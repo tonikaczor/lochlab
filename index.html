@@ -72,7 +72,7 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 .help p{margin:.4em 0}
 .help b{color:var(--accent)}
 #printArea{display:none}
-@media print{#app,.backdrop,#toast{display:none!important}#printArea{display:block}#printArea img{width:100%}body{background:#fff}}
+@media print{#app,.backdrop,#toast{display:none!important}#printArea{display:block}#printArea img{width:100%;max-height:270mm;object-fit:contain}body{background:#fff}}
 #gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 #gate form{width:100%;max-width:340px;text-align:center}
 #gate img{width:96px;height:auto;margin-bottom:10px}
@@ -850,15 +850,24 @@ function renderExport(m,S=48){
   x.fillText(doc.name+' · '+(fmtOf(doc.cols,doc.rows)||doc.cols+'×'+doc.rows+' Löcher')+' · '+side+' · Tonfunk LochLab · '+new Date().toLocaleDateString('de-DE'),MARGIN*S-S*.5,c.height-S*.3);
   return c;
 }
+function renderSheet(S=48){
+  const a=renderExport('top',S),b=renderExport('bottom',S);
+  const c=document.createElement('canvas');c.width=a.width;c.height=a.height+b.height;
+  const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+  x.drawImage(a,0,0);x.drawImage(b,0,a.height);
+  x.strokeStyle='#bbb';x.setLineDash([S*.2,S*.2]);x.lineWidth=2;x.beginPath();x.moveTo(0,a.height);x.lineTo(c.width,a.height);x.stroke();
+  return c;
+}
 function exportSheet(print){
   sheet(print?'Drucken':'Bild exportieren',(b,close)=>{
     b.innerHTML=`<p style="color:var(--mute);margin-top:0">Welche Ansicht?</p>
+      <button class="row" data-m="sheet"><div class="grow"><b>Oben + Unten auf einem Blatt</b><small>Bestückungsseite oben, Lötseite (gespiegelt) darunter</small></div></button>
       <button class="row" data-m="top"><div class="grow"><b>Bestückungsseite</b><small>Bauteile und Drahtbrücken von oben</small></div></button>
       <button class="row" data-m="bottom"><div class="grow"><b>Lötseite (gespiegelt)</b><small>Lötbahnen und Lötpunkte von unten</small></div></button>
       <button class="row" data-m="both"><div class="grow"><b>Beide Seiten überlagert</b><small>wie im Editor</small></div></button>`;
     b.addEventListener('click',e=>{
       const r=e.target.closest('.row');if(!r)return;close();
-      const c=renderExport(r.dataset.m);
+      const c=r.dataset.m==='sheet'?renderSheet():renderExport(r.dataset.m);
       if(print){$('#printImg').src=c.toDataURL('image/png');setTimeout(()=>window.print(),150);}
       else c.toBlob(bl=>shareBlob(bl,safeName()+'-'+r.dataset.m+'.png'),'image/png');
     });
