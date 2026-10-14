@@ -1,4 +1,4 @@
-const CACHE = 'lochlab-v8';
+const CACHE = 'lochlab-v9';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png'];
 
 self.addEventListener('install', e => {

@@ -88,7 +88,8 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 <div id="gate"><form id="gateForm" autocomplete="on">
   <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
   <h1>Tonfunk LochLab</h1>
-  <p>Bitte Passwort eingeben</p>
+  <p id="gateHint">Bitte anmelden</p>
+  <input id="gateName" type="text" placeholder="Vor- und Nachname" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" aria-label="Name">
   <input id="gatePw" type="password" placeholder="Passwort" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Passwort">
   <button class="btn pri" type="submit">Öffnen</button>
   <div id="gateErr" role="alert"></div>
@@ -97,15 +98,24 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 (function(){
   var H='a969a208b4df4a7c43c54c888590813046cf4c30f07efa9bb162c4aff6aabfba';
   var g=document.getElementById('gate');
-  var ok=false;try{ok=localStorage.getItem('lm4.gate')===H;}catch(e){}
-  if(ok){g.remove();return;}
-  var f=document.getElementById('gateForm'),er=document.getElementById('gateErr'),pw=document.getElementById('gatePw');
+  var pwOk=false,name='';
+  try{pwOk=localStorage.getItem('lm4.gate')===H;name=localStorage.getItem('lm4.name')||'';}catch(e){}
+  if(pwOk&&name){g.remove();return;}
+  var f=document.getElementById('gateForm'),er=document.getElementById('gateErr'),pw=document.getElementById('gatePw'),nm=document.getElementById('gateName');
+  nm.value=name;
+  if(pwOk){pw.style.display='none';document.getElementById('gateHint').textContent='Bitte Namen eintragen';}
   async function sha(t){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
   f.addEventListener('submit',async function(ev){
     ev.preventDefault();
-    if(!(window.crypto&&crypto.subtle)){er.textContent='Bitte die Seite über https öffnen.';return;}
-    if(await sha(pw.value.trim())===H){try{localStorage.setItem('lm4.gate',H);}catch(_){}g.remove();}
-    else{er.textContent='Passwort falsch.';pw.select();}
+    var n=nm.value.trim().replace(/\s+/g,' ');
+    if(n.length<3||n.indexOf(' ')<0){er.textContent='Bitte Vor- und Nachnamen eintragen.';nm.focus();return;}
+    if(!pwOk){
+      if(!(window.crypto&&crypto.subtle)){er.textContent='Bitte die Seite über https öffnen.';return;}
+      if(await sha(pw.value.trim())!==H){er.textContent='Passwort falsch.';pw.select();return;}
+      try{localStorage.setItem('lm4.gate',H);}catch(_){}
+    }
+    try{localStorage.setItem('lm4.name',n);}catch(_){}
+    g.remove();
   });
 })();
 </script>
@@ -137,6 +147,7 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 const $ = s => document.querySelector(s);
 const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
 const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const userName = () => { try { return localStorage.getItem('lm4.name') || ''; } catch (e) { return ''; } };
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('show'),1800);}
 
@@ -770,6 +781,7 @@ function openMenu(){
       ['new','Neues Projekt','Leere Platine anlegen'],
       ['open','Projekte öffnen','Auf diesem iPad gespeichert'],
       ['rename','Projekt umbenennen',doc.name],
+      ['user','Name ändern',userName()||'noch nicht eingetragen'],
       ['board','Platinengröße',`${fmtOf(doc.cols,doc.rows)||'Eigenes Format'} · ${doc.cols} × ${doc.rows} Löcher`],
       ['bom','Stückliste','Bauteile zählen und kopieren'],
       ['png','Als Bild exportieren','PNG, teilen oder speichern'],
@@ -786,6 +798,7 @@ function menuAct(m){
   if(m==='new')boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));});
   else if(m==='open')openList();
   else if(m==='rename')renameDoc();
+  else if(m==='user')form('Dein Name',[{label:'Vor- und Nachname',value:userName()}],v=>{const n=v[0].trim().replace(/\s+/g,' ');if(n){try{localStorage.setItem('lm4.name',n);}catch(e){}toast('Gespeichert');}});
   else if(m==='board')boardSheet('Platinengröße',false,(n,c,r)=>{doc.cols=c;doc.rows=r;commit();fit();});
   else if(m==='bom')openBom();
   else if(m==='png')exportSheet(false);
@@ -847,7 +860,7 @@ function renderExport(m,S=48){
   drawScene(x,{s:S,ox:MARGIN*S,oy:MARGIN*S},{mode:m,sel:null,export:true});
   const side=m==='top'?'Bestückungsseite':m==='bottom'?'Lötseite (gespiegelt)':'Beide Seiten';
   x.fillStyle='#333';x.textAlign='left';x.textBaseline='alphabetic';x.font='600 '+(S*.36)+'px -apple-system,Segoe UI,sans-serif';
-  x.fillText(doc.name+' · '+(fmtOf(doc.cols,doc.rows)||doc.cols+'×'+doc.rows+' Löcher')+' · '+side+' · Tonfunk LochLab · '+new Date().toLocaleDateString('de-DE'),MARGIN*S-S*.5,c.height-S*.3);
+  x.fillText((userName()?userName()+' · ':'')+doc.name+' · '+(fmtOf(doc.cols,doc.rows)||doc.cols+'×'+doc.rows+' Löcher')+' · '+side+' · Tonfunk LochLab · '+new Date().toLocaleDateString('de-DE'),MARGIN*S-S*.5,c.height-S*.3);
   return c;
 }
 function renderSheet(S=48){
