@@ -420,20 +420,23 @@ function drawScene(c,V,o){
   c.save();c.translate(V.ox,V.oy);c.scale(V.s,V.s);
   if(mir){c.translate(cols-1,0);c.scale(-1,1);}
   // Platine
-  rrect(c,-.5,-.5,cols,rows,.3);c.fillStyle=mir?'#8a5a2c':'#a8723a';c.fill();
-  c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=.06;c.stroke();
+  const ex=!!o.export;
+  const pal=ex?{board:'#f3e2a4',edge:'rgba(120,80,20,.6)',pad:'#efc474',ring:'rgba(130,80,20,.5)',hole:'#3a2a12',lab:'#333'}
+    :{board:mir?'#c9993f':'#d6a94c',edge:'rgba(0,0,0,.4)',pad:mir?'#f7dfa6':'#f3d89a',ring:'rgba(120,70,20,.55)',hole:null,lab:'rgba(255,255,255,.75)'};
+  rrect(c,-.5,-.5,cols,rows,.3);c.fillStyle=pal.board;c.fill();
+  c.strokeStyle=pal.edge;c.lineWidth=.06;c.stroke();
   // Lötaugen
   const top=o.mode==='top'; // Bestückungsseite: keine Lötaugen, nur Bohrungen
   if(!top){
     c.beginPath();for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){c.moveTo(x+.34,y);c.arc(x,y,.34,0,7);}
-    c.fillStyle=mir?'#f0c27a':'#e6b870';c.fill();c.strokeStyle='rgba(120,70,20,.55)';c.lineWidth=.05;c.stroke();
+    c.fillStyle=pal.pad;c.fill();c.strokeStyle=pal.ring;c.lineWidth=.05;c.stroke();
   }
   c.beginPath();for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){c.moveTo(x+.15,y);c.arc(x,y,.15,0,7);}
-  c.fillStyle=top?'#4a2f12':'#10150f';c.fill();
+  c.fillStyle=pal.hole||(top?'#5a3b16':'#1a1308');c.fill();
   // Raster-Beschriftung
   if(V.s>=9){
-    for(let x=0;x<cols;x++)if((x+1)%5===0||x===0)txt(c,String(x+1),x,-.85,.4,'rgba(255,255,255,.75)',mir);
-    for(let y=0;y<rows;y++)if((y+1)%5===0||y===0)txt(c,String(y+1),-.95,y,.4,'rgba(255,255,255,.75)',mir);
+    for(let x=0;x<cols;x++)if((x+1)%5===0||x===0)txt(c,String(x+1),x,-.8,ex?.55:.4,pal.lab,mir);
+    for(let y=0;y<rows;y++)if((y+1)%5===0||y===0)txt(c,String(y+1),-.9,y,ex?.55:.4,pal.lab,mir);
   }
   const items=doc.items;
   const hl=(it,fn)=>{if(o.sel===it.id){c.save();fn();c.restore();}};
@@ -451,6 +454,16 @@ function drawScene(c,V,o){
       c.globalAlpha=both?.7:1;c.beginPath();c.arc(it.x,it.y,.4,0,7);c.fillStyle='#d9dde2';c.fill();c.strokeStyle='#7d858e';c.lineWidth=.07;c.stroke();
       c.beginPath();c.arc(it.x-.1,it.y-.12,.12,0,7);c.fillStyle='#fff';c.fill();c.globalAlpha=1;
     });
+    // Silberdraht-Brücken werden auf der Lötseite an beiden Enden verlötet
+    const have=new Set(items.filter(i=>i.t==='dot').map(i=>i.x+','+i.y));
+    items.forEach(it=>{
+      if(it.t!=='wire'||it.c!==WCOL[0])return;
+      [[it.x1,it.y1],[it.x2,it.y2]].forEach(([x,y])=>{
+        const k=x+','+y;if(have.has(k))return;have.add(k);
+        c.globalAlpha=both?.7:1;c.beginPath();c.arc(x,y,.4,0,7);c.fillStyle='#d9dde2';c.fill();c.strokeStyle='#7d858e';c.lineWidth=.07;c.stroke();
+        c.beginPath();c.arc(x-.1,y-.12,.12,0,7);c.fillStyle='#fff';c.fill();c.globalAlpha=1;
+      });
+    });
   }
   // Oberseite
   if(o.mode!=='bottom'){
@@ -460,8 +473,8 @@ function drawScene(c,V,o){
     });
     items.forEach(it=>{if(it.t!=='part')return;
       const b=worldBox(it),cxm=(b[0]+b[2])/2;
-      if(it.l)txt(c,it.l,cxm,b[1]-.35,.5,'#fff',false,'center','rgba(0,0,0,.8)');
-      if(it.v&&V.s>=13)txt(c,it.v,cxm,b[3]+.38,.42,'#cfe8ff',false,'center','rgba(0,0,0,.8)');
+      if(it.l)txt(c,it.l,cxm,b[1]-.4,ex?.8:.5,ex?'#111':'#fff',false,'center',ex?'rgba(255,255,255,.95)':'rgba(0,0,0,.8)');
+      if(it.v&&(V.s>=13||ex))txt(c,it.v,cxm,b[3]+.45,ex?.68:.42,ex?'#12305e':'#cfe8ff',false,'center',ex?'rgba(255,255,255,.95)':'rgba(0,0,0,.8)');
     });
     c.lineCap='round';
     items.forEach(it=>{if(it.t!=='wire')return;
@@ -473,7 +486,7 @@ function drawScene(c,V,o){
     items.forEach(it=>{if(it.t!=='text')return;
       const w=it.s.length*.6*it.z;
       hl(it,()=>{rrect(c,it.x-w/2-.2,it.y-it.z/2-.15,w+.4,it.z+.3,.15);c.fillStyle='rgba(59,158,255,.35)';c.fill();});
-      txt(c,it.s,it.x,it.y,it.z,'#fff',false,'center','rgba(0,0,0,.7)');
+      txt(c,it.s,it.x,it.y,it.z,ex?'#111':'#fff',false,'center',ex?'rgba(255,255,255,.95)':'rgba(0,0,0,.7)');
     });
   } else { // Unterseite: Bauteil-Umrisse zur Orientierung
     c.setLineDash([.25,.18]);c.strokeStyle='rgba(255,255,255,.4)';c.lineWidth=.06;
@@ -854,13 +867,18 @@ function openBom(){
   });
 }
 function renderExport(m,S=48){
+  const W=Math.round(((doc.cols-1)+MARGIN*2)*S),fp=Math.round(W*0.021),foot=Math.round(fp*3.4);
   const c=document.createElement('canvas');
-  c.width=Math.round(((doc.cols-1)+MARGIN*2)*S);c.height=Math.round(((doc.rows-1)+MARGIN*2)*S);
+  c.width=W;c.height=Math.round(((doc.rows-1)+MARGIN*2)*S)+foot;
   const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
   drawScene(x,{s:S,ox:MARGIN*S,oy:MARGIN*S},{mode:m,sel:null,export:true});
   const side=m==='top'?'Bestückungsseite':m==='bottom'?'Lötseite (gespiegelt)':'Beide Seiten';
-  x.fillStyle='#333';x.textAlign='left';x.textBaseline='alphabetic';x.font='600 '+(S*.36)+'px -apple-system,Segoe UI,sans-serif';
-  x.fillText((userName()?userName()+' · ':'')+doc.name+' · '+(fmtOf(doc.cols,doc.rows)||doc.cols+'×'+doc.rows+' Löcher')+' · '+side+' · Tonfunk LochLab · '+new Date().toLocaleDateString('de-DE'),MARGIN*S-S*.5,c.height-S*.3);
+  const y0=c.height-foot,left=MARGIN*S-S*.5,who=userName();
+  x.textAlign='left';x.textBaseline='alphabetic';
+  x.fillStyle='#111';x.font='700 '+fp+'px -apple-system,Segoe UI,Arial,sans-serif';
+  x.fillText(side+' · '+doc.name+(who?' · '+who:''),left,y0+fp*1.15);
+  x.fillStyle='#444';x.font='500 '+Math.round(fp*.85)+'px -apple-system,Segoe UI,Arial,sans-serif';
+  x.fillText((fmtOf(doc.cols,doc.rows)||doc.cols+'×'+doc.rows+' Löcher')+' · Tonfunk LochLab · '+new Date().toLocaleDateString('de-DE'),left,y0+fp*2.35);
   return c;
 }
 function renderSheet(S=48){
