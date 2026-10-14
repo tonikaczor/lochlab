@@ -11,6 +11,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
+<meta name="robots" content="noindex,nofollow">
 <title>Tonfunk LochLab</title>
 <style>
 :root{--bg:#e9edf1;--panel:#ffffff;--panel2:#eef1f4;--fg:#1c2329;--mute:#66727e;--accent:#1a7fe0;--danger:#d93636;--line:#d3d9df;--cvbg:#cfd6dd;color-scheme:light}
@@ -72,9 +73,43 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 .help b{color:var(--accent)}
 #printArea{display:none}
 @media print{#app,.backdrop,#toast{display:none!important}#printArea{display:block}#printArea img{width:100%}body{background:#fff}}
+#gate{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+#gate form{width:100%;max-width:340px;text-align:center}
+#gate img{width:96px;height:auto;margin-bottom:10px}
+#gate h1{margin:0 0 4px;font-size:22px}
+#gate p{margin:0 0 18px;color:var(--mute)}
+#gate input{text-align:center;margin-bottom:12px}
+#gate .btn{width:100%}
+#gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 </style>
 </head>
 <body>
+<!--GATE-->
+<div id="gate"><form id="gateForm" autocomplete="on">
+  <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
+  <h1>Tonfunk LochLab</h1>
+  <p>Bitte Passwort eingeben</p>
+  <input id="gatePw" type="password" placeholder="Passwort" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Passwort">
+  <button class="btn pri" type="submit">Öffnen</button>
+  <div id="gateErr" role="alert"></div>
+</form></div>
+<script>
+(function(){
+  var H='a969a208b4df4a7c43c54c888590813046cf4c30f07efa9bb162c4aff6aabfba';
+  var g=document.getElementById('gate');
+  var ok=false;try{ok=localStorage.getItem('lm4.gate')===H;}catch(e){}
+  if(ok){g.remove();return;}
+  var f=document.getElementById('gateForm'),er=document.getElementById('gateErr'),pw=document.getElementById('gatePw');
+  async function sha(t){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
+  f.addEventListener('submit',async function(ev){
+    ev.preventDefault();
+    if(!(window.crypto&&crypto.subtle)){er.textContent='Bitte die Seite über https öffnen.';return;}
+    if(await sha(pw.value.trim())===H){try{localStorage.setItem('lm4.gate',H);}catch(_){}g.remove();}
+    else{er.textContent='Passwort falsch.';pw.select();}
+  });
+})();
+</script>
+<!--/GATE-->
 <div id="app">
   <header>
     <button class="ib" id="bMenu" aria-label="Menü"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
