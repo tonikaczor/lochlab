@@ -28,7 +28,21 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-
 .ib[disabled]{opacity:.3}
 .ib.txt{width:auto;padding:0 10px;font-size:13px;color:var(--accent);font-weight:600}
 svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-main{position:relative;flex:1;min-height:0}
+#mid{display:flex;flex:1;min-height:0}
+main{position:relative;flex:1;min-height:0;min-width:0}
+#side{display:none;width:184px;flex:none;background:var(--panel);border-left:1px solid var(--line);padding:14px 12px;overflow-y:auto}
+#side.on{display:block}
+#side .ttl{font-weight:600;font-size:15px}
+#side .sub{color:var(--mute);font-size:13px;margin-top:1px}
+#side .sh{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:16px 0 6px}
+.srow{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.sval{flex:1;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
+.sbtn{min-width:48px;height:46px;padding:0 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:19px;display:inline-flex;align-items:center;justify-content:center}
+.sbtn:active{background:var(--line)}
+.sbtn.wide{width:100%;font-size:14px;margin-bottom:6px}
+.sbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.sbtn.danger{color:var(--danger)}
+.swg{display:flex;flex-wrap:wrap;gap:8px}
 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
 #readout{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:99px;font-size:12px;pointer-events:none;font-variant-numeric:tabular-nums}
 #ctx{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:6px 8px;background:var(--panel);border-top:1px solid var(--line);min-height:50px;scrollbar-width:none}
@@ -139,10 +153,13 @@ th{color:var(--mute);font-weight:500;font-size:12px}
     <button class="ib" id="bTheme" aria-label="Dark Mode"></button>
     <button class="ib" id="bFit" aria-label="Einpassen"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
   </header>
-  <main id="stage">
-    <canvas id="cv"></canvas>
-    <div id="readout"></div>
-  </main>
+  <div id="mid">
+    <main id="stage">
+      <canvas id="cv"></canvas>
+      <div id="readout"></div>
+    </main>
+    <aside id="side" aria-label="Bauteil-Einstellungen"></aside>
+  </div>
   <div id="ctx"></div>
   <nav id="nav"></nav>
 </div>
@@ -781,9 +798,9 @@ window.addEventListener('keydown',e=>{
 function undo(){if(hi>0)restore(hi-1);}
 function redo(){if(hi<hist.length-1)restore(hi+1);}
 function delSel(){if(sel==null)return;doc.items=doc.items.filter(i=>i.id!==sel);sel=null;commit();}
-function rotSel(){
-  if(tool==='part'&&sel==null){partRot=(partRot+1)&3;invalidate();return;}
-  const it=byId(sel);if(it&&it.t==='part'){it.r=(it.r+1)&3;commit();}
+function rotSel(d=1){
+  if(tool==='part'&&sel==null){partRot=(partRot+d)&3;invalidate();return;}
+  const it=byId(sel);if(it&&it.t==='part'){it.r=(it.r+d)&3;commit();}
 }
 function dupSel(){
   const it=byId(sel);if(!it)return;const c=JSON.parse(JSON.stringify(it));c.id=nid();
@@ -813,30 +830,49 @@ $('#nav').addEventListener('click',e=>{const b=e.target.closest('.tb');if(b)setT
 
 const ledSw=cur=>Object.keys(LEDC).map(n=>`<button class="sw ${ledColor(cur)===LEDC[n]?'on':''}" style="background:${LEDC[n]}" data-a="lc" data-v="${n}" aria-label="${n}"></button>`).join('');
 const varChips=(k,cur,act)=>PARTS[k].variants.map(v=>`<button class="chip sub ${v.id===cur?'on':''}" data-a="${act}" data-v="${v.id}">${v.name}</button>`).join('');
+function sideCtl(k,rotV,n,it){
+  const P=PARTS[k],V=it?variantOf(it):(P.variants?P.variants.find(v=>v.id===curVar(k)):null);
+  let o=`<div class="ttl">${esc(P.name)}</div>`+(V?`<div class="sub">${esc(V.name)}</div>`:'');
+  o+=`<div class="sh">Ausrichtung</div><div class="srow"><button class="sbtn" data-a="rl" aria-label="Links drehen">↺</button><span class="sval">${rotV*90}°</span><button class="sbtn" data-a="rot" aria-label="Rechts drehen">↻</button></div>`;
+  if(P.kind!=='fixed')o+=`<div class="sh">${P.kind==='span'?'Länge':'Anzahl Pins'}</div><div class="srow"><button class="sbtn" data-a="sm" aria-label="weniger">−</button><span class="sval">${n}</span><button class="sbtn" data-a="sp" aria-label="mehr">+</button></div>`;
+  if(k==='IC'){const on=it?it.sk:autoSocket;o+=`<div class="sh">Sockel</div><button class="sbtn wide ${on?'on':''}" data-a="${it?'sk':'ask'}">${on?'Sockel darunter ✓':'Ohne Sockel'}</button>`;}
+  if(k==='LED')o+=`<div class="sh">Farbe</div><div class="swg">${ledSw(it?it.v:(partVals.LED!=null?partVals.LED:'rot'))}</div>`;
+  if(it)o+=`<div class="sh">Bauteil</div><button class="sbtn wide" data-a="edit">✎ Bearbeiten</button><button class="sbtn wide" data-a="dup">⧉ Kopie</button><button class="sbtn wide danger" data-a="del">Löschen</button>`;
+  return o;
+}
 function renderCtx(){
-  const el=$('#ctx');let h='';
+  const el=$('#ctx'),sd=$('#side');let h='',sh='';
+  const wide=matchMedia('(min-width:640px)').matches;
   const chip=(id,l,cls='')=>`<button class="chip ${cls}" data-a="${id}">${l}</button>`;
   const it=sel!=null?byId(sel):null;
   if(tool==='select'&&it){
     if(it.t==='wire')h+=WCOL.map(c=>`<button class="sw ${it.c===c?'on':''}" style="background:${c}" data-a="wc" data-c="${c}"></button>`).join('')+'<span class="sep"></span>';
-    if(it.t==='part'&&it.k==='LED')h+=ledSw(it.v)+'<span class="sep"></span>';
-    if(it.t==='part'&&it.k==='IC')h+=chip('sk','Sockel '+(it.sk?'✓':'–'),it.sk?'on':'');
-    if(it.t==='part'&&PARTS[it.k].variants)h+=varChips(it.k,variantOf(it).id,'sv')+'<span class="sep"></span>';
-    if(it.t==='part')h+=chip('rot','↻ Drehen');
-    if(it.t==='part'||it.t==='text')h+=chip('edit','✎ Bearbeiten');
-    h+=chip('dup','⧉ Kopie')+chip('del','Löschen','danger');
+    if(it.t==='part'&&wide){
+      sh=sideCtl(it.k,it.r,it.n,it);
+      h+=PARTS[it.k].variants?varChips(it.k,variantOf(it).id,'sv'):'<span class="hint">Einstellungen in der Seitenleiste</span>';
+    }else{
+      if(it.t==='part'&&it.k==='LED')h+=ledSw(it.v)+'<span class="sep"></span>';
+      if(it.t==='part'&&it.k==='IC')h+=chip('sk','Sockel '+(it.sk?'✓':'–'),it.sk?'on':'');
+      if(it.t==='part'&&PARTS[it.k].variants)h+=varChips(it.k,variantOf(it).id,'sv')+'<span class="sep"></span>';
+      if(it.t==='part')h+=chip('rot','↻ Drehen');
+      if(it.t==='part'||it.t==='text')h+=chip('edit','✎ Bearbeiten');
+      h+=chip('dup','⧉ Kopie')+chip('del','Löschen','danger');
+    }
   }else if(tool==='part'){
-    if(partKind==='LED')h+=ledSw(partVals.LED!=null?partVals.LED:'rot')+'<span class="sep"></span>';
+    if(wide)sh=sideCtl(partKind,partRot,sizes[partKind],null);
+    else if(partKind==='LED')h+=ledSw(partVals.LED!=null?partVals.LED:'rot')+'<span class="sep"></span>';
     h+=Object.keys(PARTS).map(k=>{
       let t=chip('pk',PARTS[k].name+(PARTS[k].variants?' ▾':''),k===partKind?'on':'').replace('data-a="pk"',`data-a="pk" data-k="${k}"`);
       if(k===partKind&&PARTS[k].variants)t+='<span class="sep"></span>'+varChips(k,curVar(k),'pv')+'<span class="sep"></span>';
       return t;}).join('');
-    h+='<span class="sep"></span>'+chip('rot','↻ '+partRot*90+'°');
-    if(partKind==='IC')h+=chip('ask','Sockel darunter '+(autoSocket?'✓':'–'),autoSocket?'on':'');
-    const P=PARTS[partKind];
-    if(P.kind!=='fixed'){
-      const lab=P.kind==='span'?'Länge':'Pins';
-      h+=`<span class="step"><button data-a="sm">−</button><span>${lab} ${sizes[partKind]}</span><button data-a="sp">+</button></span>`;
+    if(!wide){
+      h+='<span class="sep"></span>'+chip('rot','↻ '+partRot*90+'°');
+      if(partKind==='IC')h+=chip('ask','Sockel darunter '+(autoSocket?'✓':'–'),autoSocket?'on':'');
+      const P=PARTS[partKind];
+      if(P.kind!=='fixed'){
+        const lab=P.kind==='span'?'Länge':'Pins';
+        h+=`<span class="step"><button data-a="sm">−</button><span>${lab} ${sizes[partKind]}</span><button data-a="sp">+</button></span>`;
+      }
     }
   }else if(tool==='wire'||tool==='track'){
     if(tool==='wire')h+=WCOL.map(c=>`<button class="sw ${wireColor===c?'on':''}" style="background:${c}" data-a="wc" data-c="${c}"></button>`).join('')+'<span class="sep"></span>';
@@ -845,8 +881,9 @@ function renderCtx(){
     const hints={select:'Tippen = auswählen, ziehen = verschieben · 2 Finger = Zoom',hand:'Ziehen zum Verschieben · 2 Finger = Zoom',dot:'Tippen setzt oder entfernt einen Lötpunkt',text:'Tippen, um Text zu platzieren',erase:'Tippen oder darüberwischen zum Löschen'};
     h=`<span class="hint">${hints[tool]||''}</span>`;
   }
-  el.innerHTML=h;
+  el.innerHTML=h;sd.innerHTML=sh;sd.classList.toggle('on',!!sh);
 }
+matchMedia('(min-width:640px)').addEventListener('change',()=>renderCtx());
 // Laptop: Mausrad scrollt die Bauteilleiste seitwärts, Ziehen mit gedrückter Maustaste auf freier Fläche auch
 $('#ctx').addEventListener('wheel',e=>{
   const el=e.currentTarget;if(el.scrollWidth<=el.clientWidth)return;
@@ -861,14 +898,18 @@ $('#ctx').addEventListener('wheel',e=>{
   window.addEventListener('pointerup',()=>{if(drag&&drag.moved){suppress=true;setTimeout(()=>{suppress=false;},60);}drag=null;});
   el.addEventListener('click',e=>{if(suppress){e.stopPropagation();e.preventDefault();}},true);
 })();
-$('#ctx').addEventListener('click',e=>{
+const ctxClick=e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
   if(a==='pk'){partKind=b.dataset.k;}
   else if(a==='pv'){partVar[partKind]=b.dataset.v;}
   else if(a==='sv'){const it=sel!=null?byId(sel):null;if(it){it.vr=b.dataset.v;commit();}}
   else if(a==='rot')rotSel();
+  else if(a==='rl')rotSel(3);
   else if(a==='sm'||a==='sp'){
-    const P=PARTS[partKind],st=P.kind==='dip'?2:1,d=a==='sp'?st:-st;sizes[partKind]=clamp(sizes[partKind]+d,P.min,P.max);
+    const sit=(tool==='select'&&sel!=null)?byId(sel):null;
+    const k=sit&&sit.t==='part'?sit.k:partKind,P=PARTS[k],st=P.kind==='dip'?2:1,d=a==='sp'?st:-st;
+    if(sit&&sit.t==='part'){sit.n=clamp(sit.n+d,P.min,P.max);commit();}
+    else sizes[partKind]=clamp(sizes[partKind]+d,P.min,P.max);
   }
   else if(a==='wc'){
     const it=sel!=null?byId(sel):null;
@@ -885,7 +926,9 @@ $('#ctx').addEventListener('click',e=>{
   else if(a==='del')delSel();
   else if(a==='edit'){const it=byId(sel);if(it)it.t==='text'?editText(it):editPart(it);}
   renderCtx();invalidate();
-});
+};
+$('#ctx').addEventListener('click',ctxClick);
+$('#side').addEventListener('click',ctxClick);
 
 function updateHeader(){
   $('#title').firstChild.nodeValue=doc.name;
