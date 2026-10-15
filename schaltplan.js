@@ -1066,12 +1066,75 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
 }
+/* ---- Brücke zum Lochraster-Layout (nur mit Freigabe) ---- */
+const GODH = 'a2fdecf55d194ed8cea8d52d7d0442778e86180b6d81c6c37e56278e55add6c6';
+async function sha256(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+function godGate(then) {
+  let ok = false; try { ok = sessionStorage.getItem('lm4.god') === GODH; } catch (e) {}
+  if (ok) return then();
+  form('Freigabe nötig', [{ l: 'Passwort (nur für Ausbilder)', v: '', type: 'password' }], async ([pw]) => {
+    if (await sha256(pw.trim()) === GODH) { try { sessionStorage.setItem('lm4.god', GODH); } catch (e) {} then(); } else toast('Passwort falsch');
+  });
+}
+const DSPEC = { '1N4007': 'd4007', '1N5819': 'd5819' };
+function llSpec(p) {
+  const v = p.v, two = { two: true };
+  switch (p.k) {
+    case 'R': return { ll: { k: 'R', n: 4, v }, pm: [0, 1], ...two };
+    case 'POT': return { ll: { k: 'P', v }, pm: [0, 2, 1] };
+    case 'C': return { ll: { k: 'C', n: 2, v }, pm: [0, 1], ...two };
+    case 'CE': return { ll: { k: 'CE', n: 2, v, vr: 'e63' }, pm: [0, 1], ...two };
+    case 'L': return { ll: { k: 'L', n: 4, v }, pm: [0, 1], ...two };
+    case 'D': return { ll: { k: 'D', n: 4, v: v || '1N4148', vr: DSPEC[String(v).toUpperCase()] || 'd4148' }, pm: [0, 1], ...two };
+    case 'ZD': return { ll: { k: 'D', n: 4, v: 'BZX55C' + String(v).replace('.', 'V'), vr: 'dz' }, pm: [0, 1], ...two };
+    case 'LED': return { ll: { k: 'LED', n: 1, v, vr: '5' }, pm: [0, 1], ...two };
+    case 'LDR': return { ll: { k: 'LDR', n: 2, v: 'LDR' }, pm: [0, 1], ...two };
+    case 'NTC': case 'PTC': return { ll: { k: p.k, n: 2, v }, pm: [0, 1], ...two };
+    case 'PHT': return { ll: { k: 'PHT', n: 1, v: v || 'BPW40' }, pm: [0, 1], ...two };
+    case 'SPK': return { ll: { k: 'SPK', n: 4, v }, pm: [0, 1], ...two };
+    case 'PB': return { ll: { k: 'SW', vr: 'k2', v: '' }, pm: [0, 1] };
+    case 'NPN': case 'PNP': return { ll: { k: 'T', v }, pm: [1, 0, 2] };
+    case 'THY': return { ll: { k: 'THY', v }, pm: [1, 0, 2] };
+    case 'OPTO': return { ll: { k: 'OPTO', v }, pm: [0, 1, 3, 2] };
+    case 'RLY': return { ll: { k: 'RLY', v: v || '12V', vr: /^5/.test(v) ? 'r5' : (/^24/.test(v) ? 'r24' : 'r12') }, pm: [0, 1, 2, 3, 4] };
+    case 'TRF': return { ll: { k: 'TRF', v }, pm: [0, 1, 2, 3] };
+    case 'ICX': { const n = p.n || 8; return { ll: { k: 'IC', n, v, sk: true }, pm: Array.from({ length: n }, (_, i) => i) }; }
+    case 'BAT': case 'AC': case 'SPST': case 'SPDT': case 'LAMP': case 'MOTOR': case 'HEAT': case 'FUSE': { const n = KD(p).pins.length; return { ll: { k: 'KL', n, v: '' }, pm: Array.from({ length: n }, (_, i) => i), ext: true }; }
+    default: return null;
+  }
+}
+function buildJob() {
+  const par = new Map(), find = k => { if (!par.has(k)) par.set(k, k); while (par.get(k) !== k) { par.set(k, par.get(par.get(k))); k = par.get(k); } return k; }, uni = (a, b) => par.set(find(a), find(b));
+  sch.wires.forEach(w => uni(gk(w.x1, w.y1), gk(w.x2, w.y2)));
+  let g0 = null; sch.parts.forEach(p => { if (p.k === 'GND') { const k = gk(...pinsOf(p)[0]); if (g0) uni(g0, k); else g0 = k; find(k); } });
+  const parts = [], skipped = {}, ext = [];
+  sch.parts.forEach(p => {
+    if (p.k === 'GND' || p.k === 'VM' || p.k === 'AM') return;
+    const sp = llSpec(p), K = KINDS[p.k];
+    if (!sp) { skipped[K.name] = (skipped[K.name] || 0) + 1; return; }
+    const pw = pinsOf(p), pins = []; sp.pm.forEach((li, si) => { pins[li] = String(find(gk(...pw[si]))); });
+    const cxs = pw.reduce((a, q) => a + q[0], 0) / pw.length, cys = pw.reduce((a, q) => a + q[1], 0) / pw.length;
+    parts.push({ ll: sp.ll, l: p.l || '', sx: sp.two ? pw[0][0] : cxs, sy: sp.two ? pw[0][1] : cys, sr: p.r, two: !!sp.two, pins });
+    if (sp.ext) ext.push((p.l || K.name) + ' (' + K.name + ')');
+  });
+  return { name: sch.name, parts, notes: { skipped: Object.keys(skipped).map(k => skipped[k] + '× ' + k), ext } };
+}
+function makeLayout() {
+  if (!sch.parts.length) { toast('Noch keine Bauteile gezeichnet'); return; }
+  godGate(() => {
+    const job = buildJob();
+    if (!job.parts.length) { toast('Keine Bauteile für das Layout vorhanden'); return; }
+    try { localStorage.setItem('lm4.job', JSON.stringify(job)); } catch (e) { toast('Speichern nicht möglich'); return; }
+    location.href = 'layout.html?auto';
+  });
+}
 function menuAct(m) {
+  if (m === 'auto') { makeLayout(); return; }
   if (m === 'new') confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }));
   else if (m === 'ex') openExamples();
   else if (m === 'open') openList();
@@ -1083,7 +1146,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v36</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v37</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -1096,7 +1159,7 @@ function confirmNew(next) {
 }
 function form(title, fields, onOk) {
   sheet(title, (b, close) => {
-    b.innerHTML = fields.map((f, i) => `<label class="f"><span>${esc(f.l)}</span><input id="ff${i}" value="${esc(f.v)}"></label>`).join('') + '<div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>OK</button></div>';
+    b.innerHTML = fields.map((f, i) => `<label class="f"><span>${esc(f.l)}</span><input id="ff${i}" type="${f.type || 'text'}" value="${esc(f.v)}"></label>`).join('') + '<div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>OK</button></div>';
     b.querySelector('[data-c]').onclick = close; b.querySelector('[data-ok]').onclick = () => { onOk(fields.map((f, i) => b.querySelector('#ff' + i).value)); close(); };
     setTimeout(() => b.querySelector('#ff0').focus(), 50);
   });

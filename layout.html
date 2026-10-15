@@ -1463,7 +1463,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v36</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v37</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
@@ -1486,6 +1486,100 @@ function applyTheme(t,persist){
 })();
 $('#bTheme').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark',true);
 
+/* ============ Automatisches Layout aus dem Stromlaufplan (nur mit Freigabe) ============ */
+const GODH='a2fdecf55d194ed8cea8d52d7d0442778e86180b6d81c6c37e56278e55add6c6';
+function autoLayout(job){
+  const cols=62,rows=38,nd=newDoc((job.name||'Schaltung')+' (Layout)',cols,rows);
+  let idc=1;const nextId=()=>idc++;
+  const ps=job.parts, hk=(x,y)=>x+','+y, inB=(x,y)=>x>=0&&y>=0&&x<cols&&y<rows;
+  const minX=Math.min(...ps.map(p=>p.sx)),maxX=Math.max(...ps.map(p=>p.sx)),minY=Math.min(...ps.map(p=>p.sy)),maxY=Math.max(...ps.map(p=>p.sy));
+  const f=Math.max(.35,Math.min(1,(cols-14)/Math.max(maxX-minX,1),(rows-12)/Math.max(maxY-minY,1)));
+  const items=[],rects=[],owner=new Map(),netHoles=new Map(),notPlaced=[];
+  const order=ps.map((_,i)=>i).sort((a,b)=>((ps[b].ll.k==='IC'||ps[b].ll.k==='RLY'||ps[b].ll.k==='TRF')-(ps[a].ll.k==='IC'||ps[a].ll.k==='RLY'||ps[a].ll.k==='TRF'))||ps[a].sy-ps[b].sy||ps[a].sx-ps[b].sx);
+  const overlap=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
+  for(const i of order){
+    const jp=ps[i],ll=jp.ll,P=PARTS[ll.k];
+    const mk=(x,y)=>({id:0,t:'part',k:ll.k,x,y,r:jp.two?(jp.sr&3):0,n:ll.n||P.def,vr:ll.vr,v:(ll.v!=null&&ll.v!=='')?ll.v:(P.variants?undefined:P.val),l:jp.l,sk:ll.sk});
+    const tx=Math.round(4+(jp.sx-minX)*f),ty=Math.round(4+(jp.sy-minY)*f);
+    const cand=[];for(let dx=-30;dx<=30;dx++)for(let dy=-22;dy<=22;dy++)cand.push([dx,dy,dx*dx+dy*dy]);cand.sort((a,b)=>a[2]-b[2]);
+    let done=null;
+    for(const [dx,dy] of cand){
+      const it=mk(tx+dx,ty+dy),pw=pinsOf(it),b=worldBox(it),bb=[b[0]-.9,b[1]-.9,b[2]+.9,b[3]+.9];
+      if(bb[0]<-.5||bb[1]<-.5||bb[2]>cols-.5||bb[3]>rows-.5)continue;
+      if(!pw.every(([x,y])=>inB(x,y)&&!owner.has(hk(x,y))))continue;
+      if(rects.some(r=>overlap(r,bb)))continue;
+      done={it,pw,bb};break;
+    }
+    if(!done){notPlaced.push(jp.l||ll.k);continue;}
+    done.it.id=nextId();if(done.it.v===undefined)delete done.it.v;if(!done.it.vr)delete done.it.vr;if(!done.it.sk)delete done.it.sk;
+    items.push(done.it);rects.push(done.bb);
+    done.pw.forEach(([x,y],li)=>{const net=jp.pins[li]||('x'+items.length+'_'+li);owner.set(hk(x,y),net);if(!netHoles.has(net))netHoles.set(net,[]);netHoles.get(net).push([x,y]);});
+  }
+  // Verbindungen: je Netz ein Spannbaum, bevorzugt Silberdraht (Unterseite), sonst Drahtbrücke
+  const edges=[];
+  netHoles.forEach((hs,net)=>{
+    if(hs.length<2)return;
+    const used=[0],rest=hs.map((_,i)=>i).slice(1);
+    while(rest.length){let best=null;used.forEach(u=>rest.forEach(r=>{const d=Math.abs(hs[u][0]-hs[r][0])+Math.abs(hs[u][1]-hs[r][1]);if(!best||d<best[2])best=[u,r,d];}));
+      edges.push({net,a:hs[best[0]],b:hs[best[1]],len:best[2]});used.push(best[1]);rest.splice(rest.indexOf(best[1]),1);}
+  });
+  edges.sort((a,b)=>a.len-b.len);
+  const D=[[1,0],[-1,0],[0,1],[0,-1]];
+  function route(e){
+    const key=(x,y,d)=>(y*cols+x)*4+d,dist=new Map(),prev=new Map(),heap=[[0,e.a[0],e.a[1],-1]];
+    const push=x=>{heap.push(x);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p;}};
+    const pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){let m=i,a=2*i+1,b=a+1;if(a<heap.length&&heap[a][0]<heap[m][0])m=a;if(b<heap.length&&heap[b][0]<heap[m][0])m=b;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return t;};
+    dist.set(key(e.a[0],e.a[1],0),0);let goal=null;const limit=e.len*1.6+12;
+    while(heap.length){
+      const [c,x,y,d]=pop();
+      if(x===e.b[0]&&y===e.b[1]){goal=[x,y,d];break;}
+      if(c>limit)break;
+      if(c>(dist.get(key(x,y,d<0?0:d))??1e9))continue;
+      for(let nd2=0;nd2<4;nd2++){
+        const nx=x+D[nd2][0],ny=y+D[nd2][1];if(!inB(nx,ny))continue;
+        const o=owner.get(hk(nx,ny));if(o!==undefined&&o!==e.net)continue;
+        const nc=c+1+((d>=0&&d!==nd2)?2:0),kk=key(nx,ny,nd2);
+        if(nc<(dist.get(kk)??1e9)){dist.set(kk,nc);prev.set(kk,[x,y,d<0?0:d]);push([nc,nx,ny,nd2]);}
+      }
+    }
+    if(!goal)return null;
+    const path=[[goal[0],goal[1]]];let k=key(goal[0],goal[1],goal[2]);
+    while(prev.has(k)){const [px,py,pd]=prev.get(k);path.push([px,py]);k=key(px,py,pd);if(px===e.a[0]&&py===e.a[1])break;}
+    return path.reverse();
+  }
+  let nTr=0,nWi=0;
+  edges.forEach(e=>{
+    const path=route(e);
+    if(path&&path.length>1){
+      let sx=path[0][0],sy=path[0][1],dx=0,dy=0;
+      for(let i=1;i<path.length;i++){
+        const ddx=path[i][0]-path[i-1][0],ddy=path[i][1]-path[i-1][1];
+        if(i>1&&(ddx!==dx||ddy!==dy)){items.push({id:nextId(),t:'track',x1:sx,y1:sy,x2:path[i-1][0],y2:path[i-1][1]});sx=path[i-1][0];sy=path[i-1][1];}
+        dx=ddx;dy=ddy;
+      }
+      const L=path[path.length-1];items.push({id:nextId(),t:'track',x1:sx,y1:sy,x2:L[0],y2:L[1]});
+      path.forEach(([x,y])=>owner.set(hk(x,y),e.net));nTr++;
+    }else{items.push({id:nextId(),t:'wire',x1:e.a[0],y1:e.a[1],x2:e.b[0],y2:e.b[1],c:WCOL[1]});nWi++;}
+  });
+  nd.items=items;nd.nid=idc;
+  return {doc:nd,tracks:nTr,wires:nWi,notPlaced};
+}
+function tryJob(){
+  if(!/[?&]auto\b/.test(location.search))return;
+  let job=null,ok=false;
+  try{job=JSON.parse(localStorage.getItem('lm4.job'));localStorage.removeItem('lm4.job');}catch(e){}
+  try{ok=sessionStorage.getItem('lm4.god')===GODH;}catch(e){}
+  history.replaceState(null,'','layout.html');
+  if(!job||!ok){toast('Keine Freigabe für das automatische Layout');return;}
+  let r;try{save();r=autoLayout(job);}catch(e){console.error(e);toast('Layout konnte nicht erzeugt werden');return;}
+  load(r.doc);
+  sheet('Layout erzeugt',(b)=>{
+    const li=(t,a)=>a&&a.length?`<p><b>${t}</b><br>${a.map(esc).join('<br>')}</p>`:'';
+    b.innerHTML=`<p style="margin-top:0">Aus dem Stromlaufplan „${esc(job.name)}“ wurde ein Vorschlag für die Platine erzeugt: ${r.tracks} Silberdraht-Verbindungen, ${r.wires} Drahtbrücken.</p>`
+      +li('Extern anschließen (Klemmen):',job.notes.ext)+li('Nicht übersetzt (kein Bauteil im Layout):',job.notes.skipped)+li('Kein Platz auf der Platine:',r.notPlaced)
+      +'<p class="hint">Bitte prüfen: Pinbelegung von Transistoren, Dioden-Richtung und ICs vor dem Löten mit dem Schaltplan vergleichen. Bauteile lassen sich noch verschieben.</p>';
+  });
+}
 /* ============ Start ============ */
 buildNav();
 (function init(){
@@ -1494,6 +1588,7 @@ buildNav();
   if(d)load(d);else{doc=newDoc();resetHist();save();afterChange();}
   fit();renderCtx();
   if(/[?&]neu\b/.test(location.search))setTimeout(()=>menuAct('new'),300);
+tryJob();
 })();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))
   navigator.serviceWorker.register('sw.js').catch(()=>{});
