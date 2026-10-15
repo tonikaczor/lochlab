@@ -127,6 +127,8 @@ function buildCircuit(layout) {
 
   { const mcus = layout.parts.filter(p => p.k === 'MCU');
     if (mcus.length) { const g0 = pinKey(mcus[0], 3); mcus.forEach(p => { union(pinKey(p, 3), g0); union(pinKey(p, 24), g0); }); if (groundRoot) union(groundRoot, g0); groundRoot = find(g0); } }
+  { const pis = layout.parts.filter(p => p.k === 'PI40');
+    if (pis.length) { const GN = [5, 8, 13, 19, 24, 29, 33, 38], g0 = pinKey(pis[0], GN[0]); pis.forEach(p => GN.forEach(i => union(pinKey(p, i), g0))); if (groundRoot) union(groundRoot, g0); groundRoot = find(g0); } }
   const nodeId = new Map(); let nn = 0;
   if (groundRoot) nodeId.set(groundRoot, 0);
   const nodeOfRoot = r => { if (!nodeId.has(r)) nodeId.set(r, ++nn); return nodeId.get(r); };
@@ -217,6 +219,20 @@ function buildCircuit(layout) {
           }
         };
         el.pinNode = pn;
+        break; }
+      case 'PI40': {
+        const nd = []; for (let i = 0; i < 40; i++) nd.push(n(i));
+        const PHYS = { 2: 3, 3: 5, 4: 7, 14: 8, 15: 10, 17: 11, 18: 12, 27: 13, 22: 15, 23: 16, 24: 18, 10: 19, 9: 21, 25: 22, 11: 23, 8: 24, 7: 26, 0: 27, 1: 28, 5: 29, 6: 31, 12: 32, 13: 33, 19: 35, 16: 36, 26: 37, 20: 38, 21: 40 };
+        const m = { npin: 28, isPi: true, mode: new Array(28).fill(0), out: new Array(28).fill(0), duty: new Array(28).fill(null), tone: new Array(28).fill(null), level: new Array(28).fill(0), lastDig: new Array(28).fill(0), pulse: {}, servo: {}, pinI: new Array(28).fill(0), burnt: false };
+        const el = add({ type: 'PI40', nd, mcu: m, part: p, npin: 28 });
+        el.pinNode = g => PHYS[g] - 1; el.hasPin = g => PHYS[g] != null;
+        el.tick = function (t) {
+          for (let q = 0; q < 28; q++) {
+            if (m.mode[q] !== 1) { m.level[q] = 0; continue; }
+            if (m.duty[q] != null) { const dd = m.duty[q]; m.level[q] = dd <= 0 ? 0 : (dd >= 1 ? 1 : (((t * 1000) % 1) < dd ? 1 : 0)); }
+            else m.level[q] = m.out[q];
+          }
+        };
         break; }
       case 'RGBLED': {
         const ck = ['rot', 'grün', 'blau'];
@@ -397,11 +413,12 @@ function buildCircuit(layout) {
   });
   elems.forEach(e => { if (e.type === 'IC') for (let i = 1; i <= e.np; i++) e.fl[i] = e.n[i] > 0 && touch[e.n[i]] === 1; });
   // Verknüpfung: Welcher Arduino-Pin hängt am selben Knoten wie ein Sensor-/Servo-/LCD-Anschluss?
-  const mcuEl = elems.find(e => e.type === 'MCU');
-  const mcuPinOf = node => { if (!mcuEl || node <= 0) return -1; for (let q = 0; q < 20; q++) if (mcuEl.nd[mcuEl.pinNode(q)] === node) return q; return -1; };
+  const mcuEl = elems.find(e => e.type === 'MCU' || e.type === 'PI40');
+  const mcuPinOf = node => { if (!mcuEl || node <= 0) return -1; const np = mcuEl.mcu.npin || 20; for (let q = 0; q < np; q++) { if (mcuEl.type === 'PI40' && !mcuEl.hasPin(q)) continue; if (mcuEl.nd[mcuEl.pinNode(q)] === node) return q; } return -1; };
   elems.forEach(e => {
     if (!mcuEl) return;
-    if (e.type === 'SENS' && e.dev === 'HCSR04') { const tp = mcuPinOf(e.a), ep = mcuPinOf(e.c); e.mcuTrig = tp >= 0 ? { mcu: mcuEl.mcu, pin: tp } : null; e.echoPin = ep; }
+    const viaR = node => { let q = mcuPinOf(node); if (q >= 0) return q; for (const r of elems) { if (r.type !== 'R' || r.meter || r.led) continue; const other = r.a === node ? r.b : (r.b === node ? r.a : null); if (other != null && other > 0) { const qq = mcuPinOf(other); if (qq >= 0) return qq; } } return -1; };
+    if (e.type === 'SENS' && e.dev === 'HCSR04') { const tp = mcuPinOf(e.a), ep = viaR(e.c); e.mcuTrig = tp >= 0 ? { mcu: mcuEl.mcu, pin: tp } : null; e.echoPin = ep; }
     if (e.type === 'SERVOD') e.pin = mcuPinOf(e.sig);
     if (e.type === 'LCDD') e.ok = mcuPinOf(e.sda) === 18 && mcuPinOf(e.scl) === 19;
   });
@@ -536,6 +553,16 @@ function createSim(circ) {
               else stampG(nd, 0, 1e-9);
             }
             break; }
+          case 'PI40': {
+            const m = e.mcu; [0, 16].forEach(i => { stampG(e.nd[i], 0, 1); inj(e.nd[i], 3.3); }); [1, 3].forEach(i => { stampG(e.nd[i], 0, 1); inj(e.nd[i], 5); });
+            for (let q = 0; q < 28; q++) {
+              if (e.pinNode(q) == null || isNaN(e.pinNode(q))) continue; const nd = e.nd[e.pinNode(q)];
+              if (m.mode[q] === 1) { stampG(nd, 0, 1 / 30); if (m.level[q]) inj(nd, 3.3 / 30); }
+              else if (m.mode[q] === 2) { stampG(nd, 0, 1 / 50000); inj(nd, 3.3 / 50000); }
+              else if (m.mode[q] === 3) stampG(nd, 0, 1 / 50000);
+              else stampG(nd, 0, 1e-9);
+            }
+            break; }
           case 'PZ': { const pz = e.part.pos || 0, vo = pz * 5, gg = 1 / 2000; stampG(e.a, e.g, gg); inj(e.a, vo * gg); inj(e.g, -vo * gg); e.vo = vo; break; }
           case 'TCH': stampG(e.a, 0, 1e-9); break;
           case 'SENS': {
@@ -595,6 +622,16 @@ function createSim(circ) {
           for (let q = 0; q < 20; q++) { if (m.mode[q] === 1) { const i = ((m.level[q] ? 5 : 0) - v[e.nd[e.pinNode(q)]]) / 25; m.pinI[q] = i; if (Math.abs(i) > 0.1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Arduino-Pin ' + (q < 14 ? 'D' + q : 'A' + (q - 14)) + ' überlastet (' + (Math.abs(i) * 1000).toFixed(0) + ' mA): Vorwiderstand vergessen?' }); break; } } else m.pinI[q] = 0; }
           { const t2 = new Array(26).fill(0); let sum = 0; for (let q = 0; q < 20; q++) { const idx = e.pinNode(q); t2[idx] = -m.pinI[q]; sum += t2[idx]; }
             const i5 = (5 - v[e.nd[0]]) * 2, i52 = (5 - v[e.nd[25]]) * 2, i33 = (3.3 - v[e.nd[1]]) * 1; t2[0] = -i5; t2[25] = -i52; t2[1] = -i33; sum += t2[0] + t2[25] + t2[1]; t2[3] = -sum; e.tI = t2; e.i = i5; }
+          break; }
+        case 'PI40': {
+          const m = e.mcu; if (burnt.has(e.part.id)) break;
+          for (let q = 0; q < 28; q++) {
+            const nd = e.nd[e.pinNode(q)], vq = v[nd], name = 'GPIO' + q;
+            if (vq > 3.8 || vq < -0.6) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Raspberry-Pi-Pin ' + name + ' bekam ' + vq.toFixed(1) + ' V: Die GPIO-Pins vertragen nur 3,3 V! Bei 5-V-Signalen (zum Beispiel Echo-Pin des Ultraschallsensors) gehört ein Spannungsteiler davor.' }); break; }
+            if (m.mode[q] === 1) { const i = ((m.level[q] ? 3.3 : 0) - vq) / 30; m.pinI[q] = i; if (Math.abs(i) > 0.04) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Raspberry-Pi-Pin ' + name + ' überlastet (' + (Math.abs(i) * 1000).toFixed(0) + ' mA, empfohlen sind höchstens 16 mA): Vorwiderstand vergessen?' }); break; } } else m.pinI[q] = 0;
+          }
+          { const t2 = new Array(40).fill(0); let sum = 0; for (let q = 0; q < 28; q++) { const idx = e.pinNode(q); t2[idx] = -m.pinI[q]; sum += t2[idx]; }
+            [0, 16].forEach(i => { const ii = (3.3 - v[e.nd[i]]); t2[i] = -ii; sum += -ii; }); [1, 3].forEach(i => { const ii = (5 - v[e.nd[i]]); t2[i] = -ii; sum += -ii; }); t2[5] = -sum; e.tI = t2; e.i = 0; }
           break; }
         case 'PZ': { const i = (e.vo - (v[e.a] - v[e.g])) / 2000; e.tI = [-i, i]; e.i = i; break; }
         case 'TCH': e.tI = [0]; e.i = 0; break;

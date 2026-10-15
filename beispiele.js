@@ -268,6 +268,173 @@ void loop() {
   }
 }
 ` }) },
+
+
+    /* ---------- Pi-Lab ---------- */
+    { lab: 'pi', cat: 'Grundlagen', name: 'LED blinkt (GPIO17)', info: 'Die LED an GPIO17 (Pin 11) blinkt im Sekundentakt. Der 220-Ω-Vorwiderstand schützt Pin und LED. gpiozero zählt mit GPIO-Nummern, nicht mit den Pin-Nummern der Leiste.',
+      make: () => ({ parts: [['PI', 12, 0], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], wires: [[12, 10, 10, 10]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import LED
+from time import sleep
+
+led = LED(17)          # LED an GPIO17 (Pin 11)
+
+while True:
+    led.on()
+    sleep(1)
+    led.off()
+    sleep(1)
+` }) },
+    { lab: 'pi', cat: 'Grundlagen', name: 'Taster schaltet LED (Rückruf)', info: 'Taster gedrückt halten: die LED leuchtet. Der Taster liegt zwischen GPIO2 und Masse, gpiozero schaltet den Pull-up automatisch ein. Mit when_pressed wird bei jedem Druck eine Funktion aufgerufen.',
+      make: () => ({ parts: [['PI', 12, 0], ['PB', 8, 2, 1, ''], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], wires: [[12, 10, 10, 10], [8, 2, 12, 2], [8, 6, 8, 8, 12, 8]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import LED, Button
+from signal import pause
+
+led = LED(17)
+taster = Button(2)             # Taster zwischen GPIO2 und Masse
+
+taster.when_pressed = led.on     # bei Druck: LED an
+taster.when_released = led.off   # beim Loslassen: LED aus
+
+pause()                          # Programm läuft weiter und wartet auf Ereignisse
+` }) },
+    { lab: 'pi', cat: 'Grundlagen', name: 'Taster abfragen (Schleife)', info: 'Dieselbe Schaltung, aber das Programm fragt den Taster ständig selbst ab (Polling). is_pressed ist True, solange der Taster gedrückt ist.',
+      make: () => ({ parts: [['PI', 12, 0], ['PB', 8, 2, 1, ''], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], wires: [[12, 10, 10, 10], [8, 2, 12, 2], [8, 6, 8, 8, 12, 8]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import LED, Button
+from time import sleep
+
+led = LED(17)
+taster = Button(2)
+
+while True:
+    if taster.is_pressed:
+        led.on()
+    else:
+        led.off()
+    sleep(0.05)
+` }) },
+    { lab: 'pi', cat: 'Grundlagen', name: 'LED pulsiert (PWM)', info: 'Die gelbe LED an GPIO18 wird mit PWM langsam heller und dunkler. PWMLED nimmt Werte von 0.0 bis 1.0.',
+      make: () => ({ parts: [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10]], wires: [[20, 10, 22, 10]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import PWMLED
+from time import sleep
+
+led = PWMLED(18)
+
+while True:
+    for i in range(0, 101, 5):
+        led.value = i / 100       # 0.0 bis 1.0
+        sleep(0.05)
+    for i in range(100, -1, -5):
+        led.value = i / 100
+        sleep(0.05)
+` }) },
+    { lab: 'pi', cat: 'Grundlagen', name: 'Ampel mit TrafficLights', info: 'Drei LEDs an GPIO18 (rot), GPIO24 (gelb) und GPIO8 (grün). TrafficLights fasst sie zu einem Gerät zusammen.',
+      make: () => ({ parts: [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16], ['R', 22, 22, 0, '220'], ['LED', 26, 22, 0, 'grün'], ['GND', 30, 22]], wires: [[20, 10, 22, 10], [20, 16, 22, 16], [20, 22, 22, 22]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import TrafficLights
+from time import sleep
+
+ampel = TrafficLights(18, 24, 8)   # rot, gelb, grün
+
+while True:
+    ampel.red.on()
+    sleep(3)
+    ampel.amber.on()           # rot und gelb
+    sleep(1)
+    ampel.red.off()
+    ampel.amber.off()
+    ampel.green.on()
+    sleep(3)
+    ampel.green.off()
+    ampel.amber.on()
+    sleep(1)
+    ampel.amber.off()
+` }) },
+    { lab: 'pi', cat: 'Sensoren und Töne', name: 'Summer piept (Buzzer)', info: 'Der Lautsprecher an GPIO23 piept im Takt. Beim echten Pi nimmt man einen aktiven Summer. Der 220-Ω-Widerstand begrenzt den Strom.',
+      make: () => ({ parts: [['PI', 12, 0], ['R', 22, 14, 0, '220'], ['SPK', 26, 14, 0, '8'], ['GND', 30, 14]], wires: [[20, 14, 22, 14]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import Buzzer
+from signal import pause
+
+summer = Buzzer(23)
+summer.beep(0.2, 0.8)      # 0,2 s an, 0,8 s aus, immer wieder
+
+pause()
+` }) },
+    { lab: 'pi', cat: 'Sensoren und Töne', name: 'Ultraschall-Abstand', info: 'Regler „Abstand“ am Sensor verändern und die Werte in der Konsole beobachten. Der Echo-Pin liefert 5 V, deshalb liegt ein Spannungsteiler (1 kΩ und 2 kΩ) davor: Der Pi verträgt an den GPIO-Pins nur 3,3 V.',
+      make: () => ({ parts: [['PI', 12, 0], ['HCSR04', 30, 10, 0, '', { pos: 0.246 }], ['R', 22, 16, 0, '1k'], ['R', 22, 18, 1, '2k'], ['GND', 22, 22], ['GND', 30, 16]], wires: [[30, 10, 26, 10, 26, 0, 20, 0], [20, 14, 24, 14, 24, 12, 30, 12], [20, 16, 22, 16], [22, 16, 22, 18], [30, 14, 28, 14, 28, 16, 26, 16]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import DistanceSensor
+from time import sleep
+
+sensor = DistanceSensor(echo=24, trigger=23, max_distance=3)
+
+while True:
+    cm = sensor.distance * 100       # distance ist in Metern
+    print(round(cm), "cm")
+    sleep(0.5)
+` }) },
+    { lab: 'pi', cat: 'Sensoren und Töne', name: 'Bewegungsmelder-Alarm', info: 'Regler „Bewegung“ am PIR-Sensor über 50 % ziehen: LED und Summer gehen an. Der PIR liefert 3,3 V und darf direkt an einen GPIO-Pin.',
+      make: () => ({ parts: [['PI', 12, 0], ['PIR', 26, 12, 0, '', { pos: 0 }], ['GND', 26, 16], ['R', 22, 20, 0, '220'], ['LED', 26, 20, 0, 'rot'], ['GND', 30, 20], ['R', 22, 30, 0, '220'], ['SPK', 26, 30, 0, '8'], ['GND', 30, 30]], wires: [[26, 12, 24, 12, 24, 0, 20, 0], [20, 14, 26, 14], [20, 20, 22, 20], [20, 30, 22, 30]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import MotionSensor, LED, Buzzer
+from signal import pause
+
+pir = MotionSensor(23)
+led = LED(25)
+summer = Buzzer(12)
+
+def alarm_an():
+    led.on()
+    summer.on()
+    print("Bewegung!")
+
+def alarm_aus():
+    led.off()
+    summer.off()
+
+pir.when_motion = alarm_an
+pir.when_no_motion = alarm_aus
+
+pause()
+` }) },
+    { lab: 'pi', cat: 'Sensoren und Töne', name: 'Servo mit AngularServo', info: 'Der Servo an GPIO23 fährt nacheinander auf 0°, 90° und 180°. Die rote Leitung des Servos gehört an 5 V, das Signal an den GPIO.',
+      make: () => ({ parts: [['PI', 12, 0], ['SERVO', 24, 14], ['GND', 24, 18]], wires: [[20, 14, 24, 14], [24, 16, 26, 16, 26, 0, 20, 0]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import AngularServo
+from time import sleep
+
+servo = AngularServo(23, min_angle=0, max_angle=180)
+
+while True:
+    for winkel in (0, 90, 180, 90):
+        servo.angle = winkel
+        print("Winkel:", winkel)
+        sleep(1)
+` }) },
+    { lab: 'pi', cat: 'Sensoren und Töne', name: 'Lauflicht mit LEDBoard', info: 'Vier LEDs an GPIO18, 24, 8 und 12 laufen nacheinander. LEDBoard fasst sie zu einer Liste zusammen.',
+      make: () => ({ parts: [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16], ['R', 22, 22, 0, '220'], ['LED', 26, 22, 0, 'grün'], ['GND', 30, 22], ['R', 22, 30, 0, '220'], ['LED', 26, 30, 0, 'blau'], ['GND', 30, 30]], wires: [[20, 10, 22, 10], [20, 16, 22, 16], [20, 22, 22, 22], [20, 30, 22, 30]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import LEDBoard
+from time import sleep
+
+leds = LEDBoard(18, 24, 8, 12)
+
+while True:
+    for led in leds:
+        led.on()
+        sleep(0.2)
+        led.off()
+` }) },
+    { lab: 'pi', cat: 'Grundlagen', name: 'LED mit RPi.GPIO (klassisch)', info: 'Dieselbe Schaltung wie das erste Beispiel, aber mit der älteren Bibliothek RPi.GPIO. Sie findet man in vielen Anleitungen im Internet. Hier musst du den Pin-Modus selbst einstellen.',
+      make: () => ({ parts: [['PI', 12, 0], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], wires: [[12, 10, 10, 10]], scopes: [], tempo: 0.75,
+      code: String.raw`import RPi.GPIO as GPIO
+import time
+
+GPIO.setmode(GPIO.BCM)      # GPIO-Nummern (nicht Pin-Nummern)
+GPIO.setup(17, GPIO.OUT)    # GPIO17 ist ein Ausgang
+
+for i in range(5):
+    GPIO.output(17, GPIO.HIGH)
+    time.sleep(0.5)
+    GPIO.output(17, GPIO.LOW)
+    time.sleep(0.5)
+
+GPIO.cleanup()              # aufräumen
+` }) },
   ];
   if (typeof module !== 'undefined' && module.exports) module.exports = EX; else window.MORE_EX = EX;
 })();

@@ -2,8 +2,9 @@
 (function () {
 'use strict';
 const LS = window.LochSim;
-const LAB = window.LAB === 'sim' ? 'sim' : (window.LAB === 'code' ? 'code' : 'sch'), LABNAME = LAB === 'sim' ? 'SimLab' : (LAB === 'code' ? 'CodeLab' : 'SchaltLab'), SK = LAB === 'sim' ? 'sim.' : (LAB === 'code' ? 'code.' : 'sch.');
-const inLab = K => !K.lab || K.lab === LAB;
+const LAB = window.LAB === 'sim' ? 'sim' : (window.LAB === 'code' ? 'code' : (window.LAB === 'pi' ? 'pi' : 'sch')), LABNAME = LAB === 'sim' ? 'SimLab' : (LAB === 'code' ? 'Arduino-Lab' : (LAB === 'pi' ? 'Pi-Lab' : 'SchaltLab')), SK = LAB === 'sim' ? 'sim.' : (LAB === 'code' ? 'code.' : (LAB === 'pi' ? 'pi.' : 'sch.'));
+const inLab = K => !K.lab || K.lab.split(',').includes(LAB);
+const PROGLAB = LAB === 'code' || LAB === 'pi';
 const WIRECOL = { braun: '#9c6232', blau: '#3b82e0', gruen: '#34b24f', schwarz: '#2b2b2e', grau: '#aab0b8', rot: '#e0463a' };
 const WIRENAME = { braun: 'braun (L)', blau: 'blau (N)', gruen: 'grün-gelb (PE)', schwarz: 'schwarz (Schaltdraht)', grau: 'grau', rot: 'rot' };
 let wireColor = 'braun';
@@ -50,13 +51,14 @@ const KINDS = {
   RCD: { name: 'FI-Schutzschalter', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '30mA', core: 'RCD', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, sw0: 1, props: [] },
   SCHUETZ:{ name: 'Schütz (2 Haupt- + 2 Hilfskontakte)', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [0, 6], [5, 0], [9, 0], [5, 2], [9, 2], [5, 4], [9, 4], [5, 6], [9, 6]], v: '230V', core: 'SCHUETZ', box: [-0.2, -0.6, 9.4, 6.6], props: [['v', 'Spulenspannung', 'text', 'z. B. 230V']] },
   UNO: { name: 'Arduino Uno', cat: 'Arduino', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [0, 16], [0, 18], [8, 0], [8, 2], [8, 4], [8, 6], [8, 8], [8, 10], [8, 12], [8, 14], [8, 16], [8, 18], [8, 20], [8, 22], [8, 24], [8, 26], [8, 28], [8, -2]], v: '', core: 'MCU', box: [0, -3, 8, 30], props: [] },
+  PI: { name: 'Raspberry Pi (GPIO-Leiste)', cat: 'Raspberry Pi', lab: 'pi', pins: [[0, 0], [8, 0], [0, 2], [8, 2], [0, 4], [8, 4], [0, 6], [8, 6], [0, 8], [8, 8], [0, 10], [8, 10], [0, 12], [8, 12], [0, 14], [8, 14], [0, 16], [8, 16], [0, 18], [8, 18], [0, 20], [8, 20], [0, 22], [8, 22], [0, 24], [8, 24], [0, 26], [8, 26], [0, 28], [8, 28], [0, 30], [8, 30], [0, 32], [8, 32], [0, 34], [8, 34], [0, 36], [8, 36], [0, 38], [8, 38]], v: '', core: 'PI40', box: [0, -2, 8, 40], props: [] },
   RGBLED: { name: 'RGB-LED (gemeinsame Kathode)', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [4, 2]], v: '', core: 'RGBLED', box: [0, -1, 4, 5], props: [] },
   TMP36: { name: 'Temperatursensor TMP36', cat: 'Sensoren', lab: 'code', pins: [[4, 0], [4, 2], [4, 4]], v: '', core: 'TMP36', box: [0, -1, 4, 5], pos: true, pos0: 0.394, props: [['pos', 'Temperatur (−40 … 125 °C)', 'range']] },
   PIEZO: { name: 'Klopfsensor (Piezo)', cat: 'Sensoren', lab: 'code', pins: [[4, 0], [4, 2]], v: '', core: 'PIEZO', box: [0, -1, 4, 3], pos: true, pos0: 0, props: [['pos', 'Klopfstärke (0 … 5 V)', 'range']] },
   TOUCH: { name: 'Berührungsfläche', cat: 'Sensoren', lab: 'code', pins: [[0, 0]], v: '', core: 'TOUCH', box: [0, -2, 5, 2], pos: true, pos0: 0, props: [['pos', 'Berührung (über 50 % = Finger drauf)', 'range']] },
-  PIR: { name: 'Bewegungsmelder PIR', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'PIR', box: [0, -1, 5, 5], pos: true, pos0: 0, props: [['pos', 'Bewegung (über 50 % = erkannt)', 'range']] },
-  HCSR04: { name: 'Ultraschall HC-SR04', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [0, 6]], v: '', core: 'HCSR04', box: [0, -1.2, 6, 7.2], pos: true, pos0: 0.246, props: [['pos', 'Abstand (2 … 400 cm)', 'range']] },
-  SERVO: { name: 'Servo', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'SERVO', box: [0, -1, 6, 5], props: [] },
+  PIR: { name: 'Bewegungsmelder PIR', cat: 'Sensoren', lab: 'code,pi', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'PIR', box: [0, -1, 5, 5], pos: true, pos0: 0, props: [['pos', 'Bewegung (über 50 % = erkannt)', 'range']] },
+  HCSR04: { name: 'Ultraschall HC-SR04', cat: 'Sensoren', lab: 'code,pi', pins: [[0, 0], [0, 2], [0, 4], [0, 6]], v: '', core: 'HCSR04', box: [0, -1.2, 6, 7.2], pos: true, pos0: 0.246, props: [['pos', 'Abstand (2 … 400 cm)', 'range']] },
+  SERVO: { name: 'Servo', cat: 'Sensoren', lab: 'code,pi', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'SERVO', box: [0, -1, 6, 5], props: [] },
   LCDI2C: { name: 'LCD 16×2 (I²C)', cat: 'Sensoren', lab: 'code', pins: [[9, 0], [9, 2], [9, 4], [9, 6]], v: '', core: 'LCDI2C', box: [0, -1.2, 9, 7.2], props: [] },
   NETZ3:{ name: 'Drehstrom 400 V (L1, L2, L3, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 0], [8, 0]], v: '400V', core: 'NETZ3', box: [-1, -3, 9, 0.3], props: [['v', 'Außenleiterspannung', 'text', 'z. B. 400V']] },
   MOTOR3:{ name: 'Drehstrommotor', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0]], v: '400V 2.2kW', core: 'MOTOR3', box: [-0.6, -0.4, 4.6, 4.8], props: [['v', 'Spannung, Leistung (D = Dreieck)', 'text', 'z. B. 400V 2.2kW']] },
@@ -84,7 +86,7 @@ const KINDS = {
   VM:  { name: 'Voltmeter',       cat: 'Messen', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
   AM:  { name: 'Amperemeter',     cat: 'Messen', pins: T2, v: '', core: 'AM', box: [0, -1.1, 4, 1.1], props: [] },
 };
-const CATS = LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Netz & Schutz', 'Schalter', 'Verbraucher', 'Quellen', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
+const CATS = LAB === 'pi' ? ['Raspberry Pi', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Netz & Schutz', 'Schalter', 'Verbraucher', 'Quellen', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
 const kindsOf = cat => Object.keys(KINDS).filter(k => KINDS[k].cat === cat && inLab(KINDS[k]));
 const rot = (x, y, r) => { switch (r & 3) { case 0: return [x, y]; case 1: return [-y, x]; case 2: return [-x, -y]; default: return [y, -x]; } };
 const KD = p => { const K = KINDS[p.k]; return K.dyn ? Object.assign({}, K, K.dyn(p)) : K; };
@@ -101,7 +103,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -164,7 +166,7 @@ function rebuild() {
   flows.clear();
 }
 const sv = key => { const n = circ ? circ.nodeOfKey(key) : -1; return n < 0 || !sim ? NaN : sim.v[n]; };
-const hasGround = () => sch.parts.some(p => p.k === 'GND' || p.k === 'NETZ' || p.k === 'NETZ3' || p.k === 'UNO');
+const hasGround = () => sch.parts.some(p => p.k === 'GND' || p.k === 'NETZ' || p.k === 'NETZ3' || p.k === 'UNO' || p.k === 'PI');
 
 /* ============ Rechenschritte ============ */
 function dtFor(rate) {            // Zeitschritt aus dem gewünschten Tempo (simulierte Sekunden je echte Sekunde)
@@ -446,6 +448,17 @@ function drawPart(p, selected) {
       });
       c.setLineDash([0.25, 0.2]); c.lineWidth = 0.07; line(1.4, 3, 5.6, 3); c.setLineDash([]);
       c.save(); c.translate(3.4, -0.1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Schütz', 0, 0); c.restore();
+      break; }
+    case 'PI': {
+      const o = showSim() && bodyI.get(String(p.id)), mm = o && o.e.mcu;
+      const T = (t, x, y, size, al, rotv) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2 + (rotv || 0)); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
+      for (let i = 0; i < 40; i++) { const [px, py] = K.pins[i]; if (px === 0) lead(0, py, 1, py, pc[i]); else lead(8, py, 7, py, pc[i]); }
+      c.strokeStyle = body; c.fillStyle = PRINT ? '#f2f7ee' : 'rgba(60,150,60,.20)'; c.fillRect(1, -1.5, 6, 41); c.strokeRect(1, -1.5, 6, 41);
+      c.fillStyle = body;
+      PI_NAMES.forEach((nm, i) => { const [px, py] = K.pins[i]; if (px === 0) T(nm, 1.2, py, 0.5, 'left'); else T(nm, 6.8, py, 0.5, 'right'); });
+      T('RASPBERRY PI', 4, 19, 0.95, 'center', -Math.PI / 2);
+      if (mm) for (let g = 0; g < 28; g++) if (mm.mode[g] === 1 && mm.level[g]) { const [px, py] = K.pins[PI_PIN_OF[g]]; c.fillStyle = '#ffe14d'; c.beginPath(); c.arc(px === 0 ? 0.7 : 7.3, py, 0.2, 0, 7); c.fill(); }
+      if (o && o.e.part && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; c.lineWidth = 0.3; line(1, -1.5, 7, 39.5); line(7, -1.5, 1, 39.5); }
       break; }
     case 'UNO': {
       const o = showSim() && bodyI.get(String(p.id)), mm = o && o.e.mcu;
@@ -751,7 +764,7 @@ function valueText(p) {
     case 'SPK': return fmtVal(p.v, 'Ω');
     case 'NTC': case 'PTC': return fmtVal(p.v, 'Ω');
     case 'TRF': case 'RLY': return p.v;
-    case 'NETZ': case 'JUN5': case 'UNO': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
+    case 'NETZ': case 'JUN5': case 'UNO': case 'PI': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
     case 'FAULT': return p.sw ? 'Fehler aktiv' : 'Fehler aus';
     case 'LSS': case 'RCD': case 'IMP': case 'SCHUETZ': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
@@ -1259,7 +1272,7 @@ function updateLive() {
   if (simMode && tool === 'meter') { const mv = $('#mmVal'); if (mv) { const t = meterText(); mv.textContent = t.main; const ms = $('#mmSub'); if (ms) ms.textContent = t.sub; } }
   const t = $('#tLbl'); if (t && sim) t.textContent = fmtT(sim.t);
   const w = $('#warn'); if (w) {
-    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || p.k === 'NETZ' || p.k === 'NETZ3' || p.k === 'UNO' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
+    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || p.k === 'NETZ' || p.k === 'NETZ3' || p.k === 'UNO' || p.k === 'PI' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
     else if (!hasGround()) msgs.push('Keine Masse gesetzt. Es wird der Minuspol der Quelle als Masse genommen.');
     circ && circ.warnings.forEach(x => { const it = x.part && x.part.item; if (it) msgs.push((it.l || KINDS[it.k].name) + ': ' + x.text); });
     circ && circ.elems.forEach(e => { if (e.type === 'V' && e.cc && e.part && e.part.item) msgs.push((e.part.item.l || 'Quelle') + ' begrenzt den Strom auf ' + fmt(e.imax, 'A') + ': die Spannung bricht ein.'); });
@@ -1331,8 +1344,30 @@ function makeIO(el) {
     pulseHint: (q) => { const e = circ.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === q); return e ? e.lastEcho : null; },
   };
 }
+function makeIOPi(el) {
+  const m = el.mcu, node = g => el.nd[el.pinNode(g)], SIMT = () => sim.t, MODE = { out: 1, in: 0, up: 2, down: 3 };
+  return {
+    setMode: (g, md) => { m.mode[g] = MODE[md]; if (md === 'up') m.lastDig[g] = 1; if (md === 'out') m.duty[g] = null; },
+    write: (g, v, vt) => { m.out[g] = v ? 1 : 0; m.duty[g] = null; const pl = m.pulse[g] || (m.pulse[g] = {}); if (v) { pl.rise = vt == null ? sim.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? sim.t : vt; },
+    read: g => { if (m.mode[g] === 1) return m.level[g]; if (m.mode[g] === 2 && SIMT() < 2e-3) return 1; const vv = sim.v[node(g)]; if (vv > 2.0) m.lastDig[g] = 1; else if (vv < 1.0) m.lastDig[g] = 0; return m.lastDig[g]; },
+    pwm: (g, dd) => { m.duty[g] = dd == null ? null : dd; },
+    servo: (g, deg) => { if (deg == null) delete m.servo[g]; else m.servo[g] = deg; },
+    tone: (g, f) => { m.tone[g] = f ? { f } : null; },
+    echo: g => { const e = circ.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === g); return e ? e.lastEcho : null; },
+    print: t => serAppend(t),
+  };
+}
+function startPyProgram() {
+  const PY = window.PyRun; if (!PY) return;
+  const c = PY.compile(sch.code || '');
+  if (!c.ok) { const e = c.errors[0]; codeStatus('Fehler in Zeile ' + e.line + ': ' + e.msg, true); serAppend('⚠ Fehler in Zeile ' + e.line + ': ' + e.msg + '\n'); return; }
+  const el = circ && circ.mcu; if (!el) { codeStatus('Im Schaltplan fehlt der Raspberry Pi.', true); return; }
+  const runner = PY.createRunner(c.program, makeIOPi(el)); runner.start(); prog = { runner, err: null, el, py: true };
+  codeStatus('Programm läuft');
+}
 function startProgram() {
   prog = null; serLog = ''; serLine = ''; serSeries = [[], [], []]; serRx = []; lcdState = null; serDirty = true;
+  if (LAB === 'pi') { startPyProgram(); return; }
   if (LAB !== 'code' || !AR) return;
   const c = AR.compile(sch.code || '');
   if (!c.ok) { const e = c.errors[0]; codeStatus('Fehler in Zeile ' + e.line + ': ' + e.msg, true); serAppend('⚠ Fehler in Zeile ' + e.line + ': ' + e.msg + '\n'); return; }
@@ -1342,17 +1377,17 @@ function startProgram() {
 }
 function stepProgram() {
   if (!prog) return;
-  if (sim.burnt.has(prog.el.part.id)) { if (!prog.err) { prog.err = { msg: 'Arduino zerstört' }; codeStatus('Der Arduino ist zerstört (↻ Neu starten).', true); } return; }
+  if (sim.burnt.has(prog.el.part.id)) { if (!prog.err) { prog.err = { msg: 'zerstört' }; codeStatus(prog.py ? 'Der Raspberry Pi ist zerstört (↻ Neu starten).' : 'Der Arduino ist zerstört (↻ Neu starten).', true); } return; }
   prog.runner.step(sim.t);
-  const er = prog.runner.error; if (er && !prog.err) { prog.err = er; codeStatus('Fehler in Zeile ' + er.line + ': ' + er.msg, true); serAppend('\n⚠ Laufzeitfehler in Zeile ' + er.line + ': ' + er.msg + '\n'); }
+  const er = prog.runner.error; if (er && !prog.err) { prog.err = er; if (prog.py) codeStatus('Fehler in Zeile ' + er.line + ': ' + er.type + (er.msg ? ': ' + er.msg : ''), true); else { codeStatus('Fehler in Zeile ' + er.line + ': ' + er.msg, true); serAppend('\n⚠ Laufzeitfehler in Zeile ' + er.line + ': ' + er.msg + '\n'); } }
   else if (prog.runner.done && !prog.err) { prog.err = { msg: 'Programmende' }; codeStatus('Programm beendet'); }
 }
 function codeTick() {                                              // regelmäßig: Serial-Anzeige, Ton, Plotter
-  if (LAB !== 'code') return;
+  if (!PROGLAB) return;
   const out = $('#serOut');
   if (serDirty && out) { out.textContent = serLog; out.scrollTop = out.scrollHeight; serDirty = false; if (serMode === 'plot') drawPlot(); }
   const mm = circ && circ.mcu && circ.mcu.mcu; let f = 0;
-  if (mm && simMode && running) for (let q = 0; q < 20; q++) if (mm.tone[q]) { f = mm.tone[q].f; break; }
+  if (mm && simMode && running) for (let q = 0; q < (mm.npin || 20); q++) if (mm.tone[q]) { f = mm.tone[q].f; break; }
   if (window.LochFX) { if (f) LochFX.tone(f); else LochFX.toneOff(); }
 }
 function drawPlot() {
@@ -1375,7 +1410,7 @@ function initDock() {
   $('#cdRun').onclick = startAll; $('#cdNew').onclick = startAll;
   $('#cdStop').onclick = () => { running = false; refreshUI(); codeStatus('Angehalten'); };
   $('#cdEx').onclick = () => menuAct('ex');
-  $('#cdSave').onclick = () => { const b = new Blob([sch.code || ''], { type: 'text/plain' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (sch.name.replace(/[^\w\-]+/g, '_') || 'sketch') + '.ino'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); };
+  $('#cdSave').onclick = () => { const b = new Blob([sch.code || ''], { type: 'text/plain' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (sch.name.replace(/[^\w\-]+/g, '_') || 'programm') + (LAB === 'pi' ? '.py' : '.ino'); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); };
   $('#cdCopy').onclick = async () => { try { await navigator.clipboard.writeText(sch.code || ''); toast('Code kopiert'); } catch (e) { ta.select(); toast('Bitte markieren und kopieren'); } };
   [['#cdT1', 0.75], ['#cdT10', 0.875], ['#cdT100', 1]].forEach(([id, v]) => { $(id).onclick = () => { tempo = v; refreshUI(); }; });
   const tab = m => { serMode = m; $('#serOut').style.display = m === 'text' ? '' : 'none'; $('#serPlot').style.display = m === 'plot' ? '' : 'none'; $('#serTabT').classList.toggle('on', m === 'text'); $('#serTabP').classList.toggle('on', m === 'plot'); serDirty = true; if (m === 'plot') drawPlot(); };
@@ -1899,6 +1934,147 @@ const CODE_TASKS = [
       return [RES(R.ser === want, R.ser === want ? 'Die Zahlen 1 bis 10 stehen richtig im Serial-Monitor.' : 'Ausgabe stimmt nicht. Erhalten: ' + JSON.stringify(R.ser.slice(0, 40)))]; } },
 ];
 
+/* ---- Pi-Lab: Python-Programm im Hintergrund ausführen und beobachten ---- */
+function piEval(o) {
+  o = o || {};
+  const E = simEval({ set: o.set }), c = E.c, s = E.s, el = c.mcu, res = { E, out: '', err: null, samples: [] };
+  const PY = window.PyRun; if (!el || !PY) { res.err = 'Kein Raspberry Pi in der Schaltung.'; return res; }
+  const m = el.mcu;
+  if (o.pos) Object.keys(o.pos).forEach(id => { const w = E.wm.get(+id); if (w) { w.pos = o.pos[id]; w.light = o.pos[id]; } });
+  const comp = PY.compile(o.code != null ? o.code : (sch.code || ''));
+  if (!comp.ok) { res.err = 'Fehler in Zeile ' + comp.errors[0].line + ': ' + comp.errors[0].msg; return res; }
+  const node = g => el.nd[el.pinNode(g)], MODE = { out: 1, in: 0, up: 2, down: 3 };
+  const io = {
+    setMode: (g, md) => { m.mode[g] = MODE[md]; if (md === 'up') m.lastDig[g] = 1; if (md === 'out') m.duty[g] = null; },
+    write: (g, v, vt) => { m.out[g] = v ? 1 : 0; m.duty[g] = null; const pl = m.pulse[g] || (m.pulse[g] = {}); if (v) { pl.rise = vt == null ? s.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? s.t : vt; },
+    read: g => { if (m.mode[g] === 1) return m.level[g]; if (m.mode[g] === 2 && s.t < 2e-3) return 1; const vv = s.v[node(g)]; if (vv > 2.0) m.lastDig[g] = 1; else if (vv < 1.0) m.lastDig[g] = 0; return m.lastDig[g]; },
+    pwm: (g, dd) => { m.duty[g] = dd == null ? null : dd; }, servo: (g, deg) => { if (deg == null) delete m.servo[g]; else m.servo[g] = deg; }, tone: (g, f) => { m.tone[g] = f ? { f } : null; },
+    echo: g => { const e = c.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === g); return e ? e.lastEcho : null; },
+    print: t => { res.out += t; },
+  };
+  const runner = PY.createRunner(comp.program, io); runner.start();
+  const dt = 5e-5, n = Math.round((o.T || 2) / dt), script = (o.script || []).slice().sort((a, b) => a.t - b.t); let si = 0;
+  const leds = c.elems.filter(e => e.led && e.part);
+  for (let i = 0; i < n; i++) {
+    s.step(dt); const t = s.t;
+    while (si < script.length && t >= script[si].t) { const st = script[si++]; E.wm.forEach((w, id) => { w.pressed = !!(st.press && st.press.includes(id)); }); }
+    runner.step(t); if (runner.error) { res.err = 'Fehler in Zeile ' + runner.error.line + ': ' + runner.error.type + (runner.error.msg ? ': ' + runner.error.msg : ''); break; }
+    while (s.events.length) E.ev.push(s.events.shift());
+    if (i % 20 === 0) res.samples.push({ t, lv: m.level.slice(), duty: m.duty.slice(), tone: m.tone.map(x => x && x.f), servo: Object.assign({}, m.servo), led: leds.map(e => [e.part.id, (e.iav || 0) * 1000]) });
+  }
+  res.m = m; return res;
+}
+const PC_LED17 = [['PI', 12, 0], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], PW_LED17 = [[12, 10, 10, 10]];
+const PC_BTN = [['PI', 12, 0], ['PB', 8, 2, 1, ''], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], PW_BTN = [[12, 10, 10, 10], [8, 2, 12, 2], [8, 6, 8, 8, 12, 8]];
+const PC_AMP = [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16], ['R', 22, 22, 0, '220'], ['LED', 26, 22, 0, 'grün'], ['GND', 30, 22]], PW_AMP = [[20, 10, 22, 10], [20, 16, 22, 16], [20, 22, 22, 22]];
+const PC_BUZZ = [['PI', 12, 0], ['R', 22, 14, 0, '220'], ['SPK', 26, 14, 0, '8'], ['GND', 30, 14]], PW_BUZZ = [[20, 14, 22, 14]];
+const PC_PWM = [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10]], PW_PWM = [[20, 10, 22, 10]];
+const PC_SERVO = [['PI', 12, 0], ['SERVO', 24, 14], ['GND', 24, 18]], PW_SERVO = [[20, 14, 24, 14], [24, 16, 26, 16, 26, 0, 20, 0]];
+const PC_ULT = [['PI', 12, 0], ['HCSR04', 30, 10, 0, '', { pos: 0.5 }], ['R', 22, 16, 0, '1k'], ['R', 22, 18, 1, '2k'], ['GND', 22, 22], ['GND', 30, 16], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], PW_ULT = [[30, 10, 26, 10, 26, 0, 20, 0], [20, 14, 24, 14, 24, 12, 30, 12], [20, 16, 22, 16], [22, 16, 22, 18], [30, 14, 28, 14, 28, 16, 26, 16], [12, 10, 10, 10]];
+const PC_ULT_BAD = [['PI', 12, 0], ['HCSR04', 30, 10, 0, '', { pos: 0.246 }], ['GND', 30, 16]], PW_ULT_BAD = [[30, 10, 26, 10, 26, 0, 20, 0], [20, 14, 24, 14, 24, 12, 30, 12], [30, 14, 28, 14, 28, 16, 20, 16]];
+const PC_ULT_OK = [['PI', 12, 0], ['HCSR04', 30, 10, 0, '', { pos: 0.246 }], ['R', 22, 16, 0, '1k'], ['R', 22, 18, 1, '2k'], ['GND', 22, 22], ['GND', 30, 16]], PW_ULT_OK = [[30, 10, 26, 10, 26, 0, 20, 0], [20, 14, 24, 14, 24, 12, 30, 12], [20, 16, 22, 16], [22, 16, 22, 18], [30, 14, 28, 14, 28, 16, 26, 16]];
+const pct = (parts, wires, code) => () => ({ parts, wires, scopes: [], tempo: 0.75, code });
+const PYH = 'from gpiozero import LED, Button\nfrom time import sleep\nfrom signal import pause\n';
+function chkPiBlink(n) {
+  const L = theLed(); if (!L) return [RES(false, 'Keine LED vorhanden.')];
+  const R = piEval({ T: 6 }); if (R.err) return codeFail(R); const e = risingEdges(R, 17), sh = dutyShare(R, 17), burn = burnTxt(R.E);
+  return [RES(e >= n, e >= n ? 'Die LED blinkt (' + e + '× in 6 s).' : 'Die LED blinkt nicht oft genug (' + e + '× in 6 s, mindestens ' + n + '). Hängt sie wirklich an GPIO17?'), RES(sh > 0.15 && sh < 0.85, 'Die LED ist ' + Math.round(sh * 100) + ' % der Zeit an.'), RES(!burn.length, burn.length ? burn[0] : 'Pin und LED bleiben heil.')];
+}
+function chkPiTaster() {
+  const L = theLed(), pb = sch.parts.find(p => p.k === 'PB'); if (!L || !pb) return [RES(false, 'LED oder Taster fehlt.')];
+  const R = piEval({ T: 1.2, script: [{ t: 0.4, press: [pb.id] }, { t: 0.8, press: [] }] }); if (R.err) return codeFail(R);
+  const a = ledMA(sampleAt(R, 0.3), L.id) > 2, b = ledMA(sampleAt(R, 0.7), L.id) > 2, c2 = ledMA(sampleAt(R, 1.1), L.id) > 2;
+  return [RES(!a, 'Taster nicht gedrückt: LED ist ' + (a ? 'an, soll aber aus sein' : 'aus') + '.'), RES(b, 'Taster gedrückt: LED ist ' + (b ? 'an' : 'aus, soll aber an sein') + '.'), RES(!c2, 'Taster losgelassen: LED ist ' + (c2 ? 'an, soll aber aus sein' : 'aus') + '.')];
+}
+const PI_TASKS = [
+  { id: 'p1', lab: 'pi', cat: 'Grundlagen', title: 'Dreimal blinken', level: 1,
+    start: pct(PC_LED17, PW_LED17, 'from gpiozero import LED\nfrom time import sleep\n\nled = LED(17)\n\n# Hier: die LED dreimal blinken lassen (je 0,3 Sekunden an und aus)\n'),
+    solMake: pct(PC_LED17, PW_LED17, 'from gpiozero import LED\nfrom time import sleep\n\nled = LED(17)\n\nfor i in range(3):\n    led.on()\n    sleep(0.3)\n    led.off()\n    sleep(0.3)\n'),
+    text: 'Die LED hängt an GPIO17. Sie soll nach dem Start genau dreimal blinken (je etwa 0,3 Sekunden an und aus) und danach aus bleiben.',
+    hint: 'Eine for-Schleife wiederholt Anweisungen: for i in range(3): … (Doppelpunkt und Einrückung nicht vergessen).',
+    check() { const L = theLed(); if (!L) return [RES(false, 'Keine LED vorhanden.')]; const R = piEval({ T: 6 }); if (R.err) return codeFail(R); const e = risingEdges(R, 17), last = R.samples[R.samples.length - 1].lv[17], burn = burnTxt(R.E);
+      return [RES(e === 3, 'Die LED blinkt ' + e + '× (soll genau 3×).'), RES(!last, last ? 'Am Ende leuchtet die LED noch, sie soll aus sein.' : 'Nach dem Blinken bleibt die LED aus.'), RES(!burn.length, burn.length ? burn[0] : 'Pin und LED bleiben heil.')]; } },
+  { id: 'p2', lab: 'pi', cat: 'Grundlagen', title: 'Taster schaltet die LED', level: 1,
+    start: pct(PC_BTN, PW_BTN, PYH + '\nled = LED(17)\ntaster = Button(2)    # Taster zwischen GPIO2 und Masse\n\n# Hier: LED an, solange der Taster gedrückt ist\n\npause()\n'),
+    solMake: pct(PC_BTN, PW_BTN, PYH + '\nled = LED(17)\ntaster = Button(2)\n\ntaster.when_pressed = led.on\ntaster.when_released = led.off\n\npause()\n'),
+    text: 'Die LED (GPIO17) soll genau dann leuchten, wenn der Taster (GPIO2) gedrückt ist. Du kannst Rückrufe (when_pressed) oder eine Schleife mit is_pressed nutzen.',
+    hint: 'taster.when_pressed = led.on und taster.when_released = led.off. Danach pause(), damit das Programm weiterläuft. Ohne Klammern: led.on ist die Funktion selbst.',
+    check: chkPiTaster },
+  { id: 'p3', lab: 'pi', cat: 'Grundlagen', title: 'Hallo im Terminal', level: 1,
+    start: pct([['PI', 12, 0]], [], 'from time import sleep\n\nwhile True:\n    # Hier: jede Sekunde "Hallo Azubi" ausgeben\n    sleep(1)\n'),
+    solMake: pct([['PI', 12, 0]], [], 'from time import sleep\n\nwhile True:\n    print("Hallo Azubi")\n    sleep(1)\n'),
+    text: 'Gib im Terminal jede Sekunde die Zeile „Hallo Azubi“ aus.',
+    hint: 'print("Hallo Azubi") schreibt eine Zeile. sleep(1) wartet eine Sekunde.',
+    check() { const R = piEval({ T: 3.6 }); if (R.err) return codeFail(R); const lines = R.out.split('\n').filter(x => x.length), ok = lines.length > 0 && lines.every(x => x.trim() === 'Hallo Azubi');
+      return [RES(lines.length >= 3 && lines.length <= 4, 'In 3,6 s kamen ' + lines.length + ' Zeilen an (erwartet: 3 bis 4).'), RES(ok, ok ? 'Der Text stimmt.' : 'Der Text stimmt nicht. Erwartet: Hallo Azubi')]; } },
+  { id: 'p4', lab: 'pi', cat: 'Grundlagen', title: 'Ampel', level: 2,
+    start: pct(PC_AMP, PW_AMP, 'from gpiozero import TrafficLights\nfrom time import sleep\n\nampel = TrafficLights(18, 24, 8)    # rot, gelb, grün\n\nwhile True:\n    # Hier: rot (3 s), grün (3 s), gelb (1 s), immer wieder\n    sleep(1)\n'),
+    solMake: pct(PC_AMP, PW_AMP, 'from gpiozero import TrafficLights\nfrom time import sleep\n\nampel = TrafficLights(18, 24, 8)\n\nwhile True:\n    ampel.red.on()\n    sleep(3)\n    ampel.red.off()\n    ampel.green.on()\n    sleep(3)\n    ampel.green.off()\n    ampel.amber.on()\n    sleep(1)\n    ampel.amber.off()\n'),
+    text: 'Drei LEDs bilden eine Ampel (rot GPIO18, gelb GPIO24, grün GPIO8). Schalte nacheinander rot, grün und gelb ein, jede Farbe einige Sekunden, und das immer wieder. Es soll nie rot und grün gleichzeitig leuchten.',
+    hint: 'ampel.red.on() schaltet rot ein, ampel.red.off() aus. Eine while True-Schleife wiederholt alles.',
+    check() { const R = piEval({ T: 12 }); if (R.err) return codeFail(R); const seen = new Set(); let bad = 0; R.samples.forEach(x => { const v = [18, 24, 8].map(g => x.lv[g]).join(''); seen.add(v); if (v === '101' || v === '011' || v === '111') bad++; });
+      const r = seen.has('100'), g = seen.has('001'), a = seen.has('010') || seen.has('110');
+      return [RES(r, r ? 'Rot leuchtet.' : 'Rot leuchtet nie.'), RES(g, g ? 'Grün leuchtet.' : 'Grün leuchtet nie.'), RES(a, a ? 'Gelb leuchtet.' : 'Gelb leuchtet nie.'), RES(bad === 0, bad === 0 ? 'Rot und Grün leuchten nie gleichzeitig.' : 'Zeitweise leuchten Rot und Grün zusammen.')]; } },
+  { id: 'p5', lab: 'pi', cat: 'Sensoren und Töne', title: 'Summer piept', level: 1,
+    start: pct(PC_BUZZ, PW_BUZZ, 'from gpiozero import Buzzer\nfrom time import sleep\n\nsummer = Buzzer(23)\n\nwhile True:\n    # Hier: den Summer immer wieder kurz piepen lassen\n    sleep(1)\n'),
+    solMake: pct(PC_BUZZ, PW_BUZZ, 'from gpiozero import Buzzer\nfrom time import sleep\n\nsummer = Buzzer(23)\n\nwhile True:\n    summer.on()\n    sleep(0.2)\n    summer.off()\n    sleep(0.8)\n'),
+    text: 'Der Summer hängt an GPIO23. Er soll immer wieder kurz piepen (etwa 0,2 Sekunden an, dann Pause).',
+    hint: 'summer.on() schaltet ein, summer.off() aus. Oder einfacher: summer.beep(0.2, 0.8) gefolgt von pause().',
+    check() { const R = piEval({ T: 3 }); if (R.err) return codeFail(R); const e = risingEdges(R, 23), sh = dutyShare(R, 23);
+      return [RES(e >= 3, e >= 3 ? 'Der Summer piept (' + e + '× in 3 s).' : 'Zu wenige Pieptöne (' + e + ' in 3 s, mindestens 3).'), RES(sh > 0.05 && sh < 0.7, 'Der Summer ist ' + Math.round(sh * 100) + ' % der Zeit an (er soll kurz piepen, nicht dauern).')]; } },
+  { id: 'p6', lab: 'pi', cat: 'Sensoren und Töne', title: 'LED pulsiert', level: 2,
+    start: pct(PC_PWM, PW_PWM, 'from gpiozero import PWMLED\nfrom time import sleep\n\nled = PWMLED(18)\n\n# Hier: die LED langsam heller und wieder dunkler werden lassen\nsleep(1)\n'),
+    solMake: pct(PC_PWM, PW_PWM, 'from gpiozero import PWMLED\nfrom time import sleep\n\nled = PWMLED(18)\n\nwhile True:\n    for i in range(0, 101, 5):\n        led.value = i / 100\n        sleep(0.05)\n    for i in range(100, -1, -5):\n        led.value = i / 100\n        sleep(0.05)\n'),
+    text: 'Die gelbe LED hängt an GPIO18. Sie soll mit PWM langsam von dunkel bis hell und wieder zurück pulsieren. PWMLED nimmt Werte von 0.0 bis 1.0.',
+    hint: 'led.value = 0.5 ist halbe Helligkeit. In einer Schleife von 0 bis 100 geteilt durch 100 bekommst du alle Zwischenwerte.',
+    check() { const R = piEval({ T: 5 }); if (R.err) return codeFail(R); const v = R.samples.map(x => (x.duty[18] != null ? x.duty[18] : (x.lv[18] ? 1 : 0))); const mn = Math.min(...v), mx = Math.max(...v), steps = new Set(v.map(x => Math.round(x * 10))).size;
+      return [RES(mx >= 0.85, 'Hellster Wert: ' + Math.round(mx * 100) + ' % (soll bis fast 100 % gehen).'), RES(mn <= 0.15, 'Dunkelster Wert: ' + Math.round(mn * 100) + ' % (soll bis fast 0 % gehen).'), RES(steps >= 6, steps >= 6 ? 'Die Helligkeit ändert sich stufenweise.' : 'Die LED springt nur zwischen wenigen Helligkeiten.')]; } },
+  { id: 'p7', lab: 'pi', cat: 'Sensoren und Töne', title: 'Abstandswarner', level: 3,
+    start: pct(PC_ULT, PW_ULT, 'from gpiozero import DistanceSensor, LED\nfrom time import sleep\n\nsensor = DistanceSensor(echo=24, trigger=23, max_distance=2)\nled = LED(17)\n\nwhile True:\n    cm = sensor.distance * 100      # distance ist in Metern\n    # Hier: LED an, wenn das Hindernis näher als 50 cm ist, sonst aus\n    sleep(0.1)\n'),
+    solMake: pct(PC_ULT, PW_ULT, 'from gpiozero import DistanceSensor, LED\nfrom time import sleep\n\nsensor = DistanceSensor(echo=24, trigger=23, max_distance=2)\nled = LED(17)\n\nwhile True:\n    cm = sensor.distance * 100\n    if cm < 50:\n        led.on()\n    else:\n        led.off()\n    sleep(0.1)\n'),
+    text: 'Der Ultraschallsensor misst den Abstand (Echo-Pin über Spannungsteiler an GPIO24, Trigger an GPIO23). Die LED an GPIO17 soll leuchten, wenn ein Hindernis näher als 50 cm ist, sonst aus sein. Den Abstand stellst du mit dem Regler am Sensor ein.',
+    hint: 'Die Variable cm enthält den Abstand schon in Zentimetern. Vergleiche sie mit 50 und schalte die LED mit led.on() oder led.off().',
+    check() { const L = theLed(), U = sch.parts.find(p => p.k === 'HCSR04'); if (!L || !U) return [RES(false, 'LED oder Ultraschallsensor fehlt.')];
+      const near = piEval({ T: 1.2, pos: { [U.id]: 0.045 } }), far = piEval({ T: 1.2, pos: { [U.id]: 0.4 } }); if (near.err) return codeFail(near);
+      const a = ledMA(sampleAt(near, 1.15), L.id) > 2, b = ledMA(sampleAt(far, 1.15), L.id) > 2;
+      return [RES(a, 'Hindernis bei etwa 20 cm: LED ist ' + (a ? 'an' : 'aus, soll aber an sein') + '.'), RES(!b, 'Hindernis bei etwa 160 cm: LED ist ' + (b ? 'an, soll aber aus sein' : 'aus') + '.')]; } },
+  { id: 'p8', lab: 'pi', cat: 'Grundlagen', title: 'Tastendrücke zählen', level: 3,
+    start: pct(PC_BTN, PW_BTN, 'from gpiozero import Button\nfrom signal import pause\n\ntaster = Button(2)\nanzahl = 0\n\ndef gedrueckt():\n    # Hier: hochzählen und "Anzahl: 1", "Anzahl: 2" ... ausgeben\n    pass\n\ntaster.when_pressed = gedrueckt\npause()\n'),
+    solMake: pct(PC_BTN, PW_BTN, 'from gpiozero import Button\nfrom signal import pause\n\ntaster = Button(2)\nanzahl = 0\n\ndef gedrueckt():\n    global anzahl\n    anzahl += 1\n    print("Anzahl:", anzahl)\n\ntaster.when_pressed = gedrueckt\npause()\n'),
+    text: 'Zähle die Tastendrücke an GPIO2. Bei jedem neuen Druck soll im Terminal „Anzahl: 1“, „Anzahl: 2“ und so weiter stehen. Gehalten zählt nur als ein Druck (when_pressed löst nur einmal aus).',
+    hint: 'In der Funktion muss die Variable mit global anzahl als global markiert werden, sonst ist sie nur lokal.',
+    check() { const pb = sch.parts.find(p => p.k === 'PB'); if (!pb) return [RES(false, 'Der Taster fehlt.')]; const id = pb.id;
+      const R = piEval({ T: 2, script: [{ t: 0.3, press: [id] }, { t: 0.5, press: [] }, { t: 0.8, press: [id] }, { t: 1.0, press: [] }, { t: 1.3, press: [id] }, { t: 1.5, press: [] }] }); if (R.err) return codeFail(R);
+      const lines = R.out.split('\n').map(x => x.trim()).filter(Boolean), want = ['Anzahl: 1', 'Anzahl: 2', 'Anzahl: 3'], ok = lines.length === 3 && want.every((w, i) => lines[i] === w);
+      return [RES(ok, ok ? 'Drei Tastendrücke ergeben „Anzahl: 1“, „Anzahl: 2“, „Anzahl: 3“.' : 'Erwartet bei drei Tastendrücken: Anzahl: 1, Anzahl: 2, Anzahl: 3. Erhalten: ' + JSON.stringify(lines.slice(0, 6)))]; } },
+  { id: 'p9', lab: 'pi', cat: 'Sensoren und Töne', title: 'Servo auf 90 Grad', level: 1,
+    start: pct(PC_SERVO, PW_SERVO, 'from gpiozero import AngularServo\nfrom time import sleep\n\nservo = AngularServo(23, min_angle=0, max_angle=180)\n\n# Hier: den Servo auf 90 Grad stellen\nsleep(1)\n'),
+    solMake: pct(PC_SERVO, PW_SERVO, 'from gpiozero import AngularServo\nfrom time import sleep\n\nservo = AngularServo(23, min_angle=0, max_angle=180)\n\nservo.angle = 90\nsleep(1)\n'),
+    text: 'Der Servo hängt an GPIO23 (Signal), die rote Leitung an 5 V. Stelle ihn auf 90 Grad.',
+    hint: 'servo.angle = 90 stellt den Winkel ein.',
+    check() { const R = piEval({ T: 1.5 }); if (R.err) return codeFail(R); const a = R.samples[R.samples.length - 1].servo[23];
+      return [RES(a != null, a != null ? 'Der Servo bekommt ein Signal an GPIO23.' : 'Der Servo bekommt kein Signal (angle oder value setzen).'), RES(a != null && Math.abs(a - 90) <= 3, a != null ? 'Winkel: ' + Math.round(a) + ' Grad (soll 90).' : 'Kein Winkel eingestellt.')]; } },
+  { id: 'pf1', lab: 'pi', cat: 'Fehlersuche im Code', title: 'Die LED bleibt dunkel', level: 1,
+    start: pct(PC_LED17, PW_LED17, 'from gpiozero import LED\nfrom time import sleep\n\nled = LED(11)          # LED ist an Pin 11 angeschlossen\n\nwhile True:\n    led.on()\n    sleep(0.5)\n    led.off()\n    sleep(0.5)\n'),
+    solMake: pct(PC_LED17, PW_LED17, 'from gpiozero import LED\nfrom time import sleep\n\nled = LED(17)\n\nwhile True:\n    led.on()\n    sleep(0.5)\n    led.off()\n    sleep(0.5)\n'),
+    text: 'Die LED hängt an Pin 11 der Leiste. Das Programm läuft ohne Fehlermeldung, aber die LED bleibt dunkel. Der Fehler liegt nicht an der Schaltung.',
+    hint: 'gpiozero zählt nicht mit den Pin-Nummern der Leiste (1 bis 40), sondern mit den GPIO-Nummern. Welche GPIO-Nummer steht an Pin 11? Schau im Plan an die Beschriftung neben dem Anschluss.',
+    check: () => chkPiBlink(4) },
+  { id: 'pf2', lab: 'pi', cat: 'Fehlersuche im Code', title: 'Fehlermeldung lesen', level: 1,
+    start: pct(PC_LED17, PW_LED17, 'from gpiozero import LED\nfrom time import sleep\n\nled = LED(17)\n\nwhile True:\nled.on()\n    sleep(0.5)\n    led.off()\n    sleep(0.5)\n'),
+    solMake: pct(PC_LED17, PW_LED17, 'from gpiozero import LED\nfrom time import sleep\n\nled = LED(17)\n\nwhile True:\n    led.on()\n    sleep(0.5)\n    led.off()\n    sleep(0.5)\n'),
+    text: 'Das Programm lässt sich nicht starten. Starte es mit ▶ Start, lies die Fehlermeldung (mit Zeilennummer!) und behebe den Fehler, so dass die LED blinkt.',
+    hint: 'In Python entscheidet die Einrückung, was zu einer Schleife gehört. Alles im Schleifenrumpf muss gleich weit eingerückt sein.',
+    check: () => chkPiBlink(4) },
+  { id: 'pf3', lab: 'pi', cat: 'Fehlersuche im Code', title: 'Ultraschall zerstört den Pi', level: 3,
+    start: pct(PC_ULT_BAD, PW_ULT_BAD, 'from gpiozero import DistanceSensor\nfrom time import sleep\n\nsensor = DistanceSensor(echo=24, trigger=23, max_distance=3)\n\nwhile True:\n    print(round(sensor.distance * 100), "cm")\n    sleep(0.5)\n'),
+    solMake: pct(PC_ULT_OK, PW_ULT_OK, 'from gpiozero import DistanceSensor\nfrom time import sleep\n\nsensor = DistanceSensor(echo=24, trigger=23, max_distance=3)\n\nwhile True:\n    print(round(sensor.distance * 100), "cm")\n    sleep(0.5)\n'),
+    text: 'Sobald der Ultraschallsensor misst, geht der Raspberry Pi kaputt (Meldung „zerstört“). Das Programm ist in Ordnung, die Schaltung nicht. Baue die fehlende Schutzschaltung am Echo-Pin ein (GPIO24).',
+    hint: 'Der Echo-Pin des HC-SR04 liefert 5 V, der GPIO-Pin verträgt nur 3,3 V. Ein Spannungsteiler aus 1 kΩ (vom Echo zum GPIO) und 2 kΩ (vom GPIO nach Masse) macht aus 5 V etwa 3,3 V.',
+    check() { const R = piEval({ T: 1.5 }); if (R.err) return codeFail(R); const burn = burnTxt(R.E), lines = R.out.split('\n').filter(x => /cm/.test(x)); const nR = sch.parts.filter(p => p.k === 'R').length;
+      return [RES(!burn.length, burn.length ? burn[0] : 'Der Pi bleibt heil.'), RES(nR >= 2, nR >= 2 ? 'Zwei Widerstände bilden den Spannungsteiler.' : 'Für den Spannungsteiler fehlen Widerstände (' + nR + ' von 2).'), RES(lines.length >= 2, lines.length >= 2 ? 'Der Sensor liefert Messwerte.' : 'Es kommen keine Messwerte an.')]; } },
+];
+
 /* ---- SchaltLab: Aufgaben mit Messung ---- */
 const SCH_TASKS = [
   { id: 's1', lab: 'sch', cat: 'Grundlagen', title: 'Spannungsteiler für 6 V', level: 1, solMake: () => ({ parts: [['BAT', 4, 4, 1, '9'], ['R', 8, 2, 1, '1k'], ['R', 8, 6, 1, '2k'], ['GND', 4, 10], ['VM', 12, 6, 1, '']], wires: [[4, 4, 4, 2, 8, 2], [8, 10, 4, 10, 4, 8], [8, 6, 12, 6], [12, 10, 8, 10]], scopes: [] }),
@@ -1975,7 +2151,7 @@ const SIM_TASKS = [
     text: 'Beide Schalter sind eingeschaltet, aber nur eine der beiden Lampen leuchtet. Finde das defekte Bauteil mit Spannungsmessung.',
     hint: 'Miss die Spannung vor und hinter dem Schalter der dunklen Lampe. Wo die Spannung verschwindet, liegt der Fehler.' },
 ];
-TASKS.push(...SIM_TASKS, ...SCH_TASKS, ...CODE_TASKS);
+TASKS.push(...SIM_TASKS, ...SCH_TASKS, ...CODE_TASKS, ...PI_TASKS);
 
 window.TaskTest = only => labTasks().filter(t => !only || only.includes(t.id)).map(t => {
   const out = { id: t.id };
@@ -2089,6 +2265,8 @@ function godGate(then) {
 }
 const DSPEC = { '1N4007': 'd4007', '1N5819': 'd5819' };
 // Arduino Uno: Schaltplan-Anschluss (5V, 3V3, VIN, GND, A0..A5, D0..D13, GND, 5V) -> Stift des LochLab-Moduls
+const PI_NAMES = ["3V3", "5V", "GPIO2 SDA", "5V", "GPIO3 SCL", "GND", "GPIO4", "GPIO14 TX", "GND", "GPIO15 RX", "GPIO17", "GPIO18 PWM", "GPIO27", "GND", "GPIO22", "GPIO23", "3V3", "GPIO24", "GPIO10 MOSI", "GND", "GPIO9 MISO", "GPIO25", "GPIO11 SCLK", "GPIO8 CE0", "GND", "GPIO7 CE1", "GPIO0", "GPIO1", "GPIO5", "GND", "GPIO6", "GPIO12 PWM", "GPIO13 PWM", "GND", "GPIO19", "GPIO16", "GPIO26", "GPIO20", "GND", "GPIO21"];
+const PI_PIN_OF = (() => { const ph = { 2: 3, 3: 5, 4: 7, 14: 8, 15: 10, 17: 11, 18: 12, 27: 13, 22: 15, 23: 16, 24: 18, 10: 19, 9: 21, 25: 22, 11: 23, 8: 24, 7: 26, 0: 27, 1: 28, 5: 29, 6: 31, 12: 32, 13: 33, 19: 35, 16: 36, 26: 37, 20: 38, 21: 40 }, r = []; for (const g in ph) r[+g] = ph[g] - 1; return r; })();
 const UNO_PM = (() => { const m = [22, 21, 25, 23]; for (let a = 0; a < 6; a++) m.push(26 + a); for (let n = 0; n < 14; n++) m.push(17 - n); m.push(3, 22); return m; })();
 function llSpec(p) {
   const v = p.v, two = { two: true };
@@ -2246,7 +2424,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v64</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v65</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -2324,7 +2502,7 @@ function openExamples() {
     b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const ex = buildExample(EXAMPLES[+r.dataset.i]); loadCircuit(ex); if (ex.tempo != null) tempo = ex.tempo; if (ex.win) graphWin = ex.win; refreshUI(); });
   });
 }
-const exOk = e => LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
+const exOk = e => LAB === 'pi' ? e.lab === 'pi' : LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
 const defEx = () => EXAMPLES.find(exOk) || EXAMPLES[0];
 function buildExample(e) {
   const d = e.make(); let id = 1; const parts = [], wires = [];
@@ -2878,7 +3056,7 @@ $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name
   else if (/[?&]aufgabe=/.test(location.search) && TASKS.some(t => t.id === location.search.match(/[?&]aufgabe=(\w*)/)[1] && (t.lab || 'sim') === LAB)) startTask(location.search.match(/[?&]aufgabe=(\w*)/)[1]);
   else if (/[?&]bsp\b/.test(location.search)) loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1]));
   else if (d && d.parts && d.parts.length) loadCircuit(d); else { loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1])); }
-  if (LAB === 'code') { initDock(); }
+  if (PROGLAB) { initDock(); }
 loadShared();
 requestAnimationFrame(t => { lastFrame = t; loop(t); });
 })();

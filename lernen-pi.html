@@ -26,9 +26,9 @@ pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:
 @media print{.try{background:none;color:#000!important;border:1px solid #000}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 63</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 65</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen-arduino.html">Arduino verstehen</a> · <a href="anleitung.html">Anleitung Tonfunk Lab</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
-<p>Dieses Lernheft zeigt dir, was ein Raspberry Pi ist, wie du ihn in Betrieb nimmst und wie du mit Python LEDs, Taster und Sensoren steuerst. Die Beispiele sind für den Pi gedacht (Programme ausprobieren musst du am echten Gerät). Die Verbindung zum Arduino und zur Simulation im Tonfunk Lab zeigt dir das letzte Kapitel.</p>
+<p>Dieses Lernheft zeigt dir, was ein Raspberry Pi ist, wie du ihn in Betrieb nimmst und wie du mit Python LEDs, Taster und Sensoren steuerst. Alle Beispiele kannst du direkt im <b>Pi-Lab</b> ausprobieren (Knöpfe „Probier es aus“ und „Aufgabe“). Am echten Pi funktionieren dieselben Programme. Das letzte Kapitel vergleicht Arduino und Pi.</p>
 <div class="box toc"><b>Inhalt</b><a href="#k1">1. Was ist ein Raspberry Pi?</a><a href="#k2">2. Inbetriebnahme</a><a href="#k3">3. Die GPIO-Leiste</a><a href="#k4">4. Python in fünf Minuten</a><a href="#k5">5. Erstes Projekt: LED und Taster</a><a href="#k6">6. Mehr Bauteile</a><a href="#k7">7. Projektideen für den Pi</a><a href="#k8">8. Fehler finden und sicher arbeiten</a><a href="#k9">9. Arduino oder Pi? Und wie geht es hier weiter</a></div>
 <h2 id="k1">1. Was ist ein Raspberry Pi?</h2><p>Ein <b>Raspberry Pi</b> ist ein vollständiger kleiner <b>Computer</b> in der Größe einer Kreditkarte. Er hat Prozessor, Arbeitsspeicher, USB, HDMI, WLAN und läuft mit einem <b>Betriebssystem</b> (Raspberry Pi OS, ein Linux). Das Programm liegt nicht fest im Chip, sondern auf einer <b>SD-Karte</b>, und du startest es wie auf einem PC.</p>
 <table><tr><th></th><th>Arduino Uno</th><th>Raspberry Pi</th></tr>
@@ -81,7 +81,8 @@ def verdopple(x):                 # eigene Funktion
 <ul><li><b>Doppelpunkt</b> am Ende von <code>if</code>, <code>for</code>, <code>while</code>, <code>def</code>.</li>
 <li><b>Einrückung</b> zeigt, was zum Block gehört. Falsch eingerückt gibt einen Fehler.</li>
 <li>Warten: <code>from time import sleep</code> und <code>sleep(0.5)</code> (Sekunden, auch Kommazahlen).</li>
-<li>Ein Programm startest du in Thonny mit dem grünen Pfeil oder im Terminal mit <code>python3 programm.py</code>. Beenden mit <code>Strg+C</code>.</li></ul><h2 id="k5">5. Erstes Projekt: LED und Taster</h2><p>Die Bibliothek <b>gpiozero</b> ist auf dem Raspberry Pi OS schon installiert und macht das Ansteuern sehr einfach.</p>
+<li>Ein Programm startest du in Thonny mit dem grünen Pfeil oder im Terminal mit <code>python3 programm.py</code>. Beenden mit <code>Strg+C</code>.</li></ul>
+<a class="try noprint" href="pilab.html?aufgabe=p3">✎ Aufgabe: Hallo im Terminal</a><h2 id="k5">5. Erstes Projekt: LED und Taster</h2><p>Die Bibliothek <b>gpiozero</b> ist auf dem Raspberry Pi OS schon installiert und macht das Ansteuern sehr einfach.</p>
 <h3>LED blinken lassen</h3>
 <p>Schaltung: GPIO17 (Pin 11) → 330-Ω-Widerstand → LED (Anode) → Kathode an GND (zum Beispiel Pin 9).</p>
 <pre>from gpiozero import LED
@@ -113,6 +114,7 @@ taster = Button(2)
 taster.when_pressed = led.on
 taster.when_released = led.off
 pause()                          # Programm läuft weiter und wartet auf Ereignisse</pre>
+<a class="try noprint" href="pilab.html?ex=LED%20blinkt">▶ LED blinkt</a><a class="try noprint" href="pilab.html?ex=Taster%20schaltet">▶ Taster schaltet</a><a class="try noprint" href="pilab.html?ex=Taster%20abfragen">▶ Taster abfragen</a><a class="try noprint" href="pilab.html?ex=LED%20mit%20RPi.GPIO">▶ LED mit RPi.GPIO (klassisch)</a><a class="try noprint" href="pilab.html?aufgabe=p1">✎ Aufgabe: Dreimal blinken</a><a class="try noprint" href="pilab.html?aufgabe=p2">✎ Aufgabe: Taster schaltet die LED</a><a class="try noprint" href="pilab.html?aufgabe=p8">✎ Aufgabe: Tastendrücke zählen</a>
 <div class="merke"><b>Unterschied zum Arduino:</b> <code>is_pressed</code> ist True, wenn der Taster gedrückt ist. <code>gpiozero</code> kümmert sich um den Pull-up. Beim Arduino musst du selbst LOW abfragen.</div><h2 id="k6">6. Mehr Bauteile</h2><h3>LED dimmen (PWM)</h3>
 <pre>from gpiozero import PWMLED
 from time import sleep
@@ -140,6 +142,7 @@ servo = Servo(17)
 servo.min(); sleep(1)
 servo.mid(); sleep(1)
 servo.max(); sleep(1)</pre>
+<a class="try noprint" href="pilab.html?ex=LED%20pulsiert">▶ LED pulsiert</a><a class="try noprint" href="pilab.html?ex=Ultraschall">▶ Ultraschall</a><a class="try noprint" href="pilab.html?ex=Servo">▶ Servo</a><a class="try noprint" href="pilab.html?aufgabe=p6">✎ Aufgabe: LED pulsiert</a><a class="try noprint" href="pilab.html?aufgabe=p7">✎ Aufgabe: Abstandswarner</a><a class="try noprint" href="pilab.html?aufgabe=p9">✎ Aufgabe: Servo auf 90 Grad</a>
 <h3>Sensoren mit I²C</h3>
 <p>Viele Sensoren (Temperatur, Display, Beschleunigung) sprechen I²C über die Pins 3 (SDA) und 5 (SCL). Das lässt sich unter „Raspberry Pi Konfiguration → Schnittstellen → I2C“ einschalten. Mit <code>i2cdetect -y 1</code> findest du angeschlossene Geräte.</p><h2 id="k7">7. Projektideen für den Pi</h2><ul><li><b>Ampel</b> mit drei LEDs und Fußgängertaster (<code>LEDBoard</code>, <code>Button</code>).</li>
 <li><b>Einbruchalarm</b>: PIR-Sensor löst Summer aus und schreibt die Uhrzeit in eine Datei.</li>
@@ -147,6 +150,7 @@ servo.max(); sleep(1)</pre>
 <li><b>Webserver</b>: Eine kleine Webseite zeigt den Sensorwert (Bibliothek <code>flask</code>).</li>
 <li><b>Kamera</b>: Fotos per Knopfdruck oder Zeitraffer.</li>
 <li><b>Zusammen mit dem Arduino</b>: Der Arduino misst und sendet per USB-Kabel (Serial), der Pi zeigt die Werte an oder speichert sie.</li></ul>
+<a class="try noprint" href="pilab.html?ex=Ampel">▶ Ampel</a><a class="try noprint" href="pilab.html?ex=Summer">▶ Summer</a><a class="try noprint" href="pilab.html?ex=Bewegungsmelder">▶ Bewegungsmelder</a><a class="try noprint" href="pilab.html?ex=Lauflicht">▶ Lauflicht</a><a class="try noprint" href="pilab.html?aufgabe=p4">✎ Aufgabe: Ampel</a><a class="try noprint" href="pilab.html?aufgabe=p5">✎ Aufgabe: Summer piept</a>
 <h3>Programm beim Start automatisch ausführen</h3>
 <p>Im Terminal <code>crontab -e</code> öffnen und am Ende eine Zeile einfügen: <code>@reboot python3 /home/benutzername/projekt.py &amp;</code>. Beim nächsten Neustart läuft das Programm von selbst.</p><h2 id="k8">8. Fehler finden und sicher arbeiten</h2><table><tr><th>Symptom</th><th>Meist die Ursache</th></tr>
 <tr><td>LED leuchtet nicht</td><td>falsche GPIO-Nummer (BCM statt Pin-Nummer!), LED falsch herum, Masse nicht verbunden</td></tr>
@@ -155,6 +159,7 @@ servo.max(); sleep(1)</pre>
 <tr><td>Einrückungsfehler</td><td>Tabulator und Leerzeichen gemischt; Doppelpunkt vergessen</td></tr>
 <tr><td>Pi startet nicht</td><td>Netzteil zu schwach, SD-Karte falsch beschrieben. Auf der SD-Karte mit dem Imager neu beginnen.</td></tr>
 <tr><td>Sensor liefert Unsinn</td><td>5-V-Sensor an 3,3-V-Pin, fehlender Spannungsteiler oder fehlende Masse</td></tr></table>
+<a class="try noprint" href="pilab.html?aufgabe=pf1">✎ Aufgabe: Die LED bleibt dunkel</a><a class="try noprint" href="pilab.html?aufgabe=pf2">✎ Aufgabe: Fehlermeldung lesen</a><a class="try noprint" href="pilab.html?aufgabe=pf3">✎ Aufgabe: Ultraschall zerstört den Pi</a>
 <div class="warn"><b>Regeln für sicheres Arbeiten:</b><ul>
 <li>Verdrahten nur bei <b>heruntergefahrenem Pi</b>, danach Verbindungen doppelt prüfen.</li>
 <li>Kein 5-V-Signal auf einen GPIO-Pin. Nie 3,3 V und 5 V verbinden.</li>
@@ -166,6 +171,6 @@ servo.max(); sleep(1)</pre>
 <tr><td>Daten speichern, Webseite, Netzwerk, Kamera</td><td>Raspberry Pi</td></tr>
 <tr><td>Viele Programme, Bildschirm, Maus</td><td>Raspberry Pi</td></tr>
 <tr><td>Beides kombinieren</td><td>Arduino misst, Pi wertet aus (USB/Serial)</td></tr></table>
-<div class="box"><b>Hinweis zum Tonfunk Lab:</b> Das CodeLab simuliert heute den <b>Arduino Uno</b>. Eine Simulation von Python und GPIO für den Raspberry Pi ist geplant. Bis dahin kannst du die Schaltungen (LED, Taster, Sensoren) im CodeLab mit dem Arduino testen und die Logik später in Python übertragen. Die Elektronik ist dieselbe, nur die Spannung (3,3 V statt 5 V) und die Sprache ändern sich.</div>
+<div class="box"><b>Im Tonfunk Lab:</b> Das <b>Pi-Lab</b> simuliert einen Raspberry Pi mit Python (gpiozero und RPi.GPIO). Du verdrahtest den Pi an der 40-poligen Leiste, schreibst dein Programm und siehst LEDs, Taster und Sensoren reagieren. Die Pins sind 3,3-V-Pins: Wer 5 V an einen GPIO legt, zerstört den Pi (mit Erklärung). <a class="try noprint" href="pilab.html">▶ Pi-Lab öffnen</a><p class="mute"><b>Grenzen:</b> Unterstützt sind print, Schleifen, Funktionen, Listen, Texte, f-Strings, try/except sowie die Module time, random, math, signal, gpiozero (LED, PWMLED, Buzzer, Button, MotionSensor, DistanceSensor, Servo, AngularServo, LEDBoard, TrafficLights) und RPi.GPIO. Nicht unterstützt sind eigene Klassen (class), input(), Dateien und Zusatzmodule wie numpy oder flask. Analoge Sensoren über einen MCP3008 kommen später.</p></div>
 <p>Weiter geht es mit dem Lernheft <a href="lernen-arduino.html">Arduino verstehen</a>.</p>
 </div></body></html>
