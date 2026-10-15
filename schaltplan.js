@@ -51,6 +51,8 @@ const KINDS = {
   RCD: { name: 'FI-Schutzschalter', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '30mA', core: 'RCD', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, sw0: 1, props: [] },
   SCHUETZ:{ name: 'Schütz (2 Haupt- + 2 Hilfskontakte)', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [0, 6], [5, 0], [9, 0], [5, 2], [9, 2], [5, 4], [9, 4], [5, 6], [9, 6]], v: '230V', core: 'SCHUETZ', box: [-0.2, -0.6, 9.4, 6.6], props: [['v', 'Spulenspannung', 'text', 'z. B. 230V']] },
   UNO: { name: 'Arduino Uno', cat: 'Arduino', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [0, 16], [0, 18], [8, 0], [8, 2], [8, 4], [8, 6], [8, 8], [8, 10], [8, 12], [8, 14], [8, 16], [8, 18], [8, 20], [8, 22], [8, 24], [8, 26], [8, 28], [8, -2]], v: '', core: 'MCU', box: [0, -3, 8, 30], props: [] },
+  I2CTEMP: { name: 'Temperatursensor LM75 (I²C)', cat: 'Raspberry Pi', lab: 'pi', pins: [[5, 0], [5, 2], [5, 4], [5, 6]], v: '', core: 'I2CTEMP', box: [0, -1, 5, 7.6], pos: true, pos0: 0.4, props: [['pos', 'Temperatur (−25 … 100 °C)', 'range']] },
+  I2CLUX: { name: 'Lichtsensor BH1750 (I²C)', cat: 'Raspberry Pi', lab: 'pi', pins: [[5, 0], [5, 2], [5, 4], [5, 6]], v: '', core: 'I2CLUX', box: [0, -1, 5, 7.6], pos: true, pos0: 0.5, props: [['pos', 'Helligkeit (0 … 2000 lx)', 'range']] },
   MCP3008: { name: 'ADC MCP3008 (SPI, 8 Kanäle)', cat: 'Raspberry Pi', lab: 'pi', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [6, 0], [6, 2], [6, 4], [6, 6], [6, 8], [6, 10], [6, 12], [6, 14]], v: '', core: 'MCP3008', box: [0, -1.5, 6, 15.5], props: [] },
   PI: { name: 'Raspberry Pi (GPIO-Leiste)', cat: 'Raspberry Pi', lab: 'pi', pins: [[0, 0], [8, 0], [0, 2], [8, 2], [0, 4], [8, 4], [0, 6], [8, 6], [0, 8], [8, 8], [0, 10], [8, 10], [0, 12], [8, 12], [0, 14], [8, 14], [0, 16], [8, 16], [0, 18], [8, 18], [0, 20], [8, 20], [0, 22], [8, 22], [0, 24], [8, 24], [0, 26], [8, 26], [0, 28], [8, 28], [0, 30], [8, 30], [0, 32], [8, 32], [0, 34], [8, 34], [0, 36], [8, 36], [0, 38], [8, 38]], v: '', core: 'PI40', box: [0, -2, 8, 40], props: [] },
   RGBLED: { name: 'RGB-LED (gemeinsame Kathode)', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [4, 2]], v: '', core: 'RGBLED', box: [0, -1, 4, 5], props: [] },
@@ -104,7 +106,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { MCP3008: 'IC', PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { I2CTEMP: 'B', I2CLUX: 'B', MCP3008: 'IC', PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -456,6 +458,15 @@ function drawPart(p, selected) {
       c.setLineDash([0.25, 0.2]); c.lineWidth = 0.07; line(1.4, 3, 5.6, 3); c.setLineDash([]);
       c.save(); c.translate(3.4, -0.1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Schütz', 0, 0); c.restore();
       break; }
+    case 'I2CTEMP': case 'I2CLUX': {
+      for (let i = 0; i < 4; i++) lead(5, i * 2, 4, i * 2, pc[i]);
+      c.strokeStyle = body; c.fillStyle = PRINT ? '#eceff2' : 'rgba(120,130,145,.25)'; c.fillRect(0, -0.8, 4, 7.6); c.strokeRect(0, -0.8, 4, 7.6);
+      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al; c.textBaseline = 'middle'; c.fillStyle = body; c.fillText(t, 0, 0); c.restore(); };
+      ['VCC', 'SDA', 'SCL', 'GND'].forEach((t, i) => T(t, 3.8, i * 2, 0.5, 'right'));
+      const pos = p.pos == null ? K.pos0 : p.pos;
+      T(p.k === 'I2CTEMP' ? (-25 + 125 * pos).toFixed(1) + ' °C' : Math.round(pos * pos * 2000) + ' lx', 0.25, 6.1, 0.5, 'left');
+      c.save(); c.translate(1.2, 2.2); c.rotate(-p.r * Math.PI / 2 - Math.PI / 2); c.font = '700 .75px sans-serif'; c.textAlign = 'center'; c.fillStyle = body; c.fillText(p.k === 'I2CTEMP' ? 'LM75' : 'BH1750', 0, 0); c.restore();
+      break; }
     case 'MCP3008': {
       for (let i = 0; i < 16; i++) { const [px, py] = K.pins[i]; if (px === 0) lead(0, py, 1, py, pc[i]); else lead(6, py, 5, py, pc[i]); }
       c.strokeStyle = body; c.fillStyle = PRINT ? '#eceff2' : 'rgba(120,130,145,.25)'; c.fillRect(1, -1, 4, 16); c.strokeRect(1, -1, 4, 16);
@@ -779,7 +790,7 @@ function valueText(p) {
     case 'SPK': return fmtVal(p.v, 'Ω');
     case 'NTC': case 'PTC': return fmtVal(p.v, 'Ω');
     case 'TRF': case 'RLY': return p.v;
-    case 'NETZ': case 'JUN5': case 'UNO': case 'PI': case 'MCP3008': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
+    case 'I2CTEMP': case 'I2CLUX': case 'NETZ': case 'JUN5': case 'UNO': case 'PI': case 'MCP3008': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
     case 'FAULT': return p.sw ? 'Fehler aktiv' : 'Fehler aus';
     case 'LSS': case 'RCD': case 'IMP': case 'SCHUETZ': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
@@ -1381,6 +1392,7 @@ function makeIOPi(el, ctx) {
       }
       const vr = v(1) - v(2), val = Math.max(0, Math.min(1, (v(8 + ch) - v(2)) / vr)); return { value: val, raw: Math.round(val * 1023) };
     },
+    i2c: (addr, wr, n) => LS.i2cXfer(C, S, addr, wr, n),
     print: t => (ctx && ctx.print ? ctx.print(t) : serAppend(t)),
   };
 }
@@ -2124,6 +2136,168 @@ const PI_TASKS = [
       const a = piEval({ T: 1.2, pos: { [T.id]: 0.394 } }), b = piEval({ T: 1.2, pos: { [T.id]: 0.6 } }); if (a.err) return codeFail(a);
       const val = r => { const m = r.out.trim().split('\n').pop().match(/^Temperatur: (-?\d+(?:\.\d+)?) °C$/); return m ? +m[1] : null; }, x = val(a), y = val(b);
       return [RES(x != null && y != null, x != null && y != null ? 'Die Ausgabe hat das richtige Format.' : 'Erwartet wird eine Zeile wie „Temperatur: 25.0 °C“. Erhalten: ' + JSON.stringify(a.out.slice(-34))), RES(x != null && Math.abs(x - 25) <= 1.5, x != null ? 'Bei 25 °C zeigt das Programm ' + x + ' °C.' : 'Kein Wert.'), RES(y != null && Math.abs(y - 59) <= 1.5, y != null ? 'Bei 59 °C zeigt das Programm ' + y + ' °C.' : 'Kein Wert.')]; } },
+  { id: 'p13', lab: 'pi', cat: 'Grundlagen', title: 'Eigene Klasse: der Blinker', level: 3,
+    start: pct([['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16]], [[20, 10, 22, 10], [20, 16, 22, 16]], `from gpiozero import LED
+from signal import pause
+
+class Blinker:
+    def __init__(self, pin):
+        self.led = LED(pin)
+
+    # Hier: Methode start(self, takt), die die LED im Takt blinken lässt
+
+rot = Blinker(18)
+gelb = Blinker(24)
+rot.start(0.5)
+gelb.start(0.2)
+pause()
+`),
+    solMake: pct([['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16]], [[20, 10, 22, 10], [20, 16, 22, 16]], `from gpiozero import LED
+from signal import pause
+
+class Blinker:
+    def __init__(self, pin):
+        self.led = LED(pin)
+
+    def start(self, takt):
+        self.led.blink(on_time=takt, off_time=takt)
+
+rot = Blinker(18)
+gelb = Blinker(24)
+rot.start(0.5)
+gelb.start(0.2)
+pause()
+`),
+    text: 'Eine Klasse ist ein Bauplan für eigene Objekte. Die Klasse Blinker steht schon da und legt in __init__ eine LED an. Schreibe die Methode start(self, takt), die die LED im Takt blinken lässt (takt Sekunden an, takt Sekunden aus). Die rote LED soll im Takt 0,5 s blinken, die gelbe im Takt 0,2 s.',
+    hint: 'Eine Methode hat immer self als ersten Parameter: def start(self, takt):. Darin: self.led.blink(on_time=takt, off_time=takt). Eingerückt unter class Blinker.',
+    check() { const Ls = sch.parts.filter(p => p.k === 'LED'), R = Ls.find(p => /rot/i.test(String(p.v))), G = Ls.find(p => /gelb/i.test(String(p.v))); if (!R || !G) return [RES(false, 'Die rote und die gelbe LED fehlen.')];
+      const e = piEval({ T: 2.6 }); if (e.err) return codeFail(e); const edges = id => { let n = 0, prev = false; e.samples.forEach(sm => { const on = ledMA(sm, id) > 2; if (on && !prev) n++; prev = on; }); return n; }, a = edges(R.id), b = edges(G.id);
+      return [RES(/class\s+Blinker/.test(sch.code || ''), 'Das Programm benutzt die Klasse Blinker.'), RES(a >= 2 && a <= 3, 'Rote LED: ' + a + ' Blinkzyklen in 2,6 s (erwartet: 2 bis 3 bei Takt 0,5 s).'), RES(b >= 5 && b <= 7, 'Gelbe LED: ' + b + ' Blinkzyklen in 2,6 s (erwartet: 5 bis 7 bei Takt 0,2 s).')]; } },
+  { id: 'p14', lab: 'pi', cat: 'I²C-Sensoren', title: 'Temperatur über I²C lesen', level: 3,
+    start: pct([['PI', 12, 0], ['I2CTEMP', 2, 0, 0, '', { pos: 0.4 }], ['GND', 7, 8]], [[12, 0, 7, 0], [12, 2, 7, 2], [12, 4, 7, 4], [7, 6, 7, 8]], `from smbus2 import SMBus
+from time import sleep
+
+ADRESSE = 0x48            # I2C-Adresse des LM75
+bus = SMBus(1)            # Bus 1 = GPIO2 (SDA) und GPIO3 (SCL)
+
+while True:
+    daten = bus.read_i2c_block_data(ADRESSE, 0, 2)    # Register 0 = Temperatur, 2 Bytes
+    # Hier: aus den zwei Bytes die Temperatur berechnen und als "Temperatur: 25.0 °C" ausgeben
+    #       (daten[0] ist das obere Byte, daten[1] das untere. Der 9-Bit-Wert zählt in 0,5-Grad-Schritten)
+    sleep(1)
+`),
+    solMake: pct([['PI', 12, 0], ['I2CTEMP', 2, 0, 0, '', { pos: 0.4 }], ['GND', 7, 8]], [[12, 0, 7, 0], [12, 2, 7, 2], [12, 4, 7, 4], [7, 6, 7, 8]], `from smbus2 import SMBus
+from time import sleep
+
+ADRESSE = 0x48            # I2C-Adresse des LM75
+bus = SMBus(1)            # Bus 1 = GPIO2 (SDA) und GPIO3 (SCL)
+
+while True:
+    daten = bus.read_i2c_block_data(ADRESSE, 0, 2)    # Register 0 = Temperatur, 2 Bytes
+    wert = (daten[0] << 1) | (daten[1] >> 7)            # 9-Bit-Wert, 0,5 Grad pro Schritt
+    if wert > 255:
+        wert = wert - 512                               # negative Temperaturen
+    print("Temperatur:", wert * 0.5, "°C")
+    sleep(1)
+`),
+    text: 'Der LM75 liefert die Temperatur als 9-Bit-Wert in zwei Bytes: Das obere Byte hat die Bits 8 bis 1, vom unteren Byte zählt nur das oberste Bit. Ein Schritt sind 0,5 Grad. Gib die Temperatur genau in der Form „Temperatur: 25.0 °C“ aus. Den Regler am Sensor stellst du ein.',
+    hint: 'wert = (daten[0] << 1) | (daten[1] >> 7) ergibt den 9-Bit-Wert. Mal 0.5 sind es Grad Celsius. Bei Werten über 255 ist die Temperatur negativ (minus 512).',
+    check() { const T = sch.parts.find(p => p.k === 'I2CTEMP'); if (!T) return [RES(false, 'Der Temperatursensor fehlt.')];
+      const a = piEval({ T: 1.2, pos: { [T.id]: 0.4 } }), b = piEval({ T: 1.2, pos: { [T.id]: 0.6 } }); if (a.err) return codeFail(a);
+      const val = r => { const m = r.out.trim().split('\n').pop().match(/^Temperatur: (-?\d+(?:\.?\d+)?) °C$/); return m ? +m[1] : null; }, x = val(a), y = val(b);
+      return [RES(x != null && y != null, x != null && y != null ? 'Die Ausgabe hat das richtige Format.' : 'Erwartet wird eine Zeile wie „Temperatur: 25.0 °C“. Erhalten: ' + JSON.stringify(a.out.slice(-34))), RES(x != null && Math.abs(x - 25) <= 0.6, x != null ? 'Bei 25 °C zeigt das Programm ' + x + ' °C.' : 'Kein Wert.'), RES(y != null && Math.abs(y - 50) <= 0.6, y != null ? 'Bei 50 °C zeigt das Programm ' + y + ' °C.' : 'Kein Wert.')]; } },
+  { id: 'p15', lab: 'pi', cat: 'I²C-Sensoren', title: 'Dunkelheits-LED über I²C', level: 3,
+    start: pct([['PI', 12, 0], ['I2CLUX', 2, 0, 0, '', { pos: 0.5 }], ['GND', 7, 8], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10]], [[12, 0, 7, 0], [12, 2, 7, 2], [12, 4, 7, 4], [7, 6, 7, 8], [20, 10, 22, 10]], `from smbus2 import SMBus
+from gpiozero import LED
+from time import sleep
+
+BH1750 = 0x23
+bus = SMBus(1)
+led = LED(18)
+
+bus.write_byte(BH1750, 0x10)      # Messung starten (dauernd, hohe Auflösung)
+sleep(0.2)
+
+while True:
+    daten = bus.read_i2c_block_data(BH1750, 0x10, 2)
+    lux = ((daten[0] << 8) | daten[1]) / 1.2     # Helligkeit in Lux
+    # Hier: LED an, wenn es dunkel ist (unter 100 Lux), sonst aus
+    sleep(0.5)
+`),
+    solMake: pct([['PI', 12, 0], ['I2CLUX', 2, 0, 0, '', { pos: 0.5 }], ['GND', 7, 8], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10]], [[12, 0, 7, 0], [12, 2, 7, 2], [12, 4, 7, 4], [7, 6, 7, 8], [20, 10, 22, 10]], `from smbus2 import SMBus
+from gpiozero import LED
+from time import sleep
+
+BH1750 = 0x23
+bus = SMBus(1)
+led = LED(18)
+
+bus.write_byte(BH1750, 0x10)      # Messung starten (dauernd, hohe Auflösung)
+sleep(0.2)
+
+while True:
+    daten = bus.read_i2c_block_data(BH1750, 0x10, 2)
+    lux = ((daten[0] << 8) | daten[1]) / 1.2
+    print("Licht:", round(lux), "lx")
+    if lux < 100:
+        led.on()
+    else:
+        led.off()
+    sleep(0.5)
+`),
+    text: 'Der Lichtsensor BH1750 liefert die Helligkeit in Lux. Die LED an GPIO18 soll leuchten, wenn es dunkel ist (unter 100 Lux), sonst aus sein. Die Helligkeit stellst du am Sensor ein.',
+    hint: 'Die Variable lux ist schon berechnet. if lux < 100: led.on() else: led.off().',
+    check() { const L = theLed(), S = sch.parts.find(p => p.k === 'I2CLUX'); if (!L || !S) return [RES(false, 'LED oder Lichtsensor fehlt.')];
+      const dark = piEval({ T: 1.2, pos: { [S.id]: 0.1 } }), bright = piEval({ T: 1.2, pos: { [S.id]: 0.9 } }); if (dark.err) return codeFail(dark);
+      const a = ledMA(sampleAt(dark, 1.1), L.id) > 2, b = ledMA(sampleAt(bright, 1.1), L.id) > 2;
+      return [RES(a, 'Dunkel: LED ist ' + (a ? 'an' : 'aus, soll aber an sein') + '.'), RES(!b, 'Hell: LED ist ' + (b ? 'an, soll aber aus sein' : 'aus') + '.')]; } },
+  { id: 'pf5', lab: 'pi', cat: 'Fehlersuche im Code', title: 'Der I²C-Sensor antwortet nicht', level: 3,
+    start: pct([['PI', 12, 0], ['I2CLUX', 2, 0, 0, '', { pos: 0.5 }], ['GND', 7, 8], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10]], [[12, 0, 7, 0], [12, 2, 7, 2], [7, 6, 7, 8], [20, 10, 22, 10]], `from smbus2 import SMBus
+from gpiozero import LED
+from time import sleep
+
+BH1750 = 0x23
+bus = SMBus(1)
+led = LED(18)
+
+bus.write_byte(BH1750, 0x10)      # Messung starten (dauernd, hohe Auflösung)
+sleep(0.2)
+
+while True:
+    daten = bus.read_i2c_block_data(BH1750, 0x10, 2)
+    lux = ((daten[0] << 8) | daten[1]) / 1.2
+    print("Licht:", round(lux), "lx")
+    if lux < 100:
+        led.on()
+    else:
+        led.off()
+    sleep(0.5)
+`),
+    solMake: pct([['PI', 12, 0], ['I2CLUX', 2, 0, 0, '', { pos: 0.5 }], ['GND', 7, 8], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10]], [[12, 0, 7, 0], [12, 2, 7, 2], [12, 4, 7, 4], [7, 6, 7, 8], [20, 10, 22, 10]], `from smbus2 import SMBus
+from gpiozero import LED
+from time import sleep
+
+BH1750 = 0x23
+bus = SMBus(1)
+led = LED(18)
+
+bus.write_byte(BH1750, 0x10)      # Messung starten (dauernd, hohe Auflösung)
+sleep(0.2)
+
+while True:
+    daten = bus.read_i2c_block_data(BH1750, 0x10, 2)
+    lux = ((daten[0] << 8) | daten[1]) / 1.2
+    print("Licht:", round(lux), "lx")
+    if lux < 100:
+        led.on()
+    else:
+        led.off()
+    sleep(0.5)
+`),
+    text: 'Das Programm ist richtig, aber die Konsole meldet „Remote I/O error“: Der Lichtsensor antwortet nicht. Lies die Meldung (der Tipp am Ende sagt, was fehlt) und ergänze die Verdrahtung.',
+    hint: 'I²C braucht vier Leitungen: 3,3 V, Masse, SDA (GPIO2, Pin 3) und SCL (GPIO3, Pin 5). Welche fehlt?',
+    check() { const R = piEval({ T: 1.2 }); if (R.err) return [RES(false, R.err)]; const ok = /Licht: \d+ lx/.test(R.out);
+      return [RES(true, 'Das Programm läuft ohne Fehlermeldung.'), RES(ok, ok ? 'Der Sensor liefert Messwerte.' : 'Es kommen keine Messwerte an.')]; } },
   { id: 'pf4', lab: 'pi', cat: 'Fehlersuche im Code', title: 'Der Wandler antwortet nicht', level: 3,
     start: pct(PC_MCP_POT, PW_MCP_POT_NOCS, 'from gpiozero import MCP3008\nfrom time import sleep\n\npoti = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\n\nwhile True:\n    print("Poti:", round(poti.value * 100), "%")\n    sleep(0.5)\n'),
     solMake: pct(PC_MCP_POT, PW_MCP_POT, 'from gpiozero import MCP3008\nfrom time import sleep\n\npoti = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\n\nwhile True:\n    print("Poti:", round(poti.value * 100), "%")\n    sleep(0.5)\n'),
@@ -2208,6 +2382,18 @@ const SIM_TASKS = [
     start: () => { const d = exOf('Zwei Lampen getrennt schaltbar')(); d.parts[2][5] = { l: 'S1', sw: 1 }; d.parts[4][5] = { l: 'S2', sw: 1, defect: 'open' }; return d; },
     text: 'Beide Schalter sind eingeschaltet, aber nur eine der beiden Lampen leuchtet. Finde das defekte Bauteil mit Spannungsmessung.',
     hint: 'Miss die Spannung vor und hinter dem Schalter der dunklen Lampe. Wo die Spannung verschwindet, liegt der Fehler.' },
+  { id: 'pe1', cat: 'Hausinstallation', title: 'Schutzleiter nachrüsten (Lampen)', level: 2, sol: 'Zwei Lampen getrennt schaltbar',
+    start: () => (EXAMPLES.find(e => e.name === 'Zwei Lampen getrennt schaltbar').raw)(),
+    solMake: () => exOf('Zwei Lampen getrennt schaltbar')(),
+    text: 'Die beiden Lampen funktionieren, aber bei der Abnahme fällt auf: Die Gehäuse sind nicht geerdet. Rüste den Schutzleiter (PE, grün-gelb) vom Netz zu beiden Lampen nach. Tipp: Tippe eine Lampe an und schalte „Körperschluss“ ein. Ohne PE gibt es einen lebensgefährlichen Schlag.',
+    hint: 'Der PE-Anschluss der Lampe ist der kurze Anschluss unten am Gehäuse (grüner Punkt). Zieh eine grün-gelbe Ader vom PE des Netzes dorthin, am besten unterhalb der Schaltung entlang.',
+    check() { const L = chkPE(); return L.length ? L : [RES(false, 'Es fehlt ein Netz oder ein Gerät.')]; } },
+  { id: 'pe2', cat: 'Drehstrom', title: 'Schutzleiter nachrüsten (Motor)', level: 3, sol: 'Drehstrommotor mit Schütz (Tippbetrieb)',
+    start: () => (EXAMPLES.find(e => e.name === 'Drehstrommotor mit Schütz (Tippbetrieb)').raw)(),
+    solMake: () => exOf('Drehstrommotor mit Schütz (Tippbetrieb)')(),
+    text: 'Der Drehstrommotor läuft über das Schütz, aber sein Gehäuse ist nicht geerdet. Verbinde den PE-Anschluss des Motors mit dem PE des Drehstromnetzes (grün-gelb).',
+    hint: 'Der PE-Anschluss sitzt rechts neben dem Motor (grüner Punkt). Das Netz hat fünf Anschlüsse: L1, L2, L3, N und PE.',
+    check() { const L = chkPE(); return L.length ? L : [RES(false, 'Es fehlt ein Netz oder ein Gerät.')]; } },
 ];
 TASKS.push(...SIM_TASKS, ...SCH_TASKS, ...CODE_TASKS, ...PI_TASKS);
 
@@ -2360,6 +2546,8 @@ function llSpec(p) {
     case 'MCP3008': return { ll: { k: 'IC', n: 16, v: 'MCP3008', sk: true }, pm: [15, 14, 13, 8, 12, 11, 10, 9, 0, 1, 2, 3, 4, 5, 6, 7] };
     case 'SERVO': return { ll: { k: 'SIP', n: 3, v: 'Servo' }, pm: [2, 1, 0] };          // Stecker: Masse, Plus, Signal
     case 'HCSR04': return { ll: { k: 'SIP', n: 4, v: 'HC-SR04' }, pm: [0, 1, 2, 3] };
+    case 'I2CTEMP': return { ll: { k: 'SIP', n: 4, v: 'LM75 I2C' }, pm: [0, 1, 2, 3] };
+    case 'I2CLUX': return { ll: { k: 'SIP', n: 4, v: 'BH1750 I2C' }, pm: [0, 1, 2, 3] };
     case 'LCDI2C': return { ll: { k: 'SIP', n: 4, v: 'LCD I2C' }, pm: [0, 1, 2, 3] };
     case 'PIR': return { ll: { k: 'SIP', n: 3, v: 'PIR' }, pm: [0, 1, 2] };
     case 'TMP36': return { ll: { k: 'SIP', n: 3, v: 'TMP36' }, pm: [0, 1, 2] };
@@ -2497,7 +2685,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v70</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v74</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -3044,7 +3232,7 @@ void loop() {
       wires: [[18, 4, 18, 0, 10, 0, 6, 0], [18, 8, 18, 12, 14, 12, 12, 12, 10, 12, 6, 12, 2, 12], [2, 10, 2, 12], [6, 10, 6, 12], [6, 4, 6, 6, 8, 6], [10, 8, 12, 8], [14, 8, 14, 12]], scopes: [0, 8], tempo: 0.62, win: 0.004 }) },
 ];
 if (window.MORE_EX) EXAMPLES.push(...window.MORE_EX);
-if (LAB === 'sim' && window.addPE) EXAMPLES.forEach(e => { if (!e.noPE && (e.lab === 'sim' || e.cat === 'Bauteile')) { const mk = e.make; e.make = () => window.addPE(mk()); } });
+if (LAB === 'sim' && window.addPE) EXAMPLES.forEach(e => { if (!e.noPE && (e.lab === 'sim' || e.cat === 'Bauteile')) { const mk = e.make; e.raw = mk; e.make = () => window.addPE(mk()); } });
 
 /* ============ Drucken ============ */
 const userName = () => { try { return localStorage.getItem('lm4.name') || ''; } catch (e) { return ''; } };

@@ -121,8 +121,8 @@ function parse(toks) {
           if (isKw('else')) { p++; orelse = parseBlock(); } if (isKw('finally')) { p++; fin = parseBlock(); }
           if (!handlers.length && !fin) err('SyntaxError: „except“ oder „finally“ erwartet');
           return [{ t: 'Try', body, handlers, orelse, fin, line }]; }
-        case 'class': err('Klassen (class) werden im Pi-Lab noch nicht unterstützt. Nutze Funktionen (def).'); break;
-        case 'with': err('„with“ wird im Pi-Lab noch nicht unterstützt.'); break;
+        case 'class': { p++; const name = needName(); let base = null; if (eatOp('(')) { if (!isOp(')')) base = parseExpr(); needOp(')'); } const body = parseBlock(); return [{ t: 'Class', name, base, body, line }]; }
+        case 'with': { p++; const items = []; for (;;) { const ex = parseExpr(); let nm = null; if (eatKw('as')) nm = needName(); items.push({ ex, nm }); if (!eatOp(',')) break; } let wb = parseBlock(); for (let i = items.length - 1; i >= 0; i--) wb = [{ t: 'With', ex: items[i].ex, nm: items[i].nm, body: wb, line }]; return wb; }
       }
     }
     if (isOp('@')) err('Dekoratoren (@) werden im Pi-Lab nicht unterstützt.');
@@ -260,6 +260,7 @@ function str(x) {
   if (x instanceof Range) return 'range(' + x.a + ', ' + x.b + (x.c !== 1 ? ', ' + x.c : '') + ')';
   if (x && x.kind === 'func') return '<function ' + x.name + '>';
   if (typeof x === 'function') return '<built-in function ' + (x.pyname || 'fn') + '>';
+  if (x && x.kind === 'inst') return '<__main__.' + x.cls.name + ' object>'; if (x && x.kind === 'class') return "<class '__main__." + x.name + "'>";
   if (x && x.dev) return '<' + x.dev + ' object>';
   return String(x);
 }
@@ -378,7 +379,15 @@ function createRunner(prog, io) {
       update: o => { (o instanceof Map ? [...o] : []).forEach(([k, v]) => d.set(k, v)); return null; }, pop: (k, dv) => { const kk = key(k); if (d.has(kk)) { const v = d.get(kk); d.delete(kk); return v; } if (dv !== undefined) return dv; throwE('KeyError', repr(k)); }, clear: () => { d.clear(); return null; }, copy: () => new Map(d) }[name];
     return f && bi('dict.' + name, args => f(...args));
   }
+  const findAttr = (cls, name) => { for (let c = cls; c; c = c.base) if (c.attrs.has(name)) return c.attrs.get(name); return undefined; };
+  const bindTo = (v, inst) => (v && v.kind === 'func' ? Object.assign({}, v, { bound: inst }) : v);
   function getAttr(o, name, node) {
+    if (o && (o.kind === 'inst' || o.kind === 'class' || o.kind === 'super')) {
+      if (o.kind === 'inst' && o.attrs.has(name)) return o.attrs.get(name);
+      const v = findAttr(o.kind === 'inst' ? o.cls : o.kind === 'class' ? o : o.cls, name);
+      if (v !== undefined) return o.kind === 'class' ? v : bindTo(v, o.inst || o);
+      throwE('AttributeError', o.kind === 'class' ? "type object '" + o.name + "' has no attribute '" + name + "'" : "'" + (o.cls ? o.cls.name : 'super') + "' object has no attribute '" + name + "'", node);
+    }
     if (typeof o === 'string') { const m = strMethod(o, name, node); if (m) return m; }
     else if (Array.isArray(o)) { const m = listMethod(o, name, node); if (m) return m; }
     else if (o instanceof Map) { const m = dictMethod(o, name); if (m) return m; }
@@ -397,14 +406,21 @@ function createRunner(prog, io) {
       case 'Name': store(env, target.id, v); break;
       case 'Tuple': case 'List': { const items = toList(v, target); if (items.length !== target.el.length) throwE(items.length < target.el.length ? 'ValueError' : 'ValueError', items.length < target.el.length ? 'not enough values to unpack (expected ' + target.el.length + ', got ' + items.length + ')' : 'too many values to unpack (expected ' + target.el.length + ')', target); for (let i = 0; i < items.length; i++) yield* assign(target.el[i], items[i], env); break; }
       case 'Sub': { const o = yield* ev(target.o, env), i = yield* ev(target.idx, env); if (Array.isArray(o)) o[idx(i, o.length, target)] = v; else if (o instanceof Map) o.set(key(i), v); else throwE('TypeError', 'object does not support item assignment', target); break; }
-      case 'Attr': { const o = yield* ev(target.o, env); if (o && o.dev) devSet(o, target.name, v, target); else throwE('AttributeError', "Attribute '" + target.name + "' kann nicht gesetzt werden", target); break; }
+      case 'Attr': { const o = yield* ev(target.o, env); if (o && (o.kind === 'inst' || o.kind === 'class')) o.attrs.set(target.name, v); else if (o && o.dev) devSet(o, target.name, v, target); else throwE('AttributeError', "Attribute '" + target.name + "' kann nicht gesetzt werden", target); break; }
       default: throwE('SyntaxError', 'Zuweisung nicht möglich', target);
     }
   }
   function* callFn(f, args, kw, node) {
     if (typeof f === 'function') { const r = f(args, kw || {}, node); if (f.gen) return yield* r; return r; }
+    if (f && f.kind === 'class') {
+      const inst = { kind: 'inst', cls: f, attrs: new Map() }, init = findAttr(f, '__init__');
+      if (init) yield* callFn(bindTo(init, inst), args, kw, node); else if (args.length) throwE('TypeError', f.name + '() takes no arguments', node);
+      return inst;
+    }
     if (f && f.kind === 'func') {
+      if (f.bound !== undefined) args = [f.bound, ...args];
       const env = new Env(f.closure, true); let ai = 0; const ps = f.params;
+      if (f.owner) { env.vars.set('__cls__', f.owner); env.vars.set('__self__', f.bound); }
       for (const p of ps) {
         if (p.star === 'args') { env.vars.set(p.name, Object.assign(args.slice(ai), { _t: true })); ai = args.length; continue; }
         if (p.star === 'kw') { env.vars.set(p.name, new Map(Object.entries(kw || {}))); continue; }
@@ -441,6 +457,7 @@ function createRunner(prog, io) {
         const i = yield* ev(n.idx, env); if (typeof o === 'string') return o[idx(i, o.length, n)]; if (Array.isArray(o)) return o[idx(i, o.length, n)]; if (o instanceof Map) { const k = key(i); if (!o.has(k)) throwE('KeyError', repr(i), n); return o.get(k); } if (o instanceof Range) return toList(o)[idx(i, toList(o).length, n)]; if (o && o.dev === 'LEDBoard') return o.leds[idx(i, o.leds.length, n)]; throwE('TypeError', 'object is not subscriptable', n); break; }
       case 'ListComp': { const items = toList(yield* ev(n.iter, env), n), r = []; const e2 = new Env(env, false); for (const it of items) { yield* assign(n.target, it, e2); if (n.cond && !truthy(yield* ev(n.cond, e2))) continue; r.push(yield* ev(n.elt, e2)); } return r; }
       case 'Call': {
+        if (n.f.t === 'Name' && n.f.id === 'super' && !n.args.length) { const oc = lookup(env, '__cls__', n), inst = lookup(env, '__self__', n); if (!oc.base) throwE('TypeError', 'super(): Die Klasse ' + oc.name + ' hat keine Oberklasse', n); return { kind: 'super', cls: oc.base, inst }; }
         const f = yield* ev(n.f, env), args = []; for (const a of n.args) { if (a.t === 'Star') args.push(...toList(yield* ev(a.e, env), n)); else args.push(yield* ev(a, env)); }
         const kw = {}; for (const [k, v] of n.kw) kw[k] = yield* ev(v, env);
         if (++ops >= BUDGET) { ops = 0; yield { tick: true }; }
@@ -467,6 +484,19 @@ function createRunner(prog, io) {
         if (it instanceof Range && it.c !== 0) { for (let i = it.a; it.c > 0 ? i < it.b : i > it.b; i += it.c) { yield* assign(s.target, i, env); const sig = yield* execBlock(s.body, env); if (sig) { if (sig.brk) { broke = true; break; } if (sig.cont) continue; return sig; } } }
         else for (const x of toList(it, s)) { yield* assign(s.target, x, env); const sig = yield* execBlock(s.body, env); if (sig) { if (sig.brk) { broke = true; break; } if (sig.cont) continue; return sig; } }
         if (!broke && s.orelse) return yield* execBlock(s.orelse, env); return; }
+      case 'With': {
+        const cm = yield* ev(s.ex, env); let wv = cm;
+        const enter = cm && cm.kind === 'inst' ? findAttr(cm.cls, '__enter__') : undefined, exit = cm && cm.kind === 'inst' ? findAttr(cm.cls, '__exit__') : undefined;
+        if (enter) wv = yield* callFn(bindTo(enter, cm), [], {}, s);
+        if (s.nm) store(env, s.nm, wv);
+        try { return yield* execBlock(s.body, env); } finally { if (exit) yield* callFn(bindTo(exit, cm), [null, null, null], {}, s); } }
+      case 'Class': {
+        const base = s.base ? yield* ev(s.base, env) : null;
+        if (base && base.kind !== 'class') throwE('TypeError', 'Im Pi-Lab kann eine Klasse nur von einer eigenen Klasse erben, nicht von Bauteilklassen wie LED', s);
+        const cenv = new Env(env, false); yield* execBlock(s.body, cenv);
+        const cls = { kind: 'class', name: s.name, base, attrs: cenv.vars };
+        cenv.vars.forEach(v => { if (v && v.kind === 'func') { v.closure = env; v.owner = cls; } });
+        store(env, s.name, cls); return; }
       case 'Def': { const f = { kind: 'func', name: s.name, params: s.params.map(p => Object.assign({}, p)), body: s.body, closure: env }; for (const p of f.params) if (p.def) p.defv = yield* ev(p.def, env); store(env, s.name, f); return; }
       case 'Try': {
         let sig;
@@ -509,11 +539,11 @@ function createRunner(prog, io) {
     zip: bi('zip', a => { const L = a.map(x => toList(x)), n = Math.min(...L.map(l => l.length)), r = []; for (let i = 0; i < n; i++) r.push(Object.assign(L.map(l => l[i]), { _t: true })); return r; }),
     any: bi('any', a => toList(a[0]).some(truthy)), all: bi('all', a => toList(a[0]).every(truthy)),
     chr: bi('chr', a => String.fromCharCode(nv(a[0]))), ord: bi('ord', a => a[0].charCodeAt(0)), divmod: bi('divmod', a => Object.assign([arith('//', a[0], a[1]), arith('%', a[0], a[1])], { _t: true })),
-    pow: bi('pow', a => arith('**', a[0], a[1])), isinstance: bi('isinstance', a => { const t = a[1]; const chk = tt => (tt === B.int ? isInt(a[0]) && typeof a[0] !== 'boolean' : tt === B.float ? a[0] instanceof F : tt === B.str ? typeof a[0] === 'string' : tt === B.list ? Array.isArray(a[0]) && !a[0]._t : tt === B.bool ? typeof a[0] === 'boolean' : false); return Array.isArray(t) ? t.some(chk) : chk(t); }),
+    pow: bi('pow', a => arith('**', a[0], a[1])), isinstance: bi('isinstance', a => { const t = a[1]; const chk = tt => (tt && tt.kind === 'class' ? !!(a[0] && a[0].kind === 'inst' && (() => { for (let c = a[0].cls; c; c = c.base) if (c === tt) return true; return false; })()) : tt === B.int ? isInt(a[0]) && typeof a[0] !== 'boolean' : tt === B.float ? a[0] instanceof F : tt === B.str ? typeof a[0] === 'string' : tt === B.list ? Array.isArray(a[0]) && !a[0]._t : tt === B.bool ? typeof a[0] === 'boolean' : false); return Array.isArray(t) ? t.some(chk) : chk(t); }),
     type: bi('type', a => (a[0] instanceof F ? 'float' : typeof a[0] === 'number' ? 'int' : typeof a[0] === 'string' ? 'str' : typeof a[0] === 'boolean' ? 'bool' : Array.isArray(a[0]) ? (a[0]._t ? 'tuple' : 'list') : a[0] instanceof Map ? 'dict' : 'object')),
     input: bi('input', () => throwE('RuntimeError', 'input() gibt es im Pi-Lab nicht. Nutze feste Werte im Programm.')),
     exit: bi('exit', () => { throw { exit: true }; }),
-    Exception: { exc: 'Exception' }, ValueError: { exc: 'ValueError' }, ZeroDivisionError: { exc: 'ZeroDivisionError' }, TypeError: { exc: 'TypeError' }, NameError: { exc: 'NameError' }, IndexError: { exc: 'IndexError' }, KeyError: { exc: 'KeyError' }, KeyboardInterrupt: { exc: 'KeyboardInterrupt' }, RuntimeError: { exc: 'RuntimeError' },
+    OSError: { exc: 'OSError' }, IOError: { exc: 'OSError' }, FileNotFoundError: { exc: 'FileNotFoundError' }, Exception: { exc: 'Exception' }, ValueError: { exc: 'ValueError' }, ZeroDivisionError: { exc: 'ZeroDivisionError' }, TypeError: { exc: 'TypeError' }, NameError: { exc: 'NameError' }, IndexError: { exc: 'IndexError' }, KeyError: { exc: 'KeyError' }, KeyboardInterrupt: { exc: 'KeyboardInterrupt' }, RuntimeError: { exc: 'RuntimeError' },
   };
   B.quit = B.exit; B.True = true;
   const mkMod = (name, mod) => ({ name, mod });
@@ -527,6 +557,7 @@ function createRunner(prog, io) {
     sys: mkMod('sys', { exit: B.exit }),
   };
   MODULES.gpiozero = mkMod('gpiozero', {});
+  MODULES.smbus2 = mkMod('smbus2', {}); MODULES.smbus = mkMod('smbus', {});
   MODULES.RPi = mkMod('RPi', { GPIO: null });
 
   /* ----- Geräte (gpiozero) ----- */
@@ -548,6 +579,7 @@ function createRunner(prog, io) {
         case 'DistanceSensor': { const e = pinCheck(g(0, 'echo'), node), t = pinCheck(g(1, 'trigger'), node); claim(e, 'DistanceSensor', node); claim(t, 'DistanceSensor', node); io.setMode(e, 'in'); io.setMode(t, 'out'); io.write(t, 0, curTask.vt); const mx = g(2, 'max_distance', 1); return mkDev('DistanceSensor', { echo: e, trig: t, max: nv(mx) }); }
         case 'Servo': { const p = pinCheck(g(0, 'pin'), node); claim(p, 'Servo', node); io.setMode(p, 'out'); const d = mkDev('Servo', { pin: p, val: 0, angMode: false }); io.servo(p, 90); return d; }
         case 'AngularServo': { const p = pinCheck(g(0, 'pin'), node); claim(p, 'AngularServo', node); io.setMode(p, 'out'); const mn = nv(g(1, 'min_angle', -90)), mx = nv(g(2, 'max_angle', 90)), ia = Math.max(mn, Math.min(mx, nv(g(3, 'initial_angle', 0)))); const d = mkDev('Servo', { pin: p, val: (ia - mn) / (mx - mn) * 2 - 1, angMode: true, mn, mx, angle: ia }); io.servo(p, (ia - mn) / (mx - mn) * 180); return d; }
+        case 'SMBus': { const bn = nv(g(0, 'bus', 1)); if (bn !== 1) throwE('FileNotFoundError', "[Errno 2] No such file or directory: '/dev/i2c-" + bn + "' (beim Raspberry Pi liegen GPIO2 und GPIO3 am Bus 1: SMBus(1))", node); return mkDev('SMBus', {}); }
         case 'TonalBuzzer': { const p = pinCheck(g(0, 'pin'), node); claim(p, 'TonalBuzzer', node); io.setMode(p, 'out'); io.write(p, 0, curTask.vt); return mkDev('TonalBuzzer', { pin: p, on: 0, freq: null }); }
         case 'MCP3008': {
           const ch = nv(g(0, 'channel', 0)); if (!Number.isInteger(ch) || ch < 0 || ch > 7) throwE('SPIBadChannel', 'channel muss eine Zahl von 0 bis 7 sein (der MCP3008 hat 8 Kanäle)', node);
@@ -563,6 +595,7 @@ function createRunner(prog, io) {
     });
   }
   const spiClaimed = new Set();
+  MODULES.smbus2.mod.SMBus = MODULES.smbus.mod.SMBus = ctor('SMBus');
   ['LED', 'PWMLED', 'Buzzer', 'Button', 'MotionSensor', 'DistanceSensor', 'Servo', 'AngularServo', 'LEDBoard', 'TrafficLights', 'MCP3008', 'TonalBuzzer'].forEach(nm => { MODULES.gpiozero.mod[nm] = ctor(nm); });
   const setOut = (d, v) => { d.on = v ? 1 : 0; io.write(d.pin, d.on, curTask.vt); if (d.dev === 'Buzzer' && io.tone) io.tone(d.pin, d.on ? 2300 : null); };
   const noteFreq = (v, node) => {                            // Zahl (Hz) oder Notenname wie 'A4', 'C#5', 'Bb3'
@@ -578,6 +611,19 @@ function createRunner(prog, io) {
         case 'on': return f(() => { d.blink = null; setOut(d, 1); return null; }); case 'off': return f(() => { d.blink = null; setOut(d, 0); return null; }); case 'toggle': return f(() => { d.blink = null; setOut(d, d.on ? 0 : 1); return null; });
         case 'blink': case 'beep': return f((a, kw) => { startBlink(d, nv(a[0] !== undefined ? a[0] : (kw.on_time !== undefined ? kw.on_time : 1)), nv(a[1] !== undefined ? a[1] : (kw.off_time !== undefined ? kw.off_time : 1)), kw.n !== undefined ? nv(kw.n) : null, node); return null; });
         case 'is_lit': case 'is_active': case 'value': return d.on ? (name === 'value' ? 1 : true) : (name === 'value' ? 0 : false); case 'pin': return d.pin; } break;
+      case 'SMBus': {
+        const X = (addr, wr, n) => { const r = io.i2c ? io.i2c(nv(addr), wr, n) : { err: '[Errno 121] Remote I/O error' }; if (r.err) throwE('OSError', r.err, node); return r.data; };
+        const by = v => nv(v) & 255;
+        switch (name) {
+          case 'read_byte': return f(a => X(a[0], [], 1)[0]);
+          case 'read_byte_data': return f(a => X(a[0], [by(a[1])], 1)[0]);
+          case 'read_word_data': return f(a => { const b = X(a[0], [by(a[1])], 2); return b[0] | (b[1] << 8); });
+          case 'read_i2c_block_data': return f(a => X(a[0], [by(a[1])], nv(a[2])).slice());
+          case 'write_byte': return f(a => { X(a[0], [by(a[1])], 0); return null; });
+          case 'write_byte_data': return f(a => { X(a[0], [by(a[1]), by(a[2])], 0); return null; });
+          case 'write_i2c_block_data': return f(a => { X(a[0], [by(a[1])].concat(toList(a[2], node).map(by)), 0); return null; });
+          case 'close': return f(() => null);
+        } break; }
       case 'TonalBuzzer': switch (name) {
         case 'play': return f(a => { const fr = noteFreq(a[0], node); d.freq = fr; d.on = 1; io.write(d.pin, 1, curTask.vt); if (io.tone) io.tone(d.pin, fr); return null; });
         case 'stop': return f(() => { d.freq = null; d.on = 0; io.write(d.pin, 0, curTask.vt); if (io.tone) io.tone(d.pin, null); return null; });

@@ -243,6 +243,7 @@ function buildCircuit(layout) {
         };
         break; }
       case 'MCP3008': { const nd = []; for (let i = 0; i < 16; i++) nd.push(n(i)); add({ type: 'ADC', nd, part: p }); break; }
+      case 'I2CTEMP': case 'I2CLUX': { add({ type: 'I2C', dev: k, nd: [n(0), n(1), n(2), n(3)], part: p, st: { ptr: 0, mode: null } }); break; }
       case 'RGBLED': {
         const ck = ['rot', 'grün', 'blau'];
         ['r', 'g', 'b'].forEach((sub, i) => { const vf = LEDVF[ck[i]], is = 0.01 * Math.exp(-vf / (2 * VT)); add({ type: 'D', a: n(i), b: n(3), is, nn: 2, led: true, color: ck[i], imax: 0.03, part: p, vj: 0, sub }); });
@@ -431,6 +432,7 @@ function buildCircuit(layout) {
     if (e.type === 'SENS' && e.dev === 'HCSR04') { const tp = mcuPinOf(e.a), ep = viaR(e.c); e.mcuTrig = tp >= 0 ? { mcu: mcuEl.mcu, pin: tp } : null; e.echoPin = ep; }
     if (e.type === 'SERVOD') e.pin = mcuPinOf(e.sig);
     if (e.type === 'ADC') e.spi = { clk: mcuPinOf(e.nd[4]), miso: mcuPinOf(e.nd[5]), mosi: mcuPinOf(e.nd[6]), cs: mcuPinOf(e.nd[7]) };
+    if (e.type === 'I2C') e.bus = { sda: mcuPinOf(e.nd[1]), scl: mcuPinOf(e.nd[2]) };
     if (e.type === 'LCDD') e.ok = mcuPinOf(e.sda) === 18 && mcuPinOf(e.scl) === 19;
   });
   // Weitere Spannungsquellen ohne Masse-Bezug (zum Beispiel ein zweiter Stromkreis, der Last von der Steuerung trennt):
@@ -578,6 +580,7 @@ function createSim(circ) {
             }
             break; }
           case 'ADC': { stampG(e.nd[0], e.nd[3], 1 / 6000); for (let i = 8; i < 16; i++) stampG(e.nd[i], e.nd[2], 1e-8); for (let i = 1; i < 8; i++) stampG(e.nd[i], 0, 1e-9); break; }
+          case 'I2C': { stampG(e.nd[0], e.nd[3], 1 / 8000); stampG(e.nd[1], 0, 1e-9); stampG(e.nd[2], 0, 1e-9); break; }
           case 'PZ': { const pz = e.part.pos || 0, vo = pz * 5, gg = 1 / 2000; stampG(e.a, e.g, gg); inj(e.a, vo * gg); inj(e.g, -vo * gg); e.vo = vo; break; }
           case 'TCH': stampG(e.a, 0, 1e-9); break;
           case 'SENS': {
@@ -649,6 +652,7 @@ function createSim(circ) {
             [0, 16].forEach(i => { const ii = (3.3 - v[e.nd[i]]); t2[i] = -ii; sum += -ii; }); [1, 3].forEach(i => { const ii = (5 - v[e.nd[i]]); t2[i] = -ii; sum += -ii; }); t2[5] = -sum; e.tI = t2; e.i = 0; }
           break; }
         case 'ADC': { const i = (v[e.nd[0]] - v[e.nd[3]]) / 6000, t2 = new Array(16).fill(0); t2[0] = i; t2[3] = -i; e.tI = t2; e.i = i; break; }
+        case 'I2C': { const i = (v[e.nd[0]] - v[e.nd[3]]) / 8000; e.tI = [i, 0, 0, -i]; e.i = i; break; }
         case 'PZ': { const i = (e.vo - (v[e.a] - v[e.g])) / 2000; e.tI = [-i, i]; e.i = i; break; }
         case 'TCH': e.tI = [0]; e.i = 0; break;
         case 'SENS': {
@@ -732,6 +736,32 @@ function createSim(circ) {
   return sim;
 }
 
-const api = { si, sane, PRESETS, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS };
+
+/* I2C-Bus (Pi): Geräte-Modelle LM75 (Temperatur, 0x48) und BH1750 (Licht, 0x23). wr = zu schreibende Bytes, nrd = zu lesende Bytes. */
+const I2C_ADDR = { I2CTEMP: 0x48, I2CLUX: 0x23 }, I2C_NAME = { I2CTEMP: 'LM75', I2CLUX: 'BH1750' };
+function i2cXfer(circ, sim, addr, wr, nrd) {
+  const hex = a => '0x' + a.toString(16).padStart(2, '0');
+  const nack = hint => ({ err: '[Errno 121] Remote I/O error (das Gerät mit der Adresse ' + hex(addr) + ' antwortet nicht). Tipp: ' + hint });
+  const devs = circ.elems.filter(x => x.type === 'I2C');
+  if (!devs.length) return nack('Im Schaltplan ist kein I2C-Gerät.');
+  const e = devs.find(x => I2C_ADDR[x.dev] === addr);
+  if (!e) return nack('Die I2C-Geräte im Plan haben die Adresse ' + devs.map(x => hex(I2C_ADDR[x.dev])).join(' und ') + '.');
+  const v = i => sim.v[e.nd[i]], nm = I2C_NAME[e.dev], b = e.bus || {};
+  if (!(v(0) - v(3) > 2.4)) return nack(nm + ' ohne Versorgung: VCC an 3,3 V und GND an Masse anschließen.');
+  if (b.sda !== 2) return nack(nm + ': SDA ' + (b.sda >= 0 ? 'liegt an GPIO' + b.sda : 'ist mit keinem GPIO verbunden') + ', erwartet wird GPIO2 (Pin 3).');
+  if (b.scl !== 3) return nack(nm + ': SCL ' + (b.scl >= 0 ? 'liegt an GPIO' + b.scl : 'ist mit keinem GPIO verbunden') + ', erwartet wird GPIO3 (Pin 5).');
+  const st = e.st, pos = e.part.pos == null ? 0.5 : e.part.pos, out = [];
+  if (e.dev === 'I2CTEMP') {
+    if (wr.length) st.ptr = wr[0] & 3;
+    const t = Math.round((-25 + 125 * pos) * 2) / 2, raw = Math.round(t * 2) & 0x1ff, reg = [[(raw >> 1) & 0xff, (raw & 1) << 7], [0], [75, 0], [80, 0]][st.ptr];
+    for (let i = 0; i < nrd; i++) out.push(reg[i % reg.length]);
+  } else {
+    if (wr.length) { const c0 = wr[0]; if ([0x10, 0x11, 0x13, 0x20, 0x21, 0x23].includes(c0)) st.mode = c0; else if (c0 === 0x00) st.mode = null; }
+    const lux = Math.round(pos * pos * 2000), raw = st.mode == null ? 0 : Math.min(65535, Math.round(lux * 1.2));
+    for (let i = 0; i < nrd; i++) out.push(i % 2 === 0 ? raw >> 8 : raw & 255);
+  }
+  return { data: out };
+}
+const api = { si, sane, PRESETS, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS, i2cXfer };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LochSim = api;
 })(typeof window !== 'undefined' ? window : globalThis);

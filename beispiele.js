@@ -461,6 +461,86 @@ while True:
         nr += 1
     sleep(2)
 ` }) },
+    { lab: 'pi', cat: 'Grundlagen', name: 'Eigene Klasse: zwei Blinker', info: 'Zeigt eine eigene Klasse (Bauplan): Blinker legt eine LED an und kann blinken. Zwei Objekte (rot und gelb) blinken mit unterschiedlichem Takt.',
+      make: () => ({ parts: [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16]], wires: [[20, 10, 22, 10], [20, 16, 22, 16]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import LED
+from signal import pause
+
+class Blinker:
+    def __init__(self, pin):
+        self.led = LED(pin)
+
+    def start(self, takt):
+        self.led.blink(on_time=takt, off_time=takt)
+
+# Mit Vererbung ginge auch: class Schnell(Blinker) und super().__init__(pin)
+rot = Blinker(18)
+gelb = Blinker(24)
+rot.start(0.5)
+gelb.start(0.2)
+pause()
+` }) },
+    { lab: 'pi', cat: 'I²C-Sensoren', name: 'Temperatur über I²C (LM75)', info: 'Der Temperatursensor LM75 hängt am I²C-Bus (SDA an GPIO2, SCL an GPIO3, Adresse 0x48). Das Programm liest zwei Bytes und rechnet sie in Grad Celsius um. Den Regler am Sensor ziehen. Der Pi hat die Pull-up-Widerstände für den Bus schon eingebaut.',
+      make: () => ({ parts: [['PI', 12, 0], ['I2CTEMP', 2, 0, 0, '', { pos: 0.4 }], ['GND', 7, 8]], wires: [[12, 0, 7, 0], [12, 2, 7, 2], [12, 4, 7, 4], [7, 6, 7, 8]], scopes: [], tempo: 0.75,
+      code: String.raw`from smbus2 import SMBus
+from time import sleep
+
+ADRESSE = 0x48            # I2C-Adresse des LM75
+bus = SMBus(1)            # Bus 1 = GPIO2 (SDA) und GPIO3 (SCL)
+
+while True:
+    daten = bus.read_i2c_block_data(ADRESSE, 0, 2)    # Register 0 = Temperatur, 2 Bytes
+    wert = (daten[0] << 1) | (daten[1] >> 7)            # 9-Bit-Wert, 0,5 Grad pro Schritt
+    if wert > 255:
+        wert = wert - 512                               # negative Temperaturen
+    print("Temperatur:", wert * 0.5, "°C")
+    sleep(1)
+` }) },
+    { lab: 'pi', cat: 'I²C-Sensoren', name: 'Lichtsensor BH1750 (I²C) mit LED', info: 'Der Lichtsensor BH1750 (Adresse 0x23) misst die Helligkeit in Lux. Wird es dunkel (unter 100 lx), geht die LED an GPIO18 an. Regler am Sensor ziehen.',
+      make: () => ({ parts: [['PI', 12, 0], ['I2CLUX', 2, 0, 0, '', { pos: 0.5 }], ['GND', 7, 8], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10]], wires: [[12, 0, 7, 0], [12, 2, 7, 2], [12, 4, 7, 4], [7, 6, 7, 8], [20, 10, 22, 10]], scopes: [], tempo: 0.75,
+      code: String.raw`from smbus2 import SMBus
+from gpiozero import LED
+from time import sleep
+
+BH1750 = 0x23
+bus = SMBus(1)
+led = LED(18)
+
+bus.write_byte(BH1750, 0x10)      # Messung starten (dauernd, hohe Auflösung)
+sleep(0.2)
+
+while True:
+    daten = bus.read_i2c_block_data(BH1750, 0x10, 2)
+    lux = ((daten[0] << 8) | daten[1]) / 1.2
+    print("Licht:", round(lux), "lx")
+    if lux < 100:
+        led.on()
+    else:
+        led.off()
+    sleep(0.5)
+` }) },
+    { lab: 'pi', cat: 'I²C-Sensoren', name: 'Zwei Sensoren am selben I²C-Bus', info: 'Temperatursensor (Adresse 0x48) und Lichtsensor (Adresse 0x23) teilen sich dieselben zwei Leitungen SDA und SCL. Jedes Gerät hat eine eigene Adresse, so weiß der Pi, wen er anspricht.',
+      make: () => ({ parts: [['PI', 12, 0], ['I2CTEMP', 2, 0, 0, '', { pos: 0.4 }], ['GND', 7, 8], ['I2CLUX', 2, 12, 0, '', { pos: 0.5 }], ['GND', 7, 20]], wires: [[12, 0, 7, 0], [12, 2, 7, 2], [12, 4, 7, 4], [7, 6, 7, 8], [12, 0, 10, 0, 10, 12, 7, 12], [12, 2, 9, 2, 9, 14, 7, 14], [12, 4, 8, 4, 8, 16, 7, 16], [7, 18, 7, 20]], scopes: [], tempo: 0.75,
+      code: String.raw`from smbus2 import SMBus
+from time import sleep
+
+LM75 = 0x48
+BH1750 = 0x23
+bus = SMBus(1)
+
+bus.write_byte(BH1750, 0x10)
+sleep(0.2)
+
+while True:
+    t = bus.read_i2c_block_data(LM75, 0, 2)
+    wert = (t[0] << 1) | (t[1] >> 7)
+    if wert > 255:
+        wert = wert - 512
+    l = bus.read_i2c_block_data(BH1750, 0x10, 2)
+    lux = ((l[0] << 8) | l[1]) / 1.2
+    print(wert * 0.5, "°C und", round(lux), "lx")
+    sleep(1)
+` }) },
     { lab: 'pi', cat: 'Sensoren und Töne', name: 'Lauflicht mit LEDBoard', info: 'Vier LEDs an GPIO18, 24, 8 und 12 laufen nacheinander. LEDBoard fasst sie zu einer Liste zusammen.',
       make: () => ({ parts: [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16], ['R', 22, 22, 0, '220'], ['LED', 26, 22, 0, 'grün'], ['GND', 30, 22], ['R', 22, 30, 0, '220'], ['LED', 26, 30, 0, 'blau'], ['GND', 30, 30]], wires: [[20, 10, 22, 10], [20, 16, 22, 16], [20, 22, 22, 22], [20, 30, 22, 30]], scopes: [], tempo: 0.75,
       code: String.raw`from gpiozero import LEDBoard

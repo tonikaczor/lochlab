@@ -82,7 +82,24 @@ def verdopple(x):                 # eigene Funktion
 <li><b>Einrückung</b> zeigt, was zum Block gehört. Falsch eingerückt gibt einen Fehler.</li>
 <li>Warten: <code>from time import sleep</code> und <code>sleep(0.5)</code> (Sekunden, auch Kommazahlen).</li>
 <li>Ein Programm startest du in Thonny mit dem grünen Pfeil oder im Terminal mit <code>python3 programm.py</code>. Beenden mit <code>Strg+C</code>.</li></ul>
-<a class="try noprint" href="pilab.html?aufgabe=p3">✎ Aufgabe: Hallo im Terminal</a><h2 id="k5">5. Erstes Projekt: LED und Taster</h2><p>Die Bibliothek <b>gpiozero</b> ist auf dem Raspberry Pi OS schon installiert und macht das Ansteuern sehr einfach.</p>
+<a class="try noprint" href="pilab.html?aufgabe=p3">✎ Aufgabe: Hallo im Terminal</a>
+<h3>Eigene Klassen: ein Bauplan für Objekte</h3>
+<p>Brauchst du mehrere gleiche Dinge, zum Beispiel drei LEDs, die jeweils anders blinken, schreibst du einen <b>Bauplan</b>: eine <b>Klasse</b>. Aus dem Bauplan baust du beliebig viele <b>Objekte</b>.</p>
+<pre>class Blinker:                       # der Bauplan
+    def __init__(self, pin):         # wird beim Erzeugen aufgerufen
+        self.led = LED(pin)          # self = dieses Objekt
+
+    def start(self, takt):           # eine Methode
+        self.led.blink(on_time=takt, off_time=takt)
+
+rot = Blinker(18)                    # Objekt 1
+gelb = Blinker(24)                   # Objekt 2
+rot.start(0.5)
+gelb.start(0.2)</pre>
+<ul><li>Jede Methode hat als ersten Parameter <code>self</code>. Damit greift sie auf die Daten des eigenen Objekts zu (<code>self.led</code>).</li>
+<li><code>__init__</code> ist die Startmethode: Hier legst du an, was jedes Objekt braucht.</li>
+<li>Eine Klasse kann von einer anderen <b>erben</b> (<code>class Schnell(Blinker):</code>) und mit <code>super()</code> deren Methoden nutzen. Im Pi-Lab geht das nur mit eigenen Klassen, nicht mit <code>LED</code> selbst.</li></ul>
+<a class="try noprint" href="pilab.html?ex=Eigene%20Klasse%3A%20zwei%20Blinker">▶ Eigene Klasse: zwei Blinker</a><a class="try noprint" href="pilab.html?aufgabe=p13">✎ Aufgabe: Eigene Klasse: der Blinker</a><h2 id="k5">5. Erstes Projekt: LED und Taster</h2><p>Die Bibliothek <b>gpiozero</b> ist auf dem Raspberry Pi OS schon installiert und macht das Ansteuern sehr einfach.</p>
 <h3>LED blinken lassen</h3>
 <p>Schaltung: GPIO17 (Pin 11) → 330-Ω-Widerstand → LED (Anode) → Kathode an GND (zum Beispiel Pin 9).</p>
 <pre>from gpiozero import LED
@@ -162,13 +179,27 @@ servo.mid(); sleep(1)
 servo.max(); sleep(1)</pre>
 <a class="try noprint" href="pilab.html?ex=LED%20pulsiert">▶ LED pulsiert</a><a class="try noprint" href="pilab.html?ex=Ultraschall">▶ Ultraschall</a><a class="try noprint" href="pilab.html?ex=Servo">▶ Servo</a><a class="try noprint" href="pilab.html?aufgabe=p6">✎ Aufgabe: LED pulsiert</a><a class="try noprint" href="pilab.html?aufgabe=p7">✎ Aufgabe: Abstandswarner</a><a class="try noprint" href="pilab.html?aufgabe=p9">✎ Aufgabe: Servo auf 90 Grad</a>
 <h3>Sensoren mit I²C</h3>
-<p>Viele Sensoren (Temperatur, Display, Beschleunigung) sprechen I²C über die Pins 3 (SDA) und 5 (SCL). Das lässt sich unter „Raspberry Pi Konfiguration → Schnittstellen → I2C“ einschalten. Mit <code>i2cdetect -y 1</code> findest du angeschlossene Geräte.</p><h2 id="k7">7. Projektideen für den Pi</h2><ul><li><b>Ampel</b> mit drei LEDs und Fußgängertaster (<code>LEDBoard</code>, <code>Button</code>).</li>
+<p>Viele Sensoren (Temperatur, Licht, Display, Beschleunigung) sprechen <b>I²C</b>. Dafür reichen zwei Signalleitungen für beliebig viele Geräte: <b>SDA</b> (Daten, GPIO2, Pin 3) und <b>SCL</b> (Takt, GPIO3, Pin 5), dazu 3,3 V und Masse. Jedes Gerät hat eine feste <b>Adresse</b>, so weiß der Pi, wen er anspricht. Die nötigen Pull-up-Widerstände sind beim Pi schon eingebaut.</p>
+<div class="merke"><b>Merke:</b> Auf dem echten Pi muss I²C erst eingeschaltet werden: „Raspberry Pi Konfiguration → Schnittstellen → I2C“ oder <code>sudo raspi-config</code>. Mit <code>i2cdetect -y 1</code> findest du angeschlossene Geräte und ihre Adressen.</div>
+<pre>from smbus2 import SMBus
+
+bus = SMBus(1)                                  # Bus 1 = GPIO2 und GPIO3
+daten = bus.read_i2c_block_data(0x48, 0, 2)    # Adresse 0x48, Register 0, 2 Bytes lesen
+print(daten)                                    # zum Beispiel [25, 0]</pre>
+<p>Die Zahlen mit <code>0x</code> sind <b>Hexadezimalzahlen</b> (0x48 ist 72). Jeder Sensor liefert seine Messwerte in Bytes. Wie du sie umrechnest, steht im Datenblatt. Beim Temperatursensor LM75 sind es 9 Bit in zwei Bytes, ein Schritt sind 0,5 Grad. Beim Lichtsensor BH1750 sind es 16 Bit, geteilt durch 1,2 ergibt Lux.</p>
+<table><tr><th>Fehlermeldung</th><th>Bedeutung</th></tr>
+<tr><td><code>[Errno 121] Remote I/O error</code></td><td>Kein Gerät antwortet: Versorgung, SDA, SCL oder die Adresse stimmen nicht. Im Pi-Lab sagt der Tipp in der Meldung, was fehlt.</td></tr>
+<tr><td><code>[Errno 2] No such file or directory: '/dev/i2c-1'</code></td><td>I²C ist auf dem Pi nicht eingeschaltet (oder falsche Busnummer).</td></tr></table>
+<a class="try noprint" href="pilab.html?ex=Temperatur%20%C3%BCber%20I">▶ Temperatur über I</a><a class="try noprint" href="pilab.html?ex=Lichtsensor%20BH1750">▶ Lichtsensor BH1750</a><a class="try noprint" href="pilab.html?ex=Zwei%20Sensoren%20am%20selben">▶ Zwei Sensoren am selben</a><a class="try noprint" href="pilab.html?aufgabe=p14">✎ Aufgabe: Temperatur über I²C lesen</a><a class="try noprint" href="pilab.html?aufgabe=p15">✎ Aufgabe: Dunkelheits-LED über I²C</a><a class="try noprint" href="pilab.html?aufgabe=pf5">✎ Aufgabe: Der I²C-Sensor antwortet nicht</a><h2 id="k7">7. Projektideen für den Pi</h2><ul><li><b>Ampel</b> mit drei LEDs und Fußgängertaster (<code>LEDBoard</code>, <code>Button</code>).</li>
 <li><b>Einbruchalarm</b>: PIR-Sensor löst Summer aus und schreibt die Uhrzeit in eine Datei.</li>
 <li><b>Temperaturlogger</b>: Sensor misst jede Minute und speichert in eine CSV-Datei, die du in Excel öffnest.</li>
 <li><b>Webserver</b>: Eine kleine Webseite zeigt den Sensorwert (Bibliothek <code>flask</code>).</li>
 <li><b>Kamera</b>: Fotos per Knopfdruck oder Zeitraffer.</li>
 <li><b>Zusammen mit dem Arduino</b>: Der Arduino misst und sendet per USB-Kabel (Serial), der Pi zeigt die Werte an oder speichert sie.</li></ul>
 <a class="try noprint" href="pilab.html?ex=Ampel">▶ Ampel</a><a class="try noprint" href="pilab.html?ex=Summer">▶ Summer</a><a class="try noprint" href="pilab.html?ex=Bewegungsmelder">▶ Bewegungsmelder</a><a class="try noprint" href="pilab.html?ex=Lauflicht">▶ Lauflicht</a><a class="try noprint" href="pilab.html?aufgabe=p4">✎ Aufgabe: Ampel</a><a class="try noprint" href="pilab.html?aufgabe=p5">✎ Aufgabe: Summer piept</a>
+<h3>Melodien mit dem TonalBuzzer</h3>
+<p>Ein <b>aktiver</b> Summer kann nur einen festen Ton. Mit einem <b>passiven</b> Summer oder Lautsprecher kannst du die Tonhöhe selbst bestimmen: <code>TonalBuzzer</code> spielt Noten (<code>"A4"</code>, <code>"C#5"</code>) oder Frequenzen in Hz. Mit <code>octaves=2</code> reicht der Bereich über zwei Oktaven nach oben und unten (von A2 bis A6).</p>
+<a class="try noprint" href="pilab.html?ex=Star-Wars-Thema%20mit%20Lichtshow">▶ Star-Wars-Thema mit Lichtshow</a>
 <h3>Programm beim Start automatisch ausführen</h3>
 <p>Im Terminal <code>crontab -e</code> öffnen und am Ende eine Zeile einfügen: <code>@reboot python3 /home/benutzername/projekt.py &amp;</code>. Beim nächsten Neustart läuft das Programm von selbst.</p><h2 id="k8">8. Fehler finden und sicher arbeiten</h2><table><tr><th>Symptom</th><th>Meist die Ursache</th></tr>
 <tr><td>LED leuchtet nicht</td><td>falsche GPIO-Nummer (BCM statt Pin-Nummer!), LED falsch herum, Masse nicht verbunden</td></tr>
@@ -189,6 +220,6 @@ servo.max(); sleep(1)</pre>
 <tr><td>Daten speichern, Webseite, Netzwerk, Kamera</td><td>Raspberry Pi</td></tr>
 <tr><td>Viele Programme, Bildschirm, Maus</td><td>Raspberry Pi</td></tr>
 <tr><td>Beides kombinieren</td><td>Arduino misst, Pi wertet aus (USB/Serial)</td></tr></table>
-<div class="box"><b>Im Tonfunk Lab:</b> Das <b>Pi-Lab</b> simuliert einen Raspberry Pi mit Python (gpiozero und RPi.GPIO). Du verdrahtest den Pi an der 40-poligen Leiste, schreibst dein Programm und siehst LEDs, Taster und Sensoren reagieren. Die Pins sind 3,3-V-Pins: Wer 5 V an einen GPIO legt, zerstört den Pi (mit Erklärung). <a class="try noprint" href="pilab.html">▶ Pi-Lab öffnen</a><p class="mute"><b>Grenzen:</b> Unterstützt sind print, Schleifen, Funktionen, Listen, Texte, f-Strings, try/except sowie die Module time, random, math, signal, gpiozero (LED, PWMLED, Buzzer, Button, MotionSensor, DistanceSensor, Servo, AngularServo, LEDBoard, TrafficLights, MCP3008) und RPi.GPIO. Nicht unterstützt sind eigene Klassen (class), input(), Dateien und Zusatzmodule wie numpy oder flask. Analoge Sensoren über den Wandler MCP3008 (SPI) sind dabei. Nicht unterstützt sind I²C-Geräte.</p></div>
+<div class="box"><b>Im Tonfunk Lab:</b> Das <b>Pi-Lab</b> simuliert einen Raspberry Pi mit Python (gpiozero und RPi.GPIO). Du verdrahtest den Pi an der 40-poligen Leiste, schreibst dein Programm und siehst LEDs, Taster und Sensoren reagieren. Die Pins sind 3,3-V-Pins: Wer 5 V an einen GPIO legt, zerstört den Pi (mit Erklärung). <a class="try noprint" href="pilab.html">▶ Pi-Lab öffnen</a><p class="mute"><b>Grenzen:</b> Unterstützt sind print, Schleifen, Funktionen, eigene Klassen (mit Vererbung), with, Listen, Texte, f-Strings, try/except sowie die Module time, random, math, signal, smbus2 (I²C), gpiozero (LED, PWMLED, Buzzer, TonalBuzzer, Button, MotionSensor, DistanceSensor, Servo, AngularServo, LEDBoard, TrafficLights, MCP3008) und RPi.GPIO. Nicht unterstützt sind input(), Dateien, __str__ in eigenen Klassen und Zusatzmodule wie numpy oder flask. Analoge Sensoren über den Wandler MCP3008 (SPI) sind dabei. Nicht unterstützt sind I²C-Geräte.</p></div>
 <p>Weiter geht es mit dem Lernheft <a href="lernen-arduino.html">Arduino verstehen</a>.</p>
 </div></body></html>
