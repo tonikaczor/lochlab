@@ -1,0 +1,95 @@
+{
+ "vierwege": [
+  "vierwege-1.jpg",
+  "vierwege-2.jpg"
+ ],
+ "seg_doppelt": [
+  "seg_doppelt-1.jpg",
+  "seg_doppelt-2.jpg",
+  "seg_doppelt-3.jpg"
+ ],
+ "seg_mittel": [
+  "seg_mittel-1.jpg",
+  "seg_mittel-2.jpg",
+  "seg_mittel-3.jpg"
+ ],
+ "seg_klein": [
+  "seg_klein-1.jpg",
+  "seg_klein-2.jpg",
+  "seg_klein-3.jpg"
+ ],
+ "cf_15": [
+  "cf_15-1.jpg",
+  "cf_15-2.jpg",
+  "cf_15-3.jpg"
+ ],
+ "cf_22": [
+  "cf_22-1.jpg",
+  "cf_22-2.jpg",
+  "cf_22-3.jpg"
+ ],
+ "cf_27": [
+  "cf_27-1.jpg",
+  "cf_27-2.jpg",
+  "cf_27-3.jpg"
+ ],
+ "cf_5": [
+  "cf_5-1.jpg",
+  "cf_5-2.jpg",
+  "cf_5-3.jpg"
+ ],
+ "kipp": [
+  "kipp-1.jpg",
+  "kipp-2.jpg",
+  "kipp-3.jpg"
+ ],
+ "poti_knopf": [
+  "poti_knopf-1.jpg",
+  "poti_knopf-2.jpg",
+  "poti_knopf-3.jpg"
+ ],
+ "klemme3": [
+  "klemme3-1.jpg",
+  "klemme3-2.jpg",
+  "klemme3-3.jpg"
+ ],
+ "sicherung": [
+  "sicherung-1.jpg",
+  "sicherung-2.jpg",
+  "sicherung-3.jpg",
+  "sicherung-4.jpg"
+ ],
+ "summer": [
+  "summer-1.jpg",
+  "summer-2.jpg"
+ ],
+ "taster2": [
+  "taster2-1.jpg",
+  "taster2-2.jpg",
+  "taster2-3.jpg"
+ ],
+ "trim_orange": [
+  "trim_orange-1.jpg",
+  "trim_orange-2.jpg"
+ ],
+ "trim_lang": [
+  "trim_lang-1.jpg",
+  "trim_lang-2.jpg",
+  "trim_lang-3.jpg"
+ ],
+ "trim_liegend": [
+  "trim_liegend-1.jpg",
+  "trim_liegend-2.jpg"
+ ],
+ "trim_stehend": [
+  "trim_stehend-1.jpg",
+  "trim_stehend-2.jpg",
+  "trim_stehend-3.jpg"
+ ],
+ "trim_stehend10": [
+  "trim_stehend10-1.jpg",
+  "trim_stehend10-2.jpg",
+  "trim_stehend10-3.jpg",
+  "trim_stehend10-4.jpg"
+ ]
+}
