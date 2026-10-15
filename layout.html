@@ -32,6 +32,13 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 main{position:relative;flex:1;min-height:0;min-width:0}
 #side{display:none;width:184px;flex:none;background:var(--panel);border-left:1px solid var(--line);padding:14px 12px;overflow-y:auto}
 #side.on{display:block}
+#parts{display:none;width:190px;flex:none;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:4px 6px 12px;scrollbar-width:thin}
+@media(min-width:640px){#parts{display:block}}
+#parts .pcat{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600;padding:12px 8px 4px}
+#parts .pit{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px 9px;border-radius:9px;font-size:14px;line-height:1.2}
+#parts .pit:hover{background:var(--panel2)}#parts .pit.on{background:var(--accent);color:#fff}
+.psearch{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:6px;background:var(--panel);padding:6px 4px 4px;margin:0 -2px}.psearch input{flex:1;min-width:0;padding:6px 9px;font-size:14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}#parts [hidden]{display:none!important}.pnone{padding:10px 8px;font-size:13px;color:var(--mute)}
+#parts .pit img.th{width:26px;height:26px;border-radius:6px;object-fit:cover;flex:none}
 #side .ttl{font-weight:600;font-size:15px}
 #side .sub{color:var(--mute);font-size:13px;margin-top:1px}
 #side .sh{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:16px 0 6px}
@@ -162,6 +169,7 @@ th{color:var(--mute);font-weight:500;font-size:12px}
     <button class="ib" id="bFit" aria-label="Einpassen"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
   </header>
   <div id="mid">
+    <aside id="parts" aria-label="Bauteile"></aside>
     <main id="stage">
       <canvas id="cv"></canvas>
       <div id="readout"></div>
@@ -207,6 +215,7 @@ const PARTS = {
   KL5:{name:'Schraubklemme RM 5,08',pre:'X',kind:'sip',sp:2,def:3,min:1,max:8,val:''},
   Q:  {name:'Quarz',      pre:'Q',  kind:'span', def:2, min:1, max:12, val:'16MHz'},
   BZ: {name:'Summer',     pre:'BZ', kind:'span', def:3, min:2, max:10, val:'5V'},
+  LAMP:{name:'Glühlampe',   pre:'E',  kind:'span', def:3, min:2, max:8,  val:'6V 0.1A'},
   T:  {name:'Transistor', pre:'T',  kind:'fixed',def:3, pins:[[0,0],[1,0],[2,0]], val:'BC547'},
   U:  {name:'Regler TO-220',pre:'U',kind:'fixed',def:3, pins:[[0,0],[1,0],[2,0]], val:'7805'},
   P:  {name:'Poti',       pre:'P',  kind:'fixed',def:3, pins:[[0,0],[1,0],[2,0]], val:'10k'},
@@ -325,6 +334,7 @@ function shopTerm(k,V,it){
     case 'LDR':return 'Fotowiderstand LDR';
     case 'Q':return 'Quarz HC49 '+(v||'');
     case 'BZ':return 'Summer Piezo';
+    case 'LAMP':return 'Glühlampe '+(v||'')+' mit Lötösen';
     case 'NTC':return 'NTC Thermistor '+(v||'');
     case 'PTC':return 'PTC Kaltleiter '+(v||'');
     case 'PHT':return 'Fototransistor '+(v||'');
@@ -458,6 +468,7 @@ function bodyRect(it){
     case 'LDR': return [Math.min(-.5,n/2-1),-1,Math.max(n+.5,n/2+1),1];
     case 'Q': return [Math.min(-.5,n/2-2.2),-.95,Math.max(n+.5,n/2+2.2),.95];
     case 'BZ': case 'SPK': return [n/2-2.3,-2.3,n/2+2.3,2.3];
+    case 'LAMP': return [Math.min(-.5,n/2-1.8),-1.8,Math.max(n+.5,n/2+1.8),1.8];
     case 'NTC': case 'PTC': case 'PHT': return [Math.min(-.5,n/2-1),-1,Math.max(n+.5,n/2+1),1];
     case 'THY': return [-1.1,-6.5,3.1,.5];
     case 'OPTO': return [-.6,-.5,1.6,3.5];
@@ -703,6 +714,9 @@ function drawPart(c,it){
     c.strokeStyle='#8a4a1c';c.lineWidth=.08;c.beginPath();c.moveTo(n/2-.6,-.45);c.lineTo(n/2+.6,-.45);c.lineTo(n/2-.6,0);c.lineTo(n/2+.6,0);c.lineTo(n/2-.6,.45);c.lineTo(n/2+.6,.45);c.stroke();
   }else if(k==='Q'){
     leg();rrect(c,n/2-2.17,-.9,4.35,1.8,.9);c.fillStyle='#c9ced4';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.06;c.stroke();
+  }else if(k==='LAMP'){
+    leg();c.beginPath();c.arc(n/2,0,1.5,0,7);c.fillStyle='rgba(255,246,214,.55)';c.fill();c.strokeStyle='#8a8f96';c.lineWidth=.07;c.stroke();
+    c.strokeStyle='#d6a73a';c.lineWidth=.09;c.beginPath();c.moveTo(n/2-.7,.9);c.lineTo(n/2-.7,-.1);c.lineTo(n/2-.35,-.5);c.lineTo(n/2,-.1);c.lineTo(n/2+.35,-.5);c.lineTo(n/2+.7,-.1);c.lineTo(n/2+.7,.9);c.stroke();
   }else if(k==='BZ'){
     c.beginPath();c.arc(n/2,0,2.2,0,7);c.fillStyle='#1d1d1d';c.fill();c.strokeStyle='#555';c.lineWidth=.07;c.stroke();
     c.beginPath();c.arc(n/2,0,.35,0,7);c.fillStyle='#000';c.fill();
@@ -1174,7 +1188,10 @@ function renderCtx(){
   }else if(tool==='part'){
     if(wide)sh=sideCtl(partKind,partRot,sizes[partKind],null);
     else if(partKind==='LED')h+=ledSw(partVals.LED!=null?partVals.LED:'rot')+'<span class="sep"></span>';
-    h+=Object.keys(PARTS).map(k=>{
+    if(wide){
+      if(PARTS[partKind].variants)h+=varChips(partKind,curVar(partKind),'pv')+'<span class="sep"></span>';
+      h+='<span class="hint">Bauteil links in der Liste wählen, dann auf die Platine tippen</span>';
+    }else h+=Object.keys(PARTS).map(k=>{
       let t=chip('pk',thImg(photoOf(k,curVar(k)))+PARTS[k].name+(PARTS[k].variants?' ▾':''),k===partKind?'on':'').replace('data-a="pk"',`data-a="pk" data-k="${k}"`);
       if(k===partKind&&PARTS[k].variants)t+='<span class="sep"></span>'+varChips(k,curVar(k),'pv')+'<span class="sep"></span>';
       return t;}).join('');
@@ -1195,7 +1212,33 @@ function renderCtx(){
     h=`<span class="hint">${hints[tool]||''}</span>`;
   }
   el.innerHTML=h;sd.innerHTML=sh;sd.classList.toggle('on',!!sh);
+  renderParts();
 }
+const PCATS=[['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','T','THY','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Quellen',['BAT','SIG']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];
+function renderParts(){
+  const el=$('#parts');if(!el)return;
+  const seen=new Set();let h=`<div class="psearch"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;flex:none;opacity:.7"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="pq" type="search" placeholder="Bauteil suchen …" autocomplete="off" value="${esc(partQuery)}"></div>`;
+  const item=k=>{seen.add(k);return `<button class="pit ${tool==='part'&&k===partKind?'on':''}" data-k="${k}" data-q="${esc((PARTS[k].name+' '+k).toLowerCase())}">${thImg(photoOf(k,curVar(k)))}<span>${esc(PARTS[k].name)}</span></button>`;};
+  PCATS.forEach(([c,ks])=>{const l=ks.filter(k=>PARTS[k]);if(l.length)h+=`<div class="pcat">${c}</div>`+l.map(item).join('');});
+  const rest=Object.keys(PARTS).filter(k=>!seen.has(k));if(rest.length)h+='<div class="pcat">Weitere</div>'+rest.map(item).join('');
+  const st=el.scrollTop,hadFocus=document.activeElement&&document.activeElement.id==='pq';el.innerHTML=h;el.scrollTop=st;applyPartFilter();
+  if(hadFocus){const i=$('#pq');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length);}}
+}
+let partQuery='';
+function applyPartFilter(){
+  const pl=$('#parts');if(!pl)return;
+  const q=partQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);let cat=null,any=false,shown=0;
+  [...pl.children].forEach(el=>{
+    if(el.classList.contains('pcat')){if(cat)cat.hidden=!any;cat=el;any=false;el.hidden=false;return;}
+    if(!el.classList.contains('pit'))return;
+    const ok=!q.length||q.every(w=>(el.dataset.q||'').includes(w));el.hidden=!ok;if(ok){any=true;shown++;}
+  });
+  if(cat)cat.hidden=!any;
+  let none=pl.querySelector('.pnone');if(q.length&&!shown){if(!none){none=document.createElement('div');none.className='pnone';none.textContent='Nichts gefunden';pl.appendChild(none);}}else if(none)none.remove();
+}
+$('#parts').addEventListener('input',e=>{if(e.target.id==='pq'){partQuery=e.target.value;applyPartFilter();}});
+$('#parts').addEventListener('keydown',e=>{if(e.target.id!=='pq')return;if(e.key==='Enter'){const one=[...$('#parts').querySelectorAll('.pit:not([hidden])')];if(one.length){partKind=one[0].dataset.k;syncVarSize(partKind);if(tool!=='part')setTool('part');else{ghost=null;renderCtx();invalidate();}}}else if(e.key==='Escape'){partQuery='';e.target.value='';applyPartFilter();}});
+$('#parts').addEventListener('click',e=>{const b=e.target.closest('.pit');if(!b)return;partKind=b.dataset.k;syncVarSize(partKind);if(tool!=='part')setTool('part');else{ghost=null;renderCtx();invalidate();}});
 matchMedia('(min-width:640px)').addEventListener('change',()=>renderCtx());
 // Laptop: Mausrad scrollt die Bauteilleiste seitwärts, Ziehen mit gedrückter Maustaste auf freier Fläche auch
 $('#ctx').addEventListener('wheel',e=>{
@@ -1556,7 +1599,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v53</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v54</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;

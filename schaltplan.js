@@ -1057,6 +1057,19 @@ function setTool(t, kind) {
   if (t !== 'select') sel = null;
   buildPalette(); refreshUI(); draw();
 }
+let partQuery = '';
+{ const st = document.createElement('style'); st.textContent = '.psearch{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:6px;background:var(--panel);padding:6px 4px 4px;margin:0 -2px}.psearch input{flex:1;min-width:0;padding:6px 9px;font-size:14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}.pit[hidden],.pcat[hidden]{display:none}.pnone{padding:10px 8px;font-size:13px;color:var(--mute)}'; document.head.appendChild(st); }
+function applyPartFilter() {
+  const pl = $('#parts'); if (!pl || simMode) return;
+  const q = partQuery.trim().toLowerCase().split(/\s+/).filter(Boolean); let cat = null, any = false, shown = 0;
+  [...pl.children].forEach(el => {
+    if (el.classList.contains('pcat')) { if (cat) cat.hidden = !any; cat = el; any = false; el.hidden = false; return; }
+    if (!el.classList.contains('pit')) return;
+    const ok = !q.length || q.every(w => (el.dataset.q || '').includes(w)); el.hidden = !ok; if (ok) { any = true; shown++; }
+  });
+  if (cat) cat.hidden = !any;
+  let none = pl.querySelector('.pnone'); if (q.length && !shown) { if (!none) { none = document.createElement('div'); none.className = 'pnone'; none.textContent = 'Nichts gefunden'; pl.appendChild(none); } } else if (none) none.remove();
+}
 function buildPalette() {
   const chip = (id, label, on, data) => `<button class="chip ${on ? 'on' : ''}" data-t="${id}" ${data || ''}>${label}</button>`;
   let h;
@@ -1073,13 +1086,14 @@ function buildPalette() {
   const pl = $('#parts'), show = listMode();
   let lh = '';
   if (show && simMode) lh = controlHtml();
-  else if (show) CATS.forEach(cat => {
+  else if (show) lh += `<div class="psearch"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;flex:none;opacity:.7"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="pq" type="search" placeholder="Bauteil suchen …" autocomplete="off" value="${esc(partQuery)}"></div>`;
+  if (show && !simMode) CATS.forEach(cat => {
     if (!kindsOf(cat).length) return;
     lh += `<div class="pcat">${cat}</div>`;
-    kindsOf(cat).forEach(k => { lh += `<button class="pit ${tool === 'place' && placeKind === k ? 'on' : ''}" data-t="place" data-k="${k}">${KINDS[k].name}</button>`; });
+    kindsOf(cat).forEach(k => { lh += `<button class="pit ${tool === 'place' && placeKind === k ? 'on' : ''}" data-t="place" data-k="${k}" data-q="${esc((KINDS[k].name + ' ' + k + ' ' + cat).toLowerCase())}">${KINDS[k].name}</button>`; });
   });
   const keep = pl.scrollTop, was = pl.style.display;
-  pl.innerHTML = lh; pl.dataset.h = simMode ? lh : ''; pl.style.display = show ? 'block' : 'none'; pl.scrollTop = keep;
+  pl.innerHTML = lh; pl.dataset.h = simMode ? lh : ''; applyPartFilter(); pl.style.display = show ? 'block' : 'none'; pl.scrollTop = keep;
   if (was !== pl.style.display) window.dispatchEvent(new Event('resize'));
 }
 /* Bedienfeld links in der Simulation: Schalter, Taster und Regler aller Bauteile an einer festen Stelle */
@@ -1114,6 +1128,8 @@ function refreshControls() {
 })();
 const listMode = () => window.matchMedia('(min-width:720px)').matches;
 window.matchMedia('(min-width:720px)').addEventListener && window.matchMedia('(min-width:720px)').addEventListener('change', () => buildPalette());
+$('#parts').addEventListener('input', e => { if (e.target.id === 'pq') { partQuery = e.target.value; applyPartFilter(); } });
+$('#parts').addEventListener('keydown', e => { if (e.target.id !== 'pq') return; if (e.key === 'Enter') { const one = [...$('#parts').querySelectorAll('.pit:not([hidden])')]; if (one.length) { placeRot = 0; setTool('place', one[0].dataset.k); } } else if (e.key === 'Escape') { partQuery = ''; e.target.value = ''; applyPartFilter(); } });
 $('#parts').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) { placeRot = 0; setTool('place', b.dataset.k); } });
 $('#pal').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; if (b.dataset.t === 'place') { placeRot = 0; setTool('place', b.dataset.k); } else if (b.dataset.t === 'reset') resetSim(); else setTool(b.dataset.t); });
 $('#pal').addEventListener('wheel', e => { const el = e.currentTarget; if (el.scrollWidth <= el.clientWidth) return; el.scrollLeft += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; e.preventDefault(); }, { passive: false });
@@ -1754,15 +1770,18 @@ function llSpec(p) {
     case 'LDR': return { ll: { k: 'LDR', n: 2, v: 'LDR' }, pm: [0, 1], ...two };
     case 'NTC': case 'PTC': return { ll: { k: p.k, n: 2, v }, pm: [0, 1], ...two };
     case 'PHT': return { ll: { k: 'PHT', n: 1, v: v || 'BPW40' }, pm: [0, 1], ...two };
+    case 'LAMP': return { ll: { k: 'LAMP', n: 3, v: v || '6V 0.1A' }, pm: [0, 1], ...two };
     case 'SPK': return { ll: { k: 'SPK', n: 4, v }, pm: [0, 1], ...two };
-    case 'PB': return { ll: { k: 'SW', vr: 'k2', v: '' }, pm: [0, 1] };
+    case 'PB': case 'PBC': return { ll: { k: 'SW', vr: 'k2', v: '' }, pm: [0, 1] };
+    case 'SPST': return { ll: { k: 'SCH', vr: 'k3', n: 3, v: '' }, pm: [1, 0] };
+    case 'SPDT': return { ll: { k: 'SCH', vr: 'k3', n: 3, v: '' }, pm: [1, 0, 2] };
     case 'NPN': case 'PNP': return { ll: { k: 'T', v }, pm: [1, 0, 2] };
     case 'THY': return { ll: { k: 'THY', v }, pm: [1, 0, 2] };
     case 'OPTO': return { ll: { k: 'OPTO', v }, pm: [0, 1, 3, 2] };
     case 'RLY': return { ll: { k: 'RLY', v: v || '12V', vr: /^5/.test(v) ? 'r5' : (/^24/.test(v) ? 'r24' : 'r12') }, pm: [0, 1, 2, 3, 4] };
     case 'TRF': return { ll: { k: 'TRF', v }, pm: [0, 1, 2, 3] };
     case 'ICX': { const n = p.n || 8; return { ll: { k: 'IC', n, v, sk: true }, pm: Array.from({ length: n }, (_, i) => i) }; }
-    case 'BAT': case 'AC': case 'SPST': case 'SPDT': case 'LAMP': case 'MOTOR': case 'HEAT': case 'FUSE': { const n = KD(p).pins.length; return { ll: { k: 'KL', n, v: '' }, pm: Array.from({ length: n }, (_, i) => i), ext: true }; }
+    case 'BAT': case 'AC': case 'MOTOR': case 'HEAT': case 'FUSE': { const n = KD(p).pins.length; return { ll: { k: 'KL', n, v: '' }, pm: Array.from({ length: n }, (_, i) => i), ext: true }; }
     default: return null;
   }
 }
@@ -1881,7 +1900,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v53</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v54</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
