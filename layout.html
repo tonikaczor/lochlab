@@ -793,11 +793,15 @@ function drawScene(c,V,o){
       hl(it,()=>{rrect(c,it.x-w/2-.2,it.y-it.z/2-.15,w+.4,it.z+.3,.15);c.fillStyle='rgba(59,158,255,.35)';c.fill();});
       txt(c,it.s,it.x,it.y,it.z,ex?'#111':'#fff',false,'center',ex?'rgba(255,255,255,.95)':'rgba(0,0,0,.7)');
     });
-  } else { // Unterseite: Bauteil-Umrisse zur Orientierung
-    c.setLineDash([.25,.18]);c.strokeStyle='rgba(255,255,255,.4)';c.lineWidth=.06;
+  } else { // Unterseite: Bauteile und Drahtbrücken gestrichelt (von oben durchscheinend)
+    const dk=ex?'rgba(70,45,10,.78)':'rgba(255,255,255,.45)',ring=ex?'rgba(70,45,10,.85)':'rgba(255,255,255,.7)';
+    c.setLineDash([.25,.18]);c.strokeStyle=dk;c.lineWidth=.06;
     items.forEach(it=>{if(it.t!=='part')return;const b=worldBox(it);rrect(c,b[0],b[1],b[2]-b[0],b[3]-b[1],.2);c.stroke();});
+    c.lineCap='round';c.lineWidth=.12;
+    items.forEach(it=>{if(it.t!=='wire')return;hl(it,()=>{c.setLineDash([]);c.strokeStyle='rgba(59,158,255,.7)';c.lineWidth=.9;line(c,it.x1,it.y1,it.x2,it.y2);});c.strokeStyle=ex?'rgba(70,45,10,.9)':it.c;c.lineWidth=.14;c.globalAlpha=ex?1:.85;c.setLineDash([.3,.2]);line(c,it.x1,it.y1,it.x2,it.y2);c.globalAlpha=1;});
     c.setLineDash([]);
-    items.forEach(it=>{if(it.t!=='part')return;pinsOf(it).forEach(([x,y])=>{c.beginPath();c.arc(x,y,.46,0,7);c.strokeStyle='rgba(255,255,255,.7)';c.lineWidth=.06;c.stroke();});});
+    items.forEach(it=>{if(it.t==='part')pinsOf(it).forEach(([x,y])=>{c.beginPath();c.arc(x,y,.46,0,7);c.strokeStyle=ring;c.lineWidth=.06;c.stroke();});
+      if(it.t==='wire')[[it.x1,it.y1],[it.x2,it.y2]].forEach(([x,y])=>{c.beginPath();c.arc(x,y,.3,0,7);c.strokeStyle=ring;c.lineWidth=.08;c.stroke();});});
   }
   // Interaktionsvorschau
   if(o.ghost){c.globalAlpha=.65;drawPart(c,{t:'part',k:partKind,vr:curVar(partKind),sk:partKind==='IC'&&autoSocket,n:sizes[partKind],x:o.ghost[0],y:o.ghost[1],r:partRot,v:partVals[partKind]!=null?partVals[partKind]:PARTS[partKind].val});c.globalAlpha=1;}
@@ -1190,7 +1194,7 @@ function openMenu(){
   });
 }
 function menuAct(m){
-  if(m==='new')boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));});
+  if(m==='new')confirmNew(()=>boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));}));
   else if(m==='open')openList();
   else if(m==='rename')renameDoc();
   else if(m==='user')form('Dein Name',[{label:'Vor- und Nachname',value:userName()}],v=>{const n=v[0].trim().replace(/\s+/g,' ');if(n){try{localStorage.setItem('lm4.name',n);}catch(e){}toast('Gespeichert');}});
@@ -1203,6 +1207,15 @@ function menuAct(m){
   else if(m==='schalt')location.href='schaltplan.html';
   else if(m==='start')location.href='index.html';
   else if(m==='help')openHelp();
+}
+function confirmNew(next){
+  const np=doc.items.length;
+  if(!np){next();return;}
+  sheet('Aktuelles Projekt sichern?',(b,close)=>{
+    b.innerHTML=`<p style="margin-top:0">„${esc(doc.name)}“ hat ${np} Objekte. Es wird jetzt gespeichert und bleibt unter „Projekte öffnen“ erhalten.</p><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>Speichern und weiter</button></div>`;
+    b.querySelector('[data-c]').onclick=close;
+    b.querySelector('[data-ok]').onclick=()=>{save();close();next();};
+  });
 }
 function boardSheet(title,withName,onPick){
   sheet(title,(b,close)=>{
@@ -1366,7 +1379,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v28</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v29</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;

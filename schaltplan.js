@@ -784,7 +784,7 @@ function openMenu() {
   });
 }
 function menuAct(m) {
-  if (m === 'new') { loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }); }
+  if (m === 'new') confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }));
   else if (m === 'ex') openExamples();
   else if (m === 'open') openList();
   else if (m === 'save') form('Speichern unter', [{ l: 'Name', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); saveNamed(); toast('Gespeichert'); });
@@ -795,7 +795,16 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v28</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v29</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+}
+function confirmNew(next) {
+  const n = sch.parts.length + sch.wires.length;
+  if (!n) { next(); return; }
+  sheet('Aktuelle Schaltung sichern?', (b, close) => {
+    b.innerHTML = `<p style="margin-top:0">„${esc(sch.name)}“ wird jetzt gespeichert und bleibt unter „Gespeicherte Schaltungen“ erhalten.</p><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>Speichern und weiter</button></div>`;
+    b.querySelector('[data-c]').onclick = close;
+    b.querySelector('[data-ok]').onclick = () => { saveNamed(); close(); next(); };
+  });
 }
 function form(title, fields, onOk) {
   sheet(title, (b, close) => {
@@ -1009,7 +1018,7 @@ $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name
 (function init() {
   let d = null; try { d = JSON.parse(localStorage.getItem('sch.cur') || 'null'); } catch (e) {}
   buildPalette();
-  if (/[?&]neu\b/.test(location.search)) loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] });
+  if (/[?&]neu\b/.test(location.search)) { if (d && d.parts && (d.parts.length || (d.wires && d.wires.length))) { loadCircuit(d); confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] })); } else loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }); }
   else if (/[?&]bsp\b/.test(location.search)) loadCircuit(buildExample(EXAMPLES[1]));
   else if (d && d.parts && d.parts.length) loadCircuit(d); else { loadCircuit(buildExample(EXAMPLES[1])); }
   requestAnimationFrame(t => { lastFrame = t; loop(t); });
