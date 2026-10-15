@@ -76,9 +76,13 @@ function buildCircuit(layout) {
   const pinKey = (p, i) => key(p.pins[i][0], p.pins[i][1]);
   layout.parts.forEach(p => p.pins.forEach((_, i) => find(pinKey(p, i))));
 
-  // Masse: Minuspol der ersten Spannungsquelle
+  // Masse: Masse-Symbole (Schaltplan) oder Minuspol der ersten Spannungsquelle
   let groundRoot = null;
-  for (const p of layout.parts) if ((p.k === 'BAT' || p.k === 'SIG') && p.pins.length > 1) { groundRoot = find(pinKey(p, 1)); break; }
+  if (layout.ground && layout.ground.length) {
+    layout.ground.forEach(g => find(key(g[0], g[1])));
+    for (let i = 1; i < layout.ground.length; i++) union(key(layout.ground[0][0], layout.ground[0][1]), key(layout.ground[i][0], layout.ground[i][1]));
+    groundRoot = find(key(layout.ground[0][0], layout.ground[0][1]));
+  } else for (const p of layout.parts) if ((p.k === 'BAT' || p.k === 'SIG') && p.pins.length > 1) { groundRoot = find(pinKey(p, 1)); break; }
 
   const nodeId = new Map(); let nn = 0;
   if (groundRoot) nodeId.set(groundRoot, 0);
@@ -87,17 +91,30 @@ function buildCircuit(layout) {
   const N = (p, i) => nodeOfRoot(find(pinKey(p, i)));
 
   const elems = [], warnings = [];
-  const add = e => { elems.push(e); return e; };
+  const rec = [];
+  const add = e => { e.pi = rec.splice(0); elems.push(e); return e; };
   const R = (a, b, g, part, extra) => add(Object.assign({ type: 'R', a, b, g, part }, extra || {}));
 
   layout.parts.forEach(p => {
-    const k = p.k, pins = p.pins, n = (i) => N(p, i);
+    const k = p.k, pins = p.pins, n = (i) => { rec.push(i); return N(p, i); };
     switch (k) {
       case 'R': add({ type: 'R', a: n(0), b: n(1), g: 1 / Math.max(si(p.v, 1000), 1e-3), part: p, rated: 0.25, res: true }); break;
       case 'LDR': {
         const pos = p.light == null ? 0.5 : p.light;
         add({ type: 'R', a: n(0), b: n(1), g: 1 / (1e6 * Math.pow(1e-3, pos)), part: p,
           upd() { const q = this.part.light == null ? 0.5 : this.part.light; this.g = 1 / (1e6 * Math.pow(1e-3, q)); } });
+        break; }
+      case 'VM': add({ type: 'R', a: n(0), b: n(1), g: 1e-7, part: p, meter: 'V' }); break;
+      case 'AM': add({ type: 'R', a: n(0), b: n(1), g: 1e3, part: p, meter: 'A' }); break;
+      case 'LAMP': {
+        const q = String(p.v || '6V 0.1A').replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/);
+        const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : 0.1;
+        add({ type: 'R', a: n(0), b: n(1), g: ia / un, part: p, lamp: un * ia });
+        break; }
+      case 'SPST': add({ type: 'S', a: n(0), b: n(1), closed: !!p.sw, part: p, upd() { this.closed = !!this.part.sw; } }); break;
+      case 'ZD': {
+        const vz = Math.max(si(p.v, 5.1), 1);
+        add({ type: 'D', a: n(0), b: n(1), is: 1e-9, nn: 1.8, vz, part: p, vj: 0 });
         break; }
       case 'BZ': add({ type: 'R', a: n(0), b: n(1), g: 1 / 100, part: p, buzzer: true }); break;
       case 'C': case 'CE': case 'CF': add({ type: 'C', a: n(0), b: n(1), c: Math.max(si(p.v, 100e-9), 1e-15), part: p, vprev: 0 }); break;

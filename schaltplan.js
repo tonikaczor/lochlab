@@ -1,0 +1,966 @@
+/* Tonfunk Schaltplan - Stromlaufplan zeichnen und simulieren (Spannungsfarben, Stromweg, Graphen) */
+(function () {
+'use strict';
+const LS = window.LochSim;
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2000); }
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+
+/* ============ Bauteilarten ============ */
+const T2 = [[0, 0], [4, 0]];
+const LEDC = ['rot', 'grün', 'gelb', 'blau', 'weiß', 'orange'];
+const KINDS = {
+  R:   { name: 'Widerstand',      cat: 'Passiv', pins: T2, v: '1k', core: 'R',  box: [0, -1, 4, 1], props: [['v', 'Widerstand', 'text', 'z. B. 4k7']] },
+  POT: { name: 'Poti',            cat: 'Passiv', pins: [[0, 0], [4, 0], [2, -2]], v: '10k', core: 'P', map: [0, 2, 1], box: [0, -2.2, 4, 1], pos: true, props: [['v', 'Gesamtwiderstand', 'text', 'z. B. 10k'], ['pos', 'Schleifer', 'range']] },
+  C:   { name: 'Kondensator',     cat: 'Passiv', pins: T2, v: '1u', core: 'C',  box: [0, -1.3, 4, 1.3], props: [['v', 'Kapazität', 'text', 'z. B. 100n']] },
+  CE:  { name: 'Elko',            cat: 'Passiv', pins: T2, v: '100u', core: 'CE', box: [0, -1.3, 4, 1.3], props: [['v', 'Kapazität', 'text', 'z. B. 100u']] },
+  L:   { name: 'Spule',           cat: 'Passiv', pins: T2, v: '10m', core: 'L',  box: [0, -1, 4, 1], props: [['v', 'Induktivität', 'text', 'z. B. 10m']] },
+  LDR: { name: 'Fotowiderstand',  cat: 'Passiv', pins: T2, v: '', core: 'LDR', box: [0, -1.3, 4, 1.3], pos: true, props: [['pos', 'Helligkeit', 'range']] },
+  LAMP:{ name: 'Glühlampe',       cat: 'Passiv', pins: T2, v: '6V 0.1A', core: 'LAMP', box: [0, -1, 4, 1], props: [['v', 'Nenndaten', 'text', 'z. B. 6V 0.1A']] },
+  D:   { name: 'Diode',           cat: 'Halbleiter', pins: T2, v: '1N4148', core: 'D', box: [0, -1, 4, 1], props: [] },
+  ZD:  { name: 'Z-Diode',         cat: 'Halbleiter', pins: T2, v: '5.1', core: 'ZD', box: [0, -1, 4, 1], props: [['v', 'Z-Spannung (V)', 'text', 'z. B. 5.1']] },
+  LED: { name: 'LED',             cat: 'Halbleiter', pins: T2, v: 'rot', core: 'LED', box: [0, -1.6, 4, 1], props: [['v', 'Farbe', 'select', LEDC]] },
+  NPN: { name: 'NPN-Transistor',  cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'BC547', core: 'T', vr: 'npn-cbe', map: [1, 0, 2], box: [-.2, -2.2, 2.6, 2.2], props: [] },
+  PNP: { name: 'PNP-Transistor',  cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'BC557', core: 'T', vr: 'pnp-cbe', map: [1, 0, 2], box: [-.2, -2.2, 2.6, 2.2], props: [] },
+  BAT: { name: 'Gleichspannung',  cat: 'Quellen', pins: T2, v: '9', core: 'BAT', box: [0, -1.2, 4, 1.2], props: [['v', 'Spannung (V)', 'text', 'z. B. 9']] },
+  AC:  { name: 'Wechselspannung', cat: 'Quellen', pins: T2, v: '5V 1kHz', core: 'SIG', vr: 'sin', box: [0, -1.2, 4, 1.2], props: [['v', 'Amplitude und Frequenz', 'text', 'z. B. 5V 1kHz'], ['vr', 'Kurvenform', 'select', ['sin', 'sq', 'tri'], { sin: 'Sinus', sq: 'Rechteck', tri: 'Dreieck' }]] },
+  GND: { name: 'Masse',           cat: 'Quellen', pins: [[0, 0]], v: '', core: null, box: [-.8, -.3, .8, 1.3], props: [] },
+  SPST:{ name: 'Schalter',        cat: 'Schalter', pins: T2, v: '', core: 'SPST', box: [0, -1.2, 4, 1], toggle: true, props: [] },
+  PB:  { name: 'Taster',          cat: 'Schalter', pins: T2, v: '', core: 'SW', box: [0, -1.4, 4, 1], momentary: true, props: [] },
+  SPDT:{ name: 'Wechsler',        cat: 'Schalter', pins: [[0, 0], [4, -1], [4, 1]], v: '', core: 'SCH', map: [1, 0, 2], box: [0, -1.5, 4, 1.5], toggle: true, props: [] },
+  VM:  { name: 'Voltmeter',       cat: 'Messen', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
+  AM:  { name: 'Amperemeter',     cat: 'Messen', pins: T2, v: '', core: 'AM', box: [0, -1.1, 4, 1.1], props: [] },
+};
+const CATS = ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'];
+const rot = (x, y, r) => { switch (r & 3) { case 0: return [x, y]; case 1: return [-y, x]; case 2: return [-x, -y]; default: return [y, -x]; } };
+const pinsOf = p => KINDS[p.k].pins.map(([x, y]) => { const [a, b] = rot(x, y, p.r); return [p.x + a, p.y + b]; });
+const gk = (x, y) => x + ',' + y;
+
+const PRE = { R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+function nextLabel(k, parts) {
+  const pre = PRE[k]; if (!pre) return '';
+  let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
+  return pre + (m + 1);
+}
+function assignLabels(parts) { parts.forEach(q => { if (!q.l && PRE[q.k]) q.l = nextLabel(q.k, parts); }); }
+/* ============ Zustand ============ */
+let sch = { name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] };
+let hist = [], hi = -1;
+let view = { s: 22, ox: 60, oy: 60 };
+let tool = 'select', placeKind = null, placeRot = 0;
+let sel = null;                // {t:'part'|'wire', id}
+let ghost = null, wireStart = null, cursor = null, act = null, dirtyDraw = true;
+let running = false, sim = null, circ = null, wrapMap = new Map();
+let simMode = false;
+let tempo = 0.45, dotSpeed = 0.5, graphWin = 0.02;
+let simTime = 0, lastFrame = 0, imax = 1e-9, vmax = 1;
+const flows = new Map();       // wire id -> Strom (Ende 1 -> Ende 2)
+const bodyI = new Map();       // part id -> [Pfade mit Strom]
+let scopeBuf = [];             // je Graph: {t:[],v:[],i:[]}
+const nid = () => sch.nid++;
+const byPart = id => sch.parts.find(p => p.id === id);
+const byWire = id => sch.wires.find(w => w.id === id);
+
+/* ============ Verlauf, Speicher ============ */
+const snap = () => JSON.stringify({ name: sch.name, parts: sch.parts, wires: sch.wires, nid: sch.nid, scopes: sch.scopes });
+function commit(noRebuild, noUI) {
+  hist = hist.slice(0, hi + 1); hist.push(snap()); if (hist.length > 100) hist.shift(); hi = hist.length - 1;
+  try { localStorage.setItem('sch.cur', snap()); } catch (e) {}
+  if (!noRebuild) rebuild();
+  if (!noUI) refreshUI();
+  draw();
+}
+function restore(i) { const s = JSON.parse(hist[i]); Object.assign(sch, s); hi = i; sel = null; rebuild(); refreshUI(); draw(); try { localStorage.setItem('sch.cur', hist[i]); } catch (e) {} }
+const undo = () => { if (hi > 0) restore(hi - 1); };
+const redo = () => { if (hi < hist.length - 1) restore(hi + 1); };
+
+/* ============ Simulation aufbauen ============ */
+function toCore(p) {
+  const K = KINDS[p.k];
+  let pins = pinsOf(p); if (K.map) pins = K.map.map(i => pins[i]);
+  return { id: p.id, k: K.core, vr: K.vr || p.vr, v: p.v, n: 2, pins, sw: p.sw ? 1 : 0, pos: p.pos == null ? 0.5 : p.pos, light: p.pos == null ? 0.5 : p.pos, pressed: !!p.pressed, rint: 0.01, item: p };
+}
+function rebuild() {
+  const old = circ && sim ? { elems: circ.elems, t: sim.t } : null;
+  wrapMap.clear();
+  const parts = [], ground = [];
+  sch.parts.forEach(p => {
+    if (p.k === 'GND') { ground.push(pinsOf(p)[0]); return; }
+    const w = toCore(p); wrapMap.set(p.id, w); parts.push(w);
+  });
+  circ = LS.buildCircuit({ parts, tracks: [], wires: sch.wires, ground });
+  sim = LS.createSim(circ);
+  if (old) {                                      // Kondensator- und Spulenzustände übernehmen
+    const find = e => old.elems.find(o => o.part && e.part && o.part.id === e.part.id && o.type === e.type && (o.sub || '') === (e.sub || ''));
+    circ.elems.forEach(e => { const o = find(e); if (!o) return; if (e.type === 'C') e.vprev = o.vprev; if (e.type === 'L') e.iprev = o.iprev; });
+    sim.t = old.t;
+  }
+  scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] }));
+  flows.clear();
+}
+const sv = key => { const n = circ ? circ.nodeOfKey(key) : -1; return n < 0 || !sim ? NaN : sim.v[n]; };
+const hasGround = () => sch.parts.some(p => p.k === 'GND');
+
+/* ============ Rechenschritte ============ */
+function dtFor(rate) {            // Zeitschritt aus dem gewünschten Tempo (simulierte Sekunden je echte Sekunde)
+  const perFrame = rate / 60, steps = clamp(Math.round(perFrame / 5e-6), 20, 400);
+  return Math.max(perFrame / steps, 1e-9);
+}
+const rateOf = s => Math.pow(10, -6 + 8 * s);     // Regler 0..1 -> 1 µs/s ... 100 s/s
+function advance(realDt) {
+  if (!sim || circ.nn === 0) return;
+  const target = rateOf(tempo) * realDt, dt = dtFor(rateOf(tempo));
+  const n = Math.max(1, Math.round(target / dt)), t0 = performance.now();
+  const every = graphWin / 400;
+  for (let i = 0; i < n; i++) {
+    sim.step(dt);
+    sampleScopes(every);
+    if ((i & 15) === 15 && performance.now() - t0 > 11) break;
+  }
+  computeFlows();
+}
+function termI(e) {
+  switch (e.type) {
+    case 'Q': return [e.ic, e.ib, -(e.ic + e.ib)];
+    case 'V': return [-e.i, e.i];
+    default: return [e.i, -e.i];
+  }
+}
+function computeFlows() {
+  // Stromeinspeisung je Punkt (in die Bauteile hinein)
+  const J = new Map(), pk = (p, i) => gk(...pinsOf(p)[i]);
+  const tI = [];
+  circ.elems.forEach(e => {
+    const w = e.part && e.part.item; if (!w) return;
+    const K = KINDS[w.k], map = K.map;
+    const I = termI(e); const physPins = pinsOf(w);
+    e.pi.forEach((ci, j) => {
+      const oi = map ? map[ci] : ci;
+      const key = gk(physPins[oi][0], physPins[oi][1]);
+      J.set(key, (J.get(key) || 0) + (I[j] || 0));
+    });
+  });
+  // Graph aus Drähten
+  const adj = new Map();
+  sch.wires.forEach(w => {
+    const a = gk(w.x1, w.y1), b = gk(w.x2, w.y2);
+    if (!adj.has(a)) adj.set(a, []); if (!adj.has(b)) adj.set(b, []);
+    adj.get(a).push({ w, to: b, dir: 1 }); adj.get(b).push({ w, to: a, dir: -1 });
+  });
+  flows.clear(); const seen = new Set(); let mx = 0;
+  adj.forEach((_, root) => {
+    if (seen.has(root)) return;
+    const order = [], parent = new Map(); parent.set(root, null); seen.add(root);
+    const st = [root];
+    while (st.length) { const k = st.pop(); order.push(k); for (const ed of adj.get(k)) if (!seen.has(ed.to)) { seen.add(ed.to); parent.set(ed.to, { k, ed }); st.push(ed.to); } }
+    const sub = new Map(); order.forEach(k => sub.set(k, J.get(k) || 0));
+    for (let i = order.length - 1; i > 0; i--) {
+      const k = order[i], pr = parent.get(k); sub.set(pr.k, sub.get(pr.k) + sub.get(k));
+      // Strom von Elternknoten zu Kind = Summe der Einspeisung im Teilbaum
+      const f = sub.get(k), ed = pr.ed;                // ed: Kante von Eltern zu Kind, dir=+1 wenn Eltern = Ende 1
+      flows.set(ed.w.id, ed.dir === 1 ? f : -f); mx = Math.max(mx, Math.abs(f));
+    }
+  });
+  // Körper-Ströme
+  bodyI.clear();
+  circ.elems.forEach(e => {
+    const w = e.part && e.part.item; if (!w) return;
+    let I;
+    if (e.type === 'V') I = -e.i; else if (e.type === 'Q') I = e.ic; else I = e.i;
+    bodyI.set(w.id + (e.sub ? e.sub : '') + (e.type === 'S' ? '|' + circ.elems.indexOf(e) : ''), { e, I });
+    mx = Math.max(mx, Math.abs(I || 0));
+  });
+  imax = Math.max(mx, 1e-12);
+  let vm = 1e-3; for (let i = 1; i <= sim.N; i++) vm = Math.max(vm, Math.abs(sim.v[i])); vmax = vm;
+}
+
+/* ============ Graphen ============ */
+function scopeValues(sc) {
+  if (sc.t === 'node') { const v = sv(sc.key); return [v, NaN]; }
+  const p = byPart(sc.id); if (!p || !circ) return [NaN, NaN];
+  const pins = pinsOf(p), K = KINDS[p.k], es = circ.elems.filter(e => e.part && e.part.id === p.id);
+  const e = es.find(x => x.type !== 'S' || x.closed) || es[0]; if (!e) return [NaN, NaN];
+  let v;
+  if (e.type === 'Q') v = sv(gk(...pins[1])) - sv(gk(...pins[2]));
+  else v = sv(gk(...pins[0])) - sv(gk(...pins[1]));
+  const i = e.type === 'Q' ? e.ic : (e.type === 'V' ? -e.i : e.i);
+  return [v, i];
+}
+let lastSample = -1;
+function sampleScopes(every) {
+  if (sim.t - lastSample < every && lastSample >= 0) return;
+  lastSample = sim.t;
+  sch.scopes.forEach((sc, k) => {
+    const b = scopeBuf[k]; if (!b) return;
+    const [v, i] = scopeValues(sc);
+    b.t.push(sim.t); b.v.push(v); b.i.push(i);
+    const lim = sim.t - graphWin * 1.05;
+    while (b.t.length > 2 && b.t[0] < lim) { b.t.shift(); b.v.shift(); b.i.shift(); }
+  });
+}
+
+/* ============ Zeichnen ============ */
+const cv = $('#cv');
+let cx = cv.getContext('2d');
+let PRINT = false;
+let dpr = 1;
+function resize() { const r = cv.getBoundingClientRect(); dpr = window.devicePixelRatio || 1; cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); draw(); }
+new ResizeObserver(resize).observe(cv);
+const X = x => view.ox + x * view.s, Y = y => view.oy + y * view.s;
+const toGrid = (sx, sy) => [(sx - view.ox) / view.s, (sy - view.oy) / view.s];
+const snapG = (gx, gy) => [Math.round(gx), Math.round(gy)];
+const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
+const GRAY = [150, 156, 164], GREEN = [20, 224, 80], RED = [255, 59, 48];
+function vcol(v) {
+  if (!running && !sim.t || !isFinite(v)) return '#bfc5cc';
+  const t = clamp(Math.abs(v) / vmax, 0, 1);
+  if (Math.abs(v) < 1e-6 * vmax || t < 0.01) return 'rgb(150,156,164)';
+  const c = mix(GRAY, v > 0 ? GREEN : RED, Math.pow(t, 0.6));
+  return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+const showSim = () => !PRINT && simMode && sim && (sim.t > 0 || running);
+const keyV = key => (showSim() ? vcol(sv(key)) : (PRINT ? '#111' : '#bfc5cc'));
+function dotsOnPath(c, pts, I, ph) {
+  if (!showSim() || !isFinite(I) || Math.abs(I) / imax < 0.003) return;
+  // Länge
+  let L = 0; const seg = [];
+  for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(l); L += l; }
+  const sp = 1.0; let off = ((ph.v % sp) + sp) % sp;
+  c.fillStyle = '#ffe14d';
+  for (let d = off; d <= L; d += sp) {
+    let acc = 0, i = 0; while (i < seg.length - 1 && acc + seg[i] < d) { acc += seg[i]; i++; }
+    const u = seg[i] ? (d - acc) / seg[i] : 0;
+    const x = pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, y = pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u;
+    c.beginPath(); c.arc(x, y, 0.13, 0, 7); c.fill();
+  }
+}
+const phase = new Map();
+function ph(id) { if (!phase.has(id)) phase.set(id, { v: 0 }); return phase.get(id); }
+function stepPhases(realDt) {
+  const sp = dotSpeed * 7;
+  flows.forEach((f, id) => { ph('w' + id).v += (f / imax) * sp * realDt; });
+  bodyI.forEach((o, id) => { ph('b' + id).v += ((o.I || 0) / imax) * sp * realDt; });
+}
+
+function drawPart(p, selected) {
+  const K = KINDS[p.k], S = view.s, c = cx, pins = pinsOf(p);
+  c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(p.r * Math.PI / 2); c.scale(S, S);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  const pc = pins.map(q => keyV(gk(q[0], q[1])));
+  const body = PRINT ? '#111' : '#e8eaed';
+  const lead = (x0, y0, x1, y1, col) => { c.strokeStyle = col; c.lineWidth = 0.13; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
+  c.strokeStyle = body; c.fillStyle = body; c.lineWidth = 0.11;
+  const line = (x0, y0, x1, y1) => { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
+  const circle = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); };
+  switch (p.k) {
+    case 'R': lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8); break;
+    case 'POT':
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8);
+      lead(2, -2, 2, -0.75, pc[2]); c.beginPath(); c.moveTo(1.75, -0.95); c.lineTo(2.25, -0.95); c.lineTo(2, -0.45); c.closePath(); c.fill(); break;
+    case 'LDR':
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8);
+      line(0.9, -1.3, 1.5, -0.75); line(1.5, -1.3, 2.1, -0.75); break;
+    case 'C': case 'CE':
+      lead(0, 0, 1.8, 0, pc[0]); lead(2.2, 0, 4, 0, pc[1]); c.lineWidth = 0.16; line(1.8, -1, 1.8, 1); line(2.2, -1, 2.2, 1);
+      if (p.k === 'CE') { c.lineWidth = 0.09; line(1.1, -0.75, 1.5, -0.75); line(1.3, -0.95, 1.3, -0.55); } break;
+    case 'L':
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]);
+      for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(1.25 + i * 0.5, 0, 0.25, Math.PI, 0); c.stroke(); } break;
+    case 'D': case 'ZD': case 'LED':
+      lead(0, 0, 1.4, 0, pc[0]); lead(2.6, 0, 4, 0, pc[1]);
+      c.beginPath(); c.moveTo(1.4, -0.7); c.lineTo(1.4, 0.7); c.lineTo(2.6, 0); c.closePath(); c.stroke();
+      line(2.6, -0.7, 2.6, 0.7);
+      if (p.k === 'ZD') { line(2.6, -0.7, 2.3, -0.95); line(2.6, 0.7, 2.9, 0.95); }
+      if (p.k === 'LED') {
+        c.lineWidth = 0.09;
+        [[1.7, -1.0], [2.4, -1.0]].forEach(([ax, ay]) => { line(ax, ay, ax + 0.55, ay - 0.55); c.beginPath(); c.moveTo(ax + 0.55, ay - 0.55); c.lineTo(ax + 0.2, ay - 0.5); c.lineTo(ax + 0.5, ay - 0.2); c.closePath(); c.fill(); });
+      } break;
+    case 'NPN': case 'PNP': {
+      lead(0, 0, 1, 0, pc[0]); lead(2, -2, 2, -1.2, pc[1]); lead(2, 2, 2, 1.2, pc[2]);
+      c.lineWidth = 0.2; line(1, -0.9, 1, 0.9); c.lineWidth = 0.11;
+      line(1, -0.4, 2, -1.2); line(1, 0.4, 2, 1.2);
+      c.lineWidth = 0.05; c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : 'rgba(232,234,237,.45)'; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.11;
+      c.beginPath();
+      if (p.k === 'NPN') { c.moveTo(2, 1.2); c.lineTo(1.45, 1.1); c.lineTo(1.8, 0.7); } else { c.moveTo(1, 0.4); c.lineTo(1.55, 0.5); c.lineTo(1.2, 0.9); }
+      c.closePath(); c.fill(); break; }
+    case 'BAT':
+      lead(0, 0, 1.8, 0, pc[0]); lead(2.2, 0, 4, 0, pc[1]);
+      c.lineWidth = 0.18; line(1.8, -0.95, 1.8, 0.95); line(2.2, -0.5, 2.2, 0.5);
+      c.lineWidth = 0.09; line(1.0, -0.75, 1.4, -0.75); line(1.2, -0.95, 1.2, -0.55); break;
+    case 'AC':
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); circle(2, 0, 1);
+      c.beginPath(); for (let i = 0; i <= 20; i++) { const x = 1.35 + i * 0.065, y = -Math.sin(i / 20 * Math.PI * 2) * 0.32; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.stroke(); break;
+    case 'GND':
+      lead(0, 0, 0, 0.55, pc[0]); line(-0.6, 0.55, 0.6, 0.55); line(-0.4, 0.8, 0.4, 0.8); line(-0.18, 1.05, 0.18, 1.05); break;
+    case 'SPST': case 'PB': {
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]);
+      circle(1, 0, 0.17); circle(3, 0, 0.17);
+      if (p.k === 'SPST') { if (p.sw) line(1, 0, 3, 0); else line(1, 0, 2.85, -0.95); }
+      else { const y = p.pressed ? -0.1 : -0.65; line(1.2, y, 2.8, y); line(2, y, 2, y - 0.6); line(1.6, y - 0.6, 2.4, y - 0.6); }
+      break; }
+    case 'SPDT':
+      lead(0, 0, 1, 0, pc[0]); lead(3, -1, 4, -1, pc[1]); lead(3, 1, 4, 1, pc[2]);
+      circle(1, 0, 0.17); circle(3, -1, 0.17); circle(3, 1, 0.17);
+      line(1, 0, 3, p.sw ? 1 : -1); break;
+    case 'LAMP': {
+      lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]); circle(2, 0, 0.9); line(1.36, -0.64, 2.64, 0.64); line(2.64, -0.64, 1.36, 0.64); break; }
+    case 'VM': case 'AM':
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); circle(2, 0, 1);
+      c.restore(); c.save();
+      c.fillStyle = body; c.font = `600 ${S * 1.1}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      { const [ax, ay] = rot(2, 0, p.r); c.fillText(p.k === 'VM' ? 'V' : 'A', X(p.x + ax), Y(p.y + ay) + 1); }
+      c.restore(); c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(p.r * Math.PI / 2); c.scale(S, S); break;
+  }
+  // Leuchten (LED, Lampe)
+  if (showSim() && (p.k === 'LED' || p.k === 'LAMP')) {
+    const o = bodyI.get(String(p.id));
+    if (o) {
+      let b = 0, hex = '#ffd27a';
+      if (p.k === 'LED') { b = Math.pow(clamp(o.e.i / 0.02, 0, 1), 0.6); hex = { rot: '#ff3b2f', 'grün': '#2fe05a', gelb: '#ffe033', blau: '#3d8bff', 'weiß': '#ffffff', orange: '#ff9a2f' }[p.v] || '#ff3b2f'; if (sim.burnt.has(p.id)) b = 0; }
+      else { const pw = Math.abs(o.e.i * o.e.i / o.e.g); b = clamp(pw / (o.e.lamp || 0.6), 0, 1.2); }
+      if (b > 0.02) {
+        const n = parseInt(hex.slice(1), 16), R = (n >> 16) & 255, G = (n >> 8) & 255, B = n & 255;
+        const cxx = p.k === 'LED' ? 2 : 2, cyy = p.k === 'LED' ? -0.2 : 0, rr = (p.k === 'LED' ? 2.3 : 2.1);
+        const g = c.createRadialGradient(cxx, cyy, 0, cxx, cyy, rr);
+        g.addColorStop(0, `rgba(${R},${G},${B},${0.9 * Math.min(b, 1)})`); g.addColorStop(0.45, `rgba(${R},${G},${B},${0.35 * Math.min(b, 1)})`); g.addColorStop(1, `rgba(${R},${G},${B},0)`);
+        c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = g; c.beginPath(); c.arc(cxx, cyy, rr, 0, 7); c.fill(); c.restore();
+      }
+    }
+  }
+  // Strompunkte im Körper
+  if (showSim()) {
+    c.fillStyle = '#ffe14d';
+    const bd = id => bodyI.get(id);
+    const path = (pts, I, key) => dotsOnPath(c, pts, I, ph('b' + key));
+    if (p.k === 'NPN' || p.k === 'PNP') {
+      const o = bd(String(p.id)); if (o) { const e = o.e; path([[0, 0], [1, 0]], e.ib, p.id + 'b'); path([[2, -2], [2, -1.2], [1, -0.4]], e.ic, p.id + 'c'); path([[1, 0.4], [2, 1.2], [2, 2]], -(e.ic + e.ib), p.id + 'e'); }
+    } else if (p.k === 'POT') {
+      const a = bd(p.id + 'AW'), b = bd(p.id + 'WB');
+      if (a) path([[0, 0], [2, 0]], a.I, p.id + 'a'); if (b) path([[2, 0], [4, 0]], b.I, p.id + 'b');
+    } else if (p.k === 'SPDT') {
+      const es = circ.elems.filter(e => e.part && e.part.id === p.id && e.closed);
+      es.forEach(e => { const idx = circ.elems.indexOf(e), o = bodyI.get(p.id + '|' + idx); if (o) path([[0, 0], [2, p.sw ? 1 : -1], [4, p.sw ? 1 : -1]], -o.I, p.id + 'x'); });
+    } else if (K.pins.length === 2) {
+      let o = bd(String(p.id)) || [...bodyI.entries()].find(([k]) => k.startsWith(p.id + '|'));
+      if (Array.isArray(o)) o = o[1];
+      if (o) path([[0, 0], [4, 0]], o.I, p.id);
+    }
+  }
+  c.restore();
+  // Beschriftung und Werte
+  const [mx, my] = rot(K.pins.length > 1 ? 2 : 0, 0, p.r);
+  const lx = X(p.x + mx), ly = Y(p.y + my);
+  c.fillStyle = PRINT ? '#111' : '#cfd5db'; c.font = `${Math.max(10, S * 0.62)}px -apple-system,Segoe UI,sans-serif`; c.textBaseline = 'middle';
+  let txt = valueText(p);
+  if (p.k === 'VM' && showSim()) txt = fmt(sv(gk(...pins[0])) - sv(gk(...pins[1])), 'V');
+  if (p.k === 'AM' && showSim()) { const o = [...bodyI.entries()].find(([k]) => k === String(p.id)); txt = o ? fmt(o[1].e.i, 'A') : ''; }
+  if (p.l && p.k !== 'GND') txt = p.l + (txt ? '  ' + txt : '');
+  if (txt) {
+    const vert = (p.r & 1) === 1;
+    c.textAlign = vert ? 'left' : 'center';
+    const off = p.k === 'GND' ? 0 : (p.k === 'NPN' || p.k === 'PNP' ? 0 : 1.55);
+    if (p.k === 'NPN' || p.k === 'PNP') c.fillText(txt, lx + (rot(2.9, 0, p.r)[0] - mx) * S + (vert ? 0 : 0), ly + (rot(2.9, 0, p.r)[1] - my) * S);
+    else if (p.k !== 'GND') c.fillText(txt, vert ? lx + (p.k === 'LED' || p.k === 'LAMP' ? 2.1 : 1.3) * S : lx, vert ? ly : ly - off * S);
+  }
+  if (selected) {
+    const [bx0, by0, bx1, by1] = K.box, cs = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([a, b]) => { const [ra, rb] = rot(a, b, p.r); return [X(p.x + ra), Y(p.y + rb)]; });
+    const xs = cs.map(q => q[0]), ys = cs.map(q => q[1]);
+    c.strokeStyle = '#3b9eff'; c.lineWidth = 2; c.setLineDash([6, 4]);
+    c.strokeRect(Math.min(...xs) - 3, Math.min(...ys) - 3, Math.max(...xs) - Math.min(...xs) + 6, Math.max(...ys) - Math.min(...ys) + 6); c.setLineDash([]);
+  }
+}
+function valueText(p) {
+  const K = KINDS[p.k];
+  switch (p.k) {
+    case 'R': case 'POT': return fmtVal(p.v, 'Ω');
+    case 'C': case 'CE': return fmtVal(p.v, 'F');
+    case 'L': return fmtVal(p.v, 'H');
+    case 'BAT': return fmtVal(p.v, 'V');
+    case 'ZD': return fmtVal(p.v, 'V');
+    case 'AC': return p.v;
+    case 'LED': case 'LAMP': return p.v;
+    case 'D': case 'NPN': case 'PNP': return p.v;
+    default: return '';
+  }
+}
+function fmtVal(v, u) { v = String(v || '').trim(); if (!v) return ''; return /[A-Za-zΩµ]$/.test(v) && !/[kKMmuµnpGR]$/.test(v) ? v : v + ' ' + u; }
+function fmt(v, unit) {
+  if (!isFinite(v)) return '--';
+  const a = Math.abs(v); if (a < 1e-12) return '0 ' + unit;
+  const st = [[1e-9, 'n'], [1e-6, 'µ'], [1e-3, 'm'], [1, ''], [1e3, 'k'], [1e6, 'M']]; let b = st[3];
+  for (const s of st) if (a >= s[0] * 0.9999) b = s;
+  const x = v / b[0]; return x.toFixed(Math.abs(x) >= 100 ? 1 : Math.abs(x) >= 10 ? 2 : 3) + ' ' + b[1] + unit;
+}
+
+function draw() { dirtyDraw = true; }
+function drawCircuit() {
+  // Drähte
+  const ends = new Map(); const cnt = k => ends.set(k, (ends.get(k) || 0) + 1);
+  sch.parts.forEach(p => pinsOf(p).forEach(q => cnt(gk(q[0], q[1]))));
+  sch.wires.forEach(w => { cnt(gk(w.x1, w.y1)); cnt(gk(w.x2, w.y2)); });
+  sch.wires.forEach(w => {
+    const col = keyV(gk(w.x1, w.y1)), isSel = sel && sel.t === 'wire' && sel.id === w.id;
+    cx.lineCap = 'round';
+    if (isSel) { cx.strokeStyle = 'rgba(59,158,255,.6)'; cx.lineWidth = 9; cx.beginPath(); cx.moveTo(X(w.x1), Y(w.y1)); cx.lineTo(X(w.x2), Y(w.y2)); cx.stroke(); }
+    cx.strokeStyle = col; cx.lineWidth = Math.max(2.5, view.s * 0.13); cx.beginPath(); cx.moveTo(X(w.x1), Y(w.y1)); cx.lineTo(X(w.x2), Y(w.y2)); cx.stroke();
+    // Strompunkte
+    if (showSim()) {
+      const f = flows.get(w.id);
+      if (f != null) {
+        cx.save(); cx.translate(X(w.x1), Y(w.y1)); const ang = Math.atan2(w.y2 - w.y1, w.x2 - w.x1); cx.rotate(ang); cx.scale(view.s, view.s);
+        dotsOnPath(cx, [[0, 0], [Math.hypot(w.x2 - w.x1, w.y2 - w.y1), 0]], f, ph('w' + w.id)); cx.restore();
+      }
+    }
+  });
+  ends.forEach((n, k) => { if (n >= 3) { const [x, y] = k.split(',').map(Number); cx.fillStyle = keyV(k); cx.beginPath(); cx.arc(X(x), Y(y), Math.max(3.5, view.s * 0.18), 0, 7); cx.fill(); } });
+  sch.parts.forEach(p => drawPart(p, sel && sel.t === 'part' && sel.id === p.id));
+}
+function render() {
+  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const W = cv.width / dpr, H = cv.height / dpr;
+  cx.fillStyle = '#080b0e'; cx.fillRect(0, 0, W, H);
+  // Raster
+  if (view.s >= 10) {
+    cx.fillStyle = 'rgba(255,255,255,.13)';
+    const x0 = Math.floor(-view.ox / view.s), x1 = Math.ceil((W - view.ox) / view.s), y0 = Math.floor(-view.oy / view.s), y1 = Math.ceil((H - view.oy) / view.s);
+    for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) cx.fillRect(X(x) - 1, Y(y) - 1, 2, 2);
+  }
+  drawCircuit();
+  // Vorschau
+  if (ghost && tool === 'place' && placeKind) {
+    cx.globalAlpha = 0.6; drawPart({ id: -1, k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: KINDS[placeKind].v, sw: 0 }, false); cx.globalAlpha = 1;
+  }
+  if (wireStart && cursor) {
+    const e = ortho(wireStart, cursor);
+    cx.strokeStyle = 'rgba(255,225,77,.9)'; cx.lineWidth = 3; cx.setLineDash([8, 5]);
+    cx.beginPath(); cx.moveTo(X(wireStart[0]), Y(wireStart[1])); cx.lineTo(X(e[0]), Y(e[1])); cx.stroke(); cx.setLineDash([]);
+    cx.strokeStyle = '#3b9eff'; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(wireStart[0]), Y(wireStart[1]), 6, 0, 7); cx.stroke();
+  }
+  if (cursor && tool !== 'select') { cx.strokeStyle = 'rgba(59,158,255,.9)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(cursor[0]), Y(cursor[1]), 7, 0, 7); cx.stroke(); }
+  drawGraphs(W, H);
+}
+function drawGraphs(W, H) {
+  const n = sch.scopes.length; if (!n) return;
+  const gh = Math.min(150, H * 0.34), gw = Math.min(W / n, 330);
+  sch.scopes.forEach((sc, k) => {
+    const b = scopeBuf[k], x0 = k * gw, y0 = H - gh;
+    cx.fillStyle = 'rgba(0,0,0,.78)'; cx.fillRect(x0, y0, gw - 2, gh);
+    cx.strokeStyle = 'rgba(120,200,130,.25)'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x0, y0 + gh / 2); cx.lineTo(x0 + gw - 2, y0 + gh / 2); cx.stroke();
+    const label = sc.t === 'node' ? 'Knoten ' + sc.key : (byPart(sc.id) ? (KINDS[byPart(sc.id).k].name + ' ' + valueText(byPart(sc.id))) : '?');
+    cx.fillStyle = '#e8eaed'; cx.font = '12px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'top'; cx.fillText(label, x0 + 6, y0 + 5);
+    if (!b || b.t.length < 2) return;
+    const draw1 = (arr, col) => {
+      let mn = Infinity, mxv = -Infinity; arr.forEach(v => { if (isFinite(v)) { mn = Math.min(mn, v); mxv = Math.max(mxv, v); } });
+      if (!isFinite(mn)) return null;
+      const m = Math.max(Math.abs(mn), Math.abs(mxv), 1e-12), t1 = b.t[b.t.length - 1], t0 = t1 - graphWin;
+      cx.strokeStyle = col; cx.lineWidth = 1.8; cx.beginPath(); let first = true;
+      for (let i = 0; i < arr.length; i++) { const x = x0 + (b.t[i] - t0) / graphWin * (gw - 2), y = y0 + gh / 2 - arr[i] / m * (gh / 2 - 18); if (x < x0) continue; if (first) { cx.moveTo(x, y); first = false; } else cx.lineTo(x, y); }
+      cx.stroke(); return m;
+    };
+    const mv = draw1(b.v, '#ffe14d'), mi = sc.t === 'node' ? null : draw1(b.i, '#4cd964');
+    cx.font = '11px sans-serif'; cx.textBaseline = 'bottom';
+    if (mv != null) { cx.fillStyle = '#ffe14d'; cx.fillText('U max ' + fmt(mv, 'V'), x0 + 6, y0 + gh - 4); }
+    if (mi != null) { cx.fillStyle = '#4cd964'; cx.textAlign = 'right'; cx.fillText('I max ' + fmt(mi, 'A'), x0 + gw - 8, y0 + gh - 4); }
+  });
+  cx.fillStyle = '#c8d0d8'; cx.font = '11px sans-serif'; cx.textAlign = 'right'; cx.textBaseline = 'bottom';
+}
+
+/* ============ Treffertest ============ */
+function partAt(fx, fy) {
+  for (let i = sch.parts.length - 1; i >= 0; i--) {
+    const p = sch.parts[i], K = KINDS[p.k], [a, b] = rot(fx - p.x, fy - p.y, (4 - p.r) & 3);
+    if (a >= K.box[0] - 0.2 && a <= K.box[2] + 0.2 && b >= K.box[1] - 0.2 && b <= K.box[3] + 0.2) return p;
+  }
+  return null;
+}
+function segDist(px, py, x1, y1, x2, y2) { const dx = x2 - x1, dy = y2 - y1, l = dx * dx + dy * dy; let t = l ? ((px - x1) * dx + (py - y1) * dy) / l : 0; t = clamp(t, 0, 1); return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy)); }
+function wireAt(fx, fy) { let best = null, bd = 0.45; sch.wires.forEach(w => { const d = segDist(fx, fy, w.x1, w.y1, w.x2, w.y2); if (d < bd) { bd = d; best = w; } }); return best; }
+const ortho = (s, g) => (Math.abs(g[0] - s[0]) >= Math.abs(g[1] - s[1]) ? [g[0], s[1]] : [s[0], g[1]]);
+
+/* ============ Eingabe ============ */
+const ptrs = new Map(); let gest = null;
+const rectOf = () => cv.getBoundingClientRect();
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  const r = rectOf(); ptrs.set(e.pointerId, { x: e.clientX - r.left, y: e.clientY - r.top });
+  if (ptrs.size === 2) { cancelAct(); const [a, b] = [...ptrs.values()]; gest = { cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1 }; return; }
+  if (ptrs.size > 2) return;
+  onDown(ptrs.get(e.pointerId));
+});
+cv.addEventListener('pointermove', e => {
+  const r = rectOf(), p = { x: e.clientX - r.left, y: e.clientY - r.top };
+  if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') { const [fx, fy] = toGrid(p.x, p.y); cursor = snapG(fx, fy); if (tool === 'place') ghost = cursor; draw(); } return; }
+  ptrs.set(e.pointerId, p);
+  if (gest) {
+    const [a, b] = [...ptrs.values()]; if (!b) return;
+    const c = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, d = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+    const ns = clamp(view.s * d / gest.d, 8, 80), f = ns / view.s;
+    view.ox = c.x - (gest.cx - view.ox) * f; view.oy = c.y - (gest.cy - view.oy) * f; view.s = ns; gest = { cx: c.x, cy: c.y, d }; draw(); return;
+  }
+  onMove(p);
+});
+function pend(e) { if (!ptrs.has(e.pointerId)) return; const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (gest) { if (!ptrs.size) gest = null; return; } if (e.type === 'pointercancel') cancelAct(); else onUp(p); }
+cv.addEventListener('pointerup', pend); cv.addEventListener('pointercancel', pend);
+cv.addEventListener('wheel', e => { e.preventDefault(); const r = rectOf(), x = e.clientX - r.left, y = e.clientY - r.top, ns = clamp(view.s * Math.exp(-e.deltaY * 0.0015), 8, 80), f = ns / view.s; view.ox = x - (x - view.ox) * f; view.oy = y - (y - view.oy) * f; view.s = ns; draw(); }, { passive: false });
+cv.addEventListener('contextmenu', e => e.preventDefault());
+
+function cancelAct() { if (act && act.t === 'move' && act.moved) { act.restore && act.restore(); } act = null; draw(); }
+function onDown(p) {
+  if (simMode && tool !== 'select' && tool !== 'scope') return;
+  const [fx, fy] = toGrid(p.x, p.y), g = snapG(fx, fy); cursor = g;
+  switch (tool) {
+    case 'select': {
+      const part = partAt(fx, fy);
+      if (part) {
+        sel = { t: 'part', id: part.id };
+        const pins = pinsOf(part).map(q => gk(q[0], q[1]));
+        const att = []; sch.wires.forEach(w => { if (pins.includes(gk(w.x1, w.y1))) att.push([w, 1]); if (pins.includes(gk(w.x2, w.y2))) att.push([w, 2]); });
+        act = { t: 'move', kind: 'part', id: part.id, g0: g, o: { x: part.x, y: part.y }, att: att.map(([w, e]) => [w, e, e === 1 ? w.x1 : w.x2, e === 1 ? w.y1 : w.y2]), moved: false, sx: p.x, sy: p.y };
+        if (KINDS[part.k].momentary) { part.pressed = true; const w = wrapMap.get(part.id); if (w) w.pressed = true; act.press = part; }
+      } else {
+        const w = wireAt(fx, fy);
+        if (w) { sel = { t: 'wire', id: w.id }; act = { t: 'move', kind: 'wire', id: w.id, g0: g, o: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 }, moved: false }; }
+        else { sel = null; act = { t: 'pan', lx: p.x, ly: p.y }; }
+      }
+      refreshUI(); break; }
+    case 'wire':
+      if (wireStart) {
+        const e = ortho(wireStart, g);
+        if (e[0] === wireStart[0] && e[1] === wireStart[1]) { wireStart = null; }
+        else { addWire(wireStart, e); wireStart = e; }
+        act = { t: 'none' };
+      } else { wireStart = g; act = { t: 'wire', start: g }; }
+      break;
+    case 'place': ghost = g; act = { t: 'place' }; break;
+    case 'erase': eraseAt(fx, fy); act = { t: 'erase' }; break;
+    case 'scope': { const part = partAt(fx, fy); if (part && part.k !== 'GND') toggleScope({ t: 'part', id: part.id }); else { const w = wireAt(fx, fy); if (w) toggleScope({ t: 'node', key: gk(w.x1, w.y1) }); } act = { t: 'none' }; break; }
+  }
+  draw();
+}
+function onMove(p) {
+  const [fx, fy] = toGrid(p.x, p.y), g = snapG(fx, fy); cursor = g;
+  if (!act) { draw(); return; }
+  switch (act.t) {
+    case 'pan': view.ox += p.x - act.lx; view.oy += p.y - act.ly; act.lx = p.x; act.ly = p.y; break;
+    case 'move': {
+      if (simMode) break;
+      const dx = g[0] - act.g0[0], dy = g[1] - act.g0[1];
+      if ((dx || dy) && !act.moved) { act.moved = true; if (act.press) { act.press.pressed = false; const w = wrapMap.get(act.press.id); if (w) w.pressed = false; } }
+      if (!act.moved) break;
+      if (act.kind === 'part') {
+        const part = byPart(act.id); part.x = act.o.x + dx; part.y = act.o.y + dy;
+        act.att.forEach(([w, e, x, y]) => { if (e === 1) { w.x1 = x + dx; w.y1 = y + dy; } else { w.x2 = x + dx; w.y2 = y + dy; } });
+      } else { const w = byWire(act.id); w.x1 = act.o.x1 + dx; w.y1 = act.o.y1 + dy; w.x2 = act.o.x2 + dx; w.y2 = act.o.y2 + dy; }
+      break; }
+    case 'place': ghost = g; break;
+    case 'erase': eraseAt(fx, fy); break;
+  }
+  draw();
+}
+function onUp(p) {
+  const a = act; act = null; if (!a) return;
+  switch (a.t) {
+    case 'move':
+      if (a.press) { a.press.pressed = false; const w = wrapMap.get(a.press.id); if (w) w.pressed = false; }
+      if (a.moved) commit();
+      else if (a.kind === 'part') {
+        const part = byPart(a.id), K = KINDS[part.k];
+        if (K.toggle) { part.sw = part.sw ? 0 : 1; const w = wrapMap.get(part.id); if (w) w.sw = part.sw; commit(true); }
+      }
+      break;
+    case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: 0, pos: 0.5, vr: K.vr, l: nextLabel(placeKind) }); commit(); } break;
+    case 'wire': if (cursor && (cursor[0] !== a.start[0] || cursor[1] !== a.start[1])) { const e = ortho(a.start, cursor); addWire(a.start, e); wireStart = e; } break;
+    case 'erase': if (a.did) commit(); break;
+  }
+  draw();
+}
+function addWire(a, b) {
+  if (a[0] === b[0] && a[1] === b[1]) return;
+  sch.wires.push({ id: nid(), x1: a[0], y1: a[1], x2: b[0], y2: b[1] }); commit();
+}
+function eraseAt(fx, fy) {
+  const part = partAt(fx, fy);
+  if (part) { sch.parts = sch.parts.filter(p => p !== part); sch.scopes = sch.scopes.filter(s => !(s.t === 'part' && s.id === part.id)); sel = null; if (act) act.did = true; draw(); return; }
+  const w = wireAt(fx, fy); if (w) { sch.wires = sch.wires.filter(x => x !== w); sel = null; if (act) act.did = true; draw(); }
+}
+function toggleScope(sc) {
+  const i = sch.scopes.findIndex(s => s.t === sc.t && s.id === sc.id && s.key === sc.key);
+  if (i >= 0) sch.scopes.splice(i, 1); else { if (sch.scopes.length >= 4) sch.scopes.shift(); sch.scopes.push(sc); }
+  scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; commit(true);
+}
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if (e.key === 'Delete' || e.key === 'Backspace') delSel();
+  else if (e.key === 'r' || e.key === 'R') rotSel(1);
+  else if (e.key === ' ') { e.preventDefault(); toggleRun(); }
+  else if (e.key === 'Escape') { wireStart = null; sel = null; setTool('select'); }
+});
+function delSel() { if (simMode || !sel) return; if (sel.t === 'part') { sch.parts = sch.parts.filter(p => p.id !== sel.id); sch.scopes = sch.scopes.filter(s => !(s.t === 'part' && s.id === sel.id)); } else sch.wires = sch.wires.filter(w => w.id !== sel.id); sel = null; commit(); }
+function rotSel(d) {
+  if (simMode) return;
+  if (tool === 'place' && !sel) { placeRot = (placeRot + d) & 3; draw(); refreshUI(); return; }
+  if (sel && sel.t === 'part') { const p = byPart(sel.id); p.r = (p.r + d) & 3; commit(); }
+}
+function dupSel() { if (simMode || !sel || sel.t !== 'part') return; const p = JSON.parse(JSON.stringify(byPart(sel.id))); p.id = nid(); p.l = ''; p.x += 2; p.y += 2; p.l = nextLabel(p.k); sch.parts.push(p); sel = { t: 'part', id: p.id }; commit(); }
+
+/* ============ Werkzeuge, Palette ============ */
+function setTool(t, kind) {
+  tool = t; placeKind = kind || null; wireStart = null; ghost = null; act = null;
+  if (t !== 'select') sel = null;
+  buildPalette(); refreshUI(); draw();
+}
+function buildPalette() {
+  const chip = (id, label, on, data) => `<button class="chip ${on ? 'on' : ''}" data-t="${id}" ${data || ''}>${label}</button>`;
+  let h;
+  if (simMode) h = chip('select', '☝ Bedienen', tool === 'select') + chip('scope', '∿ Graph', tool === 'scope') + chip('reset', '↺ Zurück', false);
+  else {
+    h = chip('select', '☝ Auswahl', tool === 'select') + chip('wire', '✎ Draht', tool === 'wire') + chip('erase', '⌫ Löschen', tool === 'erase') + '<span class="sep"></span>';
+    CATS.forEach(cat => {
+      Object.keys(KINDS).filter(k => KINDS[k].cat === cat).forEach(k => { h += chip('place', KINDS[k].name, tool === 'place' && placeKind === k, `data-k="${k}"`); });
+      h += '<span class="sep"></span>';
+    });
+  }
+  $('#pal').innerHTML = h;
+}
+$('#pal').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; if (b.dataset.t === 'place') { placeRot = 0; setTool('place', b.dataset.k); } else if (b.dataset.t === 'reset') resetSim(); else setTool(b.dataset.t); });
+$('#pal').addEventListener('wheel', e => { const el = e.currentTarget; if (el.scrollWidth <= el.clientWidth) return; el.scrollLeft += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; e.preventDefault(); }, { passive: false });
+(function () {
+  const el = $('#pal'); let drag = null, sup = false;
+  el.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse' && e.button === 0) drag = { x: e.clientX, l: el.scrollLeft, m: false }; });
+  window.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x; if (Math.abs(dx) > 4) drag.m = true; if (drag.m) el.scrollLeft = drag.l - dx; });
+  window.addEventListener('pointerup', () => { if (drag && drag.m) { sup = true; setTimeout(() => { sup = false; }, 60); } drag = null; });
+  el.addEventListener('click', e => { if (sup) { e.stopPropagation(); e.preventDefault(); } }, true);
+})();
+
+/* ============ Seitenleiste ============ */
+function toggleRun() { if (!simMode) return; running = !running; lastFrame = performance.now(); refreshUI(); }
+function setSimMode(on) {
+  if (on && !sch.parts.length) { toast('Noch keine Bauteile gezeichnet'); return; }
+  simMode = on; sel = null; wireStart = null; ghost = null; act = null;
+  if (on) { tool = 'select'; rebuild(); sim.reset(); phase.clear(); lastSample = -1; running = true; lastFrame = performance.now(); }
+  else { running = false; tool = 'select'; }
+  const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', on ? 'true' : 'false');
+  $('#bRun').style.display = on ? '' : 'none';
+  buildPalette(); refreshUI(); draw();
+}
+function resetSim() { rebuild(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
+function refreshUI() {
+  const side = $('#side'); if (!side) return;
+  $('#bRun').textContent = running ? '⏸ Stopp' : '▶ Start';
+  $('#bRun').classList.toggle('on', running);
+  $('#bUndo').disabled = simMode || hi <= 0; $('#bRedo').disabled = simMode || hi >= hist.length - 1;
+  $('#title').textContent = sch.name;
+  let h = '';
+  if (simMode) {
+    h += `<div class="card"><h4>Simulation</h4>
+    <div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Stopp' : '▶ Start'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>
+    <div class="kv"><span>Zeit</span><b id="tLbl">${fmtT(sim ? sim.t : 0)}</b></div>
+    <label class="sl"><span>Tempo<em id="tempoLbl">${tempoText()}</em></span><input type="range" id="slTempo" min="0" max="1" step="0.005" value="${tempo}"></label>
+    <label class="sl"><span>Strompunkte</span><input type="range" id="slDot" min="0" max="1" step="0.01" value="${dotSpeed}"></label>
+    <div class="kv"><span>Graph-Zeitfenster</span><span>${[0.001, 0.01, 0.1, 1, 10].map(w => `<button class="mini ${Math.abs(w - graphWin) < 1e-9 ? 'on' : ''}" data-win="${w}">${w >= 1 ? w + ' s' : w * 1000 + ' ms'}</button>`).join('')}</span></div>
+  </div><div id="warn"></div>`;
+  }
+  if (!simMode && tool === 'place' && placeKind) {
+    const K = KINDS[placeKind];
+    h += `<div class="card"><h4>${esc(K.name)} setzen</h4><div class="row2"><button class="btn" data-a="rotl">↺</button><span class="sval">${placeRot * 90}°</span><button class="btn" data-a="rotr">↻</button></div><p class="hint2">Auf die Zeichenfläche tippen. Ausrichtung mit ↺ ↻ oder Taste R.</p></div>`;
+  } else if (sel && sel.t === 'part') {
+    const p = byPart(sel.id); if (p) {
+      const K = KINDS[p.k];
+      h += `<div class="card"><h4>${esc(p.l ? p.l + ' · ' : '')}${esc(K.name)}</h4>`;
+      K.props.forEach(([key, label, type, opt, names]) => {
+        if (type === 'text') h += `<label class="f"><span>${label}</span><input data-p="${key}" value="${esc(p[key] == null ? '' : p[key])}" placeholder="${esc(opt || '')}"></label>`;
+        else if (type === 'range') h += `<label class="sl"><span>${label}</span><input type="range" data-p="${key}" min="0" max="1" step="0.01" value="${p[key] == null ? 0.5 : p[key]}"></label>`;
+        else if (type === 'select') h += `<label class="f"><span>${label}</span><select data-p="${key}">${opt.map(o => `<option value="${o}" ${(p[key] || K[key]) === o ? 'selected' : ''}>${names ? names[o] : o}</option>`).join('')}</select></label>`;
+      });
+      if (K.toggle) h += `<button class="btn" data-a="sw">Schalter umlegen (${p.sw ? 'an' : 'aus'})</button>`;
+      if (!simMode) h += `<label class="f" style="margin-top:8px"><span>Bezeichnung</span><input data-p="l" value="${esc(p.l || '')}"></label><div class="row2" style="margin-top:8px"><button class="btn" data-a="rotl">↺</button><button class="btn" data-a="rotr">↻</button><button class="btn" data-a="dup">⧉</button><button class="btn danger" data-a="del">Löschen</button></div>`;
+      if (simMode) h += '<div id="live"></div>';
+      h += '</div>';
+    }
+  } else if (!simMode && sel && sel.t === 'wire') {
+    h += `<div class="card"><h4>Draht</h4><button class="btn danger" data-a="del">Löschen</button></div>`;
+  } else if (!(simMode && !sel)) {
+    h += `<div class="card"><h4>Hinweise</h4><p class="hint2">${{ select: 'Bauteil antippen zum Bearbeiten, ziehen zum Verschieben.', wire: 'Von Punkt zu Punkt ziehen oder nacheinander antippen. Gleichen Punkt nochmal antippen = Ende.', erase: 'Bauteil oder Draht antippen zum Löschen.', scope: 'Bauteil oder Draht antippen: Graph für Spannung und Strom.', place: 'Bauteil in der Leiste wählen.' }[tool]}</p></div>`;
+  }
+  if (simMode && !sel) h += `<div class="card"><h4>Hinweise</h4><p class="hint2">Schalter antippen = umlegen, Taster gedrückt halten. „Graph“ zeigt Spannung und Strom eines Bauteils.</p><p class="hint2">Grün = positive Spannung, Rot = negative, Grau = Masse. Gelbe Punkte zeigen den Stromweg.</p></div>`;
+  if (!simMode) h += `<div class="card"><h4>Drucken und Simulieren</h4><p class="hint2">Oben den Schalter auf „Sim“ stellen, um die Schaltung laufen zu lassen. Im Menü findest du „Drucken“ für den Plan und die Bauteilliste.</p></div>`;
+  side.innerHTML = h;
+}
+const fmtT = t => (t < 1e-3 ? (t * 1e6).toFixed(1) + ' µs' : t < 1 ? (t * 1e3).toFixed(2) + ' ms' : t.toFixed(3) + ' s');
+const tempoText = () => { const r = rateOf(tempo); return r < 1e-3 ? (r * 1e6).toFixed(0) + ' µs/s' : r < 1 ? (r * 1e3).toFixed(1) + ' ms/s' : r.toFixed(1) + ' s/s'; };
+$('#side').addEventListener('click', e => {
+  const b = e.target.closest('[data-a],[data-win]'); if (!b) return;
+  if (b.dataset.win) { graphWin = parseFloat(b.dataset.win); scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; refreshUI(); return; }
+  const a = b.dataset.a;
+  if (a === 'run') toggleRun(); else if (a === 'reset') resetSim();
+  else if (a === 'rotl') rotSel(3); else if (a === 'rotr') rotSel(1);
+  else if (a === 'dup') dupSel(); else if (a === 'del') delSel();
+  else if (a === 'sw') { const p = byPart(sel.id); p.sw = p.sw ? 0 : 1; const w = wrapMap.get(p.id); if (w) w.sw = p.sw; commit(true); }
+});
+$('#side').addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'slTempo') { tempo = parseFloat(t.value); $('#tempoLbl').textContent = tempoText(); return; }
+  if (t.id === 'slDot') { dotSpeed = parseFloat(t.value); return; }
+  if (t.dataset.p && sel && sel.t === 'part') {
+    const p = byPart(sel.id), key = t.dataset.p; let v = t.value;
+    if (key === 'l') { p.l = v; commit(true, true); draw(); return; }
+    if (t.type === 'range') { v = parseFloat(v); p[key] = v; const w = wrapMap.get(p.id); if (w) { w.pos = v; w.light = v; } try { localStorage.setItem('sch.cur', snap()); } catch (_) {} draw(); return; }
+    p[key] = v; commit(true, true); rebuildKeep();
+  }
+});
+$('#side').addEventListener('change', e => { const t = e.target; if (t.tagName === 'SELECT' && t.dataset.p && sel) { const p = byPart(sel.id); p[t.dataset.p] = t.value; commit(); } });
+function rebuildKeep() { rebuild(); draw(); }
+
+/* ============ Hauptschleife ============ */
+function loop(now) {
+  const rdt = Math.min((now - lastFrame) / 1000, 0.1); lastFrame = now;
+  try {
+    if (running) { advance(rdt); stepPhases(rdt); dirtyDraw = true; }
+    if (dirtyDraw) { dirtyDraw = false; render(); }
+    if (running || sel) updateLive();
+  } catch (e) { console.error(e); running = false; toast('Fehler in der Simulation: ' + e.message); refreshUI(); }
+  requestAnimationFrame(loop);
+}
+let lastLive = 0;
+function updateLive() {
+  const now = performance.now(); if (now - lastLive < 120) return; lastLive = now;
+  const t = $('#tLbl'); if (t && sim) t.textContent = fmtT(sim.t);
+  const w = $('#warn'); if (w) {
+    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC')) msgs.push('Keine Spannungsquelle in der Schaltung.');
+    else if (!hasGround()) msgs.push('Keine Masse gesetzt. Es wird der Minuspol der Quelle als Masse genommen.');
+    sim && sim.burnt.forEach(id => { const p = byPart(id); if (p) msgs.push(KINDS[p.k].name + ' ist durchgebrannt (mit „Zurück“ wiederherstellen).'); });
+    const html = msgs.length ? `<div class="card warn"><ul>${msgs.map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>` : '';
+    if (w.innerHTML !== html) w.innerHTML = html;
+  }
+  const L = $('#live'); if (L && sel && sel.t === 'part' && circ) {
+    const p = byPart(sel.id); if (!p) return;
+    const pins = pinsOf(p), es = circ.elems.filter(e => e.part && e.part.id === p.id), rows = [];
+    const e0 = es.find(x => x.type !== 'S' || x.closed) || es[0];
+    if (e0 && showSim()) {
+      if (e0.type === 'Q') { rows.push(['Uce', fmt(sv(gk(...pins[1])) - sv(gk(...pins[2])), 'V')], ['Ic', fmt(e0.ic, 'A')], ['Ib', fmt(e0.ib, 'A')]); }
+      else { const u = sv(gk(...pins[0])) - sv(gk(...pins[1])); rows.push(['Spannung', fmt(u, 'V')], ['Strom', fmt(e0.type === 'V' ? -e0.i : e0.i, 'A')], ['Leistung', fmt(Math.abs(u * (e0.type === 'V' ? -e0.i : e0.i)), 'W')]); }
+    } else rows.push(['', 'Start drücken']);
+    const html = rows.map(([a, b]) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`).join('');
+    if (L.innerHTML !== html) L.innerHTML = html;
+  }
+}
+
+/* ============ Menü, Dateien, Beispiele ============ */
+function sheet(title, build) {
+  const bd = document.createElement('div'); bd.className = 'backdrop';
+  bd.innerHTML = `<div class="sheet"><div class="sh-h"><b>${esc(title)}</b><button class="x">✕</button></div><div class="sh-b"></div></div>`;
+  document.body.appendChild(bd); const close = () => bd.remove();
+  bd.addEventListener('pointerdown', e => { if (e.target === bd) close(); });
+  bd.querySelector('.x').onclick = close; build(bd.querySelector('.sh-b'), close); return close;
+}
+function openMenu() {
+  sheet('Menü', (b, close) => {
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
+    b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
+    b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
+  });
+}
+function menuAct(m) {
+  if (m === 'new') { loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }); }
+  else if (m === 'ex') openExamples();
+  else if (m === 'open') openList();
+  else if (m === 'save') form('Speichern unter', [{ l: 'Name', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); saveNamed(); toast('Gespeichert'); });
+  else if (m === 'export') { sheet('Als Text sichern', b => { b.innerHTML = '<p class="hint2">Text kopieren und in einer Notiz oder Datei ablegen.</p><textarea id="tx" rows="8" readonly></textarea><div class="btns"><button class="btn pri" id="cp">Kopieren</button></div>'; const ta = b.querySelector('#tx'); ta.value = snap(); b.querySelector('#cp').onclick = async () => { try { await navigator.clipboard.writeText(ta.value); toast('Kopiert'); } catch (e) { ta.select(); } }; }); }
+  else if (m === 'import') { sheet('Aus Text laden', (b, close) => { b.innerHTML = '<textarea id="tx" rows="8"></textarea><div class="btns"><button class="btn pri" id="ld">Laden</button></div>'; b.querySelector('#ld').onclick = () => { try { const d = JSON.parse(b.querySelector('#tx').value); if (!Array.isArray(d.parts)) throw 0; close(); loadCircuit(d); } catch (e) { toast('Text ungültig'); } }; }); }
+  else if (m === 'print') openPrint();
+  else if (m === 'img') { if (!sch.parts.length) toast('Noch nichts gezeichnet'); else outputCanvas(renderPlan(), false); }
+  else if (m === 'fit') fit();
+  else if (m === 'lab') location.href = 'layout.html';
+  else if (m === 'start') location.href = 'index.html';
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+}
+function form(title, fields, onOk) {
+  sheet(title, (b, close) => {
+    b.innerHTML = fields.map((f, i) => `<label class="f"><span>${esc(f.l)}</span><input id="ff${i}" value="${esc(f.v)}"></label>`).join('') + '<div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>OK</button></div>';
+    b.querySelector('[data-c]').onclick = close; b.querySelector('[data-ok]').onclick = () => { onOk(fields.map((f, i) => b.querySelector('#ff' + i).value)); close(); };
+    setTimeout(() => b.querySelector('#ff0').focus(), 50);
+  });
+}
+function saveNamed() {
+  try {
+    const idx = JSON.parse(localStorage.getItem('sch.index') || '[]'), id = sch.sid || (sch.sid = uid());
+    localStorage.setItem('sch.p.' + id, snap()); if (!idx.includes(id)) { idx.push(id); localStorage.setItem('sch.index', JSON.stringify(idx)); }
+  } catch (e) { toast('Speichern nicht möglich'); }
+}
+function openList() {
+  sheet('Gespeicherte Schaltungen', (b, close) => {
+    let idx = []; try { idx = JSON.parse(localStorage.getItem('sch.index') || '[]'); } catch (e) {}
+    const items = idx.map(id => { try { const d = JSON.parse(localStorage.getItem('sch.p.' + id)); return d && { id, name: d.name }; } catch (e) { return null; } }).filter(Boolean);
+    if (!items.length) { b.innerHTML = '<p class="hint2">Noch nichts gespeichert.</p>'; return; }
+    b.innerHTML = items.map(i => `<div class="row"><button class="grow" data-o="${i.id}" style="text-align:left"><b>${esc(i.name)}</b></button><button class="chip danger" data-d="${i.id}">Löschen</button></div>`).join('');
+    b.addEventListener('click', e => {
+      const o = e.target.closest('[data-o]'), d = e.target.closest('[data-d]');
+      if (o) { close(); const dd = JSON.parse(localStorage.getItem('sch.p.' + o.dataset.o)); dd.sid = o.dataset.o; loadCircuit(dd); }
+      else if (d) { const id = d.dataset.d; localStorage.removeItem('sch.p.' + id); localStorage.setItem('sch.index', JSON.stringify(idx.filter(x => x !== id))); close(); openList(); }
+    });
+  });
+}
+function exportImage() {
+  const W = cv.width, H = cv.height; const c = document.createElement('canvas'); c.width = W; c.height = H;
+  c.getContext('2d').drawImage(cv, 0, 0);
+  sheet('Bild sichern', b => { b.innerHTML = '<p class="hint2">Bild gedrückt halten, dann „Sichern“ oder „Drucken“ wählen.</p><img alt="" style="width:100%;border-radius:8px;background:#080b0e" src="' + c.toDataURL('image/png') + '">'; });
+}
+function fit() {
+  const r = rectOf();
+  if (!sch.parts.length && !sch.wires.length) { view = { s: 24, ox: 80, oy: 80 }; draw(); return; }
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  sch.parts.forEach(p => { const K = KINDS[p.k]; [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
+  sch.wires.forEach(w => { x0 = Math.min(x0, w.x1, w.x2); x1 = Math.max(x1, w.x1, w.x2); y0 = Math.min(y0, w.y1, w.y2); y1 = Math.max(y1, w.y1, w.y2); });
+  const pad = 2, W = x1 - x0 + 2 * pad, H = y1 - y0 + 2 * pad, gh = sch.scopes.length ? Math.min(150, r.height * 0.34) : 0;
+  const s = clamp(Math.min(r.width / W, (r.height - gh) / H), 10, 50);
+  view.s = s; view.ox = (r.width - (x1 - x0) * s) / 2 - x0 * s; view.oy = ((r.height - gh) - (y1 - y0) * s) / 2 - y0 * s; draw();
+}
+function loadCircuit(d) {
+  running = false; sel = null; wireStart = null; simMode = false;
+  sch = { name: d.name || 'Schaltung', parts: JSON.parse(JSON.stringify(d.parts || [])), wires: JSON.parse(JSON.stringify(d.wires || [])), nid: d.nid || 1, scopes: d.scopes || [], sid: d.sid };
+  assignLabels(sch.parts);
+  sch.nid = Math.max(sch.nid, 1 + Math.max(0, ...sch.parts.map(p => p.id || 0), ...sch.wires.map(w => w.id || 0)));
+  circ = null; sim = null; phase.clear(); lastSample = -1; rebuild(); hist = [snap()]; hi = 0;
+  try { localStorage.setItem('sch.cur', snap()); } catch (e) {}
+  { const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', 'false'); $('#bRun').style.display = 'none'; }
+  setTool('select'); fit(); refreshUI(); draw();
+}
+function openExamples() {
+  sheet('Beispielschaltungen', (b, close) => {
+    b.innerHTML = EXAMPLES.map((e, i) => `<button class="row" data-i="${i}"><div class="grow"><b>${esc(e.name)}</b><small>${esc(e.info)}</small></div></button>`).join('');
+    b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const e = EXAMPLES[+r.dataset.i]; loadCircuit(buildExample(e)); });
+  });
+}
+function buildExample(e) {
+  const d = e.make(); let id = 1; const parts = [], wires = [];
+  d.parts.forEach(([k, x, y, r, v, extra]) => { const K = KINDS[k]; parts.push(Object.assign({ id: id++, k, x, y, r: r || 0, v: v != null ? v : K.v, sw: 0, pos: 0.5, vr: K.vr }, extra || {})); });
+  d.wires.forEach(poly => { for (let i = 2; i < poly.length; i += 2) wires.push({ id: id++, x1: poly[i - 2], y1: poly[i - 1], x2: poly[i], y2: poly[i + 1] }); });
+  assignLabels(parts);
+  const scopes = (d.scopes || []).map(i => ({ t: 'part', id: i + 1 }));
+  return { name: e.name, parts, wires, nid: id, scopes };
+}
+/* Beispiele: Teile [Art, x, y, Drehung, Wert, Zusatz], Drähte als Linienzüge x1,y1,x2,y2,... */
+const EXAMPLES = [
+  { name: 'Spannungsteiler', info: 'Zwei Widerstände teilen 9 V im Verhältnis 1:2',
+    make: () => ({ parts: [['BAT', 4, 4, 1, '9'], ['R', 8, 2, 1, '1k'], ['R', 8, 6, 1, '2k'], ['GND', 4, 10], ['VM', 12, 2, 1, '']],
+      wires: [[4, 4, 4, 2, 8, 2], [8, 10, 4, 10, 4, 8], [8, 2, 12, 2], [12, 6, 12, 10, 8, 10]], scopes: [] }) },
+  { name: 'LED mit Vorwiderstand und Schalter', info: 'Schalter antippen. Ohne Vorwiderstand würde die LED durchbrennen.',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['SPST', 2, 2, 0, '', { sw: 1 }], ['R', 6, 2, 0, '470'], ['LED', 10, 2, 1, 'rot'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [10, 6, 10, 8, 2, 8]], scopes: [] }) },
+  { name: 'RC-Tiefpass', info: 'Wechselspannung 1 kHz: der Kondensator glättet das Signal',
+    make: () => ({ parts: [['AC', 2, 4, 1, '5V 1kHz'], ['R', 2, 2, 0, '1k'], ['C', 6, 2, 1, '100n'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [6, 6, 6, 8, 2, 8]], scopes: [0, 2] }) },
+  { name: 'RLC-Reihenschwingkreis', info: 'Resonanz bei etwa 160 Hz: Strom und Spannungen werden groß',
+    make: () => ({ parts: [['AC', 2, 4, 1, '1V 160Hz'], ['L', 2, 2, 0, '10m'], ['R', 6, 2, 0, '10'], ['C', 10, 2, 1, '100u'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [10, 6, 10, 8, 2, 8]], scopes: [0, 3] }) },
+  { name: 'Einweggleichrichter mit Glättung', info: 'Diode und Elko machen aus Wechsel- eine Gleichspannung',
+    make: () => ({ parts: [['AC', 2, 4, 1, '10V 50Hz'], ['D', 2, 2, 0, '1N4007'], ['CE', 6, 2, 1, '100u'], ['R', 10, 2, 1, '1k'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [6, 2, 10, 2], [6, 6, 6, 8], [10, 6, 10, 8], [2, 8, 6, 8, 10, 8]], scopes: [0, 3] }) },
+  { name: 'Z-Dioden-Stabilisierung', info: 'Die Z-Diode hält die Spannung am Verbraucher bei etwa 5,1 V',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 2, 2, 0, '470'], ['ZD', 6, 6, 3, '5.1'], ['R', 10, 2, 1, '1k'], ['GND', 2, 8], ['VM', 14, 2, 1, '']],
+      wires: [[2, 4, 2, 2], [6, 2, 10, 2, 14, 2], [6, 6, 6, 8], [10, 6, 10, 8], [14, 6, 14, 8, 10, 8, 6, 8, 2, 8]], scopes: [] }) },
+  { name: 'Transistor als Schalter', info: 'Schalter schließen: Der Basisstrom schaltet die LED',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 10, 2, 1, '470'], ['LED', 10, 6, 1, 'grün'], ['NPN', 8, 12, 0, 'BC547'], ['R', 4, 12, 0, '10k'], ['SPST', 4, 6, 1, '', { sw: 1 }], ['GND', 2, 16]],
+      wires: [[2, 4, 2, 2, 4, 2, 10, 2], [4, 6, 4, 2], [4, 10, 4, 12], [2, 8, 2, 16, 10, 16, 10, 14]], scopes: [] }) },
+  { name: 'Lampen in Reihe und parallel', info: 'Links zwei Lampen in Reihe (dunkler), rechts zwei parallel (hell)',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '6'], ['LAMP', 8, 2, 1, '6V 0.1A'], ['LAMP', 8, 6, 1, '6V 0.1A'], ['LAMP', 14, 2, 1, '6V 0.1A'], ['LAMP', 18, 2, 1, '6V 0.1A'], ['GND', 2, 10]],
+      wires: [[2, 4, 2, 2, 8, 2, 14, 2, 18, 2], [14, 6, 18, 6], [14, 6, 14, 10], [18, 6, 18, 10], [2, 8, 2, 10, 8, 10, 14, 10, 18, 10]], scopes: [] }) },
+];
+
+/* ============ Drucken ============ */
+const userName = () => { try { return localStorage.getItem('lm4.name') || ''; } catch (e) { return ''; } };
+function planBounds() {
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  sch.parts.forEach(p => { const K = KINDS[p.k]; [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
+  sch.wires.forEach(w => { x0 = Math.min(x0, w.x1, w.x2); x1 = Math.max(x1, w.x1, w.x2); y0 = Math.min(y0, w.y1, w.y2); y1 = Math.max(y1, w.y1, w.y2); });
+  return [x0, y0, x1, y1];
+}
+function renderPlan(S) {
+  S = S || 48;
+  const [x0, y0, x1, y1] = planBounds(), pad = 3.2;
+  const W = Math.max(1500, Math.round((x1 - x0 + 2 * pad) * S)), fp = Math.round(W * 0.02), foot = Math.round(fp * 3.6);
+  const H = Math.round((y1 - y0 + 2 * pad) * S) + foot;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const sv = { cx, view, sel, ghost, wireStart, cursor };
+  try {
+    cx = c.getContext('2d'); PRINT = true; sel = null; ghost = null; wireStart = null; cursor = null;
+    view = { s: S, ox: (W - (x1 - x0) * S) / 2 - x0 * S, oy: pad * S - y0 * S };
+    cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
+    drawCircuit();
+    const F = '-apple-system,Segoe UI,Arial,sans-serif', who = userName(), left = S * 1.2;
+    cx.textAlign = 'left'; cx.textBaseline = 'alphabetic';
+    cx.fillStyle = '#111'; cx.font = '700 ' + fp + 'px ' + F; cx.fillText('Stromlaufplan · ' + sch.name + (who ? ' · ' + who : ''), left, H - foot + fp * 1.2);
+    cx.fillStyle = '#444'; cx.font = '500 ' + Math.round(fp * 0.85) + 'px ' + F; cx.fillText('Tonfunk Schaltplan · ' + new Date().toLocaleDateString('de-DE'), left, H - foot + fp * 2.4);
+  } finally { cx = sv.cx; view = sv.view; sel = sv.sel; ghost = sv.ghost; wireStart = sv.wireStart; cursor = sv.cursor; PRINT = false; }
+  return c;
+}
+function bomData() {
+  const g = {};
+  sch.parts.forEach(p => { if (p.k === 'GND') return; const K = KINDS[p.k], key = p.k + '|' + (p.v || ''); const o = g[key] || (g[key] = { name: K.name, v: valueText(p) || '', n: 0, l: [] }); o.n++; if (p.l) o.l.push(p.l); });
+  return Object.values(g).sort((a, b) => a.name.localeCompare(b.name, 'de') || a.v.localeCompare(b.v, 'de'));
+}
+function renderBom() {
+  const rows = bomData(), W = 2100, pad = 120, F = '-apple-system,Segoe UI,Arial,sans-serif', fn = 44, lh = 58, rp = 24;
+  const m = document.createElement('canvas').getContext('2d');
+  const cx0 = [pad + 90, pad + 90 + 190, pad + 90 + 190 + 760, pad + 90 + 190 + 760 + 420], wr = [0, 0, 740, 400, W - pad - 110 - (pad + 90 + 190 + 760 + 420)];
+  const wrap = (t, w, f) => { m.font = f; const out = []; let cur = ''; String(t).split(' ').forEach(wd => { const x = cur ? cur + ' ' + wd : wd; if (m.measureText(x).width > w && cur) { out.push(cur); cur = wd; } else cur = x; }); if (cur) out.push(cur); return out.length ? out : ['']; };
+  const R = rows.map(r => { const f = '500 ' + fn + 'px ' + F, L = [wrap(r.name, wr[2], f), wrap(r.v, wr[3], f), wrap(r.l.join(', '), wr[4], f)]; return { a: r.n + '×', L, h: Math.max(...L.map(l => l.length)) * lh + rp * 2 }; });
+  const head = 430, H = Math.max(2970, head + 120 + R.reduce((t, r) => t + r.h, 0) + 170);
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.textBaseline = 'alphabetic';
+  x.fillStyle = '#111'; x.font = '700 92px ' + F; x.fillText('Bauteilliste', pad, pad + 60);
+  x.font = '600 52px ' + F; x.fillText(sch.name, pad, pad + 140);
+  x.fillStyle = '#444'; x.font = '500 40px ' + F; const who = userName(); x.fillText('Stromlaufplan' + (who ? ' · ' + who : '') + ' · ' + new Date().toLocaleDateString('de-DE'), pad, pad + 205);
+  let y = head; x.fillStyle = '#111'; x.font = '700 38px ' + F; ['Anz.', 'Bauteil', 'Wert', 'Bezeichnung'].forEach((t, i) => x.fillText(t, cx0[i], y)); x.fillText('OK', W - pad - 50, y); x.fillRect(pad, y + 18, W - 2 * pad, 4); y += 22;
+  R.forEach((r, i) => {
+    if (i % 2 === 0) { x.fillStyle = '#f3f1ea'; x.fillRect(pad, y, W - 2 * pad, r.h); }
+    x.fillStyle = '#111'; x.font = '700 ' + fn + 'px ' + F; x.fillText(r.a, cx0[0], y + rp + fn); x.font = '500 ' + fn + 'px ' + F;
+    r.L.forEach((ls, ci) => ls.forEach((ln, li) => x.fillText(ln, cx0[ci + 1], y + rp + fn + li * lh)));
+    x.strokeStyle = '#111'; x.lineWidth = 4; x.strokeRect(W - pad - 70, y + rp + 4, 44, 44); y += r.h;
+  });
+  x.fillStyle = '#777'; x.font = '500 34px ' + F; x.fillText('Tonfunk Schaltplan', pad, H - pad + 30);
+  return c;
+}
+function outputCanvas(c, print) {
+  if (print) { $('#printImg').src = c.toDataURL('image/png'); setTimeout(() => window.print(), 150); }
+  else sheet('Bild sichern', b => { b.innerHTML = '<p class="hint2">Bild gedrückt halten, dann „Zu Fotos hinzufügen“ oder „Drucken“ wählen.</p><img alt="" style="width:100%;border-radius:8px;background:#fff" src="' + c.toDataURL('image/png') + '">'; });
+}
+function openPrint() {
+  if (!sch.parts.length) { toast('Noch nichts gezeichnet'); return; }
+  sheet('Drucken', (b, close) => {
+    b.innerHTML = `<button class="row" data-m="plan"><div class="grow"><b>Stromlaufplan</b><small>Schwarz auf weiß, ohne Simulationsfarben</small></div></button>
+      <button class="row" data-m="bom"><div class="grow"><b>Bauteilliste</b><small>Anzahl, Wert und Bezeichnung zum Abhaken</small></div></button>`;
+    b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); outputCanvas(r.dataset.m === 'plan' ? renderPlan() : renderBom(), true); });
+  });
+}
+/* ============ Start ============ */
+const simsw = document.createElement('button');
+simsw.className = 'simsw'; simsw.id = 'bSim'; simsw.setAttribute('role', 'switch'); simsw.setAttribute('aria-checked', 'false'); simsw.setAttribute('aria-label', 'Simulation');
+simsw.innerHTML = '<span class="lL">Zeichnen</span><span class="trk"><span class="knob"></span></span><span class="lS">Sim</span>';
+$('#bUndo').before(simsw);
+simsw.addEventListener('click', () => setSimMode(!simMode));
+$('#bRun').style.display = 'none';
+$('#bRun').onclick = toggleRun; $('#bUndo').onclick = undo; $('#bRedo').onclick = redo; $('#bMenu').onclick = openMenu;
+$('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); });
+(function init() {
+  let d = null; try { d = JSON.parse(localStorage.getItem('sch.cur') || 'null'); } catch (e) {}
+  buildPalette();
+  if (/[?&]neu\b/.test(location.search)) loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] });
+  else if (/[?&]bsp\b/.test(location.search)) loadCircuit(buildExample(EXAMPLES[1]));
+  else if (d && d.parts && d.parts.length) loadCircuit(d); else { loadCircuit(buildExample(EXAMPLES[1])); }
+  requestAnimationFrame(t => { lastFrame = t; loop(t); });
+})();
+window.SchaltTest = () => {
+  const keep = sch, out = [];
+  EXAMPLES.forEach(e => {
+    sch = buildExample(e); rebuild(); sim.reset();
+    let nc = 0; for (let i = 0; i < 4000; i++) { sim.step(1e-5); if (!sim.converged) nc++; }
+    out.push({ name: e.name, nn: circ.nn, nonconv: nc, burnt: [...sim.burnt], v: Array.from(sim.v).map(v => +v.toPrecision(4)), el: circ.elems.map(x => (x.part ? x.part.k : '?') + ':' + (+(x.i || 0).toPrecision(4))) });
+  });
+  sch = keep; rebuild(); return out;
+};
+window.SchaltDebug = () => ({ running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
+})();
