@@ -916,17 +916,48 @@ function buildPalette() {
   }
   $('#pal').innerHTML = h;
   // Bauteilliste links (Tablet/Laptop), nur im Zeichenmodus
-  const pl = $('#parts'), show = !simMode && listMode();
+  const pl = $('#parts'), show = listMode();
   let lh = '';
-  if (show) CATS.forEach(cat => {
+  if (show && simMode) lh = controlHtml();
+  else if (show) CATS.forEach(cat => {
     if (!kindsOf(cat).length) return;
     lh += `<div class="pcat">${cat}</div>`;
     kindsOf(cat).forEach(k => { lh += `<button class="pit ${tool === 'place' && placeKind === k ? 'on' : ''}" data-t="place" data-k="${k}">${KINDS[k].name}</button>`; });
   });
   const keep = pl.scrollTop, was = pl.style.display;
-  pl.innerHTML = lh; pl.style.display = show ? 'block' : 'none'; pl.scrollTop = keep;
+  pl.innerHTML = lh; pl.dataset.h = simMode ? lh : ''; pl.style.display = show ? 'block' : 'none'; pl.scrollTop = keep;
   if (was !== pl.style.display) window.dispatchEvent(new Event('resize'));
 }
+/* Bedienfeld links in der Simulation: Schalter, Taster und Regler aller Bauteile an einer festen Stelle */
+const CTLSTATE = { SD: ['ok', 'defekt'], FAULT: ['aus', 'Fehler'], SPDT: ['Stellung 1', 'Stellung 2'], KREUZ: ['gerade', 'gekreuzt'], LSS: ['aus', 'ein'], RCD: ['aus', 'ein'] };
+function controlHtml() {
+  const items = sch.parts.filter(p => { const K = KD(p); return K.toggle || K.momentary || K.pos; });
+  let h = '<div class="pcat">Bedienfeld</div>';
+  if (!items.length) return h + '<p class="hint2" style="padding:0 8px">Diese Schaltung hat keine Schalter oder Regler.</p>';
+  items.forEach(p => {
+    const K = KD(p), name = (p.l ? p.l + ' · ' : '') + K.name;
+    if (K.toggle) { const st = CTLSTATE[p.k] || ['aus', 'ein']; h += `<button class="pit ctl ${p.sw ? 'on' : ''}" data-ctl="sw" data-id="${p.id}"><span>${esc(name)}</span><em>${st[p.sw ? 1 : 0]}</em></button>`; }
+    else if (K.momentary) h += `<button class="pit ctl ${p.pressed ? 'on' : ''}" data-ctl="hold" data-id="${p.id}"><span>${esc(name)}</span><em>gedrückt halten</em></button>`;
+    if (K.pos) { const v = p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos; h += `<label class="ctl-sl"><span>${esc(name)}<em>${Math.round(v * 100)} %</em></span><input type="range" data-ctl="pos" data-id="${p.id}" min="0" max="1" step="0.01" value="${v}"></label>`; }
+  });
+  return h;
+}
+function refreshControls() {
+  if (!simMode || !listMode()) return;
+  const pl = $('#parts'), ae = document.activeElement; if (pl.contains(ae) && ae.type === 'range') return;
+  const h = controlHtml(); if (pl.dataset.h !== h) { const keep = pl.scrollTop; pl.dataset.h = h; pl.innerHTML = h; pl.scrollTop = keep; }
+}
+(function () {
+  const pl = $('#parts');
+  const setP = (id, f) => { const p = byPart(+id); if (!p) return; f(p, wrapMap.get(p.id)); };
+  pl.addEventListener('click', e => { const b = e.target.closest('[data-ctl="sw"]'); if (!b || !simMode) return; setP(b.dataset.id, (p, w) => { p.sw = p.sw ? 0 : 1; if (w) w.sw = p.sw; commit(true, true); draw(); refreshControls(); }); });
+  pl.addEventListener('input', e => { const t = e.target; if (t.dataset.ctl !== 'pos' || !simMode) return; const v = parseFloat(t.value); setP(t.dataset.id, (p, w) => { p.pos = v; if (w) { w.pos = v; w.light = v; } draw(); const em = t.closest('label').querySelector('em'); if (em) em.textContent = Math.round(v * 100) + ' %'; }); });
+  pl.addEventListener('change', e => { if (e.target.dataset.ctl === 'pos') { try { localStorage.setItem((SK + 'cur'), snap()); } catch (_) {} } });
+  let held = null;
+  pl.addEventListener('pointerdown', e => { const b = e.target.closest('[data-ctl="hold"]'); if (!b || !simMode) return; held = b.dataset.id; setP(held, (p, w) => { p.pressed = true; if (w) w.pressed = true; b.classList.add('on'); draw(); }); });
+  const rel = () => { if (held == null) return; setP(held, (p, w) => { p.pressed = false; if (w) w.pressed = false; draw(); }); held = null; refreshControls(); };
+  window.addEventListener('pointerup', rel); window.addEventListener('pointercancel', rel);
+})();
 const listMode = () => window.matchMedia('(min-width:720px)').matches;
 window.matchMedia('(min-width:720px)').addEventListener && window.matchMedia('(min-width:720px)').addEventListener('change', () => buildPalette());
 $('#parts').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) { placeRot = 0; setTool('place', b.dataset.k); } });
@@ -1046,6 +1077,7 @@ function loop(now) {
 let lastLive = 0;
 function updateLive() {
   const now = performance.now(); if (now - lastLive < 120) return; lastLive = now;
+  refreshControls();
   const t = $('#tLbl'); if (t && sim) t.textContent = fmtT(sim.t);
   const w = $('#warn'); if (w) {
     const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || p.k === 'NETZ' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
@@ -1197,7 +1229,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v39</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v40</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
