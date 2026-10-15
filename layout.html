@@ -1420,7 +1420,7 @@ async function loadShared(){
 }
 function menuAct(m){
   if(m==='ex'){openExamples();return;}
-  if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid},doc.name);return;}
+  if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid,code:doc.code,lang:doc.lang},doc.name);return;}
   if(m==='new')confirmNew(()=>boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));}));
   else if(m==='open')openList();
   else if(m==='rename')renameDoc();
@@ -1751,6 +1751,9 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <script src="fx.js"></script>
 <script src="simics.js"></script>
 <script src="simcore.js"></script>
+<script src="mcuio.js"></script>
+<script src="arduino.js"></script>
+<script src="pyrun.js"></script>
 <script src="simui.js"></script>
 <script src="lochbeispiele.js"></script>
 </body>

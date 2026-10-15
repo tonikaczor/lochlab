@@ -50,11 +50,25 @@ function partAt(fx, fy) {
   return null;
 }
 /* ---------- Simulation aufbauen ---------- */
+// Uno: Pin-Reihenfolge des Schaltplan-Kerns (Index) -> Pin der Stiftleisten im Layout (wie UNO_PM in schaltplan.js)
+const UNO_PM_SIM = (() => { const m = [22, 21, 25, 23]; for (let a = 0; a < 6; a++) m.push(26 + a); for (let n = 0; n < 14; n++) m.push(17 - n); m.push(3, 22); return m; })();
+// Sensor- und Servo-Module (Stiftleisten im Layout) -> Bauteil im Schaltungskern, Pin-Zuordnung, Startwert und Reglerbeschriftung
+const SIP_SIM = {
+  'HC-SR04': { core: 'HCSR04', pm: [0, 1, 2, 3], def: 0.5, sl: 'Abstand' },
+  'PIR': { core: 'PIR', pm: [0, 1, 2], def: 0, sl: 'Bewegung' },
+  'TMP36': { core: 'TMP36', pm: [0, 1, 2], def: 0.394, sl: 'Temperatur' },
+  'Servo': { core: 'SERVO', pm: [2, 1, 0] },
+  'LM75 I2C': { core: 'I2CTEMP', pm: [0, 1, 2, 3], def: 0.4, sl: 'Temperatur' },
+  'BH1750 I2C': { core: 'I2CLUX', pm: [0, 1, 2, 3], def: 0.5, sl: 'Helligkeit' },
+};
+const sipOf = it => (it.k === 'SIP' ? SIP_SIM[it.v] : null);
+const hasSlide = it => SLIDERS.includes(it.k) || !!(sipOf(it) && sipOf(it).sl);
+const defPos = it => { const sp = sipOf(it); return sp && sp.def != null ? sp.def : (it.k === 'NTC' || it.k === 'PTC' ? 0.32 : 0.5); };
 function build() {
   wrap.clear();
   const parts = doc.items.filter(i => i.t === 'part').map(i => {
-    const pr = pinsOf(i), pins = i.k === 'OPTO' ? [pr[0], pr[1], pr[3], pr[2]] : (i.k === 'THY' ? [pr[1], pr[0], pr[2]] : pr);
-    const w = { id: i.id, k: i.k, vr: i.vr, v: i.v, n: i.n, pins, sw: i.sw || 0, pos: i.pos == null ? (i.k === 'NTC' || i.k === 'PTC' ? 0.32 : 0.5) : i.pos, light: i.light == null ? 0.5 : i.light, pressed: false, item: i };
+    const pr = pinsOf(i), pins = i.k === 'OPTO' ? [pr[0], pr[1], pr[3], pr[2]] : (i.k === 'THY' ? [pr[1], pr[0], pr[2]] : (i.k === 'UNO' ? UNO_PM_SIM.map(li => pr[li]) : (sipOf(i) ? sipOf(i).pm.map(li => pr[li]) : pr)));
+    const w = { id: i.id, k: i.k === 'UNO' ? 'MCU' : (i.k === 'PI' ? 'PI40' : (sipOf(i) ? sipOf(i).core : i.k)), vr: i.vr, v: i.v, n: i.n, pins, sw: i.sw || 0, pos: i.pos == null ? defPos(i) : i.pos, light: i.light == null ? 0.5 : i.light, pressed: false, item: i };
     wrap.set(i.id, w); return w;
   });
   circ = LS.buildCircuit({ parts, tracks: doc.items.filter(i => i.t === 'track'), wires: doc.items.filter(i => i.t === 'wire') });
@@ -68,7 +82,38 @@ function build() {
   let f = 0;
   circ.elems.forEach(e => { if (e.type === 'V' && e.freq) f = Math.max(f, e.freq); });
   dtBase = f ? Math.min(2e-4, 1 / (f * 100)) : 2e-4;
+  mcuStart();
 }
+
+/* ---------- Programm auf dem Uno oder Pi ---------- */
+let prog = null, serLog = '';
+function mcuStart() {
+  prog = null; serLog = '';
+  const el = circ && circ.mcu; if (!el || !doc.code) return;
+  for (let i = 0; i < 6; i++) sim.step(dtBase);                       // Spannungen einschwingen lassen, bevor das Programm liest
+  const py = el.type === 'PI40', L = py ? window.PyRun : window.Arduino, IO = window.LochMcuIO; if (!L || !IO) return;
+  const c = L.compile(doc.code);
+  if (!c.ok) { const e = c.errors[0]; serLog = '⚠ Fehler in Zeile ' + e.line + ': ' + e.msg + '\n'; return; }
+  const X = { get S() { return sim; }, get C() { return circ; }, print: t => { serLog += t; if (serLog.length > 4000) serLog = serLog.slice(-3000); }, rx: [] };
+  const runner = L.createRunner(c.program, py ? IO.pi(el, X) : IO.ard(el, X)); runner.start();
+  prog = { runner, el, py, err: null };
+}
+function mcuStep() {
+  if (!prog || prog.err) return;
+  if (sim.burnt.has(prog.el.part.id)) { prog.err = { msg: 'zerstört' }; serLog += '⚠ ' + (prog.py ? 'Der Raspberry Pi' : 'Der Arduino') + ' ist zerstört.\n'; return; }
+  prog.runner.step(sim.t);
+  const er = prog.runner.error;
+  if (er) { prog.err = er; serLog += '⚠ Fehler in Zeile ' + er.line + ': ' + (er.type ? er.type + ': ' : '') + (er.msg || er.m || '') + '\n'; }
+  else if (prog.runner.done) prog.err = { msg: 'Programmende' };
+}
+window.LochSimDebug = () => ({ run: (T, hook) => { const n = Math.round(T / dtBase); for (let i = 0; i < n; i++) { if (prog) mcuStep(); sim.step(dtBase); if (hook) hook(sim.t); } }, circ, sim, prog, serLog, simOn, running, items: doc.items.filter(i => i.t === 'part').map(i => ({ k: i.k, l: i.l, b: i._b })) });
+function mcuTone() {
+  if (!window.LochFX) return;
+  const mm = circ && circ.mcu && circ.mcu.mcu; let f = 0;
+  if (mm && simOn && running) for (let q = 0; q < (mm.npin || 20); q++) if (mm.tone[q]) { f = mm.tone[q].f; break; }
+  if (f) LochFX.tone(f); else LochFX.toneOff();
+}
+
 function resetSamples() { buf.n = 0; buf.head = 0; trk.dc = 0; trk.ac = 0; trk.init = false; buf.last = -1; }
 
 /* ---------- Messwerte, Scope-Puffer ---------- */
@@ -106,6 +151,7 @@ function advance(T) {
   const n = Math.max(1, Math.round(T / dt));
   const t0 = performance.now();
   for (let i = 0; i < n; i++) {
+    if (prog) mcuStep();
     sim.step(dt); record(dt);
     if ((i & 31) === 31 && performance.now() - t0 > 12) break;
   }
@@ -132,7 +178,7 @@ function tick(now) {
   try {
     const rdt = Math.min((now - lastFrame) / 1000, 0.1); lastFrame = now;
     if (running && sim && circ.nn > 0) advance(rdt * speed);
-    if (now - lastPanel > 80) { lastPanel = now; updatePanel(); }
+    if (now - lastPanel > 80) { lastPanel = now; updatePanel(); mcuTone(); }
     invalidate();
   } catch (e) { console.error(e); running = false; toast('Simulationsfehler: ' + e.message); simNav(); }
   requestAnimationFrame(tick);
@@ -191,7 +237,7 @@ function enterSim() {
   lastFrame = performance.now(); requestAnimationFrame(tick);
 }
 function leaveSim() {
-  simOn = false; running = false;
+  simOn = false; running = false; prog = null; if (window.LochFX) LochFX.toneOff();
   doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; delete i._seg; delete i._p; });
   doc.items.forEach(i => { if (i.t === 'part') { const w = wrap.get(i.id); if (w) { i.sw = w.sw; i.pos = w.pos; i.light = w.light; } } });
   document.body.classList.remove('sim'); sw.setAttribute('aria-checked', 'false');
@@ -286,7 +332,7 @@ function drawPill(cx, x, y, w, v, label) {
 let sliderHits = [];
 const SLIDERS = ['P', 'TP', 'LDR', 'NTC', 'PTC', 'PHT'];
 const sliderAt = (px, py) => sliderHits.find(h => px >= h.xl && px <= h.xr && py >= h.y0 && py <= h.y1);
-const sliderVal = it => it.k === 'LDR' ? (it.light == null ? 0.5 : it.light) : (it.pos == null ? (it.k === 'NTC' || it.k === 'PTC' ? 0.32 : 0.5) : it.pos);
+const sliderVal = it => it.k === 'LDR' ? (it.light == null ? 0.5 : it.light) : (it.pos == null ? defPos(it) : it.pos);
 function setSlide(h, px) {
   const it = byId(h.id), w = it && wrap.get(it.id); if (!it || !w) return;
   const v = clampN((px - h.x0) / (h.x1 - h.x0), 0, 1);
@@ -354,8 +400,8 @@ function overlay() {
   }
   sliderHits = [];
   doc.items.forEach(it => {
-    if (it.t !== 'part' || !SLIDERS.includes(it.k)) return;
-    const b = worldBox(it), w = Math.max(104, 4.5 * S), lbl = it.k === 'LDR' || it.k === 'PHT' ? 'Licht' : (it.k === 'NTC' || it.k === 'PTC' ? 'Temp.' : 'Regler');
+    if (it.t !== 'part' || !hasSlide(it)) return;
+    const b = worldBox(it), w = Math.max(104, 4.5 * S), lbl = sipOf(it) ? sipOf(it).sl : (it.k === 'LDR' || it.k === 'PHT' ? 'Licht' : (it.k === 'NTC' || it.k === 'PTC' ? 'Temp.' : 'Regler'));
     sliderHits.push(Object.assign({ id: it.id }, drawPill(cx, X((b[0] + b[2]) / 2), Y(b[3]) + 22, w, sliderVal(it), lbl)));
   });
   if (window.LochFX) LochFX.draw(cx);
@@ -408,13 +454,14 @@ function buildPanel() {
   const sd = $('#side');
   const sel_ = selSim != null ? byId(selSim) : null;
   let slider = '';
-  if (sel_ && ['P', 'TP', 'LDR', 'NTC', 'PTC', 'PHT'].includes(sel_.k)) {
-    const w = wrap.get(sel_.id), isL = sel_.k === 'LDR', val = Math.round((isL ? w.light : w.pos) * 100), lbl = isL || sel_.k === 'PHT' ? 'Helligkeit' : (sel_.k === 'NTC' || sel_.k === 'PTC' ? 'Temperatur' : 'Schleifer');
+  if (sel_ && hasSlide(sel_)) {
+    const w = wrap.get(sel_.id), isL = sel_.k === 'LDR', val = Math.round((isL ? w.light : w.pos) * 100), lbl = sipOf(sel_) ? sipOf(sel_).sl : (isL || sel_.k === 'PHT' ? 'Helligkeit' : (sel_.k === 'NTC' || sel_.k === 'PTC' ? 'Temperatur' : 'Schleifer'));
     slider = `<div class="kv"><span>${lbl}</span><span id="slv">${val} %</span></div><input type="range" id="slr" min="0" max="100" value="${val}" aria-label="${isL ? 'Helligkeit' : 'Schleiferstellung'}">`;
   }
   sd.innerHTML = `
     <div class="sp-top"><b id="spT">t = 0 s</b><span id="spS"></span></div>
     <div id="spW"></div>
+    ${doc.code ? '<div class="card"><h4>' + (doc.lang === 'python' ? 'Raspberry Pi: Konsole' : 'Arduino: Serial-Monitor') + '</h4><pre id="spCon" style="margin:0;max-height:150px;overflow:auto;font:12px/1.4 monospace;white-space:pre-wrap;color:var(--fg)"></pre><details style="margin-top:8px"><summary style="cursor:pointer;color:var(--accent);font-weight:600;font-size:13px">Programm anzeigen</summary><pre style="margin:6px 0 0;max-height:220px;overflow:auto;font:11.5px/1.4 monospace;white-space:pre-wrap;color:var(--mute)">' + esc(doc.code) + '</pre><div class="mmsub" style="margin-top:6px">Das Programm lässt sich im ' + (doc.lang === 'python' ? 'Pi-Lab' : 'Arduino-Lab') + ' ändern und ausprobieren.</div></details></div>' : ''}
     <div class="card"><h4>Multimeter</h4><div class="lcd" id="mmVal">--</div><div class="mmsub" id="mmSub"></div></div>
     <div class="card"><h4>Oszilloskop</h4><canvas id="scCv" width="640" height="380"></canvas>
       <div class="scrow"><span class="lbl">Zeit/Div</span><button data-s="tm">−</button><span class="val" id="tdv"></span><button data-s="tp">+</button></div>
@@ -438,9 +485,10 @@ function updatePanel(force) {
   q('spT').textContent = 't = ' + (sim.t < 1 ? (sim.t * 1000).toFixed(1) + ' ms' : sim.t.toFixed(3) + ' s');
   q('spS').textContent = running ? '● läuft' : '❚❚ Pause';
   q('spS').style.color = running ? '#4cd964' : 'var(--mute)';
+  const con = q('spCon'); if (con && con.textContent !== serLog) { con.textContent = serLog; con.scrollTop = con.scrollHeight; }
   // Warnungen
   const w = [];
-  if (!circ.elems.some(e => e.type === 'V')) w.push('Keine Spannungsquelle (Batterie oder Signalgenerator) im Layout.');
+  if (!circ.elems.some(e => e.type === 'V' || e.type === 'MCU' || e.type === 'PI40')) w.push('Keine Spannungsquelle (Batterie oder Signalgenerator) im Layout.');
   else if (!circ.groundKnown) w.push('Keine Masse bestimmt.');
   circ.warnings.forEach(x => { const it = x.part.item; w.push((it && it.l ? it.l + ': ' : '') + (PARTS[x.part.k] ? PARTS[x.part.k].name : x.part.k) + ' – ' + x.text); });
   sim.burnt.forEach(id => { const it = byId(id); if (it) w.push(`${it.l || PARTS[it.k].name} ist durchgebrannt. Mit „Zurücksetzen“ wieder herstellen.`); });

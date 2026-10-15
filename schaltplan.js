@@ -1353,48 +1353,10 @@ function lcdCmd(name, a) {
   serDirty = true; return 0;
 }
 function makeIO(el) {
-  const SIMT = () => sim.t;
-  const m = el.mcu, node = q => el.nd[el.pinNode(q)], ok = q => q >= 0 && q < 20;
-  return {
-    pinMode: (q, md) => { if (ok(q)) { m.mode[q] = md; if (md === 2) m.lastDig[q] = 1; } },
-    digitalWrite: (q, v, vt) => { if (!ok(q)) return; m.out[q] = v; m.duty[q] = null; const pl = m.pulse[q] || (m.pulse[q] = {}); if (v) { pl.rise = vt == null ? sim.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? sim.t : vt; },
-    digitalRead: q => { if (!ok(q)) return 0; if (m.mode[q] === 1) return m.level[q]; if (m.mode[q] === 2 && SIMT() < 2e-3) return 1; const vv = sim.v[node(q)]; if (vv > 3) m.lastDig[q] = 1; else if (vv < 1.5) m.lastDig[q] = 0; return m.lastDig[q]; },
-    analogRead: q => (ok(q) ? sim.v[node(q)] / 5 * 1023 : 0),
-    analogWrite: (q, v) => { if (!ok(q)) return; m.mode[q] = 1; if ([3, 5, 6, 9, 10, 11].includes(q)) m.duty[q] = v; else { m.duty[q] = null; m.out[q] = v >= 128 ? 1 : 0; } },
-    tone: (q, f, dd) => { if (!ok(q)) return; m.mode[q] = 1; m.tone[q] = { f: Math.max(1, f), until: dd ? sim.t + dd / 1000 : null }; },
-    noTone: q => { if (ok(q)) m.tone[q] = null; },
-    serialPrint: s => serAppend(s), serialAvailable: () => serRx.length, serialRead: () => (serRx.length ? serRx.shift() : -1),
-    servo: (q, cmd, a) => { if (cmd === 'detach') delete m.servo[q]; else m.servo[q] = a; },
-    lcd: (o, name, a) => lcdCmd(name, a), object: () => {},
-    touch: q => { const nd = node(q), e = circ.elems.find(x => x.type === 'TCH' && x.a === nd); return e ? Math.round(8 + (e.part.pos || 0) * 2000) : 0; },
-    pulseHint: (q) => { const e = circ.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === q); return e ? e.lastEcho : null; },
-  };
+  return LochMcuIO.ard(el, { get S() { return sim; }, get C() { return circ; }, print: serAppend, get rx() { return serRx; }, lcd: lcdCmd });
 }
 function makeIOPi(el, ctx) {
-  const S = ctx ? ctx.sim : sim, C = ctx ? ctx.circ : circ, m = el.mcu, node = g => el.nd[el.pinNode(g)], SIMT = () => S.t, MODE = { out: 1, in: 0, up: 2, down: 3 };
-  return {
-    setMode: (g, md) => { m.mode[g] = MODE[md]; if (md === 'up') m.lastDig[g] = 1; if (md === 'out') m.duty[g] = null; },
-    write: (g, v, vt) => { m.out[g] = v ? 1 : 0; m.duty[g] = null; const pl = m.pulse[g] || (m.pulse[g] = {}); if (v) { pl.rise = vt == null ? S.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? S.t : vt; },
-    read: g => { if (m.mode[g] === 1) return m.level[g]; if (m.mode[g] === 2 && SIMT() < 2e-3) return 1; const vv = S.v[node(g)]; if (vv > 2.0) m.lastDig[g] = 1; else if (vv < 1.0) m.lastDig[g] = 0; return m.lastDig[g]; },
-    pwm: (g, dd) => { m.duty[g] = dd == null ? null : dd; },
-    servo: (g, deg) => { if (deg == null) delete m.servo[g]; else m.servo[g] = deg; },
-    tone: (g, f) => { m.tone[g] = f ? { f } : null; },
-    echo: g => { const e = C.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === g); return e ? e.lastEcho : null; },
-    adc: (ch, spec) => {
-      const e = C.elems.find(x => x.type === 'ADC'); if (!e) return { err: 'Es ist kein MCP3008 in der Schaltung.' };
-      const v = i => S.v[e.nd[i]], gnd = v(3);
-      if (!(v(0) - gnd > 2.4)) return { err: 'MCP3008 ohne Versorgung: VDD an 3,3 V und DGND an Masse anschließen.' };
-      if (!(v(1) - v(2) > 2.0)) return { err: 'MCP3008 ohne Referenzspannung: VREF an 3,3 V und AGND an Masse anschließen.' };
-      const pins = e.spi || {};
-      for (const [nm, k] of [['CLK', 'clk'], ['DOUT (MISO)', 'miso'], ['DIN (MOSI)', 'mosi'], ['CS', 'cs']]) {
-        const have = pins[k], want = k === 'cs' && spec.hw ? [8, 7] : [spec[k]];
-        if (!want.includes(have)) return { err: 'MCP3008 antwortet nicht: ' + nm + ' ' + (have >= 0 ? 'liegt an GPIO' + have : 'ist mit keinem GPIO verbunden') + ', erwartet wird GPIO' + want.join(' oder GPIO') + (spec.hw ? ' (Hardware-SPI)' : '') + '.' };
-      }
-      const vr = v(1) - v(2), val = Math.max(0, Math.min(1, (v(8 + ch) - v(2)) / vr)); return { value: val, raw: Math.round(val * 1023) };
-    },
-    i2c: (addr, wr, n) => LS.i2cXfer(C, S, addr, wr, n),
-    print: t => (ctx && ctx.print ? ctx.print(t) : serAppend(t)),
-  };
+  return LochMcuIO.pi(el, ctx ? { S: ctx.sim, C: ctx.circ, print: ctx.print } : { get S() { return sim; }, get C() { return circ; }, print: serAppend });
 }
 function startPyProgram() {
   const PY = window.PyRun; if (!PY) return;
@@ -2609,6 +2571,8 @@ function buildJob() {
   const par = new Map(), find = k => { if (!par.has(k)) par.set(k, k); while (par.get(k) !== k) { par.set(k, par.get(par.get(k))); k = par.get(k); } return k; }, uni = (a, b) => par.set(find(a), find(b));
   sch.wires.forEach(w => uni(gk(w.x1, w.y1), gk(w.x2, w.y2)));
   let g0 = null; sch.parts.forEach(p => { if (p.k === 'GND') { const k = gk(...pinsOf(p)[0]); if (g0) uni(g0, k); else g0 = k; find(k); } });
+  sch.parts.forEach(p => { if (p.k === 'PI' || p.k === 'UNO') { const pw = pinsOf(p); (p.k === 'PI' ? [5, 8, 13, 19, 24, 29, 33, 38] : [3, 24]).forEach(si => { const k = gk(...pw[si]); find(k); if (g0) uni(g0, k); else g0 = k; }); } });   // Masse-Pins der Steuerung sind untereinander und mit den Masse-Symbolen verbunden
+  sch.parts.forEach(p => { const sp = llSpec(p); if (!sp) return; const pw = pinsOf(p), first = new Map(); sp.pm.forEach((li, si) => { if (first.has(li)) uni(gk(...pw[first.get(li)]), gk(...pw[si])); else first.set(li, si); }); });   // Anschlüsse, die im Layout derselbe Pin sind (zum Beispiel die beiden 5V-Pins des Uno), gehören zum selben Netz
   const netCnt = new Map(); sch.parts.forEach(p => pinsOf(p).forEach(q => { const r = String(find(gk(...q))); netCnt.set(r, (netCnt.get(r) || 0) + 1); }));
   const parts = [], skipped = {}, ext = [];
   sch.parts.forEach(p => {
