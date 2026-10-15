@@ -36,6 +36,7 @@ const KINDS = {
   SPST:{ name: 'Schalter',        cat: 'Schalter', pins: T2, v: '', core: 'SPST', box: [0, -1.2, 4, 1], toggle: true, props: [] },
   PB:  { name: 'Taster',          cat: 'Schalter', pins: T2, v: '', core: 'SW', box: [0, -1.4, 4, 1], momentary: true, props: [] },
   SPDT:{ name: 'Wechsler',        cat: 'Schalter', pins: [[0, 0], [4, -1], [4, 1]], v: '', core: 'SCH', map: [1, 0, 2], box: [0, -1.5, 4, 1.5], toggle: true, props: [] },
+  CABLE: { name: 'Leitung (Kupfer)', cat: 'Netz & Schutz', lab: 'sim', pins: T2, v: '1.5mm2 20m', core: 'CABLE', box: [0, -0.7, 4, 0.7], props: [['v', 'Querschnitt und Länge', 'text', 'z. B. 2.5mm2 30m']] },
   FUSE:{ name: 'Sicherung',   cat: 'Passiv', pins: T2, v: '250mA', core: 'FUSE', box: [0, -0.6, 4, 0.6], props: [['v', 'Nennstrom', 'text', 'z. B. 250mA']] },
   NTC: { name: 'NTC (Heißleiter)', cat: 'Passiv', pins: T2, v: '10k', core: 'NTC', box: [0, -1.3, 4, 1.3], pos: true, pos0: 0.32, props: [['v', 'Widerstand bei 25 °C', 'text', 'z. B. 10k'], ['pos', 'Temperatur (-20 … 120 °C)', 'range']] },
   PTC: { name: 'PTC (Kaltleiter)', cat: 'Passiv', pins: T2, v: '100', core: 'PTC', box: [0, -1.3, 4, 1.3], pos: true, pos0: 0.32, props: [['v', 'Widerstand bei 25 °C', 'text', 'z. B. 100'], ['pos', 'Temperatur (-20 … 120 °C)', 'range']] },
@@ -88,6 +89,9 @@ const KINDS = {
          dyn: p => icDyn(p), props: [['ic', 'Typ', 'ictype']] },
   VM:  { name: 'Voltmeter',       cat: 'Messen', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
   AM:  { name: 'Amperemeter',     cat: 'Messen', pins: T2, v: '', core: 'AM', box: [0, -1.1, 4, 1.1], props: [] },
+  OHM: { name: 'Durchgangsprüfer (Ω)', cat: 'Messen', lab: 'sim', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
+  ISO: { name: 'Isolationsmessgerät (500 V)', cat: 'Messen', lab: 'sim', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
+  ZS:  { name: 'Schleifenimpedanz (Zs)', cat: 'Messen', lab: 'sim', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
 };
 const CATS = LAB === 'pi' ? ['Raspberry Pi', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Netz & Schutz', 'Schalter', 'Verbraucher', 'Quellen', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
 const kindsOf = cat => Object.keys(KINDS).filter(k => KINDS[k].cat === cat && inLab(KINDS[k]));
@@ -145,12 +149,58 @@ const undo = () => { if (hi > 0) restore(hi - 1); };
 const redo = () => { if (hi < hist.length - 1) restore(hi + 1); };
 
 /* ============ Simulation aufbauen ============ */
+
+/* ---- Messen im spannungsfreien oder Netz-Zustand: Durchgang, Isolation, Schleifenimpedanz (statische Rechnung am Plan) ---- */
+const INSTR = { OHM: 1, ISO: 1, ZS: 1 };
+const instrPeak = new Map();                                       // Teil-ID -> [{t, v}] (Spannung zwischen den Messspitzen in den letzten 40 ms)
+function trackInstr() {
+  if (LAB !== 'sim') return;
+  sch.parts.forEach(p => { if (!INSTR[p.k]) return; const pn = pinsOf(p), v = Math.abs(sv(gk(...pn[0])) - sv(gk(...pn[1]))); let a = instrPeak.get(p.id); if (!a) instrPeak.set(p.id, a = []); a.push({ t: sim.t, v }); while (a.length && a[0].t < sim.t - 0.04) a.shift(); });
+}
+const instrVolt = p => { const a = instrPeak.get(p.id); return a && a.length ? Math.max(...a.map(x => x.v)) : 0; };
+function staticR(a, b, vtest, mode) {                              // Widerstand zwischen den Punkten a und b bei abgeschalteten Quellen (Netz nur mit Innenwiderstand)
+  const parts = []; let nid = 100000;
+  sch.parts.forEach(p => {
+    if (p.k === 'GND' || INSTR[p.k] || p.k === 'VM' || p.k === 'AM') return;
+    const pn = pinsOf(p);
+    if ((p.k === 'NETZ' || p.k === 'NETZ3') && mode !== 'zs') return;                          // freigeschaltet: Netz abgeklemmt
+    if (p.k === 'NETZ' || p.k === 'NETZ3') { const n3 = p.k === 'NETZ3', ln = n3 ? 3 : 1, nIdx = n3 ? 3 : 1, pe = n3 ? 4 : 2; for (let i = 0; i < ln; i++) parts.push({ id: nid++, k: 'R', v: '0.3', pins: [pn[i], pn[nIdx]], n: 2, sw: 0, pos: 0.5, light: 0.5, pressed: false, vr: undefined, item: {} }); parts.push({ id: nid++, k: 'R', v: '0.01', pins: [pn[nIdx], pn[pe]], n: 2, sw: 0, pos: 0.5, light: 0.5, pressed: false, vr: undefined, item: {} }); return; }
+    if (p.k === 'BAT' || p.k === 'SIG' || p.k === 'AC') { parts.push({ id: nid++, k: 'R', v: '0.001', pins: [pn[0], pn[1]], n: 2, sw: 0, pos: 0.5, light: 0.5, pressed: false, item: {} }); return; }
+    parts.push(toCore(p));
+  });
+  const T = { id: nid++, k: 'BAT', v: String(vtest), pins: [a, b], n: 2, sw: 0, pos: 0.5, light: 0.5, pressed: false, item: {} }; parts.push(T);
+  const c = LS.buildCircuit({ parts, tracks: [], wires: sch.wires, ground: [b] }), s = LS.createSim(c);
+  for (let i = 0; i < 6; i++) s.step(1e-4);
+  const e = c.elems.find(x => x.part === T && x.type === 'V'); const I = e ? Math.abs(e.i) : 0;
+  return I < 1e-12 ? Infinity : vtest / I;
+}
+const instrCache = new Map();
+function instrRaw(p) {
+  const pn = pinsOf(p), a = pn[0], b = pn[1], live = instrVolt(p);
+  if (p.k === 'ZS') { if (live < 30) return { warn: 'Keine Spannung' }; return { v: staticR(a, b, 1, 'zs'), kind: 'zs' }; }
+  if (live > 30) return { warn: 'Spannung! Erst freischalten' };
+  if (p.k === 'ISO') return { v: staticR(a, b, 500, 'iso'), kind: 'iso' };
+  return { v: staticR(a, b, 1, 'ohm'), kind: 'ohm' };
+}
+const fmtOhm = v => (v >= 1000 ? (v / 1000).toFixed(2).replace('.', ',') + ' kΩ' : (v < 10 ? v.toFixed(2) : v.toFixed(1)).replace('.', ',') + ' Ω');
+function instrText(p) {
+  const now = performance.now(), c = instrCache.get(p.id); let r;
+  if (c && now - c.t < 350) r = c.r; else { try { r = instrRaw(p); } catch (e) { r = { warn: '–' }; } instrCache.set(p.id, { t: now, r }); }
+  if (r.warn) return '⚡ ' + r.warn;
+  const v = r.v;
+  if (r.kind === 'iso') { if (!isFinite(v) || v > 5e8) return '> 500 MΩ'; if (v < 1e5) return fmtOhm(v); const M = v / 1e6; return (M < 10 ? M.toFixed(2) : M.toFixed(1)).replace('.', ',') + ' MΩ'; }
+  if (!isFinite(v) || v > 1e9) return '∞ Ω (kein Durchgang)';
+  return fmtOhm(v);
+}
+window.SchaltInstr = { staticR: (a, b, v, m) => staticR(a, b, v, m), text: p => instrText(p) };
+
 function toCore(p) {
   const K = KINDS[p.k];
   let pins = pinsOf(p); if (K.map) pins = K.map.map(i => pins[i]);
   return { id: p.id, k: K.core, vr: p.vr != null ? p.vr : K.vr, v: p.v, n: p.n || 2, pins, sw: p.sw ? 1 : 0, pos: p.pos == null ? 0.5 : p.pos, light: p.pos == null ? 0.5 : p.pos, pressed: !!p.pressed, rint: 0.01, defect: p.defect || undefined, item: p };
 }
 function rebuild() {
+  instrPeak.clear(); instrCache.clear();
   const old = circ && sim ? { elems: circ.elems, t: sim.t } : null;
   wrapMap.clear();
   const parts = [], ground = [];
@@ -197,7 +247,7 @@ function advance(realDt) {
   for (let i = 0; i < n; i++) {
     sim.step(dt);
     if (prog) stepProgram();
-    sampleScopes(every);
+    sampleScopes(every); trackInstr();
     if (tool === 'meter') meterSample(dt);
     if ((i & 15) === 15 && performance.now() - t0 > 11) break;
   }
@@ -710,6 +760,17 @@ function drawPart(p, selected) {
       break; }
     case 'LAMP': {
       lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]); circle(2, 0, 0.9); line(1.36, -0.64, 2.64, 0.64); line(2.64, -0.64, 1.36, 0.64); if (K.pins.length > 2) peStub(2, 0.9, 2, 2, pc[2], p.sw); break; }
+    case 'CABLE': {
+      lead(0, 0, 0.8, 0, pc[0]); lead(3.2, 0, 4, 0, pc[1]); c.strokeRect(0.8, -0.4, 2.4, 0.8);
+      if (showSim() && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; line(1, 0, 1.6, 0); line(2.4, 0, 3, 0); line(1.75, -0.3, 2.25, 0.3); line(1.75, 0.3, 2.25, -0.3); }
+      else { c.strokeStyle = fuseHot(p); line(0.8, 0, 3.2, 0); c.strokeStyle = body; line(1.5, -0.4, 1.2, 0.4); line(2.0, -0.4, 1.7, 0.4); line(2.5, -0.4, 2.2, 0.4); }
+      break; }
+    case 'OHM': case 'ISO': case 'ZS':
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); circle(2, 0, 1);
+      c.restore(); c.save();
+      c.fillStyle = body; c.font = `600 ${S * (p.k === 'OHM' ? 1.1 : 0.8)}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      { const [ax, ay] = rot(2, 0, p.r); c.fillText(p.k === 'OHM' ? 'Ω' : p.k === 'ISO' ? 'MΩ' : 'Zs', X(p.x + ax), Y(p.y + ay) + 1); }
+      c.restore(); c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(p.r * Math.PI / 2); c.scale(S, S); break;
     case 'VM': case 'AM':
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); circle(2, 0, 1);
       c.restore(); c.save();
@@ -761,6 +822,7 @@ function drawPart(p, selected) {
   c.fillStyle = PRINT ? '#111' : '#cfd5db'; c.font = `${Math.max(10, S * 0.62)}px -apple-system,Segoe UI,sans-serif`; c.textBaseline = 'middle';
   let txt = valueText(p);
   if (p.k === 'VM' && showSim()) txt = fmt(sv(gk(...pins[0])) - sv(gk(...pins[1])), 'V');
+  if (INSTR[p.k] && showSim()) txt = instrText(p);
   if (p.k === 'AM' && showSim()) { const o = [...bodyI.entries()].find(([k]) => k === String(p.id)); txt = o ? fmt(o[1].e.i, 'A') : ''; }
   if (p.l && p.k !== 'GND') txt = p.l + (txt ? '  ' + txt : '');
   if (txt) {
@@ -795,6 +857,7 @@ function valueText(p) {
     case 'LSS': case 'RCD': case 'IMP': case 'SCHUETZ': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
     case 'HEAT': return p.v;
+    case 'CABLE': return p.v;
     case 'BAT': return fmtVal(p.v, 'V') + (p.imax ? '  ≤ ' + fmtVal(p.imax, 'A') : '');
     case 'ZD': return fmtVal(p.v, 'V');
     case 'AC': return p.v;
@@ -1078,7 +1141,6 @@ window.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') delSel();
-  else if (e.key === 'r' || e.key === 'R') rotSel(1);
   else if (e.key === ' ') { e.preventDefault(); toggleRun(); }
   else if (e.key === 'Escape') { wireStart = null; sel = null; setTool('select'); }
 });
@@ -1329,7 +1391,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -2356,7 +2418,49 @@ const SIM_TASKS = [
     text: 'Der Drehstrommotor läuft über das Schütz, aber sein Gehäuse ist nicht geerdet. Verbinde den PE-Anschluss des Motors mit dem PE des Drehstromnetzes (grün-gelb).',
     hint: 'Der PE-Anschluss sitzt rechts neben dem Motor (grüner Punkt). Das Netz hat fünf Anschlüsse: L1, L2, L3, N und PE.',
     check() { const L = chkPE(); return L.length ? L : [RES(false, 'Es fehlt ein Netz oder ein Gerät.')]; } },
+
+  { id: 'sl1', cat: 'Leitungen und Messen', title: 'Leitung auslegen: Spannungsfall', level: 2, sol: 'Leitung: Spannungsfall bei langer Zuleitung',
+    start: () => houseLine({ cab: '1.5mm2 50m' }), solMake: () => houseLine({ cab: '2.5mm2 50m' }),
+    text: 'Ein 2-kW-Heizlüfter hängt an 50 m Leitung mit 1,5 mm². Am Gerät sollen mindestens 97 % der Netzspannung ankommen (höchstens 3 % Spannungsfall). Ändere den Querschnitt beider Leitungen (W1 und W2: Leitung antippen, Wert ändern) so, dass es passt, aber nicht größer als nötig.',
+    hint: 'Der Widerstand einer Leitung ist R = 0,0178 · Länge / Querschnitt (je Leiter, in Ω). Hin- und Rückleiter zählen. Probiere 2.5mm2 oder 4mm2 und schau auf das Oszilloskop oder miss mit dem Voltmeter.',
+    check() { const W = sch.parts.filter(p => p.k === 'CABLE'), H = sch.parts.find(p => p.k === 'HEAT'), N = sch.parts.find(p => p.k === 'NETZ'); if (W.length < 2 || !H || !N) return [RES(false, 'Zwei Leitungen, Heizlüfter und Netz müssen vorhanden sein.')];
+      const E = simEval({}), he = E.c.elems.find(e => e.type === 'R' && e.part && e.part.id === H.id && e.lamp), nl = E.c.nodeOfKey(gk(...pinsOf(N)[0])), nn = E.c.nodeOfKey(gk(...pinsOf(N)[1])); let mx = 0, vt = 1e-9; for (let i = 0; i < 400; i++) { E.s.step(2e-4); if (he) mx = Math.max(mx, Math.abs(he.i / he.g)); vt = Math.max(vt, Math.abs((nl > 0 ? E.s.v[nl] : 0) - (nn > 0 ? E.s.v[nn] : 0))); }
+      const rel = mx / vt, As = W.slice(0, 2).map(p => LS.cableOf(p.v).A), same = Math.abs(As[0] - As[1]) < 1e-6;
+      return [RES(rel >= 0.97, 'Spannung am Heizlüfter: ' + (rel * 100).toFixed(1) + ' % der Spannung am Netzanschluss (verlangt: mindestens 97 %).'), RES(same, same ? 'Hin- und Rückleiter haben denselben Querschnitt.' : 'Hin- und Rückleiter (W1, W2) sollen denselben Querschnitt haben.'), RES(As[0] <= 4.0001, As[0] <= 4.0001 ? 'Querschnitt ist nicht übertrieben groß.' : 'Der Querschnitt ist unnötig groß (4 mm² reichen).')]; } },
+  { id: 'sl2', cat: 'Leitungen und Messen', title: 'Automat zur Leitung passend wählen', level: 2, sol: 'Leitungsschutz: Leitung zu schwach',
+    start: () => houseLine({ cab: '2.5mm2 10m', ln: 'B32', lv: '230V 3000W' }), solMake: () => houseLine({ cab: '2.5mm2 10m', ln: 'B16', lv: '230V 3000W' }),
+    text: 'Ein 3-kW-Heizlüfter hängt an einer Leitung mit 2,5 mm². Der Automat ist mit B32 viel zu groß. Wähle einen passenden Automaten (LSS antippen, Wert ändern): Er muss den Betriebsstrom des Geräts tragen, darf aber die Leitung nicht überfordern.',
+    hint: 'Betriebsstrom: I = P / U = 3000 W / 230 V = 13 A. Die Leitung 2,5 mm² verträgt etwa 23 A. Der Nennstrom In des Automaten muss zwischen beiden liegen: B16 oder B20.',
+    check() { const L = sch.parts.find(p => p.k === 'LSS'), C = sch.parts.find(p => p.k === 'CABLE'), H = sch.parts.find(p => p.k === 'HEAT'); if (!L || !C || !H) return [RES(false, 'Automat, Leitung und Heizlüfter fehlen.')];
+      const In = lssIn(L), Iz = IZ_OF(C.v), Ibr = (parseFloat(String(H.v).replace(/^\D*\d+V\s*/, '')) || 3000) / 230;
+      return [RES(In >= Ibr, 'Nennstrom ' + In + ' A ' + (In >= Ibr ? 'trägt' : 'trägt nicht') + ' den Betriebsstrom (' + Ibr.toFixed(1) + ' A).'), RES(In <= Iz, 'Nennstrom ' + In + ' A ' + (In <= Iz ? 'schützt' : 'schützt nicht') + ' die Leitung (Belastbarkeit ' + Iz + ' A).')]; } },
+  { id: 'sl3', cat: 'Leitungen und Messen', title: 'Fehlersuche: Isolationsfehler finden', level: 3, debug: true, faultLabel: 'E2', sol: 'Messen: Isolation zwischen Gerät und Schutzleiter',
+    start: () => { const d = exOfRaw3(); return d; },
+    text: 'Sobald du den Automaten einschaltest, löst er sofort aus. Irgendwo hat ein Gerät Körperschluss. Schalte den Automaten aus (freischalten), schließe das Isolationsmessgerät zwischen den Außenleiter-Anschluss eines Heizlüfters und seinen PE-Anschluss und miss alle drei Geräte durch. Wähle das defekte Gerät aus und tippe auf „Fehler melden“.',
+    hint: 'Das Messgerät steht bei Bauteile → Messen („Isolationsmessgerät“). Ein gesundes Gerät zeigt > 500 MΩ. Das defekte zeigt einen sehr kleinen Wert. Die Schalter der Heizlüfter müssen dabei geschlossen sein.' },
+  { id: 'sl4', cat: 'Leitungen und Messen', title: 'Auslösebedingung: Schleifenimpedanz', level: 3, sol: 'Messen: Schleifenimpedanz am Verbraucher',
+    start: () => houseLine({ cab: '1.5mm2 120m', pe: 'cable', inst: 'ZS' }), solMake: () => houseLine({ cab: '2.5mm2 120m', pe: 'cable', inst: 'ZS' }),
+    text: 'Der Stromkreis mit Automat B16 ist über 120 m Leitung mit 1,5 mm² angeschlossen. Das Zs-Messgerät zeigt die Schleifenimpedanz. Der Automat löst im Fehlerfall nur schnell genug aus, wenn Zs ≤ 230 V / (5 · 16 A) = 2,9 Ω ist. Ändere die Querschnitte aller drei Leitungen (W1, W2, W3) so, dass die Bedingung erfüllt ist.',
+    hint: 'Die Schleife besteht aus Außenleiter (W1) und Schutzleiter (W3), dazu kommt der Netzinnenwiderstand. Größerer Querschnitt, kleinerer Widerstand. Probiere 2.5mm2.',
+    check() { const H = sch.parts.find(p => p.k === 'HEAT'), L = sch.parts.find(p => p.k === 'LSS'), C = sch.parts.filter(p => p.k === 'CABLE'); if (!H || !L || C.length < 3) return [RES(false, 'Der Stromkreis mit drei Leitungen (W1, W2, W3) fehlt.')];
+      const pn = pinsOf(H); let z = NaN; try { z = window.SchaltInstr.staticR(pn[0], pn[2], 1, 'zs'); } catch (e) {}
+      const lim = 230 / (5 * lssIn(L)); return [RES(isFinite(z) && z <= lim, 'Schleifenimpedanz am Heizlüfter: ' + (isFinite(z) ? z.toFixed(2) : '∞') + ' Ω (verlangt: höchstens ' + lim.toFixed(2) + ' Ω).'), RES(C.every(p => LS.cableOf(p.v).A <= 6.0001), 'Die Querschnitte sind nicht übertrieben groß (höchstens 6 mm²).')]; } },
+  { id: 'sl5', cat: 'Leitungen und Messen', title: 'Fehlersuche: Schutzleiter unterbrochen', level: 3, debug: true, faultLabel: 'W3b', sol: 'Messen: Isolation zwischen Gerät und Schutzleiter',
+    start: () => houseLine({ cab: '1.5mm2 10m', pe: 'chain', def: { W3b: 'open' } }),
+    text: 'Beim Prüfen der Anlage stellt sich heraus: Der Schutzleiter des Heizlüfters hat keinen Durchgang. Er besteht aus drei Leitungsabschnitten (W3a, W3b, W3c). Schalte frei, miss mit dem Durchgangsprüfer abschnittsweise und finde den unterbrochenen Abschnitt. Wähle ihn aus und tippe auf „Fehler melden“.',
+    hint: 'Der Durchgangsprüfer steht bei Bauteile → Messen. Setze ihn nacheinander über die Abschnitte (an ihre Anschlüsse). Ein intakter Abschnitt zeigt wenige Ohm, der unterbrochene „∞ Ω (kein Durchgang)“.' },
+  { id: 'sl6', cat: 'Leitungen und Messen', title: 'Fehlersuche: Neutralleiter unterbrochen', level: 3, debug: true, faultLabel: 'W2', sol: 'Leitung: Spannungsfall bei langer Zuleitung',
+    start: () => houseLine({ cab: '1.5mm2 10m', pe: 'cable', def: { W2: 'open' } }),
+    text: 'Der Heizlüfter bleibt kalt, obwohl der Automat eingeschaltet ist und am Außenleiter Spannung anliegt. Eine der Leitungen ist unterbrochen. Miss mit dem Voltmeter, wo die Spannung verschwindet, wähle die defekte Leitung aus und tippe auf „Fehler melden“. Achtung: Hinter einer Unterbrechung im Neutralleiter steht das Gerät unter Spannung gegen Erde!',
+    hint: 'Miss die Spannung zwischen dem Außenleiteranschluss des Heizlüfters und seinem Neutralleiteranschluss, dann zwischen N hinter der Leitung und PE. Wo 230 V anliegen müssten, aber nichts ankommt, liegt der Fehler.' },
 ];
+
+// Drei Heizlüfter mit eigenem Schalter und Schutzleiter; E2 hat einen versteckten Körperschluss
+const exOfRaw3 = () => {
+  const d = { parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', -4, 6, 1, '', { sw: 1, l: 'S1' }], ['SPST', -8, 6, 1, '', { sw: 1, l: 'S2' }], ['SPST', -12, 6, 1, '', { sw: 1, l: 'S3' }], ['HEAT', -4, 10, 1, '230V 2000W', { l: 'E1' }], ['HEAT', -8, 10, 1, '230V 2000W', { l: 'E2', defect: 'body' }], ['HEAT', -12, 10, 1, '230V 2000W', { l: 'E3' }]],
+    wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -4, 6, -8, 6, -12, 6], ['blau', 3, 0, 3, 16, -4, 16, -8, 16, -12, 16], ['blau', -4, 14, -4, 16], ['blau', -8, 14, -8, 16], ['blau', -12, 14, -12, 16]], scopes: [], tempo: 0.6, win: 0.04 };
+  return window.addPE ? window.addPE(d) : d;
+};
 TASKS.push(...SIM_TASKS, ...SCH_TASKS, ...CODE_TASKS, ...PI_TASKS);
 
 
@@ -2364,7 +2468,7 @@ TASKS.push(...SIM_TASKS, ...SCH_TASKS, ...CODE_TASKS, ...PI_TASKS);
 function chkPE() {
   const OFF = { LAMP: 2, HEAT: 2, MOTOR3: 3 }, devs = sch.parts.filter(p => OFF[p.k] != null && (p.k !== 'LAMP' || /230\s*V/i.test(String(p.v || '')))), src = sch.parts.find(p => p.k === 'NETZ' || p.k === 'NETZ3');
   if (!devs.length || !src) return [];
-  const E = simEval({}), sn = E.c.nodeOfKey(gk(...pinsOf(src)[src.k === 'NETZ' ? 2 : 4])); const bad = devs.filter(p => { const q = pinsOf(p)[OFF[p.k]]; const n = E.c.nodeOfKey(gk(q[0], q[1])); return !(n >= 0 && n === sn); });
+  const E = simEval({}), sp = pinsOf(src)[src.k === 'NETZ' ? 2 : 4], sn = E.c.nodeOfKey(gk(...sp)); const bad = devs.filter(p => { const q = pinsOf(p)[OFF[p.k]]; const n = E.c.nodeOfKey(gk(q[0], q[1])); if (n >= 0 && n === sn) return false; if (!sch.parts.some(c => c.k === 'CABLE')) return true; try { return !(window.SchaltInstr.staticR(q, sp, 1, 'ohm') < 5); } catch (e) { return true; } });
   return [RES(!bad.length, bad.length ? 'Schutzleiter (PE, grün-gelb) fehlt bei: ' + bad.map(nm).join(', ') + '. Das Gehäuse muss mit PE verbunden sein.' : 'Alle Geräte sind an den Schutzleiter (PE) angeschlossen.')];
 }
 ['aus', 'reihe', 'parallel', 'wechsel', 'kreuz', 'impuls', 'schutz', 'schuetz', 'selbst', 'zl', 'oe', 'mo'].forEach(id => {
@@ -2650,7 +2754,8 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'keys') { if (window.LochKeys) window.LochKeys.help(); }
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p><p><b>Tastenkürzel:</b> Taste <b>?</b> drücken oder im Menü „Tastenkürzel“. Zum Beispiel <b>R</b> Widerstand, <b>D</b> Diode, <b>L</b> LED, <b>W</b> Draht, <b>Eingabe</b> oder <b>F5</b> Simulation ein und aus.</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -3196,6 +3301,29 @@ void loop() {
     make: () => ({ parts: [['AC', 2, 6, 1, '10mV 1kHz'], ['C', 2, 6, 0, '10u'], ['R', 6, 0, 1, '47k'], ['R', 6, 6, 1, '10k'], ['NPN', 8, 6, 0, 'BC547'], ['R', 10, 0, 1, '2.2k'], ['R', 10, 8, 1, '470'], ['CE', 10, 4, 0, '10u'], ['R', 14, 4, 1, '10k'], ['BAT', 18, 4, 1, '12'], ['CE', 12, 8, 1, '100u'], ['GND', 2, 12]],
       wires: [[18, 4, 18, 0, 10, 0, 6, 0], [18, 8, 18, 12, 14, 12, 12, 12, 10, 12, 6, 12, 2, 12], [2, 10, 2, 12], [6, 10, 6, 12], [6, 4, 6, 6, 8, 6], [10, 8, 12, 8], [14, 8, 14, 12]], scopes: [0, 8], tempo: 0.62, win: 0.004 }) },
 ];
+
+/* ---- Leitungen und Messen: Baukasten für Beispiele und Aufgaben ---- */
+// Einfacher Stromkreis: Netz, Automat, Leitung L (W1) und N (W2), Verbraucher E1, Schutzleiter über Leitung W3 (pe: 'cable') oder Draht
+const houseLine = (o = {}) => {
+  const cab = o.cab || '1.5mm2 50m', pe = o.pe, P = [['NETZ', 1, 0], ['LSS', 1, 2, 1, o.ln || 'B16'], ['CABLE', 1, 8, 1, cab, Object.assign({ l: 'W1' }, (o.def || {}).W1 ? { defect: o.def.W1 } : {})], ['CABLE', 3, 8, 1, o.ncab || cab, Object.assign({ l: 'W2' }, (o.def || {}).W2 ? { defect: o.def.W2 } : {})], [o.load || 'HEAT', 1, 14, 1, o.lv || '230V 2000W', Object.assign({ l: 'E1' }, o.body ? { defect: 'body' } : {})]];
+  const W = [['braun', 1, 0, 1, 2], ['braun', 1, 6, 1, 8], ['braun', 1, 12, 1, 14], ['blau', 3, 0, 3, 8], ['blau', 3, 12, 3, 18, 1, 18]];
+  if (pe === 'cable') { P.push(['CABLE', 5, 8, 1, o.pcab || cab, Object.assign({ l: 'W3' }, (o.def || {}).W3 ? { defect: o.def.W3 } : {})]); W.push(['gruen', 5, 0, 5, 8], ['gruen', 5, 12, 5, 22, -1, 22, -1, 16]); }
+  else if (pe === 'chain') { [[2, 'a'], [8, 'b'], [14, 'c']].forEach(([y, s]) => P.push(['CABLE', 5, y, 1, o.pcab || cab, Object.assign({ l: 'W3' + s }, (o.def || {})['W3' + s] ? { defect: o.def['W3' + s] } : {})])); W.push(['gruen', 5, 0, 5, 2], ['gruen', 5, 6, 5, 8], ['gruen', 5, 12, 5, 14], ['gruen', 5, 18, 5, 22, -1, 22, -1, 16]); }
+  if (o.inst) { P.push([o.inst, 8, 14, 0, '']); W.push(['gelb', 8, 14, 1, 14], ['gelb', 12, 14, 12, 20, -1, 20, -1, 16]); }
+  return { parts: P, wires: W, scopes: [], tempo: 0.6, win: 0.04 };
+};
+const IZ_OF = v => LS.cableOf(v).iz;
+const lssIn = p => { const m = String(p.v || '').match(/(\d+(?:[.,]\d+)?)/); return m ? parseFloat(m[1].replace(',', '.')) : NaN; };
+EXAMPLES.push(
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Leitung: Spannungsfall bei langer Zuleitung', info: 'Ein 2-kW-Heizlüfter hängt an 50 m Leitung mit 1,5 mm². Die Leitung hat Widerstand, deshalb kommt am Gerät weniger als 230 V an. Das Oszilloskop zeigt die Spannung am Heizlüfter. Probier 2.5mm2 aus (Leitung antippen, Wert ändern).',
+    make: () => houseLine({ cab: '1.5mm2 50m' }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Leitungsschutz: Leitung zu schwach', info: 'Ein 4-kW-Heizlüfter an 1,5 mm² und B20: 17 A sind mehr als die Leitung (16,5 A) verträgt, der Automat löst aber nicht aus. Die Leitung wird heiß und brennt durch. Merke: Der Automat muss zur Leitung passen (In ≤ Iz).',
+    make: () => houseLine({ cab: '1.5mm2 10m', ln: 'B20', lv: '230V 4000W' }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Messen: Isolation zwischen Gerät und Schutzleiter', info: 'Das Isolationsmessgerät hängt zwischen dem Außenleiter-Anschluss des Geräts und dem Schutzleiter. Bei gesundem Gerät zeigt es mehr als 500 MΩ. Schalte vorher den Automaten aus (freischalten!). Im Bedienfeld kannst du am Gerät einen Körperschluss einschalten und die Messung wiederholen.',
+    make: () => houseLine({ cab: '1.5mm2 10m', pe: 'cable', inst: 'ISO' }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Messen: Schleifenimpedanz am Verbraucher', info: 'Das Zs-Messgerät misst die Schleife Außenleiter, Quelle, Schutzleiter. Der Wert entscheidet, ob der Automat im Fehlerfall schnell genug auslöst: für B16 darf Zs höchstens 2,9 Ω betragen. Mach die Leitungen länger oder dünner und beobachte den Wert.',
+    make: () => houseLine({ cab: '1.5mm2 60m', pe: 'cable', inst: 'ZS' }) },
+);
 if (window.MORE_EX) EXAMPLES.push(...window.MORE_EX);
 if (LAB === 'sim' && window.addPE) EXAMPLES.forEach(e => { if (!e.noPE && (e.lab === 'sim' || e.cat === 'Bauteile')) { const mk = e.make; e.raw = mk; e.make = () => window.addPE(mk()); } });
 // Haus-Beispiele ohne eigene Oszilloskope: je Verbraucher (bis zu vier) eins, damit jede Schalterstellung sichtbar ist
@@ -3280,7 +3408,7 @@ simsw.innerHTML = '<span class="lL">Zeichnen</span><span class="trk"><span class
 $('#bUndo').before(simsw);
 simsw.addEventListener('click', () => setSimMode(!simMode));
 $('#bRun').style.display = 'none';
-$('#bShare').onclick = () => menuAct('share'); $('#bTasks').style.display = ''; $('#bTasks').onclick = openTasks; if (LAB === 'sim') { $('#bCab').style.display = ''; $('#bCab').onclick = openCabinet; } $('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
+$('#bShare').onclick = () => menuAct('share'); $('#bTasks').style.display = ''; $('#bTasks').onclick = openTasks; if (LAB === 'sim') { $('#bCab').style.display = ''; $('#bCab').onclick = openCabinet; const pp = $('#bPP'); if (pp) { pp.style.display = ''; pp.onclick = () => window.Pruefplatz && window.Pruefplatz.open(); } } $('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
 $('#bRun').onclick = toggleRun; $('#bUndo').onclick = undo; $('#bRedo').onclick = redo; $('#bMenu').onclick = openMenu;
 $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); });
 (function init() {
@@ -3338,18 +3466,25 @@ window.SchaltTrace = (name, T, step) => {                                       
 window.SchaltLive = {                                                                // Testhilfe: laufende Simulation von außen treiben und die Oszilloskope auslesen
   load: name => { const e = EXAMPLES.find(x => x.name.toLowerCase().includes(name.toLowerCase())); loadCircuit(buildExample(e)); return { parts: sch.parts.map(p => [p.id, p.k, p.l || '', p.sw || 0]), scopes: sch.scopes }; },
   set: (id, o) => { Object.assign(sch.parts.find(p => p.id === id), o); rebuild(); },
-  run: (T, press) => { simMode = true; rebuild(); const dt = 2e-4, n = Math.round(T / dt); for (let i = 0; i < n; i++) { sim.step(dt); if (i % 50 === 0) sampleScopes(0); } return sch.scopes.map((sc, k) => { const b = scopeBuf[k], m = a => a.length ? [Math.min(...a), Math.max(...a)].map(v => +v.toFixed(2)) : []; return { v: m(b.v), i: m(b.i) }; }); },
+  run: (T, press) => { simMode = true; rebuild(); const dt = 2e-4, n = Math.round(T / dt); for (let i = 0; i < n; i++) { sim.step(dt); if (i % 50 === 0) { sampleScopes(0); } trackInstr(); } return sch.scopes.map((sc, k) => { const b = scopeBuf[k], m = a => a.length ? [Math.min(...a), Math.max(...a)].map(v => +v.toFixed(2)) : []; return { v: m(b.v), i: m(b.i) }; }); },
+  instr: () => sch.parts.filter(p => INSTR[p.k]).map(p => [p.k, instrText(p)]),
   events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
   pinV: (id, i) => sv(gk(...pinsOf(byPart(id))[i])),
   stepN: n => { for (let k = 0; k < n; k++) sim.step(2e-4); return sim.t; },
   vmax: () => vmax,
 };
+window.LabUI = { sheet, esc, toast, userName, LAB };
+window.LabKeysAdapter = {                                                           // Tastenkürzel (keys.js)
+  lab: LAB, sheet, esc, toast, has: k => !!KINDS[k] && inLab(KINDS[k]),
+  part: k => { placeRot = 0; setTool('place', k); }, tool: t => setTool(t), rotate: () => rotSel(1), rotateKey: 'Tab', dup: () => dupSel(), fit: () => fit(),
+  search: () => { const q = $('#pq'); if (q) q.focus(); }, sim: () => { const s = $('#bSim'); if (s) s.click(); }, busy: () => simMode,
+};                                    // kleine Schnittstelle für Zusatzmodule (Prüfplatz)
 window.SchaltPECheck = () => EXAMPLES.filter(exOk).map(e => {                      // Testhilfe: PE-Anschluss in allen Beispielen prüfen
   loadCircuit(buildExample(e));
   const OFF = { LAMP: 2, HEAT: 2, MOTOR3: 3 }, devs = sch.parts.filter(p => OFF[p.k] != null && (p.k !== 'LAMP' || /230\s*V/i.test(String(p.v || '')))), src = sch.parts.find(p => p.k === 'NETZ' || p.k === 'NETZ3');
   if (!devs.length || !src) return null;
   const E = simEval({}); E.run(0.4); const nd = i => E.c.nodeOfKey(gk(...pinsOf(src)[i])), pe = nd(src.k === 'NETZ' ? 2 : 4), act = (src.k === 'NETZ' ? [0, 1] : [0, 1, 2, 3]).map(nd);
-  const bad = devs.filter(p => { const q = pinsOf(p)[OFF[p.k]]; return E.c.nodeOfKey(gk(q[0], q[1])) !== pe; });
+  const bad = devs.filter(p => { const q = pinsOf(p)[OFF[p.k]]; if (E.c.nodeOfKey(gk(q[0], q[1])) === pe) return false; if (!sch.parts.some(c => c.k === 'CABLE')) return true; try { return !(window.SchaltInstr.staticR(q, pinsOf(src)[src.k === 'NETZ' ? 2 : 4], 1, 'ohm') < 5); } catch (e) { return true; } });
   return { name: e.name, devs: devs.length, notOnPE: bad.map(nm), peShortedToL: act.includes(pe), warn: (E.c.warnings || []).map(w => w.text).filter(t => /Schutzleiter/.test(t)), events: E.s.events.map(x => x.text || x.kind) };
 }).filter(Boolean);
 window.SchaltDebug = () => ({ prog: prog && { err: prog.err, t: prog.runner.t }, serLog, view, sl: sliderHits, running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });

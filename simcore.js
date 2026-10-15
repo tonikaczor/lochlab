@@ -145,7 +145,7 @@ function buildCircuit(layout) {
     const r = find(pinKey(p, pe)); let cnt = 0; layout.parts.forEach(q => q.pins.forEach((_, i) => { if (find(pinKey(q, i)) === r) cnt++; }));
     const floating = cnt <= 1;
     if (floating && warn) warnings.push({ part: p, text: 'Schutzleiter (PE) nicht angeschlossen: Bei einem Körperschluss steht das Gehäuse unter Spannung (Lebensgefahr).' });
-    add({ type: 'S', a: nodeOfRoot(find(pinKey(p, 0))), b: nodeOfRoot(r), closed: !!p.sw, ron: floating ? 2000 : 0.5, part: p, sub: 'body', peFloating: floating, upd() { this.closed = !!this.part.sw; } });
+    add({ type: 'S', a: nodeOfRoot(find(pinKey(p, 0))), b: nodeOfRoot(r), closed: !!p.sw || p.defect === 'body', ron: floating ? 2000 : 0.5, part: p, sub: 'body', peFloating: floating, upd() { this.closed = !!this.part.sw || this.part.defect === 'body'; } });
   };
   const R = (a, b, g, part, extra) => add(Object.assign({ type: 'R', a, b, g, part }, extra || {}));
 
@@ -171,6 +171,7 @@ function buildCircuit(layout) {
         add({ type: 'R', a: n(0), b: n(1), g: ia / un, part: p, lamp: un * ia, lh: 0 });
         if (p.pins.length > 2) bodyFault(p, 2, un >= 50);
         break; }
+      case 'CABLE': { const cb = cableOf(p.v); add({ type: 'R', a: n(0), b: n(1), g: 1 / Math.max(cb.R, 1e-5), part: p, cable: { iz: cb.iz, tau: 8 }, heat: 0 }); break; }
       case 'FUSE': add({ type: 'R', a: n(0), b: n(1), g: 1 / 0.15, part: p, fuse: { ir: Math.max(si(p.v, 0.25), 1e-3), tau: 0.3 }, heat: 0 }); break;
       case 'NTC': case 'PTC': {
         const r25 = Math.max(si(p.v, 10000), 1), ntc = k === 'NTC';
@@ -686,6 +687,7 @@ function createSim(circ) {
         case 'R': if (e.part && burnt.has(e.part.id)) { e.i = 0; break; }
           e.i = (v[e.a] - v[e.b]) * e.g;
           if (e.fuse) { const r = e.i / e.fuse.ir; e.heat = Math.max(0, e.heat + dt * (r * r - 1) / e.fuse.tau); e.hot = Math.min(1, e.heat); if (e.heat > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Sicherung hat ausgelöst' }); } }
+          if (e.cable) { const r = e.i / e.cable.iz; e.heat = Math.max(0, e.heat + dt * (r * r - 1) / e.cable.tau); e.hot = Math.min(1, e.heat); if (e.heat > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Leitung überlastet: Die Isolierung schmilzt (Brandgefahr)' }); } }
           if (e.lamp) { const pw0 = e.i * e.i / e.g; e.pav = e.pav == null ? pw0 : e.pav + (pw0 - e.pav) * Math.min(1, dt / 0.02); const rt = e.pav / e.lamp; if (rt > 25) e.lh = 2; else e.lh = rt > 2.2 ? (e.lh || 0) + dt / 0.05 : Math.max(0, (e.lh || 0) - dt / 0.2); if (e.lh > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Glühlampe durchgebrannt' }); } }
           if (e.speaker && Math.abs(e.i * e.i / e.g) > 2) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Lautsprecher überlastet' }); }
           if (e.res && !burnt.has(e.part.id)) { const pw = e.i * e.i / e.g; e.power = pw; if (pw > 1.5) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Widerstand überlastet' }); } } break;
@@ -764,6 +766,16 @@ function i2cXfer(circ, sim, addr, wr, nrd) {
   }
   return { data: out };
 }
-const api = { si, sane, PRESETS, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS, i2cXfer };
+
+/* Kupferleitung: Querschnitt in mm², Länge in m. Widerstand je Leiter, Strombelastbarkeit nach Verlegeart B2 (grobe Tabelle). */
+const CAB_IZ = [[0.75, 9], [1, 11], [1.5, 16.5], [2.5, 23], [4, 30], [6, 38], [10, 52], [16, 70], [25, 88]];
+function cableOf(v) {
+  const s = String(v == null ? '' : v), ma = s.match(/([\d.,]+)\s*mm/i), rest = s.replace(/[\d.,]+\s*mm[²2]?/i, ''), ml = rest.match(/([\d.,]+)\s*m(?![a-zA-Z²2])/i);
+  const num = x => parseFloat(String(x).replace(',', '.'));
+  const A = Math.max(ma ? num(ma[1]) : 1.5, 0.5), L = Math.max(ml ? num(ml[1]) : 10, 0.1);
+  let iz = CAB_IZ[0][1], best = 1e9; CAB_IZ.forEach(([a, i]) => { const dd = Math.abs(Math.log(a / A)); if (dd < best) { best = dd; iz = i; } });
+  return { A, L, R: 0.0178 * L / A, iz };
+}
+const api = { si, sane, PRESETS, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS, i2cXfer, cableOf };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LochSim = api;
 })(typeof window !== 'undefined' ? window : globalThis);
