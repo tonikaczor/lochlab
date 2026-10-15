@@ -1314,11 +1314,12 @@ function lcdCmd(name, a) {
   serDirty = true; return 0;
 }
 function makeIO(el) {
+  const SIMT = () => sim.t;
   const m = el.mcu, node = q => el.nd[el.pinNode(q)], ok = q => q >= 0 && q < 20;
   return {
-    pinMode: (q, md) => { if (ok(q)) m.mode[q] = md; },
+    pinMode: (q, md) => { if (ok(q)) { m.mode[q] = md; if (md === 2) m.lastDig[q] = 1; } },
     digitalWrite: (q, v, vt) => { if (!ok(q)) return; m.out[q] = v; m.duty[q] = null; const pl = m.pulse[q] || (m.pulse[q] = {}); if (v) { pl.rise = vt == null ? sim.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? sim.t : vt; },
-    digitalRead: q => { if (!ok(q)) return 0; if (m.mode[q] === 1) return m.level[q]; const vv = sim.v[node(q)]; if (vv > 3) m.lastDig[q] = 1; else if (vv < 1.5) m.lastDig[q] = 0; return m.lastDig[q]; },
+    digitalRead: q => { if (!ok(q)) return 0; if (m.mode[q] === 1) return m.level[q]; if (m.mode[q] === 2 && SIMT() < 2e-3) return 1; const vv = sim.v[node(q)]; if (vv > 3) m.lastDig[q] = 1; else if (vv < 1.5) m.lastDig[q] = 0; return m.lastDig[q]; },
     analogRead: q => (ok(q) ? sim.v[node(q)] / 5 * 1023 : 0),
     analogWrite: (q, v) => { if (!ok(q)) return; m.mode[q] = 1; if ([3, 5, 6, 9, 10, 11].includes(q)) m.duty[q] = v; else { m.duty[q] = null; m.out[q] = v >= 128 ? 1 : 0; } },
     tone: (q, f, dd) => { if (!ok(q)) return; m.mode[q] = 1; m.tone[q] = { f: Math.max(1, f), until: dd ? sim.t + dd / 1000 : null }; },
@@ -1666,11 +1667,11 @@ function codeEval(o) {
   if (o.pos) Object.keys(o.pos).forEach(id => { const w = E.wm.get(+id); if (w) { w.pos = o.pos[id]; w.light = o.pos[id]; } });
   const comp = AR.compile(o.code != null ? o.code : (sch.code || ''));
   if (!comp.ok) { res.err = 'Fehler in Zeile ' + comp.errors[0].line + ': ' + comp.errors[0].msg; return res; }
-  const node = q => mcu.nd[mcu.pinNode(q)], ok = q => q >= 0 && q < 20, rx = (o.rx || '').split('');
+  const SIMT = () => s.t, node = q => mcu.nd[mcu.pinNode(q)], ok = q => q >= 0 && q < 20, rx = (o.rx || '').split('');
   const io = {
-    pinMode: (q, md) => { if (ok(q)) m.mode[q] = md; },
+    pinMode: (q, md) => { if (ok(q)) { m.mode[q] = md; if (md === 2) m.lastDig[q] = 1; } },
     digitalWrite: (q, v, vt) => { if (!ok(q)) return; m.out[q] = v; m.duty[q] = null; const pl = m.pulse[q] || (m.pulse[q] = {}); if (v) { pl.rise = vt == null ? s.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? s.t : vt; },
-    digitalRead: q => { if (!ok(q)) return 0; if (m.mode[q] === 1) return m.level[q]; const vv = s.v[node(q)]; if (vv > 3) m.lastDig[q] = 1; else if (vv < 1.5) m.lastDig[q] = 0; return m.lastDig[q]; },
+    digitalRead: q => { if (!ok(q)) return 0; if (m.mode[q] === 1) return m.level[q]; if (m.mode[q] === 2 && SIMT() < 2e-3) return 1; const vv = s.v[node(q)]; if (vv > 3) m.lastDig[q] = 1; else if (vv < 1.5) m.lastDig[q] = 0; return m.lastDig[q]; },
     analogRead: q => (ok(q) ? s.v[node(q)] / 5 * 1023 : 0),
     analogWrite: (q, v) => { if (!ok(q)) return; m.mode[q] = 1; if ([3, 5, 6, 9, 10, 11].includes(q)) m.duty[q] = v; else { m.duty[q] = null; m.out[q] = v >= 128 ? 1 : 0; } },
     tone: (q, f, dd) => { if (!ok(q)) return; m.mode[q] = 1; m.tone[q] = { f: Math.max(1, f), until: dd ? s.t + dd / 1000 : null }; },
@@ -1706,6 +1707,9 @@ const CP_SERVO = [['UNO', 12, 0], ['SERVO', 24, 18], ['GND', 24, 22]], CW_SERVO 
 const CP_SPK = [['UNO', 12, 0], ['R', 22, 16, 0, '100'], ['SPK', 26, 16, 0, '8'], ['GND', 30, 16]], CW_SPK = [[20, 16, 22, 16]];
 const CP_PWM = [['UNO', 12, 0], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'gelb'], ['GND', 30, 18]], CW_PWM = [[20, 18, 22, 18]];
 const CP_US = [['UNO', 12, 0], ['HCSR04', 24, 10, 0, '', { pos: 0.5 }], ['GND', 24, 16], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], CW_US = [[24, 10, 22, 10, 22, -2, 20, -2], [20, 12, 24, 12], [20, 14, 24, 14], [20, 26, 22, 26]];
+const CP_LEDS4 = [['UNO', 12, 0], ['R', 22, 6, 0, '220'], ['LED', 26, 6, 0, 'rot'], ['GND', 30, 6], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10], ['R', 22, 14, 0, '220'], ['LED', 26, 14, 0, 'grün'], ['GND', 30, 14], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'blau'], ['GND', 30, 18]], CW_LEDS4 = [[20, 6, 22, 6], [20, 10, 22, 10], [20, 14, 22, 14], [20, 18, 22, 18]];
+const CP_POTPWM = [['UNO', 12, 0], ['POT', 6, 4, 1, '10k', { pos: 0.4 }], ['GND', 6, 8], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'gelb'], ['GND', 30, 18]], CW_POTPWM = [[6, 4, 6, 0, 12, 0], [8, 6, 10, 6, 10, 8, 12, 8], [20, 18, 22, 18]];
+const CP_TMP = [['UNO', 12, 0], ['TMP36', 6, 8, 0, '', { pos: 0.394 }], ['GND', 10, 12], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], CW_TMP = [[10, 10, 11, 10, 11, 8, 12, 8], [10, 8, 9, 8, 9, 0, 12, 0], [20, 26, 22, 26]];
 const theLed = () => sch.parts.find(p => p.k === 'LED');
 function chkBlink(minEdges) {
   const L = theLed(); if (!L) return [RES(false, 'Keine LED vorhanden.')];
@@ -1811,6 +1815,88 @@ const CODE_TASKS = [
     text: 'Das Programm lässt sich nicht starten. Starte es mit ▶ Start, lies die Fehlermeldung (Zeilennummer!) und behebe den Fehler, so dass die LED blinkt.',
     hint: 'Jede Anweisung in C++ endet mit einem Semikolon. Schau in die Zeile, die die Fehlermeldung nennt.',
     check: () => chkBlink(4) },
+  { id: 'c11', lab: 'code', cat: 'Mehrere LEDs', title: 'Lauflicht', level: 2,
+    start: ct(CP_LEDS4, CW_LEDS4, 'int ledPins[] = {3, 5, 7, 9};\n\nvoid setup() {\n  for (int i = 0; i < 4; i++) {\n    pinMode(ledPins[i], OUTPUT);\n  }\n}\n\nvoid loop() {\n  // Hier: eine LED nach der anderen einschalten (von links nach rechts),\n  // dann wieder von vorn. Es leuchtet immer nur eine.\n}\n'),
+    solMake: ct(CP_LEDS4, CW_LEDS4, 'int ledPins[] = {3, 5, 7, 9};\n\nvoid setup() {\n  for (int i = 0; i < 4; i++) {\n    pinMode(ledPins[i], OUTPUT);\n  }\n}\n\nvoid loop() {\n  for (int i = 0; i < 4; i++) {\n    digitalWrite(ledPins[i], HIGH);\n    delay(200);\n    digitalWrite(ledPins[i], LOW);\n  }\n}\n'),
+    text: 'Vier LEDs hängen an den Pins 3, 5, 7 und 9 (von oben nach unten). Programmiere ein Lauflicht: Es leuchtet immer nur eine LED, und das Licht wandert von oben nach unten durch und beginnt dann wieder oben. Ein Schritt soll höchstens eine halbe Sekunde dauern.',
+    hint: 'Eine for-Schleife über das Feld ledPins: LED einschalten, kurz warten, wieder ausschalten, dann die nächste.',
+    check() { const R = codeEval({ T: 4 }); if (R.err) return codeFail(R); const seq = []; let multi = 0; const exp = [3, 5, 7, 9, 3, 5, 7, 9];
+      R.samples.forEach(x => { const lit = [3, 5, 7, 9].filter(p => x.lv[p]); if (lit.length > 1) multi++; if (lit.length === 1 && seq[seq.length - 1] !== lit[0]) seq.push(lit[0]); });
+      const ok = seq.length >= 6 && seq.slice(0, 8).every((p, i) => p === exp[i]);
+      return [RES(multi === 0, multi === 0 ? 'Es leuchtet nie mehr als eine LED.' : 'Zeitweise leuchten mehrere LEDs gleichzeitig.'), RES(seq.length >= 6, seq.length >= 6 ? 'Das Licht wandert durch (' + seq.length + ' Schritte in 4 s).' : 'Zu wenige Schritte (' + seq.length + ' in 4 s): Das Licht muss schneller wandern.'), RES(ok, ok ? 'Die Reihenfolge stimmt (Pin 3, 5, 7, 9, dann von vorn).' : 'Die Reihenfolge stimmt nicht. Erwartet: Pin 3, 5, 7, 9, dann wieder 3.')]; } },
+  { id: 'c12', lab: 'code', cat: 'Mehrere LEDs', title: 'Binärzähler', level: 3,
+    start: ct(CP_LEDS4, CW_LEDS4, 'int ledPins[] = {3, 5, 7, 9};   // Pin 3 ist das niedrigste Bit\nint zahl = 0;\n\nvoid setup() {\n  for (int i = 0; i < 4; i++) {\n    pinMode(ledPins[i], OUTPUT);\n  }\n}\n\nvoid loop() {\n  // Hier: die Zahl als Dualzahl auf den LEDs anzeigen,\n  // dann um 1 erhöhen (nach 15 wieder 0) und kurz warten\n}\n'),
+    solMake: ct(CP_LEDS4, CW_LEDS4, 'int ledPins[] = {3, 5, 7, 9};\nint zahl = 0;\n\nvoid setup() {\n  for (int i = 0; i < 4; i++) {\n    pinMode(ledPins[i], OUTPUT);\n  }\n}\n\nvoid loop() {\n  for (int bit = 0; bit < 4; bit++) {\n    digitalWrite(ledPins[bit], (zahl >> bit) & 1);\n  }\n  zahl = (zahl + 1) % 16;\n  delay(300);\n}\n'),
+    text: 'Die vier LEDs sollen eine Zahl als Dualzahl anzeigen (leuchtet = 1). Pin 3 ist das niedrigste Bit, Pin 9 das höchste. Die Zahl zählt von 0 bis 15 hoch und beginnt dann wieder bei 0. Ein Schritt soll höchstens eine Sekunde dauern.',
+    hint: 'Bit Nummer b der Zahl bekommst du mit (zahl >> b) & 1. Das schreibst du mit digitalWrite auf den Pin ledPins[b]. Danach zahl = (zahl + 1) % 16.',
+    check() { const R = codeEval({ T: 6 }); if (R.err) return codeFail(R); const vals = []; R.samples.forEach(x => { const v = [3, 5, 7, 9].reduce((s, p, i) => s + (x.lv[p] ? 1 << i : 0), 0); if (vals[vals.length - 1] !== v) vals.push(v); });
+      let steps = 0, bad = 0; for (let i = 1; i < vals.length; i++) { steps++; if (vals[i] !== (vals[i - 1] + 1) % 16) bad++; }
+      return [RES(steps >= 4, steps >= 4 ? 'Die Anzeige ändert sich (' + steps + ' Schritte in 6 s).' : 'Die Anzeige ändert sich zu selten oder gar nicht (' + steps + ' Schritte in 6 s).'), RES(steps >= 4 && bad === 0, bad === 0 ? 'Jeder Schritt erhöht die Zahl um genau 1.' : bad + '× springt die Anzeige falsch. Gesehen: ' + vals.slice(0, 8).join(', '))]; } },
+  { id: 'c13', lab: 'code', cat: 'Grundlagen', title: 'Tastendrücke zählen', level: 3,
+    start: ct(CP_BTN, CW_BTN, 'int anzahl = 0;\nint letzterZustand = HIGH;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int zustand = digitalRead(2);\n  // Hier: bei jedem neuen Tastendruck (HIGH -> LOW) hochzählen\n  // und "Anzahl: 1", "Anzahl: 2", ... ausgeben.\n  letzterZustand = zustand;\n}\n'),
+    solMake: ct(CP_BTN, CW_BTN, 'int anzahl = 0;\nint letzterZustand = HIGH;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int zustand = digitalRead(2);\n  if (zustand == LOW && letzterZustand == HIGH) {\n    anzahl++;\n    Serial.print("Anzahl: ");\n    Serial.println(anzahl);\n  }\n  letzterZustand = zustand;\n}\n'),
+    text: 'Zähle die Tastendrücke an Pin 2 (Taster gegen Masse, Pull-up). Bei jedem neuen Druck soll im Serial-Monitor „Anzahl: 1“, „Anzahl: 2“ und so weiter stehen. Wird der Taster gedrückt gehalten, darf nur einmal gezählt werden.',
+    hint: 'Merke dir den letzten Zustand des Tasters. Nur wenn er jetzt LOW und vorher HIGH war, ist es ein neuer Tastendruck (Flanke).',
+    check() { const pb = sch.parts.find(p => p.k === 'PB'); if (!pb) return [RES(false, 'Der Taster fehlt.')]; const id = pb.id;
+      const R = codeEval({ T: 2, script: [{ t: 0.3, press: [id] }, { t: 0.5, press: [] }, { t: 0.8, press: [id] }, { t: 1.0, press: [] }, { t: 1.3, press: [id] }, { t: 1.5, press: [] }] }); if (R.err) return codeFail(R);
+      const lines = R.ser.split('\n').map(x => x.trim()).filter(Boolean), want = ['Anzahl: 1', 'Anzahl: 2', 'Anzahl: 3'], ok = lines.length === 3 && want.every((w, i) => lines[i] === w);
+      return [RES(ok, ok ? 'Drei Tastendrücke ergeben die Ausgabe „Anzahl: 1“, „Anzahl: 2“, „Anzahl: 3“.' : 'Erwartet bei drei Tastendrücken: Anzahl: 1, Anzahl: 2, Anzahl: 3. Erhalten: ' + JSON.stringify(lines.slice(0, 6)))]; } },
+  { id: 'c14', lab: 'code', cat: 'Sensoren und Töne', title: 'Poti dimmt die LED', level: 2,
+    start: ct(CP_POTPWM, CW_POTPWM, 'void setup() {\n  pinMode(9, OUTPUT);\n}\n\nvoid loop() {\n  int wert = analogRead(A0);   // 0 bis 1023\n  // Hier: die LED an Pin 9 so hell machen, wie das Poti steht\n}\n'),
+    solMake: ct(CP_POTPWM, CW_POTPWM, 'void setup() {\n  pinMode(9, OUTPUT);\n}\n\nvoid loop() {\n  int wert = analogRead(A0);\n  analogWrite(9, wert / 4);\n}\n'),
+    text: 'Das Poti an A0 liefert Werte von 0 bis 1023, analogWrite erwartet 0 bis 255. Rechne um, so dass die LED an Pin 9 umso heller leuchtet, je größer der Messwert ist.',
+    hint: 'Teile den Messwert durch 4 (1023 / 4 ≈ 255) und gib das Ergebnis an analogWrite(9, …) weiter. Oder nutze map(wert, 0, 1023, 0, 255).',
+    check() { const P = sch.parts.find(p => p.k === 'POT'); if (!P) return [RES(false, 'Das Poti fehlt.')]; const hi = codeEval({ T: 0.5, pos: { [P.id]: 0.1 } }), lo = codeEval({ T: 0.5, pos: { [P.id]: 0.9 } }); if (hi.err) return codeFail(hi);
+      const a = hi.samples[hi.samples.length - 1].duty[9], b = lo.samples[lo.samples.length - 1].duty[9];
+      return [RES(a != null && a >= 215 && a <= 245, 'Messwert etwa 920: PWM-Wert ' + (a == null ? 'fehlt' : a) + ' (soll etwa 230).'), RES(b != null && b >= 14 && b <= 38, 'Messwert etwa 100: PWM-Wert ' + (b == null ? 'fehlt' : b) + ' (soll etwa 25).')]; } },
+  { id: 'c15', lab: 'code', cat: 'Sensoren und Töne', title: 'Sirene', level: 2,
+    start: ct(CP_SPK, CW_SPK, 'void setup() {\n}\n\nvoid loop() {\n  // Hier: abwechselnd 440 Hz und 660 Hz auf Pin 8 spielen (je etwa 300 ms)\n}\n'),
+    solMake: ct(CP_SPK, CW_SPK, 'void setup() {\n}\n\nvoid loop() {\n  tone(8, 440);\n  delay(300);\n  tone(8, 660);\n  delay(300);\n}\n'),
+    text: 'Der Lautsprecher hängt an Pin 8. Spiele eine Sirene: abwechselnd 440 Hz und 660 Hz, jeder Ton etwa 300 ms lang, immer wieder.',
+    hint: 'tone(8, 440); delay(300); tone(8, 660); delay(300); in loop() ergibt schon eine Sirene.',
+    check() { const R = codeEval({ T: 3 }); if (R.err) return codeFail(R); const seq = []; R.samples.forEach(x => { const f = x.tone[8]; if (f != null && seq[seq.length - 1] !== Math.round(f)) seq.push(Math.round(f)); });
+      const lo = seq.some(f => Math.abs(f - 440) <= 8), hi = seq.some(f => Math.abs(f - 660) <= 8);
+      return [RES(lo && hi, 'Gespielte Töne: ' + (seq.slice(0, 6).join(', ') || 'keine') + (lo && hi ? ' – beide Frequenzen sind dabei.' : ' – es fehlen 440 Hz und 660 Hz.')), RES(seq.length >= 4, seq.length >= 4 ? 'Die Töne wechseln sich ab (' + seq.length + ' Wechsel in 3 s).' : 'Zu wenige Tonwechsel (' + seq.length + ' in 3 s).')]; } },
+  { id: 'c16', lab: 'code', cat: 'Sensoren und Töne', title: 'Temperaturwarnung', level: 3,
+    start: ct(CP_TMP, CW_TMP, 'void setup() {\n  pinMode(13, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int roh = analogRead(A0);\n  float volt = roh * 5.0 / 1023.0;\n  // Hier: Temperatur in Grad Celsius ausrechnen (TMP36: 0,5 V bei 0 Grad, 10 mV pro Grad)\n  // und die LED an Pin 13 einschalten, wenn es wärmer als 30 Grad ist\n  delay(100);\n}\n'),
+    solMake: ct(CP_TMP, CW_TMP, 'void setup() {\n  pinMode(13, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int roh = analogRead(A0);\n  float volt = roh * 5.0 / 1023.0;\n  float celsius = (volt - 0.5) * 100.0;\n  Serial.println(celsius);\n  if (celsius > 30) {\n    digitalWrite(13, HIGH);\n  } else {\n    digitalWrite(13, LOW);\n  }\n  delay(100);\n}\n'),
+    text: 'Der Temperatursensor TMP36 liefert 0,5 V bei 0 °C und 10 mV pro Grad. Rechne die Spannung in °C um. Die LED an Pin 13 soll leuchten, wenn es wärmer als 30 °C ist. Die Temperatur stellst du mit dem Regler am Sensor ein.',
+    hint: 'celsius = (volt - 0.5) * 100.0. Danach if (celsius > 30) { LED an } else { LED aus }.',
+    check() { const L = theLed(), T = sch.parts.find(p => p.k === 'TMP36'); if (!L || !T) return [RES(false, 'LED oder Temperatursensor fehlt.')];
+      const cold = codeEval({ T: 0.8, pos: { [T.id]: 0.3636 } }), hot = codeEval({ T: 0.8, pos: { [T.id]: 0.4848 } }); if (cold.err) return codeFail(cold);
+      const a = ledMA(sampleAt(cold, 0.75), L.id) > 2, b = ledMA(sampleAt(hot, 0.75), L.id) > 2;
+      return [RES(!a, 'Bei 20 °C ist die LED ' + (a ? 'an, soll aber aus sein' : 'aus') + '.'), RES(b, 'Bei 40 °C ist die LED ' + (b ? 'an' : 'aus, soll aber an sein') + '.')]; } },
+  { id: 'c17', lab: 'code', cat: 'Grundlagen', title: 'Würfel', level: 3,
+    start: ct(CP_BTN, CW_BTN, 'void setup() {\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n  randomSeed(analogRead(A5));\n}\n\nvoid loop() {\n  // Hier: wenn der Taster gedrückt wird, eine Zufallszahl von 1 bis 6\n  // würfeln und als "Wurf: 4" ausgeben. Pro Tastendruck nur ein Wurf.\n}\n'),
+    solMake: ct(CP_BTN, CW_BTN, 'int letzter = HIGH;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n  randomSeed(analogRead(A5));\n}\n\nvoid loop() {\n  int zustand = digitalRead(2);\n  if (zustand == LOW && letzter == HIGH) {\n    Serial.print("Wurf: ");\n    Serial.println(random(1, 7));\n  }\n  letzter = zustand;\n}\n'),
+    text: 'Baue einen elektronischen Würfel: Bei jedem Druck auf den Taster an Pin 2 wird eine Zufallszahl von 1 bis 6 gewürfelt und im Serial-Monitor als „Wurf: 4“ ausgegeben (mit der gewürfelten Zahl). Gehalten zählt nur als ein Druck.',
+    hint: 'random(1, 7) liefert Zahlen von 1 bis 6 (die obere Grenze ist ausgeschlossen). Nur bei einem neuen Druck (vorher HIGH, jetzt LOW) würfeln.',
+    check() { const pb = sch.parts.find(p => p.k === 'PB'); if (!pb) return [RES(false, 'Der Taster fehlt.')]; const id = pb.id;
+      const R = codeEval({ T: 2, script: [{ t: 0.3, press: [id] }, { t: 0.5, press: [] }, { t: 0.8, press: [id] }, { t: 1.0, press: [] }, { t: 1.3, press: [id] }, { t: 1.5, press: [] }] }); if (R.err) return codeFail(R);
+      const lines = R.ser.split('\n').map(x => x.trim()).filter(Boolean), ok = lines.length === 3 && lines.every(l => /^Wurf: [1-6]$/.test(l));
+      return [RES(lines.length === 3, 'Bei drei Tastendrücken kamen ' + lines.length + ' Würfe an (erwartet: 3).'), RES(ok, ok ? 'Format und Zahlen stimmen (Wurf: 1 bis 6).' : 'Erwartetes Format: „Wurf: 4“ mit einer Zahl von 1 bis 6. Erhalten: ' + JSON.stringify(lines.slice(0, 3)))]; } },
+  { id: 'c18', lab: 'code', cat: 'Sensoren und Töne', title: 'Servo fährt hin und her', level: 2,
+    start: ct(CP_SERVO, CW_SERVO, '#include <Servo.h>\n\nServo meinServo;\n\nvoid setup() {\n  meinServo.attach(9);\n}\n\nvoid loop() {\n  // Hier: den Servo langsam von 0 auf 180 Grad fahren und wieder zurück\n}\n'),
+    solMake: ct(CP_SERVO, CW_SERVO, '#include <Servo.h>\n\nServo meinServo;\n\nvoid setup() {\n  meinServo.attach(9);\n}\n\nvoid loop() {\n  for (int w = 0; w <= 180; w += 2) {\n    meinServo.write(w);\n    delay(15);\n  }\n  for (int w = 180; w >= 0; w -= 2) {\n    meinServo.write(w);\n    delay(15);\n  }\n}\n'),
+    text: 'Der Servo an Pin 9 soll ständig langsam von 0 bis 180 Grad und wieder zurück fahren (Schleife mit kleinen Schritten und delay).',
+    hint: 'Zwei for-Schleifen hintereinander: eine zählt w von 0 bis 180 hoch, die andere von 180 bis 0 herunter. In jedem Schritt meinServo.write(w) und kurz warten.',
+    check() { const R = codeEval({ T: 7 }); if (R.err) return codeFail(R); const a = R.samples.map(x => x.servo[9]).filter(x => x != null); if (!a.length) return [RES(false, 'Der Servo bewegt sich nicht (attach oder write fehlt).')];
+      const mn = Math.min(...a), mx = Math.max(...a); let up = 0, down = 0; for (let i = 1; i < a.length; i++) { if (a[i] > a[i - 1]) up++; else if (a[i] < a[i - 1]) down++; }
+      return [RES(mx >= 170, 'Größter Winkel: ' + Math.round(mx) + ' Grad (soll 180 erreichen).'), RES(mn <= 10, 'Kleinster Winkel: ' + Math.round(mn) + ' Grad (soll 0 erreichen).'), RES(up > 5 && down > 5, up > 5 && down > 5 ? 'Der Servo fährt hin und zurück.' : 'Der Servo fährt nur in eine Richtung.')]; } },
+  { id: 'cf4', lab: 'code', cat: 'Fehlersuche im Code', title: 'Der Servo rührt sich nicht', level: 1,
+    start: ct(CP_SERVO, CW_SERVO, '#include <Servo.h>\n\nServo meinServo;\n\nvoid setup() {\n  meinServo.write(90);\n}\n\nvoid loop() {\n}\n'),
+    solMake: ct(CP_SERVO, CW_SERVO, '#include <Servo.h>\n\nServo meinServo;\n\nvoid setup() {\n  meinServo.attach(9);\n  meinServo.write(90);\n}\n\nvoid loop() {\n}\n'),
+    text: 'Der Servo soll auf 90 Grad fahren, bleibt aber ruhig. Das Programm ist formal richtig. Finde heraus, was fehlt.',
+    hint: 'Der Servo muss erst mit einem Pin verbunden werden: meinServo.attach(9).',
+    check() { const R = codeEval({ T: 1.5 }); if (R.err) return codeFail(R); const a = R.samples[R.samples.length - 1].servo[9];
+      return [RES(a != null, a != null ? 'Der Servo ist an Pin 9 angeschlossen.' : 'Der Servo ist nicht an Pin 9 angeschlossen (attach fehlt).'), RES(a != null && Math.abs(a - 90) <= 3, a != null ? 'Winkel: ' + Math.round(a) + ' Grad (soll 90).' : 'Kein Winkel eingestellt.')]; } },
+  { id: 'cf5', lab: 'code', cat: 'Fehlersuche im Code', title: 'Zählt falsch', level: 2,
+    start: ct([['UNO', 12, 0]], [], 'void setup() {\n  Serial.begin(9600);\n  for (int i = 0; i < 10; i++) {\n    Serial.println(i);\n  }\n}\n\nvoid loop() {\n}\n'),
+    solMake: ct([['UNO', 12, 0]], [], 'void setup() {\n  Serial.begin(9600);\n  for (int i = 1; i <= 10; i++) {\n    Serial.println(i);\n  }\n}\n\nvoid loop() {\n}\n'),
+    text: 'Das Programm soll die Zahlen 1 bis 10 ausgeben, zählt aber von 0 bis 9. Finde die zwei Stellen in der for-Schleife, die geändert werden müssen.',
+    hint: 'Die Schleife beginnt bei 0 und läuft nur, solange i kleiner als 10 ist. Sie soll bei 1 beginnen und bis einschließlich 10 laufen.',
+    check() { const R = codeEval({ T: 2 }); if (R.err) return codeFail(R); const want = '1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n';
+      return [RES(R.ser === want, R.ser === want ? 'Die Zahlen 1 bis 10 stehen richtig im Serial-Monitor.' : 'Ausgabe stimmt nicht. Erhalten: ' + JSON.stringify(R.ser.slice(0, 40)))]; } },
 ];
 
 /* ---- SchaltLab: Aufgaben mit Messung ---- */
@@ -1891,7 +1977,7 @@ const SIM_TASKS = [
 ];
 TASKS.push(...SIM_TASKS, ...SCH_TASKS, ...CODE_TASKS);
 
-window.TaskTest = () => labTasks().map(t => {
+window.TaskTest = only => labTasks().filter(t => !only || only.includes(t.id)).map(t => {
   const out = { id: t.id };
   try {
     if (!t.debug) { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.solMake || exOf(t.sol) }), { task: t.id })); const L = t.check(); out.pct = Math.round(100 * L.filter(l => l.ok).length / L.length); out.bad = L.filter(l => !l.ok).map(l => l.text);
@@ -2160,7 +2246,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v60</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v61</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
