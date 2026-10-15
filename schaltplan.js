@@ -259,7 +259,7 @@ function computeFlows() {
     mx = Math.max(mx, Math.abs(I || 0));
   });
   imax = Math.max(mx, 1e-6);                       // Ströme unter ca. 1 µA gelten als "kein Strom"
-  let vm = 1e-3; for (let i = 1; i <= sim.N; i++) vm = Math.max(vm, Math.abs(sim.v[i])); vmax = vm;
+  let vm = 0.05; for (let i = 1; i <= sim.N; i++) vm = Math.max(vm, Math.abs(sim.v[i])); vmax = vm;     // unter 0,5 % von 50 mV bleibt alles grau (kein Flackern durch Rauschen)
 }
 
 /* ============ Graphen ============ */
@@ -3198,6 +3198,14 @@ void loop() {
 ];
 if (window.MORE_EX) EXAMPLES.push(...window.MORE_EX);
 if (LAB === 'sim' && window.addPE) EXAMPLES.forEach(e => { if (!e.noPE && (e.lab === 'sim' || e.cat === 'Bauteile')) { const mk = e.make; e.raw = mk; e.make = () => window.addPE(mk()); } });
+// Haus-Beispiele ohne eigene Oszilloskope: je Verbraucher (bis zu vier) eins, damit jede Schalterstellung sichtbar ist
+if (LAB === 'sim') EXAMPLES.forEach(e => { if (e.noScopes) return; const mk = e.make; e.make = () => {
+  const d = mk(); if ((d.scopes && d.scopes.length) || !d.parts) return d;
+  const LOADS = ['LAMP', 'HEAT', 'MOTOR', 'MOTOR3', 'SD'], idx = []; d.parts.forEach((p, i) => { if (LOADS.includes(p[0])) idx.push(i); });
+  const mains = d.parts.some(p => p[0] === 'NETZ' || p[0] === 'NETZ3');
+  if (!idx.length || (!mains && e.name !== 'Sicherung schützt die Lampen')) return d;
+  return Object.assign({}, d, { scopes: idx.slice(0, 4), win: d.win || (mains ? 0.04 : undefined) });
+}; });
 
 /* ============ Drucken ============ */
 const userName = () => { try { return localStorage.getItem('lm4.name') || ''; } catch (e) { return ''; } };
@@ -3332,6 +3340,9 @@ window.SchaltLive = {                                                           
   set: (id, o) => { Object.assign(sch.parts.find(p => p.id === id), o); rebuild(); },
   run: (T, press) => { simMode = true; rebuild(); const dt = 2e-4, n = Math.round(T / dt); for (let i = 0; i < n; i++) { sim.step(dt); if (i % 50 === 0) sampleScopes(0); } return sch.scopes.map((sc, k) => { const b = scopeBuf[k], m = a => a.length ? [Math.min(...a), Math.max(...a)].map(v => +v.toFixed(2)) : []; return { v: m(b.v), i: m(b.i) }; }); },
   events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
+  pinV: (id, i) => sv(gk(...pinsOf(byPart(id))[i])),
+  stepN: n => { for (let k = 0; k < n; k++) sim.step(2e-4); return sim.t; },
+  vmax: () => vmax,
 };
 window.SchaltPECheck = () => EXAMPLES.filter(exOk).map(e => {                      // Testhilfe: PE-Anschluss in allen Beispielen prüfen
   loadCircuit(buildExample(e));

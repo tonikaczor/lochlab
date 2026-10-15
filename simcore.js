@@ -117,13 +117,15 @@ function buildCircuit(layout) {
   const pinKey = (p, i) => key(p.pins[i][0], p.pins[i][1]);
   layout.parts.forEach(p => p.pins.forEach((_, i) => find(pinKey(p, i))));
 
+  // Bezugspin einer Quelle: Minuspol von Batterie und Signalgenerator, Neutralleiter beim Netz (dort ist der N geerdet)
+  const refPin = p => (((p.k === 'BAT' || p.k === 'SIG') && p.pins.length > 1) ? 1 : (p.k === 'NETZ' && p.pins.length > 1 ? 1 : (p.k === 'NETZ3' && p.pins.length > 3 ? 3 : -1)));
   // Masse: Masse-Symbole (Schaltplan) oder Minuspol der ersten Spannungsquelle
   let groundRoot = null;
   if (layout.ground && layout.ground.length) {
     layout.ground.forEach(g => find(key(g[0], g[1])));
     for (let i = 1; i < layout.ground.length; i++) union(key(layout.ground[0][0], layout.ground[0][1]), key(layout.ground[i][0], layout.ground[i][1]));
     groundRoot = find(key(layout.ground[0][0], layout.ground[0][1]));
-  } else for (const p of layout.parts) if ((p.k === 'BAT' || p.k === 'SIG') && p.pins.length > 1) { groundRoot = find(pinKey(p, 1)); break; }
+  } else for (const p of layout.parts) { const gi = refPin(p); if (gi >= 0) { groundRoot = find(pinKey(p, gi)); break; } }
 
   { const mcus = layout.parts.filter(p => p.k === 'MCU');
     if (mcus.length) { const g0 = pinKey(mcus[0], 3); mcus.forEach(p => { union(pinKey(p, 3), g0); union(pinKey(p, 24), g0); }); if (groundRoot) union(groundRoot, g0); groundRoot = find(g0); } }
@@ -437,7 +439,7 @@ function buildCircuit(layout) {
   });
   // Weitere Spannungsquellen ohne Masse-Bezug (zum Beispiel ein zweiter Stromkreis, der Last von der Steuerung trennt):
   // Minuspol mit sehr hohem Widerstand an Masse legen, damit der Kreis rechenbar ist
-  if (groundRoot !== null) { const tied = new Set([find(groundRoot)]); layout.parts.forEach(p => { if ((p.k === 'BAT' || p.k === 'SIG') && p.pins.length > 1) { const r = find(pinKey(p, 1)); if (!tied.has(r)) { tied.add(r); add({ type: 'R', a: nodeOfRoot(r), b: 0, g: 1e-9 }); } } }); }
+  if (groundRoot !== null) { const tied = new Set([find(groundRoot)]); layout.parts.forEach(p => { const gi = refPin(p); if (gi >= 0) { const r = find(pinKey(p, gi)); if (!tied.has(r)) { tied.add(r); add({ type: 'R', a: nodeOfRoot(r), b: 0, g: 1e-9 }); } } }); }
   return { nn, elems, nodeOfKey, groundKnown: groundRoot !== null, warnings, parts: layout.parts, mcu: mcuEl || null };
 }
 
