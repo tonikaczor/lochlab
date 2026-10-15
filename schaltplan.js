@@ -1074,6 +1074,7 @@ function refreshUI() {
         else if (type === 'range') h += `<label class="sl"><span>${label}</span><input type="range" data-p="${key}" min="0" max="1" step="0.01" value="${p[key] == null ? 0.5 : p[key]}"></label>`;
         else if (type === 'select') h += `<label class="f"><span>${label}</span><select data-p="${key}">${opt.map(o => `<option value="${o}" ${(p[key] || K[key]) === o ? 'selected' : ''}>${names ? names[o] : o}</option>`).join('')}</select></label>`;
       });
+      if (LAB === 'sim' && !simMode && isGod()) h += `<label class="f"><span>Fehler (Lehrer)</span><select data-p="defect">${[['', 'keiner'], ['open', 'unterbrochen'], ['short', 'Kurzschluss']].map(([v, l]) => `<option value="${v}" ${(p.defect || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
       if (K.toggle) h += `<button class="btn" data-a="sw">Schalter umlegen (${p.sw ? 'an' : 'aus'})</button>`;
       if (!simMode) h += `<label class="f" style="margin-top:8px"><span>Bezeichnung</span><input data-p="l" value="${esc(p.l || '')}"></label><div class="row2" style="margin-top:8px"><button class="btn" data-a="rotl">↺</button><button class="btn" data-a="rotr">↻</button><button class="btn" data-a="dup">⧉</button><button class="btn danger" data-a="del">Löschen</button></div>`;
       if (simMode) h += '<div id="live"></div>';
@@ -1180,7 +1181,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen'], ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)']] : []), ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -1500,6 +1501,52 @@ function openTasks() {
   });
 }
 
+
+/* ============ Lehrer-Bereich (nur mit Freigabe): Aufgaben verteilen, Abgaben prüfen, Fehler einbauen ============ */
+const isGod = () => { try { return sessionStorage.getItem('lm4.god') === GODH; } catch (e) { return false; } };
+const classList = () => { try { return JSON.parse(localStorage.getItem('sim.class') || '[]'); } catch (e) { return []; } };
+function withSubmission(d, fn) {
+  const keep = sch; sch = { name: d.name || 'Abgabe', parts: d.parts || [], wires: d.wires || [], nid: d.nid || 1, scopes: [], task: d.task };
+  try { return fn(); } finally { sch = keep; }
+}
+function openTeacher() {
+  godGate(() => sheet('Lehrer-Bereich', (b) => {
+    const opts = TASKS.map(t => `<option value="${t.id}">${esc(t.cat)} · ${esc(t.title)}</option>`).join('');
+    b.innerHTML = `
+      <div class="card"><h4>Aufgabe verteilen</h4><label class="f"><span>Aufgabe</span><select id="tsel">${opts}</select></label>
+        <div class="row2"><button class="btn pri" id="tLink">Aufgabe als Link teilen</button></div>
+        <div class="row2"><button class="btn" id="tSol">Musterlösung öffnen</button><button class="btn" id="tStart">Startschaltung öffnen</button></div>
+        <p class="hint2">Der Link öffnet die Aufgabe mit Startschaltung direkt bei den Azubis. Die Prüfung läuft dort per Knopfdruck.</p></div>
+      <div class="card"><h4>Abgabe prüfen</h4><p class="hint2" style="margin-top:0">Den Teilen-Link der Azubis hier einfügen. Die Schaltung wird gegen die Aufgabe geprüft, ohne sie zu öffnen.</p>
+        <label class="f"><span>Name des Azubis</span><input id="tName" placeholder="Vor- und Nachname"></label>
+        <label class="f"><span>Link oder Text</span><textarea id="tSub" rows="3"></textarea></label>
+        <div class="row2"><button class="btn pri" id="tCheck">Prüfen</button></div><div id="tRes"></div></div>
+      <div class="card"><h4>Auswertung</h4><div id="tCls"></div><div class="row2"><button class="btn" id="tCopy">Als Tabelle kopieren</button><button class="btn danger" id="tClr">Liste leeren</button></div></div>
+      <div class="card"><h4>Fehler einbauen</h4><p class="hint2" style="margin-top:0">Im Zeichenmodus ein Bauteil antippen: unter den Eigenschaften steht jetzt „Fehler (Lehrer)“. Mit „unterbrochen“ oder „Kurzschluss“ lassen sich eigene Fehlersuche-Aufgaben bauen und per „Teilen“ verschicken. Azubis sehen den Fehler nicht.</p></div>`;
+    const sel = () => b.querySelector('#tsel').value;
+    b.querySelector('#tLink').onclick = () => { const t = TASKS.find(x => x.id === sel()); const ex = buildExample({ name: t.title, make: t.start }); ex.task = t.id; shareNow(ex, t.title); };
+    b.querySelector('#tSol').onclick = () => { const id = sel(); const go = () => { startTask(id, true); }; document.querySelector('.backdrop') && document.querySelector('.backdrop').remove(); if (sch.parts.length || sch.wires.length) confirmNew(go); else go(); };
+    b.querySelector('#tStart').onclick = () => { const id = sel(); document.querySelector('.backdrop') && document.querySelector('.backdrop').remove(); const go = () => startTask(id); if (sch.parts.length || sch.wires.length) confirmNew(go); else go(); };
+    const showCls = () => { const a = classList(); b.querySelector('#tCls').innerHTML = a.length ? `<table style="width:100%;font-size:13px;border-collapse:collapse">${a.slice(-12).reverse().map(r => `<tr><td>${esc(r.name || '–')}</td><td>${esc((TASKS.find(t => t.id === r.task) || {}).title || r.task)}</td><td style="text-align:right"><b>${r.pct} %</b></td></tr>`).join('')}</table>` : '<p class="hint2" style="margin:0">Noch keine Abgaben gespeichert.</p>'; };
+    showCls();
+    let last = null;
+    b.querySelector('#tCheck').onclick = async () => {
+      const txt = b.querySelector('#tSub').value.trim(), res = b.querySelector('#tRes'); res.innerHTML = '';
+      const hash = txt.includes('#') ? txt.slice(txt.indexOf('#')) : txt;
+      let sub = null; try { sub = await unpackShare(hash.startsWith('#') ? hash : '#' + hash); } catch (e) {}
+      if (!sub || !Array.isArray(sub.parts)) { res.innerHTML = '<p class="hint2">Der Link oder Text ist ungültig.</p>'; return; }
+      const t = TASKS.find(x => x.id === (sub.task || sel())); if (!t) { res.innerHTML = '<p class="hint2">Die Abgabe gehört zu keiner Aufgabe.</p>'; return; }
+      if (t.debug) { res.innerHTML = '<p class="hint2">Fehlersuche-Aufgaben werden direkt in der App beantwortet.</p>'; return; }
+      let lines; try { lines = withSubmission(sub, () => t.check()); } catch (e) { lines = [RES(false, 'Prüfung fehlgeschlagen: ' + e.message)]; }
+      const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1)); last = { name: b.querySelector('#tName').value.trim(), task: t.id, pct, t: Date.now() };
+      res.innerHTML = `<p style="margin:8px 0 4px"><b>${esc(t.title)}</b></p><ul class="tl">${lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul><div class="score ${pct === 100 ? 'ok' : ''}">${pct} % richtig</div><div class="row2"><button class="btn" id="tSave">In Auswertung speichern</button></div>`;
+      res.querySelector('#tSave').onclick = () => { last.name = b.querySelector('#tName').value.trim() || last.name; const a = classList(); a.push(last); try { localStorage.setItem('sim.class', JSON.stringify(a.slice(-500))); } catch (e) {} showCls(); toast('Gespeichert'); };
+    };
+    b.querySelector('#tCopy').onclick = async () => { const a = classList(), txt = 'Name\tAufgabe\tErgebnis\tZeit\n' + a.map(r => [r.name || '', (TASKS.find(t => t.id === r.task) || {}).title || r.task, r.pct + ' %', new Date(r.t).toLocaleString('de-DE')].join('\t')).join('\n'); try { await navigator.clipboard.writeText(txt); toast('Tabelle kopiert (in Excel einfügbar)'); } catch (e) { toast('Kopieren nicht möglich'); } };
+    b.querySelector('#tClr').onclick = () => { try { localStorage.removeItem('sim.class'); } catch (e) {} showCls(); };
+  }));
+}
+
 /* ---- Brücke zum Lochraster-Layout (nur mit Freigabe) ---- */
 const GODH = 'a2fdecf55d194ed8cea8d52d7d0442778e86180b6d81c6c37e56278e55add6c6';
 async function sha256(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
@@ -1638,6 +1685,7 @@ async function loadShared() {
 function menuAct(m) {
   if (m === 'tasks') { openTasks(); return; }
   if (m === 'cab') { openCabinet(); return; }
+  if (m === 'teacher') { openTeacher(); return; }
   if (m === 'share') { if (!sch.parts.length) { toast('Noch nichts gezeichnet'); return; } shareNow(JSON.parse(snap()), sch.name); return; }
   if (m === 'auto') { makeLayout(); return; }
   if (m === 'new') confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }));
@@ -1651,7 +1699,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v44</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v45</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
