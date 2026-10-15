@@ -138,12 +138,12 @@ function buildCircuit(layout) {
   const elems = [], warnings = [];
   const rec = [];
   const add = e => { e.pi = rec.splice(0); elems.push(e); return e; };
-  // PE-Anschluss am Gehäuse (Schutzklasse I): Körperschluss simulierbar (Außenleiter über 2 kΩ zum Gehäuse); ohne PE steht das Gehäuse unter Spannung
+  // PE-Anschluss am Gehäuse (Schutzklasse I): Körperschluss simulierbar (Außenleiter fast direkt am Gehäuse); mit PE ist das ein Kurzschluss (Sicherungsautomat bzw. FI löst aus), ohne PE steht das Gehäuse unter Spannung
   const bodyFault = (p, pe, warn) => {
     const r = find(pinKey(p, pe)); let cnt = 0; layout.parts.forEach(q => q.pins.forEach((_, i) => { if (find(pinKey(q, i)) === r) cnt++; }));
     const floating = cnt <= 1;
     if (floating && warn) warnings.push({ part: p, text: 'Schutzleiter (PE) nicht angeschlossen: Bei einem Körperschluss steht das Gehäuse unter Spannung (Lebensgefahr).' });
-    add({ type: 'S', a: nodeOfRoot(find(pinKey(p, 0))), b: nodeOfRoot(r), closed: !!p.sw, ron: 2000, part: p, sub: 'body', peFloating: floating, upd() { this.closed = !!this.part.sw; } });
+    add({ type: 'S', a: nodeOfRoot(find(pinKey(p, 0))), b: nodeOfRoot(r), closed: !!p.sw, ron: floating ? 2000 : 0.5, part: p, sub: 'body', peFloating: floating, upd() { this.closed = !!this.part.sw; } });
   };
   const R = (a, b, g, part, extra) => add(Object.assign({ type: 'R', a, b, g, part }, extra || {}));
 

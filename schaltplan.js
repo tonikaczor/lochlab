@@ -3130,7 +3130,7 @@ void loop() {
       wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 2], ['blau', 3, 6, 3, 12, 1, 12], ['gruen', 5, 0, 5, 14, 1, 14]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Überlast: drei Heizlüfter', info: 'Dritten Schalter einschalten: 26 A sind mehr als der Sicherungsautomat B16 erlaubt. Nach einigen Sekunden löst er aus.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', -4, 6, 1, '', { sw: 1 }], ['SPST', -8, 6, 1, '', { sw: 1 }], ['SPST', -12, 6, 1, '', { sw: 0 }], ['HEAT', -4, 10, 1, '230V 2000W'], ['HEAT', -8, 10, 1, '230V 2000W'], ['HEAT', -12, 10, 1, '230V 2000W']],
-      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -4, 6, -8, 6, -12, 6], ['blau', 3, 0, 3, 16, -4, 16, -8, 16, -12, 16], ['blau', -4, 14, -4, 16], ['blau', -8, 14, -8, 16], ['blau', -12, 14, -12, 16]], scopes: [0, 5], tempo: 0.6, win: 0.04 }) },
+      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -4, 6, -8, 6, -12, 6], ['blau', 3, 0, 3, 16, -4, 16, -8, 16, -12, 16], ['blau', -4, 14, -4, 16], ['blau', -8, 14, -8, 16], ['blau', -12, 14, -12, 16]], scopes: [0, 5, 6, 7], tempo: 0.6, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Kurzschluss löst den Sicherungsautomaten aus', info: 'Fehlerstelle antippen: ein Kurzschluss zieht sehr hohen Strom. Der Sicherungsautomat schaltet sofort ab.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['LAMP', -3, 6, 1, '230V 60W'], ['FAULT', -7, 6, 1, '0.05']],
       wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -3, 6, -7, 6], ['blau', 3, 0, 3, 12, -3, 12, -7, 12], ['blau', -3, 10, -3, 12], ['blau', -7, 10, -7, 12]], scopes: [], tempo: 0.55, win: 0.04 }) },
@@ -3326,6 +3326,12 @@ window.SchaltTrace = (name, T, step) => {                                       
   const E = simEval({}), dt = 2e-4, out = []; const leds = E.c.elems.filter(x => x.led);
   for (let t = 0, i = 0; t < T; t += dt, i++) { E.s.step(dt); if (i % Math.round((step || 0.05) / dt) === 0) out.push(+(Math.max(0, ...leds.map(x => Math.abs(x.i || 0))) * 1000).toFixed(1)); }
   return { name: e.name, leds: leds.length, trace: out };
+};
+window.SchaltLive = {                                                                // Testhilfe: laufende Simulation von außen treiben und die Oszilloskope auslesen
+  load: name => { const e = EXAMPLES.find(x => x.name.toLowerCase().includes(name.toLowerCase())); loadCircuit(buildExample(e)); return { parts: sch.parts.map(p => [p.id, p.k, p.l || '', p.sw || 0]), scopes: sch.scopes }; },
+  set: (id, o) => { Object.assign(sch.parts.find(p => p.id === id), o); rebuild(); },
+  run: (T, press) => { simMode = true; rebuild(); const dt = 2e-4, n = Math.round(T / dt); for (let i = 0; i < n; i++) { sim.step(dt); if (i % 50 === 0) sampleScopes(0); } return sch.scopes.map((sc, k) => { const b = scopeBuf[k], m = a => a.length ? [Math.min(...a), Math.max(...a)].map(v => +v.toFixed(2)) : []; return { v: m(b.v), i: m(b.i) }; }); },
+  events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
 };
 window.SchaltPECheck = () => EXAMPLES.filter(exOk).map(e => {                      // Testhilfe: PE-Anschluss in allen Beispielen prüfen
   loadCircuit(buildExample(e));
