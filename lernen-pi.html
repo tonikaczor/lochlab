@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Raspberry Pi verstehen: Schritt für Schritt</title><link rel="icon" href="icon-192.png"><style>
+:root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:8px}header img{height:42px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:30px 0 8px;border-bottom:2px solid var(--accent);padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:6px 0}small,.mute{color:var(--mute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0}
+ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
+.k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+.tip{border-left:4px solid var(--ok);padding-left:12px}
+@media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
+
+pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+@media(prefers-color-scheme:light){pre{background:#f1f4f7;color:#1d2329}}
+@media print{pre{background:#f4f4f4;color:#000;border:1px solid #999;white-space:pre-wrap}}
+.try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent);color:#fff!important;text-decoration:none;font-size:14px}
+.merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.toc a{display:block;padding:2px 0}svg{max-width:100%;height:auto}
+@media print{.try{background:none;color:#000!important;border:1px solid #000}}
+</style></head>
+<body><div class="wrap">
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 63</small></div></header>
+<p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen-arduino.html">Arduino verstehen</a> · <a href="anleitung.html">Anleitung Tonfunk Lab</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<p>Dieses Lernheft zeigt dir, was ein Raspberry Pi ist, wie du ihn in Betrieb nimmst und wie du mit Python LEDs, Taster und Sensoren steuerst. Die Beispiele sind für den Pi gedacht (Programme ausprobieren musst du am echten Gerät). Die Verbindung zum Arduino und zur Simulation im Tonfunk Lab zeigt dir das letzte Kapitel.</p>
+<div class="box toc"><b>Inhalt</b><a href="#k1">1. Was ist ein Raspberry Pi?</a><a href="#k2">2. Inbetriebnahme</a><a href="#k3">3. Die GPIO-Leiste</a><a href="#k4">4. Python in fünf Minuten</a><a href="#k5">5. Erstes Projekt: LED und Taster</a><a href="#k6">6. Mehr Bauteile</a><a href="#k7">7. Projektideen für den Pi</a><a href="#k8">8. Fehler finden und sicher arbeiten</a><a href="#k9">9. Arduino oder Pi? Und wie geht es hier weiter</a></div>
+<h2 id="k1">1. Was ist ein Raspberry Pi?</h2><p>Ein <b>Raspberry Pi</b> ist ein vollständiger kleiner <b>Computer</b> in der Größe einer Kreditkarte. Er hat Prozessor, Arbeitsspeicher, USB, HDMI, WLAN und läuft mit einem <b>Betriebssystem</b> (Raspberry Pi OS, ein Linux). Das Programm liegt nicht fest im Chip, sondern auf einer <b>SD-Karte</b>, und du startest es wie auf einem PC.</p>
+<table><tr><th></th><th>Arduino Uno</th><th>Raspberry Pi</th></tr>
+<tr><td>Art</td><td>Mikrocontroller</td><td>Einplatinen-Computer</td></tr>
+<tr><td>Betriebssystem</td><td>keins, ein Programm</td><td>Linux, viele Programme gleichzeitig</td></tr>
+<tr><td>Sprache</td><td>C++ (Sketch)</td><td>meist Python</td></tr>
+<tr><td>Pin-Spannung</td><td><b>5 V</b></td><td><b>3,3 V</b></td></tr>
+<tr><td>Analoge Eingänge</td><td>ja (A0 bis A5)</td><td><b>nein</b> (ADC-Baustein nötig)</td></tr>
+<tr><td>Zeitgenauigkeit</td><td>sehr genau, in Echtzeit</td><td>nicht garantiert (Linux läuft nebenher)</td></tr>
+<tr><td>Strombedarf</td><td>~50 mA</td><td>500 mA bis 1,5 A, eigenes Netzteil</td></tr>
+<tr><td>Starten</td><td>sofort</td><td>braucht Sekunden bis Minuten</td></tr>
+<tr><td>Stärke</td><td>Sensoren und Motoren direkt steuern</td><td>Netzwerk, Kamera, Bildschirm, Datenbanken, KI</td></tr></table>
+<div class="merke"><b>Merke:</b> Arduino = Steuern in Echtzeit. Pi = Rechnen, Vernetzen, Anzeigen. Beide arbeiten oft zusammen: Der Arduino liest den Sensor, der Pi wertet aus und zeigt an.</div>
+<p class="mute">Zur Abgrenzung: Der <b>Raspberry Pi Pico</b> ist kein Pi-Computer, sondern ein Mikrocontroller wie der Arduino (Programmierung mit MicroPython oder C++).</p><h2 id="k2">2. Inbetriebnahme</h2><h3>Was du brauchst</h3>
+<ul><li>Raspberry Pi (zum Beispiel Pi 4 oder Pi 5) mit passendem <b>Netzteil</b> (Pi 4: 5 V / 3 A USB-C, Pi 5: 5 V / 5 A)</li>
+<li><b>microSD-Karte</b> (mindestens 16 GB)</li><li>Entweder Monitor (Micro-HDMI), Tastatur und Maus, oder nur WLAN und einen zweiten Computer (<i>headless</i>)</li></ul>
+<h3>Betriebssystem auf die SD-Karte</h3>
+<ol><li>Auf einem Computer das kostenlose Programm <b>Raspberry Pi Imager</b> installieren (raspberrypi.com/software).</li>
+<li>Gerät (Raspberry Pi 4/5 …) und <b>Raspberry Pi OS</b> (64-Bit) wählen, SD-Karte auswählen.</li>
+<li>Vor dem Schreiben auf <b>Einstellungen bearbeiten</b> klicken: Hostname (zum Beispiel <code>pi-lab1</code>), Benutzername und Passwort, WLAN-Zugang, Zeitzone und <b>SSH aktivieren</b>.</li>
+<li>Schreiben lassen, SD-Karte in den Pi stecken, Netzteil anschließen. Der erste Start dauert 1 bis 2 Minuten.</li></ol>
+<h3>Verbinden</h3>
+<ul><li><b>Mit Monitor:</b> Der Desktop startet. Du findest dort das Terminal und die Programmierumgebung <b>Thonny</b> (Menü Entwicklung).</li>
+<li><b>Ohne Monitor (SSH):</b> Vom Computer oder <b>iPad</b> mit einer SSH-App (zum Beispiel Termius oder Blink) verbinden: <code>ssh benutzername@pi-lab1.local</code>.</li>
+<li><b>Fernsteuerung des Desktops:</b> Mit „Raspberry Pi Connect“ oder einer VNC-App kannst du den Desktop auch am iPad anzeigen.</li></ul>
+<div class="warn"><b>Wichtig:</b> Den Pi nie einfach vom Strom trennen, das kann die SD-Karte beschädigen. Erst herunterfahren: <code>sudo shutdown now</code> (oder im Desktop-Menü „Herunterfahren“), dann nach einigen Sekunden Netzteil abziehen.</div><h2 id="k3">3. Die GPIO-Leiste</h2><p>Über die 40-polige Stiftleiste (<b>GPIO</b> = General Purpose Input/Output) verbindet der Pi sich mit der Elektronik. Die meisten Pins sind frei belegbare Ein-/Ausgänge, einige haben Sonderfunktionen (I²C, UART, SPI, PWM).</p>
+<svg viewBox="0 0 560 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Raspberry Pi 40-Pin-Leiste"><rect x="215" y="14" width="130" height="488" rx="8" fill="#2a2f35"/><circle cx="245" cy="26" r="9" fill="#e08a1c"/><text x="245" y="30" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">1</text><text x="228" y="30" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">3V3</text><circle cx="315" cy="26" r="9" fill="#d04040"/><text x="315" y="30" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">2</text><text x="332" y="30" font-size="12" font-family="sans-serif" fill="currentColor">5V</text><circle cx="245" cy="50" r="9" fill="#2f7fd6"/><text x="245" y="54" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">3</text><text x="228" y="54" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO2 (SDA)</text><circle cx="315" cy="50" r="9" fill="#d04040"/><text x="315" y="54" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">4</text><text x="332" y="54" font-size="12" font-family="sans-serif" fill="currentColor">5V</text><circle cx="245" cy="74" r="9" fill="#2f7fd6"/><text x="245" y="78" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">5</text><text x="228" y="78" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO3 (SCL)</text><circle cx="315" cy="74" r="9" fill="#6e7782"/><text x="315" y="78" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">6</text><text x="332" y="78" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><circle cx="245" cy="98" r="9" fill="#3a8f55"/><text x="245" y="102" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">7</text><text x="228" y="102" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO4</text><circle cx="315" cy="98" r="9" fill="#2b9a4a"/><text x="315" y="102" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">8</text><text x="332" y="102" font-size="12" font-family="sans-serif" fill="currentColor">GPIO14 (TXD)</text><circle cx="245" cy="122" r="9" fill="#6e7782"/><text x="245" y="126" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">9</text><text x="228" y="126" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><circle cx="315" cy="122" r="9" fill="#2b9a4a"/><text x="315" y="126" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">10</text><text x="332" y="126" font-size="12" font-family="sans-serif" fill="currentColor">GPIO15 (RXD)</text><circle cx="245" cy="146" r="9" fill="#3a8f55"/><text x="245" y="150" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">11</text><text x="228" y="150" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO17</text><circle cx="315" cy="146" r="9" fill="#3a8f55"/><text x="315" y="150" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">12</text><text x="332" y="150" font-size="12" font-family="sans-serif" fill="currentColor">GPIO18 (PWM)</text><circle cx="245" cy="170" r="9" fill="#3a8f55"/><text x="245" y="174" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">13</text><text x="228" y="174" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO27</text><circle cx="315" cy="170" r="9" fill="#6e7782"/><text x="315" y="174" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">14</text><text x="332" y="174" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><circle cx="245" cy="194" r="9" fill="#3a8f55"/><text x="245" y="198" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">15</text><text x="228" y="198" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO22</text><circle cx="315" cy="194" r="9" fill="#3a8f55"/><text x="315" y="198" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">16</text><text x="332" y="198" font-size="12" font-family="sans-serif" fill="currentColor">GPIO23</text><circle cx="245" cy="218" r="9" fill="#e08a1c"/><text x="245" y="222" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">17</text><text x="228" y="222" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">3V3</text><circle cx="315" cy="218" r="9" fill="#3a8f55"/><text x="315" y="222" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">18</text><text x="332" y="222" font-size="12" font-family="sans-serif" fill="currentColor">GPIO24</text><circle cx="245" cy="242" r="9" fill="#7b52c9"/><text x="245" y="246" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">19</text><text x="228" y="246" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO10 (MOSI)</text><circle cx="315" cy="242" r="9" fill="#6e7782"/><text x="315" y="246" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">20</text><text x="332" y="246" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><circle cx="245" cy="266" r="9" fill="#7b52c9"/><text x="245" y="270" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">21</text><text x="228" y="270" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO9 (MISO)</text><circle cx="315" cy="266" r="9" fill="#3a8f55"/><text x="315" y="270" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">22</text><text x="332" y="270" font-size="12" font-family="sans-serif" fill="currentColor">GPIO25</text><circle cx="245" cy="290" r="9" fill="#7b52c9"/><text x="245" y="294" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">23</text><text x="228" y="294" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO11 (SCLK)</text><circle cx="315" cy="290" r="9" fill="#7b52c9"/><text x="315" y="294" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">24</text><text x="332" y="294" font-size="12" font-family="sans-serif" fill="currentColor">GPIO8 (CE0)</text><circle cx="245" cy="314" r="9" fill="#6e7782"/><text x="245" y="318" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">25</text><text x="228" y="318" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><circle cx="315" cy="314" r="9" fill="#7b52c9"/><text x="315" y="318" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">26</text><text x="332" y="318" font-size="12" font-family="sans-serif" fill="currentColor">GPIO7 (CE1)</text><circle cx="245" cy="338" r="9" fill="#a07a45"/><text x="245" y="342" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">27</text><text x="228" y="342" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO0 (ID)</text><circle cx="315" cy="338" r="9" fill="#a07a45"/><text x="315" y="342" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">28</text><text x="332" y="342" font-size="12" font-family="sans-serif" fill="currentColor">GPIO1 (ID)</text><circle cx="245" cy="362" r="9" fill="#3a8f55"/><text x="245" y="366" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">29</text><text x="228" y="366" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO5</text><circle cx="315" cy="362" r="9" fill="#6e7782"/><text x="315" y="366" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">30</text><text x="332" y="366" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><circle cx="245" cy="386" r="9" fill="#3a8f55"/><text x="245" y="390" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">31</text><text x="228" y="390" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO6</text><circle cx="315" cy="386" r="9" fill="#3a8f55"/><text x="315" y="390" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">32</text><text x="332" y="390" font-size="12" font-family="sans-serif" fill="currentColor">GPIO12 (PWM)</text><circle cx="245" cy="410" r="9" fill="#3a8f55"/><text x="245" y="414" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">33</text><text x="228" y="414" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO13 (PWM)</text><circle cx="315" cy="410" r="9" fill="#6e7782"/><text x="315" y="414" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">34</text><text x="332" y="414" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><circle cx="245" cy="434" r="9" fill="#3a8f55"/><text x="245" y="438" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">35</text><text x="228" y="438" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO19</text><circle cx="315" cy="434" r="9" fill="#3a8f55"/><text x="315" y="438" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">36</text><text x="332" y="438" font-size="12" font-family="sans-serif" fill="currentColor">GPIO16</text><circle cx="245" cy="458" r="9" fill="#3a8f55"/><text x="245" y="462" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">37</text><text x="228" y="462" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GPIO26</text><circle cx="315" cy="458" r="9" fill="#3a8f55"/><text x="315" y="462" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">38</text><text x="332" y="462" font-size="12" font-family="sans-serif" fill="currentColor">GPIO20</text><circle cx="245" cy="482" r="9" fill="#6e7782"/><text x="245" y="486" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">39</text><text x="228" y="486" text-anchor="end" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><circle cx="315" cy="482" r="9" fill="#3a8f55"/><text x="315" y="486" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#fff">40</text><text x="332" y="486" font-size="12" font-family="sans-serif" fill="currentColor">GPIO21</text><rect x="20" y="520" width="12" height="12" fill="#e08a1c"/><text x="36" y="530" font-size="12" font-family="sans-serif" fill="currentColor">3,3 V</text><rect x="85" y="520" width="12" height="12" fill="#d04040"/><text x="101" y="530" font-size="12" font-family="sans-serif" fill="currentColor">5 V</text><rect x="136" y="520" width="12" height="12" fill="#6e7782"/><text x="152" y="530" font-size="12" font-family="sans-serif" fill="currentColor">Masse</text><rect x="201" y="520" width="12" height="12" fill="#3a8f55"/><text x="217" y="530" font-size="12" font-family="sans-serif" fill="currentColor">GPIO</text><rect x="259" y="520" width="12" height="12" fill="#2f7fd6"/><text x="275" y="530" font-size="12" font-family="sans-serif" fill="currentColor">I²C</text><rect x="310" y="520" width="12" height="12" fill="#2b9a4a"/><text x="326" y="530" font-size="12" font-family="sans-serif" fill="currentColor">UART</text><rect x="368" y="520" width="12" height="12" fill="#7b52c9"/><text x="384" y="530" font-size="12" font-family="sans-serif" fill="currentColor">SPI</text></svg>
+<h3>Zwei Zählweisen</h3>
+<p>Jeder Pin hat eine <b>Pin-Nummer</b> (1 bis 40, wie auf der Leiste) und eine <b>GPIO-Nummer</b> (BCM). Das Python-Modul <code>gpiozero</code> arbeitet mit den <b>GPIO-Nummern</b>. <code>LED(17)</code> meint GPIO17, das ist Pin 11 der Leiste.</p>
+<div class="warn"><b>Die Pins vertragen nur 3,3 V!</b> Ein 5-V-Signal (zum Beispiel vom Echo-Pin eines Ultraschallsensors oder von einem Arduino) kann den Pi zerstören. Dafür braucht man einen Spannungsteiler oder einen Pegelwandler. Pro Pin sind etwa <b>16 mA</b> erlaubt, bleib bei LEDs mit 330 Ω Vorwiderstand (3,3 V − 2 V = 1,3 V, 4 mA bis 10 mA reichen für eine helle LED).</div>
+<p>Die Pins 1 und 17 liefern 3,3 V, die Pins 2 und 4 liefern 5 V (vom Netzteil, nur als Stromversorgung, nicht als Signal). Masse (GND) gibt es an mehreren Pins, zum Beispiel Pin 6 und Pin 9.</p><h2 id="k4">4. Python in fünf Minuten</h2><p>Auf dem Pi programmierst du meist in <b>Python</b>. Das liest sich fast wie Englisch. Statt geschweifter Klammern zählt die <b>Einrückung</b> (4 Leerzeichen).</p>
+<pre>name = &quot;Azubi&quot;                    # Variable (Text)
+zahl = 7                          # ganze Zahl
+print(&quot;Hallo&quot;, name, zahl)        # Ausgabe
+
+if zahl &gt; 5:                      # Entscheidung (Doppelpunkt!)
+    print(&quot;groß&quot;)
+else:
+    print(&quot;klein&quot;)
+
+for i in range(3):                # i = 0, 1, 2
+    print(i)
+
+while True:                       # Endlosschleife
+    break                         # verlässt die Schleife
+
+def verdopple(x):                 # eigene Funktion
+    return x * 2</pre>
+<ul><li><b>Doppelpunkt</b> am Ende von <code>if</code>, <code>for</code>, <code>while</code>, <code>def</code>.</li>
+<li><b>Einrückung</b> zeigt, was zum Block gehört. Falsch eingerückt gibt einen Fehler.</li>
+<li>Warten: <code>from time import sleep</code> und <code>sleep(0.5)</code> (Sekunden, auch Kommazahlen).</li>
+<li>Ein Programm startest du in Thonny mit dem grünen Pfeil oder im Terminal mit <code>python3 programm.py</code>. Beenden mit <code>Strg+C</code>.</li></ul><h2 id="k5">5. Erstes Projekt: LED und Taster</h2><p>Die Bibliothek <b>gpiozero</b> ist auf dem Raspberry Pi OS schon installiert und macht das Ansteuern sehr einfach.</p>
+<h3>LED blinken lassen</h3>
+<p>Schaltung: GPIO17 (Pin 11) → 330-Ω-Widerstand → LED (Anode) → Kathode an GND (zum Beispiel Pin 9).</p>
+<pre>from gpiozero import LED
+from time import sleep
+
+led = LED(17)
+while True:
+    led.on()
+    sleep(1)
+    led.off()
+    sleep(1)</pre>
+<p>Kurz: <code>led.blink()</code> blinkt im Hintergrund, danach mit <code>pause()</code> (aus <code>signal</code>) warten.</p>
+<h3>Taster abfragen</h3>
+<p>Schaltung: Taster zwischen GPIO2 (Pin 3) und GND. <code>Button</code> schaltet intern einen Pull-up ein, das ist wie <code>INPUT_PULLUP</code> beim Arduino.</p>
+<pre>from gpiozero import Button
+from time import sleep
+
+taster = Button(2)
+while True:
+    if taster.is_pressed:        # hier: True = gedrückt (gpiozero dreht das für dich um)
+        print(&quot;gedrückt&quot;)
+    sleep(0.1)</pre>
+<h3>Taster schaltet LED (ereignisgesteuert)</h3>
+<pre>from gpiozero import LED, Button
+from signal import pause
+
+led = LED(17)
+taster = Button(2)
+taster.when_pressed = led.on
+taster.when_released = led.off
+pause()                          # Programm läuft weiter und wartet auf Ereignisse</pre>
+<div class="merke"><b>Unterschied zum Arduino:</b> <code>is_pressed</code> ist True, wenn der Taster gedrückt ist. <code>gpiozero</code> kümmert sich um den Pull-up. Beim Arduino musst du selbst LOW abfragen.</div><h2 id="k6">6. Mehr Bauteile</h2><h3>LED dimmen (PWM)</h3>
+<pre>from gpiozero import PWMLED
+from time import sleep
+led = PWMLED(18)
+led.value = 0.5          # 50 % Helligkeit (0.0 bis 1.0)
+led.pulse()              # sanftes Pulsieren im Hintergrund
+sleep(10)</pre>
+<h3>Analoge Sensoren: der Pi hat keinen ADC</h3>
+<p>Ein Poti oder einen TMP36 kannst du <b>nicht direkt</b> an den Pi hängen. Dafür gibt es einen kleinen Wandler-Baustein (zum Beispiel <b>MCP3008</b>, SPI). Er liefert dem Pi die Messwerte als Zahl zwischen 0 und 1.</p>
+<pre>from gpiozero import MCP3008
+poti = MCP3008(channel=0)
+print(poti.value)        # 0.0 bis 1.0</pre>
+<h3>Ultraschall-Abstand</h3>
+<div class="warn">Der Echo-Pin des HC-SR04 liefert 5 V. Vor den Pi gehört ein <b>Spannungsteiler</b> (zum Beispiel 1 kΩ und 2 kΩ), sonst wird der Pin zerstört.</div>
+<pre>from gpiozero import DistanceSensor
+from time import sleep
+sensor = DistanceSensor(echo=24, trigger=23, max_distance=2)
+while True:
+    print(round(sensor.distance * 100), &quot;cm&quot;)
+    sleep(0.5)</pre>
+<h3>Servo</h3>
+<pre>from gpiozero import Servo
+from time import sleep
+servo = Servo(17)
+servo.min(); sleep(1)
+servo.mid(); sleep(1)
+servo.max(); sleep(1)</pre>
+<h3>Sensoren mit I²C</h3>
+<p>Viele Sensoren (Temperatur, Display, Beschleunigung) sprechen I²C über die Pins 3 (SDA) und 5 (SCL). Das lässt sich unter „Raspberry Pi Konfiguration → Schnittstellen → I2C“ einschalten. Mit <code>i2cdetect -y 1</code> findest du angeschlossene Geräte.</p><h2 id="k7">7. Projektideen für den Pi</h2><ul><li><b>Ampel</b> mit drei LEDs und Fußgängertaster (<code>LEDBoard</code>, <code>Button</code>).</li>
+<li><b>Einbruchalarm</b>: PIR-Sensor löst Summer aus und schreibt die Uhrzeit in eine Datei.</li>
+<li><b>Temperaturlogger</b>: Sensor misst jede Minute und speichert in eine CSV-Datei, die du in Excel öffnest.</li>
+<li><b>Webserver</b>: Eine kleine Webseite zeigt den Sensorwert (Bibliothek <code>flask</code>).</li>
+<li><b>Kamera</b>: Fotos per Knopfdruck oder Zeitraffer.</li>
+<li><b>Zusammen mit dem Arduino</b>: Der Arduino misst und sendet per USB-Kabel (Serial), der Pi zeigt die Werte an oder speichert sie.</li></ul>
+<h3>Programm beim Start automatisch ausführen</h3>
+<p>Im Terminal <code>crontab -e</code> öffnen und am Ende eine Zeile einfügen: <code>@reboot python3 /home/benutzername/projekt.py &amp;</code>. Beim nächsten Neustart läuft das Programm von selbst.</p><h2 id="k8">8. Fehler finden und sicher arbeiten</h2><table><tr><th>Symptom</th><th>Meist die Ursache</th></tr>
+<tr><td>LED leuchtet nicht</td><td>falsche GPIO-Nummer (BCM statt Pin-Nummer!), LED falsch herum, Masse nicht verbunden</td></tr>
+<tr><td><code>GPIO busy</code> / „Pin already in use“</td><td>Ein anderes Programm (oder ein zweites Fenster) nutzt den Pin noch. Beenden mit Strg+C.</td></tr>
+<tr><td><code>ModuleNotFoundError</code></td><td>Bibliothek fehlt: <code>sudo apt install python3-gpiozero</code></td></tr>
+<tr><td>Einrückungsfehler</td><td>Tabulator und Leerzeichen gemischt; Doppelpunkt vergessen</td></tr>
+<tr><td>Pi startet nicht</td><td>Netzteil zu schwach, SD-Karte falsch beschrieben. Auf der SD-Karte mit dem Imager neu beginnen.</td></tr>
+<tr><td>Sensor liefert Unsinn</td><td>5-V-Sensor an 3,3-V-Pin, fehlender Spannungsteiler oder fehlende Masse</td></tr></table>
+<div class="warn"><b>Regeln für sicheres Arbeiten:</b><ul>
+<li>Verdrahten nur bei <b>heruntergefahrenem Pi</b>, danach Verbindungen doppelt prüfen.</li>
+<li>Kein 5-V-Signal auf einen GPIO-Pin. Nie 3,3 V und 5 V verbinden.</li>
+<li>Pins nie gegeneinander oder gegen Masse kurzschließen.</li>
+<li>LEDs immer mit Vorwiderstand, Motoren und Lampen nur über Transistor, Relais oder Treiberbaustein.</li></ul></div><h2 id="k9">9. Arduino oder Pi? Und wie geht es hier weiter</h2><table><tr><th>Aufgabe</th><th>Besser geeignet</th></tr>
+<tr><td>Sensor auslesen, LED/Motor direkt schalten</td><td>Arduino</td></tr>
+<tr><td>Zeitkritisch, schnell reagieren</td><td>Arduino</td></tr>
+<tr><td>Strom sparen, Batteriebetrieb</td><td>Arduino</td></tr>
+<tr><td>Daten speichern, Webseite, Netzwerk, Kamera</td><td>Raspberry Pi</td></tr>
+<tr><td>Viele Programme, Bildschirm, Maus</td><td>Raspberry Pi</td></tr>
+<tr><td>Beides kombinieren</td><td>Arduino misst, Pi wertet aus (USB/Serial)</td></tr></table>
+<div class="box"><b>Hinweis zum Tonfunk Lab:</b> Das CodeLab simuliert heute den <b>Arduino Uno</b>. Eine Simulation von Python und GPIO für den Raspberry Pi ist geplant. Bis dahin kannst du die Schaltungen (LED, Taster, Sensoren) im CodeLab mit dem Arduino testen und die Logik später in Python übertragen. Die Elektronik ist dieselbe, nur die Spannung (3,3 V statt 5 V) und die Sprache ändern sich.</div>
+<p>Weiter geht es mit dem Lernheft <a href="lernen-arduino.html">Arduino verstehen</a>.</p>
+</div></body></html>

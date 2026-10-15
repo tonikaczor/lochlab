@@ -1,5 +1,5 @@
-const CACHE = 'lochlab-v62';
-const FILES = ['./', './index.html', './layout.html', './schaltplan.html', './simlab.html', './codelab.html', './arduino.js', './beispiele.js', './anleitung.html', './ausbilder.html', './lochbeispiele.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png', './fx.js', './simics.js', './simcore.js', './simui.js', './schaltplan.js'];
+const CACHE = 'lochlab-v63';
+const FILES = ['./', './index.html', './layout.html', './schaltplan.html', './simlab.html', './codelab.html', './arduino.js', './beispiele.js', './anleitung.html', './lernen.html', './lernen-arduino.html', './lernen-pi.html', './ausbilder.html', './lochbeispiele.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png', './fx.js', './simics.js', './simcore.js', './simui.js', './schaltplan.js'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));

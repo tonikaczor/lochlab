@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arduino verstehen: Schritt für Schritt</title><link rel="icon" href="icon-192.png"><style>
+:root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:8px}header img{height:42px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:30px 0 8px;border-bottom:2px solid var(--accent);padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:6px 0}small,.mute{color:var(--mute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0}
+ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
+.k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+.tip{border-left:4px solid var(--ok);padding-left:12px}
+@media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
+
+pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+@media(prefers-color-scheme:light){pre{background:#f1f4f7;color:#1d2329}}
+@media print{pre{background:#f4f4f4;color:#000;border:1px solid #999;white-space:pre-wrap}}
+.try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent);color:#fff!important;text-decoration:none;font-size:14px}
+.merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.toc a{display:block;padding:2px 0}svg{max-width:100%;height:auto}
+@media print{.try{background:none;color:#000!important;border:1px solid #000}}
+</style></head>
+<body><div class="wrap">
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Arduino verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 63</small></div></header>
+<p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen-pi.html">Raspberry Pi verstehen</a> · <a href="anleitung.html">Anleitung Tonfunk Lab</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<p>Dieses Lernheft führt dich vom ersten Blinken bis zum Aufbau mit Sensoren. Zu jedem Kapitel gibt es <b>Probier es aus</b>-Knöpfe: Sie öffnen das passende Beispiel direkt im CodeLab. Mit den <b>Aufgaben</b>-Knöpfen startest du eine Übung mit automatischer Prüfung.</p>
+<div class="box toc"><b>Inhalt</b><a href="#k1">1. Was ist ein Arduino?</a><a href="#k2">2. Aufbau eines Programms</a><a href="#k3">3. Digitale Ausgänge: LED ansteuern</a><a href="#k4">4. Digitale Eingänge: Taster abfragen</a><a href="#k5">5. Analoge Eingänge: Spannung messen</a><a href="#k6">6. PWM: Helligkeit und Drehzahl</a><a href="#k7">7. Der Serial-Monitor: dem Arduino zuhören</a><a href="#k8">8. Schleifen, Entscheidungen und Felder</a><a href="#k9">9. Sensoren und Aktoren</a><a href="#k10">10. Fehler finden</a><a href="#k11">11. Vom Simulator zum echten Uno</a></div>
+<h2 id="k1">1. Was ist ein Arduino?</h2><p>Ein <b>Arduino</b> ist ein kleiner Computer auf einer Platine, ein sogenannter <b>Mikrocontroller</b>. Er führt genau ein Programm aus, das du schreibst, und das sofort nach dem Einschalten startet. Er hat keinen Bildschirm und kein Betriebssystem. Dafür hat er <b>Anschlüsse (Pins)</b>, an die du LEDs, Taster, Sensoren und Motoren hängst.</p>
+<p>Der <b>Arduino Uno</b> ist das bekannteste Modell:</p>
+<table><tr><th>Merkmal</th><th>Wert beim Uno</th></tr>
+<tr><td>Mikrocontroller</td><td>ATmega328P</td></tr><tr><td>Betriebsspannung der Pins</td><td>5 V</td></tr><tr><td>Takt</td><td>16 MHz (16 Millionen Schritte pro Sekunde)</td></tr>
+<tr><td>Programmspeicher (Flash)</td><td>32 KB (dein Programm)</td></tr><tr><td>Arbeitsspeicher (RAM)</td><td>nur 2 KB (deine Variablen)</td></tr>
+<tr><td>Digitale Pins</td><td>14 (D0 bis D13), davon 6 mit PWM</td></tr><tr><td>Analoge Eingänge</td><td>6 (A0 bis A5)</td></tr>
+<tr><td>Strom pro Pin</td><td>empfohlen bis 20 mA, absolutes Maximum 40 mA</td></tr></table>
+<div class="merke"><b>Merke:</b> Der Arduino kann nur wenig Strom liefern. Eine LED braucht deshalb immer einen <b>Vorwiderstand</b>. Motoren und Lampen schaltet man über einen Transistor oder ein Relais.</div>
+<h3>Die Anschlüsse im Überblick</h3><svg viewBox="0 0 760 275" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Arduino Uno Anschlüsse"><rect x="10" y="62" width="740" height="110" rx="10" fill="#0e6e83" stroke="#0a4a58" stroke-width="2"/><text x="380.0" y="122" text-anchor="middle" fill="#fff" font-size="22" font-family="sans-serif" font-weight="700">ARDUINO UNO</text><text x="380.0" y="146" text-anchor="middle" fill="#cfe9ee" font-size="13" font-family="sans-serif">ATmega328P · 5 V · 16 MHz</text><rect x="40" y="40" width="32" height="22" rx="3" fill="#8a949e"/><text transform="translate(56.0,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">AREF</text><rect x="78" y="40" width="32" height="22" rx="3" fill="#6e7782"/><text transform="translate(94.0,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><rect x="116" y="40" width="32" height="22" rx="3" fill="#2f7fd6"/><text transform="translate(132.0,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D13</text><rect x="154" y="40" width="32" height="22" rx="3" fill="#2f7fd6"/><text transform="translate(170.0,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D12</text><rect x="192" y="40" width="32" height="22" rx="3" fill="#7b52c9"/><text transform="translate(208.0,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D11~</text><rect x="230" y="40" width="32" height="22" rx="3" fill="#7b52c9"/><text transform="translate(246.0,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D10~</text><rect x="268" y="40" width="32" height="22" rx="3" fill="#7b52c9"/><text transform="translate(284.0,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D9~</text><rect x="306" y="40" width="32" height="22" rx="3" fill="#2f7fd6"/><text transform="translate(322.0,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D8</text><rect x="366.8" y="40" width="32" height="22" rx="3" fill="#2f7fd6"/><text transform="translate(382.8,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D7</text><rect x="404.8" y="40" width="32" height="22" rx="3" fill="#7b52c9"/><text transform="translate(420.8,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D6~</text><rect x="442.8" y="40" width="32" height="22" rx="3" fill="#7b52c9"/><text transform="translate(458.8,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D5~</text><rect x="480.8" y="40" width="32" height="22" rx="3" fill="#2f7fd6"/><text transform="translate(496.8,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D4</text><rect x="518.8" y="40" width="32" height="22" rx="3" fill="#7b52c9"/><text transform="translate(534.8,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D3~</text><rect x="556.8" y="40" width="32" height="22" rx="3" fill="#2f7fd6"/><text transform="translate(572.8,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D2</text><rect x="594.8" y="40" width="32" height="22" rx="3" fill="#d28a1c"/><text transform="translate(610.8,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D1 TX</text><rect x="632.8" y="40" width="32" height="22" rx="3" fill="#d28a1c"/><text transform="translate(648.8,34) rotate(-60)" font-size="12" font-family="sans-serif" fill="currentColor">D0 RX</text><rect x="40" y="172" width="32" height="22" rx="3" fill="#8a949e"/><text transform="translate(53.0,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">NC</text><rect x="78" y="172" width="32" height="22" rx="3" fill="#8a949e"/><text transform="translate(91.0,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">IOREF</text><rect x="116" y="172" width="32" height="22" rx="3" fill="#8a949e"/><text transform="translate(129.0,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">RESET</text><rect x="154" y="172" width="32" height="22" rx="3" fill="#d04040"/><text transform="translate(167.0,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">3V3</text><rect x="192" y="172" width="32" height="22" rx="3" fill="#d04040"/><text transform="translate(205.0,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">5V</text><rect x="230" y="172" width="32" height="22" rx="3" fill="#6e7782"/><text transform="translate(243.0,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><rect x="268" y="172" width="32" height="22" rx="3" fill="#6e7782"/><text transform="translate(281.0,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">GND</text><rect x="306" y="172" width="32" height="22" rx="3" fill="#d04040"/><text transform="translate(319.0,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">VIN</text><rect x="366.8" y="172" width="32" height="22" rx="3" fill="#2b9a4a"/><text transform="translate(379.8,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">A0</text><rect x="404.8" y="172" width="32" height="22" rx="3" fill="#2b9a4a"/><text transform="translate(417.8,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">A1</text><rect x="442.8" y="172" width="32" height="22" rx="3" fill="#2b9a4a"/><text transform="translate(455.8,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">A2</text><rect x="480.8" y="172" width="32" height="22" rx="3" fill="#2b9a4a"/><text transform="translate(493.8,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">A3</text><rect x="518.8" y="172" width="32" height="22" rx="3" fill="#2b9a4a"/><text transform="translate(531.8,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">A4 SDA</text><rect x="556.8" y="172" width="32" height="22" rx="3" fill="#2b9a4a"/><text transform="translate(569.8,184) rotate(60)" font-size="12" font-family="sans-serif" fill="currentColor">A5 SCL</text><rect x="14" y="261" width="12" height="12" fill="#2f7fd6"/><text x="30" y="271" font-size="12" font-family="sans-serif" fill="currentColor">digital</text><rect x="87" y="261" width="12" height="12" fill="#7b52c9"/><text x="103" y="271" font-size="12" font-family="sans-serif" fill="currentColor">PWM (~)</text><rect x="160" y="261" width="12" height="12" fill="#2b9a4a"/><text x="176" y="271" font-size="12" font-family="sans-serif" fill="currentColor">analog</text><rect x="226" y="261" width="12" height="12" fill="#d04040"/><text x="242" y="271" font-size="12" font-family="sans-serif" fill="currentColor">Strom</text><rect x="285" y="261" width="12" height="12" fill="#6e7782"/><text x="301" y="271" font-size="12" font-family="sans-serif" fill="currentColor">Masse</text><rect x="344" y="261" width="12" height="12" fill="#d28a1c"/><text x="360" y="271" font-size="12" font-family="sans-serif" fill="currentColor">seriell (USB)</text></svg>
+<p class="mute">Oben die digitalen Pins, unten Stromversorgung und analoge Eingänge. Pins mit „~“ können PWM (Kapitel 6). D0 und D1 sind mit der USB-Schnittstelle verbunden, nutze sie am besten nicht. An D13 sitzt die eingebaute LED.</p>
+<a class="try noprint" href="codelab.html?ex=Blink%20%28LED%20an%20Pin%2013%29">▶ Im CodeLab öffnen: Blink</a><h2 id="k2">2. Aufbau eines Programms</h2><p>Ein Arduino-Programm (man sagt <b>Sketch</b>) besteht immer aus zwei Teilen:</p>
+<pre>void setup() {
+  // läuft EINMAL beim Start: Pins einstellen
+}
+
+void loop() {
+  // läuft IMMER WIEDER, solange der Arduino Strom hat
+}</pre>
+<ul><li>Jede Anweisung endet mit einem <b>Semikolon</b> <code>;</code>.</li>
+<li>Was zusammengehört, steht in <b>geschweiften Klammern</b> <code>{ }</code>.</li>
+<li>Mit <code>//</code> beginnt ein <b>Kommentar</b>. Der Arduino ignoriert ihn, er ist für Menschen.</li>
+<li>Groß- und Kleinschreibung zählt: <code>digitalWrite</code> ist nicht <code>digitalwrite</code>.</li></ul>
+<h3>Variablen</h3>
+<p>Eine Variable ist ein Behälter mit Namen für einen Wert.</p>
+<pre>int ledPin = 13;        // ganze Zahl (-32768 bis 32767)
+float spannung = 3.3;   // Kommazahl
+const int taster = 2;   // Konstante: ändert sich nie
+bool an = true;         // wahr oder falsch</pre>
+<div class="merke"><b>Merke:</b> Gib Pins sprechende Namen (<code>ledPin</code> statt einfach <code>13</code>). Dann kannst du später nur an einer Stelle umstecken.</div>
+<a class="try noprint" href="codelab.html?ex=Blink%20%28LED%20an%20Pin%2013%29">▶ Blink (LED an Pin 13)</a><a class="try noprint" href="codelab.html?ex=SOS">▶ SOS mit eigenen Funktionen</a><h2 id="k3">3. Digitale Ausgänge: LED ansteuern</h2><p>Ein digitaler Pin kennt nur zwei Zustände: <b>HIGH</b> (5 V) und <b>LOW</b> (0 V). Als Ausgang schaltet er damit eine LED ein oder aus.</p>
+<pre>pinMode(13, OUTPUT);      // Pin 13 ist ein Ausgang (einmal in setup)
+digitalWrite(13, HIGH);   // 5 V, LED an
+delay(1000);              // 1000 Millisekunden warten
+digitalWrite(13, LOW);    // 0 V, LED aus</pre>
+<h3>Der Vorwiderstand</h3>
+<p>Eine LED begrenzt ihren Strom nicht selbst. Der Widerstand übernimmt das. Die Rechnung:</p>
+<p><b>R = (U<sub>Quelle</sub> − U<sub>LED</sub>) / I</b></p>
+<p>Beispiel: rote LED (etwa 2 V), 5 V vom Arduino, gewünscht 15 mA. R = (5 V − 2 V) / 0,015 A = <b>200 Ω</b>. Nimm den nächsten Normwert: <b>220 Ω</b>.</p>
+<div class="warn"><b>Achtung:</b> Ohne Vorwiderstand fließt viel zu viel Strom. Im Simulator wird der Pin dann zerstört (Rauch und Meldung). Beim echten Arduino kann der Pin dauerhaft kaputtgehen.</div>
+<p>Die LED hat eine Richtung: Das längere Bein (Anode, +) kommt zur Quelle, das kürzere (Kathode, −, abgeflachte Seite) zur Masse.</p>
+<a class="try noprint" href="codelab.html?ex=Blink%20%28LED%20an%20Pin%2013%29">▶ Blink (LED an Pin 13)</a><a class="try noprint" href="codelab.html?ex=Ampel%20mit%20drei%20LEDs">▶ Ampel mit drei LEDs</a><a class="try noprint" href="codelab.html?aufgabe=c1">✎ Aufgabe: Dreimal blinken</a><a class="try noprint" href="codelab.html?aufgabe=cf1">✎ Aufgabe: Die LED bleibt dunkel</a><h2 id="k4">4. Digitale Eingänge: Taster abfragen</h2><p>Ein Pin kann auch <b>lesen</b>: Liegt 5 V an, liefert <code>digitalRead</code> den Wert HIGH, bei 0 V den Wert LOW. Ein offener Eingang „schwebt“ und liefert zufällige Werte. Darum braucht jeder Taster einen festen Ruhepegel.</p>
+<h3>Der interne Pull-up</h3>
+<p>Der Arduino hat in jedem Pin einen zuschaltbaren Widerstand nach 5 V. Mit <code>INPUT_PULLUP</code> liegt der Pin im Ruhezustand auf HIGH. Der Taster verbindet ihn beim Drücken mit Masse: <b>gedrückt = LOW</b>.</p>
+<pre>pinMode(2, INPUT_PULLUP);     // Taster zwischen Pin 2 und Masse
+if (digitalRead(2) == LOW) {   // LOW = gedrückt!
+  digitalWrite(13, HIGH);
+} else {
+  digitalWrite(13, LOW);
+}</pre>
+<div class="merke"><b>Merke:</b> Mit Pull-up ist das Signal umgekehrt. Das verwirrt am Anfang: Gedrückt heißt LOW.</div>
+<p><b>Prellen:</b> Echte Taster federn kurz nach (einige Millisekunden) und liefern mehrere Impulse. Für Zähler brauchst du am echten Arduino eine kurze Wartezeit (<code>delay(20)</code>) nach dem Erkennen. Der Simulator prellt nicht.</p>
+<a class="try noprint" href="codelab.html?ex=Taster%20schaltet%20LED%20%28Pull-up%29">▶ Taster schaltet LED (Pull-up)</a><a class="try noprint" href="codelab.html?aufgabe=c2">✎ Aufgabe: Taster schaltet die LED</a><a class="try noprint" href="codelab.html?aufgabe=c13">✎ Aufgabe: Tastendrücke zählen</a><a class="try noprint" href="codelab.html?aufgabe=cf2">✎ Aufgabe: Der Taster arbeitet verkehrt herum</a><h2 id="k5">5. Analoge Eingänge: Spannung messen</h2><p>An den Pins A0 bis A5 kann der Arduino Spannungen von 0 bis 5 V <b>messen</b>. Ein Analog-Digital-Wandler (ADC) macht daraus eine Zahl von <b>0 bis 1023</b> (10 Bit, 1024 Stufen). Eine Stufe sind 5 V / 1023 ≈ 4,9 mV.</p>
+<pre>int wert = analogRead(A0);                 // 0 ... 1023
+float spannung = wert * 5.0 / 1023.0;      // in Volt umrechnen</pre>
+<p>Typische Quellen: ein <b>Poti</b> (Spannungsteiler: außen 5 V und Masse, der Schleifer geht zum Pin), ein Fotowiderstand mit festem Widerstand oder ein Temperatursensor.</p>
+<h3>Werte umrechnen mit map()</h3>
+<pre>int prozent = map(wert, 0, 1023, 0, 100);   // 0...1023 -&gt; 0...100</pre>
+<p>Beispiel Temperatursensor TMP36: Er liefert 0,5 V bei 0 °C und 10 mV pro Grad. Also <code>celsius = (spannung - 0.5) * 100.0</code>.</p>
+<div class="merke"><b>Merke:</b> Rechne mit Kommazahlen (<code>5.0</code>), sonst teilt der Arduino ganzzahlig und rundet ab. <code>5 / 1023</code> ergibt 0!</div>
+<a class="try noprint" href="codelab.html?ex=Spannung%20messen">▶ Spannung messen</a><a class="try noprint" href="codelab.html?ex=Poti-Schwelle">▶ Poti-Schwelle</a><a class="try noprint" href="codelab.html?ex=Temperatur%20mit%20dem%20TMP36">▶ Temperatur mit dem TMP36</a><a class="try noprint" href="codelab.html?ex=Nachtlicht">▶ Nachtlicht</a><a class="try noprint" href="codelab.html?aufgabe=c5">✎ Aufgabe: Poti-Schwelle</a><a class="try noprint" href="codelab.html?aufgabe=c16">✎ Aufgabe: Temperaturwarnung</a><h2 id="k6">6. PWM: Helligkeit und Drehzahl</h2><p>Ein Arduino-Pin kann keine Zwischenspannung ausgeben. Mit <b>PWM</b> (Pulsweitenmodulation) schaltet er sehr schnell zwischen 0 V und 5 V hin und her (beim Uno etwa 490 Mal pro Sekunde). Das Verhältnis von „an“ zu „aus“ (das <b>Tastverhältnis</b>) bestimmt, wie hell eine LED wirkt oder wie schnell ein Motor läuft.</p>
+<pre>analogWrite(9, 0);     //   0 % -&gt; immer aus
+analogWrite(9, 128);   //  50 % -&gt; halbe Helligkeit
+analogWrite(9, 255);   // 100 % -&gt; immer an</pre>
+<p><code>analogWrite</code> gibt es nur an den Pins mit „~“: 3, 5, 6, 9, 10 und 11. Der Wert geht von 0 bis 255. Passt der Messwert eines Potis (0 bis 1023) nicht dazu, teile durch 4 oder nutze <code>map</code>.</p>
+<a class="try noprint" href="codelab.html?ex=Poti%20dimmt%20LED%20%28PWM%29">▶ Poti dimmt LED (PWM)</a><a class="try noprint" href="codelab.html?ex=RGB-Farbwechsel">▶ RGB-Farbwechsel</a><a class="try noprint" href="codelab.html?aufgabe=c8">✎ Aufgabe: Halbe Helligkeit (PWM)</a><a class="try noprint" href="codelab.html?aufgabe=c14">✎ Aufgabe: Poti dimmt die LED</a><h2 id="k7">7. Der Serial-Monitor: dem Arduino zuhören</h2><p>Über die USB-Verbindung kann der Arduino Text an den Computer schicken. Das ist dein wichtigstes Werkzeug zum <b>Fehlersuchen</b>: Du siehst, was das Programm gerade denkt.</p>
+<pre>void setup() {
+  Serial.begin(9600);          // Geschwindigkeit: 9600 Bit pro Sekunde
+}
+void loop() {
+  int wert = analogRead(A0);
+  Serial.print(&quot;Messwert: &quot;);  // ohne Zeilenumbruch
+  Serial.println(wert);        // mit Zeilenumbruch
+  delay(200);
+}</pre>
+<ul><li>Im CodeLab siehst du die Ausgabe unten im <b>Serial-Monitor</b> (Karte „Text“). Die Karte „Plotter“ zeichnet Zahlen als Kurve.</li>
+<li>Du kannst auch Zeichen <b>an den Arduino senden</b> (Eingabefeld unten) und mit <code>Serial.read()</code> lesen.</li>
+<li>Zu viel Ausgabe bremst das Programm. Nimm bei schnellen Schleifen ein <code>delay</code>.</li></ul>
+<a class="try noprint" href="codelab.html?ex=Spannung%20messen">▶ Spannung messen</a><a class="try noprint" href="codelab.html?ex=LED%20per%20Serial">▶ LED per Serial</a><a class="try noprint" href="codelab.html?aufgabe=c3">✎ Aufgabe: Hallo im Serial-Monitor</a><a class="try noprint" href="codelab.html?aufgabe=c9">✎ Aufgabe: Zählen bis 10</a><h2 id="k8">8. Schleifen, Entscheidungen und Felder</h2><h3>if / else: Entscheidungen</h3>
+<pre>if (wert &gt; 511) {
+  digitalWrite(13, HIGH);
+} else {
+  digitalWrite(13, LOW);
+}</pre>
+<p>Vergleiche: <code>==</code> gleich (zwei Gleichheitszeichen!), <code>!=</code> ungleich, <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code>. Verknüpfen: <code>&amp;&amp;</code> (und), <code>||</code> (oder), <code>!</code> (nicht).</p>
+<h3>for: eine bestimmte Anzahl wiederholen</h3>
+<pre>for (int i = 0; i &lt; 3; i++) {   // i = 0, 1, 2
+  digitalWrite(13, HIGH);
+  delay(300);
+  digitalWrite(13, LOW);
+  delay(300);
+}</pre>
+<h3>Felder (Arrays)</h3>
+<p>Ein Feld speichert mehrere Werte unter einem Namen. Gezählt wird ab <b>0</b>.</p>
+<pre>int ledPins[] = {3, 5, 7, 9};
+for (int i = 0; i &lt; 4; i++) {
+  pinMode(ledPins[i], OUTPUT);
+}</pre>
+<h3>Eigene Funktionen</h3>
+<pre>void blinkKurz() {
+  digitalWrite(13, HIGH); delay(100);
+  digitalWrite(13, LOW);  delay(100);
+}</pre>
+<div class="merke"><b>Merke:</b> <code>if (x = 5)</code> mit nur einem Gleichheitszeichen weist zu, statt zu vergleichen. Das ist einer der häufigsten Fehler.</div>
+<a class="try noprint" href="codelab.html?ex=Lauflicht">▶ Lauflicht</a><a class="try noprint" href="codelab.html?ex=Bin%C3%A4rz%C3%A4hler">▶ Binärzähler</a><a class="try noprint" href="codelab.html?aufgabe=c11">✎ Aufgabe: Lauflicht</a><a class="try noprint" href="codelab.html?aufgabe=c12">✎ Aufgabe: Binärzähler</a><a class="try noprint" href="codelab.html?aufgabe=cf5">✎ Aufgabe: Zählt falsch</a><h2 id="k9">9. Sensoren und Aktoren</h2><h3>Ultraschall HC-SR04: Abstand messen</h3>
+<p>Der Sensor sendet einen Schallimpuls und misst die Zeit, bis das Echo zurückkommt. Der Pin Trig startet die Messung (10 µs HIGH), der Pin Echo bleibt so lange HIGH, wie der Schall unterwegs ist. Schall braucht etwa 58 µs für 1 cm Entfernung (hin und zurück). Also: <b>Abstand in cm = Zeit in µs / 58</b>. Mit <code>pulseIn(echoPin, HIGH)</code> misst du diese Zeit.</p>
+<a class="try noprint" href="codelab.html?ex=Ultraschall-Abstandsmesser">▶ Ultraschall-Abstandsmesser</a><a class="try noprint" href="codelab.html?ex=Einparkhilfe">▶ Einparkhilfe</a><a class="try noprint" href="codelab.html?aufgabe=c10">✎ Aufgabe: Abstandswarner</a>
+<h3>Servo: Winkel einstellen</h3>
+<p>Ein Modellbau-Servo fährt einen Winkel von 0 bis 180° an. Er bekommt alle 20 ms einen Impuls, dessen Länge den Winkel bestimmt (1 ms = 0°, 1,5 ms = 90°, 2 ms = 180°). Die Bibliothek <code>Servo.h</code> erledigt das. Ein großer Servo braucht eine eigene Stromversorgung, der Arduino liefert nur wenig Strom.</p>
+<pre>#include &lt;Servo.h&gt;
+Servo meinServo;
+void setup() { meinServo.attach(9); }     // Signalpin
+void loop()  { meinServo.write(90); }     // Winkel in Grad</pre>
+<a class="try noprint" href="codelab.html?ex=Servo%20Sweep">▶ Servo Sweep</a><a class="try noprint" href="codelab.html?ex=Servo%20mit%20Poti">▶ Servo mit Poti</a><a class="try noprint" href="codelab.html?aufgabe=c6">✎ Aufgabe: Servo auf 90 Grad</a><a class="try noprint" href="codelab.html?aufgabe=c18">✎ Aufgabe: Servo fährt hin und her</a><a class="try noprint" href="codelab.html?aufgabe=cf4">✎ Aufgabe: Der Servo rührt sich nicht</a>
+<h3>Lautsprecher und Summer: Töne</h3>
+<pre>tone(8, 440);          // Ton mit 440 Hz auf Pin 8 (Kammerton a)
+delay(500);
+noTone(8);             // Ton aus</pre>
+<p>Je höher die Frequenz, desto höher der Ton. Ein 100-Ω-Widerstand in Reihe schützt den Pin.</p>
+<a class="try noprint" href="codelab.html?ex=Melodie">▶ Melodie</a><a class="try noprint" href="codelab.html?aufgabe=c7">✎ Aufgabe: Kammerton a</a><a class="try noprint" href="codelab.html?aufgabe=c15">✎ Aufgabe: Sirene</a>
+<h3>Bewegungsmelder (PIR)</h3>
+<p>Der PIR-Sensor erkennt die Wärmestrahlung bewegter Personen. Sein Ausgang geht bei Bewegung auf HIGH. Echte Sensoren brauchen nach dem Einschalten 30 bis 60 Sekunden zum Einmessen.</p>
+<a class="try noprint" href="codelab.html?ex=Bewegungsmelder">▶ Bewegungsmelder</a>
+<h3>Klopf- und Berührungssensor</h3>
+<p>Ein Piezo-Element erzeugt beim Klopfen eine kleine Spannung, die du mit <code>analogRead</code> misst. Die Berührungsfläche nutzt die Bibliothek <code>CapacitiveSensor</code>.</p>
+<a class="try noprint" href="codelab.html?ex=Klopfsensor">▶ Klopfsensor</a><a class="try noprint" href="codelab.html?ex=Touch-Lampe">▶ Touch-Lampe</a>
+<h3>Display (LCD)</h3>
+<p>Ein LCD mit I²C-Adapter braucht nur vier Leitungen: Plus, Masse, SDA (A4) und SCL (A5). Mit der Bibliothek <code>LiquidCrystal_I2C</code> schreibst du Text.</p>
+<a class="try noprint" href="codelab.html?ex=LCD%20mit">▶ LCD mit</a><h2 id="k10">10. Fehler finden</h2><h3>Fehlermeldungen beim Start</h3>
+<p>Wenn ▶ Start eine Fehlermeldung zeigt, steht dort die <b>Zeilennummer</b>. Schau dir genau diese Zeile an, oft auch die Zeile davor.</p>
+<table><tr><th>Meldung / Symptom</th><th>Meist die Ursache</th></tr>
+<tr><td>Syntaxfehler, „erwartet ;“</td><td>Semikolon am Zeilenende vergessen</td></tr>
+<tr><td>„nicht deklariert“</td><td>Variable oder Funktion falsch geschrieben (Groß/Klein!) oder nicht angelegt</td></tr>
+<tr><td>Klammer fehlt</td><td>Zu jeder <code>{</code> gehört eine <code>}</code>, zu jeder <code>(</code> eine <code>)</code></td></tr>
+<tr><td>LED leuchtet nie</td><td><code>pinMode(…, OUTPUT)</code> vergessen, falscher Pin, LED falsch herum, kein Vorwiderstand nach Masse</td></tr>
+<tr><td>Taster wirkt umgekehrt</td><td>Pull-up: gedrückt = LOW</td></tr>
+<tr><td>Zahlen komisch (Division ergibt 0)</td><td>Ganzzahl-Division: <code>5.0</code> statt <code>5</code> schreiben</td></tr>
+<tr><td>Servo/Sensor tut nichts</td><td><code>attach</code>/<code>pinMode</code> fehlt, Pins vertauscht, Versorgung nicht angeschlossen</td></tr></table>
+<h3>Vorgehen bei Logikfehlern</h3>
+<ol><li>Eingrenzen: Funktioniert der Aufbau? Ein Beispielprogramm ausprobieren.</li><li>Mit <code>Serial.println</code> Zwischenwerte ausgeben.</li><li>Ein Stück Programm auskommentieren (<code>//</code>) und prüfen, ob der Fehler verschwindet.</li><li>Nur <b>eine</b> Änderung auf einmal machen.</li></ol>
+<a class="try noprint" href="codelab.html?aufgabe=cf1">✎ Aufgabe: Die LED bleibt dunkel</a><a class="try noprint" href="codelab.html?aufgabe=cf2">✎ Aufgabe: Der Taster arbeitet verkehrt herum</a><a class="try noprint" href="codelab.html?aufgabe=cf3">✎ Aufgabe: Fehlermeldung lesen</a><a class="try noprint" href="codelab.html?aufgabe=cf4">✎ Aufgabe: Der Servo rührt sich nicht</a><a class="try noprint" href="codelab.html?aufgabe=cf5">✎ Aufgabe: Zählt falsch</a><h2 id="k11">11. Vom Simulator zum echten Uno</h2><h3>Was der Simulator genau macht (und was nicht)</h3>
+<ul><li>Er rechnet Schaltung und Programm gemeinsam. Gut für: Logik, Beschaltung, Vorwiderstände, Zeitabläufe.</li>
+<li>Er ist <b>idealer</b> als die Wirklichkeit: Taster prellen nicht, Messwerte rauschen nicht, Bauteile haben keine Toleranzen.</li>
+<li>Er kennt keine Speichergrenzen. Auf dem echten Uno hast du nur 2 KB RAM.</li>
+<li>Nicht alle Bibliotheken gibt es. Unterstützt sind Servo, LiquidCrystal(_I²C), CapacitiveSensor und die gängigen Funktionen.</li></ul>
+<h3>Programm auf den echten Arduino bringen</h3>
+<ol><li>Im CodeLab <span class="k">⤓ .ino</span> (Datei sichern) oder <span class="k">Kopieren</span> wählen.</li>
+<li>Auf einem <b>Computer</b> die kostenlose <b>Arduino IDE</b> öffnen (arduino.cc), Programm einfügen.</li>
+<li>Uno per USB-Kabel anschließen (ein Datenkabel, kein reines Ladekabel!). Bei Nachbauten ist manchmal ein CH340-Treiber nötig.</li>
+<li>Werkzeuge → Board: <b>Arduino Uno</b>, Werkzeuge → Port: den neuen Port wählen.</li>
+<li>Mit „Hochladen“ (Pfeil) übertragen. Das Programm startet sofort.</li></ol>
+<div class="box"><b>Am iPad:</b> Das iPad kann einen Uno nicht direkt programmieren (Safari bietet keinen Zugriff auf die USB-Schnittstelle). Du kannst die ganze Planung und das Testen am iPad machen und die .ino-Datei dann auf einen Computer in der Werkstatt übertragen (AirDrop, E-Mail, Teams, Schulcloud).</div>
+<h3>Aufbau auf dem Lochraster oder Steckbrett</h3>
+<ol><li>Erst die Stromlaufplan im CodeLab zeichnen und simulieren.</li><li>Mit dem Ausbilder aus dem Plan ein <b>Layout</b> für die Lochrasterplatine erzeugen (LochLab, Beispiele „Arduino“).</li><li>Beim Verdrahten Masse zuerst, Strom zuletzt. Vor dem Einschalten alle Verbindungen mit dem Plan vergleichen.</li></ol>
+<div class="warn"><b>Sicherheit:</b> Nie mehr als 5 V an einen Pin legen. Nie einen Pin gegen Masse oder 5 V kurzschließen. LEDs immer mit Vorwiderstand. Motoren nicht direkt an einen Pin hängen.</div>
+</div></body></html>
