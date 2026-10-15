@@ -234,6 +234,7 @@ function buildCircuit(layout) {
           }
         };
         break; }
+      case 'MCP3008': { const nd = []; for (let i = 0; i < 16; i++) nd.push(n(i)); add({ type: 'ADC', nd, part: p }); break; }
       case 'RGBLED': {
         const ck = ['rot', 'grün', 'blau'];
         ['r', 'g', 'b'].forEach((sub, i) => { const vf = LEDVF[ck[i]], is = 0.01 * Math.exp(-vf / (2 * VT)); add({ type: 'D', a: n(i), b: n(3), is, nn: 2, led: true, color: ck[i], imax: 0.03, part: p, vj: 0, sub }); });
@@ -420,6 +421,7 @@ function buildCircuit(layout) {
     const viaR = node => { let q = mcuPinOf(node); if (q >= 0) return q; for (const r of elems) { if (r.type !== 'R' || r.meter || r.led) continue; const other = r.a === node ? r.b : (r.b === node ? r.a : null); if (other != null && other > 0) { const qq = mcuPinOf(other); if (qq >= 0) return qq; } } return -1; };
     if (e.type === 'SENS' && e.dev === 'HCSR04') { const tp = mcuPinOf(e.a), ep = viaR(e.c); e.mcuTrig = tp >= 0 ? { mcu: mcuEl.mcu, pin: tp } : null; e.echoPin = ep; }
     if (e.type === 'SERVOD') e.pin = mcuPinOf(e.sig);
+    if (e.type === 'ADC') e.spi = { clk: mcuPinOf(e.nd[4]), miso: mcuPinOf(e.nd[5]), mosi: mcuPinOf(e.nd[6]), cs: mcuPinOf(e.nd[7]) };
     if (e.type === 'LCDD') e.ok = mcuPinOf(e.sda) === 18 && mcuPinOf(e.scl) === 19;
   });
   // Weitere Spannungsquellen ohne Masse-Bezug (zum Beispiel ein zweiter Stromkreis, der Last von der Steuerung trennt):
@@ -566,6 +568,7 @@ function createSim(circ) {
               else stampG(nd, 0, 1e-9);
             }
             break; }
+          case 'ADC': { stampG(e.nd[0], e.nd[3], 1 / 6000); for (let i = 8; i < 16; i++) stampG(e.nd[i], e.nd[2], 1e-8); for (let i = 1; i < 8; i++) stampG(e.nd[i], 0, 1e-9); break; }
           case 'PZ': { const pz = e.part.pos || 0, vo = pz * 5, gg = 1 / 2000; stampG(e.a, e.g, gg); inj(e.a, vo * gg); inj(e.g, -vo * gg); e.vo = vo; break; }
           case 'TCH': stampG(e.a, 0, 1e-9); break;
           case 'SENS': {
@@ -636,6 +639,7 @@ function createSim(circ) {
           { const t2 = new Array(40).fill(0); let sum = 0; for (let q = 0; q < 28; q++) { const idx = e.pinNode(q); t2[idx] = -m.pinI[q]; sum += t2[idx]; }
             [0, 16].forEach(i => { const ii = (3.3 - v[e.nd[i]]); t2[i] = -ii; sum += -ii; }); [1, 3].forEach(i => { const ii = (5 - v[e.nd[i]]); t2[i] = -ii; sum += -ii; }); t2[5] = -sum; e.tI = t2; e.i = 0; }
           break; }
+        case 'ADC': { const i = (v[e.nd[0]] - v[e.nd[3]]) / 6000, t2 = new Array(16).fill(0); t2[0] = i; t2[3] = -i; e.tI = t2; e.i = i; break; }
         case 'PZ': { const i = (e.vo - (v[e.a] - v[e.g])) / 2000; e.tI = [-i, i]; e.i = i; break; }
         case 'TCH': e.tI = [0]; e.i = 0; break;
         case 'SENS': {

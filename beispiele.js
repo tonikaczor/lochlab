@@ -270,6 +270,7 @@ void loop() {
 ` }) },
 
 
+
     /* ---------- Pi-Lab ---------- */
     { lab: 'pi', cat: 'Grundlagen', name: 'LED blinkt (GPIO17)', info: 'Die LED an GPIO17 (Pin 11) blinkt im Sekundentakt. Der 220-Ω-Vorwiderstand schützt Pin und LED. gpiozero zählt mit GPIO-Nummern, nicht mit den Pin-Nummern der Leiste.',
       make: () => ({ parts: [['PI', 12, 0], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], wires: [[12, 10, 10, 10]], scopes: [], tempo: 0.75,
@@ -434,6 +435,48 @@ for i in range(5):
     time.sleep(0.5)
 
 GPIO.cleanup()              # aufräumen
+` }) },
+    { lab: 'pi', cat: 'Analoge Sensoren (MCP3008)', name: 'Poti lesen (MCP3008)', info: 'Der Raspberry Pi hat keine analogen Eingänge. Der Wandler MCP3008 misst die Spannung am Poti und schickt sie als Zahl über vier Leitungen (SPI). Wandler MCP3008 mit Software-SPI an GPIO23 (Takt), GPIO24 (MISO), GPIO25 (MOSI) und GPIO8 (Chip-Select). VDD und VREF liegen an 3,3 V, AGND und DGND an Masse. Poti drehen: Regler unter dem Bauteil.',
+      make: () => ({ parts: [['PI', 12, 0], ['MCP3008', 28, 6], ['POT', 40, 6, 1, '10k', { pos: 0.4 }], ['GND', 40, 10]], wires: [[28, 8, 26, 8, 26, 6, 26, -2, 26, -4, 10, -4, 10, 0, 12, 0], [28, 6, 26, 6], [20, 14, 28, 14], [20, 16, 28, 16], [28, 18, 24, 18, 24, 20, 20, 20], [28, 20, 26, 20, 26, 22, 20, 22], [20, 12, 26, 12, 28, 12], [28, 10, 26, 10, 26, 12], [40, 6, 40, -2, 26, -2], [42, 8, 44, 8, 44, 4, 36, 4, 36, 6, 34, 6]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import MCP3008
+from time import sleep
+
+# Software-SPI: Takt GPIO23, MISO GPIO24, MOSI GPIO25, Chip-Select GPIO8
+poti = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)
+
+while True:
+    wert = poti.value              # 0.0 bis 1.0
+    print("Poti:", round(wert * 100), "%")
+    sleep(0.5)
+` }) },
+    { lab: 'pi', cat: 'Analoge Sensoren (MCP3008)', name: 'Helligkeit messen (LDR)', info: 'Fotowiderstand und 10-kΩ-Widerstand bilden einen Spannungsteiler an Kanal 0. Regler „Licht“ am Fotowiderstand verändern. Wandler MCP3008 mit Software-SPI an GPIO23 (Takt), GPIO24 (MISO), GPIO25 (MOSI) und GPIO8 (Chip-Select). VDD und VREF liegen an 3,3 V, AGND und DGND an Masse.',
+      make: () => ({ parts: [['PI', 12, 0], ['MCP3008', 28, 6], ['LDR', 40, 6, 1, '', { pos: 0.5 }], ['R', 40, 10, 1, '10k'], ['GND', 40, 14]], wires: [[28, 8, 26, 8, 26, 6, 26, -2, 26, -4, 10, -4, 10, 0, 12, 0], [28, 6, 26, 6], [20, 14, 28, 14], [20, 16, 28, 16], [28, 18, 24, 18, 24, 20, 20, 20], [28, 20, 26, 20, 26, 22, 20, 22], [20, 12, 26, 12, 28, 12], [28, 10, 26, 10, 26, 12], [40, 6, 40, -2, 26, -2], [40, 10, 38, 10, 38, 6, 34, 6]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import MCP3008
+from time import sleep
+
+licht = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)
+
+while True:
+    wert = licht.value
+    if wert < 0.3:
+        text = "dunkel"
+    else:
+        text = "hell"
+    print(round(wert * 100), "% ->", text)
+    sleep(0.5)
+` }) },
+    { lab: 'pi', cat: 'Analoge Sensoren (MCP3008)', name: 'Temperatur messen (TMP36)', info: 'Der Sensor TMP36 liefert 0,5 V bei 0 °C und 10 mV pro Grad. voltage rechnet den Messwert in Volt um (bei 3,3 V Referenz). Regler „Temperatur“ am Sensor verändern. Wandler MCP3008 mit Software-SPI an GPIO23 (Takt), GPIO24 (MISO), GPIO25 (MOSI) und GPIO8 (Chip-Select). VDD und VREF liegen an 3,3 V, AGND und DGND an Masse.',
+      make: () => ({ parts: [['PI', 12, 0], ['MCP3008', 28, 6], ['TMP36', 44, 8, 2, '', { pos: 0.394 }], ['GND', 40, 4]], wires: [[28, 8, 26, 8, 26, 6, 26, -2, 26, -4, 10, -4, 10, 0, 12, 0], [28, 6, 26, 6], [20, 14, 28, 14], [20, 16, 28, 16], [28, 18, 24, 18, 24, 20, 20, 20], [28, 20, 26, 20, 26, 22, 20, 22], [20, 12, 26, 12, 28, 12], [28, 10, 26, 10, 26, 12], [40, 8, 38, 8, 38, -2, 26, -2], [40, 6, 34, 6]], scopes: [], tempo: 0.75,
+      code: String.raw`from gpiozero import MCP3008
+from time import sleep
+
+temp = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)
+
+while True:
+    volt = temp.voltage                 # in Volt (0 bis 3,3)
+    celsius = (volt - 0.5) * 100        # TMP36: 0,5 V bei 0 Grad, 10 mV pro Grad
+    print("Temperatur:", round(celsius, 1), "°C")
+    sleep(0.5)
 ` }) },
   ];
   if (typeof module !== 'undefined' && module.exports) module.exports = EX; else window.MORE_EX = EX;

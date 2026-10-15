@@ -26,7 +26,7 @@ pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:
 @media print{.try{background:none;color:#000!important;border:1px solid #000}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 65</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 67</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen-arduino.html">Arduino verstehen</a> · <a href="anleitung.html">Anleitung Tonfunk Lab</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 <p>Dieses Lernheft zeigt dir, was ein Raspberry Pi ist, wie du ihn in Betrieb nimmst und wie du mit Python LEDs, Taster und Sensoren steuerst. Alle Beispiele kannst du direkt im <b>Pi-Lab</b> ausprobieren (Knöpfe „Probier es aus“ und „Aufgabe“). Am echten Pi funktionieren dieselben Programme. Das letzte Kapitel vergleicht Arduino und Pi.</p>
 <div class="box toc"><b>Inhalt</b><a href="#k1">1. Was ist ein Raspberry Pi?</a><a href="#k2">2. Inbetriebnahme</a><a href="#k3">3. Die GPIO-Leiste</a><a href="#k4">4. Python in fünf Minuten</a><a href="#k5">5. Erstes Projekt: LED und Taster</a><a href="#k6">6. Mehr Bauteile</a><a href="#k7">7. Projektideen für den Pi</a><a href="#k8">8. Fehler finden und sicher arbeiten</a><a href="#k9">9. Arduino oder Pi? Und wie geht es hier weiter</a></div>
@@ -123,10 +123,28 @@ led.value = 0.5          # 50 % Helligkeit (0.0 bis 1.0)
 led.pulse()              # sanftes Pulsieren im Hintergrund
 sleep(10)</pre>
 <h3>Analoge Sensoren: der Pi hat keinen ADC</h3>
-<p>Ein Poti oder einen TMP36 kannst du <b>nicht direkt</b> an den Pi hängen. Dafür gibt es einen kleinen Wandler-Baustein (zum Beispiel <b>MCP3008</b>, SPI). Er liefert dem Pi die Messwerte als Zahl zwischen 0 und 1.</p>
+<p>Ein Poti, ein Fotowiderstand oder ein TMP36 liefern eine <b>Spannung</b>. Der Arduino misst sie mit <code>analogRead</code>. Der Pi hat dafür <b>keinen</b> Eingang. Du brauchst einen kleinen Wandler-Baustein, zum Beispiel den <b>MCP3008</b> (8 Kanäle, 10 Bit). Er misst die Spannung an einem Kanal und schickt sie als Zahl über vier Leitungen (<b>SPI</b>) zum Pi.</p>
+<table><tr><th>MCP3008-Anschluss</th><th>Wohin</th></tr>
+<tr><td>VDD und VREF</td><td>3,3 V (nicht 5 V!)</td></tr><tr><td>AGND und DGND</td><td>Masse</td></tr>
+<tr><td>CLK (Takt)</td><td>GPIO11 (SCLK) oder ein frei gewählter Pin</td></tr>
+<tr><td>DOUT (Daten zum Pi)</td><td>GPIO9 (MISO) oder frei</td></tr>
+<tr><td>DIN (Daten vom Pi)</td><td>GPIO10 (MOSI) oder frei</td></tr>
+<tr><td>CS (Chip-Select)</td><td>GPIO8 (CE0) oder frei</td></tr>
+<tr><td>CH0 bis CH7</td><td>die Sensoren (Spannung zwischen 0 und 3,3 V)</td></tr></table>
 <pre>from gpiozero import MCP3008
+
+# Hardware-SPI (feste Pins GPIO11, 9, 10, 8): SPI muss am Pi eingeschaltet sein
 poti = MCP3008(channel=0)
-print(poti.value)        # 0.0 bis 1.0</pre>
+
+# oder Software-SPI mit frei gewählten Pins
+poti = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)
+
+print(poti.value)          # 0.0 bis 1.0
+print(poti.raw_value)      # 0 bis 1023
+print(poti.voltage)        # in Volt (0 bis 3,3)</pre>
+<div class="warn"><b>Achtung:</b> Am Eingang dürfen höchstens 3,3 V liegen. Der TMP36 liefert bei 3,3 V Versorgung bis etwa 1,5 V und passt gut. Ein Sensor mit 5 V Ausgang braucht einen Spannungsteiler.</div>
+<p>Beim TMP36 gilt wie beim Arduino: <code>celsius = (volt - 0.5) * 100</code>.</p>
+<a class="try noprint" href="pilab.html?ex=Poti%20lesen">▶ Poti lesen</a><a class="try noprint" href="pilab.html?ex=Helligkeit%20messen">▶ Helligkeit messen</a><a class="try noprint" href="pilab.html?ex=Temperatur%20messen">▶ Temperatur messen</a><a class="try noprint" href="pilab.html?aufgabe=p10">✎ Aufgabe: Poti über den MCP3008 lesen</a><a class="try noprint" href="pilab.html?aufgabe=p11">✎ Aufgabe: Dunkelheits-Anzeige</a><a class="try noprint" href="pilab.html?aufgabe=p12">✎ Aufgabe: Temperatur ausgeben</a><a class="try noprint" href="pilab.html?aufgabe=pf4">✎ Aufgabe: Der Wandler antwortet nicht</a>
 <h3>Ultraschall-Abstand</h3>
 <div class="warn">Der Echo-Pin des HC-SR04 liefert 5 V. Vor den Pi gehört ein <b>Spannungsteiler</b> (zum Beispiel 1 kΩ und 2 kΩ), sonst wird der Pin zerstört.</div>
 <pre>from gpiozero import DistanceSensor
@@ -171,6 +189,6 @@ servo.max(); sleep(1)</pre>
 <tr><td>Daten speichern, Webseite, Netzwerk, Kamera</td><td>Raspberry Pi</td></tr>
 <tr><td>Viele Programme, Bildschirm, Maus</td><td>Raspberry Pi</td></tr>
 <tr><td>Beides kombinieren</td><td>Arduino misst, Pi wertet aus (USB/Serial)</td></tr></table>
-<div class="box"><b>Im Tonfunk Lab:</b> Das <b>Pi-Lab</b> simuliert einen Raspberry Pi mit Python (gpiozero und RPi.GPIO). Du verdrahtest den Pi an der 40-poligen Leiste, schreibst dein Programm und siehst LEDs, Taster und Sensoren reagieren. Die Pins sind 3,3-V-Pins: Wer 5 V an einen GPIO legt, zerstört den Pi (mit Erklärung). <a class="try noprint" href="pilab.html">▶ Pi-Lab öffnen</a><p class="mute"><b>Grenzen:</b> Unterstützt sind print, Schleifen, Funktionen, Listen, Texte, f-Strings, try/except sowie die Module time, random, math, signal, gpiozero (LED, PWMLED, Buzzer, Button, MotionSensor, DistanceSensor, Servo, AngularServo, LEDBoard, TrafficLights) und RPi.GPIO. Nicht unterstützt sind eigene Klassen (class), input(), Dateien und Zusatzmodule wie numpy oder flask. Analoge Sensoren über einen MCP3008 kommen später.</p></div>
+<div class="box"><b>Im Tonfunk Lab:</b> Das <b>Pi-Lab</b> simuliert einen Raspberry Pi mit Python (gpiozero und RPi.GPIO). Du verdrahtest den Pi an der 40-poligen Leiste, schreibst dein Programm und siehst LEDs, Taster und Sensoren reagieren. Die Pins sind 3,3-V-Pins: Wer 5 V an einen GPIO legt, zerstört den Pi (mit Erklärung). <a class="try noprint" href="pilab.html">▶ Pi-Lab öffnen</a><p class="mute"><b>Grenzen:</b> Unterstützt sind print, Schleifen, Funktionen, Listen, Texte, f-Strings, try/except sowie die Module time, random, math, signal, gpiozero (LED, PWMLED, Buzzer, Button, MotionSensor, DistanceSensor, Servo, AngularServo, LEDBoard, TrafficLights, MCP3008) und RPi.GPIO. Nicht unterstützt sind eigene Klassen (class), input(), Dateien und Zusatzmodule wie numpy oder flask. Analoge Sensoren über den Wandler MCP3008 (SPI) sind dabei. Nicht unterstützt sind I²C-Geräte.</p></div>
 <p>Weiter geht es mit dem Lernheft <a href="lernen-arduino.html">Arduino verstehen</a>.</p>
 </div></body></html>

@@ -548,12 +548,21 @@ function createRunner(prog, io) {
         case 'DistanceSensor': { const e = pinCheck(g(0, 'echo'), node), t = pinCheck(g(1, 'trigger'), node); claim(e, 'DistanceSensor', node); claim(t, 'DistanceSensor', node); io.setMode(e, 'in'); io.setMode(t, 'out'); io.write(t, 0, curTask.vt); const mx = g(2, 'max_distance', 1); return mkDev('DistanceSensor', { echo: e, trig: t, max: nv(mx) }); }
         case 'Servo': { const p = pinCheck(g(0, 'pin'), node); claim(p, 'Servo', node); io.setMode(p, 'out'); const d = mkDev('Servo', { pin: p, val: 0, angMode: false }); io.servo(p, 90); return d; }
         case 'AngularServo': { const p = pinCheck(g(0, 'pin'), node); claim(p, 'AngularServo', node); io.setMode(p, 'out'); const mn = nv(g(1, 'min_angle', -90)), mx = nv(g(2, 'max_angle', 90)), ia = Math.max(mn, Math.min(mx, nv(g(3, 'initial_angle', 0)))); const d = mkDev('Servo', { pin: p, val: (ia - mn) / (mx - mn) * 2 - 1, angMode: true, mn, mx, angle: ia }); io.servo(p, (ia - mn) / (mx - mn) * 180); return d; }
+        case 'MCP3008': {
+          const ch = nv(g(0, 'channel', 0)); if (!Number.isInteger(ch) || ch < 0 || ch > 7) throwE('SPIBadChannel', 'channel muss eine Zahl von 0 bis 7 sein (der MCP3008 hat 8 Kanäle)', node);
+          const sw = ['clock_pin', 'mosi_pin', 'miso_pin', 'select_pin'].some(k => kw[k] !== undefined);
+          const spec = sw ? { hw: false, clk: pinCheck(kw.clock_pin !== undefined ? kw.clock_pin : 11, node), mosi: pinCheck(kw.mosi_pin !== undefined ? kw.mosi_pin : 10, node), miso: pinCheck(kw.miso_pin !== undefined ? kw.miso_pin : 9, node), cs: pinCheck(kw.select_pin !== undefined ? kw.select_pin : 8, node) }
+            : { hw: true, clk: 11, mosi: 10, miso: 9, cs: kw.device !== undefined && nv(kw.device) === 1 ? 7 : 8 };
+          const sk = JSON.stringify(spec); if (!spiClaimed.has(sk)) { [spec.clk, spec.mosi, spec.miso, spec.cs].forEach(pp => claim(pp, 'MCP3008', node)); spiClaimed.add(sk); }
+          return mkDev('MCP3008', { ch, spec, maxv: nv(g(99, 'max_voltage', 3.3)) });
+        }
         case 'LEDBoard': { const leds = a.map(p => ctor('LED')([p], {}, node)); return mkDev('LEDBoard', { leds }); }
         case 'TrafficLights': { const r = ctor('LED')([g(0, 'red')], {}, node), y = ctor('LED')([g(1, 'amber')], {}, node), gr = ctor('LED')([g(2, 'green')], {}, node); return mkDev('TrafficLights', { red: r, amber: y, green: gr }); }
       }
     });
   }
-  ['LED', 'PWMLED', 'Buzzer', 'Button', 'MotionSensor', 'DistanceSensor', 'Servo', 'AngularServo', 'LEDBoard', 'TrafficLights'].forEach(nm => { MODULES.gpiozero.mod[nm] = ctor(nm); });
+  const spiClaimed = new Set();
+  ['LED', 'PWMLED', 'Buzzer', 'Button', 'MotionSensor', 'DistanceSensor', 'Servo', 'AngularServo', 'LEDBoard', 'TrafficLights', 'MCP3008'].forEach(nm => { MODULES.gpiozero.mod[nm] = ctor(nm); });
   const setOut = (d, v) => { d.on = v ? 1 : 0; io.write(d.pin, d.on, curTask.vt); if (d.dev === 'Buzzer' && io.tone) io.tone(d.pin, d.on ? 2300 : null); };
   const startBlink = (d, on, off, n, node) => { d.blink = { on, off, n, phase: 0, next: curTask.vt }; };
   function devGet(d, name, node) {
@@ -581,6 +590,10 @@ function createRunner(prog, io) {
         case 'value': return d.val === null ? null : new F(d.val); case 'angle': return d.angMode ? new F(d.angle) : null;
         case 'min': return f(() => { servoVal(d, -1); return null; }); case 'mid': return f(() => { servoVal(d, 0); return null; }); case 'max': return f(() => { servoVal(d, 1); return null; }); case 'detach': return f(() => { io.servo(d.pin, null); return null; }); } break;
       case 'GPIOPWM': return gpioPwmGet(d, name, node);
+      case 'MCP3008': {
+        const rd = () => { const r = io.adc(d.ch, d.spec); if (r.err) throwE('GPIOZeroError', r.err, node); return r; };
+        switch (name) { case 'value': return new F(rd().value); case 'raw_value': return rd().raw; case 'voltage': return new F(rd().value * d.maxv); case 'channel': return d.ch; case 'bits': return 10; }
+        break; }
       case 'LEDBoard': switch (name) {
         case 'on': return f(() => { d.leds.forEach(l => { l.blink = null; setOut(l, 1); }); return null; }); case 'off': return f(() => { d.leds.forEach(l => { l.blink = null; setOut(l, 0); }); return null; }); case 'toggle': return f(() => { d.leds.forEach(l => { l.blink = null; setOut(l, l.on ? 0 : 1); }); return null; });
         case 'blink': return f((a, kw) => { d.leds.forEach(l => startBlink(l, nv(a[0] !== undefined ? a[0] : 1), nv(a[1] !== undefined ? a[1] : 1), null, node)); return null; }); case 'leds': return d.leds; } break;

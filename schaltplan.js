@@ -51,9 +51,10 @@ const KINDS = {
   RCD: { name: 'FI-Schutzschalter', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '30mA', core: 'RCD', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, sw0: 1, props: [] },
   SCHUETZ:{ name: 'Schütz (2 Haupt- + 2 Hilfskontakte)', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [0, 6], [5, 0], [9, 0], [5, 2], [9, 2], [5, 4], [9, 4], [5, 6], [9, 6]], v: '230V', core: 'SCHUETZ', box: [-0.2, -0.6, 9.4, 6.6], props: [['v', 'Spulenspannung', 'text', 'z. B. 230V']] },
   UNO: { name: 'Arduino Uno', cat: 'Arduino', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [0, 16], [0, 18], [8, 0], [8, 2], [8, 4], [8, 6], [8, 8], [8, 10], [8, 12], [8, 14], [8, 16], [8, 18], [8, 20], [8, 22], [8, 24], [8, 26], [8, 28], [8, -2]], v: '', core: 'MCU', box: [0, -3, 8, 30], props: [] },
+  MCP3008: { name: 'ADC MCP3008 (SPI, 8 Kanäle)', cat: 'Raspberry Pi', lab: 'pi', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [6, 0], [6, 2], [6, 4], [6, 6], [6, 8], [6, 10], [6, 12], [6, 14]], v: '', core: 'MCP3008', box: [0, -1.5, 6, 15.5], props: [] },
   PI: { name: 'Raspberry Pi (GPIO-Leiste)', cat: 'Raspberry Pi', lab: 'pi', pins: [[0, 0], [8, 0], [0, 2], [8, 2], [0, 4], [8, 4], [0, 6], [8, 6], [0, 8], [8, 8], [0, 10], [8, 10], [0, 12], [8, 12], [0, 14], [8, 14], [0, 16], [8, 16], [0, 18], [8, 18], [0, 20], [8, 20], [0, 22], [8, 22], [0, 24], [8, 24], [0, 26], [8, 26], [0, 28], [8, 28], [0, 30], [8, 30], [0, 32], [8, 32], [0, 34], [8, 34], [0, 36], [8, 36], [0, 38], [8, 38]], v: '', core: 'PI40', box: [0, -2, 8, 40], props: [] },
   RGBLED: { name: 'RGB-LED (gemeinsame Kathode)', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [4, 2]], v: '', core: 'RGBLED', box: [0, -1, 4, 5], props: [] },
-  TMP36: { name: 'Temperatursensor TMP36', cat: 'Sensoren', lab: 'code', pins: [[4, 0], [4, 2], [4, 4]], v: '', core: 'TMP36', box: [0, -1, 4, 5], pos: true, pos0: 0.394, props: [['pos', 'Temperatur (−40 … 125 °C)', 'range']] },
+  TMP36: { name: 'Temperatursensor TMP36', cat: 'Sensoren', lab: 'code,pi', pins: [[4, 0], [4, 2], [4, 4]], v: '', core: 'TMP36', box: [0, -1, 4, 5], pos: true, pos0: 0.394, props: [['pos', 'Temperatur (−40 … 125 °C)', 'range']] },
   PIEZO: { name: 'Klopfsensor (Piezo)', cat: 'Sensoren', lab: 'code', pins: [[4, 0], [4, 2]], v: '', core: 'PIEZO', box: [0, -1, 4, 3], pos: true, pos0: 0, props: [['pos', 'Klopfstärke (0 … 5 V)', 'range']] },
   TOUCH: { name: 'Berührungsfläche', cat: 'Sensoren', lab: 'code', pins: [[0, 0]], v: '', core: 'TOUCH', box: [0, -2, 5, 2], pos: true, pos0: 0, props: [['pos', 'Berührung (über 50 % = Finger drauf)', 'range']] },
   PIR: { name: 'Bewegungsmelder PIR', cat: 'Sensoren', lab: 'code,pi', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'PIR', box: [0, -1, 5, 5], pos: true, pos0: 0, props: [['pos', 'Bewegung (über 50 % = erkannt)', 'range']] },
@@ -103,7 +104,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { MCP3008: 'IC', PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -449,6 +450,14 @@ function drawPart(p, selected) {
       c.setLineDash([0.25, 0.2]); c.lineWidth = 0.07; line(1.4, 3, 5.6, 3); c.setLineDash([]);
       c.save(); c.translate(3.4, -0.1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Schütz', 0, 0); c.restore();
       break; }
+    case 'MCP3008': {
+      for (let i = 0; i < 16; i++) { const [px, py] = K.pins[i]; if (px === 0) lead(0, py, 1, py, pc[i]); else lead(6, py, 5, py, pc[i]); }
+      c.strokeStyle = body; c.fillStyle = PRINT ? '#eceff2' : 'rgba(120,130,145,.25)'; c.fillRect(1, -1, 4, 16); c.strokeRect(1, -1, 4, 16);
+      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al; c.textBaseline = 'middle'; c.fillStyle = body; c.fillText(t, 0, 0); c.restore(); };
+      ['VDD', 'VREF', 'AGND', 'DGND', 'CLK', 'DOUT', 'DIN', 'CS'].forEach((t, i) => T(t, 1.2, i * 2, 0.5, 'left'));
+      for (let i = 0; i < 8; i++) T('CH' + i, 4.8, i * 2, 0.5, 'right');
+      c.save(); c.translate(3, 7); c.rotate(-p.r * Math.PI / 2 - Math.PI / 2); c.font = '700 .8px sans-serif'; c.textAlign = 'center'; c.fillStyle = body; c.fillText('MCP3008', 0, 0); c.restore();
+      break; }
     case 'PI': {
       const o = showSim() && bodyI.get(String(p.id)), mm = o && o.e.mcu;
       const T = (t, x, y, size, al, rotv) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2 + (rotv || 0)); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
@@ -764,7 +773,7 @@ function valueText(p) {
     case 'SPK': return fmtVal(p.v, 'Ω');
     case 'NTC': case 'PTC': return fmtVal(p.v, 'Ω');
     case 'TRF': case 'RLY': return p.v;
-    case 'NETZ': case 'JUN5': case 'UNO': case 'PI': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
+    case 'NETZ': case 'JUN5': case 'UNO': case 'PI': case 'MCP3008': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
     case 'FAULT': return p.sw ? 'Fehler aktiv' : 'Fehler aus';
     case 'LSS': case 'RCD': case 'IMP': case 'SCHUETZ': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
@@ -1344,17 +1353,29 @@ function makeIO(el) {
     pulseHint: (q) => { const e = circ.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === q); return e ? e.lastEcho : null; },
   };
 }
-function makeIOPi(el) {
-  const m = el.mcu, node = g => el.nd[el.pinNode(g)], SIMT = () => sim.t, MODE = { out: 1, in: 0, up: 2, down: 3 };
+function makeIOPi(el, ctx) {
+  const S = ctx ? ctx.sim : sim, C = ctx ? ctx.circ : circ, m = el.mcu, node = g => el.nd[el.pinNode(g)], SIMT = () => S.t, MODE = { out: 1, in: 0, up: 2, down: 3 };
   return {
     setMode: (g, md) => { m.mode[g] = MODE[md]; if (md === 'up') m.lastDig[g] = 1; if (md === 'out') m.duty[g] = null; },
-    write: (g, v, vt) => { m.out[g] = v ? 1 : 0; m.duty[g] = null; const pl = m.pulse[g] || (m.pulse[g] = {}); if (v) { pl.rise = vt == null ? sim.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? sim.t : vt; },
-    read: g => { if (m.mode[g] === 1) return m.level[g]; if (m.mode[g] === 2 && SIMT() < 2e-3) return 1; const vv = sim.v[node(g)]; if (vv > 2.0) m.lastDig[g] = 1; else if (vv < 1.0) m.lastDig[g] = 0; return m.lastDig[g]; },
+    write: (g, v, vt) => { m.out[g] = v ? 1 : 0; m.duty[g] = null; const pl = m.pulse[g] || (m.pulse[g] = {}); if (v) { pl.rise = vt == null ? S.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? S.t : vt; },
+    read: g => { if (m.mode[g] === 1) return m.level[g]; if (m.mode[g] === 2 && SIMT() < 2e-3) return 1; const vv = S.v[node(g)]; if (vv > 2.0) m.lastDig[g] = 1; else if (vv < 1.0) m.lastDig[g] = 0; return m.lastDig[g]; },
     pwm: (g, dd) => { m.duty[g] = dd == null ? null : dd; },
     servo: (g, deg) => { if (deg == null) delete m.servo[g]; else m.servo[g] = deg; },
     tone: (g, f) => { m.tone[g] = f ? { f } : null; },
-    echo: g => { const e = circ.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === g); return e ? e.lastEcho : null; },
-    print: t => serAppend(t),
+    echo: g => { const e = C.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === g); return e ? e.lastEcho : null; },
+    adc: (ch, spec) => {
+      const e = C.elems.find(x => x.type === 'ADC'); if (!e) return { err: 'Es ist kein MCP3008 in der Schaltung.' };
+      const v = i => S.v[e.nd[i]], gnd = v(3);
+      if (!(v(0) - gnd > 2.4)) return { err: 'MCP3008 ohne Versorgung: VDD an 3,3 V und DGND an Masse anschließen.' };
+      if (!(v(1) - v(2) > 2.0)) return { err: 'MCP3008 ohne Referenzspannung: VREF an 3,3 V und AGND an Masse anschließen.' };
+      const pins = e.spi || {};
+      for (const [nm, k] of [['CLK', 'clk'], ['DOUT (MISO)', 'miso'], ['DIN (MOSI)', 'mosi'], ['CS', 'cs']]) {
+        const have = pins[k], want = k === 'cs' && spec.hw ? [8, 7] : [spec[k]];
+        if (!want.includes(have)) return { err: 'MCP3008 antwortet nicht: ' + nm + ' ' + (have >= 0 ? 'liegt an GPIO' + have : 'ist mit keinem GPIO verbunden') + ', erwartet wird GPIO' + want.join(' oder GPIO') + (spec.hw ? ' (Hardware-SPI)' : '') + '.' };
+      }
+      const vr = v(1) - v(2), val = Math.max(0, Math.min(1, (v(8 + ch) - v(2)) / vr)); return { value: val, raw: Math.round(val * 1023) };
+    },
+    print: t => (ctx && ctx.print ? ctx.print(t) : serAppend(t)),
   };
 }
 function startPyProgram() {
@@ -1943,15 +1964,7 @@ function piEval(o) {
   if (o.pos) Object.keys(o.pos).forEach(id => { const w = E.wm.get(+id); if (w) { w.pos = o.pos[id]; w.light = o.pos[id]; } });
   const comp = PY.compile(o.code != null ? o.code : (sch.code || ''));
   if (!comp.ok) { res.err = 'Fehler in Zeile ' + comp.errors[0].line + ': ' + comp.errors[0].msg; return res; }
-  const node = g => el.nd[el.pinNode(g)], MODE = { out: 1, in: 0, up: 2, down: 3 };
-  const io = {
-    setMode: (g, md) => { m.mode[g] = MODE[md]; if (md === 'up') m.lastDig[g] = 1; if (md === 'out') m.duty[g] = null; },
-    write: (g, v, vt) => { m.out[g] = v ? 1 : 0; m.duty[g] = null; const pl = m.pulse[g] || (m.pulse[g] = {}); if (v) { pl.rise = vt == null ? s.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? s.t : vt; },
-    read: g => { if (m.mode[g] === 1) return m.level[g]; if (m.mode[g] === 2 && s.t < 2e-3) return 1; const vv = s.v[node(g)]; if (vv > 2.0) m.lastDig[g] = 1; else if (vv < 1.0) m.lastDig[g] = 0; return m.lastDig[g]; },
-    pwm: (g, dd) => { m.duty[g] = dd == null ? null : dd; }, servo: (g, deg) => { if (deg == null) delete m.servo[g]; else m.servo[g] = deg; }, tone: (g, f) => { m.tone[g] = f ? { f } : null; },
-    echo: g => { const e = c.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === g); return e ? e.lastEcho : null; },
-    print: t => { res.out += t; },
-  };
+  const io = makeIOPi(el, { sim: s, circ: c, print: t => { res.out += t; } });
   const runner = PY.createRunner(comp.program, io); runner.start();
   const dt = 5e-5, n = Math.round((o.T || 2) / dt), script = (o.script || []).slice().sort((a, b) => a.t - b.t); let si = 0;
   const leds = c.elems.filter(e => e.led && e.part);
@@ -1973,6 +1986,11 @@ const PC_SERVO = [['PI', 12, 0], ['SERVO', 24, 14], ['GND', 24, 18]], PW_SERVO =
 const PC_ULT = [['PI', 12, 0], ['HCSR04', 30, 10, 0, '', { pos: 0.5 }], ['R', 22, 16, 0, '1k'], ['R', 22, 18, 1, '2k'], ['GND', 22, 22], ['GND', 30, 16], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], PW_ULT = [[30, 10, 26, 10, 26, 0, 20, 0], [20, 14, 24, 14, 24, 12, 30, 12], [20, 16, 22, 16], [22, 16, 22, 18], [30, 14, 28, 14, 28, 16, 26, 16], [12, 10, 10, 10]];
 const PC_ULT_BAD = [['PI', 12, 0], ['HCSR04', 30, 10, 0, '', { pos: 0.246 }], ['GND', 30, 16]], PW_ULT_BAD = [[30, 10, 26, 10, 26, 0, 20, 0], [20, 14, 24, 14, 24, 12, 30, 12], [30, 14, 28, 14, 28, 16, 20, 16]];
 const PC_ULT_OK = [['PI', 12, 0], ['HCSR04', 30, 10, 0, '', { pos: 0.246 }], ['R', 22, 16, 0, '1k'], ['R', 22, 18, 1, '2k'], ['GND', 22, 22], ['GND', 30, 16]], PW_ULT_OK = [[30, 10, 26, 10, 26, 0, 20, 0], [20, 14, 24, 14, 24, 12, 30, 12], [20, 16, 22, 16], [22, 16, 22, 18], [30, 14, 28, 14, 28, 16, 26, 16]];
+const MCP_SPI_W = [[28, 8, 26, 8, 26, 6, 26, -2, 26, -4, 10, -4, 10, 0, 12, 0], [28, 6, 26, 6], [20, 14, 28, 14], [20, 16, 28, 16], [28, 18, 24, 18, 24, 20, 20, 20], [20, 12, 26, 12, 28, 12], [28, 10, 26, 10, 26, 12]], MCP_CS_W = [[28, 20, 26, 20, 26, 22, 20, 22]];
+const PC_MCP_POT = [['PI', 12, 0], ['MCP3008', 28, 6], ['POT', 40, 6, 1, '10k', { pos: 0.4 }], ['GND', 40, 10]], POTW = [[40, 6, 40, -2, 26, -2], [42, 8, 44, 8, 44, 4, 36, 4, 36, 6, 34, 6]];
+const PW_MCP_POT = MCP_SPI_W.concat(MCP_CS_W, POTW), PW_MCP_POT_NOCS = MCP_SPI_W.concat(POTW);
+const PC_MCP_LDR = [['PI', 12, 0], ['MCP3008', 28, 6], ['LDR', 40, 6, 1, '', { pos: 0.5 }], ['R', 40, 10, 1, '10k'], ['GND', 40, 14], ['R', 10, 10, 2, '220'], ['LED', 6, 10, 2, 'rot'], ['GND', 2, 10]], PW_MCP_LDR = MCP_SPI_W.concat(MCP_CS_W, [[40, 6, 40, -2, 26, -2], [40, 10, 38, 10, 38, 6, 34, 6], [12, 10, 10, 10]]);
+const PC_MCP_TMP = [['PI', 12, 0], ['MCP3008', 28, 6], ['TMP36', 44, 8, 2, '', { pos: 0.394 }], ['GND', 40, 4]], PW_MCP_TMP = MCP_SPI_W.concat(MCP_CS_W, [[40, 8, 38, 8, 38, -2, 26, -2], [40, 6, 34, 6]]);
 const pct = (parts, wires, code) => () => ({ parts, wires, scopes: [], tempo: 0.75, code });
 const PYH = 'from gpiozero import LED, Button\nfrom time import sleep\nfrom signal import pause\n';
 function chkPiBlink(n) {
@@ -2073,6 +2091,40 @@ const PI_TASKS = [
     hint: 'Der Echo-Pin des HC-SR04 liefert 5 V, der GPIO-Pin verträgt nur 3,3 V. Ein Spannungsteiler aus 1 kΩ (vom Echo zum GPIO) und 2 kΩ (vom GPIO nach Masse) macht aus 5 V etwa 3,3 V.',
     check() { const R = piEval({ T: 1.5 }); if (R.err) return codeFail(R); const burn = burnTxt(R.E), lines = R.out.split('\n').filter(x => /cm/.test(x)); const nR = sch.parts.filter(p => p.k === 'R').length;
       return [RES(!burn.length, burn.length ? burn[0] : 'Der Pi bleibt heil.'), RES(nR >= 2, nR >= 2 ? 'Zwei Widerstände bilden den Spannungsteiler.' : 'Für den Spannungsteiler fehlen Widerstände (' + nR + ' von 2).'), RES(lines.length >= 2, lines.length >= 2 ? 'Der Sensor liefert Messwerte.' : 'Es kommen keine Messwerte an.')]; } },
+  { id: 'p10', lab: 'pi', cat: 'Analoge Sensoren (MCP3008)', title: 'Poti über den MCP3008 lesen', level: 2,
+    start: pct(PC_MCP_POT, PW_MCP_POT, 'from gpiozero import MCP3008\nfrom time import sleep\n\npoti = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\n\nwhile True:\n    # Hier: den Poti-Wert in Prozent ausgeben, zum Beispiel "Poti: 40 %"\n    sleep(0.5)\n'),
+    solMake: pct(PC_MCP_POT, PW_MCP_POT, 'from gpiozero import MCP3008\nfrom time import sleep\n\npoti = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\n\nwhile True:\n    print("Poti:", round(poti.value * 100), "%")\n    sleep(0.5)\n'),
+    text: 'Der Raspberry Pi hat keine analogen Eingänge. Der Wandler MCP3008 misst das Poti an Kanal 0. Gib den Wert in Prozent aus, genau in der Form „Poti: 40 %“. Den Regler stellst du am Poti ein.',
+    hint: 'poti.value liefert eine Zahl von 0.0 bis 1.0. Mit 100 malnehmen und mit round() auf eine ganze Zahl runden: print("Poti:", round(poti.value * 100), "%").',
+    check() { const P = sch.parts.find(p => p.k === 'POT'); if (!P) return [RES(false, 'Das Poti fehlt.')];
+      const a = piEval({ T: 1.2, pos: { [P.id]: 0.1 } }), b = piEval({ T: 1.2, pos: { [P.id]: 0.9 } }); if (a.err) return codeFail(a);
+      const val = r => { const m = r.out.trim().split('\n').pop().match(/^Poti: (\d+) %$/); return m ? +m[1] : null; }, x = val(a), y = val(b);
+      return [RES(x != null && y != null, x != null && y != null ? 'Die Ausgabe hat das richtige Format.' : 'Erwartet wird eine Zeile wie „Poti: 40 %“. Erhalten: ' + JSON.stringify(a.out.slice(-30))), RES(x != null && y != null && Math.abs(x - y) > 60, x != null && y != null ? 'Poti unten ' + x + ' %, Poti oben ' + y + ' % (sie sollen sich deutlich unterscheiden).' : 'Kein Messwert.')]; } },
+  { id: 'p11', lab: 'pi', cat: 'Analoge Sensoren (MCP3008)', title: 'Dunkelheits-Anzeige', level: 3,
+    start: pct(PC_MCP_LDR, PW_MCP_LDR, 'from gpiozero import MCP3008, LED\nfrom time import sleep\n\nlicht = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\nled = LED(17)\n\nwhile True:\n    # Hier: LED an, wenn der Messwert unter 0.3 liegt (dunkel), sonst aus\n    sleep(0.2)\n'),
+    solMake: pct(PC_MCP_LDR, PW_MCP_LDR, 'from gpiozero import MCP3008, LED\nfrom time import sleep\n\nlicht = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\nled = LED(17)\n\nwhile True:\n    if licht.value < 0.3:\n        led.on()\n    else:\n        led.off()\n    sleep(0.2)\n'),
+    text: 'Fotowiderstand und 10-kΩ-Widerstand bilden einen Spannungsteiler, der MCP3008 misst ihn an Kanal 0. Je dunkler, desto kleiner der Messwert. Die LED an GPIO17 soll leuchten, wenn der Wert unter 0.3 liegt (dunkel), sonst aus sein. Das Licht stellst du am Fotowiderstand ein.',
+    hint: 'licht.value ist eine Zahl zwischen 0.0 und 1.0. if licht.value < 0.3: led.on() else: led.off().',
+    check() { const L = theLed(), P = sch.parts.find(p => p.k === 'LDR'); if (!L || !P) return [RES(false, 'LED oder Fotowiderstand fehlt.')];
+      const dark = piEval({ T: 1, pos: { [P.id]: 0.15 } }), bright = piEval({ T: 1, pos: { [P.id]: 0.9 } }); if (dark.err) return codeFail(dark);
+      const a = ledMA(sampleAt(dark, 0.95), L.id) > 2, b = ledMA(sampleAt(bright, 0.95), L.id) > 2;
+      return [RES(a, 'Dunkel: LED ist ' + (a ? 'an' : 'aus, soll aber an sein') + '.'), RES(!b, 'Hell: LED ist ' + (b ? 'an, soll aber aus sein' : 'aus') + '.')]; } },
+  { id: 'p12', lab: 'pi', cat: 'Analoge Sensoren (MCP3008)', title: 'Temperatur ausgeben', level: 3,
+    start: pct(PC_MCP_TMP, PW_MCP_TMP, 'from gpiozero import MCP3008\nfrom time import sleep\n\ntemp = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\n\nwhile True:\n    volt = temp.voltage        # Spannung in Volt (bei 3,3 V Referenz)\n    # Hier: in Grad Celsius umrechnen und als "Temperatur: 25.0 °C" ausgeben\n    #       (TMP36: 0,5 V bei 0 Grad, 10 mV pro Grad)\n    sleep(0.5)\n'),
+    solMake: pct(PC_MCP_TMP, PW_MCP_TMP, 'from gpiozero import MCP3008\nfrom time import sleep\n\ntemp = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\n\nwhile True:\n    volt = temp.voltage\n    celsius = (volt - 0.5) * 100\n    print("Temperatur:", round(celsius, 1), "°C")\n    sleep(0.5)\n'),
+    text: 'Der Temperatursensor TMP36 liefert 0,5 V bei 0 °C und 10 mV pro Grad. Rechne die Spannung in Grad Celsius um und gib sie aus, genau in der Form „Temperatur: 25.0 °C“. Die Temperatur stellst du am Sensor ein.',
+    hint: 'celsius = (volt - 0.5) * 100. Mit round(celsius, 1) auf eine Nachkommastelle runden.',
+    check() { const T = sch.parts.find(p => p.k === 'TMP36'); if (!T) return [RES(false, 'Der Temperatursensor fehlt.')];
+      const a = piEval({ T: 1.2, pos: { [T.id]: 0.394 } }), b = piEval({ T: 1.2, pos: { [T.id]: 0.6 } }); if (a.err) return codeFail(a);
+      const val = r => { const m = r.out.trim().split('\n').pop().match(/^Temperatur: (-?\d+(?:\.\d+)?) °C$/); return m ? +m[1] : null; }, x = val(a), y = val(b);
+      return [RES(x != null && y != null, x != null && y != null ? 'Die Ausgabe hat das richtige Format.' : 'Erwartet wird eine Zeile wie „Temperatur: 25.0 °C“. Erhalten: ' + JSON.stringify(a.out.slice(-34))), RES(x != null && Math.abs(x - 25) <= 1.5, x != null ? 'Bei 25 °C zeigt das Programm ' + x + ' °C.' : 'Kein Wert.'), RES(y != null && Math.abs(y - 59) <= 1.5, y != null ? 'Bei 59 °C zeigt das Programm ' + y + ' °C.' : 'Kein Wert.')]; } },
+  { id: 'pf4', lab: 'pi', cat: 'Fehlersuche im Code', title: 'Der Wandler antwortet nicht', level: 3,
+    start: pct(PC_MCP_POT, PW_MCP_POT_NOCS, 'from gpiozero import MCP3008\nfrom time import sleep\n\npoti = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\n\nwhile True:\n    print("Poti:", round(poti.value * 100), "%")\n    sleep(0.5)\n'),
+    solMake: pct(PC_MCP_POT, PW_MCP_POT, 'from gpiozero import MCP3008\nfrom time import sleep\n\npoti = MCP3008(channel=0, clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8)\n\nwhile True:\n    print("Poti:", round(poti.value * 100), "%")\n    sleep(0.5)\n'),
+    text: 'Das Programm ist richtig, aber die Konsole meldet, dass der MCP3008 nicht antwortet. Lies die Fehlermeldung: Sie sagt, welche Leitung fehlt oder falsch liegt. Ergänze die Verdrahtung im Plan.',
+    hint: 'Der Chip braucht vier Signalleitungen: Takt (CLK), Daten vom Chip (DOUT/MISO), Daten zum Chip (DIN/MOSI) und Chip-Select (CS). Die Pins stehen im Programm: clock_pin=23, miso_pin=24, mosi_pin=25, select_pin=8. Welche Leitung fehlt?',
+    check() { const R = piEval({ T: 1.2 }); if (R.err) return [RES(false, R.err)]; const ok = /Poti: \d+ %/.test(R.out);
+      return [RES(true, 'Das Programm läuft ohne Fehlermeldung.'), RES(ok, ok ? 'Der Wandler liefert Messwerte.' : 'Es kommen keine Messwerte an.')]; } },
 ];
 
 /* ---- SchaltLab: Aufgaben mit Messung ---- */
@@ -2285,6 +2337,7 @@ function llSpec(p) {
     case 'LAMP': return { ll: { k: 'LAMP', n: 3, v: v || '6V 0.1A' }, pm: [0, 1], ...two };
     case 'SPK': return { ll: { k: 'SPK', n: 4, v }, pm: [0, 1], ...two };
     case 'UNO': return { ll: { k: 'UNO', v: 'Uno R3' }, pm: UNO_PM };
+    case 'MCP3008': return { ll: { k: 'IC', n: 16, v: 'MCP3008', sk: true }, pm: [15, 14, 13, 8, 12, 11, 10, 9, 0, 1, 2, 3, 4, 5, 6, 7] };
     case 'SERVO': return { ll: { k: 'SIP', n: 3, v: 'Servo' }, pm: [2, 1, 0] };          // Stecker: Masse, Plus, Signal
     case 'HCSR04': return { ll: { k: 'SIP', n: 4, v: 'HC-SR04' }, pm: [0, 1, 2, 3] };
     case 'LCDI2C': return { ll: { k: 'SIP', n: 4, v: 'LCD I2C' }, pm: [0, 1, 2, 3] };
@@ -2424,7 +2477,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v66</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v67</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
