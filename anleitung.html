@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tonfunk Lab – Anleitung für Azubis</title><link rel="icon" href="icon-192.png"><style>
+:root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:8px}header img{height:42px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:30px 0 8px;border-bottom:2px solid var(--accent);padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:6px 0}small,.mute{color:var(--mute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0}
+ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
+.k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+.tip{border-left:4px solid var(--ok);padding-left:12px}
+@media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
+</style></head>
+<body><div class="wrap">
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 62</small></div></header>
+<p class="nav"><a href="index.html">← Startseite</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+
+<div class="box"><b>Tonfunk Lab</b> sind vier Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
+<ul><li><b>LochLab:</b> Schaltungen auf der Lochrasterplatine planen und ausprobieren.</li>
+<li><b>SchaltLab:</b> Stromlaufpläne zeichnen und simulieren (Spannungen, Ströme, Graphen).</li>
+<li><b>SimLab:</b> Experimente und Hausinstallation (Wechselschaltung, Schütz, FI, Drehstrom), mit Aufgaben und Fehlersuche.</li>
+<li><b>CodeLab:</b> Arduino-Programme schreiben, den Arduino im Plan verdrahten und alles gemeinsam simulieren.</li></ul></div>
+
+<h2>1. Anmelden und installieren</h2>
+<ol><li>Seite öffnen: <b>tonikaczor.github.io/lochlab</b>.</li>
+<li>Passwort eingeben (bekommst du vom Ausbilder) und <b>Vor- und Nachnamen</b> eintragen. Der Name erscheint auf Ausdrucken und bei Abgaben.</li>
+<li>Als App auf den Startbildschirm legen: <b>iPad/iPhone:</b> Teilen-Symbol → „Zum Home-Bildschirm“. <b>Android/Laptop (Chrome):</b> Menü → „App installieren“.</li>
+<li>Nach dem ersten Öffnen funktionieren die Programme auch <b>ohne Internet</b>.</li></ol>
+<p class="mute">Alles, was du baust, bleibt auf deinem Gerät (Menü → „Gespeicherte Schaltungen“ oder „Projekte öffnen“). Wechselst du das Gerät, nutze „Teilen“.</p>
+
+<h2>2. Grundbedienung</h2>
+<ul><li><b>Menü</b> (☰ oben links), <b>Haus-Symbol</b> oder Tonfunk-Logo: zurück zur Startseite.</li>
+<li><b>Bauteil wählen</b> (Liste links, am Handy unten; mit der Lupe suchen) → auf die Fläche tippen. <b>Drehen</b>: Bauteil antippen und „Drehen“.</li>
+<li><b>Draht</b> ziehen: Werkzeug „Draht“, von Anschluss zu Anschluss ziehen. Drähte verbinden nur an ihren Enden und Knickpunkten.</li>
+<li><b>Simulieren</b>: Schalter oben auf „Sim“. Grün = positive Spannung, Rot = negative, gelbe Punkte = Strom. Schalter und Taster antippen, Regler (Poti, Licht, Temperatur) am Bauteil oder links im Bedienfeld verstellen.</li>
+<li><b>Messen</b>: Werkzeug „Messen“, Voltmeter oder Amperemeter setzen. <b>Graph</b>: Werkzeug „Graph“ und Bauteil antippen.</li>
+<li><b>Beispiele</b> im Menü zeigen fertige Schaltungen zum Ausprobieren.</li>
+<li><b>Zerstörte Bauteile</b>: Zu viel Spannung oder Strom zerstört ein Bauteil (Rauch, Knall, Erklärung). Das gehört dazu: Wert prüfen und neu versuchen.</li></ul>
+
+<h2>3. Aufgaben bearbeiten</h2>
+<ol><li>Menü oder Knopf <span class="k">📝 Aufgaben</span> → Aufgabe wählen. Du bekommst eine <b>Startschaltung</b> und rechts (am Handy oben) den Aufgabentext.</li>
+<li>Baue die Schaltung (SchaltLab, SimLab) oder schreibe das Programm (CodeLab).</li>
+<li><span class="k">Lösung prüfen</span> drücken: Grüne Häkchen ✓ sind richtig, rote ✗ sagen dir, was nicht stimmt. Du kannst beliebig oft prüfen.</li>
+<li><span class="k">Tipp</span> hilft, wenn du nicht weiterkommst. <span class="k">Aufgabe beenden</span> schließt die Aufgabe.</li>
+<li><b>Fehlersuche-Aufgaben</b>: Eine Schaltung hat einen versteckten Fehler. Miss mit Voltmeter und Amperemeter, wähle das defekte Bauteil aus und tippe auf <span class="k">Fehler melden</span>. Weniger Versuche geben mehr Punkte.</li>
+<li><b>Abgeben</b>: Menü → <span class="k">Teilen</span> → Link kopieren und dem Ausbilder schicken (E-Mail, Teams, Messenger). Im Link steckt deine Schaltung, bei CodeLab auch dein Programm.</li></ol>
+
+<h2>4. CodeLab: Arduino programmieren</h2>
+<ul><li>Unten steht der <b>Editor</b>, rechts oder darunter der <b>Serial-Monitor</b> (Ausgaben mit <code>Serial.println</code>, Eingaben unten ins Feld).</li>
+<li><span class="k">▶ Start</span> übersetzt und startet das Programm. Fehler stehen mit <b>Zeilennummer</b> in der Statuszeile und im Serial-Monitor.</li>
+<li><span class="k">Neu starten</span> setzt Programm und Schaltung zurück. <b>Tempo</b> ×10 oder ×100 beschleunigt lange <code>delay()</code>.</li>
+<li>Der Arduino hat im Plan Pins D0 bis D13, A0 bis A5, 5V und GND. LEDs brauchen einen <b>Vorwiderstand</b>, sonst wird der Pin zerstört.</li>
+<li><span class="k">⤓ .ino</span> speichert das Programm als Datei für die Arduino-IDE, <span class="k">Kopieren</span> legt es in die Zwischenablage.</li></ul>
+
+<h2>5. Wenn etwas nicht klappt</h2>
+<table><tr><th>Problem</th><th>Lösung</th></tr>
+<tr><td>Seite zeigt alte Version oder neue Beispiele fehlen</td><td>App schließen und neu öffnen, notfalls Seite neu laden.</td></tr>
+<tr><td>Name falsch</td><td>Menü → „Name ändern“ (LochLab) bzw. Abmelden und neu anmelden.</td></tr>
+<tr><td>Meldung „Keine Spannungsquelle“</td><td>Quelle (Batterie, Netz, Arduino) und Masse im Plan vorhanden und verdrahtet?</td></tr>
+<tr><td>Bauteil verbindet nicht</td><td>Drahtenden müssen genau auf den Anschlüssen liegen. Anschluss antippen, Draht bis zum Zielpunkt ziehen.</td></tr>
+<tr><td>Programm macht nichts</td><td>Hast du <code>pinMode</code> gesetzt? Hast du ▶ Start gedrückt und „Sim“ eingeschaltet?</td></tr></table>
+
+</div></body></html>

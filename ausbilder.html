@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tonfunk Lab – Hinweise für Ausbilder</title><link rel="icon" href="icon-192.png"><style>
+:root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:8px}header img{height:42px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:30px 0 8px;border-bottom:2px solid var(--accent);padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:6px 0}small,.mute{color:var(--mute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0}
+ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
+.k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+.tip{border-left:4px solid var(--ok);padding-left:12px}
+@media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
+</style></head>
+<body><div class="wrap">
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Hinweise für Ausbilder</h1><small>Stand: Oktober 2026 · Version 62</small></div></header>
+<p class="nav"><a href="index.html">← Startseite</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+
+<div class="box tip"><b>Kurz:</b> Azubis bearbeiten Aufgaben selbstständig, das Programm prüft die Lösung. Im <b>Lehrer-Bereich</b> verteilst du Aufgaben per Link, prüfst Abgaben und siehst eine Auswertung. Das Passwort für den Lehrer-Bereich und das automatische Layout kennst nur du. Gib es nicht weiter.</div>
+
+<h2>1. Vorbereitung</h2>
+<ul><li>Azubis öffnen <b>tonikaczor.github.io/lochlab</b>, geben das Zugangspasswort und ihren Namen ein (siehe <a href="anleitung.html">Anleitung für Azubis</a>).</li>
+<li>Das Zugangspasswort ist ein anderes als das Ausbilder-Passwort. Es schützt nur die Seite vor fremden Aufrufen.</li>
+<li>Nach dem ersten Laden läuft alles offline. Neue Versionen erscheinen beim nächsten Öffnen mit Internet.</li></ul>
+
+<h2>2. Aufgabe verteilen</h2>
+<ol><li>Im Programm (SchaltLab, SimLab oder CodeLab): Menü → <b>Lehrer-Bereich</b> → Ausbilder-Passwort.</li>
+<li>Aufgabe wählen → <span class="k">Aufgabe als Link teilen</span>. Der Link öffnet die Aufgabe mit Startschaltung (und Startprogramm im CodeLab) direkt bei den Azubis.</li>
+<li>Den Link in euer Kursmedium stellen (Teams, E-Mail, QR-Code).</li>
+<li>Mit <span class="k">Musterlösung öffnen</span> siehst du die Lösung, mit <span class="k">Startschaltung öffnen</span> den Ausgangszustand.</li></ol>
+
+<h2>3. Abgaben prüfen</h2>
+<ol><li>Azubi schickt den <b>Teilen-Link</b> (Menü → Teilen).</li>
+<li>Lehrer-Bereich → Namen eintragen, Link in „Link oder Text“ einfügen → <span class="k">Prüfen</span>.</li>
+<li>Du siehst die Prüfpunkte (✓/✗) und die Prozentzahl, ohne die Abgabe zu öffnen. Mit <span class="k">In Auswertung speichern</span> landet das Ergebnis in der Liste.</li>
+<li><span class="k">Als Tabelle kopieren</span> liefert Name, Aufgabe, Ergebnis und Zeit zum Einfügen in Excel. <span class="k">Liste leeren</span> löscht die Auswertung auf diesem Gerät.</li></ol>
+<p class="mute">Fehlersuche-Aufgaben werden direkt in der App beantwortet und lassen sich nicht per Link abgeben. Die Auswertung bleibt auf dem Gerät, auf dem du sie speicherst.</p>
+
+<h2>4. Eigene Fehlersuche bauen (SimLab)</h2>
+<p>Im Lehrer-Zustand zeigt jedes angetippte Bauteil unter den Eigenschaften „Fehler (Lehrer)“: <i>unterbrochen</i> oder <i>Kurzschluss</i>. So baust du eine Schaltung mit verstecktem Fehler und verteilst sie über „Teilen“. Azubis sehen den Fehler nicht.</p>
+
+<h2>5. Layout automatisch erzeugen</h2>
+<p>Menü → <b>Layout automatisch erzeugen</b> (Ausbilder-Passwort) macht aus einem Stromlaufplan einen Vorschlag für die Lochrasterplatine (LochLab), auch mit Arduino, Schaltern, Lampen und Sensoren. Das Ergebnis ist ein <b>Vorschlag</b>: Pinbelegung von Transistoren und ICs sowie die Reihenfolge der Sensoranschlüsse vor dem Löten mit dem Datenblatt vergleichen.</p>
+
+<h2>6. Aufgabenübersicht</h2>
+<p>Insgesamt 49 Aufgaben mit automatischer Prüfung. Niveau: ● einfach bis ●●●● anspruchsvoll.</p>
+<h3>SchaltLab (7 Aufgaben)</h3><table><tr><th>Bereich</th><th>Aufgabe</th><th>Niveau</th></tr><tr><td>Grundlagen</td><td>Spannungsteiler für 6 V</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Vorwiderstand für die LED</td><td>●○○○</td></tr><tr><td>Transistoren</td><td>Transistor als Schalter</td><td>●●○○</td></tr><tr><td>Filter und Gleichrichter</td><td>Tiefpass mit 1 kHz Grenzfrequenz</td><td>●●●○</td></tr><tr><td>Filter und Gleichrichter</td><td>Netzteil: Einweggleichrichter</td><td>●●●○</td></tr><tr><td>Fehlersuche</td><td>Transistorschalter: die LED bleibt aus</td><td>●●○○</td></tr><tr><td>Fehlersuche</td><td>Netzteil liefert keine Gleichspannung</td><td>●●○○</td></tr></table><h3>SimLab (19 Aufgaben)</h3><table><tr><th>Bereich</th><th>Aufgabe</th><th>Niveau</th></tr><tr><td>Grundlagen</td><td>Ausschaltung</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Zwei Schalter in Reihe (UND)</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Zwei Schalter parallel (ODER)</td><td>●○○○</td></tr><tr><td>Hausinstallation</td><td>Wechselschaltung</td><td>●●○○</td></tr><tr><td>Hausinstallation</td><td>Kreuzschaltung (drei Orte)</td><td>●●●○</td></tr><tr><td>Hausinstallation</td><td>Treppenhaus mit Stromstoßschalter</td><td>●●●○</td></tr><tr><td>Hausinstallation</td><td>Kurzschluss und Sicherungsautomat</td><td>●●○○</td></tr><tr><td>Hausinstallation</td><td>Steckdose mit FI-Schutzschalter</td><td>●●●○</td></tr><tr><td>Hausinstallation</td><td>Schütz-Steuerung</td><td>●●●○</td></tr><tr><td>Hausinstallation</td><td>Selbsthaltung (Start und Stopp)</td><td>●●●●</td></tr><tr><td>Fehlersuche</td><td>Wechselschaltung: Lampe bleibt dunkel</td><td>●●○○</td></tr><tr><td>Fehlersuche</td><td>Heizlüfter: der Automat fliegt sofort</td><td>●●○○</td></tr><tr><td>Fehlersuche</td><td>Schütz zieht nicht an</td><td>●●●○</td></tr><tr><td>Fehlersuche</td><td>Treppenhaus: Licht geht nicht</td><td>●●●○</td></tr><tr><td>Fehlersuche</td><td>Spannungsteiler zeigt 9 V</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Zwei Lampen getrennt schalten</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Öffner-Taster (Ruhestromkreis)</td><td>●○○○</td></tr><tr><td>Drehstrom</td><td>Drehstrommotor schützen schalten</td><td>●●●●</td></tr><tr><td>Fehlersuche</td><td>Zwei Lampen: eine bleibt dunkel</td><td>●●○○</td></tr></table><h3>CodeLab (23 Aufgaben)</h3><table><tr><th>Bereich</th><th>Aufgabe</th><th>Niveau</th></tr><tr><td>Grundlagen</td><td>Dreimal blinken</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Taster schaltet die LED</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Hallo im Serial-Monitor</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Wechselblinker</td><td>●●○○</td></tr><tr><td>Sensoren und Töne</td><td>Poti-Schwelle</td><td>●●○○</td></tr><tr><td>Sensoren und Töne</td><td>Servo auf 90 Grad</td><td>●○○○</td></tr><tr><td>Sensoren und Töne</td><td>Kammerton a</td><td>●○○○</td></tr><tr><td>Sensoren und Töne</td><td>Halbe Helligkeit (PWM)</td><td>●○○○</td></tr><tr><td>Grundlagen</td><td>Zählen bis 10</td><td>●●○○</td></tr><tr><td>Sensoren und Töne</td><td>Abstandswarner</td><td>●●●○</td></tr><tr><td>Fehlersuche im Code</td><td>Die LED bleibt dunkel</td><td>●○○○</td></tr><tr><td>Fehlersuche im Code</td><td>Der Taster arbeitet verkehrt herum</td><td>●○○○</td></tr><tr><td>Fehlersuche im Code</td><td>Fehlermeldung lesen</td><td>●○○○</td></tr><tr><td>Mehrere LEDs</td><td>Lauflicht</td><td>●●○○</td></tr><tr><td>Mehrere LEDs</td><td>Binärzähler</td><td>●●●○</td></tr><tr><td>Grundlagen</td><td>Tastendrücke zählen</td><td>●●●○</td></tr><tr><td>Sensoren und Töne</td><td>Poti dimmt die LED</td><td>●●○○</td></tr><tr><td>Sensoren und Töne</td><td>Sirene</td><td>●●○○</td></tr><tr><td>Sensoren und Töne</td><td>Temperaturwarnung</td><td>●●●○</td></tr><tr><td>Grundlagen</td><td>Würfel</td><td>●●●○</td></tr><tr><td>Sensoren und Töne</td><td>Servo fährt hin und her</td><td>●●○○</td></tr><tr><td>Fehlersuche im Code</td><td>Der Servo rührt sich nicht</td><td>●○○○</td></tr><tr><td>Fehlersuche im Code</td><td>Zählt falsch</td><td>●●○○</td></tr></table>
+
+<h2>7. Technik und Datenschutz</h2>
+<ul><li>Die Programme sind statische Webseiten (GitHub Pages). Es gibt keinen Server mit Benutzerdaten und keine Anmeldung. Schaltungen, Ergebnisse und Namen liegen nur im Speicher des jeweiligen Geräts.</li>
+<li>Teilen-Links enthalten die ganze Schaltung (und im CodeLab das Programm), sonst nichts.</li>
+<li>Geräte ohne aktuelle Version: App schließen und neu öffnen.</li>
+<li>Die Prüfung vergleicht das <b>Verhalten</b> der Schaltung in der Simulation, nicht das Aussehen. Mehrere richtige Lösungen sind möglich.</li></ul>
+
+</div></body></html>
