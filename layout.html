@@ -1305,6 +1305,7 @@ function openMenu(){
   sheet('Menü',(b,close)=>{
     const rows=[
       ['new','Neues Projekt','Leere Platine anlegen'],
+      ['ex','Beispiele','Fertige Layouts zum Nachbauen'],
       ['open','Projekte öffnen','Auf diesem iPad gespeichert'],
       ['rename','Projekt umbenennen',doc.name],
       ['user','Name ändern',userName()||'noch nicht eingetragen'],
@@ -1359,6 +1360,7 @@ async function loadShared(){
   d.id=uid();d.name=(d.name||'Projekt')+' (geteilt)';load(d);toast('Geteiltes Projekt geladen');return true;
 }
 function menuAct(m){
+  if(m==='ex'){openExamples();return;}
   if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid},doc.name);return;}
   if(m==='new')confirmNew(()=>boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));}));
   else if(m==='open')openList();
@@ -1373,6 +1375,15 @@ function menuAct(m){
   else if(m==='schalt')location.href='schaltplan.html';
   else if(m==='start')location.href='index.html';
   else if(m==='help')openHelp();
+}
+function openExamples(){
+  const L=window.LOCH_EX||[];
+  sheet('Beispiele',(b,close)=>{
+    let h='',last='';
+    L.forEach((e,i)=>{if(e.cat!==last){last=e.cat;h+=`<div class="gh">${esc(e.cat)}</div>`;}h+=`<button class="row" data-i="${i}"><div class="grow"><b>${esc(e.name)}</b><small>${esc(e.info)}</small></div></button>`;});
+    b.innerHTML=h||'<p>Keine Beispiele vorhanden.</p>';
+    b.addEventListener('click',ev=>{const r=ev.target.closest('.row');if(!r)return;const e=L[+r.dataset.i];close();confirmNew(()=>{save();const d=JSON.parse(JSON.stringify(e.doc));d.id=uid();d.name=e.name;d.updated=Date.now();load(d);toast('Beispiel geladen');});});
+  });
 }
 function confirmNew(next){
   const np=doc.items.length;
@@ -1545,7 +1556,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v52</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v53</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
@@ -1670,6 +1681,7 @@ buildNav();
   if(d)load(d);else{doc=newDoc();resetHist();save();afterChange();}
   fit();renderCtx();
   if(/[?&]neu\b/.test(location.search))setTimeout(()=>menuAct('new'),300);
+  else if(/[?&]bsp\b/.test(location.search))setTimeout(()=>menuAct('ex'),300);
 tryJob();
 loadShared();
 })();
@@ -1680,5 +1692,6 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <script src="simics.js"></script>
 <script src="simcore.js"></script>
 <script src="simui.js"></script>
+<script src="lochbeispiele.js"></script>
 </body>
 </html>

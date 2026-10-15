@@ -1,0 +1,273 @@
+/* Zusätzliche Beispiele (alle Labs). Format wie EXAMPLES in schaltplan.js:
+   Teile [Art, x, y, Drehung, Wert, Zusatz], Drähte als Linienzüge x1,y1,x2,y2,… (Knickpunkte nur dort, wo etwas anschließt). */
+(function () {
+  const EX = [
+    /* ---------- SchaltLab ---------- */
+    { cat: 'Dioden', name: 'Diode: Durchlass- und Sperrrichtung', info: 'Links leitet die Diode (Voltmeter etwa 0,7 V), rechts ist sie umgekehrt eingebaut und sperrt: fast die ganze Spannung fällt an der Diode ab.',
+      make: () => ({ parts: [['BAT', 4, 4, 1, '5'], ['R', 10, 2, 1, '470'], ['D', 10, 6, 1, '1N4148'], ['VM', 14, 6, 1, ''], ['R', 22, 2, 1, '470'], ['D', 22, 10, 3, '1N4148'], ['VM', 26, 6, 1, ''], ['GND', 4, 14]],
+        wires: [[4, 4, 4, 2, 10, 2, 22, 2], [10, 6, 14, 6], [14, 10, 10, 10, 10, 12], [22, 6, 26, 6], [26, 10, 22, 10, 22, 12], [4, 8, 4, 12, 10, 12, 22, 12], [4, 12, 4, 14]], scopes: [] }) },
+    { cat: 'Grundlagen', name: 'Kondensator laden und entladen', info: 'Wechsler umlegen: Der Kondensator lädt sich über 10 kΩ auf 9 V auf und entlädt sich wieder. Die Zeitkonstante beträgt 1 s. Im Graph sieht man die Kurve.',
+      make: () => ({ parts: [['SPDT', 4, 2, 0, ''], ['R', 4, 2, 2, '10k'], ['C', 0, 2, 1, '100u'], ['BAT', 10, 1, 1, '9'], ['GND', 0, 8]],
+        wires: [[8, 1, 10, 1], [10, 5, 10, 8, 8, 8, 0, 8, 0, 6], [8, 3, 8, 8]], scopes: [3], tempo: 0.75, win: 6 }) },
+    { cat: 'Grundlagen', name: 'Belasteter Spannungsteiler', info: 'Ohne Last zeigt das Voltmeter 6 V. Schalter schließen: Der Lastwiderstand liegt parallel zu R2 und die Spannung sackt auf 4 V ab.',
+      make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 8, 2, 1, '1k'], ['R', 8, 6, 1, '1k'], ['VM', 5, 6, 1, ''], ['SPST', 12, 6, 0, ''], ['R', 16, 6, 1, '1k'], ['GND', 2, 12]],
+        wires: [[2, 4, 2, 2, 8, 2], [8, 6, 5, 6], [5, 10, 8, 10], [8, 6, 12, 6], [2, 8, 2, 10, 5, 10, 8, 10, 16, 10], [2, 10, 2, 12]], scopes: [] }) },
+    { cat: 'Filter und Schwingkreise', name: 'RL-Glied am Wechselstrom', info: 'Die Spule bremst den Strom: Im Graph (gelb Spannung, grün Strom) hinkt der Strom der Spannung hinterher. Je höher die Frequenz, desto größer der Blindwiderstand der Spule.',
+      make: () => ({ parts: [['AC', 2, 4, 1, '5V 200Hz'], ['R', 4, 2, 0, '100'], ['L', 8, 2, 0, '100m'], ['GND', 2, 12]],
+        wires: [[2, 4, 2, 2, 4, 2], [12, 2, 14, 2, 14, 10, 2, 10, 2, 8], [2, 10, 2, 12]], scopes: [0] }) },
+    { cat: 'Transistoren', name: 'Dämmerungsschalter (LDR)', info: 'Im Dunkeln (Regler Licht unten) hat der Fotowiderstand viel Widerstand, die Basisspannung steigt und die LED leuchtet. Regler Licht hochziehen: Der Widerstand fällt, der Transistor sperrt, die LED geht aus.',
+      make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 6, 6, 1, '100k'], ['LDR', 6, 14, 1, '', { pos: 0.15 }], ['NPN', 8, 14, 0, 'BC547'], ['R', 10, 2, 1, '470'], ['LED', 10, 6, 1, 'rot'], ['GND', 2, 20]],
+        wires: [[2, 4, 2, 2, 6, 2, 10, 2], [6, 2, 6, 6], [6, 10, 6, 14, 8, 14], [10, 10, 10, 12], [2, 8, 2, 18, 6, 18, 10, 18, 10, 16], [2, 18, 2, 20]], scopes: [] }) },
+    { cat: 'Filter und Schwingkreise', name: 'Parallelschwingkreis (Sperrkreis)', info: 'Bei der Resonanzfrequenz (etwa 1 kHz) sperrt der Kreis aus Spule und Kondensator: Die Spannung an ihm wird groß, der Strom aus der Quelle klein. Frequenz der Quelle verändern und die Graphen vergleichen.',
+      make: () => ({ parts: [['AC', 2, 4, 1, '5V 1kHz'], ['R', 2, 2, 0, '1k'], ['L', 6, 2, 1, '10m'], ['C', 10, 2, 1, '2.5u'], ['GND', 2, 12]],
+        wires: [[2, 4, 2, 2], [6, 2, 10, 2], [2, 8, 2, 10, 6, 10, 10, 10], [6, 6, 6, 10], [10, 6, 10, 10], [2, 10, 2, 12]], scopes: [0, 2] }) },
+    { cat: 'Logik', name: 'Invertierender Verstärker (Operationsverstärker)', info: 'Das Signal wird um den Faktor 10 verstärkt (Rf : Rin = 100 k : 10 k) und gleichzeitig invertiert. Der Graph zeigt Eingang und Ausgang. Der Operationsverstärker braucht eine symmetrische Versorgung ±9 V.',
+      make: () => ({ parts: [['AC', 2, 8, 1, '100mV 1kHz'], ['R', 4, 8, 0, '10k'], ['R', 10, 2, 0, '100k'], ['OPA', 12, 8, 0, 'LM358'], ['BAT', 24, 4, 1, '9'], ['BAT', 24, 8, 1, '9'], ['GND', 2, 14], ['GND', 10, 10], ['GND', 26, 8]],
+        wires: [[2, 8, 4, 8], [8, 8, 10, 8, 12, 8], [10, 8, 10, 2], [14, 2, 20, 2, 20, 9, 16, 9], [12, 10, 10, 10], [14, 6, 14, 4, 24, 4], [14, 12, 14, 14, 24, 14, 24, 12], [24, 8, 26, 8], [2, 12, 2, 14]], scopes: [0, 3], tempo: 0.5 }) },
+    { cat: 'Logik', name: 'Monostabiler 555 (Treppenlicht-Timer)', info: 'Taster kurz drücken: Der Ausgang geht für etwa 1,1 Sekunden auf HIGH und die LED leuchtet. Die Dauer ergibt sich aus 1,1 · R · C (100 kΩ · 10 µF).',
+      make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['ICX', 14, 6, 0, 'NE555', { n: 8 }], ['R', 10, 2, 1, '10k'], ['PB', 6, 12, 0, ''], ['R', 30, 2, 1, '100k'], ['C', 30, 8, 1, '10u'], ['R', 22, 12, 0, '470'], ['LED', 26, 12, 1, 'rot'], ['GND', 2, 10], ['GND', 6, 14], ['GND', 17, 18], ['GND', 30, 14], ['GND', 26, 18]],
+        wires: [[2, 4, 2, 2, 10, 2, 16, 2, 18, 2, 30, 2], [16, 4, 16, 2], [18, 4, 18, 2], [10, 6, 10, 12, 14, 12], [14, 10, 12, 10, 12, 0, 32, 0, 32, 8, 30, 8], [30, 6, 30, 8, 20, 8], [20, 12, 22, 12], [17, 16, 17, 18], [26, 16, 26, 18], [2, 8, 2, 10], [6, 12, 6, 14], [30, 12, 30, 14]], scopes: [1, 7], tempo: 0.75, win: 3 }) },
+    { cat: 'Logik', name: 'Halbaddierer (XOR und UND)', info: 'Zwei Schalter sind die Eingänge A und B. Die gelbe LED zeigt die Summe (XOR), die rote den Übertrag (UND). 1 + 1 = 10: Summe aus, Übertrag an.',
+      make: () => ({ parts: [['BAT', 2, 6, 1, '5'], ['SPST', 4, 2, 0, ''], ['SPST', 4, 6, 0, ''], ['XOR', 12, 2, 0, '5V'], ['AND', 12, 10, 0, '5V'], ['R', 18, 3, 0, '470'], ['LED', 22, 3, 1, 'gelb'], ['R', 18, 11, 0, '470'], ['LED', 22, 11, 1, 'rot'], ['GND', 2, 12], ['GND', 22, 9], ['GND', 22, 17]],
+        wires: [[4, 2, 2, 2, 2, 6, 4, 6], [8, 2, 10, 2, 12, 2], [10, 2, 10, 10, 12, 10], [8, 6, 11, 6, 11, 4, 12, 4], [11, 6, 11, 12, 12, 12], [16, 3, 18, 3], [16, 11, 18, 11], [2, 10, 2, 12]], scopes: [], tempo: 0.75 }) },
+    { cat: 'Bauteile', name: 'Relais mit Transistor und Freilaufdiode', info: 'Schalter schließen: Der Transistor schaltet die Relaisspule, das Relais zieht an und schaltet die Lampe im zweiten Stromkreis. Die Diode über der Spule schützt den Transistor vor der Induktionsspannung beim Abschalten.',
+      make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['SPST', 4, 8, 1, ''], ['R', 4, 12, 0, '10k'], ['NPN', 8, 12, 0, 'BC547'], ['RLY', 8, 2, 0, '12V'], ['D', 6, 6, 3, '1N4007'], ['LAMP', 16, 2, 0, '12V 0.1A'], ['BAT', 22, 2, 1, '12'], ['GND', 2, 10], ['GND', 10, 16], ['GND', 22, 10]],
+        wires: [[2, 4, 2, 2, 4, 2, 6, 2, 8, 2], [4, 2, 4, 8], [8, 6, 10, 6, 10, 10], [6, 6, 8, 6], [10, 14, 10, 16], [20, 2, 22, 2], [13, 4, 13, 10, 22, 10, 22, 6], [2, 8, 2, 10]], scopes: [], tempo: 0.75 }) },
+    /* ---------- SimLab ---------- */
+    { lab: 'sim', cat: 'Hausinstallation', name: 'Zwei Lampen getrennt schaltbar', info: 'Hinter dem Sicherungsautomaten zweigt der Außenleiter ab: Jede Lampe hat ihren eigenen Schalter. Beide Lampen liegen parallel an 230 V und beeinflussen sich nicht.',
+      make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', 1, 8, 1, '', { sw: 1 }], ['LAMP', 1, 12, 1, '230V 60W'], ['SPST', -3, 8, 1, '', { sw: 0 }], ['LAMP', -3, 12, 1, '230V 60W']],
+        wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, 1, 8], ['braun', 1, 6, -3, 6, -3, 8], ['blau', 3, 0, 3, 20, 1, 20, -3, 20, -3, 16], ['blau', 1, 16, 1, 20]], scopes: [], tempo: 0.55, win: 0.04 }) },
+    { lab: 'sim', cat: 'Hausinstallation', name: 'Öffner-Taster (Ruhekontakt)', info: 'Die Lampe leuchtet im Ruhezustand. Taster gedrückt halten: Der Öffner unterbricht den Stromkreis und die Lampe geht aus. So arbeiten Stopp- und Not-Aus-Taster.',
+      make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['PBC', 1, 6, 1, ''], ['LAMP', 1, 10, 1, '230V 60W']],
+        wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 16, 1, 16, 1, 14]], scopes: [], tempo: 0.55, win: 0.04 }) },
+    { lab: 'sim', cat: 'Drehstrom', name: 'Drehstrommotor mit Schütz (Tippbetrieb)', info: 'Start gedrückt halten: Das Schütz (Spule an L1 und N) zieht an und schaltet mit seinen drei Schließern die drei Außenleiter auf den Motor. Taster loslassen: Der Motor stoppt.',
+      make: () => ({ parts: [['NETZ3', 1, 0], ['PB', -9, 11, 0, '', { l: 'S1' }], ['SCHUETZ', -14, 14, 0, '230V'], ['MOTOR3', -12, 26, 0, '400V 2.2kW']],
+        wires: [['braun', 1, 0, 1, 11, 1, 18, -5, 18], ['braun', 1, 11, -5, 11], ['schwarz', 3, 0, 3, 14, -5, 14], ['grau', 5, 0, 5, 20, -5, 20], ['schwarz', -9, 11, -14, 11, -14, 14],
+                ['blau', 7, 0, 7, 34, -17, 34, -17, 20, -14, 20], ['schwarz', -9, 14, -12, 14, -12, 26], ['braun', -9, 18, -10, 18, -10, 26], ['grau', -9, 20, -9, 22, -8, 22, -8, 26]], scopes: [], tempo: 0.55, win: 0.04 }) },
+
+    /* ---------- CodeLab ---------- */
+    { lab: 'code', cat: 'Mehrere LEDs', name: 'Lauflicht mit vier LEDs', info: 'Vier LEDs an den Pins 3, 5, 7 und 9 laufen hin und her. Die Pins liegen in einem Feld (Array) und werden mit einer Schleife angesteuert.',
+      make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 6, 0, '220'], ['LED', 26, 6, 0, 'rot'], ['GND', 30, 6], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10], ['R', 22, 14, 0, '220'], ['LED', 26, 14, 0, 'grün'], ['GND', 30, 14], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'blau'], ['GND', 30, 18]], wires: [[20, 6, 22, 6], [20, 10, 22, 10], [20, 14, 22, 14], [20, 18, 22, 18]], scopes: [], tempo: 0.75,
+      code: String.raw`// Lauflicht: ein Licht wandert hin und her
+int ledPins[] = {3, 5, 7, 9};
+int anzahl = 4;
+
+void setup() {
+  for (int i = 0; i < anzahl; i++) {
+    pinMode(ledPins[i], OUTPUT);
+  }
+}
+
+void loop() {
+  for (int i = 0; i < anzahl; i++) {          // von links nach rechts
+    digitalWrite(ledPins[i], HIGH);
+    delay(150);
+    digitalWrite(ledPins[i], LOW);
+  }
+  for (int i = anzahl - 2; i > 0; i--) {      // und zurück
+    digitalWrite(ledPins[i], HIGH);
+    delay(150);
+    digitalWrite(ledPins[i], LOW);
+  }
+}
+` }) },
+    { lab: 'code', cat: 'Mehrere LEDs', name: 'Binärzähler mit vier LEDs', info: 'Die vier LEDs zeigen die Zahlen 0 bis 15 als Dualzahl (leuchtet = 1). Die rote LED ist das niedrigste Bit. Im Serial-Monitor steht die Zahl dazu.',
+      make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 6, 0, '220'], ['LED', 26, 6, 0, 'rot'], ['GND', 30, 6], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10], ['R', 22, 14, 0, '220'], ['LED', 26, 14, 0, 'grün'], ['GND', 30, 14], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'blau'], ['GND', 30, 18]], wires: [[20, 6, 22, 6], [20, 10, 22, 10], [20, 14, 22, 14], [20, 18, 22, 18]], scopes: [], tempo: 0.75,
+      code: String.raw`// Binärzähler: jede LED zeigt ein Bit der Zahl
+int ledPins[] = {3, 5, 7, 9};
+int zahl = 0;
+
+void setup() {
+  for (int i = 0; i < 4; i++) {
+    pinMode(ledPins[i], OUTPUT);
+  }
+  Serial.begin(9600);
+}
+
+void loop() {
+  for (int bit = 0; bit < 4; bit++) {
+    digitalWrite(ledPins[bit], (zahl >> bit) & 1);   // Bit Nummer "bit" herausholen
+  }
+  Serial.println(zahl);
+  zahl = (zahl + 1) % 16;
+  delay(500);
+}
+` }) },
+    { lab: 'code', cat: 'Grundlagen', name: 'SOS-Morsezeichen', info: 'Die LED blinkt dreimal kurz, dreimal lang, dreimal kurz. Eigene Funktionen (punkt, strich) machen das Programm übersichtlich.',
+      make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`// SOS: ... --- ...
+const int ledPin = 13;
+
+void punkt() {
+  digitalWrite(ledPin, HIGH);
+  delay(200);
+  digitalWrite(ledPin, LOW);
+  delay(200);
+}
+
+void strich() {
+  digitalWrite(ledPin, HIGH);
+  delay(600);
+  digitalWrite(ledPin, LOW);
+  delay(200);
+}
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop() {
+  for (int i = 0; i < 3; i++) punkt();
+  delay(400);
+  for (int i = 0; i < 3; i++) strich();
+  delay(400);
+  for (int i = 0; i < 3; i++) punkt();
+  delay(2000);
+}
+` }) },
+    { lab: 'code', cat: 'Grundlagen', name: 'LED per Serial-Monitor schalten', info: 'Im Eingabefeld des Serial-Monitors eine 1 senden: LED an. Eine 0 senden: LED aus. Der Arduino liest die Zeichen mit Serial.read().',
+      make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`void setup() {
+  pinMode(13, OUTPUT);
+  Serial.begin(9600);
+  Serial.println("Sende 1 = LED an, 0 = LED aus");
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    char zeichen = Serial.read();
+    if (zeichen == '1') {
+      digitalWrite(13, HIGH);
+      Serial.println("LED an");
+    } else if (zeichen == '0') {
+      digitalWrite(13, LOW);
+      Serial.println("LED aus");
+    }
+  }
+}
+` }) },
+    { lab: 'code', cat: 'Grundlagen', name: 'Würfel mit Taster', info: 'Taster gedrückt halten: Der Arduino würfelt (random), schreibt das Ergebnis in den Serial-Monitor und lässt die LED so oft blinken, wie die Augenzahl ist.',
+      make: () => ({ parts: [['UNO', 12, 0], ['PB', 24, 4, 1, ''], ['GND', 24, 8], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[20, 4, 24, 4], [20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`const int tasterPin = 2;
+const int ledPin = 13;
+
+void setup() {
+  pinMode(tasterPin, INPUT_PULLUP);
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600);
+  Serial.println("Taster druecken zum Wuerfeln");
+}
+
+void loop() {
+  if (digitalRead(tasterPin) == LOW) {
+    randomSeed(micros());               // Zufall hängt vom Zeitpunkt ab
+    int wurf = random(1, 7);            // 1 bis 6
+    Serial.print("Gewuerfelt: ");
+    Serial.println(wurf);
+    for (int i = 0; i < wurf; i++) {
+      digitalWrite(ledPin, HIGH);
+      delay(200);
+      digitalWrite(ledPin, LOW);
+      delay(200);
+    }
+    while (digitalRead(tasterPin) == LOW) {   // warten, bis losgelassen
+      delay(10);
+    }
+  }
+}
+` }) },
+    { lab: 'code', cat: 'Töne und Sensoren', name: 'Nachtlicht mit Fotowiderstand', info: 'Regler „Licht“ am Fotowiderstand herunterziehen: Je dunkler es wird, desto heller leuchtet die LED (PWM an Pin 9). Der Fotowiderstand bildet mit 10 kΩ einen Spannungsteiler an A0.',
+      make: () => ({ parts: [['UNO', 12, 0], ['LDR', 8, 0, 1, '', { pos: 0.5 }], ['R', 8, 4, 1, '10k'], ['GND', 8, 8], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'gelb'], ['GND', 30, 18]], wires: [[8, 0, 12, 0], [8, 4, 10, 4, 10, 8, 12, 8], [20, 18, 22, 18]], scopes: [], tempo: 0.75,
+      code: String.raw`const int ldrPin = A0;
+const int ledPin = 9;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int hell = analogRead(ldrPin);        // 0 = dunkel, 1023 = hell
+  int pwm = 255 - hell / 4;             // dunkel -> LED hell
+  analogWrite(ledPin, pwm);
+  Serial.println(hell);
+  delay(100);
+}
+` }) },
+    { lab: 'code', cat: 'Töne und Sensoren', name: 'Servo mit Poti steuern', info: 'Am Poti drehen (Regler unter dem Bauteil): Der Servo folgt dem Drehwinkel. analogRead liefert 0 bis 1023, map rechnet das auf 0 bis 180 Grad um.',
+      make: () => ({ parts: [['UNO', 12, 0], ['POT', 6, 4, 1, '10k', { pos: 0.4 }], ['GND', 6, 8], ['SERVO', 24, 18], ['GND', 24, 22]], wires: [[6, 4, 6, 0, 12, 0], [8, 6, 10, 6, 10, 8, 12, 8], [20, 18, 24, 18], [24, 20, 26, 20, 26, -2, 20, -2]], scopes: [], tempo: 0.75,
+      code: String.raw`#include <Servo.h>
+
+Servo meinServo;
+
+void setup() {
+  meinServo.attach(9);
+}
+
+void loop() {
+  int wert = analogRead(A0);
+  int winkel = map(wert, 0, 1023, 0, 180);
+  meinServo.write(winkel);
+  delay(15);
+}
+` }) },
+    { lab: 'code', cat: 'Töne und Sensoren', name: 'Bewegungsmelder-Alarm (PIR)', info: 'Regler „Bewegung“ am PIR-Sensor über 50 % ziehen: Der Sensor meldet eine Bewegung, die rote LED leuchtet und der Summer spielt eine Sirene.',
+      make: () => ({ parts: [['UNO', 12, 0], ['PIR', 24, 2, 0, '', { pos: 0 }], ['GND', 24, 6], ['R', 22, 16, 0, '100'], ['SPK', 26, 16, 0, '8'], ['GND', 30, 16], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[24, 2, 22, 2, 22, -2, 20, -2], [20, 4, 24, 4], [20, 16, 22, 16], [20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`const int pirPin = 2;
+const int summerPin = 8;
+const int ledPin = 13;
+
+void setup() {
+  pinMode(pirPin, INPUT);
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  if (digitalRead(pirPin) == HIGH) {
+    digitalWrite(ledPin, HIGH);
+    tone(summerPin, 880);
+    delay(150);
+    tone(summerPin, 660);
+    delay(150);
+  } else {
+    digitalWrite(ledPin, LOW);
+    noTone(summerPin);
+  }
+}
+` }) },
+    { lab: 'code', cat: 'Töne und Sensoren', name: 'Einparkhilfe mit Ultraschall und Summer', info: 'Regler „Abstand“ am Sensor verkleinern: Unter 100 cm piept der Summer, und je näher das Hindernis ist, desto schneller kommen die Töne.',
+      make: () => ({ parts: [['UNO', 12, 0], ['HCSR04', 24, 10, 0, '', { pos: 0.1 }], ['GND', 24, 16], ['R', 22, 20, 0, '100'], ['SPK', 26, 20, 0, '8'], ['GND', 30, 20]], wires: [[24, 10, 22, 10, 22, -2, 20, -2], [20, 12, 24, 12], [20, 14, 24, 14], [20, 20, 22, 20]], scopes: [], tempo: 0.75,
+      code: String.raw`const int triggerPin = 6;
+const int echoPin = 7;
+const int summerPin = 10;
+
+long messeDauer() {
+  pinMode(triggerPin, OUTPUT);
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+  pinMode(echoPin, INPUT);
+  return pulseIn(echoPin, HIGH);
+}
+
+void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  float cm = 0.01723 * messeDauer();
+  Serial.println(cm);
+  if (cm < 100) {
+    tone(summerPin, 1000, 60);
+    delay(cm * 4 + 40);          // je näher, desto schneller
+  } else {
+    delay(200);
+  }
+}
+` }) },
+  ];
+  if (typeof module !== 'undefined' && module.exports) module.exports = EX; else window.MORE_EX = EX;
+})();
