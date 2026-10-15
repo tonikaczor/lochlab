@@ -422,6 +422,9 @@ function buildCircuit(layout) {
     if (e.type === 'SERVOD') e.pin = mcuPinOf(e.sig);
     if (e.type === 'LCDD') e.ok = mcuPinOf(e.sda) === 18 && mcuPinOf(e.scl) === 19;
   });
+  // Weitere Spannungsquellen ohne Masse-Bezug (zum Beispiel ein zweiter Stromkreis, der Last von der Steuerung trennt):
+  // Minuspol mit sehr hohem Widerstand an Masse legen, damit der Kreis rechenbar ist
+  if (groundRoot !== null) { const tied = new Set([find(groundRoot)]); layout.parts.forEach(p => { if ((p.k === 'BAT' || p.k === 'SIG') && p.pins.length > 1) { const r = find(pinKey(p, 1)); if (!tied.has(r)) { tied.add(r); add({ type: 'R', a: nodeOfRoot(r), b: 0, g: 1e-9 }); } } }); }
   return { nn, elems, nodeOfKey, groundKnown: groundRoot !== null, warnings, parts: layout.parts, mcu: mcuEl || null };
 }
 
