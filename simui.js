@@ -214,6 +214,7 @@ rotSel = function (d) { if (simOn) return; return _rotSel(d); };
 dupSel = function () { if (simOn) return; return _dupSel(); };
 
 function simDown(p) {
+  { const sh = sliderAt(p.x, p.y); if (sh) { simAct = { slide: sh }; setSlide(sh, p.x); return; } }
   const [fx, fy] = toGrid(p.x, p.y), [gx, gy] = snap(fx, fy);
   simAct = { sx: p.x, sy: p.y, lx: p.x, ly: p.y, pan: false, fx, fy, gx, gy };
   if (simTool === 'use') {
@@ -234,6 +235,7 @@ function simDown(p) {
 }
 function simMove(p) {
   if (!simAct) return;
+  if (simAct.slide) { setSlide(simAct.slide, p.x); return; }
   const dx = p.x - simAct.lx, dy = p.y - simAct.ly;
   if (!simAct.pan && Math.hypot(p.x - simAct.sx, p.y - simAct.sy) > 8 && !simAct.press) simAct.pan = true;
   if (simAct.pan) { view.ox += dx; view.oy += dy; }
@@ -243,6 +245,7 @@ function simMove(p) {
 }
 function simUp(p) {
   const a = simAct; simAct = null; if (!a) return;
+  if (a.slide) { try { save(); } catch (e) {} buildPanel(); invalidate(); return; }
   if (a.press) { const w = wrap.get(a.press.id); if (w) w.pressed = false; a.press._p = false; invalidate(); return; }
   if (a.pan || a.done) return;
   const key = gk(a.gx, a.gy);
@@ -264,6 +267,31 @@ function simUp(p) {
   }
 }
 
+
+function drawPill(cx, x, y, w, v, label) {
+  const h = 22, x0 = x - w / 2;
+  cx.save();
+  cx.fillStyle = 'rgba(18,22,28,.92)'; cx.strokeStyle = 'rgba(120,140,160,.8)'; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.roundRect ? cx.roundRect(x0, y - h / 2, w, h, 11) : cx.rect(x0, y - h / 2, w, h); cx.fill(); cx.stroke();
+  const tx0 = x0 + 12, tx1 = x0 + w - 12;
+  cx.strokeStyle = '#5b6672'; cx.lineWidth = 4; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(tx0, y); cx.lineTo(tx1, y); cx.stroke();
+  cx.strokeStyle = '#3b9eff'; cx.beginPath(); cx.moveTo(tx0, y); cx.lineTo(tx0 + (tx1 - tx0) * v, y); cx.stroke();
+  cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(tx0 + (tx1 - tx0) * v, y, 8, 0, 7); cx.fill(); cx.strokeStyle = '#3b9eff'; cx.lineWidth = 2; cx.stroke();
+  cx.fillStyle = '#cfd5db'; cx.font = '600 11px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'bottom'; cx.fillText(label + ' ' + Math.round(v * 100) + ' %', x, y - h / 2 - 2);
+  cx.restore();
+  return { x0: tx0, x1: tx1, y0: y - h / 2 - 8, y1: y + h / 2 + 8, xl: x0 - 8, xr: x0 + w + 8 };
+}
+
+let sliderHits = [];
+const SLIDERS = ['P', 'TP', 'LDR', 'NTC', 'PTC', 'PHT'];
+const sliderAt = (px, py) => sliderHits.find(h => px >= h.xl && px <= h.xr && py >= h.y0 && py <= h.y1);
+const sliderVal = it => it.k === 'LDR' ? (it.light == null ? 0.5 : it.light) : (it.pos == null ? (it.k === 'NTC' || it.k === 'PTC' ? 0.32 : 0.5) : it.pos);
+function setSlide(h, px) {
+  const it = byId(h.id), w = it && wrap.get(it.id); if (!it || !w) return;
+  const v = clampN((px - h.x0) / (h.x1 - h.x0), 0, 1);
+  if (it.k === 'LDR') { w.light = v; it.light = v; } else { w.pos = v; it.pos = v; }
+  invalidate();
+}
 /* ---------- Zusatzzeichnung über dem Layout ---------- */
 function overlay() {
   const S = view.s, X = x => view.ox + x * S, Y = y => view.oy + y * S;
@@ -323,6 +351,12 @@ function overlay() {
     for (let i = 0; i < 3; i++) { cx.beginPath(); cx.moveTo(x - (0.5 - i * 0.18) * S, y + i * 0.2 * S); cx.lineTo(x + (0.5 - i * 0.18) * S, y + i * 0.2 * S); cx.stroke(); }
     cx.beginPath(); cx.moveTo(x, y - 0.3 * S); cx.lineTo(x, y); cx.stroke();
   }
+  sliderHits = [];
+  doc.items.forEach(it => {
+    if (it.t !== 'part' || !SLIDERS.includes(it.k)) return;
+    const b = worldBox(it), w = Math.max(104, 4.5 * S), lbl = it.k === 'LDR' || it.k === 'PHT' ? 'Licht' : (it.k === 'NTC' || it.k === 'PTC' ? 'Temp.' : 'Regler');
+    sliderHits.push(Object.assign({ id: it.id }, drawPill(cx, X((b[0] + b[2]) / 2), Y(b[3]) + 22, w, sliderVal(it), lbl)));
+  });
   if (window.LochFX) LochFX.draw(cx);
 }
 

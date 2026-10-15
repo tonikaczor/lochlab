@@ -621,6 +621,27 @@ function fmt(v, unit) {
 }
 
 function draw() { dirtyDraw = true; }
+
+function drawPill(cx, x, y, w, v, label) {
+  const h = 22, x0 = x - w / 2;
+  cx.save();
+  cx.fillStyle = 'rgba(18,22,28,.92)'; cx.strokeStyle = 'rgba(120,140,160,.8)'; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.roundRect ? cx.roundRect(x0, y - h / 2, w, h, 11) : cx.rect(x0, y - h / 2, w, h); cx.fill(); cx.stroke();
+  const tx0 = x0 + 12, tx1 = x0 + w - 12;
+  cx.strokeStyle = '#5b6672'; cx.lineWidth = 4; cx.lineCap = 'round'; cx.beginPath(); cx.moveTo(tx0, y); cx.lineTo(tx1, y); cx.stroke();
+  cx.strokeStyle = '#3b9eff'; cx.beginPath(); cx.moveTo(tx0, y); cx.lineTo(tx0 + (tx1 - tx0) * v, y); cx.stroke();
+  cx.fillStyle = '#fff'; cx.beginPath(); cx.arc(tx0 + (tx1 - tx0) * v, y, 8, 0, 7); cx.fill(); cx.strokeStyle = '#3b9eff'; cx.lineWidth = 2; cx.stroke();
+  cx.fillStyle = '#cfd5db'; cx.font = '600 11px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'bottom'; cx.fillText(label + ' ' + Math.round(v * 100) + ' %', x, y - h / 2 - 2);
+  cx.restore();
+  return { x0: tx0, x1: tx1, y0: y - h / 2 - 8, y1: y + h / 2 + 8, xl: x0 - 8, xr: x0 + w + 8 };
+}
+
+let sliderHits = [];
+const sliderAt = (px, py) => sliderHits.find(h => px >= h.xl && px <= h.xr && py >= h.y0 && py <= h.y1);
+function setSlide(h, px) {
+  const v = clamp((px - h.x0) / (h.x1 - h.x0), 0, 1), p = byPart(h.id); if (!p) return;
+  p.pos = v; const w = wrapMap.get(p.id); if (w) { w.pos = v; w.light = v; } draw();
+}
 function drawCircuit() {
   // Drähte
   const ends = new Map(); const cnt = k => ends.set(k, (ends.get(k) || 0) + 1);
@@ -648,6 +669,14 @@ function drawCircuit() {
   });
   ends.forEach((n, k) => { if (n >= 3) { const [x, y] = k.split(',').map(Number); cx.fillStyle = keyV(k); cx.beginPath(); cx.arc(X(x), Y(y), Math.max(3.5, view.s * 0.18), 0, 7); cx.fill(); } });
   sch.parts.forEach(p => drawPart(p, sel && sel.t === 'part' && sel.id === p.id));
+  sliderHits = [];
+  if (simMode && !PRINT) sch.parts.forEach(p => {
+    const K = KD(p); if (!K.pos) return;
+    let y1 = -1e9, xc = 0, n = 0;
+    [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); y1 = Math.max(y1, p.y + rb); xc += p.x + ra; n++; });
+    const w = Math.max(104, view.s * 3.8), r = drawPill(cx, X(xc / n), Y(y1) + 20, w, clamp(p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos, 0, 1), p.k === 'MOTOR' ? 'Bremse' : (p.k === 'NTC' || p.k === 'PTC' ? 'Temp.' : (p.k === 'POT' ? 'Poti' : 'Licht')));
+    sliderHits.push(Object.assign({ id: p.id }, r));
+  });
 }
 function render() {
   cx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -755,6 +784,7 @@ cv.addEventListener('auxclick', e => e.preventDefault());
 function cancelAct() { if (act && act.t === 'move' && act.moved) { act.restore && act.restore(); } act = null; draw(); }
 function onDown(p) {
   if (simMode && tool !== 'select' && tool !== 'scope') return;
+  if (simMode) { const sh = sliderAt(p.x, p.y); if (sh) { act = { t: 'slide', sh }; setSlide(sh, p.x); return; } }
   const [fx, fy] = toGrid(p.x, p.y), g = snapG(fx, fy); cursor = g;
   switch (tool) {
     case 'select': {
@@ -787,6 +817,7 @@ function onDown(p) {
 }
 function onMove(p) {
   const [fx, fy] = toGrid(p.x, p.y), g = snapG(fx, fy); cursor = g;
+  if (act && act.t === 'slide') { setSlide(act.sh, p.x); return; }
   if (!act) { draw(); return; }
   switch (act.t) {
     case 'pan': view.ox += p.x - act.lx; view.oy += p.y - act.ly; act.lx = p.x; act.ly = p.y; break;
@@ -807,6 +838,7 @@ function onMove(p) {
 }
 function onUp(p) {
   const a = act; act = null; if (!a) return;
+  if (a.t === 'slide') { try { localStorage.setItem((SK + 'cur'), snap()); } catch (_) {} refreshUI(); return; }
   switch (a.t) {
     case 'move':
       if (a.press) { a.press.pressed = false; const w = wrapMap.get(a.press.id); if (w) w.pressed = false; }
@@ -1051,7 +1083,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v35</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v36</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -1324,6 +1356,7 @@ simsw.innerHTML = '<span class="lL">Zeichnen</span><span class="trk"><span class
 $('#bUndo').before(simsw);
 simsw.addEventListener('click', () => setSimMode(!simMode));
 $('#bRun').style.display = 'none';
+$('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
 $('#bRun').onclick = toggleRun; $('#bUndo').onclick = undo; $('#bRedo').onclick = redo; $('#bMenu').onclick = openMenu;
 $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); });
 (function init() {
@@ -1343,5 +1376,5 @@ window.SchaltTest = () => {
   });
   sch = keep; rebuild(); return out;
 };
-window.SchaltDebug = () => ({ running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
+window.SchaltDebug = () => ({ sl: sliderHits, running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
 })();

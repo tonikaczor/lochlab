@@ -25,6 +25,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-
 .ib:active,.chip:active{background:var(--panel2)}
 .ib[disabled]{opacity:.3}
 svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hb{height:38px;padding:0 12px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;margin:0 2px;flex:none}
+.hb:active{background:var(--panel)}
+@media(max-width:820px){.hb span{display:none}.hb{padding:0 10px}}
 .run{height:38px;padding:0 16px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-weight:600;flex:none}
 .run.on{background:#2fae45;border-color:#2fae45;color:#fff}
 #mid{display:flex;flex:1;min-height:0}
@@ -130,6 +133,9 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
     <button class="ib" id="bMenu" aria-label="Menü"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     <img id="logo" src="logo.png" alt="Tonfunk" onerror="this.remove()">
     <div class="title" id="title">Schaltplan</div>
+    <button class="hb" id="bEx" aria-label="Beispielschaltungen">📖 <span>Beispiele</span></button>
+    <button class="hb" id="bOpen" aria-label="Gespeicherte Schaltungen">📂 <span>Öffnen</span></button>
+    <button class="hb" id="bPrint" aria-label="Drucken">🖨 <span>Drucken</span></button>
     <button class="ib" id="bUndo" aria-label="Rückgängig"><svg class="i" viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-3" transform="translate(0 -3)"/></svg></button>
     <button class="ib" id="bRedo" aria-label="Wiederholen"><svg class="i" viewBox="0 0 24 24"><path d="M15 7l5 5-5 5M20 12H9a5 5 0 000 10h3" transform="translate(0 -3)"/></svg></button>
     <button class="run" id="bRun">▶ Start</button>
