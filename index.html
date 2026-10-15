@@ -12,7 +12,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
-<title>Tonfunk Elektronik-Lab</title>
+<title>Tonfunk Lab</title>
 <style>
 :root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--danger:#ff5c5c;--line:#38424d;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -23,8 +23,9 @@ header img{height:64px}
 h1{margin:0;font-size:26px;letter-spacing:.01em}
 header p{margin:2px 0 0;color:var(--mute)}
 .q{font-size:18px;margin:0 0 14px;color:var(--mute)}
-.cards{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:700px){.cards{grid-template-columns:1fr}}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+.card.soon{opacity:.8;border-style:dashed}
+a.btn.off{pointer-events:none;color:var(--mute);background:transparent}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px}
 .card .tag{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
 .card h2{margin:0;font-size:22px}
@@ -51,7 +52,7 @@ a.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
 <!--GATE-->
 <div id="gate"><form id="gateForm" autocomplete="on">
   <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
-  <h1>Tonfunk Elektronik-Lab</h1>
+  <h1>Tonfunk Lab</h1>
   <p id="gateHint">Bitte anmelden</p>
   <input id="gateName" type="text" placeholder="Vor- und Nachname" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" aria-label="Name">
   <input id="gatePw" type="password" placeholder="Passwort" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Passwort">
@@ -87,7 +88,7 @@ a.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
 <div class="wrap">
   <header>
     <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
-    <div><h1>Tonfunk Elektronik-Lab</h1><p>Lehrwerkstatt · planen, drucken, simulieren</p></div>
+    <div><h1>Tonfunk Lab</h1><p>Lehrwerkstatt · planen, drucken, simulieren</p></div>
   </header>
   <p class="q">Was möchtest du erstellen?</p>
   <div class="cards">
@@ -102,7 +103,7 @@ a.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
       <div class="btns"><a class="btn pri" href="layout.html">Öffnen</a><a class="btn" href="layout.html?neu">Neu</a></div>
     </section>
     <section class="card">
-      <span class="tag">SchaltLab (Arbeitsname)</span>
+      <span class="tag">SchaltLab</span>
       <h2>Stromlaufplan</h2>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><g fill="none" stroke="#14e050" stroke-width="3"><path d="M40 90V30h60"/><path d="M140 30h60"/></g><g fill="none" stroke="#9aa0a6" stroke-width="3"><path d="M40 90h160V30"/></g><rect x="100" y="20" width="40" height="20" fill="none" stroke="#e8eaed" stroke-width="3"/><g stroke="#e8eaed" stroke-width="4"><path d="M28 62h24M33 72h14"/></g><g fill="#ffe14d"><circle cx="60" cy="30" r="3.5"/><circle cx="80" cy="30" r="3.5"/><circle cx="160" cy="30" r="3.5"/><circle cx="180" cy="30" r="3.5"/><circle cx="200" cy="55" r="3.5"/><circle cx="170" cy="90" r="3.5"/><circle cx="110" cy="90" r="3.5"/><circle cx="40" cy="55" r="3.5"/></g></svg>
@@ -111,8 +112,18 @@ a.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
       <div class="steps"><span>Zeichnen</span><span>Drucken</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="schaltplan.html">Öffnen</a><a class="btn" href="schaltplan.html?neu">Neu</a><a class="btn" href="schaltplan.html?bsp">Beispiel</a></div>
     </section>
+  <section class="card soon">
+      <span class="tag">SimLab</span>
+      <h2>Experimentierlabor</h2>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><g fill="none" stroke="#9aa0a6" stroke-width="3"><path d="M50 95V45h40M150 45h40v50H50"/></g><rect x="40" y="62" width="20" height="26" rx="3" fill="#2b2b2b" stroke="#e0b020" stroke-width="3"/><circle cx="120" cy="45" r="22" fill="#ffe14d" opacity=".9"/><circle cx="120" cy="45" r="30" fill="#ffe14d" opacity=".22"/><path d="M108 45h24M120 33v24" stroke="#8a6b10" stroke-width="3"/></svg>
+      </div>
+      <p>Schaltungen wie im Experimentierkasten aufbauen, Messgeräte anschließen und beobachten. In Planung.</p>
+      <div class="steps"><span>Aufbauen</span><span>Messen</span><span>Beobachten</span></div>
+      <div class="btns"><a class="btn off" href="#">Bald verfügbar</a></div>
+    </section>
   </div>
-  <p class="foot">In beiden Programmen: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>
+  <p class="foot">In LochLab und SchaltLab: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>
 </div>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
