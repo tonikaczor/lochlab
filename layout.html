@@ -288,6 +288,7 @@ PARTS.TP.variants.push(
   {id:'tlang',name:'Spindel lang (3006)',pins:[[0,0],[2,0],[3,0]], box:[-1.65,-1.9,5.85,.5], r:.5,  style:'trimlong', col:'#2a5db0'},
   {id:'tst5', name:'Stehend blau',      pins:[[0,0],[1,0],[2,0]], box:[-.8,-3.4,2.8,.5],  r:.9,  style:'trim', col:'#e8e6e0', kc:'#1f3fa0'},
   {id:'tst10',name:'Stehend 10 mm',     pins:[[0,0],[2,0],[4,0]], box:[-1.1,-4.3,5.1,.6], r:1.4, style:'trim', col:'#6b4326', kc:'#c9ccd1'},
+  {id:'truw',name:'Ruwido klein (3 Pins Dreieck)', pins:[[0,0],[2,0],[1,-4]], box:[-1.5,-5.3,3.5,.7], r:1.2, style:'trim', col:'#1e1e1e', kc:'#3a3a3a'},
   {id:'tlieg',name:'Liegend rund',      pins:[[0,0],[2,0],[1,3]], box:[-1.4,-2.2,3.4,3.7],r:1.5, style:'trim', col:'#2b2b2b', kc:'#e6e6e6'},
 );
 PARTS.P.variants.push(
@@ -296,7 +297,7 @@ PARTS.P.variants.push(
 function syncVarSize(k){const P=PARTS[k];if(!P.variants)return;const V=P.variants.find(v=>v.id===curVar(k))||P.variants[P.defVar||0];if(V&&V.n)sizes[k]=V.n;}
 // Fotos: Zuordnung Bauteil/Variante -> Bilddatei in bauteile/
 const PHOTO={'CF:rm5':'cf_5','CF:rm15':'cf_15','CF:rm22':'cf_22','CF:rm27':'cf_27','SCH:k3':'kipp','BZ':'summer','SW:k2':'taster2','KL':'klemme3',
-  'TP:tor':'trim_orange','TP:tlang':'trim_lang','TP:tlieg':'trim_liegend','TP:tst5':'trim_stehend','TP:tst10':'trim_stehend10','P:pknopf':'poti_knopf'};
+  'TP:tor':'trim_orange','TP:tlang':'trim_lang','TP:tlieg':'trim_liegend','TP:truw':'vierwege','TP:tst5':'trim_stehend','TP:tst10':'trim_stehend10','P:pknopf':'poti_knopf'};
 const PHOTO_IDX={"vierwege": ["vierwege-1.jpg", "vierwege-2.jpg"], "seg_doppelt": ["seg_doppelt-1.jpg", "seg_doppelt-2.jpg", "seg_doppelt-3.jpg"], "seg_mittel": ["seg_mittel-1.jpg", "seg_mittel-2.jpg", "seg_mittel-3.jpg"], "seg_klein": ["seg_klein-1.jpg", "seg_klein-2.jpg", "seg_klein-3.jpg"], "cf_15": ["cf_15-1.jpg", "cf_15-2.jpg", "cf_15-3.jpg"], "cf_22": ["cf_22-1.jpg", "cf_22-2.jpg", "cf_22-3.jpg"], "cf_27": ["cf_27-1.jpg", "cf_27-2.jpg", "cf_27-3.jpg"], "cf_5": ["cf_5-1.jpg", "cf_5-2.jpg", "cf_5-3.jpg"], "kipp": ["kipp-1.jpg", "kipp-2.jpg", "kipp-3.jpg"], "poti_knopf": ["poti_knopf-1.jpg", "poti_knopf-2.jpg", "poti_knopf-3.jpg"], "klemme3": ["klemme3-1.jpg", "klemme3-2.jpg", "klemme3-3.jpg"], "sicherung": ["sicherung-1.jpg", "sicherung-2.jpg", "sicherung-3.jpg", "sicherung-4.jpg"], "summer": ["summer-1.jpg", "summer-2.jpg"], "taster2": ["taster2-1.jpg", "taster2-2.jpg", "taster2-3.jpg"], "trim_orange": ["trim_orange-1.jpg", "trim_orange-2.jpg"], "trim_lang": ["trim_lang-1.jpg", "trim_lang-2.jpg", "trim_lang-3.jpg"], "trim_liegend": ["trim_liegend-1.jpg", "trim_liegend-2.jpg"], "trim_stehend": ["trim_stehend-1.jpg", "trim_stehend-2.jpg", "trim_stehend-3.jpg"], "trim_stehend10": ["trim_stehend10-1.jpg", "trim_stehend10-2.jpg", "trim_stehend10-3.jpg", "trim_stehend10-4.jpg"]};
 function shopTerm(k,V,it){
   const v=it?it.v:(partVals[k]!=null?partVals[k]:PARTS[k].val),vn=V?V.name:'';
@@ -1462,7 +1463,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v33</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v34</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
