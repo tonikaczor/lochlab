@@ -138,7 +138,7 @@ function buildCircuit(layout) {
       case 'BAT': {
         const v = si(p.v, 9);
         const r = p.vr === 'psu' ? 0.1 : (v <= 2 ? 0.3 : 0.6);
-        add({ type: 'V', a: n(0), b: n(1), v0: v, rint: r, wave: 'dc', part: p });
+        add({ type: 'V', a: n(0), b: n(1), v0: v, rint: r, wave: 'dc', imax: si(p.imax || (p.item && p.item.imax), 0) || 0, part: p });
         break; }
       case 'SIG': {
         const g = parseGen(p.v);
@@ -183,6 +183,9 @@ function buildCircuit(layout) {
         const vset = REGV[String(p.v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')] || 5;
         add({ type: 'REG', ni: n(0), ng: n(1), no: n(2), vset, part: p, vtar: 0 });
         break; }
+      case 'GATE': add(ICS.makeIdeal(p, n, 'gate')); break;
+      case 'DFF': add(ICS.makeIdeal(p, n, 'dff')); break;
+      case 'OPA': add(ICS.make({ key: 'opa', fam: 'oa' }, p, n)); break;
       case 'IC': {
         const def = ICS && ICS.find(p.v);
         if (!def) { warnings.push({ part: p, text: 'IC-Typ wird nicht erkannt (Wert z. B. NE555, 7400, 4017, LM358)' }); break; }
@@ -284,7 +287,16 @@ function createSim(circ) {
           case 'S': stampG(e.a, e.b, e.closed ? 1 / RON : 1 / ROFF); break;
           case 'C': { const g = e.c / dt; stampG(e.a, e.b, g); inj(e.a, g * e.vprev); inj(e.b, -g * e.vprev); break; }
           case 'L': { const g = dt / e.l; stampG(e.a, e.b, g); cur(e.a, e.b, e.iprev); break; }
-          case 'V': { const g = 1 / e.rint, vs = waveform(e, t); stampG(e.a, e.b, g); inj(e.a, vs * g); inj(e.b, -vs * g); break; }
+          case 'V': {
+            const g = 1 / e.rint, vs = waveform(e, t);
+            if (e.imax > 0) {                                                   // Strombegrenzung (CC): Modus linear oder konstanter Strom
+              const x = (vs - vd(e.a, e.b)) * g; let cm = e.cm || 0;
+              if (cm === 0) { if (Math.abs(x) > e.imax) { cm = x > 0 ? 1 : -1; limited = true; } }
+              else if (cm * x < e.imax) { cm = 0; limited = true; }
+              e.cm = cm;
+              if (cm) { stampG(e.a, e.b, GMIN); inj(e.a, cm * e.imax); inj(e.b, -cm * e.imax); } else { stampG(e.a, e.b, g); inj(e.a, vs * g); inj(e.b, -vs * g); }
+            } else { stampG(e.a, e.b, g); inj(e.a, vs * g); inj(e.b, -vs * g); }
+            break; }
           case 'D': {
             const nvt = e.nn * VT, vc = vcrit(e.is, nvt);
             let vj = vd(e.a, e.b);
@@ -340,7 +352,7 @@ function createSim(circ) {
         case 'S': e.i = (v[e.a] - v[e.b]) * (e.closed ? 1 / RON : 1 / ROFF); break;
         case 'C': { const vc = v[e.a] - v[e.b]; e.i = e.c / dt * (vc - e.vprev); e.vprev = vc; break; }
         case 'L': { const g = dt / e.l; e.i = e.iprev + g * (v[e.a] - v[e.b]); e.iprev = e.i; break; }
-        case 'V': { const vs = waveform(e, t); e.i = (vs - (v[e.a] - v[e.b])) / e.rint; e.vs = vs; break; }
+        case 'V': { const vs = waveform(e, t); let x = (vs - (v[e.a] - v[e.b])) / e.rint; if (e.imax > 0) { e.cc = !!e.cm; if (e.cm) x = e.cm * e.imax; } e.i = x; e.vs = vs; break; }
         case 'D': {
           if (burnt.has(e.part.id)) { e.i = 0; break; }
           const vj = v[e.a] - v[e.b], nvt = e.nn * VT;
@@ -369,7 +381,7 @@ function createSim(circ) {
   };
 
   sim.volt = (node) => (node < 0 ? NaN : v[node]);
-  sim.reset = () => { v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
+  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
   return sim;
 }
 

@@ -48,6 +48,7 @@ const CATALOG = {
   '072':    { name: 'TL072 2×Operationsverstärker', np: 8, vcc: 8, gnd: 4, labels: ['1OUT', '1IN−', '1IN+', 'V−', '2IN+', '2IN−', '2OUT', 'V+'], oa: [{ p: 3, n: 2, o: 1 }, { p: 5, n: 6, o: 7 }], rail: 1.5 },
   '324':    { name: 'LM324 4×Operationsverstärker', np: 14, vcc: 4, gnd: 11, labels: ['1OUT', '1IN−', '1IN+', 'V+', '2IN+', '2IN−', '2OUT', '3OUT', '3IN−', '3IN+', 'V−', '4IN+', '4IN−', '4OUT'], oa: [{ p: 3, n: 2, o: 1 }, { p: 5, n: 6, o: 7 }, { p: 10, n: 9, o: 8 }, { p: 12, n: 13, o: 14 }], rail: 1.5, rlow: 0.05 },
 };
+CATALOG.opa = { name: 'Operationsverstärker', np: 5, vcc: 4, gnd: 5, labels: ['IN+', 'IN−', 'OUT', 'V+', 'V−'], oa: [{ p: 1, n: 2, o: 3 }], rail: 1.5, hidden: true };
 const SORT = ['555', '7400', '7402', '7404', '7408', '7432', '7486', '7414', '4011', '4001', '4081', '4071', '4093', '4069', '7474', '4013', '4017', '4020', '7490', '7447', '4511', '741', '358', '072', '324'];
 
 /* Typ aus der Wertangabe erkennen (NE555, SN74HC00N, CD4017, LM358 ...) */
@@ -82,6 +83,25 @@ function make(def, part, n) {
   return e;
 }
 
+/* Ideale Logik ohne Versorgungspins (SchaltLab): Pegel 0 V / Vh, Schwelle bei Vh/2 */
+function makeIdeal(part, n, kind) {
+  const np = kind === 'dff' ? 4 : (part.vr === 'not' || part.vr === 'snot' ? 2 : 3);
+  const e = { type: 'IC', key: 'ideal', ideal: true, kind, fn: part.vr, vh: parseFloat(String(part.v || '5').replace(',', '.')) || 5, part, np, n: [0], outs: new Map(), st: {}, hs: [], fl: [], oas: [], info: {}, vcc: 0, gnd: 0, gq: 0 };
+  e.ins = kind === 'dff' ? [1, 2] : (np === 2 ? [1] : [1, 2]);
+  for (let i = 1; i <= np; i++) e.n[i] = n(i - 1);
+  e.icupd = (vp) => updateIdeal(e, vp);
+  return e;
+}
+function updateIdeal(e, vp) {
+  e.outs.clear();
+  const vh = e.vh;
+  const hi = i => { const x = vp[e.n[i]] / vh; if (e.fn === 'snot') { if (x > 0.65) e.hs[i] = 1; else if (x < 0.35) e.hs[i] = 0; return e.hs[i] || 0; } return x > 0.5 ? 1 : 0; };
+  const O = (pin, l) => e.outs.set(pin, { level: l, rh: 50, rl: 50 });
+  if (e.kind === 'dff') { const edge = rise(e, 'clk', hi(2)); let Q = e.st.q || 0; if (edge) Q = hi(1); e.st.q = Q; O(3, Q); O(4, Q ? 0 : 1); return; }
+  const F2 = { and: (a, b) => a && b, nand: (a, b) => !(a && b), or: (a, b) => a || b, nor: (a, b) => !(a || b), xor: (a, b) => a !== b, xnor: (a, b) => a === b }[e.fn];
+  if (e.fn === 'not' || e.fn === 'snot') O(2, hi(1) ? 0 : 1);
+  else if (F2) O(3, F2(!!hi(1), !!hi(2)) ? 1 : 0);
+}
 const powered = (e, vp) => (vp[e.vcc] - vp[e.gnd]) >= (e.fam === 'ttl' ? 3.5 : e.fam === 'bip' ? 4.0 : 2.0);
 function lv(e, vp, pin, hyst) {
   const g = vp[e.gnd], vs = vp[e.vcc] - g;
@@ -181,6 +201,14 @@ function update(e, vp, dt) {
 
 /* Aufruf aus dem Rechenkern: Ausgangsstufen und Analogteile einstempeln */
 function stamp(e, S, v) {
+  if (e.ideal) {
+    e.ins.forEach(i => S.stampG(e.n[i], 0, 1e-6));                          // offene Eingänge liegen auf Low
+    e.outs.forEach((o, pin) => {
+      const node = e.n[pin];
+      if (o.level === 1) { const g = 1 / o.rh; S.stampG(node, 0, g); S.inj(node, g * e.vh); } else S.stampG(node, 0, 1 / o.rl);
+    });
+    return;
+  }
   const gnd = e.gnd;
   S.stampG(e.vcc, gnd, e.gq);
   if (e.key === '555') {                                           // interner Spannungsteiler (5k - 5k - 5k)
@@ -210,6 +238,6 @@ function stamp(e, S, v) {
   });
 }
 
-const api = { find, make, stamp, update, CATALOG, SORT, QUAD };
+const api = { find, make, makeIdeal, stamp, update, CATALOG, SORT, QUAD };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LochSimICs = api;
 })(typeof window !== 'undefined' ? window : globalThis);

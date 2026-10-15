@@ -111,11 +111,19 @@ function advance(T) {
   // Zustände auf die Bauteile übertragen
   circ.elems.forEach(e => {
     const it = e.part && e.part.item; if (!it) return;
-    if (e.type === 'D' && e.led) it._b = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6);
+    if (e.type === 'D' && e.led) { it._b = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); it._st = e.imax ? e.i / e.imax : 0; }
     if (e.res) it._hot = e.power > 0.25 ? clampN(e.power / 1, 0, 1) : 0;
   });
   sim.burnt.forEach(id => { const w = wrap.get(id); if (w) w.item._burnt = true; });
-  while (sim.events.length) { const ev = sim.events.shift(); toast(ev.text + (ev.part && ev.part.item.l ? ' (' + ev.part.item.l + ')' : '')); }
+  while (sim.events.length) {
+    const ev = sim.events.shift(); toast(ev.text + (ev.part && ev.part.item.l ? ' (' + ev.part.item.l + ')' : ''));
+    const it = ev.part && ev.part.item;
+    if (it && window.LochFX && ev.kind === 'burn') {
+      const ctr = () => { const b = worldBox(it); return [view.ox + (b[0] + b[2]) / 2 * view.s, view.oy + (b[1] + b[3]) / 2 * view.s]; }, [x, y] = ctr();
+      const led = it.k === 'LED';
+      LochFX.explode(x, y, { kind: led ? 'led' : (it.k === 'R' || it.k === 'P' || it.k === 'TP' ? 'res' : (['Q', 'IC', 'U'].includes(it.k) ? 'chip' : 'big')), color: led ? hexRgb(ledColor(it.v)).join(',') : '255,170,60', scale: view.s, at: ctr });
+    }
+  }
 }
 function tick(now) {
   if (!simOn) return;
@@ -262,6 +270,7 @@ function overlay() {
   cx.globalCompositeOperation = 'lighter';
   doc.items.forEach(it => {
     if (it.t !== 'part') return;
+    if (it.k === 'LED' && it._st > 0.85 && !it._burnt && window.LochFX) { const b = worldBox(it); LochFX.stress(X((b[0] + b[2]) / 2), Y((b[1] + b[3]) / 2), it._st, S); it._b = Math.min(1.6, it._b * (1 + (it._st - 0.85) * 4)); }
     if (it.k === 'LED' && it._b > 0.02 && !it._burnt) {
       const r = ledR(it), [lx, ly] = rot(it.n / 2, 0, it.r), px = X(it.x + lx), py = Y(it.y + ly);
       const [R, G, B] = hexRgb(ledColor(it.v)), rad = (r * 2.4 + 0.8) * S, a = clampN(it._b, 0, 1);
@@ -307,6 +316,7 @@ function overlay() {
     for (let i = 0; i < 3; i++) { cx.beginPath(); cx.moveTo(x - (0.5 - i * 0.18) * S, y + i * 0.2 * S); cx.lineTo(x + (0.5 - i * 0.18) * S, y + i * 0.2 * S); cx.stroke(); }
     cx.beginPath(); cx.moveTo(x, y - 0.3 * S); cx.lineTo(x, y); cx.stroke();
   }
+  if (window.LochFX) LochFX.draw(cx);
 }
 
 /* ---------- Navigation und Leiste ---------- */
@@ -328,7 +338,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-s]'); if (!b || !simOn) return;
   const s = b.dataset.s;
   if (s === 'run') { running = !running; lastFrame = performance.now(); }
-  else if (s === 'rst') { sim.reset(); resetSamples(); doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; }); toast('Simulation zurückgesetzt'); }
+  else if (s === 'rst') { if (window.LochFX) LochFX.clear(); sim.reset(); resetSamples(); doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; }); toast('Simulation zurückgesetzt'); }
   else if (s.startsWith('t:')) { simTool = s.slice(2); }
   else if (s === 'spd') speed = parseFloat(b.dataset.v);
   else if (s === 'tm' || s === 'tp') { const i = TDIV.findIndex(t => Math.abs(t - scope.tdiv) < t * 1e-6); scope.tdiv = TDIV[clampN(i + (s === 'tp' ? 1 : -1), 0, TDIV.length - 1)]; buf.n = 0; buf.head = 0; buf.last = -1; }

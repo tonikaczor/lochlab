@@ -969,7 +969,7 @@ function onUp(p){
     case 'move':if(a.moved)commit();break;
     case 'place':if(ghost){
       const k=partKind,P=PARTS[k];
-      doc.items.push({id:nid(),t:'part',k,x:ghost[0],y:ghost[1],r:partRot,vr:curVar(k),sk:k==='IC'&&autoSocket,n:sizes[k],v:partVals[k]!=null?partVals[k]:(varVal(k)!=null?varVal(k):P.val),l:autoLabel(k)});commit();}
+      doc.items.push({id:nid(),t:'part',k,x:ghost[0],y:ghost[1],r:partRot,imax:(k==='BAT'||k==='SIG')?(partVals.imax||''):undefined,vr:curVar(k),sk:k==='IC'&&autoSocket,n:sizes[k],v:partVals[k]!=null?partVals[k]:(varVal(k)!=null?varVal(k):P.val),l:autoLabel(k)});commit();}
       break;
     case 'line':
       if(cursor&&(cursor[0]!==a.start[0]||cursor[1]!==a.start[1])){chain={x:cursor[0],y:cursor[1]};addLine(tool,a.start[0],a.start[1],cursor[0],cursor[1]);}
@@ -1036,6 +1036,7 @@ function sideCtl(k,rotV,n,it){
     o+=`<div class="sh">Typ</div><select class="icsel" data-ic="1">${ck?'':'<option value="">(eigener Wert)</option>'}${LochSimICs.SORT.map(q=>`<option value="${q}" ${q===ck?'selected':''}>${esc(LochSimICs.CATALOG[q].name)}</option>`).join('')}</select>`;
   }
   if(k==='IC'){const on=it?it.sk:autoSocket;o+=`<div class="sh">Sockel</div><button class="sbtn wide ${on?'on':''}" data-a="${it?'sk':'ask'}">${on?'Sockel darunter ✓':'Ohne Sockel'}</button>`;}
+  if(k==='BAT'||k==='SIG'){const cur=it?(it.imax||''):(partVals.imax||'');o+=`<div class="sh">Max. Strom</div><div class="srow" style="flex-wrap:wrap;gap:6px">${[['','unbegrenzt'],['20m','20 mA'],['100m','100 mA'],['500m','500 mA'],['1','1 A']].map(([v,l])=>`<button class="chip sub ${v===cur?'on':''}" data-a="imax" data-v="${v}">${l}</button>`).join('')}</div>`;}
   if(k==='LED')o+=`<div class="sh">Farbe</div><div class="swg">${ledSw(it?it.v:(partVals.LED!=null?partVals.LED:'rot'))}</div>`;
   if(it)o+=`<div class="sh">Bauteil</div><button class="sbtn wide" data-a="edit">✎ Bearbeiten</button><button class="sbtn wide" data-a="dup">⧉ Kopie</button><button class="sbtn wide danger" data-a="del">Löschen</button>`;
   return o;
@@ -1125,6 +1126,7 @@ const ctxClick=e=>{
     const it=sel!=null?byId(sel):null;
     if(it&&it.k==='LED'){it.v=b.dataset.v;commit();}else partVals.LED=b.dataset.v;
   }
+  else if(a==='imax'){const it=sel!=null?byId(sel):null;if(it&&(it.k==='BAT'||it.k==='SIG')){it.imax=b.dataset.v;commit();}else partVals.imax=b.dataset.v;}
   else if(a==='ask'){autoSocket=!autoSocket;}
   else if(a==='sk'){const it=byId(sel);if(it){it.sk=!it.sk;commit();}}
   else if(a==='photo'){openGallery(b.dataset.id);}
@@ -1398,7 +1400,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v30</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v31</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
@@ -1433,6 +1435,7 @@ buildNav();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
+<script src="fx.js"></script>
 <script src="simics.js"></script>
 <script src="simcore.js"></script>
 <script src="simui.js"></script>

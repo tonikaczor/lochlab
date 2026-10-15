@@ -24,21 +24,43 @@ const KINDS = {
   LED: { name: 'LED',             cat: 'Halbleiter', pins: T2, v: 'rot', core: 'LED', box: [0, -1.6, 4, 1], props: [['v', 'Farbe', 'select', LEDC]] },
   NPN: { name: 'NPN-Transistor',  cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'BC547', core: 'T', vr: 'npn-cbe', map: [1, 0, 2], box: [-.2, -2.2, 2.6, 2.2], props: [] },
   PNP: { name: 'PNP-Transistor',  cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'BC557', core: 'T', vr: 'pnp-cbe', map: [1, 0, 2], box: [-.2, -2.2, 2.6, 2.2], props: [] },
-  BAT: { name: 'Gleichspannung',  cat: 'Quellen', pins: T2, v: '9', core: 'BAT', box: [0, -1.2, 4, 1.2], props: [['v', 'Spannung (V)', 'text', 'z. B. 9']] },
+  BAT: { name: 'Gleichspannung',  cat: 'Quellen', pins: T2, v: '9', core: 'BAT', box: [0, -1.2, 4, 1.2], props: [['v', 'Spannung (V)', 'text', 'z. B. 9'], ['imax', 'Max. Strom', 'text', 'leer = unbegrenzt, z. B. 100mA']] },
   AC:  { name: 'Wechselspannung', cat: 'Quellen', pins: T2, v: '5V 1kHz', core: 'SIG', vr: 'sin', box: [0, -1.2, 4, 1.2], props: [['v', 'Amplitude und Frequenz', 'text', 'z. B. 5V 1kHz'], ['vr', 'Kurvenform', 'select', ['sin', 'sq', 'tri'], { sin: 'Sinus', sq: 'Rechteck', tri: 'Dreieck' }]] },
   GND: { name: 'Masse',           cat: 'Quellen', pins: [[0, 0]], v: '', core: null, box: [-.8, -.3, .8, 1.3], props: [] },
   SPST:{ name: 'Schalter',        cat: 'Schalter', pins: T2, v: '', core: 'SPST', box: [0, -1.2, 4, 1], toggle: true, props: [] },
   PB:  { name: 'Taster',          cat: 'Schalter', pins: T2, v: '', core: 'SW', box: [0, -1.4, 4, 1], momentary: true, props: [] },
   SPDT:{ name: 'Wechsler',        cat: 'Schalter', pins: [[0, 0], [4, -1], [4, 1]], v: '', core: 'SCH', map: [1, 0, 2], box: [0, -1.5, 4, 1.5], toggle: true, props: [] },
+  AND: { name: 'UND-Gatter',   cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'and',  box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
+  NAND:{ name: 'NAND-Gatter',  cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'nand', box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
+  OR:  { name: 'ODER-Gatter',  cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'or',   box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
+  NOR: { name: 'NOR-Gatter',   cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'nor',  box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
+  XOR: { name: 'XOR-Gatter',   cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'xor',  box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
+  NOT: { name: 'NICHT-Gatter', cat: 'Logik', pins: [[0, 1], [4, 1]], v: '5V', core: 'GATE', vr: 'not',  box: [0, .2, 4, 1.8], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
+  SNOT:{ name: 'NICHT (Schmitt)', cat: 'Logik', pins: [[0, 1], [4, 1]], v: '5V', core: 'GATE', vr: 'snot', box: [0, .2, 4, 1.8], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
+  DFF: { name: 'D-Flipflop',   cat: 'Logik', pins: [[0, 0], [0, 2], [4, 0], [4, 2]], v: '5V', core: 'DFF', box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
+  OPA: { name: 'Operationsverstärker', cat: 'Logik', pins: [[0, 2], [0, 0], [4, 1], [2, -2], [2, 4]], v: 'LM358', core: 'OPA', map: null, box: [0, -2.2, 4, 4.2], props: [] },
+  ICX: { name: 'IC (Kästchen)', cat: 'Logik', pins: [[0, 0]], v: 'NE555', n: 8, core: 'IC', box: [0, -1, 6, 7],
+         dyn: p => icDyn(p), props: [['ic', 'Typ', 'ictype']] },
   VM:  { name: 'Voltmeter',       cat: 'Messen', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
   AM:  { name: 'Amperemeter',     cat: 'Messen', pins: T2, v: '', core: 'AM', box: [0, -1.1, 4, 1.1], props: [] },
 };
-const CATS = ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'];
+const CATS = ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
 const rot = (x, y, r) => { switch (r & 3) { case 0: return [x, y]; case 1: return [-y, x]; case 2: return [-x, -y]; default: return [y, -x]; } };
-const pinsOf = p => KINDS[p.k].pins.map(([x, y]) => { const [a, b] = rot(x, y, p.r); return [p.x + a, p.y + b]; });
+const KD = p => { const K = KINDS[p.k]; return K.dyn ? Object.assign({}, K, K.dyn(p)) : K; };
+const pinsOf = p => KD(p).pins.map(([x, y]) => { const [a, b] = rot(x, y, p.r); return [p.x + a, p.y + b]; });
 const gk = (x, y) => x + ',' + y;
+// IC-Kästchen: 555 mit Funktionsschaltbild, sonst DIP-Kästchen (Pins 1..n/2 links von oben nach unten, Rest rechts von unten nach oben)
+function icDyn(p) {
+  const I = window.LochSimICs, def = I && I.find(p.v);
+  if (def && def.key === '555' && (p.n || 8) === 8)
+    return { pins: [[3, 10], [0, 6], [6, 6], [2, -2], [0, 2], [0, 4], [6, 2], [4, -2]], box: [0, -2.4, 6, 10.4], sym555: true };
+  const n = p.n || 8, h = n / 2, pins = [];
+  for (let i = 0; i < h; i++) pins.push([0, 2 * i]);
+  for (let j = 0; j < h; j++) pins.push([6, 2 * (h - 1 - j)]);
+  return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
+}
 
-const PRE = { R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -80,7 +102,7 @@ const redo = () => { if (hi < hist.length - 1) restore(hi + 1); };
 function toCore(p) {
   const K = KINDS[p.k];
   let pins = pinsOf(p); if (K.map) pins = K.map.map(i => pins[i]);
-  return { id: p.id, k: K.core, vr: K.vr || p.vr, v: p.v, n: 2, pins, sw: p.sw ? 1 : 0, pos: p.pos == null ? 0.5 : p.pos, light: p.pos == null ? 0.5 : p.pos, pressed: !!p.pressed, rint: 0.01, item: p };
+  return { id: p.id, k: K.core, vr: K.vr || p.vr, v: p.v, n: p.n || 2, pins, sw: p.sw ? 1 : 0, pos: p.pos == null ? 0.5 : p.pos, light: p.pos == null ? 0.5 : p.pos, pressed: !!p.pressed, rint: 0.01, item: p };
 }
 function rebuild() {
   const old = circ && sim ? { elems: circ.elems, t: sim.t } : null;
@@ -109,6 +131,15 @@ function dtFor(rate) {            // Zeitschritt aus dem gewünschten Tempo (sim
   return Math.max(perFrame / steps, 1e-9);
 }
 const rateOf = s => Math.pow(10, -6 + 8 * s);     // Regler 0..1 -> 1 µs/s ... 100 s/s
+const LEDRGB = { rot: '255,59,47', 'grün': '47,224,90', gelb: '255,224,51', blau: '61,139,255', 'weiß': '255,255,255', orange: '255,154,47' };
+function partCenter(p) { const K = KD(p), [a, b] = rot((K.box[0] + K.box[2]) / 2, (K.box[1] + K.box[3]) / 2, p.r); return [X(p.x + a), Y(p.y + b)]; }
+function onBurn(ev) {
+  const p = ev.part && ev.part.item; if (!p) return;
+  toast(ev.text);
+  if (!window.LochFX) return;
+  const [x, y] = partCenter(p), led = p.k === 'LED';
+  LochFX.explode(x, y, { kind: led ? 'led' : (p.k === 'R' || p.k === 'POT' ? 'res' : (['NPN', 'PNP', 'ICX', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'OPA'].includes(p.k) ? 'chip' : 'big')), color: led ? (LEDRGB[p.v] || '255,59,47') : '255,170,60', scale: view.s, at: () => partCenter(p) });
+}
 function advance(realDt) {
   if (!sim || circ.nn === 0) return;
   const target = rateOf(tempo) * realDt, dt = dtFor(rateOf(tempo));
@@ -119,6 +150,7 @@ function advance(realDt) {
     sampleScopes(every);
     if ((i & 15) === 15 && performance.now() - t0 > 11) break;
   }
+  while (sim.events.length) onBurn(sim.events.shift());
   computeFlows();
 }
 function termI(e) {
@@ -245,7 +277,7 @@ function stepPhases(realDt) {
 }
 
 function drawPart(p, selected) {
-  const K = KINDS[p.k], S = view.s, c = cx, pins = pinsOf(p);
+  const K = KD(p), S = view.s, c = cx, pins = pinsOf(p);
   c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(p.r * Math.PI / 2); c.scale(S, S);
   c.lineCap = 'round'; c.lineJoin = 'round';
   const pc = pins.map(q => keyV(gk(q[0], q[1])));
@@ -307,6 +339,49 @@ function drawPart(p, selected) {
       lead(0, 0, 1, 0, pc[0]); lead(3, -1, 4, -1, pc[1]); lead(3, 1, 4, 1, pc[2]);
       circle(1, 0, 0.17); circle(3, -1, 0.17); circle(3, 1, 0.17);
       line(1, 0, 3, p.sw ? 1 : -1); break;
+    case 'AND': case 'NAND': case 'OR': case 'NOR': case 'XOR': case 'NOT': case 'SNOT': {
+      const two = pins.length === 3, neg = p.k === 'NAND' || p.k === 'NOR' || p.k === 'NOT' || p.k === 'SNOT';
+      const y0 = two ? -.5 : .2, y1 = two ? 2.5 : 1.8, yo = 1;
+      if (two) { lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(neg ? 3.45 : 3, yo, 4, yo, pc[2]); }
+      else { lead(0, 1, 1, 1, pc[0]); lead(3.45, yo, 4, yo, pc[1]); }
+      c.strokeRect(1, y0, 2, y1 - y0);
+      if (neg) { c.beginPath(); c.arc(3.22, yo, .22, 0, 7); c.stroke(); }
+      c.save(); c.translate(2, yo); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = `600 ${p.k === 'OR' || p.k === 'NOR' ? .8 : 1}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText({ AND: '&', NAND: '&', OR: '≥1', NOR: '≥1', XOR: '=1', NOT: '1', SNOT: '1' }[p.k], 0, .08); c.restore();
+      if (p.k === 'SNOT') { c.lineWidth = .08; c.beginPath(); c.moveTo(1.35, y1 - .35); c.lineTo(1.7, y1 - .35); c.lineTo(1.7, y1 - .75); c.lineTo(2.05, y1 - .75); c.stroke(); }
+      break; }
+    case 'DFF': {
+      lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(3, 0, 3.55, 0, pc[2]); lead(3.45, 2, 4, 2, pc[3]); lead(3.55, 0, 4, 0, pc[2]);
+      c.strokeRect(1, -.6, 2, 3.2); c.beginPath(); c.arc(3.22, 2, .22, 0, 7); c.stroke();
+      c.beginPath(); c.moveTo(1, 1.75); c.lineTo(1.4, 2); c.lineTo(1, 2.25); c.stroke();
+      c.save(); c.fillStyle = body; c.font = '600 .8px sans-serif'; c.textBaseline = 'middle';
+      [['D', 1.2, 0, 'left'], ['Q', 2.8, 0, 'right'], ['C', 1.5, 2, 'left'], ['Q̄', 2.8, 2, 'right']].forEach(([t, x, y, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = al; c.fillText(t, 0, 0); c.restore(); });
+      c.restore(); break; }
+    case 'OPA': {
+      lead(0, 0, 1, 0, pc[1]); lead(0, 2, 1, 2, pc[0]); lead(3.4, 1, 4, 1, pc[2]); lead(2, -2, 2, -.2, pc[3]); lead(2, 4, 2, 2.2, pc[4]);
+      c.beginPath(); c.moveTo(1, -1); c.lineTo(1, 3); c.lineTo(3.4, 1); c.closePath(); c.stroke();
+      c.save(); c.fillStyle = body; c.font = '600 .9px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'center';
+      [['−', 1.45, 0], ['+', 1.45, 2]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); });
+      c.restore(); break; }
+    case 'ICX': {
+      const I = window.LochSimICs, def = I && I.find(p.v), info = def && I.CATALOG[def.key], cfg = K.sym555;
+      const nn = pins.length, labs = info && info.np === nn ? info.labels : null;
+      const bx0 = 1, bx1 = 5, by0 = cfg ? -1 : K.box[1], by1 = cfg ? 9 : K.box[3];
+      const kp = KD(p).pins;
+      kp.forEach(([x, y], i) => {
+        const left = x < 3 && y >= -1, top = y < 0, bottom = y > by1;
+        if (top) lead(x, y, x, by0, pc[i]); else if (bottom) lead(x, y, x, by1, pc[i]); else if (x === 0) lead(0, y, bx0, y, pc[i]); else lead(x, y, bx1, y, pc[i]);
+      });
+      c.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
+      c.save(); c.fillStyle = body;
+      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
+      kp.forEach(([x, y], i) => {
+        const nm = labs ? labs[i] : '', top = y < 0, bottom = y > by1;
+        T(String(i + 1), x + (top || bottom ? .45 : (x === 0 ? .45 : -.45)), top ? y + .45 : bottom ? y - .45 : y - .42, .5);
+        if (nm) { if (top) T(nm, x, by0 + .55, .55); else if (bottom) T(nm, x, by1 - .55, .55); else if (x === 0) T(nm, bx0 + .2, y, .62, 'left'); else T(nm, bx1 - .2, y, .62, 'right'); }
+      });
+      if (cfg) T(def ? 'NE555' : (p.v || 'IC'), 3.9, 4, .55); else T(info ? info.name.split(' ')[0] : (p.v || 'IC'), 3, (by0 + by1) / 2, .8);
+      c.restore(); break; }
     case 'LAMP': {
       lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]); circle(2, 0, 0.9); line(1.36, -0.64, 2.64, 0.64); line(2.64, -0.64, 1.36, 0.64); break; }
     case 'VM': case 'AM':
@@ -323,6 +398,7 @@ function drawPart(p, selected) {
       let b = 0, hex = '#ffd27a';
       if (p.k === 'LED') { b = Math.pow(clamp(o.e.i / 0.02, 0, 1), 0.6); hex = { rot: '#ff3b2f', 'grün': '#2fe05a', gelb: '#ffe033', blau: '#3d8bff', 'weiß': '#ffffff', orange: '#ff9a2f' }[p.v] || '#ff3b2f'; if (sim.burnt.has(p.id)) b = 0; }
       else { const pw = Math.abs(o.e.i * o.e.i / o.e.g); b = clamp(pw / (o.e.lamp || 0.6), 0, 1.2); }
+      if (p.k === 'LED' && o.e.imax && !sim.burnt.has(p.id) && window.LochFX) { const ratio = o.e.i / o.e.imax; if (ratio > 0.85) { b = Math.min(b * (1 + (ratio - 0.85) * 4), 1.6); const [sx, sy] = partCenter(p); LochFX.stress(sx, sy, ratio, view.s); } }
       if (b > 0.02) {
         const n = parseInt(hex.slice(1), 16), R = (n >> 16) & 255, G = (n >> 8) & 255, B = n & 255;
         const cxx = p.k === 'LED' ? 2 : 2, cyy = p.k === 'LED' ? -0.2 : 0, rr = (p.k === 'LED' ? 2.3 : 2.1);
@@ -354,7 +430,7 @@ function drawPart(p, selected) {
   }
   c.restore();
   // Beschriftung und Werte
-  const [mx, my] = rot(K.pins.length > 1 ? 2 : 0, 0, p.r);
+  const [mx, my] = p.k === 'ICX' ? rot(3, 0, p.r) : rot(K.pins.length > 1 ? 2 : 0, 0, p.r);
   const lx = X(p.x + mx), ly = Y(p.y + my);
   c.fillStyle = PRINT ? '#111' : '#cfd5db'; c.font = `${Math.max(10, S * 0.62)}px -apple-system,Segoe UI,sans-serif`; c.textBaseline = 'middle';
   let txt = valueText(p);
@@ -383,7 +459,7 @@ function valueText(p) {
     case 'R': case 'POT': return fmtVal(p.v, 'Ω');
     case 'C': case 'CE': return fmtVal(p.v, 'F');
     case 'L': return fmtVal(p.v, 'H');
-    case 'BAT': return fmtVal(p.v, 'V');
+    case 'BAT': return fmtVal(p.v, 'V') + (p.imax ? '  ≤ ' + fmtVal(p.imax, 'A') : '');
     case 'ZD': return fmtVal(p.v, 'V');
     case 'AC': return p.v;
     case 'LED': case 'LAMP': return p.v;
@@ -447,6 +523,7 @@ function render() {
   }
   if (cursor && tool !== 'select') { cx.strokeStyle = 'rgba(59,158,255,.9)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(cursor[0]), Y(cursor[1]), 7, 0, 7); cx.stroke(); }
   drawGraphs(W, H);
+  if (window.LochFX) LochFX.draw(cx);
 }
 function drawGraphs(W, H) {
   const n = sch.scopes.length; if (!n) return;
@@ -477,7 +554,7 @@ function drawGraphs(W, H) {
 /* ============ Treffertest ============ */
 function partAt(fx, fy) {
   for (let i = sch.parts.length - 1; i >= 0; i--) {
-    const p = sch.parts[i], K = KINDS[p.k], [a, b] = rot(fx - p.x, fy - p.y, (4 - p.r) & 3);
+    const p = sch.parts[i], K = KD(p), [a, b] = rot(fx - p.x, fy - p.y, (4 - p.r) & 3);
     if (a >= K.box[0] - 0.2 && a <= K.box[2] + 0.2 && b >= K.box[1] - 0.2 && b <= K.box[3] + 0.2) return p;
   }
   return null;
@@ -590,7 +667,7 @@ function onUp(p) {
         if (K.toggle) { part.sw = part.sw ? 0 : 1; const w = wrapMap.get(part.id); if (w) w.sw = part.sw; commit(true); }
       }
       break;
-    case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: 0, pos: 0.5, vr: K.vr, l: nextLabel(placeKind) }); commit(); } break;
+    case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: 0, pos: 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); commit(); } break;
     case 'wire': if (cursor && (cursor[0] !== a.start[0] || cursor[1] !== a.start[1])) { const e = ortho(a.start, cursor); addWire(a.start, e); wireStart = e; } break;
     case 'erase': if (a.did) commit(); break;
   }
@@ -638,13 +715,26 @@ function buildPalette() {
   if (simMode) h = chip('select', '☝ Bedienen', tool === 'select') + chip('scope', '∿ Graph', tool === 'scope') + chip('reset', '↺ Zurück', false);
   else {
     h = chip('select', '☝ Auswahl', tool === 'select') + chip('wire', '✎ Draht', tool === 'wire') + chip('erase', '⌫ Löschen', tool === 'erase') + '<span class="sep"></span>';
-    CATS.forEach(cat => {
+    if (!listMode()) CATS.forEach(cat => {
       Object.keys(KINDS).filter(k => KINDS[k].cat === cat).forEach(k => { h += chip('place', KINDS[k].name, tool === 'place' && placeKind === k, `data-k="${k}"`); });
       h += '<span class="sep"></span>';
     });
   }
   $('#pal').innerHTML = h;
+  // Bauteilliste links (Tablet/Laptop), nur im Zeichenmodus
+  const pl = $('#parts'), show = !simMode && listMode();
+  let lh = '';
+  if (show) CATS.forEach(cat => {
+    lh += `<div class="pcat">${cat}</div>`;
+    Object.keys(KINDS).filter(k => KINDS[k].cat === cat).forEach(k => { lh += `<button class="pit ${tool === 'place' && placeKind === k ? 'on' : ''}" data-t="place" data-k="${k}">${KINDS[k].name}</button>`; });
+  });
+  const keep = pl.scrollTop, was = pl.style.display;
+  pl.innerHTML = lh; pl.style.display = show ? 'block' : 'none'; pl.scrollTop = keep;
+  if (was !== pl.style.display) window.dispatchEvent(new Event('resize'));
 }
+const listMode = () => window.matchMedia('(min-width:720px)').matches;
+window.matchMedia('(min-width:720px)').addEventListener && window.matchMedia('(min-width:720px)').addEventListener('change', () => buildPalette());
+$('#parts').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) { placeRot = 0; setTool('place', b.dataset.k); } });
 $('#pal').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; if (b.dataset.t === 'place') { placeRot = 0; setTool('place', b.dataset.k); } else if (b.dataset.t === 'reset') resetSim(); else setTool(b.dataset.t); });
 $('#pal').addEventListener('wheel', e => { const el = e.currentTarget; if (el.scrollWidth <= el.clientWidth) return; el.scrollLeft += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; e.preventDefault(); }, { passive: false });
 (function () {
@@ -664,9 +754,10 @@ function setSimMode(on) {
   else { running = false; tool = 'select'; }
   const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', on ? 'true' : 'false');
   $('#bRun').style.display = on ? '' : 'none';
+  if (window.LochFX) { LochFX.showBtn(on); LochFX.clear(); if (on) LochFX.unlock(); }
   buildPalette(); refreshUI(); draw();
 }
-function resetSim() { rebuild(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
+function resetSim() { if (window.LochFX) LochFX.clear(); rebuild(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
 function refreshUI() {
   const side = $('#side'); if (!side) return;
   $('#bRun').textContent = running ? '⏸ Stopp' : '▶ Start';
@@ -691,6 +782,7 @@ function refreshUI() {
       const K = KINDS[p.k];
       h += `<div class="card"><h4>${esc(p.l ? p.l + ' · ' : '')}${esc(K.name)}</h4>`;
       K.props.forEach(([key, label, type, opt, names]) => {
+        if (type === 'ictype' && window.LochSimICs) { const cur = LochSimICs.find(p.v), ck = cur ? cur.key : ''; h += `<label class="f"><span>Typ</span><select data-ic="1">${ck ? '' : '<option value="">(eigener Wert)</option>'}${LochSimICs.SORT.map(q => `<option value="${q}" ${q === ck ? 'selected' : ''}>${esc(LochSimICs.CATALOG[q].name)}</option>`).join('')}</select></label><label class="f"><span>Wert</span><input data-p="v" value="${esc(p.v || '')}"></label>`; return; }
         if (type === 'text') h += `<label class="f"><span>${label}</span><input data-p="${key}" value="${esc(p[key] == null ? '' : p[key])}" placeholder="${esc(opt || '')}"></label>`;
         else if (type === 'range') h += `<label class="sl"><span>${label}</span><input type="range" data-p="${key}" min="0" max="1" step="0.01" value="${p[key] == null ? 0.5 : p[key]}"></label>`;
         else if (type === 'select') h += `<label class="f"><span>${label}</span><select data-p="${key}">${opt.map(o => `<option value="${o}" ${(p[key] || K[key]) === o ? 'selected' : ''}>${names ? names[o] : o}</option>`).join('')}</select></label>`;
@@ -731,7 +823,10 @@ $('#side').addEventListener('input', e => {
     p[key] = v; commit(true, true); rebuildKeep();
   }
 });
-$('#side').addEventListener('change', e => { const t = e.target; if (t.tagName === 'SELECT' && t.dataset.p && sel) { const p = byPart(sel.id); p[t.dataset.p] = t.value; commit(); } });
+const ICDEF = { '555': 'NE555', '7400': 'SN7400', '7402': 'SN7402', '7404': 'SN7404', '7408': 'SN7408', '7432': 'SN7432', '7486': 'SN7486', '7414': 'SN74HC14', '4011': 'CD4011', '4001': 'CD4001', '4081': 'CD4081', '4071': 'CD4071', '4093': 'CD4093', '4069': 'CD4069', '7474': 'SN7474', '4013': 'CD4013', '4017': 'CD4017', '4020': 'CD4020', '7490': 'SN7490', '7447': 'SN7447', '4511': 'CD4511', '741': 'LM741', '358': 'LM358', '072': 'TL072', '324': 'LM324' };
+$('#side').addEventListener('change', e => {
+  const t0 = e.target;
+  if (t0.dataset && t0.dataset.ic && sel && sel.t === 'part') { const p0 = byPart(sel.id), C = window.LochSimICs && LochSimICs.CATALOG[t0.value]; if (p0 && C) { p0.v = ICDEF[t0.value] || t0.value; p0.n = C.np; commit(); } return; } const t = e.target; if (t.tagName === 'SELECT' && t.dataset.p && sel) { const p = byPart(sel.id); p[t.dataset.p] = t.value; commit(); } });
 function rebuildKeep() { rebuild(); draw(); }
 
 /* ============ Hauptschleife ============ */
@@ -739,6 +834,7 @@ function loop(now) {
   const rdt = Math.min((now - lastFrame) / 1000, 0.1); lastFrame = now;
   try {
     if (running) { advance(rdt); stepPhases(rdt); dirtyDraw = true; }
+    if (window.LochFX && LochFX.active()) dirtyDraw = true;
     if (dirtyDraw) { dirtyDraw = false; render(); }
     if (running || sel) updateLive();
   } catch (e) { console.error(e); running = false; toast('Fehler in der Simulation: ' + e.message); refreshUI(); }
@@ -749,8 +845,9 @@ function updateLive() {
   const now = performance.now(); if (now - lastLive < 120) return; lastLive = now;
   const t = $('#tLbl'); if (t && sim) t.textContent = fmtT(sim.t);
   const w = $('#warn'); if (w) {
-    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC')) msgs.push('Keine Spannungsquelle in der Schaltung.');
+    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
     else if (!hasGround()) msgs.push('Keine Masse gesetzt. Es wird der Minuspol der Quelle als Masse genommen.');
+    circ && circ.elems.forEach(e => { if (e.type === 'V' && e.cc && e.part && e.part.item) msgs.push((e.part.item.l || 'Quelle') + ' begrenzt den Strom auf ' + fmt(e.imax, 'A') + ': die Spannung bricht ein.'); });
     sim && sim.burnt.forEach(id => { const p = byPart(id); if (p) msgs.push(KINDS[p.k].name + ' ist durchgebrannt (mit „Zurück“ wiederherstellen).'); });
     const html = msgs.length ? `<div class="card warn"><ul>${msgs.map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>` : '';
     if (w.innerHTML !== html) w.innerHTML = html;
@@ -795,7 +892,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v30</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v31</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -841,7 +938,7 @@ function fit() {
   const r = rectOf();
   if (!sch.parts.length && !sch.wires.length) { view = { s: 24, ox: 80, oy: 80 }; draw(); return; }
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  sch.parts.forEach(p => { const K = KINDS[p.k]; [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
+  sch.parts.forEach(p => { const K = KD(p); [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
   sch.wires.forEach(w => { x0 = Math.min(x0, w.x1, w.x2); x1 = Math.max(x1, w.x1, w.x2); y0 = Math.min(y0, w.y1, w.y2); y1 = Math.max(y1, w.y1, w.y2); });
   const pad = 2, W = x1 - x0 + 2 * pad, H = y1 - y0 + 2 * pad, gh = sch.scopes.length ? Math.min(150, r.height * 0.34) : 0;
   const s = clamp(Math.min(r.width / W, (r.height - gh) / H), 10, 50);
@@ -935,6 +1032,20 @@ const EXAMPLES = [
   { cat: 'Dioden', name: 'Spannungsverdoppler', info: 'Zwei Dioden und zwei Kondensatoren verdoppeln die Spitzenspannung',
     make: () => ({ parts: [['AC', 2, 4, 1, '5V 50Hz'], ['C', 2, 2, 0, '47u'], ['D', 6, 6, 3, '1N4148'], ['D', 6, 2, 0, '1N4148'], ['CE', 10, 2, 1, '47u'], ['R', 14, 2, 1, '10k'], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [10, 2, 14, 2], [6, 6, 6, 8], [10, 6, 10, 8], [14, 6, 14, 8], [2, 8, 6, 8, 10, 8, 14, 8]], scopes: [0, 4], tempo: 0.4, win: 0.1 }) },
+  { cat: 'Logik', name: 'UND-Gatter mit zwei Schaltern', info: 'Die LED leuchtet nur, wenn beide Schalter geschlossen sind',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '5'], ['SPST', 6, 2, 1, '', { sw: 1 }], ['SPST', 8, 2, 1, '', { sw: 1 }], ['AND', 12, 8, 0, '5V'], ['R', 16, 9, 0, '470'], ['LED', 20, 9, 1, 'grün'], ['GND', 2, 8], ['GND', 20, 13]],
+      wires: [[2, 4, 2, 2, 6, 2, 8, 2], [8, 6, 8, 8, 12, 8], [6, 6, 6, 10, 12, 10]], scopes: [], tempo: 0.75 }) },
+  { cat: 'Logik', name: 'NOR-Flipflop (Speicher)', info: 'Taster S setzt, Taster R löscht: das Gatterpaar merkt sich den Zustand',
+    make: () => ({ parts: [['BAT', 2, 2, 1, '5'], ['PB', 6, 0, 1, ''], ['PB', 8, 0, 1, ''], ['NOR', 14, 2, 0, '5V'], ['NOR', 14, 10, 0, '5V'], ['R', 21, 3, 0, '470'], ['LED', 25, 3, 1, 'rot'], ['GND', 2, 6], ['GND', 25, 7]],
+      wires: [[2, 2, 2, 0, 6, 0, 8, 0], [8, 4, 10, 4, 10, 2, 14, 2], [6, 4, 6, 10, 14, 10],
+              [18, 3, 21, 3, 21, 14, 12, 14, 12, 12, 14, 12], [18, 11, 19, 11, 19, 7, 12, 7, 12, 4, 14, 4]], scopes: [3, 4], tempo: 0.75, win: 5 }) },
+  { cat: 'Logik', name: '555-Blinker (astabil)', info: 'Der 555 lädt und entlädt den Kondensator und lässt die LED etwa 1,4-mal pro Sekunde blinken',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['ICX', 14, 6, 0, 'NE555', { n: 8 }], ['R', 26, 2, 1, '10k'], ['R', 26, 8, 1, '47k'], ['C', 13, 16, 0, '10u'], ['R', 20, 12, 0, '470'], ['LED', 24, 12, 1, 'rot'], ['GND', 2, 8], ['GND', 17, 16], ['GND', 24, 16]],
+      wires: [[2, 4, 2, 2, 16, 2, 18, 2, 26, 2], [16, 4, 16, 2], [18, 4, 18, 2], [26, 6, 26, 8], [20, 8, 26, 8],
+              [14, 10, 12, 10, 12, 12, 14, 12], [12, 12, 12, 16, 13, 16], [26, 12, 26, 19, 12, 19, 12, 16]], scopes: [4, 6], tempo: 0.75, win: 3 }) },
+  { cat: 'Logik', name: 'Operationsverstärker als Komparator', info: 'Poti drehen: liegt IN+ über der Referenz von 4,5 V, schaltet der Ausgang die LED ein',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['POT', 4, 2, 1, '10k', { pos: 0.4 }], ['R', 12, 2, 1, '10k'], ['R', 12, 6, 1, '10k'], ['OPA', 16, 8, 0, 'LM358'], ['R', 20, 9, 0, '470'], ['LED', 24, 9, 1, 'grün'], ['GND', 2, 8], ['GND', 4, 6], ['GND', 12, 10], ['GND', 18, 12], ['GND', 24, 13]],
+      wires: [[2, 4, 2, 2, 4, 2, 12, 2, 18, 2, 18, 6], [12, 6, 14, 6, 14, 8, 16, 8], [6, 4, 6, 13, 14, 13, 14, 10, 16, 10]], scopes: [], tempo: 0.75 }) },
   { cat: 'Transistoren', name: 'Emitterschaltung (Verstärker)', info: 'Der Transistor verstärkt das kleine Wechselsignal etwa 100-fach',
     make: () => ({ parts: [['AC', 2, 6, 1, '10mV 1kHz'], ['C', 2, 6, 0, '10u'], ['R', 6, 0, 1, '47k'], ['R', 6, 6, 1, '10k'], ['NPN', 8, 6, 0, 'BC547'], ['R', 10, 0, 1, '2.2k'], ['R', 10, 8, 1, '470'], ['CE', 10, 4, 0, '10u'], ['R', 14, 4, 1, '10k'], ['BAT', 18, 4, 1, '12'], ['CE', 12, 8, 1, '100u'], ['GND', 2, 12]],
       wires: [[18, 4, 18, 0, 10, 0, 6, 0], [18, 8, 18, 12, 14, 12, 12, 12, 10, 12, 6, 12, 2, 12], [2, 10, 2, 12], [6, 10, 6, 12], [6, 4, 6, 6, 8, 6], [10, 8, 12, 8], [14, 8, 14, 12]], scopes: [0, 8], tempo: 0.62, win: 0.004 }) },
@@ -944,7 +1055,7 @@ const EXAMPLES = [
 const userName = () => { try { return localStorage.getItem('lm4.name') || ''; } catch (e) { return ''; } };
 function planBounds() {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  sch.parts.forEach(p => { const K = KINDS[p.k]; [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
+  sch.parts.forEach(p => { const K = KD(p); [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
   sch.wires.forEach(w => { x0 = Math.min(x0, w.x1, w.x2); x1 = Math.max(x1, w.x1, w.x2); y0 = Math.min(y0, w.y1, w.y2); y1 = Math.max(y1, w.y1, w.y2); });
   return [x0, y0, x1, y1];
 }
