@@ -486,7 +486,13 @@ const ortho = (s, g) => (Math.abs(g[0] - s[0]) >= Math.abs(g[1] - s[1]) ? [g[0],
 const ptrs = new Map(); let gest = null;
 const rectOf = () => cv.getBoundingClientRect();
 cv.addEventListener('pointerdown', e => {
-  e.preventDefault(); try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  e.preventDefault();
+  // Maus: Rechtsklick beendet das aktive Werkzeug (zurück zur Auswahl), andere Tasten tun nichts
+  if (e.pointerType === 'mouse' && e.button !== 0) {
+    if (e.button === 2 && !simMode) { wireStart = null; ghost = null; act = null; setTool('select'); draw(); }
+    return;
+  }
+  try { cv.setPointerCapture(e.pointerId); } catch (_) {}
   const r = rectOf(); ptrs.set(e.pointerId, { x: e.clientX - r.left, y: e.clientY - r.top });
   if (ptrs.size === 2) { cancelAct(); const [a, b] = [...ptrs.values()]; gest = { cx: (a.x + b.x) / 2, cy: (a.y + b.y) / 2, d: Math.hypot(a.x - b.x, a.y - b.y) || 1 }; return; }
   if (ptrs.size > 2) return;
