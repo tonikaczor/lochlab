@@ -112,6 +112,7 @@ function advance(T) {
   // Zustände auf die Bauteile übertragen
   circ.elems.forEach(e => {
     const it = e.part && e.part.item; if (!it) return;
+    if (e.type === 'D' && e.seg != null) { (it._seg = it._seg || [])[e.seg] = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); return; }
     if (e.type === 'D' && e.led) { it._b = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); it._st = e.imax ? e.i / e.imax : 0; }
     if (e.res) it._hot = e.power > 0.25 ? clampN(e.power / 1, 0, 1) : 0;
   });
@@ -191,7 +192,7 @@ function enterSim() {
 }
 function leaveSim() {
   simOn = false; running = false;
-  doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; delete i._p; });
+  doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; delete i._seg; delete i._p; });
   doc.items.forEach(i => { if (i.t === 'part') { const w = wrap.get(i.id); if (w) { i.sw = w.sw; i.pos = w.pos; i.light = w.light; } } });
   document.body.classList.remove('sim'); sw.setAttribute('aria-checked', 'false');
   $('#side').innerHTML = ''; $('#side').classList.remove('on');
@@ -379,7 +380,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-s]'); if (!b || !simOn) return;
   const s = b.dataset.s;
   if (s === 'run') { running = !running; lastFrame = performance.now(); }
-  else if (s === 'rst') { if (window.LochFX) LochFX.clear(); sim.reset(); resetSamples(); doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; }); toast('Simulation zurückgesetzt'); }
+  else if (s === 'rst') { if (window.LochFX) LochFX.clear(); sim.reset(); resetSamples(); doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; delete i._seg; }); toast('Simulation zurückgesetzt'); }
   else if (s.startsWith('t:')) { simTool = s.slice(2); }
   else if (s === 'spd') speed = parseFloat(b.dataset.v);
   else if (s === 'tm' || s === 'tp') { const i = TDIV.findIndex(t => Math.abs(t - scope.tdiv) < t * 1e-6); scope.tdiv = TDIV[clampN(i + (s === 'tp' ? 1 : -1), 0, TDIV.length - 1)]; buf.n = 0; buf.head = 0; buf.last = -1; }

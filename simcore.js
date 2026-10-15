@@ -165,6 +165,16 @@ function buildCircuit(layout) {
         const led = add({ type: 'D', a: n(0), b: n(1), is, nn: 2, led: true, color: 'rot', imax: 0.06, part: p, vj: 0, sub: 'LED' });
         add({ type: 'CCS', a: n(2), b: n(3), ictl: 0, part: p, sub: 'T', upd() { this.ictl = Math.min(0.05, 0.5 * Math.max(0, led.i || 0)); } });
         break; }
+      case 'SEG7': {
+        const vr = String(p.vr || 'mk');
+        if (vr[0] === 'd') { warnings.push({ part: p, text: 'Doppelanzeige wird noch nicht simuliert (Pinbelegung ungeprüft)' }); break; }
+        const anode = vr[1] === 'a', map = [4, 3, -1, 2, 7, 1, 0, -1, 5, 6], vf = LEDVF.rot, is = 0.01 * Math.exp(-vf / (2 * VT));
+        add({ type: 'R', a: n(2), b: n(7), g: 1e3, part: p, sub: 'com' });
+        for (let i = 0; i < 10; i++) {
+          if (map[i] < 0) continue;
+          add({ type: 'D', a: anode ? n(2) : n(i), b: anode ? n(i) : n(2), is, nn: 2, led: true, color: 'rot', imax: 0.04, part: p, vj: 0, seg: map[i], sub: 's' + map[i] });
+        }
+        break; }
       case 'NETZ': {
         const u = Math.max(si(p.v, 230), 1);
         add(p.vr === 'ac' ? { type: 'V', a: n(0), b: n(1), v0: 0, amp: u * 1.4142, freq: 50, rint: 0.3, wave: 'sin', part: p } : { type: 'V', a: n(0), b: n(1), v0: u, rint: 0.3, wave: 'dc', imax: 0, part: p });
