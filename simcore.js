@@ -492,19 +492,19 @@ function createSim(circ) {
         case 'R': if (e.part && burnt.has(e.part.id)) { e.i = 0; break; }
           e.i = (v[e.a] - v[e.b]) * e.g;
           if (e.fuse) { const r = e.i / e.fuse.ir; e.heat = Math.max(0, e.heat + dt * (r * r - 1) / e.fuse.tau); e.hot = Math.min(1, e.heat); if (e.heat > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Sicherung hat ausgelöst' }); } }
-          if (e.lamp) { const rt = e.i * e.i / e.g / e.lamp; if (rt > 25) e.lh = 2; else e.lh = rt > 2 ? (e.lh || 0) + dt / 0.05 : Math.max(0, (e.lh || 0) - dt / 0.2); if (e.lh > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Glühlampe durchgebrannt' }); } }
+          if (e.lamp) { const pw0 = e.i * e.i / e.g; e.pav = e.pav == null ? pw0 : e.pav + (pw0 - e.pav) * Math.min(1, dt / 0.02); const rt = e.pav / e.lamp; if (rt > 25) e.lh = 2; else e.lh = rt > 2.2 ? (e.lh || 0) + dt / 0.05 : Math.max(0, (e.lh || 0) - dt / 0.2); if (e.lh > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Glühlampe durchgebrannt' }); } }
           if (e.speaker && Math.abs(e.i * e.i / e.g) > 2) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Lautsprecher überlastet' }); }
           if (e.res && !burnt.has(e.part.id)) { const pw = e.i * e.i / e.g; e.power = pw; if (pw > 1.5) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Widerstand überlastet' }); } } break;
         case 'S': {
           e.i = (v[e.a] - v[e.b]) * (e.closed ? 1 / (e.ron || RON) : 1 / ROFF);
           if (e.trip && e.closed) {
-            const r = Math.abs(e.i) / e.trip.ir; e.trip.h = Math.max(0, e.trip.h + dt * (r * r - 1.15) / 10);
-            if (r > e.trip.mag || e.trip.h > 1) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; e.trip.h = 0; sim.events.push({ kind: 'trip', part: e.part, text: 'Sicherungsautomat ausgelöst' + (r > e.trip.mag ? ' (Kurzschluss)' : ' (Überlast)') }); }
+            const r = Math.abs(e.i) / e.trip.ir; e.trip.h = Math.max(0, e.trip.h + dt * (r * r - 1.15) / 1);
+            if (r > e.trip.mag * 1.4142 || e.trip.h > 1) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; e.trip.h = 0; sim.events.push({ kind: 'trip', part: e.part, text: 'Sicherungsautomat ausgelöst' + (r > e.trip.mag * 1.4142 ? ' (Kurzschluss)' : ' (Überlast)') }); }
           }
           break; }
         case 'RCD': {
           const g = e.closed ? 1 / RON : 1 / ROFF; e.i = (v[e.a] - v[e.c]) * g; e.iN = (v[e.b] - v[e.d]) * g; e.leak = e.i + e.iN;
-          if (e.closed && Math.abs(e.leak) > 0.03) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; sim.events.push({ kind: 'trip', part: e.part, text: 'FI-Schutzschalter ausgelöst (Fehlerstrom ' + (Math.abs(e.leak) * 1000).toFixed(0) + ' mA)' }); }
+          if (e.closed && Math.abs(e.leak) > 0.0424) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; sim.events.push({ kind: 'trip', part: e.part, text: 'FI-Schutzschalter ausgelöst (Fehlerstrom ' + (Math.abs(e.leak) * 1000).toFixed(0) + ' mA)' }); }
           break; }
         case 'C': { const vc = v[e.a] - v[e.b]; e.i = e.c / dt * (vc - e.vprev); e.vprev = vc; if (e.vmax && Math.abs(vc) > e.vmax * 1.2 && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Kondensator überspannt (' + vc.toFixed(0) + ' V bei ' + e.vmax + ' V)' }); } break; }
         case 'L': { const g = dt / e.l; e.i = e.iprev + g * (v[e.a] - v[e.b]); e.iprev = e.i; break; }
@@ -538,7 +538,7 @@ function createSim(circ) {
   };
 
   sim.volt = (node) => (node < 0 ? NaN : v[node]);
-  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'RL') { e.iprev = 0; e.heat = 0; e.on = false; e.latch = false; e.phase = 0; if (e.mech) e.mech.w = 0; } if (e.type === 'THY') e.on = false; if (e.type === 'TRF') { e.i1p = e.i2p = 0; } if (e.fuse) e.heat = 0; if (e.lamp) e.lh = 0; if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
+  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'RL') { e.iprev = 0; e.heat = 0; e.on = false; e.latch = false; e.phase = 0; if (e.mech) e.mech.w = 0; } if (e.type === 'THY') e.on = false; if (e.type === 'TRF') { e.i1p = e.i2p = 0; } if (e.fuse) e.heat = 0; if (e.lamp) { e.lh = 0; e.pav = null; } if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
   return sim;
 }
 

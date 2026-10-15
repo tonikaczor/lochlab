@@ -45,7 +45,7 @@ const KINDS = {
   THY: { name: 'Thyristor', cat: 'Halbleiter', pins: [[0, 0], [4, 0], [3, 2]], v: 'TIC106', core: 'THY', box: [0, -1, 4, 2.2], props: [] },
   PHT: { name: 'Fototransistor', cat: 'Halbleiter', pins: [[2, -2], [2, 2]], v: '', core: 'PHT', box: [-1, -2.2, 2.6, 2.2], pos: true, props: [['pos', 'Helligkeit', 'range']] },
   OPTO:{ name: 'Optokoppler', cat: 'Halbleiter', pins: [[0, 0], [0, 4], [6, 0], [6, 4]], v: 'PC817', core: 'OPTO', box: [0, -0.4, 6, 4.4], props: [] },
-  NETZ:{ name: 'Netz 230 V (L, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0]], v: '230V', core: 'NETZ', vr: 'dc', box: [-1, -3, 5, 0.3], props: [['v', 'Spannung', 'text', 'z. B. 230V'], ['vr', 'Darstellung', 'select', ['dc', 'ac'], { dc: 'Effektivwert (ruhig)', ac: 'Wechselspannung 50 Hz' }]] },
+  NETZ:{ name: 'Netz 230 V (L, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0]], v: '230V', core: 'NETZ', vr: 'ac', box: [-1, -3, 5, 0.3], props: [['v', 'Spannung', 'text', 'z. B. 230V'], ['vr', 'Darstellung', 'select', ['dc', 'ac'], { dc: 'Effektivwert (ruhig)', ac: 'Wechselspannung 50 Hz' }]] },
   LSS: { name: 'Sicherungsautomat', cat: 'Netz & Schutz', lab: 'sim', pins: T2, v: 'B16', core: 'LSS', box: [0, -1.3, 4, 1.1], toggle: true, sw0: 1, props: [['v', 'Typ und Nennstrom', 'text', 'z. B. B16 oder C10']] },
   RCD: { name: 'FI-Schutzschalter', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '30mA', core: 'RCD', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, sw0: 1, props: [] },
   KREUZ:{ name: 'Kreuzschalter', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '', core: 'KREUZ', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, props: [] },
@@ -127,7 +127,7 @@ const redo = () => { if (hi < hist.length - 1) restore(hi + 1); };
 function toCore(p) {
   const K = KINDS[p.k];
   let pins = pinsOf(p); if (K.map) pins = K.map.map(i => pins[i]);
-  return { id: p.id, k: K.core, vr: K.vr || p.vr, v: p.v, n: p.n || 2, pins, sw: p.sw ? 1 : 0, pos: p.pos == null ? 0.5 : p.pos, light: p.pos == null ? 0.5 : p.pos, pressed: !!p.pressed, rint: 0.01, item: p };
+  return { id: p.id, k: K.core, vr: p.vr != null ? p.vr : K.vr, v: p.v, n: p.n || 2, pins, sw: p.sw ? 1 : 0, pos: p.pos == null ? 0.5 : p.pos, light: p.pos == null ? 0.5 : p.pos, pressed: !!p.pressed, rint: 0.01, item: p };
 }
 function rebuild() {
   const old = circ && sim ? { elems: circ.elems, t: sim.t } : null;
@@ -543,7 +543,7 @@ function drawPart(p, selected) {
     if (o) {
       let b = 0, hex = '#ffd27a';
       if (p.k === 'LED') { b = Math.pow(clamp(o.e.i / 0.02, 0, 1), 0.6); hex = { rot: '#ff3b2f', 'grün': '#2fe05a', gelb: '#ffe033', blau: '#3d8bff', 'weiß': '#ffffff', orange: '#ff9a2f' }[p.v] || '#ff3b2f'; if (sim.burnt.has(p.id)) b = 0; }
-      else { const pw = Math.abs(o.e.i * o.e.i / o.e.g); b = clamp(pw / (o.e.lamp || 0.6), 0, 1.2); if (p.k === 'HEAT') hex = '#ff6a2a'; }
+      else { const pw = o.e.pav != null ? o.e.pav : Math.abs(o.e.i * o.e.i / o.e.g); b = clamp(pw / (o.e.lamp || 0.6), 0, 1.2); if (p.k === 'HEAT') hex = '#ff6a2a'; }
       if (p.k === 'LED' && o.e.imax && !sim.burnt.has(p.id) && window.LochFX) { const ratio = o.e.i / o.e.imax; if (ratio > 0.85) { b = Math.min(b * (1 + (ratio - 0.85) * 4), 1.6); const [sx, sy] = partCenter(p); LochFX.stress(sx, sy, ratio, view.s); } }
       if (b > 0.02) {
         const n = parseInt(hex.slice(1), 16), R = (n >> 16) & 255, G = (n >> 8) & 255, B = n & 255;
@@ -1112,7 +1112,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -1217,7 +1217,43 @@ function makeLayout() {
     location.href = 'layout.html?auto';
   });
 }
+
+/* ---- Teilen: die ganze Schaltung steckt komprimiert im Link (wie ein Textdokument zum Einfügen) ---- */
+async function packShare(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, tag = 's';
+  if (window.CompressionStream) { try { const cs = new CompressionStream('deflate-raw'), w = cs.writable.getWriter(); w.write(bytes); w.close(); out = new Uint8Array(await new Response(cs.readable).arrayBuffer()); tag = 'z'; } catch (e) {} }
+  let bin = ''; out.forEach(b => { bin += String.fromCharCode(b); });
+  return tag + '=' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function unpackShare(h) {
+  const m = String(h).match(/^#?([sz])=([\w-]+)$/); if (!m) return null;
+  let b64 = m[2].replace(/-/g, '+').replace(/_/g, '/'); while (b64.length % 4) b64 += '=';
+  const bin = atob(b64), bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  let txt;
+  if (m[1] === 'z') { const ds = new DecompressionStream('deflate-raw'), w = ds.writable.getWriter(); w.write(bytes); w.close(); txt = new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()); }
+  else txt = new TextDecoder().decode(bytes);
+  return JSON.parse(txt);
+}
+async function shareNow(obj, title) {
+  let url; try { url = location.href.split('#')[0] + '#' + await packShare(obj); } catch (e) { toast('Teilen nicht möglich'); return; }
+  if (navigator.share) { try { await navigator.share({ title: 'Tonfunk Lab: ' + title, text: 'Schau dir „' + title + '“ an:', url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  sheet('Teilen', b => {
+    b.innerHTML = '<p class="hint2" style="margin-top:0">Diesen Link weitergeben (zum Beispiel per WhatsApp oder E-Mail). Wer ihn öffnet, bekommt eine Kopie deiner Arbeit.</p><textarea id="shTx" rows="5" readonly></textarea><div class="btns"><button class="btn pri" id="shCp">Link kopieren</button></div>';
+    const ta = b.querySelector('#shTx'); ta.value = url;
+    b.querySelector('#shCp').onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Link kopiert'); } catch (e) { ta.select(); toast('Bitte Text markieren und kopieren'); } };
+  });
+}
+window.addEventListener('hashchange', () => { loadShared(); });
+async function loadShared() {
+  if (!/^#[sz]=/.test(location.hash)) return false;
+  let d = null; try { d = await unpackShare(location.hash); } catch (e) {}
+  history.replaceState(null, '', location.pathname + location.search);
+  if (!d || !Array.isArray(d.parts)) { toast('Der Link ist ungültig'); return false; }
+  if (sch && (sch.parts.length || sch.wires.length)) { try { sch.name = sch.name || 'Schaltung'; saveNamed(); } catch (e) {} }
+  d.name = (d.name || 'Schaltung') + ' (geteilt)'; delete d.sid; loadCircuit(d); toast('Geteilte Schaltung geladen'); return true;
+}
 function menuAct(m) {
+  if (m === 'share') { if (!sch.parts.length) { toast('Noch nichts gezeichnet'); return; } shareNow(JSON.parse(snap()), sch.name); return; }
   if (m === 'auto') { makeLayout(); return; }
   if (m === 'new') confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }));
   else if (m === 'ex') openExamples();
@@ -1230,7 +1266,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v41</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v42</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -1376,29 +1412,29 @@ const EXAMPLES = [
       wires: [[2, 4, 2, 2], [10, 2, 14, 2], [6, 6, 6, 8], [10, 6, 10, 8], [14, 6, 14, 8], [2, 8, 6, 8, 10, 8, 14, 8]], scopes: [0, 4], tempo: 0.4, win: 0.1 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Ausschaltung mit Sicherungsautomat', info: 'Schalter antippen: die Lampe geht an und aus. Der Sicherungsautomat schützt die Leitung.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', 1, 6, 1, '', { sw: 1 }], ['LAMP', -3, 12, 1, '230V 60W']],
-      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 10, 1, 12, -3, 12], ['blau', 3, 0, 3, 18, -3, 18, -3, 16]], scopes: [], tempo: 0.75 }) },
+      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 10, 1, 12, -3, 12], ['blau', 3, 0, 3, 18, -3, 18, -3, 16]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Wechselschaltung (zwei Orte)', info: 'Die Lampe lässt sich von beiden Wechselschaltern aus ein- und ausschalten. Die schwarzen Adern sind die Wechseldrähte.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPDT', 1, 6, 1, ''], ['SPDT', 1, 22, 3, ''], ['LAMP', -3, 24, 1, '230V 60W']],
-      wires: [['braun', 1, 0, 1, 2], ['schwarz', 2, 10, 2, 18], ['schwarz', 0, 10, 0, 18], ['braun', 1, 22, 1, 24, -3, 24], ['blau', 3, 0, 3, 30, -3, 30, -3, 28]], scopes: [], tempo: 0.75 }) },
+      wires: [['braun', 1, 0, 1, 2], ['schwarz', 2, 10, 2, 18], ['schwarz', 0, 10, 0, 18], ['braun', 1, 22, 1, 24, -3, 24], ['blau', 3, 0, 3, 30, -3, 30, -3, 28]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Kreuzschaltung (drei Orte)', info: 'Zwei Wechselschalter und ein Kreuzschalter in der Mitte: von jedem der drei Orte lässt sich das Licht schalten.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPDT', 1, 6, 1, ''], ['KREUZ', 0, 12], ['SPDT', 1, 22, 3, ''], ['LAMP', -3, 24, 1, '230V 60W']],
-      wires: [['braun', 1, 0, 1, 2], ['schwarz', 2, 10, 2, 12], ['schwarz', 0, 10, 0, 12], ['schwarz', 0, 16, 0, 18], ['schwarz', 2, 16, 2, 18], ['braun', 1, 22, 1, 24, -3, 24], ['blau', 3, 0, 3, 30, -3, 30, -3, 28]], scopes: [], tempo: 0.75 }) },
+      wires: [['braun', 1, 0, 1, 2], ['schwarz', 2, 10, 2, 12], ['schwarz', 0, 10, 0, 12], ['schwarz', 0, 16, 0, 18], ['schwarz', 2, 16, 2, 18], ['braun', 1, 22, 1, 24, -3, 24], ['blau', 3, 0, 3, 30, -3, 30, -3, 28]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Stromstoßschalter (Treppenhaus)', info: 'Zwei Taster an verschiedenen Orten: jeder Druck schaltet das Licht um. Dauerhaft halten ist nicht nötig.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['PB', -4, 6, 1, ''], ['PB', -8, 6, 1, ''], ['IMP', -6, 12, 0, '230V'], ['LAMP', -2, 20, 1, '230V 60W']],
       wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -4, 6, -8, 6], ['schwarz', -8, 10, -6, 10, -4, 10], ['schwarz', -6, 10, -6, 12], ['braun', 1, 6, 1, 12, 0, 12], ['schwarz', 0, 16, 0, 20, -2, 20],
-              ['blau', 3, 0, 3, 24, 3, 26], ['blau', -2, 24, 3, 24], ['blau', -6, 16, -6, 26, 3, 26]], scopes: [], tempo: 0.75 }) },
+              ['blau', 3, 0, 3, 24, 3, 26], ['blau', -2, 24, 3, 24], ['blau', -6, 16, -6, 26, 3, 26]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'FI-Schutzschalter an der Steckdose', info: 'Steckdose antippen = Gerät defekt (Körperschluss). Der FI misst den Fehlerstrom und schaltet innerhalb von Millisekunden ab.',
     make: () => ({ parts: [['NETZ', 1, 0], ['RCD', 1, 2], ['LSS', 1, 6, 1, 'B16'], ['SD', -3, 10, 0, '2000W']],
-      wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 2], ['blau', 3, 6, 3, 12, 1, 12], ['gruen', 5, 0, 5, 14, 1, 14]], scopes: [], tempo: 0.75 }) },
+      wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 2], ['blau', 3, 6, 3, 12, 1, 12], ['gruen', 5, 0, 5, 14, 1, 14]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Überlast: drei Heizlüfter', info: 'Dritten Schalter einschalten: 26 A sind mehr als der Sicherungsautomat B16 erlaubt. Nach einigen Sekunden löst er aus.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', -4, 6, 1, '', { sw: 1 }], ['SPST', -8, 6, 1, '', { sw: 1 }], ['SPST', -12, 6, 1, '', { sw: 0 }], ['HEAT', -4, 10, 1, '230V 2000W'], ['HEAT', -8, 10, 1, '230V 2000W'], ['HEAT', -12, 10, 1, '230V 2000W']],
-      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -4, 6, -8, 6, -12, 6], ['blau', 3, 0, 3, 16, -4, 16, -8, 16, -12, 16], ['blau', -4, 14, -4, 16], ['blau', -8, 14, -8, 16], ['blau', -12, 14, -12, 16]], scopes: [], tempo: 0.8 }) },
+      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -4, 6, -8, 6, -12, 6], ['blau', 3, 0, 3, 16, -4, 16, -8, 16, -12, 16], ['blau', -4, 14, -4, 16], ['blau', -8, 14, -8, 16], ['blau', -12, 14, -12, 16]], scopes: [0, 5], tempo: 0.6, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Kurzschluss löst den Sicherungsautomaten aus', info: 'Fehlerstelle antippen: ein Kurzschluss zieht sehr hohen Strom. Der Sicherungsautomat schaltet sofort ab.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['LAMP', -3, 6, 1, '230V 60W'], ['FAULT', -7, 6, 1, '0.05']],
-      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -3, 6, -7, 6], ['blau', 3, 0, 3, 12, -3, 12, -7, 12], ['blau', -3, 10, -3, 12], ['blau', -7, 10, -7, 12]], scopes: [], tempo: 0.75 }) },
+      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -3, 6, -7, 6], ['blau', 3, 0, 3, 12, -3, 12, -7, 12], ['blau', -3, 10, -3, 12], ['blau', -7, 10, -7, 12]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Verteilung mit zwei Stromkreisen (Flur und Bad)', info: 'Ein FI schützt beide Stromkreise, jeder hat einen eigenen Sicherungsautomaten. Schalter antippen.',
     make: () => ({ parts: [['NETZ', 1, 0], ['RCD', 1, 2], ['LSS', -4, 8, 1, 'B10'], ['LSS', -10, 8, 1, 'B10'], ['SPST', -4, 12, 1, '', { sw: 1 }], ['SPST', -10, 12, 1, '', { sw: 1 }], ['LAMP', -4, 16, 1, '230V 60W'], ['LAMP', -10, 16, 1, '230V 60W']],
-      wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 2], ['braun', 1, 6, 1, 8, -4, 8, -10, 8], ['blau', 3, 6, 3, 22, -4, 22, -10, 22], ['blau', -4, 20, -4, 22], ['blau', -10, 20, -10, 22]], scopes: [], tempo: 0.75 }) },
+      wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 2], ['braun', 1, 6, 1, 8, -4, 8, -10, 8], ['blau', 3, 6, 3, 22, -4, 22, -10, 22], ['blau', -4, 20, -4, 22], ['blau', -10, 20, -10, 22]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { cat: 'Bauteile', name: 'Motor mit Bremse', info: 'Seitenleiste: „Bremse / Last“ hochziehen. Der Strom steigt, die Drehzahl fällt. Bei Blockade brennt der Motor durch.',
     make: () => ({ parts: [['BAT', 2, 4, 1, '6'], ['SPST', 2, 2, 0, '', { sw: 1 }], ['MOTOR', 6, 2, 0, '6V', { pos: 0 }], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [10, 2, 10, 8, 2, 8]], scopes: [2], tempo: 0.7, win: 1 }) },
@@ -1509,7 +1545,7 @@ simsw.innerHTML = '<span class="lL">Zeichnen</span><span class="trk"><span class
 $('#bUndo').before(simsw);
 simsw.addEventListener('click', () => setSimMode(!simMode));
 $('#bRun').style.display = 'none';
-$('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
+$('#bShare').onclick = () => menuAct('share'); $('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
 $('#bRun').onclick = toggleRun; $('#bUndo').onclick = undo; $('#bRedo').onclick = redo; $('#bMenu').onclick = openMenu;
 $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); });
 (function init() {
@@ -1518,7 +1554,8 @@ $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name
   if (/[?&]neu\b/.test(location.search)) { if (d && d.parts && (d.parts.length || (d.wires && d.wires.length))) { loadCircuit(d); confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] })); } else loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }); }
   else if (/[?&]bsp\b/.test(location.search)) loadCircuit(buildExample(LAB === 'sim' ? defEx() : EXAMPLES[1]));
   else if (d && d.parts && d.parts.length) loadCircuit(d); else { loadCircuit(buildExample(LAB === 'sim' ? defEx() : EXAMPLES[1])); }
-  requestAnimationFrame(t => { lastFrame = t; loop(t); });
+  loadShared();
+requestAnimationFrame(t => { lastFrame = t; loop(t); });
 })();
 window.SchaltTest = () => {
   const keep = sch, out = [];
