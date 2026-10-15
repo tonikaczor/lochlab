@@ -2,7 +2,7 @@
 (function () {
 'use strict';
 const LS = window.LochSim;
-const LAB = window.LAB === 'sim' ? 'sim' : 'sch', LABNAME = LAB === 'sim' ? 'SimLab' : 'SchaltLab', SK = LAB === 'sim' ? 'sim.' : 'sch.';
+const LAB = window.LAB === 'sim' ? 'sim' : (window.LAB === 'code' ? 'code' : 'sch'), LABNAME = LAB === 'sim' ? 'SimLab' : (LAB === 'code' ? 'CodeLab' : 'SchaltLab'), SK = LAB === 'sim' ? 'sim.' : (LAB === 'code' ? 'code.' : 'sch.');
 const inLab = K => !K.lab || K.lab === LAB;
 const WIRECOL = { braun: '#9c6232', blau: '#3b82e0', gruen: '#34b24f', schwarz: '#2b2b2e', grau: '#aab0b8', rot: '#e0463a' };
 const WIRENAME = { braun: 'braun (L)', blau: 'blau (N)', gruen: 'grün-gelb (PE)', schwarz: 'schwarz (Schaltdraht)', grau: 'grau', rot: 'rot' };
@@ -49,6 +49,13 @@ const KINDS = {
   LSS: { name: 'Sicherungsautomat', cat: 'Netz & Schutz', lab: 'sim', pins: T2, v: 'B16', core: 'LSS', box: [0, -1.3, 4, 1.1], toggle: true, sw0: 1, props: [['v', 'Typ und Nennstrom', 'text', 'z. B. B16 oder C10']] },
   RCD: { name: 'FI-Schutzschalter', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '30mA', core: 'RCD', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, sw0: 1, props: [] },
   SCHUETZ:{ name: 'Schütz (2 Haupt- + 2 Hilfskontakte)', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [0, 6], [5, 0], [9, 0], [5, 2], [9, 2], [5, 4], [9, 4], [5, 6], [9, 6]], v: '230V', core: 'SCHUETZ', box: [-0.2, -0.6, 9.4, 6.6], props: [['v', 'Spulenspannung', 'text', 'z. B. 230V']] },
+  UNO: { name: 'Arduino Uno', cat: 'Arduino', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [0, 16], [0, 18], [8, 0], [8, 2], [8, 4], [8, 6], [8, 8], [8, 10], [8, 12], [8, 14], [8, 16], [8, 18], [8, 20], [8, 22], [8, 24], [8, 26], [8, 28], [8, -2]], v: '', core: 'MCU', box: [0, -3, 8, 30], props: [] },
+  RGBLED: { name: 'RGB-LED (gemeinsame Kathode)', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [4, 2]], v: '', core: 'RGBLED', box: [0, -1, 4, 5], props: [] },
+  TMP36: { name: 'Temperatursensor TMP36', cat: 'Sensoren', lab: 'code', pins: [[4, 0], [4, 2], [4, 4]], v: '', core: 'TMP36', box: [0, -1, 4, 5], pos: true, pos0: 0.394, props: [['pos', 'Temperatur (−40 … 125 °C)', 'range']] },
+  PIR: { name: 'Bewegungsmelder PIR', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'PIR', box: [0, -1, 5, 5], pos: true, pos0: 0, props: [['pos', 'Bewegung (über 50 % = erkannt)', 'range']] },
+  HCSR04: { name: 'Ultraschall HC-SR04', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [0, 6]], v: '', core: 'HCSR04', box: [0, -1.2, 6, 7.2], pos: true, pos0: 0.246, props: [['pos', 'Abstand (2 … 400 cm)', 'range']] },
+  SERVO: { name: 'Servo', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'SERVO', box: [0, -1, 6, 5], props: [] },
+  LCDI2C: { name: 'LCD 16×2 (I²C)', cat: 'Sensoren', lab: 'code', pins: [[9, 0], [9, 2], [9, 4], [9, 6]], v: '', core: 'LCDI2C', box: [0, -1.2, 9, 7.2], props: [] },
   NETZ3:{ name: 'Drehstrom 400 V (L1, L2, L3, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 0], [8, 0]], v: '400V', core: 'NETZ3', box: [-1, -3, 9, 0.3], props: [['v', 'Außenleiterspannung', 'text', 'z. B. 400V']] },
   MOTOR3:{ name: 'Drehstrommotor', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0]], v: '400V 2.2kW', core: 'MOTOR3', box: [-0.6, -0.4, 4.6, 4.8], props: [['v', 'Spannung, Leistung (D = Dreieck)', 'text', 'z. B. 400V 2.2kW']] },
   BRUECKE:{ name: 'Brückengleichrichter', cat: 'Halbleiter', pins: [[0, 2], [4, 2], [2, 0], [2, 4]], v: '', core: 'BRUECKE', box: [0, -0.4, 4, 4.4], props: [] },
@@ -75,7 +82,7 @@ const KINDS = {
   VM:  { name: 'Voltmeter',       cat: 'Messen', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
   AM:  { name: 'Amperemeter',     cat: 'Messen', pins: T2, v: '', core: 'AM', box: [0, -1.1, 4, 1.1], props: [] },
 };
-const CATS = LAB === 'sim' ? ['Netz & Schutz', 'Schalter', 'Verbraucher', 'Quellen', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
+const CATS = LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Netz & Schutz', 'Schalter', 'Verbraucher', 'Quellen', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
 const kindsOf = cat => Object.keys(KINDS).filter(k => KINDS[k].cat === cat && inLab(KINDS[k]));
 const rot = (x, y, r) => { switch (r & 3) { case 0: return [x, y]; case 1: return [-y, x]; case 2: return [-x, -y]; default: return [y, -x]; } };
 const KD = p => { const K = KINDS[p.k]; return K.dyn ? Object.assign({}, K, K.dyn(p)) : K; };
@@ -92,7 +99,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -118,7 +125,7 @@ const byPart = id => sch.parts.find(p => p.id === id);
 const byWire = id => sch.wires.find(w => w.id === id);
 
 /* ============ Verlauf, Speicher ============ */
-const snap = () => JSON.stringify({ name: sch.name, parts: sch.parts, wires: sch.wires, nid: sch.nid, scopes: sch.scopes, task: sch.task });
+const snap = () => JSON.stringify({ name: sch.name, parts: sch.parts, wires: sch.wires, nid: sch.nid, scopes: sch.scopes, task: sch.task, code: sch.code });
 function commit(noRebuild, noUI) {
   hist = hist.slice(0, hi + 1); hist.push(snap()); if (hist.length > 100) hist.shift(); hi = hist.length - 1;
   try { localStorage.setItem((SK + 'cur'), snap()); } catch (e) {}
@@ -126,7 +133,7 @@ function commit(noRebuild, noUI) {
   if (!noUI) refreshUI();
   draw();
 }
-function restore(i) { const s = JSON.parse(hist[i]); Object.assign(sch, s); sch.task = s.task; hi = i; sel = null; rebuild(); refreshUI(); draw(); try { localStorage.setItem((SK + 'cur'), hist[i]); } catch (e) {} }
+function restore(i) { const s = JSON.parse(hist[i]); Object.assign(sch, s); sch.task = s.task; sch.code = s.code; syncCode(); hi = i; sel = null; rebuild(); refreshUI(); draw(); try { localStorage.setItem((SK + 'cur'), hist[i]); } catch (e) {} }
 const undo = () => { if (hi > 0) restore(hi - 1); };
 const redo = () => { if (hi < hist.length - 1) restore(hi + 1); };
 
@@ -155,7 +162,7 @@ function rebuild() {
   flows.clear();
 }
 const sv = key => { const n = circ ? circ.nodeOfKey(key) : -1; return n < 0 || !sim ? NaN : sim.v[n]; };
-const hasGround = () => sch.parts.some(p => p.k === 'GND' || p.k === 'NETZ' || p.k === 'NETZ3');
+const hasGround = () => sch.parts.some(p => p.k === 'GND' || p.k === 'NETZ' || p.k === 'NETZ3' || p.k === 'UNO');
 
 /* ============ Rechenschritte ============ */
 function dtFor(rate) {            // Zeitschritt aus dem gewünschten Tempo (simulierte Sekunden je echte Sekunde)
@@ -181,6 +188,7 @@ function advance(realDt) {
   const every = graphWin / 400;
   for (let i = 0; i < n; i++) {
     sim.step(dt);
+    if (prog) stepProgram();
     sampleScopes(every);
     if (tool === 'meter') meterSample(dt);
     if ((i & 15) === 15 && performance.now() - t0 > 11) break;
@@ -189,6 +197,7 @@ function advance(realDt) {
   computeFlows();
 }
 function termI(e) {
+  if (e.tI) return e.tI;
   switch (e.type) {
     case 'Q': return [e.ic, e.ib, -(e.ic + e.ib)];
     case 'V': return [-e.i, e.i];
@@ -436,6 +445,66 @@ function drawPart(p, selected) {
       c.setLineDash([0.25, 0.2]); c.lineWidth = 0.07; line(1.4, 3, 5.6, 3); c.setLineDash([]);
       c.save(); c.translate(3.4, -0.1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Schütz', 0, 0); c.restore();
       break; }
+    case 'UNO': {
+      const o = showSim() && bodyI.get(String(p.id)), mm = o && o.e.mcu;
+      const T = (t, x, y, size, al, rotv) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2 + (rotv || 0)); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
+      for (let i = 0; i < 26; i++) { const [px, py] = K.pins[i]; if (px === 0) lead(0, py, 1, py, pc[i]); else lead(8, py, 7, py, pc[i]); }
+      c.strokeStyle = body; c.fillStyle = PRINT ? '#eef6f8' : 'rgba(14,110,131,.22)'; c.fillRect(1, -2.9, 6, 32.8); c.strokeRect(1, -2.9, 6, 32.8);
+      c.fillStyle = body;
+      ['5V', '3V3', 'VIN', 'GND', 'A0', 'A1', 'A2', 'A3', 'A4', 'A5'].forEach((t, i) => T(t, 1.25, i * 2, 0.62, 'left'));
+      for (let dn = 0; dn < 14; dn++) T('D' + dn + ([3, 5, 6, 9, 10, 11].includes(dn) ? '~' : ''), 6.75, dn * 2, 0.62, 'right');
+      T('GND', 6.75, 28, 0.62, 'right'); T('5V', 6.75, -2, 0.62, 'right');
+      T('ARDUINO UNO', 4, 13, 0.95, 'center', -Math.PI / 2);
+      if (mm) for (let q = 0; q < 14; q++) if (mm.mode[q] === 1 && mm.level[q]) { c.fillStyle = '#ffe14d'; c.beginPath(); c.arc(5.9, q * 2, 0.2, 0, 7); c.fill(); }
+      if (o && o.e.part && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; c.lineWidth = 0.3; line(1, -2.9, 7, 29.9); line(7, -2.9, 1, 29.9); }
+      break; }
+    case 'RGBLED': {
+      lead(0, 0, 1.2, 0, pc[0]); lead(0, 2, 1.2, 2, pc[1]); lead(0, 4, 1.2, 4, pc[2]); lead(4, 2, 3.4, 2, pc[3]);
+      const cur = nm => { const o = showSim() && bodyI.get(p.id + nm); return o ? Math.pow(clamp(Math.abs(o.e.iav != null ? o.e.iav : o.e.i) / 0.02, 0, 1), 0.6) : 0; };
+      const r2 = cur('r'), g2 = cur('g'), b2 = cur('b');
+      c.strokeStyle = body; circle(2.3, 2, 1.1);
+      if (r2 + g2 + b2 > 0.03) {
+        const R = Math.round(255 * Math.min(1, r2)), G = Math.round(255 * Math.min(1, g2)), B = Math.round(255 * Math.min(1, b2)), mx = Math.min(1, Math.max(r2, g2, b2));
+        c.save(); c.globalCompositeOperation = 'lighter'; const gr = c.createRadialGradient(2.3, 2, 0, 2.3, 2, 3.4); gr.addColorStop(0, `rgba(${R},${G},${B},${0.9 * mx})`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`); c.fillStyle = gr; c.beginPath(); c.arc(2.3, 2, 3.4, 0, 7); c.fill(); c.restore();
+        c.fillStyle = `rgb(${R},${G},${B})`; c.beginPath(); c.arc(2.3, 2, 0.95, 0, 7); c.fill();
+      }
+      c.save(); c.translate(2.3, 2); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('RGB', 0, 0); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .42px sans-serif'; c.textBaseline = 'middle'; [['R', 0.35, -0.5], ['G', 0.35, 1.5], ['B', 0.35, 3.5]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'left'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      break; }
+    case 'TMP36': {
+      lead(4, 0, 3, 0, pc[0]); lead(4, 2, 3, 2, pc[1]); lead(4, 4, 3, 4, pc[2]);
+      c.strokeStyle = body; c.strokeRect(0.5, -0.8, 2.5, 5.6);
+      c.save(); c.fillStyle = body; c.textBaseline = 'middle';
+      [['TMP36', 1.75, 1, 0.62, 'center'], [((-40 + 165 * (p.pos == null ? 0.394 : p.pos)).toFixed(0)) + ' °C', 1.75, 3.2, 0.62, 'center'], ['+5V', 2.85, -0.2, 0.42, 'right'], ['OUT', 2.85, 1.8, 0.42, 'right'], ['GND', 2.85, 3.8, 0.42, 'right']].forEach(([t, x, y, sz, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${sz}px sans-serif`; c.textAlign = al; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      break; }
+    case 'PIR': {
+      lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]);
+      c.strokeStyle = body; c.strokeRect(1, -0.8, 4, 5.6); const act = (p.pos || 0) > 0.5;
+      c.fillStyle = act ? 'rgba(255,225,77,.85)' : 'rgba(232,234,237,.15)'; c.beginPath(); c.arc(3.2, 2, 1.3, 0, 7); c.fill(); c.strokeStyle = body; circle(3.2, 2, 1.3);
+      c.save(); c.translate(3.2, 4.2); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText('PIR', 0, 0); c.restore();
+      break; }
+    case 'HCSR04': {
+      lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]); lead(0, 6, 1, 6, pc[3]);
+      c.strokeStyle = body; c.strokeRect(1, -1.2, 5, 8.4); circle(3.5, 1.4, 1.1); circle(3.5, 4.8, 1.1);
+      c.save(); c.fillStyle = body; c.textBaseline = 'middle';
+      [['HC-SR04', 4.6, -0.5, 0.5, 'center'], [(2 + 398 * (p.pos == null ? 0.246 : p.pos)).toFixed(0) + ' cm', 3.5, 3.1, 0.55, 'center'], ['VCC', 1.2, 0, 0.35, 'left'], ['TRIG', 1.2, 2, 0.35, 'left'], ['ECHO', 1.2, 4, 0.35, 'left'], ['GND', 1.2, 6, 0.35, 'left']].forEach(([t, x, y, sz, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${sz}px sans-serif`; c.textAlign = al; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      break; }
+    case 'SERVO': {
+      lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]);
+      c.strokeStyle = body; c.strokeRect(1, -0.8, 5, 5.6);
+      const o = showSim() && bodyI.get(String(p.id)), mm = circ && circ.mcu && circ.mcu.mcu, pin = o && o.e.pin, ang = (mm && pin != null && pin >= 0 && mm.servo[pin] != null) ? mm.servo[pin] : 90;
+      const a = (180 - ang) * Math.PI / 180; c.fillStyle = body; c.beginPath(); c.arc(4.4, 2, 0.35, 0, 7); c.fill(); c.strokeStyle = '#ffe14d'; c.lineWidth = 0.22; c.beginPath(); c.moveTo(4.4, 2); c.lineTo(4.4 + 1.9 * Math.cos(a), 2 - 1.9 * Math.sin(a)); c.stroke();
+      c.save(); c.translate(2.4, 3.9); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText(Math.round(ang) + '°', 0, 0); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .38px sans-serif'; c.textBaseline = 'middle'; [['SIG', 0], ['V+', 2], ['GND', 4]].forEach(([t, y]) => { c.save(); c.translate(1.2, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'left'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      break; }
+    case 'LCDI2C': {
+      lead(9, 0, 8, 0, pc[0]); lead(9, 2, 8, 2, pc[1]); lead(9, 4, 8, 4, pc[2]); lead(9, 6, 8, 6, pc[3]);
+      const o = showSim() && bodyI.get(String(p.id)), ok = o && o.e.ok;
+      c.fillStyle = '#1d6b3d'; c.fillRect(0, -1.2, 8, 8.4); c.strokeStyle = body; c.strokeRect(0, -1.2, 8, 8.4);
+      c.fillStyle = ok && lcdState ? '#9fd18a' : '#4a6a4a'; c.fillRect(0.4, 0.4, 7.2, 3.6);
+      if (ok && lcdState) { c.save(); c.fillStyle = '#1b3b12'; c.font = '600 .78px monospace'; c.textBaseline = 'middle'; c.textAlign = 'left'; lcdState.rows.forEach((r, i) => { c.save(); c.translate(0.55, 1.35 + i * 1.5); c.rotate(-p.r * Math.PI / 2); for (let k2 = 0; k2 < 16; k2++) c.fillText(r[k2] || ' ', k2 * 0.43, 0); c.restore(); }); c.restore(); }
+      c.save(); c.fillStyle = '#e8eaed'; c.font = '600 .42px sans-serif'; c.textBaseline = 'middle'; [['GND', 0], ['VCC', 2], ['SDA', 4], ['SCL', 6]].forEach(([t, y]) => { c.save(); c.translate(7.8, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'right'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      break; }
     case 'NETZ3': {
       [0, 1, 2, 3, 4].forEach(i => lead(i * 2, 0, i * 2, -0.9, pc[i])); c.strokeStyle = body; c.strokeRect(-1, -3, 10, 2.1);
       c.save(); c.fillStyle = body; c.textAlign = 'center'; c.textBaseline = 'middle';
@@ -601,7 +670,7 @@ function drawPart(p, selected) {
     const o = bodyI.get(String(p.id));
     if (o) {
       let b = 0, hex = '#ffd27a';
-      if (p.k === 'LED') { b = Math.pow(clamp(o.e.i / 0.02, 0, 1), 0.6); hex = { rot: '#ff3b2f', 'grün': '#2fe05a', gelb: '#ffe033', blau: '#3d8bff', 'weiß': '#ffffff', orange: '#ff9a2f' }[p.v] || '#ff3b2f'; if (sim.burnt.has(p.id)) b = 0; }
+      if (p.k === 'LED') { b = Math.pow(clamp((o.e.iav != null ? o.e.iav : o.e.i) / 0.02, 0, 1), 0.6); hex = { rot: '#ff3b2f', 'grün': '#2fe05a', gelb: '#ffe033', blau: '#3d8bff', 'weiß': '#ffffff', orange: '#ff9a2f' }[p.v] || '#ff3b2f'; if (sim.burnt.has(p.id)) b = 0; }
       else { const pw = o.e.pav != null ? o.e.pav : Math.abs(o.e.i * o.e.i / o.e.g); b = clamp(pw / (o.e.lamp || 0.6), 0, 1.2); if (p.k === 'HEAT') hex = '#ff6a2a'; }
       if (p.k === 'LED' && o.e.imax && !sim.burnt.has(p.id) && window.LochFX) { const ratio = o.e.i / o.e.imax; if (ratio > 0.85) { b = Math.min(b * (1 + (ratio - 0.85) * 4), 1.6); const [sx, sy] = partCenter(p); LochFX.stress(sx, sy, ratio, view.s); } }
       if (b > 0.02) {
@@ -669,7 +738,7 @@ function valueText(p) {
     case 'SPK': return fmtVal(p.v, 'Ω');
     case 'NTC': case 'PTC': return fmtVal(p.v, 'Ω');
     case 'TRF': case 'RLY': return p.v;
-    case 'NETZ': case 'JUN5': return '';
+    case 'NETZ': case 'JUN5': case 'UNO': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': return '';
     case 'FAULT': return p.sw ? 'Fehler aktiv' : 'Fehler aus';
     case 'LSS': case 'RCD': case 'IMP': case 'SCHUETZ': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
@@ -747,7 +816,7 @@ function drawCircuit() {
     const K = KD(p); if (!K.pos) return;
     let y1 = -1e9, xc = 0, n = 0;
     [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); y1 = Math.max(y1, p.y + rb); xc += p.x + ra; n++; });
-    const w = Math.max(104, view.s * 3.8), r = drawPill(cx, X(xc / n), Y(y1) + 20, w, clamp(p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos, 0, 1), p.k === 'MOTOR' ? 'Bremse' : (p.k === 'NTC' || p.k === 'PTC' ? 'Temp.' : (p.k === 'POT' ? 'Poti' : 'Licht')));
+    const w = Math.max(104, view.s * 3.8), r = drawPill(cx, X(xc / n), Y(y1) + 20, w, clamp(p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos, 0, 1), p.k === 'MOTOR' ? 'Bremse' : (p.k === 'NTC' || p.k === 'PTC' || p.k === 'TMP36' ? 'Temp.' : (p.k === 'POT' ? 'Poti' : (p.k === 'HCSR04' ? 'Abstand' : (p.k === 'PIR' ? 'Bewegung' : 'Licht')))));
     sliderHits.push(Object.assign({ id: p.id }, r));
   });
 }
@@ -1037,14 +1106,14 @@ function toggleRun() { if (!simMode) return; running = !running; lastFrame = per
 function setSimMode(on) {
   if (on && !sch.parts.length) { toast('Noch keine Bauteile gezeichnet'); return; }
   simMode = on; sel = null; wireStart = null; ghost = null; act = null;
-  if (on) { tool = 'select'; rebuild(); sim.reset(); phase.clear(); lastSample = -1; running = true; lastFrame = performance.now(); }
-  else { running = false; tool = 'select'; }
+  if (on) { tool = 'select'; rebuild(); sim.reset(); phase.clear(); lastSample = -1; running = true; lastFrame = performance.now(); startProgram(); }
+  else { running = false; tool = 'select'; prog = null; if (window.LochFX) LochFX.toneOff(); }
   const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', on ? 'true' : 'false');
   $('#bRun').style.display = on ? '' : 'none';
   if (window.LochFX) { LochFX.showBtn(on); LochFX.clear(); if (on) LochFX.unlock(); }
   buildPalette(); refreshUI(); draw();
 }
-function resetSim() { if (window.LochFX) LochFX.clear(); rebuild(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
+function resetSim() { if (window.LochFX) LochFX.clear(); rebuild(); startProgram(); if (window.LochFX) LochFX.toneOff(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
 function refreshUI() {
   const side = $('#side'); if (!side) return;
   $('#bRun').textContent = running ? '⏸ Stopp' : '▶ Start';
@@ -1146,11 +1215,11 @@ function loop(now) {
 let lastLive = 0;
 function updateLive() {
   const now = performance.now(); if (now - lastLive < 120) return; lastLive = now;
-  refreshControls();
+  refreshControls(); codeTick();
   if (simMode && tool === 'meter') { const mv = $('#mmVal'); if (mv) { const t = meterText(); mv.textContent = t.main; const ms = $('#mmSub'); if (ms) ms.textContent = t.sub; } }
   const t = $('#tLbl'); if (t && sim) t.textContent = fmtT(sim.t);
   const w = $('#warn'); if (w) {
-    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || p.k === 'NETZ' || p.k === 'NETZ3' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
+    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || p.k === 'NETZ' || p.k === 'NETZ3' || p.k === 'UNO' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
     else if (!hasGround()) msgs.push('Keine Masse gesetzt. Es wird der Minuspol der Quelle als Masse genommen.');
     circ && circ.warnings.forEach(x => { const it = x.part && x.part.item; if (it) msgs.push((it.l || KINDS[it.k].name) + ': ' + x.text); });
     circ && circ.elems.forEach(e => { if (e.type === 'V' && e.cc && e.part && e.part.item) msgs.push((e.part.item.l || 'Quelle') + ' begrenzt den Strom auf ' + fmt(e.imax, 'A') + ': die Spannung bricht ein.'); });
@@ -1185,6 +1254,94 @@ function openMenu() {
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
+}
+
+
+/* ============ CodeLab: Arduino-Programm ausführen ============ */
+let prog = null, serLog = '', serLine = '', serSeries = [[], [], []], serMode = 'text', serRx = [], lcdState = null, serDirty = true, lastCodeStatus = '';
+const AR = window.Arduino;
+function codeStatus(msg, bad) { const s = $('#codeStatus'); if (!s) return; s.textContent = msg; s.style.color = bad ? '#ff8a7a' : 'var(--mute)'; lastCodeStatus = msg; }
+function serAppend(s) {
+  serLog += s; if (serLog.length > 6000) serLog = serLog.slice(-4500); serDirty = true; serLine += s;
+  let i; while ((i = serLine.indexOf('\n')) >= 0) { const ln = serLine.slice(0, i); serLine = serLine.slice(i + 1); const nums = ln.match(/-?\d+(?:\.\d+)?/g); if (nums) nums.slice(0, 3).forEach((x, k) => { serSeries[k].push(parseFloat(x)); if (serSeries[k].length > 300) serSeries[k].shift(); }); }
+}
+function lcdCmd(name, a) {
+  if (!lcdState) lcdState = { rows: ['                ', '                '], col: 0, row: 0 };
+  const L = lcdState;
+  if (name === 'setCursor') { L.col = Math.max(0, Math.min(15, a[0] | 0)); L.row = Math.max(0, Math.min(1, a[1] | 0)); }
+  else if (name === 'clear') { L.rows = ['                ', '                ']; L.col = 0; L.row = 0; }
+  else if (name === 'print' || name === 'println' || name === 'write') { const t = String(a[0] == null ? '' : a[0]); for (const ch of t) { if (L.col > 15) break; const r = L.rows[L.row]; L.rows[L.row] = r.slice(0, L.col) + ch + r.slice(L.col + 1); L.col++; } }
+  serDirty = true; return 0;
+}
+function makeIO(el) {
+  const m = el.mcu, node = q => el.nd[el.pinNode(q)], ok = q => q >= 0 && q < 20;
+  return {
+    pinMode: (q, md) => { if (ok(q)) m.mode[q] = md; },
+    digitalWrite: (q, v, vt) => { if (!ok(q)) return; m.out[q] = v; m.duty[q] = null; const pl = m.pulse[q] || (m.pulse[q] = {}); if (v) { pl.rise = vt == null ? sim.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? sim.t : vt; },
+    digitalRead: q => { if (!ok(q)) return 0; if (m.mode[q] === 1) return m.level[q]; const vv = sim.v[node(q)]; if (vv > 3) m.lastDig[q] = 1; else if (vv < 1.5) m.lastDig[q] = 0; return m.lastDig[q]; },
+    analogRead: q => (ok(q) ? sim.v[node(q)] / 5 * 1023 : 0),
+    analogWrite: (q, v) => { if (!ok(q)) return; m.mode[q] = 1; if ([3, 5, 6, 9, 10, 11].includes(q)) m.duty[q] = v; else { m.duty[q] = null; m.out[q] = v >= 128 ? 1 : 0; } },
+    tone: (q, f, dd) => { if (!ok(q)) return; m.mode[q] = 1; m.tone[q] = { f: Math.max(1, f), until: dd ? sim.t + dd / 1000 : null }; },
+    noTone: q => { if (ok(q)) m.tone[q] = null; },
+    serialPrint: s => serAppend(s), serialAvailable: () => serRx.length, serialRead: () => (serRx.length ? serRx.shift() : -1),
+    servo: (q, cmd, a) => { if (cmd === 'detach') delete m.servo[q]; else m.servo[q] = a; },
+    lcd: (o, name, a) => lcdCmd(name, a), object: () => {},
+    pulseHint: (q) => { const e = circ.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === q); return e ? e.lastEcho : null; },
+  };
+}
+function startProgram() {
+  prog = null; serLog = ''; serLine = ''; serSeries = [[], [], []]; serRx = []; lcdState = null; serDirty = true;
+  if (LAB !== 'code' || !AR) return;
+  const c = AR.compile(sch.code || '');
+  if (!c.ok) { const e = c.errors[0]; codeStatus('Fehler in Zeile ' + e.line + ': ' + e.msg, true); serAppend('⚠ Fehler in Zeile ' + e.line + ': ' + e.msg + '\n'); return; }
+  const el = circ && circ.mcu; if (!el) { codeStatus('Im Schaltplan fehlt ein Arduino.', true); return; }
+  const runner = AR.createRunner(c.program, makeIO(el)); runner.start(); prog = { runner, err: null, el };
+  codeStatus('Programm läuft');
+}
+function stepProgram() {
+  if (!prog) return;
+  if (sim.burnt.has(prog.el.part.id)) { if (!prog.err) { prog.err = { msg: 'Arduino zerstört' }; codeStatus('Der Arduino ist zerstört (↻ Neu starten).', true); } return; }
+  prog.runner.step(sim.t);
+  const er = prog.runner.error; if (er && !prog.err) { prog.err = er; codeStatus('Fehler in Zeile ' + er.line + ': ' + er.msg, true); serAppend('\n⚠ Laufzeitfehler in Zeile ' + er.line + ': ' + er.msg + '\n'); }
+  else if (prog.runner.done && !prog.err) { prog.err = { msg: 'Programmende' }; codeStatus('Programm beendet'); }
+}
+function codeTick() {                                              // regelmäßig: Serial-Anzeige, Ton, Plotter
+  if (LAB !== 'code') return;
+  const out = $('#serOut');
+  if (serDirty && out) { out.textContent = serLog; out.scrollTop = out.scrollHeight; serDirty = false; if (serMode === 'plot') drawPlot(); }
+  const mm = circ && circ.mcu && circ.mcu.mcu; let f = 0;
+  if (mm && simMode && running) for (let q = 0; q < 20; q++) if (mm.tone[q]) { f = mm.tone[q].f; break; }
+  if (window.LochFX) { if (f) LochFX.tone(f); else LochFX.toneOff(); }
+}
+function drawPlot() {
+  const cv2 = $('#serPlot'); if (!cv2) return; const g = cv2.getContext('2d'), W = cv2.width = cv2.clientWidth || 300, H = cv2.height = cv2.clientHeight || 120;
+  g.clearRect(0, 0, W, H); g.fillStyle = '#0b0f13'; g.fillRect(0, 0, W, H);
+  let mn = Infinity, mx = -Infinity; serSeries.forEach(s => s.forEach(v => { mn = Math.min(mn, v); mx = Math.max(mx, v); }));
+  if (!isFinite(mn)) { g.fillStyle = '#8d99a6'; g.font = '12px sans-serif'; g.fillText('Keine Zahlen in der Ausgabe. Mit Serial.println(Wert) einen Messwert ausgeben.', 10, 20); return; }
+  if (mx - mn < 1e-9) { mx += 1; mn -= 1; }
+  g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1; for (let i = 0; i <= 4; i++) { const y = 8 + (H - 16) * i / 4; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); g.fillStyle = '#8d99a6'; g.font = '10px sans-serif'; g.fillText((mx - (mx - mn) * i / 4).toFixed(mx - mn > 50 ? 0 : 1), 3, y - 2); }
+  ['#ffe14d', '#4cd964', '#35d0ff'].forEach((col, k) => { const s = serSeries[k]; if (s.length < 2) return; g.strokeStyle = col; g.lineWidth = 1.8; g.beginPath(); s.forEach((v, i) => { const x = 34 + (W - 40) * i / Math.max(299, s.length - 1), y = 8 + (H - 16) * (1 - (v - mn) / (mx - mn)); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); });
+}
+function syncCode() { const ta = $('#codeTa'); if (!ta) return; ta.value = sch.code || ''; gutter(); }
+function gutter() { const ta = $('#codeTa'), gu = $('#codeGut'); if (!ta || !gu) return; const n = ta.value.split('\n').length; let s = ''; for (let i = 1; i <= n; i++) s += i + '\n'; gu.textContent = s; gu.scrollTop = ta.scrollTop; }
+function initDock() {
+  const ta = $('#codeTa'); if (!ta) return;
+  ta.addEventListener('input', () => { sch.code = ta.value; gutter(); try { localStorage.setItem((SK + 'cur'), snap()); } catch (e) {} codeStatus('Änderung gilt ab dem nächsten Start (↻).'); });
+  ta.addEventListener('scroll', () => { const gu = $('#codeGut'); if (gu) gu.scrollTop = ta.scrollTop; });
+  ta.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); const s = ta.selectionStart, en = ta.selectionEnd; ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en); ta.selectionStart = ta.selectionEnd = s + 2; ta.dispatchEvent(new Event('input')); } });
+  const startAll = () => { if (!simMode) setSimMode(true); else { resetSim(); running = true; lastFrame = performance.now(); refreshUI(); } };
+  $('#cdRun').onclick = startAll; $('#cdNew').onclick = startAll;
+  $('#cdStop').onclick = () => { running = false; refreshUI(); codeStatus('Angehalten'); };
+  $('#cdEx').onclick = () => menuAct('ex');
+  $('#cdSave').onclick = () => { const b = new Blob([sch.code || ''], { type: 'text/plain' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (sch.name.replace(/[^\w\-]+/g, '_') || 'sketch') + '.ino'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); };
+  $('#cdCopy').onclick = async () => { try { await navigator.clipboard.writeText(sch.code || ''); toast('Code kopiert'); } catch (e) { ta.select(); toast('Bitte markieren und kopieren'); } };
+  [['#cdT1', 0.75], ['#cdT10', 0.875], ['#cdT100', 1]].forEach(([id, v]) => { $(id).onclick = () => { tempo = v; refreshUI(); }; });
+  const tab = m => { serMode = m; $('#serOut').style.display = m === 'text' ? '' : 'none'; $('#serPlot').style.display = m === 'plot' ? '' : 'none'; $('#serTabT').classList.toggle('on', m === 'text'); $('#serTabP').classList.toggle('on', m === 'plot'); serDirty = true; if (m === 'plot') drawPlot(); };
+  $('#serTabT').onclick = () => tab('text'); $('#serTabP').onclick = () => tab('plot'); tab('text');
+  $('#serClr').onclick = () => { serLog = ''; serSeries = [[], [], []]; serDirty = true; };
+  const send = () => { const i = $('#serIn'); const t = i.value; i.value = ''; for (const ch of t + '\n') serRx.push(ch.charCodeAt(0)); serAppend('> ' + t + '\n'); };
+  $('#serSend').onclick = send; $('#serIn').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+  syncCode();
 }
 
 /* ============ Multimeter (Spannung und Strom messen) ============ */
@@ -1699,7 +1856,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v46</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v47</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -1754,14 +1911,14 @@ function fit() {
 function loadCircuit(d) {
   running = false; sel = null; wireStart = null; simMode = false;
   if (d.tempo != null) tempo = d.tempo; if (d.win) graphWin = d.win;
-  sch = { name: d.name || 'Schaltung', parts: JSON.parse(JSON.stringify(d.parts || [])), wires: JSON.parse(JSON.stringify(d.wires || [])), nid: d.nid || 1, scopes: d.scopes || [], sid: d.sid, task: d.task };
-  taskRes = null;
+  sch = { name: d.name || 'Schaltung', parts: JSON.parse(JSON.stringify(d.parts || [])), wires: JSON.parse(JSON.stringify(d.wires || [])), nid: d.nid || 1, scopes: d.scopes || [], sid: d.sid, task: d.task, code: d.code };
+  taskRes = null; prog = null; serLog = ''; lcdState = null;
   assignLabels(sch.parts);
   sch.nid = Math.max(sch.nid, 1 + Math.max(0, ...sch.parts.map(p => p.id || 0), ...sch.wires.map(w => w.id || 0)));
   circ = null; sim = null; phase.clear(); lastSample = -1; rebuild(); hist = [snap()]; hi = 0;
   try { localStorage.setItem((SK + 'cur'), snap()); } catch (e) {}
   { const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', 'false'); $('#bRun').style.display = 'none'; }
-  setTool('select'); fit(); refreshUI(); draw();
+  setTool('select'); fit(); refreshUI(); draw(); syncCode();
 }
 function openExamples() {
   sheet('Beispielschaltungen', (b, close) => {
@@ -1775,7 +1932,7 @@ function openExamples() {
     b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const ex = buildExample(EXAMPLES[+r.dataset.i]); loadCircuit(ex); if (ex.tempo != null) tempo = ex.tempo; if (ex.win) graphWin = ex.win; refreshUI(); });
   });
 }
-const exOk = e => LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
+const exOk = e => LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
 const defEx = () => EXAMPLES.find(exOk) || EXAMPLES[0];
 function buildExample(e) {
   const d = e.make(); let id = 1; const parts = [], wires = [];
@@ -1783,7 +1940,7 @@ function buildExample(e) {
   d.wires.forEach(poly => { let wc; if (typeof poly[0] === 'string') { wc = poly[0]; poly = poly.slice(1); } for (let i = 2; i < poly.length; i += 2) wires.push(Object.assign({ id: id++, x1: poly[i - 2], y1: poly[i - 1], x2: poly[i], y2: poly[i + 1] }, wc ? { c: wc } : {})); });
   assignLabels(parts);
   const scopes = (d.scopes || []).map(i => ({ t: 'part', id: i + 1 }));
-  return { name: e.name, parts, wires, nid: id, scopes, tempo: d.tempo, win: d.win };
+  return { name: e.name, parts, wires, nid: id, scopes, tempo: d.tempo, win: d.win, code: d.code };
 }
 /* Beispiele: Teile [Art, x, y, Drehung, Wert, Zusatz], Drähte als Linienzüge x1,y1,x2,y2,... */
 const EXAMPLES = [
@@ -1844,6 +2001,274 @@ const EXAMPLES = [
   { cat: 'Dioden', name: 'Spannungsverdoppler', info: 'Zwei Dioden und zwei Kondensatoren verdoppeln die Spitzenspannung',
     make: () => ({ parts: [['AC', 2, 4, 1, '5V 50Hz'], ['C', 2, 2, 0, '47u'], ['D', 6, 6, 3, '1N4148'], ['D', 6, 2, 0, '1N4148'], ['CE', 10, 2, 1, '47u'], ['R', 14, 2, 1, '10k'], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [10, 2, 14, 2], [6, 6, 6, 8], [10, 6, 10, 8], [14, 6, 14, 8], [2, 8, 6, 8, 10, 8, 14, 8]], scopes: [0, 4], tempo: 0.4, win: 0.1 }) },
+  { lab: 'code', cat: 'Grundlagen', name: 'Blink (LED an Pin 13)', info: 'Die LED an Pin 13 blinkt im Sekundentakt. Der Vorwiderstand schützt Pin und LED.',
+    make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`// Blink: LED an Pin 13 ein- und ausschalten
+void setup() {
+  pinMode(13, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(13, HIGH);  // LED an
+  delay(1000);             // eine Sekunde warten
+  digitalWrite(13, LOW);   // LED aus
+  delay(1000);
+}
+` }) },
+  { lab: 'code', cat: 'Grundlagen', name: 'Taster schaltet LED (Pull-up)', info: 'Taster gedrückt halten: die LED leuchtet. Der Taster liegt zwischen Pin 2 und Masse, der interne Pull-up hält den Pin sonst auf HIGH.',
+    make: () => ({ parts: [['UNO', 12, 0], ['PB', 24, 4, 1, ''], ['GND', 24, 8], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[20, 4, 24, 4], [20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`const int tasterPin = 2;
+const int ledPin = 13;
+
+void setup() {
+  pinMode(tasterPin, INPUT_PULLUP);  // Taster gegen Masse
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop() {
+  if (digitalRead(tasterPin) == LOW) {   // gedrückt = LOW
+    digitalWrite(ledPin, HIGH);
+  } else {
+    digitalWrite(ledPin, LOW);
+  }
+}
+` }) },
+  { lab: 'code', cat: 'Grundlagen', name: 'Poti dimmt LED (PWM)', info: 'Am Poti drehen (Regler unter dem Bauteil): die LED wird heller und dunkler. analogRead liest 0–1023, analogWrite schreibt 0–255.',
+    make: () => ({ parts: [['UNO', 12, 0], ['POT', 6, 4, 1, '10k', { pos: 0.4 }], ['GND', 6, 8], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'gelb'], ['GND', 30, 18]], wires: [[6, 4, 6, 0, 12, 0], [8, 6, 10, 6, 10, 8, 12, 8], [20, 18, 22, 18]], scopes: [], tempo: 0.75,
+      code: String.raw`const int potPin = A0;
+const int ledPin = 9;       // Pin 9 kann PWM (~)
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+}
+
+void loop() {
+  int wert = analogRead(potPin);   // 0 ... 1023
+  analogWrite(ledPin, wert / 4);   // 0 ... 255
+}
+` }) },
+  { lab: 'code', cat: 'Grundlagen', name: 'Poti-Schwelle mit Serial-Ausgabe', info: 'Das Programm gibt den Messwert aus und schaltet die LED ab 400. Unten im Serial-Monitor siehst du die Zahlen.',
+    make: () => ({ parts: [['UNO', 12, 0], ['POT', 6, 4, 1, '10k', { pos: 0.4 }], ['GND', 6, 8], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[6, 4, 6, 0, 12, 0], [8, 6, 10, 6, 10, 8, 12, 8], [20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`// Conditionals: LED an, wenn der Poti-Wert über der Schwelle liegt
+const int analogPin = A0;
+const int ledPin = 13;
+const int threshold = 400;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int analogValue = analogRead(analogPin);
+
+  if (analogValue > threshold) {
+    digitalWrite(ledPin, HIGH);
+  } else {
+    digitalWrite(ledPin, LOW);
+  }
+
+  Serial.println(analogValue);
+  delay(100);
+}
+` }) },
+  { lab: 'code', cat: 'Grundlagen', name: 'Spannung messen (Serial-Plotter)', info: 'Poti drehen und im Serial-Monitor auf „Plotter“ umschalten: die Spannung erscheint als Kurve.',
+    make: () => ({ parts: [['UNO', 12, 0], ['POT', 6, 4, 1, '10k', { pos: 0.4 }], ['GND', 6, 8]], wires: [[6, 4, 6, 0, 12, 0], [8, 6, 10, 6, 10, 8, 12, 8]], scopes: [], tempo: 0.75,
+      code: String.raw`void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  int sensorValue = analogRead(A0);
+  // 0 ... 1023 in 0 ... 5 V umrechnen
+  float voltage = sensorValue * (5.0 / 1023.0);
+  Serial.println(voltage);
+  delay(50);
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'Melodie auf dem Lautsprecher', info: 'Die Melodie wird über den Lautsprecher abgespielt (Ton an, Lautsprecher-Symbol oben rechts). Der 100-Ω-Widerstand schützt den Pin.',
+    make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 16, 0, '100'], ['SPK', 26, 16, 0, '8'], ['GND', 30, 16]], wires: [[20, 16, 22, 16]], scopes: [], tempo: 0.75,
+      code: String.raw`#include "pitches.h"
+
+// Noten der Melodie
+int melody[] = {
+  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
+};
+
+// Notenlängen: 4 = Viertel, 8 = Achtel
+int noteDurations[] = {
+  4, 8, 8, 4, 4, 4, 4, 4
+};
+
+void setup() {
+  for (int thisNote = 0; thisNote < 8; thisNote++) {
+    int noteDuration = 1000 / noteDurations[thisNote];
+    tone(8, melody[thisNote], noteDuration);
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    noTone(8);
+  }
+}
+
+void loop() {
+  // die Melodie nur einmal spielen
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'Ultraschall-Abstandsmesser', info: 'Regler „Abstand“ am Sensor verändern: unter 100 cm leuchtet die rote LED, sonst die grüne. Messwerte im Serial-Monitor.',
+    make: () => ({ parts: [['UNO', 12, 0], ['HCSR04', 24, 10, 0, '', { pos: 0.246 }], ['GND', 24, 16], ['R', 22, 22, 0, '220'], ['LED', 26, 22, 0, 'grün'], ['GND', 30, 22], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]],
+      wires: [[24, 10, 22, 10, 22, -2, 20, -2], [20, 12, 24, 12], [20, 14, 24, 14], [20, 22, 22, 22], [20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`const int triggerPin = 6;
+const int echoPin = 7;
+
+// Misst die Echozeit des Ultraschall-Sensors (in Mikrosekunden)
+long readUltrasonicDistance(int trigger, int echo) {
+  pinMode(trigger, OUTPUT);
+  digitalWrite(trigger, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigger, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigger, LOW);
+  pinMode(echo, INPUT);
+  return pulseIn(echo, HIGH);
+}
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(11, OUTPUT);   // grüne LED
+  pinMode(13, OUTPUT);   // rote LED
+}
+
+void loop() {
+  float cm = 0.01723 * readUltrasonicDistance(triggerPin, echoPin);
+  Serial.print(cm);
+  Serial.println(" cm");
+  if (cm < 100) {
+    digitalWrite(13, HIGH);
+    digitalWrite(11, LOW);
+  } else {
+    digitalWrite(13, LOW);
+    digitalWrite(11, HIGH);
+  }
+  delay(100);
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'Servo Sweep', info: 'Der Servo fährt langsam hin und her (0° bis 180°).',
+    make: () => ({ parts: [['UNO', 12, 0], ['SERVO', 24, 18], ['GND', 24, 22]], wires: [[20, 18, 24, 18], [24, 20, 26, 20, 26, -2, 20, -2]], scopes: [], tempo: 0.75,
+      code: String.raw`#include <Servo.h>
+
+Servo myservo;
+int pos = 0;
+
+void setup() {
+  myservo.attach(9);
+}
+
+void loop() {
+  for (pos = 0; pos <= 180; pos += 1) {
+    myservo.write(pos);
+    delay(15);
+  }
+  for (pos = 180; pos >= 0; pos -= 1) {
+    myservo.write(pos);
+    delay(15);
+  }
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'Temperatur mit dem TMP36', info: 'Regler „Temperatur“ am Sensor verändern und die Werte im Serial-Monitor beobachten. Beim TMP36 sind 0,5 V = 0 °C und 10 mV pro Grad.',
+    make: () => ({ parts: [['UNO', 12, 0], ['TMP36', 6, 8, 0, '', { pos: 0.394 }], ['GND', 10, 12]], wires: [[10, 10, 11, 10, 11, 8, 12, 8], [10, 8, 9, 8, 9, 0, 12, 0]], scopes: [], tempo: 0.75,
+      code: String.raw`void setup() {
+  Serial.begin(9600);
+}
+
+void loop() {
+  int raw = analogRead(A0);
+  float volt = raw * 5.0 / 1023.0;
+  float celsius = (volt - 0.5) * 100.0;   // TMP36: 10 mV pro Grad, 0,5 V bei 0 Grad
+  Serial.print(celsius);
+  Serial.println(" Grad C");
+  delay(200);
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'Ampel mit drei LEDs', info: 'Eine Fußgängerampel nur mit delay(): rot, rot-gelb, grün, gelb.',
+    make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 8, 0, '220'], ['LED', 26, 8, 0, 'rot'], ['GND', 30, 8], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16], ['R', 22, 24, 0, '220'], ['LED', 26, 24, 0, 'grün'], ['GND', 30, 24]], wires: [[20, 8, 22, 8], [20, 16, 22, 16], [20, 24, 22, 24]], scopes: [], tempo: 0.75,
+      code: String.raw`const int rot = 4;
+const int gelb = 8;
+const int gruen = 12;
+
+void setup() {
+  pinMode(rot, OUTPUT);
+  pinMode(gelb, OUTPUT);
+  pinMode(gruen, OUTPUT);
+}
+
+void loop() {
+  digitalWrite(rot, HIGH);
+  delay(3000);
+  digitalWrite(gelb, HIGH);     // rot-gelb
+  delay(1000);
+  digitalWrite(rot, LOW);
+  digitalWrite(gelb, LOW);
+  digitalWrite(gruen, HIGH);
+  delay(3000);
+  digitalWrite(gruen, LOW);
+  digitalWrite(gelb, HIGH);
+  delay(1000);
+  digitalWrite(gelb, LOW);
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'RGB-Farbwechsel', info: 'Die RGB-LED mischt Farben: jeder Kanal wird per PWM gedimmt.',
+    make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 18, 0, '220'], ['R', 22, 20, 0, '220'], ['R', 22, 22, 0, '220'], ['RGBLED', 30, 18], ['GND', 34, 20]], wires: [[20, 18, 22, 18], [20, 20, 22, 20], [20, 22, 22, 22], [26, 18, 30, 18], [26, 20, 30, 20], [26, 22, 30, 22]], scopes: [], tempo: 0.75,
+      code: String.raw`const int redPin = 9;
+const int greenPin = 10;
+const int bluePin = 11;
+
+void setup() {
+  pinMode(redPin, OUTPUT);
+  pinMode(greenPin, OUTPUT);
+  pinMode(bluePin, OUTPUT);
+}
+
+void loop() {
+  // von Rot über Grün nach Blau und zurück überblenden
+  for (int i = 0; i <= 255; i += 5) {
+    analogWrite(redPin, 255 - i);
+    analogWrite(greenPin, i);
+    analogWrite(bluePin, 0);
+    delay(30);
+  }
+  for (int i = 0; i <= 255; i += 5) {
+    analogWrite(greenPin, 255 - i);
+    analogWrite(bluePin, i);
+    delay(30);
+  }
+  for (int i = 0; i <= 255; i += 5) {
+    analogWrite(bluePin, 255 - i);
+    analogWrite(redPin, i);
+    delay(30);
+  }
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'LCD mit Sekundenzähler', info: 'Das Display (I²C an A4/A5) zeigt Text und die vergangenen Sekunden.',
+    make: () => ({ parts: [['UNO', 12, 0], ['LCDI2C', 1, 10], ['GND', 10, 10]], wires: [[10, 12, 11, 12, 11, 0, 12, 0], [10, 14, 11, 14, 11, 16, 12, 16], [10, 16, 10, 18, 12, 18]], scopes: [], tempo: 0.75,
+      code: String.raw`#include <LiquidCrystal_I2C.h>
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  lcd.init();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Hallo Tonfunk!");
+}
+
+void loop() {
+  lcd.setCursor(0, 1);
+  lcd.print("Zaehler: ");
+  lcd.print(millis() / 1000);
+  lcd.print("   ");
+  delay(200);
+}
+` }) },
   { lab: 'sim', cat: 'Hausinstallation', name: 'Ausschaltung mit Sicherungsautomat', info: 'Schalter antippen: die Lampe geht an und aus. Der Sicherungsautomat schützt die Leitung.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', 1, 6, 1, '', { sw: 1 }], ['LAMP', -3, 12, 1, '230V 60W']],
       wires: [['braun', 1, 0, 1, 2], ['braun', 1, 10, 1, 12, -3, 12], ['blau', 3, 0, 3, 18, -3, 18, -3, 16]], scopes: [], tempo: 0.55, win: 0.04 }) },
@@ -2011,7 +2436,8 @@ $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name
   if (/[?&]neu\b/.test(location.search)) { if (d && d.parts && (d.parts.length || (d.wires && d.wires.length))) { loadCircuit(d); confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] })); } else loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }); }
   else if (/[?&]bsp\b/.test(location.search)) loadCircuit(buildExample(LAB === 'sim' ? defEx() : EXAMPLES[1]));
   else if (d && d.parts && d.parts.length) loadCircuit(d); else { loadCircuit(buildExample(LAB === 'sim' ? defEx() : EXAMPLES[1])); }
-  loadShared();
+  if (LAB === 'code') { initDock(); }
+loadShared();
 requestAnimationFrame(t => { lastFrame = t; loop(t); });
 })();
 window.SchaltTest = () => {
@@ -2023,5 +2449,5 @@ window.SchaltTest = () => {
   });
   sch = keep; rebuild(); return out;
 };
-window.SchaltDebug = () => ({ view, sl: sliderHits, running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
+window.SchaltDebug = () => ({ prog: prog && { err: prog.err, t: prog.runner.t }, serLog, view, sl: sliderHits, running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
 })();

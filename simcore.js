@@ -125,6 +125,8 @@ function buildCircuit(layout) {
     groundRoot = find(key(layout.ground[0][0], layout.ground[0][1]));
   } else for (const p of layout.parts) if ((p.k === 'BAT' || p.k === 'SIG') && p.pins.length > 1) { groundRoot = find(pinKey(p, 1)); break; }
 
+  { const mcus = layout.parts.filter(p => p.k === 'MCU');
+    if (mcus.length) { const g0 = pinKey(mcus[0], 3); mcus.forEach(p => { union(pinKey(p, 3), g0); union(pinKey(p, 24), g0); }); if (groundRoot) union(groundRoot, g0); groundRoot = find(g0); } }
   const nodeId = new Map(); let nn = 0;
   if (groundRoot) nodeId.set(groundRoot, 0);
   const nodeOfRoot = r => { if (!nodeId.has(r)) nodeId.set(r, ++nn); return nodeId.get(r); };
@@ -200,6 +202,42 @@ function buildCircuit(layout) {
           add({ type: 'D', a: anode ? n(2) : n(i), b: anode ? n(i) : n(2), is, nn: 2, led: true, color: 'rot', imax: 0.04, part: p, vj: 0, seg: map[i], sub: 's' + map[i] });
         }
         break; }
+      case 'MCU': {
+        const nd = []; for (let i = 0; i < 26; i++) nd.push(n(i));
+        const m = { mode: new Array(20).fill(0), out: new Array(20).fill(0), duty: new Array(20).fill(null), tone: new Array(20).fill(null), level: new Array(20).fill(0), lastDig: new Array(20).fill(0), pulse: {}, servo: {}, pinI: new Array(20).fill(0), burnt: false };
+        const pn = q => (q < 14 ? 10 + q : 4 + (q - 14));
+        const el = add({ type: 'MCU', nd, mcu: m, part: p, pi: Array.from({ length: 26 }, (_, i) => i) });
+        el.tick = function (t) {
+          for (let q = 0; q < 20; q++) {
+            if (m.mode[q] !== 1) { m.level[q] = 0; continue; }
+            const tn = m.tone[q];
+            if (tn) { if (tn.until != null && t >= tn.until) { m.tone[q] = null; m.level[q] = m.out[q]; } else { m.level[q] = ((t * tn.f) % 1) < 0.5 ? 1 : 0; continue; } }
+            if (m.duty[q] != null) { const fq = (q === 5 || q === 6) ? 980 : 490, dd = m.duty[q]; m.level[q] = dd <= 0 ? 0 : (dd >= 255 ? 1 : (((t * fq) % 1) < dd / 255 ? 1 : 0)); }
+            else m.level[q] = m.out[q];
+          }
+        };
+        el.pinNode = pn;
+        break; }
+      case 'RGBLED': {
+        const ck = ['rot', 'grün', 'blau'];
+        ['r', 'g', 'b'].forEach((sub, i) => { const vf = LEDVF[ck[i]], is = 0.01 * Math.exp(-vf / (2 * VT)); add({ type: 'D', a: n(i), b: n(3), is, nn: 2, led: true, color: ck[i], imax: 0.03, part: p, vj: 0, sub }); });
+        break; }
+      case 'TMP36': case 'PIR': case 'HCSR04': {
+        const dev = k;
+        const pins4 = dev === 'HCSR04';
+        const el = add({ type: 'SENS', dev, vcc: n(0), a: n(1), c: pins4 ? n(2) : -1, g: n(pins4 ? 3 : 2), part: p, outV: 0, echo: { start: -1, len: 0 }, lastEcho: null });
+        el.tick = function (t) {
+          const pos = this.part.pos == null ? 0.5 : this.part.pos, vv = (this.v0 && this.v0.get) ? 0 : 0;
+          if (dev === 'TMP36') this.tC = -40 + 165 * pos;
+          if (dev === 'HCSR04') {
+            this.cm = 2 + pos * 398;
+            const m = this.mcuTrig; if (m) { const pl = m.mcu.pulse[m.pin]; if (pl && pl.fall != null && !pl.used) { pl.used = true; if (pl.fall - pl.rise >= 8e-6 && this.powered) { this.echo.start = pl.fall + 200e-6; this.echo.len = this.cm * 58e-6; this.lastEcho = null; this.echoDone = false; } } }
+            if (this.echo.len && t >= this.echo.start + this.echo.len && !this.echoDone) { this.echoDone = true; this.lastEcho = this.echo.len * 1e6; }
+          }
+        };
+        break; }
+      case 'SERVO': add({ type: 'SERVOD', sig: n(0), vcc: n(1), g: n(2), part: p }); break;
+      case 'LCDI2C': add({ type: 'LCDD', g: n(0), vcc: n(1), sda: n(2), scl: n(3), part: p }); break;
       case 'NETZ3': {
         const u = Math.max(si(p.v, 400), 1), uph = u / Math.sqrt(3);
         for (let i = 0; i < 3; i++) add({ type: 'V', a: n(i), b: n(3), v0: 0, amp: uph * 1.4142, freq: 50, rint: 0.3, wave: 'sin', phase0: -i / 3, part: p, sub: 'L' + (i + 1) });
@@ -356,7 +394,16 @@ function buildCircuit(layout) {
     else ['a', 'b', 'c', 'e', 'ni', 'ng', 'no'].forEach(f => { if (typeof e[f] === 'number') touch[e[f]]++; });
   });
   elems.forEach(e => { if (e.type === 'IC') for (let i = 1; i <= e.np; i++) e.fl[i] = e.n[i] > 0 && touch[e.n[i]] === 1; });
-  return { nn, elems, nodeOfKey, groundKnown: groundRoot !== null, warnings, parts: layout.parts };
+  // Verknüpfung: Welcher Arduino-Pin hängt am selben Knoten wie ein Sensor-/Servo-/LCD-Anschluss?
+  const mcuEl = elems.find(e => e.type === 'MCU');
+  const mcuPinOf = node => { if (!mcuEl || node <= 0) return -1; for (let q = 0; q < 20; q++) if (mcuEl.nd[mcuEl.pinNode(q)] === node) return q; return -1; };
+  elems.forEach(e => {
+    if (!mcuEl) return;
+    if (e.type === 'SENS' && e.dev === 'HCSR04') { const tp = mcuPinOf(e.a), ep = mcuPinOf(e.c); e.mcuTrig = tp >= 0 ? { mcu: mcuEl.mcu, pin: tp } : null; e.echoPin = ep; }
+    if (e.type === 'SERVOD') e.pin = mcuPinOf(e.sig);
+    if (e.type === 'LCDD') e.ok = mcuPinOf(e.sda) === 18 && mcuPinOf(e.scl) === 19;
+  });
+  return { nn, elems, nodeOfKey, groundKnown: groundRoot !== null, warnings, parts: layout.parts, mcu: mcuEl || null };
 }
 
 /* ---------- Lösen ---------- */
@@ -426,6 +473,7 @@ function createSim(circ) {
     const t = sim.t + dt;
     let converged = false;
     for (const e of elems) if (e.upd) e.upd();
+    for (const e of elems) if (e.tick) e.tick(t, dt);
     const prev = Float64Array.from(v);
     for (const e of elems) if (e.type === 'IC' && !burnt.has(e.part.id)) e.icupd(prev, dt);
     for (let it = 0; it < 80; it++) {
@@ -476,6 +524,28 @@ function createSim(circ) {
               if (r > 0) z[r - 1] -= s * (ae * ieBe + ac * ieBc);
             }
             break; }
+          case 'MCU': {
+            const m = e.mcu;
+            stampG(e.nd[0], 0, 2); inj(e.nd[0], 10); stampG(e.nd[25], 0, 2); inj(e.nd[25], 10); stampG(e.nd[1], 0, 1); inj(e.nd[1], 3.3); stampG(e.nd[3], 0, 1e3); stampG(e.nd[24], 0, 1e3); stampG(e.nd[2], 0, 1e-9);
+            for (let q = 0; q < 20; q++) {
+              const nd = e.nd[e.pinNode(q)];
+              if (m.mode[q] === 1) { stampG(nd, 0, 1 / 25); if (m.level[q]) inj(nd, 5 / 25); }
+              else if (m.mode[q] === 2) { stampG(nd, 0, 1 / 30000); inj(nd, 5 / 30000); }
+              else stampG(nd, 0, 1e-9);
+            }
+            break; }
+          case 'SENS': {
+            const vc = v[e.vcc] - v[e.g], pw = vc > (e.dev === 'PIR' ? 4.0 : 2.7); e.powered = pw;
+            let drv = null;
+            if (e.dev === 'TMP36') drv = pw ? [e.a, 0.5 + (e.tC || 25) / 100, 100] : null;
+            else if (e.dev === 'PIR') drv = pw ? [e.a, (e.part.pos || 0) > 0.5 ? 3.3 : 0, 100] : null;
+            else if (e.dev === 'HCSR04') { const high = pw && e.echo.len && t >= e.echo.start && t < e.echo.start + e.echo.len; drv = [e.c, high ? 5 : 0, 100]; if (!pw) drv = null; }
+            stampG(e.vcc, e.g, pw ? 1 / 5000 : 1e-9);
+            e.drive = drv ? { nd: drv[0], vo: drv[1], gg: 1 / drv[2] } : null;
+            if (drv) { const [nd, vo, rr] = drv, gg = 1 / rr; stampG(nd, e.g, gg); inj(nd, vo * gg); inj(e.g, -vo * gg); }
+            break; }
+          case 'SERVOD': stampG(e.vcc, e.g, (v[e.vcc] - v[e.g]) > 3 ? 1 / 200 : 1e-9); stampG(e.sig, e.g, 1e-9); break;
+          case 'LCDD': stampG(e.vcc, e.g, 1 / 1000); stampG(e.sda, e.g, 1e-9); stampG(e.scl, e.g, 1e-9); break;
           case 'RL': { const g = 1 / (e.r + e.l / dt + (e.mech ? 0 : 0)); stampG(e.a, e.b, g); cur(e.a, e.b, g * ((e.l / dt) * e.iprev - (e.emf || 0))); break; }
           case 'THY': { if (e.on) { stampG(e.a, e.b, 2); cur(e.a, e.b, -1.6); } else stampG(e.a, e.b, 1e-9); break; }
           case 'CCS': { const vce = vd(e.a, e.b), th = Math.tanh(vce / 0.3), i = e.ictl * th, gd = e.ictl / 0.3 * (1 - th * th) + GMIN; stampG(e.a, e.b, gd); cur(e.a, e.b, i - gd * vce); break; }
@@ -516,6 +586,18 @@ function createSim(circ) {
       if (e.defect === 'open' && e.type !== 'V') { e.i = 0; if (e.type === 'Q') { e.ic = 0; e.ib = 0; } if (e.type === 'RL') e.iprev = 0; continue; }
       if (e.defect === 'short' && e.b !== undefined && e.type !== 'V' && e.type !== 'TRF' && e.type !== 'RCD') { e.i = (v[e.a] - v[e.b]) * 1e3; continue; }
       switch (e.type) {
+        case 'MCU': {
+          const m = e.mcu; if (burnt.has(e.part.id)) break;
+          for (let q = 0; q < 20; q++) { if (m.mode[q] === 1) { const i = ((m.level[q] ? 5 : 0) - v[e.nd[e.pinNode(q)]]) / 25; m.pinI[q] = i; if (Math.abs(i) > 0.1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Arduino-Pin ' + (q < 14 ? 'D' + q : 'A' + (q - 14)) + ' überlastet (' + (Math.abs(i) * 1000).toFixed(0) + ' mA): Vorwiderstand vergessen?' }); break; } } else m.pinI[q] = 0; }
+          { const t2 = new Array(26).fill(0); let sum = 0; for (let q = 0; q < 20; q++) { const idx = e.pinNode(q); t2[idx] = -m.pinI[q]; sum += t2[idx]; }
+            const i5 = (5 - v[e.nd[0]]) * 2, i52 = (5 - v[e.nd[25]]) * 2, i33 = (3.3 - v[e.nd[1]]) * 1; t2[0] = -i5; t2[25] = -i52; t2[1] = -i33; sum += t2[0] + t2[25] + t2[1]; t2[3] = -sum; e.tI = t2; e.i = i5; }
+          break; }
+        case 'SENS': {
+          const dv = e.drive, ivcc = (v[e.vcc] - v[e.g]) / 5000, iOut = dv ? (dv.vo - (v[dv.nd] - v[e.g])) * dv.gg : 0, tI = e.c >= 0 ? [ivcc, 0, -iOut, -ivcc + iOut] : [ivcc, -iOut, -ivcc + iOut];
+          if (dv && e.c >= 0 && dv.nd !== e.c) tI[2] = 0;
+          e.tI = tI; e.i = ivcc; break; }
+        case 'SERVOD': { const i = (v[e.vcc] - v[e.g]) > 3 ? (v[e.vcc] - v[e.g]) / 200 : 0; e.tI = [0, i, -i]; e.i = i; break; }
+        case 'LCDD': { const i = (v[e.vcc] - v[e.g]) / 1000; e.tI = [-i, i, 0, 0]; e.i = i; break; }
         case 'RL': {
           if (e.part && burnt.has(e.part.id)) { e.i = 0; break; }
           if (e.m3) { const m = e.m3; const ei = e.i || 0; m.i2 = m.i2 == null ? ei * ei : m.i2 + (ei * ei - m.i2) * Math.min(1, dt / 0.03); const run = Math.sqrt(m.i2) > 0.4 * m.inom ? 157 : 0; e.w = (e.w || 0) + (run - (e.w || 0)) * Math.min(1, dt / 0.3); e.phase = (e.phase || 0) + e.w * dt; }
@@ -562,6 +644,7 @@ function createSim(circ) {
           let i = e.is * (expSafe(vj / nvt) - 1);
           if (e.vz) i -= 1e-9 * expSafe((-vj - (e.vz - 0.45)) / (1.2 * VT));
           e.i = i;
+          if (e.led) e.iav = e.iav == null ? i : e.iav + (i - e.iav) * Math.min(1, dt / 0.015);
           if (e.led && i > e.imax) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'LED durchgebrannt' }); }
           if (e.vmax && -vj > e.vmax * 1.1 && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Diode zerstört (Sperrspannung ' + (-vj).toFixed(0) + ' V zu hoch)' }); }
           break; }

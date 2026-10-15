@@ -20,6 +20,13 @@
       if (AC.state === 'suspended') AC.resume();
     } catch (e) {}
   }
+  let tOsc = null, tGain = null, tF = 0;
+  function tone(f) {
+    if (muted) return; unlock(); if (!AC) return;
+    if (tOsc) { if (Math.abs(tF - f) > 0.5) { tOsc.frequency.setValueAtTime(f, AC.currentTime); tF = f; } return; }
+    tOsc = AC.createOscillator(); tOsc.type = 'square'; tOsc.frequency.value = f; tF = f; tGain = AC.createGain(); tGain.gain.value = 0.05; tOsc.connect(tGain); tGain.connect(master); tOsc.start();
+  }
+  function toneOff() { if (tOsc) { try { tOsc.stop(); } catch (e) {} tOsc = null; } }
   function snd(kind) {
     if (muted) return; unlock(); if (!AC || !noiseBuf) return;
     const t = AC.currentTime + 0.01;
@@ -155,5 +162,5 @@
   }
   document.addEventListener('pointerdown', unlock, true);
   document.addEventListener('keydown', unlock, true);
-  root.LochFX = { trip, explode, stress, draw, active, clear, sound: snd, unlock, showBtn, setMuted, isMuted: () => muted, setShakeEl: el => { shakeEl = el; } };
+  root.LochFX = { tone, toneOff, trip, explode, stress, draw, active, clear, sound: snd, unlock, showBtn, setMuted, isMuted: () => muted, setShakeEl: el => { shakeEl = el; } };
 })(typeof window !== 'undefined' ? window : globalThis);
