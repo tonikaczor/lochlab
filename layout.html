@@ -108,6 +108,8 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 .phcap{font-size:11px;color:var(--mute);margin:3px 0 0}
 .shop{margin-top:10px;font-size:11px;color:var(--mute);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .shop a{color:var(--accent);text-decoration:none;padding:3px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px}
+.hint3{margin-top:12px;font-size:12px;line-height:1.4;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.hint3 b{color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
 </style>
 </head>
 <body>
@@ -318,6 +320,37 @@ const shopLinks=(k,V,it)=>{
   const t=encodeURIComponent(shopTerm(k,V,it).replace(/\s+/g,' ').trim());
   return `<div class="shop"><span>Beim Händler ansehen:</span><a href="https://www.reichelt.de/index.html?ACTION=446&q=${t}" target="_blank" rel="noopener">Reichelt</a><a href="https://www.conrad.de/de/search.html?search=${t}" target="_blank" rel="noopener">Conrad</a></div>`;
 };
+const HINTS={
+  R:'Begrenzt den Strom, keine Polung. Den Wert liest du an den Farbringen ab.',
+  POT:'Drei Anschlüsse: außen Anfang und Ende der Widerstandsbahn, in der Mitte der Schleifer.',
+  TP:'Einstellwiderstand zum Abgleichen mit dem Schraubendreher. Mitte ist der Schleifer.',
+  C:'Keramikkondensator, keine Polung. Meist kleine Kapazitäten (pF bis einige 100 nF).',
+  CE:'Elko mit Polung! Der Streifen am Gehäuse ist Minus, der längere Draht ist Plus. Falsch gepolt kann er platzen.',
+  CF:'Folienkondensator, keine Polung. Das Rastermaß (RM) ist der Abstand der Anschlüsse.',
+  L:'Spule, speichert Energie im Magnetfeld. Der Wert steht in Henry (H).',
+  LDR:'Fotowiderstand: je heller es ist, desto kleiner wird der Widerstand.',
+  D:'Strom fließt nur von der Anode zur Kathode. Der Ring am Gehäuse markiert die Kathode.',
+  LED:'Immer mit Vorwiderstand betreiben! Langer Anschluss = Anode (+), Abflachung am Rand = Kathode (−).',
+  T:'Die Belegung der Anschlüsse steht im Datenblatt. Wähle die passende Variante (C-B-E oder E-B-C).',
+  U:'Spannungsregler 78xx: Anschlüsse von links IN, GND, OUT. Die Eingangsspannung muss etwa 2 V über der Ausgangsspannung liegen.',
+  Q:'Quarz, gibt den Takt vor. Keine Polung.',
+  BZ:'Summer: auf die Plus-Markierung am Gehäuse achten.',
+  SW:'Taster: verbindet nur, solange er gedrückt ist.',
+  SCH:'Kippschalter: in der Mitte der gemeinsame Anschluss, außen die beiden Schaltstellungen.',
+  DSW:'DIP-Schalter: jeder Schalter verbindet zwei gegenüberliegende Pins.',
+  IC:'Kerbe oder Punkt zeigt Pin 1. Gezählt wird gegen den Uhrzeigersinn. Am besten auf einem Sockel einstecken.',
+  SOCK:'Der Sockel wird eingelötet, der IC steckt darauf. Die Kerbe zeigt Pin 1.',
+  SIP:'Stiftleiste im 2,54-mm-Raster.',
+  BU:'Buchsenleiste, das Gegenstück zur Stiftleiste.',
+  KL:'Schraubklemme: Draht festschrauben, Rastermaß meist 5,08 mm.',
+  GL:'Brückengleichrichter: zwei Wechselspannungs-Anschlüsse (~) sowie Plus und Minus. Beschriftung beachten.',
+  PIN:'Lötstift als Messpunkt oder Anschluss für ein Kabel.',
+  BAT:'Spannungsquelle: Plus und Minus nicht vertauschen.',
+  SIG:'Signalgenerator: erzeugt eine Wechselspannung, zum Beispiel 5 V Spitze bei 1 kHz.',
+  NANO:'Arduino Nano: 30 Pins im 2,54-mm-Raster, USB-Anschluss oben.',
+  UNO:'Arduino Uno: wird meist über Buchsenleisten eingebunden.',
+};
+const hintOf=(k,V)=>(k==='D'&&V&&V.id==='dz')?'Z-Diode: Ring = Kathode. In Sperrrichtung leitet sie ab ihrer Z-Spannung, zum Beispiel 5,1 V.':(HINTS[k]||'');
 const photoOf=(k,vr)=>PHOTO[k+':'+vr]||PHOTO[k]||null;
 const thImg=id=>id?`<img class="th" src="bauteile/${id}.jpg" alt="" loading="lazy">`:'';
 PARTS.BAT={name:'Spannungsquelle',pre:'V',kind:'fixed',def:2,val:'9V',pins:[[0,0],[2,0]],variants:[
@@ -400,6 +433,11 @@ function ohm(v){
   return n>0?n:null;
 }
 const LEDC={rot:'#e33',grün:'#3c3',gelb:'#ee3',blau:'#38f',weiß:'#f2f2f2',orange:'#f93'};
+function shadeHex(h,a){
+  h=String(h).replace('#','');if(h.length===3)h=h.split('').map(x=>x+x).join('');
+  const n=parseInt(h,16),f=v=>Math.max(0,Math.min(255,Math.round(v*(1+a))));
+  return 'rgb('+f((n>>16)&255)+','+f((n>>8)&255)+','+f(n&255)+')';
+}
 function ledColor(v){
   v=String(v||'').toLowerCase();
   if(/^(gr|green)/.test(v))return LEDC.grün;if(/^(ge|yel)/.test(v))return LEDC.gelb;if(/^bl/.test(v))return LEDC.blau;
@@ -587,8 +625,10 @@ function drawPart(c,it){
     c.strokeStyle='#fff';c.lineWidth=.09;line(c,n/2-r*.6,-r*.45,n/2-r*.3,-r*.45);line(c,n/2-r*.45,-r*.6,n/2-r*.45,-r*.3);}
   }else if(k==='LED'){
     leg();const col=ledColor(it.v),r=ledR(it);
-    c.beginPath();c.arc(n/2,0,r,0,7);c.globalAlpha=.9;c.fillStyle=col;c.fill();c.globalAlpha=1;c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=.06;c.stroke();
-    c.beginPath();c.arc(n/2-r*.22,-r*.28,r*.3,0,7);c.fillStyle='rgba(255,255,255,.45)';c.fill();
+    {const g=c.createRadialGradient(n/2-r*.28,-r*.32,r*.05,n/2,0,r);
+     g.addColorStop(0,'rgba(255,255,255,.9)');g.addColorStop(.38,col);g.addColorStop(1,shadeHex(col,-.4));
+     c.beginPath();c.arc(n/2,0,r,0,7);c.fillStyle=g;c.fill();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=.06;c.stroke();
+     if(r>.5){c.fillStyle='rgba(50,50,50,.5)';c.fillRect(n/2-r*.45,-r*.12,r*.2,r*.24);c.fillRect(n/2+r*.1,-r*.3,r*.32,r*.6);}}
     c.strokeStyle='rgba(0,0,0,.6)';c.lineWidth=.08;line(c,n/2+r*.88,-r*.55,n/2+r*.88,r*.55);
     if(it._burnt){c.fillStyle='rgba(0,0,0,.65)';c.beginPath();c.arc(n/2,0,r,0,7);c.fill();c.strokeStyle='#e33';c.lineWidth=.14;line(c,n/2-r*.6,-r*.6,n/2+r*.6,r*.6);line(c,n/2-r*.6,r*.6,n/2+r*.6,-r*.6);}
   }else if(k==='T'){
@@ -976,6 +1016,7 @@ function sideCtl(k,rotV,n,it){
   const P=PARTS[k],V=it?variantOf(it):(P.variants?P.variants.find(v=>v.id===curVar(k)):null);
   let o=`<div class="ttl">${esc(P.name)}</div>`+(V?`<div class="sub">${esc(V.name)}</div>`:'');
   o+=shopLinks(k,V,it);
+  { const h=hintOf(k,V); if(h)o+=`<div class="hint3"><b>Gut zu wissen</b><br>${esc(h)}</div>`; }
   { const ph=photoOf(k,V&&V.id); if(ph)o+=`<img class="phimg" src="bauteile/${ph}.jpg" alt="Foto" data-a="photo" data-id="${ph}"><div class="phcap">Foto antippen: alle Ansichten</div>`; }
   o+=`<div class="sh">Ausrichtung</div><div class="srow"><button class="sbtn" data-a="rl" aria-label="Links drehen">↺</button><span class="sval">${rotV*90}°</span><button class="sbtn" data-a="rot" aria-label="Rechts drehen">↻</button></div>`;
   if(P.kind!=='fixed')o+=`<div class="sh">${P.kind==='span'?'Länge':'Anzahl Pins'}</div><div class="srow"><button class="sbtn" data-a="sm" aria-label="weniger">−</button><span class="sval">${n}</span><button class="sbtn" data-a="sp" aria-label="mehr">+</button></div>`;
@@ -1325,7 +1366,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v26</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v27</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
