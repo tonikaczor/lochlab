@@ -548,6 +548,7 @@ function createRunner(prog, io) {
         case 'DistanceSensor': { const e = pinCheck(g(0, 'echo'), node), t = pinCheck(g(1, 'trigger'), node); claim(e, 'DistanceSensor', node); claim(t, 'DistanceSensor', node); io.setMode(e, 'in'); io.setMode(t, 'out'); io.write(t, 0, curTask.vt); const mx = g(2, 'max_distance', 1); return mkDev('DistanceSensor', { echo: e, trig: t, max: nv(mx) }); }
         case 'Servo': { const p = pinCheck(g(0, 'pin'), node); claim(p, 'Servo', node); io.setMode(p, 'out'); const d = mkDev('Servo', { pin: p, val: 0, angMode: false }); io.servo(p, 90); return d; }
         case 'AngularServo': { const p = pinCheck(g(0, 'pin'), node); claim(p, 'AngularServo', node); io.setMode(p, 'out'); const mn = nv(g(1, 'min_angle', -90)), mx = nv(g(2, 'max_angle', 90)), ia = Math.max(mn, Math.min(mx, nv(g(3, 'initial_angle', 0)))); const d = mkDev('Servo', { pin: p, val: (ia - mn) / (mx - mn) * 2 - 1, angMode: true, mn, mx, angle: ia }); io.servo(p, (ia - mn) / (mx - mn) * 180); return d; }
+        case 'TonalBuzzer': { const p = pinCheck(g(0, 'pin'), node); claim(p, 'TonalBuzzer', node); io.setMode(p, 'out'); io.write(p, 0, curTask.vt); return mkDev('TonalBuzzer', { pin: p, on: 0, freq: null }); }
         case 'MCP3008': {
           const ch = nv(g(0, 'channel', 0)); if (!Number.isInteger(ch) || ch < 0 || ch > 7) throwE('SPIBadChannel', 'channel muss eine Zahl von 0 bis 7 sein (der MCP3008 hat 8 Kanäle)', node);
           const sw = ['clock_pin', 'mosi_pin', 'miso_pin', 'select_pin'].some(k => kw[k] !== undefined);
@@ -562,8 +563,13 @@ function createRunner(prog, io) {
     });
   }
   const spiClaimed = new Set();
-  ['LED', 'PWMLED', 'Buzzer', 'Button', 'MotionSensor', 'DistanceSensor', 'Servo', 'AngularServo', 'LEDBoard', 'TrafficLights', 'MCP3008'].forEach(nm => { MODULES.gpiozero.mod[nm] = ctor(nm); });
+  ['LED', 'PWMLED', 'Buzzer', 'Button', 'MotionSensor', 'DistanceSensor', 'Servo', 'AngularServo', 'LEDBoard', 'TrafficLights', 'MCP3008', 'TonalBuzzer'].forEach(nm => { MODULES.gpiozero.mod[nm] = ctor(nm); });
   const setOut = (d, v) => { d.on = v ? 1 : 0; io.write(d.pin, d.on, curTask.vt); if (d.dev === 'Buzzer' && io.tone) io.tone(d.pin, d.on ? 2300 : null); };
+  const noteFreq = (v, node) => {                            // Zahl (Hz) oder Notenname wie 'A4', 'C#5', 'Bb3'
+    if (typeof v === 'number' || v instanceof F) { const h = nv(v); if (!(h > 0)) throwE('ValueError', 'Die Frequenz muss größer als 0 sein', node); return h; }
+    const m = typeof v === 'string' && v.match(/^([A-Ga-g])([#b]?)(\d)$/); if (!m) throwE('ValueError', 'Unbekannte Note ' + JSON.stringify(v) + ': erlaubt sind Namen wie "A4", "C#5" oder eine Frequenz in Hz', node);
+    const base = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 }[m[1].toUpperCase()] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0); return 440 * Math.pow(2, (12 * (+m[3] + 1) + base - 69) / 12);
+  };
   const startBlink = (d, on, off, n, node) => { d.blink = { on, off, n, phase: 0, next: curTask.vt }; };
   function devGet(d, name, node) {
     const f = (fn, gen) => bi(d.dev + '.' + name, (a, kw) => fn(a, kw), gen);
@@ -572,6 +578,10 @@ function createRunner(prog, io) {
         case 'on': return f(() => { d.blink = null; setOut(d, 1); return null; }); case 'off': return f(() => { d.blink = null; setOut(d, 0); return null; }); case 'toggle': return f(() => { d.blink = null; setOut(d, d.on ? 0 : 1); return null; });
         case 'blink': case 'beep': return f((a, kw) => { startBlink(d, nv(a[0] !== undefined ? a[0] : (kw.on_time !== undefined ? kw.on_time : 1)), nv(a[1] !== undefined ? a[1] : (kw.off_time !== undefined ? kw.off_time : 1)), kw.n !== undefined ? nv(kw.n) : null, node); return null; });
         case 'is_lit': case 'is_active': case 'value': return d.on ? (name === 'value' ? 1 : true) : (name === 'value' ? 0 : false); case 'pin': return d.pin; } break;
+      case 'TonalBuzzer': switch (name) {
+        case 'play': return f(a => { const fr = noteFreq(a[0], node); d.freq = fr; d.on = 1; io.write(d.pin, 1, curTask.vt); if (io.tone) io.tone(d.pin, fr); return null; });
+        case 'stop': return f(() => { d.freq = null; d.on = 0; io.write(d.pin, 0, curTask.vt); if (io.tone) io.tone(d.pin, null); return null; });
+        case 'is_active': return d.on ? true : false; case 'value': return d.on ? 1 : 0; case 'pin': return d.pin; } break;
       case 'PWMLED': switch (name) {
         case 'on': return f(() => { d.pulse = null; setVal(d, 1); return null; }); case 'off': return f(() => { d.pulse = null; setVal(d, 0); return null; }); case 'toggle': return f(() => { d.pulse = null; setVal(d, d.val > 0 ? 0 : 1); return null; });
         case 'pulse': return f((a, kw) => { d.pulse = { fi: nv(a[0] !== undefined ? a[0] : (kw.fade_in_time !== undefined ? kw.fade_in_time : 1)), fo: nv(a[1] !== undefined ? a[1] : (kw.fade_out_time !== undefined ? kw.fade_out_time : 1)), t0: curTask.vt }; return null; });

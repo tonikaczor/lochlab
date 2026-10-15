@@ -236,6 +236,33 @@ void loop() {
   }
 }
 ` }) },
+    { lab: 'code', cat: 'Töne und Sensoren', name: 'Star-Wars-Thema mit Lichtshow', info: 'Der Lautsprecher an Pin 8 spielt das Star-Wars-Thema, dazu leuchten die drei LEDs reihum im Takt der Noten. Die Tonhöhen und Längen stehen in zwei Listen (Arrays). Mit dem Tempo-Regler oben geht es schneller.',
+      make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 4, 0, '220'], ['LED', 26, 4, 0, 'rot'], ['GND', 30, 4], ['R', 22, 12, 0, '220'], ['LED', 26, 12, 0, 'gelb'], ['GND', 30, 12], ['R', 22, 16, 0, '100'], ['SPK', 26, 16, 0, '8'], ['GND', 30, 16], ['R', 22, 24, 0, '220'], ['LED', 26, 24, 0, 'grün'], ['GND', 30, 24]], wires: [[20, 4, 22, 4], [20, 12, 22, 12], [20, 16, 22, 16], [20, 24, 22, 24]], scopes: [], tempo: 1,
+      code: String.raw`const int summerPin = 8;
+int ledPins[] = {2, 6, 12};
+
+// Die Melodie: Tonhöhe (Hz) und Länge (ms) jeder Note
+int melodie[] = {NOTE_G4, NOTE_G4, NOTE_G4, NOTE_C5, NOTE_G5, NOTE_F5, NOTE_E5, NOTE_D5, NOTE_C6, NOTE_G5, NOTE_F5, NOTE_E5, NOTE_D5, NOTE_C6, NOTE_G5, NOTE_F5, NOTE_E5, NOTE_F5, NOTE_D5};
+int dauer[]   = {200, 200, 200, 800, 800, 200, 200, 200, 800, 400, 200, 200, 200, 800, 400, 200, 200, 200, 1000};
+const int anzahl = 19;
+
+void setup() {
+  for (int i = 0; i < 3; i++) {
+    pinMode(ledPins[i], OUTPUT);
+  }
+}
+
+void loop() {
+  for (int i = 0; i < anzahl; i++) {
+    int led = ledPins[i % 3];      // die LEDs reihum nehmen
+    digitalWrite(led, HIGH);
+    tone(summerPin, melodie[i], dauer[i]);
+    delay(dauer[i] + 60);          // kurze Pause zwischen den Noten
+    digitalWrite(led, LOW);
+  }
+  delay(2000);
+}
+` }) },
     { lab: 'code', cat: 'Töne und Sensoren', name: 'Einparkhilfe mit Ultraschall und Summer', info: 'Regler „Abstand“ am Sensor verkleinern: Unter 100 cm piept der Summer, und je näher das Hindernis ist, desto schneller kommen die Töne.',
       make: () => ({ parts: [['UNO', 12, 0], ['HCSR04', 24, 10, 0, '', { pos: 0.1 }], ['GND', 24, 16], ['R', 22, 20, 0, '100'], ['SPK', 26, 20, 0, '8'], ['GND', 30, 20]], wires: [[24, 10, 22, 10, 22, -2, 20, -2], [20, 12, 24, 12], [20, 14, 24, 14], [20, 20, 22, 20]], scopes: [], tempo: 0.75,
       code: String.raw`const int triggerPin = 6;
@@ -406,6 +433,33 @@ while True:
         servo.angle = winkel
         print("Winkel:", winkel)
         sleep(1)
+` }) },
+    { lab: 'pi', cat: 'Sensoren und Töne', name: 'Star-Wars-Thema mit Lichtshow', info: 'Der Lautsprecher an GPIO23 spielt das Star-Wars-Thema (TonalBuzzer), dazu leuchten die drei LEDs reihum im Takt der Noten. Beim echten Pi braucht man dafür einen passiven Summer oder Lautsprecher, ein aktiver Summer kann nur einen festen Ton.',
+      make: () => ({ parts: [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 14, 0, '100'], ['SPK', 26, 14, 0, '8'], ['GND', 30, 14], ['R', 22, 22, 0, '220'], ['LED', 26, 22, 0, 'gelb'], ['GND', 30, 22], ['R', 22, 30, 0, '220'], ['LED', 26, 30, 0, 'grün'], ['GND', 30, 30]], wires: [[20, 10, 22, 10], [20, 14, 22, 14], [20, 22, 22, 22], [20, 30, 22, 30]], scopes: [], tempo: 1,
+      code: String.raw`from gpiozero import TonalBuzzer, LED
+from time import sleep
+
+summer = TonalBuzzer(23, octaves=2)
+leds = [LED(18), LED(8), LED(12)]
+
+# Die Melodie: Notenname und Länge in Sekunden
+melodie = [("G4", 0.2), ("G4", 0.2), ("G4", 0.2), ("C5", 0.8), ("G5", 0.8),
+           ("F5", 0.2), ("E5", 0.2), ("D5", 0.2), ("C6", 0.8), ("G5", 0.4),
+           ("F5", 0.2), ("E5", 0.2), ("D5", 0.2), ("C6", 0.8), ("G5", 0.4),
+           ("F5", 0.2), ("E5", 0.2), ("F5", 0.2), ("D5", 1.0)]
+
+while True:
+    nr = 0
+    for note, laenge in melodie:
+        led = leds[nr % 3]         # die LEDs reihum nehmen
+        led.on()
+        summer.play(note)
+        sleep(laenge)
+        summer.stop()
+        led.off()
+        sleep(0.06)                # kurze Pause zwischen den Noten
+        nr += 1
+    sleep(2)
 ` }) },
     { lab: 'pi', cat: 'Sensoren und Töne', name: 'Lauflicht mit LEDBoard', info: 'Vier LEDs an GPIO18, 24, 8 und 12 laufen nacheinander. LEDBoard fasst sie zu einer Liste zusammen.',
       make: () => ({ parts: [['PI', 12, 0], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'gelb'], ['GND', 30, 16], ['R', 22, 22, 0, '220'], ['LED', 26, 22, 0, 'grün'], ['GND', 30, 22], ['R', 22, 30, 0, '220'], ['LED', 26, 30, 0, 'blau'], ['GND', 30, 30]], wires: [[20, 10, 22, 10], [20, 16, 22, 16], [20, 22, 22, 22], [20, 30, 22, 30]], scopes: [], tempo: 0.75,
