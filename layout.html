@@ -106,6 +106,8 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 .chip .th{width:28px;height:28px;border-radius:7px;object-fit:cover;margin:0 7px 0 -6px;flex:none}
 .phimg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;margin-top:8px;cursor:pointer}
 .phcap{font-size:11px;color:var(--mute);margin:3px 0 0}
+.shop{margin-top:10px;font-size:11px;color:var(--mute);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.shop a{color:var(--accent);text-decoration:none;padding:3px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px}
 </style>
 </head>
 <body>
@@ -248,6 +250,22 @@ PARTS.CF.variants=[
   {id:'rm27', name:'RM 27,5 (MKS4)',n:11, bw:12.4, bh:3.8, col:'#d6372b'},
 ];
 PARTS.CF.defVar=1;
+// Dioden nach Gehäuse (Maße: 1N4148 DO-35 ca. 4 x 1,9 mm, 1N4007 DO-41 5,2 x 2,7 mm)
+PARTS.D.variants=[
+  {id:'d4148',name:'1N4148 (Glas)',  val:'1N4148',   bl:1.7,  bh:.75, col:'#d08a3c', bc:'#111',    glass:true},
+  {id:'d4007',name:'1N4007 (DO-41)', val:'1N4007',   bl:2.05, bh:1.06,col:'#222',    bc:'#d8dde2'},
+  {id:'d5819',name:'1N5819 Schottky',val:'1N5819',   bl:2.05, bh:1.06,col:'#1c2a4a', bc:'#d8dde2'},
+  {id:'dz',   name:'Z-Diode (Glas)', val:'BZX55C5V1',bl:1.7,  bh:.75, col:'#cfae6a', bc:'#111',    glass:true},
+];
+// Elkos nach Durchmesser (Rastermaß auf dem 2,54-Raster gerundet)
+PARTS.CE.variants=[
+  {id:'e5',  name:'Ø 5 mm',   n:1, r:1.0},
+  {id:'e63', name:'Ø 6,3 mm', n:1, r:1.25},
+  {id:'e8',  name:'Ø 8 mm',   n:1, r:1.57},
+  {id:'e10', name:'Ø 10 mm',  n:2, r:1.97},
+  {id:'e13', name:'Ø 13 mm',  n:2, r:2.56},
+];
+PARTS.CE.defVar=1;
 PARTS.TP.variants.push(
   {id:'tor',  name:'Orange (RFT)',      pins:[[0,0],[1,0],[2,0]], box:[-.6,-2.8,2.6,.5],  r:.45, style:'trim', col:'#e07b1a'},
   {id:'tlang',name:'Spindel lang (3006)',pins:[[0,0],[2,0],[3,0]], box:[-1.65,-1.9,5.85,.5], r:.5,  style:'trimlong', col:'#2a5db0'},
@@ -263,6 +281,43 @@ function syncVarSize(k){const P=PARTS[k];if(!P.variants)return;const V=P.variant
 const PHOTO={'CF:rm5':'cf_5','CF:rm15':'cf_15','CF:rm22':'cf_22','CF:rm27':'cf_27','SCH:k3':'kipp','BZ':'summer','SW:k2':'taster2','KL':'klemme3',
   'TP:tor':'trim_orange','TP:tlang':'trim_lang','TP:tlieg':'trim_liegend','TP:tst5':'trim_stehend','TP:tst10':'trim_stehend10','P:pknopf':'poti_knopf'};
 const PHOTO_IDX={"vierwege": ["vierwege-1.jpg", "vierwege-2.jpg"], "seg_doppelt": ["seg_doppelt-1.jpg", "seg_doppelt-2.jpg", "seg_doppelt-3.jpg"], "seg_mittel": ["seg_mittel-1.jpg", "seg_mittel-2.jpg", "seg_mittel-3.jpg"], "seg_klein": ["seg_klein-1.jpg", "seg_klein-2.jpg", "seg_klein-3.jpg"], "cf_15": ["cf_15-1.jpg", "cf_15-2.jpg", "cf_15-3.jpg"], "cf_22": ["cf_22-1.jpg", "cf_22-2.jpg", "cf_22-3.jpg"], "cf_27": ["cf_27-1.jpg", "cf_27-2.jpg", "cf_27-3.jpg"], "cf_5": ["cf_5-1.jpg", "cf_5-2.jpg", "cf_5-3.jpg"], "kipp": ["kipp-1.jpg", "kipp-2.jpg", "kipp-3.jpg"], "poti_knopf": ["poti_knopf-1.jpg", "poti_knopf-2.jpg", "poti_knopf-3.jpg"], "klemme3": ["klemme3-1.jpg", "klemme3-2.jpg", "klemme3-3.jpg"], "sicherung": ["sicherung-1.jpg", "sicherung-2.jpg", "sicherung-3.jpg", "sicherung-4.jpg"], "summer": ["summer-1.jpg", "summer-2.jpg"], "taster2": ["taster2-1.jpg", "taster2-2.jpg", "taster2-3.jpg"], "trim_orange": ["trim_orange-1.jpg", "trim_orange-2.jpg"], "trim_lang": ["trim_lang-1.jpg", "trim_lang-2.jpg", "trim_lang-3.jpg"], "trim_liegend": ["trim_liegend-1.jpg", "trim_liegend-2.jpg"], "trim_stehend": ["trim_stehend-1.jpg", "trim_stehend-2.jpg", "trim_stehend-3.jpg"], "trim_stehend10": ["trim_stehend10-1.jpg", "trim_stehend10-2.jpg", "trim_stehend10-3.jpg", "trim_stehend10-4.jpg"]};
+function shopTerm(k,V,it){
+  const v=it?it.v:(partVals[k]!=null?partVals[k]:PARTS[k].val),vn=V?V.name:'';
+  switch(k){
+    case 'R':return 'Widerstand 0,25W '+(v||'');
+    case 'D':return (V&&V.val)||v||'Diode';
+    case 'LED':return 'LED '+(vn||'5 mm')+' '+(v||'rot');
+    case 'C':return 'Keramikkondensator '+(v||'');
+    case 'CE':return 'Elko radial '+vn+' '+(v||'');
+    case 'CF':return 'Folienkondensator '+vn.replace(/\(.*\)/,'')+' '+(v||'');
+    case 'L':return 'Drossel '+(v||'');
+    case 'LDR':return 'Fotowiderstand LDR';
+    case 'Q':return 'Quarz HC49 '+(v||'');
+    case 'BZ':return 'Summer Piezo';
+    case 'T':return v||'Transistor';
+    case 'U':return 'Spannungsregler '+(v||'7805');
+    case 'P':return 'Potentiometer '+(v||'')+' '+vn;
+    case 'TP':return 'Trimmer '+(v||'')+' '+vn;
+    case 'SW':return 'Taster '+vn;
+    case 'SCH':return 'Kippschalter '+vn;
+    case 'DSW':return 'DIP-Schalter';
+    case 'IC':return 'IC '+(v||'');
+    case 'SOCK':return 'IC-Sockel DIP';
+    case 'SIP':return 'Stiftleiste';
+    case 'BU':return 'Buchsenleiste';
+    case 'KL':return 'Schraubklemme RM 5,08';
+    case 'GL':return 'Brückengleichrichter';
+    case 'PIN':return 'Lötstift';
+    case 'BAT':return vn||'Batterie';
+    case 'NANO':return 'Arduino Nano';
+    case 'UNO':return 'Arduino Uno';
+    default:return PARTS[k].name;
+  }
+}
+const shopLinks=(k,V,it)=>{
+  const t=encodeURIComponent(shopTerm(k,V,it).replace(/\s+/g,' ').trim());
+  return `<div class="shop"><span>Beim Händler ansehen:</span><a href="https://www.reichelt.de/index.html?ACTION=446&q=${t}" target="_blank" rel="noopener">Reichelt</a><a href="https://www.conrad.de/de/search.html?search=${t}" target="_blank" rel="noopener">Conrad</a></div>`;
+};
 const photoOf=(k,vr)=>PHOTO[k+':'+vr]||PHOTO[k]||null;
 const thImg=id=>id?`<img class="th" src="bauteile/${id}.jpg" alt="" loading="lazy">`:'';
 PARTS.BAT={name:'Spannungsquelle',pre:'V',kind:'fixed',def:2,val:'9V',pins:[[0,0],[2,0]],variants:[
@@ -305,19 +360,19 @@ function bodyRect(it){
   switch(k){
     case 'R': case 'D': return [-.5,-.5,n+.5,.5];
     case 'C': return [-.5,-.6,n+.5,.6];
-    case 'CE': return [Math.min(-.5,n/2-.9),-.9,Math.max(n+.5,n/2+.9),.9];
+    case 'CE':{const r=(variantOf(it)||{}).r||.85;return [Math.min(-.5,n/2-r-.05),-r-.05,Math.max(n+.5,n/2+r+.05),r+.05];}
     case 'LED':{const r=ledR(it);return [Math.min(-.5,n/2-r),-r,Math.max(n+.5,n/2+r),r];}
     case 'T': return [-.5,-.9,2.5,.55];
     case 'P': return [-.5,-1.6,2.5,.5];
     case 'TP': return [-.5,-1.3,2.5,.5];
-    case 'U': return [-.5,-3.2,2.5,.5];
+    case 'U': return [-1.1,-6.5,3.1,.5];
     case 'SW': return [-.5,-.5,2.5,3.5];
     case 'GL': return [-.5,-1.2,3.5,.5];
     case 'PIN': return [-.5,-.5,.5,.5];
     case 'CF':{const V=variantOf(it),w=V&&V.bw?V.bw:Math.min(n+.6,2.6),h=(V&&V.bh?V.bh:1.3)/2+.2;return [Math.min(-.5,n/2-w/2-.2),-h,Math.max(n+.5,n/2+w/2+.2),h];}
     case 'L': return [-.5,-.6,n+.5,.6];
     case 'LDR': return [Math.min(-.5,n/2-1),-1,Math.max(n+.5,n/2+1),1];
-    case 'Q': return [Math.min(-.5,n/2-1.5),-.9,Math.max(n+.5,n/2+1.5),.9];
+    case 'Q': return [Math.min(-.5,n/2-2.2),-.95,Math.max(n+.5,n/2+2.2),.95];
     case 'BZ': return [n/2-2.3,-2.3,n/2+2.3,2.3];
     case 'BU': return [-.5,-.5,n-.5,.5];
     case 'NANO': return [-.6,-1.7,6.6,15.7];
@@ -511,21 +566,25 @@ function drawPart(c,it){
   const leg=()=>{c.strokeStyle='#6b727a';c.lineWidth=.2;line(c,0,0,n,0);c.strokeStyle='#d6dbe1';c.lineWidth=.12;line(c,0,0,n,0);};
   if(k==='R'){
     leg();const L=Math.min(2.5,n-.6),bx=n/2-L/2;
-    rrect(c,bx,-.3,L,.6,.18);c.fillStyle='#d9bd85';c.fill();c.strokeStyle='#8a6b3a';c.lineWidth=.04;c.stroke();
+    rrect(c,bx,-.45,L,.9,.32);c.fillStyle='#d9bd85';c.fill();c.strokeStyle='#8a6b3a';c.lineWidth=.04;c.stroke();
     const b=bands(it.v);
-    if(b){[.18,.34,.5,.82].forEach((f,i)=>{c.fillStyle=b[i];c.fillRect(bx+L*f-.04,-.3,.09,.6);});}
+    if(b){[.18,.34,.5,.82].forEach((f,i)=>{c.fillStyle=b[i];c.fillRect(bx+L*f-.04,-.45,.09,.9);});}
   }else if(k==='P'||k==='TP'||k==='SW'||k==='SCH'){
     drawVarPart(c,it);
   }else if(k==='D'){
-    leg();const L=Math.min(2,n-.6),bx=n/2-L/2;
-    rrect(c,bx,-.28,L,.56,.1);c.fillStyle='#262626';c.fill();
-    c.fillStyle='#d8dde2';c.fillRect(bx+L-.2,-.28,.14,.56);
+    leg();{const V=variantOf(it),L=Math.min(V&&V.bl?V.bl:2,n-.6),h=(V&&V.bh)||.56,bx=n/2-L/2;
+    rrect(c,bx,-h/2,L,h,V&&V.glass?h/2:.1);c.fillStyle=(V&&V.col)||'#262626';c.fill();
+    if(V&&V.glass){c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=.05;line(c,bx+.2,-h*.2,bx+L-.5,-h*.2);}
+    c.fillStyle=(V&&V.bc)||'#d8dde2';c.fillRect(bx+L-(V&&V.glass?.34:.24),-h/2,V&&V.glass?.16:.16,h);}
   }else if(k==='C'){
     leg();const w=Math.min(n+.5,1.5);
-    rrect(c,n/2-w/2,-.5,w,1,.35);c.fillStyle='#e3a233';c.fill();c.strokeStyle='#8a5a10';c.lineWidth=.05;c.stroke();
+    c.beginPath();c.ellipse(n/2,-.12,.85,.75,0,0,7);c.fillStyle='#e3a233';c.fill();c.strokeStyle='#8a5a10';c.lineWidth=.05;c.stroke();
   }else if(k==='CE'){
-    leg();c.beginPath();c.arc(n/2,0,.85,0,7);c.fillStyle='#27468f';c.fill();c.strokeStyle='#142a5e';c.lineWidth=.06;c.stroke();
-    c.fillStyle='#dbe6ff';c.fillRect(n/2+.45,-.55,.14,1.1);
+    leg();{const r=(variantOf(it)||{}).r||.85;
+    c.beginPath();c.arc(n/2,0,r,0,7);c.fillStyle='#27468f';c.fill();c.strokeStyle='#142a5e';c.lineWidth=.06;c.stroke();
+    c.strokeStyle='rgba(255,255,255,.28)';c.lineWidth=.05;c.beginPath();c.arc(n/2,0,r*.72,0,7);c.stroke();
+    c.fillStyle='#dbe6ff';c.fillRect(n/2+r*.55,-r*.62,Math.max(.14,r*.17),r*1.24);
+    c.strokeStyle='#fff';c.lineWidth=.09;line(c,n/2-r*.6,-r*.45,n/2-r*.3,-r*.45);line(c,n/2-r*.45,-r*.6,n/2-r*.45,-r*.3);}
   }else if(k==='LED'){
     leg();const col=ledColor(it.v),r=ledR(it);
     c.beginPath();c.arc(n/2,0,r,0,7);c.globalAlpha=.9;c.fillStyle=col;c.fill();c.globalAlpha=1;c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=.06;c.stroke();
@@ -546,15 +605,16 @@ function drawPart(c,it){
     leg();c.beginPath();c.arc(n/2,0,.95,0,7);c.fillStyle='#d9c79a';c.fill();c.strokeStyle='#7a6a3c';c.lineWidth=.06;c.stroke();
     c.strokeStyle='#8a4a1c';c.lineWidth=.08;c.beginPath();c.moveTo(n/2-.6,-.45);c.lineTo(n/2+.6,-.45);c.lineTo(n/2-.6,0);c.lineTo(n/2+.6,0);c.lineTo(n/2-.6,.45);c.lineTo(n/2+.6,.45);c.stroke();
   }else if(k==='Q'){
-    leg();rrect(c,n/2-1.5,-.7,3,1.4,.7);c.fillStyle='#c9ced4';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.06;c.stroke();
+    leg();rrect(c,n/2-2.17,-.9,4.35,1.8,.9);c.fillStyle='#c9ced4';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.06;c.stroke();
   }else if(k==='BZ'){
     c.beginPath();c.arc(n/2,0,2.2,0,7);c.fillStyle='#1d1d1d';c.fill();c.strokeStyle='#555';c.lineWidth=.07;c.stroke();
     c.beginPath();c.arc(n/2,0,.35,0,7);c.fillStyle='#000';c.fill();
     c.strokeStyle='#ddd';c.lineWidth=.1;line(c,n/2-1.7,-1,n/2-1.3,-1);line(c,n/2-1.5,-1.2,n/2-1.5,-.8);
   }else if(k==='U'){
-    rrect(c,-.5,-1.9,3,1.5,.1);c.fillStyle='#222';c.fill();
-    rrect(c,-.5,-3.2,3,1.4,.1);c.fillStyle='#b8bec5';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.05;c.stroke();
-    c.beginPath();c.arc(1,-2.55,.3,0,7);c.fillStyle='#222';c.fill();
+    [0,1,2].forEach(x=>{c.strokeStyle='#cfd5db';c.lineWidth=.14;line(c,x,0,x,-.7);});
+    rrect(c,-1,-4,4,3.4,.12);c.fillStyle='#222';c.fill();
+    rrect(c,-1,-6.4,4,2.4,.12);c.fillStyle='#b8bec5';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.05;c.stroke();
+    c.beginPath();c.arc(1,-5.3,.75,0,7);c.fillStyle='#222';c.fill();
   }else if(k==='TP'){
     rrect(c,-.45,-1.2,2.9,1.65,.1);c.fillStyle='#3a6ea5';c.fill();c.strokeStyle='#1d3d63';c.lineWidth=.05;c.stroke();
     c.beginPath();c.arc(1,-.45,.55,0,7);c.fillStyle='#d6a23a';c.fill();c.strokeStyle='#6b4a10';c.lineWidth=.05;c.stroke();line(c,.65,-.45,1.35,-.45);
@@ -915,6 +975,7 @@ const varChips=(k,cur,act)=>PARTS[k].variants.map(v=>`<button class="chip sub ${
 function sideCtl(k,rotV,n,it){
   const P=PARTS[k],V=it?variantOf(it):(P.variants?P.variants.find(v=>v.id===curVar(k)):null);
   let o=`<div class="ttl">${esc(P.name)}</div>`+(V?`<div class="sub">${esc(V.name)}</div>`:'');
+  o+=shopLinks(k,V,it);
   { const ph=photoOf(k,V&&V.id); if(ph)o+=`<img class="phimg" src="bauteile/${ph}.jpg" alt="Foto" data-a="photo" data-id="${ph}"><div class="phcap">Foto antippen: alle Ansichten</div>`; }
   o+=`<div class="sh">Ausrichtung</div><div class="srow"><button class="sbtn" data-a="rl" aria-label="Links drehen">↺</button><span class="sval">${rotV*90}°</span><button class="sbtn" data-a="rot" aria-label="Rechts drehen">↻</button></div>`;
   if(P.kind!=='fixed')o+=`<div class="sh">${P.kind==='span'?'Länge':'Anzahl Pins'}</div><div class="srow"><button class="sbtn" data-a="sm" aria-label="weniger">−</button><span class="sval">${n}</span><button class="sbtn" data-a="sp" aria-label="mehr">+</button></div>`;
@@ -1264,7 +1325,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v25</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v26</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
