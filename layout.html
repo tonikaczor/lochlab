@@ -168,6 +168,7 @@ th{color:var(--mute);font-weight:500;font-size:12px}
     <img id="logo" onclick="location.href='index.html'" title="Startseite" src="logo.png" alt="Tonfunk" style="height:34px;max-width:90px;object-fit:contain;display:none;margin-left:4px" onload="this.style.display='block'" onerror="this.remove()">
     <div class="title" id="title">LochLab<small id="sub"></small></div>
     <button class="ib hb2" id="bEx" aria-label="Beispiele" title="Beispiele">📖 <span>Beispiele</span></button>
+    <button class="ib hb2" id="bTasks" aria-label="Aufgaben" title="Aufgaben">📝 <span>Aufgaben</span></button>
     <button class="ib hb2" id="bOpen" aria-label="Projekte öffnen" title="Projekte öffnen">📂 <span>Öffnen</span></button>
     <button class="ib hb2" id="bShare" aria-label="Teilen" title="Teilen">📤 <span>Teilen</span></button>
     <button class="ib hb2" id="bPrint" aria-label="Drucken" title="Drucken">🖨 <span>Drucken</span></button>
@@ -1365,6 +1366,9 @@ function openMenu(){
     const rows=[
       ['new','Neues Projekt','Leere Platine anlegen'],
       ['ex','Beispiele','Fertige Layouts zum Nachbauen'],
+      ['tasks','Aufgaben','Aufbau und Fehlersuche mit automatischer Prüfung'],
+      ['check','Layout prüfen','Findet lose Drähte, Kurzschlüsse und offene Anschlüsse'],
+      ['solder','Lötanleitung','Reihenfolge und Lage der Bauteile, zum Drucken'],
       ['open','Projekte öffnen','Auf diesem iPad gespeichert'],
       ['rename','Projekt umbenennen',doc.name],
       ['user','Name ändern',userName()||'noch nicht eingetragen'],
@@ -1420,7 +1424,8 @@ async function loadShared(){
 }
 function menuAct(m){
   if(m==='ex'){openExamples();return;}
-  if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid,code:doc.code,lang:doc.lang},doc.name);return;}
+  if(m==='tasks'||m==='check'||m==='solder'){if(window.LochTasks)LochTasks.menu(m);return;}
+  if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid,code:doc.code,lang:doc.lang,task:doc.task},doc.name);return;}
   if(m==='new')confirmNew(()=>boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));}));
   else if(m==='open')openList();
   else if(m==='rename')renameDoc();
@@ -1756,5 +1761,6 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <script src="pyrun.js"></script>
 <script src="simui.js"></script>
 <script src="lochbeispiele.js"></script>
+<script src="lochtasks.js"></script>
 </body>
 </html>
