@@ -112,6 +112,39 @@ function buildCircuit(layout) {
         const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : 0.1;
         add({ type: 'R', a: n(0), b: n(1), g: ia / un, part: p, lamp: un * ia });
         break; }
+      case 'FUSE': add({ type: 'R', a: n(0), b: n(1), g: 1 / 0.15, part: p, fuse: { ir: Math.max(si(p.v, 0.25), 1e-3), tau: 0.3 }, heat: 0 }); break;
+      case 'NTC': case 'PTC': {
+        const r25 = Math.max(si(p.v, 10000), 1), ntc = k === 'NTC';
+        const gOf = q => { const T = -20 + 140 * (q == null ? 0.32 : q), r = ntc ? r25 * Math.exp(3950 * (1 / (T + 273.15) - 1 / 298.15)) : r25 * Math.exp(0.0225 * (T - 25)); return 1 / Math.max(r, 0.1); };
+        add({ type: 'R', a: n(0), b: n(1), g: gOf(p.pos), part: p, upd() { this.g = gOf(this.part.pos); } });
+        break; }
+      case 'SPK': add({ type: 'R', a: n(0), b: n(1), g: 1 / Math.max(si(p.v, 8), 1), part: p, speaker: true }); break;
+      case 'MOTOR': {
+        const un = Math.max(si(p.v, 6), 0.5), R = un / 1.2, i0 = 0.12, w0 = 350, ke = (un - R * i0) / w0, tst = ke * un / R;
+        const m = { ke, b: ke * i0 / w0, J: 3e-6, w: 0, tst, w0, bx: 0 };
+        add({ type: 'RL', a: n(0), b: n(1), r: R, l: 1e-3, emf: 0, iprev: 0, mech: m, part: p, heat: 0,
+          upd() { const q = this.part.pos == null ? 0 : this.part.pos; m.bx = q * 8 * m.tst / m.w0; this.emf = m.ke * m.w; } });
+        break; }
+      case 'RLY': {
+        const un = Math.max(si(p.v, 12), 1), R = un * un / 0.4, rl = add({ type: 'RL', a: n(0), b: n(1), r: R, l: R * 0.03, emf: 0, iprev: 0, relay: true, on: false, ion: 0.7 * un / R, ioff: 0.2 * un / R, part: p });
+        add({ type: 'S', a: n(2), b: n(3), closed: false, part: p, sub: 'NO', upd() { this.closed = rl.on; } });
+        add({ type: 'S', a: n(2), b: n(4), closed: true, part: p, sub: 'NC', upd() { this.closed = !rl.on; } });
+        break; }
+      case 'THY': {
+        const gd = add({ type: 'D', a: n(2), b: n(1), is: 1e-9, nn: 1.8, part: p, vj: 0, sub: 'G' });
+        add({ type: 'THY', a: n(0), b: n(1), on: false, gd, part: p, sub: 'AK' });
+        break; }
+      case 'TRF': {
+        const m = String(p.v || '230V:12V').replace(',', '.').match(/([0-9.]+)\s*V?\s*[:/]\s*([0-9.]+)/), vp = m ? parseFloat(m[1]) : 230, vs = m ? parseFloat(m[2]) : 12, nr = vp / vs;
+        const L1 = Math.max(vp / 9.4, 0.05), L2 = L1 / (nr * nr), M = 0.99 * Math.sqrt(L1 * L2), r1 = 0.01 * vp * vp, r2 = r1 / (nr * nr);
+        add({ type: 'TRF', a: n(0), b: n(1), c: n(2), d: n(3), L1, L2, M, r1, r2, i1p: 0, i2p: 0, i1: 0, i2: 0, part: p });
+        break; }
+      case 'PHT': add({ type: 'CCS', a: n(0), b: n(1), ictl: 0, part: p, upd() { this.ictl = (this.part.pos == null ? 0.5 : this.part.pos) * 5e-3; } }); break;
+      case 'OPTO': {
+        const vf = 1.25, is = 0.01 * Math.exp(-vf / (2 * VT));
+        const led = add({ type: 'D', a: n(0), b: n(1), is, nn: 2, led: true, color: 'rot', imax: 0.06, part: p, vj: 0, sub: 'LED' });
+        add({ type: 'CCS', a: n(2), b: n(3), ictl: 0, part: p, sub: 'T', upd() { this.ictl = Math.min(0.05, 0.5 * Math.max(0, led.i || 0)); } });
+        break; }
       case 'SPST': add({ type: 'S', a: n(0), b: n(1), closed: !!p.sw, part: p, upd() { this.closed = !!this.part.sw; } }); break;
       case 'ZD': {
         const vz = Math.max(si(p.v, 5.1), 1);
@@ -322,6 +355,18 @@ function createSim(circ) {
               if (r > 0) z[r - 1] -= s * (ae * ieBe + ac * ieBc);
             }
             break; }
+          case 'RL': { const g = 1 / (e.r + e.l / dt + (e.mech ? 0 : 0)); stampG(e.a, e.b, g); cur(e.a, e.b, g * ((e.l / dt) * e.iprev - (e.emf || 0))); break; }
+          case 'THY': { if (e.on) { stampG(e.a, e.b, 2); cur(e.a, e.b, -1.6); } else stampG(e.a, e.b, 1e-9); break; }
+          case 'CCS': { const vce = vd(e.a, e.b), th = Math.tanh(vce / 0.3), i = e.ictl * th, gd = e.ictl / 0.3 * (1 - th * th) + GMIN; stampG(e.a, e.b, gd); cur(e.a, e.b, i - gd * vce); break; }
+          case 'TRF': {
+            const a11 = e.r1 + e.L1 / dt, a22 = e.r2 + e.L2 / dt, a12 = e.M / dt, det = a11 * a22 - a12 * a12;
+            const y11 = a22 / det, y22 = a11 / det, y12 = -a12 / det;
+            const b1 = (e.L1 * e.i1p + e.M * e.i2p) / dt, b2 = (e.M * e.i1p + e.L2 * e.i2p) / dt;
+            const tg = (r1, r2, c1, c2, g) => { addA(r1, c1, g); addA(r1, c2, -g); addA(r2, c1, -g); addA(r2, c2, g); };
+            tg(e.a, e.b, e.a, e.b, y11); tg(e.a, e.b, e.c, e.d, y12); tg(e.c, e.d, e.a, e.b, y12); tg(e.c, e.d, e.c, e.d, y22);
+            cur(e.a, e.b, y11 * b1 + y12 * b2); cur(e.c, e.d, y12 * b1 + y22 * b2);
+            e.y = [y11, y12, y22, y11 * b1 + y12 * b2, y12 * b1 + y22 * b2];
+            break; }
           case 'IC': ICS.stamp(e, S, v); break;
           case 'REG': {
             const vin = v[e.ni] - v[e.ng];
@@ -348,7 +393,31 @@ function createSim(circ) {
     // Zustände übernehmen, Ströme berechnen
     for (const e of elems) {
       switch (e.type) {
-        case 'R': e.i = (v[e.a] - v[e.b]) * e.g; if (e.res && !burnt.has(e.part.id)) { const pw = e.i * e.i / e.g; e.power = pw; if (pw > 1.5) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Widerstand überlastet' }); } } break;
+        case 'RL': {
+          if (e.part && burnt.has(e.part.id)) { e.i = 0; break; }
+          const g = 1 / (e.r + e.l / dt); e.i = g * (v[e.a] - v[e.b] - (e.emf || 0) + (e.l / dt) * e.iprev); e.iprev = e.i;
+          if (e.mech) {
+            const m = e.mech; m.w = (m.w + dt * m.ke * e.i / m.J) / (1 + dt * (m.b + m.bx) / m.J); e.phase = (e.phase || 0) + m.w * dt; e.w = m.w;
+            e.heat = Math.max(0, e.heat + dt * (e.i * e.i * e.r - 2.5) / 12);
+            if (e.heat > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Motor überhitzt (blockiert)' }); }
+          }
+          if (e.relay) { const ia = Math.abs(e.i); if (!e.on && ia > e.ion) e.on = true; else if (e.on && ia < e.ioff) e.on = false; }
+          break; }
+        case 'THY': {
+          const vak = v[e.a] - v[e.b], ia = e.on ? (vak - 0.8) * 2 : 0; e.i = ia;
+          if (!e.on && (e.gd.i || 0) > 2e-4 && vak > 0.6) e.on = true; else if (e.on && ia < 0.005) e.on = false;
+          break; }
+        case 'CCS': { const vce = v[e.a] - v[e.b]; e.i = e.ictl * Math.tanh(vce / 0.3); break; }
+        case 'TRF': {
+          const vp = v[e.a] - v[e.b], vs = v[e.c] - v[e.d], y = e.y; if (!y) break;
+          e.i1 = y[0] * vp + y[1] * vs + y[3]; e.i2 = y[1] * vp + y[2] * vs + y[4]; e.i1p = e.i1; e.i2p = e.i2; e.i = e.i1;
+          break; }
+        case 'R': if (e.part && burnt.has(e.part.id)) { e.i = 0; break; }
+          e.i = (v[e.a] - v[e.b]) * e.g;
+          if (e.fuse) { const r = e.i / e.fuse.ir; e.heat = Math.max(0, e.heat + dt * (r * r - 1) / e.fuse.tau); e.hot = Math.min(1, e.heat); if (e.heat > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Sicherung hat ausgelöst' }); } }
+          if (e.lamp) { const rt = e.i * e.i / e.g / e.lamp; e.lh = rt > 2 ? (e.lh || 0) + dt / 0.05 : Math.max(0, (e.lh || 0) - dt / 0.2); if (e.lh > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Glühlampe durchgebrannt' }); } }
+          if (e.speaker && Math.abs(e.i * e.i / e.g) > 2) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Lautsprecher überlastet' }); }
+          if (e.res && !burnt.has(e.part.id)) { const pw = e.i * e.i / e.g; e.power = pw; if (pw > 1.5) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Widerstand überlastet' }); } } break;
         case 'S': e.i = (v[e.a] - v[e.b]) * (e.closed ? 1 / RON : 1 / ROFF); break;
         case 'C': { const vc = v[e.a] - v[e.b]; e.i = e.c / dt * (vc - e.vprev); e.vprev = vc; break; }
         case 'L': { const g = dt / e.l; e.i = e.iprev + g * (v[e.a] - v[e.b]); e.iprev = e.i; break; }
@@ -381,7 +450,7 @@ function createSim(circ) {
   };
 
   sim.volt = (node) => (node < 0 ? NaN : v[node]);
-  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
+  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'RL') { e.iprev = 0; e.heat = 0; e.on = false; e.phase = 0; if (e.mech) e.mech.w = 0; } if (e.type === 'THY') e.on = false; if (e.type === 'TRF') { e.i1p = e.i2p = 0; } if (e.fuse) e.heat = 0; if (e.lamp) e.lh = 0; if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
   return sim;
 }
 

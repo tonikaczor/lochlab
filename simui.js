@@ -53,7 +53,8 @@ function partAt(fx, fy) {
 function build() {
   wrap.clear();
   const parts = doc.items.filter(i => i.t === 'part').map(i => {
-    const w = { id: i.id, k: i.k, vr: i.vr, v: i.v, n: i.n, pins: pinsOf(i), sw: i.sw || 0, pos: i.pos == null ? 0.5 : i.pos, light: i.light == null ? 0.5 : i.light, pressed: false, item: i };
+    const pr = pinsOf(i), pins = i.k === 'OPTO' ? [pr[0], pr[1], pr[3], pr[2]] : (i.k === 'THY' ? [pr[1], pr[0], pr[2]] : pr);
+    const w = { id: i.id, k: i.k, vr: i.vr, v: i.v, n: i.n, pins, sw: i.sw || 0, pos: i.pos == null ? (i.k === 'NTC' || i.k === 'PTC' ? 0.32 : 0.5) : i.pos, light: i.light == null ? 0.5 : i.light, pressed: false, item: i };
     wrap.set(i.id, w); return w;
   });
   circ = LS.buildCircuit({ parts, tracks: doc.items.filter(i => i.t === 'track'), wires: doc.items.filter(i => i.t === 'wire') });
@@ -285,6 +286,12 @@ function overlay() {
     }
   });
   cx.restore();
+  // Relais und Thyristor: Zustandsanzeige
+  circ.elems.forEach(e => {
+    if (!(e.relay || e.type === 'THY') || !e.part.item) return;
+    const b = worldBox(e.part.item), on = e.relay ? e.on : e.on;
+    cx.beginPath(); cx.arc(X((b[0] + b[2]) / 2), Y((b[1] + b[3]) / 2) + (e.relay ? 0.5 * S : 0), 0.35 * S, 0, 7); cx.fillStyle = on ? '#4cd964' : '#555'; cx.globalAlpha = 0.95; cx.fill(); cx.globalAlpha = 1;
+  });
   // IC-Pegel: Ring je Pin (grün = High, grau = Low, orange = dazwischen)
   circ.elems.forEach(e => {
     if (e.type !== 'IC') return;
@@ -366,9 +373,9 @@ function buildPanel() {
   const sd = $('#side');
   const sel_ = selSim != null ? byId(selSim) : null;
   let slider = '';
-  if (sel_ && ['P', 'TP', 'LDR'].includes(sel_.k)) {
-    const w = wrap.get(sel_.id), isL = sel_.k === 'LDR', val = Math.round((isL ? w.light : w.pos) * 100);
-    slider = `<div class="kv"><span>${isL ? 'Helligkeit' : 'Schleifer'}</span><span id="slv">${val} %</span></div><input type="range" id="slr" min="0" max="100" value="${val}" aria-label="${isL ? 'Helligkeit' : 'Schleiferstellung'}">`;
+  if (sel_ && ['P', 'TP', 'LDR', 'NTC', 'PTC', 'PHT'].includes(sel_.k)) {
+    const w = wrap.get(sel_.id), isL = sel_.k === 'LDR', val = Math.round((isL ? w.light : w.pos) * 100), lbl = isL || sel_.k === 'PHT' ? 'Helligkeit' : (sel_.k === 'NTC' || sel_.k === 'PTC' ? 'Temperatur' : 'Schleifer');
+    slider = `<div class="kv"><span>${lbl}</span><span id="slv">${val} %</span></div><input type="range" id="slr" min="0" max="100" value="${val}" aria-label="${isL ? 'Helligkeit' : 'Schleiferstellung'}">`;
   }
   sd.innerHTML = `
     <div class="sp-top"><b id="spT">t = 0 s</b><span id="spS"></span></div>

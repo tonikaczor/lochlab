@@ -30,6 +30,16 @@ const KINDS = {
   SPST:{ name: 'Schalter',        cat: 'Schalter', pins: T2, v: '', core: 'SPST', box: [0, -1.2, 4, 1], toggle: true, props: [] },
   PB:  { name: 'Taster',          cat: 'Schalter', pins: T2, v: '', core: 'SW', box: [0, -1.4, 4, 1], momentary: true, props: [] },
   SPDT:{ name: 'Wechsler',        cat: 'Schalter', pins: [[0, 0], [4, -1], [4, 1]], v: '', core: 'SCH', map: [1, 0, 2], box: [0, -1.5, 4, 1.5], toggle: true, props: [] },
+  FUSE:{ name: 'Sicherung',   cat: 'Passiv', pins: T2, v: '250mA', core: 'FUSE', box: [0, -0.6, 4, 0.6], props: [['v', 'Nennstrom', 'text', 'z. B. 250mA']] },
+  NTC: { name: 'NTC (Heißleiter)', cat: 'Passiv', pins: T2, v: '10k', core: 'NTC', box: [0, -1.3, 4, 1.3], pos: true, pos0: 0.32, props: [['v', 'Widerstand bei 25 °C', 'text', 'z. B. 10k'], ['pos', 'Temperatur (-20 … 120 °C)', 'range']] },
+  PTC: { name: 'PTC (Kaltleiter)', cat: 'Passiv', pins: T2, v: '100', core: 'PTC', box: [0, -1.3, 4, 1.3], pos: true, pos0: 0.32, props: [['v', 'Widerstand bei 25 °C', 'text', 'z. B. 100'], ['pos', 'Temperatur (-20 … 120 °C)', 'range']] },
+  MOTOR:{ name: 'Gleichstrommotor', cat: 'Passiv', pins: T2, v: '6V', core: 'MOTOR', box: [0, -1.2, 4, 1.2], pos: true, pos0: 0, props: [['v', 'Nennspannung', 'text', 'z. B. 6V'], ['pos', 'Bremse / Last', 'range']] },
+  SPK: { name: 'Lautsprecher', cat: 'Passiv', pins: T2, v: '8', core: 'SPK', box: [0, -1.1, 4, 1.1], props: [['v', 'Impedanz (Ω)', 'text', 'z. B. 8']] },
+  TRF: { name: 'Transformator', cat: 'Passiv', pins: [[0, 0], [0, 4], [6, 0], [6, 4]], v: '230V:12V', core: 'TRF', box: [0, -0.4, 6, 4.4], props: [['v', 'Übersetzung', 'text', 'z. B. 230V:12V']] },
+  RLY: { name: 'Relais', cat: 'Schalter', pins: [[0, 0], [0, 4], [5, 2], [8, 0], [8, 4]], v: '12V', core: 'RLY', box: [0, -0.4, 8, 4.4], props: [['v', 'Spulenspannung', 'text', 'z. B. 12V']] },
+  THY: { name: 'Thyristor', cat: 'Halbleiter', pins: [[0, 0], [4, 0], [3, 2]], v: 'TIC106', core: 'THY', box: [0, -1, 4, 2.2], props: [] },
+  PHT: { name: 'Fototransistor', cat: 'Halbleiter', pins: [[2, -2], [2, 2]], v: '', core: 'PHT', box: [-1, -2.2, 2.6, 2.2], pos: true, props: [['pos', 'Helligkeit', 'range']] },
+  OPTO:{ name: 'Optokoppler', cat: 'Halbleiter', pins: [[0, 0], [0, 4], [6, 0], [6, 4]], v: 'PC817', core: 'OPTO', box: [0, -0.4, 6, 4.4], props: [] },
   AND: { name: 'UND-Gatter',   cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'and',  box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
   NAND:{ name: 'NAND-Gatter',  cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'nand', box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
   OR:  { name: 'ODER-Gatter',  cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'or',   box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
@@ -60,7 +70,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -138,7 +148,8 @@ function onBurn(ev) {
   toast(ev.text);
   if (!window.LochFX) return;
   const [x, y] = partCenter(p), led = p.k === 'LED';
-  LochFX.explode(x, y, { kind: led ? 'led' : (p.k === 'R' || p.k === 'POT' ? 'res' : (['NPN', 'PNP', 'ICX', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'OPA'].includes(p.k) ? 'chip' : 'big')), color: led ? (LEDRGB[p.v] || '255,59,47') : '255,170,60', scale: view.s, at: () => partCenter(p) });
+  const TXT = { FUSE: 'ZACK!', MOTOR: 'BRRRZ!', LAMP: 'KLIRR!', SPK: 'KRAWUMM!' };
+  LochFX.explode(x, y, { text: TXT[p.k], kind: led ? 'led' : (p.k === 'R' || p.k === 'POT' || p.k === 'FUSE' || p.k === 'LAMP' ? 'res' : (['NPN', 'PNP', 'THY', 'OPTO', 'ICX', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'OPA'].includes(p.k) ? 'chip' : 'big')), color: led ? (LEDRGB[p.v] || '255,59,47') : '255,170,60', scale: view.s, at: () => partCenter(p) });
 }
 function advance(realDt) {
   if (!sim || circ.nn === 0) return;
@@ -157,6 +168,7 @@ function termI(e) {
   switch (e.type) {
     case 'Q': return [e.ic, e.ib, -(e.ic + e.ib)];
     case 'V': return [-e.i, e.i];
+    case 'TRF': return [e.i1, -e.i1, e.i2, -e.i2];
     default: return [e.i, -e.i];
   }
 }
@@ -254,6 +266,10 @@ function vcol(v) {
 }
 const showSim = () => !PRINT && simMode && sim && (sim.t > 0 || running);
 const keyV = key => (showSim() ? vcol(sv(key)) : (PRINT ? '#111' : '#bfc5cc'));
+function fuseHot(p) {
+  const o = showSim() && bodyI.get(String(p.id)), h = o && o.e ? o.e.hot || 0 : 0;
+  return h > 0.05 ? `rgb(255,${Math.round(220 - 160 * h)},${Math.round(80 - 60 * h)})` : (PRINT ? '#111' : '#e8eaed');
+}
 function dotsOnPath(c, pts, I, ph) {
   if (!showSim() || !isFinite(I) || Math.abs(I) < 1e-6 || Math.abs(I) / imax < 0.003) return;
   // Länge
@@ -382,6 +398,66 @@ function drawPart(p, selected) {
       });
       if (cfg) T(def ? 'NE555' : (p.v || 'IC'), 3.9, 4, .55); else T(info ? info.name.split(' ')[0] : (p.v || 'IC'), 3, (by0 + by1) / 2, .8);
       c.restore(); break; }
+    case 'FUSE': {
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8);
+      if (showSim() && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; line(1.2, 0, 1.8, 0); line(2.2, 0, 2.8, 0); line(1.85, -0.3, 2.15, 0.3); line(1.85, 0.3, 2.15, -0.3); }
+      else { c.strokeStyle = fuseHot(p); line(1, 0, 3, 0); }
+      break; }
+    case 'NTC': case 'PTC':
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8);
+      c.beginPath(); c.moveTo(0.8, p.k === 'NTC' ? 1.1 : -1.1); c.lineTo(1.3, p.k === 'NTC' ? 1.1 : -1.1); c.lineTo(2.7, p.k === 'NTC' ? -1.1 : 1.1); c.stroke();
+      c.save(); c.translate(3.0, p.k === 'NTC' ? -1.0 : 1.0); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(p.k === 'NTC' ? '−ϑ' : '+ϑ', 0, 0); c.restore();
+      break;
+    case 'MOTOR': {
+      lead(0, 0, 0.9, 0, pc[0]); lead(3.1, 0, 4, 0, pc[1]); circle(2, 0, 1.1);
+      c.save(); c.translate(2, 0); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 1.1px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, 0.06); c.restore();
+      { const o = showSim() && bodyI.get(String(p.id)), ph0 = o && o.e && o.e.phase ? o.e.phase : 0, dead = showSim() && sim.burnt.has(p.id);
+        if (o && !dead) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.62 * Math.cos(a), 0.62 * Math.sin(a)); c.lineTo(2 + 0.98 * Math.cos(a), 0.98 * Math.sin(a)); c.stroke();
+          if (Math.abs(o.e.w || 0) > 20) { c.strokeStyle = 'rgba(255,225,77,.35)'; c.lineWidth = 0.08; c.beginPath(); c.arc(2, 0, 1.25, a, a + 1.6); c.stroke(); } }
+        if (dead) { c.strokeStyle = '#ff5544'; line(1.2, -0.7, 2.8, 0.7); line(2.8, -0.7, 1.2, 0.7); } }
+      break; }
+    case 'SPK': {
+      lead(0, 0, 1.1, 0, pc[0]); lead(3.0, 0, 4, 0, pc[1]);
+      { const o = showSim() && bodyI.get(String(p.id)), sh = o ? clamp(Math.abs(o.e.i) * 2, 0, 1) * 0.12 * Math.sin(performance.now() / 18) : 0;
+        c.strokeRect(1.1 + sh, -0.5, 0.9, 1); c.beginPath(); c.moveTo(2 + sh, -0.5); c.lineTo(3 + sh, -1.1); c.lineTo(3 + sh, 1.1); c.lineTo(2 + sh, 0.5); c.stroke();
+        if (o && Math.abs(o.e.i) > 1e-3) { c.lineWidth = 0.07; for (let k = 1; k <= 2; k++) { c.beginPath(); c.arc(3.1 + sh, 0, 0.55 * k, -0.9, 0.9); c.stroke(); } } }
+      break; }
+    case 'TRF': {
+      lead(0, 0, 1.8, 0, pc[0]); lead(1.8, 0, 1.8, 0.4, pc[0]); lead(1.8, 3.6, 1.8, 4, pc[1]); lead(1.8, 4, 0, 4, pc[1]);
+      lead(6, 0, 4.2, 0, pc[2]); lead(4.2, 0, 4.2, 0.4, pc[2]); lead(4.2, 3.6, 4.2, 4, pc[3]); lead(4.2, 4, 6, 4, pc[3]);
+      for (let i = 0; i < 4; i++) { const cy = 0.8 + i * 0.8; c.beginPath(); c.arc(1.8, cy, 0.4, -Math.PI / 2, Math.PI / 2, true); c.stroke(); c.beginPath(); c.arc(4.2, cy, 0.4, -Math.PI / 2, Math.PI / 2, false); c.stroke(); }
+      line(2.9, 0.3, 2.9, 3.7); line(3.1, 0.3, 3.1, 3.7); break; }
+    case 'RLY': {
+      lead(0, 0, 1, 0, pc[0]); lead(1, 0, 1, 0.8, pc[0]); lead(1, 3.2, 1, 4, pc[1]); lead(1, 4, 0, 4, pc[1]);
+      c.strokeRect(0.6, 0.8, 0.8, 2.4); line(0.6, 3.2, 1.4, 0.8);
+      const o = showSim() && bodyI.get(String(p.id)), on = !!(o && o.e.on);
+      lead(5, 2, 5.7, 2, pc[2]); lead(8, 0, 7.2, 0, pc[3]); lead(7.2, 0, 7.2, 0.5, pc[3]); lead(8, 4, 7.2, 4, pc[4]); lead(7.2, 4, 7.2, 3.5, pc[4]);
+      c.beginPath(); c.arc(7.2, 0.7, 0.15, 0, 7); c.stroke(); c.beginPath(); c.arc(7.2, 3.3, 0.15, 0, 7); c.stroke();
+      c.strokeStyle = on ? '#ffe14d' : body; c.lineWidth = 0.13; line(5.7, 2, 7.1, on ? 0.8 : 3.2);
+      c.strokeStyle = body; c.lineWidth = 0.07; c.setLineDash([0.25, 0.2]); line(1.4, 2, 5.4, 2); c.setLineDash([]);
+      break; }
+    case 'THY': {
+      lead(0, 0, 1.4, 0, pc[0]); lead(2.6, 0, 4, 0, pc[1]); lead(3, 2, 2.95, 1.2, pc[2]);
+      c.beginPath(); c.moveTo(1.4, -0.7); c.lineTo(1.4, 0.7); c.lineTo(2.6, 0); c.closePath(); c.stroke();
+      line(2.6, -0.7, 2.6, 0.7); line(2.95, 1.2, 2.6, 0.5);
+      { const o = showSim() && bodyI.get(p.id + 'AK'); if (o && o.e.on) { c.fillStyle = 'rgba(255,225,77,.35)'; c.beginPath(); c.moveTo(1.4, -0.7); c.lineTo(1.4, 0.7); c.lineTo(2.6, 0); c.closePath(); c.fill(); } }
+      break; }
+    case 'PHT': {
+      lead(2, -2, 2, -1.2, pc[0]); lead(2, 2, 2, 1.2, pc[1]);
+      c.lineWidth = 0.2; line(1, -0.9, 1, 0.9); c.lineWidth = 0.11; line(1, -0.4, 2, -1.2); line(1, 0.4, 2, 1.2);
+      c.beginPath(); c.moveTo(2, 1.2); c.lineTo(1.45, 1.1); c.lineTo(1.8, 0.7); c.closePath(); c.fill();
+      c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : 'rgba(232,234,237,.45)'; c.lineWidth = 0.05; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.09;
+      [[-0.9, -0.9], [-0.9, 0.2]].forEach(([ax, ay]) => { line(ax, ay, ax + 0.65, ay + 0.65); c.beginPath(); c.moveTo(ax + 0.65, ay + 0.65); c.lineTo(ax + 0.28, ay + 0.6); c.lineTo(ax + 0.58, ay + 0.3); c.closePath(); c.fill(); });
+      break; }
+    case 'OPTO': {
+      lead(0, 0, 1.8, 0, pc[0]); lead(1.8, 0, 1.8, 1.1, pc[0]); lead(1.8, 2.9, 1.8, 4, pc[1]); lead(1.8, 4, 0, 4, pc[1]);
+      c.beginPath(); c.moveTo(1.3, 1.1); c.lineTo(2.3, 1.1); c.lineTo(1.8, 2.1); c.closePath(); c.stroke(); line(1.3, 2.1, 2.3, 2.1);
+      lead(6, 0, 5.2, 0, pc[2]); lead(5.2, 0, 5.2, 1.1, pc[2]); lead(5.2, 2.9, 5.2, 4, pc[3]); lead(5.2, 4, 6, 4, pc[3]);
+      c.lineWidth = 0.18; line(4.3, 1.2, 4.3, 2.8); c.lineWidth = 0.11; line(4.3, 1.6, 5.2, 1.1); line(4.3, 2.4, 5.2, 2.9);
+      c.beginPath(); c.moveTo(5.2, 2.9); c.lineTo(4.75, 2.85); c.lineTo(5.0, 2.5); c.closePath(); c.fill();
+      c.lineWidth = 0.08; [1.4, 2.2].forEach(ay => { line(2.7, ay, 3.7, ay + 0.0); c.beginPath(); c.moveTo(3.7, ay); c.lineTo(3.4, ay - 0.2); c.lineTo(3.4, ay + 0.2); c.closePath(); c.fill(); });
+      c.setLineDash([0.2, 0.2]); c.lineWidth = 0.06; c.strokeRect(0.9, 0.3, 4.6, 3.4); c.setLineDash([]);
+      break; }
     case 'LAMP': {
       lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]); circle(2, 0, 0.9); line(1.36, -0.64, 2.64, 0.64); line(2.64, -0.64, 1.36, 0.64); break; }
     case 'VM': case 'AM':
@@ -459,6 +535,11 @@ function valueText(p) {
     case 'R': case 'POT': return fmtVal(p.v, 'Ω');
     case 'C': case 'CE': return fmtVal(p.v, 'F');
     case 'L': return fmtVal(p.v, 'H');
+    case 'FUSE': return fmtVal(p.v, 'A');
+    case 'MOTOR': return fmtVal(p.v, 'V');
+    case 'SPK': return fmtVal(p.v, 'Ω');
+    case 'NTC': case 'PTC': return fmtVal(p.v, 'Ω');
+    case 'TRF': case 'RLY': return p.v;
     case 'BAT': return fmtVal(p.v, 'V') + (p.imax ? '  ≤ ' + fmtVal(p.imax, 'A') : '');
     case 'ZD': return fmtVal(p.v, 'V');
     case 'AC': return p.v;
@@ -667,7 +748,7 @@ function onUp(p) {
         if (K.toggle) { part.sw = part.sw ? 0 : 1; const w = wrapMap.get(part.id); if (w) w.sw = part.sw; commit(true); }
       }
       break;
-    case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: 0, pos: 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); commit(); } break;
+    case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); commit(); } break;
     case 'wire': if (cursor && (cursor[0] !== a.start[0] || cursor[1] !== a.start[1])) { const e = ortho(a.start, cursor); addWire(a.start, e); wireStart = e; } break;
     case 'erase': if (a.did) commit(); break;
   }
@@ -892,7 +973,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v31</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v32</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -967,7 +1048,7 @@ function openExamples() {
 }
 function buildExample(e) {
   const d = e.make(); let id = 1; const parts = [], wires = [];
-  d.parts.forEach(([k, x, y, r, v, extra]) => { const K = KINDS[k]; parts.push(Object.assign({ id: id++, k, x, y, r: r || 0, v: v != null ? v : K.v, sw: 0, pos: 0.5, vr: K.vr }, extra || {})); });
+  d.parts.forEach(([k, x, y, r, v, extra]) => { const K = KINDS[k]; parts.push(Object.assign({ id: id++, k, x, y, r: r || 0, v: v != null ? v : K.v, sw: 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr }, extra || {})); });
   d.wires.forEach(poly => { for (let i = 2; i < poly.length; i += 2) wires.push({ id: id++, x1: poly[i - 2], y1: poly[i - 1], x2: poly[i], y2: poly[i + 1] }); });
   assignLabels(parts);
   const scopes = (d.scopes || []).map(i => ({ t: 'part', id: i + 1 }));
@@ -1032,6 +1113,24 @@ const EXAMPLES = [
   { cat: 'Dioden', name: 'Spannungsverdoppler', info: 'Zwei Dioden und zwei Kondensatoren verdoppeln die Spitzenspannung',
     make: () => ({ parts: [['AC', 2, 4, 1, '5V 50Hz'], ['C', 2, 2, 0, '47u'], ['D', 6, 6, 3, '1N4148'], ['D', 6, 2, 0, '1N4148'], ['CE', 10, 2, 1, '47u'], ['R', 14, 2, 1, '10k'], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [10, 2, 14, 2], [6, 6, 6, 8], [10, 6, 10, 8], [14, 6, 14, 8], [2, 8, 6, 8, 10, 8, 14, 8]], scopes: [0, 4], tempo: 0.4, win: 0.1 }) },
+  { cat: 'Bauteile', name: 'Motor mit Bremse', info: 'Seitenleiste: „Bremse / Last“ hochziehen. Der Strom steigt, die Drehzahl fällt. Bei Blockade brennt der Motor durch.',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '6'], ['SPST', 2, 2, 0, '', { sw: 1 }], ['MOTOR', 6, 2, 0, '6V', { pos: 0 }], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [10, 2, 10, 8, 2, 8]], scopes: [2], tempo: 0.7, win: 1 }) },
+  { cat: 'Bauteile', name: 'Sicherung schützt die Lampen', info: 'Dritten Schalter schließen: 0,3 A sind mehr als die 250-mA-Sicherung. Sie löst aus und alles geht aus.',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['FUSE', 2, 2, 0, '250mA'], ['SPST', 8, 2, 1, '', { sw: 1 }], ['LAMP', 8, 6, 1, '9V 0.1A'], ['SPST', 12, 2, 1, '', { sw: 1 }], ['LAMP', 12, 6, 1, '9V 0.1A'], ['SPST', 16, 2, 1, '', { sw: 0 }], ['LAMP', 16, 6, 1, '9V 0.1A'], ['GND', 2, 8]],
+      wires: [[6, 2, 8, 2, 12, 2, 16, 2], [2, 8, 2, 10, 8, 10, 12, 10, 16, 10]], scopes: [], tempo: 0.75 }) },
+  { cat: 'Bauteile', name: 'Relais schaltet eine zweite Last', info: 'Taster drücken: das Relais zieht an und schaltet die Lampe um. Der Steuerstromkreis ist vom Lastkreis getrennt.',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['PB', 2, 2, 0, ''], ['RLY', 8, 2, 0, '12V'], ['LAMP', 16, 2, 0, '12V 0.1A'], ['LAMP', 16, 6, 0, '12V 0.1A'], ['BAT', 22, 2, 1, '12'], ['GND', 2, 8], ['GND', 22, 6]],
+      wires: [[2, 4, 2, 2], [6, 2, 8, 2], [8, 6, 8, 8, 2, 8], [20, 2, 20, 6], [20, 2, 22, 2], [13, 4, 13, 10, 22, 10, 22, 6]], scopes: [], tempo: 0.75 }) },
+  { cat: 'Bauteile', name: 'Thyristor zündet und hält', info: 'Taster kurz drücken: der Thyristor zündet und die Lampe bleibt an, auch wenn der Taster wieder loslässt. „Zurück“ löscht.',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['LAMP', 2, 2, 0, '9V 0.1A'], ['THY', 6, 2, 0, 'TIC106'], ['R', 9, 4, 1, '1k'], ['PB', 5, 8, 0, ''], ['GND', 2, 8]],
+      wires: [[5, 8, 4, 8, 4, 4, 2, 4], [10, 2, 16, 2, 16, 12, 2, 12, 2, 8]], scopes: [], tempo: 0.75 }) },
+  { cat: 'Bauteile', name: 'Transformator 230 V : 12 V', info: 'Die Primärseite liegt an 230 V, sekundär kommen etwa 12 V heraus. Beide Seiten sind galvanisch getrennt.',
+    make: () => ({ parts: [['AC', 2, 4, 1, '325V 50Hz'], ['TRF', 6, 2, 0, '230V:12V'], ['LAMP', 14, 2, 1, '12V 0.1A'], ['GND', 2, 8], ['GND', 12, 6]],
+      wires: [[2, 4, 2, 2, 6, 2], [6, 6, 6, 10, 2, 10, 2, 8], [12, 2, 14, 2], [14, 6, 12, 6]], scopes: [0, 2], tempo: 0.4, win: 0.06 }) },
+  { cat: 'Bauteile', name: 'NTC-Temperaturfühler mit LED', info: 'Seitenleiste: Temperatur des NTC erhöhen. Wird er warm, sinkt sein Widerstand und die LED geht an.',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['NTC', 6, 2, 1, '10k', { pos: 0.3 }], ['R', 6, 6, 1, '680'], ['R', 8, 2, 0, '470'], ['LED', 12, 2, 1, 'rot'], ['NPN', 10, 8, 0, 'BC547'], ['GND', 2, 8], ['GND', 6, 10], ['GND', 12, 10]],
+      wires: [[2, 4, 2, 2, 6, 2, 8, 2], [6, 6, 8, 6, 8, 8, 10, 8]], scopes: [], tempo: 0.75 }) },
   { cat: 'Logik', name: 'UND-Gatter mit zwei Schaltern', info: 'Die LED leuchtet nur, wenn beide Schalter geschlossen sind',
     make: () => ({ parts: [['BAT', 2, 4, 1, '5'], ['SPST', 6, 2, 1, '', { sw: 1 }], ['SPST', 8, 2, 1, '', { sw: 1 }], ['AND', 12, 8, 0, '5V'], ['R', 16, 9, 0, '470'], ['LED', 20, 9, 1, 'grün'], ['GND', 2, 8], ['GND', 20, 13]],
       wires: [[2, 4, 2, 2, 6, 2, 8, 2], [8, 6, 8, 8, 12, 8], [6, 6, 6, 10, 12, 10]], scopes: [], tempo: 0.75 }) },

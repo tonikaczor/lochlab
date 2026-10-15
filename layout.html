@@ -193,6 +193,14 @@ const PARTS = {
   CF: {name:'Folien-Kond.',pre:'C', kind:'span', def:3, min:2, max:24, val:'100n'},
   L:  {name:'Spule/Drossel',pre:'L',kind:'span', def:4, min:2, max:24, val:'10µH'},
   LDR:{name:'Fotowiderstand',pre:'R',kind:'span',def:2, min:1, max:12, val:'LDR'},
+  NTC:{name:'NTC (Heißleiter)',pre:'R',kind:'span',def:2, min:1, max:12, val:'10k'},
+  PTC:{name:'PTC (Kaltleiter)',pre:'R',kind:'span',def:2, min:1, max:12, val:'100'},
+  PHT:{name:'Fototransistor',pre:'T',kind:'span',def:1, min:1, max:4, val:'BPW40'},
+  SPK:{name:'Lautsprecher',pre:'LS',kind:'span',def:4, min:2, max:12, val:'8'},
+  RLY:{name:'Relais',     pre:'K',  kind:'fixed',def:5, pins:[[0,0],[0,4],[6,2],[6,0],[6,4]], val:'12V'},
+  THY:{name:'Thyristor TO-220',pre:'V',kind:'fixed',def:3, pins:[[0,0],[1,0],[2,0]], val:'TIC106'},
+  OPTO:{name:'Optokoppler (DIP-4)',pre:'OK',kind:'fixed',def:4, pins:[[0,3],[1,3],[1,0],[0,0]], val:'PC817'},
+  TRF:{name:'Print-Trafo', pre:'TR', kind:'fixed',def:4, pins:[[0,0],[0,4],[6,0],[6,4]], val:'230V:12V'},
   Q:  {name:'Quarz',      pre:'Q',  kind:'span', def:2, min:1, max:12, val:'16MHz'},
   BZ: {name:'Summer',     pre:'BZ', kind:'span', def:3, min:2, max:10, val:'5V'},
   T:  {name:'Transistor', pre:'T',  kind:'fixed',def:3, pins:[[0,0],[1,0],[2,0]], val:'BC547'},
@@ -239,6 +247,13 @@ PARTS.SCH={name:'Schalter',pre:'S',kind:'fixed',def:3,val:'',pins:[[0,0],[2,0],[
   {id:'k6',name:'Kippschalter 6 Pins', pins:[[0,0],[2,0],[4,0],[0,2],[2,2],[4,2]], box:[-.7,-.7,4.7,2.7], style:'toggle'},
   {id:'sl',name:'Schiebeschalter',     pins:[[0,0],[1,0],[2,0]], box:[-.5,-1.2,2.5,.5], style:'slide'},
 ]};
+// Relais: Maße und Pinbelegung geschätzt (Bauform wie Songle SRD / Finder 40.31), bitte mit dem echten Bauteil vergleichen
+PARTS.RLY.variants=[
+  {id:'r5', name:'5 V',  val:'5V',  pins:[[0,0],[0,4],[6,2],[6,0],[6,4]], box:[-.8,-.9,6.8,4.9]},
+  {id:'r12',name:'12 V', val:'12V', pins:[[0,0],[0,4],[6,2],[6,0],[6,4]], box:[-.8,-.9,6.8,4.9]},
+  {id:'r24',name:'24 V', val:'24V', pins:[[0,0],[0,4],[6,2],[6,0],[6,4]], box:[-.8,-.9,6.8,4.9]},
+];
+PARTS.RLY.defVar=1;
 PARTS.DSW={name:'DIP-Schalter',pre:'S',kind:'dip',def:8,min:2,max:16,val:''};
 PARTS.LED.variants=[
   {id:'18',name:'1,8 mm',r:.45},{id:'3',name:'3 mm',r:.62},{id:'5',name:'5 mm',r:.98},{id:'8',name:'8 mm',r:1.6},{id:'10',name:'10 mm',r:2},
@@ -296,6 +311,14 @@ function shopTerm(k,V,it){
     case 'LDR':return 'Fotowiderstand LDR';
     case 'Q':return 'Quarz HC49 '+(v||'');
     case 'BZ':return 'Summer Piezo';
+    case 'NTC':return 'NTC Thermistor '+(v||'');
+    case 'PTC':return 'PTC Kaltleiter '+(v||'');
+    case 'PHT':return 'Fototransistor '+(v||'');
+    case 'SPK':return 'Lautsprecher '+(v||'8')+' Ohm';
+    case 'RLY':return 'Relais Print '+(v||'12V')+' 1 Wechsler';
+    case 'THY':return 'Thyristor '+(v||'TIC106');
+    case 'OPTO':return 'Optokoppler '+(v||'PC817');
+    case 'TRF':return 'Printtransformator '+(v||'');
     case 'T':return v||'Transistor';
     case 'U':return 'Spannungsregler '+(v||'7805');
     case 'P':return 'Potentiometer '+(v||'')+' '+vn;
@@ -335,6 +358,14 @@ const HINTS={
   U:'Spannungsregler 78xx: Anschlüsse von links IN, GND, OUT. Die Eingangsspannung muss etwa 2 V über der Ausgangsspannung liegen.',
   Q:'Quarz, gibt den Takt vor. Keine Polung.',
   BZ:'Summer: auf die Plus-Markierung am Gehäuse achten.',
+  NTC:'NTC: Der Widerstand sinkt, wenn es wärmer wird. Typische Angabe: Widerstand bei 25 °C.',
+  PTC:'PTC: Der Widerstand steigt, wenn es wärmer wird.',
+  PHT:'Fototransistor: Bei Licht fließt Strom von Kollektor nach Emitter. Pinbelegung im Datenblatt prüfen (Maße geschätzt).',
+  SPK:'Lautsprecher: kleine Leistung, nur an Verstärker oder Signalquelle mit passendem Vorwiderstand.',
+  RLY:'Relais: Spule (A1/A2) zieht an, dann wechselt der Kontakt von NC nach NO. Spulenspannung beachten. Pinbelegung und Maße sind geschätzt, bitte mit dem echten Relais vergleichen.',
+  THY:'Thyristor TIC106 (TO-220): Pin 1 Kathode, Pin 2 Anode, Pin 3 Gate. Zündet mit einem Gate-Strom und hält sich selbst.',
+  OPTO:'Optokoppler PC817: Pin 1 Anode, 2 Kathode (LED), 3 Emitter, 4 Kollektor. Trennt zwei Stromkreise galvanisch.',
+  TRF:'Print-Transformator: Primär- und Sekundärseite sind galvanisch getrennt. Pinbelegung und Maße geschätzt.',
   SW:'Taster: verbindet nur, solange er gedrückt ist.',
   SCH:'Kippschalter: in der Mitte der gemeinsame Anschluss, außen die beiden Schaltstellungen.',
   DSW:'DIP-Schalter: jeder Schalter verbindet zwei gegenüberliegende Pins.',
@@ -406,7 +437,11 @@ function bodyRect(it){
     case 'L': return [-.5,-.6,n+.5,.6];
     case 'LDR': return [Math.min(-.5,n/2-1),-1,Math.max(n+.5,n/2+1),1];
     case 'Q': return [Math.min(-.5,n/2-2.2),-.95,Math.max(n+.5,n/2+2.2),.95];
-    case 'BZ': return [n/2-2.3,-2.3,n/2+2.3,2.3];
+    case 'BZ': case 'SPK': return [n/2-2.3,-2.3,n/2+2.3,2.3];
+    case 'NTC': case 'PTC': case 'PHT': return [Math.min(-.5,n/2-1),-1,Math.max(n+.5,n/2+1),1];
+    case 'THY': return [-1.1,-6.5,3.1,.5];
+    case 'OPTO': return [-.6,-.5,1.6,3.5];
+    case 'TRF': return [-.8,-.9,6.8,4.9];
     case 'BU': return [-.5,-.5,n-.5,.5];
     case 'NANO': return [-.6,-1.7,6.6,15.7];
     case 'UNO': return [-4.8,-1,23.5,20];
@@ -684,6 +719,32 @@ function drawPart(c,it){
     c.fillStyle='#1e1e1e';
     rrect(c,-.5,-.5,10,1,.05);c.fill();rrect(c,10.5,-.5,8,1,.05);c.fill();rrect(c,1.5,18.5,8,1,.05);c.fill();rrect(c,10.5,18.5,6,1,.05);c.fill();
     c.fillStyle='#d8b44a';localPins(k,n).forEach(([x,y])=>c.fillRect(x-.15,y-.15,.3,.3));
+  }else if(k==='NTC'||k==='PTC'){
+    leg();c.beginPath();c.arc(n/2,0,.85,0,7);c.fillStyle=k==='NTC'?'#2a4d8f':'#c9a227';c.fill();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=.06;c.stroke();
+    c.fillStyle='#fff';c.font='bold .7px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(k==='NTC'?'NTC':'PTC',n/2,.05);
+  }else if(k==='PHT'){
+    leg();c.beginPath();c.arc(n/2,0,.9,0,7);c.fillStyle='#55392d';c.fill();c.strokeStyle='rgba(0,0,0,.6)';c.lineWidth=.06;c.stroke();
+    c.beginPath();c.arc(n/2-.2,-.2,.35,0,7);c.fillStyle='rgba(255,255,255,.25)';c.fill();
+  }else if(k==='SPK'){
+    c.beginPath();c.arc(n/2,0,2.2,0,7);c.fillStyle='#202327';c.fill();c.strokeStyle='#666';c.lineWidth=.07;c.stroke();
+    c.beginPath();c.arc(n/2,0,1.4,0,7);c.fillStyle='#34393f';c.fill();c.beginPath();c.arc(n/2,0,.45,0,7);c.fillStyle='#111';c.fill();
+  }else if(k==='RLY'){
+    rrect(c,-.8,-.9,7.6,5.8,.2);c.fillStyle='#1f5fae';c.fill();c.strokeStyle='#0f3a70';c.lineWidth=.06;c.stroke();
+    c.fillStyle='#fff';c.font='bold .9px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('RELAIS',3,1.5);c.font='bold .8px sans-serif';c.fillText(it.v||'12V',3,2.7);
+    c.fillStyle='#cfe3ff';c.font='.5px sans-serif';[['A1',0,0],['A2',0,4],['COM',6,2],['NO',6,0],['NC',6,4]].forEach(([t,x,y])=>c.fillText(t,x<3?x+.65:x-.75,y+(y===4?-.55:y===0?.55:0)));
+  }else if(k==='THY'){
+    [0,1,2].forEach(x=>{c.strokeStyle='#cfd5db';c.lineWidth=.14;line(c,x,0,x,-.7);});
+    rrect(c,-1,-4,4,3.4,.12);c.fillStyle='#222';c.fill();
+    rrect(c,-1,-6.4,4,2.4,.12);c.fillStyle='#b8bec5';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.05;c.stroke();
+    c.beginPath();c.arc(1,-5.3,.75,0,7);c.fillStyle='#222';c.fill();
+    c.fillStyle='#fff';c.font='.55px sans-serif';c.textAlign='center';c.textBaseline='middle';['K','A','G'].forEach((t,i)=>c.fillText(t,i,.9));
+  }else if(k==='OPTO'){
+    c.fillStyle='#cfd5db';[0,1].forEach(i=>{c.fillRect(i-.14,.1,.28,.5);c.fillRect(i-.14,2.4,.28,.5);});
+    rrect(c,-.45,.45,1.9,2.1,.12);c.fillStyle='#232323';c.fill();c.strokeStyle='#555';c.lineWidth=.04;c.stroke();
+    c.beginPath();c.arc(.1,2.15,.12,0,7);c.fillStyle='#bbb';c.fill();
+  }else if(k==='TRF'){
+    rrect(c,-.8,-.9,7.6,5.8,.2);c.fillStyle='#3b3f45';c.fill();c.strokeStyle='#1c1e21';c.lineWidth=.06;c.stroke();
+    c.fillStyle='#e8eaed';c.font='bold .9px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('TRAFO',3,1.7);c.font='.7px sans-serif';c.fillText(it.v||'',3,2.9);
   }else if(k==='DSW'){
     drawDsw(c,n,it);
   }else if(k==='SOCK'){
@@ -1400,7 +1461,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v31</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v32</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
