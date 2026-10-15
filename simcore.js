@@ -12,13 +12,13 @@ const RON = 1e-3, ROFF = 1e9;  // geschlossener / offener Schalter
 /* Plausibilitätsprüfung der Bauteilwerte: unrealistische Eingaben werden durch Standardwerte ersetzt */
 const LIMITS = {
   BAT: [0.01, 1000, '9'], R: [1e-3, 1e10, '1k'], C: [1e-15, 10, '100n'], CE: [1e-12, 10, '100u'], CF: [1e-15, 10, '100n'], L: [1e-9, 1e3, '10m'],
-  ZD: [1, 200, '5.1'], FUSE: [1e-3, 100, '250mA'], MOTOR: [0.5, 48, '6V'], RLY: [1, 48, '12V'], NTC: [1, 1e8, '10k'], PTC: [0.1, 1e8, '100'], SPK: [1, 1e4, '8'], P: [1, 1e8, '10k'], TP: [1, 1e8, '10k'],
+  NETZ: [50, 500, '230V'], ZD: [1, 200, '5.1'], FUSE: [1e-3, 100, '250mA'], MOTOR: [0.5, 48, '6V'], RLY: [1, 48, '12V'], NTC: [1, 1e8, '10k'], PTC: [0.1, 1e8, '100'], SPK: [1, 1e4, '8'], P: [1, 1e8, '10k'], TP: [1, 1e8, '10k'],
 };
 function sane(k, v) {
   const L = LIMITS[k];
   if (k === 'LAMP') {
-    const q = String(v == null ? '' : v).replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/);
-    const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : 0.1;
+    const q = String(v == null ? '' : v).replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/), mw = q.match(/([0-9.]+)\s*W/);
+    const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : (mw ? parseFloat(mw[1]) / un : 0.1);
     return (un >= 0.1 && un <= 400 && ia >= 1e-3 && ia <= 20) ? { ok: true, v } : { ok: false, v: '6V 0.1A' };
   }
   if (k === 'SIG') { const g = parseGen(v); return (g.amp <= 1000 && g.freq <= 1e7) ? { ok: true, v } : { ok: false, v: '5V 1kHz' }; }
@@ -128,8 +128,8 @@ function buildCircuit(layout) {
       case 'VM': add({ type: 'R', a: n(0), b: n(1), g: 1e-7, part: p, meter: 'V' }); break;
       case 'AM': add({ type: 'R', a: n(0), b: n(1), g: 1e3, part: p, meter: 'A' }); break;
       case 'LAMP': {
-        const q = String(p.v || '6V 0.1A').replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/);
-        const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : 0.1;
+        const q = String(p.v || '6V 0.1A').replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/), mw = q.match(/([0-9.]+)\s*W/);
+        const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : (mw ? parseFloat(mw[1]) / un : 0.1);
         add({ type: 'R', a: n(0), b: n(1), g: ia / un, part: p, lamp: un * ia, lh: 0 });
         break; }
       case 'FUSE': add({ type: 'R', a: n(0), b: n(1), g: 1 / 0.15, part: p, fuse: { ir: Math.max(si(p.v, 0.25), 1e-3), tau: 0.3 }, heat: 0 }); break;
@@ -165,6 +165,34 @@ function buildCircuit(layout) {
         const led = add({ type: 'D', a: n(0), b: n(1), is, nn: 2, led: true, color: 'rot', imax: 0.06, part: p, vj: 0, sub: 'LED' });
         add({ type: 'CCS', a: n(2), b: n(3), ictl: 0, part: p, sub: 'T', upd() { this.ictl = Math.min(0.05, 0.5 * Math.max(0, led.i || 0)); } });
         break; }
+      case 'NETZ': {
+        const u = Math.max(si(p.v, 230), 1);
+        add(p.vr === 'ac' ? { type: 'V', a: n(0), b: n(1), v0: 0, amp: u * 1.4142, freq: 50, rint: 0.3, wave: 'sin', part: p } : { type: 'V', a: n(0), b: n(1), v0: u, rint: 0.3, wave: 'dc', imax: 0, part: p });
+        add({ type: 'R', a: n(1), b: n(2), g: 1e3, part: p, sub: 'pe' });
+        break; }
+      case 'LSS': {
+        const ir = Math.max(si(String(p.v || 'B16').replace(/^[A-Za-z]+/, ''), 16), 1), mag = /^C/i.test(p.v || '') ? 10 : 5;
+        add({ type: 'S', a: n(0), b: n(1), closed: !!p.sw, part: p, trip: { ir, mag, h: 0 }, upd() { this.closed = !!this.part.sw; } });
+        break; }
+      case 'RCD': add({ type: 'RCD', a: n(0), b: n(1), c: n(2), d: n(3), closed: !!p.sw, part: p, i: 0, iN: 0, upd() { this.closed = !!this.part.sw; } }); break;
+      case 'KREUZ':
+        add({ type: 'S', a: n(0), b: n(2), closed: true, part: p, sub: 'a', upd() { this.closed = !this.part.sw; } });
+        add({ type: 'S', a: n(1), b: n(3), closed: true, part: p, sub: 'b', upd() { this.closed = !this.part.sw; } });
+        add({ type: 'S', a: n(0), b: n(3), closed: false, part: p, sub: 'c', upd() { this.closed = !!this.part.sw; } });
+        add({ type: 'S', a: n(1), b: n(2), closed: false, part: p, sub: 'd', upd() { this.closed = !!this.part.sw; } });
+        break;
+      case 'IMP': {
+        const un = Math.max(si(p.v, 230), 1), R = un * un / 2;
+        const rl = add({ type: 'RL', a: n(0), b: n(1), r: R, l: R * 0.01, emf: 0, iprev: 0, relay: true, imp: true, on: false, latch: false, ion: 0.6 * un / R, ioff: 0.2 * un / R, part: p });
+        add({ type: 'S', a: n(2), b: n(3), closed: false, part: p, sub: 'K', upd() { this.closed = rl.latch; } });
+        break; }
+      case 'SD': {
+        const w = si(String(p.v || '').replace(/\s*W$/i, ''), 0);
+        if (w > 0) add({ type: 'R', a: n(0), b: n(1), g: w / (230 * 230), part: p, device: true });
+        add({ type: 'S', a: n(0), b: n(2), closed: !!p.sw, ron: 3300, part: p, sub: 'fault', upd() { this.closed = !!this.part.sw; } });
+        break; }
+      case 'FAULT': add({ type: 'S', a: n(0), b: n(1), closed: !!p.sw, ron: Math.max(si(p.v, 3300), 1), part: p, upd() { this.closed = !!this.part.sw; } }); break;
+      case 'JUN': for (let i = 1; i < pins.length; i++) add({ type: 'R', a: n(0), b: n(i), g: 1e3, part: p, sub: 'j' + i }); break;
       case 'SPST': add({ type: 'S', a: n(0), b: n(1), closed: !!p.sw, part: p, upd() { this.closed = !!this.part.sw; } }); break;
       case 'ZD': {
         const vz = Math.max(si(p.v, 5.1), 1);
@@ -337,7 +365,8 @@ function createSim(circ) {
         if (e.part && burnt.has(e.part.id) && (e.type !== 'S')) { if (e.type === 'V') {} else continue; }
         switch (e.type) {
           case 'R': stampG(e.a, e.b, e.g); break;
-          case 'S': stampG(e.a, e.b, e.closed ? 1 / RON : 1 / ROFF); break;
+          case 'S': stampG(e.a, e.b, e.closed ? 1 / (e.ron || RON) : 1 / ROFF); break;
+          case 'RCD': { const g = e.closed ? 1 / RON : 1 / ROFF; stampG(e.a, e.c, g); stampG(e.b, e.d, g); break; }
           case 'C': { const g = e.c / dt; stampG(e.a, e.b, g); inj(e.a, g * e.vprev); inj(e.b, -g * e.vprev); break; }
           case 'L': { const g = dt / e.l; stampG(e.a, e.b, g); cur(e.a, e.b, e.iprev); break; }
           case 'V': {
@@ -421,7 +450,7 @@ function createSim(circ) {
             e.heat = Math.max(0, e.heat + dt * (e.i * e.i * e.r - 2.5) / 12);
             if (e.heat > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Motor überhitzt (blockiert)' }); }
           }
-          if (e.relay) { const ia = Math.abs(e.i); if (!e.on && ia > e.ion) e.on = true; else if (e.on && ia < e.ioff) e.on = false; }
+          if (e.relay) { const ia = Math.abs(e.i); if (!e.on && ia > e.ion) { e.on = true; if (e.imp) e.latch = !e.latch; } else if (e.on && ia < e.ioff) e.on = false; }
           break; }
         case 'THY': {
           const vak = v[e.a] - v[e.b], ia = e.on ? (vak - 0.8) * 2 : 0; e.i = ia;
@@ -438,7 +467,17 @@ function createSim(circ) {
           if (e.lamp) { const rt = e.i * e.i / e.g / e.lamp; if (rt > 25) e.lh = 2; else e.lh = rt > 2 ? (e.lh || 0) + dt / 0.05 : Math.max(0, (e.lh || 0) - dt / 0.2); if (e.lh > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Glühlampe durchgebrannt' }); } }
           if (e.speaker && Math.abs(e.i * e.i / e.g) > 2) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Lautsprecher überlastet' }); }
           if (e.res && !burnt.has(e.part.id)) { const pw = e.i * e.i / e.g; e.power = pw; if (pw > 1.5) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Widerstand überlastet' }); } } break;
-        case 'S': e.i = (v[e.a] - v[e.b]) * (e.closed ? 1 / RON : 1 / ROFF); break;
+        case 'S': {
+          e.i = (v[e.a] - v[e.b]) * (e.closed ? 1 / (e.ron || RON) : 1 / ROFF);
+          if (e.trip && e.closed) {
+            const r = Math.abs(e.i) / e.trip.ir; e.trip.h = Math.max(0, e.trip.h + dt * (r * r - 1.15) / 10);
+            if (r > e.trip.mag || e.trip.h > 1) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; e.trip.h = 0; sim.events.push({ kind: 'trip', part: e.part, text: 'Sicherungsautomat ausgelöst' + (r > e.trip.mag ? ' (Kurzschluss)' : ' (Überlast)') }); }
+          }
+          break; }
+        case 'RCD': {
+          const g = e.closed ? 1 / RON : 1 / ROFF; e.i = (v[e.a] - v[e.c]) * g; e.iN = (v[e.b] - v[e.d]) * g; e.leak = e.i + e.iN;
+          if (e.closed && Math.abs(e.leak) > 0.03) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; sim.events.push({ kind: 'trip', part: e.part, text: 'FI-Schutzschalter ausgelöst (Fehlerstrom ' + (Math.abs(e.leak) * 1000).toFixed(0) + ' mA)' }); }
+          break; }
         case 'C': { const vc = v[e.a] - v[e.b]; e.i = e.c / dt * (vc - e.vprev); e.vprev = vc; break; }
         case 'L': { const g = dt / e.l; e.i = e.iprev + g * (v[e.a] - v[e.b]); e.iprev = e.i; break; }
         case 'V': { const vs = waveform(e, t); let x = (vs - (v[e.a] - v[e.b])) / e.rint; if (e.imax > 0) { e.cc = !!e.cm; if (e.cm) x = e.cm * e.imax; } e.i = x; e.vs = vs; break; }
@@ -470,7 +509,7 @@ function createSim(circ) {
   };
 
   sim.volt = (node) => (node < 0 ? NaN : v[node]);
-  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'RL') { e.iprev = 0; e.heat = 0; e.on = false; e.phase = 0; if (e.mech) e.mech.w = 0; } if (e.type === 'THY') e.on = false; if (e.type === 'TRF') { e.i1p = e.i2p = 0; } if (e.fuse) e.heat = 0; if (e.lamp) e.lh = 0; if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
+  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'RL') { e.iprev = 0; e.heat = 0; e.on = false; e.latch = false; e.phase = 0; if (e.mech) e.mech.w = 0; } if (e.type === 'THY') e.on = false; if (e.type === 'TRF') { e.i1p = e.i2p = 0; } if (e.fuse) e.heat = 0; if (e.lamp) e.lh = 0; if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
   return sim;
 }
 

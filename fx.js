@@ -42,6 +42,7 @@
       case 'zap': tone('sawtooth', 1500, 45, 0.4, 0.45); nz(0.35, 'highpass', 2500, 500, 0.55); tone('square', 90, 40, 0.5, 0.2, 0.1); break;
       case 'fizz': nz(1.6, 'bandpass', 4500, 1400, 0.3); for (let i = 0; i < 14; i++) nz(0.025, 'highpass', 3000, 3000, 0.3, Math.random() * 1.4); tone('sine', 220, 50, 0.4, 0.25); break;
       case 'tick': nz(0.02, 'highpass', 4000, 4000, 0.25); break;
+      case 'click': nz(0.03, 'bandpass', 2500, 2500, 1); tone('square', 180, 60, 0.07, 0.4); tone('square', 900, 300, 0.04, 0.3, 0.09); break;
     }
   }
 
@@ -69,6 +70,14 @@
     smokers.push({ at: o.at || (() => [x, y]), left: big ? 7 : 5, acc: 0, f });
     snd(o.sound || (k === 'led' ? 'pop' : k === 'res' ? 'fizz' : k === 'chip' ? 'zap' : 'boom'));
     if (big || k === 'chip') snd('boom');
+  }
+  function trip(x, y, text, scale) {
+    const f = (scale || 22) / 22;
+    for (let i = 0; i < 14; i++) { const a = rnd(0, 6.283), v = rnd(80, 260) * f; P.push({ t: 'spark', x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, g: 200, life: 0, max: rnd(0.2, 0.5), s: rnd(1.2, 2.4), col: '255,240,170' }); }
+    rings.push({ x, y, r: 0, R: 3 * (scale || 22), life: 0, max: 0.35, col: '255,200,80' });
+    texts.push({ x, y: y - 10 * f, s: text || 'KLACK!', life: 0, max: 1.1, col: '255,200,80', size: 24 });
+    shakeA = Math.max(shakeA, 5); flash = Math.max(flash, 0.2); flashCol = '255,200,80';
+    snd('click');
   }
   /* Bauteil unter Last: gelegentlich Funken und leises Knistern */
   function stress(x, y, ratio, S) {
@@ -146,5 +155,5 @@
   }
   document.addEventListener('pointerdown', unlock, true);
   document.addEventListener('keydown', unlock, true);
-  root.LochFX = { explode, stress, draw, active, clear, sound: snd, unlock, showBtn, setMuted, isMuted: () => muted, setShakeEl: el => { shakeEl = el; } };
+  root.LochFX = { trip, explode, stress, draw, active, clear, sound: snd, unlock, showBtn, setMuted, isMuted: () => muted, setShakeEl: el => { shakeEl = el; } };
 })(typeof window !== 'undefined' ? window : globalThis);
