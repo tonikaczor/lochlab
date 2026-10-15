@@ -258,7 +258,10 @@ function drawPart(p, selected) {
     case 'R': lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8); break;
     case 'POT':
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8);
-      lead(2, -2, 2, -0.75, pc[2]); c.beginPath(); c.moveTo(1.75, -0.95); c.lineTo(2.25, -0.95); c.lineTo(2, -0.45); c.closePath(); c.fill(); break;
+      { const wx = 1 + 2 * clamp(p.pos == null ? 0.5 : p.pos, 0, 1);
+        lead(2, -2, 2, -1.35, pc[2]); lead(2, -1.35, wx, -1.35, pc[2]); lead(wx, -1.35, wx, -0.8, pc[2]);
+        c.beginPath(); c.moveTo(wx - 0.25, -0.95); c.lineTo(wx + 0.25, -0.95); c.lineTo(wx, -0.42); c.closePath(); c.fill(); }
+      break;
     case 'LDR':
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8);
       line(0.9, -1.3, 1.5, -0.75); line(1.5, -1.3, 2.1, -0.75); break;
@@ -338,7 +341,8 @@ function drawPart(p, selected) {
       const o = bd(String(p.id)); if (o) { const e = o.e; path([[0, 0], [1, 0]], e.ib, p.id + 'b'); path([[2, -2], [2, -1.2], [1, -0.4]], e.ic, p.id + 'c'); path([[1, 0.4], [2, 1.2], [2, 2]], -(e.ic + e.ib), p.id + 'e'); }
     } else if (p.k === 'POT') {
       const a = bd(p.id + 'AW'), b = bd(p.id + 'WB');
-      if (a) path([[0, 0], [2, 0]], a.I, p.id + 'a'); if (b) path([[2, 0], [4, 0]], b.I, p.id + 'b');
+      { const wx = 1 + 2 * clamp(p.pos == null ? 0.5 : p.pos, 0, 1);
+        if (a) path([[0, 0], [wx, 0]], a.I, p.id + 'a'); if (b) path([[wx, 0], [4, 0]], b.I, p.id + 'b'); }
     } else if (p.k === 'SPDT') {
       const es = circ.elems.filter(e => e.part && e.part.id === p.id && e.closed);
       es.forEach(e => { const idx = circ.elems.indexOf(e), o = bodyI.get(p.id + '|' + idx); if (o) path([[0, 0], [2, p.sw ? 1 : -1], [4, p.sw ? 1 : -1]], -o.I, p.id + 'x'); });
