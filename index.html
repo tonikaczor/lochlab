@@ -33,6 +33,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displa
 #readout{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:99px;font-size:12px;pointer-events:none;font-variant-numeric:tabular-nums}
 #ctx{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:6px 8px;background:var(--panel);border-top:1px solid var(--line);min-height:50px;scrollbar-width:none}
 #ctx::-webkit-scrollbar{display:none}
+@media (hover:hover) and (pointer:fine){
+  #ctx{scrollbar-width:thin;scrollbar-color:var(--mute) transparent;padding-bottom:10px}
+  #ctx::-webkit-scrollbar{display:block;height:8px}
+  #ctx::-webkit-scrollbar-thumb{background:var(--mute);border-radius:4px}
+  #ctx::-webkit-scrollbar-track{background:transparent}
+}
 #ctx .hint{color:var(--mute);font-size:13px;padding:0 4px;white-space:nowrap}
 .chip{flex:none;height:38px;padding:0 13px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -720,6 +726,20 @@ function renderCtx(){
   }
   el.innerHTML=h;
 }
+// Laptop: Mausrad scrollt die Bauteilleiste seitwärts, Ziehen mit gedrückter Maustaste auf freier Fläche auch
+$('#ctx').addEventListener('wheel',e=>{
+  const el=e.currentTarget;if(el.scrollWidth<=el.clientWidth)return;
+  const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;
+  el.scrollLeft+=d;e.preventDefault();
+},{passive:false});
+(function(){
+  const el=$('#ctx');let drag=null;
+  el.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse'||e.button!==0)return;drag={x:e.clientX,l:el.scrollLeft,moved:false};});
+  window.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x;if(Math.abs(dx)>4)drag.moved=true;if(drag.moved)el.scrollLeft=drag.l-dx;});
+  let suppress=false;
+  window.addEventListener('pointerup',()=>{if(drag&&drag.moved){suppress=true;setTimeout(()=>{suppress=false;},60);}drag=null;});
+  el.addEventListener('click',e=>{if(suppress){e.stopPropagation();e.preventDefault();}},true);
+})();
 $('#ctx').addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
   if(a==='pk'){partKind=b.dataset.k;}
