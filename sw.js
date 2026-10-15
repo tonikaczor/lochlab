@@ -1,4 +1,4 @@
-const CACHE = 'lochlab-v49';
+const CACHE = 'lochlab-v50';
 const FILES = ['./', './index.html', './layout.html', './schaltplan.html', './simlab.html', './codelab.html', './arduino.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png', './fx.js', './simics.js', './simcore.js', './simui.js', './schaltplan.js'];
 
 self.addEventListener('install', e => {

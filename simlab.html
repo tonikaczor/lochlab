@@ -136,8 +136,8 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 <!--/GATE-->
 <div id="app">
   <header>
-    <button class="ib" id="bMenu" aria-label="Menü"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <img id="logo" src="logo.png" alt="Tonfunk" onerror="this.remove()">
+    <button class="ib" id="bMenu" aria-label="Menü"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="ib" id="bHome" href="index.html" aria-label="Startseite" title="Startseite" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="i" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5M6.5 10v9h4v-5h3v5h4v-9"/></svg></a>
+    <img id="logo" onclick="location.href='index.html'" title="Startseite" style="cursor:pointer" src="logo.png" alt="Tonfunk" onerror="this.remove()">
     <div class="title" id="title">Schaltplan</div>
     <button class="hb" id="bEx" aria-label="Beispielschaltungen">📖 <span>Beispiele</span></button>
     <button class="hb" id="bOpen" aria-label="Gespeicherte Schaltungen">📂 <span>Öffnen</span></button>

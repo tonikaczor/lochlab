@@ -152,8 +152,8 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 <!--/GATE-->
 <div id="app">
   <header>
-    <button class="ib" id="bMenu" aria-label="Menü"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-    <img id="logo" src="logo.png" alt="Tonfunk" style="height:34px;max-width:90px;object-fit:contain;display:none;margin-left:4px" onload="this.style.display='block'" onerror="this.remove()">
+    <button class="ib" id="bMenu" aria-label="Menü"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="ib" id="bHome" href="index.html" aria-label="Startseite" title="Startseite" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="i" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5M6.5 10v9h4v-5h3v5h4v-9"/></svg></a>
+    <img id="logo" onclick="location.href='index.html'" title="Startseite" src="logo.png" alt="Tonfunk" style="height:34px;max-width:90px;object-fit:contain;display:none;margin-left:4px" onload="this.style.display='block'" onerror="this.remove()">
     <div class="title" id="title">LochLab<small id="sub"></small></div>
     <button class="ib" id="bUndo" aria-label="Rückgängig"><svg class="i" viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-3" transform="translate(0 -3)"/></svg></button>
     <button class="ib" id="bRedo" aria-label="Wiederholen"><svg class="i" viewBox="0 0 24 24"><path d="M15 7l5 5-5 5M20 12H9a5 5 0 000 10h3" transform="translate(0 -3)"/></svg></button>
@@ -1545,7 +1545,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v49</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v50</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
