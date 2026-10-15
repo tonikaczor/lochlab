@@ -143,7 +143,7 @@ const redo = () => { if (hi < hist.length - 1) restore(hi + 1); };
 function toCore(p) {
   const K = KINDS[p.k];
   let pins = pinsOf(p); if (K.map) pins = K.map.map(i => pins[i]);
-  return { id: p.id, k: K.core, vr: p.vr != null ? p.vr : K.vr, v: p.v, n: p.n || 2, pins, sw: p.sw ? 1 : 0, pos: p.pos == null ? 0.5 : p.pos, light: p.pos == null ? 0.5 : p.pos, pressed: !!p.pressed, rint: 0.01, item: p };
+  return { id: p.id, k: K.core, vr: p.vr != null ? p.vr : K.vr, v: p.v, n: p.n || 2, pins, sw: p.sw ? 1 : 0, pos: p.pos == null ? 0.5 : p.pos, light: p.pos == null ? 0.5 : p.pos, pressed: !!p.pressed, rint: 0.01, defect: p.defect || undefined, item: p };
 }
 function rebuild() {
   const old = circ && sim ? { elems: circ.elems, t: sim.t } : null;
@@ -1290,7 +1290,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen'], ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)']] : []), ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -1646,10 +1646,256 @@ const TASKS = [
     text: 'Das Voltmeter soll 6 V anzeigen (Spannung über R2), zeigt aber 9 V. Welcher Widerstand ist defekt?',
     hint: 'Wenn kein Strom fließt, liegt an dem Teil die ganze Spannung an.' },
 ];
-window.TaskTest = () => TASKS.map(t => {
+/* ---- Messhelfer für Aufgaben (SchaltLab, CodeLab) ---- */
+const labTasks = () => TASKS.filter(t => (t.lab || 'sim') === LAB);
+const vAt = (E, x, y) => { const n = E.c.nodeOfKey(x + ',' + y); return n < 0 ? NaN : E.s.v[n]; };
+const pinV = (E, p, i) => { const w = E.wm.get(p.id), q = w && w.pins[i]; return q ? vAt(E, q[0], q[1]) : NaN; };
+const vAcross = (E, p) => pinV(E, p, 0) - pinV(E, p, 1);
+const ledElem = E => E.c.elems.find(e => e.led);
+const burnTxt = E => E.ev.filter(e => e.kind === 'burn').map(e => e.text);
+const fmt1 = x => (Math.round(x * 10) / 10).toString().replace('.', ',');
+/* Mit kleiner Schrittweite weiterrechnen (Wechselspannung); fn(t) wird nach jedem Schritt aufgerufen */
+function stepFine(E, T, dt, fn) { const n = Math.round(T / dt); for (let i = 1; i <= n; i++) { E.s.step(dt); while (E.s.events.length) E.ev.push(E.s.events.shift()); if (fn) fn(i * dt); } }
+
+/* ---- Arduino-Programm im Hintergrund ausführen und beobachten ---- */
+function codeEval(o) {
+  o = o || {};
+  const E = simEval({ set: o.set }), c = E.c, s = E.s, mcu = c.mcu, res = { E, ser: '', err: null, samples: [] };
+  if (!mcu || !AR) { res.err = 'Kein Arduino in der Schaltung.'; return res; }
+  const m = mcu.mcu;
+  if (o.pos) Object.keys(o.pos).forEach(id => { const w = E.wm.get(+id); if (w) { w.pos = o.pos[id]; w.light = o.pos[id]; } });
+  const comp = AR.compile(o.code != null ? o.code : (sch.code || ''));
+  if (!comp.ok) { res.err = 'Fehler in Zeile ' + comp.errors[0].line + ': ' + comp.errors[0].msg; return res; }
+  const node = q => mcu.nd[mcu.pinNode(q)], ok = q => q >= 0 && q < 20, rx = (o.rx || '').split('');
+  const io = {
+    pinMode: (q, md) => { if (ok(q)) m.mode[q] = md; },
+    digitalWrite: (q, v, vt) => { if (!ok(q)) return; m.out[q] = v; m.duty[q] = null; const pl = m.pulse[q] || (m.pulse[q] = {}); if (v) { pl.rise = vt == null ? s.t : vt; pl.fall = null; pl.used = false; } else if (pl.rise != null && pl.fall == null) pl.fall = vt == null ? s.t : vt; },
+    digitalRead: q => { if (!ok(q)) return 0; if (m.mode[q] === 1) return m.level[q]; const vv = s.v[node(q)]; if (vv > 3) m.lastDig[q] = 1; else if (vv < 1.5) m.lastDig[q] = 0; return m.lastDig[q]; },
+    analogRead: q => (ok(q) ? s.v[node(q)] / 5 * 1023 : 0),
+    analogWrite: (q, v) => { if (!ok(q)) return; m.mode[q] = 1; if ([3, 5, 6, 9, 10, 11].includes(q)) m.duty[q] = v; else { m.duty[q] = null; m.out[q] = v >= 128 ? 1 : 0; } },
+    tone: (q, f, dd) => { if (!ok(q)) return; m.mode[q] = 1; m.tone[q] = { f: Math.max(1, f), until: dd ? s.t + dd / 1000 : null }; },
+    noTone: q => { if (ok(q)) m.tone[q] = null; },
+    serialPrint: x => { res.ser += x; }, serialAvailable: () => rx.length, serialRead: () => (rx.length ? rx.shift().charCodeAt(0) : -1),
+    servo: (q, cmd, a) => { if (cmd === 'detach') delete m.servo[q]; else m.servo[q] = a; },
+    lcd: () => {}, object: () => {}, touch: () => 0,
+    pulseHint: q => { const e = c.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === q); return e ? e.lastEcho : null; },
+  };
+  const runner = AR.createRunner(comp.program, io); runner.start();
+  const dt = 5e-5, n = Math.round((o.T || 2) / dt), script = (o.script || []).slice().sort((a, b) => a.t - b.t); let si = 0;
+  const leds = c.elems.filter(e => e.led && e.part);
+  for (let i = 0; i < n; i++) {
+    s.step(dt); const t = s.t;
+    while (si < script.length && t >= script[si].t) { const st = script[si++]; E.wm.forEach((w, id) => { w.pressed = !!(st.press && st.press.includes(id)); }); }
+    runner.step(t); if (runner.error) { res.err = 'Laufzeitfehler: ' + runner.error.msg; break; }
+    while (s.events.length) E.ev.push(s.events.shift());
+    if (i % 20 === 0) res.samples.push({ t, lv: m.level.slice(), duty: m.duty.slice(), tone: m.tone.map(x => x && x.f), servo: Object.assign({}, m.servo), led: leds.map(e => [e.part.id, (e.iav || 0) * 1000]) });
+  }
+  res.m = m; return res;
+}
+const sampleAt = (R, t) => R.samples.reduce((b, x) => (Math.abs(x.t - t) < Math.abs(b.t - t) ? x : b), R.samples[0] || { t: 0, lv: [], duty: [], tone: [], servo: {}, led: [] });
+const ledMA = (smp, id) => { const l = smp.led.find(x => x[0] === id); return l ? l[1] : 0; };
+const codeFail = R => (R.err ? [RES(false, R.err)] : null);
+const risingEdges = (R, pin) => { let n = 0, prev = 0; R.samples.forEach(x => { if (x.lv[pin] && !prev) n++; prev = x.lv[pin]; }); return n; };
+const dutyShare = (R, pin, t0) => { const a = R.samples.filter(x => x.t >= (t0 || 0)); return a.length ? a.filter(x => x.lv[pin]).length / a.length : 0; };
+const ct = (parts, wires, code) => () => ({ parts, wires, scopes: [], tempo: 0.75, code });
+const CP_LED13 = [['UNO', 12, 0], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], CW_LED13 = [[20, 26, 22, 26]];
+const CP_BTN = [['UNO', 12, 0], ['PB', 24, 4, 1, ''], ['GND', 24, 8], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], CW_BTN = [[20, 4, 24, 4], [20, 26, 22, 26]];
+const CP_TWO = [['UNO', 12, 0], ['R', 22, 8, 0, '220'], ['LED', 26, 8, 0, 'rot'], ['GND', 30, 8], ['R', 22, 16, 0, '220'], ['LED', 26, 16, 0, 'grün'], ['GND', 30, 16]], CW_TWO = [[20, 8, 22, 8], [20, 16, 22, 16]];
+const CP_POT = [['UNO', 12, 0], ['POT', 6, 4, 1, '10k', { pos: 0.4 }], ['GND', 6, 8], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], CW_POT = [[6, 4, 6, 0, 12, 0], [8, 6, 10, 6, 10, 8, 12, 8], [20, 26, 22, 26]];
+const CP_SERVO = [['UNO', 12, 0], ['SERVO', 24, 18], ['GND', 24, 22]], CW_SERVO = [[20, 18, 24, 18], [24, 20, 26, 20, 26, -2, 20, -2]];
+const CP_SPK = [['UNO', 12, 0], ['R', 22, 16, 0, '100'], ['SPK', 26, 16, 0, '8'], ['GND', 30, 16]], CW_SPK = [[20, 16, 22, 16]];
+const CP_PWM = [['UNO', 12, 0], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'gelb'], ['GND', 30, 18]], CW_PWM = [[20, 18, 22, 18]];
+const CP_US = [['UNO', 12, 0], ['HCSR04', 24, 10, 0, '', { pos: 0.5 }], ['GND', 24, 16], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], CW_US = [[24, 10, 22, 10, 22, -2, 20, -2], [20, 12, 24, 12], [20, 14, 24, 14], [20, 26, 22, 26]];
+const theLed = () => sch.parts.find(p => p.k === 'LED');
+function chkBlink(minEdges) {
+  const L = theLed(); if (!L) return [RES(false, 'Keine LED vorhanden.')];
+  const R = codeEval({ T: 5 }); if (R.err) return codeFail(R);
+  const e = risingEdges(R, 13), sh = dutyShare(R, 13), burn = burnTxt(R.E);
+  return [RES(e >= minEdges, e >= minEdges ? 'Die LED blinkt (' + e + '× in 5 s).' : 'Die LED blinkt nicht oft genug (' + e + '× in 5 s, mindestens ' + minEdges + ').'), RES(sh > 0.15 && sh < 0.85, 'Die LED ist ' + Math.round(sh * 100) + ' % der Zeit an (sinnvoll sind 20 bis 80 %).'), RES(!burn.length, burn.length ? burn[0] : 'Pin und LED bleiben heil.')];
+}
+function chkTaster() {
+  const L = theLed(), pb = sch.parts.find(p => p.k === 'PB'); if (!L || !pb) return [RES(false, 'LED oder Taster fehlt.')];
+  const R = codeEval({ T: 1.2, script: [{ t: 0.4, press: [pb.id] }, { t: 0.8, press: [] }] }); if (R.err) return codeFail(R);
+  const a = ledMA(sampleAt(R, 0.3), L.id) > 2, b = ledMA(sampleAt(R, 0.7), L.id) > 2, c = ledMA(sampleAt(R, 1.1), L.id) > 2;
+  return [RES(!a, 'Taster nicht gedrückt: LED ist ' + (a ? 'an, soll aber aus sein' : 'aus') + '.'), RES(b, 'Taster gedrückt: LED ist ' + (b ? 'an' : 'aus, soll aber an sein') + '.'), RES(!c, 'Taster losgelassen: LED ist ' + (c ? 'an, soll aber aus sein' : 'aus') + '.')];
+}
+const CODE_TASKS = [
+  { id: 'c1', lab: 'code', cat: 'Grundlagen', title: 'Dreimal blinken', level: 1,
+    start: ct(CP_LED13, CW_LED13, 'void setup() {\n  pinMode(13, OUTPUT);\n  // Hier: LED dreimal blinken lassen (je 300 ms an und aus)\n}\n\nvoid loop() {\n  // bleibt leer: danach passiert nichts mehr\n}\n'),
+    solMake: ct(CP_LED13, CW_LED13, 'void setup() {\n  pinMode(13, OUTPUT);\n  for (int i = 0; i < 3; i++) {\n    digitalWrite(13, HIGH);\n    delay(300);\n    digitalWrite(13, LOW);\n    delay(300);\n  }\n}\n\nvoid loop() {\n}\n'),
+    text: 'Die LED an Pin 13 soll nach dem Start genau dreimal blinken (je etwa 300 ms an und aus) und danach dunkel bleiben. Schreibe das Programm in setup().',
+    hint: 'Mit einer for-Schleife kannst du Anweisungen wiederholen: for (int i = 0; i < 3; i++) { ... }',
+    check() { const L = theLed(); if (!L) return [RES(false, 'Keine LED vorhanden.')]; const R = codeEval({ T: 6 }); if (R.err) return codeFail(R); const e = risingEdges(R, 13), last = R.samples[R.samples.length - 1].lv[13], burn = burnTxt(R.E);
+      return [RES(e === 3, 'Die LED blinkt ' + e + '× (soll genau 3×).'), RES(!last, last ? 'Am Ende leuchtet die LED noch, sie soll aus sein.' : 'Nach dem Blinken bleibt die LED aus.'), RES(!burn.length, burn.length ? burn[0] : 'Pin und LED bleiben heil.')]; } },
+  { id: 'c2', lab: 'code', cat: 'Grundlagen', title: 'Taster schaltet die LED', level: 1,
+    start: ct(CP_BTN, CW_BTN, 'void setup() {\n  pinMode(2, INPUT_PULLUP);   // Taster gegen Masse\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  // Hier: LED an, solange der Taster gedrückt ist\n}\n'),
+    solMake: ct(CP_BTN, CW_BTN, 'void setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  if (digitalRead(2) == LOW) {\n    digitalWrite(13, HIGH);\n  } else {\n    digitalWrite(13, LOW);\n  }\n}\n'),
+    text: 'Die LED soll genau dann leuchten, wenn der Taster gedrückt ist. Der Taster liegt zwischen Pin 2 und Masse, Pin 2 nutzt den internen Pull-up-Widerstand.',
+    hint: 'Mit Pull-up liest digitalRead(2) im Ruhezustand HIGH und bei gedrücktem Taster LOW.',
+    check: chkTaster },
+  { id: 'c3', lab: 'code', cat: 'Grundlagen', title: 'Hallo im Serial-Monitor', level: 1,
+    start: ct([['UNO', 12, 0]], [], 'void setup() {\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  // Hier: jede Sekunde "Hallo Azubi" ausgeben\n}\n'),
+    solMake: ct([['UNO', 12, 0]], [], 'void setup() {\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  Serial.println("Hallo Azubi");\n  delay(1000);\n}\n'),
+    text: 'Gib im Serial-Monitor jede Sekunde die Zeile „Hallo Azubi“ aus (nach dem Text soll ein Zeilenumbruch kommen).',
+    hint: 'Serial.println("...") schreibt Text mit Zeilenumbruch, delay(1000) wartet eine Sekunde.',
+    check() { const R = codeEval({ T: 3.6 }); if (R.err) return codeFail(R); const lines = R.ser.split('\n').filter(x => x.length), allOk = lines.length > 0 && lines.every(x => x.trim() === 'Hallo Azubi');
+      return [RES(lines.length >= 3 && lines.length <= 4, 'In 3,6 s kamen ' + lines.length + ' Zeilen an (erwartet: 3 bis 4).'), RES(allOk, allOk ? 'Der Text stimmt.' : 'Der Text stimmt nicht. Erwartet: Hallo Azubi')]; } },
+  { id: 'c4', lab: 'code', cat: 'Grundlagen', title: 'Wechselblinker', level: 2,
+    start: ct(CP_TWO, CW_TWO, 'void setup() {\n  pinMode(4, OUTPUT);   // rote LED\n  pinMode(8, OUTPUT);   // grüne LED\n}\n\nvoid loop() {\n  // Hier: die beiden LEDs wechselweise blinken lassen\n}\n'),
+    solMake: ct(CP_TWO, CW_TWO, 'void setup() {\n  pinMode(4, OUTPUT);\n  pinMode(8, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(4, HIGH);\n  digitalWrite(8, LOW);\n  delay(400);\n  digitalWrite(4, LOW);\n  digitalWrite(8, HIGH);\n  delay(400);\n}\n'),
+    text: 'Die rote LED (Pin 4) und die grüne LED (Pin 8) sollen abwechselnd leuchten, etwa im Takt von einer halben Sekunde. Es darf nie eine Zeit geben, in der beide gleichzeitig leuchten.',
+    hint: 'Schalte in jedem Schritt eine LED ein und die andere aus, dann warte (delay), dann umgekehrt.',
+    check() { const R = codeEval({ T: 4 }); if (R.err) return codeFail(R); const both = R.samples.filter(x => x.lv[4] && x.lv[8]).length / R.samples.length, a = dutyShare(R, 4), b = dutyShare(R, 8), ea = risingEdges(R, 4), eb = risingEdges(R, 8);
+      return [RES(ea >= 3 && eb >= 3, 'Beide LEDs blinken (rot ' + ea + '×, grün ' + eb + '× in 4 s).'), RES(a > 0.25 && a < 0.75 && b > 0.25 && b < 0.75, 'Jede LED ist etwa die Hälfte der Zeit an (rot ' + Math.round(a * 100) + ' %, grün ' + Math.round(b * 100) + ' %).'), RES(both < 0.03, both < 0.03 ? 'Nie leuchten beide gleichzeitig.' : 'Zeitweise leuchten beide gleichzeitig (' + Math.round(both * 100) + ' % der Zeit).')]; } },
+  { id: 'c5', lab: 'code', cat: 'Sensoren und Töne', title: 'Poti-Schwelle', level: 2,
+    start: ct(CP_POT, CW_POT, 'void setup() {\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  int wert = analogRead(A0);   // 0 bis 1023\n  // Hier: LED an, wenn wert größer als 511 ist, sonst aus\n}\n'),
+    solMake: ct(CP_POT, CW_POT, 'void setup() {\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  int wert = analogRead(A0);\n  if (wert > 511) {\n    digitalWrite(13, HIGH);\n  } else {\n    digitalWrite(13, LOW);\n  }\n}\n'),
+    text: 'Das Programm liest das Poti an A0 (Werte 0 bis 1023). Die LED an Pin 13 soll leuchten, wenn der Messwert größer als 511 ist, sonst aus sein. Verstelle das Poti mit dem Regler unter dem Bauteil.',
+    hint: 'if (wert > 511) { digitalWrite(13, HIGH); } else { digitalWrite(13, LOW); }',
+    check() { const L = theLed(), P = sch.parts.find(p => p.k === 'POT'); if (!L || !P) return [RES(false, 'LED oder Poti fehlt.')];
+      const hi = codeEval({ T: 0.6, pos: { [P.id]: 0.1 } }), lo = codeEval({ T: 0.6, pos: { [P.id]: 0.9 } }); if (hi.err) return codeFail(hi);
+      const on = ledMA(sampleAt(hi, 0.55), L.id) > 2, off = ledMA(sampleAt(lo, 0.55), L.id) > 2;
+      return [RES(on, 'Messwert etwa 920 (über 511): LED ist ' + (on ? 'an' : 'aus, soll aber an sein') + '.'), RES(!off, 'Messwert etwa 100 (unter 511): LED ist ' + (off ? 'an, soll aber aus sein' : 'aus') + '.')]; } },
+  { id: 'c6', lab: 'code', cat: 'Sensoren und Töne', title: 'Servo auf 90 Grad', level: 1,
+    start: ct(CP_SERVO, CW_SERVO, '#include <Servo.h>\n\nServo meinServo;\n\nvoid setup() {\n  // Hier: Servo an Pin 9 anschließen und auf 90 Grad fahren\n}\n\nvoid loop() {\n}\n'),
+    solMake: ct(CP_SERVO, CW_SERVO, '#include <Servo.h>\n\nServo meinServo;\n\nvoid setup() {\n  meinServo.attach(9);\n  meinServo.write(90);\n}\n\nvoid loop() {\n}\n'),
+    text: 'Der Servo hängt an Pin 9. Fahre ihn nach dem Start auf die Mittelstellung (90 Grad).',
+    hint: 'Mit meinServo.attach(9) verbindest du den Servo mit dem Pin, mit meinServo.write(90) stellst du den Winkel ein.',
+    check() { const R = codeEval({ T: 1.5 }); if (R.err) return codeFail(R); const a = R.samples[R.samples.length - 1].servo[9];
+      return [RES(a != null, a != null ? 'Der Servo ist an Pin 9 angeschlossen.' : 'Der Servo ist nicht an Pin 9 angeschlossen (attach fehlt).'), RES(a != null && Math.abs(a - 90) <= 3, a != null ? 'Winkel: ' + Math.round(a) + ' Grad (soll 90).' : 'Kein Winkel eingestellt.')]; } },
+  { id: 'c7', lab: 'code', cat: 'Sensoren und Töne', title: 'Kammerton a', level: 1,
+    start: ct(CP_SPK, CW_SPK, 'void setup() {\n  // Hier: den Ton a (440 Hz) auf dem Lautsprecher an Pin 8 spielen\n}\n\nvoid loop() {\n}\n'),
+    solMake: ct(CP_SPK, CW_SPK, 'void setup() {\n  tone(8, 440);\n}\n\nvoid loop() {\n}\n'),
+    text: 'Spiele auf dem Lautsprecher an Pin 8 dauerhaft den Kammerton a mit 440 Hz.',
+    hint: 'tone(Pin, Frequenz) startet einen Ton, zum Beispiel tone(8, 262) für das tiefe c.',
+    check() { const R = codeEval({ T: 1 }); if (R.err) return codeFail(R); const f = R.samples[R.samples.length - 1].tone[8];
+      return [RES(f != null, f != null ? 'Auf Pin 8 wird ein Ton gespielt.' : 'Auf Pin 8 ist kein Ton zu hören.'), RES(f != null && Math.abs(f - 440) <= 5, f != null ? 'Frequenz: ' + Math.round(f) + ' Hz (soll 440 Hz).' : 'Keine Frequenz.')]; } },
+  { id: 'c8', lab: 'code', cat: 'Sensoren und Töne', title: 'Halbe Helligkeit (PWM)', level: 1,
+    start: ct(CP_PWM, CW_PWM, 'void setup() {\n  pinMode(9, OUTPUT);\n  // Hier: LED an Pin 9 mit halber Helligkeit leuchten lassen\n}\n\nvoid loop() {\n}\n'),
+    solMake: ct(CP_PWM, CW_PWM, 'void setup() {\n  pinMode(9, OUTPUT);\n  analogWrite(9, 128);\n}\n\nvoid loop() {\n}\n'),
+    text: 'Die LED an Pin 9 soll mit etwa halber Helligkeit leuchten. Pin 9 kann PWM (analogWrite, Wert 0 bis 255).',
+    hint: 'analogWrite(9, 128) ergibt ein Tastverhältnis von 50 %.',
+    check() { const R = codeEval({ T: 0.5 }); if (R.err) return codeFail(R); const d = R.samples[R.samples.length - 1].duty[9];
+      return [RES(d != null, d != null ? 'Pin 9 gibt ein PWM-Signal aus.' : 'Pin 9 gibt kein PWM-Signal aus (analogWrite fehlt).'), RES(d != null && d >= 115 && d <= 140, d != null ? 'PWM-Wert: ' + d + ' (soll etwa 128).' : 'Kein Wert.')]; } },
+  { id: 'c9', lab: 'code', cat: 'Grundlagen', title: 'Zählen bis 10', level: 2,
+    start: ct([['UNO', 12, 0]], [], 'void setup() {\n  Serial.begin(9600);\n  // Hier: die Zahlen 1 bis 10 ausgeben, jede in einer eigenen Zeile\n}\n\nvoid loop() {\n}\n'),
+    solMake: ct([['UNO', 12, 0]], [], 'void setup() {\n  Serial.begin(9600);\n  for (int i = 1; i <= 10; i++) {\n    Serial.println(i);\n  }\n}\n\nvoid loop() {\n}\n'),
+    text: 'Gib im Serial-Monitor einmalig die Zahlen von 1 bis 10 aus, jede Zahl in einer eigenen Zeile. Danach soll nichts mehr kommen.',
+    hint: 'Eine for-Schleife zählt für dich: for (int i = 1; i <= 10; i++) { Serial.println(i); }',
+    check() { const R = codeEval({ T: 2 }); if (R.err) return codeFail(R); const want = '1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n';
+      return [RES(R.ser === want, R.ser === want ? 'Die Zahlen 1 bis 10 stehen richtig im Serial-Monitor.' : 'Ausgabe stimmt nicht. Erhalten: ' + JSON.stringify(R.ser.slice(0, 40)))]; } },
+  { id: 'c10', lab: 'code', cat: 'Sensoren und Töne', title: 'Abstandswarner', level: 3,
+    start: ct(CP_US, CW_US, 'const int triggerPin = 6;\nconst int echoPin = 7;\nconst int ledPin = 13;\n\nlong messeDauer() {\n  pinMode(triggerPin, OUTPUT);\n  digitalWrite(triggerPin, LOW);\n  delayMicroseconds(2);\n  digitalWrite(triggerPin, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(triggerPin, LOW);\n  pinMode(echoPin, INPUT);\n  return pulseIn(echoPin, HIGH);\n}\n\nvoid setup() {\n  pinMode(ledPin, OUTPUT);\n}\n\nvoid loop() {\n  float cm = 0.01723 * messeDauer();\n  // Hier: LED an, wenn das Hindernis näher als 50 cm ist\n  delay(60);\n}\n'),
+    solMake: ct(CP_US, CW_US, 'const int triggerPin = 6;\nconst int echoPin = 7;\nconst int ledPin = 13;\n\nlong messeDauer() {\n  pinMode(triggerPin, OUTPUT);\n  digitalWrite(triggerPin, LOW);\n  delayMicroseconds(2);\n  digitalWrite(triggerPin, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(triggerPin, LOW);\n  pinMode(echoPin, INPUT);\n  return pulseIn(echoPin, HIGH);\n}\n\nvoid setup() {\n  pinMode(ledPin, OUTPUT);\n}\n\nvoid loop() {\n  float cm = 0.01723 * messeDauer();\n  if (cm < 50) {\n    digitalWrite(ledPin, HIGH);\n  } else {\n    digitalWrite(ledPin, LOW);\n  }\n  delay(60);\n}\n'),
+    text: 'Der Ultraschallsensor misst den Abstand (die Funktion messeDauer ist schon fertig). Die LED an Pin 13 soll leuchten, wenn ein Hindernis näher als 50 cm ist, sonst aus sein. Den Abstand stellst du mit dem Regler am Sensor ein.',
+    hint: 'Die Variable cm enthält schon den Abstand. Vergleiche sie mit 50 und schalte die LED mit digitalWrite.',
+    check() { const L = theLed(), U = sch.parts.find(p => p.k === 'HCSR04'); if (!L || !U) return [RES(false, 'LED oder Ultraschallsensor fehlt.')];
+      const near = codeEval({ T: 1, pos: { [U.id]: 0.045 } }), far = codeEval({ T: 1, pos: { [U.id]: 0.4 } }); if (near.err) return codeFail(near);
+      const a = ledMA(sampleAt(near, 0.95), L.id) > 2, b = ledMA(sampleAt(far, 0.95), L.id) > 2;
+      return [RES(a, 'Hindernis bei etwa 20 cm: LED ist ' + (a ? 'an' : 'aus, soll aber an sein') + '.'), RES(!b, 'Hindernis bei etwa 160 cm: LED ist ' + (b ? 'an, soll aber aus sein' : 'aus') + '.')]; } },
+  { id: 'cf1', lab: 'code', cat: 'Fehlersuche im Code', title: 'Die LED bleibt dunkel', level: 1,
+    start: ct(CP_LED13, CW_LED13, 'void setup() {\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(500);\n  digitalWrite(13, LOW);\n  delay(500);\n}\n'),
+    solMake: ct(CP_LED13, CW_LED13, 'void setup() {\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(500);\n  digitalWrite(13, LOW);\n  delay(500);\n}\n'),
+    text: 'Das Programm soll die LED an Pin 13 blinken lassen, aber sie bleibt dunkel. Das Programm ist fehlerfrei geschrieben, trotzdem fehlt etwas Wichtiges. Finde und behebe den Fehler.',
+    hint: 'Ein Pin muss erst mit pinMode als Ausgang (OUTPUT) eingestellt werden, sonst treibt er keinen Strom.',
+    check: () => chkBlink(4) },
+  { id: 'cf2', lab: 'code', cat: 'Fehlersuche im Code', title: 'Der Taster arbeitet verkehrt herum', level: 1,
+    start: ct(CP_BTN, CW_BTN, 'void setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  if (digitalRead(2) == HIGH) {\n    digitalWrite(13, HIGH);\n  } else {\n    digitalWrite(13, LOW);\n  }\n}\n'),
+    solMake: ct(CP_BTN, CW_BTN, 'void setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  if (digitalRead(2) == LOW) {\n    digitalWrite(13, HIGH);\n  } else {\n    digitalWrite(13, LOW);\n  }\n}\n'),
+    text: 'Die LED soll leuchten, solange der Taster gedrückt ist. Im Moment leuchtet sie aber, wenn der Taster NICHT gedrückt ist. Behebe den Fehler im Programm.',
+    hint: 'Der Taster liegt gegen Masse. Mit Pull-up liest der Pin im Ruhezustand HIGH und beim Drücken LOW.',
+    check: chkTaster },
+  { id: 'cf3', lab: 'code', cat: 'Fehlersuche im Code', title: 'Fehlermeldung lesen', level: 1,
+    start: ct(CP_LED13, CW_LED13, 'void setup() {\n  pinMode(13, OUTPUT)\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(500);\n  digitalWrite(13, LOW);\n  delay(500);\n}\n'),
+    solMake: ct(CP_LED13, CW_LED13, 'void setup() {\n  pinMode(13, OUTPUT);\n}\n\nvoid loop() {\n  digitalWrite(13, HIGH);\n  delay(500);\n  digitalWrite(13, LOW);\n  delay(500);\n}\n'),
+    text: 'Das Programm lässt sich nicht starten. Starte es mit ▶ Start, lies die Fehlermeldung (Zeilennummer!) und behebe den Fehler, so dass die LED blinkt.',
+    hint: 'Jede Anweisung in C++ endet mit einem Semikolon. Schau in die Zeile, die die Fehlermeldung nennt.',
+    check: () => chkBlink(4) },
+];
+
+/* ---- SchaltLab: Aufgaben mit Messung ---- */
+const SCH_TASKS = [
+  { id: 's1', lab: 'sch', cat: 'Grundlagen', title: 'Spannungsteiler für 6 V', level: 1, solMake: () => ({ parts: [['BAT', 4, 4, 1, '9'], ['R', 8, 2, 1, '1k'], ['R', 8, 6, 1, '2k'], ['GND', 4, 10], ['VM', 12, 6, 1, '']], wires: [[4, 4, 4, 2, 8, 2], [8, 10, 4, 10, 4, 8], [8, 6, 12, 6], [12, 10, 8, 10]], scopes: [] }),
+    start: () => ({ parts: [['BAT', 4, 4, 1, '9'], ['R', 8, 2, 1, '1k'], ['GND', 4, 10], ['VM', 12, 6, 1, '']], wires: [[4, 4, 4, 2, 8, 2]], scopes: [] }),
+    text: 'Das Voltmeter soll 6 V anzeigen. R1 (1 kΩ) und die 9-V-Batterie sind schon platziert. Ergänze den zweiten Widerstand R2 so, dass an R2 genau 6 V liegen, und verdrahte alles: R2 zwischen R1 und Masse, das Voltmeter parallel zu R2.',
+    hint: 'Beim Spannungsteiler verhalten sich die Spannungen wie die Widerstände: U2 / U = R2 / (R1 + R2). Für 6 von 9 V muss R2 doppelt so groß sein wie R1.',
+    check() { const vm = sch.parts.find(p => p.k === 'VM'); const r = needKinds([['Zweiter Widerstand', ['R'], 2]]); if (!vm) return r.concat([RES(false, 'Das Voltmeter fehlt.')]);
+      const E = simEval({}); E.run(0.05); const v = vAcross(E, vm);
+      return r.concat([RES(Math.abs(v - 6) < 0.3, isNaN(v) ? 'Das Voltmeter ist nicht angeschlossen.' : 'Das Voltmeter zeigt ' + fmt1(v) + ' V (soll 6 V).')]); } },
+  { id: 's2', lab: 'sch', cat: 'Grundlagen', title: 'Vorwiderstand für die LED', level: 1, solMake: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 6, 2, 0, '470'], ['LED', 10, 2, 1, 'rot'], ['GND', 2, 8]], wires: [[2, 4, 2, 2, 6, 2], [10, 6, 10, 8, 2, 8]], scopes: [] }),
+    start: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['LED', 10, 2, 1, 'rot'], ['GND', 2, 8]], wires: [[10, 6, 10, 8, 2, 8], [2, 4, 2, 2]], scopes: [] }),
+    text: 'Betreibe die rote LED an der 9-V-Batterie. Wähle einen passenden Vorwiderstand: Der LED-Strom soll zwischen 8 und 20 mA liegen (typisch 15 mA, die LED hat etwa 2 V Spannungsabfall). Ohne Widerstand würde die LED durchbrennen.',
+    hint: 'R = (9 V − 2 V) / 0,015 A ≈ 470 Ω. Nimm einen Wert aus der Normreihe (zum Beispiel 470 Ω).',
+    check() { const r = needKinds([['Vorwiderstand', ['R'], 1]]); const E = simEval({}); E.run(0.05); const e = ledElem(E), burn = burnTxt(E);
+      if (burn.length) return r.concat([RES(false, burn[0])]); const i = e ? Math.abs(e.i) * 1000 : 0;
+      return r.concat([RES(i >= 8 && i <= 20, 'LED-Strom: ' + fmt1(i) + ' mA' + (i >= 8 && i <= 20 ? '' : (i < 8 ? ' (zu klein, LED fast dunkel)' : ' (zu groß)')) + '.')]); } },
+  { id: 's3', lab: 'sch', cat: 'Transistoren', title: 'Transistor als Schalter', level: 2, sol: 'Transistor als Schalter',
+    start: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 10, 2, 1, '470'], ['LED', 10, 6, 1, 'grün'], ['NPN', 8, 12, 0, 'BC547'], ['R', 4, 12, 0, '10k'], ['SPST', 4, 6, 1, '', { sw: 1 }], ['GND', 2, 16]], wires: [[2, 4, 2, 2, 10, 2], [2, 8, 2, 16, 10, 16, 10, 14]], scopes: [] }),
+    text: 'Ein Schalter soll über einen Transistor die LED ein- und ausschalten. Batterie, LED mit Vorwiderstand, Transistor, Basiswiderstand (10 kΩ) und Schalter sind platziert. Verdrahte den Schalter und den Basiswiderstand mit der Batterie und der Basis.',
+    hint: 'Plus → Schalter → Basiswiderstand → Basis des Transistors. Der Transistor schaltet den LED-Zweig nach Masse (Emitter an Masse).',
+    check() { const sw = sch.parts.find(p => p.k === 'SPST'); if (!sw) return needKinds([['Schalter', ['SPST'], 1]]); const out = [];
+      [[1, true], [0, false]].forEach(([st, want]) => { const E = evalCombo([sw], [st]), e = ledElem(E), i = e ? Math.abs(e.i) * 1000 : 0, evs = evTxt(E).concat(burnTxt(E)); if (evs.length) out.push(RES(false, 'Schalter ' + (st ? 'ein' : 'aus') + ': ' + evs[0])); else out.push(RES(want ? i > 5 : i < 0.5, 'Schalter ' + (st ? 'ein' : 'aus') + ': LED-Strom ' + fmt1(i) + ' mA, die LED soll ' + (want ? 'leuchten' : 'aus sein') + '.')); });
+      return out; } },
+  { id: 's4', lab: 'sch', cat: 'Filter und Gleichrichter', title: 'Tiefpass mit 1 kHz Grenzfrequenz', level: 3, solMake: () => ({ parts: [['AC', 2, 4, 1, '5V 1kHz'], ['R', 2, 2, 0, '1k'], ['C', 6, 2, 1, '160n'], ['GND', 2, 8]], wires: [[2, 4, 2, 2], [6, 6, 6, 8, 2, 8]], scopes: [0, 2] }),
+    start: () => ({ parts: [['AC', 2, 4, 1, '5V 1kHz'], ['R', 2, 2, 0, '1k'], ['GND', 2, 8]], wires: [[2, 4, 2, 2]], scopes: [0] }),
+    text: 'Ergänze einen Kondensator, so dass die Schaltung mit R = 1 kΩ einen Tiefpass mit der Grenzfrequenz 1 kHz bildet. Bei der Grenzfrequenz ist die Spannung am Kondensator auf 70 % der Eingangsspannung gesunken. Die Quelle liefert 1 kHz.',
+    hint: 'fg = 1 / (2 · π · R · C). Umgestellt: C = 1 / (2 · π · 1000 Hz · 1000 Ω) ≈ 160 nF. Kondensator zwischen Widerstand und Masse legen.',
+    check() { const cap = sch.parts.find(p => p.k === 'C' || p.k === 'CE'), src = sch.parts.find(p => p.k === 'AC'); if (!cap || !src) return needKinds([['Kondensator', ['C', 'CE'], 1], ['Wechselspannungsquelle', ['AC'], 1]]);
+      const E = simEval({}); let pc = 0, ps = 0; stepFine(E, 0.012, 2e-6, t => { if (t > 0.006) { pc = Math.max(pc, Math.abs(vAcross(E, cap))); ps = Math.max(ps, Math.abs(vAcross(E, src))); } }); const q = ps > 0 ? pc / ps : 0;
+      return [RES(q > 0.58 && q < 0.82, 'Bei 1 kHz erreicht ' + Math.round(q * 100) + ' % der Eingangsspannung den Kondensator (soll etwa 70 %).')]; } },
+  { id: 's5', lab: 'sch', cat: 'Filter und Gleichrichter', title: 'Netzteil: Einweggleichrichter', level: 3, sol: 'Einweggleichrichter mit Glättung',
+    start: () => ({ parts: [['AC', 2, 4, 1, '10V 50Hz'], ['R', 10, 2, 1, '1k'], ['GND', 2, 8]], wires: [[2, 4, 2, 2], [10, 6, 10, 8], [2, 8, 10, 8]], scopes: [] }),
+    text: 'Aus der Wechselspannung (10 V, 50 Hz) soll eine möglichst glatte Gleichspannung am Lastwiderstand (1 kΩ) entstehen. Baue einen Einweggleichrichter mit Diode und Ladeelko. Die Spannung an der Last soll im Mittel über 5,5 V liegen und um weniger als 2 V schwanken.',
+    hint: 'Diode in Reihe (Ring zur Last), Elko parallel zur Last (Plus zur Diode). Ein größerer Elko glättet besser.',
+    check() { const d = sch.parts.find(p => p.k === 'D'), ce = sch.parts.find(p => p.k === 'CE'), rl = sch.parts.find(p => p.k === 'R'); const r = needKinds([['Diode', ['D'], 1], ['Elko', ['CE'], 1]]); if (!d || !ce || !rl) return r;
+      const E = simEval({}); let mn = 99, mx = -99, sum = 0, cnt = 0; stepFine(E, 0.3, 1e-4, t => { if (t > 0.15) { const v = vAcross(E, rl); mn = Math.min(mn, v); mx = Math.max(mx, v); sum += v; cnt++; } }); const avg = cnt ? sum / cnt : 0, rip = mx - mn;
+      return r.concat([RES(avg > 5.5, 'Mittlere Spannung an der Last: ' + fmt1(avg) + ' V (soll über 5,5 V).'), RES(rip < 2, 'Restwelligkeit: ' + fmt1(rip) + ' V (soll unter 2 V).')]); } },
+  { id: 'sf1', lab: 'sch', cat: 'Fehlersuche', title: 'Transistorschalter: die LED bleibt aus', level: 2, debug: true, faultLabel: 'R2', sol: 'Transistor als Schalter',
+    start: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 10, 2, 1, '470', { l: 'R1' }], ['LED', 10, 6, 1, 'grün'], ['NPN', 8, 12, 0, 'BC547'], ['R', 4, 12, 0, '10k', { l: 'R2', defect: 'open' }], ['SPST', 4, 6, 1, '', { sw: 1 }], ['GND', 2, 16]], wires: [[2, 4, 2, 2, 4, 2, 10, 2], [4, 6, 4, 2], [4, 10, 4, 12], [2, 8, 2, 16, 10, 16, 10, 14]], scopes: [] }),
+    text: 'Der Schalter ist geschlossen, aber die LED leuchtet nicht. Die Verdrahtung ist in Ordnung. Finde mit den Messgeräten das defekte Bauteil. Wähle es aus und tippe auf „Fehler melden“.',
+    hint: 'Miss die Spannung an der Basis des Transistors. Ist sie 0 V, obwohl der Schalter geschlossen ist, kommt kein Strom aus dem Basiszweig.' },
+  { id: 'sf2', lab: 'sch', cat: 'Fehlersuche', title: 'Netzteil liefert keine Gleichspannung', level: 2, debug: true, faultLabel: 'D1', sol: 'Einweggleichrichter mit Glättung',
+    start: () => ({ parts: [['AC', 2, 4, 1, '10V 50Hz'], ['D', 2, 2, 0, '1N4007', { l: 'D1', defect: 'open' }], ['CE', 6, 2, 1, '100u', { l: 'C1' }], ['R', 10, 2, 1, '1k', { l: 'R1' }], ['GND', 2, 8]], wires: [[2, 4, 2, 2], [6, 2, 10, 2], [6, 6, 6, 8], [10, 6, 10, 8], [2, 8, 6, 8, 10, 8]], scopes: [0, 3] }),
+    text: 'Der Lastwiderstand R1 bekommt keine Spannung, obwohl die Quelle 10 V liefert. Welches Bauteil ist defekt?',
+    hint: 'Vergleiche die Spannung vor und hinter der Diode. Hinter dem defekten Bauteil bleibt die Spannung aus.' },
+];
+
+/* ---- SimLab: weitere Aufgaben ---- */
+const SIM_TASKS = [
+  { id: 'zl', cat: 'Grundlagen', title: 'Zwei Lampen getrennt schalten', level: 1, sol: 'Zwei Lampen getrennt schaltbar',
+    start: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', 1, 8, 1, '', { sw: 0 }], ['LAMP', 1, 12, 1, '230V 60W'], ['SPST', -3, 8, 1, '', { sw: 0 }], ['LAMP', -3, 12, 1, '230V 60W']], wires: [['blau', 3, 0, 3, 20, 1, 20, -3, 20, -3, 16], ['blau', 1, 16, 1, 20], ['braun', 1, 0, 1, 2]], scopes: [], tempo: 0.55, win: 0.04 }),
+    text: 'Zwei Lampen sollen unabhängig voneinander mit je einem eigenen Schalter geschaltet werden. Beide Lampen hängen hinter dem Sicherungsautomaten. Verdrahte den Außenleiter (braun) über die Schalter zu den Lampen.',
+    hint: 'Der Außenleiter verzweigt hinter dem Sicherungsautomaten in zwei Zweige: je Schalter und Lampe in Reihe. Beide Zweige liegen parallel.',
+    check() { const sws = swList().filter(p => p.k === 'SPST'), lamps = lampList(); if (sws.length < 2 || lamps.length < 2) return needKinds([['Schalter', ['SPST'], 2], ['Lampen', ['LAMP'], 2]]);
+      const out = [], seen = new Set(); const off = evalCombo(sws.slice(0, 2), [0, 0]).lamps(); out.push(RES(lamps.every(l => !off.get(l.id)), 'Beide Schalter aus: ' + (lamps.every(l => !off.get(l.id)) ? 'beide Lampen sind aus.' : 'eine Lampe leuchtet trotzdem.')));
+      sws.slice(0, 2).forEach((s, i) => { const vals = [0, 0]; vals[i] = 1; const m = evalCombo(sws.slice(0, 2), vals).lamps(), lit = lamps.filter(l => m.get(l.id)); lit.forEach(l => seen.add(l.id)); out.push(RES(lit.length === 1, nm(s) + ' allein ein: ' + (lit.length === 1 ? 'genau eine Lampe leuchtet.' : lit.length + ' Lampen leuchten (soll genau 1).'))); });
+      out.push(RES(seen.size === 2, seen.size === 2 ? 'Jeder Schalter gehört zu einer eigenen Lampe.' : 'Beide Schalter schalten dieselbe Lampe.')); return out.concat(chkProtect(lamps[0])); } },
+  { id: 'oe', cat: 'Grundlagen', title: 'Öffner-Taster (Ruhestromkreis)', level: 1, sol: 'Öffner-Taster (Ruhekontakt)',
+    start: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['PBC', 1, 6, 1, ''], ['LAMP', 1, 10, 1, '230V 60W']], wires: [['blau', 3, 0, 3, 16, 1, 16, 1, 14]], scopes: [], tempo: 0.55, win: 0.04 }),
+    text: 'Die Lampe soll im Ruhezustand leuchten und beim Drücken des Tasters ausgehen (Öffner). Verdrahte den Außenleiter vom Netz über Sicherungsautomat und Öffner-Taster zur Lampe.',
+    hint: 'Der Öffner ist im Ruhezustand geschlossen. Außenleiter: Netz L → Sicherungsautomat → Öffner → Lampe.',
+    check() { const L = firstLamp(), pb = sch.parts.find(p => p.k === 'PBC'); if (!L) return noLamp(); if (!pb) return needKinds([['Öffner-Taster', ['PBC'], 1]]);
+      return chkSequence([{ press: [], expect: true, t: 0.2, text: 'Ruhezustand' }, { press: [pb], expect: false, text: 'Taster gedrückt' }, { press: [], expect: true, text: 'Taster losgelassen' }], L); } },
+  { id: 'mo', cat: 'Drehstrom', title: 'Drehstrommotor schützen schalten', level: 4, sol: 'Drehstrommotor mit Schütz (Tippbetrieb)',
+    start: () => ({ parts: [['NETZ3', 1, 0], ['PB', -9, 11, 0, '', { l: 'S1' }], ['SCHUETZ', -14, 14, 0, '230V'], ['MOTOR3', -12, 26, 0, '400V 2.2kW']], wires: [['blau', 7, 0, 7, 34, -17, 34, -17, 20, -14, 20]], scopes: [], tempo: 0.55, win: 0.04 }),
+    text: 'Ein Drehstrommotor soll über ein Schütz geschaltet werden: Taster gedrückt = Motor läuft, losgelassen = Motor steht. Die Schützspule hängt an L1 und N. Verdrahte Steuerstromkreis (Taster, Spule) und Hauptstromkreis (drei Schließer, Motor). Die drei Außenleiter gehören jeweils auf einen eigenen Schließer.',
+    hint: 'Steuerkreis: L1 → Taster → Spule A1, A2 → N (schon verdrahtet). Hauptstromkreis: je Außenleiter L1, L2, L3 durch einen Schließer des Schützes zu einer Klemme des Motors. Verwende die Schließer in den Reihen 1, 3 und 4 (der zweite Kontakt von oben ist ein Öffner).',
+    check() { const pb = sch.parts.find(p => p.k === 'PB'), mo = sch.parts.find(p => p.k === 'MOTOR3'); if (!pb || !mo) return needKinds([['Taster', ['PB'], 1], ['Drehstrommotor', ['MOTOR3'], 1]]);
+      const meas = press => { const E = simEval({ press: press ? [pb.id] : [] }); E.run(0.3, press ? [pb.id] : []); const w = E.c.elems.filter(e => e.type === 'RL' && /^w/.test(e.sub || '')); const pk = [0, 0, 0]; stepFine(E, 0.04, 2e-4, () => { w.forEach((e, i) => { pk[i] = Math.max(pk[i], Math.abs(e.i)); }); }); return pk; };
+      const on = meas(true), off = meas(false), good = on.filter(x => x > 1).length;
+      return [RES(good === 3, 'Taster gedrückt: ' + good + ' von 3 Motorwicklungen führen Strom' + (good === 3 ? '.' : ' (alle drei Außenleiter müssen am Motor ankommen).')), RES(off.every(x => x < 0.05), off.every(x => x < 0.05) ? 'Taster losgelassen: Der Motor steht.' : 'Der Motor bekommt auch ohne Tastendruck Strom.')]; } },
+  { id: 'f6', cat: 'Fehlersuche', title: 'Zwei Lampen: eine bleibt dunkel', level: 2, debug: true, faultLabel: 'S2', sol: 'Zwei Lampen getrennt schaltbar',
+    start: () => { const d = exOf('Zwei Lampen getrennt schaltbar')(); d.parts[2][5] = { l: 'S1', sw: 1 }; d.parts[4][5] = { l: 'S2', sw: 1, defect: 'open' }; return d; },
+    text: 'Beide Schalter sind eingeschaltet, aber nur eine der beiden Lampen leuchtet. Finde das defekte Bauteil mit Spannungsmessung.',
+    hint: 'Miss die Spannung vor und hinter dem Schalter der dunklen Lampe. Wo die Spannung verschwindet, liegt der Fehler.' },
+];
+TASKS.push(...SIM_TASKS, ...SCH_TASKS, ...CODE_TASKS);
+
+window.TaskTest = () => labTasks().map(t => {
   const out = { id: t.id };
   try {
-    if (!t.debug) { loadCircuit(Object.assign(buildExample({ name: t.title, make: exOf(t.sol) }), { task: t.id })); const L = t.check(); out.pct = Math.round(100 * L.filter(l => l.ok).length / L.length); out.bad = L.filter(l => !l.ok).map(l => l.text); }
+    if (!t.debug) { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.solMake || exOf(t.sol) }), { task: t.id })); const L = t.check(); out.pct = Math.round(100 * L.filter(l => l.ok).length / L.length); out.bad = L.filter(l => !l.ok).map(l => l.text);
+      try { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.start }), { task: t.id })); const L2 = t.check(); out.startPct = Math.round(100 * L2.filter(l => l.ok).length / L2.length); } catch (e) { out.startErr = String(e.message || e).slice(0, 120); } }
     else { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.start }), { task: t.id })); const L = lampList(); const E = simEval({}); E.run(0.2); out.lampsOn = L.filter(p => E.lamps().get(p.id)).length; out.events = E.ev.map(e => e.text); }
   } catch (e) { out.err = String(e.stack || e).slice(0, 300); }
   return out;
@@ -1660,7 +1906,7 @@ function logResult(id, pct, extra) {
   try { const a = JSON.parse(localStorage.getItem('sim.results') || '[]'); a.push(Object.assign({ t: Date.now(), name: userName(), task: id, pct }, extra || {})); localStorage.setItem('sim.results', JSON.stringify(a.slice(-300))); } catch (e) {}
 }
 function taskCardHtml() {
-  if (LAB !== 'sim' || !sch.task) return '';
+  if (!sch.task) return '';
   const t = TASKS.find(x => x.id === sch.task); if (!t) return '';
   let h = `<div class="card task"><h4>Aufgabe · ${esc(t.cat)}</h4><b>${esc(t.title)}</b><p class="hint2">${esc(t.text)}</p>`;
   h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div>`;
@@ -1685,7 +1931,7 @@ function reportFault() {
 }
 function startTask(id, solution) {
   const t = TASKS.find(x => x.id === id); if (!t) return;
-  const mk = solution ? exOf(t.sol) : t.start; if (!mk) { toast('Keine Musterlösung hinterlegt'); return; }
+  const mk = solution ? (t.solMake || exOf(t.sol)) : t.start; if (!mk) { toast('Keine Musterlösung hinterlegt'); return; }
   const ex = buildExample({ name: t.title + (solution ? ' (Musterlösung)' : ''), make: mk }); ex.task = solution ? undefined : t.id; loadCircuit(ex); reports = 0;
   if (!solution) { tool = 'select'; buildPalette(); }
   refreshUI(); draw();
@@ -1693,7 +1939,7 @@ function startTask(id, solution) {
 function openTasks() {
   sheet('Aufgaben', (b, close) => {
     const dn = taskDone(); let h = '<p class="hint2" style="margin-top:0">Wähle eine Aufgabe. Du bekommst eine Startschaltung und kannst deine Lösung vom Programm prüfen lassen.</p>', last = '';
-    TASKS.forEach(t => { if (t.cat !== last) { last = t.cat; h += `<div class="gh">${esc(t.cat)}</div>`; } h += `<button class="row" data-t="${t.id}"><div class="grow"><b>${esc(t.title)}</b><small>${'●'.repeat(t.level)}${'○'.repeat(4 - t.level)} ${dn[t.id] != null ? ' · bisher ' + dn[t.id] + ' %' + (dn[t.id] === 100 ? ' ✓' : '') : ''}</small></div></button>`; });
+    labTasks().forEach(t => { if (t.cat !== last) { last = t.cat; h += `<div class="gh">${esc(t.cat)}</div>`; } h += `<button class="row" data-t="${t.id}"><div class="grow"><b>${esc(t.title)}</b><small>${'●'.repeat(t.level)}${'○'.repeat(4 - t.level)} ${dn[t.id] != null ? ' · bisher ' + dn[t.id] + ' %' + (dn[t.id] === 100 ? ' ✓' : '') : ''}</small></div></button>`; });
     b.innerHTML = h;
     b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const go = () => startTask(r.dataset.t); if (sch.parts.length || sch.wires.length) confirmNew(go); else go(); });
   });
@@ -1704,12 +1950,12 @@ function openTasks() {
 const isGod = () => { try { return sessionStorage.getItem('lm4.god') === GODH; } catch (e) { return false; } };
 const classList = () => { try { return JSON.parse(localStorage.getItem('sim.class') || '[]'); } catch (e) { return []; } };
 function withSubmission(d, fn) {
-  const keep = sch; sch = { name: d.name || 'Abgabe', parts: d.parts || [], wires: d.wires || [], nid: d.nid || 1, scopes: [], task: d.task };
+  const keep = sch; sch = { name: d.name || 'Abgabe', parts: d.parts || [], wires: d.wires || [], nid: d.nid || 1, scopes: [], task: d.task, code: d.code };
   try { return fn(); } finally { sch = keep; }
 }
 function openTeacher() {
   godGate(() => sheet('Lehrer-Bereich', (b) => {
-    const opts = TASKS.map(t => `<option value="${t.id}">${esc(t.cat)} · ${esc(t.title)}</option>`).join('');
+    const opts = labTasks().map(t => `<option value="${t.id}">${esc(t.cat)} · ${esc(t.title)}</option>`).join('');
     b.innerHTML = `
       <div class="card"><h4>Aufgabe verteilen</h4><label class="f"><span>Aufgabe</span><select id="tsel">${opts}</select></label>
         <div class="row2"><button class="btn pri" id="tLink">Aufgabe als Link teilen</button></div>
@@ -1900,7 +2146,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v55</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v56</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -2521,7 +2767,7 @@ simsw.innerHTML = '<span class="lL">Zeichnen</span><span class="trk"><span class
 $('#bUndo').before(simsw);
 simsw.addEventListener('click', () => setSimMode(!simMode));
 $('#bRun').style.display = 'none';
-$('#bShare').onclick = () => menuAct('share'); if (LAB === 'sim') { $('#bTasks').style.display = ''; $('#bTasks').onclick = openTasks; $('#bCab').style.display = ''; $('#bCab').onclick = openCabinet; } $('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
+$('#bShare').onclick = () => menuAct('share'); $('#bTasks').style.display = ''; $('#bTasks').onclick = openTasks; if (LAB === 'sim') { $('#bCab').style.display = ''; $('#bCab').onclick = openCabinet; } $('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
 $('#bRun').onclick = toggleRun; $('#bUndo').onclick = undo; $('#bRedo').onclick = redo; $('#bMenu').onclick = openMenu;
 $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); });
 (function init() {
