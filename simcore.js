@@ -19,14 +19,30 @@ function sane(k, v) {
   if (k === 'LAMP') {
     const q = String(v == null ? '' : v).replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/), mw = q.match(/([0-9.]+)\s*W/);
     const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : (mw ? parseFloat(mw[1]) / un : 0.1);
-    return (un >= 0.1 && un <= 400 && ia >= 1e-3 && ia <= 20) ? { ok: true, v } : { ok: false, v: '6V 0.1A' };
+    if (un < 0.1 || ia < 1e-3) return { ok: false, v: '6V 0.1A' };
+    return (un <= 400 && ia <= 20) ? { ok: true, v } : { ok: false, high: true, v };
   }
-  if (k === 'SIG') { const g = parseGen(v); return (g.amp <= 1000 && g.freq <= 1e7) ? { ok: true, v } : { ok: false, v: '5V 1kHz' }; }
+  if (k === 'SIG') { const g = parseGen(v); return (g.amp <= 1000 && g.freq <= 1e7) ? { ok: true, v } : { ok: false, high: true, v }; }
   if (!L || v == null || String(v).trim() === '') return { ok: true, v };
   const x = si(v, NaN);
   if (!isFinite(x)) return { ok: true, v };
-  return (x >= L[0] && x <= L[1]) ? { ok: true, v } : { ok: false, v: L[2] };
+  if (x < L[0]) return { ok: false, v: L[2] };
+  return x <= L[1] ? { ok: true, v } : { ok: false, high: true, v, max: L[1] };
 }
+/* Übliche Werte zum schnellen Einsetzen (die Eingabe bleibt frei änderbar) */
+const E12 = ['10', '22', '47', '100', '220', '330', '470', '680', '1k', '2.2k', '4.7k', '10k', '22k', '47k', '100k', '470k', '1M'];
+const PRESETS = {
+  R: E12, POT: ['1k', '4.7k', '10k', '47k', '100k', '470k'], P: ['1k', '4.7k', '10k', '47k', '100k', '470k'], TP: ['100', '1k', '10k', '47k', '100k', '1M'],
+  C: ['22p', '100p', '1n', '10n', '47n', '100n', '220n', '470n', '1u'], CF: ['10n', '47n', '100n', '220n', '470n', '1u', '2.2u'], CE: ['1u', '4.7u', '10u', '47u', '100u', '220u', '470u', '1000u'],
+  L: ['1u', '10u', '100u', '1m', '10m', '100m', '1'], ZD: ['3.3', '4.7', '5.1', '6.2', '9.1', '12', '15', '24'], D: ['1N4148', '1N4007', '1N5408', '1N5819', 'BAT43'],
+  BAT: ['1.5', '3', '4.5', '5', '6', '9', '12', '24', '48'], AC: ['5V 50Hz', '5V 1kHz', '10V 50Hz', '12V 50Hz', '325V 50Hz'], NETZ: ['230V', '400V', '110V'],
+  LAMP: ['6V 0.1A', '6V 0.3A', '12V 5W', '12V 21W', '24V 5W', '230V 25W', '230V 60W', '230V 100W'], HEAT: ['230V 500W', '230V 1000W', '230V 2000W'],
+  FUSE: ['100mA', '250mA', '500mA', '1A', '2A', '5A', '10A'], LSS: ['B10', 'B16', 'B20', 'C16'], MOTOR: ['3V', '6V', '9V', '12V'], RLY: ['5V', '12V', '24V'],
+  NTC: ['4.7k', '10k', '47k', '100k'], PTC: ['47', '100', '220'], SPK: ['4', '8', '16'], BZ: ['5V', '12V'], TRF: ['230V:6V', '230V:12V', '230V:24V'], SD: ['', '500W', '1000W', '2000W'],
+  NPN: ['BC547', 'BC548', 'BC337', '2N3904'], PNP: ['BC557', 'BC327', '2N3906'], T: ['BC547', 'BC548', 'BC557', 'BC337', 'BC327', '2N3904', '2N3906'],
+  U: ['7805', '7812', '7905', '78L05', 'LM317'], Q: ['32.768k', '4M', '8M', '16M', '20M'], THY: ['TIC106', '2N5062'], OPTO: ['PC817', '4N25'], IMP: ['230V', '24V'], FAULT: ['0.05', '100', '3300'],
+  IC: ['NE555', 'SN7400', 'SN7404', 'SN7408', 'SN7432', 'SN7486', 'SN74HC14', 'CD4011', 'CD4017', 'CD4020', 'LM358', 'LM741', 'TL072', 'LM324'], ICX: ['NE555', 'SN7400', 'SN7404', 'CD4017', 'LM358', 'LM741'],
+};
 function si(str, def) {
   if (str == null || str === '') return def;
   let s = String(str).trim().replace(',', '.').replace(/µ/g, 'u').replace(/[Ωω]/g, '');
@@ -115,7 +131,9 @@ function buildCircuit(layout) {
   const R = (a, b, g, part, extra) => add(Object.assign({ type: 'R', a, b, g, part }, extra || {}));
 
   layout.parts.forEach(p => {
-    { const s = sane(p.k, p.v); if (!s.ok) { warnings.push({ part: p, text: 'Wert „' + p.v + '“ ist unrealistisch, es wird der Standardwert ' + s.v + ' verwendet' }); p.v = s.v; }
+    { const s = sane(p.k, p.v);
+      if (!s.ok && s.high) { warnings.push({ part: p, text: 'Wert „' + p.v + '“ ist weit über dem üblichen Bereich' + (s.max ? ' (bis ' + s.max + ')' : '') + ': das Bauteil im Stromkreis wird zerstört. Übliche Werte stehen beim Bauteil zur Auswahl.' }); if ((p.k === 'BAT' || p.k === 'NETZ') && si(p.v, 0) > 1e6) p.v = '1000000'; }
+      else if (!s.ok) { warnings.push({ part: p, text: 'Wert „' + p.v + '“ ist unrealistisch klein oder ungültig, es wird der Standardwert ' + s.v + ' verwendet' }); p.v = s.v; }
       if (p.imax && !(si(p.imax, 0) >= 1e-3 && si(p.imax, 0) <= 100)) { warnings.push({ part: p, text: 'Max. Strom „' + p.imax + '“ ist unrealistisch und wird ignoriert' }); p.imax = ''; } }
     const k = p.k, pins = p.pins, n = (i) => { rec.push(i); return N(p, i); };
     switch (k) {
@@ -209,7 +227,7 @@ function buildCircuit(layout) {
         add({ type: 'D', a: n(0), b: n(1), is: 1e-9, nn: 1.8, vz, part: p, vj: 0 });
         break; }
       case 'BZ': add({ type: 'R', a: n(0), b: n(1), g: 1 / 100, part: p, buzzer: true }); break;
-      case 'C': case 'CE': case 'CF': add({ type: 'C', a: n(0), b: n(1), c: Math.max(si(p.v, 100e-9), 1e-15), part: p, vprev: 0 }); break;
+      case 'C': case 'CE': case 'CF': add({ type: 'C', a: n(0), b: n(1), c: Math.max(si(p.v, 100e-9), 1e-15), part: p, vprev: 0, vmax: ((String(p.v).match(/(\d+(?:\.\d+)?)\s*V/) || [])[1] * 1) || (k === 'CE' ? 35 : (k === 'CF' ? 250 : 100)) }); break;
       case 'L': add({ type: 'L', a: n(0), b: n(1), l: Math.max(si(p.v, 10e-6), 1e-9), part: p, iprev: 0 }); break;
       case 'D': {
         const z = /z/i.test(p.v || '') || /^[0-9]+V[0-9]?$/.test(String(p.v || '').trim());
@@ -219,7 +237,7 @@ function buildCircuit(layout) {
           add({ type: 'D', a: n(0), b: n(1), is: 1e-9, nn: 1.8, vz, part: p, vj: 0, vjz: 0 });
         } else {
           const schottky = /5819|BAT|SB|SS/i.test(p.v || '');
-          add({ type: 'D', a: n(0), b: n(1), is: schottky ? 1e-6 : 1e-9, nn: schottky ? 1.1 : 1.8, part: p, vj: 0 });
+          add({ type: 'D', a: n(0), b: n(1), is: schottky ? 1e-6 : 1e-9, nn: schottky ? 1.1 : 1.8, part: p, vj: 0, vmax: /4007|5408|4004/.test(p.v || '') ? 1000 : (schottky ? 40 : 100) });
         }
         break; }
       case 'LED': {
@@ -488,7 +506,7 @@ function createSim(circ) {
           const g = e.closed ? 1 / RON : 1 / ROFF; e.i = (v[e.a] - v[e.c]) * g; e.iN = (v[e.b] - v[e.d]) * g; e.leak = e.i + e.iN;
           if (e.closed && Math.abs(e.leak) > 0.03) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; sim.events.push({ kind: 'trip', part: e.part, text: 'FI-Schutzschalter ausgelöst (Fehlerstrom ' + (Math.abs(e.leak) * 1000).toFixed(0) + ' mA)' }); }
           break; }
-        case 'C': { const vc = v[e.a] - v[e.b]; e.i = e.c / dt * (vc - e.vprev); e.vprev = vc; break; }
+        case 'C': { const vc = v[e.a] - v[e.b]; e.i = e.c / dt * (vc - e.vprev); e.vprev = vc; if (e.vmax && Math.abs(vc) > e.vmax * 1.2 && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Kondensator überspannt (' + vc.toFixed(0) + ' V bei ' + e.vmax + ' V)' }); } break; }
         case 'L': { const g = dt / e.l; e.i = e.iprev + g * (v[e.a] - v[e.b]); e.iprev = e.i; break; }
         case 'V': { const vs = waveform(e, t); let x = (vs - (v[e.a] - v[e.b])) / e.rint; if (e.imax > 0) { e.cc = !!e.cm; if (e.cm) x = e.cm * e.imax; } e.i = x; e.vs = vs; break; }
         case 'D': {
@@ -498,13 +516,14 @@ function createSim(circ) {
           if (e.vz) i -= 1e-9 * expSafe((-vj - (e.vz - 0.45)) / (1.2 * VT));
           e.i = i;
           if (e.led && i > e.imax) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'LED durchgebrannt' }); }
+          if (e.vmax && -vj > e.vmax * 1.1 && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Diode zerstört (Sperrspannung ' + (-vj).toFixed(0) + ' V zu hoch)' }); }
           break; }
         case 'Q': {
           const s = e.s, vbe = s * (v[e.b] - v[e.e]), vbc = s * (v[e.b] - v[e.c]);
           const ibe = e.is * (expSafe(vbe / VT) - 1), ibc = e.is * (expSafe(vbc / VT) - 1);
           e.ic = s * (ibe - (1 + 1 / e.br) * ibc); e.ib = s * (ibe / e.bf + ibc / e.br); e.i = e.ic;
           e.power = Math.abs(e.ic * (v[e.c] - v[e.e]));
-          if (e.power > 1.5 && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Transistor überlastet' }); }
+          if ((e.power > 1.5 || Math.abs(v[e.c] - v[e.e]) > 70) && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: Math.abs(v[e.c] - v[e.e]) > 70 ? 'Transistor durchgeschlagen (Spannung zu hoch)' : 'Transistor überlastet' }); }
           break; }
         case 'REG': e.i = (e.vtar - (v[e.no] - v[e.ng])) / 0.05; break;
         case 'IC': {
@@ -523,6 +542,6 @@ function createSim(circ) {
   return sim;
 }
 
-const api = { si, sane, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS };
+const api = { si, sane, PRESETS, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LochSim = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1009,7 +1009,7 @@ function refreshUI() {
       h += `<div class="card"><h4>${esc(p.l ? p.l + ' · ' : '')}${esc(K.name)}</h4>`;
       K.props.forEach(([key, label, type, opt, names]) => {
         if (type === 'ictype' && window.LochSimICs) { const cur = LochSimICs.find(p.v), ck = cur ? cur.key : ''; h += `<label class="f"><span>Typ</span><select data-ic="1">${ck ? '' : '<option value="">(eigener Wert)</option>'}${LochSimICs.SORT.map(q => `<option value="${q}" ${q === ck ? 'selected' : ''}>${esc(LochSimICs.CATALOG[q].name)}</option>`).join('')}</select></label><label class="f"><span>Wert</span><input data-p="v" value="${esc(p.v || '')}"></label>`; return; }
-        if (type === 'text') h += `<label class="f"><span>${label}</span><input data-p="${key}" value="${esc(p[key] == null ? '' : p[key])}" placeholder="${esc(opt || '')}"></label>`;
+        if (type === 'text') h += `<label class="f"><span>${label}</span><input data-p="${key}" value="${esc(p[key] == null ? '' : p[key])}" placeholder="${esc(opt || '')}"></label>` + (key === 'v' && LS.PRESETS[p.k] ? `<div class="pre">${LS.PRESETS[p.k].filter(x => x !== '').map(x => `<button data-a="preset" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : '');
         else if (type === 'range') h += `<label class="sl"><span>${label}</span><input type="range" data-p="${key}" min="0" max="1" step="0.01" value="${p[key] == null ? 0.5 : p[key]}"></label>`;
         else if (type === 'select') h += `<label class="f"><span>${label}</span><select data-p="${key}">${opt.map(o => `<option value="${o}" ${(p[key] || K[key]) === o ? 'selected' : ''}>${names ? names[o] : o}</option>`).join('')}</select></label>`;
       });
@@ -1035,6 +1035,7 @@ $('#side').addEventListener('click', e => {
   const b = e.target.closest('[data-a],[data-win]'); if (!b) return;
   if (b.dataset.win) { graphWin = parseFloat(b.dataset.win); scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; refreshUI(); return; }
   const a = b.dataset.a;
+  if (a === 'preset') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) { p0.v = b.dataset.v; commit(true, true); rebuildKeep(); refreshUI(); } return; }
   if (a === 'wcol') { const w = sel && sel.t === 'wire' && byWire(sel.id); if (w) { w.c = b.dataset.c; wireColor = b.dataset.c; commit(true); } return; }
   if (a === 'run') toggleRun(); else if (a === 'reset') resetSim();
   else if (a === 'rotl') rotSel(3); else if (a === 'rotr') rotSel(1);
@@ -1057,7 +1058,7 @@ $('#side').addEventListener('change', e => {
   const t0 = e.target;
   if (t0.dataset && t0.dataset.p && t0.type !== 'range' && sel && sel.t === 'part' && t0.tagName === 'INPUT') {
     const p1 = byPart(sel.id), K1 = KINDS[p1.k];
-    if (t0.dataset.p === 'v') { const s = LS.sane(K1.core, t0.value); if (!s.ok) { toast('Wert unrealistisch, Standardwert ' + s.v + ' übernommen'); p1.v = s.v; t0.value = s.v; commit(true, true); rebuildKeep(); } }
+    if (t0.dataset.p === 'v') { const s = LS.sane(K1.core, t0.value); if (!s.ok && !s.high) { toast('Wert unrealistisch, Standardwert ' + s.v + ' übernommen'); p1.v = s.v; t0.value = s.v; commit(true, true); rebuildKeep(); } }
     else if (t0.dataset.p === 'imax' && t0.value) { const x = LS.si(t0.value, 0); if (!(x >= 1e-3 && x <= 100)) { toast('Max. Strom unrealistisch, Eingabe gelöscht'); p1.imax = ''; t0.value = ''; commit(true, true); rebuildKeep(); } }
   }
   if (t0.dataset && t0.dataset.ic && sel && sel.t === 'part') { const p0 = byPart(sel.id), C = window.LochSimICs && LochSimICs.CATALOG[t0.value]; if (p0 && C) { p0.v = ICDEF[t0.value] || t0.value; p0.n = C.np; commit(); } return; } const t = e.target; if (t.tagName === 'SELECT' && t.dataset.p && sel) { const p = byPart(sel.id); p[t.dataset.p] = t.value; commit(); } });
@@ -1229,7 +1230,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v40</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v41</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -1528,5 +1529,5 @@ window.SchaltTest = () => {
   });
   sch = keep; rebuild(); return out;
 };
-window.SchaltDebug = () => ({ sl: sliderHits, running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
+window.SchaltDebug = () => ({ view, sl: sliderHits, running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
 })();
