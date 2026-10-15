@@ -360,9 +360,11 @@ function drawPart(p, selected) {
   if (txt) {
     const vert = (p.r & 1) === 1;
     c.textAlign = vert ? 'left' : 'center';
+    c.lineJoin = 'round'; c.lineWidth = 4; c.strokeStyle = PRINT ? '#fff' : '#080b0e';
+    const _ft = c.fillText.bind(c); const fillText = (t, x, y) => { c.strokeText(t, x, y); _ft(t, x, y); };
     const off = p.k === 'GND' ? 0 : (p.k === 'NPN' || p.k === 'PNP' ? 0 : 1.55);
-    if (p.k === 'NPN' || p.k === 'PNP') c.fillText(txt, lx + (rot(2.9, 0, p.r)[0] - mx) * S + (vert ? 0 : 0), ly + (rot(2.9, 0, p.r)[1] - my) * S);
-    else if (p.k !== 'GND') c.fillText(txt, vert ? lx + (p.k === 'LED' || p.k === 'LAMP' ? 2.1 : 1.3) * S : lx, vert ? ly : ly - off * S);
+    if (p.k === 'NPN' || p.k === 'PNP') fillText(txt, lx + (rot(2.9, 0, p.r)[0] - mx) * S + (vert ? 0 : 0), ly + (rot(2.9, 0, p.r)[1] - my) * S);
+    else if (p.k !== 'GND') fillText(txt, vert ? lx + (p.k === 'LED' || p.k === 'LAMP' ? 2.1 : 1.3) * S : lx, vert ? ly : ly - off * S);
   }
   if (selected) {
     const [bx0, by0, bx1, by1] = K.box, cs = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([a, b]) => { const [ra, rb] = rot(a, b, p.r); return [X(p.x + ra), Y(p.y + rb)]; });
@@ -381,7 +383,8 @@ function valueText(p) {
     case 'ZD': return fmtVal(p.v, 'V');
     case 'AC': return p.v;
     case 'LED': case 'LAMP': return p.v;
-    case 'D': case 'NPN': case 'PNP': return p.v;
+    case 'NPN': case 'PNP': return p.v;
+    case 'D': return '';
     default: return '';
   }
 }
@@ -830,8 +833,13 @@ function loadCircuit(d) {
 }
 function openExamples() {
   sheet('Beispielschaltungen', (b, close) => {
-    b.innerHTML = EXAMPLES.map((e, i) => `<button class="row" data-i="${i}"><div class="grow"><b>${esc(e.name)}</b><small>${esc(e.info)}</small></div></button>`).join('');
-    b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const e = EXAMPLES[+r.dataset.i]; loadCircuit(buildExample(e)); });
+    let h = '', last = '';
+    EXAMPLES.forEach((e, i) => {
+      if (e.cat !== last) { last = e.cat; h += `<div class="gh">${esc(e.cat || 'Weitere')}</div>`; }
+      h += `<button class="row" data-i="${i}"><div class="grow"><b>${esc(e.name)}</b><small>${esc(e.info)}</small></div></button>`;
+    });
+    b.innerHTML = h;
+    b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const ex = buildExample(EXAMPLES[+r.dataset.i]); loadCircuit(ex); if (ex.tempo != null) tempo = ex.tempo; if (ex.win) graphWin = ex.win; refreshUI(); });
   });
 }
 function buildExample(e) {
@@ -840,34 +848,70 @@ function buildExample(e) {
   d.wires.forEach(poly => { for (let i = 2; i < poly.length; i += 2) wires.push({ id: id++, x1: poly[i - 2], y1: poly[i - 1], x2: poly[i], y2: poly[i + 1] }); });
   assignLabels(parts);
   const scopes = (d.scopes || []).map(i => ({ t: 'part', id: i + 1 }));
-  return { name: e.name, parts, wires, nid: id, scopes };
+  return { name: e.name, parts, wires, nid: id, scopes, tempo: d.tempo, win: d.win };
 }
 /* Beispiele: Teile [Art, x, y, Drehung, Wert, Zusatz], Drähte als Linienzüge x1,y1,x2,y2,... */
 const EXAMPLES = [
-  { name: 'Spannungsteiler', info: 'Zwei Widerstände teilen 9 V im Verhältnis 1:2',
+  { cat: 'Grundlagen', name: 'Spannungsteiler', info: 'Zwei Widerstände teilen 9 V im Verhältnis 1:2',
     make: () => ({ parts: [['BAT', 4, 4, 1, '9'], ['R', 8, 2, 1, '1k'], ['R', 8, 6, 1, '2k'], ['GND', 4, 10], ['VM', 12, 2, 1, '']],
       wires: [[4, 4, 4, 2, 8, 2], [8, 10, 4, 10, 4, 8], [8, 2, 12, 2], [12, 6, 12, 10, 8, 10]], scopes: [] }) },
-  { name: 'LED mit Vorwiderstand und Schalter', info: 'Schalter antippen. Ohne Vorwiderstand würde die LED durchbrennen.',
+  { cat: 'Grundlagen', name: 'LED mit Vorwiderstand und Schalter', info: 'Schalter antippen. Ohne Vorwiderstand würde die LED durchbrennen.',
     make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['SPST', 2, 2, 0, '', { sw: 1 }], ['R', 6, 2, 0, '470'], ['LED', 10, 2, 1, 'rot'], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [10, 6, 10, 8, 2, 8]], scopes: [] }) },
-  { name: 'RC-Tiefpass', info: 'Wechselspannung 1 kHz: der Kondensator glättet das Signal',
+  { cat: 'Filter und Schwingkreise', name: 'RC-Tiefpass', info: 'Wechselspannung 1 kHz: der Kondensator glättet das Signal',
     make: () => ({ parts: [['AC', 2, 4, 1, '5V 1kHz'], ['R', 2, 2, 0, '1k'], ['C', 6, 2, 1, '100n'], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [6, 6, 6, 8, 2, 8]], scopes: [0, 2] }) },
-  { name: 'RLC-Reihenschwingkreis', info: 'Resonanz bei etwa 160 Hz: Strom und Spannungen werden groß',
+  { cat: 'Filter und Schwingkreise', name: 'RLC-Reihenschwingkreis', info: 'Resonanz bei etwa 160 Hz: Strom und Spannungen werden groß',
     make: () => ({ parts: [['AC', 2, 4, 1, '1V 160Hz'], ['L', 2, 2, 0, '10m'], ['R', 6, 2, 0, '10'], ['C', 10, 2, 1, '100u'], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [10, 6, 10, 8, 2, 8]], scopes: [0, 3] }) },
-  { name: 'Einweggleichrichter mit Glättung', info: 'Diode und Elko machen aus Wechsel- eine Gleichspannung',
+  { cat: 'Dioden', name: 'Einweggleichrichter mit Glättung', info: 'Diode und Elko machen aus Wechsel- eine Gleichspannung',
     make: () => ({ parts: [['AC', 2, 4, 1, '10V 50Hz'], ['D', 2, 2, 0, '1N4007'], ['CE', 6, 2, 1, '100u'], ['R', 10, 2, 1, '1k'], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [6, 2, 10, 2], [6, 6, 6, 8], [10, 6, 10, 8], [2, 8, 6, 8, 10, 8]], scopes: [0, 3] }) },
-  { name: 'Z-Dioden-Stabilisierung', info: 'Die Z-Diode hält die Spannung am Verbraucher bei etwa 5,1 V',
+  { cat: 'Dioden', name: 'Z-Dioden-Stabilisierung', info: 'Die Z-Diode hält die Spannung am Verbraucher bei etwa 5,1 V',
     make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 2, 2, 0, '470'], ['ZD', 6, 6, 3, '5.1'], ['R', 10, 2, 1, '1k'], ['GND', 2, 8], ['VM', 14, 2, 1, '']],
       wires: [[2, 4, 2, 2], [6, 2, 10, 2, 14, 2], [6, 6, 6, 8], [10, 6, 10, 8], [14, 6, 14, 8, 10, 8, 6, 8, 2, 8]], scopes: [] }) },
-  { name: 'Transistor als Schalter', info: 'Schalter schließen: Der Basisstrom schaltet die LED',
+  { cat: 'Transistoren', name: 'Transistor als Schalter', info: 'Schalter schließen: Der Basisstrom schaltet die LED',
     make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 10, 2, 1, '470'], ['LED', 10, 6, 1, 'grün'], ['NPN', 8, 12, 0, 'BC547'], ['R', 4, 12, 0, '10k'], ['SPST', 4, 6, 1, '', { sw: 1 }], ['GND', 2, 16]],
       wires: [[2, 4, 2, 2, 4, 2, 10, 2], [4, 6, 4, 2], [4, 10, 4, 12], [2, 8, 2, 16, 10, 16, 10, 14]], scopes: [] }) },
-  { name: 'Lampen in Reihe und parallel', info: 'Links zwei Lampen in Reihe (dunkler), rechts zwei parallel (hell)',
+  { cat: 'Grundlagen', name: 'Lampen in Reihe und parallel', info: 'Links zwei Lampen in Reihe (dunkler), rechts zwei parallel (hell)',
     make: () => ({ parts: [['BAT', 2, 4, 1, '6'], ['LAMP', 8, 2, 1, '6V 0.1A'], ['LAMP', 8, 6, 1, '6V 0.1A'], ['LAMP', 14, 2, 1, '6V 0.1A'], ['LAMP', 18, 2, 1, '6V 0.1A'], ['GND', 2, 10]],
       wires: [[2, 4, 2, 2, 8, 2, 14, 2, 18, 2], [14, 6, 18, 6], [14, 6, 14, 10], [18, 6, 18, 10], [2, 8, 2, 10, 8, 10, 14, 10, 18, 10]], scopes: [] }) },
+  { cat: 'Grundlagen', name: 'Reihenschaltung von Widerständen', info: '12 V an 1k + 2k + 3k: überall fließt derselbe Strom (2 mA)',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 2, 2, 0, '1k'], ['R', 6, 2, 0, '2k'], ['R', 10, 2, 0, '3k'], ['AM', 14, 2, 0, ''], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [18, 2, 18, 8, 2, 8]], scopes: [] }) },
+  { cat: 'Grundlagen', name: 'Parallelschaltung von Widerständen', info: 'An allen Zweigen liegt dieselbe Spannung, die Ströme addieren sich',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 4, 2, 1, '1k'], ['R', 8, 2, 1, '2k'], ['R', 12, 2, 1, '4k'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2, 4, 2, 8, 2, 12, 2], [4, 6, 4, 8], [8, 6, 8, 8], [12, 6, 12, 8], [2, 8, 4, 8, 8, 8, 12, 8]], scopes: [] }) },
+  { cat: 'Grundlagen', name: 'Wheatstone-Brücke', info: 'Das Voltmeter zeigt die kleine Verstimmung der Brücke',
+    make: () => ({ parts: [['BAT', 2, 2, 1, '10'], ['R', 6, 2, 1, '1k'], ['R', 6, 6, 1, '1k'], ['R', 12, 2, 1, '1k'], ['R', 12, 6, 1, '1.2k'], ['VM', 6, 6, 0, ''], ['GND', 2, 10]],
+      wires: [[2, 2, 6, 2, 12, 2], [2, 6, 2, 10, 6, 10, 12, 10], [10, 6, 12, 6]], scopes: [] }) },
+  { cat: 'Grundlagen', name: 'Potentiometer als Dimmer', info: 'Schleifer in der Seitenleiste verstellen: die LED wird heller oder dunkler',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['POT', 6, 2, 1, '1k', { pos: 0.6 }], ['R', 8, 4, 0, '330'], ['LED', 12, 4, 1, 'gelb'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2, 6, 2], [6, 6, 6, 8, 2, 8], [12, 8, 6, 8]], scopes: [] }) },
+  { cat: 'Grundlagen', name: 'Lichtabhängiger Spannungsteiler (LDR)', info: 'Helligkeit des Fotowiderstands verändern: die Spannung am Voltmeter steigt und fällt',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['LDR', 6, 2, 1, '', { pos: 0.5 }], ['R', 6, 6, 1, '10k'], ['VM', 10, 6, 1, ''], ['GND', 2, 10]],
+      wires: [[2, 4, 2, 2, 6, 2], [6, 6, 10, 6], [2, 8, 2, 10, 6, 10, 10, 10]], scopes: [] }) },
+  { cat: 'Grundlagen', name: 'Wechselschaltung (Treppenhaus)', info: 'Die Lampe lässt sich von beiden Schaltern aus ein- und ausschalten',
+    make: () => ({ parts: [['BAT', 2, 8, 3, '6'], ['SPDT', 4, 6, 0, ''], ['SPDT', 16, 6, 2, ''], ['LAMP', 16, 6, 1, '6V 0.1A'], ['GND', 0, 12]],
+      wires: [[2, 8, 4, 8, 4, 6], [8, 5, 12, 5], [8, 7, 12, 7], [16, 10, 16, 12, 0, 12, 0, 4, 2, 4]], scopes: [] }) },
+  { cat: 'Filter und Schwingkreise', name: 'RC-Hochpass', info: 'Tiefe Frequenzen werden gesperrt, hohe kommen durch (Grenzfrequenz ca. 1,6 kHz)',
+    make: () => ({ parts: [['AC', 2, 4, 1, '5V 1kHz'], ['C', 2, 2, 0, '100n'], ['R', 6, 2, 1, '1k'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [6, 6, 6, 8, 2, 8]], scopes: [0, 2], tempo: 0.5, win: 0.005 }) },
+  { cat: 'Filter und Schwingkreise', name: 'LC-Schwingkreis', info: 'Wechsler umlegen: der geladene Kondensator schwingt mit der Spule (ca. 500 Hz)',
+    make: () => ({ parts: [['BAT', 2, 5, 1, '10'], ['SPDT', 10, 6, 2, '', { sw: 1 }], ['C', 10, 6, 1, '10u'], ['L', 6, 7, 1, '10m'], ['GND', 2, 12]],
+      wires: [[2, 5, 6, 5], [2, 9, 2, 12, 6, 12, 10, 12], [6, 11, 6, 12], [10, 10, 10, 12]], scopes: [2, 3], tempo: 0.55, win: 0.01 }) },
+  { cat: 'Dioden', name: 'Brückengleichrichter mit Glättung', info: 'Vier Dioden richten beide Halbwellen gleich',
+    make: () => ({ parts: [['AC', 6, 4, 0, '10V 50Hz'], ['D', 6, 4, 3, '1N4007'], ['D', 6, 8, 3, '1N4007'], ['D', 12, 4, 3, '1N4007'], ['D', 12, 8, 3, '1N4007'], ['R', 14, 0, 1, '1k'], ['CE', 18, 0, 1, '100u'], ['GND', 12, 8]],
+      wires: [[10, 4, 12, 4], [6, 0, 12, 0, 14, 0, 18, 0], [6, 8, 12, 8], [14, 4, 14, 8, 12, 8], [18, 4, 18, 8, 14, 8]], scopes: [0, 5], tempo: 0.4, win: 0.1 }) },
+  { cat: 'Dioden', name: 'Spannungsbegrenzer mit Dioden', info: 'Zwei gegenparallele Dioden begrenzen das Signal auf etwa ±0,7 V',
+    make: () => ({ parts: [['AC', 2, 4, 1, '5V 1kHz'], ['R', 2, 2, 0, '1k'], ['D', 6, 2, 1, '1N4148'], ['D', 8, 6, 3, '1N4148'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [6, 2, 8, 2], [8, 6, 6, 6, 6, 8, 2, 8]], scopes: [0, 2], tempo: 0.5, win: 0.005 }) },
+  { cat: 'Dioden', name: 'Spannungsverdoppler', info: 'Zwei Dioden und zwei Kondensatoren verdoppeln die Spitzenspannung',
+    make: () => ({ parts: [['AC', 2, 4, 1, '5V 50Hz'], ['C', 2, 2, 0, '47u'], ['D', 6, 6, 3, '1N4148'], ['D', 6, 2, 0, '1N4148'], ['CE', 10, 2, 1, '47u'], ['R', 14, 2, 1, '10k'], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2], [10, 2, 14, 2], [6, 6, 6, 8], [10, 6, 10, 8], [14, 6, 14, 8], [2, 8, 6, 8, 10, 8, 14, 8]], scopes: [0, 4], tempo: 0.4, win: 0.1 }) },
+  { cat: 'Transistoren', name: 'Emitterschaltung (Verstärker)', info: 'Der Transistor verstärkt das kleine Wechselsignal etwa 100-fach',
+    make: () => ({ parts: [['AC', 2, 6, 1, '10mV 1kHz'], ['C', 2, 6, 0, '10u'], ['R', 6, 0, 1, '47k'], ['R', 6, 6, 1, '10k'], ['NPN', 8, 6, 0, 'BC547'], ['R', 10, 0, 1, '2.2k'], ['R', 10, 8, 1, '470'], ['CE', 10, 4, 0, '10u'], ['R', 14, 4, 1, '10k'], ['BAT', 18, 4, 1, '12'], ['CE', 12, 8, 1, '100u'], ['GND', 2, 12]],
+      wires: [[18, 4, 18, 0, 10, 0, 6, 0], [18, 8, 18, 12, 14, 12, 12, 12, 10, 12, 6, 12, 2, 12], [2, 10, 2, 12], [6, 10, 6, 12], [6, 4, 6, 6, 8, 6], [10, 8, 12, 8], [14, 8, 14, 12]], scopes: [0, 8], tempo: 0.62, win: 0.004 }) },
 ];
 
 /* ============ Drucken ============ */
@@ -899,7 +943,7 @@ function renderPlan(S) {
 }
 function bomData() {
   const g = {};
-  sch.parts.forEach(p => { if (p.k === 'GND') return; const K = KINDS[p.k], key = p.k + '|' + (p.v || ''); const o = g[key] || (g[key] = { name: K.name, v: valueText(p) || '', n: 0, l: [] }); o.n++; if (p.l) o.l.push(p.l); });
+  sch.parts.forEach(p => { if (p.k === 'GND') return; const K = KINDS[p.k], key = p.k + '|' + (p.v || ''); const o = g[key] || (g[key] = { name: K.name, v: valueText(p) || (p.k === 'D' ? p.v : ''), n: 0, l: [] }); o.n++; if (p.l) o.l.push(p.l); });
   return Object.values(g).sort((a, b) => a.name.localeCompare(b.name, 'de') || a.v.localeCompare(b.v, 'de'));
 }
 function renderBom() {
