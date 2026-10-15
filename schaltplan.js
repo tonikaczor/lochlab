@@ -48,6 +48,13 @@ const KINDS = {
   NETZ:{ name: 'Netz 230 V (L, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0]], v: '230V', core: 'NETZ', vr: 'ac', box: [-1, -3, 5, 0.3], props: [['v', 'Spannung', 'text', 'z. B. 230V'], ['vr', 'Darstellung', 'select', ['dc', 'ac'], { dc: 'Effektivwert (ruhig)', ac: 'Wechselspannung 50 Hz' }]] },
   LSS: { name: 'Sicherungsautomat', cat: 'Netz & Schutz', lab: 'sim', pins: T2, v: 'B16', core: 'LSS', box: [0, -1.3, 4, 1.1], toggle: true, sw0: 1, props: [['v', 'Typ und Nennstrom', 'text', 'z. B. B16 oder C10']] },
   RCD: { name: 'FI-Schutzschalter', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '30mA', core: 'RCD', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, sw0: 1, props: [] },
+  SCHUETZ:{ name: 'Schütz (2 Haupt- + 2 Hilfskontakte)', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [0, 6], [5, 0], [9, 0], [5, 2], [9, 2], [5, 4], [9, 4], [5, 6], [9, 6]], v: '230V', core: 'SCHUETZ', box: [-0.2, -0.6, 9.4, 6.6], props: [['v', 'Spulenspannung', 'text', 'z. B. 230V']] },
+  NETZ3:{ name: 'Drehstrom 400 V (L1, L2, L3, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 0], [8, 0]], v: '400V', core: 'NETZ3', box: [-1, -3, 9, 0.3], props: [['v', 'Außenleiterspannung', 'text', 'z. B. 400V']] },
+  MOTOR3:{ name: 'Drehstrommotor', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0]], v: '400V 2.2kW', core: 'MOTOR3', box: [-0.6, -0.4, 4.6, 4.8], props: [['v', 'Spannung, Leistung (D = Dreieck)', 'text', 'z. B. 400V 2.2kW']] },
+  BRUECKE:{ name: 'Brückengleichrichter', cat: 'Halbleiter', pins: [[0, 2], [4, 2], [2, 0], [2, 4]], v: '', core: 'BRUECKE', box: [0, -0.4, 4, 4.4], props: [] },
+  REG: { name: 'Spannungsregler 78xx', cat: 'Halbleiter', pins: [[0, 0], [2, 2], [4, 0]], v: '7805', core: 'U', box: [0, -1, 4, 2.4], props: [['v', 'Typ', 'text', 'z. B. 7805 oder 7812']] },
+  SEG8:{ name: '7-Segment-Anzeige', cat: 'Halbleiter', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [6, 14]], v: 'rot', core: 'SEG8', vr: 'k', box: [-0.6, -0.8, 6.6, 15], props: [['vr', 'Bauart', 'select', ['k', 'a'], { k: 'gemeinsame Kathode', a: 'gemeinsame Anode' }]] },
+  PBC: { name: 'Taster (Öffner)', cat: 'Schalter', lab: 'sim', pins: T2, v: '', core: 'SWNC', box: [0, -1.4, 4, 1], momentary: true, props: [] },
   KREUZ:{ name: 'Kreuzschalter', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '', core: 'KREUZ', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, props: [] },
   IMP: { name: 'Stromstoßschalter', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [0, 4], [6, 0], [6, 4]], v: '230V', core: 'IMP', box: [0, -0.4, 6, 4.4], props: [['v', 'Spulenspannung', 'text', 'z. B. 230V']] },
   HEAT:{ name: 'Heizlüfter', cat: 'Verbraucher', lab: 'sim', pins: T2, v: '230V 2000W', core: 'LAMP', box: [0, -1.1, 4, 1.1], props: [['v', 'Spannung und Leistung', 'text', 'z. B. 230V 2000W']] },
@@ -85,7 +92,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -111,7 +118,7 @@ const byPart = id => sch.parts.find(p => p.id === id);
 const byWire = id => sch.wires.find(w => w.id === id);
 
 /* ============ Verlauf, Speicher ============ */
-const snap = () => JSON.stringify({ name: sch.name, parts: sch.parts, wires: sch.wires, nid: sch.nid, scopes: sch.scopes });
+const snap = () => JSON.stringify({ name: sch.name, parts: sch.parts, wires: sch.wires, nid: sch.nid, scopes: sch.scopes, task: sch.task });
 function commit(noRebuild, noUI) {
   hist = hist.slice(0, hi + 1); hist.push(snap()); if (hist.length > 100) hist.shift(); hi = hist.length - 1;
   try { localStorage.setItem((SK + 'cur'), snap()); } catch (e) {}
@@ -119,7 +126,7 @@ function commit(noRebuild, noUI) {
   if (!noUI) refreshUI();
   draw();
 }
-function restore(i) { const s = JSON.parse(hist[i]); Object.assign(sch, s); hi = i; sel = null; rebuild(); refreshUI(); draw(); try { localStorage.setItem((SK + 'cur'), hist[i]); } catch (e) {} }
+function restore(i) { const s = JSON.parse(hist[i]); Object.assign(sch, s); sch.task = s.task; hi = i; sel = null; rebuild(); refreshUI(); draw(); try { localStorage.setItem((SK + 'cur'), hist[i]); } catch (e) {} }
 const undo = () => { if (hi > 0) restore(hi - 1); };
 const redo = () => { if (hi < hist.length - 1) restore(hi + 1); };
 
@@ -148,7 +155,7 @@ function rebuild() {
   flows.clear();
 }
 const sv = key => { const n = circ ? circ.nodeOfKey(key) : -1; return n < 0 || !sim ? NaN : sim.v[n]; };
-const hasGround = () => sch.parts.some(p => p.k === 'GND' || p.k === 'NETZ');
+const hasGround = () => sch.parts.some(p => p.k === 'GND' || p.k === 'NETZ' || p.k === 'NETZ3');
 
 /* ============ Rechenschritte ============ */
 function dtFor(rate) {            // Zeitschritt aus dem gewünschten Tempo (simulierte Sekunden je echte Sekunde)
@@ -175,6 +182,7 @@ function advance(realDt) {
   for (let i = 0; i < n; i++) {
     sim.step(dt);
     sampleScopes(every);
+    if (tool === 'meter') meterSample(dt);
     if ((i & 15) === 15 && performance.now() - t0 > 11) break;
   }
   while (sim.events.length) onBurn(sim.events.shift());
@@ -415,6 +423,57 @@ function drawPart(p, selected) {
       });
       if (cfg) T(def ? 'NE555' : (p.v || 'IC'), 3.9, 4, .55); else T(info ? info.name.split(' ')[0] : (p.v || 'IC'), 3, (by0 + by1) / 2, .8);
       c.restore(); break; }
+    case 'SCHUETZ': {
+      const o = showSim() && bodyI.get(String(p.id)), on = !!(o && o.e.on);
+      lead(0, 0, 1, 0, pc[0]); lead(1, 0, 1, 1, pc[0]); lead(1, 5, 1, 6, pc[1]); lead(1, 6, 0, 6, pc[1]);
+      c.strokeStyle = body; c.strokeRect(0.6, 1, 0.8, 4); c.beginPath(); c.moveTo(0.6, 5); c.lineTo(1.4, 1); c.stroke();
+      [[0, 2, 3, true], [2, 4, 5, false], [4, 6, 7, true], [6, 8, 9, true]].forEach(([y, a, b2, no]) => {
+        lead(5, y, 6, y, pc[a]); lead(8, y, 9, y, pc[b2]);
+        const closed = no ? on : !on;
+        c.strokeStyle = closed ? '#ffe14d' : body; c.lineWidth = 0.12; line(6, y, 8, closed ? y : y - 0.9);
+        c.strokeStyle = body; c.lineWidth = 0.1; c.beginPath(); c.arc(6, y, 0.12, 0, 7); c.fill(); c.beginPath(); c.arc(8, y, 0.12, 0, 7); c.fill();
+      });
+      c.setLineDash([0.25, 0.2]); c.lineWidth = 0.07; line(1.4, 3, 5.6, 3); c.setLineDash([]);
+      c.save(); c.translate(3.4, -0.1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Schütz', 0, 0); c.restore();
+      break; }
+    case 'NETZ3': {
+      [0, 1, 2, 3, 4].forEach(i => lead(i * 2, 0, i * 2, -0.9, pc[i])); c.strokeStyle = body; c.strokeRect(-1, -3, 10, 2.1);
+      c.save(); c.fillStyle = body; c.textAlign = 'center'; c.textBaseline = 'middle';
+      ['L1', 'L2', 'L3', 'N', 'PE'].forEach((t, i) => { c.save(); c.translate(i * 2, -1.25); c.rotate(-p.r * Math.PI / 2); c.font = '700 .55px sans-serif'; c.fillText(t, 0, 0); c.restore(); });
+      c.save(); c.translate(4, -2.05); c.rotate(-p.r * Math.PI / 2); c.font = '700 .85px sans-serif'; c.fillText('3~ ' + (p.v || '400V'), 0, 0); c.restore(); c.restore();
+      break; }
+    case 'MOTOR3': {
+      [0, 1, 2].forEach(i => lead(i * 2, 0, i * 2, 1.5, pc[i]));
+      c.strokeStyle = body; circle(2, 3, 1.5);
+      c.save(); c.translate(2, 3); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, -0.2); c.font = '600 .6px sans-serif'; c.fillText('3~', 0, 0.55); c.restore();
+      { const o = showSim() && bodyI.get(p.id + 'w0'), ph0 = o && o.e && o.e.phase ? o.e.phase : 0;
+        if (o && (o.e.w || 0) > 5) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.9 * Math.cos(a), 3 + 0.9 * Math.sin(a)); c.lineTo(2 + 1.3 * Math.cos(a), 3 + 1.3 * Math.sin(a)); c.stroke(); } }
+      break; }
+    case 'BRUECKE': {
+      lead(0, 2, 0.8, 2, pc[0]); lead(3.2, 2, 4, 2, pc[1]); lead(2, 0, 2, 0.8, pc[2]); lead(2, 3.2, 2, 4, pc[3]);
+      c.strokeStyle = body; c.beginPath(); c.moveTo(0.8, 2); c.lineTo(2, 0.8); c.lineTo(3.2, 2); c.lineTo(2, 3.2); c.closePath(); c.stroke();
+      const arrow = (x0, y0, x1, y1) => { const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, a = Math.atan2(y1 - y0, x1 - x0); c.save(); c.translate(mx, my); c.rotate(a); c.beginPath(); c.moveTo(-0.3, -0.28); c.lineTo(-0.3, 0.28); c.lineTo(0.3, 0); c.closePath(); c.fill(); line(0.3, -0.3, 0.3, 0.3); c.restore(); };
+      arrow(0.8, 2, 2, 0.8); arrow(3.2, 2, 2, 0.8); arrow(2, 3.2, 0.8, 2); arrow(2, 3.2, 3.2, 2);
+      c.save(); c.translate(0.45, 1.5); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText('~', 0, 0); c.restore();
+      break; }
+    case 'REG': {
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[2]); lead(2, 2, 2, 1.4, pc[1]); c.strokeStyle = body; c.strokeRect(1, -0.8, 2, 2.2);
+      c.save(); c.translate(2, 0.3); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .62px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(p.v || '78xx', 0, 0); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; [['IN', 1.35, -0.35], ['OUT', 2.65, -0.35], ['GND', 2, 1.15]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      break; }
+    case 'SEG8': {
+      [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => lead(0, i * 2, 1, i * 2, pc[i])); lead(5, 14, 6, 14, pc[8]);
+      c.strokeStyle = body; c.fillStyle = '#23272c'; c.fillRect(1, -0.6, 4, 15); c.strokeRect(1, -0.6, 4, 15);
+      const segs = [[1.9, 1.6, 4.1, 1.6], [4.5, 2.2, 4.5, 6], [4.5, 7.4, 4.5, 11.2], [1.9, 12.4, 4.1, 12.4], [1.5, 7.4, 1.5, 11.2], [1.5, 2.2, 1.5, 6], [1.9, 7, 4.1, 7]];
+      segs.forEach((s2, i) => { const o = showSim() && bodyI.get(p.id + 's' + i), b2 = o ? Math.pow(clamp(Math.abs(o.e.i) / 0.02, 0, 1), 0.6) : 0; c.strokeStyle = b2 > 0.05 ? `rgba(255,${Math.round(60 + 40 * (1 - b2))},50,${0.45 + 0.55 * Math.min(b2, 1)})` : '#3a2a2c'; c.lineWidth = 0.55; c.lineCap = 'round'; c.beginPath(); c.moveTo(s2[0], s2[1]); c.lineTo(s2[2], s2[3]); c.stroke(); });
+      { const o = showSim() && bodyI.get(p.id + 's7'), b2 = o ? Math.abs(o.e.i) / 0.02 : 0; c.fillStyle = b2 > 0.05 ? '#ff5a40' : '#3a2a2c'; c.beginPath(); c.arc(4.6, 12.4, 0.3, 0, 7); c.fill(); }
+      c.save(); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle'; ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'].forEach((t, i) => { c.save(); c.translate(0.9, i * 2 - 0.55); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      break; }
+    case 'PBC': {
+      lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]);
+      c.beginPath(); c.arc(1.1, 0, 0.1, 0, 7); c.fill(); c.beginPath(); c.arc(2.9, 0, 0.1, 0, 7); c.fill();
+      { const y = p.pressed ? -0.65 : -0.1; line(1.2, y, 2.8, y); line(2, y, 2, y - 0.6); line(1.6, y - 0.6, 2.4, y - 0.6); line(1.5, 0.3, 2.5, -0.5); }
+      break; }
     case 'JUN5': {
       c.strokeStyle = body; c.strokeRect(0, -0.6, 1, 9.2);
       [0, 2, 4, 6, 8].forEach((y, i) => { c.strokeStyle = pc[i]; c.lineWidth = 0.13; line(0, y, 0.5, y); c.fillStyle = pc[i]; c.beginPath(); c.arc(0.5, y, 0.18, 0, 7); c.fill(); });
@@ -612,7 +671,7 @@ function valueText(p) {
     case 'TRF': case 'RLY': return p.v;
     case 'NETZ': case 'JUN5': return '';
     case 'FAULT': return p.sw ? 'Fehler aktiv' : 'Fehler aus';
-    case 'LSS': case 'RCD': case 'IMP': return p.v;
+    case 'LSS': case 'RCD': case 'IMP': case 'SCHUETZ': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
     case 'HEAT': return p.v;
     case 'BAT': return fmtVal(p.v, 'V') + (p.imax ? '  ≤ ' + fmtVal(p.imax, 'A') : '');
@@ -682,6 +741,7 @@ function drawCircuit() {
   });
   ends.forEach((n, k) => { if (n >= 3) { const [x, y] = k.split(',').map(Number); cx.fillStyle = keyV(k); cx.beginPath(); cx.arc(X(x), Y(y), Math.max(3.5, view.s * 0.18), 0, 7); cx.fill(); } });
   sch.parts.forEach(p => drawPart(p, sel && sel.t === 'part' && sel.id === p.id));
+  drawMeterMarks();
   sliderHits = [];
   if (simMode && !PRINT) sch.parts.forEach(p => {
     const K = KD(p); if (!K.pos) return;
@@ -796,7 +856,8 @@ cv.addEventListener('auxclick', e => e.preventDefault());
 
 function cancelAct() { if (act && act.t === 'move' && act.moved) { act.restore && act.restore(); } act = null; draw(); }
 function onDown(p) {
-  if (simMode && tool !== 'select' && tool !== 'scope') return;
+  if (simMode && tool !== 'select' && tool !== 'scope' && tool !== 'meter') return;
+  if (simMode && tool === 'meter') { meterTap(...toGrid(p.x, p.y)); act = { t: 'none' }; draw(); return; }
   if (simMode) { const sh = sliderAt(p.x, p.y); if (sh) { act = { t: 'slide', sh }; setSlide(sh, p.x); return; } }
   const [fx, fy] = toGrid(p.x, p.y), g = snapG(fx, fy); cursor = g;
   switch (tool) {
@@ -906,7 +967,7 @@ function setTool(t, kind) {
 function buildPalette() {
   const chip = (id, label, on, data) => `<button class="chip ${on ? 'on' : ''}" data-t="${id}" ${data || ''}>${label}</button>`;
   let h;
-  if (simMode) h = chip('select', '☝ Bedienen', tool === 'select') + chip('scope', '∿ Graph', tool === 'scope') + chip('reset', '↺ Zurück', false);
+  if (simMode) h = chip('select', '☝ Bedienen', tool === 'select') + chip('meter', '🔌 Messen', tool === 'meter') + chip('scope', '∿ Oszilloskop', tool === 'scope') + chip('reset', '↺ Zurück', false);
   else {
     h = chip('select', '☝ Auswahl', tool === 'select') + chip('wire', '✎ Draht', tool === 'wire') + chip('erase', '⌫ Löschen', tool === 'erase') + '<span class="sep"></span>';
     if (!listMode()) CATS.forEach(cat => {
@@ -990,7 +1051,7 @@ function refreshUI() {
   $('#bRun').classList.toggle('on', running);
   $('#bUndo').disabled = simMode || hi <= 0; $('#bRedo').disabled = simMode || hi >= hist.length - 1;
   $('#title').textContent = sch.name;
-  let h = '';
+  let h = taskCardHtml() + meterCardHtml();
   if (simMode) {
     h += `<div class="card"><h4>Simulation</h4>
     <div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Stopp' : '▶ Start'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>
@@ -1035,6 +1096,12 @@ $('#side').addEventListener('click', e => {
   const b = e.target.closest('[data-a],[data-win]'); if (!b) return;
   if (b.dataset.win) { graphWin = parseFloat(b.dataset.win); scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; refreshUI(); return; }
   const a = b.dataset.a;
+  if (a === 'mmV') { meter.mode = 'V'; meterReset(); refreshUI(); return; }
+  if (a === 'mmA') { meter.mode = 'A'; meterReset(); refreshUI(); return; }
+  if (a === 'tcheck') { runTaskCheck(); return; }
+  if (a === 'treport') { reportFault(); return; }
+  if (a === 'thint') { const t = TASKS.find(x => x.id === sch.task); if (t) sheet('Tipp', bb => { bb.innerHTML = '<p style="margin-top:0">' + esc(t.hint) + '</p>'; }); return; }
+  if (a === 'tstop') { sch.task = undefined; taskRes = null; commit(true, true); refreshUI(); return; }
   if (a === 'preset') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) { p0.v = b.dataset.v; commit(true, true); rebuildKeep(); refreshUI(); } return; }
   if (a === 'wcol') { const w = sel && sel.t === 'wire' && byWire(sel.id); if (w) { w.c = b.dataset.c; wireColor = b.dataset.c; commit(true); } return; }
   if (a === 'run') toggleRun(); else if (a === 'reset') resetSim();
@@ -1079,9 +1146,10 @@ let lastLive = 0;
 function updateLive() {
   const now = performance.now(); if (now - lastLive < 120) return; lastLive = now;
   refreshControls();
+  if (simMode && tool === 'meter') { const mv = $('#mmVal'); if (mv) { const t = meterText(); mv.textContent = t.main; const ms = $('#mmSub'); if (ms) ms.textContent = t.sub; } }
   const t = $('#tLbl'); if (t && sim) t.textContent = fmtT(sim.t);
   const w = $('#warn'); if (w) {
-    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || p.k === 'NETZ' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
+    const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || p.k === 'NETZ' || p.k === 'NETZ3' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
     else if (!hasGround()) msgs.push('Keine Masse gesetzt. Es wird der Minuspol der Quelle als Masse genommen.');
     circ && circ.warnings.forEach(x => { const it = x.part && x.part.item; if (it) msgs.push((it.l || KINDS[it.k].name) + ': ' + x.text); });
     circ && circ.elems.forEach(e => { if (e.type === 'V' && e.cc && e.part && e.part.item) msgs.push((e.part.item.l || 'Quelle') + ' begrenzt den Strom auf ' + fmt(e.imax, 'A') + ': die Spannung bricht ein.'); });
@@ -1112,11 +1180,326 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
 }
+
+/* ============ Multimeter (Spannung und Strom messen) ============ */
+let meter = { mode: 'V', a: null, b: null, part: null, dc: 0, ac: 0, init: false };
+function meterValue() {
+  if (!circ || !sim) return NaN;
+  if (meter.mode === 'A') {
+    if (meter.part == null) return NaN;
+    const es = circ.elems.filter(e => e.part && e.part.id === meter.part); if (!es.length) return NaN;
+    const e = es.find(x => x.type !== 'S' || x.closed) || es[0];
+    return e.type === 'Q' ? e.ic : (e.type === 'V' ? -e.i : (e.i || 0));
+  }
+  if (!meter.a) return NaN;
+  const va = sv(meter.a.key), vb = meter.b ? sv(meter.b.key) : 0; return va - vb;
+}
+function meterSample(dt) {
+  const m = meterValue(); if (!isFinite(m)) return;
+  if (!meter.init) { meter.dc = m; meter.ac = 0; meter.init = true; return; }
+  const al = 1 - Math.exp(-dt / 0.05);
+  meter.dc += al * (m - meter.dc); meter.ac += al * ((m - meter.dc) * (m - meter.dc) - meter.ac);
+}
+function meterReset() { meter.init = false; meter.dc = 0; meter.ac = 0; }
+function meterTap(fx, fy) {
+  if (!circ) return;
+  if (meter.mode === 'A') { const p = partAt(fx, fy); if (p && p.k !== 'GND') { meter.part = p.id; meterReset(); } else toast('Bauteil antippen, durch das der Strom gemessen wird'); draw(); refreshUI(); return; }
+  // nächster Anschlusspunkt (Bauteilpin oder Drahtende)
+  let best = null, bd = 1.1;
+  const cand = []; sch.parts.forEach(p => pinsOf(p).forEach(q => cand.push(q))); sch.wires.forEach(w => { cand.push([w.x1, w.y1]); cand.push([w.x2, w.y2]); });
+  cand.forEach(q => { const dd = Math.hypot(q[0] - fx, q[1] - fy); if (dd < bd && circ.nodeOfKey(gk(q[0], q[1])) >= 0) { bd = dd; best = q; } });
+  if (!best) { const w = wireAt(fx, fy); if (w) best = [w.x1, w.y1]; }
+  if (!best) { toast('Einen Anschlusspunkt oder Draht antippen'); return; }
+  const pt = { key: gk(best[0], best[1]), x: best[0], y: best[1] };
+  if (!meter.a || (meter.a && meter.b)) { meter.a = pt; meter.b = null; } else meter.b = pt;
+  meterReset(); draw(); refreshUI();
+}
+function meterText() {
+  const m = meterValue(); if (!isFinite(m)) return { main: '--', sub: meter.mode === 'A' ? 'Bauteil antippen, durch das der Strom fließt.' : 'Erst die rote, dann die schwarze Messspitze setzen (ohne schwarze: gegen Masse).' };
+  const u = meter.mode === 'A' ? 'A' : 'V', rms = Math.sqrt(Math.max(meter.dc * meter.dc + meter.ac, 0)), acr = Math.sqrt(Math.max(meter.ac, 0));
+  if (acr > 0.02 * Math.max(Math.abs(meter.dc), 1e-9) && acr > 1e-6) return { main: '~ ' + fmt(rms, u), sub: 'Wechselgröße, Effektivwert · Gleichanteil ' + fmt(meter.dc, u) };
+  return { main: fmt(meter.dc, u), sub: meter.mode === 'A' ? 'Strom durch das Bauteil (von Pin 1 nach Pin 2)' : (meter.b ? 'Spannung rot gegen schwarz' : 'Spannung gegen Masse') };
+}
+function drawMeterMarks() {
+  if (!simMode || tool !== 'meter') return;
+  const ring = (pt, col, lbl) => { if (!pt) return; cx.strokeStyle = col; cx.lineWidth = 3; cx.beginPath(); cx.arc(X(pt.x), Y(pt.y), Math.max(8, view.s * 0.45), 0, 7); cx.stroke(); cx.fillStyle = col; cx.font = '700 12px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'middle'; cx.fillText(lbl, X(pt.x) + 12, Y(pt.y) - 12); };
+  ring(meter.a, '#ff4d4d', meter.b ? '+' : 'rot'); ring(meter.b, '#ffffff', '−');
+  if (meter.mode === 'A' && meter.part != null) { const p = byPart(meter.part); if (p) { const K = KD(p), cs = [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].map(([a, b]) => { const [ra, rb] = rot(a, b, p.r); return [X(p.x + ra), Y(p.y + rb)]; }); cx.strokeStyle = '#7dff7d'; cx.lineWidth = 2; cx.setLineDash([6, 4]); cx.strokeRect(Math.min(cs[0][0], cs[1][0]) - 4, Math.min(cs[0][1], cs[1][1]) - 4, Math.abs(cs[1][0] - cs[0][0]) + 8, Math.abs(cs[1][1] - cs[0][1]) + 8); cx.setLineDash([]); } }
+}
+function meterCardHtml() {
+  if (!simMode || tool !== 'meter') return '';
+  const t = meterText();
+  return `<div class="card"><h4>Multimeter</h4><div class="row2"><button class="btn ${meter.mode === 'V' ? 'pri' : ''}" data-a="mmV">Spannung V</button><button class="btn ${meter.mode === 'A' ? 'pri' : ''}" data-a="mmA">Strom A</button></div><div class="lcd" id="mmVal">${esc(t.main)}</div><div class="mmsub" id="mmSub">${esc(t.sub)}</div></div>`;
+}
+
+
+/* ============ Schaltschrank-Ansicht (SimLab) ============ */
+function openCabinet() {
+  sheet('Schaltschrank', (b) => {
+    b.innerHTML = '<p class="hint2" style="margin-top:0">Wie im echten Verteiler: Hebel antippen zum Ein- und Ausschalten. Beim FI löst die Prüftaste „T“ aus. Der Balken zeigt die Belastung des Automaten.</p><canvas id="cabCv" width="640" height="440" style="width:100%;border-radius:10px;background:#1a1f26;touch-action:none;display:block"></canvas>';
+    const cvs = b.querySelector('#cabCv'), g = cvs.getContext('2d'); let hits = [];
+    const mods = () => sch.parts.filter(p => p.k === 'RCD').sort(byPos).concat(sch.parts.filter(p => p.k === 'LSS').sort(byPos));
+    const curOf = p => { const e = circ && circ.elems.find(x => x.part && x.part.id === p.id && (x.type === 'S' || x.type === 'RCD')); return e ? Math.abs(e.i || 0) : 0; };
+    const rated = p => (p.k === 'LSS' ? (parseFloat(String(p.v || 'B16').replace(/^[A-Za-z]+/, '')) || 16) : 40);
+    const rr = (x, y, w, h, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+    function frame() {
+      if (!document.body.contains(cvs)) return;
+      g.clearRect(0, 0, 640, 440);
+      const list = mods(); hits = [];
+      g.fillStyle = '#2a313a'; rr(10, 10, 620, 420, 10); g.fill(); g.strokeStyle = '#46505c'; g.lineWidth = 2; g.stroke();
+      g.fillStyle = '#9aa3ad'; g.font = '600 13px sans-serif'; g.textAlign = 'left'; g.fillText('Verteilerkasten · Hutschiene', 24, 30);
+      if (!list.length) { g.fillStyle = '#c0c6cd'; g.font = '15px sans-serif'; g.textAlign = 'center'; g.fillText('Noch keine Sicherungsautomaten oder FI in der Schaltung.', 320, 220); requestAnimationFrame(frame); return; }
+      let x = 28, y = 48; const rowH = 205;
+      list.forEach(p => {
+        const fi = p.k === 'RCD', w = fi ? 78 : 52;
+        if (x + w > 620) { x = 28; y += rowH; }
+        // Hutschiene
+        g.fillStyle = '#6f7882'; g.fillRect(x - 6, y + 46, w + 12, 8);
+        // Gehaeuse
+        g.fillStyle = '#e4e7ea'; rr(x, y, w, 122, 6); g.fill(); g.strokeStyle = '#8b939c'; g.lineWidth = 1.5; g.stroke();
+        g.fillStyle = '#b9bfc6'; g.fillRect(x + 4, y + 4, w - 8, 16);
+        g.fillStyle = '#333'; g.font = '700 11px sans-serif'; g.textAlign = 'center'; g.fillText(p.l || (fi ? 'FI' : 'LS'), x + w / 2, y + 16);
+        // Hebel
+        const on = !!p.sw, lx = x + w / 2 - (fi ? 20 : 11), lw = 22, ly = on ? y + 30 : y + 62;
+        g.fillStyle = '#16191d'; rr(lx - 3, y + 26, lw + 6, 66, 4); g.fill();
+        g.fillStyle = on ? '#3aa655' : '#c04a3a'; rr(lx, ly, lw, 28, 3); g.fill();
+        g.fillStyle = '#fff'; g.font = '700 12px sans-serif'; g.fillText(on ? 'I' : '0', lx + lw / 2, ly + 19);
+        hits.push({ x: lx - 6, y: y + 24, w: lw + 12, h: 72, p, kind: 'lever' });
+        if (fi) { g.fillStyle = '#2d6cdf'; rr(x + w - 28, y + 38, 20, 20, 3); g.fill(); g.fillStyle = '#fff'; g.font = '700 12px sans-serif'; g.fillText('T', x + w - 18, y + 53); hits.push({ x: x + w - 32, y: y + 34, w: 28, h: 28, p, kind: 'test' }); }
+        // Beschriftung
+        g.fillStyle = '#333'; g.font = '700 12px sans-serif'; g.fillText(fi ? 'FI ' + (p.v || '30mA') : (p.v || 'B16'), x + w / 2, y + 112);
+        // Belastung
+        const i = curOf(p), ir = rated(p), q = Math.min(i / ir, 1.3);
+        g.fillStyle = '#12161b'; g.fillRect(x, y + 132, w, 10);
+        g.fillStyle = q < 0.7 ? '#3aa655' : (q < 1 ? '#e6a820' : '#d94a3a'); g.fillRect(x, y + 132, Math.min(w, w * q), 10);
+        g.fillStyle = '#c0c6cd'; g.font = '12px sans-serif'; g.fillText(i < 0.005 ? '0 A' : i.toFixed(1) + ' A', x + w / 2, y + 160);
+        if (!on) { g.fillStyle = '#ff8a7a'; g.font = '700 11px sans-serif'; g.fillText('AUS', x + w / 2, y + 178); }
+        x += w + 10;
+      });
+      // N- und PE-Klemmen
+      const ry = Math.min(y + 190, 395);
+      g.fillStyle = '#3b82e0'; rr(28, ry, 270, 22, 4); g.fill(); g.fillStyle = '#34b24f'; rr(330, ry, 270, 22, 4); g.fill(); g.fillStyle = '#f2d21b'; for (let k = 0; k < 14; k++) g.fillRect(332 + k * 19, ry + 15, 9, 5);
+      g.fillStyle = '#fff'; g.font = '700 12px sans-serif'; g.textAlign = 'left'; g.fillText('N-Klemmen', 36, ry + 15); g.fillText('PE-Klemmen', 340, ry + 12);
+      requestAnimationFrame(frame);
+    }
+    cvs.addEventListener('pointerdown', e => {
+      const r = cvs.getBoundingClientRect(), px = (e.clientX - r.left) * 640 / r.width, py = (e.clientY - r.top) * 440 / r.height;
+      const h = hits.find(q => px >= q.x && px <= q.x + q.w && py >= q.y && py <= q.y + q.h); if (!h) return;
+      const p = h.p, w = wrapMap.get(p.id);
+      if (h.kind === 'lever') p.sw = p.sw ? 0 : 1; else { if (!p.sw) { toast('Der FI ist schon aus'); return; } p.sw = 0; toast('Prüftaste: der FI löst aus'); }
+      if (w) w.sw = p.sw; commit(true, true); draw(); refreshControls();
+      if (window.LochFX) LochFX.sound('click');
+    });
+    frame();
+  });
+}
+
+/* ============ Aufgaben, Prüfung und Fehlersuche (SimLab) ============ */
+let taskRes = null;     // letzte Prüfung {id, lines:[{ok,text}], pct}
+const byPos = (a, b) => a.y - b.y || a.x - b.x;
+const SWK = ['SPST', 'SPDT', 'KREUZ'];
+const swList = () => sch.parts.filter(p => SWK.includes(p.k)).sort(byPos);
+const lampList = () => sch.parts.filter(p => p.k === 'LAMP' || p.k === 'HEAT').sort(byPos);
+const nm = p => p.l || KINDS[p.k].name;
+const RES = (ok, text) => ({ ok, text });
+/* Schaltung ohne Rückwirkung auf die Zeichnung durchrechnen (Schalterstellungen und Taster vorgebbar) */
+function simEval(o) {
+  o = o || {};
+  const parts = [], ground = [];
+  sch.parts.forEach(p => {
+    if (p.k === 'GND') { ground.push(pinsOf(p)[0]); return; }
+    const w = toCore(p); w.item = Object.assign({}, p);
+    if (o.set && o.set[p.id] != null) { w.sw = o.set[p.id] ? 1 : 0; w.item.sw = w.sw; }
+    w.pressed = !!(o.press && o.press.includes(p.id));
+    parts.push(w);
+  });
+  const c = LS.buildCircuit({ parts, tracks: [], wires: sch.wires, ground }), s = LS.createSim(c), wm = new Map(parts.map(w => [w.id, w])), ev = [], dt = 2e-4;
+  const run = (t, press) => { if (press) wm.forEach((w, id) => { w.pressed = press.includes(id); }); const n = Math.round(t / dt); for (let i = 0; i < n; i++) { s.step(dt); while (s.events.length) ev.push(s.events.shift()); } };
+  const lamps = () => { const m = new Map(); c.elems.forEach(e => { if (e.lamp && e.part) m.set(e.part.id, (e.pav || 0) / e.lamp > 0.25); }); return m; };
+  return { c, s, run, lamps, ev, wm };
+}
+const combos = n => Array.from({ length: 1 << n }, (_, m) => Array.from({ length: n }, (_, i) => (m >> i) & 1));
+function evalCombo(sws, vals, extra) { const set = Object.assign({}, extra || {}); sws.forEach((p, i) => { set[p.id] = vals[i]; }); const E = simEval({ set }); E.run(0.12); return E; }
+const valTxt = (sws, vals) => sws.map((p, i) => nm(p) + (vals[i] ? ' an' : ' aus')).join(', ');
+const evTxt = E => E.ev.filter(e => e.kind === 'burn' || e.kind === 'trip').map(e => e.text);
+
+/* Bausteine für Prüfungen */
+function needKinds(list) {   // [[Text, [Arten], Mindestanzahl]]
+  return list.map(([text, kinds, n]) => { const have = sch.parts.filter(p => kinds.includes(p.k)).length; return RES(have >= n, have >= n ? text + ' vorhanden' : text + ' fehlt (' + have + ' von ' + n + ')'); });
+}
+function chkLogic(mode, sws, lamp) {
+  const out = []; let bad = 0;
+  combos(sws.length).forEach(vals => {
+    const E = evalCombo(sws, vals), st = E.lamps().get(lamp.id), want = mode === 'and' ? vals.every(Boolean) : (mode === 'or' ? vals.some(Boolean) : !!vals[0]);
+    const evs = evTxt(E);
+    if (evs.length) { bad++; if (bad <= 3) out.push(RES(false, valTxt(sws, vals) + ': ' + evs[0])); }
+    else if (!!st !== want) { bad++; if (bad <= 3) out.push(RES(false, valTxt(sws, vals) + ': Lampe soll ' + (want ? 'leuchten' : 'aus sein') + ', ist aber ' + (st ? 'an' : 'aus') + '.')); }
+  });
+  return out.length ? out : [RES(true, 'Die Lampe schaltet in allen ' + (1 << sws.length) + ' Schalterstellungen richtig.')];
+}
+function chkToggle(sws, lamp) {
+  const res = new Map(), out = [];
+  combos(sws.length).forEach(vals => { const E = evalCombo(sws, vals), evs = evTxt(E); res.set(vals.join(''), E.lamps().get(lamp.id)); if (evs.length && out.length < 3) out.push(RES(false, valTxt(sws, vals) + ': ' + evs[0])); });
+  let bad = 0;
+  res.forEach((st, key) => { sws.forEach((p, i) => { const k2 = key.slice(0, i) + (key[i] === '1' ? '0' : '1') + key.slice(i + 1); if (key < k2 && res.get(k2) === st) { bad++; if (bad <= 3) out.push(RES(false, 'Wird nur ' + nm(p) + ' umgelegt (Stellung ' + key.split('').map((x, j) => nm(sws[j]) + '=' + (x === '1' ? 'an' : 'aus')).join(', ') + '), ändert sich die Lampe nicht.')); } }); });
+  return out.length ? out : [RES(true, 'Jedes Umlegen eines einzelnen Schalters ändert den Zustand der Lampe.')];
+}
+function chkProtect(lamp) {
+  const lss = sch.parts.filter(p => p.k === 'LSS'); if (!lss.length) return [RES(false, 'Kein Sicherungsautomat im Stromkreis.')];
+  const sws = swList(), on = {}; sws.forEach(p => { on[p.id] = 1; });
+  let ok = true;
+  // mit ausgeschaltetem Automaten darf die Lampe in keiner Schalterstellung leuchten
+  const set = Object.assign({}, on); lss.forEach(p => { set[p.id] = 0; });
+  const E = simEval({ set }); E.run(0.1); if (E.lamps().get(lamp.id)) ok = false;
+  return [RES(ok, ok ? 'Der Sicherungsautomat liegt im Stromkreis der Lampe.' : 'Die Lampe leuchtet auch bei ausgeschaltetem Sicherungsautomaten: er liegt nicht im Stromkreis.')];
+}
+function chkSequence(steps, lamp, pressMap) {
+  // steps: [{press:[Teile], erwartet:true/false, text}]
+  const E = simEval({}); const out = [];
+  steps.forEach(st => { E.run(st.t || 0.25, st.press.map(p => p.id)); const on = !!E.lamps().get(lamp.id); out.push(RES(on === st.expect, st.text + ': Lampe ist ' + (on ? 'an' : 'aus') + (on === st.expect ? '' : ', soll ' + (st.expect ? 'an' : 'aus') + ' sein') + '.')); const evs = evTxt(E); if (evs.length) { out.push(RES(false, evs[evs.length - 1])); E.ev.length = 0; } });
+  return out;
+}
+const firstLamp = () => lampList()[0];
+const noLamp = () => [RES(false, 'Es ist keine Lampe oder kein Heizlüfter vorhanden.')];
+
+/* Aufgabenliste */
+const NETZ_LSS_LAMP = () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['LAMP', -3, 12, 1, '230V 60W']], wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 18, -3, 18, -3, 16]], scopes: [], tempo: 0.55, win: 0.04 });
+const NETZ_LAMP = () => ({ parts: [['NETZ', 1, 0], ['LAMP', -3, 12, 1, '230V 60W']], wires: [['blau', 3, 0, 3, 18, -3, 18, -3, 16]], scopes: [], tempo: 0.55, win: 0.04 });
+const exOf = name => (EXAMPLES.find(e => e.name === name) || {}).make;
+const withDefect = (make, label, defect) => () => { const d = make(); d.parts = d.parts.map(a => (a[5] && a[5].l === label) ? a : a); const idx = d.parts.findIndex(a => a[5] && a[5].l === label); if (idx >= 0) d.parts[idx][5].defect = defect; return d; };
+const TASKS = [
+  { id: 'aus', cat: 'Grundlagen', title: 'Ausschaltung', level: 1, start: NETZ_LAMP, sol: 'Ausschaltung mit Sicherungsautomat',
+    text: 'Baue eine Ausschaltung: Eine Lampe wird mit einem Schalter ein- und ausgeschaltet. Der Stromkreis wird mit einem Sicherungsautomaten B16 abgesichert. Netz und Lampe sind schon platziert, die Aderfarben wählst du beim Draht-Werkzeug.',
+    hint: 'Reihenfolge im Außenleiter (braun): Netz L → Sicherungsautomat → Schalter → Lampe. Der Neutralleiter (blau) geht direkt zur Lampe.',
+    check() { const L = firstLamp(); if (!L) return noLamp(); const sw = swList().filter(p => p.k === 'SPST'); return needKinds([['Sicherungsautomat', ['LSS'], 1], ['Schalter', ['SPST'], 1]]).concat(sw.length ? chkLogic('single', [sw[0]], L).concat(chkProtect(L)) : []); } },
+  { id: 'reihe', cat: 'Grundlagen', title: 'Zwei Schalter in Reihe (UND)', level: 1, start: NETZ_LSS_LAMP, sol: 'Zwei Schalter in Reihe (UND)',
+    text: 'Die Lampe soll nur leuchten, wenn beide Schalter geschlossen sind. Baue die Schaltung zwischen Sicherungsautomat und Lampe auf.',
+    hint: 'Bei einer Reihenschaltung hängen die Schalter hintereinander im selben Draht.',
+    check() { const L = firstLamp(), sw = swList().filter(p => p.k === 'SPST'); if (!L) return noLamp(); if (sw.length < 2) return needKinds([['Schalter', ['SPST'], 2]]); return chkLogic('and', sw.slice(0, 2), L); } },
+  { id: 'parallel', cat: 'Grundlagen', title: 'Zwei Schalter parallel (ODER)', level: 1, start: NETZ_LSS_LAMP, sol: 'Zwei Schalter parallel (ODER)',
+    text: 'Die Lampe soll leuchten, wenn mindestens einer der beiden Schalter geschlossen ist.',
+    hint: 'Bei einer Parallelschaltung liegen die Schalter nebeneinander, jeder verbindet Anfang und Ende des Zweiges.',
+    check() { const L = firstLamp(), sw = swList().filter(p => p.k === 'SPST'); if (!L) return noLamp(); if (sw.length < 2) return needKinds([['Schalter', ['SPST'], 2]]); return chkLogic('or', sw.slice(0, 2), L); } },
+  { id: 'wechsel', cat: 'Hausinstallation', title: 'Wechselschaltung', level: 2, start: NETZ_LSS_LAMP, sol: 'Wechselschaltung (zwei Orte)',
+    text: 'Eine Lampe soll von zwei Orten aus mit je einem Wechselschalter ein- und ausgeschaltet werden. Verdrahte die beiden Wechselschalter mit den zwei Wechseldrähten (schwarz).',
+    hint: 'Jeder Wechselschalter hat einen gemeinsamen Anschluss (COM) und zwei Schaltkontakte. Die beiden Kontakte des ersten Schalters werden mit den beiden Kontakten des zweiten verbunden. COM des ersten kommt vom Sicherungsautomaten, COM des zweiten geht zur Lampe.',
+    check() { const L = firstLamp(), sw = swList().filter(p => p.k === 'SPDT'); if (!L) return noLamp(); const r = needKinds([['Wechselschalter', ['SPDT'], 2]]); return sw.length < 2 ? r : r.concat(chkToggle(sw.slice(0, 2), L), chkProtect(L)); } },
+  { id: 'kreuz', cat: 'Hausinstallation', title: 'Kreuzschaltung (drei Orte)', level: 3, start: NETZ_LSS_LAMP, sol: 'Kreuzschaltung (drei Orte)',
+    text: 'Eine Lampe soll von drei Orten aus geschaltet werden: zwei Wechselschalter außen und ein Kreuzschalter in der Mitte.',
+    hint: 'Zwischen den beiden Wechselschaltern liegt der Kreuzschalter. Die zwei Adern vom ersten Wechselschalter gehen in die beiden oberen Anschlüsse des Kreuzschalters, die beiden unteren zum zweiten Wechselschalter.',
+    check() { const L = firstLamp(), sw = swList(); if (!L) return noLamp(); const r = needKinds([['Wechselschalter', ['SPDT'], 2], ['Kreuzschalter', ['KREUZ'], 1]]); return (sw.length < 3 || !r.every(x => x.ok)) ? r : r.concat(chkToggle(sw.slice(0, 3), L), chkProtect(L)); } },
+  { id: 'impuls', cat: 'Hausinstallation', title: 'Treppenhaus mit Stromstoßschalter', level: 3, sol: 'Stromstoßschalter (Treppenhaus)',
+    start: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B10'], ['IMP', -6, 12, 0, '230V'], ['LAMP', -2, 20, 1, '230V 60W']], wires: [['blau', 3, 0, 3, 24, 3, 26], ['blau', -2, 24, 3, 24], ['blau', -6, 16, -6, 26, 3, 26], ['braun', 1, 0, 1, 2]], scopes: [], tempo: 0.55, win: 0.04 }),
+    text: 'Das Licht im Treppenhaus soll von zwei Tastern aus umgeschaltet werden: jeder Druck schaltet das Licht um (Stromstoßschalter). Ergänze die zwei Taster und die fehlenden Leitungen.',
+    hint: 'Die Taster liegen parallel in der Steuerleitung zur Spule (A1) des Stromstoßschalters. Der Lastkontakt (K1/K2) schaltet die Lampe.',
+    check() { const L = firstLamp(), pb = sch.parts.filter(p => p.k === 'PB').sort(byPos); if (!L) return noLamp(); const r = needKinds([['Stromstoßschalter', ['IMP'], 1], ['Taster', ['PB'], 2]]); if (pb.length < 2 || !r.every(x => x.ok)) return r;
+      return r.concat(chkSequence([{ press: [], expect: false, t: 0.15, text: 'Ohne Betätigung' }, { press: [pb[0]], expect: true, text: 'Taster 1 gedrückt' }, { press: [], expect: true, text: 'Taster 1 losgelassen' }, { press: [pb[1]], expect: false, text: 'Taster 2 gedrückt' }, { press: [], expect: false, text: 'Taster 2 losgelassen' }], L)); } },
+  { id: 'schutz', cat: 'Hausinstallation', title: 'Kurzschluss und Sicherungsautomat', level: 2, sol: 'Kurzschluss löst den Sicherungsautomaten aus',
+    start: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['LAMP', -3, 6, 1, '230V 60W'], ['FAULT', -7, 6, 1, '0.05']], wires: [['blau', 3, 0, 3, 12, -3, 12, -7, 12], ['blau', -3, 10, -3, 12], ['blau', -7, 10, -7, 12]], scopes: [], tempo: 0.55, win: 0.04 }),
+    text: 'Lampe und Fehlerstelle (Kurzschluss) sind platziert. Verdrahte den Außenleiter über den Sicherungsautomaten so, dass er bei einem Kurzschluss auslöst, die Lampe aber normal leuchtet.',
+    hint: 'Beide Teile hängen parallel am Außenleiter hinter dem Sicherungsautomaten und zwischen Außen- und Neutralleiter.',
+    check() { const L = firstLamp(), F = sch.parts.find(p => p.k === 'FAULT'), S = sch.parts.find(p => p.k === 'LSS'); if (!L || !F || !S) return needKinds([['Lampe', ['LAMP', 'HEAT'], 1], ['Fehlerstelle', ['FAULT'], 1], ['Sicherungsautomat', ['LSS'], 1]]);
+      const E0 = simEval({ set: { [F.id]: 0 } }); E0.run(0.12); const E1 = simEval({ set: { [F.id]: 1 } }); E1.run(0.12); const trip = E1.ev.some(e => e.kind === 'trip');
+      return [RES(!!E0.lamps().get(L.id) && !evTxt(E0).length, 'Ohne Fehler leuchtet die Lampe und nichts löst aus.'), RES(trip, trip ? 'Beim Kurzschluss löst der Sicherungsautomat aus.' : 'Beim Kurzschluss löst nichts aus: der Sicherungsautomat liegt nicht im Stromkreis.')]; } },
+  { id: 'fi', cat: 'Hausinstallation', title: 'Steckdose mit FI-Schutzschalter', level: 3, sol: 'FI-Schutzschalter an der Steckdose',
+    start: () => ({ parts: [['NETZ', 1, 0], ['SD', -3, 10, 0, '2000W']], wires: [], scopes: [], tempo: 0.55, win: 0.04 }),
+    text: 'Schließe die Steckdose (mit 2-kW-Gerät) über FI-Schutzschalter und Sicherungsautomat an das Netz an. Schutzleiter (PE, grün-gelb) nicht vergessen! Ist das Gerät defekt (Steckdose antippen), muss der FI auslösen.',
+    hint: 'Der FI wird mit Außen- und Neutralleiter durchgeschleift (L und N durch den FI), der Schutzleiter geht am FI vorbei direkt zur Steckdose.',
+    check() { const SD = sch.parts.find(p => p.k === 'SD'), FI = sch.parts.find(p => p.k === 'RCD'); const r = needKinds([['FI-Schutzschalter', ['RCD'], 1], ['Sicherungsautomat', ['LSS'], 1], ['Steckdose', ['SD'], 1]]); if (!SD || !FI || !r.every(x => x.ok)) return r;
+      const E0 = simEval({ set: { [SD.id]: 0 } }); E0.run(0.15); const dev = E0.c.elems.find(e => e.device); let mx = 0; for (let k = 0; k < 120; k++) { E0.s.step(2e-4); if (dev) mx = Math.max(mx, Math.abs(dev.i)); } const run = mx > 5; const E1 = simEval({ set: { [SD.id]: 1 } }); E1.run(0.15); const trip = E1.ev.some(e => e.kind === 'trip' && /FI/.test(e.text));
+      return r.concat([RES(run && !E0.ev.some(e => e.kind === 'trip'), run ? 'Das Gerät läuft und der FI bleibt ruhig.' : 'Das Gerät an der Steckdose bekommt keinen Strom.'), RES(trip, trip ? 'Bei defektem Gerät löst der FI aus.' : 'Bei defektem Gerät löst der FI nicht aus (Schutzleiter prüfen).')]); } },
+  { id: 'schuetz', cat: 'Hausinstallation', title: 'Schütz-Steuerung', level: 3, sol: 'Schütz schaltet einen Heizlüfter',
+    start: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['PB', -1, 6, 1, ''], ['SCHUETZ', -12, 10, 0, '230V'], ['HEAT', -9, 18, 1, '230V 2000W']], wires: [['blau', 3, 0, 3, 22, -9, 22], ['braun', 1, 0, 1, 2]], scopes: [], tempo: 0.55, win: 0.04 }),
+    text: 'Ein Taster schaltet über die Spule des Schützes einen Heizlüfter: Taster gedrückt = Heizlüfter an. Verdrahte Steuerstromkreis (Taster, Spule A1/A2) und Laststromkreis (Hauptkontakt 1/2, Heizlüfter).',
+    hint: 'Steuerkreis: L → Taster → Spule A1, Spule A2 → N. Laststromkreis: L → Kontakt 2 → Kontakt 1 → Heizlüfter → N.',
+    check() { const L = firstLamp(), pb = sch.parts.find(p => p.k === 'PB'); if (!L) return noLamp(); if (!pb) return needKinds([['Taster', ['PB'], 1]]);
+      return chkSequence([{ press: [], expect: false, t: 0.2, text: 'Taster nicht gedrückt' }, { press: [pb], expect: true, text: 'Taster gedrückt' }, { press: [], expect: false, text: 'Taster losgelassen' }], L); } },
+  { id: 'selbst', cat: 'Hausinstallation', title: 'Selbsthaltung (Start und Stopp)', level: 4, sol: 'Selbsthaltung (Start und Stopp)',
+    start: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['PB', -1, 6, 1, '', { l: 'S1' }], ['PBC', -5, 6, 1, '', { l: 'S2' }], ['SCHUETZ', -14, 10, 0, '230V'], ['LAMP', -10, 20, 1, '230V 60W']], wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 28]], scopes: [], tempo: 0.55, win: 0.04 }),
+    text: 'Ein Start-Taster (S1) schaltet das Schütz ein, es hält sich über seinen eigenen Hilfskontakt (13/14) selbst. Der Stopp-Taster (S2, Öffner) schaltet aus. Verdrahte Steuer- und Laststromkreis (Lampe).',
+    hint: 'Den Hilfskontakt 13/14 parallel zum Start-Taster legen. Den Stopp-Taster (Öffner) vor beide in Reihe schalten.',
+    check() { const L = firstLamp(), st = sch.parts.find(p => p.k === 'PB'), sp = sch.parts.find(p => p.k === 'PBC'); if (!L) return noLamp(); if (!st || !sp) return needKinds([['Start-Taster', ['PB'], 1], ['Stopp-Taster (Öffner)', ['PBC'], 1]]);
+      return chkSequence([{ press: [], expect: false, t: 0.2, text: 'Ruhezustand' }, { press: [st], expect: true, text: 'Start gedrückt' }, { press: [], expect: true, text: 'Start losgelassen (Selbsthaltung)' }, { press: [sp], expect: false, text: 'Stopp gedrückt' }, { press: [], expect: false, text: 'Stopp losgelassen' }], L); } },
+  // ---- Fehlersuche ----
+  { id: 'f1', cat: 'Fehlersuche', title: 'Wechselschaltung: Lampe bleibt dunkel', level: 2, debug: true, faultLabel: 'S2', sol: 'Wechselschaltung (zwei Orte)',
+    start: () => { const d = exOf('Wechselschaltung (zwei Orte)')(); d.parts[2][5] = { l: 'S1' }; d.parts[3][5] = { l: 'S2', defect: 'open' }; return d; },
+    text: 'Die Lampe leuchtet in keiner Schalterstellung. Die Verdrahtung wurde schon kontrolliert und ist in Ordnung. Finde das defekte Bauteil mit Spannungs- und Strommessung. Wähle das Bauteil aus und tippe auf „Fehler melden“.',
+    hint: 'Miss die Spannung hinter jedem Schalter in der Simulation (Messen). Wo die Spannung verschwindet, liegt der Fehler davor.' },
+  { id: 'f2', cat: 'Fehlersuche', title: 'Heizlüfter: der Automat fliegt sofort', level: 2, debug: true, faultLabel: 'E2', sol: 'Überlast: drei Heizlüfter',
+    start: () => { const d = exOf('Überlast: drei Heizlüfter')(); d.parts.forEach(a => { if (a[0] === 'SPST') { a[5] = { sw: 0 }; } }); d.parts[5][5] = { l: 'E1' }; d.parts[6][5] = { l: 'E2', defect: 'short' }; d.parts[7][5] = { l: 'E3' }; return d; },
+    text: 'Sobald ein bestimmter Heizlüfter eingeschaltet wird, löst der Sicherungsautomat sofort aus. Einer der drei Heizlüfter hat einen Kurzschluss. Schalte sie einzeln zu und finde den defekten.',
+    hint: 'Schalte die Heizlüfter nacheinander einzeln ein. Der Automat muss dazwischen wieder eingeschaltet werden (Bedienfeld links).' },
+  { id: 'f3', cat: 'Fehlersuche', title: 'Schütz zieht nicht an', level: 3, debug: true, faultLabel: 'S1', sol: 'Schütz schaltet einen Heizlüfter',
+    start: () => { const d = exOf('Schütz schaltet einen Heizlüfter')(); d.parts[2][5] = { l: 'S1', defect: 'open' }; d.parts[4][5] = { l: 'E1' }; return d; },
+    text: 'Der Taster wird gedrückt, aber der Heizlüfter bleibt kalt. Das Schütz zieht nicht an. Finde das defekte Bauteil im Steuerkreis.',
+    hint: 'Miss die Spannung an der Schützspule (A1/A2). Liegt sie nicht an, ist der Fehler davor im Steuerkreis.' },
+  { id: 'f4', cat: 'Fehlersuche', title: 'Treppenhaus: Licht geht nicht', level: 3, debug: true, faultLabel: 'E1', sol: 'Stromstoßschalter (Treppenhaus)',
+    start: () => { const d = exOf('Stromstoßschalter (Treppenhaus)')(); d.parts[5][5] = { l: 'E1', defect: 'open' }; return d; },
+    text: 'Das Stromstoßrelais schaltet hörbar (Klack), aber das Licht geht nicht an. Finde das defekte Bauteil.',
+    hint: 'Misst du an der Lampe die volle Netzspannung, ist die Lampe selbst unterbrochen.' },
+  { id: 'f5', cat: 'Fehlersuche', title: 'Spannungsteiler zeigt 9 V', level: 1, debug: true, faultLabel: 'R2', sol: 'Spannungsteiler',
+    start: () => ({ parts: [['BAT', 4, 4, 1, '9'], ['R', 8, 2, 1, '1k', { l: 'R1' }], ['R', 8, 6, 1, '2k', { l: 'R2', defect: 'open' }], ['GND', 4, 10], ['VM', 12, 2, 1, '']], wires: [[4, 4, 4, 2, 8, 2], [8, 10, 4, 10, 4, 8], [8, 2, 12, 2], [12, 6, 12, 10, 8, 10]], scopes: [], tempo: 0.7 }),
+    text: 'Das Voltmeter soll 6 V anzeigen (Spannung über R2), zeigt aber 9 V. Welcher Widerstand ist defekt?',
+    hint: 'Wenn kein Strom fließt, liegt an dem Teil die ganze Spannung an.' },
+];
+window.TaskTest = () => TASKS.map(t => {
+  const out = { id: t.id };
+  try {
+    if (!t.debug) { loadCircuit(Object.assign(buildExample({ name: t.title, make: exOf(t.sol) }), { task: t.id })); const L = t.check(); out.pct = Math.round(100 * L.filter(l => l.ok).length / L.length); out.bad = L.filter(l => !l.ok).map(l => l.text); }
+    else { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.start }), { task: t.id })); const L = lampList(); const E = simEval({}); E.run(0.2); out.lampsOn = L.filter(p => E.lamps().get(p.id)).length; out.events = E.ev.map(e => e.text); }
+  } catch (e) { out.err = String(e.stack || e).slice(0, 300); }
+  return out;
+});
+const taskDone = () => { try { return JSON.parse(localStorage.getItem('sim.done') || '{}'); } catch (e) { return {}; } };
+function markDone(id, pct) { try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {} }
+function logResult(id, pct, extra) {
+  try { const a = JSON.parse(localStorage.getItem('sim.results') || '[]'); a.push(Object.assign({ t: Date.now(), name: userName(), task: id, pct }, extra || {})); localStorage.setItem('sim.results', JSON.stringify(a.slice(-300))); } catch (e) {}
+}
+function taskCardHtml() {
+  if (LAB !== 'sim' || !sch.task) return '';
+  const t = TASKS.find(x => x.id === sch.task); if (!t) return '';
+  let h = `<div class="card task"><h4>Aufgabe · ${esc(t.cat)}</h4><b>${esc(t.title)}</b><p class="hint2">${esc(t.text)}</p>`;
+  h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div>`;
+  if (taskRes && taskRes.id === t.id) h += `<ul class="tl">${taskRes.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>` + (taskRes.pct != null ? `<div class="score ${taskRes.pct === 100 ? 'ok' : ''}">${taskRes.pct === 100 ? '🎉 Geschafft!' : taskRes.pct + ' % richtig'}</div>` : '');
+  return h + '</div>';
+}
+function runTaskCheck() {
+  const t = TASKS.find(x => x.id === sch.task); if (!t) return;
+  let lines; try { lines = t.check(); } catch (e) { console.error(e); lines = [RES(false, 'Die Prüfung konnte nicht ausgeführt werden: ' + e.message)]; }
+  const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
+  taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); logResult(t.id, pct); refreshUI();
+  if (pct === 100 && window.LochFX) LochFX.sound('pop');
+}
+let reports = 0;
+function reportFault() {
+  const t = TASKS.find(x => x.id === sch.task); if (!t || !t.debug) return;
+  const p = sel && sel.t === 'part' && byPart(sel.id); if (!p) { toast('Erst das vermutete Bauteil antippen'); return; }
+  reports++; const ok = (p.l || '') === t.faultLabel;
+  taskRes = { id: t.id, lines: [RES(ok, ok ? nm(p) + ' ist tatsächlich defekt. Gut gefunden!' : nm(p) + ' ist in Ordnung. Miss weiter. (Versuch ' + reports + ')')], pct: ok ? 100 : null };
+  if (ok) { markDone(t.id, Math.max(30, 100 - 20 * (reports - 1))); logResult(t.id, Math.max(30, 100 - 20 * (reports - 1)), { versuche: reports }); reports = 0; if (window.LochFX) LochFX.sound('pop'); }
+  refreshUI();
+}
+function startTask(id, solution) {
+  const t = TASKS.find(x => x.id === id); if (!t) return;
+  const mk = solution ? exOf(t.sol) : t.start; if (!mk) { toast('Keine Musterlösung hinterlegt'); return; }
+  const ex = buildExample({ name: t.title + (solution ? ' (Musterlösung)' : ''), make: mk }); ex.task = solution ? undefined : t.id; loadCircuit(ex); reports = 0;
+  if (!solution) { tool = 'select'; buildPalette(); }
+  refreshUI(); draw();
+}
+function openTasks() {
+  sheet('Aufgaben', (b, close) => {
+    const dn = taskDone(); let h = '<p class="hint2" style="margin-top:0">Wähle eine Aufgabe. Du bekommst eine Startschaltung und kannst deine Lösung vom Programm prüfen lassen.</p>', last = '';
+    TASKS.forEach(t => { if (t.cat !== last) { last = t.cat; h += `<div class="gh">${esc(t.cat)}</div>`; } h += `<button class="row" data-t="${t.id}"><div class="grow"><b>${esc(t.title)}</b><small>${'●'.repeat(t.level)}${'○'.repeat(4 - t.level)} ${dn[t.id] != null ? ' · bisher ' + dn[t.id] + ' %' + (dn[t.id] === 100 ? ' ✓' : '') : ''}</small></div></button>`; });
+    b.innerHTML = h;
+    b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const go = () => startTask(r.dataset.t); if (sch.parts.length || sch.wires.length) confirmNew(go); else go(); });
+  });
+}
+
 /* ---- Brücke zum Lochraster-Layout (nur mit Freigabe) ---- */
 const GODH = 'a2fdecf55d194ed8cea8d52d7d0442778e86180b6d81c6c37e56278e55add6c6';
 async function sha256(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
@@ -1253,6 +1636,8 @@ async function loadShared() {
   d.name = (d.name || 'Schaltung') + ' (geteilt)'; delete d.sid; loadCircuit(d); toast('Geteilte Schaltung geladen'); return true;
 }
 function menuAct(m) {
+  if (m === 'tasks') { openTasks(); return; }
+  if (m === 'cab') { openCabinet(); return; }
   if (m === 'share') { if (!sch.parts.length) { toast('Noch nichts gezeichnet'); return; } shareNow(JSON.parse(snap()), sch.name); return; }
   if (m === 'auto') { makeLayout(); return; }
   if (m === 'new') confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }));
@@ -1266,7 +1651,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v42</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v44</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -1321,7 +1706,8 @@ function fit() {
 function loadCircuit(d) {
   running = false; sel = null; wireStart = null; simMode = false;
   if (d.tempo != null) tempo = d.tempo; if (d.win) graphWin = d.win;
-  sch = { name: d.name || 'Schaltung', parts: JSON.parse(JSON.stringify(d.parts || [])), wires: JSON.parse(JSON.stringify(d.wires || [])), nid: d.nid || 1, scopes: d.scopes || [], sid: d.sid };
+  sch = { name: d.name || 'Schaltung', parts: JSON.parse(JSON.stringify(d.parts || [])), wires: JSON.parse(JSON.stringify(d.wires || [])), nid: d.nid || 1, scopes: d.scopes || [], sid: d.sid, task: d.task };
+  taskRes = null;
   assignLabels(sch.parts);
   sch.nid = Math.max(sch.nid, 1 + Math.max(0, ...sch.parts.map(p => p.id || 0), ...sch.wires.map(w => w.id || 0)));
   circ = null; sim = null; phase.clear(); lastSample = -1; rebuild(); hist = [snap()]; hi = 0;
@@ -1435,6 +1821,29 @@ const EXAMPLES = [
   { lab: 'sim', cat: 'Hausinstallation', name: 'Verteilung mit zwei Stromkreisen (Flur und Bad)', info: 'Ein FI schützt beide Stromkreise, jeder hat einen eigenen Sicherungsautomaten. Schalter antippen.',
     make: () => ({ parts: [['NETZ', 1, 0], ['RCD', 1, 2], ['LSS', -4, 8, 1, 'B10'], ['LSS', -10, 8, 1, 'B10'], ['SPST', -4, 12, 1, '', { sw: 1 }], ['SPST', -10, 12, 1, '', { sw: 1 }], ['LAMP', -4, 16, 1, '230V 60W'], ['LAMP', -10, 16, 1, '230V 60W']],
       wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 2], ['braun', 1, 6, 1, 8, -4, 8, -10, 8], ['blau', 3, 6, 3, 22, -4, 22, -10, 22], ['blau', -4, 20, -4, 22], ['blau', -10, 20, -10, 22]], scopes: [], tempo: 0.55, win: 0.04 }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Zwei Schalter in Reihe (UND)', info: 'Die Lampe leuchtet nur, wenn beide Schalter geschlossen sind.',
+    make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', 1, 6, 1, '', { sw: 1 }], ['SPST', 1, 10, 1, '', { sw: 1 }], ['LAMP', 1, 14, 1, '230V 60W']],
+      wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 22, 1, 22, 1, 18]], scopes: [], tempo: 0.55, win: 0.04 }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Zwei Schalter parallel (ODER)', info: 'Die Lampe leuchtet, wenn mindestens ein Schalter geschlossen ist.',
+    make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', 1, 8, 1, '', { sw: 1 }], ['SPST', -3, 8, 1, ''], ['LAMP', 1, 14, 1, '230V 60W']],
+      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, 1, 8, -3, 8], ['braun', 1, 12, 1, 14], ['braun', -3, 12, -3, 14, 1, 14], ['blau', 3, 0, 3, 22, 1, 22, 1, 18]], scopes: [], tempo: 0.55, win: 0.04 }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Selbsthaltung (Start und Stopp)', info: 'Start drücken: das Schütz zieht an und hält sich über Hilfskontakt 13/14 selbst. Stopp (Öffner) schaltet aus.',
+    make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['PBC', -5, 7, 1, '', { l: 'S2' }], ['PB', -9, 11, 0, '', { l: 'S1' }], ['SCHUETZ', -14, 14, 0, '230V'], ['LAMP', -11, 22, 1, '230V 60W']],
+      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, 1, 7, -5, 7], ['schwarz', -9, 11, -9, 14, -14, 14], ['schwarz', -5, 11, -5, 14], ['braun', 1, 6, 1, 18, -5, 18], ['braun', -9, 18, -11, 18, -11, 22],
+              ['blau', 3, 0, 3, 28, -11, 28, -14, 28, -14, 20], ['blau', -11, 26, -11, 28]], scopes: [], tempo: 0.55, win: 0.04 }) },
+  { lab: 'sim', cat: 'Drehstrom', name: 'Drehstrommotor am Netz 400 V', info: 'Drei Außenleiter L1, L2, L3 (je 120° versetzt) speisen den Motor. In den Graphen siehst du die drei Phasen, der Läufer dreht sich.',
+    make: () => ({ parts: [['NETZ3', 1, 0], ['MOTOR3', 2, 10, 0, '400V 2.2kW']],
+      wires: [['braun', 1, 0, 1, 8, 2, 8, 2, 10], ['schwarz', 3, 0, 3, 6, 4, 6, 4, 10], ['grau', 5, 0, 5, 4, 6, 4, 6, 10]], scopes: [0, 1], tempo: 0.55, win: 0.04 }) },
+  { cat: 'Bauteile', name: 'Netzteil: Brückengleichrichter mit Glättung', info: 'Der Brückengleichrichter formt die Wechselspannung in pulsierende Gleichspannung um, der Elko glättet sie.',
+    make: () => ({ parts: [['AC', 2, 4, 1, '12V 50Hz'], ['BRUECKE', 6, 2], ['CE', 14, 2, 1, '470u'], ['R', 18, 2, 1, '220'], ['GND', 8, 6]],
+      wires: [[2, 4, 6, 4], [2, 8, 10, 8, 10, 4], [8, 2, 14, 2, 18, 2], [8, 6, 14, 6, 18, 6]], scopes: [0, 2], tempo: 0.45, win: 0.06 }) },
+  { cat: 'Bauteile', name: 'Festspannung 5 V mit Spannungsregler 7805', info: 'Der 7805 macht aus 9 V eine stabile Ausgangsspannung von 5 V.',
+    make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['REG', 6, 2, 0, '7805'], ['R', 10, 2, 0, '330'], ['LED', 14, 2, 1, 'grün'], ['VM', 18, 2, 1, ''], ['GND', 2, 8]],
+      wires: [[2, 4, 2, 2, 6, 2], [8, 4, 8, 8, 2, 8], [14, 6, 14, 8, 8, 8], [10, 2, 10, 0, 18, 0, 18, 2], [18, 6, 18, 8, 14, 8]], scopes: [], tempo: 0.7 }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Schütz schaltet einen Heizlüfter', info: 'Taster gedrückt halten: das Schütz (Spule 230 V) zieht an und schaltet den Heizlüfter über seinen Hauptkontakt. Steuer- und Laststromkreis sind getrennt.',
+    make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['PB', -1, 6, 1, ''], ['SCHUETZ', -12, 10, 0, '230V'], ['HEAT', -9, 18, 1, '230V 2000W']],
+      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -1, 6], ['schwarz', -1, 10, -1, 8, -12, 8, -12, 10], ['braun', 1, 6, 1, 14, -3, 14], ['braun', -7, 14, -9, 14, -9, 18],
+              ['blau', 3, 0, 3, 22, -9, 22, -12, 22, -12, 16]], scopes: [], tempo: 0.55, win: 0.04 }) },
   { cat: 'Bauteile', name: 'Motor mit Bremse', info: 'Seitenleiste: „Bremse / Last“ hochziehen. Der Strom steigt, die Drehzahl fällt. Bei Blockade brennt der Motor durch.',
     make: () => ({ parts: [['BAT', 2, 4, 1, '6'], ['SPST', 2, 2, 0, '', { sw: 1 }], ['MOTOR', 6, 2, 0, '6V', { pos: 0 }], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [10, 2, 10, 8, 2, 8]], scopes: [2], tempo: 0.7, win: 1 }) },
@@ -1545,7 +1954,7 @@ simsw.innerHTML = '<span class="lL">Zeichnen</span><span class="trk"><span class
 $('#bUndo').before(simsw);
 simsw.addEventListener('click', () => setSimMode(!simMode));
 $('#bRun').style.display = 'none';
-$('#bShare').onclick = () => menuAct('share'); $('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
+$('#bShare').onclick = () => menuAct('share'); if (LAB === 'sim') { $('#bTasks').style.display = ''; $('#bTasks').onclick = openTasks; $('#bCab').style.display = ''; $('#bCab').onclick = openCabinet; } $('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
 $('#bRun').onclick = toggleRun; $('#bUndo').onclick = undo; $('#bRedo').onclick = redo; $('#bMenu').onclick = openMenu;
 $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); });
 (function init() {

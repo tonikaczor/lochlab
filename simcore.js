@@ -12,8 +12,14 @@ const RON = 1e-3, ROFF = 1e9;  // geschlossener / offener Schalter
 /* Plausibilitätsprüfung der Bauteilwerte: unrealistische Eingaben werden durch Standardwerte ersetzt */
 const LIMITS = {
   BAT: [0.01, 1000, '9'], R: [1e-3, 1e10, '1k'], C: [1e-15, 10, '100n'], CE: [1e-12, 10, '100u'], CF: [1e-15, 10, '100n'], L: [1e-9, 1e3, '10m'],
-  NETZ: [50, 500, '230V'], ZD: [1, 200, '5.1'], FUSE: [1e-3, 100, '250mA'], MOTOR: [0.5, 48, '6V'], RLY: [1, 48, '12V'], NTC: [1, 1e8, '10k'], PTC: [0.1, 1e8, '100'], SPK: [1, 1e4, '8'], P: [1, 1e8, '10k'], TP: [1, 1e8, '10k'],
+  NETZ: [50, 500, '230V'], NETZ3: [100, 1000, '400V'], ZD: [1, 200, '5.1'], FUSE: [1e-3, 100, '250mA'], MOTOR: [0.5, 48, '6V'], RLY: [1, 400, '12V'], NTC: [1, 1e8, '10k'], PTC: [0.1, 1e8, '100'], SPK: [1, 1e4, '8'], P: [1, 1e8, '10k'], TP: [1, 1e8, '10k'],
 };
+/* Spulenwerte: Gleichstromspulen (kleine Spannung) rein ohmsch-induktiv, Wechselstromspulen (230 V) über ihre Impedanz bei 50 Hz */
+function coil(un, va, tau) {
+  if (un < 100) { const R = un * un / va; return { r: R, l: R * tau, ion: 0.7 * un / R, ioff: 0.2 * un / R }; }
+  const Z = un * un / va, R = 0.15 * Z, L = Math.sqrt(Z * Z - R * R) / 314.16;
+  return { r: R, l: L, ion: 0.7 * un / Z, ioff: 0.2 * un / Z };
+}
 function sane(k, v) {
   const L = LIMITS[k];
   if (k === 'LAMP') {
@@ -37,8 +43,8 @@ const PRESETS = {
   L: ['1u', '10u', '100u', '1m', '10m', '100m', '1'], ZD: ['3.3', '4.7', '5.1', '6.2', '9.1', '12', '15', '24'], D: ['1N4148', '1N4007', '1N5408', '1N5819', 'BAT43'],
   BAT: ['1.5', '3', '4.5', '5', '6', '9', '12', '24', '48'], AC: ['5V 50Hz', '5V 1kHz', '10V 50Hz', '12V 50Hz', '325V 50Hz'], NETZ: ['230V', '400V', '110V'],
   LAMP: ['6V 0.1A', '6V 0.3A', '12V 5W', '12V 21W', '24V 5W', '230V 25W', '230V 60W', '230V 100W'], HEAT: ['230V 500W', '230V 1000W', '230V 2000W'],
-  FUSE: ['100mA', '250mA', '500mA', '1A', '2A', '5A', '10A'], LSS: ['B10', 'B16', 'B20', 'C16'], MOTOR: ['3V', '6V', '9V', '12V'], RLY: ['5V', '12V', '24V'],
-  NTC: ['4.7k', '10k', '47k', '100k'], PTC: ['47', '100', '220'], SPK: ['4', '8', '16'], BZ: ['5V', '12V'], TRF: ['230V:6V', '230V:12V', '230V:24V'], SD: ['', '500W', '1000W', '2000W'],
+  FUSE: ['100mA', '250mA', '500mA', '1A', '2A', '5A', '10A'], LSS: ['B10', 'B16', 'B20', 'C16'], MOTOR: ['3V', '6V', '9V', '12V'], RLY: ['5V', '12V', '24V', '230V'],
+  NETZ3: ['400V'], MOTOR3: ['400V 2.2kW', '400V 0.75kW', '400V 4kW', '230V 1.1kW D'], NTC: ['4.7k', '10k', '47k', '100k'], PTC: ['47', '100', '220'], SPK: ['4', '8', '16'], BZ: ['5V', '12V'], TRF: ['230V:6V', '230V:12V', '230V:24V'], SD: ['', '500W', '1000W', '2000W'],
   NPN: ['BC547', 'BC548', 'BC337', '2N3904'], PNP: ['BC557', 'BC327', '2N3906'], T: ['BC547', 'BC548', 'BC557', 'BC337', 'BC327', '2N3904', '2N3906'],
   U: ['7805', '7812', '7905', '78L05', 'LM317'], Q: ['32.768k', '4M', '8M', '16M', '20M'], THY: ['TIC106', '2N5062'], OPTO: ['PC817', '4N25'], IMP: ['230V', '24V'], FAULT: ['0.05', '100', '3300'],
   IC: ['NE555', 'SN7400', 'SN7404', 'SN7408', 'SN7432', 'SN7486', 'SN74HC14', 'CD4011', 'CD4017', 'CD4020', 'LM358', 'LM741', 'TL072', 'LM324'], ICX: ['NE555', 'SN7400', 'SN7404', 'CD4017', 'LM358', 'LM741'],
@@ -131,6 +137,7 @@ function buildCircuit(layout) {
   const R = (a, b, g, part, extra) => add(Object.assign({ type: 'R', a, b, g, part }, extra || {}));
 
   layout.parts.forEach(p => {
+    const elemStart = elems.length;
     { const s = sane(p.k, p.v);
       if (!s.ok && s.high) { warnings.push({ part: p, text: 'Wert „' + p.v + '“ ist weit über dem üblichen Bereich' + (s.max ? ' (bis ' + s.max + ')' : '') + ': das Bauteil im Stromkreis wird zerstört. Übliche Werte stehen beim Bauteil zur Auswahl.' }); if ((p.k === 'BAT' || p.k === 'NETZ') && si(p.v, 0) > 1e6) p.v = '1000000'; }
       else if (!s.ok) { warnings.push({ part: p, text: 'Wert „' + p.v + '“ ist unrealistisch klein oder ungültig, es wird der Standardwert ' + s.v + ' verwendet' }); p.v = s.v; }
@@ -164,7 +171,7 @@ function buildCircuit(layout) {
           upd() { const q = this.part.pos == null ? 0 : this.part.pos; m.bx = q * 8 * m.tst / m.w0; this.emf = m.ke * m.w; } });
         break; }
       case 'RLY': {
-        const un = Math.max(si(p.v, 12), 1), R = un * un / 0.4, rl = add({ type: 'RL', a: n(0), b: n(1), r: R, l: R * 0.03, emf: 0, iprev: 0, relay: true, on: false, ion: 0.7 * un / R, ioff: 0.2 * un / R, part: p });
+        const un = Math.max(si(p.v, 12), 1), cl = coil(un, 0.4, 0.03), rl = add({ type: 'RL', a: n(0), b: n(1), r: cl.r, l: cl.l, emf: 0, iprev: 0, relay: true, on: false, ion: cl.ion, ioff: cl.ioff, part: p });
         add({ type: 'S', a: n(2), b: n(3), closed: false, part: p, sub: 'NO', upd() { this.closed = rl.on; } });
         add({ type: 'S', a: n(2), b: n(4), closed: true, part: p, sub: 'NC', upd() { this.closed = !rl.on; } });
         break; }
@@ -193,6 +200,31 @@ function buildCircuit(layout) {
           add({ type: 'D', a: anode ? n(2) : n(i), b: anode ? n(i) : n(2), is, nn: 2, led: true, color: 'rot', imax: 0.04, part: p, vj: 0, seg: map[i], sub: 's' + map[i] });
         }
         break; }
+      case 'NETZ3': {
+        const u = Math.max(si(p.v, 400), 1), uph = u / Math.sqrt(3);
+        for (let i = 0; i < 3; i++) add({ type: 'V', a: n(i), b: n(3), v0: 0, amp: uph * 1.4142, freq: 50, rint: 0.3, wave: 'sin', phase0: -i / 3, part: p, sub: 'L' + (i + 1) });
+        add({ type: 'R', a: n(3), b: n(4), g: 1e3, part: p, sub: 'pe' });
+        break; }
+      case 'MOTOR3': {
+        const q = String(p.v || '400V 2.2kW').replace(',', '.'), mu = q.match(/([0-9.]+)\s*V/), mp = q.match(/([0-9.]+)\s*(k?)W/), dlt = /(^|\s)D(\s|$)|Δ|dreieck/i.test(q);
+        const U = mu ? parseFloat(mu[1]) : 400, P = mp ? parseFloat(mp[1]) * (mp[2] ? 1000 : 1) : 2200;
+        const uph = dlt ? U : U / Math.sqrt(3), Z = uph * uph / (P / 0.8 / 3), R = Z * 0.8, L = Z * 0.6 / 314.16, star = dlt ? null : nodeOfRoot('mstar' + p.id);
+        const w = [[0, 1], [1, 2], [2, 0]];
+        for (let i = 0; i < 3; i++) {
+          const el = add({ type: 'RL', a: n(dlt ? w[i][0] : i), b: dlt ? n(w[i][1]) : star, r: R, l: L, emf: 0, iprev: 0, part: p, sub: 'w' + i });
+          if (i === 0) el.m3 = { inom: uph / Z, i2: null };
+        }
+        break; }
+      case 'BRUECKE':
+        add({ type: 'D', a: n(0), b: n(2), is: 1e-9, nn: 1.8, part: p, vj: 0, vmax: 1000, sub: 'd1' });
+        add({ type: 'D', a: n(1), b: n(2), is: 1e-9, nn: 1.8, part: p, vj: 0, vmax: 1000, sub: 'd2' });
+        add({ type: 'D', a: n(3), b: n(0), is: 1e-9, nn: 1.8, part: p, vj: 0, vmax: 1000, sub: 'd3' });
+        add({ type: 'D', a: n(3), b: n(1), is: 1e-9, nn: 1.8, part: p, vj: 0, vmax: 1000, sub: 'd4' });
+        break;
+      case 'SEG8': {
+        const ca = /a/i.test(String(p.vr || '')), vf = LEDVF.rot, is = 0.01 * Math.exp(-vf / (2 * VT));
+        for (let i = 0; i < 8; i++) add({ type: 'D', a: ca ? n(8) : n(i), b: ca ? n(i) : n(8), is, nn: 2, led: true, color: 'rot', imax: 0.04, part: p, vj: 0, seg: i, sub: 's' + i });
+        break; }
       case 'NETZ': {
         const u = Math.max(si(p.v, 230), 1);
         add(p.vr === 'ac' ? { type: 'V', a: n(0), b: n(1), v0: 0, amp: u * 1.4142, freq: 50, rint: 0.3, wave: 'sin', part: p } : { type: 'V', a: n(0), b: n(1), v0: u, rint: 0.3, wave: 'dc', imax: 0, part: p });
@@ -209,9 +241,17 @@ function buildCircuit(layout) {
         add({ type: 'S', a: n(0), b: n(3), closed: false, part: p, sub: 'c', upd() { this.closed = !!this.part.sw; } });
         add({ type: 'S', a: n(1), b: n(2), closed: false, part: p, sub: 'd', upd() { this.closed = !!this.part.sw; } });
         break;
+      case 'SCHUETZ': {
+        const un = Math.max(si(p.v, 230), 1), cl = coil(un, 3, 0.02);
+        const rl = add({ type: 'RL', a: n(0), b: n(1), r: cl.r, l: cl.l, emf: 0, iprev: 0, relay: true, on: false, ion: cl.ion, ioff: cl.ioff, part: p });
+        add({ type: 'S', a: n(2), b: n(3), closed: false, part: p, sub: 'a1', upd() { this.closed = rl.on; } });
+        add({ type: 'S', a: n(4), b: n(5), closed: true, part: p, sub: 'a2', upd() { this.closed = !rl.on; } });
+        add({ type: 'S', a: n(6), b: n(7), closed: false, part: p, sub: 'h1', upd() { this.closed = rl.on; } });
+        add({ type: 'S', a: n(8), b: n(9), closed: false, part: p, sub: 'h2', upd() { this.closed = rl.on; } });
+        break; }
       case 'IMP': {
-        const un = Math.max(si(p.v, 230), 1), R = un * un / 2;
-        const rl = add({ type: 'RL', a: n(0), b: n(1), r: R, l: R * 0.01, emf: 0, iprev: 0, relay: true, imp: true, on: false, latch: false, ion: 0.6 * un / R, ioff: 0.2 * un / R, part: p });
+        const un = Math.max(si(p.v, 230), 1), cl = coil(un, 2, 0.01);
+        const rl = add({ type: 'RL', a: n(0), b: n(1), r: cl.r, l: cl.l, emf: 0, iprev: 0, relay: true, imp: true, on: false, latch: false, ion: cl.ion * 0.9, ioff: cl.ioff, part: p });
         add({ type: 'S', a: n(2), b: n(3), closed: false, part: p, sub: 'K', upd() { this.closed = rl.latch; } });
         break; }
       case 'SD': {
@@ -259,6 +299,7 @@ function buildCircuit(layout) {
         add({ type: 'R', a: n(0), b: n(1), g: 1 / (rt * pos), part: p, sub: 'AW', upd() { this.g = 1 / (rt * pp(this.part.pos)); } });
         add({ type: 'R', a: n(1), b: n(2), g: 1 / (rt * (1 - pos)), part: p, sub: 'WB', upd() { this.g = 1 / (rt * (1 - pp(this.part.pos))); } });
         break; }
+      case 'SWNC': add({ type: 'S', a: n(0), b: n(1), closed: !p.pressed, part: p, upd() { this.closed = !this.part.pressed; } }); break;
       case 'SW': {
         const prs = !!p.pressed;
         const up = function () { this.closed = !!this.part.pressed; };
@@ -305,6 +346,7 @@ function buildCircuit(layout) {
       default:
         if (['NANO', 'UNO'].includes(k)) warnings.push({ part: p, text: 'wird nicht simuliert' });
     }
+    if (p.defect) for (let i = elemStart; i < elems.length; i++) elems[i].defect = p.defect;
   });
 
   // Eingänge, an denen sonst nichts hängt, sind „offen“ (TTL: High, CMOS: undefiniert -> Low)
@@ -342,7 +384,7 @@ function solve(A, z, n) {
 
 function waveform(e, t) {
   if (e.wave === 'dc') return e.v0;
-  const ph = (t * e.freq) % 1;
+  const ph = (((t * e.freq + (e.phase0 || 0)) % 1) + 1) % 1;
   if (e.wave === 'sin') return e.v0 + e.amp * Math.sin(2 * Math.PI * ph);
   if (e.wave === 'sq') return e.v0 + (ph < 0.5 ? e.amp : -e.amp);
   return e.v0 + e.amp * (ph < 0.5 ? (4 * ph - 1) : (3 - 4 * ph));
@@ -391,6 +433,8 @@ function createSim(circ) {
       let limited = false;
       for (const e of elems) {
         if (e.part && burnt.has(e.part.id) && (e.type !== 'S')) { if (e.type === 'V') {} else continue; }
+        if (e.defect === 'open' && e.type !== 'V') continue;
+        if (e.defect === 'short' && e.b !== undefined && e.type !== 'V' && e.type !== 'TRF' && e.type !== 'RCD') { stampG(e.a, e.b, 1e3); continue; }
         switch (e.type) {
           case 'R': stampG(e.a, e.b, e.g); break;
           case 'S': stampG(e.a, e.b, e.closed ? 1 / (e.ron || RON) : 1 / ROFF); break;
@@ -469,16 +513,19 @@ function createSim(circ) {
     }
     // Zustände übernehmen, Ströme berechnen
     for (const e of elems) {
+      if (e.defect === 'open' && e.type !== 'V') { e.i = 0; if (e.type === 'Q') { e.ic = 0; e.ib = 0; } if (e.type === 'RL') e.iprev = 0; continue; }
+      if (e.defect === 'short' && e.b !== undefined && e.type !== 'V' && e.type !== 'TRF' && e.type !== 'RCD') { e.i = (v[e.a] - v[e.b]) * 1e3; continue; }
       switch (e.type) {
         case 'RL': {
           if (e.part && burnt.has(e.part.id)) { e.i = 0; break; }
+          if (e.m3) { const m = e.m3; const ei = e.i || 0; m.i2 = m.i2 == null ? ei * ei : m.i2 + (ei * ei - m.i2) * Math.min(1, dt / 0.03); const run = Math.sqrt(m.i2) > 0.4 * m.inom ? 157 : 0; e.w = (e.w || 0) + (run - (e.w || 0)) * Math.min(1, dt / 0.3); e.phase = (e.phase || 0) + e.w * dt; }
           const g = 1 / (e.r + e.l / dt); e.i = g * (v[e.a] - v[e.b] - (e.emf || 0) + (e.l / dt) * e.iprev); e.iprev = e.i;
           if (e.mech) {
             const m = e.mech; m.w = (m.w + dt * m.ke * e.i / m.J) / (1 + dt * (m.b + m.bx) / m.J); e.phase = (e.phase || 0) + m.w * dt; e.w = m.w;
             e.heat = Math.max(0, e.heat + dt * (e.i * e.i * e.r - 2.5) / 12);
             if (e.heat > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Motor überhitzt (blockiert)' }); }
           }
-          if (e.relay) { const ia = Math.abs(e.i); if (!e.on && ia > e.ion) { e.on = true; if (e.imp) e.latch = !e.latch; } else if (e.on && ia < e.ioff) e.on = false; }
+          if (e.relay) { e.ir2 = e.ir2 == null ? e.i * e.i : e.ir2 + (e.i * e.i - e.ir2) * Math.min(1, dt / 0.015); const ia = Math.sqrt(e.ir2); if (!e.on && ia > e.ion) { e.on = true; if (e.imp) e.latch = !e.latch; } else if (e.on && ia < e.ioff) e.on = false; }
           break; }
         case 'THY': {
           const vak = v[e.a] - v[e.b], ia = e.on ? (vak - 0.8) * 2 : 0; e.i = ia;
@@ -538,7 +585,7 @@ function createSim(circ) {
   };
 
   sim.volt = (node) => (node < 0 ? NaN : v[node]);
-  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'RL') { e.iprev = 0; e.heat = 0; e.on = false; e.latch = false; e.phase = 0; if (e.mech) e.mech.w = 0; } if (e.type === 'THY') e.on = false; if (e.type === 'TRF') { e.i1p = e.i2p = 0; } if (e.fuse) e.heat = 0; if (e.lamp) { e.lh = 0; e.pav = null; } if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
+  sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'RL') { e.iprev = 0; e.ir2 = null; e.heat = 0; e.on = false; e.latch = false; e.phase = 0; if (e.mech) e.mech.w = 0; } if (e.type === 'THY') e.on = false; if (e.type === 'TRF') { e.i1p = e.i2p = 0; } if (e.fuse) e.heat = 0; if (e.lamp) { e.lh = 0; e.pav = null; } if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
   return sim;
 }
 

@@ -39,6 +39,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displa
 .pit.ctl{display:flex;justify-content:space-between;align-items:center;gap:6px}.pit.ctl em{font-style:normal;font-size:12px;opacity:.75}
 .ctl-sl{display:block;padding:6px 10px;font-size:13px}.ctl-sl span{display:flex;justify-content:space-between;color:var(--mute);margin-bottom:2px}.ctl-sl em{font-style:normal;color:var(--fg);font-weight:600}
 .pre{display:flex;flex-wrap:wrap;gap:5px;margin:-4px 0 12px}.pre button{padding:3px 9px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:12px}
+.tl{list-style:none;margin:10px 0 0;padding:0;font-size:13px}.tl li{padding:4px 0 4px 2px}.tl li.ok{color:#4cd964}.tl li.bad{color:#ff8a7a}.score{margin-top:8px;font-weight:700;color:#ffb340}.score.ok{color:#4cd964}
+.lcd{font:600 30px/1.15 ui-monospace,Menlo,Consolas,monospace;background:#c9d99d;color:#1d2a0c;border-radius:8px;padding:6px 10px;text-align:right;border:2px solid #7b8a58}
+.mmsub{margin-top:6px;font-size:12px;color:var(--mute);min-height:30px}
 .wc{display:flex;flex-wrap:wrap;gap:6px}
 .pcat{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600;padding:12px 8px 4px}
 .pit{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:9px;font-size:14px;line-height:1.2}
@@ -138,6 +141,8 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
     <div class="title" id="title">Schaltplan</div>
     <button class="hb" id="bEx" aria-label="Beispielschaltungen">📖 <span>Beispiele</span></button>
     <button class="hb" id="bOpen" aria-label="Gespeicherte Schaltungen">📂 <span>Öffnen</span></button>
+    <button class="hb" id="bTasks" style="display:none" aria-label="Aufgaben">📝 <span>Aufgaben</span></button>
+    <button class="hb" id="bCab" style="display:none" aria-label="Schaltschrank">🗄 <span>Schrank</span></button>
     <button class="hb" id="bShare" aria-label="Teilen">📤 <span>Teilen</span></button>
     <button class="hb" id="bPrint" aria-label="Drucken">🖨 <span>Drucken</span></button>
     <button class="ib" id="bUndo" aria-label="Rückgängig"><svg class="i" viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-3" transform="translate(0 -3)"/></svg></button>
