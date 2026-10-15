@@ -52,6 +52,8 @@ const KINDS = {
   IMP: { name: 'Stromstoßschalter', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [0, 4], [6, 0], [6, 4]], v: '230V', core: 'IMP', box: [0, -0.4, 6, 4.4], props: [['v', 'Spulenspannung', 'text', 'z. B. 230V']] },
   HEAT:{ name: 'Heizlüfter', cat: 'Verbraucher', lab: 'sim', pins: T2, v: '230V 2000W', core: 'LAMP', box: [0, -1.1, 4, 1.1], props: [['v', 'Spannung und Leistung', 'text', 'z. B. 230V 2000W']] },
   SD:  { name: 'Steckdose', cat: 'Verbraucher', lab: 'sim', pins: [[4, 0], [4, 2], [4, 4]], v: '1000W', core: 'SD', box: [0, -0.9, 4, 4.9], toggle: true, props: [['v', 'Angeschlossenes Gerät (Leistung)', 'text', 'z. B. 2000W, leer = nichts angesteckt']] },
+  JUN5:{ name: 'Verteilerklemme 5-polig', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8]], v: '', core: 'JUN', box: [-0.6, -0.8, 1.4, 8.8], props: [] },
+  FAULT:{ name: 'Fehlerstelle (Kurzschluss)', cat: 'Verbraucher', lab: 'sim', pins: T2, v: '0.05', core: 'FAULT', box: [0, -1.4, 4, 1.2], toggle: true, props: [['v', 'Widerstand der Fehlerstelle (Ω)', 'text', 'z. B. 0.05 = Kurzschluss']] },
   AND: { name: 'UND-Gatter',   cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'and',  box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
   NAND:{ name: 'NAND-Gatter',  cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'nand', box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
   OR:  { name: 'ODER-Gatter',  cat: 'Logik', pins: [[0, 0], [0, 2], [4, 1]], v: '5V', core: 'GATE', vr: 'or',   box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] },
@@ -83,7 +85,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -413,6 +415,16 @@ function drawPart(p, selected) {
       });
       if (cfg) T(def ? 'NE555' : (p.v || 'IC'), 3.9, 4, .55); else T(info ? info.name.split(' ')[0] : (p.v || 'IC'), 3, (by0 + by1) / 2, .8);
       c.restore(); break; }
+    case 'JUN5': {
+      c.strokeStyle = body; c.strokeRect(0, -0.6, 1, 9.2);
+      [0, 2, 4, 6, 8].forEach((y, i) => { c.strokeStyle = pc[i]; c.lineWidth = 0.13; line(0, y, 0.5, y); c.fillStyle = pc[i]; c.beginPath(); c.arc(0.5, y, 0.18, 0, 7); c.fill(); });
+      break; }
+    case 'FAULT': {
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]);
+      c.beginPath(); c.arc(1, 0, 0.1, 0, 7); c.fill(); c.beginPath(); c.arc(3, 0, 0.1, 0, 7); c.fill();
+      c.strokeStyle = p.sw ? '#ff5544' : body; c.lineWidth = 0.13; line(1, 0, p.sw ? 3 : 2.9, p.sw ? 0 : -1.1);
+      c.strokeStyle = '#ff5544'; c.lineWidth = 0.14; c.beginPath(); c.moveTo(2.2, -1.2); c.lineTo(1.7, -0.5); c.lineTo(2.3, -0.5); c.lineTo(1.8, 0.4); c.stroke();
+      break; }
     case 'NETZ': {
       [0, 1, 2].forEach(i => lead(i * 2, 0, i * 2, -0.9, pc[i])); c.strokeStyle = body; c.strokeRect(-1, -3, 6, 2.1);
       c.save(); c.fillStyle = body; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '700 .85px sans-serif';
@@ -598,7 +610,8 @@ function valueText(p) {
     case 'SPK': return fmtVal(p.v, 'Ω');
     case 'NTC': case 'PTC': return fmtVal(p.v, 'Ω');
     case 'TRF': case 'RLY': return p.v;
-    case 'NETZ': return '';
+    case 'NETZ': case 'JUN5': return '';
+    case 'FAULT': return p.sw ? 'Fehler aktiv' : 'Fehler aus';
     case 'LSS': case 'RCD': case 'IMP': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
     case 'HEAT': return p.v;
@@ -1108,6 +1121,41 @@ function llSpec(p) {
     default: return null;
   }
 }
+const GATE_IC = { AND: ['7408', 'q'], NAND: ['7400', 'q'], OR: ['7432', 'q'], NOR: ['7402', 'n'], XOR: ['7486', 'q'], NOT: ['7404', 'h'], SNOT: ['7414', 'h'], DFF: ['7474', 'd'], OPA: ['LM358', 'o'] };
+const SLOTS = {
+  q: [[1, 2, 3], [4, 5, 6], [9, 10, 8], [12, 13, 11]], n: [[2, 3, 1], [5, 6, 4], [8, 9, 10], [11, 12, 13]],
+  h: [[1, 2], [3, 4], [5, 6], [9, 8], [11, 10], [13, 12]],
+  d: [[2, 3, 5, 6, 1, 4], [12, 11, 9, 8, 13, 10]],                 // D, CLK, Q, /Q, CLR, PRE
+  o: [[3, 2, 1, 8, 4], [5, 6, 7, 8, 4]],                            // IN+, IN-, OUT, V+, V-
+};
+function addLogic(job, find, gnd) {
+  const groups = {}; sch.parts.forEach(p => { if (GATE_IC[p.k]) (groups[GATE_IC[p.k][0] + '|' + GATE_IC[p.k][1]] = groups[GATE_IC[p.k][0] + '|' + GATE_IC[p.k][1]] || []).push(p); });
+  const keys = Object.keys(groups); if (!keys.length) return;
+  let uc = 0; const un = () => '__u' + (uc++), VCC = '__VCC', GN = gnd || '__GND';
+  keys.forEach(key => {
+    const [type, cls] = key.split('|'), slots = SLOTS[cls], list = groups[key];
+    for (let i = 0; i < list.length; i += slots.length) {
+      const chunk = list.slice(i, i + slots.length), np = cls === 'o' ? 8 : 14, pins = Array.from({ length: np }, () => un());
+      if (cls !== 'o') { pins[13] = VCC; pins[6] = GN; }
+      slots.forEach((slot, si) => {
+        const p = chunk[si];
+        if (p) { const pw = pinsOf(p); slot.slice(0, pw.length).forEach((pn, k) => { pins[pn - 1] = String(find(gk(...pw[k]))); }); }
+        else if (cls === 'q') { pins[slot[0] - 1] = GN; pins[slot[1] - 1] = GN; }
+        else if (cls === 'n') { pins[slot[1] - 1] = GN; pins[slot[2] - 1] = GN; }
+        else if (cls === 'h') { pins[slot[0] - 1] = GN; }
+        else if (cls === 'd') { pins[slot[0] - 1] = GN; pins[slot[1] - 1] = GN; pins[slot[4] - 1] = VCC; pins[slot[5] - 1] = VCC; }
+        else if (cls === 'o') { pins[slot[0] - 1] = GN; pins[slot[1] - 1] = GN; }
+      });
+      if (cls === 'd') chunk.forEach((p, si) => { const slot = slots[si], pw = pinsOf(p); pins[slot[4] - 1] = VCC; pins[slot[5] - 1] = VCC; });
+      if (cls === 'o' && chunk.length === 1) { pins[slots[1][0] - 1] = GN; pins[slots[1][1] - 1] = GN; pins[6] = un(); }
+      const first = chunk[0], pw0 = pinsOf(first);
+      job.parts.push({ ll: { k: 'IC', n: np, v: type, sk: true }, l: first.l || type, sx: pw0[0][0], sy: pw0[0][1], sr: 0, two: false, pins });
+      job.notes.logic = (job.notes.logic || []).concat((first.l || type) + ': ' + type + ' mit ' + chunk.length + ' Gatter(n) aus dem Plan');
+    }
+  });
+  job.parts.push({ ll: { k: 'KL', n: 2, v: '' }, l: 'Vcc', sx: 0, sy: -3, sr: 0, two: false, pins: [VCC, GN] });
+  job.notes.ext.push('Vcc (+5 V) und GND für die ICs');
+}
 function buildJob() {
   const par = new Map(), find = k => { if (!par.has(k)) par.set(k, k); while (par.get(k) !== k) { par.set(k, par.get(par.get(k))); k = par.get(k); } return k; }, uni = (a, b) => par.set(find(a), find(b));
   sch.wires.forEach(w => uni(gk(w.x1, w.y1), gk(w.x2, w.y2)));
@@ -1115,6 +1163,7 @@ function buildJob() {
   const parts = [], skipped = {}, ext = [];
   sch.parts.forEach(p => {
     if (p.k === 'GND' || p.k === 'VM' || p.k === 'AM') return;
+    if (GATE_IC[p.k]) return;
     const sp = llSpec(p), K = KINDS[p.k];
     if (!sp) { skipped[K.name] = (skipped[K.name] || 0) + 1; return; }
     const pw = pinsOf(p), pins = []; sp.pm.forEach((li, si) => { pins[li] = String(find(gk(...pw[si]))); });
@@ -1122,7 +1171,9 @@ function buildJob() {
     parts.push({ ll: sp.ll, l: p.l || '', sx: sp.two ? pw[0][0] : cxs, sy: sp.two ? pw[0][1] : cys, sr: p.r, two: !!sp.two, pins });
     if (sp.ext) ext.push((p.l || K.name) + ' (' + K.name + ')');
   });
-  return { name: sch.name, parts, notes: { skipped: Object.keys(skipped).map(k => skipped[k] + '× ' + k), ext } };
+  const job = { name: sch.name, parts, notes: { skipped: Object.keys(skipped).map(k => skipped[k] + '× ' + k), ext } };
+  addLogic(job, find, g0 ? String(find(g0)) : null);
+  return job;
 }
 function makeLayout() {
   if (!sch.parts.length) { toast('Noch keine Bauteile gezeichnet'); return; }
@@ -1146,7 +1197,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v38</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v39</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -1309,6 +1360,12 @@ const EXAMPLES = [
   { lab: 'sim', cat: 'Hausinstallation', name: 'Überlast: drei Heizlüfter', info: 'Dritten Schalter einschalten: 26 A sind mehr als der Sicherungsautomat B16 erlaubt. Nach einigen Sekunden löst er aus.',
     make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['SPST', -4, 6, 1, '', { sw: 1 }], ['SPST', -8, 6, 1, '', { sw: 1 }], ['SPST', -12, 6, 1, '', { sw: 0 }], ['HEAT', -4, 10, 1, '230V 2000W'], ['HEAT', -8, 10, 1, '230V 2000W'], ['HEAT', -12, 10, 1, '230V 2000W']],
       wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -4, 6, -8, 6, -12, 6], ['blau', 3, 0, 3, 16, -4, 16, -8, 16, -12, 16], ['blau', -4, 14, -4, 16], ['blau', -8, 14, -8, 16], ['blau', -12, 14, -12, 16]], scopes: [], tempo: 0.8 }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Kurzschluss löst den Sicherungsautomaten aus', info: 'Fehlerstelle antippen: ein Kurzschluss zieht sehr hohen Strom. Der Sicherungsautomat schaltet sofort ab.',
+    make: () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['LAMP', -3, 6, 1, '230V 60W'], ['FAULT', -7, 6, 1, '0.05']],
+      wires: [['braun', 1, 0, 1, 2], ['braun', 1, 6, -3, 6, -7, 6], ['blau', 3, 0, 3, 12, -3, 12, -7, 12], ['blau', -3, 10, -3, 12], ['blau', -7, 10, -7, 12]], scopes: [], tempo: 0.75 }) },
+  { lab: 'sim', cat: 'Hausinstallation', name: 'Verteilung mit zwei Stromkreisen (Flur und Bad)', info: 'Ein FI schützt beide Stromkreise, jeder hat einen eigenen Sicherungsautomaten. Schalter antippen.',
+    make: () => ({ parts: [['NETZ', 1, 0], ['RCD', 1, 2], ['LSS', -4, 8, 1, 'B10'], ['LSS', -10, 8, 1, 'B10'], ['SPST', -4, 12, 1, '', { sw: 1 }], ['SPST', -10, 12, 1, '', { sw: 1 }], ['LAMP', -4, 16, 1, '230V 60W'], ['LAMP', -10, 16, 1, '230V 60W']],
+      wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 2], ['braun', 1, 6, 1, 8, -4, 8, -10, 8], ['blau', 3, 6, 3, 22, -4, 22, -10, 22], ['blau', -4, 20, -4, 22], ['blau', -10, 20, -10, 22]], scopes: [], tempo: 0.75 }) },
   { cat: 'Bauteile', name: 'Motor mit Bremse', info: 'Seitenleiste: „Bremse / Last“ hochziehen. Der Strom steigt, die Drehzahl fällt. Bei Blockade brennt der Motor durch.',
     make: () => ({ parts: [['BAT', 2, 4, 1, '6'], ['SPST', 2, 2, 0, '', { sw: 1 }], ['MOTOR', 6, 2, 0, '6V', { pos: 0 }], ['GND', 2, 8]],
       wires: [[2, 4, 2, 2], [10, 2, 10, 8, 2, 8]], scopes: [2], tempo: 0.7, win: 1 }) },
