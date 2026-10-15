@@ -9,6 +9,24 @@ const GMIN = 1e-12;            // kleiner Leitwert gegen Masse, verhindert singu
 const RON = 1e-3, ROFF = 1e9;  // geschlossener / offener Schalter
 
 /* ---------- Werte lesen (4k7, 100n, 10µ, 1M, 5V, 1kHz ...) ---------- */
+/* Plausibilitätsprüfung der Bauteilwerte: unrealistische Eingaben werden durch Standardwerte ersetzt */
+const LIMITS = {
+  BAT: [0.01, 1000, '9'], R: [1e-3, 1e10, '1k'], C: [1e-15, 10, '100n'], CE: [1e-12, 10, '100u'], CF: [1e-15, 10, '100n'], L: [1e-9, 1e3, '10m'],
+  ZD: [1, 200, '5.1'], FUSE: [1e-3, 100, '250mA'], MOTOR: [0.5, 48, '6V'], RLY: [1, 48, '12V'], NTC: [1, 1e8, '10k'], PTC: [0.1, 1e8, '100'], SPK: [1, 1e4, '8'], P: [1, 1e8, '10k'], TP: [1, 1e8, '10k'],
+};
+function sane(k, v) {
+  const L = LIMITS[k];
+  if (k === 'LAMP') {
+    const q = String(v == null ? '' : v).replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/);
+    const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : 0.1;
+    return (un >= 0.1 && un <= 400 && ia >= 1e-3 && ia <= 20) ? { ok: true, v } : { ok: false, v: '6V 0.1A' };
+  }
+  if (k === 'SIG') { const g = parseGen(v); return (g.amp <= 1000 && g.freq <= 1e7) ? { ok: true, v } : { ok: false, v: '5V 1kHz' }; }
+  if (!L || v == null || String(v).trim() === '') return { ok: true, v };
+  const x = si(v, NaN);
+  if (!isFinite(x)) return { ok: true, v };
+  return (x >= L[0] && x <= L[1]) ? { ok: true, v } : { ok: false, v: L[2] };
+}
 function si(str, def) {
   if (str == null || str === '') return def;
   let s = String(str).trim().replace(',', '.').replace(/µ/g, 'u').replace(/[Ωω]/g, '');
@@ -97,6 +115,8 @@ function buildCircuit(layout) {
   const R = (a, b, g, part, extra) => add(Object.assign({ type: 'R', a, b, g, part }, extra || {}));
 
   layout.parts.forEach(p => {
+    { const s = sane(p.k, p.v); if (!s.ok) { warnings.push({ part: p, text: 'Wert „' + p.v + '“ ist unrealistisch, es wird der Standardwert ' + s.v + ' verwendet' }); p.v = s.v; }
+      if (p.imax && !(si(p.imax, 0) >= 1e-3 && si(p.imax, 0) <= 100)) { warnings.push({ part: p, text: 'Max. Strom „' + p.imax + '“ ist unrealistisch und wird ignoriert' }); p.imax = ''; } }
     const k = p.k, pins = p.pins, n = (i) => { rec.push(i); return N(p, i); };
     switch (k) {
       case 'R': add({ type: 'R', a: n(0), b: n(1), g: 1 / Math.max(si(p.v, 1000), 1e-3), part: p, rated: 0.25, res: true }); break;
@@ -110,7 +130,7 @@ function buildCircuit(layout) {
       case 'LAMP': {
         const q = String(p.v || '6V 0.1A').replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/);
         const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : 0.1;
-        add({ type: 'R', a: n(0), b: n(1), g: ia / un, part: p, lamp: un * ia });
+        add({ type: 'R', a: n(0), b: n(1), g: ia / un, part: p, lamp: un * ia, lh: 0 });
         break; }
       case 'FUSE': add({ type: 'R', a: n(0), b: n(1), g: 1 / 0.15, part: p, fuse: { ir: Math.max(si(p.v, 0.25), 1e-3), tau: 0.3 }, heat: 0 }); break;
       case 'NTC': case 'PTC': {
@@ -415,7 +435,7 @@ function createSim(circ) {
         case 'R': if (e.part && burnt.has(e.part.id)) { e.i = 0; break; }
           e.i = (v[e.a] - v[e.b]) * e.g;
           if (e.fuse) { const r = e.i / e.fuse.ir; e.heat = Math.max(0, e.heat + dt * (r * r - 1) / e.fuse.tau); e.hot = Math.min(1, e.heat); if (e.heat > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Sicherung hat ausgelöst' }); } }
-          if (e.lamp) { const rt = e.i * e.i / e.g / e.lamp; e.lh = rt > 2 ? (e.lh || 0) + dt / 0.05 : Math.max(0, (e.lh || 0) - dt / 0.2); if (e.lh > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Glühlampe durchgebrannt' }); } }
+          if (e.lamp) { const rt = e.i * e.i / e.g / e.lamp; if (rt > 25) e.lh = 2; else e.lh = rt > 2 ? (e.lh || 0) + dt / 0.05 : Math.max(0, (e.lh || 0) - dt / 0.2); if (e.lh > 1) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Glühlampe durchgebrannt' }); } }
           if (e.speaker && Math.abs(e.i * e.i / e.g) > 2) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Lautsprecher überlastet' }); }
           if (e.res && !burnt.has(e.part.id)) { const pw = e.i * e.i / e.g; e.power = pw; if (pw > 1.5) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Widerstand überlastet' }); } } break;
         case 'S': e.i = (v[e.a] - v[e.b]) * (e.closed ? 1 / RON : 1 / ROFF); break;
@@ -454,6 +474,6 @@ function createSim(circ) {
   return sim;
 }
 
-const api = { si, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS };
+const api = { si, sane, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LochSim = api;
 })(typeof window !== 'undefined' ? window : globalThis);

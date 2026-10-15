@@ -907,6 +907,11 @@ $('#side').addEventListener('input', e => {
 const ICDEF = { '555': 'NE555', '7400': 'SN7400', '7402': 'SN7402', '7404': 'SN7404', '7408': 'SN7408', '7432': 'SN7432', '7486': 'SN7486', '7414': 'SN74HC14', '4011': 'CD4011', '4001': 'CD4001', '4081': 'CD4081', '4071': 'CD4071', '4093': 'CD4093', '4069': 'CD4069', '7474': 'SN7474', '4013': 'CD4013', '4017': 'CD4017', '4020': 'CD4020', '7490': 'SN7490', '7447': 'SN7447', '4511': 'CD4511', '741': 'LM741', '358': 'LM358', '072': 'TL072', '324': 'LM324' };
 $('#side').addEventListener('change', e => {
   const t0 = e.target;
+  if (t0.dataset && t0.dataset.p && t0.type !== 'range' && sel && sel.t === 'part' && t0.tagName === 'INPUT') {
+    const p1 = byPart(sel.id), K1 = KINDS[p1.k];
+    if (t0.dataset.p === 'v') { const s = LS.sane(K1.core, t0.value); if (!s.ok) { toast('Wert unrealistisch, Standardwert ' + s.v + ' übernommen'); p1.v = s.v; t0.value = s.v; commit(true, true); rebuildKeep(); } }
+    else if (t0.dataset.p === 'imax' && t0.value) { const x = LS.si(t0.value, 0); if (!(x >= 1e-3 && x <= 100)) { toast('Max. Strom unrealistisch, Eingabe gelöscht'); p1.imax = ''; t0.value = ''; commit(true, true); rebuildKeep(); } }
+  }
   if (t0.dataset && t0.dataset.ic && sel && sel.t === 'part') { const p0 = byPart(sel.id), C = window.LochSimICs && LochSimICs.CATALOG[t0.value]; if (p0 && C) { p0.v = ICDEF[t0.value] || t0.value; p0.n = C.np; commit(); } return; } const t = e.target; if (t.tagName === 'SELECT' && t.dataset.p && sel) { const p = byPart(sel.id); p[t.dataset.p] = t.value; commit(); } });
 function rebuildKeep() { rebuild(); draw(); }
 
@@ -928,6 +933,7 @@ function updateLive() {
   const w = $('#warn'); if (w) {
     const msgs = []; if (!sch.parts.some(p => p.k === 'BAT' || p.k === 'AC' || ['GATE', 'DFF'].includes(KINDS[p.k].core))) msgs.push('Keine Spannungsquelle in der Schaltung.');
     else if (!hasGround()) msgs.push('Keine Masse gesetzt. Es wird der Minuspol der Quelle als Masse genommen.');
+    circ && circ.warnings.forEach(x => { const it = x.part && x.part.item; if (it) msgs.push((it.l || KINDS[it.k].name) + ': ' + x.text); });
     circ && circ.elems.forEach(e => { if (e.type === 'V' && e.cc && e.part && e.part.item) msgs.push((e.part.item.l || 'Quelle') + ' begrenzt den Strom auf ' + fmt(e.imax, 'A') + ': die Spannung bricht ein.'); });
     sim && sim.burnt.forEach(id => { const p = byPart(id); if (p) msgs.push(KINDS[p.k].name + ' ist durchgebrannt (mit „Zurück“ wiederherstellen).'); });
     const html = msgs.length ? `<div class="card warn"><ul>${msgs.map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>` : '';
@@ -973,7 +979,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v32</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v33</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
