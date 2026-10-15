@@ -491,9 +491,9 @@ const ptrs = new Map(); let gest = null;
 const rectOf = () => cv.getBoundingClientRect();
 cv.addEventListener('pointerdown', e => {
   e.preventDefault();
-  // Maus: Rechtsklick beendet das aktive Werkzeug (zurück zur Auswahl), andere Tasten tun nichts
-  if (e.pointerType === 'mouse' && e.button !== 0) {
-    if (e.button === 2 && !simMode) { wireStart = null; ghost = null; act = null; setTool('select'); draw(); }
+  // Rechtsklick (oder Strg+Klick) beendet das aktive Werkzeug, andere Maustasten tun nichts
+  if ((e.pointerType === 'mouse' && e.button !== 0) || (e.button === 0 && e.ctrlKey)) {
+    if (e.button === 2 || e.ctrlKey) rightClickExit();
     return;
   }
   try { cv.setPointerCapture(e.pointerId); } catch (_) {}
@@ -514,10 +514,17 @@ cv.addEventListener('pointermove', e => {
   }
   onMove(p);
 });
-function pend(e) { if (!ptrs.has(e.pointerId)) return; const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (gest) { if (!ptrs.size) gest = null; return; } if (e.type === 'pointercancel') cancelAct(); else onUp(p); }
+function pend(e) { if (e.pointerType === 'mouse' && e.button !== 0) return; if (!ptrs.has(e.pointerId)) return; const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (gest) { if (!ptrs.size) gest = null; return; } if (e.type === 'pointercancel') cancelAct(); else onUp(p); }
 cv.addEventListener('pointerup', pend); cv.addEventListener('pointercancel', pend);
 cv.addEventListener('wheel', e => { e.preventDefault(); const r = rectOf(), x = e.clientX - r.left, y = e.clientY - r.top, ns = clamp(view.s * Math.exp(-e.deltaY * 0.0015), 8, 80), f = ns / view.s; view.ox = x - (x - view.ox) * f; view.oy = y - (y - view.oy) * f; view.s = ns; draw(); }, { passive: false });
-cv.addEventListener('contextmenu', e => e.preventDefault());
+function rightClickExit() {
+  if (simMode) return;
+  wireStart = null; ghost = null; act = null;
+  if (tool !== 'select') { setTool('select'); toast('Werkzeug beendet'); }
+  draw();
+}
+cv.addEventListener('contextmenu', e => { e.preventDefault(); rightClickExit(); });
+cv.addEventListener('auxclick', e => e.preventDefault());
 
 function cancelAct() { if (act && act.t === 'move' && act.moved) { act.restore && act.restore(); } act = null; draw(); }
 function onDown(p) {
@@ -788,7 +795,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v23</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function form(title, fields, onOk) {
   sheet(title, (b, close) => {

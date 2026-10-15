@@ -1,4 +1,4 @@
-const CACHE = 'lochlab-v22';
+const CACHE = 'lochlab-v23';
 const FILES = ['./', './index.html', './layout.html', './schaltplan.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png', './simcore.js', './simui.js', './schaltplan.js'];
 
 self.addEventListener('install', e => {
@@ -11,7 +11,7 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(r => {
+    fetch(e.request, { cache: 'no-cache' }).then(r => {
       const copy = r.clone();
       caches.open(CACHE).then(c => c.put(e.request, copy));
       return r;

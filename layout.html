@@ -713,9 +713,9 @@ function readout(g){$('#readout').textContent=g?`Spalte ${g[0]+1} · Zeile ${g[1
 
 cv.addEventListener('pointerdown',e=>{
   e.preventDefault();
-  // Maus: Rechtsklick beendet das aktive Werkzeug (zurück zur Auswahl), andere Tasten tun nichts
-  if(e.pointerType==='mouse'&&e.button!==0){
-    if(e.button===2&&!document.body.classList.contains('sim')){chain=null;ghost=null;act=null;setTool('select');invalidate();}
+  // Rechtsklick (oder Strg+Klick) beendet das aktive Werkzeug, andere Maustasten tun nichts
+  if((e.pointerType==='mouse'&&e.button!==0)||(e.button===0&&e.ctrlKey)){
+    if(e.button===2||e.ctrlKey)rightClickExit();
     return;
   }
   try{cv.setPointerCapture(e.pointerId);}catch(_){}
@@ -740,6 +740,7 @@ cv.addEventListener('pointermove',e=>{
   onMove(p);
 });
 function pend(e){
+  if(e.pointerType==='mouse'&&e.button!==0)return;
   if(!ptrs.has(e.pointerId))return;const p=ptrs.get(e.pointerId);ptrs.delete(e.pointerId);
   if(gest){if(!ptrs.size)gest=null;return;}
   if(e.type==='pointercancel')cancelAct();else onUp(p);
@@ -750,7 +751,14 @@ cv.addEventListener('wheel',e=>{
   const ns=clamp(view.s*Math.exp(-e.deltaY*.0015),5,140),f=ns/view.s;
   view.ox=x-(x-view.ox)*f;view.oy=y-(y-view.oy)*f;view.s=ns;invalidate();
 },{passive:false});
-cv.addEventListener('contextmenu',e=>e.preventDefault());
+function rightClickExit(){
+  if(document.body.classList.contains('sim'))return;
+  chain=null;ghost=null;act=null;
+  if(tool!=='select'){setTool('select');toast('Werkzeug beendet');}
+  invalidate();
+}
+cv.addEventListener('contextmenu',e=>{e.preventDefault();rightClickExit();});
+cv.addEventListener('auxclick',e=>{e.preventDefault();});
 
 function cancelAct(){
   if(act&&act.t==='move'&&act.moved){const it=byId(act.id);if(it)Object.assign(it,JSON.parse(act.orig));}
@@ -1217,7 +1225,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v23</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
