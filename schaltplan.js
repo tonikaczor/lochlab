@@ -2002,6 +2002,8 @@ function godGate(then) {
   });
 }
 const DSPEC = { '1N4007': 'd4007', '1N5819': 'd5819' };
+// Arduino Uno: Schaltplan-Anschluss (5V, 3V3, VIN, GND, A0..A5, D0..D13, GND, 5V) -> Stift des LochLab-Moduls
+const UNO_PM = (() => { const m = [22, 21, 25, 23]; for (let a = 0; a < 6; a++) m.push(26 + a); for (let n = 0; n < 14; n++) m.push(17 - n); m.push(3, 22); return m; })();
 function llSpec(p) {
   const v = p.v, two = { two: true };
   switch (p.k) {
@@ -2018,6 +2020,15 @@ function llSpec(p) {
     case 'PHT': return { ll: { k: 'PHT', n: 1, v: v || 'BPW40' }, pm: [0, 1], ...two };
     case 'LAMP': return { ll: { k: 'LAMP', n: 3, v: v || '6V 0.1A' }, pm: [0, 1], ...two };
     case 'SPK': return { ll: { k: 'SPK', n: 4, v }, pm: [0, 1], ...two };
+    case 'UNO': return { ll: { k: 'UNO', v: 'Uno R3' }, pm: UNO_PM };
+    case 'SERVO': return { ll: { k: 'SIP', n: 3, v: 'Servo' }, pm: [2, 1, 0] };          // Stecker: Masse, Plus, Signal
+    case 'HCSR04': return { ll: { k: 'SIP', n: 4, v: 'HC-SR04' }, pm: [0, 1, 2, 3] };
+    case 'LCDI2C': return { ll: { k: 'SIP', n: 4, v: 'LCD I2C' }, pm: [0, 1, 2, 3] };
+    case 'PIR': return { ll: { k: 'SIP', n: 3, v: 'PIR' }, pm: [0, 1, 2] };
+    case 'TMP36': return { ll: { k: 'SIP', n: 3, v: 'TMP36' }, pm: [0, 1, 2] };
+    case 'RGBLED': return { ll: { k: 'SIP', n: 4, v: 'RGB-LED' }, pm: [0, 1, 2, 3] };
+    case 'PIEZO': return { ll: { k: 'BZ', n: 3, v: 'Piezo' }, pm: [0, 1], ...two };
+    case 'TOUCH': return { ll: { k: 'PIN', n: 1, v: '' }, pm: [0] };
     case 'PB': case 'PBC': return { ll: { k: 'SW', vr: 'k2', v: '' }, pm: [0, 1] };
     case 'SPST': return { ll: { k: 'SCH', vr: 'k3', n: 3, v: '' }, pm: [1, 0] };
     case 'SPDT': return { ll: { k: 'SCH', vr: 'k3', n: 3, v: '' }, pm: [1, 0, 2] };
@@ -2072,13 +2083,14 @@ function buildJob() {
   const par = new Map(), find = k => { if (!par.has(k)) par.set(k, k); while (par.get(k) !== k) { par.set(k, par.get(par.get(k))); k = par.get(k); } return k; }, uni = (a, b) => par.set(find(a), find(b));
   sch.wires.forEach(w => uni(gk(w.x1, w.y1), gk(w.x2, w.y2)));
   let g0 = null; sch.parts.forEach(p => { if (p.k === 'GND') { const k = gk(...pinsOf(p)[0]); if (g0) uni(g0, k); else g0 = k; find(k); } });
+  const netCnt = new Map(); sch.parts.forEach(p => pinsOf(p).forEach(q => { const r = String(find(gk(...q))); netCnt.set(r, (netCnt.get(r) || 0) + 1); }));
   const parts = [], skipped = {}, ext = [];
   sch.parts.forEach(p => {
     if (p.k === 'GND' || p.k === 'VM' || p.k === 'AM') return;
     if (GATE_IC[p.k]) return;
     const sp = llSpec(p), K = KINDS[p.k];
     if (!sp) { skipped[K.name] = (skipped[K.name] || 0) + 1; return; }
-    const pw = pinsOf(p), pins = []; sp.pm.forEach((li, si) => { pins[li] = String(find(gk(...pw[si]))); });
+    const pw = pinsOf(p), pins = []; sp.pm.forEach((li, si) => { const net = String(find(gk(...pw[si]))); if (pins[li] == null || (netCnt.get(net) || 0) > 1) pins[li] = net; });
     const cxs = pw.reduce((a, q) => a + q[0], 0) / pw.length, cys = pw.reduce((a, q) => a + q[1], 0) / pw.length;
     parts.push({ ll: sp.ll, l: p.l || '', sx: sp.two ? pw[0][0] : cxs, sy: sp.two ? pw[0][1] : cys, sr: p.r, two: !!sp.two, pins });
     if (sp.ext) ext.push((p.l || K.name) + ' (' + K.name + ')');
@@ -2148,7 +2160,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v59</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v60</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
