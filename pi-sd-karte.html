@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SD-Karte für den Raspberry Pi vorbereiten</title><link rel="icon" href="icon-192.png"><style>
+:root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:8px}header img{height:42px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:30px 0 8px;border-bottom:2px solid var(--accent);padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:6px 0}small,.mute{color:var(--mute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0}
+ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
+.k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+.tip{border-left:4px solid var(--ok);padding-left:12px}
+@media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
+
+pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+@media(prefers-color-scheme:light){pre{background:#f1f4f7;color:#1d2329}}
+@media print{pre{background:#f4f4f4;color:#000;border:1px solid #999;white-space:pre-wrap}}
+.try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent);color:#fff!important;text-decoration:none;font-size:14px}
+.merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.toc a{display:block;padding:2px 0}svg{max-width:100%;height:auto}
+@media print{.try{background:none;color:#000!important;border:1px solid #000}}
+</style></head>
+<body><div class="wrap">
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>SD-Karte für den Raspberry Pi vorbereiten</h1><small>Stand: Oktober 2026 · Version 63</small></div></header>
+<p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen-pi.html">Raspberry Pi verstehen</a> · <a href="lernen.html">Lernen</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<p>Bevor der Pi etwas tun kann, braucht er ein Betriebssystem auf einer SD-Karte. Hier steht, welches Programm du dafür nimmst und wie es geht.</p>
+<div class="box toc"><b>Inhalt</b><a href="#k1">1. Das richtige Programm</a><a href="#k2">2. Schritt für Schritt mit dem Imager</a></div>
+<h2 id="k1">1. Das richtige Programm</h2><div class="box"><b>Empfehlung: Raspberry Pi Imager</b> (offiziell von Raspberry Pi, kostenlos, für Windows, macOS und Linux).<br>
+<a class="try" href="https://www.raspberrypi.com/software/" target="_blank" rel="noopener">Raspberry Pi Imager herunterladen</a>
+<p class="mute">Adresse: raspberrypi.com/software. Der Imager lädt das Betriebssystem selbst aus dem Internet, löscht die Karte, schreibt sie neu und stellt WLAN, Benutzer und SSH schon vor dem ersten Start ein. Ein getrenntes Formatieren ist dafür normalerweise <b>nicht nötig</b>.</p></div>
+<table><tr><th>Programm</th><th>Wofür</th><th>Link</th></tr>
+<tr><td><b>Raspberry Pi Imager</b></td><td>Betriebssystem laden, Karte löschen und beschreiben, Voreinstellungen (empfohlen)</td><td><a href="https://www.raspberrypi.com/software/" target="_blank" rel="noopener">raspberrypi.com/software</a></td></tr>
+<tr><td>SD Memory Card Formatter</td><td>Nur wenn eine Karte defekt wirkt, falsche Größe anzeigt oder lange nicht mehr benutzt wurde (offizielles Formatierprogramm der SD Association)</td><td><a href="https://www.sdcard.org/downloads/formatter/" target="_blank" rel="noopener">sdcard.org/downloads/formatter</a></td></tr>
+<tr><td>balenaEtcher</td><td>Alternative zum Schreiben von Abbildern, ohne Voreinstellungen</td><td><a href="https://etcher.balena.io/" target="_blank" rel="noopener">etcher.balena.io</a></td></tr></table>
+<p><b>Warum steht das nicht direkt im Tonfunk Lab?</b> Ein Browser darf aus Sicherheitsgründen nicht selbst auf SD-Karten oder Laufwerke schreiben. Dafür braucht man ein installiertes Programm auf dem Computer. Das Tonfunk Lab verlinkt deshalb nur auf die offiziellen Programme. Am iPad geht das nicht, du brauchst dafür einen Laptop oder PC.</p><h2 id="k2">2. Schritt für Schritt mit dem Imager</h2><ol><li><b>Kartenleser</b> mit der microSD-Karte (mindestens 16 GB, besser 32 GB, Markenkarte der Klasse A1 oder A2) an den Computer stecken.</li>
+<li>Raspberry Pi Imager installieren und starten.</li>
+<li><b>Gerät</b> wählen (zum Beispiel Raspberry Pi 4 oder 5).</li>
+<li><b>Betriebssystem</b>: „Raspberry Pi OS (64-bit)“. Für Lernzwecke mit Desktop, für reine Steuerung ohne Monitor geht auch „Lite“.</li>
+<li><b>Speicher</b>: die SD-Karte wählen. <b>Prüfe das Laufwerk genau!</b> Alles darauf wird gelöscht. Externe Festplatten oder USB-Sticks nicht verwechseln.</li>
+<li><b>Einstellungen bearbeiten</b> (Zahnrad oder „Anpassen“): Hostname (zum Beispiel <code>pi-lab1</code>), Benutzername und Passwort, WLAN-Name und Passwort, Land, Zeitzone, <b>SSH aktivieren</b>.</li>
+<li>Schreiben bestätigen, warten (einige Minuten). Der Imager prüft danach die Karte.</li>
+<li>Karte in den Pi stecken, Netzteil anschließen, 1 bis 2 Minuten warten. Dann verbinden (Bildschirm, oder <code>ssh benutzer@pi-lab1.local</code>).</li></ol>
+<div class="merke"><b>Karte komplett löschen:</b> Im Imager gibt es unter „Betriebssystem“ den Punkt „Erase“ (Löschen). Er formatiert die Karte neu. Für hartnäckige Fälle nimmst du den SD Memory Card Formatter.</div>
+<div class="warn"><b>Wenn es nicht klappt:</b><ul><li>Karte wird nicht angezeigt: anderen Kartenleser oder USB-Anschluss probieren.</li><li>Fehler beim Schreiben: Schreibschutz-Schalter am Adapter prüfen, Karte mit dem Formatter neu formatieren.</li><li>Pi startet nicht: Netzteil zu schwach oder Karte nicht richtig beschrieben, Vorgang wiederholen.</li><li>Kein WLAN: Land und WLAN-Name/Passwort in den Einstellungen prüfen oder per Netzwerkkabel anschließen.</li></ul></div>
+</div></body></html>
