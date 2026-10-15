@@ -52,6 +52,8 @@ const KINDS = {
   UNO: { name: 'Arduino Uno', cat: 'Arduino', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [0, 16], [0, 18], [8, 0], [8, 2], [8, 4], [8, 6], [8, 8], [8, 10], [8, 12], [8, 14], [8, 16], [8, 18], [8, 20], [8, 22], [8, 24], [8, 26], [8, 28], [8, -2]], v: '', core: 'MCU', box: [0, -3, 8, 30], props: [] },
   RGBLED: { name: 'RGB-LED (gemeinsame Kathode)', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [4, 2]], v: '', core: 'RGBLED', box: [0, -1, 4, 5], props: [] },
   TMP36: { name: 'Temperatursensor TMP36', cat: 'Sensoren', lab: 'code', pins: [[4, 0], [4, 2], [4, 4]], v: '', core: 'TMP36', box: [0, -1, 4, 5], pos: true, pos0: 0.394, props: [['pos', 'Temperatur (−40 … 125 °C)', 'range']] },
+  PIEZO: { name: 'Klopfsensor (Piezo)', cat: 'Sensoren', lab: 'code', pins: [[4, 0], [4, 2]], v: '', core: 'PIEZO', box: [0, -1, 4, 3], pos: true, pos0: 0, props: [['pos', 'Klopfstärke (0 … 5 V)', 'range']] },
+  TOUCH: { name: 'Berührungsfläche', cat: 'Sensoren', lab: 'code', pins: [[0, 0]], v: '', core: 'TOUCH', box: [0, -2, 5, 2], pos: true, pos0: 0, props: [['pos', 'Berührung (über 50 % = Finger drauf)', 'range']] },
   PIR: { name: 'Bewegungsmelder PIR', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'PIR', box: [0, -1, 5, 5], pos: true, pos0: 0, props: [['pos', 'Bewegung (über 50 % = erkannt)', 'range']] },
   HCSR04: { name: 'Ultraschall HC-SR04', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [0, 6]], v: '', core: 'HCSR04', box: [0, -1.2, 6, 7.2], pos: true, pos0: 0.246, props: [['pos', 'Abstand (2 … 400 cm)', 'range']] },
   SERVO: { name: 'Servo', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'SERVO', box: [0, -1, 6, 5], props: [] },
@@ -99,7 +101,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -477,6 +479,17 @@ function drawPart(p, selected) {
       c.save(); c.fillStyle = body; c.textBaseline = 'middle';
       [['TMP36', 1.75, 1, 0.62, 'center'], [((-40 + 165 * (p.pos == null ? 0.394 : p.pos)).toFixed(0)) + ' °C', 1.75, 3.2, 0.62, 'center'], ['+5V', 2.85, -0.2, 0.42, 'right'], ['OUT', 2.85, 1.8, 0.42, 'right'], ['GND', 2.85, 3.8, 0.42, 'right']].forEach(([t, x, y, sz, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${sz}px sans-serif`; c.textAlign = al; c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
+    case 'PIEZO': {
+      lead(4, 0, 3, 0, pc[0]); lead(4, 2, 3, 2, pc[1]);
+      c.strokeStyle = body; c.fillStyle = 'rgba(214,170,90,.55)'; c.beginPath(); c.arc(1.6, 1, 1.35, 0, 7); c.fill(); c.stroke();
+      c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('+', 3.5, -0.35); c.fillText('Piezo', 1.6, 1);
+      if ((p.pos || 0) > 0.05) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.1; c.beginPath(); c.arc(1.6, 1, 1.9, -0.9, 0.9); c.stroke(); c.beginPath(); c.arc(1.6, 1, 2.3, -0.9, 0.9); c.stroke(); }
+      break; }
+    case 'TOUCH': {
+      lead(0, 0, 1, 0, pc[0]);
+      const on = (p.pos || 0) > 0.5; c.fillStyle = on ? 'rgba(255,225,77,.8)' : 'rgba(232,234,237,.18)'; c.strokeStyle = body; c.lineWidth = 0.12; c.fillRect(1, -1.3, 3.6, 2.6); c.strokeRect(1, -1.3, 3.6, 2.6);
+      c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(on ? 'berührt' : 'Fläche', 2.8, 0);
+      break; }
     case 'PIR': {
       lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]);
       c.strokeStyle = body; c.strokeRect(1, -0.8, 4, 5.6); const act = (p.pos || 0) > 0.5;
@@ -738,7 +751,7 @@ function valueText(p) {
     case 'SPK': return fmtVal(p.v, 'Ω');
     case 'NTC': case 'PTC': return fmtVal(p.v, 'Ω');
     case 'TRF': case 'RLY': return p.v;
-    case 'NETZ': case 'JUN5': case 'UNO': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': return '';
+    case 'NETZ': case 'JUN5': case 'UNO': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
     case 'FAULT': return p.sw ? 'Fehler aktiv' : 'Fehler aus';
     case 'LSS': case 'RCD': case 'IMP': case 'SCHUETZ': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
@@ -816,7 +829,7 @@ function drawCircuit() {
     const K = KD(p); if (!K.pos) return;
     let y1 = -1e9, xc = 0, n = 0;
     [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); y1 = Math.max(y1, p.y + rb); xc += p.x + ra; n++; });
-    const w = Math.max(104, view.s * 3.8), r = drawPill(cx, X(xc / n), Y(y1) + 20, w, clamp(p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos, 0, 1), p.k === 'MOTOR' ? 'Bremse' : (p.k === 'NTC' || p.k === 'PTC' || p.k === 'TMP36' ? 'Temp.' : (p.k === 'POT' ? 'Poti' : (p.k === 'HCSR04' ? 'Abstand' : (p.k === 'PIR' ? 'Bewegung' : 'Licht')))));
+    const w = Math.max(104, view.s * 3.8), r = drawPill(cx, X(xc / n), Y(y1) + 20, w, clamp(p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos, 0, 1), p.k === 'MOTOR' ? 'Bremse' : (p.k === 'NTC' || p.k === 'PTC' || p.k === 'TMP36' ? 'Temp.' : (p.k === 'POT' ? 'Poti' : (p.k === 'HCSR04' ? 'Abstand' : (p.k === 'PIEZO' ? 'Klopfen' : (p.k === 'TOUCH' ? 'Finger' : (p.k === 'PIR' ? 'Bewegung' : 'Licht')))))));
     sliderHits.push(Object.assign({ id: p.id }, r));
   });
 }
@@ -1286,6 +1299,7 @@ function makeIO(el) {
     serialPrint: s => serAppend(s), serialAvailable: () => serRx.length, serialRead: () => (serRx.length ? serRx.shift() : -1),
     servo: (q, cmd, a) => { if (cmd === 'detach') delete m.servo[q]; else m.servo[q] = a; },
     lcd: (o, name, a) => lcdCmd(name, a), object: () => {},
+    touch: q => { const nd = node(q), e = circ.elems.find(x => x.type === 'TCH' && x.a === nd); return e ? Math.round(8 + (e.part.pos || 0) * 2000) : 0; },
     pulseHint: (q) => { const e = circ.elems.find(x => x.type === 'SENS' && x.dev === 'HCSR04' && x.echoPin === q); return e ? e.lastEcho : null; },
   };
 }
@@ -1856,7 +1870,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v47</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v48</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -2187,6 +2201,53 @@ void loop() {
   Serial.print(celsius);
   Serial.println(" Grad C");
   delay(200);
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'Klopfsensor mit Piezo', info: 'Regler „Klopfen“ am Piezo hochziehen: Ab einem Messwert von 100 schaltet die LED um und der Serial-Monitor meldet „Knock!“. Regler wieder auf 0 stellen, damit nicht dauernd umgeschaltet wird.',
+    make: () => ({ parts: [['UNO', 12, 0], ['PIEZO', 6, 8, 0, '', { pos: 0 }], ['GND', 10, 10], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[10, 8, 12, 8], [20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`const int ledPin = 13;
+const int knockSensor = A0;
+const int threshold = 100;
+
+int sensorReading = 0;
+int ledState = LOW;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  sensorReading = analogRead(knockSensor);
+  if (sensorReading >= threshold) {
+    ledState = !ledState;
+    digitalWrite(ledPin, ledState);
+    Serial.println("Knock!");
+  }
+  delay(100);
+}
+` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'Touch-Lampe (Berührungssensor)', info: 'Regler „Finger“ an der Berührungsfläche hochziehen: Die LED leuchtet, solange berührt wird. Die Bibliothek CapacitiveSensor misst, wie lange sich die Fläche auflädt.',
+    make: () => ({ parts: [['UNO', 12, 0], ['TOUCH', 24, 4, 0, '', { pos: 0 }], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], wires: [[20, 4, 24, 4], [20, 26, 22, 26]], scopes: [], tempo: 0.75,
+      code: String.raw`#include <CapacitiveSensor.h>
+
+// Sendepin 4, Empfangspin 2 (dort hängt die Berührungsfläche)
+CapacitiveSensor cs_4_2 = CapacitiveSensor(4, 2);
+
+void setup() {
+  pinMode(13, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  long total = cs_4_2.capacitiveSensor(30);
+  Serial.println(total);
+  if (total > 1000) {
+    digitalWrite(13, HIGH);
+  } else {
+    digitalWrite(13, LOW);
+  }
+  delay(100);
 }
 ` }) },
   { lab: 'code', cat: 'Töne und Sensoren', name: 'Ampel mit drei LEDs', info: 'Eine Fußgängerampel nur mit delay(): rot, rot-gelb, grün, gelb.',

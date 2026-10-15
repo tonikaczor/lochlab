@@ -222,6 +222,8 @@ function buildCircuit(layout) {
         const ck = ['rot', 'grün', 'blau'];
         ['r', 'g', 'b'].forEach((sub, i) => { const vf = LEDVF[ck[i]], is = 0.01 * Math.exp(-vf / (2 * VT)); add({ type: 'D', a: n(i), b: n(3), is, nn: 2, led: true, color: ck[i], imax: 0.03, part: p, vj: 0, sub }); });
         break; }
+      case 'PIEZO': add({ type: 'PZ', a: n(0), g: n(1), part: p }); break;
+      case 'TOUCH': add({ type: 'TCH', a: n(0), part: p }); break;
       case 'TMP36': case 'PIR': case 'HCSR04': {
         const dev = k;
         const pins4 = dev === 'HCSR04';
@@ -534,6 +536,8 @@ function createSim(circ) {
               else stampG(nd, 0, 1e-9);
             }
             break; }
+          case 'PZ': { const pz = e.part.pos || 0, vo = pz * 5, gg = 1 / 2000; stampG(e.a, e.g, gg); inj(e.a, vo * gg); inj(e.g, -vo * gg); e.vo = vo; break; }
+          case 'TCH': stampG(e.a, 0, 1e-9); break;
           case 'SENS': {
             const vc = v[e.vcc] - v[e.g], pw = vc > (e.dev === 'PIR' ? 4.0 : 2.7); e.powered = pw;
             let drv = null;
@@ -592,6 +596,8 @@ function createSim(circ) {
           { const t2 = new Array(26).fill(0); let sum = 0; for (let q = 0; q < 20; q++) { const idx = e.pinNode(q); t2[idx] = -m.pinI[q]; sum += t2[idx]; }
             const i5 = (5 - v[e.nd[0]]) * 2, i52 = (5 - v[e.nd[25]]) * 2, i33 = (3.3 - v[e.nd[1]]) * 1; t2[0] = -i5; t2[25] = -i52; t2[1] = -i33; sum += t2[0] + t2[25] + t2[1]; t2[3] = -sum; e.tI = t2; e.i = i5; }
           break; }
+        case 'PZ': { const i = (e.vo - (v[e.a] - v[e.g])) / 2000; e.tI = [-i, i]; e.i = i; break; }
+        case 'TCH': e.tI = [0]; e.i = 0; break;
         case 'SENS': {
           const dv = e.drive, ivcc = (v[e.vcc] - v[e.g]) / 5000, iOut = dv ? (dv.vo - (v[dv.nd] - v[e.g])) * dv.gg : 0, tI = e.c >= 0 ? [ivcc, 0, -iOut, -ivcc + iOut] : [ivcc, -iOut, -ivcc + iOut];
           if (dv && e.c >= 0 && dv.nd !== e.c) tI[2] = 0;
