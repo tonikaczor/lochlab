@@ -227,7 +227,7 @@ function stamp(e, S, v) {
     const hi = vp - (info.rail || 1.5), lo = vn + (info.rlow != null ? info.rlow : (info.rail || 1.5));
     o.mid = (hi + lo) / 2; o.half = Math.max((hi - lo) / 2, 0);
     let vd = v[o.p] - v[o.n];
-    vd = Math.max(o.vd - 0.5, Math.min(o.vd + 0.5, vd)); o.vd = vd;               // Schrittbegrenzung
+    const lim = Math.max(0.002, 0.3 * Math.abs(o.vd)); vd = Math.max(o.vd - lim, Math.min(o.vd + lim, vd)); o.vd = vd;               // Schrittbegrenzung: klein im linearen Bereich (sonst pendelt die Gegenkopplung), groß in der Sättigung
     const A = 2000, rout = 75, g = 1 / rout;
     let f, df;
     if (o.half < 1e-3) { f = o.mid; df = 0; }

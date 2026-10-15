@@ -2685,7 +2685,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v75</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -3200,13 +3200,13 @@ void loop() {
       wires: [[2, 4, 2, 2], [10, 2, 10, 8, 2, 8]], scopes: [2], tempo: 0.7, win: 1 }) },
   { cat: 'Bauteile', name: 'Sicherung schützt die Lampen', info: 'Dritten Schalter schließen: 0,3 A sind mehr als die 250-mA-Sicherung. Sie löst aus und alles geht aus.',
     make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['FUSE', 2, 2, 0, '250mA'], ['SPST', 8, 2, 1, '', { sw: 1 }], ['LAMP', 8, 6, 1, '9V 0.1A'], ['SPST', 12, 2, 1, '', { sw: 1 }], ['LAMP', 12, 6, 1, '9V 0.1A'], ['SPST', 16, 2, 1, '', { sw: 0 }], ['LAMP', 16, 6, 1, '9V 0.1A'], ['GND', 2, 8]],
-      wires: [[6, 2, 8, 2, 12, 2, 16, 2], [2, 8, 2, 10, 8, 10, 12, 10, 16, 10]], scopes: [], tempo: 0.75 }) },
+      wires: [[2, 4, 2, 2], [6, 2, 8, 2, 12, 2, 16, 2], [2, 8, 2, 10, 8, 10, 12, 10, 16, 10]], scopes: [], tempo: 0.75 }) },
   { cat: 'Bauteile', name: 'Relais schaltet eine zweite Last', info: 'Taster drücken: das Relais zieht an und schaltet die Lampe um. Der Steuerstromkreis ist vom Lastkreis getrennt.',
     make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['PB', 2, 2, 0, ''], ['RLY', 8, 2, 0, '12V'], ['LAMP', 16, 2, 0, '12V 0.1A'], ['LAMP', 16, 6, 0, '12V 0.1A'], ['BAT', 22, 2, 1, '12'], ['GND', 2, 8], ['GND', 22, 6]],
       wires: [[2, 4, 2, 2], [6, 2, 8, 2], [8, 6, 8, 8, 2, 8], [20, 2, 20, 6], [20, 2, 22, 2], [13, 4, 13, 10, 22, 10, 22, 6]], scopes: [], tempo: 0.75 }) },
   { cat: 'Bauteile', name: 'Thyristor zündet und hält', info: 'Taster kurz drücken: der Thyristor zündet und die Lampe bleibt an, auch wenn der Taster wieder loslässt. „Zurück“ löscht.',
     make: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['LAMP', 2, 2, 0, '9V 0.1A'], ['THY', 6, 2, 0, 'TIC106'], ['R', 9, 4, 1, '1k'], ['PB', 5, 8, 0, ''], ['GND', 2, 8]],
-      wires: [[5, 8, 4, 8, 4, 4, 2, 4], [10, 2, 16, 2, 16, 12, 2, 12, 2, 8]], scopes: [], tempo: 0.75 }) },
+      wires: [[5, 8, 4, 8, 4, 4, 2, 4, 2, 2], [10, 2, 16, 2, 16, 12, 2, 12, 2, 8]], scopes: [], tempo: 0.75 }) },
   { cat: 'Bauteile', name: 'Transformator 230 V : 12 V', info: 'Die Primärseite liegt an 230 V, sekundär kommen etwa 12 V heraus. Beide Seiten sind galvanisch getrennt.',
     make: () => ({ parts: [['AC', 2, 4, 1, '325V 50Hz'], ['TRF', 6, 2, 0, '230V:12V'], ['LAMP', 14, 2, 1, '12V 0.1A'], ['GND', 2, 8], ['GND', 12, 6]],
       wires: [[2, 4, 2, 2, 6, 2], [6, 6, 6, 10, 2, 10, 2, 8], [12, 2, 14, 2], [14, 6, 12, 6]], scopes: [0, 2], tempo: 0.4, win: 0.06 }) },
@@ -3333,6 +3333,35 @@ window.SchaltTest = () => {
 };
 window.SchaltJob = i => { const ex = buildExample(EXAMPLES[i]); loadCircuit(ex); return { name: EXAMPLES[i].name, job: buildJob() }; };
 window.SchaltExamples = () => EXAMPLES.map((e, i) => [i, e.name, e.lab || '']);
+window.SchaltSweep = (a, b) => EXAMPLES.filter(exOk).slice(a || 0, b == null ? 999 : b).map(e => {                          // Testhilfe: alle Beispiele des Labs simulieren
+  const r = { name: e.name };
+  try {
+    loadCircuit(buildExample(e));
+    if (LAB === 'code' || LAB === 'pi') {
+      const R = LAB === 'pi' ? piEval({ T: 6 }) : codeEval({ T: 6 }); r.err = R.err ? (R.err.msg || String(R.err)) : null; r.out = String(R.out || R.ser || '').slice(0, 60);
+      r.events = R.E.ev.map(x => x.text); const ls = R.samples.flatMap(sm => (sm.led || []).map(l => l[1])); r.ledMax = ls.length ? +Math.max(...ls).toFixed(1) : 0; r.tone = R.samples.some(sm => sm.tone && sm.tone.some(Boolean)); r.pins = R.samples.length && R.samples.some(sm => sm.lv && sm.lv.some(Boolean));
+    } else {
+      const E = simEval({}); E.run(1.5); r.events = E.ev.map(x => x.text); r.lamps = [...E.lamps().values()].filter(Boolean).length; const il = E.c.elems.filter(x => x.led).map(x => Math.abs(x.iav || x.i || 0) * 1000); r.ledMax = il.length ? +Math.max(...il).toFixed(1) : 0; r.conv = E.s.converged !== false;
+      const sws = sch.parts.filter(p => { const K = KINDS[p.k]; return (K.toggle || K.momentary) && !['LAMP', 'HEAT', 'MOTOR3', 'SD', 'LSS', 'RCD'].includes(p.k); });
+      if (sws.length) { const set = {}, press = []; sws.forEach(p => { if (KINDS[p.k].momentary) press.push(p.id); else set[p.id] = 1; });
+        const E2 = simEval({ set, press }); E2.run(1.5); const il2 = E2.c.elems.filter(x => x.led).map(x => Math.abs(x.iav || x.i || 0) * 1000); const mot = E2.c.elems.filter(x => /MOTOR|M3/i.test(x.type || '')).map(x => Math.abs(x.i || 0));
+        r.sw = sws.length; r.on = { lamps: [...E2.lamps().values()].filter(Boolean).length, ledMax: il2.length ? +Math.max(...il2).toFixed(1) : 0, motor: mot.length ? +Math.max(...mot).toFixed(2) : 0, events: E2.ev.map(x => x.text) }; }
+    }
+  } catch (x) { r.exc = String(x && x.message || x); }
+  return r;
+});
+window.SchaltRun = (name, T, setAll) => {                                          // Testhilfe: ein Beispiel gezielt laufen lassen
+  const e = EXAMPLES.find(x => x.name.toLowerCase().includes(name.toLowerCase())); loadCircuit(buildExample(e));
+  const set = {}, press = []; if (setAll) sch.parts.forEach(p => { const K = KINDS[p.k]; if ((K.toggle || K.momentary) && !['LAMP', 'HEAT', 'MOTOR3', 'SD', 'LSS', 'RCD'].includes(p.k)) { if (K.momentary) press.push(p.id); else set[p.id] = 1; } });
+  const E = simEval({ set, press }); E.run(T || 2); let nonConv = 0; for (let i = 0; i < 5000; i++) { E.s.step(2e-4); if (E.s.converged === false) nonConv++; }
+  return { name: e.name, nonConv, events: E.ev.map(x => x.text), elems: E.c.elems.filter(x => x.part).map(x => [x.type, x.part.k, x.part.v, +(x.i || 0).toFixed(3), x.part.sw, x.blown ? 'DEFEKT' : '']) };
+};
+window.SchaltTrace = (name, T, step) => {                                          // Testhilfe: Strom der LEDs über die Zeit (Blinker prüfen)
+  const e = EXAMPLES.find(x => x.name.toLowerCase().includes(name.toLowerCase())); loadCircuit(buildExample(e));
+  const E = simEval({}), dt = 2e-4, out = []; const leds = E.c.elems.filter(x => x.led);
+  for (let t = 0, i = 0; t < T; t += dt, i++) { E.s.step(dt); if (i % Math.round((step || 0.05) / dt) === 0) out.push(+(Math.max(0, ...leds.map(x => Math.abs(x.i || 0))) * 1000).toFixed(1)); }
+  return { name: e.name, leds: leds.length, trace: out };
+};
 window.SchaltPECheck = () => EXAMPLES.filter(exOk).map(e => {                      // Testhilfe: PE-Anschluss in allen Beispielen prüfen
   loadCircuit(buildExample(e));
   const OFF = { LAMP: 2, HEAT: 2, MOTOR3: 3 }, devs = sch.parts.filter(p => OFF[p.k] != null && (p.k !== 'LAMP' || /230\s*V/i.test(String(p.v || '')))), src = sch.parts.find(p => p.k === 'NETZ' || p.k === 'NETZ3');
