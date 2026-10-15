@@ -46,7 +46,7 @@ const PRESETS = {
   FUSE: ['100mA', '250mA', '500mA', '1A', '2A', '5A', '10A'], LSS: ['B10', 'B16', 'B20', 'C16'], MOTOR: ['3V', '6V', '9V', '12V'], RLY: ['5V', '12V', '24V', '230V'],
   NETZ3: ['400V'], MOTOR3: ['400V 2.2kW', '400V 0.75kW', '400V 4kW', '230V 1.1kW D'], NTC: ['4.7k', '10k', '47k', '100k'], PTC: ['47', '100', '220'], SPK: ['4', '8', '16'], BZ: ['5V', '12V'], TRF: ['230V:6V', '230V:12V', '230V:24V'], SD: ['', '500W', '1000W', '2000W'],
   NPN: ['BC547', 'BC548', 'BC337', '2N3904'], PNP: ['BC557', 'BC327', '2N3906'], T: ['BC547', 'BC548', 'BC557', 'BC337', 'BC327', '2N3904', '2N3906'],
-  U: ['7805', '7812', '7905', '78L05', 'LM317'], Q: ['32.768k', '4M', '8M', '16M', '20M'], THY: ['TIC106', '2N5062'], OPTO: ['PC817', '4N25'], IMP: ['230V', '24V'], FAULT: ['0.05', '100', '3300'],
+  U: ['7805', '7812', '7905', '78L05', 'LM317'], Q: ['32.768k', '4M', '8M', '16M', '20M'], THY: ['TIC106', '2N5062'], NMOS: ['IRLZ44N', 'IRF540N', 'BS170', '2N7000', 'IRLML2502'], PMOS: ['IRF9540', 'BS250'], FET: ['IRLZ44N', 'IRF540N', 'BS170', '2N7000', 'IRF9540', 'BS250'], TRIAC: ['BT136', 'BT138', 'TIC206'], VDR: ['14V', '25V', '60V', '275V', '320V'], DIAC: ['28V', '32V', '35V'], OPTO: ['PC817', '4N25'], IMP: ['230V', '24V'], FAULT: ['0.05', '100', '3300'],
   IC: ['NE555', 'SN7400', 'SN7404', 'SN7408', 'SN7432', 'SN7486', 'SN74HC14', 'CD4011', 'CD4017', 'CD4020', 'LM358', 'LM741', 'TL072', 'LM324'], ICX: ['NE555', 'SN7400', 'SN7404', 'CD4017', 'LM358', 'LM741'],
 };
 function si(str, def) {
@@ -247,9 +247,30 @@ function buildCircuit(layout) {
         break; }
       case 'MCP3008': { const nd = []; for (let i = 0; i < 16; i++) nd.push(n(i)); add({ type: 'ADC', nd, part: p }); break; }
       case 'I2CTEMP': case 'I2CLUX': { add({ type: 'I2C', dev: k, nd: [n(0), n(1), n(2), n(3)], part: p, st: { ptr: 0, mode: null } }); break; }
+      case 'SCHOTTKY': add({ type: 'D', a: n(0), b: n(1), is: 1.6e-7, nn: 1.05, vmax: 40, part: p, vj: 0 }); break;
+      case 'NMOS': case 'PMOS': case 'FET': {
+        const pm = k === 'PMOS' || (k === 'FET' && /^(IRF9540|BS250)$/i.test(String(p.v || '').trim())), key = String(p.v || '').toUpperCase().replace(/\s+/g, ''), M = MOSF[key] || (pm ? MOSF.IRF9540 : MOSF.IRLZ44N);
+        add({ type: 'M', s: pm ? -1 : 1, g: n(0), d: n(1), sn: n(2), vth: M.vth, kp: M.kp, lam: 0.02, vgsmax: 20, imax: M.imax, part: p, vgsP: 0, vdsP: 0 });
+        add({ type: 'D', a: pm ? n(1) : n(2), b: pm ? n(2) : n(1), is: 5e-10, nn: 1.2, part: p, vj: 0, sub: 'bd' });                // Body-Diode
+        break; }
+      case 'DIAC': { const vbo = Math.max(si(String(p.v || '32V').replace(/V$/i, ''), 32), 5); add({ type: 'DIAC', a: n(0), b: n(1), vbo, vb: Math.max(vbo - 8, 3), on: false, sg: 0, part: p }); break; }
+      case 'TRIAC': {
+        add({ type: 'R', a: n(2), b: n(0), g: 1 / 60, part: p, sub: 'G' });
+        add({ type: 'TRIAC', a: n(1), b: n(0), gn: n(2), rg: 60, igt: 0.008, ih: 0.012, on: false, sg: 0, part: p, sub: 'MT' });
+        break; }
+      case 'VDR': { const vn = Math.max(si(String(p.v || '275V').replace(/V$/i, ''), 275), 10), vk = 23.5 * vn / 275, v1 = vn * 1.55; add({ type: 'VDR', a: n(0), b: n(1), vk, i0: 1e-3 / Math.sinh(v1 / vk), en: 0, emax: 0.15 * vn, xP: 0, part: p }); break; }
+      case 'SEG8D': {                                                                       // zwei Ziffern (Multiplex): Segmente a bis g, dp gemeinsam, Pin 8 und 9 sind die gemeinsamen Anschlüsse der Ziffern
+        const ca = /a/i.test(String(p.vr || '')), vf = LEDVF.rot, is = 0.01 * Math.exp(-vf / (2 * VT));
+        for (let dg = 0; dg < 2; dg++) for (let i = 0; i < 8; i++) add({ type: 'D', a: ca ? n(8 + dg) : n(i), b: ca ? n(i) : n(8 + dg), is, nn: 2, led: true, color: 'rot', imax: 0.04, part: p, vj: 0, seg: i, dig: dg, sub: 'd' + dg + 's' + i });
+        break; }
+      case 'DUOLED': {                                                                    // Duo-LED rot/grün mit gemeinsamer Kathode (Standard) oder Anode
+        const anode = /^A/i.test(String(p.v || '')), ck = ['rot', 'grün'];
+        ['r', 'g'].forEach((sub, i) => { const vf = LEDVF[ck[i]], is = 0.01 * Math.exp(-vf / (2 * VT)), pin = i * 2; add({ type: 'D', a: anode ? n(1) : n(pin), b: anode ? n(pin) : n(1), is, nn: 2, led: true, color: ck[i], imax: 0.03, part: p, vj: 0, sub }); });
+        break; }
       case 'RGBLED': {
         const ck = ['rot', 'grün', 'blau'];
-        ['r', 'g', 'b'].forEach((sub, i) => { const vf = LEDVF[ck[i]], is = 0.01 * Math.exp(-vf / (2 * VT)); add({ type: 'D', a: n(i), b: n(3), is, nn: 2, led: true, color: ck[i], imax: 0.03, part: p, vj: 0, sub }); });
+        const anode = /^A/i.test(String(p.v || ''));
+        ['r', 'g', 'b'].forEach((sub, i) => { const vf = LEDVF[ck[i]], is = 0.01 * Math.exp(-vf / (2 * VT)); add({ type: 'D', a: anode ? n(3) : n(i), b: anode ? n(i) : n(3), is, nn: 2, led: true, color: ck[i], imax: 0.03, part: p, vj: 0, sub }); });
         break; }
       case 'PIEZO': add({ type: 'PZ', a: n(0), g: n(1), part: p }); break;
       case 'TOUCH': add({ type: 'TCH', a: n(0), part: p }); break;
@@ -340,6 +361,7 @@ function buildCircuit(layout) {
       case 'C': case 'CE': case 'CF': add({ type: 'C', a: n(0), b: n(1), c: Math.max(si(p.v, 100e-9), 1e-15), part: p, vprev: 0, vmax: ((String(p.v).match(/(\d+(?:\.\d+)?)\s*V/) || [])[1] * 1) || (k === 'CE' ? 35 : (k === 'CF' ? 250 : 100)) }); break;
       case 'L': add({ type: 'L', a: n(0), b: n(1), l: Math.max(si(p.v, 10e-6), 1e-9), part: p, iprev: 0 }); break;
       case 'D': {
+        if (p.vr === 'diac' || /^(DB3|DIAC)/i.test(p.v || '')) { const vbo = /^DB3|^DIAC/i.test(p.v || '') ? 32 : 32; add({ type: 'DIAC', a: n(0), b: n(1), vbo, vb: vbo - 8, on: false, sg: 0, part: p }); break; }
         const z = /z/i.test(p.v || '') || /^[0-9]+V[0-9]?$/.test(String(p.v || '').trim());
         if (z) {
           const m = String(p.v).match(/([0-9]+)V([0-9])?/);
@@ -507,7 +529,7 @@ function createSim(circ) {
     return { i, g: g + GMIN };
   }
 
-  sim.step = function (dt) {
+  const stepOnce = function (dt) {
     const t = sim.t + dt;
     let converged = false;
     for (const e of elems) if (e.upd) e.upd();
@@ -545,6 +567,19 @@ function createSim(circ) {
             vj = lim; e.vj = vj;
             const ev = diodeEval(e, vj);
             stampG(e.a, e.b, ev.g); cur(e.a, e.b, ev.i - ev.g * vj);
+            break; }
+          case 'M': {
+            if (burnt.has(e.part.id)) { stampG(e.d, e.sn, 1e-9); break; }
+            const s = e.s; let vgs = s * (v[e.g] - v[e.sn]), vds = s * (v[e.d] - v[e.sn]);
+            const cl = (x, p0, lim) => Math.max(p0 - lim, Math.min(p0 + lim, x)); const g2 = cl(vgs, e.vgsP, 1.5), d2 = cl(vds, e.vdsP, 4); if (g2 !== vgs || d2 !== vds) limited = true; vgs = g2; vds = d2; e.vgsP = vgs; e.vdsP = vds;
+            const vov = vgs - e.vth; let id = 0, gm = 0, gds = GMIN;
+            if (vov > 0) { if (vds < vov) { id = e.kp * (vov * vds - vds * vds / 2); gm = e.kp * vds; gds = e.kp * (vov - vds) + GMIN; } else { const f = 1 + e.lam * vds; id = e.kp / 2 * vov * vov * f; gm = e.kp * vov * f; gds = e.kp / 2 * vov * vov * e.lam + GMIN; } }
+            stampG(e.d, e.sn, gds); addA(e.d, e.g, gm); addA(e.d, e.sn, -gm); addA(e.sn, e.g, -gm); addA(e.sn, e.sn, gm); cur(e.d, e.sn, s * (id - gm * vgs - gds * vds));
+            break; }
+          case 'VDR': {
+            let x = Math.max(-50, Math.min(50, (v[e.a] - v[e.b]) / e.vk)); const xl = Math.max(e.xP - 2, Math.min(e.xP + 2, x)); if (xl !== x) limited = true; x = xl; e.xP = x;
+            const sh = Math.sinh(x), ch = Math.cosh(x), gg = e.i0 * ch / e.vk + GMIN, ii = e.i0 * sh;
+            stampG(e.a, e.b, gg); cur(e.a, e.b, ii - gg * x * e.vk);
             break; }
           case 'Q': {
             const s = e.s, vtq = VT, vc = vcrit(e.is, vtq);
@@ -600,6 +635,8 @@ function createSim(circ) {
           case 'LCDD': stampG(e.vcc, e.g, 1 / 1000); stampG(e.sda, e.g, 1e-9); stampG(e.scl, e.g, 1e-9); break;
           case 'RL': { const g = 1 / (e.r + e.l / dt + (e.mech ? 0 : 0)); stampG(e.a, e.b, g); cur(e.a, e.b, g * ((e.l / dt) * e.iprev - (e.emf || 0))); break; }
           case 'THY': { if (e.on) { stampG(e.a, e.b, 2); cur(e.a, e.b, -1.6); } else stampG(e.a, e.b, 1e-9); break; }
+          case 'DIAC': { if (e.on) { stampG(e.a, e.b, 1 / 20); cur(e.a, e.b, -e.sg * e.vb / 20); } else stampG(e.a, e.b, 1e-9); break; }
+          case 'TRIAC': { if (e.on) { stampG(e.a, e.b, 1); cur(e.a, e.b, -e.sg * 1.2); } else stampG(e.a, e.b, 1e-9); break; }
           case 'CCS': { const vce = vd(e.a, e.b), th = Math.tanh(vce / 0.3), i = e.ictl * th, gd = e.ictl / 0.3 * (1 - th * th) + GMIN; stampG(e.a, e.b, gd); cur(e.a, e.b, i - gd * vce); break; }
           case 'TRF': {
             const a11 = e.r1 + e.L1 / dt, a22 = e.r2 + e.L2 / dt, a12 = e.M / dt, det = a11 * a22 - a12 * a12;
@@ -675,6 +712,20 @@ function createSim(circ) {
           }
           if (e.relay) { e.ir2 = e.ir2 == null ? e.i * e.i : e.ir2 + (e.i * e.i - e.ir2) * Math.min(1, dt / 0.015); const ia = Math.sqrt(e.ir2); if (!e.on && ia > e.ion) { e.on = true; if (e.imp) e.latch = !e.latch; } else if (e.on && ia < e.ioff) e.on = false; }
           break; }
+        case 'M': {
+          const s = e.s, vgs = s * (v[e.g] - v[e.sn]), vds = s * (v[e.d] - v[e.sn]), vov = vgs - e.vth; let id = 0; if (vov > 0) id = vds < vov ? e.kp * (vov * vds - vds * vds / 2) : e.kp / 2 * vov * vov * (1 + e.lam * vds);
+          e.i = s * id; e.power = Math.abs(e.i * (v[e.d] - v[e.sn]));
+          if (!burnt.has(e.part.id)) { if (Math.abs(vgs) > e.vgsmax) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'MOSFET: Gate durchgeschlagen (U_GS ' + Math.abs(vgs).toFixed(0) + ' V, höchstens 20 V)' }); } else if (Math.abs(e.i) > e.imax * 1.6 || e.power > (e.imax > 5 ? 90 : 1.5)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'MOSFET überlastet' }); } }
+          break; }
+        case 'VDR': { const x = Math.max(-50, Math.min(50, (v[e.a] - v[e.b]) / e.vk)); e.i = e.i0 * Math.sinh(x); e.en = Math.max(0, e.en + (Math.abs(e.i * (v[e.a] - v[e.b])) - 1) * dt); if (e.en > e.emax && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Varistor überlastet (Überspannung zu energiereich)' }); } break; }
+        case 'DIAC': {
+          const vab = v[e.a] - v[e.b], i = e.on ? (vab - e.sg * e.vb) / 20 : vab * 1e-9; e.i = i;
+          if (!e.on && Math.abs(vab) > e.vbo) { e.on = true; e.sg = vab > 0 ? 1 : -1; } else if (e.on && e.sg * i < 2e-3) e.on = false;
+          break; }
+        case 'TRIAC': {
+          const vmt = v[e.a] - v[e.b], i = e.on ? (vmt - e.sg * 1.2) * 1 : vmt * 1e-9, ig = (v[e.gn] - v[e.b]) / e.rg; e.i = i; e.ig = ig;
+          if (!e.on && Math.abs(ig) > e.igt && Math.abs(vmt) > 1.5) { e.on = true; e.sg = vmt > 0 ? 1 : -1; } else if (e.on && e.sg * i < e.ih) e.on = false;
+          break; }
         case 'THY': {
           const vak = v[e.a] - v[e.b], ia = e.on ? (vak - 0.8) * 2 : 0; e.i = ia;
           if (!e.on && (e.gd.i || 0) > 2e-4 && vak > 0.6) e.on = true; else if (e.on && ia < 0.005) e.on = false;
@@ -734,6 +785,12 @@ function createSim(circ) {
     sim.t = t; sim.converged = converged;
     return converged;
   };
+  const hasDiac = elems.some(e => e.type === 'DIAC');
+  /* Während ein DIAC durchgeschaltet hat, dauert der Zündimpuls nur wenige Mikrosekunden: dann in feinen Teilschritten rechnen, damit der TRIAC/Thyristor den Gate-Strom sieht */
+  sim.step = function (dt) {
+    if (hasDiac && elems.some(e => e.type === 'DIAC' && e.on)) { let c = true; for (let k = 0; k < 16; k++) c = stepOnce(dt / 16) && c; return c; }
+    return stepOnce(dt);
+  };
 
   sim.volt = (node) => (node < 0 ? NaN : v[node]);
   sim.reset = () => { elems.forEach(e => { e.cm = 0; }); v.fill(0); sim.t = 0; sim.events.length = 0; burnt.clear(); elems.forEach(e => { if (e.type === 'C') e.vprev = 0; if (e.type === 'L') e.iprev = 0; if (e.type === 'RL') { e.iprev = 0; e.ir2 = null; e.heat = 0; e.on = false; e.latch = false; e.phase = 0; if (e.mech) e.mech.w = 0; } if (e.type === 'THY') e.on = false; if (e.type === 'TRF') { e.i1p = e.i2p = 0; } if (e.fuse) e.heat = 0; if (e.lamp) { e.lh = 0; e.pav = null; } if (e.type === 'D' || e.type === 'Q') { e.vj = 0; e.vbe = 0; e.vbc = 0; } }); };
@@ -776,6 +833,12 @@ function cableOf(v) {
   let iz = CAB_IZ[0][1], best = 1e9; CAB_IZ.forEach(([a, i]) => { const dd = Math.abs(Math.log(a / A)); if (dd < best) { best = dd; iz = i; } });
   return { A, L, R: 0.0178 * L / A, iz };
 }
+
+/* MOSFET-Typen (vereinfachtes Level-1-Modell): Schwellenspannung, Steilheitsfaktor in A/V², höchster Dauerstrom */
+const MOSF = {
+  IRLZ44N: { vth: 1.6, kp: 30, imax: 40 }, IRF540N: { vth: 3.5, kp: 25, imax: 30 }, BS170: { vth: 2.1, kp: 0.4, imax: 0.4 }, '2N7000': { vth: 2.1, kp: 0.3, imax: 0.2 },
+  IRF9540: { vth: 3.5, kp: 8, imax: 19 }, BS250: { vth: 2.1, kp: 0.3, imax: 0.3 }, IRLML2502: { vth: 1.0, kp: 8, imax: 4 },
+};
 const api = { si, sane, PRESETS, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS, i2cXfer, cableOf };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LochSim = api;
 })(typeof window !== 'undefined' ? window : globalThis);

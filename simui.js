@@ -146,6 +146,8 @@ function simDt() {
   const act = scope.ch[0] || scope.ch[1];
   return act ? Math.min(dtBase, scope.tdiv / 80) : dtBase;
 }
+/* Taster bleiben mindestens 100 ms Simulationszeit gedrückt (bei langsamem Tempo wäre ein kurzer Klick sonst unsichtbar) */
+const holdPend = new Set();
 function advance(T) {
   const dt = Math.max(simDt(), 1e-7);
   const n = Math.max(1, Math.round(T / dt));
@@ -155,11 +157,12 @@ function advance(T) {
     sim.step(dt); record(dt);
     if ((i & 31) === 31 && performance.now() - t0 > 12) break;
   }
+  holdPend.forEach(it => { if (sim.t - (it._pt || 0) >= 0.1) { const w = wrap.get(it.id); if (w) w.pressed = false; it._p = false; holdPend.delete(it); } });
   // Zustände auf die Bauteile übertragen
   circ.elems.forEach(e => {
     const it = e.part && e.part.item; if (!it) return;
     if (e.type === 'D' && e.seg != null) { (it._seg = it._seg || [])[e.seg] = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); return; }
-    if (e.type === 'D' && e.led) { it._b = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); it._st = e.imax ? e.i / e.imax : 0; }
+    if (e.type === 'D' && e.led) { it._b = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); it._st = e.imax ? e.i / e.imax : 0; if (e.sub) (it._bs = it._bs || {})[e.sub] = it._b; }
     if (e.res) it._hot = e.power > 0.25 ? clampN(e.power / 1, 0, 1) : 0;
   });
   sim.burnt.forEach(id => { const w = wrap.get(id); if (w) w.item._burnt = true; });
@@ -238,7 +241,7 @@ function enterSim() {
 }
 function leaveSim() {
   simOn = false; running = false; prog = null; if (window.LochFX) LochFX.toneOff();
-  doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; delete i._seg; delete i._p; });
+  doc.items.forEach(i => { delete i._b; delete i._bs; delete i._burnt; delete i._hot; delete i._seg; delete i._p; });
   doc.items.forEach(i => { if (i.t === 'part') { const w = wrap.get(i.id); if (w) { i.sw = w.sw; i.pos = w.pos; i.light = w.light; } } });
   document.body.classList.remove('sim'); sw.setAttribute('aria-checked', 'false');
   $('#side').innerHTML = ''; $('#side').classList.remove('on');
@@ -270,7 +273,7 @@ function simDown(p) {
       selSim = h.id; sel = h.id;
       const w = wrap.get(h.id);
       if (h.k === 'SCH') { h.sw = h.sw ? 0 : 1; w.sw = h.sw; simAct.done = true; }
-      else if (h.k === 'SW') { w.pressed = true; h._p = true; simAct.press = h; simAct.done = true; }
+      else if (h.k === 'SW') { w.pressed = true; h._p = true; h._pt = sim ? sim.t : 0; holdPend.delete(h); simAct.press = h; simAct.done = true; }
       else if (h.k === 'DSW') {
         const [lx] = rot(fx - h.x, fy - h.y, (4 - h.r) & 3);
         const i = clampN(Math.round(lx), 0, h.n / 2 - 1);
@@ -293,7 +296,7 @@ function simMove(p) {
 function simUp(p) {
   const a = simAct; simAct = null; if (!a) return;
   if (a.slide) { try { save(); } catch (e) {} buildPanel(); invalidate(); return; }
-  if (a.press) { const w = wrap.get(a.press.id); if (w) w.pressed = false; a.press._p = false; invalidate(); return; }
+  if (a.press) { if (sim && sim.t - (a.press._pt || 0) < 0.1) { holdPend.add(a.press); invalidate(); return; } const w = wrap.get(a.press.id); if (w) w.pressed = false; a.press._p = false; invalidate(); return; }
   if (a.pan || a.done) return;
   const key = gk(a.gx, a.gy);
   if (simTool === 'use') {

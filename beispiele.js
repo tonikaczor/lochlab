@@ -3,6 +3,19 @@
 (function () {
   const EX = [
     /* ---------- SchaltLab ---------- */
+    /* ---------- neue Bauteile ---------- */
+    { cat: 'Transistoren', name: 'MOSFET als Schalter (N-Kanal, Low-Side)', info: 'Schalter schließen: Das Gate bekommt 5 V, der IRLZ44N schaltet durch und die LED leuchtet. Offen zieht der 10-kΩ-Widerstand das Gate auf Masse, der MOSFET sperrt. Im Gegensatz zum Bipolartransistor fließt kein Basisstrom.',
+      make: () => ({ parts: [['BAT', 0, 4, 1, '5'], ['R', 10, 2, 0, '220'], ['LED', 14, 2, 0, 'rot'], ['NMOS', 16, 6, 0, 'IRLZ44N'], ['SPST', 6, 6, 0, ''], ['R', 13, 6, 1, '10k'], ['GND', 0, 12]],
+        wires: [[0, 4, 0, 2, 6, 2, 10, 2], [6, 2, 6, 6], [18, 2, 18, 4], [10, 6, 13, 6, 16, 6], [0, 8, 0, 10, 13, 10, 18, 10], [18, 8, 18, 10], [0, 10, 0, 12]], scopes: [] }) },
+    { cat: 'Transistoren', name: 'Lampen-Dimmer mit DIAC und TRIAC', info: 'Phasenanschnitt wie im Wandschalter: Der Kondensator lädt sich über R auf, bis der DIAC bei etwa 32 V kippt und den TRIAC zündet. Je größer R, desto später zündet er und desto dunkler leuchtet die Lampe. Wert von R ändern (z. B. 100k, 220k, 330k) und die Helligkeit vergleichen.',
+      make: () => ({ parts: [['AC', 0, 4, 1, '325V 50Hz'], ['LAMP', 6, 2, 0, '230V 100W'], ['R', 20, 4, 1, '220k'], ['C', 20, 8, 1, '100n'], ['DIAC', 16, 8, 0, '32V'], ['TRIAC', 12, 6, 0, 'BT136'], ['GND', 0, 14]],
+        wires: [[0, 4, 0, 2, 6, 2], [10, 2, 16, 2, 20, 2, 20, 4], [16, 2, 16, 6], [12, 6, 12, 12], [15, 8, 16, 8], [0, 8, 0, 12, 12, 12, 20, 12], [0, 12, 0, 14]], scopes: [2] }) },
+    { cat: 'Dioden', name: 'Duo-LED mit drei Beinen (rot/grün)', info: 'Zwei LEDs in einem Gehäuse mit gemeinsamer Kathode (mittleres Bein). Je nachdem, welcher Schalter geschlossen ist, leuchtet sie rot, grün oder bei beiden gelb-orange. Jede Farbe braucht ihren eigenen Vorwiderstand. Im Eigenschaftenfeld lässt sich auch „gemeinsame Anode“ wählen.',
+      make: () => ({ parts: [['BAT', 0, 10, 1, '5'], ['SPST', 4, 2, 0, ''], ['R', 8, 2, 0, '220'], ['SPST', 4, 8, 0, ''], ['R', 8, 8, 0, '220'], ['DUOLED', 14, 2, 0, 'Kathode'], ['GND', 0, 18]],
+        wires: [[0, 10, 0, 8, 4, 8], [0, 8, 0, 2, 4, 2], [12, 2, 14, 2], [12, 8, 12, 6, 14, 6], [14, 4, 18, 4, 18, 16, 0, 16, 0, 14], [0, 16, 0, 18]], scopes: [] }) },
+    { cat: 'Dioden', name: 'Duo-7-Segment: Ziffer wählen (Multiplex-Anzeige)', info: 'Die Anzeige hat zwei Ziffern, die sich die Segmente a bis dp teilen. Jede Ziffer hat ihre eigene gemeinsame Kathode (K1, K2). Segmente a, b, c sind vorbereitet: Schalter an K1 schließen = linke Ziffer zeigt eine 7, an K2 = rechte Ziffer. Beide = beide. Im Multiplexbetrieb schaltet ein Mikrocontroller die Ziffern schnell abwechselnd.',
+      make: () => ({ parts: [['BAT', 0, 0, 1, '5'], ['R', 10, 0, 0, '330'], ['R', 10, 2, 0, '330'], ['R', 10, 4, 0, '330'], ['SEG8D', 16, 0, 0, ''], ['SPST', 28, 2, 0, ''], ['SPST', 28, 12, 0, ''], ['GND', 32, 14]],
+        wires: [[0, 0, 8, 0], [8, 0, 8, 2, 8, 4], [8, 2, 10, 2], [8, 4, 10, 4], [14, 0, 16, 0], [14, 2, 16, 2], [14, 4, 16, 4], [26, 2, 28, 2], [26, 12, 28, 12], [0, 4, 0, 16, 32, 16, 32, 14], [32, 2, 32, 12, 32, 14], [8, 0, 10, 0]], scopes: [] }) },
     { cat: 'Dioden', name: 'Diode: Durchlass- und Sperrrichtung', info: 'Links leitet die Diode (Voltmeter etwa 0,7 V), rechts ist sie umgekehrt eingebaut und sperrt: fast die ganze Spannung fällt an der Diode ab.',
       make: () => ({ parts: [['BAT', 4, 4, 1, '5'], ['R', 10, 2, 1, '470'], ['D', 10, 6, 1, '1N4148'], ['VM', 14, 6, 1, ''], ['R', 22, 2, 1, '470'], ['D', 22, 10, 3, '1N4148'], ['VM', 26, 6, 1, ''], ['GND', 4, 14]],
         wires: [[4, 4, 4, 2, 10, 2, 22, 2], [10, 6, 14, 6], [14, 10, 10, 10, 10, 12], [22, 6, 26, 6], [26, 10, 22, 10, 22, 12], [4, 8, 4, 12, 10, 12, 22, 12], [4, 12, 4, 14]], scopes: [] }) },

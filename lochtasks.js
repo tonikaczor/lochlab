@@ -120,7 +120,7 @@ function layoutCheck(d) {
 }
 
 /* ---------- Lötanleitung ---------- */
-const ORDER = ['R', 'D', 'GL', 'SOCK', 'C', 'CF', 'IC', 'T', 'U', 'THY', 'OPTO', 'LED', 'LDR', 'NTC', 'PTC', 'PHT', 'L', 'CE', 'P', 'TP', 'SW', 'SCH', 'DSW', 'SEG7', 'Q', 'BZ', 'SPK', 'FUSE', 'LAMP', 'RLY', 'TRF', 'SIP', 'BU', 'KL', 'PIN', 'NANO', 'UNO', 'PI', 'BAT', 'SIG'];
+const ORDER = ['R', 'D', 'GL', 'SOCK', 'C', 'CF', 'IC', 'T', 'FET', 'U', 'THY', 'TRIAC', 'VDR', 'OPTO', 'LED', 'LDR', 'NTC', 'PTC', 'PHT', 'L', 'CE', 'P', 'TP', 'SW', 'SCH', 'DSW', 'SEG7', 'Q', 'BZ', 'SPK', 'FUSE', 'LAMP', 'RLY', 'TRF', 'SIP', 'BU', 'KL', 'PIN', 'NANO', 'UNO', 'PI', 'BAT', 'SIG'];
 const POLAR = { LED: 'Polung beachten: das lange Bein ist die Anode (+).', D: 'Polung beachten: der Ring markiert die Kathode.', CE: 'Polung beachten: der Streifen markiert Minus.', T: 'Flache Seite zeigt wie im Bild.', IC: 'Kerbe oder Punkt markiert Pin 1.', SOCK: 'Kerbe markiert Pin 1.', BAT: 'Plus und Minus nicht vertauschen.', U: 'Metallfahne wie im Bild ausrichten.', GL: 'Plus- und Minus-Anschluss beachten.', PI: 'Pin 1 (3,3 V) ist markiert.', UNO: 'Zwei Stiftleisten, Beschriftung beachten.' };
 const pos = (it, i) => { const p = pinsOf(it)[i]; return 'Spalte ' + (p[0] + 1) + ', Zeile ' + (p[1] + 1); };
 function solderHtml(d) {

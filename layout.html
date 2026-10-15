@@ -209,6 +209,7 @@ const PARTS = {
   C:  {name:'Kondensator',pre:'C',  kind:'span', def:2, min:1, max:24, val:'100n'},
   CE: {name:'Elko',       pre:'C',  kind:'span', def:2, min:1, max:24, val:'100µ'},
   LED:{name:'LED',        pre:'LED',kind:'span', def:1, min:1, max:24, val:'rot'},
+  DUOLED:{name:'Duo-LED (rot/grün, 3 Beine)',pre:'LED',kind:'fixed',def:3,pins:[[0,0],[1,0],[2,0]],val:'Kathode',labels:['Rot','Gem.','Grün']},
   CF: {name:'Folien-Kond.',pre:'C', kind:'span', def:3, min:2, max:24, val:'100n'},
   L:  {name:'Spule/Drossel',pre:'L',kind:'span', def:4, min:2, max:24, val:'10µH'},
   LDR:{name:'Fotowiderstand',pre:'R',kind:'span',def:2, min:1, max:12, val:'LDR'},
@@ -218,6 +219,9 @@ const PARTS = {
   SPK:{name:'Lautsprecher',pre:'LS',kind:'span',def:4, min:2, max:12, val:'8'},
   RLY:{name:'Relais',     pre:'K',  kind:'fixed',def:5, pins:[[0,0],[0,4],[6,2],[6,0],[6,4]], val:'12V'},
   THY:{name:'Thyristor TO-220',pre:'V',kind:'fixed',def:3, pins:[[0,0],[1,0],[2,0]], val:'TIC106'},
+  FET:{name:'MOSFET (TO-220 / TO-92)',pre:'Q',kind:'fixed',def:3, pins:[[0,0],[1,0],[2,0]], val:'IRLZ44N'},
+  TRIAC:{name:'TRIAC TO-220',pre:'V',kind:'fixed',def:3, pins:[[0,0],[1,0],[2,0]], val:'BT136'},
+  VDR:{name:'Varistor (VDR)',pre:'RV',kind:'span',def:2, min:1, max:4, val:'275V'},
   OPTO:{name:'Optokoppler (DIP-4)',pre:'OK',kind:'fixed',def:4, pins:[[0,3],[1,3],[1,0],[0,0]], val:'PC817'},
   TRF:{name:'Print-Trafo', pre:'TR', kind:'fixed',def:4, pins:[[0,0],[0,4],[6,0],[6,4]], val:'230V:12V'},
   SEG7:{name:'7-Segment-Anzeige',pre:'DS',kind:'fixed',def:10,pins:[[0,6],[1,6],[2,6],[3,6],[4,6],[4,0],[3,0],[2,0],[1,0],[0,0]],val:'rot'},
@@ -308,6 +312,7 @@ PARTS.D.variants=[
   {id:'d4007',name:'1N4007 (DO-41)', val:'1N4007',   bl:2.05, bh:1.06,col:'#222',    bc:'#d8dde2'},
   {id:'d5819',name:'1N5819 Schottky',val:'1N5819',   bl:2.05, bh:1.06,col:'#1c2a4a', bc:'#d8dde2'},
   {id:'dz',   name:'Z-Diode (Glas)', val:'BZX55C5V1',bl:1.7,  bh:.75, col:'#cfae6a', bc:'#111',    glass:true},
+  {id:'diac',name:'DB3 DIAC (Glas)',val:'DB3',bl:1.7,bh:.75,col:'#6b3d82',bc:'#111',glass:true},
 ];
 // Elkos nach Durchmesser (Rastermaß auf dem 2,54-Raster gerundet)
 PARTS.CE.variants=[
@@ -354,6 +359,9 @@ function shopTerm(k,V,it){
     case 'SPK':return 'Lautsprecher '+(v||'8')+' Ohm';
     case 'RLY':return 'Relais Print '+(v||'12V')+' 1 Wechsler';
     case 'THY':return 'Thyristor '+(v||'TIC106');
+    case 'FET':return 'MOSFET '+(v||'IRLZ44N');
+    case 'TRIAC':return 'TRIAC '+(v||'BT136');
+    case 'VDR':return 'Varistor '+(v||'275V');
     case 'OPTO':return 'Optokoppler '+(v||'PC817');
     case 'TRF':return 'Printtransformator '+(v||'');
     case 'T':return v||'Transistor';
@@ -395,6 +403,7 @@ const HINTS={
   LDR:'Fotowiderstand: je heller es ist, desto kleiner wird der Widerstand.',
   D:'Strom fließt nur von der Anode zur Kathode. Der Ring am Gehäuse markiert die Kathode.',
   LED:'Immer mit Vorwiderstand betreiben! Langer Anschluss = Anode (+), Abflachung am Rand = Kathode (−).',
+  DUOLED:'Duo-LED mit drei Beinen: die beiden Anoden (rot und grün) liegen außen, die gemeinsame Kathode in der Mitte. Jede Farbe braucht einen eigenen Vorwiderstand. Leuchten beide, mischt sich gelb-orange.',
   T:'Die Belegung der Anschlüsse steht im Datenblatt. Wähle die passende Variante (C-B-E oder E-B-C).',
   U:'Spannungsregler 78xx: Anschlüsse von links IN, GND, OUT. Die Eingangsspannung muss etwa 2 V über der Ausgangsspannung liegen.',
   Q:'Quarz, gibt den Takt vor. Keine Polung.',
@@ -407,6 +416,9 @@ const HINTS={
   PHT:'Fototransistor: Bei Licht fließt Strom von Kollektor nach Emitter. Pinbelegung im Datenblatt prüfen (Maße geschätzt).',
   SPK:'Lautsprecher: kleine Leistung, nur an Verstärker oder Signalquelle mit passendem Vorwiderstand.',
   RLY:'Relais: Achtung bei 230 V: Netzspannung nur mit Abstand zur Niederspannung und isoliert verdrahten! Spule (A1/A2) zieht an, dann wechselt der Kontakt von NC nach NO. Spulenspannung beachten. Pinbelegung und Maße sind geschätzt, bitte mit dem echten Relais vergleichen.',
+  FET:'MOSFET: Pin 1 Gate, Pin 2 Drain, Pin 3 Source (bei TO-220 und TO-92 gleich, von vorn gesehen). Der N-Kanal schaltet die Last gegen Masse (Low-Side), der P-Kanal liegt zwischen Plus und Last (High-Side). Das Gate verträgt höchstens 20 V und ist statisch empfindlich.',
+  TRIAC:'TRIAC BT136 (TO-220): Pin 1 MT1, Pin 2 MT2, Pin 3 Gate. Schaltet Wechselstrom in beide Richtungen, gezündet mit einem Gate-Strom (Dimmer: über einen DIAC).',
+  VDR:'Varistor (VDR): spannungsabhängiger Widerstand. Unterhalb der Betriebsspannung sperrt er, bei Überspannung leitet er und begrenzt sie. Immer parallel zur Last, hinter einer Sicherung. Ein DIAC ist als Diodenvariante „DB3“ wählbar.',
   THY:'Thyristor TIC106 (TO-220): Pin 1 Kathode, Pin 2 Anode, Pin 3 Gate. Zündet mit einem Gate-Strom und hält sich selbst.',
   OPTO:'Optokoppler PC817: Pin 1 Anode, 2 Kathode (LED), 3 Emitter, 4 Kollektor. Trennt zwei Stromkreise galvanisch.',
   TRF:'Print-Transformator: Primär- und Sekundärseite sind galvanisch getrennt. Pinbelegung und Maße geschätzt.',
@@ -440,6 +452,14 @@ PARTS.SIG={name:'Signalgenerator',pre:'G',kind:'fixed',def:2,val:'5V 1kHz',pins:
   {id:'sq', name:'Rechteck',val:'5V 1kHz',box:[-.7,-2.6,2.7,.5],style:'sig'},
   {id:'tri',name:'Dreieck',val:'5V 1kHz',box:[-.7,-2.6,2.7,.5],style:'sig'},
 ]};
+PARTS.FET.variants=[
+  {id:'n-irlz44n',name:'N-Kanal IRLZ44N (Logic-Level, TO-220)',val:'IRLZ44N'},
+  {id:'n-irf540n',name:'N-Kanal IRF540N (TO-220)',val:'IRF540N'},
+  {id:'n-bs170',name:'N-Kanal BS170 (TO-92)',val:'BS170'},
+  {id:'n-2n7000',name:'N-Kanal 2N7000 (TO-92)',val:'2N7000'},
+  {id:'p-irf9540',name:'P-Kanal IRF9540 (TO-220)',val:'IRF9540'},
+  {id:'p-bs250',name:'P-Kanal BS250 (TO-92)',val:'BS250'},
+];
 PARTS.T.variants=[
   {id:'npn-cbe',name:'NPN C-B-E',val:'BC547'},
   {id:'npn-ebc',name:'NPN E-B-C',val:'2N2222'},
@@ -471,6 +491,7 @@ function bodyRect(it){
     case 'C': return [-.5,-.6,n+.5,.6];
     case 'CE':{const r=(variantOf(it)||{}).r||.85;return [Math.min(-.5,n/2-r-.05),-r-.05,Math.max(n+.5,n/2+r+.05),r+.05];}
     case 'LED':{const r=ledR(it);return [Math.min(-.5,n/2-r),-r,Math.max(n+.5,n/2+r),r];}
+    case 'DUOLED': return [-.5,-2.1,2.5,.5];
     case 'T': return [-.5,-.9,2.5,.55];
     case 'P': return [-.5,-1.6,2.5,.5];
     case 'TP': return [-.5,-1.3,2.5,.5];
@@ -484,8 +505,8 @@ function bodyRect(it){
     case 'Q': return [Math.min(-.5,n/2-2.2),-.95,Math.max(n+.5,n/2+2.2),.95];
     case 'BZ': case 'SPK': return [n/2-2.3,-2.3,n/2+2.3,2.3];
     case 'LAMP': return [Math.min(-.5,n/2-1.8),-1.8,Math.max(n+.5,n/2+1.8),1.8];
-    case 'NTC': case 'PTC': case 'PHT': return [Math.min(-.5,n/2-1),-1,Math.max(n+.5,n/2+1),1];
-    case 'THY': return [-1.1,-6.5,3.1,.5];
+    case 'NTC': case 'PTC': case 'PHT': case 'VDR': return [Math.min(-.5,n/2-1),-1,Math.max(n+.5,n/2+1),1];
+    case 'THY': case 'FET': case 'TRIAC': return [-1.1,-6.5,3.1,.5];
     case 'OPTO': return [-.6,-.5,1.6,3.5];
     case 'TRF': return [-.8,-.9,6.8,4.9];
     case 'BU': return [-.5,-.5,n-.5,.5];
@@ -715,6 +736,14 @@ function drawPart(c,it){
      if(r>.5){c.fillStyle='rgba(50,50,50,.5)';c.fillRect(n/2-r*.45,-r*.12,r*.2,r*.24);c.fillRect(n/2+r*.1,-r*.3,r*.32,r*.6);}}
     c.strokeStyle='rgba(0,0,0,.6)';c.lineWidth=.08;line(c,n/2+r*.88,-r*.55,n/2+r*.88,r*.55);
     if(it._burnt){c.fillStyle='rgba(0,0,0,.65)';c.beginPath();c.arc(n/2,0,r,0,7);c.fill();c.strokeStyle='#e33';c.lineWidth=.14;line(c,n/2-r*.6,-r*.6,n/2+r*.6,r*.6);line(c,n/2-r*.6,r*.6,n/2+r*.6,-r*.6);}
+  }else if(k==='DUOLED'){
+    const cx=1,cy=-1.05,r=1,bs=it._bs||null,br=bs?Math.min(1,bs.r||0):.55,bg=bs?Math.min(1,bs.g||0):.55;
+    const mixc=(a,b,t)=>'rgb('+a.map((v,i)=>Math.round(v+(b[i]-v)*t)).join(',')+')';
+    c.beginPath();c.arc(cx,cy,r,Math.PI/2,Math.PI*1.5);c.closePath();c.fillStyle=mixc([90,26,24],[255,74,58],br);c.fill();
+    c.beginPath();c.arc(cx,cy,r,-Math.PI/2,Math.PI/2);c.closePath();c.fillStyle=mixc([28,74,30],[84,255,96],bg);c.fill();
+    c.beginPath();c.arc(cx,cy,r,0,7);c.strokeStyle='rgba(0,0,0,.55)';c.lineWidth=.06;c.stroke();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=.05;line(c,cx,cy-r,cx,cy+r);
+    c.fillStyle='rgba(255,255,255,.28)';c.beginPath();c.arc(cx-.3,cy-.35,.3,0,7);c.fill();
+    if(bs&&(br>.05||bg>.05)){c.save();c.globalCompositeOperation='lighter';const gr=c.createRadialGradient(cx,cy,0,cx,cy,2.3),R=Math.round(255*Math.min(1,br+bg*.2)),G=Math.round(255*Math.min(1,bg+br*.1));gr.addColorStop(0,'rgba('+R+','+G+',40,'+(.55*Math.max(br,bg))+')');gr.addColorStop(1,'rgba('+R+','+G+',40,0)');c.fillStyle=gr;c.beginPath();c.arc(cx,cy,2.3,0,7);c.fill();c.restore();}
   }else if(k==='T'){
     c.beginPath();c.moveTo(-.25,.45);c.arc(1,.45,1.25,Math.PI,0);c.closePath();c.fillStyle='#262626';c.fill();c.strokeStyle='#555';c.lineWidth=.05;c.stroke();
   }else if(k==='P'){
@@ -770,6 +799,9 @@ function drawPart(c,it){
     rrect(c,-.55,-.55,2.1,20.1,.12);c.fillStyle='#1e1e1e';c.fill();
     c.fillStyle='#d8b44a';localPins(k,n).forEach(([x,y])=>c.fillRect(x-.17,y-.17,.34,.34));
     c.strokeStyle='#ffd24a';c.lineWidth=.08;c.strokeRect(-.32,-.32,.64,.64);
+  }else if(k==='VDR'){
+    leg();c.beginPath();c.arc(n/2,0,.9,0,7);c.fillStyle='#3a6ea5';c.fill();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=.06;c.stroke();
+    c.fillStyle='#fff';c.font='bold .55px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('VDR',n/2,-.2);c.font='.45px sans-serif';c.fillText(it.v||'',n/2,.35);
   }else if(k==='NTC'||k==='PTC'){
     leg();c.beginPath();c.arc(n/2,0,.85,0,7);c.fillStyle=k==='NTC'?'#2a4d8f':'#c9a227';c.fill();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=.06;c.stroke();
     c.fillStyle='#fff';c.font='bold .7px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(k==='NTC'?'NTC':'PTC',n/2,.05);
@@ -783,12 +815,12 @@ function drawPart(c,it){
     rrect(c,-.8,-.9,7.6,5.8,.2);c.fillStyle='#1f5fae';c.fill();c.strokeStyle='#0f3a70';c.lineWidth=.06;c.stroke();
     c.fillStyle='#fff';c.font='bold .9px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText('RELAIS',3,1.5);c.font='bold .8px sans-serif';c.fillText(it.v||'12V',3,2.7);
     c.fillStyle='#cfe3ff';c.font='.5px sans-serif';[['A1',0,0],['A2',0,4],['COM',6,2],['NO',6,0],['NC',6,4]].forEach(([t,x,y])=>c.fillText(t,x<3?x+.65:x-.75,y+(y===4?-.55:y===0?.55:0)));
-  }else if(k==='THY'){
+  }else if(k==='THY'||k==='FET'||k==='TRIAC'){
     [0,1,2].forEach(x=>{c.strokeStyle='#cfd5db';c.lineWidth=.14;line(c,x,0,x,-.7);});
     rrect(c,-1,-4,4,3.4,.12);c.fillStyle='#222';c.fill();
     rrect(c,-1,-6.4,4,2.4,.12);c.fillStyle='#b8bec5';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.05;c.stroke();
     c.beginPath();c.arc(1,-5.3,.75,0,7);c.fillStyle='#222';c.fill();
-    c.fillStyle='#fff';c.font='.55px sans-serif';c.textAlign='center';c.textBaseline='middle';['K','A','G'].forEach((t,i)=>c.fillText(t,i,.9));
+    c.fillStyle='#fff';c.font='.55px sans-serif';c.textAlign='center';c.textBaseline='middle';(k==='FET'?['G','D','S']:k==='TRIAC'?['MT1','MT2','G']:['K','A','G']).forEach((t,i)=>c.fillText(t,i,.9));
   }else if(k==='OPTO'){
     c.fillStyle='#cfd5db';[0,1].forEach(i=>{c.fillRect(i-.14,.1,.28,.5);c.fillRect(i-.14,2.4,.28,.5);});
     rrect(c,-.45,.45,1.9,2.1,.12);c.fillStyle='#232323';c.fill();c.strokeStyle='#555';c.lineWidth=.04;c.stroke();
@@ -856,7 +888,9 @@ function drawScene(c,V,o){
   // Platine
   const ex=!!o.export;
   const pal=ex?{board:'#f3e2a4',edge:'rgba(120,80,20,.6)',pad:'#efc474',ring:'rgba(130,80,20,.5)',hole:'#3a2a12',lab:'#333'}
-    :{board:mir?'#c9993f':'#d6a94c',edge:'rgba(0,0,0,.4)',pad:mir?'#f7dfa6':'#f3d89a',ring:'rgba(120,70,20,.55)',hole:null,lab:'rgba(255,255,255,.75)'};
+    :(document.documentElement.dataset.theme==='dark'                                                       // Dark Mode: dunklere Platine (Druck und Export bleiben hell)
+      ?{board:mir?'#7a5c25':'#8c6b2c',edge:'rgba(0,0,0,.55)',pad:mir?'#b48f4c':'#c7a25a',ring:'rgba(50,30,8,.65)',hole:null,lab:'rgba(255,255,255,.7)'}
+      :{board:mir?'#c9993f':'#d6a94c',edge:'rgba(0,0,0,.4)',pad:mir?'#f7dfa6':'#f3d89a',ring:'rgba(120,70,20,.55)',hole:null,lab:'rgba(255,255,255,.75)'});
   rrect(c,-.5,-.5,cols,rows,.3);c.fillStyle=pal.board;c.fill();
   c.strokeStyle=pal.edge;c.lineWidth=.06;c.stroke();
   // Lötaugen
@@ -1229,7 +1263,7 @@ function renderCtx(){
   el.innerHTML=h;sd.innerHTML=sh;sd.classList.toggle('on',!!sh);
   renderParts();
 }
-const PCATS=[['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','T','THY','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','PI','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Quellen',['BAT','SIG']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];
+const PCATS=[['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','DUOLED','T','FET','THY','TRIAC','VDR','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','PI','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Quellen',['BAT','SIG']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];
 function renderParts(){
   const el=$('#parts');if(!el)return;
   const seen=new Set();let h=`<div class="psearch"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;flex:none;opacity:.7"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="pq" type="search" placeholder="Bauteil suchen …" autocomplete="off" value="${esc(partQuery)}"></div>`;
@@ -1380,6 +1414,7 @@ function openMenu(){
       ['import','Projekt importieren','JSON-Datei laden'],
       ['schalt','SchaltLab (Stromlaufplan)','Schaltung zeichnen, drucken, simulieren'],
       ['start','Zur Startseite','Tonfunk Lab: Programm wählen'],
+      ['calc','Rechner','Farbcode, Ohmsches Gesetz, LED-Vorwiderstand'],
       ['keys','Tastenkürzel','Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'],
       ['help','Hilfe','Bedienung & Installation'],
     ];
@@ -1426,6 +1461,7 @@ function menuAct(m){
   if(m==='ex'){openExamples();return;}
   if(m==='tasks'||m==='check'||m==='solder'){if(window.LochTasks)LochTasks.menu(m);return;}
   if(m==='keys'){if(window.LochKeys)LochKeys.help();return;}
+  if(m==='calc'){if(window.Rechner)Rechner.open('farbe');return;}
   if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid,code:doc.code,lang:doc.lang,task:doc.task},doc.name);return;}
   if(m==='new')confirmNew(()=>boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));}));
   else if(m==='open')openList();
@@ -1772,5 +1808,6 @@ window.LabKeysAdapter = {
 };
 </script>
 <script src="keys.js"></script>
+<script src="rechner.js"></script>
 </body>
 </html>

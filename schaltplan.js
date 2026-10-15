@@ -44,6 +44,13 @@ const KINDS = {
   SPK: { name: 'Lautsprecher', cat: 'Passiv', pins: T2, v: '8', core: 'SPK', box: [0, -1.1, 4, 1.1], props: [['v', 'Impedanz (Ω)', 'text', 'z. B. 8']] },
   TRF: { name: 'Transformator', cat: 'Passiv', pins: [[0, 0], [0, 4], [6, 0], [6, 4]], v: '230V:12V', core: 'TRF', box: [0, -0.4, 6, 4.4], props: [['v', 'Übersetzung', 'text', 'z. B. 230V:12V']] },
   RLY: { name: 'Relais', cat: 'Schalter', pins: [[0, 0], [0, 4], [5, 2], [8, 0], [8, 4]], v: '12V', core: 'RLY', box: [0, -0.4, 8, 4.4], props: [['v', 'Spulenspannung', 'text', 'z. B. 12V']] },
+  SCHOTTKY: { name: 'Schottky-Diode', cat: 'Halbleiter', pins: T2, v: '1N5819', core: 'SCHOTTKY', box: [0, -1, 4, 1], props: [['v', 'Typ', 'select', ['1N5819', 'BAT43', 'BAT85', 'SB140']]] },
+  NMOS: { name: 'MOSFET N-Kanal', cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'IRLZ44N', core: 'NMOS', box: [-.2, -2.2, 2.6, 2.2], props: [['v', 'Typ', 'select', ['IRLZ44N', 'IRF540N', 'BS170', '2N7000']]] },
+  PMOS: { name: 'MOSFET P-Kanal', cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'IRF9540', core: 'PMOS', box: [-.2, -2.2, 2.6, 2.2], props: [['v', 'Typ', 'select', ['IRF9540', 'BS250']]] },
+  DIAC: { name: 'DIAC', cat: 'Halbleiter', pins: T2, v: '32V', core: 'DIAC', box: [0, -1, 4, 1], props: [['v', 'Kippspannung', 'select', ['28V', '32V', '35V']]] },
+  TRIAC: { name: 'TRIAC', cat: 'Halbleiter', pins: [[0, 0], [4, 0], [3, 2]], v: 'BT136', core: 'TRIAC', box: [0, -1, 4, 2.2], props: [['v', 'Typ', 'select', ['BT136', 'BT138', 'TIC206']]] },
+  VDR: { name: 'Varistor (VDR)', cat: 'Halbleiter', pins: T2, v: '275V', core: 'VDR', box: [0, -1, 4, 1], props: [['v', 'Betriebsspannung', 'select', ['14V', '25V', '60V', '275V', '320V']]] },
+  SEG8D: { name: 'Duo-7-Segment (2 Ziffern)', cat: 'Halbleiter', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [10, 2], [10, 12]], v: 'rot', core: 'SEG8D', vr: 'k', box: [-0.6, -0.8, 10.6, 15], props: [['vr', 'Bauart', 'select', ['k', 'a'], { k: 'gemeinsame Kathode', a: 'gemeinsame Anode' }]] },
   THY: { name: 'Thyristor', cat: 'Halbleiter', pins: [[0, 0], [4, 0], [3, 2]], v: 'TIC106', core: 'THY', box: [0, -1, 4, 2.2], props: [] },
   PHT: { name: 'Fototransistor', cat: 'Halbleiter', pins: [[2, -2], [2, 2]], v: '', core: 'PHT', box: [-1, -2.2, 2.6, 2.2], pos: true, props: [['pos', 'Helligkeit', 'range']] },
   OPTO:{ name: 'Optokoppler', cat: 'Halbleiter', pins: [[0, 0], [0, 4], [6, 0], [6, 4]], v: 'PC817', core: 'OPTO', box: [0, -0.4, 6, 4.4], props: [] },
@@ -56,7 +63,8 @@ const KINDS = {
   I2CLUX: { name: 'Lichtsensor BH1750 (I²C)', cat: 'Raspberry Pi', lab: 'pi', pins: [[5, 0], [5, 2], [5, 4], [5, 6]], v: '', core: 'I2CLUX', box: [0, -1, 5, 7.6], pos: true, pos0: 0.5, props: [['pos', 'Helligkeit (0 … 2000 lx)', 'range']] },
   MCP3008: { name: 'ADC MCP3008 (SPI, 8 Kanäle)', cat: 'Raspberry Pi', lab: 'pi', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [6, 0], [6, 2], [6, 4], [6, 6], [6, 8], [6, 10], [6, 12], [6, 14]], v: '', core: 'MCP3008', box: [0, -1.5, 6, 15.5], props: [] },
   PI: { name: 'Raspberry Pi (GPIO-Leiste)', cat: 'Raspberry Pi', lab: 'pi', pins: [[0, 0], [8, 0], [0, 2], [8, 2], [0, 4], [8, 4], [0, 6], [8, 6], [0, 8], [8, 8], [0, 10], [8, 10], [0, 12], [8, 12], [0, 14], [8, 14], [0, 16], [8, 16], [0, 18], [8, 18], [0, 20], [8, 20], [0, 22], [8, 22], [0, 24], [8, 24], [0, 26], [8, 26], [0, 28], [8, 28], [0, 30], [8, 30], [0, 32], [8, 32], [0, 34], [8, 34], [0, 36], [8, 36], [0, 38], [8, 38]], v: '', core: 'PI40', box: [0, -2, 8, 40], props: [] },
-  RGBLED: { name: 'RGB-LED (gemeinsame Kathode)', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [4, 2]], v: '', core: 'RGBLED', box: [0, -1, 4, 5], props: [] },
+  DUOLED: { name: 'Duo-LED (rot/grün, 3 Beine)', cat: 'Halbleiter', pins: [[0, 0], [0, 2], [0, 4]], v: 'Kathode', core: 'DUOLED', box: [0, -1, 4, 5.4], props: [['v', 'Gemeinsamer Anschluss', 'select', ['Kathode', 'Anode']]] },
+  RGBLED: { name: 'RGB-LED (4 Beine)', cat: 'Sensoren', lab: 'code', pins: [[0, 0], [0, 2], [0, 4], [4, 2]], v: 'Kathode', core: 'RGBLED', box: [0, -1, 4, 5], props: [['v', 'Gemeinsamer Anschluss', 'select', ['Kathode', 'Anode']]] },
   TMP36: { name: 'Temperatursensor TMP36', cat: 'Sensoren', lab: 'code,pi', pins: [[4, 0], [4, 2], [4, 4]], v: '', core: 'TMP36', box: [0, -1, 4, 5], pos: true, pos0: 0.394, props: [['pos', 'Temperatur (−40 … 125 °C)', 'range']] },
   PIEZO: { name: 'Klopfsensor (Piezo)', cat: 'Sensoren', lab: 'code', pins: [[4, 0], [4, 2]], v: '', core: 'PIEZO', box: [0, -1, 4, 3], pos: true, pos0: 0, props: [['pos', 'Klopfstärke (0 … 5 V)', 'range']] },
   TOUCH: { name: 'Berührungsfläche', cat: 'Sensoren', lab: 'code', pins: [[0, 0]], v: '', core: 'TOUCH', box: [0, -2, 5, 2], pos: true, pos0: 0, props: [['pos', 'Berührung (über 50 % = Finger drauf)', 'range']] },
@@ -110,7 +118,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { I2CTEMP: 'B', I2CLUX: 'B', MCP3008: 'IC', PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { I2CTEMP: 'B', I2CLUX: 'B', MCP3008: 'IC', PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', DUOLED: 'LED', SCHOTTKY: 'D', NMOS: 'Q', PMOS: 'Q', DIAC: 'V', TRIAC: 'V', VDR: 'RV', SEG8D: 'DS', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -239,6 +247,13 @@ function onBurn(ev) {
   const TXT = { FUSE: 'ZACK!', MOTOR: 'BRRRZ!', LAMP: 'KLIRR!', SPK: 'KRAWUMM!' };
   LochFX.explode(x, y, { text: TXT[p.k], kind: led ? 'led' : (p.k === 'R' || p.k === 'POT' || p.k === 'FUSE' || p.k === 'LAMP' ? 'res' : (['NPN', 'PNP', 'THY', 'OPTO', 'ICX', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'OPA'].includes(p.k) ? 'chip' : 'big')), color: led ? (LEDRGB[p.v] || '255,59,47') : '255,170,60', scale: view.s, at: () => partCenter(p) });
 }
+/* Taster halten mindestens 100 ms Simulationszeit gedrückt: bei langsamem Tempo wäre ein kurzer Klick sonst für Relais und Stromstoßschalter unsichtbar */
+const pressT0 = new Map(), relPend = new Set();
+function pressPart(part) { part.pressed = true; const w = wrapMap.get(part.id); if (w) w.pressed = true; pressT0.set(part.id, sim ? sim.t : 0); relPend.delete(part.id); }
+function releasePart(part, force) {
+  if (!force && simMode && sim && sim.t - (pressT0.get(part.id) || 0) < 0.1) { relPend.add(part.id); return; }
+  part.pressed = false; const w = wrapMap.get(part.id); if (w) w.pressed = false; relPend.delete(part.id);
+}
 function advance(realDt) {
   if (!sim || circ.nn === 0) return;
   const target = rateOf(tempo) * realDt, dt = dtFor(rateOf(tempo));
@@ -251,6 +266,7 @@ function advance(realDt) {
     if (tool === 'meter') meterSample(dt);
     if ((i & 15) === 15 && performance.now() - t0 > 11) break;
   }
+  if (relPend.size) relPend.forEach(id => { const p = byPart(id); if (!p || sim.t - (pressT0.get(id) || 0) >= 0.1) { if (p) releasePart(p, true); relPend.delete(id); if (refreshControls) refreshControls(); } });
   while (sim.events.length) onBurn(sim.events.shift());
   computeFlows();
 }
@@ -549,6 +565,19 @@ function drawPart(p, selected) {
       if (mm) for (let q = 0; q < 14; q++) if (mm.mode[q] === 1 && mm.level[q]) { c.fillStyle = '#ffe14d'; c.beginPath(); c.arc(5.9, q * 2, 0.2, 0, 7); c.fill(); }
       if (o && o.e.part && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; c.lineWidth = 0.3; line(1, -2.9, 7, 29.9); line(7, -2.9, 1, 29.9); }
       break; }
+    case 'DUOLED': {
+      lead(0, 0, 1.2, 0, pc[0]); lead(0, 2, 1.2, 2, pc[1]); lead(0, 4, 1.2, 4, pc[2]);
+      const cur = nm => { const o = showSim() && bodyI.get(p.id + nm); return o ? Math.pow(clamp(Math.abs(o.e.iav != null ? o.e.iav : o.e.i) / 0.02, 0, 1), 0.6) : 0; };
+      const r2 = cur('r'), g2 = cur('g'), R = Math.round(255 * Math.min(1, r2 * 1.0 + g2 * 0.15)), G = Math.round(255 * Math.min(1, g2 + r2 * 0.1)), B = Math.round(60 * Math.min(1, g2 * 0.5));
+      c.strokeStyle = body; circle(2.3, 2, 1.1); line(2.3, 0.9, 2.3, 3.1);
+      c.fillStyle = body; c.font = '600 .55px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.save(); c.translate(1.2, 3.3); c.rotate(-p.r * Math.PI / 2); c.fillText(/^A/i.test(String(p.v || '')) ? 'gem. A' : 'gem. K', 0.2, 0); c.restore();
+      if (r2 + g2 > 0.03) {
+        const mx = Math.min(1, Math.max(r2, g2));
+        c.save(); c.globalCompositeOperation = 'lighter'; const gr = c.createRadialGradient(2.3, 2, 0, 2.3, 2, 3.4); gr.addColorStop(0, `rgba(${R},${G},${B},${0.9 * mx})`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`); c.fillStyle = gr; c.beginPath(); c.arc(2.3, 2, 3.4, 0, 7); c.fill(); c.restore();
+        c.fillStyle = `rgb(${R},${G},${B})`; c.beginPath(); c.arc(2.3, 2, 0.95, 0, 7); c.fill();
+        c.strokeStyle = body; line(2.3, 0.9, 2.3, 3.1);
+      }
+      break; }
     case 'RGBLED': {
       lead(0, 0, 1.2, 0, pc[0]); lead(0, 2, 1.2, 2, pc[1]); lead(0, 4, 1.2, 4, pc[2]); lead(4, 2, 3.4, 2, pc[3]);
       const cur = nm => { const o = showSim() && bodyI.get(p.id + nm); return o ? Math.pow(clamp(Math.abs(o.e.iav != null ? o.e.iav : o.e.i) / 0.02, 0, 1), 0.6) : 0; };
@@ -736,6 +765,46 @@ function drawPart(p, selected) {
       c.strokeStyle = on ? '#ffe14d' : body; c.lineWidth = 0.13; line(5.7, 2, 7.1, on ? 0.8 : 3.2);
       c.strokeStyle = body; c.lineWidth = 0.07; c.setLineDash([0.25, 0.2]); line(1.4, 2, 5.4, 2); c.setLineDash([]);
       break; }
+    case 'SCHOTTKY': {
+      lead(0, 0, 1.4, 0, pc[0]); lead(2.6, 0, 4, 0, pc[1]);
+      c.beginPath(); c.moveTo(1.4, -0.7); c.lineTo(1.4, 0.7); c.lineTo(2.6, 0); c.closePath(); c.stroke();
+      c.beginPath(); c.moveTo(2.25, -0.7); c.lineTo(2.6, -0.7); c.lineTo(2.6, 0.7); c.lineTo(2.95, 0.7); c.stroke();
+      break; }
+    case 'NMOS': case 'PMOS': {
+      lead(0, 0, 0.9, 0, pc[0]); c.lineWidth = 0.16; line(0.9, -0.9, 0.9, 0.9); c.lineWidth = 0.11;
+      line(1.25, -0.9, 1.25, -0.45); line(1.25, -0.2, 1.25, 0.2); line(1.25, 0.45, 1.25, 0.9);
+      lead(1.25, -0.7, 2, -0.7, pc[1]); lead(2, -0.7, 2, -2, pc[1]); lead(1.25, 0.7, 2, 0.7, pc[2]); lead(2, 0.7, 2, 2, pc[2]);
+      line(1.25, 0, 1.75, 0); line(1.75, 0, 1.75, 0.7);
+      c.beginPath(); if (p.k === 'NMOS') { c.moveTo(1.25, 0); c.lineTo(1.6, -0.17); c.lineTo(1.6, 0.17); } else { c.moveTo(1.75, 0); c.lineTo(1.4, -0.17); c.lineTo(1.4, 0.17); } c.closePath(); c.fill();
+      c.lineWidth = 0.05; c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : 'rgba(232,234,237,.45)'; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.11;
+      break; }
+    case 'DIAC': {
+      lead(0, 0, 1.2, 0, pc[0]); lead(2.8, 0, 4, 0, pc[1]);
+      c.beginPath(); c.moveTo(1.2, -0.7); c.lineTo(1.2, 0.7); c.lineTo(2, 0); c.closePath(); c.stroke();
+      c.beginPath(); c.moveTo(2.8, -0.7); c.lineTo(2.8, 0.7); c.lineTo(2, 0); c.closePath(); c.stroke();
+      break; }
+    case 'TRIAC': {
+      lead(0, 0, 1.2, 0, pc[0]); lead(2.8, 0, 4, 0, pc[1]); lead(3, 2, 2.95, 1.2, pc[2]);
+      c.beginPath(); c.moveTo(1.2, -0.8); c.lineTo(1.2, 0.8); c.lineTo(2, 0); c.closePath(); c.stroke();
+      c.beginPath(); c.moveTo(2.8, -0.8); c.lineTo(2.8, 0.8); c.lineTo(2, 0); c.closePath(); c.stroke();
+      line(2.95, 1.2, 2.8, 0.8);
+      { const o = showSim() && bodyI.get(p.id + 'MT'); if (o && o.e.on) { c.fillStyle = 'rgba(255,225,77,.35)'; c.fillRect(1.2, -0.8, 1.6, 1.6); } }
+      break; }
+    case 'VDR': {
+      lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.45, 2, 0.9);
+      line(0.9, 1.0, 1.3, 1.0); line(1.3, 1.0, 3.1, -1.0);
+      break; }
+    case 'SEG8D': {
+      [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => lead(0, i * 2, 1, i * 2, pc[i])); lead(9, 2, 10, 2, pc[8]); lead(9, 12, 10, 12, pc[9]);
+      c.strokeStyle = body; c.fillStyle = '#23272c'; c.fillRect(1, -0.6, 8, 15); c.strokeRect(1, -0.6, 8, 15);
+      [1.4, 5.2].forEach((ox, dg) => {
+        const segs = [[ox + .6, 1.6, ox + 2.4, 1.6], [ox + 2.8, 2.2, ox + 2.8, 6], [ox + 2.8, 7.4, ox + 2.8, 11.2], [ox + .6, 12.4, ox + 2.4, 12.4], [ox + .2, 7.4, ox + .2, 11.2], [ox + .2, 2.2, ox + .2, 6], [ox + .6, 7, ox + 2.4, 7]];
+        segs.forEach((s2, i) => { const o = showSim() && bodyI.get(p.id + 'd' + dg + 's' + i), b2 = o ? Math.pow(clamp(Math.abs(o.e.i) / 0.02, 0, 1), 0.6) : 0; c.strokeStyle = b2 > 0.05 ? `rgba(255,${Math.round(60 + 40 * (1 - b2))},50,${0.45 + 0.55 * Math.min(1, b2)})` : '#3a2a2c'; c.lineWidth = 0.5; line(s2[0], s2[1], s2[2], s2[3]); });
+        { const o = showSim() && bodyI.get(p.id + 'd' + dg + 's7'), b2 = o ? Math.abs(o.e.i) / 0.02 : 0; c.fillStyle = b2 > 0.05 ? '#ff5a40' : '#3a2a2c'; c.beginPath(); c.arc(ox + 3.2, 12.4, 0.28, 0, 7); c.fill(); }
+      });
+      c.save(); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'right'; ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'].forEach((t, i) => { c.save(); c.translate(0.9, i * 2 - 0.55); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); });
+      c.textAlign = 'left'; [['K1', 2], ['K2', 12]].forEach(([t, y]) => { c.save(); c.translate(9.1, y - 0.6); c.rotate(-p.r * Math.PI / 2); c.fillText(/a/i.test(p.vr || '') ? t.replace('K', 'A') : t, 0, 0); c.restore(); }); c.restore();
+      break; }
     case 'THY': {
       lead(0, 0, 1.4, 0, pc[0]); lead(2.6, 0, 4, 0, pc[1]); lead(3, 2, 2.95, 1.2, pc[2]);
       c.beginPath(); c.moveTo(1.4, -0.7); c.lineTo(1.4, 0.7); c.lineTo(2.6, 0); c.closePath(); c.stroke();
@@ -852,7 +921,7 @@ function valueText(p) {
     case 'SPK': return fmtVal(p.v, 'Ω');
     case 'NTC': case 'PTC': return fmtVal(p.v, 'Ω');
     case 'TRF': case 'RLY': return p.v;
-    case 'I2CTEMP': case 'I2CLUX': case 'NETZ': case 'JUN5': case 'UNO': case 'PI': case 'MCP3008': case 'RGBLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
+    case 'I2CTEMP': case 'I2CLUX': case 'NETZ': case 'JUN5': case 'UNO': case 'PI': case 'MCP3008': case 'RGBLED': case 'DUOLED': case 'SERVO': case 'LCDI2C': case 'PIR': case 'TMP36': case 'HCSR04': case 'PIEZO': case 'TOUCH': return '';
     case 'FAULT': return p.sw ? 'Fehler aktiv' : 'Fehler aus';
     case 'LSS': case 'RCD': case 'IMP': case 'SCHUETZ': return p.v;
     case 'SD': return p.v ? (p.sw ? p.v + ' (defekt)' : p.v) : 'leer';
@@ -862,7 +931,7 @@ function valueText(p) {
     case 'ZD': return fmtVal(p.v, 'V');
     case 'AC': return p.v;
     case 'LED': case 'LAMP': return p.v;
-    case 'NPN': case 'PNP': return p.v;
+    case 'NPN': case 'PNP': case 'NMOS': case 'PMOS': case 'SCHOTTKY': case 'DIAC': case 'TRIAC': case 'VDR': return p.v;
     case 'D': return '';
     default: return '';
   }
@@ -1052,7 +1121,7 @@ function onDown(p) {
         const pins = pinsOf(part).map(q => gk(q[0], q[1]));
         const att = []; sch.wires.forEach(w => { if (pins.includes(gk(w.x1, w.y1))) att.push([w, 1]); if (pins.includes(gk(w.x2, w.y2))) att.push([w, 2]); });
         act = { t: 'move', kind: 'part', id: part.id, g0: g, o: { x: part.x, y: part.y }, att: att.map(([w, e]) => [w, e, e === 1 ? w.x1 : w.x2, e === 1 ? w.y1 : w.y2]), moved: false, sx: p.x, sy: p.y };
-        if (KINDS[part.k].momentary) { part.pressed = true; const w = wrapMap.get(part.id); if (w) w.pressed = true; act.press = part; }
+        if (KINDS[part.k].momentary) { pressPart(part); act.press = part; }
       } else {
         const w = wireAt(fx, fy);
         if (w) { sel = { t: 'wire', id: w.id }; act = { t: 'move', kind: 'wire', id: w.id, g0: g, o: { x1: w.x1, y1: w.y1, x2: w.x2, y2: w.y2 }, moved: false }; }
@@ -1082,7 +1151,7 @@ function onMove(p) {
     case 'move': {
       if (simMode) break;
       const dx = g[0] - act.g0[0], dy = g[1] - act.g0[1];
-      if ((dx || dy) && !act.moved) { act.moved = true; if (act.press) { act.press.pressed = false; const w = wrapMap.get(act.press.id); if (w) w.pressed = false; } }
+      if ((dx || dy) && !act.moved) { act.moved = true; if (act.press) releasePart(act.press, true); }
       if (!act.moved) break;
       if (act.kind === 'part') {
         const part = byPart(act.id); part.x = act.o.x + dx; part.y = act.o.y + dy;
@@ -1099,7 +1168,7 @@ function onUp(p) {
   if (a.t === 'slide') { try { localStorage.setItem((SK + 'cur'), snap()); } catch (_) {} refreshUI(); return; }
   switch (a.t) {
     case 'move':
-      if (a.press) { a.press.pressed = false; const w = wrapMap.get(a.press.id); if (w) w.pressed = false; }
+      if (a.press) releasePart(a.press);
       if (a.moved) commit();
       else if (a.kind === 'part') {
         const part = byPart(a.id), K = KINDS[part.k];
@@ -1223,8 +1292,8 @@ function refreshControls() {
   pl.addEventListener('input', e => { const t = e.target; if (t.dataset.ctl !== 'pos' || !simMode) return; const v = parseFloat(t.value); setP(t.dataset.id, (p, w) => { p.pos = v; if (w) { w.pos = v; w.light = v; } draw(); const em = t.closest('label').querySelector('em'); if (em) em.textContent = Math.round(v * 100) + ' %'; }); });
   pl.addEventListener('change', e => { if (e.target.dataset.ctl === 'pos') { try { localStorage.setItem((SK + 'cur'), snap()); } catch (_) {} } });
   let held = null;
-  pl.addEventListener('pointerdown', e => { const b = e.target.closest('[data-ctl="hold"]'); if (!b || !simMode) return; held = b.dataset.id; setP(held, (p, w) => { p.pressed = true; if (w) w.pressed = true; b.classList.add('on'); draw(); }); });
-  const rel = () => { if (held == null) return; setP(held, (p, w) => { p.pressed = false; if (w) w.pressed = false; draw(); }); held = null; refreshControls(); };
+  pl.addEventListener('pointerdown', e => { const b = e.target.closest('[data-ctl="hold"]'); if (!b || !simMode) return; held = b.dataset.id; setP(held, p => { pressPart(p); b.classList.add('on'); draw(); }); });
+  const rel = () => { if (held == null) return; setP(held, p => { releasePart(p); draw(); }); held = null; refreshControls(); };
   window.addEventListener('pointerup', rel); window.addEventListener('pointercancel', rel);
 })();
 const listMode = () => window.matchMedia('(min-width:720px)').matches;
@@ -1391,7 +1460,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -1668,6 +1737,32 @@ const noLamp = () => [RES(false, 'Es ist keine Lampe oder kein Heizlüfter vorha
 /* Aufgabenliste */
 const NETZ_LSS_LAMP = () => ({ parts: [['NETZ', 1, 0], ['LSS', 1, 2, 1, 'B16'], ['LAMP', -3, 12, 1, '230V 60W']], wires: [['braun', 1, 0, 1, 2], ['blau', 3, 0, 3, 18, -3, 18, -3, 16]], scopes: [], tempo: 0.55, win: 0.04 });
 const NETZ_LAMP = () => ({ parts: [['NETZ', 1, 0], ['LAMP', -3, 12, 1, '230V 60W']], wires: [['blau', 3, 0, 3, 18, -3, 18, -3, 16]], scopes: [], tempo: 0.55, win: 0.04 });
+
+/* ---- Aufbau-Aufgaben: Verdrahtung mit der Musterlösung vergleichen (Netze, gleiche Bauteil-Nummern) ---- */
+function netsOfDoc(d) {
+  const parts = d.parts.filter(p => p.k !== 'GND' && !INSTR[p.k]).map(p => toCore(p)), ground = d.parts.filter(p => p.k === 'GND').map(p => pinsOf(p)[0]);
+  const c = LS.buildCircuit({ parts, tracks: [], wires: d.wires, ground }), m = new Map();
+  d.parts.forEach(p => pinsOf(p).forEach(([x, y], i) => { const nd = c.nodeOfKey(gk(x, y)); if (nd < 0) return; if (!m.has(nd)) m.set(nd, []); m.get(nd).push(p.id + '.' + i); }));
+  return { c, list: [...m.values()].filter(a => a.length > 1) };
+}
+function schNetCheck(makeFn) {
+  const sol = buildExample({ name: 'Lösung', make: makeFn }), S = netsOfDoc(sol), M = netsOfDoc({ parts: sch.parts, wires: sch.wires });
+  const nm = key => { const [id, pin] = key.split('.'), p = sol.parts.find(q => q.id === +id); return p ? (p.l || KINDS[p.k].name) + ' Pin ' + (+pin + 1) : key; }, lt = ks => ks.slice(0, 3).map(nm).join(', ') + (ks.length > 3 ? ' …' : '');
+  const where = new Map(); M.list.forEach((ks, ni) => ks.forEach(k => where.set(k, ni)));
+  const out = [], hit = new Map();
+  S.list.forEach((ks, si) => {
+    const groups = new Map(); ks.forEach(k => { const g = where.has(k) ? where.get(k) : 'x' + k; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(k); });
+    if (groups.size <= 1) out.push(RES(true, 'Verbunden: ' + lt(ks))); else { const gs = [...groups.values()]; out.push(RES(false, 'Es fehlt eine Verbindung: ' + lt(gs[0]) + ' ist nicht mit ' + lt(gs[1]) + ' verbunden.')); }
+    groups.forEach((_, g) => { if (typeof g === 'number') { if (!hit.has(g)) hit.set(g, new Set()); hit.get(g).add(si); } });
+  });
+  hit.forEach(sis => { if (sis.size > 1) { const a = [...sis]; out.push(RES(false, 'Kurzschluss: ' + lt(S.list[a[0]]) + ' ist mit ' + lt(S.list[a[1]]) + ' verbunden. Das gehört nicht zusammen.')); } });
+  const miss = sol.parts.filter(p => !sch.parts.some(q => q.id === p.id)).map(p => p.l || KINDS[p.k].name); if (miss.length) out.unshift(RES(false, 'Bauteil fehlt: ' + miss.join(', ') + '. Lass die vorgegebenen Bauteile stehen.'));
+  return out;
+}
+const exLike = part => { const e = EXAMPLES.find(x => x.name.includes(part)); return e ? e.make : null; };
+const wiresOff = fn => () => Object.assign({}, fn(), { wires: [], scopes: [] });
+const totalI = E => { const v = E.c.elems.find(e => e.type === 'V'); return v ? Math.abs(v.i) * 1000 : 0; };
+
 const exOf = name => (EXAMPLES.find(e => e.name === name) || {}).make;
 const withDefect = (make, label, defect) => () => { const d = make(); d.parts = d.parts.map(a => (a[5] && a[5].l === label) ? a : a); const idx = d.parts.findIndex(a => a[5] && a[5].l === label); if (idx >= 0) d.parts[idx][5].defect = defect; return d; };
 const TASKS = [
@@ -2376,6 +2471,79 @@ const SCH_TASKS = [
     start: () => ({ parts: [['AC', 2, 4, 1, '10V 50Hz'], ['D', 2, 2, 0, '1N4007', { l: 'D1', defect: 'open' }], ['CE', 6, 2, 1, '100u', { l: 'C1' }], ['R', 10, 2, 1, '1k', { l: 'R1' }], ['GND', 2, 8]], wires: [[2, 4, 2, 2], [6, 2, 10, 2], [6, 6, 6, 8], [10, 6, 10, 8], [2, 8, 6, 8, 10, 8]], scopes: [0, 3] }),
     text: 'Der Lastwiderstand R1 bekommt keine Spannung, obwohl die Quelle 10 V liefert. Welches Bauteil ist defekt?',
     hint: 'Vergleiche die Spannung vor und hinter der Diode. Hinter dem defekten Bauteil bleibt die Spannung aus.' },
+
+  { id: 's6', lab: 'sch', cat: 'Grundlagen', title: 'Reihenschaltung: 6 mA fließen', level: 1,
+    start: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 6, 2, 0, '1k', { l: 'R1' }], ['AM', 10, 2, 0, ''], ['GND', 2, 10]], wires: [[2, 4, 2, 2, 6, 2], [2, 8, 2, 10]], scopes: [] }),
+    solMake: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 6, 2, 0, '1k', { l: 'R1' }], ['AM', 10, 2, 0, ''], ['GND', 2, 10], ['R', 14, 4, 1, '500', { l: 'R2' }]], wires: [[2, 4, 2, 2, 6, 2], [2, 8, 2, 10], [14, 2, 14, 4], [14, 8, 14, 10, 2, 10]], scopes: [] }),
+    text: 'An der 9-V-Batterie hängen R1 = 1 kΩ und ein Amperemeter. Das Amperemeter soll 6 mA anzeigen. Ergänze einen zweiten Widerstand R2 in Reihe und wähle seinen Wert so, dass genau 6 mA fließen.',
+    hint: 'I = U / R_gesamt. Für 6 mA bei 9 V muss R_gesamt = 9 V / 0,006 A = 1,5 kΩ sein. Bei einer Reihenschaltung addieren sich die Widerstände: R2 = 1,5 kΩ − 1 kΩ.',
+    check() { const rs = sch.parts.filter(p => p.k === 'R'); const r = needKinds([['Zweiter Widerstand (in Reihe)', ['R'], 2]]); if (rs.length < 2) return r; const E = simEval({}); E.run(0.05); const i = totalI(E); return r.concat([RES(Math.abs(i - 6) <= 0.35, 'Es fließen ' + fmt1(i) + ' mA (soll 6 mA).')]); } },
+  { id: 's7', lab: 'sch', cat: 'Grundlagen', title: 'Parallelschaltung: 20 mA', level: 1,
+    start: () => ({ parts: [['BAT', 2, 4, 1, '10'], ['R', 6, 2, 1, '1k', { l: 'R1' }], ['GND', 2, 10]], wires: [[2, 4, 2, 2, 6, 2], [6, 6, 6, 8, 2, 8], [2, 8, 2, 10]], scopes: [] }),
+    solMake: () => ({ parts: [['BAT', 2, 4, 1, '10'], ['R', 6, 2, 1, '1k', { l: 'R1' }], ['GND', 2, 10], ['R', 10, 2, 1, '1k', { l: 'R2' }]], wires: [[2, 4, 2, 2, 6, 2, 10, 2], [6, 6, 6, 8, 2, 8, 10, 8, 10, 6], [2, 8, 2, 10]], scopes: [] }),
+    text: 'An 10 V liegt R1 = 1 kΩ. Die Batterie soll insgesamt 20 mA liefern. Schalte einen zweiten Widerstand R2 parallel zu R1 und wähle seinen Wert passend.',
+    hint: 'Parallel liegen beide Widerstände an derselben Spannung. 10 V / 1 kΩ = 10 mA durch R1. Es fehlen noch 10 mA durch R2: R2 = 10 V / 10 mA = 1 kΩ.',
+    check() { const r = needKinds([['Zweiter Widerstand (parallel)', ['R'], 2]]); if (sch.parts.filter(p => p.k === 'R').length < 2) return r; const E = simEval({}); E.run(0.05); const i = totalI(E); return r.concat([RES(Math.abs(i - 20) <= 1, 'Die Batterie liefert ' + fmt1(i) + ' mA (soll 20 mA).')]); } },
+  { id: 's8', lab: 'sch', cat: 'Grundlagen', title: 'Belasteter Spannungsteiler: 3 V an der Last', level: 2,
+    start: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 6, 2, 0, '1k', { l: 'R1' }], ['R', 10, 2, 1, '1k', { l: 'RL' }], ['GND', 2, 10]], wires: [[2, 4, 2, 2, 6, 2], [10, 6, 10, 8, 2, 8], [2, 8, 2, 10]], scopes: [] }),
+    solMake: () => ({ parts: [['BAT', 2, 4, 1, '9'], ['R', 6, 2, 0, '1k', { l: 'R1' }], ['R', 10, 2, 1, '1k', { l: 'RL' }], ['GND', 2, 10], ['R', 14, 2, 1, '1k', { l: 'R2' }]], wires: [[2, 4, 2, 2, 6, 2], [10, 6, 10, 8, 2, 8, 14, 8, 14, 6], [2, 8, 2, 10], [10, 2, 14, 2]], scopes: [] }),
+    text: 'Die Last RL (1 kΩ) hängt hinter R1 (1 kΩ) an 9 V. An RL sollen genau 3 V liegen. Ergänze einen Widerstand R2 parallel zur Last und wähle seinen Wert. Denke daran: R2 und die Last liegen parallel.',
+    hint: 'Für 3 von 9 V muss der Widerstand unter dem Abgriff halb so groß sein wie R1: R2 ‖ RL = 500 Ω. Zwei gleiche Widerstände parallel ergeben die Hälfte.',
+    check() { const rl = sch.parts.find(p => p.l === 'RL'); const r = needKinds([['Widerstand R2 (parallel zur Last)', ['R'], 3]]); if (!rl || sch.parts.filter(p => p.k === 'R').length < 3) return r; const E = simEval({}); E.run(0.05); const v = vAcross(E, rl); return r.concat([RES(Math.abs(v) >= 2.85 && Math.abs(v) <= 3.15, 'An der Last liegen ' + fmt1(Math.abs(v)) + ' V (soll 3 V).')]); } },
+  { id: 's9', lab: 'sch', cat: 'Halbleiter', title: 'Z-Diode stabilisiert 5,1 V', level: 2,
+    start: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 6, 2, 0, '470', { l: 'R1' }], ['R', 10, 2, 1, '1k', { l: 'RL' }], ['GND', 2, 10]], wires: [[2, 4, 2, 2, 6, 2], [10, 6, 10, 8, 2, 8], [2, 8, 2, 10]], scopes: [] }),
+    solMake: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 6, 2, 0, '470', { l: 'R1' }], ['R', 10, 2, 1, '1k', { l: 'RL' }], ['GND', 2, 10], ['ZD', 14, 6, 3, '5.1', { l: 'D1' }]], wires: [[2, 4, 2, 2, 6, 2], [10, 6, 10, 8, 2, 8, 14, 8, 14, 6], [2, 8, 2, 10], [10, 2, 14, 2]], scopes: [] }),
+    text: 'Die Last RL (1 kΩ) hängt an 12 V hinter einem Vorwiderstand. Dort sollen stabile 5,1 V liegen. Setze eine Z-Diode (5,1 V) parallel zur Last, in Sperrrichtung (Kathode zum Pluspol).',
+    hint: 'Eine Z-Diode wird in Sperrrichtung betrieben: Der Strich (Kathode) zeigt zum höheren Potenzial. Wenn die Spannung an der Last nur etwa 0,7 V beträgt, liegt die Diode falsch herum (Durchlassrichtung).',
+    check() { const rl = sch.parts.find(p => p.l === 'RL'), z = sch.parts.find(p => p.k === 'ZD'); const r = needKinds([['Z-Diode', ['ZD'], 1]]); if (!rl || !z) return r; const E = simEval({}); E.run(0.05); const v = vAcross(E, rl); return r.concat([RES(Math.abs(v - 5.1) <= 0.35, 'An der Last liegen ' + fmt1(v) + ' V (soll 5,1 V)' + (v < 1 ? ': Die Z-Diode ist falsch herum eingebaut.' : '.'))]); } },
+  { id: 's10', lab: 'sch', cat: 'Filter und Gleichrichter', title: 'RC-Glied: Zeitkonstante 1 ms', level: 2,
+    start: () => ({ parts: [['BAT', 2, 4, 1, '5'], ['R', 6, 2, 0, '10k', { l: 'R1' }], ['GND', 2, 10]], wires: [[2, 4, 2, 2, 6, 2], [2, 8, 2, 10]], scopes: [] }),
+    solMake: () => ({ parts: [['BAT', 2, 4, 1, '5'], ['R', 6, 2, 0, '10k', { l: 'R1' }], ['GND', 2, 10], ['C', 10, 2, 1, '100n', { l: 'C1' }]], wires: [[2, 4, 2, 2, 6, 2], [2, 8, 2, 10], [10, 6, 10, 8, 2, 8]], scopes: [] }),
+    text: 'Ergänze einen Kondensator so, dass sich der Kondensator mit R1 = 10 kΩ an 5 V nach genau 1 ms auf etwa 63 % der Batteriespannung (3,2 V) geladen hat. Das ist die Zeitkonstante τ = R · C = 1 ms.',
+    hint: 'τ = R · C. Umgestellt: C = τ / R = 1 ms / 10 kΩ = 100 nF. Der Kondensator liegt zwischen dem Widerstand und Masse.',
+    check() { const c = sch.parts.find(p => p.k === 'C' || p.k === 'CE'); const r = needKinds([['Kondensator', ['C', 'CE'], 1]]); if (!c) return r; const E = simEval({}); let v = 0; stepFine(E, 0.001, 5e-6, () => { v = vAcross(E, c); }); return r.concat([RES(Math.abs(Math.abs(v) - 3.16) <= 0.4, 'Nach 1 ms liegen ' + fmt1(Math.abs(v)) + ' V am Kondensator (soll etwa 3,2 V).')]); } },
+  { id: 's11', lab: 'sch', cat: 'Aufbau nach Plan', title: 'Brückengleichrichter verdrahten', level: 3, sol: 'Brückengleichrichter mit Glättung',
+    start: () => wiresOff(exLike('Brückengleichrichter mit Glättung'))(),
+    text: 'Die Bauteile für ein Netzteil mit Brückengleichrichter und Glättung stehen schon im Plan. Verdrahte sie wie im Beispiel „Brückengleichrichter mit Glättung“: Wechselspannung auf die Brücke, Elko und Last an Plus und Minus.',
+    hint: 'Die Wechselspannungs-Anschlüsse (~) der Brücke gehen an die Quelle, Plus und Minus der Brücke an den Elko (Polung) und den Lastwiderstand.',
+    check() { return schNetCheck(exLike('Brückengleichrichter mit Glättung')); } },
+  { id: 's12', lab: 'sch', cat: 'Aufbau nach Plan', title: '555-Blinker verdrahten', level: 3, sol: '555-Blinker (astabil)',
+    start: () => wiresOff(exLike('555-Blinker'))(),
+    text: 'Verdrahte den NE555 als astabilen Multivibrator (Blinker) nach dem Beispiel „555-Blinker (astabil)“: zwei Widerstände, Kondensator, LED mit Vorwiderstand und die Batterie.',
+    hint: 'Pin 2 und Pin 6 sind verbunden, der Kondensator liegt an Pin 6 nach Masse, Pin 7 liegt zwischen den beiden Widerständen. Pin 4 und 8 an Plus, Pin 1 an Masse.',
+    check() { return schNetCheck(exLike('555-Blinker')); } },
+  { id: 's13', lab: 'sch', cat: 'Aufbau nach Plan', title: 'Dämmerungsschalter verdrahten', level: 2, sol: 'Dämmerungsschalter (LDR)',
+    start: () => wiresOff(exLike('Dämmerungsschalter (LDR)'))(),
+    text: 'Verdrahte den Dämmerungsschalter nach dem Beispiel: Fotowiderstand und Widerstand bilden einen Spannungsteiler, der Transistor schaltet die LED.',
+    hint: 'Der Mittelpunkt des Spannungsteilers geht an die Basis des Transistors. Die LED mit Vorwiderstand liegt im Kollektorkreis.',
+    check() { return schNetCheck(exLike('Dämmerungsschalter (LDR)')); } },
+  { id: 's14', lab: 'sch', cat: 'Aufbau nach Plan', title: 'Relais mit Transistor verdrahten', level: 3, sol: 'Relais mit Transistor und Freilaufdiode',
+    start: () => wiresOff(exLike('Relais mit Transistor und Freilaufdiode'))(),
+    text: 'Der Transistor soll die Relaisspule schalten, die Freilaufdiode schützt ihn. Verdrahte Steuer- und Laststromkreis wie im Beispiel „Relais mit Transistor und Freilaufdiode“.',
+    hint: 'Die Diode liegt in Sperrrichtung parallel zur Spule. Die beiden Stromkreise (Steuerung und Last) sind nur über die Spule und den Relaiskontakt gekoppelt.',
+    check() { return schNetCheck(exLike('Relais mit Transistor und Freilaufdiode')); } },
+  { id: 's15', lab: 'sch', cat: 'Aufbau nach Plan', title: 'Komparator mit Operationsverstärker', level: 3, sol: 'Operationsverstärker als Komparator',
+    start: () => wiresOff(exLike('Operationsverstärker als Komparator'))(),
+    text: 'Verdrahte den Operationsverstärker als Komparator nach dem Beispiel: Poti und Referenzspannung an die beiden Eingänge, LED am Ausgang.',
+    hint: 'Der Ausgang schaltet auf Plus, wenn der Pluseingang höher liegt als der Minuseingang. Achte auf die Versorgung des Operationsverstärkers.',
+    check() { return schNetCheck(exLike('Operationsverstärker als Komparator')); } },
+  { id: 's16', lab: 'sch', cat: 'Aufbau nach Plan', title: 'Festspannung 5 V mit Regler 7805', level: 2, sol: 'Festspannung 5 V mit Spannungsregler 7805',
+    start: () => wiresOff(exLike('Festspannung 5 V mit Spannungsregler'))(),
+    text: 'Verdrahte die Festspannungsquelle: Der Regler 7805 macht aus 9 V stabile 5 V für die LED mit Vorwiderstand.',
+    hint: 'Eingang des Reglers an Plus, gemeinsamer Anschluss an Masse, Ausgang zur Last.',
+    check() { return schNetCheck(exLike('Festspannung 5 V mit Spannungsregler')); } },
+  { id: 'sf3', lab: 'sch', cat: 'Fehlersuche', title: 'Spannungsteiler zeigt falsche Spannung', level: 1, debug: true, faultLabel: 'R2', sol: 'Spannungsteiler',
+    start: () => { const d = exOf('Spannungsteiler')(); d.parts[1] = ['R', 8, 2, 1, '1k', { l: 'R1' }]; d.parts[2] = ['R', 8, 6, 1, '2k', { l: 'R2', defect: 'open' }]; return d; },
+    text: 'Der Spannungsteiler soll 6 V am Voltmeter liefern, zeigt aber etwas anderes. Welcher Widerstand ist defekt? Miss nach, wähle ihn aus und tippe auf „Fehler melden“.',
+    hint: 'Fließt durch die Reihenschaltung kein Strom, fällt über dem unterbrochenen Widerstand die ganze Spannung ab.' },
+  { id: 'sf4', lab: 'sch', cat: 'Fehlersuche', title: 'Z-Diode stabilisiert nicht', level: 2, debug: true, faultLabel: 'D1', sol: 'Z-Dioden-Stabilisierung',
+    start: () => { const d = SCH_TASKS.find(t => t.id === 's9').solMake(); d.parts[4] = ['ZD', 14, 6, 3, '5.1', { l: 'D1', defect: 'open' }]; return d; },
+    text: 'Die Last sollte 5,1 V bekommen, es liegen aber viel mehr an. Welches Bauteil ist defekt?',
+    hint: 'Vergleiche die Spannung an der Last mit der erwarteten Stabilisierungsspannung. Eine unterbrochene Z-Diode begrenzt nichts mehr.' },
+  { id: 'sf5', lab: 'sch', cat: 'Fehlersuche', title: 'Tiefpass filtert nicht', level: 2, debug: true, faultLabel: 'C1', sol: 'RC-Tiefpass',
+    start: () => { const d = SCH_TASKS.find(t => t.id === 's10').solMake(); d.parts[3] = ['C', 10, 2, 1, '100n', { l: 'C1', defect: 'open' }]; return d; },
+    text: 'Das RC-Glied lädt keinen Kondensator, die Spannung bleibt ganz oben. Welches Bauteil ist defekt?',
+    hint: 'Ein unterbrochener Kondensator nimmt keine Ladung auf. Miss die Spannung am Kondensator über der Zeit.' },
 ];
 
 /* ---- SimLab: weitere Aufgaben ---- */
@@ -2619,6 +2787,7 @@ function llSpec(p) {
     case 'PIR': return { ll: { k: 'SIP', n: 3, v: 'PIR' }, pm: [0, 1, 2] };
     case 'TMP36': return { ll: { k: 'SIP', n: 3, v: 'TMP36' }, pm: [0, 1, 2] };
     case 'RGBLED': return { ll: { k: 'SIP', n: 4, v: 'RGB-LED' }, pm: [0, 1, 2, 3] };
+    case 'DUOLED': return { ll: { k: 'DUOLED', v: v || 'Kathode' }, pm: [0, 1, 2] };
     case 'PIEZO': return { ll: { k: 'BZ', n: 3, v: 'Piezo' }, pm: [0, 1], ...two };
     case 'TOUCH': return { ll: { k: 'PIN', n: 1, v: '' }, pm: [0] };
     case 'PB': case 'PBC': return { ll: { k: 'SW', vr: 'k2', v: '' }, pm: [0, 1] };
@@ -2626,6 +2795,11 @@ function llSpec(p) {
     case 'SPDT': return { ll: { k: 'SCH', vr: 'k3', n: 3, v: '' }, pm: [1, 0, 2] };
     case 'NPN': case 'PNP': return { ll: { k: 'T', v }, pm: [1, 0, 2] };
     case 'THY': return { ll: { k: 'THY', v }, pm: [1, 0, 2] };
+    case 'SCHOTTKY': return { ll: { k: 'D', n: 4, v: v || '1N5819', vr: 'd5819' }, pm: [0, 1], ...two };
+    case 'NMOS': case 'PMOS': return { ll: { k: 'FET', v, vr: (p.k === 'PMOS' ? 'p-' : 'n-') + String(v).toLowerCase() }, pm: [0, 1, 2] };
+    case 'DIAC': return { ll: { k: 'D', n: 4, v: 'DB3', vr: 'diac' }, pm: [0, 1], ...two };
+    case 'TRIAC': return { ll: { k: 'TRIAC', v }, pm: [0, 1, 2] };
+    case 'VDR': return { ll: { k: 'VDR', n: 2, v }, pm: [0, 1], ...two };
     case 'OPTO': return { ll: { k: 'OPTO', v }, pm: [0, 1, 3, 2] };
     case 'RLY': return { ll: { k: 'RLY', v: v || '12V', vr: /^5/.test(v) ? 'r5' : (/^24/.test(v) ? 'r24' : 'r12') }, pm: [0, 1, 2, 3, 4] };
     case 'TRF': return { ll: { k: 'TRF', v }, pm: [0, 1, 2, 3] };
@@ -2755,6 +2929,7 @@ function menuAct(m) {
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
   else if (m === 'keys') { if (window.LochKeys) window.LochKeys.help(); }
+  else if (m === 'calc') { if (window.Rechner) window.Rechner.open(); }
   else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p><p><b>Tastenkürzel:</b> Taste <b>?</b> drücken oder im Menü „Tastenkürzel“. Zum Beispiel <b>R</b> Widerstand, <b>D</b> Diode, <b>L</b> LED, <b>W</b> Draht, <b>Eingabe</b> oder <b>F5</b> Simulation ein und aus.</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
@@ -3471,7 +3646,7 @@ window.SchaltLive = {                                                           
   events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
   pinV: (id, i) => sv(gk(...pinsOf(byPart(id))[i])),
   stepN: n => { for (let k = 0; k < n; k++) sim.step(2e-4); return sim.t; },
-  vmax: () => vmax,
+  vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
 };
 window.LabUI = { sheet, esc, toast, userName, LAB };
 window.LabKeysAdapter = {                                                           // Tastenkürzel (keys.js)
