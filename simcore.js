@@ -411,7 +411,7 @@ function buildCircuit(layout) {
         add(ICS.make(def, p, n));
         break; }
       default:
-        if (['NANO', 'UNO'].includes(k)) warnings.push({ part: p, text: 'wird nicht simuliert' });
+        if (['NANO', 'UNO', 'PI'].includes(k)) warnings.push({ part: p, text: 'wird nicht simuliert' });
     }
     if (p.defect) for (let i = elemStart; i < elems.length; i++) elems[i].defect = p.defect;
   });

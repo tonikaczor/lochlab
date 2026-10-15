@@ -2543,6 +2543,7 @@ function llSpec(p) {
     case 'LAMP': return { ll: { k: 'LAMP', n: 3, v: v || '6V 0.1A' }, pm: [0, 1], ...two };
     case 'SPK': return { ll: { k: 'SPK', n: 4, v }, pm: [0, 1], ...two };
     case 'UNO': return { ll: { k: 'UNO', v: 'Uno R3' }, pm: UNO_PM };
+    case 'PI': return { ll: { k: 'PI', v: 'Pi GPIO' }, pm: Array.from({ length: 40 }, (_, i) => i) };
     case 'MCP3008': return { ll: { k: 'IC', n: 16, v: 'MCP3008', sk: true }, pm: [15, 14, 13, 8, 12, 11, 10, 9, 0, 1, 2, 3, 4, 5, 6, 7] };
     case 'SERVO': return { ll: { k: 'SIP', n: 3, v: 'Servo' }, pm: [2, 1, 0] };          // Stecker: Masse, Plus, Signal
     case 'HCSR04': return { ll: { k: 'SIP', n: 4, v: 'HC-SR04' }, pm: [0, 1, 2, 3] };

@@ -27,6 +27,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-
 .ib:active,.tb:active,.chip:active{background:var(--panel2)}
 .ib[disabled]{opacity:.3}
 .ib.txt{width:auto;padding:0 10px;font-size:13px;color:var(--accent);font-weight:600}
+.hb2{width:auto;padding:0 9px;font-size:13px;font-weight:600;color:var(--fg);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+@media(max-width:1000px){.hb2 span{display:none}}
+@media(max-width:620px){.hb2{display:none}}
 svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 #mid{display:flex;flex:1;min-height:0}
 main{position:relative;flex:1;min-height:0;min-width:0}
@@ -164,6 +167,10 @@ th{color:var(--mute);font-weight:500;font-size:12px}
     <button class="ib" id="bMenu" aria-label="Menü"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="ib" id="bHome" href="index.html" aria-label="Startseite" title="Startseite" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="i" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5M6.5 10v9h4v-5h3v5h4v-9"/></svg></a>
     <img id="logo" onclick="location.href='index.html'" title="Startseite" src="logo.png" alt="Tonfunk" style="height:34px;max-width:90px;object-fit:contain;display:none;margin-left:4px" onload="this.style.display='block'" onerror="this.remove()">
     <div class="title" id="title">LochLab<small id="sub"></small></div>
+    <button class="ib hb2" id="bEx" aria-label="Beispiele" title="Beispiele">📖 <span>Beispiele</span></button>
+    <button class="ib hb2" id="bOpen" aria-label="Projekte öffnen" title="Projekte öffnen">📂 <span>Öffnen</span></button>
+    <button class="ib hb2" id="bShare" aria-label="Teilen" title="Teilen">📤 <span>Teilen</span></button>
+    <button class="ib hb2" id="bPrint" aria-label="Drucken" title="Drucken">🖨 <span>Drucken</span></button>
     <button class="ib" id="bUndo" aria-label="Rückgängig"><svg class="i" viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-3" transform="translate(0 -3)"/></svg></button>
     <button class="ib" id="bRedo" aria-label="Wiederholen"><svg class="i" viewBox="0 0 24 24"><path d="M15 7l5 5-5 5M20 12H9a5 5 0 000 10h3" transform="translate(0 -3)"/></svg></button>
     <button class="ib txt" id="bView">Beide</button>
@@ -240,7 +247,10 @@ const UNO_TX=[0,1,2,3,4,5,6,7,8,9,11,12,13,14,15,16,17,18];
 const UNO_BX=[2,3,4,5,6,7,8,9,11,12,13,14,15,16];
 PARTS.NANO={name:'Arduino Nano',pre:'A',kind:'fixed',def:30,val:'Nano',
   pins:[...NANO_L.map((_,i)=>[0,i]),...NANO_R.map((_,i)=>[6,i])],labels:[...NANO_L,...NANO_R]};
-PARTS.UNO={name:'Arduino Uno',pre:'A',kind:'fixed',def:32,val:'Uno R3',
+const PI_L=['3V3','5V','GPIO2','5V','GPIO3','GND','GPIO4','GPIO14','GND','GPIO15','GPIO17','GPIO18','GPIO27','GND','GPIO22','GPIO23','3V3','GPIO24','GPIO10','GND','GPIO9','GPIO25','GPIO11','GPIO8','GND','GPIO7','GPIO0','GPIO1','GPIO5','GND','GPIO6','GPIO12','GPIO13','GND','GPIO19','GPIO16','GPIO26','GPIO20','GND','GPIO21'];
+PARTS.PI={name:'Raspberry Pi (GPIO-Stiftleiste)',pre:'A',kind:'fixed',def:40,val:'Pi GPIO',
+  pins:PI_L.map((_,i)=>[i%2,Math.floor(i/2)]),labels:PI_L};
+PARTS.UNO={name:'Arduino Uno (Stiftleisten)',pre:'A',kind:'fixed',def:32,val:'Uno R3',
   pins:[...UNO_TX.map(x=>[x,0]),...UNO_BX.map(x=>[x,19])],labels:[...UNO_T,...UNO_B]};
 // Varianten (Untergruppen): Poti, Trimmer, Taster, Schalter, LED
 PARTS.P.variants=[
@@ -365,6 +375,7 @@ function shopTerm(k,V,it){
     case 'BAT':return vn||'Batterie';
     case 'NANO':return 'Arduino Nano';
     case 'UNO':return 'Arduino Uno';
+    case 'PI':return 'Raspberry Pi (GPIO)';
     default:return PARTS[k].name;
   }
 }
@@ -411,7 +422,8 @@ const HINTS={
   BAT:'Spannungsquelle: Plus und Minus nicht vertauschen.',
   SIG:'Signalgenerator: erzeugt eine Wechselspannung, zum Beispiel 5 V Spitze bei 1 kHz.',
   NANO:'Arduino Nano: 30 Pins im 2,54-mm-Raster, USB-Anschluss oben.',
-  UNO:'Arduino Uno: wird meist über Buchsenleisten eingebunden.',
+  UNO:'Arduino Uno: zwei Stiftleisten (Digital oben, Strom und analog unten), im Rasterabstand 2,54 mm. Das Lochraster-Board steckt als Shield auf dem Uno.',
+  PI:'Raspberry Pi: 2×20-polige Stiftleiste (GPIO-Leiste) im Rasterabstand 2,54 mm. Pin 1 (3,3 V) ist markiert. Der Pi wird mit einem Flachbandkabel oder direkt aufgesteckt.',
 };
 const hintOf=(k,V)=>(k==='D'&&V&&V.id==='dz')?'Z-Diode: Ring = Kathode. In Sperrrichtung leitet sie ab ihrer Z-Spannung, zum Beispiel 5,1 V.':(HINTS[k]||'');
 const photoOf=(k,vr)=>PHOTO[k+':'+vr]||PHOTO[k]||null;
@@ -477,7 +489,8 @@ function bodyRect(it){
     case 'TRF': return [-.8,-.9,6.8,4.9];
     case 'BU': return [-.5,-.5,n-.5,.5];
     case 'NANO': return [-.6,-1.7,6.6,15.7];
-    case 'UNO': return [-4.8,-1,23.5,20];
+    case 'UNO': return [-.7,-.7,18.7,19.7];
+    case 'PI': return [-.7,-.7,1.7,19.7];
     case 'IC': case 'SOCK': case 'DSW': return [-.5,-.5,n/2-.5,3.5];
     case 'SIP': return [-.5,-.5,n-.5,.5];
     case 'KL': return [-.5,-.9,n-.5,.9];
@@ -749,14 +762,13 @@ function drawPart(c,it){
     rrect(c,2.5,1.5,1,.8,.1);c.fillStyle='#d0d4d9';c.fill();
     c.fillStyle='#d8b44a';localPins(k,n).forEach(([x,y])=>c.fillRect(x-.15,y-.15,.3,.3));
   }else if(k==='UNO'){
-    rrect(c,-3.5,-1,27,21,.35);c.fillStyle='#0e6e83';c.fill();c.strokeStyle='#07414d';c.lineWidth=.07;c.stroke();
-    rrect(c,-4.8,3.2,4.6,5.6,.15);c.fillStyle='#b9c0c8';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.05;c.stroke();
-    rrect(c,-4.8,13,3.6,5.2,.15);c.fillStyle='#1d1d1d';c.fill();
-    rrect(c,7,8,9,3,.1);c.fillStyle='#1d1d1d';c.fill();
-    rrect(c,-1.2,1,1.4,1.4,.15);c.fillStyle='#d0d4d9';c.fill();
     c.fillStyle='#1e1e1e';
     rrect(c,-.5,-.5,10,1,.05);c.fill();rrect(c,10.5,-.5,8,1,.05);c.fill();rrect(c,1.5,18.5,8,1,.05);c.fill();rrect(c,10.5,18.5,6,1,.05);c.fill();
     c.fillStyle='#d8b44a';localPins(k,n).forEach(([x,y])=>c.fillRect(x-.15,y-.15,.3,.3));
+  }else if(k==='PI'){
+    rrect(c,-.55,-.55,2.1,20.1,.12);c.fillStyle='#1e1e1e';c.fill();
+    c.fillStyle='#d8b44a';localPins(k,n).forEach(([x,y])=>c.fillRect(x-.17,y-.17,.34,.34));
+    c.strokeStyle='#ffd24a';c.lineWidth=.08;c.strokeRect(-.32,-.32,.64,.64);
   }else if(k==='NTC'||k==='PTC'){
     leg();c.beginPath();c.arc(n/2,0,.85,0,7);c.fillStyle=k==='NTC'?'#2a4d8f':'#c9a227';c.fill();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=.06;c.stroke();
     c.fillStyle='#fff';c.font='bold .7px sans-serif';c.textAlign='center';c.textBaseline='middle';c.fillText(k==='NTC'?'NTC':'PTC',n/2,.05);
@@ -824,7 +836,7 @@ function drawPart(c,it){
     rrect(c,-.5,-.9,n,1.8,.1);c.fillStyle='#2a9d4a';c.fill();c.strokeStyle='#17602d';c.lineWidth=.05;c.stroke();
     for(let i=0;i<n;i++){c.beginPath();c.arc(i,0,.42,0,7);c.fillStyle='#c4c8ce';c.fill();c.strokeStyle='#555';c.lineWidth=.05;c.stroke();line(c,i-.25,-.2,i+.25,.2);}
   }
-  if(k!=='SIP'&&k!=='KL'&&k!=='BU'&&k!=='PIN'&&k!=='NANO'&&k!=='UNO'){ // Anschlussbeine
+  if(k!=='SIP'&&k!=='KL'&&k!=='BU'&&k!=='PIN'&&k!=='NANO'&&k!=='UNO'&&k!=='PI'){ // Anschlussbeine
     c.fillStyle='#e6eaee';c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=.04;
     localPins(k,n,it.vr).forEach(([x,y])=>{c.beginPath();c.arc(x,y,.17,0,7);c.fill();c.stroke();});
   }
@@ -904,6 +916,7 @@ function drawScene(c,V,o){
       pw.forEach(([px,py],i)=>{
         let d,off;
         if(it.k==='NANO'){d=i<15?[1,0]:[-1,0];off=.95;}
+        else if(it.k==='PI'){d=i%2?[1,0]:[-1,0];off=1.5;}
         else if(it.k==='IC'){d=i<it.n/2?[0,-1]:[0,1];off=.78+(i%2)*.5;}
         else{d=i<UNO_TX.length?[0,1]:[0,-1];off=.8+(i%2)*.75;}
         const [dx,dy]=rot(d[0],d[1],it.r);
@@ -1216,7 +1229,7 @@ function renderCtx(){
   el.innerHTML=h;sd.innerHTML=sh;sd.classList.toggle('on',!!sh);
   renderParts();
 }
-const PCATS=[['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','T','THY','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Quellen',['BAT','SIG']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];
+const PCATS=[['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','T','THY','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','PI','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Quellen',['BAT','SIG']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];
 function renderParts(){
   const el=$('#parts');if(!el)return;
   const seen=new Set();let h=`<div class="psearch"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;flex:none;opacity:.7"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="pq" type="search" placeholder="Bauteil suchen …" autocomplete="off" value="${esc(partQuery)}"></div>`;
@@ -1305,6 +1318,7 @@ function updateHeader(){
   $('#bView').textContent=MODES.find(m=>m[0]===mode)[1];
 }
 $('#bUndo').onclick=undo;$('#bRedo').onclick=redo;$('#bFit').onclick=fit;
+$('#bEx').onclick=()=>menuAct('ex');$('#bOpen').onclick=()=>menuAct('open');$('#bShare').onclick=()=>menuAct('share');$('#bPrint').onclick=()=>menuAct('print');
 $('#bView').onclick=()=>{mode=MODES[(MODES.findIndex(m=>m[0]===mode)+1)%3][0];sel=null;updateHeader();renderCtx();invalidate();toast(mode==='bottom'?'Lötseite (gespiegelt)':mode==='top'?'Bestückungsseite':'Beide Seiten');};
 $('#title').onclick=renameDoc;
 $('#bMenu').onclick=openMenu;
@@ -1633,7 +1647,7 @@ function autoLayout(job){
   const minX=Math.min(...ps.map(p=>p.sx)),maxX=Math.max(...ps.map(p=>p.sx)),minY=Math.min(...ps.map(p=>p.sy)),maxY=Math.max(...ps.map(p=>p.sy));
   const f=Math.max(.35,Math.min(1,(cols-14)/Math.max(maxX-minX,1),(rows-12)/Math.max(maxY-minY,1)));
   const items=[],rects=[],owner=new Map(),netHoles=new Map(),notPlaced=[];
-  const order=ps.map((_,i)=>i).sort((a,b)=>((ps[b].ll.k==='IC'||ps[b].ll.k==='RLY'||ps[b].ll.k==='TRF'||ps[b].ll.k==='UNO')-(ps[a].ll.k==='IC'||ps[a].ll.k==='RLY'||ps[a].ll.k==='TRF'||ps[a].ll.k==='UNO'))||ps[a].sy-ps[b].sy||ps[a].sx-ps[b].sx);
+  const order=ps.map((_,i)=>i).sort((a,b)=>((ps[b].ll.k==='IC'||ps[b].ll.k==='RLY'||ps[b].ll.k==='TRF'||ps[b].ll.k==='UNO'||ps[b].ll.k==='PI')-(ps[a].ll.k==='IC'||ps[a].ll.k==='RLY'||ps[a].ll.k==='TRF'||ps[a].ll.k==='UNO'||ps[a].ll.k==='PI'))||ps[a].sy-ps[b].sy||ps[a].sx-ps[b].sx);
   const overlap=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
   for(const i of order){
     const jp=ps[i],ll=jp.ll,P=PARTS[ll.k];
