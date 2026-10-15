@@ -24,7 +24,7 @@ const KINDS = {
   CE:  { name: 'Elko',            cat: 'Passiv', pins: T2, v: '100u', core: 'CE', box: [0, -1.3, 4, 1.3], props: [['v', 'Kapazität', 'text', 'z. B. 100u']] },
   L:   { name: 'Spule',           cat: 'Passiv', pins: T2, v: '10m', core: 'L',  box: [0, -1, 4, 1], props: [['v', 'Induktivität', 'text', 'z. B. 10m']] },
   LDR: { name: 'Fotowiderstand',  cat: 'Passiv', pins: T2, v: '', core: 'LDR', box: [0, -1.3, 4, 1.3], pos: true, props: [['pos', 'Helligkeit', 'range']] },
-  LAMP:{ name: 'Glühlampe',       cat: 'Passiv', pins: T2, v: '6V 0.1A', core: 'LAMP', box: [0, -1, 4, 1], props: [['v', 'Nenndaten', 'text', 'z. B. 6V 0.1A']] },
+  LAMP:{ name: 'Glühlampe',       cat: 'Passiv', pins: T2, v: '6V 0.1A', core: 'LAMP', box: [0, -1, 4, 1], dyn: p => (/230\s*V/i.test(String(p.v || '')) ? { pins: [[0, 0], [4, 0], [2, 2]], box: [0, -1, 4, 2.6], toggle: true } : {}), props: [['v', 'Nenndaten', 'text', 'z. B. 6V 0.1A']] },
   D:   { name: 'Diode',           cat: 'Halbleiter', pins: T2, v: '1N4148', core: 'D', box: [0, -1, 4, 1], props: [] },
   ZD:  { name: 'Z-Diode',         cat: 'Halbleiter', pins: T2, v: '5.1', core: 'ZD', box: [0, -1, 4, 1], props: [['v', 'Z-Spannung (V)', 'text', 'z. B. 5.1']] },
   LED: { name: 'LED',             cat: 'Halbleiter', pins: T2, v: 'rot', core: 'LED', box: [0, -1.6, 4, 1], props: [['v', 'Farbe', 'select', LEDC]] },
@@ -62,14 +62,14 @@ const KINDS = {
   SERVO: { name: 'Servo', cat: 'Sensoren', lab: 'code,pi', pins: [[0, 0], [0, 2], [0, 4]], v: '', core: 'SERVO', box: [0, -1, 6, 5], props: [] },
   LCDI2C: { name: 'LCD 16×2 (I²C)', cat: 'Sensoren', lab: 'code', pins: [[9, 0], [9, 2], [9, 4], [9, 6]], v: '', core: 'LCDI2C', box: [0, -1.2, 9, 7.2], props: [] },
   NETZ3:{ name: 'Drehstrom 400 V (L1, L2, L3, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 0], [8, 0]], v: '400V', core: 'NETZ3', box: [-1, -3, 9, 0.3], props: [['v', 'Außenleiterspannung', 'text', 'z. B. 400V']] },
-  MOTOR3:{ name: 'Drehstrommotor', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0]], v: '400V 2.2kW', core: 'MOTOR3', box: [-0.6, -0.4, 4.6, 4.8], props: [['v', 'Spannung, Leistung (D = Dreieck)', 'text', 'z. B. 400V 2.2kW']] },
+  MOTOR3:{ name: 'Drehstrommotor', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 3]], v: '400V 2.2kW', core: 'MOTOR3', box: [-0.6, -0.4, 6.6, 4.8], toggle: true, props: [['v', 'Spannung, Leistung (D = Dreieck)', 'text', 'z. B. 400V 2.2kW']] },
   BRUECKE:{ name: 'Brückengleichrichter', cat: 'Halbleiter', pins: [[0, 2], [4, 2], [2, 0], [2, 4]], v: '', core: 'BRUECKE', box: [0, -0.4, 4, 4.4], props: [] },
   REG: { name: 'Spannungsregler 78xx', cat: 'Halbleiter', pins: [[0, 0], [2, 2], [4, 0]], v: '7805', core: 'U', box: [0, -1, 4, 2.4], props: [['v', 'Typ', 'text', 'z. B. 7805 oder 7812']] },
   SEG8:{ name: '7-Segment-Anzeige', cat: 'Halbleiter', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [6, 14]], v: 'rot', core: 'SEG8', vr: 'k', box: [-0.6, -0.8, 6.6, 15], props: [['vr', 'Bauart', 'select', ['k', 'a'], { k: 'gemeinsame Kathode', a: 'gemeinsame Anode' }]] },
   PBC: { name: 'Taster (Öffner)', cat: 'Schalter', lab: 'sim', pins: T2, v: '', core: 'SWNC', box: [0, -1.4, 4, 1], momentary: true, props: [] },
   KREUZ:{ name: 'Kreuzschalter', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '', core: 'KREUZ', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, props: [] },
   IMP: { name: 'Stromstoßschalter', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [0, 4], [6, 0], [6, 4]], v: '230V', core: 'IMP', box: [0, -0.4, 6, 4.4], props: [['v', 'Spulenspannung', 'text', 'z. B. 230V']] },
-  HEAT:{ name: 'Heizlüfter', cat: 'Verbraucher', lab: 'sim', pins: T2, v: '230V 2000W', core: 'LAMP', box: [0, -1.1, 4, 1.1], props: [['v', 'Spannung und Leistung', 'text', 'z. B. 230V 2000W']] },
+  HEAT:{ name: 'Heizlüfter', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [4, 0], [2, 2]], v: '230V 2000W', core: 'LAMP', box: [0, -1.1, 4, 2.6], toggle: true, props: [['v', 'Spannung und Leistung', 'text', 'z. B. 230V 2000W']] },
   SD:  { name: 'Steckdose', cat: 'Verbraucher', lab: 'sim', pins: [[4, 0], [4, 2], [4, 4]], v: '1000W', core: 'SD', box: [0, -0.9, 4, 4.9], toggle: true, props: [['v', 'Angeschlossenes Gerät (Leistung)', 'text', 'z. B. 2000W, leer = nichts angesteckt']] },
   JUN5:{ name: 'Verteilerklemme 5-polig', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8]], v: '', core: 'JUN', box: [-0.6, -0.8, 1.4, 8.8], props: [] },
   FAULT:{ name: 'Fehlerstelle (Kurzschluss)', cat: 'Verbraucher', lab: 'sim', pins: T2, v: '0.05', core: 'FAULT', box: [0, -1.4, 4, 1.2], toggle: true, props: [['v', 'Widerstand der Fehlerstelle (Ω)', 'text', 'z. B. 0.05 = Kurzschluss']] },
@@ -181,6 +181,7 @@ function onBurn(ev) {
   const p = ev.part && ev.part.item; if (!p) return;
   toast(ev.text);
   if (!window.LochFX) return;
+  if (ev.kind === 'shock') { const [sx, sy] = partCenter(p); LochFX.trip(sx, sy, 'ZAP!', view.s); draw(); refreshUI(); return; }
   if (ev.kind === 'trip') { const [tx, ty] = partCenter(p); LochFX.trip(tx, ty, p.k === 'RCD' ? 'FI! KLACK!' : 'KLACK!', view.s); draw(); refreshUI(); return; }
   const [x, y] = partCenter(p), led = p.k === 'LED';
   const TXT = { FUSE: 'ZACK!', MOTOR: 'BRRRZ!', LAMP: 'KLIRR!', SPK: 'KRAWUMM!' };
@@ -341,6 +342,11 @@ function drawPart(p, selected) {
   c.strokeStyle = body; c.fillStyle = body; c.lineWidth = 0.11;
   const line = (x0, y0, x1, y1) => { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
   const circle = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); };
+  const peStub = (x0, y0, x1, y1, col, fault) => {        // Schutzleiter-Anschluss am Gehäuse (grün-gelb)
+    lead(x0, y0, x1, y1, col); c.fillStyle = '#35c24a'; c.beginPath(); c.arc(x1, y1, 0.26, 0, 7); c.fill(); c.strokeStyle = '#f2d21b'; c.lineWidth = 0.1; c.setLineDash([0.18, 0.18]); c.beginPath(); c.arc(x1, y1, 0.26, 0, 7); c.stroke(); c.setLineDash([]);
+    c.save(); c.translate(x1 === x0 ? x1 + 0.7 : x1 + 0.2, x1 === x0 ? y1 : y1 - 0.7); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('PE', 0, 0); c.restore();
+    if (fault) { c.strokeStyle = '#ff4d3a'; c.lineWidth = 0.14; c.beginPath(); c.moveTo(x0 - 0.5, y0 - 0.2); c.lineTo(x0 - 0.1, y0 + 0.3); c.lineTo(x0 - 0.4, y0 + 0.3); c.lineTo(x0, y0 + 0.9); c.stroke(); }
+  };
   switch (p.k) {
     case 'R': lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8); break;
     case 'POT':
@@ -548,7 +554,7 @@ function drawPart(p, selected) {
       break; }
     case 'MOTOR3': {
       [0, 1, 2].forEach(i => lead(i * 2, 0, i * 2, 1.5, pc[i]));
-      c.strokeStyle = body; circle(2, 3, 1.5);
+      c.strokeStyle = body; circle(2, 3, 1.5); if (K.pins.length > 3) peStub(3.5, 3, 6, 3, pc[3], p.sw);
       c.save(); c.translate(2, 3); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, -0.2); c.font = '600 .6px sans-serif'; c.fillText('3~', 0, 0.55); c.restore();
       { const o = showSim() && bodyI.get(p.id + 'w0'), ph0 = o && o.e && o.e.phase ? o.e.phase : 0;
         if (o && (o.e.w || 0) > 5) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.9 * Math.cos(a), 3 + 0.9 * Math.sin(a)); c.lineTo(2 + 1.3 * Math.cos(a), 3 + 1.3 * Math.sin(a)); c.stroke(); } }
@@ -622,7 +628,7 @@ function drawPart(p, selected) {
       c.save(); c.translate(3.4, 3.4); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Stromstoß', 0, 0); c.restore();
       break; }
     case 'HEAT': {
-      lead(0, 0, 0.8, 0, pc[0]); lead(3.2, 0, 4, 0, pc[1]); c.strokeRect(0.8, -0.8, 2.4, 1.6);
+      lead(0, 0, 0.8, 0, pc[0]); lead(3.2, 0, 4, 0, pc[1]); c.strokeRect(0.8, -0.8, 2.4, 1.6); peStub(2, 0.8, 2, 2, pc[2], p.sw);
       c.beginPath(); c.moveTo(1.1, 0.4); [0, 1, 2, 3].forEach(i => { c.lineTo(1.1 + (i + 0.5) * 0.5, i % 2 ? 0.4 : -0.4); }); c.lineTo(2.9, 0); c.stroke();
       break; }
     case 'SD': {
@@ -692,7 +698,7 @@ function drawPart(p, selected) {
       c.setLineDash([0.2, 0.2]); c.lineWidth = 0.06; c.strokeRect(0.9, 0.3, 4.6, 3.4); c.setLineDash([]);
       break; }
     case 'LAMP': {
-      lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]); circle(2, 0, 0.9); line(1.36, -0.64, 2.64, 0.64); line(2.64, -0.64, 1.36, 0.64); break; }
+      lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]); circle(2, 0, 0.9); line(1.36, -0.64, 2.64, 0.64); line(2.64, -0.64, 1.36, 0.64); if (K.pins.length > 2) peStub(2, 0.9, 2, 2, pc[2], p.sw); break; }
     case 'VM': case 'AM':
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); circle(2, 0, 1);
       c.restore(); c.save();
@@ -1119,7 +1125,7 @@ function buildPalette() {
   if (was !== pl.style.display) window.dispatchEvent(new Event('resize'));
 }
 /* Bedienfeld links in der Simulation: Schalter, Taster und Regler aller Bauteile an einer festen Stelle */
-const CTLSTATE = { SD: ['ok', 'defekt'], FAULT: ['aus', 'Fehler'], SPDT: ['Stellung 1', 'Stellung 2'], KREUZ: ['gerade', 'gekreuzt'], LSS: ['aus', 'ein'], RCD: ['aus', 'ein'] };
+const CTLSTATE = { LAMP: ['ok', 'Körperschluss'], HEAT: ['ok', 'Körperschluss'], MOTOR3: ['ok', 'Körperschluss'], SD: ['ok', 'defekt'], FAULT: ['aus', 'Fehler'], SPDT: ['Stellung 1', 'Stellung 2'], KREUZ: ['gerade', 'gekreuzt'], LSS: ['aus', 'ein'], RCD: ['aus', 'ein'] };
 function controlHtml() {
   const items = sch.parts.filter(p => { const K = KD(p); return K.toggle || K.momentary || K.pos; });
   let h = '<div class="pcat">Bedienfeld</div>';
@@ -2205,6 +2211,20 @@ const SIM_TASKS = [
 ];
 TASKS.push(...SIM_TASKS, ...SCH_TASKS, ...CODE_TASKS, ...PI_TASKS);
 
+
+/* ---- Schutzleiter-Prüfung für Haus-Aufgaben ---- */
+function chkPE() {
+  const OFF = { LAMP: 2, HEAT: 2, MOTOR3: 3 }, devs = sch.parts.filter(p => OFF[p.k] != null && (p.k !== 'LAMP' || /230\s*V/i.test(String(p.v || '')))), src = sch.parts.find(p => p.k === 'NETZ' || p.k === 'NETZ3');
+  if (!devs.length || !src) return [];
+  const E = simEval({}), sn = E.c.nodeOfKey(gk(...pinsOf(src)[src.k === 'NETZ' ? 2 : 4])); const bad = devs.filter(p => { const q = pinsOf(p)[OFF[p.k]]; const n = E.c.nodeOfKey(gk(q[0], q[1])); return !(n >= 0 && n === sn); });
+  return [RES(!bad.length, bad.length ? 'Schutzleiter (PE, grün-gelb) fehlt bei: ' + bad.map(nm).join(', ') + '. Das Gehäuse muss mit PE verbunden sein.' : 'Alle Geräte sind an den Schutzleiter (PE) angeschlossen.')];
+}
+['aus', 'reihe', 'parallel', 'wechsel', 'kreuz', 'impuls', 'schutz', 'schuetz', 'selbst', 'zl', 'oe', 'mo'].forEach(id => {
+  const t = TASKS.find(x => x.id === id); if (!t || t.debug) return; const c0 = t.check;
+  t.check = function () { return c0.call(this).concat(chkPE()); };
+  t.text += ' Vergiss den Schutzleiter (PE, grün-gelb) von den Geräten zum PE des Netzes nicht.';
+});
+
 window.TaskTest = only => labTasks().filter(t => !only || only.includes(t.id)).map(t => {
   const out = { id: t.id };
   try {
@@ -2477,7 +2497,7 @@ function menuAct(m) {
   else if (m === 'fit') fit();
   else if (m === 'lab') location.href = 'layout.html';
   else if (m === 'start') location.href = 'index.html';
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v67</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: v68</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -3024,6 +3044,7 @@ void loop() {
       wires: [[18, 4, 18, 0, 10, 0, 6, 0], [18, 8, 18, 12, 14, 12, 12, 12, 10, 12, 6, 12, 2, 12], [2, 10, 2, 12], [6, 10, 6, 12], [6, 4, 6, 6, 8, 6], [10, 8, 12, 8], [14, 8, 14, 12]], scopes: [0, 8], tempo: 0.62, win: 0.004 }) },
 ];
 if (window.MORE_EX) EXAMPLES.push(...window.MORE_EX);
+if (LAB === 'sim' && window.addPE) EXAMPLES.forEach(e => { if (!e.noPE && (e.lab === 'sim' || e.cat === 'Bauteile')) { const mk = e.make; e.make = () => window.addPE(mk()); } });
 
 /* ============ Drucken ============ */
 const userName = () => { try { return localStorage.getItem('lm4.name') || ''; } catch (e) { return ''; } };

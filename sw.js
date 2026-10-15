@@ -1,4 +1,4 @@
-const CACHE = 'lochlab-v67';
+const CACHE = 'lochlab-v68';
 const FILES = ['./', './index.html', './layout.html', './schaltplan.html', './simlab.html', './codelab.html', './arduino.js', './pyrun.js', './pilab.html', './beispiele.js', './anleitung.html', './lernen.html', './lernen-arduino.html', './lernen-pi.html', './pi-sd-karte.html', './ausbilder.html', './lochbeispiele.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png', './fx.js', './simics.js', './simcore.js', './simui.js', './schaltplan.js'];
 
 self.addEventListener('install', e => {

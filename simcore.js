@@ -138,6 +138,13 @@ function buildCircuit(layout) {
   const elems = [], warnings = [];
   const rec = [];
   const add = e => { e.pi = rec.splice(0); elems.push(e); return e; };
+  // PE-Anschluss am Gehäuse (Schutzklasse I): Körperschluss simulierbar (Außenleiter über 2 kΩ zum Gehäuse); ohne PE steht das Gehäuse unter Spannung
+  const bodyFault = (p, pe, warn) => {
+    const r = find(pinKey(p, pe)); let cnt = 0; layout.parts.forEach(q => q.pins.forEach((_, i) => { if (find(pinKey(q, i)) === r) cnt++; }));
+    const floating = cnt <= 1;
+    if (floating && warn) warnings.push({ part: p, text: 'Schutzleiter (PE) nicht angeschlossen: Bei einem Körperschluss steht das Gehäuse unter Spannung (Lebensgefahr).' });
+    add({ type: 'S', a: nodeOfRoot(find(pinKey(p, 0))), b: nodeOfRoot(r), closed: !!p.sw, ron: 2000, part: p, sub: 'body', peFloating: floating, upd() { this.closed = !!this.part.sw; } });
+  };
   const R = (a, b, g, part, extra) => add(Object.assign({ type: 'R', a, b, g, part }, extra || {}));
 
   layout.parts.forEach(p => {
@@ -160,6 +167,7 @@ function buildCircuit(layout) {
         const q = String(p.v || '6V 0.1A').replace(',', '.'), mv = q.match(/([0-9.]+)\s*V/), ma = q.match(/([0-9.]+)\s*(m?)A/), mw = q.match(/([0-9.]+)\s*W/);
         const un = mv ? parseFloat(mv[1]) : 6, ia = ma ? parseFloat(ma[1]) * (ma[2] ? 1e-3 : 1) : (mw ? parseFloat(mw[1]) / un : 0.1);
         add({ type: 'R', a: n(0), b: n(1), g: ia / un, part: p, lamp: un * ia, lh: 0 });
+        if (p.pins.length > 2) bodyFault(p, 2, un >= 50);
         break; }
       case 'FUSE': add({ type: 'R', a: n(0), b: n(1), g: 1 / 0.15, part: p, fuse: { ir: Math.max(si(p.v, 0.25), 1e-3), tau: 0.3 }, heat: 0 }); break;
       case 'NTC': case 'PTC': {
@@ -263,6 +271,7 @@ function buildCircuit(layout) {
         add({ type: 'R', a: n(3), b: n(4), g: 1e3, part: p, sub: 'pe' });
         break; }
       case 'MOTOR3': {
+        if (p.pins.length > 3) bodyFault(p, 3, true);
         const q = String(p.v || '400V 2.2kW').replace(',', '.'), mu = q.match(/([0-9.]+)\s*V/), mp = q.match(/([0-9.]+)\s*(k?)W/), dlt = /(^|\s)D(\s|$)|Δ|dreieck/i.test(q);
         const U = mu ? parseFloat(mu[1]) : 400, P = mp ? parseFloat(mp[1]) * (mp[2] ? 1000 : 1) : 2200;
         const uph = dlt ? U : U / Math.sqrt(3), Z = uph * uph / (P / 0.8 / 3), R = Z * 0.8, L = Z * 0.6 / 314.16, star = dlt ? null : nodeOfRoot('mstar' + p.id);
@@ -713,6 +722,7 @@ function createSim(circ) {
           break; }
       }
     }
+    elems.forEach(e => { if (e.sub === 'body') { if (e.closed && e.peFloating && !e.shock) { e.shock = true; sim.events.push({ kind: 'shock', part: e.part, text: 'Körperschluss ohne Schutzleiter: Das Gehäuse steht unter Spannung. Wer es berührt, bekommt einen lebensgefährlichen Schlag!' }); } else if (!e.closed) e.shock = false; } });
     sim.t = t; sim.converged = converged;
     return converged;
   };

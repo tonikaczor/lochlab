@@ -479,5 +479,25 @@ while True:
     sleep(0.5)
 ` }) },
   ];
-  if (typeof module !== 'undefined' && module.exports) module.exports = EX; else window.MORE_EX = EX;
+
+  /* Schutzleiter (PE) für Haus-Beispiele: Lampen (230 V), Heizlüfter und Drehstrommotor bekommen eine grün-gelbe Ader vom PE des Netzes.
+     Die Leitung läuft unterhalb der Schaltung entlang, damit sie keine andere Leitung berührt. */
+  function addPE(dd) {
+    const OFF = { LAMP: [2, 2], HEAT: [2, 2], MOTOR3: [6, 3] }, SRC = { NETZ: [4, 0], NETZ3: [8, 0] };
+    const rot = (x, y, r) => { switch (r & 3) { case 0: return [x, y]; case 1: return [-y, x]; case 2: return [-x, -y]; default: return [y, -x]; } };
+    const pinAt = (p, off) => { const [a, b] = rot(off[0], off[1], p[3] || 0); return [p[1] + a, p[2] + b]; };
+    const src = dd.parts.find(p => SRC[p[0]]); if (!src) return dd;
+    const devs = dd.parts.filter(p => OFF[p[0]] && (p[0] !== 'LAMP' || /230\s*V/i.test(String(p[4] || ''))));
+    if (!devs.length) return dd;
+    const ends = new Set(); let maxY = -1e9;
+    dd.wires.forEach(w => { const poly = typeof w[0] === 'string' ? w.slice(1) : w; for (let i = 0; i + 1 < poly.length; i += 2) { ends.add(poly[i] + ',' + poly[i + 1]); maxY = Math.max(maxY, poly[i + 1]); } });
+    dd.parts.forEach(p => { maxY = Math.max(maxY, p[2] + 6); });
+    const todo = devs.map(p => pinAt(p, OFF[p[0]])).filter(q => !ends.has(q[0] + ',' + q[1]));
+    if (!todo.length) return dd;
+    const sp = pinAt(src, SRC[src[0]]), yl = maxY + 4, wires = [['gruen', sp[0], sp[1], sp[0], yl]];
+    todo.forEach(q => wires.push(['gruen', sp[0], yl, q[0], yl, q[0], q[1]]));
+    return Object.assign({}, dd, { wires: dd.wires.concat(wires) });
+  }
+  EX.addPE = addPE;
+  if (typeof module !== 'undefined' && module.exports) module.exports = EX; else { window.MORE_EX = EX; window.addPE = addPE; }
 })();
