@@ -237,6 +237,24 @@ PARTS.LED.variants=[
   {id:'18',name:'1,8 mm',r:.45},{id:'3',name:'3 mm',r:.62},{id:'5',name:'5 mm',r:.98},{id:'8',name:'8 mm',r:1.6},{id:'10',name:'10 mm',r:2},
 ];
 PARTS.LED.defVar=2;
+PARTS.BAT={name:'Spannungsquelle',pre:'V',kind:'fixed',def:2,val:'9V',pins:[[0,0],[2,0]],variants:[
+  {id:'blk',name:'9-V-Block',val:'9V',box:[-.7,-2.6,2.7,.5],style:'bat'},
+  {id:'aa', name:'1,5 V (Mignon)',val:'1.5V',box:[-.7,-1.6,2.7,.5],style:'bat'},
+  {id:'fl', name:'4,5 V (Flach)',val:'4.5V',box:[-.7,-2.6,2.7,.5],style:'bat'},
+  {id:'psu',name:'Netzteil',val:'5V',box:[-.7,-2.6,2.7,.5],style:'psu'},
+]};
+PARTS.SIG={name:'Signalgenerator',pre:'G',kind:'fixed',def:2,val:'5V 1kHz',pins:[[0,0],[2,0]],variants:[
+  {id:'sin',name:'Sinus',val:'5V 1kHz',box:[-.7,-2.6,2.7,.5],style:'sig'},
+  {id:'sq', name:'Rechteck',val:'5V 1kHz',box:[-.7,-2.6,2.7,.5],style:'sig'},
+  {id:'tri',name:'Dreieck',val:'5V 1kHz',box:[-.7,-2.6,2.7,.5],style:'sig'},
+]};
+PARTS.T.variants=[
+  {id:'npn-cbe',name:'NPN C-B-E',val:'BC547'},
+  {id:'npn-ebc',name:'NPN E-B-C',val:'2N2222'},
+  {id:'pnp-cbe',name:'PNP C-B-E',val:'BC557'},
+  {id:'pnp-ebc',name:'PNP E-B-C',val:'2N2907'},
+];
+function varVal(k){const P=PARTS[k];if(!P.variants)return undefined;const V=P.variants.find(v=>v.id===curVar(k))||P.variants[P.defVar||0];return V.val;}
 function variantOf(it){const P=PARTS[it.k];if(!P||!P.variants)return null;return P.variants.find(v=>v.id===it.vr)||P.variants[P.defVar||0];}
 const ledR=it=>{const V=variantOf(it);return V?V.r:.9;};
 const partVar={};
@@ -407,6 +425,24 @@ function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,
 function drawVarPart(c,it){
   const V=variantOf(it),[x0,y0,x1,y1]=V.box,w=x1-x0,h=y1-y0,cx=(x0+x1)/2,cy=(y0+y1)/2;
   c.lineCap='round';
+  if(V.style==='bat'||V.style==='psu'||V.style==='sig'){
+    rrect(c,x0,y0,w,h,.25);
+    c.fillStyle=V.style==='bat'?'#262626':(V.style==='psu'?'#8a9199':'#237b8a');c.fill();c.strokeStyle='rgba(0,0,0,.6)';c.lineWidth=.06;c.stroke();
+    if(V.style==='bat'){c.fillStyle='#e0b020';c.fillRect(x0+.2,y0+.35,w-.4,.55);}
+    if(V.style==='psu'){c.fillStyle='#d33';c.beginPath();c.arc(0,-.2,.3,0,7);c.fill();c.fillStyle='#111';c.beginPath();c.arc(2,-.2,.3,0,7);c.fill();}
+    if(V.style==='sig'){
+      c.strokeStyle='#fff';c.lineWidth=.12;c.beginPath();
+      const wx=cx-.9,wy=y0+h/2-.1;
+      if(it.vr==='sq'){c.moveTo(wx,wy+.3);c.lineTo(wx,wy-.3);c.lineTo(wx+.9,wy-.3);c.lineTo(wx+.9,wy+.3);c.lineTo(wx+1.8,wy+.3);c.lineTo(wx+1.8,wy-.3);}
+      else if(it.vr==='tri'){c.moveTo(wx,wy+.3);c.lineTo(wx+.45,wy-.3);c.lineTo(wx+1.35,wy+.3);c.lineTo(wx+1.8,wy-.3);}
+      else{for(let i=0;i<=24;i++){const xx=wx+i*.075,yy=wy-Math.sin(i/24*Math.PI*4)*.32;i?c.lineTo(xx,yy):c.moveTo(xx,yy);}}
+      c.stroke();
+    }
+    c.fillStyle='#fff';c.font='bold .7px sans-serif';
+    c.strokeStyle='#e33';c.lineWidth=.12;line(c,-.35,y1-.25,-.05,y1-.25);line(c,-.2,y1-.4,-.2,y1-.1);
+    c.strokeStyle='#ddd';line(c,1.8,y1-.25,2.2,y1-.25);
+    return;
+  }
   if(V.style==='pot'){
     rrect(c,x0,y0,w,h,.2);c.fillStyle='#2b4a8f';c.fill();c.strokeStyle='#142a5e';c.lineWidth=.05;c.stroke();
     const ky=y0+V.r+.25;c.beginPath();c.arc(cx,ky,V.r,0,7);c.fillStyle='#c8ccd2';c.fill();c.strokeStyle='#555';c.lineWidth=.06;c.stroke();
@@ -417,20 +453,20 @@ function drawVarPart(c,it){
     line(c,cx-V.r*.6,ky,cx+V.r*.6,ky);
   }else if(V.style==='tact'){
     rrect(c,x0,y0,w,h,.2);c.fillStyle='#2b2b2b';c.fill();c.strokeStyle='#777';c.lineWidth=.05;c.stroke();
-    c.beginPath();c.arc(cx,cy,Math.min(w,h)*.33,0,7);c.fillStyle='#8e949b';c.fill();c.strokeStyle='#444';c.lineWidth=.06;c.stroke();
+    c.beginPath();c.arc(cx,cy,Math.min(w,h)*(it._p?.28:.33),0,7);c.fillStyle=it._p?'#5d6269':'#8e949b';c.fill();c.strokeStyle='#444';c.lineWidth=.06;c.stroke();
   }else if(V.style==='toggle'){
     rrect(c,x0,y0,w,h,.15);c.fillStyle='#8e949b';c.fill();c.strokeStyle='#555';c.lineWidth=.05;c.stroke();
     const r=Math.min(w,h)*.3;c.beginPath();c.arc(cx,cy,r,0,7);c.fillStyle='#c8ccd2';c.fill();c.stroke();
-    c.strokeStyle='#333';c.lineWidth=.28;line(c,cx,cy,cx,y0+.15);
+    c.strokeStyle='#333';c.lineWidth=.28;line(c,cx,cy,cx,it.sw?y1-.15:y0+.15);
   }else if(V.style==='slide'){
     rrect(c,x0,y0,w,h,.1);c.fillStyle='#9aa0a6';c.fill();c.strokeStyle='#555';c.lineWidth=.05;c.stroke();
-    rrect(c,x0+.3,y0+.25,.9,h-.5,.1);c.fillStyle='#222';c.fill();
+    rrect(c,it.sw?x1-1.2:x0+.3,y0+.25,.9,h-.5,.1);c.fillStyle='#222';c.fill();
   }
 }
-function drawDsw(c,n){
+function drawDsw(c,n,it){
   const h=n/2;
   rrect(c,-.45,-.4,h-.1,3.8,.1);c.fillStyle='#c0392b';c.fill();c.strokeStyle='#7d1f12';c.lineWidth=.05;c.stroke();
-  for(let i=0;i<h;i++){rrect(c,i-.22,.55,.44,1.9,.08);c.fillStyle='#f4f4f4';c.fill();c.fillStyle='#444';c.fillRect(i-.17,.7,.34,.7);}
+  for(let i=0;i<h;i++){rrect(c,i-.22,.55,.44,1.9,.08);c.fillStyle='#f4f4f4';c.fill();c.fillStyle='#444';c.fillRect(i-.17,((it&&it.sw||0)>>i&1)?.7:1.5,.34,.7);}
 }
 function drawSocket(c,n){
   const h=n/2;
@@ -464,6 +500,7 @@ function drawPart(c,it){
     c.beginPath();c.arc(n/2,0,r,0,7);c.globalAlpha=.9;c.fillStyle=col;c.fill();c.globalAlpha=1;c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=.06;c.stroke();
     c.beginPath();c.arc(n/2-r*.22,-r*.28,r*.3,0,7);c.fillStyle='rgba(255,255,255,.45)';c.fill();
     c.strokeStyle='rgba(0,0,0,.6)';c.lineWidth=.08;line(c,n/2+r*.88,-r*.55,n/2+r*.88,r*.55);
+    if(it._burnt){c.fillStyle='rgba(0,0,0,.65)';c.beginPath();c.arc(n/2,0,r,0,7);c.fill();c.strokeStyle='#e33';c.lineWidth=.14;line(c,n/2-r*.6,-r*.6,n/2+r*.6,r*.6);line(c,n/2-r*.6,r*.6,n/2+r*.6,-r*.6);}
   }else if(k==='T'){
     c.beginPath();c.moveTo(-.25,.45);c.arc(1,.45,1.25,Math.PI,0);c.closePath();c.fillStyle='#262626';c.fill();c.strokeStyle='#555';c.lineWidth=.05;c.stroke();
   }else if(k==='P'){
@@ -517,7 +554,7 @@ function drawPart(c,it){
     rrect(c,-.5,-.5,10,1,.05);c.fill();rrect(c,10.5,-.5,8,1,.05);c.fill();rrect(c,1.5,18.5,8,1,.05);c.fill();rrect(c,10.5,18.5,6,1,.05);c.fill();
     c.fillStyle='#d8b44a';localPins(k,n).forEach(([x,y])=>c.fillRect(x-.15,y-.15,.3,.3));
   }else if(k==='DSW'){
-    drawDsw(c,n);
+    drawDsw(c,n,it);
   }else if(k==='SOCK'){
     drawSocket(c,n);
   }else if(k==='IC'){
@@ -776,7 +813,7 @@ function onUp(p){
     case 'move':if(a.moved)commit();break;
     case 'place':if(ghost){
       const k=partKind,P=PARTS[k];
-      doc.items.push({id:nid(),t:'part',k,x:ghost[0],y:ghost[1],r:partRot,vr:curVar(k),sk:k==='IC'&&autoSocket,n:sizes[k],v:partVals[k]!=null?partVals[k]:P.val,l:autoLabel(k)});commit();}
+      doc.items.push({id:nid(),t:'part',k,x:ghost[0],y:ghost[1],r:partRot,vr:curVar(k),sk:k==='IC'&&autoSocket,n:sizes[k],v:partVals[k]!=null?partVals[k]:(varVal(k)!=null?varVal(k):P.val),l:autoLabel(k)});commit();}
       break;
     case 'line':
       if(cursor&&(cursor[0]!==a.start[0]||cursor[1]!==a.start[1])){chain={x:cursor[0],y:cursor[1]};addLine(tool,a.start[0],a.start[1],cursor[0],cursor[1]);}
@@ -902,7 +939,7 @@ const ctxClick=e=>{
   const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
   if(a==='pk'){partKind=b.dataset.k;}
   else if(a==='pv'){partVar[partKind]=b.dataset.v;}
-  else if(a==='sv'){const it=sel!=null?byId(sel):null;if(it){it.vr=b.dataset.v;commit();}}
+  else if(a==='sv'){const it=sel!=null?byId(sel):null;if(it){const P=PARTS[it.k],old=variantOf(it);it.vr=b.dataset.v;const nv=P.variants.find(v=>v.id===it.vr);if(nv&&nv.val!=null&&(!it.v||(old&&it.v===old.val)))it.v=nv.val;commit();}}
   else if(a==='rot')rotSel();
   else if(a==='rl')rotSel(3);
   else if(a==='sm'||a==='sp'){
@@ -1172,6 +1209,7 @@ function openHelp(){
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
     <p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
+    <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
   });
 }
@@ -1203,5 +1241,7 @@ buildNav();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
+<script src="simcore.js"></script>
+<script src="simui.js"></script>
 </body>
 </html>
