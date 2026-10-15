@@ -338,7 +338,7 @@ const HINTS={
   SW:'Taster: verbindet nur, solange er gedrückt ist.',
   SCH:'Kippschalter: in der Mitte der gemeinsame Anschluss, außen die beiden Schaltstellungen.',
   DSW:'DIP-Schalter: jeder Schalter verbindet zwei gegenüberliegende Pins.',
-  IC:'Kerbe oder Punkt zeigt Pin 1. Gezählt wird gegen den Uhrzeigersinn. Am besten auf einem Sockel einstecken.',
+  IC:'Kerbe zeigt nach links, Pin 1 liegt unten links (Punkt). Gezählt wird gegen den Uhrzeigersinn. Typ wählen: die Pins werden beschriftet und simuliert. Am besten auf einem Sockel einstecken.',
   SOCK:'Der Sockel wird eingelötet, der IC steckt darauf. Die Kerbe zeigt Pin 1.',
   SIP:'Stiftleiste im 2,54-mm-Raster.',
   BU:'Buchsenleiste, das Gegenstück zur Stiftleiste.',
@@ -380,7 +380,7 @@ const sizes = {}; for (const k in PARTS) sizes[k] = PARTS[k].def;
 
 function localPins(k,n,vr){
   const P=PARTS[k], a=[];
-  if(P.kind==='dip'){const h=n/2;for(let i=0;i<h;i++)a.push([i,0]);for(let i=0;i<h;i++)a.push([h-1-i,3]);}
+  if(P.kind==='dip'){const h=n/2;for(let i=0;i<h;i++)a.push([i,3]);for(let i=0;i<h;i++)a.push([h-1-i,0]);}
   else if(P.kind==='fixed'){const V=variantOf({k,vr});return (V&&V.pins?V.pins:P.pins).map(p=>p.slice());}
   else if(P.kind==='sip'){for(let i=0;i<n;i++)a.push([i,0]);}
   else a.push([0,0],[n,0]);
@@ -694,7 +694,7 @@ function drawPart(c,it){
     for(let i=0;i<h;i++){c.fillRect(i-.14,.1,.28,.5);c.fillRect(i-.14,2.4,.28,.5);}
     rrect(c,-.38,.45,h-.24,2.1,.12);c.fillStyle='#232323';c.fill();c.strokeStyle='#555';c.lineWidth=.04;c.stroke();
     c.beginPath();c.arc(-.38,1.5,.28,-Math.PI/2,Math.PI/2);c.strokeStyle='#888';c.lineWidth=.06;c.stroke();
-    c.beginPath();c.arc(.12,.9,.12,0,7);c.fillStyle='#888';c.fill();
+    c.beginPath();c.arc(.12,2.1,.12,0,7);c.fillStyle='#bbb';c.fill();
   }else if(k==='SIP'){
     rrect(c,-.5,-.5,n,1,.08);c.fillStyle='#1e1e1e';c.fill();
     for(let i=0;i<n;i++){c.fillStyle=i?'#d8b44a':'#fff';c.fillRect(i-.14,-.14,.28,.28);}
@@ -709,6 +709,11 @@ function drawPart(c,it){
   c.restore();
 }
 
+function labelsOf(it){
+  if(PARTS[it.k].labels)return PARTS[it.k].labels;
+  if(it.k==='IC'&&window.LochSimICs){const d=LochSimICs.find(it.v);if(d&&LochSimICs.CATALOG[d.key].np===it.n)return LochSimICs.CATALOG[d.key].labels;}
+  return null;
+}
 function drawScene(c,V,o){
   const {cols,rows}=doc, mir=o.mode==='bottom', both=o.mode==='both';
   c.save();c.translate(V.ox,V.oy);c.scale(V.s,V.s);
@@ -764,6 +769,7 @@ function drawScene(c,V,o){
     items.forEach(it=>{if(it.t!=='part')return;
       hl(it,()=>{const b=worldBox(it);rrect(c,b[0]-.1,b[1]-.1,b[2]-b[0]+.2,b[3]-b[1]+.2,.2);c.fillStyle='rgba(59,158,255,.35)';c.fill();c.strokeStyle='#3b9eff';c.lineWidth=.1;c.stroke();});
       drawPart(c,it);
+      if(it._burnt&&it.k!=='LED'){const bb=worldBox(it);c.strokeStyle='#e33';c.lineWidth=.16;line(c,bb[0],bb[1],bb[2],bb[3]);line(c,bb[2],bb[1],bb[0],bb[3]);}
     });
     items.forEach(it=>{if(it.t!=='part')return;
       const b=worldBox(it),cxm=(b[0]+b[2])/2;
@@ -771,11 +777,12 @@ function drawScene(c,V,o){
       if(it.v&&(V.s>=13||ex))txt(c,it.v,cxm,b[3]+.45,ex?.68:.42,ex?'#12305e':'#cfe8ff',false,'center',ex?'rgba(255,255,255,.95)':'rgba(0,0,0,.8)');
     });
     if(V.s>=15||ex)items.forEach(it=>{
-      if(it.t!=='part'||!PARTS[it.k].labels)return;
-      const L=PARTS[it.k].labels,pw=pinsOf(it);
+      if(it.t!=='part')return;const LL=labelsOf(it);if(!LL)return;
+      const L=LL,pw=pinsOf(it);
       pw.forEach(([px,py],i)=>{
         let d,off;
         if(it.k==='NANO'){d=i<15?[1,0]:[-1,0];off=.95;}
+        else if(it.k==='IC'){d=i<it.n/2?[0,-1]:[0,1];off=.78+(i%2)*.5;}
         else{d=i<UNO_TX.length?[0,1]:[0,-1];off=.8+(i%2)*.75;}
         const [dx,dy]=rot(d[0],d[1],it.r);
         txt(c,L[i],px+dx*off,py+dy*off,ex?.46:.4,'#fff',false,'center','rgba(0,40,50,.9)');
@@ -1024,6 +1031,10 @@ function sideCtl(k,rotV,n,it){
   { const ph=photoOf(k,V&&V.id); if(ph)o+=`<img class="phimg" src="bauteile/${ph}.jpg" alt="Foto" data-a="photo" data-id="${ph}"><div class="phcap">Foto antippen: alle Ansichten</div>`; }
   o+=`<div class="sh">Ausrichtung</div><div class="srow"><button class="sbtn" data-a="rl" aria-label="Links drehen">↺</button><span class="sval">${rotV*90}°</span><button class="sbtn" data-a="rot" aria-label="Rechts drehen">↻</button></div>`;
   if(P.kind!=='fixed')o+=`<div class="sh">${P.kind==='span'?'Länge':'Anzahl Pins'}</div><div class="srow"><button class="sbtn" data-a="sm" aria-label="weniger">−</button><span class="sval">${n}</span><button class="sbtn" data-a="sp" aria-label="mehr">+</button></div>`;
+  if(k==='IC'&&window.LochSimICs){
+    const cur=LochSimICs.find(it?it.v:(partVals.IC!=null?partVals.IC:PARTS.IC.val)),ck=cur?cur.key:'';
+    o+=`<div class="sh">Typ</div><select class="icsel" data-ic="1">${ck?'':'<option value="">(eigener Wert)</option>'}${LochSimICs.SORT.map(q=>`<option value="${q}" ${q===ck?'selected':''}>${esc(LochSimICs.CATALOG[q].name)}</option>`).join('')}</select>`;
+  }
   if(k==='IC'){const on=it?it.sk:autoSocket;o+=`<div class="sh">Sockel</div><button class="sbtn wide ${on?'on':''}" data-a="${it?'sk':'ask'}">${on?'Sockel darunter ✓':'Ohne Sockel'}</button>`;}
   if(k==='LED')o+=`<div class="sh">Farbe</div><div class="swg">${ledSw(it?it.v:(partVals.LED!=null?partVals.LED:'rot'))}</div>`;
   if(it)o+=`<div class="sh">Bauteil</div><button class="sbtn wide" data-a="edit">✎ Bearbeiten</button><button class="sbtn wide" data-a="dup">⧉ Kopie</button><button class="sbtn wide danger" data-a="del">Löschen</button>`;
@@ -1125,6 +1136,14 @@ const ctxClick=e=>{
 };
 $('#ctx').addEventListener('click',ctxClick);
 $('#side').addEventListener('click',ctxClick);
+const ICDEF={'555':'NE555','7400':'SN7400','7402':'SN7402','7404':'SN7404','7408':'SN7408','7432':'SN7432','7486':'SN7486','7414':'SN74HC14','4011':'CD4011','4001':'CD4001','4081':'CD4081','4071':'CD4071','4093':'CD4093','4069':'CD4069','7474':'SN7474','4013':'CD4013','4017':'CD4017','4020':'CD4020','7490':'SN7490','7447':'SN7447','4511':'CD4511','741':'LM741','358':'LM358','072':'TL072','324':'LM324'};
+$('#side').addEventListener('change',e=>{
+  const t=e.target;if(!t.dataset||!t.dataset.ic||!window.LochSimICs)return;
+  const C=LochSimICs.CATALOG[t.value];if(!C)return;
+  const v=ICDEF[t.value]||t.value;
+  if(tool==='select'&&sel!=null){const it=byId(sel);if(it&&it.k==='IC'){it.v=v;it.n=C.np;commit();}}
+  else{partVals.IC=v;sizes.IC=C.np;renderCtx();invalidate();}
+});
 
 function updateHeader(){
   $('#title').firstChild.nodeValue=doc.name;
@@ -1379,7 +1398,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: v29</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: v30</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
@@ -1414,6 +1433,7 @@ buildNav();
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
+<script src="simics.js"></script>
 <script src="simcore.js"></script>
 <script src="simui.js"></script>
 </body>

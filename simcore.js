@@ -2,6 +2,7 @@
    Reine Rechenfunktionen ohne Zugriff auf die Oberfläche. */
 (function (root) {
 'use strict';
+const ICS = (typeof module !== 'undefined' && module.exports) ? require('./simics.js') : root.LochSimICs;
 
 const VT = 0.025852;           // Temperaturspannung bei 300 K
 const GMIN = 1e-12;            // kleiner Leitwert gegen Masse, verhindert singuläre Matrizen
@@ -182,11 +183,25 @@ function buildCircuit(layout) {
         const vset = REGV[String(p.v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')] || 5;
         add({ type: 'REG', ni: n(0), ng: n(1), no: n(2), vset, part: p, vtar: 0 });
         break; }
+      case 'IC': {
+        const def = ICS && ICS.find(p.v);
+        if (!def) { warnings.push({ part: p, text: 'IC-Typ wird nicht erkannt (Wert z. B. NE555, 7400, 4017, LM358)' }); break; }
+        const need = ICS.CATALOG[def.key].np;
+        if (need !== pins.length) { warnings.push({ part: p, text: 'Pinzahl passt nicht: ' + def.key + ' hat ' + need + ' Pins' }); break; }
+        add(ICS.make(def, p, n));
+        break; }
       default:
-        if (['IC', 'SOCK', 'NANO', 'UNO', 'Q'].includes(k) && k !== 'SOCK' && k !== 'Q') warnings.push({ part: p, text: 'wird nicht simuliert' });
+        if (['NANO', 'UNO'].includes(k)) warnings.push({ part: p, text: 'wird nicht simuliert' });
     }
   });
 
+  // Eingänge, an denen sonst nichts hängt, sind „offen“ (TTL: High, CMOS: undefiniert -> Low)
+  const touch = new Array(nn + 1).fill(0);
+  elems.forEach(e => {
+    if (e.type === 'IC') { for (let i = 1; i <= e.np; i++) touch[e.n[i]]++; }
+    else ['a', 'b', 'c', 'e', 'ni', 'ng', 'no'].forEach(f => { if (typeof e[f] === 'number') touch[e[f]]++; });
+  });
+  elems.forEach(e => { if (e.type === 'IC') for (let i = 1; i <= e.np; i++) e.fl[i] = e.n[i] > 0 && touch[e.n[i]] === 1; });
   return { nn, elems, nodeOfKey, groundKnown: groundRoot !== null, warnings, parts: layout.parts };
 }
 
@@ -239,6 +254,7 @@ function createSim(circ) {
   const inj = (a, i) => { if (a > 0) z[a - 1] += i; };                                           // Strom in Knoten a hinein
   const addA = (r, c, val) => { if (r > 0 && c > 0) A[r - 1][c - 1] += val; };
   const vd = (a, b) => v[a] - v[b];
+  const S = { stampG, inj, addA, rhs: (r, val) => { if (r > 0) z[r - 1] += val; } };
 
   function diodeEval(e, vj) {
     const nvt = e.nn * VT;
@@ -257,6 +273,7 @@ function createSim(circ) {
     let converged = false;
     for (const e of elems) if (e.upd) e.upd();
     const prev = Float64Array.from(v);
+    for (const e of elems) if (e.type === 'IC' && !burnt.has(e.part.id)) e.icupd(prev, dt);
     for (let it = 0; it < 80; it++) {
       for (let r = 0; r < N; r++) { A[r].fill(0); z[r] = 0; A[r][r] = GMIN; }
       let limited = false;
@@ -293,6 +310,7 @@ function createSim(circ) {
               if (r > 0) z[r - 1] -= s * (ae * ieBe + ac * ieBc);
             }
             break; }
+          case 'IC': ICS.stamp(e, S, v); break;
           case 'REG': {
             const vin = v[e.ni] - v[e.ng];
             e.vtar = Math.max(0, Math.min(e.vset, vin - 2));
@@ -339,6 +357,11 @@ function createSim(circ) {
           if (e.power > 1.5 && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Transistor überlastet' }); }
           break; }
         case 'REG': e.i = (e.vtar - (v[e.no] - v[e.ng])) / 0.05; break;
+        case 'IC': {
+          const vs = v[e.vcc] - v[e.gnd], lim = e.info.oa ? 45 : e.key[0] === '4' ? 20 : (e.key === '555' ? 18.5 : 7.5);
+          e.i = vs * e.gq;
+          if (vs > lim && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'IC durch Überspannung zerstört (' + vs.toFixed(1) + ' V)' }); }
+          break; }
       }
     }
     sim.t = t; sim.converged = converged;
@@ -350,6 +373,6 @@ function createSim(circ) {
   return sim;
 }
 
-const api = { si, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV };
+const api = { si, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LochSim = api;
 })(typeof window !== 'undefined' ? window : globalThis);

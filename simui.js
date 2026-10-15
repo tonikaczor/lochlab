@@ -276,6 +276,18 @@ function overlay() {
     }
   });
   cx.restore();
+  // IC-Pegel: Ring je Pin (grün = High, grau = Low, orange = dazwischen)
+  circ.elems.forEach(e => {
+    if (e.type !== 'IC') return;
+    const it = e.part.item, pw = pinsOf(it), g = sim.v[e.gnd], vs = sim.v[e.vcc] - g;
+    if (!(vs > 1)) return;
+    const sup = new Set([e.vcc, e.gnd]);
+    for (let i = 1; i <= e.np; i++) {
+      if (e.n[i] === e.vcc || e.n[i] === e.gnd) continue;
+      const x = (sim.v[e.n[i]] - g) / vs, col = x > 0.65 ? '#4cd964' : x < 0.3 ? '#8a94a0' : '#ffb340';
+      cx.beginPath(); cx.arc(X(pw[i - 1][0]), Y(pw[i - 1][1]), 0.34 * S, 0, 7); cx.fillStyle = col; cx.globalAlpha = 0.9; cx.fill(); cx.globalAlpha = 1;
+    }
+  });
   // Markierungen: Masse, Messspitzen, Scope
   const ring = (pt, col, label) => {
     if (!pt) return;
@@ -378,8 +390,7 @@ function updatePanel(force) {
   const w = [];
   if (!circ.elems.some(e => e.type === 'V')) w.push('Keine Spannungsquelle (Batterie oder Signalgenerator) im Layout.');
   else if (!circ.groundKnown) w.push('Keine Masse bestimmt.');
-  const skipped = {}; circ.warnings.forEach(x => { skipped[x.part.k] = 1; });
-  if (Object.keys(skipped).length) w.push('Wird noch nicht simuliert: ' + Object.keys(skipped).map(k => PARTS[k] ? PARTS[k].name : k).join(', '));
+  circ.warnings.forEach(x => { const it = x.part.item; w.push((it && it.l ? it.l + ': ' : '') + (PARTS[x.part.k] ? PARTS[x.part.k].name : x.part.k) + ' – ' + x.text); });
   sim.burnt.forEach(id => { const it = byId(id); if (it) w.push(`${it.l || PARTS[it.k].name} ist durchgebrannt. Mit „Zurücksetzen“ wieder herstellen.`); });
   if (running && sim.converged === false) w.push('Schaltung rechnet nicht stabil.');
   q('spW').innerHTML = w.length ? `<div class="card warn"><ul style="margin:0;padding-left:18px;font-size:13px">${w.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '';
