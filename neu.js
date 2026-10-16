@@ -2,6 +2,8 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v5.109', items: [
+      ['Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen in jedem Lab: Scheinwerfer auf die Stelle, Erklärung in der Sprechblase, bei manchen Schritten wartet der Trainer, bis du es selbst gemacht hast. Beim ersten Besuch eines Labs wird er angeboten. Zwei neue Abzeichen.', 'Menü ▸ Trainer: Erste Schritte (alle Labs)'] ] },
     { v: 'v5.108', items: [
       ['Neu in dieser Version', 'Diese Übersicht: Stichpunkte je Version mit Fundort. Auch per Tipp auf die Versionsanzeige unten rechts.', 'Menü ▸ Neu in dieser Version'] ] },
     { v: 'v5.107', items: [

@@ -1489,6 +1489,7 @@ function openMenu(){
       ['abz','Abzeichen','Deine Sammlung und was noch fehlt'],
       ['speak','Bauteile sprechen automatisch','Antippen = Steckbrief per Sprachausgabe (an/aus)'],
       ['ton','Tonwerkstatt','Klaviertasten, tone()-Code und 555-Sirene zum Hören'],
+      ['trainer','Trainer: Erste Schritte','Kurze Einführung zum Mitmachen'],
       ['neu','Neu in dieser Version','Was zuletzt dazukam und wo du es findest'],
       ['predict','Vorhersage-Modus an/aus','Vor dem Start der Simulation tippen, was passiert'],
       ['png','Bild speichern (PNG)','Aktuelle Ansicht als Bilddatei'],
@@ -1546,6 +1547,7 @@ function menuAct(m){
   if(m==='speak'){if(window.Speak)Speak.toggleAuto();return;}
   if(m==='ton'){if(window.Tonwerkstatt)Tonwerkstatt.open();return;}
   if(m==='neu'){window.LabNeu();return;}
+  if(m==='trainer'){if(window.Trainer)Trainer.start();return;}
   if(m==='predict'){if(window.Predict)Predict.toggle();return;}
   if(m==='png'){if(window.LabExport)LabExport.png();return;}
   if(m==='gif'){if(window.LabExport)LabExport.gif();return;}
@@ -1888,6 +1890,14 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <script src="lochbeispiele.js"></script>
 <script src="lochtasks.js"></script>
 <script>
+window.LabTrainerAPI = {                                                               // Schnittstelle für den Trainer (trainer.js)
+  lab: 'loch',
+  examples: () => (window.LOCH_EX || []).map(e => e.name),
+  load: name => { const e = (window.LOCH_EX || []).find(x => x.name.toLowerCase().includes(String(name).toLowerCase())); if (!e) return false; try { save(); } catch (x) {} const dd = JSON.parse(JSON.stringify(e.doc)); dd.id = uid(); dd.name = e.name; dd.updated = Date.now(); load(dd); return true; },
+  parts: () => doc.items.filter(i => i.t === 'part').length, items: () => doc.items.length,
+  simMode: () => document.body.classList.contains('sim'),
+  sel: () => { const it = doc.items.find(i => i.id === sel); return it && it.t === 'part' ? it : null; },
+};
 window.LabKeysAdapter = {
   lab: 'loch', sheet, esc, toast, has: k => !!PARTS[k],
   part: k => { partKind = k; syncVarSize(k); if (tool !== 'part') setTool('part'); else { ghost = null; renderCtx(); invalidate(); } },
@@ -1906,5 +1916,6 @@ window.LabKeysAdapter = {
 <script src="predict.js"></script>
 <script src="speak.js"></script>
 <script src="tonwerkstatt.js"></script>
+<script src="trainer.js"></script>
 </body>
 </html>

@@ -36,6 +36,8 @@
     ['wuerfel', '🎲', 'Würfelglück', 'Einen gewürfelten Fehler gefunden.', function (c) { return [c.st.dice || 0, 1]; }],
     ['wuerfel5', '🎰', 'Würfelkönig', 'Fünf gewürfelte Fehler gefunden.', function (c) { return [c.st.dice || 0, 5]; }],
     ['hellseher', '🔮', 'Hellseher', 'Fünf richtige Vorhersagen hintereinander.', function (c) { return [c.st.predictBest || 0, 5]; }],
+    ['einsteiger', '🎓', 'Erste Schritte', 'Den Trainer eines Labs bis zum Ende durchgespielt.', function (c) { return [c.st.trainer || 0, 1]; }],
+    ['trainer5', '🧭', 'Alle Labs erkundet', 'Den Trainer in allen fünf Labs durchgespielt.', function (c) { return [c.st.trainer || 0, 5]; }],
     ['duell', '⚔️', 'Duellant', 'Ein Duell zu Ende gebracht.', function (c) { return [c.st.duelle || 0, 1]; }],
     ['escape', '🗝️', 'Ausbruchskünstler', 'Den Escape-Room geschafft.', function (c) { return [c.st.escape || 0, 1]; }],
     ['serie3', '🔥', 'Dreier-Serie', 'Drei Tage hintereinander die Tagesaufgabe gelöst.', function (c) { return [c.st.dailyBest || 0, 3]; }],
