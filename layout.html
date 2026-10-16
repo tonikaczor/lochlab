@@ -1079,8 +1079,61 @@ function cancelAct(){
 // Silberdraht und Lötzinn laufen nur im 90°-Winkel von Loch zu Loch
 const ortho=()=>tool==='track'||(tool==='wire'&&wireColor===WCOL[0]);
 function lineEnd(s,g){
-  if(!ortho())return g;
+  if(autoOn()||!ortho())return g;
   return Math.abs(g[0]-s[0])>=Math.abs(g[1]-s[1])?[g[0],s[1]]:[s[0],g[1]];
+}
+
+/* Auto-Weg: Lötbahn und senkrechter Draht werden selbst mit 90°-Knicken von Loch zu Loch gelegt.
+   Eine Lötbahn darf keine andere Bahn und keinen Bauteilanschluss berühren (Kurzschluss), eine Drahtbrücke schwebt über der Platine und darf kreuzen. */
+let autoRoute=(()=>{try{return localStorage.getItem('lm4.autoroute')!=='0';}catch(e){return true;}})();
+const autoOn=()=>autoRoute&&(tool==='track'||(tool==='wire'&&wireColor===WCOL[0]));
+function routeTrack(a,b){
+  const key=(x,y)=>x+','+y,occ=new Set();
+  doc.items.forEach(it=>{
+    if(it.t==='part')pinsOf(it).forEach(q=>occ.add(key(q[0],q[1])));
+    else if(it.t==='track'){const dx=Math.sign(it.x2-it.x1),dy=Math.sign(it.y2-it.y1);let x=it.x1,y=it.y1;for(let n=0;n<400;n++){occ.add(key(x,y));if(x===it.x2&&y===it.y2)break;x+=dx;y+=dy;}}
+    else if(it.t==='dot')occ.add(key(it.x,it.y));
+  });
+  const W=doc.cols,H=doc.rows,D=[[1,0],[-1,0],[0,1],[0,-1]],kk=(x,y,d)=>(y*W+x)*4+d;
+  const dist=new Map(),prev=new Map(),heap=[[0,a[0],a[1],-1]];
+  const push=it=>{heap.push(it);let i=heap.length-1;while(i>0){const q=(i-1)>>1;if(heap[q][0]<=heap[i][0])break;[heap[q],heap[i]]=[heap[i],heap[q]];i=q;}};
+  const pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){let m=i;const x=2*i+1,y=x+1;if(x<heap.length&&heap[x][0]<heap[m][0])m=x;if(y<heap.length&&heap[y][0]<heap[m][0])m=y;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return t;};
+  dist.set(kk(a[0],a[1],0),0);let goal=null,steps=0;
+  while(heap.length&&steps++<150000){
+    const [c,x,y,dd]=pop();
+    if(x===b[0]&&y===b[1]){goal=[x,y,dd];break;}
+    if(c>(dist.get(kk(x,y,dd<0?0:dd))??1e9))continue;
+    for(let nd=0;nd<4;nd++){
+      if(dd>=0&&(nd>>1)===(dd>>1)&&nd!==dd)continue;
+      const nx=x+D[nd][0],ny=y+D[nd][1];if(nx<0||ny<0||nx>=W||ny>=H)continue;
+      if(!(nx===b[0]&&ny===b[1])&&occ.has(key(nx,ny)))continue;
+      const nc=c+1+(dd>=0&&nd!==dd?3:0),q=kk(nx,ny,nd);
+      if(nc<(dist.get(q)??1e9)){dist.set(q,nc);prev.set(q,[x,y,dd<0?0:dd]);push([nc,nx,ny,nd]);}
+    }
+  }
+  if(!goal)return null;
+  const path=[[goal[0],goal[1]]];let q=kk(goal[0],goal[1],goal[2]);
+  while(prev.has(q)){const [px,py,pd]=prev.get(q);path.push([px,py]);q=kk(px,py,pd);if(px===a[0]&&py===a[1])break;}
+  return path.reverse();
+}
+function addPath(t,path){
+  const pts=[path[0]];
+  for(let i=1;i<path.length-1;i++){const dx1=path[i][0]-path[i-1][0],dy1=path[i][1]-path[i-1][1],dx2=path[i+1][0]-path[i][0],dy2=path[i+1][1]-path[i][1];if(dx1!==dx2||dy1!==dy2)pts.push(path[i]);}
+  pts.push(path[path.length-1]);
+  for(let i=0;i+1<pts.length;i++)doc.items.push(t==='wire'?{id:nid(),t:'wire',x1:pts[i][0],y1:pts[i][1],x2:pts[i+1][0],y2:pts[i+1][1],c:wireColor}:{id:nid(),t:'track',x1:pts[i][0],y1:pts[i][1],x2:pts[i+1][0],y2:pts[i+1][1]});
+  commit();
+}
+/* Linie von a nach g setzen, liefert den neuen Endpunkt oder null, wenn nichts gesetzt wurde */
+function lineTo(t,a,g){
+  if(a[0]===g[0]&&a[1]===g[1])return null;
+  if(!autoOn()){const e=lineEnd(a,g);if(e[0]===a[0]&&e[1]===a[1])return null;addLine(t,a[0],a[1],e[0],e[1]);return e;}
+  if(t==='track'){
+    const path=routeTrack(a,g);
+    if(path&&path.length>1){addPath('track',path);return g;}
+    toast('Kein freier Weg für die Lötbahn: Sie darf keine andere Bahn und keinen Anschluss berühren. Nimm eine Drahtbrücke oder setze Zwischenpunkte.');return null;
+  }
+  const corner=Math.abs(g[0]-a[0])>=Math.abs(g[1]-a[1])?[g[0],a[1]]:[a[0],g[1]];
+  addPath('wire',(corner[0]===a[0]&&corner[1]===a[1])||(corner[0]===g[0]&&corner[1]===g[1])?[a,g]:[a,corner,g]);return g;
 }
 function addLine(t,x1,y1,x2,y2){
   if(x1===x2&&y1===y2)return;
@@ -1142,7 +1195,7 @@ function onUp(p){
       doc.items.push({id:nid(),t:'part',k,x:ghost[0],y:ghost[1],r:partRot,imax:(k==='BAT'||k==='SIG')?(partVals.imax||''):undefined,vr:curVar(k),sk:k==='IC'&&autoSocket,n:sizes[k],v:partVals[k]!=null?partVals[k]:(varVal(k)!=null?varVal(k):P.val),l:autoLabel(k)});commit();}
       break;
     case 'line':
-      if(cursor&&(cursor[0]!==a.start[0]||cursor[1]!==a.start[1])){chain={x:cursor[0],y:cursor[1]};addLine(tool,a.start[0],a.start[1],cursor[0],cursor[1]);}
+      if(cursor&&(cursor[0]!==a.start[0]||cursor[1]!==a.start[1])){const e=lineTo(tool,a.start,cursor);if(e)chain={x:e[0],y:e[1]};}
       break;
     case 'text':editText(null,a.g);break;
     case 'erase':if(erased){commit();erased=false;}break;
@@ -1256,7 +1309,7 @@ function renderCtx(){
     }
   }else if(tool==='wire'||tool==='track'){
     if(tool==='wire')h+=WCOL.map(c=>`<button class="sw ${wireColor===c?'on':''}" style="background:${c}" data-a="wc" data-c="${c}"></button>`).join('')+'<span class="sep"></span>';
-    h+=chip('done','Fertig','')+`<span class="hint">${chain?'Nächsten Punkt setzen · letzten Punkt nochmal antippen = Ende':'Ziehen oder antippen · gleichen Punkt nochmal = Ende'}</span>`;
+    h+=chip('autoroute','⤳ Auto-Weg '+(autoRoute?'an':'aus'),autoRoute?'on':'')+chip('done','Fertig','')+`<span class="hint">${chain?'Nächsten Punkt setzen · letzten Punkt nochmal antippen = Ende':'Ziehen oder antippen · gleichen Punkt nochmal = Ende'}</span>`;
   }else{
     const hints={select:'Tippen = auswählen, ziehen = verschieben · 2 Finger = Zoom',hand:'Ziehen zum Verschieben · 2 Finger = Zoom',dot:'Tippen setzt oder entfernt einen Lötpunkt',text:'Tippen, um Text zu platzieren',erase:'Tippen oder darüberwischen zum Löschen'};
     h=`<span class="hint">${hints[tool]||''}</span>`;
@@ -1330,6 +1383,7 @@ const ctxClick=e=>{
   else if(a==='sk'){const it=byId(sel);if(it){it.sk=!it.sk;commit();}}
   else if(a==='photo'){openGallery(b.dataset.id);}
   else if(a==='done'){chain=null;}
+  else if(a==='autoroute'){autoRoute=!autoRoute;try{localStorage.setItem('lm4.autoroute',autoRoute?'1':'0');}catch(e){}toast(autoRoute?'Auto-Weg an: Lötbahn und Draht suchen den Weg mit 90°-Knicken selbst':'Auto-Weg aus: gerade Stücke, Knickpunkte selbst setzen');}
   else if(a==='dup')dupSel();
   else if(a==='del')delSel();
   else if(a==='edit'){const it=byId(sel);if(it)it.t==='text'?editText(it):editPart(it);}

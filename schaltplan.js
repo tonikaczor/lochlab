@@ -1072,6 +1072,76 @@ function partAt(fx, fy) {
 }
 function segDist(px, py, x1, y1, x2, y2) { const dx = x2 - x1, dy = y2 - y1, l = dx * dx + dy * dy; let t = l ? ((px - x1) * dx + (py - y1) * dy) / l : 0; t = clamp(t, 0, 1); return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy)); }
 function wireAt(fx, fy) { let best = null, bd = 0.45; sch.wires.forEach(w => { const d = segDist(fx, fy, w.x1, w.y1, w.x2, w.y2); if (d < bd) { bd = d; best = w; } }); return best; }
+
+/* ============ Auto-Weg: Draht automatisch mit 90°-Knicken verlegen ============ */
+let autoRoute = (() => { try { return localStorage.getItem('lm4.autoroute') !== '0'; } catch (e) { return true; } })();
+/* Sucht den kürzesten Weg mit möglichst wenigen Knicken von a nach b. Bauteile sind Hindernisse, Anschlusspunkte und Drahtenden anderer Leitungen
+   ebenfalls (sonst entstünde ungewollt eine Verbindung). Andere Drähte darf der Weg rechtwinklig kreuzen: ohne Lötpunkt bleibt das keine Verbindung. */
+function routeWire(a, b) {
+  const key = (x, y) => x + ',' + y, blocked = new Set(), hW = new Set(), vW = new Set();
+  let minX = Math.min(a[0], b[0]), maxX = Math.max(a[0], b[0]), minY = Math.min(a[1], b[1]), maxY = Math.max(a[1], b[1]);
+  const grow = (x, y) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); };
+  sch.parts.forEach(p => {
+    const K = KD(p), cs = [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].map(([x, y]) => { const [rx, ry] = rot(x, y, p.r); return [p.x + rx, p.y + ry]; });
+    const x1 = Math.min(cs[0][0], cs[1][0]) - 0.3, x2 = Math.max(cs[0][0], cs[1][0]) + 0.3, y1 = Math.min(cs[0][1], cs[1][1]) - 0.3, y2 = Math.max(cs[0][1], cs[1][1]) + 0.3;
+    grow(x1, y1); grow(x2, y2);
+    for (let x = Math.ceil(x1); x <= Math.floor(x2); x++) for (let y = Math.ceil(y1); y <= Math.floor(y2); y++) blocked.add(key(x, y));
+    pinsOf(p).forEach(q => blocked.add(key(q[0], q[1])));
+  });
+  sch.wires.forEach(w => {
+    grow(w.x1, w.y1); grow(w.x2, w.y2); blocked.add(key(w.x1, w.y1)); blocked.add(key(w.x2, w.y2));
+    const lo = (u, v) => Math.min(u, v), hi = (u, v) => Math.max(u, v);
+    if (w.y1 === w.y2) for (let x = lo(w.x1, w.x2) + 1; x < hi(w.x1, w.x2); x++) { const k = key(x, w.y1); if (hW.has(k) || vW.has(k)) blocked.add(k); else hW.add(k); }
+    else if (w.x1 === w.x2) for (let y = lo(w.y1, w.y2) + 1; y < hi(w.y1, w.y2); y++) { const k = key(w.x1, y); if (hW.has(k) || vW.has(k)) blocked.add(k); else vW.add(k); }
+    else blocked.add(key((w.x1 + w.x2) >> 1, (w.y1 + w.y2) >> 1));
+  });
+  const P = 6; minX = Math.floor(minX) - P; maxX = Math.ceil(maxX) + P; minY = Math.floor(minY) - P; maxY = Math.ceil(maxY) + P;
+  if ((maxX - minX) * (maxY - minY) > 40000) return null;
+  const D = [[1, 0], [-1, 0], [0, 1], [0, -1]], W = maxX - minX + 1, kk = (x, y, d) => ((y - minY) * W + (x - minX)) * 4 + d;
+  const dist = new Map(), prev = new Map(), heap = [[0, a[0], a[1], -1]];
+  const push = it => { heap.push(it); let i = heap.length - 1; while (i > 0) { const q = (i - 1) >> 1; if (heap[q][0] <= heap[i][0]) break; [heap[q], heap[i]] = [heap[i], heap[q]]; i = q; } };
+  const pop = () => { const t = heap[0], l = heap.pop(); if (heap.length) { heap[0] = l; let i = 0; for (;;) { let m = i; const x = 2 * i + 1, y = x + 1; if (x < heap.length && heap[x][0] < heap[m][0]) m = x; if (y < heap.length && heap[y][0] < heap[m][0]) m = y; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return t; };
+  dist.set(kk(a[0], a[1], 0), 0); let goal = null, steps = 0;
+  while (heap.length && steps++ < 120000) {
+    const [c, x, y, dd] = pop();
+    if (x === b[0] && y === b[1]) { goal = [x, y, dd]; break; }
+    if (c > (dist.get(kk(x, y, dd < 0 ? 0 : dd)) ?? 1e9)) continue;
+    const here = hW.has(key(x, y)) || vW.has(key(x, y));
+    for (let nd = 0; nd < 4; nd++) {
+      if (dd >= 0 && (nd >> 1) === (dd >> 1) && nd !== dd) continue;                                  // keine Umkehr
+      if (dd >= 0 && nd !== dd && here) continue;                                                     // auf einem fremden Draht nicht abbiegen
+      const nx = x + D[nd][0], ny = y + D[nd][1]; if (nx < minX || nx > maxX || ny < minY || ny > maxY) continue;
+      const k = key(nx, ny), goalCell = nx === b[0] && ny === b[1];
+      if (!goalCell) { if (blocked.has(k)) continue; if (hW.has(k) && nd < 2) continue; if (vW.has(k) && nd >= 2) continue; }
+      const nc = c + 1 + (dd >= 0 && nd !== dd ? 3 : 0) + (!goalCell && (hW.has(k) || vW.has(k)) ? 4 : 0), q = kk(nx, ny, nd);
+      if (nc < (dist.get(q) ?? 1e9)) { dist.set(q, nc); prev.set(q, [x, y, dd < 0 ? 0 : dd]); push([nc, nx, ny, nd]); }
+    }
+  }
+  if (!goal) return null;
+  const path = [[goal[0], goal[1]]]; let q = kk(goal[0], goal[1], goal[2]);
+  while (prev.has(q)) { const [px, py, pd] = prev.get(q); path.push([px, py]); q = kk(px, py, pd); if (px === a[0] && py === a[1]) break; }
+  return path.reverse();
+}
+/* Weg als Drähte eintragen (je gerader Strecke ein Draht), ein einziger Rückgängig-Schritt */
+function addRoute(path) {
+  const pts = [path[0]];
+  for (let i = 1; i < path.length - 1; i++) { const dx1 = path[i][0] - path[i - 1][0], dy1 = path[i][1] - path[i - 1][1], dx2 = path[i + 1][0] - path[i][0], dy2 = path[i + 1][1] - path[i][1]; if (dx1 !== dx2 || dy1 !== dy2) pts.push(path[i]); }
+  pts.push(path[path.length - 1]);
+  for (let i = 0; i + 1 < pts.length; i++) {
+    splitWiresAt(pts[i]); splitWiresAt(pts[i + 1]);
+    sch.wires.push(Object.assign({ id: nid(), x1: pts[i][0], y1: pts[i][1], x2: pts[i + 1][0], y2: pts[i + 1][1] }, LAB === 'sim' ? { c: wireColor } : {}));
+  }
+  commit();
+}
+/* Draht von a nach b legen: mit Auto-Weg rechtwinklig um Hindernisse herum, sonst wie bisher ein gerades Stück. Liefert den Endpunkt. */
+function wireTo(a, g) {
+  if (autoRoute) {
+    const path = routeWire(a, g);
+    if (path && path.length > 1) { addRoute(path); return g; }
+    toast('Kein freier Weg gefunden. Der Draht wird gerade gesetzt, setze Zwischenpunkte.');
+  }
+  const e = ortho(a, g); if (e[0] !== a[0] || e[1] !== a[1]) addWire(a, e); return e;
+}
 const ortho = (s, g) => (Math.abs(g[0] - s[0]) >= Math.abs(g[1] - s[1]) ? [g[0], s[1]] : [s[0], g[1]]);
 
 /* ============ Eingabe ============ */
@@ -1137,9 +1207,8 @@ function onDown(p) {
       refreshUI(); break; }
     case 'wire':
       if (wireStart) {
-        const e = ortho(wireStart, g);
-        if (e[0] === wireStart[0] && e[1] === wireStart[1]) { wireStart = null; }
-        else { addWire(wireStart, e); wireStart = e; }
+        if (g[0] === wireStart[0] && g[1] === wireStart[1]) { wireStart = null; }
+        else { const e = wireTo(wireStart, g); wireStart = e; }
         act = { t: 'none' };
       } else { wireStart = g; act = { t: 'wire', start: g }; }
       break;
@@ -1183,7 +1252,7 @@ function onUp(p) {
       }
       break;
     case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: K.sw0 || 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); commit(); } break;
-    case 'wire': if (cursor && (cursor[0] !== a.start[0] || cursor[1] !== a.start[1])) { const e = ortho(a.start, cursor); addWire(a.start, e); wireStart = e; } break;
+    case 'wire': if (cursor && (cursor[0] !== a.start[0] || cursor[1] !== a.start[1])) { wireStart = wireTo(a.start, cursor); } break;
     case 'erase': if (a.did) commit(); break;
   }
   draw();
@@ -1252,7 +1321,7 @@ function buildPalette() {
   let h;
   if (simMode) h = chip('select', '☝ Bedienen', tool === 'select') + chip('meter', '🔌 Messen', tool === 'meter') + chip('scope', '∿ Oszilloskop', tool === 'scope') + chip('reset', '↺ Zurück', false);
   else {
-    h = chip('select', '☝ Auswahl', tool === 'select') + chip('wire', '✎ Draht', tool === 'wire') + chip('erase', '⌫ Löschen', tool === 'erase') + '<span class="sep"></span>';
+    h = chip('select', '☝ Auswahl', tool === 'select') + chip('wire', '✎ Draht', tool === 'wire') + chip('autoroute', autoRoute ? '⤳ Auto-Weg an' : '⤳ Auto-Weg aus', autoRoute) + chip('erase', '⌫ Löschen', tool === 'erase') + '<span class="sep"></span>';
     if (!listMode()) CATS.forEach(cat => {
       kindsOf(cat).forEach(k => { h += chip('place', KINDS[k].name, tool === 'place' && placeKind === k, `data-k="${k}"`); });
       h += '<span class="sep"></span>';
@@ -1308,7 +1377,7 @@ window.matchMedia('(min-width:720px)').addEventListener && window.matchMedia('(m
 $('#parts').addEventListener('input', e => { if (e.target.id === 'pq') { partQuery = e.target.value; applyPartFilter(); } });
 $('#parts').addEventListener('keydown', e => { if (e.target.id !== 'pq') return; if (e.key === 'Enter') { const one = [...$('#parts').querySelectorAll('.pit:not([hidden])')]; if (one.length) { placeRot = 0; setTool('place', one[0].dataset.k); } } else if (e.key === 'Escape') { partQuery = ''; e.target.value = ''; applyPartFilter(); } });
 $('#parts').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) { placeRot = 0; setTool('place', b.dataset.k); } });
-$('#pal').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; if (b.dataset.t === 'place') { placeRot = 0; setTool('place', b.dataset.k); } else if (b.dataset.t === 'reset') resetSim(); else setTool(b.dataset.t); });
+$('#pal').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; if (b.dataset.t === 'place') { placeRot = 0; setTool('place', b.dataset.k); } else if (b.dataset.t === 'reset') resetSim(); else if (b.dataset.t === 'autoroute') { autoRoute = !autoRoute; try { localStorage.setItem('lm4.autoroute', autoRoute ? '1' : '0'); } catch (e2) {} buildPalette(); toast(autoRoute ? 'Auto-Weg an: der Draht sucht den Weg mit 90°-Knicken selbst' : 'Auto-Weg aus: gerade Stücke, Knickpunkte selbst setzen'); } else setTool(b.dataset.t); });
 $('#pal').addEventListener('wheel', e => { const el = e.currentTarget; if (el.scrollWidth <= el.clientWidth) return; el.scrollLeft += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; e.preventDefault(); }, { passive: false });
 (function () {
   const el = $('#pal'); let drag = null, sup = false;
@@ -1372,7 +1441,7 @@ function refreshUI() {
   } else if (LAB === 'sim' && !simMode && tool === 'wire') {
     h += `<div class="card"><h4>Aderfarbe</h4><div class="wc">${Object.keys(WIRECOL).map(c => `<button class="chip ${wireColor === c ? 'on' : ''}" data-a="wcol" data-c="${c}">${WIRENAME[c]}</button>`).join('')}</div><p class="hint2">Braun oder schwarz = Außenleiter L, blau = Neutralleiter N, grün-gelb = Schutzleiter PE.</p></div>`;
   } else if (!(simMode && !sel)) {
-    h += `<div class="card"><h4>Hinweise</h4><p class="hint2">${{ select: 'Bauteil antippen zum Bearbeiten, ziehen zum Verschieben.', wire: 'Von Punkt zu Punkt ziehen oder nacheinander antippen. Gleichen Punkt nochmal antippen = Ende.', erase: 'Bauteil oder Draht antippen zum Löschen.', scope: 'Bauteil oder Draht antippen: Graph für Spannung und Strom.', place: 'Bauteil in der Leiste wählen.' }[tool]}</p></div>`;
+    h += `<div class="card"><h4>Hinweise</h4><p class="hint2">${{ select: 'Bauteil antippen zum Bearbeiten, ziehen zum Verschieben.', wire: 'Start und Ziel antippen: mit „Auto-Weg“ sucht das Programm den Weg mit 90°-Knicken um Bauteile herum, Kreuzungen ohne Lötpunkt sind erlaubt. Gleichen Punkt nochmal antippen = Ende.', erase: 'Bauteil oder Draht antippen zum Löschen.', scope: 'Bauteil oder Draht antippen: Graph für Spannung und Strom.', place: 'Bauteil in der Leiste wählen.' }[tool]}</p></div>`;
   }
   if (simMode && !sel) h += `<div class="card"><h4>Hinweise</h4><p class="hint2">Schalter antippen = umlegen, Taster gedrückt halten. „Graph“ zeigt Spannung und Strom eines Bauteils.</p><p class="hint2">Grün = positive Spannung, Rot = negative, Grau = Masse. Gelbe Punkte zeigen den Stromweg.</p></div>`;
   if (!simMode) h += `<div class="card"><h4>Drucken und Simulieren</h4><p class="hint2">Oben den Schalter auf „Sim“ stellen, um die Schaltung laufen zu lassen. Im Menü findest du „Drucken“ für den Plan und die Bauteilliste.</p></div>`;
@@ -3755,7 +3824,7 @@ window.SchaltLive = {                                                           
   events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
   pinV: (id, i) => sv(gk(...pinsOf(byPart(id))[i])),
   stepN: n => { for (let k = 0; k < n; k++) sim.step(2e-4); return sim.t; },
-  vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
+  route: (a, b) => routeWire(a, b), wireTo: (a, b) => wireTo(a, b), wires: () => sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
 };
 window.LabUI = { sheet, esc, toast, userName, LAB };
 window.LabKeysAdapter = {                                                           // Tastenkürzel (keys.js)
