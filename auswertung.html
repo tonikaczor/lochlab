@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Tonfunk Auswertung</title>
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f5f7;--panel:#fff;--line:#d8dce1;--fg:#1c2127;--mute:#68717c;--acc:#1f7ae0;--ok:#2fae45;--part:#f0b429;--none:#eceff2}
+@media(prefers-color-scheme:dark){:root{--bg:#14171a;--panel:#1e2327;--line:#323941;--fg:#e8eaed;--mute:#9aa3ad;--acc:#4da3ff;--ok:#2c9a41;--part:#b7861b;--none:#272d33}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+header h1{font-size:18px;margin:0;flex:1}
+a.home{color:var(--acc);text-decoration:none}
+main{padding:16px;max-width:1400px;margin:0 auto}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 8px}
+textarea,input,select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
+textarea{min-height:90px;font:12px monospace}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+button{font:inherit;border:1px solid var(--line);background:var(--panel);color:inherit;border-radius:8px;padding:8px 14px;cursor:pointer}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.danger{color:#d33}
+.mute{color:var(--mute);font-size:13px}
+.tw{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:separate;border-spacing:0;font-size:13px}
+th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:4px 6px;text-align:center;white-space:nowrap}
+thead th{position:sticky;top:0;background:var(--panel);z-index:2;vertical-align:bottom}
+th.name,td.name{position:sticky;left:0;background:var(--panel);text-align:left;z-index:1;min-width:150px}
+thead th.name{z-index:3}
+th.t{height:130px;min-width:34px;padding:4px 2px}
+th.t span{display:inline-block;writing-mode:vertical-rl;transform:rotate(180deg);max-height:122px;overflow:hidden;text-overflow:ellipsis}
+td.c{min-width:34px;font-weight:600}
+td.p100{background:var(--ok);color:#fff}td.pp{background:var(--part);color:#fff}td.p0{background:var(--none);color:var(--mute)}
+tfoot td{font-weight:600;background:var(--panel);position:sticky;bottom:0}
+.sum{font-weight:600}
+#gate{max-width:360px;margin:15vh auto;text-align:center}
+.hide{display:none}
+@media print{header,#eingabe,.noprint{display:none!important}.tw{max-height:none;overflow:visible;border:0}body{background:#fff;color:#000}th.name,td.name,thead th,tfoot td{position:static}}
+</style>
+</head>
+<body>
+<div id="gate" class="card">
+  <h2>Auswertung (Ausbilder)</h2>
+  <p class="mute">Diese Seite ist für Ausbilder. Bitte Passwort eingeben.</p>
+  <input id="pw" type="password" placeholder="Passwort" autocomplete="off">
+  <div class="row" style="justify-content:center"><button class="pri" id="pwGo">Öffnen</button></div>
+  <p id="pwErr" class="mute"></p>
+</div>
+<div id="app" class="hide">
+<header><a class="home" href="index.html">← Start</a><h1>Auswertung</h1><span class="mute" id="stand"></span></header>
+<main>
+  <div class="card" id="eingabe">
+    <h2>Ergebnis-Codes einsammeln</h2>
+    <p class="mute" style="margin-top:0">Die Azubis erzeugen in jedem Lab im Menü unter <b>„Ergebnis senden“</b> einen Code (beginnt mit <code>TFL1.</code>). Hier alle Codes einfügen, auch mehrere auf einmal (z. B. den ganzen Chatverlauf). Ein neuer Code desselben Namens aktualisiert dessen Ergebnisse, es zählt je Aufgabe der beste Wert.</p>
+    <textarea id="codes" placeholder="Codes hier einfügen …"></textarea>
+    <div class="row"><button class="pri" id="add">Hinzufügen</button><span id="addMsg" class="mute"></span></div>
+  </div>
+  <div class="card">
+    <h2>Übersicht</h2>
+    <div class="row noprint" style="margin-top:0">
+      <label class="mute">Lab <select id="labSel" style="width:auto"></select></label>
+      <label class="mute"><input type="checkbox" id="allT" style="width:auto"> auch Aufgaben ohne Ergebnis</label>
+      <span style="flex:1"></span>
+      <button id="csv">CSV herunterladen</button><button id="prt">Drucken</button><button class="danger" id="clr">Alles löschen</button>
+    </div>
+    <div class="tw" style="margin-top:10px"><table id="tab"></table></div>
+    <p class="mute">Grün = 100 %, gelb = teilweise richtig, grau = noch nicht bearbeitet. Mit dem Mauszeiger über einer Spaltenüberschrift steht der volle Aufgabentitel.</p>
+  </div>
+</main>
+</div>
+<script src="aufgaben.js"></script>
+<script src="auswertung.js"></script>
+<script>
+'use strict';
+const GODH = 'a2fdecf55d194ed8cea8d52d7d0442778e86180b6d81c6c37e56278e55add6c6', $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+async function sha256(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+const KEY = 'ausw.data';
+const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
+const save = d => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} };
+let god = false; try { god = sessionStorage.getItem('lm4.god') === GODH; } catch (e) {}
+async function tryPw() { if (await sha256($('#pw').value.trim()) === GODH) { try { sessionStorage.setItem('lm4.god', GODH); } catch (e) {} start(); } else $('#pwErr').textContent = 'Passwort falsch'; }
+$('#pwGo').onclick = tryPw; $('#pw').addEventListener('keydown', e => { if (e.key === 'Enter') tryPw(); });
+/* Ergebnisse aus dem Lehrer-Bereich dieses Geräts (geprüfte Abgaben) mit übernehmen */
+function mergeClass(d) {
+  let a = []; try { a = JSON.parse(localStorage.getItem('sim.class') || '[]'); } catch (e) {}
+  a.forEach(r => { if (!r.name || !r.task) return; const p = d[r.name] = d[r.name] || { t: 0, d: {} }; p.d[r.task] = Math.max(p.d[r.task] || 0, Math.round(r.pct || 0)); p.t = Math.max(p.t, r.t || 0); });
+}
+function addCodes(txt) {
+  const list = Auswertung.parse(txt), d = load(); let n = 0;
+  list.forEach(o => { const nm = (o.n || '').trim() || 'ohne Namen'; const p = d[nm] = d[nm] || { t: 0, d: {} }; Object.keys(o.d).forEach(k => { p.d[k] = Math.max(p.d[k] || 0, Math.round(+o.d[k] || 0)); }); p.t = Math.max(p.t, o.t || 0); n++; });
+  save(d); return n;
+}
+function render() {
+  const d = load(); mergeClass(d);
+  const labs = window.AUFGABEN_LABS, all = window.AUFGABEN, lab = $('#labSel').value || 'alle', showAll = $('#allT').checked;
+  const names = Object.keys(d).sort((a, b) => a.localeCompare(b, 'de'));
+  const used = new Set(); names.forEach(n => Object.keys(d[n].d).forEach(k => used.add(k)));
+  let cols = all.filter(t => (lab === 'alle' || t[1] === lab) && (showAll || used.has(t[0])));
+  const known = new Set(all.map(t => t[0]));
+  if (lab === 'alle') used.forEach(k => { if (!known.has(k)) cols.push([k, '?', 'Unbekannt', k, 0]); });
+  const order = Object.keys(labs); cols.sort((a, b) => order.indexOf(a[1]) - order.indexOf(b[1]));
+  let h = '<thead><tr><th class="name">Name</th><th>Fertig</th><th>Ø %</th>' + cols.map(t => `<th class="t" title="${esc((labs[t[1]] || '?') + ' · ' + t[2] + ' · ' + t[3])}"><span>${esc(({loch:'Loch',sch:'Schalt',sim:'Sim',code:'Ard',pi:'Pi'}[t[1]]||'?')+': '+t[3])}</span></th>`).join('') + '</tr></thead><tbody>';
+  const colSum = cols.map(() => [0, 0]);
+  names.forEach(n => {
+    const p = d[n].d; const vals = cols.map(t => p[t[0]]); const done = vals.filter(v => v >= 100).length, tried = vals.filter(v => v != null);
+    const avg = tried.length ? Math.round(tried.reduce((s, v) => s + v, 0) / tried.length) : 0;
+    h += `<tr><td class="name">${esc(n)}</td><td class="sum">${done}</td><td>${avg}</td>` + vals.map((v, i) => { if (v != null) { colSum[i][1]++; if (v >= 100) colSum[i][0]++; } return v == null ? '<td class="c p0"></td>' : `<td class="c ${v >= 100 ? 'p100' : 'pp'}">${v}</td>`; }).join('') + '</tr>';
+  });
+  h += '</tbody><tfoot><tr><td class="name">Geschafft (100 %)</td><td></td><td></td>' + colSum.map(c => `<td>${c[0]}</td>`).join('') + '</tr></tfoot>';
+  $('#tab').innerHTML = names.length ? h : '<tbody><tr><td class="name">Noch keine Ergebnisse. Oben Codes einfügen.</td></tr></tbody>';
+  $('#stand').textContent = names.length + ' Azubis · ' + cols.length + ' Aufgaben';
+}
+function csv() {
+  const d = load(); mergeClass(d); const labs = window.AUFGABEN_LABS, all = window.AUFGABEN, used = new Set();
+  Object.values(d).forEach(p => Object.keys(p.d).forEach(k => used.add(k)));
+  const cols = all.filter(t => used.has(t[0])), names = Object.keys(d).sort((a, b) => a.localeCompare(b, 'de'));
+  const q = s => '"' + String(s).replace(/"/g, '""') + '"';
+  let out = ['Name', 'Fertig (100 %)'].concat(cols.map(t => (labs[t[1]] || '') + ': ' + t[3])).map(q).join(';') + '\n';
+  names.forEach(n => { const p = d[n].d; out += [q(n), cols.filter(t => (p[t[0]] || 0) >= 100).length].concat(cols.map(t => p[t[0]] == null ? '' : p[t[0]])).join(';') + '\n'; });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + out], { type: 'text/csv;charset=utf-8' })); a.download = 'Auswertung-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+}
+function start() {
+  $('#gate').classList.add('hide'); $('#app').classList.remove('hide');
+  const labs = window.AUFGABEN_LABS; $('#labSel').innerHTML = '<option value="alle">alle Labs</option>' + Object.keys(labs).map(k => `<option value="${k}">${labs[k]}</option>`).join('');
+  $('#labSel').onchange = render; $('#allT').onchange = render;
+  $('#add').onclick = () => { const n = addCodes($('#codes').value); $('#addMsg').textContent = n ? n + ' Code(s) übernommen' : 'Kein gültiger Code gefunden'; if (n) $('#codes').value = ''; render(); };
+  $('#csv').onclick = csv; $('#prt').onclick = () => window.print();
+  $('#clr').onclick = () => { if (confirm('Alle gesammelten Ergebnisse auf diesem Gerät löschen?')) { save({}); try { localStorage.removeItem('sim.class'); } catch (e) {} render(); } };
+  render();
+}
+if (god) start();
+</script>
+</body>
+</html>
