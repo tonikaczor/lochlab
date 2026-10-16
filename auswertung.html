@@ -38,7 +38,19 @@ tfoot td{font-weight:600;background:var(--panel);position:sticky;bottom:0}
 .sum{font-weight:600}
 #gate{max-width:360px;margin:15vh auto;text-align:center}
 .hide{display:none}
-@media print{header,#eingabe,.noprint{display:none!important}.tw{max-height:none;overflow:visible;border:0}body{background:#fff;color:#000}th.name,td.name,thead th,tfoot td{position:static}}
+#qrSheet{display:none}
+.qrgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.qrcell{border:1px solid #999;border-radius:8px;padding:8px;text-align:center;break-inside:avoid;background:#fff;color:#000}
+.qrcell svg{width:100%;max-width:190px;height:auto}
+.qrcell b{display:block;font-size:13px;line-height:1.25;margin-top:4px}.qrcell small{color:#555}
+details.cat{margin:6px 0}details.cat summary{cursor:pointer;font-weight:600}
+.tl2{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:2px 12px;margin:6px 0 6px 6px}
+.tl2 label{font-size:13px;display:flex;gap:6px;align-items:flex-start}.tl2 input{width:auto;margin-top:3px}
+#vid{width:100%;max-width:420px;border-radius:10px;background:#000;display:none}
+.scanok{color:var(--ok);font-weight:600}
+body.printqr #app>header,body.printqr #app>main{display:none!important}
+body.printqr #qrSheet{display:block!important}
+@media print{#qrSheet{display:none}body.printqr #qrSheet{display:block}header,#eingabe,.noprint{display:none!important}.tw{max-height:none;overflow:visible;border:0}body{background:#fff;color:#000}th.name,td.name,thead th,tfoot td{position:static}}
 </style>
 </head>
 <body>
@@ -58,6 +70,19 @@ tfoot td{font-weight:600;background:var(--panel);position:sticky;bottom:0}
     <textarea id="codes" placeholder="Codes hier einfügen …"></textarea>
     <div class="row"><button class="pri" id="add">Hinzufügen</button><span id="addMsg" class="mute"></span></div>
   </div>
+  <div class="card" id="scanCard">
+    <h2>Abgaben scannen</h2>
+    <p class="mute" style="margin-top:0">Azubis tippen in der Aufgabe auf <b>Abgeben</b> und zeigen den QR-Code. Hier mit der Kamera scannen: Das Ergebnis landet sofort in der Tabelle.</p>
+    <video id="vid" playsinline muted></video><canvas id="cnv" class="hide"></canvas>
+    <div class="row"><button class="pri" id="scanBtn">Kamera starten</button><span id="scanMsg" class="mute"></span></div>
+    <div id="scanLog" class="mute" style="margin-top:8px"></div>
+  </div>
+  <div class="card" id="qrCard">
+    <h2>Aufgaben als QR-Code verteilen</h2>
+    <p class="mute" style="margin-top:0">Aufgaben ankreuzen und das QR-Blatt drucken. Die Azubis scannen mit der Kamera des iPads, die Aufgabe öffnet sich direkt im passenden Lab (Name und Passwort fragt das Lab beim ersten Mal ab).</p>
+    <div id="qrList"></div>
+    <div class="row"><button class="pri" id="qrPrint">QR-Blatt drucken</button><button id="qrAll">Alle ankreuzen</button><button id="qrNone">Keine</button><span id="qrMsg" class="mute"></span></div>
+  </div>
   <div class="card">
     <h2>Übersicht</h2>
     <div class="row noprint" style="margin-top:0">
@@ -70,7 +95,10 @@ tfoot td{font-weight:600;background:var(--panel);position:sticky;bottom:0}
     <p class="mute">Grün = 100 %, gelb = teilweise richtig, grau = noch nicht bearbeitet. Mit dem Mauszeiger über einer Spaltenüberschrift steht der volle Aufgabentitel.</p>
   </div>
 </main>
+<div id="qrSheet"></div>
 </div>
+<script src="qr.js"></script>
+<script src="jsqr.js"></script>
 <script src="aufgaben.js"></script>
 <script src="auswertung.js"></script>
 <script>
@@ -123,6 +151,52 @@ function csv() {
   names.forEach(n => { const p = d[n].d; out += [q(n), cols.filter(t => (p[t[0]] || 0) >= 100).length].concat(cols.map(t => p[t[0]] == null ? '' : p[t[0]])).join(';') + '\n'; });
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + out], { type: 'text/csv;charset=utf-8' })); a.download = 'Auswertung-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
 }
+const LABFILE = { loch: 'layout.html', sch: 'schaltplan.html', sim: 'simlab.html', code: 'codelab.html', pi: 'pilab.html' };
+const taskTitle = id => { const t = window.AUFGABEN.find(x => x[0] === id); return t ? t[3] : id; };
+function buildQrList() {
+  const labs = window.AUFGABEN_LABS; let h = '';
+  Object.keys(labs).forEach(lab => {
+    const ts = window.AUFGABEN.filter(t => t[1] === lab); if (!ts.length) return;
+    const cats = []; ts.forEach(t => { if (!cats.includes(t[2])) cats.push(t[2]); });
+    h += `<details class="cat"><summary>${labs[lab]} (${ts.length})</summary>` + cats.map(c => `<div class="mute" style="margin:6px 0 0 6px"><b>${esc(c)}</b></div><div class="tl2">` + ts.filter(t => t[2] === c).map(t => `<label><input type="checkbox" data-id="${t[0]}">${esc(t[3])}</label>`).join('') + '</div>').join('') + '</details>';
+  });
+  $('#qrList').innerHTML = h;
+}
+function qrPrint() {
+  const ids = [...document.querySelectorAll('#qrList input:checked')].map(x => x.dataset.id);
+  if (!ids.length) { $('#qrMsg').textContent = 'Bitte mindestens eine Aufgabe ankreuzen'; return; }
+  const labs = window.AUFGABEN_LABS;
+  $('#qrSheet').innerHTML = '<h2 style="margin:0 0 10px">Tonfunk Lab: Aufgaben per QR-Code</h2><div class="qrgrid">' + ids.map(id => {
+    const t = window.AUFGABEN.find(x => x[0] === id), url = new URL(LABFILE[t[1]] + '?aufgabe=' + id, location.href).href;
+    return `<div class="qrcell">${Auswertung.qrSvg(url)}<b>${esc(t[3])}</b><small>${labs[t[1]]} · ${esc(t[2])}</small></div>`;
+  }).join('') + '</div>';
+  $('#qrMsg').textContent = ''; document.body.classList.add('printqr');
+  const done = () => { document.body.classList.remove('printqr'); window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done); setTimeout(() => window.print(), 100);
+}
+/* Kamera-Scanner für Abgabe-QR-Codes */
+let stream = null, raf = 0, lastData = '', lastT = 0;
+function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); setTimeout(() => { o.stop(); a.close(); }, 120); } catch (e) {} }
+function stopScan() { if (raf) cancelAnimationFrame(raf); raf = 0; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; $('#vid').style.display = 'none'; $('#scanBtn').textContent = 'Kamera starten'; }
+async function startScan() {
+  if (stream) { stopScan(); return; }
+  try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); } catch (e) { $('#scanMsg').textContent = 'Kamera nicht verfügbar (Zugriff erlauben und die Seite über https öffnen)'; return; }
+  const v = $('#vid'), c = $('#cnv'), cx = c.getContext('2d', { willReadFrequently: true }); v.srcObject = stream; v.style.display = 'block'; await v.play(); $('#scanBtn').textContent = 'Kamera stoppen'; $('#scanMsg').textContent = 'Bitte QR-Code ins Bild halten …';
+  const loop = () => {
+    if (v.readyState >= 2 && v.videoWidth) {
+      const sc = Math.min(1, 640 / v.videoWidth); c.width = Math.round(v.videoWidth * sc); c.height = Math.round(v.videoHeight * sc); cx.drawImage(v, 0, 0, c.width, c.height);
+      const img = cx.getImageData(0, 0, c.width, c.height), r = window.jsQR && jsQR(img.data, c.width, c.height, { inversionAttempts: 'dontInvert' });
+      if (r && r.data && (r.data !== lastData || Date.now() - lastT > 4000)) {
+        lastData = r.data; lastT = Date.now();
+        const list = Auswertung.parse(r.data);
+        if (list.length) { addCodes(r.data); beep(); const o = list[0], ks = Object.keys(o.d); $('#scanLog').innerHTML = `<div class="scanok">✓ ${esc(o.n || 'ohne Namen')}: ${ks.map(k => esc(taskTitle(k)) + ' ' + o.d[k] + ' %').join(', ')}</div>` + $('#scanLog').innerHTML; render(); }
+        else $('#scanMsg').textContent = 'Das ist kein Abgabe-Code von Tonfunk Lab';
+      }
+    }
+    raf = requestAnimationFrame(loop);
+  };
+  loop();
+}
 function start() {
   $('#gate').classList.add('hide'); $('#app').classList.remove('hide');
   const labs = window.AUFGABEN_LABS; $('#labSel').innerHTML = '<option value="alle">alle Labs</option>' + Object.keys(labs).map(k => `<option value="${k}">${labs[k]}</option>`).join('');
@@ -130,6 +204,7 @@ function start() {
   $('#add').onclick = () => { const n = addCodes($('#codes').value); $('#addMsg').textContent = n ? n + ' Code(s) übernommen' : 'Kein gültiger Code gefunden'; if (n) $('#codes').value = ''; render(); };
   $('#csv').onclick = csv; $('#prt').onclick = () => window.print();
   $('#clr').onclick = () => { if (confirm('Alle gesammelten Ergebnisse auf diesem Gerät löschen?')) { save({}); try { localStorage.removeItem('sim.class'); } catch (e) {} render(); } };
+  buildQrList(); $('#qrPrint').onclick = qrPrint; $('#qrAll').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = true); $('#qrNone').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = false); $('#scanBtn').onclick = startScan;
   render();
 }
 if (god) start();

@@ -161,13 +161,14 @@ function showCard() {
   if (card) { card.remove(); card = null; }
   const t = doc.task && byTask(doc.task); if (!t) return;
   card = document.createElement('div'); card.id = 'tcard';
-  card.innerHTML = `<b>${esc(t.title)} <span style="color:var(--mute)">${dots(t.level)}</span></b><p>${esc(t.text)}</p><div class="tb"><button class="pri" data-a="chk">Lösung prüfen</button><button data-a="hint">Tipp</button><button data-a="min">Einklappen</button><button data-a="end">Beenden</button></div>`;
+  card.innerHTML = `<b>${esc(t.title)} <span style="color:var(--mute)">${dots(t.level)}</span></b><p>${esc(t.text)}</p><div class="tb"><button class="pri" data-a="chk">Lösung prüfen</button><button data-a="hint">Tipp</button><button data-a="hand">Abgeben</button><button data-a="min">Einklappen</button><button data-a="end">Beenden</button></div>`;
   $('#stage').appendChild(card);
   card.querySelector('[data-a=min]').textContent = card.classList.contains('min') ? 'Aufklappen' : 'Einklappen';
   card.onclick = e => {
     const a = e.target.dataset && e.target.dataset.a; if (!a) return;
     if (a === 'chk') runCheck(t);
     else if (a === 'hint') sheet('Tipp', b => { b.innerHTML = `<p style="margin-top:0">${esc(t.hint)}</p>`; });
+    else if (a === 'hand') { if (window.Auswertung) window.Auswertung.handIn(t.id, done()[t.id] || 0, t.title); }
     else if (a === 'min') { card.classList.toggle('min'); e.target.textContent = card.classList.contains('min') ? 'Aufklappen' : 'Einklappen'; }
     else if (a === 'end') { delete doc.task; try { save(); } catch (x) {} showCard(); toast('Aufgabe beendet'); }
   };

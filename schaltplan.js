@@ -1380,6 +1380,7 @@ $('#side').addEventListener('click', e => {
   if (a === 'mmA') { meter.mode = 'A'; meterReset(); refreshUI(); return; }
   if (a === 'tcheck') { runTaskCheck(); return; }
   if (a === 'treport') { reportFault(); return; }
+  if (a === 'thand') { const t = TASKS.find(x => x.id === sch.task); if (t && window.Auswertung) window.Auswertung.handIn(t.id, taskDone()[t.id] || 0, t.title); return; }
   if (a === 'thint') { const t = TASKS.find(x => x.id === sch.task); if (t) sheet('Tipp', bb => { bb.innerHTML = '<p style="margin-top:0">' + esc(t.hint) + '</p>'; }); return; }
   if (a === 'tstop') { sch.task = undefined; taskRes = null; commit(true, true); refreshUI(); return; }
   if (a === 'preset') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) { p0.v = b.dataset.v; commit(true, true); rebuildKeep(); refreshUI(); } return; }
@@ -2663,7 +2664,7 @@ function taskCardHtml() {
   if (!sch.task) return '';
   const t = TASKS.find(x => x.id === sch.task); if (!t) return '';
   let h = `<div class="card task"><h4>Aufgabe · ${esc(t.cat)}</h4><b>${esc(t.title)}</b><p class="hint2">${esc(t.text)}</p>`;
-  h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div>`;
+  h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div><div class="row2"><button class="btn" data-a="thand">Abgeben (QR)</button></div>`;
   if (taskRes && taskRes.id === t.id) h += `<ul class="tl">${taskRes.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>` + (taskRes.pct != null ? `<div class="score ${taskRes.pct === 100 ? 'ok' : ''}">${taskRes.pct === 100 ? '🎉 Geschafft!' : taskRes.pct + ' % richtig'}</div>` : '');
   return h + '</div>';
 }
