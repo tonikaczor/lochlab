@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lernheft LochLab: Löten und Lochrasterplatine</title><link rel="icon" href="icon-192.png"><style>
+:root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:8px}header img{height:42px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:30px 0 8px;border-bottom:2px solid var(--accent);padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:6px 0}small,.mute{color:var(--mute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0}
+ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
+.k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+.tip{border-left:4px solid var(--ok);padding-left:12px}
+@media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
+
+.try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent);color:#fff!important;text-decoration:none;font-size:14px}
+.merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.toc a{display:block;padding:2px 0}
+table.t{border-collapse:collapse;margin:8px 0;font-size:14px}table.t th,table.t td{border:1px solid var(--line);padding:4px 10px;text-align:left}
+.ws{break-before:page;page-break-before:always}
+.q{margin:14px 0}.q .a{border-bottom:1px dotted #888;height:26px;margin-top:2px}.q .a.big{height:64px}
+.sol .lo{color:#1b7a34;font-weight:600;margin-top:4px}
+.k{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+@media print{.try{background:none;color:#000!important;border:1px solid #000}.noprint{display:none!important}}
+</style></head>
+<body><div class="wrap">
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Lernheft LochLab: Löten und Lochrasterplatine</h1><small>Stand: Oktober 2026 · Version 5.88</small></div></header>
+<p class="nav noprint"><a href="index.html">← Startseite</a> · <a href="lernen-loch.html">LochLab: Löten</a> · <a href="lernen-schalt.html">SchaltLab: Elektronik</a> · <a href="lernen-sim.html">SimLab: Installation und Prüfung</a> · <a href="lernen.html">Arduino und Pi</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<div class="box"><b>Kurz:</b> Du lernst, eine Schaltung auf Lochraster zu planen, zu verdrahten und sauber zu löten. Die blauen Knöpfe öffnen das passende Beispiel oder die Aufgabe direkt im LochLab.</div>
+<div class="box toc noprint"><b>Inhalt</b><a href="#k1">1. Wozu eine Lochrasterplatine?</a><a href="#k2">2. Bauteile erkennen und richtig herum einbauen</a><a href="#k3">3. Löten: so wird die Lötstelle gut</a><a href="#k4">4. In welcher Reihenfolge bestückt man?</a><a href="#k5">5. Im LochLab verdrahten</a><a href="#k6">6. Typische Fehler und wie man sie findet</a><a href="#k7">7. Übungen im LochLab</a><a href="#ws">8. Arbeitsblatt: Löten und Lochraster</a></div>
+<h2 id="k1">1. Wozu eine Lochrasterplatine?</h2>
+<p>Bevor eine Schaltung auf eine fertige Leiterplatte kommt, baut man sie oft als <b>Prototyp</b> auf einer Lochrasterplatine auf. Die Löcher liegen im Abstand von <b>2,54 mm</b> (ein Zehntel Zoll), genau passend für Bauteilbeine, IC-Sockel und Stiftleisten. Auf der Unterseite sitzen Kupferflächen (Lötaugen), die du mit Draht oder Lötbahnen verbindest.</p>
+<p>Im <b>LochLab</b> übst du das am Bildschirm: Du setzt Bauteile, ziehst Drähte und Lötbahnen und lässt dir die Schaltung prüfen und simulieren, bevor du den Lötkolben heiß machst. Fehler am Bildschirm kosten nichts.</p>
+<div class="merke"><b>Merke:</b> Erst planen, dann löten. Ein Stromlaufplan (SchaltLab) zeigt <i>was</i> verbunden ist, das Layout (LochLab) zeigt <i>wo</i> auf der Platine.</div>
+<p><a class="try noprint" href="layout.html?ex=Spannungsteiler">▶ Beispiel: Spannungsteiler</a> <a class="try noprint" href="layout.html?ex=LED%20mit%20Vorwiderstand%20und%20Schalter">▶ Beispiel: LED mit Schalter</a></p><h2 id="k2">2. Bauteile erkennen und richtig herum einbauen</h2>
+<p>Viele Bauteile dürfen nicht beliebig herum eingebaut werden. Falsch gepolt arbeiten sie nicht oder gehen kaputt.</p>
+<table class="t"><tr><th>Bauteil</th><th>Woran erkenne ich die Richtung?</th></tr><tr><td>Widerstand</td><td>Keine Polung. Der Wert steht im Farbcode (z. B. braun-schwarz-rot-gold = 1 kΩ, 5 %). Im LochLab-Menü gibt es den <b>Rechner</b> mit Farbcode.</td></tr><tr><td>Diode</td><td>Der <b>Ring</b> auf dem Gehäuse markiert die Kathode (Strich im Symbol).</td></tr><tr><td>LED</td><td>Das <b>längere Bein</b> ist die Anode (Plus), die abgeflachte Seite am Gehäuse die Kathode. Immer mit Vorwiderstand!</td></tr><tr><td>Elko</td><td>Ein <b>Streifen</b> am Gehäuse kennzeichnet den Minuspol. Falsch herum eingebaut kann er platzen.</td></tr><tr><td>IC</td><td>Eine <b>Kerbe</b> oder ein Punkt markiert die Seite von Pin 1. Pins werden gegen den Uhrzeigersinn gezählt. Besser einen Sockel einlöten.</td></tr><tr><td>Transistor</td><td>Die Belegung (C, B, E) steht im Datenblatt und ist je nach Typ verschieden: erst nachsehen, dann einbauen.</td></tr></table>
+<div class="warn"><b>Achtung:</b> Bei Elko und IC gilt: Wer die Richtung nicht kennt, schaut ins Datenblatt oder fragt nach. Raten ist keine Lösung.</div><h2 id="k3">3. Löten: so wird die Lötstelle gut</h2>
+<ol>
+<li><b>Vorbereiten:</b> Lötkolben auf etwa 330 bis 350 °C (bleifreies Lot), Spitze sauber und leicht verzinnt, Bauteil in die Platine stecken und Beine leicht umbiegen, damit es nicht herausfällt.</li>
+<li><b>Erhitzen:</b> Kolbenspitze so anlegen, dass <b>Lötauge und Bauteilbein gleichzeitig</b> warm werden (1 bis 2 Sekunden).</li>
+<li><b>Lot zuführen:</b> Das Lötzinn an die Lötstelle halten (nicht an die Kolbenspitze). Es fließt von allein um das Bein.</li>
+<li><b>Lot wegnehmen</b>, dann den <b>Kolben wegnehmen</b>. Etwa eine Sekunde lang nichts bewegen, bis das Lot erstarrt ist.</li>
+<li><b>Beine kürzen</b> (Seitenschneider, Augen schützen) und die Lötstelle prüfen.</li>
+</ol>
+<table class="t"><tr><th>Gute Lötstelle</th><th>Schlechte Lötstelle (kalt)</th></tr><tr><td>Glänzend, glatt, wie ein kleiner Kegel (Vulkan).</td><td>Matt, grau, kugelig oder krümelig. Oft nur lose aufgesetzt: Wackelkontakt!</td></tr></table>
+<div class="warn"><b>Achtung:</b> Der Lötkolben ist rund 350 °C heiß: immer in der Halterung ablegen, nie Kabel darüberlegen. Dämpfe vom Flussmittel nicht einatmen, gut lüften oder absaugen. Nach dem Löten Hände waschen.</div><h2 id="k4">4. In welcher Reihenfolge bestückt man?</h2>
+<p>Immer von <b>flach nach hoch</b>, damit die Platine beim Umdrehen auf dem Tisch liegen bleibt:</p>
+<ol><li>Drahtbrücken</li><li>Widerstände und Dioden</li><li>IC-Sockel</li><li>Keramik- und Folienkondensatoren</li><li>Transistoren und LEDs</li><li>Elkos, Relais, Stiftleisten, Klemmen</li></ol>
+<p>Hitzeempfindliche Halbleiter (Transistoren, LEDs) lötest du zügig, in weniger als drei Sekunden pro Lötstelle. ICs gehören immer in einen Sockel und werden erst nach dem Löten gesteckt.</p>
+<p><a class="try noprint" href="layout.html?ex=Transistor%20als%20Schalter">▶ Beispiel: Transistor als Schalter</a> <a class="try noprint" href="layout.html?ex=Br%C3%BCckengleichrichter%20mit%20Gl%C3%A4ttung">▶ Beispiel: Brückengleichrichter</a></p><h2 id="k5">5. Im LochLab verdrahten</h2>
+<p>Auf der Platine verbindest du zwei Punkte auf drei Arten:</p>
+<table class="t"><tr><th>Werkzeug</th><th>Taste</th><th>Wofür</th></tr><tr><td>Draht</td><td>W</td><td>isolierte Drahtbrücke über der Platine, darf andere Bahnen kreuzen</td></tr><tr><td>Lötbahn (Silberdraht)</td><td><span class="k">.</span></td><td>Verbindung auf der Lötseite entlang der Löcher</td></tr><tr><td>Lötpunkt (Zinn)</td><td><span class="k">,</span></td><td>kurze Verbindung zwischen zwei benachbarten Lötaugen</td></tr></table>
+<p>Weitere Tasten: <span class="k">R</span> Widerstand, <span class="k">C</span> Kondensator, <span class="k">D</span> Diode, <span class="k">L</span> LED, <span class="k">T</span> Transistor. Die ganze Liste zeigt die Taste <span class="k">?</span> oder das Menü „Tastenkürzel“. Zum Wechsel zwischen Layout und Simulation drückst du <span class="k">Eingabe</span> oder <span class="k">F5</span>.</p>
+<ul><li><b>Layout prüfen:</b> findet Kurzschlüsse, offene Anschlüsse und Bauteile, die nicht auf Lötaugen sitzen.</li><li><b>Lötanleitung:</b> druckt eine Liste, welches Bauteil in welche Löcher kommt und in welcher Reihenfolge.</li></ul>
+<p><a class="try noprint" href="layout.html?aufgabe=l1">✎ Aufgabe: Spannungsteiler aufbauen</a> <a class="try noprint" href="layout.html?aufgabe=l2">✎ Aufgabe: LED mit Vorwiderstand und Schalter</a></p><h2 id="k6">6. Typische Fehler und wie man sie findet</h2>
+<table class="t"><tr><th>Fehler</th><th>Folge</th><th>Wie finde ich ihn?</th></tr><tr><td><b>Lötbrücke</b> (zu viel Zinn verbindet zwei Lötaugen)</td><td>Kurzschluss, Schaltung tut nichts oder wird heiß</td><td>Lupe, Durchgangsprüfer zwischen den Netzen. Mit Entlötlitze oder Lötkolben wieder trennen.</td></tr><tr><td><b>Kalte Lötstelle</b></td><td>Wackelkontakt, Schaltung fällt zeitweise aus</td><td>Matte Stelle suchen, nachlöten. Leicht an den Beinen wackeln.</td></tr><tr><td><b>Bauteil falsch gepolt</b></td><td>LED oder Elko tut nichts oder wird zerstört</td><td>Richtung mit Plan und Datenblatt vergleichen.</td></tr><tr><td><b>Verbindung vergessen</b></td><td>Teil der Schaltung ohne Spannung</td><td>Spannung Schritt für Schritt von der Batterie aus nachmessen.</td></tr></table>
+<p>Im Layout-Check des LochLab erscheinen solche Fehler als Warnung. Übe das Suchen an Platinen mit eingebautem Fehler:</p>
+<p><a class="try noprint" href="layout.html?aufgabe=lf1">✎ Aufgabe: Eine Lötbrücke</a> <a class="try noprint" href="layout.html?aufgabe=lf2">✎ Aufgabe: Eine Leitung fehlt</a> <a class="try noprint" href="layout.html?aufgabe=lf3">✎ Aufgabe: Netzteil ohne Spannung</a></p>
+<div class="merke"><b>Merke:</b> Fehlersuche heißt: Annahme aufstellen, mit einer Messung prüfen, erst dann ändern. Nie mehrere Dinge auf einmal ändern.</div><h2 id="k7">7. Übungen im LochLab</h2>
+<p>Arbeite die Aufgaben der Reihe nach ab. „Lösung prüfen“ sagt dir genau, was noch fehlt. Mit <b>Abgeben</b> zeigst du deinem Ausbilder das Ergebnis per QR-Code.</p>
+<h3>Aufbau</h3>
+<p><a class="try noprint" href="layout.html?aufgabe=l3">✎ Aufgabe: Lampen in Reihe und parallel</a> <a class="try noprint" href="layout.html?aufgabe=l4">✎ Aufgabe: Transistor als Schalter</a> <a class="try noprint" href="layout.html?aufgabe=l5">✎ Aufgabe: Dämmerungsschalter</a> <a class="try noprint" href="layout.html?aufgabe=l6">✎ Aufgabe: Relais mit Freilaufdiode</a> <a class="try noprint" href="layout.html?aufgabe=l7">✎ Aufgabe: Brückengleichrichter</a> <a class="try noprint" href="layout.html?aufgabe=l8">✎ Aufgabe: 555-Blinker</a></p>
+<h3>Mit Arduino und Raspberry Pi</h3>
+<p><a class="try noprint" href="layout.html?aufgabe=l9">✎ Aufgabe: Arduino: LED an Pin 13</a> <a class="try noprint" href="layout.html?aufgabe=l10">✎ Aufgabe: Raspberry Pi: LED an GPIO17</a> <a class="try noprint" href="layout.html?aufgabe=l11">✎ Aufgabe: Pi: Temperatur über I²C</a> <a class="try noprint" href="layout.html?aufgabe=l12">✎ Aufgabe: Arduino: Einparkhilfe</a></p>
+<h3>Fehlersuche</h3>
+<p><a class="try noprint" href="layout.html?aufgabe=lf4">✎ Aufgabe: Uno-Schaltung antwortet nicht</a></p>
+<h2 id="ws" class="ws">8. Arbeitsblatt: Löten und Lochraster</h2>
+<p>Name: ______________________________ &nbsp; Datum: ______________ &nbsp; Punkte: ______ / 10</p>
+<div class="q"><b>1.</b> Warum beträgt der Lochabstand einer Lochrasterplatine 2,54 mm? Nenne zwei Bauteile, die in dieses Raster passen.<div class="a"></div></div><div class="q"><b>2.</b> Wie erkennst du bei einer LED die Anode? Wie bei einer Diode die Kathode?<div class="a"></div></div><div class="q"><b>3.</b> Ein Widerstand zeigt die Farben braun, schwarz, orange, gold. Welchen Wert hat er?<div class="a"></div></div><div class="q"><b>4.</b> Welche Farben hat ein 4,7-kΩ-Widerstand (4-Ring-Code, 5 %)?<div class="a"></div></div><div class="q"><b>5.</b> Bringe die Schritte des Lötens in die richtige Reihenfolge: (a) Kolben wegnehmen, (b) Lötauge und Bein erhitzen, (c) Lot wegnehmen, (d) Lot zuführen.<div class="a"></div></div><div class="q"><b>6.</b> Woran erkennst du eine kalte Lötstelle? Was ist die Folge?<div class="a"></div></div><div class="q"><b>7.</b> Nenne die Bestückungsreihenfolge für eine Platine mit Widerstand, Elko, IC-Sockel und Draht­brücke.<div class="a"></div></div><div class="q"><b>8.</b> Was ist eine Lötbrücke? Wie findest du sie, wie beseitigst du sie?<div class="a"></div></div><div class="q"><b>9.</b> Warum werden ICs in einen Sockel gesteckt, statt sie direkt einzulöten?<div class="a"></div></div><div class="q"><b>10.</b> Nenne drei Sicherheitsregeln beim Löten.<div class="a"></div></div>
+</div></body></html>

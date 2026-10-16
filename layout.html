@@ -1785,6 +1785,7 @@ buildNav();
   if(d)load(d);else{doc=newDoc();resetHist();save();afterChange();}
   fit();renderCtx();
   if(/[?&]neu\b/.test(location.search))setTimeout(()=>menuAct('new'),300);
+  else if(/[?&]ex=/.test(location.search))setTimeout(()=>{const q=decodeURIComponent(location.search.match(/[?&]ex=([^&]*)/)[1]).toLowerCase(),e=(window.LOCH_EX||[]).find(x=>x.name.toLowerCase()===q)||(window.LOCH_EX||[]).find(x=>x.name.toLowerCase().includes(q));if(!e)return;confirmNew(()=>{save();const dd=JSON.parse(JSON.stringify(e.doc));dd.id=uid();dd.name=e.name;dd.updated=Date.now();load(dd);history.replaceState(null,'','layout.html');toast('Beispiel geladen');});},400);
   else if(/[?&]bsp\b/.test(location.search))setTimeout(()=>menuAct('ex'),300);
 tryJob();
 loadShared();
