@@ -6,7 +6,7 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const REG = root.LAB_REG || {}, ROWS = root.AUFGABEN || [];
   const TRACKS = [
-    { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und Messen bis zur Digitaltechnik.', labs: ['sch', 'loch', 'mess', 'digi'] },
+    { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik.', labs: ['sch', 'loch', 'digi', 'mess'] },
     { t: 'Installation und Anlagen', s: 'Wie Strom im Haus verteilt, geschaltet und abgesichert wird.', labs: ['sim', 'haus'], pre: 'Empfohlen vorher: SchaltLab' },
     { t: 'Programmieren und Steuern', s: 'Schaltungen mit Programmen steuern: Arduino und Raspberry Pi.', labs: ['code', 'pi'], pre: 'Empfohlen vorher: SchaltLab' }
   ];

@@ -16,10 +16,10 @@
     { t: 'Strom aus der Steckdose', s: 'Das Hoflicht braucht Gleichspannung. Meister Funk legt einen Trafo auf den Tisch: „Aus Wechselspannung mach Gleichspannung. Erst klein, dann ein richtiges Netzteil.“', m: [T('sch', 's5'), T('sch', 's11'), T('sch', 's19')] },
     { t: 'Im Haus', s: 'Ein Außeneinsatz: Ein Treppenhaus soll sicher beleuchtet werden. „Hier gibt es Sicherungsautomaten und kein Spielzeug“, sagt Meister Funk. „Schutzleiter nicht vergessen.“', m: [T('sim', 'aus'), T('sim', 'wechsel'), T('sim', 'impuls')] },
     { t: 'Löten und Aufbauen', s: 'Jetzt wird es ernst: echte Platinen. „Ein guter Plan ist die halbe Miete, eine gute Lötstelle die andere Hälfte.“', m: [{ k: 'stat', key: 'loetOK', min: 6, t: 'Lötübung: sechs gute Lötstellen sammeln', open: 'loet' }, T('loch', 'l15'), T('loch', 'l17')] },
-    { t: 'Die Steuerung', s: 'Die Anlage soll programmierbar werden. „Ein Arduino für die Logik, ein Raspberry Pi für die Zentrale“, sagt Meister Funk. „Fangt mit dem Einfachsten an: Blinken.“', m: [T('code', 'c1'), T('code', 'c2'), T('pi', 'p1'), T('pi', 'p2')] },
     { t: 'Digitale Welt', s: 'Die Hoflampe soll gesteuert werden: nicht mehr mit Widerständen, sondern mit Einsen und Nullen. „Ohne Digitaltechnik läuft heute nichts“, sagt Meister Funk. „Fang bei den Gattern an und hör bei der kleinen CPU noch lange nicht auf.“', m: [{ k: 'trainer', lab: 'digi' }, T('digi', 'd1'), T('digi', 'd6'), T('digi', 'd13'), { k: 'stat', key: 'zahl', min: 3, t: 'Zahlenumrechner: drei Übungsaufgaben richtig', open: 'zahl' }, T('digi', 'dc1')] },
     { t: 'Messen wie ein Profi', s: 'Meister Funk legt ein Oszilloskop auf deine Werkbank: „Wer nicht messen kann, der baut nur Zufall.“ Jetzt lernst du, jedes Messgerät richtig anzuschließen, abzulesen und auch seinen Fehlern auf die Spur zu kommen.', m: [{ k: 'trainer', lab: 'mess' }, T('mess', 'm1'), T('mess', 'm8'), T('mess', 'm9'), T('mess', 'm15'), T('mess', 'm16')] },
     { t: 'Das eigene Haus', s: 'Meister Funk breitet einen Bauplan aus: „Ein Haus, ein Verteiler, zwanzig Leitungen. Und alles muss sicher sein.“ Du planst die Stromkreise, ziehst die Leitungen und bestückst den Verteilerkasten.', m: [{ k: 'trainer', lab: 'haus' }, T('haus', 'ha1'), T('haus', 'ha3'), T('haus', 'ha4'), T('haus', 'ha6'), T('haus', 'ha13')] },
+    { t: 'Die Steuerung', s: 'Die Anlage soll programmierbar werden. „Ein Arduino für die Logik, ein Raspberry Pi für die Zentrale“, sagt Meister Funk. „Fangt mit dem Einfachsten an: Blinken.“', m: [T('code', 'c1'), T('code', 'c2'), T('pi', 'p1'), T('pi', 'p2')] },
     { t: 'Das Abschlussgerät', s: 'Letzter Auftrag: ein Dämmerungsschalter mit Relais für die Hoflampe, geplant, gebaut und geprüft. „Zeig, was du kannst. Und prüfe deine Lötstellen mit der Lupe.“', m: [T('sch', 's18'), T('loch', 'l16'), { k: 'stat', key: 'lupePerfekt', min: 1, t: 'Lupen-Prüfung ohne Fehler (Qualitätskontrolle)', open: 'loet' }] }
   ];
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
@@ -40,7 +40,9 @@
   /* abgeschlossene Kapitel feiern (einmalig) */
   function check(silent) {
     const k = get('lm4.kamp', { done: [] }); let fresh = [];
-    CH.forEach((c, i) => { if (cdone(i) && !k.done.includes(i)) { k.done.push(i); fresh.push(i); } });
+    const OLD = ['Willkommen in der Lehrwerkstatt', 'Die Notleuchte', 'Messen, bevor man rät', 'Licht nur im Dunkeln', 'Strom aus der Steckdose', 'Im Haus', 'Löten und Aufbauen', 'Die Steuerung', 'Digitale Welt', 'Messen wie ein Profi', 'Das eigene Haus', 'Das Abschlussgerät'];
+    k.done = k.done.map(x => (typeof x === 'number' ? OLD[x] : x)).filter(Boolean);      // früher nach Nummer gespeichert
+    CH.forEach((c, i) => { if (cdone(i) && !k.done.includes(c.t)) { k.done.push(c.t); fresh.push(i); } });
     if (!fresh.length) return;
     try { localStorage.setItem('lm4.kamp', JSON.stringify(k)); } catch (e) {}
     if (root.Badges) { root.Badges.stat('kapitel', k.done.length, 'max'); if (k.done.length === CH.length) root.Badges.stat('kampagne', 1, 'max'); if (!silent) { root.Badges.confetti(fresh.includes(CH.length - 1)); root.Badges.chime(false); } }

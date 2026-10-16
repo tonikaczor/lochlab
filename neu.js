@@ -2,6 +2,8 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v8.121', items: [
+      ['Neue Reihenfolge der Labs', 'Digitaltechnik, Messtechnik und Hausinstallation stehen jetzt vor Arduino-Lab und Pi-Lab. Arduino-Lab und Pi-Lab sind die letzten Labs: Startseite, Lernpfad, Kampagne (neue Kapitelreihenfolge), Auswertung und Anleitung folgen dieser Reihenfolge.', 'Startseite, Kampagne'] ] },
     { v: 'v8.120', items: [
       ['Lernpfad auf der Startseite', 'Drei Spuren (Elektronik, Installation, Programmieren) mit empfohlener Reihenfolge. Jedes Lab zeigt Schwierigkeit, Fortschritt und einen Knopf „Weiter“ zur nächsten offenen Aufgabe, neue Labs „Einführung starten“. Die Kampagne steht ganz oben.', 'Startseite ganz oben'],
       ['„Warum?“ bei falschen Antworten', 'Bei fehlgeschlagenen Prüfzeilen im HausLab und MessLab steht jetzt eine Erklärung: Ursache, Formel oder der Weg zum Messen. Tippe auf „Warum?“ unter der Zeile.', 'HausLab und MessLab ▸ Aufgabe prüfen'],
