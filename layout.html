@@ -1469,17 +1469,17 @@ function openMenu(){
   sheet('Menü',(b,close)=>{
     const rows=[
       ['new','Neues Projekt','Leere Platine anlegen'],
-      ['ex','Beispiele','Fertige Layouts zum Nachbauen'],
       ['tasks','Aufgaben','Aufbau und Fehlersuche mit automatischer Prüfung'],
+      ['open','Projekte öffnen','Auf diesem iPad gespeichert'],
+      ['print','Drucken','Layout als Seite drucken'],
+      ['ex','Beispiele','Fertige Layouts zum Nachbauen'],
       ['check','Layout prüfen','Findet lose Drähte, Kurzschlüsse und offene Anschlüsse'],
       ['solder','Lötanleitung','Reihenfolge und Lage der Bauteile, zum Drucken'],
-      ['open','Projekte öffnen','Auf diesem iPad gespeichert'],
       ['rename','Projekt umbenennen',doc.name],
       ['user','Name ändern',userName()||'noch nicht eingetragen'],
       ['board','Platinengröße',`${fmtOf(doc.cols,doc.rows)||'Eigenes Format'} · ${doc.cols} × ${doc.rows} Löcher`],
       ['bom','Bauteilliste','Anzeigen, drucken, kopieren'],
       ['png','Als Bild exportieren','PNG, teilen oder speichern'],
-      ['print','Drucken','Layout als Seite drucken'],
       ['share','Teilen','Link zum Weitergeben (Projekt steckt im Link)'],
       ['json','Projekt sichern (Datei)','JSON-Datei zum Weitergeben'],
       ['import','Projekt importieren','JSON-Datei laden'],
@@ -1494,6 +1494,7 @@ function openMenu(){
       ['oszi','Oszilloskop-Trainer','Ablesen üben und Kurven-Rätsel'],
       ['voice','Sprachsteuerung an/aus','Befehle mit dem Mikrofon (Zustimmung nötig)'],
       ['feel','Bauteile fühlen an/aus','Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'],
+      ['kamp','Kampagne: Das Abschlussgerät','Lernpfad mit Geschichte über alle Labs'],
       ['neu','Neu in dieser Version','Was zuletzt dazukam und wo du es findest'],
       ['predict','Vorhersage-Modus an/aus','Vor dem Start der Simulation tippen, was passiert'],
       ['png','Bild speichern (PNG)','Aktuelle Ansicht als Bilddatei'],
@@ -1556,6 +1557,7 @@ function menuAct(m){
   if(m==='oszi'){if(window.Oszi)Oszi.open();return;}
   if(m==='voice'){if(window.Voice)Voice.toggle();return;}
   if(m==='feel'){if(window.Feel)Feel.toggle();return;}
+  if(m==='kamp'){if(window.Kampagne)Kampagne.open();return;}
   if(m==='predict'){if(window.Predict)Predict.toggle();return;}
   if(m==='png'){if(window.LabExport)LabExport.png();return;}
   if(m==='gif'){if(window.LabExport)LabExport.gif();return;}
@@ -1929,5 +1931,7 @@ window.LabKeysAdapter = {
 <script src="oszi.js"></script>
 <script src="voice.js"></script>
 <script src="feel.js"></script>
+<script src="kampagne.js"></script>
+<script src="hdr.js"></script>
 </body>
 </html>

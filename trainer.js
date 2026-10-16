@@ -6,8 +6,7 @@
   const A = () => root.LabTrainerAPI || {};
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const NEXTSTEPS = [
-    { at: '#bTasks', t: 'Aufgaben', x: 'Hier warten Aufgaben mit Prüfung. Das Lab sagt dir, was schon stimmt und was noch fehlt. Auf Wunsch gibt es Tipps in drei Stufen.' },
-    { at: '#bMenu', t: 'Menü', x: 'Im Menü findest du Beispiele, Rechner, Tagesaufgabe, Abzeichen, Tonwerkstatt und „Neu in dieser Version“. Diesen Trainer startest du dort jederzeit neu.' }];
+    { at: '#bMenu', t: 'Menü: Aufgaben, Öffnen, Drucken', x: 'Im Menü stehen ganz oben die Aufgaben mit Prüfung (das Lab sagt dir, was schon stimmt, auf Wunsch gibt es Tipps in drei Stufen), das Öffnen gespeicherter Arbeiten und das Drucken. Weiter unten: Rechner, Tagesaufgabe, Abzeichen, Tonwerkstatt und „Neu in dieser Version“. Diesen Trainer startest du dort jederzeit neu.' }];
   const END = (name) => ({ t: 'Geschafft!', x: 'Das war die Einführung ins ' + name + '. Jetzt bist du dran: Probiere Beispiele aus oder starte eine Aufgabe. Viel Spaß beim Tüfteln!' });
 
   const SCRIPTS = {
@@ -22,7 +21,7 @@
       { at: '#cv', prep: (a, st) => { st.sw = a.switchState(); }, gate: (a, st) => a.switchState() !== st.sw, t: 'Strom sehen', x: 'Die gelben Punkte zeigen den Strom, die Farbe der Leitung zeigt die Spannung. Tippe den Schalter in der Zeichnung an und sieh, wie die LED reagiert.' },
       { at: '#side', prep: (a, st) => { const p = a.part('R'); st.r = p ? p.v : null; }, gate: (a, st) => { const p = a.part('R'); return !!p && p.v !== st.r; }, t: 'Wert ändern', x: 'Wähle den Widerstand und ändere seinen Wert, zum Beispiel auf 100 Ω. Wird die LED heller? Mit sehr kleinem Wert brennt sie durch. Das ist hier ungefährlich, es ist nur Simulation.' },
       { at: '#bWater', gate: a => a.water(), optional: true, t: 'Wasser-Ansicht', x: 'Probiere den blauen Schalter: Der Strom wird zu Wasser im Rohr, die Spannung zum Druck. Das hilft beim Verstehen. (Du kannst den Schritt auch überspringen.)' },
-      NEXTSTEPS[0], NEXTSTEPS[1], END('SchaltLab')] },
+      NEXTSTEPS[0], END('SchaltLab')] },
     sim: { name: 'SimLab', steps: [
       { t: 'Willkommen im SimLab', x: 'Das SimLab ist dein Experimentierlabor für die Hausinstallation: Schalter, Sicherungsautomat, Steckdose und Lampe. Ich zeige dir die Grundlagen in wenigen Minuten.' },
       { prep: a => a.load('Ausschaltung'), at: '#cv', t: 'Eine Ausschaltung', x: 'Ich habe dir eine Ausschaltung geladen: Netz, Sicherungsautomat, Schalter und Lampe. Die farbigen Drähte entsprechen den echten Leitungsfarben (braun Außenleiter, blau Neutralleiter, grün-gelb Schutzleiter).' },
@@ -32,7 +31,7 @@
       { at: '#cv', prep: (a, st) => { st.sw = a.switchState(); }, gate: (a, st) => a.switchState() !== st.sw, t: 'Schalten', x: 'Tippe den Schalter in der Zeichnung an. Die Lampe geht an oder aus. Die Punkte zeigen, wo Strom fließt.' },
       { at: '#bCab', t: 'Schaltschrank', x: 'Die Schaltschrank-Ansicht zeigt Sicherungsautomaten und FI so, wie du sie im Verteiler bedienst. Nach einem Kurzschluss schaltest du hier wieder ein.' },
       { at: '#bPP', t: 'Prüfplatz', x: 'Im Prüfplatz übst du das Prüfen elektrischer Geräte nach VDE 0701 und 0702: Schutzleiter, Isolation, Ableitstrom.' },
-      NEXTSTEPS[0], NEXTSTEPS[1], END('SimLab')] },
+      NEXTSTEPS[0], END('SimLab')] },
     code: { name: 'Arduino-Lab', steps: [
       { t: 'Willkommen im Arduino-Lab', x: 'Hier programmierst du einen Arduino Uno und siehst sofort, was die Schaltung macht. Ich zeige dir das mit dem Klassiker: einer blinkenden LED.' },
       { prep: a => a.load('Blink'), at: '#cv', t: 'Die Schaltung', x: 'Links der Arduino Uno, an Pin 13 hängt eine LED mit Vorwiderstand. Das ist die Schaltung zum Programm.' },
@@ -42,7 +41,7 @@
       { at: '#codeTa', prep: (a, st) => { st.c = ($('#codeTa') || {}).value; }, gate: (a, st) => (($('#codeTa') || {}).value) !== st.c, t: 'Selbst ändern', x: 'Ändere im Code eine Zahl bei delay, zum Beispiel auf 100, und starte mit „Neu starten“. Die LED blinkt dann schneller.' },
       { at: '#serWrap', t: 'Serieller Monitor', x: 'Mit Serial.println schickt dein Programm Text an den Computer. Hier siehst du ihn, genau wie im echten Serial Monitor. Auch ein Plotter für Messwerte ist dabei.' },
       { at: '#bEx', t: 'Beispiele', x: 'Hier findest du fertige Programme zum Ausprobieren: Taster, Poti, Töne, Servo, LCD und mehr.' },
-      NEXTSTEPS[0], NEXTSTEPS[1], END('Arduino-Lab')] },
+      NEXTSTEPS[0], END('Arduino-Lab')] },
     pi: { name: 'Pi-Lab', steps: [
       { t: 'Willkommen im Pi-Lab', x: 'Hier programmierst du einen Raspberry Pi in Python und siehst sofort, was die Schaltung macht. Ich zeige dir das mit einer blinkenden LED.' },
       { prep: a => a.load('LED blinkt'), at: '#cv', t: 'Die Schaltung', x: 'Der Raspberry Pi hat eine GPIO-Leiste. An GPIO17 hängt eine LED mit Vorwiderstand. Das ist die Schaltung zum Programm.' },
@@ -52,7 +51,7 @@
       { at: '#codeTa', prep: (a, st) => { st.c = ($('#codeTa') || {}).value; }, gate: (a, st) => (($('#codeTa') || {}).value) !== st.c, t: 'Selbst ändern', x: 'Ändere eine Zahl bei sleep, zum Beispiel auf 0.2, und starte mit „Neu starten“. Die LED blinkt dann schneller.' },
       { at: '#serWrap', t: 'Terminal', x: 'Mit print schickt dein Programm Text ins Terminal. Hier siehst du ihn, genau wie auf dem echten Pi.' },
       { at: '#bEx', t: 'Beispiele', x: 'Hier findest du fertige Programme: Taster, PWM, Ampel, Sensoren und mehr.' },
-      NEXTSTEPS[0], NEXTSTEPS[1], END('Pi-Lab')] },
+      NEXTSTEPS[0], END('Pi-Lab')] },
     loch: { name: 'LochLab', steps: [
       { t: 'Willkommen im LochLab', x: 'Im LochLab planst du eine Schaltung auf einer Lochrasterplatine, so wie du sie später lötest. Ich zeige dir die Grundlagen in wenigen Minuten.' },
       { prep: a => a.load('LED mit Vorwiderstand'), at: '#cv', t: 'Die Platine', x: 'Ich habe dir ein Beispiel geladen: eine LED mit Vorwiderstand und Schalter auf der Platine. Deine bisherige Arbeit ist gesichert. Mit zwei Fingern oder dem Mausrad zoomst du.' },
@@ -62,7 +61,7 @@
       { at: '#cv', gate: a => !!a.sel(), t: 'Bauteil antippen', x: 'Tippe auf ein Bauteil auf der Platine. Dann siehst du seine Daten.' },
       { at: '#side', t: 'Daten des Bauteils', x: 'Hier stehen Wert und Einstellungen des gewählten Bauteils. Auch „Erkläre dich“ ist dabei: Das Bauteil erzählt dir, wie es funktioniert.' },
       { at: '#bSim', gate: a => a.simMode(), t: 'Simulation', x: 'Schalte oben auf „Sim“. Dann kannst du die Schaltung ausprobieren, bevor du sie lötest.' },
-      NEXTSTEPS[0], NEXTSTEPS[1], END('LochLab')] },
+      NEXTSTEPS[0], END('LochLab')] },
   };
 
   let steps = null, idx = 0, st = {}, prepped = {}, passed = false, timer = 0, ring = null, bub = null, dim = null, script = null;
@@ -149,5 +148,6 @@
     c.querySelector('#tfGo').onclick = () => { mark(); start(); }; c.querySelector('#tfNo').onclick = mark;
   }
   root.Trainer = { start, stop, offer, SCRIPTS };
-  setTimeout(offer, 2500);
+  if (/[?&]trainer\b/.test(location.search)) { const t = setInterval(() => { const g = document.getElementById('gate'); if (!g || !vis(g)) { clearInterval(t); setTimeout(start, 600); } }, 500); }
+  else setTimeout(offer, 2500);
 })(typeof window !== 'undefined' ? window : globalThis);

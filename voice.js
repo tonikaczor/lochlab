@@ -18,7 +18,7 @@
     let suf = ''; if (/kilo|\bk\b|kohm/.test(t)) suf = 'k'; else if (/mega/.test(t)) suf = 'M'; else if (/nano/.test(t)) suf = 'n'; else if (/mikro|micro/.test(t)) suf = 'u'; else if (/pico|piko/.test(t)) suf = 'p'; else if (/milli/.test(t)) suf = 'm';
     return String(n) + suf;
   }
-  const click = id => { const e = $(id); if (e && e.offsetParent !== null || (e && getComputedStyle(e).display !== 'none')) { e.click(); return true; } return false; };
+  const click = id => { const e = $(id); if (e) { e.click(); return true; } return false; };
   const RULES = [
     [/(starte|start|schalte|aktiviere|beginne).*(simulation|sim)\b|^simulation (an|ein|starten)/, () => { const t = T(); if (t.simMode && t.simMode()) return 'Die Simulation läuft schon.'; return click('#bSim') ? 'Simulation an' : null; }],
     [/(stoppe|beende|schalte|deaktiviere|verlasse).*(simulation|sim)( aus)?\b|^simulation (aus|beenden)|zurück zum zeichnen|zeichenmodus/, () => { const t = T(); if (t.simMode && !t.simMode()) return 'Du bist schon im Zeichenmodus.'; return click('#bSim') ? 'Zeichenmodus' : null; }],

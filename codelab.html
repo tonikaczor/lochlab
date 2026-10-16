@@ -175,7 +175,7 @@ header .title{font-size:16px;font-weight:700}header .title small{color:var(--fg)
     <button class="hb" id="bPrint" aria-label="Drucken">🖨 <span>Drucken</span></button>
     <button class="ib" id="bUndo" aria-label="Rückgängig"><svg class="i" viewBox="0 0 24 24"><path d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-3" transform="translate(0 -3)"/></svg></button>
     <button class="ib" id="bRedo" aria-label="Wiederholen"><svg class="i" viewBox="0 0 24 24"><path d="M15 7l5 5-5 5M20 12H9a5 5 0 000 10h3" transform="translate(0 -3)"/></svg></button>
-    <button class="run" id="bRun">▶ Start</button>
+    <button class="run" id="bRun" aria-label="Start">▶</button>
   </header>
   <div id="mid">
     <aside id="parts"></aside>
@@ -227,6 +227,8 @@ header .title{font-size:16px;font-weight:700}header .title small{color:var(--fg)
 <script src="oszi.js"></script>
 <script src="voice.js"></script>
 <script src="feel.js"></script>
+<script src="kampagne.js"></script>
+<script src="hdr.js"></script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 </body>
 </html>

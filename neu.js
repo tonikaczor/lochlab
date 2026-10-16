@@ -2,6 +2,9 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v5.115', items: [
+      ['Kampagne: Das Abschlussgerät', 'Ein Lernpfad mit Geschichte über alle Labs: neun Kapitel mit Meister Funk, Missionen aus Aufgaben, Trainern, Messen, Löten und Programmieren. Dein Fortschritt zählt von selbst, Kapitel schalten nacheinander frei. Zwei neue Abzeichen.', 'Menü ▸ Kampagne, außerdem Karte auf der Startseite'],
+      ['Kopfleiste nur mit Symbolen', 'Beschriftungen sind weg, es bleibt mehr Platz. Der Name erscheint beim Zeigen mit der Maus und beim Antippen. „Aufgaben“, „Öffnen“ und „Drucken“ stehen jetzt ganz oben im Menü.', 'Oben in jedem Lab, Menü ▸ oberste Einträge'] ] },
     { v: 'v5.114', items: [
       ['Bauteile fühlen', 'Das Relais klackt, Schalter rasten, der Motor läuft mit Brummen an und aus, Sicherungen und Automaten lösen mit Ruck aus, ein Kurzschluss rüttelt. Vibration am Handy und passende Klicks. Abschaltbar.', 'Menü ▸ Bauteile fühlen an/aus'],
       ['Nachbesprechung auf Wunsch', 'Nach Durchbrennen, Auslösen oder Schlag erscheint ein kleiner Hinweis. Erst auf „Warum? Erkläre mir das“ gibt es die Erklärung mit Zahlen und Abhilfe. Bei Detektiv-Fällen bleibt sie bis zur Lösung zu.', 'Seitenleiste in der Simulation (SchaltLab, SimLab, Arduino-, Pi-Lab)'] ] },

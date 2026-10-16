@@ -344,14 +344,14 @@ function tlGo(i) {
   running = false; tlIdx = i; sim.v.set(sn.v); sim.t = sn.t; sn.els.forEach((o, k) => Object.assign(circ.elems[k], o)); sim.events.length = 0;
   scopeBuf.forEach(b => { while (b.t.length > 1 && b.t[b.t.length - 1] > sn.t) { b.t.pop(); b.v.pop(); b.i.pop(); } });
   computeFlows(); lastSample = sn.t; dirtyDraw = true; draw(); tlLabel();
-  const br = $('#bRun'); if (br) { br.textContent = '▶ Start'; br.classList.remove('on'); }
+  const br = $('#bRun'); if (br) { br.textContent = '▶'; br.classList.remove('on'); }
 }
-function tlLive() { if (tlIdx >= 0) { tl = tl.slice(0, tlIdx + 1); tlIdx = -1; } running = true; lastFrame = performance.now(); const br = $('#bRun'); if (br) { br.textContent = '⏸ Stopp'; br.classList.add('on'); } }
+function tlLive() { if (tlIdx >= 0) { tl = tl.slice(0, tlIdx + 1); tlIdx = -1; } running = true; lastFrame = performance.now(); const br = $('#bRun'); if (br) { br.textContent = '⏸'; br.classList.add('on'); } }
 function tlStepFwd() {
   if (tlIdx >= 0 && tlIdx < tl.length - 1) { tlGo(tlIdx + 1); return; }
   if (tlIdx >= 0) { tl = tl.slice(0, tlIdx + 1); tlIdx = -1; }
   running = false; advance(1 / 20); tlLast = 0; tlCapture(); tlLabel(); dirtyDraw = true; draw();
-  const br = $('#bRun'); if (br) { br.textContent = '▶ Start'; br.classList.remove('on'); }
+  const br = $('#bRun'); if (br) { br.textContent = '▶'; br.classList.remove('on'); }
 }
 function advance(realDt) {
   if (!sim || circ.nn === 0) return;
@@ -1607,7 +1607,7 @@ function setSimModeNow(on) {
 function resetSim() { tlClear(); if (window.LochFX) LochFX.clear(); rebuild(); startProgram(); if (window.LochFX) LochFX.toneOff(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
 function refreshUI() {
   const side = $('#side'); if (!side) return;
-  $('#bRun').textContent = running ? '⏸ Stopp' : '▶ Start';
+  $('#bRun').textContent = running ? '⏸' : '▶';
   $('#bRun').classList.toggle('on', running);
   $('#bUndo').disabled = simMode || hi <= 0; $('#bRedo').disabled = simMode || hi >= hist.length - 1;
   $('#title').textContent = sch.name;
@@ -1774,7 +1774,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['kamp', 'Kampagne: Das Abschlussgerät', 'Lernpfad mit Geschichte über alle Labs'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -3701,6 +3701,7 @@ function menuAct(m) {
   else if (m === 'water') setWater(!water);
   else if (m === 'neu') window.LabNeu();
   else if (m === 'det') openDetective();
+  else if (m === 'kamp') { if (window.Kampagne) window.Kampagne.open(); }
   else if (m === 'feel') { if (window.Feel) window.Feel.toggle(); }
   else if (m === 'voice') { if (window.Voice) window.Voice.toggle(); }
   else if (m === 'oszi') { if (window.Oszi) window.Oszi.open(); }

@@ -36,6 +36,8 @@
     ['wuerfel', '🎲', 'Würfelglück', 'Einen gewürfelten Fehler gefunden.', function (c) { return [c.st.dice || 0, 1]; }],
     ['wuerfel5', '🎰', 'Würfelkönig', 'Fünf gewürfelte Fehler gefunden.', function (c) { return [c.st.dice || 0, 5]; }],
     ['hellseher', '🔮', 'Hellseher', 'Fünf richtige Vorhersagen hintereinander.', function (c) { return [c.st.predictBest || 0, 5]; }],
+    ['kapitel4', '🧭', 'Auf dem Weg', 'Vier Kapitel der Kampagne geschafft.', function (c) { return [c.st.kapitel || 0, 4]; }],
+    ['kampagne', '🏆', 'Abschlussgerät', 'Die ganze Kampagne geschafft.', function (c) { return [c.st.kampagne || 0, 1]; }],
     ['osziprofi', '📈', 'Oszi-Profi', 'Im Oszilloskop-Trainer alles richtig gemacht.', function (c) { return [c.st.osziPerfekt || 0, 1]; }],
     ['ruhighand', '✋', 'Ruhige Hand', 'Sechs von sechs Lötstellen in der Lötübung gelungen.', function (c) { return [c.st.loetPerfekt || 0, 1]; }],
     ['scharfauge', '🔍', 'Scharfes Auge', 'In der Lupen-Prüfung alle schlechten Lötstellen gefunden, ohne falschen Alarm.', function (c) { return [c.st.lupePerfekt || 0, 1]; }],
