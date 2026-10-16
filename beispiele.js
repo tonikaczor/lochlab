@@ -4,6 +4,9 @@
   const EX = [
     /* ---------- SchaltLab ---------- */
     /* ---------- neue Bauteile ---------- */
+    { cat: 'Transistoren', name: 'Dämmerungsschalter mit Relais und Lampe', info: 'Im Dunkeln (Regler Licht unten) hat der Fotowiderstand viel Widerstand, die Basisspannung steigt, der Transistor schaltet das Relais und das Relais schaltet die Lampe im zweiten Stromkreis ein. Bei Licht fällt der Widerstand, der Transistor sperrt und die Lampe geht aus. Die Diode schützt vor der Induktionsspannung der Spule.',
+      make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 4, 4, 1, '47k'], ['LDR', 4, 10, 1, '', { pos: 0.15 }], ['NPN', 8, 12, 0, 'BC547'], ['RLY', 8, 2, 0, '12V'], ['D', 6, 6, 3, '1N4007'], ['LAMP', 16, 2, 0, '12V 0.1A'], ['BAT', 22, 2, 1, '12'], ['GND', 2, 10], ['GND', 4, 16], ['GND', 10, 16], ['GND', 22, 10]],
+        wires: [[2, 4, 2, 2, 4, 2, 6, 2, 8, 2], [4, 2, 4, 4], [4, 8, 4, 10], [4, 10, 6, 10, 6, 12, 8, 12], [4, 14, 4, 16], [8, 6, 10, 6, 10, 10], [6, 6, 8, 6], [10, 14, 10, 16], [20, 2, 22, 2], [13, 4, 13, 10, 22, 10, 22, 6], [2, 8, 2, 10]], scopes: [], tempo: 0.75 }) },
     { cat: 'Logik', name: 'Ampel mit 555-Takt und Zähler (CD4017)', info: 'Der 555 ist als astabile Kippstufe der Taktgeber (etwa 1 Hz). Der CD4017 zählt die Takte und schaltet seine Ausgänge nacheinander: Q0 rot, Q1 grün, Q2 gelb. Q3 setzt den Zähler zurück (RST), dann beginnt es von vorn.',
       make: () => ({ parts: [['BAT', 2, 8, 1, '9'], ['ICX', 22, 6, 0, 'CD4017', { n: 16 }], ['ICX', 40, 6, 0, 'NE555', { n: 8 }], ['R', 10, 8, 1, '470'], ['LED', 10, 12, 1, 'grün'], ['R', 14, 10, 1, '470'], ['LED', 14, 14, 1, 'rot'], ['R', 18, 12, 1, '470'], ['LED', 18, 16, 1, 'gelb'], ['R', 50, 2, 1, '10k'], ['R', 50, 8, 1, '68k'], ['C', 38, 22, 1, '10u'], ['GND', 2, 28]],
         wires: [[2, 8, 2, 2, 28, 2, 42, 2, 44, 2, 50, 2], [28, 6, 28, 2], [42, 4, 42, 2], [44, 4, 44, 2],

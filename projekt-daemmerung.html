@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Projekt Dämmerungsschalter: vom Plan zur Platine</title><link rel="icon" href="icon-192.png"><style>
+:root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:8px}header img{height:42px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:30px 0 8px;border-bottom:2px solid var(--accent);padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:6px 0}small,.mute{color:var(--mute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0}
+ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
+.k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+.tip{border-left:4px solid var(--ok);padding-left:12px}
+@media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
+
+.try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent);color:#fff!important;text-decoration:none;font-size:14px}
+.merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.toc a{display:block;padding:2px 0}
+table.t{border-collapse:collapse;margin:8px 0;font-size:14px}table.t th,table.t td{border:1px solid var(--line);padding:4px 10px;text-align:left}
+.ws{break-before:page;page-break-before:always}
+.q{margin:14px 0}.q .a{border-bottom:1px dotted #888;height:26px;margin-top:2px}.q .a.big{height:64px}
+.sol .lo{color:#1b7a34;font-weight:600;margin-top:4px}
+.k{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+@media print{.try{background:none;color:#000!important;border:1px solid #000}.noprint{display:none!important}}
+</style></head>
+<body><div class="wrap">
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Projekt Dämmerungsschalter: vom Plan zur Platine</h1><small>Stand: Oktober 2026 · Version 5.96</small></div></header>
+<p class="nav noprint"><a href="index.html">← Startseite</a> · <a href="projekt-ampel.html">Projekt Ampel</a> · <a href="projekt-daemmerung.html">Projekt Dämmerungsschalter</a> · <a href="lernen-loch.html">LochLab: Löten</a> · <a href="lernen-schalt.html">SchaltLab: Elektronik</a> · <a href="lernen-sim.html">SimLab: Installation und Prüfung</a> · <a href="lernen.html">Arduino und Pi</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<div class="box"><b>Kurz:</b> Fotowiderstand, Transistor und Relais schalten eine Lampe bei Dunkelheit ein. Plan im SchaltLab, Aufbau im LochLab, Messen und Löten.</div>
+<div class="box toc noprint"><b>Inhalt</b><a href="#k1">1. Die Aufgabe</a><a href="#k2">2. Wie funktioniert die Schaltung?</a><a href="#k3">3. Rechnen</a><a href="#k4">4. Teil 1: Plan im SchaltLab</a><a href="#k5">5. Teil 2: Aufbau im LochLab</a><a href="#k6">6. Teil 3: Ändern und erweitern</a><a href="#ws">7. Arbeitsblatt: Projekt Dämmerungsschalter</a></div>
+<h2 id="k1">1. Die Aufgabe</h2>
+<p>Eine Lampe soll <b>von allein einschalten, wenn es dunkel wird</b>, und bei Tageslicht ausbleiben. Ein Fotowiderstand misst die Helligkeit, ein Transistor verstärkt das Signal und ein <b>Relais</b> schaltet die Lampe in einem eigenen Stromkreis.</p>
+<p>Ablauf wie beim Projekt Ampel: <b>1. Plan</b> im SchaltLab, <b>2. Berechnen</b>, <b>3. Aufbau</b> im LochLab, <b>4. Testen</b>, <b>5. Löten</b>, <b>6. Messen</b>.</p>
+<div class="warn"><b>Achtung:</b> Dieses Projekt arbeitet mit 12 V. Die Lampe am Relais darf <b>nie</b> an die Netzspannung (230 V) angeschlossen werden: Auf einer Lochrasterplatine fehlen Abstände, Berührschutz und Isolation. Netzspannung ist Sache der Elektrofachkraft.</div>
+<p><a class="try noprint" href="schaltplan.html?ex=D%C3%A4mmerungsschalter%20mit%20Relais%20und%20Lampe">▶ Beispiel ansehen (SchaltLab)</a> <a class="try noprint" href="layout.html?ex=D%C3%A4mmerungsschalter%20mit%20Relais%20und%20Lampe">▶ Fertiges Layout ansehen (LochLab)</a></p><h2 id="k2">2. Wie funktioniert die Schaltung?</h2>
+<ol>
+<li><b>Spannungsteiler mit Fotowiderstand:</b> Der 47-kΩ-Widerstand liegt an Plus, der Fotowiderstand (LDR) an Masse. Bei Licht hat der LDR wenige kΩ, die Spannung am Mittelpunkt ist klein. Im Dunkeln steigt sein Widerstand auf hunderte kΩ, die Spannung am Mittelpunkt steigt.</li>
+<li><b>Transistor als Schalter:</b> Der Mittelpunkt führt an die Basis des BC547. Ab etwa 0,7 V Basis-Emitter-Spannung fließt Basisstrom und der Transistor schaltet durch.</li>
+<li><b>Relais:</b> Die Spule liegt im Kollektorkreis. Zieht sie an, schließt der Kontakt (Mitte zu Schließer) und schaltet die Lampe in einem <b>zweiten, getrennten Stromkreis</b> mit eigener Batterie.</li>
+<li><b>Freilaufdiode:</b> Parallel zur Spule, Ring zur Plusseite. Beim Abschalten erzeugt die Spule eine hohe Induktionsspannung. Die Diode leitet sie ab und schützt den Transistor.</li>
+</ol>
+<div class="merke"><b>Merke:</b> Das Relais trennt Steuerkreis (klein, empfindlich) und Laststromkreis (größer, anders versorgt). So kann ein kleines Signal eine große Last schalten.</div>
+<p><a class="try noprint" href="schaltplan.html?ex=D%C3%A4mmerungsschalter%20%28LDR%29">▶ Variante mit LED (SchaltLab)</a> <a class="try noprint" href="schaltplan.html?ex=Relais%20mit%20Transistor%20und%20Freilaufdiode">▶ Relais mit Transistor (SchaltLab)</a></p><h2 id="k3">3. Rechnen</h2>
+<table class="t"><tr><th>Größe</th><th>Rechnung</th><th>Ergebnis</th></tr><tr><td>Mittelpunkt bei Licht (LDR 2 kΩ)</td><td>U = 12 V · 2 kΩ / (47 kΩ + 2 kΩ)</td><td>0,49 V (unter 0,7 V: Transistor sperrt)</td></tr><tr><td>Mittelpunkt im Dunkeln (LDR 500 kΩ)</td><td>U = 12 V · 500 kΩ / (47 kΩ + 500 kΩ)</td><td>10,97 V rechnerisch (die Basis begrenzt auf etwa 0,7 V)</td></tr><tr><td>Basisstrom im Dunkeln</td><td>I<sub>B</sub> = (12 V − 0,7 V) / 47 kΩ</td><td>0,24 mA</td></tr><tr><td>Möglicher Kollektorstrom</td><td>I<sub>C</sub> = B · I<sub>B</sub> mit B ≈ 250</td><td>60 mA</td></tr><tr><td>Spulenstrom (Relais 12 V, 400 Ω)</td><td>I = 12 V / 400 Ω</td><td>30 mA, der Transistor schafft das</td></tr></table>
+<p>Wichtig: Der Fotowiderstand und der 47-kΩ-Widerstand bestimmen die <b>Schaltschwelle</b>. Ein anderer Widerstand verschiebt sie. Mit einem Poti statt der 47 kΩ lässt sie sich einstellen.</p><h2 id="k4">4. Teil 1: Plan im SchaltLab</h2>
+<p>Verdrahte den Stromlaufplan. Die Bauteile liegen schon, nur die Leitungen fehlen. Der Auto-Weg hilft beim Verlegen der Drähte.</p>
+<p><a class="try noprint" href="schaltplan.html?aufgabe=s18">✎ Aufgabe: Dämmerungsschalter mit Relais verdrahten</a></p>
+<p>Starte die Simulation, stelle den Regler „Licht“ von dunkel nach hell und beobachte das Relais und die Lampe. Im Bedienfeld lässt sich die Helligkeit in Prozent einstellen. Mit dem <b>Messprotokoll</b> hältst du die Spannung am Mittelpunkt bei hell und dunkel fest und vergleichst sie mit deiner Rechnung.</p><h2 id="k5">5. Teil 2: Aufbau im LochLab</h2>
+<p>Wenn der Plan stimmt, führt dich „Weiter: im LochLab aufbauen“ zur Platine. Die Bauteile liegen schon, du verbindest sie.</p>
+<p><a class="try noprint" href="layout.html?aufgabe=l16">✎ Aufgabe: Dämmerungsschalter aufbauen</a></p>
+<ol><li>Zuerst Plus- und Masseschiene festlegen.</li><li>Verbinde mit Lötbahnen (<span class="k">.</span>). Der Auto-Weg zeigt eine Vorschau des Weges.</li><li>Das Relais hat fünf Anschlüsse: zwei Spule, einer Mitte, einer Schließer, einer Öffner. Achte auf die Belegung.</li><li>Prüfe mit <b>Layout prüfen</b> und „Lösung prüfen“, dann in der <b>Sim</b>: Fotowiderstand-Regler bewegen, die Lampe schaltet.</li></ol>
+<p>Danach: <b>Lötanleitung</b> drucken und aufbauen. Der Transistor (Belegung im Datenblatt!), die Diode (Ring) und das Relais (Spulenanschlüsse) sind die Bauteile mit Fehlerrisiko.</p><h2 id="k6">6. Teil 3: Ändern und erweitern</h2>
+<ul><li><b>Umgekehrt:</b> Lampe an bei Licht? LDR und Widerstand vertauschen.</li><li><b>Schwelle einstellbar:</b> Poti statt 47 kΩ (zum Beispiel 100 kΩ in Reihe mit einem festen Widerstand).</li><li><b>Kein Flattern:</b> Eine Hysterese (Schmitt-Trigger oder Komparator mit Mitkopplung) verhindert, dass die Lampe in der Dämmerung flackert.</li><li><b>Mit Komparator:</b> Die Schaltung mit einem Operationsverstärker als Schwellenschalter aufbauen.</li></ul>
+<p><a class="try noprint" href="schaltplan.html?aufgabe=s13">✎ Aufgabe: Dämmerungsschalter mit LED</a> <a class="try noprint" href="schaltplan.html?aufgabe=s14">✎ Aufgabe: Relais mit Transistor</a> <a class="try noprint" href="schaltplan.html?aufgabe=s15">✎ Aufgabe: Komparator mit Operationsverstärker</a></p>
+<h2 id="ws" class="ws">7. Arbeitsblatt: Projekt Dämmerungsschalter</h2>
+<p>Name: ______________________________ &nbsp; Datum: ______________ &nbsp; Punkte: ______ / 9</p>
+<div class="q"><b>1.</b> Berechne die Spannung am Mittelpunkt des Teilers bei Licht (LDR 2 kΩ) und rechnerisch im Dunkeln (LDR 500 kΩ), jeweils mit 47 kΩ und 12 V.<div class="a"></div></div><div class="q"><b>2.</b> Schaltet der Transistor bei Licht? Begründe mit der Basis-Emitter-Spannung.<div class="a"></div></div><div class="q"><b>3.</b> Berechne den Basisstrom im Dunkeln und den damit möglichen Kollektorstrom bei B = 250. Reicht das für ein Relais mit 400 Ω Spulenwiderstand an 12 V?<div class="a"></div></div><div class="q"><b>4.</b> Wozu dient die Diode parallel zur Relaisspule? In welche Richtung muss sie eingebaut werden?<div class="a"></div></div><div class="q"><b>5.</b> Warum schaltet man die Lampe über ein Relais in einem zweiten Stromkreis, statt sie direkt in den Transistorkreis zu legen?<div class="a"></div></div><div class="q"><b>6.</b> Eine Lampe 12 V / 0,1 A: Berechne Leistung und Widerstand der Lampe.<div class="a"></div></div><div class="q"><b>7.</b> Wie änderst du die Schaltung, damit die Lampe bei Licht leuchtet statt im Dunkeln?<div class="a"></div></div><div class="q"><b>8.</b> Wie machst du die Schaltschwelle einstellbar?<div class="a"></div></div><div class="q"><b>9.</b> Warum darf man die Lampe an diesem Aufbau nicht einfach an 230 V anschließen?<div class="a"></div></div>
+</div></body></html>

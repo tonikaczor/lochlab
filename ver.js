@@ -1,6 +1,6 @@
 /* Versionsanzeige unten rechts über der Werkzeugleiste, auf der Startseite oben rechts. Bei jedem Release zusammen mit CACHE in sw.js erhöhen. */
 (function () {
-  var V = 'v5.95';   // 5 = Anzahl der Labs, 95 = laufende Versionsnummer
+  var V = 'v5.96';   // 5 = Anzahl der Labs, 96 = laufende Versionsnummer
   window.LAB_VERSION = V;
   var d;
   function place() {
