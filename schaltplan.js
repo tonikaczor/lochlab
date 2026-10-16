@@ -2540,6 +2540,11 @@ const SCH_TASKS = [
     text: 'Verdrahte die Festspannungsquelle: Der Regler 7805 macht aus 9 V stabile 5 V für die LED mit Vorwiderstand.',
     hint: 'Eingang des Reglers an Plus, gemeinsamer Anschluss an Masse, Ausgang zur Last.',
     check() { return schNetCheck(exLike('Festspannung 5 V mit Spannungsregler')); } },
+  { id: 's17', lab: 'sch', cat: 'Projekt: Ampel', title: 'Ampel: Taktgeber und Zähler verdrahten', level: 3, sol: 'Ampel mit 555-Takt und Zähler (CD4017)', loch: 'l15',
+    start: () => wiresOff(exLike('Ampel mit 555-Takt'))(),
+    text: 'Projekt Ampel, Teil 1 (Plan): Ein NE555 als astabile Kippstufe liefert den Takt, der CD4017 zählt und schaltet nacheinander die LEDs rot, grün und gelb. Verdrahte den Stromlaufplan. Danach baust du die Schaltung im LochLab auf.',
+    hint: 'Der 555 arbeitet wie im Blinker: R1 von Plus an Pin 7, R2 von Pin 7 an Pin 6, Pin 2 und 6 verbinden, Kondensator an Pin 6 nach Masse, Pin 3 (Ausgang) an CLK (Pin 14) des CD4017. Beim CD4017: Pin 16 an Plus, Pin 8 und Pin 13 (ENA) an Masse, Q0 (Pin 3) rot, Q1 (Pin 2) grün, Q2 (Pin 4) gelb, jeweils über 470 Ω gegen Masse, und Q3 (Pin 7) an RST (Pin 15).',
+    check() { return schNetCheck(exLike('Ampel mit 555-Takt')); } },
   { id: 'sf3', lab: 'sch', cat: 'Fehlersuche', title: 'Spannungsteiler zeigt falsche Spannung', level: 1, debug: true, faultLabel: 'R2', sol: 'Spannungsteiler',
     start: () => { const d = exOf('Spannungsteiler')(); d.parts[1] = ['R', 8, 2, 1, '1k', { l: 'R1' }]; d.parts[2] = ['R', 8, 6, 1, '2k', { l: 'R2', defect: 'open' }]; return d; },
     text: 'Der Spannungsteiler soll 6 V am Voltmeter liefern, zeigt aber etwas anderes. Welcher Widerstand ist defekt? Miss nach, wähle ihn aus und tippe auf „Fehler melden“.',
@@ -2672,6 +2677,7 @@ function taskCardHtml() {
   const t = TASKS.find(x => x.id === sch.task); if (!t) return '';
   let h = `<div class="card task"><h4>Aufgabe · ${esc(t.cat)}</h4><b>${esc(t.title)}</b><p class="hint2">${esc(t.text)}</p>`;
   h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div><div class="row2"><button class="btn" data-a="thand">Abgeben (QR)</button></div>`;
+  if (t.loch) h += (taskDone()[t.id] || 0) >= 100 ? `<div class="row2"><a class="btn pri" href="layout.html?aufgabe=${t.loch}" style="text-decoration:none;text-align:center">Weiter: im LochLab aufbauen</a></div>` : '<p class="hint2">Wenn der Plan stimmt, geht es im LochLab weiter: dort baust du dieselbe Schaltung auf der Platine auf.</p>';
   if (taskRes && taskRes.id === t.id) h += `<ul class="tl">${taskRes.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>` + (taskRes.pct != null ? `<div class="score ${taskRes.pct === 100 ? 'ok' : ''}">${taskRes.pct === 100 ? '🎉 Geschafft!' : taskRes.pct + ' % richtig'}</div>` : '');
   return h + '</div>';
 }

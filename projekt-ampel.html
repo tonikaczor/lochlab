@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Projekt Ampel: vom Plan zur Platine</title><link rel="icon" href="icon-192.png"><style>
+:root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
+@media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:24px 18px 60px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:8px}header img{height:42px}
+h1{font-size:26px;margin:0}h2{font-size:20px;margin:30px 0 8px;border-bottom:2px solid var(--accent);padding-bottom:4px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:6px 0}small,.mute{color:var(--mute)}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin:12px 0}
+ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
+.k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+.tip{border-left:4px solid var(--ok);padding-left:12px}
+@media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
+
+.try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent);color:#fff!important;text-decoration:none;font-size:14px}
+.merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
+.toc a{display:block;padding:2px 0}
+table.t{border-collapse:collapse;margin:8px 0;font-size:14px}table.t th,table.t td{border:1px solid var(--line);padding:4px 10px;text-align:left}
+.ws{break-before:page;page-break-before:always}
+.q{margin:14px 0}.q .a{border-bottom:1px dotted #888;height:26px;margin-top:2px}.q .a.big{height:64px}
+.sol .lo{color:#1b7a34;font-weight:600;margin-top:4px}
+.k{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:0 5px}
+@media print{.try{background:none;color:#000!important;border:1px solid #000}.noprint{display:none!important}}
+</style></head>
+<body><div class="wrap">
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Projekt Ampel: vom Plan zur Platine</h1><small>Stand: Oktober 2026 · Version 5.91</small></div></header>
+<p class="nav noprint"><a href="index.html">← Startseite</a> · <a href="projekt-ampel.html">Projekt Ampel</a> · <a href="lernen-loch.html">LochLab: Löten</a> · <a href="lernen-schalt.html">SchaltLab: Elektronik</a> · <a href="lernen-sim.html">SimLab: Installation und Prüfung</a> · <a href="lernen.html">Arduino und Pi</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<div class="box"><b>Kurz:</b> Ein Projekt in drei Schritten: Plan im SchaltLab, Aufbau im LochLab, Messen und Löten. Taktgeber ist eine astabile Kippstufe mit dem NE555.</div>
+<div class="box toc noprint"><b>Inhalt</b><a href="#k1">1. Die Aufgabe</a><a href="#k2">2. Wie funktioniert der Taktgeber (astabile Kippstufe)?</a><a href="#k3">3. Wie funktioniert der Zähler (CD4017)?</a><a href="#k4">4. Teil 1: Plan im SchaltLab</a><a href="#k5">5. Teil 2: Aufbau im LochLab</a><a href="#k6">6. Teil 3: Ändern und erweitern</a><a href="#ws">7. Arbeitsblatt: Projekt Ampel</a></div>
+<h2 id="k1">1. Die Aufgabe</h2>
+<p>Eine einfache <b>Ampel</b> soll nacheinander <b>rot, grün, gelb</b> leuchten und dann wieder von vorn beginnen. Ein Taktgeber gibt die Schritte vor, ein Zähler schaltet die LEDs weiter.</p>
+<p>Du gehst vor wie in der Praxis: <b>1. Plan</b> (Stromlaufplan im SchaltLab), <b>2. Berechnen</b>, <b>3. Aufbau</b> auf Lochraster im LochLab, <b>4. Testen</b> in der Simulation, <b>5. Löten</b> mit der Lötanleitung und <b>6. Messen</b> mit dem Messprotokoll.</p>
+<div class="merke"><b>Merke:</b> Die Schaltung besteht aus zwei ICs: Der <b>NE555</b> arbeitet als <b>astabile Kippstufe</b> (sie kippt von allein dauernd zwischen „an“ und „aus“) und der <b>CD4017</b> ist ein Dezimalzähler mit zehn Ausgängen.</div>
+<p><a class="try noprint" href="schaltplan.html?ex=Ampel%20mit%20555-Takt%20und%20Z%C3%A4hler%20%28CD4017%29">▶ Beispiel ansehen (SchaltLab)</a> <a class="try noprint" href="layout.html?ex=Ampel%20mit%20555-Takt%20und%20Z%C3%A4hler%20%28CD4017%29">▶ Fertiges Layout ansehen (LochLab)</a></p><h2 id="k2">2. Wie funktioniert der Taktgeber (astabile Kippstufe)?</h2>
+<p>Im 555 lädt sich der Kondensator C über R1 und R2 auf. Erreicht seine Spannung zwei Drittel der Betriebsspannung, schaltet der Ausgang aus und der Kondensator entlädt sich über R2. Bei einem Drittel schaltet der Ausgang wieder ein. So entsteht ein Rechtecksignal.</p>
+<table class="t"><tr><th>Größe</th><th>Formel</th></tr><tr><td>Zeit „high“</td><td>t<sub>H</sub> = 0,693 · (R1 + R2) · C</td></tr><tr><td>Zeit „low“</td><td>t<sub>L</sub> = 0,693 · R2 · C</td></tr><tr><td>Periodendauer</td><td>T = t<sub>H</sub> + t<sub>L</sub> = 0,693 · (R1 + 2 · R2) · C</td></tr><tr><td>Frequenz</td><td>f = 1 / T ≈ 1,44 / ((R1 + 2 · R2) · C)</td></tr></table>
+<p>Mit R1 = 10 kΩ, R2 = 68 kΩ und C = 10 µF ergibt das T ≈ 1,01 s, also etwa <b>1 Takt pro Sekunde</b>. Jede Ampelphase dauert einen Takt.</p>
+<p><a class="try noprint" href="schaltplan.html?ex=555-Blinker%20%28astabil%29">▶ Der 555-Blinker im SchaltLab</a></p><h2 id="k3">3. Wie funktioniert der Zähler (CD4017)?</h2>
+<p>Bei jeder steigenden Flanke am Eingang <b>CLK</b> (Pin 14) springt im CD4017 ein Ausgang weiter: erst <b>Q0</b> (Pin 3), dann Q1 (Pin 2), Q2 (Pin 4), Q3 (Pin 7) und so weiter. Immer nur ein Ausgang führt „high“.</p>
+<table class="t"><tr><th>Pin</th><th>Name</th><th>Anschluss in der Ampel</th></tr><tr><td>16</td><td>VDD</td><td>Plus</td></tr><tr><td>8</td><td>VSS</td><td>Masse</td></tr><tr><td>14</td><td>CLK</td><td>Ausgang des 555 (Pin 3)</td></tr><tr><td>13</td><td>ENA (Clock Enable)</td><td>Masse, sonst zählt er nicht</td></tr><tr><td>15</td><td>RST (Reset)</td><td>Q3 (Pin 7): setzt den Zähler zurück</td></tr><tr><td>3</td><td>Q0</td><td>rote LED</td></tr><tr><td>2</td><td>Q1</td><td>grüne LED</td></tr><tr><td>4</td><td>Q2</td><td>gelbe LED</td></tr></table>
+<p>Wird Q3 high, setzt es sofort den Zähler zurück auf Q0. Der Zähler läuft also nur durch Q0, Q1, Q2: <b>drei Phasen</b>. Jeder Ausgang speist über 470 Ω eine LED.</p><h2 id="k4">4. Teil 1: Plan im SchaltLab</h2>
+<p>Verdrahte den Stromlaufplan. Die Bauteile liegen schon, nur die Leitungen fehlen. „Lösung prüfen“ zeigt dir, was noch fehlt.</p>
+<p><a class="try noprint" href="schaltplan.html?aufgabe=s17">✎ Aufgabe: Ampel: Taktgeber und Zähler verdrahten</a></p>
+<p>Starte danach die Simulation und beobachte: Die LEDs leuchten nacheinander. Miss mit dem Multimeter die Spannung am 555-Ausgang (Pin 3): sie wechselt zwischen etwa 0 V und gut 7 V.</p>
+<p>Mit dem <b>Messprotokoll</b> (Menü) hältst du Sollwerte und Messwerte fest.</p><h2 id="k5">5. Teil 2: Aufbau im LochLab</h2>
+<p>Wenn der Plan stimmt, führt dich die Aufgabenkarte mit „Weiter: im LochLab aufbauen“ zur Platine. Dort liegen die Bauteile schon. Die ICs sitzen in Sockeln (Kerbe nach links).</p>
+<p><a class="try noprint" href="layout.html?aufgabe=l15">✎ Aufgabe: Ampel aufbauen</a></p>
+<ol><li>Plane Plus- und Masseschiene (oben und unten).</li><li>Verbinde mit Lötbahnen (<span class="k">.</span>), Drahtbrücken (W) dort, wo sich Leitungen kreuzen würden.</li><li>Prüfe mit <b>Layout prüfen</b>, dann mit „Lösung prüfen“.</li><li>Schalte auf <b>Sim</b> (Taste <span class="k">Eingabe</span>): Die LEDs laufen rot, grün, gelb.</li></ol>
+<p>Danach: <b>Lötanleitung</b> drucken und die Schaltung wirklich aufbauen (siehe Lernheft „Löten“). Typische Fehler: Lötbrücken zwischen den engen IC-Pins, ein vergessener Masse-Anschluss an Pin 8 oder Pin 13 des CD4017.</p><h2 id="k6">6. Teil 3: Ändern und erweitern</h2>
+<ul><li><b>Andere Phasendauer:</b> Ändere R2 oder C im Plan und miss die neue Periodendauer.</li><li><b>Fußgängerampel:</b> Nur zwei LEDs (rot, grün) mit Q0 und Q1 und Reset über Q2.</li><li><b>Mehr Phasen:</b> Reset über Q4 und eine zweite rote LED an Q3 (Rot-Gelb-Phase mit Dioden-ODER).</li></ul>
+<p><a class="try noprint" href="schaltplan.html?aufgabe=s12">✎ Aufgabe: Der einfache 555-Blinker</a> <a class="try noprint" href="layout.html?aufgabe=l8">✎ Aufgabe: 555-Blinker im LochLab</a></p>
+<h2 id="ws" class="ws">7. Arbeitsblatt: Projekt Ampel</h2>
+<p>Name: ______________________________ &nbsp; Datum: ______________ &nbsp; Punkte: ______ / 9</p>
+<div class="q"><b>1.</b> Berechne mit R1 = 10 kΩ, R2 = 68 kΩ und C = 10 µF die Zeiten t_H, t_L, die Periodendauer T und die Frequenz des Taktgebers.<div class="a"></div></div><div class="q"><b>2.</b> Wie lange leuchtet jede Ampelphase? Wie lange dauert ein ganzer Durchlauf (rot, grün, gelb)?<div class="a"></div></div><div class="q"><b>3.</b> Du möchtest etwa 2 s je Phase erreichen (R1 = 10 kΩ, C = 10 µF). Welchen Wert braucht R2 rechnerisch? Welchen E12-Wert nimmst du?<div class="a"></div></div><div class="q"><b>4.</b> Welche Aufgabe hat Pin 13 (ENA) des CD4017? Was passiert, wenn man ihn offen lässt?<div class="a"></div></div><div class="q"><b>5.</b> Warum steht der Zähler nicht auf Q3, sondern springt nach Q2 wieder auf Q0?<div class="a"></div></div><div class="q"><b>6.</b> Berechne den LED-Strom bei 9 V, einer LED mit 2 V und 470 Ω. Welche Leistung nimmt der Vorwiderstand auf?<div class="a"></div></div><div class="q"><b>7.</b> Nenne die Pins des NE555, die in dieser Schaltung an Plus liegen, an Masse liegen und die über R2 und C verbunden sind.<div class="a"></div></div><div class="q"><b>8.</b> Du baust die Schaltung auf Lochraster. Nenne drei Dinge, auf die du beim Einbau der ICs achtest.<div class="a"></div></div><div class="q"><b>9.</b> Beschreibe, wie du mit dem Multimeter prüfst, ob der Taktgeber arbeitet. Welche Spannungen erwartest du am Ausgang (Pin 3)?<div class="a"></div></div>
+</div></body></html>

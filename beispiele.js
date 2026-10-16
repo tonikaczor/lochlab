@@ -4,6 +4,12 @@
   const EX = [
     /* ---------- SchaltLab ---------- */
     /* ---------- neue Bauteile ---------- */
+    { cat: 'Logik', name: 'Ampel mit 555-Takt und Zähler (CD4017)', info: 'Der 555 ist als astabile Kippstufe der Taktgeber (etwa 1 Hz). Der CD4017 zählt die Takte und schaltet seine Ausgänge nacheinander: Q0 rot, Q1 grün, Q2 gelb. Q3 setzt den Zähler zurück (RST), dann beginnt es von vorn.',
+      make: () => ({ parts: [['BAT', 2, 8, 1, '9'], ['ICX', 22, 6, 0, 'CD4017', { n: 16 }], ['ICX', 40, 6, 0, 'NE555', { n: 8 }], ['R', 10, 8, 1, '470'], ['LED', 10, 12, 1, 'grün'], ['R', 14, 10, 1, '470'], ['LED', 14, 14, 1, 'rot'], ['R', 18, 12, 1, '470'], ['LED', 18, 16, 1, 'gelb'], ['R', 50, 2, 1, '10k'], ['R', 50, 8, 1, '68k'], ['C', 38, 22, 1, '10u'], ['GND', 2, 28]],
+        wires: [[2, 8, 2, 2, 28, 2, 42, 2, 44, 2, 50, 2], [28, 6, 28, 2], [42, 4, 42, 2], [44, 4, 44, 2],
+                [2, 12, 2, 26, 10, 26, 14, 26, 18, 26, 22, 26, 32, 26, 38, 26, 43, 26], [2, 26, 2, 28], [10, 16, 10, 26], [14, 18, 14, 26], [18, 20, 18, 26],
+                [22, 8, 10, 8], [22, 10, 14, 10], [22, 12, 18, 12], [22, 18, 20, 18, 20, 24, 30, 24, 30, 8, 28, 8], [22, 20, 22, 26], [28, 12, 32, 12, 32, 26],
+                [43, 16, 43, 26], [46, 8, 50, 8], [50, 6, 50, 8], [50, 12, 50, 22, 38, 22, 38, 12, 40, 12], [38, 12, 38, 10, 40, 10], [46, 12, 48, 12, 48, 20, 34, 20, 34, 10, 28, 10]], scopes: [], tempo: 0.75, win: 6 }) },
     { cat: 'Transistoren', name: 'MOSFET als Schalter (N-Kanal, Low-Side)', info: 'Schalter schließen: Das Gate bekommt 5 V, der IRLZ44N schaltet durch und die LED leuchtet. Offen zieht der 10-kΩ-Widerstand das Gate auf Masse, der MOSFET sperrt. Im Gegensatz zum Bipolartransistor fließt kein Basisstrom.',
       make: () => ({ parts: [['BAT', 0, 4, 1, '5'], ['R', 10, 2, 0, '220'], ['LED', 14, 2, 0, 'rot'], ['NMOS', 16, 6, 0, 'IRLZ44N'], ['SPST', 6, 6, 0, ''], ['R', 13, 6, 1, '10k'], ['GND', 0, 12]],
         wires: [[0, 4, 0, 2, 6, 2, 10, 2], [6, 2, 6, 6], [18, 2, 18, 4], [10, 6, 13, 6, 16, 6], [0, 8, 0, 10, 13, 10, 18, 10], [18, 8, 18, 10], [0, 10, 0, 12]], scopes: [] }) },
