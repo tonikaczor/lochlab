@@ -48,11 +48,12 @@
       });
       h += '</div></div>';
     });
-    h += '</div>';
+    h += '<button type="button" id="lpClose" style="display:block;width:100%;margin-top:12px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:600 14px system-ui;cursor:pointer">▲ Lernpfad zuklappen</button></div>';
     const sec = document.createElement('section'); sec.id = 'lernpfad'; sec.className = 'lp' + (open ? ' open' : ''); sec.innerHTML = h;
     q.parentNode.insertBefore(sec, q); q.textContent = 'Alle Programme im Überblick';
     const hd = document.getElementById('lpHd'), tog = () => { const o = sec.classList.toggle('open'); hd.setAttribute('aria-expanded', o); hd.lastElementChild.textContent = o ? 'zuklappen' : 'aufklappen'; try { localStorage.setItem('lm4.lp.open', o ? '1' : '0'); } catch (e) {} };
     hd.addEventListener('click', e => { if (e.target.closest('a')) return; tog(); }); hd.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(); } });
+    const cl = document.getElementById('lpClose'); if (cl) cl.onclick = () => { tog(); hd.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
     const kb = document.getElementById('lpKamp'); if (kb) kb.onclick = e => { e.preventDefault(); K.open(); };
     const kc = document.getElementById('kampCard'); if (kc) kc.remove();
     // Fortschritt auch in den Karten

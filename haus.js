@@ -20,8 +20,13 @@
     junc: { n: 'Abzweigdose', z: 2.2, icon: '▣' },
     panel: { n: 'Verteilerkasten', z: 1.5, icon: '▤' },
     dev3: { n: 'Drehstromgerät', z: 0.9, icon: '3~', w: 7000 },
-    sock3: { n: 'CEE-Steckdose 400 V', z: 0.3, icon: '⚡3', w: 0 }
+    sock3: { n: 'CEE-Steckdose 400 V', z: 0.3, icon: '⚡3', w: 0 },
+    swk: { n: 'Kreuzschalter', z: 1.05, icon: '✕' },
+    tast: { n: 'Taster', z: 1.05, icon: '◉' },
+    imp: { n: 'Stromstoßschalter', z: 1.5, icon: '⟳' },
+    wet: { n: 'Dusche / Badewanne', z: 1.0, icon: '🚿' }
   };
+  const HAK_FUSES = ['C25', 'C35', 'C50', 'C63'];
   const DEVS = [['Heizlüfter', 2000], ['Backofen', 3500], ['Wasserkocher', 2000], ['Kaffeemaschine', 1000], ['Kühlschrank', 150], ['PC-Arbeitsplatz', 300], ['Server', 1500], ['Fernseher', 120], ['Waschmaschine', 2200], ['Durchlauferhitzer', 3500]];
   const DEV3 = [['Herd', 7000], ['Durchlauferhitzer', 18000], ['Wallbox', 11000], ['Klimagerät', 8000], ['Kompressor', 4000], ['Lüftung (Motor)', 3000, 1], ['Kreissäge (Motor)', 2200, 1]];
   const LS_TYPES = ['B10', 'B13', 'B16', 'B20', 'B25', 'C16'], FI_TYPES = ['30mA', '300mA'];
@@ -29,7 +34,7 @@
   const SECS = [1.5, 2.5, 4, 6, 10];
 
   /* ---------------- Modell ---------------- */
-  const newHouse = name => ({ name: name || 'Neues Haus', h: 2.5, rooms: [], objs: [], cables: [], panel: { fi: [{ type: '' }, { type: '' }], slots: Array.from({ length: SLOTS }, () => ({ ls: '', fi: 0, on: 1, p3: 0, ph: 0 })) }, nid: 1 });
+  const newHouse = name => ({ name: name || 'Neues Haus', h: 2.5, rooms: [], objs: [], cables: [], panel: { fi: [{ type: '' }, { type: '' }], slots: Array.from({ length: SLOTS }, () => ({ ls: '', fi: 0, on: 1, p3: 0, ph: 0 })) }, hak: { fuse: '', on: 1 }, nid: 1 });
   const nid = h => h.nid++;
   const room = (h, id) => h.rooms.find(r => r.id === id);
   const obj = (h, id) => h.objs.find(o => o.id === id);
@@ -43,6 +48,8 @@
       default: return [r.x + o.u, r.y + o.v, h.h];
     }
   };
+  const rlv = r => (r && r.lv) || 0;
+  const olv = (h, o) => (o.lv != null ? o.lv : rlv(room(h, o.room)));
   const bounds = h => { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; h.rooms.forEach(r => { x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.d); }); return h.rooms.length ? { x0, y0, x1, y1 } : { x0: 0, y0: 0, x1: 8, y1: 8 }; };
 
   /* ---------------- Leitungswege: nur an Wänden und Decke ---------------- */
@@ -89,13 +96,15 @@
     zones.forEach(z => { const t = Math.abs(za - z) + Math.abs(zb - z); if (t < best) { best = t; zone = z; } });
     const ra = room(h, a.room), rb = room(h, b.room), ea = endPath(h, a, zone), eb = endPath(h, b, zone);
     let pts, extra = 0;
+    const lvd = olv(h, a) !== olv(h, b);
+    if (lvd && !(ra.st || rb.st)) return { ok: false, why: 'Zwischen Erdgeschoss und Obergeschoss führt eine Leitung nur durch das Treppenhaus. Ziehe sie bis zu einer Dose im Treppenhaus und von dort weiter.', pts: [], len: 0 };
     const at = (xy) => [xy[0], xy[1], zone];
     if (a.room === b.room) pts = ea.pts.concat(walk(ra, ea.at, eb.at).slice(1).map(at), eb.pts.slice().reverse());
     else {
       const m = shared(ra, rb); if (!m) return { ok: false, why: 'Die Räume grenzen nicht aneinander. Führe die Leitung über einen Zwischenraum (Abzweigdose).', pts: [], len: 0 };
       pts = ea.pts.concat(walk(ra, ea.at, m).slice(1).map(at), walk(rb, m, eb.at).map(at), eb.pts.slice().reverse()); extra = 0.3;
     }
-    let len = extra + 0.5;
+    let len = extra + 0.5 + (lvd ? h.h + 0.3 : 0);
     for (let i = 1; i < pts.length; i++) len += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]);
     return { ok: true, pts, len };
   }
@@ -107,8 +116,9 @@
     const add = (k, v, pins, o) => { rows.push({ k, v, pins, o: o || {} }); return rows.length - 1; };
     const L = [net(), net(), net()], N0 = net(), PE0 = net();
     add('NETZ3', '400V', [L[0], L[1], L[2], N0, PE0], { hx: { role: 'netz' } });
-    const P = h.panel || newHouse().panel, grp = [{ L, N: N0 }];
-    [0, 1].forEach(g => { const f = P.fi[g]; if (f && f.type) { const Lg = [net(), net(), net()], Ng = net(); add('RCD4', f.type, [L[0], L[1], L[2], N0, Lg[0], Lg[1], Lg[2], Ng], { sw: f.on === 0 ? 0 : 1, hx: { role: 'rcd', g } }); grp[g + 1] = { L: Lg, N: Ng }; } });
+    const HK = h.hak && h.hak.fuse ? (() => { const m = [net(), net(), net()]; [0, 1, 2].forEach(k => add('LSS', h.hak.fuse, [L[k], m[k]], { sw: h.hak.on === 0 ? 0 : 1, hx: { role: 'hak', k } })); return m; })() : L;
+    const P = h.panel || newHouse().panel, grp = [{ L: HK, N: N0 }];
+    [0, 1].forEach(g => { const f = P.fi[g]; if (f && f.type) { const Lg = [net(), net(), net()], Ng = net(); add('RCD4', f.type, [HK[0], HK[1], HK[2], N0, Lg[0], Lg[1], Lg[2], Ng], { sw: f.on === 0 ? 0 : 1, hx: { role: 'rcd', g } }); grp[g + 1] = { L: Lg, N: Ng }; } });
     const roots = [];
     P.slots.forEach((s, i) => {
       if (!s || !s.ls) return; const g = s.fi > 0 && grp[s.fi] ? grp[s.fi] : grp[0], sw = s.on === 0 ? 0 : 1;
@@ -131,7 +141,14 @@
       const ph = ups.three ? (c.pi || 1) : ups.ph, Lin = ups.three ? ups.L[ph - 1] : ups.L, Ln = net(), Nn = net(), Pn = net();
       add('CABLE', v, [Lin, Ln], { hx: { role: 'cab', c: c.id, w: 'L' }, defect: bad });
       add('CABLE', v, [ups.N, Nn], { hx: { role: 'cab', c: c.id, w: 'N' } }); add('CABLE', v, [ups.PE, Pn], { hx: { role: 'cab', c: c.id, w: 'PE' } });
-      cabPh[c.id] = ph; return single(Ln, Nn, Pn, ph);
+      cabPh[c.id] = ph; const sn = single(Ln, Nn, Pn, ph); if (ups.ctl) sn.ctl = ups.ctl; return sn;
+    }
+    /* Wechselschalter-Adern (zwei Wechseldrähte) über eine Leitung führen: gibt die Netze hinter der Leitung zurück */
+    function trav(cc, T1, T2, Nn, Pn, ph) {
+      const r = route(h, cc), v = cc.s + 'mm2 ' + (r.ok ? r.len : 10).toFixed(1) + 'm', a = net(), b = net(), n2 = net(), p2 = net(); cabPh[cc.id] = ph; cabUp3[cc.id] = false;
+      add('CABLE', v, [T1, a], { hx: { role: 'cab', c: cc.id, w: 'T1' }, defect: cc.bad ? 'open' : undefined }); add('CABLE', v, [T2, b], { hx: { role: 'cab', c: cc.id, w: 'T2' } });
+      add('CABLE', v, [Nn, n2], { hx: { role: 'cab', c: cc.id, w: 'N' } }); add('CABLE', v, [Pn, p2], { hx: { role: 'cab', c: cc.id, w: 'PE' } });
+      return [a, b, n2, p2];
     }
     function down(o, nets, via, skip) {
       const kids = (adj[o.id] || []).filter(c => c !== via && c !== skip);
@@ -139,11 +156,15 @@
         const other = obj(h, c.a === o.id ? c.b : c.a); if (!other || other.t === 'panel') return;
         if (!route(h, c).ok) { warn.push('Leitung zu ' + objName(h, other) + ' erreicht den Raum nicht'); return; }
         if (visited.has(other.id)) { warn.push('Leitung führt im Kreis (Ring): ' + objName(h, other)); return; }
-        arrive(other, c, nets, o);
+        if (o.t === 'tast' && other.t !== 'tast') { warn.push('Vom Taster geht nur die Steuerleitung zu weiteren Tastern weiter, nicht zu ' + objName(h, other)); return; }
+        arrive(other, c, other.t === 'tast' && nets.alt ? nets.alt : nets, o);
       });
     }
     function arrive(o, c, ups, from) {
       const needs3 = o.t === 'dev3' || o.t === 'sock3';
+      if (o.t === 'swk') { warn.push('Der Kreuzschalter gehört zwischen zwei Wechselschalter (Leitung vom ersten Wechselschalter zum Kreuzschalter und weiter zum zweiten)'); return; }
+      if (o.t === 'wet') { warn.push('Dusche und Badewanne bekommen keine Leitung'); return; }
+      if (o.t === 'tast' && !ups.ctl && !ups.alt) { warn.push('Ein Taster gehört an die Steuerleitung eines Stromstoßschalters'); return; }
       if (needs3 && !(c.ph3 && ups.three)) { warn.push(objName(h, o) + ' braucht eine Drehstromleitung (5-adrig) an einem dreipoligen Abgang'); return; }
       let n = cableParts(c, ups); if (!n) return;
       visited.add(o.id); powered.add(o.id); slotOf[o.id] = curSlot; up[o.id] = c.id;
@@ -162,8 +183,24 @@
           if (o.motor) add('MOTOR3', '400V ' + o.w + 'W', [Ld[0], Ld[1], Ld[2], n.PE], { hx: { role: 'motor', o: o.id } });
           else [0, 1, 2].forEach(k => add('SD', (o.w / 3) + 'W', [Ld[k], n.N, n.PE], { sw: 0, hx: { role: 'devR', o: o.id, k } }));
         }
+      } else if (o.t === 'imp') {
+        const A1 = net(), Lo = net(); add('IMP', '230V', [A1, n.N, n.L, Lo], { hx: { role: 'imp', o: o.id } });
+        dn = Object.assign(mk1(Lo, n.N, n.PE, n.ph), { alt: Object.assign(mk1(n.L, n.N, n.PE, n.ph), { ctl: A1 }) });
+      } else if (o.t === 'tast') {
+        add('PB', '', [n.L, n.ctl], { hx: { role: 'tast', o: o.id } }); dn = Object.assign(mk1(n.L, n.N, n.PE, n.ph), { ctl: n.ctl, alt: ups.alt });
       } else if (o.t === 'swc') {
-        const partner = o.partner && obj(h, o.partner), pc = partner && (adj[o.id] || []).find(x => x !== c && (x.a === partner.id || x.b === partner.id));
+        const partner = o.partner && obj(h, o.partner); let pc = partner && (adj[o.id] || []).find(x => x !== c && (x.a === partner.id || x.b === partner.id));
+        let kz = null, k1c = null, k2c = null;
+        if (partner && !pc) (adj[o.id] || []).forEach(x => { if (x === c || kz) return; const oo = obj(h, x.a === o.id ? x.b : x.a); if (oo && oo.t === 'swk' && !visited.has(oo.id)) { const y = (adj[oo.id] || []).find(z => z !== x && (z.a === partner.id || z.b === partner.id)); if (y) { kz = oo; k1c = x; k2c = y; } } });
+        if (partner && kz && !visited.has(partner.id)) {
+          const T1 = net(), T2 = net(); add('SPDT', '', [n.L, T1, T2], { sw: o.on ? 1 : 0, hx: { role: 'swc', o: o.id } });
+          const [T1b, T2b, Nb, Pb] = trav(k1c, T1, T2, n.N, n.PE, n.ph); visited.add(kz.id); powered.add(kz.id); slotOf[kz.id] = curSlot; phOf[kz.id] = n.ph; up[kz.id] = k1c.id;
+          const T1c = net(), T2c = net(); add('KREUZ', '', [T1b, T2b, T1c, T2c], { sw: kz.on ? 1 : 0, hx: { role: 'swk', o: kz.id } });
+          const [T1d, T2d, Nd, Pd] = trav(k2c, T1c, T2c, Nb, Pb, n.ph); visited.add(partner.id); powered.add(partner.id); slotOf[partner.id] = curSlot; phOf[partner.id] = n.ph; up[partner.id] = k2c.id;
+          const Lo = net(); add('SPDT', '', [Lo, T1d, T2d], { sw: partner.on ? 1 : 0, hx: { role: 'swc', o: partner.id } });
+          down(partner, mk1(Lo, Nd, Pd, n.ph), k2c); down(o, mk1(n.L, n.N, n.PE, n.ph), c, k1c);
+          return;
+        }
         if (partner && pc && !visited.has(partner.id)) {
           const T1 = net(), T2 = net(); add('SPDT', '', [n.L, T1, T2], { sw: o.on ? 1 : 0, hx: { role: 'swc', o: o.id } });
           visited.add(partner.id); powered.add(partner.id); slotOf[partner.id] = curSlot; phOf[partner.id] = n.ph; up[partner.id] = pc.id;
@@ -209,7 +246,8 @@
       const x = p.hx; if (!x) return;
       if (x.role === 'lss') { const s = h.panel.slots[x.slot]; if (s) s.on = p.sw ? 1 : 0; }
       else if (x.role === 'rcd') { const f = h.panel.fi[x.g]; if (f) f.on = p.sw ? 1 : 0; }
-      else { const o = x.o != null ? obj(h, x.o) : null; if (!o) return; if (x.role === 'sw' || x.role === 'swc') o.on = p.sw ? 1 : 0; else if (x.role === 'dev') o.on = p.sw ? 1 : 0; else if (x.role === 'sd') o.f = p.sw ? 1 : 0; }
+      else if (x.role === 'hak') { if (h.hak) h.hak.on = p.sw ? 1 : 0; }
+      else { const o = x.o != null ? obj(h, x.o) : null; if (!o) return; if (x.role === 'sw' || x.role === 'swc' || x.role === 'swk') o.on = p.sw ? 1 : 0; else if (x.role === 'dev') o.on = p.sw ? 1 : 0; else if (x.role === 'sd') o.f = p.sw ? 1 : 0; }
     });
   }
 
@@ -217,10 +255,13 @@
     const S = () => api.sch, H = () => api.sch.haus;
     /* ---------------- Ansicht ---------------- */
     const cam = { yaw: 0.62, pitch: 0.62, s: 30, ox: 0, oy: 0, cx: 4, cy: 4 };
-    const stt = { tool: 'sel', place: null, cabA: null, sel: null, hover: null, drag: null, pan: null, rubber: null, ptrs: new Map(), pinch: null, top: false, dev: DEVS[0], dev3: DEV3[0] };
+    const stt = { view: 0, meas: null, tool: 'sel', place: null, cabA: null, sel: null, hover: null, drag: null, pan: null, rubber: null, ptrs: new Map(), pinch: null, top: false, dev: DEVS[0], dev3: DEV3[0] };
     const proj = (x, y, z) => { const dx = x - cam.cx, dy = y - cam.cy, c = Math.cos(cam.yaw), s = Math.sin(cam.yaw), xr = dx * c - dy * s, yr = dx * s + dy * c; return [cam.ox + xr * cam.s, cam.oy - (z * Math.cos(cam.pitch) + yr * Math.sin(cam.pitch)) * cam.s, yr]; };
     const nyr = (nx, ny) => nx * Math.sin(cam.yaw) + ny * Math.cos(cam.yaw);
     const topView = () => cam.pitch > 1.4;
+    const vr = r => r.st || rlv(r) === stt.view, vo = (h, o) => olv(h, o) === stt.view;
+    const hasOG = h => !!h && h.rooms.some(r => rlv(r) === 1 || r.st);
+    const loc = (h, o) => { const r = room(h, o.room); if (!r) return '?'; const og = hasOG(h); return r.n + (og ? (olv(h, o) ? ' OG' : ' EG') : ''); };
     /* Bildschirmpunkt -> Welt auf einer Ebene */
     function unplane(sx, sy, plane) {
       const xr = (sx - cam.ox) / cam.s, t = (cam.oy - sy) / cam.s, cy = Math.cos(cam.yaw), sy_ = Math.sin(cam.yaw), cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
@@ -253,9 +294,10 @@
     let gang = { src: null, groups: [] };
     const gangCheck = () => {
       const ps = S().parts;
-      if (gang.src !== ps) { const m = {}; ps.forEach(p => { if (p.hx && p.hx.role === 'lss') (m[p.hx.slot] = m[p.hx.slot] || []).push(p); }); gang = { src: ps, groups: Object.values(m).filter(g => g.length > 1) }; }
+      if (gang.src !== ps) { const m = {}; ps.forEach(p => { if (p.hx && p.hx.role === 'lss') (m[p.hx.slot] = m[p.hx.slot] || []).push(p); else if (p.hx && p.hx.role === 'hak') (m.hak = m.hak || []).push(p); }); gang = { src: ps, groups: Object.values(m).filter(g => g.length > 1) }; }
       gang.groups.forEach(g => { if (g.some(p => !p.sw) && g.some(p => p.sw)) g.forEach(p => { if (p.sw) api.setSw(p.id, 0); }); });
     };
+    const meter = { kwh: 0, p: 0, speed: 1 };
     root.LAB_STEP = dt => {
       if (!api.sim || !api.circ) return;
       gangCheck();
@@ -266,7 +308,9 @@
         let r = rms[p.id]; if (!r) r = rms[p.id] = { u2: 0, i2: 0, p: 0 };
         r.u2 += al * (v * v - r.u2); const ii = isFinite(i) ? i : 0; r.i2 += al * (ii * ii - r.i2); r.p += al * (v * ii - r.p);
       });
+      { let P = 0; S().parts.forEach(p => { if (p.hx && (p.hx.role === 'lamp' || p.hx.role === 'devR' || p.hx.role === 'motor') && rms[p.id]) P += Math.max(0, rms[p.id].p); }); meter.p = P; meter.kwh += P / 1000 * dt / 3600 * meter.speed; }
     };
+    root.HAUS_METER = meter;
     const U = pid => { const r = rms[pid]; return r ? Math.sqrt(Math.max(r.u2, 0)) : 0; };
     const I = pid => { const r = rms[pid]; return r ? Math.sqrt(Math.max(r.i2, 0)) : 0; };
 
@@ -297,7 +341,10 @@
         const w = k * 1.5; cx.fillStyle = o.t === 'junc' ? '#a8744c' : '#f2f4f6'; cx.strokeStyle = '#2a323b'; cx.lineWidth = 1.5; cx.beginPath(); (cx.roundRect ? cx.roundRect(x - w / 2, y - w / 2, w, w, 3) : cx.rect(x - w / 2, y - w / 2, w, w)); cx.fill(); cx.stroke();
         cx.fillStyle = '#2a323b';
         if (o.t === 'sock') { cx.beginPath(); cx.arc(x - w * .18, y, w * .09, 0, 7); cx.arc(x + w * .18, y, w * .09, 0, 7); cx.fill(); cx.beginPath(); cx.arc(x, y, w * .3, 0, 7); cx.stroke(); }
-        else if (o.t === 'swi' || o.t === 'swc') { cx.fillStyle = o.on ? '#4cd964' : '#8a949f'; cx.fillRect(x - w * .22, y - w * .32 + (o.on ? 0 : w * .32), w * .44, w * .32); if (o.t === 'swc') { cx.fillStyle = '#2a323b'; cx.font = '700 ' + Math.round(k * .7) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText('W', x, y + w * .08); } }
+        else if (o.t === 'tast') { cx.fillStyle = '#d7dbe0'; cx.beginPath(); cx.arc(x, y, w * .3, 0, 7); cx.fill(); cx.stroke(); if (partOf(o.id, 'tast') && partOf(o.id, 'tast').pressed) { cx.fillStyle = '#4cd964'; cx.beginPath(); cx.arc(x, y, w * .17, 0, 7); cx.fill(); } }
+        else if (o.t === 'imp') { cx.fillStyle = '#c9ced4'; cx.fillRect(x - w * .38, y - w * .38, w * .76, w * .76); cx.strokeRect(x - w * .38, y - w * .38, w * .76, w * .76); cx.fillStyle = '#2a323b'; cx.font = '700 ' + Math.round(k * .75) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText('SS', x, y + k * .27); }
+        else if (o.t === 'wet') { cx.fillStyle = '#7cc4ee'; cx.fillRect(x - w * .45, y - w * .3, w * .9, w * .6); cx.strokeRect(x - w * .45, y - w * .3, w * .9, w * .6); cx.fillStyle = '#10324a'; cx.font = '700 ' + Math.round(k * .75) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText('~', x, y + k * .27); }
+        else if (o.t === 'swi' || o.t === 'swc' || o.t === 'swk') { cx.fillStyle = o.on ? '#4cd964' : '#8a949f'; cx.fillRect(x - w * .22, y - w * .32 + (o.on ? 0 : w * .32), w * .44, w * .32); if (o.t === 'swc' || o.t === 'swk') { cx.fillStyle = '#2a323b'; cx.font = '700 ' + Math.round(k * .7) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText(o.t === 'swk' ? 'K' : 'W', x, y + w * .08); } }
         else if (o.t === 'dev') { cx.fillStyle = b > 0.2 ? '#ff7a45' : '#b8a69a'; cx.fillRect(x - w * .4, y - w * .3, w * .8, w * .6); if (b > 0.2) { cx.fillStyle = 'rgba(255,120,60,.35)'; cx.beginPath(); cx.arc(x, y, w * 1.1, 0, 7); cx.fill(); } }
         if (o.t === 'dev3' || o.t === 'sock3') {
           cx.fillStyle = o.t === 'sock3' ? '#c0392b' : (b > 0.2 ? '#ff7a45' : '#b8a69a'); if (o.t === 'sock3') { cx.beginPath(); cx.arc(x, y, w * .42, 0, 7); cx.fill(); } else cx.fillRect(x - w * .42, y - w * .34, w * .84, w * .68);
@@ -332,7 +379,7 @@
       const sim = isSim() && !!api.circ, k = clamp(cam.s * 0.42, 7, 24), top = topView();
       // Raster am Boden
       cx.fillStyle = '#0d1217'; cx.fillRect(0, 0, W, Ht);
-      const rs = h.rooms.map(r => ({ r, d: proj(r.x + r.w / 2, r.y + r.d / 2, 0)[2] })).sort((a, b) => b.d - a.d);
+      const rs = h.rooms.filter(vr).map(r => ({ r, d: proj(r.x + r.w / 2, r.y + r.d / 2, 0)[2] })).sort((a, b) => b.d - a.d);
       // Böden
       rs.forEach(({ r }) => {
         const pts = [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.d], [r.x, r.y + r.d]].map(p => proj(p[0], p[1], 0));
@@ -356,28 +403,31 @@
         });
         // Raumname auf dem Boden
         const c = proj(r.x + r.w / 2, r.y + r.d / 2, 0.02); cx.fillStyle = 'rgba(255,255,255,.55)'; cx.font = '600 ' + clamp(Math.round(cam.s * .45), 10, 18) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText(r.n, c[0], c[1]);
-        h.objs.filter(o => o.room === r.id && o.t !== 'lamp').forEach(o => drawObj(cx, o, h, k, sim));
+        h.objs.filter(o => o.room === r.id && o.t === 'wet' && vo(h, o)).forEach(o => { const p0 = pos(h, o), z0 = []; for (let a = 0; a <= 24; a++) { const t0 = a / 24 * Math.PI * 2; z0.push(proj(p0[0] + Math.cos(t0) * 0.6, p0[1] + Math.sin(t0) * 0.6, 0.03)); } cx.beginPath(); z0.forEach((q, i) => (i ? cx.lineTo(q[0], q[1]) : cx.moveTo(q[0], q[1]))); cx.closePath(); cx.fillStyle = 'rgba(80,170,255,.18)'; cx.fill(); cx.setLineDash([4, 3]); cx.strokeStyle = 'rgba(120,200,255,.8)'; cx.stroke(); cx.setLineDash([]); });
+        h.objs.filter(o => o.room === r.id && o.t !== 'lamp' && vo(h, o)).forEach(o => drawObj(cx, o, h, k, sim));
         // vordere Wände: nur Kante und niedriger Sockel (Durchsicht)
         front.forEach(([a, b]) => { const pts = [proj(a[0], a[1], 0), proj(b[0], b[1], 0), proj(b[0], b[1], 0.25), proj(a[0], a[1], 0.25)]; cx.beginPath(); pts.forEach((p, j) => (j ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.closePath(); cx.fillStyle = 'rgba(180,195,210,.35)'; cx.fill(); cx.strokeStyle = 'rgba(210,220,232,.7)'; cx.lineWidth = 1.5; cx.stroke(); const t1 = proj(a[0], a[1], h.h), t2 = proj(b[0], b[1], h.h); cx.strokeStyle = 'rgba(210,220,232,.35)'; cx.beginPath(); cx.moveTo(t1[0], t1[1]); cx.lineTo(t2[0], t2[1]); cx.stroke(); });
         if (top) { const pts = [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.d], [r.x, r.y + r.d]].map(p => proj(p[0], p[1], 0)); cx.beginPath(); pts.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.closePath(); cx.strokeStyle = '#d6dde5'; cx.lineWidth = 3; cx.stroke(); }
       });
       // Leitungen
       h.cables.forEach(c => {
-        const r = route(h, c); if (!r.ok) return; const pp = r.pts.map(p => proj(p[0], p[1], p[2]));
+        const r = route(h, c); if (!r.ok) return; const A0 = obj(h, c.a), B0 = obj(h, c.b), va = A0 && vo(h, A0), vb = B0 && vo(h, B0); if (!va && !vb) return; const pp = r.pts.map(p => proj(p[0], p[1], p[2]));
+        if (!(va && vb)) cx.setLineDash([6, 5]);
         const col = cabColor(c, sim), sel = stt.sel && stt.sel.t === 'cab' && stt.sel.id === c.id;
         cx.lineJoin = 'round'; cx.lineCap = 'round'; cx.strokeStyle = 'rgba(0,0,0,.55)'; cx.lineWidth = 2 + c.s * .55 + 2; cx.beginPath(); pp.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.stroke();
         cx.strokeStyle = sel ? '#3b9eff' : col; cx.lineWidth = 1.5 + c.s * .55; cx.beginPath(); pp.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.stroke();
         if (c.bad && !sim) { /* defekte Leitung bleibt unsichtbar markiert */ }
-        cabHits.push({ id: c.id, pp });
+        cx.setLineDash([]); cabHits.push({ id: c.id, pp });
       });
       // Deckenlampen zuletzt (hängen über allem)
-      h.objs.filter(o => o.t === 'lamp').forEach(o => drawObj(cx, o, h, k, sim));
+      h.objs.filter(o => o.t === 'lamp' && vo(h, o)).forEach(o => drawObj(cx, o, h, k, sim));
       // Vorschau
       if (stt.rubber) { const a = stt.rubber, pts = [[a.x0, a.y0], [a.x1, a.y0], [a.x1, a.y1], [a.x0, a.y1]].map(p => proj(p[0], p[1], 0)); cx.beginPath(); pts.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.closePath(); cx.fillStyle = 'rgba(59,158,255,.25)'; cx.fill(); cx.strokeStyle = '#3b9eff'; cx.lineWidth = 2; cx.stroke(); cx.fillStyle = '#fff'; cx.font = '700 13px sans-serif'; cx.textAlign = 'center'; const c = proj((a.x0 + a.x1) / 2, (a.y0 + a.y1) / 2, 0); cx.fillText(num(Math.abs(a.x1 - a.x0), 1) + ' × ' + num(Math.abs(a.y1 - a.y0), 1) + ' m', c[0], c[1]); }
       if (stt.ghost) { const g = stt.ghost; const o = g.o, p = pos(h, Object.assign({ room: g.room }, o)); const q = proj(p[0], p[1], p[2]); cx.globalAlpha = .6; cx.fillStyle = '#3b9eff'; cx.beginPath(); cx.arc(q[0], q[1], k, 0, 7); cx.fill(); cx.globalAlpha = 1; }
       if (stt.cabA) { const a = obj(h, stt.cabA); if (a) { const p = pos(h, a), q = proj(p[0], p[1], p[2]); cx.fillStyle = '#ffb340'; cx.font = '600 13px sans-serif'; cx.textAlign = 'left'; cx.fillText('Leitung von ' + objName(h, a) + ' … Ziel antippen', 12, Ht - 16); } }
       // Hinweise
       cx.fillStyle = 'rgba(255,255,255,.55)'; cx.font = '12px sans-serif'; cx.textAlign = 'left';
+      if (hasOG(h)) { cx.fillStyle = 'rgba(255,255,255,.8)'; cx.font = '700 15px sans-serif'; cx.textAlign = 'right'; cx.fillText(stt.view ? 'Obergeschoss' : 'Erdgeschoss', W - 14, Ht - 16); cx.textAlign = 'left'; }
       if (!h.rooms.length) { cx.fillStyle = 'rgba(255,255,255,.8)'; cx.font = '16px sans-serif'; cx.textAlign = 'center'; cx.fillText('Noch leer: Wähle unten „Raum“ und ziehe ein Rechteck auf, oder lade ein Haus über „Beispiele“.', W / 2, Ht / 2); }
       if (lastWarn.length && !sim) { cx.fillStyle = '#ffb340'; cx.font = '600 12px sans-serif'; cx.textAlign = 'left'; lastWarn.slice(0, 3).forEach((t, i) => cx.fillText('⚠ ' + t, 12, 20 + i * 16)); }
     };
@@ -394,19 +444,19 @@
     const snap = (v, g) => Math.round(v / g) * g;
     /* Fläche unter dem Zeiger: Wand (für Schalter, Steckdosen, Geräte) oder Boden (für Deckenlampen) */
     function pick(sx, sy, type) {
-      const h = H(); if (!h.rooms.length) return null;
+      const h = H(); if (!h.rooms.length) return null; const RM = h.rooms.filter(vr);
       if (type === 'lamp') {
         const p = unplane(sx, sy, { z: 0 }); if (!p) return null;
-        const r = h.rooms.find(r => p.x >= r.x + 0.2 && p.x <= r.x + r.w - 0.2 && p.y >= r.y + 0.2 && p.y <= r.y + r.d - 0.2); if (!r) return null;
+        const r = RM.find(r => p.x >= r.x + 0.2 && p.x <= r.x + r.w - 0.2 && p.y >= r.y + 0.2 && p.y <= r.y + r.d - 0.2); if (!r) return null;
         return { room: r.id, face: 'C', u: snap(p.x - r.x, 0.25), v: snap(p.y - r.y, 0.25), z: h.h };
       }
       if (topView()) {
         const p = unplane(sx, sy, { z: 0 }); if (!p) return null; let best = null, bd = 0.9;
-        h.rooms.forEach(r => { [['S', Math.abs(p.y - r.y), p.x - r.x, r.w, p.y >= r.y - 0.9 && p.y <= r.y + 0.9], ['N', Math.abs(p.y - (r.y + r.d)), p.x - r.x, r.w], ['W', Math.abs(p.x - r.x), p.y - r.y, r.d], ['E', Math.abs(p.x - (r.x + r.w)), p.y - r.y, r.d]].forEach(([f, d, u, len]) => { if (d < bd && u > 0.2 && u < len - 0.2) { bd = d; best = { room: r.id, face: f, u: snap(u, 0.25), z: (TYPES[type] || {}).z || 1 }; } }); });
+        RM.forEach(r => { [['S', Math.abs(p.y - r.y), p.x - r.x, r.w, p.y >= r.y - 0.9 && p.y <= r.y + 0.9], ['N', Math.abs(p.y - (r.y + r.d)), p.x - r.x, r.w], ['W', Math.abs(p.x - r.x), p.y - r.y, r.d], ['E', Math.abs(p.x - (r.x + r.w)), p.y - r.y, r.d]].forEach(([f, d, u, len]) => { if (d < bd && u > 0.2 && u < len - 0.2) { bd = d; best = { room: r.id, face: f, u: snap(u, 0.25), z: (TYPES[type] || {}).z || 1 }; } }); });
         return best;
       }
       let best = null;
-      h.rooms.forEach(r => {
+      RM.forEach(r => {
         [['S', { y: r.y }, 0, 1], ['N', { y: r.y + r.d }, 0, -1], ['W', { x: r.x }, 1, 0], ['E', { x: r.x + r.w }, -1, 0]].forEach(([f, pl, nx, ny]) => {
           if (nyr(nx, ny) >= -0.15) return; const p = unplane(sx, sy, pl); if (!p) return;
           const u = f === 'S' || f === 'N' ? p.x - r.x : p.y - r.y, len = f === 'S' || f === 'N' ? r.w : r.d;
@@ -419,6 +469,7 @@
     function newObj(t, pk) {
       const h = H(), T = TYPES[t], o = { id: nid(h), t, room: pk.room, face: pk.face, u: pk.u, z: t === 'lamp' ? h.h : (t === 'sock' || t === 'dev' || t === 'sock3' || t === 'dev3' ? T.z : (pk.z == null ? T.z : T.z)), on: t === 'swi' || t === 'swc' ? 0 : 1 };
       if (pk.face === 'C') o.v = pk.v;
+      { const rr = room(h, pk.room); if (rr && rr.st) o.lv = stt.view; }
       if (t === 'lamp') o.w = 60; if (t === 'dev') { o.n = stt.dev[0]; o.w = stt.dev[1]; } if (t === 'sock') o.w = 0;
       if (t === 'dev3') { o.n = stt.dev3[0]; o.w = stt.dev3[1]; if (stt.dev3[2]) o.motor = 1; } if (t === 'sock3') o.w = 0;
       return o;
@@ -427,12 +478,14 @@
     function addCable(a, b, slot) {
       const h = H(), A = obj(h, a), B = obj(h, b); if (!A || !B || a === b) return false;
       if (h.cables.some(c => (c.a === a && c.b === b) || (c.a === b && c.b === a))) { api.toast('Diese Leitung gibt es schon'); return false; }
+      if (A.t === 'wet' || B.t === 'wet') { api.toast('Dusche und Badewanne bekommen keine Leitung. Sie zeigen nur den Schutzbereich.'); return false; }
       const probe = { a, b, s: 1.5 }, r = route(h, probe); if (!r.ok) { api.toast(r.why); return false; }
       const heavy = (o => o.t === 'sock' || (o.t === 'dev' && o.w > 800))(A) || (o => o.t === 'sock' || (o.t === 'dev' && o.w > 800))(B);
       const is3 = o => o.t === 'dev3' || o.t === 'sock3', pn = A.t === 'panel' ? A : (B.t === 'panel' ? B : null);
       const c = { id: nid(h), a, b, s: heavy || is3(A) || is3(B) ? 2.5 : 1.5 }; if (pn) c.slot = slot;
       if (is3(A) || is3(B) || (pn && h.panel.slots[slot] && h.panel.slots[slot].p3) || h.cables.some(x => x.ph3 && (x.a === a || x.b === a || x.a === b || x.b === b))) { if (is3(A) || is3(B) || (pn && h.panel.slots[slot] && h.panel.slots[slot].p3)) c.ph3 = 1; }
       if (A.t === 'swc' && B.t === 'swc' && !A.partner && !B.partner) { A.partner = B.id; B.partner = A.id; }
+      { const K = A.t === 'swk' ? A : B.t === 'swk' ? B : null, X = K === A ? B : A; if (K && X.t === 'swc') { const z = h.cables.find(q => q.a === K.id || q.b === K.id), Y = z ? obj(h, z.a === K.id ? z.b : z.a) : null; if (Y && Y.t === 'swc' && !X.partner && !Y.partner) { X.partner = Y.id; Y.partner = X.id; } } }
       h.cables.push(c); return c;
     }
     function chooseSlot(done) {
@@ -445,7 +498,8 @@
     const partsOf = (oid, role) => S().parts.filter(p => p.hx && p.hx.o === oid && p.hx.role === role);
     function operate(o) {
       const h = H();
-      if (o.t === 'swi' || o.t === 'swc') { o.on = o.on ? 0 : 1; const p = partOf(o.id, o.t === 'swi' ? 'sw' : 'swc'); if (p) { api.setSw(p.id, o.on); api.commit(true, true); } stat('hausSchalter', 1); }
+      if (o.t === 'tast') { const p = partOf(o.id, 'tast'); if (p) { api.pressBtn(p.id); setTimeout(() => { const q = partOf(o.id, 'tast'); if (q) { api.releaseBtn(q.id); api.draw(); } }, 250); stat('hausSchalter', 1); } }
+      else if (o.t === 'swi' || o.t === 'swc' || o.t === 'swk') { o.on = o.on ? 0 : 1; const p = partOf(o.id, o.t === 'swi' ? 'sw' : (o.t === 'swk' ? 'swk' : 'swc')); if (p) { api.setSw(p.id, o.on); api.commit(true, true); } stat('hausSchalter', 1); }
       else if ((o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3') && o.w > 0) { o.on = o.on === 0 ? 1 : 0; partsOf(o.id, 'dev').forEach(p => api.setSw(p.id, o.on)); api.commit(true, true); if (o.t === 'sock3' || o.t === 'dev3') stat('hausDrehstrom', 1); }
       api.refreshUI();
     }
@@ -476,6 +530,7 @@
     function down(p) {
       const h = H(), sim = isSim(); stt.moved = false; stt.start = p;
       const oid = hitObj(p.x, p.y);
+      if (sim && stt.tool === 'meas') { const cid0 = oid == null ? hitCab(p.x, p.y) : null; stt.meas = oid != null ? { t: 'obj', id: oid } : cid0 ? { t: 'cab', id: cid0 } : null; stt.sel = stt.meas; api.refreshUI(); api.draw(); return; }
       if (sim) { if (oid != null) { const o = obj(h, oid); stt.sel = { t: 'obj', id: oid }; operate(o); api.refreshUI(); api.draw(); } else { const cid = hitCab(p.x, p.y); stt.sel = cid ? { t: 'cab', id: cid } : null; stt.pan = { x: p.x, y: p.y, ox: cam.ox, oy: cam.oy }; api.refreshUI(); api.draw(); } return; }
       const tool = stt.tool;
       if (tool === 'sel') {
@@ -506,12 +561,12 @@
     function move(p) {
       const h = H(); if (!stt.start) return; if (Math.hypot(p.x - stt.start.x, p.y - stt.start.y) > 4) stt.moved = true;
       if (stt.rubber) { const w = unplane(p.x, p.y, { z: 0 }); if (w) { stt.rubber.x1 = snap(w.x, 0.5); stt.rubber.y1 = snap(w.y, 0.5); api.draw(); } return; }
-      if (stt.drag && stt.moved) { const o = obj(h, stt.drag.id); if (!o) return; const pk = pick(p.x, p.y, o.t); if (pk && !(o.t === 'panel' && false)) { o.room = pk.room; o.face = pk.face; o.u = pk.u; if (pk.face === 'C') { o.v = pk.v; o.z = h.h; } else { o.z = (o.t === 'sock' || o.t === 'dev' || o.t === 'panel' || o.t === 'swi' || o.t === 'swc' || o.t === 'junc') ? o.z : o.z; delete o.v; } stt.drag.moved = true; api.draw(); } return; }
+      if (stt.drag && stt.moved) { const o = obj(h, stt.drag.id); if (!o) return; const pk = pick(p.x, p.y, o.t); if (pk && !(o.t === 'panel' && false)) { o.room = pk.room; { const rr = room(h, pk.room); if (rr && rr.st) o.lv = stt.view; else delete o.lv; } o.face = pk.face; o.u = pk.u; if (pk.face === 'C') { o.v = pk.v; o.z = h.h; } else { o.z = (o.t === 'sock' || o.t === 'dev' || o.t === 'panel' || o.t === 'swi' || o.t === 'swc' || o.t === 'junc') ? o.z : o.z; delete o.v; } stt.drag.moved = true; api.draw(); } return; }
       if (stt.pan) { stt.userCam = true; cam.ox = stt.pan.ox + p.x - stt.pan.x; cam.oy = stt.pan.oy + p.y - stt.pan.y; api.draw(); }
     }
     function up(p, cancelled) {
       const h = H();
-      if (stt.rubber) { const a = stt.rubber; stt.rubber = null; const x0 = Math.min(a.x0, a.x1), y0 = Math.min(a.y0, a.y1), w = Math.abs(a.x1 - a.x0), d = Math.abs(a.y1 - a.y0); if (!cancelled && w >= 2 && d >= 2) { if (h.rooms.some(r => x0 < r.x + r.w - EPS && x0 + w > r.x + EPS && y0 < r.y + r.d - EPS && y0 + d > r.y + EPS)) api.toast('Der Raum überschneidet einen anderen Raum'); else { const r = { id: nid(h), n: 'Raum ' + (h.rooms.length + 1), x: x0, y: y0, w, d, c: ['#3b4756', '#44503f', '#4d4458', '#3f5253', '#56493f'][h.rooms.length % 5] }; h.rooms.push(r); stt.sel = { t: 'room', id: r.id }; apply(); HAUS_FITSOFT(); return; } } else if (!cancelled) api.toast('Zu klein: Räume sind mindestens 2 × 2 m'); api.draw(); return; }
+      if (stt.rubber) { const a = stt.rubber; stt.rubber = null; const x0 = Math.min(a.x0, a.x1), y0 = Math.min(a.y0, a.y1), w = Math.abs(a.x1 - a.x0), d = Math.abs(a.y1 - a.y0); if (!cancelled && w >= 2 && d >= 2) { if (h.rooms.filter(vr).some(r => x0 < r.x + r.w - EPS && x0 + w > r.x + EPS && y0 < r.y + r.d - EPS && y0 + d > r.y + EPS)) api.toast('Der Raum überschneidet einen anderen Raum auf dieser Ebene'); else { const r = { id: nid(h), n: 'Raum ' + (h.rooms.length + 1), x: x0, y: y0, w, d, c: ['#3b4756', '#44503f', '#4d4458', '#3f5253', '#56493f'][h.rooms.length % 5] }; if (stt.view) r.lv = 1; h.rooms.push(r); stt.sel = { t: 'room', id: r.id }; apply(); HAUS_FITSOFT(); return; } } else if (!cancelled) api.toast('Zu klein: Räume sind mindestens 2 × 2 m'); api.draw(); return; }
       if (stt.drag) { const d = stt.drag; stt.drag = null; if (d.moved) { const o = obj(h, d.id); const bad = h.cables.some(c => (c.a === o.id || c.b === o.id) && !route(h, c).ok); if (bad) { Object.assign(h, JSON.parse(d.snapshot)); api.toast('Dort erreicht die Leitung den Nachbarraum nicht mehr'); api.draw(); api.refreshUI(); return; } apply(); } else api.refreshUI(); }
       stt.pan = null;
     }
@@ -524,12 +579,13 @@
       if (sim) h += chip('sel', '☝ Bedienen', true) + chip('reset', '↺ Zurück', false) + '<span class="sep"></span>';
       else {
         h += chip('sel', '☝ Auswahl', stt.tool === 'sel') + chip('room', '▭ Raum', stt.tool === 'room') + '<span class="sep"></span>';
-        [['sock', 'Steckdose'], ['swi', 'Schalter'], ['swc', 'Wechselschalter'], ['lamp', 'Lampe'], ['dev', 'Gerät'], ['dev3', 'Drehstromgerät'], ['sock3', 'CEE 400 V'], ['junc', 'Abzweigdose'], ['panel', 'Verteiler']].forEach(([t, n]) => { h += chip('place', TYPES[t].icon + ' ' + n, stt.tool === 'place' && stt.place === t, `data-t="${t}"`); });
+        [['sock', 'Steckdose'], ['swi', 'Schalter'], ['swc', 'Wechselschalter'], ['swk', 'Kreuzschalter'], ['tast', 'Taster'], ['imp', 'Stromstoßschalter'], ['wet', 'Dusche'], ['lamp', 'Lampe'], ['dev', 'Gerät'], ['dev3', 'Drehstromgerät'], ['sock3', 'CEE 400 V'], ['junc', 'Abzweigdose'], ['panel', 'Verteiler']].forEach(([t, n]) => { h += chip('place', TYPES[t].icon + ' ' + n, stt.tool === 'place' && stt.place === t, `data-t="${t}"`); });
         h += '<span class="sep"></span>' + chip('cable', '〰 Leitung', stt.tool === 'cable') + chip('del', '⌫ Löschen', stt.tool === 'del') + '<span class="sep"></span>';
       }
+      if (hasOG(H()) || !sim) h += chip('lv0', 'EG', stt.view === 0) + chip('lv1', 'OG', stt.view === 1) + '<span class="sep"></span>';
       h += chip('turnl', '↺', false) + chip('turnr', '↻', false) + chip('top', stt.top ? '◫ Schräg' : '◫ Oben', false) + chip('zin', '＋', false) + chip('zout', '−', false) + chip('fit', '⤢', false);
-      if (!sim) h += '<span class="sep"></span>' + chip('verteiler', '▤ Verteiler öffnen', false);
-      else h += '<span class="sep"></span>' + chip('verteiler', '▤ Verteiler', false);
+      if (!sim) h += '<span class="sep"></span>' + chip('verteiler', '▤ Verteiler öffnen', false) + chip('calc', '≈ Leitungen prüfen', false);
+      else h += '<span class="sep"></span>' + chip('verteiler', '▤ Verteiler', false) + chip('meas', '⌁ Multimeter', stt.tool === 'meas') + chip('calc', '≈ Leitungen', false);
       return h;
     };
     document.addEventListener('click', e => {
@@ -537,8 +593,11 @@
       const x = b.dataset.hx;
       if (x === 'sel' || x === 'room' || x === 'cable' || x === 'del') { stt.tool = x; stt.place = null; stt.cabA = null; stt.ghost = null; if (x === 'cable') api.toast('Erst das eine Gerät antippen, dann das andere'); }
       else if (x === 'place') { stt.tool = 'place'; stt.place = b.dataset.t; stt.ghost = null; }
+      else if (x === 'lv0' || x === 'lv1') { stt.view = x === 'lv1' ? 1 : 0; stt.sel = null; stt.cabA = null; stt.ghost = null; }
       else if (x === 'turnl') turn(-1); else if (x === 'turnr') turn(1); else if (x === 'top') toggleTop(); else if (x === 'zin') zoom(1.25); else if (x === 'zout') zoom(0.8); else if (x === 'fit') { root.HAUS_FIT(); api.draw(); }
       else if (x === 'verteiler') { openPanel(); return; }
+      else if (x === 'calc') { openCalc(); return; }
+      else if (x === 'meas') { stt.tool = stt.tool === 'meas' ? 'sel' : 'meas'; stt.meas = null; api.toast(stt.tool === 'meas' ? 'Multimeter: Gerät oder Leitung antippen' : 'Multimeter aus'); }
       else if (x === 'reset') { api.setSimMode(false); return; }
       api.refreshUI(); api.draw(); const pal = document.getElementById('pal'); if (pal) { const bar = root.HAUS_PALETTE(isSim()); pal.innerHTML = bar; }
     }, true);
@@ -553,8 +612,29 @@
       if (e.key === 'ArrowLeft') { turn(-1); e.preventDefault(); } else if (e.key === 'ArrowRight') { turn(1); e.preventDefault(); }
       else if (e.key === '+' || e.key === '=') zoom(1.2); else if (e.key === '-') zoom(0.83); else if (e.key === 'o' || e.key === 'O') toggleTop(); else if (e.key === '0') { root.HAUS_FIT(); api.draw(); }
     });
+    const b64u = u8 => { let s = ''; u8.forEach(b => { s += String.fromCharCode(b); }); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+    const unb64u = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; const b = atob(s), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; };
+    async function pipeBytes(u8, stream) { const r = new Response(new Blob([u8]).stream().pipeThrough(stream)); return new Uint8Array(await r.arrayBuffer()); }
+    async function houseCode(h) { const raw = new TextEncoder().encode(JSON.stringify(h)); if (typeof CompressionStream !== 'undefined') { try { return 'TFH1.' + b64u(await pipeBytes(raw, new CompressionStream('deflate-raw'))); } catch (e) {} } return 'TFH0.' + b64u(raw); }
+    async function houseFromCode(code) {
+      code = String(code || '').replace(/\s+/g, ''); const m = code.match(/^TFH([01])\.(.+)$/); if (!m) throw new Error('Das ist kein Haus-Code (er beginnt mit TFH).');
+      let u8 = unb64u(m[2]); if (m[1] === '1') { if (typeof DecompressionStream === 'undefined') throw new Error('Dieses Gerät kann den Code nicht lesen.'); u8 = await pipeBytes(u8, new DecompressionStream('deflate-raw')); }
+      const o = JSON.parse(new TextDecoder().decode(u8)); if (!o || !Array.isArray(o.rooms) || !Array.isArray(o.objs) || !Array.isArray(o.cables) || !o.panel) throw new Error('Der Code enthält kein Haus.'); return o;
+    }
+    root.LAB_EXTRA_MENU = () => [['hshare', 'Haus teilen oder laden (Code)', 'Dein Haus als Text weitergeben oder ein fremdes Haus einlesen'], ['hcalc', 'Leitungen prüfen', 'Strombelastbarkeit und Spannungsfall je Stromkreis']];
+    root.LAB_EXTRA_ACT = m => {
+      if (m === 'hcalc') { openCalc(); return true; }
+      if (m !== 'hshare') return false;
+      houseCode(H()).then(code => root.LabUI.sheet('Haus teilen oder laden', (b, close) => {
+        b.innerHTML = '<p class="hint2" style="margin-top:0"><b>Teilen:</b> Kopiere diesen Code und schicke ihn weiter. Wer ihn einliest, bekommt eine Kopie deines Hauses (Räume, Geräte, Leitungen, Verteiler).</p><textarea id="hsC" readonly rows="4" style="width:100%;font:12px ui-monospace,monospace;background:#14181c;color:#e8ecf0;border:1px solid #38424d;border-radius:8px;padding:6px">' + esc(code) + '</textarea><div class="row2"><button class="btn pri" id="hsCp">Code kopieren</button></div><hr style="border:0;border-top:1px solid #38424d;margin:12px 0"><p class="hint2"><b>Laden:</b> Code eines anderen Hauses einfügen. Dein aktuelles Haus wird dabei ersetzt (speichere es vorher über „Speichern“, wenn du es behalten willst).</p><textarea id="hsI" rows="3" placeholder="Code hier einfügen (beginnt mit TFH)" style="width:100%;font:12px ui-monospace,monospace;background:#14181c;color:#e8ecf0;border:1px solid #38424d;border-radius:8px;padding:6px"></textarea><div class="row2"><button class="btn" id="hsLd">Haus einlesen</button></div><div id="hsM" class="hint2"></div>';
+        b.querySelector('#hsCp').onclick = async () => { try { await navigator.clipboard.writeText(code); } catch (e) { b.querySelector('#hsC').select(); document.execCommand && document.execCommand('copy'); } b.querySelector('#hsM').textContent = 'Code kopiert.'; };
+        b.querySelector('#hsLd').onclick = async () => { const t = b.querySelector('#hsI').value, mm = b.querySelector('#hsM'); try { const o = await houseFromCode(t); const sch = S(); sch.haus = o; sch.name = o.name || sch.name; apply(); stt.sel = null; stt.view = 0; root.HAUS_FIT(); api.draw(); api.refreshUI(); close(); api.toast('Haus eingelesen: ' + (o.name || 'ohne Namen')); } catch (e) { mm.style.color = '#ff8a7a'; mm.textContent = String(e.message || e); } };
+      }));
+      return true;
+    };
     root.LAB_HELP = () => `<p><b>Ansicht:</b> Pfeil links und rechts oder die Knöpfe unten drehen das Haus in 90-Grad-Schritten, <b>O</b> schaltet auf Draufsicht, <b>+</b> und <b>−</b> oder das Mausrad zoomen, <b>0</b> zeigt das ganze Haus. Auf freier Fläche ziehen verschiebt die Ansicht, mit zwei Fingern zoomst du.</p>
       <p><b>Bauen:</b> Werkzeug unten wählen und auf eine sichtbare Wand tippen (Lampen auf den Boden). <b>Raum</b> ziehst du als Rechteck auf dem Boden auf. <b>Leitung</b>: erst das eine Gerät, dann das andere antippen. Leitungen laufen immer an Wänden und Decke. Der Verteilerkasten fragt nach dem Abgang.</p>
+      <p><b>Geschosse:</b> Mit „EG“ und „OG“ unten wechselst du die Ebene. Neue Räume landen auf der gewählten Ebene. Das <b>Treppenhaus</b> (Raum antippen, „Als Treppenhaus markieren“) gehört zu beiden Geschossen: Nur dort kann eine Leitung von einer Ebene zur anderen steigen.</p>
       <p><b>Tastatur:</b> <b>Esc</b> oder Rechtsklick beendet das Werkzeug, <b>Entf</b> löscht die Auswahl, Strg + Z macht rückgängig.</p>
       <p><b>Betrieb:</b> Oben auf „Sim“ stellen. Schalter und Geräte antippen oder links im <b>Bedienfeld</b> schalten. Dort sind „Alle an“ und „Alle aus“. An jedem Gerät steht die Spannung, „ohne Spannung“ in Orange zeigt eine Lücke.</p>
       <p><b>Verteiler:</b> Der Knopf „Verteiler“ öffnet den Kasten: FI und Automaten einsetzen, Phase und FI-Zuordnung wählen, im Betrieb Hebel bedienen. Leitungen färben sich im Betrieb nach Last: grün normal, orange hoch, rot überlastet.</p>`;
@@ -567,13 +647,24 @@
       return t;
     };
     const secBtns = (cur) => SECS.map(s => `<button class="chip ${cur === s ? 'on' : ''}" data-a="hx" data-op="sec" data-v="${s}">${String(s).replace('.', ',')} mm²</button>`).join('');
+    /* Multimeter im Haus: Spannung am Gerät oder Strom in der Leitung (Effektivwerte der laufenden Simulation) */
+    function measCard() {
+      const h = H(), m = stt.meas; if (!m) return '<div class="card"><h4>⌁ Multimeter</h4><p class="hint2" style="margin-top:0">Tippe ein Gerät, eine Steckdose oder eine Leitung an. Bei Geräten misst du die Spannung zwischen L und N, bei Leitungen den Strom. Ohne Schalter oder Geräte im Betrieb zeigt er 0.</p></div>';
+      if (m.t === 'obj') {
+        const o = obj(h, m.id); if (!o) return ''; const p = partOf(o.id, 'lamp') || partOf(o.id, 'sd'); const u = p && poweredSet.has(o.id) ? U(p.id) : 0;
+        return `<div class="card"><h4>⌁ Multimeter: ${esc(objName(h, o))}</h4><div class="kv"><span>Spannung L–N</span><b>${num(u, 0)} V</b></div><div class="kv"><span>Spannung L–PE</span><b>${num(u, 0)} V</b></div><div class="kv"><span>Spannung N–PE</span><b>${u > 1 ? '≈ 0 V' : '0 V'}</b></div><p class="hint2">Eine Messung an einem Gerät ohne Spannung zeigt entweder eine ausgeschaltete Strecke (Schalter, Automat) oder eine fehlende Leitung.</p></div>`;
+      }
+      const c = cab(h, m.id); if (!c) return ''; const ps = cabParts(c.id).filter(x => ['L', 'L1', 'T1'].includes(x.hx.w)), I1 = ps.length ? Math.max(...ps.map(x => I(x.id))) : 0, rt = route(h, c), iz = ps.length ? root.LochSim.cableOf(ps[0].v).iz : 0;
+      return `<div class="card"><h4>⌁ Multimeter: Leitung</h4><div class="kv"><span>Strom (Außenleiter)</span><b>${api.fmt(I1, 'A')}</b></div><div class="kv"><span>Belastbarkeit</span><b>${api.fmt(iz, 'A')}</b></div><div class="kv"><span>Länge</span><b>${num(rt.len, 1)} m</b></div><div class="kv"><span>Querschnitt</span><b>${String(c.s).replace('.', ',')} mm²</b></div></div>`;
+    }
     root.HAUS_SIDE = function (sim) {
       const h = H(); let out = '';
+      if (sim && stt.tool === 'meas') return measCard() + (lastWarn.length ? `<div class="card warn"><h4>Hinweise</h4><ul>${lastWarn.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>` : '');
       const o = selObj(), c = selCab(), r = selRoom();
       if (o) {
         const T = TYPES[o.t], rm = room(h, o.room);
         out += `<div class="card"><h4>${esc(T.icon + ' ' + T.n)}</h4>`;
-        out += `<div class="kv"><span>Raum</span><b>${esc(rm ? rm.n : '?')}</b></div>`;
+        out += `<div class="kv"><span>Raum</span><b>${esc(loc(h, o))}</b></div>`;
         if (o.t === 'sock') out += `<label class="f"><span>Angeschlossenes Gerät</span><select data-hx="dev">${[['', 'keines'], ...DEVS.map(d => [d[0], d[0] + ' (' + d[1] + ' W)'])].map(d => `<option value="${esc(d[0])}" ${((o.n || '') === d[0] && (o.w > 0) || (!o.w && d[0] === '')) ? 'selected' : ''}>${esc(d[1])}</option>`).join('')}</select></label>`;
         if (o.t === 'dev') out += `<label class="f"><span>Gerät</span><select data-hx="dev">${DEVS.map(d => `<option value="${esc(d[0])}" ${o.n === d[0] ? 'selected' : ''}>${esc(d[0] + ' (' + d[1] + ' W)')}</option>`).join('')}</select></label>`;
         if (o.t === 'dev3' || o.t === 'sock3') out += `<label class="f"><span>${o.t === 'sock3' ? 'Angeschlossenes Gerät' : 'Gerät'}</span><select data-hx="dev3">${(o.t === 'sock3' ? [['', 'keines', 0]] : []).concat(DEV3.map(d => [d[0], d[0] + ' (' + (d[1] / 1000) + ' kW)', d[1]])).map(d => `<option value="${esc(d[0])}" ${((o.n || '') === d[0] && o.w > 0) || (!o.w && d[0] === '') ? 'selected' : ''}>${esc(d[1])}</option>`).join('')}</select></label>`;
@@ -587,7 +678,7 @@
         if (o.t === 'swc') out += `<div class="kv"><span>Partner</span><b>${o.partner ? 'verbunden' : 'noch keiner (Leitung zu zweitem Wechselschalter ziehen)'}</b></div>`;
         const lp = partOf(o.id, 'lamp') || partOf(o.id, 'sd');
         if (sim && lp && poweredSet.has(o.id)) { const cp = cabParts(o.id && cabIdUp(o.id)).filter(p => ['L', 'L1', 'T1'].includes(p.hx.w))[0]; out += `<div class="kv"><span>Spannung</span><b>${Math.round(U(lp.id))} V</b></div>` + (cp ? `<div class="kv"><span>Strom in der Zuleitung</span><b>${api.fmt(I(cp.id), 'A')}</b></div>` : ''); }
-        else if (!poweredSet.has(o.id) && o.t !== 'panel') out += `<p class="hint2">Nicht angeschlossen: Es führt noch keine Leitung vom Verteiler hierher.</p>`;
+        else if (!poweredSet.has(o.id) && o.t !== 'panel' && o.t !== 'wet') out += `<p class="hint2">Nicht angeschlossen: Es führt noch keine Leitung vom Verteiler hierher.</p>`;
         if (o.t === 'panel') out += `<div class="row2"><button class="btn pri" data-a="hx" data-op="panel">▤ Verteiler öffnen</button></div>`;
         if (!sim) out += `<label class="f"><span>Bezeichnung</span><input data-hx="name" value="${esc(o.n || '')}" placeholder="${esc(T.n)}"></label><div class="row2"><button class="btn danger" data-a="hx" data-op="delobj">Löschen</button></div>`;
         out += '</div>';
@@ -600,7 +691,7 @@
         out += '</div>';
       } else if (r) {
         out += `<div class="card"><h4>▭ Raum</h4><label class="f"><span>Name</span><input data-hx="rname" value="${esc(r.n)}"></label><div class="kv"><span>Größe</span><b>${num(r.w, 1)} × ${num(r.d, 1)} m</b></div>`;
-        if (!sim) out += `<div class="row2"><button class="btn" data-a="hx" data-op="rw" data-v="-0.5">Breite −</button><button class="btn" data-a="hx" data-op="rw" data-v="0.5">Breite +</button></div><div class="row2"><button class="btn" data-a="hx" data-op="rd" data-v="-0.5">Tiefe −</button><button class="btn" data-a="hx" data-op="rd" data-v="0.5">Tiefe +</button></div><div class="row2"><button class="btn danger" data-a="hx" data-op="delroom">Raum löschen</button></div>`;
+        if (!sim) out += `<div class="kv"><span>Geschoss</span><b>${r.st ? 'Treppenhaus (beide)' : rlv(r) ? 'Obergeschoss' : 'Erdgeschoss'}</b></div><div class="row2"><button class="btn ${r.st ? 'pri' : ''}" data-a="hx" data-op="stair">${r.st ? 'Ist Treppenhaus: wieder normaler Raum' : 'Als Treppenhaus markieren (EG und OG)'}</button></div><div class="row2"><button class="btn" data-a="hx" data-op="rlv">${rlv(r) ? 'Ins Erdgeschoss verschieben' : 'Ins Obergeschoss verschieben'}</button></div><div class="row2"><button class="btn" data-a="hx" data-op="rw" data-v="-0.5">Breite −</button><button class="btn" data-a="hx" data-op="rw" data-v="0.5">Breite +</button></div><div class="row2"><button class="btn" data-a="hx" data-op="rd" data-v="-0.5">Tiefe −</button><button class="btn" data-a="hx" data-op="rd" data-v="0.5">Tiefe +</button></div><div class="row2"><button class="btn danger" data-a="hx" data-op="delroom">Raum löschen</button></div>`;
         out += '</div>';
       } else {
         const tips = { sel: 'Antippen zum Auswählen, Gerät ziehen zum Verschieben, auf freie Fläche ziehen zum Verschieben der Ansicht. Mit den Pfeilen unten drehst du das Haus.', room: 'Auf den Boden tippen und ein Rechteck aufziehen (mindestens 2 × 2 m, Raster 0,5 m).', place: stt.place === 'lamp' ? 'Auf den Boden eines Raumes tippen: Die Lampe hängt darüber an der Decke.' : 'Auf eine Wand tippen, die du siehst. Drehe das Haus mit den Pfeilen, um andere Wände zu sehen.', cable: 'Erst das eine Gerät antippen, dann das andere. Die Leitung läuft an Wänden und Decke entlang, nie quer durch den Raum. Der Verteiler fragt nach dem Abgang.', del: 'Gerät, Leitung oder Raum antippen, um es zu löschen.' };
@@ -625,6 +716,8 @@
       else if (op === 'ph3' && c) { c.ph3 = v === '1' ? 1 : 0; if (c.ph3 && c.s < 2.5) c.s = 2.5; apply(); }
       else if (op === 'pi' && c) { c.pi = +v; apply(); }
       else if (op === 'oph' && o) { o.ph = +v; apply(); }
+      else if (op === 'stair' && r) { if (r.st) { r.st = 0; const lvl = r.lv || 0; h.objs.forEach(x => { if (x.room === r.id) { if (x.lv != null && x.lv !== lvl) { removeObj(x.id); } delete x.lv; } }); } else { const other = h.rooms.some(q => q !== r && rlv(q) !== rlv(r) && !q.st && r.x < q.x + q.w - EPS && r.x + r.w > q.x + EPS && r.y < q.y + q.d - EPS && r.y + r.d > q.y + EPS) || h.rooms.some(q => q !== r && q.st && r.x < q.x + q.w - EPS && r.x + r.w > q.x + EPS && r.y < q.y + q.d - EPS && r.y + r.d > q.y + EPS); if (other) { api.toast('Das Treppenhaus darf auf keiner Ebene einen anderen Raum überdecken'); return true; } r.st = 1; h.objs.forEach(x => { if (x.room === r.id) x.lv = rlv(r); }); } apply(); }
+      else if (op === 'rlv' && r) { if (r.st) { api.toast('Das Treppenhaus gehört zu beiden Geschossen'); return true; } const nl = rlv(r) ? 0 : 1, snap0 = JSON.stringify(h); if (h.rooms.some(q => q !== r && (q.st || rlv(q) === nl) && r.x < q.x + q.w - EPS && r.x + r.w > q.x + EPS && r.y < q.y + q.d - EPS && r.y + r.d > q.y + EPS)) { api.toast('Dort liegt schon ein Raum'); return true; } if (nl) r.lv = 1; else delete r.lv; if (h.cables.some(cc => !route(h, cc).ok)) { Object.assign(h, JSON.parse(snap0)); api.toast('Dann erreicht eine Leitung den Raum nicht mehr (nur durchs Treppenhaus)'); return true; } stt.view = nl; stt.sel = { t: 'room', id: r.id }; apply(); }
       else if (op === 'panel') openPanel();
       return true;
     };
@@ -638,6 +731,41 @@
       else if (t.dataset.hx === 'newdev') { stt.dev = DEVS.find(x => x[0] === t.value) || DEVS[0]; }
     });
 
+    /* ---------------- Leitungsauslegung: Strombelastbarkeit und Spannungsfall je Stromkreis ---------------- */
+    const RHO = 1 / 56;   // Kupfer in Ohm mm² / m bei 20 °C
+    function calcLines(h) {
+      const adj = {}; h.cables.forEach(c => { (adj[c.a] = adj[c.a] || []).push(c); (adj[c.b] = adj[c.b] || []).push(c); });
+      const panel = h.objs.find(o => o.t === 'panel'); if (!panel) return [];
+      const load = o => { let w = 0; if (o.t === 'lamp') w = o.w || 60; else if (['sock', 'dev', 'sock3', 'dev3'].includes(o.t) && o.on !== 0) w = o.w || 0; if (!w) return 0; return (o.t === 'sock3' || o.t === 'dev3') ? w / (400 * Math.sqrt(3)) * (o.motor ? 1.25 : 1) : w / 230; };
+      const out = [];
+      h.cables.filter(c => c.slot != null && (c.a === panel.id || c.b === panel.id)).forEach(c0 => {
+        const seen = new Set([panel.id]), rows = [], worst = { drop: 0, name: '', i: 0 }; let minS = 99, ratioMax = 0, ratioName = '';
+        const sub = (o, via) => { seen.add(o.id); let i = load(o); (adj[o.id] || []).forEach(c => { if (c === via) return; const q = obj(h, c.a === o.id ? c.b : c.a); if (!q || seen.has(q.id) || q.t === 'panel') return; const iq = sub(q, c); c.__i = iq; i += iq; }); return i; };
+        const first = obj(h, c0.a === panel.id ? c0.b : c0.a); if (!first) return; c0.__i = sub(first, c0);
+        const seen2 = new Set([panel.id]);
+        const walkd = (o, via, drop, cab) => { seen2.add(o.id); (adj[o.id] || []).forEach(c => { if (c === via) return; const q = obj(h, c.a === o.id ? c.b : c.a); if (!q || seen2.has(q.id) || q.t === 'panel') return; const r = route(h, c), I1 = c.__i || 0, dr = (c.ph3 ? Math.sqrt(3) : 2) * I1 * RHO * (r.len || 0) / c.s, U0 = c.ph3 ? 400 : 230, pc = dr / U0 * 100; minS = Math.min(minS, c.s); const iz = root.LochSim.cableOf(c.s + 'mm2 ' + (r.len || 10).toFixed(1) + 'm').iz; if (iz && I1 / iz > ratioMax) { ratioMax = I1 / iz; ratioName = objName(h, q); } const tot = drop + pc; if (tot > worst.drop) { worst.drop = tot; worst.name = objName(h, q); } walkd(q, c, tot); }); };
+        const q0 = first; const r0 = route(h, c0), I0 = c0.__i || 0, dr0 = (c0.ph3 ? Math.sqrt(3) : 2) * I0 * RHO * (r0.len || 0) / c0.s, p0 = dr0 / (c0.ph3 ? 400 : 230) * 100; minS = Math.min(minS, c0.s); const iz0 = root.LochSim.cableOf(c0.s + 'mm2 ' + (r0.len || 10).toFixed(1) + 'm').iz; if (iz0 && I0 / iz0 > ratioMax) { ratioMax = I0 / iz0; ratioName = objName(h, q0); } if (p0 > worst.drop) { worst.drop = p0; worst.name = objName(h, q0); }
+        walkd(q0, c0, p0);
+        const s = h.panel.slots[c0.slot]; out.push({ slot: c0.slot, ls: s ? s.ls : '', I: I0, minS, drop: worst.drop, dropAt: worst.name, ratio: ratioMax, ratioAt: ratioName, iz: iz0, ln: s && s.ls ? lsAmp(s.ls) : 0, fi: s ? s.fi : 0 });
+      });
+      return out.sort((a, b) => a.slot - b.slot);
+    }
+    const lsAmp = ls => parseFloat(String(ls || '').replace(/[^0-9.]/g, '')) || 0;
+    function openCalc() {
+      const h = H(); if (!h) return;
+      root.LabUI.sheet('Leitungen prüfen', (b) => {
+        const rows = calcLines(h);
+        const tot = houseLoads(h);
+        const ok = x => `<b style="color:#4cd964">in Ordnung</b>`, bad = t => `<b style="color:#ff8a7a">${t}</b>`;
+        b.innerHTML = '<p class="hint2" style="margin-top:0">Rechnet je Stromkreis mit den Nennleistungen aller eingeschalteten Geräte und allen Lampen. <b>Strombelastbarkeit:</b> Der Automat muss die Leitung schützen (Nennstrom des Automaten höchstens so groß wie die Belastbarkeit der Leitung). <b>Spannungsfall:</b> Als Richtwert gelten höchstens 3 % von der Zählerseite bis zum letzten Verbraucher. Die Grenzen sind Richtwerte zum Üben, nicht die Auslegung für eine echte Anlage.</p>'
+          + (rows.length ? '<table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="text-align:left;color:var(--mute)"><th>Abgang</th><th>Automat</th><th>Strom</th><th>Leitung</th><th>Schutz</th><th>Spannungsfall</th></tr>' + rows.map(r => {
+            const schutz = r.ln && r.iz && r.ln > r.iz + 1e-9 ? bad('Automat zu groß') : (r.ratio > 1 ? bad('überlastet') : ok());
+            const fall = r.drop > 3 ? bad(num(r.drop, 1) + ' % (zu hoch)') : '<b style="color:#4cd964">' + num(r.drop, 1) + ' %</b>';
+            return `<tr style="border-top:1px solid var(--line)"><td>${r.slot + 1}</td><td>${esc(r.ls || '–')}</td><td>${num(r.I, 1)} A</td><td>${String(r.minS).replace('.', ',')} mm², Belastbarkeit ${num(r.iz, 0)} A</td><td>${schutz}</td><td title="am Ende: ${esc(r.dropAt)}">${fall}</td></tr>`;
+          }).join('') + '</table><p class="hint2">Höhere Querschnitte und kürzere Wege verringern den Spannungsfall. Die Spannungsfall-Spalte zeigt die Stelle mit dem höchsten Wert (Mauszeiger auf die Zahl).</p>' : '<p>Noch keine Leitung vom Verteiler: Verlege zuerst Leitungen.</p>')
+          + `<p class="hint2">Last je Phase im ganzen Haus: L1 ${num(tot[0], 1)} A · L2 ${num(tot[1], 1)} A · L3 ${num(tot[2], 1)} A</p>`;
+      });
+    }
     /* ---------------- Verteilerkasten ---------------- */
     function openPanel() {
       const h = H(); if (!h) return;
@@ -647,6 +775,7 @@
           const modLs = i => `<div class="hmod"><div class="hlab">${i + 1}</div>${P.slots[i].ls ? `<button class="hmb ${P.slots[i].on ? 'on' : 'off'}" data-m="lss" data-i="${i}"><b>${P.slots[i].p3 ? '3×' : ''}${P.slots[i].ls}</b><small>${P.slots[i].on ? 'I' : '0'}</small></button>` : `<button class="hmb empty" data-m="lss" data-i="${i}">${sim ? '–' : '＋'}</button>`}${P.slots[i].ls ? `<select class="hsel" data-m="fi" data-i="${i}" ${sim ? 'disabled' : ''}><option value="0" ${!P.slots[i].fi ? 'selected' : ''}>ohne FI</option><option value="1" ${P.slots[i].fi === 1 ? 'selected' : ''}>hinter FI 1</option><option value="2" ${P.slots[i].fi === 2 ? 'selected' : ''}>hinter FI 2</option></select>` : ''}${P.slots[i].ls && !P.slots[i].p3 ? `<select class="hsel" data-m="ph" data-i="${i}" ${sim ? 'disabled' : ''}>${[[0, 'Phase auto'], [1, 'Phase L1'], [2, 'Phase L2'], [3, 'Phase L3']].map(x => `<option value="${x[0]}" ${(P.slots[i].ph || 0) === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}</select>` : (P.slots[i].p3 ? '<div class="hwire" style="color:#d9a441">Drehstrom L1 L2 L3</div>' : '')}<div class="hwire">${(() => { const cs = h.cables.filter(c => c.slot === i); return cs.length ? cs.map(c => { const o2 = obj(h, c.a === (h.objs.find(x => x.t === 'panel') || {}).id ? c.b : c.a); return '→ ' + esc(o2 ? objName(h, o2) : '?') + ' (' + c.s + ' mm²)'; }).join('<br>') : (P.slots[i].ls ? 'nicht verdrahtet' : ''); })()}</div></div>`;
           b.innerHTML = '<style>.hrail{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px;padding:10px;background:#1b2127;border-radius:10px;border-bottom:6px solid #6f7882}.hmod{width:84px;display:flex;flex-direction:column;gap:4px;align-items:stretch}.hlab{font-size:11px;color:var(--mute);text-align:center}.hmb{height:78px;border-radius:6px;background:#e4e7ea;color:#222;border:2px solid #8b939c;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px}.hmb small{margin-top:6px;padding:2px 12px;border-radius:4px;background:#c04a3a;color:#fff;font-weight:700}.hmb.on small{background:#3aa655}.hmb.empty{background:#2a323b;color:#8d99a6;border-style:dashed;font-size:22px}.hsel{height:30px;font-size:12px;padding:0 2px}.hwire{font-size:11px;color:var(--mute);min-height:30px}.hfi{width:120px}.hfi .hmb{height:96px}.hfi small{background:#3aa655}.hfi .off small{background:#c04a3a}</style>'
             + '<p class="hint2" style="margin-top:0">' + (sim ? 'Hebel antippen: ein und aus. Ausgelöste Automaten zeigen „0“.' : '<b>Bestücken:</b> Leere Plätze antippen und einen Automaten oder FI einsetzen. <b>Verdrahten:</b> Im Haus mit „Leitung“ den Verteilerkasten antippen und den Abgang wählen. Tippe auf einen Automaten, um ihn zu tauschen.') + '</p>'
+            + '<div class="gh">Hausanschluss: Hauptsicherung</div><div class="hrail">' + (sim ? (h.hak && h.hak.fuse ? `<div class="hmod hfi"><div class="hlab">Haupt</div><button class="hmb ${h.hak.on === 0 ? 'off' : 'on'}" data-m="hak"><b>3× ${h.hak.fuse}</b><small>${h.hak.on === 0 ? '0' : 'I'}</small></button></div><div class="hwire" style="flex:1;min-width:140px">Die Hauptsicherung schützt die Zuleitung vor dem Zähler. Sie muss mindestens so groß sein wie alle Abgänge gleichzeitig brauchen, aber die Automaten müssen zuerst auslösen (Selektivität).</div>` : '<div class="hwire">Keine Hauptsicherung eingebaut (im Bearbeiten-Modus einsetzen).</div>') : `<div class="hmod" style="width:auto"><label class="hlab">Hauptsicherung</label><select class="hsel" data-m="hakf" style="height:34px;font-size:13px"><option value="">keine (nur Üben)</option>${HAK_FUSES.map(f => `<option value="${f}" ${h.hak && h.hak.fuse === f ? 'selected' : ''}>3× ${f}</option>`).join('')}</select></div><div class="hwire" style="flex:1;min-width:140px">Sitzt im Hausanschlusskasten vor dem Zähler. Wähle sie so, dass sie die Summe der Abgänge trägt und trotzdem die Automaten zuerst auslösen.</div>`) + '</div>'
             + '<div class="gh">FI-Schutzschalter</div><div class="hrail">' + [0, 1].map(g => `<div class="hmod hfi"><div class="hlab">FI ${g + 1}</div>${P.fi[g].type ? `<button class="hmb ${P.fi[g].on === 0 ? 'off' : 'on'}" data-m="rcd" data-i="${g}"><b>4P ${P.fi[g].type}</b><small>${P.fi[g].on === 0 ? '0' : 'I'}</small></button>` : `<button class="hmb empty" data-m="rcd" data-i="${g}">${sim ? '–' : '＋'}</button>`}</div>`).join('') + '</div>'
             + '<div class="gh">Leitungsschutzschalter (Abgänge)</div><div class="hrail">' + P.slots.map((s, i) => modLs(i)).join('') + '</div>';
         };
@@ -657,13 +786,15 @@
           if (t.dataset.m === 'lss') {
             if (sim) { const ps = S().parts.filter(q => q.hx && q.hx.role === 'lss' && q.hx.slot === i); if (ps.length) { const nv = ps[0].sw ? 0 : 1; ps.forEach(p => api.setSw(p.id, nv)); api.commit(true, true); syncModel(S()); draw(); } return; }
             menu('Sicherungsautomat für Abgang ' + (i + 1), [...LS_TYPES.map(x => [x, x + ' (' + x.replace(/\D/g, '') + ' A, einpolig, ' + (x[0] === 'B' ? 'für Licht und Steckdosen' : 'für Geräte mit Anlaufstrom') + ')']), ...['B16', 'B20', 'B25', 'B32', 'C16'].map(x => [x + '|3', x + ' dreipolig (Drehstrom)', 'für Herd, Wallbox, Motoren, Klimagerät']), ['', 'entfernen']], P.slots[i].ls, v0 => { const pr = v0.split('|'), v = pr[0]; P.slots[i].p3 = pr[1] ? 1 : 0; P.slots[i].ls = v; if (!v) { P.slots[i].fi = 0; P.slots[i].p3 = 0; } apply(); stat('hausVerteiler', P.slots.filter(s => s.ls).length, 'max'); draw(); });
+          } else if (t.dataset.m === 'hak') {
+            const ps = S().parts.filter(q => q.hx && q.hx.role === 'hak'); if (ps.length) { const nv = ps[0].sw ? 0 : 1; ps.forEach(p => api.setSw(p.id, nv)); api.commit(true, true); syncModel(S()); draw(); }
           } else if (t.dataset.m === 'rcd') {
             if (sim) { const p = S().parts.find(q => q.hx && q.hx.role === 'rcd' && q.hx.g === i); if (p) { api.setSw(p.id, p.sw ? 0 : 1); api.commit(true, true); syncModel(S()); draw(); } return; }
             menu('FI-Schutzschalter ' + (i + 1), [['30mA', 'FI 4-polig 30 mA', 'Personenschutz, schützt alle drei Phasen und N, Pflicht für Steckdosen und Bäder'], ['300mA', 'FI 4-polig 300 mA', 'Brandschutz'], ['', 'entfernen']], P.fi[i].type, v => { P.fi[i].type = v; if (!v) P.slots.forEach(s => { if (s.fi === i + 1) s.fi = 0; }); apply(); stat('hausVerteiler', P.slots.filter(s => s.ls).length, 'max'); draw(); });
           }
         };
         b.onclick = main;
-        b.onchange = e => { const t = e.target; if (t.dataset.m === 'ph') { h.panel.slots[+t.dataset.i].ph = +t.value; apply(); draw(); return; } if (t.dataset.m === 'fi') { const i = +t.dataset.i, v = +t.value; if (v > 0 && !h.panel.fi[v - 1].type) { api.toast('FI ' + v + ' ist noch nicht eingesetzt'); t.value = h.panel.slots[i].fi; return; } h.panel.slots[i].fi = v; apply(); draw(); } };
+        b.onchange = e => { const t = e.target; if (t.dataset.m === 'hakf') { h.hak = h.hak || { fuse: '', on: 1 }; h.hak.fuse = t.value; h.hak.on = 1; apply(); draw(); return; } if (t.dataset.m === 'ph') { h.panel.slots[+t.dataset.i].ph = +t.value; apply(); draw(); return; } if (t.dataset.m === 'fi') { const i = +t.dataset.i, v = +t.value; if (v > 0 && !h.panel.fi[v - 1].type) { api.toast('FI ' + v + ' ist noch nicht eingesetzt'); t.value = h.panel.slots[i].fi; return; } h.panel.slots[i].fi = v; apply(); draw(); } };
         const iv = setInterval(() => { if (!document.body.contains(b)) { clearInterval(iv); return; } if (isSim() && !b.querySelector('.row')) draw(); }, 700);
       });
     }
@@ -673,6 +804,8 @@
       opt = opt || {}; const r = compile(h), tmp = { name: 'tmp', parts: r.parts, wires: r.wires, nid: r.nid, scopes: [], haus: h }, out = { lit: {}, v: {}, ph3: {}, trip: [], burn: [], powered: r.powered, slotOf: r.slotOf, warn: r.warn };
       api.withSch(tmp, () => {
         const E = api.simEval(); E.run(opt.t || 0.3);
+        /* Tastendrücke nacheinander (je Eintrag eine Liste von Tastern): Stromstoßschalter schalten bei jedem Druck um */
+        (opt.pulses || []).forEach(keys => { const ids = r.parts.filter(p => p.hx && p.hx.role === 'tast' && keys.indexOf(p.hx.o) >= 0).map(p => p.id); E.run(0.12, ids); E.run(0.2, []); });
         /* eine volle Netzperiode (20 ms) abtasten: Spitzenwerte je Bauteil, damit alle drei Phasen erfasst sind */
         const pv = {}, pi = {}, lampOn = new Set();
         const dev = E.c.elems.filter(e => e.part && e.part.item && e.part.item.hx && ((e.device && e.part.item.hx.role === 'devR') || e.part.item.hx.role === 'motor'));
@@ -727,9 +860,9 @@
       const h = H(); if (!h) return ''; syncModel(S());
       const chip = (op, id, label, on, cls, tOn, tOff) => `<button class="hcb ${on ? 'on' : 'off'} ${cls || ''}" data-hc="${op}" data-id="${id}"><span>${esc(label)}</span><i>${on ? (tOn || 'an') : (tOff || 'aus')}</i></button>`;
       let t = '<div class="hcp"><style>.hcp h5{margin:12px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute)}.hcp .hrow{display:flex;gap:6px;margin:4px 0}.hcp .hbt{flex:1;height:32px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-size:12px;font-weight:600}.hcb{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;padding:6px 8px;margin:3px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel2);font-size:12px;text-align:left}.hcb i{font-style:normal;font-weight:700;font-size:11px;padding:1px 7px;border-radius:8px;background:#4a5561;color:#fff}.hcb.on i{background:#2fae45}.hcb.trip i{background:#e04b3a}.hcb small{display:block;color:var(--mute);font-size:10px}</style><b>Bedienfeld</b>';
-      const sw = h.objs.filter(o => o.t === 'swi' || o.t === 'swc').sort((a, b) => (room(h, a.room) ? room(h, a.room).n : '').localeCompare(room(h, b.room) ? room(h, b.room).n : ''));
+      const sw = h.objs.filter(o => o.t === 'swi' || o.t === 'swc' || o.t === 'swk' || o.t === 'tast').sort((a, b) => (room(h, a.room) ? room(h, a.room).n : '').localeCompare(room(h, b.room) ? room(h, b.room).n : ''));
       t += '<h5>Licht</h5><div class="hrow"><button class="hbt" data-hc="lights" data-id="1">Alle an</button><button class="hbt" data-hc="lights" data-id="0">Alle aus</button></div>';
-      sw.forEach(o => { const r = room(h, o.room); t += o.t === 'swc' ? chip('sw', o.id, (r ? r.n : '?') + ' · Wechselschalter ' + (o.partner && o.id > o.partner ? 'B' : 'A'), !!o.on, '', 'Stellung 2', 'Stellung 1') : chip('sw', o.id, (r ? r.n : '?') + ' · Schalter', !!o.on); });
+      sw.forEach(o => { const r = room(h, o.room); if (o.t === 'swk') { t += chip('sw', o.id, loc(h, o) + ' · Kreuzschalter', !!o.on, '', 'gekreuzt', 'gerade'); return; } if (o.t === 'tast') { t += chip('sw', o.id, loc(h, o) + ' · Taster', false, '', 'an', 'drücken'); return; } t += o.t === 'swc' ? chip('sw', o.id, loc(h, o) + ' · Wechselschalter ' + (o.partner && o.id > o.partner ? 'B' : 'A'), !!o.on, '', 'Stellung 2', 'Stellung 1') : chip('sw', o.id, loc(h, o) + ' · Schalter', !!o.on); });
       const dv = h.objs.filter(o => (o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3') && o.w > 0);
       if (dv.length) {
         t += '<h5>Geräte</h5><div class="hrow"><button class="hbt" data-hc="devs" data-id="1">Alle an</button><button class="hbt" data-hc="devs" data-id="0">Alle aus</button></div>';
@@ -742,8 +875,10 @@
         t += '<h5>Verteiler</h5><div class="hrow"><button class="hbt" data-hc="panel" data-id="1">Alle ein</button><button class="hbt" data-hc="panel" data-id="0">Alle aus</button></div>';
         mods.forEach(m => { t += chip(m[0], m[1], m[2], m[3], m[3] ? '' : 'trip'); });
       }
+      t += '<h5>Zähler</h5><div class="hcb" style="cursor:default"><span>Leistung</span><i id="hmP">0 W</i></div><div class="hcb" style="cursor:default"><span>Zählerstand</span><i id="hmK">0,000 kWh</i></div><div class="hrow"><button class="hbt" data-hc="spd" data-id="1">Echtzeit</button><button class="hbt" data-hc="spd" data-id="900">×900</button><button class="hbt" data-hc="spd" data-id="36000">×36000</button></div><div class="hrow"><button class="hbt" data-hc="mreset" data-id="0">Zähler auf 0</button></div>';
       return t + '</div>';
     }
+    function updMeter() { const a = document.getElementById('hmP'), b = document.getElementById('hmK'); if (a) a.textContent = Math.round(meter.p) + ' W'; if (b) b.textContent = num(meter.kwh, 3) + ' kWh'; }
     function renderControls(force) {
       if (!partsEl) return; const sim = isSim() && wide();
       partsEl.style.display = sim ? 'block' : 'none'; if (!sim) { ctlSig = ''; return; }
@@ -756,14 +891,16 @@
       const b = e.target.closest('#parts [data-hc]'); if (!b || !isSim()) return; e.stopPropagation(); const h = H(), op = b.dataset.hc, id = +b.dataset.id;
       if (op === 'lights') setAllLights(id === 1); else if (op === 'devs') setAllDevices(id === 1); else if (op === 'panel') setPanel(id === 1);
       else if (op === 'sw' || op === 'dev') { const o = obj(h, id); if (o) operate(o); renderControls(true); }
+      else if (op === 'spd') { meter.speed = id; api.toast(id === 1 ? 'Zähler läuft in Echtzeit' : 'Zeitraffer ×' + id); }
+      else if (op === 'mreset') { meter.kwh = 0; updMeter(); }
       else if (op === 'lss') { const ps = S().parts.filter(q => q.hx && q.hx.role === 'lss' && q.hx.slot === id); if (ps.length) { const nv = ps[0].sw ? 0 : 1; ps.forEach(p => api.setSw(p.id, nv)); syncModel(S()); api.commit(true, true); api.refreshUI(); renderControls(true); } }
       else if (op === 'rcd') { const p = S().parts.find(q => q.hx && q.hx.role === 'rcd' && q.hx.g === id); if (p) { api.setSw(p.id, p.sw ? 0 : 1); syncModel(S()); api.commit(true, true); api.refreshUI(); renderControls(true); } }
     }, true);
-    setInterval(() => { if (isSim() && partsEl) renderControls(false); }, 600);
+    setInterval(() => { if (isSim() && partsEl) { renderControls(false); updMeter(); } }, 400);
     window.addEventListener('resize', () => renderControls(true));
 
     root.HAUS_NEW = () => ({ name: 'Neues Haus', parts: [], wires: [], nid: 1, scopes: [], haus: newHouse('Neues Haus') });
-    root.HAUS = { evalHouse, slotLoads, phaseLoads, houseLoads, DEV3, TYPES, DEVS, SLOTS, newHouse, route, buildNet, compile, pos, room, obj, cab, nid, cam, stt, proj, pick, unplane, hits: () => hits, apply, openPanel, U, I, partOf, cabParts, poweredSet: () => poweredSet, warn: () => lastWarn, syncModel, newObj, addCable, removeObj, operate };
+    root.HAUS = { calcLines, evalHouse, slotLoads, phaseLoads, houseLoads, DEV3, TYPES, DEVS, SLOTS, newHouse, route, buildNet, compile, pos, room, obj, cab, nid, cam, stt, proj, pick, unplane, hits: () => hits, apply, openPanel, U, I, partOf, cabParts, poweredSet: () => poweredSet, warn: () => lastWarn, syncModel, newObj, addCable, removeObj, operate };
     if (root.HAUS_DATA) root.HAUS_DATA(api, root.HAUS);
     const css = document.createElement('style'); css.textContent = '#pal .chip{flex:none}'; document.head.appendChild(css);
     window.addEventListener('resize', () => { if (!stt.userCam && H()) { root.HAUS_FIT(); api.draw(); } });

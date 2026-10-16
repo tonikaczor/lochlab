@@ -94,7 +94,7 @@
     const DMM = {
       name: 'Multimeter', icon: '📟', w: 280,
       build(el) {
-        el.innerHTML = '<div class="wbrow" data-dials></div><div class="wbrow" data-jacks></div><div class="wblcd" data-v>--</div><div class="wbmut" data-sub style="min-height:34px"></div><div class="wbrow"><button class="wbb" data-probe>Messspitzen setzen</button><button class="wbb" data-fuse>Sicherung tauschen</button></div>';
+        el.innerHTML = '<div class="wbrow" data-dials></div><div class="wbrow" data-jacks></div><div class="wblcd" data-v>--</div><div class="wbmut" data-sub style="min-height:34px"></div><div class="wbmut" data-acc style="font-size:11px;min-height:28px"></div><div class="wbrow"><button class="wbb" data-probe>Messspitzen setzen</button><button class="wbb" data-fuse>Sicherung tauschen</button></div>';
         const q = s => el.querySelector(s), M = () => api.meter, t = {};
         const DIALS = [['V=', 'V ⎓'], ['V~', 'V ∿'], ['A', 'A'], ['R', 'Ω']], JACKS = [['V', 'VΩ'], ['mA', 'mA'], ['10A', '10 A']];
         const draw = () => {
@@ -106,7 +106,7 @@
         q('[data-probe]').onclick = () => { if (!api.simMode) { api.setSimMode(true); } api.setTool('meter'); mark('dmm'); };
         q('[data-fuse]').onclick = () => { M().fuse = false; M().fuse10 = false; api.refreshUI(); };
         draw(); t.k = M().dial + M().jack;
-        return { update() { const k = M().dial + M().jack; if (k !== t.k) { t.k = k; draw(); } let r = { main: '--', sub: 'Simulation einschalten, dann „Messspitzen setzen“.' }; if (api.simMode && api.tool === 'meter') { try { r = api.meterText(); } catch (e) {} } else if (api.simMode) r.sub = 'Tippe auf „Messspitzen setzen“ und dann auf die Messpunkte in der Schaltung.'; q('[data-v]').textContent = r.main; q('[data-sub]').textContent = r.sub; q('[data-fuse]').disabled = !(M().fuse || M().fuse10); } };
+        return { update() { const k = M().dial + M().jack; if (k !== t.k) { t.k = k; draw(); } let r = { main: '--', sub: 'Simulation einschalten, dann „Messspitzen setzen“.' }; if (api.simMode && api.tool === 'meter') { try { r = api.meterText(); } catch (e) {} } else if (api.simMode) r.sub = 'Tippe auf „Messspitzen setzen“ und dann auf die Messpunkte in der Schaltung.'; q('[data-v]').textContent = r.main; q('[data-sub]').textContent = r.sub; q('[data-acc]').textContent = root.MESS_PLUS_ACC && api.simMode && api.tool === 'meter' ? root.MESS_PLUS_ACC.dmmAcc(r.main, M().dial) : ''; q('[data-fuse]').disabled = !(M().fuse || M().fuse10); } };
       }
     };
 
@@ -282,6 +282,7 @@
     const INST = { psu: PSU, gen: GEN, dmm: DMM, osc: OSC, cnt: CNT, pwr: PWR, trace: TRACE };
     const ORDER = ['psu', 'gen', 'dmm', 'osc', 'cnt', 'pwr', 'trace'];
     api.INST = INST;
+    if (root.MESS_PLUS) root.MESS_PLUS(api, { INST, ORDER, partsOf, partSel, mark, S, esc, num, LANECOL, fmtHz, parseHz, OSC, TDIV, parseVal });
 
     /* ---------------- Werkbank: Rahmen, feste und freie Ansicht ---------------- */
     let dock = null, bodies = {}, timer = null, upd = {};

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Projekte für zuhause</title>
+<style>
+:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--ok:#4cd964;--warn:#ffb340;--line:#38424d;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,system-ui,"Segoe UI",sans-serif}
+a{color:var(--accent)}.wrap{max-width:900px;margin:0 auto;padding:16px}
+h1{margin:6px 0 4px}h2{margin:0 0 6px}.lead{color:var(--mute);margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:14px}
+.tag{display:inline-block;font-size:11px;letter-spacing:.08em;font-weight:700;color:var(--accent);margin-bottom:4px}
+.btn{display:inline-block;height:36px;line-height:34px;padding:0 14px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-weight:600;text-decoration:none;margin:4px 6px 0 0}.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.wn{margin:10px 0;padding:9px 12px;border-radius:8px;background:rgba(255,179,64,.1);border:1px solid rgba(255,179,64,.45);font-size:14px}
+pre{margin:6px 0;padding:8px 10px;background:#0f1418;border:1px solid var(--line);border-radius:8px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+details{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0;background:var(--panel2)}summary{cursor:pointer;font-weight:700}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+@media print{.noprint{display:none}body{background:#fff;color:#000}.card,details{background:#fff;border-color:#999}pre{background:#f4f4f4;color:#000}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top noprint"><a class="btn" href="index.html">Startseite</a></div>
+  <h1>Projekte für zuhause</h1>
+  <p class="lead">Freiwillig, zum Selbermachen für alle, die Lust haben. Es gibt keine Abgabe und keine Auswertung. Du brauchst nichts zu kaufen: Zuerst übst du alles hier im Browser, und wenn es dir gefällt, baust du es zuhause nach.</p>
+
+  <div class="card">
+    <span class="tag">NETZWERK · RASPBERRY PI</span>
+    <h2>Pi-hole: Werbung im ganzen Heimnetz blocken</h2>
+    <p>Ein kleiner Server filtert Werbung und Tracker für jedes Gerät im Netz: Handy, Laptop, Fernseher. In 14 Schritten von der SD-Karte bis zur Fehlersuche, mit Übungsumgebung (Imager, Router, SSH-Terminal, Installer, Dashboard).</p>
+    <p style="color:var(--mute);font-size:13px">Material für zuhause: Raspberry Pi 3, 4 oder 5, microSD-Karte, Netzteil, Netzwerkkabel. Zugang zum Router.</p>
+    <a class="btn pri" href="pihole-labor.html">Projekt starten</a><a class="btn" href="pihole-labor.html?druck">Anleitung (alle Schritte offen)</a>
+    <div class="wn">Pi-hole sieht alle DNS-Anfragen im Netz. Richte es nur im eigenen Heimnetz ein und sag den anderen Nutzern Bescheid, nie im Schul- oder Firmennetz ohne Erlaubnis.</div>
+  </div>
+
+  <div class="card" id="licht">
+    <span class="tag">ARDUINO · LICHT AM FAHRZEUG (MODELL)</span>
+    <h2>Licht pimpen: erst am Brett, nicht am Fahrzeug</h2>
+    <p>Drei Ideen für Moped und Auto, die du zuerst als Modell auf dem Steckbrett baust und im Arduino-Lab simulierst: ein Lauflicht-Blinker, ein Bremslicht mit Notbremsblinken und ein Tagfahrlicht mit weichem Überblenden.</p>
+    <div class="wn"><b>Wichtig:</b> Im Straßenverkehr dürfen nur Leuchten und Teile mit Prüfzeichen (zum Beispiel E-Prüfzeichen) verbaut werden. Veränderungen an der Beleuchtung können die Betriebserlaubnis erlöschen lassen, dann drohen Bußgeld, Punkte und Probleme mit der Versicherung. Dazu ist die Bordspannung kein Spielzeug: Ein Kurzschluss kann Kabel in Brand setzen. Diese Projekte sind deshalb nur Modelle (5 V, Steckbrett), kein Einbauplan.</div>
+    <table>
+      <tr><th>Projekt</th><th>Das übst du</th></tr>
+      <tr><td>Lauflicht-Blinker</td><td>Pins in einem Feld, Schleife, Taster mit Pull-up und Flankenerkennung</td></tr>
+      <tr><td>Bremslicht mit Notbremsblinken</td><td>PWM (<span style="font-family:monospace">analogWrite</span>), Zeitmessung mit <span style="font-family:monospace">millis()</span> statt <span style="font-family:monospace">delay()</span></td></tr>
+      <tr><td>Tagfahrlicht und Standlicht</td><td>Betriebsarten, weiches Überblenden, <span style="font-family:monospace">constrain()</span></td></tr>
+    </table>
+    <details><summary>Material für das Modell zuhause</summary><ul><li>Arduino Uno (oder Nachbau) mit USB-Kabel</li><li>Steckbrett und Steckbrücken</li><li>LEDs (gelb, rot, weiß), je ein Vorwiderstand 220 Ω</li><li>Ein Taster</li></ul></details>
+    <details><summary>Schritte</summary><ol><li>Im Arduino-Lab das Beispiel öffnen (Menü „Beispiele“, Gruppe „Projekt: Licht am Fahrzeug (Modell)“).</li><li>Schaltung und Sketch ansehen: Welche LED hängt an welchem Pin? Warum braucht jede LED einen Widerstand?</li><li>Simulation starten und den Taster bedienen.</li><li>Eine Sache ändern: Blinkgeschwindigkeit, Helligkeit, ein weiteres Muster.</li><li>Wenn du magst: Mit dem Material oben auf dem Steckbrett nachbauen und den Sketch in die Arduino-IDE kopieren.</li></ol></details>
+    <a class="btn pri" href="codelab.html?bsp">Im Arduino-Lab öffnen</a>
+  </div>
+  <p style="color:var(--mute);font-size:13px">Weitere Projekte folgen. Wünsche gern beim Ausbilder abgeben.</p>
+</div>
+<script src="ver.js"></script>
+<script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+</body>
+</html>

@@ -33,6 +33,8 @@ header p{margin:2px 0 0;color:var(--mute)}
 .pic svg .cur{animation:cur 1s steps(1) infinite}
 .pic svg .pin{animation:pinrun 1.8s linear infinite}
 .pic svg .beat{animation:onoff .9s steps(1) infinite}
+.pic svg .scr84{animation:scr84 3s linear infinite}.pic svg .scr24{animation:scr24 1.2s linear infinite}.pic svg .ledp{animation:onoff 1.2s steps(1) infinite}.pic svg .sweep{animation:sweep 3s linear infinite}
+@keyframes scr84{to{transform:translateX(-84px)}}@keyframes scr24{to{transform:translateX(-24px)}}@keyframes sweep{0%{transform:translateX(0)}100%{transform:translateX(176px)}}
 @keyframes flow{to{stroke-dashoffset:-14}}
 @keyframes glowp{0%,100%{opacity:.12}50%{opacity:.4}}
 @keyframes onoff{0%{opacity:1}50%{opacity:.12}}
@@ -64,7 +66,7 @@ a.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
 a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2px}.mp{margin:0}
 @media(min-width:1180px){.cards{grid-template-columns:repeat(4,1fr)}.cards .card,.cards .card:last-child:nth-child(n),.cards .card:nth-last-child(2):nth-child(n){grid-column:auto}}
 @media(min-width:640px) and (max-width:1179px){.cards{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:639px){.pic{display:none}.card p{-webkit-line-clamp:2}}
+@media(max-width:639px){.pic{height:64px}.card p{-webkit-line-clamp:2}}
 .foot{margin-top:26px;color:var(--mute);font-size:13px;text-align:center}
 #gate{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 #gate form{width:100%;max-width:340px;text-align:center}
@@ -154,7 +156,7 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <span class="tag">DigiLab</span>
       <h2>Digitaltechnik</h2>
       <div class="pic" aria-hidden="true">
-        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#10261a"/><g fill="none" stroke="#6dff7a" stroke-width="3"><path d="M70 35h22a25 25 0 010 50H70z"/><path d="M40 47h30M40 73h30M117 60h30"/></g><path d="M160 85h12V50h12v35h12V50h12v35" fill="none" stroke="#ffe14d" stroke-width="3"/></svg>
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#10261a"/><g fill="none" stroke="#6dff7a" stroke-width="3"><path d="M50 35h20a22 22 0 010 44H50z"/><path class="wire" d="M22 46h28M22 68h28" stroke-width="2.5"/><path d="M92 57h22"/></g><circle class="ledp" cx="124" cy="57" r="5" fill="#ffe14d"/><defs><clipPath id="dgc"><rect x="136" y="38" width="86" height="62"/></clipPath></defs><g clip-path="url(#dgc)"><path class="scr24" d="M124 85h12V50h12V85h12V50h12V85h12V50h12V85h12V50h12V85h12V50h12V85h12V50h12V85h12V50h12V85" fill="none" stroke="#ffe14d" stroke-width="3"/></g><text x="22" y="40" font-family="monospace" font-size="9" fill="#9fd18a">A</text><text x="22" y="62" font-family="monospace" font-size="9" fill="#9fd18a">B</text></svg>
       </div>
       <p>Gatter, Wahrheitstabellen, Flipflops, Zähler und eine kleine CPU. Mit Zeitdiagramm und Zahlenumrechner.</p>
       <div class="steps"><span>Verdrahten</span><span>Schalten</span><span>Programmieren</span></div>
@@ -164,7 +166,7 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <span class="tag">MessLab</span>
       <h2>Messtechnik</h2>
       <div class="pic" aria-hidden="true">
-        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#0b1a10"/><g stroke="#1f4a2a" stroke-width="1"><path d="M10 35h220M10 60h220M10 85h220M65 10v100M120 10v100M175 10v100"/></g><path d="M12 60c14-40 28-40 42 0s28 40 42 0 28-40 42 0 28 40 42 0" fill="none" stroke="#6dff7a" stroke-width="3"/></svg>
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#0b1a10"/><g stroke="#1f4a2a" stroke-width="1"><path d="M10 35h220M10 60h220M10 85h220M65 10v100M120 10v100M175 10v100"/></g><defs><clipPath id="msc"><rect x="12" y="12" width="216" height="96"/></clipPath></defs><g clip-path="url(#msc)"><path class="scr84" d="M-72 60c14-40 28-40 42 0s28 40 42 0c14-40 28-40 42 0s28 40 42 0c14-40 28-40 42 0s28 40 42 0c14-40 28-40 42 0s28 40 42 0c14-40 28-40 42 0s28 40 42 0" fill="none" stroke="#6dff7a" stroke-width="3" style="filter:drop-shadow(0 0 3px #6dff7a)"/><rect class="sweep" x="12" y="12" width="2" height="96" fill="#ffe14d" opacity=".55"/></g><circle class="beat" cx="218" cy="20" r="3" fill="#4cd964"/></svg>
       </div>
       <p>Werkbank mit Multimeter, Oszilloskop, Netzgerät, Generator, Frequenzzähler und Kennlinienschreiber. Mit Messaufgaben und Messfehlern.</p>
       <div class="steps"><span>Messen</span><span>Ablesen</span><span>Fehler finden</span></div>
@@ -174,7 +176,7 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <span class="tag">HausLab</span>
       <h2>Elektroinstallation im Haus</h2>
       <div class="pic" aria-hidden="true">
-        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#14202b"/><path d="M60 95V55l60-30 60 30v40z" fill="#c9d3de" stroke="#5b6672" stroke-width="3"/><path d="M60 55l60-30 60 30" fill="none" stroke="#5b6672" stroke-width="3"/><path d="M80 90V60h20v30M130 70h35v20h-35z" fill="#7d8793"/><circle cx="120" cy="52" r="8" fill="#ffe14d"/><path d="M120 60v14l-20 0" fill="none" stroke="#d9a441" stroke-width="3"/></svg>
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#14202b"/><path d="M60 95V55l60-30 60 30v40z" fill="#c9d3de" stroke="#5b6672" stroke-width="3"/><path d="M60 55l60-30 60 30" fill="none" stroke="#5b6672" stroke-width="3"/><path d="M80 90V60h20v30M130 70h35v20h-35z" fill="#7d8793"/><circle class="onglow" cx="120" cy="52" r="15" fill="#ffe14d"/><circle class="on" cx="120" cy="52" r="8" fill="#ffe14d"/><path d="M120 60v14l-20 0" fill="none" stroke="#d9a441" stroke-width="3"/><g class="on"><path class="dots" d="M120 60v14l-20 0"/></g><rect class="ledp" x="137" y="74" width="8" height="8" fill="#ffe14d"/><rect class="beat" x="152" y="74" width="8" height="8" fill="#ffe14d"/></svg>
       </div>
       <p>Drei Häuser, darunter ein Bürokomplex, und freies Gestalten: Räume, Steckdosen, Schalter, Leitungen und Verteilerkasten in 3D.</p>
       <div class="steps"><span>Planen</span><span>Verlegen</span><span>Verteilen</span></div>
@@ -202,7 +204,7 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
     </section>
   </div>
   <p class="foot">In allen Programmen: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>
-  <p class="foot"><a href="#" id="lsOpen" style="color:var(--accent)">💾 Lernstand sichern oder laden</a> · <a href="lernen.html">Lernhefte: Löten, Elektronik, Installation, Arduino, Pi</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a></p>
+  <p class="foot"><a href="#" id="lsOpen" style="color:var(--accent)">💾 Lernstand sichern oder laden</a> · <a href="projekte.html">Projekte für zuhause</a> · <a href="lernen.html">Lernhefte: Löten, Elektronik, Installation, Arduino, Pi</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a></p>
 </div>
 <script src="aufgaben.js"></script>
 <script src="kampagne.js"></script>

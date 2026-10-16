@@ -4377,6 +4377,7 @@ window.LabDigiAPI = {
   get meter() { return meter; }, meterText, meterDial, meterReset, meterTap, scopeValues, toggleScope, sv, rebuildKeep, staticR: (a, b) => staticR(a, b, 1, 'ohm'),
   get scopeBuf() { return scopeBuf; }, get graphWin() { return graphWin; }, setGraphWin: w => { graphWin = w; scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; },
   tasksList: () => labTasks(),
+  pressBtn: id => { const p = byPart(id); if (p) pressPart(p); }, releaseBtn: (id, force) => { const p = byPart(id); if (p) releasePart(p, !!force); },
   setSw: (id, v) => { const p = byPart(id); if (!p) return; p.sw = v ? 1 : 0; const w = wrapMap.get(id); if (w) w.sw = p.sw; },
   get canvas() { return cv; }, get dirty() { return dirtyDraw; }, rectOf: () => rectOf(), taskDoneMap: () => taskDone(), vAtKey: key => sv(key),
   withSch(tmp, fn) { const saved = sch; sch = tmp; try { return fn(); } finally { sch = saved; } },

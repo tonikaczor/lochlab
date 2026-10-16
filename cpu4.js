@@ -7,20 +7,23 @@
   const OPS = {
     NOP: '', HLT: '', LDI: 'n', LDBI: 'n', LDA: 'a', STA: 'a', LDB: 'a', STB: 'a', TAB: '', TBA: '', SWP: '',
     ADD: '', SUB: '', ADDI: 'n', SUBI: 'n', CMP: '', CMPI: 'n', AND: '', OR: '', XOR: '', NOT: '', SHL: '', SHR: '', INC: '', DEC: '',
-    IN: '', OUT: '', OUTI: 'n', JMP: 'l', JZ: 'l', JNZ: 'l', JC: 'l', JNC: 'l'
+    IN: '', OUT: '', OUTI: 'n', JMP: 'l', JZ: 'l', JNZ: 'l', JC: 'l', JNC: 'l', CALL: 'l', RET: '', PUSH: '', POP: ''
   };
   const DOC = {
     NOP: 'tut nichts', HLT: 'hält die CPU an (bis Reset)', LDI: 'A = n', LDBI: 'B = n', LDA: 'A = RAM[a]', STA: 'RAM[a] = A', LDB: 'B = RAM[a]', STB: 'RAM[a] = B',
     TAB: 'B = A', TBA: 'A = B', SWP: 'A und B tauschen', ADD: 'A = A + B (C = Übertrag)', SUB: 'A = A − B (C = geborgt)', ADDI: 'A = A + n', SUBI: 'A = A − n',
     CMP: 'vergleicht A mit B (Flags, A bleibt)', CMPI: 'vergleicht A mit n', AND: 'A = A und B', OR: 'A = A oder B', XOR: 'A = A xor B', NOT: 'A = nicht A',
     SHL: 'A um 1 nach links (C = herausgeschobenes Bit)', SHR: 'A um 1 nach rechts (C = herausgeschobenes Bit)', INC: 'A = A + 1', DEC: 'A = A − 1',
-    IN: 'A = Eingänge IN0..IN3', OUT: 'Ausgänge = A', OUTI: 'Ausgänge = n', JMP: 'springt zur Marke', JZ: 'springt, wenn Z = 1', JNZ: 'springt, wenn Z = 0', JC: 'springt, wenn C = 1', JNC: 'springt, wenn C = 0'
+    IN: 'A = Eingänge IN0..IN3', OUT: 'Ausgänge = A', OUTI: 'Ausgänge = n', JMP: 'springt zur Marke', JZ: 'springt, wenn Z = 1', JNZ: 'springt, wenn Z = 0', JC: 'springt, wenn C = 1', JNC: 'springt, wenn C = 0',
+    CALL: 'Unterprogramm aufrufen: merkt sich die Rückkehr-Adresse (Stapel, vier Ebenen)', RET: 'zurück hinter den letzten CALL', PUSH: 'A auf den Datenstapel legen (vier Plätze)', POP: 'A = oberster Wert des Datenstapels'
   };
   const PROGRAMS = {
     'Zähler 0 bis 15': 'start:  LDI 0\nloop:   OUT\n        INC\n        JMP loop\n',
     'Lauflicht': 'start:  LDI 1\nloop:   OUT\n        SHL\n        JNC loop      ; C wird 1, wenn das Bit links herausfällt\n        JMP start\n',
     'Eingabe plus 3': 'loop:   IN            ; Schalter lesen\n        ADDI 3\n        OUT\n        JMP loop\n',
     'Abwärtszähler 9 bis 0': 'start:  LDI 9\nloop:   OUT\n        DEC\n        CMPI 15       ; nach 0 kommt 15 (Unterlauf)\n        JNZ loop\n        JMP start\n',
+    'Unterprogramm: zweimal ausgeben': 'start:  LDI 5\n        CALL zeige    ; Unterprogramm aufrufen\n        LDI 10\n        CALL zeige\n        JMP start\nzeige:  OUT           ; Unterprogramm: Wert ausgeben ...\n        NOP\n        NOP\n        RET           ; ... und zurück\n',
+    'Unterprogramm: Wartezeit': 'start:  OUTI 15\n        CALL warte\n        OUTI 0\n        CALL warte\n        JMP start\nwarte:  LDI 5         ; Zählschleife als Verzögerung\nw1:     DEC\n        JNZ w1\n        RET\n',
     'Fibonacci': '        LDI 0\n        STA 0         ; RAM0 = alte Zahl\n        LDI 1\n        STA 1         ; RAM1 = neue Zahl\nloop:   LDA 1\n        OUT\n        LDB 0         ; B = alte Zahl\n        ADD           ; A = neu + alt\n        JC reset      ; ab 16 Übertrag: von vorn\n        LDB 1\n        STB 0         ; alt = neu\n        STA 1         ; neu = Summe\n        JMP loop\nreset:  JMP 0\n'
   };
 
@@ -52,7 +55,7 @@
   const program = () => { const t = (root.LabDigiAPI && root.LabDigiAPI.sch && root.LabDigiAPI.sch.code) || ''; if (t !== cacheT) { cacheT = t; cacheP = assemble(t); } return cacheP; };
 
   /* ---------- Ausführung ---------- */
-  function fresh(st) { st.pc = 0; st.a = 0; st.b = 0; st.z = 0; st.c = 0; st.out = 0; st.halt = 0; st.ram = new Array(16).fill(0); st.steps = 0; st.last = -1; }
+  function fresh(st) { st.pc = 0; st.a = 0; st.b = 0; st.z = 0; st.c = 0; st.out = 0; st.halt = 0; st.ram = new Array(16).fill(0); st.steps = 0; st.last = -1; st.stack = []; st.dstack = []; st.err = ''; }
   function exec(e) {
     const st = e.st, P = program(), ins = P.prog[st.pc];
     if (!ins || P.errors.length) { st.halt = 1; return; }
@@ -92,6 +95,10 @@
       case 'JNZ': if (!st.z) pc = ins.n; break;
       case 'JC': if (st.c) pc = ins.n; break;
       case 'JNC': if (!st.c) pc = ins.n; break;
+      case 'CALL': if ((st.stack || (st.stack = [])).length >= 4) { st.halt = 1; st.err = 'Stapel voll: zu viele verschachtelte CALL'; break; } st.stack.push(pc); pc = ins.n; break;
+      case 'RET': if (!(st.stack || []).length) { st.halt = 1; st.err = 'RET ohne CALL: der Stapel ist leer'; break; } pc = st.stack.pop(); break;
+      case 'PUSH': if ((st.dstack || (st.dstack = [])).length >= 4) { st.halt = 1; st.err = 'Datenstapel voll'; break; } st.dstack.push(st.a); break;
+      case 'POP': if (!(st.dstack || []).length) { st.halt = 1; st.err = 'POP bei leerem Datenstapel'; break; } st.a = set(st.dstack.pop()); break;
     }
     st.pc = pc & 63; st.steps++;
     if (st.pc >= P.prog.length) st.halt = 1;
@@ -131,7 +138,7 @@
       const e = cpuElem(api), P = program(); const st = (e && e.st && e.st.pc != null) ? e.st : null;
       if (!st) { q('#cpV').innerHTML = '<span style="color:#9aa6b2">Setze eine Mini-CPU (Menü „IC“ oder Baustein „Mini-CPU“), versorge sie mit 5 V und Masse und gib ihr einen Takt, dann siehst du hier die Register.</span>'; return; }
       const nxt = P.prog[st.pc], cell = (n, v, b) => `<span style="display:inline-block;margin:2px 10px 2px 0">${n} <b style="color:#6dff7a">${bin(v, b)}</b> <span style="color:#9aa6b2">(${v})</span></span>`;
-      q('#cpV').innerHTML = cell('A', st.a, 4) + cell('B', st.b, 4) + cell('OUT', st.out, 4) + '<br>' + `<span style="margin-right:10px">PC <b style="color:#6dff7a">${st.pc}</b></span><span style="margin-right:10px">Z <b style="color:#6dff7a">${st.z}</b></span><span style="margin-right:10px">C <b style="color:#6dff7a">${st.c}</b></span><span style="margin-right:10px">IN <b style="color:#6dff7a">${bin(st.inv || 0, 4)}</b></span>${st.halt ? '<b style="color:#ffb020">HALT</b>' : ''}<br>RAM ${st.ram.map((v, i) => `<span style="color:${v ? '#6dff7a' : '#6b7682'}">${v.toString(16).toUpperCase()}</span>`).join(' ')}<br><span style="color:#9aa6b2">Nächster Befehl: ${nxt ? 'Zeile ' + nxt.line + ': <b>' + nxt.op + (OPS[nxt.op] ? ' ' + (nxt.label != null ? nxt.label : nxt.n) : '') + '</b>' : 'Programmende'} · ${st.steps} Schritte</span>`;
+      q('#cpV').innerHTML = cell('A', st.a, 4) + cell('B', st.b, 4) + cell('OUT', st.out, 4) + '<br>' + `<span style="margin-right:10px">PC <b style="color:#6dff7a">${st.pc}</b></span><span style="margin-right:10px">Z <b style="color:#6dff7a">${st.z}</b></span><span style="margin-right:10px">C <b style="color:#6dff7a">${st.c}</b></span><span style="margin-right:10px">IN <b style="color:#6dff7a">${bin(st.inv || 0, 4)}</b></span>${st.halt ? '<b style="color:#ffb020">HALT</b>' : ''}<br>Stapel <span style="color:#6dff7a">${(st.stack && st.stack.length ? st.stack.map(x => x).join(' · ') : '–')}</span>${st.dstack && st.dstack.length ? ' · Daten <span style="color:#6dff7a">' + st.dstack.join(' · ') + '</span>' : ''}${st.err ? '<br><b style="color:#ffb020">' + esc(st.err) + '</b>' : ''}<br>RAM ${st.ram.map((v, i) => `<span style="color:${v ? '#6dff7a' : '#6b7682'}">${v.toString(16).toUpperCase()}</span>`).join(' ')}<br><span style="color:#9aa6b2">Nächster Befehl: ${nxt ? 'Zeile ' + nxt.line + ': <b>' + nxt.op + (OPS[nxt.op] ? ' ' + (nxt.label != null ? nxt.label : nxt.n) : '') + '</b>' : 'Programmende'} · ${st.steps} Schritte</span>`;
     };
     timer = setInterval(show, 150); show();
     q('#cpX').onclick = closeEditor;

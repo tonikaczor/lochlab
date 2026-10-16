@@ -61,6 +61,7 @@
       { at: '#side', t: 'Digitaltechnik-Karte', x: 'Rechts findest du die Werkzeuge: die Wahrheitstabelle (alle Kombinationen auf einmal), „Aus Tabelle bauen“ (Schaltung nach Wunsch) und den Zahlenumrechner.' },
       { at: '#bMenu', t: 'Menü: Wahrheitstabelle und mehr', x: 'Im Menü stehen Aufgaben, Beispiele und die Digital-Werkzeuge. Lade das Beispiel „4-Bit-Binärzähler“ und tippe unten bei den Messpunkten auf einen Baustein: Dann erscheint das Zeitdiagramm mit allen Takten.' },
       { at: '#bEx', t: 'Beispiele', x: 'Von Gattern über Addierer und Speicher bis zum Mini-Prozessor, der ein Programm ausführt.' },
+      { at: '#bMenu', t: 'KV-Diagramm und Zustandsautomaten', x: 'Im Menü findest du jetzt das KV-Diagramm (Gruppen bilden, Gleichung ablesen), das Werkzeug Zustandsautomat (Zustände eintragen, durchspielen, als Schaltung mit D-Flipflops bauen, mit Reset) und den Fehler-Würfel für Gatterschaltungen. Die Mini-CPU kennt jetzt auch Unterprogramme mit CALL und RET.' },
       NEXTSTEPS[0], END('DigiLab')] },
     haus: { name: 'HausLab', steps: [
       { t: 'Willkommen im HausLab', x: 'Hier installierst du Strom in einem Haus: Räume, Steckdosen, Schalter, Lampen, Leitungen und der Verteilerkasten. Ich zeige dir die wichtigsten Handgriffe in wenigen Minuten.' },
@@ -71,8 +72,9 @@
       { at: '#cv', t: 'Schalter bedienen', x: 'Tippe einen Lichtschalter an: Die Lampe leuchtet. Geräte an Steckdosen schaltest du auch durch Antippen. Bei jeder Steckdose siehst du die Spannung. Wenn ein Gerät einen Körperschluss hat, löst der FI aus.' },
       { at: '#pal', gate: () => !!document.querySelector('.sheet .hrail'), t: 'Verteilerkasten öffnen', x: 'Tippe unten auf „Verteiler“. Im Kasten sitzen der FI-Schutzschalter und die Sicherungsautomaten. Jeder Automat schützt einen Stromkreis.' },
       { at: '#pal', t: 'Drehstrom', x: 'Das Haus hat drei Phasen. Herd, Wallbox und Durchlauferhitzer sind Drehstromgeräte: Du setzt sie unter „Drehstromgerät“, im Verteiler wählst du einen dreipoligen Automaten, und die Leitung wird fünfadrig. Alles andere hängt einphasig an einer der drei Phasen.' },
+      { at: '#pal', t: 'Etagen, Kreuzschalter, Dusche', x: 'Mit „EG“ und „OG“ wechselst du die Etage. Leitungen steigen nur im Treppenhaus nach oben. Neu sind auch Kreuzschalter, Taster mit Stromstoßschalter und die Dusche mit ihrem Schutzbereich (gestrichelter Kreis). Im Betrieb misst das Multimeter, der Zähler im Bedienfeld zählt die Kilowattstunden, und „Leitungen prüfen“ rechnet Spannungsfall und Belastbarkeit.' },
       { at: '#pal', t: 'Bestücken und verdrahten', x: 'Im Zeichenmodus tippst du auf leere Plätze und setzt FI und Automaten ein. Danach ziehst du mit „Leitung“ vom Verteilerkasten zum ersten Gerät und wählst den Abgang. Die Länge ermittelt das Lab selbst.' },
-      { at: '#bMenu', t: 'Aufgaben und Häuser', x: 'Im Menü warten 18 Aufgaben: vom Lichtschalter über Wechselschaltung und Verteiler bis zu Drehstrom, Wallbox und dem kompletten Haus. Unter „Beispiele“ findest du drei Häuser fertig und im Rohbau, und das leere Grundstück zum freien Gestalten.' },
+      { at: '#bMenu', t: 'Aufgaben und Häuser', x: 'Im Menü warten 26 Aufgaben: vom Lichtschalter über Wechselschaltung und Verteiler bis zu Drehstrom, Wallbox und dem kompletten Haus. Unter „Beispiele“ findest du vier Häuser fertig und im Rohbau, dazu Lernbeispiele zu Kreuzschaltung, Stromstoß, Bad und Hausanschluss, und das leere Grundstück zum freien Gestalten.' },
       NEXTSTEPS[0], END('HausLab')] },
     mess: { name: 'MessLab', steps: [
       { t: 'Willkommen im MessLab', x: 'Hier lernst du Messen wie ein Profi: mit Multimeter, Oszilloskop, Netzgerät, Funktionsgenerator und mehr. Ich zeige dir in wenigen Minuten, wie die Werkbank funktioniert.' },
@@ -85,6 +87,7 @@
       { at: '.wbdock', t: 'Messen', x: 'Tippe im Multimeter auf „Messspitzen setzen“, dann auf den oberen und den unteren Anschluss von R2: erst rot, dann schwarz. Die Anzeige zeigt 6 V. Probiere auch R1: Die zwei Spannungen ergeben zusammen 9 V.' },
       { at: '.wbdock', t: 'Oszilloskop und mehr', x: 'Das Oszilloskop zeichnet den Spannungsverlauf über der Zeit. Mit „Messpunkt setzen“ wählst du, was du sehen willst. Die Beispiele „Sinus am Oszilloskop“ und „RC-Tiefpass mit Rechteck“ eignen sich zum Üben.' },
       { at: '#bMenu', t: 'Aufgaben mit Zahlen', x: 'Im Menü warten die Messaufgaben: Du misst, trägst die Zahl in ein Feld ein, und das Lab prüft sie gegen den simulierten Wert. Dazu gibt es Messfehler-Aufgaben: Warum zeigt das Gerät Unsinn?' },
+      { at: '.wbdock', t: 'Neue Geräte', x: 'In der Werkbank gibt es jetzt den Frequenzgang (Bode-Messplatz mit Grenzfrequenz), den Logikanalysator (digitale Kanäle und Buswert) und das Messprotokoll zum Ausdrucken. Unter der Anzeige des Multimeters steht die Genauigkeit.' },
       NEXTSTEPS[0], END('MessLab')] },
     loch: { name: 'LochLab', steps: [
       { t: 'Willkommen im LochLab', x: 'Im LochLab planst du eine Schaltung auf einer Lochrasterplatine, so wie du sie später lötest. Ich zeige dir die Grundlagen in wenigen Minuten.' },

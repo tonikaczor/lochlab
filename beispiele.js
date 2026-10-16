@@ -637,6 +637,92 @@ while True:
     print("Temperatur:", round(celsius, 1), "°C")
     sleep(0.5)
 ` }) },
+
+    /* ---------- Projekte für zuhause: Licht am Fahrzeug (nur Modell auf dem Brett, kein Einbau) ---------- */
+    { lab: 'code', cat: 'Projekt: Licht am Fahrzeug (Modell)', name: 'Lauflicht-Blinker (Modell)', info: 'Modell auf dem Steckbrett, nicht für den Einbau: Vier gelbe LEDs zeigen einen Lauflicht-Blinker. Der Taster an Pin 2 schaltet ihn ein und aus. Hinweis: Am Fahrzeug im Straßenverkehr dürfen nur Teile mit Prüfzeichen verbaut werden, Änderungen an der Beleuchtung können die Betriebserlaubnis erlöschen lassen.',
+      make: () => ({ parts: [['UNO', 12, 0], ['PB', 34, 4, 1, ''], ['GND', 34, 8], ['R', 22, 6, 0, '220'], ['LED', 26, 6, 0, 'gelb'], ['GND', 30, 6], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10], ['R', 22, 14, 0, '220'], ['LED', 26, 14, 0, 'gelb'], ['GND', 30, 14], ['R', 22, 18, 0, '220'], ['LED', 26, 18, 0, 'gelb'], ['GND', 30, 18]], wires: [[20, 4, 34, 4], [20, 6, 22, 6], [20, 10, 22, 10], [20, 14, 22, 14], [20, 18, 22, 18]], scopes: [], tempo: 0.75,
+      code: String.raw`// Lauflicht-Blinker (Modell): Taster an Pin 2 schaltet ein und aus
+int ledPins[] = {3, 5, 7, 9};
+int anzahl = 4;
+bool an = true;                                  // startet eingeschaltet
+bool letzter = HIGH;
+
+void setup() {
+  pinMode(2, INPUT_PULLUP);                    // Taster gegen Masse
+  for (int i = 0; i < anzahl; i++) pinMode(ledPins[i], OUTPUT);
+}
+
+void alleAus() {
+  for (int i = 0; i < anzahl; i++) digitalWrite(ledPins[i], LOW);
+}
+
+void loop() {
+  bool jetzt = digitalRead(2);
+  if (letzter == HIGH && jetzt == LOW) an = !an;   // Flanke: Taste wurde gedrückt
+  letzter = jetzt;
+  if (!an) { alleAus(); delay(20); return; }
+  for (int i = 0; i < anzahl; i++) {               // Licht wandert in Fahrtrichtung
+    digitalWrite(ledPins[i], HIGH);
+    delay(90);
+  }
+  alleAus();
+  delay(250);
+}
+` }) },
+    { lab: 'code', cat: 'Projekt: Licht am Fahrzeug (Modell)', name: 'Bremslicht mit Notbremsblinken (Modell)', info: 'Modell auf dem Steckbrett: Taster an Pin 2 ist das Bremspedal. Gedrückt leuchtet das Bremslicht hell (zwei LEDs); wer lange bremst, bekommt schnelles Blinken. Nur Modell, kein Einbau: Im Straßenverkehr gelten für Bremslichter feste Vorschriften, nur geprüfte Teile sind erlaubt.',
+      make: () => ({ parts: [['UNO', 12, 0], ['PB', 34, 4, 1, ''], ['GND', 34, 8], ['R', 22, 6, 0, '220'], ['LED', 26, 6, 0, 'rot'], ['GND', 30, 6], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'rot'], ['GND', 30, 10], ['R', 22, 14, 0, '220'], ['LED', 26, 14, 0, 'rot'], ['GND', 30, 14]], wires: [[20, 4, 34, 4], [20, 6, 22, 6], [20, 10, 22, 10], [20, 14, 22, 14]], scopes: [], tempo: 0.75,
+      code: String.raw`// Bremslicht (Modell): Pin 3 und 5 = Bremslicht, Pin 7 = Zusatz
+// Rücklicht dunkel (PWM), Bremsen hell, lange Bremsung blinkt
+unsigned long bremsStart = 0;
+bool bremst = false;
+
+void setup() {
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, OUTPUT); pinMode(5, OUTPUT); pinMode(7, OUTPUT);
+}
+
+void loop() {
+  bool druck = (digitalRead(2) == LOW);
+  if (druck && !bremst) bremsStart = millis();
+  bremst = druck;
+  if (!bremst) {
+    analogWrite(3, 40);                          // Rücklicht: gedimmt
+    analogWrite(5, 40);
+    digitalWrite(7, LOW);
+  } else if (millis() - bremsStart < 1500) {
+    analogWrite(3, 255); analogWrite(5, 255);    // Bremslicht: volle Helligkeit
+    digitalWrite(7, HIGH);
+  } else {                                       // lange Bremsung: Warnblinken
+    bool blink = (millis() / 100) % 2;
+    digitalWrite(3, blink); digitalWrite(5, blink); digitalWrite(7, blink);
+  }
+}
+` }) },
+    { lab: 'code', cat: 'Projekt: Licht am Fahrzeug (Modell)', name: 'Tagfahrlicht und Standlicht dimmen (Modell)', info: 'Modell auf dem Steckbrett: Pin 3 ist ein Tagfahrlicht (weiß), Pin 5 das Standlicht (gelb). Der Taster an Pin 2 wechselt zwischen Aus, Tagfahrlicht, Standlicht. Die Helligkeit wird über PWM weich verändert. Nur Modell: Am Fahrzeug ist dafür eine zugelassene Leuchte mit Prüfzeichen nötig.',
+      make: () => ({ parts: [['UNO', 12, 0], ['PB', 34, 4, 1, ''], ['GND', 34, 8], ['R', 22, 6, 0, '220'], ['LED', 26, 6, 0, 'weiß'], ['GND', 30, 6], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10]], wires: [[20, 4, 34, 4], [20, 6, 22, 6], [20, 10, 22, 10]], scopes: [], tempo: 0.75,
+      code: String.raw`// Betriebsarten: 0 = aus, 1 = Tagfahrlicht, 2 = Standlicht
+int modus = 1;                       // startet mit Tagfahrlicht
+bool letzter = HIGH;
+int h3 = 0, h5 = 0;                  // aktuelle Helligkeit (0 bis 255)
+
+void setup() {
+  pinMode(2, INPUT_PULLUP);
+  pinMode(3, OUTPUT); pinMode(5, OUTPUT);
+}
+
+void loop() {
+  bool jetzt = digitalRead(2);
+  if (letzter == HIGH && jetzt == LOW) modus = (modus + 1) % 3;
+  letzter = jetzt;
+  int ziel3 = (modus == 1) ? 255 : 0;
+  int ziel5 = (modus == 2) ? 90 : 0;
+  if (h3 < ziel3) h3 += 5; else if (h3 > ziel3) h3 -= 5;   // weich überblenden
+  if (h5 < ziel5) h5 += 5; else if (h5 > ziel5) h5 -= 5;
+  analogWrite(3, constrain(h3, 0, 255));
+  analogWrite(5, constrain(h5, 0, 255));
+  delay(10);
+}
+` }) },
   ];
 
   /* Schutzleiter (PE) für Haus-Beispiele: Lampen (230 V), Heizlüfter und Drehstrommotor bekommen eine grün-gelbe Ader vom PE des Netzes.

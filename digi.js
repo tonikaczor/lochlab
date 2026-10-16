@@ -199,6 +199,7 @@
     { cat: 'Mini-CPU', name: 'Mini-CPU: Zähler', info: 'Die CPU zählt mit jedem Takt von 0 bis 15 und zeigt die Zahl binär auf vier LEDs. Öffne das Programm im Menü „Mini-CPU: Programm“.', o: { clk: '4Hz', code: 'start:  LDI 0\nloop:   OUT\n        INC\n        JMP loop\n' } },
     { cat: 'Mini-CPU', name: 'Mini-CPU: Lauflicht', info: 'Ein einzelnes Licht wandert durch die vier LEDs. SHL schiebt das Bit nach links, JNC prüft den Übertrag.', o: { clk: '6Hz', code: 'start:  LDI 1\nloop:   OUT\n        SHL\n        JNC loop      ; C wird 1, wenn das Bit links herausfällt\n        JMP start\n' } },
     { cat: 'Mini-CPU', name: 'Mini-CPU: Eingabe plus 3', info: 'Die vier Schalter IN0 bis IN3 sind eine Zahl (die 10-kΩ-Widerstände ziehen offene Eingänge auf Low: Pull-down). Die CPU liest sie, addiert 3 und zeigt das Ergebnis auf den LEDs.', o: { clk: '20Hz', inputs: 4, code: 'loop:   IN\n        ADDI 3\n        OUT\n        JMP loop\n' } },
+    { cat: 'Mini-CPU', name: 'Mini-CPU: Unterprogramm', info: 'CALL ruft ein Unterprogramm auf, RET springt zurück. Das Hauptprogramm gibt 5 und 10 aus, die Ausgabe selbst steckt in einem Unterprogramm. Im Editor siehst du den Rücksprung-Stapel.', o: { clk: '8Hz', code: 'start:  LDI 5\n        CALL zeige    ; Unterprogramm aufrufen\n        LDI 10\n        CALL zeige\n        JMP start\nzeige:  OUT           ; Unterprogramm: Wert ausgeben ...\n        NOP\n        NOP\n        RET           ; ... und zurück\n' } },
     { cat: 'Mini-CPU', name: 'Mini-CPU: Fibonacci', info: 'Die Zahlenfolge 1, 1, 2, 3, 5, 8, 13 entsteht durch Addieren der letzten beiden Zahlen (RAM als Zwischenspeicher).', o: { clk: '3Hz', code: '        LDI 0\n        STA 0\n        LDI 1\n        STA 1\nloop:   LDA 1\n        OUT\n        LDB 0\n        ADD\n        JC reset\n        LDB 1\n        STB 0\n        STA 1\n        JMP loop\nreset:  JMP 0\n' } },
   ];
   /* ---------- Beispiele mit echten ICs ---------- */
@@ -218,6 +219,18 @@
         nets.push([ip(3), ip(5), ip(6), P[L1.r][0]]); nets.push([ip(4), P[L2.r][0]]);
         gnd.push(ip(7));
       }, scope: [L1.l, L2.l] };
+    } else if (which === '7474') {
+      const clk = add(['CLK', 2, 12, 1, '2Hz']); add(['GND', 2, 16]);
+      const swh = (x, y, name, on) => { const i = add(['SPST', x, y, 0, '', { l: name, sw: on ? 1 : 0 }]), q = add(['R', x + 8, y + 2, 1, '10k']); add(['GND', x + 8, y + 6]); return { i, p: q }; };
+      const Dd = swh(6, 22, 'D', 1), Cl = swh(6, 32, 'CLR', 1), Pr = swh(6, 42, 'PRE', 1);
+      const ic = add(['ICX', 24, 2, 0, 'SN7474', { n: 14 }]), L1 = led(36, 6, 'Q', 'grün'), L2 = led(36, 12, 'Q̄', 'rot');
+      spec = { build: P => {
+        const ip = k => P[ic][k - 1];
+        nets.push([P[iBat][0], ip(14), ip(13), ip(10), P[Dd.i][0], P[Cl.i][0], P[Pr.i][0]]);
+        nets.push([P[Dd.i][1], P[Dd.p][0], ip(2)]); nets.push([P[Cl.i][1], P[Cl.p][0], ip(1)]); nets.push([P[Pr.i][1], P[Pr.p][0], ip(4)]);
+        nets.push([P[clk][0], ip(3)]); nets.push([ip(5), P[L1.r][0]]); nets.push([ip(6), P[L2.r][0]]);
+        gnd.push(ip(7)); gnd.push(ip(11)); gnd.push(ip(12));
+      }, scope: [L1.l, L2.l] };
     } else if (which === '4017') {
       const clk = add(['CLK', 2, 12, 1, '3Hz']); add(['GND', 2, 16]);
       const ic = add(['ICX', 20, 2, 0, 'CD4017', { n: 16 }]), Ls = [0, 1, 2, 3, 4].map(i => led(34, 4 + 3 * i, 'Q' + i, i % 2 ? 'gelb' : 'grün'));
@@ -236,7 +249,8 @@
         nets.push([P[clk][0], a(14)]); nets.push([a(12), a(1)]);
         nets.push([a(12), b(7)]); nets.push([a(9), b(1)]); nets.push([a(8), b(2)]); nets.push([a(11), b(6)]);
         [[13, 0], [12, 1], [11, 2], [10, 3], [9, 4], [15, 5], [14, 6]].forEach(([pin, i]) => nets.push([b(pin), sg(i)]));
-        gnd.push(a(10)); gnd.push(a(2)); gnd.push(a(3)); gnd.push(a(6)); gnd.push(a(7)); gnd.push(b(8)); gnd.push(b(5)); gnd.push(sg(8));
+        if (which === '7490m6') { nets.push([a(9), a(2)]); nets.push([a(8), a(3)]); } else { gnd.push(a(2)); gnd.push(a(3)); }
+        gnd.push(a(10)); gnd.push(a(6)); gnd.push(a(7)); gnd.push(b(8)); gnd.push(b(5)); gnd.push(sg(8));
       }, scope: [] };
     }
     const P0 = api.pinPts(rows); spec.build(P0);
@@ -247,6 +261,8 @@
   const IC_EX = [
     { cat: 'ICs', name: 'IC CD4011: vier NAND-Gatter', info: 'Ein echter CMOS-Baustein mit Pinbelegung. Gatter 1 ist NAND(A, B), Gatter 2 kehrt das Ergebnis um und macht daraus UND. Die 10-kΩ-Widerstände ziehen offene Eingänge auf Low (Pull-down).', which: '4011' },
     { cat: 'ICs', name: 'IC CD4017: Lauflicht', info: 'Der Dezimalzähler 4017 schaltet mit jedem Takt den nächsten Ausgang ein. Q5 setzt ihn zurück, so laufen fünf LEDs im Kreis.', which: '4017' },
+    { cat: 'ICs', name: 'IC 7474: D-Flipflop mit Clear und Preset', info: 'Clear (CLR) und Preset (PRE) sind asynchrone Reset-Eingänge: Sie wirken sofort, ohne auf den Takt zu warten, und sind aktiv bei Low. Die Schalter stehen auf geschlossen (High, nicht aktiv). Öffne CLR: Q wird sofort 0. Öffne PRE: Q wird sofort 1.', which: '7474' },
+    { cat: 'ICs', name: 'ICs 7490 und 4511: Zähler 0 bis 5 durch Rücksetzen', info: 'Der 7490 zählt dezimal. Mit QB und QC an den Reset-Eingängen R0 wird er beim Wert 6 sofort auf 0 zurückgesetzt: Er zählt nur 0 bis 5 (Modulo 6, zum Beispiel für Zehner der Minuten).', which: '7490m6' },
     { cat: 'ICs', name: 'ICs 7490, 4511 und 7-Segment: Dezimalzähler', info: 'Der 7490 zählt Takte dezimal (BCD), der 4511 macht daraus die Segmente der Anzeige. Im echten Aufbau gehört vor jedes Segment ein Vorwiderstand.', which: '7490' },
   ];
   root.DIGI_DEF = function (api) {
@@ -338,10 +354,11 @@
     }
 
     /* Menüeinträge, Seitenkarte und Klicks des Labs */
-    root.LAB_EXTRA_MENU = () => [['wt', 'Wahrheitstabelle', 'Alle Eingangskombinationen prüfen, Gleichung herleiten'], ['synth', 'Schaltung aus Tabelle', 'Wahrheitstabelle eintragen, Schaltung bauen lassen'], ['zahl', 'Zahlenumrechner', 'Binär, Dezimal, Hex, BCD, Zweierkomplement, Üben'], ['cpu', 'Mini-CPU: Programm', 'Assembler-Editor, Register, Einzelschritt']];
-    root.LAB_EXTRA_ACT = m => { if (m === 'wt') { openTruth(); return true; } if (m === 'synth') { openSynth(); return true; } if (m === 'zahl') { openConv(); return true; } if (m === 'cpu') { if (root.CPU4) root.CPU4.openEditor(api); return true; } return false; };
-    root.LAB_EXTRA_CARD = () => '<div class="card"><h4>Digitaltechnik</h4><div class="row2"><button class="btn" data-a="dwt">Wahrheitstabelle</button><button class="btn" data-a="dsy">Aus Tabelle bauen</button></div><div class="row2"><button class="btn" data-a="dzn">Zahlenumrechner</button>' + (api.sch.parts.some(p => p.k === 'CPU' || (p.k === 'ICX' && /cpu4/i.test(p.v))) ? '<button class="btn" data-a="dcp">Mini-CPU</button>' : '') + '</div></div>';
-    root.LAB_EXTRA_CLICK = (a) => { if (a === 'dwt') { openTruth(); return true; } if (a === 'dsy') { openSynth(); return true; } if (a === 'dzn') { openConv(); return true; } if (a === 'dcp') { if (root.CPU4) root.CPU4.openEditor(api); return true; } return false; };
+    let PLUSI = null; const plus = () => PLUSI || (PLUSI = root.DIGI_PLUS ? root.DIGI_PLUS(api, root.DIGI) : null);
+    root.LAB_EXTRA_MENU = () => [['kv', 'KV-Diagramm', 'Gruppen bilden und die kürzeste Gleichung ablesen'], ['fsm', 'Zustandsautomat', 'Zustände und Übergänge, Simulation, Schaltung bauen'], ['gdw', 'Fehler-Würfel (Gatter)', 'Ein Gatter wird vertauscht, finde es'], ['wt', 'Wahrheitstabelle', 'Alle Eingangskombinationen prüfen, Gleichung herleiten'], ['synth', 'Schaltung aus Tabelle', 'Wahrheitstabelle eintragen, Schaltung bauen lassen'], ['zahl', 'Zahlenumrechner', 'Binär, Dezimal, Hex, BCD, Zweierkomplement, Üben'], ['cpu', 'Mini-CPU: Programm', 'Assembler-Editor, Register, Einzelschritt']];
+    root.LAB_EXTRA_ACT = m => { if (m === 'kv' && plus()) { plus().openKV(); return true; } if (m === 'fsm' && plus()) { plus().openFSM(); return true; } if (m === 'gdw' && plus()) { plus().rollGate(); return true; } if (m === 'wt') { openTruth(); return true; } if (m === 'synth') { openSynth(); return true; } if (m === 'zahl') { openConv(); return true; } if (m === 'cpu') { if (root.CPU4) root.CPU4.openEditor(api); return true; } return false; };
+    root.LAB_EXTRA_CARD = () => '<div class="card"><h4>Digitaltechnik</h4><div class="row2"><button class="btn" data-a="dwt">Wahrheitstabelle</button><button class="btn" data-a="dsy">Aus Tabelle bauen</button></div><div class="row2"><button class="btn" data-a="dkv">KV-Diagramm</button><button class="btn" data-a="dfs">Zustandsautomat</button></div><div class="row2"><button class="btn" data-a="dzn">Zahlenumrechner</button>' + (api.sch.parts.some(p => p.k === 'CPU' || (p.k === 'ICX' && /cpu4/i.test(p.v))) ? '<button class="btn" data-a="dcp">Mini-CPU</button>' : '') + '</div></div>' + (plus() ? plus().cardHtml() : '');
+    root.LAB_EXTRA_CLICK = (a) => { if (a === 'dkv' && plus()) { plus().openKV(); return true; } if (a === 'dfs' && plus()) { plus().openFSM(); return true; } if (a === 'gdw' && plus()) { plus().rollGate(); return true; } if (a === 'gdr' && plus()) { plus().reportGate(); return true; } if (a === 'gdv' && plus()) { plus().reveal(); return true; } if (a === 'dwt') { openTruth(); return true; } if (a === 'dsy') { openSynth(); return true; } if (a === 'dzn') { openConv(); return true; } if (a === 'dcp') { if (root.CPU4) root.CPU4.openEditor(api); return true; } return false; };
     /* ---------- Aufgaben ---------- */
     const RES = api.RES;
     const ledsOf = () => api.sch.parts.filter(p => p.k === 'LED');
@@ -459,12 +476,62 @@
         text: 'Schreibe ein Programm, das von 0 bis 9 zählt und danach wieder bei 0 beginnt (wie ein Dezimalzähler).', hint: 'Zähle wie beim Aufwärtszähler, aber vergleiche nach INC mit CMPI 10. Das Flag Z zeigt, ob A gleich 10 ist: JNZ bleibt in der Schleife, solange das nicht so ist.',
         check() { if (!cpuHas()) return [RES(false, 'Die Mini-CPU fehlt')]; const r = cpuRun(120), ch = changes(r.seq); if (r.err.length) return [RES(false, 'Das Programm hat Fehler: Zeile ' + r.err[0].line + ', ' + r.err[0].msg)]; const s = ch.join(','), ok = /(^|,)0,1,2,3,4,5,6,7,8,9,0,1,2/.test(',' + s) || s.startsWith('0,1,2,3,4,5,6,7,8,9,0'); const over = ch.some(v => v > 9); return [RES(true, 'Programm ist fehlerfrei'), RES(ok && !over, ok && !over ? 'Die Ausgabe zählt 0 bis 9 und beginnt neu' : 'Erwartet 0, 1 … 9, 0, 1 … (gesehen: ' + ch.slice(0, 14).join(', ') + ')')]; } },
     ];
+    /* Aufgaben zu den Werkzeugen KV-Diagramm, Zustandsautomat und Reset */
+    const PL = () => root.DIGI_PLUS && root.DIGI_PLUS(api);
+    const fsmCheck = (tmpl, bitsSeq, want, withReset) => () => {
+      const P = PL(); const sws = api.sch.parts.filter(p => p.k === 'SPST'), X = sws.find(p => p.l === 'X'), R = sws.find(p => p.l === 'R'), dffs = api.sch.parts.filter(p => p.k === 'DFF');
+      if (!dffs.length) return [RES(false, 'Es fehlen D-Flipflops (der Zustandsspeicher). Nutze das Werkzeug „Zustandsautomat“ im Menü und baue die Schaltung.')];
+      if (!X) return [RES(false, 'Es fehlt der Eingangsschalter X')];
+      if (withReset && !R) return [RES(true, 'Zustandsspeicher aus D-Flipflops vorhanden'), RES(false, 'Es fehlt der Reset-Schalter R (im Werkzeug „Reset-Schalter R einbauen“ ankreuzen)')];
+      const leds = api.sch.parts.filter(p => p.k === 'LED'), led = n => leds.find(l => l.l === n) || null;
+      const T = 1 / clkHz(), E = api.simEval({ set: Object.assign({ [X.id]: 0 }, R ? { [R.id]: 0 } : {}) }), got = []; let t = 0;
+      for (let k = 0; k < bitsSeq.length; k++) { E.wm.get(X.id).sw = bitsSeq[k]; const target = (k + 1) * T + 0.3 * T; E.run(target - t); t = target; got.push(want.read(E, led, ledOn)); }
+      const L = [RES(true, 'Zustandsspeicher aus D-Flipflops vorhanden'), RES(got.join('') === want.seq.join(''), got.join('') === want.seq.join('') ? want.ok : want.bad + ' (erwartet ' + want.seq.join('') + ', gesehen ' + got.join('') + ')')];
+      if (withReset) { E.wm.get(R.id).sw = 1; E.wm.get(X.id).sw = 1; E.run(T); const st = want.read(E, led, ledOn); L.push(RES(st === 0, st === 0 ? 'Mit R = 1 geht der Automat beim nächsten Takt in den Startzustand' : 'Mit R = 1 sollte der Automat beim nächsten Takt im Startzustand sein')); }
+      return L;
+    };
+    const readQ = (E, led, on) => { const q0 = led('Q0'), q1 = led('Q1'); return (q1 && on(E, q1.id) ? 2 : 0) + (q0 && on(E, q0.id) ? 1 : 0); };
+    const readZ = (E, led, on) => { const z = led('Z') || api.sch.parts.filter(p => p.k === 'LED').slice(-1)[0]; return z && on(E, z.id) ? 1 : 0; };
+    const tasksPlus = [
+      { id: 'd15', cat: 'Vereinfachen', title: 'KV-Diagramm: Funktion mit vier Variablen', level: 3, start: SK(['A', 'B', 'C', 'D'], ['Y']),
+        solSpec: { inputs: ['A', 'B', 'C', 'D'], gates: [{ id: 'nB', t: 'NOT', in: ['B'] }, { id: 'nC', t: 'NOT', in: ['C'] }, { id: 'nD', t: 'NOT', in: ['D'] }, { id: 'a1', t: 'AND', in: ['nC', 'nD'] }, { id: 'a2', t: 'AND', in: ['C', 'D'] }, { id: 'o', t: 'OR', in: ['a1', 'a2'] }, { id: 'y', t: 'AND', in: ['nB', 'o'] }], outputs: [{ name: 'Y', src: 'y', color: 'grün' }] },
+        text: 'Y soll genau dann 1 sein, wenn die Zahl ABCD die Werte 0, 3, 8 oder 11 hat (Dezimal). Trage die Einsen in das KV-Diagramm ein (Menü „KV-Diagramm“), lies die kürzeste Gleichung ab und baue die Schaltung. Vier Schalter A bis D und eine LED.', hint: 'Die Felder 0, 3, 8 und 11 bilden eine Gruppe aus vier Feldern über den Rand: B = 0 und C = D. Die Gleichung ist Y = ¬B · (¬C · ¬D + C · D). „Schaltung bauen“ im KV-Werkzeug erledigt den Bau.',
+        check: ttCheck(4, 1, b => [(b[1] === 0 && b[2] === b[3]) ? 1 : 0]) },
+      { id: 'd16', cat: 'Vereinfachen', title: 'KV mit Don’t-Care: Ziffern 5 bis 9', level: 3, start: SK(['A', 'B', 'C', 'D'], ['Y']),
+        solSpec: { inputs: ['A', 'B', 'C', 'D'], gates: [{ id: 'a1', t: 'AND', in: ['B', 'C'] }, { id: 'a2', t: 'AND', in: ['B', 'D'] }, { id: 'o1', t: 'OR', in: ['a1', 'a2'] }, { id: 'o2', t: 'OR', in: ['A', 'o1'] }], outputs: [{ name: 'Y', src: 'o2', color: 'grün' }] },
+        text: 'Eine BCD-Ziffer (0 bis 9, vier Schalter ABCD) soll erkannt werden: Y = 1 für die Ziffern 5 bis 9. Die Werte 10 bis 15 kommen bei BCD nie vor: Sie sind Don\'t-Care. Trage im KV-Diagramm 1 für 5 bis 9 und X für 10 bis 15 ein und baue die einfachste Schaltung. Nur die Zeilen 0 bis 9 werden geprüft.', hint: 'Mit den Don\'t-Care-Feldern werden die Gruppen groß: Y = A + B · C + B · D (drei Gruppen). Tippe auf ein Feld mehrmals: 0, 1, X.',
+        check() { const an = analyse(api); if (an.error) return [RES(false, an.error)]; if (an.n !== 4 || an.outs.length !== 1) return [RES(false, 'Es werden vier Schalter (A bis D) und eine LED erwartet')]; const bad = []; for (let c = 0; c < 10; c++) if (an.rows[c][0] !== (c >= 5 ? 1 : 0)) bad.push(c); return [RES(!bad.length, !bad.length ? 'Für die Ziffern 0 bis 9 stimmt die Tabelle' : 'Falsch bei der Ziffer ' + bad[0] + (bad.length > 1 ? ' (und ' + (bad.length - 1) + ' weiteren)' : ''))]; } },
+      { id: 'd17', cat: 'Zustandsautomaten', title: 'Zustandsautomat: Zähler 0 bis 3 mit Freigabe', level: 3, start: () => strip({ inputs: ['X'], gates: [], outputs: [{ name: 'Q1', src: 'X' }, { name: 'Q0', src: 'X' }], scope: [] }),
+        solFn: () => { const P = PL(); return P.fsmSpec(P.FSM_T['Zähler 0 bis 3 mit Freigabe'], false); },
+        text: 'Ein Zähler soll bei jedem Takt weiterzählen (00, 01, 10, 11, 00 …), solange der Schalter X (Freigabe) geschlossen ist. Bei X = 0 bleibt er stehen. Öffne im Menü das Werkzeug „Zustandsautomat“, wähle die Vorlage „Zähler 0 bis 3 mit Freigabe“, sieh dir Diagramm und Gleichungen an und lass die Schaltung bauen.', hint: 'Das Werkzeug zeigt Zustandsdiagramm, Zustandstabelle und die Gleichungen für D0 und D1. „Schaltung bauen“ erzeugt zwei D-Flipflops, die Gatter und die LEDs Q1 und Q0.',
+        check: fsmCheck('count', [1, 1, 1, 1, 0, 0], { seq: [1, 2, 3, 0, 0, 0], read: readQ, ok: 'Mit X = 1 zählt er 1, 2, 3, 0 und bleibt bei X = 0 stehen', bad: 'Zählfolge falsch' }) },
+      { id: 'd18', cat: 'Zustandsautomaten', title: 'Zustandsautomat: Folge 101 erkennen', level: 3, start: () => strip({ inputs: ['X'], gates: [], outputs: [{ name: 'Z', src: 'X' }], scope: [] }),
+        solFn: () => { const P = PL(); return P.fsmSpec(P.FSM_T['Folge 101 erkennen'], false); },
+        text: 'Ein Automat soll die Bitfolge 1, 0, 1 am Eingang X erkennen: Nach jeder Taktflanke wird X gelesen. Der Ausgang Z soll 1 sein, solange der Automat nach „101“ im letzten Zustand steht. Wähle im Werkzeug „Zustandsautomat“ die Vorlage „Folge 101 erkennen“ und baue die Schaltung. Die Prüfung füttert sie mit 1,0,1,1,0,1,0,0.', hint: 'Zustände: Start, 1, 10, 101. Z gehört zum Zustand 101. Im Werkzeug sind Tabelle und Diagramm schon eingetragen, du musst die Schaltung nur bauen lassen und mit X und dem Takt prüfen.',
+        check: fsmCheck('seq', [1, 0, 1, 1, 0, 1, 0, 0], { seq: [0, 0, 1, 0, 0, 1, 0, 0], read: readZ, ok: 'Z wird nach 1, 0, 1 zu 1 und sonst 0 (beide Treffer erkannt)', bad: 'Der Ausgang Z folgt nicht der Folge 101' }) },
+      { id: 'd19', cat: 'Zustandsautomaten', title: 'Reset-Eingang: Zähler mit Rücksetzen', level: 3, start: () => strip({ inputs: ['X', 'R'], gates: [], outputs: [{ name: 'Q1', src: 'X' }, { name: 'Q0', src: 'X' }], scope: [] }),
+        solFn: () => { const P = PL(); return P.fsmSpec(P.FSM_T['Zähler 0 bis 3 mit Freigabe'], true); },
+        text: 'Ein Reset-Eingang bringt den Automaten in einen bekannten Startzustand. Baue den Zähler 0 bis 3 mit Freigabe noch einmal, diesmal mit angekreuztem „Reset-Schalter R einbauen“: Bei R = 1 geht er mit dem nächsten Takt auf 0, egal wie X steht. (Das ist ein synchroner Reset; asynchron arbeiten Clear und Preset der ICs.)', hint: 'Im Werkzeug „Zustandsautomat“: Vorlage „Zähler 0 bis 3 mit Freigabe“, Haken bei „Reset-Schalter R“, dann bauen. Jeder D-Eingang wird mit ¬R verundet: Ist R = 1, wird D = 0.',
+        check: fsmCheck('countr', [1, 1, 1, 1, 0, 0], { seq: [1, 2, 3, 0, 0, 0], read: readQ, ok: 'Der Zähler zählt mit Freigabe', bad: 'Zählfolge falsch' }, true) },
+    ];
     const tasks = [];
     T1.forEach(t => {
       const sp = t.spec, mk = t.start || (() => strip(sp)), sol = () => layout(api, sp), f = t.faulty;
       tasks.push({ id: t.id, cat: t.cat, title: t.title, level: t.level, text: t.text, hint: t.hint, start: f ? () => layout(api, f(sp)) : mk, solMake: sol, check: t.check });
     });
     T2.forEach(t => tasks.push({ id: t.id, cat: t.cat, title: t.title, level: t.level, text: t.text, hint: t.hint, start: () => cpuLayout(api, t.cpu), solMake: () => cpuLayout(api, Object.assign({}, t.cpu, { code: t.sol })), check: t.check }));
+    tasksPlus.forEach(t => tasks.push({ id: t.id, cat: t.cat, title: t.title, level: t.level, text: t.text, hint: t.hint, start: t.start, solMake: t.solFn ? () => layout(api, t.solFn()) : () => layout(api, t.solSpec), check: t.check }));
+    /* Mini-CPU: Unterprogramme */
+    const hasOp = op => root.CPU4.program().prog.some(i => i.op === op);
+    const T3 = [
+      { id: 'dc5', cat: 'Mini-CPU', title: 'Programmiere ein Unterprogramm (CALL und RET)', level: 3, cpu: { clk: '40Hz', code: '; Hauptprogramm: gib mit einem Unterprogramm erst 5, dann 10 aus.\n' }, sol: 'start:  LDI 5\n        CALL zeige\n        LDI 10\n        CALL zeige\n        JMP start\nzeige:  OUT\n        NOP\n        RET\n',
+        text: 'Schreibe ein Programm, das mit einem <b>Unterprogramm</b> zuerst 5 und dann 10 ausgibt und endlos wiederholt. Das Unterprogramm „zeige“ gibt den Wert in A mit OUT aus. Rufe es mit CALL zeige auf und springe mit RET zurück.'.replace(/<\/?b>/g, ''), hint: 'CALL merkt sich die Adresse hinter dem Befehl und springt zur Marke. RET springt dorthin zurück. Das Unterprogramm steht hinter dem Hauptprogramm (nach JMP start), sonst läuft es versehentlich mit.',
+        check() { if (!cpuHas()) return [RES(false, 'Die Mini-CPU fehlt')]; const r = cpuRun(100), ch = changes(r.seq); if (r.err.length) return [RES(false, 'Das Programm hat Fehler: Zeile ' + r.err[0].line + ', ' + r.err[0].msg)]; const usesSub = hasOp('CALL') && hasOp('RET'); const ok = ch.filter(v => v !== 0).slice(0, 6).every((v, i) => v === (i % 2 ? 10 : 5)) && ch.filter(v => v !== 0).length >= 4; return [RES(true, 'Programm ist fehlerfrei'), RES(usesSub, usesSub ? 'Das Programm nutzt CALL und RET' : 'Nutze CALL zum Aufrufen und RET zum Zurückspringen'), RES(ok, ok ? 'Die Ausgabe wechselt 5, 10, 5, 10 …' : 'Erwartet wird 5, 10, 5, 10 … (gesehen: ' + ch.slice(0, 8).join(', ') + ')')]; } },
+      { id: 'dc6', cat: 'Mini-CPU', title: 'Programmiere ein Blinklicht mit Warte-Unterprogramm', level: 3, cpu: { clk: '60Hz', code: '; Blinklicht: alle vier LEDs an, warten, aus, warten. Das Warten steckt in einem Unterprogramm.\n' }, sol: 'start:  OUTI 15\n        CALL warte\n        OUTI 0\n        CALL warte\n        JMP start\nwarte:  LDI 5\nw1:     DEC\n        JNZ w1\n        RET\n',
+        text: 'Alle vier LEDs sollen abwechselnd an (15) und aus (0) gehen, dazwischen wartet ein Unterprogramm „warte“ mit einer Zählschleife. Nutze CALL und RET und schreibe die Wartezeit nur einmal.', hint: 'Das Unterprogramm zählt A herunter: LDI 5, dann DEC und JNZ zurück zur Schleifenmarke, am Ende RET. Das Hauptprogramm ruft es zweimal auf.',
+        check() { if (!cpuHas()) return [RES(false, 'Die Mini-CPU fehlt')]; const r = cpuRun(150), ch = changes(r.seq); if (r.err.length) return [RES(false, 'Das Programm hat Fehler: Zeile ' + r.err[0].line + ', ' + r.err[0].msg)]; const calls = root.CPU4.program().prog.filter(i => i.op === 'CALL').length; const ok = ch.length >= 5 && ch.slice(0, 6).every((v, i) => v === (i % 2 ? 0 : 15)); return [RES(true, 'Programm ist fehlerfrei'), RES(calls >= 1 && hasOp('RET'), calls >= 1 && hasOp('RET') ? 'Das Programm nutzt ein Unterprogramm' : 'Nutze CALL und RET'), RES(ok, ok ? 'Alle LEDs gehen im Wechsel an und aus' : 'Erwartet wird 15, 0, 15, 0 … (gesehen: ' + ch.slice(0, 8).join(', ') + ')')]; } },
+    ];
+    T3.forEach(t => tasks.push({ id: t.id, cat: t.cat, title: t.title, level: t.level, text: t.text, hint: t.hint, start: () => cpuLayout(api, t.cpu), solMake: () => cpuLayout(api, Object.assign({}, t.cpu, { code: t.sol })), check: t.check }));
     api.addTasks(tasks);
 
     if (/[?&]zahl\b/.test(location.search)) setTimeout(() => { const t = setInterval(() => { const gt = document.getElementById('gate'); if (!gt || gt.offsetParent === null) { clearInterval(t); openConv(); } }, 500); }, 1200);

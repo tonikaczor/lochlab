@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Projekt Pi-hole: Übungsumgebung</title>
+<style>
+:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--ok:#4cd964;--bad:#ff8a7a;--warn:#ffb340;--line:#38424d;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,"Segoe UI",sans-serif}
+a{color:var(--accent)}
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+header h1{font-size:18px;margin:0;flex:1}header small{color:var(--mute);display:block;font-weight:400;font-size:12px}
+.btn{height:34px;padding:0 12px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:600 13px system-ui;cursor:pointer}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}.btn[disabled]{opacity:.45;cursor:default}
+main{display:grid;grid-template-columns:minmax(300px,430px) 1fr;gap:14px;padding:14px;align-items:start}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.col{min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
+.step{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--panel)}
+.step>.sh{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer}
+.step .no{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);font-weight:700;font-size:13px;flex:none}
+.step.done .no{background:var(--ok);color:#0b1a0f}.step.cur{border-color:var(--accent)}
+.step .sb{display:none;padding:2px 14px 12px}.step.open .sb{display:block}
+.step h3{margin:0;font-size:15px;flex:1}
+.k{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0f1418;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:13px}
+pre.cmd{margin:6px 0;padding:8px 10px;background:#0f1418;border:1px solid var(--line);border-radius:8px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;position:relative}
+.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:10px 0 3px;font-weight:700}
+.pp{margin:10px 0 0;padding:7px 10px;border-radius:8px;background:rgba(76,217,100,.1);border:1px solid rgba(76,217,100,.4);font-size:13px}
+.wn{margin:10px 0 0;padding:7px 10px;border-radius:8px;background:rgba(255,179,64,.1);border:1px solid rgba(255,179,64,.45);font-size:13px}
+.hintbtn{margin-top:8px}
+/* Umgebung */
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.tab{padding:7px 12px;border-radius:9px 9px 0 0;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-weight:600;font-size:13px}
+.tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.env{border:1px solid var(--line);border-radius:12px;background:#0f1418;min-height:420px;overflow:hidden}
+.term{font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:10px;height:430px;overflow:auto;background:#0b0e11;color:#d6e2ea;white-space:pre-wrap;word-break:break-word}
+.term .p{color:#7dff9a}.term .e{color:#ff8a7a}.term .i{color:#8d99a6}.term .y{color:#ffe14d}
+.tin{display:flex;border-top:1px solid var(--line);background:#0b0e11}.tin span{padding:8px 0 8px 10px;font:13px ui-monospace,monospace;color:#7dff9a;white-space:nowrap}.tin input{flex:1;background:none;border:0;color:#fff;font:13px ui-monospace,monospace;padding:8px;outline:none;min-width:0}
+.web{background:#fff;color:#1b2230;padding:12px;min-height:420px;font-family:system-ui,sans-serif}.web h2{margin:6px 0}
+.bar{display:flex;gap:6px;background:#e6e9ee;padding:8px;border-bottom:1px solid #c9cfd8}.bar input{flex:1;padding:6px 8px;border:1px solid #b9c0cb;border-radius:6px;font:13px system-ui;min-width:0}.bar button{padding:6px 10px;border-radius:6px;border:1px solid #b9c0cb;background:#fff;cursor:pointer}
+.ad{border:2px dashed #e0a020;background:#fff6dd;padding:10px;margin:8px 0;border-radius:8px;text-align:center;font-weight:700;color:#7a5200}.blk{border:2px dashed #b9c0cb;background:#f2f4f7;color:#7b8592;padding:10px;margin:8px 0;border-radius:8px;text-align:center;font-size:13px}
+.img{display:inline-block;width:110px;height:80px;border-radius:8px;background:linear-gradient(135deg,#8ec5ff,#4a90e2);margin:4px;color:#fff;font:600 12px system-ui;text-align:center;line-height:80px}.imgx{background:#e5e8ec;color:#98a1ad}
+.rt{background:#f4f6f9;color:#1b2230;display:grid;grid-template-columns:170px 1fr;min-height:420px;font-family:system-ui,sans-serif}.rt nav{background:#0d3b66;color:#fff;padding:10px 0}.rt nav div{padding:9px 14px;cursor:pointer;font-size:13px}.rt nav div.on{background:#1565a8}.rt section{padding:14px}
+.rt table{border-collapse:collapse;width:100%;font-size:13px}.rt td,.rt th{border-bottom:1px solid #d6dbe3;padding:6px 8px;text-align:left}
+.rt input[type=text]{padding:6px 8px;border:1px solid #b9c0cb;border-radius:6px;font:13px system-ui;width:210px}
+.rt .b{padding:7px 14px;border-radius:6px;border:0;background:#1565a8;color:#fff;cursor:pointer;font-weight:600}
+.dlg{background:#16417a;color:#fff;border:2px solid #9fb4d6;margin:30px auto;max-width:560px;padding:0;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace}.dlg h4{margin:0;background:#cfd9ea;color:#16417a;padding:4px 10px;font-size:13px}.dlg .bd{padding:12px;white-space:pre-wrap}.dlg .ac{display:flex;gap:10px;justify-content:center;padding:0 12px 12px}.dlg button{background:#cfd9ea;color:#16417a;border:0;padding:4px 14px;font:600 13px ui-monospace,monospace;cursor:pointer}.dlg .opt{display:block;padding:2px 8px;cursor:pointer}.dlg .opt.on{background:#e8c24a;color:#000}
+.dash{background:#1b1f27;color:#e3e7ee;padding:12px;font-family:system-ui,sans-serif;min-height:420px}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}.tile{border-radius:8px;padding:10px;color:#fff}.tile b{display:block;font-size:22px}
+.dash table{width:100%;border-collapse:collapse;font-size:12px}.dash td,.dash th{border-bottom:1px solid #2e3440;padding:5px 6px;text-align:left}.dash .bk{color:#ff8a7a}.dash .al{color:#7dd87d}.dash button{font-size:11px;padding:2px 8px;border-radius:5px;border:1px solid #556;background:#2a3040;color:#fff;cursor:pointer}
+.imgr{background:#f0f0f0;color:#222;font-family:system-ui,sans-serif;padding:14px;min-height:420px}.imgr h4{margin:0 0 8px}.imgr .row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.imgr .opt{padding:7px 10px;border:2px solid #c3c8d1;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}.imgr .opt.on{border-color:#c51a4a;background:#fde8ee}.imgr label{display:block;margin:6px 0;font-size:13px}.imgr input[type=text],.imgr input[type=password]{padding:5px 8px;border:1px solid #b0b6c0;border-radius:6px;margin-left:6px}.imgr .go{padding:8px 16px;border:0;border-radius:8px;background:#c51a4a;color:#fff;font-weight:700;cursor:pointer}
+.pi{padding:14px;color:#e8ecf0}.pi .it{display:inline-block;margin:6px 8px 6px 0;padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:var(--panel2);cursor:pointer}.pi .it.on{border-color:var(--ok);background:rgba(76,217,100,.12)}
+.msg{margin:8px 0;min-height:18px;font-size:13px}
+.hide{display:none}
+@media print{header .btn,.tabs,.env,.hintbtn,.noprint{display:none!important}main{display:block;padding:0}.col.envcol{display:none}body{background:#fff;color:#000}.card,.step{background:#fff;border:1px solid #999}.step .sb{display:block!important}.k,pre.cmd{background:#f4f4f4;color:#000;border-color:#bbb}.pp{background:#eef9ee}.wn{background:#fff6dd}.lbl{color:#444}.step .no{background:#ddd;color:#000}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Projekt Pi-hole: Werbung im ganzen Heimnetz blocken<small>Anleitung zum Selbermachen und eine Übungsumgebung, in der du alles zuerst gefahrlos ausprobierst</small></h1>
+  <a class="btn" href="index.html" style="text-decoration:none;display:inline-flex;align-items:center">Startseite</a>
+  <button class="btn" id="bPrint">Anleitung drucken</button>
+  <button class="btn" id="bReset">Übung zurücksetzen</button>
+</header>
+<main>
+  <div class="col" id="guide"></div>
+  <div class="col envcol">
+    <div class="card" style="margin-bottom:8px"><b id="curT"></b><div class="msg" id="curM" style="margin:4px 0 0"></div></div>
+    <div class="tabs" id="tabs"></div>
+    <div class="env" id="env"></div>
+    <p style="color:var(--mute);font-size:12px;margin:8px 2px">Die Übungsumgebung ist vereinfacht: Ausgaben und Menünamen sehen bei dir etwas anders aus (je nach Router und Pi-hole-Version). Nichts davon verlässt diese Seite.</p>
+  </div>
+</main>
+<script>
+(function () {
+'use strict';
+var $ = function (s, r) { return (r || document).querySelector(s); }, esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+var KEY = 'lm4.proj.pihole';
+var PI_IP = '192.168.178.45', ROUTER_IP = '192.168.178.1', LAPTOP_IP = '192.168.178.23';
+var ADLIST = 'https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts';
+var BLOCKED = ['ads.tracker.beispiel', 'werbung.popup.beispiel', 'metrics.analytics.beispiel', 'cdn.shopbilder.beispiel'];   // Blockliste (die letzte Adresse ist ein Fehlalarm)
+var SITES = {
+  'schule.beispiel': { title: 'Berufsschule Beispielstadt', res: [], text: 'Willkommen. Hier gibt es keine Werbung.' },
+  'shop.beispiel': { title: 'Moped-Shop', res: [{ d: 'cdn.shopbilder.beispiel', k: 'img', t: 'Produktfoto' }, { d: 'ads.tracker.beispiel', k: 'ad', t: 'Werbebanner' }], text: 'Zubehör für dein Moped: Blinker, Spiegel, LED-Licht.' },
+  'nachrichten.beispiel': { title: 'Nachrichten heute', res: [{ d: 'ads.tracker.beispiel', k: 'ad', t: 'Werbebanner' }, { d: 'werbung.popup.beispiel', k: 'ad', t: 'Pop-up-Werbung' }, { d: 'metrics.analytics.beispiel', k: 'px', t: 'Tracking-Pixel' }], text: 'Die wichtigsten Meldungen des Tages.' }
+};
+var IMG = { dev: ['Raspberry Pi 3', 'Raspberry Pi 4', 'Raspberry Pi 5', 'Raspberry Pi Zero 2 W'], os: ['Raspberry Pi OS (64-bit) mit Desktop', 'Raspberry Pi OS Lite (64-bit)', 'Ubuntu Desktop', 'Windows 11'], sto: ['SD-Karte 32 GB (neu)', 'USB-Festplatte BACKUP 1 TB (deine Fotos!)'] };
+var UP = ['Google', 'Cloudflare', 'OpenDNS', 'Quad9 (gefiltert)', 'Quad9 (ungefiltert)'];
+
+function fresh() { return { step: 0, done: {}, v: { img: { dev: '', os: '', sto: '', host: 'raspberrypi', user: '', pw: '', ssh: false, wifi: false, tz: false, flashed: false }, aufbau: { sd: false, lan: false, pwr: false }, piOn: false, ipSeen: '', ipRes: false, router: { dnsField: '', dnsSet: false }, sshOk: false, upd: false, wgetFile: false, inst: null, installed: false, pwSet: false, up: { cfg: null }, svc: true, blocking: true, allow: [], deny: [], tested: {}, queries: [], visited: {}, gravity: false, status: false, lists: [ADLIST] } }; }
+var S = (function () { try { var o = JSON.parse(localStorage.getItem(KEY)); if (o && o.v) return o; } catch (e) {} return fresh(); })();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+var V = function () { return S.v; };
+
+/* ---------- Schritte ---------- */
+var STEPS = [
+  { t: 'Überblick und Material', env: null, why: 'Jede Webseite besteht aus vielen Teilen von verschiedenen Servern: Text, Bilder, Werbung, Tracker. Dein Gerät fragt für jeden Server zuerst einen DNS-Server nach der Adresse („Wie lautet die IP von ads.beispiel.de?“). Pi-hole ist ein DNS-Server im Heimnetz: Kennt er den Namen aus einer Sperrliste, antwortet er mit „gibt es nicht“ – die Werbung wird gar nicht erst geladen. Das gilt für jedes Gerät im Netz, auch für Handy, Fernseher und Spielkonsole.',
+    real: '<ul><li>Raspberry Pi 3, 4 oder 5 (auch Zero 2 W geht), etwa 35 bis 80 €</li><li>microSD-Karte ab 16 GB (besser 32 GB), etwa 8 €</li><li>Netzteil für deinen Pi (das richtige, sonst gibt es Abstürze), etwa 10 €</li><li>Netzwerkkabel zum Router (Kabel ist stabiler als WLAN), etwa 3 €</li><li>Einen Computer zum Einrichten (Windows, Mac oder Linux)</li><li>Zugriff auf die Einstellungen deines Routers (frag die Person, die den Router verwaltet)</li></ul>',
+    prac: 'Lies die Schritte durch und klicke auf „Gelesen“. Die Übungsumgebung rechts ersetzt Pi, Router und Computer.', manual: true, hint: 'Nichts zu tun außer lesen.',
+    warn: 'Datenschutz: Pi-hole sieht alle DNS-Anfragen im Netz (welche Seiten aufgerufen werden). Richte es nur in deinem eigenen Heimnetz ein und nur mit Wissen der anderen Nutzer, nie im Schul- oder Firmennetz ohne Erlaubnis.' },
+  { t: 'Raspberry Pi OS auf die SD-Karte schreiben', env: 'imager', why: 'Der Pi hat keine Festplatte. Das Betriebssystem liegt auf der SD-Karte. Das Programm „Raspberry Pi Imager“ schreibt es dorthin und trägt gleich Name, Benutzer, Passwort und SSH ein, damit du den Pi später ohne Bildschirm und Tastatur bedienen kannst („headless“).',
+    real: '<ol><li>Raspberry Pi Imager von raspberrypi.com herunterladen und installieren.</li><li>Gerät wählen (dein Pi-Modell).</li><li>Betriebssystem: <b>Raspberry Pi OS Lite (64-bit)</b>. Ohne Desktop, spart Speicher und Strom.</li><li>Speicher: <b>deine SD-Karte</b>, auf keinen Fall ein anderes Laufwerk, denn alles darauf wird gelöscht!</li><li>Einstellungen anpassen: Hostname (zum Beispiel <span class="k">pihole</span>), Benutzername und Passwort, <b>SSH aktivieren</b>, Zeitzone Europe/Berlin.</li><li>Schreiben und warten.</li></ol>',
+    prac: 'Wechsle zum Reiter „Imager“. Wähle Gerät, Betriebssystem und Speicher, stelle Hostname <span class="k">pihole</span>, einen Benutzernamen und ein Passwort ein, schalte SSH ein und schreibe die Karte.', hint: 'Das Betriebssystem heißt „Raspberry Pi OS Lite (64-bit)“. Als Speicher nimmst du die SD-Karte. Vergiss „SSH aktivieren“ nicht, sonst kommst du später nicht auf den Pi.',
+    check: function (v) { var i = v.img; return i.flashed && i.host === 'pihole' && i.ssh && !!i.user && !!i.pw; } },
+  { t: 'Pi aufbauen und starten', env: 'aufbau', why: 'Der Pi startet, sobald er Strom hat. Er holt sich vom Router per DHCP eine IP-Adresse. Beim ersten Start braucht er ein paar Minuten.',
+    real: '<ol><li>SD-Karte in den Pi stecken.</li><li>Netzwerkkabel vom Pi zum Router.</li><li>Zuletzt das Netzteil anschließen. Die grüne LED flackert, wenn er bootet.</li><li>Etwa zwei bis drei Minuten warten.</li></ol>',
+    prac: 'Wechsle zum Reiter „Aufbau“ und klicke die drei Teile in dieser Reihenfolge an, dann „Einschalten“.', hint: 'Erst SD-Karte, dann Netzwerkkabel, zuletzt das Netzteil.',
+    check: function (v) { return v.piOn; } },
+  { t: 'Die IP-Adresse des Pi herausfinden', env: 'router', why: 'Um dich mit dem Pi zu verbinden, brauchst du seine Adresse im Heimnetz. Der Router weiß, welche Geräte verbunden sind.',
+    real: '<ol><li>Im Browser die Oberfläche des Routers öffnen (häufig die Adresse <span class="k">192.168.178.1</span>, <span class="k">fritz.box</span> oder <span class="k">192.168.0.1</span>, steht oft auf dem Router).</li><li>Zur Liste der Netzwerkgeräte gehen (bei vielen Routern unter „Heimnetz“ oder „Netzwerk“).</li><li>Das Gerät mit dem Namen aus Schritt 2 (<span class="k">pihole</span>) suchen und die IP-Adresse ablesen.</li></ol>',
+    prac: 'Im Reiter „Router“ siehst du die Geräteliste. Trage die IP-Adresse des Geräts <span class="k">pihole</span> in das Feld unten ein und klicke „Merken“.', hint: 'Die Liste ist unter „Heimnetz › Netzwerk“. Dein Pi steht erst da, wenn er gestartet ist.',
+    check: function (v) { return v.piOn && v.ipSeen === PI_IP; } },
+  { t: 'Per SSH auf den Pi verbinden', env: 'term', why: 'SSH ist eine verschlüsselte Fernverbindung für die Kommandozeile. Du tippst Befehle an deinem Computer, sie laufen auf dem Pi. Beim ersten Mal fragt SSH, ob du dem Pi vertraust (Fingerabdruck).',
+    real: '<pre class="cmd">ssh BENUTZER@pihole.local</pre>BENUTZER ist der Name, den du im Imager gewählt hast. Statt <span class="k">pihole.local</span> geht auch die IP-Adresse. Die Frage „Are you sure you want to continue connecting?“ beantwortest du mit <span class="k">yes</span>, dann das Passwort eingeben (beim Tippen erscheint nichts).',
+    prac: 'Wechsle zum Reiter „Terminal“. Das ist dein Computer. Tippe den ssh-Befehl mit deinem Benutzernamen und bestätige mit Eingabe.', hint: 'Zum Beispiel: ssh meinname@pihole.local (meinname ist dein Benutzername aus dem Imager).',
+    check: function (v) { return v.sshOk; } },
+  { t: 'System aktualisieren', env: 'term', why: 'Bevor du etwas installierst, bringst du das System auf den neuesten Stand. So holst du Sicherheitsupdates und vermeidest Fehler beim Installieren.',
+    real: '<pre class="cmd">sudo apt update\nsudo apt full-upgrade -y</pre><span class="k">sudo</span> führt den Befehl mit Administratorrechten aus. <span class="k">apt update</span> lädt die Paketlisten, <span class="k">full-upgrade</span> installiert die Updates.',
+    prac: 'Du bist per SSH auf dem Pi. Gib beide Befehle nacheinander ein.', hint: 'Erst sudo apt update, dann sudo apt full-upgrade -y.',
+    check: function (v) { return v.upd; } },
+  { t: 'Feste IP-Adresse für den Pi (DHCP-Reservierung)', env: 'router', why: 'Pi-hole ist der DNS-Server für dein ganzes Netz. Ändert sich seine Adresse, finden die Geräte ihn nicht mehr und es geht „kein Internet“. Darum bekommt der Pi immer dieselbe Adresse. Am einfachsten sagst du dem Router: „Gib diesem Gerät immer diese IP.“ (DHCP-Reservierung).',
+    real: '<ol><li>In der Routeroberfläche den Pi in der Geräteliste öffnen („Bearbeiten“).</li><li>Die Option „Diesem Netzwerkgerät immer die gleiche IPv4-Adresse zuweisen“ (so heißt sie bei vielen Routern) einschalten.</li><li>Übernehmen.</li></ol>Die Bezeichnungen unterscheiden sich je nach Router. Pi-hole braucht nach der Doku eine feste Adresse, eine Reservierung reicht.',
+    prac: 'Im Reiter „Router“ den Eintrag <span class="k">pihole</span> bearbeiten und die Reservierung einschalten.', hint: 'Klicke bei „pihole“ auf das Stift-Symbol und setze den Haken bei „immer die gleiche IPv4-Adresse“.',
+    check: function (v) { return v.ipRes; } },
+  { t: 'Pi-hole installieren', env: 'term', why: 'Der Installer lädt Pi-hole herunter und fragt dich ein paar Dinge. Die Standardantworten sind für den Anfang in Ordnung. Der Befehl lädt ein Skript aus dem Internet und führt es sofort aus: Das ist bequem, aber man sieht den Code vorher nicht. Wer vorsichtig sein will, lädt das Skript erst herunter, schaut es an und startet es dann.',
+    real: '<div class="lbl">Schnell</div><pre class="cmd">curl -sSL https://install.pi-hole.net | bash</pre><div class="lbl">Vorsichtiger: erst ansehen</div><pre class="cmd">wget -O basic-install.sh https://install.pi-hole.net\nless basic-install.sh\nsudo bash basic-install.sh</pre>Im Installer: mit den Pfeiltasten wählen, mit Tab zwischen den Knöpfen wechseln und mit Eingabe bestätigen. Wähle einen Upstream-DNS-Anbieter (der Server, den Pi-hole fragt, wenn eine Adresse nicht gesperrt ist), lass die Standard-Sperrliste an, installiere die Weboberfläche und aktiviere das Protokoll (Query Log).',
+    prac: 'Gib einen der beiden Wege im Terminal ein (du bist weiter per SSH auf dem Pi). Der Installer öffnet sich im Reiter „Pi-hole-Installer“. Gehe die Fenster durch.', hint: 'Der kürzeste Weg: curl -sSL https://install.pi-hole.net | bash',
+    check: function (v) { return v.installed; } },
+  { t: 'Passwort für die Weboberfläche setzen', env: 'term', why: 'Die Weboberfläche zeigt alle Anfragen und lässt Einstellungen ändern. Ohne Passwort könnte jeder im Netz daran drehen. In Pi-hole Version 6 setzt du das Passwort auf der Kommandozeile.',
+    real: '<pre class="cmd">pihole setpassword</pre>Du wirst zweimal nach dem Passwort gefragt (beim Tippen erscheint nichts). Wähle ein eigenes, langes Passwort.',
+    prac: 'Gib den Befehl im Terminal ein und lege ein Passwort fest.', hint: 'pihole setpassword',
+    check: function (v) { return v.pwSet; } },
+  { t: 'Den Router auf Pi-hole zeigen lassen', env: 'router', why: 'Jetzt läuft Pi-hole, aber noch fragt niemand ihn. Du sagst dem Router: „Sag allen Geräten, dass sie Pi-hole als DNS-Server nehmen sollen.“ Der Router verteilt diese Einstellung beim nächsten Verbinden eines Geräts.',
+    real: '<ol><li>In der Routeroberfläche zu den Netzwerkeinstellungen gehen (bei vielen Routern „Heimnetz › Netzwerk › Netzwerkeinstellungen“).</li><li>Das Feld für den lokalen DNS-Server (IPv4) mit der IP des Pi füllen.</li><li>Übernehmen. Danach Geräte neu verbinden (WLAN aus und an) oder warten.</li></ol><div class="wn">IPv6: Verteilt dein Router auch IPv6-DNS-Server, können Geräte an Pi-hole vorbeifragen. Dann dort ebenfalls Pi-hole eintragen oder IPv6-DNS abschalten. Je nach Router unterschiedlich.</div>',
+    prac: 'Im Reiter „Router“ den Eintrag „Netzwerkeinstellungen“ öffnen, bei „Lokaler DNS-Server“ die IP-Adresse des Pi eintragen und übernehmen.', hint: 'Die Adresse des Pi kennst du aus Schritt 4 (192.168.178.45).',
+    check: function (v) { return v.router.dnsSet; } },
+  { t: 'Testen: Werbung verschwindet', env: 'browser', why: 'Jetzt siehst du, ob es klappt. Im Browser fehlen die gesperrten Teile, in der Pi-hole-Oberfläche zählt der Zähler der gesperrten Anfragen hoch. Mit dem Befehl nslookup siehst du, was dein Gerät zur Adresse erfährt.',
+    real: '<ol><li>Besuche eine Seite mit viel Werbung. Banner fehlen oder sind leer.</li><li>Öffne die Weboberfläche <span class="k">http://pi.hole/admin</span> (oder <span class="k">http://IP-DES-PI/admin</span>). Du siehst Zähler und das Query Log.</li><li>Im Terminal: <pre class="cmd">nslookup ads.tracker.beispiel</pre> Gesperrte Namen liefern die Adresse 0.0.0.0.</li></ol>',
+    prac: 'Öffne im Reiter „Browser“ die Seiten <span class="k">nachrichten.beispiel</span> und <span class="k">shop.beispiel</span>, schau dann im Reiter „Pi-hole“ in das Dashboard und gib im Terminal einen nslookup auf <span class="k">ads.tracker.beispiel</span> ein (dein Computer).', hint: 'Beim Shop fehlt noch etwas, das nicht fehlen sollte. Das ist der nächste Schritt.',
+    check: function (v) { return v.visited['nachrichten.beispiel'] && v.visited['shop.beispiel'] && v.nsl; } },
+  { t: 'Fehlalarm beheben: Allowlist', env: 'pihole', why: 'Sperrlisten sind nicht perfekt: Manchmal steht ein harmloser Server auf der Liste, dann fehlen Bilder oder die Seite geht nicht. Dafür gibt es die Allowlist: Adressen, die immer erlaubt sind. Im Query Log siehst du, welche Anfrage blockiert wurde.',
+    real: '<ol><li>Bei Problemen mit einer Seite in der Pi-hole-Oberfläche das <b>Query Log</b> öffnen.</li><li>Nach der Adresse suchen, die „Blocked“ ist und zur Seite gehört.</li><li>Bei dieser Zeile „Allow“ wählen (oder im Terminal <span class="k">pihole allow ADRESSE</span>).</li></ol>Erlaube nur, was du verstanden hast: Das Blocken von Werbung soll bleiben.',
+    prac: 'Beim Moped-Shop fehlen die Produktbilder. Finde im Reiter „Pi-hole“ im Query Log den Fehlalarm (<span class="k">cdn.shopbilder.beispiel</span>) und erlaube ihn. Dann lade den Shop im Browser neu.', hint: 'Im Query Log steht neben der roten Zeile ein Knopf „Allow“. Im Terminal geht auch: pihole allow cdn.shopbilder.beispiel',
+    check: function (v) { return v.allow.indexOf('cdn.shopbilder.beispiel') >= 0; } },
+  { t: 'Pflege: Listen aktualisieren und Status prüfen', env: 'term', why: 'Werbeserver ändern sich ständig. Pi-hole lädt die Sperrlisten darum regelmäßig neu (Gravity). Mit ein paar Befehlen hältst du es gesund.',
+    real: '<pre class="cmd">pihole status\npihole -g\npihole -up\npihole version</pre><ul><li><span class="k">pihole status</span>: Läuft der DNS-Server, ist das Blocken an?</li><li><span class="k">pihole -g</span>: Sperrlisten neu laden (Gravity aktualisieren).</li><li><span class="k">pihole -up</span>: Pi-hole selbst aktualisieren.</li><li><span class="k">pihole disable 5m</span>: Blocken für fünf Minuten ausschalten (falls eine Seite nicht geht), <span class="k">pihole enable</span> schaltet es wieder an.</li></ul>',
+    prac: 'Gehe wieder per SSH auf den Pi (falls du raus bist), führe <span class="k">pihole status</span> und <span class="k">pihole -g</span> aus.', hint: 'pihole status und pihole -g',
+    check: function (v) { return v.status && v.gravity; } },
+  { t: 'Wenn etwas schiefgeht: der Notfall', env: 'term', why: 'Fällt der Pi aus (Stromausfall, SD-Karte defekt), fragen alle Geräte einen DNS-Server, der nicht antwortet. Dann sieht es so aus, als wäre das Internet weg, obwohl nur Pi-hole fehlt. Das ist die wichtigste Fehlerquelle bei Pi-hole.',
+    real: '<ol><li>Zuerst prüfen: Läuft der Pi? <span class="k">ping IP-DES-PI</span> vom Computer.</li><li>Per SSH: <pre class="cmd">sudo systemctl status pihole-FTL\nsudo systemctl restart pihole-FTL</pre></li><li>Notlösung: Im Router den DNS-Eintrag leeren, dann geht das Internet auch ohne Pi-hole.</li></ol>Tipp: Viele Router erlauben einen zweiten DNS-Server als Reserve. Dann bleibt das Internet an, aber es wird nicht immer gefiltert.',
+    prac: 'Spiele den Notfall durch: Halte Pi-hole im Terminal mit <span class="k">sudo systemctl stop pihole-FTL</span> an, lade dann im Browser eine Seite (Fehler!) und starte den Dienst mit <span class="k">sudo systemctl start pihole-FTL</span> wieder. Lade die Seite erneut.', hint: 'Stoppen: sudo systemctl stop pihole-FTL. Browser: Seite laden und den Fehler ansehen. Starten: sudo systemctl start pihole-FTL.',
+    check: function (v) { return v.crash && v.svc && v.recovered; } },
+  { t: 'Geschafft: Wie geht es weiter?', env: null, why: 'Du hast ein vollständiges Netzwerkprojekt durchgespielt: Betriebssystem, SSH, feste IP, DNS, Filter, Fehlersuche. Mit einem echten Pi dauert das etwa eine Stunde.',
+    real: '<ul><li><b>Backup:</b> Die Einstellungen lassen sich in der Oberfläche unter „Settings › Teleporter“ sichern.</li><li><b>Mehr Listen:</b> In der Oberfläche unter „Adlists“ weitere Sperrlisten eintragen, danach Gravity aktualisieren.</li><li><b>Eigener DNS-Resolver:</b> Mit <i>Unbound</i> fragt Pi-hole die Root-Server selbst statt eines Anbieters.</li><li><b>Fernzugriff:</b> Mit WireGuard bist du unterwegs mit Pi-hole verbunden.</li></ul>',
+    prac: 'Klicke auf „Gelesen“. Für die Praxis brauchst du nur einen Pi und eine SD-Karte.', manual: true, hint: 'Nichts zu tun.',
+    warn: 'Pi-hole ersetzt keine Firewall und keinen Virenschutz. Es filtert nur Namen. Wer die DNS-Adresse direkt in einem Gerät einträgt, umgeht es.' }
+];
+
+/* ---------- Anleitung ---------- */
+function curIdx() { for (var i = 0; i < STEPS.length; i++) if (!S.done[i]) return i; return STEPS.length - 1; }
+function evalDone() {
+  var ch = false; STEPS.forEach(function (s, i) { if (s.manual) return; var ok = false; try { ok = !!s.check(V()); } catch (e) {} if (ok && !S.done[i]) { S.done[i] = 1; ch = true; } });
+  if (ch) save(); return ch;
+}
+var openSet = {}, guideEl = $('#guide');
+function renderGuide() {
+  evalDone(); var cur = curIdx(), h = '<div class="card"><b>Fortschritt:</b> ' + Object.keys(S.done).length + ' von ' + STEPS.length + ' Schritten <div style="height:6px;border-radius:3px;background:var(--panel2);margin-top:6px;overflow:hidden"><i style="display:block;height:100%;width:' + Math.round(100 * Object.keys(S.done).length / STEPS.length) + '%;background:var(--ok)"></i></div></div>';
+  STEPS.forEach(function (s, i) {
+    var open = openSet[i] != null ? openSet[i] : i === cur;
+    h += '<div class="step ' + (S.done[i] ? 'done ' : '') + (i === cur ? 'cur ' : '') + (open ? 'open' : '') + '" data-i="' + i + '"><div class="sh"><span class="no">' + (S.done[i] ? '✓' : i + 1) + '</span><h3>' + esc(s.t) + '</h3></div><div class="sb">'
+      + '<div class="lbl">Wozu?</div><div>' + s.why + '</div><div class="lbl">So geht es in echt</div><div>' + s.real + '</div>' + (s.warn ? '<div class="wn">' + s.warn + '</div>' : '')
+      + '<div class="lbl noprint">In der Übung</div><div class="noprint">' + s.prac + '</div>'
+      + (s.manual ? '<div class="noprint" style="margin-top:8px"><button class="btn pri" data-a="read" data-i="' + i + '">' + (S.done[i] ? 'Gelesen ✓' : 'Gelesen') + '</button></div>' : '<div class="pp noprint">✓ Prüfpunkt: ' + (S.done[i] ? 'geschafft' : 'wird automatisch erkannt, sobald es klappt') + '</div><button class="btn hintbtn noprint" data-a="hint" data-i="' + i + '">Tipp</button><div class="msg noprint" id="hint' + i + '"></div>')
+      + '</div></div>';
+  });
+  guideEl.innerHTML = h; var cs = STEPS[cur]; $('#curT').textContent = 'Jetzt: Schritt ' + (cur + 1) + ' · ' + cs.t; $('#curM').textContent = cs.env ? 'Reiter: ' + ({ imager: 'Imager', aufbau: 'Aufbau', router: 'Router', term: 'Terminal', pihole: 'Pi-hole', browser: 'Browser' }[cs.env] || '') : '';
+}
+guideEl.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-a]');
+  if (b) { var i = +b.dataset.i; if (b.dataset.a === 'read') { S.done[i] = 1; save(); renderGuide(); } else if (b.dataset.a === 'hint') { $('#hint' + i).textContent = 'Tipp: ' + STEPS[i].hint; } return; }
+  var st = e.target.closest('.step'); if (st && e.target.closest('.sh')) { var i2 = +st.dataset.i; openSet[i2] = !st.classList.contains('open'); st.classList.toggle('open'); }
+});
+
+/* ---------- Umgebung ---------- */
+var TABS = [['imager', 'Imager'], ['aufbau', 'Aufbau'], ['router', 'Router'], ['term', 'Terminal'], ['installer', 'Pi-hole-Installer'], ['pihole', 'Pi-hole'], ['browser', 'Browser']];
+var tab = 'imager', env = $('#env');
+function renderTabs() { $('#tabs').innerHTML = TABS.map(function (t) { return '<div class="tab ' + (t[0] === tab ? 'on' : '') + '" data-t="' + t[0] + '">' + t[1] + '</div>'; }).join(''); }
+$('#tabs').addEventListener('click', function (e) { var t = e.target.closest('.tab'); if (t) show(t.dataset.t); });
+function show(t) { tab = t; renderTabs(); ({ imager: rImager, aufbau: rAufbau, router: rRouter, term: rTerm, installer: rInstaller, pihole: rDash, browser: rBrowser })[t](); }
+function refresh() { save(); renderGuide(); }
+
+/* Imager */
+function rImager() {
+  var i = V().img, ch = function (k, arr) { return '<div class="row">' + arr.map(function (o) { return '<div class="opt ' + (i[k] === o ? 'on' : '') + '" data-k="' + k + '" data-v="' + esc(o) + '">' + esc(o) + '</div>'; }).join('') + '</div>'; };
+  env.innerHTML = '<div class="imgr"><h4>Raspberry Pi Imager</h4><b>1. Raspberry-Pi-Gerät</b>' + ch('dev', IMG.dev) + '<b>2. Betriebssystem</b>' + ch('os', IMG.os) + '<b>3. Speicher</b>' + ch('sto', IMG.sto)
+    + '<b>4. Einstellungen anpassen</b><label>Hostname: <input type="text" id="iH" value="' + esc(i.host) + '">.local</label><label>Benutzername: <input type="text" id="iU" value="' + esc(i.user) + '"></label><label>Passwort: <input type="password" id="iP" value="' + esc(i.pw) + '"></label><label><input type="checkbox" id="iS" ' + (i.ssh ? 'checked' : '') + '> SSH aktivieren (Passwort-Anmeldung)</label><label><input type="checkbox" id="iT" ' + (i.tz ? 'checked' : '') + '> Zeitzone Europe/Berlin und deutsche Tastatur</label>'
+    + '<div style="margin-top:10px"><button class="go" id="iGo">Schreiben</button></div><div class="msg" id="iM"></div></div>';
+  env.querySelectorAll('.opt').forEach(function (o) { o.onclick = function () { i[o.dataset.k] = o.dataset.v; i.flashed = false; save(); rImager(); }; });
+  var up = function () { i.host = $('#iH').value.trim(); i.user = $('#iU').value.trim(); i.pw = $('#iP').value; i.ssh = $('#iS').checked; i.tz = $('#iT').checked; i.flashed = false; save(); };
+  ['iH', 'iU', 'iP', 'iS', 'iT'].forEach(function (id) { $('#' + id).onchange = up; $('#' + id).oninput = up; });
+  $('#iGo').onclick = function () {
+    up(); var m = $('#iM'); m.style.color = '#b00020';
+    if (!i.dev || !i.os || !i.sto) { m.textContent = 'Wähle zuerst Gerät, Betriebssystem und Speicher.'; return; }
+    if (i.sto.indexOf('BACKUP') >= 0) { m.textContent = 'Stopp! Das ist deine Backup-Festplatte. Alles darauf würde gelöscht. Wähle die SD-Karte.'; return; }
+    if (i.os.indexOf('Windows') >= 0 || i.os.indexOf('Ubuntu Desktop') >= 0) { m.textContent = 'Dieses System läuft nicht auf dem Pi oder ist für Pi-hole unnötig groß. Nimm Raspberry Pi OS Lite.'; return; }
+    if (!i.host || !i.user || !i.pw) { m.textContent = 'Hostname, Benutzername und Passwort fehlen.'; return; }
+    m.style.color = '#0b6b2b'; m.textContent = 'Schreibe … 100 % · Prüfe … fertig. Du kannst die SD-Karte entnehmen.'; i.flashed = true;
+    if (i.os.indexOf('mit Desktop') >= 0) m.textContent += ' Hinweis: Mit Desktop läuft es auch, braucht aber mehr Speicher. „Lite“ ist für Pi-hole die bessere Wahl.';
+    if (!i.ssh) m.textContent += ' Achtung: SSH ist nicht aktiviert, du kommst später nicht auf den Pi.';
+    if (i.host !== 'pihole') m.textContent += ' (Für die Übung nenne den Hostnamen „pihole“.)';
+    refresh();
+  };
+}
+/* Aufbau */
+function rAufbau() {
+  var a = V().aufbau; var item = function (k, t) { return '<span class="it ' + (a[k] ? 'on' : '') + '" data-k="' + k + '">' + t + (a[k] ? ' ✓' : '') + '</span>'; };
+  env.innerHTML = '<div class="pi"><h4 style="margin:0 0 8px">Aufbau</h4><p>Klicke die Teile in der richtigen Reihenfolge an:</p>' + item('sd', '1. SD-Karte einstecken') + item('lan', '2. Netzwerkkabel zum Router') + item('pwr', '3. Netzteil anschließen') + '<div style="margin-top:12px"><button class="btn pri" id="aOn" ' + (a.sd && a.lan && a.pwr ? '' : 'disabled') + '>Einschalten</button></div><div class="msg" id="aM" style="color:var(--mute)">' + (V().piOn ? 'Der Pi läuft (grüne LED flackert). Nach etwa zwei Minuten ist er im Netz.' : '') + '</div></div>';
+  env.querySelectorAll('.it').forEach(function (o) { o.onclick = function () { var k = o.dataset.k, order = ['sd', 'lan', 'pwr']; var idx = order.indexOf(k); if (idx > 0 && !a[order[idx - 1]]) { $('#aM').textContent = k === 'pwr' ? 'Erst SD-Karte und Netzwerkkabel, dann den Strom. Sonst startet der Pi ohne Speicher.' : 'Erst die SD-Karte einstecken.'; return; } if (!V().img.flashed && k === 'sd') { $('#aM').textContent = 'Die SD-Karte ist noch leer: Schreibe sie zuerst im Imager (Schritt 2).'; return; } a[k] = true; save(); rAufbau(); }; });
+  $('#aOn').onclick = function () { V().piOn = true; $('#aM').textContent = 'Der Pi bootet … Nach kurzer Zeit taucht er im Router als „' + V().img.host + '“ auf.'; refresh(); };
+}
+/* Router */
+var rp = 'devices';
+function rRouter() {
+  var v = V(), nav = [['devices', 'Heimnetz › Netzwerk'], ['netset', 'Heimnetz › Netzwerkeinstellungen'], ['over', 'Übersicht']];
+  var body = '';
+  if (rp === 'over') body = '<h3>Übersicht</h3><p>Internetverbindung: verbunden (Beispielrouter)<br>Heimnetz: 192.168.178.0 / 24<br>Router-Adresse: ' + ROUTER_IP + '</p>';
+  else if (rp === 'devices') {
+    var rows = '<tr><td>laptop (dieser Computer)</td><td>' + LAPTOP_IP + '</td><td></td></tr><tr><td>handy-anna</td><td>192.168.178.31</td><td></td></tr>' + (v.piOn ? '<tr><td><b>' + esc(v.img.host) + '</b></td><td><b>' + PI_IP + '</b>' + (v.ipRes ? ' (feste Adresse)' : '') + '</td><td><a href="#" id="rEd">✎ Bearbeiten</a></td></tr>' : '');
+    body = '<h3>Netzwerkgeräte</h3><table><tr><th>Name</th><th>IP-Adresse</th><th></th></tr>' + rows + '</table>' + (v.piOn ? '' : '<p style="color:#666">Der Pi ist noch nicht im Netz.</p>') + '<div style="margin-top:14px;padding-top:10px;border-top:1px solid #d6dbe3">IP-Adresse des Pi (zum Merken): <input type="text" id="rIp" value="' + esc(v.ipSeen) + '" placeholder="z. B. 192.168.178.20"> <button class="b" id="rMk">Merken</button> <span id="rM" style="margin-left:8px"></span></div>';
+  } else if (rp === 'edit') body = '<h3>Gerät bearbeiten: ' + esc(v.img.host) + '</h3><p>IP-Adresse: ' + PI_IP + '</p><label><input type="checkbox" id="rRes" ' + (v.ipRes ? 'checked' : '') + '> Diesem Netzwerkgerät immer die gleiche IPv4-Adresse zuweisen</label><p><button class="b" id="rOk">OK</button> <button class="b" style="background:#6b7787" id="rBack">Zurück</button></p>';
+  else body = '<h3>Netzwerkeinstellungen</h3><p><b>IPv4-Adressen</b><br>Router-Adresse: ' + ROUTER_IP + '<br>Lokaler DNS-Server: <input type="text" id="rDns" value="' + esc(v.router.dnsField) + '" placeholder="leer = Router (Provider-DNS)"></p><p><button class="b" id="rDnsOk">Übernehmen</button> <span id="rM2"></span></p><p style="color:#666;font-size:12px">Die Bezeichnungen heißen bei jedem Router etwas anders.</p>';
+  env.innerHTML = '<div class="rt"><nav>' + nav.map(function (n) { return '<div class="' + (rp === n[0] || (rp === 'edit' && n[0] === 'devices') ? 'on' : '') + '" data-p="' + n[0] + '">' + n[1] + '</div>'; }).join('') + '</nav><section>' + body + '</section></div>';
+  env.querySelectorAll('nav div').forEach(function (d) { d.onclick = function () { rp = d.dataset.p; rRouter(); }; });
+  if ($('#rEd')) $('#rEd').onclick = function (e) { e.preventDefault(); rp = 'edit'; rRouter(); };
+  if ($('#rMk')) $('#rMk').onclick = function () { v.ipSeen = $('#rIp').value.trim(); $('#rM').textContent = v.ipSeen === PI_IP ? '✓ Gemerkt' : (v.piOn ? 'Diese Adresse steht nicht bei deinem Pi.' : 'Der Pi ist noch nicht im Netz.'); $('#rM').style.color = v.ipSeen === PI_IP ? '#0b6b2b' : '#b00020'; refresh(); };
+  if ($('#rOk')) $('#rOk').onclick = function () { v.ipRes = $('#rRes').checked; rp = 'devices'; refresh(); rRouter(); };
+  if ($('#rBack')) $('#rBack').onclick = function () { rp = 'devices'; rRouter(); };
+  if ($('#rDnsOk')) $('#rDnsOk').onclick = function () { v.router.dnsField = $('#rDns').value.trim(); v.router.dnsSet = v.router.dnsField === PI_IP; var m = $('#rM2'); m.textContent = v.router.dnsSet ? '✓ Übernommen. Geräte nutzen jetzt den Pi-hole als DNS-Server.' : (v.router.dnsField ? 'Übernommen, aber ' + v.router.dnsField + ' ist nicht die Adresse deines Pi.' : 'Leer: Es wird wieder der DNS-Server des Providers genutzt.'); m.style.color = v.router.dnsSet ? '#0b6b2b' : '#b00020'; refresh(); };
+}
+/* Terminal */
+var T = { host: 'local', lines: [], mode: 'shell', pending: null, hist: [], hi: 0 };
+var tEl = null;
+function prompt() { return T.host === 'local' ? 'du@computer:~$ ' : (V().img.user || 'pi') + '@' + V().img.host + ':~ $ '; }
+function out(s, c) { T.lines.push([s, c || '']); }
+function rTerm() {
+  env.innerHTML = '<div class="term" id="tOut"></div><div class="tin"><span id="tPr"></span><input id="tIn" autocomplete="off" spellcheck="false" autocapitalize="off"></div>';
+  tEl = $('#tOut'); drawTerm(); var inp = $('#tIn'); inp.focus();
+  inp.onkeydown = function (e) {
+    if (e.key === 'Enter') { var line = inp.value; inp.value = ''; run(line); }
+    else if (e.key === 'ArrowUp') { if (T.hist.length) { T.hi = Math.max(0, T.hi - 1); inp.value = T.hist[T.hi] || ''; } e.preventDefault(); }
+    else if (e.key === 'ArrowDown') { T.hi = Math.min(T.hist.length, T.hi + 1); inp.value = T.hist[T.hi] || ''; e.preventDefault(); }
+  };
+  env.onclick = function (e) { if (!e.target.closest('button,input')) inp.focus(); };
+}
+function drawTerm() {
+  if (!tEl) return; var html = T.lines.map(function (l) { return l[1] ? '<span class="' + l[1] + '">' + esc(l[0]) + '</span>' : esc(l[0]); }).join('\n');
+  tEl.innerHTML = html; tEl.scrollTop = tEl.scrollHeight;
+  var pr = $('#tPr'); if (pr) { pr.textContent = T.mode === 'pw' ? 'Passwort: ' : T.mode === 'yn' ? '> ' : T.mode === 'setpw' || T.mode === 'setpw2' ? '  ' : prompt(); $('#tIn').type = (T.mode === 'pw' || T.mode === 'setpw' || T.mode === 'setpw2') ? 'password' : 'text'; }
+}
+out('Willkommen in der Übungs-Konsole. Tippe „help“ für die erlaubten Befehle.', 'i');
+function norm(s) { return s.trim().replace(/\s+/g, ' '); }
+function resolveName(d) {   // was antwortet der DNS-Server, den dein Computer benutzt?
+  var v = V(), viaPi = v.router.dnsSet;
+  if (!viaPi) return { server: ROUTER_IP, ok: true, ip: '203.0.113.' + (d.length % 200 + 10), blocked: false };
+  if (!v.installed || !v.svc) return { server: PI_IP, ok: false };
+  var al = v.allow.indexOf(d) >= 0, bl = v.blocking && !al && (BLOCKED.indexOf(d) >= 0 || v.deny.indexOf(d) >= 0);
+  v.queries.unshift({ t: new Date().toLocaleTimeString('de-DE'), d: d, c: 'laptop', b: bl }); if (v.queries.length > 60) v.queries.pop();
+  return { server: PI_IP, ok: true, ip: bl ? '0.0.0.0' : '203.0.113.' + (d.length % 200 + 10), blocked: bl };
+}
+function run(line) {
+  var inp = $('#tIn');
+  if (T.mode === 'yn') { out('> ' + line); T.mode = 'shell'; if (norm(line).toLowerCase() === 'yes') { out('Warning: Permanently added \'' + T.pending.host + '\' (ED25519) to the list of known hosts.', 'i'); T.mode = 'pw'; } else { out('Host key verification failed.', 'e'); T.pending = null; } drawTerm(); return; }
+  if (T.mode === 'pw') {
+    out('Passwort: ' + new Array(line.length + 1).join('•')); var v = V(), p = T.pending; T.mode = 'shell';
+    if (p.user === v.img.user && line === v.img.pw) { T.host = 'pi'; v.sshOk = true; out('Linux ' + v.img.host + ' 6.6.x aarch64 (Debian GNU/Linux)\nDie Programme des Debian-Systems sind freie Software.\nLast login: gerade eben', 'i'); out(''); refresh(); }
+    else { out('Permission denied, please try again.', 'e'); out('(Falscher Benutzername oder falsches Passwort. Benutzer und Passwort stammen aus dem Imager.)', 'i'); }
+    T.pending = null; drawTerm(); return;
+  }
+  if (T.mode === 'setpw' || T.mode === 'setpw2') {
+    out('  ' + new Array(line.length + 1).join('•'));
+    if (T.mode === 'setpw') { T.tmp = line; T.mode = 'setpw2'; out('  Confirm Password: ', 'i'); drawTerm(); return; }
+    T.mode = 'shell'; if (line !== T.tmp) out('  [✗] Passwords don\'t match', 'e'); else if (!line) { out('  [i] Web password removed', 'y'); V().pwSet = false; } else { V().pwSet = true; out('  [✓] New password set', 'p'); refresh(); } drawTerm(); return;
+  }
+  var cmd = norm(line); out(prompt() + line); if (cmd) { T.hist.push(line); T.hi = T.hist.length; }
+  if (cmd) exec(cmd);
+  drawTerm();
+}
+function exec(cmd) {
+  var v = V(), a = cmd.split(' ');
+  if (cmd === 'clear') { T.lines = []; return; }
+  if (cmd === 'help') { out('Erlaubte Befehle (Auszug):', 'i'); out('  Auf deinem Computer:  ssh, ping, nslookup, clear\n  Auf dem Pi:          sudo apt update, sudo apt full-upgrade -y, curl/wget (Installer), pihole …,\n                       sudo systemctl status|stop|start|restart pihole-FTL, ls, pwd, whoami,\n                       hostname, hostname -I, ip a, df -h, free -h, history, exit', 'i'); return; }
+  if (a[0] === 'ssh') {
+    if (T.host !== 'local') { out('Du bist schon auf dem Pi. Mit „exit“ gehst du zurück.', 'i'); return; }
+    var m = a[1] && a[1].match(/^([^@]+)@(.+)$/); if (!m) { out('usage: ssh BENUTZER@RECHNER', 'e'); return; }
+    var host = m[2], names = [v.img.host + '.local', v.img.host, PI_IP];
+    if (names.indexOf(host) < 0 && !/^\d+\.\d+\.\d+\.\d+$/.test(host) && host.indexOf('.local') < 0) { out('ssh: Could not resolve hostname ' + host + ': Name or service not known', 'e'); return; }
+    if (names.indexOf(host) < 0) { out('ssh: connect to host ' + host + ' port 22: No route to host', 'e'); out('(Diese Adresse gehört nicht zu deinem Pi. Hostname und IP stehen im Imager und im Router.)', 'i'); return; }
+    if (!v.piOn) { out('ssh: connect to host ' + host + ' port 22: No route to host', 'e'); out('(Der Pi läuft noch nicht. Schritt 3: aufbauen und starten.)', 'i'); return; }
+    if (!v.img.ssh) { out('ssh: connect to host ' + host + ' port 22: Connection refused', 'e'); out('(SSH war im Imager nicht aktiviert. Schreibe die SD-Karte noch einmal mit aktiviertem SSH.)', 'i'); return; }
+    T.pending = { user: m[1], host: host }; if (v.known) { T.mode = 'pw'; } else { v.known = true; out('The authenticity of host \'' + host + ' (' + PI_IP + ')\' can\'t be established.\nED25519 key fingerprint is SHA256:Qk2…beispiel.\nAre you sure you want to continue connecting (yes/no/[fingerprint])?', 'i'); T.mode = 'yn'; }
+    return;
+  }
+  if (a[0] === 'ping') { var t = a[1]; if (!t) { out('usage: ping ZIEL', 'e'); return; } var okp = (t === PI_IP || t === v.img.host + '.local' || t === ROUTER_IP) && (t !== PI_IP && t !== v.img.host + '.local' || v.piOn); if (okp) { out('PING ' + t + ': 4 Pakete gesendet, 4 empfangen, 0 % Verlust, Zeit etwa 2 ms', 'p'); } else out('ping: ' + t + ': Destination Host Unreachable', 'e'); return; }
+  if (a[0] === 'nslookup' || a[0] === 'dig') {
+    var d = a[1]; if (!d) { out('usage: ' + a[0] + ' ADRESSE', 'e'); return; } var r = resolveName(d);
+    out('Server:\t\t' + r.server + '\nAddress:\t' + r.server + '#53\n');
+    if (!r.ok) { out(';; connection timed out; no servers could be reached', 'e'); out('(Der DNS-Server antwortet nicht. Läuft Pi-hole?)', 'i'); return; }
+    out('Name:\t' + d + '\nAddress: ' + r.ip, r.blocked ? 'e' : '');
+    if (r.blocked) out('→ 0.0.0.0 heißt: Pi-hole hat diese Adresse gesperrt.', 'y'); if (v.router.dnsSet && r.server === PI_IP) v.nsl = true; else if (!v.router.dnsSet) out('(Dein Computer fragt noch den Router, nicht Pi-hole: Router-DNS siehe Schritt 10.)', 'i'); refresh(); return;
+  }
+  if (T.host === 'local') { out('Auf deinem Computer gibt es diesen Befehl in der Übung nicht. Verbinde dich zuerst per ssh mit dem Pi, oder tippe „help“.', 'e'); return; }
+  /* ---- auf dem Pi ---- */
+  if (cmd === 'exit' || cmd === 'logout') { T.host = 'local'; out('logout\nConnection to ' + v.img.host + '.local closed.', 'i'); return; }
+  if (cmd === 'whoami') { out(v.img.user); return; }
+  if (cmd === 'hostname') { out(v.img.host); return; }
+  if (cmd === 'hostname -I') { out(PI_IP + ' '); return; }
+  if (cmd === 'pwd') { out('/home/' + v.img.user); return; }
+  if (cmd === 'ls') { out(v.wgetFile ? 'basic-install.sh' : ''); return; }
+  if (cmd === 'ip a' || cmd === 'ip addr') { out('2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP>\n    inet ' + PI_IP + '/24 brd 192.168.178.255 scope global dynamic eth0', ''); return; }
+  if (cmd === 'df -h') { out('Dateisystem  Größe Benutzt Verf. Verw%\n/dev/root      29G   2,1G   26G    8%'); return; }
+  if (cmd === 'free -h') { out('              gesamt  benutzt  frei\nSpeicher:     1,8Gi    190Mi   1,5Gi'); return; }
+  if (cmd === 'history') { T.hist.forEach(function (h, i) { out('  ' + (i + 1) + '  ' + h); }); return; }
+  if (cmd === 'sudo apt update' || cmd === 'sudo apt-get update') { out('Holen:1 http://deb.debian.org/debian stable InRelease [151 kB]\nHolen:2 http://archive.raspberrypi.com/debian stable InRelease [24 kB]\nPaketlisten werden gelesen … Fertig\n12 Pakete können aktualisiert werden. Führen Sie »apt list --upgradable« aus, um sie anzuzeigen.', 'p'); v.updl = true; refresh(); return; }
+  if (/^sudo apt(-get)? (full-upgrade|upgrade|dist-upgrade)( -y)?$/.test(cmd)) { if (!v.updl) { out('(Tipp: Führe zuerst „sudo apt update“ aus, damit die Paketlisten aktuell sind.)', 'y'); } out('Paketlisten werden gelesen … Fertig\n12 aktualisiert, 0 neu installiert, 0 zu entfernen.\nEntpacken … Einrichten … Fertig', 'p'); v.upd = true; refresh(); return; }
+  if (cmd === 'sudo reboot') { out('Der Pi startet neu … (in der Übung sofort wieder da)', 'i'); T.host = 'local'; out('Connection to ' + v.img.host + '.local closed by remote host.', 'i'); return; }
+  if (cmd === 'wget -O basic-install.sh https://install.pi-hole.net') { out('--  https://install.pi-hole.net/\nbasic-install.sh gespeichert [~120 KB]', 'p'); v.wgetFile = true; return; }
+  if (/^(less|cat) basic-install.sh$/.test(cmd)) { if (!v.wgetFile) { out(cmd.split(' ')[0] + ': basic-install.sh: Datei oder Verzeichnis nicht gefunden', 'e'); return; } out('#!/usr/bin/env bash\n# Pi-hole: A black hole for Internet advertisements\n# … (Skript, rund 2000 Zeilen). So prüfst du, was gleich auf deinem Pi läuft.', 'i'); return; }
+  if (cmd === 'curl -sSL https://install.pi-hole.net | bash' || cmd === 'sudo bash basic-install.sh' || cmd === 'bash basic-install.sh') {
+    if (cmd !== 'curl -sSL https://install.pi-hole.net | bash' && !v.wgetFile) { out('bash: basic-install.sh: Datei oder Verzeichnis nicht gefunden', 'e'); return; }
+    if (v.installed) { out('Pi-hole ist schon installiert. (Neu installieren: pihole repair)', 'i'); return; }
+    out('  [✓] Root user check\n  [i] Starte Pi-hole-Installer … (öffne den Reiter „Pi-hole-Installer“)', 'p'); v.inst = { page: 0, up: '', list: true, web: true, log: true }; save(); setTimeout(function () { show('installer'); }, 250); return;
+  }
+  if (a[0] === 'sudo' && a[1] === 'systemctl') {
+    var act = a[2], svc = a[3]; if (svc !== 'pihole-FTL') { out('Unit ' + (svc || '') + ' nicht gefunden. (Hier: pihole-FTL)', 'e'); return; }
+    if (!v.installed) { out('Unit pihole-FTL.service could not be found.', 'e'); return; }
+    if (act === 'status') { out('● pihole-FTL.service - Pi-hole FTL\n   Active: ' + (v.svc ? 'active (running)' : 'inactive (dead)'), v.svc ? 'p' : 'e'); return; }
+    if (act === 'stop') { v.svc = false; v.crash = true; out('(Dienst gestoppt. Jetzt fragt kein Gerät mehr erfolgreich einen DNS-Server: das Internet scheint „weg“.)', 'y'); save(); return; }
+    if (act === 'start' || act === 'restart') { v.svc = true; if (v.crash) v.recovered = true; out('(Dienst läuft wieder.)', 'p'); refresh(); return; }
+    out('Unbekannte Aktion. Erlaubt: status, stop, start, restart', 'e'); return;
+  }
+  if (a[0] === 'pihole') { pihole(a.slice(1)); return; }
+  if (/^sudo pihole /.test(cmd)) { pihole(a.slice(2)); return; }
+  out('bash: ' + a[0] + ': Befehl nicht gefunden oder in der Übung nicht erlaubt. Tippe „help“.', 'e');
+}
+function pihole(a) {
+  var v = V(), c = a[0] || '';
+  if (!v.installed) { out('bash: pihole: Befehl nicht gefunden', 'e'); out('(Pi-hole ist noch nicht installiert: Schritt 8.)', 'i'); return; }
+  if (c === 'status') { out('  [✓] FTL is listening on port 53\n     [✓] UDP (IPv4)\n     [✓] TCP (IPv4)\n\n  [' + (v.svc && v.blocking ? '✓' : '✗') + '] Pi-hole blocking is ' + (v.svc ? (v.blocking ? 'enabled' : 'disabled') : 'not running'), v.svc && v.blocking ? 'p' : 'e'); v.status = true; refresh(); return; }
+  if (c === 'setpassword') { if (a[1]) { v.pwSet = true; out('  [✓] New password set', 'p'); refresh(); return; } out('  Enter New Password (blank for no password): ', 'i'); T.mode = 'setpw'; return; }
+  if (c === '-g' || c === 'updateGravity') { out('  [i] Neutrino emissions detected...\n  [✓] Pulling blocklist source list into range\n  [✓] Status: Retrieval successful (' + ADLIST + ')\n  [✓] Building tree\n  [✓] Number of gravity domains: ~79 000 (unique domains)\n  [✓] Flushing DNS cache', 'p'); v.gravity = true; refresh(); return; }
+  if (c === '-up' || c === 'updatePihole') { out('  [i] Checking for updates...\n  [i] Pi-hole Core: up to date\n  [i] Web Interface: up to date\n  [i] FTL: up to date\n\n  [✓] Everything is up to date!', 'p'); return; }
+  if (c === 'version' || c === '-v') { out('Core version is v6.x (Beispielausgabe)\nWeb version is v6.x\nFTL version is v6.x', ''); return; }
+  if (c === 'disable') { v.blocking = false; out('  [✓] Blocking disabled' + (a[1] ? ' for ' + a[1] : ''), 'y'); save(); return; }
+  if (c === 'enable') { v.blocking = true; out('  [✓] Blocking enabled', 'p'); save(); return; }
+  if (c === 'allow' && a[1]) { a.slice(1).forEach(function (d) { if (v.allow.indexOf(d) < 0) v.allow.push(d); }); out('  [✓] Added ' + (a.length - 1) + ' domain(s) to the allowlist', 'p'); refresh(); return; }
+  if (c === 'deny' && a[1]) { a.slice(1).forEach(function (d) { if (v.deny.indexOf(d) < 0) v.deny.push(d); }); out('  [✓] Added ' + (a.length - 1) + ' domain(s) to the denylist', 'p'); save(); return; }
+  if ((c === '-q' || c === 'query') && a[1]) { var d = a[a.length - 1], bl = BLOCKED.indexOf(d) >= 0; out(bl ? '  Found 1 domains in 1 adlists:\n   - ' + ADLIST : '  No results found for ' + d, bl ? 'y' : ''); return; }
+  if (c === 'tail') { var q = v.queries.slice(0, 5); out(q.length ? q.map(function (x) { return x.t + ' ' + x.d + ' ' + (x.b ? 'blocked' : 'forwarded'); }).join('\n') : '(noch keine Anfragen)', ''); out('(In echt läuft „tail“ weiter; Strg + C beendet.)', 'i'); return; }
+  if (c === 'flush') { v.queries = []; out('  [✓] Flushed the log', 'p'); save(); return; }
+  if (c === 'repair' || c === '-r') { out('  [i] Repair mode: Pi-hole wird neu eingerichtet (Einstellungen bleiben)… fertig', 'p'); return; }
+  if (c === 'debug') { out('  [i] Debug-Informationen werden gesammelt … (in der Übung nicht ausgeführt)', 'i'); return; }
+  out('  Unbekannter Pi-hole-Befehl. Gebräuchlich: status, setpassword, -g, -up, version, disable, enable, allow, deny, -q, tail, flush', 'e');
+}
+/* Installer */
+var DL = [
+  { h: 'Pi-hole Automated Installer', b: 'Dieser Installer richtet Pi-hole ein: einen DNS-Filter für dein ganzes Netz.\n\nEr braucht Internet und Administratorrechte (sudo).', acts: ['Weiter'] },
+  { h: 'Statische IP nötig', b: 'Pi-hole ist ein Server. Er braucht eine feste IP-Adresse, damit die Geräte ihn immer finden.\n\nDu hast sie im Router reserviert (Schritt 7): Das genügt.', acts: ['Weiter'], warnIp: true },
+  { h: 'Upstream-DNS-Anbieter', b: 'Welchen DNS-Server soll Pi-hole fragen, wenn eine Adresse nicht gesperrt ist?\n(Wähle mit Klick, bestätige mit „OK“.)', opts: UP, key: 'up', acts: ['OK'] },
+  { h: 'Blocklisten', b: 'Pi-hole nutzt Sperrlisten. Die Standardliste (StevenBlack) sperrt Werbung und Tracker. Sie kann später in der Weboberfläche ergänzt werden.\n\nStandardliste verwenden?', opts: ['Ja (empfohlen)', 'Nein'], key: 'list', acts: ['OK'] },
+  { h: 'Weboberfläche', b: 'Soll die Weboberfläche installiert werden? Mit ihr siehst du Statistiken und bedienst Pi-hole im Browser.', opts: ['Ja (empfohlen)', 'Nein'], key: 'web', acts: ['OK'] },
+  { h: 'Protokollierung (Query Log)', b: 'Soll Pi-hole die Anfragen protokollieren? Ohne Protokoll siehst du nicht, was blockiert wurde und kannst Fehlalarme schwer finden.', opts: ['Ja (empfohlen)', 'Nein'], key: 'log', acts: ['OK'] },
+  { h: 'Bereit zur Installation', b: 'Alle Angaben sind gesammelt. Pi-hole wird jetzt installiert.', acts: ['Installieren'], final: true }
+];
+function rInstaller() {
+  var v = V(), i = v.inst;
+  if (v.installed) { env.innerHTML = '<div class="dash"><h3>Pi-hole ist installiert ✓</h3><p>Schritt 9: Setze ein Passwort im Terminal. Die Weboberfläche erreichst du unter <span class="k">http://pi.hole/admin</span>.</p></div>'; return; }
+  if (!i) { env.innerHTML = '<div class="dash"><p>Der Installer wurde noch nicht gestartet. Starte ihn im Terminal (Schritt 8).</p></div>'; return; }
+  var d = DL[i.page], h = '<div class="dlg"><h4>' + esc(d.h) + '</h4><div class="bd">' + esc(d.b) + (d.warnIp && !v.ipRes ? '\n\n⚠ Du hast noch keine feste Adresse reserviert (Schritt 7). Ändert sich die IP, geht das Internet aus.' : '') + '</div>';
+  if (d.opts) h += '<div style="padding:0 12px 10px">' + d.opts.map(function (o) { var on = d.key === 'up' ? i.up === o : (d.key === 'list' ? (i.list ? o.charAt(0) === 'J' : o === 'Nein') : (i[d.key] ? o.charAt(0) === 'J' : o === 'Nein')); return '<span class="opt ' + (on ? 'on' : '') + '" data-o="' + esc(o) + '">' + (on ? '(*) ' : '( ) ') + esc(o) + '</span>'; }).join('') + '</div>';
+  h += '<div class="ac">' + d.acts.map(function (a) { return '<button data-a="' + a + '">&lt; ' + a + ' &gt;</button>'; }).join('') + '</div></div><div class="msg" id="iNm" style="color:#ffb340;text-align:center"></div>';
+  env.innerHTML = '<div style="background:#0b0e11;min-height:420px;padding:10px">' + h + '</div>';
+  env.querySelectorAll('.opt').forEach(function (o) { o.onclick = function () { var val = o.dataset.o; if (d.key === 'up') i.up = val; else i[d.key] = val.charAt(0) === 'J'; save(); rInstaller(); }; });
+  env.querySelectorAll('button').forEach(function (b) { b.onclick = function () {
+    if (d.key === 'up' && !i.up) { $('#iNm').textContent = 'Bitte einen Anbieter wählen.'; return; }
+    if (d.final) { i.page = -1; instal(); return; } i.page++; save(); rInstaller(); }; });
+}
+function instal() {
+  var v = V(), i = v.inst, lines = ['  [✓] Root user check', '  [✓] Update local cache of available packages', '  [✓] Checking apt-get for installed package depends', '  [✓] Installing Pi-hole core', '  [✓] Installing the web interface: ' + (i.web ? 'ja' : 'nein (nicht gewählt)'), '  [✓] Upstream-DNS: ' + i.up, '  [✓] Blocklist: ' + (i.list ? 'StevenBlack (Standard)' : 'keine'), '  [✓] Protokoll: ' + (i.log ? 'an' : 'aus'), '  [✓] Starte pihole-FTL.service', '  [✓] Gravity wird erstellt …'];
+  env.innerHTML = '<div class="term" id="iOut"></div>'; var el = $('#iOut'), k = 0;
+  var iv = setInterval(function () { el.textContent += lines[k] + '\n'; k++; if (k >= lines.length) { clearInterval(iv); finishInst(); } }, 220);
+}
+function finishInst() {
+  var v = V(); v.installed = true; v.svc = true; if (!v.inst.list) { v.nolist = true; } v.inst = null; save();
+  T.lines.push(['', '']); T.lines.push(['  [✓] Installation abgeschlossen.', 'p']); T.lines.push(['  Weboberfläche: http://pi.hole/admin oder http://' + PI_IP + '/admin', 'i']); T.lines.push(['  Setze jetzt ein Passwort mit: pihole setpassword', 'y']);
+  env.innerHTML += '<div class="msg" style="padding:10px;color:#7dff9a">Installation abgeschlossen. Wechsle zum Terminal.</div>'; refresh();
+}
+/* Dashboard */
+var dp = 'dash', dashAuth = false;
+function rDash() {
+  var v = V();
+  if (!v.installed) { env.innerHTML = '<div class="dash"><p>Hier läge die Pi-hole-Weboberfläche. Sie ist noch nicht installiert (Schritt 8).</p></div>'; return; }
+  if (!v.svc) { env.innerHTML = '<div class="dash"><p>Die Seite ist nicht erreichbar: Pi-hole läuft nicht. (Starte den Dienst im Terminal.)</p></div>'; return; }
+  if (v.pwSet && !dashAuth) { env.innerHTML = '<div class="dash"><h3>Pi-hole · Anmelden</h3><p>Passwort: <input type="password" id="dPw" style="padding:6px"> <button id="dLogin" class="btn pri">Anmelden</button></p><div class="msg" id="dM"></div></div>'; $('#dLogin').onclick = function () { dashAuth = true; rDash(); }; return; }
+  var q = v.queries, tot = q.length + 42, blk = q.filter(function (x) { return x.b; }).length + 11, pct = Math.round(100 * blk / tot);
+  var nav = '<div style="margin-bottom:8px"><button class="btn" data-p="dash">Dashboard</button> <button class="btn" data-p="log">Query Log</button> <button class="btn" data-p="lists">Adlists</button></div>', body = '';
+  if (dp === 'dash') {
+    var top = {}; q.filter(function (x) { return x.b; }).forEach(function (x) { top[x.d] = (top[x.d] || 0) + 1; }); var tl = Object.keys(top).map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + top[k] + '</td></tr>'; }).join('') || '<tr><td colspan="2" style="color:#8d99a6">noch nichts</td></tr>';
+    body = '<div class="tiles"><div class="tile" style="background:#00a65a"><b>' + tot + '</b>Anfragen gesamt</div><div class="tile" style="background:#dd4b39"><b>' + blk + '</b>blockiert</div><div class="tile" style="background:#f39c12"><b>' + pct + ' %</b>blockiert</div><div class="tile" style="background:#00c0ef"><b>' + (v.nolist ? 0 : '79 000') + '</b>Domains auf Listen</div></div><b>Meist blockierte Adressen</b><table><tr><th>Adresse</th><th>Anzahl</th></tr>' + tl + '</table>' + (v.router.dnsSet ? '' : '<p style="color:#ffb340">Noch fragt kein Gerät diesen Pi-hole: Der Router verteilt ihn noch nicht (Schritt 10).</p>');
+  } else if (dp === 'log') {
+    body = '<b>Query Log</b><table><tr><th>Zeit</th><th>Adresse</th><th>Client</th><th>Status</th><th></th></tr>' + (q.map(function (x) { var al = v.allow.indexOf(x.d) >= 0; return '<tr><td>' + x.t + '</td><td>' + esc(x.d) + '</td><td>' + x.c + '</td><td class="' + (x.b ? 'bk' : 'al') + '">' + (x.b ? 'Blocked (gravity)' : 'Allowed') + '</td><td>' + (x.b ? '<button data-al="' + esc(x.d) + '">Allow</button>' : '<button data-dn="' + esc(x.d) + '">Deny</button>') + '</td></tr>'; }).join('') || '<tr><td colspan="5" style="color:#8d99a6">Noch keine Anfragen. Besuche im Reiter „Browser“ eine Seite.</td></tr>') + '</table><div class="msg" id="dM"></div>';
+  } else body = '<b>Adlists</b><table><tr><th>Adresse</th><th>Status</th></tr>' + v.lists.map(function (l) { return '<tr><td style="word-break:break-all">' + esc(l) + '</td><td class="al">aktiv</td></tr>'; }).join('') + '</table><p>Neue Liste (Adresse): <input id="dL" style="width:60%;padding:5px"> <button id="dAdd" class="btn">Hinzufügen</button></p><p><button id="dGr" class="btn pri">Gravity aktualisieren</button></p><div class="msg" id="dM"></div>';
+  env.innerHTML = '<div class="dash"><h3 style="margin:0 0 8px">Pi-hole ' + esc(v.img.host) + ' · ' + (v.blocking ? 'Blocken aktiv' : 'Blocken AUS') + '</h3>' + nav + body + '</div>';
+  env.querySelectorAll('[data-p]').forEach(function (b) { b.onclick = function () { dp = b.dataset.p; rDash(); }; });
+  env.querySelectorAll('[data-al]').forEach(function (b) { b.onclick = function () { if (v.allow.indexOf(b.dataset.al) < 0) v.allow.push(b.dataset.al); refresh(); rDash(); $('#dM').textContent = '✓ ' + b.dataset.al + ' ist jetzt erlaubt. Lade im Browser die Seite neu.'; }; });
+  env.querySelectorAll('[data-dn]').forEach(function (b) { b.onclick = function () { if (v.deny.indexOf(b.dataset.dn) < 0) v.deny.push(b.dataset.dn); refresh(); rDash(); }; });
+  if ($('#dAdd')) $('#dAdd').onclick = function () { var u = $('#dL').value.trim(); if (/^https?:\/\//.test(u)) { v.lists.push(u); save(); rDash(); $('#dM').textContent = 'Liste hinzugefügt. Aktualisiere jetzt Gravity.'; } else $('#dM').textContent = 'Das ist keine Adresse (sie beginnt mit https://).'; };
+  if ($('#dGr')) $('#dGr').onclick = function () { v.gravity = true; refresh(); rDash(); $('#dM').textContent = '✓ Gravity aktualisiert (' + v.lists.length + ' Liste(n)).'; };
+}
+/* Browser */
+var url = 'schule.beispiel';
+function rBrowser() {
+  var v = V(), site = SITES[url];
+  env.innerHTML = '<div class="bar"><input id="bU" value="' + esc(url) + '"><button id="bGo">Los</button><button id="bRe">⟳</button></div><div class="web" id="bW"></div>';
+  var w = $('#bW');
+  function go(u) { u = u.trim().replace(/^https?:\/\//, '').replace(/\/$/, ''); url = u; rBrowser(); }
+  $('#bGo').onclick = function () { go($('#bU').value); }; $('#bRe').onclick = function () { go(url); }; $('#bU').onkeydown = function (e) { if (e.key === 'Enter') go($('#bU').value); };
+  var s = SITES[url]; if (!s) { w.innerHTML = '<h2>Seite nicht gefunden</h2><p>Diese Übungs-Browser kennt: <a href="#" data-g="schule.beispiel">schule.beispiel</a>, <a href="#" data-g="shop.beispiel">shop.beispiel</a>, <a href="#" data-g="nachrichten.beispiel">nachrichten.beispiel</a></p>'; }
+  else {
+    var dnsMain = resolveName(url);
+    if (!dnsMain.ok) { w.innerHTML = '<h2>Diese Seite ist nicht erreichbar</h2><p>DNS_PROBE_FINISHED_NO_INTERNET: Der Computer findet keinen DNS-Server, der antwortet.</p><p style="color:#666;font-size:13px">Tipp: Läuft Pi-hole noch? Siehe Schritt 13.</p>'; v.crashSeen = true; save(); }
+    else {
+      var html = '<h2>' + esc(s.title) + '</h2><p>' + esc(s.text) + '</p>', blocked = 0;
+      s.res.forEach(function (r) { var d = resolveName(r.d); if (d.ok && d.blocked) { blocked++; html += (r.k === 'px' ? '' : '<div class="' + (r.k === 'img' ? 'img imgx' : 'blk') + '" title="' + esc(r.d) + '">' + (r.k === 'img' ? 'Bild fehlt' : 'Werbung blockiert: ' + esc(r.d)) + '</div>'); } else html += (r.k === 'img' ? '<div class="img">' + esc(r.t) + '</div>' : (r.k === 'px' ? '' : '<div class="ad">' + esc(r.t) + ' (von ' + esc(r.d) + ')</div>')); });
+      if (s.res.length) html += '<p style="color:#666;font-size:12px">Geladene Teile: ' + (s.res.length - blocked) + ' · blockiert: ' + blocked + '</p>';
+      if (url === 'shop.beispiel' && v.allow.indexOf('cdn.shopbilder.beispiel') < 0 && v.installed && v.router.dnsSet) html += '<p style="color:#b00020;font-size:13px">Die Produktbilder fehlen: Hier hat Pi-hole zu viel blockiert (Fehlalarm). Schritt 12.</p>';
+      w.innerHTML = html; v.visited[url] = true; save(); renderGuide();
+    }
+  }
+  w.querySelectorAll('[data-g]').forEach(function (a) { a.onclick = function (e) { e.preventDefault(); go(a.dataset.g); }; });
+  if (v.crash && v.svc && v.crashSeen) { v.recovered = v.recovered || false; }
+}
+/* Start */
+$('#bPrint').onclick = function () { document.querySelectorAll('.step').forEach(function (s) { s.classList.add('open'); }); window.print(); };
+$('#bReset').onclick = function () { if (confirm('Die Übung von vorn beginnen? Dein Fortschritt hier wird gelöscht.')) { S = fresh(); T = { host: 'local', lines: [['Willkommen in der Übungs-Konsole. Tippe „help“ für die erlaubten Befehle.', 'i']], mode: 'shell', pending: null, hist: [], hi: 0 }; dashAuth = false; rp = 'devices'; save(); renderGuide(); show('imager'); } };
+if (/[?&]druck\b/.test(location.search)) { document.querySelectorAll('.step').forEach(function (s) { s.classList.add('open'); }); STEPS.forEach(function (s, i) { openSet[i] = true; }); }
+renderGuide(); show((STEPS[curIdx()].env === 'term' || STEPS[curIdx()].env == null) ? (STEPS[curIdx()].env || 'imager') : STEPS[curIdx()].env);
+if (/[?&]druck\b/.test(location.search)) document.body.classList.add('druck');
+window.PiholeLab = { S: function () { return S; }, STEPS: STEPS, run: run, show: show };
+})();
+</script>
+</body>
+</html>
