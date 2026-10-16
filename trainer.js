@@ -62,6 +62,18 @@
       { at: '#bMenu', t: 'Menü: Wahrheitstabelle und mehr', x: 'Im Menü stehen Aufgaben, Beispiele und die Digital-Werkzeuge. Lade das Beispiel „4-Bit-Binärzähler“ und tippe unten bei den Messpunkten auf einen Baustein: Dann erscheint das Zeitdiagramm mit allen Takten.' },
       { at: '#bEx', t: 'Beispiele', x: 'Von Gattern über Addierer und Speicher bis zum Mini-Prozessor, der ein Programm ausführt.' },
       NEXTSTEPS[0], END('DigiLab')] },
+    mess: { name: 'MessLab', steps: [
+      { t: 'Willkommen im MessLab', x: 'Hier lernst du Messen wie ein Profi: mit Multimeter, Oszilloskop, Netzgerät, Funktionsgenerator und mehr. Ich zeige dir in wenigen Minuten, wie die Werkbank funktioniert.' },
+      { prep: a => a.load('Spannung messen'), at: '#cv', t: 'Eine Messschaltung', x: 'Ein Spannungsteiler aus zwei Widerständen an 9 V. Wie viel Spannung fällt an jedem Widerstand ab? Das messen wir gleich.' },
+      { at: '#bSim', gate: a => a.simMode(), t: 'Auf Simulation schalten', x: 'Messen geht nur bei laufender Schaltung (außer Widerstände). Schalte oben von Zeichnen auf Sim.' },
+      { at: '#side', t: 'Die Werkbank', x: 'Rechts findest du die Karte „Werkbank“. Dort öffnest du alle Messgeräte. Tippe gleich auf „Messgeräte öffnen“.' },
+      { at: '#pal', gate: () => { const b = document.querySelector('.wbdock'); return !!b && b.style.display !== 'none'; }, t: 'Werkbank öffnen', x: 'Tippe rechts auf „Messgeräte öffnen“. Unten erscheint die Werkbank mit Netzgerät, Funktionsgenerator, Multimeter und Oszilloskop.' },
+      { at: '.wbdock', t: 'Fest oder frei', x: 'Die Geräte sitzen fest unten in einer Leiste. Mit „Frei“ rechts oben werden sie zu Fenstern, die du verschieben kannst. In der Leiste schaltest du jedes Gerät ein und aus, auch Frequenzzähler, Leistungsmesser und Kennlinienschreiber.' },
+      { at: '.wbdock', t: 'Das Multimeter', x: 'Der Drehschalter wählt, was gemessen wird: V⎓ Gleichspannung, V∿ Wechselspannung, A Strom, Ω Widerstand. Strom gehört in die mA- oder 10-A-Buchse, Spannung in die VΩ-Buchse. Falsch gewählt, bekommst du Hinweise oder brennt die Sicherung durch.' },
+      { at: '.wbdock', t: 'Messen', x: 'Tippe im Multimeter auf „Messspitzen setzen“, dann auf den oberen und den unteren Anschluss von R2: erst rot, dann schwarz. Die Anzeige zeigt 6 V. Probiere auch R1: Die zwei Spannungen ergeben zusammen 9 V.' },
+      { at: '.wbdock', t: 'Oszilloskop und mehr', x: 'Das Oszilloskop zeichnet den Spannungsverlauf über der Zeit. Mit „Messpunkt setzen“ wählst du, was du sehen willst. Die Beispiele „Sinus am Oszilloskop“ und „RC-Tiefpass mit Rechteck“ eignen sich zum Üben.' },
+      { at: '#bMenu', t: 'Aufgaben mit Zahlen', x: 'Im Menü warten die Messaufgaben: Du misst, trägst die Zahl in ein Feld ein, und das Lab prüft sie gegen den simulierten Wert. Dazu gibt es Messfehler-Aufgaben: Warum zeigt das Gerät Unsinn?' },
+      NEXTSTEPS[0], END('MessLab')] },
     loch: { name: 'LochLab', steps: [
       { t: 'Willkommen im LochLab', x: 'Im LochLab planst du eine Schaltung auf einer Lochrasterplatine, so wie du sie später lötest. Ich zeige dir die Grundlagen in wenigen Minuten.' },
       { prep: a => a.load('LED mit Vorwiderstand'), at: '#cv', t: 'Die Platine', x: 'Ich habe dir ein Beispiel geladen: eine LED mit Vorwiderstand und Schalter auf der Platine. Deine bisherige Arbeit ist gesichert. Mit zwei Fingern oder dem Mausrad zoomst du.' },

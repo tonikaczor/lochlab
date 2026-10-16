@@ -53,6 +53,10 @@
     ['cpu', '🖥️', 'Prozessor-Programmierer', 'Zwei Programme für die Mini-CPU geschrieben, die laufen.', function (c) { return [c.n(['dc1', 'dc2', 'dc3', 'dc4']), 2]; }],
     ['tabelle', '📋', 'Tabellenkünstler', 'Eine Wahrheitstabelle ausgewertet und eine Schaltung daraus bauen lassen.', function (c) { return [(c.st.wt ? 1 : 0) + (c.st.synth ? 1 : 0), 2]; }],
     ['zahlen', '🔟', 'Zahlenakrobat', 'Alle sechs Aufgaben im Zahlenumrechner richtig.', function (c) { return [c.st.zahlPerfekt || 0, 1]; }],
+    ['messer', '📏', 'Messtechniker', 'Sechs Aufgaben im MessLab geschafft.', function (c) { return [c.n(c.ids('mess')), 6]; }],
+    ['werkbank', '🔧', 'Werkbank-Meister', 'Netzgerät, Generator, Multimeter und Oszilloskop in der Werkbank benutzt.', function (c) { return [(c.st.bench_psu ? 1 : 0) + (c.st.bench_gen ? 1 : 0) + (c.st.bench_dmm ? 1 : 0) + (c.st.bench_osc ? 1 : 0), 4]; }],
+    ['kennlinie', '📉', 'Kennlinien-Forscher', 'Mit dem Kennlinienschreiber eine Kennlinie aufgenommen.', function (c) { return [c.st.bench_trace || 0, 1]; }],
+    ['messfehler', '🧐', 'Fehlerjäger beim Messen', 'Vier Messfehler-Aufgaben gelöst.', function (c) { return [c.n(['m15', 'm16', 'm17', 'm18', 'm19', 'm20', 'm22']), 4]; }],
     ['zufall', '🎰', 'Zahlenjongleur', 'Eine Zufallsaufgabe mit eigenen Zahlen gelöst.', function (c) { return [c.n(['r1', 'r2', 'r3', 'r4']) , 1]; }],
   ];
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });

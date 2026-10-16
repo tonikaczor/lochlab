@@ -2,7 +2,7 @@
 (function () {
 'use strict';
 const LS = window.LochSim;
-const LAB = ['sim', 'code', 'pi', 'digi'].includes(window.LAB) ? window.LAB : 'sch', LABNAME = { sim: 'SimLab', code: 'Arduino-Lab', pi: 'Pi-Lab', digi: 'DigiLab' }[LAB] || 'SchaltLab', SK = { sim: 'sim.', code: 'code.', pi: 'pi.', digi: 'digi.' }[LAB] || 'sch.';
+const LAB = ['sim', 'code', 'pi', 'digi', 'mess'].includes(window.LAB) ? window.LAB : 'sch', LABNAME = { sim: 'SimLab', code: 'Arduino-Lab', pi: 'Pi-Lab', digi: 'DigiLab', mess: 'MessLab' }[LAB] || 'SchaltLab', SK = { sim: 'sim.', code: 'code.', pi: 'pi.', digi: 'digi.', mess: 'mess.' }[LAB] || 'sch.';
 const inLab = K => LAB === 'digi' ? !!K.digi : (!K.lab || K.lab.split(',').includes(LAB));
 const PROGLAB = LAB === 'code' || LAB === 'pi';
 const WIRECOL = { braun: '#9c6232', blau: '#3b82e0', gruen: '#34b24f', schwarz: '#2b2b2e', grau: '#aab0b8', rot: '#e0463a' };
@@ -368,7 +368,7 @@ function advance(realDt) {
   for (let i = 0; i < n; i++) {
     sim.step(dt);
     if (prog) stepProgram();
-    sampleScopes(every); trackInstr();
+    sampleScopes(every); trackInstr(); if (window.LAB_STEP) window.LAB_STEP(dt);
     if (tool === 'meter') meterSample(dt);
     if ((i & 15) === 15 && performance.now() - t0 > 11) break;
   }
@@ -454,7 +454,7 @@ function sampleScopes(every) {
     const b = scopeBuf[k]; if (!b) return;
     const [v, i] = scopeValues(sc);
     b.t.push(sim.t); b.v.push(v); b.i.push(i);
-    const lim = sim.t - graphWin * 1.05;
+    const lim = sim.t - graphWin * (window.GRAPH_KEEP || 1.05);
     while (b.t.length > 2 && b.t[0] < lim) { b.t.shift(); b.v.shift(); b.i.shift(); }
   });
 }
@@ -3257,8 +3257,8 @@ function chkPE() {
 window.TaskTest = only => labTasks().filter(t => !only || only.includes(t.id)).map(t => {
   const out = { id: t.id };
   try {
-    if (!t.debug) { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.solMake || exOf(t.sol) }), { task: t.id })); const L = t.check(); out.pct = Math.round(100 * L.filter(l => l.ok).length / L.length); out.bad = L.filter(l => !l.ok).map(l => l.text);
-      try { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.start }), { task: t.id })); const L2 = t.check(); out.startPct = Math.round(100 * L2.filter(l => l.ok).length / L2.length); } catch (e) { out.startErr = String(e.message || e).slice(0, 120); } }
+    if (!t.debug) { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.solMake || exOf(t.sol) }), { task: t.id })); taskAns[t.id] = t.solAns ? t.solAns() : {}; const L = t.check(); out.pct = Math.round(100 * L.filter(l => l.ok).length / L.length); out.bad = L.filter(l => !l.ok).map(l => l.text);
+      try { taskAns[t.id] = {}; loadCircuit(Object.assign(buildExample({ name: t.title, make: t.start }), { task: t.id })); const L2 = t.check(); out.startPct = Math.round(100 * L2.filter(l => l.ok).length / L2.length); } catch (e) { out.startErr = String(e.message || e).slice(0, 120); } }
     else { loadCircuit(Object.assign(buildExample({ name: t.title, make: t.start }), { task: t.id })); const L = lampList(); const E = simEval({}); E.run(0.2); out.lampsOn = L.filter(p => E.lamps().get(p.id)).length; out.events = E.ev.map(e => e.text); }
   } catch (e) { out.err = String(e.stack || e).slice(0, 300); }
   return out;
@@ -3361,10 +3361,21 @@ function diceCardHtml() {
     + (done ? '' : `<div class="row2"><button class="btn pri" data-a="dreport">Fehler melden (gewähltes Bauteil)</button></div>${dc.msg ? `<p class="hint2">${esc(dc.msg)}</p>` : ''}`)
     + `<div class="row2"><button class="btn" data-a="dreveal">${done ? 'Fehler beheben' : 'Auflösung zeigen'}</button>${cs ? '<button class="btn" data-a="ddet">Fälle</button>' : '<button class="btn" data-a="droll">Neu würfeln</button>'}</div></div>`;
 }
+/* Antworten zu Mess- und Auswahlaufgaben (Zahlenfelder und Auswahl), bleiben beim Neuzeichnen der Seitenleiste erhalten */
+const taskAns = {};
+window.TaskAns = { get: id => taskAns[id] || {}, set: (id, k, v) => { (taskAns[id] = taskAns[id] || {})[k] = v; }, setAll: (id, o) => { taskAns[id] = Object.assign({}, o); }, clear: id => { delete taskAns[id]; } };
+function taskAnswerHtml(t) {
+  const a = taskAns[t.id] || {};
+  let h = '';
+  (t.fields || []).forEach(f => { h += `<div class="kv" style="gap:6px"><span style="color:var(--fg)">${esc(f.label)}</span><span><input type="text" inputmode="decimal" autocomplete="off" style="width:84px;text-align:right;padding:6px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg)" value="${esc(a[f.id] == null ? '' : a[f.id])}" oninput="TaskAns.set('${t.id}','${f.id}',this.value)" data-tf="${f.id}"> ${esc(f.unit || '')}</span></div>`; });
+  (t.choices || []).forEach(q => { h += `<div style="margin:6px 0"><div style="font-size:13px;margin-bottom:3px">${esc(q.q)}</div>` + q.opts.map((o, i) => `<label style="display:flex;gap:6px;align-items:flex-start;font-size:13px;padding:2px 0"><input type="radio" name="tc_${t.id}_${q.id}" ${a[q.id] === i ? 'checked' : ''} onchange="TaskAns.set('${t.id}','${q.id}',${i})"> <span>${esc(o)}</span></label>`).join('') + '</div>'; });
+  return h;
+}
 function taskCardHtml() {
   if (!sch.task) return '';
   const t = TASKS.find(x => x.id === sch.task); if (!t) return '';
   let h = `<div class="card task"><h4>Aufgabe · ${esc(t.cat)}</h4><b>${esc(t.title)}</b><p class="hint2">${esc(t.text)}</p>`;
+  if (t.fields || t.choices) h += taskAnswerHtml(t);
   h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div><div class="row2"><button class="btn" data-a="thand">Abgeben (QR)</button></div>`;
   if (t.daily) { const di = dailyInfo(); h += '<p class="hint2">🔥 Serie: ' + di.streak + (di.streak === 1 ? ' Tag' : ' Tage') + (di.doneToday ? ' · heute geschafft ✓' : ' · heute noch offen') + '</p>'; }
   if (t.rand) h += '<div class="row2"><button class="btn" data-a="trand">🎲 Neue Zahlen würfeln</button></div>';
@@ -3405,6 +3416,7 @@ function taskHint(t) {
 function startTask(id, solution) {
   const t = TASKS.find(x => x.id === id); if (!t) return;
   if (!solution && window.Auswertung) window.Auswertung.hintReset(id);
+  if (!solution) taskAns[id] = {};
   const mk = solution ? (t.solMake || exOf(t.sol)) : t.start; if (!mk) { toast('Keine Musterlösung hinterlegt'); return; }
   const ex = buildExample({ name: t.title + (solution ? ' (Musterlösung)' : ''), make: mk }); ex.task = solution ? undefined : t.id; loadCircuit(ex); reports = 0;
   if (!solution) { tool = 'select'; buildPalette(); }
@@ -3836,7 +3848,7 @@ function openExamples() {
     b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const ex = buildExample(EXAMPLES[+r.dataset.i]); loadCircuit(ex); if (ex.tempo != null) tempo = ex.tempo; if (ex.win) graphWin = ex.win; refreshUI(); });
   });
 }
-const exOk = e => LAB === 'digi' ? e.lab === 'digi' : LAB === 'pi' ? e.lab === 'pi' : LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
+const exOk = e => LAB === 'digi' ? e.lab === 'digi' : LAB === 'mess' ? e.lab === 'mess' : LAB === 'pi' ? e.lab === 'pi' : LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
 const defEx = () => EXAMPLES.find(exOk) || EXAMPLES[0];
 function buildExample(e) {
   const d = e.make(); let id = 1; const parts = [], wires = [];
@@ -4336,7 +4348,11 @@ window.LabDigiAPI = {
   mkParts: mkPartsFromRows,
   pinPts: rows => mkPartsFromRows(rows).map(p => pinsOf(p)),
   addExamples: list => { EXAMPLES.push(...list); },
-  addTasks: list => { TASKS.push(...list.map(t => Object.assign({ lab: 'digi' }, t))); },
+  addTasks: list => { TASKS.push(...list.map(t => Object.assign({ lab: LAB }, t))); },
+  get tool() { return tool; }, setTool: (t, k) => setTool(t, k), toggleRun, setSimMode: on => setSimMode(on),
+  get meter() { return meter; }, meterText, meterDial, meterReset, meterTap, scopeValues, toggleScope, sv, rebuildKeep, staticR: (a, b) => staticR(a, b, 1, 'ohm'),
+  get scopeBuf() { return scopeBuf; }, get graphWin() { return graphWin; }, setGraphWin: w => { graphWin = w; scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; },
+  withSch(tmp, fn) { const saved = sch; sch = tmp; try { return fn(); } finally { sch = saved; } },
   /* nets: Liste von Punktfolgen [[x,y],[x,y],...]; jedes Paar benachbarter Punkte wird per Auto-Weg als Draht gelegt. Ergebnis: Polylinien [x1,y1,x2,y2,...] */
   routeNets(rows, nets) {
     const saved = sch; let fails = 0;
@@ -4374,6 +4390,7 @@ window.LabDigiAPI = {
   }
 };
 if (LAB === 'digi' && window.DIGI_DEF) window.DIGI_DEF(window.LabDigiAPI);
+if (LAB === 'mess' && window.MESS_DEF) window.MESS_DEF(window.LabDigiAPI);
 
 if (LAB === 'sim' && window.addPE) EXAMPLES.forEach(e => { if (!e.noPE && (e.lab === 'sim' || e.cat === 'Bauteile')) { const mk = e.make; e.raw = mk; e.make = () => window.addPE(mk()); } });
 // Haus-Beispiele ohne eigene Oszilloskope: je Verbraucher (bis zu vier) eins, damit jede Schalterstellung sichtbar ist
@@ -4530,7 +4547,7 @@ window.SchaltTrace = (name, T, step) => {                                       
 window.SchaltLive = {                                                                // Testhilfe: laufende Simulation von außen treiben und die Oszilloskope auslesen
   load: name => { const e = EXAMPLES.find(x => x.name.toLowerCase().includes(name.toLowerCase())); loadCircuit(buildExample(e)); return { parts: sch.parts.map(p => [p.id, p.k, p.l || '', p.sw || 0]), scopes: sch.scopes }; },
   set: (id, o) => { Object.assign(sch.parts.find(p => p.id === id), o); rebuild(); },
-  run: (T, press) => { simMode = true; rebuild(); const dt = 2e-4, n = Math.round(T / dt); for (let i = 0; i < n; i++) { sim.step(dt); if (i % 50 === 0) { sampleScopes(0); } trackInstr(); } return sch.scopes.map((sc, k) => { const b = scopeBuf[k], m = a => a.length ? [Math.min(...a), Math.max(...a)].map(v => +v.toFixed(2)) : []; return { v: m(b.v), i: m(b.i) }; }); },
+  run: (T, press, ev) => { simMode = true; rebuild(); const dt = 2e-4, n = Math.round(T / dt); for (let i = 0; i < n; i++) { sim.step(dt); if (i % (ev || 50) === 0) { sampleScopes(0); } trackInstr(); if (window.LAB_STEP) window.LAB_STEP(dt); } return sch.scopes.map((sc, k) => { const b = scopeBuf[k], m = a => a.length ? [Math.min(...a), Math.max(...a)].map(v => +v.toFixed(2)) : []; return { v: m(b.v), i: m(b.i) }; }); },
   instr: () => sch.parts.filter(p => INSTR[p.k]).map(p => [p.k, instrText(p)]),
   events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
   pinV: (id, i) => sv(gk(...pinsOf(byPart(id))[i])),

@@ -2,6 +2,12 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v7.117', items: [
+      ['MessLab: das siebte Lab', 'Messtechnik mit Werkbank: Netzgerät mit Strombegrenzung, Funktionsgenerator, Multimeter, Oszilloskop, Frequenzzähler, Leistungsmesser und Kennlinienschreiber. 20 Beispiele, 26 Aufgaben mit Zahlenfeldern, Messfehler und Fehlersuche, Trainer, Lernheft und Kampagnenkapitel.', 'Startseite ▸ MessLab'],
+      ['Werkbank fest oder frei', 'Die Geräte sitzen fest in einer Leiste unten oder als frei verschiebbare Fenster. Jedes Gerät lässt sich einzeln ein- und ausschalten.', 'MessLab ▸ Karte „Werkbank“ oder Menü ▸ Werkbank'],
+      ['Messaufgaben mit Zahlenfeldern', 'Du misst, trägst die Zahl ein, das Lab prüft sie gegen den simulierten Wert. Einheit und Zehnerpotenz werden mitgeprüft.', 'MessLab ▸ Menü ▸ Aufgaben'],
+      ['Messfehler-Aufgaben', 'Falsche Buchse, falscher Bereich, Strommesser parallel, Voltmeter belastet den Kreis, Tastkopf ×10: Finde den Fehler und behebe ihn.', 'MessLab ▸ Aufgaben ▸ Messfehler'],
+      ['Neue Teile für alle Labs', 'Aufgaben können jetzt Zahlenfelder und Auswahlfragen enthalten.', 'Aufgabenkarte in jedem Lab'] ] },
     { v: 'v6.116', items: [
       ['DigiLab: das sechste Lab', 'Digitaltechnik zum Ausprobieren: Gatter, Flipflops, Zähler, echte ICs (CD4011, 4017, 7490, 4511) und eine kleine Mini-CPU zum Programmieren. 17 Beispiele, 20 Aufgaben mit Prüfung, Trainer, Lernheft mit Arbeitsblatt, Kampagnenkapitel und neue Abzeichen.', 'Startseite ▸ DigiLab'],
       ['Wahrheitstabelle und Schaltung aus Tabelle', 'Das Lab probiert alle Schalterkombinationen durch und zeigt Tabelle und kürzeste Gleichung. Umgekehrt trägst du eine Tabelle ein, das Lab baut die Gatterschaltung samt Verdrahtung.', 'DigiLab ▸ Menü oder Karte „Digitaltechnik“'],

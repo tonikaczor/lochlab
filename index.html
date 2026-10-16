@@ -42,7 +42,7 @@ header p{margin:2px 0 0;color:var(--mute)}
 @media(prefers-reduced-motion:reduce){.pic svg *{animation:none!important}}
 .q{font-size:18px;margin:0 0 14px;color:var(--mute)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
-@media(min-width:1180px){.cards{grid-template-columns:repeat(6,1fr)}.cards .card{grid-column:span 2}}
+@media(min-width:1180px){.cards{grid-template-columns:repeat(6,1fr)}.cards .card{grid-column:span 2}.cards .card:last-child:nth-child(3n+1){grid-column:3 / span 2}}
 @media(min-width:640px) and (max-width:1179px){.cards{grid-template-columns:repeat(2,1fr)}}
 .card.soon{opacity:.8;border-style:dashed}
 a.btn.off{pointer-events:none;color:var(--mute);background:transparent}
@@ -171,6 +171,16 @@ a.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
       <p>Gatter, Wahrheitstabellen, Flipflops, Zähler und eine kleine CPU. Mit Zeitdiagramm und Zahlenumrechner.</p>
       <div class="steps"><span>Verdrahten</span><span>Schalten</span><span>Programmieren</span></div>
       <div class="btns"><a class="btn pri" href="digilab.html">Öffnen</a><a class="btn" href="digilab.html?neu">Neu</a><a class="btn" href="digilab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card">
+      <span class="tag">MessLab</span>
+      <h2>Messtechnik</h2>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#0b1a10"/><g stroke="#1f4a2a" stroke-width="1"><path d="M10 35h220M10 60h220M10 85h220M65 10v100M120 10v100M175 10v100"/></g><path d="M12 60c14-40 28-40 42 0s28 40 42 0 28-40 42 0 28 40 42 0" fill="none" stroke="#6dff7a" stroke-width="3"/></svg>
+      </div>
+      <p>Werkbank mit Multimeter, Oszilloskop, Netzgerät, Generator, Frequenzzähler und Kennlinienschreiber. Mit Messaufgaben und Messfehlern.</p>
+      <div class="steps"><span>Messen</span><span>Ablesen</span><span>Fehler finden</span></div>
+      <div class="btns"><a class="btn pri" href="messlab.html">Öffnen</a><a class="btn" href="messlab.html?neu">Neu</a><a class="btn" href="messlab.html?bsp">Beispiel</a></div>
     </section>
   </div>
   <p class="foot">In allen Programmen: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>
