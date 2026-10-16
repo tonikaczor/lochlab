@@ -503,6 +503,13 @@ function createSim(circ) {
   const z = new Float64Array(N);
   const v = new Float64Array(N + 1);
   const sim = { t: 0, v, circ, events: [], N };
+  { const evs = sim.events, push0 = evs.push;                                  // Momentaufnahme je Ereignis: Strom, Spannung, Grenzwerte des Bauteils
+    evs.push = function (e) {
+      try {
+        e.snap = { els: circ.elems.filter(x => x.part === e.part).map(x => ({ type: x.type, i: x.i, ic: x.ic, vj: (x.a != null && x.b != null) ? v[x.a] - v[x.b] : undefined, power: x.power, imax: x.imax, vmax: x.vmax, g: x.g })), net: Math.max(0.05, ...Array.from(v).map(Math.abs)) };
+      } catch (er) {}
+      return push0.apply(this, arguments);
+    }; }
   const burnt = new Set();
   sim.burnt = burnt;
 

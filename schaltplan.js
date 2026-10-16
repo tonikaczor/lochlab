@@ -247,9 +247,56 @@ function dtFor(rate) {            // Zeitschritt aus dem gewünschten Tempo (sim
 const rateOf = s => Math.pow(10, -6 + 8 * s);     // Regler 0..1 -> 1 µs/s ... 100 s/s
 const LEDRGB = { rot: '255,59,47', 'grün': '47,224,90', gelb: '255,224,51', blau: '61,139,255', 'weiß': '255,255,255', orange: '255,154,47' };
 function partCenter(p) { const K = KD(p), [a, b] = rot((K.box[0] + K.box[2]) / 2, (K.box[1] + K.box[3]) / 2, p.r); return [X(p.x + a), Y(p.y + b)]; }
+
+/* ============ Nachbesprechung: nach Kurzschluss, Durchbrennen oder Auslösen gibt es auf Wunsch eine Erklärung ============ */
+let incident = null;
+const LEDVF_UI = { rot: 1.9, gelb: 2.0, grün: 2.1, blau: 3.0, weiß: 3.1, orange: 2.0 };
+const srcMax = () => Math.max(0, ...sch.parts.filter(q => ['BAT', 'AC', 'SIG', 'NETZ'].includes(q.k)).map(q => { const m = String(q.v == null ? '' : q.v).replace(',', '.').match(/([0-9]*\.?[0-9]+)/); return m ? parseFloat(m[1]) : 0; }));
+function explainIncident(inc) {
+  const ev = inc.ev, p = ev.part && ev.part.item, k = p ? p.k : '', s = (ev.snap && ev.snap.els && ev.snap.els[0]) || {}, I = Math.abs(s.i || s.ic || 0), U = srcMax() || (ev.snap && ev.snap.net) || vmax, name = p ? nm(p) : 'Das Bauteil';
+  const sc = x => fmt(x, 'V'); let why = '', fix = '';
+  if (ev.kind === 'shock') { why = 'Das Gehäuse von ' + name + ' stand unter Spannung, weil der Schutzleiter (PE) nicht angeschlossen war und ein Körperschluss auftrat. Wer das Gehäuse berührt, bekommt einen Schlag.'; fix = 'Schutzleiter (grün-gelb) vom Gerät an PE des Netzes anschließen. Dann löst bei einem Körperschluss der Automat oder FI aus, bevor jemand gefährdet wird.'; }
+  else if (ev.kind === 'trip') {
+    if (k === 'RCD') { why = 'Der FI-Schutzschalter hat ausgelöst, weil ein Strom nicht über den Neutralleiter zurückfloss, sondern woanders hin (Fehlerstrom über ca. 30 mA, zum Beispiel über das Gehäuse oder einen Menschen).'; fix = 'Fehlerstelle suchen: ein Gerät mit Körperschluss oder Isolationsfehler, N und PE vertauscht oder verbunden. Danach den FI wieder einschalten (Schaltschrank-Ansicht).'; }
+    else { why = 'Der Sicherungsautomat hat bei ' + fmt(I, 'A') + ' ausgelöst. Das ist ein Kurzschluss (sofortiges Auslösen) oder eine Überlast (Strom dauerhaft über dem Nennstrom, Auslösen nach einigen Sekunden).'; fix = 'Erst den Fehler beseitigen (Kurzschluss zwischen L und N oder zu viele Verbraucher an einem Stromkreis), dann den Automaten wieder einschalten. Sonst löst er gleich wieder aus.'; }
+  } else if (k === 'LED') {
+    const vf = LEDVF_UI[p.v] || 2, R = U > vf ? (U - vf) / 0.015 : NaN;
+    why = 'Durch ' + name + ' floss ' + fmt(I, 'A') + '. Erlaubt sind etwa ' + fmt(s.imax || 0.02, 'A') + '. Eine LED begrenzt ihren Strom nicht selbst: Der Vorwiderstand fehlt oder ist viel zu klein.';
+    fix = 'Vorwiderstand einbauen: R = (U − Uf) / If.' + (isFinite(R) ? ' Bei ' + sc(U) + ' Versorgung, Uf ≈ ' + vf + ' V und 15 mA ergibt das etwa ' + fmt(R, 'Ω') + ' (nächster Normwert nehmen, lieber etwas größer).' : '');
+  } else if (['R', 'POT', 'NTC', 'PTC', 'LDR'].includes(k)) {
+    const Rv = protoNum(p.v), P = isFinite(Rv) ? I * I * Rv : (s.power || 0);
+    why = name + ' wurde mit ' + fmt(P, 'W') + ' belastet (Strom ' + fmt(I, 'A') + '). In der Simulation hält ein Widerstand etwa 1,5 W aus. Die Leistung wird zu Wärme: P = I² · R.';
+    fix = 'Strom verkleinern (größerer Widerstandswert im Kreis, Kurzschluss nebenan beseitigen) oder einen Leistungswiderstand mit höherer Wattzahl nehmen.';
+  } else if (['C', 'CE', 'CF'].includes(k)) {
+    why = 'Am Kondensator ' + name + ' lagen ' + sc(Math.abs(s.vj || U)) + ' an' + (s.vmax ? ', zugelassen sind ' + sc(s.vmax) : '') + '. Bei Überspannung schlägt das Dielektrikum durch, Elkos platzen auch bei falscher Polung.';
+    fix = 'Kondensator mit höherer Spannungsfestigkeit nehmen (mindestens das 1,5-Fache der Betriebsspannung) und bei Elkos auf die Polung (Minus-Streifen) achten.';
+  } else if (['D', 'ZD', 'SCHOTTKY'].includes(k)) {
+    why = ev.text + '. Eine Diode sperrt nur bis zu ihrer Grenzspannung, darüber bricht sie durch.';
+    fix = 'Diode mit höherer Sperrspannung wählen (zum Beispiel 1N4007 statt 1N4148 bei Netzteilen) oder bei Z-Dioden den Strom mit dem Vorwiderstand begrenzen.';
+  } else if (['NPN', 'PNP', 'NMOS', 'PMOS'].includes(k)) {
+    why = ev.text + '. Strom (' + fmt(I, 'A') + ') und Spannung am Transistor ergaben zu viel Verlustleistung, oder die Steuerspannung war zu hoch.';
+    fix = 'Basis- bzw. Gatewiderstand prüfen, Last verkleinern oder einen größeren Typ mit Kühlkörper nehmen. Bei MOSFETs das Gate nie über etwa 20 V treiben.';
+  } else if (k === 'FUSE') {
+    why = 'Die Sicherung hat bei ' + fmt(I, 'A') + ' angesprochen, weil der Strom über ihrem Nennwert lag. Genau dafür ist sie da: Sie opfert sich, bevor Leitung oder Gerät Schaden nehmen.';
+    fix = 'Ursache der Überlast beseitigen, dann eine neue Sicherung mit demselben Nennwert einsetzen (nie überbrücken oder eine stärkere nehmen).';
+  } else if (k === 'LAMP' || k === 'MOTOR' || k === 'SPK') {
+    why = ev.text + '. Das Bauteil bekam mehr Spannung oder Leistung, als es verträgt (Strom ' + fmt(I, 'A') + ').';
+    fix = 'Betriebsspannung und Nennleistung auf dem Bauteil prüfen und die Versorgung passend wählen. Bei Motoren: nicht blockieren, sonst überhitzt er.';
+  } else if (['UNO', 'PI', 'ICX', 'IC', 'U', 'OPA'].includes(k)) {
+    why = ev.text + '. Pins und Versorgung von ICs vertragen nur kleine Ströme und enge Spannungsgrenzen (Arduino 5 V, Pi 3,3 V, Pinstrom wenige mA).';
+    fix = 'Immer einen Vorwiderstand oder Treiber (Transistor) einsetzen und die Pegel prüfen: Beim Pi nie 5 V auf einen GPIO-Pin geben.';
+  } else { why = ev.text + '.'; fix = 'Prüfe Strom und Spannung am Bauteil mit dem Multimeter und vergleiche sie mit den Angaben des Bauteils.'; }
+  return '<p style="margin:6px 0"><b>Was ist passiert?</b><br>' + esc(why) + '</p><p style="margin:6px 0"><b>Wie behebst du es?</b><br>' + esc(fix) + '</p>';
+}
+function incidentCardHtml() {
+  if (!incident || !simMode) return '';
+  const hold = sch.dice && !sch.dice.solved;                      // beim Detektiv-Fall und beim Fehler-Würfel keine Lösung verraten
+  return `<div class="card" style="border-color:#c97a1a"><h4>⚠ Hinweis</h4><b>${esc(incident.ev.text)}</b>` + (hold ? '<p class="hint2">Die Erklärung gibt es, sobald du den Fehler gefunden hast.</p>' : incident.open ? explainIncident(incident) + '<div class="row2"><button class="btn" data-a="whyx">Schließen</button></div>' : '<div class="row2"><button class="btn" data-a="why">Warum? Erkläre mir das</button><button class="btn" data-a="whyx">Ausblenden</button></div>') + '</div>';
+}
 function onBurn(ev) {
   const p = ev.part && ev.part.item; if (!p) return;
-  toast(ev.text);
+  toast(ev.text); if (window.Feel) window.Feel.event(ev.kind);
+  incident = { ev, open: false }; refreshUI();
   if (!window.LochFX) return;
   if (ev.kind === 'shock') { const [sx, sy] = partCenter(p); LochFX.trip(sx, sy, 'ZAP!', view.s); draw(); refreshUI(); return; }
   if (ev.kind === 'trip') { const [tx, ty] = partCenter(p); LochFX.trip(tx, ty, p.k === 'RCD' ? 'FI! KLACK!' : 'KLACK!', view.s); draw(); refreshUI(); return; }
@@ -259,10 +306,10 @@ function onBurn(ev) {
 }
 /* Taster halten mindestens 100 ms Simulationszeit gedrückt: bei langsamem Tempo wäre ein kurzer Klick sonst für Relais und Stromstoßschalter unsichtbar */
 const pressT0 = new Map(), relPend = new Set();
-function pressPart(part) { part.pressed = true; const w = wrapMap.get(part.id); if (w) w.pressed = true; pressT0.set(part.id, sim ? sim.t : 0); relPend.delete(part.id); }
+function pressPart(part) { if (window.Feel) window.Feel.tap('press'); part.pressed = true; const w = wrapMap.get(part.id); if (w) w.pressed = true; pressT0.set(part.id, sim ? sim.t : 0); relPend.delete(part.id); }
 function releasePart(part, force) {
   if (!force && simMode && sim && sim.t - (pressT0.get(part.id) || 0) < 0.1) { relPend.add(part.id); return; }
-  part.pressed = false; const w = wrapMap.get(part.id); if (w) w.pressed = false; relPend.delete(part.id);
+  part.pressed = false; const w = wrapMap.get(part.id); if (w) w.pressed = false; relPend.delete(part.id); if (window.Feel) window.Feel.tap('release');
 }
 
 /* ============ Zeitreise: Simulation zurückspulen und Schritt für Schritt ansehen ============ */
@@ -320,7 +367,7 @@ function advance(realDt) {
   }
   if (relPend.size) relPend.forEach(id => { const p = byPart(id); if (!p || sim.t - (pressT0.get(id) || 0) >= 0.1) { if (p) releasePart(p, true); relPend.delete(id); if (refreshControls) refreshControls(); } });
   while (sim.events.length) onBurn(sim.events.shift());
-  computeFlows(); tlCapture();
+  computeFlows(); tlCapture(); if (window.Feel) window.Feel.watch(circ.elems, running);
 }
 function termI(e) {
   if (e.tI) return e.tI;
@@ -1346,7 +1393,7 @@ function onUp(p) {
       if (a.moved) commit();
       else if (a.kind === 'part') {
         const part = byPart(a.id), K = KINDS[part.k];
-        if (K.toggle) { part.sw = part.sw ? 0 : 1; const w = wrapMap.get(part.id); if (w) w.sw = part.sw; commit(true); }
+        if (K.toggle) { part.sw = part.sw ? 0 : 1; const w = wrapMap.get(part.id); if (w) w.sw = part.sw; if (window.Feel) window.Feel.tap('switch'); commit(true); }
       }
       break;
     case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: K.sw0 || 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); commit(); } break;
@@ -1473,7 +1520,7 @@ function refreshControls() {
 (function () {
   const pl = $('#parts');
   const setP = (id, f) => { const p = byPart(+id); if (!p) return; f(p, wrapMap.get(p.id)); };
-  pl.addEventListener('click', e => { const b = e.target.closest('[data-ctl="sw"]'); if (!b || !simMode) return; setP(b.dataset.id, (p, w) => { p.sw = p.sw ? 0 : 1; if (w) w.sw = p.sw; commit(true, true); draw(); refreshControls(); }); });
+  pl.addEventListener('click', e => { const b = e.target.closest('[data-ctl="sw"]'); if (!b || !simMode) return; setP(b.dataset.id, (p, w) => { p.sw = p.sw ? 0 : 1; if (w) w.sw = p.sw; if (window.Feel) window.Feel.tap('switch'); commit(true, true); draw(); refreshControls(); }); });
   pl.addEventListener('input', e => {
     const t = e.target;
     if ((t.dataset.ctl === 'vs' || t.dataset.ctl === 'vsn' || t.dataset.ctl === 'vsf') && simMode) {
@@ -1547,7 +1594,7 @@ function setSimMode(on) {
   setSimModeNow(on);
 }
 function setSimModeNow(on) {
-  tlClear();
+  tlClear(); if (!on) incident = null;
   if (on && !sch.parts.length) { toast('Noch keine Bauteile gezeichnet'); return; }
   simMode = on; sel = null; wireStart = null; ghost = null; act = null;
   if (on) { tool = 'select'; rebuild(); sim.reset(); phase.clear(); lastSample = -1; running = true; lastFrame = performance.now(); startProgram(); }
@@ -1564,7 +1611,7 @@ function refreshUI() {
   $('#bRun').classList.toggle('on', running);
   $('#bUndo').disabled = simMode || hi <= 0; $('#bRedo').disabled = simMode || hi >= hist.length - 1;
   $('#title').textContent = sch.name;
-  let h = taskCardHtml() + diceCardHtml() + meterCardHtml();
+  let h = incidentCardHtml() + taskCardHtml() + diceCardHtml() + meterCardHtml();
   if (simMode) {
     h += `<div class="card"><h4>Simulation</h4>
     <div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Stopp' : '▶ Start'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>
@@ -1619,6 +1666,8 @@ $('#side').addEventListener('click', e => {
   const b = e.target.closest('[data-a],[data-win]'); if (!b) return;
   if (b.dataset.win) { graphWin = parseFloat(b.dataset.win); scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; refreshUI(); return; }
   const a = b.dataset.a;
+  if (a === 'why') { if (incident) { incident.open = true; refreshUI(); } return; }
+  if (a === 'whyx') { incident = null; refreshUI(); return; }
   if (a === 'mmD') { meterDial(b.dataset.v); refreshUI(); draw(); return; }
   if (a === 'mmJ') { meter.jack = b.dataset.v; refreshUI(); return; }
   if (a === 'mmFuse') { meter.fuse = false; meter.fuse10 = false; toast('Neue Messgerätesicherung eingesetzt'); refreshUI(); return; }
@@ -1725,7 +1774,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -3652,6 +3701,7 @@ function menuAct(m) {
   else if (m === 'water') setWater(!water);
   else if (m === 'neu') window.LabNeu();
   else if (m === 'det') openDetective();
+  else if (m === 'feel') { if (window.Feel) window.Feel.toggle(); }
   else if (m === 'voice') { if (window.Voice) window.Voice.toggle(); }
   else if (m === 'oszi') { if (window.Oszi) window.Oszi.open(); }
   else if (m === 'loet') { if (window.Loetuebung) window.Loetuebung.open(); }
@@ -3715,7 +3765,7 @@ function fit() {
   view.s = s; view.ox = (r.width - (x1 - x0) * s) / 2 - x0 * s; view.oy = ((r.height - gh) - (y1 - y0) * s) / 2 - y0 * s; draw();
 }
 function loadCircuit(d) {
-  running = false; sel = null; wireStart = null; simMode = false;
+  incident = null; running = false; sel = null; wireStart = null; simMode = false;
   if (d.tempo != null) tempo = d.tempo; if (d.win) graphWin = d.win;
   sch = { name: d.name || 'Schaltung', parts: JSON.parse(JSON.stringify(d.parts || [])), wires: JSON.parse(JSON.stringify(d.wires || [])), nid: d.nid || 1, scopes: d.scopes || [], sid: d.sid, task: d.task, code: d.code, dice: d.dice };
   taskRes = null; prog = null; serLog = ''; lcdState = null;

@@ -2,6 +2,9 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v5.114', items: [
+      ['Bauteile fühlen', 'Das Relais klackt, Schalter rasten, der Motor läuft mit Brummen an und aus, Sicherungen und Automaten lösen mit Ruck aus, ein Kurzschluss rüttelt. Vibration am Handy und passende Klicks. Abschaltbar.', 'Menü ▸ Bauteile fühlen an/aus'],
+      ['Nachbesprechung auf Wunsch', 'Nach Durchbrennen, Auslösen oder Schlag erscheint ein kleiner Hinweis. Erst auf „Warum? Erkläre mir das“ gibt es die Erklärung mit Zahlen und Abhilfe. Bei Detektiv-Fällen bleibt sie bis zur Lösung zu.', 'Seitenleiste in der Simulation (SchaltLab, SimLab, Arduino-, Pi-Lab)'] ] },
     { v: 'v5.113', items: [
       ['Versionsliste mit 50 Einträgen', 'Unter „Früher“ stehen jetzt die 50 Versionen vor v5.103 in einer Zeile je Version.', 'Menü ▸ Neu in dieser Version ▸ Früher'] ] },
     { v: 'v5.112', items: [

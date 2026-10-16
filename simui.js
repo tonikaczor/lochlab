@@ -202,10 +202,10 @@ function advance(T) {
   }
   holdPend.forEach(it => { if (sim.t - (it._pt || 0) >= 0.1) { const w = wrap.get(it.id); if (w) w.pressed = false; it._p = false; holdPend.delete(it); } });
   transfer();
-  tlCapture();
+  tlCapture(); if (window.Feel) window.Feel.watch(circ.elems, running);
   sim.burnt.forEach(id => { const w = wrap.get(id); if (w) w.item._burnt = true; });
   while (sim.events.length) {
-    const ev = sim.events.shift(); toast(ev.text + (ev.part && ev.part.item.l ? ' (' + ev.part.item.l + ')' : ''));
+    const ev = sim.events.shift(); if (window.Feel) window.Feel.event(ev.kind); toast(ev.text + (ev.part && ev.part.item.l ? ' (' + ev.part.item.l + ')' : ''));
     const it = ev.part && ev.part.item;
     if (it && window.LochFX && ev.kind === 'burn') {
       const ctr = () => { const b = worldBox(it); return [view.ox + (b[0] + b[2]) / 2 * view.s, view.oy + (b[1] + b[3]) / 2 * view.s]; }, [x, y] = ctr();
@@ -322,8 +322,8 @@ function simDown(p) {
     if (h) {
       selSim = h.id; sel = h.id; if (window.Speak && window.Speak.auto()) window.Speak.part(h.k);
       const w = wrap.get(h.id);
-      if (h.k === 'SCH') { h.sw = h.sw ? 0 : 1; w.sw = h.sw; simAct.done = true; }
-      else if (h.k === 'SW') { w.pressed = true; h._p = true; h._pt = sim ? sim.t : 0; holdPend.delete(h); simAct.press = h; simAct.done = true; }
+      if (h.k === 'SCH') { h.sw = h.sw ? 0 : 1; w.sw = h.sw; simAct.done = true; if (window.Feel) window.Feel.tap('switch'); }
+      else if (h.k === 'SW') { if (window.Feel) window.Feel.tap('press'); w.pressed = true; h._p = true; h._pt = sim ? sim.t : 0; holdPend.delete(h); simAct.press = h; simAct.done = true; }
       else if (h.k === 'DSW') {
         const [lx] = rot(fx - h.x, fy - h.y, (4 - h.r) & 3);
         const i = clampN(Math.round(lx), 0, h.n / 2 - 1);
