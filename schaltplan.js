@@ -1053,7 +1053,10 @@ function waterBadges() {
     } else if (kind === 'p') {                  // Pumpe
       cx.fillStyle = '#6cb8ff'; cx.font = 'bold ' + Math.round(h * .62) + 'px system-ui'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('⟳ Pumpe', 0, 1);
     } else {                                    // Spule: Schwungrad, träge Strömung
-      cx.fillStyle = '#6cb8ff'; cx.font = 'bold ' + Math.round(h * .62) + 'px system-ui'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('⚙ Rad', 0, 1);
+      const o = bodyI.get(String(p.id)), I = o ? o.I || 0 : 0, ang = ph('b' + p.id).v * 1.2, R = h * .4;       // Schwungrad: dreht sich mit dem Spulenstrom (Richtung = Stromrichtung)
+      cx.strokeStyle = '#6cb8ff'; cx.fillStyle = '#6cb8ff'; cx.lineWidth = Math.max(2, h * .09); cx.beginPath(); cx.arc(0, 0, R, 0, 7); cx.stroke();
+      for (let k = 0; k < 6; k++) { const a = ang + k * Math.PI / 3; cx.beginPath(); cx.moveTo(0, 0); cx.lineTo(Math.cos(a) * R, Math.sin(a) * R); cx.stroke(); cx.beginPath(); cx.arc(Math.cos(a) * R * .8, Math.sin(a) * R * .8, Math.max(1.5, h * .07), 0, 7); cx.fill(); }
+      cx.beginPath(); cx.arc(0, 0, Math.max(2, h * .1), 0, 7); cx.fill();
     }
     cx.restore();
   });
