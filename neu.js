@@ -2,6 +2,12 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v8.120', items: [
+      ['Lernpfad auf der Startseite', 'Drei Spuren (Elektronik, Installation, Programmieren) mit empfohlener Reihenfolge. Jedes Lab zeigt Schwierigkeit, Fortschritt und einen Knopf „Weiter“ zur nächsten offenen Aufgabe, neue Labs „Einführung starten“. Die Kampagne steht ganz oben.', 'Startseite ganz oben'],
+      ['„Warum?“ bei falschen Antworten', 'Bei fehlgeschlagenen Prüfzeilen im HausLab und MessLab steht jetzt eine Erklärung: Ursache, Formel oder der Weg zum Messen. Tippe auf „Warum?“ unter der Zeile.', 'HausLab und MessLab ▸ Aufgabe prüfen'],
+      ['Korrigiert: Querschnitt bei Steckdosen', 'Für Steckdosen sind 2,5 mm² üblich und empfohlen, nicht zwingend. Die Texte sagen das jetzt. Außerdem erwähnt das Lernheft, dass der FI-Schutz auch für Lichtkreise gilt.', 'HausLab ▸ Aufgaben, Lernheft'],
+      ['Bedienfeld im HausLab', 'Im Betrieb steht links ein Bedienfeld: alle Lichtschalter nach Raum, alle Geräte, FI und Automaten. Mit „Alle an“ und „Alle aus“ schaltest du das ganze Licht oder alle Geräte auf einmal. Die Wasser-Ansicht gibt es im HausLab nicht mehr.', 'HausLab ▸ Sim ▸ linke Leiste'],
+      ['Selbsttest für Entwickler', 'Die Seite selftest.html prüft alle Aufgaben aller Labs in einem Rutsch.', 'selftest.html'] ] },
     { v: 'v8.119', items: [
       ['Drehstrom im HausLab', 'Die Häuser haben jetzt drei Phasen (L1, L2, L3). Neu: Drehstromgeräte (Herd, Wallbox, Durchlauferhitzer, Klimagerät, Motoren), CEE-Steckdose 400 V, dreipolige Automaten, fünfadrige Drehstromleitungen und ein vierpoliger FI. Einphasige Stromkreise bekommen ihre Phase im Verteiler.', 'HausLab ▸ Drehstromgerät, Verteiler'],
       ['Phasen verteilen', 'Im Verteilerkasten stellst du je Automat die Phase ein. Die Last je Phase wird berechnet, Schieflast fällt auf.', 'HausLab ▸ Verteiler ▸ Phase'],

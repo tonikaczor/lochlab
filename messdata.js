@@ -58,7 +58,46 @@
       (t.choices || []).forEach(q => { const v = A[q.id]; out.push(RES(v === q.right, v == null ? q.short + ': keine Antwort gewählt' : (v === q.right ? q.short + ': richtig' : q.short + ': leider falsch, lies die Frage noch einmal'))); });
       return out;
     }
-    const mk = t => Object.assign({ lab: 'mess' }, t, { check() { const L = (t.pre ? t.pre() : []).concat(fieldLines(t)); return L.length ? L : [RES(false, 'Keine Prüfung')]; } });
+    const HOW = {
+      m1: 'Spannungsteiler: U2 = U · R2 / (R1 + R2). Die Teilspannungen ergeben zusammen die Batteriespannung.',
+      m2: 'Reihenschaltung: I = U / (R1 + R2). Der Strom ist überall gleich groß.',
+      m3: 'Zwei Widerstände parallel: R = R2 · R3 / (R2 + R3). Dazu kommt R1 in Reihe. Der Ohm-Bereich misst nur spannungsfrei.',
+      m4: 'Jeder Zweig: I = U / R. Der Gesamtstrom ist die Summe der Zweigströme (Knotenregel).',
+      m5: 'P = U · I. Warte, bis die Anzeige ruhig steht. Die Lampe ist ein Glühfaden, ihr Widerstand ändert sich mit der Temperatur.',
+      m6: 'LED-Strom: I = (U − UF) / R mit UF etwa 1,9 V bei einer roten LED.',
+      m8: 'Periodendauer T = Kästchen waagerecht · Zeit je Kästchen. Frequenz f = 1 / T. Spitze-Spitze = Kästchen senkrecht · Volt je Kästchen.',
+      m9: 'Beim Sinus gilt Ueff = Umax / √2 ≈ 0,707 · Umax. Uss = 2 · Umax.',
+      m10: 'Eine Halbwelle hat den Mittelwert Umax / π. Von Umax ziehst du etwa 0,7 V Diodenspannung ab.',
+      m11: 'τ = R · C. Nach der Zeit τ hat der Kondensator 63 % des Sprungs erreicht. Setze den Cursor auf die Flanke und auf 63 %.',
+      m12: 'f = 1 / T. Der Zähler braucht einige Perioden, bis er einen Wert zeigt.',
+      m13: 'Eine Siliziumdiode hat bei 10 mA etwa 0,65 bis 0,75 V Durchlassspannung. Kontrolle: I = (5 V − UF) / 430 Ω.',
+      m14: 'Die Spannung an der Z-Diode ist etwa ihre Z-Spannung. Strom durch R1: (12 V − UZ) / 470 Ω.',
+      m15: '1 MΩ parallel 10 MΩ = 0,91 MΩ. Dann Spannungsteiler: U = 10 V · 0,91 / (1 + 0,91). Messfehler = (Anzeige − Sollwert) / Sollwert.',
+      m16: 'V⎓ misst Gleichspannung (Batterie), V∿ Wechselspannung. Die Spannung an R2 ist 9 V · 2 kΩ / 3 kΩ = 6 V.',
+      m17: 'Strom gehört in eine Strombuchse (mA oder 10 A). Strom in Reihe: I = 9 V / 3 kΩ = 3 mA.',
+      m20: 'Der Tastkopf teilt durch 10. Stelle am Oszilloskop den Faktor ebenfalls auf ×10, dann stimmt die Anzeige. Uss = 2 · Umax.',
+      m21: 'Bei Strombegrenzung gilt U = I · R = 30 mA · 68 Ω ≈ 2 V.',
+      m22: 'Spannung zwischen den Mittelpunkten: U = 5 V · (R4 / (R2 + R4)) − 5 V · (R3 / (R1 + R3)). Abgeglichen bei R1/R3 = R2/R4.',
+      m23: 'Eine rote LED hat bei etwa 5 mA rund 1,8 bis 2 V Durchlassspannung.'
+    };
+    const WHY = [
+      ['Drehschalter', 'V⎓ misst Gleichspannung, V∿ Wechselspannung. Eine Batterie liefert Gleichspannung: Im Bereich V∿ zeigt das Gerät 0 V.'],
+      ['Buchse', 'Spannung misst du in der Buchse VΩ, Strom in mA oder 10 A. Die Strombuchsen haben fast keinen Widerstand: Bei Spannung wäre das ein Kurzschluss, bei Strom in VΩ zeigt das Gerät 0.'],
+      ['Strommesser', 'Ein Strommesser gehört in Reihe: Der Strom muss durch ihn hindurch fließen. Parallel zum Verbraucher legt er ihn praktisch kurz.'],
+      ['Voltmeter zeigt', 'Ein Voltmeter misst parallel zum Bauteil: beide Anschlüsse an die zwei Punkte, zwischen denen du die Spannung wissen willst. In Reihe lässt es fast keinen Strom durch.'],
+      ['Spannung steht', 'Am Netzgerät stellst du die Spannung mit dem oberen Regler ein, die Strombegrenzung mit dem Haken und dem unteren Regler.'],
+      ['Strombegrenzung', 'Die Strombegrenzung stellst du getrennt von der Spannung ein (Haken setzen, dann den Strom wählen).'],
+      ['Kurvenform', 'Der Funktionsgenerator hat drei Kurvenformen: Sinus, Rechteck, Dreieck. Wähle sie mit den Tasten im Gerät.'],
+      ['Frequenz stimmt', 'Gib die Frequenz im Gerät ein, zum Beispiel „2k“ für 2 kHz.'],
+      ['Amplitude', 'Die Amplitude ist der Spitzenwert in Volt (nicht Spitze-Spitze).'],
+      ['Tastkopf', 'Tastkopf-Schalter und Kanal-Faktor müssen übereinstimmen, sonst ist die Anzeige um den Faktor 10 falsch.'],
+      ['Kanal-Faktor', 'Tastkopf-Schalter und Kanal-Faktor müssen übereinstimmen, sonst ist die Anzeige um den Faktor 10 falsch.'],
+      ['abgeglichen', 'Eine Brücke ist abgeglichen, wenn R1 / R3 = R2 / R4 gilt. Dann ist die Spannung zwischen den Mittelpunkten null.'],
+      ['Strommesser misst', 'Der Strommesser muss im Weg des Stroms liegen, nicht neben dem Widerstand. Entferne die Drähte, die ihn neben R2 legen, und setze ihn zwischen R1 und R2.'],
+      ['Voltmeter', 'Ein Voltmeter liegt parallel zum Bauteil. Verbinde beide Anschlüsse mit den zwei Anschlüssen von R2.']
+    ];
+    const fixWhy = (t, L) => { L.forEach(l => { if (l.ok || l.why) return; const m = WHY.find(w => l.text.indexOf(w[0]) >= 0); if (m) l.why = m[1]; else if (HOW[t.id] && /passt nicht|ungenau|Zehnerpotenz/.test(l.text)) l.why = /Zehnerpotenz/.test(l.text) ? 'Prüfe die Einheit neben dem Feld: Milli (m) heißt tausendmal kleiner, Kilo (k) tausendmal größer. 1000 mA sind 1 A.' : HOW[t.id]; }); return L; };
+    const mk = t => Object.assign({ lab: 'mess' }, t, { check() { const L = (t.pre ? t.pre() : []).concat(fieldLines(t)); return fixWhy(t, L.length ? L : [RES(false, 'Keine Prüfung')]); } });
     const sol = (id, o) => () => o;     // Platzhalter für kurze Schreibweise
 
     /* Schaltungen der Aufgaben als Funktionen (mit Zufallsanteil) */

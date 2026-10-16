@@ -1509,7 +1509,7 @@ function applyPartFilter() {
   let none = pl.querySelector('.pnone'); if (q.length && !shown) { if (!none) { none = document.createElement('div'); none.className = 'pnone'; none.textContent = 'Nichts gefunden'; pl.appendChild(none); } } else if (none) none.remove();
 }
 function buildPalette() {
-  if (LAB === 'haus' && window.HAUS_PALETTE) { $('#pal').innerHTML = window.HAUS_PALETTE(simMode); const pl0 = $('#parts'); if (pl0) pl0.style.display = 'none'; return; }
+  if (LAB === 'haus' && window.HAUS_PALETTE) { $('#pal').innerHTML = window.HAUS_PALETTE(simMode); const pl0 = $('#parts'); if (pl0) { if (window.HAUS_PARTS) window.HAUS_PARTS(pl0, simMode); else pl0.style.display = 'none'; } return; }
   const chip = (id, label, on, data) => `<button class="chip ${on ? 'on' : ''}" data-t="${id}" ${data || ''}>${label}</button>`;
   let h;
   if (simMode) h = chip('select', '☝ Bedienen', tool === 'select') + chip('meter', '🔌 Messen', tool === 'meter') + chip('scope', '∿ Oszilloskop', tool === 'scope') + chip('reset', '↺ Zurück', false);
@@ -1561,7 +1561,7 @@ function controlHtml() {
   return h;
 }
 function refreshControls() {
-  if (!simMode || !listMode()) return;
+  if (LAB === 'haus' || !simMode || !listMode()) return;
   const pl = $('#parts'), ae = document.activeElement; if (pl.contains(ae) && (ae.type === 'range' || ae.type === 'number')) return;
   const h = controlHtml(); if (pl.dataset.h !== h) { const keep = pl.scrollTop; pl.dataset.h = h; pl.innerHTML = h; pl.scrollTop = keep; }
 }
@@ -1671,7 +1671,7 @@ function refreshUI() {
     <div class="kv"><span>Graph-Zeitfenster</span><span>${[0.001, 0.01, 0.1, 1, 10].map(w => `<button class="mini ${Math.abs(w - graphWin) < 1e-9 ? 'on' : ''}" data-win="${w}">${w >= 1 ? w + ' s' : w * 1000 + ' ms'}</button>`).join('')}</span></div>
   </div><div id="warn"></div>`;
   }
-  if (LAB === 'haus' && window.HAUS_SIDE) { h += window.HAUS_SIDE(simMode); side.innerHTML = h; side.classList.toggle('quiet', false); return; }
+  if (LAB === 'haus' && window.HAUS_SIDE) { h = h.replace(/<button[^>]*data-a="water"[^>]*>[\s\S]*?<\/button>/, '').replace(/<label class="sl"><span>Strompunkte<\/span>[\s\S]*?<\/label>/, '').replace(/<div class="kv"><span>Graph-Zeitfenster<\/span>[\s\S]*?<\/span><\/div>/, ''); h += window.HAUS_SIDE(simMode); side.innerHTML = h; side.classList.toggle('quiet', false); return; }
   if (!simMode && tool === 'place' && placeKind) {
     const K = KINDS[placeKind];
     h += `<div class="card"><h4>${esc(K.name)} setzen</h4><div class="row2"><button class="btn" data-a="rotl">↺</button><span class="sval">${placeRot * 90}°</span><button class="btn" data-a="rotr">↻</button></div><p class="hint2">Auf die Zeichenfläche tippen. Ausrichtung mit ↺ ↻ oder Taste R.</p></div>`;
@@ -2113,7 +2113,7 @@ const SWK = ['SPST', 'SPDT', 'KREUZ'];
 const swList = () => sch.parts.filter(p => SWK.includes(p.k)).sort(byPos);
 const lampList = () => sch.parts.filter(p => p.k === 'LAMP' || p.k === 'HEAT').sort(byPos);
 const nm = p => p.l || KINDS[p.k].name;
-const RES = (ok, text) => ({ ok, text });
+const RES = (ok, text, why) => (why ? { ok, text, why } : { ok, text });
 /* Schaltung ohne Rückwirkung auf die Zeichnung durchrechnen (Schalterstellungen und Taster vorgebbar) */
 function simEval(o) {
   o = o || {};
@@ -3386,7 +3386,7 @@ function taskCardHtml() {
   if (t.daily) { const di = dailyInfo(); h += '<p class="hint2">🔥 Serie: ' + di.streak + (di.streak === 1 ? ' Tag' : ' Tage') + (di.doneToday ? ' · heute geschafft ✓' : ' · heute noch offen') + '</p>'; }
   if (t.rand) h += '<div class="row2"><button class="btn" data-a="trand">🎲 Neue Zahlen würfeln</button></div>';
   if (t.loch) h += (taskDone()[t.id] || 0) >= 100 ? `<div class="row2"><a class="btn pri" href="layout.html?aufgabe=${t.loch}" style="text-decoration:none;text-align:center">Weiter: im LochLab aufbauen</a></div>` : '<p class="hint2">Wenn der Plan stimmt, geht es im LochLab weiter: dort baust du dieselbe Schaltung auf der Platine auf.</p>';
-  if (taskRes && taskRes.id === t.id) h += `<ul class="tl">${taskRes.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>` + (taskRes.pct != null ? `<div class="score ${taskRes.pct === 100 ? 'ok' : ''}">${taskRes.pct === 100 ? '🎉 Geschafft!' : taskRes.pct + ' % richtig'}</div>` : '');
+  if (taskRes && taskRes.id === t.id) h += `<ul class="tl">${taskRes.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details style="margin:3px 0 2px;color:var(--mute);font-size:12px"><summary style="cursor:pointer;color:var(--accent)">Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul>` + (taskRes.pct != null ? `<div class="score ${taskRes.pct === 100 ? 'ok' : ''}">${taskRes.pct === 100 ? '🎉 Geschafft!' : taskRes.pct + ' % richtig'}</div>` : '');
   return h + '</div>';
 }
 function runTaskCheck() {
@@ -4493,7 +4493,7 @@ simsw.addEventListener('click', () => setSimMode(!simMode));
   const wsw = document.createElement('button');
   wsw.className = 'simsw watersw'; wsw.id = 'bWater'; wsw.setAttribute('role', 'switch'); wsw.setAttribute('aria-checked', water ? 'true' : 'false'); wsw.setAttribute('aria-label', 'Wasser-Ansicht'); wsw.title = 'Wasser-Ansicht: Strom als Wasser, Spannung als Druck'; wsw.style.display = 'none';
   wsw.innerHTML = '<span class="lL">💧<span> Wasser</span></span><span class="trk"><span class="knob"></span></span>';
-  simsw.after(wsw);
+  simsw.after(wsw); if (LAB === 'haus') wsw.remove();
   wsw.addEventListener('click', () => setWater(!water));
 }
 $('#bRun').style.display = 'none';

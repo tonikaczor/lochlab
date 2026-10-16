@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>Selbsttest läuft …</title>
+<meta name="robots" content="noindex,nofollow">
+<style>body{font:14px/1.4 system-ui,sans-serif;background:#14181c;color:#e8ecf0;margin:16px}h1{font-size:18px}table{border-collapse:collapse}td,th{border:1px solid #38424d;padding:4px 10px;text-align:left}.ok{color:#4cd964}.bad{color:#ff8a7a}iframe{position:absolute;left:-3000px;top:0;width:1200px;height:800px}</style></head>
+<body><h1>Tonfunk Lab: Selbsttest</h1>
+<p>Lädt jedes Lab und lässt alle Aufgaben mit Musterlösung prüfen (müssen 100 % ergeben, am Start unter 100 %). Vor jedem Release öffnen: <b>selftest.html</b>. Dauer etwa eine Minute.</p>
+<table id="t"><tr><th>Lab</th><th>Aufgaben</th><th>Ergebnis</th><th>Probleme</th></tr></table>
+<pre id="out"></pre>
+<script>
+(function () {
+  var LABS = [['sch', 'SchaltLab', 'schaltplan.html', 40], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40]];
+  var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
+  var all = { ok: true, labs: [] };
+  async function lab(l) {
+    var f = document.createElement('iframe'); f.src = l[2]; document.body.appendChild(f);
+    await new Promise(function (r) { f.onload = r; }); await sleep(1800);
+    var w = f.contentWindow, g = w.document.getElementById('gate'); if (g) g.remove();
+    var ids = (w.AUFGABEN || []).filter(function (a) { return a[1] === l[0]; }).map(function (a) { return a[0]; }).filter(function (id) { return !/^det\d+$/.test(id); }), bad = [], n = 0;   // Detektiv-Fälle werden nicht über TaskTest geprüft
+    for (var i = 0; i < ids.length; i += l[3]) {
+      var r = w.TaskTest(ids.slice(i, i + l[3]));
+      r.forEach(function (x) { n++; if (x.err) bad.push(x.id + ' Fehler ' + x.err); else if (x.pct != null && x.pct !== 100) bad.push(x.id + ' Lösung ' + x.pct + ' %'); else if (x.startPct != null && x.startPct >= 100) bad.push(x.id + ' Start schon 100 %'); });
+      await sleep(80);
+    }
+    var res = { lab: l[1], tasks: ids.length, tested: n, bad: bad, missing: ids.length - n };
+    if (bad.length || res.missing) all.ok = false; all.labs.push(res);
+    document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + l[1] + '</td><td>' + ids.length + '</td><td class="' + (bad.length || res.missing ? 'bad' : 'ok') + '">' + (bad.length || res.missing ? 'FEHLER' : 'alle in Ordnung') + '</td><td>' + (bad.concat(res.missing ? [res.missing + ' ohne Ergebnis'] : [])).join('; ') + '</td></tr>');
+    f.remove();
+  }
+  (async function () {
+    for (var i = 0; i < LABS.length; i++) { try { await lab(LABS[i]); } catch (e) { all.ok = false; all.labs.push({ lab: LABS[i][1], error: String(e) }); document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + LABS[i][1] + '</td><td></td><td class="bad">FEHLER</td><td>' + String(e) + '</td></tr>'); } }
+    document.title = all.ok ? 'SELFTEST OK' : 'SELFTEST FEHLER';
+    document.getElementById('out').textContent = (all.ok ? 'ALLES IN ORDNUNG' : 'FEHLER GEFUNDEN') + '\n' + JSON.stringify(all);
+  })();
+})();
+</script></body></html>

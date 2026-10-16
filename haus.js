@@ -687,6 +687,65 @@
     function slotLoads(h) { const pl = phaseLoads(h), out = {}; Object.keys(pl).forEach(s => { out[s] = Math.max(...pl[s]); }); return out; }
     /* Last je Phase im ganzen Haus */
     function houseLoads(h) { const pl = phaseLoads(h), t = [0, 0, 0]; Object.values(pl).forEach(a => a.forEach((v, k) => { t[k] += v; })); return t; }
+    /* ---------------- Bedienfeld links (Betrieb): Licht, Geräte, Verteiler ---------------- */
+    let partsEl = null, ctlSig = '';
+    const wide = () => window.innerWidth >= 900;
+    function setAllLights(on) {
+      const h = H(), done = new Set();
+      h.objs.forEach(o => {
+        if (o.t === 'swi') { o.on = on ? 1 : 0; const p = partOf(o.id, 'sw'); if (p) api.setSw(p.id, o.on); }
+        else if (o.t === 'swc' && !done.has(o.id)) { const q = o.partner ? obj(h, o.partner) : null; done.add(o.id); if (q) done.add(q.id); o.on = on ? 0 : 1; if (q) q.on = 0; else o.on = on ? 0 : 1; [o, q].forEach(x => { if (!x) return; const p = partOf(x.id, 'swc'); if (p) api.setSw(p.id, x.on); }); }
+      });
+      api.commit(true, true); api.refreshUI(); renderControls(true);
+    }
+    function setAllDevices(on) {
+      const h = H();
+      h.objs.forEach(o => { if ((o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3') && o.w > 0) { o.on = on ? 1 : 0; partsOf(o.id, 'dev').forEach(p => api.setSw(p.id, o.on)); } });
+      api.commit(true, true); api.refreshUI(); renderControls(true);
+    }
+    function setPanel(on) {
+      const h = H(); S().parts.forEach(p => { if (p.hx && (p.hx.role === 'lss' || p.hx.role === 'rcd')) api.setSw(p.id, on ? 1 : 0); });
+      syncModel(S()); api.commit(true, true); api.refreshUI(); renderControls(true);
+    }
+    function controlsHtml() {
+      const h = H(); if (!h) return ''; syncModel(S());
+      const chip = (op, id, label, on, cls, tOn, tOff) => `<button class="hcb ${on ? 'on' : 'off'} ${cls || ''}" data-hc="${op}" data-id="${id}"><span>${esc(label)}</span><i>${on ? (tOn || 'an') : (tOff || 'aus')}</i></button>`;
+      let t = '<div class="hcp"><style>.hcp h5{margin:12px 0 6px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute)}.hcp .hrow{display:flex;gap:6px;margin:4px 0}.hcp .hbt{flex:1;height:32px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-size:12px;font-weight:600}.hcb{display:flex;justify-content:space-between;align-items:center;gap:6px;width:100%;padding:6px 8px;margin:3px 0;border-radius:8px;border:1px solid var(--line);background:var(--panel2);font-size:12px;text-align:left}.hcb i{font-style:normal;font-weight:700;font-size:11px;padding:1px 7px;border-radius:8px;background:#4a5561;color:#fff}.hcb.on i{background:#2fae45}.hcb.trip i{background:#e04b3a}.hcb small{display:block;color:var(--mute);font-size:10px}</style><b>Bedienfeld</b>';
+      const sw = h.objs.filter(o => o.t === 'swi' || o.t === 'swc').sort((a, b) => (room(h, a.room) ? room(h, a.room).n : '').localeCompare(room(h, b.room) ? room(h, b.room).n : ''));
+      t += '<h5>Licht</h5><div class="hrow"><button class="hbt" data-hc="lights" data-id="1">Alle an</button><button class="hbt" data-hc="lights" data-id="0">Alle aus</button></div>';
+      sw.forEach(o => { const r = room(h, o.room); t += o.t === 'swc' ? chip('sw', o.id, (r ? r.n : '?') + ' · Wechselschalter ' + (o.partner && o.id > o.partner ? 'B' : 'A'), !!o.on, '', 'Stellung 2', 'Stellung 1') : chip('sw', o.id, (r ? r.n : '?') + ' · Schalter', !!o.on); });
+      const dv = h.objs.filter(o => (o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3') && o.w > 0);
+      if (dv.length) {
+        t += '<h5>Geräte</h5><div class="hrow"><button class="hbt" data-hc="devs" data-id="1">Alle an</button><button class="hbt" data-hc="devs" data-id="0">Alle aus</button></div>';
+        dv.forEach(o => { const r = room(h, o.room); t += chip('dev', o.id, (o.n || TYPES[o.t].n) + ' (' + (o.w >= 1000 ? (o.w / 1000) + ' kW' : o.w + ' W') + ')', o.on !== 0); });
+      }
+      const P = h.panel, mods = [];
+      [0, 1].forEach(g => { if (P.fi[g].type) mods.push(['rcd', g, 'FI ' + (g + 1) + ' (' + P.fi[g].type.replace('mA', ' mA') + ')', P.fi[g].on !== 0]); });
+      P.slots.forEach((s, i) => { if (s.ls) mods.push(['lss', i, 'Abgang ' + (i + 1) + ' · ' + (s.p3 ? '3×' : '') + s.ls, s.on !== 0]); });
+      if (mods.length) {
+        t += '<h5>Verteiler</h5><div class="hrow"><button class="hbt" data-hc="panel" data-id="1">Alle ein</button><button class="hbt" data-hc="panel" data-id="0">Alle aus</button></div>';
+        mods.forEach(m => { t += chip(m[0], m[1], m[2], m[3], m[3] ? '' : 'trip'); });
+      }
+      return t + '</div>';
+    }
+    function renderControls(force) {
+      if (!partsEl) return; const sim = isSim() && wide();
+      partsEl.style.display = sim ? 'block' : 'none'; if (!sim) { ctlSig = ''; return; }
+      partsEl.style.width = '216px'; partsEl.style.padding = '10px';
+      const sig = JSON.stringify([H().objs.map(o => [o.id, o.on, o.f]), H().panel, H().cables.length]);
+      if (!force && sig === ctlSig) return; ctlSig = sig; const keep = partsEl.scrollTop; partsEl.innerHTML = controlsHtml(); partsEl.scrollTop = keep;
+    }
+    root.HAUS_PARTS = (el, sim) => { partsEl = el; ctlSig = ''; el.dataset.h = ''; renderControls(true); };
+    document.addEventListener('click', e => {
+      const b = e.target.closest('#parts [data-hc]'); if (!b || !isSim()) return; e.stopPropagation(); const h = H(), op = b.dataset.hc, id = +b.dataset.id;
+      if (op === 'lights') setAllLights(id === 1); else if (op === 'devs') setAllDevices(id === 1); else if (op === 'panel') setPanel(id === 1);
+      else if (op === 'sw' || op === 'dev') { const o = obj(h, id); if (o) operate(o); renderControls(true); }
+      else if (op === 'lss') { const ps = S().parts.filter(q => q.hx && q.hx.role === 'lss' && q.hx.slot === id); if (ps.length) { const nv = ps[0].sw ? 0 : 1; ps.forEach(p => api.setSw(p.id, nv)); syncModel(S()); api.commit(true, true); api.refreshUI(); renderControls(true); } }
+      else if (op === 'rcd') { const p = S().parts.find(q => q.hx && q.hx.role === 'rcd' && q.hx.g === id); if (p) { api.setSw(p.id, p.sw ? 0 : 1); syncModel(S()); api.commit(true, true); api.refreshUI(); renderControls(true); } }
+    }, true);
+    setInterval(() => { if (isSim() && partsEl) renderControls(false); }, 600);
+    window.addEventListener('resize', () => renderControls(true));
+
     root.HAUS_NEW = () => ({ name: 'Neues Haus', parts: [], wires: [], nid: 1, scopes: [], haus: newHouse('Neues Haus') });
     root.HAUS = { evalHouse, slotLoads, phaseLoads, houseLoads, DEV3, TYPES, DEVS, SLOTS, newHouse, route, buildNet, compile, pos, room, obj, cab, nid, cam, stt, proj, pick, unplane, hits: () => hits, apply, openPanel, U, I, partOf, cabParts, poweredSet: () => poweredSet, warn: () => lastWarn, syncModel, newObj, addCable, removeObj, operate };
     if (root.HAUS_DATA) root.HAUS_DATA(api, root.HAUS);
