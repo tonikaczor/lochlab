@@ -2,7 +2,7 @@
 (function () {
 'use strict';
 const LS = window.LochSim;
-const LAB = ['sim', 'code', 'pi', 'digi', 'mess'].includes(window.LAB) ? window.LAB : 'sch', LABNAME = { sim: 'SimLab', code: 'Arduino-Lab', pi: 'Pi-Lab', digi: 'DigiLab', mess: 'MessLab' }[LAB] || 'SchaltLab', SK = { sim: 'sim.', code: 'code.', pi: 'pi.', digi: 'digi.', mess: 'mess.' }[LAB] || 'sch.';
+const LAB = ['sim', 'code', 'pi', 'digi', 'mess', 'haus'].includes(window.LAB) ? window.LAB : 'sch', LABNAME = { sim: 'SimLab', code: 'Arduino-Lab', pi: 'Pi-Lab', digi: 'DigiLab', mess: 'MessLab', haus: 'HausLab' }[LAB] || 'SchaltLab', SK = { sim: 'sim.', code: 'code.', pi: 'pi.', digi: 'digi.', mess: 'mess.', haus: 'haus.' }[LAB] || 'sch.';
 const inLab = K => LAB === 'digi' ? !!K.digi : (!K.lab || K.lab.split(',').includes(LAB));
 const PROGLAB = LAB === 'code' || LAB === 'pi';
 const WIRECOL = { braun: '#9c6232', blau: '#3b82e0', gruen: '#34b24f', schwarz: '#2b2b2e', grau: '#aab0b8', rot: '#e0463a' };
@@ -158,7 +158,7 @@ const byPart = id => sch.parts.find(p => p.id === id);
 const byWire = id => sch.wires.find(w => w.id === id);
 
 /* ============ Verlauf, Speicher ============ */
-const snap = () => JSON.stringify({ name: sch.name, parts: sch.parts, wires: sch.wires, nid: sch.nid, scopes: sch.scopes, task: sch.task, code: sch.code, dice: sch.dice });
+const snap = () => JSON.stringify({ name: sch.name, parts: sch.parts, wires: sch.wires, nid: sch.nid, scopes: sch.scopes, task: sch.task, code: sch.code, dice: sch.dice, haus: sch.haus });
 function commit(noRebuild, noUI) {
   hist = hist.slice(0, hi + 1); hist.push(snap()); if (hist.length > 100) hist.shift(); hi = hist.length - 1;
   try { localStorage.setItem((SK + 'cur'), snap()); } catch (e) {}
@@ -1167,6 +1167,7 @@ function render() {
   cx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const W = cv.width / dpr, H = cv.height / dpr;
   cx.fillStyle = '#080b0e'; cx.fillRect(0, 0, W, H);
+  if (LAB === 'haus' && window.HAUS_RENDER) { window.HAUS_RENDER(cx, W, H); return; }
   // Raster
   if (view.s >= 10) {
     cx.fillStyle = 'rgba(255,255,255,.13)';
@@ -1337,6 +1338,7 @@ const ptrs = new Map(); let gest = null;
 const rectOf = () => cv.getBoundingClientRect();
 cv.addEventListener('pointerdown', e => {
   e.preventDefault();
+  if (LAB === 'haus' && window.HAUS_PTR && window.HAUS_PTR(e)) return;
   // Rechtsklick (oder Strg+Klick) beendet das aktive Werkzeug, andere Maustasten tun nichts
   if ((e.pointerType === 'mouse' && e.button !== 0) || (e.button === 0 && e.ctrlKey)) {
     if (e.button === 2 || e.ctrlKey) rightClickExit();
@@ -1349,6 +1351,7 @@ cv.addEventListener('pointerdown', e => {
   onDown(ptrs.get(e.pointerId));
 });
 cv.addEventListener('pointermove', e => {
+  if (LAB === 'haus' && window.HAUS_PTR && window.HAUS_PTR(e)) return;
   const r = rectOf(), p = { x: e.clientX - r.left, y: e.clientY - r.top };
   if (!ptrs.has(e.pointerId)) { if (e.pointerType === 'mouse') { const [fx, fy] = toGrid(p.x, p.y); cursor = snapG(fx, fy); if (tool === 'place') ghost = cursor; draw(); } return; }
   ptrs.set(e.pointerId, p);
@@ -1361,8 +1364,8 @@ cv.addEventListener('pointermove', e => {
   onMove(p);
 });
 function pend(e) { if (e.pointerType === 'mouse' && e.button !== 0) return; if (!ptrs.has(e.pointerId)) return; const p = ptrs.get(e.pointerId); ptrs.delete(e.pointerId); if (gest) { if (!ptrs.size) gest = null; return; } if (e.type === 'pointercancel') cancelAct(); else onUp(p); }
-cv.addEventListener('pointerup', pend); cv.addEventListener('pointercancel', pend);
-cv.addEventListener('wheel', e => { e.preventDefault(); const r = rectOf(), x = e.clientX - r.left, y = e.clientY - r.top, ns = clamp(view.s * Math.exp(-e.deltaY * 0.0015), 8, 80), f = ns / view.s; view.ox = x - (x - view.ox) * f; view.oy = y - (y - view.oy) * f; view.s = ns; draw(); }, { passive: false });
+cv.addEventListener('pointerup', e => { if (LAB === 'haus' && window.HAUS_PTR && window.HAUS_PTR(e)) return; pend(e); }); cv.addEventListener('pointercancel', e => { if (LAB === 'haus' && window.HAUS_PTR && window.HAUS_PTR(e)) return; pend(e); });
+cv.addEventListener('wheel', e => { e.preventDefault(); if (LAB === 'haus' && window.HAUS_WHEEL && window.HAUS_WHEEL(e)) return; const r = rectOf(), x = e.clientX - r.left, y = e.clientY - r.top, ns = clamp(view.s * Math.exp(-e.deltaY * 0.0015), 8, 80), f = ns / view.s; view.ox = x - (x - view.ox) * f; view.oy = y - (y - view.oy) * f; view.s = ns; draw(); }, { passive: false });
 function rightClickExit() {
   if (simMode) return;
   wireStart = null; ghost = null; act = null;
@@ -1505,6 +1508,7 @@ function applyPartFilter() {
   let none = pl.querySelector('.pnone'); if (q.length && !shown) { if (!none) { none = document.createElement('div'); none.className = 'pnone'; none.textContent = 'Nichts gefunden'; pl.appendChild(none); } } else if (none) none.remove();
 }
 function buildPalette() {
+  if (LAB === 'haus' && window.HAUS_PALETTE) { $('#pal').innerHTML = window.HAUS_PALETTE(simMode); const pl0 = $('#parts'); if (pl0) pl0.style.display = 'none'; return; }
   const chip = (id, label, on, data) => `<button class="chip ${on ? 'on' : ''}" data-t="${id}" ${data || ''}>${label}</button>`;
   let h;
   if (simMode) h = chip('select', '☝ Bedienen', tool === 'select') + chip('meter', '🔌 Messen', tool === 'meter') + chip('scope', '∿ Oszilloskop', tool === 'scope') + chip('reset', '↺ Zurück', false);
@@ -1666,6 +1670,7 @@ function refreshUI() {
     <div class="kv"><span>Graph-Zeitfenster</span><span>${[0.001, 0.01, 0.1, 1, 10].map(w => `<button class="mini ${Math.abs(w - graphWin) < 1e-9 ? 'on' : ''}" data-win="${w}">${w >= 1 ? w + ' s' : w * 1000 + ' ms'}</button>`).join('')}</span></div>
   </div><div id="warn"></div>`;
   }
+  if (LAB === 'haus' && window.HAUS_SIDE) { h += window.HAUS_SIDE(simMode); side.innerHTML = h; side.classList.toggle('quiet', false); return; }
   if (!simMode && tool === 'place' && placeKind) {
     const K = KINDS[placeKind];
     h += `<div class="card"><h4>${esc(K.name)} setzen</h4><div class="row2"><button class="btn" data-a="rotl">↺</button><span class="sval">${placeRot * 90}°</span><button class="btn" data-a="rotr">↻</button></div><p class="hint2">Auf die Zeichenfläche tippen. Ausrichtung mit ↺ ↻ oder Taste R.</p></div>`;
@@ -3735,7 +3740,7 @@ function menuAct(m) {
   if (m === 'teacher') { openTeacher(); return; }
   if (m === 'share') { if (!sch.parts.length) { toast('Noch nichts gezeichnet'); return; } shareNow(JSON.parse(snap()), sch.name); return; }
   if (m === 'auto') { makeLayout(); return; }
-  if (m === 'new') confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }));
+  if (m === 'new') confirmNew(() => loadCircuit(LAB === 'haus' && window.HAUS_NEW ? window.HAUS_NEW() : { name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }));
   else if (m === 'ex') openExamples();
   else if (m === 'open') openList();
   else if (m === 'save') form('Speichern unter', [{ l: 'Name', v: sch.name }], ([n]) => { sch.name = n.trim() || sch.name; commit(true); saveNamed(); toast('Gespeichert'); });
@@ -3813,6 +3818,7 @@ function exportImage() {
   sheet('Bild sichern', b => { b.innerHTML = '<p class="hint2">Bild gedrückt halten, dann „Sichern“ oder „Drucken“ wählen.</p><img alt="" style="width:100%;border-radius:8px;background:#080b0e" src="' + c.toDataURL('image/png') + '">'; });
 }
 function fit() {
+  if (LAB === 'haus' && window.HAUS_FIT) { window.HAUS_FIT(); draw(); return; }
   const r = rectOf();
   if (!sch.parts.length && !sch.wires.length) { view = { s: 24, ox: 80, oy: 80 }; draw(); return; }
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -3825,7 +3831,8 @@ function fit() {
 function loadCircuit(d) {
   incident = null; running = false; sel = null; wireStart = null; simMode = false;
   if (d.tempo != null) tempo = d.tempo; if (d.win) graphWin = d.win;
-  sch = { name: d.name || 'Schaltung', parts: JSON.parse(JSON.stringify(d.parts || [])), wires: JSON.parse(JSON.stringify(d.wires || [])), nid: d.nid || 1, scopes: d.scopes || [], sid: d.sid, task: d.task, code: d.code, dice: d.dice };
+  sch = { name: d.name || 'Schaltung', parts: JSON.parse(JSON.stringify(d.parts || [])), wires: JSON.parse(JSON.stringify(d.wires || [])), nid: d.nid || 1, scopes: d.scopes || [], sid: d.sid, task: d.task, code: d.code, dice: d.dice, haus: d.haus ? JSON.parse(JSON.stringify(d.haus)) : undefined };
+  if (LAB === 'haus' && sch.haus && window.HAUS_COMPILE) window.HAUS_COMPILE(sch);
   taskRes = null; prog = null; serLog = ''; lcdState = null;
   assignLabels(sch.parts);
   sch.nid = Math.max(sch.nid, 1 + Math.max(0, ...sch.parts.map(p => p.id || 0), ...sch.wires.map(w => w.id || 0)));
@@ -3848,7 +3855,7 @@ function openExamples() {
     b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const ex = buildExample(EXAMPLES[+r.dataset.i]); loadCircuit(ex); if (ex.tempo != null) tempo = ex.tempo; if (ex.win) graphWin = ex.win; refreshUI(); });
   });
 }
-const exOk = e => LAB === 'digi' ? e.lab === 'digi' : LAB === 'mess' ? e.lab === 'mess' : LAB === 'pi' ? e.lab === 'pi' : LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
+const exOk = e => LAB === 'digi' ? e.lab === 'digi' : LAB === 'mess' ? e.lab === 'mess' : LAB === 'haus' ? e.lab === 'haus' : LAB === 'pi' ? e.lab === 'pi' : LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
 const defEx = () => EXAMPLES.find(exOk) || EXAMPLES[0];
 function buildExample(e) {
   const d = e.make(); let id = 1; const parts = [], wires = [];
@@ -3856,7 +3863,7 @@ function buildExample(e) {
   d.wires.forEach(poly => { let wc; if (typeof poly[0] === 'string') { wc = poly[0]; poly = poly.slice(1); } for (let i = 2; i < poly.length; i += 2) wires.push(Object.assign({ id: id++, x1: poly[i - 2], y1: poly[i - 1], x2: poly[i], y2: poly[i + 1] }, wc ? { c: wc } : {})); });
   assignLabels(parts);
   const scopes = (d.scopes || []).map(i => ({ t: 'part', id: i + 1 }));
-  return { name: e.name, parts, wires, nid: id, scopes, tempo: d.tempo, win: d.win, code: d.code };
+  return { name: e.name, parts, wires, nid: id, scopes, tempo: d.tempo, win: d.win, code: d.code, haus: d.haus };
 }
 /* Beispiele: Teile [Art, x, y, Drehung, Wert, Zusatz], Drähte als Linienzüge x1,y1,x2,y2,... */
 const EXAMPLES = [
@@ -4352,6 +4359,8 @@ window.LabDigiAPI = {
   get tool() { return tool; }, setTool: (t, k) => setTool(t, k), toggleRun, setSimMode: on => setSimMode(on),
   get meter() { return meter; }, meterText, meterDial, meterReset, meterTap, scopeValues, toggleScope, sv, rebuildKeep, staticR: (a, b) => staticR(a, b, 1, 'ohm'),
   get scopeBuf() { return scopeBuf; }, get graphWin() { return graphWin; }, setGraphWin: w => { graphWin = w; scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; },
+  setSw: (id, v) => { const p = byPart(id); if (!p) return; p.sw = v ? 1 : 0; const w = wrapMap.get(id); if (w) w.sw = p.sw; },
+  get canvas() { return cv; }, get dirty() { return dirtyDraw; }, rectOf: () => rectOf(), taskDoneMap: () => taskDone(), vAtKey: key => sv(key),
   withSch(tmp, fn) { const saved = sch; sch = tmp; try { return fn(); } finally { sch = saved; } },
   /* nets: Liste von Punktfolgen [[x,y],[x,y],...]; jedes Paar benachbarter Punkte wird per Auto-Weg als Draht gelegt. Ergebnis: Polylinien [x1,y1,x2,y2,...] */
   routeNets(rows, nets) {
@@ -4391,6 +4400,7 @@ window.LabDigiAPI = {
 };
 if (LAB === 'digi' && window.DIGI_DEF) window.DIGI_DEF(window.LabDigiAPI);
 if (LAB === 'mess' && window.MESS_DEF) window.MESS_DEF(window.LabDigiAPI);
+if (LAB === 'haus' && window.HAUS_DEF) window.HAUS_DEF(window.LabDigiAPI);
 
 if (LAB === 'sim' && window.addPE) EXAMPLES.forEach(e => { if (!e.noPE && (e.lab === 'sim' || e.cat === 'Bauteile')) { const mk = e.make; e.raw = mk; e.make = () => window.addPE(mk()); } });
 // Haus-Beispiele ohne eigene Oszilloskope: je Verbraucher (bis zu vier) eins, damit jede Schalterstellung sichtbar ist

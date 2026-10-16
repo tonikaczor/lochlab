@@ -62,6 +62,17 @@
       { at: '#bMenu', t: 'Menü: Wahrheitstabelle und mehr', x: 'Im Menü stehen Aufgaben, Beispiele und die Digital-Werkzeuge. Lade das Beispiel „4-Bit-Binärzähler“ und tippe unten bei den Messpunkten auf einen Baustein: Dann erscheint das Zeitdiagramm mit allen Takten.' },
       { at: '#bEx', t: 'Beispiele', x: 'Von Gattern über Addierer und Speicher bis zum Mini-Prozessor, der ein Programm ausführt.' },
       NEXTSTEPS[0], END('DigiLab')] },
+    haus: { name: 'HausLab', steps: [
+      { t: 'Willkommen im HausLab', x: 'Hier installierst du Strom in einem Haus: Räume, Steckdosen, Schalter, Lampen, Leitungen und der Verteilerkasten. Ich zeige dir die wichtigsten Handgriffe in wenigen Minuten.' },
+      { prep: a => a.load('Einfamilienhaus (fertig'), at: '#cv', t: 'Das Haus in 3D', x: 'Das ist ein fertig installiertes Einfamilienhaus. Du siehst die Räume von schräg oben. Die orange und blauen Linien sind Leitungen, sie laufen nur an Wänden und Decke entlang, so wie es in echten Häusern vorgeschrieben ist.' },
+      { prep: (a, st) => { st.y = window.HAUS ? window.HAUS.cam.yaw : 0; }, at: '#pal', gate: (a, st) => !!window.HAUS && Math.abs(window.HAUS.cam.yaw - st.y) > 0.5, t: 'Haus drehen', x: 'Tippe unten auf einen der Drehpfeile (↺ oder ↻). So siehst du alle Wände. Mit „Oben“ schaust du von oben auf den Grundriss, mit + und − zoomst du.' },
+      { at: '#pal', t: 'Werkzeuge unten', x: 'Hier wählst du: „Raum“ zum Zeichnen, dann Steckdose, Schalter, Wechselschalter, Lampe, Gerät, Abzweigdose und Verteiler. „Leitung“ verbindet zwei Dinge, „Löschen“ entfernt. Tippe auf eine Wand, die du siehst, um etwas zu setzen. Lampen setzt du auf den Boden: Sie hängen darüber an der Decke.' },
+      { at: '#bSim', gate: a => a.simMode(), t: 'In den Betrieb schalten', x: 'Schalte oben von Zeichnen auf Sim. Jetzt ist der Strom an und du bedienst das Haus.' },
+      { at: '#cv', t: 'Schalter bedienen', x: 'Tippe einen Lichtschalter an: Die Lampe leuchtet. Geräte an Steckdosen schaltest du auch durch Antippen. Bei jeder Steckdose siehst du die Spannung. Wenn ein Gerät einen Körperschluss hat, löst der FI aus.' },
+      { at: '#pal', gate: () => !!document.querySelector('.sheet .hrail'), t: 'Verteilerkasten öffnen', x: 'Tippe unten auf „Verteiler“. Im Kasten sitzen der FI-Schutzschalter und die Sicherungsautomaten. Jeder Automat schützt einen Stromkreis.' },
+      { at: '#pal', t: 'Bestücken und verdrahten', x: 'Im Zeichenmodus tippst du auf leere Plätze und setzt FI und Automaten ein. Danach ziehst du mit „Leitung“ vom Verteilerkasten zum ersten Gerät und wählst den Abgang. Die Länge ermittelt das Lab selbst.' },
+      { at: '#bMenu', t: 'Aufgaben und Häuser', x: 'Im Menü warten 14 Aufgaben: vom Lichtschalter über Wechselschaltung und Verteiler bis zum kompletten Haus. Unter „Beispiele“ findest du drei Häuser fertig und im Rohbau, und das leere Grundstück zum freien Gestalten.' },
+      NEXTSTEPS[0], END('HausLab')] },
     mess: { name: 'MessLab', steps: [
       { t: 'Willkommen im MessLab', x: 'Hier lernst du Messen wie ein Profi: mit Multimeter, Oszilloskop, Netzgerät, Funktionsgenerator und mehr. Ich zeige dir in wenigen Minuten, wie die Werkbank funktioniert.' },
       { prep: a => a.load('Spannung messen'), at: '#cv', t: 'Eine Messschaltung', x: 'Ein Spannungsteiler aus zwei Widerständen an 9 V. Wie viel Spannung fällt an jedem Widerstand ab? Das messen wir gleich.' },

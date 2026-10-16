@@ -2,6 +2,12 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v8.118', items: [
+      ['HausLab: das achte Lab', 'Elektroinstallation im 3D-Haus: Drei Häuser (Einfamilienhaus, Altbau-Wohnung, Bürokomplex) und freies Gestalten mit eigenen Räumen. Du setzt Steckdosen, Schalter, Lampen und Geräte, ziehst Leitungen an Wänden und Decke und bestückst den Verteilerkasten. 14 Aufgaben, Trainer, Lernheft und Kampagnenkapitel.', 'Startseite ▸ HausLab'],
+      ['Leitungen in den Installationszonen', 'Leitungen laufen nur an Wänden und Decke entlang, nie quer durch den Raum. Das Lab zeigt die Länge, du wählst den Querschnitt. Zwischen Räumen geht es nur durch die gemeinsame Wand, sonst über eine Abzweigdose.', 'HausLab ▸ Leitung'],
+      ['Verteilerkasten bestücken', 'Setze FI-Schutzschalter und Sicherungsautomaten ein und verdrahte die Abgänge im Haus. Im Betrieb lösen Automaten und FI wirklich aus.', 'HausLab ▸ Verteiler'],
+      ['Drehen, kippen, von oben sehen', 'Das Haus lässt sich in 90-Grad-Schritten drehen, von oben ansehen und zoomen. Im Betrieb leuchten Lampen, Geräte zeigen ihre Spannung und die Leitungen färben sich nach der Last.', 'HausLab ▸ Pfeile unten'],
+      ['Wechselschaltung und Abzweigdosen', 'Wechselschalter lassen sich zu Paaren verdrahten, Abzweigdosen verteilen Leitungen auf mehrere Räume.', 'HausLab ▸ Beispiele ▸ Einfamilienhaus'] ] },
     { v: 'v7.117', items: [
       ['MessLab: das siebte Lab', 'Messtechnik mit Werkbank: Netzgerät mit Strombegrenzung, Funktionsgenerator, Multimeter, Oszilloskop, Frequenzzähler, Leistungsmesser und Kennlinienschreiber. 20 Beispiele, 26 Aufgaben mit Zahlenfeldern, Messfehler und Fehlersuche, Trainer, Lernheft und Kampagnenkapitel.', 'Startseite ▸ MessLab'],
       ['Werkbank fest oder frei', 'Die Geräte sitzen fest in einer Leiste unten oder als frei verschiebbare Fenster. Jedes Gerät lässt sich einzeln ein- und ausschalten.', 'MessLab ▸ Karte „Werkbank“ oder Menü ▸ Werkbank'],
