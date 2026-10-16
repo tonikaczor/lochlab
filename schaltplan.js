@@ -101,8 +101,15 @@ const KINDS = {
   ISO: { name: 'Isolationsmessgerät (500 V)', cat: 'Messen', lab: 'sim', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
   ZS:  { name: 'Schleifenimpedanz (Zs)', cat: 'Messen', lab: 'sim', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
 };
-const CATS = LAB === 'pi' ? ['Raspberry Pi', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Netz & Schutz', 'Schalter', 'Verbraucher', 'Quellen', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
-const kindsOf = cat => Object.keys(KINDS).filter(k => KINDS[k].cat === cat && inLab(KINDS[k]));
+const CATS = LAB === 'pi' ? ['Raspberry Pi', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Quellen', 'Netz & Schutz', 'Schalter', 'Verbraucher', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
+/* SimLab: Spannungsquellen und Masse stehen ganz oben, dazu die Netzquellen (Netz 230 V, Drehstrom 400 V) */
+const SRC_FIRST = LAB === 'sim' ? ['NETZ', 'NETZ3'] : [];
+const kindsOf = cat => {
+  const all = Object.keys(KINDS).filter(k => KINDS[k].cat === cat && inLab(KINDS[k]));
+  if (cat === 'Netz & Schutz') return all.filter(k => !SRC_FIRST.includes(k));
+  if (cat === 'Quellen') return SRC_FIRST.filter(k => KINDS[k] && inLab(KINDS[k])).concat(all);
+  return all;
+};
 const rot = (x, y, r) => { switch (r & 3) { case 0: return [x, y]; case 1: return [-y, x]; case 2: return [-x, -y]; default: return [y, -x]; } };
 const KD = p => { const K = KINDS[p.k]; return K.dyn ? Object.assign({}, K, K.dyn(p)) : K; };
 const pinsOf = p => KD(p).pins.map(([x, y]) => { const [a, b] = rot(x, y, p.r); return [p.x + a, p.y + b]; });

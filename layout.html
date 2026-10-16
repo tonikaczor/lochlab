@@ -1264,7 +1264,7 @@ function renderCtx(){
   el.innerHTML=h;sd.innerHTML=sh;sd.classList.toggle('on',!!sh);
   renderParts();
 }
-const PCATS=[['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','DUOLED','T','FET','THY','TRIAC','VDR','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','PI','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Quellen',['BAT','SIG']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];
+const PCATS=[['Quellen',['BAT','SIG']],['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','DUOLED','T','FET','THY','TRIAC','VDR','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','PI','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];
 function renderParts(){
   const el=$('#parts');if(!el)return;
   const seen=new Set();let h=`<div class="psearch"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;flex:none;opacity:.7"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="pq" type="search" placeholder="Bauteil suchen …" autocomplete="off" value="${esc(partQuery)}"></div>`;
