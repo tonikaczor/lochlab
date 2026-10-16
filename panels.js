@@ -13,6 +13,7 @@
       '@media(min-width:720px){#mid.hasLW:not(.noL) #parts{width:var(--lw)!important}#mid.hasRW:not(.noR) #side{width:var(--rw)!important}}' +
       '.ptab{position:absolute;top:50%;transform:translateY(-50%);z-index:6;width:26px;height:64px;display:none;align-items:center;justify-content:center;font:700 20px/1 system-ui,sans-serif;color:var(--fg,#e8ecf0);background:var(--panel,#222830);border:1px solid var(--line,#38424d);opacity:.92;cursor:pointer;padding:0;touch-action:manipulation;-webkit-tap-highlight-color:transparent}' +
       '.ptab:active{background:var(--panel2,#2c343e)}.ptab.l{left:0;border-left:0;border-radius:0 12px 12px 0}.ptab.r{right:0;border-right:0;border-radius:12px 0 0 12px}' +
+      '#mid .pmeasure{white-space:nowrap!important}#mid .pmeasure *{white-space:nowrap!important}' +
       '.pgrip{position:absolute;top:0;bottom:0;width:16px;z-index:5;display:none;cursor:col-resize;touch-action:none;-webkit-tap-highlight-color:transparent}' +
       '.pgrip.l{left:0}.pgrip.r{right:0}.pgrip::after{content:"";position:absolute;top:50%;height:46px;width:4px;margin-top:-23px;border-radius:2px;background:var(--mute,#8d99a6);opacity:.55}' +
       '.pgrip.l::after{left:' + 2 + 'px}.pgrip.r::after{right:2px}.pgrip:hover::after,.pgrip.on::after{opacity:1;background:var(--accent,#3b9eff)}' +
@@ -22,7 +23,29 @@
     document.head.appendChild(s);
   }
   function shown(el) { return !!el && getComputedStyle(el).display !== 'none'; }
-  function clampW(k, w) { var m = Math.max(LIM[k][0], Math.min(LIM[k][1], Math.round(window.innerWidth * 0.42))); return Math.max(LIM[k][0], Math.min(m, w)); }
+  /* natürliche Breite: so breit wie der längste Text der Leiste (ohne Umbruch), damit man sie nie weiter aufzieht als nötig */
+  var nat = { l: 0, r: 0 };
+  function measure(k, panel) {
+    if (!panel || getComputedStyle(panel).display === 'none') return nat[k];
+    var prev = panel.getAttribute('style');
+    panel.classList.add('pmeasure'); panel.style.setProperty('width', 'max-content', 'important'); panel.style.setProperty('max-width', 'none', 'important'); panel.style.setProperty('overflow', 'visible', 'important');
+    var pr = panel.getBoundingClientRect(), best = 0, cs = getComputedStyle(panel), padR = parseFloat(cs.paddingRight) || 0;
+    var tw = document.createTreeWalker(panel, NodeFilter.SHOW_TEXT, null), n, rg = document.createRange();
+    while ((n = tw.nextNode())) {
+      if (!n.nodeValue.trim()) continue;
+      var pe = n.parentElement; if (!pe || getComputedStyle(pe).display === 'none' || pe.closest('[hidden]')) continue;
+      rg.selectNodeContents(n); var r = rg.getBoundingClientRect(); if (r.width > 0) best = Math.max(best, r.right - pr.left);
+    }
+    panel.classList.remove('pmeasure');
+    if (prev === null) panel.removeAttribute('style'); else panel.setAttribute('style', prev);
+    if (best > 0) nat[k] = Math.ceil(best + padR + 16);
+    return nat[k];
+  }
+  function clampW(k, w) {
+    var m = Math.max(LIM[k][0], Math.min(LIM[k][1], Math.round(window.innerWidth * 0.42)));
+    if (nat[k]) m = Math.max(LIM[k][0], Math.min(m, nat[k]));
+    return Math.max(LIM[k][0], Math.min(m, w));
+  }
   var lastSig = '';
   function update() {
     if (!mid) return;
@@ -30,6 +53,7 @@
     var showL0 = shown(left) && !narrow, showR0 = shown(right);
     var sig = [state.l, state.r, state.lw, state.rw, narrow, showL0, showR0, window.innerWidth].join('|');
     if (sig === lastSig) return; lastSig = sig;
+    if (state.lw && !state.l) measure('l', left); if (state.rw && !state.r) measure('r', right);
     mid.classList.toggle('noL', !!state.l); mid.classList.toggle('noR', !!state.r);
     if (state.lw) { mid.style.setProperty('--lw', clampW('l', state.lw) + 'px'); mid.classList.add('hasLW'); } else mid.classList.remove('hasLW');
     if (state.rw) { mid.style.setProperty('--rw', clampW('r', state.rw) + 'px'); mid.classList.add('hasRW'); } else mid.classList.remove('hasRW');
@@ -44,7 +68,7 @@
   function toggle(k) { state[k] = state[k] ? 0 : 1; save(); update(); setTimeout(fire, 30); }
   function grip(el, k, panel) {
     var sx = 0, sw = 0, raf = 0;
-    el.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch (x) {} sx = e.clientX; sw = panel.getBoundingClientRect().width; el.classList.add('on'); el._drag = true; });
+    el.addEventListener('pointerdown', function (e) { e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch (x) {} sx = e.clientX; sw = panel.getBoundingClientRect().width; measure(k, panel); el.classList.add('on'); el._drag = true; });
     el.addEventListener('pointermove', function (e) {
       if (!el._drag) return; var dx = e.clientX - sx, w = clampW(k, sw + (k === 'l' ? dx : -dx));
       state[k + 'w'] = w; mid.style.setProperty('--' + (k === 'l' ? 'lw' : 'rw'), w + 'px'); mid.classList.add(k === 'l' ? 'hasLW' : 'hasRW');
