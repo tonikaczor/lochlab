@@ -75,7 +75,10 @@ body.printqr #qrSheet{display:block!important}
     <p class="mute" style="margin-top:0">Azubis tippen in der Aufgabe auf <b>Abgeben</b> und zeigen den QR-Code. Hier mit der Kamera scannen: Das Ergebnis landet sofort in der Tabelle.</p>
     <video id="vid" playsinline muted></video><canvas id="cnv" class="hide"></canvas>
     <div class="row"><button class="pri" id="scanBtn">Kamera starten</button><span id="scanMsg" class="mute"></span></div>
-    <div id="scanLog" class="mute" style="margin-top:8px"></div>
+    <div id="scanSum" style="margin-top:10px;font-weight:600"></div>
+    <div id="scanLog" class="mute" style="margin-top:4px;max-height:220px;overflow:auto"></div>
+    <div class="row"><button id="sumCopy">Zusammenfassung kopieren</button><button id="xferCopy">Daten auf anderes Gerät übertragen</button><button class="danger" id="scanClr">Liste leeren</button></div>
+    <p class="mute">Mit dem Handy scannen und am Rechner weiterarbeiten: „Daten auf anderes Gerät übertragen“ kopiert alles als Text (z. B. in Teams an dich selbst schicken). Am Rechner unter „Ergebnis-Codes einsammeln“ einfügen.</p>
   </div>
   <div class="card" id="qrCard">
     <h2>Aufgaben als QR-Code verteilen</h2>
@@ -175,7 +178,21 @@ function qrPrint() {
   window.addEventListener('afterprint', done); setTimeout(() => window.print(), 100);
 }
 /* Kamera-Scanner für Abgabe-QR-Codes */
-let stream = null, raf = 0, lastData = '', lastT = 0;
+let stream = null, raf = 0, lastData = '', lastT = 0; const scans = [];
+const hm = t => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+function showScans() {
+  const nm = new Set(scans.map(x => x.n));
+  $('#scanSum').textContent = scans.length ? `Gescannt: ${scans.length} Abgabe(n) von ${nm.size} Azubi(s)` : '';
+  $('#scanLog').innerHTML = scans.map(x => `<div class="scanok">✓ ${hm(x.t)} · ${esc(x.n)}: ` + Object.keys(x.d).map(k => esc(taskTitle(k)) + ' ' + x.d[k] + ' %').join(', ') + '</div>').join('');
+}
+function copyText(txt, msg) { (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { $('#scanMsg').textContent = msg; }).catch(() => { prompt('Bitte kopieren:', txt); }); }
+function summaryText() {
+  const d = load(); mergeClass(d); const names = Object.keys(d).sort((a, b) => a.localeCompare(b, 'de')), L = window.AUFGABEN_LABS;
+  let out = 'Auswertung Tonfunk Lab, Stand ' + new Date().toLocaleString('de-DE') + '\n';
+  names.forEach(n => { const p = d[n].d, ks = Object.keys(p), full = ks.filter(k => p[k] >= 100); out += '\n' + n + ': ' + full.length + ' von ' + ks.length + ' Aufgaben vollständig\n' + ks.map(k => '  ' + (p[k] >= 100 ? '✓' : '·') + ' ' + taskTitle(k) + ' (' + p[k] + ' %)').join('\n') + '\n'; });
+  return out;
+}
+function transferText() { const d = load(); mergeClass(d); return Object.keys(d).map(n => 'TFL1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ n, t: d[n].t || Date.now(), d: d[n].d })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')).join('\n'); }
 function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); setTimeout(() => { o.stop(); a.close(); }, 120); } catch (e) {} }
 function stopScan() { if (raf) cancelAnimationFrame(raf); raf = 0; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; $('#vid').style.display = 'none'; $('#scanBtn').textContent = 'Kamera starten'; }
 async function startScan() {
@@ -189,7 +206,7 @@ async function startScan() {
       if (r && r.data && (r.data !== lastData || Date.now() - lastT > 4000)) {
         lastData = r.data; lastT = Date.now();
         const list = Auswertung.parse(r.data);
-        if (list.length) { addCodes(r.data); beep(); const o = list[0], ks = Object.keys(o.d); $('#scanLog').innerHTML = `<div class="scanok">✓ ${esc(o.n || 'ohne Namen')}: ${ks.map(k => esc(taskTitle(k)) + ' ' + o.d[k] + ' %').join(', ')}</div>` + $('#scanLog').innerHTML; render(); }
+        if (list.length) { addCodes(r.data); beep(); const o = list[0]; scans.unshift({ n: o.n || 'ohne Namen', d: o.d, t: Date.now() }); showScans(); render(); }
         else $('#scanMsg').textContent = 'Das ist kein Abgabe-Code von Tonfunk Lab';
       }
     }
@@ -204,7 +221,7 @@ function start() {
   $('#add').onclick = () => { const n = addCodes($('#codes').value); $('#addMsg').textContent = n ? n + ' Code(s) übernommen' : 'Kein gültiger Code gefunden'; if (n) $('#codes').value = ''; render(); };
   $('#csv').onclick = csv; $('#prt').onclick = () => window.print();
   $('#clr').onclick = () => { if (confirm('Alle gesammelten Ergebnisse auf diesem Gerät löschen?')) { save({}); try { localStorage.removeItem('sim.class'); } catch (e) {} render(); } };
-  buildQrList(); $('#qrPrint').onclick = qrPrint; $('#qrAll').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = true); $('#qrNone').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = false); $('#scanBtn').onclick = startScan;
+  buildQrList(); $('#qrPrint').onclick = qrPrint; $('#qrAll').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = true); $('#qrNone').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = false); $('#scanBtn').onclick = startScan; $('#sumCopy').onclick = () => copyText(summaryText(), 'Zusammenfassung kopiert'); $('#xferCopy').onclick = () => copyText(transferText(), 'Alle Ergebnisse als Text kopiert'); $('#scanClr').onclick = () => { scans.length = 0; showScans(); };
   render();
 }
 if (god) start();
