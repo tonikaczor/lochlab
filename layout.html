@@ -1492,6 +1492,7 @@ function openMenu(){
       ['trainer','Trainer: Erste Schritte','Kurze Einführung zum Mitmachen'],
       ['loet','Lötübung','Löten üben und schlechte Lötstellen finden'],
       ['oszi','Oszilloskop-Trainer','Ablesen üben und Kurven-Rätsel'],
+      ['voice','Sprachsteuerung an/aus','Befehle mit dem Mikrofon (Zustimmung nötig)'],
       ['neu','Neu in dieser Version','Was zuletzt dazukam und wo du es findest'],
       ['predict','Vorhersage-Modus an/aus','Vor dem Start der Simulation tippen, was passiert'],
       ['png','Bild speichern (PNG)','Aktuelle Ansicht als Bilddatei'],
@@ -1552,6 +1553,7 @@ function menuAct(m){
   if(m==='trainer'){if(window.Trainer)Trainer.start();return;}
   if(m==='loet'){if(window.Loetuebung)Loetuebung.open();return;}
   if(m==='oszi'){if(window.Oszi)Oszi.open();return;}
+  if(m==='voice'){if(window.Voice)Voice.toggle();return;}
   if(m==='predict'){if(window.Predict)Predict.toggle();return;}
   if(m==='png'){if(window.LabExport)LabExport.png();return;}
   if(m==='gif'){if(window.LabExport)LabExport.gif();return;}
@@ -1923,5 +1925,6 @@ window.LabKeysAdapter = {
 <script src="trainer.js"></script>
 <script src="loetuebung.js"></script>
 <script src="oszi.js"></script>
+<script src="voice.js"></script>
 </body>
 </html>

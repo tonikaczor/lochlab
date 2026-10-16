@@ -2,6 +2,8 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v5.112', items: [
+      ['Sprachsteuerung', 'Mit dem Mikrofon-Knopf kurze Befehle geben: „Starte Simulation“, „Setze einen Widerstand“, „Wert 4,7 Kiloohm“, „Wasser-Ansicht“, „Rückgängig“, „Trainer“. Nur nach Zustimmung, die Erkennung macht der Browser deines Geräts.', 'Menü ▸ Sprachsteuerung an/aus, danach Knopf 🎤 unten links'] ] },
     { v: 'v5.111', items: [
       ['Lötübung', 'Löten üben mit Hitze und Zinn (sechs Lötstellen) und Lupen-Prüfung: schlechte Lötstellen auf einer Reihe erkennen.', 'Menü ▸ Lötübung (alle Labs)'],
       ['Oszilloskop-Trainer', 'Übungsgerät mit Zeitbasis, Volt je Kästchen und Trigger, fünf Ableseaufgaben mit Zufallszahlen und ein Kurven-Rätsel (welche Schaltung macht diese Kurve?).', 'Menü ▸ Oszilloskop-Trainer (alle Labs)'],
