@@ -2,6 +2,8 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v5.113', items: [
+      ['Versionsliste mit 50 Einträgen', 'Unter „Früher“ stehen jetzt die 50 Versionen vor v5.103 in einer Zeile je Version.', 'Menü ▸ Neu in dieser Version ▸ Früher'] ] },
     { v: 'v5.112', items: [
       ['Sprachsteuerung', 'Mit dem Mikrofon-Knopf kurze Befehle geben: „Starte Simulation“, „Setze einen Widerstand“, „Wert 4,7 Kiloohm“, „Wasser-Ansicht“, „Rückgängig“, „Trainer“. Nur nach Zustimmung, die Erkennung macht der Browser deines Geräts.', 'Menü ▸ Sprachsteuerung an/aus, danach Knopf 🎤 unten links'] ] },
     { v: 'v5.111', items: [
@@ -37,11 +39,57 @@
       ['Vorhersage-Modus', 'Vor dem Start tippen, was passiert.', 'Menü ▸ Vorhersage-Modus'],
       ['Spannungsquelle live ändern', 'Volt, bei Wechselspannung auch Frequenz, ohne Neustart.', 'Bedienfeld (Simulation), LochLab: Quelle antippen'],
       ['Export', 'Bild (PNG), Animation (GIF), Messkurven (CSV).', 'Menü ▸ Bild speichern, Animation als GIF, Oszilloskop-Daten'] ] },
-    { v: 'Früher', items: [
-      ['Auto-Weg für Drähte', 'Draht legt sich rechtwinklig um Hindernisse, mit Vorschau.', 'Zeichnen, Drahtwerkzeug'],
-      ['Seitenleisten', 'Ein- und ausklappen, in der Breite ziehen.', 'Griffe an den Leisten'],
-      ['Abgabe per QR und Auswertung', 'Aufgaben verteilen, Ergebnisse scannen, Gruppenüberblick.', 'Menü ▸ Ergebnis senden, Ausbilder: Auswertung'],
-      ['Tipp-Stufen, Messprotokoll, Rechner, Lernhefte', 'Hilfen, Protokoll zum Drucken, Ohm- und RC-Rechner, Arbeitsblätter.', 'Menü und Startseite'] ] }
+    { v: 'Früher: die 50 Versionen davor (v5.53 bis v5.102)', old: [
+      ['v5.102', 'Export: Bild (PNG), Animation (GIF), Messkurven als CSV.'],
+      ['v5.101', 'Seitenleisten lassen sich höchstens so weit aufziehen, wie der längste Text breit ist.'],
+      ['v5.100', 'Seitenleisten ein- und ausklappen und in der Breite ziehen (alle Labs).'],
+      ['v5.99', 'Kopfzeile in allen Labs besser lesbar; die SimLab-Kopfzeile läuft am iPad quer nicht mehr über.'],
+      ['v5.98', 'LochLab-Kopfzeile und Versionsanzeige besser lesbar (nach dem ersten iPad-Test).'],
+      ['v5.97', 'Projekt Netzteil 5 V: Plan im SchaltLab, Aufbau im LochLab.'],
+      ['v5.96', 'Projekt Dämmerungsschalter mit Relais (Plan, dann Aufbau).'],
+      ['v5.95', 'Vorschau beim Auto-Weg: gestrichelter Weg bis zum Finger oder Mauszeiger.'],
+      ['v5.94', 'Regler in echten Einheiten (°C, cm, lx, V, Ω) mit Zahleneingabe.'],
+      ['v5.93', 'Auto-Weg: Drähte suchen sich selbst den Weg mit 90°-Knicken.'],
+      ['v5.92', 'Spannungsquellen und Masse stehen ganz oben in der Bauteilliste.'],
+      ['v5.91', 'Projekt Ampel mit 555 und CD4017: Plan im SchaltLab, Aufbau im LochLab.'],
+      ['v5.90', 'LochLab: Beispiele und Aufgaben MOSFET und Duo-LED; Hinweis „Schneller stellen“ bei niedrigem Tempo.'],
+      ['v5.89', 'Tipp-Stufen: Tipp, konkreter Hinweis, Lösung.'],
+      ['v5.88', 'Lernhefte mit Arbeitsblättern für LochLab, SchaltLab und SimLab.'],
+      ['v5.87', 'Auswertung: Scanner-Übersicht und Datenübertragung auf ein anderes Gerät.'],
+      ['v5.86', 'QR-Codes: Aufgaben verteilen, Ergebnisse per QR abgeben und einscannen.'],
+      ['v5.85', 'Auswertung für Ausbilder: Ergebnis-Code, Tabelle, CSV.'],
+      ['v5.84', 'LochLab am Handy: Knopf „Bauteil“ wieder da.'],
+      ['v5.83', 'Treppenhaus-Fehler behoben (Taster mindestens 0,1 s gedrückt); neue Bauteile (Schottky, MOSFET, DIAC, TRIAC, Varistor, Duo-LED, Duo-7-Segment, RGB-LED), Rechner, Aufgaben s6 bis s16.'],
+      ['v5.82', 'SimLab: Prüfplatz VDE 0701/0702, Leitungen und Messgeräte; Tastenkürzel in allen Editoren.'],
+      ['v5.81', 'LochLab: 16 Aufgaben (Aufbau und Fehlersuche) mit Prüfung.'],
+      ['v5.80', 'SimLab: Netz mit Massebezug, kein Blinken mehr hinter offenen Schaltern.'],
+      ['v5.79', 'SimLab: Körperschluss löst Automat oder FI aus; Überlast-Beispiel mit vier Oszilloskopen.'],
+      ['v5.78', 'LochLab simuliert Arduino Uno und Raspberry Pi samt Programm.'],
+      ['v5.77', 'LochLab: Raspberry Pi als Bauteil, sechs Pi-Layoutbeispiele.'],
+      ['v5.76', 'Versionsanzeige; Durchsicht aller Beispiele (drei Fehler behoben); Debug-Hilfen.'],
+      ['v5.75', 'Prüfhilfe für den Schutzleiter in allen SimLab-Beispielen.'],
+      ['v5.74', 'Pi-Lab: eigene Klassen und I²C (Sensoren LM75 und BH1750).'],
+      ['v5.73', 'Slogan mit Punkt am Ende.'],
+      ['v5.72', 'Neuer Slogan: „… es gibt immer eine Schaltung, die noch fehlt.“'],
+      ['v5.71', 'Slogan auf der Startseite.'],
+      ['v5.70', 'Star-Wars-Beispiel für Arduino und Pi; animierte Vorschaubilder auf der Startseite.'],
+      ['v5.69', 'Anleitung und Ausbilder-Hinweise um den Schutzleiter ergänzt.'],
+      ['v5.68', 'Schutzleiter PE an Hausverbrauchern, Körperschluss einschaltbar.'],
+      ['v5.67', 'Pi-Lab: Wandler MCP3008, TMP36, vier neue Aufgaben (jetzt 16).'],
+      ['v5.66', 'LochLab: Spannungsquelle und Signalgenerator werden gezeichnet; zweiter Stromkreis bekommt Massebezug.'],
+      ['v5.65', 'Pi-Lab als fünftes Lab mit Python; das CodeLab heißt jetzt Arduino-Lab.'],
+      ['v5.64', 'Seite „SD-Karte vorbereiten“ für den Raspberry Pi.'],
+      ['v5.63', 'Lernbereich mit Heften für Arduino und Pi.'],
+      ['v5.62', 'Anleitung für Azubis und Seite für Ausbilder (mit PDFs).'],
+      ['v5.61', 'Arduino-Lab: zehn weitere Aufgaben (jetzt 23); Phantom-Tastendruck beim Start behoben.'],
+      ['v5.60', 'Layout-Automat kennt den Arduino (Uno, Servo, Sensoren); LochLab-Beispiele für Arduino.'],
+      ['v5.59', 'Arduino-Lab am Handy: Aufgabenkarte steht oben.'],
+      ['v5.58', 'LochLab-Bauteilliste mit Suchlinks zu Reichelt und Conrad.'],
+      ['v5.57', 'Layout-Automat: Batterie und Wechselspannung als Quellen im LochLab, die Simulation läuft dort.'],
+      ['v5.56', 'Aufgaben mit automatischer Prüfung in allen drei Labs.'],
+      ['v5.55', 'Handyansicht: zweizeilige Kopfleiste.'],
+      ['v5.54', 'Bauteilliste links mit Lupen-Suche in allen Labs; Kippschalter und Glühlampe im Layout-Automaten.'],
+      ['v5.53', 'Zusätzliche Beispiele: SchaltLab plus zehn, SimLab plus drei, Arduino-Lab.']] }
   ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function open() {
@@ -49,8 +97,9 @@
     const cur = root.LAB_VERSION || LOG[0].v;
     const w = document.createElement('div'); w.id = 'neuBox';
     w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px';
+    const oldBlock = (b) => `<details style="margin:8px 0;border:1px solid #38424d;border-radius:10px;padding:8px 12px;background:#252d36"><summary style="cursor:pointer;font-weight:700;font-size:16px">${esc(b.v)}</summary><ul style="margin:8px 0 2px;padding-left:20px">${b.old.map(o => `<li style="margin:5px 0"><b>${esc(o[0])}</b>: ${esc(o[1])}</li>`).join('')}</ul></details>`;
     const block = (b, open) => `<details${open ? ' open' : ''} style="margin:8px 0;border:1px solid #38424d;border-radius:10px;padding:8px 12px;background:#252d36"><summary style="cursor:pointer;font-weight:700;font-size:16px">${esc(b.v)}${b.v === cur ? ' <span style="background:#2fae45;color:#fff;border-radius:8px;padding:1px 8px;font-size:12px;margin-left:6px">aktuell</span>' : ''}</summary><ul style="margin:8px 0 2px;padding-left:20px">${b.items.map(i => `<li style="margin:7px 0"><b>${esc(i[0])}</b>: ${esc(i[1])}<br><span style="color:#6cb8ff;font-size:13px">Fundort: ${esc(i[2])}</span></li>`).join('')}</ul></details>`;
-    w.innerHTML = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:640px;width:100%;font:15px system-ui,sans-serif"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">Neu in Tonfunk Lab ${esc(cur)}</b><button id="neuX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer" aria-label="Schließen">✕</button></div><p style="color:#9aa6b2;margin:6px 0 4px">Das ist zuletzt dazugekommen und so findest du es.</p>${LOG.map((b, i) => block(b, i < 2)).join('')}</div>`;
+    w.innerHTML = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:640px;width:100%;font:15px system-ui,sans-serif"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">Neu in Tonfunk Lab ${esc(cur)}</b><button id="neuX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer" aria-label="Schließen">✕</button></div><p style="color:#9aa6b2;margin:6px 0 4px">Das ist zuletzt dazugekommen und so findest du es.</p>${LOG.map((b, i) => b.old ? oldBlock(b) : block(b, i < 2)).join('')}</div>`;
     document.body.appendChild(w);
     const close = () => w.remove();
     w.querySelector('#neuX').onclick = close; w.addEventListener('pointerdown', e => { if (e.target === w) close(); });
