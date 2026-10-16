@@ -2,6 +2,10 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v5.111', items: [
+      ['Lötübung', 'Löten üben mit Hitze und Zinn (sechs Lötstellen) und Lupen-Prüfung: schlechte Lötstellen auf einer Reihe erkennen.', 'Menü ▸ Lötübung (alle Labs)'],
+      ['Oszilloskop-Trainer', 'Übungsgerät mit Zeitbasis, Volt je Kästchen und Trigger, fünf Ableseaufgaben mit Zufallszahlen und ein Kurven-Rätsel (welche Schaltung macht diese Kurve?).', 'Menü ▸ Oszilloskop-Trainer (alle Labs)'],
+      ['Rangliste und Wochenwertung', 'Punkte pro Azubi, „Woche starten“ merkt den Stand, die Spalte „diese Woche“ zeigt den Zuwachs. Wochenpreis kopieren und Urkunde drucken.', 'Ausbilder: Auswertung (auswertung.html)'] ] },
     { v: 'v5.110', items: [
       ['Schaltungs-Detektiv', 'Acht Fälle mit Geschichte: In jeder Schaltung steckt ein versteckter Fehler. Du misst, findest Bauteil und Fehlerart und sammelst Punkte. Jeder falsche Versuch kostet Punkte.', 'Menü ▸ Schaltungs-Detektiv (SchaltLab)'],
       ['Multimeter wie echt', 'Drehschalter (V Gleich, V Wechsel, A, Ω), Buchsen (VΩ, mA, 10 A) und eine Messgerätesicherung. Wer falsch einstellt, bekommt die Folgen zu spüren: Spannung in der Strombuchse brennt die Sicherung durch, Widerstand misst man nur spannungsfrei.', 'Simulation ▸ Messen (SchaltLab, SimLab, Arduino-, Pi-Lab)'],

@@ -91,6 +91,12 @@ body.printqr #qrSheet{display:block!important}
     <div id="qrList"></div>
     <div class="row"><button class="pri" id="qrPrint">QR-Blatt drucken</button><button id="qrAll">Alle ankreuzen</button><button id="qrNone">Keine</button><span id="qrMsg" class="mute"></span></div>
   </div>
+  <div class="card" id="rankCard">
+    <h2>Rangliste und Wochenwertung</h2>
+    <p class="mute" style="margin-top:0">Punkte: je Aufgabe bis zu 10 (Prozent geteilt durch 10, minus benutzte Tipp-Stufen), 5 je Abzeichen, 3 je Duell. „Woche starten“ merkt den heutigen Stand, danach zählt die Spalte „diese Woche“ nur das, was seitdem dazugekommen ist.</p>
+    <div class="row noprint"><button class="pri" id="wkStart">Woche starten (Stand merken)</button><button id="wkClr">Wochenstand löschen</button><button id="wkCopy">Wochenpreis kopieren</button><button id="wkCert">Urkunde drucken</button><span id="wkMsg" class="mute"></span></div>
+    <div id="rankList" style="margin-top:8px"></div>
+  </div>
   <div class="card" id="duelCard"><h2>Duell-Rangliste</h2><div id="duelList"></div></div>
   <div class="card" id="chartCard">
     <h2>Gruppenüberblick</h2>
@@ -127,7 +133,7 @@ const load = () => { try { return JSON.parse(localStorage.getItem(KEY) || '{}');
 const save = d => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} };
 let god = false; try { god = sessionStorage.getItem('lm4.god') === GODH; } catch (e) {}
 async function tryPw() { if (await sha256($('#pw').value.trim()) === GODH) { try { sessionStorage.setItem('lm4.god', GODH); } catch (e) {} start(); } else $('#pwErr').textContent = 'Passwort falsch'; }
-$('#pwGo').onclick = tryPw; $('#pw').addEventListener('keydown', e => { if (e.key === 'Enter') tryPw(); });
+$('#pwGo').onclick = tryPw; rankButtons(); $('#pw').addEventListener('keydown', e => { if (e.key === 'Enter') tryPw(); });
 /* Ergebnisse aus dem Lehrer-Bereich dieses Geräts (geprüfte Abgaben) mit übernehmen */
 function mergeClass(d) {
   let a = []; try { a = JSON.parse(localStorage.getItem('sim.class') || '[]'); } catch (e) {}
@@ -171,8 +177,37 @@ function render() {
   });
   h += '</tbody><tfoot><tr><td class="name">Geschafft (100 %)</td><td></td><td></td><td></td><td></td>' + colSum.map(c => `<td>${c[0]}</td>`).join('') + '</tr></tfoot>';
   $('#tab').innerHTML = names.length ? h : '<tbody><tr><td class="name">Noch keine Ergebnisse. Oben Codes einfügen.</td></tr></tbody>';
-  charts(d, names, cols); duelRank(d);
+  charts(d, names, cols); rankRender(d); duelRank(d);
   $('#stand').textContent = names.length + ' Azubis · ' + cols.length + ' Aufgaben';
+}
+/* ---------- Rangliste und Wochenwertung ---------- */
+const BASE = 'ausw.base';
+const loadBase = () => { try { return JSON.parse(localStorage.getItem(BASE) || 'null'); } catch (e) { return null; } };
+function score(p) {
+  let s = 0; Object.keys(p.d || {}).forEach(k => { s += Math.max(0, Math.round((+p.d[k] || 0) / 10) - ((p.h || {})[k] || 0)); });
+  s += 5 * (p.b || []).length + 3 * Object.keys(p.w || {}).length; return s;
+}
+let rankRows = [];
+function rankRender(d) {
+  const names = Object.keys(d), base = loadBase(), bs = base ? base.scores : null;
+  rankRows = names.map(n => { const sc = score(d[n]); return { n, sc, wk: bs ? sc - (bs[n] || 0) : null, bd: (d[n].b || []).length }; });
+  const useWk = !!bs; rankRows.sort((a, b) => (useWk ? b.wk - a.wk : 0) || b.sc - a.sc || a.n.localeCompare(b.n, 'de'));
+  const mx = Math.max(1, ...rankRows.map(r => useWk ? Math.max(r.wk, 0) : r.sc));
+  $('#rankList').innerHTML = rankRows.length ? ('<div class="mute" style="margin-bottom:4px">' + (useWk ? 'Sortiert nach „diese Woche“ (Stand vom ' + new Date(base.at).toLocaleDateString('de-DE') + ')' : 'Sortiert nach Gesamtpunkten') + '</div>' +
+    rankRows.map((r, i) => { const v = useWk ? Math.max(r.wk, 0) : r.sc; return `<div class="brow"><span class="lb" title="${esc(r.n)}">${['🥇', '🥈', '🥉'][i] || (i + 1) + '.'} ${esc(r.n)}</span><div class="bar"><i class="g" style="width:${100 * v / mx}%"></i></div><span class="nm" style="width:auto;min-width:110px">${r.sc} P${useWk ? ' · +' + r.wk + ' Woche' : ''}</span></div>`; }).join('')) : '<p class="mute">Noch keine Daten.</p>';
+}
+function winnerText() {
+  if (!rankRows.length) return ''; const base = loadBase(), w = rankRows[0];
+  return base ? `Wochenpreis: ${w.n} mit +${w.wk} Punkten diese Woche (gesamt ${w.sc}). Platz 2: ${rankRows[1] ? rankRows[1].n : '–'}, Platz 3: ${rankRows[2] ? rankRows[2].n : '–'}.` : `Spitzenreiter: ${w.n} mit ${w.sc} Punkten. Platz 2: ${rankRows[1] ? rankRows[1].n : '–'}, Platz 3: ${rankRows[2] ? rankRows[2].n : '–'}.`;
+}
+function rankButtons() {
+  $('#wkStart').onclick = () => { const d = load(); mergeClass(d); const sc = {}; Object.keys(d).forEach(n => { sc[n] = score(d[n]); }); try { localStorage.setItem(BASE, JSON.stringify({ at: Date.now(), scores: sc })); } catch (e) {} $('#wkMsg').textContent = 'Stand gemerkt: ' + Object.keys(sc).length + ' Azubis'; render(); };
+  $('#wkClr').onclick = () => { try { localStorage.removeItem(BASE); } catch (e) {} $('#wkMsg').textContent = 'Wochenstand gelöscht'; render(); };
+  $('#wkCopy').onclick = () => { const t = winnerText(); if (!t) { $('#wkMsg').textContent = 'Noch keine Daten'; return; } (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => { $('#wkMsg').textContent = 'Kopiert'; }).catch(() => { prompt('Bitte kopieren:', t); }); };
+  $('#wkCert').onclick = () => {
+    if (!rankRows.length) { $('#wkMsg').textContent = 'Noch keine Daten'; return; } const w = rankRows[0], base = loadBase(), win = window.open('', '_blank'); if (!win) { $('#wkMsg').textContent = 'Pop-up blockiert'; return; }
+    win.document.write(`<!doctype html><meta charset="utf-8"><title>Urkunde</title><style>body{font-family:Georgia,serif;text-align:center;margin:0;padding:40px;border:14px double #b8860b;min-height:90vh;box-sizing:border-box}h1{font-size:46px;margin:30px 0 10px}h2{font-size:34px;margin:30px 0}p{font-size:20px}.s{margin-top:70px;display:flex;justify-content:space-around;font-size:16px}</style><h1>Urkunde</h1><p>Tonfunk Lab · ${base ? 'Wochenwertung' : 'Gesamtwertung'}</p><h2>${esc(w.n)}</h2><p>hat in der ${base ? 'Woche ab ' + new Date(base.at).toLocaleDateString('de-DE') : 'Gesamtwertung'} den ersten Platz erreicht${base ? ' mit ' + w.wk + ' Punkten' : ' mit ' + w.sc + ' Punkten'}.</p><p>Herzlichen Glückwunsch!</p><div class="s"><span>Datum: ${new Date().toLocaleDateString('de-DE')}</span><span>Ausbilder: ____________________</span></div><script>setTimeout(()=>print(),300)<\/script>`); win.document.close();
+  };
 }
 function duelRank(d) {
   const by = {}; Object.keys(d).forEach(n => Object.keys(d[n].w || {}).forEach(k => { (by[k] = by[k] || []).push({ n, ms: d[n].w[k][0], t: d[n].w[k][1] }); }));
