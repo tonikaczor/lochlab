@@ -19,7 +19,7 @@
     const lv = rows.length ? rows.reduce((s, r) => s + r[4], 0) / rows.length : 1;
     return { n: rows.length, d: done.length, next: todo[0] || null, started: done.length > 0 || rows.some(r => (res[r[0]] || 0) > 0), level: LEVEL[lab] || (lv < 1.75 ? 'Einstieg' : lv < 2.4 ? 'Mittel' : 'Anspruchsvoll'), pct: rows.length ? Math.round(100 * done.length / rows.length) : 0 };
   }
-  const css = '.lp{margin:0 0 26px}.lp h2{margin:0 0 4px;font-size:20px}.lp .sub{color:var(--mute);margin:0 0 14px;font-size:14px}.lp .trk{margin:0 0 16px}.lp .trk h3{margin:0;font-size:15px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.lp .trk h3 small{font-weight:400;color:var(--mute);font-size:12px}.lp .trk p{margin:2px 0 8px;color:var(--mute);font-size:13px}'
+  const css = '.lp{margin:0 0 20px}.lp h2{margin:0 0 4px;font-size:20px}.lp .sub{color:var(--mute);margin:0 0 14px;font-size:14px}.lp .trk{margin:0 0 16px}.lp .trk h3{margin:0;font-size:15px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.lp .trk h3 small{font-weight:400;color:var(--mute);font-size:12px}.lp .trk p{margin:2px 0 8px;color:var(--mute);font-size:13px}'
     + '.lp .st{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.lp .step{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}.lp .step.rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.lp .step .no{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--panel2);font-size:12px;font-weight:700;margin-right:6px}.lp .step b{font-size:15px}'
     + '.lp .bar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden}.lp .bar i{display:block;height:100%;background:#4cd964;border-radius:3px}.lp .meta{display:flex;justify-content:space-between;font-size:12px;color:var(--mute)}.lp .lvl{padding:1px 8px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:11px}.lp .go{display:flex;gap:6px;margin-top:2px}.lp .go a{flex:1;text-align:center;padding:8px 6px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:600;background:var(--panel2);border:1px solid var(--line);color:var(--fg)}.lp .go a.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}'
     + '.lp .badge{position:absolute;top:-9px;right:10px;background:var(--accent);color:#fff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:9px}.lp .kamp{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:14px;border:1px solid #ff9d00;background:rgba(255,157,0,.08);margin-bottom:18px}.lp .kamp .bar{flex:1;min-width:140px}'
@@ -31,7 +31,12 @@
     let rec = order.find(k => st[k].n && st[k].pct < 100 && st[k].started) || order.find(k => st[k].n && st[k].pct < 100);
     const total = Object.keys(st).reduce((n, k) => n + st[k].n, 0), done = Object.keys(st).reduce((n, k) => n + st[k].d, 0);
     const K = root.Kampagne, kt = K ? K.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = K ? K.CH.reduce((n, c) => n + K.prog(c).d, 0) : 0;
-    let h = `<style>${css}</style><h2>Dein Lernpfad</h2><p class="sub">${done === 0 ? 'Neu hier? Beginne mit dem SchaltLab. ' : ''}Wähle eine Spur und gehe von links nach rechts. Bisher ${done} von ${total} Aufgaben geschafft.</p>`;
+    const nx = rec && st[rec].next ? st[rec] : null, R0 = rec ? REG[rec] : null;
+    const goHref = !rec ? '' : (st[rec].started || trained(rec) ? (nx ? `${R0.file}?aufgabe=${nx.next[0]}` : R0.file) : `${R0.file}?trainer`);
+    const goTxt = !rec ? '' : (st[rec].started || trained(rec) ? (nx ? 'Weiter: ' + R0.name + ' · ' + (nx.next[3].length > 30 ? nx.next[3].slice(0, 29) + '…' : nx.next[3]) : R0.name + ' öffnen') : 'Start: ' + R0.name + ' (Einführung)');
+    const open = (() => { try { return localStorage.getItem('lm4.lp.open') === '1'; } catch (e) { return false; } })();
+    let h = `<style>${css}.lp .hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;text-align:left;color:var(--fg);cursor:pointer}.lp .hd .ar{font-size:14px;transition:transform .15s;display:inline-block}.lp.open .hd .ar{transform:rotate(90deg)}.lp .hd b{font-size:17px}.lp .hd .sum{flex:1;min-width:160px;color:var(--mute);font-size:13px}.lp .hd .nx{padding:7px 12px;border-radius:10px;background:var(--accent);color:#fff;font-weight:600;font-size:13px;text-decoration:none;max-width:100%}.lp .body{display:none;margin-top:14px}.lp.open .body{display:block}</style>`
+      + `<div class="hd" id="lpHd" role="button" tabindex="0" aria-expanded="${open}"><span class="ar">▸</span><b>Dein Lernpfad</b><span class="sum">${done} von ${total} Aufgaben` + (K ? ` · Kampagne ${kd} von ${kt}` : '') + (done === 0 ? ' · Neu hier? Beginne mit dem SchaltLab.' : '') + `</span>` + (goHref ? `<a class="nx" href="${esc(goHref)}">${esc(goTxt)}</a>` : '') + `<span style="color:var(--mute);font-size:12px">${open ? 'zuklappen' : 'aufklappen'}</span></div><div class="body"><p class="sub">Wähle eine Spur und gehe von links nach rechts.</p>`;
     if (K) h += `<div class="kamp"><span style="font-size:26px">🎯</span><div style="flex:1;min-width:200px"><b>Kampagne: Das Abschlussgerät</b><br><span style="color:var(--mute);font-size:13px">${K.CH.length} Kapitel mit Meister Funk durch alle Labs. ${kd} von ${kt} Missionen erledigt.</span></div><div class="bar"><i style="width:${kt ? Math.round(100 * kd / kt) : 0}%"></i></div><a href="#" id="lpKamp" class="btn pri" style="flex:none;padding:0 18px;height:40px">Kampagne öffnen</a></div>`;
     TRACKS.forEach(tr => {
       const labs = tr.labs.filter(k => REG[k]); if (!labs.length) return;
@@ -43,8 +48,11 @@
       });
       h += '</div></div>';
     });
-    const sec = document.createElement('section'); sec.id = 'lernpfad'; sec.className = 'lp'; sec.innerHTML = h;
+    h += '</div>';
+    const sec = document.createElement('section'); sec.id = 'lernpfad'; sec.className = 'lp' + (open ? ' open' : ''); sec.innerHTML = h;
     q.parentNode.insertBefore(sec, q); q.textContent = 'Alle Programme im Überblick';
+    const hd = document.getElementById('lpHd'), tog = () => { const o = sec.classList.toggle('open'); hd.setAttribute('aria-expanded', o); hd.lastElementChild.textContent = o ? 'zuklappen' : 'aufklappen'; try { localStorage.setItem('lm4.lp.open', o ? '1' : '0'); } catch (e) {} };
+    hd.addEventListener('click', e => { if (e.target.closest('a')) return; tog(); }); hd.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(); } });
     const kb = document.getElementById('lpKamp'); if (kb) kb.onclick = e => { e.preventDefault(); K.open(); };
     const kc = document.getElementById('kampCard'); if (kc) kc.remove();
     // Fortschritt auch in den Karten

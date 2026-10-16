@@ -2,6 +2,8 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v8.122', items: [
+      ['Lernpfad zum Aufklappen', 'Auf der Startseite ist der Lernpfad zugeklappt und zeigt nur eine Zeile: Fortschritt, Kampagne und ein Knopf zur nächsten Aufgabe. Antippen klappt Spuren und Kampagne auf, die Wahl wird gemerkt.', 'Startseite ganz oben'] ] },
     { v: 'v8.121', items: [
       ['Neue Reihenfolge der Labs', 'Digitaltechnik, Messtechnik und Hausinstallation stehen jetzt vor Arduino-Lab und Pi-Lab. Arduino-Lab und Pi-Lab sind die letzten Labs: Startseite, Lernpfad, Kampagne (neue Kapitelreihenfolge), Auswertung und Anleitung folgen dieser Reihenfolge.', 'Startseite, Kampagne'] ] },
     { v: 'v8.120', items: [
