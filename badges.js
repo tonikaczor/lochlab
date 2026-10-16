@@ -56,6 +56,7 @@
     ['hausbau', '🏠', 'Elektroinstallateur', 'Sechs Aufgaben im HausLab geschafft.', function (c) { return [c.n(c.ids('haus')), 6]; }],
     ['wechselschalter', '⇅', 'Wechselschalter-Meister', 'Die Wechselschaltung im Flur richtig verdrahtet.', function (c) { return [c.n(['ha4']), 1]; }],
     ['verteilermeister', '▤', 'Verteilermeister', 'Den Verteilerkasten bestückt und ein ganzes Haus installiert.', function (c) { return [c.n(['ha3', 'ha13']), 2]; }],
+    ['drehstrom', '⚡', 'Drehstrom-Profi', 'Zwei Drehstrom-Aufgaben im HausLab geschafft.', function (c) { return [c.n(['ha15', 'ha16', 'ha17', 'ha18']), 2]; }],
     ['fehlersucher', '🕵️', 'Elektro-Fehlersucher', 'Beide Fehlersuchen im Haus gelöst.', function (c) { return [c.n(['ha8', 'ha9']), 2]; }],
     ['messer', '📏', 'Messtechniker', 'Sechs Aufgaben im MessLab geschafft.', function (c) { return [c.n(c.ids('mess')), 6]; }],
     ['werkbank', '🔧', 'Werkbank-Meister', 'Netzgerät, Generator, Multimeter und Oszilloskop in der Werkbank benutzt.', function (c) { return [(c.st.bench_psu ? 1 : 0) + (c.st.bench_gen ? 1 : 0) + (c.st.bench_dmm ? 1 : 0) + (c.st.bench_osc ? 1 : 0), 4]; }],

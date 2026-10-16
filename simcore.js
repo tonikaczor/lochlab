@@ -325,6 +325,10 @@ function buildCircuit(layout) {
         const ir = Math.max(si(String(p.v || 'B16').replace(/^[A-Za-z]+/, ''), 16), 1), mag = /^C/i.test(p.v || '') ? 10 : 5;
         add({ type: 'S', a: n(0), b: n(1), closed: !!p.sw, part: p, trip: { ir, mag, h: 0 }, upd() { this.closed = !!this.part.sw; } });
         break; }
+      case 'RCD4': {                                   // vierpoliger FI (L1, L2, L3, N): vier Schalter und ein Summenstromwandler
+        const ss = [0, 1, 2, 3].map(k => add({ type: 'S', a: n(k), b: n(k + 4), closed: !!p.sw, part: p, sub: 'r' + k, upd() { this.closed = !!this.part.sw; } }));
+        add({ type: 'RCDM', a: n(3), b: n(3), ss, part: p, leak: 0 });
+        break; }
       case 'RCD': add({ type: 'RCD', a: n(0), b: n(1), c: n(2), d: n(3), closed: !!p.sw, part: p, i: 0, iN: 0, upd() { this.closed = !!this.part.sw; } }); break;
       case 'KREUZ':
         add({ type: 'S', a: n(0), b: n(2), closed: true, part: p, sub: 'a', upd() { this.closed = !this.part.sw; } });
@@ -758,6 +762,10 @@ function createSim(circ) {
             const r = Math.abs(e.i) / e.trip.ir; e.trip.h = Math.max(0, e.trip.h + dt * (r * r - 1.15) / 1);
             if (r > e.trip.mag * 1.4142 || e.trip.h > 1) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; e.trip.h = 0; sim.events.push({ kind: 'trip', part: e.part, text: 'Sicherungsautomat ausgelöst' + (r > e.trip.mag * 1.4142 ? ' (Kurzschluss)' : ' (Überlast)') }); }
           }
+          break; }
+        case 'RCDM': {
+          let lk = 0; e.ss.forEach(s => { lk += s.i || 0; }); e.leak = lk;
+          if (e.ss[0].closed && Math.abs(lk) > 0.0424) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.ss.forEach(s => { s.closed = false; }); sim.events.push({ kind: 'trip', part: e.part, text: 'FI-Schutzschalter ausgelöst (Fehlerstrom ' + (Math.abs(lk) * 1000).toFixed(0) + ' mA)' }); }
           break; }
         case 'RCD': {
           const g = e.closed ? 1 / RON : 1 / ROFF; e.i = (v[e.a] - v[e.c]) * g; e.iN = (v[e.b] - v[e.d]) * g; e.leak = e.i + e.iN;

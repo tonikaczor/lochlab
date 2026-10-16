@@ -70,8 +70,9 @@
       { at: '#bSim', gate: a => a.simMode(), t: 'In den Betrieb schalten', x: 'Schalte oben von Zeichnen auf Sim. Jetzt ist der Strom an und du bedienst das Haus.' },
       { at: '#cv', t: 'Schalter bedienen', x: 'Tippe einen Lichtschalter an: Die Lampe leuchtet. Geräte an Steckdosen schaltest du auch durch Antippen. Bei jeder Steckdose siehst du die Spannung. Wenn ein Gerät einen Körperschluss hat, löst der FI aus.' },
       { at: '#pal', gate: () => !!document.querySelector('.sheet .hrail'), t: 'Verteilerkasten öffnen', x: 'Tippe unten auf „Verteiler“. Im Kasten sitzen der FI-Schutzschalter und die Sicherungsautomaten. Jeder Automat schützt einen Stromkreis.' },
+      { at: '#pal', t: 'Drehstrom', x: 'Das Haus hat drei Phasen. Herd, Wallbox und Durchlauferhitzer sind Drehstromgeräte: Du setzt sie unter „Drehstromgerät“, im Verteiler wählst du einen dreipoligen Automaten, und die Leitung wird fünfadrig. Alles andere hängt einphasig an einer der drei Phasen.' },
       { at: '#pal', t: 'Bestücken und verdrahten', x: 'Im Zeichenmodus tippst du auf leere Plätze und setzt FI und Automaten ein. Danach ziehst du mit „Leitung“ vom Verteilerkasten zum ersten Gerät und wählst den Abgang. Die Länge ermittelt das Lab selbst.' },
-      { at: '#bMenu', t: 'Aufgaben und Häuser', x: 'Im Menü warten 14 Aufgaben: vom Lichtschalter über Wechselschaltung und Verteiler bis zum kompletten Haus. Unter „Beispiele“ findest du drei Häuser fertig und im Rohbau, und das leere Grundstück zum freien Gestalten.' },
+      { at: '#bMenu', t: 'Aufgaben und Häuser', x: 'Im Menü warten 18 Aufgaben: vom Lichtschalter über Wechselschaltung und Verteiler bis zu Drehstrom, Wallbox und dem kompletten Haus. Unter „Beispiele“ findest du drei Häuser fertig und im Rohbau, und das leere Grundstück zum freien Gestalten.' },
       NEXTSTEPS[0], END('HausLab')] },
     mess: { name: 'MessLab', steps: [
       { t: 'Willkommen im MessLab', x: 'Hier lernst du Messen wie ein Profi: mit Multimeter, Oszilloskop, Netzgerät, Funktionsgenerator und mehr. Ich zeige dir in wenigen Minuten, wie die Werkbank funktioniert.' },

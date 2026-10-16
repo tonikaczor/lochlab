@@ -2,6 +2,10 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v8.119', items: [
+      ['Drehstrom im HausLab', 'Die Häuser haben jetzt drei Phasen (L1, L2, L3). Neu: Drehstromgeräte (Herd, Wallbox, Durchlauferhitzer, Klimagerät, Motoren), CEE-Steckdose 400 V, dreipolige Automaten, fünfadrige Drehstromleitungen und ein vierpoliger FI. Einphasige Stromkreise bekommen ihre Phase im Verteiler.', 'HausLab ▸ Drehstromgerät, Verteiler'],
+      ['Phasen verteilen', 'Im Verteilerkasten stellst du je Automat die Phase ein. Die Last je Phase wird berechnet, Schieflast fällt auf.', 'HausLab ▸ Verteiler ▸ Phase'],
+      ['Vier neue Aufgaben', 'Herd anschließen, Wallbox und Durchlauferhitzer absichern, Phasen gleichmäßig belasten, Körperschluss am Herd mit vierpoligem FI. Das Einfamilienhaus hat jetzt Garage mit Wallbox, der Bürokomplex einen Technikraum.', 'HausLab ▸ Aufgaben ▸ Drehstrom'] ] },
     { v: 'v8.118', items: [
       ['HausLab: das achte Lab', 'Elektroinstallation im 3D-Haus: Drei Häuser (Einfamilienhaus, Altbau-Wohnung, Bürokomplex) und freies Gestalten mit eigenen Räumen. Du setzt Steckdosen, Schalter, Lampen und Geräte, ziehst Leitungen an Wänden und Decke und bestückst den Verteilerkasten. 14 Aufgaben, Trainer, Lernheft und Kampagnenkapitel.', 'Startseite ▸ HausLab'],
       ['Leitungen in den Installationszonen', 'Leitungen laufen nur an Wänden und Decke entlang, nie quer durch den Raum. Das Lab zeigt die Länge, du wählst den Querschnitt. Zwischen Räumen geht es nur durch die gemeinsame Wand, sonst über eine Abzweigdose.', 'HausLab ▸ Leitung'],

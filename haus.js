@@ -18,15 +18,18 @@
     lamp: { n: 'Deckenlampe', z: 2.5, icon: '💡', w: 60 },
     dev: { n: 'Festes Gerät', z: 0.9, icon: '♨', w: 2000 },
     junc: { n: 'Abzweigdose', z: 2.2, icon: '▣' },
-    panel: { n: 'Verteilerkasten', z: 1.5, icon: '▤' }
+    panel: { n: 'Verteilerkasten', z: 1.5, icon: '▤' },
+    dev3: { n: 'Drehstromgerät', z: 0.9, icon: '3~', w: 7000 },
+    sock3: { n: 'CEE-Steckdose 400 V', z: 0.3, icon: '⚡3', w: 0 }
   };
   const DEVS = [['Heizlüfter', 2000], ['Backofen', 3500], ['Wasserkocher', 2000], ['Kaffeemaschine', 1000], ['Kühlschrank', 150], ['PC-Arbeitsplatz', 300], ['Server', 1500], ['Fernseher', 120], ['Waschmaschine', 2200], ['Durchlauferhitzer', 3500]];
+  const DEV3 = [['Herd', 7000], ['Durchlauferhitzer', 18000], ['Wallbox', 11000], ['Klimagerät', 8000], ['Kompressor', 4000], ['Lüftung (Motor)', 3000, 1], ['Kreissäge (Motor)', 2200, 1]];
   const LS_TYPES = ['B10', 'B13', 'B16', 'B20', 'B25', 'C16'], FI_TYPES = ['30mA', '300mA'];
   const SLOTS = 10;
   const SECS = [1.5, 2.5, 4, 6, 10];
 
   /* ---------------- Modell ---------------- */
-  const newHouse = name => ({ name: name || 'Neues Haus', h: 2.5, rooms: [], objs: [], cables: [], panel: { fi: [{ type: '' }, { type: '' }], slots: Array.from({ length: SLOTS }, () => ({ ls: '', fi: 0, on: 1 })) }, nid: 1 });
+  const newHouse = name => ({ name: name || 'Neues Haus', h: 2.5, rooms: [], objs: [], cables: [], panel: { fi: [{ type: '' }, { type: '' }], slots: Array.from({ length: SLOTS }, () => ({ ls: '', fi: 0, on: 1, p3: 0, ph: 0 })) }, nid: 1 });
   const nid = h => h.nid++;
   const room = (h, id) => h.rooms.find(r => r.id === id);
   const obj = (h, id) => h.objs.find(o => o.id === id);
@@ -102,21 +105,33 @@
   function buildNet(h) {
     const rows = [], warn = []; let nn = 0; const net = () => ++nn;
     const add = (k, v, pins, o) => { rows.push({ k, v, pins, o: o || {} }); return rows.length - 1; };
-    const L0 = net(), N0 = net(), PE0 = net();
-    add('NETZ', '230V', [L0, N0, PE0], { hx: { role: 'netz' } });
-    const P = h.panel || newHouse().panel, grp = [{ L: L0, N: N0 }];
-    [0, 1].forEach(g => { const f = P.fi[g]; if (f && f.type) { const Lg = net(), Ng = net(); add('RCD', f.type, [L0, N0, Lg, Ng], { sw: f.on === 0 ? 0 : 1, hx: { role: 'rcd', g } }); grp[g + 1] = { L: Lg, N: Ng }; } });
+    const L = [net(), net(), net()], N0 = net(), PE0 = net();
+    add('NETZ3', '400V', [L[0], L[1], L[2], N0, PE0], { hx: { role: 'netz' } });
+    const P = h.panel || newHouse().panel, grp = [{ L, N: N0 }];
+    [0, 1].forEach(g => { const f = P.fi[g]; if (f && f.type) { const Lg = [net(), net(), net()], Ng = net(); add('RCD4', f.type, [L[0], L[1], L[2], N0, Lg[0], Lg[1], Lg[2], Ng], { sw: f.on === 0 ? 0 : 1, hx: { role: 'rcd', g } }); grp[g + 1] = { L: Lg, N: Ng }; } });
     const roots = [];
-    P.slots.forEach((s, i) => { if (s && s.ls) { const g = s.fi > 0 && grp[s.fi] ? grp[s.fi] : grp[0], Lc = net(); add('LSS', s.ls, [g.L, Lc], { sw: s.on === 0 ? 0 : 1, hx: { role: 'lss', slot: i } }); roots[i] = { L: Lc, N: g.N, PE: PE0 }; } });
+    P.slots.forEach((s, i) => {
+      if (!s || !s.ls) return; const g = s.fi > 0 && grp[s.fi] ? grp[s.fi] : grp[0], sw = s.on === 0 ? 0 : 1;
+      if (s.p3) { const Lc = [net(), net(), net()]; [0, 1, 2].forEach(k => add('LSS', s.ls, [g.L[k], Lc[k]], { sw, hx: { role: 'lss', slot: i, k } })); roots[i] = { three: true, L: Lc, N: g.N, PE: PE0, ph: 0 }; }
+      else { const ph = s.ph || ((i % 3) + 1), Lc = net(); add('LSS', s.ls, [g.L[ph - 1], Lc], { sw, hx: { role: 'lss', slot: i, k: 0 } }); roots[i] = { three: false, L: Lc, N: g.N, PE: PE0, ph }; }
+    });
     const panel = h.objs.find(o => o.t === 'panel'), adj = {};
     h.cables.forEach(c => { (adj[c.a] = adj[c.a] || []).push(c); (adj[c.b] = adj[c.b] || []).push(c); });
-    const visited = new Set(), powered = new Set(), up = {}, slotOf = {}; let curSlot = -1;
+    const visited = new Set(), powered = new Set(), up = {}, slotOf = {}, phOf = {}, cabPh = {}, cabUp3 = {}, objPick = {}; let curSlot = -1;
+    const single = (Ln, Nn, Pn, ph) => ({ three: false, L: Ln, N: Nn, PE: Pn, ph });
     function cableParts(c, ups) {
-      const r = route(h, c), Ln = net(), Nn = net(), Pn = net(), v = c.s + 'mm2 ' + (r.ok ? r.len : 10).toFixed(1) + 'm';
-      add('CABLE', v, [ups.L, Ln], { hx: { role: 'cab', c: c.id, w: 'L' }, defect: c.bad ? 'open' : undefined });
-      add('CABLE', v, [ups.N, Nn], { hx: { role: 'cab', c: c.id, w: 'N' } });
-      add('CABLE', v, [ups.PE, Pn], { hx: { role: 'cab', c: c.id, w: 'PE' } });
-      return { L: Ln, N: Nn, PE: Pn };
+      const r = route(h, c), v = c.s + 'mm2 ' + (r.ok ? r.len : 10).toFixed(1) + 'm', bad = c.bad ? 'open' : undefined; cabUp3[c.id] = !!ups.three;
+      if (c.ph3) {
+        if (!ups.three) { warn.push('Eine Drehstromleitung braucht eine Drehstrom-Speisung (dreipoliger Abgang)'); return null; }
+        const Ls = [net(), net(), net()], Nn = net(), Pn = net();
+        ['L1', 'L2', 'L3'].forEach((w, k) => add('CABLE', v, [ups.L[k], Ls[k]], { hx: { role: 'cab', c: c.id, w }, defect: k === 0 ? bad : undefined }));
+        add('CABLE', v, [ups.N, Nn], { hx: { role: 'cab', c: c.id, w: 'N' } }); add('CABLE', v, [ups.PE, Pn], { hx: { role: 'cab', c: c.id, w: 'PE' } });
+        cabPh[c.id] = 3; return { three: true, L: Ls, N: Nn, PE: Pn, ph: 0 };
+      }
+      const ph = ups.three ? (c.pi || 1) : ups.ph, Lin = ups.three ? ups.L[ph - 1] : ups.L, Ln = net(), Nn = net(), Pn = net();
+      add('CABLE', v, [Lin, Ln], { hx: { role: 'cab', c: c.id, w: 'L' }, defect: bad });
+      add('CABLE', v, [ups.N, Nn], { hx: { role: 'cab', c: c.id, w: 'N' } }); add('CABLE', v, [ups.PE, Pn], { hx: { role: 'cab', c: c.id, w: 'PE' } });
+      cabPh[c.id] = ph; return single(Ln, Nn, Pn, ph);
     }
     function down(o, nets, via, skip) {
       const kids = (adj[o.id] || []).filter(c => c !== via && c !== skip);
@@ -128,26 +143,38 @@
       });
     }
     function arrive(o, c, ups, from) {
-      visited.add(o.id); powered.add(o.id); slotOf[o.id] = curSlot;
-      const n = cableParts(c, ups); up[o.id] = c.id; let dn = { L: n.L, N: n.N, PE: n.PE };
+      const needs3 = o.t === 'dev3' || o.t === 'sock3';
+      if (needs3 && !(c.ph3 && ups.three)) { warn.push(objName(h, o) + ' braucht eine Drehstromleitung (5-adrig) an einem dreipoligen Abgang'); return; }
+      let n = cableParts(c, ups); if (!n) return;
+      visited.add(o.id); powered.add(o.id); slotOf[o.id] = curSlot; up[o.id] = c.id;
+      if (n.three && !needs3 && o.t !== 'junc') { const pi = o.ph || 1; n = single(n.L[pi - 1], n.N, n.PE, pi); objPick[o.id] = true; }
+      phOf[o.id] = needs3 ? 0 : n.ph; let dn = n;
+      const mk1 = (L1, nn_, pe_, ph_) => ({ three: false, L: L1, N: nn_, PE: pe_, ph: ph_ });
       if (o.t === 'lamp') add('LAMP', '230V ' + (o.w || 60) + 'W', [n.L, n.N], { hx: { role: 'lamp', o: o.id } });
-      else if (o.t === 'swi') { const Lo = net(); add('SPST', '', [n.L, Lo], { sw: o.on ? 1 : 0, hx: { role: 'sw', o: o.id } }); dn = { L: Lo, N: n.N, PE: n.PE }; }
+      else if (o.t === 'swi') { const Lo = net(); add('SPST', '', [n.L, Lo], { sw: o.on ? 1 : 0, hx: { role: 'sw', o: o.id } }); dn = mk1(Lo, n.N, n.PE, n.ph); }
       else if (o.t === 'sock' || o.t === 'dev') {
         add('SD', '0W', [n.L, n.N, n.PE], { sw: o.f ? 1 : 0, hx: { role: 'sd', o: o.id } });
         if (o.w > 0) { const Ld = net(); add('SPST', '', [n.L, Ld], { sw: o.on === 0 ? 0 : 1, hx: { role: 'dev', o: o.id } }); add('SD', o.w + 'W', [Ld, n.N, n.PE], { sw: 0, hx: { role: 'devR', o: o.id } }); }
+      } else if (needs3) {
+        add('SD', '0W', [n.L[0], n.N, n.PE], { sw: o.f ? 1 : 0, hx: { role: 'sd', o: o.id } });
+        if (o.w > 0) {
+          const Ld = [net(), net(), net()]; [0, 1, 2].forEach(k => add('SPST', '', [n.L[k], Ld[k]], { sw: o.on === 0 ? 0 : 1, hx: { role: 'dev', o: o.id, k } }));
+          if (o.motor) add('MOTOR3', '400V ' + o.w + 'W', [Ld[0], Ld[1], Ld[2], n.PE], { hx: { role: 'motor', o: o.id } });
+          else [0, 1, 2].forEach(k => add('SD', (o.w / 3) + 'W', [Ld[k], n.N, n.PE], { sw: 0, hx: { role: 'devR', o: o.id, k } }));
+        }
       } else if (o.t === 'swc') {
         const partner = o.partner && obj(h, o.partner), pc = partner && (adj[o.id] || []).find(x => x !== c && (x.a === partner.id || x.b === partner.id));
         if (partner && pc && !visited.has(partner.id)) {
           const T1 = net(), T2 = net(); add('SPDT', '', [n.L, T1, T2], { sw: o.on ? 1 : 0, hx: { role: 'swc', o: o.id } });
-          visited.add(partner.id); powered.add(partner.id); slotOf[partner.id] = curSlot; up[partner.id] = pc.id;
-          const r = route(h, pc), v = pc.s + 'mm2 ' + (r.ok ? r.len : 10).toFixed(1) + 'm', T1b = net(), T2b = net(), Nb = net(), Pb = net(), Lo = net();
+          visited.add(partner.id); powered.add(partner.id); slotOf[partner.id] = curSlot; phOf[partner.id] = n.ph; up[partner.id] = pc.id;
+          const r = route(h, pc), v = pc.s + 'mm2 ' + (r.ok ? r.len : 10).toFixed(1) + 'm', T1b = net(), T2b = net(), Nb = net(), Pb = net(), Lo = net(); cabPh[pc.id] = n.ph; cabUp3[pc.id] = false;
           add('CABLE', v, [T1, T1b], { hx: { role: 'cab', c: pc.id, w: 'T1' }, defect: pc.bad ? 'open' : undefined }); add('CABLE', v, [T2, T2b], { hx: { role: 'cab', c: pc.id, w: 'T2' } });
           add('CABLE', v, [n.N, Nb], { hx: { role: 'cab', c: pc.id, w: 'N' } }); add('CABLE', v, [n.PE, Pb], { hx: { role: 'cab', c: pc.id, w: 'PE' } });
           add('SPDT', '', [Lo, T1b, T2b], { sw: partner.on ? 1 : 0, hx: { role: 'swc', o: partner.id } });
-          down(partner, { L: Lo, N: Nb, PE: Pb }, pc); down(o, { L: n.L, N: n.N, PE: n.PE }, c, pc);   // weitere Leitungen am ersten Wechselschalter hängen an der Zuleitung
+          down(partner, mk1(Lo, Nb, Pb, n.ph), pc); down(o, mk1(n.L, n.N, n.PE, n.ph), c, pc);
           return;
         }
-        const Lo = net(); add('SPDT', '', [n.L, Lo, net()], { sw: o.on ? 1 : 0, hx: { role: 'swc', o: o.id } }); dn = { L: Lo, N: n.N, PE: n.PE };
+        const Lo = net(); add('SPDT', '', [n.L, Lo, net()], { sw: o.on ? 1 : 0, hx: { role: 'swc', o: o.id } }); dn = mk1(Lo, n.N, n.PE, n.ph);
       }
       down(o, dn, c);
     }
@@ -155,7 +182,7 @@
       visited.add(panel.id);
       h.cables.forEach(c => { if ((c.a === panel.id || c.b === panel.id) && c.slot != null) { const other = obj(h, c.a === panel.id ? c.b : c.a); if (!other) return; if (!roots[c.slot]) { warn.push('Abgang ' + (c.slot + 1) + ' hat keinen Sicherungsautomaten'); return; } if (!route(h, c).ok) { warn.push('Leitung zu ' + objName(h, other) + ' erreicht den Raum nicht'); return; } if (visited.has(other.id)) { warn.push('Leitung führt im Kreis'); return; } curSlot = c.slot; arrive(other, c, roots[c.slot], panel); } });
     } else if (h.cables.length) warn.push('Kein Verteilerkasten im Haus');
-    return { rows, warn, powered, slotOf };
+    return { rows, warn, powered, slotOf, phOf, cabPh, cabUp3, objPick };
   }
   function compile(h) {
     const B = buildNet(h), api = root.LabDigiAPI, K = api.KINDS;
@@ -168,12 +195,12 @@
       pins[i].forEach((pt, j) => { const hb = hub(r.pins[j]); wires.push({ id: 0, x1: pt[0], y1: pt[1], x2: hb[0], y2: hb[1] }); });
     });
     wires.forEach(w => { w.id = id++; });
-    return { parts, wires, nid: id, warn: B.warn, powered: B.powered, slotOf: B.slotOf };
+    return { parts, wires, nid: id, warn: B.warn, powered: B.powered, slotOf: B.slotOf, phOf: B.phOf, cabPh: B.cabPh, cabUp3: B.cabUp3, objPick: B.objPick };
   }
-  let lastWarn = [], poweredSet = new Set();
+  let lastWarn = [], poweredSet = new Set(), lastInfo = { cabPh: {}, cabUp3: {}, objPick: {}, phOf: {} };
   root.HAUS_COMPILE = function (sch) {
     syncModel(sch);
-    const r = compile(sch.haus); sch.parts = r.parts; sch.wires = r.wires; sch.nid = r.nid; lastWarn = r.warn; poweredSet = r.powered;
+    const r = compile(sch.haus); sch.parts = r.parts; sch.wires = r.wires; sch.nid = r.nid; lastWarn = r.warn; poweredSet = r.powered; lastInfo = r;
   };
   /* Schalterstellungen aus den Bauteilen ins Modell übernehmen (Betrieb, Auslösungen) */
   function syncModel(sch) {
@@ -190,7 +217,7 @@
     const S = () => api.sch, H = () => api.sch.haus;
     /* ---------------- Ansicht ---------------- */
     const cam = { yaw: 0.62, pitch: 0.62, s: 30, ox: 0, oy: 0, cx: 4, cy: 4 };
-    const stt = { tool: 'sel', place: null, cabA: null, sel: null, hover: null, drag: null, pan: null, rubber: null, ptrs: new Map(), pinch: null, top: false, dev: DEVS[0] };
+    const stt = { tool: 'sel', place: null, cabA: null, sel: null, hover: null, drag: null, pan: null, rubber: null, ptrs: new Map(), pinch: null, top: false, dev: DEVS[0], dev3: DEV3[0] };
     const proj = (x, y, z) => { const dx = x - cam.cx, dy = y - cam.cy, c = Math.cos(cam.yaw), s = Math.sin(cam.yaw), xr = dx * c - dy * s, yr = dx * s + dy * c; return [cam.ox + xr * cam.s, cam.oy - (z * Math.cos(cam.pitch) + yr * Math.sin(cam.pitch)) * cam.s, yr]; };
     const nyr = (nx, ny) => nx * Math.sin(cam.yaw) + ny * Math.cos(cam.yaw);
     const topView = () => cam.pitch > 1.4;
@@ -203,16 +230,16 @@
       const k = plane.y - cam.cy; if (Math.abs(cy) < 0.12) return null; const yr = (k + xr * sy_) / cy, dx = xr * cy + yr * sy_, z = (t - yr * sp) / (cp < 0.05 ? 0.05 : cp); return { x: dx + cam.cx, y: plane.y, z, yr };
     }
     root.HAUS_FIT = function () {
-      const h = H(); if (!h) return; const b = bounds(h), r = api.rectOf();
+      const h = H(); if (!h) return; stt.userCam = false; const b = bounds(h), r = api.rectOf();
       cam.cx = (b.x0 + b.x1) / 2; cam.cy = (b.y0 + b.y1) / 2; const wx = b.x1 - b.x0, wy = b.y1 - b.y0, span = Math.hypot(wx, wy) + 1;
       cam.s = clamp(Math.min(r.width, r.height * 1.25) / (span * 1.15), 8, 80); cam.ox = r.width / 2; cam.oy = r.height * 0.58;
     };
-    const turn = d => { cam.yaw += d * Math.PI / 2; api.draw(); };
+    const turn = d => { cam.yaw += d * Math.PI / 2; stt.userCam = true; api.draw(); };
     const toggleTop = () => { stt.top = !stt.top; cam.pitch = stt.top ? 1.5 : 0.62; api.draw(); api.refreshUI(); };
-    const zoom = (f, x, y) => { const r = api.rectOf(), px = x == null ? r.width / 2 : x, py = y == null ? r.height / 2 : y, ns = clamp(cam.s * f, 8, 90); cam.ox = px - (px - cam.ox) * ns / cam.s; cam.oy = py - (py - cam.oy) * ns / cam.s; cam.s = ns; api.draw(); };
+    const zoom = (f, x, y) => { stt.userCam = true; const r = api.rectOf(), px = x == null ? r.width / 2 : x, py = y == null ? r.height / 2 : y, ns = clamp(cam.s * f, 8, 90); cam.ox = px - (px - cam.ox) * ns / cam.s; cam.oy = py - (py - cam.oy) * ns / cam.s; cam.s = ns; api.draw(); };
 
     /* ---------------- Auswahl und Änderungen ---------------- */
-    const apply = (keepSel) => { const sch = S(); const r = compile(sch.haus); sch.parts = r.parts; sch.wires = r.wires; sch.nid = r.nid; lastWarn = r.warn; poweredSet = r.powered; if (!keepSel) { } api.commit(); };
+    const apply = (keepSel) => { const sch = S(); const r = compile(sch.haus); sch.parts = r.parts; sch.wires = r.wires; sch.nid = r.nid; lastWarn = r.warn; poweredSet = r.powered; lastInfo = r; api.commit(); };
     const isSim = () => api.simMode;
     const selObj = () => stt.sel && stt.sel.t === 'obj' ? obj(H(), stt.sel.id) : null;
     const selCab = () => stt.sel && stt.sel.t === 'cab' ? cab(H(), stt.sel.id) : null;
@@ -222,11 +249,19 @@
 
     /* ---------------- Rechnen im Betrieb: Effektivwerte je Schritt ---------------- */
     const rms = {};   // partId -> {u2, i2, p}
+    /* dreipolige Automaten löschen gemeinsam aus */
+    let gang = { src: null, groups: [] };
+    const gangCheck = () => {
+      const ps = S().parts;
+      if (gang.src !== ps) { const m = {}; ps.forEach(p => { if (p.hx && p.hx.role === 'lss') (m[p.hx.slot] = m[p.hx.slot] || []).push(p); }); gang = { src: ps, groups: Object.values(m).filter(g => g.length > 1) }; }
+      gang.groups.forEach(g => { if (g.some(p => !p.sw) && g.some(p => p.sw)) g.forEach(p => { if (p.sw) api.setSw(p.id, 0); }); });
+    };
     root.LAB_STEP = dt => {
       if (!api.sim || !api.circ) return;
+      gangCheck();
       const al = Math.min(1, dt / 0.04);
       S().parts.forEach(p => {
-        if (!p.hx || !['lamp', 'sd', 'devR', 'cab', 'lss'].includes(p.hx.role) || (p.hx.role === 'cab' && p.hx.w !== 'L' && p.hx.w !== 'T1')) return;
+        if (!p.hx || !['lamp', 'sd', 'devR', 'cab', 'lss', 'motor'].includes(p.hx.role) || (p.hx.role === 'cab' && !['L', 'L1', 'T1'].includes(p.hx.w)) || (p.hx.role === 'lss' && p.hx.k > 0)) return;
         const [v, i] = api.scopeValues({ t: 'part', id: p.id }); if (!isFinite(v)) return;
         let r = rms[p.id]; if (!r) r = rms[p.id] = { u2: 0, i2: 0, p: 0 };
         r.u2 += al * (v * v - r.u2); const ii = isFinite(i) ? i : 0; r.i2 += al * (ii * ii - r.i2); r.p += al * (v * ii - r.p);
@@ -248,9 +283,10 @@
       const sel = stt.sel && stt.sel.t === 'obj' && stt.sel.id === o.id, cabA = stt.cabA === o.id, hov = stt.hover === o.id;
       const live = sim && api.circ;
       let b = 0, uTxt = '';
-      const lp = partOf(o.id, 'lamp'), dp = partOf(o.id, 'devR');
+      const lp = partOf(o.id, 'lamp'), dp = partOf(o.id, 'devR'), mp = partOf(o.id, 'motor');
       if (live && lp) { const e = api.circ.elems.find(el => el.part && el.part.id === lp.id && el.lamp); b = e ? clamp((e.pav || 0) / e.lamp, 0, 1.2) : 0; }
       else if (live && dp) b = I(dp.id) > 0.05 ? 1 : 0;
+      else if (live && mp) b = I(mp.id) > 0.05 ? 1 : 0;
       const connected = poweredSet.has(o.id) || o.t === 'panel';
       cx.save();
       if (o.t === 'lamp') { drawLamp(cx, x, y, k, b); if (!connected && !sim) { cx.strokeStyle = '#ff8a5c'; cx.setLineDash([3, 3]); cx.beginPath(); cx.arc(x, y, k * 1.1, 0, 7); cx.stroke(); } }
@@ -263,6 +299,11 @@
         if (o.t === 'sock') { cx.beginPath(); cx.arc(x - w * .18, y, w * .09, 0, 7); cx.arc(x + w * .18, y, w * .09, 0, 7); cx.fill(); cx.beginPath(); cx.arc(x, y, w * .3, 0, 7); cx.stroke(); }
         else if (o.t === 'swi' || o.t === 'swc') { cx.fillStyle = o.on ? '#4cd964' : '#8a949f'; cx.fillRect(x - w * .22, y - w * .32 + (o.on ? 0 : w * .32), w * .44, w * .32); if (o.t === 'swc') { cx.fillStyle = '#2a323b'; cx.font = '700 ' + Math.round(k * .7) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText('W', x, y + w * .08); } }
         else if (o.t === 'dev') { cx.fillStyle = b > 0.2 ? '#ff7a45' : '#b8a69a'; cx.fillRect(x - w * .4, y - w * .3, w * .8, w * .6); if (b > 0.2) { cx.fillStyle = 'rgba(255,120,60,.35)'; cx.beginPath(); cx.arc(x, y, w * 1.1, 0, 7); cx.fill(); } }
+        if (o.t === 'dev3' || o.t === 'sock3') {
+          cx.fillStyle = o.t === 'sock3' ? '#c0392b' : (b > 0.2 ? '#ff7a45' : '#b8a69a'); if (o.t === 'sock3') { cx.beginPath(); cx.arc(x, y, w * .42, 0, 7); cx.fill(); } else cx.fillRect(x - w * .42, y - w * .34, w * .84, w * .68);
+          cx.fillStyle = '#fff'; cx.font = '700 ' + Math.round(k * .75) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText('3~', x, y + k * .27);
+          if (b > 0.2) { cx.fillStyle = 'rgba(255,120,60,.35)'; cx.beginPath(); cx.arc(x, y, w * 1.1, 0, 7); cx.fill(); }
+        }
         if (o.t === 'sock' && o.w > 0 && (!live || b > 0.2)) { cx.fillStyle = b > 0.2 ? '#ff7a45' : '#8a949f'; cx.fillRect(x + w * .55, y - w * .2, w * .4, w * .4); }
         if (o.f && sim) { cx.fillStyle = '#ff4d4d'; cx.font = '700 ' + Math.round(k * 1.1) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText('⚡', x + w * .75, y - w * .5); }
         if (!connected && !sim && o.t !== 'junc') { cx.strokeStyle = '#ff8a5c'; cx.lineWidth = 1.5; cx.setLineDash([3, 3]); cx.strokeRect(x - w * .75, y - w * .75, w * 1.5, w * 1.5); }
@@ -270,18 +311,19 @@
       cx.restore();
       if (sel || cabA || hov) { cx.strokeStyle = cabA ? '#ffb340' : sel ? '#3b9eff' : 'rgba(255,255,255,.7)'; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(x, y, k * 1.35, 0, 7); cx.stroke(); }
       {
-        const lab = objName(h, o) + (o.t === 'sock' || o.t === 'dev' ? (o.w ? ' ' + o.w + ' W' : '') : o.t === 'lamp' ? ' ' + (o.w || 60) + ' W' : '');
-        let u = ''; const measurable = o.t === 'lamp' || o.t === 'sock' || o.t === 'dev';
+        const lab = objName(h, o) + (o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3' ? (o.w ? ' ' + o.w + ' W' : '') : o.t === 'lamp' ? ' ' + (o.w || 60) + ' W' : '');
+        let u = ''; const measurable = o.t === 'lamp' || o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3';
         if (live && measurable) { const sd = partOf(o.id, 'sd') || partOf(o.id, 'lamp'); if (sd && poweredSet.has(o.id)) u = Math.round(U(sd.id)) + ' V'; else u = 'ohne Spannung'; }
         const t = (sel || hov) ? (u ? lab + ' · ' + u : lab) : (live ? u : '');
         if (t && !(live && !sel && !hov && o.t === 'lamp' && b > 0.2)) { cx.font = '600 ' + Math.max(10, Math.round(k * .62)) + 'px sans-serif'; cx.textAlign = 'center'; const tw = cx.measureText(t).width + 8; cx.fillStyle = 'rgba(14,17,21,.82)'; cx.fillRect(x - tw / 2, y + k * 1.2, tw, k * .9); cx.fillStyle = u === 'ohne Spannung' ? '#ffb340' : '#e8ecf0'; cx.fillText(t, x, y + k * 1.2 + k * .66); }
       }
       hits.push({ id: o.id, x, y, r: Math.max(k * 1.3, 11) });
     }
+    const PHCOL = { 1: '#a0662b', 2: '#5a6068', 3: '#8f98a3' };
     function cabColor(c, sim) {
-      if (!sim || !api.circ) return c.s >= 2.5 ? '#d9a441' : '#8fb4d9';
-      const ps = cabParts(c.id).filter(p => p.hx.w === 'L' || p.hx.w === 'T1'); if (!ps.length) return '#667';
-      const p = ps[0], iz = root.LochSim.cableOf(p.v).iz, ratio = I(p.id) / iz;
+      if (!sim || !api.circ) { const ph = lastInfo.cabPh[c.id]; return ph === 3 ? '#d96a5b' : ph ? PHCOL[ph] : (c.s >= 2.5 ? '#d9a441' : '#8fb4d9'); }
+      const ps = cabParts(c.id).filter(p => ['L', 'L1', 'L2', 'L3', 'T1'].includes(p.hx.w)); if (!ps.length) return '#667';
+      const iz = root.LochSim.cableOf(ps[0].v).iz, ratio = Math.max(...ps.map(p => I(p.id))) / iz;
       return ratio > 1 ? '#ff4d4d' : ratio > 0.6 ? '#ffb340' : ratio > 0.02 ? '#5ee27d' : '#7d8793';
     }
     root.HAUS_RENDER = function (cx, W, Ht) {
@@ -375,9 +417,10 @@
       return best;
     }
     function newObj(t, pk) {
-      const h = H(), T = TYPES[t], o = { id: nid(h), t, room: pk.room, face: pk.face, u: pk.u, z: t === 'lamp' ? h.h : (t === 'sock' || t === 'dev' ? T.z : (pk.z == null ? T.z : T.z)), on: t === 'swi' || t === 'swc' ? 0 : 1 };
+      const h = H(), T = TYPES[t], o = { id: nid(h), t, room: pk.room, face: pk.face, u: pk.u, z: t === 'lamp' ? h.h : (t === 'sock' || t === 'dev' || t === 'sock3' || t === 'dev3' ? T.z : (pk.z == null ? T.z : T.z)), on: t === 'swi' || t === 'swc' ? 0 : 1 };
       if (pk.face === 'C') o.v = pk.v;
       if (t === 'lamp') o.w = 60; if (t === 'dev') { o.n = stt.dev[0]; o.w = stt.dev[1]; } if (t === 'sock') o.w = 0;
+      if (t === 'dev3') { o.n = stt.dev3[0]; o.w = stt.dev3[1]; if (stt.dev3[2]) o.motor = 1; } if (t === 'sock3') o.w = 0;
       return o;
     }
     function removeObj(id) { const h = H(); h.objs = h.objs.filter(o => o.id !== id); h.cables = h.cables.filter(c => c.a !== id && c.b !== id); h.objs.forEach(o => { if (o.partner === id) o.partner = null; }); }
@@ -386,7 +429,9 @@
       if (h.cables.some(c => (c.a === a && c.b === b) || (c.a === b && c.b === a))) { api.toast('Diese Leitung gibt es schon'); return false; }
       const probe = { a, b, s: 1.5 }, r = route(h, probe); if (!r.ok) { api.toast(r.why); return false; }
       const heavy = (o => o.t === 'sock' || (o.t === 'dev' && o.w > 800))(A) || (o => o.t === 'sock' || (o.t === 'dev' && o.w > 800))(B);
-      const c = { id: nid(h), a, b, s: heavy ? 2.5 : 1.5 }; if (A.t === 'panel' || B.t === 'panel') c.slot = slot;
+      const is3 = o => o.t === 'dev3' || o.t === 'sock3', pn = A.t === 'panel' ? A : (B.t === 'panel' ? B : null);
+      const c = { id: nid(h), a, b, s: heavy || is3(A) || is3(B) ? 2.5 : 1.5 }; if (pn) c.slot = slot;
+      if (is3(A) || is3(B) || (pn && h.panel.slots[slot] && h.panel.slots[slot].p3) || h.cables.some(x => x.ph3 && (x.a === a || x.b === a || x.a === b || x.b === b))) { if (is3(A) || is3(B) || (pn && h.panel.slots[slot] && h.panel.slots[slot].p3)) c.ph3 = 1; }
       if (A.t === 'swc' && B.t === 'swc' && !A.partner && !B.partner) { A.partner = B.id; B.partner = A.id; }
       h.cables.push(c); return c;
     }
@@ -397,10 +442,11 @@
         b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); done(+r.dataset.s); });
       });
     }
+    const partsOf = (oid, role) => S().parts.filter(p => p.hx && p.hx.o === oid && p.hx.role === role);
     function operate(o) {
       const h = H();
       if (o.t === 'swi' || o.t === 'swc') { o.on = o.on ? 0 : 1; const p = partOf(o.id, o.t === 'swi' ? 'sw' : 'swc'); if (p) { api.setSw(p.id, o.on); api.commit(true, true); } stat('hausSchalter', 1); }
-      else if ((o.t === 'sock' || o.t === 'dev') && o.w > 0) { o.on = o.on === 0 ? 1 : 0; const p = partOf(o.id, 'dev'); if (p) { api.setSw(p.id, o.on); api.commit(true, true); } }
+      else if ((o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3') && o.w > 0) { o.on = o.on === 0 ? 1 : 0; partsOf(o.id, 'dev').forEach(p => api.setSw(p.id, o.on)); api.commit(true, true); if (o.t === 'sock3' || o.t === 'dev3') stat('hausDrehstrom', 1); }
       api.refreshUI();
     }
 
@@ -461,7 +507,7 @@
       const h = H(); if (!stt.start) return; if (Math.hypot(p.x - stt.start.x, p.y - stt.start.y) > 4) stt.moved = true;
       if (stt.rubber) { const w = unplane(p.x, p.y, { z: 0 }); if (w) { stt.rubber.x1 = snap(w.x, 0.5); stt.rubber.y1 = snap(w.y, 0.5); api.draw(); } return; }
       if (stt.drag && stt.moved) { const o = obj(h, stt.drag.id); if (!o) return; const pk = pick(p.x, p.y, o.t); if (pk && !(o.t === 'panel' && false)) { o.room = pk.room; o.face = pk.face; o.u = pk.u; if (pk.face === 'C') { o.v = pk.v; o.z = h.h; } else { o.z = (o.t === 'sock' || o.t === 'dev' || o.t === 'panel' || o.t === 'swi' || o.t === 'swc' || o.t === 'junc') ? o.z : o.z; delete o.v; } stt.drag.moved = true; api.draw(); } return; }
-      if (stt.pan) { cam.ox = stt.pan.ox + p.x - stt.pan.x; cam.oy = stt.pan.oy + p.y - stt.pan.y; api.draw(); }
+      if (stt.pan) { stt.userCam = true; cam.ox = stt.pan.ox + p.x - stt.pan.x; cam.oy = stt.pan.oy + p.y - stt.pan.y; api.draw(); }
     }
     function up(p, cancelled) {
       const h = H();
@@ -478,7 +524,7 @@
       if (sim) h += chip('sel', '☝ Bedienen', true) + chip('reset', '↺ Zurück', false) + '<span class="sep"></span>';
       else {
         h += chip('sel', '☝ Auswahl', stt.tool === 'sel') + chip('room', '▭ Raum', stt.tool === 'room') + '<span class="sep"></span>';
-        [['sock', 'Steckdose'], ['swi', 'Schalter'], ['swc', 'Wechselschalter'], ['lamp', 'Lampe'], ['dev', 'Gerät'], ['junc', 'Abzweigdose'], ['panel', 'Verteiler']].forEach(([t, n]) => { h += chip('place', TYPES[t].icon + ' ' + n, stt.tool === 'place' && stt.place === t, `data-t="${t}"`); });
+        [['sock', 'Steckdose'], ['swi', 'Schalter'], ['swc', 'Wechselschalter'], ['lamp', 'Lampe'], ['dev', 'Gerät'], ['dev3', 'Drehstromgerät'], ['sock3', 'CEE 400 V'], ['junc', 'Abzweigdose'], ['panel', 'Verteiler']].forEach(([t, n]) => { h += chip('place', TYPES[t].icon + ' ' + n, stt.tool === 'place' && stt.place === t, `data-t="${t}"`); });
         h += '<span class="sep"></span>' + chip('cable', '〰 Leitung', stt.tool === 'cable') + chip('del', '⌫ Löschen', stt.tool === 'del') + '<span class="sep"></span>';
       }
       h += chip('turnl', '↺', false) + chip('turnr', '↻', false) + chip('top', stt.top ? '◫ Schräg' : '◫ Oben', false) + chip('zin', '＋', false) + chip('zout', '−', false) + chip('fit', '⤢', false);
@@ -498,6 +544,12 @@
     }, true);
 
     /* ---------------- Seitenleiste ---------------- */
+    const cabExtra = c => {
+      let t = `<div class="kv"><span>Leitungsart</span><span><button class="mini ${c.ph3 ? 'on' : ''}" data-a="hx" data-op="ph3" data-v="1">Drehstrom 5-adrig</button><button class="mini ${c.ph3 ? '' : 'on'}" data-a="hx" data-op="ph3" data-v="0">Wechselstrom 3-adrig</button></span></div>`;
+      if (!c.ph3 && lastInfo.cabUp3[c.id]) t += `<div class="kv"><span>Phase</span><span>${[1, 2, 3].map(p => `<button class="mini ${(c.pi || 1) === p ? 'on' : ''}" data-a="hx" data-op="pi" data-v="${p}">L${p}</button>`).join('')}</span></div>`;
+      else if (!c.ph3 && lastInfo.cabPh[c.id]) t += `<div class="kv"><span>Phase</span><b>L${lastInfo.cabPh[c.id]}</b></div>`;
+      return t;
+    };
     const secBtns = (cur) => SECS.map(s => `<button class="chip ${cur === s ? 'on' : ''}" data-a="hx" data-op="sec" data-v="${s}">${String(s).replace('.', ',')} mm²</button>`).join('');
     root.HAUS_SIDE = function (sim) {
       const h = H(); let out = '';
@@ -508,14 +560,17 @@
         out += `<div class="kv"><span>Raum</span><b>${esc(rm ? rm.n : '?')}</b></div>`;
         if (o.t === 'sock') out += `<label class="f"><span>Angeschlossenes Gerät</span><select data-hx="dev">${[['', 'keines'], ...DEVS.map(d => [d[0], d[0] + ' (' + d[1] + ' W)'])].map(d => `<option value="${esc(d[0])}" ${((o.n || '') === d[0] && (o.w > 0) || (!o.w && d[0] === '')) ? 'selected' : ''}>${esc(d[1])}</option>`).join('')}</select></label>`;
         if (o.t === 'dev') out += `<label class="f"><span>Gerät</span><select data-hx="dev">${DEVS.map(d => `<option value="${esc(d[0])}" ${o.n === d[0] ? 'selected' : ''}>${esc(d[0] + ' (' + d[1] + ' W)')}</option>`).join('')}</select></label>`;
+        if (o.t === 'dev3' || o.t === 'sock3') out += `<label class="f"><span>${o.t === 'sock3' ? 'Angeschlossenes Gerät' : 'Gerät'}</span><select data-hx="dev3">${(o.t === 'sock3' ? [['', 'keines', 0]] : []).concat(DEV3.map(d => [d[0], d[0] + ' (' + (d[1] / 1000) + ' kW)', d[1]])).map(d => `<option value="${esc(d[0])}" ${((o.n || '') === d[0] && o.w > 0) || (!o.w && d[0] === '') ? 'selected' : ''}>${esc(d[1])}</option>`).join('')}</select></label>`;
+        if (lastInfo.objPick[o.id] && !sim) out += `<div class="kv"><span>Phase (Drehstromleitung)</span><span>${[1, 2, 3].map(p => `<button class="mini ${(o.ph || 1) === p ? 'on' : ''}" data-a="hx" data-op="oph" data-v="${p}">L${p}</button>`).join('')}</span></div>`;
+        else if (lastInfo.phOf[o.id] > 0) out += `<div class="kv"><span>Phase</span><b>L${lastInfo.phOf[o.id]}</b></div>`;
         if (o.t === 'lamp') out += `<label class="f"><span>Leistung (W)</span><select data-hx="lampw">${[10, 40, 60, 100, 150].map(w => `<option ${o.w === w ? 'selected' : ''}>${w}</option>`).join('')}</select></label>`;
         if (!sim && o.t !== 'lamp' && o.t !== 'junc') out += `<div class="kv"><span>Höhe über dem Boden</span><span>${[0.3, 1.05, 1.2, 2.2].map(z => `<button class="mini ${Math.abs(o.z - z) < 0.01 ? 'on' : ''}" data-a="hx" data-op="z" data-v="${z}">${String(z).replace('.', ',')}</button>`).join('')}</span></div>`;
         if (o.t === 'swi' || o.t === 'swc') out += `<div class="row2"><button class="btn" data-a="hx" data-op="toggle">Schalter ${o.on ? 'aus' : 'ein'}schalten</button></div>`;
-        if ((o.t === 'sock' || o.t === 'dev') && o.w > 0) out += `<div class="row2"><button class="btn" data-a="hx" data-op="toggle">Gerät ${o.on === 0 ? 'ein' : 'aus'}schalten</button></div>`;
-        if (o.t === 'sock' || o.t === 'dev') out += `<div class="row2"><button class="btn ${o.f ? 'danger' : ''}" data-a="hx" data-op="fault">${o.f ? 'Körperschluss beheben' : '⚡ Körperschluss am Gerät'}</button></div>`;
+        if ((o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3') && o.w > 0) out += `<div class="row2"><button class="btn" data-a="hx" data-op="toggle">Gerät ${o.on === 0 ? 'ein' : 'aus'}schalten</button></div>`;
+        if (o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3') out += `<div class="row2"><button class="btn ${o.f ? 'danger' : ''}" data-a="hx" data-op="fault">${o.f ? 'Körperschluss beheben' : '⚡ Körperschluss am Gerät'}</button></div>`;
         if (o.t === 'swc') out += `<div class="kv"><span>Partner</span><b>${o.partner ? 'verbunden' : 'noch keiner (Leitung zu zweitem Wechselschalter ziehen)'}</b></div>`;
         const lp = partOf(o.id, 'lamp') || partOf(o.id, 'sd');
-        if (sim && lp && poweredSet.has(o.id)) { const cp = cabParts(o.id && cabIdUp(o.id)).filter(p => p.hx.w === 'L' || p.hx.w === 'T1')[0]; out += `<div class="kv"><span>Spannung</span><b>${Math.round(U(lp.id))} V</b></div>` + (cp ? `<div class="kv"><span>Strom in der Zuleitung</span><b>${api.fmt(I(cp.id), 'A')}</b></div>` : ''); }
+        if (sim && lp && poweredSet.has(o.id)) { const cp = cabParts(o.id && cabIdUp(o.id)).filter(p => ['L', 'L1', 'T1'].includes(p.hx.w))[0]; out += `<div class="kv"><span>Spannung</span><b>${Math.round(U(lp.id))} V</b></div>` + (cp ? `<div class="kv"><span>Strom in der Zuleitung</span><b>${api.fmt(I(cp.id), 'A')}</b></div>` : ''); }
         else if (!poweredSet.has(o.id) && o.t !== 'panel') out += `<p class="hint2">Nicht angeschlossen: Es führt noch keine Leitung vom Verteiler hierher.</p>`;
         if (o.t === 'panel') out += `<div class="row2"><button class="btn pri" data-a="hx" data-op="panel">▤ Verteiler öffnen</button></div>`;
         if (!sim) out += `<label class="f"><span>Bezeichnung</span><input data-hx="name" value="${esc(o.n || '')}" placeholder="${esc(T.n)}"></label><div class="row2"><button class="btn danger" data-a="hx" data-op="delobj">Löschen</button></div>`;
@@ -524,8 +579,8 @@
         const rt = route(h, c), A = obj(h, c.a), B = obj(h, c.b);
         out += `<div class="card"><h4>〰 Leitung</h4><div class="kv"><span>Von</span><b>${esc(A ? objName(h, A) : '?')}</b></div><div class="kv"><span>Nach</span><b>${esc(B ? objName(h, B) : '?')}</b></div><div class="kv"><span>Länge (an Wänden und Decke)</span><b>${num(rt.len, 1)} m</b></div>`;
         if (c.slot != null) out += `<div class="kv"><span>Abgang im Verteiler</span><b>${c.slot + 1}</b></div>`;
-        if (!sim) out += `<div class="kv" style="align-items:flex-start"><span>Querschnitt</span></div><div class="wc">${secBtns(c.s)}</div><p class="hint2">Licht: 1,5 mm², Steckdosen und Geräte: 2,5 mm² (mit höchstens B16). Starke Geräte brauchen mehr.</p><div class="row2"><button class="btn danger" data-a="hx" data-op="delcab">Leitung löschen</button></div>`;
-        else { const p = cabParts(c.id).find(x => x.hx.w === 'L' || x.hx.w === 'T1'); if (p) out += `<div class="kv"><span>Strom</span><b>${api.fmt(I(p.id), 'A')}</b></div><div class="kv"><span>Belastbarkeit</span><b>${api.fmt(root.LochSim.cableOf(p.v).iz, 'A')}</b></div>`; }
+        if (!sim) out += `<div class="kv" style="align-items:flex-start"><span>Querschnitt</span></div><div class="wc">${secBtns(c.s)}</div>${cabExtra(c)}<p class="hint2">Licht: 1,5 mm², Steckdosen und Geräte: 2,5 mm² (mit höchstens B16). Starke Geräte brauchen mehr.</p><div class="row2"><button class="btn danger" data-a="hx" data-op="delcab">Leitung löschen</button></div>`;
+        else { const p = cabParts(c.id).find(x => ['L', 'L1', 'T1'].includes(x.hx.w)); if (p) out += `<div class="kv"><span>Strom</span><b>${api.fmt(I(p.id), 'A')}</b></div><div class="kv"><span>Belastbarkeit</span><b>${api.fmt(root.LochSim.cableOf(p.v).iz, 'A')}</b></div>`; }
         out += '</div>';
       } else if (r) {
         out += `<div class="card"><h4>▭ Raum</h4><label class="f"><span>Name</span><input data-hx="rname" value="${esc(r.n)}"></label><div class="kv"><span>Größe</span><b>${num(r.w, 1)} × ${num(r.d, 1)} m</b></div>`;
@@ -551,6 +606,9 @@
       else if (op === 'delcab' && c) { h.cables = h.cables.filter(x => x.id !== c.id); stt.sel = null; apply(); }
       else if (op === 'delroom' && r) { h.objs.filter(x => x.room === r.id).forEach(x => removeObj(x.id)); h.rooms = h.rooms.filter(x => x.id !== r.id); stt.sel = null; apply(); }
       else if ((op === 'rw' || op === 'rd') && r) { const nw = op === 'rw' ? r.w + parseFloat(v) : r.w, nd = op === 'rd' ? r.d + parseFloat(v) : r.d; if (nw < 2 || nd < 2) { api.toast('Mindestens 2 m'); return true; } if (h.rooms.some(q => q !== r && r.x < q.x + q.w - EPS && r.x + nw > q.x + EPS && r.y < q.y + q.d - EPS && r.y + nd > q.y + EPS)) { api.toast('Dann überschneidet der Raum einen anderen'); return true; } const old = { w: r.w, d: r.d }; r.w = nw; r.d = nd; h.objs.forEach(x => { if (x.room !== r.id) return; const len = x.face === 'S' || x.face === 'N' ? r.w : r.d; if (x.u > len - 0.2) x.u = len - 0.25; }); apply(); }
+      else if (op === 'ph3' && c) { c.ph3 = v === '1' ? 1 : 0; if (c.ph3 && c.s < 2.5) c.s = 2.5; apply(); }
+      else if (op === 'pi' && c) { c.pi = +v; apply(); }
+      else if (op === 'oph' && o) { o.ph = +v; apply(); }
       else if (op === 'panel') openPanel();
       return true;
     };
@@ -560,6 +618,7 @@
       else if (t.dataset.hx === 'rname' && r) { r.n = t.value.trim() || r.n; apply(); }
       else if (t.dataset.hx === 'lampw' && o) { o.w = +t.value; apply(); }
       else if (t.dataset.hx === 'dev' && o) { const d = DEVS.find(x => x[0] === t.value); if (o.t === 'sock') { if (d) { o.n = d[0]; o.w = d[1]; } else { o.n = ''; o.w = 0; } } else if (d) { o.n = d[0]; o.w = d[1]; } apply(); }
+      else if (t.dataset.hx === 'dev3' && o) { const d = DEV3.find(x => x[0] === t.value); if (d) { o.n = d[0]; o.w = d[1]; o.motor = d[2] ? 1 : 0; } else { o.n = ''; o.w = 0; o.motor = 0; } apply(); }
       else if (t.dataset.hx === 'newdev') { stt.dev = DEVS.find(x => x[0] === t.value) || DEVS[0]; }
     });
 
@@ -569,10 +628,10 @@
       root.LabUI.sheet('Verteilerkasten', (b, close) => {
         const draw = () => {
           const P = h.panel, sim = isSim(); syncModel(S());
-          const modLs = i => `<div class="hmod"><div class="hlab">${i + 1}</div>${P.slots[i].ls ? `<button class="hmb ${P.slots[i].on ? 'on' : 'off'}" data-m="lss" data-i="${i}"><b>${P.slots[i].ls}</b><small>${P.slots[i].on ? 'I' : '0'}</small></button>` : `<button class="hmb empty" data-m="lss" data-i="${i}">${sim ? '–' : '＋'}</button>`}${P.slots[i].ls ? `<select class="hsel" data-m="fi" data-i="${i}" ${sim ? 'disabled' : ''}><option value="0" ${!P.slots[i].fi ? 'selected' : ''}>ohne FI</option><option value="1" ${P.slots[i].fi === 1 ? 'selected' : ''}>hinter FI 1</option><option value="2" ${P.slots[i].fi === 2 ? 'selected' : ''}>hinter FI 2</option></select>` : ''}<div class="hwire">${(() => { const cs = h.cables.filter(c => c.slot === i); return cs.length ? cs.map(c => { const o2 = obj(h, c.a === (h.objs.find(x => x.t === 'panel') || {}).id ? c.b : c.a); return '→ ' + esc(o2 ? objName(h, o2) : '?') + ' (' + c.s + ' mm²)'; }).join('<br>') : (P.slots[i].ls ? 'nicht verdrahtet' : ''); })()}</div></div>`;
+          const modLs = i => `<div class="hmod"><div class="hlab">${i + 1}</div>${P.slots[i].ls ? `<button class="hmb ${P.slots[i].on ? 'on' : 'off'}" data-m="lss" data-i="${i}"><b>${P.slots[i].p3 ? '3×' : ''}${P.slots[i].ls}</b><small>${P.slots[i].on ? 'I' : '0'}</small></button>` : `<button class="hmb empty" data-m="lss" data-i="${i}">${sim ? '–' : '＋'}</button>`}${P.slots[i].ls ? `<select class="hsel" data-m="fi" data-i="${i}" ${sim ? 'disabled' : ''}><option value="0" ${!P.slots[i].fi ? 'selected' : ''}>ohne FI</option><option value="1" ${P.slots[i].fi === 1 ? 'selected' : ''}>hinter FI 1</option><option value="2" ${P.slots[i].fi === 2 ? 'selected' : ''}>hinter FI 2</option></select>` : ''}${P.slots[i].ls && !P.slots[i].p3 ? `<select class="hsel" data-m="ph" data-i="${i}" ${sim ? 'disabled' : ''}>${[[0, 'Phase auto'], [1, 'Phase L1'], [2, 'Phase L2'], [3, 'Phase L3']].map(x => `<option value="${x[0]}" ${(P.slots[i].ph || 0) === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}</select>` : (P.slots[i].p3 ? '<div class="hwire" style="color:#d9a441">Drehstrom L1 L2 L3</div>' : '')}<div class="hwire">${(() => { const cs = h.cables.filter(c => c.slot === i); return cs.length ? cs.map(c => { const o2 = obj(h, c.a === (h.objs.find(x => x.t === 'panel') || {}).id ? c.b : c.a); return '→ ' + esc(o2 ? objName(h, o2) : '?') + ' (' + c.s + ' mm²)'; }).join('<br>') : (P.slots[i].ls ? 'nicht verdrahtet' : ''); })()}</div></div>`;
           b.innerHTML = '<style>.hrail{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px;padding:10px;background:#1b2127;border-radius:10px;border-bottom:6px solid #6f7882}.hmod{width:84px;display:flex;flex-direction:column;gap:4px;align-items:stretch}.hlab{font-size:11px;color:var(--mute);text-align:center}.hmb{height:78px;border-radius:6px;background:#e4e7ea;color:#222;border:2px solid #8b939c;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px}.hmb small{margin-top:6px;padding:2px 12px;border-radius:4px;background:#c04a3a;color:#fff;font-weight:700}.hmb.on small{background:#3aa655}.hmb.empty{background:#2a323b;color:#8d99a6;border-style:dashed;font-size:22px}.hsel{height:30px;font-size:12px;padding:0 2px}.hwire{font-size:11px;color:var(--mute);min-height:30px}.hfi{width:120px}.hfi .hmb{height:96px}.hfi small{background:#3aa655}.hfi .off small{background:#c04a3a}</style>'
             + '<p class="hint2" style="margin-top:0">' + (sim ? 'Hebel antippen: ein und aus. Ausgelöste Automaten zeigen „0“.' : '<b>Bestücken:</b> Leere Plätze antippen und einen Automaten oder FI einsetzen. <b>Verdrahten:</b> Im Haus mit „Leitung“ den Verteilerkasten antippen und den Abgang wählen. Tippe auf einen Automaten, um ihn zu tauschen.') + '</p>'
-            + '<div class="gh">FI-Schutzschalter</div><div class="hrail">' + [0, 1].map(g => `<div class="hmod hfi"><div class="hlab">FI ${g + 1}</div>${P.fi[g].type ? `<button class="hmb ${P.fi[g].on === 0 ? 'off' : 'on'}" data-m="rcd" data-i="${g}"><b>${P.fi[g].type}</b><small>${P.fi[g].on === 0 ? '0' : 'I'}</small></button>` : `<button class="hmb empty" data-m="rcd" data-i="${g}">${sim ? '–' : '＋'}</button>`}</div>`).join('') + '</div>'
+            + '<div class="gh">FI-Schutzschalter</div><div class="hrail">' + [0, 1].map(g => `<div class="hmod hfi"><div class="hlab">FI ${g + 1}</div>${P.fi[g].type ? `<button class="hmb ${P.fi[g].on === 0 ? 'off' : 'on'}" data-m="rcd" data-i="${g}"><b>4P ${P.fi[g].type}</b><small>${P.fi[g].on === 0 ? '0' : 'I'}</small></button>` : `<button class="hmb empty" data-m="rcd" data-i="${g}">${sim ? '–' : '＋'}</button>`}</div>`).join('') + '</div>'
             + '<div class="gh">Leitungsschutzschalter (Abgänge)</div><div class="hrail">' + P.slots.map((s, i) => modLs(i)).join('') + '</div>';
         };
         draw();
@@ -580,38 +639,58 @@
         const main = e => {
           const t = e.target.closest('[data-m]'); if (!t || t.tagName === 'SELECT') return; const P = h.panel, i = +t.dataset.i, sim = isSim();
           if (t.dataset.m === 'lss') {
-            if (sim) { const p = S().parts.find(q => q.hx && q.hx.role === 'lss' && q.hx.slot === i); if (p) { api.setSw(p.id, p.sw ? 0 : 1); api.commit(true, true); syncModel(S()); draw(); } return; }
-            menu('Sicherungsautomat für Abgang ' + (i + 1), [...LS_TYPES.map(x => [x, x + ' (' + x.replace(/\D/g, '') + ' A, ' + (x[0] === 'B' ? 'für Licht und Steckdosen' : 'für Geräte mit Anlaufstrom') + ')']), ['', 'entfernen']], P.slots[i].ls, v => { P.slots[i].ls = v; if (!v) P.slots[i].fi = 0; apply(); stat('hausVerteiler', P.slots.filter(s => s.ls).length, 'max'); draw(); });
+            if (sim) { const ps = S().parts.filter(q => q.hx && q.hx.role === 'lss' && q.hx.slot === i); if (ps.length) { const nv = ps[0].sw ? 0 : 1; ps.forEach(p => api.setSw(p.id, nv)); api.commit(true, true); syncModel(S()); draw(); } return; }
+            menu('Sicherungsautomat für Abgang ' + (i + 1), [...LS_TYPES.map(x => [x, x + ' (' + x.replace(/\D/g, '') + ' A, einpolig, ' + (x[0] === 'B' ? 'für Licht und Steckdosen' : 'für Geräte mit Anlaufstrom') + ')']), ...['B16', 'B20', 'B25', 'B32', 'C16'].map(x => [x + '|3', x + ' dreipolig (Drehstrom)', 'für Herd, Wallbox, Motoren, Klimagerät']), ['', 'entfernen']], P.slots[i].ls, v0 => { const pr = v0.split('|'), v = pr[0]; P.slots[i].p3 = pr[1] ? 1 : 0; P.slots[i].ls = v; if (!v) { P.slots[i].fi = 0; P.slots[i].p3 = 0; } apply(); stat('hausVerteiler', P.slots.filter(s => s.ls).length, 'max'); draw(); });
           } else if (t.dataset.m === 'rcd') {
             if (sim) { const p = S().parts.find(q => q.hx && q.hx.role === 'rcd' && q.hx.g === i); if (p) { api.setSw(p.id, p.sw ? 0 : 1); api.commit(true, true); syncModel(S()); draw(); } return; }
-            menu('FI-Schutzschalter ' + (i + 1), [['30mA', 'FI 30 mA', 'Personenschutz, Pflicht für Steckdosen und Bäder'], ['300mA', 'FI 300 mA', 'Brandschutz'], ['', 'entfernen']], P.fi[i].type, v => { P.fi[i].type = v; if (!v) P.slots.forEach(s => { if (s.fi === i + 1) s.fi = 0; }); apply(); stat('hausVerteiler', P.slots.filter(s => s.ls).length, 'max'); draw(); });
+            menu('FI-Schutzschalter ' + (i + 1), [['30mA', 'FI 4-polig 30 mA', 'Personenschutz, schützt alle drei Phasen und N, Pflicht für Steckdosen und Bäder'], ['300mA', 'FI 4-polig 300 mA', 'Brandschutz'], ['', 'entfernen']], P.fi[i].type, v => { P.fi[i].type = v; if (!v) P.slots.forEach(s => { if (s.fi === i + 1) s.fi = 0; }); apply(); stat('hausVerteiler', P.slots.filter(s => s.ls).length, 'max'); draw(); });
           }
         };
         b.onclick = main;
-        b.onchange = e => { const t = e.target; if (t.dataset.m === 'fi') { const i = +t.dataset.i, v = +t.value; if (v > 0 && !h.panel.fi[v - 1].type) { api.toast('FI ' + v + ' ist noch nicht eingesetzt'); t.value = h.panel.slots[i].fi; return; } h.panel.slots[i].fi = v; apply(); draw(); } };
+        b.onchange = e => { const t = e.target; if (t.dataset.m === 'ph') { h.panel.slots[+t.dataset.i].ph = +t.value; apply(); draw(); return; } if (t.dataset.m === 'fi') { const i = +t.dataset.i, v = +t.value; if (v > 0 && !h.panel.fi[v - 1].type) { api.toast('FI ' + v + ' ist noch nicht eingesetzt'); t.value = h.panel.slots[i].fi; return; } h.panel.slots[i].fi = v; apply(); draw(); } };
         const iv = setInterval(() => { if (!document.body.contains(b)) { clearInterval(iv); return; } if (isSim() && !b.querySelector('.row')) draw(); }, 700);
       });
     }
 
     /* Haus auswerten, ohne die Zeichnung zu verändern: Lampen, Spannungen, Auslösungen; Strom je Abgang aus den Nennleistungen */
     function evalHouse(h, opt) {
-      opt = opt || {}; const r = compile(h), tmp = { name: 'tmp', parts: r.parts, wires: r.wires, nid: r.nid, scopes: [], haus: h }, out = { lit: {}, v: {}, trip: [], burn: [], powered: r.powered, slotOf: r.slotOf, warn: r.warn };
+      opt = opt || {}; const r = compile(h), tmp = { name: 'tmp', parts: r.parts, wires: r.wires, nid: r.nid, scopes: [], haus: h }, out = { lit: {}, v: {}, ph3: {}, trip: [], burn: [], powered: r.powered, slotOf: r.slotOf, warn: r.warn };
       api.withSch(tmp, () => {
-        const E = api.simEval(); E.run(opt.t || 0.305); const lamps = E.lamps();
-        r.parts.forEach(p => { const x = p.hx; if (!x) return; if (x.role === 'lamp' && lamps.get(p.id)) out.lit[x.o] = true; if (x.role === 'lamp' || x.role === 'sd') out.v[x.o] = Math.abs(api.vAcross(E, p)); });
-        E.c.elems.forEach(e => { if (e.device && e.part && e.part.item && e.part.item.hx && e.part.item.hx.role === 'devR' && Math.abs(e.i) > 0.05) out.lit[e.part.item.hx.o] = true; });
+        const E = api.simEval(); E.run(opt.t || 0.3);
+        /* eine volle Netzperiode (20 ms) abtasten: Spitzenwerte je Bauteil, damit alle drei Phasen erfasst sind */
+        const pv = {}, pi = {}, lampOn = new Set();
+        const dev = E.c.elems.filter(e => e.part && e.part.item && e.part.item.hx && ((e.device && e.part.item.hx.role === 'devR') || e.part.item.hx.role === 'motor'));
+        for (let k = 0; k < 100; k++) {
+          E.run(0.0002);
+          r.parts.forEach(p => { const x = p.hx; if (x && (x.role === 'lamp' || x.role === 'sd')) { const v = Math.abs(api.vAcross(E, p)); if (!(v <= (pv[p.id] || 0))) pv[p.id] = v; } });
+          dev.forEach(e => { const a = Math.abs(e.i || 0); if (a > (pi[e.part.id] || 0)) pi[e.part.id] = a; });
+        }
+        const lamps = E.lamps();
+        r.parts.forEach(p => { const x = p.hx; if (!x) return; if (x.role === 'lamp' && lamps.get(p.id)) out.lit[x.o] = true; if (x.role === 'lamp' || x.role === 'sd') out.v[x.o] = Math.max(out.v[x.o] || 0, pv[p.id] || 0); if ((x.role === 'devR' || x.role === 'motor') && (pi[p.id] || 0) > 0.05) out.lit[x.o] = true; if (x.role === 'devR' && x.k != null) (out.ph3[x.o] = out.ph3[x.o] || [0, 0, 0])[x.k] = pi[p.id] || 0; });
         E.ev.forEach(e => { if (e.kind === 'trip') out.trip.push(e.text); if (e.kind === 'burn') out.burn.push(e.text); });
         out.E = E;
       });
       return out;
     }
-    function slotLoads(h) {
-      const B = buildNet(h), cur = {}; h.objs.forEach(o => { const s = B.slotOf[o.id]; if (s == null || s < 0) return; let w = 0; if (o.t === 'lamp') w = o.w || 60; else if ((o.t === 'sock' || o.t === 'dev') && o.on !== 0) w = o.w || 0; cur[s] = (cur[s] || 0) + w / 230; });
+    /* Strom je Phase aus den Nennleistungen: {slot: [I1, I2, I3]} (eingeschaltete Geräte, alle Lampen) */
+    function phaseLoads(h) {
+      const B = buildNet(h), cur = {};
+      h.objs.forEach(o => {
+        const s = B.slotOf[o.id]; if (s == null || s < 0) return; let w = 0;
+        if (o.t === 'lamp') w = o.w || 60; else if ((o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3') && o.on !== 0) w = o.w || 0;
+        if (!w) return; const a = cur[s] = cur[s] || [0, 0, 0];
+        if (o.t === 'sock3' || o.t === 'dev3') { const i3 = w / (400 * Math.sqrt(3)) * (o.motor ? 1.25 : 1); a[0] += i3; a[1] += i3; a[2] += i3; }
+        else { const ph = B.phOf[o.id] || 1; a[ph - 1] += w / 230; }
+      });
       return cur;
     }
+    function slotLoads(h) { const pl = phaseLoads(h), out = {}; Object.keys(pl).forEach(s => { out[s] = Math.max(...pl[s]); }); return out; }
+    /* Last je Phase im ganzen Haus */
+    function houseLoads(h) { const pl = phaseLoads(h), t = [0, 0, 0]; Object.values(pl).forEach(a => a.forEach((v, k) => { t[k] += v; })); return t; }
     root.HAUS_NEW = () => ({ name: 'Neues Haus', parts: [], wires: [], nid: 1, scopes: [], haus: newHouse('Neues Haus') });
-    root.HAUS = { evalHouse, slotLoads, TYPES, DEVS, SLOTS, newHouse, route, buildNet, compile, pos, room, obj, cab, nid, cam, stt, proj, pick, unplane, hits: () => hits, apply, openPanel, U, I, partOf, cabParts, poweredSet: () => poweredSet, warn: () => lastWarn, syncModel, newObj, addCable, removeObj, operate };
+    root.HAUS = { evalHouse, slotLoads, phaseLoads, houseLoads, DEV3, TYPES, DEVS, SLOTS, newHouse, route, buildNet, compile, pos, room, obj, cab, nid, cam, stt, proj, pick, unplane, hits: () => hits, apply, openPanel, U, I, partOf, cabParts, poweredSet: () => poweredSet, warn: () => lastWarn, syncModel, newObj, addCable, removeObj, operate };
     if (root.HAUS_DATA) root.HAUS_DATA(api, root.HAUS);
     const css = document.createElement('style'); css.textContent = '#pal .chip{flex:none}'; document.head.appendChild(css);
+    window.addEventListener('resize', () => { if (!stt.userCam && H()) { root.HAUS_FIT(); api.draw(); } });
   };
 })(window);
