@@ -224,7 +224,18 @@ const sw = document.createElement('button');
 sw.className = 'simsw'; sw.id = 'bSim'; sw.setAttribute('role', 'switch'); sw.setAttribute('aria-checked', 'false'); sw.setAttribute('aria-label', 'Simulation');
 sw.innerHTML = '<span class="lL">Layout</span><span class="trk"><span class="knob"></span></span><span class="lS">Sim</span>';
 $('#bUndo').before(sw);
-sw.addEventListener('click', () => (simOn ? leaveSim() : enterSim()));
+sw.addEventListener('click', () => {
+  if (simOn) { leaveSim(); return; }
+  if (window.Predict && window.Predict.on() && doc.items.some(i => i.t === 'part')) {
+    const qs = [];
+    doc.items.forEach(i => { if (i.t === 'part' && (i.k === 'LED' || i.k === 'DUOLED')) qs.push({ id: 'p' + i.id, pid: i.id, text: 'Leuchtet die LED ' + (i.l || '') + '?' }); else if (i.t === 'part' && i.k === 'LAMP') qs.push({ id: 'p' + i.id, pid: i.id, lamp: true, text: 'Brennt die Lampe ' + (i.l || '') + '?' }); else if (i.t === 'part' && i.k === 'RLY') qs.push({ id: 'p' + i.id, pid: i.id, rly: true, text: 'Zieht das Relais ' + (i.l || '') + ' an?' }); });
+    if (qs.length) {
+      const read = () => { const o = {}; if (!circ) return o; qs.slice(0, 3).forEach(q => { const els = circ.elems.filter(e => e.part && e.part.item && e.part.item.id === q.pid); o[q.id] = q.lamp ? els.some(e => e.lamp && e.g && (e.i * e.i / e.g) >= 0.15 * e.lamp) : (q.rly ? els.some(e => e.relay && e.on) : els.some(e => e.led && Math.abs(e.i || 0) > 0.001)); }); return o; };
+      window.Predict.run(qs.slice(0, 3), () => enterSim(), read, () => !!sim && sim.t >= 0.4); return;
+    }
+  }
+  enterSim();
+});
 
 /* ---------- Ein- und Ausstieg ---------- */
 function enterSim() {
@@ -482,6 +493,12 @@ function buildPanel() {
     const w = wrap.get(sel_.id), isL = sel_.k === 'LDR', v0 = isL ? w.light : w.pos, u = uCur(sel_), multi = uUnits(sel_).length > 1, val = uNum(u, v0), lbl = sipOf(sel_) ? sipOf(sel_).sl : (isL || sel_.k === 'PHT' ? 'Helligkeit' : (sel_.k === 'NTC' || sel_.k === 'PTC' ? 'Temperatur' : 'Schleifer'));
     slider = `<div class="kv"><span>${lbl}</span><span id="slv">${val.replace('.', ',')} ${u.u}</span></div><div style="display:flex;gap:6px;align-items:center"><input type="range" id="slr" min="${u.min}" max="${u.max}" step="${u.step}" value="${val}" aria-label="${isL ? 'Helligkeit' : 'Schleiferstellung'}" style="flex:1;min-width:0"><input type="number" id="sln" min="${u.min}" max="${u.max}" step="${u.step}" value="${val}" style="width:72px" aria-label="Wert"></div>${multi ? `<button class="btn" id="slu" style="margin-top:6px">Einheit wechseln: ${u.u} → ${uUnits(sel_).find(q => q.id !== u.id).u}</button>` : ''}`;
   }
+  /* Spannungsquelle in der Simulation verstellen (Gleichspannung: Volt, Signalgenerator: Amplitude und Frequenz), ohne die Simulation neu zu starten */
+  let srcCtl = '';
+  const svt = v => { const m = String(v == null ? '' : v).replace(',', '.').match(/([0-9]*\.?[0-9]+)/); return m ? parseFloat(m[1]) : 0; };
+  const sgen = v => { const t = String(v || '5V 1kHz').replace(',', '.'), a = t.match(/([0-9]*\.?[0-9]+)\s*V/i), f = t.match(/([0-9]*\.?[0-9]+)\s*(k?)Hz/i); return { amp: a ? parseFloat(a[1]) : 5, hz: f ? parseFloat(f[1]) * (f[2] ? 1000 : 1) : 1000 }; };
+  if (sel_ && sel_.k === 'BAT') { const v = svt(sel_.v); srcCtl = `<div class="kv" style="margin-top:10px"><span>Spannung</span><span id="svv">${String(v).replace('.', ',')} V</span></div><div style="display:flex;gap:6px;align-items:center"><input type="range" id="svr" min="0" max="${Math.max(30, Math.ceil(v))}" step="0.5" value="${v}" style="flex:1;min-width:0" aria-label="Spannung"><input type="number" id="svn" min="0" max="100" step="0.1" value="${v}" style="width:72px" aria-label="Volt"></div>`; }
+  if (sel_ && sel_.k === 'SIG') { const g = sgen(sel_.v); srcCtl = `<div class="kv" style="margin-top:10px"><span>Amplitude</span><span id="svv">${String(g.amp).replace('.', ',')} V · ${g.hz} Hz</span></div><div style="display:flex;gap:6px;align-items:center"><input type="range" id="svr" min="0" max="${Math.max(30, Math.ceil(g.amp))}" step="0.5" value="${g.amp}" style="flex:1;min-width:0" aria-label="Amplitude"><input type="number" id="svn" min="0" max="400" step="0.1" value="${g.amp}" style="width:72px" aria-label="Volt"></div><div style="display:flex;gap:6px;align-items:center;margin-top:6px"><span style="flex:1;font-size:13px;color:var(--mute)">Frequenz</span><input type="number" id="svf" min="1" max="1000000" step="1" value="${g.hz}" style="width:96px" aria-label="Hertz"> <span style="font-size:13px;color:var(--mute)">Hz</span></div>`; }
   sd.innerHTML = `
     <div class="sp-top"><b id="spT">t = 0 s</b><span id="spS"></span></div>
     <div id="spW"></div>
@@ -493,7 +510,22 @@ function buildPanel() {
       <div class="scrow"><span class="lbl" style="color:#35d0ff">K2 V/Div</span><button data-s="v2m">−</button><span class="val" id="v2d"></span><button data-s="v2p">+</button></div>
       <div class="scrow"><button class="mini" data-s="auto" style="flex:1">Automatisch einstellen</button></div>
     </div>
-    <div class="card"><h4>Bauteil</h4><div id="spP"></div>${slider}</div>`;
+    <div class="card"><h4>Bauteil</h4><div id="spP"></div>${slider}${srcCtl}</div>`;
+  const applySrc = (kind, x) => {
+    if (!sel_ || !isFinite(x) || x < 0) return; const w = wrap.get(sel_.id), els = circ.elems.filter(e => e.part && e.part.id === sel_.id && e.type === 'V');
+    if (sel_.k === 'BAT') { const vv = Math.min(x, 100); sel_.v = String(Math.round(vv * 100) / 100) + 'V'; if (w) w.v = sel_.v; els.forEach(e => { e.v0 = vv; }); $('#svv').textContent = String(Math.round(vv * 100) / 100).replace('.', ',') + ' V'; $('#svr').value = vv; $('#svn').value = vv; }
+    else if (sel_.k === 'SIG') {
+      const g = sgen(sel_.v); if (kind === 'f') g.hz = Math.max(1, x); else g.amp = Math.min(x, 400);
+      sel_.v = (Math.round(g.amp * 100) / 100) + 'V ' + (g.hz >= 1000 && g.hz % 100 === 0 ? (g.hz / 1000) + 'kHz' : g.hz + 'Hz'); if (w) w.v = sel_.v;
+      els.forEach(e => { e.amp = g.amp; e.freq = g.hz; }); dtBase = Math.min(2e-4, 1 / (g.hz * 100));
+      $('#svv').textContent = String(g.amp).replace('.', ',') + ' V · ' + g.hz + ' Hz'; if (kind !== 'f') { $('#svr').value = g.amp; $('#svn').value = g.amp; }
+    }
+    try { save(); } catch (e) {}
+  };
+  const svr = $('#svr'), svn = $('#svn'), svf = $('#svf');
+  if (svr) svr.addEventListener('input', () => applySrc('a', parseFloat(svr.value)));
+  if (svn) svn.addEventListener('input', () => applySrc('a', parseFloat(String(svn.value).replace(',', '.'))));
+  if (svf) svf.addEventListener('input', () => applySrc('f', parseFloat(String(svf.value).replace(',', '.'))));
   const r = $('#slr'), nIn = $('#sln'), uBtn = $('#slu');
   const applyPos = (x, from) => {
     const w = wrap.get(sel_.id), u = uCur(sel_); if (!isFinite(x)) return;

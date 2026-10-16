@@ -30,7 +30,8 @@
   }
   function name() { try { return (localStorage.getItem('lm4.name') || '').trim(); } catch (e) { return ''; } }
   function ownHints(d) { const h = hints(), r = {}; Object.keys(d).forEach(k => { if (h[k]) r[k] = h[k]; }); return r; }
-  function code() { const d = own(); return 'TFL1.' + b64(JSON.stringify({ n: name(), t: Date.now(), d, h: ownHints(d) })); }
+  function ownBadges() { return window.Badges ? window.Badges.earnedIds() : []; }
+  function code() { const d = own(); return 'TFL1.' + b64(JSON.stringify({ n: name(), t: Date.now(), d, h: ownHints(d), b: ownBadges() })); }
   function parse(txt) {
     const out = [];
     (String(txt).match(/TFL1\.[A-Za-z0-9_-]+/g) || []).forEach(c => { try { const o = JSON.parse(unb64(c.slice(5))); if (o && o.d && typeof o.d === 'object') out.push(o); } catch (e) {} });
@@ -48,7 +49,7 @@
     const u = ui(), nm = name();
     if (!(pct > 0)) { u.toast('Prüfe zuerst deine Lösung, dann kannst du abgeben'); return; }
     if (!nm) { u.toast('Bitte zuerst deinen Namen eintragen (Startseite)'); return; }
-    const c = 'TFL1.' + b64(JSON.stringify({ n: nm, t: Date.now(), d: { [id]: Math.round(pct) }, h: ownHints({ [id]: 1 }) })), svg = qrSvg(c);
+    const c = 'TFL1.' + b64(JSON.stringify({ n: nm, t: Date.now(), d: { [id]: Math.round(pct) }, h: ownHints({ [id]: 1 }), b: ownBadges() })), svg = qrSvg(c);
     u.sheet('Abgeben', b => {
       b.innerHTML = `<p style="margin-top:0"><b>${esc(nm)}</b><br>${esc(title || id)}: <b>${Math.round(pct)} %</b></p>
         <p class="hint2">Halte dieses Bild dem Ausbilder zum Scannen hin. Danach ist deine Abgabe angekommen.</p>

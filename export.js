@@ -92,7 +92,7 @@
   /* ---------- Bedienung ---------- */
   function png() {
     var u = ui(), cv = canvas(); if (!cv) { u.toast('Keine Zeichenfläche gefunden'); return; }
-    cv.toBlob(function (b) { if (b) saveBlob(b, fname('png')); else u.toast('Bild konnte nicht erzeugt werden'); }, 'image/png');
+    cv.toBlob(function (b) { if (b) { saveBlob(b, fname('png')); if (window.Badges) window.Badges.stat('png'); } else u.toast('Bild konnte nicht erzeugt werden'); }, 'image/png');
   }
   var busy = false;
   function banner(text) {
@@ -113,7 +113,7 @@
       banner('Erzeuge GIF …');
       setTimeout(function () {
         var blob; try { blob = encodeGif(w, h, frames, Math.round(100 / fps)); } catch (e) { var bn = document.getElementById('recBanner'); if (bn) bn.remove(); busy = false; u.toast('GIF konnte nicht erzeugt werden'); return; }
-        var bn2 = document.getElementById('recBanner'); if (bn2) bn2.remove(); busy = false; result(blob, w, h, frames.length, sec, fps, maxW);
+        var bn2 = document.getElementById('recBanner'); if (bn2) bn2.remove(); busy = false; if (window.Badges) window.Badges.stat('gif'); result(blob, w, h, frames.length, sec, fps, maxW);
       }, 60);
     };
     setTimeout(tick, 50);

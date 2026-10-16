@@ -1354,13 +1354,21 @@ function buildPalette() {
 /* Bedienfeld links in der Simulation: Schalter, Taster und Regler aller Bauteile an einer festen Stelle */
 const CTLSTATE = { LAMP: ['ok', 'Körperschluss'], HEAT: ['ok', 'Körperschluss'], MOTOR3: ['ok', 'Körperschluss'], SD: ['ok', 'defekt'], FAULT: ['aus', 'Fehler'], SPDT: ['Stellung 1', 'Stellung 2'], KREUZ: ['gerade', 'gekreuzt'], LSS: ['aus', 'ein'], RCD: ['aus', 'ein'] };
 function controlHtml() {
-  const items = sch.parts.filter(p => { const K = KD(p); return K.toggle || K.momentary || K.pos; });
+  const items = sch.parts.filter(p => { const K = KD(p); return K.toggle || K.momentary || K.pos || p.k === 'BAT' || p.k === 'AC'; });
   let h = '<div class="pcat">Bedienfeld</div>';
   if (!items.length) return h + '<p class="hint2" style="padding:0 8px">Diese Schaltung hat keine Schalter oder Regler.</p>';
   items.forEach(p => {
     const K = KD(p), name = (p.l ? p.l + ' · ' : '') + K.name;
     if (K.toggle) { const st = CTLSTATE[p.k] || ['aus', 'ein']; h += `<button class="pit ctl ${p.sw ? 'on' : ''}" data-ctl="sw" data-id="${p.id}"><span>${esc(name)}</span><em>${st[p.sw ? 1 : 0]}</em></button>`; }
     else if (K.momentary) h += `<button class="pit ctl ${p.pressed ? 'on' : ''}" data-ctl="hold" data-id="${p.id}"><span>${esc(name)}</span><em>gedrückt halten</em></button>`;
+    if (p.k === 'BAT') {
+      const v = srcVolt(p);
+      h += `<div class="ctl-sl"><span>${esc(name)}<em>${fmtSrc(v)} V</em></span><div style="display:flex;gap:6px;align-items:center"><input type="range" data-ctl="vs" data-id="${p.id}" min="0" max="${Math.max(30, Math.ceil(v))}" step="0.5" value="${v}" style="flex:1;min-width:0"><input type="number" data-ctl="vsn" data-id="${p.id}" min="0" max="100" step="0.1" value="${fmtSrc(v)}" style="width:68px" aria-label="Spannung in Volt"></div></div>`;
+    }
+    if (p.k === 'AC') {
+      const a = acParts(p);
+      h += `<div class="ctl-sl"><span>${esc(name)}<em>${fmtSrc(a.amp)} V · ${fmtHz(a.hz)}</em></span><div style="display:flex;gap:6px;align-items:center"><input type="range" data-ctl="vs" data-id="${p.id}" min="0" max="${Math.max(30, Math.ceil(a.amp))}" step="0.5" value="${a.amp}" style="flex:1;min-width:0"><input type="number" data-ctl="vsn" data-id="${p.id}" min="0" max="400" step="0.1" value="${fmtSrc(a.amp)}" style="width:68px" aria-label="Amplitude in Volt"></div><div style="display:flex;gap:6px;align-items:center;margin-top:4px"><span style="flex:1;font-size:12px;color:var(--mute)">Frequenz</span><input type="number" data-ctl="vsf" data-id="${p.id}" min="1" max="1000000" step="1" value="${a.hz}" style="width:96px" aria-label="Frequenz in Hertz"> <span style="font-size:12px;color:var(--mute)">Hz</span></div></div>`;
+    }
     if (K.pos) {
       const v = posVal(p), u = posUnit(p), multi = posUnits(p).length > 1;
       h += `<div class="ctl-sl"><span>${esc(name)}<em>${posText(u, v)}</em></span><div style="display:flex;gap:6px;align-items:center"><input type="range" data-ctl="pos" data-id="${p.id}" min="${u.min}" max="${u.max}" step="${u.step}" value="${posNum(u, v)}" style="flex:1;min-width:0"><input type="number" data-ctl="posn" data-id="${p.id}" min="${u.min}" max="${u.max}" step="${u.step}" value="${posNum(u, v)}" style="width:68px" aria-label="Wert"></div>${multi ? `<button class="btn" data-ctl="unit" data-id="${p.id}" style="margin-top:4px;padding:3px 10px;font-size:12px">Einheit wechseln: ${esc(u.u)} → ${esc(posUnits(p).find(x => x.id !== u.id).u)}</button>` : ''}</div>`;
@@ -1370,7 +1378,7 @@ function controlHtml() {
 }
 function refreshControls() {
   if (!simMode || !listMode()) return;
-  const pl = $('#parts'), ae = document.activeElement; if (pl.contains(ae) && ae.type === 'range') return;
+  const pl = $('#parts'), ae = document.activeElement; if (pl.contains(ae) && (ae.type === 'range' || ae.type === 'number')) return;
   const h = controlHtml(); if (pl.dataset.h !== h) { const keep = pl.scrollTop; pl.dataset.h = h; pl.innerHTML = h; pl.scrollTop = keep; }
 }
 (function () {
@@ -1378,7 +1386,18 @@ function refreshControls() {
   const setP = (id, f) => { const p = byPart(+id); if (!p) return; f(p, wrapMap.get(p.id)); };
   pl.addEventListener('click', e => { const b = e.target.closest('[data-ctl="sw"]'); if (!b || !simMode) return; setP(b.dataset.id, (p, w) => { p.sw = p.sw ? 0 : 1; if (w) w.sw = p.sw; commit(true, true); draw(); refreshControls(); }); });
   pl.addEventListener('input', e => {
-    const t = e.target; if ((t.dataset.ctl !== 'pos' && t.dataset.ctl !== 'posn') || !simMode) return;
+    const t = e.target;
+    if ((t.dataset.ctl === 'vs' || t.dataset.ctl === 'vsn' || t.dataset.ctl === 'vsf') && simMode) {
+      const x = parseFloat(String(t.value).replace(',', '.')); if (!isFinite(x) || x < 0) return;
+      setP(t.dataset.id, p => {
+        if (p.k === 'BAT') p.v = fmtSrc(Math.min(x, 100)); else { const a = acParts(p); if (t.dataset.ctl === 'vsf') a.hz = Math.max(1, x); else a.amp = Math.min(x, 400); p.v = fmtSrc(a.amp) + 'V ' + fmtHz(a.hz); }
+        try { localStorage.setItem((SK + 'cur'), snap()); } catch (_) {} rebuildKeep();
+        const box = t.closest('.ctl-sl'), em = box.querySelector('em'); if (em) em.textContent = p.k === 'BAT' ? fmtSrc(srcVolt(p)) + ' V' : fmtSrc(acParts(p).amp) + ' V · ' + fmtHz(acParts(p).hz);
+        if (t.dataset.ctl !== 'vsf') box.querySelectorAll('[data-ctl="vs"],[data-ctl="vsn"]').forEach(i => { if (i !== t) i.value = fmtSrc(p.k === 'BAT' ? srcVolt(p) : acParts(p).amp); });
+      });
+      return;
+    }
+    if ((t.dataset.ctl !== 'pos' && t.dataset.ctl !== 'posn') || !simMode) return;
     const x = parseFloat(String(t.value).replace(',', '.')); if (!isFinite(x)) return;
     setP(t.dataset.id, p => {
       const u = posUnit(p), v = clamp(u.from(clamp(x, u.min, u.max)), 0, 1); setPos(p, v); draw();
@@ -1410,7 +1429,35 @@ $('#pal').addEventListener('wheel', e => { const el = e.currentTarget; if (el.sc
 
 /* ============ Seitenleiste ============ */
 function toggleRun() { if (!simMode) return; running = !running; lastFrame = performance.now(); refreshUI(); }
+
+/* ============ Vorhersage-Modus: erst tippen, dann simulieren ============ */
+function predictQuestions() {
+  const q = [];
+  sch.parts.forEach(p => {
+    if (p.k === 'LED') q.push({ id: 'p' + p.id, k: 'led', pid: p.id, text: 'Leuchtet die LED ' + (p.l || '') + '?' });
+    else if (p.k === 'LAMP') q.push({ id: 'p' + p.id, k: 'lamp', pid: p.id, text: 'Brennt die Lampe ' + (p.l || '') + '?' });
+    else if (p.k === 'RLY') q.push({ id: 'p' + p.id, k: 'rly', pid: p.id, text: 'Zieht das Relais ' + (p.l || '') + ' an?' });
+  });
+  return q.slice(0, 3);
+}
+function predictRead(qs) {
+  const out = {}; if (!circ) return out;
+  qs.forEach(q => {
+    const els = circ.elems.filter(e => e.part && e.part.id === q.pid);
+    if (q.k === 'led') out[q.id] = els.some(e => e.led && Math.abs(e.i || 0) > 0.001);
+    else if (q.k === 'lamp') out[q.id] = els.some(e => e.lamp && e.g && (e.i * e.i / e.g) >= 0.15 * e.lamp);
+    else out[q.id] = els.some(e => e.relay && e.on);
+  });
+  return out;
+}
 function setSimMode(on) {
+  if (on && !simMode && window.Predict && window.Predict.on() && sch.parts.length) {
+    const qs = predictQuestions();
+    if (qs.length) { window.Predict.run(qs, () => setSimModeNow(true), () => predictRead(qs), () => !!sim && sim.t >= 0.4); return; }
+  }
+  setSimModeNow(on);
+}
+function setSimModeNow(on) {
   if (on && !sch.parts.length) { toast('Noch keine Bauteile gezeichnet'); return; }
   simMode = on; sel = null; wireStart = null; ghost = null; act = null;
   if (on) { tool = 'select'; rebuild(); sim.reset(); phase.clear(); lastSample = -1; running = true; lastFrame = performance.now(); startProgram(); }
@@ -1427,7 +1474,7 @@ function refreshUI() {
   $('#bRun').classList.toggle('on', running);
   $('#bUndo').disabled = simMode || hi <= 0; $('#bRedo').disabled = simMode || hi >= hist.length - 1;
   $('#title').textContent = sch.name;
-  let h = taskCardHtml() + meterCardHtml();
+  let h = taskCardHtml() + diceCardHtml() + meterCardHtml();
   if (simMode) {
     h += `<div class="card"><h4>Simulation</h4>
     <div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Stopp' : '▶ Start'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>
@@ -1482,6 +1529,10 @@ $('#side').addEventListener('click', e => {
   const a = b.dataset.a;
   if (a === 'mmV') { meter.mode = 'V'; meterReset(); refreshUI(); return; }
   if (a === 'posunit') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) { posUnitNext(p0); refreshUI(); } return; }
+  if (a === 'dreport') { diceReport(); return; }
+  if (a === 'droll') { rollFault(); return; }
+  if (a === 'dreveal') { const dc = sch.dice; if (!dc) return; if (dc.solved) { diceFix(); refreshUI(); } else { const pp = byPart(dc.id); sel = pp ? { t: 'part', id: pp.id } : null; dc.msg = 'Auflösung: ' + diceText(dc); dc.solved = true; dc.revealed = true; refreshUI(); draw(); } return; }
+  if (a === 'trand') { const t = TASKS.find(x => x.id === sch.task); if (t && t.rand) { try { localStorage.setItem('sim.rs.' + t.id, String((+localStorage.getItem('sim.rs.' + t.id) || 0) + 1)); } catch (e) {} startTask(t.id); } return; }
   if (a === 'faster') { tempo = Math.min(1, Math.max(tempo + 0.1, 0.62)); refreshUI(); return; }
   if (a === 'mmA') { meter.mode = 'A'; meterReset(); refreshUI(); return; }
   if (a === 'tcheck') { runTaskCheck(); return; }
@@ -1573,7 +1624,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -1666,6 +1717,16 @@ function initDock() {
   syncCode();
 }
 
+
+
+/* Spannungsquellen in der Simulation verstellen: Gleichspannung (Volt) und Wechselspannung (Amplitude und Frequenz) */
+const srcVolt = p => { const m = String(p.v == null ? '' : p.v).replace(',', '.').match(/([0-9]*\.?[0-9]+)/); return m ? parseFloat(m[1]) : 0; };
+function acParts(p) {
+  const t = String(p.v || '5V 1kHz').replace(',', '.'), a = t.match(/([0-9]*\.?[0-9]+)\s*V/i), f = t.match(/([0-9]*\.?[0-9]+)\s*(k?)Hz/i);
+  return { amp: a ? parseFloat(a[1]) : 5, hz: f ? parseFloat(f[1]) * (f[2] ? 1000 : 1) : 1000 };
+}
+const fmtHz = hz => hz >= 1000 && hz % 100 === 0 ? String(hz / 1000).replace(/\.0+$/, '') + 'kHz' : String(Math.round(hz * 100) / 100) + 'Hz';
+const fmtSrc = x => String(Math.round(x * 100) / 100);
 
 /* ============ Regler in echten Einheiten ============ */
 /* Jeder Regler speichert intern 0 bis 1 (pos). Angezeigt und eingestellt wird wahlweise in der echten Größe (°C, cm, lx, V, Ω) oder in Prozent. */
@@ -2564,6 +2625,22 @@ while True:
 ];
 
 /* ---- SchaltLab: Aufgaben mit Messung ---- */
+
+/* ============ Zufallsaufgaben: jeder Azubi bekommt eigene Zahlen (aus Name, Aufgabe und „Neue Zahlen“) ============ */
+function rng(id) {
+  let a = 0; const str = (userName() || 'Azubi') + '|' + id + '|' + (localStorage.getItem('sim.rs.' + id) || '0'); for (const ch of str) a = (a * 31 + ch.charCodeAt(0)) >>> 0;
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const rpick = (r, arr) => arr[Math.floor(r() * arr.length)];
+const E12S = [1, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2];
+function e12(x) { const dec = Math.pow(10, Math.floor(Math.log10(x))); let best = 1, bd = 1e9; [...E12S, 10].forEach(m => { const d2 = Math.abs(Math.log(x / (m * dec))); if (d2 < bd) { bd = d2; best = m * dec; } }); return best; }
+const RP = {
+  r1: () => { const r = rng('r1'), U = rpick(r, [5, 6, 9, 12, 15]), col = rpick(r, ['rot', 'grün', 'gelb']), I = rpick(r, [5, 10, 15, 20]); return { U, col, I, R: (U - 2) / (I / 1000) }; },
+  r2: () => { const r = rng('r2'), U = rpick(r, [5, 9, 12, 24]), R1 = rpick(r, [1000, 2200, 4700, 10000]), k = rpick(r, [1 / 3, 1 / 2, 2 / 3, 3 / 4]), U2 = Math.round(U * k * 10) / 10; return { U, R1, U2, R2: R1 * U2 / (U - U2) }; },
+  r3: () => { const r = rng('r3'), U = rpick(r, [6, 9, 12, 24]), R1 = rpick(r, [330, 470, 680, 1000]); const Is = [4, 6, 8, 10, 12].filter(i => U / i * 1000 > R1 * 1.25), I = rpick(r, Is.length ? Is : [4]); return { U, R1, I, R2: U / (I / 1000) - R1 }; },
+  r4: () => { const r = rng('r4'), R = rpick(r, [1000, 2200, 4700, 10000, 22000]), tau = rpick(r, [0.5, 1, 2, 5]); return { R, tau, C: tau / 1000 / R }; },
+};
+const noun = c => ({ rot: 'rote', grün: 'grüne', gelb: 'gelbe' }[c] || c);
 const SCH_TASKS = [
   { id: 's1', lab: 'sch', cat: 'Grundlagen', title: 'Spannungsteiler für 6 V', level: 1, solMake: () => ({ parts: [['BAT', 4, 4, 1, '9'], ['R', 8, 2, 1, '1k'], ['R', 8, 6, 1, '2k'], ['GND', 4, 10], ['VM', 12, 6, 1, '']], wires: [[4, 4, 4, 2, 8, 2], [8, 10, 4, 10, 4, 8], [8, 6, 12, 6], [12, 10, 8, 10]], scopes: [] }),
     start: () => ({ parts: [['BAT', 4, 4, 1, '9'], ['R', 8, 2, 1, '1k'], ['GND', 4, 10], ['VM', 12, 6, 1, '']], wires: [[4, 4, 4, 2, 8, 2]], scopes: [] }),
@@ -2684,6 +2761,35 @@ const SCH_TASKS = [
     text: 'Projekt Netzteil, Teil 1 (Plan): Aus 12 V Wechselspannung soll eine stabile Gleichspannung von 5 V werden: Vier Dioden als Brücke, ein Elko zum Glätten, der Spannungsregler 7805 und ein Elko am Ausgang. Eine LED mit Vorwiderstand zeigt den Betrieb. Verdrahte den Stromlaufplan. Danach baust du die Schaltung im LochLab auf.',
     hint: 'Brücke: die Wechselspannungsquelle zwischen die beiden Diodenmitten, die Ringe (Kathoden) der oberen Dioden zum Plus-Ausgang, die unteren Dioden zur Masse. Plus: Elko 1000 µF nach Masse (Pluspol oben), dann an IN des 7805. Der 7805 hat IN links, GND unten, OUT rechts. Am Ausgang ein Elko 10 µF nach Masse, dann 330 Ω und LED nach Masse.',
     check() { return schNetCheck(exLike('Netzteil 5 V: Brücke')); } },
+  { id: 'r1', lab: 'sch', cat: 'Zufallsaufgaben', title: 'Zufall: Vorwiderstand für die LED', level: 1, rand: true,
+    get text() { const p = RP.r1(); return 'Betreibe die ' + noun(p.col) + ' LED an ' + p.U + ' V so, dass etwa ' + p.I + ' mA fließen (die LED hat etwa 2 V Spannungsabfall). Berechne den Vorwiderstand, wähle einen passenden Wert und baue ihn ein. Deine Zahlen sind nur deine: „Neue Zahlen“ würfelt andere.'; },
+    get hint() { const p = RP.r1(); return 'R = (U − 2 V) / I = (' + p.U + ' V − 2 V) / ' + p.I + ' mA ≈ ' + Math.round(p.R) + ' Ω. Nimm den nächsten Wert der Normreihe E12.'; },
+    start: () => { const p = RP.r1(); return { parts: [['BAT', 2, 4, 1, String(p.U)], ['LED', 10, 2, 1, p.col], ['GND', 2, 8]], wires: [[10, 6, 10, 8, 2, 8], [2, 4, 2, 2]], scopes: [] }; },
+    solMake: () => { const p = RP.r1(); return { parts: [['BAT', 2, 4, 1, String(p.U)], ['R', 6, 2, 0, fmtSI(e12(p.R))], ['LED', 10, 2, 1, p.col], ['GND', 2, 8]], wires: [[2, 4, 2, 2, 6, 2], [10, 6, 10, 8, 2, 8]], scopes: [] }; },
+    check() { const p = RP.r1(), r = needKinds([['Vorwiderstand', ['R'], 1]]); const E = simEval({}); E.run(0.05); const e = ledElem(E), burn = burnTxt(E); if (burn.length) return r.concat([RES(false, burn[0])]);
+      const i = e ? Math.abs(e.i) * 1000 : 0, ok = Math.abs(i - p.I) <= p.I * 0.2; return r.concat([RES(ok, 'LED-Strom: ' + fmt1(i) + ' mA (Ziel etwa ' + p.I + ' mA, erlaubt ±20 %).')]); } },
+  { id: 'r2', lab: 'sch', cat: 'Zufallsaufgaben', title: 'Zufall: Spannungsteiler', level: 2, rand: true,
+    get text() { const p = RP.r2(); return 'Das Voltmeter soll ' + String(p.U2).replace('.', ',') + ' V anzeigen. Die Batterie hat ' + p.U + ' V, R1 ist ' + fmtSI(p.R1) + ' Ω. Berechne R2, wähle den nächsten Normwert und verdrahte alles: R2 zwischen R1 und Masse, das Voltmeter parallel zu R2.'; },
+    get hint() { const p = RP.r2(); return 'U2 / U = R2 / (R1 + R2). Umgestellt: R2 = R1 · U2 / (U − U2) = ' + fmtSI(p.R1) + ' Ω · ' + p.U2 + ' V / ' + fmt1(p.U - p.U2) + ' V ≈ ' + Math.round(p.R2) + ' Ω.'; },
+    start: () => { const p = RP.r2(); return { parts: [['BAT', 4, 4, 1, String(p.U)], ['R', 8, 2, 1, fmtSI(p.R1)], ['GND', 4, 10], ['VM', 12, 6, 1, '']], wires: [[4, 4, 4, 2, 8, 2]], scopes: [] }; },
+    solMake: () => { const p = RP.r2(); return { parts: [['BAT', 4, 4, 1, String(p.U)], ['R', 8, 2, 1, fmtSI(p.R1)], ['R', 8, 6, 1, fmtSI(e12(p.R2))], ['GND', 4, 10], ['VM', 12, 6, 1, '']], wires: [[4, 4, 4, 2, 8, 2], [8, 10, 4, 10, 4, 8], [8, 6, 12, 6], [12, 10, 8, 10]], scopes: [] }; },
+    check() { const p = RP.r2(), vm = sch.parts.find(q => q.k === 'VM'), r = needKinds([['Zweiter Widerstand', ['R'], 2]]); if (!vm) return r.concat([RES(false, 'Das Voltmeter fehlt.')]);
+      const E = simEval({}); E.run(0.05); const v = vAcross(E, vm), tol = Math.max(0.07 * p.U2, 0.15);
+      return r.concat([RES(Math.abs(v - p.U2) <= tol, isNaN(v) ? 'Das Voltmeter ist nicht angeschlossen.' : 'Das Voltmeter zeigt ' + fmt1(v) + ' V (Ziel ' + String(p.U2).replace('.', ',') + ' V).')]); } },
+  { id: 'r3', lab: 'sch', cat: 'Zufallsaufgaben', title: 'Zufall: Reihenschaltung, Strom einstellen', level: 2, rand: true,
+    get text() { const p = RP.r3(); return 'An ' + p.U + ' V liegen R1 = ' + fmtSI(p.R1) + ' Ω und ein zweiter Widerstand R2 in Reihe. Es sollen ' + p.I + ' mA fließen. Berechne R2, wähle den nächsten Normwert, baue ihn ein und verdrahte: R1 → R2 → Masse.'; },
+    get hint() { const p = RP.r3(); return 'R gesamt = U / I = ' + p.U + ' V / ' + p.I + ' mA = ' + Math.round(p.U / p.I * 1000) + ' Ω. R2 = R gesamt − R1 = ' + Math.round(p.R2) + ' Ω.'; },
+    start: () => { const p = RP.r3(); return { parts: [['BAT', 2, 4, 1, String(p.U)], ['R', 6, 2, 0, fmtSI(p.R1)], ['GND', 2, 8]], wires: [[2, 4, 2, 2, 6, 2]], scopes: [] }; },
+    solMake: () => { const p = RP.r3(); return { parts: [['BAT', 2, 4, 1, String(p.U)], ['R', 6, 2, 0, fmtSI(p.R1)], ['R', 10, 2, 1, fmtSI(e12(p.R2))], ['GND', 2, 8]], wires: [[2, 4, 2, 2, 6, 2], [10, 6, 10, 8, 2, 8]], scopes: [] }; },
+    check() { const p = RP.r3(), r = needKinds([['Zweiter Widerstand', ['R'], 2]]); const E = simEval({}); E.run(0.05); const e = E.c.elems.find(x => x.type === 'V'), i = e ? Math.abs(e.i) * 1000 : 0, burn = burnTxt(E);
+      if (burn.length) return r.concat([RES(false, burn[0])]); return r.concat([RES(Math.abs(i - p.I) <= p.I * 0.1, 'Der Strom beträgt ' + fmt1(i) + ' mA (Ziel ' + p.I + ' mA, erlaubt ±10 %).')]); } },
+  { id: 'r4', lab: 'sch', cat: 'Zufallsaufgaben', title: 'Zufall: RC-Glied, Zeitkonstante', level: 2, rand: true,
+    get text() { const p = RP.r4(); return 'Ergänze einen Kondensator so, dass sich der Kondensator mit R1 = ' + fmtSI(p.R) + ' Ω an 5 V nach genau ' + String(p.tau).replace('.', ',') + ' ms auf etwa 63 % der Batteriespannung (3,2 V) geladen hat. Das ist die Zeitkonstante τ = R · C.'; },
+    get hint() { const p = RP.r4(); return 'τ = R · C. Umgestellt: C = τ / R = ' + String(p.tau).replace('.', ',') + ' ms / ' + fmtSI(p.R) + ' Ω = ' + fmtSI(p.C) + 'F. Der Kondensator liegt zwischen dem Widerstand und Masse.'; },
+    start: () => { const p = RP.r4(); return { parts: [['BAT', 2, 4, 1, '5'], ['R', 6, 2, 0, fmtSI(p.R), { l: 'R1' }], ['GND', 2, 10]], wires: [[2, 4, 2, 2, 6, 2], [2, 8, 2, 10]], scopes: [] }; },
+    solMake: () => { const p = RP.r4(); return { parts: [['BAT', 2, 4, 1, '5'], ['R', 6, 2, 0, fmtSI(p.R), { l: 'R1' }], ['GND', 2, 10], ['C', 10, 2, 1, fmtSI(e12(p.C)), { l: 'C1' }]], wires: [[2, 4, 2, 2, 6, 2], [2, 8, 2, 10], [10, 6, 10, 8, 2, 8]], scopes: [] }; },
+    check() { const p = RP.r4(), c = sch.parts.find(q => q.k === 'C' || q.k === 'CE'), r = needKinds([['Kondensator', ['C', 'CE'], 1]]); if (!c) return r; const E = simEval({}); let v = 0; stepFine(E, p.tau / 1000, p.tau / 1000 / 200, () => { v = vAcross(E, c); });
+      return r.concat([RES(Math.abs(Math.abs(v) - 3.16) <= 0.45, 'Nach ' + String(p.tau).replace('.', ',') + ' ms liegen ' + fmt1(Math.abs(v)) + ' V am Kondensator (Ziel etwa 3,2 V).')]); } },
   { id: 'sf3', lab: 'sch', cat: 'Fehlersuche', title: 'Spannungsteiler zeigt falsche Spannung', level: 1, debug: true, faultLabel: 'R2', sol: 'Spannungsteiler',
     start: () => { const d = exOf('Spannungsteiler')(); d.parts[1] = ['R', 8, 2, 1, '1k', { l: 'R1' }]; d.parts[2] = ['R', 8, 6, 1, '2k', { l: 'R2', defect: 'open' }]; return d; },
     text: 'Der Spannungsteiler soll 6 V am Voltmeter liefern, zeigt aber etwas anderes. Welcher Widerstand ist defekt? Miss nach, wähle ihn aus und tippe auf „Fehler melden“.',
@@ -2807,15 +2913,61 @@ window.TaskTest = only => labTasks().filter(t => !only || only.includes(t.id)).m
   return out;
 });
 const taskDone = () => { try { return JSON.parse(localStorage.getItem('sim.done') || '{}'); } catch (e) { return {}; } };
-function markDone(id, pct) { try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {} }
+function markDone(id, pct) { try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {} if (window.Badges) window.Badges.result(id, pct); }
 function logResult(id, pct, extra) {
   try { const a = JSON.parse(localStorage.getItem('sim.results') || '[]'); a.push(Object.assign({ t: Date.now(), name: userName(), task: id, pct }, extra || {})); localStorage.setItem('sim.results', JSON.stringify(a.slice(-300))); } catch (e) {}
+}
+
+/* ============ Fehler-Würfel: ein zufälliger, versteckter Fehler in der aktuellen Schaltung ============ */
+const DICE_KINDS = ['R', 'C', 'CE', 'L', 'LED', 'D', 'ZD', 'NPN', 'PNP', 'LAMP', 'SPST', 'SPDT', 'PB', 'LDR', 'NTC', 'PTC', 'FUSE', 'NMOS', 'PMOS'];
+function fmtSI(x) { const u = [[1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'u'], [1e-9, 'n'], [1e-12, 'p']]; for (const [f, sfx] of u) if (x >= f * 0.9995) return String(parseFloat((x / f).toPrecision(3))) + sfx; return String(x); }
+function diceText(dc) {
+  const p = byPart(dc.id), nmx = p ? nm(p) : 'das Bauteil';
+  const how = dc.kind === 'open' ? 'war unterbrochen (kein Strom fließt hindurch)' : dc.kind === 'short' ? 'hatte einen Kurzschluss (leitet wie ein Draht)' : 'hatte einen falschen Wert: ' + (p ? p.v : '?') + ' statt ' + dc.orig.v;
+  return nmx + ' (' + (p ? KD(p).name : '') + ') ' + how + '.';
+}
+function rollFault() {
+  if (simMode) { toast('Zum Würfeln zurück in den Zeichenmodus'); return; }
+  if (sch.dice) diceFix(true);
+  const c = sch.parts.filter(p => DICE_KINDS.includes(p.k) && !p.defect);
+  if (c.length < 2) { toast('Zu wenige Bauteile zum Würfeln. Lade ein Beispiel oder zeichne mehr.'); return; }
+  const p = c[Math.floor(Math.random() * c.length)], kinds = ['open'];
+  if (!['SPST', 'SPDT', 'PB', 'FUSE'].includes(p.k)) kinds.push('short');
+  if (['R', 'C', 'CE', 'L', 'NTC', 'PTC'].includes(p.k) && isFinite(protoNum(p.v))) kinds.push('wert');
+  const kind = kinds[Math.floor(Math.random() * kinds.length)];
+  sch.dice = { id: p.id, kind, orig: { defect: p.defect, v: p.v }, tries: 0, solved: false, msg: '' };
+  if (kind === 'wert') p.v = fmtSI(protoNum(p.v) * (Math.random() < 0.5 ? 10 : 0.1)); else p.defect = kind;
+  sel = null; commit(); toast('🎲 Gewürfelt: In der Schaltung steckt jetzt ein Fehler. Starte die Simulation, miss nach und finde das Bauteil.');
+}
+function diceFix(silent) {
+  const dc = sch.dice; if (!dc) return; const p = byPart(dc.id);
+  if (p) { if (dc.kind === 'wert') p.v = dc.orig.v; else { if (dc.orig.defect) p.defect = dc.orig.defect; else delete p.defect; } }
+  delete sch.dice; if (!silent) { commit(); toast('Fehler behoben, die Schaltung ist wieder in Ordnung'); }
+}
+function diceReport() {
+  const dc = sch.dice; if (!dc) return;
+  const p = sel && sel.t === 'part' && byPart(sel.id); if (!p) { toast('Erst das vermutete Bauteil antippen'); return; }
+  dc.tries++;
+  if (p.id === dc.id) {
+    dc.solved = true; dc.msg = '🎉 Gefunden nach ' + dc.tries + (dc.tries === 1 ? ' Versuch' : ' Versuchen') + '! ' + diceText(dc);
+    try { const dn = taskDone(); dn['dice'] = Math.max(dn['dice'] || 0, Math.max(30, 100 - 20 * (dc.tries - 1))); localStorage.setItem('sim.done', JSON.stringify(dn)); } catch (e) {}
+    if (window.Badges) { window.Badges.stat('dice'); window.Badges.confetti(false); window.Badges.chime(false); }
+  } else dc.msg = '✗ ' + nm(p) + ' ist in Ordnung. Miss weiter. (Versuch ' + dc.tries + ')';
+  refreshUI();
+}
+function diceCardHtml() {
+  const dc = sch.dice; if (!dc) return '';
+  const done = dc.solved;
+  return `<div class="card task"><h4>🎲 Fehler-Würfel</h4><p class="hint2">${done ? esc(dc.msg) : 'In dieser Schaltung steckt ein versteckter Fehler. Starte die Simulation, miss Spannungen und Ströme und vergleiche mit dem, was du erwartest. Tippe dann das vermutete Bauteil an und melde es.'}</p>`
+    + (done ? '' : `<div class="row2"><button class="btn pri" data-a="dreport">Fehler melden (gewähltes Bauteil)</button></div>${dc.msg ? `<p class="hint2">${esc(dc.msg)}</p>` : ''}`)
+    + `<div class="row2"><button class="btn" data-a="dreveal">${done ? 'Fehler beheben' : 'Auflösung zeigen'}</button><button class="btn" data-a="droll">Neu würfeln</button></div></div>`;
 }
 function taskCardHtml() {
   if (!sch.task) return '';
   const t = TASKS.find(x => x.id === sch.task); if (!t) return '';
   let h = `<div class="card task"><h4>Aufgabe · ${esc(t.cat)}</h4><b>${esc(t.title)}</b><p class="hint2">${esc(t.text)}</p>`;
   h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div><div class="row2"><button class="btn" data-a="thand">Abgeben (QR)</button></div>`;
+  if (t.rand) h += '<div class="row2"><button class="btn" data-a="trand">🎲 Neue Zahlen würfeln</button></div>';
   if (t.loch) h += (taskDone()[t.id] || 0) >= 100 ? `<div class="row2"><a class="btn pri" href="layout.html?aufgabe=${t.loch}" style="text-decoration:none;text-align:center">Weiter: im LochLab aufbauen</a></div>` : '<p class="hint2">Wenn der Plan stimmt, geht es im LochLab weiter: dort baust du dieselbe Schaltung auf der Platine auf.</p>';
   if (taskRes && taskRes.id === t.id) h += `<ul class="tl">${taskRes.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>` + (taskRes.pct != null ? `<div class="score ${taskRes.pct === 100 ? 'ok' : ''}">${taskRes.pct === 100 ? '🎉 Geschafft!' : taskRes.pct + ' % richtig'}</div>` : '');
   return h + '</div>';
@@ -2971,6 +3123,7 @@ function openProtocol() {
     let p = protoLoad();
     const draw = () => {
       const unitOpts = u => ['V', 'mA', 'A', 'Ω', 'kΩ', 'Hz', 'W'].map(x => `<option${x === u ? ' selected' : ''}>${x}</option>`).join('');
+      if (window.Badges) window.Badges.stat('protoOk', p.rows.filter(r0 => { const v0 = protoEval(r0, p.tol); return v0 && v0.ok; }).length, 'max');
       let h = `<p class="hint2" style="margin-top:0">So geht es: 1. Sollwert <b>berechnen</b> (Rechner im Menü hilft). 2. In der Simulation mit dem Multimeter messen. 3. Mit „⤓“ den angezeigten Messwert übernehmen. 4. Abweichung beurteilen, drucken.</p>
         <label class="f"><span>Toleranz „in Ordnung“</span><select id="pTol">${[2, 5, 10, 20].map(x => `<option value="${x}"${x === p.tol ? ' selected' : ''}>± ${x} %</option>`).join('')}</select></label>`;
       p.rows.forEach((r, k) => {
@@ -3184,6 +3337,9 @@ function menuAct(m) {
   else if (m === 'calc') { if (window.Rechner) window.Rechner.open(); }
   else if (m === 'erg') { if (window.Auswertung) window.Auswertung.openSend(); }
   else if (m === 'proto') openProtocol();
+  else if (m === 'abz') { if (window.Badges) window.Badges.open(); }
+  else if (m === 'dice') rollFault();
+  else if (m === 'predict') { if (window.Predict) window.Predict.toggle(); }
   else if (m === 'png') { if (window.LabExport) window.LabExport.png(); }
   else if (m === 'gif') { if (window.LabExport) window.LabExport.gif(); }
   else if (m === 'csv') exportScopeCsv();

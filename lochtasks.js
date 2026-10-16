@@ -185,7 +185,7 @@ function showCard() {
   };
 }
 function runCheck(t) {
-  const r = checkTask(t, doc), dn = done(); dn[t.id] = Math.max(dn[t.id] || 0, r.pct); store('lm4.tdone', dn);
+  const r = checkTask(t, doc), dn = done(); dn[t.id] = Math.max(dn[t.id] || 0, r.pct); store('lm4.tdone', dn); if (window.Badges) window.Badges.result(t.id, r.pct);
   sheet('Prüfung: ' + t.title, b => {
     b.innerHTML = `<div class="tres"><div class="pc" style="color:${r.ok ? '#4cd964' : '#ffb340'}">${r.ok ? '✓ Alles richtig' : r.pct + ' % richtig'}</div>${r.lines.map(l => `<div class="ln ${l.ok ? 'ok' : 'no'}"><i>${l.ok ? '✓' : '✗'}</i><span>${esc(l.text)}</span></div>`).join('')}</div>` + (r.ok ? '<p class="hint2">Super. Zum Abgeben tippe in der Aufgabenkarte auf „Abgeben“ und zeige den QR-Code deinem Ausbilder.</p>' : '<p class="hint2">Verbessere die Platine und prüfe nochmal. Du kannst beliebig oft prüfen.</p>');
   });
