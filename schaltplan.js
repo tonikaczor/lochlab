@@ -1007,7 +1007,7 @@ function drawCircuit() {
     const K = KD(p); if (!K.pos) return;
     let y1 = -1e9, xc = 0, n = 0;
     [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); y1 = Math.max(y1, p.y + rb); xc += p.x + ra; n++; });
-    const w = Math.max(104, view.s * 3.8), r = drawPill(cx, X(xc / n), Y(y1) + 20, w, clamp(p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos, 0, 1), p.k === 'MOTOR' ? 'Bremse' : (p.k === 'NTC' || p.k === 'PTC' || p.k === 'TMP36' ? 'Temp.' : (p.k === 'POT' ? 'Poti' : (p.k === 'HCSR04' ? 'Abstand' : (p.k === 'PIEZO' ? 'Klopfen' : (p.k === 'TOUCH' ? 'Finger' : (p.k === 'PIR' ? 'Bewegung' : 'Licht')))))));
+    const w = Math.max(104, view.s * 3.8), r = drawPill(cx, X(xc / n), Y(y1) + 20, w, clamp(p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos, 0, 1), p.k === 'MOTOR' ? 'Bremse' : (p.k === 'NTC' || p.k === 'PTC' || p.k === 'TMP36' || p.k === 'I2CTEMP' ? 'Temp. ' + posText(posUnit(p), posVal(p)) : (p.k === 'POT' ? 'Poti ' + posText(posUnit(p), posVal(p)) : (p.k === 'HCSR04' ? 'Abstand ' + posText(posUnit(p), posVal(p)) : (p.k === 'PIEZO' ? 'Klopfen' : (p.k === 'TOUCH' ? 'Finger' : (p.k === 'PIR' ? 'Bewegung' : 'Licht')))))));
     sliderHits.push(Object.assign({ id: p.id }, r));
   });
 }
@@ -1352,7 +1352,10 @@ function controlHtml() {
     const K = KD(p), name = (p.l ? p.l + ' · ' : '') + K.name;
     if (K.toggle) { const st = CTLSTATE[p.k] || ['aus', 'ein']; h += `<button class="pit ctl ${p.sw ? 'on' : ''}" data-ctl="sw" data-id="${p.id}"><span>${esc(name)}</span><em>${st[p.sw ? 1 : 0]}</em></button>`; }
     else if (K.momentary) h += `<button class="pit ctl ${p.pressed ? 'on' : ''}" data-ctl="hold" data-id="${p.id}"><span>${esc(name)}</span><em>gedrückt halten</em></button>`;
-    if (K.pos) { const v = p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos; h += `<label class="ctl-sl"><span>${esc(name)}<em>${Math.round(v * 100)} %</em></span><input type="range" data-ctl="pos" data-id="${p.id}" min="0" max="1" step="0.01" value="${v}"></label>`; }
+    if (K.pos) {
+      const v = posVal(p), u = posUnit(p), multi = posUnits(p).length > 1;
+      h += `<div class="ctl-sl"><span>${esc(name)}<em>${posText(u, v)}</em></span><div style="display:flex;gap:6px;align-items:center"><input type="range" data-ctl="pos" data-id="${p.id}" min="${u.min}" max="${u.max}" step="${u.step}" value="${posNum(u, v)}" style="flex:1;min-width:0"><input type="number" data-ctl="posn" data-id="${p.id}" min="${u.min}" max="${u.max}" step="${u.step}" value="${posNum(u, v)}" style="width:68px" aria-label="Wert"></div>${multi ? `<button class="btn" data-ctl="unit" data-id="${p.id}" style="margin-top:4px;padding:3px 10px;font-size:12px">Einheit wechseln: ${esc(u.u)} → ${esc(posUnits(p).find(x => x.id !== u.id).u)}</button>` : ''}</div>`;
+    }
   });
   return h;
 }
@@ -1365,7 +1368,16 @@ function refreshControls() {
   const pl = $('#parts');
   const setP = (id, f) => { const p = byPart(+id); if (!p) return; f(p, wrapMap.get(p.id)); };
   pl.addEventListener('click', e => { const b = e.target.closest('[data-ctl="sw"]'); if (!b || !simMode) return; setP(b.dataset.id, (p, w) => { p.sw = p.sw ? 0 : 1; if (w) w.sw = p.sw; commit(true, true); draw(); refreshControls(); }); });
-  pl.addEventListener('input', e => { const t = e.target; if (t.dataset.ctl !== 'pos' || !simMode) return; const v = parseFloat(t.value); setP(t.dataset.id, (p, w) => { p.pos = v; if (w) { w.pos = v; w.light = v; } draw(); const em = t.closest('label').querySelector('em'); if (em) em.textContent = Math.round(v * 100) + ' %'; }); });
+  pl.addEventListener('input', e => {
+    const t = e.target; if ((t.dataset.ctl !== 'pos' && t.dataset.ctl !== 'posn') || !simMode) return;
+    const x = parseFloat(String(t.value).replace(',', '.')); if (!isFinite(x)) return;
+    setP(t.dataset.id, p => {
+      const u = posUnit(p), v = clamp(u.from(clamp(x, u.min, u.max)), 0, 1); setPos(p, v); draw();
+      const box = t.closest('.ctl-sl'), em = box.querySelector('em'); if (em) em.textContent = posText(u, v);
+      box.querySelectorAll('input').forEach(i => { if (i !== t) i.value = posNum(u, v); });
+    });
+  });
+  pl.addEventListener('click', e => { const b = e.target.closest('[data-ctl="unit"]'); if (!b || !simMode) return; setP(b.dataset.id, p => { posUnitNext(p); }); pl.dataset.h = ''; refreshControls(); });
   pl.addEventListener('change', e => { if (e.target.dataset.ctl === 'pos') { try { localStorage.setItem((SK + 'cur'), snap()); } catch (_) {} } });
   let held = null;
   pl.addEventListener('pointerdown', e => { const b = e.target.closest('[data-ctl="hold"]'); if (!b || !simMode) return; held = b.dataset.id; setP(held, p => { pressPart(p); b.classList.add('on'); draw(); }); });
@@ -1427,6 +1439,7 @@ function refreshUI() {
       K.props.forEach(([key, label, type, opt, names]) => {
         if (type === 'ictype' && window.LochSimICs) { const cur = LochSimICs.find(p.v), ck = cur ? cur.key : ''; h += `<label class="f"><span>Typ</span><select data-ic="1">${ck ? '' : '<option value="">(eigener Wert)</option>'}${LochSimICs.SORT.map(q => `<option value="${q}" ${q === ck ? 'selected' : ''}>${esc(LochSimICs.CATALOG[q].name)}</option>`).join('')}</select></label><label class="f"><span>Wert</span><input data-p="v" value="${esc(p.v || '')}"></label>`; return; }
         if (type === 'text') h += `<label class="f"><span>${label}</span><input data-p="${key}" value="${esc(p[key] == null ? '' : p[key])}" placeholder="${esc(opt || '')}"></label>` + (key === 'v' && LS.PRESETS[p.k] ? `<div class="pre">${LS.PRESETS[p.k].filter(x => x !== '').map(x => `<button data-a="preset" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : '');
+        else if (type === 'range' && key === 'pos' && K.pos) { const u = posUnit(p), v = posVal(p), multi = posUnits(p).length > 1; h += `<div class="sl"><span>${label}<em id="posEm">${posText(u, v)}</em></span><div style="display:flex;gap:6px;align-items:center"><input type="range" data-p="pos" data-pu="1" min="${u.min}" max="${u.max}" step="${u.step}" value="${posNum(u, v)}" style="flex:1;min-width:0"><input type="number" data-pn="1" min="${u.min}" max="${u.max}" step="${u.step}" value="${posNum(u, v)}" style="width:72px" aria-label="Wert"></div>${multi ? `<button class="btn" data-a="posunit" style="margin-top:4px;padding:3px 10px;font-size:12px">Einheit wechseln: ${esc(u.u)} → ${esc(posUnits(p).find(x => x.id !== u.id).u)}</button>` : ''}</div>`; }
         else if (type === 'range') h += `<label class="sl"><span>${label}</span><input type="range" data-p="${key}" min="0" max="1" step="0.01" value="${p[key] == null ? 0.5 : p[key]}"></label>`;
         else if (type === 'select') h += `<label class="f"><span>${label}</span><select data-p="${key}">${opt.map(o => `<option value="${o}" ${(p[key] || K[key]) === o ? 'selected' : ''}>${names ? names[o] : o}</option>`).join('')}</select></label>`;
       });
@@ -1459,6 +1472,7 @@ $('#side').addEventListener('click', e => {
   if (b.dataset.win) { graphWin = parseFloat(b.dataset.win); scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; refreshUI(); return; }
   const a = b.dataset.a;
   if (a === 'mmV') { meter.mode = 'V'; meterReset(); refreshUI(); return; }
+  if (a === 'posunit') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) { posUnitNext(p0); refreshUI(); } return; }
   if (a === 'faster') { tempo = Math.min(1, Math.max(tempo + 0.1, 0.62)); refreshUI(); return; }
   if (a === 'mmA') { meter.mode = 'A'; meterReset(); refreshUI(); return; }
   if (a === 'tcheck') { runTaskCheck(); return; }
@@ -1477,6 +1491,12 @@ $('#side').addEventListener('input', e => {
   const t = e.target;
   if (t.id === 'slTempo') { tempo = parseFloat(t.value); $('#tempoLbl').textContent = tempoText(); const th = $('#tempoHint'); if (th) th.innerHTML = tempoHintHtml(); return; }
   if (t.id === 'slDot') { dotSpeed = parseFloat(t.value); return; }
+  if ((t.dataset.pu || t.dataset.pn) && sel && sel.t === 'part') {
+    const p = byPart(sel.id), x = parseFloat(String(t.value).replace(',', '.')); if (!p || !isFinite(x)) return;
+    const u = posUnit(p), v = clamp(u.from(clamp(x, u.min, u.max)), 0, 1); setPos(p, v); try { localStorage.setItem((SK + 'cur'), snap()); } catch (_) {} draw();
+    const box = t.closest('.sl'), em = box.querySelector('em'); if (em) em.textContent = posText(u, v); box.querySelectorAll('input').forEach(i => { if (i !== t) i.value = posNum(u, v); });
+    return;
+  }
   if (t.dataset.p && sel && sel.t === 'part') {
     const p = byPart(sel.id), key = t.dataset.p; let v = t.value;
     if (key === 'l') { p.l = v; commit(true, true); draw(); return; }
@@ -1636,6 +1656,30 @@ function initDock() {
   $('#serSend').onclick = send; $('#serIn').addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
   syncCode();
 }
+
+
+/* ============ Regler in echten Einheiten ============ */
+/* Jeder Regler speichert intern 0 bis 1 (pos). Angezeigt und eingestellt wird wahlweise in der echten Größe (°C, cm, lx, V, Ω) oder in Prozent. */
+const PCT = { id: 'pct', u: '%', min: 0, max: 100, step: 1, to: v => v * 100, from: x => x / 100 };
+const POSU = {
+  NTC: { id: 't', u: '°C', min: -20, max: 120, step: 1, to: v => -20 + 140 * v, from: x => (x + 20) / 140 },
+  TMP36: { id: 't', u: '°C', min: -40, max: 125, step: 1, to: v => -40 + 165 * v, from: x => (x + 40) / 165 },
+  I2CTEMP: { id: 't', u: '°C', min: -25, max: 100, step: 0.5, to: v => -25 + 125 * v, from: x => (x + 25) / 125 },
+  HCSR04: { id: 'cm', u: 'cm', min: 2, max: 400, step: 1, to: v => 2 + 398 * v, from: x => (x - 2) / 398 },
+  I2CLUX: { id: 'lx', u: 'lx', min: 0, max: 2000, step: 10, to: v => 2000 * v * v, from: x => Math.sqrt(Math.max(x, 0) / 2000) },
+  PIEZO: { id: 'v', u: 'V', min: 0, max: 5, step: 0.1, to: v => 5 * v, from: x => x / 5 },
+};
+POSU.PTC = POSU.NTC;
+function posUnits(p) {
+  if (p.k === 'POT') { const R = protoNum(p.v); if (isFinite(R) && R > 0) { const kk = R >= 1000, sc = kk ? 1000 : 1; return [{ id: 'r', u: kk ? 'kΩ' : 'Ω', min: 0, max: R / sc, step: R / sc / 100, to: v => v * R / sc, from: x => x * sc / R }, PCT]; } }
+  return POSU[p.k] ? [POSU[p.k], PCT] : [PCT];
+}
+function posUnit(p) { const us = posUnits(p); let m = {}; try { m = JSON.parse(localStorage.getItem('lm4.posunit') || '{}'); } catch (e) {} return us.find(x => x.id === m[p.k]) || us[0]; }
+function posUnitNext(p) { const us = posUnits(p), cur = posUnit(p), nx = us[(us.findIndex(x => x.id === cur.id) + 1) % us.length]; let m = {}; try { m = JSON.parse(localStorage.getItem('lm4.posunit') || '{}'); } catch (e) {} m[p.k] = nx.id; try { localStorage.setItem('lm4.posunit', JSON.stringify(m)); } catch (e) {} }
+const posVal = p => clamp(p.pos == null ? (KINDS[p.k].pos0 != null ? KINDS[p.k].pos0 : 0.5) : p.pos, 0, 1);
+const posNum = (u, v) => { const x = u.to(v), dg = u.step >= 1 ? 0 : (u.step >= 0.1 ? 1 : 2); return x.toFixed(dg); };
+const posText = (u, v) => posNum(u, v).replace('.', ',') + ' ' + u.u;
+function setPos(p, v) { p.pos = v; const w = wrapMap.get(p.id); if (w) { w.pos = v; w.light = v; } }
 
 /* ============ Multimeter (Spannung und Strom messen) ============ */
 let meter = { mode: 'V', a: null, b: null, part: null, dc: 0, ac: 0, init: false };

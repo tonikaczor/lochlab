@@ -15,7 +15,7 @@ const VDIV = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20];
 let saved = null, lastFrame = 0, lastPanel = 0, simAct = null, selSim = null;
 let dtBase = 2e-4;
 
-window.LochSimDebug = () => ({ simOn, running, simTool, probe, ampPart, scope: JSON.parse(JSON.stringify(scope.ch)), t: sim && sim.t, N: circ && circ.nn, elems: circ && circ.elems.map(e => ({ type: e.type, part: e.part && e.part.k, a: e.a, b: e.b, closed: e.closed, i: e.i })) });
+window.LochSimDebug = () => ({ select: id => { selSim = id; sel = id; buildPanel(); }, simOn, running, simTool, probe, ampPart, scope: JSON.parse(JSON.stringify(scope.ch)), t: sim && sim.t, N: circ && circ.nn, elems: circ && circ.elems.map(e => ({ type: e.type, part: e.part && e.part.k, a: e.a, b: e.b, closed: e.closed, i: e.i })) });
 /* ---------- Hilfen ---------- */
 const clampN = (v, a, b) => Math.max(a, Math.min(b, v));
 function fmt(v, unit) {
@@ -106,7 +106,7 @@ function mcuStep() {
   if (er) { prog.err = er; serLog += '⚠ Fehler in Zeile ' + er.line + ': ' + (er.type ? er.type + ': ' : '') + (er.msg || er.m || '') + '\n'; }
   else if (prog.runner.done) prog.err = { msg: 'Programmende' };
 }
-window.LochSimDebug = () => ({ run: (T, hook) => { const n = Math.round(T / dtBase); for (let i = 0; i < n; i++) { if (prog) mcuStep(); sim.step(dtBase); if (hook) hook(sim.t); } }, circ, sim, prog, serLog, simOn, running, items: doc.items.filter(i => i.t === 'part').map(i => ({ k: i.k, l: i.l, b: i._b })) });
+window.LochSimDebug = () => ({ select: id => { selSim = id; sel = id; buildPanel(); }, run: (T, hook) => { const n = Math.round(T / dtBase); for (let i = 0; i < n; i++) { if (prog) mcuStep(); sim.step(dtBase); if (hook) hook(sim.t); } }, circ, sim, prog, serLog, simOn, running, items: doc.items.filter(i => i.t === 'part').map(i => ({ k: i.k, l: i.l, b: i._b })) });
 function mcuTone() {
   if (!window.LochFX) return;
   const mm = circ && circ.mcu && circ.mcu.mcu; let f = 0;
@@ -452,14 +452,35 @@ function autoScope() {
   buf.n = 0; buf.head = 0; buf.last = -1;
 }
 
+
+/* ---------- Regler in echten Einheiten (°C, cm, lx, Ω) oder Prozent, Auswahl wird gemerkt ---------- */
+const UPCT = { id: 'pct', u: '%', min: 0, max: 100, step: 1, to: v => v * 100, from: x => x / 100 };
+const UPOS = {
+  NTC: { id: 't', u: '°C', min: -20, max: 120, step: 1, to: v => -20 + 140 * v, from: x => (x + 20) / 140 },
+  TMP36: { id: 't', u: '°C', min: -40, max: 125, step: 1, to: v => -40 + 165 * v, from: x => (x + 40) / 165 },
+  I2CTEMP: { id: 't', u: '°C', min: -25, max: 100, step: 0.5, to: v => -25 + 125 * v, from: x => (x + 25) / 125 },
+  HCSR04: { id: 'cm', u: 'cm', min: 2, max: 400, step: 1, to: v => 2 + 398 * v, from: x => (x - 2) / 398 },
+  I2CLUX: { id: 'lx', u: 'lx', min: 0, max: 2000, step: 10, to: v => 2000 * v * v, from: x => Math.sqrt(Math.max(x, 0) / 2000) },
+};
+UPOS.PTC = UPOS.NTC;
+const uKey = it => (sipOf(it) ? sipOf(it).core : it.k);
+function uSI(str) { const m = String(str == null ? '' : str).trim().replace(',', '.').match(/^([0-9]*\.?[0-9]+)\s*([kKMm]?)/); return m ? parseFloat(m[1]) * ({ k: 1e3, K: 1e3, M: 1e6, m: 1e-3 }[m[2]] || 1) : NaN; }
+function uUnits(it) {
+  if (it.k === 'P' || it.k === 'TP') { const R = uSI(it.v); if (isFinite(R) && R > 0) { const kk = R >= 1000, sc = kk ? 1000 : 1; return [{ id: 'r', u: kk ? 'kΩ' : 'Ω', min: 0, max: R / sc, step: R / sc / 100, to: v => v * R / sc, from: x => x * sc / R }, UPCT]; } }
+  return UPOS[uKey(it)] ? [UPOS[uKey(it)], UPCT] : [UPCT];
+}
+function uCur(it) { const us = uUnits(it); let m = {}; try { m = JSON.parse(localStorage.getItem('lm4.posunit') || '{}'); } catch (e) {} return us.find(x => x.id === m[uKey(it)]) || us[0]; }
+function uNext(it) { const us = uUnits(it), cur = uCur(it), nx = us[(us.findIndex(x => x.id === cur.id) + 1) % us.length]; let m = {}; try { m = JSON.parse(localStorage.getItem('lm4.posunit') || '{}'); } catch (e) {} m[uKey(it)] = nx.id; try { localStorage.setItem('lm4.posunit', JSON.stringify(m)); } catch (e) {} }
+const uNum = (u, v) => u.to(v).toFixed(u.step >= 1 ? 0 : (u.step >= 0.1 ? 1 : 2));
+
 /* ---------- Seitenleiste: Messgeräte und Bauteil-Info ---------- */
 function buildPanel() {
   const sd = $('#side');
   const sel_ = selSim != null ? byId(selSim) : null;
   let slider = '';
   if (sel_ && hasSlide(sel_)) {
-    const w = wrap.get(sel_.id), isL = sel_.k === 'LDR', val = Math.round((isL ? w.light : w.pos) * 100), lbl = sipOf(sel_) ? sipOf(sel_).sl : (isL || sel_.k === 'PHT' ? 'Helligkeit' : (sel_.k === 'NTC' || sel_.k === 'PTC' ? 'Temperatur' : 'Schleifer'));
-    slider = `<div class="kv"><span>${lbl}</span><span id="slv">${val} %</span></div><input type="range" id="slr" min="0" max="100" value="${val}" aria-label="${isL ? 'Helligkeit' : 'Schleiferstellung'}">`;
+    const w = wrap.get(sel_.id), isL = sel_.k === 'LDR', v0 = isL ? w.light : w.pos, u = uCur(sel_), multi = uUnits(sel_).length > 1, val = uNum(u, v0), lbl = sipOf(sel_) ? sipOf(sel_).sl : (isL || sel_.k === 'PHT' ? 'Helligkeit' : (sel_.k === 'NTC' || sel_.k === 'PTC' ? 'Temperatur' : 'Schleifer'));
+    slider = `<div class="kv"><span>${lbl}</span><span id="slv">${val.replace('.', ',')} ${u.u}</span></div><div style="display:flex;gap:6px;align-items:center"><input type="range" id="slr" min="${u.min}" max="${u.max}" step="${u.step}" value="${val}" aria-label="${isL ? 'Helligkeit' : 'Schleiferstellung'}" style="flex:1;min-width:0"><input type="number" id="sln" min="${u.min}" max="${u.max}" step="${u.step}" value="${val}" style="width:72px" aria-label="Wert"></div>${multi ? `<button class="btn" id="slu" style="margin-top:6px">Einheit wechseln: ${u.u} → ${uUnits(sel_).find(q => q.id !== u.id).u}</button>` : ''}`;
   }
   sd.innerHTML = `
     <div class="sp-top"><b id="spT">t = 0 s</b><span id="spS"></span></div>
@@ -473,12 +494,17 @@ function buildPanel() {
       <div class="scrow"><button class="mini" data-s="auto" style="flex:1">Automatisch einstellen</button></div>
     </div>
     <div class="card"><h4>Bauteil</h4><div id="spP"></div>${slider}</div>`;
-  const r = $('#slr');
-  if (r) r.addEventListener('input', () => {
-    const w = wrap.get(sel_.id), v = r.value / 100;
+  const r = $('#slr'), nIn = $('#sln'), uBtn = $('#slu');
+  const applyPos = (x, from) => {
+    const w = wrap.get(sel_.id), u = uCur(sel_); if (!isFinite(x)) return;
+    const v = Math.max(0, Math.min(1, u.from(Math.max(u.min, Math.min(u.max, x)))));
     if (sel_.k === 'LDR') { w.light = v; sel_.light = v; } else { w.pos = v; sel_.pos = v; }
-    $('#slv').textContent = r.value + ' %';
-  });
+    $('#slv').textContent = uNum(u, v).replace('.', ',') + ' ' + u.u;
+    if (from !== 'r') r.value = uNum(u, v); if (from !== 'n') nIn.value = uNum(u, v);
+  };
+  if (r) r.addEventListener('input', () => applyPos(parseFloat(r.value), 'r'));
+  if (nIn) nIn.addEventListener('input', () => applyPos(parseFloat(String(nIn.value).replace(',', '.')), 'n'));
+  if (uBtn) uBtn.addEventListener('click', () => { uNext(sel_); buildPanel(); });
   sd.classList.add('on');
   updatePanel(true);
 }
