@@ -629,8 +629,10 @@ function invalidate(){dirty=true;}
 (function loop(){if(dirty){dirty=false;render();}requestAnimationFrame(loop);})();
 
 function resize(){
-  const r=cv.getBoundingClientRect();dpr=window.devicePixelRatio||1;
-  cv.width=Math.round(r.width*dpr);cv.height=Math.round(r.height*dpr);invalidate();
+  const r=cv.getBoundingClientRect(),nd=window.devicePixelRatio||1,w=Math.round(r.width*nd),h=Math.round(r.height*nd);
+  if(w===cv.width&&h===cv.height&&nd===dpr)return;
+  dpr=nd;cv.width=w;cv.height=h;invalidate();
+  try{render();dirty=false;}catch(e){}
 }
 function fit(){
   const r=cv.getBoundingClientRect();if(!r.width||!doc)return;

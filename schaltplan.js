@@ -216,7 +216,7 @@ function toCore(p) {
 }
 function rebuild() {
   instrPeak.clear(); instrCache.clear();
-  const old = circ && sim ? { elems: circ.elems, t: sim.t } : null;
+  const old = circ && sim ? { elems: circ.elems, t: sim.t } : null, oldBuf = scopeBuf;
   wrapMap.clear();
   const parts = [], ground = [];
   sch.parts.forEach(p => {
@@ -230,8 +230,11 @@ function rebuild() {
     circ.elems.forEach(e => { const o = find(e); if (!o) return; if (e.type === 'C') e.vprev = o.vprev; if (e.type === 'L') e.iprev = o.iprev; });
     sim.t = old.t;
   }
-  scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] }));
+  /* Beim Bearbeiten (Absetzen, Verschieben, Draht) bleiben Kurven und Anzeige erhalten, sonst blitzt für einen Moment ein zurückgesetztes Bild auf */
+  const keep = old && oldBuf && oldBuf.length === sch.scopes.length;
+  scopeBuf = sch.scopes.map((_, i) => (keep ? oldBuf[i] : { t: [], v: [], i: [] }));
   flows.clear();
+  if (old && !prog) { try { for (let k = 0; k < 6; k++) sim.step(1e-6); computeFlows(); } catch (e) {} }
 }
 const sv = key => { const n = circ ? circ.nodeOfKey(key) : -1; return n < 0 || !sim ? NaN : sim.v[n]; };
 const hasGround = () => sch.parts.some(p => p.k === 'GND' || p.k === 'NETZ' || p.k === 'NETZ3' || p.k === 'UNO' || p.k === 'PI');
@@ -407,7 +410,13 @@ const cv = $('#cv');
 let cx = cv.getContext('2d');
 let PRINT = false;
 let dpr = 1;
-function resize() { const r = cv.getBoundingClientRect(); dpr = window.devicePixelRatio || 1; cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr); draw(); }
+/* Zeichenfläche nur bei echter Größenänderung neu setzen (das Setzen von width löscht die Fläche) und sofort neu zeichnen, sonst blitzt ein leeres Bild auf */
+function resize() {
+  const r = cv.getBoundingClientRect(), nd = window.devicePixelRatio || 1, w = Math.round(r.width * nd), h = Math.round(r.height * nd);
+  if (w === cv.width && h === cv.height && nd === dpr) return;
+  dpr = nd; cv.width = w; cv.height = h; dirtyDraw = true;
+  try { render(); dirtyDraw = false; } catch (e) {}
+}
 new ResizeObserver(resize).observe(cv);
 const X = x => view.ox + x * view.s, Y = y => view.oy + y * view.s;
 const toGrid = (sx, sy) => [(sx - view.ox) / view.s, (sy - view.oy) / view.s];
