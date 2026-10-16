@@ -1336,6 +1336,7 @@ function refreshUI() {
     <div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Stopp' : '▶ Start'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>
     <div class="kv"><span>Zeit</span><b id="tLbl">${fmtT(sim ? sim.t : 0)}</b></div>
     <label class="sl"><span>Tempo<em id="tempoLbl">${tempoText()}</em></span><input type="range" id="slTempo" min="0" max="1" step="0.005" value="${tempo}"></label>
+    <div id="tempoHint">${tempoHintHtml()}</div>
     <label class="sl"><span>Strompunkte</span><input type="range" id="slDot" min="0" max="1" step="0.01" value="${dotSpeed}"></label>
     <div class="kv"><span>Graph-Zeitfenster</span><span>${[0.001, 0.01, 0.1, 1, 10].map(w => `<button class="mini ${Math.abs(w - graphWin) < 1e-9 ? 'on' : ''}" data-win="${w}">${w >= 1 ? w + ' s' : w * 1000 + ' ms'}</button>`).join('')}</span></div>
   </div><div id="warn"></div>`;
@@ -1371,12 +1372,18 @@ function refreshUI() {
   side.innerHTML = h; side.classList.toggle('quiet', !sch.task && !simMode);
 }
 const fmtT = t => (t < 1e-3 ? (t * 1e6).toFixed(1) + ' µs' : t < 1 ? (t * 1e3).toFixed(2) + ' ms' : t.toFixed(3) + ' s');
+/* Hinweis bei niedrigem Tempo: Relais, Schütze und Thyristoren brauchen einige Millisekunden Simulationszeit, bei 4 ms pro Sekunde also mehrere Sekunden */
+function tempoHintHtml() {
+  if (rateOf(tempo) >= 0.03 || !sch.parts.some(p => ['IMP', 'RLY', 'SCHUETZ', 'THY', 'TRIAC', 'TRF'].includes(p.k))) return '';
+  return '<p class="hint2" style="margin:2px 0 8px">Das Tempo ist niedrig: Relais und Schütze brauchen etwas Simulationszeit und reagieren deshalb erst nach einigen Sekunden. <button class="btn" data-a="faster" style="margin-top:4px">Schneller stellen</button></p>';
+}
 const tempoText = () => { const r = rateOf(tempo); return r < 1e-3 ? (r * 1e6).toFixed(0) + ' µs/s' : r < 1 ? (r * 1e3).toFixed(1) + ' ms/s' : r.toFixed(1) + ' s/s'; };
 $('#side').addEventListener('click', e => {
   const b = e.target.closest('[data-a],[data-win]'); if (!b) return;
   if (b.dataset.win) { graphWin = parseFloat(b.dataset.win); scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; refreshUI(); return; }
   const a = b.dataset.a;
   if (a === 'mmV') { meter.mode = 'V'; meterReset(); refreshUI(); return; }
+  if (a === 'faster') { tempo = Math.min(1, Math.max(tempo + 0.1, 0.62)); refreshUI(); return; }
   if (a === 'mmA') { meter.mode = 'A'; meterReset(); refreshUI(); return; }
   if (a === 'tcheck') { runTaskCheck(); return; }
   if (a === 'treport') { reportFault(); return; }
@@ -1392,7 +1399,7 @@ $('#side').addEventListener('click', e => {
 });
 $('#side').addEventListener('input', e => {
   const t = e.target;
-  if (t.id === 'slTempo') { tempo = parseFloat(t.value); $('#tempoLbl').textContent = tempoText(); return; }
+  if (t.id === 'slTempo') { tempo = parseFloat(t.value); $('#tempoLbl').textContent = tempoText(); const th = $('#tempoHint'); if (th) th.innerHTML = tempoHintHtml(); return; }
   if (t.id === 'slDot') { dotSpeed = parseFloat(t.value); return; }
   if (t.dataset.p && sel && sel.t === 'part') {
     const p = byPart(sel.id), key = t.dataset.p; let v = t.value;
