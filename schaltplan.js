@@ -1029,7 +1029,7 @@ function setSlide(h, px) {
 /* ============ Wasser-Ansicht: Strom als Wasser im Rohr, Spannung als Druck ============ */
 let water = false; try { water = localStorage.getItem('lm4.water') === '1'; } catch (e) {}
 const waterOn = () => water && showSim();
-function setWater(on) { water = on; try { localStorage.setItem('lm4.water', on ? '1' : '0'); } catch (e) {} const b = $('[data-a="water"]'); if (b) b.textContent = on ? '💧 Wasser-Ansicht: an' : '💧 Wasser-Ansicht'; dirtyDraw = true; draw(); toast(on ? 'Wasser-Ansicht: Spannung = Druck, Strom = Strömung' : 'Normale Ansicht'); }
+function setWater(on) { water = on; try { localStorage.setItem('lm4.water', on ? '1' : '0'); } catch (e) {} const ws = $('#bWater'); if (ws) ws.setAttribute('aria-checked', on ? 'true' : 'false'); const b = $('[data-a="water"]'); if (b) b.textContent = on ? '💧 Wasser-Ansicht: an' : '💧 Wasser-Ansicht'; dirtyDraw = true; draw(); toast(on ? 'Wasser-Ansicht: Spannung = Druck, Strom = Strömung' : 'Normale Ansicht'); }
 function waterPipe(x1, y1, x2, y2, v) {
   const f = Math.max(-1, Math.min(1, v / Math.max(vmax, 0.05))), a = 0.18 + 0.78 * Math.abs(f), lw = Math.max(7, view.s * 0.34);
   cx.lineCap = 'round'; cx.lineWidth = lw + 3; cx.strokeStyle = '#4a5560'; cx.beginPath(); cx.moveTo(X(x1), Y(y1)); cx.lineTo(X(x2), Y(y2)); cx.stroke();
@@ -1550,7 +1550,7 @@ function setSimModeNow(on) {
   if (on) { tool = 'select'; rebuild(); sim.reset(); phase.clear(); lastSample = -1; running = true; lastFrame = performance.now(); startProgram(); }
   else { running = false; tool = 'select'; prog = null; if (window.LochFX) LochFX.toneOff(); }
   const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', on ? 'true' : 'false');
-  $('#bRun').style.display = on ? '' : 'none';
+  $('#bRun').style.display = on ? '' : 'none'; { const ws = $('#bWater'); if (ws) ws.style.display = on ? '' : 'none'; }
   if (window.LochFX) { LochFX.showBtn(on); LochFX.clear(); if (on) LochFX.unlock(); }
   buildPalette(); refreshUI(); draw();
 }
@@ -3624,7 +3624,7 @@ function loadCircuit(d) {
   sch.nid = Math.max(sch.nid, 1 + Math.max(0, ...sch.parts.map(p => p.id || 0), ...sch.wires.map(w => w.id || 0)));
   circ = null; sim = null; phase.clear(); lastSample = -1; rebuild(); hist = [snap()]; hi = 0;
   try { localStorage.setItem((SK + 'cur'), snap()); } catch (e) {}
-  { const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', 'false'); $('#bRun').style.display = 'none'; }
+  { const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', 'false'); $('#bRun').style.display = 'none'; const ws = $('#bWater'); if (ws) ws.style.display = 'none'; }
   setTool('select'); fit(); refreshUI(); draw(); syncCode();
 }
 function openExamples() {
@@ -4215,6 +4215,17 @@ simsw.className = 'simsw'; simsw.id = 'bSim'; simsw.setAttribute('role', 'switch
 simsw.innerHTML = '<span class="lL">Zeichnen</span><span class="trk"><span class="knob"></span></span><span class="lS">Sim</span>';
 $('#bUndo').before(simsw);
 simsw.addEventListener('click', () => setSimMode(!simMode));
+/* Zweiter Schalter in der Kopfleiste: Wasser-Ansicht (blau), erscheint nur bei eingeschalteter Simulation */
+{
+  const st = document.createElement('style');
+  st.textContent = '.watersw .trk{position:relative;width:38px;height:22px;border-radius:11px;background:#4a5561;transition:background .15s}.watersw .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}.watersw[aria-checked=true] .trk{background:#2f8dff}.watersw[aria-checked=true] .knob{left:18px}.watersw .lL{color:#8d99a6}.watersw[aria-checked=true] .lL{color:#fff;font-weight:600}@media(max-width:560px){.watersw .lL span{display:none}}';
+  document.head.appendChild(st);
+  const wsw = document.createElement('button');
+  wsw.className = 'simsw watersw'; wsw.id = 'bWater'; wsw.setAttribute('role', 'switch'); wsw.setAttribute('aria-checked', water ? 'true' : 'false'); wsw.setAttribute('aria-label', 'Wasser-Ansicht'); wsw.title = 'Wasser-Ansicht: Strom als Wasser, Spannung als Druck'; wsw.style.display = 'none';
+  wsw.innerHTML = '<span class="lL">💧<span> Wasser</span></span><span class="trk"><span class="knob"></span></span>';
+  simsw.after(wsw);
+  wsw.addEventListener('click', () => setWater(!water));
+}
 $('#bRun').style.display = 'none';
 $('#bShare').onclick = () => menuAct('share'); $('#bTasks').style.display = ''; $('#bTasks').onclick = openTasks; if (LAB === 'sim') { $('#bCab').style.display = ''; $('#bCab').onclick = openCabinet; const pp = $('#bPP'); if (pp) { pp.style.display = ''; pp.onclick = () => window.Pruefplatz && window.Pruefplatz.open(); } } $('#bEx').onclick = () => menuAct('ex'); $('#bOpen').onclick = () => menuAct('open'); $('#bPrint').onclick = () => menuAct('print');
 $('#bRun').onclick = toggleRun; $('#bUndo').onclick = undo; $('#bRedo').onclick = redo; $('#bMenu').onclick = openMenu;

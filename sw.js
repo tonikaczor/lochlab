@@ -1,4 +1,4 @@
-const CACHE = 'lochlab-v5.105';
+const CACHE = 'lochlab-v5.106';
 const FILES = ['./', './index.html', './layout.html', './schaltplan.html', './simlab.html', './codelab.html', './arduino.js', './pyrun.js', './mcuio.js', './lochtasks.js', './keys.js', './rechner.js', './auswertung.js', './panels.js', './export.js', './badges.js', './predict.js', './speak.js', './tonwerkstatt.js', './qr.js', './jsqr.js', './auswertung.html', './aufgaben.js', './pruefplatz.js', './ver.js', './pilab.html', './beispiele.js', './anleitung.html', './lernen.html', './lernen-arduino.html', './projekt-ampel.html', './projekt-daemmerung.html', './projekt-netzteil.html', './lernen-loch.html', './lernen-schalt.html', './lernen-sim.html', './lernen-pi.html', './pi-sd-karte.html', './ausbilder.html', './lochbeispiele.js', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './logo.png', './logo-full.png', './fx.js', './simics.js', './simcore.js', './simui.js', './schaltplan.js'];
 
 self.addEventListener('install', e => {
