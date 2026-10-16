@@ -1381,7 +1381,7 @@ $('#side').addEventListener('click', e => {
   if (a === 'tcheck') { runTaskCheck(); return; }
   if (a === 'treport') { reportFault(); return; }
   if (a === 'thand') { const t = TASKS.find(x => x.id === sch.task); if (t && window.Auswertung) window.Auswertung.handIn(t.id, taskDone()[t.id] || 0, t.title); return; }
-  if (a === 'thint') { const t = TASKS.find(x => x.id === sch.task); if (t) sheet('Tipp', bb => { bb.innerHTML = '<p style="margin-top:0">' + esc(t.hint) + '</p>'; }); return; }
+  if (a === 'thint') { const t = TASKS.find(x => x.id === sch.task); if (t) taskHint(t); return; }
   if (a === 'tstop') { sch.task = undefined; taskRes = null; commit(true, true); refreshUI(); return; }
   if (a === 'preset') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) { p0.v = b.dataset.v; commit(true, true); rebuildKeep(); refreshUI(); } return; }
   if (a === 'wcol') { const w = sel && sel.t === 'wire' && byWire(sel.id); wireColor = b.dataset.c; if (w) { w.c = wireColor; commit(true); } refreshUI(); draw(); return; }
@@ -1461,7 +1461,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -2684,8 +2684,23 @@ function reportFault() {
   if (ok) { markDone(t.id, Math.max(30, 100 - 20 * (reports - 1))); logResult(t.id, Math.max(30, 100 - 20 * (reports - 1)), { versuche: reports }); reports = 0; if (window.LochFX) LochFX.sound('pop'); }
   refreshUI();
 }
+/* Tipp-Stufen für Aufgaben: 1 Tipp, 2 konkreter Hinweis (erster offener Prüfpunkt bzw. Bauteiltyp des Fehlers), 3 Musterlösung bzw. defektes Bauteil */
+function taskHint(t) {
+  if (!window.Auswertung) { sheet('Tipp', bb => { bb.innerHTML = '<p style="margin-top:0">' + esc(t.hint) + '</p>'; }); return; }
+  window.Auswertung.hint({
+    id: t.id, hint: t.hint,
+    concrete: () => {
+      if (t.debug) { const p = sch.parts.find(q => q.l === t.faultLabel); return p ? 'Das defekte Bauteil ist vom Typ „' + KD(p).name + '“. Miss dort Spannung und Strom und vergleiche sie mit dem, was du erwartest.' : 'Miss Spannungen und Ströme an mehreren Stellen und vergleiche sie mit dem, was du erwartest.'; }
+      const lines = t.check(), bad = lines.find(l => !l.ok);
+      return bad ? 'Noch nicht erfüllt: ' + bad.text : 'Alle Prüfpunkte sind erfüllt. Tippe auf „Lösung prüfen“.';
+    },
+    reveal: t.debug ? () => 'Das defekte Bauteil ist ' + t.faultLabel + '.' : null,
+    solution: t.debug ? null : () => { const go = () => startTask(t.id, true); if (sch.parts.length || sch.wires.length) confirmNew(go); else go(); },
+  });
+}
 function startTask(id, solution) {
   const t = TASKS.find(x => x.id === id); if (!t) return;
+  if (!solution && window.Auswertung) window.Auswertung.hintReset(id);
   const mk = solution ? (t.solMake || exOf(t.sol)) : t.start; if (!mk) { toast('Keine Musterlösung hinterlegt'); return; }
   const ex = buildExample({ name: t.title + (solution ? ' (Musterlösung)' : ''), make: mk }); ex.task = solution ? undefined : t.id; loadCircuit(ex); reports = 0;
   if (!solution) { tool = 'select'; buildPalette(); }
@@ -2744,6 +2759,77 @@ function openTeacher() {
     b.querySelector('#tCopy').onclick = async () => { const a = classList(), txt = 'Name\tAufgabe\tErgebnis\tZeit\n' + a.map(r => [r.name || '', (TASKS.find(t => t.id === r.task) || {}).title || r.task, r.pct + ' %', new Date(r.t).toLocaleString('de-DE')].join('\t')).join('\n'); try { await navigator.clipboard.writeText(txt); toast('Tabelle kopiert (in Excel einfügbar)'); } catch (e) { toast('Kopieren nicht möglich'); } };
     b.querySelector('#tClr').onclick = () => { try { localStorage.removeItem('sim.class'); } catch (e) {} showCls(); };
   }));
+}
+
+
+/* ============ Messprotokoll: Soll berechnen, messen, vergleichen, drucken ============ */
+const PROTO_KEY = 'sim.proto';
+const protoLoad = () => { try { const o = JSON.parse(localStorage.getItem(PROTO_KEY) || '{}'); return { tol: o.tol || 5, rows: Array.isArray(o.rows) ? o.rows : [] }; } catch (e) { return { tol: 5, rows: [] }; } };
+const protoSave = p => { try { localStorage.setItem(PROTO_KEY, JSON.stringify(p)); } catch (e) {} };
+/* Zahl mit Komma und Vorsatz lesen: "4,7k" → 4700, "12m" → 0.012 (der Vorsatz ist hier immer ein Zehnerpotenz-Faktor) */
+function protoNum(s) {
+  const m = String(s == null ? '' : s).trim().replace(',', '.').match(/^(-?[0-9]*\.?[0-9]+(?:e-?[0-9]+)?)\s*([pnuµmkKMG]?)/);
+  if (!m) return NaN;
+  const f = { p: 1e-12, n: 1e-9, u: 1e-6, 'µ': 1e-6, m: 1e-3, k: 1e3, K: 1e3, M: 1e6, G: 1e9 }[m[2]] || 1;
+  return parseFloat(m[1]) * f;
+}
+function protoEval(r, tol) {
+  const s = protoNum(r.s), i = protoNum(r.i);
+  if (!isFinite(s) || !isFinite(i)) return null;
+  const dev = s === 0 ? (Math.abs(i) <= 0.05 ? 0 : 100) : (i - s) / Math.abs(s) * 100;
+  return { dev, ok: Math.abs(dev) <= tol };
+}
+const protoFmtN = v => { const a = Math.abs(v); return String(a >= 100 ? Math.round(v) : parseFloat(v.toPrecision(3))).replace('.', ','); };
+function protoFromMeter() {
+  if (!simMode || !circ) return null;
+  const m = meterValue(); if (!isFinite(m)) return null;
+  const val = meter.init ? Math.sqrt(Math.max(meter.dc * meter.dc + meter.ac, 0)) * (meter.dc < 0 && meter.ac < 1e-9 ? -1 : 1) : m;
+  if (meter.mode === 'A') return Math.abs(val) < 1 ? { v: protoFmtN(val * 1000), u: 'mA' } : { v: protoFmtN(val), u: 'A' };
+  return { v: protoFmtN(val), u: 'V' };
+}
+function protoPrint(p) {
+  const e = s => esc(String(s == null ? '' : s)), who = userName(), t = sch.task && TASKS.find(x => x.id === sch.task);
+  const rows = p.rows.slice(); while (rows.length < 8) rows.push({ w: '', u: '', s: '', i: '' });
+  const html = `<div class="proto"><h1>Messprotokoll</h1>
+    <table class="pi"><tr><td>Name</td><td>${e(who)}</td><td>Datum</td><td>${new Date().toLocaleDateString('de-DE')}</td></tr>
+    <tr><td>Schaltung</td><td>${e(sch.name)}</td><td>Aufgabe</td><td>${e(t ? t.title : '')}</td></tr></table>
+    <p>Toleranz für „in Ordnung“: ±${p.tol} %</p>
+    <table class="pm"><tr><th>Nr.</th><th>Messpunkt</th><th>Soll</th><th>Ist</th><th>Einheit</th><th>Abweichung</th><th>Bewertung</th></tr>${rows.map((r, k) => { const v = protoEval(r, p.tol); return `<tr><td>${k + 1}</td><td>${e(r.w)}</td><td>${e(r.s)}</td><td>${e(r.i)}</td><td>${e(r.u)}</td><td>${v ? (v.dev >= 0 ? '+' : '') + protoFmtN(v.dev) + ' %' : ''}</td><td>${v ? (v.ok ? 'in Ordnung' : 'außerhalb') : ''}</td></tr>`; }).join('')}</table>
+    <p><b>Auffälligkeiten und Fazit:</b></p><div class="ln"></div><div class="ln"></div><div class="ln"></div>
+    <table class="ps"><tr><td>Unterschrift Azubi</td><td>Unterschrift Ausbilder</td></tr></table></div>`;
+  const pa = document.getElementById('printArea'); if (!pa) return;
+  const old = pa.innerHTML; pa.innerHTML = html;
+  const done = () => { pa.innerHTML = old; window.removeEventListener('afterprint', done); };
+  window.addEventListener('afterprint', done); setTimeout(() => window.print(), 80);
+}
+function openProtocol() {
+  sheet('Messprotokoll', (b, close) => {
+    let p = protoLoad();
+    const draw = () => {
+      const unitOpts = u => ['V', 'mA', 'A', 'Ω', 'kΩ', 'Hz', 'W'].map(x => `<option${x === u ? ' selected' : ''}>${x}</option>`).join('');
+      let h = `<p class="hint2" style="margin-top:0">So geht es: 1. Sollwert <b>berechnen</b> (Rechner im Menü hilft). 2. In der Simulation mit dem Multimeter messen. 3. Mit „⤓“ den angezeigten Messwert übernehmen. 4. Abweichung beurteilen, drucken.</p>
+        <label class="f"><span>Toleranz „in Ordnung“</span><select id="pTol">${[2, 5, 10, 20].map(x => `<option value="${x}"${x === p.tol ? ' selected' : ''}>± ${x} %</option>`).join('')}</select></label>`;
+      p.rows.forEach((r, k) => {
+        const v = protoEval(r, p.tol);
+        h += `<div class="card" data-k="${k}" style="padding:8px 10px;margin:8px 0"><div style="display:flex;gap:6px;align-items:center"><b style="min-width:20px">${k + 1}.</b><input data-f="w" value="${esc(r.w)}" placeholder="Messpunkt, z. B. U über R2" style="flex:1;min-width:0"><button class="btn" data-a="del" aria-label="Zeile löschen">✕</button></div>
+          <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap"><input data-f="s" value="${esc(r.s)}" placeholder="Soll" inputmode="decimal" style="width:72px"><input data-f="i" value="${esc(r.i)}" placeholder="Ist" inputmode="decimal" style="width:72px"><select data-f="u">${unitOpts(r.u || 'V')}</select><button class="btn" data-a="take" title="Messwert aus dem Multimeter übernehmen">⤓ Messwert</button></div>
+          <div style="margin-top:4px;font-size:13px;color:${v ? (v.ok ? '#2fae45' : '#e05050') : 'var(--mute)'}">${v ? (v.ok ? '✓ in Ordnung' : '✗ außerhalb der Toleranz') + ' · Abweichung ' + (v.dev >= 0 ? '+' : '') + protoFmtN(v.dev) + ' %' : 'Soll und Ist eintragen'}</div></div>`;
+      });
+      h += `<div class="row2"><button class="btn" data-a="add">+ Zeile</button><button class="btn pri" data-a="print">Drucken</button><button class="btn danger" data-a="clr">Alles leeren</button></div>`;
+      b.innerHTML = h;
+    };
+    draw();
+    b.addEventListener('change', ev => { const t = ev.target; if (t.id === 'pTol') { p.tol = +t.value; protoSave(p); draw(); return; } const c = t.closest('[data-k]'); if (!c || !t.dataset.f) return; p.rows[+c.dataset.k][t.dataset.f] = t.value; protoSave(p); draw(); });
+    b.addEventListener('click', ev => {
+      const t = ev.target.closest('[data-a]'); if (!t) return; const c = t.closest('[data-k]'), k = c ? +c.dataset.k : -1, a = t.dataset.a;
+      if (a === 'add') { p.rows.push({ w: '', u: 'V', s: '', i: '' }); protoSave(p); draw(); }
+      else if (a === 'del') { p.rows.splice(k, 1); protoSave(p); draw(); }
+      else if (a === 'clr') { p = { tol: p.tol, rows: [] }; protoSave(p); draw(); }
+      else if (a === 'print') protoPrint(p);
+      else if (a === 'take') { const m = protoFromMeter(); if (!m) { toast('Starte die Simulation und miss mit dem Multimeter (Messen), dann übernimm den Wert'); return; } p.rows[k].i = m.v; p.rows[k].u = m.u; protoSave(p); draw(); }
+    });
+    if (!p.rows.length) { p.rows.push({ w: '', u: 'V', s: '', i: '' }); protoSave(p); draw(); }
+  });
 }
 
 /* ---- Brücke zum Lochraster-Layout (nur mit Freigabe) ---- */
@@ -2932,6 +3018,7 @@ function menuAct(m) {
   else if (m === 'keys') { if (window.LochKeys) window.LochKeys.help(); }
   else if (m === 'calc') { if (window.Rechner) window.Rechner.open(); }
   else if (m === 'erg') { if (window.Auswertung) window.Auswertung.openSend(); }
+  else if (m === 'proto') openProtocol();
   else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p><p><b>Tastenkürzel:</b> Taste <b>?</b> drücken oder im Menü „Tastenkürzel“. Zum Beispiel <b>R</b> Widerstand, <b>D</b> Diode, <b>L</b> LED, <b>W</b> Draht, <b>Eingabe</b> oder <b>F5</b> Simulation ein und aus.</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {

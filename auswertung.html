@@ -95,7 +95,7 @@ body.printqr #qrSheet{display:block!important}
       <button id="csv">CSV herunterladen</button><button id="prt">Drucken</button><button class="danger" id="clr">Alles löschen</button>
     </div>
     <div class="tw" style="margin-top:10px"><table id="tab"></table></div>
-    <p class="mute">Grün = 100 %, gelb = teilweise richtig, grau = noch nicht bearbeitet. Mit dem Mauszeiger über einer Spaltenüberschrift steht der volle Aufgabentitel.</p>
+    <p class="mute">Grün = 100 %, gelb = teilweise richtig, grau = noch nicht bearbeitet. Die kleine Zahl hochgestellt ist die höchste benutzte Tipp-Stufe (1 Tipp, 2 konkreter Hinweis, 3 Auflösung). Mit dem Mauszeiger über einer Spaltenüberschrift steht der volle Aufgabentitel.</p>
   </div>
 </main>
 <div id="qrSheet"></div>
@@ -122,7 +122,7 @@ function mergeClass(d) {
 }
 function addCodes(txt) {
   const list = Auswertung.parse(txt), d = load(); let n = 0;
-  list.forEach(o => { const nm = (o.n || '').trim() || 'ohne Namen'; const p = d[nm] = d[nm] || { t: 0, d: {} }; Object.keys(o.d).forEach(k => { p.d[k] = Math.max(p.d[k] || 0, Math.round(+o.d[k] || 0)); }); p.t = Math.max(p.t, o.t || 0); n++; });
+  list.forEach(o => { const nm = (o.n || '').trim() || 'ohne Namen'; const p = d[nm] = d[nm] || { t: 0, d: {}, h: {} }; p.h = p.h || {}; Object.keys(o.d).forEach(k => { const v = Math.round(+o.d[k] || 0), old = p.d[k] || 0; if (v >= old) p.h[k] = (o.h && o.h[k]) || 0; p.d[k] = Math.max(old, v); }); p.t = Math.max(p.t, o.t || 0); n++; });
   save(d); return n;
 }
 function render() {
@@ -134,14 +134,14 @@ function render() {
   const known = new Set(all.map(t => t[0]));
   if (lab === 'alle') used.forEach(k => { if (!known.has(k)) cols.push([k, '?', 'Unbekannt', k, 0]); });
   const order = Object.keys(labs); cols.sort((a, b) => order.indexOf(a[1]) - order.indexOf(b[1]));
-  let h = '<thead><tr><th class="name">Name</th><th>Fertig</th><th>Ø %</th>' + cols.map(t => `<th class="t" title="${esc((labs[t[1]] || '?') + ' · ' + t[2] + ' · ' + t[3])}"><span>${esc(({loch:'Loch',sch:'Schalt',sim:'Sim',code:'Ard',pi:'Pi'}[t[1]]||'?')+': '+t[3])}</span></th>`).join('') + '</tr></thead><tbody>';
+  let h = '<thead><tr><th class="name">Name</th><th>Fertig</th><th>Ø %</th><th title="Summe der benutzten Tipp-Stufen">Tipps</th>' + cols.map(t => `<th class="t" title="${esc((labs[t[1]] || '?') + ' · ' + t[2] + ' · ' + t[3])}"><span>${esc(({loch:'Loch',sch:'Schalt',sim:'Sim',code:'Ard',pi:'Pi'}[t[1]]||'?')+': '+t[3])}</span></th>`).join('') + '</tr></thead><tbody>';
   const colSum = cols.map(() => [0, 0]);
   names.forEach(n => {
-    const p = d[n].d; const vals = cols.map(t => p[t[0]]); const done = vals.filter(v => v >= 100).length, tried = vals.filter(v => v != null);
+    const p = d[n].d, hh = d[n].h || {}; const vals = cols.map(t => p[t[0]]); const done = vals.filter(v => v >= 100).length, tried = vals.filter(v => v != null), tipps = cols.reduce((s, t) => s + (p[t[0]] != null ? (hh[t[0]] || 0) : 0), 0);
     const avg = tried.length ? Math.round(tried.reduce((s, v) => s + v, 0) / tried.length) : 0;
-    h += `<tr><td class="name">${esc(n)}</td><td class="sum">${done}</td><td>${avg}</td>` + vals.map((v, i) => { if (v != null) { colSum[i][1]++; if (v >= 100) colSum[i][0]++; } return v == null ? '<td class="c p0"></td>' : `<td class="c ${v >= 100 ? 'p100' : 'pp'}">${v}</td>`; }).join('') + '</tr>';
+    h += `<tr><td class="name">${esc(n)}</td><td class="sum">${done}</td><td>${avg}</td><td>${tipps}</td>` + vals.map((v, i) => { if (v != null) { colSum[i][1]++; if (v >= 100) colSum[i][0]++; } const hs = hh[cols[i][0]] || 0; return v == null ? '<td class="c p0"></td>' : `<td class="c ${v >= 100 ? 'p100' : 'pp'}" title="${hs ? 'Tipp-Stufe ' + hs + ' von 3 benutzt' : 'ohne Tipp'}">${v}${hs ? '<sup>' + hs + '</sup>' : ''}</td>`; }).join('') + '</tr>';
   });
-  h += '</tbody><tfoot><tr><td class="name">Geschafft (100 %)</td><td></td><td></td>' + colSum.map(c => `<td>${c[0]}</td>`).join('') + '</tr></tfoot>';
+  h += '</tbody><tfoot><tr><td class="name">Geschafft (100 %)</td><td></td><td></td><td></td>' + colSum.map(c => `<td>${c[0]}</td>`).join('') + '</tr></tfoot>';
   $('#tab').innerHTML = names.length ? h : '<tbody><tr><td class="name">Noch keine Ergebnisse. Oben Codes einfügen.</td></tr></tbody>';
   $('#stand').textContent = names.length + ' Azubis · ' + cols.length + ' Aufgaben';
 }
@@ -150,8 +150,8 @@ function csv() {
   Object.values(d).forEach(p => Object.keys(p.d).forEach(k => used.add(k)));
   const cols = all.filter(t => used.has(t[0])), names = Object.keys(d).sort((a, b) => a.localeCompare(b, 'de'));
   const q = s => '"' + String(s).replace(/"/g, '""') + '"';
-  let out = ['Name', 'Fertig (100 %)'].concat(cols.map(t => (labs[t[1]] || '') + ': ' + t[3])).map(q).join(';') + '\n';
-  names.forEach(n => { const p = d[n].d; out += [q(n), cols.filter(t => (p[t[0]] || 0) >= 100).length].concat(cols.map(t => p[t[0]] == null ? '' : p[t[0]])).join(';') + '\n'; });
+  let out = ['Name', 'Fertig (100 %)', 'Tipp-Stufen gesamt'].concat(cols.map(t => (labs[t[1]] || '') + ': ' + t[3])).map(q).join(';') + '\n';
+  names.forEach(n => { const p = d[n].d, hh = d[n].h || {}; out += [q(n), cols.filter(t => (p[t[0]] || 0) >= 100).length, cols.reduce((s, t) => s + (p[t[0]] != null ? (hh[t[0]] || 0) : 0), 0)].concat(cols.map(t => p[t[0]] == null ? '' : p[t[0]])).join(';') + '\n'; });
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + out], { type: 'text/csv;charset=utf-8' })); a.download = 'Auswertung-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
 }
 const LABFILE = { loch: 'layout.html', sch: 'schaltplan.html', sim: 'simlab.html', code: 'codelab.html', pi: 'pilab.html' };
@@ -189,10 +189,10 @@ function copyText(txt, msg) { (navigator.clipboard ? navigator.clipboard.writeTe
 function summaryText() {
   const d = load(); mergeClass(d); const names = Object.keys(d).sort((a, b) => a.localeCompare(b, 'de')), L = window.AUFGABEN_LABS;
   let out = 'Auswertung Tonfunk Lab, Stand ' + new Date().toLocaleString('de-DE') + '\n';
-  names.forEach(n => { const p = d[n].d, ks = Object.keys(p), full = ks.filter(k => p[k] >= 100); out += '\n' + n + ': ' + full.length + ' von ' + ks.length + ' Aufgaben vollständig\n' + ks.map(k => '  ' + (p[k] >= 100 ? '✓' : '·') + ' ' + taskTitle(k) + ' (' + p[k] + ' %)').join('\n') + '\n'; });
+  names.forEach(n => { const p = d[n].d, ks = Object.keys(p), full = ks.filter(k => p[k] >= 100); out += '\n' + n + ': ' + full.length + ' von ' + ks.length + ' Aufgaben vollständig\n' + ks.map(k => '  ' + (p[k] >= 100 ? '✓' : '·') + ' ' + taskTitle(k) + ' (' + p[k] + ' %' + ((d[n].h || {})[k] ? ', Tipp-Stufe ' + d[n].h[k] : '') + ')').join('\n') + '\n'; });
   return out;
 }
-function transferText() { const d = load(); mergeClass(d); return Object.keys(d).map(n => 'TFL1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ n, t: d[n].t || Date.now(), d: d[n].d })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')).join('\n'); }
+function transferText() { const d = load(); mergeClass(d); return Object.keys(d).map(n => 'TFL1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ n, t: d[n].t || Date.now(), d: d[n].d, h: d[n].h || {} })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')).join('\n'); }
 function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); setTimeout(() => { o.stop(); a.close(); }, 120); } catch (e) {} }
 function stopScan() { if (raf) cancelAnimationFrame(raf); raf = 0; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; $('#vid').style.display = 'none'; $('#scanBtn').textContent = 'Kamera starten'; }
 async function startScan() {

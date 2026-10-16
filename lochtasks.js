@@ -167,7 +167,12 @@ function showCard() {
   card.onclick = e => {
     const a = e.target.dataset && e.target.dataset.a; if (!a) return;
     if (a === 'chk') runCheck(t);
-    else if (a === 'hint') sheet('Tipp', b => { b.innerHTML = `<p style="margin-top:0">${esc(t.hint)}</p>`; });
+    else if (a === 'hint') {
+      if (!window.Auswertung) { sheet('Tipp', b => { b.innerHTML = `<p style="margin-top:0">${esc(t.hint)}</p>`; }); return; }
+      window.Auswertung.hint({ id: t.id, hint: t.hint,
+        concrete: () => { const r = checkTask(t, doc), bad = r.lines.find(l => !l.ok); return bad ? 'Noch nicht erfüllt: ' + bad.text : 'Alle Prüfpunkte sind erfüllt. Tippe auf „Lösung prüfen“.'; },
+        solution: () => { try { save(); } catch (x) {} const s = clone(t.sol); s.id = uid(); s.name = 'Musterlösung: ' + t.title; s.updated = Date.now(); load(s); toast('Musterlösung geladen'); } });
+    }
     else if (a === 'hand') { if (window.Auswertung) window.Auswertung.handIn(t.id, done()[t.id] || 0, t.title); }
     else if (a === 'min') { card.classList.toggle('min'); e.target.textContent = card.classList.contains('min') ? 'Aufklappen' : 'Einklappen'; }
     else if (a === 'end') { delete doc.task; try { save(); } catch (x) {} showCard(); toast('Aufgabe beendet'); }
@@ -176,11 +181,12 @@ function showCard() {
 function runCheck(t) {
   const r = checkTask(t, doc), dn = done(); dn[t.id] = Math.max(dn[t.id] || 0, r.pct); store('lm4.tdone', dn);
   sheet('Prüfung: ' + t.title, b => {
-    b.innerHTML = `<div class="tres"><div class="pc" style="color:${r.ok ? '#4cd964' : '#ffb340'}">${r.ok ? '✓ Alles richtig' : r.pct + ' % richtig'}</div>${r.lines.map(l => `<div class="ln ${l.ok ? 'ok' : 'no'}"><i>${l.ok ? '✓' : '✗'}</i><span>${esc(l.text)}</span></div>`).join('')}</div>` + (r.ok ? '<p class="hint2">Super. Zum Abgeben: Menü → Teilen, Link an den Ausbilder schicken.</p>' : '<p class="hint2">Verbessere die Platine und prüfe nochmal. Du kannst beliebig oft prüfen.</p>');
+    b.innerHTML = `<div class="tres"><div class="pc" style="color:${r.ok ? '#4cd964' : '#ffb340'}">${r.ok ? '✓ Alles richtig' : r.pct + ' % richtig'}</div>${r.lines.map(l => `<div class="ln ${l.ok ? 'ok' : 'no'}"><i>${l.ok ? '✓' : '✗'}</i><span>${esc(l.text)}</span></div>`).join('')}</div>` + (r.ok ? '<p class="hint2">Super. Zum Abgeben tippe in der Aufgabenkarte auf „Abgeben“ und zeige den QR-Code deinem Ausbilder.</p>' : '<p class="hint2">Verbessere die Platine und prüfe nochmal. Du kannst beliebig oft prüfen.</p>');
   });
 }
 function startTask(id) {
   const t = byTask(id); if (!t) return;
+  if (window.Auswertung) window.Auswertung.hintReset(id);
   try { save(); } catch (e) {}
   const d = clone(t.start); d.id = uid(); d.name = 'Aufgabe: ' + t.title; d.task = t.id; d.updated = Date.now();
   load(d); showCard(); toast('Aufgabe geladen');
