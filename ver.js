@@ -1,6 +1,6 @@
 /* Versionsanzeige unten rechts über der Werkzeugleiste, auf der Startseite oben rechts. Bei jedem Release zusammen mit CACHE in sw.js erhöhen. */
 (function () {
-  var V = 'v5.97';   // 5 = Anzahl der Labs, 97 = laufende Versionsnummer
+  var V = 'v5.98';   // 5 = Anzahl der Labs, 98 = laufende Versionsnummer
   window.LAB_VERSION = V;
   var d;
   function place() {
@@ -13,7 +13,7 @@
   function add() {
     if (document.getElementById('verBadge')) return;
     var st = document.createElement('style');
-    st.textContent = '#verBadge{position:fixed;right:10px;bottom:3px;z-index:3;font:600 10px/1 system-ui,sans-serif;letter-spacing:.04em;color:#9aa6b2;opacity:.65;pointer-events:none;user-select:none}@media print{#verBadge{display:none}}';
+    st.textContent = '#verBadge{position:fixed;right:10px;bottom:3px;z-index:3;font:700 11px/1 system-ui,sans-serif;letter-spacing:.04em;color:#e3eaf1;background:rgba(14,17,21,.78);padding:4px 8px;border-radius:8px;pointer-events:none;user-select:none}@media print{#verBadge{display:none}}';
     document.head.appendChild(st);
     d = document.createElement('div'); d.id = 'verBadge'; d.textContent = 'Tonfunk Lab ' + V;
     document.body.appendChild(d); place();

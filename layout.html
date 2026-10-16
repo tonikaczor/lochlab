@@ -19,15 +19,15 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px/1.3 -apple-system,system-ui,"Segoe UI",sans-serif;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left)}
-header{--panel:#1b1f24;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--line:#38424d;--accent:#3b9eff;display:flex;align-items:center;gap:2px;padding:calc(4px + env(safe-area-inset-top)) 8px 4px;background:var(--panel);color:var(--fg);border-bottom:1px solid var(--line);min-height:52px}
-header .title{flex:1;min-width:0;padding:0 8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-header .title small{display:block;font-weight:400;color:var(--mute);font-size:12px}
+header{--panel:#1b1f24;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--line:#38424d;--accent:#3b9eff;display:flex;align-items:center;gap:2px;padding:calc(4px + env(safe-area-inset-top)) 8px 4px;background:#171b21;color:#fff;border-bottom:1px solid #4a5663;box-shadow:0 3px 10px rgba(0,0,0,.5);min-height:52px;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;position:relative;z-index:5}
+header .title{flex:1;min-width:0;padding:0 8px;font-weight:700;font-size:16px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .title small{display:block;font-weight:500;color:#c3ceda;font-size:12.5px}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
 .ib{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none}
 .ib:active,.tb:active,.chip:active{background:var(--panel2)}
 .ib[disabled]{opacity:.3}
 .ib.txt{width:auto;padding:0 10px;font-size:13px;color:var(--accent);font-weight:600}
-.hb2{width:auto;padding:0 9px;font-size:13px;font-weight:600;color:var(--fg);display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.hb2{width:auto;padding:0 9px;font-size:14px;font-weight:700;color:#fff;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 @media(max-width:1000px){.hb2 span{display:none}}
 @media(max-width:620px){.hb2{display:none}}
 svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
