@@ -426,6 +426,9 @@ function buildCircuit(layout) {
         add({ type: 'REG', ni: n(0), ng: n(1), no: n(2), vset, part: p, vtar: 0 });
         break; }
       case 'GATE': add(ICS.makeIdeal(p, n, 'gate')); break;
+      case 'JKFF': add(ICS.makeIdeal(p, n, 'jk')); break;
+      case 'TFF': add(ICS.makeIdeal(p, n, 'tff')); break;
+      case 'CLK': { const g = parseGen(p.v); add({ type: 'V', a: n(0), b: n(1), v0: g.amp / 2, amp: g.amp / 2, freq: g.freq, rint: 30, wave: 'sq', part: p }); break; }
       case 'DFF': add(ICS.makeIdeal(p, n, 'dff')); break;
       case 'OPA': add(ICS.make({ key: 'opa', fam: 'oa' }, p, n)); break;
       case 'IC': {

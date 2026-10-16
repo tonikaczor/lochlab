@@ -42,7 +42,7 @@ header p{margin:2px 0 0;color:var(--mute)}
 @media(prefers-reduced-motion:reduce){.pic svg *{animation:none!important}}
 .q{font-size:18px;margin:0 0 14px;color:var(--mute)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
-@media(min-width:1180px){.cards{grid-template-columns:repeat(6,1fr)}.cards .card{grid-column:span 2}.cards .card:nth-child(4){grid-column:2 / span 2}.cards .card:nth-child(5){grid-column:4 / span 2}}
+@media(min-width:1180px){.cards{grid-template-columns:repeat(6,1fr)}.cards .card{grid-column:span 2}}
 @media(min-width:640px) and (max-width:1179px){.cards{grid-template-columns:repeat(2,1fr)}}
 .card.soon{opacity:.8;border-style:dashed}
 a.btn.off{pointer-events:none;color:var(--mute);background:transparent}
@@ -161,6 +161,16 @@ a.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
       <p>Python-Programm schreiben, den Raspberry Pi mit LEDs, Tastern und Sensoren verdrahten und alles zusammen simulieren (gpiozero, 3,3-V-Pins, Konsole).</p>
       <div class="steps"><span>Verdrahten</span><span>Programmieren</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="pilab.html">Öffnen</a><a class="btn" href="pilab.html?neu">Neu</a><a class="btn" href="pilab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card">
+      <span class="tag">DigiLab</span>
+      <h2>Digitaltechnik</h2>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#10261a"/><g fill="none" stroke="#6dff7a" stroke-width="3"><path d="M70 35h22a25 25 0 010 50H70z"/><path d="M40 47h30M40 73h30M117 60h30"/></g><path d="M160 85h12V50h12v35h12V50h12v35" fill="none" stroke="#ffe14d" stroke-width="3"/></svg>
+      </div>
+      <p>Gatter, Wahrheitstabellen, Flipflops, Zähler und eine kleine CPU. Mit Zeitdiagramm und Zahlenumrechner.</p>
+      <div class="steps"><span>Verdrahten</span><span>Schalten</span><span>Programmieren</span></div>
+      <div class="btns"><a class="btn pri" href="digilab.html">Öffnen</a><a class="btn" href="digilab.html?neu">Neu</a><a class="btn" href="digilab.html?bsp">Beispiel</a></div>
     </section>
   </div>
   <p class="foot">In allen Programmen: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>

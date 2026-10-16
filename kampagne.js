@@ -4,8 +4,9 @@
    außer der Liste abgeschlossener Kapitel (lm4.kamp) für die Feier. Missionen führen per Link in das passende Lab. */
 (function (root) {
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const PAGE = { sch: 'schaltplan.html', sim: 'simlab.html', code: 'codelab.html', pi: 'pilab.html', loch: 'layout.html' };
-  const LABN = { sch: 'SchaltLab', sim: 'SimLab', code: 'Arduino-Lab', pi: 'Pi-Lab', loch: 'LochLab' };
+  const REG = root.LAB_REG || {}, PAGE = {}, LABN = {};
+  ['sch', 'sim', 'code', 'pi', 'loch'].forEach(k => { PAGE[k] = { sch: 'schaltplan.html', sim: 'simlab.html', code: 'codelab.html', pi: 'pilab.html', loch: 'layout.html' }[k]; LABN[k] = { sch: 'SchaltLab', sim: 'SimLab', code: 'Arduino-Lab', pi: 'Pi-Lab', loch: 'LochLab' }[k]; });
+  Object.keys(REG).forEach(k => { PAGE[k] = REG[k].file; LABN[k] = REG[k].name; });
   const T = (lab, id) => ({ k: 'task', lab, id });
   const CH = [
     { t: 'Willkommen in der Lehrwerkstatt', s: 'Dein erster Tag. Meister Funk drückt dir einen Lötkolben und einen Zettel in die Hand: „Erst die Werkstatt kennenlernen, dann wird gebaut. Fang mit den beiden Trainern an.“', m: [{ k: 'trainer', lab: 'sch' }, { k: 'trainer', lab: 'loch' }, T('sch', 's6')] },
@@ -16,6 +17,7 @@
     { t: 'Im Haus', s: 'Ein Außeneinsatz: Ein Treppenhaus soll sicher beleuchtet werden. „Hier gibt es Sicherungsautomaten und kein Spielzeug“, sagt Meister Funk. „Schutzleiter nicht vergessen.“', m: [T('sim', 'aus'), T('sim', 'wechsel'), T('sim', 'impuls')] },
     { t: 'Löten und Aufbauen', s: 'Jetzt wird es ernst: echte Platinen. „Ein guter Plan ist die halbe Miete, eine gute Lötstelle die andere Hälfte.“', m: [{ k: 'stat', key: 'loetOK', min: 6, t: 'Lötübung: sechs gute Lötstellen sammeln', open: 'loet' }, T('loch', 'l15'), T('loch', 'l17')] },
     { t: 'Die Steuerung', s: 'Die Anlage soll programmierbar werden. „Ein Arduino für die Logik, ein Raspberry Pi für die Zentrale“, sagt Meister Funk. „Fangt mit dem Einfachsten an: Blinken.“', m: [T('code', 'c1'), T('code', 'c2'), T('pi', 'p1'), T('pi', 'p2')] },
+    { t: 'Digitale Welt', s: 'Die Hoflampe soll gesteuert werden: nicht mehr mit Widerständen, sondern mit Einsen und Nullen. „Ohne Digitaltechnik läuft heute nichts“, sagt Meister Funk. „Fang bei den Gattern an und hör bei der kleinen CPU noch lange nicht auf.“', m: [{ k: 'trainer', lab: 'digi' }, T('digi', 'd1'), T('digi', 'd6'), T('digi', 'd13'), { k: 'stat', key: 'zahl', min: 3, t: 'Zahlenumrechner: drei Übungsaufgaben richtig', open: 'zahl' }, T('digi', 'dc1')] },
     { t: 'Das Abschlussgerät', s: 'Letzter Auftrag: ein Dämmerungsschalter mit Relais für die Hoflampe, geplant, gebaut und geprüft. „Zeig, was du kannst. Und prüfe deine Lötstellen mit der Lupe.“', m: [T('sch', 's18'), T('loch', 'l16'), { k: 'stat', key: 'lupePerfekt', min: 1, t: 'Lupen-Prüfung ohne Fehler (Qualitätskontrolle)', open: 'loet' }] }
   ];
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
@@ -48,6 +50,7 @@
     if (m.k === 'task') { location.href = PAGE[m.lab] + '?aufgabe=' + m.id; return; }
     if (m.k === 'trainer') { if (here === m.lab && root.Trainer) { close(); root.Trainer.start(); } else location.href = PAGE[m.lab] + '?trainer'; return; }
     if (m.k === 'stat' && m.open === 'oszi' && root.Oszi) { close(); root.Oszi.open(); return; }
+    if (m.k === 'stat' && m.open === 'zahl') { if (here === 'digi' && root.DIGI) { close(); root.DIGI.openConv(); } else location.href = PAGE.digi + '?zahl'; return; }
     if (m.k === 'stat' && m.open === 'loet' && root.Loetuebung) { close(); root.Loetuebung.open(); return; }
     if (m.k === 'multi') { if (here === 'sch') { close(); if (root.LabUI && root.LabUI.toast) root.LabUI.toast('Simulation einschalten und unten „Messen“ wählen'); } else location.href = PAGE.sch + '?ex=Spannungsteiler'; return; }
   }
@@ -60,7 +63,7 @@
       const tot = CH.reduce((s, c) => s + c.m.length, 0), dn = CH.reduce((s, c) => s + prog(c).d, 0);
       w.innerHTML = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:680px;width:100%;font:15px/1.45 system-ui,sans-serif">
         <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">🎯 Kampagne: Das Abschlussgerät</b><button id="kX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer" aria-label="Schließen">✕</button></div>
-        <p style="color:#9aa6b2;margin:6px 0">Neun Kapitel, ein Ziel: Du baust mit Meister Funk ein Abschlussgerät. Die Missionen sind Aufgaben und Übungen aus allen Labs. Dein Fortschritt zählt von selbst mit.</p>
+        <p style="color:#9aa6b2;margin:6px 0">${CH.length} Kapitel, ein Ziel: Du baust mit Meister Funk ein Abschlussgerät. Die Missionen sind Aufgaben und Übungen aus allen Labs. Dein Fortschritt zählt von selbst mit.</p>
         <div style="background:#10151a;border-radius:8px;height:12px;overflow:hidden;margin:8px 0"><div style="width:${Math.round(100 * dn / tot)}%;height:100%;background:#5ee27d"></div></div><div style="font-size:13px;color:#9aa6b2;margin-bottom:8px">${dn} von ${tot} Missionen erledigt</div>
         ${CH.map((c, i) => { const p = prog(c), un = unlocked(i), dd = cdone(i), op = i === first; return `<div style="border:1px solid ${dd ? '#2f7a45' : '#38424d'};border-radius:10px;margin:8px 0;background:#252d36;opacity:${un ? 1 : .55}"><button data-c="${i}" style="all:unset;display:flex;width:100%;box-sizing:border-box;padding:10px 12px;cursor:${un ? 'pointer' : 'default'};align-items:center;gap:8px"><span style="font-size:20px">${dd ? '✅' : un ? '▶️' : '🔒'}</span><b style="flex:1">Kapitel ${i + 1}: ${esc(c.t)}</b><span style="font-size:13px;color:#9aa6b2">${p.d}/${p.n}</span></button>${op && un ? `<div style="padding:0 12px 12px"><p style="margin:0 0 8px;font-style:italic;color:#c8d2dc">${esc(c.s)}</p>${c.m.map((m, j) => { const ok = mdone(m); return `<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span>${ok ? '✅' : '⬜'}</span><span style="flex:1;font-size:14px">${esc(mtitle(m))}${m.where ? '<br><span style="color:#6cb8ff;font-size:12px">' + esc(m.where) + '</span>' : ''}</span>${ok ? '' : `<button data-m="${i}.${j}" style="background:#ff9d00;border:0;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer">Los</button>`}</div>`; }).join('')}</div>` : ''}</div>`; }).join('')}
         <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:#9aa6b2"><input type="checkbox" id="kFree"${free() ? ' checked' : ''}> Alle Kapitel freischalten (für Ausbilder oder zum Stöbern)</label></div>`;
@@ -78,7 +81,7 @@
     const tot = CH.reduce((n, c) => n + c.m.length, 0), dn = CH.reduce((n, c) => n + prog(c).d, 0);
     const c = document.createElement('div'); c.id = 'kampCard';
     c.style.cssText = 'margin:14px auto;max-width:900px;padding:14px 16px;border-radius:14px;border:1px solid #ff9d00;background:rgba(255,157,0,.08);display:flex;gap:12px;align-items:center;flex-wrap:wrap';
-    c.innerHTML = '<span style="font-size:28px">🎯</span><div style="flex:1;min-width:200px"><b>Kampagne: Das Abschlussgerät</b><br><span style="opacity:.8;font-size:14px">Neun Kapitel mit Meister Funk durch alle Labs. ' + dn + ' von ' + tot + ' Missionen erledigt.</span></div><button style="background:#ff9d00;border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer">' + (dn ? 'Weitermachen' : 'Los geht’s') + '</button>';
+    c.innerHTML = '<span style="font-size:28px">🎯</span><div style="flex:1;min-width:200px"><b>Kampagne: Das Abschlussgerät</b><br><span style="opacity:.8;font-size:14px">' + CH.length + ' Kapitel mit Meister Funk durch alle Labs. ' + dn + ' von ' + tot + ' Missionen erledigt.</span></div><button style="background:#ff9d00;border:0;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer">' + (dn ? 'Weitermachen' : 'Los geht’s') + '</button>';
     c.querySelector('button').onclick = open; cards.parentNode.insertBefore(c, cards.nextSibling);
   }
   if (document.body) indexCard(); else document.addEventListener('DOMContentLoaded', indexCard);

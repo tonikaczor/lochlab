@@ -52,6 +52,16 @@
       { at: '#serWrap', t: 'Terminal', x: 'Mit print schickt dein Programm Text ins Terminal. Hier siehst du ihn, genau wie auf dem echten Pi.' },
       { at: '#bEx', t: 'Beispiele', x: 'Hier findest du fertige Programme: Taster, PWM, Ampel, Sensoren und mehr.' },
       NEXTSTEPS[0], END('Pi-Lab')] },
+    digi: { name: 'DigiLab', steps: [
+      { t: 'Willkommen im DigiLab', x: 'Hier lernst du Digitaltechnik: Gatter, Wahrheitstabellen, Flipflops, Zähler und sogar eine kleine CPU. Ich zeige dir die Grundlagen in wenigen Minuten.' },
+      { prep: a => a.load('Grundgatter'), at: '#cv', t: 'Eine digitale Schaltung', x: 'Links die Batterie mit 5 V, zwei Schalter A und B, drei Gatter (UND, ODER, NICHT) und rechts drei LEDs. Ein Gatter macht aus Nullen und Einsen wieder eine Null oder Eins.' },
+      { at: '#pal', t: 'Bauteile', x: 'Hier findest du Taktgeber, Gatter, Flipflops, ICs und die Mini-CPU. Antippen und auf die Fläche tippen zum Absetzen.' },
+      { at: '#bSim', gate: a => a.simMode(), t: 'Auf Simulation schalten', x: 'Schalte oben von Zeichnen auf Sim. Jetzt rechnet das Lab die Pegel live.' },
+      { at: '#cv', prep: (a, st) => { st.sw = a.switchState(); }, gate: (a, st) => a.switchState() !== st.sw, t: 'Eingang schalten', x: 'Tippe einen der Schalter an. Beobachte, welche LEDs leuchten: UND braucht beide Schalter, ODER reicht einer.' },
+      { at: '#side', t: 'Digitaltechnik-Karte', x: 'Rechts findest du die Werkzeuge: die Wahrheitstabelle (alle Kombinationen auf einmal), „Aus Tabelle bauen“ (Schaltung nach Wunsch) und den Zahlenumrechner.' },
+      { at: '#bMenu', t: 'Menü: Wahrheitstabelle und mehr', x: 'Im Menü stehen Aufgaben, Beispiele und die Digital-Werkzeuge. Lade das Beispiel „4-Bit-Binärzähler“ und tippe unten bei den Messpunkten auf einen Baustein: Dann erscheint das Zeitdiagramm mit allen Takten.' },
+      { at: '#bEx', t: 'Beispiele', x: 'Von Gattern über Addierer und Speicher bis zum Mini-Prozessor, der ein Programm ausführt.' },
+      NEXTSTEPS[0], END('DigiLab')] },
     loch: { name: 'LochLab', steps: [
       { t: 'Willkommen im LochLab', x: 'Im LochLab planst du eine Schaltung auf einer Lochrasterplatine, so wie du sie später lötest. Ich zeige dir die Grundlagen in wenigen Minuten.' },
       { prep: a => a.load('LED mit Vorwiderstand'), at: '#cv', t: 'Die Platine', x: 'Ich habe dir ein Beispiel geladen: eine LED mit Vorwiderstand und Schalter auf der Platine. Deine bisherige Arbeit ist gesichert. Mit zwei Fingern oder dem Mausrad zoomst du.' },

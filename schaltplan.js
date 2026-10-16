@@ -2,8 +2,8 @@
 (function () {
 'use strict';
 const LS = window.LochSim;
-const LAB = window.LAB === 'sim' ? 'sim' : (window.LAB === 'code' ? 'code' : (window.LAB === 'pi' ? 'pi' : 'sch')), LABNAME = LAB === 'sim' ? 'SimLab' : (LAB === 'code' ? 'Arduino-Lab' : (LAB === 'pi' ? 'Pi-Lab' : 'SchaltLab')), SK = LAB === 'sim' ? 'sim.' : (LAB === 'code' ? 'code.' : (LAB === 'pi' ? 'pi.' : 'sch.'));
-const inLab = K => !K.lab || K.lab.split(',').includes(LAB);
+const LAB = ['sim', 'code', 'pi', 'digi'].includes(window.LAB) ? window.LAB : 'sch', LABNAME = { sim: 'SimLab', code: 'Arduino-Lab', pi: 'Pi-Lab', digi: 'DigiLab' }[LAB] || 'SchaltLab', SK = { sim: 'sim.', code: 'code.', pi: 'pi.', digi: 'digi.' }[LAB] || 'sch.';
+const inLab = K => LAB === 'digi' ? !!K.digi : (!K.lab || K.lab.split(',').includes(LAB));
 const PROGLAB = LAB === 'code' || LAB === 'pi';
 const WIRECOL = { braun: '#9c6232', blau: '#3b82e0', gruen: '#34b24f', schwarz: '#2b2b2e', grau: '#aab0b8', rot: '#e0463a' };
 const WIRENAME = { braun: 'braun (L)', blau: 'blau (N)', gruen: 'grün-gelb (PE)', schwarz: 'schwarz (Schaltdraht)', grau: 'grau', rot: 'rot' };
@@ -101,7 +101,14 @@ const KINDS = {
   ISO: { name: 'Isolationsmessgerät (500 V)', cat: 'Messen', lab: 'sim', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
   ZS:  { name: 'Schleifenimpedanz (Zs)', cat: 'Messen', lab: 'sim', pins: T2, v: '', core: 'VM', box: [0, -1.1, 4, 1.1], props: [] },
 };
-const CATS = LAB === 'pi' ? ['Raspberry Pi', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Quellen', 'Netz & Schutz', 'Schalter', 'Verbraucher', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
+
+/* ---- DigiLab: zusätzliche Bausteine und Auswahl ---- */
+KINDS.CLK = { name: 'Taktgeber', cat: 'Quellen', lab: 'digi', pins: T2, v: '1Hz', core: 'CLK', box: [0, -1.2, 4, 1.2], props: [['v', 'Takt (z. B. 2Hz, 100Hz)', 'text', 'z. B. 2Hz']] };
+KINDS.JKFF = { name: 'JK-Flipflop', cat: 'Logik', lab: 'digi', pins: [[0, 0], [0, 2], [0, 4], [4, 0], [4, 4]], v: '5V', core: 'JKFF', box: [0, -.6, 4, 4.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] };
+KINDS.TFF = { name: 'T-Flipflop', cat: 'Logik', lab: 'digi', pins: [[0, 0], [0, 2], [4, 0], [4, 2]], v: '5V', core: 'TFF', box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] };
+KINDS.CPU = Object.assign({}, KINDS.ICX, { name: 'Mini-CPU (4 Bit)', lab: 'digi', v: 'CPU4', n: 16, props: [] });
+['BAT', 'GND', 'CLK', 'SPST', 'PB', 'LED', 'SEG8', 'R', 'C', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'JKFF', 'TFF', 'ICX', 'CPU', 'VM', 'POT'].forEach(k => { if (KINDS[k]) KINDS[k].digi = true; });
+const CATS = LAB === 'digi' ? ['Quellen', 'Schalter', 'Logik', 'Halbleiter', 'Passiv', 'Messen'] : LAB === 'pi' ? ['Raspberry Pi', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Quellen', 'Netz & Schutz', 'Schalter', 'Verbraucher', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
 /* SimLab: Spannungsquellen und Masse stehen ganz oben, dazu die Netzquellen (Netz 230 V, Drehstrom 400 V) */
 const SRC_FIRST = LAB === 'sim' ? ['NETZ', 'NETZ3'] : [];
 const kindsOf = cat => {
@@ -591,13 +598,22 @@ function drawPart(p, selected) {
       c.save(); c.fillStyle = body; c.font = '600 .8px sans-serif'; c.textBaseline = 'middle';
       [['D', 1.2, 0, 'left'], ['Q', 2.8, 0, 'right'], ['C', 1.5, 2, 'left'], ['Q̄', 2.8, 2, 'right']].forEach(([t, x, y, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = al; c.fillText(t, 0, 0); c.restore(); });
       c.restore(); break; }
+    case 'JKFF': case 'TFF': {
+      const jk = p.k === 'JKFF', yq = jk ? 4 : 2, ycl = 2, ymax = jk ? 4.6 : 2.6;
+      if (jk) { lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]); lead(3, 0, 4, 0, pc[3]); lead(3.45, 4, 4, 4, pc[4]); }
+      else { lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(3, 0, 4, 0, pc[2]); lead(3.45, 2, 4, 2, pc[3]); }
+      c.strokeRect(1, -.6, 2, ymax + .6); c.beginPath(); c.arc(3.22, yq, .22, 0, 7); c.stroke();
+      c.beginPath(); c.moveTo(1, ycl - .25); c.lineTo(1.4, ycl); c.lineTo(1, ycl + .25); c.stroke();
+      c.save(); c.fillStyle = body; c.font = '600 .8px sans-serif'; c.textBaseline = 'middle';
+      (jk ? [['J', 1.2, 0, 'left'], ['C', 1.5, 2, 'left'], ['K', 1.2, 4, 'left'], ['Q', 2.8, 0, 'right'], ['Q̄', 2.8, 4, 'right']] : [['T', 1.2, 0, 'left'], ['C', 1.5, 2, 'left'], ['Q', 2.8, 0, 'right'], ['Q̄', 2.8, 2, 'right']]).forEach(([t, x, y, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = al; c.fillText(t, 0, 0); c.restore(); });
+      c.restore(); break; }
     case 'OPA': {
       lead(0, 0, 1, 0, pc[1]); lead(0, 2, 1, 2, pc[0]); lead(3.4, 1, 4, 1, pc[2]); lead(2, -2, 2, -.2, pc[3]); lead(2, 4, 2, 2.2, pc[4]);
       c.beginPath(); c.moveTo(1, -1); c.lineTo(1, 3); c.lineTo(3.4, 1); c.closePath(); c.stroke();
       c.save(); c.fillStyle = body; c.font = '600 .9px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'center';
       [['−', 1.45, 0], ['+', 1.45, 2]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); });
       c.restore(); break; }
-    case 'ICX': {
+    case 'ICX': case 'CPU': {
       const I = window.LochSimICs, def = I && I.find(p.v), info = def && I.CATALOG[def.key], cfg = K.sym555;
       const nn = pins.length, labs = info && info.np === nn ? info.labels : null;
       const bx0 = 1, bx1 = 5, by0 = cfg ? -1 : K.box[1], by1 = cfg ? 9 : K.box[3];
@@ -991,7 +1007,7 @@ function drawPart(p, selected) {
   }
   c.restore();
   // Beschriftung und Werte
-  const [mx, my] = p.k === 'ICX' ? rot(3, 0, p.r) : rot(K.pins.length > 1 ? 2 : 0, 0, p.r);
+  const [mx, my] = (p.k === 'ICX' || p.k === 'CPU') ? rot(3, 0, p.r) : rot(K.pins.length > 1 ? 2 : 0, 0, p.r);
   const lx = X(p.x + mx), ly = Y(p.y + my);
   c.fillStyle = PRINT ? '#111' : '#cfd5db'; c.font = `${Math.max(10, S * 0.62)}px -apple-system,Segoe UI,sans-serif`; c.textBaseline = 'middle';
   let txt = valueText(p);
@@ -1175,7 +1191,34 @@ function render() {
   drawGraphs(W, H);
   if (window.LochFX) LochFX.draw(cx);
 }
+/* DigiLab: Logikanalysator, jede Messstelle als Spur mit Rechteckverlauf (0 oder 1) und gemeinsamer Zeitachse */
+const LANECOL = ['#6dff7a', '#ffe14d', '#4cc3ff', '#ff8a5c', '#d58cff', '#ff6b9a', '#a6ff6b', '#ffd23f'];
+function drawLanes(W, H) {
+  const n = sch.scopes.length; if (!n) return;
+  const lane = 26, hd = 20, x0 = 96, gw = W - x0 - 10, gh = Math.min(H * 0.55, n * lane + hd + 6), y0 = H - gh;
+  cx.fillStyle = 'rgba(0,0,0,.84)'; cx.fillRect(0, y0, W, gh);
+  cx.strokeStyle = 'rgba(120,200,130,.25)'; cx.lineWidth = 1; cx.fillStyle = '#9aa6b2'; cx.font = '10px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'top';
+  for (let i = 0; i <= 4; i++) { const x = x0 + gw * i / 4; cx.beginPath(); cx.moveTo(x, y0 + hd - 2); cx.lineTo(x, y0 + gh); cx.stroke(); cx.fillText('−' + fmtT(graphWin * (4 - i) / 4).replace('−', ''), x, y0 + 4); }
+  sch.scopes.forEach((sc, k) => {
+    const b = scopeBuf[k], yb = y0 + hd + k * lane, col = LANECOL[k % LANECOL.length], p = sc.t === 'part' ? byPart(sc.id) : null;
+    if (yb + lane > H) return;
+    cx.fillStyle = col; cx.font = '600 12px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'middle';
+    cx.fillText(String(p ? (p.l || KINDS[p.k].name) : (sc.t === 'node' ? 'Knoten' : '?')).slice(0, 11), 8, yb + lane / 2);
+    cx.strokeStyle = 'rgba(255,255,255,.08)'; cx.beginPath(); cx.moveTo(x0, yb + lane - 2); cx.lineTo(x0 + gw, yb + lane - 2); cx.stroke();
+    if (!b || b.t.length < 2) return;
+    let hi = 1; b.v.forEach(v => { if (isFinite(v) && v > hi) hi = v; }); const thr = hi / 2, t1 = b.t[b.t.length - 1], t0 = t1 - graphWin;
+    cx.strokeStyle = col; cx.lineWidth = 2; cx.beginPath(); let prevY = null;
+    for (let i = 0; i < b.t.length; i++) {
+      const x = x0 + (b.t[i] - t0) / graphWin * gw, yy = (b.v[i] > thr) ? yb + 4 : yb + lane - 7;
+      if (x < x0) { prevY = yy; continue; }
+      if (prevY == null) cx.moveTo(x, yy); else { if (yy !== prevY) { cx.lineTo(x, prevY); } cx.lineTo(x, yy); }
+      prevY = yy;
+    }
+    cx.stroke();
+  });
+}
 function drawGraphs(W, H) {
+  if (LAB === 'digi') { drawLanes(W, H); return; }
   const n = sch.scopes.length; if (!n) return;
   const gh = Math.min(150, H * 0.34), gw = Math.min(W / n, 330);
   sch.scopes.forEach((sc, k) => {
@@ -1611,7 +1654,7 @@ function refreshUI() {
   $('#bRun').classList.toggle('on', running);
   $('#bUndo').disabled = simMode || hi <= 0; $('#bRedo').disabled = simMode || hi >= hist.length - 1;
   $('#title').textContent = sch.name;
-  let h = incidentCardHtml() + taskCardHtml() + diceCardHtml() + meterCardHtml();
+  let h = incidentCardHtml() + (window.LAB_EXTRA_CARD ? window.LAB_EXTRA_CARD() : '') + taskCardHtml() + diceCardHtml() + meterCardHtml();
   if (simMode) {
     h += `<div class="card"><h4>Simulation</h4>
     <div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Stopp' : '▶ Start'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>
@@ -1666,6 +1709,7 @@ $('#side').addEventListener('click', e => {
   const b = e.target.closest('[data-a],[data-win]'); if (!b) return;
   if (b.dataset.win) { graphWin = parseFloat(b.dataset.win); scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; refreshUI(); return; }
   const a = b.dataset.a;
+  if (window.LAB_EXTRA_CLICK && window.LAB_EXTRA_CLICK(a, b)) return;
   if (a === 'why') { if (incident) { incident.open = true; refreshUI(); } return; }
   if (a === 'whyx') { incident = null; refreshUI(); return; }
   if (a === 'mmD') { meterDial(b.dataset.v); refreshUI(); draw(); return; }
@@ -1774,7 +1818,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['kamp', 'Kampagne: Das Abschlussgerät', 'Lernpfad mit Geschichte über alle Labs'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['print', 'Drucken', 'Plan und Bauteilliste'], ...(window.LAB_EXTRA_MENU ? window.LAB_EXTRA_MENU() : []), ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['kamp', 'Kampagne: Das Abschlussgerät', 'Lernpfad mit Geschichte über alle Labs'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -3673,6 +3717,7 @@ async function loadShared() {
   d.name = (d.name || 'Schaltung') + ' (geteilt)'; delete d.sid; loadCircuit(d); toast('Geteilte Schaltung geladen'); return true;
 }
 function menuAct(m) {
+  if (window.LAB_EXTRA_ACT && window.LAB_EXTRA_ACT(m)) return;
   if (m === 'tasks') { openTasks(); return; }
   if (m === 'cab') { openCabinet(); return; }
   if (m === 'teacher') { openTeacher(); return; }
@@ -3791,7 +3836,7 @@ function openExamples() {
     b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const ex = buildExample(EXAMPLES[+r.dataset.i]); loadCircuit(ex); if (ex.tempo != null) tempo = ex.tempo; if (ex.win) graphWin = ex.win; refreshUI(); });
   });
 }
-const exOk = e => LAB === 'pi' ? e.lab === 'pi' : LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
+const exOk = e => LAB === 'digi' ? e.lab === 'digi' : LAB === 'pi' ? e.lab === 'pi' : LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
 const defEx = () => EXAMPLES.find(exOk) || EXAMPLES[0];
 function buildExample(e) {
   const d = e.make(); let id = 1; const parts = [], wires = [];
@@ -4283,6 +4328,53 @@ EXAMPLES.push(
     make: () => houseLine({ cab: '1.5mm2 60m', pe: 'cable', inst: 'ZS' }) },
 );
 if (window.MORE_EX) EXAMPLES.push(...window.MORE_EX);
+/* ---- DigiLab-Schnittstelle: Beispiele und Aufgaben werden in digi.js beschrieben, Verdrahtung läuft über den Auto-Weg ---- */
+const mkPartsFromRows = rows => rows.map(([k, x, y, r, v, extra], i) => Object.assign({ id: i + 1, k, x, y, r: r || 0, v: v != null ? v : KINDS[k].v, sw: KINDS[k].sw0 || 0, pos: KINDS[k].pos0 != null ? KINDS[k].pos0 : 0.5, vr: KINDS[k].vr }, extra || {}));
+window.LabDigiAPI = {
+  KINDS, simEval, RES, needKinds, byPart, pinsOf, pinV, vAt, vAcross, ledElem, fmt1, fmt, nm, taskDone, markDone, loadCircuit, buildExample, rebuild, refreshUI, draw, commit, toast, saveNamed,
+  get sch() { return sch; }, get sim() { return sim; }, get circ() { return circ; }, get simMode() { return simMode; }, get running() { return running; },
+  mkParts: mkPartsFromRows,
+  pinPts: rows => mkPartsFromRows(rows).map(p => pinsOf(p)),
+  addExamples: list => { EXAMPLES.push(...list); },
+  addTasks: list => { TASKS.push(...list.map(t => Object.assign({ lab: 'digi' }, t))); },
+  /* nets: Liste von Punktfolgen [[x,y],[x,y],...]; jedes Paar benachbarter Punkte wird per Auto-Weg als Draht gelegt. Ergebnis: Polylinien [x1,y1,x2,y2,...] */
+  routeNets(rows, nets) {
+    const saved = sch; let fails = 0;
+    sch = { name: 'tmp', parts: mkPartsFromRows(rows), wires: [], nid: 5000, scopes: [] };
+    const near = (p, q) => Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]), groups = new Map();
+    try {
+      nets.forEach(net => {
+        const gk0 = net[0][0] + ',' + net[0][1]; if (!groups.has(gk0)) groups.set(gk0, { pins: [net[0]], wires: [] });
+        const pins = groups.get(gk0).pins, myWires = groups.get(gk0).wires;     // Netze mit gleichem Startpunkt teilen ihre Drähte: Abzweige dürfen an sie anschließen
+        for (let i = 1; i < net.length; i++) {
+          const sink = net[i]; let done = false;
+          if (pins.some(q => q[0] === sink[0] && q[1] === sink[1])) { pins.push(sink); continue; }
+          const cand = pins.slice();
+          myWires.forEach(w => { const dx = Math.sign(w.x2 - w.x1), dy = Math.sign(w.y2 - w.y1); let x = w.x1, y = w.y1; for (let k = 0; k < 80; k++) { cand.push([x, y]); if (x === w.x2 && y === w.y2) break; x += dx; y += dy; } });
+          cand.sort((p, q) => near(p, sink) - near(q, sink));
+          const seen = new Set();
+          for (const t of cand) {
+            if (seen.size >= 16) break; const k = t[0] + ',' + t[1]; if (seen.has(k)) continue; seen.add(k);
+            let path = null; try { path = routeWire(sink, t); } catch (e) { path = null; }
+            if (!path || path.length < 2) continue;
+            const pts = [path[0]];
+            for (let q = 1; q < path.length - 1; q++) { const dx1 = path[q][0] - path[q - 1][0], dy1 = path[q][1] - path[q - 1][1], dx2 = path[q + 1][0] - path[q][0], dy2 = path[q + 1][1] - path[q][1]; if (dx1 !== dx2 || dy1 !== dy2) pts.push(path[q]); }
+            pts.push(path[path.length - 1]);
+            splitWiresAt(pts[0]); splitWiresAt(pts[pts.length - 1]);
+            for (let q = 0; q + 1 < pts.length; q++) { const w = { id: sch.nid++, x1: pts[q][0], y1: pts[q][1], x2: pts[q + 1][0], y2: pts[q + 1][1] }; sch.wires.push(w); myWires.push(w); }
+            done = true; break;
+          }
+          if (!done) { fails++; console.warn('Kein Weg gefunden', sink, net[0]); }
+          pins.push(sink);
+        }
+      });
+      window.LabDigiAPI.routeFails = (window.LabDigiAPI.routeFails || 0) + fails;
+      return sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]);
+    } finally { sch = saved; }
+  }
+};
+if (LAB === 'digi' && window.DIGI_DEF) window.DIGI_DEF(window.LabDigiAPI);
+
 if (LAB === 'sim' && window.addPE) EXAMPLES.forEach(e => { if (!e.noPE && (e.lab === 'sim' || e.cat === 'Bauteile')) { const mk = e.make; e.raw = mk; e.make = () => window.addPE(mk()); } });
 // Haus-Beispiele ohne eigene Oszilloskope: je Verbraucher (bis zu vier) eins, damit jede Schalterstellung sichtbar ist
 if (LAB === 'sim') EXAMPLES.forEach(e => { if (e.noScopes) return; const mk = e.make; e.make = () => {
@@ -4461,7 +4553,7 @@ window.LabTrainerAPI = {
 
 /* Schnittstelle für die Sprachsteuerung (voice.js) */
 window.LabVoiceAPI = {
-  place: k => { if (!k || !KINDS[k] || !inLab(KINDS[k]) || simMode) return false; setTool('place', k); toast(KINDS[k].name + ': Tippe auf die Fläche zum Absetzen'); return true; },
+  place: k => { if (!k || !KINDS[k] || !inLab(KINDS[k])) return false; if (simMode) { toast('Zum Setzen erst oben auf „Zeichnen“ umschalten'); return 'sim'; } setTool('place', k); toast(KINDS[k].name + ': Tippe auf die Fläche zum Absetzen'); return KINDS[k].name; },
   setValue: v => { const p = sel && sel.t === 'part' && byPart(sel.id); if (!p || !(KINDS[p.k].props || []).some(q => q[0] === 'v')) return false; p.v = v; commit(true, true); rebuildKeep(); refreshUI(); draw(); return true; },
   toggleWater: () => { if (!simMode) { toast('Die Wasser-Ansicht gibt es in der Simulation'); return water; } setWater(!water); return water; },
   tlBack: () => { if (!simMode || !tl.length) return false; tlGo((tlIdx >= 0 ? tlIdx : tl.length - 1) - 1); return true; },

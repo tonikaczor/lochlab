@@ -48,13 +48,15 @@ const CATALOG = {
   '072':    { name: 'TL072 2×Operationsverstärker', np: 8, vcc: 8, gnd: 4, labels: ['1OUT', '1IN−', '1IN+', 'V−', '2IN+', '2IN−', '2OUT', 'V+'], oa: [{ p: 3, n: 2, o: 1 }, { p: 5, n: 6, o: 7 }], rail: 1.5 },
   '324':    { name: 'LM324 4×Operationsverstärker', np: 14, vcc: 4, gnd: 11, labels: ['1OUT', '1IN−', '1IN+', 'V+', '2IN+', '2IN−', '2OUT', '3OUT', '3IN−', '3IN+', 'V−', '4IN+', '4IN−', '4OUT'], oa: [{ p: 3, n: 2, o: 1 }, { p: 5, n: 6, o: 7 }, { p: 10, n: 9, o: 8 }, { p: 12, n: 13, o: 14 }], rail: 1.5, rlow: 0.05 },
 };
+CATALOG.cpu4 = { name: 'Mini-CPU 4 Bit (TF-4)', np: 16, vcc: 16, gnd: 8, labels: ['CLK', 'RST', 'IN0', 'IN1', 'IN2', 'IN3', 'HLT', 'GND', 'CF', 'ZF', 'OUT3', 'OUT2', 'OUT1', 'OUT0', 'NC', 'VCC'], cpu: true };
 CATALOG.opa = { name: 'Operationsverstärker', np: 5, vcc: 4, gnd: 5, labels: ['IN+', 'IN−', 'OUT', 'V+', 'V−'], oa: [{ p: 1, n: 2, o: 3 }], rail: 1.5, hidden: true };
-const SORT = ['555', '7400', '7402', '7404', '7408', '7432', '7486', '7414', '4011', '4001', '4081', '4071', '4093', '4069', '7474', '4013', '4017', '4020', '7490', '7447', '4511', '741', '358', '072', '324'];
+const SORT = ['cpu4', '555', '7400', '7402', '7404', '7408', '7432', '7486', '7414', '4011', '4001', '4081', '4071', '4093', '4069', '7474', '4013', '4017', '4020', '7490', '7447', '4511', '741', '358', '072', '324'];
 
 /* Typ aus der Wertangabe erkennen (NE555, SN74HC00N, CD4017, LM358 ...) */
 function find(v) {
   const s = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!s) return null;
+  if (/^(CPU4|MINICPU|TF4)/.test(s)) return { key: 'cpu4', fam: 'cmos' };
   if (/555/.test(s)) return { key: '555', fam: /TLC|LMC|7555|ICM/.test(s) ? 'cmos' : 'bip' };
   if (/^(LM|UA|MC|NE)?741[A-Z]*$/.test(s)) return { key: '741', fam: 'oa' };
   if (/(LM|NE)?358/.test(s)) return { key: '358', fam: 'oa' };
@@ -85,9 +87,9 @@ function make(def, part, n) {
 
 /* Ideale Logik ohne Versorgungspins (SchaltLab): Pegel 0 V / Vh, Schwelle bei Vh/2 */
 function makeIdeal(part, n, kind) {
-  const np = kind === 'dff' ? 4 : (part.vr === 'not' || part.vr === 'snot' ? 2 : 3);
+  const np = kind === 'jk' ? 5 : (kind === 'dff' || kind === 'tff' ? 4 : (part.vr === 'not' || part.vr === 'snot' ? 2 : 3));
   const e = { type: 'IC', key: 'ideal', ideal: true, kind, fn: part.vr, vh: parseFloat(String(part.v || '5').replace(',', '.')) || 5, part, np, n: [0], outs: new Map(), st: {}, hs: [], fl: [], oas: [], info: {}, vcc: 0, gnd: 0, gq: 0 };
-  e.ins = kind === 'dff' ? [1, 2] : (np === 2 ? [1] : [1, 2]);
+  e.ins = kind === 'jk' ? [1, 2, 3] : (kind === 'dff' || kind === 'tff' ? [1, 2] : (np === 2 ? [1] : [1, 2]));
   for (let i = 1; i <= np; i++) e.n[i] = n(i - 1);
   e.icupd = (vp) => updateIdeal(e, vp);
   return e;
@@ -97,7 +99,10 @@ function updateIdeal(e, vp) {
   const vh = e.vh;
   const hi = i => { const x = vp[e.n[i]] / vh; if (e.fn === 'snot') { if (x > 0.65) e.hs[i] = 1; else if (x < 0.35) e.hs[i] = 0; return e.hs[i] || 0; } return x > 0.5 ? 1 : 0; };
   const O = (pin, l) => e.outs.set(pin, { level: l, rh: 50, rl: 50 });
-  if (e.kind === 'dff') { const edge = rise(e, 'clk', hi(2)); let Q = e.st.q || 0; if (edge) Q = hi(1); e.st.q = Q; O(3, Q); O(4, Q ? 0 : 1); return; }
+  e.st.n = (e.st.n || 0) + 1;                                       // beim Einschalten die ersten Millisekunden ignorieren (Ausgänge schwingen sich erst ein, sonst gibt es Geisterflanken)
+  if (e.kind === 'jk') { const edge = rise(e, 'clk', hi(2)) && e.st.n > 30; let Q = e.st.q || 0; if (edge) { const J = hi(1), K = hi(3); if (J && K) Q = Q ? 0 : 1; else if (J) Q = 1; else if (K) Q = 0; } e.st.q = Q; O(4, Q); O(5, Q ? 0 : 1); return; }
+  if (e.kind === 'tff') { const edge = rise(e, 'clk', hi(2)) && e.st.n > 30; let Q = e.st.q || 0; if (edge && hi(1)) Q = Q ? 0 : 1; e.st.q = Q; O(3, Q); O(4, Q ? 0 : 1); return; }
+  if (e.kind === 'dff') { const edge = rise(e, 'clk', hi(2)) && e.st.n > 30; let Q = e.st.q || 0; if (edge) Q = hi(1); e.st.q = Q; O(3, Q); O(4, Q ? 0 : 1); return; }
   const F2 = { and: (a, b) => a && b, nand: (a, b) => !(a && b), or: (a, b) => a || b, nor: (a, b) => !(a || b), xor: (a, b) => a !== b, xnor: (a, b) => a === b }[e.fn];
   if (e.fn === 'not' || e.fn === 'snot') O(2, hi(1) ? 0 : 1);
   else if (F2) O(3, F2(!!hi(1), !!hi(2)) ? 1 : 0);
@@ -139,6 +144,7 @@ function update(e, vp, dt) {
       O(3, q, e.fam === 'cmos' ? { rh: 40, rl: 40, drop: 0 } : { rh: 20, rl: 12, drop: 1.5 });
       O(7, q ? null : 0, { rl: 12 });                                    // Entladetransistor
       return; }
+    case 'cpu4': return root.CPU4 ? root.CPU4.update(e, vp, lv, O, rise) : undefined;
     case '7474': {
       [[1, 2, 3, 4, 5, 6, 'a'], [13, 12, 11, 10, 9, 8, 'b']].forEach(([clr, d, clk, pre, q, qn, id]) => {
         const c = lv(e, vp, clr), p = lv(e, vp, pre), D = lv(e, vp, d), edge = rise(e, 'clk' + id, lv(e, vp, clk));
@@ -174,7 +180,7 @@ function update(e, vp, dt) {
       return; }
     case '7490': {
       const r0 = lv(e, vp, 2) && lv(e, vp, 3), r9 = lv(e, vp, 6) && lv(e, vp, 7);
-      const ea = fall(e, 'a', lv(e, vp, 14)), eb = fall(e, 'b', lv(e, vp, 1));
+      const ea = fall(e, 'cka', lv(e, vp, 14)), eb = fall(e, 'ckb', lv(e, vp, 1));     // eigene Schlüssel für die Taktgedächtnisse (a und b sind die Zählerstände)
       let a = e.st.a || 0, b = e.st.b || 0;
       if (r9) { a = 1; b = 4; }
       else if (r0) { a = 0; b = 0; }

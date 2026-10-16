@@ -2,6 +2,13 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v6.116', items: [
+      ['DigiLab: das sechste Lab', 'Digitaltechnik zum Ausprobieren: Gatter, Flipflops, Zähler, echte ICs (CD4011, 4017, 7490, 4511) und eine kleine Mini-CPU zum Programmieren. 17 Beispiele, 20 Aufgaben mit Prüfung, Trainer, Lernheft mit Arbeitsblatt, Kampagnenkapitel und neue Abzeichen.', 'Startseite ▸ DigiLab'],
+      ['Wahrheitstabelle und Schaltung aus Tabelle', 'Das Lab probiert alle Schalterkombinationen durch und zeigt Tabelle und kürzeste Gleichung. Umgekehrt trägst du eine Tabelle ein, das Lab baut die Gatterschaltung samt Verdrahtung.', 'DigiLab ▸ Menü oder Karte „Digitaltechnik“'],
+      ['Zeitdiagramm (Logikanalysator)', 'Mehrere Messpunkte als Spuren mit gemeinsamer Zeitachse: Taktteiler, Zähler und Schieberegister sieht man auf einen Blick.', 'DigiLab ▸ Simulation, Messpunkte setzen'],
+      ['Mini-CPU TF-4', 'Vier Bit, Assembler mit 33 Befehlen, Registeranzeige, Flags, RAM und Einzelschritt. Vier Beispielprogramme und vier Programmieraufgaben.', 'DigiLab ▸ Menü ▸ Mini-CPU: Programm'],
+      ['Zahlenumrechner', 'Dezimal, Binär, Hex, BCD, Gray-Code und Zweierkomplement umrechnen, dazu Übungsaufgaben.', 'DigiLab ▸ Menü ▸ Zahlenumrechner'],
+      ['Flipflops und Taktgeber', 'Neue Bausteine JK-Flipflop, T-Flipflop und Taktgeber. Fehler im 7490 behoben (Dezimalzähler zählte nicht).', 'DigiLab ▸ Bauteilliste'] ] },
     { v: 'v5.115', items: [
       ['Kampagne: Das Abschlussgerät', 'Ein Lernpfad mit Geschichte über alle Labs: neun Kapitel mit Meister Funk, Missionen aus Aufgaben, Trainern, Messen, Löten und Programmieren. Dein Fortschritt zählt von selbst, Kapitel schalten nacheinander frei. Zwei neue Abzeichen.', 'Menü ▸ Kampagne, außerdem Karte auf der Startseite'],
       ['Kopfleiste nur mit Symbolen', 'Beschriftungen sind weg, es bleibt mehr Platz. Der Name erscheint beim Zeigen mit der Maus und beim Antippen. „Aufgaben“, „Öffnen“ und „Drucken“ stehen jetzt ganz oben im Menü.', 'Oben in jedem Lab, Menü ▸ oberste Einträge'] ] },

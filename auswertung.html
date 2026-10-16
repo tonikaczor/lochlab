@@ -154,7 +154,7 @@ function charts(d, names, cols) {
   /* je Aufgabe */
   const rows = used.map(t => { let g = 0, y = 0, tips = 0; names.forEach(nm => { const v = d[nm].d[t[0]]; if (v == null) return; if (v >= 100) g++; else y++; tips += (d[nm].h || {})[t[0]] || 0; }); return { t, g, y, tried: g + y, tips: (g + y) ? tips / (g + y) : 0 }; });
   const sorted = rows.slice().sort((a, b) => (a.t[1] === b.t[1] ? 0 : Object.keys(lab).indexOf(a.t[1]) - Object.keys(lab).indexOf(b.t[1])) || b.g - a.g);
-  $('#chTasks').innerHTML = sorted.map(r => `<div class="brow"><span class="lb" title="${esc((lab[r.t[1]] || '?') + ' · ' + r.t[3])}">${esc(({loch:'Loch',sch:'Schalt',sim:'Sim',code:'Ard',pi:'Pi'}[r.t[1]] || '?') + ': ' + r.t[3])}</span>${bar(r.g, r.y, n)}<span class="nm">${r.g} / ${n}</span></div>`).join('');
+  $('#chTasks').innerHTML = sorted.map(r => `<div class="brow"><span class="lb" title="${esc((lab[r.t[1]] || '?') + ' · ' + r.t[3])}">${esc(((window.LAB_REG[r.t[1]] || {}).short || '?') + ': ' + r.t[3])}</span>${bar(r.g, r.y, n)}<span class="nm">${r.g} / ${n}</span></div>`).join('');
   /* Stolpersteine: viele begonnen, aber nicht geschafft, dazu hohe Tipp-Stufe */
   const stones = rows.filter(r => r.y > 0 || r.tips >= 1.5).sort((a, b) => (b.y + b.tips * 0.5) - (a.y + a.tips * 0.5)).slice(0, 5);
   $('#chStones').innerHTML = stones.length ? stones.map(r => `<div class="stone"><b>${esc(r.t[3])}</b> (${esc(lab[r.t[1]] || '?')}): ${r.y} von ${r.tried} Bearbeitern noch nicht ganz richtig${r.tips ? ', durchschnittliche Tipp-Stufe ' + r.tips.toFixed(1).replace('.', ',') : ''}</div>`).join('') : '<p class="mute">Keine Auffälligkeiten: alle begonnenen Aufgaben sind geschafft.</p>';
@@ -168,7 +168,7 @@ function render() {
   const known = new Set(all.map(t => t[0]));
   if (lab === 'alle') used.forEach(k => { if (!known.has(k)) cols.push([k, '?', 'Unbekannt', k, 0]); });
   const order = Object.keys(labs); cols.sort((a, b) => order.indexOf(a[1]) - order.indexOf(b[1]));
-  let h = '<thead><tr><th class="name">Name</th><th>Fertig</th><th>Ø %</th><th title="Summe der benutzten Tipp-Stufen">Tipps</th><th title="Anzahl der Abzeichen">🏅</th>' + cols.map(t => `<th class="t" title="${esc((labs[t[1]] || '?') + ' · ' + t[2] + ' · ' + t[3])}"><span>${esc(({loch:'Loch',sch:'Schalt',sim:'Sim',code:'Ard',pi:'Pi'}[t[1]]||'?')+': '+t[3])}</span></th>`).join('') + '</tr></thead><tbody>';
+  let h = '<thead><tr><th class="name">Name</th><th>Fertig</th><th>Ø %</th><th title="Summe der benutzten Tipp-Stufen">Tipps</th><th title="Anzahl der Abzeichen">🏅</th>' + cols.map(t => `<th class="t" title="${esc((labs[t[1]] || '?') + ' · ' + t[2] + ' · ' + t[3])}"><span>${esc(((window.LAB_REG[t[1]] || {}).short || '?')+': '+t[3])}</span></th>`).join('') + '</tr></thead><tbody>';
   const colSum = cols.map(() => [0, 0]);
   names.forEach(n => {
     const p = d[n].d, hh = d[n].h || {}; const vals = cols.map(t => p[t[0]]); const done = vals.filter(v => v >= 100).length, tried = vals.filter(v => v != null), tipps = cols.reduce((s, t) => s + (p[t[0]] != null ? (hh[t[0]] || 0) : 0), 0);
@@ -224,7 +224,7 @@ function csv() {
   names.forEach(n => { const p = d[n].d, hh = d[n].h || {}; out += [q(n), cols.filter(t => (p[t[0]] || 0) >= 100).length, cols.reduce((s, t) => s + (p[t[0]] != null ? (hh[t[0]] || 0) : 0), 0)].concat(cols.map(t => p[t[0]] == null ? '' : p[t[0]])).join(';') + '\n'; });
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + out], { type: 'text/csv;charset=utf-8' })); a.download = 'Auswertung-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
 }
-const LABFILE = { loch: 'layout.html', sch: 'schaltplan.html', sim: 'simlab.html', code: 'codelab.html', pi: 'pilab.html' };
+const LABFILE = {}; Object.keys(window.LAB_REG).forEach(k => { LABFILE[k] = window.LAB_REG[k].file; });
 const taskTitle = id => { const t = window.AUFGABEN.find(x => x[0] === id); return t ? t[3] : id; };
 function buildQrList() {
   const labs = window.AUFGABEN_LABS; let h = '';
