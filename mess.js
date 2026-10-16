@@ -344,6 +344,11 @@
     root.LAB_EXTRA_CARD = () => '<div class="card"><h4>Werkbank</h4><div class="row2"><button class="btn pri" data-a="wbo">Messgeräte öffnen</button></div><p class="hint2" style="margin:0">Netzgerät, Funktionsgenerator, Multimeter, Oszilloskop, Frequenzzähler, Leistungsmesser, Kennlinienschreiber. Fest unten oder frei verschiebbar.</p></div>';
     root.LAB_EXTRA_CLICK = a => { if (a === 'wbo') { openBench(); return true; } return false; };
     root.GRAPH_KEEP = 1.7;
+    root.LAB_HELP = () => `<p><b>Werkbank:</b> Der Knopf „Messgeräte öffnen“ rechts (oder Menü „Werkbank“) öffnet die Geräte. Oben in der Leiste schaltest du jedes Gerät ein oder aus. „Frei“ macht aus den Geräten verschiebbare Fenster, „Fest“ legt sie wieder in die Leiste.</p>
+      <p><b>Messen:</b> Auf „Sim“ stellen. Beim Multimeter „Messspitzen setzen“, dann erst den roten, dann den schwarzen Punkt antippen. Beim Strom das Bauteil antippen. Beim Oszilloskop „Messpunkt setzen“ und ein Bauteil oder einen Draht antippen.</p>
+      <p><b>Geräte:</b> Netzgerät (Spannung und Strombegrenzung), Funktionsgenerator (Kurvenform, Frequenz, Amplitude), Multimeter, Oszilloskop (Zeit, Volt, Trigger, Cursor), Frequenzzähler, Leistungsmesser, Kennlinienschreiber.</p>
+      <p><b>Aufgaben:</b> Du misst, trägst die Zahl in das Feld ein (Einheit darf dabei stehen, zum Beispiel „250mA“), und das Lab prüft sie gegen den simulierten Wert.</p>
+      <p><b>Zeichnen:</b> Bauteil unten wählen, auf die Fläche tippen, Drähte ziehen, Entf löscht, Esc oder Rechtsklick beendet das Werkzeug.</p>`;
     if (root.MESS_DATA) root.MESS_DATA(api);
   };
 })(window);

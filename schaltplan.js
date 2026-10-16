@@ -1733,6 +1733,7 @@ $('#side').addEventListener('click', e => {
   if (a === 'dreveal') { const dc = sch.dice; if (!dc) return; if (dc.solved) { diceFix(); refreshUI(); } else { const pp = byPart(dc.id); sel = pp ? { t: 'part', id: pp.id } : null; dc.msg = 'Auflösung: ' + diceText(dc); dc.solved = true; dc.revealed = true; refreshUI(); draw(); } return; }
   if (a === 'trand') { const t = TASKS.find(x => x.id === sch.task); if (t && t.rand) { try { localStorage.setItem('sim.rs.' + t.id, String((+localStorage.getItem('sim.rs.' + t.id) || 0) + 1)); } catch (e) {} startTask(t.id); } return; }
   if (a === 'faster') { tempo = Math.min(1, Math.max(tempo + 0.1, 0.62)); refreshUI(); return; }
+  if (a === 'think') { const t0 = TASKS.find(x => x.id === sch.task), q = t0 && window.THINK && window.THINK[t0.id]; if (q && thinkAns[t0.id] == null) { thinkAns[t0.id] = +b.dataset.i; if (thinkAns[t0.id] === q.right) { try { const m = JSON.parse(localStorage.getItem('lm4.think') || '{}'); m[t0.id] = 1; localStorage.setItem('lm4.think', JSON.stringify(m)); if (window.Badges) window.Badges.stat('denk', Object.keys(m).length, 'max'); } catch (e) {} } refreshUI(); } return; }
   if (a === 'tcheck') { runTaskCheck(); return; }
   if (a === 'treport') { reportFault(); return; }
   if (a === 'thand') { const t = TASKS.find(x => x.id === sch.task); if (t && window.Auswertung) window.Auswertung.handIn(t.id, taskDone()[t.id] || 0, t.title); return; }
@@ -1824,7 +1825,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['print', 'Drucken', 'Plan und Bauteilliste'], ...(window.LAB_EXTRA_MENU ? window.LAB_EXTRA_MENU() : []), ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['kamp', 'Kampagne: Das Abschlussgerät', 'Lernpfad mit Geschichte über alle Labs'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['lern', 'Lernstand sichern oder laden', 'Fortschritt als Code oder Datei mitnehmen'], ...(window.LAB_EXTRA_MENU ? window.LAB_EXTRA_MENU() : []), ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['kamp', 'Kampagne: Das Abschlussgerät', 'Lernpfad mit Geschichte über alle Labs'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -3368,7 +3369,19 @@ function diceCardHtml() {
     + `<div class="row2"><button class="btn" data-a="dreveal">${done ? 'Fehler beheben' : 'Auflösung zeigen'}</button>${cs ? '<button class="btn" data-a="ddet">Fälle</button>' : '<button class="btn" data-a="droll">Neu würfeln</button>'}</div></div>`;
 }
 /* Antworten zu Mess- und Auswahlaufgaben (Zahlenfelder und Auswahl), bleiben beim Neuzeichnen der Seitenleiste erhalten */
-const taskAns = {};
+const taskAns = {}, thinkAns = {};
+/* Denkfragen (denkfragen.js): eine Frage vor dem Start, sofortige Rückmeldung, kein Einfluss auf das Ergebnis */
+function thinkHtml(t) {
+  const q = window.THINK && window.THINK[t.id]; if (!q) return '';
+  const a = thinkAns[t.id];
+  let h = `<div style="margin:8px 0;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel)"><div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:3px">🤔 Denkfrage: Was erwartest du?</div><div style="font-size:13px;margin-bottom:6px">${esc(q.q)}</div>`;
+  q.opts.forEach((o, i) => {
+    const on = a === i, col = a == null ? '' : (i === q.right ? 'border-color:#4cd964;' : (on ? 'border-color:#ff8a7a;' : 'opacity:.6;'));
+    h += `<button class="btn" style="display:block;width:100%;height:auto;min-height:34px;margin:3px 0;padding:6px 10px;text-align:left;font-weight:500;${col}" data-a="think" data-i="${i}" ${a != null ? 'disabled' : ''}>${a != null && i === q.right ? '✓ ' : (on ? '✗ ' : '')}${esc(o)}</button>`;
+  });
+  if (a != null) h += `<div style="font-size:12px;margin-top:6px;color:${a === q.right ? '#4cd964' : '#ffb340'}"><b>${a === q.right ? 'Richtig gedacht.' : 'Nicht ganz.'}</b> ${esc(q.why)}</div>`;
+  return h + '</div>';
+}
 window.TaskAns = { get: id => taskAns[id] || {}, set: (id, k, v) => { (taskAns[id] = taskAns[id] || {})[k] = v; }, setAll: (id, o) => { taskAns[id] = Object.assign({}, o); }, clear: id => { delete taskAns[id]; } };
 function taskAnswerHtml(t) {
   const a = taskAns[t.id] || {};
@@ -3381,6 +3394,7 @@ function taskCardHtml() {
   if (!sch.task) return '';
   const t = TASKS.find(x => x.id === sch.task); if (!t) return '';
   let h = `<div class="card task"><h4>Aufgabe · ${esc(t.cat)}</h4><b>${esc(t.title)}</b><p class="hint2">${esc(t.text)}</p>`;
+  h += thinkHtml(t);
   if (t.fields || t.choices) h += taskAnswerHtml(t);
   h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div><div class="row2"><button class="btn" data-a="thand">Abgeben (QR)</button></div>`;
   if (t.daily) { const di = dailyInfo(); h += '<p class="hint2">🔥 Serie: ' + di.streak + (di.streak === 1 ? ' Tag' : ' Tage') + (di.doneToday ? ' · heute geschafft ✓' : ' · heute noch offen') + '</p>'; }
@@ -3392,6 +3406,7 @@ function taskCardHtml() {
 function runTaskCheck() {
   const t = TASKS.find(x => x.id === sch.task); if (!t) return;
   let lines; try { lines = t.check(); } catch (e) { console.error(e); lines = [RES(false, 'Die Prüfung konnte nicht ausgeführt werden: ' + e.message)]; }
+  if (window.Warum) window.Warum.decorate(lines);
   const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
   taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); logResult(t.id, pct); refreshUI();
   if (pct === 100 && window.LochFX) LochFX.sound('pop');
@@ -3422,7 +3437,7 @@ function taskHint(t) {
 function startTask(id, solution) {
   const t = TASKS.find(x => x.id === id); if (!t) return;
   if (!solution && window.Auswertung) window.Auswertung.hintReset(id);
-  if (!solution) taskAns[id] = {};
+  if (!solution) { taskAns[id] = {}; delete thinkAns[id]; }
   const mk = solution ? (t.solMake || exOf(t.sol)) : t.start; if (!mk) { toast('Keine Musterlösung hinterlegt'); return; }
   const ex = buildExample({ name: t.title + (solution ? ' (Musterlösung)' : ''), make: mk }); ex.task = solution ? undefined : t.id; loadCircuit(ex); reports = 0;
   if (!solution) { tool = 'select'; buildPalette(); }
@@ -3736,6 +3751,7 @@ async function loadShared() {
 }
 function menuAct(m) {
   if (window.LAB_EXTRA_ACT && window.LAB_EXTRA_ACT(m)) return;
+  if (m === 'lern') { const go = () => window.Lernstand && window.Lernstand.open(); if (window.Lernstand) go(); else { const sc = document.createElement('script'); sc.src = 'lernstand.js'; sc.onload = go; document.head.appendChild(sc); } return; }
   if (m === 'tasks') { openTasks(); return; }
   if (m === 'cab') { openCabinet(); return; }
   if (m === 'teacher') { openTeacher(); return; }
@@ -3776,7 +3792,7 @@ function menuAct(m) {
   else if (m === 'png') { if (window.LabExport) window.LabExport.png(); }
   else if (m === 'gif') { if (window.LabExport) window.LabExport.gif(); }
   else if (m === 'csv') exportScopeCsv();
-  else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p><p><b>Tastenkürzel:</b> Taste <b>?</b> drücken oder im Menü „Tastenkürzel“. Zum Beispiel <b>R</b> Widerstand, <b>D</b> Diode, <b>L</b> LED, <b>W</b> Draht, <b>Eingabe</b> oder <b>F5</b> Simulation ein und aus.</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
+  else if (m === 'help') sheet('Hilfe', b => { if (window.LAB_HELP) { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p>${window.LAB_HELP()}</div>`; return; } b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p><p><b>Tastenkürzel:</b> Taste <b>?</b> drücken oder im Menü „Tastenkürzel“. Zum Beispiel <b>R</b> Widerstand, <b>D</b> Diode, <b>L</b> LED, <b>W</b> Draht, <b>Eingabe</b> oder <b>F5</b> Simulation ein und aus.</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
   const n = sch.parts.length + sch.wires.length;
@@ -4360,6 +4376,7 @@ window.LabDigiAPI = {
   get tool() { return tool; }, setTool: (t, k) => setTool(t, k), toggleRun, setSimMode: on => setSimMode(on),
   get meter() { return meter; }, meterText, meterDial, meterReset, meterTap, scopeValues, toggleScope, sv, rebuildKeep, staticR: (a, b) => staticR(a, b, 1, 'ohm'),
   get scopeBuf() { return scopeBuf; }, get graphWin() { return graphWin; }, setGraphWin: w => { graphWin = w; scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; },
+  tasksList: () => labTasks(),
   setSw: (id, v) => { const p = byPart(id); if (!p) return; p.sw = v ? 1 : 0; const w = wrapMap.get(id); if (w) w.sw = p.sw; },
   get canvas() { return cv; }, get dirty() { return dirtyDraw; }, rectOf: () => rectOf(), taskDoneMap: () => taskDone(), vAtKey: key => sv(key),
   withSch(tmp, fn) { const saved = sch; sch = tmp; try { return fn(); } finally { sch = saved; } },

@@ -2,6 +2,12 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v8.123', items: [
+      ['Kompaktere Startseite', 'Die acht Labs stehen in vier Spalten und zwei Reihen mit kleineren Bildern, damit mehr auf einen Bildschirm passt.', 'Startseite'],
+      ['„Warum?“ auch in SchaltLab, SimLab und DigiLab', 'Bei fehlgeschlagenen Prüfzeilen steht jetzt in allen Labs eine Erklärung: Ursache, Formel oder der Weg zur Lösung.', 'Aufgabe prüfen ▸ Warum?'],
+      ['Denkfragen vor dem Start', 'Bei ausgewählten Aufgaben aller Labs beantwortest du vor dem Bauen eine Frage: Was erwartest du? Du bekommst sofort die Erklärung. Dazu das Abzeichen Vorausdenker.', 'Aufgabenkarte'],
+      ['Lernstand sichern und mitnehmen', 'Dein Fortschritt liegt nur auf diesem Gerät. Jetzt kannst du ihn als Code, QR oder Datei sichern und auf einem anderen Gerät wieder einlesen (zusammenführen oder ersetzen).', 'Menü ▸ Lernstand sichern oder laden, Startseite unten'],
+      ['HausLab und MessLab bedienen wie die anderen', 'Esc und Rechtsklick beenden das Werkzeug, Entf löscht, im HausLab drehen die Pfeiltasten das Haus. Beide Labs haben eigene Hilfetexte.', 'Menü ▸ Hilfe'] ] },
     { v: 'v8.122', items: [
       ['Lernpfad zum Aufklappen', 'Auf der Startseite ist der Lernpfad zugeklappt und zeigt nur eine Zeile: Fortschritt, Kampagne und ein Knopf zur nächsten Aufgabe. Antippen klappt Spuren und Kampagne auf, die Wahl wird gemerkt.', 'Startseite ganz oben'] ] },
     { v: 'v8.121', items: [

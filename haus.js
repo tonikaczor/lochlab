@@ -543,6 +543,22 @@
       api.refreshUI(); api.draw(); const pal = document.getElementById('pal'); if (pal) { const bar = root.HAUS_PALETTE(isSim()); pal.innerHTML = bar; }
     }, true);
 
+    /* Tastatur und Rechtsklick wie in den anderen Labs: Esc beendet das Werkzeug, Entf löscht, Pfeile drehen, + und − zoomen */
+    function exitTool() { if (isSim()) return; stt.cabA = null; stt.ghost = null; stt.rubber = null; if (stt.tool !== 'sel') { stt.tool = 'sel'; stt.place = null; api.toast('Werkzeug beendet'); } api.refreshUI(); api.draw(); const pal = document.getElementById('pal'); if (pal) pal.innerHTML = root.HAUS_PALETTE(isSim()); }
+    api.canvas.addEventListener('contextmenu', e => { e.preventDefault(); exitTool(); });
+    window.addEventListener('keydown', e => {
+      const t = e.target; if (t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable) || e.ctrlKey || e.metaKey || e.altKey) return; if (!H()) return;
+      if (e.key === 'Escape') { exitTool(); return; }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && !isSim() && stt.sel) { const h = H(), s = stt.sel; if (s.t === 'obj') removeObj(s.id); else if (s.t === 'cab') h.cables = h.cables.filter(c => c.id !== s.id); else if (s.t === 'room') { h.objs.filter(o => o.room === s.id).forEach(o => removeObj(o.id)); h.rooms = h.rooms.filter(r => r.id !== s.id); } stt.sel = null; apply(); e.preventDefault(); return; }
+      if (e.key === 'ArrowLeft') { turn(-1); e.preventDefault(); } else if (e.key === 'ArrowRight') { turn(1); e.preventDefault(); }
+      else if (e.key === '+' || e.key === '=') zoom(1.2); else if (e.key === '-') zoom(0.83); else if (e.key === 'o' || e.key === 'O') toggleTop(); else if (e.key === '0') { root.HAUS_FIT(); api.draw(); }
+    });
+    root.LAB_HELP = () => `<p><b>Ansicht:</b> Pfeil links und rechts oder die Knöpfe unten drehen das Haus in 90-Grad-Schritten, <b>O</b> schaltet auf Draufsicht, <b>+</b> und <b>−</b> oder das Mausrad zoomen, <b>0</b> zeigt das ganze Haus. Auf freier Fläche ziehen verschiebt die Ansicht, mit zwei Fingern zoomst du.</p>
+      <p><b>Bauen:</b> Werkzeug unten wählen und auf eine sichtbare Wand tippen (Lampen auf den Boden). <b>Raum</b> ziehst du als Rechteck auf dem Boden auf. <b>Leitung</b>: erst das eine Gerät, dann das andere antippen. Leitungen laufen immer an Wänden und Decke. Der Verteilerkasten fragt nach dem Abgang.</p>
+      <p><b>Tastatur:</b> <b>Esc</b> oder Rechtsklick beendet das Werkzeug, <b>Entf</b> löscht die Auswahl, Strg + Z macht rückgängig.</p>
+      <p><b>Betrieb:</b> Oben auf „Sim“ stellen. Schalter und Geräte antippen oder links im <b>Bedienfeld</b> schalten. Dort sind „Alle an“ und „Alle aus“. An jedem Gerät steht die Spannung, „ohne Spannung“ in Orange zeigt eine Lücke.</p>
+      <p><b>Verteiler:</b> Der Knopf „Verteiler“ öffnet den Kasten: FI und Automaten einsetzen, Phase und FI-Zuordnung wählen, im Betrieb Hebel bedienen. Leitungen färben sich im Betrieb nach Last: grün normal, orange hoch, rot überlastet.</p>`;
+
     /* ---------------- Seitenleiste ---------------- */
     const cabExtra = c => {
       let t = `<div class="kv"><span>Leitungsart</span><span><button class="mini ${c.ph3 ? 'on' : ''}" data-a="hx" data-op="ph3" data-v="1">Drehstrom 5-adrig</button><button class="mini ${c.ph3 ? '' : 'on'}" data-a="hx" data-op="ph3" data-v="0">Wechselstrom 3-adrig</button></span></div>`;

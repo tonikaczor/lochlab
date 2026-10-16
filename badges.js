@@ -53,6 +53,7 @@
     ['cpu', '🖥️', 'Prozessor-Programmierer', 'Zwei Programme für die Mini-CPU geschrieben, die laufen.', function (c) { return [c.n(['dc1', 'dc2', 'dc3', 'dc4']), 2]; }],
     ['tabelle', '📋', 'Tabellenkünstler', 'Eine Wahrheitstabelle ausgewertet und eine Schaltung daraus bauen lassen.', function (c) { return [(c.st.wt ? 1 : 0) + (c.st.synth ? 1 : 0), 2]; }],
     ['zahlen', '🔟', 'Zahlenakrobat', 'Alle sechs Aufgaben im Zahlenumrechner richtig.', function (c) { return [c.st.zahlPerfekt || 0, 1]; }],
+    ['denker', '🤔', 'Vorausdenker', 'Fünf Denkfragen vor dem Start richtig beantwortet.', function (c) { return [c.st.denk || 0, 5]; }],
     ['hausbau', '🏠', 'Elektroinstallateur', 'Sechs Aufgaben im HausLab geschafft.', function (c) { return [c.n(c.ids('haus')), 6]; }],
     ['wechselschalter', '⇅', 'Wechselschalter-Meister', 'Die Wechselschaltung im Flur richtig verdrahtet.', function (c) { return [c.n(['ha4']), 1]; }],
     ['verteilermeister', '▤', 'Verteilermeister', 'Den Verteilerkasten bestückt und ein ganzes Haus installiert.', function (c) { return [c.n(['ha3', 'ha13']), 2]; }],
