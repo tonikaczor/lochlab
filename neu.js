@@ -2,6 +2,10 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v5.110', items: [
+      ['Schaltungs-Detektiv', 'Acht Fälle mit Geschichte: In jeder Schaltung steckt ein versteckter Fehler. Du misst, findest Bauteil und Fehlerart und sammelst Punkte. Jeder falsche Versuch kostet Punkte.', 'Menü ▸ Schaltungs-Detektiv (SchaltLab)'],
+      ['Multimeter wie echt', 'Drehschalter (V Gleich, V Wechsel, A, Ω), Buchsen (VΩ, mA, 10 A) und eine Messgerätesicherung. Wer falsch einstellt, bekommt die Folgen zu spüren: Spannung in der Strombuchse brennt die Sicherung durch, Widerstand misst man nur spannungsfrei.', 'Simulation ▸ Messen (SchaltLab, SimLab, Arduino-, Pi-Lab)'],
+      ['Zeitreise und Wasser-Ansicht im LochLab', 'In der Simulation: ⏪ Zurück und ⏩ Schritt spulen die Zeit, 💧 Wasser zeigt Druck, Engstelle, Tank, Pumpe und Rad.', 'LochLab: Simulation an, Leiste unten'] ] },
     { v: 'v5.109', items: [
       ['Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen in jedem Lab: Scheinwerfer auf die Stelle, Erklärung in der Sprechblase, bei manchen Schritten wartet der Trainer, bis du es selbst gemacht hast. Beim ersten Besuch eines Labs wird er angeboten. Zwei neue Abzeichen.', 'Menü ▸ Trainer: Erste Schritte (alle Labs)'] ] },
     { v: 'v5.108', items: [

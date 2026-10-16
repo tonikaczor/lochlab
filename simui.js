@@ -65,7 +65,7 @@ const sipOf = it => (it.k === 'SIP' ? SIP_SIM[it.v] : null);
 const hasSlide = it => SLIDERS.includes(it.k) || !!(sipOf(it) && sipOf(it).sl);
 const defPos = it => { const sp = sipOf(it); return sp && sp.def != null ? sp.def : (it.k === 'NTC' || it.k === 'PTC' ? 0.32 : 0.5); };
 function build() {
-  wrap.clear();
+  tlClear(); wrap.clear();
   const parts = doc.items.filter(i => i.t === 'part').map(i => {
     const pr = pinsOf(i), pins = i.k === 'OPTO' ? [pr[0], pr[1], pr[3], pr[2]] : (i.k === 'THY' ? [pr[1], pr[0], pr[2]] : (i.k === 'UNO' ? UNO_PM_SIM.map(li => pr[li]) : (sipOf(i) ? sipOf(i).pm.map(li => pr[li]) : pr)));
     const w = { id: i.id, k: i.k === 'UNO' ? 'MCU' : (i.k === 'PI' ? 'PI40' : (sipOf(i) ? sipOf(i).core : i.k)), vr: i.vr, v: i.v, n: i.n, pins, sw: i.sw || 0, pos: i.pos == null ? defPos(i) : i.pos, light: i.light == null ? 0.5 : i.light, pressed: false, item: i };
@@ -106,7 +106,7 @@ function mcuStep() {
   if (er) { prog.err = er; serLog += '⚠ Fehler in Zeile ' + er.line + ': ' + (er.type ? er.type + ': ' : '') + (er.msg || er.m || '') + '\n'; }
   else if (prog.runner.done) prog.err = { msg: 'Programmende' };
 }
-window.LochSimDebug = () => ({ select: id => { selSim = id; sel = id; buildPanel(); }, run: (T, hook) => { const n = Math.round(T / dtBase); for (let i = 0; i < n; i++) { if (prog) mcuStep(); sim.step(dtBase); if (hook) hook(sim.t); } }, circ, sim, prog, serLog, simOn, running, items: doc.items.filter(i => i.t === 'part').map(i => ({ k: i.k, l: i.l, b: i._b })) });
+window.LochSimDebug = () => ({ tl: { n: () => tl.length, idx: () => tlIdx, go: tlGo, fwd: tlStepFwd, live: tlLive, t: () => sim.t }, water: setWater, render: () => { try { render(); return 'ok'; } catch (e) { return String(e.stack || e); } }, select: id => { selSim = id; sel = id; buildPanel(); }, run: (T, hook) => { const n = Math.round(T / dtBase); for (let i = 0; i < n; i++) { if (prog) mcuStep(); sim.step(dtBase); if (hook) hook(sim.t); } }, circ, sim, prog, serLog, simOn, running, items: doc.items.filter(i => i.t === 'part').map(i => ({ k: i.k, l: i.l, b: i._b })) });
 function mcuTone() {
   if (!window.LochFX) return;
   const mm = circ && circ.mcu && circ.mcu.mcu; let f = 0;
@@ -148,6 +148,49 @@ function simDt() {
 }
 /* Taster bleiben mindestens 100 ms Simulationszeit gedrückt (bei langsamem Tempo wäre ein kurzer Klick sonst unsichtbar) */
 const holdPend = new Set();
+function transfer() {                                              // Zustände auf die Bauteile übertragen
+  circ.elems.forEach(e => {
+    const it = e.part && e.part.item; if (!it) return;
+    if (e.type === 'D' && e.seg != null) { (it._seg = it._seg || [])[e.seg] = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); return; }
+    if (e.type === 'D' && e.led) { it._b = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); it._st = e.imax ? e.i / e.imax : 0; if (e.sub) (it._bs = it._bs || {})[e.sub] = it._b; }
+    if (e.res) it._hot = e.power > 0.25 ? clampN(e.power / 1, 0, 1) : 0;
+  });
+}
+
+/* ---------- Zeitreise: Simulation zurückspulen und Schritt für Schritt ansehen ---------- */
+const TL_MAX = 400; let tl = [], tlIdx = -1, tlLast = 0;           // tlIdx: -1 = live, sonst Nummer des gezeigten Zustands
+function tlClear() { tl = []; tlIdx = -1; }
+function tlSnap() {
+  const els = circ.elems.map(e => {
+    const o = {};
+    for (const k in e) {
+      const v = e[k]; if (k === 'part' || typeof v === 'function') continue;
+      if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string' || v === null) o[k] = v;
+      else if (Array.isArray(v) && v.every(x => typeof x === 'number')) o[k] = v.slice();
+      else if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) { try { o[k] = JSON.parse(JSON.stringify(v)); } catch (x) {} }
+    }
+    return o;
+  });
+  return { t: sim.t, v: Float64Array.from(sim.v), els };
+}
+function tlCapture() {
+  if (!sim || !circ || prog || tlIdx >= 0) return;
+  const now = performance.now(); if (now - tlLast < 90) return; tlLast = now;
+  tl.push(tlSnap()); if (tl.length > TL_MAX) tl.shift();
+}
+function tlGo(i) {
+  if (!tl.length || !sim) return; i = clampN(i, 0, tl.length - 1); const sn = tl[i];
+  if (sn.els.length !== circ.elems.length) { tlClear(); simNav(); return; }
+  running = false; tlIdx = i; sim.v.set(sn.v); sim.t = sn.t; sn.els.forEach((o, k) => Object.assign(circ.elems[k], o)); sim.events.length = 0;
+  while (buf.n > 0 && buf.t[(buf.head - 1) % CAP] > sn.t) { buf.head--; buf.n--; }
+  buf.last = sn.t; trk.init = false; transfer(); simNav(); renderCtx(); invalidate();
+}
+function tlLive() { if (tlIdx >= 0) { tl = tl.slice(0, tlIdx + 1); tlIdx = -1; } }
+function tlStepFwd() {
+  if (tlIdx >= 0 && tlIdx < tl.length - 1) { tlGo(tlIdx + 1); return; }
+  tlLive(); running = false; advance(0.05); tlLast = 0; tlCapture(); simNav(); renderCtx(); invalidate();
+}
+
 function advance(T) {
   const dt = Math.max(simDt(), 1e-7);
   const n = Math.max(1, Math.round(T / dt));
@@ -158,13 +201,8 @@ function advance(T) {
     if ((i & 31) === 31 && performance.now() - t0 > 12) break;
   }
   holdPend.forEach(it => { if (sim.t - (it._pt || 0) >= 0.1) { const w = wrap.get(it.id); if (w) w.pressed = false; it._p = false; holdPend.delete(it); } });
-  // Zustände auf die Bauteile übertragen
-  circ.elems.forEach(e => {
-    const it = e.part && e.part.item; if (!it) return;
-    if (e.type === 'D' && e.seg != null) { (it._seg = it._seg || [])[e.seg] = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); return; }
-    if (e.type === 'D' && e.led) { it._b = Math.pow(clampN(e.i / 0.02, 0, 1), 0.6); it._st = e.imax ? e.i / e.imax : 0; if (e.sub) (it._bs = it._bs || {})[e.sub] = it._b; }
-    if (e.res) it._hot = e.power > 0.25 ? clampN(e.power / 1, 0, 1) : 0;
-  });
+  transfer();
+  tlCapture();
   sim.burnt.forEach(id => { const w = wrap.get(id); if (w) w.item._burnt = true; });
   while (sim.events.length) {
     const ev = sim.events.shift(); toast(ev.text + (ev.part && ev.part.item.l ? ' (' + ev.part.item.l + ')' : ''));
@@ -180,6 +218,7 @@ function tick(now) {
   if (!simOn) return;
   try {
     const rdt = Math.min((now - lastFrame) / 1000, 0.1); lastFrame = now;
+    if (running && tlIdx >= 0) tlLive();
     if (running && sim && circ.nn > 0) advance(rdt * speed);
     if (now - lastPanel > 80) { lastPanel = now; updatePanel(); mcuTone(); }
     invalidate();
@@ -354,8 +393,53 @@ function setSlide(h, px) {
   invalidate();
 }
 /* ---------- Zusatzzeichnung über dem Layout ---------- */
+
+/* ---------- Wasser-Ansicht: Strom als Wasser im Rohr, Spannung als Druck ---------- */
+let water = false; try { water = localStorage.getItem('lm4.water') === '1'; } catch (e) {}
+const wang = new Map(); let wLast = 0;
+function setWater(on) { water = on; try { localStorage.setItem('lm4.water', on ? '1' : '0'); } catch (e) {} simNav(); toast(on ? 'Wasser-Ansicht: Spannung = Druck, Strom = Strömung' : 'Normale Ansicht'); invalidate(); }
+function waterDraw(X, Y, S) {
+  let vm = 0.05; for (let i = 1; i < sim.v.length; i++) vm = Math.max(vm, Math.abs(sim.v[i]));
+  let im = 1e-6; circ.elems.forEach(e => { if (isFinite(e.i)) im = Math.max(im, Math.abs(e.i)); });
+  const now = performance.now(), dtw = Math.min(0.1, (now - (wLast || now)) / 1000); wLast = now;
+  cx.save(); cx.lineCap = 'round'; const lw = Math.max(6, S * 0.36);
+  doc.items.forEach(it => {
+    if (it.t !== 'wire' && it.t !== 'track') return;
+    const v = sv(circ.nodeOfKey(gk(it.x1, it.y1))); if (!isFinite(v)) return;
+    const f = clampN(v / vm, -1, 1), a = 0.18 + 0.78 * Math.abs(f);
+    const seg = () => { cx.beginPath(); cx.moveTo(X(it.x1), Y(it.y1)); cx.lineTo(X(it.x2), Y(it.y2)); cx.stroke(); };
+    cx.lineWidth = lw + 3; cx.strokeStyle = '#4a5560'; seg(); cx.lineWidth = lw; cx.strokeStyle = '#0d1319'; seg();
+    cx.lineWidth = lw - 3; cx.strokeStyle = f >= 0 ? 'rgba(40,150,255,' + a + ')' : 'rgba(255,150,60,' + a + ')'; seg();
+  });
+  const rr = (x, y, w, h, r) => { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); };
+  doc.items.forEach(it => {
+    if (it.t !== 'part') return;
+    const kind = ['R', 'P', 'TP', 'LDR', 'NTC', 'PTC', 'LAMP', 'VDR'].includes(it.k) ? 'r' : (['C', 'CE', 'CF'].includes(it.k) ? 'c' : (it.k === 'BAT' ? 'p' : (it.k === 'L' ? 'l' : '')));
+    if (!kind) return;
+    const b = worldBox(it), px = X((b[0] + b[2]) / 2), py = Y((b[1] + b[3]) / 2), w = S * 1.9, h = S * 1.15;
+    cx.save(); cx.translate(px, py); cx.fillStyle = 'rgba(8,11,14,.92)'; cx.strokeStyle = '#6cb8ff'; cx.lineWidth = 2; rr(-w / 2, -h / 2, w, h, 6); cx.fill(); cx.stroke();
+    if (kind === 'r') {
+      cx.fillStyle = '#6cb8ff'; cx.beginPath(); cx.moveTo(-w * .42, -h * .36); cx.lineTo(-w * .08, -h * .08); cx.lineTo(w * .08, -h * .08); cx.lineTo(w * .42, -h * .36); cx.lineTo(w * .42, -h * .42); cx.lineTo(-w * .42, -h * .42); cx.closePath(); cx.fill();
+      cx.beginPath(); cx.moveTo(-w * .42, h * .36); cx.lineTo(-w * .08, h * .08); cx.lineTo(w * .08, h * .08); cx.lineTo(w * .42, h * .36); cx.lineTo(w * .42, h * .42); cx.lineTo(-w * .42, h * .42); cx.closePath(); cx.fill();
+    } else if (kind === 'c') {
+      const pw = pinsOf(it), vv = Math.abs(sv(circ.nodeOfKey(gk(pw[0][0], pw[0][1]))) - sv(circ.nodeOfKey(gk(pw[1][0], pw[1][1])))), lv = isFinite(vv) ? Math.min(1, vv / vm) : 0, tw = w * .56, th = h * .74;
+      cx.fillStyle = 'rgba(40,150,255,.85)'; cx.fillRect(-tw / 2, th / 2 - th * lv, tw, th * lv); cx.strokeStyle = '#6cb8ff'; cx.strokeRect(-tw / 2, -th / 2, tw, th);
+    } else if (kind === 'p') {
+      cx.fillStyle = '#6cb8ff'; cx.font = 'bold ' + Math.round(h * .62) + 'px system-ui'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('⟳ Pumpe', 0, 1);
+    } else {
+      const es = circ.elems.filter(e => e.part && e.part.item === it), I = es.length && isFinite(es[0].i) ? es[0].i : 0;
+      wang.set(it.id, (wang.get(it.id) || 0) + (I / im) * dtw * 9); const ang = wang.get(it.id), R = h * .4;
+      cx.strokeStyle = '#6cb8ff'; cx.fillStyle = '#6cb8ff'; cx.lineWidth = Math.max(2, h * .09); cx.beginPath(); cx.arc(0, 0, R, 0, 7); cx.stroke();
+      for (let k = 0; k < 6; k++) { const a = ang + k * Math.PI / 3; cx.beginPath(); cx.moveTo(0, 0); cx.lineTo(Math.cos(a) * R, Math.sin(a) * R); cx.stroke(); cx.beginPath(); cx.arc(Math.cos(a) * R * .8, Math.sin(a) * R * .8, Math.max(1.5, h * .07), 0, 7); cx.fill(); }
+      cx.beginPath(); cx.arc(0, 0, Math.max(2, h * .1), 0, 7); cx.fill();
+    }
+    cx.restore();
+  });
+  cx.restore();
+}
 function overlay() {
   const S = view.s, X = x => view.ox + x * S, Y = y => view.oy + y * S;
+  if (water) waterDraw(X, Y, S);
   cx.save();
   cx.globalCompositeOperation = 'lighter';
   doc.items.forEach(it => {
@@ -427,20 +511,24 @@ function simNav() {
   $('#nav').innerHTML =
     b('run', running ? '⏸' : '▶', running ? 'Pause' : 'Start', running) + b('rst', '↺', 'Zurücksetzen') +
     b('t:use', '☝', 'Bedienen', simTool === 'use') + b('t:volt', 'V', 'Spannung', simTool === 'volt') +
-    b('t:amp', 'A', 'Strom', simTool === 'amp') + b('t:scope', '∿', 'Oszi', simTool === 'scope');
+    b('t:amp', 'A', 'Strom', simTool === 'amp') + b('t:scope', '∿', 'Oszi', simTool === 'scope') +
+    b('tlb', '⏪', 'Zurück') + b('tlf', '⏩', 'Schritt') + b('water', '💧', 'Wasser', water);
 }
 function simCtx() {
   const hints = { use: 'Schalter und Taster antippen, Potis in der Seitenleiste einstellen', volt: 'Zwei Punkte antippen: rote und schwarze Messspitze', amp: 'Bauteil antippen, durch das der Strom gemessen wird', scope: 'Punkt antippen: erst Kanal 1, dann Kanal 2' };
   const chip = (v, l) => `<button class="chip ${speed === v ? 'on' : ''}" data-s="spd" data-v="${v}">${l}</button>`;
-  $('#ctx').innerHTML = `<span class="hint">${hints[simTool]}</span><span class="sep"></span><span class="hint">Tempo</span>` +
+  $('#ctx').innerHTML = `<span class="hint">${tlIdx >= 0 ? '⏪ Zeitreise ' + fmtT(tl[tlIdx].t) + ' · ' : ''}${hints[simTool]}</span><span class="sep"></span><span class="hint">Tempo</span>` +
     chip(0.01, '1/100') + chip(0.1, '1/10') + chip(1, '×1') + chip(10, '×10') + chip(100, '×100');
   $('#side').classList.add('on');
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-s]'); if (!b || !simOn) return;
   const s = b.dataset.s;
-  if (s === 'run') { running = !running; lastFrame = performance.now(); }
-  else if (s === 'rst') { if (window.LochFX) LochFX.clear(); sim.reset(); resetSamples(); doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; delete i._seg; }); toast('Simulation zurückgesetzt'); }
+  if (s === 'run') { running = !running; lastFrame = performance.now(); if (running) tlLive(); }
+  else if (s === 'tlb') { tlGo((tlIdx >= 0 ? tlIdx : tl.length - 1) - 1); }
+  else if (s === 'tlf') { tlStepFwd(); }
+  else if (s === 'water') { setWater(!water); }
+  else if (s === 'rst') { tlClear(); if (window.LochFX) LochFX.clear(); sim.reset(); resetSamples(); doc.items.forEach(i => { delete i._b; delete i._burnt; delete i._hot; delete i._seg; }); toast('Simulation zurückgesetzt'); }
   else if (s.startsWith('t:')) { simTool = s.slice(2); }
   else if (s === 'spd') speed = parseFloat(b.dataset.v);
   else if (s === 'tm' || s === 'tp') { const i = TDIV.findIndex(t => Math.abs(t - scope.tdiv) < t * 1e-6); scope.tdiv = TDIV[clampN(i + (s === 'tp' ? 1 : -1), 0, TDIV.length - 1)]; buf.n = 0; buf.head = 0; buf.last = -1; }

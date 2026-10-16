@@ -36,6 +36,8 @@
     ['wuerfel', '🎲', 'Würfelglück', 'Einen gewürfelten Fehler gefunden.', function (c) { return [c.st.dice || 0, 1]; }],
     ['wuerfel5', '🎰', 'Würfelkönig', 'Fünf gewürfelte Fehler gefunden.', function (c) { return [c.st.dice || 0, 5]; }],
     ['hellseher', '🔮', 'Hellseher', 'Fünf richtige Vorhersagen hintereinander.', function (c) { return [c.st.predictBest || 0, 5]; }],
+    ['detektiv', '🕵️', 'Schaltungs-Detektiv', 'Drei Detektiv-Fälle gelöst.', function (c) { return [c.st.detektiv || 0, 3]; }],
+    ['dmm', '🔌', 'Multimeter-Profi', 'Spannung, Wechselspannung, Strom und Widerstand richtig gemessen.', function (c) { return [(c.st.mmV ? 1 : 0) + (c.st.mmAC ? 1 : 0) + (c.st.mmA ? 1 : 0) + (c.st.mmR ? 1 : 0), 4]; }],
     ['einsteiger', '🎓', 'Erste Schritte', 'Den Trainer eines Labs bis zum Ende durchgespielt.', function (c) { return [c.st.trainer || 0, 1]; }],
     ['trainer5', '🧭', 'Alle Labs erkundet', 'Den Trainer in allen fünf Labs durchgespielt.', function (c) { return [c.st.trainer || 0, 5]; }],
     ['duell', '⚔️', 'Duellant', 'Ein Duell zu Ende gebracht.', function (c) { return [c.st.duelle || 0, 1]; }],
