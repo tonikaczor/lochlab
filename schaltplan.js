@@ -1573,7 +1573,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -2914,6 +2914,18 @@ function openTeacher() {
 }
 
 
+
+/* Oszilloskop-Daten als Tabelle (CSV mit Semikolon und Dezimalkomma, öffnet direkt in Excel) */
+function exportScopeCsv() {
+  if (!window.LabExport) return;
+  const bufs = scopeBuf.map((b, k) => ({ b, k })).filter(x => x.b && x.b.t && x.b.t.length);
+  if (!bufs.length) { toast('Noch keine Messkurven: Oszilloskop-Kanal wählen und die Simulation laufen lassen'); return; }
+  const n = Math.max(...bufs.map(x => x.b.t.length)), f = v => (v == null || !isFinite(v) ? '' : String(+v.toPrecision(6)).replace('.', ','));
+  let out = 'Zeit [s]' + bufs.map(x => ';Kanal ' + (x.k + 1) + ' Spannung [V];Kanal ' + (x.k + 1) + ' Strom [A]').join('') + '\n';
+  for (let i = 0; i < n; i++) out += f(bufs[0].b.t[i]) + bufs.map(x => ';' + f(x.b.v[i]) + ';' + f(x.b.i[i])).join('') + '\n';
+  window.LabExport.saveBlob(new Blob(['﻿' + out], { type: 'text/csv;charset=utf-8' }), window.LabExport.fname('csv'));
+}
+
 /* ============ Messprotokoll: Soll berechnen, messen, vergleichen, drucken ============ */
 const PROTO_KEY = 'sim.proto';
 const protoLoad = () => { try { const o = JSON.parse(localStorage.getItem(PROTO_KEY) || '{}'); return { tol: o.tol || 5, rows: Array.isArray(o.rows) ? o.rows : [] }; } catch (e) { return { tol: 5, rows: [] }; } };
@@ -3172,6 +3184,9 @@ function menuAct(m) {
   else if (m === 'calc') { if (window.Rechner) window.Rechner.open(); }
   else if (m === 'erg') { if (window.Auswertung) window.Auswertung.openSend(); }
   else if (m === 'proto') openProtocol();
+  else if (m === 'png') { if (window.LabExport) window.LabExport.png(); }
+  else if (m === 'gif') { if (window.LabExport) window.LabExport.gif(); }
+  else if (m === 'csv') exportScopeCsv();
   else if (m === 'help') sheet('Hilfe', b => { b.innerHTML = `<div class="help"><p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION || ''}</p><p><b>Tastenkürzel:</b> Taste <b>?</b> drücken oder im Menü „Tastenkürzel“. Zum Beispiel <b>R</b> Widerstand, <b>D</b> Diode, <b>L</b> LED, <b>W</b> Draht, <b>Eingabe</b> oder <b>F5</b> Simulation ein und aus.</p><p><b>Zeichnen:</b> Bauteil in der Leiste wählen, auf die Fläche tippen. <b>Draht</b> von Punkt zu Punkt ziehen. Bauteil-Anschlüsse müssen genau auf Drahtenden liegen.</p><p><b>Masse:</b> Das Massesymbol legt fest, wo 0 V ist. Ohne Masse wird der Minuspol der Quelle genommen.</p><p><b>Simulation:</b> Oben den Schalter auf „Sim“ stellen. Die Spannung ist grün (positiv), rot (negativ) oder grau (null). Gelbe Punkte zeigen den Stromweg und seine Richtung.</p><p><b>Bedienen:</b> Schalter antippen, Taster gedrückt halten. Poti, Fotowiderstand und Werte rechts einstellen.</p><p><b>Drucken:</b> Menü, dann „Drucken“: der Plan kommt schwarz auf weiß aufs Blatt, dazu die Bauteilliste.</p><p><b>Graph:</b> Werkzeug „Graph“, dann Bauteil oder Draht antippen. Gelb ist die Spannung, grün der Strom.</p><p><b>Tempo:</b> Der Regler legt fest, wie viele simulierte Sekunden pro echter Sekunde vergehen. Schnelle Signale brauchen ein kleines Tempo.</p></div>`; });
 }
 function confirmNew(next) {
@@ -3888,7 +3903,7 @@ window.SchaltLive = {                                                           
   events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
   pinV: (id, i) => sv(gk(...pinsOf(byPart(id))[i])),
   stepN: n => { for (let k = 0; k < n; k++) sim.step(2e-4); return sim.t; },
-  route: (a, b) => routeWire(a, b), wireTo: (a, b) => wireTo(a, b), wires: () => sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
+  csv: () => exportScopeCsv(), scopeLen: () => scopeBuf.map(b => b.t.length), route: (a, b) => routeWire(a, b), wireTo: (a, b) => wireTo(a, b), wires: () => sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
 };
 window.LabUI = { sheet, esc, toast, userName, LAB };
 window.LabKeysAdapter = {                                                           // Tastenkürzel (keys.js)

@@ -1482,6 +1482,8 @@ function openMenu(){
       ['schalt','SchaltLab (Stromlaufplan)','Schaltung zeichnen, drucken, simulieren'],
       ['start','Zur Startseite','Tonfunk Lab: Programm wählen'],
       ['calc','Rechner','Farbcode, Ohmsches Gesetz, LED-Vorwiderstand'],
+      ['png','Bild speichern (PNG)','Aktuelle Ansicht als Bilddatei'],
+      ['gif','Animation als GIF','Laufende Simulation aufnehmen und teilen'],
       ['erg','Ergebnis senden','Code für den Ausbilder: meine bearbeiteten Aufgaben'],
       ['keys','Tastenkürzel','Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'],
       ['help','Hilfe','Bedienung & Installation'],
@@ -1531,6 +1533,8 @@ function menuAct(m){
   if(m==='keys'){if(window.LochKeys)LochKeys.help();return;}
   if(m==='calc'){if(window.Rechner)Rechner.open('farbe');return;}
   if(m==='erg'){if(window.Auswertung)Auswertung.openSend();return;}
+  if(m==='png'){if(window.LabExport)LabExport.png();return;}
+  if(m==='gif'){if(window.LabExport)LabExport.gif();return;}
   if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid,code:doc.code,lang:doc.lang,task:doc.task},doc.name);return;}
   if(m==='new')confirmNew(()=>boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));}));
   else if(m==='open')openList();
@@ -1882,5 +1886,6 @@ window.LabKeysAdapter = {
 <script src="qr.js"></script>
 <script src="auswertung.js"></script>
 <script src="panels.js"></script>
+<script src="export.js"></script>
 </body>
 </html>
