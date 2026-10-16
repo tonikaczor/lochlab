@@ -281,7 +281,7 @@ function simDown(p) {
   if (simTool === 'use') {
     const h = partAt(fx, fy);
     if (h) {
-      selSim = h.id; sel = h.id;
+      selSim = h.id; sel = h.id; if (window.Speak && window.Speak.auto()) window.Speak.part(h.k);
       const w = wrap.get(h.id);
       if (h.k === 'SCH') { h.sw = h.sw ? 0 : 1; w.sw = h.sw; simAct.done = true; }
       else if (h.k === 'SW') { w.pressed = true; h._p = true; h._pt = sim ? sim.t : 0; holdPend.delete(h); simAct.press = h; simAct.done = true; }
@@ -510,7 +510,7 @@ function buildPanel() {
       <div class="scrow"><span class="lbl" style="color:#35d0ff">K2 V/Div</span><button data-s="v2m">−</button><span class="val" id="v2d"></span><button data-s="v2p">+</button></div>
       <div class="scrow"><button class="mini" data-s="auto" style="flex:1">Automatisch einstellen</button></div>
     </div>
-    <div class="card"><h4>Bauteil</h4><div id="spP"></div>${slider}${srcCtl}</div>`;
+    <div class="card"><h4>Bauteil</h4><div id="spP"></div>${slider}${srcCtl}${sel_ && window.Speak && window.Speak.info(sel_.k) ? '<button class="btn" id="spk" style="margin-top:10px">🔊 Erkläre dich</button>' : ''}</div>`;
   const applySrc = (kind, x) => {
     if (!sel_ || !isFinite(x) || x < 0) return; const w = wrap.get(sel_.id), els = circ.elems.filter(e => e.part && e.part.id === sel_.id && e.type === 'V');
     if (sel_.k === 'BAT') { const vv = Math.min(x, 100); sel_.v = String(Math.round(vv * 100) / 100) + 'V'; if (w) w.v = sel_.v; els.forEach(e => { e.v0 = vv; }); $('#svv').textContent = String(Math.round(vv * 100) / 100).replace('.', ',') + ' V'; $('#svr').value = vv; $('#svn').value = vv; }
@@ -522,6 +522,7 @@ function buildPanel() {
     }
     try { save(); } catch (e) {}
   };
+  const spk = $('#spk'); if (spk) spk.addEventListener('click', () => window.Speak.part(sel_.k));
   const svr = $('#svr'), svn = $('#svn'), svf = $('#svf');
   if (svr) svr.addEventListener('input', () => applySrc('a', parseFloat(svr.value)));
   if (svn) svn.addEventListener('input', () => applySrc('a', parseFloat(String(svn.value).replace(',', '.'))));

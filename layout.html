@@ -1160,7 +1160,7 @@ function onDown(p){
     case 'hand':act={t:'pan',lx:p.x,ly:p.y};break;
     case 'select':{
       const h=hit(fx,fy);
-      if(h){sel=h.id;act={t:'move',id:h.id,g0:[gx,gy],orig:JSON.stringify(h),moved:false};}
+      if(h){sel=h.id;act={t:'move',id:h.id,g0:[gx,gy],orig:JSON.stringify(h),moved:false};if(h.t==='part'&&window.Speak&&Speak.auto())Speak.part(h.k);}
       else{sel=null;act={t:'pan',lx:p.x,ly:p.y};}
       renderCtx();break;}
     case 'wire':case 'track':
@@ -1263,6 +1263,7 @@ function sideCtl(k,rotV,n,it){
   let o=`<div class="ttl">${esc(P.name)}</div>`+(V?`<div class="sub">${esc(V.name)}</div>`:'');
   o+=shopLinks(k,V,it);
   { const h=hintOf(k,V); if(h)o+=`<div class="hint3"><b>Gut zu wissen</b><br>${esc(h)}</div>`; }
+  if(window.Speak&&Speak.info(k))o+=`<button class="sbtn wide" data-a="speak" data-k="${k}" style="margin-top:6px">🔊 Erkläre dich</button>`;
   { const ph=photoOf(k,V&&V.id); if(ph)o+=`<img class="phimg" src="bauteile/${ph}.jpg" alt="Foto" data-a="photo" data-id="${ph}"><div class="phcap">Foto antippen: alle Ansichten</div>`; }
   o+=`<div class="sh">Ausrichtung</div><div class="srow"><button class="sbtn" data-a="rl" aria-label="Links drehen">↺</button><span class="sval">${rotV*90}°</span><button class="sbtn" data-a="rot" aria-label="Rechts drehen">↻</button></div>`;
   if(P.kind!=='fixed')o+=`<div class="sh">${P.kind==='span'?'Länge':'Anzahl Pins'}</div><div class="srow"><button class="sbtn" data-a="sm" aria-label="weniger">−</button><span class="sval">${n}</span><button class="sbtn" data-a="sp" aria-label="mehr">+</button></div>`;
@@ -1396,6 +1397,7 @@ const ctxClick=e=>{
   else if(a==='photo'){openGallery(b.dataset.id);}
   else if(a==='done'){chain=null;}
   else if(a==='autoroute'){autoRoute=!autoRoute;try{localStorage.setItem('lm4.autoroute',autoRoute?'1':'0');}catch(e){}toast(autoRoute?'Auto-Weg an: Lötbahn und Draht suchen den Weg mit 90°-Knicken selbst':'Auto-Weg aus: gerade Stücke, Knickpunkte selbst setzen');}
+  else if(a==='speak'){if(window.Speak)Speak.part(b.dataset.k);}
   else if(a==='dup')dupSel();
   else if(a==='del')delSel();
   else if(a==='edit'){const it=byId(sel);if(it)it.t==='text'?editText(it):editPart(it);}
@@ -1483,6 +1485,8 @@ function openMenu(){
       ['start','Zur Startseite','Tonfunk Lab: Programm wählen'],
       ['calc','Rechner','Farbcode, Ohmsches Gesetz, LED-Vorwiderstand'],
       ['abz','Abzeichen','Deine Sammlung und was noch fehlt'],
+      ['speak','Bauteile sprechen automatisch','Antippen = Steckbrief per Sprachausgabe (an/aus)'],
+      ['ton','Tonwerkstatt','Klaviertasten, tone()-Code und 555-Sirene zum Hören'],
       ['predict','Vorhersage-Modus an/aus','Vor dem Start der Simulation tippen, was passiert'],
       ['png','Bild speichern (PNG)','Aktuelle Ansicht als Bilddatei'],
       ['gif','Animation als GIF','Laufende Simulation aufnehmen und teilen'],
@@ -1536,6 +1540,8 @@ function menuAct(m){
   if(m==='calc'){if(window.Rechner)Rechner.open('farbe');return;}
   if(m==='erg'){if(window.Auswertung)Auswertung.openSend();return;}
   if(m==='abz'){if(window.Badges)Badges.open();return;}
+  if(m==='speak'){if(window.Speak)Speak.toggleAuto();return;}
+  if(m==='ton'){if(window.Tonwerkstatt)Tonwerkstatt.open();return;}
   if(m==='predict'){if(window.Predict)Predict.toggle();return;}
   if(m==='png'){if(window.LabExport)LabExport.png();return;}
   if(m==='gif'){if(window.LabExport)LabExport.gif();return;}
@@ -1894,5 +1900,7 @@ window.LabKeysAdapter = {
 <script src="aufgaben.js"></script>
 <script src="badges.js"></script>
 <script src="predict.js"></script>
+<script src="speak.js"></script>
+<script src="tonwerkstatt.js"></script>
 </body>
 </html>

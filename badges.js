@@ -36,6 +36,10 @@
     ['wuerfel', '🎲', 'Würfelglück', 'Einen gewürfelten Fehler gefunden.', function (c) { return [c.st.dice || 0, 1]; }],
     ['wuerfel5', '🎰', 'Würfelkönig', 'Fünf gewürfelte Fehler gefunden.', function (c) { return [c.st.dice || 0, 5]; }],
     ['hellseher', '🔮', 'Hellseher', 'Fünf richtige Vorhersagen hintereinander.', function (c) { return [c.st.predictBest || 0, 5]; }],
+    ['duell', '⚔️', 'Duellant', 'Ein Duell zu Ende gebracht.', function (c) { return [c.st.duelle || 0, 1]; }],
+    ['escape', '🗝️', 'Ausbruchskünstler', 'Den Escape-Room geschafft.', function (c) { return [c.st.escape || 0, 1]; }],
+    ['serie3', '🔥', 'Dreier-Serie', 'Drei Tage hintereinander die Tagesaufgabe gelöst.', function (c) { return [c.st.dailyBest || 0, 3]; }],
+    ['serie7', '🌟', 'Wochenläufer', 'Sieben Tage in Folge die Tagesaufgabe gelöst.', function (c) { return [c.st.dailyBest || 0, 7]; }],
     ['zufall', '🎰', 'Zahlenjongleur', 'Eine Zufallsaufgabe mit eigenen Zahlen gelöst.', function (c) { return [c.n(['r1', 'r2', 'r3', 'r4']) , 1]; }],
   ];
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });

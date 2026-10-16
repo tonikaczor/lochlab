@@ -261,6 +261,48 @@ function releasePart(part, force) {
   if (!force && simMode && sim && sim.t - (pressT0.get(part.id) || 0) < 0.1) { relPend.add(part.id); return; }
   part.pressed = false; const w = wrapMap.get(part.id); if (w) w.pressed = false; relPend.delete(part.id);
 }
+
+/* ============ Zeitreise: Simulation zurückspulen und Schritt für Schritt ansehen ============ */
+const TL_MAX = 400; let tl = [], tlLast = 0, tlIdx = -1, tlLab = 0;          // tlIdx: -1 = live, sonst Nummer des gezeigten Zustands
+function tlClear() { tl = []; tlIdx = -1; }
+function tlSnap() {
+  const els = circ.elems.map(e => {
+    const o = {};
+    for (const k in e) {
+      const v = e[k]; if (k === 'part' || typeof v === 'function') continue;
+      if (typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string' || v === null) o[k] = v;
+      else if (Array.isArray(v) && v.every(x => typeof x === 'number')) o[k] = v.slice();
+      else if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) { try { o[k] = JSON.parse(JSON.stringify(v)); } catch (x) {} }
+    }
+    return o;
+  });
+  return { t: sim.t, v: Float64Array.from(sim.v), els };
+}
+function tlCapture() {
+  if (!sim || !circ || prog || tlIdx >= 0) return;
+  const now = performance.now(); if (now - tlLast < 90) return; tlLast = now;
+  tl.push(tlSnap()); if (tl.length > TL_MAX) tl.shift();
+}
+function tlLabel() {
+  const r = $('#tlR'), t = $('#tlT'); if (!r) return;
+  r.max = Math.max(0, tl.length - 1); r.value = tlIdx >= 0 ? tlIdx : tl.length - 1;
+  if (t) t.textContent = tl.length ? (tlIdx >= 0 ? 'Zeitreise ' : 'live ') + fmtT(tl[tlIdx >= 0 ? tlIdx : tl.length - 1].t) : '–';
+}
+function tlGo(i) {
+  if (!tl.length || !sim) return; i = Math.max(0, Math.min(tl.length - 1, i)); const sn = tl[i];
+  if (sn.els.length !== circ.elems.length) { tlClear(); tlLabel(); return; }
+  running = false; tlIdx = i; sim.v.set(sn.v); sim.t = sn.t; sn.els.forEach((o, k) => Object.assign(circ.elems[k], o)); sim.events.length = 0;
+  scopeBuf.forEach(b => { while (b.t.length > 1 && b.t[b.t.length - 1] > sn.t) { b.t.pop(); b.v.pop(); b.i.pop(); } });
+  computeFlows(); lastSample = sn.t; dirtyDraw = true; draw(); tlLabel();
+  const br = $('#bRun'); if (br) { br.textContent = '▶ Start'; br.classList.remove('on'); }
+}
+function tlLive() { if (tlIdx >= 0) { tl = tl.slice(0, tlIdx + 1); tlIdx = -1; } running = true; lastFrame = performance.now(); const br = $('#bRun'); if (br) { br.textContent = '⏸ Stopp'; br.classList.add('on'); } }
+function tlStepFwd() {
+  if (tlIdx >= 0 && tlIdx < tl.length - 1) { tlGo(tlIdx + 1); return; }
+  if (tlIdx >= 0) { tl = tl.slice(0, tlIdx + 1); tlIdx = -1; }
+  running = false; advance(1 / 20); tlLast = 0; tlCapture(); tlLabel(); dirtyDraw = true; draw();
+  const br = $('#bRun'); if (br) { br.textContent = '▶ Start'; br.classList.remove('on'); }
+}
 function advance(realDt) {
   if (!sim || circ.nn === 0) return;
   const target = rateOf(tempo) * realDt, dt = dtFor(rateOf(tempo));
@@ -275,7 +317,7 @@ function advance(realDt) {
   }
   if (relPend.size) relPend.forEach(id => { const p = byPart(id); if (!p || sim.t - (pressT0.get(id) || 0) >= 0.1) { if (p) releasePart(p, true); relPend.delete(id); if (refreshControls) refreshControls(); } });
   while (sim.events.length) onBurn(sim.events.shift());
-  computeFlows();
+  computeFlows(); tlCapture();
 }
 function termI(e) {
   if (e.tI) return e.tI;
@@ -391,12 +433,12 @@ function dotsOnPath(c, pts, I, ph) {
   let L = 0; const seg = [];
   for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(l); L += l; }
   const sp = 1.0; let off = ((ph.v % sp) + sp) % sp;
-  c.fillStyle = '#ffe14d';
+  c.fillStyle = waterOn() ? '#d9f1ff' : '#ffe14d'; const dr = waterOn() ? 0.2 : 0.13;
   for (let d = off; d <= L; d += sp) {
     let acc = 0, i = 0; while (i < seg.length - 1 && acc + seg[i] < d) { acc += seg[i]; i++; }
     const u = seg[i] ? (d - acc) / seg[i] : 0;
     const x = pts[i][0] + (pts[i + 1][0] - pts[i][0]) * u, y = pts[i][1] + (pts[i + 1][1] - pts[i][1]) * u;
-    c.beginPath(); c.arc(x, y, 0.13, 0, 7); c.fill();
+    c.beginPath(); c.arc(x, y, dr, 0, 7); c.fill();
   }
 }
 const phase = new Map();
@@ -974,6 +1016,39 @@ function setSlide(h, px) {
   const v = clamp((px - h.x0) / (h.x1 - h.x0), 0, 1), p = byPart(h.id); if (!p) return;
   p.pos = v; const w = wrapMap.get(p.id); if (w) { w.pos = v; w.light = v; } draw();
 }
+
+/* ============ Wasser-Ansicht: Strom als Wasser im Rohr, Spannung als Druck ============ */
+let water = false; try { water = localStorage.getItem('lm4.water') === '1'; } catch (e) {}
+const waterOn = () => water && showSim();
+function setWater(on) { water = on; try { localStorage.setItem('lm4.water', on ? '1' : '0'); } catch (e) {} const b = $('[data-a="water"]'); if (b) b.textContent = on ? '💧 Wasser-Ansicht: an' : '💧 Wasser-Ansicht'; dirtyDraw = true; draw(); toast(on ? 'Wasser-Ansicht: Spannung = Druck, Strom = Strömung' : 'Normale Ansicht'); }
+function waterPipe(x1, y1, x2, y2, v) {
+  const f = Math.max(-1, Math.min(1, v / Math.max(vmax, 0.05))), a = 0.18 + 0.78 * Math.abs(f), lw = Math.max(7, view.s * 0.34);
+  cx.lineCap = 'round'; cx.lineWidth = lw + 3; cx.strokeStyle = '#4a5560'; cx.beginPath(); cx.moveTo(X(x1), Y(y1)); cx.lineTo(X(x2), Y(y2)); cx.stroke();
+  cx.lineWidth = lw; cx.strokeStyle = '#0d1319'; cx.stroke();
+  cx.lineWidth = lw - 3; cx.strokeStyle = f >= 0 ? 'rgba(40,150,255,' + a + ')' : 'rgba(255,150,60,' + a + ')'; cx.stroke();
+}
+function waterBadges() {
+  const rr = (x, y, w, h, r) => { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); };
+  sch.parts.forEach(p => {
+    const K = KD(p); if (!K || !K.box) return;
+    const [ra, rb] = rot((K.box[0] + K.box[2]) / 2, (K.box[1] + K.box[3]) / 2, p.r), px = X(p.x + ra), py = Y(p.y + rb), s = view.s, w = s * 1.9, h = s * 1.15;
+    const kind = ['R', 'POT', 'NTC', 'PTC', 'LDR', 'LAMP', 'VDR'].includes(p.k) ? 'r' : (['C', 'CE', 'CF'].includes(p.k) ? 'c' : (p.k === 'BAT' ? 'p' : (p.k === 'L' ? 'l' : '')));
+    if (!kind) return;
+    cx.save(); cx.translate(px, py); cx.fillStyle = 'rgba(8,11,14,.92)'; cx.strokeStyle = '#6cb8ff'; cx.lineWidth = 2; rr(-w / 2, -h / 2, w, h, 6); cx.fill(); cx.stroke();
+    if (kind === 'r') {                         // Engstelle: je enger, desto größer der Widerstand
+      cx.fillStyle = '#6cb8ff'; cx.beginPath(); cx.moveTo(-w * .42, -h * .36); cx.lineTo(-w * .08, -h * .08); cx.lineTo(w * .08, -h * .08); cx.lineTo(w * .42, -h * .36); cx.lineTo(w * .42, -h * .42); cx.lineTo(-w * .42, -h * .42); cx.closePath(); cx.fill();
+      cx.beginPath(); cx.moveTo(-w * .42, h * .36); cx.lineTo(-w * .08, h * .08); cx.lineTo(w * .08, h * .08); cx.lineTo(w * .42, h * .36); cx.lineTo(w * .42, h * .42); cx.lineTo(-w * .42, h * .42); cx.closePath(); cx.fill();
+    } else if (kind === 'c') {                  // Tank: Füllstand = Spannung am Kondensator
+      const sc = scopeValues({ t: 'part', id: p.id }), lv = isFinite(sc[0]) ? Math.min(1, Math.abs(sc[0]) / Math.max(vmax, 0.05)) : 0, tw = w * .56, th = h * .74;
+      cx.fillStyle = 'rgba(40,150,255,.85)'; cx.fillRect(-tw / 2, th / 2 - th * lv, tw, th * lv); cx.strokeStyle = '#6cb8ff'; cx.strokeRect(-tw / 2, -th / 2, tw, th);
+    } else if (kind === 'p') {                  // Pumpe
+      cx.fillStyle = '#6cb8ff'; cx.font = 'bold ' + Math.round(h * .62) + 'px system-ui'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('⟳ Pumpe', 0, 1);
+    } else {                                    // Spule: Schwungrad, träge Strömung
+      cx.fillStyle = '#6cb8ff'; cx.font = 'bold ' + Math.round(h * .62) + 'px system-ui'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.fillText('⚙ Rad', 0, 1);
+    }
+    cx.restore();
+  });
+}
 function drawCircuit() {
   // Drähte
   const ends = new Map(); const cnt = k => ends.set(k, (ends.get(k) || 0) + 1);
@@ -983,7 +1058,8 @@ function drawCircuit() {
     const col = keyV(gk(w.x1, w.y1)), isSel = sel && sel.t === 'wire' && sel.id === w.id;
     cx.lineCap = 'round';
     if (isSel) { cx.strokeStyle = 'rgba(59,158,255,.6)'; cx.lineWidth = 9; cx.beginPath(); cx.moveTo(X(w.x1), Y(w.y1)); cx.lineTo(X(w.x2), Y(w.y2)); cx.stroke(); }
-    if (LAB === 'sim' && w.c && WIRECOL[w.c]) {
+    if (waterOn()) waterPipe(w.x1, w.y1, w.x2, w.y2, sv(gk(w.x1, w.y1)));
+    else if (LAB === 'sim' && w.c && WIRECOL[w.c]) {
       const lw = Math.max(3, view.s * 0.2); cx.lineWidth = lw + 2; cx.strokeStyle = PRINT ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.3)'; cx.beginPath(); cx.moveTo(X(w.x1), Y(w.y1)); cx.lineTo(X(w.x2), Y(w.y2)); cx.stroke();
       cx.lineWidth = lw; cx.strokeStyle = WIRECOL[w.c]; cx.stroke();
       if (w.c === 'gruen') { cx.strokeStyle = '#f2d21b'; cx.setLineDash([lw * 1.4, lw * 1.4]); cx.stroke(); cx.setLineDash([]); }
@@ -1001,6 +1077,7 @@ function drawCircuit() {
   });
   ends.forEach((n, k) => { if (n >= 3) { const [x, y] = k.split(',').map(Number); const rr = Math.max(4.5, view.s * 0.25); cx.beginPath(); cx.arc(X(x), Y(y), rr + 1.5, 0, 7); cx.fillStyle = PRINT ? '#fff' : '#080b0e'; cx.fill(); cx.beginPath(); cx.arc(X(x), Y(y), rr, 0, 7); cx.fillStyle = PRINT ? '#000' : keyV(k); cx.fill(); if (!PRINT) { cx.lineWidth = 1.5; cx.strokeStyle = 'rgba(255,255,255,.85)'; cx.stroke(); } } });
   sch.parts.forEach(p => drawPart(p, sel && sel.t === 'part' && sel.id === p.id));
+  if (waterOn() && !PRINT) waterBadges();
   drawMeterMarks();
   sliderHits = [];
   if (simMode && !PRINT) sch.parts.forEach(p => {
@@ -1203,7 +1280,7 @@ function onDown(p) {
     case 'select': {
       const part = partAt(fx, fy);
       if (part) {
-        sel = { t: 'part', id: part.id };
+        sel = { t: 'part', id: part.id }; if (window.Speak && window.Speak.auto()) speakPart(part);
         const pins = pinsOf(part).map(q => gk(q[0], q[1]));
         const att = []; sch.wires.forEach(w => { if (pins.includes(gk(w.x1, w.y1))) att.push([w, 1]); if (pins.includes(gk(w.x2, w.y2))) att.push([w, 2]); });
         act = { t: 'move', kind: 'part', id: part.id, g0: g, o: { x: part.x, y: part.y }, att: att.map(([w, e]) => [w, e, e === 1 ? w.x1 : w.x2, e === 1 ? w.y1 : w.y2]), moved: false, sx: p.x, sy: p.y };
@@ -1458,6 +1535,7 @@ function setSimMode(on) {
   setSimModeNow(on);
 }
 function setSimModeNow(on) {
+  tlClear();
   if (on && !sch.parts.length) { toast('Noch keine Bauteile gezeichnet'); return; }
   simMode = on; sel = null; wireStart = null; ghost = null; act = null;
   if (on) { tool = 'select'; rebuild(); sim.reset(); phase.clear(); lastSample = -1; running = true; lastFrame = performance.now(); startProgram(); }
@@ -1467,7 +1545,7 @@ function setSimModeNow(on) {
   if (window.LochFX) { LochFX.showBtn(on); LochFX.clear(); if (on) LochFX.unlock(); }
   buildPalette(); refreshUI(); draw();
 }
-function resetSim() { if (window.LochFX) LochFX.clear(); rebuild(); startProgram(); if (window.LochFX) LochFX.toneOff(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
+function resetSim() { tlClear(); if (window.LochFX) LochFX.clear(); rebuild(); startProgram(); if (window.LochFX) LochFX.toneOff(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
 function refreshUI() {
   const side = $('#side'); if (!side) return;
   $('#bRun').textContent = running ? '⏸ Stopp' : '▶ Start';
@@ -1481,6 +1559,7 @@ function refreshUI() {
     <div class="kv"><span>Zeit</span><b id="tLbl">${fmtT(sim ? sim.t : 0)}</b></div>
     <label class="sl"><span>Tempo<em id="tempoLbl">${tempoText()}</em></span><input type="range" id="slTempo" min="0" max="1" step="0.005" value="${tempo}"></label>
     <div id="tempoHint">${tempoHintHtml()}</div>
+    <div style="margin-top:8px"><div class="kv"><span>⏪ Zeitreise</span><b id="tlT">–</b></div><input type="range" id="tlR" min="0" max="0" value="0" step="1" aria-label="Zeitreise"><div class="row2"><button class="btn" data-a="tlback">◀ Schritt</button><button class="btn" data-a="tlfwd">Schritt ▶</button><button class="btn" data-a="tllive">Live</button></div><div class="row2" style="margin-top:6px"><button class="btn" data-a="water">${water ? '💧 Wasser-Ansicht: an' : '💧 Wasser-Ansicht'}</button></div>${prog ? '<p class="hint2">Bei Programmen (Arduino, Pi) gibt es keine Zeitreise.</p>' : ''}</div>
     <label class="sl"><span>Strompunkte</span><input type="range" id="slDot" min="0" max="1" step="0.01" value="${dotSpeed}"></label>
     <div class="kv"><span>Graph-Zeitfenster</span><span>${[0.001, 0.01, 0.1, 1, 10].map(w => `<button class="mini ${Math.abs(w - graphWin) < 1e-9 ? 'on' : ''}" data-win="${w}">${w >= 1 ? w + ' s' : w * 1000 + ' ms'}</button>`).join('')}</span></div>
   </div><div id="warn"></div>`;
@@ -1502,6 +1581,7 @@ function refreshUI() {
       if (LAB === 'sim' && !simMode && isGod()) h += `<label class="f"><span>Fehler (Lehrer)</span><select data-p="defect">${[['', 'keiner'], ['open', 'unterbrochen'], ['short', 'Kurzschluss']].map(([v, l]) => `<option value="${v}" ${(p.defect || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
       if (K.toggle) h += `<button class="btn" data-a="sw">Schalter umlegen (${p.sw ? 'an' : 'aus'})</button>`;
       if (!simMode) h += `<label class="f" style="margin-top:8px"><span>Bezeichnung</span><input data-p="l" value="${esc(p.l || '')}"></label><div class="row2" style="margin-top:8px"><button class="btn" data-a="rotl">↺</button><button class="btn" data-a="rotr">↻</button><button class="btn" data-a="dup">⧉</button><button class="btn danger" data-a="del">Löschen</button></div>`;
+      if (window.Speak && window.Speak.info(p.k)) h += '<div class="row2" style="margin-top:8px"><button class="btn" data-a="speak">🔊 Erkläre dich</button></div>';
       if (simMode) h += '<div id="live"></div>';
       h += '</div>';
     }
@@ -1529,6 +1609,11 @@ $('#side').addEventListener('click', e => {
   const a = b.dataset.a;
   if (a === 'mmV') { meter.mode = 'V'; meterReset(); refreshUI(); return; }
   if (a === 'posunit') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) { posUnitNext(p0); refreshUI(); } return; }
+  if (a === 'speak') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) speakPart(p0); return; }
+  if (a === 'water') { setWater(!water); return; }
+  if (a === 'tlback') { tlGo((tlIdx >= 0 ? tlIdx : tl.length - 1) - 1); return; }
+  if (a === 'tlfwd') { tlStepFwd(); return; }
+  if (a === 'tllive') { tlLive(); return; }
   if (a === 'dreport') { diceReport(); return; }
   if (a === 'droll') { rollFault(); return; }
   if (a === 'dreveal') { const dc = sch.dice; if (!dc) return; if (dc.solved) { diceFix(); refreshUI(); } else { const pp = byPart(dc.id); sel = pp ? { t: 'part', id: pp.id } : null; dc.msg = 'Auflösung: ' + diceText(dc); dc.solved = true; dc.revealed = true; refreshUI(); draw(); } return; }
@@ -1549,6 +1634,7 @@ $('#side').addEventListener('click', e => {
 });
 $('#side').addEventListener('input', e => {
   const t = e.target;
+  if (t.id === 'tlR') { tlGo(+t.value); return; }
   if (t.id === 'slTempo') { tempo = parseFloat(t.value); $('#tempoLbl').textContent = tempoText(); const th = $('#tempoHint'); if (th) th.innerHTML = tempoHintHtml(); return; }
   if (t.id === 'slDot') { dotSpeed = parseFloat(t.value); return; }
   if ((t.dataset.pu || t.dataset.pn) && sel && sel.t === 'part') {
@@ -1579,7 +1665,8 @@ function rebuildKeep() { rebuild(); draw(); }
 function loop(now) {
   const rdt = Math.min((now - lastFrame) / 1000, 0.1); lastFrame = now;
   try {
-    if (running) { advance(rdt); stepPhases(rdt); dirtyDraw = true; }
+    if (running && tlIdx >= 0) { tl = tl.slice(0, tlIdx + 1); tlIdx = -1; }
+    if (running) { advance(rdt); stepPhases(rdt); dirtyDraw = true; if (now - tlLab > 300) { tlLab = now; tlLabel(); } }
     if (window.LochFX && LochFX.active()) dirtyDraw = true;
     if (dirtyDraw) { dirtyDraw = false; render(); }
     if (running || sel) updateLive();
@@ -1624,7 +1711,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -2626,9 +2713,112 @@ while True:
 
 /* ---- SchaltLab: Aufgaben mit Messung ---- */
 
+
+/* ============ Tagesaufgabe mit Serie: jeden Tag eine neue Zufallsaufgabe, für alle mit denselben Zahlen ============ */
+let dailyMode = false;
+const withDaily = f => { dailyMode = true; try { return f(); } finally { dailyMode = false; } };
+function localDate(off) { const t = new Date(); t.setDate(t.getDate() + (off || 0)); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); }
+const dayNum = () => Math.floor(new Date(localDate() + 'T12:00:00').getTime() / 86400000);
+const dateDE = () => new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+const dbase = () => TASKS.find(t => t.id === ['r1', 'r2', 'r3', 'r4'][dayNum() % 4]);
+const dget = () => { try { return JSON.parse(localStorage.getItem('lm4.daily') || '{}'); } catch (e) { return {}; } };
+function dailyInfo() { const s = dget(), today = localDate(), live = s.last === today || s.last === localDate(-1); return { streak: live ? (s.streak || 0) : 0, best: s.best || 0, doneToday: s.last === today, days: s.days || {} }; }
+function dailySolved() {
+  const s = dget(), today = localDate(); if (s.last === today) return;
+  s.streak = s.last === localDate(-1) ? (s.streak || 0) + 1 : 1; s.last = today; s.best = Math.max(s.best || 0, s.streak); s.days = Object.assign({}, s.days, { [today]: 1 });
+  try { localStorage.setItem('lm4.daily', JSON.stringify(s)); } catch (e) {}
+  toast('🔥 Tagesaufgabe geschafft! Serie: ' + s.streak + (s.streak === 1 ? ' Tag' : ' Tage'));
+  if (window.Badges) { window.Badges.stat('dailyBest', s.streak, 'max'); window.Badges.confetti(false); window.Badges.chime(false); }
+}
+function openDaily() {
+  if (LAB !== 'sch') { location.href = 'schaltplan.html?aufgabe=tag'; return; }
+  const inf = dailyInfo(), base = withDaily(() => dbase());
+  sheet('Tagesaufgabe', b => {
+    let cal = ''; for (let i = 13; i >= 0; i--) { const dt = localDate(-i); cal += `<span title="${dt}" style="display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:6px;margin:2px;font-size:13px;background:${inf.days[dt] ? '#ff7a00' : 'var(--panel2,#2c343e)'};color:${inf.days[dt] ? '#fff' : 'var(--mute,#8d99a6)'}">${inf.days[dt] ? '🔥' : ''}</span>`; }
+    b.innerHTML = `<p style="margin-top:0"><b>${esc(dateDE())}</b><br>Heute: ${esc(base ? base.title.replace('Zufall: ', '') : '')} mit den Zahlen des Tages. Alle in der Gruppe haben heute dieselben Zahlen.</p>
+      <div class="card" style="padding:10px"><div style="font-size:26px;font-weight:700">🔥 ${inf.streak} ${inf.streak === 1 ? 'Tag' : 'Tage'} in Folge</div><div class="hint2" style="margin:2px 0 8px">Beste Serie: ${inf.best} · ${inf.doneToday ? 'Heute schon geschafft ✓' : 'Heute noch offen'}</div><div>${cal}</div></div>
+      <div class="row2"><button class="btn pri" id="dStart">${inf.doneToday ? 'Nochmal ansehen' : 'Heute starten'}</button></div><p class="hint2">Wer jeden Tag eine Aufgabe löst, baut eine Serie auf. Verpasst du einen Tag, beginnt sie wieder bei eins.</p>`;
+    b.querySelector('#dStart').onclick = () => { const bd = document.querySelector('.backdrop'); if (bd) bd.remove(); const go = () => startTask('tag'); if (sch.parts.length || sch.wires.length) confirmNew(go); else go(); };
+  });
+}
+
+
+/* ============ Duell: zwei Azubis, dieselbe Zufallsaufgabe, wer ist schneller? Zeiten gehen per Ergebnis-QR in die Rangliste ============ */
+let duelSeed = null;
+const withDuel = (seed, f) => { const o = duelSeed; duelSeed = seed; try { return f(); } finally { duelSeed = o; } };
+const dcur = () => { try { return JSON.parse(localStorage.getItem('lm4.duelcur') || '{}'); } catch (e) { return {}; } };
+const dduels = () => { try { return JSON.parse(localStorage.getItem('lm4.duels') || '{}'); } catch (e) { return {}; } };
+const dbaseDuel = () => { const sd = String(dcur().seed || '0000'); return TASKS.find(t => t.id === ['r1', 'r2', 'r3', 'r4'][(parseInt(sd, 10) || 0) % 4]); };
+const fmtDuel = ms => { const s = ms / 1000, m = Math.floor(s / 60); return (m ? m + ':' : '') + (s - m * 60).toFixed(1).padStart(m ? 4 : 1, '0').replace('.', ',') + (m ? '' : ' s'); };
+let duelTimer = 0;
+function duelChip(on) {
+  let c = document.getElementById('duelChip');
+  if (!on) { if (duelTimer) clearInterval(duelTimer); duelTimer = 0; if (c) c.remove(); return; }
+  if (!c) { c = document.createElement('div'); c.id = 'duelChip'; c.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:60;background:#ff7a00;color:#fff;font:700 18px system-ui;padding:8px 16px;border-radius:22px;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;gap:10px;align-items:center'; document.body.appendChild(c); }
+  const tick = () => { const cu = dcur(); if (!cu.start || cu.done) { duelChip(false); return; } c.innerHTML = '⚔️ Duell ' + esc(cu.seed) + ' · ' + esc(fmtDuel(Date.now() - cu.start)) + ' <button style="background:rgba(0,0,0,.25);border:0;color:#fff;border-radius:12px;padding:2px 9px;font-size:14px;cursor:pointer">✕</button>'; c.querySelector('button').onclick = () => { try { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: cu.seed, done: 1 })); } catch (e) {} duelChip(false); toast('Duell abgebrochen'); }; };
+  tick(); if (!duelTimer) duelTimer = setInterval(tick, 200);
+}
+function duelSolved() {
+  const cu = dcur(); if (!cu.start || cu.done) return; const ms = Date.now() - cu.start;
+  try { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: cu.seed, start: cu.start, done: 1, ms })); const du = dduels(); if (!du[cu.seed] || du[cu.seed][0] > ms) du[cu.seed] = [ms, dbaseDuel() ? dbaseDuel().id : '']; localStorage.setItem('lm4.duels', JSON.stringify(du)); } catch (e) {}
+  duelChip(false);
+  if (window.Badges) { window.Badges.stat('duelle', Object.keys(dduels()).length, 'max'); window.Badges.confetti(false); window.Badges.chime(false); }
+  sheet('🏁 Im Ziel!', b => {
+    b.innerHTML = `<p style="margin-top:0;font-size:22px"><b>${esc(fmtDuel(ms))}</b></p><p>Duell-Code <b>${esc(cu.seed)}</b>. Vergleicht eure Zeiten. Der Ausbilder trägt sie in die Rangliste ein: tippe auf „Ergebnis senden“ und zeige den QR-Code.</p><div class="row2"><button class="btn pri" id="dSend">Ergebnis senden</button></div>`;
+    b.querySelector('#dSend').onclick = () => { const bd = document.querySelector('.backdrop'); if (bd) bd.remove(); if (window.Auswertung) window.Auswertung.openSend(); };
+  });
+}
+function openDuel() {
+  if (LAB !== 'sch') { location.href = 'schaltplan.html?duell'; return; }
+  const seed = String(1000 + Math.floor(Math.random() * 9000));
+  sheet('Duell', b => {
+    b.innerHTML = `<p style="margin-top:0">Zwei oder mehr Azubis lösen <b>dieselbe Aufgabe mit denselben Zahlen</b>. Wer zuerst richtig ist, gewinnt.</p>
+      <label class="hint2">Duell-Code (alle geben denselben ein)</label>
+      <input id="dSeed" inputmode="numeric" maxlength="6" value="${seed}" style="width:100%;font-size:26px;text-align:center;letter-spacing:4px;box-sizing:border-box">
+      <div class="row2" style="margin-top:10px"><button class="btn pri" id="dGo">Los! (3, 2, 1)</button></div>
+      <p class="hint2">Tipp: Einer denkt sich einen Code aus und sagt ihn laut. Gleichzeitig auf „Los“ tippen.</p>`;
+    b.querySelector('#dGo').onclick = () => {
+      const sd = (b.querySelector('#dSeed').value || '').replace(/\D/g, '') || seed; const bd = document.querySelector('.backdrop'); if (bd) bd.remove();
+      const go = () => {
+        let n = 3; const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;color:#fff;font:900 140px system-ui'; document.body.appendChild(ov);
+        const step = () => { if (n > 0) { ov.textContent = n--; if (window.LochFX) window.LochFX.sound('tick'); setTimeout(step, 800); } else { ov.remove(); try { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: sd, start: Date.now() })); } catch (e) {} startTask('duell'); duelChip(true); } };
+        try { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: sd })); } catch (e) {} step();
+      };
+      if (sch.parts.length || sch.wires.length) confirmNew(go); else go();
+    };
+  });
+}
+
+/* ============ Escape-Room: gelöste Aufgaben verraten die Ziffern des Türcodes ============ */
+const ESC_STEPS = [
+  { id: 's6', d: 7, room: 'Heizungsraum', story: 'Der Strom ist ausgefallen und die Tür ist zu. An der Wand hängt ein Zettel: „Reihenschaltung, 6 mA fließen.“ Baue sie, dann zeigt dir die Anzeige die erste Ziffer.' },
+  { id: 's2', d: 3, room: 'Lampenlager', story: 'Eine Notleuchte braucht einen Vorwiderstand, sonst verglüht sie. Berechne und baue ihn, dann leuchtet die zweite Ziffer auf.' },
+  { id: 's13', d: 1, room: 'Pförtnerloge', story: 'Die Hofbeleuchtung soll bei Dämmerung von selbst angehen. Verdrahte den Dämmerungsschalter, dann hängt die dritte Ziffer am Schlüsselbrett.' },
+  { id: 's12', d: 9, room: 'Schaltwarte', story: 'Zuletzt blinkt die Warnleuchte der Schaltwarte nicht mehr. Verdrahte den 555-Blinker, dann ist die letzte Ziffer frei.' }];
+const ESC_CODE = ESC_STEPS.map(s => s.d).join('');
+const escOpen = () => { try { return localStorage.getItem('lm4.escape') === '1'; } catch (e) { return false; } };
+const escDigits = () => { const dn = taskDone(); return ESC_STEPS.map(s => (dn[s.id] || 0) >= 100); };
+function escMark(id) { const k = ESC_STEPS.findIndex(s => s.id === id); if (k < 0) return; const ok = escDigits(); if (ok.every(Boolean)) toast('🔑 Letzte Ziffer gefunden! Öffne im Menü den Escape-Room und tippe den Code ein.'); else toast('🔑 Ziffer ' + (k + 1) + ' gefunden: ' + ESC_STEPS[k].d); }
+function openEscape() {
+  if (LAB !== 'sch') { location.href = 'schaltplan.html?escape'; return; }
+  sheet('🗝️ Escape-Room', b => {
+    const ok = escDigits(), won = escOpen(), dn = ok.map((v, i) => v ? ESC_STEPS[i].d : '_');
+    b.innerHTML = `<p style="margin-top:0">Der Strom ist weg und du bist im Technikkeller eingeschlossen. Die Tür öffnet sich mit einem vierstelligen Code. <b>Jede gelöste Aufgabe verrät eine Ziffer.</b></p>
+      <div class="card" style="padding:10px;text-align:center"><div style="font:700 38px monospace;letter-spacing:10px">${dn.join(' ')}</div><div class="hint2">${won ? 'Tür offen ✓' : (ok.filter(Boolean).length + ' von 4 Ziffern')}</div></div>
+      ${ESC_STEPS.map((s, i) => `<div class="card" style="padding:10px;margin-top:8px"><b>Raum ${i + 1}: ${esc(s.room)}</b> ${ok[i] ? '✅' : '🔒'}<div class="hint2" style="margin:4px 0 8px">${esc(s.story)}</div>${ok[i] ? '<div>Ziffer: <b>' + s.d + '</b></div>' : '<button class="btn" data-esc="' + s.id + '">Aufgabe starten</button>'}</div>`).join('')}
+      ${won ? '<p><b>Geschafft!</b> Du bist raus. Tür auf, Licht an.</p>' : `<div class="card" style="padding:10px;margin-top:10px"><b>Tür-Schloss</b><div style="display:flex;gap:8px;margin-top:6px"><input id="escIn" inputmode="numeric" maxlength="4" placeholder="Code" style="flex:1;font-size:22px;letter-spacing:6px;text-align:center"><button class="btn pri" id="escGo">Öffnen</button></div><div class="hint2" id="escMsg"></div></div>`}`;
+    b.querySelectorAll('[data-esc]').forEach(x => { x.onclick = () => { const bd = document.querySelector('.backdrop'); if (bd) bd.remove(); const go = () => startTask(x.dataset.esc); if (sch.parts.length || sch.wires.length) confirmNew(go); else go(); }; });
+    const gb = b.querySelector('#escGo'); if (gb) gb.onclick = () => {
+      const v = b.querySelector('#escIn').value.trim();
+      if (v === ESC_CODE && escDigits().every(Boolean)) { try { localStorage.setItem('lm4.escape', '1'); } catch (e) {} if (window.Badges) { window.Badges.stat('escape', 1, 'max'); window.Badges.confetti(true); window.Badges.chime(true); } const bd = document.querySelector('.backdrop'); if (bd) bd.remove(); openEscape(); }
+      else b.querySelector('#escMsg').textContent = v.length === 4 ? (escDigits().every(Boolean) ? 'Das Schloss klemmt. Prüfe die Ziffern.' : 'Das Schloss klemmt. Dir fehlen noch Ziffern.') : 'Der Code hat vier Ziffern.';
+    };
+  });
+}
+
 /* ============ Zufallsaufgaben: jeder Azubi bekommt eigene Zahlen (aus Name, Aufgabe und „Neue Zahlen“) ============ */
 function rng(id) {
-  let a = 0; const str = (userName() || 'Azubi') + '|' + id + '|' + (localStorage.getItem('sim.rs.' + id) || '0'); for (const ch of str) a = (a * 31 + ch.charCodeAt(0)) >>> 0;
+  let a = 0; const str = duelSeed ? 'DUEL|' + duelSeed + '|' + id : dailyMode ? 'TAG|' + localDate() + '|' + id : (userName() || 'Azubi') + '|' + id + '|' + (localStorage.getItem('sim.rs.' + id) || '0'); for (const ch of str) a = (a * 31 + ch.charCodeAt(0)) >>> 0;
   return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
 const rpick = (r, arr) => arr[Math.floor(r() * arr.length)];
@@ -2790,6 +2980,18 @@ const SCH_TASKS = [
     solMake: () => { const p = RP.r4(); return { parts: [['BAT', 2, 4, 1, '5'], ['R', 6, 2, 0, fmtSI(p.R), { l: 'R1' }], ['GND', 2, 10], ['C', 10, 2, 1, fmtSI(e12(p.C)), { l: 'C1' }]], wires: [[2, 4, 2, 2, 6, 2], [2, 8, 2, 10], [10, 6, 10, 8, 2, 8]], scopes: [] }; },
     check() { const p = RP.r4(), c = sch.parts.find(q => q.k === 'C' || q.k === 'CE'), r = needKinds([['Kondensator', ['C', 'CE'], 1]]); if (!c) return r; const E = simEval({}); let v = 0; stepFine(E, p.tau / 1000, p.tau / 1000 / 200, () => { v = vAcross(E, c); });
       return r.concat([RES(Math.abs(Math.abs(v) - 3.16) <= 0.45, 'Nach ' + String(p.tau).replace('.', ',') + ' ms liegen ' + fmt1(Math.abs(v)) + ' V am Kondensator (Ziel etwa 3,2 V).')]); } },
+  { id: 'tag', lab: 'sch', cat: 'Tagesaufgabe', title: 'Tagesaufgabe: jeden Tag neue Zahlen', level: 2, daily: true,
+    get text() { return 'Heute, ' + dateDE() + ': ' + withDaily(() => dbase().text) + ' (Die Zahlen gelten heute für alle.)'; },
+    get hint() { return withDaily(() => dbase().hint); },
+    start: () => withDaily(() => dbase().start()),
+    solMake: () => withDaily(() => dbase().solMake()),
+    check() { return withDaily(() => dbase().check()); } },
+  { id: 'duell', lab: 'sch', cat: 'Duell', title: 'Duell: gleiche Aufgabe, schnellste Zeit', level: 2, duel: true,
+    get text() { const sd = dcur().seed || '0000'; return 'Duell ' + sd + ': ' + withDuel(sd, () => dbaseDuel().text) + ' (Alle im Duell haben dieselben Zahlen.)'; },
+    get hint() { return withDuel(dcur().seed || '0000', () => dbaseDuel().hint); },
+    start: () => withDuel(dcur().seed || '0000', () => dbaseDuel().start()),
+    solMake: () => withDuel(dcur().seed || '0000', () => dbaseDuel().solMake()),
+    check() { return withDuel(dcur().seed || '0000', () => dbaseDuel().check()); } },
   { id: 'sf3', lab: 'sch', cat: 'Fehlersuche', title: 'Spannungsteiler zeigt falsche Spannung', level: 1, debug: true, faultLabel: 'R2', sol: 'Spannungsteiler',
     start: () => { const d = exOf('Spannungsteiler')(); d.parts[1] = ['R', 8, 2, 1, '1k', { l: 'R1' }]; d.parts[2] = ['R', 8, 6, 1, '2k', { l: 'R2', defect: 'open' }]; return d; },
     text: 'Der Spannungsteiler soll 6 V am Voltmeter liefern, zeigt aber etwas anderes. Welcher Widerstand ist defekt? Miss nach, wähle ihn aus und tippe auf „Fehler melden“.',
@@ -2913,10 +3115,12 @@ window.TaskTest = only => labTasks().filter(t => !only || only.includes(t.id)).m
   return out;
 });
 const taskDone = () => { try { return JSON.parse(localStorage.getItem('sim.done') || '{}'); } catch (e) { return {}; } };
-function markDone(id, pct) { try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {} if (window.Badges) window.Badges.result(id, pct); }
+function markDone(id, pct) { try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {} if (window.Badges) window.Badges.result(id, pct); if (id === 'tag' && pct >= 100) dailySolved(); if (id === 'duell' && pct >= 100) duelSolved(); if (pct >= 100 && ESC_STEPS.some(s => s.id === id) && !escOpen()) escMark(id); }
 function logResult(id, pct, extra) {
   try { const a = JSON.parse(localStorage.getItem('sim.results') || '[]'); a.push(Object.assign({ t: Date.now(), name: userName(), task: id, pct }, extra || {})); localStorage.setItem('sim.results', JSON.stringify(a.slice(-300))); } catch (e) {}
 }
+
+function speakPart(p) { if (!window.Speak) return; const vt = valueText(p); window.Speak.part(p.k, vt ? 'In dieser Schaltung habe ich den Wert ' + vt + '.' : ''); }
 
 /* ============ Fehler-Würfel: ein zufälliger, versteckter Fehler in der aktuellen Schaltung ============ */
 const DICE_KINDS = ['R', 'C', 'CE', 'L', 'LED', 'D', 'ZD', 'NPN', 'PNP', 'LAMP', 'SPST', 'SPDT', 'PB', 'LDR', 'NTC', 'PTC', 'FUSE', 'NMOS', 'PMOS'];
@@ -2967,6 +3171,7 @@ function taskCardHtml() {
   const t = TASKS.find(x => x.id === sch.task); if (!t) return '';
   let h = `<div class="card task"><h4>Aufgabe · ${esc(t.cat)}</h4><b>${esc(t.title)}</b><p class="hint2">${esc(t.text)}</p>`;
   h += `<div class="row2"><button class="btn pri" data-a="${t.debug ? 'treport' : 'tcheck'}">${t.debug ? 'Fehler melden (gewähltes Bauteil)' : 'Lösung prüfen'}</button></div><div class="row2"><button class="btn" data-a="thint">Tipp</button><button class="btn" data-a="tstop">Aufgabe beenden</button></div><div class="row2"><button class="btn" data-a="thand">Abgeben (QR)</button></div>`;
+  if (t.daily) { const di = dailyInfo(); h += '<p class="hint2">🔥 Serie: ' + di.streak + (di.streak === 1 ? ' Tag' : ' Tage') + (di.doneToday ? ' · heute geschafft ✓' : ' · heute noch offen') + '</p>'; }
   if (t.rand) h += '<div class="row2"><button class="btn" data-a="trand">🎲 Neue Zahlen würfeln</button></div>';
   if (t.loch) h += (taskDone()[t.id] || 0) >= 100 ? `<div class="row2"><a class="btn pri" href="layout.html?aufgabe=${t.loch}" style="text-decoration:none;text-align:center">Weiter: im LochLab aufbauen</a></div>` : '<p class="hint2">Wenn der Plan stimmt, geht es im LochLab weiter: dort baust du dieselbe Schaltung auf der Platine auf.</p>';
   if (taskRes && taskRes.id === t.id) h += `<ul class="tl">${taskRes.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>` + (taskRes.pct != null ? `<div class="score ${taskRes.pct === 100 ? 'ok' : ''}">${taskRes.pct === 100 ? '🎉 Geschafft!' : taskRes.pct + ' % richtig'}</div>` : '');
@@ -3337,7 +3542,13 @@ function menuAct(m) {
   else if (m === 'calc') { if (window.Rechner) window.Rechner.open(); }
   else if (m === 'erg') { if (window.Auswertung) window.Auswertung.openSend(); }
   else if (m === 'proto') openProtocol();
+  else if (m === 'tag') openDaily();
+  else if (m === 'duell') openDuel();
+  else if (m === 'escape') openEscape();
   else if (m === 'abz') { if (window.Badges) window.Badges.open(); }
+  else if (m === 'speak') { if (window.Speak) window.Speak.toggleAuto(); }
+  else if (m === 'water') setWater(!water);
+  else if (m === 'ton') { if (window.Tonwerkstatt) window.Tonwerkstatt.open(); }
   else if (m === 'dice') rollFault();
   else if (m === 'predict') { if (window.Predict) window.Predict.toggle(); }
   else if (m === 'png') { if (window.LabExport) window.LabExport.png(); }
@@ -4005,6 +4216,8 @@ $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name
   if (/[?&]neu\b/.test(location.search)) { if (d && d.parts && (d.parts.length || (d.wires && d.wires.length))) { loadCircuit(d); confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] })); } else loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }); }
   else if (/[?&]ex=/.test(location.search)) { const q = decodeURIComponent(location.search.match(/[?&]ex=([^&]*)/)[1]).toLowerCase(), e = EXAMPLES.find(x => exOk(x) && x.name.toLowerCase().includes(q)); loadCircuit(buildExample(e || defEx())); }
   else if (/[?&]aufgabe=/.test(location.search) && TASKS.some(t => t.id === location.search.match(/[?&]aufgabe=(\w*)/)[1] && (t.lab || 'sim') === LAB)) startTask(location.search.match(/[?&]aufgabe=(\w*)/)[1]);
+  else if (/[?&]escape\b/.test(location.search)) openEscape();
+  else if (/[?&]duell\b/.test(location.search)) openDuel();
   else if (/[?&]bsp\b/.test(location.search)) loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1]));
   else if (d && d.parts && d.parts.length) loadCircuit(d); else { loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1])); }
   if (PROGLAB) { initDock(); }
@@ -4059,7 +4272,7 @@ window.SchaltLive = {                                                           
   events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
   pinV: (id, i) => sv(gk(...pinsOf(byPart(id))[i])),
   stepN: n => { for (let k = 0; k < n; k++) sim.step(2e-4); return sim.t; },
-  csv: () => exportScopeCsv(), scopeLen: () => scopeBuf.map(b => b.t.length), route: (a, b) => routeWire(a, b), wireTo: (a, b) => wireTo(a, b), wires: () => sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
+  csv: () => exportScopeCsv(), scopeLen: () => scopeBuf.map(b => b.t.length), route: (a, b) => routeWire(a, b), wireTo: (a, b) => wireTo(a, b), wires: () => sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), water: on => setWater(on), done: markDone, daily: openDaily, openEscape, openDuel, duel: { solved: duelSolved, cur: dcur, set: (sd) => { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: sd, start: Date.now() })); }, base: dbaseDuel, fmt: fmtDuel }, esc: { steps: ESC_STEPS, code: ESC_CODE, digits: escDigits }, render: () => { try { render(); return "ok"; } catch (e) { return String(e.stack || e); } }, tl: { n: () => tl.length, idx: () => tlIdx, go: tlGo, live: tlLive, fwd: tlStepFwd, adv: n => { for (let k = 0; k < n; k++) { tlLast = 0; advance(0.05); } return tl.length; }, t: () => sim.t, v: () => Array.from(sim.v).slice(0, 6) }, vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
 };
 window.LabUI = { sheet, esc, toast, userName, LAB };
 window.LabKeysAdapter = {                                                           // Tastenkürzel (keys.js)

@@ -91,6 +91,7 @@ body.printqr #qrSheet{display:block!important}
     <div id="qrList"></div>
     <div class="row"><button class="pri" id="qrPrint">QR-Blatt drucken</button><button id="qrAll">Alle ankreuzen</button><button id="qrNone">Keine</button><span id="qrMsg" class="mute"></span></div>
   </div>
+  <div class="card" id="duelCard"><h2>Duell-Rangliste</h2><div id="duelList"></div></div>
   <div class="card" id="chartCard">
     <h2>Gruppenüberblick</h2>
     <div class="legend"><b style="background:var(--ok)"></b>100 % geschafft<b style="background:var(--part)"></b>begonnen, noch nicht ganz richtig</div>
@@ -134,7 +135,7 @@ function mergeClass(d) {
 }
 function addCodes(txt) {
   const list = Auswertung.parse(txt), d = load(); let n = 0;
-  list.forEach(o => { const nm = (o.n || '').trim() || 'ohne Namen'; const p = d[nm] = d[nm] || { t: 0, d: {}, h: {}, b: [] }; p.h = p.h || {}; p.b = Array.from(new Set((p.b || []).concat(o.b || []))); Object.keys(o.d).forEach(k => { const v = Math.round(+o.d[k] || 0), old = p.d[k] || 0; if (v >= old) p.h[k] = (o.h && o.h[k]) || 0; p.d[k] = Math.max(old, v); }); p.t = Math.max(p.t, o.t || 0); n++; });
+  list.forEach(o => { const nm = (o.n || '').trim() || 'ohne Namen'; const p = d[nm] = d[nm] || { t: 0, d: {}, h: {}, b: [] }; p.h = p.h || {}; p.b = Array.from(new Set((p.b || []).concat(o.b || []))); Object.keys(o.d).forEach(k => { const v = Math.round(+o.d[k] || 0), old = p.d[k] || 0; if (v >= old) p.h[k] = (o.h && o.h[k]) || 0; p.d[k] = Math.max(old, v); }); p.w = p.w || {}; Object.keys(o.w || {}).forEach(k => { const x = o.w[k]; if (Array.isArray(x) && x[0] > 0 && (!p.w[k] || p.w[k][0] > x[0])) p.w[k] = [Math.round(x[0]), String(x[1] || '')]; }); p.t = Math.max(p.t, o.t || 0); n++; });
   save(d); return n;
 }
 function charts(d, names, cols) {
@@ -170,8 +171,14 @@ function render() {
   });
   h += '</tbody><tfoot><tr><td class="name">Geschafft (100 %)</td><td></td><td></td><td></td><td></td>' + colSum.map(c => `<td>${c[0]}</td>`).join('') + '</tr></tfoot>';
   $('#tab').innerHTML = names.length ? h : '<tbody><tr><td class="name">Noch keine Ergebnisse. Oben Codes einfügen.</td></tr></tbody>';
-  charts(d, names, cols);
+  charts(d, names, cols); duelRank(d);
   $('#stand').textContent = names.length + ' Azubis · ' + cols.length + ' Aufgaben';
+}
+function duelRank(d) {
+  const by = {}; Object.keys(d).forEach(n => Object.keys(d[n].w || {}).forEach(k => { (by[k] = by[k] || []).push({ n, ms: d[n].w[k][0], t: d[n].w[k][1] }); }));
+  const ks = Object.keys(by), fm = ms => { const s = ms / 1000, m = Math.floor(s / 60); return (m ? m + ':' : '') + (s - m * 60).toFixed(1).padStart(m ? 4 : 1, '0').replace('.', ',') + (m ? '' : ' s'); };
+  $('#duelCard').style.display = ks.length ? '' : 'none';
+  $('#duelList').innerHTML = ks.map(k => `<h3 style="font-size:14px;margin:8px 0 4px">Duell ${esc(k)}</h3>` + by[k].sort((a, b) => a.ms - b.ms).map((r, i) => `<div class="brow"><span class="lb">${['🥇', '🥈', '🥉'][i] || (i + 1) + '.'} ${esc(r.n)}</span><span class="nm" style="margin-left:auto">${esc(fm(r.ms))}</span></div>`).join('')).join('');
 }
 function csv() {
   const d = load(); mergeClass(d); const labs = window.AUFGABEN_LABS, all = window.AUFGABEN, used = new Set();
@@ -220,7 +227,7 @@ function summaryText() {
   names.forEach(n => { const p = d[n].d, ks = Object.keys(p), full = ks.filter(k => p[k] >= 100); out += '\n' + n + ': ' + full.length + ' von ' + ks.length + ' Aufgaben vollständig, ' + (d[n].b || []).length + ' Abzeichen\n' + ks.map(k => '  ' + (p[k] >= 100 ? '✓' : '·') + ' ' + taskTitle(k) + ' (' + p[k] + ' %' + ((d[n].h || {})[k] ? ', Tipp-Stufe ' + d[n].h[k] : '') + ')').join('\n') + '\n'; });
   return out;
 }
-function transferText() { const d = load(); mergeClass(d); return Object.keys(d).map(n => 'TFL1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ n, t: d[n].t || Date.now(), d: d[n].d, h: d[n].h || {}, b: d[n].b || [] })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')).join('\n'); }
+function transferText() { const d = load(); mergeClass(d); return Object.keys(d).map(n => 'TFL1.' + btoa(unescape(encodeURIComponent(JSON.stringify({ n, t: d[n].t || Date.now(), d: d[n].d, h: d[n].h || {}, b: d[n].b || [], w: d[n].w })))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')).join('\n'); }
 function beep() { try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(); o.frequency.value = 880; o.connect(a.destination); o.start(); setTimeout(() => { o.stop(); a.close(); }, 120); } catch (e) {} }
 function stopScan() { if (raf) cancelAnimationFrame(raf); raf = 0; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; $('#vid').style.display = 'none'; $('#scanBtn').textContent = 'Kamera starten'; }
 async function startScan() {
