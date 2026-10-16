@@ -1186,8 +1186,9 @@ const ICONS={
 const TOOLS=[['select','Auswahl'],['hand','Schieben'],['part','Bauteil'],['wire','Draht'],['track','Lötbahn'],['dot','Lötpunkt'],['text','Text'],['erase','Löschen']];
 const icon=n=>`<svg class="i" viewBox="0 0 24 24">${ICONS[n]}</svg>`;
 function buildNav(){
-  $('#nav').innerHTML=TOOLS.filter(([id])=>id!=='part').map(([id,l])=>`<button class="tb ${tool===id?'on':''}" data-t="${id}">${icon(id)}<span>${l}</span></button>`).join('');
+  $('#nav').innerHTML=TOOLS.filter(([id])=>id!=='part'||!matchMedia('(min-width:640px)').matches).map(([id,l])=>`<button class="tb ${tool===id?'on':''}" data-t="${id}">${icon(id)}<span>${l}</span></button>`).join('');
 }
+matchMedia('(min-width:640px)').addEventListener&&matchMedia('(min-width:640px)').addEventListener('change',()=>{buildNav();renderCtx();});
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('.tb');if(b)setTool(b.dataset.t);});
 
 const ledSw=cur=>Object.keys(LEDC).map(n=>`<button class="sw ${ledColor(cur)===LEDC[n]?'on':''}" style="background:${LEDC[n]}" data-a="lc" data-v="${n}" aria-label="${n}"></button>`).join('');
