@@ -4,6 +4,9 @@
   const EX = [
     /* ---------- SchaltLab ---------- */
     /* ---------- neue Bauteile ---------- */
+    { cat: 'Netzteile', name: 'Netzteil 5 V: Brücke, Elko und Spannungsregler', info: 'Aus 12 V Wechselspannung (Trafo, Scheitelwert 17 V) wird eine stabile Gleichspannung: vier Dioden richten gleich, der Elko 1000 µF glättet, der 7805 stabilisiert auf 5 V. Ein kleiner Elko am Ausgang beruhigt den Regler, die LED zeigt den Betrieb an.',
+      make: () => ({ parts: [['AC', 6, 4, 0, '17V 50Hz'], ['D', 6, 4, 3, '1N4007'], ['D', 6, 8, 3, '1N4007'], ['D', 12, 4, 3, '1N4007'], ['D', 12, 8, 3, '1N4007'], ['CE', 18, 0, 1, '1000u'], ['REG', 22, 0, 0, '7805'], ['CE', 30, 0, 1, '10u'], ['R', 34, 0, 1, '330'], ['LED', 34, 4, 1, 'grün'], ['GND', 12, 8]],
+        wires: [[10, 4, 12, 4], [6, 0, 12, 0, 18, 0, 22, 0], [6, 8, 12, 8, 18, 8, 24, 8, 30, 8, 34, 8], [18, 4, 18, 8], [24, 2, 24, 8], [26, 0, 30, 0, 34, 0], [30, 4, 30, 8]], scopes: [], tempo: 0.4, win: 0.1 }) },
     { cat: 'Transistoren', name: 'Dämmerungsschalter mit Relais und Lampe', info: 'Im Dunkeln (Regler Licht unten) hat der Fotowiderstand viel Widerstand, die Basisspannung steigt, der Transistor schaltet das Relais und das Relais schaltet die Lampe im zweiten Stromkreis ein. Bei Licht fällt der Widerstand, der Transistor sperrt und die Lampe geht aus. Die Diode schützt vor der Induktionsspannung der Spule.',
       make: () => ({ parts: [['BAT', 2, 4, 1, '12'], ['R', 4, 4, 1, '47k'], ['LDR', 4, 10, 1, '', { pos: 0.15 }], ['NPN', 8, 12, 0, 'BC547'], ['RLY', 8, 2, 0, '12V'], ['D', 6, 6, 3, '1N4007'], ['LAMP', 16, 2, 0, '12V 0.1A'], ['BAT', 22, 2, 1, '12'], ['GND', 2, 10], ['GND', 4, 16], ['GND', 10, 16], ['GND', 22, 10]],
         wires: [[2, 4, 2, 2, 4, 2, 6, 2, 8, 2], [4, 2, 4, 4], [4, 8, 4, 10], [4, 10, 6, 10, 6, 12, 8, 12], [4, 14, 4, 16], [8, 6, 10, 6, 10, 10], [6, 6, 8, 6], [10, 14, 10, 16], [20, 2, 22, 2], [13, 4, 13, 10, 22, 10, 22, 6], [2, 8, 2, 10]], scopes: [], tempo: 0.75 }) },

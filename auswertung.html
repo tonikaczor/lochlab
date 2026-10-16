@@ -36,6 +36,11 @@ td.c{min-width:34px;font-weight:600}
 td.p100{background:var(--ok);color:#fff}td.pp{background:var(--part);color:#fff}td.p0{background:var(--none);color:var(--mute)}
 tfoot td{font-weight:600;background:var(--panel);position:sticky;bottom:0}
 .sum{font-weight:600}
+.chart{margin:6px 0 14px}.brow{display:grid;grid-template-columns:minmax(120px,38%) 1fr 58px;gap:8px;align-items:center;font-size:13px;margin:3px 0}
+.brow .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar{height:16px;background:var(--none);border-radius:8px;overflow:hidden;display:flex}
+.bar i{display:block;height:100%}.bar i.g{background:var(--ok)}.bar i.y{background:var(--part)}.brow .nm{text-align:right;color:var(--mute)}
+.stone{margin:4px 0;padding:6px 10px;border-left:4px solid var(--part);background:var(--bg);border-radius:0 8px 8px 0;font-size:13px}
+.legend{font-size:12px;color:var(--mute);margin:2px 0 8px}.legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 4px 0 10px;vertical-align:-1px}
 #gate{max-width:360px;margin:15vh auto;text-align:center}
 .hide{display:none}
 #qrSheet{display:none}
@@ -86,6 +91,13 @@ body.printqr #qrSheet{display:block!important}
     <div id="qrList"></div>
     <div class="row"><button class="pri" id="qrPrint">QR-Blatt drucken</button><button id="qrAll">Alle ankreuzen</button><button id="qrNone">Keine</button><span id="qrMsg" class="mute"></span></div>
   </div>
+  <div class="card" id="chartCard">
+    <h2>Gruppenüberblick</h2>
+    <div class="legend"><b style="background:var(--ok)"></b>100 % geschafft<b style="background:var(--part)"></b>begonnen, noch nicht ganz richtig</div>
+    <h3 style="font-size:14px;margin:8px 0 2px">Fortschritt je Azubi</h3><div id="chPeople" class="chart"></div>
+    <h3 style="font-size:14px;margin:8px 0 2px">Wie viele haben die Aufgabe geschafft?</h3><div id="chTasks" class="chart"></div>
+    <h3 style="font-size:14px;margin:8px 0 2px">Hier hängen die meisten</h3><div id="chStones"></div>
+  </div>
   <div class="card">
     <h2>Übersicht</h2>
     <div class="row noprint" style="margin-top:0">
@@ -125,6 +137,21 @@ function addCodes(txt) {
   list.forEach(o => { const nm = (o.n || '').trim() || 'ohne Namen'; const p = d[nm] = d[nm] || { t: 0, d: {}, h: {} }; p.h = p.h || {}; Object.keys(o.d).forEach(k => { const v = Math.round(+o.d[k] || 0), old = p.d[k] || 0; if (v >= old) p.h[k] = (o.h && o.h[k]) || 0; p.d[k] = Math.max(old, v); }); p.t = Math.max(p.t, o.t || 0); n++; });
   save(d); return n;
 }
+function charts(d, names, cols) {
+  const n = names.length, lab = window.AUFGABEN_LABS;
+  if (!n || !cols.length) { ['#chPeople', '#chTasks', '#chStones'].forEach(i => { $(i).innerHTML = '<p class="mute">Noch keine Daten. Oben Codes einfügen oder Abgaben scannen.</p>'; }); return; }
+  const bar = (g, y, tot) => `<div class="bar"><i class="g" style="width:${tot ? (100 * g / tot) : 0}%"></i><i class="y" style="width:${tot ? (100 * y / tot) : 0}%"></i></div>`;
+  /* Fortschritt je Azubi: grün = geschafft, gelb = begonnen, Basis = Zahl der angezeigten Aufgaben mit Ergebnis (mindestens eine Aufgabe) */
+  const used = cols.filter(t => names.some(nm => d[nm].d[t[0]] != null)), base = Math.max(used.length, 1);
+  $('#chPeople').innerHTML = names.map(nm => { const p = d[nm].d, v = used.map(t => p[t[0]]).filter(x => x != null), g = v.filter(x => x >= 100).length, y = v.length - g; return `<div class="brow"><span class="lb" title="${esc(nm)}">${esc(nm)}</span>${bar(g, y, base)}<span class="nm">${g} / ${base}</span></div>`; }).join('');
+  /* je Aufgabe */
+  const rows = used.map(t => { let g = 0, y = 0, tips = 0; names.forEach(nm => { const v = d[nm].d[t[0]]; if (v == null) return; if (v >= 100) g++; else y++; tips += (d[nm].h || {})[t[0]] || 0; }); return { t, g, y, tried: g + y, tips: (g + y) ? tips / (g + y) : 0 }; });
+  const sorted = rows.slice().sort((a, b) => (a.t[1] === b.t[1] ? 0 : Object.keys(lab).indexOf(a.t[1]) - Object.keys(lab).indexOf(b.t[1])) || b.g - a.g);
+  $('#chTasks').innerHTML = sorted.map(r => `<div class="brow"><span class="lb" title="${esc((lab[r.t[1]] || '?') + ' · ' + r.t[3])}">${esc(({loch:'Loch',sch:'Schalt',sim:'Sim',code:'Ard',pi:'Pi'}[r.t[1]] || '?') + ': ' + r.t[3])}</span>${bar(r.g, r.y, n)}<span class="nm">${r.g} / ${n}</span></div>`).join('');
+  /* Stolpersteine: viele begonnen, aber nicht geschafft, dazu hohe Tipp-Stufe */
+  const stones = rows.filter(r => r.y > 0 || r.tips >= 1.5).sort((a, b) => (b.y + b.tips * 0.5) - (a.y + a.tips * 0.5)).slice(0, 5);
+  $('#chStones').innerHTML = stones.length ? stones.map(r => `<div class="stone"><b>${esc(r.t[3])}</b> (${esc(lab[r.t[1]] || '?')}): ${r.y} von ${r.tried} Bearbeitern noch nicht ganz richtig${r.tips ? ', durchschnittliche Tipp-Stufe ' + r.tips.toFixed(1).replace('.', ',') : ''}</div>`).join('') : '<p class="mute">Keine Auffälligkeiten: alle begonnenen Aufgaben sind geschafft.</p>';
+}
 function render() {
   const d = load(); mergeClass(d);
   const labs = window.AUFGABEN_LABS, all = window.AUFGABEN, lab = $('#labSel').value || 'alle', showAll = $('#allT').checked;
@@ -143,6 +170,7 @@ function render() {
   });
   h += '</tbody><tfoot><tr><td class="name">Geschafft (100 %)</td><td></td><td></td><td></td>' + colSum.map(c => `<td>${c[0]}</td>`).join('') + '</tr></tfoot>';
   $('#tab').innerHTML = names.length ? h : '<tbody><tr><td class="name">Noch keine Ergebnisse. Oben Codes einfügen.</td></tr></tbody>';
+  charts(d, names, cols);
   $('#stand').textContent = names.length + ' Azubis · ' + cols.length + ' Aufgaben';
 }
 function csv() {

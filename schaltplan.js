@@ -2679,6 +2679,11 @@ const SCH_TASKS = [
     text: 'Projekt Dämmerungsschalter, Teil 1 (Plan): Ein Fotowiderstand und ein Widerstand steuern einen Transistor, der ein Relais schaltet. Das Relais schaltet im zweiten Stromkreis die Lampe. Verdrahte den Stromlaufplan. Danach baust du die Schaltung im LochLab auf.',
     hint: 'Steuerkreis: 12 V Plus über 47 kΩ an den Mittelpunkt, der Fotowiderstand vom Mittelpunkt nach Masse, der Mittelpunkt an die Basis. Transistor: Emitter an Masse, Kollektor an Relaisspule, die andere Spulenseite an Plus, Freilaufdiode parallel zur Spule (Ring zur Plusseite). Laststromkreis: Relaiskontakt (Mitte und Schließer) in Reihe mit Lampe und zweiter Batterie.',
     check() { return schNetCheck(exLike('Dämmerungsschalter mit Relais')); } },
+  { id: 's19', lab: 'sch', cat: 'Projekt: Netzteil', title: 'Netzteil 5 V verdrahten', level: 3, sol: 'Netzteil 5 V: Brücke, Elko und Spannungsregler', loch: 'l17',
+    start: () => wiresOff(exLike('Netzteil 5 V: Brücke'))(),
+    text: 'Projekt Netzteil, Teil 1 (Plan): Aus 12 V Wechselspannung soll eine stabile Gleichspannung von 5 V werden: Vier Dioden als Brücke, ein Elko zum Glätten, der Spannungsregler 7805 und ein Elko am Ausgang. Eine LED mit Vorwiderstand zeigt den Betrieb. Verdrahte den Stromlaufplan. Danach baust du die Schaltung im LochLab auf.',
+    hint: 'Brücke: die Wechselspannungsquelle zwischen die beiden Diodenmitten, die Ringe (Kathoden) der oberen Dioden zum Plus-Ausgang, die unteren Dioden zur Masse. Plus: Elko 1000 µF nach Masse (Pluspol oben), dann an IN des 7805. Der 7805 hat IN links, GND unten, OUT rechts. Am Ausgang ein Elko 10 µF nach Masse, dann 330 Ω und LED nach Masse.',
+    check() { return schNetCheck(exLike('Netzteil 5 V: Brücke')); } },
   { id: 'sf3', lab: 'sch', cat: 'Fehlersuche', title: 'Spannungsteiler zeigt falsche Spannung', level: 1, debug: true, faultLabel: 'R2', sol: 'Spannungsteiler',
     start: () => { const d = exOf('Spannungsteiler')(); d.parts[1] = ['R', 8, 2, 1, '1k', { l: 'R1' }]; d.parts[2] = ['R', 8, 6, 1, '2k', { l: 'R2', defect: 'open' }]; return d; },
     text: 'Der Spannungsteiler soll 6 V am Voltmeter liefern, zeigt aber etwas anderes. Welcher Widerstand ist defekt? Miss nach, wähle ihn aus und tippe auf „Fehler melden“.',
@@ -3029,6 +3034,7 @@ function llSpec(p) {
     case 'SPDT': return { ll: { k: 'SCH', vr: 'k3', n: 3, v: '' }, pm: [1, 0, 2] };
     case 'NPN': case 'PNP': return { ll: { k: 'T', v }, pm: [1, 0, 2] };
     case 'THY': return { ll: { k: 'THY', v }, pm: [1, 0, 2] };
+    case 'REG': return { ll: { k: 'U', v: v || '7805' }, pm: [0, 1, 2] };
     case 'SCHOTTKY': return { ll: { k: 'D', n: 4, v: v || '1N5819', vr: 'd5819' }, pm: [0, 1], ...two };
     case 'NMOS': case 'PMOS': return { ll: { k: 'FET', v, vr: (p.k === 'PMOS' ? 'p-' : 'n-') + String(v).toLowerCase() }, pm: [0, 1, 2] };
     case 'DIAC': return { ll: { k: 'D', n: 4, v: 'DB3', vr: 'diac' }, pm: [0, 1], ...two };
