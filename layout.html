@@ -1489,6 +1489,7 @@ function openMenu(){
       ['abz','Abzeichen','Deine Sammlung und was noch fehlt'],
       ['speak','Bauteile sprechen automatisch','Antippen = Steckbrief per Sprachausgabe (an/aus)'],
       ['ton','Tonwerkstatt','Klaviertasten, tone()-Code und 555-Sirene zum Hören'],
+      ['neu','Neu in dieser Version','Was zuletzt dazukam und wo du es findest'],
       ['predict','Vorhersage-Modus an/aus','Vor dem Start der Simulation tippen, was passiert'],
       ['png','Bild speichern (PNG)','Aktuelle Ansicht als Bilddatei'],
       ['gif','Animation als GIF','Laufende Simulation aufnehmen und teilen'],
@@ -1544,6 +1545,7 @@ function menuAct(m){
   if(m==='abz'){if(window.Badges)Badges.open();return;}
   if(m==='speak'){if(window.Speak)Speak.toggleAuto();return;}
   if(m==='ton'){if(window.Tonwerkstatt)Tonwerkstatt.open();return;}
+  if(m==='neu'){window.LabNeu();return;}
   if(m==='predict'){if(window.Predict)Predict.toggle();return;}
   if(m==='png'){if(window.LabExport)LabExport.png();return;}
   if(m==='gif'){if(window.LabExport)LabExport.gif();return;}
