@@ -983,8 +983,11 @@ function drawScene(c,V,o){
   // Interaktionsvorschau
   if(o.ghost){c.globalAlpha=.65;drawPart(c,{t:'part',k:partKind,vr:curVar(partKind),sk:partKind==='IC'&&autoSocket,n:sizes[partKind],x:o.ghost[0],y:o.ghost[1],r:partRot,v:partVals[partKind]!=null?partVals[partKind]:PARTS[partKind].val});c.globalAlpha=1;}
   if(o.chain&&o.cursor){
-    c.lineCap='round';c.strokeStyle=tool==='track'?'rgba(214,219,225,.95)':wireColor;c.lineWidth=.3;c.setLineDash([.3,.2]);
-    line(c,o.chain.x,o.chain.y,o.cursor[0],o.cursor[1]);c.setLineDash([]);
+    /* Vorschau mit Auto-Weg: der berechnete Weg mit 90°-Knicken, rot und gerade, wenn es für die Lötbahn keinen freien Weg gibt */
+    const pa=[o.chain.x,o.chain.y],pb=o.cursor;let pts=[pa,pb],bad=false;
+    if(autoOn()&&!(pa[0]===pb[0]&&pa[1]===pb[1])){const p=previewRoute(pa,pb);if(p)pts=p;else bad=true;}
+    c.lineCap='round';c.lineJoin='round';c.strokeStyle=bad?'rgba(255,90,80,.95)':(tool==='track'?'rgba(214,219,225,.95)':wireColor);c.lineWidth=.3;c.setLineDash([.3,.2]);
+    c.beginPath();c.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);c.stroke();c.setLineDash([]);
     c.beginPath();c.arc(o.chain.x,o.chain.y,.5,0,7);c.strokeStyle='#3b9eff';c.lineWidth=.1;c.stroke();
   }
   if(o.cursor&&!o.export){c.beginPath();c.arc(o.cursor[0],o.cursor[1],.55,0,7);c.strokeStyle='#3b9eff';c.lineWidth=.09;c.stroke();}
@@ -1115,6 +1118,15 @@ function routeTrack(a,b){
   const path=[[goal[0],goal[1]]];let q=kk(goal[0],goal[1],goal[2]);
   while(prev.has(q)){const [px,py,pd]=prev.get(q);path.push([px,py]);q=kk(px,py,pd);if(px===a[0]&&py===a[1])break;}
   return path.reverse();
+}
+let prevKey='',prevPath=null;
+function previewRoute(a,b){
+  const k=tool+'|'+a+'|'+b+'|'+doc.items.length+'|'+doc.cols+'x'+doc.rows;
+  if(k!==prevKey){prevKey=k;
+    if(tool==='track'){try{prevPath=routeTrack(a,b);}catch(e){prevPath=null;}}
+    else{const corner=Math.abs(b[0]-a[0])>=Math.abs(b[1]-a[1])?[b[0],a[1]]:[a[0],b[1]];prevPath=(corner[0]===a[0]&&corner[1]===a[1])||(corner[0]===b[0]&&corner[1]===b[1])?[a,b]:[a,corner,b];}
+  }
+  return prevPath;
 }
 function addPath(t,path){
   const pts=[path[0]];

@@ -1027,9 +1027,12 @@ function render() {
     cx.globalAlpha = 0.6; drawPart({ id: -1, k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: KINDS[placeKind].v, sw: 0 }, false); cx.globalAlpha = 1;
   }
   if (wireStart && cursor) {
-    const e = ortho(wireStart, cursor);
-    cx.strokeStyle = 'rgba(255,225,77,.9)'; cx.lineWidth = 3; cx.setLineDash([8, 5]);
-    cx.beginPath(); cx.moveTo(X(wireStart[0]), Y(wireStart[1])); cx.lineTo(X(e[0]), Y(e[1])); cx.stroke(); cx.setLineDash([]);
+    /* Vorschau: mit Auto-Weg der berechnete Weg mit 90°-Knicken (rot und gerade, wenn es keinen freien Weg gibt), sonst das gerade Stück */
+    let pts = null, bad = false;
+    if (autoRoute && (cursor[0] !== wireStart[0] || cursor[1] !== wireStart[1])) { const path = routePreview(wireStart, cursor); if (path) pts = path; else bad = true; }
+    if (!pts) pts = [wireStart, autoRoute ? cursor : ortho(wireStart, cursor)];
+    cx.strokeStyle = bad ? 'rgba(255,90,80,.95)' : 'rgba(255,225,77,.9)'; cx.lineWidth = 3; cx.setLineDash([8, 5]);
+    cx.beginPath(); cx.moveTo(X(pts[0][0]), Y(pts[0][1])); for (let i = 1; i < pts.length; i++) cx.lineTo(X(pts[i][0]), Y(pts[i][1])); cx.stroke(); cx.setLineDash([]);
     cx.strokeStyle = '#3b9eff'; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(wireStart[0]), Y(wireStart[1]), 6, 0, 7); cx.stroke();
   }
   if (cursor && tool !== 'select') { cx.strokeStyle = 'rgba(59,158,255,.9)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(cursor[0]), Y(cursor[1]), 7, 0, 7); cx.stroke(); }
@@ -1121,6 +1124,12 @@ function routeWire(a, b) {
   const path = [[goal[0], goal[1]]]; let q = kk(goal[0], goal[1], goal[2]);
   while (prev.has(q)) { const [px, py, pd] = prev.get(q); path.push([px, py]); q = kk(px, py, pd); if (px === a[0] && py === a[1]) break; }
   return path.reverse();
+}
+let prevKey = '', prevPath = null;
+function routePreview(a, b) {
+  const k = a + '|' + b + '|' + sch.wires.length + '|' + sch.parts.length + '|' + sch.parts.map(p => p.x + ',' + p.y + ',' + p.r).join(';');
+  if (k !== prevKey) { prevKey = k; try { prevPath = routeWire(a, b); } catch (e) { prevPath = null; } }
+  return prevPath;
 }
 /* Weg als Drähte eintragen (je gerader Strecke ein Draht), ein einziger Rückgängig-Schritt */
 function addRoute(path) {
