@@ -8,7 +8,7 @@
 <pre id="out"></pre>
 <script>
 (function () {
-  var LABS = [['sch', 'SchaltLab', 'schaltplan.html', 40], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40]];
+  var LABS = [['sch', 'SchaltLab', 'schaltplan.html', 40], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40]];
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
   async function lab(l) {
@@ -17,7 +17,7 @@
     var w = f.contentWindow, g = w.document.getElementById('gate'); if (g) g.remove();
     var ids = (w.AUFGABEN || []).filter(function (a) { return a[1] === l[0]; }).map(function (a) { return a[0]; }).filter(function (id) { return !/^det\d+$/.test(id); }), bad = [], n = 0;   // Detektiv-Fälle werden nicht über TaskTest geprüft
     for (var i = 0; i < ids.length; i += l[3]) {
-      var r = w.TaskTest(ids.slice(i, i + l[3]));
+      var r = await w.TaskTest(ids.slice(i, i + l[3]));
       r.forEach(function (x) { n++; if (x.err) bad.push(x.id + ' Fehler ' + x.err); else if (x.pct != null && x.pct !== 100) bad.push(x.id + ' Lösung ' + x.pct + ' %'); else if (x.startPct != null && x.startPct >= 100) bad.push(x.id + ' Start schon 100 %'); });
       await sleep(80);
     }

@@ -8,9 +8,9 @@
   const TRACKS = [
     { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik.', labs: ['sch', 'loch', 'digi', 'mess'] },
     { t: 'Installation und Anlagen', s: 'Wie Strom im Haus verteilt, geschaltet und abgesichert wird.', labs: ['sim', 'haus'], pre: 'Empfohlen vorher: SchaltLab' },
-    { t: 'Programmieren und Steuern', s: 'Schaltungen mit Programmen steuern: Arduino und Raspberry Pi.', labs: ['code', 'pi'], pre: 'Empfohlen vorher: SchaltLab' }
+    { t: 'Programmieren und Steuern', s: 'Eigene Apps mit KI bauen, dann Schaltungen mit Programmen steuern: Arduino und Raspberry Pi.', labs: ['app', 'code', 'pi'], pre: 'Die App-Werkstatt braucht kein Vorwissen. Für Arduino und Pi empfohlen: SchaltLab' }
   ];
-  const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten' };
+  const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', code: 'Mittel', pi: 'Fortgeschritten' };
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
   const results = () => { const m = {}; [get('sim.done', {}), get('lm4.tdone', {})].forEach(o => Object.keys(o).forEach(k => { const v = +o[k] || 0; if (v > (m[k] || 0)) m[k] = v; })); return m; };
   const trained = lab => !!get('lm4.trainer', {})[lab];

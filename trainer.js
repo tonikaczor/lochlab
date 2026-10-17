@@ -76,6 +76,16 @@
       { at: '#pal', t: 'Bestücken und verdrahten', x: 'Im Zeichenmodus tippst du auf leere Plätze und setzt FI und Automaten ein. Danach ziehst du mit „Leitung“ vom Verteilerkasten zum ersten Gerät und wählst den Abgang. Die Länge ermittelt das Lab selbst.' },
       { at: '#bMenu', t: 'Aufgaben und Häuser', x: 'Im Menü warten 26 Aufgaben: vom Lichtschalter über Wechselschaltung und Verteiler bis zu Drehstrom, Wallbox und dem kompletten Haus. Unter „Beispiele“ findest du vier Häuser fertig und im Rohbau, dazu Lernbeispiele zu Kreuzschaltung, Stromstoß, Bad und Hausanschluss, und das leere Grundstück zum freien Gestalten.' },
       NEXTSTEPS[0], END('HausLab')] },
+    app: { name: 'App-Werkstatt', steps: [
+      { t: 'Willkommen in der App-Werkstatt', x: 'Hier baust du eigene kleine Apps und deinen eigenen Wissensspeicher. Die Arbeit macht eine KI (Claude, ChatGPT oder eine andere), du gibst den Auftrag und prüfst das Ergebnis. Vorkenntnisse brauchst du nicht.' },
+      { at: '#tabs', t: 'Die sechs Bereiche', x: 'Start, Auftrag, Werkstatt, Notizen, Bibliothek und Aufgaben. Der Weg: Auftrag schreiben, Code in der Werkstatt starten, prüfen, verbessern, speichern.' },
+      { at: '#tabs', gate: () => (window.LabTrainerAPI && window.LabTrainerAPI.tab() === 'auftrag'), t: 'Zum Auftrag', x: 'Tippe oben auf „Auftrag“. Dort setzt der Baukasten einen guten Auftrag für dich zusammen. Er nennt sieben Dinge: Art der App, Zielgruppe, Thema, Bedienung, Technik, Umfang und Ausgabe.' },
+      { at: '#view', t: 'Auftrag kopieren', x: 'Mit „Auftrag kopieren“ nimmst du den Text mit in die KI deiner Wahl. Kopiere die Antwort der KI (den ganzen Code) wieder zurück. Unten kannst du auch einen eigenen Auftrag prüfen lassen.' },
+      { at: '#tabs', gate: () => (window.LabTrainerAPI && window.LabTrainerAPI.tab() === 'werkstatt'), t: 'Zur Werkstatt', x: 'Tippe jetzt auf „Werkstatt“. Dort fügst du den Code ein und startest die App. Sie läuft abgeschottet: Sie sieht weder deinen Fortschritt noch das Internet.' },
+      { at: '#view', t: 'Prüfen statt glauben', x: 'Unter der Vorschau stehen Meldungen. Fehlermeldungen kopierst du in deine nächste Eingabe an die KI. Aber auch ohne Fehler gilt: Rechne Zahlen nach und prüfe Aussagen, die KI behauptet manchmal Falsches.' },
+      { at: '#tabs', gate: () => (window.LabTrainerAPI && window.LabTrainerAPI.tab() === 'notizen'), t: 'Notizen', x: 'Tippe auf „Notizen“. Hier baust du dein Wissen auf: eigene Notizen, mit [[Doppelklammern]] verknüpft. Der Export als ZIP öffnet sich in der App Obsidian.' },
+      { at: '#bMenu', t: 'Aufgaben, Abzeichen, Hilfe', x: 'Im Menü findest du die Aufgaben, Abzeichen, die Kampagne und diesen Trainer. Die Aufgaben führen dich in sechs Stufen vom ersten Start bis zur eigenen Lernapp für die Klasse.' },
+      NEXTSTEPS[0], END('App-Werkstatt')] },
     mess: { name: 'MessLab', steps: [
       { t: 'Willkommen im MessLab', x: 'Hier lernst du Messen wie ein Profi: mit Multimeter, Oszilloskop, Netzgerät, Funktionsgenerator und mehr. Ich zeige dir in wenigen Minuten, wie die Werkbank funktioniert.' },
       { prep: a => a.load('Spannung messen'), at: '#cv', t: 'Eine Messschaltung', x: 'Ein Spannungsteiler aus zwei Widerständen an 9 V. Wie viel Spannung fällt an jedem Widerstand ab? Das messen wir gleich.' },

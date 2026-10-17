@@ -2,6 +2,12 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v9.126', items: [
+      ['Neues Lab: App-Werkstatt', 'Eigene Apps mit einer KI bauen (Claude, ChatGPT oder andere), prüfen, verbessern und weitergeben, dazu ein eigener Wissensspeicher im Obsidian-Format. Ohne Vorkenntnisse. Der Auftrag-Baukasten schreibt gute Eingaben für dich, die Werkstatt startet fremden Code abgeschottet (kein Internet, kein Zugriff auf deinen Fortschritt).', 'Startseite ▸ App-Werkstatt'],
+      ['Aufgaben in sechs Stufen', '17 Aufgaben vom ersten Start über Lernapps, KI-Antworten prüfen, Notizen und Datenschutz bis zur eigenen Lernapp für die Klasse. Das Lab prüft den Code automatisch.', 'App-Werkstatt ▸ Aufgaben'],
+      ['Notizen für Obsidian', 'Notizen mit [[Verknüpfungen]] und #Schlagwörtern, Übersichtskarte, Export als ZIP für Obsidian, Import von Markdown-Dateien.', 'App-Werkstatt ▸ Notizen'],
+      ['Bibliothek und Klassenbibliothek', 'Apps speichern, als Code oder Datei weitergeben, einlesen. Der Ausbilder kann geprüfte Apps für die ganze Klasse freigeben.', 'App-Werkstatt ▸ Bibliothek'],
+      ['Lernheft, Abzeichen, Kampagne', 'Neues Lernheft „App-Werkstatt“ mit Arbeitsblatt, sechs Abzeichen, Trainer und ein Kampagnenkapitel „Die eigene Lernapp“.', 'Lernhefte'] ] },
     { v: 'v8.125', items: [
       ['Kundenaufträge', 'Neue Aufgaben, die mehrere Themen verbinden: Gartenhaus mit langer Leitung (Querschnitt, Spannungsfall, FI), Schranke mit Münzeinwurf als Zustandsautomat, Trittschallfilter mit 100 Hz im MessLab.', 'HausLab, DigiLab, MessLab ▸ Aufgaben'],
       ['Mehr Denkfragen', 'Vor fast jeder Aufgabe in allen Labs steht jetzt eine kurze Denkfrage: Was erwartest du? Mit sofortiger Erklärung.', 'Aufgabenkarte'],

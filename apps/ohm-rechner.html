@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ohm-Rechner</title>
+<style>body{font-family:system-ui,sans-serif;margin:0;padding:16px;background:#f4f6f9;color:#1b2230}h1{font-size:22px;margin:0 0 10px}button{font-size:17px;padding:10px 16px;margin:4px;border-radius:10px;border:0;background:#2b7de9;color:#fff}input{font-size:18px;padding:8px;width:120px;margin:4px;border-radius:8px;border:1px solid #9aa6b5}.box{background:#fff;border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 1px 4px rgba(0,0,0,.15)}</style></head><body>
+<h1>Ohm-Rechner</h1><div class="box">Spannung U in V: <input id="u" type="number"><br>Widerstand R in Ω: <input id="r" type="number"><br><button id="b">Berechnen</button><p>Strom I = <b id="i">-</b> A</p></div>
+<script>document.getElementById("b").onclick=function(){var u=parseFloat(document.getElementById("u").value),r=parseFloat(document.getElementById("r").value);document.getElementById("i").textContent=(u/r).toFixed(2).replace(".",",");};</script></body></html>

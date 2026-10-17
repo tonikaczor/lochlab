@@ -1,0 +1,22 @@
+[
+ {
+  "name": "Quiz Elektrotechnik",
+  "file": "quiz-elektrotechnik.html",
+  "desc": "Zehn Fragen zu den Grundlagen der Elektrotechnik."
+ },
+ {
+  "name": "Ohm-Rechner",
+  "file": "ohm-rechner.html",
+  "desc": "Berechnet den Strom aus Spannung und Widerstand."
+ },
+ {
+  "name": "Farbcode-Trainer",
+  "file": "farbcode-trainer.html",
+  "desc": "Übt die Ziffern des Widerstands-Farbcodes."
+ },
+ {
+  "name": "Spannungsfall-Rechner",
+  "file": "spannungsfall-rechner.html",
+  "desc": "Spannungsfall einer Leitung in Volt und Prozent (Richtwerte, ohne Gewähr)."
+ }
+]
