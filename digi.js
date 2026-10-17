@@ -491,8 +491,14 @@
       return L;
     };
     const readQ = (E, led, on) => { const q0 = led('Q0'), q1 = led('Q1'); return (q1 && on(E, q1.id) ? 2 : 0) + (q0 && on(E, q0.id) ? 1 : 0); };
-    const readZ = (E, led, on) => { const z = led('Z') || api.sch.parts.filter(p => p.k === 'LED').slice(-1)[0]; return z && on(E, z.id) ? 1 : 0; };
+    const readZ = (E, led, on) => { const ls = api.sch.parts.filter(p => p.k === 'LED'), z = led('Z') || ls.find(l => !/^Q\d$/.test(l.l || '')) || ls.slice(-1)[0]; return z && on(E, z.id) ? 1 : 0; };
+    const SCHRANKE = { x: true, outs: ['Auf'], states: [{ n: 'Zu', o: [0], t: [0, 1] }, { n: 'Offen1', o: [1], t: [2, 2] }, { n: 'Offen2', o: [1], t: [0, 0] }] };
     const tasksPlus = [
+      { id: 'd20', cat: 'Kundenauftrag', title: 'Kundenauftrag: Schranke mit Münzeinwurf', level: 3, start: () => strip({ inputs: ['X'], gates: [], outputs: [{ name: 'Auf', src: 'X' }], scope: [] }),
+        solFn: () => PL().fsmSpec(SCHRANKE, false),
+        text: 'Eine Schranke öffnet, wenn eine Münze eingeworfen wird (X = 1, ein Takt lang), bleibt zwei Takte offen und schließt dann von allein. Der Ausgang Auf ist 1, solange die Schranke offen ist. Entwirf den Automaten mit dem Werkzeug „Zustandsautomat“ (Menü) und lass die Schaltung bauen. Sie wird mit der Eingabe 0, 1, 0, 0, 0, 0 geprüft.',
+        hint: 'Drei Zustände: Zu (Auf = 0), Offen1 und Offen2 (Auf = 1). Von Zu geht es bei X = 1 nach Offen1, danach ohne Bedingung nach Offen2 und von dort zurück nach Zu. Starte mit der Vorlage „Treppenlicht“ und entferne den letzten Zustand: Der zweite offene Zustand muss nach Zu führen.',
+        check: fsmCheck('schranke', [0, 1, 0, 0, 0, 0], { seq: [0, 1, 1, 0, 0, 0], read: readZ, ok: 'Die Schranke öffnet nach der Münze, bleibt zwei Takte offen und schließt', bad: 'Der Ausgang Auf folgt nicht dem Ablauf (Zu, Offen, Offen, Zu)' }) },
       { id: 'd15', cat: 'Vereinfachen', title: 'KV-Diagramm: Funktion mit vier Variablen', level: 3, start: SK(['A', 'B', 'C', 'D'], ['Y']),
         solSpec: { inputs: ['A', 'B', 'C', 'D'], gates: [{ id: 'nB', t: 'NOT', in: ['B'] }, { id: 'nC', t: 'NOT', in: ['C'] }, { id: 'nD', t: 'NOT', in: ['D'] }, { id: 'a1', t: 'AND', in: ['nC', 'nD'] }, { id: 'a2', t: 'AND', in: ['C', 'D'] }, { id: 'o', t: 'OR', in: ['a1', 'a2'] }, { id: 'y', t: 'AND', in: ['nB', 'o'] }], outputs: [{ name: 'Y', src: 'y', color: 'grün' }] },
         text: 'Y soll genau dann 1 sein, wenn die Zahl ABCD die Werte 0, 3, 8 oder 11 hat (Dezimal). Trage die Einsen in das KV-Diagramm ein (Menü „KV-Diagramm“), lies die kürzeste Gleichung ab und baue die Schaltung. Vier Schalter A bis D und eine LED.', hint: 'Die Felder 0, 3, 8 und 11 bilden eine Gruppe aus vier Feldern über den Rand: B = 0 und C = D. Die Gleichung ist Y = ¬B · (¬C · ¬D + C · D). „Schaltung bauen“ im KV-Werkzeug erledigt den Bau.',

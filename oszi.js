@@ -36,7 +36,7 @@
   function open() {
     if (document.getElementById('osziBox')) return;
     const w = document.createElement('div'); w.id = 'osziBox';
-    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.62);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:12px';
+    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.62);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch';
     w.innerHTML = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:14px;max-width:760px;width:100%;font:15px system-ui,sans-serif">
       <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">∿ Oszilloskop-Trainer</b><button id="ozX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer" aria-label="Schließen">✕</button></div>
       <div style="display:flex;gap:8px;margin:10px 0"><button class="ozt on" id="oz1">Ablesen</button><button class="ozt" id="oz2">Kurven-Rätsel</button></div>

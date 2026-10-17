@@ -126,6 +126,7 @@
     /* Modell eines 10:1-Tastkopfs, mit dem Faktor 1000 vergrößert (echt: 9 MΩ und etwa 10 pF), damit die Simulation die Kanten sauber rechnet. Ck ist der Abgleichkondensator. */
     const probeCirc = ck => ({ parts: [['AC', 2, 4, 1, '5V 100Hz', { l: 'G1', vr: 'sq' }], ['R', 2, 2, 0, '900k', { l: 'R1' }], ['C', 2, 0, 0, ck, { l: 'Ck' }], ['C', 6, 2, 1, '10n', { l: 'Cin' }], ['R', 10, 2, 1, '100k', { l: 'R2' }], ['GND', 2, 8]], wires: [[2, 4, 2, 2], [2, 2, 2, 0], [6, 0, 6, 2], [6, 2, 10, 2], [6, 6, 6, 8, 2, 8], [10, 6, 10, 8, 6, 8]], scopes: [0, 3], tempo: 0.3, win: 0.02 });
     const triple = () => ({ parts: [['AC', 2, 4, 1, '2.5V 1kHz', { l: 'G1', vr: 'sq' }], ['R', 2, 2, 0, '1k', { l: 'R1' }], ['GND', 2, 8], ['AC', 14, 4, 1, '2.5V 500Hz', { l: 'G2', vr: 'sq' }], ['R', 14, 2, 0, '1k', { l: 'R2' }], ['GND', 14, 8], ['AC', 26, 4, 1, '2.5V 250Hz', { l: 'G3', vr: 'sq' }], ['R', 26, 2, 0, '1k', { l: 'R3' }], ['GND', 26, 8]], wires: [[2, 4, 2, 2], [6, 2, 6, 8, 2, 8], [14, 4, 14, 2], [18, 2, 18, 8, 14, 8], [26, 4, 26, 2], [30, 2, 30, 8, 26, 8]], scopes: [0, 3, 6], tempo: 0.3, win: 0.008 });
+    const hp100 = c => ({ parts: [['AC', 2, 4, 1, '1V 1kHz', { l: 'G1' }], ['C', 2, 2, 0, c, { l: 'C1' }], ['R', 6, 2, 1, '10k', { l: 'R1' }], ['GND', 2, 8]], wires: [[2, 4, 2, 2], [6, 6, 6, 8, 2, 8]], scopes: [0, 2], tempo: 0.3, win: 0.02 });
     const ckOf = () => { const c = part('Ck'), ci = part('Cin'); return { ck: c ? root.MessParse(c.v, 'F') : NaN, cin: ci ? root.MessParse(ci.v, 'F') : NaN }; };
     const probeRatio = () => { const { ck, cin } = ckOf(); return 10 * ck / (ck + cin); };   // Kantenhöhe im Verhältnis zum Dach: 1 = richtig abgeglichen
 
@@ -275,6 +276,11 @@
         hint: 'Setze die Messpunkte der Reihe nach auf G1, G2 und G3. Stelle die Zeit am Analysator so ein, dass du einige Perioden siehst. Unter den Kanälen steht die Zahl des Busses. Alle drei Rechtecke beginnen auf High.',
         start: triple, solMake: triple, solAns: () => ({ dir: 1 }),
         fields: [], choices: [{ id: 'dir', q: 'Der Bus beginnt bei 7. In welche Richtung zählt er?', short: 'Zählrichtung', right: 1, opts: ['Aufwärts: 0, 1, 2, 3 …', 'Abwärts: 7, 6, 5, 4 …', 'Er zählt nicht, die Zahl springt zufällig'] }] }),
+      mk({ id: 'm29', cat: 'Kundenauftrag', title: 'Kundenauftrag: Trittschallfilter mit 100 Hz', level: 3, text: 'Für ein Mikrofon soll ein Hochpass tiefes Brummen unterdrücken. Der Widerstand R1 = 10 kΩ ist fest. Wähle den Kondensator C1 so, dass die Grenzfrequenz bei etwa 100 Hz liegt (±15 %). Prüfe dein Ergebnis mit dem Frequenzgang in der Werkbank und trage C1 ein (Bauteil antippen, Wert ändern). Der Kondensator steht noch auf 1 µF.',
+        hint: 'fg = 1 / (2π · R · C), also C = 1 / (2π · R · fg) = 1 / (2π · 10 kΩ · 100 Hz) ≈ 160 nF. Aus der E-Reihe passen 150 nF und 180 nF. Öffne die Werkbank, wähle „Frequenzgang“, Ausgang R1, von 20 Hz bis 1 kHz.',
+        start: () => hp100('1u'), solMake: () => hp100('150n'), solAns: () => ({}),
+        pre: () => { const g = part('G1'), r = part('R1'); if (!g || !r) return [RES(false, 'Generator oder R1 fehlen')]; const c = part('C1'), cv = c ? root.MessParse(c.v, 'F') : NaN; let fg = null; try { const pts = root.MESS_PLUS_BODE.sweep(g.id, r.id, 20, 1000, 21, false, true); fg = root.MESS_PLUS_BODE.fg(pts); } catch (e) {} const ok = fg != null && fg > 85 && fg < 115; return [RES(isFinite(cv), isFinite(cv) ? 'C1 = ' + c.v : 'Der Kondensator C1 fehlt'), RES(ok, fg == null ? 'Die Grenzfrequenz liegt außerhalb von 20 Hz bis 1 kHz' : (ok ? 'Die Grenzfrequenz liegt bei etwa ' + Math.round(fg) + ' Hz' : 'Die Grenzfrequenz liegt bei etwa ' + Math.round(fg) + ' Hz, gewünscht sind 100 Hz ±15 %'))]; },
+        fields: [] }),
       /* Fehlersuche mit Messgeräten */
       { id: 'mf1', lab: 'mess', cat: 'Fehlersuche', title: 'Fehlersuche: Widerstandskette', level: 2, debug: true, faultLabel: 'R2', sol: 'x',
         solMake: () => chain3(false),

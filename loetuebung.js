@@ -43,7 +43,7 @@
   function open() {
     if (document.getElementById('loetBox')) return;
     const w = document.createElement('div'); w.id = 'loetBox';
-    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px';
+    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch';
     w.innerHTML = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:560px;width:100%;font:15px system-ui,sans-serif">
       <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">🔥 Lötübung</b><button id="lbX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer" aria-label="Schließen">✕</button></div>
       <div style="display:flex;gap:8px;margin:10px 0"><button class="lbt on" id="lbT1">Löten üben</button><button class="lbt" id="lbT2">Lupen-Prüfung</button></div>

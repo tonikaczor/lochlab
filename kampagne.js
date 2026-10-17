@@ -61,7 +61,7 @@
   function open() {
     if (document.getElementById('kampBox')) return; check(true);
     const w = document.createElement('div'); w.id = 'kampBox';
-    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.62);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:12px';
+    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.62);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch';
     let first = CH.findIndex((c, i) => unlocked(i) && !cdone(i)); if (first < 0) first = CH.length - 1;
     const render = () => {
       const tot = CH.reduce((s, c) => s + c.m.length, 0), dn = CH.reduce((s, c) => s + prog(c).d, 0);

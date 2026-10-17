@@ -33,7 +33,7 @@
   function open() {
     if (document.getElementById('tonWerk')) return;
     const w = document.createElement('div'); w.id = 'tonWerk';
-    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px';
+    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch';
     let keys = '', x = 0; const lo = 60, hi = 83, WW = 42;                            // C4 bis H5
     for (let n = lo; n <= hi; n++) if (!BLACK.includes(n % 12)) { keys += `<button data-n="${n}" aria-label="${nname(n)}" style="position:absolute;left:${x}px;top:0;width:${WW - 2}px;height:150px;border:1px solid #333;border-radius:0 0 6px 6px;background:#f4f4f2;color:#444;font-size:11px;padding:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;touch-action:manipulation">${nname(n)}</button>`; x += WW; }
     x = 0; for (let n = lo; n <= hi; n++) { if (!BLACK.includes(n % 12)) { x += WW; continue; } keys += `<button data-n="${n}" aria-label="${nname(n)}" style="position:absolute;left:${x - 13}px;top:0;width:26px;height:92px;border:1px solid #000;border-radius:0 0 5px 5px;background:#1b1f24;z-index:2;padding:0;touch-action:manipulation"></button>`; }
