@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['ds', 'Datenblatt-Lab', 'dslab.html', 10]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -311,6 +311,55 @@
     });
     return { n: ex.length, bad: bad };
   }
+  /* Datenblatt-Lab: Kern, 16 Uebungsdatenblaetter (validieren, im Betrachter rendern), 14 Beispiele, 34 Aufgaben (Zahl, Auswahl, Markieren, Ablesen ueber die echte Oberflaeche) */
+  async function dsCore(w) {
+    var bad = [];
+    if (!w.DS_CORE || !w.DS_SCHEMA || typeof w.DS_SCHEMA.validate !== 'function') bad.push('DS_CORE oder DS_SCHEMA fehlt');
+    var libs = (w.DS_LIB && w.DS_LIB.list) || [];
+    if (libs.length !== 16) bad.push('Datenblaetter: ' + libs.length + ' statt 16');
+    if (w.DS_SCHEMA) libs.forEach(function (d) { try { var v = w.DS_SCHEMA.validate(d); if (!v.ok) bad.push(d.id + ': ' + v.errors.slice(0, 2).join(' / ')); } catch (x) { bad.push(d.id + ': ' + x); } });
+    if (w.DS_CORE && w.DS_CORE.glossary().length < 120) bad.push('Glossar: ' + w.DS_CORE.glossary().length + ' Begriffe, erwartet mindestens 120');
+    var ex = (w.DS_DATA && w.DS_DATA.examples) || [];
+    if (ex.length !== 14) bad.push('Beispiele: ' + ex.length + ' statt 14');
+    ex.forEach(function (e) { try { if (!(e.steps && e.steps.length >= 3)) bad.push('Beispiel ' + e.id + ': zu wenige Schritte'); var r = e.rechne(); if (r && r.some(function (q) { return !isFinite(q.value); })) bad.push('Beispiel ' + e.id + ': Rechenwert keine Zahl'); } catch (x) { bad.push('Beispiel ' + e.id + ': ' + x); } });
+    var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'ds'; });
+    if (tk.length !== 34) bad.push('Aufgaben: ' + tk.length + ' statt 34');
+    /* jedes Datenblatt in einem Betrachter rendern */
+    if (w.DS_VIEW && libs.length) libs.forEach(function (d) {
+      try {
+        var el = w.document.createElement('div'); w.document.body.appendChild(el);
+        var v = w.DS_VIEW.mount(el, { getDs: function () { return d; }, onRead: function () {}, onMark: function () {}, toast: function () {}, mode: 'lesen' });
+        if (!el.querySelector('table')) bad.push(d.id + ': Betrachter zeigt keine Tabelle');
+        if (!el.querySelector('svg')) bad.push(d.id + ': Betrachter zeigt keine Zeichnung');
+        if (v && v.destroy) v.destroy(); el.remove();
+      } catch (x) { bad.push(d.id + ': Betrachter ' + x); }
+    });
+    /* alle Aufgaben ueber die echte Oberflaeche: Aufgabe starten, Antwort eintragen, pruefen */
+    var U = w.DS_UI, T = (w.DS_TASKS && w.DS_TASKS.tasks) || [];
+    if (!U || !T.length) bad.push('DS_UI oder Aufgaben fehlen');
+    else {
+      var rows = function () { var li = [].slice.call(w.document.querySelectorAll('#taskView .tl li')); return { n: li.length, ok: li.filter(function (x) { return x.classList.contains('ok'); }).length }; };
+      for (var i = 0; i < T.length; i++) {
+        var t = T[i];
+        try {
+          await U.startTask(t.id); await sleep(25);
+          if (!U.S.task || U.S.task.id !== t.id) { bad.push(t.id + ': startTask setzt die Aufgabe nicht'); continue; }
+          await U.checkTask(); await sleep(15); var r0 = rows(); if (r0.n && r0.ok === r0.n) bad.push(t.id + ': Startzustand besteht schon');
+          await U.startTask(t.id); await sleep(15);
+          var s2 = t.sol(); U.setTab('tasks'); await sleep(10);
+          if (s2.choice != null) { var b = w.document.querySelector('[data-tc="' + s2.choice + '"]'); if (!b) { bad.push(t.id + ': Auswahlknopf fehlt'); continue; } b.click(); }
+          if (s2.value != null && t.ask && !t.ask.choices) { var inp = w.document.getElementById('tkAns'); if (!inp) { bad.push(t.id + ': Zahlenfeld fehlt'); continue; } inp.value = String(s2.value).replace('.', ','); inp.dispatchEvent(new w.Event('input', { bubbles: true })); }
+          U.goState(Object.assign({}, s2, { tab: s2.tab || (s2.calc ? 'calc' : 'lib') })); await sleep(15);
+          (s2.marks || []).forEach(function (m) { var mk = U.S.marks[m.ds] || (U.S.marks[m.ds] = {}); mk[m.section + ':' + m.key] = 1; });
+          (s2.reads || []).forEach(function (rd) { U.S.lastRead = rd; U.S.readsN++; U.S.reads.push(rd); });
+          if (s2.calc) { U.renderCalc(); await sleep(15); }
+          await U.checkTask(); await sleep(15); var r1 = rows();
+          if (!r1.n || r1.ok !== r1.n) bad.push(t.id + ': Musterloesung ueber die Oberflaeche nur ' + r1.ok + '/' + r1.n);
+        } catch (x) { bad.push(t.id + ': ' + x); }
+      }
+    }
+    return { n: ex.length, bad: bad };
+  }
   async function lab(l) {
     if (l[0] === 'loch') return labLoch(l);
     if (l[0] === 'quarz') return labQuarz(l);
@@ -342,6 +391,11 @@
       var sc2 = senCore(w); if (sc2.bad.length) all.ok = false;
       all.labs.push({ lab: 'Sensorik-Lab Kern', tasks: sc2.n, bad: sc2.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Sensorik-Lab: Kern, Pruefstaende, Beispiele</td><td>' + sc2.n + ' Beispiele</td><td class="' + (sc2.bad.length ? 'bad' : 'ok') + '">' + (sc2.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + sc2.bad.join('; ') + '</td></tr>');
+    }
+    if (l[0] === 'ds') {
+      var dc = await dsCore(w); if (dc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Datenblatt-Lab Kern', tasks: dc.n, bad: dc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Datenblatt-Lab: Kern, 16 Datenblaetter, Beispiele, Aufgaben ueber die Oberflaeche</td><td>' + dc.n + ' Beispiele</td><td class="' + (dc.bad.length ? 'bad' : 'ok') + '">' + (dc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + dc.bad.join('; ') + '</td></tr>');
     }
     var au = null; if (l[0] === 'pr' || l[0] === 'sch' || l[0] === 'app' || l[0] === 'mess') { try { au = l[0] === 'mess' ? await auditMess() : audit(w, l); } catch (e) { au = { n: 0, errs: ['Auswahlfragen-Prüfung abgebrochen: ' + e], hints: [] }; } }
     if (au) {

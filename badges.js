@@ -136,6 +136,18 @@
     ['sencal', '🎯', 'Kalibrierer', 'Einen Kraftaufnehmer mit Nullpunkt und Endwert kalibriert.', function (c) { return [c.st.sencal || 0, 1]; }],
     ['sendoktor', '🔍', 'Sensor-Doktor', 'Alle drei Fehlersuchen an der Messkette gelöst.', function (c) { return [c.n(['se24', 'se25', 'se26']), 3]; }],
     ['senpruef', '📋', 'Datenblatt-Profi', 'Beide Aufgaben im Prüfungsstil gelöst.', function (c) { return [c.n(['se27', 'se28']), 2]; }],
+    ['dserste', '📄', 'Erste Datenblatt-Aufgabe', 'Die erste Aufgabe im Datenblatt-Lab geschafft.', function (c) { return [c.n(c.ids('ds')), 1]; }],
+    ['dszehn', '🔎', 'Datenblatt-Leser', 'Zehn Aufgaben im Datenblatt-Lab geschafft.', function (c) { return [c.n(c.ids('ds')), 10]; }],
+    ['dsalle', '🏆', 'Datenblatt-Meister', 'Alle Aufgaben im Datenblatt-Lab geschafft.', function (c) { return [c.n(c.ids('ds')), c.ids('ds').length || 34]; }],
+    ['dsread', '📖', 'Vielleser', 'Zehnmal ein Übungsdatenblatt geöffnet.', function (c) { return [c.st.dsread || 0, 10]; }],
+    ['dslibs', '📚', 'Bibliothekar', 'Alle 16 Übungsdatenblätter angesehen.', function (c) { return [c.st.dslibs || 0, 16]; }],
+    ['dscurve', '📈', 'Kurvenleser', 'Fünf Kennlinien in Datenblättern abgelesen.', function (c) { return [c.st.dscurve || 0, 5]; }],
+    ['dsengl', '🇬🇧', 'Fachenglisch-Fuchs', 'Zwanzig Fachenglisch-Begriffe sicher gelernt.', function (c) { return [c.st.dsengl || 0, 20]; }],
+    ['dspick', '🧩', 'Bauteil-Auswähler', 'Drei Bauteilwahl-Aufgaben richtig gelöst.', function (c) { return [c.st.dspick || 0, 3]; }],
+    ['dscalc', '🧮', 'Datenblatt-Rechner', 'Fünf verschiedene Rechner im Datenblatt-Lab benutzt.', function (c) { return [c.st.dscalc || 0, 5]; }],
+    ['dsvokabel', '🔤', 'Vokabelprofi', 'Alle fünf Fachenglisch-Aufgaben gelöst.', function (c) { return [c.n(['ds26', 'ds27', 'ds28', 'ds29', 'ds30']), 5]; }],
+    ['dsdoktor', '🔍', 'Grenzwert-Detektiv', 'Beide Fehlersuchen im Datenblatt gelöst.', function (c) { return [c.n(['ds31', 'ds32']), 2]; }],
+    ['dspruef', '📋', 'Prüfungsleser', 'Beide Aufgaben im Prüfungsstil gelöst.', function (c) { return [c.n(['ds33', 'ds34']), 2]; }],
   ];
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });
   DEFS.find(function (d) { return d.id === 'wuerfel5'; }).icon = '👑';

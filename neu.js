@@ -2,6 +2,17 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v14.134', items: [
+      ['Neues Datenblatt-Lab', 'Das 15. Lab. Du lernst, Datenblätter zu lesen: Grenzwerte und Betriebswerte unterscheiden, Min, Typ und Max mit Testbedingungen lesen, Kennlinien mit logarithmischer Achse ablesen, Thermik und Derating rechnen. In den Abschlussprüfungen ein Dauerbrenner.', 'Startseite ▸ Datenblatt-Lab'],
+      ['16 Übungsdatenblätter', 'Von der Signaldiode und dem BC547 über MOSFET, Spannungsregler und NE555 bis zu Port-Expander, Digitalpoti und Temperatursensor. Es sind eigene Übungsdatenblätter in der Form echter Datenblätter, angelehnt an bekannte Bauteile. Maßgeblich sind immer die Datenblätter der Hersteller.', 'Datenblatt-Lab ▸ Bibliothek'],
+      ['Betrachter wie ein Datenblatt', 'Seiten mit Pinbelegung, Absolute Maximum Ratings, Betriebsbedingungen, Kennwerten, Kennlinien, Thermik, Gehäusezeichnung, Zeitdiagramm, Registertabelle und Anwendung. Zeilen lassen sich markieren, die Suche springt zur Textstelle, Fachbegriffe übersetzt ein Tipp.', 'Datenblatt-Lab ▸ Bibliothek'],
+      ['Kennlinien ablesen', 'Mit dem Fadenkreuz liest du Werte aus linearen und logarithmischen Kennlinien ab und übernimmst sie mit einem Tipp als Antwort.', 'Datenblatt-Lab ▸ Lesen üben'],
+      ['Fachenglisch mit Karteikarten', 'Über 120 Begriffe aus Datenblättern lernst du mit Karteikarten, Quiz und Lückentexten. Karten, die du kannst, kommen seltener.', 'Datenblatt-Lab ▸ Fachenglisch'],
+      ['Bauteilwahl und Rechner', 'Zu Anforderungen wie Spannung, Strom und Gehäuse wählst du das passende Bauteil und bekommst eine Begründung. Der Rechner zeigt den Rechenweg für LED-Vorwiderstand, Verlustleistung, Derating, E-Reihen und Toleranzen.', 'Datenblatt-Lab ▸ Bauteilwahl, Rechnen'],
+      ['34 Aufgaben und 14 Beispiele', 'Von Grenzwerten und Kennwerten über Kennlinien, Thermik, Bauteilwahl, Zeitdiagramm und Register bis zu Fachenglisch, Fehlersuche und Aufgaben im Prüfungsstil. Die Prüfung rechnet automatisch, Tipps gibt es in drei Stufen.', 'Datenblatt-Lab ▸ Aufgaben'],
+      ['Kampagne, Abzeichen und Trainer', 'Neues Kampagnenkapitel „Das Datenblatt“, zwölf neue Abzeichen und der Trainer „Erste Schritte“ für das Datenblatt-Lab.', 'Menü ▸ Kampagne, Abzeichen, Trainer'],
+      ['Neues Lernheft Datenblatt-Lab', 'Aufbau eines Datenblatts, Grenzwerte und Betriebswerte, Min, Typ und Max, Kennlinien lesen, Thermik und Derating, LED-Vorwiderstand und E-Reihen, Bauteilwahl, Zeitdiagramme und Register sowie eine Fachenglisch-Vokabelliste. Lösungsblätter gibt es für Ausbilder.', 'Lernhefte ▸ Datenblatt-Lab'],
+    ] },
     { v: 'v14.133', items: [
       ['Neues Sensorik-Lab', 'Das 14. Lab. Sieben animierte Prüfstände zeigen die ganze Messkette vom Sensor über die Signalaufbereitung bis zur Anzeige: Temperatur (NTC, Pt100, Pt1000, LM35, Thermoelement, 2-, 3- und 4-Leiter), Licht und Näherung, Kraft und Druck mit DMS-Brücke, Beschleunigung und Neigung, Normsignale 4…20 mA, digitale Sensoren per I²C sowie ADU und Abtastung.', 'Startseite ▸ Sensorik-Lab'],
       ['Fehler mit Folgen', 'Selbsterwärmung, Leitungswiderstand, Fremdlicht, Drift, Drahtbruch, Übersteuerung, zu großer Pull-up und Aliasing zeigen sich mit Funken, Rauch und Ton. Du siehst, warum ein Messwert falsch ist.', 'Sensorik-Lab ▸ Prüfstand'],
