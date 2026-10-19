@@ -2,6 +2,16 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v14.133', items: [
+      ['Neues Sensorik-Lab', 'Das 14. Lab. Sieben animierte Prüfstände zeigen die ganze Messkette vom Sensor über die Signalaufbereitung bis zur Anzeige: Temperatur (NTC, Pt100, Pt1000, LM35, Thermoelement, 2-, 3- und 4-Leiter), Licht und Näherung, Kraft und Druck mit DMS-Brücke, Beschleunigung und Neigung, Normsignale 4…20 mA, digitale Sensoren per I²C sowie ADU und Abtastung.', 'Startseite ▸ Sensorik-Lab'],
+      ['Fehler mit Folgen', 'Selbsterwärmung, Leitungswiderstand, Fremdlicht, Drift, Drahtbruch, Übersteuerung, zu großer Pull-up und Aliasing zeigen sich mit Funken, Rauch und Ton. Du siehst, warum ein Messwert falsch ist.', 'Sensorik-Lab ▸ Prüfstand'],
+      ['Kennlinien und Zeitschreiber', 'Sensorkennlinien, Hysterese-Schleifen, Bürden-Arbeitsbereich und Spektrum werden aus dem Modell berechnet. Dein Betriebspunkt wandert als Marker mit. Aufzeichnungen lassen sich als CSV speichern.', 'Sensorik-Lab ▸ Kennlinien'],
+      ['Ablaufprogramm', 'Temperatursprung, Hysterese-Schleife oder Drahtbruch zu einem bestimmten Zeitpunkt programmierst du als Tabelle. Das Ergebnis erscheint als Diagramm.', 'Sensorik-Lab ▸ Ablauf'],
+      ['Rechner für Messketten', 'NTC und Pt100, Brückenspannung, Verstärkung, Bürde, ADU-Stufe, Rauschabstand und Aliasing mit Rechenweg, dazu ein Übungsgenerator mit sofortiger Prüfung.', 'Sensorik-Lab ▸ Rechnen'],
+      ['28 Aufgaben und 27 Beispiele', 'Von der DMS-Vollbrücke über Pt100 in 2-Leiter-Technik, Schaltabstand und Hysterese, Kalibrierung, I²C-Register und Drahtbruch bis zur Fehlersuche und Aufgaben im Prüfungsstil. Die Prüfung rechnet automatisch, Tipps gibt es in drei Stufen.', 'Sensorik-Lab ▸ Aufgaben'],
+      ['Kampagne, Abzeichen und Trainer', 'Neues Kampagnenkapitel „Die Messkette“, neue Abzeichen und der Trainer „Erste Schritte“ für das Sensorik-Lab.', 'Menü ▸ Kampagne, Abzeichen, Trainer'],
+      ['Neues Lernheft Sensorik-Lab', 'Arbeitsblätter zu allen Prüfständen und ausführliche Erklärungen zu Temperaturfühlern, Brückenschaltung und DMS, Normsignalen, ADU und Abtastung sowie I²C. Lösungsblätter gibt es für Ausbilder.', 'Lernhefte ▸ Sensorik-Lab'],
+    ] },
     { v: 'v13.132', items: [
       ['Neues Antriebs-Lab', 'Das 13. Lab. Fünf animierte Prüfstände: Gleichstrommotor mit H-Brücke und PWM, Servo mit Lageregelung, Schrittmotor, Drehstrom-Asynchronmotor mit Stern-Dreieck-Anlauf und Frequenzumrichter sowie Getriebe. Du bedienst Schalter und Regler und liest Messgeräte ab.', 'Startseite ▸ Antriebs-Lab'],
       ['Fehler mit Folgen', 'Brückenkurzschluss, überhitzte Wicklung, verlorene Schritte, Kippmoment und Zahnbruch zeigen sich mit Funken, Rauch und Ton. Du siehst, warum ein Antrieb sich so verhält.', 'Antriebs-Lab ▸ Prüfstand'],

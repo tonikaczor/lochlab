@@ -123,6 +123,19 @@
     ['antcalc', '🧮', 'Typenschild-Rechner', 'Eine Übungsaufgabe im Rechner des Antriebs-Labs beantwortet.', function (c) { return [c.st.antcalc || 0, 1]; }],
     ['antdoktor', '🔍', 'Antriebs-Doktor', 'Alle vier Fehlersuchen an Motor und Getriebe gelöst.', function (c) { return [c.n(['an24', 'an25', 'an26', 'an27']), 4]; }],
     ['antpruef', '📋', 'Typenschild-Profi', 'Alle drei Aufgaben im Prüfungsstil gelöst.', function (c) { return [c.n(['an28', 'an29', 'an30']), 3]; }],
+    ['senerste', '🌡️', 'Erste Sensorik-Aufgabe', 'Die erste Aufgabe im Sensorik-Lab geschafft.', function (c) { return [c.n(c.ids('sen')), 1]; }],
+    ['senzehn', '📏', 'Messtechniker', 'Zehn Aufgaben im Sensorik-Lab geschafft.', function (c) { return [c.n(c.ids('sen')), 10]; }],
+    ['senalle', '🏆', 'Sensorik-Meister', 'Alle Aufgaben im Sensorik-Lab geschafft.', function (c) { return [c.n(c.ids('sen')), c.ids('sen').length || 28]; }],
+    ['senrun', '▶️', 'Messkette läuft', 'Einen Prüfstand im Sensorik-Lab gestartet.', function (c) { return [c.st.senrun || 0, 1]; }],
+    ['senrigs', '🎛️', 'Alle sieben Prüfstände', 'Temperatur, Licht, Kraft, Beschleunigung, Normsignal, digitale Sensoren und ADU ausprobiert.', function (c) { return [c.st.senrigs || 0, 7]; }],
+    ['sencurve', '📈', 'Kennlinien-Leser', 'Die Kennlinien eines Sensor-Prüfstands angesehen.', function (c) { return [c.st.sencurve || 0, 1]; }],
+    ['senseq', '⏱️', 'Messfolgen-Programmierer', 'Ein Ablaufprogramm im Sensorik-Lab gestartet, zum Beispiel einen Temperatursprung.', function (c) { return [c.st.senseq || 0, 1]; }],
+    ['senfault', '💥', 'Messfehler-Jäger', 'Fünf verschiedene Messfehler erlebt: Selbsterwärmung, Drahtbruch, Aliasing und mehr.', function (c) { return [c.st.senfault || 0, 5]; }],
+    ['sencalc', '🧮', 'Messketten-Rechner', 'Eine Übungsaufgabe im Rechner des Sensorik-Labs beantwortet.', function (c) { return [c.st.sencalc || 0, 1]; }],
+    ['sencalcok', '✅', 'Rechnen mit Gefühl', 'Fünf Übungsaufgaben im Sensorik-Rechner richtig gelöst.', function (c) { return [c.st.sencalcok || 0, 5]; }],
+    ['sencal', '🎯', 'Kalibrierer', 'Einen Kraftaufnehmer mit Nullpunkt und Endwert kalibriert.', function (c) { return [c.st.sencal || 0, 1]; }],
+    ['sendoktor', '🔍', 'Sensor-Doktor', 'Alle drei Fehlersuchen an der Messkette gelöst.', function (c) { return [c.n(['se24', 'se25', 'se26']), 3]; }],
+    ['senpruef', '📋', 'Datenblatt-Profi', 'Beide Aufgaben im Prüfungsstil gelöst.', function (c) { return [c.n(['se27', 'se28']), 2]; }],
   ];
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });
   DEFS.find(function (d) { return d.id === 'wuerfel5'; }).icon = '👑';

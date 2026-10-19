@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -280,6 +280,37 @@
     });
     return { n: ex.length, bad: bad };
   }
+  /* Sensorik-Lab: Kern, sieben Pruefstaende (laufen, zeichnen, Kennlinien), 27 Beispiele, 28 Aufgaben */
+  function senCore(w) {
+    var bad = [];
+    if (!w.SEN_CORE || typeof w.SEN_CORE.runSeq !== 'function') bad.push('SEN_CORE fehlt');
+    var ids = ['temperatur', 'licht', 'kraft', 'beschleunigung', 'normsignal', 'digital', 'adu'];
+    var rl = w.SEN_RIGS && w.SEN_RIGS.list ? w.SEN_RIGS.list : [];
+    if (rl.length !== 7) bad.push('Pruefstaende: ' + rl.length + ' statt 7');
+    var ex = (w.SEN_DATA && w.SEN_DATA.examples) || [];
+    if (ex.length !== 27) bad.push('Beispiele: ' + ex.length + ' statt 27');
+    var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'sen'; });
+    if (tk.length !== 28) bad.push('Aufgaben: ' + tk.length + ' statt 28');
+    if (w.SEN_RIGS) ids.forEach(function (id) {
+      try {
+        var r = w.SEN_RIGS.create(id, {});
+        for (var i = 0; i < 400; i++) r.step(10);
+        var m = r.readMeters(), st = r.state();
+        if (!m || !st) bad.push(id + ': keine Messwerte');
+        else Object.keys(m).forEach(function (k) { if (typeof m[k] === 'number' && !isFinite(m[k])) bad.push(id + ': Messwert ' + k + ' ist keine Zahl'); });
+        var cv = r.curves(); if (!cv || !cv.length) bad.push(id + ': keine Kennlinien');
+        r.reset();
+      } catch (x) { bad.push(id + ': ' + x); }
+    });
+    if (w.SEN_CORE && w.SEN_RIGS) ex.forEach(function (e) {
+      try {
+        var r = w.SEN_RIGS.create(e.rig, {}); Object.keys(e.controls || {}).forEach(function (k) { r.setControl(k, e.controls[k]); });
+        if (e.seq) { var o = w.SEN_CORE.runSeq(function () { return w.SEN_RIGS.create(e.rig, {}); }, e.seq, e.dur || 4000); if (!o || !o.samples || !o.samples.length) bad.push('Beispiel ' + e.id + ': Ablauf ohne Ergebnis'); }
+        else for (var i = 0; i < 100; i++) r.step(10);
+      } catch (x) { bad.push('Beispiel ' + e.id + ': ' + x); }
+    });
+    return { n: ex.length, bad: bad };
+  }
   async function lab(l) {
     if (l[0] === 'loch') return labLoch(l);
     if (l[0] === 'quarz') return labQuarz(l);
@@ -306,6 +337,11 @@
       var ac = antCore(w); if (ac.bad.length) all.ok = false;
       all.labs.push({ lab: 'Antriebs-Lab Kern', tasks: ac.n, bad: ac.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Antriebs-Lab: Kern, Pruefstaende, Beispiele</td><td>' + ac.n + ' Beispiele</td><td class="' + (ac.bad.length ? 'bad' : 'ok') + '">' + (ac.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + ac.bad.join('; ') + '</td></tr>');
+    }
+    if (l[0] === 'sen') {
+      var sc2 = senCore(w); if (sc2.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Sensorik-Lab Kern', tasks: sc2.n, bad: sc2.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Sensorik-Lab: Kern, Pruefstaende, Beispiele</td><td>' + sc2.n + ' Beispiele</td><td class="' + (sc2.bad.length ? 'bad' : 'ok') + '">' + (sc2.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + sc2.bad.join('; ') + '</td></tr>');
     }
     var au = null; if (l[0] === 'pr' || l[0] === 'sch' || l[0] === 'app' || l[0] === 'mess') { try { au = l[0] === 'mess' ? await auditMess() : audit(w, l); } catch (e) { au = { n: 0, errs: ['Auswahlfragen-Prüfung abgebrochen: ' + e], hints: [] }; } }
     if (au) {

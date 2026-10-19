@@ -17,10 +17,10 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 13.132</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 14.133</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen.html">Lernen (Arduino, Raspberry Pi)</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 
-<div class="box"><b>Tonfunk Lab</b> sind dreizehn Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
+<div class="box"><b>Tonfunk Lab</b> sind vierzehn Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
 <ul><li><b>LochLab:</b> Schaltungen auf der Lochrasterplatine planen und ausprobieren.</li>
 <li><b>SchaltLab:</b> Stromlaufpläne zeichnen und simulieren (Spannungen, Ströme, Graphen).</li>
 <li><b>SimLab:</b> Experimente und Hausinstallation (Wechselschaltung, Schütz, FI, Drehstrom, mit Schutzleiter PE), mit Aufgaben und Fehlersuche.</li>
@@ -32,9 +32,10 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>SPS-Lab:</b> Eine speicherprogrammierbare Steuerung programmieren in Kontaktplan (KOP), Funktionsplan (FUP) und GRAFCET, mit Adressen nach IEC oder Siemens, und an vier animierten Anlagen testen: Förderband, Ampel, Tank und Garagentor.</li>
 <li><b>Leiterplatten-Lab:</b> Echte Leiterplatten mit 1, 2, 4 und 6 Lagen entwerfen, bestücken und löten, Gerber-Daten ansehen, Fehler auf defekten Platinen suchen und die Prüfverfahren der Fertigung kennenlernen (Flying Probe, ICT, AOI, SPI, AXI, Boundary Scan).</li>
 <li><b>Antriebs-Lab:</b> Fünf animierte Prüfstände: Gleichstrommotor mit H-Brücke und PWM, Servo mit Lageregelung, Schrittmotor, Drehstrommotor mit Stern-Dreieck-Anlauf und Frequenzumrichter sowie Getriebe. Mit Messgeräten, Kennlinien, Ablaufprogramm und Rechner.</li>
+<li><b>Sensorik-Lab:</b> Sieben animierte Prüfstände: Temperatur (NTC, Pt100, Thermoelement), Licht und Näherung, Kraft und Druck mit DMS-Brücke, Beschleunigung und Neigung, Normsignale 4…20 mA, digitale Sensoren per I²C sowie ADU und Abtastung. Mit Messgeräten, Kennlinien, Ablaufprogramm und Rechner.</li>
 <li><b>Arduino-Lab:</b> Arduino-Programme schreiben, den Arduino im Plan verdrahten und alles gemeinsam simulieren.</li>
 <li><b>Pi-Lab:</b> Python-Programme für den Raspberry Pi schreiben, den Pi mit LEDs, Tastern und Sensoren verdrahten und simulieren (3,3-V-Pins!).</li></ul>
-<p>Zum Lernen gibt es die <a href="lernen.html">Lernhefte</a> (Löten, Elektronik, Installation, Digitaltechnik, SPS, Leiterplatten, Antriebe, Arduino und Raspberry Pi) mit Arbeitsblättern. Auf der Startseite kannst du Karten ausblenden und umsortieren („Startseite anpassen“, gilt nur auf deinem Gerät). Neu: der <b>Trainer</b> führt dich in jedem Lab durch die ersten Schritte (Menü: Trainer), und die <b>Kampagne</b> verbindet alle Labs zu einem Lernpfad.</p></div>
+<p>Zum Lernen gibt es die <a href="lernen.html">Lernhefte</a> (Löten, Elektronik, Installation, Digitaltechnik, SPS, Leiterplatten, Antriebe, Sensorik, Arduino und Raspberry Pi) mit Arbeitsblättern. Auf der Startseite kannst du Karten ausblenden und umsortieren („Startseite anpassen“, gilt nur auf deinem Gerät). Neu: der <b>Trainer</b> führt dich in jedem Lab durch die ersten Schritte (Menü: Trainer), und die <b>Kampagne</b> verbindet alle Labs zu einem Lernpfad.</p></div>
 
 <h2>1. Anmelden und installieren</h2>
 <ol><li>Seite öffnen: <b>tonikaczor.github.io/lochlab</b>.</li>
@@ -97,6 +98,16 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>Rechnen:</b> Formelrechner für Drehzahl, Moment, Leistung, Wirkungsgrad, Schlupf, Übersetzung und Typenschild mit Rechenweg, dazu ein Übungsgenerator mit zufälligen Aufgaben.</li>
 <li><b>Aufgaben:</b> 30 Aufgaben mit automatischer Prüfung (Rechnen, Einstellen am Prüfstand, Ablaufprogramme, Fehlersuche, Prüfungsstil). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-ant.html">Antriebs-Lab: Motoren, Regelung und Getriebe</a> mit Arbeitsblatt zu allen Aufgaben.</p>
+
+<h2>5c. Sensorik-Lab: Sensoren und Messketten untersuchen</h2>
+<ul><li><b>Sechs Bereiche</b> oben: <span class="k">Prüfstand</span> (Messkette als Bild, Bedienpult und Messgeräte), <span class="k">Kennlinien</span> (Kennlinien mit Betriebspunkt und Zeitschreiber), <span class="k">Ablauf</span> (Ablaufprogramm), <span class="k">Rechnen</span>, <span class="k">Aufgaben</span> und <span class="k">Lernen</span>.</li>
+<li><b>Sieben Prüfstände:</b> Temperatur (NTC, Pt100, Pt1000, LM35, Thermoelement; 2-, 3- und 4-Leiter), Licht und Näherung, Kraft und Druck mit DMS-Brücke, Beschleunigung und Neigung, Normsignale und Messumformer, digitale Sensoren per I²C mit Logikanalysator, ADU und Abtastung. Mit ▶ unten startest du, Regler und Schalter verstellst du im Bedienpult. Der Zeitraffer reicht von ×0,5 bis ×5.</li>
+<li><b>Fehler mit Folgen:</b> Selbsterwärmung, Leitungswiderstand, Fremdlicht, Drift, Übersteuerung, Drahtbruch, zu großer Pull-up und Aliasing erzeugen Meldungen mit Funken, Rauch und Ton. Das Lab zeigt, warum der Messwert falsch ist.</li>
+<li><b>Kennlinien:</b> Sensorkennlinien, Hysterese-Schleifen, Bürden-Arbeitsbereich und Spektrum werden aus dem Modell berechnet. Der Marker zeigt deinen aktuellen Betriebspunkt. Der Zeitschreiber lässt sich als CSV speichern.</li>
+<li><b>Ablauf:</b> Eine Tabelle „nach X Sekunden setze Steuerwert = Wert“, zum Beispiel für einen Temperatursprung, eine Hysterese-Schleife oder einen Drahtbruch zu einem bestimmten Zeitpunkt. Das Ergebnis erscheint als Diagramm.</li>
+<li><b>Rechnen:</b> Formelrechner für NTC und Pt100, Brückenspannung, Verstärkung, Bürde, ADU-Stufe, Rauschabstand und Aliasing mit Rechenweg, dazu ein Übungsgenerator mit zufälligen Aufgaben.</li>
+<li><b>Aufgaben:</b> 28 Aufgaben mit automatischer Prüfung (Rechnen, Einstellen am Prüfstand, Ablaufprogramme, Fehlersuche, Prüfungsstil). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
+<p class="mute">Weiter im Lernheft <a href="lernen-sen.html">Sensorik-Lab: Sensoren, Messketten und Normsignale</a> mit Arbeitsblatt zu allen Aufgaben.</p>
 
 <h2>6. Wenn etwas nicht klappt</h2>
 <table><tr><th>Problem</th><th>Lösung</th></tr>

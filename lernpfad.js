@@ -6,12 +6,12 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const REG = root.LAB_REG || {}, ROWS = root.AUFGABEN || [];
   const TRACKS = [
-    { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik, zur Leiterplatte, zur speicherprogrammierbaren Steuerung (SPS) und zu den Antrieben.', labs: ['sch', 'loch', 'digi', 'mess', 'pcb', 'sps', 'ant'] },
+    { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik, zur Leiterplatte, zur speicherprogrammierbaren Steuerung (SPS), zu den Antrieben und zur Sensorik.', labs: ['sch', 'loch', 'digi', 'mess', 'pcb', 'sps', 'ant', 'sen'] },
     { t: 'Installation und Anlagen', s: 'Wie Strom im Haus verteilt, geschaltet und abgesichert wird.', labs: ['sim', 'haus'], pre: 'Empfohlen vorher: SchaltLab' },
     { t: 'Prüfungsvorbereitung', s: 'Die Abschlussprüfung üben: Themen trainieren, Rechnen, Probeprüfung mit Zeitlimit und Auswertung.', labs: ['pr'], pre: 'Am besten nach SchaltLab, DigiLab und MessLab' },
     { t: 'Programmieren und Steuern', s: 'Eigene Apps mit KI bauen, dann Schaltungen mit Programmen steuern: Arduino und Raspberry Pi.', labs: ['app', 'code', 'pi'], pre: 'Die App-Werkstatt braucht kein Vorwissen. Für Arduino und Pi empfohlen: SchaltLab' }
   ];
-  const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', pr: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten', sps: 'Mittel', pcb: 'Mittel', ant: 'Mittel' };
+  const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', pr: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten', sps: 'Mittel', pcb: 'Mittel', ant: 'Mittel', sen: 'Mittel' };
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
   const results = () => { const m = {}; [get('sim.done', {}), get('lm4.tdone', {})].forEach(o => Object.keys(o).forEach(k => { const v = +o[k] || 0; if (v > (m[k] || 0)) m[k] = v; })); return m; };
   const trained = lab => !!get('lm4.trainer', {})[lab];
