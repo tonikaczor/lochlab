@@ -308,11 +308,11 @@ function onBurn(ev) {
   toast(ev.text); if (window.Feel) window.Feel.event(ev.kind);
   incident = { ev, open: false }; refreshUI();
   if (!window.LochFX) return;
-  if (ev.kind === 'shock') { const [sx, sy] = partCenter(p); LochFX.trip(sx, sy, 'ZAP!', view.s); draw(); refreshUI(); return; }
-  if (ev.kind === 'trip') { const [tx, ty] = partCenter(p); LochFX.trip(tx, ty, p.k === 'RCD' ? 'FI! KLACK!' : 'KLACK!', view.s); draw(); refreshUI(); return; }
+  if (ev.kind === 'shock') { const [sx, sy] = partCenter(p); LochFX.trip(sx, sy, 'ZAP!', view.s, { kind: 'shock' }); draw(); refreshUI(); return; }
+  if (ev.kind === 'trip') { const [tx, ty] = partCenter(p); LochFX.trip(tx, ty, p.k === 'RCD' ? 'FI! KLACK!' : 'KLACK!', view.s, { kind: 'trip', part: p.k }); draw(); refreshUI(); return; }
   const [x, y] = partCenter(p), led = p.k === 'LED';
   const TXT = { FUSE: 'ZACK!', MOTOR: 'BRRRZ!', LAMP: 'KLIRR!', SPK: 'KRAWUMM!' };
-  LochFX.explode(x, y, { text: TXT[p.k], kind: led ? 'led' : (p.k === 'R' || p.k === 'POT' || p.k === 'FUSE' || p.k === 'LAMP' ? 'res' : (['NPN', 'PNP', 'THY', 'OPTO', 'ICX', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'OPA'].includes(p.k) ? 'chip' : 'big')), color: led ? (LEDRGB[p.v] || '255,59,47') : '255,170,60', scale: view.s, at: () => partCenter(p) });
+  LochFX.explode(x, y, { text: TXT[p.k], part: p.k, why: ev.text, kind: led ? 'led' : (p.k === 'R' || p.k === 'POT' || p.k === 'FUSE' || p.k === 'LAMP' ? 'res' : (['NPN', 'PNP', 'THY', 'OPTO', 'ICX', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'OPA'].includes(p.k) ? 'chip' : 'big')), color: led ? (LEDRGB[p.v] || '255,59,47') : '255,170,60', scale: view.s, at: () => partCenter(p) });
 }
 /* Taster halten mindestens 100 ms Simulationszeit gedrückt: bei langsamem Tempo wäre ein kurzer Klick sonst für Relais und Stromstoßschalter unsichtbar */
 const pressT0 = new Map(), relPend = new Set();
@@ -1853,7 +1853,7 @@ function sheet(title, build) {
 }
 function openMenu() {
   sheet('Menü', (b, close) => {
-    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['lern', 'Lernstand sichern oder laden', 'Fortschritt als Code oder Datei mitnehmen'], ...(window.LAB_EXTRA_MENU ? window.LAB_EXTRA_MENU() : []), ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['kamp', 'Kampagne: Das Abschlussgerät', 'Lernpfad mit Geschichte über alle Labs'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
+    const rows = [['new', 'Neue Schaltung', 'Leere Fläche'], ['tasks', 'Aufgaben', 'Aufgaben bearbeiten und prüfen lassen'], ['open', 'Gespeicherte Schaltungen', 'Auf diesem Gerät'], ['print', 'Drucken', 'Plan und Bauteilliste'], ['lern', 'Lernstand sichern oder laden', 'Fortschritt als Code oder Datei mitnehmen'], ...(window.LAB_EXTRA_MENU ? window.LAB_EXTRA_MENU() : []), ['ex', 'Beispielschaltungen', `${EXAMPLES.filter(exOk).length} Schaltungen zum Ausprobieren`], ['save', 'Speichern unter …', sch.name], ['export', 'Als Text sichern', 'Zum Weitergeben oder als Backup'], ['import', 'Aus Text laden', 'Gesicherten Text einfügen'], ['share', 'Teilen', 'Link zum Weitergeben (Schaltung steckt im Link)'], ...(LAB === 'sim' ? [['cab', 'Schaltschrank-Ansicht', 'Sicherungsautomaten und FI wie im Verteiler bedienen']] : []), ['teacher', 'Lehrer-Bereich', 'Aufgaben verteilen, Abgaben prüfen (nur mit Freigabe)'], ['img', 'Als Bild exportieren', 'Gedrückt halten zum Sichern'], ['fit', 'Ansicht einpassen', ''], ['lab', 'Zum Lochraster-Layout', 'LochLab öffnen'], ['auto', 'Layout automatisch erzeugen', 'Nur mit Freigabe (Ausbilder)'], ['start', 'Zur Startseite', 'Layout oder Stromlaufplan wählen'], ['calc', 'Rechner', 'Ohm, Farbcode, LED-Vorwiderstand, Teiler, RC, Leitung'], ['proto', 'Messprotokoll', 'Soll berechnen, messen, vergleichen, drucken'], ['tag', 'Tagesaufgabe', 'Jeden Tag neue Zahlen, mit Serie'], ['duell', 'Duell', 'Gleiche Aufgabe, schnellste Zeit gewinnt'], ['escape', 'Escape-Room', 'Aufgaben lösen, Türcode finden'], ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['speak', 'Bauteile sprechen automatisch', 'Antippen = Steckbrief per Sprachausgabe (an/aus)'], ['ton', 'Tonwerkstatt', 'Klaviertasten, tone()-Code und 555-Sirene zum Hören'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'], ['det', 'Schaltungs-Detektiv', 'Acht Fälle: Fehler per Messung finden'], ['loet', 'Lötübung', 'Löten üben und schlechte Lötstellen finden'], ['oszi', 'Oszilloskop-Trainer', 'Ablesen üben und Kurven-Rätsel'], ['voice', 'Sprachsteuerung an/aus', 'Befehle mit dem Mikrofon (Zustimmung nötig)'], ['feel', 'Bauteile fühlen an/aus', 'Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'], ['fun', 'Sprüche und Effekte an/aus', 'Lustige Sprüche, Konfetti und Rauchringe (Ton: Lautsprecher-Knopf)'], ['kamp', 'Kampagne: Das Abschlussgerät', 'Lernpfad mit Geschichte über alle Labs'], ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['water', 'Wasser-Ansicht an/aus', 'Strom als Wasser, Spannung als Druck (in der Simulation)'], ['dice', 'Fehler-Würfel', 'Würfelt einen versteckten Fehler in die Schaltung'], ['predict', 'Vorhersage-Modus an/aus', 'Vor dem Start tippen, was passiert'], ['png', 'Bild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['gif', 'Animation als GIF', 'Laufende Simulation aufnehmen und teilen'], ['csv', 'Oszilloskop-Daten (CSV)', 'Messkurven als Tabelle für Excel'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', 'Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'], ['help', 'Hilfe', '']];
     b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
     b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
   });
@@ -1863,7 +1863,7 @@ function openMenu() {
 /* ============ CodeLab: Arduino-Programm ausführen ============ */
 let prog = null, serLog = '', serLine = '', serSeries = [[], [], []], serMode = 'text', serRx = [], lcdState = null, serDirty = true, lastCodeStatus = '';
 const AR = window.Arduino;
-function codeStatus(msg, bad) { const s = $('#codeStatus'); if (!s) return; s.textContent = msg; s.style.color = bad ? '#ff8a7a' : 'var(--mute)'; lastCodeStatus = msg; }
+function codeStatus(msg, bad) { if (bad && /^Fehler/.test(msg) && window.LochFX) LochFX.sound('sad', 0.55); const s = $('#codeStatus'); if (!s) return; s.textContent = msg; s.style.color = bad ? '#ff8a7a' : 'var(--mute)'; lastCodeStatus = msg; }
 function serAppend(s) {
   serLog += s; if (serLog.length > 6000) serLog = serLog.slice(-4500); serDirty = true; serLine += s;
   let i; while ((i = serLine.indexOf('\n')) >= 0) { const ln = serLine.slice(0, i); serLine = serLine.slice(i + 1); const nums = ln.match(/-?\d+(?:\.\d+)?/g); if (nums) nums.slice(0, 3).forEach((x, k) => { serSeries[k].push(parseFloat(x)); if (serSeries[k].length > 300) serSeries[k].shift(); }); }
@@ -3451,9 +3451,11 @@ function diceJudge(p, kindGuess) {
     dc.solved = true; dc.msg = '🎉 Gefunden nach ' + dc.tries + (dc.tries === 1 ? ' Versuch' : ' Versuchen') + '! ' + diceText(dc);
     const score = Math.max(30, 100 - 20 * (dc.tries - 1));
     try { const dn = taskDone(); dn['dice'] = Math.max(dn['dice'] || 0, score); if (dc.case != null) { const k = 'det' + (dc.case + 1); dn[k] = Math.max(dn[k] || 0, score); } localStorage.setItem('sim.done', JSON.stringify(dn)); } catch (e) {}
+    if (window.LochFX) LochFX.pass(100);
     if (window.Badges) { window.Badges.stat('dice'); if (dc.case != null) { const dn = taskDone(); window.Badges.stat('detektiv', Object.keys(dn).filter(k => /^det\d+$/.test(k) && dn[k] > 0).length, 'max'); } window.Badges.confetti(false); window.Badges.chime(false); }
   } else if (p.id === dc.id) dc.msg = '✗ ' + nm(p) + ' ist das richtige Bauteil, aber die Fehlerart stimmt nicht. Miss genauer: Liegt Spannung an? Fließt Strom? (Versuch ' + dc.tries + ')';
   else dc.msg = '✗ ' + nm(p) + ' ist in Ordnung. Miss weiter. (Versuch ' + dc.tries + ')';
+  if (!dc.solved && window.LochFX) { const v = LochFX.variant('fail', { vol: 0.6 }); if (v) LochFX.say(v.text); }
   refreshUI();
 }
 function diceCardHtml() {
@@ -3505,7 +3507,7 @@ function runTaskCheck() {
   if (window.Warum) window.Warum.decorate(lines);
   const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
   taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); logResult(t.id, pct); refreshUI();
-  if (pct === 100 && window.LochFX) LochFX.sound('pop');
+  /* Fanfare, Konfetti oder Ding: übernimmt LochFX.pass über Badges.result in markDone */
 }
 let reports = 0;
 function reportFault() {
@@ -3513,7 +3515,8 @@ function reportFault() {
   const p = sel && sel.t === 'part' && byPart(sel.id); if (!p) { toast('Erst das vermutete Bauteil antippen'); return; }
   reports++; const ok = (p.l || '') === t.faultLabel;
   taskRes = { id: t.id, lines: [RES(ok, ok ? nm(p) + ' ist tatsächlich defekt. Gut gefunden!' : nm(p) + ' ist in Ordnung. Miss weiter. (Versuch ' + reports + ')')], pct: ok ? 100 : null };
-  if (ok) { markDone(t.id, Math.max(30, 100 - 20 * (reports - 1))); logResult(t.id, Math.max(30, 100 - 20 * (reports - 1)), { versuche: reports }); reports = 0; if (window.LochFX) LochFX.sound('pop'); }
+  if (ok) { markDone(t.id, Math.max(30, 100 - 20 * (reports - 1))); logResult(t.id, Math.max(30, 100 - 20 * (reports - 1)), { versuche: reports }); reports = 0; }
+  else if (window.LochFX) LochFX.variant('fail');
   refreshUI();
 }
 /* Tipp-Stufen für Aufgaben: 1 Tipp, 2 konkreter Hinweis (erster offener Prüfpunkt bzw. Bauteiltyp des Fehlers), 3 Musterlösung bzw. defektes Bauteil */
@@ -3880,6 +3883,7 @@ function menuAct(m) {
   else if (m === 'det') openDetective();
   else if (m === 'kamp') { if (window.Kampagne) window.Kampagne.open(); }
   else if (m === 'feel') { if (window.Feel) window.Feel.toggle(); }
+  else if (m === 'fun') { if (window.LochFX) { LochFX.setFun(!LochFX.isFun()); toast('Sprüche und Effekte: ' + (LochFX.isFun() ? 'an' : 'aus')); } }
   else if (m === 'voice') { if (window.Voice) window.Voice.toggle(); }
   else if (m === 'oszi') { if (window.Oszi) window.Oszi.open(); }
   else if (m === 'loet') { if (window.Loetuebung) window.Loetuebung.open(); }

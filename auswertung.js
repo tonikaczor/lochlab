@@ -15,6 +15,7 @@
   const hintSave = h => { try { localStorage.setItem('sim.hints', JSON.stringify(h)); } catch (e) {} };
   function hintReset(id) { const h = hints(); if (h[id]) { delete h[id]; hintSave(h); } }
   function hint(o) {
+    if (window.LochFX) { const v = LochFX.variant('hint'); if (v) LochFX.say(v.text); }
     const u = ui(), h = hints(), n = Math.min(3, (h[o.id] || 0) + 1); h[o.id] = n; hintSave(h);
     const E = s => esc(s);
     u.sheet('Tipp, Stufe ' + n + ' von 3', (b, close) => {

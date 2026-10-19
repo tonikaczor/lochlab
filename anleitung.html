@@ -17,10 +17,10 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 10.129</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 11.130</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen.html">Lernen (Arduino, Raspberry Pi)</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 
-<div class="box"><b>Tonfunk Lab</b> sind zehn Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
+<div class="box"><b>Tonfunk Lab</b> sind elf Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
 <ul><li><b>LochLab:</b> Schaltungen auf der Lochrasterplatine planen und ausprobieren.</li>
 <li><b>SchaltLab:</b> Stromlaufpläne zeichnen und simulieren (Spannungen, Ströme, Graphen).</li>
 <li><b>SimLab:</b> Experimente und Hausinstallation (Wechselschaltung, Schütz, FI, Drehstrom, mit Schutzleiter PE), mit Aufgaben und Fehlersuche.</li>
@@ -29,9 +29,10 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>HausLab:</b> Elektroinstallation im 3D-Haus: drei Häuser (Einfamilienhaus, Altbau-Wohnung, Bürokomplex), freies Gestalten, Leitungen an Wänden und Decke, Verteilerkasten bestücken, Betrieb mit Auslösung von FI und Automaten.</li>
 <li><b>Prüfungs-Lab:</b> Für die Abschlussprüfung üben: Training je Thema, Rechenserie, Probeprüfung mit Zeitlimit und Note, Auswertung mit Lernplan. Die Aufgaben sind eigene Übungsaufgaben.</li>
 <li><b>App-Werkstatt:</b> Eigene Apps mit einer KI bauen (Claude, ChatGPT oder andere), prüfen und weitergeben, dazu Notizen im Obsidian-Format. Ohne Vorkenntnisse. Die KI läuft außerhalb des Labs, in der Werkstatt startest und prüfst du den Code abgeschottet.</li>
+<li><b>SPS-Lab:</b> Eine speicherprogrammierbare Steuerung programmieren in Kontaktplan (KOP), Funktionsplan (FUP) und GRAFCET, mit Adressen nach IEC oder Siemens, und an vier animierten Anlagen testen: Förderband, Ampel, Tank und Garagentor.</li>
 <li><b>Arduino-Lab:</b> Arduino-Programme schreiben, den Arduino im Plan verdrahten und alles gemeinsam simulieren.</li>
 <li><b>Pi-Lab:</b> Python-Programme für den Raspberry Pi schreiben, den Pi mit LEDs, Tastern und Sensoren verdrahten und simulieren (3,3-V-Pins!).</li></ul>
-<p>Zum Lernen gibt es die <a href="lernen.html">Lernhefte</a> (Löten, Elektronik, Installation, Digitaltechnik, Arduino und Raspberry Pi) mit Arbeitsblättern. Neu: der <b>Trainer</b> führt dich in jedem Lab durch die ersten Schritte (Menü: Trainer), und die <b>Kampagne</b> verbindet alle Labs zu einem Lernpfad.</p></div>
+<p>Zum Lernen gibt es die <a href="lernen.html">Lernhefte</a> (Löten, Elektronik, Installation, Digitaltechnik, SPS, Arduino und Raspberry Pi) mit Arbeitsblättern. Neu: der <b>Trainer</b> führt dich in jedem Lab durch die ersten Schritte (Menü: Trainer), und die <b>Kampagne</b> verbindet alle Labs zu einem Lernpfad.</p></div>
 
 <h2>1. Anmelden und installieren</h2>
 <ol><li>Seite öffnen: <b>tonikaczor.github.io/lochlab</b>.</li>
@@ -66,7 +67,16 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><span class="k">⤓ .ino</span> speichert das Programm als Datei für die Arduino-IDE, <span class="k">Kopieren</span> legt es in die Zwischenablage.</li>
 <li><b>Pi-Lab:</b> Du schreibst <b>Python</b> (gpiozero, auch RPi.GPIO). Die Ausgabe von <code>print</code> steht in der Konsole. Die Pins sind 3,3-V-Pins mit GPIO-Nummern (nicht die Pin-Nummern 1 bis 40!). Eigene Klassen, <code>with</code>, I²C-Sensoren (<code>smbus2</code>) und der Wandler MCP3008 gehen. Programme mit <code>input()</code>, Dateien oder Zusatzmodulen wie numpy laufen im Pi-Lab nicht.</li></ul>
 
-<h2>5. Wenn etwas nicht klappt</h2>
+<h2>5. SPS-Lab: Steuerungen programmieren</h2>
+<ul><li><b>Fünf Bereiche</b> oben: <span class="k">Anlage</span> (die Maschine in Bewegung), <span class="k">Programm</span> (Editor), <span class="k">Simulation</span> (Anlage mit Ein- und Ausgängen), <span class="k">Aufgaben</span> und <span class="k">Lernen</span>.</li>
+<li><b>Drei Sprachen:</b> Im Editor wechselst du zwischen <b>KOP</b> (Kontaktplan wie ein Stromlaufplan), <b>FUP</b> (Funktionsplan mit Gattern) und <b>GRAFCET</b> (Schrittkette). KOP und FUP sind dasselbe Programm in zwei Darstellungen, GRAFCET ist eine eigene Sprache und beginnt ein neues Programm. „📄 Text“ zeigt die Anweisungsliste.</li>
+<li><b>IEC oder Siemens:</b> In der unteren Leiste schaltest du die Anzeige um (%IX0.0 und AND oder E0.0 und U). Das Programm selbst ändert sich nicht. Mit „🏷 Symbole“ zeigst du statt der Adressen die Namen (S1_Start).</li>
+<li><b>Starten:</b> ▶ startet die SPS. Tippe in der Liste auf einen Taster oder Schalter (oder in die Anlage), um einen Eingang zu betätigen. <b>Schritt</b> rechnet genau einen Zyklus, der <b>Zeitraffer</b> (×0,5 bis ×4) beschleunigt die Anlage. Mit dem kleinen <b>F</b> an einem Ein- oder Ausgang erzwingst du einen Wert (Zwangssetzen). Bitte nicht vergessen, ihn wieder zu lösen.</li>
+<li><b>Aufgaben:</b> 24 Aufgaben mit automatischer Prüfung. Die Prüfung lässt die Anlage das Programm durchlaufen, Tipps gibt es in drei Stufen.</li>
+<li><b>Effekte und Ton</b> (Knopf „Effekte“ in der unteren Leiste, in den anderen Labs im Menü): Funken, Sprechblasen, Konfetti und kleine Töne bei Erfolgen und Pannen. Wer es ruhig mag, schaltet sie aus.</li></ul>
+<p class="mute">Weiter im Lernheft <a href="lernen-sps.html">SPS-Lab: Steuerungen programmieren</a> mit Arbeitsblatt zu allen Aufgaben.</p>
+
+<h2>6. Wenn etwas nicht klappt</h2>
 <table><tr><th>Problem</th><th>Lösung</th></tr>
 <tr><td>Seite zeigt alte Version oder neue Beispiele fehlen</td><td>App schließen und neu öffnen, notfalls Seite neu laden.</td></tr>
 <tr><td>Name falsch</td><td>Menü → „Name ändern“ (LochLab) bzw. Abmelden und neu anmelden.</td></tr>

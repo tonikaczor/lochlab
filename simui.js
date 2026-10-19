@@ -207,10 +207,11 @@ function advance(T) {
   while (sim.events.length) {
     const ev = sim.events.shift(); if (window.Feel) window.Feel.event(ev.kind); toast(ev.text + (ev.part && ev.part.item.l ? ' (' + ev.part.item.l + ')' : ''));
     const it = ev.part && ev.part.item;
+    if (it && window.LochFX && (ev.kind === 'trip' || ev.kind === 'shock')) { const b0 = worldBox(it); LochFX.trip(view.ox + (b0[0] + b0[2]) / 2 * view.s, view.oy + (b0[1] + b0[3]) / 2 * view.s, ev.kind === 'shock' ? 'ZAP!' : 'KLACK!', view.s, { kind: ev.kind }); }
     if (it && window.LochFX && ev.kind === 'burn') {
       const ctr = () => { const b = worldBox(it); return [view.ox + (b[0] + b[2]) / 2 * view.s, view.oy + (b[1] + b[3]) / 2 * view.s]; }, [x, y] = ctr();
       const led = it.k === 'LED';
-      LochFX.explode(x, y, { kind: led ? 'led' : (it.k === 'R' || it.k === 'P' || it.k === 'TP' ? 'res' : (['Q', 'IC', 'U'].includes(it.k) ? 'chip' : 'big')), color: led ? hexRgb(ledColor(it.v)).join(',') : '255,170,60', scale: view.s, at: ctr });
+      LochFX.explode(x, y, { part: it.k, why: ev.text, kind: led ? 'led' : (it.k === 'R' || it.k === 'P' || it.k === 'TP' ? 'res' : (['Q', 'IC', 'U'].includes(it.k) ? 'chip' : 'big')), color: led ? hexRgb(ledColor(it.v)).join(',') : '255,170,60', scale: view.s, at: ctr });
     }
   }
 }

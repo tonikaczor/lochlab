@@ -2,6 +2,13 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v11.130', items: [
+      ['Neues SPS-Lab: speicherprogrammierbare Steuerung', 'Das 11. Lab. Du programmierst eine SPS in den Sprachen KOP (Kontaktplan), FUP (Funktionsplan) und GRAFCET (Ablaufsprache) und siehst, wie das Programm zyklisch abläuft. Adressen und Befehle lassen sich zwischen IEC (%IX0.0, AND) und Siemens (E0.0, U) umschalten.', 'Startseite ▸ SPS-Lab'],
+      ['Vier animierte Anlagen', 'Förderband mit Sortierung, Ampel, Tank mit Pumpe und Garagentor laufen als Animation. Taster und Sensoren bedienst du per Fingertipp, Fehler wie überlaufender Tank oder eingeklemmtes Auto sind sichtbar.', 'SPS-Lab ▸ Anlage wählen'],
+      ['24 Aufgaben mit Prüfung und 18 Beispiele', 'Von der Selbsthaltung über Zeitglieder und Zähler bis zu GRAFCET, Fehlersuche und Aufgaben im Prüfungsstil. Die Prüfung läuft die Anlage automatisch durch. Tipp-Stufen und Musterlösung wie in den anderen Labs.', 'SPS-Lab ▸ Menü ▸ Aufgaben'],
+      ['Lustige Effekte und Töne in allen Labs', 'Funken, Sprechblasen, Konfetti und kleine Töne begleiten Erfolge und Pannen. Wer es ruhig mag, schaltet sie aus.', 'Menü ▸ Effekte (im SPS-Lab als Knopf „Effekte“)'],
+      ['Neues Lernheft SPS-Lab', 'Arbeitsblätter zu allen 24 Aufgaben, vom Zyklus einer SPS bis zur Prüfung. Lösungsblätter gibt es für Ausbilder.', 'Lernhefte ▸ SPS-Lab'],
+    ] },
     { v: 'v10.129', items: [
       ['Prüfungs-Lab: Teil 1 und Teil 2 getrennt', 'Oben im Prüfungs-Lab wählst du den Bereich Teil 1 oder Teil 2. Probeprüfungen, Training mit Prüfungs-Pool und Auswertung sind pro Bereich getrennt. Teil 2 enthält Systementwurf und Funktions- und Systemanalyse.', 'Prüfungs-Lab ▸ Bereich'],
       ['Prüfungs-Pool deutlich größer', 'Der Pool umfasst jetzt rund 950 eigene Übungsfragen im Stil der Kammerprüfungen von 2020 bis 2025, darunter Fragen zur Schaltung der Praxisprüfung Winter 2024. Alles sind eigene Formulierungen, keine Originalaufgaben.', 'Prüfungs-Lab ▸ Training und Probeprüfung']

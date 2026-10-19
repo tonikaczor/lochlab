@@ -1522,6 +1522,7 @@ function openMenu(){
       ['oszi','Oszilloskop-Trainer','Ablesen üben und Kurven-Rätsel'],
       ['voice','Sprachsteuerung an/aus','Befehle mit dem Mikrofon (Zustimmung nötig)'],
       ['feel','Bauteile fühlen an/aus','Klicks und Vibration: Relais, Schalter, Motor, Kurzschluss'],
+      ['fun','Sprüche und Effekte an/aus','Lustige Sprüche, Konfetti und Rauchringe (Ton: Lautsprecher-Knopf)'],
       ['kamp','Kampagne: Das Abschlussgerät','Lernpfad mit Geschichte über alle Labs'],
       ['neu','Neu in dieser Version','Was zuletzt dazukam und wo du es findest'],
       ['predict','Vorhersage-Modus an/aus','Vor dem Start der Simulation tippen, was passiert'],
@@ -1585,6 +1586,7 @@ function menuAct(m){
   if(m==='oszi'){if(window.Oszi)Oszi.open();return;}
   if(m==='voice'){if(window.Voice)Voice.toggle();return;}
   if(m==='feel'){if(window.Feel)Feel.toggle();return;}
+  if(m==='fun'){if(window.LochFX){LochFX.setFun(!LochFX.isFun());toast('Sprüche und Effekte: '+(LochFX.isFun()?'an':'aus'));}return;}
   if(m==='kamp'){if(window.Kampagne)Kampagne.open();return;}
   if(m==='predict'){if(window.Predict)Predict.toggle();return;}
   if(m==='png'){if(window.LabExport)LabExport.png();return;}

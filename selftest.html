@@ -9,7 +9,8 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40]];
+  var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
   /* Auswahlfragen prüfen: je Frage genau eine richtige Antwort (Aufbau, keine doppelten Antworten, keine widersprüchlichen Dubletten), die richtige Antwort bleibt nach dem Mischen immer dieselbe,
@@ -209,6 +210,25 @@
     if (alarmRes && alarmRes.length) document.getElementById('hints').textContent += 'SchaltLab Quarzuhr, Wecker-Test (Maximalspannung am Ausgang IC23.9 / Flanken in 1 s): ' + alarmRes.map(function (r) { return (r.en ? 'ein' : 'aus') + ', Minute ' + r.minutes + ': ' + r.hi + ' V, ' + r.tog; }).join(' | ') + '\n\n';
     f.remove();
   }
+  /* SPS-Lab: Kern, vier Anlagen, 18 Beispiele (jedes kompiliert), 24 Aufgaben */
+  function spsCore(w) {
+    var bad = [];
+    if (!w.SPS_CORE || typeof w.SPS_CORE.create !== 'function') bad.push('SPS_CORE fehlt');
+    var pl = w.SPS_PLANTS && w.SPS_PLANTS.list ? w.SPS_PLANTS.list : [];
+    if (pl.length !== 4) bad.push('Anlagen: ' + pl.length + ' statt 4');
+    var ex = (w.SPS_DATA && w.SPS_DATA.examples) || [];
+    if (ex.length !== 18) bad.push('Beispiele: ' + ex.length + ' statt 18');
+    var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'sps'; });
+    if (tk.length !== 24) bad.push('Aufgaben: ' + tk.length + ' statt 24');
+    if (w.SPS_CORE) ex.forEach(function (e) {
+      try {
+        var p = typeof e.prog === 'function' ? e.prog() : e.prog, plc = w.SPS_CORE.create(p);
+        if (!plc.ok) bad.push('Beispiel ' + e.id + ' kompiliert nicht: ' + (plc.errors || []).join(' / '));
+        if (!w.SPS_PLANTS.defs[e.plant]) bad.push('Beispiel ' + e.id + ': Anlage ' + e.plant + ' unbekannt');
+      } catch (x) { bad.push('Beispiel ' + e.id + ': ' + x); }
+    });
+    return { n: ex.length, bad: bad };
+  }
   async function lab(l) {
     if (l[0] === 'loch') return labLoch(l);
     if (l[0] === 'quarz') return labQuarz(l);
@@ -220,6 +240,11 @@
       var r = await w.TaskTest(ids.slice(i, i + l[3]));
       r.forEach(function (x) { n++; if (x.err) bad.push(x.id + ' Fehler ' + x.err); else if (x.pct != null && x.pct !== 100) bad.push(x.id + ' Lösung ' + x.pct + ' %'); else if (x.startPct != null && x.startPct >= 100) bad.push(x.id + ' Start schon 100 %'); });
       await sleep(80);
+    }
+    if (l[0] === 'sps') {
+      var sc = spsCore(w); if (sc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'SPS-Lab Kern', tasks: sc.n, bad: sc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>SPS-Lab: Kern, Anlagen, Beispiele</td><td>' + sc.n + ' Beispiele</td><td class="' + (sc.bad.length ? 'bad' : 'ok') + '">' + (sc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + sc.bad.join('; ') + '</td></tr>');
     }
     var au = null; if (l[0] === 'pr' || l[0] === 'sch' || l[0] === 'app' || l[0] === 'mess') { try { au = l[0] === 'mess' ? await auditMess() : audit(w, l); } catch (e) { au = { n: 0, errs: ['Auswahlfragen-Prüfung abgebrochen: ' + e], hints: [] }; } }
     if (au) {

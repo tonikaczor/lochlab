@@ -91,6 +91,15 @@
     ['kennlinie', '📉', 'Kennlinien-Forscher', 'Mit dem Kennlinienschreiber eine Kennlinie aufgenommen.', function (c) { return [c.st.bench_trace || 0, 1]; }],
     ['messfehler', '🧐', 'Fehlerjäger beim Messen', 'Vier Messfehler-Aufgaben gelöst.', function (c) { return [c.n(['m15', 'm16', 'm17', 'm18', 'm19', 'm20', 'm22']), 4]; }],
     ['zufall', '🎰', 'Zahlenjongleur', 'Eine Zufallsaufgabe mit eigenen Zahlen gelöst.', function (c) { return [c.n(['r1', 'r2', 'r3', 'r4']) , 1]; }],
+    ['spserste', '🏭', 'Erste SPS-Aufgabe', 'Die erste Aufgabe im SPS-Lab geschafft.', function (c) { return [c.n(c.ids('sps')), 1]; }],
+    ['spszehn', '🧰', 'SPS-Praktiker', 'Zehn Aufgaben im SPS-Lab geschafft.', function (c) { return [c.n(c.ids('sps')), 10]; }],
+    ['spsalle', '🏆', 'SPS-Meister', 'Alle Aufgaben im SPS-Lab geschafft.', function (c) { return [c.n(c.ids('sps')), c.ids('sps').length || 24]; }],
+    ['spsgra', '🪜', 'Schrittketten-Profi', 'Alle drei GRAFCET-Aufgaben im SPS-Lab geschafft.', function (c) { return [c.n(['sp17', 'sp18', 'sp19']), 3]; }],
+    ['spsfehler', '🔧', 'Anlagen-Doktor', 'Alle drei Fehlersuchen an den Anlagen gelöst.', function (c) { return [c.n(['sp20', 'sp21', 'sp22']), 3]; }],
+    ['spssprachen', '🗣️', 'Dreisprachig', 'Ein Programm in KOP, in FUP und in GRAFCET gestartet.', function (c) { return [(c.st.spslang_kop ? 1 : 0) + (c.st.spslang_fup ? 1 : 0) + (c.st.spslang_gra ? 1 : 0), 3]; }],
+    ['spslauf', '▶️', 'Anlage läuft', 'Zum ersten Mal ein Programm an einer Anlage gestartet.', function (c) { return [c.st.spsrun || 0, 1]; }],
+    ['spsforce', '🔒', 'Zwangssetzer', 'Einen Ein- oder Ausgang mit dem Zwangssetzen festgehalten.', function (c) { return [c.st.spsforce || 0, 1]; }],
+    ['spsprogs', '💾', 'Programmsammler', 'Drei eigene SPS-Programme gespeichert.', function (c) { return [c.st.spsprogs || 0, 3]; }],
   ];
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });
   DEFS.find(function (d) { return d.id === 'wuerfel5'; }).icon = '👑';
@@ -107,6 +116,7 @@
     })();
   }
   function confetti(big) {
+    if (window.LochFX && window.LochFX.confetti) return window.LochFX.confetti(big);
     try {
       var c = document.createElement('canvas'); c.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;z-index:200;pointer-events:none';
       c.width = window.innerWidth; c.height = window.innerHeight; document.body.appendChild(c);
@@ -123,6 +133,7 @@
     } catch (e) {}
   }
   function chime(big) {
+    if (window.LochFX && window.LochFX.chime) return window.LochFX.chime(big);
     try {
       var A = window.AudioContext || window.webkitAudioContext; if (!A) return; var a = new A(), t = a.currentTime, notes = big ? [523, 659, 784, 1047] : [659, 880];
       notes.forEach(function (f, i) { var o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.value = f; g.gain.setValueAtTime(0.0001, t + i * .11); g.gain.exponentialRampToValueAtTime(0.18, t + i * .11 + .02); g.gain.exponentialRampToValueAtTime(0.0001, t + i * .11 + .28); o.connect(g); g.connect(a.destination); o.start(t + i * .11); o.stop(t + i * .11 + .3); });
@@ -138,6 +149,7 @@
   }
   /* Ergebnis einer Aufgabe: Konfetti beim ersten vollständigen Treffer, dazu Abzeichen-Prüfung */
   function result(id, pct) {
+    if (window.LochFX && window.LochFX.pass) window.LochFX.pass(pct);
     if (!(pct >= 100)) return;
     var seen = get('lm4.seen', {}), first = !seen[id]; if (first) { seen[id] = 1; set('lm4.seen', seen); }
     var fresh = check();
