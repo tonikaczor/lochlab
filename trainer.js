@@ -86,6 +86,16 @@
       { at: '#cv', t: 'Die Anlage', x: 'Hier siehst du die Anlage in Bewegung. Werkstücke laufen über das Band, Sensoren melden sie der SPS. Bei Fehlern in deinem Programm passiert etwas Sichtbares: Werkstücke fallen herunter, der Tank läuft über oder ein Auto wird eingeklemmt.' },
       { at: '#bMenu', t: 'Aufgaben, Beispiele, Anlagen', x: 'Im Menü warten 24 Aufgaben mit automatischer Prüfung: von der Selbsthaltung über Zeitglieder und Zähler bis zu GRAFCET, Fehlersuche und Aufgaben im Prüfungsstil. Dazu 18 Beispiele und vier Anlagen. Tipps gibt es in drei Stufen.' },
       NEXTSTEPS[0], END('SPS-Lab')] },
+    pcb: { name: 'Leiterplatten-Lab', steps: [
+      { t: 'Willkommen im Leiterplatten-Lab', x: 'Hier entwirfst du echte Leiterplatten mit mehreren Lagen, siehst, wie sie gefertigt, bestückt und geprüft werden, und suchst Fehler auf defekten Platinen. Ich zeige dir in wenigen Minuten, wo was ist.' },
+      { prep: a => { a.load('exnetz'); a.go('edit'); }, at: '#viewHost', t: 'Das Layout', x: 'Ich habe dir ein Netzteil geladen. Rot ist die Oberseite, blau die Unterseite, gestrichelte Linien zeigen noch offene Verbindungen. Mit zwei Fingern oder dem Mausrad zoomst du. Deine bisherige Platine ist gesichert.' },
+      { at: '#tabs', t: 'Sieben Bereiche', x: 'Layout, Lagen, Fertigung, Bestückung, Fehlersuche, Aufgaben und Lernen. Der Weg einer Platine: entwerfen, Lagenaufbau wählen, fertigen lassen, bestücken, prüfen und bei Bedarf reparieren.' },
+      { at: '#tabs', gate: a => a.tab() === 'stack', t: 'Zu den Lagen', x: 'Tippe oben auf „Lagen“. Du siehst den Querschnitt: Kupfer, Prepreg, Kern, Lötstopplack. Schalte zwischen 1, 2, 4 und 6 Lagen um. Innenlagen nehmen Masse und Versorgung auf, das macht Signale ruhiger.' },
+      { at: '#tabs', gate: a => a.tab() === 'fab', t: 'Zur Fertigung', x: 'Tippe auf „Fertigung“. Hier gibt es die Gerber-Dateien (eine pro Lage), die Herstellungsschritte als Animation, die Kosten und den Bereich „Prüfen“ mit Flying Probe, ICT, AOI, SPI, AXI und Boundary Scan.' },
+      { at: '#tabs', gate: a => a.tab() === 'asm', t: 'Zur Bestückung', x: 'Tippe auf „Bestückung“. Dort stehen der Bestückungsplan, die Stückliste und das Löten: Reflow-Ofen für SMD und Handlöten für THT. Auch Tombstone und Lötbrücken kannst du hier erzeugen und verstehen.' },
+      { at: '#tabs', gate: a => a.tab() === 'repair', t: 'Zur Fehlersuche', x: 'Tippe auf „Fehlersuche“. Mit Multimeter und Lupe findest du Fehler auf einer defekten Platine: Haarriss, Brücke, verpoltes Bauteil. Messen statt raten.' },
+      { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 43 Aufgaben mit automatischer Prüfung: von Pads und Raster über Leiterbahnbreite, Mehrlagen und Layout bis zu Fertigung, Löten, Fehlersuche und Prüfungsaufgaben. Dazu 21 Beispiele. Tipps gibt es in drei Stufen.' },
+      NEXTSTEPS[0], END('Leiterplatten-Lab')] },
     pr: { name: 'Prüfungs-Lab', steps: [
       { t: 'Willkommen im Prüfungs-Lab', x: 'Hier übst du für die Abschlussprüfung: Themen trainieren, Rechenaufgaben lösen und Probeprüfungen mit Zeitlimit machen. Am Ende weißt du, wo du stehst.' },
       { at: '#tabs', t: 'Die sechs Bereiche', x: 'Start, Probeprüfung, Training, Auswertung, Formeln und Aufgaben. Ein guter Weg: erst Themen üben, dann Probeprüfung, dann die Schwächen beheben.' },

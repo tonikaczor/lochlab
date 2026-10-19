@@ -2,6 +2,18 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v12.131', items: [
+      ['Neues Leiterplatten-Lab', 'Das 12. Lab. Du entwirfst echte Leiterplatten mit 1, 2, 4 oder 6 Lagen: Bauteile setzen, Leiterbahnen ziehen, Vias und Kupferflächen anlegen. Der Prüfer (DRC) meldet zu enge Abstände, zu dünne Bahnen und offene Verbindungen sofort.', 'Startseite ▸ Leiterplatten-Lab'],
+      ['Lagen, Bestückung und Löten', 'Im Reiter Lagen siehst du den Lagenaufbau im Querschnitt. Unter Bestückung stehen Bestückungsplan, Stückliste, Reflow-Ofen und Handlöten zum Üben.', 'Leiterplatten-Lab ▸ Lagen und Bestückung'],
+      ['Fertigung und Gerber-Daten', 'Du siehst die Gerber-Dateien Lage für Lage, die Bohrdatei, die Herstellungsschritte als Animation und den Preis je Platine.', 'Leiterplatten-Lab ▸ Fertigung'],
+      ['Fehlersuche an defekten Platinen', 'Mit Multimeter und Lupe findest du Haarrisse, Lötbrücken, kalte Lötstellen, verpolte Bauteile und falsche Werte und behebst sie mit Lötkolben und Draht.', 'Leiterplatten-Lab ▸ Fehlersuche'],
+      ['Prüfverfahren: Flying Probe, ICT, AOI, SPI, AXI, Boundary Scan', 'So wird eine Platine in der Fertigung geprüft. Du siehst, was jedes Verfahren findet und was nicht, und vergleichst Kosten und Zeit.', 'Leiterplatten-Lab ▸ Fertigung ▸ Prüfen'],
+      ['43 Aufgaben und 21 Beispiele', 'Von Pads und Rastern über Leiterbahnbreite, Mehrlagen, Layout und Fehlersuche bis zu Prüfungsaufgaben. Die Prüfung rechnet automatisch, Tipps gibt es in drei Stufen. Bei Rechenaufgaben trägst du die Antworten in ein Antwortblatt ein.', 'Leiterplatten-Lab ▸ Aufgaben'],
+      ['Startseite anpassen', 'Du kannst Lab-Karten ausblenden und umsortieren, auch mit Pfeilen oder Tastatur. Das gilt nur auf deinem Gerät.', 'Startseite ▸ Startseite anpassen'],
+      ['Klassen-Dashboard für Ausbilder', 'Ergebnis-Codes einer Klasse zusammenfassen: wer hat was geschafft, wo hakt es, wer braucht Hilfe. Alles bleibt in diesem Browser.', 'Auswertung ▸ Klassen-Dashboard'],
+      ['SPS-Lab: Hinweis bei Leerlauf', 'Schaltet dein Programm einige Sekunden keinen Ausgang, erinnert dich das SPS-Lab daran, dass die Anlage nur tut, was das Programm vorgibt. Am Förderband verweist der Hinweis auf das Beispiel „Sortieren“.', 'SPS-Lab ▸ Simulation'],
+      ['Neues Lernheft Leiterplatten-Lab', 'Arbeitsblätter zu allen Aufgaben und ausführliche Erklärungen zu Flying Probe, ICT, AOI, SPI, AXI und Boundary Scan. Lösungsblätter gibt es für Ausbilder.', 'Lernhefte ▸ Leiterplatten-Lab'],
+    ] },
     { v: 'v11.130', items: [
       ['Neues SPS-Lab: speicherprogrammierbare Steuerung', 'Das 11. Lab. Du programmierst eine SPS in den Sprachen KOP (Kontaktplan), FUP (Funktionsplan) und GRAFCET (Ablaufsprache) und siehst, wie das Programm zyklisch abläuft. Adressen und Befehle lassen sich zwischen IEC (%IX0.0, AND) und Siemens (E0.0, U) umschalten.', 'Startseite ▸ SPS-Lab'],
       ['Vier animierte Anlagen', 'Förderband mit Sortierung, Ampel, Tank mit Pumpe und Garagentor laufen als Animation. Taster und Sensoren bedienst du per Fingertipp, Fehler wie überlaufender Tank oder eingeklemmtes Auto sind sichtbar.', 'SPS-Lab ▸ Anlage wählen'],

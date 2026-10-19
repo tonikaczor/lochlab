@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -229,6 +229,26 @@
     });
     return { n: ex.length, bad: bad };
   }
+  /* Leiterplatten-Lab: Kern, 21 Beispiele (gueltig, DRC laeuft), 43 Aufgaben */
+  function pcbCore(w) {
+    var bad = [];
+    if (!w.PCB_CORE || typeof w.PCB_CORE.drc !== 'function') bad.push('PCB_CORE fehlt');
+    var ex = (w.PCB_DATA && w.PCB_DATA.examples) || [];
+    if (ex.length !== 21) bad.push('Beispiele: ' + ex.length + ' statt 21');
+    var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'pcb'; });
+    if (tk.length !== 43) bad.push('Aufgaben: ' + tk.length + ' statt 43');
+    ['edit', 'stack', 'gerber', 'fab', 'test', 'asm', 'solder', 'repair'].forEach(function (v) { if (!w.PCB_VIEWS || !w.PCB_VIEWS.views[v]) bad.push('Ansicht ' + v + ' fehlt'); });
+    if (w.PCB_CORE) ex.forEach(function (e) {
+      try {
+        var b = e.board(), v = w.PCB_CORE.validate(b);
+        if (!v.ok) bad.push('Beispiel ' + e.id + ' ungueltig: ' + (v.errors || []).slice(0, 2).join(' / '));
+        w.PCB_CORE.drc(b); w.PCB_CORE.connectivity(b);
+        var g = w.PCB_CORE.gerber(b, { name: 'x' });
+        if (!g || !g.files || !Object.keys(g.files).length) bad.push('Beispiel ' + e.id + ': keine Gerber-Dateien');
+      } catch (x) { bad.push('Beispiel ' + e.id + ': ' + x); }
+    });
+    return { n: ex.length, bad: bad };
+  }
   async function lab(l) {
     if (l[0] === 'loch') return labLoch(l);
     if (l[0] === 'quarz') return labQuarz(l);
@@ -245,6 +265,11 @@
       var sc = spsCore(w); if (sc.bad.length) all.ok = false;
       all.labs.push({ lab: 'SPS-Lab Kern', tasks: sc.n, bad: sc.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>SPS-Lab: Kern, Anlagen, Beispiele</td><td>' + sc.n + ' Beispiele</td><td class="' + (sc.bad.length ? 'bad' : 'ok') + '">' + (sc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + sc.bad.join('; ') + '</td></tr>');
+    }
+    if (l[0] === 'pcb') {
+      var pc = pcbCore(w); if (pc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Leiterplatten-Lab Kern', tasks: pc.n, bad: pc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Leiterplatten-Lab: Kern, Ansichten, Beispiele</td><td>' + pc.n + ' Beispiele</td><td class="' + (pc.bad.length ? 'bad' : 'ok') + '">' + (pc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + pc.bad.join('; ') + '</td></tr>');
     }
     var au = null; if (l[0] === 'pr' || l[0] === 'sch' || l[0] === 'app' || l[0] === 'mess') { try { au = l[0] === 'mess' ? await auditMess() : audit(w, l); } catch (e) { au = { n: 0, errs: ['Auswahlfragen-Prüfung abgebrochen: ' + e], hints: [] }; } }
     if (au) {

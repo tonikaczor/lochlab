@@ -100,6 +100,18 @@
     ['spslauf', '▶️', 'Anlage läuft', 'Zum ersten Mal ein Programm an einer Anlage gestartet.', function (c) { return [c.st.spsrun || 0, 1]; }],
     ['spsforce', '🔒', 'Zwangssetzer', 'Einen Ein- oder Ausgang mit dem Zwangssetzen festgehalten.', function (c) { return [c.st.spsforce || 0, 1]; }],
     ['spsprogs', '💾', 'Programmsammler', 'Drei eigene SPS-Programme gespeichert.', function (c) { return [c.st.spsprogs || 0, 3]; }],
+    ['pcberste', '🔌', 'Erste Platinen-Aufgabe', 'Die erste Aufgabe im Leiterplatten-Lab geschafft.', function (c) { return [c.n(c.ids('pcb')), 1]; }],
+    ['pcbzehn', '🧰', 'Platinen-Praktiker', 'Zehn Aufgaben im Leiterplatten-Lab geschafft.', function (c) { return [c.n(c.ids('pcb')), 10]; }],
+    ['pcballe', '🏆', 'Platinen-Meister', 'Alle Aufgaben im Leiterplatten-Lab geschafft.', function (c) { return [c.n(c.ids('pcb')), c.ids('pcb').length || 43]; }],
+    ['pcbbahnen', '〰️', 'Bahnenzieher', 'Fünfzig Leiterbahnen gezeichnet.', function (c) { return [c.st.pcbtracks || 0, 50]; }],
+    ['pcbvia', '🕳️', 'Via-Künstler', 'Zehn Vias gesetzt.', function (c) { return [c.st.pcbvias || 0, 10]; }],
+    ['pcblagen4', '🥪', 'Vierlagen-Profi', 'Eine vierlagige Platine ohne DRC-Fehler und mit allen Verbindungen gebaut.', function (c) { return [c.st.pcblayers4 || 0, 1]; }],
+    ['pcbgerber', '📦', 'Gerber-Pionier', 'Gerber-Dateien angesehen oder als Paket gepackt.', function (c) { return [c.st.pcbgerber || 0, 1]; }],
+    ['pcbfix', '🩹', 'DRC-Aufräumer', 'Zehn DRC-Fehler beseitigt.', function (c) { return [c.st.pcbfix || 0, 10]; }],
+    ['pcbloet', '🔥', 'Lötprofi', 'Fünf Lötstellen von Hand oder im Ofen gut gelungen.', function (c) { return [c.st.pcbsolder || 0, 5]; }],
+    ['pcbdoktor', '🔍', 'Platinen-Doktor', 'Alle sechs Fehlersuchen an defekten Platinen gelöst.', function (c) { return [c.n(['pb33', 'pb34', 'pb35', 'pb36', 'pb37', 'pb38']), 6]; }],
+    ['pcbpruef', '🔬', 'Prüfverfahren-Kenner', 'Alle drei Aufgaben zu Prüfverfahren (Flying Probe und Co.) gelöst.', function (c) { return [c.n(['pb39', 'pb40', 'pb41']), 3]; }],
+    ['pcbsammler', '💾', 'Platinensammler', 'Drei eigene Platinen gespeichert.', function (c) { return [c.st.pcbsaved || 0, 3]; }],
   ];
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });
   DEFS.find(function (d) { return d.id === 'wuerfel5'; }).icon = '👑';

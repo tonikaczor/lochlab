@@ -18,7 +18,7 @@
   const num1 = x => (Math.round(x * 10) / 10).toString().replace('.', ',');
 
   /* ============================================================ Fenster, Meldungen, Dialoge */
-  function toast(m) { const t = $('#toast'); if (!t) return; t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2400); }
+  function toast(m) { const t = $('#toast'); if (!t) return; t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), Math.max(2400, m.length * 55)); }
   function sheet(title, build, onClose) {
     const bd = document.createElement('div'); bd.className = 'backdrop';
     bd.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(title)}"><div class="sh-h"><b>${esc(title)}</b><button class="x" aria-label="Schließen">✕</button></div><div class="sh-b"></div></div>`;
@@ -339,6 +339,13 @@
     c.scan(10);
     const out = {}; io.outputs.forEach(o => { out[o.key] = !!c.getOutput(o.key); });
     p.writeOutputs(out); p.step(10);
+    if (S.running) {   // Hinweis, wenn das Programm lange keinen Ausgang schaltet: die Anlage tut nur, was das Programm vorgibt
+      if (io.outputs.some(o => out[o.key])) S.idleMs = 0; else S.idleMs = (S.idleMs || 0) + 10;
+      if (S.idleMs >= 4000 && !S.idleHinted) {
+        S.idleHinted = true;
+        toast(S.plantId === 'foerderband' ? 'Noch kein Ausgang geschaltet: Die Anlage tut nur, was dein Programm vorgibt. Lade das Beispiel "Sortieren" (Menü, Beispiele).' : 'Noch kein Ausgang geschaltet: Die Anlage tut nur, was dein Programm vorgibt. Ein Beispiel findest du im Menü unter Beispiele.');
+      }
+    }
   }
   function makeLive() {
     if (!S.plc || !S.plc.ok) { S.live = null; return; }
@@ -350,6 +357,7 @@
     if (on && S.readonly) return;
     if (on && S.plc && !S.plc.ok) { toast('Das Programm hat Fehler und kann nicht laufen. Siehe Fehlerliste.'); showErrors(); return; }
     S.running = !!on; if (S.live) S.live.running = S.running; updateChrome(); refreshEditor(true);
+    if (on) { S.idleMs = 0; S.idleHinted = false; }
     if (on) stat('spsrun', 1, 'max');
     if (on && S.prog && S.prog.lang) stat('spslang_' + S.prog.lang, 1, 'max');
   }

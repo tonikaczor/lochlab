@@ -69,6 +69,7 @@ body.printqr #qrSheet{display:block!important}
 <div id="app" class="hide">
 <header><a class="home" href="index.html">← Start</a><h1>Auswertung</h1><span class="mute" id="stand"></span></header>
 <main>
+  <div id="dash"></div>
   <div class="card" id="eingabe">
     <h2>Ergebnis-Codes einsammeln</h2>
     <p class="mute" style="margin-top:0">Die Azubis erzeugen in jedem Lab im Menü unter <b>„Ergebnis senden“</b> einen Code (beginnt mit <code>TFL1.</code>). Hier alle Codes einfügen, auch mehrere auf einmal (z. B. den ganzen Chatverlauf). Ein neuer Code desselben Namens aktualisiert dessen Ergebnisse, es zählt je Aufgabe der beste Wert.</p>
@@ -123,6 +124,7 @@ body.printqr #qrSheet{display:block!important}
 <script src="jsqr.js"></script>
 <script src="aufgaben.js"></script>
 <script src="auswertung.js"></script>
+<script src="dash.js"></script>
 <script>
 'use strict';
 const GODH = 'a2fdecf55d194ed8cea8d52d7d0442778e86180b6d81c6c37e56278e55add6c6', $ = s => document.querySelector(s);
@@ -142,7 +144,7 @@ function mergeClass(d) {
 function addCodes(txt) {
   const list = Auswertung.parse(txt), d = load(); let n = 0;
   list.forEach(o => { const nm = (o.n || '').trim() || 'ohne Namen'; const p = d[nm] = d[nm] || { t: 0, d: {}, h: {}, b: [] }; p.h = p.h || {}; p.b = Array.from(new Set((p.b || []).concat(o.b || []))); Object.keys(o.d).forEach(k => { const v = Math.round(+o.d[k] || 0), old = p.d[k] || 0; if (v >= old) p.h[k] = (o.h && o.h[k]) || 0; p.d[k] = Math.max(old, v); }); p.w = p.w || {}; Object.keys(o.w || {}).forEach(k => { const x = o.w[k]; if (Array.isArray(x) && x[0] > 0 && (!p.w[k] || p.w[k][0] > x[0])) p.w[k] = [Math.round(x[0]), String(x[1] || '')]; }); p.t = Math.max(p.t, o.t || 0); n++; });
-  save(d); return n;
+  save(d); if (window.Dash && list.length) Dash.feed(list); return n;
 }
 function charts(d, names, cols) {
   const n = names.length, lab = window.AUFGABEN_LABS;
@@ -291,6 +293,7 @@ function start() {
   $('#add').onclick = () => { const n = addCodes($('#codes').value); $('#addMsg').textContent = n ? n + ' Code(s) übernommen' : 'Kein gültiger Code gefunden'; if (n) $('#codes').value = ''; render(); };
   $('#csv').onclick = csv; $('#prt').onclick = () => window.print();
   $('#clr').onclick = () => { if (confirm('Alle gesammelten Ergebnisse auf diesem Gerät löschen?')) { save({}); try { localStorage.removeItem('sim.class'); } catch (e) {} render(); } };
+  if (window.Dash) Dash.mount($('#dash'));
   buildQrList(); $('#qrPrint').onclick = qrPrint; $('#qrAll').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = true); $('#qrNone').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = false); $('#scanBtn').onclick = startScan; $('#sumCopy').onclick = () => copyText(summaryText(), 'Zusammenfassung kopiert'); $('#xferCopy').onclick = () => copyText(transferText(), 'Alle Ergebnisse als Text kopiert'); $('#scanClr').onclick = () => { scans.length = 0; showScans(); };
   render();
 }
