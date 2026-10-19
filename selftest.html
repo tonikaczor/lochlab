@@ -8,7 +8,7 @@
 <pre id="out"></pre>
 <script>
 (function () {
-  var LABS = [['sch', 'SchaltLab', 'schaltplan.html', 40], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40]];
+  var LABS = [['sch', 'SchaltLab', 'schaltplan.html', 40], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40]];
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
   async function lab(l) {

@@ -1,0 +1,12 @@
+{
+ "titel": "Deine Regeln für die eigene KI",
+ "stand": "Vorschlag des Labs. Der Ausbilder kann den Text in apps/ki-regeln.json anpassen.",
+ "punkte": [
+  "Du nutzt deine eigene KI und bist selbst dafür verantwortlich, was du eingibst.",
+  "Kundendaten und Betriebsinterna gehören nicht dir. Sie bleiben aus Eingaben heraus, bei jedem Dienst.",
+  "Schau in die Einstellungen deines Dienstes (Chatverlauf, Nutzung der Eingaben zum Verbessern) und nutze ihn nur, wenn du die Bedingungen und Altersgrenzen erfüllst.",
+  "Hilfe durch eine KI kennzeichnest du, und du musst erklären können, was du abgibst.",
+  "Bei Prüfungen und benoteten Arbeiten nutzt du KI nur, wenn es ausdrücklich erlaubt ist.",
+  "Bei Unsicherheit gilt: erst fragen, dann eingeben."
+ ]
+}

@@ -76,6 +76,15 @@
       { at: '#pal', t: 'Bestücken und verdrahten', x: 'Im Zeichenmodus tippst du auf leere Plätze und setzt FI und Automaten ein. Danach ziehst du mit „Leitung“ vom Verteilerkasten zum ersten Gerät und wählst den Abgang. Die Länge ermittelt das Lab selbst.' },
       { at: '#bMenu', t: 'Aufgaben und Häuser', x: 'Im Menü warten 26 Aufgaben: vom Lichtschalter über Wechselschaltung und Verteiler bis zu Drehstrom, Wallbox und dem kompletten Haus. Unter „Beispiele“ findest du vier Häuser fertig und im Rohbau, dazu Lernbeispiele zu Kreuzschaltung, Stromstoß, Bad und Hausanschluss, und das leere Grundstück zum freien Gestalten.' },
       NEXTSTEPS[0], END('HausLab')] },
+    pr: { name: 'Prüfungs-Lab', steps: [
+      { t: 'Willkommen im Prüfungs-Lab', x: 'Hier übst du für die Abschlussprüfung: Themen trainieren, Rechenaufgaben lösen und Probeprüfungen mit Zeitlimit machen. Am Ende weißt du, wo du stehst.' },
+      { at: '#tabs', t: 'Die sechs Bereiche', x: 'Start, Probeprüfung, Training, Auswertung, Formeln und Aufgaben. Ein guter Weg: erst Themen üben, dann Probeprüfung, dann die Schwächen beheben.' },
+      { at: '#tabs', gate: () => (window.LabTrainerAPI && window.LabTrainerAPI.tab() === 'training'), t: 'Zum Training', x: 'Tippe oben auf „Training“. Du wählst ein Thema und bekommst zehn Fragen. Nach jeder Antwort siehst du sofort die Erklärung oder den Lösungsweg.' },
+      { at: '#view', t: 'Rechnen mit Einheit', x: 'Bei Rechenaufgaben gibst du nur die Zahl ein. Die Einheit steht daneben. Rundungen bis 2 % gelten als richtig, Komma oder Punkt sind egal.' },
+      { at: '#tabs', gate: () => (window.LabTrainerAPI && window.LabTrainerAPI.tab() === 'pruefung'), t: 'Zur Probeprüfung', x: 'Tippe auf „Probeprüfung“. Es gibt 20 Aufgaben mit Zeitlimit. Am Ende bekommst du Punkte, eine Note nach dem IHK-Schlüssel und eine Auswertung nach Themen.' },
+      { at: '#tabs', gate: () => (window.LabTrainerAPI && window.LabTrainerAPI.tab() === 'auswertung'), t: 'Auswertung', x: 'Tippe auf „Auswertung“. Dort siehst du, welche Themen noch schwach sind, mit einem Lernplan und dem passenden Lab zum Ausprobieren.' },
+      { at: '#bMenu', t: 'Aufgaben, Abzeichen, Hilfe', x: 'Im Menü findest du die Aufgaben, die Formelsammlung, Abzeichen, die Kampagne und diesen Trainer.' },
+      NEXTSTEPS[0], END('Prüfungs-Lab')] },
     app: { name: 'App-Werkstatt', steps: [
       { t: 'Willkommen in der App-Werkstatt', x: 'Hier baust du eigene kleine Apps und deinen eigenen Wissensspeicher. Die Arbeit macht eine KI (Claude, ChatGPT oder eine andere), du gibst den Auftrag und prüfst das Ergebnis. Vorkenntnisse brauchst du nicht.' },
       { at: '#tabs', t: 'Die sechs Bereiche', x: 'Start, Auftrag, Werkstatt, Notizen, Bibliothek und Aufgaben. Der Weg: Auftrag schreiben, Code in der Werkstatt starten, prüfen, verbessern, speichern.' },

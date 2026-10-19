@@ -242,7 +242,7 @@ function compile(src) {
 function createRunner(prog, io) {
   const consts = constants(), globals = new Scope(null), self = { t: 0, debt: 0, wakeAt: 0, done: false, error: null, ops: 0, loops: 0, started: false, serialBuf: '', rng: 12345 };
   const objects = [];
-  const rnd = () => { self.rng = (self.rng * 1103515245 + 12345) & 0x7fffffff; return self.rng; };
+  const rnd = () => { self.rng = (Math.imul(self.rng, 1103515245) + 12345) & 0x7fffffff; return self.rng >> 8; };   // Math.imul: exakte 32-Bit-Rechnung; hohe Bits nutzen (die niedrigen eines LCG wechseln zu regelmäßig)
   const err = (m, line) => new RuntimeError(m, line);
   const T = v => (typeof v === 'string' ? v.length > 0 : N(v) !== 0);
 

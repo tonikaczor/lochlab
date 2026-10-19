@@ -161,13 +161,13 @@
   };
 
   /* ---------------- Oberfläche ---------------- */
-  const TABS = [['start', 'Start'], ['auftrag', 'Auftrag'], ['werkstatt', 'Werkstatt'], ['notizen', 'Notizen'], ['bibliothek', 'Bibliothek'], ['aufgaben', 'Aufgaben']];
+  const TABS = [['start', 'Start'], ['auftrag', 'Auftrag'], ['werkstatt', 'Werkstatt'], ['notizen', 'Notizen'], ['bibliothek', 'Bibliothek'], ['fuehrer', 'KI-Führerschein'], ['aufgaben', 'Aufgaben']];
   let tab = 'start', curNote = null, openTaskId = null, notePrev = false, noteMap = false;
   function go(t, id) { tab = t; if (t === 'aufgaben') openTaskId = id || null; render(); window.scrollTo(0, 0); }
   function render() {
     $('#tabs').innerHTML = TABS.map(([k, n]) => '<button class="tab' + (tab === k ? ' on' : '') + '" data-t="' + k + '">' + n + '</button>').join('');
     $$('#tabs .tab').forEach(b => { b.onclick = () => go(b.dataset.t); });
-    const v = $('#view'); ({ start: vStart, auftrag: vAuftrag, werkstatt: vWerk, notizen: vNotes, bibliothek: vLib, aufgaben: vTasks })[tab](v);
+    const v = $('#view'); ({ start: vStart, auftrag: vAuftrag, werkstatt: vWerk, notizen: vNotes, bibliothek: vLib, fuehrer: vFuehrer, aufgaben: vTasks })[tab](v);
     try { localStorage.setItem('app.tab', tab); } catch (e) {}
   }
 
@@ -299,6 +299,9 @@
     }).catch(() => { const c = $('#cls'); if (c) c.innerHTML = '<p class="mute">Die Klassenbibliothek braucht eine Internetverbindung.</p>'; });
   }
 
+  /* ----- KI-Führerschein (Inhalt in kifs.js) ----- */
+  function vFuehrer(v) { root.KIFS.mount(v, { S, persist, stat, toast, render }); }
+
   /* ----- Aufgaben ----- */
   function vTasks(v) {
     if (openTaskId) { card(v, TASKS.find(t => t.id === openTaskId)); return; }
@@ -317,6 +320,7 @@
     else if (t.widget && t.widget.type === 'quiz') w = t.widget.items.map((q, i) => '<div class="qz"><b>' + (i + 1) + '. ' + esc(q.q) + '</b>' + q.o.map((o, k) => '<label class="ck"><input type="radio" name="q' + i + '" data-q="' + i + '" value="' + k + '"' + (A['q' + i] === k ? ' checked' : '') + '> ' + esc(o) + '</label>').join('') + '</div>').join('');
     else if (t.widget && t.widget.type === 'bug') w = '<div class="row"><button class="btn" id="tLoad">Fehlerhafte App in die Werkstatt laden</button></div><label>Die App zeigt bei 10 V und 2 A<input id="tShown" value="' + esc(A.shown || '') + '" inputmode="decimal"></label><label>Richtig wäre (in W)<input id="tRight" value="' + esc(A.right || '') + '" inputmode="decimal"></label><label>Der Fehler<select id="tBug"><option value="">wählen …</option><option value="plus"' + (A.bug === 'plus' ? ' selected' : '') + '>Die App addiert statt zu multiplizieren</option><option value="div"' + (A.bug === 'div' ? ' selected' : '') + '>Die App teilt statt zu multiplizieren</option><option value="einheit"' + (A.bug === 'einheit' ? ' selected' : '') + '>Die Einheit ist falsch</option></select></label>';
     else if (t.kind === 'app') w = '<div class="row"><button class="btn" id="tWerk">Zur Werkstatt</button><button class="btn" id="tAuf">Zum Auftrag</button></div><p class="mute small">Geprüft wird der Code, der gerade in der Werkstatt steht.</p>';
+    else if (t.kind === 'kifs') w = '<div class="row"><button class="btn pri" id="tKf">Zum KI-Führerschein</button></div>';
     else if (t.kind === 'notes') w = '<div class="row"><button class="btn" id="tNotes">Zu den Notizen</button></div>';
     else if (t.kind === 'flag') w = '<div class="row"><button class="btn" id="tNotes">Zu den Notizen</button><button class="btn" id="tLib">Zur Bibliothek</button></div>';
     v.innerHTML = '<div class="card"><button class="btn s" id="tBack">← Alle Aufgaben</button><h2>' + esc(t.title) + '</h2><p>' + esc(t.text) + '</p>' + think(t) + w + '<div class="row"><button class="btn pri" id="tCheck">Prüfen</button><button class="btn" id="tHint">Tipp</button>' + (t.kind === 'app' || t.kind === 'prompt' ? '<button class="btn" id="tSol">Beispiel zeigen</button>' : '') + '<button class="btn" id="tHand" ' + ((d[t.id] || 0) > 0 ? '' : 'disabled') + '>Abgeben</button></div><div id="tHintBox" class="hintbox" hidden>' + esc(t.hint || '') + '</div><div id="tRes"></div></div>';
@@ -327,7 +331,7 @@
     $$('input[data-q]', v).forEach(c => { c.onchange = () => { A['q' + c.dataset.q] = +c.value; persist(); }; });
     if ($('#tLoad')) $('#tLoad').onclick = () => { S.code = SAMPLES.fehlerhaft; S.name = 'Leistungsrechner'; persist(); go('werkstatt'); toast('Fehlerhafte App geladen: starten, 10 und 2 eingeben'); };
     ['tShown', 'tRight'].forEach(i => { if ($('#' + i)) $('#' + i).oninput = e => { A[i === 'tShown' ? 'shown' : 'right'] = e.target.value; persist(); }; }); if ($('#tBug')) $('#tBug').onchange = e => { A.bug = e.target.value; persist(); };
-    if ($('#tWerk')) $('#tWerk').onclick = () => go('werkstatt'); if ($('#tAuf')) $('#tAuf').onclick = () => go('auftrag'); if ($('#tNotes')) $('#tNotes').onclick = () => go('notizen'); if ($('#tLib')) $('#tLib').onclick = () => go('bibliothek');
+    if ($('#tWerk')) $('#tWerk').onclick = () => go('werkstatt'); if ($('#tAuf')) $('#tAuf').onclick = () => go('auftrag'); if ($('#tNotes')) $('#tNotes').onclick = () => go('notizen'); if ($('#tLib')) $('#tLib').onclick = () => go('bibliothek'); if ($('#tKf')) $('#tKf').onclick = () => go('fuehrer');
     $('#tHint').onclick = () => { $('#tHintBox').hidden = !$('#tHintBox').hidden; try { const h = lsGet('sim.hints', {}); h[t.id] = Math.max(h[t.id] || 0, 1); localStorage.setItem('sim.hints', JSON.stringify(h)); } catch (e) {} };
     if ($('#tSol')) $('#tSol').onclick = () => { if (t.kind === 'prompt') { const keep = S.prompts[t.id]; t.sol(); const p = S.prompts[t.id]; S.prompts[t.id] = keep; sheet('Beispiel', b => { b.innerHTML = '<p class="mute" style="margin-top:0">So könnte ein guter Text aussehen. Schreibe deinen eigenen, am besten zu einem Thema, das dich interessiert.</p><div class="prev">' + esc(p) + '</div>'; }); } else if (confirm('Das Beispiel ersetzt den Code in der Werkstatt. Weiter?')) { const keep = { n: NOTES, l: LIB, a: S.answers, p: S.prompts, f: S.flags }; t.sol(); NOTES = keep.n; LIB = keep.l; S.answers = keep.a; S.prompts = keep.p; S.flags = keep.f; persist(); try { const h = lsGet('sim.hints', {}); h[t.id] = 3; localStorage.setItem('sim.hints', JSON.stringify(h)); } catch (e) {} go('werkstatt'); toast('Beispiel geladen: Starten und ansehen'); } };
     $('#tCheck').onclick = async () => {

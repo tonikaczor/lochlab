@@ -2357,6 +2357,15 @@ function chkTaster() {
   const a = ledMA(sampleAt(R, 0.3), L.id) > 2, b = ledMA(sampleAt(R, 0.7), L.id) > 2, c = ledMA(sampleAt(R, 1.1), L.id) > 2;
   return [RES(!a, 'Taster nicht gedrückt: LED ist ' + (a ? 'an, soll aber aus sein' : 'aus') + '.'), RES(b, 'Taster gedrückt: LED ist ' + (b ? 'an' : 'aus, soll aber an sein') + '.'), RES(!c, 'Taster losgelassen: LED ist ' + (c ? 'an, soll aber aus sein' : 'aus') + '.')];
 }
+
+/* Prüfungspraxis (Arduino): Schaltungen für die Aufgaben cp1 bis cp4 (Pin 2 Taster, Pin 3 rot, 5 gelb, 7 grün, 8 Lautsprecher, 13 LED) */
+const CP_COUNT = [['UNO', 12, 0], ['PB', 24, 4, 1, ''], ['GND', 24, 8], ['R', 22, 16, 0, '100'], ['SPK', 26, 16, 0, '8'], ['GND', 30, 16], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]], CW_COUNT = [[20, 4, 24, 4], [20, 16, 22, 16], [20, 26, 22, 26]];
+const CP_LUFT = [['UNO', 12, 0], ['POT', 6, 4, 1, '10k', { pos: 0.4 }], ['GND', 6, 8], ['R', 22, 6, 0, '220'], ['LED', 26, 6, 0, 'rot'], ['GND', 30, 6], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10], ['R', 22, 14, 0, '220'], ['LED', 26, 14, 0, 'grün'], ['GND', 30, 14]], CW_LUFT = [[6, 4, 6, 0, 12, 0], [8, 6, 10, 6, 10, 8, 12, 8], [20, 6, 22, 6], [20, 10, 22, 10], [20, 14, 22, 14]];
+const CP_STUFE = [['UNO', 12, 0], ['PB', 24, 4, 1, ''], ['GND', 24, 8], ['R', 22, 6, 0, '220'], ['LED', 26, 6, 0, 'rot'], ['GND', 30, 6], ['R', 22, 10, 0, '220'], ['LED', 26, 10, 0, 'gelb'], ['GND', 30, 10], ['R', 22, 14, 0, '220'], ['LED', 26, 14, 0, 'grün'], ['GND', 30, 14]], CW_STUFE = [[20, 4, 24, 4], [20, 6, 22, 6], [20, 10, 22, 10], [20, 14, 22, 14]];
+const CP_DICE = [['UNO', 12, 0], ['PB', 24, 4, 1, ''], ['GND', 24, 8]], CW_DICE = [[20, 4, 24, 4]];
+/* Taster mit Prellen: drei kurze Kontakte, dann gedrückt bis t1 */
+const bounceScript = (pb, t0, t1) => [{ t: t0, press: [pb] }, { t: t0 + 0.002, press: [] }, { t: t0 + 0.005, press: [pb] }, { t: t0 + 0.007, press: [] }, { t: t0 + 0.010, press: [pb] }, { t: t1, press: [] }];
+const serLines = R => R.ser.split('\n').map(x => x.trim()).filter(x => x.length);
 const CODE_TASKS = [
   { id: 'c1', lab: 'code', cat: 'Grundlagen', title: 'Dreimal blinken', level: 1,
     start: ct(CP_LED13, CW_LED13, 'void setup() {\n  pinMode(13, OUTPUT);\n  // Hier: LED dreimal blinken lassen (je 300 ms an und aus)\n}\n\nvoid loop() {\n  // bleibt leer: danach passiert nichts mehr\n}\n'),
@@ -2531,6 +2540,56 @@ const CODE_TASKS = [
     hint: 'Die Schleife beginnt bei 0 und läuft nur, solange i kleiner als 10 ist. Sie soll bei 1 beginnen und bis einschließlich 10 laufen.',
     check() { const R = codeEval({ T: 2 }); if (R.err) return codeFail(R); const want = '1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n';
       return [RES(R.ser === want, R.ser === want ? 'Die Zahlen 1 bis 10 stehen richtig im Serial-Monitor.' : 'Ausgabe stimmt nicht. Erhalten: ' + JSON.stringify(R.ser.slice(0, 40)))]; } },
+  /* ---- Prüfungspraxis (Arduino-Lab), angelehnt an die praktischen Prüfungsteile ---- */
+  { id: 'cp1', lab: 'code', cat: 'Prüfungspraxis', title: 'Countdown mit Warnton', level: 2,
+    start: ct(CP_COUNT, CW_COUNT, 'void setup() {\n  pinMode(2, INPUT_PULLUP);   // Taster gegen Masse\n  pinMode(13, OUTPUT);        // LED: Countdown läuft\n  pinMode(8, OUTPUT);         // Lautsprecher\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  // Hier: Nach einem Tastendruck 10 Sekunden herunterzählen\n}\n'),
+    solMake: ct(CP_COUNT, CW_COUNT, 'void setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(13, OUTPUT);\n  pinMode(8, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  if (digitalRead(2) == LOW) {\n    digitalWrite(13, HIGH);\n    for (int s = 10; s >= 0; s--) {\n      Serial.println(s);\n      if (s >= 1 && s <= 3) {\n        tone(8, 1000, 100);\n      }\n      if (s == 0) {\n        tone(8, 1000, 1000);\n      }\n      delay(1000);\n    }\n    digitalWrite(13, LOW);\n  }\n}\n'),
+    text: 'Nach einem Tastendruck (Pin 2, gegen Masse) soll ein Countdown von 10 Sekunden laufen: Die LED an Pin 13 leuchtet während des Countdowns, und im Serial-Monitor erscheint jede Sekunde die Zahl 10, 9, … bis 0. Bei 3, 2 und 1 piept der Lautsprecher (Pin 8) einmal kurz (etwa 100 ms), bei 0 ertönt ein Dauerton von einer Sekunde. Danach geht die LED aus und das Programm wartet auf den nächsten Tastendruck.',
+    hint: 'Mit einer for-Schleife von 10 bis 0 zählen (s--). Serial.println(s) gibt die Zahl aus, tone(8, 1000, 100) piept 100 ms, delay(1000) wartet eine Sekunde. Die if-Bedingung für 1 bis 3 lautet: s >= 1 && s <= 3.',
+    check() { const pb = sch.parts.find(p => p.k === 'PB'), L = theLed(); if (!pb || !L) return [RES(false, 'Taster oder LED fehlt.')];
+      const R = codeEval({ T: 14, script: [{ t: 0.4, press: [pb.id] }, { t: 0.7, press: [] }] }); if (R.err) return codeFail(R);
+      const nums = serLines(R).map(Number), ok = nums.length === 11 && nums.every((v, i) => v === 10 - i);
+      let beeps = 0, prev = false; R.samples.forEach(x => { if (x.t > 6.5 && x.t < 10.3) { const on = !!x.tone[8]; if (on && !prev) beeps++; prev = on; } });
+      const l0 = ledMA(sampleAt(R, 0.2), L.id) > 2, l1 = ledMA(sampleAt(R, 5), L.id) > 2, l2 = ledMA(sampleAt(R, 13.5), L.id) > 2, longTone = !!sampleAt(R, 10.9).tone[8], quiet = !sampleAt(R, 3).tone[8];
+      return [RES(ok, ok ? 'Die Zahlen 10 bis 0 stehen in der richtigen Reihenfolge im Serial-Monitor.' : 'Serial-Monitor: erwartet die Zahlen 10 bis 0, je eine pro Zeile (erhalten: ' + JSON.stringify(R.ser.slice(0, 40)) + ').'),
+        RES(!l0, 'Vor dem Tastendruck ist die LED ' + (l0 ? 'an, soll aber aus sein' : 'aus') + '.'), RES(l1, 'Während des Countdowns ist die LED ' + (l1 ? 'an' : 'aus, soll aber an sein') + '.'), RES(!l2, 'Nach dem Countdown ist die LED ' + (l2 ? 'noch an, soll aber aus sein' : 'aus') + '.'),
+        RES(beeps === 3, 'Bei 3, 2 und 1 piept es ' + beeps + '× (erwartet: 3×).'), RES(longTone, 'Bei 0 ertönt ein Dauerton: ' + (longTone ? 'ja' : 'nein')), RES(quiet, 'Zu Beginn ist der Lautsprecher ' + (quiet ? 'still' : 'nicht still')) ]; } },
+  { id: 'cp2', lab: 'code', cat: 'Prüfungspraxis', title: 'Luftampel mit Poti', level: 2,
+    start: ct(CP_LUFT, CW_LUFT, 'void setup() {\n  pinMode(3, OUTPUT);   // rot\n  pinMode(5, OUTPUT);   // gelb\n  pinMode(7, OUTPUT);   // grün\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int prozent = map(analogRead(A0), 0, 1023, 0, 100);\n  // Hier: passende LED einschalten, Prozentwert ausgeben\n}\n'),
+    solMake: ct(CP_LUFT, CW_LUFT, 'void setup() {\n  pinMode(3, OUTPUT);\n  pinMode(5, OUTPUT);\n  pinMode(7, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  int prozent = map(analogRead(A0), 0, 1023, 0, 100);\n  digitalWrite(3, prozent > 70);\n  digitalWrite(5, prozent >= 30 && prozent <= 70);\n  digitalWrite(7, prozent < 30);\n  Serial.println(prozent);\n  delay(500);\n}\n'),
+    text: 'Das Poti an A0 simuliert die Luftbelastung in einem Tunnel (0 bis 1023 entspricht 0 bis 100 %). Unter 30 % soll die grüne LED (Pin 7) leuchten, von 30 bis 70 % die gelbe (Pin 5), über 70 % die rote (Pin 3). Es darf immer nur eine LED leuchten. Gib außerdem alle halbe Sekunde den Prozentwert als ganze Zahl im Serial-Monitor aus. Verstelle das Poti mit dem Regler unter dem Bauteil.',
+    hint: 'map(wert, 0, 1023, 0, 100) rechnet den Messwert in Prozent um. digitalWrite(pin, bedingung) schaltet den Pin je nach Ergebnis des Vergleichs. Die Grenzen sind 30 und 70.',
+    check() { const P = sch.parts.find(p => p.k === 'POT'), leds = sch.parts.filter(p => p.k === 'LED').sort(byPos); if (!P || leds.length < 3) return [RES(false, 'Poti oder drei LEDs fehlen.')];
+      const out = [], cases = [[0.9, 10, 2, 'unter 30 % (etwa 10 %)', 'grün'], [0.5, 50, 1, 'von 30 bis 70 % (etwa 50 %)', 'gelb'], [0.1, 90, 0, 'über 70 % (etwa 90 %)', 'rot']];
+      for (const [pos, pc, want, label, color] of cases) {
+        const R = codeEval({ T: 1.3, pos: { [P.id]: pos } }); if (R.err) return codeFail(R);
+        const sm = sampleAt(R, 1.25), on = leds.map(l => ledMA(sm, l.id) > 2), ok = on.filter(Boolean).length === 1 && on[want], nums = serLines(R).map(Number).filter(n => !isNaN(n)), last = nums[nums.length - 1];
+        out.push(RES(ok, 'Belastung ' + label + ': ' + (ok ? 'nur die ' + color + 'e LED leuchtet' : 'es soll nur die ' + color + 'e LED leuchten (an: ' + on.map((b, i) => b ? ['rot', 'gelb', 'grün'][i] : '').filter(Boolean).join(', ') + ')') + '.'));
+        out.push(RES(nums.length >= 2 && Math.abs(last - pc) <= 6, 'Serial-Monitor: ' + (nums.length >= 2 && Math.abs(last - pc) <= 6 ? 'der Prozentwert stimmt (' + last + ' %)' : 'der Prozentwert fehlt oder stimmt nicht (erwartet etwa ' + pc + ' %, ' + nums.length + ' Werte erhalten)') + '.'));
+      }
+      return out; } },
+  { id: 'cp3', lab: 'code', cat: 'Prüfungspraxis', title: 'Heizstufen mit entprelltem Taster', level: 3,
+    start: ct(CP_STUFE, CW_STUFE, 'int stufe = 0;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(3, OUTPUT);\n  pinMode(5, OUTPUT);\n  pinMode(7, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  // Hier: Tastendruck erkennen, Stufe erhöhen (0 bis 3), LEDs setzen, "Stufe n" ausgeben\n}\n'),
+    solMake: ct(CP_STUFE, CW_STUFE, 'int stufe = 0;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  pinMode(3, OUTPUT);\n  pinMode(5, OUTPUT);\n  pinMode(7, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  if (digitalRead(2) == LOW) {\n    delay(50);\n    stufe = (stufe + 1) % 4;\n    digitalWrite(3, stufe >= 1);\n    digitalWrite(5, stufe >= 2);\n    digitalWrite(7, stufe >= 3);\n    Serial.print("Stufe ");\n    Serial.println(stufe);\n    while (digitalRead(2) == LOW) {\n    }\n    delay(50);\n  }\n}\n'),
+    text: 'Drei LEDs (Pin 3, 5, 7) zeigen die Heizstufe. Jeder Tastendruck (Pin 2) schaltet eine Stufe weiter: Stufe 1 = eine LED, Stufe 2 = zwei LEDs, Stufe 3 = drei LEDs, dann Stufe 0 = alle aus, danach wieder Stufe 1. Gib bei jedem Tastendruck „Stufe n“ im Serial-Monitor aus. Der Taster prellt: Ein Druck darf nur eine Stufe weiterschalten, auch wenn der Kontakt mehrfach schnell schließt.',
+    hint: 'Merke dir die Stufe in einer Variablen und erhöhe sie mit (stufe + 1) % 4. Nach dem ersten LOW wartest du etwa 50 ms (delay), schaltest weiter und wartest, bis der Taster losgelassen ist (while-Schleife), damit das Prellen nicht zählt.',
+    check() { const pb = sch.parts.find(p => p.k === 'PB'), leds = sch.parts.filter(p => p.k === 'LED').sort(byPos); if (!pb || leds.length < 3) return [RES(false, 'Taster oder drei LEDs fehlen.')];
+      const script = []; [0.3, 0.9, 1.5, 2.1, 2.7].forEach(t => bounceScript(pb.id, t, t + 0.2).forEach(x => script.push(x)));
+      const R = codeEval({ T: 3.6, script }); if (R.err) return codeFail(R);
+      const want = ['Stufe 1', 'Stufe 2', 'Stufe 3', 'Stufe 0', 'Stufe 1'], got = serLines(R), okSer = got.length === 5 && want.every((w, i) => got[i] === w);
+      const checks = [[0.75, 1], [1.35, 2], [1.95, 3], [2.55, 0], [3.3, 1]], out = [RES(okSer, okSer ? 'Der Serial-Monitor zeigt Stufe 1, 2, 3, 0, 1 (ein Druck = eine Stufe, trotz Prellen).' : 'Serial-Monitor: erwartet 5 Zeilen Stufe 1, 2, 3, 0, 1, erhalten ' + got.length + ': ' + JSON.stringify(got.join(' | ').slice(0, 60)) + '. Zählt das Prellen mit?')];
+      checks.forEach(([t, n], i) => { const sm = sampleAt(R, t), on = leds.map(l => ledMA(sm, l.id) > 2), cnt = on.filter(Boolean).length, ord = on.every((b, k) => b === (k < n)); out.push(RES(cnt === n && ord, 'Nach Druck ' + (i + 1) + ' leuchten ' + cnt + ' LED(s)' + (cnt === n && ord ? '.' : ', erwartet ' + n + ' (von Pin 3 an aufwärts).'))); });
+      return out; } },
+  { id: 'cp4', lab: 'code', cat: 'Prüfungspraxis', title: 'Fehlersuche: Würfel ohne Wiederholung', level: 3,
+    start: ct(CP_DICE, CW_DICE, 'int letzter = 0;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  if (digitalRead(2) == LOW) {\n    int wurf = random(1, 6);\n    Serial.println(wurf);\n    letzter = wurf;\n  }\n}\n'),
+    solMake: ct(CP_DICE, CW_DICE, 'int letzter = 0;\n\nvoid setup() {\n  pinMode(2, INPUT_PULLUP);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  if (digitalRead(2) == LOW) {\n    delay(30);\n    int wurf = random(1, 7);\n    while (wurf == letzter) {\n      wurf = random(1, 7);\n    }\n    Serial.println(wurf);\n    letzter = wurf;\n    while (digitalRead(2) == LOW) {\n    }\n    delay(30);\n  }\n}\n'),
+    text: 'Der Sketch soll bei jedem Tastendruck eine Zahl von 1 bis 6 würfeln und im Serial-Monitor ausgeben. Zwei gleiche Zahlen hintereinander sind nicht erlaubt, und pro Tastendruck darf genau eine Zahl kommen (auch wenn der Taster prellt oder gedrückt bleibt). Der Sketch enthält drei Fehler: Finde und behebe sie.',
+    hint: 'Fehler 1: random(1, 6) liefert nur 1 bis 5 (die obere Grenze zählt nicht mit). Fehler 2: Es wird nie geprüft, ob der Wurf gleich dem letzten ist (while-Schleife). Fehler 3: Der Taster wird nicht entprellt und nicht auf Loslassen gewartet, deshalb kommen mehrere Zahlen pro Druck.',
+    check() { const pb = sch.parts.find(p => p.k === 'PB'); if (!pb) return [RES(false, 'Der Taster fehlt.')];
+      const script = []; for (let i = 0; i < 40; i++) bounceScript(pb.id, 0.2 + 0.3 * i, 0.2 + 0.3 * i + 0.12).forEach(x => script.push(x));
+      const R = codeEval({ T: 12.4, script }); if (R.err) return codeFail(R);
+      const nums = serLines(R).map(Number), valid = nums.every(n => n >= 1 && n <= 6), rep = nums.some((n, i) => i > 0 && n === nums[i - 1]);
+      return [RES(nums.length === 40, 'Bei 40 Tastendrücken kamen ' + nums.length + ' Zahlen (erwartet: genau 40, eine je Druck).'), RES(valid && nums.length > 0, valid && nums.length > 0 ? 'Alle Zahlen liegen zwischen 1 und 6.' : 'Es kommen Zahlen außerhalb von 1 bis 6 vor oder gar keine.'), RES(nums.includes(6), nums.includes(6) ? 'Die Zahl 6 kommt vor.' : 'Die Zahl 6 kam nie vor: Die obere Grenze von random() zählt nicht mit.'), RES(nums.length > 1 && !rep, rep ? 'Zwei gleiche Zahlen kamen hintereinander.' : 'Keine zwei gleichen Zahlen hintereinander.')]; } },
 ];
 
 /* ---- Pi-Lab: Python-Programm im Hintergrund ausführen und beobachten ---- */

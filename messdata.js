@@ -298,6 +298,7 @@
     ];
     function chain3(bad) { return { parts: [PSU(12, null, 4), ['R', 8, 2, 1, '1k', { l: 'R1' }], ['R', 8, 6, 1, '1k', Object.assign({ l: 'R2' }, bad ? { defect: 'open' } : {})], ['R', 8, 10, 1, '1k', { l: 'R3' }], ['GND', 4, 14]], wires: [[4, 4, 4, 2, 8, 2], [8, 14, 4, 14, 4, 8]], scopes: [] }; }
     function ledCircDefect(bad) { return { parts: [PSU(9), ['SPST', 2, 2, 0, '', { sw: 1, l: 'S1' }], ['R', 6, 2, 0, '470', Object.assign({ l: 'R1' }, bad ? { defect: 'open' } : {})], ['LED', 10, 2, 1, 'rot', { l: 'LED1' }], ['GND', 2, 8]], wires: [[2, 4, 2, 2], [10, 6, 10, 8, 2, 8]], scopes: [] }; }
+    if (root.MESS_PRUEF) { const X = root.MESS_PRUEF(api, { mk, ex, PSU, part, kindPart, partI, evalNow, near, RES }); if (X) { api.addExamples(X.ex || []); TASKS.push(...(X.tasks || [])); } }
     api.addTasks(TASKS);
     root.MESS_TASKS = TASKS;
   };
