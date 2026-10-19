@@ -204,5 +204,5 @@
     return r.shuffle(out).slice(0, n);
   }
 
-  root.PR_BANK = { TOPICS, MC, GEN, seeded, draw, exam, de, sig, nMC: MC.length, nGEN: Object.keys(GEN).reduce((s, k) => s + GEN[k].length, 0) };
+  root.PR_BANK = { TOPICS, MC, GEN, seeded, draw, exam, mcQuestion, de, sig, nMC: MC.length, nGEN: Object.keys(GEN).reduce((s, k) => s + GEN[k].length, 0) };
 })(window);

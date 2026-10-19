@@ -566,14 +566,16 @@ const BOARDS=[
 const fmtOf=(c,r)=>{const b=BOARDS.find(x=>x.cols===c&&x.rows===r);return b?b.n:'';};
 const newDoc=(name='Neues Projekt',cols=62,rows=38)=>({id:uid(),name,cols,rows,items:[],nid:1,updated:Date.now()});
 const nid=()=>doc.nid++;
-const snapJSON=()=>JSON.stringify({cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid});
+/* Mehrere Platinen: doc.boards = [{x,y,cols,rows,name}] im gemeinsamen Raster, doc.cols/rows sind die Außenmaße. Ohne boards gibt es eine Platine. */
+const boardsOf=d=>(d.boards&&d.boards.length)?d.boards:[{x:0,y:0,cols:d.cols,rows:d.rows}];
+const snapJSON=()=>JSON.stringify({cols:doc.cols,rows:doc.rows,boards:doc.boards,items:doc.items,nid:doc.nid});
 function resetHist(){hist=[snapJSON()];hi=0;}
 function commit(){
   hist=hist.slice(0,hi+1);hist.push(snapJSON());if(hist.length>120)hist.shift();hi=hist.length-1;
   afterChange();
 }
 function restore(i){
-  const s=JSON.parse(hist[i]);Object.assign(doc,s);hi=i;sel=null;chain=null;afterChange(true);
+  const s=JSON.parse(hist[i]);if(!('boards' in s))delete doc.boards;Object.assign(doc,s);hi=i;sel=null;chain=null;afterChange(true);
 }
 function afterChange(){
   clearTimeout(saveT);saveT=setTimeout(save,350);
@@ -606,6 +608,7 @@ function load(d){
 
 /* ============ Zustand ============ */
 let view={s:24,ox:20,oy:20}, tool='select', mode='both';
+let ribStart=null, ribbonN=10;
 let sel=null, partKind='R', partRot=0, wireColor='#d6dbe1';
 let autoSocket=true;
 let ghost=null, chain=null, cursor=null, act=null, erased=false;
@@ -893,21 +896,24 @@ function drawScene(c,V,o){
     :(document.documentElement.dataset.theme==='dark'                                                       // Dark Mode: dunklere Platine (Druck und Export bleiben hell)
       ?{board:mir?'#7a5c25':'#8c6b2c',edge:'rgba(0,0,0,.55)',pad:mir?'#b48f4c':'#c7a25a',ring:'rgba(50,30,8,.65)',hole:null,lab:'rgba(255,255,255,.7)'}
       :{board:mir?'#c9993f':'#d6a94c',edge:'rgba(0,0,0,.4)',pad:mir?'#f7dfa6':'#f3d89a',ring:'rgba(120,70,20,.55)',hole:null,lab:'rgba(255,255,255,.75)'});
-  rrect(c,-.5,-.5,cols,rows,.3);c.fillStyle=pal.board;c.fill();
-  c.strokeStyle=pal.edge;c.lineWidth=.06;c.stroke();
-  // Lötaugen
   const top=o.mode==='top'; // Bestückungsseite: keine Lötaugen, nur Bohrungen
-  if(!top){
-    c.beginPath();for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){c.moveTo(x+.34,y);c.arc(x,y,.34,0,7);}
-    c.fillStyle=pal.pad;c.fill();c.strokeStyle=pal.ring;c.lineWidth=.05;c.stroke();
-  }
-  c.beginPath();for(let y=0;y<rows;y++)for(let x=0;x<cols;x++){c.moveTo(x+.15,y);c.arc(x,y,.15,0,7);}
-  c.fillStyle=pal.hole||(top?'#5a3b16':'#1a1308');c.fill();
-  // Raster-Beschriftung
-  if(V.s>=9){
-    for(let x=0;x<cols;x++)if((x+1)%5===0||x===0)txt(c,String(x+1),x,-.8,ex?.55:.4,pal.lab,mir);
-    for(let y=0;y<rows;y++)if((y+1)%5===0||y===0)txt(c,String(y+1),-.9,y,ex?.55:.4,pal.lab,mir);
-  }
+  boardsOf(doc).forEach(B=>{
+    rrect(c,B.x-.5,B.y-.5,B.cols,B.rows,.3);c.fillStyle=pal.board;c.fill();
+    c.strokeStyle=pal.edge;c.lineWidth=.06;c.stroke();
+    // Lötaugen
+    if(!top){
+      c.beginPath();for(let y=0;y<B.rows;y++)for(let x=0;x<B.cols;x++){c.moveTo(B.x+x+.34,B.y+y);c.arc(B.x+x,B.y+y,.34,0,7);}
+      c.fillStyle=pal.pad;c.fill();c.strokeStyle=pal.ring;c.lineWidth=.05;c.stroke();
+    }
+    c.beginPath();for(let y=0;y<B.rows;y++)for(let x=0;x<B.cols;x++){c.moveTo(B.x+x+.15,B.y+y);c.arc(B.x+x,B.y+y,.15,0,7);}
+    c.fillStyle=pal.hole||(top?'#5a3b16':'#1a1308');c.fill();
+    // Raster-Beschriftung
+    if(V.s>=9){
+      for(let x=0;x<B.cols;x++)if((x+1)%5===0||x===0)txt(c,String(x+1),B.x+x,B.y-.8,ex?.55:.4,pal.lab,mir);
+      for(let y=0;y<B.rows;y++)if((y+1)%5===0||y===0)txt(c,String(y+1),B.x-.9,B.y+y,ex?.55:.4,pal.lab,mir);
+      if(B.name&&boardsOf(doc).length>1)txt(c,B.name,B.x+B.cols/2,B.y-1.7,ex?.8:.65,pal.lab,mir,'center');
+    }
+  });
   const items=doc.items;
   const hl=(it,fn)=>{if(o.sel===it.id){c.save();fn();c.restore();}};
   // Unterseite: Bahnen & Lötpunkte
@@ -967,6 +973,17 @@ function drawScene(c,V,o){
       c.strokeStyle=it.c;c.lineWidth=.28;line(c,it.x1,it.y1,it.x2,it.y2);
       [[it.x1,it.y1],[it.x2,it.y2]].forEach(([x,y])=>{c.beginPath();c.arc(x,y,.2,0,7);c.fillStyle='#d9dde2';c.fill();c.strokeStyle='rgba(0,0,0,.5)';c.lineWidth=.04;c.stroke();});
     });
+    items.forEach(it=>{if(it.t!=='ribbon')return;
+      const n=it.n||1,ax=it.x1+(n-1)/2,bx=it.x2+(n-1)/2;
+      hl(it,()=>{c.strokeStyle='rgba(59,158,255,.7)';c.lineWidth=1.6;line(c,ax,it.y1,bx,it.y2);});
+      // Band: Fläche zwischen den beiden Stiftleisten, darauf jede Ader als feine Linie, die erste (rot) markiert Pin 1
+      const m1=it.y1+(it.y2-it.y1)*.45,m2=it.y1+(it.y2-it.y1)*.55,my=(it.y1+it.y2)/2;
+      c.beginPath();c.moveTo(it.x1-.5,it.y1);c.bezierCurveTo(it.x1-.5,m1,it.x2-.5,m2,it.x2-.5,it.y2);c.lineTo(it.x2+n-.5,it.y2);c.bezierCurveTo(it.x2+n-.5,m2,it.x1+n-.5,m1,it.x1+n-.5,it.y1);c.closePath();
+      c.globalAlpha=.93;c.fillStyle='#a7adb5';c.fill();c.globalAlpha=1;c.strokeStyle='#5d636b';c.lineWidth=.08;c.stroke();
+      for(let i=0;i<n;i++){c.beginPath();c.moveTo(it.x1+i,it.y1);c.bezierCurveTo(it.x1+i,m1,it.x2+i,m2,it.x2+i,it.y2);c.strokeStyle=i===0?'#d33b3b':'rgba(60,66,74,.55)';c.lineWidth=i===0?.2:.07;c.stroke();}
+      [[it.x1,it.y1],[it.x2,it.y2]].forEach(([x,y])=>{rrect(c,x-.5,y-.5,n,1,.12);c.fillStyle='#17191c';c.fill();c.strokeStyle='#e5e7ea';c.lineWidth=.05;c.stroke();for(let i=0;i<n;i++){c.beginPath();c.arc(x+i,y,.2,0,7);c.fillStyle='#c9ced4';c.fill();}});
+      txt(c,'Flachband '+n+' Adern',(ax+bx)/2,my,ex?.7:.5,ex?'#111':'#fff',false,'center',ex?'rgba(255,255,255,.95)':'rgba(0,0,0,.8)');
+    });
     items.forEach(it=>{if(it.t!=='text')return;
       const w=it.s.length*.6*it.z;
       hl(it,()=>{rrect(c,it.x-w/2-.2,it.y-it.z/2-.15,w+.4,it.z+.3,.15);c.fillStyle='rgba(59,158,255,.35)';c.fill();});
@@ -1006,12 +1023,13 @@ function segDist(px,py,x1,y1,x2,y2){
   const dx=x2-x1,dy=y2-y1,l=dx*dx+dy*dy;let t=l?((px-x1)*dx+(py-y1)*dy)/l:0;t=clamp(t,0,1);
   return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));
 }
-const RANK={text:5,wire:4,part:3,dot:2,track:1};
+const RANK={text:5,wire:4,ribbon:4,part:3,dot:2,track:1};
 function hit(fx,fy){
   const tol=Math.max(.5,13/view.s);let best=null,br=-1,bd=1e9;
   for(let i=doc.items.length-1;i>=0;i--){
     const it=doc.items[i];if(!visible(it))continue;let d=1e9;
     if(it.t==='wire'||it.t==='track')d=segDist(fx,fy,it.x1,it.y1,it.x2,it.y2);
+    else if(it.t==='ribbon'){const n=it.n||1;d=Math.min(segDist(fx,fy,it.x1+(n-1)/2,it.y1,it.x2+(n-1)/2,it.y2),segDist(fx,fy,it.x1-.5,it.y1,it.x1+n-.5,it.y1),segDist(fx,fy,it.x2-.5,it.y2,it.x2+n-.5,it.y2));}
     else if(it.t==='dot')d=Math.hypot(fx-it.x,fy-it.y);
     else if(it.t==='part'){const[a,b]=rot(fx-it.x,fy-it.y,(4-it.r)&3),r=bodyRect(it);d=(a>=r[0]-.15&&a<=r[2]+.15&&b>=r[1]-.15&&b<=r[3]+.15)?0:1e9;}
     else if(it.t==='text'){const w=it.s.length*.6*it.z;d=(Math.abs(fx-it.x)<=w/2+.2&&Math.abs(fy-it.y)<=it.z/2+.2)?0:1e9;}
@@ -1172,6 +1190,13 @@ function onDown(p){
         else act={t:'line',start:[chain.x,chain.y]}; // Segment wird beim Loslassen gesetzt, Kette läuft weiter
       }else{chain={x:gx,y:gy};act={t:'line',start:[gx,gy]};renderCtx();}
       break;
+    case 'ribbon':
+      if(!ribStart){ribStart=[gx,gy];toast('Flachband: jetzt das Ende auf der anderen Platine antippen');}
+      else{
+        const a=ribStart;ribStart=null;
+        if(a[0]!==gx||a[1]!==gy)form('Flachbandkabel',[{label:'Anzahl Adern (Stiftleiste in einer Reihe)',value:ribbonN,type:'number',min:1,max:64}],v=>{const n=clamp(parseInt(v[0])||8,1,64);ribbonN=n;doc.items.push({id:nid(),t:'ribbon',x1:a[0],y1:a[1],x2:gx,y2:gy,n});commit();});
+      }
+      act={t:'none'};break;
     case 'part':ghost=[gx,gy];act={t:'place'};break;
     case 'dot':{
       const ex=doc.items.find(i=>i.t==='dot'&&i.x===gx&&i.y===gy);
@@ -1237,7 +1262,7 @@ function dupSel(){
   if(c.t==='part')c.l=autoLabel(c.k);
   doc.items.push(c);sel=c.id;commit();
 }
-function setTool(t){tool=t;chain=null;ghost=null;act=null;if(t!=='select')sel=null;buildNav();renderCtx();invalidate();}
+function setTool(t){tool=t;ribStart=null;chain=null;ghost=null;act=null;if(t!=='select')sel=null;buildNav();renderCtx();invalidate();}
 
 /* ============ Oberfläche ============ */
 const ICONS={
@@ -1245,12 +1270,13 @@ const ICONS={
   hand:'<path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>',
   wire:'<circle cx="5.5" cy="18" r="2.2"/><circle cx="18.5" cy="6" r="2.2"/><path d="M7.4 16.6L16.6 7.4"/>',
   track:'<path d="M4 18L12 18 20 8" stroke-width="5" opacity=".85"/>',
+  ribbon:'<rect x="3" y="4" width="8" height="3" rx=".6"/><rect x="13" y="17" width="8" height="3" rx=".6"/><path d="M7 7c0 6 10 4 10 10" stroke-width="3.4" opacity=".8"/>',
   dot:'<circle cx="12" cy="12" r="5.5" fill="currentColor"/>',
   part:'<rect x="6" y="7" width="12" height="10" rx="1.5"/><path d="M9 7V4M15 7V4M9 20v-3M15 20v-3"/>',
   text:'<path d="M5 6h14M12 6v13M9 19h6"/>',
   erase:'<path d="M4 15l8-9 8 8-5 6H8z"/><path d="M9 20h11"/>',
 };
-const TOOLS=[['select','Auswahl'],['hand','Schieben'],['part','Bauteil'],['wire','Draht'],['track','Lötbahn'],['dot','Lötpunkt'],['text','Text'],['erase','Löschen']];
+const TOOLS=[['select','Auswahl'],['hand','Schieben'],['part','Bauteil'],['wire','Draht'],['track','Lötbahn'],['ribbon','Flachband'],['dot','Lötpunkt'],['text','Text'],['erase','Löschen']];
 const icon=n=>`<svg class="i" viewBox="0 0 24 24">${ICONS[n]}</svg>`;
 function buildNav(){
   $('#nav').innerHTML=TOOLS.filter(([id])=>id!=='part'||!matchMedia('(min-width:640px)').matches).map(([id,l])=>`<button class="tb ${tool===id?'on':''}" data-t="${id}">${icon(id)}<span>${l}</span></button>`).join('');
@@ -1272,6 +1298,7 @@ function sideCtl(k,rotV,n,it){
   if(k==='IC'&&window.LochSimICs){
     const cur=LochSimICs.find(it?it.v:(partVals.IC!=null?partVals.IC:PARTS.IC.val)),ck=cur?cur.key:'';
     o+=`<div class="sh">Typ</div><select class="icsel" data-ic="1">${ck?'':'<option value="">(eigener Wert)</option>'}${LochSimICs.SORT.map(q=>`<option value="${q}" ${q===ck?'selected':''}>${esc(LochSimICs.CATALOG[q].name)}</option>`).join('')}</select>`;
+    { const dt=String(it?it.v:(partVals.IC!=null?partVals.IC:PARTS.IC.val)||'').replace(/[^A-Za-z0-9._-]/g,''); if(dt)o+=`<div class="phcap" style="margin-top:6px"><a href="https://www.google.com/search?q=${encodeURIComponent(dt+' datasheet')}" target="_blank" rel="noopener noreferrer">Datenblatt im Web suchen</a> (${esc(dt)}, braucht Internet)</div>`; }
   }
   if(k==='IC'){const on=it?it.sk:autoSocket;o+=`<div class="sh">Sockel</div><button class="sbtn wide ${on?'on':''}" data-a="${it?'sk':'ask'}">${on?'Sockel darunter ✓':'Ohne Sockel'}</button>`;}
   if(k==='BAT'||k==='SIG'){const cur=it?(it.imax||''):(partVals.imax||'');o+=`<div class="sh">Max. Strom</div><div class="srow" style="flex-wrap:wrap;gap:6px">${[['','unbegrenzt'],['20m','20 mA'],['100m','100 mA'],['500m','500 mA'],['1','1 A']].map(([v,l])=>`<button class="chip sub ${v===cur?'on':''}" data-a="imax" data-v="${v}">${l}</button>`).join('')}</div>`;}
@@ -1407,7 +1434,7 @@ const ctxClick=e=>{
 };
 $('#ctx').addEventListener('click',ctxClick);
 $('#side').addEventListener('click',ctxClick);
-const ICDEF={'555':'NE555','7400':'SN7400','7402':'SN7402','7404':'SN7404','7408':'SN7408','7432':'SN7432','7486':'SN7486','7414':'SN74HC14','4011':'CD4011','4001':'CD4001','4081':'CD4081','4071':'CD4071','4093':'CD4093','4069':'CD4069','7474':'SN7474','4013':'CD4013','4017':'CD4017','4020':'CD4020','7490':'SN7490','7447':'SN7447','4511':'CD4511','741':'LM741','358':'LM358','072':'TL072','324':'LM324'};
+const ICDEF={'555':'NE555','7400':'SN7400','7402':'SN7402','7404':'SN7404','7408':'SN7408','7432':'SN7432','7486':'SN7486','7414':'SN74HC14','4011':'CD4011','4001':'CD4001','4081':'CD4081','4071':'CD4071','4093':'CD4093','4069':'CD4069','7474':'SN7474','4013':'CD4013','4017':'CD4017','4020':'CD4020','7490':'SN7490','7447':'SN7447','4511':'CD4511','4543':'CD4543','4518':'CD4518','4060':'CD4060','74138':'SN74HC138','741':'LM741','358':'LM358','072':'TL072','324':'LM324'};
 $('#side').addEventListener('change',e=>{
   const t=e.target;if(!t.dataset||!t.dataset.ic||!window.LochSimICs)return;
   const C=LochSimICs.CATALOG[t.value];if(!C)return;
@@ -1478,6 +1505,7 @@ function openMenu(){
       ['rename','Projekt umbenennen',doc.name],
       ['user','Name ändern',userName()||'noch nicht eingetragen'],
       ['board','Platinengröße',`${fmtOf(doc.cols,doc.rows)||'Eigenes Format'} · ${doc.cols} × ${doc.rows} Löcher`],
+      ['addboard','Platine hinzufügen','Zweite Platine, mit Flachbandkabel verbinden'+(boardsOf(doc).length>1?` (jetzt ${boardsOf(doc).length})`:'')],
       ['bom','Bauteilliste','Anzeigen, drucken, kopieren'],
       ['png','Als Bild exportieren','PNG, teilen oder speichern'],
       ['share','Teilen','Link zum Weitergeben (Projekt steckt im Link)'],
@@ -1561,12 +1589,18 @@ function menuAct(m){
   if(m==='predict'){if(window.Predict)Predict.toggle();return;}
   if(m==='png'){if(window.LabExport)LabExport.png();return;}
   if(m==='gif'){if(window.LabExport)LabExport.gif();return;}
-  if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,items:doc.items,nid:doc.nid,code:doc.code,lang:doc.lang,task:doc.task},doc.name);return;}
+  if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,boards:doc.boards,items:doc.items,nid:doc.nid,code:doc.code,lang:doc.lang,task:doc.task},doc.name);return;}
   if(m==='new')confirmNew(()=>boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));}));
   else if(m==='open')openList();
   else if(m==='rename')renameDoc();
   else if(m==='user')form('Dein Name',[{label:'Vor- und Nachname',value:userName()}],v=>{const n=v[0].trim().replace(/\s+/g,' ');if(n){try{localStorage.setItem('lm4.name',n);}catch(e){}toast('Gespeichert');}});
   else if(m==='board')boardSheet('Platinengröße',false,(n,c,r)=>{doc.cols=c;doc.rows=r;commit();fit();});
+  else if(m==='addboard')boardSheet('Platine hinzufügen',false,(n,c,r)=>{
+    const L=boardsOf(doc).map((b,i)=>Object.assign({name:'Platine '+(i+1)},b));
+    L.push({x:0,y:Math.max(...L.map(b=>b.y+b.rows))+4,cols:c,rows:r,name:'Platine '+(L.length+1)});
+    doc.boards=L;doc.cols=Math.max(...L.map(b=>b.x+b.cols));doc.rows=Math.max(...L.map(b=>b.y+b.rows));
+    commit();fit();toast('Platine hinzugefügt. Mit dem Werkzeug „Flachband“ verbinden.');
+  });
   else if(m==='bom')openBom();
   else if(m==='png')exportSheet(false);
   else if(m==='print')exportSheet(true);
@@ -1580,9 +1614,17 @@ function openExamples(){
   const L=window.LOCH_EX||[];
   sheet('Beispiele',(b,close)=>{
     let h='',last='';
-    L.forEach((e,i)=>{if(e.cat!==last){last=e.cat;h+=`<div class="gh">${esc(e.cat)}</div>`;}h+=`<button class="row" data-i="${i}"><div class="grow"><b>${esc(e.name)}</b><small>${esc(e.info)}</small></div></button>`;});
+    L.forEach((e,i)=>{if(e.cat!==last){last=e.cat;h+=`<div class="gh">${esc(e.cat)}</div>`;}h+=`<button class="row" data-i="${i}"><div class="grow"><b>${e.lock?'🔒 ':''}${esc(e.name)}</b><small>${esc(e.info)}</small></div></button>`;});
     b.innerHTML=h||'<p>Keine Beispiele vorhanden.</p>';
-    b.addEventListener('click',ev=>{const r=ev.target.closest('.row');if(!r)return;const e=L[+r.dataset.i];close();confirmNew(()=>{save();const d=JSON.parse(JSON.stringify(e.doc));d.id=uid();d.name=e.name;d.updated=Date.now();load(d);toast('Beispiel geladen');});});
+    b.addEventListener('click',ev=>{const r=ev.target.closest('.row');if(!r)return;const e=L[+r.dataset.i];close();const go=()=>confirmNew(()=>{save();const d=JSON.parse(JSON.stringify(e.doc));d.id=uid();d.name=e.name;d.updated=Date.now();load(d);toast('Beispiel geladen');});if(e.lock)godAsk(go);else go();});
+  });
+}
+async function godSha(t){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('');}
+function godAsk(then){   // gesperrte Beispiele (Ausbilder): nur mit Passwort, im Code steht nur der Hash
+  let ok=false;try{ok=sessionStorage.getItem('lm4.god')===GODH;}catch(e){}
+  if(ok){then();return;}
+  form('Freigabe nötig',[{label:'Passwort (nur für Ausbilder)',value:'',type:'password'}],async v=>{
+    if(await godSha(String(v[0]).trim())===GODH){try{sessionStorage.setItem('lm4.god',GODH);}catch(e){}then();}else toast('Passwort falsch');
   });
 }
 function confirmNew(next){
@@ -1646,6 +1688,7 @@ function bomData(){
   const extra=[];
   if(tracks.length||silver.length)extra.push({n:'',name:'Silberdraht',v:'ca. '+Math.ceil(sum(tracks)+sum(silver))+' cm',l:[`${tracks.length} Lötbahn-Segmente`,`${silver.length} Drahtbrücken`].join(', ')});
   if(color.length)extra.push({n:color.length,name:'Schaltdraht farbig',v:'ca. '+Math.ceil(sum(color))+' cm',l:''});
+  doc.items.filter(i=>i.t==='ribbon').forEach(r=>extra.push({n:1,name:'Flachbandkabel',v:r.n+' Adern',l:`mit zwei Stiftleisten (${r.n} Pole, einreihig) oder Pfostenverbindern`}));
   if(ends.size)extra.push({n:ends.size,name:'Lötpunkte',v:'',l:'inkl. Enden der Silberdraht-Brücken'});
   return {rows,extra};
 }
@@ -1782,12 +1825,17 @@ $('#bTheme').onclick=()=>applyTheme(document.documentElement.dataset.theme==='da
 /* ============ Automatisches Layout aus dem Stromlaufplan (nur mit Freigabe) ============ */
 const GODH='a2fdecf55d194ed8cea8d52d7d0442778e86180b6d81c6c37e56278e55add6c6';
 function autoLayout(job){
-  const cols=62,rows=38,nd=newDoc((job.name||'Schaltung')+' (Layout)',cols,rows);
+  const MB=job.boards&&job.boards.length?job.boards:null;   // mehrere Platinen (feste Bauteilpositionen, Flachbandkabel nach job.ribbons)
+  const big=job.parts.length>45,cols=MB?Math.max(...MB.map(b=>b.x+b.cols)):(window.__cols||(big?190:62)),rows=MB?Math.max(...MB.map(b=>b.y+b.rows)):(window.__rows||(big?115:38)),nd=newDoc((job.name||'Schaltung')+' (Layout)',cols,rows);   // große Schaltungen (zum Beispiel die Quarzuhr) bekommen eine große Platine
   let idc=1;const nextId=()=>idc++;
-  const ps=job.parts, hk=(x,y)=>x+','+y, inB=(x,y)=>x>=0&&y>=0&&x<cols&&y<rows;
+  let owner=new Map();
+  const ps=job.parts, hk=(x,y)=>x+','+y, boardIdx=(x,y)=>MB?MB.findIndex(b=>x>=b.x&&y>=b.y&&x<b.x+b.cols&&y<b.y+b.rows):((x>=0&&y>=0&&x<cols&&y<rows)?0:-1), inB=(x,y)=>boardIdx(x,y)>=0;
+  const xnet=new Set();(job.ribbons||[]).forEach(r=>r.nets.forEach(n=>{if(n)xnet.add(n);}));
+  const qual=(net,x,y)=>(net&&xnet.has(net))?net+'@'+boardIdx(x,y):net;
+  if(MB)nd.boards=MB.map(b=>Object.assign({},b));
   const minX=Math.min(...ps.map(p=>p.sx)),maxX=Math.max(...ps.map(p=>p.sx)),minY=Math.min(...ps.map(p=>p.sy)),maxY=Math.max(...ps.map(p=>p.sy));
-  const f=Math.max(.35,Math.min(1,(cols-14)/Math.max(maxX-minX,1),(rows-12)/Math.max(maxY-minY,1)));
-  const items=[],rects=[],owner=new Map(),netHoles=new Map(),notPlaced=[];
+  const f=Math.max(.35,Math.min(big?1.6:1,(cols-14)/Math.max(maxX-minX,1),(rows-12)/Math.max(maxY-minY,1)));
+  const items=[],rects=[],netHoles=new Map(),notPlaced=[],notRouted=[],placedInfo=[];
   const order=ps.map((_,i)=>i).sort((a,b)=>((ps[b].ll.k==='IC'||ps[b].ll.k==='RLY'||ps[b].ll.k==='TRF'||ps[b].ll.k==='UNO'||ps[b].ll.k==='PI')-(ps[a].ll.k==='IC'||ps[a].ll.k==='RLY'||ps[a].ll.k==='TRF'||ps[a].ll.k==='UNO'||ps[a].ll.k==='PI'))||ps[a].sy-ps[b].sy||ps[a].sx-ps[b].sx);
   const overlap=(a,b)=>a[0]<b[2]&&a[2]>b[0]&&a[1]<b[3]&&a[3]>b[1];
   for(const i of order){
@@ -1796,7 +1844,11 @@ function autoLayout(job){
     const tx=Math.round(4+(jp.sx-minX)*f),ty=Math.round(4+(jp.sy-minY)*f);
     const cand=[];for(let dx=-30;dx<=30;dx++)for(let dy=-22;dy<=22;dy++)cand.push([dx,dy,dx*dx+dy*dy]);cand.sort((a,b)=>a[2]-b[2]);
     let done=null;
-    for(const [dx,dy] of cand){
+    if(job.fixed&&job.fixed[jp.l]){   // feste Position (z. B. von Hand entworfenes Modulraster)
+      const f=job.fixed[jp.l],it=mk(f.x,f.y);it.r=f.r||0;const pw=pinsOf(it),b=worldBox(it);
+      done={it,pw,bb:[b[0]-.15,b[1]-.15,b[2]+.15,b[3]+.15]};
+    }
+    for(const [dx,dy] of done?[]:cand){
       const it=mk(tx+dx,ty+dy),pw=pinsOf(it),b=worldBox(it),bb=[b[0]-.9,b[1]-.9,b[2]+.9,b[3]+.9];
       if(bb[0]<-.5||bb[1]<-.5||bb[2]>cols-.5||bb[3]>rows-.5)continue;
       if(!pw.every(([x,y])=>inB(x,y)&&!owner.has(hk(x,y))))continue;
@@ -1805,57 +1857,119 @@ function autoLayout(job){
     }
     if(!done){notPlaced.push(jp.l||ll.k);continue;}
     done.it.id=nextId();if(done.it.v===undefined)delete done.it.v;if(!done.it.vr)delete done.it.vr;if(!done.it.sk)delete done.it.sk;
-    items.push(done.it);rects.push(done.bb);
-    done.pw.forEach(([x,y],li)=>{const net=jp.pins[li]||('x'+items.length+'_'+li);owner.set(hk(x,y),net);if(!netHoles.has(net))netHoles.set(net,[]);netHoles.get(net).push([x,y]);});
+    items.push(done.it);rects.push(done.bb);const pn=done.pw.map(([x,y],li)=>qual(jp.pins[li]||null,x,y));placedInfo.push({pw:done.pw,bb:done.bb,jp,pn});
+    done.pw.forEach(([x,y],li)=>{const net=pn[li]||('x'+items.length+'_'+li);owner.set(hk(x,y),net);if(!netHoles.has(net))netHoles.set(net,[]);netHoles.get(net).push([x,y]);});
   }
+  const hdrCells=new Set();
+  // Flachbandkabel: je Ader zwei Löcher (Stiftleiste auf jeder Platine), Netz auf beiden Platinen getrennt geführt
+  (job.ribbons||[]).forEach(r=>{
+    const n=r.nets.length;
+    items.push({id:nextId(),t:'ribbon',x1:r.a[0],y1:r.a[1],x2:r.b[0],y2:r.b[1],n});
+    [r.a,r.b].forEach(end=>{
+      rects.push([end[0]-.5,end[1]-.5,end[0]+n-.5,end[1]+.5]);
+      const pw=[],pn=[];
+      r.nets.forEach((net,i)=>{const x=end[0]+i,y=end[1];if(net)hdrCells.add(hk(x,y));const nm=(net?qual(net,x,y):('v'+x+'_'+y));pw.push([x,y]);pn.push(nm);owner.set(hk(x,y),nm);if(!netHoles.has(nm))netHoles.set(nm,[]);netHoles.get(nm).push([x,y]);});
+      placedInfo.push({pw,bb:[end[0]-.5,end[1]-.5,end[0]+n-.5,end[1]+.5],pn});
+    });
+  });
+  // Ausgänge der Anschlüsse freihalten: je Anschluss zwei Löcher nach außen (sonst bauen kurze Bahnen den Anschluss ein)
+  let resv=new Set(),comp=new Map(),compCells=new Map(),ncomp=0;
+  const cEnsure=k=>{if(!comp.has(k)){comp.set(k,++ncomp);compCells.set(ncomp,new Set([k]));}return comp.get(k);};
+  const cMerge=(k1,k2)=>{let a=cEnsure(k1),b=cEnsure(k2);if(a===b)return;if(compCells.get(a).size<compCells.get(b).size){const t=a;a=b;b=t;}compCells.get(b).forEach(c=>{comp.set(c,a);compCells.get(a).add(c);});compCells.delete(b);};
+  const cCommit=(path,e)=>{const ks=path.map(([l,x,y])=>(l?'T:':'')+hk(x,y));ks.forEach((k,i)=>cMerge(ks[0],k));cMerge(ks[0],hk(e.b[0],e.b[1]));cMerge(ks[0],hk(e.a[0],e.a[1]));};
+  placedInfo.forEach(({pw,bb,pn})=>pw.forEach(([x,y],li)=>{const net=pn[li]||null;if(!net)return;
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx,dy])=>{for(let k=1;k<=(window.__rsv||2);k++){const nx=x+dx*k,ny=y+dy*k;if(!inB(nx,ny)||owner.has(hk(nx,ny)))break;owner.set(hk(nx,ny),net);resv.add(hk(nx,ny));}});}));
   // Verbindungen: je Netz ein Spannbaum, bevorzugt Silberdraht (Unterseite), sonst Drahtbrücke
   const edges=[];
   netHoles.forEach((hs,net)=>{
     if(hs.length<2)return;
-    const used=[0],rest=hs.map((_,i)=>i).slice(1);
+    // Netz auf einer Nebenplatine: alle Stiftleistenlöcher gelten als schon verbunden (über Flachband und Hauptplatine), nur Anschlüsse an die Leiste anbinden
+    const side=MB&&job.mainBoard!=null&&/@(\d+)$/.test(net)&&(+net.match(/@(\d+)$/)[1])!==job.mainBoard;
+    const hdr=side?hs.map((h,i)=>hdrCells.has(hk(h[0],h[1]))?i:-1).filter(i=>i>=0):[];
+    const used=hdr.length?hdr.slice():[0],rest=hs.map((_,i)=>i).filter(i=>!used.includes(i));
     while(rest.length){let best=null;used.forEach(u=>rest.forEach(r=>{const d=Math.abs(hs[u][0]-hs[r][0])+Math.abs(hs[u][1]-hs[r][1]);if(!best||d<best[2])best=[u,r,d];}));
       edges.push({net,a:hs[best[0]],b:hs[best[1]],len:best[2]});used.push(best[1]);rest.splice(rest.indexOf(best[1]),1);}
   });
-  edges.sort((a,b)=>a.len-b.len);
+  edges.sort(window.__ord===1?((a,b)=>b.len-a.len):window.__ord===2?((a,b)=>(netHoles.get(b.net).length>6)-(netHoles.get(a.net).length>6)||(a.len+(window.__jit?Math.random()*window.__jit:0))-(b.len+(window.__jit?Math.random()*window.__jit:0))):((a,b)=>a.len-b.len));
   const D=[[1,0],[-1,0],[0,1],[0,-1]];
+  // Zwei Lagen: Lötbahn (Lötseite, Lage 0) und Silberdraht (Bestückungsseite, Lage 1, nicht über Bauteilkörpern). Lagenwechsel nur an freien Löchern. Keine farbigen Brücken.
+  let ownerT=new Map(),endT=new Map();const inRect=(x,y)=>rects.some(r=>x>r[0]&&x<r[2]&&y>r[1]&&y<r[3]);
+  let relax=false,soft=false;
   function route(e){
-    const key=(x,y,d)=>(y*cols+x)*4+d,dist=new Map(),prev=new Map(),heap=[[0,e.a[0],e.a[1],-1]];
+    const key=(l,x,y,d)=>((l*rows+y)*cols+x)*4+d,dist=new Map(),prev=new Map(),heap=[];
     const push=x=>{heap.push(x);let i=heap.length-1;while(i>0){const p=(i-1)>>1;if(heap[p][0]<=heap[i][0])break;[heap[p],heap[i]]=[heap[i],heap[p]];i=p;}};
     const pop=()=>{const t=heap[0],l=heap.pop();if(heap.length){heap[0]=l;let i=0;for(;;){let m=i,a=2*i+1,b=a+1;if(a<heap.length&&heap[a][0]<heap[m][0])m=a;if(b<heap.length&&heap[b][0]<heap[m][0])m=b;if(m===i)break;[heap[m],heap[i]]=[heap[i],heap[m]];i=m;}}return t;};
-    dist.set(key(e.a[0],e.a[1],0),0);let goal=null;const limit=e.len*1.6+12;
+    const isEnd=(x,y)=>(x===e.a[0]&&y===e.a[1])||(x===e.b[0]&&y===e.b[1]);
+    const okL=(l,x,y)=>{const o=l?ownerT.get(hk(x,y)):owner.get(hk(x,y));if(o!==undefined&&o!==e.net&&!(soft&&!(l===0&&baseOwner.has(hk(x,y))&&!baseResv.has(hk(x,y)))))return false;if(!l){const et=endT.get(hk(x,y));if(et!==undefined&&et!==e.net)return false;}if(l&&!relax&&!isEnd(x,y)&&inRect(x,y))return false;return true;};
+    const okVia=(x,y)=>{const o=owner.get(hk(x,y)),t=ownerT.get(hk(x,y));return (o===undefined||o===e.net)&&(t===undefined||t===e.net)&&(relax||isEnd(x,y)||!inRect(x,y));};
+    dist.set(key(1,e.a[0],e.a[1],0),3);heap.push([3,1,e.a[0],e.a[1],-1]);
+    // Quellen: alle schon verlegten Lötbahn-Löcher und Anschlüsse desselben Netzes (Verzweigung an jeder Stelle einer Bahn möglich)
+    cEnsure(hk(e.a[0],e.a[1]));
+    for(const hkey of compCells.get(comp.get(hk(e.a[0],e.a[1])))){if(owner.get(hkey)!==e.net||resv.has(hkey)&&hkey!==hk(e.a[0],e.a[1]))continue;const [sx,sy]=hkey.split(',').map(Number);const kk=key(0,sx,sy,0);if(!dist.has(kk)){dist.set(kk,0);heap.push([0,0,sx,sy,-1]);}}
+    let goal=null;const limit=window.__lim||(soft?600:(e.len*6+150));
     while(heap.length){
-      const [c,x,y,d]=pop();
-      if(x===e.b[0]&&y===e.b[1]){goal=[x,y,d];break;}
+      const [c,l,x,y,d]=pop();
+      if(x===e.b[0]&&y===e.b[1]){goal=[l,x,y,d];break;}
       if(c>limit)break;
-      if(c>(dist.get(key(x,y,d<0?0:d))??1e9))continue;
+      if(c>(dist.get(key(l,x,y,d<0?0:d))??1e9))continue;
       for(let nd2=0;nd2<4;nd2++){
-        const nx=x+D[nd2][0],ny=y+D[nd2][1];if(!inB(nx,ny))continue;
-        const o=owner.get(hk(nx,ny));if(o!==undefined&&o!==e.net)continue;
-        const nc=c+1+((d>=0&&d!==nd2)?2:0),kk=key(nx,ny,nd2);
-        if(nc<(dist.get(kk)??1e9)){dist.set(kk,nc);prev.set(kk,[x,y,d<0?0:d]);push([nc,nx,ny,nd2]);}
+        const nx=x+D[nd2][0],ny=y+D[nd2][1];if(!inB(nx,ny)||!okL(l,nx,ny))continue;
+        if(l&&d>=0&&d!==nd2){const bo=owner.get(hk(x,y));if(bo!==undefined&&bo!==e.net)continue;}   // Knick im Silberdraht nur über freiem oder eigenem Loch (Drahtenden berühren das Loch)
+        const fo=(soft?Math.random()*(window.__sj||0.8):0)+(soft?(((l?ownerT:owner).get(hk(nx,ny))!==undefined&&(l?ownerT:owner).get(hk(nx,ny))!==e.net)?25:0):0),nc=c+(l?(window.__tc||4):1)+((d>=0&&d!==nd2)?2:0)+fo,kk=key(l,nx,ny,nd2);
+        if(nc<(dist.get(kk)??1e9)){dist.set(kk,nc);prev.set(kk,[l,x,y,d<0?0:d]);push([nc,l,nx,ny,nd2]);}
       }
+      if(okVia(x,y)){const kk=key(1-l,x,y,0),nc=c+(window.__vc||12);if(nc<(dist.get(kk)??1e9)){dist.set(kk,nc);prev.set(kk,[l,x,y,d<0?0:d]);push([nc,1-l,x,y,0]);}}
     }
     if(!goal)return null;
-    const path=[[goal[0],goal[1]]];let k=key(goal[0],goal[1],goal[2]);
-    while(prev.has(k)){const [px,py,pd]=prev.get(k);path.push([px,py]);k=key(px,py,pd);if(px===e.a[0]&&py===e.a[1])break;}
+    const path=[[goal[0],goal[1],goal[2]]];let k=key(goal[0],goal[1],goal[2],goal[3]<0?0:goal[3]);
+    while(prev.has(k)){const [pl,px,py,pd]=prev.get(k);path.push([pl,px,py]);k=key(pl,px,py,pd);}
     return path.reverse();
   }
+  // Verlegen: mehrere Anläufe (nicht verlegte Verbindungen kommen im nächsten Anlauf zuerst), danach Rip-up: eine blockierte Verbindung wird
+  // durchgesetzt, die dabei gekreuzten Verbindungen werden entfernt und neu verlegt.
+  const baseOwner=new Map(owner),baseResv=new Set(resv);
+  const toRuns=path=>{const out=[];let k=0;while(k<path.length-1){const l=path[k][0];if(path[k+1][0]!==l){k++;continue;}let j2=k+1;const dx=path[j2][1]-path[k][1],dy=path[j2][2]-path[k][2];while(j2+1<path.length&&path[j2+1][0]===l&&path[j2+1][1]-path[j2][1]===dx&&path[j2+1][2]-path[j2][2]===dy)j2++;out.push({l,x1:path[k][1],y1:path[k][2],x2:path[j2][1],y2:path[j2][2]});k=j2;}return out;};
+  const resetState=()=>{owner=new Map(baseOwner);ownerT=new Map();endT=new Map();resv=new Set(baseResv);comp=new Map();compCells=new Map();ncomp=0;};
+  const commitPath=(i,path)=>{const e=edges[i];
+    toRuns(path).forEach(r=>{if(r.l){endT.set(hk(r.x1,r.y1),e.net);endT.set(hk(r.x2,r.y2),e.net);}});
+    path.forEach(([l,x,y])=>{(l?ownerT:owner).set(hk(x,y),e.net);if(!l)resv.delete(hk(x,y));});cCommit(path,e);};
+  const baseOrder=edges.map((_,i)=>i);
+  let prio=new Set(),P=null,bestF=1e9;
+  for(let att=0;att<(window.__att||12);att++){
+    resetState();const Pn=new Array(edges.length).fill(null);
+    const ord=baseOrder.slice().sort((p,q)=>(prio.has(p)?0:1)-(prio.has(q)?0:1)||p-q);
+    ord.forEach(i=>{const path=route(edges[i]);if(path){Pn[i]=path;commitPath(i,path);}});
+    const nf=Pn.filter(x=>!x).length;
+    if(nf<bestF){bestF=nf;P=Pn;}
+    if(!nf)break;
+    Pn.forEach((x,i)=>{if(!x)prio.add(i);});
+  }
+  const replay=PP=>{resetState();baseOrder.forEach(i=>{if(PP[i])commitPath(i,PP[i]);});};
+  for(let pass=0;pass<(window.__rip!=null?window.__rip:14)&&P.some(x=>!x);pass++){
+    let improved=false;
+    P.forEach((px,f)=>{
+      if(P[f])return;
+      replay(P);soft=true;const sp=route(edges[f]);soft=false;const lg={f,net:edges[f].net,soft:!!sp};(window.__ripLog=window.__ripLog||[]).push(lg);if(!sp)return;
+      const crossed=new Set();sp.forEach(([l,x,y])=>{if(l===0&&baseResv.has(hk(x,y))&&baseOwner.get(hk(x,y))!==edges[f].net){baseOwner.delete(hk(x,y));baseResv.delete(hk(x,y));}const o=(l?ownerT:owner).get(hk(x,y));if(o!==undefined&&o!==edges[f].net&&!(l===0&&baseOwner.has(hk(x,y))&&!baseResv.has(hk(x,y))))crossed.add(l+':'+hk(x,y));});
+      const R=[];P.forEach((pp,i)=>{if(pp&&pp.some(([l,x,y])=>crossed.has(l+':'+hk(x,y))))R.push(i);});
+      {const nets=new Set(R.map(i=>edges[i].net));nets.add(edges[f].net);edges.forEach((e,i)=>{if(nets.has(e.net)&&i!==f&&P[i]&&!R.includes(i))R.push(i);});}   // ganze Netze neu legen (spätere Äste hängen an früheren)
+      lg.R=R.length;if(R.length>40)return;
+      const Pn=P.slice();R.forEach(i=>{Pn[i]=null;});replay(Pn);
+      const pf=route(edges[f]);lg.strict=!!pf;if(!pf){soft=true;const sp2=route(edges[f]);soft=false;lg.sp2=sp2?sp2.filter(([l,x,y])=>{const o=(l?ownerT:owner).get(hk(x,y));return o!==undefined&&o!==edges[f].net;}).map(([l,x,y])=>l+':'+x+','+y+'='+(l?ownerT:owner).get(hk(x,y))):null;lg.crossed=[...crossed].slice(0,8);return;}Pn[f]=pf;commitPath(f,pf);
+      R.sort((a,b)=>edges[a].len+Math.random()*(window.__rj||6)-edges[b].len-Math.random()*(window.__rj||6)).forEach(i=>{const pr=route(edges[i]);if(pr){Pn[i]=pr;commitPath(i,pr);}});
+      lg.after=Pn.filter(x=>!x).length;lg.before=P.filter(x=>!x).length;if(Pn.filter(x=>!x).length<=P.filter(x=>!x).length){if(Pn.filter(x=>!x).length<P.filter(x=>!x).length)improved=true;P=Pn;}
+    });
+  }
+  replay(P);
+  if(P.some(x=>!x)){   // letzter Ausweg: Silberdraht darf an dieser Stelle über einen Bauteilkörper laufen
+    relax=true;P.forEach((x,i)=>{if(x)return;const path=route(edges[i]);if(path){P[i]=path;commitPath(i,path);}});relax=false;
+  }
   let nTr=0,nWi=0;
-  edges.forEach(e=>{
-    const path=route(e);
-    if(path&&path.length>1){
-      let sx=path[0][0],sy=path[0][1],dx=0,dy=0;
-      for(let i=1;i<path.length;i++){
-        const ddx=path[i][0]-path[i-1][0],ddy=path[i][1]-path[i-1][1];
-        if(i>1&&(ddx!==dx||ddy!==dy)){items.push({id:nextId(),t:'track',x1:sx,y1:sy,x2:path[i-1][0],y2:path[i-1][1]});sx=path[i-1][0];sy=path[i-1][1];}
-        dx=ddx;dy=ddy;
-      }
-      const L=path[path.length-1];items.push({id:nextId(),t:'track',x1:sx,y1:sy,x2:L[0],y2:L[1]});
-      path.forEach(([x,y])=>owner.set(hk(x,y),e.net));nTr++;
-    }else{items.push({id:nextId(),t:'wire',x1:e.a[0],y1:e.a[1],x2:e.b[0],y2:e.b[1],c:WCOL[1]});nWi++;}
-  });
+  baseOrder.forEach(i=>{if(!P[i])return;toRuns(P[i]).forEach(r=>{items.push(r.l?{id:nextId(),t:'wire',x1:r.x1,y1:r.y1,x2:r.x2,y2:r.y2,c:WCOL[0]}:{id:nextId(),t:'track',x1:r.x1,y1:r.y1,x2:r.x2,y2:r.y2});if(r.l)nWi++;else nTr++;});});
+  const failedIdx=baseOrder.filter(i=>!P[i]);failedIdx.forEach(i=>notRouted.push(edges[i].net));
+  const best={failed:failedIdx};
   nd.items=items;nd.nid=idc;
-  return {doc:nd,tracks:nTr,wires:nWi,notPlaced};
+  return {doc:nd,tracks:nTr,wires:nWi,notPlaced,notRouted,failedEdges:failedIdx.map(i=>edges[i]),dbg:{owner,ownerT,rects}};
 }
 function tryJob(){
   if(!/[?&]auto\b/.test(location.search))return;
@@ -1868,8 +1982,8 @@ function tryJob(){
   load(r.doc);
   sheet('Layout erzeugt',(b)=>{
     const li=(t,a)=>a&&a.length?`<p><b>${t}</b><br>${a.map(esc).join('<br>')}</p>`:'';
-    b.innerHTML=`<p style="margin-top:0">Aus dem Stromlaufplan „${esc(job.name)}“ wurde ein Vorschlag für die Platine erzeugt: ${r.tracks} Silberdraht-Verbindungen, ${r.wires} Drahtbrücken.</p>`
-      +li('Aus Gattern wurden ICs:',job.notes.logic)+li('Extern anschließen (Klemmen):',job.notes.ext)+li('Nicht übersetzt (kein Bauteil im Layout):',job.notes.skipped)+li('Kein Platz auf der Platine:',r.notPlaced)
+    b.innerHTML=`<p style="margin-top:0">Aus dem Stromlaufplan „${esc(job.name)}“ wurde ein Vorschlag für die Platine erzeugt: ${r.tracks} Lötbahn-Stücke auf der Lötseite und ${r.wires} Silberdraht-Stücke auf der Bestückungsseite (nur dort, wo es nicht anders geht).</p>`
+      +li('Aus Gattern wurden ICs:',job.notes.logic)+li('Extern anschließen (Klemmen):',job.notes.ext)+li('Nicht übersetzt (kein Bauteil im Layout):',job.notes.skipped)+li('Kein Platz auf der Platine:',r.notPlaced)+(r.notRouted&&r.notRouted.length?`<p><b>Nicht verlegt (bitte von Hand ziehen):</b><br>${r.notRouted.length} Verbindung(en)</p>`:'')
       +'<p class="hint">Bitte prüfen: Pinbelegung von Transistoren, Dioden-Richtung und ICs vor dem Löten mit dem Schaltplan vergleichen. Bauteile lassen sich noch verschieben.</p>';
   });
 }
@@ -1881,7 +1995,7 @@ buildNav();
   if(d)load(d);else{doc=newDoc();resetHist();save();afterChange();}
   fit();renderCtx();
   if(/[?&]neu\b/.test(location.search))setTimeout(()=>menuAct('new'),300);
-  else if(/[?&]ex=/.test(location.search))setTimeout(()=>{const q=decodeURIComponent(location.search.match(/[?&]ex=([^&]*)/)[1]).toLowerCase(),e=(window.LOCH_EX||[]).find(x=>x.name.toLowerCase()===q)||(window.LOCH_EX||[]).find(x=>x.name.toLowerCase().includes(q));if(!e)return;confirmNew(()=>{save();const dd=JSON.parse(JSON.stringify(e.doc));dd.id=uid();dd.name=e.name;dd.updated=Date.now();load(dd);history.replaceState(null,'','layout.html');toast('Beispiel geladen');});},400);
+  else if(/[?&]ex=/.test(location.search))setTimeout(()=>{const q=decodeURIComponent(location.search.match(/[?&]ex=([^&]*)/)[1]).toLowerCase(),e=(window.LOCH_EX||[]).find(x=>x.name.toLowerCase()===q)||(window.LOCH_EX||[]).find(x=>x.name.toLowerCase().includes(q));if(!e)return;const go=()=>confirmNew(()=>{save();const dd=JSON.parse(JSON.stringify(e.doc));dd.id=uid();dd.name=e.name;dd.updated=Date.now();load(dd);history.replaceState(null,'','layout.html');toast('Beispiel geladen');});if(e.lock)godAsk(go);else go();},400);
   else if(/[?&]bsp\b/.test(location.search))setTimeout(()=>menuAct('ex'),300);
 tryJob();
 loadShared();
@@ -1898,6 +2012,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <script src="pyrun.js"></script>
 <script src="simui.js"></script>
 <script src="lochbeispiele.js"></script>
+<script src="lochuhr.js"></script>
 <script src="lochtasks.js"></script>
 <script>
 window.LabTrainerAPI = {                                                               // Schnittstelle für den Trainer (trainer.js)

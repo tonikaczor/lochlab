@@ -137,7 +137,8 @@ function buildCircuit(layout) {
   const nodeOfKey = k => { if (!parent.has(k)) return -1; return nodeOfRoot(find(k)); };
   const N = (p, i) => nodeOfRoot(find(pinKey(p, i)));
 
-  const elems = [], warnings = [];
+  const elems = [], warnings = [], xtals = [];
+  const parseFreq = v => { const t = String(v || '').toLowerCase().replace(',', '.').replace(/hz/g, '').replace(/\s/g, ''), m = t.match(/^([0-9]*\.?[0-9]+)(k|m|g)?$/); return m ? parseFloat(m[1]) * ({ k: 1e3, m: 1e6, g: 1e9 }[m[2]] || 1) : 0; };
   const rec = [];
   const add = e => { e.pi = rec.splice(0); elems.push(e); return e; };
   // PE-Anschluss am Gehäuse (Schutzklasse I): Körperschluss simulierbar (Außenleiter fast direkt am Gehäuse); mit PE ist das ein Kurzschluss (Sicherungsautomat bzw. FI löst aus), ohne PE steht das Gehäuse unter Spannung
@@ -362,7 +363,7 @@ function buildCircuit(layout) {
         add({ type: 'D', a: n(0), b: n(1), is: 1e-9, nn: 1.8, vz, part: p, vj: 0 });
         break; }
       case 'BZ': add({ type: 'R', a: n(0), b: n(1), g: 1 / 100, part: p, buzzer: true }); break;
-      case 'C': case 'CE': case 'CF': add({ type: 'C', a: n(0), b: n(1), c: Math.max(si(p.v, 100e-9), 1e-15), part: p, vprev: 0, vmax: ((String(p.v).match(/(\d+(?:\.\d+)?)\s*V/) || [])[1] * 1) || (k === 'CE' ? 35 : (k === 'CF' ? 250 : 100)) }); break;
+      case 'C': case 'CE': case 'CF': add({ type: 'C', a: n(0), b: n(1), c: Math.max(si(p.v, 100e-9), 1e-15), part: p, vprev: 0, polar: k === 'CE', vmax: ((String(p.v).match(/(\d+(?:\.\d+)?)\s*V/) || [])[1] * 1) || (k === 'CE' ? 35 : (k === 'CF' ? 250 : 100)) }); break;
       case 'L': add({ type: 'L', a: n(0), b: n(1), l: Math.max(si(p.v, 10e-6), 1e-9), part: p, iprev: 0 }); break;
       case 'D': {
         if (p.vr === 'diac' || /^(DB3|DIAC)/i.test(p.v || '')) { const vbo = /^DB3|^DIAC/i.test(p.v || '') ? 32 : 32; add({ type: 'DIAC', a: n(0), b: n(1), vbo, vb: vbo - 8, on: false, sg: 0, part: p }); break; }
@@ -442,12 +443,14 @@ function buildCircuit(layout) {
         if (need !== pins.length) { warnings.push({ part: p, text: 'Pinzahl passt nicht: ' + def.key + ' hat ' + need + ' Pins' }); break; }
         add(ICS.make(def, p, n));
         break; }
+      case 'XTAL': case 'Q': xtals.push({ a: n(0), b: n(pins.length - 1), v: p.v }); break;   // Schwingquarz: leitet nicht, gibt dem 4060 den Takt
       default:
         if (['NANO', 'UNO', 'PI'].includes(k)) warnings.push({ part: p, text: 'wird nicht simuliert' });
     }
     if (p.defect) for (let i = elemStart; i < elems.length; i++) elems[i].defect = p.defect;
   });
 
+  elems.forEach(e => { if (e.type === 'IC' && e.key === '4060') { const a = e.n[10], b = e.n[11], x = xtals.find(q => (q.a === a && q.b === b) || (q.a === b && q.b === a)); e.xf = x ? parseFreq(x.v) : 0; } });
   // Eingänge, an denen sonst nichts hängt, sind „offen“ (TTL: High, CMOS: undefiniert -> Low)
   const touch = new Array(nn + 1).fill(0);
   elems.forEach(e => {
@@ -771,7 +774,7 @@ function createSim(circ) {
           const g = e.closed ? 1 / RON : 1 / ROFF; e.i = (v[e.a] - v[e.c]) * g; e.iN = (v[e.b] - v[e.d]) * g; e.leak = e.i + e.iN;
           if (e.closed && Math.abs(e.leak) > 0.0424) { e.part.sw = 0; if (e.part.item) e.part.item.sw = 0; e.closed = false; sim.events.push({ kind: 'trip', part: e.part, text: 'FI-Schutzschalter ausgelöst (Fehlerstrom ' + (Math.abs(e.leak) * 1000).toFixed(0) + ' mA)' }); }
           break; }
-        case 'C': { const vc = v[e.a] - v[e.b]; e.i = e.c / dt * (vc - e.vprev); e.vprev = vc; if (e.vmax && Math.abs(vc) > e.vmax * 1.2 && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Kondensator überspannt (' + vc.toFixed(0) + ' V bei ' + e.vmax + ' V)' }); } break; }
+        case 'C': { const vc = v[e.a] - v[e.b]; e.i = e.c / dt * (vc - e.vprev); e.vprev = vc; if (e.polar && !burnt.has(e.part.id)) { const vr = -vc; e.rv = vr > 1 ? (e.rv || 0) + dt : 0; if (e.rv > 0.01) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Elko verkehrt herum gepolt und zerstört: Der Plus-Anschluss (+) muss am höheren Potential liegen.' }); } } if (e.vmax && Math.abs(vc) > e.vmax * 1.2 && !burnt.has(e.part.id)) { burnt.add(e.part.id); sim.events.push({ kind: 'burn', part: e.part, text: 'Kondensator überspannt (' + vc.toFixed(0) + ' V bei ' + e.vmax + ' V)' }); } break; }
         case 'L': { const g = dt / e.l; e.i = e.iprev + g * (v[e.a] - v[e.b]); e.iprev = e.i; break; }
         case 'V': { const vs = waveform(e, t); let x = (vs - (v[e.a] - v[e.b])) / e.rint; if (e.imax > 0) { e.cc = !!e.cm; if (e.cm) x = e.cm * e.imax; } e.i = x; e.vs = vs; break; }
         case 'D': {
@@ -857,6 +860,12 @@ const MOSF = {
   IRLZ44N: { vth: 1.6, kp: 30, imax: 40 }, IRF540N: { vth: 3.5, kp: 25, imax: 30 }, BS170: { vth: 2.1, kp: 0.4, imax: 0.4 }, '2N7000': { vth: 2.1, kp: 0.3, imax: 0.2 },
   IRF9540: { vth: 3.5, kp: 8, imax: 19 }, BS250: { vth: 2.1, kp: 0.3, imax: 0.3 }, IRLML2502: { vth: 1.0, kp: 8, imax: 4 },
 };
-const api = { si, sane, PRESETS, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS, i2cXfer, cableOf };
+/* Flachbandkabel zwischen zwei Platinen: n Adern, Ader i verbindet Loch (x1+i, y1) mit Loch (x2+i, y2) */
+function ribbonWires(items) {
+  const out = [];
+  (items || []).forEach(it => { if (it.t !== 'ribbon') return; for (let i = 0; i < (it.n || 0); i++) out.push({ id: (it.id || 0) + '.' + i, t: 'wire', x1: it.x1 + i, y1: it.y1, x2: it.x2 + i, y2: it.y2, c: '#888', rib: true }); });
+  return out;
+}
+const api = { ribbonWires, si, sane, PRESETS, parseGen, buildCircuit, createSim, ledKey, LEDVF, REGV, ICS, i2cXfer, cableOf };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.LochSim = api;
 })(typeof window !== 'undefined' ? window : globalThis);

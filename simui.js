@@ -71,7 +71,7 @@ function build() {
     const w = { id: i.id, k: i.k === 'UNO' ? 'MCU' : (i.k === 'PI' ? 'PI40' : (sipOf(i) ? sipOf(i).core : i.k)), vr: i.vr, v: i.v, n: i.n, pins, sw: i.sw || 0, pos: i.pos == null ? defPos(i) : i.pos, light: i.light == null ? 0.5 : i.light, pressed: false, item: i };
     wrap.set(i.id, w); return w;
   });
-  circ = LS.buildCircuit({ parts, tracks: doc.items.filter(i => i.t === 'track'), wires: doc.items.filter(i => i.t === 'wire') });
+  circ = LS.buildCircuit({ parts, tracks: doc.items.filter(i => i.t === 'track'), wires: doc.items.filter(i => i.t === 'wire').concat(LS.ribbonWires(doc.items)) });
   sim = LS.createSim(circ);
   // Messspitzen neu zuordnen
   const re = o => o && { x: o.x, y: o.y, key: o.key, node: circ.nodeOfKey(o.key) };

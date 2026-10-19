@@ -9,7 +9,7 @@ if (!LS || !window.LOCH_EX) return;
 const partsOf = d => d.items.filter(i => i.t === 'part');
 function circOf(d) {
   const parts = partsOf(d).map(i => ({ id: i.id, k: i.k, vr: i.vr, v: i.v, n: i.n, pins: pinsOf(i), sw: 0, pos: 0.5, light: 0.5, pressed: false, item: i }));
-  return LS.buildCircuit({ parts, tracks: d.items.filter(t => t.t === 'track'), wires: d.items.filter(t => t.t === 'wire') });
+  return LS.buildCircuit({ parts, tracks: d.items.filter(t => t.t === 'track'), wires: d.items.filter(t => t.t === 'wire').concat(LS.ribbonWires(d.items)) });
 }
 // Liste der Netze: [{ pins: ['id.pin', ...] }] mit mindestens zwei Anschlüssen
 function netList(d) {
@@ -115,8 +115,10 @@ function layoutCheck(d) {
   // lose Drahtenden
   const holeUse = new Map(); const add = (x, y) => holeUse.set(x + ',' + y, (holeUse.get(x + ',' + y) || 0) + 1);
   P.forEach(it => pinsOf(it).forEach(([x, y]) => add(x, y)));
-  d.items.filter(i => i.t === 'track' || i.t === 'wire').forEach(i => { add(i.x1, i.y1); add(i.x2, i.y2); });
-  let loose = 0; d.items.filter(i => i.t === 'track' || i.t === 'wire').forEach(i => { [[i.x1, i.y1], [i.x2, i.y2]].forEach(([x, y]) => { if ((holeUse.get(x + ',' + y) || 0) <= 1) loose++; }); });
+  d.items.filter(i => i.t === 'track' || i.t === 'wire').concat(LS.ribbonWires(d.items)).forEach(i => { add(i.x1, i.y1); add(i.x2, i.y2); });
+  const cover = new Set();   // Löcher, durch die eine Lötbahn mitten hindurch läuft (Abzweig ist dort erlaubt)
+  d.items.filter(i => i.t === 'track').forEach(i => { const dx = Math.sign(i.x2 - i.x1), dy = Math.sign(i.y2 - i.y1); let x = i.x1 + dx, y = i.y1 + dy; for (let n = 0; n < 400 && !(x === i.x2 && y === i.y2); n++) { cover.add(x + ',' + y); x += dx; y += dy; } });
+  let loose = 0; d.items.filter(i => i.t === 'track' || i.t === 'wire').forEach(i => { [[i.x1, i.y1], [i.x2, i.y2]].forEach(([x, y]) => { if ((holeUse.get(x + ',' + y) || 0) <= 1 && !cover.has(x + ',' + y)) loose++; }); });
   if (loose) out.push({ ok: false, text: loose + ' Drahtende(n) liegen frei und berühren nichts (loser Draht oder Silberdraht mit freiem Ende).' });
   // Simulation: Zerstörung
   try {

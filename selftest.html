@@ -6,12 +6,212 @@
 <p>Lädt jedes Lab und lässt alle Aufgaben mit Musterlösung prüfen (müssen 100 % ergeben, am Start unter 100 %). Vor jedem Release öffnen: <b>selftest.html</b>. Dauer etwa eine Minute.</p>
 <table id="t"><tr><th>Lab</th><th>Aufgaben</th><th>Ergebnis</th><th>Probleme</th></tr></table>
 <pre id="out"></pre>
+<h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['sch', 'SchaltLab', 'schaltplan.html', 40], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40]];
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
+  /* Auswahlfragen prüfen: je Frage genau eine richtige Antwort (Aufbau, keine doppelten Antworten, keine widersprüchlichen Dubletten), die richtige Antwort bleibt nach dem Mischen immer dieselbe,
+     und eine Stichprobe nach Inhalt (die Erklärung passt zur gewählten Antwort besser als zu einer anderen). Fehler lassen den Selbsttest scheitern, Hinweise sind zum Gegenlesen. */
+  function norm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[\s.,;:!?„“"'’\-–·]+/g, ' ').trim(); }
+  function toks(s) { var o = {}; (String(s).toLowerCase().match(/[a-zäöüß0-9]{4,}/g) || []).forEach(function (t) { o[t.slice(0, 6)] = 1; }); return o; }
+  function mcAudit(items, label, errs, hints) {
+    var seenQ = {}, seenId = {};
+    items.forEach(function (it) {
+      var id = it.id, o = it.o, r = it.r, who = label + ' ' + id;
+      if (!Array.isArray(o) || o.length < 3) { errs.push(who + ': zu wenige Antworten'); return; }
+      if (!(Number.isInteger(r) && r >= 0 && r < o.length)) { errs.push(who + ': Index der richtigen Antwort ungültig'); return; }
+      var n = o.map(norm), blank = o.some(function (x) { return !String(x).trim(); });
+      if (blank) errs.push(who + ': leere Antwort');
+      var dupIdx = -1; n.forEach(function (x, i) { if (n.indexOf(x) !== i) dupIdx = i; });
+      if (dupIdx >= 0) errs.push(who + ': doppelte Antwort („' + o[dupIdx] + '“), dann können zwei Antworten richtig sein');
+      o.forEach(function (x, i) { if (i !== r && /^(alle|keine) (der )?(obigen|oben|genannten)/i.test(String(x).trim())) hints.push(who + ': Sammelantwort „' + x + '“ prüfen'); });
+      if (/^(alle|keine) (der )?(obigen|oben|genannten)/i.test(String(o[r]).trim())) hints.push(who + ': richtige Antwort ist eine Sammelantwort');
+      if (seenId[id]) errs.push(who + ': Kennung kommt doppelt vor'); seenId[id] = 1;
+      var key = norm(it.q), prev = seenQ[key];
+      if (prev) hints.push(who + ': gleicher Fragetext wie ' + prev.id + (norm(prev.o[prev.r]) !== norm(o[r]) ? ' (andere Formulierung der richtigen Antwort, bitte vergleichen)' : ''));
+      seenQ[key] = it;
+      if (it.w && /(Antwort(en)?|Option(en)?|Aussage(n)?|Variante)\s*\(?[1-5A-E](?![A-Za-zäöüß])\)?/.test(String(it.w))) errs.push(who + ': die Erklärung nennt eine Antwortnummer, die Antworten werden aber gemischt');
+      if (it.w) {
+        var tw = toks(it.w), sc = o.map(function (x) { var t = toks(x), c = 0; for (var k in t) if (tw[k]) c++; return c; });
+        o.forEach(function (x, i) { if (i !== r && sc[i] >= 3 && sc[i] > sc[r] + 1) hints.push(who + ': Erklärung passt eher zu Antwort ' + (i + 1) + ' als zur markierten (' + (r + 1) + ')'); });
+      }
+    });
+  }
+  function shuffleAudit(label, mk, items, errs) {   // mk(it, seed) liefert die gemischte Frage {opts, r}; Text der richtigen Antwort muss gleich bleiben
+    items.forEach(function (it) {
+      var want = it.o[it.r], base = it.o.slice().sort().join('|');
+      for (var s = 1; s <= 12; s++) {
+        var a = mk(it, s), b = mk(it, s);
+        if (a.opts[a.r] !== want) { errs.push(label + ' ' + it.id + ': nach dem Mischen (Seed ' + s + ') zeigt die Markierung auf eine falsche Antwort'); return; }
+        if (a.opts.slice().sort().join('|') !== base) { errs.push(label + ' ' + it.id + ': Antworten nach dem Mischen verändert'); return; }
+        if (a.r !== b.r || a.opts.join('|') !== b.opts.join('|')) { errs.push(label + ' ' + it.id + ': gleicher Seed, aber andere Reihenfolge'); return; }
+      }
+    });
+  }
+  async function auditMess() {   // MessLab: Auswahlfragen stehen als Text in messdata.js und messpruef.js (right = Index der richtigen Antwort)
+    var errs = [], hints = [], items = [];
+    for (var f of ['messdata.js', 'messpruef.js']) {
+      var t = await (await fetch(f, { cache: 'no-store' })).text(), re = /\{\s*id:\s*'([^']+)',\s*q:\s*('(?:[^'\\]|\\.)*'),[^{}]*?right:\s*(\d+),\s*opts:\s*(\[(?:'(?:[^'\\]|\\.)*'|\s|,)*\])/g, m;
+      while ((m = re.exec(t))) { try { items.push({ id: f.slice(0, 5) + ':' + m[1] + '#' + items.length, q: (0, eval)(m[2]), o: (0, eval)(m[4]), r: +m[3], w: '' }); } catch (e) { errs.push(f + ' ' + m[1] + ': nicht lesbar'); } }
+    }
+    mcAudit(items, 'MessLab', errs, hints);
+    return { n: items.length, errs: errs, hints: hints };
+  }
+  function audit(w, l) {
+    var errs = [], hints = [], n = 0;
+    if (l[0] === 'pr') {
+      var pool = (w.PR_POOL && w.PR_POOL.q || []).filter(function (p) { return p.o; }).map(function (p) { return { id: p.id, q: p.q, o: p.o, r: p.r, w: p.w }; });
+      mcAudit(pool, 'Pool', errs, hints); n += pool.length;
+      shuffleAudit('Pool', function (it, s) { var p = w.PR_POOL.q.filter(function (x) { return x.id === it.id; })[0]; return w.PR_TEST.poolQ(p, w.PR_BANK.seeded(s * 7919 + 13)); }, pool, errs);
+      var bank = w.PR_BANK.MC.map(function (m, i) { return { id: 'mc' + i, q: m[1], o: [m[2], m[3], m[4], m[5]], r: 0, w: m[6] }; });
+      mcAudit(bank, 'Prüfungsbank', errs, hints); n += bank.length;
+      shuffleAudit('Prüfungsbank', function (it, s) { var i = +it.id.slice(2); return w.PR_BANK.mcQuestion(i, w.PR_BANK.seeded(s * 104729 + 5)); }, bank, errs);
+    }
+    if (l[0] === 'sch' && w.THINK) {
+      var th = Object.keys(w.THINK).map(function (k) { var t = w.THINK[k]; return { id: k, q: t.q, o: t.opts, r: t.right, w: t.why }; });
+      mcAudit(th, 'Denkfrage', errs, hints); n += th.length;
+    }
+    if (l[0] === 'app' && w.KIFS) {
+      var ki = []; w.KIFS.LESSONS.forEach(function (ls) { ls.items.forEach(function (it, i) { if (it.type === 'q') ki.push({ id: ls.id + '.' + (i + 1), q: it.q, o: it.o, r: it.r, w: it.w }); }); });
+      mcAudit(ki, 'KI-Führerschein', errs, hints); n += ki.length;
+    }
+    return { n: n, errs: errs, hints: hints };
+  }
+
+  async function labLoch(l) {   // LochLab: Aufgaben (Musterlösung muss 100 % ergeben, Startzustand nicht), Beispiele laden und prüfen
+    var f = document.createElement('iframe'); f.src = l[2]; document.body.appendChild(f);
+    await new Promise(function (r) { f.onload = r; }); await sleep(1800);
+    var w = f.contentWindow, g = w.document.getElementById('gate'); if (g) g.remove();
+    var bad = [], tasks = w.LochTasks.list();
+    tasks.forEach(function (t) {
+      try {
+        var r = w.LochTasks.check(t, t.sol); if (!r.ok) bad.push(t.id + ' Musterlösung ' + r.pct + ' %');
+        var r0 = w.LochTasks.check(t, t.start); if (r0.ok) bad.push(t.id + ' Start schon gelöst');
+        var lc = w.LochTasks.layoutCheck(t.sol).filter(function (x) { return !x.ok; }); if (lc.length && !t.fault) bad.push(t.id + ' Layout-Check der Musterlösung: ' + lc[0].text);
+      } catch (e) { bad.push(t.id + ' Fehler ' + e); }
+    });
+    var ex = w.LOCH_EX || [], exn = 0;
+    ex.forEach(function (e) {
+      exn++;
+      try {
+        var d = JSON.parse(JSON.stringify(e.doc)), lc = w.LochTasks.layoutCheck(d).filter(function (x) { return !x.ok; });
+        if (lc.length && !e.fault) bad.push('Beispiel „' + e.name + '“: ' + lc[0].text);
+        if (e.lock && !(e.cat || '').match(/Ausbilder/)) bad.push('Beispiel „' + e.name + '“ ist gesperrt, aber nicht als Ausbilder-Beispiel eingeordnet');
+        if (/Quarzuhr mit Wecker/.test(e.name)) { var nb = (d.boards || []).length, nr = (d.items || []).filter(function (it) { return it.t === 'ribbon'; }).length, np = (d.items || []).filter(function (it) { return it.t === 'part'; }).length; if (nb !== 3 || nr !== 2) bad.push('Quarzuhr mit Wecker: erwartet 3 Platinen und 2 Flachbandkabel, gefunden ' + nb + ' / ' + nr); if (np < 100) bad.push('Quarzuhr mit Wecker: nur ' + np + ' Bauteile'); (d.boards || []).forEach(function (b) { if (b.cols > 77 || b.rows > 38) bad.push('Quarzuhr: Platine „' + b.name + '“ größer als 200 × 100 mm'); }); }
+        (d.items || []).forEach(function (it) { if (it.t === 'wire' && /Quarzuhr/.test(e.name) && it.c !== '#d6dbe1') bad.push('Quarzuhr: farbige Brücke gefunden'); });
+      } catch (x) { bad.push('Beispiel „' + e.name + '“ Fehler ' + x); }
+    });
+    var res = { lab: l[1], tasks: tasks.length, examples: exn, bad: bad };
+    if (bad.length) all.ok = false; all.labs.push(res);
+    document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + l[1] + '</td><td>' + tasks.length + ' + ' + exn + ' Beispiele</td><td class="' + (bad.length ? 'bad' : 'ok') + '">' + (bad.length ? 'FEHLER' : 'alle in Ordnung') + '</td><td>' + bad.join('; ') + '</td></tr>');
+    f.remove();
+  }
+  /* SchaltLab: Beispiel „Digitale Quarzuhr mit Wecker“ (gesperrt, quarzuhr.js). Logik aus quarzuhr-dev-tools.js (full, alarmTest), hier ohne die DEV-Datei. */
+  function qzLint(W) {   // T-Kontakte (Drahtende liegt mitten auf einem anderen Draht) und überlappende Drähte verschiedener Linienzüge
+    var segs = []; W.forEach(function (w, wi) { for (var i = 0; i + 3 < w.length; i += 2) segs.push({ wi: wi, x1: w[i], y1: w[i + 1], x2: w[i + 2], y2: w[i + 3] }); });
+    function on(s, x, y) { return s.x1 === s.x2 ? (x === s.x1 && y > Math.min(s.y1, s.y2) && y < Math.max(s.y1, s.y2)) : (s.y1 === s.y2 ? (y === s.y1 && x > Math.min(s.x1, s.x2) && x < Math.max(s.x1, s.x2)) : false); }
+    var T = 0, O = 0;
+    segs.forEach(function (a) { [[a.x1, a.y1], [a.x2, a.y2]].forEach(function (p) { segs.forEach(function (b) { if (b.wi !== a.wi && on(b, p[0], p[1])) T++; }); }); });
+    function ov(a, b) {
+      if (a.wi === b.wi) return false;
+      if (a.y1 === a.y2 && b.y1 === b.y2 && a.y1 === b.y1) return Math.min(Math.max(a.x1, a.x2), Math.max(b.x1, b.x2)) - Math.max(Math.min(a.x1, a.x2), Math.min(b.x1, b.x2)) > 0;
+      if (a.x1 === a.x2 && b.x1 === b.x2 && a.x1 === b.x1) return Math.min(Math.max(a.y1, a.y2), Math.max(b.y1, b.y2)) - Math.max(Math.min(a.y1, a.y2), Math.min(b.y1, b.y2)) > 0;
+      return false;
+    }
+    for (var i = 0; i < segs.length; i++) for (var j = i + 1; j < segs.length; j++) if (ov(segs[i], segs[j])) O++;
+    return { T: T, O: O };
+  }
+  async function labQuarz(l) {
+    var f = document.createElement('iframe'); f.src = l[2]; document.body.appendChild(f);
+    await new Promise(function (r) { f.onload = r; }); await sleep(1800);
+    var w = f.contentWindow, g = w.document.getElementById('gate'); if (g) g.remove();
+    var rows = { load: [], net: [], wire: [], alarm: [] }, cnt = { load: 1, net: 0, wire: 0, alarm: 4 }, alarmRes = null;
+    try {
+      var a = w.LabDigiAPI, QZ = w.QUARZUHR;
+      if (!a || !QZ) throw new Error('LabDigiAPI oder QUARZUHR fehlt');
+      var qn = QZ.make();
+      // (1) Beispiel lädt, 147 Teile
+      if (!w.__quarzuhrReg) rows.load.push('Beispiel nicht in der Beispielliste registriert');
+      if (qn.parts.length !== 147) rows.load.push(qn.parts.length + ' statt 147 Teile in den Daten');
+      a.loadCircuit(a.buildExample({ name: 'Digitale Quarzuhr (Abschlussprojekt)', make: function () { return qn; } }));
+      if (a.sch.parts.length !== 147) rows.load.push(a.sch.parts.length + ' statt 147 Teile im geladenen Schaltplan');
+      var job = a.buildJob(); if (!job.parts.length) rows.load.push('Stückliste/Layout-Auftrag leer');   // job.parts enthält nur Layout-Teile (ohne Batterie-Symbol, Masse u. ä.), daher keine 147
+      // (2) Netze
+      var P = {}; job.parts.forEach(function (p) { P[p.l] = p.pins; });
+      var SW = [1, 0, 2];   // Pin-Zuordnung Schaltplan → Layout für Umschalter (SPDT) und Transistor (NPN)
+      var net = function (lb, i) { var lk = (/^S\d+$/.test(lb) || lb === 'Q2') ? SW : null; return P[lb][lk ? lk[i] : i]; };
+      var bad = rows.net, A_PIN = [9, 11, 12, 14], B_PIN = [8, 10, 13, 0];
+      var wk = ['B1', 'IC17', 'IC18', 'R49', 'R50', 'Q2', 'SPK1'], k;
+      for (k = 7; k <= 23; k++) wk.push('IC' + k);
+      for (k = 2; k <= 20; k++) wk.push('S' + k);
+      wk.forEach(function (lb) { if (!P[lb]) bad.push(lb + ' fehlt'); });
+      if (!bad.length) {
+        var GND = net('B1', 1), VDD = net('B1', 0);
+        if (!GND || !VDD) bad.push('Batterie ohne Netz');
+        if (VDD === GND) bad.push('KURZSCHLUSS +9 V mit Masse');
+        var chk = function (ok, msg) { cnt.net++; if (!ok) bad.push(msg); };
+        chk(VDD !== GND, 'KURZSCHLUSS +9 V mit Masse');
+        for (var d = 0; d < 4; d++) {
+          var cn = 'IC' + (19 + d);
+          for (var i = 0; i < 4; i++) {
+            var sn = 'S' + (5 + d * 4 + i);
+            chk(net(sn, 0) === net(cn, B_PIN[i]), sn + ' Schleifer ≠ ' + cn + ' B' + i);
+            chk(net(sn, 1) === GND, sn + ' Kontakt aus nicht Masse');
+            chk(net(sn, 2) === VDD, sn + ' Kontakt an nicht +9 V');
+            chk(net(cn, A_PIN[i]) === net('IC' + (7 + d), 10 + i), cn + ' A' + i + ' ≠ Zählerausgang IC' + (7 + d) + ' Q' + i);
+          }
+          [1, 3, 7].forEach(function (p) { chk(net(cn, p) === GND, cn + '.' + p + ' nicht Masse'); });
+          chk(net(cn, 15) === VDD, cn + ' VDD fehlt');
+          if (d === 0) chk(net(cn, 2) === VDD, cn + ' A=B-Eingang nicht +9 V'); else chk(net(cn, 2) === net('IC' + (18 + d), 5), cn + ' A=B-Eingang ≠ Ausgang der Vorstufe');
+        }
+        chk(net('IC22', 5) === net('IC23', 0), 'IC22 A=B-Ausgang ≠ IC23 Eingang 1');
+        [['IC23', 13, VDD], ['R50', 0, VDD], ['S4', 2, VDD], ['IC23', 6, GND], ['S4', 1, GND], ['Q2', 2, GND], ['IC23', 11, GND], ['IC23', 12, GND]].forEach(function (x) { chk(net(x[0], x[1]) === x[2], x[0] + '.' + x[1] + (x[2] === VDD ? ' nicht +9 V' : ' nicht Masse')); });
+        chk(net('S4', 0) === net('IC23', 1), 'S4 Schleifer ≠ IC23 Eingang 2');
+        chk(net('IC23', 2) === net('IC23', 4), 'IC23 g1 → g2'); chk(net('IC23', 3) === net('IC23', 7), 'IC23 g2 → g3');
+        chk(net('IC23', 5) === net('IC18', 13), '1 Hz fehlt'); chk(net('IC23', 8) === net('IC17', 2), '256 Hz fehlt');
+        chk(net('IC23', 9) === net('R49', 0), 'IC23 Ausgang ≠ R49'); chk(net('R49', 1) === net('Q2', 0), 'R49 ≠ Basis'); chk(net('Q2', 1) === net('SPK1', 0), 'Kollektor ≠ SPK1'); chk(net('SPK1', 1) === net('R50', 1), 'SPK1 ≠ R50');
+      }
+      // (3) Drähte: keine bunten, keine T-Kontakte/Überlappungen
+      var colored = qn.wires.filter(function (x) { return typeof x[0] === 'string'; });
+      cnt.wire = qn.wires.length;
+      if (colored.length) rows.wire.push(colored.length + ' bunte Drähte (Farbe ' + colored[0][0] + ')');
+      var cw = a.sch.wires.filter(function (x) { return x.c && x.c !== '#d6dbe1'; });
+      if (cw.length) rows.wire.push(cw.length + ' farbige Drähte im geladenen Schaltplan (' + cw[0].c + ')');
+      var L = qzLint(qn.wires.filter(function (x) { return typeof x[0] !== 'string'; }));
+      // Bekannter Bestand: 24 gewollte Abzweige auf Sammelleitungen (Masse-Schiene und Busse der Weckerplatinen); mehr bedeutet einen neuen T-Kontakt
+      if (L.T > 24) rows.wire.push(L.T + ' T-Kontakte (Drahtende mitten auf anderem Draht), erlaubt sind die 24 bekannten Abzweige auf Sammelleitungen');
+      if (L.O) rows.wire.push(L.O + ' überlappende Drähte');
+      // (4) Wecker-Test: Weckzeit 00:03 (S17, S18 = Minuten-Einer 0011), Minuten mit S2 hochzählen
+      var PP = function (lb) { return a.sch.parts.find(function (p) { return p.l === lb; }); };
+      var V = function (E, lb, ip) { var q = a.pinsOf(PP(lb))[ip], nd = E.c.nodeOfKey(q[0] + ',' + q[1]); return nd < 0 ? NaN : E.s.v[nd]; };
+      var run = async function (en, minutes) {
+        var set = {}; ['S17', 'S18'].forEach(function (lb) { set[PP(lb).id] = 1; }); set[PP('S4').id] = en;
+        var E = a.simEval({ set: set }), s2 = PP('S2').id;
+        for (var m = 0; m < minutes; m++) { E.run(0.06, [s2]); E.run(0.06, []); }
+        var hi = 0, tog = 0, last = 0;
+        for (var n = 0; n < 250; n++) { E.run(0.004, []); var y = V(E, 'IC23', 9); hi = Math.max(hi, y); var b = y > 4.5 ? 1 : 0; if (b !== last) { tog++; last = b; } if (n % 10 === 9) await sleep(0); }
+        return { en: en, minutes: minutes, hi: +hi.toFixed(1), tog: tog };
+      };
+      var cases = [[1, 2, false], [1, 3, true], [1, 4, false], [0, 3, false]]; alarmRes = [];
+      for (var c = 0; c < cases.length; c++) {
+        var r = await run(cases[c][0], cases[c][1]); alarmRes.push(r);
+        var pulses = r.tog >= 2 && r.hi > 4.5;
+        if (pulses !== cases[c][2]) rows.alarm.push('Wecker ' + (cases[c][0] ? 'ein' : 'AUS (S4)') + ', Minute ' + cases[c][1] + ': Summer ' + (pulses ? 'pulst (falsch)' : 'bleibt stumm (falsch)') + ' (Maximum ' + r.hi + ' V, ' + r.tog + ' Flanken)');
+      }
+    } catch (e) { rows.load.push('Prüfung abgebrochen: ' + e + ' ' + String(e && e.stack || '').slice(0, 200)); }
+    var defs = [['load', 'Beispiel lädt, 147 Teile', ' Beispiel'], ['net', 'Netze: kein Kurzschluss +9 V/Masse, Wecker-Teile IC19–IC23, S4–S20, Q2, SPK1', ' Netzprüfungen'], ['wire', 'Drähte: keine bunten, kein T-Kontakt/Überlapp', ' Drähte'], ['alarm', 'Wecker 00:03: Summer nur bei Minute 3, nie mit S4 aus', ' Fälle']];
+    defs.forEach(function (d) {
+      var bad = rows[d[0]], res = { lab: 'SchaltLab Quarzuhr: ' + d[1], tasks: cnt[d[0]], bad: bad }; if (bad.length) all.ok = false; all.labs.push(res);
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>SchaltLab: Quarzuhr<br><small>' + d[1] + '</small></td><td>' + cnt[d[0]] + d[2] + '</td><td class="' + (bad.length ? 'bad' : 'ok') + '">' + (bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + bad.join('; ') + '</td></tr>');
+    });
+    if (alarmRes && alarmRes.length) document.getElementById('hints').textContent += 'SchaltLab Quarzuhr, Wecker-Test (Maximalspannung am Ausgang IC23.9 / Flanken in 1 s): ' + alarmRes.map(function (r) { return (r.en ? 'ein' : 'aus') + ', Minute ' + r.minutes + ': ' + r.hi + ' V, ' + r.tog; }).join(' | ') + '\n\n';
+    f.remove();
+  }
   async function lab(l) {
+    if (l[0] === 'loch') return labLoch(l);
+    if (l[0] === 'quarz') return labQuarz(l);
     var f = document.createElement('iframe'); f.src = l[2]; document.body.appendChild(f);
     await new Promise(function (r) { f.onload = r; }); await sleep(1800);
     var w = f.contentWindow, g = w.document.getElementById('gate'); if (g) g.remove();
@@ -20,6 +220,13 @@
       var r = await w.TaskTest(ids.slice(i, i + l[3]));
       r.forEach(function (x) { n++; if (x.err) bad.push(x.id + ' Fehler ' + x.err); else if (x.pct != null && x.pct !== 100) bad.push(x.id + ' Lösung ' + x.pct + ' %'); else if (x.startPct != null && x.startPct >= 100) bad.push(x.id + ' Start schon 100 %'); });
       await sleep(80);
+    }
+    var au = null; if (l[0] === 'pr' || l[0] === 'sch' || l[0] === 'app' || l[0] === 'mess') { try { au = l[0] === 'mess' ? await auditMess() : audit(w, l); } catch (e) { au = { n: 0, errs: ['Auswahlfragen-Prüfung abgebrochen: ' + e], hints: [] }; } }
+    if (au) {
+      var ab = au.errs.length > 0; if (ab) all.ok = false;
+      all.labs.push({ lab: l[1] + ' Auswahlfragen', tasks: au.n, bad: au.errs, hints: au.hints });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + l[1] + ': Auswahlfragen</td><td>' + au.n + '</td><td class="' + (ab ? 'bad' : 'ok') + '">' + (ab ? 'FEHLER' : 'je Frage genau eine richtige Antwort, Mischen stabil') + '</td><td>' + au.errs.join('; ') + (au.hints.length ? '<br><small>' + au.hints.length + ' Hinweise zum Gegenlesen (siehe unten)</small>' : '') + '</td></tr>');
+      if (au.hints.length) document.getElementById('hints').textContent += l[1] + ':\n' + au.hints.join('\n') + '\n\n';
     }
     var res = { lab: l[1], tasks: ids.length, tested: n, bad: bad, missing: ids.length - n };
     if (bad.length || res.missing) all.ok = false; all.labs.push(res);

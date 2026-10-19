@@ -331,4 +331,5 @@
     tab = TABS.some(x => x[0] === st) ? st : 'start'; if (t0 && TASKS.some(t => t.id === t0)) { tab = 'aufgaben'; openTaskId = t0; } render();
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  root.PR_TEST = { poolQ, POOL };   // für den Selbsttest (Mischen der Antworten prüfen)
 })(window);

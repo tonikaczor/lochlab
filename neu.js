@@ -2,6 +2,16 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v10.128', items: [
+      ['Wecker in der Quarzuhr (Ausbilder-Beispiel)', 'Die digitale Quarzuhr hat jetzt einen Wecker mit Summer: Weckzeit einstellen, bei Gleichstand schaltet der Summer. Als gesperrtes Ausbilder-Beispiel in SchaltLab und LochLab (Freigabe nur für Ausbilder).', 'SchaltLab und LochLab ▸ Beispiele ▸ Quarzuhr'],
+      ['Mehrere Platinen und Flachbandkabel im LochLab', 'Große Schaltungen passen auf mehrere Platinen, verbunden durch ein Flachbandkabel. Menü „Platine hinzufügen“, das Kabel führt alle Adern von Platine zu Platine.', 'LochLab ▸ Menü ▸ Platine hinzufügen'],
+      ['Elko-Polung wird simuliert', 'Gepolte Kondensatoren (Elko) werden jetzt richtig simuliert: Wer den Elko verkehrt herum einbaut (Plus am niedrigeren Potential), zerstört ihn, und die Simulation meldet es. Ungepolte Kondensatoren und Folienkondensatoren dürfen in beide Richtungen betrieben werden. Gilt in allen Labs mit Simulation.', 'SchaltLab, SimLab, LochLab, DigiLab, MessLab ▸ Elko'],
+      ['Aufgaben-Prüfung zeigt den Fortschritt', 'Bei Verdrahtungsaufgaben im SimLab (zum Beispiel Schütz-Steuerung, Selbsthaltung, Motor) zeigt die Prüfung jetzt, wie viele Verbindungen der Musterlösung schon stehen und welche noch fehlen, statt nur „Lampe ist aus“.', 'SimLab ▸ Aufgabe ▸ Prüfen'],
+      ['Zweistufiges Absetzen im SchaltLab', 'Bauteile werden in zwei Schritten gesetzt: erst das erste Bein fixieren, dann ausrichten und die Beine in der Länge ziehen, dann das zweite Bein absetzen. Der Körper bleibt gleich, nur die Anschlussdrähte werden länger. In der rechten Seitenleiste lässt sich das Ziehen ein- und ausschalten, dort gibt es auch einen Knopf zu den Tastenkürzeln.', 'SchaltLab ▸ Bauteil setzen, rechte Seitenleiste'],
+      ['Datenblatt-Link bei ICs', 'Bei jedem IC führt ein Link zum Datenblatt des Bausteins.', 'SchaltLab, LochLab ▸ IC antippen'],
+      ['Neue IC-Modelle', '4070, 4002, 4082, 4585, 4060, 4518, 4543 und 74138 sind jetzt in der Simulation.', 'SchaltLab, LochLab ▸ Bauteile ▸ ICs'],
+      ['Auswahlfragen-Prüfung im Selbsttest', 'Der Selbsttest prüft jetzt auch die Auswahlfragen (Antwortmöglichkeiten und richtige Antwort) des Prüfungs-Labs.', 'selftest.html'],
+      ['Neue Prüfungsfragen', 'Weitere Aufgaben im Prüfungs-Pool aus der Auswertung der Prüfungen Sommer 2025 und Winter 2025 (eigene Formulierungen, KI-Entwurf).', 'Prüfungs-Lab ▸ Prüfungs-Pool'] ] },
     { v: 'v10.127', items: [
       ['Neues Lab: Prüfungs-Lab', 'Für die Abschlussprüfung üben (Elektroniker/in für Geräte und Systeme): Training in acht Themen, Rechenserie, Probeprüfung mit 20 Aufgaben und Zeitlimit, Note nach IHK-Schlüssel, Auswertung mit Lernplan. 81 Fragen und 40 Rechengeneratoren mit zufälligen Werten, alle selbst formuliert.', 'Prüfungs-Lab'],
       ['Formelsammlung und Fragenbank', 'Alle Formeln nach Themen im Tab „Formeln“. Im Menü steht die Fragenbank zum Gegenlesen.', 'Prüfungs-Lab ▸ Formeln'],

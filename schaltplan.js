@@ -77,6 +77,7 @@ const KINDS = {
   MOTOR3:{ name: 'Drehstrommotor', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 3]], v: '400V 2.2kW', core: 'MOTOR3', box: [-0.6, -0.4, 6.6, 4.8], toggle: true, props: [['v', 'Spannung, Leistung (D = Dreieck)', 'text', 'z. B. 400V 2.2kW']] },
   BRUECKE:{ name: 'Brückengleichrichter', cat: 'Halbleiter', pins: [[0, 2], [4, 2], [2, 0], [2, 4]], v: '', core: 'BRUECKE', box: [0, -0.4, 4, 4.4], props: [] },
   REG: { name: 'Spannungsregler 78xx', cat: 'Halbleiter', pins: [[0, 0], [2, 2], [4, 0]], v: '7805', core: 'U', box: [0, -1, 4, 2.4], props: [['v', 'Typ', 'text', 'z. B. 7805 oder 7812']] },
+  XTAL:{ name: 'Schwingquarz', cat: 'Passiv', pins: T2, v: '4.1943M', core: 'XTAL', box: [0, -1.1, 4, 1.1], props: [['v', 'Frequenz', 'text', 'z. B. 4.1943M, 32768 oder 16M']] },
   SEG8:{ name: '7-Segment-Anzeige', cat: 'Halbleiter', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [6, 14]], v: 'rot', core: 'SEG8', vr: 'k', box: [-0.6, -0.8, 6.6, 15], props: [['vr', 'Bauart', 'select', ['k', 'a'], { k: 'gemeinsame Kathode', a: 'gemeinsame Anode' }]] },
   PBC: { name: 'Taster (Öffner)', cat: 'Schalter', lab: 'sim', pins: T2, v: '', core: 'SWNC', box: [0, -1.4, 4, 1], momentary: true, props: [] },
   KREUZ:{ name: 'Kreuzschalter', cat: 'Schalter', lab: 'sim', pins: [[0, 0], [2, 0], [0, 4], [2, 4]], v: '', core: 'KREUZ', box: [-0.6, -0.2, 2.6, 4.2], toggle: true, props: [] },
@@ -108,7 +109,7 @@ KINDS.CLK = { name: 'Taktgeber', cat: 'Quellen', lab: 'digi', pins: T2, v: '1Hz'
 KINDS.JKFF = { name: 'JK-Flipflop', cat: 'Logik', lab: 'digi', pins: [[0, 0], [0, 2], [0, 4], [4, 0], [4, 4]], v: '5V', core: 'JKFF', box: [0, -.6, 4, 4.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] };
 KINDS.TFF = { name: 'T-Flipflop', cat: 'Logik', lab: 'digi', pins: [[0, 0], [0, 2], [4, 0], [4, 2]], v: '5V', core: 'TFF', box: [0, -.6, 4, 2.6], props: [['v', 'Logikpegel', 'text', 'z. B. 5V']] };
 KINDS.CPU = Object.assign({}, KINDS.ICX, { name: 'Mini-CPU (4 Bit)', lab: 'digi', v: 'CPU4', n: 16, props: [] });
-['BAT', 'GND', 'CLK', 'SPST', 'PB', 'LED', 'SEG8', 'R', 'C', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'JKFF', 'TFF', 'ICX', 'CPU', 'VM', 'POT'].forEach(k => { if (KINDS[k]) KINDS[k].digi = true; });
+['BAT', 'GND', 'CLK', 'SPST', 'PB', 'LED', 'SEG8', 'R', 'C', 'AND', 'NAND', 'OR', 'NOR', 'XOR', 'NOT', 'SNOT', 'DFF', 'JKFF', 'TFF', 'ICX', 'CPU', 'VM', 'POT', 'XTAL'].forEach(k => { if (KINDS[k]) KINDS[k].digi = true; });
 const CATS = LAB === 'digi' ? ['Quellen', 'Schalter', 'Logik', 'Halbleiter', 'Passiv', 'Messen'] : LAB === 'pi' ? ['Raspberry Pi', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'code' ? ['Arduino', 'Sensoren', 'Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Messen'] : LAB === 'sim' ? ['Quellen', 'Netz & Schutz', 'Schalter', 'Verbraucher', 'Passiv', 'Halbleiter', 'Logik', 'Messen'] : ['Quellen', 'Passiv', 'Halbleiter', 'Schalter', 'Logik', 'Messen'];
 /* SimLab: Spannungsquellen und Masse stehen ganz oben, dazu die Netzquellen (Netz 230 V, Drehstrom 400 V) */
 const SRC_FIRST = LAB === 'sim' ? ['NETZ', 'NETZ3'] : [];
@@ -119,7 +120,8 @@ const kindsOf = cat => {
   return all;
 };
 const rot = (x, y, r) => { switch (r & 3) { case 0: return [x, y]; case 1: return [-y, x]; case 2: return [-x, -y]; default: return [y, -x]; } };
-const KD = p => { const K = KINDS[p.k]; return K.dyn ? Object.assign({}, K, K.dyn(p)) : K; };
+// Zweipolige Bauteile mit gezogenen Beinen: p.len ist der Abstand der beiden Anschlüsse (mindestens die Körperlänge 4), der Körper bleibt gleich groß
+const KD = p => { const K = KINDS[p.k]; let r = K.dyn ? Object.assign({}, K, K.dyn(p)) : K; if (p.len > 4 && r.pins === T2) r = Object.assign({}, r, { pins: [[0, 0], [p.len, 0]], box: [r.box[0], r.box[1], p.len, r.box[3]] }); return r; };
 const pinsOf = p => KD(p).pins.map(([x, y]) => { const [a, b] = rot(x, y, p.r); return [p.x + a, p.y + b]; });
 const gk = (x, y) => x + ',' + y;
 // IC-Kästchen: 555 mit Funktionsschaltbild, sonst DIP-Kästchen (Pins 1..n/2 links von oben nach unten, Rest rechts von unten nach oben)
@@ -133,7 +135,7 @@ function icDyn(p) {
   return { pins, box: [0, -1, 6, 2 * (h - 1) + 1] };
 }
 
-const PRE = { I2CTEMP: 'B', I2CLUX: 'B', MCP3008: 'IC', PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', DUOLED: 'LED', SCHOTTKY: 'D', NMOS: 'Q', PMOS: 'Q', DIAC: 'V', TRIAC: 'V', VDR: 'RV', SEG8D: 'DS', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
+const PRE = { XTAL: 'Q', I2CTEMP: 'B', I2CLUX: 'B', MCP3008: 'IC', PI: 'A', PIEZO: 'B', TOUCH: 'B', UNO: 'A', RGBLED: 'LED', DUOLED: 'LED', SCHOTTKY: 'D', NMOS: 'Q', PMOS: 'Q', DIAC: 'V', TRIAC: 'V', VDR: 'RV', SEG8D: 'DS', TMP36: 'B', PIR: 'B', HCSR04: 'B', SERVO: 'M', LCDI2C: 'LCD', NETZ3: 'N', MOTOR3: 'M', BRUECKE: 'B', REG: 'U', SEG8: 'DS', PBC: 'S', SCHUETZ: 'K', JUN5: 'X', FAULT: 'Z', NETZ: 'N', LSS: 'F', RCD: 'FI', KREUZ: 'S', IMP: 'K', HEAT: 'E', SD: 'X', FUSE: 'F', NTC: 'R', PTC: 'R', MOTOR: 'M', SPK: 'LS', TRF: 'TR', RLY: 'K', THY: 'V', PHT: 'T', OPTO: 'OK', AND: 'G', NAND: 'G', OR: 'G', NOR: 'G', XOR: 'G', NOT: 'G', SNOT: 'G', DFF: 'FF', OPA: 'OP', ICX: 'IC', R: 'R', POT: 'P', C: 'C', CE: 'C', L: 'L', LDR: 'R', LAMP: 'E', D: 'D', ZD: 'D', LED: 'LED', NPN: 'T', PNP: 'T', BAT: 'V', AC: 'G', SPST: 'S', PB: 'S', SPDT: 'S', VM: 'VM', AM: 'AM' };
 function nextLabel(k, parts) {
   const pre = PRE[k]; if (!pre) return '';
   let m = 0; (parts || sch.parts).forEach(q => { if (q.l && q.l.startsWith(pre) && /^\d+$/.test(q.l.slice(pre.length))) m = Math.max(m, parseInt(q.l.slice(pre.length), 10)); });
@@ -146,7 +148,7 @@ let hist = [], hi = -1;
 let view = { s: 22, ox: 60, oy: 60 };
 let tool = 'select', placeKind = null, placeRot = 0;
 let sel = null;                // {t:'part'|'wire', id}
-let ghost = null, wireStart = null, cursor = null, act = null, dirtyDraw = true;
+let leg1 = null, ghost = null, wireStart = null, cursor = null, act = null, dirtyDraw = true;
 let running = false, sim = null, circ = null, wrapMap = new Map();
 let simMode = false;
 let tempo = 0.45, dotSpeed = 0.5, graphWin = 0.02;
@@ -528,6 +530,7 @@ function drawPart(p, selected) {
     c.save(); c.translate(x1 === x0 ? x1 + 0.7 : x1 + 0.2, x1 === x0 ? y1 : y1 - 0.7); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('PE', 0, 0); c.restore();
     if (fault) { c.strokeStyle = '#ff4d3a'; c.lineWidth = 0.14; c.beginPath(); c.moveTo(x0 - 0.5, y0 - 0.2); c.lineTo(x0 - 0.1, y0 + 0.3); c.lineTo(x0 - 0.4, y0 + 0.3); c.lineTo(x0, y0 + 0.9); c.stroke(); }
   };
+  if (p.len > 4 && KINDS[p.k].pins === T2) { const s = (p.len - 4) / 2; lead(0, 0, s, 0, pc[0]); lead(s + 4, 0, p.len, 0, pc[1]); c.translate(s, 0); }   // gezogene Beine: Körper mittig, Zuleitungen verlängert
   switch (p.k) {
     case 'R': lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8); break;
     case 'POT':
@@ -542,6 +545,8 @@ function drawPart(p, selected) {
     case 'C': case 'CE':
       lead(0, 0, 1.8, 0, pc[0]); lead(2.2, 0, 4, 0, pc[1]); c.lineWidth = 0.16; line(1.8, -1, 1.8, 1); line(2.2, -1, 2.2, 1);
       if (p.k === 'CE') { c.lineWidth = 0.09; line(1.1, -0.75, 1.5, -0.75); line(1.3, -0.95, 1.3, -0.55); } break;
+    case 'XTAL':
+      lead(0, 0, 1.5, 0, pc[0]); lead(2.5, 0, 4, 0, pc[1]); c.lineWidth = 0.16; line(1.5, -0.9, 1.5, 0.9); line(2.5, -0.9, 2.5, 0.9); c.lineWidth = 0.12; c.strokeRect(1.75, -0.6, 0.5, 1.2); break;
     case 'L':
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]);
       for (let i = 0; i < 4; i++) { c.beginPath(); c.arc(1.25 + i * 0.5, 0, 0.25, Math.PI, 0); c.stroke(); } break;
@@ -1037,6 +1042,7 @@ function valueText(p) {
   switch (p.k) {
     case 'R': case 'POT': return fmtVal(p.v, 'Ω');
     case 'C': case 'CE': return fmtVal(p.v, 'F');
+    case 'XTAL': return String(p.v || '').replace(/\s*hz$/i, '') + ' Hz';
     case 'L': return fmtVal(p.v, 'H');
     case 'FUSE': return fmtVal(p.v, 'A');
     case 'MOTOR': return fmtVal(p.v, 'V');
@@ -1178,7 +1184,8 @@ function render() {
   drawCircuit();
   // Vorschau
   if (ghost && tool === 'place' && placeKind) {
-    cx.globalAlpha = 0.6; drawPart({ id: -1, k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: KINDS[placeKind].v, sw: 0 }, false); cx.globalAlpha = 1;
+    const L = leg1 ? legShape(leg1, ghost) : null;
+    cx.globalAlpha = 0.6; drawPart(L ? { id: -1, k: placeKind, x: leg1[0], y: leg1[1], r: L.r, len: L.len > 4 ? L.len : undefined, v: KINDS[placeKind].v, sw: 0 } : { id: -1, k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: KINDS[placeKind].v, sw: 0 }, false); cx.globalAlpha = 1;
   }
   if (wireStart && cursor) {
     /* Vorschau: mit Auto-Weg der berechnete Weg mit 90°-Knicken (rot und gerade, wenn es keinen freien Weg gibt), sonst das gerade Stück */
@@ -1280,13 +1287,13 @@ function routeWire(a, b) {
     else blocked.add(key((w.x1 + w.x2) >> 1, (w.y1 + w.y2) >> 1));
   });
   const P = 6; minX = Math.floor(minX) - P; maxX = Math.ceil(maxX) + P; minY = Math.floor(minY) - P; maxY = Math.ceil(maxY) + P;
-  if ((maxX - minX) * (maxY - minY) > 40000) return null;
+  if ((maxX - minX) * (maxY - minY) > 90000) return null;
   const D = [[1, 0], [-1, 0], [0, 1], [0, -1]], W = maxX - minX + 1, kk = (x, y, d) => ((y - minY) * W + (x - minX)) * 4 + d;
   const dist = new Map(), prev = new Map(), heap = [[0, a[0], a[1], -1]];
   const push = it => { heap.push(it); let i = heap.length - 1; while (i > 0) { const q = (i - 1) >> 1; if (heap[q][0] <= heap[i][0]) break; [heap[q], heap[i]] = [heap[i], heap[q]]; i = q; } };
   const pop = () => { const t = heap[0], l = heap.pop(); if (heap.length) { heap[0] = l; let i = 0; for (;;) { let m = i; const x = 2 * i + 1, y = x + 1; if (x < heap.length && heap[x][0] < heap[m][0]) m = x; if (y < heap.length && heap[y][0] < heap[m][0]) m = y; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return t; };
   dist.set(kk(a[0], a[1], 0), 0); let goal = null, steps = 0;
-  while (heap.length && steps++ < 120000) {
+  while (heap.length && steps++ < 900000) {
     const [c, x, y, dd] = pop();
     if (x === b[0] && y === b[1]) { goal = [x, y, dd]; break; }
     if (c > (dist.get(kk(x, y, dd < 0 ? 0 : dd)) ?? 1e9)) continue;
@@ -1369,7 +1376,7 @@ cv.addEventListener('pointerup', e => { if (LAB === 'haus' && window.HAUS_PTR &&
 cv.addEventListener('wheel', e => { e.preventDefault(); if (LAB === 'haus' && window.HAUS_WHEEL && window.HAUS_WHEEL(e)) return; const r = rectOf(), x = e.clientX - r.left, y = e.clientY - r.top, ns = clamp(view.s * Math.exp(-e.deltaY * 0.0015), 8, 80), f = ns / view.s; view.ox = x - (x - view.ox) * f; view.oy = y - (y - view.oy) * f; view.s = ns; draw(); }, { passive: false });
 function rightClickExit() {
   if (simMode) return;
-  wireStart = null; ghost = null; act = null;
+  wireStart = null; ghost = null; act = null; leg1 = null;
   if (tool !== 'select') { setTool('select'); toast('Werkzeug beendet'); }
   draw();
 }
@@ -1404,7 +1411,13 @@ function onDown(p) {
         act = { t: 'none' };
       } else { wireStart = g; act = { t: 'wire', start: g }; }
       break;
-    case 'place': ghost = g; act = { t: 'place' }; break;
+    case 'place':
+      if (twoLeg()) {   // zweistufig: erstes Bein setzen, dann Richtung und Länge ziehen, dann zweites Bein absetzen
+        if (!leg1) { leg1 = g; ghost = g; act = { t: 'leg' }; toast('Erstes Bein gesetzt. Jetzt Richtung und Länge wählen und das zweite Bein absetzen.'); }
+        else { ghost = g; act = { t: 'leg' }; }
+        refreshUI(); break;
+      }
+      ghost = g; act = { t: 'place' }; break;
     case 'erase': eraseAt(fx, fy); act = { t: 'erase' }; break;
     case 'scope': { const part = partAt(fx, fy); if (part && part.k !== 'GND') toggleScope({ t: 'part', id: part.id }); else { const w = wireAt(fx, fy); if (w) toggleScope({ t: 'node', key: gk(w.x1, w.y1) }); } act = { t: 'none' }; break; }
   }
@@ -1427,6 +1440,7 @@ function onMove(p) {
       } else { const w = byWire(act.id); w.x1 = act.o.x1 + dx; w.y1 = act.o.y1 + dy; w.x2 = act.o.x2 + dx; w.y2 = act.o.y2 + dy; }
       break; }
     case 'place': ghost = g; break;
+    case 'leg': ghost = g; break;
     case 'erase': eraseAt(fx, fy); break;
   }
   draw();
@@ -1443,6 +1457,9 @@ function onUp(p) {
         if (K.toggle) { part.sw = part.sw ? 0 : 1; const w = wrapMap.get(part.id); if (w) w.sw = part.sw; if (window.Feel) window.Feel.tap('switch'); commit(true); }
       }
       break;
+    case 'leg': {   // Loslassen: war es ein Zug vom ersten Bein weg, wird das Bauteil gesetzt, sonst bleibt das erste Bein stehen
+      if (leg1 && ghost && (ghost[0] !== leg1[0] || ghost[1] !== leg1[1])) { const L = legShape(leg1, ghost), K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: leg1[0], y: leg1[1], r: L.r, len: L.len > 4 ? L.len : undefined, v: K.v, sw: K.sw0 || 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); leg1 = null; ghost = null; commit(); refreshUI(); }
+      break; }
     case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: K.sw0 || 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); commit(); } break;
     case 'wire': if (cursor && (cursor[0] !== a.start[0] || cursor[1] !== a.start[1])) { wireStart = wireTo(a.start, cursor); } break;
     case 'erase': if (a.did) commit(); break;
@@ -1453,6 +1470,7 @@ function onUp(p) {
 function splitWiresAt(pt) {
   const add = [];
   sch.wires.forEach(w => {
+    if (w.fixed) return;   // feste Drähte (zum Beispiel Versorgungsschienen) werden nie geteilt
     const [x, y] = pt, onH = w.y1 === w.y2 && y === w.y1 && x > Math.min(w.x1, w.x2) && x < Math.max(w.x1, w.x2), onV = w.x1 === w.x2 && x === w.x1 && y > Math.min(w.y1, w.y2) && y < Math.max(w.y1, w.y2);
     if (!(onH || onV)) return;
     const w2 = Object.assign({}, w, { id: nid(), x1: x, y1: y }); w.x2 = x; w.y2 = y; add.push(w2);
@@ -1479,7 +1497,7 @@ window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }
   else if (e.key === 'Delete' || e.key === 'Backspace') delSel();
   else if (e.key === ' ') { e.preventDefault(); toggleRun(); }
-  else if (e.key === 'Escape') { wireStart = null; sel = null; setTool('select'); }
+  else if (e.key === 'Escape') { wireStart = null; leg1 = null; sel = null; setTool('select'); }
 });
 function delSel() { if (simMode || !sel) return; if (sel.t === 'part') { sch.parts = sch.parts.filter(p => p.id !== sel.id); sch.scopes = sch.scopes.filter(s => !(s.t === 'part' && s.id === sel.id)); } else sch.wires = sch.wires.filter(w => w.id !== sel.id); sel = null; commit(); }
 function rotSel(d) {
@@ -1490,8 +1508,16 @@ function rotSel(d) {
 function dupSel() { if (simMode || !sel || sel.t !== 'part') return; const p = JSON.parse(JSON.stringify(byPart(sel.id))); p.id = nid(); p.l = ''; p.x += 2; p.y += 2; p.l = nextLabel(p.k); sch.parts.push(p); sel = { t: 'part', id: p.id }; commit(); }
 
 /* ============ Werkzeuge, Palette ============ */
+// Zweistufiges Absetzen für zweipolige Bauteile (Widerstand, Kondensator, LED …)
+let twoLegOn = true; try { twoLegOn = localStorage.getItem('lm4.twoleg') !== '0'; } catch (e) {}   // Zweistufiges Absetzen (Beine ziehen) lässt sich in der Seitenleiste aus- und einschalten
+const twoLeg = () => twoLegOn && tool === 'place' && placeKind && KINDS[placeKind].pins === T2 && !simMode;
+function legShape(a, b) {   // aus erstem Bein und Mauszeiger: Ausrichtung (r) und Beinabstand (len, mindestens 4)
+  const dx = b[0] - a[0], dy = b[1] - a[1];
+  if (Math.abs(dx) >= Math.abs(dy)) return { r: dx >= 0 ? 0 : 2, len: Math.max(4, Math.abs(dx)) };
+  return { r: dy >= 0 ? 1 : 3, len: Math.max(4, Math.abs(dy)) };
+}
 function setTool(t, kind) {
-  tool = t; placeKind = kind || null; wireStart = null; ghost = null; act = null;
+  tool = t; placeKind = kind || null; wireStart = null; ghost = null; act = null; leg1 = null;
   if (t !== 'select') sel = null;
   buildPalette(); refreshUI(); draw();
 }
@@ -1674,7 +1700,7 @@ function refreshUI() {
   if (LAB === 'haus' && window.HAUS_SIDE) { h = h.replace(/<button[^>]*data-a="water"[^>]*>[\s\S]*?<\/button>/, '').replace(/<label class="sl"><span>Strompunkte<\/span>[\s\S]*?<\/label>/, '').replace(/<div class="kv"><span>Graph-Zeitfenster<\/span>[\s\S]*?<\/span><\/div>/, ''); h += window.HAUS_SIDE(simMode); side.innerHTML = h; side.classList.toggle('quiet', false); return; }
   if (!simMode && tool === 'place' && placeKind) {
     const K = KINDS[placeKind];
-    h += `<div class="card"><h4>${esc(K.name)} setzen</h4><div class="row2"><button class="btn" data-a="rotl">↺</button><span class="sval">${placeRot * 90}°</span><button class="btn" data-a="rotr">↻</button></div><p class="hint2">Auf die Zeichenfläche tippen. Ausrichtung mit ↺ ↻ oder Taste R.</p></div>`;
+    h += `<div class="card"><h4>${esc(K.name)} setzen</h4><div class="row2"><button class="btn" data-a="rotl">↺</button><span class="sval">${placeRot * 90}°</span><button class="btn" data-a="rotr">↻</button></div><p class="hint2">${K.pins === T2 ? (leg1 ? 'Erstes Bein steht. Jetzt Richtung und Länge wählen (Maus bewegen oder ziehen) und das zweite Bein absetzen. Der Körper bleibt gleich, nur die Anschlussdrähte werden länger. Esc bricht ab.' : 'Erstes Bein antippen, dann Richtung und Länge wählen und das zweite Bein absetzen. Oder vom ersten Bein zum zweiten ziehen.') : 'Auf die Zeichenfläche tippen. Ausrichtung mit ↺ ↻ oder Taste R.'}</p>${K.pins === T2 ? `<label class="chk"><input type="checkbox" data-a="tleg" ${twoLegOn ? 'checked' : ''}> Beine ziehen und ausrichten</label>` : ''}<button class="btn" data-a="keyhelp">⌨ Tastenkürzel (?)</button></div>`;
   } else if (sel && sel.t === 'part') {
     const p = byPart(sel.id); if (p) {
       const K = KINDS[p.k];
@@ -1689,6 +1715,7 @@ function refreshUI() {
       if (LAB === 'sim' && !simMode && isGod()) h += `<label class="f"><span>Fehler (Lehrer)</span><select data-p="defect">${[['', 'keiner'], ['open', 'unterbrochen'], ['short', 'Kurzschluss']].map(([v, l]) => `<option value="${v}" ${(p.defect || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
       if (K.toggle) h += `<button class="btn" data-a="sw">Schalter umlegen (${p.sw ? 'an' : 'aus'})</button>`;
       if (!simMode) h += `<label class="f" style="margin-top:8px"><span>Bezeichnung</span><input data-p="l" value="${esc(p.l || '')}"></label><div class="row2" style="margin-top:8px"><button class="btn" data-a="rotl">↺</button><button class="btn" data-a="rotr">↻</button><button class="btn" data-a="dup">⧉</button><button class="btn danger" data-a="del">Löschen</button></div>`;
+      if (K.props.some(q => q[2] === 'ictype')) { const dt = String(p.v || '').replace(/[^A-Za-z0-9._-]/g, ''); if (dt) h += `<p class="hint2" style="margin-top:8px"><a href="https://www.google.com/search?q=${encodeURIComponent(dt + ' datasheet')}" target="_blank" rel="noopener noreferrer">Datenblatt im Web suchen</a> (${esc(dt)}, öffnet neuen Tab, braucht Internet)</p>`; }
       if (window.Speak && window.Speak.info(p.k)) h += '<div class="row2" style="margin-top:8px"><button class="btn" data-a="speak">🔊 Erkläre dich</button></div>';
       if (simMode) h += '<div id="live"></div>';
       h += '</div>';
@@ -1742,6 +1769,7 @@ $('#side').addEventListener('click', e => {
   if (a === 'preset') { const p0 = sel && sel.t === 'part' && byPart(sel.id); if (p0) { p0.v = b.dataset.v; commit(true, true); rebuildKeep(); refreshUI(); } return; }
   if (a === 'wcol') { const w = sel && sel.t === 'wire' && byWire(sel.id); wireColor = b.dataset.c; if (w) { w.c = wireColor; commit(true); } refreshUI(); draw(); return; }
   if (a === 'run') toggleRun(); else if (a === 'reset') resetSim();
+  else if (a === 'keyhelp') { if (window.LochKeys) window.LochKeys.help(); } else if (a === 'tleg') { twoLegOn = !twoLegOn; try { localStorage.setItem('lm4.twoleg', twoLegOn ? '1' : '0'); } catch (e) {} leg1 = null; ghost = null; refreshUI(); }
   else if (a === 'rotl') rotSel(3); else if (a === 'rotr') rotSel(1);
   else if (a === 'dup') dupSel(); else if (a === 'del') delSel();
   else if (a === 'sw') { const p = byPart(sel.id); p.sw = p.sw ? 0 : 1; const w = wrapMap.get(p.id); if (w) w.sw = p.sw; commit(true); }
@@ -2168,8 +2196,8 @@ function chkProtect(lamp) {
 }
 function chkSequence(steps, lamp, pressMap) {
   // steps: [{press:[Teile], erwartet:true/false, text}]
-  const E = simEval({}); const out = [];
-  steps.forEach(st => { E.run(st.t || 0.25, st.press.map(p => p.id)); const on = !!E.lamps().get(lamp.id); out.push(RES(on === st.expect, st.text + ': Lampe ist ' + (on ? 'an' : 'aus') + (on === st.expect ? '' : ', soll ' + (st.expect ? 'an' : 'aus') + ' sein') + '.')); const evs = evTxt(E); if (evs.length) { out.push(RES(false, evs[evs.length - 1])); E.ev.length = 0; } });
+  const E = simEval({}); const out = [], dev = lamp.k === 'HEAT' ? 'Heizlüfter' : 'Lampe';   // das Gerät beim richtigen Namen nennen
+  steps.forEach(st => { E.run(st.t || 0.25, st.press.map(p => p.id)); const on = !!E.lamps().get(lamp.id); out.push(RES(on === st.expect, st.text + ': ' + dev + ' ist ' + (on ? 'an' : 'aus') + (on === st.expect ? '' : ', soll ' + (st.expect ? 'an' : 'aus') + ' sein') + '.')); const evs = evTxt(E); if (evs.length) { out.push(RES(false, evs[evs.length - 1])); E.ev.length = 0; } });
   return out;
 }
 const firstLamp = () => lampList()[0];
@@ -3316,7 +3344,16 @@ function chkPE() {
 }
 ['aus', 'reihe', 'parallel', 'wechsel', 'kreuz', 'impuls', 'schutz', 'schuetz', 'selbst', 'zl', 'oe', 'mo'].forEach(id => {
   const t = TASKS.find(x => x.id === id); if (!t || t.debug) return; const c0 = t.check;
-  t.check = function () { return c0.call(this).concat(chkPE()); };
+  t.check = function () {
+    const L = c0.call(this).concat(chkPE());
+    if (L.every(l => l.ok)) return L;
+    try {   // Hinweise zum Fortschritt: fehlende Verbindungen im Vergleich mit der Musterlösung, damit jede Änderung sichtbar etwas bringt
+      const mk = t.solMake || exOf(t.sol); if (!mk) return L;
+      const N = schNetCheck(mk), miss = N.filter(l => !l.ok && /fehlt eine Verbindung/.test(l.text)), done = N.filter(l => l.ok).length, tot = done + miss.length;
+      if (tot && miss.length) { L.push(RES(false, 'Fortschritt der Verdrahtung: ' + done + ' von ' + tot + ' Verbindungen der Musterlösung sind da.')); miss.slice(0, 4).forEach(l => L.push(RES(false, 'Hinweis: ' + l.text))); }
+    } catch (e) { /* Hinweise sind nur Zugabe */ }
+    return L;
+  };
   t.text += ' Vergiss den Schutzleiter (PE, grün-gelb) von den Geräten zum PE des Netzes nicht.';
 });
 
@@ -3700,6 +3737,8 @@ function llSpec(p) {
     case 'OPTO': return { ll: { k: 'OPTO', v }, pm: [0, 1, 3, 2] };
     case 'RLY': return { ll: { k: 'RLY', v: v || '12V', vr: /^5/.test(v) ? 'r5' : (/^24/.test(v) ? 'r24' : 'r12') }, pm: [0, 1, 2, 3, 4] };
     case 'TRF': return { ll: { k: 'TRF', v }, pm: [0, 1, 2, 3] };
+    case 'SEG8': return { ll: { k: 'SEG7', vr: /a/i.test(String(p.vr || '')) ? 'ma' : 'mk', v: 'TDSO 3160 M' }, pm: [6, 5, 3, 1, 0, 8, 9, 4, 2] };   // a, b, c, d, e, f, g, dp, gemeinsam → Pin 7, 6, 4, 2, 1, 9, 10, 5, 3 der Anzeige
+    case 'XTAL': return { ll: { k: 'Q', n: 2, v: String(p.v || '') }, pm: [0, 1], ...two };
     case 'ICX': { const n = p.n || 8; return { ll: { k: 'IC', n, v, sk: true }, pm: Array.from({ length: n }, (_, i) => i) }; }
     case 'BAT': { const n = parseFloat(p.v) || 9; return { ll: { k: 'BAT', v: n + 'V', vr: n === 9 ? 'blk' : 'psu' }, pm: [0, 1], ...two }; }
     case 'AC': return { ll: { k: 'SIG', v: p.v || '5V 1kHz', vr: 'sin' }, pm: [0, 1], ...two };
@@ -3925,10 +3964,10 @@ function openExamples() {
     order.forEach(i => {
       const e = EXAMPLES[i];
       if (e.cat !== last) { last = e.cat; h += `<div class="gh">${esc(e.cat || 'Weitere')}</div>`; }
-      h += `<button class="row" data-i="${i}"><div class="grow"><b>${esc(e.name)}</b><small>${esc(e.info)}</small></div></button>`;
+      h += `<button class="row" data-i="${i}"><div class="grow"><b>${e.lock ? '🔒 ' : ''}${esc(e.name)}</b><small>${esc(e.info)}</small></div></button>`;
     });
     b.innerHTML = h;
-    b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const ex = buildExample(EXAMPLES[+r.dataset.i]); loadCircuit(ex); if (ex.tempo != null) tempo = ex.tempo; if (ex.win) graphWin = ex.win; refreshUI(); });
+    b.addEventListener('click', ev => { const r = ev.target.closest('.row'); if (!r) return; close(); const e0 = EXAMPLES[+r.dataset.i], go = () => { const ex = buildExample(e0); loadCircuit(ex); if (ex.tempo != null) tempo = ex.tempo; if (ex.win) graphWin = ex.win; refreshUI(); }; if (e0.lock) godGate(go); else go(); });   // gesperrte Beispiele (Ausbilder) nur nach Passwort
   });
 }
 const exOk = e => LAB === 'digi' ? e.lab === 'digi' : LAB === 'mess' ? e.lab === 'mess' : LAB === 'haus' ? e.lab === 'haus' : LAB === 'pi' ? e.lab === 'pi' : LAB === 'code' ? e.lab === 'code' : LAB === 'sim' ? (e.lab === 'sim' || e.cat === 'Bauteile') : !e.lab;
@@ -4431,6 +4470,7 @@ window.LabDigiAPI = {
   mkParts: mkPartsFromRows,
   pinPts: rows => mkPartsFromRows(rows).map(p => pinsOf(p)),
   addExamples: list => { EXAMPLES.push(...list); },
+  buildJob: () => buildJob(),
   addTasks: list => { TASKS.push(...list.map(t => Object.assign({ lab: LAB }, t))); },
   get tool() { return tool; }, setTool: (t, k) => setTool(t, k), toggleRun, setSimMode: on => setSimMode(on),
   get meter() { return meter; }, meterText, meterDial, meterReset, meterTap, scopeValues, toggleScope, sv, rebuildKeep, staticR: (a, b) => staticR(a, b, 1, 'ohm'),
@@ -4441,9 +4481,10 @@ window.LabDigiAPI = {
   get canvas() { return cv; }, get dirty() { return dirtyDraw; }, rectOf: () => rectOf(), taskDoneMap: () => taskDone(), vAtKey: key => sv(key),
   withSch(tmp, fn) { const saved = sch; sch = tmp; try { return fn(); } finally { sch = saved; } },
   /* nets: Liste von Punktfolgen [[x,y],[x,y],...]; jedes Paar benachbarter Punkte wird per Auto-Weg als Draht gelegt. Ergebnis: Polylinien [x1,y1,x2,y2,...] */
-  routeNets(rows, nets) {
+  routeNets(rows, nets, pre) {   // pre: bereits feste Drähte als Polylinien [x1,y1,x2,y2,...]; der Auto-Weg weicht ihnen aus und liefert sie nicht mit zurück
     const saved = sch; let fails = 0;
-    sch = { name: 'tmp', parts: mkPartsFromRows(rows), wires: [], nid: 5000, scopes: [] };
+    const fixed = []; (pre || []).forEach(pl => { for (let i = 0; i + 3 < pl.length; i += 2) fixed.push({ fixed: true, id: -1 - fixed.length, x1: pl[i], y1: pl[i + 1], x2: pl[i + 2], y2: pl[i + 3] }); });
+    sch = { name: 'tmp', parts: mkPartsFromRows(rows), wires: fixed, nid: 5000, scopes: [] };
     const near = (p, q) => Math.abs(p[0] - q[0]) + Math.abs(p[1] - q[1]), groups = new Map();
     try {
       nets.forEach(net => {
@@ -4472,7 +4513,7 @@ window.LabDigiAPI = {
         }
       });
       window.LabDigiAPI.routeFails = (window.LabDigiAPI.routeFails || 0) + fails;
-      return sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]);
+      return sch.wires.filter(w => w.id >= 5000).map(w => [w.x1, w.y1, w.x2, w.y2]);
     } finally { sch = saved; }
   }
 };
@@ -4581,7 +4622,7 @@ $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name
   let d = null; try { d = JSON.parse(localStorage.getItem((SK + 'cur')) || 'null'); } catch (e) {}
   buildPalette();
   if (/[?&]neu\b/.test(location.search)) { if (d && d.parts && (d.parts.length || (d.wires && d.wires.length))) { loadCircuit(d); confirmNew(() => loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] })); } else loadCircuit({ name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] }); }
-  else if (/[?&]ex=/.test(location.search)) { const q = decodeURIComponent(location.search.match(/[?&]ex=([^&]*)/)[1]).toLowerCase(), e = EXAMPLES.find(x => exOk(x) && x.name.toLowerCase().includes(q)); loadCircuit(buildExample(e || defEx())); }
+  else if (/[?&]ex=/.test(location.search)) { const q = decodeURIComponent(location.search.match(/[?&]ex=([^&]*)/)[1]).toLowerCase(), e = EXAMPLES.find(x => exOk(x) && x.name.toLowerCase().includes(q)); if (e && e.lock) { loadCircuit(buildExample(defEx())); godGate(() => loadCircuit(buildExample(e))); } else loadCircuit(buildExample(e || defEx())); }
   else if (/[?&]aufgabe=/.test(location.search) && TASKS.some(t => t.id === location.search.match(/[?&]aufgabe=(\w*)/)[1] && (t.lab || 'sim') === LAB)) startTask(location.search.match(/[?&]aufgabe=(\w*)/)[1]);
   else if (/[?&]escape\b/.test(location.search)) openEscape();
   else if (/[?&]detektiv\b/.test(location.search)) openDetective();
