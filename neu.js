@@ -2,6 +2,16 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v13.132', items: [
+      ['Neues Antriebs-Lab', 'Das 13. Lab. Fünf animierte Prüfstände: Gleichstrommotor mit H-Brücke und PWM, Servo mit Lageregelung, Schrittmotor, Drehstrom-Asynchronmotor mit Stern-Dreieck-Anlauf und Frequenzumrichter sowie Getriebe. Du bedienst Schalter und Regler und liest Messgeräte ab.', 'Startseite ▸ Antriebs-Lab'],
+      ['Fehler mit Folgen', 'Brückenkurzschluss, überhitzte Wicklung, verlorene Schritte, Kippmoment und Zahnbruch zeigen sich mit Funken, Rauch und Ton. Du siehst, warum ein Antrieb sich so verhält.', 'Antriebs-Lab ▸ Prüfstand'],
+      ['Kennlinien und Zeitschreiber', 'Drehmoment-Drehzahl-Kennlinien, Pull-out-Kurve, Sprungantwort und Wirkungsgrad werden aus dem Modell berechnet. Dein Betriebspunkt wandert als Marker mit. Aufzeichnungen lassen sich als CSV speichern.', 'Antriebs-Lab ▸ Kennlinien'],
+      ['Ablaufprogramm', 'Stern-Dreieck-Anlauf, Rampen und Richtungsumkehr programmierst du als Tabelle: nach so vielen Sekunden setze diesen Wert. Das Ergebnis erscheint als Diagramm.', 'Antriebs-Lab ▸ Ablauf'],
+      ['Rechner für Typenschild und Getriebe', 'Drehzahl, Moment, Leistung, Wirkungsgrad, Schlupf und Übersetzung mit Rechenweg, dazu ein Übungsgenerator mit sofortiger Prüfung.', 'Antriebs-Lab ▸ Rechnen'],
+      ['30 Aufgaben und 22 Beispiele', 'Von Leistung aus Moment und Drehzahl über PWM, Servo-Regler, Schrittmotor, Stern-Dreieck und Getriebe bis zur Fehlersuche und Aufgaben im Prüfungsstil. Die Prüfung rechnet automatisch, Tipps gibt es in drei Stufen.', 'Antriebs-Lab ▸ Aufgaben'],
+      ['Kampagne, Abzeichen und Trainer', 'Neues Kampagnenkapitel „Der Antrieb“, neue Abzeichen und der Trainer „Erste Schritte“ für das Antriebs-Lab.', 'Menü ▸ Kampagne, Abzeichen, Trainer'],
+      ['Neues Lernheft Antriebs-Lab', 'Arbeitsblätter zu allen Prüfständen und ausführliche Erklärungen zu H-Brücke, Servo, Schrittmotor, Drehstrom, Getriebe und Typenschild. Lösungsblätter gibt es für Ausbilder.', 'Lernhefte ▸ Antriebs-Lab'],
+    ] },
     { v: 'v12.131', items: [
       ['Neues Leiterplatten-Lab', 'Das 12. Lab. Du entwirfst echte Leiterplatten mit 1, 2, 4 oder 6 Lagen: Bauteile setzen, Leiterbahnen ziehen, Vias und Kupferflächen anlegen. Der Prüfer (DRC) meldet zu enge Abstände, zu dünne Bahnen und offene Verbindungen sofort.', 'Startseite ▸ Leiterplatten-Lab'],
       ['Lagen, Bestückung und Löten', 'Im Reiter Lagen siehst du den Lagenaufbau im Querschnitt. Unter Bestückung stehen Bestückungsplan, Stückliste, Reflow-Ofen und Handlöten zum Üben.', 'Leiterplatten-Lab ▸ Lagen und Bestückung'],

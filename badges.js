@@ -112,6 +112,17 @@
     ['pcbdoktor', '🔍', 'Platinen-Doktor', 'Alle sechs Fehlersuchen an defekten Platinen gelöst.', function (c) { return [c.n(['pb33', 'pb34', 'pb35', 'pb36', 'pb37', 'pb38']), 6]; }],
     ['pcbpruef', '🔬', 'Prüfverfahren-Kenner', 'Alle drei Aufgaben zu Prüfverfahren (Flying Probe und Co.) gelöst.', function (c) { return [c.n(['pb39', 'pb40', 'pb41']), 3]; }],
     ['pcbsammler', '💾', 'Platinensammler', 'Drei eigene Platinen gespeichert.', function (c) { return [c.st.pcbsaved || 0, 3]; }],
+    ['anterste', '⚙️', 'Erste Antriebs-Aufgabe', 'Die erste Aufgabe im Antriebs-Lab geschafft.', function (c) { return [c.n(c.ids('ant')), 1]; }],
+    ['antzehn', '🧰', 'Antriebs-Praktiker', 'Zehn Aufgaben im Antriebs-Lab geschafft.', function (c) { return [c.n(c.ids('ant')), 10]; }],
+    ['antalle', '🏆', 'Antriebs-Meister', 'Alle Aufgaben im Antriebs-Lab geschafft.', function (c) { return [c.n(c.ids('ant')), c.ids('ant').length || 30]; }],
+    ['antrun', '▶️', 'Motor läuft', 'Einen Prüfstand im Antriebs-Lab gestartet.', function (c) { return [c.st.antrun || 0, 1]; }],
+    ['antrigs', '🎛️', 'Alle fünf Prüfstände', 'Gleichstrom, Servo, Schrittmotor, Drehstrom und Getriebe ausprobiert.', function (c) { return [c.st.antrigs || 0, 5]; }],
+    ['antcurve', '📈', 'Kennlinien-Leser', 'Die Kennlinien eines Prüfstands angesehen.', function (c) { return [c.st.antcurve || 0, 1]; }],
+    ['antseq', '⏱️', 'Ablauf-Programmierer', 'Ein Ablaufprogramm gestartet, zum Beispiel einen Stern-Dreieck-Anlauf.', function (c) { return [c.st.antseq || 0, 1]; }],
+    ['antfault', '💥', 'Fehlerjäger', 'Fünf verschiedene Antriebsfehler erlebt: Kurzschluss, Überhitzung, Schrittverlust und mehr.', function (c) { return [c.st.antfault || 0, 5]; }],
+    ['antcalc', '🧮', 'Typenschild-Rechner', 'Eine Übungsaufgabe im Rechner des Antriebs-Labs beantwortet.', function (c) { return [c.st.antcalc || 0, 1]; }],
+    ['antdoktor', '🔍', 'Antriebs-Doktor', 'Alle vier Fehlersuchen an Motor und Getriebe gelöst.', function (c) { return [c.n(['an24', 'an25', 'an26', 'an27']), 4]; }],
+    ['antpruef', '📋', 'Typenschild-Profi', 'Alle drei Aufgaben im Prüfungsstil gelöst.', function (c) { return [c.n(['an28', 'an29', 'an30']), 3]; }],
   ];
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });
   DEFS.find(function (d) { return d.id === 'wuerfel5'; }).icon = '👑';
