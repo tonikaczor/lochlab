@@ -2,6 +2,10 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v10.129', items: [
+      ['Prüfungs-Lab: Teil 1 und Teil 2 getrennt', 'Oben im Prüfungs-Lab wählst du den Bereich Teil 1 oder Teil 2. Probeprüfungen, Training mit Prüfungs-Pool und Auswertung sind pro Bereich getrennt. Teil 2 enthält Systementwurf und Funktions- und Systemanalyse.', 'Prüfungs-Lab ▸ Bereich'],
+      ['Prüfungs-Pool deutlich größer', 'Der Pool umfasst jetzt rund 950 eigene Übungsfragen im Stil der Kammerprüfungen von 2020 bis 2025, darunter Fragen zur Schaltung der Praxisprüfung Winter 2024. Alles sind eigene Formulierungen, keine Originalaufgaben.', 'Prüfungs-Lab ▸ Training und Probeprüfung']
+    ] },
     { v: 'v10.128', items: [
       ['Wecker in der Quarzuhr (Ausbilder-Beispiel)', 'Die digitale Quarzuhr hat jetzt einen Wecker mit Summer: Weckzeit einstellen, bei Gleichstand schaltet der Summer. Als gesperrtes Ausbilder-Beispiel in SchaltLab und LochLab (Freigabe nur für Ausbilder).', 'SchaltLab und LochLab ▸ Beispiele ▸ Quarzuhr'],
       ['Mehrere Platinen und Flachbandkabel im LochLab', 'Große Schaltungen passen auf mehrere Platinen, verbunden durch ein Flachbandkabel. Menü „Platine hinzufügen“, das Kabel führt alle Adern von Platine zu Platine.', 'LochLab ▸ Menü ▸ Platine hinzufügen'],
