@@ -6,8 +6,9 @@
 
 /* ---------- Werte ---------- */
 class Fl { constructor(x) { this.x = x; } }                 // Kommazahl (float/double)
-const isF = v => v instanceof Fl;
-const N = v => (isF(v) ? v.x : (typeof v === 'boolean' ? (v ? 1 : 0) : (typeof v === 'number' ? v : (typeof v === 'string' ? (parseFloat(v) || 0) : 0))));
+class Ch { constructor(c) { this.c = c; } }                 // Zeichen (char): rechnet wie eine Zahl, wird aber als Buchstabe ausgegeben (Serial.print('A') zeigt A, nicht 65)
+const isF = v => v instanceof Fl, isC = v => v instanceof Ch;
+const N = v => (isF(v) ? v.x : (isC(v) ? v.c : (typeof v === 'boolean' ? (v ? 1 : 0) : (typeof v === 'number' ? v : (typeof v === 'string' ? (parseFloat(v) || 0) : 0)))));
 const WRAP = {
   int: x => (x << 16) >> 16, short: x => (x << 16) >> 16, long: x => x | 0, 'long long': x => Math.trunc(x),
   'unsigned int': x => x & 0xFFFF, 'unsigned short': x => x & 0xFFFF, 'unsigned long': x => x >>> 0, 'unsigned long long': x => Math.max(0, Math.trunc(x)),
@@ -20,11 +21,13 @@ function norm(v, type) {                                      // Wert beim Speic
   if (type === 'float') return new Fl(Math.fround(N(v)));
   if (type === 'double') return new Fl(N(v));
   if (type === 'bool' || type === 'boolean') return N(v) ? 1 : 0;
-  if (type === 'String') return typeof v === 'string' ? v : (isF(v) ? fmtF(v.x, 2) : String(v));
+  if (type === 'String') return typeof v === 'string' ? v : (isF(v) ? fmtF(v.x, 2) : (isC(v) ? chStr(v) : String(v)));
+  if (type === 'char') return new Ch(WRAP.char(Math.trunc(N(v))));
   const w = WRAP[type]; if (w) return w(Math.trunc(N(v)));
   return v;
 }
 const fmtF = (x, d) => (isFinite(x) ? x.toFixed(d) : (x !== x ? 'nan' : (x > 0 ? 'inf' : '-inf')));
+const chStr = v => String.fromCharCode(v.c & 255);
 
 /* ---------- Lexer ---------- */
 const KW_OPS = ['<<=', '>>=', '++', '--', '+=', '-=', '*=', '/=', '%=', '&=', '|=', '^=', '==', '!=', '<=', '>=', '&&', '||', '<<', '>>', '->'];
@@ -106,12 +109,15 @@ function parse(toks, errors) {
     else type = parts.filter(x => x !== 'signed')[0] || 'int';
     return { type, isConst, len: q - p };
   }
+  function funcAhead(ty) {       // steht ab p „Typ name (“, also ein Funktionskopf mitten im Block? (nicht bei Objekten wie Servo s(9))
+    return !CLASSES.has(ty.type) && peek(ty.len).t === 'id' && isOp('(', ty.len + 1) && (isOp(')', ty.len + 2) || (peek(ty.len + 2).t === 'id' && TYPES.has(peek(ty.len + 2).v))) ? peek(ty.len).v : null;
+  }
 
   function program() {
     const prog = { globals: [], funcs: {}, decls: [] };
     while (peek().t !== 'eof') {
       try {
-        const ty = typeAt(); if (!ty) fail('Hier wird eine Funktion oder Variable erwartet', peek());
+        const ty = typeAt(); if (!ty) fail(isOp('}') ? 'Eine schließende Klammer „}“ zu viel' : 'Hier wird eine Funktion oder Variable erwartet', peek());
         const start = p; p += ty.len; const nm = ident();
         if (isOp('(') && !CLASSES.has(ty.type)) { // Funktion
           p++; const params = [];
@@ -155,7 +161,8 @@ function parse(toks, errors) {
         case 'continue': p++; eat(';'); return { k: 'continue', line };
         case 'return': { p++; let e = null; if (!isOp(';')) e = expr(); eat(';'); return { k: 'return', e, line }; }
       }
-      if (typeAt()) return declStmt();
+      const ty = typeAt();
+      if (ty) { const fn = funcAhead(ty); if (fn) fail('Hier beginnt die Funktion „' + fn + '()“: vermutlich fehlt davor eine schließende Klammer „}“', t); return declStmt(); }
     }
     const e = expr(); eat(';'); return { k: 'expr', e, line };
   }
@@ -198,7 +205,7 @@ function parse(toks, errors) {
   }
   function primary() {
     const t = peek();
-    if (t.t === 'num') { p++; return { k: 'num', v: t.v, f: t.f, line: t.line }; }
+    if (t.t === 'num') { p++; return { k: 'num', v: t.v, f: t.f, ch: !!t.ch, line: t.line }; }
     if (t.t === 'str') { p++; return { k: 'str', v: t.v, line: t.line }; }
     if (t.t === 'id') {
       p++;
@@ -268,7 +275,7 @@ function createRunner(prog, io) {
     randomSeed: a => { self.rng = N(a[0]) | 0; },
     bitRead: a => (N(a[0]) >> N(a[1])) & 1, bitSet: a => N(a[0]) | (1 << N(a[1])), bitClear: a => N(a[0]) & ~(1 << N(a[1])), lowByte: a => N(a[0]) & 255, highByte: a => (N(a[0]) >> 8) & 255,
     isDigit: a => (N(a[0]) >= 48 && N(a[0]) <= 57 ? 1 : 0), isAlpha: a => (/[A-Za-z]/.test(String.fromCharCode(N(a[0]))) ? 1 : 0),
-    String: a => { const v = a[0]; if (isF(v)) return fmtF(v.x, a.length > 1 ? N(a[1]) : 2); if (typeof v === 'string') return v; if (a.length > 1 && N(a[1]) === 16) return (N(v) >>> 0).toString(16).toUpperCase(); if (a.length > 1 && N(a[1]) === 2) return (N(v) >>> 0).toString(2); return String(N(v)); },
+    String: a => { const v = a[0]; if (isF(v)) return fmtF(v.x, a.length > 1 ? N(a[1]) : 2); if (typeof v === 'string') return v; if (isC(v) && a.length < 2) return chStr(v); if (a.length > 1 && N(a[1]) === 16) return (N(v) >>> 0).toString(16).toUpperCase(); if (a.length > 1 && N(a[1]) === 2) return (N(v) >>> 0).toString(2); return String(N(v)); },
     attachInterrupt: () => {}, detachInterrupt: () => {}, digitalPinToInterrupt: a => N(a[0]), noInterrupts: () => {}, interrupts: () => {},
     yield: () => {}, shiftOut: () => {},
   };
@@ -289,6 +296,7 @@ function createRunner(prog, io) {
   /* Objekte: Serial, Servo, LCD, ... */
   const fmtNum = (v, base) => {
     if (typeof v === 'string') return v;
+    if (isC(v) && base == null) return chStr(v);                     // char ohne Zahlenbasis: als Buchstabe, wie beim echten Arduino
     if (isF(v)) return fmtF(v.x, base == null ? 2 : base);
     const x = N(v); if (base === 16) return (x >>> 0).toString(16).toUpperCase(); if (base === 2) return (x >>> 0).toString(2); if (base === 8) return (x >>> 0).toString(8);
     return String(x);
@@ -313,18 +321,18 @@ function createRunner(prog, io) {
           if (name === 'write') { obj.angle = Math.max(0, Math.min(180, N(a[0]))); if (obj.pin != null) io.servo(obj.pin, 'write', obj.angle); return; }
           if (name === 'writeMicroseconds') { obj.angle = Math.max(0, Math.min(180, (N(a[0]) - 544) * 180 / 1856)); if (obj.pin != null) io.servo(obj.pin, 'write', obj.angle); return; }
           if (name === 'read') return Math.round(obj.angle == null ? 90 : obj.angle);
-          if (name === 'detach') { if (obj.pin != null) io.servo(obj.pin, 'detach'); return; }
+          if (name === 'detach') { if (obj.pin != null) io.servo(obj.pin, 'detach'); obj.pin = null; return; }
           if (name === 'attached') return obj.pin != null ? 1 : 0;
           break;
         case 'LiquidCrystal': case 'LiquidCrystal_I2C':
-          return io.lcd(obj, name, a.map(x => (typeof x === 'string' ? x : (isF(x) ? fmtF(x.x, 2) : N(x)))));
+          return io.lcd(obj, name, a.map(x => (typeof x === 'string' ? x : (isF(x) ? fmtF(x.x, 2) : (isC(x) ? chStr(x) : N(x))))));
         case 'CapacitiveSensor': if (name === 'capacitiveSensor') return io.touch ? io.touch(obj.a[1], N(a[0])) : 0; if (name.startsWith('set')) return; break;
         default: break;
       }
       throw err(obj.cls + '.' + name + '() kenne ich nicht');
     }
     if (typeof obj === 'string') {
-      switch (name) { case 'length': return obj.length; case 'charAt': return obj.charCodeAt(N(a[0])) || 0; case 'substring': return obj.substring(N(a[0]), a.length > 1 ? N(a[1]) : undefined); case 'toInt': return parseInt(obj, 10) || 0; case 'toFloat': return new Fl(parseFloat(obj) || 0); case 'indexOf': return obj.indexOf(typeof a[0] === 'string' ? a[0] : String.fromCharCode(N(a[0]))); case 'toUpperCase': return obj.toUpperCase(); case 'toLowerCase': return obj.toLowerCase(); case 'trim': return obj.trim(); case 'equals': return obj === a[0] ? 1 : 0; case 'startsWith': return obj.startsWith(a[0]) ? 1 : 0; default: throw err('String.' + name + '() kenne ich nicht'); }
+      switch (name) { case 'length': return obj.length; case 'charAt': return new Ch(obj.charCodeAt(N(a[0])) || 0); case 'substring': return obj.substring(N(a[0]), a.length > 1 ? N(a[1]) : undefined); case 'toInt': return parseInt(obj, 10) || 0; case 'toFloat': return new Fl(parseFloat(obj) || 0); case 'indexOf': return obj.indexOf(typeof a[0] === 'string' ? a[0] : String.fromCharCode(N(a[0]))); case 'toUpperCase': return obj.toUpperCase(); case 'toLowerCase': return obj.toLowerCase(); case 'trim': return obj.trim(); case 'equals': return obj === a[0] ? 1 : 0; case 'startsWith': return obj.startsWith(a[0]) ? 1 : 0; default: throw err('String.' + name + '() kenne ich nicht'); }
     }
     throw err('Diese Methode „' + name + '“ gibt es hier nicht');
   }
@@ -333,7 +341,7 @@ function createRunner(prog, io) {
   function* ev(n, sc) {
     if (++self.ops % 300 === 0) yield { t: 'tick' };
     switch (n.k) {
-      case 'num': return n.f ? new Fl(n.v) : n.v;
+      case 'num': return n.f ? new Fl(n.v) : (n.ch ? new Ch(n.v) : n.v);
       case 'str': return n.v;
       case 'id': {
         const s = sc.find(n.name); if (s) return s.v.get(n.name).val;
@@ -359,7 +367,7 @@ function createRunner(prog, io) {
       }
       case 'new': { const args = []; for (const a of n.args) args.push(yield* ev(a, sc)); return makeObject(n.cls, args); }
       case 'mcall': { const obj = yield* ev(n.obj, sc); const args = []; for (const a of n.args) args.push(yield* ev(a, sc)); try { return callMethod(obj, n.name, args); } catch (e) { if (e instanceof RuntimeError && !e.line) e.line = n.line; throw e; } }
-      case 'idx': { const a = yield* ev(n.a, sc), i = N(yield* ev(n.i, sc)); if (typeof a === 'string') return a.charCodeAt(i) || 0; if (!Array.isArray(a)) throw err('Das ist kein Feld (Array)', n.line); if (i < 0 || i >= a.length) throw err('Index ' + i + ' liegt außerhalb des Feldes (Größe ' + a.length + ')', n.line); return a[i]; }
+      case 'idx': { const a = yield* ev(n.a, sc), i = N(yield* ev(n.i, sc)); if (typeof a === 'string') return new Ch(a.charCodeAt(i) || 0); if (!Array.isArray(a)) throw err('Das ist kein Feld (Array)', n.line); if (i < 0 || i >= a.length) throw err('Index ' + i + ' liegt außerhalb des Feldes (Größe ' + a.length + ')', n.line); return a[i]; }
       case 'sizeof': { const v = yield* ev(n.e, sc); return Array.isArray(v) ? v.length * 2 : 2; }
       case 'inc': {
         const old = yield* ev(n.e, sc), nv = binop(n.op === '++' ? '+' : '-', old, 1, n.line); yield* store(n.e, nv, sc, n.line); return n.pre ? yield* ev(n.e, sc) : old;
@@ -403,7 +411,7 @@ function createRunner(prog, io) {
       let size = null; if (it.arr.size) size = N(yield* ev(it.arr.size, sc));
       let arr;
       if (it.init && it.init.k === 'list') { arr = []; for (const x of it.init.items) arr.push(norm(yield* ev(x, sc), type)); if (size != null) while (arr.length < size) arr.push(norm(0, type)); }
-      else if (it.init && typeof (yield* ev(it.init, sc)) === 'string') { const s = yield* ev(it.init, sc); arr = Array.from(s).map(ch => ch.charCodeAt(0)); arr.push(0); }
+      else if (it.init && typeof (yield* ev(it.init, sc)) === 'string') { const s = yield* ev(it.init, sc); arr = Array.from(s).map(ch => norm(ch.charCodeAt(0), type)); arr.push(norm(0, type)); }
       else { if (size == null) throw err('Die Feldgröße fehlt', line); arr = Array.from({ length: size }, () => norm(0, type)); }
       arr.etype = type; return arr;
     }
@@ -462,6 +470,6 @@ function createRunner(prog, io) {
   return self;
 }
 
-const api = { compile, createRunner, Fl };
+const api = { compile, createRunner, Fl, Ch };
 if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.Arduino = api;
 })(typeof window !== 'undefined' ? window : globalThis);

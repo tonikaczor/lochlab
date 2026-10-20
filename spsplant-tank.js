@@ -510,9 +510,8 @@
         ctx.fillStyle = '#d6b21d'; ctx.beginPath(); ctx.arc(184, 424, 24, 0, 6.2832); ctx.fill();
         btn('S3', 184, 424, 17, st.in6 ? '#e63232' : '#7a1d1d', !st.in6, 'S3 Not-Halt');
         // Stoerlampe
-        const hon = o['Q0.5'], blink = hon;
-        const lampOn = hon && (Math.floor(tt * 3) % 2 === 0 || true);
-        led(ctx, 258, 438, lampOn, C.bad, 9); txt(ctx, 'H1', 258, 460, 11, hon ? C.bad : C.dim, 'center', '700');
+        const hon = !!o['Q0.5'];
+        led(ctx, 258, 438, hon, C.bad, 9); txt(ctx, 'H1', 258, 460, 11, hon ? C.bad : C.dim, 'center', '700');
         ctx.restore();
       }
 

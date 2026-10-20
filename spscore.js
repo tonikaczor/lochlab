@@ -25,6 +25,8 @@
  *    des vorherigen Zyklus (Aktionen laufen nach den Transitionen).
  *  - Operanden im GRAFCET-Text: Schritt-ID (hat Vorrang) > Adresse (alle Schreibweisen) > Symbolname aus prog.symbols.
  *    Zusaetzlich erlaubt: ! und ^ ( NICHT / XOR ), && und ||, 1/0 als true/false, Dezimalkomma bei Zeiten.
+ *    Zeitbedingung auch in der Schreibweise der DIN EN 60848 (Zeit vor Schritt): 3s/S1, 500ms/X2 (X2 = Schritt S2);
+ *    die Textausgabe (condToText) bleibt bei t/S1/3s, wie es Hilfe und Aufgaben zeigen.
  *    Prioritaet: NICHT > UND > XOR > ODER.
  *  - addr(key, mode, kind?) - optionaler dritter Parameter kind ('ton','tof','tp','ctu','ctd') liefert
  *    TON1/TOF1/TP1/CTU1/CTD1 (IEC) bzw. 'T1 (SE)' / 'Z1 (ZV)' (Siemens).
@@ -133,6 +135,15 @@
         toks.push({ k: 'time', pos: pos, txt: m[0], step: m[1], ms: Math.round(parseFloat(m[2].replace(',', '.')) * mult) });
         i += m[0].length; continue;
       }
+      // Schreibweise nach DIN EN 60848: Zeit vor Schritt, z. B. 3s/S1 oder 500ms/X2 (X2 = Schrittvariable von S2)
+      if (/\d/.test(c)) {
+        const md = /^(\d+(?:[.,]\d+)?)\s*(ms|s|min)\s*\/\s*([A-Za-z_][A-Za-z0-9_]*)(?![A-Za-z0-9_])/i.exec(src.slice(i));
+        if (md) {
+          const mult = { ms: 1, s: 1000, min: 60000 }[md[2].toLowerCase()];
+          toks.push({ k: 'time', pos: pos, txt: md[0], step: md[3], ms: Math.round(parseFloat(md[1].replace(',', '.')) * mult) });
+          i += md[0].length; continue;
+        }
+      }
       if (c === '&') { i += src[i + 1] === '&' ? 2 : 1; toks.push({ k: 'and', pos: pos, txt: '&' }); continue; }
       if (c === '+') { toks.push({ k: 'or', pos: pos, txt: '+' }); i++; continue; }
       if (c === '|') { i += src[i + 1] === '|' ? 2 : 1; toks.push({ k: 'or', pos: pos, txt: '|' }); continue; }
@@ -210,10 +221,14 @@
         case 'lp': { p++; const e = orExpr(); expectRp(tok); return e; }
         case 'true': p++; return { t: 'const', v: true };
         case 'false': p++; return { t: 'const', v: false };
-        case 'time':
+        case 'time': {
           p++;
-          if (haveSteps && !stepUp[tok.step.toUpperCase()]) throw perr('Zeitbedingung: Schritt "' + tok.step + '" gibt es nicht', tok.pos);
-          return { t: 'time', step: haveSteps ? stepUp[tok.step.toUpperCase()] : tok.step, ms: tok.ms };
+          let sname = tok.step.toUpperCase();
+          // Schrittvariable X<n> (DIN EN 60848) meint den Schritt S<n>, wenn es ihn gibt
+          if (haveSteps && !stepUp[sname]) { const mx = /^X(\d+)$/.exec(sname); if (mx && stepUp['S' + mx[1]]) sname = 'S' + mx[1]; }
+          if (haveSteps && !stepUp[sname]) throw perr('Zeitbedingung: Schritt "' + tok.step + '" gibt es nicht', tok.pos);
+          return { t: 'time', step: haveSteps ? stepUp[sname] : tok.step, ms: tok.ms };
+        }
         case 're': case 'fe': {
           p++;
           const lp = peek();

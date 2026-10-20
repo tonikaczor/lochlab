@@ -585,7 +585,7 @@
       { source: 'netz', connection: 'dreieck', K1: false, K2: false, K3: false, load: 3 },
       { dur: 4000, seq: [{ t: 200, set: { K1: true } }] }),
     E('ac-sd', 'Stern-Dreieck-Anlauf mit Ablaufprogramm', 'Drehstrom', 'drehstrom',
-      'K1 und K2 schalten den Motor im Stern ein, der Anlaufstrom ist nur etwa halb so hoch wie beim Direktanlauf. Nach dem Hochlauf fällt K2 ab, und kurz danach zieht K3 an: Der Motor läuft im Dreieck weiter. K2 und K3 sind nie gleichzeitig an.',
+      'K1 und K2 schalten den Motor im Stern ein, der Anlaufstrom ist nur etwa ein Drittel des Direktanlaufstroms (hier rund 7 A statt 20 A). Nach dem Hochlauf fällt K2 ab, und kurz danach zieht K3 an: Der Motor läuft im Dreieck weiter. K2 und K3 sind nie gleichzeitig an.',
       { source: 'netz', connection: 'dreieck', K1: false, K2: false, K3: false, load: 3 }, { dur: 6000, seq: SD_SEQ }),
     E('ac-fu', 'Frequenzumrichter: Rampe und Drehzahl', 'Drehstrom', 'drehstrom',
       'Der Umrichter fährt den Motor erst auf 25 Hz, bei 5 Sekunden dann auf 50 Hz. Die Drehzahl folgt der Frequenz, der Strom bleibt dabei klein. Das Messgerät für die Frequenz am Motor zeigt die Rampe.',

@@ -8,7 +8,7 @@
  *      board.cuts   [{id,track,x,y,layer,ca,cb}]   Haarriss in einer Leiterbahn (Bahn bleibt gezeichnet, ist aber getrennt)
  *      board.blobs  [{id,kind:'bridge'|'ball'|'copper',a,b,x,y,r,ang,layer}]  Lötbrücke, Zinnperle, Kupferrest (verbindet zwei Punkte)
  *      board.wires  [{id,a:{x,y,side},b:{x,y,side}}]   Fädeldrähte (Reparatur)
- *      vias[].broken = true       gebrochene Via (Hülse unterbrochen)
+ *      vias[].broken = true       gebrochenes Via (Hülse unterbrochen)
  *      parts[].cold = ['1','3']   kalte Lötstellen (Pin-Nummern), parts[].defect = 'open'|'short'
  *      board.repair = { faults:[info], soll:{parts,nets}, supply?:{net,v,gnd} }  Fehlerliste und Soll-Stand (für check)
  *  - Die Messwerte kommen aus einem eigenen Konnektivitätsgraphen (Pads, Bahnstücke, Vias je Lage, Zonen, Drähte, Lötbrücken),
@@ -615,7 +615,7 @@
       for (const v of shuffle((b.vias || []).filter(v => !opt.via || v.id === opt.via), rnd)) {
         const b2 = clone(b); b2.vias.find(q => q.id === v.id).broken = true; if (!effective(b2, board)) continue;
         b.vias = b2.vias; info.via = v.id; info.net = v.net; info.where = { x: v.x, y: v.y };
-        info.desc = 'Die Via ' + (v.net ? 'im Netz ' + v.net : '') + ' ist gebrochen.'; info.fix = 'Die Verbindung zwischen Vorder- und Rückseite mit einem Draht durch die Via-Bohrung wiederherstellen (Fädeldraht oder Via durchlöten).';
+        info.desc = 'Das Via ' + (v.net ? 'im Netz ' + v.net : '') + ' ist gebrochen.'; info.fix = 'Die Verbindung zwischen Vorder- und Rückseite mit einem Draht durch die Via-Bohrung wiederherstellen (Fädeldraht oder Via durchlöten).';
         return fin(b, rp, info);
       }
       return null;
@@ -715,7 +715,7 @@
         if (act.t !== need) { res.msg = bl.kind === 'bridge' ? 'Eine Lötbrücke saugst du mit Entlötlitze ab.' : bl.kind === 'ball' ? 'Eine Zinnperle nimmst du mit der Pinzette weg.' : 'Einen Kupferrest schabst du mit dem Messer weg.'; return res; }
         b.blobs = b.blobs.filter(x => x.id !== act.id); res.ok = true; res.fx = bl.kind === 'bridge' ? 'fizz' : 'click'; res.msg = (bl.kind === 'bridge' ? 'Brücke abgesaugt.' : bl.kind === 'ball' ? 'Zinnperle entfernt.' : 'Kupferrest abgeschabt.'); return res; }
       case 'solderCut': { const c = (b.cuts || []).find(x => x.id === act.id); if (!c) { res.msg = 'Hier ist kein Riss.'; return res; } b.cuts = b.cuts.filter(x => x.id !== act.id); res.ok = true; res.fx = 'fizz'; res.msg = 'Riss mit Lötzinn überbrückt.'; return res; }
-      case 'viaFix': { const v = (b.vias || []).find(x => x.id === act.id); if (!v || !v.broken) { res.msg = 'Diese Via ist in Ordnung.'; return res; } delete v.broken; res.ok = true; res.fx = 'fizz'; res.msg = 'Draht durch die Via gelötet: Vorder- und Rückseite sind wieder verbunden.'; return res; }
+      case 'viaFix': { const v = (b.vias || []).find(x => x.id === act.id); if (!v || !v.broken) { res.msg = 'Dieses Via ist in Ordnung.'; return res; } delete v.broken; res.ok = true; res.fx = 'fizz'; res.msg = 'Draht durch das Via gelötet: Vorder- und Rückseite sind wieder verbunden.'; return res; }
       case 'wire': {
         const g = buildGraph(b), a = g.nodeAt(act.a.x, act.a.y, g.layerOf(act.a.side), 0.35), c = g.nodeAt(act.b.x, act.b.y, g.layerOf(act.b.side), 0.35);
         if (a < 0 || c < 0) { res.msg = 'Der Draht muss auf beiden Seiten an Kupfer (Pad, Bahn oder Via) angelötet werden.'; return res; }
@@ -1351,7 +1351,7 @@
         sel: 'Tippe ein Bauteil an: Du siehst Wert und Aufdruck. Ziehen verschiebt die Ansicht, zwei Finger zoomen.',
         meter: 'Tippe zwei Messpunkte (Pad, Bahn oder Via) oder ziehe die Spitzen. Rot = A, schwarz = B. Wähle unten die Messart.',
         lupe: 'Ziehe die Lupe über Lötstellen, Bahnen und Vias. Manche Fehler siehst du nur im Zoom.',
-        iron: 'Tippe eine Lötstelle, ein Bauteil, einen Riss oder eine Via an: nachlöten, ausbauen, drehen oder ersetzen.',
+        iron: 'Tippe eine Lötstelle, ein Bauteil, einen Riss oder ein Via an: nachlöten, ausbauen, drehen oder ersetzen.',
         wick: 'Entlötlitze: Tippe auf überschüssiges Lot (Lötbrücke), um es abzusaugen.',
         pin: 'Pinzette und Messer: Tippe auf eine Zinnperle oder einen Kupferrest (oder einen Draht), um ihn zu entfernen.',
         wire: 'Fädeldraht: Tippe erst den Anfang, dann das Ende der Überbrückung (Pad, Bahn oder Via). Das ist eine Notlösung.'
@@ -1533,7 +1533,7 @@
         const bl = (b.blobs || []).find(k => k.layer === layer && Math.hypot(k.x - w.x, k.y - w.y) < Math.max(k.r, (k.len || 1) / 2) + 0.6);
         let pad = null, bd = 1e9; sc.pads.forEach(pd => { if (pd.layers.indexOf(layer) < 0) return; const d = Math.hypot(pd.x - w.x, pd.y - w.y); if (d < bd) { bd = d; pad = pd; } });
         if (ct) t = 'Haarriss quer über der Leiterbahn: Die Bahn ist hier unterbrochen!';
-        else if (vi) t = 'Die Kupferhülse der Via hat einen Riss: keine Verbindung zwischen den Seiten.';
+        else if (vi) t = 'Die Kupferhülse des Vias hat einen Riss: keine Verbindung zwischen den Seiten.';
         else if (bl) t = bl.kind === 'bridge' ? 'Zu viel Lot: eine Lötbrücke verbindet zwei Pads.' : bl.kind === 'ball' ? 'Eine Zinnperle liegt zwischen den Kupferflächen.' : 'Ein Kupferrest verbindet zwei Bahnen.';
         else if (pad && bd < Math.max(pad.w, pad.h) / 2 + 0.5) { const p = sc.part[pad.ref]; if (p && pad.drill && (p.side === 'bot') === mir()) t = 'Hier verdeckt das Bauteil die Lötstelle. Die Lötstelle von ' + pad.ref + ' Pin ' + pad.n + ' sieht man von der Lötseite (Rückseite).'; else if (p && (p.cold || []).indexOf(pad.n) >= 0) t = 'Lötstelle ' + pad.ref + ' Pin ' + pad.n + ': matt, körnig, Riss am Rand. Das ist eine kalte Lötstelle.'; else if (p) t = 'Lötstelle ' + pad.ref + ' Pin ' + pad.n + ': glänzend, sauberer Meniskus. In Ordnung.'; }
         const part = partAt(w.x, w.y, 0); if (!t && part && !part.missing) { const p = part.part; t = p.ref + ': Aufdruck ' + p.value + (p.defect === 'open' ? ', Körper angekohlt' : '') + '.'; } else if (!t && part && part.missing) t = 'Leerer Bestückungsplatz ' + part.part.ref + '.';

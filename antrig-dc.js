@@ -464,7 +464,6 @@
       ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#7d8996'; ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(60, 125); ctx.lineTo(60, tp); ctx.lineTo(Rr, tp);
-      ctx.moveTo(L, tp); ctx.lineTo(L, tp + 0);
       ctx.moveTo(L, md); ctx.lineTo(SCH.mL, md); ctx.moveTo(SCH.mR, md); ctx.lineTo(Rr, md);
       ctx.moveTo(L, bt); ctx.lineTo(Rr, bt);
       ctx.stroke();
@@ -652,7 +651,7 @@
         ctx.beginPath(); ctx.moveTo(cx, cy + sg * (Rr - 15)); ctx.lineTo(cx, cy + sg * (Rr + 9)); ctx.stroke();
         ctx.fillStyle = '#26211c'; rr(ctx, cx - 8, by - (sg > 0 ? 0 : 17), 16, 17, 3); ctx.fill();
         ctx.strokeStyle = '#7d8996'; ctx.lineWidth = 2; ctx.beginPath();
-        for (let k = 0; k < 4; k++) { const yy = cy + sg * (48 + k * 6); ctx.moveTo(cx - 6, yy); ctx.lineTo(cx + 6, yy + 3); ctx.lineTo(cx - 6, yy + 6 * 0); }
+        for (let k = 0; k < 4; k++) { const yy = cy + sg * (48 + k * 6); ctx.moveTo(cx - 6, yy); ctx.lineTo(cx + 6, yy + 3); ctx.lineTo(cx - 6, yy); }
         ctx.stroke();
         ctx.fillStyle = live ? rgba(bc, 1) : '#555'; ctx.beginPath(); ctx.arc(cx, cy + sg * (Rr + 11), 5, 0, TWO_PI); ctx.fill();
       });

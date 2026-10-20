@@ -139,7 +139,19 @@
   const allErrors = () => (S.plc ? S.plc.errors : []);
 
   /* ---- Programm laden ---- */
+  /* Fremde Programme (Link, Code, alter Speicherstand) auf das Modell bringen, damit Editoren und Kern nie an einem fehlenden Feld scheitern */
+  function sanitizeProg(p) {
+    if (!p || typeof p !== 'object' || Array.isArray(p)) p = {};
+    if (!LANGN[p.lang]) p.lang = p.gra && !p.networks ? 'gra' : 'kop';
+    if (!p.symbols || typeof p.symbols !== 'object' || Array.isArray(p.symbols)) p.symbols = {};
+    if (p.lang === 'gra') {
+      if (!p.gra || typeof p.gra !== 'object' || Array.isArray(p.gra)) p.gra = { steps: [{ id: 'S0', init: true, title: 'Grundstellung', actions: [] }], transitions: [] };
+      if (!Array.isArray(p.gra.steps)) p.gra.steps = []; if (!Array.isArray(p.gra.transitions)) p.gra.transitions = [];
+    } else if (!Array.isArray(p.networks)) p.networks = [{ id: 'N1', title: '', expr: null, outs: [] }];
+    return p;
+  }
   function setProg(p, name, id) {
+    p = sanitizeProg(p);
     S.prog = p; S.name = name || 'Programm'; S.id = id || null; S.dirty = false;
     hist = [JSON.stringify(p)]; hi = 0;
     recompile(); buildIO(); mountEditor(); updateChrome(); saveCur();
@@ -293,7 +305,8 @@
   function plantPng(w, h) {
     const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
     x.fillStyle = '#14181c'; x.fillRect(0, 0, w, h); try { S.plant.draw(x, w, h); } catch (e) {}
-    drawPlant(); return c;
+    drawPlant();   // Tank und Garagentor merken sich beim Zeichnen den Maßstab für das Antippen: gleich wieder auf die sichtbare Fläche setzen
+    return c;
   }
   function exportPng() {
     const c = plantPng(1600, 1000);
@@ -314,7 +327,7 @@
   function symbolSheet() {
     const pd = pdef(S.plantId), rows = [];
     pd.io.inputs.forEach(x => rows.push(['Eingänge', x.key, x.text])); pd.io.outputs.forEach(x => rows.push(['Ausgänge', x.key, x.text]));
-    for (let i = 0; i < 8; i++) rows.push(['Merker', 'M0.' + i, 'Merker']);
+    for (let b = 0; b < 2; b++) for (let i = 0; i < 8; i++) rows.push(['Merker', 'M' + b + '.' + i, 'Merker']);
     sheet('Symboltabelle', (b, close) => {
       let last = '', h = '<p class="hint2" style="margin-top:0">Symbolnamen machen das Programm lesbar (zum Beispiel <b>S1_Start</b> statt E0.0). Sie gelten nur für dieses Programm.</p>';
       rows.forEach(([g, k, t], i) => { if (g !== last) { last = g; h += `<div class="gh">${g}</div>`; } h += `<label class="f" style="margin-bottom:6px"><span>${esc(CORE.addr(k, 's7'))} · ${esc(CORE.addr(k, 'iec'))} · ${esc(t)}</span><input data-k="${k}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc((S.prog.symbols || {})[k] || '')}"></label>`; });
@@ -525,7 +538,7 @@
     const er = c.errorList || [], wa = c.warnings || [];
     if (!er.length && !wa.length) { b.className = ''; b.innerHTML = ''; return; }
     b.className = 'on'; if (S.errOpen == null) b.open = er.length > 0; else b.open = S.errOpen;
-    b.innerHTML = `<summary><span style="color:${er.length ? '#ff8a7a' : 'var(--warn)'}">⚠</span> ${er.length ? er.length + (er.length === 1 ? ' Fehler' : ' Fehler') : ''}${er.length && wa.length ? ' · ' : ''}${wa.length ? wa.length + (wa.length === 1 ? ' Hinweis' : ' Hinweise') : ''}${er.length ? ' – das Programm läuft erst, wenn die Fehler behoben sind' : ''}</summary><ul>${er.map(t => `<li class="e">${esc(t)}</li>`).join('')}${wa.map(t => `<li class="w">${esc(t)}</li>`).join('')}</ul>`;
+    b.innerHTML = `<summary><span style="color:${er.length ? '#ff8a7a' : 'var(--warn)'}">⚠</span> ${er.length ? er.length + ' Fehler' : ''}${er.length && wa.length ? ' · ' : ''}${wa.length ? wa.length + (wa.length === 1 ? ' Hinweis' : ' Hinweise') : ''}${er.length ? ' – das Programm läuft erst, wenn die Fehler behoben sind' : ''}</summary><ul>${er.map(t => `<li class="e">${esc(t)}</li>`).join('')}${wa.map(t => `<li class="w">${esc(t)}</li>`).join('')}</ul>`;
   }
   $('#errBox').addEventListener('toggle', e => { S.errOpen = e.target.open; });
   function showErrors() {
@@ -851,7 +864,7 @@
     <details open><summary>1 · So arbeitet eine SPS</summary><div class="hb2"><p>Eine speicherprogrammierbare Steuerung (SPS) wiederholt immer wieder denselben <b>Zyklus</b>:</p><p><b>1.</b> Eingänge einlesen (Taster, Schalter, Sensoren) und als <b>Prozessabbild</b> einfrieren<br><b>2.</b> Programm von oben nach unten abarbeiten<br><b>3.</b> Ausgänge schreiben (Schütze, Ventile, Lampen)</p><p>Im SPS-Lab dauert ein Zyklus <b>10 ms</b>. Während des Zyklus ändert sich ein Eingang nie mitten im Programm, jede Stelle sieht denselben Wert. Mit dem Zeitraffer (×0,5 bis ×4) läuft die Anlage schneller oder langsamer, die SPS rechnet immer 10-ms-Schritte. Mit <b>Schritt</b> gehst du genau einen Zyklus weiter.</p></div></details>
     <details><summary>2 · Adressen: IEC und Siemens</summary><div class="hb2"><p>Jeder Ein- und Ausgang hat eine Adresse. Unten in der Leiste schaltest du zwischen <b>IEC</b> (nach Norm) und <b>Siemens</b> um. Das Programm bleibt gleich, nur die Anzeige ändert sich. Mit <b>Symbole</b> siehst du statt der Adresse einen Namen wie <code>S1_Start</code>.</p><table><tr><th>Bedeutung</th><th>IEC</th><th>Siemens</th></tr><tr><td>Eingang</td><td><code>%IX0.0</code></td><td><code>E0.0</code></td></tr><tr><td>Ausgang</td><td><code>%QX0.1</code></td><td><code>A0.1</code></td></tr><tr><td>Merker</td><td><code>%MX0.2</code></td><td><code>M0.2</code></td></tr><tr><td>Zeitglied</td><td><code>TON1</code>, <code>TOF1</code>, <code>TP1</code></td><td><code>T1</code> (SE, SA, SI)</td></tr><tr><td>Zähler</td><td><code>CTU1</code>, <code>CTD1</code></td><td><code>Z1</code></td></tr><tr><td>Anweisungen</td><td>LD, AND, OR, ST, S, R</td><td>U, UN, O, =, S, R</td></tr></table><p>Die Zahl hinter dem Punkt ist das Bit (0 bis 7), davor das Byte. <code>E0.3</code> ist also Bit 3 im Eingangsbyte 0.</p></div></details>
     <details><summary>3 · Öffner und Schließer beim Stopp-Taster</summary><div class="hb2"><p>Ein <b>Schließer</b> liefert nur gedrückt eine 1. Ein <b>Öffner</b> liefert in Ruhe eine 1 und gedrückt eine 0. Stopp-Taster und Not-Halt sind aus Sicherheitsgründen <b>Öffner</b>: Bricht ein Draht, sieht die SPS eine 0 und schaltet ab, genau wie bei Betätigung.</p><p>Im Programm heißt das: Den Stopp-Taster fragst du als <b>Schließer-Kontakt</b> ab (Ruhe = 1 = Strom fließt). Das überrascht am Anfang, ist aber Absicht.</p><div class="tryit">${ex('selbsthaltung', 'Selbsthaltung ausprobieren')}</div></div></details>
-    <details><summary>4 · KOP, FUP und GRAFCET</summary><div class="hb2"><p><b>KOP (Kontaktplan)</b> sieht aus wie ein Stromlaufplan: Kontakte (Schließer, Öffner) in Reihe sind UND, parallel sind ODER. Rechts steht die Spule oder eine Zuweisung. <b>Setzen (S)</b> hält einen Ausgang auch nach dem Loslassen, <b>Rücksetzen (R)</b> löscht ihn.</p><p><b>FUP (Funktionsplan)</b> zeigt dieselbe Logik mit Gattern (UND, ODER, XOR) und Bausteinen. KOP und FUP lassen sich ineinander umschalten.</p><p><b>GRAFCET</b> beschreibt Abläufe: Ein <b>Schritt</b> ist aktiv oder nicht, <b>Aktionen</b> gehören zu einem Schritt, eine <b>Transition</b> schaltet weiter, wenn ihre Bedingung wahr ist. Aktionen: <code>N</code> nur solange aktiv, <code>S</code> speichern (setzen), <code>R</code> rücksetzen, <code>D</code> verzögert, <code>L</code> zeitbegrenzt. Zeitbedingungen schreibst du so: <code>t/S1/3s</code> (Schritt S1 seit 3 s aktiv).</p><p>Die Ansicht <b>Text</b> zeigt dein Programm als Anweisungsliste.</p></div></details>
+    <details><summary>4 · KOP, FUP und GRAFCET</summary><div class="hb2"><p><b>KOP (Kontaktplan)</b> sieht aus wie ein Stromlaufplan: Kontakte (Schließer, Öffner) in Reihe sind UND, parallel sind ODER. Rechts steht die Spule oder eine Zuweisung. <b>Setzen (S)</b> hält einen Ausgang auch nach dem Loslassen, <b>Rücksetzen (R)</b> löscht ihn.</p><p><b>FUP (Funktionsplan)</b> zeigt dieselbe Logik mit Gattern (UND, ODER, XOR) und Bausteinen. KOP und FUP lassen sich ineinander umschalten.</p><p><b>GRAFCET</b> beschreibt Abläufe: Ein <b>Schritt</b> ist aktiv oder nicht, <b>Aktionen</b> gehören zu einem Schritt, eine <b>Transition</b> schaltet weiter, wenn ihre Bedingung wahr ist. Aktionen: <code>N</code> nur solange aktiv, <code>S</code> speichern (setzen), <code>R</code> rücksetzen, <code>D</code> verzögert, <code>L</code> zeitbegrenzt. Zeitbedingungen schreibst du so: <code>t/S1/3s</code> (Schritt S1 seit 3 s aktiv); die Schreibweise der Norm DIN EN 60848 <code>3s/S1</code> versteht das Lab ebenfalls.</p><p>Die Ansicht <b>Text</b> zeigt dein Programm als Anweisungsliste.</p></div></details>
     <details><summary>5 · Zeitglieder und Zähler</summary><div class="hb2"><table><tr><th>Baustein</th><th>Verhalten</th></tr><tr><td><b>TON</b> (SE)<br>Einschaltverzögerung</td><td>Ausgang geht erst an, wenn der Eingang <b>PT</b> lang durchgehend 1 war.</td></tr><tr><td><b>TOF</b> (SA)<br>Ausschaltverzögerung</td><td>Ausgang geht sofort an und fällt erst <b>PT</b> nach dem Abschalten des Eingangs ab.</td></tr><tr><td><b>TP</b> (SI)<br>Impuls</td><td>Eine steigende Flanke startet einen Impuls von genau <b>PT</b> Länge.</td></tr><tr><td><b>CTU</b> (Z vorwärts)</td><td>Jede steigende Flanke zählt +1, Reset setzt auf 0, Ausgang bei Zählwert ≥ <b>PV</b>.</td></tr><tr><td><b>CTD</b> (Z rückwärts)</td><td>Jede steigende Flanke zählt −1 (nie unter 0), Laden setzt auf <b>PV</b>, Ausgang bei Zählwert 0.</td></tr></table>
       ${timing([{ n: 'Eingang', p: [[0, 0], [1, 1], [5, 0]], c: '#3b9eff' }, { n: 'TON 3 s', p: [[0, 0], [4, 1], [5, 0]] }], 6)}${timing([{ n: 'Eingang', p: [[0, 0], [1, 1], [3, 0]], c: '#3b9eff' }, { n: 'TOF 2 s', p: [[0, 0], [1, 1], [5, 0]] }], 6)}${timing([{ n: 'Eingang', p: [[0, 0], [1, 1], [2, 0]], c: '#3b9eff' }, { n: 'TP 3 s', p: [[0, 0], [1, 1], [4, 0]] }], 6)}
       <p>Oben der Eingang (blau), darunter der Ausgang des Bausteins (grün). Jedes Zeitglied und jeder Zähler darf nur <b>einmal</b> im Programm vorkommen.</p><div class="tryit">${ex('blinker', 'Blinker ansehen')}${ex('zaehler', 'Zähler ansehen')}${ex('treppenlicht', 'Treppenlicht (TP)')}</div></div></details>
@@ -896,7 +909,7 @@
   /* ============================================================ Tastatur */
   const typing = e => { const t = e.target; return t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable); };
   root.addEventListener('keydown', e => {
-    if (typing(e) || e.altKey || document.querySelector('.backdrop')) return;
+    if (typing(e) || e.altKey || document.querySelector('.backdrop, .sg-ov.show')) return;   // auch nicht, solange ein GRAFCET-Fenster offen ist
     const k = e.key, mod = e.ctrlKey || e.metaKey;
     if (mod) {
       if (k.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); }

@@ -98,7 +98,7 @@
     if (!isObj(n) || isLeaf(n)) return 0;
     let m = -1;
     childList(n).forEach(function (c) { m = Math.max(m, c.node ? treeHeight(c.node) : 0); });
-    return m + 1 + (childList(n).length ? 0 : 0);
+    return m + 1;
   }
   function collectFb(expr, acc) {
     if (!isObj(expr)) return acc;
@@ -815,7 +815,7 @@
         if (isNaN(v) || v < 0 || v > 999) { toast('Der Vorgabewert muss eine ganze Zahl von 0 bis 999 sein.'); return null; }
         node.pv = v;
       }
-      if (old && !(old.t === 'const' && old.v === true && false)) node[inf.pins[0]] = old;
+      if (old) node[inf.pins[0]] = old;
       return node;
     }
     // Auswahl für leeren Platz: Signal oder Block
@@ -916,7 +916,7 @@
           { value: 'neg', label: n.neg ? 'Negation am Ausgang entfernen' : 'Negation am Ausgang (Kreis) setzen', group: 'Bearbeiten' },
           { value: 'kind', label: 'Gattertyp ändern (jetzt ' + n.t.toUpperCase() + ')', group: 'Bearbeiten' }];
         if (n.in.length < MAXIN) opts.push({ value: 'addin', label: 'Eingang hinzufügen (jetzt ' + n.in.length + ')', group: 'Eingänge' });
-        if (n.in.length > 2 || (n.in.length > 1 && false)) opts.push({ value: 'rmin', label: 'Eingang entfernen …', group: 'Eingänge' });
+        if (n.in.length > 2) opts.push({ value: 'rmin', label: 'Eingang entfernen …', group: 'Eingänge' });
         opts.push({ value: 'block', label: 'Block davorsetzen (dieses Gatter wird Eingang)', group: 'Einfügen' });
         opts.push({ value: 'del', label: 'Gatter samt Eingängen löschen', group: 'Entfernen' });
         const t = await pick('Gatter ' + n.t.toUpperCase() + (n.neg ? ' (negiert)' : ''), opts);

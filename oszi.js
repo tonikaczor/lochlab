@@ -115,7 +115,7 @@
     let ri = 0, rok = 0;
     function riddle() {
       const right = pick(RIDDLE), opts = [right]; while (opts.length < 4) { const o = pick(RIDDLE); if (!opts.includes(o)) opts.push(o); } opts.sort(() => rnd() - .5);
-      S.sig = { shape: right.s, f: pick([500, 1000, 2000]), a: 2, off: 0 }; S.tb = right.s === 'ripple' ? 5 : 5; S.vb = 4; S.trig = true; S.level = 0; S.slope = 1; S.off = 0;
+      S.sig = { shape: right.s, f: pick([500, 1000, 2000]), a: 2, off: 0 }; S.tb = 5; S.vb = 4; S.trig = true; S.level = 0; S.slope = 1; S.off = 0;
       S.level = { half: 0.3, full: 0.3, ripple: 1.6, hp: 0.5 }[right.s] || 0;
       buildCtl(false);
       task.innerHTML = `<div class="hint2" style="color:#9aa6b2">Rätsel ${ri + 1} von 5</div><p style="margin:6px 0">Welche Schaltung liefert diese Kurve am Ausgang?</p>${opts.map((o, i) => `<button class="opt" data-i="${i}">${esc(o.n)}</button>`).join('')}<div id="ozMsg" style="margin-top:8px"></div>`;

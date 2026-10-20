@@ -812,8 +812,11 @@
   function ipcCalc() {
     const I = num($('#ipcI').value), oz = num($('#ipcOz').value), dt = num($('#ipcDT').value), ext = $('#ipcExt').value === '1', out = $('#ipcRes');
     if (!(I > 0) || !(oz > 0) || !(dt > 0)) { out.textContent = 'Bitte Zahlen eingeben'; return; }
-    const k = ext ? 0.048 : 0.024, A = Math.pow(I / (k * Math.pow(dt, 0.44)), 1 / 0.725), w = A / (1.378 * oz) * 0.0254;
-    out.textContent = 'Mindestbreite: ' + fmt(w) + ' mm';
+    /* gleiche Rechnung wie der DRC (PCB_CORE.ipcWidth), damit Hilfe und Prüfung nie auseinanderlaufen */
+    const C = CORE(); let w = 0;
+    if (C && C.ipcWidth) { try { w = C.ipcWidth(I, { oz, rise: dt, external: ext }); } catch (e) { w = 0; } }
+    if (!(w > 0)) { const k = ext ? 0.048 : 0.024, A = Math.pow(I / (k * Math.pow(dt, 0.44)), 1 / 0.725); w = A / (1.378 * oz) * 0.0254; }
+    out.textContent = 'Mindestbreite: ' + fmt(w) + ' mm' + (w > 0 && C && C.ipcCurrent ? ' (umgekehrt: 1 mm Bahn trägt etwa ' + fmt(C.ipcCurrent(1, { oz, rise: dt, external: ext }), 1) + ' A)' : '');
   }
   $('#helpView').addEventListener('input', e => { if (e.target.closest('.calc')) ipcCalc(); });
   $('#helpView').addEventListener('change', e => { if (e.target.closest('.calc')) ipcCalc(); });
@@ -827,7 +830,7 @@
   });
   function keysHtml() {
     const k = (a, t) => `<tr><td style="white-space:nowrap"><code>${a}</code></td><td>${t}</td></tr>`;
-    return '<table>' + k('W', 'Leiterbahn zeichnen') + k('V', 'Via setzen (Lagenwechsel)') + k('R', 'Bauteil drehen') + k('F', 'Bauteil spiegeln (auf die andere Seite)') + k('M', 'Messen (Abstand und Winkel)') + k('Entf', 'Auswahl löschen') + k('1 bis 6', 'Lage wählen (1 oben, die letzte Zahl unten)') + k('Strg + Z', 'Rückgängig') + k('Strg + Y oder Strg + Umschalt + Z', 'Wiederholen') + k('Strg + S', 'Platine speichern') + k('Mausrad oder Zwei-Finger-Geste', 'Zoomen') + k('Esc', 'Werkzeug beenden, Auswahl aufheben') + k('?', 'Diese Übersicht') + '</table><p class="hint2">Die Kürzel gelten nicht, solange ein Eingabefeld oder ein Fenster offen ist.</p>';
+    return '<table>' + k('S', 'Wählen und Verschieben') + k('P', 'Bauteil setzen') + k('B', 'Leiterbahn zeichnen') + k('V', 'Beim Zeichnen: Via setzen und Lage wechseln (sonst Via-Werkzeug)') + k('O', 'Via-Werkzeug') + k('Z', 'Kupferfläche (Zone) zeichnen') + k('X', 'Text setzen') + k('M', 'Messen (Abstand und Winkel)') + k('D oder Entf', 'Löschen') + k('R (Umschalt + R)', 'Bauteil drehen (gegen den Uhrzeigersinn)') + k('F', 'Bauteil spiegeln (auf die andere Seite)') + k('C', 'Beim Zeichnen: Eckenart wechseln (45° / 90°)') + k('Enter', 'Bahn oder Fläche fertigstellen') + k('Rücktaste', 'Beim Zeichnen: letzten Punkt zurücknehmen') + k('H', 'Netz-Hervorhebung aus') + k('1 bis 6', 'Kupferlage wählen (1 oben, die letzte Zahl unten)') + k('Strg + Z', 'Rückgängig') + k('Strg + Y oder Strg + Umschalt + Z', 'Wiederholen') + k('Strg + S', 'Platine speichern') + k('Mausrad oder Zwei-Finger-Geste', 'Zoomen') + k('Leertaste + Ziehen', 'Ansicht verschieben (Maus)') + k('Esc', 'Werkzeug beenden, Auswahl aufheben') + k('?', 'Diese Übersicht') + '</table><p class="hint2">Die Kürzel gelten im Layout-Tab und nicht, solange ein Eingabefeld oder ein Fenster offen ist.</p>';
   }
 
   /* ============================================================ Menü */

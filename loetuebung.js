@@ -44,18 +44,21 @@
     if (document.getElementById('loetBox')) return;
     const w = document.createElement('div'); w.id = 'loetBox';
     w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch';
-    w.innerHTML = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:560px;width:100%;font:15px system-ui,sans-serif">
-      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">🔥 Lötübung</b><button id="lbX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer" aria-label="Schließen">✕</button></div>
-      <div style="display:flex;gap:8px;margin:10px 0"><button class="lbt on" id="lbT1">Löten üben</button><button class="lbt" id="lbT2">Lupen-Prüfung</button></div>
+    w.innerHTML = `<div role="dialog" aria-modal="true" aria-label="Lötübung" style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:560px;width:100%;font:15px system-ui,sans-serif">
+      <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">🔥 Lötübung</b><button id="lbX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer;width:44px;height:44px" aria-label="Schließen">✕</button></div>
+      <div style="display:flex;gap:8px;margin:10px 0" role="tablist"><button class="lbt on" id="lbT1" role="tab" aria-selected="true">Löten üben</button><button class="lbt" id="lbT2" role="tab" aria-selected="false">Lupen-Prüfung</button></div>
       <div id="lbBody"></div></div>
-      <style>.lbt{background:#2c343e;color:#e8eaed;border:1px solid #38424d;border-radius:9px;padding:9px 14px;font-size:14px;cursor:pointer;touch-action:manipulation}.lbt.on{background:#ff9d00;color:#1b1b1b;border-color:#ff9d00;font-weight:700}.lbt[disabled]{opacity:.4;cursor:default}#loetBox canvas{width:100%;background:#1d4a2c;border-radius:10px;display:block}</style>`;
+      <style>.lbt{background:#2c343e;color:#e8eaed;border:1px solid #38424d;border-radius:9px;padding:9px 14px;font-size:14px;cursor:pointer;touch-action:manipulation;min-height:40px}.lbt.on{background:#ff9d00;color:#1b1b1b;border-color:#ff9d00;font-weight:700}.lbt[disabled]{opacity:.4;cursor:default}#loetBox canvas{width:100%;background:#1d4a2c;border-radius:10px;display:block;touch-action:manipulation}</style>`;
     document.body.appendChild(w);
     const body = w.querySelector('#lbBody'); let raf = 0, cleanup = () => {};
-    const close = () => { cleanup(); clearTimeout(raf); w.remove(); };
+    const onKey = e => { if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); } };
+    const close = () => { cleanup(); clearTimeout(raf); window.removeEventListener('keydown', onKey, true); w.remove(); };
+    window.addEventListener('keydown', onKey, true);
     w.querySelector('#lbX').onclick = close; w.addEventListener('pointerdown', e => { if (e.target === w) close(); });
-    const tab = n => { cleanup(); cleanup = () => {}; clearTimeout(raf); w.querySelector('#lbT1').classList.toggle('on', n === 1); w.querySelector('#lbT2').classList.toggle('on', n === 2); n === 1 ? practice() : lupe(); };
+    const tab = n => { cleanup(); cleanup = () => {}; clearTimeout(raf); [1, 2].forEach(i => { const b = w.querySelector('#lbT' + i); b.classList.toggle('on', n === i); b.setAttribute('aria-selected', n === i ? 'true' : 'false'); }); n === 1 ? practice() : lupe(); };
     w.querySelector('#lbT1').onclick = () => tab(1); w.querySelector('#lbT2').onclick = () => tab(2);
     const stat = (k, v, m) => { if (root.Badges) root.Badges.stat(k, v, m); };
+    const fx = (kind, big) => { try { if (!root.LochFX) return; if (kind === 'confetti') { root.LochFX.confetti && root.LochFX.isFun && root.LochFX.isFun() && root.LochFX.confetti(!!big); } else if (root.LochFX.sound) root.LochFX.sound(kind); } catch (e) { /* Effekte sind Beiwerk */ } };
 
     /* ===== Teil 1: Löten üben ===== */
     function practice() {
@@ -73,13 +76,13 @@
       const finish = () => {
         st.done = true; st.iron = false; st.sol = false; bI.disabled = true; bS.disabled = true;
         let k; if (st.ovr > 2.2) k = 'verbrannt'; else if (st.amt < 0.05) k = 'leer'; else if (st.cold > 0.35) k = 'kalt'; else if (st.amt < 0.55) k = 'zuwenig'; else if (st.amt > 1.75) k = 'zuviel'; else k = 'gut';
-        st.kind = k; n++; if (k === 'gut') good++; results.push(k);
+        st.kind = k; n++; if (k === 'gut') good++; results.push(k); fx(k === 'gut' ? 'ding' : 'boing');
         msg.innerHTML = `<b style="color:${k === 'gut' ? '#5ee27d' : '#ffb020'}">${esc(KINDS[k].t)}</b><br>${esc(KINDS[k].x)}<br><button class="lbt" id="lbNext" style="margin-top:8px">${n >= 6 ? 'Ergebnis' : 'Nächste Lötstelle'}</button>`;
         dots.textContent = results.map(r => r === 'gut' ? '🟢' : '🔴').join('') + '⚪'.repeat(Math.max(0, 6 - results.length));
         body.querySelector('#lbNext').onclick = () => { if (n >= 6) summary(); else fresh(); };
       };
       const summary = () => {
-        if (good >= 1) stat('loetOK', good); if (good === 6) stat('loetPerfekt', 1, 'max');
+        if (good >= 1) stat('loetOK', good); if (good === 6) { stat('loetPerfekt', 1, 'max'); fx('tada'); fx('confetti'); } else fx(good >= 4 ? 'ding' : 'sad');
         body.innerHTML = `<p style="font-size:20px;margin:0 0 8px"><b>${good} von 6</b> Lötstellen gut</p><p style="color:#9aa6b2">${good === 6 ? 'Makellos! Ruhige Hand. Jetzt noch die Lupen-Prüfung?' : good >= 4 ? 'Schon ordentlich. Achte auf die Hitze vor dem Zinn und auf die Menge.' : 'Übung macht den Meister. Erst erhitzen, dann das Zinn an Lötauge und Kolben zugleich, nicht auf den Kolben.'}</p>
           <div style="display:flex;gap:8px"><button class="lbt on" id="lbAgain">Nochmal</button><button class="lbt" id="lbL">Zur Lupen-Prüfung</button></div>`;
         body.querySelector('#lbAgain').onclick = () => tab(1); body.querySelector('#lbL').onclick = () => tab(2);
@@ -139,12 +142,12 @@
         });
       };
       paint();
-      cv.addEventListener('pointerdown', e => { if (checked) return; const r = cv.getBoundingClientRect(), px = (e.clientX - r.left) * 480 / r.width, py = (e.clientY - r.top) * 300 / r.height; let b = -1, bd = 56; row.forEach((k, i) => { const [x, y] = pos(i), d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; b = i; } }); if (b >= 0) { mark.has(b) ? mark.delete(b) : mark.add(b); paint(); } });
+      cv.addEventListener('pointerdown', e => { if (checked) return; e.preventDefault(); const r = cv.getBoundingClientRect(), px = (e.clientX - r.left) * 480 / r.width, py = (e.clientY - r.top) * 300 / r.height; let b = -1, bd = 56; row.forEach((k, i) => { const [x, y] = pos(i), d = Math.hypot(px - x, py - y); if (d < bd) { bd = d; b = i; } }); if (b >= 0) { mark.has(b) ? mark.delete(b) : mark.add(b); fx('click'); paint(); } });
       body.querySelector('#lpNew').onclick = () => lupe();
       body.querySelector('#lpGo').onclick = () => {
         if (checked) return; checked = true;
         const bad = row.map((k, i) => k !== 'gut' ? i : -1).filter(i => i >= 0), found = bad.filter(i => mark.has(i)).length, fals = [...mark].filter(i => row[i] === 'gut').length;
-        const perfect = found === bad.length && !fals; if (found) stat('lupeOK', found); if (perfect) stat('lupePerfekt', 1, 'max');
+        const perfect = found === bad.length && !fals; if (found) stat('lupeOK', found); if (perfect) { stat('lupePerfekt', 1, 'max'); fx('tada'); fx('confetti'); } else fx(found ? 'ding' : 'sad');
         msg.innerHTML = `<b style="color:${perfect ? '#5ee27d' : '#ffb020'}">${found} von ${bad.length} schlechten Lötstellen gefunden${fals ? ', ' + fals + ' gute fälschlich markiert' : ''}.</b><br>${perfect ? 'Scharfes Auge! Das wäre eine saubere Platine.' : 'Rot gestrichelt sind die übersehenen. Die Beschriftung sagt, was der Fehler ist.'}`;
         paint();
       };

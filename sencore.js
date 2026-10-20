@@ -221,7 +221,6 @@
     warm: 'Sensorheizung noch nicht auf Temperatur: Messwert unzuverlässig.',
     speisung_hoch: 'Brückenspeisung zu hoch: der DMS erwärmt sich.',
     stoerung: 'Starke Störeinkopplung auf der Leitung.',
-    bürde_zu_gross: 'Bürde zu groß: Der Messumformer kann den Strom nicht mehr einprägen.',
     buerde_zu_gross: 'Bürde zu groß: Der Messumformer kann den Strom nicht mehr einprägen.',
     adu_uebersteuert: 'ADU übersteuert: Die Eingangsspannung ist größer als die Referenzspannung.',
     unterbereich: 'Unterschreitung des Messbereichs.',

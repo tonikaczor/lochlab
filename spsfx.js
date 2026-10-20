@@ -133,7 +133,7 @@
   }
 
   /* ============================================================ Teilchen (Objektpool) */
-  const NP = 380, NB = 4;
+  const NP = 380;
   const P = []; for (let i = 0; i < NP; i++) P.push({ on: false, k: '', x: 0, y: 0, vx: 0, vy: 0, g: 0, life: 0, max: 1, s: 1, rot: 0, vr: 0, col: '#fff', cx: 0, cy: 0, ang: 0, rad: 0, w: 0, lay: 0 });
   let pNext = 0, nOn = 0;
   function alloc() {
@@ -323,7 +323,7 @@
         gx.fillStyle = '#ffffff'; gx.fill(); gx.stroke();
         gx.beginPath(); gx.moveTo(tx - 6, ty); gx.lineTo(tx + 6, ty); gx.strokeStyle = '#ffffff'; gx.lineWidth = 4; gx.stroke();
       }
-      gx.fillStyle = b.burst ? '#1a1f25' : '#1a1f25';
+      gx.fillStyle = '#1a1f25';
       const y1 = -(b.lines.length - 1) * lh / 2; b.lines.forEach((l, k) => { gx.fillText(l, 0, y1 + k * lh); });
       gx.restore();
     }

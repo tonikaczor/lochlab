@@ -529,8 +529,6 @@
         c.fillStyle = 'rgba(255,244,200,0.09)'; c.beginPath(); c.moveTo(-2, -9); c.lineTo(48, -20); c.lineTo(48, 20); c.lineTo(-2, 9); c.closePath(); c.fill();
       }
       c.fillStyle = 'rgba(0,0,0,0.38)'; rr(c, -L + 3, -hw + 4, L, CAR_W, 9); c.fill();
-      const g = c.createLinearGradient(0, -hw, 0, hw);
-      g.addColorStop(0, car.col); g.addColorStop(0.5, car.col); g.addColorStop(1, car.col);
       c.fillStyle = car.col; rr(c, -L, -hw, L, CAR_W, 9); c.fill();
       c.fillStyle = 'rgba(0,0,0,0.22)'; rr(c, -L, 3, L, hw - 3, 9); c.fill();
       c.fillStyle = 'rgba(255,255,255,0.20)'; rr(c, -L + 4, -hw + 2, L - 8, 5, 3); c.fill();
@@ -566,7 +564,6 @@
       }
       const moving = p.st !== 1;
       const sw = moving ? Math.sin(p.ph * 6) * 4 : 0;
-      const dir = p.st === 0 ? (p.ty >= p.y ? 1 : -1) * (p.side === 0 ? 1 : 1) : p.dir;
       const dy = p.st === 0 ? (p.ty - p.y >= 0 ? 1 : -1) : p.dir;
       // Schatten
       c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(p.x + 2, p.y + 3, 9, 5.5, 0, 0, 6.2832); c.fill();
@@ -645,8 +642,7 @@
         const bp = ins['I0.0'];
         c.fillStyle = '#0b0e11'; c.beginPath(); c.arc(px, py + 5, 7, 0, 6.2832); c.fill();
         c.fillStyle = bp ? '#9a9a9a' : '#d6dde5'; c.beginPath(); c.arc(px, py + 5, bp ? 4.2 : 5, 0, 6.2832); c.fill();
-        const on = req && (Math.floor(t / 500) % 2 === 0 || true);
-        led(c, px, py - 8, 3.2, on, '#ffb340');
+        led(c, px, py - 8, 3.2, req, '#ffb340');
       };
       ped2(c, 430, 178, 6.5); sigClick(452, 196);
       ped2(c, 570, 362, 6.5); sigClick(548, 344);

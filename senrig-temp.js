@@ -192,7 +192,7 @@
     { key: 'vref', label: 'Referenzspannung', type: 'select', value: 3.3, group: 'Wandler', options: [{ value: 3.3, label: '3,3 V' }, { value: 5, label: '5 V' }], help: 'Versorgung der Schaltung und Messbereich des ADU.' },
     { key: 'lin', label: 'Linearisierung', type: 'select', value: 'sh', group: 'Auswertung', options: [{ value: 'aus', label: 'aus (Gerade 0 bis 100 °C)' }, { value: 'tabelle', label: 'Tabelle (alle 20 K)' }, { value: 'sh', label: 'Rechnung (Steinhart-Hart / Kennlinie)' }], help: 'Wie aus dem ADU-Zählwert die Temperatur berechnet wird. Aus: nur eine Gerade, bei NTC groß falsch.' },
     { key: 'selfHeat', label: 'Selbsterwärmung berücksichtigen', type: 'switch', value: true, group: 'Fehlerquellen', help: 'Der Messstrom heizt den Sensor auf: P = I²·R. Aus: Idealfall ohne Selbsterwärmung.' },
-    { key: 'lead', label: 'Leitungswiderstand je Ader', type: 'slider', min: 0, max: 20, step: 0.1, unit: 'Ω', value: 0, group: 'Fehlerquellen', help: 'Widerstand einer Zuleitung. Bei Pt100 sind 2 Ω schon etwa 5 K Fehler (2-Leiter).' },
+    { key: 'lead', label: 'Leitungswiderstand je Ader', type: 'slider', min: 0, max: 20, step: 0.1, unit: 'Ω', value: 0, group: 'Fehlerquellen', help: 'Widerstand einer Zuleitung. Beim Pt100 ergeben 2 Ω je Ader in 2-Leiter-Technik schon rund 10 K Fehler (beide Adern zählen: 4 Ω / 0,385 Ω/K).' },
     { key: 'wires', label: 'Anschlusstechnik', type: 'select', value: 2, group: 'Fehlerquellen', options: [{ value: 2, label: '2-Leiter' }, { value: 3, label: '3-Leiter' }, { value: 4, label: '4-Leiter' }], help: '2-Leiter: beide Leitungen verfälschen. 3-Leiter: in der Brücke kompensiert. 4-Leiter: Messspannung direkt am Sensor.' },
     { key: 'cjc', label: 'Vergleichsstellen-Kompensation', type: 'switch', value: true, group: 'Thermoelement', help: 'Das Thermoelement misst nur die Differenz zur Vergleichsstelle (25 °C). Ohne Kompensation zeigt es 25 K zu wenig.' },
     { key: 'wireBreak', label: 'Drahtbruch (Taster halten)', type: 'button', value: false, group: 'Fehlerquellen', help: 'Halten = die Zuleitung ist unterbrochen. Beobachte, was der ADU dann anzeigt.' }
@@ -579,7 +579,7 @@
         } else {
           line(ctx, pts, cols[i], 3);
         }
-        if (act && !cut && !(brk && sn.kind !== 'R' && false)) polyDots(ctx, cut ? [[hx, 198], [hx, ly], [448, ly]] : pts, t, 30, 'rgba(255,255,255,0.9)', 22, 2.2);
+        if (act && !cut) polyDots(ctx, pts, t, 30, 'rgba(255,255,255,0.9)', 22, 2.2);
         if (sn.kind === 'R' && Cv.lead > 0 && !cut) {
           ctx.fillStyle = '#10151a'; rr(ctx, 372, ly - 4.5, 36, 9, 2); ctx.fill(); ctx.strokeStyle = '#c9d1d9'; ctx.lineWidth = 1.2; ctx.stroke();
           if (i === 0) txt(ctx, 'Rl = ' + fmt(Cv.lead, 1) + ' Ω', 390, ly + 13, 10, C.warn, 'center', true);
@@ -614,7 +614,7 @@
       txt(ctx, 'Thermometer ziehen', 508, y1 + 18, 10.5, C.dim, 'right');
     }
 
-    function drawRes(ctx, x, y, w, h, lab, vert) {
+    function drawRes(ctx, x, y, w, h) {
       ctx.fillStyle = '#10151a'; rr(ctx, x, y, w, h, 2); ctx.fill(); ctx.strokeStyle = '#c9d1d9'; ctx.lineWidth = 1.6; ctx.stroke();
     }
     function drawSchem(ctx, t) {

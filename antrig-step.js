@@ -115,13 +115,12 @@
     }
     function unit() { return ctl.mode === 'auto' && ctl.stepMode === 'halb' ? 0.5 : (S && S.st && S.st.stepMode === 'halb' ? 0.5 : 1); }
     function pulseRate() { return ctl.mode === 'auto' && ctl.run ? clamp(num(ctl.rate, 100), 1, 2000) : 0; }
-    function availAt() { return S.avail; }
+    const availAt = () => S.avail;
     function lostSigned() {
       const l = S.lost; if (!l) return 0;
       const d = Math.round((S.phiU - S.theta) / 4);
       return (d < 0 ? -1 : 1) * l;
     }
-    const mod = (a, n) => ((a % n) + n) % n;
     function idxOf(bits, mode) { const tab = CORE.stepPatterns[mode] || CORE.stepPatterns.voll; for (let i = 0; i < tab.length; i++) if (tab[i].join('') === bits.join('')) return i; return 0; }
     function sync(st) {
       S.st = st;
@@ -374,7 +373,6 @@
       if (f.k > 0) {
         ctx.save(); ctx.globalAlpha = 0.5 + 0.2 * f.k;
         ctx.strokeStyle = C.acc; ctx.lineWidth = 6; ctx.lineCap = 'round';
-        const L1 = 40 + 55 * f.k;
         ctx.setLineDash([2, 10]);
         ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(fa) * 104, -Math.sin(fa) * 104); ctx.stroke(); ctx.setLineDash([]);
         ctx.restore();
@@ -423,7 +421,7 @@
       txt(ctx, 'Modell: 1 Schritt = 90° im Bild (in Wirklichkeit 1,8°)', cx, 515, 12, C.dim, 'center', '600');
 
       // Balken unter dem Motor
-      const avail = availAt(pulseRate()), loadV = num(ctl.load, 0);
+      const avail = availAt(), loadV = num(ctl.load, 0);
       const bx = 60, bw = 480;
       rr(ctx, bx, 530, bw, 12, 6); ctx.fillStyle = '#1a2026'; ctx.fill();
       const fullScale = Math.max(model.Mh * 1.15, loadV * 1.1, 0.05);

@@ -416,7 +416,6 @@
         const col = cabColor(c, sim), sel = stt.sel && stt.sel.t === 'cab' && stt.sel.id === c.id;
         cx.lineJoin = 'round'; cx.lineCap = 'round'; cx.strokeStyle = 'rgba(0,0,0,.55)'; cx.lineWidth = 2 + c.s * .55 + 2; cx.beginPath(); pp.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.stroke();
         cx.strokeStyle = sel ? '#3b9eff' : col; cx.lineWidth = 1.5 + c.s * .55; cx.beginPath(); pp.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.stroke();
-        if (c.bad && !sim) { /* defekte Leitung bleibt unsichtbar markiert */ }
         cx.setLineDash([]); cabHits.push({ id: c.id, pp });
       });
       // Deckenlampen zuletzt (hängen über allem)
@@ -561,7 +560,7 @@
     function move(p) {
       const h = H(); if (!stt.start) return; if (Math.hypot(p.x - stt.start.x, p.y - stt.start.y) > 4) stt.moved = true;
       if (stt.rubber) { const w = unplane(p.x, p.y, { z: 0 }); if (w) { stt.rubber.x1 = snap(w.x, 0.5); stt.rubber.y1 = snap(w.y, 0.5); api.draw(); } return; }
-      if (stt.drag && stt.moved) { const o = obj(h, stt.drag.id); if (!o) return; const pk = pick(p.x, p.y, o.t); if (pk && !(o.t === 'panel' && false)) { o.room = pk.room; { const rr = room(h, pk.room); if (rr && rr.st) o.lv = stt.view; else delete o.lv; } o.face = pk.face; o.u = pk.u; if (pk.face === 'C') { o.v = pk.v; o.z = h.h; } else { o.z = (o.t === 'sock' || o.t === 'dev' || o.t === 'panel' || o.t === 'swi' || o.t === 'swc' || o.t === 'junc') ? o.z : o.z; delete o.v; } stt.drag.moved = true; api.draw(); } return; }
+      if (stt.drag && stt.moved) { const o = obj(h, stt.drag.id); if (!o) return; const pk = pick(p.x, p.y, o.t); if (pk) { o.room = pk.room; { const rr = room(h, pk.room); if (rr && rr.st) o.lv = stt.view; else delete o.lv; } o.face = pk.face; o.u = pk.u; if (pk.face === 'C') { o.v = pk.v; o.z = h.h; } else { o.z = (o.t === 'sock' || o.t === 'dev' || o.t === 'panel' || o.t === 'swi' || o.t === 'swc' || o.t === 'junc') ? o.z : o.z; delete o.v; } stt.drag.moved = true; api.draw(); } return; }
       if (stt.pan) { stt.userCam = true; cam.ox = stt.pan.ox + p.x - stt.pan.x; cam.oy = stt.pan.oy + p.y - stt.pan.y; api.draw(); }
     }
     function up(p, cancelled) {

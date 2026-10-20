@@ -55,9 +55,9 @@ function si(str, def) {
   s = s.replace(/(ohm|Ohm|OHM)$/, '').replace(/(Hz|hz|HZ)$/, '');
   const m = s.match(/^([0-9]*\.?[0-9]+)\s*([pnumkKMGRr]?)([0-9]*)\s*[VAFHvafh]?$/);
   if (!m) return def;
-  const mult = { p: 1e-12, n: 1e-9, u: 1e-6, m: 1e-3, k: 1e3, K: 1e3, M: 1e6, G: 1e9, R: 1, r: 1 }[m[2]] || 1;
-  const num = m[3] ? parseFloat(m[1].split('.')[0] + '.' + m[3]) : parseFloat(m[1]);
-  const v = num * mult;
+  const ex = { p: -12, n: -9, u: -6, m: -3, k: 3, K: 3, M: 6, G: 9, R: 0, r: 0 }[m[2]] || 0;   // Zehnerpotenz als Exponent: 100n ergibt exakt 1e-7 (nicht 100 * 1e-9 mit Rundungsrest)
+  const mant = m[3] ? m[1].split('.')[0] + '.' + m[3] : m[1];
+  const v = parseFloat(mant + 'e' + ex);
   return isFinite(v) ? v : def;
 }
 function parseGen(v) {

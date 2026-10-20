@@ -486,8 +486,7 @@
       line(ctx, [top, lf, bt, rt, top], wire, 2);
       // vier Zweige: R1 oben links, R2 oben rechts, R3 unten links, R4 unten rechts. Aktive DMS: orange mit Vorzeichen
       const arm = (a, b, lab, active, sign, side) => { const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; ctx.fillStyle = active ? '#4a3414' : '#10151a'; ctx.beginPath(); ctx.arc(mx, my, 11, 0, TWO_PI); ctx.fill(); ctx.strokeStyle = active ? '#e2a046' : '#c9d1d9'; ctx.lineWidth = 2; ctx.stroke(); txt(ctx, sign || '', mx, my, 11, '#ffd27a', 'center', true); txt(ctx, lab, mx + side * 18, my, 10.5, active ? C.warn : C.dim, side < 0 ? 'right' : 'left', true); };
-      const dR = S.dR / R0 * 0 + 0;
-      arm(top, lf, 'R1', actv(0), actv(0) ? (br === 'viertel' ? '+' : '+') : '', -1); arm(top, rt, 'R2', br === 'voll', br === 'voll' ? '−' : '', 1);
+      arm(top, lf, 'R1', actv(0), actv(0) ? '+' : '', -1); arm(top, rt, 'R2', br === 'voll', br === 'voll' ? '−' : '', 1);
       arm(lf, bt, 'R3', br === 'voll', br === 'voll' ? '−' : '', -1); arm(rt, bt, 'R4', br !== 'viertel', br !== 'viertel' ? '+' : '', 1);
       [top, bt, lf, rt].forEach(p => { ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(p[0], p[1], 3.5, 0, TWO_PI); ctx.fill(); });
       txt(ctx, '+' + fmt(Cv.uBridge, 1) + ' V', top[0] + 10, top[1] - 8, 11.5, C.ok, 'left', true); txt(ctx, '0 V', bt[0] + 8, bt[1] + 10, 10.5, C.dim, 'left');

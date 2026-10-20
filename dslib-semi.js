@@ -159,7 +159,7 @@
         { key: 'ir75', param: 'Reverse current', sym: 'IR', cond: 'VR = 75 V', min: null, typ: 40, max: 1000, unit: 'nA', tj: 25 },
         { key: 'ir20hot', param: 'Reverse current', sym: 'IR', cond: 'VR = 20 V', min: null, typ: 2, max: 50, unit: 'µA', tj: 150 },
         { key: 'cd', param: 'Diode capacitance', sym: 'Cd', cond: 'VR = 0 V, f = 1 MHz', min: null, typ: 2.0, max: 4.0, unit: 'pF', tj: 25 },
-        { key: 'trr', param: 'Reverse recovery time', sym: 'trr', cond: 'IF = 10 mA to IR = 1 mA, RL = 100 Ω', min: null, typ: 3, max: 4, unit: 'ns', tj: 25 }],
+        { key: 'trr', param: 'Reverse recovery time', sym: 'trr', cond: 'IF = IR = 10 mA, Irr = 1 mA, RL = 100 Ω', min: null, typ: 3, max: 4, unit: 'ns', tj: 25 }],
       graphs: [
         { id: 'if_vf', title: 'Forward current vs. forward voltage', xLabel: 'Forward voltage', xUnit: 'V', xScale: 'lin', yLabel: 'Forward current', yUnit: 'A', yScale: 'log',
           series: [

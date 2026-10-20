@@ -88,7 +88,7 @@
       outputs: [{ name: 'Summe', src: 'x2', color: 'grün' }, { name: 'Cout', src: 'co', color: 'gelb' }] },
     { cat: 'Schaltnetze', name: '2:1-Multiplexer', info: 'Der Schalter S wählt, ob A oder B am Ausgang Y erscheint.',
       inputs: ['A', 'B', 'S'], gates: [{ id: 'ns', t: 'NOT', in: ['S'] }, { id: 'a1', t: 'AND', in: ['A', 'ns'] }, { id: 'a2', t: 'AND', in: ['B', 'S'] }, { id: 'y', t: 'OR', in: ['a1', 'a2'] }], outputs: [{ name: 'Y', src: 'y', color: 'grün' }] },
-    { cat: 'Schaltnetze', name: 'Mehrheitsfunktion (3 aus 3)', info: 'Der Ausgang ist 1, wenn mindestens zwei der drei Eingänge 1 sind. Gut für die Wahrheitstabelle.',
+    { cat: 'Schaltnetze', name: 'Mehrheitsfunktion (2 aus 3)', info: 'Der Ausgang ist 1, wenn mindestens zwei der drei Eingänge 1 sind. Gut für die Wahrheitstabelle.',
       inputs: ['A', 'B', 'C'], gates: [{ id: 'g1', t: 'AND', in: ['A', 'B'] }, { id: 'g2', t: 'AND', in: ['A', 'C'] }, { id: 'g3', t: 'AND', in: ['B', 'C'] }, { id: 'o1', t: 'OR', in: ['g1', 'g2'] }, { id: 'o2', t: 'OR', in: ['o1', 'g3'] }], outputs: [{ name: 'M', src: 'o2', color: 'grün' }] },
     { cat: 'Speicher', name: 'SR-Speicher aus NOR-Gattern', info: 'S setzt, R löscht. Bei S = R = 0 merkt sich das Gatterpaar den letzten Zustand.',
       inputs: ['S', 'R'], gates: [{ id: 'g1', t: 'NOR', in: ['R', 'g2'] }, { id: 'g2', t: 'NOR', in: ['S', 'g1'] }], outputs: [{ name: 'Q', src: 'g1', color: 'grün' }, { name: 'Q̄', src: 'g2', color: 'rot' }], scope: [] },
@@ -261,7 +261,7 @@
   const IC_EX = [
     { cat: 'ICs', name: 'IC CD4011: vier NAND-Gatter', info: 'Ein echter CMOS-Baustein mit Pinbelegung. Gatter 1 ist NAND(A, B), Gatter 2 kehrt das Ergebnis um und macht daraus UND. Die 10-kΩ-Widerstände ziehen offene Eingänge auf Low (Pull-down).', which: '4011' },
     { cat: 'ICs', name: 'IC CD4017: Lauflicht', info: 'Der Dezimalzähler 4017 schaltet mit jedem Takt den nächsten Ausgang ein. Q5 setzt ihn zurück, so laufen fünf LEDs im Kreis.', which: '4017' },
-    { cat: 'ICs', name: 'IC 7474: D-Flipflop mit Clear und Preset', info: 'Clear (CLR) und Preset (PRE) sind asynchrone Reset-Eingänge: Sie wirken sofort, ohne auf den Takt zu warten, und sind aktiv bei Low. Die Schalter stehen auf geschlossen (High, nicht aktiv). Öffne CLR: Q wird sofort 0. Öffne PRE: Q wird sofort 1.', which: '7474' },
+    { cat: 'ICs', name: 'IC 7474: D-Flipflop mit Clear und Preset', info: 'Clear (CLR) ist der asynchrone Rücksetz-Eingang, Preset (PRE) der asynchrone Setz-Eingang: Beide wirken sofort, ohne auf den Takt zu warten, und sind aktiv bei Low. Die Schalter stehen auf geschlossen (High, nicht aktiv). Öffne CLR: Q wird sofort 0. Öffne PRE: Q wird sofort 1.', which: '7474' },
     { cat: 'ICs', name: 'ICs 7490 und 4511: Zähler 0 bis 5 durch Rücksetzen', info: 'Der 7490 zählt dezimal. Mit QB und QC an den Reset-Eingängen R0 wird er beim Wert 6 sofort auf 0 zurückgesetzt: Er zählt nur 0 bis 5 (Modulo 6, zum Beispiel für Zehner der Minuten).', which: '7490m6' },
     { cat: 'ICs', name: 'ICs 7490, 4511 und 7-Segment: Dezimalzähler', info: 'Der 7490 zählt Takte dezimal (BCD), der 4511 macht daraus die Segmente der Anzeige. Im echten Aufbau gehört vor jedes Segment ein Vorwiderstand.', which: '7490' },
   ];

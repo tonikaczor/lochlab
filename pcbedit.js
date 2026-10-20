@@ -10,9 +10,9 @@
  * BESONDERHEITEN
  *  - Zeichenwerkzeuge (Bauteil/Bahn/Via/Flaeche/Text/Messen): Finger bewegt das Fadenkreuz, Loslassen setzt (Tippen = setzen).
  *    Verschieben der Ansicht dort mit zwei Fingern, Maus: Mausrad/mittlere Taste/rechte Taste/Leertaste+Ziehen.
- *  - Bahn: Doppeltipp, Taste V oder Knopf "Via" setzt eine Via und wechselt die Lage (2 Lagen: andere Seite;
- *    sonst Wechsel der aktiven Lage waehrend des Routens setzt ebenfalls eine Via). Fertig: Knopf, Enter, Tippen auf ein
- *    Pad/eine Via desselben Netzes, rechte Maustaste. Backspace nimmt den letzten Punkt zurueck, Esc bricht ab.
+ *  - Bahn: Doppeltipp, Taste V oder Knopf "Via" setzt ein Via und wechselt die Lage (2 Lagen: andere Seite;
+ *    sonst Wechsel der aktiven Lage waehrend des Routens setzt ebenfalls ein Via). Fertig: Knopf, Enter, Tippen auf ein
+ *    Pad/ein Via desselben Netzes, rechte Maustaste. Backspace nimmt den letzten Punkt zurueck, Esc bricht ab.
  *  - Tasten: S Waehlen, P Bauteil, B Bahn, O Via, Z Flaeche, X Text, M Messen, D Loeschen, R drehen, F spiegeln, V Via (Bahn),
  *    Entf loeschen, Strg+Z / Strg+Y, 1..6 Lage, H Netz hervorheben aus.
  *  - Gesperrte Bauteile (part.locked), ctx.mode()==='view' und ctx.task().readonly verhindern Aenderungen.
@@ -1245,7 +1245,7 @@
       return S.modal;
     }
 
-    // ---- Schnitt durch eine Via
+    // ---- Schnitt durch ein Via
     function viaLayersInfo(v) {
       const b = B(), cu = cuList(), sp = viaSpan(v), out = {};
       const r = (v.dia || 0.8) / 2;
@@ -1332,7 +1332,7 @@
       const nf = cu.filter(function (l) { return info[l].on && !info[l].conn; });
       if (nf.length) list.appendChild(h('p', { class: 'pe-p', text: 'Ohne Anschluss durchlaufen: ' + nf.join(', ') + (nf.some(function (l) { return info[l].plane; }) ? ' (Freistellung um die Hülse in Flächen anderer Netze)' : '') + '.' }));
       list.appendChild(h('p', { class: 'pe-p', text: 'Aspektverhältnis (Platinendicke : Bohrung) ca. ' + fmt(total / (v.drill || 0.4), 1) + ' : 1. Die Hülse ist innen verkupfert; sie verbindet die Lagen elektrisch.' }));
-      openModal('Schnitt durch die Via', h('div', null, [can, list]));
+      openModal('Schnitt durch das Via', h('div', null, [can, list]));
     }
 
     // ---- Footprint-Auswahl
@@ -2207,7 +2207,7 @@
         optRow.appendChild(optField('Breite', ws));
         optRow.appendChild(h('button', { class: 'pe-b flat' + (S.free ? '' : ' on'), type: 'button', text: S.free ? 'Winkel frei' : '45°-Raster', title: 'Winkel einrasten (45 Grad) oder frei', onclick: function () { S.free = !S.free; buildOpts(); invalidate(); } }));
         optRow.appendChild(h('button', { class: 'pe-b flat', type: 'button', text: '⌐ Ecke ' + (S.cornerMode ? 'schräg zuerst' : 'gerade zuerst'), title: 'Reihenfolge der 45-Grad-Ecke (C)', onclick: function () { S.cornerMode ^= 1; buildOpts(); invalidate(); } }));
-        optRow.appendChild(h('button', { class: 'pe-b flat', type: 'button', text: '◉ Via (V)', onclick: function () { if (S.trk) trackVia(); else toast('Starte zuerst eine Bahn, dann setzt dieser Knopf eine Via.'); } }));
+        optRow.appendChild(h('button', { class: 'pe-b flat', type: 'button', text: '◉ Via (V)', onclick: function () { if (S.trk) trackVia(); else toast('Starte zuerst eine Bahn, dann setzt dieser Knopf ein Via.'); } }));
       } else if (t === 'via') {
         optRow.appendChild(optField('Netz', netSelect(S.viaNet, 'automatisch', function (v) { S.viaNet = v; })));
         const di = h('input', { class: 'pe-in', type: 'number', step: '0.05', min: '0.3', value: S.viaDia || r.viaDia, style: 'width:78px' });

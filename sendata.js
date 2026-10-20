@@ -537,7 +537,7 @@
   const examples = [
     /* Temperatur */
     E('temp-ntc', 'NTC im Spannungsteiler: Kennlinie abfahren', 'Temperatur', 'temperatur',
-      'Die Messstelle wird langsam von 0 auf 100 °C erwärmt. Der Widerstand des NTC fällt dabei stark und nicht linear, die Rechnung (Steinhart-Hart) macht daraus trotzdem eine saubere Temperaturanzeige. Während der Rampe hinkt die Anzeige wegen der Wärmeträgheit der Sonde etwas hinterher.',
+      'Die Messstelle wird langsam von 0 auf 100 °C erwärmt. Der Widerstand des NTC fällt dabei stark und nicht linear, die Rechnung (Steinhart-Hart) macht daraus trotzdem eine saubere Temperaturanzeige. Während der Rampe hinkt die Anzeige wegen der Wärmeträgheit der Sonde deutlich hinterher (bis rund 15 K bei 3,3 K/s), erst am Ende holt sie auf.',
       { sensor: 'ntc', circuit: 'teiler', rRef: 10000, adcBits: 12, vref: 3.3, lin: 'sh', selfHeat: true, lead: 0, wires: 2, tMeas: 0 },
       { dur: 50000, seq: [{ t: 0, set: { tMeas: 0 } }, { t: 1000, ramp: { key: 'tMeas', to: 100, durMs: 30000 } }] }),
     E('temp-sprung', 'Temperatursprung: Wärmeträgheit der Sonde', 'Temperatur', 'temperatur',
@@ -626,7 +626,7 @@
       { sensor: 'sht', temp: 23, rh: 45, addr: 68, addrPin: 'low', twin: false, pullup: 4700, busSpeed: 100000, busLength: 0.3, stretch: false },
       { dur: 25000, seq: [{ t: 1000, ramp: { key: 'temp', to: 40, durMs: 15000 } }] }),
     E('dig-pullup', 'Fehler: Pull-up zu groß bei 400 kHz', 'Digitale Sensoren', 'digital',
-      'Im Fast-Mode mit 400 kHz und 1 m Kabel verlangt der I2C-Bus Anstiegszeiten unter 300 ns. Mit 10 kΩ Pull-up sind die Flanken doppelt so langsam, die Übertragungen schlagen fehl. Nach 12 Sekunden wird auf 2,2 kΩ gewechselt, danach laufen sie wieder fehlerfrei.',
+      'Im Fast-Mode mit 400 kHz und 1 m Kabel verlangt der I2C-Bus Anstiegszeiten unter 300 ns. Mit 10 kΩ Pull-up dauert der Anstieg rund 1,1 µs, fast das Vierfache des Erlaubten, und die Übertragungen schlagen fehl. Nach 12 Sekunden wird auf 2,2 kΩ gewechselt, danach laufen sie wieder fehlerfrei.',
       { sensor: 'sht', temp: 23, rh: 45, addr: 68, addrPin: 'low', twin: false, pullup: 10000, busSpeed: 400000, busLength: 1, stretch: false },
       { dur: 25000, seq: [{ t: 12000, set: { pullup: 2200 } }] }),
     E('dig-konflikt', 'Fehler: Adresskonflikt zweier Sensoren', 'Digitale Sensoren', 'digital',

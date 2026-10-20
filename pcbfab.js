@@ -535,7 +535,7 @@
       const txt = {
         thru: ['Durchkontaktierung (Through-Via)', 'Wird nach dem Laminieren durch die ganze Platine gebohrt und innen verkupfert. Sie verbindet alle Lagen, die dort Kupfer haben. Das ist der Standard und mit Abstand die billigste Lösung.'],
         blind: ['Blind-Via', 'Beginnt auf einer Außenlage und endet in einer Innenlage, sie geht also nicht durch. Praktisch bei sehr dichten Bauteilen (z. B. BGA), weil darunter und dahinter Platz bleibt. Teurer, weil die Platine in mehreren Pressvorgängen entsteht und oft mit Laser gebohrt wird.'],
-        buried: ['Buried-Via (vergrabenes Via)', 'Verbindet nur Innenlagen und ist von außen nicht zu sehen. Sie wird gebohrt und verkupfert, bevor die Außenlagen aufgepresst werden. Das ist aufwendig und deshalb die teuerste Variante.']
+        buried: ['Buried-Via (vergrabenes Via)', 'Verbindet nur Innenlagen und ist von außen nicht zu sehen. Es wird gebohrt und verkupfert, bevor die Außenlagen aufgepresst werden. Das ist aufwendig und deshalb die teuerste Variante.']
       }[S.via] || ['', ''];
       return h('div', null,
         h('div', { class: 'pf-row' }, [['thru', 'Durchkontaktiert'], ['blind', 'Blind'], ['buried', 'Buried']].map(o => {

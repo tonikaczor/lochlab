@@ -169,7 +169,7 @@
     fotodiode: { label: 'Fotodiode', short: 'Fotodiode', cls: 'opt', vcc: 5, pol: 1 },
     fototransistor: { label: 'Fototransistor', short: 'Fototransistor', cls: 'opt', vcc: 5, pol: -1 },
     gabel: { label: 'Gabellichtschranke', short: 'Gabel-LS', cls: 'opt', vcc: 5, pol: 1, beam: true },
-    reflex: { label: 'Reflexlichtschranke (Taster)', short: 'Reflex-LS', cls: 'opt', vcc: 5, pol: -1, beam: true },
+    reflex: { label: 'Reflexionslichttaster (Objekt reflektiert)', short: 'Reflex-Taster', cls: 'opt', vcc: 5, pol: -1, beam: true },
     induktiv: { label: 'Induktiver Näherungsschalter', short: 'induktiv', cls: 'prox', vcc: 24, Sn: 8, F: { stahl: 1, alu: 0.4, kupfer: 0.3, kunststoff: 0, wasser: 0 } },
     kapazitiv: { label: 'Kapazitiver Näherungsschalter', short: 'kapazitiv', cls: 'prox', vcc: 24, Sn: 10, F: { stahl: 1, alu: 1, kupfer: 1, kunststoff: 0.45, wasser: 1 } },
     ultraschall: { label: 'Ultraschall-Abstandssensor', short: 'Ultraschall', cls: 'prox', vcc: 24, Sn: 150, us: true, F: { stahl: 1, alu: 1, kupfer: 1, kunststoff: 0.85, wasser: 0.8 } }
@@ -351,7 +351,6 @@
       refreshStatic(c);
       if (s.cls === 'opt') { if (!soft) { const o = uOpt(c, eOf(c, c.dist, 1)); S.Uf = o.U; S.If = o.I; S.state = cmpOn(c, o.U) ? 1 : 0; } }
       else if (!soft) S.state = proxWant(c, 0) ? 1 : 0;
-      else if (!proxWant(c, S.state) && S.state && c.dist >= srOf(c) * 1.1) S.state = S.state;
     }
     function applyPreset(id) {
       const p = PRESETS.find(x => x.id === id); if (!p) return false;
@@ -585,7 +584,7 @@
         for (let q = 0; q < 6; q++) {
           const p = (tt + q * 30) % (per + 80); let xw, a;
           if (p < L) { xw = x0 + p; a = 1 - p / L * 0.4; } else if (p < 2 * L) { xw = xo - (p - L); a = 0.6 - (p - L) / L * 0.4; } else continue;
-          ctx.strokeStyle = (p < L ? 'rgba(90,170,255,' : 'rgba(255,200,100,') + a + ')'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(xw - (p < L ? 0 : 0), yR, 24 + 10 * (p < L ? p / L : 1 - (p - L) / L * 0), p < L ? -0.9 : Math.PI - 0.9, p < L ? 0.9 : Math.PI + 0.9); ctx.stroke();
+          ctx.strokeStyle = (p < L ? 'rgba(90,170,255,' : 'rgba(255,200,100,') + a + ')'; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(xw, yR, 24 + 10 * (p < L ? p / L : 1), p < L ? -0.9 : Math.PI - 0.9, p < L ? 0.9 : Math.PI + 0.9); ctx.stroke();
         }
         if (sr1 > 0 && Cv.dist >= 0) { const xs = x0 + sr1 * m.k; ctx.strokeStyle = C.ok; ctx.lineWidth = 2; ctx.setLineDash && ctx.setLineDash([6, 4]); ctx.beginPath(); ctx.moveTo(xs, yR - 80); ctx.lineTo(xs, yR + 80); ctx.stroke(); ctx.setLineDash && ctx.setLineDash([]); txt(ctx, 'Sr = ' + fmt(sr1, 0) + ' mm', xs, yR - 92, 12, C.ok, 'center', true); }
         drawObject(ctx, t, xo, yR, 130, 18);
@@ -606,13 +605,17 @@
         const xm = ox + 75;
         line(ctx, [[xm, oy + 30], [xm, y1]], wire, 2);
         const box = (yy, h, lab, sub, col) => { ctx.fillStyle = '#10151a'; rr(ctx, xm - 8, yy, 16, h, 3); ctx.fill(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.stroke(); txt(ctx, lab, xm + 18, yy + h / 2 - 6, 10.5, col, 'left', true); txt(ctx, sub, xm + 18, yy + h / 2 + 7, 10.5, C.text, 'left', false, MONO); };
-        if (ldr) { box(y1, 38, 'LDR', eng(clamp(10000 * Math.pow(10 / Math.max(S.E, 1e-6), 0.7), 100, 1e6), 'Ω'), '#c78a4a'); line(ctx, [[xm - 16, y1 + 34], [xm + 16, y1 + 4]], '#ffe08a', 1.6); }
-        else { box(y1, 38, trans ? 'Foto-T' : 'Foto-D', eng(S.If, 'A'), '#7fb0ff'); line(ctx, [[xm - 24, y1 + 6], [xm - 10, y1 + 14]], '#ffe08a', 1.8); line(ctx, [[xm - 24, y1 + 18], [xm - 10, y1 + 26]], '#ffe08a', 1.8); }
-        line(ctx, [[xm, y1 + 38], [xm, y3]], wire, 2); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(xm, y2 + 4, 3.5, 0, TWO_PI); ctx.fill();
-        ctx.fillStyle = '#10151a'; rr(ctx, xm - 8, y3 - 2, 16, 30, 3); ctx.fill(); ctx.strokeStyle = '#c9d1d9'; ctx.lineWidth = 2; ctx.stroke(); txt(ctx, 'Rlast', xm + 18, y3 + 6, 10.5, C.dim, 'left', true); txt(ctx, eng(c.rLoad, 'Ω'), xm + 18, y3 + 19, 10.5, C.text, 'left', false, MONO);
-        line(ctx, [[xm, y3 + 28], [xm, y4 + 8]], wire, 2); line(ctx, [[xm - 9, y4 + 8], [xm + 9, y4 + 8]], wire, 2); line(ctx, [[xm - 5, y4 + 12], [xm + 5, y4 + 12]], wire, 2);
-        // Messpunkt zum Komparator
-        const yn = trans ? y1 + 44 : y3 - 6;
+        // LDR und Fotodiode: Sensor oben, Rlast unten (Ausgang steigt mit dem Licht).
+        // Fototransistor und Lichtschranken: Rlast als Arbeitswiderstand am Kollektor (oben), Transistor unten, Ausgang am Kollektor faellt mit dem Licht.
+        const ySens = trans ? y3 - 8 : y1, yR = trans ? y1 + 4 : y3 - 2;
+        if (ldr) { box(ySens, 38, 'LDR', eng(clamp(10000 * Math.pow(10 / Math.max(S.E, 1e-6), 0.7), 100, 1e6), 'Ω'), '#c78a4a'); line(ctx, [[xm - 16, ySens + 34], [xm + 16, ySens + 4]], '#ffe08a', 1.6); }
+        else { box(ySens, 38, trans ? 'Foto-T' : 'Foto-D', eng(S.If, 'A'), '#7fb0ff'); line(ctx, [[xm - 24, ySens + 6], [xm - 10, ySens + 14]], '#ffe08a', 1.8); line(ctx, [[xm - 24, ySens + 18], [xm - 10, ySens + 26]], '#ffe08a', 1.8); }
+        ctx.fillStyle = '#10151a'; rr(ctx, xm - 8, yR, 16, 30, 3); ctx.fill(); ctx.strokeStyle = '#c9d1d9'; ctx.lineWidth = 2; ctx.stroke(); txt(ctx, 'Rlast', xm + 18, yR + 8, 10.5, C.dim, 'left', true); txt(ctx, eng(c.rLoad, 'Ω'), xm + 18, yR + 21, 10.5, C.text, 'left', false, MONO);
+        const yTopEnd = trans ? yR + 30 : ySens + 38, yBotStart = trans ? ySens : yR, yBotEnd = trans ? ySens + 38 : yR + 30;
+        line(ctx, [[xm, yTopEnd], [xm, yBotStart]], wire, 2); ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(xm, y2 + 4, 3.5, 0, TWO_PI); ctx.fill();
+        line(ctx, [[xm, yBotEnd], [xm, y4 + 8]], wire, 2); line(ctx, [[xm - 9, y4 + 8], [xm + 9, y4 + 8]], wire, 2); line(ctx, [[xm - 5, y4 + 12], [xm + 5, y4 + 12]], wire, 2);
+        // Messpunkt (Knoten zwischen Sensor und Rlast) zum Komparator
+        const yn = y2 + 4;
         line(ctx, [[xm, yn], [ox + 190, yn]], wire, 2);
         polyDots(ctx, [[xm, oy + 30], [xm, y1]], t, S.If > 0 ? 36 : 0, 'rgba(255,226,110,0.95)', 16, 2.4);
         drawCmpAt(ctx, ox + 190, yn, t);

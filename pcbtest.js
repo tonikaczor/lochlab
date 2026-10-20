@@ -1012,7 +1012,7 @@
       ['Abstand zu hohen Bauteilen halten.', 'Hohe Bauteile (Elkos, Stecker, Kühlkörper) verdecken den Zugang für die Nadel. Die genaue Sperrzone legt der Prüfplatz fest. Im Simulator rechnet das Modell mit 2 mm Abstand ab 5 mm Bauteilhöhe.'],
       ['Keine Testpunkte unter Bauteilen.', 'Was unter einem Gehäuse liegt, kann keine Nadel berühren.'],
       ['Abstand zwischen Testpunkten ausreichend.', 'Nadeln und Aufnahmen brauchen Platz. Ein Nadelbett arbeitet im Raster 100 mil (2,54 mm), bei Bedarf 75 oder 50 mil.'],
-      ['Vias als Testpunkt nur mit Lötstopp-Öffnung.', 'Ist die Via mit Lötstopp abgedeckt, kann die Nadel nicht sicher kontaktieren. Außerdem muss die Via groß genug sein.'],
+      ['Vias als Testpunkt nur mit Lötstopp-Öffnung.', 'Ist das Via mit Lötstopp abgedeckt, kann die Nadel nicht sicher kontaktieren. Außerdem muss das Via groß genug sein.'],
       ['Lötstopp-Öffnung und kein Bestückungsdruck auf dem Testpunkt.', 'Lötstopp oder Silkscreen auf dem Kupfer isolieren die Nadel.'],
       ['Fiducials für die Ausrichtung vorhanden.', 'Kameras von Drucker, Bestücker, AOI und Prüfer richten sich an den Passmarken aus.'],
       ['Programmier- und Boundary-Scan-Zugang eingeplant.', 'JTAG-Anschluss (TCK, TMS, TDI, TDO) und Programmierstecker mit Zugang vorsehen.'],

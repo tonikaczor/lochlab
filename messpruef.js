@@ -107,7 +107,7 @@
         fields: [{ id: 'ukn', label: 'Spannung am Knoten', unit: 'V', tol: 0.03, truth: () => Math.abs(api.pinV(ev(), part('R1'), 1)) }, { id: 'id', label: 'Diodenstrom', unit: 'mA', tol: 0.06, truth: () => iThrough(ev(), 'D1') }, { id: 'uf', label: 'Durchlassspannung der Diode', unit: 'V', tol: 0.2, truth: () => Math.abs(api.pinV(ev(), part('R1'), 1)) - 5 }],
         choices: [{ id: 'schutz', q: 'Ist der Eingang geschützt?', short: 'Schutz', right: 0, opts: ['Ja: die Spannung bleibt unter 5,5 V.', 'Nein: der Knoten liegt über 5,5 V.', 'Das hängt vom Eingang ab, nicht von der Diode.'] }] }),
       mk({ id: 'mp9', cat: 'Prüfung: Stromlaufplan', title: 'Innenwiderstand einer Batterie bestimmen', level: 3,
-        text: 'Eine Batterie hat 4,5 V Leerlaufspannung. Ihr Innenwiderstand ist als R1 = 2,2 Ω in Reihe dargestellt. Die Last RL = 10 Ω ist angeschlossen. 1. Miss die Spannung an RL (2 Pkt.). 2. Miss den Strom in mA (2 Pkt.). 3. Berechne den Innenwiderstand aus Leerlaufspannung, Lastspannung und Strom: Ri = (U0 − UL) / I (4 Pkt.).',
+        text: 'Eine Batterie hat 4,5 V Leerlaufspannung. Der Innenwiderstand der Batterie ist als R1 = 2,2 Ω in Reihe dargestellt. Die Last RL = 10 Ω ist angeschlossen. 1. Miss die Spannung an RL (2 Pkt.). 2. Miss den Strom in mA (2 Pkt.). 3. Berechne den Innenwiderstand aus Leerlaufspannung, Lastspannung und Strom: Ri = (U0 − UL) / I (4 Pkt.).',
         hint: 'U0 = 4,5 V (ohne Last). Der Spannungsfall am Innenwiderstand ist U0 − UL. Teile ihn durch den Strom.',
         start: () => cBatt(), solMake: () => cBatt(),
         solAns: () => { const E = ev(), ul = uAcross(E, 'RL'), i = iThrough(E, 'RL'); return { ul: String(rMeas(ul)), i: String(rMeas(i * 1000)), ri: String(rMeas((4.5 - ul) / i)) }; },

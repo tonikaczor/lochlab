@@ -130,7 +130,7 @@
  *                                        formulas.explain(name, ...args) -> { value, unit, steps:[Rechenweg-Zeilen] }
  *  ANT_CORE.runSeq(rigFactory|rigId|rig, seq, tEndMs, opts) -> { samples:[{t,meters,state}], final, events, faults, peaks, errors }
  *       seq = [{ t [ms], set:{key:value}, ramp?:{key,to,durMs} }], opts: { dtMs (5), sampleMs (50), controls, rigOpts, keepRig }
- *  ANT_CORE.typenschild(P, U, I, cosphi, n, opts) -> { ok, pIn, eta, etaPct, torque, slip, slipPct, nSync, polePairs, poles, S, Q, pLoss, ... }
+ *  ANT_CORE.typenschild(P, U, I, cosphi, n, opts) -> { ok, pIn, eta, etaPct, torque, slip, slipPct, nSync, polePairs, poles, S, Q, pLoss, iStarRated (I/sqrt3), iStartStar (1/3 des Direktanlaufs), hinweis }
  *       P in W (opts.unitP:'kW' fuer kW), U Leiterspannung V, I A, n 1/min, opts.f (50)
  * =================================================================================================== */
 (function (root) {
@@ -267,7 +267,7 @@
     const iStall = u / p.Ra;
     const o = {
       kt: kt, ke: p.Ke, u: u, w0: w0, n0: rpmOf(w0), iStall: iStall, mStall: kt * iStall, iNoLoad: iNoLoad,
-      pMax: u * u / (4 * p.Ra) * 1.0, tauM: p.J * p.Ra / (p.Ke * kt), tauE: p.La / p.Ra
+      pMax: u * u / (4 * p.Ra), tauM: p.J * p.Ra / (p.Ke * kt), tauE: p.La / p.Ra
     };
     let best = { eta: 0, i: 0 };
     for (let k = 1; k <= 400; k++) {
@@ -1183,7 +1183,7 @@
   };
   function normType(t) {
     t = String(t === undefined || t === null ? 'stirnrad' : t).toLowerCase();
-    if (t.indexOf('r') === 0 && t.indexOf('ri') === 0) return 'riemen';
+    if (t.indexOf('ri') === 0 || t.indexOf('belt') === 0) return 'riemen';
     if (t.indexOf('sch') === 0 || t.indexOf('worm') === 0) return 'schnecke';
     return 'stirnrad';
   }
@@ -1271,7 +1271,7 @@
         if (!s.broken && stress > p.mLimit) { s.dmg += 20 * (stress / p.mLimit - 1) * dt; if (s.dmg >= 1) s.broken = true; }
         else if (!s.broken && s.dmg > 0) s.dmg = Math.max(0, s.dmg - 0.05 * dt);
         r = calc(inp, lb);
-        const pl = Math.max(0, r.pLoss) + (s.broken ? 0 : 0);
+        const pl = Math.max(0, r.pLoss);
         const rth = p.Rth * (lb ? 1 : 2), tinf = p.tAmb + pl * rth, tau = rth * p.Cth / Math.max(1e-9, p.thermFactor);
         s.temp = tinf + (s.temp - tinf) * Math.exp(-dt / tau);
         s.t += dt * 1000;
@@ -1389,7 +1389,8 @@
     r.polePairs = Math.max(1, Math.floor(60 * f / nn + 1e-9)); r.poles = 2 * r.polePairs;
     r.nSync = 60 * f / r.polePairs; r.slip = (r.nSync - nn) / r.nSync; r.slipPct = r.slip * 100;
     r.S = SQ3 * u * i; r.Q = Math.sqrt(Math.max(0, r.S * r.S - r.pIn * r.pIn)); r.pLoss = r.pIn - pw;
-    r.iStar = i / 3; r.iDirect = null;
+    r.iStarRated = i / SQ3;                 // Nennstrom in Sternschaltung (am hoeheren Netz, z. B. 690 V): I_Y = I_Delta / sqrt(3)
+    r.iStartStar = i / 3;                   // Anlaufstrom im Stern-Dreieck-Anlauf bezogen auf den Direktanlauf: ein Drittel (Faktor, nicht A)
     if (r.eta > 1.0001) r.hinweis = 'Der Wirkungsgrad wäre über 100 %: Prüfe, ob P in Watt und I in Ampere eingegeben wurde.';
     return r;
   }

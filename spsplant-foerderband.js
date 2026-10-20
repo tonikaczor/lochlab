@@ -517,7 +517,7 @@
       c.fillStyle = sg; c.beginPath(); c.arc(X_METAL, 270, 15, 0, 6.2832); c.fill();
       c.strokeStyle = '#14181c'; c.lineWidth = 1.5; c.stroke();
       c.strokeStyle = 'rgba(255,255,255,0.25)'; c.beginPath(); c.arc(X_METAL, 270, 10, 0, 6.2832); c.stroke();
-      led(c, X_METAL, 270, 4, ins['I0.3'], ins['I0.3'] ? '#4cd964' : '#4cd964');
+      led(c, X_METAL, 270, 4, ins['I0.3'], '#4cd964');
       txt(c, 'B2 Metall', X_METAL, 205, '#8a96a4', 10, 'center', '600');
 
       // --- Ausschieber-Zylinder (oben, Kolbenstange) ---
@@ -629,7 +629,7 @@
         txt(c, label, x, y + 36, '#cfd8e2', 12, 'center', '600');
       };
       lamp(900, 442, !!out['Q0.2'], '#4cd964', 'H1 Betrieb');
-      lamp(900, 502, !!out['Q0.3'] && (Math.floor(t / 300) % 2 === 0 || true), '#ff5c5c', 'H2 Störung');
+      lamp(900, 502, !!out['Q0.3'], '#ff5c5c', 'H2 Störung');
       c.lineCap = 'butt';
 
       // --- Signalliste unten links ---

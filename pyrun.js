@@ -265,6 +265,17 @@ function str(x) {
   return String(x);
 }
 function truthy(x) { if (x === null || x === undefined || x === false) return false; if (x === true) return true; if (typeof x === 'number') return x !== 0; if (x instanceof F) return x.v !== 0; if (typeof x === 'string' || Array.isArray(x)) return x.length > 0; if (x instanceof Map) return x.size > 0; return true; }
+/* feste Nachkommastellen wie Python: bei einem exakten Zwischenwert (z. B. 2.25 auf eine Stelle) wird zur geraden Ziffer gerundet, sonst wie toFixed (exakt aus dem Binärwert, 2.675 → 2.67) */
+function fixed(v, p) {
+  if (!Number.isFinite(v) || p > 20) return v.toFixed(Math.min(100, Math.max(0, p)));
+  const neg = v < 0 || Object.is(v, -0), s = Math.abs(v).toPrecision(21);        // 21 Stellen trennen jeden double eindeutig vom Nachbarn: exakter Blick auf die Stellen hinter dem Schnitt
+  if (/e/.test(s)) return v.toFixed(p);
+  let [ip, fp] = s.split('.'); fp = (fp || '').padEnd(p + 1, '0');
+  const d = (ip + fp.slice(0, p)).split('').map(Number), rest = fp.slice(p), first = +rest[0], tie = /^0*$/.test(rest.slice(1));
+  if (first > 5 || (first === 5 && (!tie || d[d.length - 1] % 2 === 1))) { let i = d.length - 1; while (i >= 0 && d[i] === 9) d[i--] = 0; if (i < 0) d.unshift(1); else d[i]++; }
+  const t = d.join(''), il = t.length - p, out = p ? t.slice(0, il) + '.' + t.slice(il) : t;
+  return (neg ? '-' : '') + out;
+}
 function formatSpec(x, spec) {
   if (!spec) return str(x);
   const m = /^(?:(.)?([<>^=]))?([+\- ])?(0)?(\d+)?(,)?(?:\.(\d+))?([bcdeEfFgGnosxX%])?$/.exec(spec);
@@ -272,11 +283,11 @@ function formatSpec(x, spec) {
   const [, fill, align, sign, zero, width, comma, prec, type] = m; let s;
   if (type === 'f' || type === 'F' || type === 'e' || type === '%' || type === 'g') {
     let v = nv(x); const p = prec === undefined ? 6 : +prec;
-    s = type === '%' ? (v * 100).toFixed(p) + '%' : type === 'e' ? v.toExponential(p).replace(/e([+-])(\d)$/, 'e$10$2') : type === 'g' ? String(+v.toPrecision(p || 6)) : v.toFixed(p);
+    s = type === '%' ? fixed(v * 100, p) + '%' : type === 'e' ? v.toExponential(p).replace(/e([+-])(\d)$/, 'e$10$2') : type === 'g' ? String(+v.toPrecision(p || 6)) : fixed(v, p);
   } else if (type === 'd' || type === 'n') s = String(Math.trunc(nv(x)));
   else if (type === 'x') s = Math.trunc(nv(x)).toString(16); else if (type === 'X') s = Math.trunc(nv(x)).toString(16).toUpperCase(); else if (type === 'b') s = Math.trunc(nv(x)).toString(2); else if (type === 'o') s = Math.trunc(nv(x)).toString(8);
   else if (prec !== undefined && typeof x === 'string') s = x.slice(0, +prec);
-  else if (prec !== undefined && isNum(x)) s = nv(x).toFixed(+prec); else s = str(x);
+  else if (prec !== undefined && isNum(x)) s = fixed(nv(x), +prec); else s = str(x);
   if (comma && isNum(x)) { const [a, b] = s.split('.'); s = a.replace(/\B(?=(\d{3})+(?!\d))/g, ',') + (b ? '.' + b : ''); }
   if (sign === '+' && isNum(x) && nv(x) >= 0) s = '+' + s;
   const w = width ? +width : 0;
@@ -328,7 +339,7 @@ function createRunner(prog, io) {
     const list = Array.isArray(args) && args._t ? args : [args]; let k = 0;
     return f.replace(/%(?:\((\w+)\))?([-+0 #]*)(\d+)?(?:\.(\d+))?([sdifrxX%])/g, (m, key, flags, w, pr, ty) => {
       if (ty === '%') return '%'; const v = key !== undefined ? args.get(key) : list[k++]; let s;
-      if (ty === 's') s = str(v); else if (ty === 'r') s = repr(v); else if (ty === 'd' || ty === 'i') s = String(Math.trunc(nv(v))); else if (ty === 'f') s = nv(v).toFixed(pr === undefined ? 6 : +pr); else s = Math.trunc(nv(v)).toString(16);
+      if (ty === 's') s = str(v); else if (ty === 'r') s = repr(v); else if (ty === 'd' || ty === 'i') s = String(Math.trunc(nv(v))); else if (ty === 'f') s = fixed(nv(v), pr === undefined ? 6 : +pr); else s = Math.trunc(nv(v)).toString(16);
       if (w) s = flags.includes('-') ? s.padEnd(+w) : s.padStart(+w, flags.includes('0') ? '0' : ' '); return s;
     });
   }
@@ -361,9 +372,9 @@ function createRunner(prog, io) {
       split: (sep, mx) => { const r = sep == null ? s.trim().split(/\s+/).filter(x => x !== '') : s.split(sep); return r; }, join: it => toList(it, node).map(x => { if (typeof x !== 'string') throwE('TypeError', 'sequence item: expected str instance', node); return x; }).join(s),
       replace: (a, b) => s.split(a).join(b), startswith: a => s.startsWith(a), endswith: a => s.endsWith(a), find: a => s.indexOf(a), count: a => (a === '' ? s.length + 1 : s.split(a).length - 1),
       isdigit: () => /^\d+$/.test(s), isalpha: () => /^[A-Za-zÄÖÜäöüß]+$/.test(s), isnumeric: () => /^\d+$/.test(s), zfill: n => s.padStart(nv(n), '0'), center: (n, c) => { const w = nv(n), pd = w - s.length; return pd > 0 ? (c || ' ').repeat(Math.floor(pd / 2)) + s + (c || ' ').repeat(Math.ceil(pd / 2)) : s; },
-      format: (...a) => { let k = 0; const kw = a._kw || {}; return s.replace(/\{([^{}:]*)(?::([^{}]*))?\}/g, (m, nm, sp) => { const v = nm === '' ? a[k++] : (/^\d+$/.test(nm) ? a[+nm] : kw[nm]); return formatSpec(v, sp); }); },
+      format: (a, kw) => { let k = 0; return s.replace(/\{([^{}:]*)(?::([^{}]*))?\}/g, (m, nm, sp) => { const v = nm === '' ? a[k++] : (/^\d+$/.test(nm) ? a[+nm] : kw[nm]); return formatSpec(v, sp); }); },
     }[name];
-    return f && bi('str.' + name, (args, kw) => { args._kw = kw; return f(...args); });
+    return f && bi('str.' + name, (args, kw) => (name === 'format' ? f(args, kw || {}) : f(...args)));
   }
   function listMethod(l, name, node) {
     const f = {
@@ -473,7 +484,10 @@ function createRunner(prog, io) {
     switch (s.t) {
       case 'Expr': yield* ev(s.e, env); return;
       case 'Assign': { const v = yield* ev(s.value, env); for (const t of s.targets) yield* assign(t, v, env); return; }
-      case 'AugAssign': { const cur = yield* ev(s.target, env), v = yield* ev(s.value, env); let r; if (s.op === '+' && Array.isArray(cur) && !cur._t) { cur.push(...toList(v)); r = cur; } else r = arith(s.op, cur, v, s); yield* assign(s.target, r, env); return; }
+      case 'AugAssign': {
+        if (s.target.t === 'Name' && env.isFunc && !env.vars.has(s.target.id) && !env.globals.has(s.target.id)) { let found = false; for (let e = env.parent; e; e = e.parent) if (e.vars.has(s.target.id)) { found = true; break; }   // wie Python: Zuweisung macht den Namen lokal
+          if (found) throwE('UnboundLocalError', "local variable '" + s.target.id + "' referenced before assignment (Tipp: in der Funktion zuerst „global " + s.target.id + "“ schreiben, sonst ist die Variable nur lokal)", s); }
+        const cur = yield* ev(s.target, env), v = yield* ev(s.value, env); let r; if (s.op === '+' && Array.isArray(cur) && !cur._t) { cur.push(...toList(v)); r = cur; } else r = arith(s.op, cur, v, s); yield* assign(s.target, r, env); return; }
       case 'Pass': return;
       case 'Break': return { brk: true }; case 'Continue': return { cont: true };
       case 'Return': return { ret: s.v ? yield* ev(s.v, env) : null };
@@ -528,7 +542,8 @@ function createRunner(prog, io) {
     float: bi('float', a => { const x = a[0]; if (x === undefined) return new F(0); if (typeof x === 'string') { const t = x.trim(); if (!/^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$|^[+-]?(inf|nan)$/i.test(t)) throwE('ValueError', 'could not convert string to float: ' + repr(x)); return new F(parseFloat(t)); } return new F(num(x)); }),
     str: bi('str', a => (a.length ? str(a[0]) : '')), bool: bi('bool', a => truthy(a[0])),
     abs: bi('abs', a => { const x = a[0]; return isInt(x) ? Math.abs(nv(x)) : new F(Math.abs(num(x))); }),
-    round: bi('round', a => { const x = num(a[0]); if (a.length < 2) { const r = Math.round(x); return (Math.abs(x % 1) === 0.5) ? 2 * Math.round(x / 2) : r; } const d = Math.pow(10, nv(a[1])); return new F(Math.round(x * d) / d); }),
+    round: bi('round', a => { const x = num(a[0]); if (a.length < 2) { const r = Math.round(x); return (Math.abs(x % 1) === 0.5) ? 2 * Math.round(x / 2) : r; } const nd = nv(a[1]); if (nd >= 0) return new F(+fixed(x, nd)); const d = Math.pow(10, nd); return new F(Math.round(x * d) / d); }),
+    repr: bi('repr', a => repr(a[0])), hex: bi('hex', a => (nv(a[0]) < 0 ? '-0x' + (-Math.trunc(nv(a[0]))).toString(16) : '0x' + Math.trunc(nv(a[0])).toString(16))), bin: bi('bin', a => (nv(a[0]) < 0 ? '-0b' + (-Math.trunc(nv(a[0]))).toString(2) : '0b' + Math.trunc(nv(a[0])).toString(2))), oct: bi('oct', a => (nv(a[0]) < 0 ? '-0o' + (-Math.trunc(nv(a[0]))).toString(8) : '0o' + Math.trunc(nv(a[0])).toString(8))),
     min: bi('min', (a, kw) => { const L = a.length === 1 ? toList(a[0]) : a; if (!L.length) throwE('ValueError', 'min() arg is an empty sequence'); return L.reduce((m, x) => (cmpVals(x, m) < 0 ? x : m)); }),
     max: bi('max', (a, kw) => { const L = a.length === 1 ? toList(a[0]) : a; if (!L.length) throwE('ValueError', 'max() arg is an empty sequence'); return L.reduce((m, x) => (cmpVals(x, m) > 0 ? x : m)); }),
     sum: bi('sum', a => toList(a[0]).reduce((s, x) => arith('+', s, x), a[1] !== undefined ? a[1] : 0)),

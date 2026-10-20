@@ -44,7 +44,7 @@
     { key: 'uAdc', label: 'Spannung am Wandler', unit: 'V', digits: 3, min: 0, max: 6, warnAbove: 5 },
     { key: 'adc', label: 'Zählwert', unit: 'Digit', digits: 0, min: 0, max: 65535 },
     { key: 'shown', label: 'Anzeige (skaliert)', unit: 'bar', digits: 2, min: -4, max: 20 },
-    { key: 'error', label: 'Anzeigefehler', unit: '%', digits: 2, min: -100, max: 100 },
+    { key: 'error', label: 'Anzeigefehler', unit: '% v. E.', digits: 2, min: -100, max: 100 },
     { key: 'headroom', label: 'Spannungsreserve', unit: 'V', digits: 2, min: -10, max: 20 },
     { key: 'uTerm', label: 'Spannung am Messumformer', unit: 'V', digits: 2, min: 0, max: 30 }
   ];
@@ -445,7 +445,7 @@
         seg(uB, rgba(BLUE, 1), 'Bürde ' + f1(uB, 1)); seg(uL, '#9a7b4f', 'Leit. ' + f1(uL, 1));
         const okT = uT >= U_MIN - 1e-6 || Cv.signal !== '420';
         seg(uT, okT ? rgba(GREEN, 1) : rgba(RED, 1), 'Messumformer ' + f1(uT, 1) + ' V');
-        if (Cv.signal === '420') { const mx = bx + bw * U_MIN / tot; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; if (ctx.setLineDash) ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(bx + bw - (bw * U_MIN / tot), by - 4); ctx.lineTo(bx + bw - (bw * U_MIN / tot), by + bh + 4); ctx.stroke(); if (ctx.setLineDash) ctx.setLineDash([]); }
+        if (Cv.signal === '420') { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; if (ctx.setLineDash) ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.moveTo(bx + bw - (bw * U_MIN / tot), by - 4); ctx.lineTo(bx + bw - (bw * U_MIN / tot), by + bh + 4); ctx.stroke(); if (ctx.setLineDash) ctx.setLineDash([]); }
         const rMax = Cv.signal === '420' ? 'Maximalbürde = (Us − 12 V) / 20 mA = ' + f1(m.burdenMax, 0) + ' Ω (mit Leitung)' : 'Maximalbürde = Us / 20 mA = ' + f1(m.burdenMax, 0) + ' Ω';
         txt(ctx, rMax, x0 + 16, y0 + h - 12, 12, m.limited ? C.bad : C.dim, 'left', m.limited);
         txt(ctx, 'Reserve ' + f1(m.headroom, 1) + ' V', x0 + w - 16, y0 + h - 12, 12, m.headroom < 0 ? C.bad : C.ok, 'right', true);
@@ -517,7 +517,7 @@
         ['Messgröße (wahr)', f1(S.vf, 2), 'bar', C.text], ['Signal', f1(m.sig, 2), m.sg.unit, C.warn],
         ['U an der Bürde', f1(m.uBurden, 2), 'V', m.uAdc > U_REF ? C.bad : C.acc], ['U am Wandler', f1(S.uAdcInst, 3), 'V', C.acc],
         ['Zählwert', String(S.N), '/ ' + (Math.pow(2, Cv.adcBits) - 1), C.text], ['Anzeige', f1(S.shown, 2), 'bar', C.ok],
-        ['Fehler', f1((S.shown - S.vf) / m.span * 100, 2), '% v. M.', Math.abs((S.shown - S.vf) / m.span * 100) > 2 ? C.warn : C.ok],
+        ['Fehler', f1((S.shown - S.vf) / m.span * 100, 2), '% v. E.', Math.abs((S.shown - S.vf) / m.span * 100) > 2 ? C.warn : C.ok],
         ['Auflösung', f1(stateLsb(), 3), 'bar/Digit', C.dim]
       ];
       rows.forEach((r2, k) => {

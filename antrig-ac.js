@@ -319,7 +319,7 @@
         ctx.fillStyle = '#a7b2bd'; ctx.beginPath(); ctx.arc(xs[i], y, 13, 0, TAU); ctx.fill();
         ctx.fillStyle = '#6d7885'; ctx.beginPath(); ctx.arc(xs[i], y, 8, 0, TAU); ctx.fill();
         ctx.strokeStyle = '#2d3640'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(xs[i] - 6, y); ctx.lineTo(xs[i] + 6, y); ctx.stroke();
-        txt(ctx, names[r2][i], xs[i] + (r2 ? 0 : 0), y + (r2 ? 24 : -20), 13, C.text, 'center', '800');
+        txt(ctx, names[r2][i], xs[i], y + (r2 ? 24 : -20), 13, C.text, 'center', '800');
       }
       const Uwv = (connShown === 'stern' ? 1 / SQ3 : 1) * S.uLine;
       txt(ctx, 'Strangspannung ' + Math.round(Uwv) + ' V', 172, 215, 12, S.live ? C.warn : C.dim, 'center', '700');
@@ -487,10 +487,14 @@
       const n = Math.abs(S.w) * 30 / Math.PI;
       txt(ctx, 'Motor: n = ' + Math.round(S.w * 30 / Math.PI) + ' 1/min', 460, 70, 15, C.text, 'center', '800');
       txt(ctx, 'M = ' + fmt(Math.abs(S.Mmot), 1) + ' Nm', 460, 88, 13, C.acc, 'center', '800');
-      // Drehpfeil
-      ctx.strokeStyle = 'rgba(59,158,255,0.9)'; ctx.lineWidth = 3; ctx.beginPath();
+      // Drehpfeil (Bogen ueber der Welle, Pfeilspitze je nach Drehrichtung am rechten oder linken Ende)
       const dirw = S.w >= 0 ? 1 : -1;
-      if (n > 5) { ctx.arc(560, 150, 22, -2.2, -0.2, false); ctx.stroke(); const ex = 560 + Math.cos(-0.2) * 22, ey = 150 + Math.sin(-0.2) * 22; ctx.fillStyle = 'rgba(59,158,255,0.9)'; ctx.beginPath(); ctx.moveTo(ex + 8 * dirw, ey + 3); ctx.lineTo(ex - 4, ey - 8); ctx.lineTo(ex - 5, ey + 7); ctx.closePath(); if (dirw > 0) ctx.fill(); }
+      if (n > 5) {
+        ctx.strokeStyle = 'rgba(59,158,255,0.9)'; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.beginPath(); ctx.arc(560, 150, 22, -2.2, -0.2, false); ctx.stroke();
+        const ae = dirw > 0 ? -0.2 : -2.2, ex = 560 + Math.cos(ae) * 22, ey = 150 + Math.sin(ae) * 22, tx = -Math.sin(ae) * dirw, ty = Math.cos(ae) * dirw, nx = Math.cos(ae), ny = Math.sin(ae);
+        ctx.fillStyle = 'rgba(59,158,255,0.9)'; ctx.beginPath(); ctx.moveTo(ex + tx * 11, ey + ty * 11); ctx.lineTo(ex + nx * 7, ey + ny * 7); ctx.lineTo(ex - nx * 7, ey - ny * 7); ctx.closePath(); ctx.fill();
+        txt(ctx, dirw > 0 ? 'rechts' : 'links', 560, 122, 10, C.dim, 'center', '700');
+      }
       // Temperaturbalken unter dem Typenschild
       rr(ctx, 378, 309, 136, 7, 3.5); ctx.fillStyle = '#1a2026'; ctx.fill();
       const th = clamp((S.temp - 20) / 140, 0, 1);
@@ -502,7 +506,7 @@
     function drawField(ctx, t) {
       panel(ctx, 664, 14, 322, 232, 'Drehfeld und Rotor (Zeitlupe)');
       const cx = 760, cy = 140, r = 76;
-      const fa = S.thField * 0.04, ra = S.thRot * 0.04 * 1; // Zeitlupe: Feld und Rotor gleich skaliert
+      const fa = S.thField * 0.04, ra = S.thRot * 0.04; // Zeitlupe: Feld und Rotor gleich skaliert
       const live = S.live && Math.abs(S.fe) > 0.25;
       // Farbkreis (Feld)
       const seg = 72;
@@ -529,7 +533,7 @@
       }
       ctx.fillStyle = '#e6edf3'; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, TAU); ctx.fill();
       // Phasenmarken U V W
-      ['U', 'V', 'W'].forEach((s, i) => { const a = -Math.PI / 2 + i * TAU / 3 + (ctl.reverse ? 0 : 0); txt(ctx, s, cx + Math.cos(a) * (r + 18), cy + Math.sin(a) * (r + 18), 13, ['#ffd24a', '#4cd964', '#b08cff'][i], 'center', '800'); });
+      ['U', 'V', 'W'].forEach((s, i) => { const a = -Math.PI / 2 + i * TAU / 3; txt(ctx, s, cx + Math.cos(a) * (r + 18), cy + Math.sin(a) * (r + 18), 13, ['#ffd24a', '#4cd964', '#b08cff'][i], 'center', '800'); });
       const ns = 60 * Math.abs(S.fe) / POLES, n = Math.abs(S.w) * 30 / Math.PI;
       const tx = 850;
       const slip = live && ns > 1 ? (ns - n) / ns * 100 : 0;

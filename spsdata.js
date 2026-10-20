@@ -322,7 +322,7 @@
     ex('ampel-festzyklus', 'Ampel im Festzyklus (Schrittkette in KOP)', 'Ampel', 'ampel', 'kop',
       'Vier Merker bilden die Phasen Grün (5 s), Gelb (2 s), Rot (5 s) und Rot-Gelb (1 s). Jedes Zeitglied setzt die nächste Phase und löscht die aktuelle. Mit dem Schalter S2 Betrieb startet und stoppt der Zyklus.', ampelZyklus),
     ex('ampel-fussgaenger', 'Bedarfsampel für Fußgänger (GRAFCET)', 'Ampel', 'ampel', 'gra',
-      'Die Straße ist grün, bis ein Fußgänger den Taster S1 drückt. Dann folgen Gelb, eine Sekunde Rot als Räumzeit, 5 Sekunden Fußgänger-Grün, 4 Sekunden Räumzeit für die Fußgänger und Rot-Gelb. Fahrzeuge und Fußgänger haben nie gleichzeitig Grün.', () => GRA_AMPEL_FUSS(false)),
+      'Die Straße ist grün, bis ein Fußgänger den Taster S1 drückt. Dann folgen Gelb, eine Sekunde Rot als Räumzeit, 5 Sekunden Fußgänger-Grün, 4 Sekunden Räumzeit für die Fußgänger und Rot-Gelb. Fahrzeuge und Fußgänger haben nie gleichzeitig Grün. Ein Tastendruck während des laufenden Ablaufs wird hier nicht gespeichert: Wer dann wartet, muss bei Straße-Grün noch einmal drücken.', () => GRA_AMPEL_FUSS(false)),
     ex('sortieren', 'Sortieren: Metallteile ausschieben', 'Förderband', 'foerderband', 'kop',
       'Der induktive Sensor B2 merkt sich ein Metallteil. Erreicht es die Lichtschranke B1, hält das Band, der Zylinder schiebt das Teil in die Rutsche, fährt zurück, und das Band läuft weiter. Helle Teile laufen bis zum Bandende.', bandSortier),
     ex('band-anlauf', 'Anlaufwarnung mit Einschaltverzögerung', 'Förderband', 'foerderband', 'fup',
@@ -640,7 +640,7 @@
       hint: ['Jeder Motor bekommt: seinen Taster, den Endschalter als Öffner und den anderen Motor als Öffner (Verriegelung).', 'Netzwerk 1: I0.0 UND NICHT I0.2 UND NICHT Q0.1 → Q0.0. Netzwerk 2 entsprechend mit I0.1, I0.3 und Q0.0.', 'N1: (I0.0 UND NICHT I0.2 UND NICHT Q0.1) → Q0.0. N2: (I0.1 UND NICHT I0.3 UND NICHT Q0.0) → Q0.1.'],
       start: torTippStart, sol: torTipp, check: checkSp3 },
     { id: 'sp4', lab: 'sps', cat: 'Grundlagen', title: 'Flanke: Licht mit einem Taster ein und aus', level: 2, plant: 'garagentor',
-      text: 'Die Beleuchtung H2_Beleuchtung (Q0.3) wird wie ein Stromstoßschalter bedient: Jeder Tastendruck auf S1_Auf (I0.0) wechselt den Zustand, Licht an, nächster Druck Licht aus, und so weiter. Halte ich den Taster lange gedrückt, darf trotzdem nur ein einziger Wechsel passieren. ' + EIN('garagentor', ['I0.0']) + AUS('garagentor', ['Q0.3']) + 'Tipp: Die Auswertung der Taste muss auf die Flanke reagieren, nicht auf den Pegel.' + ADR,
+      text: 'Die Beleuchtung H2_Beleuchtung (Q0.3) wird wie ein Stromstoßschalter bedient: Jeder Tastendruck auf S1_Auf (I0.0) wechselt den Zustand, Licht an, nächster Druck Licht aus, und so weiter. Hältst du den Taster lange gedrückt, darf trotzdem nur ein einziger Wechsel passieren. ' + EIN('garagentor', ['I0.0']) + AUS('garagentor', ['Q0.3']) + 'Tipp: Die Auswertung der Taste muss auf die Flanke reagieren, nicht auf den Pegel.' + ADR,
       hint: ['Eine Flanke (P) ist nur einen Zyklus lang 1. Damit kannst du den Zustand genau einmal pro Tastendruck umkehren.', 'Umkehren heißt: neuer Zustand = alter Zustand XOR Flanke. Den alten Zustand liest du vom Ausgang Q0.3 selbst.', 'N1: (Q0.3 XOR Flanke P an I0.0) → Spule Q0.3.'],
       start: torToggleStart, sol: torToggle, check: checkSp4 },
 

@@ -640,6 +640,18 @@
   function limSI(e) {
     return { min: isNum(e.min) ? toSI(e.min, e.unit) : null, max: isNum(e.max) ? toSI(e.max, e.unit) : null };
   }
+  // Dauer-Grenzwerte, deren Schlüssel mit key beginnt (vce → vceo), gleiche Basiseinheit, keine Spitzenwerte; vorsichtig: kleinster Höchstwert zuerst
+  function absByPrefix(ds, key, unit) {
+    var k = lc(key), base = siBaseOf(unit), arr = ds && isArr(ds.abs) ? ds.abs : [], out = [];
+    for (var i = 0; i < arr.length; i++) {
+      var e = arr[i];
+      if (!e || typeof e.key !== 'string' || lc(e.key).indexOf(k) !== 0 || lc(e.key) === k || siBaseOf(e.unit) !== base) continue;
+      if (PEAK_KEY.test(e.key) || PEAK_RE.test(String(e.param || '') + ' ' + String(e.cond || '') + ' ' + String(e.note || ''))) continue;
+      out.push(e);
+    }
+    out.sort(function (a, b) { var la = limSI(a), lb = limSI(b); return (la.max === null ? Infinity : la.max) - (lb.max === null ? Infinity : lb.max); });
+    return out;
+  }
   function fmtLim(v, e) { return fmt(v, siBaseOf(e.unit), 3); }
   function rangeText(e) {
     var l = limSI(e);
@@ -679,6 +691,9 @@
           continue;
         }
         var ab = entriesFor(ds, 'abs', key), rc = entriesFor(ds, 'rec', key);
+        // Betriebsbedingung ohne gleichnamigen Grenzwert (z. B. vce ↔ vceo): den Dauer-Grenzwert mit gleichem Schlüsselanfang
+        // und gleicher Einheit heranziehen, Spitzen-/Impulswerte (icm, idm, ifsm, vgsm …) bleiben außen vor.
+        if (!ab.length && rc.length) ab = absByPrefix(ds, key, rc[0].unit);
         if (!ab.length && !rc.length) {
           if (lc(key) === 'ptot' || lc(key) === 'tamb') { if (lc(key) === 'ptot') continue; }
           out.push({ key: key, ok: false, unknown: true, level: 'unknown', text: "Zu '" + key + "' gibt es im Datenblatt keine Grenzwerte (weder Absolute Maximum Ratings noch Recommended Operating Conditions)." });
@@ -692,7 +707,7 @@
         ab.forEach(function (e) {
           var l = limSI(e);
           if (l.max !== null && r.hi > l.max * (1 + 1e-12)) failMsg = failMsg || (sym + ' = ' + vt + ' überschreitet das Absolute Maximum Rating (max. ' + fmtLim(l.max, e) + '). Das Bauteil kann dauerhaft geschädigt oder zerstört werden.');
-          else if (l.min !== null && r.lo < l.min * (l.min >= 0 ? 1 : 1) - 1e-12 && r.lo < l.min) failMsg = failMsg || (sym + ' = ' + vt + ' unterschreitet das Absolute Maximum Rating (min. ' + fmtLim(l.min, e) + '). Das Bauteil kann dauerhaft geschädigt oder zerstört werden.');
+          else if (l.min !== null && r.lo < l.min - 1e-12) failMsg = failMsg || (sym + ' = ' + vt + ' unterschreitet das Absolute Maximum Rating (min. ' + fmtLim(l.min, e) + '). Das Bauteil kann dauerhaft geschädigt oder zerstört werden.');
           else if (l.max !== null && l.max > 0 && r.hi >= 0.9 * l.max) notes.push('Achtung: weniger als 10 % Reserve zum Grenzwert (max. ' + fmtLim(l.max, e) + ').');
         });
         rc.forEach(function (e) {
@@ -705,7 +720,7 @@
           out.push({ key: key, ok: false, level: 'fail', text: failMsg });
           anyBad = true;
         } else if (warnMsg) {
-          out.push({ key: key, ok: false, level: 'warn', text: warnMsg + ' Das ist zwar noch unter dem Absolute Maximum Rating, aber kein zulässiger Arbeitsbereich: Die Kenndaten sind dort nicht garantiert. Absolute Maximum Ratings sind keine Betriebswerte.' });
+          out.push({ key: key, ok: false, level: 'warn', text: warnMsg + (ab.length ? ' Das ist zwar noch unter dem Absolute Maximum Rating (' + rangeText(ab[0]) + '), aber kein zulässiger Arbeitsbereich: Die Kenndaten sind dort nicht garantiert.' : ' Ein passendes Absolute Maximum Rating nennt das Datenblatt dazu nicht; der Wert liegt außerhalb des garantierten Bereichs.') + ' Absolute Maximum Ratings sind keine Betriebswerte.' });
           anyBad = true;
         } else if (rc.length) {
           out.push({ key: key, ok: true, level: 'ok', text: sym + ' = ' + vt + ' liegt im empfohlenen Betriebsbereich (' + rangeText(rc[0]) + ').' + (notes.length ? ' ' + notes.join(' ') : '') });

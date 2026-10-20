@@ -36,7 +36,16 @@ const stripConn = d => { d.items = d.items.filter(i => i.t === 'part'); return d
 function withFault(d, kind) {
   const f = clone(d);
   if (kind === 'missing') {
-    const conn = f.items.filter(i => i.t !== 'part'); const victim = conn[Math.max(0, conn.length - 2)]; f.items = f.items.filter(i => i !== victim);
+    // Eine echte Verbindung (Bahn oder Draht, kein Lötpunkt) entfernen, und zwar eine, deren Fehlen die Prüfung auch bemerkt.
+    // Erster Kandidat bleibt die zweitletzte Verbindung (bisheriges Verhalten), danach die übrigen von hinten nach vorn.
+    const conn = f.items.filter(i => i.t === 'track' || i.t === 'wire');
+    const order = conn.map((_, i) => i).sort((a, b) => (a === conn.length - 2 ? -1 : b === conn.length - 2 ? 1 : b - a));
+    for (const i of order) {
+      const g = clone(d); g.items = g.items.filter(x => x.id !== conn[i].id);
+      let ok = true; try { ok = checkTask({ sol: d }, g).ok; } catch (e) { ok = false; }
+      if (!ok) return g;
+    }
+    f.items = f.items.filter(i => i !== conn[Math.max(0, conn.length - 2)]);
   } else {
     const nl = netList(f), P = [];
     nl.list.forEach((keys, ni) => keys.forEach(k => { const [id, pin] = k.split('.'), it = byIdIn(f, id), pt = pinsOf(it)[+pin]; P.push({ ni, pt }); }));
@@ -107,8 +116,8 @@ function layoutCheck(d) {
   let nl; try { nl = netList(d); } catch (e) { return [{ ok: false, text: 'Das Layout konnte nicht ausgewertet werden.' }]; }
   const nodeOfPin = (it, i) => { const pt = pinsOf(it)[i]; return nl.c.nodeOfKey(pt[0] + ',' + pt[1]); };
   P.forEach(it => {
-    const pins = pinsOf(it), nm = it.l || PARTS[it.k].name;
-    if (NEED_ALL.includes(it.k)) pins.forEach((_, i) => { const nd = nodeOfPin(it, i), cnt = (nl.byNode.get(nd) || []).length; if (cnt <= 1) out.push({ ok: false, text: nm + ' (' + PARTS[it.k].name + '): ' + (labelsOf(it) && labelsOf(it)[i] ? labelsOf(it)[i] : 'Anschluss ' + (i + 1)) + ' ist mit nichts verbunden.' }); });
+    const pins = pinsOf(it), nm = it.l ? it.l + ' (' + PARTS[it.k].name + ')' : PARTS[it.k].name, LB = labelsOf(it);
+    if (NEED_ALL.includes(it.k)) pins.forEach((_, i) => { const nd = nodeOfPin(it, i), cnt = (nl.byNode.get(nd) || []).length; if (cnt <= 1) out.push({ ok: false, text: nm + ': ' + (LB && LB[i] ? LB[i] : 'Anschluss ' + (i + 1)) + ' ist mit nichts verbunden.' }); });
     if (pins.length === 2 && nodeOfPin(it, 0) === nodeOfPin(it, 1) && nodeOfPin(it, 0) >= 0 && ['R', 'LED', 'D', 'C', 'CE', 'L', 'LAMP', 'SPK', 'FUSE'].includes(it.k)) out.push({ ok: false, text: nm + ' ist kurzgeschlossen: beide Anschlüsse liegen auf demselben Netz.' });
     if ((it.k === 'BAT' || it.k === 'SIG') && nodeOfPin(it, 0) === nodeOfPin(it, 1) && nodeOfPin(it, 0) >= 0) out.push({ ok: false, text: nm + ': Plus und Minus sind verbunden (Kurzschluss der Spannungsquelle).' });
   });
@@ -137,7 +146,9 @@ function solderHtml(d) {
   const P = partsOf(d).slice().sort((a, b) => { const ia = ORDER.indexOf(a.k), ib = ORDER.indexOf(b.k); return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || pinsOf(a)[0][1] - pinsOf(b)[0][1] || pinsOf(a)[0][0] - pinsOf(b)[0][0]; });
   const wires = d.items.filter(i => i.t === 'wire'), tracks = d.items.filter(i => i.t === 'track'), dots = d.items.filter(i => i.t === 'dot');
   const e = s => esc(String(s == null ? '' : s));
-  let n = 0, h = `<div class="sol"><h2>Lötanleitung: ${e(d.name)}</h2><p>Platine ${d.cols} × ${d.rows} Löcher. Spalten laufen von links nach rechts, Zeilen von oben nach unten (beide ab 1). Zuerst die niedrigen Bauteile, dann die höheren, zuletzt Stecker und Relais. Bauteile von oben (Bestückungsseite) einsetzen, auf der Lötseite verlöten und die Beinchen kürzen.</p>`;
+  const BL = (typeof boardsOf === 'function') ? boardsOf(d) : [{ cols: d.cols, rows: d.rows }];
+  const boardTxt = BL.length > 1 ? BL.length + ' Platinen (' + BL.map((b, i) => e(b.name || 'Platine ' + (i + 1)) + ' ' + b.cols + ' × ' + b.rows + ' Löcher' + (b.x || b.y ? ', ab Spalte ' + (b.x + 1) + ', Zeile ' + (b.y + 1) : '')).join('; ') + ') in einem gemeinsamen Raster' : 'Platine ' + d.cols + ' × ' + d.rows + ' Löcher';
+  let n = 0, h = `<div class="sol"><h2>Lötanleitung: ${e(d.name)}</h2><p>${boardTxt}. Spalten laufen von links nach rechts, Zeilen von oben nach unten (beide ab 1). Zuerst die niedrigen Bauteile, dann die höheren, zuletzt Stecker und Relais. Bauteile von oben (Bestückungsseite) einsetzen, auf der Lötseite verlöten und die Beinchen kürzen.</p>`;
   if (wires.length) h += `<h3>1. Drahtbrücken (Bestückungsseite)</h3><table><tr><th>Nr.</th><th>Von</th><th>Nach</th></tr>${wires.map((w, i) => `<tr><td>${i + 1}</td><td>Spalte ${w.x1 + 1}, Zeile ${w.y1 + 1}</td><td>Spalte ${w.x2 + 1}, Zeile ${w.y2 + 1}</td></tr>`).join('')}</table>`;
   h += `<h3>${wires.length ? '2' : '1'}. Bauteile</h3><table><tr><th>Schritt</th><th>Bauteil</th><th>Wert</th><th>Lage (Pin 1)</th><th>Hinweis</th><th>✓</th></tr>${P.map(it => { n++; return `<tr><td>${n}</td><td>${e(it.l || '')} ${e(PARTS[it.k].name)}</td><td>${e(it.v || '')}</td><td>${pos(it, 0)}</td><td>${e(POLAR[it.k] || '')}</td><td class="chk">☐</td></tr>`; }).join('')}</table>`;
   if (tracks.length) h += `<h3>${wires.length ? '3' : '2'}. Silberdraht und Lötzinn (Lötseite, gespiegelt)</h3><p>Die Lötseite ist von unten gesehen gespiegelt. Die Angaben unten gelten für die Bestückungsseite; die Strecken werden auf der Rückseite gezogen.</p><table><tr><th>Nr.</th><th>Von</th><th>Nach</th><th>✓</th></tr>${tracks.map((t, i) => `<tr><td>${i + 1}</td><td>Spalte ${t.x1 + 1}, Zeile ${t.y1 + 1}</td><td>Spalte ${t.x2 + 1}, Zeile ${t.y2 + 1}</td><td class="chk">☐</td></tr>`).join('')}</table>`;
@@ -157,9 +168,9 @@ const done = () => store('lm4.tdone') || {};
 const dots = n => '●'.repeat(n) + '○'.repeat(Math.max(0, 4 - n));
 let card = null;
 (function css() { const s = document.createElement('style'); s.textContent = `
-#tcard{position:absolute;z-index:5;left:8px;top:8px;max-width:min(380px,calc(100% - 16px));background:var(--panel,#1b1f24);color:var(--fg,#e8ecf0);border:1px solid var(--line,#38424d);border-radius:12px;padding:10px 12px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.4)}
+#tcard{position:absolute;z-index:5;left:8px;top:34px;max-width:min(380px,calc(100% - 16px));background:var(--panel,#1b1f24);color:var(--fg,#e8ecf0);border:1px solid var(--line,#38424d);border-radius:12px;padding:10px 12px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.4)}
 #tcard b{display:block;margin-bottom:4px;font-size:14px} #tcard p{margin:0 0 8px;color:var(--mute,#8d99a6);line-height:1.4} #tcard .tb{display:flex;gap:6px;flex-wrap:wrap}
-#tcard .tb button{height:34px;padding:0 12px;border-radius:9px;background:var(--panel2,#2c343e);border:1px solid var(--line,#38424d);font-weight:600;font-size:13px}
+#tcard .tb button{height:38px;padding:0 12px;border-radius:9px;background:var(--panel2,#2c343e);border:1px solid var(--line,#38424d);font-weight:600;font-size:13px}
 #tcard .tb .pri{background:var(--accent,#3b9eff);border-color:var(--accent,#3b9eff);color:#fff}
 #tcard.min p,#tcard.min .tb{display:none}
 .tres .ln{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px} .tres .ln i{font-style:normal;flex:none;width:20px} .tres .ok i{color:#4cd964} .tres .no i{color:#ff6a5a}
@@ -170,8 +181,8 @@ body.printhtml #printArea img{display:none} body.printhtml #printArea{background
 function showCard() {
   if (card) { card.remove(); card = null; }
   const t = doc.task && byTask(doc.task); if (!t) return;
-  card = document.createElement('div'); card.id = 'tcard';
-  card.innerHTML = `<b>${esc(t.title)} <span style="color:var(--mute)">${dots(t.level)}</span></b><p>${esc(t.text)}</p><div class="tb"><button class="pri" data-a="chk">Lösung prüfen</button><button data-a="hint">Tipp</button>${t.plan ? '<button data-a="plan">Schaltplan</button>' : ''}<button data-a="hand">Abgeben</button><button data-a="min">Einklappen</button><button data-a="end">Beenden</button></div>`;
+  card = document.createElement('div'); card.id = 'tcard'; card.setAttribute('role', 'region'); card.setAttribute('aria-label', 'Aufgabe: ' + t.title);
+  card.innerHTML = `<b>${esc(t.title)} <span style="color:var(--mute)" aria-label="Stufe ${t.level} von 4">${dots(t.level)}</span></b><p>${esc(t.text)}</p><div class="tb"><button class="pri" data-a="chk">Lösung prüfen</button><button data-a="hint">Tipp</button>${t.plan ? '<button data-a="plan">Schaltplan</button>' : ''}<button data-a="hand">Abgeben</button><button data-a="min">Einklappen</button><button data-a="end">Beenden</button></div>`;
   $('#stage').appendChild(card);
   card.querySelector('[data-a=min]').textContent = card.classList.contains('min') ? 'Aufklappen' : 'Einklappen';
   card.onclick = e => {
@@ -190,7 +201,9 @@ function showCard() {
   };
 }
 function runCheck(t) {
-  const r = checkTask(t, doc), dn = done(); dn[t.id] = Math.max(dn[t.id] || 0, r.pct); store('lm4.tdone', dn); if (window.Badges) window.Badges.result(t.id, r.pct);
+  const r = checkTask(t, doc), dn = done(); dn[t.id] = Math.max(dn[t.id] || 0, r.pct); store('lm4.tdone', dn);
+  if (window.Badges) window.Badges.result(t.id, r.pct);   // Badges.result spielt auch Ton und Konfetti (LochFX.pass), hier nichts doppelt auslösen
+  else try { window.LochFX && LochFX.pass && LochFX.pass(r.pct); } catch (e) { /* Effekte sind Beiwerk */ }
   sheet('Prüfung: ' + t.title, b => {
     b.innerHTML = `<div class="tres"><div class="pc" style="color:${r.ok ? '#4cd964' : '#ffb340'}">${r.ok ? '✓ Alles richtig' : r.pct + ' % richtig'}</div>${r.lines.map(l => `<div class="ln ${l.ok ? 'ok' : 'no'}"><i>${l.ok ? '✓' : '✗'}</i><span>${esc(l.text)}</span></div>`).join('')}</div>` + (r.ok ? '<p class="hint2">Super. Zum Abgeben tippe in der Aufgabenkarte auf „Abgeben“ und zeige den QR-Code deinem Ausbilder.</p>' : '<p class="hint2">Verbessere die Platine und prüfe nochmal. Du kannst beliebig oft prüfen.</p>');
   });

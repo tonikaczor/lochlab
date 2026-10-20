@@ -376,7 +376,7 @@ function shopTerm(k,V,it){
     case 'SIP':return 'Stiftleiste';
     case 'BU':return 'Buchsenleiste';
     case 'KL':return 'Schraubklemme RM 5,08';
-    case 'KL5':return 'Schraubklemme RM 5,08 '+i.n+'-polig';
+    case 'KL5':return 'Schraubklemme RM 5,08 '+(it?it.n:sizes.KL5)+'-polig';
     case 'FUSE':return 'Sicherungshalter 5x20 Print + Sicherung '+(v||'');
     case 'SEG7':return '7-Segment-Anzeige '+vn;
     case 'GL':return 'Brückengleichrichter';
@@ -394,7 +394,7 @@ const shopLinks=(k,V,it)=>{
 };
 const HINTS={
   R:'Begrenzt den Strom, keine Polung. Den Wert liest du an den Farbringen ab.',
-  POT:'Drei Anschlüsse: außen Anfang und Ende der Widerstandsbahn, in der Mitte der Schleifer.',
+  P:'Drei Anschlüsse: außen Anfang und Ende der Widerstandsbahn, in der Mitte der Schleifer.',
   TP:'Einstellwiderstand zum Abgleichen mit dem Schraubendreher. Mitte ist der Schleifer.',
   C:'Keramikkondensator, keine Polung. Meist kleine Kapazitäten (pF bis einige 100 nF).',
   CE:'Elko mit Polung! Der Streifen am Gehäuse ist Minus, der längere Draht ist Plus. Falsch gepolt kann er platzen.',
@@ -405,7 +405,7 @@ const HINTS={
   LED:'Immer mit Vorwiderstand betreiben! Langer Anschluss = Anode (+), Abflachung am Rand = Kathode (−).',
   DUOLED:'Duo-LED mit drei Beinen: die beiden Anoden (rot und grün) liegen außen, die gemeinsame Kathode in der Mitte. Jede Farbe braucht einen eigenen Vorwiderstand. Leuchten beide, mischt sich gelb-orange.',
   T:'Die Belegung der Anschlüsse steht im Datenblatt. Wähle die passende Variante (C-B-E oder E-B-C).',
-  U:'Spannungsregler 78xx: Anschlüsse von links IN, GND, OUT. Die Eingangsspannung muss etwa 2 V über der Ausgangsspannung liegen.',
+  U:'Spannungsregler 78xx: Anschlüsse von links IN, GND, OUT. Die Eingangsspannung muss mindestens etwa 2 V über der Ausgangsspannung liegen (Dropout), sonst regelt er nicht.',
   Q:'Quarz, gibt den Takt vor. Keine Polung.',
   BZ:'Summer: auf die Plus-Markierung am Gehäuse achten.',
   SEG7:'7-Segment-Anzeige: Pins wie beim IC gezählt (unten links Pin 1). Belegung nach gängiger Norm: 1 E, 2 D, 3 gemeinsam, 4 C, 5 Punkt, 6 B, 7 A, 8 gemeinsam, 9 F, 10 G. Bei den alten Typen (z. B. TDSO 3160 M) bitte mit dem Durchgangsprüfer kontrollieren. Immer Vorwiderstände (330 Ω) einbauen. Maße geschätzt.',
@@ -416,7 +416,7 @@ const HINTS={
   PHT:'Fototransistor: Bei Licht fließt Strom von Kollektor nach Emitter. Pinbelegung im Datenblatt prüfen (Maße geschätzt).',
   SPK:'Lautsprecher: kleine Leistung, nur an Verstärker oder Signalquelle mit passendem Vorwiderstand.',
   RLY:'Relais: Achtung bei 230 V: Netzspannung nur mit Abstand zur Niederspannung und isoliert verdrahten! Spule (A1/A2) zieht an, dann wechselt der Kontakt von NC nach NO. Spulenspannung beachten. Pinbelegung und Maße sind geschätzt, bitte mit dem echten Relais vergleichen.',
-  FET:'MOSFET: Pin 1 Gate, Pin 2 Drain, Pin 3 Source (bei TO-220 und TO-92 gleich, von vorn gesehen). Der N-Kanal schaltet die Last gegen Masse (Low-Side), der P-Kanal liegt zwischen Plus und Last (High-Side). Das Gate verträgt höchstens 20 V und ist statisch empfindlich.',
+  FET:'MOSFET: Im Layout gilt für alle Typen Pin 1 Gate, Pin 2 Drain, Pin 3 Source (wie IRLZ44N und IRF540N im TO-220, von vorn gesehen). Achtung bei TO-92: BS170 ist D-G-S, 2N7000 ist S-G-D, also vor dem Löten das Datenblatt prüfen. Der N-Kanal schaltet die Last gegen Masse (Low-Side), der P-Kanal liegt zwischen Plus und Last (High-Side). Das Gate verträgt höchstens 20 V und ist statisch empfindlich.',
   TRIAC:'TRIAC BT136 (TO-220): Pin 1 MT1, Pin 2 MT2, Pin 3 Gate. Schaltet Wechselstrom in beide Richtungen, gezündet mit einem Gate-Strom (Dimmer: über einen DIAC).',
   VDR:'Varistor (VDR): spannungsabhängiger Widerstand. Unterhalb der Betriebsspannung sperrt er, bei Überspannung leitet er und begrenzt sie. Immer parallel zur Last, hinter einer Sicherung. Ein DIAC ist als Diodenvariante „DB3“ wählbar.',
   THY:'Thyristor TIC106 (TO-220): Pin 1 Kathode, Pin 2 Anode, Pin 3 Gate. Zündet mit einem Gate-Strom und hält sich selbst.',
@@ -575,7 +575,7 @@ function commit(){
   afterChange();
 }
 function restore(i){
-  const s=JSON.parse(hist[i]);if(!('boards' in s))delete doc.boards;Object.assign(doc,s);hi=i;sel=null;chain=null;afterChange(true);
+  const s=JSON.parse(hist[i]);if(!('boards' in s))delete doc.boards;Object.assign(doc,s);hi=i;sel=null;chain=null;afterChange();
 }
 function afterChange(){
   clearTimeout(saveT);saveT=setTimeout(save,350);
@@ -600,9 +600,25 @@ function listProjects(){
 function openProject(id){
   try{const d=JSON.parse(localStorage.getItem('lm4.p.'+id));if(!d)throw 0;load(d);}catch(e){toast('Projekt nicht lesbar');}
 }
+/* Fremde oder beschädigte Daten (Import, geteilter Link, alter Speicher) werden beim Laden bereinigt, damit kein Objekt später das Zeichnen zum Absturz bringt */
+function sanitize(d){
+  const KT=['wire','track','dot','text','ribbon'];
+  d.cols=clamp(parseInt(d.cols,10)||62,4,400);d.rows=clamp(parseInt(d.rows,10)||38,4,400);
+  if(!Array.isArray(d.boards)||!d.boards.length)delete d.boards;
+  d.items=(Array.isArray(d.items)?d.items:[]).filter(i=>i&&typeof i==='object'&&(i.t==='part'?!!PARTS[i.k]:KT.includes(i.t)));
+  d.items.forEach(i=>{
+    if(i.t==='part'){const P=PARTS[i.k];i.x=Math.round(+i.x||0);i.y=Math.round(+i.y||0);i.r=(parseInt(i.r,10)||0)&3;i.n=P.kind==='fixed'?P.def:clamp(parseInt(i.n,10)||P.def,P.min||1,P.max||64);if(i.v!=null)i.v=String(i.v);if(i.l!=null)i.l=String(i.l);}
+    else if(i.t==='text'){i.s=String(i.s==null?'':i.s);i.z=clamp(+i.z||1,.5,6);i.x=+i.x||0;i.y=+i.y||0;}
+    else if(i.t==='dot'){i.x=Math.round(+i.x||0);i.y=Math.round(+i.y||0);}
+    else{i.x1=Math.round(+i.x1||0);i.y1=Math.round(+i.y1||0);i.x2=Math.round(+i.x2||0);i.y2=Math.round(+i.y2||0);if(i.t==='wire'&&typeof i.c!=='string')i.c=WCOL[0];if(i.t==='ribbon')i.n=clamp(parseInt(i.n,10)||1,1,64);}
+  });
+  const seen=new Set();let mx=0;d.items.forEach(i=>{if(typeof i.id==='number'&&!seen.has(i.id)){seen.add(i.id);if(i.id>mx)mx=i.id;}else i.id=null;});
+  d.items.forEach(i=>{if(i.id==null)i.id=++mx;});
+  return d;
+}
 function load(d){
-  doc=Object.assign(newDoc(),d);doc.items=doc.items||[];
-  doc.nid=doc.nid||(Math.max(0,...doc.items.map(i=>i.id||0))+1);
+  doc=sanitize(Object.assign(newDoc(),d));
+  doc.nid=Math.max(parseInt(doc.nid,10)||0,Math.max(0,...doc.items.map(i=>i.id||0))+1);
   sel=null;chain=null;resetHist();fit();save();afterChange();
 }
 
@@ -613,6 +629,8 @@ let sel=null, partKind='R', partRot=0, wireColor='#d6dbe1';
 let autoSocket=true;
 let ghost=null, chain=null, cursor=null, act=null, erased=false;
 const WCOL=['#d6dbe1','#e03a3a','#2f7de1','#2fae45','#f0c020','#ececec','#222'];
+const WCOLN=['Silberdraht','rot','blau','grün','gelb','weiß','schwarz'];
+const wireSw=cur=>WCOL.map((c,i)=>`<button class="sw ${cur===c?'on':''}" style="background:${c}" data-a="wc" data-c="${c}" aria-label="${WCOLN[i]}" title="${WCOLN[i]}"></button>`).join('');
 const MODES=[['both','Beide'],['top','Oben'],['bottom','Unten']];
 
 const byId=id=>doc.items.find(i=>i.id===id);
@@ -725,7 +743,7 @@ function drawPart(c,it){
     if(V&&V.glass){c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=.05;line(c,bx+.2,-h*.2,bx+L-.5,-h*.2);}
     c.fillStyle=(V&&V.bc)||'#d8dde2';c.fillRect(bx+L-(V&&V.glass?.34:.24),-h/2,V&&V.glass?.16:.16,h);}
   }else if(k==='C'){
-    leg();const w=Math.min(n+.5,1.5);
+    leg();
     c.beginPath();c.ellipse(n/2,-.12,.85,.75,0,0,7);c.fillStyle='#e3a233';c.fill();c.strokeStyle='#8a5a10';c.lineWidth=.05;c.stroke();
   }else if(k==='CE'){
     leg();{const r=(variantOf(it)||{}).r||.85;
@@ -751,9 +769,6 @@ function drawPart(c,it){
     if(bs&&(br>.05||bg>.05)){c.save();c.globalCompositeOperation='lighter';const gr=c.createRadialGradient(cx,cy,0,cx,cy,2.3),R=Math.round(255*Math.min(1,br+bg*.2)),G=Math.round(255*Math.min(1,bg+br*.1));gr.addColorStop(0,'rgba('+R+','+G+',40,'+(.55*Math.max(br,bg))+')');gr.addColorStop(1,'rgba('+R+','+G+',40,0)');c.fillStyle=gr;c.beginPath();c.arc(cx,cy,2.3,0,7);c.fill();c.restore();}
   }else if(k==='T'){
     c.beginPath();c.moveTo(-.25,.45);c.arc(1,.45,1.25,Math.PI,0);c.closePath();c.fillStyle='#262626';c.fill();c.strokeStyle='#555';c.lineWidth=.05;c.stroke();
-  }else if(k==='P'){
-    rrect(c,-.45,-1.5,2.9,1.9,.2);c.fillStyle='#2b4a8f';c.fill();
-    c.beginPath();c.arc(1,-.55,.7,0,7);c.fillStyle='#c8ccd2';c.fill();c.strokeStyle='#555';c.lineWidth=.06;c.stroke();line(c,.6,-.95,1.4,-.15);
   }else if(k==='CF'){
     leg();{const V=variantOf(it),w=V&&V.bw?V.bw:Math.min(n+.6,2.6),h=V&&V.bh?V.bh:1.3;rrect(c,n/2-w/2,-h/2,w,h,.12);c.fillStyle=V&&V.col?V.col:'#d4402c';c.fill();c.strokeStyle='rgba(0,0,0,.45)';c.lineWidth=.05;c.stroke();}
   }else if(k==='L'){
@@ -776,12 +791,6 @@ function drawPart(c,it){
     rrect(c,-1,-4,4,3.4,.12);c.fillStyle='#222';c.fill();
     rrect(c,-1,-6.4,4,2.4,.12);c.fillStyle='#b8bec5';c.fill();c.strokeStyle='#6b727a';c.lineWidth=.05;c.stroke();
     c.beginPath();c.arc(1,-5.3,.75,0,7);c.fillStyle='#222';c.fill();
-  }else if(k==='TP'){
-    rrect(c,-.45,-1.2,2.9,1.65,.1);c.fillStyle='#3a6ea5';c.fill();c.strokeStyle='#1d3d63';c.lineWidth=.05;c.stroke();
-    c.beginPath();c.arc(1,-.45,.55,0,7);c.fillStyle='#d6a23a';c.fill();c.strokeStyle='#6b4a10';c.lineWidth=.05;c.stroke();line(c,.65,-.45,1.35,-.45);
-  }else if(k==='SW'){
-    rrect(c,-.3,-.3,2.6,3.6,.2);c.fillStyle='#2b2b2b';c.fill();c.strokeStyle='#777';c.lineWidth=.05;c.stroke();
-    c.beginPath();c.arc(1,1.5,.95,0,7);c.fillStyle='#8e949b';c.fill();c.strokeStyle='#444';c.lineWidth=.06;c.stroke();
   }else if(k==='GL'){
     rrect(c,-.5,-1.2,4,1.7,.12);c.fillStyle='#1e1e1e';c.fill();c.strokeStyle='#555';c.lineWidth=.04;c.stroke();
     c.strokeStyle='#eee';c.lineWidth=.08;line(c,-.1,-.8,.3,-.8);line(c,.1,-1,.1,-.6);
@@ -1242,7 +1251,7 @@ function onUp(p){
   invalidate();
 }
 window.addEventListener('keydown',e=>{
-  if(e.target.tagName==='INPUT')return;
+  const tg=e.target;if(tg&&(/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName)||tg.isContentEditable))return;   // Tippen in Feldern und Auswahllisten darf nichts auf der Platine löschen
   if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();e.shiftKey?redo():undo();}
   else if(e.key==='Delete'||e.key==='Backspace')delSel();
   else if(e.key==='Escape'){chain=null;sel=null;renderCtx();invalidate();}
@@ -1318,7 +1327,7 @@ function renderCtx(){
   const chip=(id,l,cls='')=>`<button class="chip ${cls}" data-a="${id}">${l}</button>`;
   const it=sel!=null?byId(sel):null;
   if(tool==='select'&&it){
-    if(it.t==='wire')h+=WCOL.map(c=>`<button class="sw ${it.c===c?'on':''}" style="background:${c}" data-a="wc" data-c="${c}"></button>`).join('')+'<span class="sep"></span>';
+    if(it.t==='wire')h+=wireSw(it.c)+'<span class="sep"></span>';
     if(it.t==='part'&&wide){
       sh=sideCtl(it.k,it.r,it.n,it);
       h+=PARTS[it.k].variants?varChips(it.k,variantOf(it).id,'sv'):'<span class="hint">Einstellungen in der Seitenleiste</span>';
@@ -1350,7 +1359,7 @@ function renderCtx(){
       }
     }
   }else if(tool==='wire'||tool==='track'){
-    if(tool==='wire')h+=WCOL.map(c=>`<button class="sw ${wireColor===c?'on':''}" style="background:${c}" data-a="wc" data-c="${c}"></button>`).join('')+'<span class="sep"></span>';
+    if(tool==='wire')h+=wireSw(wireColor)+'<span class="sep"></span>';
     h+=chip('autoroute','⤳ Auto-Weg '+(autoRoute?'an':'aus'),autoRoute?'on':'')+chip('done','Fertig','')+`<span class="hint">${chain?'Nächsten Punkt setzen · letzten Punkt nochmal antippen = Ende':'Ziehen oder antippen · gleichen Punkt nochmal = Ende'}</span>`;
   }else{
     const hints={select:'Tippen = auswählen, ziehen = verschieben · 2 Finger = Zoom',hand:'Ziehen zum Verschieben · 2 Finger = Zoom',dot:'Tippen setzt oder entfernt einen Lötpunkt',text:'Tippen, um Text zu platzieren',erase:'Tippen oder darüberwischen zum Löschen'};
@@ -1360,9 +1369,13 @@ function renderCtx(){
   renderParts();
 }
 const PCATS=[['Quellen',['BAT','SIG']],['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','DUOLED','T','FET','THY','TRIAC','VDR','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','PI','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];
+let partsKey='';
 function renderParts(){
   const el=$('#parts');if(!el)return;
-  const seen=new Set();let h=`<div class="psearch"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;flex:none;opacity:.7"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="pq" type="search" placeholder="Bauteil suchen …" autocomplete="off" value="${esc(partQuery)}"></div>`;
+  // Die Liste hängt nur von Werkzeug, gewähltem Bauteil und den Varianten ab, nicht vom Projekt: nur neu aufbauen, wenn sich davon etwas geändert hat
+  const key=(tool==='part'?partKind:'')+'|'+JSON.stringify(partVar);
+  if(key===partsKey&&el.children.length)return;partsKey=key;
+  const seen=new Set();let h=`<div class="psearch"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px;flex:none;opacity:.7"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg><input id="pq" type="search" placeholder="Bauteil suchen …" aria-label="Bauteil suchen" autocomplete="off" value="${esc(partQuery)}"></div>`;
   const item=k=>{seen.add(k);return `<button class="pit ${tool==='part'&&k===partKind?'on':''}" data-k="${k}" data-q="${esc((PARTS[k].name+' '+k).toLowerCase())}">${thImg(photoOf(k,curVar(k)))}<span>${esc(PARTS[k].name)}</span></button>`;};
   PCATS.forEach(([c,ks])=>{const l=ks.filter(k=>PARTS[k]);if(l.length)h+=`<div class="pcat">${c}</div>`+l.map(item).join('');});
   const rest=Object.keys(PARTS).filter(k=>!seen.has(k));if(rest.length)h+='<div class="pcat">Weitere</div>'+rest.map(item).join('');
@@ -1458,8 +1471,11 @@ $('#bMenu').onclick=openMenu;
 /* ---- Dialoge ---- */
 function sheet(title,build){
   const bd=document.createElement('div');bd.className='backdrop';
-  bd.innerHTML=`<div class="sheet"><div class="sh-h"><b>${esc(title)}</b><button class="x">✕</button></div><div class="sh-b"></div></div>`;
-  document.body.appendChild(bd);const close=()=>bd.remove();
+  bd.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}"><div class="sh-h"><b>${esc(title)}</b><button class="x" aria-label="Schließen">✕</button></div><div class="sh-b"></div></div>`;
+  document.body.appendChild(bd);
+  const onKey=e=>{if(e.key!=='Escape'||!bd.isConnected)return;const all=document.querySelectorAll('.backdrop');if(all[all.length-1]!==bd)return;e.stopImmediatePropagation();close();};
+  const close=()=>{bd.remove();window.removeEventListener('keydown',onKey,true);};
+  window.addEventListener('keydown',onKey,true);   // Escape schließt das oberste Blatt (Tastatur am Laptop)
   bd.addEventListener('pointerdown',e=>{if(e.target===bd)close();});
   bd.querySelector('.x').onclick=close;build(bd.querySelector('.sh-b'),close);return close;
 }
@@ -1507,7 +1523,7 @@ function openMenu(){
       ['board','Platinengröße',`${fmtOf(doc.cols,doc.rows)||'Eigenes Format'} · ${doc.cols} × ${doc.rows} Löcher`],
       ['addboard','Platine hinzufügen','Zweite Platine, mit Flachbandkabel verbinden'+(boardsOf(doc).length>1?` (jetzt ${boardsOf(doc).length})`:'')],
       ['bom','Bauteilliste','Anzeigen, drucken, kopieren'],
-      ['png','Als Bild exportieren','PNG, teilen oder speichern'],
+      ['exp','Layout exportieren','Bestückungsseite, Lötseite, beide auf einem Blatt oder Bauteilliste als PNG'],
       ['share','Teilen','Link zum Weitergeben (Projekt steckt im Link)'],
       ['json','Projekt sichern (Datei)','JSON-Datei zum Weitergeben'],
       ['import','Projekt importieren','JSON-Datei laden'],
@@ -1589,7 +1605,7 @@ function menuAct(m){
   if(m==='fun'){if(window.LochFX){LochFX.setFun(!LochFX.isFun());toast('Sprüche und Effekte: '+(LochFX.isFun()?'an':'aus'));}return;}
   if(m==='kamp'){if(window.Kampagne)Kampagne.open();return;}
   if(m==='predict'){if(window.Predict)Predict.toggle();return;}
-  if(m==='png'){if(window.LabExport)LabExport.png();return;}
+  if(m==='png'){if(window.LabExport)LabExport.png();else exportSheet(false);return;}
   if(m==='gif'){if(window.LabExport)LabExport.gif();return;}
   if(m==='share'){if(!doc.items.length){toast('Noch nichts auf der Platine');return;}shareNow({name:doc.name,cols:doc.cols,rows:doc.rows,boards:doc.boards,items:doc.items,nid:doc.nid,code:doc.code,lang:doc.lang,task:doc.task},doc.name);return;}
   if(m==='new')confirmNew(()=>boardSheet('Neues Projekt',true,(name,c,r)=>{save();load(newDoc(name||'Neues Projekt',c,r));}));
@@ -1604,7 +1620,7 @@ function menuAct(m){
     commit();fit();toast('Platine hinzugefügt. Mit dem Werkzeug „Flachband“ verbinden.');
   });
   else if(m==='bom')openBom();
-  else if(m==='png')exportSheet(false);
+  else if(m==='exp')exportSheet(false);
   else if(m==='print')exportSheet(true);
   else if(m==='json'){const blob=new Blob([JSON.stringify(doc)],{type:'application/json'});shareBlob(blob,safeName()+'.lochmaster.json');}
   else if(m==='import')importFile();
@@ -1801,7 +1817,7 @@ function openHelp(){
     b.innerHTML=`<div style="background:#fff;border-radius:12px;padding:12px;margin-bottom:12px"><img src="logo-full.png" alt="Tonfunk Gruppe" style="width:100%;display:block" onerror="this.parentNode.remove()"></div><p><b>Tonfunk LochLab</b> – Lochraster-Planer der Tonfunk Lehrwerkstatt.</p><p><b>Bauteil</b> wählen, Typ und Länge einstellen, aufs Raster tippen oder den Finger ziehen und loslassen. ↻ dreht.</p>
     <p><b>Draht</b> = Drahtbrücke auf der Bestückungsseite. <b>Lötbahn</b> = Silberdraht/Lötzinn auf der Lötseite, nur waagerecht oder senkrecht von Loch zu Loch. Auch silberne Drähte laufen nur im 90°-Winkel; farbige Schaltdrähte dürfen schräg. Entweder von Punkt zu Punkt ziehen oder Punkte nacheinander antippen; „Fertig“ oder erneut denselben Punkt beendet die Kette.</p>
     <p><b>Lötpunkt</b> setzen/entfernen durch Tippen. <b>Auswahl</b>: Objekt antippen, ziehen zum Verschieben; leere Fläche ziehen verschiebt die Ansicht.</p>
-    <p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION||''}</p><p><b>Tastenkürzel:</b> Taste <b>?</b> drücken oder im Menü „Tastenkürzel“. Zum Beispiel <b>R</b> Widerstand, <b>D</b> Diode, <b>L</b> LED, <b>W</b> Draht、<b>.</b> Silberdraht, <b>,</b> Lötzinn, <b>Eingabe</b> oder <b>F5</b> Simulation ein und aus.</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
+    <p style="color:var(--mute);font-size:12px">Programmstand: ${window.LAB_VERSION||''}</p><p><b>Tastenkürzel:</b> Taste <b>?</b> drücken oder im Menü „Tastenkürzel“. Zum Beispiel <b>R</b> Widerstand, <b>D</b> Diode, <b>L</b> LED, <b>W</b> Draht, <b>.</b> Silberdraht, <b>,</b> Lötzinn, <b>Eingabe</b> oder <b>F5</b> Simulation ein und aus.</p><p><b>Zwei Finger</b> zoomen und verschieben immer. Oben rechts wechselt die Ansicht zwischen Beide / Oben / Unten (Lötseite gespiegelt).</p>
     <p>Widerstände zeigen automatisch den Farbcode zum Wert (z. B. 4k7, 220, 1M).</p>
     <p><b>Simulation:</b> Oben den Schalter von „Layout“ auf „Sim“ stellen. Die Schaltung läuft, LEDs leuchten. Silberdraht auf der Lötseite verbindet jedes Loch auf seinem Weg, eine Drahtbrücke nur ihre Enden. Mit „Bedienen“ schaltest du Schalter und Taster, mit „Spannung“ und „Strom“ misst du, mit „Oszi“ siehst du Signale. Eine Spannungsquelle (Batterie, Netzteil oder Signalgenerator) muss im Layout sein.</p>
     <p><b>Auf dem iPad installieren:</b> Seite in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Danach läuft sie wie eine App, auch offline. Projekte liegen lokal im Gerät; mit „Projekt sichern“ erstellst du eine Datei als Backup.</p>`;
@@ -1813,7 +1829,7 @@ const SUN='<svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><pa
 const MOON='<svg class="i" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 019.5 4 8 8 0 1020 14.5z"/></svg>';
 function applyTheme(t,persist){
   document.documentElement.dataset.theme=t;
-  $('#bTheme').innerHTML=t==='dark'?SUN:MOON;
+  $('#bTheme').innerHTML=t==='dark'?SUN:MOON;$('#bTheme').setAttribute('aria-label',t==='dark'?'Helles Design':'Dunkles Design');$('#bTheme').title=t==='dark'?'Helles Design':'Dunkles Design';
   if(persist)try{localStorage.setItem('lm4.theme',t);}catch(e){}
   invalidate();
 }

@@ -298,7 +298,6 @@
         const z1 = stages[0].zIn, z2 = stages[0].zOut, z3 = stages[1].zIn, z4 = stages[1].zOut;
         const mod = Math.min(6, 590 / ((2 * z1 + z2 + z3 + 2 * z4) / 2), 240 / (Math.max(z1, z2, z3, z4) + 2));
         const r = (z) => z * mod / 2;
-        const span = r(z1) * 2 + (z1 + z2) * mod / 2 - r(z1) + (z3 + z4) * mod / 2 + r(z4) - 0;
         const total = (z1 + z2) * mod / 2 + (z3 + z4) * mod / 2 + r(z1) + r(z4);
         const x1 = CX - total / 2 + r(z1), x2 = x1 + (z1 + z2) * mod / 2, x4 = x2 + (z3 + z4) * mod / 2;
         out.mod = mod; out.gears = [{ x: x1, y: CY, r: r(z1), z: z1 }, { x: x2, y: CY, r: r(z2), z: z2 }, { x: x2, y: CY, r: r(z3), z: z3 }, { x: x4, y: CY, r: r(z4), z: z4 }];
@@ -620,7 +619,7 @@
       ctx.fillStyle = C.bad; ctx.fillRect(bx + (90 - 20) / 140 * bw - 1, 458, 3, 22);
       txt(ctx, 'Temperatur ' + Math.round(S.temp) + ' °C', bx, 494, 12, S.overHeat ? C.bad : C.text, 'left', '700');
       txt(ctx, 'Wirkungsgrad Bauart ' + fmt(c.eta0 * 100, 0) + ' %', bx + bw, 494, 12, C.dim, 'right', '700');
-      txt(ctx, 'z. B. Stirnrad 98 %, Riemen 96 %, Schnecke 50–85 %', bx, 520, 10.5, C.dim, 'left', '600');
+      txt(ctx, 'Richtwerte je Stufe: Stirnrad ca. 97 %, Zahnriemen ca. 94 %, Schnecke 50–85 %', bx, 520, 10.5, C.dim, 'left', '600');
 
       // Schmierung (antippen)
       const lr = L.lube;
