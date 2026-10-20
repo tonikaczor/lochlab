@@ -132,6 +132,18 @@
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für LED-Vorwiderstand, Verlustleistung und Sperrschichttemperatur, Derating, E-Reihen und Toleranzen. Werte kannst du direkt aus einem Datenblatt übernehmen.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 34 Aufgaben mit automatischer Prüfung: von Grenzwerten und Kennwerten über Kennlinien, Thermik und Bauteilwahl bis zu Zeitdiagrammen, Fachenglisch, Fehlersuche und Aufgaben im Prüfungsstil. Dazu 14 Beispiele. Tipps gibt es in drei Stufen.' },
       NEXTSTEPS[0], END('Datenblatt-Lab')] },
+    vb: { name: 'Verbundprojekte', steps: [
+      { t: 'Willkommen bei den Verbundprojekten', x: 'Hier bauen alle Labs zusammen ein Gerät: Garagentor, Ampel, Uhr, Gartenbewässerung oder Förderanlage. Jede Station arbeitet in einem Lab und liefert ihr Ergebnis an die nächste. Ich zeige dir in wenigen Minuten, wie das geht.' },
+      { at: () => document.getElementById('view'), t: 'Fünf Projekte', x: 'Wähle ein Projekt und eine Stufe: Einsteiger mit Starthilfen, Standard oder Profi. Dein Name und die Stufe bestimmen das Lastenheft, also die Zahlen deines Auftrags. Wer im Team arbeitet, nimmt denselben Teamnamen.' },
+      { at: () => document.getElementById('view'), gate: a => a.started(), optional: true, t: 'Projekt starten', x: 'Tippe bei einem Projekt auf „Starten“ und lege es an. Du kannst es später zurücksetzen, eine Sicherung bleibt erhalten. (Du kannst den Schritt überspringen.)' },
+      { at: () => document.getElementById('view'), gate: a => a.lastenheftOpened(), optional: true, t: 'Das Lastenheft', x: 'Im Projekt klappst du das Lastenheft auf. Dort stehen die Anforderungen: Spannungen, Ströme, Zeiten, Toleranzen. Alle Stationen prüfen dein Ergebnis gegen diese Werte.' },
+      { at: () => document.getElementById('view'), t: 'Die Phasenleiste', x: 'Die Phasenleiste zeigt alle Stationen in der Reihenfolge des Projekts, jede mit dem Symbol des Labs, in dem du arbeitest, und ihrem Stand. Eine Station wird erst frei, wenn die vorige bestanden ist (🔒 gesperrt, ▶ offen, ⚠ nicht bestanden, ✓ bestanden). ↻ „Eingang geändert“ heißt: Eine Vorstation hat neue Daten geliefert, du prüfst und übergibst noch einmal.' },
+      { at: () => document.getElementById('view'), gate: a => a.stationViewed(), optional: true, t: 'Eine Station öffnen', x: 'Tippe auf die nächste offene Station. Du siehst Auftrag, Eingänge von den Vorstationen und einen Knopf, der das passende Lab öffnet. Tipps gibt es in drei Stufen, die dritte zeigt die Musterlösung und wird vermerkt.' },
+      { at: () => document.getElementById('view'), t: 'Die Leiste im Lab', x: 'Im Lab erscheint oben eine Leiste mit dem Auftrag. Dort drückst du „Prüfen“ (nichts wird gespeichert) und „Übergeben“ (das Ergebnis geht an die nächste Station). Ohne Projekt bleibt die Leiste unsichtbar, das Lab arbeitet wie immer.' },
+      { at: () => document.getElementById('view'), t: 'Der Gesamttest', x: 'Sind alle Stationen bestanden, prüft der Gesamttest das fertige Gerät mit Kennzahlen. Danach gibt es Abschlussbericht und Zertifikat mit Medaille. Das druckst du als A4-Seite aus dem Menü.' },
+      { at: () => document.getElementById('view'), t: 'Teilen und Teamarbeit', x: 'Über „Teilen“ erzeugst du einen Code, einen Link oder einen QR für deinen Partner oder als Sicherung. Der Partner braucht denselben Teamnamen und dieselbe Stufe, dann passt das Lastenheft.' },
+      { at: '#bMenu', t: 'Menü', x: 'Im Menü findest du Bericht, Zertifikat, Teilen, Abzeichen, die Kampagne und diesen Trainer. Den Ausbilder-Bereich mit Musterlösungen und Beispielständen öffnet nur der Ausbilder.' },
+      NEXTSTEPS[0], END('Projekte')] },
     pr: { name: 'Prüfungs-Lab', steps: [
       { t: 'Willkommen im Prüfungs-Lab', x: 'Hier übst du für die Abschlussprüfung: Themen trainieren, Rechenaufgaben lösen und Probeprüfungen mit Zeitlimit machen. Am Ende weißt du, wo du stehst.' },
       { at: '#tabs', t: 'Die sechs Bereiche', x: 'Start, Probeprüfung, Training, Auswertung, Formeln und Aufgaben. Ein guter Weg: erst Themen üben, dann Probeprüfung, dann die Schwächen beheben.' },
@@ -194,7 +206,7 @@
   }
   function finish() {
     const lab = (A().lab) || '';
-    try { const d = JSON.parse(localStorage.getItem('lm4.trainer') || '{}'); d[lab] = 1; localStorage.setItem('lm4.trainer', JSON.stringify(d)); if (root.Badges) root.Badges.stat('trainer', Object.keys(d).length, 'max'); } catch (e) {}
+    try { const d = JSON.parse(localStorage.getItem('lm4.trainer') || '{}'); d[lab] = 1; localStorage.setItem('lm4.trainer', JSON.stringify(d)); if (root.Badges) root.Badges.stat('trainer', Object.keys(d).filter(k => !((root.LAB_REG || {})[k] || {}).hub).length, 'max'); } catch (e) {}
     stop(); if (root.LabUI && root.LabUI.toast) root.LabUI.toast('Trainer abgeschlossen');
   }
   function render() {

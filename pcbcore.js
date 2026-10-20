@@ -10,6 +10,8 @@
  *  - Pin-Nummern: DIP/SOIC/TSSOP 1..n/2 links oben nach unten, dann rechts unten nach oben. LED: 1 = Kathode,
  *    2 = Anode. Dioden/LED0603/SOD-123: 1 = Kathode. Elko/C_RADIAL: 1 = Plus. TO-92/TO-220/SOT-23: siehe desc.
  *    TO-92 hat hier 2,54 mm Pitch (Wide-Variante, anfaengerfreundlich).
+ *    D_DO41: 1 = Kathode, 2 = Anode. RELAY_SRD: 1 A1, 2 A2, 3 COM, 4 NO, 5 NC. XTAL_HC49: 1, 2. TERMINAL_n: Pad n = Anschluss n.
+ *    SEG7_10: 1 e, 2 d, 3 gem. Kathode, 4 c, 5 dp, 6 b, 7 a, 8 gem. Kathode, 9 f, 10 g.
  *  - stackup() liefert ein Array (oben nach unten) mit Eigenschaften .total, .copper (Kupferlagen). Mask/Silk zaehlen
  *    zur Gesamtdicke; der Mittelkern/Kern wird so gewaehlt, dass die Summe board.thickness (Standard 1,6 mm) ergibt.
  *  - Zonen: Raster-Fuellung (Zellgroesse 0,1..0,25 mm, aus der Flaeche abgeleitet), Abstand = max(zone.clearance,
@@ -301,6 +303,27 @@
     addFP('SWITCH_6MM', 'Taster 6 mm', 'tht', 'Kurzhubtaster 6x6 mm, 4 Pins (1-2 und 3-4 intern verbunden)',
       [tp(1, -3.25, -2.25, 2, 1.1, true), tp(2, 3.25, -2.25, 2, 1.1), tp(3, -3.25, 2.25, 2, 1.1), tp(4, 3.25, 2.25, 2, 1.1)],
       [sLine(-3, -1, -3, 1), sLine(3, -1, 3, 1), sLine(-1, -3, 1, -3), sLine(-1, 3, 1, 3)], { bodyH: 4.3, body: { w: 6, h: 6 } });
+
+    /* Ergaenzungen fuer die Verbundprojekte (Paket A3). Pad-Nummer = Anschlussnummer der Netzliste (Verbund.nl.FPMAP).
+       Gehaeusemasse sind Lehrwerte (A): vor einer echten Fertigung am Datenblatt des gewaehlten Bauteils pruefen. */
+    addFP('D_DO41', 'Diode DO-41', 'tht', 'Bedrahtete Diode DO-41 liegend, Rastermaß 10,16 mm, Pin 1 = Kathode (Ring), Pin 2 = Anode',
+      [tp(1, -5.08, 0, 1.8, 1, true), tp(2, 5.08, 0, 1.8, 1)], [sRect(-2.6, -1.35, 5.2, 2.7), sLine(-1.7, -1.35, -1.7, 1.35)], { bodyH: 2.7, body: { w: 5.2, h: 2.7 } });
+    addFP('RELAY_SRD', 'Relais SRD (Wechsler)', 'tht', 'Print-Relais im Gehäuse 19 x 15,5 mm (Bauform SRD, Raster vereinfacht (A)): Pin 1 = A1, 2 = A2 (Spule), 3 = COM, 4 = NO, 5 = NC',
+      [P(1, -7, -3.75, 'oval', 2.6, 2.2, 1.3), P(2, -7, 3.75, 'oval', 2.6, 2.2, 1.3), P(3, 7, 0, 'oval', 2.6, 2.2, 1.3), P(4, 7, -6, 'oval', 2.6, 2.2, 1.3), P(5, 7, 6, 'oval', 2.6, 2.2, 1.3)],
+      [sRect(-9.5, -7.75, 19, 15.5), sLine(-9.5, -5.5, -8.3, -5.5)], { bodyH: 15.5, body: { w: 19, h: 15.5 } });
+    addFP('XTAL_HC49', 'Quarz HC-49', 'tht', 'Quarz HC-49 bedrahtet, Pinabstand 4,88 mm, Pin 1 und 2 beliebig tauschbar',
+      [tp(1, -2.44, 0, 1.7, 0.9, true), tp(2, 2.44, 0, 1.7, 0.9)], [sRect(-5.5, -2.3, 11, 4.6)], { bodyH: 13.5, body: { w: 11, h: 4.6 } });
+    (function () {
+      var pads = dualRow(10, 2.54, 10.16, function (k, x, y) { return tp(k, x, y, 1.6, 0.8, k === 1); });
+      addFP('SEG7_10', '7-Segment-Anzeige 10 Pins', 'tht', '7-Segment-Anzeige 10 Pins (gängige Norm, Reihenabstand 10,16 mm (A)): 1 e, 2 d, 3 gem. Kathode, 4 c, 5 dp, 6 b, 7 a, 8 gem. Kathode, 9 f, 10 g; Zählweise wie DIP',
+        pads, [sRect(-6.3, -9.5, 12.6, 19), sCirc(-4.4, -8, 0.4)], { bodyH: 8, body: { w: 12.6, h: 19 } });
+    })();
+    [2, 3].forEach(function (n) {
+      var pads = [], i;
+      for (i = 0; i < n; i++) pads.push(tp(i + 1, 0, (i - (n - 1) / 2) * 5.08, 2.4, 1.3, i === 0));
+      addFP('TERMINAL_' + n, 'Schraubklemme ' + n + '-polig', 'tht', 'Schraubklemme ' + n + '-polig (kompakte Bauform, Körper nur 4,6 mm tief (A)), Raster 5,08 mm, Pin 1 oben, Pad n = Anschluss n',
+        pads, [sRect(-2.3, -n * 2.54, 4.6, n * 5.08)], { bodyH: 10, body: { w: 4.6, h: n * 5.08 } });
+    });
 
     // --- SMD Chip ---
     function chip(id, name, desc, px, pw, ph, silkY, extra) {

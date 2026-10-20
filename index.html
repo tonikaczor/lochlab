@@ -67,6 +67,11 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
 @media(min-width:1180px){.cards{grid-template-columns:repeat(4,1fr)}.cards .card,.cards .card:last-child:nth-child(n),.cards .card:nth-last-child(2):nth-child(n){grid-column:auto}}
 @media(min-width:640px) and (max-width:1179px){.cards{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:639px){.pic{height:64px}.card p{-webkit-line-clamp:2}}
+/* Zeile Projekte (Verbund): eigene Zeile unter den Lab-Karten, kein Lab */
+.vbrow{margin-top:14px;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;border-color:#3b9eff;background:linear-gradient(135deg,rgba(59,158,255,.12),rgba(34,40,48,1) 60%)}
+.vbrow .pic{flex:0 0 190px;height:76px}.vbrow .vbt{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}.vbrow .vbt p{-webkit-line-clamp:3}
+.vbrow .btns{flex:0 0 auto;margin:0;padding:0}.vbrow a.btn{min-width:150px;padding:0 18px}
+@media(max-width:639px){.vbrow .pic{flex:1 1 100%}.vbrow .btns{flex:1 1 100%}}
 .foot{margin-top:26px;color:var(--mute);font-size:13px;text-align:center}
 #gate{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 #gate form{width:100%;max-width:340px;text-align:center}
@@ -273,8 +278,20 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="btns"><a class="btn pri" href="pilab.html">Öffnen</a><a class="btn" href="pilab.html?neu">Neu</a><a class="btn" href="pilab.html?bsp">Beispiel</a></div>
     </section>
   </div>
+  <section class="card vbrow" id="vbRow" data-hub="vb">
+    <div class="pic" aria-hidden="true">
+      <svg viewBox="0 0 240 120"><g fill="none" stroke="#3b9eff" stroke-width="3" stroke-linecap="round"><path d="M40 60H92M148 60H200M120 30V90M92 60L120 30L148 60L120 90Z"/></g><path class="dots" d="M40 60H92L120 30L148 60H200" fill="none"/><g fill="#14181c" stroke="#e8eaed" stroke-width="3"><circle cx="40" cy="60" r="13"/><circle cx="120" cy="30" r="13"/><circle cx="120" cy="90" r="13"/><circle cx="200" cy="60" r="13"/></g><g fill="#ffe14d"><circle class="on" cx="40" cy="60" r="5"/><circle class="on" cx="120" cy="30" r="5" style="animation-delay:.4s"/><circle class="on" cx="200" cy="60" r="5" style="animation-delay:.8s"/><circle class="on" cx="120" cy="90" r="5" style="animation-delay:1.2s"/></g></svg>
+    </div>
+    <div class="vbt">
+      <span class="tag">PROJEKTE · LABS ARBEITEN ZUSAMMEN</span>
+      <h2>Verbundprojekte: ein Gerät, alle Labs</h2>
+      <p>Fünf Projekte wie in der Firma: Garagentor mit Funköffner, Ampelanlage, Digitale Uhr, Gartenbewässerung und Förderanlage. Datenblatt, Schaltplan, Platine, Messung, Antrieb, Sensorik, Steuerung und Programm: Jede Station liefert ihr Ergebnis an die nächste.</p>
+      <div class="steps"><span>Lastenheft</span><span>Stationen in den Labs</span><span>Gesamttest</span><span>Zertifikat</span></div>
+    </div>
+    <div class="btns"><a class="btn pri" href="verbund.html">Projekte öffnen</a><a class="btn" href="lernen-vb.html">Projektheft</a></div>
+  </section>
   <p class="foot">In allen Programmen: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>
-  <p class="foot"><a href="#" id="lsOpen" style="color:var(--accent)">💾 Lernstand sichern oder laden</a> · <a href="projekte.html">Projekte für zuhause</a> · <a href="lernen.html">Lernhefte: Löten, Elektronik, Installation, SPS, Leiterplatten, Antriebe, Sensorik, Datenblätter, Arduino, Pi</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a></p>
+  <p class="foot"><a href="#" id="lsOpen" style="color:var(--accent)">💾 Lernstand sichern oder laden</a> · <a href="projekte.html">Projekte für zuhause</a> · <a href="lernen.html">Lernhefte: Löten, Elektronik, Installation, SPS, Leiterplatten, Antriebe, Sensorik, Datenblätter, Arduino, Pi, Projekte</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a></p>
 </div>
 <script src="aufgaben.js"></script>
 <script src="kampagne.js"></script>

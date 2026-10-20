@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['ds', 'Datenblatt-Lab', 'dslab.html', 10]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['vb', 'Projekte', 'verbund.html', 10]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -85,7 +85,8 @@
     var f = document.createElement('iframe'); f.src = l[2]; document.body.appendChild(f);
     await new Promise(function (r) { f.onload = r; }); await sleep(1800);
     var w = f.contentWindow, g = w.document.getElementById('gate'); if (g) g.remove();
-    var bad = [], tasks = w.LochTasks.list();
+    var vbRegL = (w.document.getElementById('vbBar') || (w.VerbundBar && w.VerbundBar.active)) ? ['Verbund-Leiste ohne ?verbund= sichtbar (Regression)'] : [];
+    var bad = vbRegL.slice(), tasks = w.LochTasks.list();
     tasks.forEach(function (t) {
       try {
         var r = w.LochTasks.check(t, t.sol); if (!r.ok) bad.push(t.id + ' Musterlösung ' + r.pct + ' %');
@@ -360,12 +361,79 @@
     }
     return { n: ex.length, bad: bad };
   }
+  /* Verbundprojekte (Hub): 5 Projekte registriert, Datenfluss-Graph, Demo bis zum Abschluss fuer alle Projekte und Stufen = 100 %, Teilen-Round-Trip. TaskTest laeuft ueber den Standardweg (Stationen + Gesamttests). */
+  function memStore() {
+    var m = {};
+    return { getItem: function (k) { return Object.prototype.hasOwnProperty.call(m, k) ? m[k] : null; }, setItem: function (k, v) { m[String(k)] = String(v); }, removeItem: function (k) { delete m[k]; }, key: function (i) { return Object.keys(m)[i] || null; }, get length() { return Object.keys(m).length; } };
+  }
+  async function vbCore(w) {
+    var bad = [], n = 0, V = w.Verbund;
+    if (!V) return { n: 0, bad: ['Verbund fehlt'] };
+    var ps = V.projects() || [];
+    if (ps.length !== 5) bad.push('Projekte: ' + ps.length + ' statt 5');
+    var labsSeen = {};
+    ps.forEach(function (p) {
+      var def = V.project(p.id); if (!def) { bad.push(p.id + ': Definition fehlt'); return; }
+      /* Datenfluss-Graph: jeder Eingang stammt von einer frueheren Station, jede Station ab der zweiten hat einen Eingang aus einer frueheren */
+      var made = {}; made[p.id + '.lastenheft'] = 1;
+      def.stations.forEach(function (st, i) {
+        labsSeen[st.on] = 1;
+        var ins = (st['in'] || []).filter(function (x) { return x !== p.id + '.lastenheft'; });
+        ins.forEach(function (x) { if (!made[x]) bad.push(p.id + ' ' + st.id + ': Eingang ' + x + ' stammt nicht von einer fruehen Station'); });
+        if (i > 0 && !ins.length) bad.push(p.id + ' ' + st.id + ': kein Eingang aus einer frueheren Station');
+        made[st.out] = 1;
+      });
+      if (!/^v[a-z]F$/.test(def.final.id)) bad.push(p.id + ': Gesamttest-ID ' + def.final.id);
+    });
+    if (Object.keys(labsSeen).length < 12) bad.push('nur ' + Object.keys(labsSeen).length + ' verschiedene Labs in den Stationen');
+    /* Demo bis zum Abschluss: alle Projekte und Stufen, in einem Wegwerf-Speicher */
+    var UI = w.VerbundUI, g = UI && UI.snapGuard ? UI.snapGuard() : null, active = null;
+    try { active = w.sessionStorage.getItem('verbund.active'); } catch (e) {}
+    var mem = memStore(); mem.setItem('lm4.kamp.free', '1');
+    if (!V.setStorage(mem)) { bad.push('Wegwerf-Speicher nicht angenommen'); return { n: n, bad: bad }; }
+    try {
+      for (var i = 0; i < ps.length; i++) {
+        var pid = ps[i].id;
+        for (var lv = 1; lv <= 3; lv++) {
+          var r = V.demo(pid, { name: 'Selbsttest Team', level: lv, again: true });
+          n++;
+          if (!r || !r.ok) { bad.push(pid + ' Stufe ' + lv + ': Demo ' + (r && (r.msg || r.err) || 'fehlgeschlagen') + (r && r.done ? ' nach ' + r.done.length + ' Stationen' : '')); continue; }
+          var f = r.final || {}; if (!f.ok || Math.round(f.pct) !== 100) bad.push(pid + ' Stufe ' + lv + ': Gesamttest ' + Math.round(f.pct || 0) + ' % (ok=' + !!f.ok + ')');
+          var sta = V.status(pid), low = (sta.stations || []).filter(function (x) { return Math.round(x.pct) !== 100; }).map(function (x) { return x.id + '=' + Math.round(x.pct); });
+          if (low.length) bad.push(pid + ' Stufe ' + lv + ': Stationen unter 100 %: ' + low.join(', '));
+          if (sta.finalState !== 'passed') bad.push(pid + ' Stufe ' + lv + ': Projekt nicht bestanden (' + sta.finalState + ')');
+        }
+      }
+      /* Teilen-Round-Trip (Stufe 3 liegt noch im Speicher: Projekt zuletzt = foerder; nehme garage Stufe 2) */
+      try {
+        V.demo('garage', { name: 'Selbsttest Team', level: 2, again: true });
+        var code = await V.pack('garage', { slots: 'all' });
+        var bundle = await V.unpack(code);
+        if (!code || !bundle || bundle.ok === false) bad.push('Teilen: pack/unpack fehlgeschlagen');
+        else {
+          var mem2 = memStore(); V.setStorage(mem2); V.start('garage', { name: 'Selbsttest Team', level: 2, again: true });
+          var im = V.importBundle(bundle, { mode: 'merge' });
+          if (!im || !im.ok || !(im.imported || []).length || (im.rejected || []).length) bad.push('Teilen: Import ' + JSON.stringify(im && { ok: im.ok, imp: (im.imported || []).length, rej: im.rejected }));
+          V.start('garage', { name: 'Anderes Team', level: 2, again: true });
+          var im2 = V.importBundle(bundle, { mode: 'merge' });
+          if (im2 && im2.ok && (im2.imported || []).length) bad.push('Teilen: fremdes Lastenheft wurde nicht abgelehnt');
+        }
+      } catch (e) { bad.push('Teilen: ' + e); }
+    } catch (e) { bad.push('Demo-Lauf: ' + e); }
+    finally {
+      try { V.setStorage(w.localStorage); } catch (e) {}
+      if (g && UI.restoreGuard) try { UI.restoreGuard(g); } catch (e) {}
+      try { if (active == null) w.sessionStorage.removeItem('verbund.active'); else w.sessionStorage.setItem('verbund.active', active); } catch (e) {}
+    }
+    return { n: n, bad: bad };
+  }
   async function lab(l) {
     if (l[0] === 'loch') return labLoch(l);
     if (l[0] === 'quarz') return labQuarz(l);
     var f = document.createElement('iframe'); f.src = l[2]; document.body.appendChild(f);
     await new Promise(function (r) { f.onload = r; }); await sleep(1800);
     var w = f.contentWindow, g = w.document.getElementById('gate'); if (g) g.remove();
+    var vbReg = (l[0] !== 'vb' && (w.document.getElementById('vbBar') || (w.VerbundBar && w.VerbundBar.active))) ? ['Verbund-Leiste ohne ?verbund= sichtbar (Regression)'] : [];
     var ids = (w.AUFGABEN || []).filter(function (a) { return a[1] === l[0]; }).map(function (a) { return a[0]; }).filter(function (id) { return !/^det\d+$/.test(id); }), bad = [], n = 0;   // Detektiv-Fälle werden nicht über TaskTest geprüft
     for (var i = 0; i < ids.length; i += l[3]) {
       var r = await w.TaskTest(ids.slice(i, i + l[3]));
@@ -397,6 +465,11 @@
       all.labs.push({ lab: 'Datenblatt-Lab Kern', tasks: dc.n, bad: dc.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Datenblatt-Lab: Kern, 16 Datenblaetter, Beispiele, Aufgaben ueber die Oberflaeche</td><td>' + dc.n + ' Beispiele</td><td class="' + (dc.bad.length ? 'bad' : 'ok') + '">' + (dc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + dc.bad.join('; ') + '</td></tr>');
     }
+    if (l[0] === 'vb') {
+      var vc = await vbCore(w); if (vc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Projekte Kern', tasks: vc.n, bad: vc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Projekte: 5 Projekte, Datenfluss, Demo bis Abschluss (3 Stufen), Teilen</td><td>' + vc.n + ' Demos</td><td class="' + (vc.bad.length ? 'bad' : 'ok') + '">' + (vc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + vc.bad.join('; ') + '</td></tr>');
+    }
     var au = null; if (l[0] === 'pr' || l[0] === 'sch' || l[0] === 'app' || l[0] === 'mess') { try { au = l[0] === 'mess' ? await auditMess() : audit(w, l); } catch (e) { au = { n: 0, errs: ['Auswahlfragen-Prüfung abgebrochen: ' + e], hints: [] }; } }
     if (au) {
       var ab = au.errs.length > 0; if (ab) all.ok = false;
@@ -404,6 +477,7 @@
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + l[1] + ': Auswahlfragen</td><td>' + au.n + '</td><td class="' + (ab ? 'bad' : 'ok') + '">' + (ab ? 'FEHLER' : 'je Frage genau eine richtige Antwort, Mischen stabil') + '</td><td>' + au.errs.join('; ') + (au.hints.length ? '<br><small>' + au.hints.length + ' Hinweise zum Gegenlesen (siehe unten)</small>' : '') + '</td></tr>');
       if (au.hints.length) document.getElementById('hints').textContent += l[1] + ':\n' + au.hints.join('\n') + '\n\n';
     }
+    vbReg.forEach(function (x) { bad.push(x); });
     var res = { lab: l[1], tasks: ids.length, tested: n, bad: bad, missing: ids.length - n };
     if (bad.length || res.missing) all.ok = false; all.labs.push(res);
     document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + l[1] + '</td><td>' + ids.length + '</td><td class="' + (bad.length || res.missing ? 'bad' : 'ok') + '">' + (bad.length || res.missing ? 'FEHLER' : 'alle in Ordnung') + '</td><td>' + (bad.concat(res.missing ? [res.missing + ' ohne Ergebnis'] : [])).join('; ') + '</td></tr>');

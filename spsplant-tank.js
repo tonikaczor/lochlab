@@ -8,7 +8,10 @@
   // Physik: Zulauf je Ventil 8 %/s, Ablauf 10 %/s (Ablaufventil ODER Pumpe), Abnehmer an Behaelter 2 4 %/s.
   // Sensoren: B1 min >= 10 %, B2 mitte >= 50 %, B3 max >= 90 %, B4 = Behaelter 2 unter 1 %.
   // Ruehrwerk mischt nur bei Fuellstand >= 50 % (4 s bis vollstaendig durchmischt).
-  const TH = { min: 10, mid: 50, max: 90 };
+  // Optionen (alle freiwillig, ohne sie bleibt der Verlauf bitgleich): opts.thr {min,mid,max} in %, opts.pumpLpm (Pumpe in l/min),
+  // opts.tankL (Behaelterinhalt in Liter, Vorgabe 100, (A): 1 % = 1 l). state().pumpedL zaehlt die bei laufender Pumpe abgepumpten Liter.
+  const TH_DEF = { min: 10, mid: 50, max: 90 };
+  const TANK_L = 100;
   const RATE_IN = 8, RATE_OUT = 10, RATE_CONS = 4, MIX_S = 4;
   const LW = 800, LH = 480;
   const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
@@ -98,6 +101,21 @@
       const seed = opts.seed != null ? opts.seed : 1;
       let rnd = mulberry32(seed);
       const events = [];
+      const num = (v) => typeof v === 'number' && isFinite(v);
+      // Schwellen: nur gueltig, wenn 0 < min < mid < max <= 100, sonst gelten die bisherigen Werte
+      const TH = Object.assign({}, TH_DEF);
+      if (opts.thr && typeof opts.thr === 'object') {
+        const t = { min: num(opts.thr.min) ? opts.thr.min : TH_DEF.min, mid: num(opts.thr.mid) ? opts.thr.mid : TH_DEF.mid, max: num(opts.thr.max) ? opts.thr.max : TH_DEF.max };
+        if (t.min > 0 && t.min < t.mid && t.mid < t.max && t.max <= 100) { TH.min = t.min; TH.mid = t.mid; TH.max = t.max; }
+      }
+      const tankL = num(opts.tankL) && opts.tankL > 0 ? opts.tankL : TANK_L;
+      const pumpLpm = num(opts.pumpLpm) && opts.pumpLpm > 0 ? opts.pumpLpm : null;
+      const PUMP_RATE = pumpLpm === null ? RATE_OUT : pumpLpm / 60 / tankL * 100;   // % pro Sekunde
+      // E/A-Beschreibung: bei eigenen Schwellen mit den richtigen Prozentwerten im Text
+      const IOI = (TH.min === TH_DEF.min && TH.mid === TH_DEF.mid && TH.max === TH_DEF.max) ? IO : {
+        inputs: IO.inputs.map((x) => ({ key: x.key, sym: x.sym, text: x.key === 'I0.2' ? 'Füllstand min (ab ' + TH.min + ' %)' : x.key === 'I0.3' ? 'Füllstand mitte (ab ' + TH.mid + ' %)' : x.key === 'I0.4' ? 'Füllstand max (ab ' + TH.max + ' %)' : x.text, kind: x.kind })),
+        outputs: IO.outputs
+      };
       let st, layout = { s: 1, ox: 0, oy: 0 }, hits = [], held = {};
 
       function ev(kind, text, fxk, x, y) { const e = { t: st.t, text: text, kind: kind }; if (fxk) { e.fx = fxk; e.x = x; e.y = y; } events.push(e); if (events.length > 300) events.shift(); }
@@ -107,7 +125,7 @@
           t: 0, acc: 0, in0: false, in1: true, in6: true,
           out: { 'Q0.0': false, 'Q0.1': false, 'Q0.2': false, 'Q0.3': false, 'Q0.4': false, 'Q0.5': false },
           level: 0, level2: 0, amtA: 0, amtB: 0, mixed: 0, mixTimeMs: 0, mixTimeFullMs: 0,
-          batches: 0, badBatches: 0, fills: 0, spilled: 0, spilled2: 0,
+          batches: 0, badBatches: 0, fills: 0, spilled: 0, spilled2: 0, pumpedL: 0,
           overflow: false, overflow2: false, dryRun: false, dryTimer: 0, dryNow: false,
           ovMs: 0, ov2Ms: 0, batchOpen: false, fillReached: false, batchA: 0, batchB: 0,
           fA: 0, fB: 0, fOut: 0, c2: BLUE.slice(), phA: 0, phB: 0, phO: 0, rot: 0, pumpRot: 0, cons: 0
@@ -142,7 +160,9 @@
         let outF = 0;
         const drain = o['Q0.3'] || o['Q0.4'];
         if (drain && st.level > 0) {
-          outF = Math.min(RATE_OUT * dt, st.level);
+          const rate = o['Q0.3'] ? (o['Q0.4'] && PUMP_RATE > RATE_OUT ? PUMP_RATE : RATE_OUT) : PUMP_RATE;   // Ventil 10 %/s, Pumpe PUMP_RATE (ohne opts.pumpLpm ebenfalls 10 %/s)
+          outF = Math.min(rate * dt, st.level);
+          if (o['Q0.4']) st.pumpedL += outF * tankL / 100;
           const sc = (st.level - outF) / st.level;
           st.amtA *= sc; st.amtB *= sc; st.level -= outF;
           if (st.level < 1e-9) { st.level = 0; st.amtA = 0; st.amtB = 0; }
@@ -181,7 +201,7 @@
       }
 
       const p = {
-        io: IO,
+        io: IOI,
         events: events,
         worldSize() { return { w: LW, h: LH }; },
         setInput(key, v) {
@@ -207,6 +227,7 @@
             level: st.level, level2: st.level2, overflow: st.overflow, overflow2: st.overflow2, dryRun: st.dryRun,
             mixTimeMs: st.mixTimeMs, mixTimeFullMs: st.mixTimeFullMs, mixed: st.mixed, fracB: tot > 1e-9 ? st.amtB / tot : 0,
             batches: st.batches, badBatches: st.badBatches, fills: st.fills, spilled: st.spilled, timeMs: st.t,
+            pumpedL: st.pumpedL, pumpLpm: pumpLpm, tankL: tankL, thr: { min: TH.min, mid: TH.mid, max: TH.max },
             overflowNow: st.ovMs > 0, dryRunNow: st.dryNow, outputs: Object.assign({}, st.out),
             crash: st.overflow || st.dryRun
           };

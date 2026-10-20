@@ -2,10 +2,10 @@
 /* Tonfunk Lab: Startseite anpassen.
    Jeder Nutzer kann Lab-Karten ausblenden und per Griff, Pfeile oder Tastatur umsortieren (nur auf diesem Gerät, localStorage lm4.home).
    Lab-IDs: data-lab der Karte, sonst Dateiname der ersten Ziel-URL (spslab.html -> spslab). Neue Karten in index.html erscheinen
-   automatisch an der Dateiposition (relativ zu bekannten Nachbarn). Ausgeblendete Bereiche stehen als "@name" in hidden (derzeit: @lernpfad). */
+   automatisch an der Dateiposition (relativ zu bekannten Nachbarn). Ausgeblendete Bereiche stehen als "@name" in hidden (derzeit: @lernpfad, @projekte; die Zeile Projekte ist kein Lab und steht außerhalb der Karten). */
 (function () {
   const KEY = 'lm4.home', SEEN = 'lm4.home.seen';
-  const SECTIONS = [{ id: '@lernpfad', name: 'Lernpfad', css: '#lernpfad{display:none!important}' }];
+  const SECTIONS = [{ id: '@lernpfad', name: 'Lernpfad', css: '#lernpfad{display:none!important}' }, { id: '@projekte', name: 'Projekte', css: '#vbRow{display:none!important}' }];
   const doc = document;
   let cards = null, st = { order: [], hidden: [] }, defaults = [], edit = false, showAll = false, obs = null, drag = null, armed = '';
   let ui = {};

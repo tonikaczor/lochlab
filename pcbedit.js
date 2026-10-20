@@ -140,7 +140,11 @@
     if (/^R[_0-9]/.test(s)) return 'R';
     if (/^C[_0-9]/.test(s)) return 'C';
     if (s.indexOf('LED') === 0) return 'D';
-    if (s.indexOf('SOD') === 0) return 'D';
+    if (s.indexOf('SOD') === 0 || s.indexOf('D_DO41') === 0) return 'D';
+    if (s.indexOf('RELAY') === 0) return 'K';
+    if (s.indexOf('XTAL') === 0) return 'Y';
+    if (s.indexOf('SEG7') === 0) return 'DS';
+    if (s.indexOf('TERMINAL') === 0) return 'X';
     if (s.indexOf('DIP') === 0 || s.indexOf('SOIC') === 0 || s.indexOf('TSSOP') === 0 || s.indexOf('QFP') === 0 || s.indexOf('QFN') === 0 || s.indexOf('SOT-223') === 0 || s.indexOf('TO-220') === 0) return 'U';
     if (s.indexOf('SOT') === 0 || s.indexOf('TO-92') === 0) return 'Q';
     if (s.indexOf('HDR') === 0 || s.indexOf('DC_JACK') === 0) return 'J';
@@ -153,6 +157,8 @@
     if (prefix === 'D') return /LED/i.test(fpId) ? 'LED' : '1N4148';
     if (prefix === 'SW') return 'Taster';
     if (prefix === 'J') return '';
+    if (prefix === 'X' && /^TERMINAL/i.test(fpId)) return '';
+    if (prefix === 'K') return 'SRD-05VDC';
     return fpId;
   }
   function bodyHeight(fp, id) {

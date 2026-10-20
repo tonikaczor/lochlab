@@ -108,6 +108,8 @@
     let time, acc, carTimer, pedTimer, pressTimer, req, lastMode, yfg, pedGreenPrev, vioFlags, dayNight;
     let carsPassed, carsCrashed, pedsCrashed, pedsCrossed, redRunners, violations, carWaitSum, carWaitN, maxCarWait, pedWaitSum, pedWaitN, maxPedWait;
     let carsSpawned, pedsSpawned;
+    // Phasenprotokoll (nur Aufzeichnung, ohne Einfluss auf den Ablauf): ein Eintrag je Aenderung der Ampelausgaenge Q0.0..Q0.4
+    let cyc = [], cycKey = '';
 
     function ev(text, kind, fxk, x, y) {
       const e = { t: time, text: text, kind: kind || 'info' };
@@ -122,6 +124,7 @@
       carsPassed = carsCrashed = pedsCrashed = pedsCrossed = redRunners = violations = 0;
       carWaitSum = carWaitN = maxCarWait = pedWaitSum = pedWaitN = maxPedWait = 0;
       carsSpawned = pedsSpawned = 0;
+      cyc = []; cycKey = '';
       lanes[0].length = 0; lanes[1].length = 0; peds.length = 0;
       for (let k = 0; k < 2; k++) for (let i = 0; i < SLOTS; i++) slotUsed[k][i] = false;
       for (const k in out) out[k] = false;
@@ -319,8 +322,20 @@
       }
     }
 
+    function logCyc() {
+      const ck = (out['Q0.0'] ? '1' : '0') + (out['Q0.1'] ? '1' : '0') + (out['Q0.2'] ? '1' : '0') + (out['Q0.3'] ? '1' : '0') + (out['Q0.4'] ? '1' : '0');
+      if (ck === cycKey) return;
+      if (cyc.length) cyc[cyc.length - 1].ms = time - cyc[cyc.length - 1].t;
+      cycKey = ck;
+      cyc.push({ t: time, street: streetSignal(mode()), ped: pedSignal(), q: ck, ms: 0 });
+      if (cyc.length > 400) cyc.shift();
+    }
+    function streetSignal(md) { return md === ST_STOP ? (out['Q0.1'] ? 'rotgelb' : 'rot') : md === ST_GO ? 'gruen' : md === ST_YEL ? 'gelb' : 'dunkel'; }
+    function pedSignal() { return out['Q0.4'] ? 'gruen' : (out['Q0.3'] ? 'rot' : 'dunkel'); }
+
     function tick() {
       time += 10;
+      logCyc();
       const md = mode();
       if (md === ST_YEL && lastMode !== ST_YEL) yfg = lastMode === ST_GO;
       lastMode = md;
@@ -419,8 +434,9 @@
           avgCarWaitMs: carWaitN ? Math.round(carWaitSum / carWaitN) : 0,
           avgPedWaitMs: pedWaitN ? Math.round(pedWaitSum / pedWaitN) : 0,
           carsSpawned: carsSpawned, pedsSpawned: pedsSpawned,
-          streetSignal: md === ST_STOP ? (out['Q0.1'] ? 'rotgelb' : 'rot') : md === ST_GO ? 'gruen' : md === ST_YEL ? 'gelb' : 'dunkel',
-          pedSignal: out['Q0.4'] ? 'gruen' : (out['Q0.3'] ? 'rot' : 'dunkel')
+          streetSignal: streetSignal(md),
+          pedSignal: pedSignal(),
+          cyc: cyc.map((e, i) => ({ t: e.t, street: e.street, ped: e.ped, q: e.q, ms: i === cyc.length - 1 ? time - e.t : e.ms }))
         };
       },
       addCar: addCar, addPed: addPed,

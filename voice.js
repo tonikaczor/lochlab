@@ -20,6 +20,7 @@
   }
   const click = id => { const e = $(id); if (e) { e.click(); return true; } return false; };
   const RULES = [
+    [/./, (m, x, t) => { const B = root.VerbundBar, U = root.VerbundUI; let r = null; if (B && B.active && B.voice) r = B.voice(t); if (!r && U && U.voice) r = U.voice(t); return r; }],   /* Verbund: Leiste im Lab oder Hub (Station, prüfen, übergeben, Gesamttest) */
     [/(starte|start|schalte|aktiviere|beginne).*(simulation|sim)\b|^simulation (an|ein|starten)/, () => { const t = T(); if (t.simMode && t.simMode()) return 'Die Simulation läuft schon.'; return click('#bSim') ? 'Simulation an' : null; }],
     [/(stoppe|beende|schalte|deaktiviere|verlasse).*(simulation|sim)( aus)?\b|^simulation (aus|beenden)|zurück zum zeichnen|zeichenmodus/, () => { const t = T(); if (t.simMode && !t.simMode()) return 'Du bist schon im Zeichenmodus.'; return click('#bSim') ? 'Zeichenmodus' : null; }],
     [/^(pause|halt|anhalten|stopp)\b|pausiere/, () => { const t = T(); if (t.running && t.running()) { click('#bRun'); return 'Pause'; } return t.simMode && t.simMode() ? 'Die Simulation steht schon.' : 'Erst die Simulation starten.'; }],

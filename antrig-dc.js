@@ -23,6 +23,7 @@
   const THERM = 20;          // thermFactor des Kerns: Erwaermung/Abkuehlung 20-fach beschleunigt (Vorfuehrung)
   const I_LIMIT = 10;        // Strombegrenzung des Netzteils (A)
   const TWO_PI = Math.PI * 2;
+  const BRAKE_STOP_RPM = 1;  // Stillstand beim Bremsen: Drehzahl unter 1/min
   const core = () => {
     const c = root.ANT_CORE || (typeof require === 'function' ? require('./antcore.js') : null);
     if (!c) throw new Error('ANT_CORE (antcore.js) ist nicht geladen');
@@ -143,7 +144,8 @@
     function resetState() {
       mot.reset();
       S = { t: 0, acc: 0, i: 0, w: 0, ra: M.Ra, theta: 0, T: T_AMB, tq: 0, rip: 0, peak: 0, uAvg: 0, ptotCu: 0, iSup: 0, pElec: 0, pMech: 0, eta: 0,
-        trip: false, shootT: 0, shootAct: false, ovAct: false, stallAct: false, ocAct: false, stallT: 0, transT: 0, brakeAct: false, histAcc: 0, uShown: Cv.uSupply };
+        trip: false, shootT: 0, shootAct: false, ovAct: false, stallAct: false, ocAct: false, stallT: 0, transT: 0, brakeAct: false, histAcc: 0, uShown: Cv.uSupply,
+        bk: { on: false, t: 0, th0: 0, dir: 1, rpm0: 0, stopMs: 0, angle: 0, done: false } };   // Bremsprotokoll (Verbund, Paket A5): Dauer und Wellenwinkel bis zum Stillstand
       H = [];
       V = { vis: 0, last: null, blink: 0 };
       events.length = 0;
@@ -189,13 +191,29 @@
       return { U, mode, sgn, duty, sw, shoot, brake, uAvg, open };
     }
 
+    // Bremsprotokoll: ab dem Einschalten der Kurzschlussbremse (H-Brücke 'bremse') Zeit und Wellenwinkel bis zum ersten Stillstand
+    // (Drehzahl in der alten Drehrichtung unter BRAKE_STOP_RPM; ein kurzes Zurückfedern danach zählt nicht mehr mit)
+    function trackBrake(dtMs, thPrev, wPrev, st) {
+      const b = S.bk;
+      if (drv.mode !== 'bremse') { b.on = false; return; }
+      if (!b.on) { b.on = true; b.t = 0; b.th0 = thPrev; b.dir = wPrev < 0 ? -1 : 1; b.rpm0 = Math.abs(wPrev) * 60 / TWO_PI; b.stopMs = 0; b.angle = 0; b.done = false; }
+      if (b.done) return;
+      const rpmPrev = b.dir * wPrev * 60 / TWO_PI, rpmNow = b.dir * st.w * 60 / TWO_PI, angNow = b.dir * (st.theta - b.th0) * 180 / Math.PI;
+      if (rpmNow < BRAKE_STOP_RPM) {
+        // Stillstand innerhalb dieses Schritts: Zeit und Winkel linear zwischen Anfang und Ende des Schritts
+        const f = rpmPrev > rpmNow ? clamp((rpmPrev - BRAKE_STOP_RPM) / (rpmPrev - rpmNow), 0, 1) : 0;
+        b.angle = Math.max(0, b.angle + (angNow - b.angle) * f); b.t += dtMs * f; b.stopMs = b.t; b.done = true;
+      } else { b.angle = Math.max(0, angNow); b.t += dtMs; b.stopMs = b.t; }
+    }
     function stepCore(dtMs) {
       drv = computeDrive();
       const mp = mot.params, ld = loadInput();
       // nicht rueckspeisende Bruecke: Wuerde der mittlere Strom gegen die Antriebsrichtung fliessen, ist der Motor stromlos (Freilauf)
       let open = drv.open;
       if (!open && (drv.mode === 'vor' || drv.mode === 'rueck') && drv.sgn * (drv.uAvg - mp.Ke * S.w) < 0) open = true;
+      const thPrev = S.theta, wPrev = S.w;
       const st = mot.step(dtMs, { u: drv.uAvg, load: ld.load, fan: ld.fan, open: open });
+      trackBrake(dtMs, thPrev, wPrev, st);
       S.i = st.i; S.w = st.w; S.theta = st.theta; S.T = st.temp; S.ra = st.ra; S.t = st.t;
       const iAvg = Math.abs(S.i);
       const driving = !open && (drv.mode === 'vor' || drv.mode === 'rueck');
@@ -307,7 +325,8 @@
         rpm: S.w * 60 / TWO_PI, omega: S.w, torque: S.tq, current: S.i, voltage: S.uAvg, power: S.pElec, pMech: S.pMech,
         eta: S.eta, temp: S.T, stalled: S.stallAct, fault: f.length > 0, faults: f, theta: S.theta,
         bridge: drv.mode, shoot: drv.shoot, duty: drv.duty, iPeak: S.peak, ripple: S.rip, iSupply: S.iSup,
-        uSupply: S.uShown, iAvg: Math.abs(S.i), tripped: S.trip, motor: M.id, t: S.t, sw: drv.sw.slice()
+        uSupply: S.uShown, iAvg: Math.abs(S.i), tripped: S.trip, motor: M.id, t: S.t, sw: drv.sw.slice(),
+        braking: S.bk.on && !S.bk.done, brakeDone: S.bk.done, brakeStopMs: S.bk.stopMs, brakeAngle: S.bk.angle, brakeRpm0: S.bk.rpm0, turns: S.theta / TWO_PI
       };
     }
 

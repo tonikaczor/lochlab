@@ -11,7 +11,7 @@
   const W = 1000, H = 560;
   const BX0 = 60, BX1 = 760, BY0 = 230, BY1 = 310, BYC = 270;   // Band
   const PW = 40, HALF = 20;                                       // Werkstueck 40 x 40
-  const SPEED = 80;                                               // Einheiten pro Sekunde
+  const SPEED = 80;                                               // Einheiten pro Sekunde (1 Einheit = 1 mm); opts.beltMmS ueberschreibt (10 bis 600)
   const X_METAL = 360;      // induktiver Sensor B2 (Mitte)
   const X_PUSH = 480;       // Mitte des Ausschiebers
   const X_BEAM = 502;       // Lichtschranke B1: Teil ist zentriert vor dem Ausschieber, wenn die Vorderkante den Strahl erreicht
@@ -95,6 +95,8 @@
     opts = opts || {};
     const seed = opts.seed == null ? 1 : opts.seed;
     let rnd = rng(seed);
+    // optionale Bandgeschwindigkeit in mm/s; ohne gueltigen Wert bleibt alles wie bisher
+    const beltMmS = (typeof opts.beltMmS === 'number' && isFinite(opts.beltMmS) && opts.beltMmS > 0) ? Math.min(600, Math.max(10, opts.beltMmS)) : SPEED;
     const cfg = { auto: true, ratio: 0.4, mode: 'rnd', tmin: 3000, tmax: 5000 };
     function applyScen(name) {
       const sc = SCEN[name]; if (!sc) return false;
@@ -168,7 +170,7 @@
         if (!dualFault) { dualFault = true; violations++; ev('Band vorwärts und rückwärts gleichzeitig angesteuert – Motor blockiert (Schütze verriegeln!)', 'error', 'interlock', BX0 + 20, BYC - 70); }
       } else {
         dualFault = false;
-        v = fwd ? SPEED : (rev ? -SPEED : 0);
+        v = fwd ? beltMmS : (rev ? -beltMmS : 0);
       }
       speed = v;
       const dx = v * 0.01;
@@ -270,7 +272,7 @@
           time: time, delivered: delivered, deliveredLight: deliveredLight, deliveredMetal: deliveredMetal,
           sorted: sorted, sortedMetal: sortedMetal, sortedLight: sortedLight, lost: lost, crash: crash,
           violations: violations, spawned: spawned, pieces: n, pieceX: px, pieceMetal: pm,
-          cylinder: Math.round(cylMs / CYL_MS * 100), bandSpeed: speed, motorFault: dualFault,
+          cylinder: Math.round(cylMs / CYL_MS * 100), bandSpeed: speed, beltMmS: beltMmS, motorFault: dualFault,
           workpiecesDelivered: delivered, workpiecesSorted: sorted, workpiecesLost: lost
         };
       },

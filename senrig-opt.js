@@ -178,6 +178,13 @@
   const DIST0 = { ldr: 20, fotodiode: 20, fototransistor: 20, gabel: 60, reflex: 100, induktiv: 12, kapazitiv: 18, ultraschall: 120 };
   const ALIAS = { sensor: { 'fotowiderstand': 'ldr', 'foto-transistor': 'fototransistor', 'gabellichtschranke': 'gabel', 'reflexlichtschranke': 'reflex', 'induktiver': 'induktiv', 'kapazitiver': 'kapazitiv', 'ultraschallsensor': 'ultraschall', 'us': 'ultraschall' }, material: { aluminium: 'alu', 'kupfer ': 'kupfer', plastik: 'kunststoff' } };
   const LED_GABEL = 1000, ROH = { hell: 0.9, dunkel: 0.3 }, I_LIM = 0.2, V_RES = 2.0;
+  // Ansprechzeit und Schaltfrequenz (Verbund, Paket A5), alle Nennwerte sind Lehrwerte (A):
+  //   Naeherungsschalter: Nennschaltfrequenz induktiv 1 kHz (A), kapazitiv 50 Hz (A), Ultraschall 10 Hz (A); Ansprechzeit des Sensors = 1 / (2 * fNenn) (+ Laufzeit des Echos 2d/c)
+  //   Optik: Nennschaltfrequenz 5 kHz (A); Ansprechzeit des Sensors = tau * ln 2 (Schwelle in der Mitte des Spannungshubs), tau wie im Modell (LDR 80 ms langsame Flanke, Fotodiode 0,5 ms, sonst 5 ms)
+  //   Beide kommen dazu mit der Entprellzeit fdelay; fMax = min(Nennfrequenz, 1 / (2 * tResp)). Montageabstand: mindestens 10 % Sn, hoechstens 0,8 * gesicherter Schaltabstand (20 % Reserve) (A)
+  const F_NOM = { ldr: 5000, fotodiode: 5000, fototransistor: 5000, gabel: 5000, reflex: 5000, induktiv: 1000, kapazitiv: 50, ultraschall: 10 };
+  const TAU_MAX = { ldr: 0.08, fotodiode: 0.0005, fototransistor: 0.005, gabel: 0.005, reflex: 0.005 };
+  const I_Q_PROX = 10;      // Ruhestrom eines Naeherungsschalters an 24 V in mA (A, wie im Verbund-Lastenheft)
   const GAP_C = 30, OBJ_W = 14, BEAM_R = 1.5;     // Gabel: Strahlmitte 30 mm, Objektbreite 14 mm
   const SCENE = { gabel: { x0: 152, k: 3.6 }, reflex: { x0: 120, k: 1.2 }, ultraschall: { x0: 120, k: 1.2 }, induktiv: { x0: 150, k: 13.75 }, kapazitiv: { x0: 150, k: 8.25 } };
 
@@ -358,6 +365,18 @@
       const c = cfg(); const s = SENS[c.sensor];
       return { uOut: S.uOut, iOut: S.iOut, state: S.state, lux: S.E, switchDist: S.sw, hystError: hystPct(c), flutter: S.flutter };
     }
+    // Zeiten und Frequenzen in ms bzw. Hz (siehe F_NOM), Montage-Auswertung nur fuer Naeherungsschalter
+    function timing(c, s) {
+      const fNom = F_NOM[c.sensor], prox = s.cls === 'prox';
+      const tSens = prox ? 500 / fNom + (s.us ? S.echo : 0) : Math.LN2 * TAU_MAX[c.sensor] * 1000;
+      const tResp = tSens + Math.max(0, c.fdelay);
+      return { tSens, tResp, fNom, fMax: Math.min(fNom, tResp > 0 ? 500 / tResp : fNom) };
+    }
+    function mount(c, s) {
+      if (s.cls !== 'prox') return { sn: 0, mountMin: 0, mountMax: 0, mountOk: false, mountReserve: 0 };
+      const sr = srOf(c), min = 0.1 * s.Sn, max = 0.8 * sr;
+      return { sn: s.Sn, mountMin: min, mountMax: max, mountOk: sr > 0 && c.dist >= min - 1e-9 && c.dist <= max + 1e-9, mountReserve: sr > 0 ? 1 - c.dist / sr : 0 };
+    }
     function state() {
       const c = cfg(), s = SENS[c.sensor], faults = [];
       if (s.cls === 'opt' && S.sat) faults.push('saturation');
@@ -365,9 +384,12 @@
       if (S.ambErr) faults.push('ambient');
       if (S.ovl) faults.push('overload');
       if (s.cls === 'prox' && srOf(c) <= 0) faults.push('material');
+      const tm = timing(c, s);
       return { sensor: c.sensor, cls: s.cls, uOut: S.uOut, uNoisy: S.Un, iOut: S.iOut, state: S.state, switched: S.state === 1, lux: S.E, dist: c.dist, switchDist: S.sw, switchOn: s.cls === 'prox' ? srOf(c) : S.sw,
         switchOff: s.cls === 'prox' ? srOf(c) * 1.1 : 0, reduction: matF(c), hystError: hystPct(c), flutter: S.flutter, saturated: !!S.sat, overload: !!S.ovl, ambientError: !!S.ambErr, material: c.material,
-        echoMs: S.echo, vcc: s.vcc, faults, fault: faults.length > 0, t: S.t * 1000 };
+        echoMs: S.echo, vcc: s.vcc, faults, fault: faults.length > 0, t: S.t * 1000,
+        tSens: tm.tSens, tResp: tm.tResp, fNom: tm.fNom, fMax: tm.fMax, ...mount(c, s),
+        iSupplyMa: s.cls === 'prox' ? I_Q_PROX + (S.state ? S.iOut : 0) : S.If * 1000 };
     }
 
     // ---- Kennlinien ----

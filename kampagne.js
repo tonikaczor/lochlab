@@ -27,8 +27,10 @@
     { t: 'Die Messkette', s: 'Die Anlage soll wissen, was los ist: Temperatur, Druck, Kraft, Lage. Meister Funk legt dir ein Datenblatt hin: „Ein Sensor liefert nur eine Spannung oder einen Strom. Erst die Messkette macht daraus einen Wert, dem man trauen kann. Und jede Stufe darf einen Fehler machen.“', m: [{ k: 'trainer', lab: 'sen' }, T('sen', 'se1'), T('sen', 'se3'), T('sen', 'se5'), T('sen', 'se9'), T('sen', 'se13'), T('sen', 'se19'), T('sen', 'se21'), T('sen', 'se24')] },
     { t: 'Das Datenblatt', s: 'Ein Bauteil ist ausgefallen und niemand weiß warum. Meister Funk legt dir ein dickes Datenblatt hin: „Alles steht drin, man muss es nur lesen können. Grenzwerte sind keine Betriebswerte, und eine Zahl ohne Testbedingung ist nur eine Zahl. Und ein bisschen Englisch schadet auch nicht.“', m: [{ k: 'trainer', lab: 'ds' }, T('ds', 'ds1'), T('ds', 'ds3'), T('ds', 'ds8'), T('ds', 'ds12'), T('ds', 'ds18'), T('ds', 'ds20'), T('ds', 'ds27'), T('ds', 'ds33')] },
     { t: 'Die Steuerung', s: 'Die Anlage soll programmierbar werden. „Ein Arduino für die Logik, ein Raspberry Pi für die Zentrale“, sagt Meister Funk. „Fangt mit dem Einfachsten an: Blinken.“', m: [T('code', 'c1'), T('code', 'c2'), T('pi', 'p1'), T('pi', 'p2')] },
-    { t: 'Das Abschlussgerät', s: 'Letzter Auftrag: ein Dämmerungsschalter mit Relais für die Hoflampe, geplant, gebaut und geprüft. „Zeig, was du kannst. Und prüfe deine Lötstellen mit der Lupe.“', m: [T('sch', 's18'), T('loch', 'l16'), { k: 'stat', key: 'lupePerfekt', min: 1, t: 'Lupen-Prüfung ohne Fehler (Qualitätskontrolle)', open: 'loet' }] }
+    { t: 'Das Abschlussgerät', s: 'Letzter Auftrag: ein Dämmerungsschalter mit Relais für die Hoflampe, geplant, gebaut und geprüft. „Zeig, was du kannst. Und prüfe deine Lötstellen mit der Lupe.“', m: [T('sch', 's18'), T('loch', 'l16'), { k: 'stat', key: 'lupePerfekt', min: 1, t: 'Lupen-Prüfung ohne Fehler (Qualitätskontrolle)', open: 'loet' }] },
+    { t: 'Epilog: Das Verbundprojekt', epilog: true, s: 'Meister Funk breitet fünf Aufträge aus: „Bisher hast du jedes Lab einzeln gelernt. In der Firma arbeitet alles zusammen: vom Datenblatt über Schaltplan, Platine und Messung bis zur Steuerung. Such dir ein Projekt aus, jede Station liefert ihr Ergebnis an die nächste. Am Ende gibt es einen Gesamttest und ein Zertifikat.“', m: [{ k: 'verbund', pid: 'garage', t: 'Projekt Garagentor abschließen', open: 'vb' }, { k: 'stat', key: 'vbfertig', min: 2, t: 'Zwei Verbundprojekte abgeschlossen', open: 'vb' }, { k: 'stat', key: 'vbfertig', min: 5, t: 'Alle fünf Verbundprojekte', open: 'vb' }] }
   ];
+  const MAIN = CH.filter(c => !c.epilog);   // Hauptkampagne: der Epilog gehört nicht zum Abzeichen „Abschlussgerät“
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
   const results = () => { const m = {}; [get('sim.done', {}), get('lm4.tdone', {})].forEach(o => Object.keys(o).forEach(k => { const v = +o[k] || 0; if (v > (m[k] || 0)) m[k] = v; })); return m; };
   const title = id => { const r = (root.AUFGABEN || []).find(a => a[0] === id); return r ? r[3] : id; };
@@ -37,6 +39,10 @@
     if (m.k === 'trainer') return !!get('lm4.trainer', {})[m.lab];
     if (m.k === 'stat') return (get('lm4.stats', {})[m.key] || 0) >= m.min;
     if (m.k === 'multi') { const st = get('lm4.stats', {}); return m.keys.every(k => (st[k] || 0) >= 1); }
+    if (m.k === 'verbund') {   // Projekt abgeschlossen: Gesamttest bestanden (Verbund geladen), sonst der Zähler des Kerns
+      try { const V = root.Verbund, s = V && V.state && V.state(m.pid) ? V.status(m.pid) : null; if (s) return s.finalState === 'passed'; } catch (e) {}
+      return (get('lm4.stats', {})['vb' + m.pid] || 0) >= 1;
+    }
     return false;
   }
   const mtitle = m => m.t || (m.k === 'task' ? title(m.id) + ' (' + LABN[m.lab] + ')' : m.k === 'trainer' ? 'Trainer „Erste Schritte“ im ' + LABN[m.lab] : '');
@@ -52,8 +58,8 @@
     CH.forEach((c, i) => { if (cdone(i) && !k.done.includes(c.t)) { k.done.push(c.t); fresh.push(i); } });
     if (!fresh.length) return;
     try { localStorage.setItem('lm4.kamp', JSON.stringify(k)); } catch (e) {}
-    if (root.Badges) { root.Badges.stat('kapitel', k.done.length, 'max'); if (k.done.length === CH.length) root.Badges.stat('kampagne', 1, 'max'); if (!silent) { root.Badges.confetti(fresh.includes(CH.length - 1)); root.Badges.chime(false); } }
-    if (!silent && root.LabUI && root.LabUI.toast) root.LabUI.toast('🎯 Kapitel ' + (fresh[0] + 1) + ' geschafft: ' + CH[fresh[0]].t);
+    if (root.Badges) { root.Badges.stat('kapitel', k.done.length, 'max'); if (MAIN.every(c => k.done.includes(c.t))) root.Badges.stat('kampagne', 1, 'max'); if (!silent) { root.Badges.confetti(fresh.some(i => i >= MAIN.length - 1)); root.Badges.chime(false); } }
+    if (!silent && root.LabUI && root.LabUI.toast) root.LabUI.toast('🎯 ' + (CH[fresh[0]].epilog ? '' : 'Kapitel ' + (fresh[0] + 1) + ' ') + 'geschafft: ' + CH[fresh[0]].t);
   }
   function go(m) {
     const close = () => { const b = document.getElementById('kampBox'); if (b) b.remove(); };
@@ -63,6 +69,8 @@
     if (m.k === 'stat' && m.open === 'oszi' && root.Oszi) { close(); root.Oszi.open(); return; }
     if (m.k === 'stat' && m.open === 'zahl') { if (here === 'digi' && root.DIGI) { close(); root.DIGI.openConv(); } else location.href = PAGE.digi + '?zahl'; return; }
     if (m.k === 'stat' && m.open === 'loet' && root.Loetuebung) { close(); root.Loetuebung.open(); return; }
+    if (m.k === 'verbund') { location.href = PAGE.vb + '?projekt=' + encodeURIComponent(m.pid); return; }
+    if (m.k === 'stat' && m.open === 'vb') { location.href = PAGE.vb || 'verbund.html'; return; }
     if (m.k === 'multi') { if (here === 'sch') { close(); if (root.LabUI && root.LabUI.toast) root.LabUI.toast('Simulation einschalten und unten „Messen“ wählen'); } else location.href = PAGE.sch + '?ex=Spannungsteiler'; return; }
   }
   function open() {
@@ -74,9 +82,9 @@
       const tot = CH.reduce((s, c) => s + c.m.length, 0), dn = CH.reduce((s, c) => s + prog(c).d, 0);
       w.innerHTML = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:680px;width:100%;font:15px/1.45 system-ui,sans-serif">
         <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">🎯 Kampagne: Das Abschlussgerät</b><button id="kX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer" aria-label="Schließen">✕</button></div>
-        <p style="color:#9aa6b2;margin:6px 0">${CH.length} Kapitel, ein Ziel: Du baust mit Meister Funk ein Abschlussgerät. Die Missionen sind Aufgaben und Übungen aus allen Labs. Dein Fortschritt zählt von selbst mit.</p>
+        <p style="color:#9aa6b2;margin:6px 0">${MAIN.length} Kapitel, ein Ziel: Du baust mit Meister Funk ein Abschlussgerät. Danach wartet der Epilog mit den Verbundprojekten. Die Missionen sind Aufgaben und Übungen aus allen Labs. Dein Fortschritt zählt von selbst mit.</p>
         <div style="background:#10151a;border-radius:8px;height:12px;overflow:hidden;margin:8px 0"><div style="width:${Math.round(100 * dn / tot)}%;height:100%;background:#5ee27d"></div></div><div style="font-size:13px;color:#9aa6b2;margin-bottom:8px">${dn} von ${tot} Missionen erledigt</div>
-        ${CH.map((c, i) => { const p = prog(c), un = unlocked(i), dd = cdone(i), op = i === first; return `<div style="border:1px solid ${dd ? '#2f7a45' : '#38424d'};border-radius:10px;margin:8px 0;background:#252d36;opacity:${un ? 1 : .55}"><button data-c="${i}" style="all:unset;display:flex;width:100%;box-sizing:border-box;padding:10px 12px;cursor:${un ? 'pointer' : 'default'};align-items:center;gap:8px"><span style="font-size:20px">${dd ? '✅' : un ? '▶️' : '🔒'}</span><b style="flex:1">Kapitel ${i + 1}: ${esc(c.t)}</b><span style="font-size:13px;color:#9aa6b2">${p.d}/${p.n}</span></button>${op && un ? `<div style="padding:0 12px 12px"><p style="margin:0 0 8px;font-style:italic;color:#c8d2dc">${esc(c.s)}</p>${c.m.map((m, j) => { const ok = mdone(m); return `<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span>${ok ? '✅' : '⬜'}</span><span style="flex:1;font-size:14px">${esc(mtitle(m))}${m.where ? '<br><span style="color:#6cb8ff;font-size:12px">' + esc(m.where) + '</span>' : ''}</span>${ok ? '' : `<button data-m="${i}.${j}" style="background:#ff9d00;border:0;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer">Los</button>`}</div>`; }).join('')}</div>` : ''}</div>`; }).join('')}
+        ${CH.map((c, i) => { const p = prog(c), un = unlocked(i), dd = cdone(i), op = i === first; return `<div style="border:1px solid ${dd ? '#2f7a45' : '#38424d'};border-radius:10px;margin:8px 0;background:#252d36;opacity:${un ? 1 : .55}"><button data-c="${i}" style="all:unset;display:flex;width:100%;box-sizing:border-box;padding:10px 12px;cursor:${un ? 'pointer' : 'default'};align-items:center;gap:8px"><span style="font-size:20px">${dd ? '✅' : un ? '▶️' : '🔒'}</span><b style="flex:1">${c.epilog ? '' : 'Kapitel ' + (i + 1) + ': '}${esc(c.t)}</b><span style="font-size:13px;color:#9aa6b2">${p.d}/${p.n}</span></button>${op && un ? `<div style="padding:0 12px 12px"><p style="margin:0 0 8px;font-style:italic;color:#c8d2dc">${esc(c.s)}</p>${c.m.map((m, j) => { const ok = mdone(m); return `<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span>${ok ? '✅' : '⬜'}</span><span style="flex:1;font-size:14px">${esc(mtitle(m))}${m.where ? '<br><span style="color:#6cb8ff;font-size:12px">' + esc(m.where) + '</span>' : ''}</span>${ok ? '' : `<button data-m="${i}.${j}" style="background:#ff9d00;border:0;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer">Los</button>`}</div>`; }).join('')}</div>` : ''}</div>`; }).join('')}
         <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:#9aa6b2"><input type="checkbox" id="kFree"${free() ? ' checked' : ''}> Alle Kapitel freischalten (für Ausbilder oder zum Stöbern)</label></div>`;
       w.querySelector('#kX').onclick = () => w.remove();
       w.querySelector('#kFree').onchange = e => { try { localStorage.setItem('lm4.kamp.free', e.target.checked ? '1' : '0'); } catch (x) {} render(); };

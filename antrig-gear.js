@@ -71,6 +71,8 @@
     const CORE = getCore();
     const ctl = {}; CONTROLS.forEach(c => { ctl[c.key] = c.value; });
     const ev = [];
+    // Hubberechnung (Verbund, Paket A5): Seiltrommel am Abtrieb, Durchmesser opts.drumMm (Vorgabe 100 mm (A), wie das Garagentor-Lastenheft)
+    const drumMm = isFinite(+opts.drumMm) && +opts.drumMm > 0 ? +opts.drumMm : 100;
     let S, gb = null;
 
     function gbParams() {
@@ -185,6 +187,8 @@
       const v = view();
       return { ratio: v.i, nOut: S.nOut, mOut: S.mOut, pIn: S.pIn, pOut: S.pOut, pLoss: S.pLoss, eta: S.eta * 100, temp: S.temp };
     }
+    // Umdrehungen am Abtrieb seit dem Zuruecksetzen: Eingangswinkel / Uebersetzung (Hub = pi * d * Umdrehungen)
+    function outTurns(v) { return v.i > 0 ? S.a1 / (2 * Math.PI) / v.i : 0; }
     function state() {
       const v = view(), st = S.st;
       const faults = [];
@@ -198,7 +202,8 @@
         nIn: S.wIn * 30 / Math.PI, nOut: S.nOut, rpm: S.nOut, mIn: S.broken ? 0 : S.mInEff, mOut: S.mOut, torque: S.mOut,
         pIn: S.pIn, pOut: S.pOut, power: S.pOut, pLoss: S.pLoss, eta: S.eta, etaMesh: v.eta0, temp: S.temp, drag: st.mDrag,
         mLimit: v.a.lim, overload: S.broken || st.overload, broken: S.broken, brokenStage: S.brokenStage, overSpeed: !!st.overspeed, stalled: S.stalled, dirOut: v.dirOut,
-        selfLocking: v.selfLocking, nSet: S.nSet, mOutAvail: S.mAvail, fault: faults.length > 0, faults
+        selfLocking: v.selfLocking, nSet: S.nSet, mOutAvail: S.mAvail, fault: faults.length > 0, faults,
+        outTurns: outTurns(v), outAngle: outTurns(v) * 360, drumMm: drumMm, strokeMm: Math.PI * drumMm * outTurns(v)
       };
     }
     function reset() { initState(); }

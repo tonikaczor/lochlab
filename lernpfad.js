@@ -9,9 +9,10 @@
     { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik, zur Leiterplatte, zur speicherprogrammierbaren Steuerung (SPS), zu den Antrieben und zur Sensorik.', labs: ['sch', 'loch', 'digi', 'mess', 'pcb', 'sps', 'ant', 'sen'] },
     { t: 'Installation und Anlagen', s: 'Wie Strom im Haus verteilt, geschaltet und abgesichert wird.', labs: ['sim', 'haus'], pre: 'Empfohlen vorher: SchaltLab' },
     { t: 'Prüfungsvorbereitung', s: 'Die Abschlussprüfung üben: Datenblätter lesen (Grenzwerte, Kennlinien, Fachenglisch), Themen trainieren, Rechnen, Probeprüfung mit Zeitlimit und Auswertung.', labs: ['ds', 'pr'], pre: 'Am besten nach SchaltLab, DigiLab und MessLab' },
-    { t: 'Programmieren und Steuern', s: 'Eigene Apps mit KI bauen, dann Schaltungen mit Programmen steuern: Arduino und Raspberry Pi.', labs: ['app', 'code', 'pi'], pre: 'Die App-Werkstatt braucht kein Vorwissen. Für Arduino und Pi empfohlen: SchaltLab' }
+    { t: 'Programmieren und Steuern', s: 'Eigene Apps mit KI bauen, dann Schaltungen mit Programmen steuern: Arduino und Raspberry Pi.', labs: ['app', 'code', 'pi'], pre: 'Die App-Werkstatt braucht kein Vorwissen. Für Arduino und Pi empfohlen: SchaltLab' },
+    { t: 'Verbundprojekte', s: 'Alle Labs arbeiten zusammen an einem Gerät: Garagentor, Ampel, Digitale Uhr, Gartenbewässerung und Förderanlage. Jede Station liefert ihr Ergebnis an die nächste, am Ende gibt es Gesamttest und Zertifikat.', labs: ['vb'], pre: 'Am besten nach den Labs, die ein Projekt braucht (Datenblatt, Schaltplan, Leiterplatte, Messen, Antrieb, Sensorik, SPS)' }
   ];
-  const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', pr: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten', sps: 'Mittel', pcb: 'Mittel', ant: 'Mittel', sen: 'Mittel', ds: 'Mittel' };
+  const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', pr: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten', sps: 'Mittel', pcb: 'Mittel', ant: 'Mittel', sen: 'Mittel', ds: 'Mittel', vb: 'Fortgeschritten' };
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
   const results = () => { const m = {}; [get('sim.done', {}), get('lm4.tdone', {})].forEach(o => Object.keys(o).forEach(k => { const v = +o[k] || 0; if (v > (m[k] || 0)) m[k] = v; })); return m; };
   const trained = lab => !!get('lm4.trainer', {})[lab];
@@ -30,7 +31,8 @@
     const st = {}; Object.keys(REG).forEach(k => { st[k] = stat(k); });
     const order = TRACKS.reduce((a, t) => a.concat(t.labs), []).filter(k => REG[k]);
     let rec = order.find(k => st[k].n && st[k].pct < 100 && st[k].started) || order.find(k => st[k].n && st[k].pct < 100);
-    const total = Object.keys(st).reduce((n, k) => n + st[k].n, 0), done = Object.keys(st).reduce((n, k) => n + st[k].d, 0);
+    const labKeys = Object.keys(st).filter(k => !(REG[k] || {}).hub);   // der Hub Projekte zählt nicht als Lab
+    const total = labKeys.reduce((n, k) => n + st[k].n, 0), done = labKeys.reduce((n, k) => n + st[k].d, 0);
     const K = root.Kampagne, kt = K ? K.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = K ? K.CH.reduce((n, c) => n + K.prog(c).d, 0) : 0;
     const nx = rec && st[rec].next ? st[rec] : null, R0 = rec ? REG[rec] : null;
     const goHref = !rec ? '' : (st[rec].started || trained(rec) ? (nx ? `${R0.file}?aufgabe=${nx.next[0]}` : R0.file) : `${R0.file}?trainer`);

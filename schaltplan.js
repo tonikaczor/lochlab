@@ -3729,7 +3729,7 @@ function llSpec(p) {
     case 'PB': case 'PBC': return { ll: { k: 'SW', vr: 'k2', v: '' }, pm: [0, 1] };
     case 'SPST': return { ll: { k: 'SCH', vr: 'k3', n: 3, v: '' }, pm: [1, 0] };
     case 'SPDT': return { ll: { k: 'SCH', vr: 'k3', n: 3, v: '' }, pm: [1, 0, 2] };
-    case 'NPN': case 'PNP': return { ll: { k: 'T', v }, pm: [1, 0, 2] };
+    case 'NPN': case 'PNP': return { ll: { k: 'T', v, vr: p.k === 'PNP' ? 'pnp-cbe' : 'npn-cbe' }, pm: [1, 0, 2] };
     case 'THY': return { ll: { k: 'THY', v }, pm: [1, 0, 2] };
     case 'REG': return { ll: { k: 'U', v: v || '7805' }, pm: [0, 1, 2] };
     case 'SCHOTTKY': return { ll: { k: 'D', n: 4, v: v || '1N5819', vr: 'd5819' }, pm: [0, 1], ...two };
@@ -4726,5 +4726,128 @@ window.SchaltPECheck = () => EXAMPLES.filter(exOk).map(e => {                   
   const bad = devs.filter(p => { const q = pinsOf(p)[OFF[p.k]]; if (E.c.nodeOfKey(gk(q[0], q[1])) === pe) return false; if (!sch.parts.some(c => c.k === 'CABLE')) return true; try { return !(window.SchaltInstr.staticR(q, pinsOf(src)[src.k === 'NETZ' ? 2 : 4], 1, 'ohm') < 5); } catch (e) { return true; } });
   return { name: e.name, devs: devs.length, notOnPE: bad.map(nm), peShortedToL: act.includes(pe), warn: (E.c.warnings || []).map(w => w.text).filter(t => /Schutzleiter/.test(t)), events: E.s.events.map(x => x.text || x.kind) };
 }).filter(Boolean);
+/* ============ Verbund-Hook (Paket A1, Verbundprojekte, SPEC 5.3): window.LabVerbund ============
+   Schnittstelle für verbundad-eng.js (gilt für sch, sim, digi, mess, haus, code, pi). Rein additiv: Lesen (snap, netlist, simMeas, proto, code, haus) ändert nichts;
+   load sichert die Arbeit vorher (saveNamed) und ersetzt dann den Plan (auch eine offene Aufgabe); setCode beendet eine offene Aufgabe (vorher gesichert), load und setHaus ersetzen sie; setPart und setProto sind im Aufgaben-Prüfmodus (sch.task) gesperrt.
+   Alles in try/catch: bei Fehler null bzw. false. Bezeichnung (ref) = Beschriftung p.l, sonst Vorsilbe + Nummer (wie assignLabels), eindeutig, ohne Leerzeichen und Punkt. */
+window.LabVerbund = (() => {
+  const nlib = () => (window.Verbund && window.Verbund.nl) || window.VerbundNL || null;
+  const locked = () => !!(sch && sch.task);
+  const copy = o => JSON.parse(JSON.stringify(o));
+  const natCmp = (a, b) => { const ma = /^(\D*)(\d*)(.*)$/.exec(String(a)), mb = /^(\D*)(\d*)(.*)$/.exec(String(b)); if (ma[1] !== mb[1]) return ma[1] < mb[1] ? -1 : 1; const na = ma[2] === '' ? -1 : +ma[2], nb = mb[2] === '' ? -1 : +mb[2]; if (na !== nb) return na < nb ? -1 : 1; return ma[3] < mb[3] ? -1 : ma[3] > mb[3] ? 1 : 0; };
+  function refs() {                                   // Teil-ID -> Bezeichnung
+    const m = new Map(), used = new Set(), todo = [];
+    sch.parts.forEach(p => { if (p.k === 'GND') return; const l = String(p.l == null ? '' : p.l).trim().replace(/[\s.]+/g, '_'); if (l && !used.has(l)) { used.add(l); m.set(p.id, l); } else todo.push(p); });
+    todo.forEach(p => { const pre = PRE[p.k] || p.k; let n = 1; while (used.has(pre + n)) n++; used.add(pre + n); m.set(p.id, pre + n); });
+    return m;
+  }
+  const partByRef = ref => { let hit = null; refs().forEach((r, id) => { if (r === ref) hit = byPart(id); }); return hit; };
+  /* Anschlussnamen des Teils (Verbund.nl.pinNames) oder null, wenn die Netzlisten-Bibliothek fehlt */
+  function namesOf(p) { const L = nlib(); if (!L || !L.pinNames) return null; const n = KD(p).pins.length; return L.pinNames(p.k, { value: p.v, props: p.k === 'ICX' || p.k === 'CPU' ? { n } : undefined }); }
+  function pinIndex(p, pin) {                         // Zahl = Nummer ab 0, Text = Anschlussname wie in der Netzliste
+    const n = KD(p).pins.length; if (typeof pin === 'number') return pin >= 0 && pin < n ? pin : -1;
+    const names = namesOf(p), s = String(pin);
+    if (names) { let i = names.indexOf(s); if (i < 0) i = names.findIndex(x => x.toLowerCase() === s.toLowerCase()); return i >= 0 && i < n ? i : -1; }
+    return /^\d+$/.test(s) && +s >= 1 && +s <= n ? +s - 1 : -1;
+  }
+  function topo() {                                   // Verbindungen wie im Rechenkern: Drähte, Masse-Symbole, Masse-Pins von Uno und Pi
+    const par = new Map(), find = k => { if (!par.has(k)) par.set(k, k); let r = k; while (par.get(r) !== r) r = par.get(r); par.set(k, r); return r; }, uni = (a, b) => par.set(find(a), find(b)), wired = new Set();
+    sch.wires.forEach(w => { const a = gk(w.x1, w.y1), b = gk(w.x2, w.y2); wired.add(a); wired.add(b); uni(a, b); });
+    let g0 = null; const gnd = k => { find(k); wired.add(k); if (g0 !== null) uni(g0, k); else g0 = k; };
+    sch.parts.forEach(p => { if (p.k === 'GND') gnd(gk(...pinsOf(p)[0])); });
+    sch.parts.forEach(p => { if (p.k === 'PI' || p.k === 'UNO') { const pw = pinsOf(p); (p.k === 'PI' ? [5, 8, 13, 19, 24, 29, 33, 38] : [3, 24]).forEach(si => gnd(gk(...pw[si]))); } });
+    return { find, wired, g0 };
+  }
+  /* Rohe Netzliste: Anschlussnamen aus names(p) (null: '1'..'n'); nicht angeschlossene Anschlüsse fehlen (offen) */
+  function rawNet(names) {
+    const T = topo(), R = refs(), ps = sch.parts.filter(p => p.k !== 'GND').map(p => ({ p, ref: R.get(p.id) })).sort((a, b) => natCmp(a.ref, b.ref)), cnt = new Map();
+    const key = (p, i) => { const q = pinsOf(p)[i]; return gk(q[0], q[1]); };
+    ps.forEach(({ p }) => pinsOf(p).forEach((q, i) => { const r = T.find(key(p, i)); cnt.set(r, (cnt.get(r) || 0) + 1); }));
+    const conn = (p, i) => T.wired.has(key(p, i)) || cnt.get(T.find(key(p, i))) > 1;
+    const nm = new Map(), gr = T.g0 !== null ? T.find(T.g0) : null; if (gr !== null) nm.set(gr, 'GND');
+    const sup = []; ps.forEach(({ p }) => { if (p.k === 'BAT' && conn(p, 0)) { const r = T.find(key(p, 0)); if (r !== gr && !sup.includes(r)) sup.push(r); } });
+    sup.forEach((r, i) => nm.set(r, sup.length === 1 ? 'VCC' : 'V' + (i + 1)));
+    let nn = 0; const nameOf = r => { if (!nm.has(r)) nm.set(r, 'N' + (++nn)); return nm.get(r); }, nets = new Map();
+    const parts = ps.map(({ p, ref }) => {
+      const K = KD(p), pn = (names && names(p)) || KD(p).pins.map((_, i) => String(i + 1)), pins = {}, props = {};
+      pinsOf(p).forEach((_, i) => { if (!conn(p, i) || i >= pn.length) return; const net = nameOf(T.find(key(p, i))); pins[pn[i]] = net; if (!nets.has(net)) nets.set(net, []); nets.get(net).push(ref + '.' + pn[i]); });
+      if (KINDS[p.k].toggle) props.sw = p.sw ? 1 : 0; if (KINDS[p.k].momentary) props.pressed = !!p.pressed; if (KINDS[p.k].pos && p.pos != null) props.pos = p.pos;
+      if (p.vr != null && p.vr !== KINDS[p.k].vr) props.vr = p.vr; if (p.k === 'ICX' || p.k === 'CPU') props.n = K.pins.length;
+      const o = { ref, kind: p.k, value: String(p.v == null ? '' : p.v), pins }; if (Object.keys(props).length) o.props = props; return o;
+    });
+    return { v: 1, name: sch.name, parts, nets: [...nets.keys()].map(name => ({ name, pins: nets.get(name) })) };
+  }
+  function netlist() {
+    const L = nlib(); if (!L || !L.normalize) return null;
+    const raw = rawNet(namesOf), r = L.normalize(raw);
+    if (r.ok) return r.nl;
+    const r2 = L.normalize(raw, { lenient: true }); return r2.ok ? r2.nl : null;
+  }
+  function simMeas(specs, T) {
+    T = T > 0 ? +T : 0.3;
+    const E = simEval({}); E.run(T);
+    const J = new Map(), byRef = new Map(), out = {};
+    E.c.elems.forEach(e => { const w = e.part && e.part.item; if (!w) return; const K = KINDS[w.k], I = termI(e); e.pi.forEach((ci, j) => { const k = w.id + ':' + (K.map ? K.map[ci] : ci); J.set(k, (J.get(k) || 0) + (I[j] || 0)); }); });
+    refs().forEach((r, id) => byRef.set(r, byPart(id)));
+    const vAt = (p, i) => { const q = pinsOf(p)[i], n = E.c.nodeOfKey(gk(q[0], q[1])); return n < 0 ? NaN : E.s.v[n]; };
+    (Array.isArray(specs) ? specs : []).forEach(sp => {
+      try {
+        let ref = sp.ref, a = sp.pin; const m = typeof ref === 'string' && !byRef.has(ref) && /^(.*)\.([^.]+)$/.exec(ref);
+        if (m && byRef.has(m[1])) { ref = m[1]; if (a === undefined) a = m[2]; }                    // 'R1.2' als Kurzform
+        const p = byRef.get(ref); if (!p) return;
+        let v = NaN;
+        if (sp.kind === 'vdiff') { const pr = sp.pins || [0, 1], i = pinIndex(p, pr[0]), j = pinIndex(p, pr[1]); v = i < 0 || j < 0 ? NaN : vAt(p, i) - vAt(p, j); }
+        else { const i = pinIndex(p, a === undefined ? 0 : a); v = i < 0 ? NaN : (sp.kind === 'i' ? (J.get(p.id + ':' + i) || 0) : vAt(p, i)); }
+        if (isFinite(v)) out[String(sp.label)] = v;
+      } catch (e) {}
+    });
+    return out;
+  }
+  function endTask() { if (!sch.task) return; try { saveNamed(); } catch (e) {} sch.task = undefined; taskRes = null; commit(true, true); refreshUI(); }      // wie „Aufgabe beenden“ (tstop), vorher gesichert
+  const W = fn => (...a) => { try { return fn(...a); } catch (e) { return false; } };      // schreibende Hooks: bei Fehler false
+  const api = {
+    lab: LAB,
+    ready: () => !!sch && Array.isArray(sch.parts),
+    canWrite: () => !locked(),
+    snap: () => { try { return JSON.parse(snap()); } catch (e) { return null; } },
+    load: W((d, name) => {
+      if (!d || typeof d !== 'object') return false;
+      if (sch.parts.length || sch.wires.length) { try { saveNamed(); } catch (e) {} }
+      const c = copy(d); delete c.sid; if (name) c.name = String(name);
+      loadCircuit(c); return true;
+    }),
+    netlist: () => { try { return netlist(); } catch (e) { return null; } },
+    rawNetlist: () => { try { return rawNet(null); } catch (e) { return null; } },
+    parts: () => { try { const R = refs(); return sch.parts.filter(p => p.k !== 'GND').map(p => ({ ref: R.get(p.id), id: p.id, kind: p.k, value: String(p.v == null ? '' : p.v) })); } catch (e) { return null; } },
+    simMeas: (specs, T) => { try { return simMeas(specs, T); } catch (e) { return null; } },
+    setPart: W((ref, props) => {
+      if (locked() || !props || typeof props !== 'object') return false;
+      const p = partByRef(ref); if (!p) return false;
+      ['v', 'sw', 'pos', 'pressed', 'vr', 'imax', 'defect'].forEach(k => { if (props[k] !== undefined) p[k] = (k === 'sw' ? (props[k] ? 1 : 0) : k === 'pressed' ? !!props[k] : props[k]); });
+      if (props.l !== undefined) p.l = String(props.l).trim().replace(/[\s.]+/g, '_');
+      commit(false); return true;
+    }),
+    proto: () => { try { return protoLoad().rows.map(r => Object.assign({}, r)); } catch (e) { return null; } },
+    protoTol: () => { try { return protoLoad().tol; } catch (e) { return null; } },
+    setProto: W((rows, tol) => {
+      if (locked() || !Array.isArray(rows)) return false;
+      const s = x => String(x == null ? '' : x);
+      protoSave({ tol: tol > 0 ? +tol : protoLoad().tol, rows: rows.map(r => ({ w: s(r.w), u: s(r.u || 'V'), s: s(r.s), i: s(r.i) })) }); return true;
+    }),
+    code: () => { try { return sch.code || ''; } catch (e) { return null; } },
+    setCode: W(src => {
+      if (!PROGLAB) return false;
+      endTask();                                    // eine offene Aufgabe wird beendet (Arbeit vorher gesichert), sonst bliebe die Station im Prüfmodus unlösbar
+      sch.code = String(src == null ? '' : src); syncCode(); try { localStorage.setItem((SK + 'cur'), snap()); } catch (e) {} return true;
+    }),
+    haus: () => { try { return sch.haus ? copy(sch.haus) : null; } catch (e) { return null; } },
+    setHaus: W((model, name) => {
+      if (LAB !== 'haus' || !model || typeof model !== 'object') return false;
+      if (sch.parts.length || sch.wires.length || sch.haus) { try { saveNamed(); } catch (e) {} }
+      loadCircuit({ name: name ? String(name) : (model.name || sch.name), parts: [], wires: [], nid: 1, scopes: [], haus: copy(model) }); return true;
+    })
+  };
+  return api;
+})();
 window.SchaltDebug = () => ({ prog: prog && { err: prog.err, t: prog.runner.t }, serLog, view, sl: sliderHits, running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
 })();

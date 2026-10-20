@@ -7,7 +7,8 @@
   // ===== Anlage 4: Garagentor (Rolltor) mit Endschaltern =====
   // Physik: Tor faehrt in 6 s von 0 (unten) nach 100 (oben). Endschalter oben (I0.2) ab 98, unten (I0.3) bis 2.
   // Hindernis: Lichtschranke I0.4 = 1. Faehrt das Tor abwaerts auf das Hindernis, ist das ein crash.
-  const SPEED = 100 / 6; // % pro Sekunde
+  const TRAVEL_S = 6;                  // Vorgabe-Fahrzeit in s (opts.travelS ueberschreibt sie, Bereich 2 bis 30 s)
+  const SPEED = 100 / TRAVEL_S; // % pro Sekunde
   const TOP_SW = 98, BOT_SW = 2;
   const LW = 800, LH = 480;
   const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
@@ -63,6 +64,9 @@
       const seed = opts.seed != null ? opts.seed : 1;
       let rnd = mulberry32(seed);
       const events = [];
+      // optionale Fahrzeit (Sekunden fuer die ganze Fahrt); ohne gueltigen Wert bleibt alles wie bisher
+      const travelS = (typeof opts.travelS === 'number' && isFinite(opts.travelS) && opts.travelS > 0) ? clamp(opts.travelS, 2, 30) : TRAVEL_S;
+      const speed = travelS === TRAVEL_S ? SPEED : 100 / travelS;
       let st, layout = { s: 1, ox: 0, oy: 0 }, hits = [], held = {};
 
       function ev(kind, text, fxk, x, y, what) { const e = { t: st.t, text: text, kind: kind }; if (fxk) { e.fx = fxk; e.x = x; e.y = y; if (what) e.what = what; } events.push(e); if (events.length > 300) events.shift(); }
@@ -95,7 +99,7 @@
         if (both) {
           if (!st.interlockNow) { st.interlockNow = true; st.crash = true; st.crashes++; st.crashReason = 'interlock'; st.dentY = OY1 - st.pos / 100 * OH - 20; st.dentT = st.t; ev('error', 'Motor Auf und Ab gleichzeitig (Verriegelung verletzt)', 'interlock', OCX, OY0 + 20); }
         } else st.interlockNow = false;
-        const step = SPEED * dt;
+        const step = speed * dt;
         let dir = 0, jam = false;
         if (!both && up) {
           dir = 1; st.pos = Math.min(100, st.pos + step);
@@ -149,7 +153,7 @@
         state() {
           const od = obstDef();
           return {
-            doorPos: st.pos, crash: st.crash, overrun: st.overrun, crashes: st.crashes, crashReason: st.crashReason,
+            travelS: travelS, doorPos: st.pos, crash: st.crash, overrun: st.overrun, crashes: st.crashes, crashReason: st.crashReason,
             jammed: st.jammed, interlock: st.interlockNow, obstacle: st.obst, obstacleType: st.obst ? od.name : '',
             obstacleHeight: st.obst ? od.h * 100 : 0, moving: st.moving, trips: st.trips, travelMs: st.travelMs, timeMs: st.t,
             outputs: Object.assign({}, st.out), top: st.pos >= TOP_SW, bottom: st.pos <= BOT_SW

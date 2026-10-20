@@ -2032,6 +2032,42 @@ window.LabKeysAdapter = {
   search: () => { const q = $('#pq'); if (q) q.focus(); }, sim: () => { const s = document.querySelector('#bSim'); if (s) s.click(); }, busy: () => document.body.classList.contains('sim'),
 };
 </script>
+<script>
+/* Verbundprojekte (Paket A2): Schnittstelle fuer verbundad-loch.js. Rein additiv, ohne Wirkung auf das normale LochLab.
+   Umrechnung Layout <-> Netzliste: window.VerbundAdLoch.pure (wird nur mit ?verbund= nachgeladen). Alle Hooks in try/catch, Fehler -> null. */
+window.LochVerbund = (function () {
+  const A = () => window.VerbundAdLoch || null, nlib = () => (window.Verbund && window.Verbund.nl) || window.VerbundNL || null;
+  const env = () => ({ PARTS, pinsOf, labelsOf, variantOf, LochSim: window.LochSim });
+  const g = (f, bad) => { try { return f(); } catch (e) { return bad === undefined ? null : bad; } };
+  const nlOf = () => { const a = A(); if (!a) return null; const r = a.pure.netlistFromDoc(doc, env(), nlib()); return r.ok ? r : null; };
+  return {
+    env,
+    doc: () => g(() => JSON.parse(JSON.stringify(doc))),
+    load: (d, name) => g(() => {                                                       // sichert die aktuelle Arbeit, lädt d als neues Projekt
+      if (!d || !Array.isArray(d.items)) return false;
+      try { save(); } catch (e) { /* weiter */ }
+      const dd = JSON.parse(JSON.stringify(d)); dd.id = uid(); dd.updated = Date.now(); if (name) dd.name = String(name);
+      load(dd); return true;
+    }),
+    netlist: () => g(() => { const r = nlOf(); return r ? r.nl : null; }),
+    bom: () => g(() => { const r = nlOf(); return r ? r.bom : null; }),
+    boards: () => g(() => boardsOf(doc).length),
+    ribbons: () => g(() => doc.items.filter(i => i.t === 'ribbon').map(r => ({ n: r.n || 0 }))),
+    placeFromNetlist: (nl, o) => g(() => {                                               // Bauteile aus der Netzliste aufs Raster; route:true = Verbindungen automatisch (Stufe 1, umgeht das Lehrer-Tor bewusst)
+      o = o || {}; const a = A(); if (!a) return { ok: false, notPlaced: [], err: 'Adapter nicht geladen.' };
+      const job = a.pure.jobFromNetlist(nl, env(), nlib(), { route: !!o.route });
+      if (!job.ok) return { ok: false, notPlaced: [], err: (job.errs && job.errs[0]) || 'Netzliste ungültig.' };
+      if (!job.parts.length) return { ok: false, notPlaced: job.notes.skipped.slice(), err: 'Keine Bauteile, die aufs Lochraster passen.' };
+      try { save(); } catch (e) { /* weiter */ }
+      const hadC = '__cols' in window, oc = window.__cols, or = window.__rows;
+      let r; try { if (!hadC && job.parts.length > 20) { window.__cols = 77; window.__rows = 38; } r = autoLayout(job); } finally { if (hadC) { window.__cols = oc; window.__rows = or; } else { delete window.__cols; delete window.__rows; } }
+      r.doc.name = job.name; job.parts.forEach(jp => { if (jp.gates) { const it = r.doc.items.find(i => i.t === 'part' && i.l === jp.l); if (it) it.gates = jp.gates; } });   // Gatter-IC merkt sich die Gatter des Schaltplans
+      load(r.doc);
+      return { ok: true, notPlaced: (r.notPlaced || []).concat(job.notes.skipped), notRouted: (r.notRouted || []).slice(), tracks: r.tracks, wires: r.wires, logic: job.notes.logic };
+    }, { ok: false, notPlaced: [], err: 'Fehler beim Platzieren.' })
+  };
+})();
+</script>
 <script src="keys.js"></script>
 <script src="rechner.js"></script>
 <script src="qr.js"></script>
@@ -2050,5 +2086,6 @@ window.LabKeysAdapter = {
 <script src="feel.js"></script>
 <script src="kampagne.js"></script>
 <script src="hdr.js"></script>
+<script src="verbundbar.js" defer></script>
 </body>
 </html>
