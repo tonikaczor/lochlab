@@ -192,6 +192,7 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 <div id="toast"></div>
 <div id="printArea"><img id="printImg" alt=""></div>
 
+<script src="pins.js"></script>
 <script>
 'use strict';
 /* ============ Hilfsfunktionen ============ */
@@ -895,6 +896,21 @@ function labelsOf(it){
   if(it.k==='IC'&&window.LochSimICs){const d=LochSimICs.find(it.v);if(d&&LochSimICs.CATALOG[d.key].np===it.n)return LochSimICs.CATALOG[d.key].labels;}
   return null;
 }
+/* Pins anzeigen: Anschlussbezeichnungen an den Bauteilbeinen (Daten und Platzierung in pins.js, rein optisch) */
+const pinsOn=()=>!!(window.TfPins&&window.TfPins.on());
+let pinCache={key:'',labs:[]};
+function drawPinLabels(c,V,mir,items){
+  if(!pinsOn())return;
+  const T=window.TfPins,bottom=mir||false;
+  const meas=(t,fs)=>{c.save();c.font='700 100px -apple-system,system-ui,Segoe UI,sans-serif';const w=c.measureText(t).width;c.restore();return w*fs/100;};
+  let key=V.s+'|'+bottom;
+  items.forEach(it=>{if(it.t==='part')key+=';'+it.id+it.k+it.x+','+it.y+','+it.r+','+it.n+(it.vr||'')+(it.v&&it.k==='IC'?it.v:'');else if(it.t==='wire'||(it.t==='track'&&mode!=='top'))key+=';'+it.x1+','+it.y1+','+it.x2+','+it.y2;});
+  if(pinCache.key!==key){
+    const segs=[];items.forEach(it=>{if(it.t==='wire'||(it.t==='track'&&mode!=='top'))segs.push([it.x1,it.y1,it.x2,it.y2]);});
+    pinCache={key,labs:T.lochLabels({items,pinsOf,bodyRect,rot,segs,s:V.s,meas,LI:window.LochSimICs,isSpan:it=>PARTS[it.k]&&PARTS[it.k].kind==='span'})};
+  }
+  T.paint(c,pinCache.labs,{fill:'#ffd166',halo:'rgba(10,12,16,.92)',mir:bottom});
+}
 function drawScene(c,V,o){
   const {cols,rows}=doc, mir=o.mode==='bottom', both=o.mode==='both';
   c.save();c.translate(V.ox,V.oy);c.scale(V.s,V.s);
@@ -1008,6 +1024,7 @@ function drawScene(c,V,o){
     items.forEach(it=>{if(it.t==='part')pinsOf(it).forEach(([x,y])=>{c.beginPath();c.arc(x,y,.46,0,7);c.strokeStyle=ring;c.lineWidth=.06;c.stroke();});
       if(it.t==='wire')[[it.x1,it.y1],[it.x2,it.y2]].forEach(([x,y])=>{c.beginPath();c.arc(x,y,.3,0,7);c.strokeStyle=ring;c.lineWidth=.08;c.stroke();});});
   }
+  if(!ex&&V.s>=11)drawPinLabels(c,V,o.mode==='bottom',items);
   // Interaktionsvorschau
   if(o.ghost){c.globalAlpha=.65;drawPart(c,{t:'part',k:partKind,vr:curVar(partKind),sk:partKind==='IC'&&autoSocket,n:sizes[partKind],x:o.ghost[0],y:o.ghost[1],r:partRot,v:partVals[partKind]!=null?partVals[partKind]:PARTS[partKind].val});c.globalAlpha=1;}
   if(o.chain&&o.cursor){
@@ -1365,6 +1382,11 @@ function renderCtx(){
     const hints={select:'Tippen = auswählen, ziehen = verschieben · 2 Finger = Zoom',hand:'Ziehen zum Verschieben · 2 Finger = Zoom',dot:'Tippen setzt oder entfernt einen Lötpunkt',text:'Tippen, um Text zu platzieren',erase:'Tippen oder darüberwischen zum Löschen'};
     h=`<span class="hint">${hints[tool]||''}</span>`;
   }
+  {const T=window.TfPins;
+    if(T){const on=pinsOn();
+      if(sh||matchMedia('(min-width:720px)').matches)sh+=`<div class="sh">Anzeige</div><button class="sbtn wide ${on?'on':''}" data-a="pins" role="switch" aria-checked="${on}" title="${T.TIP}">📌 Pins anzeigen: ${on?'an':'aus'}</button><div class="phcap">${T.TIP}. Pin-Nummern, Polung und Belegung stehen am Bauteil.</div>`;
+      else h=chip('pins','📌 Pins '+(on?'an':'aus'),on?'on':'').replace('<button','<button role="switch" aria-checked="'+on+'" title="'+T.TIP+'"')+'<span class="sep"></span>'+h;}
+  }
   el.innerHTML=h;sd.innerHTML=sh;sd.classList.toggle('on',!!sh);
   renderParts();
 }
@@ -1434,6 +1456,7 @@ const ctxClick=e=>{
     if(it&&it.k==='LED'){it.v=b.dataset.v;commit();}else partVals.LED=b.dataset.v;
   }
   else if(a==='imax'){const it=sel!=null?byId(sel):null;if(it&&(it.k==='BAT'||it.k==='SIG')){it.imax=b.dataset.v;commit();}else partVals.imax=b.dataset.v;}
+  else if(a==='pins'){if(window.TfPins){window.TfPins.set(!pinsOn());pinCache.key='';}}
   else if(a==='ask'){autoSocket=!autoSocket;}
   else if(a==='sk'){const it=byId(sel);if(it){it.sk=!it.sk;commit();}}
   else if(a==='photo'){openGallery(b.dataset.id);}

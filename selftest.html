@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['vb', 'Projekte', 'verbund.html', 10]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['vb', 'Projekte', 'verbund.html', 10]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -94,6 +94,27 @@
         var lc = w.LochTasks.layoutCheck(t.sol).filter(function (x) { return !x.ok; }); if (lc.length && !t.fault) bad.push(t.id + ' Layout-Check der Musterlösung: ' + lc[0].text);
       } catch (e) { bad.push(t.id + ' Fehler ' + e); }
     });
+    /* l16 Dämmerungsschalter: getrennter Laststromkreis und gemeinsame Masse sind beide richtig, falsche Verdrahtungen fallen durch */
+    try {
+      var t16 = tasks.filter(function (t) { return t.id === 'l16'; })[0];
+      if (t16) {
+        var nidv = 900, rmv = function (d, ids) { d.items = d.items.filter(function (i) { return ids.indexOf(i.id) < 0; }); }, addv = function (d, o) { o.id = nidv++; d.items.push(o); };
+        var V16 = [['gemeinsame Masse (Muster)', true, function (d) {}], ['getrennter Laststromkreis', true, function (d) { rmv(d, [32, 33, 34]); }],
+          ['Lampe ohne Relaiskontakt', false, function (d) { rmv(d, [13]); addv(d, { t: 'wire', x1: 24, y1: 4, x2: 24, y2: 11 }); }],
+          ['Pluspole verbunden', false, function (d) { addv(d, { t: 'wire', x1: 14, y1: 6, x2: 24, y2: 9 }); }],
+          ['getrennt, aber Pluspole verbunden', false, function (d) { rmv(d, [32, 33, 34]); addv(d, { t: 'wire', x1: 14, y1: 6, x2: 24, y2: 9 }); }],
+          ['Relaiskontakt an Masse, Minus der Lastbatterie frei', false, function (d) { rmv(d, [19, 20, 21]); }],
+          ['Minus der Lastbatterie an Masse, Relaiskontakt frei', false, function (d) { rmv(d, [32, 33, 34, 19, 20, 21]); addv(d, { t: 'track', x1: 24, y1: 11, x2: 24, y2: 16 }); addv(d, { t: 'track', x1: 24, y1: 16, x2: 13, y2: 16 }); }]];
+        V16.forEach(function (v) { var d = JSON.parse(JSON.stringify(t16.sol)); v[2](d); var r = w.LochTasks.check(t16, d); if (r.ok !== v[1]) bad.push('l16 Variante „' + v[0] + '“: erwartet ' + (v[1] ? 'richtig' : 'falsch') + ', Prüfung ' + r.pct + ' %'); });
+      }
+      var t6 = tasks.filter(function (t) { return t.id === 'l6'; })[0];   /* l6 Relais mit Transistor: gleiche Regel wie l16 */
+      if (t6) {
+        var V6 = [['gemeinsame Masse (Muster)', true, function (d) {}], ['getrennter Laststromkreis', true, function (d) { rmv(d, [29, 31]); }],
+          ['Pluspole verbunden', false, function (d) { addv(d, { t: 'wire', x1: 14, y1: 6, x2: 24, y2: 9 }); }],
+          ['Relaiskontakt an Masse, Minus der Lastbatterie frei', false, function (d) { rmv(d, [22, 23, 24]); }]];
+        V6.forEach(function (v) { var d = JSON.parse(JSON.stringify(t6.sol)); v[2](d); var r = w.LochTasks.check(t6, d); if (r.ok !== v[1]) bad.push('l6 Variante „' + v[0] + '“: erwartet ' + (v[1] ? 'richtig' : 'falsch') + ', Prüfung ' + r.pct + ' %'); });
+      }
+    } catch (e) { bad.push('l16 Varianten Fehler ' + e); }
     var ex = w.LOCH_EX || [], exn = 0;
     ex.forEach(function (e) {
       exn++;
@@ -361,6 +382,97 @@
     }
     return { n: ex.length, bad: bad };
   }
+  /* Regelungstechnik-Lab: Kern-Check (Marker-Rechnungen), 7 Pruefstaende (laufen 60 Prozess-s ohne NaN, zeichnen mit Mock), 24 Beispiele, 30 Aufgaben
+     (Hinweiszahlen-Audit, Start ueber die echte Oberflaeche), Auswahlfragen der Aufgaben mit choices */
+  function regMock() {
+    var n = 0, store = {};
+    return new Proxy(store, {
+      get: function (t, p) {
+        if (p === '__n') return n; if (typeof p === 'symbol') return undefined;
+        if (p === 'measureText') return function () { n++; return { width: 10 }; };
+        if (p === 'canvas') return { width: 1000, height: 640 };
+        if (p === 'createLinearGradient' || p === 'createRadialGradient') return function () { n++; return { addColorStop: function () {} }; };
+        if (p in t) return t[p];
+        return function () { n++; };
+      },
+      set: function (t, p, v) { t[p] = v; return true; }
+    });
+  }
+  function regNums(o, path, out) {
+    if (typeof o === 'number') { if (!isFinite(o)) out.push(path); return; }
+    if (o && typeof o === 'object') Object.keys(o).forEach(function (k) { if (k !== 'events') regNums(o[k], path + '.' + k, out); });
+  }
+  async function regCore(w) {
+    var bad = [], C = w.REG_CORE, IDS = ['fuellstand', 'durchfluss', 'raumtemp', 'thermostat', 'drehzahl', 'position', 'baukasten'];
+    if (!C || typeof C.runSeq !== 'function') bad.push('REG_CORE fehlt');
+    if (!w.REG_RIGS || !w.REG_UI) bad.push('REG_RIGS oder REG_UI fehlt');
+    var ex = (w.REG_DATA && w.REG_DATA.examples) || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'reg'; });
+    if (ex.length !== 24) bad.push('Beispiele: ' + ex.length + ' statt 24');
+    if (tk.length !== 30) bad.push('Aufgaben: ' + tk.length + ' statt 30');
+    if (!C || !w.REG_RIGS || !w.REG_UI) return { n: ex.length, bad: bad };
+    /* Kern-Marker: PT3 10/5/2 s, Ks 1 */
+    try {
+      var bl = [{ t: 'K', K: 1 }, { t: 'PT1', T: 10 }, { t: 'PT1', T: 5 }, { t: 'PT1', T: 2 }], u = C.ultimate(bl), kf = C.formulas.kkrit.fn(1, 10, 5, 2);
+      if (!u.ok || Math.abs(u.Kkrit - kf) > 1e-6 * kf) bad.push('ultimate: Kkrit ' + u.Kkrit + ' statt ' + kf);
+      var mg = C.margins(C.freq.loopBlocks(bl, { type: 'P', Kp: u.Kkrit / 2 }));
+      if (!mg.ok || Math.abs(mg.AR - 20 * Math.log10(2)) > 0.05) bad.push('margins: Amplitudenreserve ' + mg.AR + ' dB statt 6,02 dB bei Kp = Kkrit/2');
+      var idn = C.identify(bl);
+      C.rules.methods.forEach(function (m) {
+        m.types.forEach(function (ty) {
+          var r = C.rules.apply(m.id, idn, ty);
+          if (!r.ok) bad.push('rules.apply ' + m.id + ' ' + ty + ': ' + r.why);
+          else if (!(r.Kp > 0) || (ty !== 'P' && !(r.Tn > 0)) || (ty === 'PID' && !(r.Tv > 0))) bad.push('rules.apply ' + m.id + ' ' + ty + ': Kennwerte unvollstaendig');
+        });
+      });
+      var zp = C.rules.apply('zn-schwing', idn, 'PI');
+      if (Math.abs(zp.Kp - 0.45 * u.Kkrit) > 1e-6) bad.push('Ziegler-Nichols PI: Kp ' + zp.Kp + ' statt 0,45 mal Kkrit');
+    } catch (x) { bad.push('Kern-Marker: ' + x); }
+    /* Oberflaeche: feste Reihenfolge der sieben Pruefstaende */
+    if (w.REG_UI.ORDER.join() !== IDS.join()) bad.push('Reihenfolge in der Oberflaeche: ' + w.REG_UI.ORDER.join());
+    /* sieben Pruefstaende: 60 Prozess-s ohne NaN, zeichnen in drei Groessen */
+    IDS.forEach(function (id) {
+      try {
+        if (!w.REG_RIGS.defs[id]) { bad.push(id + ': nicht registriert'); return; }
+        var r = w.REG_RIGS.create(id, {});
+        r.stepProcess(60);
+        var st = r.state(), nf = []; regNums(st, 'state', nf); regNums(r.readMeters(), 'meter', nf);
+        if (nf.length) bad.push(id + ': keine Zahl in ' + nf.slice(0, 3).join(', '));
+        [[1180, 820], [820, 1180], [390, 800]].forEach(function (sz) { var m = regMock(); r.draw(m, sz[0], sz[1], 0); if (m.__n < 30) bad.push(id + ': draw ' + sz.join('x') + ' zeichnet zu wenig (' + m.__n + ')'); });
+        if (typeof r.drawError === 'function' && r.drawError()) bad.push(id + ': Zeichenfehler ' + r.drawError());
+      } catch (x) { bad.push(id + ': ' + x); }
+    });
+    /* Beispiele: laufen fehlerfrei, endliche Werte, Zahlen der Beschreibung gerechnet */
+    ex.forEach(function (e) {
+      try {
+        var o = w.REG_TASKS.util.run(e.rig, e.controls, e.seq || [], e.dur, { op: e.op, sampleS: e.dur / 400 });
+        if (o.errors.length || o.rejected.length) bad.push('Beispiel ' + e.id + ': ' + o.errors.concat(o.rejected.map(JSON.stringify)).join('; '));
+        var nf = []; o.samples.forEach(function (sm) { ['t', 'w', 'x', 'y', 'e'].forEach(function (k) { if (!isFinite(sm[k])) nf.push(k); }); }); if (nf.length) bad.push('Beispiel ' + e.id + ': Werte ohne Zahl');
+        var au = w.REG_TASKS.auditExample(e); if (!au.ok) bad.push('Beispiel ' + e.id + ': Zahl in der Beschreibung ohne Quelle ' + au.bad.join(', '));
+      } catch (x) { bad.push('Beispiel ' + e.id + ': ' + x); }
+    });
+    /* Aufgaben: Hinweiszahlen-Audit, Start ueber die echte Oberflaeche, Auswahlfragen eindeutig */
+    var T = w.REG_TASKS.tasks, U = w.REG_UI;
+    if (T.length !== 30) bad.push('REG_TASKS: ' + T.length + ' Aufgaben');
+    for (var i = 0; i < T.length; i++) {
+      var t = T[i];
+      try {
+        var a = w.REG_TASKS.audit(t); if (!a.ok) bad.push(t.id + ': Zahl im Tipp ohne Quelle ' + a.bad.join(', '));
+        if (!(t.hint && t.hint.length === 3)) bad.push(t.id + ': keine drei Tipp-Stufen');
+        await U.startTask(t.id); await sleep(20);
+        if (!U.S.task || U.S.task.id !== t.id) bad.push(t.id + ': startTask setzt die Aufgabe nicht');
+        else if (!w.document.querySelector('#taskBar') || !/\S/.test(w.document.querySelector('#taskBar').textContent)) bad.push(t.id + ': Aufgabenleiste leer');
+        var ch = typeof t.choices === 'function' ? t.choices() : t.choices;
+        (ch || []).forEach(function (q) {
+          var op = (q.options || []).map(function (x) { return typeof x === 'object' ? x : { value: x, label: x }; });
+          if (op.length < 2) bad.push(t.id + ' ' + q.key + ': weniger als zwei Antworten');
+          var ns = op.map(function (x) { return norm(x.label); });
+          ns.forEach(function (x, j) { if (ns.indexOf(x) !== j) bad.push(t.id + ' ' + q.key + ': doppelte Antwort ' + op[j].label); });
+        });
+      } catch (x) { bad.push(t.id + ': ' + x); }
+    }
+    try { U.S.task = null; } catch (x) { /* Aufraeumen */ }
+    return { n: ex.length, bad: bad };
+  }
   /* Verbundprojekte (Hub): 5 Projekte registriert, Datenfluss-Graph, Demo bis zum Abschluss fuer alle Projekte und Stufen = 100 %, Teilen-Round-Trip. TaskTest laeuft ueber den Standardweg (Stationen + Gesamttests). */
   function memStore() {
     var m = {};
@@ -440,6 +552,26 @@
       r.forEach(function (x) { n++; if (x.err) bad.push(x.id + ' Fehler ' + x.err); else if (x.pct != null && x.pct !== 100) bad.push(x.id + ' Lösung ' + x.pct + ' %'); else if (x.startPct != null && x.startPct >= 100) bad.push(x.id + ' Start schon 100 %'); });
       await sleep(80);
     }
+    if (l[0] === 'sch' && w.TaskTestWith) {   /* s18 Dämmerungsschalter mit Relais: getrennter Laststromkreis und gemeinsame Masse sind beide richtig, falsche fallen durch */
+      try {
+        var b18 = function () { return { parts: [['BAT', 2, 4, 1, '12'], ['R', 4, 4, 1, '47k'], ['LDR', 4, 10, 1, '', { pos: 0.15 }], ['NPN', 8, 12, 0, 'BC547'], ['RLY', 8, 2, 0, '12V'], ['D', 6, 6, 3, '1N4007'], ['LAMP', 16, 2, 0, '12V 0.1A'], ['BAT', 22, 2, 1, '12'], ['GND', 2, 10], ['GND', 4, 16], ['GND', 10, 16], ['GND', 22, 10]], wires: [[2, 4, 2, 2, 4, 2, 6, 2, 8, 2], [4, 2, 4, 4], [4, 8, 4, 10], [4, 10, 6, 10, 6, 12, 8, 12], [4, 14, 4, 16], [8, 6, 10, 6, 10, 10], [6, 6, 8, 6], [10, 14, 10, 16], [20, 2, 22, 2], [13, 4, 13, 10, 22, 10, 22, 6], [2, 8, 2, 10]], scopes: [], tempo: 0.75 }; };
+        var W18 = JSON.stringify([13, 4, 13, 10, 22, 10, 22, 6]), rep18 = function (d, to) { d.wires = d.wires.filter(function (x) { return JSON.stringify(x) !== W18; }); if (to) d.wires.push(to); return d; };
+        var V18 = [['gemeinsame Masse (Muster)', true, function (d) { return d; }], ['getrennt, Masse-Symbol neben V2 bleibt frei', true, function (d) { return rep18(d, [13, 4, 13, 8, 22, 8, 22, 6]); }],
+          ['getrennt, Masse-Symbol neben V2 gelöscht', true, function (d) { d.parts.pop(); return rep18(d, [13, 4, 13, 8, 22, 8, 22, 6]); }],
+          ['Lampe ohne Relaiskontakt', false, function (d) { d.parts[6] = ['LAMP', 14, 16, 0, '12V 0.1A']; d.wires = d.wires.filter(function (x) { return x[0] !== 20 && x[0] !== 13; }); d.wires.push([18, 16, 22, 16, 22, 2], [14, 16, 10, 16], [22, 6, 22, 10]); return d; }],
+          ['Pluspole verbunden', false, function (d) { d.wires.push([4, 2, 4, 0, 22, 0, 22, 2]); return d; }],
+          ['getrennt, aber Pluspole verbunden', false, function (d) { rep18(d, [13, 4, 13, 8, 22, 8, 22, 6]); d.wires.push([4, 2, 4, 0, 22, 0, 22, 2]); return d; }],
+          ['Relaiskontakt an Masse, Minus von V2 frei', false, function (d) { return rep18(d, [13, 4, 13, 10, 22, 10]); }],
+          ['Minus von V2 an Masse, Relaiskontakt frei', false, function (d) { return rep18(d, [22, 6, 22, 10]); }]];
+        var b14 = function () { return { parts: [['BAT', 2, 4, 1, '12'], ['SPST', 4, 8, 1, ''], ['R', 4, 12, 0, '10k'], ['NPN', 8, 12, 0, 'BC547'], ['RLY', 8, 2, 0, '12V'], ['D', 6, 6, 3, '1N4007'], ['LAMP', 16, 2, 0, '12V 0.1A'], ['BAT', 22, 2, 1, '12'], ['GND', 2, 10], ['GND', 10, 16], ['GND', 22, 10]], wires: [[2, 4, 2, 2, 4, 2, 6, 2, 8, 2], [4, 2, 4, 8], [8, 6, 10, 6, 10, 10], [6, 6, 8, 6], [10, 14, 10, 16], [20, 2, 22, 2], [13, 4, 13, 10, 22, 10, 22, 6], [2, 8, 2, 10]], scopes: [], tempo: 0.75 }; };   /* s14 Relais mit Transistor: gleiche Regel wie s18 */
+        var V14 = [['gemeinsame Masse (Muster)', true, function (d) { return d; }], ['getrennt, Masse-Symbol neben V2 bleibt frei', true, function (d) { return rep18(d, [13, 4, 13, 8, 22, 8, 22, 6]); }],
+          ['getrennt, Masse-Symbol neben V2 gelöscht', true, function (d) { d.parts.pop(); return rep18(d, [13, 4, 13, 8, 22, 8, 22, 6]); }],
+          ['Pluspole verbunden', false, function (d) { d.wires.push([4, 2, 4, 0, 22, 0, 22, 2]); return d; }],
+          ['Relaiskontakt an Masse, Minus von V2 frei', false, function (d) { return rep18(d, [13, 4, 13, 10, 22, 10]); }]];
+        V14.forEach(function (v) { var r = w.TaskTestWith('s14', function () { return v[2](b14()); }); if (r.ok !== v[1]) bad.push('s14 Variante „' + v[0] + '“: erwartet ' + (v[1] ? 'richtig' : 'falsch') + ', Prüfung ' + r.pct + ' %'); });
+        V18.forEach(function (v) { var r = w.TaskTestWith('s18', function () { return v[2](b18()); }); if (r.ok !== v[1]) bad.push('s18 Variante „' + v[0] + '“: erwartet ' + (v[1] ? 'richtig' : 'falsch') + ', Prüfung ' + r.pct + ' %'); });
+      } catch (e) { bad.push('s18 Varianten Fehler ' + e); }
+    }
     if (l[0] === 'sps') {
       var sc = spsCore(w); if (sc.bad.length) all.ok = false;
       all.labs.push({ lab: 'SPS-Lab Kern', tasks: sc.n, bad: sc.bad });
@@ -464,6 +596,11 @@
       var dc = await dsCore(w); if (dc.bad.length) all.ok = false;
       all.labs.push({ lab: 'Datenblatt-Lab Kern', tasks: dc.n, bad: dc.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Datenblatt-Lab: Kern, 16 Datenblaetter, Beispiele, Aufgaben ueber die Oberflaeche</td><td>' + dc.n + ' Beispiele</td><td class="' + (dc.bad.length ? 'bad' : 'ok') + '">' + (dc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + dc.bad.join('; ') + '</td></tr>');
+    }
+    if (l[0] === 'reg') {
+      var rc = await regCore(w); if (rc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Regelungstechnik-Lab Kern', tasks: rc.n, bad: rc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Regelungstechnik-Lab: Kern, 7 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche</td><td>' + rc.n + ' Beispiele</td><td class="' + (rc.bad.length ? 'bad' : 'ok') + '">' + (rc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + rc.bad.join('; ') + '</td></tr>');
     }
     if (l[0] === 'vb') {
       var vc = await vbCore(w); if (vc.bad.length) all.ok = false;

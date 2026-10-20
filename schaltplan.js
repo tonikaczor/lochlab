@@ -515,7 +515,9 @@ function stepPhases(realDt) {
   bodyI.forEach((o, id) => { if (Math.abs(o.I || 0) >= 1e-6) ph('b' + id).v += ((o.I || 0) / imax) * sp * realDt; });
 }
 
+const partText = new Map();   // Rechteck des Bezeichnungs- und Werttextes je Bauteil (Pixel), damit die Pin-Anzeige nicht darauf schreibt
 function drawPart(p, selected) {
+  partText.delete(p.id);
   const K = KD(p), S = view.s, c = cx, pins = pinsOf(p);
   c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(p.r * Math.PI / 2); c.scale(S, S);
   c.lineCap = 'round'; c.lineJoin = 'round';
@@ -1025,7 +1027,7 @@ function drawPart(p, selected) {
     const vert = (p.r & 1) === 1;
     c.textAlign = vert ? 'left' : 'center';
     c.lineJoin = 'round'; c.lineWidth = 4; c.strokeStyle = PRINT ? '#fff' : '#080b0e';
-    const _ft = c.fillText.bind(c); const fillText = (t, x, y) => { c.strokeText(t, x, y); _ft(t, x, y); };
+    const _ft = c.fillText.bind(c); const fillText = (t, x, y) => { c.strokeText(t, x, y); _ft(t, x, y); const tw = c.measureText(t).width, th = Math.max(10, S * 0.62) * 1.2; partText.set(p.id, vert ? [x, y - th / 2, x + tw, y + th / 2] : [x - tw / 2, y - th / 2, x + tw / 2, y + th / 2]); };
     const off = p.k === 'GND' ? 0 : (p.k === 'NPN' || p.k === 'PNP' ? 0 : 1.55);
     if (p.k === 'NPN' || p.k === 'PNP') fillText(txt, lx + (rot(2.9, 0, p.r)[0] - mx) * S + (vert ? 0 : 0), ly + (rot(2.9, 0, p.r)[1] - my) * S);
     else if (p.k !== 'GND') fillText(txt, vert ? lx + (p.k === 'LED' || p.k === 'LAMP' ? 2.1 : 1.3) * S : lx, vert ? ly : ly - off * S);
@@ -1096,6 +1098,41 @@ function setSlide(h, px) {
   p.pos = v; const w = wrapMap.get(p.id); if (w) { w.pos = v; w.light = v; } draw();
 }
 
+
+/* ============ Pins anzeigen: Anschlussbezeichnungen an den Bauteilen (rein optisch, Daten und Platzierung in pins.js) ============ */
+const PINS = window.TfPins || null;
+const pinsOn = () => !!(PINS && PINS.on());
+let pinCache = { key: '', labs: [] };
+function pinsKey(W, H, fs) {
+  let k = view.s + '|' + Math.round(view.ox) + '|' + Math.round(view.oy) + '|' + W + 'x' + H + '|' + fs;
+  sch.parts.forEach(p => { k += ';' + p.k + p.x + ',' + p.y + ',' + p.r + (p.len || '') + (p.k === 'LAMP' || p.k === 'DUOLED' || p.k === 'RGBLED' ? p.v : '') + (p.vr || ''); });
+  partText.forEach((r, id) => { k += ';t' + id + ':' + Math.round(r[0]) + ',' + Math.round(r[1]) + ',' + Math.round(r[2]) + ',' + Math.round(r[3]); });
+  sch.wires.forEach(w => { k += ';' + w.x1 + ',' + w.y1 + ',' + w.x2 + ',' + w.y2; });
+  return k;
+}
+function drawPinLabels() {
+  if (!pinsOn() || PRINT) return;
+  const W = cv.width / dpr, H = cv.height / dpr, S = view.s;
+  cx.save(); cx.font = '700 12px -apple-system,system-ui,Segoe UI,sans-serif';
+  const meas = (t, fs) => cx.measureText(t).width * fs / 12;
+  const key = pinsKey(W, H, 0);
+  if (pinCache.key !== key) {
+    const vis = p => { const x = X(p.x), y = Y(p.y); return x > -400 && x < W + 400 && y > -400 && y < H + 400; };
+    const ids = new Set(sch.parts.map(p => p.id)), texts = [];
+    partText.forEach((r, id) => { if (ids.has(id)) texts.push(r); });
+    pinCache = { key, labs: PINS.schLabels({ parts: sch.parts.filter(vis), wires: sch.wires, KD, pinsOf, rot, X, Y, S, meas, texts }) };
+  }
+  cx.restore();
+  PINS.paint(cx, pinCache.labs, { fill: '#ffd166', halo: '#080b0e' });
+}
+
+/* Schalter in der rechten Leiste */
+function pinsCardHtml() {
+  if (!PINS) return '';
+  const on = pinsOn();
+  return `<div class="card"><button class="btn ${on ? 'pri' : ''}" data-a="pins" role="switch" aria-checked="${on}" title="${PINS.TIP}" style="width:100%">📌 Pins anzeigen: ${on ? 'an' : 'aus'}</button><p class="hint2" style="margin-bottom:0">${PINS.TIP}. Zum Beispiel B, C, E am Transistor oder A1, A2, COM, NO, NC am Relais.</p></div>`;
+}
+function togglePins() { PINS.set(!pinsOn()); pinCache.key = ''; refreshUI(); draw(); }
 /* ============ Wasser-Ansicht: Strom als Wasser im Rohr, Spannung als Druck ============ */
 let water = false; try { water = localStorage.getItem('lm4.water') === '1'; } catch (e) {}
 const waterOn = () => water && showSim();
@@ -1159,6 +1196,7 @@ function drawCircuit() {
   });
   ends.forEach((n, k) => { if (n >= 3) { const [x, y] = k.split(',').map(Number); const rr = Math.max(4.5, view.s * 0.25); cx.beginPath(); cx.arc(X(x), Y(y), rr + 1.5, 0, 7); cx.fillStyle = PRINT ? '#fff' : '#080b0e'; cx.fill(); cx.beginPath(); cx.arc(X(x), Y(y), rr, 0, 7); cx.fillStyle = PRINT ? '#000' : keyV(k); cx.fill(); if (!PRINT) { cx.lineWidth = 1.5; cx.strokeStyle = 'rgba(255,255,255,.85)'; cx.stroke(); } } });
   sch.parts.forEach(p => drawPart(p, sel && sel.t === 'part' && sel.id === p.id));
+  drawPinLabels();
   if (waterOn() && !PRINT) waterBadges();
   drawMeterMarks();
   sliderHits = [];
@@ -1686,6 +1724,7 @@ function refreshUI() {
   $('#bUndo').disabled = simMode || hi <= 0; $('#bRedo').disabled = simMode || hi >= hist.length - 1;
   $('#title').textContent = sch.name;
   let h = incidentCardHtml() + (window.LAB_EXTRA_CARD ? window.LAB_EXTRA_CARD() : '') + taskCardHtml() + diceCardHtml() + meterCardHtml();
+  if (!(LAB === 'haus' && window.HAUS_SIDE)) h += pinsCardHtml();
   if (simMode) {
     h += `<div class="card"><h4>Simulation</h4>
     <div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Stopp' : '▶ Start'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>
@@ -1743,6 +1782,7 @@ $('#side').addEventListener('click', e => {
   if (b.dataset.win) { graphWin = parseFloat(b.dataset.win); scopeBuf = sch.scopes.map(() => ({ t: [], v: [], i: [] })); lastSample = -1; refreshUI(); return; }
   const a = b.dataset.a;
   if (window.LAB_EXTRA_CLICK && window.LAB_EXTRA_CLICK(a, b)) return;
+  if (a === 'pins') { togglePins(); return; }
   if (a === 'why') { if (incident) { incident.open = true; refreshUI(); } return; }
   if (a === 'whyx') { incident = null; refreshUI(); return; }
   if (a === 'mmD') { meterDial(b.dataset.v); refreshUI(); draw(); return; }
@@ -2214,18 +2254,19 @@ function netsOfDoc(d) {
   d.parts.forEach(p => pinsOf(p).forEach(([x, y], i) => { const nd = c.nodeOfKey(gk(x, y)); if (nd < 0) return; if (!m.has(nd)) m.set(nd, []); m.get(nd).push(p.id + '.' + i); }));
   return { c, list: [...m.values()].filter(a => a.length > 1) };
 }
-function schNetCheck(makeFn) {
+function schNetCheck(makeFn, opt) {   // opt.sep = Anschlüsse, die zusammen getrennt von der übrigen Masse liegen dürfen; opt.optional = Teile-Nummern, die fehlen dürfen
   const sol = buildExample({ name: 'Lösung', make: makeFn }), S = netsOfDoc(sol), M = netsOfDoc({ parts: sch.parts, wires: sch.wires });
   const nm = key => { const [id, pin] = key.split('.'), p = sol.parts.find(q => q.id === +id); return p ? (p.l || KINDS[p.k].name) + ' Pin ' + (+pin + 1) : key; }, lt = ks => ks.slice(0, 3).map(nm).join(', ') + (ks.length > 3 ? ' …' : '');
   const where = new Map(); M.list.forEach((ks, ni) => ks.forEach(k => where.set(k, ni)));
   const out = [], hit = new Map();
   S.list.forEach((ks, si) => {
-    const groups = new Map(); ks.forEach(k => { const g = where.has(k) ? where.get(k) : 'x' + k; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(k); });
-    if (groups.size <= 1) out.push(RES(true, 'Verbunden: ' + lt(ks))); else { const gs = [...groups.values()]; out.push(RES(false, 'Es fehlt eine Verbindung: ' + lt(gs[0]) + ' ist nicht mit ' + lt(gs[1]) + ' verbunden.')); }
+    const groups = new Map(); ks.forEach(k => { if (opt && opt.optional && opt.optional.includes(+k.split('.')[0]) && !sch.parts.some(q => q.id === +k.split('.')[0])) return; const g = where.has(k) ? where.get(k) : 'x' + k; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(k); });
+    const sepG = groups.size === 2 && ((opt && opt.sep) || []).map(sp => [...groups.values()].find(g => g.length === sp.length && sp.every(k => g.includes(k)))).find(Boolean);
+    if (groups.size <= 1) out.push(RES(true, 'Verbunden: ' + lt(ks))); else if (sepG) out.push(RES(true, 'Getrennter Stromkreis: ' + lt(sepG) + ' liegen zusammen und haben keine Verbindung zur übrigen Masse. Das ist ebenfalls richtig.')); else { const gs = [...groups.values()]; out.push(RES(false, 'Es fehlt eine Verbindung: ' + lt(gs[0]) + ' ist nicht mit ' + lt(gs[1]) + ' verbunden.')); }
     groups.forEach((_, g) => { if (typeof g === 'number') { if (!hit.has(g)) hit.set(g, new Set()); hit.get(g).add(si); } });
   });
   hit.forEach(sis => { if (sis.size > 1) { const a = [...sis]; out.push(RES(false, 'Kurzschluss: ' + lt(S.list[a[0]]) + ' ist mit ' + lt(S.list[a[1]]) + ' verbunden. Das gehört nicht zusammen.')); } });
-  const miss = sol.parts.filter(p => !sch.parts.some(q => q.id === p.id)).map(p => p.l || KINDS[p.k].name); if (miss.length) out.unshift(RES(false, 'Bauteil fehlt: ' + miss.join(', ') + '. Lass die vorgegebenen Bauteile stehen.'));
+  const miss = sol.parts.filter(p => !sch.parts.some(q => q.id === p.id) && !((opt && opt.optional) || []).includes(p.id)).map(p => p.l || KINDS[p.k].name); if (miss.length) out.unshift(RES(false, 'Bauteil fehlt: ' + miss.join(', ') + '. Lass die vorgegebenen Bauteile stehen.'));
   return out;
 }
 const exLike = part => { const e = EXAMPLES.find(x => x.name.includes(part)); return e ? e.make : null; };
@@ -3167,8 +3208,8 @@ const SCH_TASKS = [
   { id: 's14', lab: 'sch', cat: 'Aufbau nach Plan', title: 'Relais mit Transistor verdrahten', level: 3, sol: 'Relais mit Transistor und Freilaufdiode',
     start: () => wiresOff(exLike('Relais mit Transistor und Freilaufdiode'))(),
     text: 'Der Transistor soll die Relaisspule schalten, die Freilaufdiode schützt ihn. Verdrahte Steuer- und Laststromkreis wie im Beispiel „Relais mit Transistor und Freilaufdiode“.',
-    hint: 'Die Diode liegt in Sperrrichtung parallel zur Spule. Die beiden Stromkreise (Steuerung und Last) sind nur über die Spule und den Relaiskontakt gekoppelt.',
-    check() { return schNetCheck(exLike('Relais mit Transistor und Freilaufdiode')); } },
+    hint: 'Die Diode liegt in Sperrrichtung parallel zur Spule. Die beiden Stromkreise (Steuerung und Last) sind nur über die Spule und den Relaiskontakt gekoppelt. Laststromkreis: Plus der zweiten Batterie an die Lampe, die Lampe an den Schließer, der Relaiskontakt Mitte an Minus der zweiten Batterie. Dieses Minus darf an einem Masse-Symbol des Steuerkreises liegen oder für sich bleiben, beides ist richtig. Die beiden Pluspole dürfen nicht verbunden werden.',
+    check() { return schNetCheck(exLike('Relais mit Transistor und Freilaufdiode'), { sep: [['5.2', '8.1']], optional: [11] }); } },   // Relaiskontakt Mitte (K1 Pin 3) und Minus V2 dürfen für sich liegen; das dritte Masse-Symbol neben V2 darf fehlen
   { id: 's15', lab: 'sch', cat: 'Aufbau nach Plan', title: 'Komparator mit Operationsverstärker', level: 3, sol: 'Operationsverstärker als Komparator',
     start: () => wiresOff(exLike('Operationsverstärker als Komparator'))(),
     text: 'Verdrahte den Operationsverstärker als Komparator nach dem Beispiel: Poti und Referenzspannung an die beiden Eingänge, LED am Ausgang.',
@@ -3186,9 +3227,9 @@ const SCH_TASKS = [
     check() { return schNetCheck(exLike('Ampel mit 555-Takt')); } },
   { id: 's18', lab: 'sch', cat: 'Projekt: Dämmerungsschalter', title: 'Dämmerungsschalter mit Relais verdrahten', level: 3, sol: 'Dämmerungsschalter mit Relais und Lampe', loch: 'l16',
     start: () => wiresOff(exLike('Dämmerungsschalter mit Relais'))(),
-    text: 'Projekt Dämmerungsschalter, Teil 1 (Plan): Ein Fotowiderstand und ein Widerstand steuern einen Transistor, der ein Relais schaltet. Das Relais schaltet im zweiten Stromkreis die Lampe. Verdrahte den Stromlaufplan. Danach baust du die Schaltung im LochLab auf.',
-    hint: 'Steuerkreis: 12 V Plus über 47 kΩ an den Mittelpunkt, der Fotowiderstand vom Mittelpunkt nach Masse, der Mittelpunkt an die Basis. Transistor: Emitter an Masse, Kollektor an Relaisspule, die andere Spulenseite an Plus, Freilaufdiode parallel zur Spule (Ring zur Plusseite). Laststromkreis: Relaiskontakt (Mitte und Schließer) in Reihe mit Lampe und zweiter Batterie.',
-    check() { return schNetCheck(exLike('Dämmerungsschalter mit Relais')); } },
+    text: 'Projekt Dämmerungsschalter, Teil 1 (Plan): Ein Fotowiderstand und ein Widerstand steuern einen Transistor, der ein Relais schaltet. Das Relais schaltet im zweiten Stromkreis die Lampe. Der zweite Stromkreis ist vom Steuerkreis getrennt: Sein Minus darf mit der Masse des Steuerkreises verbunden sein oder für sich bleiben, beides wird als richtig gewertet. Verdrahte den Stromlaufplan. Danach baust du die Schaltung im LochLab auf.',
+    hint: 'Steuerkreis: 12 V Plus über 47 kΩ an den Mittelpunkt, der Fotowiderstand vom Mittelpunkt nach Masse, der Mittelpunkt an die Basis. Transistor: Emitter an Masse, Kollektor an Relaisspule, die andere Spulenseite an Plus, Freilaufdiode parallel zur Spule (Ring zur Plusseite). Laststromkreis: Plus der zweiten Batterie an die Lampe, die Lampe an den Schließer des Relais, der Relaiskontakt Mitte an Minus der zweiten Batterie. Minus der zweiten Batterie darf an einem Masse-Symbol des Steuerkreises liegen oder für sich bleiben, beides ist richtig. Die beiden Pluspole dürfen nicht verbunden werden.',
+    check() { return schNetCheck(exLike('Dämmerungsschalter mit Relais'), { sep: [['5.2', '8.1']], optional: [12] }); } },   // Mitte des Relaiskontakts (K1 Pin 3) und Minus V2 dürfen für sich liegen; das vierte Masse-Symbol neben V2 darf fehlen
   { id: 's19', lab: 'sch', cat: 'Projekt: Netzteil', title: 'Netzteil 5 V verdrahten', level: 3, sol: 'Netzteil 5 V: Brücke, Elko und Spannungsregler', loch: 'l17',
     start: () => wiresOff(exLike('Netzteil 5 V: Brücke'))(),
     text: 'Projekt Netzteil, Teil 1 (Plan): Aus 12 V Wechselspannung soll eine stabile Gleichspannung von 5 V werden: Vier Dioden als Brücke, ein Elko zum Glätten, der Spannungsregler 7805 und ein Elko am Ausgang. Eine LED mit Vorwiderstand zeigt den Betrieb. Verdrahte den Stromlaufplan. Danach baust du die Schaltung im LochLab auf.',
@@ -3357,6 +3398,7 @@ function chkPE() {
   t.text += ' Vergiss den Schutzleiter (PE, grün-gelb) von den Geräten zum PE des Netzes nicht.';
 });
 
+window.TaskTestWith = (id, make) => { const t = labTasks().find(x => x.id === id); loadCircuit(Object.assign(buildExample({ name: t.title, make }), { task: id })); taskAns[id] = {}; const L = t.check(); return { pct: Math.round(100 * L.filter(l => l.ok).length / L.length), ok: L.every(l => l.ok), lines: L.map(l => (l.ok ? '+ ' : '- ') + l.text) }; };   // Testhilfe: eine Aufgabe gegen eine selbst gebaute Schaltung prüfen (Beispiel: node-/Browser-Test der Varianten)
 window.TaskTest = only => labTasks().filter(t => !only || only.includes(t.id)).map(t => {
   const out = { id: t.id };
   try {

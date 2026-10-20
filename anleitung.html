@@ -17,10 +17,10 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 15.136</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 16.137</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen.html">Lernen (Arduino, Raspberry Pi)</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 
-<div class="box"><b>Tonfunk Lab</b> sind fünfzehn Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
+<div class="box"><b>Tonfunk Lab</b> sind sechzehn Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
 <ul><li><b>LochLab:</b> Schaltungen auf der Lochrasterplatine planen und ausprobieren.</li>
 <li><b>SchaltLab:</b> Stromlaufpläne zeichnen und simulieren (Spannungen, Ströme, Graphen).</li>
 <li><b>SimLab:</b> Experimente und Hausinstallation (Wechselschaltung, Schütz, FI, Drehstrom, mit Schutzleiter PE), mit Aufgaben und Fehlersuche.</li>
@@ -34,10 +34,11 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>Antriebs-Lab:</b> Fünf animierte Prüfstände: Gleichstrommotor mit H-Brücke und PWM, Servo mit Lageregelung, Schrittmotor, Drehstrommotor mit Stern-Dreieck-Anlauf und Frequenzumrichter sowie Getriebe. Mit Messgeräten, Kennlinien, Ablaufprogramm und Rechner.</li>
 <li><b>Sensorik-Lab:</b> Sieben animierte Prüfstände: Temperatur (NTC, Pt100, Thermoelement), Licht und Näherung, Kraft und Druck mit DMS-Brücke, Beschleunigung und Neigung, Normsignale 4…20 mA, digitale Sensoren per I²C sowie ADU und Abtastung. Mit Messgeräten, Kennlinien, Ablaufprogramm und Rechner.</li>
 <li><b>Datenblatt-Lab:</b> Datenblätter lesen und verstehen: 16 Übungsdatenblätter von der Diode bis zum I²C-Baustein mit Seitenansicht, Kennlinien zum Ablesen, Fachenglisch-Karteikarten, Bauteilwahl und Rechner für LED-Vorwiderstand, Thermik, Derating und Toleranzen.</li>
+<li><b>Regelungstechnik-Lab:</b> Regelkreise untersuchen: sieben animierte Prüfstände (Füllstand, Durchfluss, Raumtemperatur, Thermostat, Drehzahl, Position und ein Streckenbaukasten). Sprungantworten aufnehmen, Regler (P, I, D, Zweipunkt) einstellen nach Ziegler-Nichols, Chien-Hrones-Reswick und T-Summe, Stabilität prüfen. Mit Messschreiber, Ablaufprogramm und Rechner. Alle Anlagen sind Übungsanlagen mit fiktiven Werten.</li>
 <li><b>Arduino-Lab:</b> Arduino-Programme schreiben, den Arduino im Plan verdrahten und alles gemeinsam simulieren.</li>
 <li><b>Pi-Lab:</b> Python-Programme für den Raspberry Pi schreiben, den Pi mit LEDs, Tastern und Sensoren verdrahten und simulieren (3,3-V-Pins!).</li></ul>
 <p>Dazu gibt es auf der Startseite die Zeile <b>Projekte</b> (kein weiteres Lab): fünf <a href="lernen-vb.html">Verbundprojekte</a>, in denen alle Labs zusammen ein Gerät fertigstellen.</p>
-<p>Zum Lernen gibt es die <a href="lernen.html">Lernhefte</a> (Löten, Elektronik, Installation, Digitaltechnik, SPS, Leiterplatten, Antriebe, Sensorik, Datenblätter, Verbundprojekte, Arduino und Raspberry Pi) mit Arbeitsblättern. Auf der Startseite kannst du Karten ausblenden und umsortieren („Startseite anpassen“, gilt nur auf deinem Gerät). Neu: der <b>Trainer</b> führt dich in jedem Lab durch die ersten Schritte (Menü: Trainer), und die <b>Kampagne</b> verbindet alle Labs zu einem Lernpfad.</p></div>
+<p>Zum Lernen gibt es die <a href="lernen.html">Lernhefte</a> (Löten, Elektronik, Installation, Digitaltechnik, SPS, Leiterplatten, Antriebe, Sensorik, Datenblätter, Regelungstechnik, Verbundprojekte, Arduino und Raspberry Pi) mit Arbeitsblättern. Auf der Startseite kannst du Karten ausblenden und umsortieren („Startseite anpassen“, gilt nur auf deinem Gerät). Neu: der <b>Trainer</b> führt dich in jedem Lab durch die ersten Schritte (Menü: Trainer), und die <b>Kampagne</b> verbindet alle Labs zu einem Lernpfad.</p></div>
 
 <h2>1. Anmelden und installieren</h2>
 <ol><li>Seite öffnen: <b>tonikaczor.github.io/lochlab</b>.</li>
@@ -123,7 +124,19 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>Aufgaben:</b> 34 Aufgaben mit automatischer Prüfung (Zahlenantwort, Auswahl, Zeilen markieren, Kennlinie ablesen, Rechner). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-ds.html">Datenblatt-Lab: Datenblätter lesen und verstehen</a> mit Arbeitsblatt zu allen Aufgaben.</p>
 
-<h2>5e. Verbundprojekte: alle Labs zusammen</h2>
+<h2>5e. Regelungstechnik-Lab: Regelkreise untersuchen</h2>
+<ul><li><b>Sieben Bereiche</b> oben: <span class="k">Prüfstand</span> (Anlage als Bild mit Messschreiber, Bedienpult und Messgeräten), <span class="k">Strecke messen</span> (Sprungantwort und Schwingversuch), <span class="k">Regler einstellen</span> (Einstellhilfe, Kenngrößen, Stabilität), <span class="k">Ablauf</span>, <span class="k">Rechnen</span>, <span class="k">Aufgaben</span> und <span class="k">Lernen</span>.</li>
+<li><b>Sieben Prüfstände</b> (Übungsanlagen mit fiktiven Werten): Füllstand (Tank, Pumpe, Entnahmeventil), Durchfluss (Regelventil), Raumtemperatur (Heizung mit Totzeit, Fenster), Thermostat (Bügeleisen, Kühlschrank und Klimagerät mit Zweipunkt- und Dreipunktregler), Drehzahl (Motor mit Tachogenerator, Lastsprung), Position (Spindelachse mit Haftreibung und Lose) und ein Streckenbaukasten. Mit ▶ unten startest du, Regler und Schalter verstellst du im Bedienpult oder direkt im Bild. Der Zeitraffer reicht von ×0,5 bis ×20; langsame Anlagen laufen von sich aus schneller, die Anzeige sagt dann „Prozesszeit“.</li>
+<li><b>Hand und Automatik:</b> Im Handbetrieb stellst du die Stellgröße selbst, das Umschalten auf Automatik ist stoßfrei. Reglerart, Wirkungssinn, Kp, Tn, Tv, Anti-Windup, Abtastzeit und Stellgrößenbegrenzung stellst du im Bedienpult ein.</li>
+<li><b>Strecke messen:</b> Ein Assistent führt dich durch die Sprungantwort (Arbeitspunkt, Sprung, Aufzeichnung, Wendetangente mit Tu und Tg); danach vergleicht das Lab deine Werte mit der Berechnung. Ein zweiter Assistent steigert Kp bis zur Dauerschwingung (Kkrit und Tkrit).</li>
+<li><b>Regler einstellen:</b> Die Einstellhilfe rechnet nach Ziegler-Nichols, Chien-Hrones-Reswick oder T-Summe, zeigt den Rechenweg und warnt, wenn eine Regel für die Strecke nicht gilt. Die Kenngrößen-Tafel zeigt Anregelzeit, Ausregelzeit, Überschwingweite und bleibende Abweichung. Bode-Diagramm und Reserven sind eine eingeklappte Vertiefung.</li>
+<li><b>Fehler mit Folgen:</b> Überlauf, Dauerschwingung, Windup, Stromgrenze, Anschlag und zu kleine Heizleistung erzeugen Meldungen mit Funken und Ton. Der Fehler-Würfel würfelt eine Störung aus, die du finden und beheben sollst.</li>
+<li><b>Ablauf:</b> Eine Tabelle „nach X Zeit setze Steuerwert = Wert“, zum Beispiel für einen Sollwertsprung, einen Lastsprung oder das Umschalten von Hand auf Automatik. Das Ergebnis erscheint als Diagramm, ein früherer Lauf lässt sich zum Vergleichen einblenden (zum Beispiel P gegen PI).</li>
+<li><b>Rechnen:</b> Einstellregeln, Kenngrößen aus einer Sprungantwort ablesen, Stabilität, Kreisverstärkung und bleibende Abweichung, Reglerausgang und SPS-Skalierung mit Rechenweg, dazu ein Übungsgenerator.</li>
+<li><b>Aufgaben:</b> 30 Aufgaben mit automatischer Prüfung (Grundlagen, Strecke messen, Regler verstehen, Einstellen, Stabilität, Führung und Störung, Zweipunkt, Praxis, SPS und Technik, Fehlersuche, Prüfungsstil). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
+<p class="mute">Weiter im Lernheft <a href="lernen-reg.html">Regelungstechnik-Lab: Regelkreis, Regler und Einstellen</a> mit Arbeitsblatt zu Regelkreis, Strecke, Regler, Stabilität, Einstellregeln, Zweipunktregler, Praxis und SPS.</p>
+
+<h2>5f. Verbundprojekte: alle Labs zusammen</h2>
 <ul><li><b>Was ist das?</b> Auf der Startseite findest du unter den Lab-Karten die Zeile <span class="k">Projekte</span>. Fünf Projekte (Garagentor mit Funköffner, Ampelanlage, Digitale Uhr mit Wecker, Gartenbewässerung, Förder- und Sortieranlage) bestehen aus acht bis zehn Stationen. Jede Station gehört zu einem Lab, und jede gibt ihr Ergebnis an die nächste weiter. Am Ende steht ein Gesamttest.</li>
 <li><b>Starten:</b> Projekt wählen, Namen oder Teamnamen und Stufe eingeben (1 Einsteiger, 2 Standard, 3 Profi). Daraus entsteht dein Lastenheft mit deinen Zahlen. Gleicher Name und gleiche Stufe geben dieselben Zahlen.</li>
 <li><b>Station öffnen:</b> In der Phasenleiste die offene Station antippen, den Auftrag lesen und „Im Lab öffnen“ wählen. Im Lab erscheint oben eine <b>Leiste</b> mit Auftrag, <span class="k">Prüfen</span>, <span class="k">Übergeben</span>, <span class="k">Tipp</span> und <span class="k">Live-Hinweise</span>. Die Daten der Vorstationen sind schon geladen. Ohne Projekt bleibt die Leiste unsichtbar.</li>
