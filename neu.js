@@ -2,6 +2,15 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v18.139', items: [
+      ['Neues EMV-Lab', 'Das 18. Lab. EMV heißt elektromagnetische Verträglichkeit: Geräte dürfen sich nicht gegenseitig stören. An neun animierten Prüfständen siehst du, woher Störungen kommen, wie sie wandern und was dagegen hilft. Die Aufbauten sind Übungsaufbauten mit Übungswerten.', 'Startseite ▸ EMV-Lab'],
+      ['Kopplung, Filter, Schirmung', 'Verdrillen, Abstand, Schirm, Netzfilter, Schlitz im Gehäuse und Ferrit probierst du aus. Ampel und Marge in dB zeigen sofort, ob der Grenzwert eingehalten wird. Mit Merken, Vorher, Nachher und Wischer siehst du, was eine Maßnahme wirklich bringt.', 'EMV-Lab ▸ Prüfstand'],
+      ['Spektrum, Layout, ESD und Burst', 'Lies Oberwellen im Spektrum ab, finde Layoutfehler auf zwölf Platinen (Schlitz, Abblock-C, Schleifenfläche) und löse ESD, Burst und Surge aus. Dazu Tastkopf und Vorprüfung vor dem Labortest.', 'EMV-Lab ▸ Tabs Spektrum, Layout-Fälle'],
+      ['Rechner, Aufgaben und Lernheft', '32 Aufgaben mit automatischer Prüfung und Tipps in drei Stufen, 26 Beispiele, Rechner mit Rechenweg, Lernheft mit Arbeitsblatt, Trainer, Kampagne „Die Störung“ und 14 neue Abzeichen.', 'EMV-Lab ▸ Rechnen, Aufgaben, Lernen'],
+      ['Übungsmaterial zur Praxisprüfung W-2024', 'Neu im Prüfungs-Lab: ein Erklärheft zur Praxisschaltung W-2024 (Aufbau, Bauteile, Wirkungsweise, Fehlersuche), sieben Arbeitsblätter zu den einzelnen Teilen und eine Probeprüfung zum Ausdrucken.', 'Prüfungs-Lab ▸ Praxisschaltung W-2024 verstehen, Lernhefte ▸ Praxisschaltung W-2024'],
+      ['Lösungen für Ausbilder', 'Die Lösungsblätter liegen jetzt verschlüsselt im Lab und lassen sich nur mit dem Ausbilder-Passwort öffnen. Der Zugang erscheint im Ausbilder-Bereich.', 'Ausbilder-Bereich ▸ Lösungen für Ausbilder'],
+      ['Neue Reihenfolge der Labs', 'Auf der Startseite und im Lernpfad stehen die Labs jetzt so: LochLab bis Regelungstechnik, Thermik, EMV, dann Arduino und Pi. Das Datenblatt-Lab steht an vorletzter, das Prüfungs-Lab an letzter Stelle.', 'Startseite, Lernpfad'],
+    ] },
     { v: 'v17.138', items: [
       ['Neues Thermik-Lab', 'Das 17. Lab. Du lernst, wo im Gerät die Wärme entsteht und wie man sie abführt. An fünf animierten Prüfständen siehst du, wie heiß Linearregler, Transistor, MOSFET, Diode, Widerstand und LED werden. Die Bauteile sind Übungsbauteile mit Übungswerten.', 'Startseite ▸ Thermik-Lab'],
       ['Verlustleistung und Wärmewiderstandskette', 'Das Lab zeigt, wie aus der Verlustleistung die Temperaturen werden: Sperrschicht, Gehäuse, Kühlkörper und Umgebung hängen an einer Kette von Wärmewiderständen. Im Ersatzschaltbild und im Balkenbild siehst du, welches Glied wie viel Temperaturunterschied verbraucht.', 'Thermik-Lab ▸ Prüfstand ▸ Ansicht Ersatzschaltbild, Balken'],

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1b1f24">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<link rel="icon" href="icon-192.png">
+<title>Lösungen für Ausbilder</title>
+<style>
+:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--danger:#ff5c5c;--line:#38424d;--ok:#4cd964;--warn:#ffb340;color-scheme:dark}
+@media(prefers-color-scheme:light){:root{--bg:#f3f6f9;--panel:#fff;--panel2:#e8eef4;--fg:#1d2329;--mute:#5b6773;--accent:#0a6cdc;--danger:#c62828;--line:#cfd8e0;--ok:#1a8f3a;--warn:#a85d00;color-scheme:light}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.4 -apple-system,system-ui,"Segoe UI",sans-serif}
+header{display:flex;align-items:center;gap:10px;padding:calc(6px + env(safe-area-inset-top)) 12px 6px;background:var(--panel);border-bottom:1px solid var(--line);min-height:56px;position:sticky;top:0;z-index:5}
+header img{height:34px}
+header h1{flex:1;min-width:0;margin:0;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
+button[disabled]{opacity:.45;cursor:default}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;min-width:44px;padding:0 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600;text-decoration:none;color:var(--fg)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.s{min-height:40px;padding:0 12px;font-size:14px}
+main{max-width:860px;margin:0 auto;padding:16px 14px calc(40px + env(safe-area-inset-bottom))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
+.card h2{margin:0 0 6px;font-size:18px}
+.mute{color:var(--mute);font-size:14px}
+input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:0 12px;min-height:44px}
+#pwRow{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+#pwRow input{flex:1;min-width:200px}
+#msg{min-height:22px;margin-top:10px;color:var(--danger);font-size:14px}
+#msg.info{color:var(--mute)}
+.gh{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);padding:16px 4px 4px;font-weight:700}
+.row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);min-height:56px}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.row .t small{color:var(--mute);font-size:12.5px}
+.row .a{display:flex;gap:6px;flex:none}
+#viewer{position:fixed;inset:0;z-index:100;background:var(--bg);display:none;flex-direction:column}
+#viewer.on{display:flex}
+#viewer .bar{display:flex;align-items:center;gap:8px;padding:calc(6px + env(safe-area-inset-top)) 10px 6px;background:var(--panel);border-bottom:1px solid var(--line)}
+#viewer .bar b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+#viewer iframe{flex:1;border:0;background:#fff;width:100%}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:9px 16px;border-radius:99px;z-index:300;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:92vw;text-align:center}
+#toast.show{opacity:1}
+[hidden]{display:none!important}
+@media(max-width:560px){.row{flex-wrap:wrap}.row .a{width:100%}.row .a .btn{flex:1}header .btn span{display:none}}
+#gate{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+#gate form{width:100%;max-width:340px;text-align:center}
+#gate img{width:96px;height:auto;margin-bottom:10px}
+#gate h1{margin:0 0 4px;font-size:22px}
+#gate p{margin:0 0 18px;color:var(--mute)}
+#gate input{text-align:center;margin-bottom:12px}
+#gate .btn{width:100%}
+#gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
+</style>
+</head>
+<body>
+<!--GATE-->
+<div id="gate"><form id="gateForm" autocomplete="on">
+  <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
+  <h1>Lösungen für Ausbilder</h1>
+  <p id="gateHint">Bitte anmelden</p>
+  <input id="gateName" type="text" placeholder="Vor- und Nachname" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" aria-label="Name">
+  <input id="gatePw" type="password" placeholder="Passwort" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Passwort">
+  <button class="btn pri" type="submit">Öffnen</button>
+  <div id="gateErr" role="alert"></div>
+</form></div>
+<script>
+(function(){
+  var H='a969a208b4df4a7c43c54c888590813046cf4c30f07efa9bb162c4aff6aabfba';
+  var g=document.getElementById('gate');
+  var pwOk=false,name='';
+  try{pwOk=localStorage.getItem('lm4.gate')===H;name=localStorage.getItem('lm4.name')||'';}catch(e){}
+  if(pwOk&&name){g.remove();return;}
+  var f=document.getElementById('gateForm'),er=document.getElementById('gateErr'),pw=document.getElementById('gatePw'),nm=document.getElementById('gateName');
+  nm.value=name;
+  if(pwOk){pw.style.display='none';document.getElementById('gateHint').textContent='Bitte Namen eintragen';}
+  async function sha(t){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
+  f.addEventListener('submit',async function(ev){
+    ev.preventDefault();
+    var n=nm.value.trim().replace(/\s+/g,' ');
+    if(n.length<3||n.indexOf(' ')<0){er.textContent='Bitte Vor- und Nachnamen eintragen.';nm.focus();return;}
+    if(!pwOk){
+      if(!(window.crypto&&crypto.subtle)){er.textContent='Bitte die Seite über https öffnen.';return;}
+      if(await sha(pw.value.trim())!==H){er.textContent='Passwort falsch.';pw.select();return;}
+      try{localStorage.setItem('lm4.gate',H);}catch(_){}
+    }
+    try{localStorage.setItem('lm4.name',n);}catch(_){}
+    g.remove();
+  });
+})();
+</script>
+<!--/GATE-->
+<header>
+  <a href="index.html" class="btn s" aria-label="Startseite" title="Startseite">⌂</a>
+  <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
+  <h1>Lösungen für Ausbilder</h1>
+  <button class="btn s" id="bLock" hidden aria-label="Alle sperren">🔒 <span>Alle sperren</span></button>
+</header>
+<main>
+  <section class="card" id="login">
+    <h2>Ausbilder-Passwort</h2>
+    <p class="mute">Die Lösungsblätter liegen verschlüsselt auf dem Server. Sie werden erst hier im Browser mit dem Ausbilder-Passwort entschlüsselt. Das Passwort bleibt nur im Arbeitsspeicher dieser Seite und wird nach 15 Minuten ohne Eingabe vergessen.</p>
+    <form id="pwForm" autocomplete="off">
+      <div id="pwRow">
+        <input id="pw" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Passwort" aria-label="Ausbilder-Passwort">
+        <button class="btn pri" id="bGo" type="submit">Entschlüsseln</button>
+      </div>
+    </form>
+    <div id="msg" role="alert"></div>
+  </section>
+  <section id="liste" hidden>
+    <div class="card">
+      <input id="q" type="search" placeholder="Suchen (Lab, Titel)" aria-label="Suchen" autocomplete="off">
+      <p class="mute" id="count" style="margin:8px 0 0"></p>
+    </div>
+    <div class="card" id="items"></div>
+  </section>
+</main>
+<div id="viewer" role="dialog" aria-modal="true" aria-label="Lösung ansehen">
+  <div class="bar"><b id="vTitle"></b><button class="btn s" id="vPrint">Drucken</button><button class="btn s" id="vTab">Neuer Tab</button><button class="btn s" id="vClose">Schließen</button></div>
+  <iframe id="vFrame" title="Lösung" sandbox="allow-same-origin allow-modals allow-popups allow-popups-to-escape-sandbox"></iframe>
+</div>
+<div id="toast" role="status"></div>
+<script src="loesungen-crypto.js"></script>
+<script>
+(function () {
+  'use strict';
+  var C = window.LoesCrypto, IDLE_MS = 15 * 60 * 1000;
+  var base = null, index = null, idxBytes = null, timer = null, lastReset = 0, urls = [], wins = [], viewerUrl = null;
+  var $ = function (s) { return document.querySelector(s); };
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function toast(t) { var e = $('#toast'); e.textContent = t; e.classList.add('show'); setTimeout(function () { e.classList.remove('show'); }, 2200); }
+  function msg(t, info) { var m = $('#msg'); m.textContent = t || ''; m.className = info ? 'info' : ''; }
+  function kb(n) { return n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  async function fetchBytes(u) {
+    var r = await fetch(u, { cache: 'no-cache', credentials: 'omit' });
+    if (!r.ok) { var e = new Error('HTTP'); e.status = r.status; throw e; }
+    return new Uint8Array(await r.arrayBuffer());
+  }
+
+  /* ----- Sperren und Inaktivität ----- */
+  function lock(grund) {
+    base = null; index = null;
+    if (timer) { clearTimeout(timer); timer = null; }
+    closeViewer();
+    wins.forEach(function (w) { try { w.close(); } catch (e) {} }); wins = [];
+    urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} }); urls = [];
+    $('#items').textContent = ''; $('#q').value = ''; $('#pw').value = '';
+    $('#liste').hidden = true; $('#bLock').hidden = true; $('#login').hidden = false;
+    if (grund) msg(grund, true); else msg('');
+  }
+  function resetIdle() {
+    if (!base) return;
+    var now = Date.now(); if (timer && now - lastReset < 1000) return;
+    lastReset = now; if (timer) clearTimeout(timer);
+    timer = setTimeout(function () { lock('Aus Sicherheitsgründen gesperrt (15 Minuten ohne Eingabe).'); }, IDLE_MS);
+  }
+  ['pointerdown', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach(function (ev) { window.addEventListener(ev, resetIdle, { passive: true, capture: true }); });
+  window.addEventListener('pagehide', function () { base = null; });
+
+  /* ----- Start: gibt es überhaupt verschlüsselte Lösungen? ----- */
+  async function init() {
+    $('#pwForm').hidden = true; msg('Prüfe Lösungsdaten …', true);
+    try {
+      idxBytes = await fetchBytes('loesungen/index.enc');
+      if (idxBytes[0] !== C.VERSION) throw new Error('FORMAT');
+      $('#pwForm').hidden = false; msg('');
+    } catch (e) {
+      idxBytes = null;
+      msg(e && e.status === 404 ? 'Noch keine Lösungen verschlüsselt.' : 'Die Lösungsdaten sind gerade nicht erreichbar (offline?). Bitte später erneut versuchen.', true);
+    }
+  }
+  $('#pwForm').addEventListener('submit', async function (ev) {
+    ev.preventDefault();
+    var pwEl = $('#pw'), pw = pwEl.value;
+    if (!pw || !idxBytes) return;
+    var go = $('#bGo'); go.disabled = true; msg('Schlüssel wird berechnet …', true);
+    try {
+      var b = await C.importPw(pw);
+      pwEl.value = ''; pw = '';
+      var idx = await C.decryptIndex(b, idxBytes);
+      base = b; index = idx;
+      msg(''); $('#login').hidden = true; $('#liste').hidden = false; $('#bLock').hidden = false;
+      lastReset = 0; resetIdle(); render();
+    } catch (e) {
+      base = null; index = null; pwEl.value = '';
+      msg(e && e.message === 'WEBCRYPTO' ? 'Bitte die Seite über https öffnen.' : 'Passwort falsch oder Daten nicht lesbar.');
+      pwEl.focus();
+    } finally { go.disabled = false; }
+  });
+  $('#bLock').addEventListener('click', function () { lock(''); toast('Alle gesperrt'); });
+
+  /* ----- Liste ----- */
+  function render() {
+    var q = $('#q').value.trim().toLowerCase(), box = $('#items'), gr = {}, n = 0;
+    box.textContent = '';
+    (index ? index.eintraege : []).forEach(function (e) {
+      if (q && (e.titel + ' ' + e.gruppe + ' ' + e.name).toLowerCase().indexOf(q) < 0) return;
+      (gr[e.gruppe || 'Weitere'] = gr[e.gruppe || 'Weitere'] || []).push(e); n++;
+    });
+    Object.keys(gr).sort(function (a, b) { return a.localeCompare(b, 'de'); }).forEach(function (g) {
+      var h = document.createElement('div'); h.className = 'gh'; h.textContent = g; box.appendChild(h);
+      gr[g].sort(function (a, b) { return a.typ === b.typ ? a.titel.localeCompare(b.titel, 'de') : (a.typ === 'pdf' ? -1 : 1); }).forEach(function (e) {
+        var r = document.createElement('div'); r.className = 'row';
+        r.innerHTML = '<div class="t"><b>' + esc(e.titel) + '</b><small>' + (e.typ === 'pdf' ? 'PDF' : 'Heft (HTML)') + ' · ' + kb(e.groesse) + '</small></div>' +
+          '<div class="a"><button class="btn s" data-a="open">Öffnen</button><button class="btn s" data-a="save">Speichern</button></div>';
+        r.querySelector('[data-a=open]').addEventListener('click', function () { openEntry(e); });
+        r.querySelector('[data-a=save]').addEventListener('click', function () { saveEntry(e); });
+        box.appendChild(r);
+      });
+    });
+    if (!n) { var p = document.createElement('p'); p.className = 'mute'; p.textContent = q ? 'Nichts gefunden.' : 'Keine Einträge.'; box.appendChild(p); }
+    $('#count').textContent = n + (n === 1 ? ' Lösung' : ' Lösungen');
+  }
+  $('#q').addEventListener('input', render);
+
+  /* ----- Öffnen, Speichern ----- */
+  function blobUrl(plain, mime) { var u = URL.createObjectURL(new Blob([plain], { type: mime })); urls.push(u); return u; }
+  function htmlMitBasis(plain) {
+    var t = new TextDecoder('utf-8').decode(plain), b = '<base href="' + new URL('./', location.href).href + '" target="_blank">';
+    t = /<head[^>]*>/i.test(t) ? t.replace(/<head[^>]*>/i, function (m) { return m + b; }) : b + t;
+    return new TextEncoder().encode(t);
+  }
+  async function laden(e) {
+    if (!base) throw new Error('GESPERRT');
+    return C.openEntry(base, e, fetchBytes);
+  }
+  async function openEntry(e) {
+    var w = null;
+    if (e.typ === 'pdf') { try { w = window.open('', '_blank'); if (w) { w.opener = null; w.document.title = 'Lösung wird entschlüsselt …'; wins.push(w); } } catch (x) { w = null; } }
+    toast('Wird entschlüsselt …');
+    try {
+      var plain = await laden(e);
+      if (e.typ === 'pdf') {
+        var u = blobUrl(plain, 'application/pdf');
+        if (w && !w.closed) w.location.href = u; else { saveBlob(u, e.name); toast('Pop-up blockiert: Datei wird gespeichert'); }
+      } else {
+        viewerUrl = blobUrl(htmlMitBasis(plain), 'text/html;charset=utf-8');
+        $('#vTitle').textContent = e.titel; $('#vFrame').src = viewerUrl; $('#viewer').classList.add('on');
+      }
+    } catch (x) { if (w) { try { w.close(); } catch (y) {} } toast(base ? 'Datei nicht lesbar' : 'Gesperrt'); }
+  }
+  function saveBlob(u, name) { var a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+  async function saveEntry(e) {
+    try {
+      var plain = await laden(e);
+      saveBlob(blobUrl(plain, e.typ === 'pdf' ? 'application/pdf' : 'text/html;charset=utf-8'), e.name);
+    } catch (x) { toast(base ? 'Datei nicht lesbar' : 'Gesperrt'); }
+  }
+  function closeViewer() { $('#viewer').classList.remove('on'); $('#vFrame').removeAttribute('src'); $('#vFrame').src = 'about:blank'; viewerUrl = null; }
+  $('#vClose').addEventListener('click', closeViewer);
+  $('#vPrint').addEventListener('click', function () { try { $('#vFrame').contentWindow.print(); } catch (e) { toast('Drucken nicht möglich'); } });
+  $('#vTab').addEventListener('click', function () { if (viewerUrl) { var w = window.open(viewerUrl, '_blank'); if (w) wins.push(w); } });
+
+  init();
+})();
+</script>
+</body>
+</html>

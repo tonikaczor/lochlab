@@ -1,6 +1,6 @@
 /* Versionsanzeige unten rechts über der Werkzeugleiste, auf der Startseite oben rechts. Bei jedem Release zusammen mit CACHE in sw.js erhöhen. */
 (function () {
-  var V = 'v17.138';   // 17 = Anzahl der Labs, 138 = laufende Versionsnummer
+  var V = 'v18.139';   // 18 = Anzahl der Labs, 139 = laufende Versionsnummer
   window.LAB_VERSION = V;
   window.LabNeu = function () { if (window.WhatsNew) { window.WhatsNew.open(); return; } var s = document.createElement('script'); s.src = 'neu.js'; s.onload = function () { window.WhatsNew && window.WhatsNew.open(); }; document.head.appendChild(s); };   // „Neu in dieser Version“ (neu.js wird erst beim Öffnen geladen)
   var d;
