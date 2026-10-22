@@ -17,10 +17,10 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 16.137</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 17.138</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen.html">Lernen (Arduino, Raspberry Pi)</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 
-<div class="box"><b>Tonfunk Lab</b> sind sechzehn Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
+<div class="box"><b>Tonfunk Lab</b> sind siebzehn Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
 <ul><li><b>LochLab:</b> Schaltungen auf der Lochrasterplatine planen und ausprobieren.</li>
 <li><b>SchaltLab:</b> Stromlaufpläne zeichnen und simulieren (Spannungen, Ströme, Graphen).</li>
 <li><b>SimLab:</b> Experimente und Hausinstallation (Wechselschaltung, Schütz, FI, Drehstrom, mit Schutzleiter PE), mit Aufgaben und Fehlersuche.</li>
@@ -35,10 +35,11 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>Sensorik-Lab:</b> Sieben animierte Prüfstände: Temperatur (NTC, Pt100, Thermoelement), Licht und Näherung, Kraft und Druck mit DMS-Brücke, Beschleunigung und Neigung, Normsignale 4…20 mA, digitale Sensoren per I²C sowie ADU und Abtastung. Mit Messgeräten, Kennlinien, Ablaufprogramm und Rechner.</li>
 <li><b>Datenblatt-Lab:</b> Datenblätter lesen und verstehen: 16 Übungsdatenblätter von der Diode bis zum I²C-Baustein mit Seitenansicht, Kennlinien zum Ablesen, Fachenglisch-Karteikarten, Bauteilwahl und Rechner für LED-Vorwiderstand, Thermik, Derating und Toleranzen.</li>
 <li><b>Regelungstechnik-Lab:</b> Regelkreise untersuchen: sieben animierte Prüfstände (Füllstand, Durchfluss, Raumtemperatur, Thermostat, Drehzahl, Position und ein Streckenbaukasten). Sprungantworten aufnehmen, Regler (P, I, D, Zweipunkt) einstellen nach Ziegler-Nichols, Chien-Hrones-Reswick und T-Summe, Stabilität prüfen. Mit Messschreiber, Ablaufprogramm und Rechner. Alle Anlagen sind Übungsanlagen mit fiktiven Werten.</li>
+<li><b>Thermik-Lab:</b> Wärme im Gerät: Verlustleistung berechnen, die Kette der Wärmewiderstände (Sperrschicht, Gehäuse, Kühlkörper, Umgebung), Wärmeleitpaste, Glimmerscheibe, Kühlkörper mit Lüfter und Einbaulage, 7805 und LM317 mit Last, Transistor, MOSFET, Diode und Widerstand. Die Anlagen sind Übungsanlagen mit Übungswerten.</li>
 <li><b>Arduino-Lab:</b> Arduino-Programme schreiben, den Arduino im Plan verdrahten und alles gemeinsam simulieren.</li>
 <li><b>Pi-Lab:</b> Python-Programme für den Raspberry Pi schreiben, den Pi mit LEDs, Tastern und Sensoren verdrahten und simulieren (3,3-V-Pins!).</li></ul>
 <p>Dazu gibt es auf der Startseite die Zeile <b>Projekte</b> (kein weiteres Lab): fünf <a href="lernen-vb.html">Verbundprojekte</a>, in denen alle Labs zusammen ein Gerät fertigstellen.</p>
-<p>Zum Lernen gibt es die <a href="lernen.html">Lernhefte</a> (Löten, Elektronik, Installation, Digitaltechnik, SPS, Leiterplatten, Antriebe, Sensorik, Datenblätter, Regelungstechnik, Verbundprojekte, Arduino und Raspberry Pi) mit Arbeitsblättern. Auf der Startseite kannst du Karten ausblenden und umsortieren („Startseite anpassen“, gilt nur auf deinem Gerät). Neu: der <b>Trainer</b> führt dich in jedem Lab durch die ersten Schritte (Menü: Trainer), und die <b>Kampagne</b> verbindet alle Labs zu einem Lernpfad.</p></div>
+<p>Zum Lernen gibt es die <a href="lernen.html">Lernhefte</a> (Löten, Elektronik, Installation, Digitaltechnik, SPS, Leiterplatten, Antriebe, Sensorik, Datenblätter, Regelungstechnik, Thermik, Verbundprojekte, Arduino und Raspberry Pi) mit Arbeitsblättern. Auf der Startseite kannst du Karten ausblenden und umsortieren („Startseite anpassen“, gilt nur auf deinem Gerät). Neu: der <b>Trainer</b> führt dich in jedem Lab durch die ersten Schritte (Menü: Trainer), und die <b>Kampagne</b> verbindet alle Labs zu einem Lernpfad.</p></div>
 
 <h2>1. Anmelden und installieren</h2>
 <ol><li>Seite öffnen: <b>tonikaczor.github.io/lochlab</b>.</li>
@@ -136,7 +137,15 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>Aufgaben:</b> 30 Aufgaben mit automatischer Prüfung (Grundlagen, Strecke messen, Regler verstehen, Einstellen, Stabilität, Führung und Störung, Zweipunkt, Praxis, SPS und Technik, Fehlersuche, Prüfungsstil). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-reg.html">Regelungstechnik-Lab: Regelkreis, Regler und Einstellen</a> mit Arbeitsblatt zu Regelkreis, Strecke, Regler, Stabilität, Einstellregeln, Zweipunktregler, Praxis und SPS.</p>
 
-<h2>5f. Verbundprojekte: alle Labs zusammen</h2>
+<h2>5f. Thermik-Lab: Wärme und Kühlkörper</h2>
+<ul><li><b>Sechs Bereiche</b> oben: <span class="k">Prüfstand</span> (Aufbau als Schnittbild, Wärmebild, Ersatzschaltbild oder Balken, mit Messschreiber, Bedienpult und Messgeräten), <span class="k">Rechnen</span>, <span class="k">Vergleichen</span> (bis zu drei Aufbauten nebeneinander), <span class="k">Ablauf</span>, <span class="k">Aufgaben</span> und <span class="k">Lernen</span>.</li>
+<li><b>Vier Prüfstände</b> plus Vergleich: Linearregler (7805 und LM317 mit Last), Leistungstransistor (BD139, Längstransistor und Endstufe), MOSFET als Schalter (IRLZ34N, Leit- und Schaltverluste) sowie Diode, Widerstand und LED. Bauteile und Kühlkörper sind <b>Übungsbauteile mit Übungswerten</b> (aus den Übungsdatenblättern des Datenblatt-Labs), keine Katalogwerte.</li>
+<li><b>Montage:</b> Kühlkörper (Fahne, Profile in vier Größen, Rippenkörper, Blech), Isolierscheibe (Glimmer, Silikonfolie), Wärmeleitpaste, Isolierbuchse, Schraube, Lüfter und Einbaulage stellst du am Prüfstand ein. Das Lab zeigt Tj, Tc und Tk, die Temperaturabfälle über der Kette und meldet Überhitzung, Abschalten des Reglers, Kurzschluss über die Fahne und Pendeln.</li>
+<li><b>Rechnen und Lernen:</b> neun Rechner-Karten: Prüfungsassistent (sieben Schritte), Verlustleistung, Wärmekette, erforderlicher Kühlkörper, Wirkungsgrad Linear- gegen Schaltregler, Zeitverhalten, Wärmewiderstand einer Schicht, Formelsammlung und Übungsgenerator, jeweils mit Rechenweg; der Bereich Lernen erklärt die Begriffe und die Analogie zum elektrischen Stromkreis.</li>
+<li><b>Aufgaben:</b> 30 Aufgaben mit automatischer Prüfung, die der Prüfstand simuliert. Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
+<p class="mute">Weiter im Lernheft <a href="lernen-thm.html">Thermik-Lab: Wärme, Kühlkörper und Wärmewiderstand</a> mit Arbeitsblatt zu Verlustleistung, Wärmewiderstandskette, Montage, Kühlkörper, Berechnungsgang, Aufheizen und Schaltregler.</p>
+
+<h2>5g. Verbundprojekte: alle Labs zusammen</h2>
 <ul><li><b>Was ist das?</b> Auf der Startseite findest du unter den Lab-Karten die Zeile <span class="k">Projekte</span>. Fünf Projekte (Garagentor mit Funköffner, Ampelanlage, Digitale Uhr mit Wecker, Gartenbewässerung, Förder- und Sortieranlage) bestehen aus acht bis zehn Stationen. Jede Station gehört zu einem Lab, und jede gibt ihr Ergebnis an die nächste weiter. Am Ende steht ein Gesamttest.</li>
 <li><b>Starten:</b> Projekt wählen, Namen oder Teamnamen und Stufe eingeben (1 Einsteiger, 2 Standard, 3 Profi). Daraus entsteht dein Lastenheft mit deinen Zahlen. Gleicher Name und gleiche Stufe geben dieselben Zahlen.</li>
 <li><b>Station öffnen:</b> In der Phasenleiste die offene Station antippen, den Auftrag lesen und „Im Lab öffnen“ wählen. Im Lab erscheint oben eine <b>Leiste</b> mit Auftrag, <span class="k">Prüfen</span>, <span class="k">Übergeben</span>, <span class="k">Tipp</span> und <span class="k">Live-Hinweise</span>. Die Daten der Vorstationen sind schon geladen. Ohne Projekt bleibt die Leiste unsichtbar.</li>

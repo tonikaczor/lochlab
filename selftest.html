@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['vb', 'Projekte', 'verbund.html', 10]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['thm', 'Thermik-Lab', 'thmlab.html', 6], ['vb', 'Projekte', 'verbund.html', 10]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -382,6 +382,90 @@
     }
     return { n: ex.length, bad: bad };
   }
+  /* Thermik-Lab: Kern-Check (Marker-Rechnungen aus SPEC 4.11, Tabelle Rth_CK, jede Uebungsart), 5 Pruefstaende (3 mal tau ohne NaN, zeichnen mit Mock in vier Ansichten),
+     24 Beispiele, 30 Aufgaben (Hinweiszahlen-Audit, Start ueber die echte Oberflaeche), Auswahlfragen der Aufgaben mit choices */
+  async function thmCore(w) {
+    var bad = [], C = w.THM_CORE, IDS = ['linear', 'transistor', 'mosfet', 'bauteil', 'vergleich'], VIEWS = ['schnitt', 'kamera', 'ersatz', 'balken'];
+    if (!C || typeof C.runSeq !== 'function') bad.push('THM_CORE fehlt');
+    if (!w.THM_RIGS || !w.THM_UI) bad.push('THM_RIGS oder THM_UI fehlt');
+    var ex = (w.THM_DATA && w.THM_DATA.examples) || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'thm'; });
+    if (ex.length !== 24) bad.push('Beispiele: ' + ex.length + ' statt 24');
+    if (tk.length !== 30) bad.push('Aufgaben: ' + tk.length + ' statt 30');
+    if (!C || !w.THM_RIGS || !w.THM_UI) return { n: ex.length, bad: bad };
+    var near = function (a, b, tol) { return typeof a === 'number' && Math.abs(a - b) <= tol; };
+    /* Kern-Marker: 7805 an 12 V, 0,5 A; freistehend und mit Profil m, Glimmer, Paste */
+    try {
+      var pl = C.power.linear(12, 5, 0.5);
+      if (!pl.ok || !near(pl.p, 3.5, 1e-9)) bad.push('power.linear: P = ' + pl.p + ' statt 3,5 W');
+      var c0 = C.cfgFromControls({ heatsink: 'none' }, '7805'), s0 = C.steady(c0, 3.5, 25);
+      if (!s0.ok || !near(s0.tj, 200, 1e-6)) bad.push('7805 freistehend: Tj = ' + s0.tj + ' statt 200 Grad C');
+      var c1 = C.cfgFromControls({ heatsink: 'm', joint: 'glimmer', paste: 'duenn', bushing: true, screw: 'fest', fan: 'aus', orient: 'senkrecht' }, '7805'), s1 = C.steady(c1, 3.5, 25);
+      if (!s1.ok || !near(s1.rthTotal, 14.5, 1e-9) || !near(s1.tj, 75.75, 1e-6) || !near(s1.tc, 58.25, 1e-6) || !near(s1.tk, 53, 1e-6)) bad.push('7805 mit Kuehlkoerper m: Rth ' + s1.rthTotal + ', Tj ' + s1.tj + ', Tc ' + s1.tc + ', Tk ' + s1.tk);
+      var dsum = s1.dJC + s1.dCK + s1.dK; if (!near(dsum, s1.tj - s1.ta, 1e-9)) bad.push('Abfaelle summieren sich nicht zu Tj minus Ta: ' + dsum);
+      var s2 = C.steady(c1, 3.5, 40); if (!near(s2.tj, 90.75, 1e-6)) bad.push('Ta 40: Tj = ' + s2.tj + ' statt 90,75 Grad C');
+      var pz = C.pzul(c1, 25); if (!(pz && (pz.ok !== false) && near(typeof pz === 'number' ? pz : pz.p !== undefined ? pz.p : pz.pzul, 100 / 14.5, 1e-3))) bad.push('pzul: ' + JSON.stringify(pz));
+      /* Tabelle Rth_CK (TO-220): Glimmer mit duenner Paste 1,5; ohne Paste deutlich mehr; direkt mit Paste weniger */
+      var ck1 = C.mount.rthCK('TO-220', 'glimmer', 'duenn', 'fest'), ck2 = C.mount.rthCK('TO-220', 'glimmer', 'keine', 'fest'), ck3 = C.mount.rthCK('TO-220', 'direkt', 'duenn', 'fest');
+      if (!near(ck1, 1.5, 1e-9) || !(ck2 > ck1) || !(ck3 < ck1)) bad.push('mount.rthCK: ' + [ck1, ck2, ck3].join(' / '));
+      /* jede Uebungsart: richtige Antwort wird akzeptiert, absichtlich falsche (zu gross und zu klein) nicht */
+      C.exercise.kinds.forEach(function (k) {
+        var e = C.exercise(k, 1), v = e && e.answer && e.answer.value;
+        if (!isFinite(v)) { bad.push('exercise ' + k + ': keine Zahl als Antwort'); return; }
+        if (!e.check(String(v).replace('.', ',')).ok) bad.push('exercise ' + k + ': richtige Antwort abgelehnt');
+        if (e.check(String(v * 3 + 7)).ok) bad.push('exercise ' + k + ': zu grosse Antwort akzeptiert');
+        if (e.check(String(v / 3 - 1)).ok) bad.push('exercise ' + k + ': zu kleine Antwort akzeptiert');
+      });
+    } catch (x) { bad.push('Kern-Marker: ' + x); }
+    /* Oberflaeche: feste Reihenfolge der fuenf Pruefstaende */
+    if (w.THM_UI.ORDER.join() !== IDS.join()) bad.push('Reihenfolge in der Oberflaeche: ' + w.THM_UI.ORDER.join());
+    /* fuenf Pruefstaende: 3 mal tau Prozess-s ohne NaN, zeichnen in vier Ansichten (Mock) */
+    IDS.forEach(function (id) {
+      try {
+        if (!w.THM_RIGS.defs[id]) { bad.push(id + ': nicht registriert'); return; }
+        var r = w.THM_RIGS.create(id, {});
+        var tau = 600; try { var idn = r.identify && r.identify(); if (idn && isFinite(idn.tau63)) tau = idn.tau63; } catch (x2) { /* Standardwert */ }
+        r.stepProcess(3 * tau);
+        var st = r.state(), nf = []; regNums(st, 'state', nf); try { regNums(r.readMeters(), 'meter', nf); } catch (x3) { /* Messgeraete optional */ }
+        if (nf.length) bad.push(id + ': keine Zahl in ' + nf.slice(0, 3).join(', '));
+        VIEWS.forEach(function (vw) {
+          try { r.view = vw; } catch (x4) { /* Ansicht fehlt */ }
+          [[1180, 820], [390, 800]].forEach(function (sz) { var m = regMock(); r.draw(m, sz[0], sz[1], 0); if (m.__n < 30) bad.push(id + ' ' + vw + ': draw ' + sz.join('x') + ' zeichnet zu wenig (' + m.__n + ')'); });
+        });
+        if (typeof r.drawError === 'function' && r.drawError()) bad.push(id + ': Zeichenfehler ' + r.drawError());
+      } catch (x) { bad.push(id + ': ' + x); }
+    });
+    /* Beispiele: laufen fehlerfrei, endliche Werte, Zahlen der Beschreibung gerechnet */
+    ex.forEach(function (e) {
+      try {
+        var o = w.THM_TASKS.util.run(e.rig, e.controls, e.seq || [], e.dur || 600, { settle: e.settle !== false, sampleS: (e.dur || 600) / 200 });
+        if ((o.errors && o.errors.length) || (o.rejected && o.rejected.length)) bad.push('Beispiel ' + e.id + ': ' + (o.errors || []).concat((o.rejected || []).map(JSON.stringify)).join('; '));
+        var nf = []; (o.samples || []).forEach(function (sm) { ['t', 'tj', 'tc', 'tk'].forEach(function (k) { if (sm[k] !== undefined && !isFinite(sm[k])) nf.push(k); }); }); if (nf.length) bad.push('Beispiel ' + e.id + ': Werte ohne Zahl');
+        var au = w.THM_TASKS.auditExample(e); if (!au.ok) bad.push('Beispiel ' + e.id + ': Zahl in der Beschreibung ohne Quelle ' + au.bad.join(', '));
+      } catch (x) { bad.push('Beispiel ' + e.id + ': ' + x); }
+    });
+    /* Aufgaben: Hinweiszahlen-Audit, Start ueber die echte Oberflaeche, Auswahlfragen eindeutig */
+    var T = w.THM_TASKS.tasks, U = w.THM_UI;
+    if (T.length !== 30) bad.push('THM_TASKS: ' + T.length + ' Aufgaben');
+    for (var i = 0; i < T.length; i++) {
+      var t = T[i];
+      try {
+        var a = w.THM_TASKS.audit(t); if (!a.ok) bad.push(t.id + ': Zahl im Tipp ohne Quelle ' + a.bad.join(', '));
+        if (!(t.hint && t.hint.length === 3)) bad.push(t.id + ': keine drei Tipp-Stufen');
+        await U.startTask(t.id); await sleep(20);
+        if (!U.S.task || U.S.task.id !== t.id) bad.push(t.id + ': startTask setzt die Aufgabe nicht');
+        else if (!w.document.querySelector('#taskBar') || !/\S/.test(w.document.querySelector('#taskBar').textContent)) bad.push(t.id + ': Aufgabenleiste leer');
+        var ch = typeof t.choices === 'function' ? t.choices(U.S.taskStart) : t.choices;
+        (ch || []).forEach(function (q) {
+          var op = (q.options || []).map(function (x) { return typeof x === 'object' ? x : { value: x, label: x }; });
+          if (op.length < 2) bad.push(t.id + ' ' + q.key + ': weniger als zwei Antworten');
+          var ns = op.map(function (x) { return norm(x.label); });
+          ns.forEach(function (x, j) { if (ns.indexOf(x) !== j) bad.push(t.id + ' ' + q.key + ': doppelte Antwort ' + op[j].label); });
+        });
+      } catch (x) { bad.push(t.id + ': ' + x); }
+    }
+    try { U.S.task = null; } catch (x) { /* Aufraeumen */ }
+    return { n: ex.length, bad: bad };
+  }
   /* Regelungstechnik-Lab: Kern-Check (Marker-Rechnungen), 7 Pruefstaende (laufen 60 Prozess-s ohne NaN, zeichnen mit Mock), 24 Beispiele, 30 Aufgaben
      (Hinweiszahlen-Audit, Start ueber die echte Oberflaeche), Auswahlfragen der Aufgaben mit choices */
   function regMock() {
@@ -601,6 +685,11 @@
       var rc = await regCore(w); if (rc.bad.length) all.ok = false;
       all.labs.push({ lab: 'Regelungstechnik-Lab Kern', tasks: rc.n, bad: rc.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Regelungstechnik-Lab: Kern, 7 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche</td><td>' + rc.n + ' Beispiele</td><td class="' + (rc.bad.length ? 'bad' : 'ok') + '">' + (rc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + rc.bad.join('; ') + '</td></tr>');
+    }
+    if (l[0] === 'thm') {
+      var tc = await thmCore(w); if (tc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Thermik-Lab Kern', tasks: tc.n, bad: tc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Thermik-Lab: Kern, 5 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche</td><td>' + tc.n + ' Beispiele</td><td class="' + (tc.bad.length ? 'bad' : 'ok') + '">' + (tc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + tc.bad.join('; ') + '</td></tr>');
     }
     if (l[0] === 'vb') {
       var vc = await vbCore(w); if (vc.bad.length) all.ok = false;

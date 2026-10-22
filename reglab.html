@@ -117,28 +117,37 @@ fieldset.choice{border:1px solid var(--line);border-radius:10px;margin:8px 0;pad
 .rbar{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none;align-items:center}
 .rbar::-webkit-scrollbar{display:none}
 #cvw{position:relative;background:#14181c;overflow:hidden;width:100%;aspect-ratio:1000/560;max-height:56vh;border-radius:12px;border:1px solid var(--line)}
+/* Anlage, Messgeräte, Schreiber: alles grob auf einer Seite. Breite folgt der Höhengrenze (--ar setzt regui.js aus der Weltgröße). */
+@media(min-width:900px){#cvw{width:min(100%,calc(32vh*var(--ar,1.78)));max-height:32vh;margin:0 auto}}
 canvas{display:block;touch-action:none}
 #cvw canvas{position:absolute;inset:0;width:100%;height:100%}
 #cvTag{position:absolute;right:8px;bottom:8px;font-size:12px;font-weight:600;background:#000a;border:1px solid var(--line);border-radius:12px;padding:3px 9px;pointer-events:none;color:var(--mute);max-width:70%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;z-index:2}
 #cvFault{position:absolute;left:8px;right:8px;bottom:8px;z-index:2;font-size:13.5px;font-weight:700;background:#7a1d1dee;border:1px solid #ff5c5c;border-radius:10px;padding:6px 10px;display:none;pointer-events:none}
 #cvFault.on{display:block}
-.scope{margin-top:10px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 8px 8px}
+.scope{margin-top:8px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px 8px 8px}
 .scbar{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:2px 0 6px}
 .scinfo{color:var(--mute);font-size:12.5px;margin-left:auto}
 .chartbox{position:relative}
 .chartbox canvas{width:100%;height:auto;aspect-ratio:16/8;background:#10151a;border:1px solid var(--line);border-radius:10px;touch-action:none}
 .chartbox.sc canvas{aspect-ratio:16/6.5}
 .chartbox.lane canvas{aspect-ratio:16/3.4}
+.scope .chartbox.sc canvas{aspect-ratio:auto;height:150px}
+.scope .chartbox.lane canvas{aspect-ratio:auto;height:112px}
+.scope .scrub{display:flex;align-items:center;gap:10px;margin:2px 0 0}.scope .scrub span{flex:0 1 38%;margin:0;font-size:11px;line-height:1.25}.scope .scrub input{flex:1;min-width:0;margin:0}
+.scope .scbar{padding:0 0 6px}.scope .readout{min-height:20px;padding:2px 6px}
+@media(min-width:900px){#rigMain .scope{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}#rigMain .scope .scbar,#rigMain .scope .scrub,#rigMain .scope .readout{grid-column:1/-1}#rigMain .scope .chartbox.sc canvas,#rigMain .scope .chartbox.lane canvas{height:140px}}
+@media(max-width:600px){.scope .chartbox.sc canvas{height:132px}.scope .chartbox.lane canvas{height:104px}.scope .scrub{display:block}.scope .scrub span{margin-bottom:0}}
 .chartbox.sq canvas{aspect-ratio:1/1;max-width:440px;margin:6px auto 0}
 .scrub{margin:4px 0 0}
 input[type=range]{height:40px;padding:0;border:0;background:none;accent-color:var(--accent);-webkit-appearance:auto;appearance:auto;margin:2px 0 0}
-#meters{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px;margin-top:10px}
-.mt{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative;min-height:56px}
+#meters{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;margin-top:8px}
+.mt{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative;min-height:48px}
 .mt canvas{width:100%;height:auto;aspect-ratio:13/9}.mt .lbl{font-size:11px;color:var(--mute);text-align:center;padding:0 4px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mt.dg{padding:8px 10px}.mt.dg .lbl{font-size:11.5px;text-align:left;padding:0}.mt.dg .num{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.mt.dg .num small{font-size:12px;color:var(--mute);font-weight:500;margin-left:3px}
+.mt.dg{padding:6px 10px}.mt.dg .lbl{font-size:11.5px;text-align:left;padding:0}.mt.dg .num{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}.mt.dg .num small{font-size:12px;color:var(--mute);font-weight:500;margin-left:3px}
 .mt.dg.warn .num{color:#ff8a7a}
 .mt.warn{border-color:#ff5c5c}
-@media(max-width:600px){#meters{grid-template-columns:repeat(3,1fr);gap:5px}.mt .lbl{font-size:10px}}
+@media(min-width:700px){#meters{grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:4px}}
+@media(max-width:600px){#meters{grid-template-columns:repeat(3,1fr);gap:5px}.mt canvas{aspect-ratio:13/8}.mt .lbl{font-size:11px}}
 .ctg{margin-bottom:10px}
 .ct{display:block;padding:4px 10px;min-height:44px}
 .ct[hidden]{display:none}
@@ -285,8 +294,8 @@ svg.dr{background:#10151a;border:1px solid var(--line);border-radius:8px;display
       <div id="rigMain">
         <div class="rbar" id="rigPick"></div>
         <div id="cvw"><canvas id="cv"></canvas><span id="cvTag"></span><div id="cvFault" role="alert"></div></div>
-        <div id="scopeHost"></div>
         <div id="meters"></div>
+        <div id="scopeHost"></div>
       </div>
       <div id="rigSide">
         <div id="presetBar"></div>

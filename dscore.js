@@ -18,8 +18,10 @@
  *    = Fortsetzung des Randsegments). Nicht aufsteigende Reihen werden nach x sortiert. Log-Achsen
  *    verlangen positive Werte, sonst null. inverse() verlangt streng monotone y-Werte, sonst null
  *    (crossings() liefert alle Schnittpunkte für nicht monotone Reihen).
- *  - derate(): ptotAllowed = min((Tjmax − Tamb)/RthJA, ptotMax); der Deckel ptotMax gilt, weil
+ *  - derate(): Freiluft: ptotAllowed = min((Tjmax − Tamb)/RthJA, ptotMax); der Deckel ptotMax gilt, weil
  *    Datenblätter unterhalb 25 °C nicht mehr Leistung zulassen. ptotFormula liefert die reine Formel.
+ *    Mit Kühlkörper (rthSA) gilt NUR die thermische Rechnung ptotAllowed = (Tjmax − Tamb)/(RthJC + RthCS + RthSA);
+ *    ptotMax (Freiluftwert) deckelt dann nicht, ratedExceeded zeigt, ob die Formel darüber liegt (ratedNote = Meldung).
  *    margin = ptotAllowed − ptot (W), marginK = Tjmax − Tj (K). Ohne ptot: tj/margin null.
  *    Mit Kühlkörper (rthSA, optional rthCS): Rth = RthJC + RthCS + RthSA.
  *  - ledResistor(): E-Reihen-Werte werden AUFGERUNDET (nächster größerer Wert, schützt die LED);
@@ -367,19 +369,24 @@
       var tAmb = cond.tAmb === undefined ? 25 : num(cond.tAmb);
       if (tAmb === null) return bad('Umgebungstemperatur (tAmb) ist keine gültige Zahl.');
       if (tjMax === null) return bad('Das Datenblatt nennt keine maximale Sperrschichttemperatur (tjMax).');
-      var rth = null;
+      var rth = null, withSink = false;
       if (cond.rthJA !== undefined) rth = num(cond.rthJA);
       else if (cond.rthSA !== undefined) {
         var jc = num(th && th.rthJC !== undefined ? th.rthJC : cond.rthJC);
         var sa = num(cond.rthSA), cs = cond.rthCS === undefined ? 0 : num(cond.rthCS);
         if (jc === null || sa === null || cs === null) return bad('Für die Rechnung mit Kühlkörper fehlen RthJC, RthCS oder RthSA.');
-        rth = jc + cs + sa;
+        rth = jc + cs + sa; withSink = true;
       } else rth = num(th && th.rthJA);
       if (rth === null || !(rth > 0)) return bad('Der Wärmewiderstand (RthJA) fehlt oder ist nicht größer als 0.');
       var formula = Math.max(0, (tjMax - tAmb) / rth);
       var ptotMax = th ? num(th.ptotMax) : null;
-      var allowed = (ptotMax !== null && ptotMax > 0) ? Math.min(formula, ptotMax) : formula;
-      var out = { ptotAllowed: allowed, ptotFormula: formula, ptotRated: ptotMax, tj: null, ok: tAmb < tjMax, margin: null, marginK: null, rth: rth, tjMax: tjMax, tAmb: tAmb };
+      var hasRated = ptotMax !== null && ptotMax > 0;
+      /* Freiluft (RthJA): Datenblattwert deckelt (gilt bei 25 °C, darunter nicht mehr Leistung).
+         Mit Kühlkörper (Reihenschaltung RthJC + RthCS + RthSA): das thermische Ergebnis ist maßgeblich,
+         der Datenblattwert ptotMax (Freiluft) wird nur gemeldet. */
+      var allowed = (hasRated && !withSink) ? Math.min(formula, ptotMax) : formula;
+      var ratedExceeded = withSink && hasRated && formula > ptotMax;
+      var out = { ptotAllowed: allowed, ptotFormula: formula, ptotRated: ptotMax, ratedExceeded: ratedExceeded, ratedNote: null, tj: null, ok: tAmb < tjMax, margin: null, marginK: null, rth: rth, tjMax: tjMax, tAmb: tAmb };
       if (cond.ptot !== undefined) {
         var p = num(cond.ptot);
         if (p === null || p < 0) return bad('Die Verlustleistung (ptot) ist keine gültige Zahl ≥ 0.');
@@ -387,6 +394,7 @@
         out.margin = allowed - p;
         out.marginK = tjMax - out.tj;
         out.ok = out.tj <= tjMax && p <= allowed + 1e-12;
+        if (withSink && hasRated && p > ptotMax) out.ratedNote = 'Der Datenblattwert Ptot = ' + fmt(ptotMax, 'W') + ' gilt für den Fall ohne Kühlkörper; mit Kühlkörper entscheidet die thermische Rechnung (Tj ≤ Tj max).';
       }
       return out;
     } catch (e) { return bad('Interner Fehler bei der Thermikrechnung.'); }

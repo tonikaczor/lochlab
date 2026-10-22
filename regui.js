@@ -470,7 +470,7 @@
   const fxg = cvfx.getContext('2d'); let fxDrew = false;
   function worldSz() { try { const w = S.rig && S.rig.worldSize && S.rig.worldSize(); if (w && w.w > 0 && w.h > 0) return w; } catch (e) {} return { w: 1000, h: 560 }; }
   function fitCanvas() {
-    const ws = worldSz(), ar = ws.w + '/' + ws.h; if (cvw.style.aspectRatio !== ar) cvw.style.aspectRatio = ar;
+    const ws = worldSz(), ar = ws.w + '/' + ws.h; if (cvw.style.aspectRatio !== ar) { cvw.style.aspectRatio = ar; cvw.style.setProperty('--ar', String(+(ws.w / ws.h).toFixed(4))); }
     const w = cvw.clientWidth, h = cvw.clientHeight; if (!w || !h) return;
     dpr = Math.min(2, root.devicePixelRatio || 1); const W = Math.round(w * dpr), H = Math.round(h * dpr);
     if (cvs.width !== W || cvs.height !== H) { cvs.width = W; cvs.height = H; }
