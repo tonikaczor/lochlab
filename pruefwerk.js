@@ -353,6 +353,8 @@
   const init = () => {
     $('#bMenu').onclick = menu; const sp = new URLSearchParams(location.search), t0 = sp.get('aufgabe'); let st = 'start'; try { st = localStorage.getItem('pr.tab') || 'start'; } catch (e) {}
     tab = TABS.some(x => x[0] === st) ? st : 'start'; if (t0 && TASKS.some(t => t.id === t0)) { tab = 'aufgaben'; openTaskId = t0; } render();
+    /* ?thema=sicherheit (Link aus dem Sicherheits-Lab und dem Lernpfad): startet das Training zu diesem Thema */
+    try { const th = sp.get('thema'), tk = ({ sicherheit: 'sicher' })[th] || th; if (th && !t0 && TOP[tk] && !TOP[tk].pool) startTrain(tk); } catch (e) {}
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   root.PR_TEST = { poolQ, POOL };   // für den Selbsttest (Mischen der Antworten prüfen)
