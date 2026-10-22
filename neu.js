@@ -2,6 +2,16 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v19.140', items: [
+      ['Neues Energie-Lab', 'Das 19. Lab. Du lernst, wie aus Sonnenlicht Strom wird und wie eine Solaranlage ausgelegt wird. An fünf animierten Prüfständen siehst du Solarmodul, Verschattung, Laderegler mit Akku, Inselanlage und Netzeinspeisung. Die Anlagen sind Übungsanlagen mit Übungswerten.', 'Startseite ▸ Energie-Lab'],
+      ['Kennlinie, MPP und Temperatur', 'Ändere Einstrahlung und Temperatur und sieh, wie sich Leerlaufspannung, Kurzschlussstrom und der Punkt größter Leistung (MPP) verschieben. Tippe oder ziehe auf der Kennlinie, um den Arbeitspunkt selbst zu setzen.', 'Energie-Lab ▸ Prüfstand Solarmodul-Kennlinie, Tab Kennlinien'],
+      ['Verschattung und Bypassdioden', 'Lege ein Laubblatt oder den Schatten einer Hecke auf das Modul. Du siehst Hotspot, Bypassdiode und mehrere Maxima und lernst, warum die MPP-Suche das globale Maximum finden muss.', 'Energie-Lab ▸ Prüfstand Verschattung'],
+      ['Laderegler, Akku und Inselanlage', 'PWM gegen MPPT, Ladeschlussspannung, Tiefentladeschutz und ein ganzer Tag mit Sonne, Akku und Last im Zeitraffer. Der Fehler-Würfel baut dir zum Beispiel ein dünnes Kabel oder einen zu kleinen Akku ein.', 'Energie-Lab ▸ Prüfstände Laderegler, Inselanlage'],
+      ['Netzeinspeisung und Eigenverbrauch', 'Wechselrichter, Zähler und Speicher: europäischer Wirkungsgrad, Autarkie und Eigenverbrauchsquote an einer Netzanlage ausprobieren.', 'Energie-Lab ▸ Prüfstand Netzeinspeisung'],
+      ['Auslegen und Rechnen', 'Der Assistent führt dich in sechs Schritten durch die Auslegung einer Inselanlage, dazu Strangprüfung sowie Leitung und Sicherung. Der Rechner zeigt zu jeder Formel den Rechenweg und bietet Übungen zum Selbstprüfen an.', 'Energie-Lab ▸ Tabs Auslegen, Rechnen'],
+      ['Aufgaben, Beispiele und Lernheft', '30 Aufgaben mit automatischer Prüfung und Tipps in drei Stufen, 32 Beispiele, Lernheft mit Arbeitsblatt, Trainer „Erste Schritte“, Kampagne „Die Sonne“ und 16 neue Abzeichen.', 'Energie-Lab ▸ Aufgaben, Beispiele, Lernen'],
+      ['Neue Reihenfolge der Labs', 'Das Energie-Lab steht auf der Startseite und im Lernpfad direkt hinter dem EMV-Lab und vor Arduino und Pi.', 'Startseite, Lernpfad'],
+    ] },
     { v: 'v18.139', items: [
       ['Neues EMV-Lab', 'Das 18. Lab. EMV heißt elektromagnetische Verträglichkeit: Geräte dürfen sich nicht gegenseitig stören. An neun animierten Prüfständen siehst du, woher Störungen kommen, wie sie wandern und was dagegen hilft. Die Aufbauten sind Übungsaufbauten mit Übungswerten.', 'Startseite ▸ EMV-Lab'],
       ['Kopplung, Filter, Schirmung', 'Verdrillen, Abstand, Schirm, Netzfilter, Schlitz im Gehäuse und Ferrit probierst du aus. Ampel und Marge in dB zeigen sofort, ob der Grenzwert eingehalten wird. Mit Merken, Vorher, Nachher und Wischer siehst du, was eine Maßnahme wirklich bringt.', 'EMV-Lab ▸ Prüfstand'],

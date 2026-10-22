@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['thm', 'Thermik-Lab', 'thmlab.html', 6], ['emv', 'EMV-Lab', 'emvlab.html', 6], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['vb', 'Projekte', 'verbund.html', 10]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['thm', 'Thermik-Lab', 'thmlab.html', 6], ['emv', 'EMV-Lab', 'emvlab.html', 6], ['enr', 'Energie-Lab', 'enrlab.html', 6], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['vb', 'Projekte', 'verbund.html', 10]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -511,6 +511,75 @@
     try { U.S.task = null; } catch (x) { /* Aufraeumen */ }
     return { n: ex.length, bad: bad };
   }
+  /* Energie-Lab: Kern-Check (Tageslaenge gegen unabhaengige Formel, Modulkennwerte, Europaeischer Wirkungsgrad, Energiebilanz eines Sommertags), fuenf Pruefstaende
+     (60 Prozess-s bzw. ein Prozess-Tag ohne NaN, zeichnen mit Mock), 32 Beispiele ueber die Oberflaeche, 30 Aufgaben (Hinweiszahlen-Audit, Start ueber die echte Oberflaeche) */
+  async function enrCore(w) {
+    var bad = [], IDS = ['modul', 'schatten', 'regler', 'insel', 'netz'];
+    var C = w.ENR_CORE, R = w.ENR_RIGS, U = w.ENR_UI, T = w.ENR_TASKS;
+    if (!C || !R || !U || !T || !w.ENR_DATA) { bad.push('ENR_CORE, ENR_RIGS, ENR_UI, ENR_TASKS oder ENR_DATA fehlt'); return { n: 0, bad: bad }; }
+    var ex = w.ENR_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'enr'; });
+    if (ex.length !== 32) bad.push('Beispiele: ' + ex.length + ' statt 32');
+    if (tk.length !== 30) bad.push('Aufgaben: ' + tk.length + ' statt 30');
+    if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
+    /* Kern: Tageslaenge am 21. Juni (Tag 172) bei 51 Grad Nord gegen die Formel mit Deklination und Stundenwinkel */
+    try {
+      var phi = 51 * Math.PI / 180, dec = 23.45 * Math.PI / 180 * Math.sin(2 * Math.PI * (284 + 172) / 365), ws = Math.acos(-Math.tan(phi) * Math.tan(dec));
+      var dl = C.sun.dayLength(172, 51), ref = 2 * ws * 180 / Math.PI / 15;
+      if (!(Math.abs(dl - ref) < 0.3)) bad.push('Kern: Tageslaenge ' + dl + ' h statt etwa ' + ref.toFixed(2) + ' h');
+      var k25 = C.pv.keys('si60', { G: 1000, Tc: 25 }), k65 = C.pv.keys('si60', { G: 1000, Tc: 65 }), kh = C.pv.keys('si60', { G: 500, Tc: 25 });
+      if (!(k25.ok && Math.abs(k25.Pmpp - k25.Umpp * k25.Impp) < 1e-6 * k25.Pmpp)) bad.push('Kern: Pmpp ist nicht Umpp mal Impp');
+      if (!(Math.abs(k25.FF - k25.Pmpp / (k25.Uoc * k25.Isc)) < 1e-9)) bad.push('Kern: Fuellfaktor stimmt nicht mit Pmpp/(Uoc*Isc) ueberein');
+      if (!(k25.Pmpp > 230 && k25.Pmpp < 330 && k25.Uoc > 35 && k25.Uoc < 42)) bad.push('Kern: 60-Zellen-Modul bei STC unplausibel (Pmpp ' + k25.Pmpp + ' W, Uoc ' + k25.Uoc + ' V)');
+      if (!(k65.Pmpp < 0.92 * k25.Pmpp && k65.Pmpp > 0.78 * k25.Pmpp && k65.Uoc < k25.Uoc)) bad.push('Kern: Temperaturgang bei 65 Grad unplausibel');
+      if (!(Math.abs(kh.Isc / k25.Isc - 0.5) < 0.02)) bad.push('Kern: Kurzschlussstrom bei halber Einstrahlung nicht etwa halb');
+      var wgt = [0.03, 0.06, 0.13, 0.10, 0.48, 0.20], pts = [0.05, 0.1, 0.2, 0.3, 0.5, 1], eu = 0;
+      pts.forEach(function (p, i) { eu += wgt[i] * C.inv.eta('standard', p); });
+      if (!(Math.abs(C.inv.euroEta('standard') - eu) < 0.003)) bad.push('Kern: Europaeischer Wirkungsgrad ' + C.inv.euroEta('standard') + ' statt ' + eu);
+    } catch (x0) { bad.push('Kern: ' + x0); }
+    IDS.forEach(function (id) {
+      try {
+        if (!R.defs[id]) { bad.push(id + ': nicht registriert'); return; }
+        var r = R.create(id, {}); r.stepProcess(60);
+        var st = r.state(), nf = []; regNums(st, 'state', nf); try { regNums(r.readMeters(), 'meter', nf); } catch (x3) { /* Messgeraete optional */ }
+        if (nf.length) bad.push(id + ': keine Zahl in ' + nf.slice(0, 3).join(', '));
+        [[1180, 820], [390, 800]].forEach(function (sz) { var m = regMock(); r.draw(m, sz[0], sz[1], 1234); if (m.__n < 30) bad.push(id + ': draw ' + sz.join('x') + ' zeichnet zu wenig (' + m.__n + ')'); });
+        if (id === 'insel' || id === 'netz') {
+          var d = R.create(id, {}); d.setControl('quelle', 'tagesgang'); d.setControl('datum', 'sommer'); d.setControl('uhr', 0);
+          var e = 0; d.stepProcess(1); for (var q = 0; q < 2880; q++) { d.stepProcess(30); e += d.readMeters()[id === 'insel' ? 'pPv' : 'pDc'] * 30 / 3600; }
+          var nd = []; regNums(d.state(), 'state', nd); regNums(d.readMeters(), 'meter', nd); regNums(d.balance(), 'balance', nd);
+          if (nd.length) bad.push(id + ': Tageslauf mit NaN in ' + nd.slice(0, 3).join(', '));
+          var bl = d.balance();
+          if (!(e > 0)) bad.push(id + ': Sommertag liefert keine Solarenergie');
+          else if (!bl.rig || !(Math.abs(bl.rig.ePv - e) <= 1e-6 * Math.max(1, e))) bad.push(id + ': Energiebilanz ePv ' + (bl.rig && bl.rig.ePv) + ' statt Summe ' + e);
+          else if (bl.closed !== true) bad.push(id + ': Energiebilanz nicht geschlossen (' + bl.residualPct + ' Prozent)');
+        }
+      } catch (x) { bad.push(id + ': ' + x); }
+    });
+    /* Beispiele ueber die Oberflaeche laden: richtiger Pruefstand, kein Fehler */
+    for (var i = 0; i < ex.length; i++) {
+      var e2 = ex[i];
+      try {
+        var au = T.auditExample(e2); if (au && au.ok === false) bad.push('Beispiel ' + e2.id + ': Zahl in der Beschreibung ohne Quelle ' + (au.bad || []).join(', '));
+        U.loadExampleByName(e2.name); await sleep(25);
+        if (U.S.rigId !== e2.rig) bad.push('Beispiel ' + e2.id + ': Pruefstand ' + U.S.rigId + ' statt ' + e2.rig);
+      } catch (x) { bad.push('Beispiel ' + e2.id + ': ' + x); }
+    }
+    /* Aufgaben: Hinweiszahlen-Audit, drei Tipps, Start ueber die echte Oberflaeche */
+    var TS = T.tasks;
+    if (TS.length !== 30) bad.push('ENR_TASKS: ' + TS.length + ' Aufgaben');
+    for (var j = 0; j < TS.length; j++) {
+      var t = TS[j];
+      try {
+        var a = T.audit(t); if (a && a.ok === false) bad.push(t.id + ': Zahl im Tipp ohne Quelle ' + (a.bad || []).join(', '));
+        if (!(t.hint && t.hint.length === 3)) bad.push(t.id + ': keine drei Tipp-Stufen');
+        await U.startTask(t.id); await sleep(25);
+        if (!U.S.task || U.S.task.id !== t.id) bad.push(t.id + ': startTask setzt die Aufgabe nicht');
+        else if (!w.document.querySelector('#taskBar') || !/\S/.test(w.document.querySelector('#taskBar').textContent)) bad.push(t.id + ': Aufgabenleiste leer');
+      } catch (x) { bad.push(t.id + ': ' + x); }
+    }
+    try { U.S.task = null; } catch (x) { /* Aufraeumen */ }
+    return { n: ex.length, bad: bad };
+  }
   /* Regelungstechnik-Lab: Kern-Check (Marker-Rechnungen), 7 Pruefstaende (laufen 60 Prozess-s ohne NaN, zeichnen mit Mock), 24 Beispiele, 30 Aufgaben
      (Hinweiszahlen-Audit, Start ueber die echte Oberflaeche), Auswahlfragen der Aufgaben mit choices */
   function regMock() {
@@ -741,6 +810,11 @@
       all.labs.push({ lab: 'EMV-Lab Kern', tasks: ec.n, bad: ec.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>EMV-Lab: Kern, 9 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche</td><td>' + ec.n + ' Beispiele</td><td class="' + (ec.bad.length ? 'bad' : 'ok') + '">' + (ec.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + ec.bad.join('; ') + '</td></tr>');
     }
+    if (l[0] === 'enr') {
+      var nc = await enrCore(w); if (nc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Energie-Lab Kern', tasks: nc.n, bad: nc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Energie-Lab: Kern, 5 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche</td><td>' + nc.n + ' Beispiele</td><td class="' + (nc.bad.length ? 'bad' : 'ok') + '">' + (nc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + nc.bad.join('; ') + '</td></tr>');
+    }
     if (l[0] === 'vb') {
       var vc = await vbCore(w); if (vc.bad.length) all.ok = false;
       all.labs.push({ lab: 'Projekte Kern', tasks: vc.n, bad: vc.bad });
@@ -765,4 +839,5 @@
     document.getElementById('out').textContent = (all.ok ? 'ALLES IN ORDNUNG' : 'FEHLER GEFUNDEN') + '\n' + JSON.stringify(all);
   })();
 })();
-</script></body></html>
+</script><script src="urheber.js"></script>
+</body></html>

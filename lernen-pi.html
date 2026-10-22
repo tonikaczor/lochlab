@@ -26,7 +26,7 @@ pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:
 @media print{.try{background:none;color:#000!important;border:1px solid #000}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 18.139</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 19.140</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen-arduino.html">Arduino verstehen</a> · <a href="anleitung.html">Anleitung Tonfunk Lab</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 <p>Dieses Lernheft zeigt dir, was ein Raspberry Pi ist, wie du ihn in Betrieb nimmst und wie du mit Python LEDs, Taster und Sensoren steuerst. Alle Beispiele kannst du direkt im <b>Pi-Lab</b> ausprobieren (Knöpfe „Probier es aus“ und „Aufgabe“). Am echten Pi funktionieren dieselben Programme. Das letzte Kapitel vergleicht Arduino und Pi.</p>
 <div class="box toc"><b>Inhalt</b><a href="#k1">1. Was ist ein Raspberry Pi?</a><a href="#k2">2. Inbetriebnahme</a><a href="#k3">3. Die GPIO-Leiste</a><a href="#k4">4. Python in fünf Minuten</a><a href="#k5">5. Erstes Projekt: LED und Taster</a><a href="#k6">6. Mehr Bauteile</a><a href="#k7">7. Projektideen für den Pi</a><a href="#k8">8. Fehler finden und sicher arbeiten</a><a href="#k9">9. Arduino oder Pi? Und wie geht es hier weiter</a></div>
@@ -222,4 +222,4 @@ print(daten)                                    # zum Beispiel [25, 0]</pre>
 <tr><td>Beides kombinieren</td><td>Arduino misst, Pi wertet aus (USB/Serial)</td></tr></table>
 <div class="box"><b>Im Tonfunk Lab:</b> Das <b>Pi-Lab</b> simuliert einen Raspberry Pi mit Python (gpiozero und RPi.GPIO). Du verdrahtest den Pi an der 40-poligen Leiste, schreibst dein Programm und siehst LEDs, Taster und Sensoren reagieren. Die Pins sind 3,3-V-Pins: Wer 5 V an einen GPIO legt, zerstört den Pi (mit Erklärung). <a class="try noprint" href="pilab.html">▶ Pi-Lab öffnen</a><p class="mute"><b>Grenzen:</b> Unterstützt sind print, Schleifen, Funktionen, eigene Klassen (mit Vererbung), with, Listen, Texte, f-Strings, try/except sowie die Module time, random, math, signal, smbus2 (I²C), gpiozero (LED, PWMLED, Buzzer, TonalBuzzer, Button, MotionSensor, DistanceSensor, Servo, AngularServo, LEDBoard, TrafficLights, MCP3008) und RPi.GPIO. Nicht unterstützt sind input(), Dateien, __str__ in eigenen Klassen und Zusatzmodule wie numpy oder flask. Analoge Sensoren über den Wandler MCP3008 (SPI) sind dabei. Nicht unterstützt sind I²C-Geräte.</p></div>
 <p>Weiter geht es mit dem Lernheft <a href="lernen-arduino.html">Arduino verstehen</a>.</p>
-</div></body></html>
+</div><script src="urheber.js"></script></body></html>
