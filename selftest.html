@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['els', 'Sicherheits-Lab', 'elslab.html', 6], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['thm', 'Thermik-Lab', 'thmlab.html', 6], ['emv', 'EMV-Lab', 'emvlab.html', 6], ['enr', 'Energie-Lab', 'enrlab.html', 6], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['vb', 'Projekte', 'verbund.html', 10]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['els', 'Sicherheits-Lab', 'elslab.html', 6], ['nts', 'Netzteil-Lab', 'ntslab.html', 6], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['thm', 'Thermik-Lab', 'thmlab.html', 6], ['emv', 'EMV-Lab', 'emvlab.html', 6], ['enr', 'Energie-Lab', 'enrlab.html', 6], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['vb', 'Projekte', 'verbund.html', 10]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -640,6 +640,84 @@
     FORBID.forEach(function (re) { if (re.test(tx)) bad.push('Verbotsliste: ' + re + ' kommt in Texten vor'); });
     return { n: ex.length, bad: bad };
   }
+  /* Netzteil-Lab: Kern-Marker (Û 15,57 V, ΔU 2,27 V, P_V 5,4 W, LM317 6,302 V, ΔI_L 0,2917 A, η 93,8 %, CV/CC bei 12 Ohm), Registry mit 8 Pruefstaenden (laufen ohne NaN,
+     zeichnen mit Mock in zwei Groessen, Ampel gueltig), 34 Beispiele ueber die Oberflaeche (Hinweiszahlen-Audit der Beschreibung), 32 Aufgaben (Hinweiszahlen-Audit, drei Tipp-Stufen,
+     Auswahl-Audit der Auswahlfragen, Start ueber die echte Oberflaeche), Verbotslisten-Suchlauf ueber alle Texte. Der Abgleich mit dem Pruefungspool liest Dateien und laeuft
+     deshalb in Node (quelle/ntslab/test_pool.js), nicht hier. */
+  async function ntsCore(w) {
+    var bad = [], IDS = ['trafo', 'gleich', 'stabil', 'buck', 'topo', 'gate', 'regel', 'fehler'];
+    var C = w.NTS_CORE, R = w.NTS_RIGS, U = w.NTS_UI, T = w.NTS_TASKS;
+    if (!C || !R || !U || !T || !w.NTS_DATA) { bad.push('NTS_CORE, NTS_RIGS, NTS_UI, NTS_TASKS oder NTS_DATA fehlt'); return { n: 0, bad: bad }; }
+    var ex = w.NTS_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'nts'; });
+    if (ex.length !== 34) bad.push('Beispiele: ' + ex.length + ' statt 34');
+    if (tk.length !== 32) bad.push('Aufgaben: ' + tk.length + ' statt 32');
+    if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
+    if (Object.keys(R.defs).length !== 8) bad.push('Registry: ' + Object.keys(R.defs).length + ' Pruefstaende statt 8');
+    /* Kern-Marker */
+    var mk = function (name, v, soll, tol) { if (!(Math.abs(v - soll) <= tol)) bad.push('Kern: ' + name + ' ' + v + ' statt ' + soll); };
+    try {
+      mk('Spitzenspannung Bruecke 12 V', C.rect.peak({ topo: 'bruecke', U2: 12 }), 15.57, 5e-3);
+      mk('Brummspannung dU', C.rect.ripple({ topo: 'bruecke', U2: 12, I: 0.5, C: 2200 }).dU, 2.27, 5e-3);
+      mk('Verlustleistung 7805', C.lin.fixed({ typ: '7805', Uein: 14, I: 0.6 }).P_V, 5.4, 1e-9);
+      mk('LM317 Ausgangsspannung', C.lin.lm317({ R1: 240, R2: 970 }).Uaus, 6.302, 1e-3);
+      mk('Drosselstrom-Welligkeit', C.buck.ccm({ Uin: 12, Uout: 5, f: 100e3, L: 100e-6, C: 100e-6, Iout: 1 }).dIL, 0.2917, 1e-3);
+      mk('Wirkungsgrad Schaltregler', C.loss.parts({ Uin: 12, Uout: 5, Iout: 1, f: 100e3, L: 100e-6, rdson: 0.05, uf: 0.4, tsw: 40e-9, Qg: 20e-9, UG: 10, rl: 0.03 }).eta, 0.938, 1e-3);
+      var cc = C.lab.cvcc({ Uset: 12, Iset: 1, Rlast: 20 }), cc2 = C.lab.cvcc({ Uset: 12, Iset: 1, Rlast: 8 });
+      mk('CV/CC Grenzlast', cc.Rkrit, 12, 1e-9);
+      if (cc.modus !== 'CV' || cc2.modus !== 'CC') bad.push('Kern: Labornetzteil 20 Ohm ' + cc.modus + ' (CV erwartet), 8 Ohm ' + cc2.modus + ' (CC erwartet)');
+      if (!(C.limits && C.limits.length)) bad.push('Kern: keine Grenzwerte');
+    } catch (x0) { bad.push('Kern: ' + x0); }
+    /* Pruefstaende */
+    IDS.forEach(function (id) {
+      try {
+        if (!R.defs[id]) { bad.push(id + ': nicht registriert'); return; }
+        var r = R.create(id, {}); for (var q = 0; q < 60; q++) r.step(100);
+        var nf = []; regNums(r.state(), 'state', nf); regNums(r.readMeters(), 'meter', nf);
+        if (nf.length) bad.push(id + ': keine Zahl in ' + nf.slice(0, 3).join(', '));
+        var am = r.assess(); if (!am || ['gruen', 'gelb', 'rot', 'grau'].indexOf(am.ampel) < 0) bad.push(id + ': Ampel ungueltig ' + (am && am.ampel));
+        [[1180, 820], [390, 800]].forEach(function (sz) { var m = regMock(); r.draw(m, sz[0], sz[1], 0.3, {}); if (m.__n < 30) bad.push(id + ': draw ' + sz.join('x') + ' zeichnet zu wenig (' + m.__n + ')'); });
+        if (typeof r.drawError === 'function' && r.drawError()) bad.push(id + ': Zeichenfehler ' + r.drawError());
+      } catch (x) { bad.push(id + ': ' + x); }
+    });
+    /* Beispiele ueber die Oberflaeche laden: richtiger Pruefstand */
+    var FORBID = [/überbrück/i, /Netzteil öffnen/i, /Elko kurzschließen/i, /unter Spannung arbeiten/i, /am Netz messen/i, /Primärseite messen/i, /Schutzleiter abklemm/i, /Gehäuse öffnen/i], texts = [];
+    for (var i = 0; i < ex.length; i++) {
+      var e2 = ex[i]; texts.push(e2.name + ' ' + (e2.desc || ''));
+      try {
+        var au = T.auditExample(e2); if (au && au.ok === false) bad.push('Beispiel ' + e2.id + ': Zahl in der Beschreibung ohne Quelle ' + (au.bad || []).join(', '));
+        U.loadExampleByName(e2.id); await sleep(25);
+        if (U.S.rigId !== e2.rig) bad.push('Beispiel ' + e2.id + ': Pruefstand ' + U.S.rigId + ' statt ' + e2.rig);
+      } catch (x) { bad.push('Beispiel ' + e2.id + ': ' + x); }
+    }
+    /* Aufgaben */
+    var TS = T.tasks;
+    if (TS.length !== 32) bad.push('NTS_TASKS: ' + TS.length + ' Aufgaben');
+    for (var j = 0; j < TS.length; j++) {
+      var t = TS[j]; texts.push(t.title + ' ' + (t.hint || []).join(' '));
+      try {
+        var a = T.audit(t); if (a && a.ok === false) bad.push(t.id + ': Zahl im Tipp ohne Quelle ' + (a.bad || []).join(', '));
+        if (!(t.hint && t.hint.length === 3)) bad.push(t.id + ': keine drei Tipp-Stufen');
+        /* Auswahl-Audit: je Frage mindestens zwei Optionen, Werte und Beschriftungen eindeutig, die Musterloesung waehlt genau eine vorhandene Option */
+        if (t.choices && t.choices.length) {
+          var sol = null; try { sol = typeof t.sol === 'function' ? t.sol() : null; } catch (xs) { sol = null; }
+          t.choices.forEach(function (ch) {
+            var ov = (ch.options || []).map(function (o) { return String(o.value); }), ol = (ch.options || []).map(function (o) { return String(o.label); });
+            if (ov.length < 2) bad.push(t.id + ' ' + ch.key + ': weniger als zwei Optionen');
+            if (new Set(ov).size !== ov.length || new Set(ol).size !== ol.length) bad.push(t.id + ' ' + ch.key + ': Werte oder Beschriftungen doppelt');
+            var pick = sol && sol.choices ? sol.choices[ch.key] : undefined;
+            if (sol && sol.choices && ov.filter(function (v) { return v === String(pick); }).length !== 1) bad.push(t.id + ' ' + ch.key + ': Musterloesung waehlt keine eindeutige Option (' + pick + ')');
+          });
+        }
+        await U.startTask(t.id); await sleep(25);
+        if (!U.S.task || U.S.task.id !== t.id) bad.push(t.id + ': startTask setzt die Aufgabe nicht');
+        else if (!w.document.querySelector('#taskBar') || !/\S/.test(w.document.querySelector('#taskBar').textContent)) bad.push(t.id + ': Aufgabenleiste leer');
+      } catch (x) { bad.push(t.id + ': ' + x); }
+    }
+    try { U.S.task = null; } catch (x) { /* Aufraeumen */ }
+    var tx = JSON.stringify(C.TEXTS || {}) + ' ' + texts.join(' ');
+    FORBID.forEach(function (re) { if (re.test(tx)) bad.push('Verbotsliste: ' + re + ' kommt in Texten vor'); });
+    return { n: ex.length, bad: bad };
+  }
   /* Regelungstechnik-Lab: Kern-Check (Marker-Rechnungen), 7 Pruefstaende (laufen 60 Prozess-s ohne NaN, zeichnen mit Mock), 24 Beispiele, 30 Aufgaben
      (Hinweiszahlen-Audit, Start ueber die echte Oberflaeche), Auswahlfragen der Aufgaben mit choices */
   function regMock() {
@@ -879,6 +957,11 @@
       var lc = await elsCore(w); if (lc.bad.length) all.ok = false;
       all.labs.push({ lab: 'Sicherheits-Lab Kern', tasks: lc.n, bad: lc.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Sicherheits-Lab: Kern, 8 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche, Verbotsliste</td><td>' + lc.n + ' Beispiele</td><td class="' + (lc.bad.length ? 'bad' : 'ok') + '">' + (lc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + lc.bad.join('; ') + '</td></tr>');
+    }
+    if (l[0] === 'nts') {
+      var nt = await ntsCore(w); if (nt.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Netzteil-Lab Kern', tasks: nt.n, bad: nt.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Netzteil-Lab: Kern, 8 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche, Verbotsliste</td><td>' + nt.n + ' Beispiele</td><td class="' + (nt.bad.length ? 'bad' : 'ok') + '">' + (nt.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + nt.bad.join('; ') + '</td></tr>');
     }
     if (l[0] === 'vb') {
       var vc = await vbCore(w); if (vc.bad.length) all.ok = false;

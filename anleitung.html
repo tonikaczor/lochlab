@@ -17,16 +17,17 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 20.141</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 21.142</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen.html">Lernen (Arduino, Raspberry Pi)</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 
-<div class="box"><b>Tonfunk Lab</b> sind zwanzig Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
+<div class="box"><b>Tonfunk Lab</b> sind einundzwanzig Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
 <ul><li><b>LochLab:</b> Schaltungen auf der Lochrasterplatine planen und ausprobieren.</li>
 <li><b>SchaltLab:</b> Stromlaufpläne zeichnen und simulieren (Spannungen, Ströme, Graphen).</li>
 <li><b>SimLab:</b> Experimente und Hausinstallation (Wechselschaltung, Schütz, FI, Drehstrom, mit Schutzleiter PE), mit Aufgaben und Fehlersuche.</li>
 <li><b>DigiLab:</b> Digitaltechnik mit Gattern, Wahrheitstabellen, Flipflops, Zählern, echten ICs und einer kleinen CPU zum Programmieren.</li>
 <li><b>MessLab:</b> Messtechnik mit Werkbank: Multimeter, Oszilloskop, Netzgerät, Funktionsgenerator, Frequenzzähler, Leistungsmesser und Kennlinienschreiber, dazu Messaufgaben mit Zahlenfeldern, Messfehler und Fehlersuche.</li>
 <li><b>Sicherheits-Lab:</b> Elektrische Sicherheit an acht animierten Prüfständen: Stromwirkung auf den Körper, Netzformen mit Fehlerschleife, Sicherung und LS-Schalter, RCD, Schutzklassen und Schutzart, Isolation und Schutzleiter, Prüfplatz für die Geräteprüfung (mit Prüfprotokoll) sowie Sicherheitsregeln und Rettungskette. Alles ist Simulation und ersetzt keine Unterweisung; die Werte sind Übungswerte.</li>
+<li><b>Netzteil-Lab:</b> Netzteile und Schaltregler an acht animierten Prüfständen: Transformator, Gleichrichter mit Siebung, Z-Diode und Linearregler (7805, LM317), Tiefsetzsteller, Hochsetzsteller, Inverswandler und Sperrwandler, Gate-Ansteuerung und Schaltverluste, Regelkreis mit Labornetzteil sowie Fehlersuche. Brummspannung, Verlustleistung und Wirkungsgrad rechnen, Netzteile auslegen. Alles ist Simulation und ersetzt keine Unterweisung; die Bauteilwerte sind Übungswerte.</li>
 <li><b>HausLab:</b> Elektroinstallation im 3D-Haus: drei Häuser (Einfamilienhaus, Altbau-Wohnung, Bürokomplex), freies Gestalten, Leitungen an Wänden und Decke, Verteilerkasten bestücken, Betrieb mit Auslösung von FI und Automaten.</li>
 <li><b>App-Werkstatt:</b> Eigene Apps mit einer KI bauen (Claude, ChatGPT oder andere), prüfen und weitergeben, dazu Notizen im Obsidian-Format. Ohne Vorkenntnisse. Die KI läuft außerhalb des Labs, in der Werkstatt startest und prüfst du den Code abgeschottet.</li>
 <li><b>SPS-Lab:</b> Eine speicherprogrammierbare Steuerung programmieren in Kontaktplan (KOP), Funktionsplan (FUP) und GRAFCET, mit Adressen nach IEC oder Siemens, und an vier animierten Anlagen testen: Förderband, Ampel, Tank und Garagentor.</li>
@@ -182,6 +183,15 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>Sicherheit des Labs:</b> Es gibt keine Anleitung zu Arbeiten an Netzspannung und keine Mess- oder Aufbauanleitung für Steckdosen und Verteiler. Das Lab ersetzt keine Unterweisung und keinen Erste-Hilfe-Kurs; das Prüfprotokoll ist ein Übungsprotokoll und kein Prüfnachweis.</li>
 <li><b>Aufgaben:</b> 32 Aufgaben mit automatischer Prüfung, Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-els.html">Sicherheits-Lab: Schutz, Prüfung, Rettung</a> mit Arbeitsblatt. Zur Prüfungsvorbereitung gehört das Thema Sicherheit und Normen im Prüfungs-Lab.</p>
+
+<h2>5k. Netzteil-Lab: Netzteile und Schaltregler</h2>
+<ul><li><b>Sieben Bereiche</b> oben: <span class="k">Prüfstand</span> (Bild, Blockschaltbild mit Leistungsbilanz, Bedienpult, Messgeräte, Ampel), <span class="k">Verläufe</span> (Spannungen und Ströme über der Zeit mit Cursor und Zeitlupe), <span class="k">Kennlinien</span> (mit Fadenkreuz, Tabelle und CSV-Export), <span class="k">Auslegen</span> (Assistent in vier Schritten mit Verlustvergleich Linear gegen Schaltregler), <span class="k">Rechnen</span> (Rechenweg zu allen Formeln, dazu Übungen), <span class="k">Aufgaben</span> und <span class="k">Lernen</span> (19 Abschnitte).</li>
+<li><b>Acht Prüfstände:</b> Transformator, Gleichrichter und Siebung, Z-Diode und Linearregler, Tiefsetzsteller, Hochsetzsteller, Inverswandler und Sperrwandler, Gate und Schaltverluste, Regelkreis und Labornetzteil, Fehlersuche am Netzteil. Alle Anlagen sind <b>Übungsanlagen mit Übungswerten</b>; belegt sind nur die Werte, die im Lab mit Haken gekennzeichnet sind.</li>
+<li><b>Von der Netzspannung zur Gleichspannung:</b> Das Blockschaltbild zeigt Transformator, Gleichrichtung, Glättung und Stabilisierung mit der Leistungsbilanz: Was hineingeht, was ankommt und was als Verlust zu Wärme wird. Die Ampel zeigt Farbe, Symbol, Text und Marge; <b>Grün heißt nicht gefahrlos</b>, sondern nur, dass die Übungswerte eingehalten sind.</li>
+<li><b>Fehler-Würfel und Fehlersuche:</b> Der Würfel baut zum Beispiel einen ausgetrockneten Ladekondensator, eine offene Diode, R1 oder R2 offen oder einen zufälligen Fehler ein. Beim zufälligen Fehler bleibt die Ursache verdeckt, bis du eine Diagnose abgibst oder die Auflösung zeigst.</li>
+<li><b>Sicherheit des Labs:</b> Es gibt keine Anleitung zu Arbeiten an Netzspannung und keine Mess- oder Aufbauanleitung für Netzteile am Netz. Zum geladenen Kondensator steht nur der Hinweis, dass er nach dem Abschalten gefährlich bleiben kann, ohne Verfahren und ohne Zahl. Das Lab ersetzt keine Unterweisung.</li>
+<li><b>Aufgaben:</b> 32 Aufgaben mit automatischer Prüfung, Tipps in drei Stufen, Musterlösung zum Ansehen, viele im Stil der Abschlussprüfung.</li></ul>
+<p class="mute">Weiter im Lernheft <a href="lernen-nts.html">Netzteil-Lab: Netzteile und Schaltregler</a> mit Arbeitsblatt. Zur Prüfungsvorbereitung gehört das Thema Stromversorgung im Prüfungs-Lab (Link im Lernpfad und im Menü des Labs).</p>
 
 <h2>6. Wenn etwas nicht klappt</h2>
 <table><tr><th>Problem</th><th>Lösung</th></tr>
