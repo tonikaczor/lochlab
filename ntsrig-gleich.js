@@ -38,7 +38,7 @@
     { key: 'diode', label: 'Diodenart', type: 'select', value: 'si', options: opt([['si', 'Silizium-Diode (0,7 V)'], ['schottky', 'Schottky-Diode (0,4 V, Übungswert)']]), stufe: 'gleich', group: G_G,
       help: 'Die Durchlassspannung je Diode: Silizium 0,7 V (belegt), Schottky 0,4 V (Übungswert, Ausbilder gleicht ab). Eine kleinere Durchlassspannung erhöht den Scheitelwert und senkt die Diodenverluste.' },
     { key: 'rs', label: 'Vorwiderstand R_s', type: 'slider', scale: 'lin', min: 0, max: 20, step: 0.1, unit: 'Ω', unitKind: 'res', value: 0, stufe: 'gleich', group: G_G,
-      help: 'Widerstand in Reihe vor dem Ladekondensator. Er begrenzt den Einschaltstrom (Û geteilt durch R_i plus R_s) und die Ladestromspitzen. R_i des Transformators ist ein Übungswert.' },
+      help: 'Widerstand in Reihe vor dem Ladekondensator. Er begrenzt den Einschaltstrom (Û geteilt durch R_i plus R_s) und die Ladestromspitzen. Im Betrieb kostet er Spannung: Weil der Ladestrom nur in Impulsen fließt, sinkt U_min stärker, als der mittlere Laststrom allein am Widerstand erwarten lässt (Zeitschrittmodell). R_i des Transformators ist ein Übungswert.' },
     { key: 'c', label: 'Ladekondensator C', type: 'slider', scale: 'log', min: 100, max: 10000, step: 1, unit: 'µF', unitKind: 'cap', value: 2200, stufe: 'sieb', group: G_G,
       help: 'Kapazität des Ladekondensators. Ein größeres C verkleinert die Brummspannung (ΔU = I / (f_p · C), Lehrnäherung), macht die Ladestromimpulse aber schmaler und höher.' },
     { key: 'rsieb', label: 'RC-Glied nach dem Ladekondensator', type: 'switch', value: false, stufe: 'sieb', group: G_G,
@@ -55,7 +55,7 @@
     { key: 'iPeak', label: 'Ladestromspitze', unit: 'A', digits: 2, min: 0, max: 40, help: 'Höchster Strom der Dioden im Ladeimpuls aus der Zeitschritt-Rechnung. Dieser Strom ist viel größer als der mittlere Laststrom.' },
     { key: 'tLeit', label: 'Leitdauer je Impuls', unit: 'ms', digits: 2, min: 0, max: 10, zeroIsNone: true, help: 'Dauer, in der die Dioden je Ladeimpuls leiten, aus der Zeitschritt-Rechnung. 0 heißt: keine Leitphase (kein Laststrom).' },
     { key: 'imax', label: 'Einschaltstrom I_max', unit: 'A', digits: 1, min: 0, max: 200, help: 'Höchster Strom beim Einschalten in den leeren Kondensator: Û / (R_i + R_s). R_i (Übungswert) und R_s begrenzen ihn.' },
-    { key: 'umin', label: 'Kleinste Spannung U_min', unit: 'V', digits: 2, min: 0, max: 75, help: 'Tiefster Wert der Ladekondensatorspannung: Û minus ΔU. Mit RC-Glied ist I · R abgezogen. Dieser Wert muss über der Mindest-Eingangsspannung des Reglers bleiben.' },
+    { key: 'umin', label: 'Kleinste Spannung U_min', unit: 'V', digits: 2, min: 0, max: 75, help: 'Tiefster Wert der Ladekondensatorspannung: Û minus ΔU; mit Vorwiderstand R_s aus dem Zeitschrittmodell (Ladestrom in Impulsen). Mit RC-Glied ist I · R abgezogen. Dieser Wert muss über der Mindest-Eingangsspannung des Reglers bleiben.' },
     { key: 'dusieb', label: 'Brumm nach RC-Glied', unit: 'mV', digits: 1, min: 0, max: 5000, zeroIsNone: true, help: 'Brummspannung hinter dem RC-Glied (Spannungsteiler aus R und Blindwiderstand von C2). 0 heißt: RC-Glied aus.' }
   ];
   const PRESETS = [
@@ -81,7 +81,8 @@
       const cmin = ctl.iLast > 0 ? CORE.rect.cmin({ topo: ctl.topo, I: ctl.iLast, dU: okLim, f }) : NaN;
       const valid = rip.valid;
       let mean = 0; for (let i = 0; i < wv.uc.length; i++) mean += wv.uc[i]; mean /= Math.max(1, wv.uc.length);
-      const dU = valid ? rip.dU : wv.dU, Umittel0 = valid ? rip.Umittel : mean, Umin0 = valid ? rip.Umin : wv.Umin;
+      const zeit = !valid || ctl.rs > 0;      // mit Vorwiderstand gilt die Brummformel nicht (R_s vor dem Ladekondensator): Zeitschrittmodell (Fachreview v22, K1)
+      const dU = zeit ? wv.dU : rip.dU, Umittel0 = zeit ? mean : rip.Umittel, Umin0 = zeit ? wv.Umin : rip.Umin;
       let rc = null, drop = 0;
       if (ctl.rsieb) {
         const rcR = L('rc_r'), rcC = L('rc_c');

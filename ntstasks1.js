@@ -237,26 +237,32 @@
 
   /* ====================================================================== nt8: Einschaltstrom begrenzen (Pool F2024-N07) */
   const M8 = (() => {
-    const BASE = { u2: 12, topo: 'bruecke', diode: 'si', c: 2200, rsieb: false, iLast: 0.5 }, OWN = ['rs'], IMAX = 2;
-    const vals = () => once('v8', () => { const k = snap('gleich', fullCtl('gleich', Object.assign({}, BASE, { rs: 0 }))), peak = k.m.uhat, ri = lim('ri_trafo'), umin = k.m.umin, regmin = lim('umin_7805'),
-      rsmin = peak / IMAX - ri, rsmax = (umin - regmin) / BASE.iLast, sol = Math.round((rsmin + rsmax) / 2), s = snap('gleich', fullCtl('gleich', Object.assign({}, BASE, { rs: sol })));
-      return { imax: IMAX, peak, ri, i0: k.m.imax, umin, regmin, rsmin, rsmax, sol, isol: s.m.imax, umsol: umin - BASE.iLast * sol, il: BASE.iLast, i20: snap('gleich', fullCtl('gleich', Object.assign({}, BASE, { rs: 20 }))).m.imax, u20: umin - BASE.iLast * 20 }; });
+    const BASE = { u2: 12, topo: 'bruecke', diode: 'si', c: 2200, rsieb: false, iLast: 0.5 }, OWN = ['rs'], IMAX = 4;
+    /* U_min im Betrieb aus dem Zeitschrittmodell des Kerns (rect.wave): Der Ladestrom fließt in Impulsen, ein Gleichstrom-Abfall "U_min − I · R_s" wäre zu klein (Fachreview v22, K1). */
+    const umW = rs => { const w = CORE().rect.wave({ topo: BASE.topo, U2: BASE.u2, uf: lim('uf_si'), f: lim('f_netz'), C: BASE.c, I: BASE.iLast, ri: lim('ri_trafo'), rs }, 400); return w && w.ok ? w.Umin : NaN; };
+    const E12 = [1, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2];
+    const vals = () => once('v8', () => { const k = snap('gleich', fullCtl('gleich', Object.assign({}, BASE, { rs: 0 }))), peak = k.m.uhat, ri = lim('ri_trafo'), regmin = lim('umin_7805'), rsminRaw = peak / IMAX - ri;
+      let lo = rsminRaw, hi = 20; for (let i = 0; i < 50; i++) { const mid = (lo + hi) / 2; if (umW(mid) >= regmin) lo = mid; else hi = mid; }
+      const rsmin = Math.ceil(rsminRaw * 10 - 1e-9) / 10, rsmax = Math.floor(lo * 10 + 1e-9) / 10, mid0 = (rsmin + rsmax) / 2, cand = [];
+      [0.1, 1, 10].forEach(d => E12.forEach(e => { const x = Math.round(e * d * 100) / 100; if (x >= rsmin && x <= rsmax) cand.push(x); }));
+      const sol = cand.length ? cand.sort((a, b) => Math.abs(a - mid0) - Math.abs(b - mid0))[0] : Math.round(mid0 * 10) / 10, s = snap('gleich', fullCtl('gleich', Object.assign({}, BASE, { rs: sol })));
+      return { imax: IMAX, peak, ri, i0: k.m.imax, umin0: umW(0), regmin, rsmin, rsmax, sol, isol: s.m.imax, umsol: umW(sol), il: BASE.iLast, rsgross: 10, ugross: umW(10) }; });
     const check = mk('gleich', OWN, (c, r, a) => {
-      const eff = effOf(c, 'gleich', OWN, BASE), sim = snap('gleich', eff), v = vals(), um = sim.m.umin - eff.iLast * eff.rs;
+      const eff = effOf(c, 'gleich', OWN, BASE), sim = snap('gleich', eff), v = vals(), um = umW(eff.rs);
       inputRow(c, r, sim, a, 'gleich');
       r(sim.m.imax <= v.imax + 1e-9, 'Der Einschaltstrom am Prüfstand liegt bei höchstens ' + f(v.imax, 0) + ' A', 'Das Messgerät zeigt bei R_s = ' + f(eff.rs, 1) + ' Ω einen Einschaltstrom von ' + f(sim.m.imax, 2) + ' A, verlangt sind höchstens ' + f(v.imax, 0) + ' A. Der Vorwiderstand ist zu klein.');
-      r(um >= v.regmin - 1e-9, 'Die kleinste Reglereingangsspannung U_min − I · R_s bleibt über ' + f(v.regmin, 0) + ' V', 'Mit R_s = ' + f(eff.rs, 1) + ' Ω ist U_min − I · R_s = ' + f(sim.m.umin, 2) + ' V − ' + f(eff.iLast, 1) + ' A · ' + f(eff.rs, 1) + ' Ω = ' + f(um, 2) + ' V, der Regler braucht mindestens ' + f(v.regmin, 0) + ' V (Übungswert). Der Vorwiderstand ist zu groß.');
+      r(um >= v.regmin - 1e-9, 'Die kleinste Spannung am Ladekondensator (Reglereingang) bleibt im Betrieb über ' + f(v.regmin, 0) + ' V', 'Mit R_s = ' + f(eff.rs, 1) + ' Ω fällt die Spannung am Ladekondensator im Betrieb bis auf ' + f(um, 2) + ' V (Zeitschrittmodell, der Ladestrom fließt in Impulsen), der Regler braucht mindestens ' + f(v.regmin, 0) + ' V (Übungswert). Der Vorwiderstand ist zu groß.');
     });
     return { vals, check, consts: [],
-      text: () => { const v = vals(); return 'Ein Netzteil mit Brückengleichrichter und Ladekondensator (' + f(BASE.c, 0) + ' µF) versorgt eine Last mit ' + f(v.il, 1) + ' A. Im Einschaltmoment wirkt der leere Kondensator wie ein Kurzschluss. Ein Vorwiderstand R_s in Reihe soll den Einschaltstrom auf höchstens ' + f(v.imax, 0) + ' A begrenzen. Er darf aber nicht so groß sein, dass die kleinste Eingangsspannung des nachfolgenden Reglers (U_min − I · R_s) unter ' + f(v.regmin, 0) + ' V fällt (Übungswert). Stelle R_s im Prüfstand „Gleichrichter und Siebung“ ein.'; },
+      text: () => { const v = vals(); return 'Ein Netzteil mit Brückengleichrichter und Ladekondensator (' + f(BASE.c, 0) + ' µF) versorgt eine Last mit ' + f(v.il, 1) + ' A. Im Einschaltmoment wirkt der leere Kondensator wie ein Kurzschluss. Ein Vorwiderstand R_s in Reihe soll den Einschaltstrom auf höchstens ' + f(v.imax, 0) + ' A begrenzen. Er darf aber nicht so groß sein, dass die kleinste Spannung am Ladekondensator, also am Eingang des nachfolgenden Reglers, im Betrieb unter ' + f(v.regmin, 0) + ' V fällt (Übungswert). Der Ladestrom fließt nur in kurzen Impulsen, deshalb sinkt die Spannung stärker, als der Laststrom allein am Widerstand erwarten lässt: Das Messgerät U_min im Prüfstand „Gleichrichter und Siebung“ zeigt den Wert aus dem Zeitschrittmodell. Stelle R_s dort ein.'; },
       hint: () => { const v = vals(); return [
-        'Im Einschaltmoment begrenzen nur der Innenwiderstand und der Vorwiderstand den Strom: I = Û / (R_i + R_s). Im Betrieb fließt der Laststrom durch R_s und kostet Spannung: U = I · R_s.',
-        'Û = ' + f(v.peak, 2) + ' V und R_i = ' + f(v.ri, 1) + ' Ω ergeben ohne Vorwiderstand ' + f(v.i0, 1) + ' A. Für höchstens ' + f(v.imax, 0) + ' A braucht R_s mindestens ' + f(v.rsmin, 1) + ' Ω; für ' + f(v.regmin, 0) + ' V am Reglereingang darf es höchstens ' + f(v.rsmax, 1) + ' Ω sein.',
-        'Musterlösung: R_s zwischen ' + f(v.rsmin, 1) + ' Ω und ' + f(v.rsmax, 1) + ' Ω, zum Beispiel ' + f(v.sol, 0) + ' Ω (Einschaltstrom ' + f(v.isol, 2) + ' A, U_min − I · R_s = ' + f(v.umsol, 2) + ' V).'
+        'Im Einschaltmoment begrenzen nur der Innenwiderstand und der Vorwiderstand den Strom: I = Û / (R_i + R_s). Im Betrieb lädt sich der Kondensator nur in kurzen Impulsen nach; der Vorwiderstand liegt im Weg dieser Impulse und kostet deshalb deutlich mehr Spannung, als der mittlere Laststrom allein am Widerstand erzeugen würde. Die kleinste Spannung liest du am Messgerät U_min ab.',
+        'Û = ' + f(v.peak, 2) + ' V und R_i = ' + f(v.ri, 1) + ' Ω ergeben ohne Vorwiderstand ' + f(v.i0, 1) + ' A. Für höchstens ' + f(v.imax, 0) + ' A braucht R_s mindestens ' + f(v.rsmin, 1) + ' Ω. Ohne Vorwiderstand beträgt die kleinste Spannung ' + f(v.umin0, 2) + ' V, mit wachsendem R_s fällt sie weiter; für ' + f(v.regmin, 0) + ' V am Reglereingang darf R_s höchstens ' + f(v.rsmax, 1) + ' Ω sein (Zeitschrittmodell).',
+        'Musterlösung: R_s zwischen ' + f(v.rsmin, 1) + ' Ω und ' + f(v.rsmax, 1) + ' Ω, zum Beispiel ' + f(v.sol, 1) + ' Ω (Einschaltstrom ' + f(v.isol, 2) + ' A, kleinste Spannung ' + f(v.umsol, 2) + ' V).'
       ]; },
       start: () => S('gleich', Object.assign({}, BASE, { rs: 0 })),
       sol: () => S('gleich', Object.assign({}, BASE, { rs: vals().sol })),
-      wrong: () => [{ name: 'ohne Vorwiderstand', answer: S('gleich', Object.assign({}, BASE, { rs: 0 })) }, { name: 'Vorwiderstand zu groß (20 Ω)', answer: S('gleich', Object.assign({}, BASE, { rs: 20 })) }] };
+      wrong: () => [{ name: 'ohne Vorwiderstand', answer: S('gleich', Object.assign({}, BASE, { rs: 0 })) }, { name: 'Vorwiderstand zu groß (' + f(vals().rsgross, 0) + ' Ω)', answer: S('gleich', Object.assign({}, BASE, { rs: vals().rsgross })) }] };
   })();
 
   /* ====================================================================== nt9: Z-Diode, Strom berechnen (Pool S2025-30) */

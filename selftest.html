@@ -9,7 +9,7 @@
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
 <script>
 (function () {
-  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['els', 'Sicherheits-Lab', 'elslab.html', 6], ['nts', 'Netzteil-Lab', 'ntslab.html', 6], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['thm', 'Thermik-Lab', 'thmlab.html', 6], ['emv', 'EMV-Lab', 'emvlab.html', 6], ['enr', 'Energie-Lab', 'enrlab.html', 6], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['vb', 'Projekte', 'verbund.html', 10]];
+  var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['els', 'Sicherheits-Lab', 'elslab.html', 6], ['nts', 'Netzteil-Lab', 'ntslab.html', 6], ['wsl', 'Wechselstrom-Lab', 'wsllab.html', 6], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['thm', 'Thermik-Lab', 'thmlab.html', 6], ['emv', 'EMV-Lab', 'emvlab.html', 6], ['enr', 'Energie-Lab', 'enrlab.html', 6], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['vb', 'Projekte', 'verbund.html', 10]];
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -718,6 +718,95 @@
     FORBID.forEach(function (re) { if (re.test(tx)) bad.push('Verbotsliste: ' + re + ' kommt in Texten vor'); });
     return { n: ex.length, bad: bad };
   }
+  /* Wechselstrom-Lab: Kern-Marker (X_L 31,42 Ohm und I 6,00 A, Q 2,40 kvar, C 81,12 uF, f0 15915,5 Hz, f_g 338,6 Hz), Registry mit 8 Pruefstaenden (laufen ohne NaN,
+     zeichnen mit Mock in zwei Groessen, Ampel gueltig), 34 Beispiele ueber die Oberflaeche (Hinweiszahlen-Audit der Beschreibung), 32 Aufgaben (Hinweiszahlen-Audit, drei Tipp-Stufen,
+     Auswahl-Audit der Auswahlfragen, Start ueber die echte Oberflaeche), Verbotslisten-Suchlauf ueber alle Texte, Praefix-Test der Globalen. Der Abgleich mit dem Pruefungspool liest
+     Dateien und laeuft deshalb in Node (quelle/wsllab/test_pool.js), nicht hier. */
+  async function wslCore(w) {
+    var bad = [], IDS = ['sinus', 'rlc', 'leistung', 'kompens', 'schwing', 'filter', 'trafo', 'drehstrom'];
+    var C = w.WSL_CORE, R = w.WSL_RIGS, U = w.WSL_UI, T = w.WSL_TASKS;
+    if (!C || !R || !U || !T || !w.WSL_DATA) { bad.push('WSL_CORE, WSL_RIGS, WSL_UI, WSL_TASKS oder WSL_DATA fehlt'); return { n: 0, bad: bad }; }
+    var ex = w.WSL_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'wsl'; });
+    if (ex.length !== 34) bad.push('Beispiele: ' + ex.length + ' statt 34');
+    if (tk.length !== 32) bad.push('Aufgaben: ' + tk.length + ' statt 32');
+    if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
+    if (Object.keys(R.defs).length !== 8) bad.push('Registry: ' + Object.keys(R.defs).length + ' Pruefstaende statt 8');
+    /* Kern-Marker */
+    var mk = function (name, v, soll, tol) { if (!(Math.abs(v - soll) <= tol)) bad.push('Kern: ' + name + ' ' + v + ' statt ' + soll); };
+    try {
+      var a1 = C.rlc.series({ u: 230, f: 50, r: 22, l: 0.1 });
+      mk('X_L 100 mH bei 50 Hz', a1.xl, 31.42, 5e-2); mk('Strom R 22 Ohm, L 100 mH an 230 V', a1.i, 6.00, 5e-3);
+      mk('Blindleistung 3,2 kW, cos phi 0,8', C.power.fromPcos(3200, 0.8, 230).q, 2400, 1e-6);
+      mk('Kompensations-C auf cos phi 0,95 in uF', C.comp.need({ p: 3200, cos1: 0.8, cos2: 0.95, u: 230, f: 50 }).c * 1e6, 81.12, 5e-3);
+      mk('Resonanzfrequenz 1 mH, 100 nF', C.res.series({ l: 1e-3, c: 100e-9, r: 10, u: 1 }).f0, 15915.5, 0.05);
+      mk('Grenzfrequenz RC 10 kOhm, 47 nF', C.filter.rc({ typ: 'tief', r: 10e3, c: 47e-9 }).fg, 338.6, 0.05);
+      if (!(C.limits && Object.keys(C.limits).length)) bad.push('Kern: keine Grenzwerte');
+    } catch (x0) { bad.push('Kern: ' + x0); }
+    /* Pruefstaende */
+    IDS.forEach(function (id) {
+      try {
+        if (!R.defs[id]) { bad.push(id + ': nicht registriert'); return; }
+        var r = R.create(id, {}); for (var q = 0; q < 60; q++) r.step(100);
+        var nf = []; regNums(r.state(), 'state', nf); regNums(r.readMeters(), 'meter', nf);
+        if (nf.length) bad.push(id + ': keine Zahl in ' + nf.slice(0, 3).join(', '));
+        var am = r.assess(); if (!am || ['gruen', 'gelb', 'rot', 'grau'].indexOf(am.ampel) < 0) bad.push(id + ': Ampel ungueltig ' + (am && am.ampel));
+        [[1180, 820], [390, 800]].forEach(function (sz) { var m = regMock(); r.draw(m, sz[0], sz[1], 500, {}); if (m.__n < 30) bad.push(id + ': draw ' + sz.join('x') + ' zeichnet zu wenig (' + m.__n + ')'); });
+      } catch (x) { bad.push(id + ': ' + x); }
+    });
+    /* Beispiele ueber die Oberflaeche laden: richtiger Pruefstand */
+    var FORBID = [/überbrück/i, /Gehäuse öffnen/i, /unter Spannung arbeiten/i, /am Netz messen/i, /Schutzleiter abklemm/i, /Steckdose messen/i, /Phase anfassen/i, /Netz anschließen/i], texts = [];
+    for (var i = 0; i < ex.length; i++) {
+      var e2 = ex[i]; texts.push(e2.name + ' ' + (e2.desc || ''));
+      try {
+        var au = T.auditExample(e2); if (au && au.ok === false) bad.push('Beispiel ' + e2.id + ': Zahl in der Beschreibung ohne Quelle ' + (au.bad || []).join(', '));
+        U.loadExampleByName(e2.id); await sleep(25);
+        if (U.S.rigId !== e2.rig) bad.push('Beispiel ' + e2.id + ': Pruefstand ' + U.S.rigId + ' statt ' + e2.rig);
+      } catch (x) { bad.push('Beispiel ' + e2.id + ': ' + x); }
+    }
+    /* Integrationspunkte: Beispiel mit Ablauf spielt live, Fehler-Wuerfel Ueberkompensation ohne Vorgabe, Bode-Klappe im Lernen folgt wsl.deep */
+    try {
+      U.loadExampleByName('wsx6'); await sleep(60);
+      if (!U.S.live) bad.push('Beispiel wsx6 mit Ablauf spielt nicht live');
+      U.setRig('kompens'); U.setCtl('ziel', 0, true);
+      var dk = U.DICE && U.DICE.kompens && U.DICE.kompens[0].apply();
+      if (!dk || !(dk.c > 0)) bad.push('Fehler-Wuerfel Ueberkompensation liefert ohne Vorgabe (ziel = 0) nichts');
+      U.setTab('help'); await sleep(120);
+      var dd = w.document.querySelector('#helpView details[data-deep="bode"]');
+      if (!dd) bad.push('Lernen: Bode-Klappe fehlt');
+      else { U.deepSet('bode', true); if (!dd.open) bad.push('Lernen: Bode-Klappe folgt wsl.deep nicht (auf)'); U.deepSet('bode', false); if (dd.open) bad.push('Lernen: Bode-Klappe folgt wsl.deep nicht (zu)'); }
+      U.setTab('rig');
+    } catch (xi) { bad.push('Integrationspunkte: ' + xi); }
+    /* Aufgaben */
+    var TS = T.tasks;
+    if (TS.length !== 32) bad.push('WSL_TASKS: ' + TS.length + ' Aufgaben');
+    for (var j = 0; j < TS.length; j++) {
+      var t = TS[j]; texts.push(t.title + ' ' + (t.hint || []).join(' '));
+      try {
+        var a = T.audit(t); if (a && a.ok === false) bad.push(t.id + ': Zahl im Tipp ohne Quelle ' + (a.bad || []).join(', '));
+        if (!(t.hint && t.hint.length === 3)) bad.push(t.id + ': keine drei Tipp-Stufen');
+        /* Auswahl-Audit: je Frage mindestens zwei Optionen, Werte und Beschriftungen eindeutig, die Musterloesung waehlt genau eine vorhandene Option */
+        if (t.choices && t.choices.length) {
+          var sol = null; try { sol = typeof t.sol === 'function' ? t.sol() : null; } catch (xs) { sol = null; }
+          t.choices.forEach(function (ch) {
+            var ov = (ch.options || []).map(function (o) { return String(o.value); }), ol = (ch.options || []).map(function (o) { return String(o.label); });
+            if (ov.length < 2) bad.push(t.id + ' ' + ch.key + ': weniger als zwei Optionen');
+            if (new Set(ov).size !== ov.length || new Set(ol).size !== ol.length) bad.push(t.id + ' ' + ch.key + ': Werte oder Beschriftungen doppelt');
+            var pick = sol && sol.choices ? sol.choices[ch.key] : undefined;
+            if (sol && sol.choices && ov.filter(function (v) { return v === String(pick); }).length !== 1) bad.push(t.id + ' ' + ch.key + ': Musterloesung waehlt keine eindeutige Option (' + pick + ')');
+          });
+        }
+        await U.startTask(t.id); await sleep(25);
+        if (!U.S.task || U.S.task.id !== t.id) bad.push(t.id + ': startTask setzt die Aufgabe nicht');
+        else if (!w.document.querySelector('#taskBar') || !/\S/.test(w.document.querySelector('#taskBar').textContent)) bad.push(t.id + ': Aufgabenleiste leer');
+      } catch (x) { bad.push(t.id + ': ' + x); }
+    }
+    try { U.S.task = null; } catch (x) { /* Aufraeumen */ }
+    var tx = JSON.stringify(C.TEXTS || {}) + ' ' + texts.join(' ');
+    FORBID.forEach(function (re) { if (re.test(tx)) bad.push('Verbotsliste: ' + re + ' kommt in Texten vor'); });
+    /* Praefix-Test: die Globalen des Labs tragen das Praefix WSL_ */
+    ['WSL_CORE', 'WSL_RIGS', 'WSL_UI', 'WSL_TASKS', 'WSL_DATA'].forEach(function (k) { if (!w[k]) bad.push('Praefix: ' + k + ' fehlt'); });
+    return { n: ex.length, bad: bad };
+  }
   /* Regelungstechnik-Lab: Kern-Check (Marker-Rechnungen), 7 Pruefstaende (laufen 60 Prozess-s ohne NaN, zeichnen mit Mock), 24 Beispiele, 30 Aufgaben
      (Hinweiszahlen-Audit, Start ueber die echte Oberflaeche), Auswahlfragen der Aufgaben mit choices */
   function regMock() {
@@ -962,6 +1051,11 @@
       var nt = await ntsCore(w); if (nt.bad.length) all.ok = false;
       all.labs.push({ lab: 'Netzteil-Lab Kern', tasks: nt.n, bad: nt.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Netzteil-Lab: Kern, 8 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche, Verbotsliste</td><td>' + nt.n + ' Beispiele</td><td class="' + (nt.bad.length ? 'bad' : 'ok') + '">' + (nt.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + nt.bad.join('; ') + '</td></tr>');
+    }
+    if (l[0] === 'wsl') {
+      var wc = await wslCore(w); if (wc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Wechselstrom-Lab Kern', tasks: wc.n, bad: wc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Wechselstrom-Lab: Kern, 8 Pruefstaende, Beispiele, Aufgaben ueber die Oberflaeche, Verbotsliste</td><td>' + wc.n + ' Beispiele</td><td class="' + (wc.bad.length ? 'bad' : 'ok') + '">' + (wc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + wc.bad.join('; ') + '</td></tr>');
     }
     if (l[0] === 'vb') {
       var vc = await vbCore(w); if (vc.bad.length) all.ok = false;

@@ -547,11 +547,11 @@
           '. Dafür darf bei D die Schleifenimpedanz am kleinsten sein, die Leitung also am kürzesten (Beispiel B, C oder D). Der Faktor 5 für B ist belegt, die Grenzen für C und D sind Übungswerte.';
       } },
     { id: 'elx14', name: 'Leitung zu schwach', cat: 'Schutzorgane', rig: 'schutz',
-      spec: () => ({ ctl: { dev: 'LS-B', In: 20, q: 1.5, ib: 12, i: 2 }, ref: { In: 16 } }),
+      spec: () => ({ ctl: { dev: 'LS-B', In: 20, q: 1.5, ib: 12, i: 2 }, ref: { In: 13 } }),
       text(X) {
         const { a, b, n } = X;
         must(m(a, 'iz') < g(a, 'In') && a.a.ampel === 'rot' && b.a.ampel === 'gruen' && m(b, 'iz') >= g(b, 'In') && g(b, 'ib') <= g(b, 'In'), 'In > Iz rot, In = Iz grün');
-        return 'Eine Leitung mit ' + n('q', g(a, 'q'), 1) + ' mm² darf im Modell höchstens ' + n('iz', m(a, 'iz'), 0) + ' A dauernd führen (Übungstabelle, Verlegeart B2). Ein LS-Schalter mit In = ' + n('in', g(a, 'In'), 0) + ' A löst bei Überlast erst oberhalb dieses Werts aus: Die Leitung wäre nicht geschützt, die Ampel zeigt ' + ampName(a) +
+        return 'Eine Leitung mit ' + n('q', g(a, 'q'), 1) + ' mm² darf im Modell höchstens ' + n('iz', m(a, 'iz'), 0) + ' A dauernd führen (Übungstabelle, Verlegeart B2, 3 belastete Adern). Ein LS-Schalter mit In = ' + n('in', g(a, 'In'), 0) + ' A löst bei Überlast erst oberhalb dieses Werts aus: Die Leitung wäre nicht geschützt, die Ampel zeigt ' + ampName(a) +
           '. Mit In = ' + n('in0', g(b, 'In'), 0) + ' A gilt Ib ≤ In ≤ Iz (' + n('ib', g(b, 'ib'), 0) + ' A ≤ ' + n('in1', g(b, 'In'), 0) + ' A ≤ ' + n('iz1', m(b, 'iz'), 0) + ' A) und die Ampel zeigt ' + ampName(b) + '. Der Nennstrom wird nach der Leitung gewählt, nicht nach dem Verbraucher allein. Die Belastbarkeiten sind Übungswerte.';
       } },
     { id: 'elx15', name: 'Schmelzsicherung gG', cat: 'Schutzorgane', rig: 'schutz',

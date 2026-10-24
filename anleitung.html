@@ -17,10 +17,10 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 21.142</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 22.143</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen.html">Lernen (Arduino, Raspberry Pi)</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 
-<div class="box"><b>Tonfunk Lab</b> sind einundzwanzig Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
+<div class="box"><b>Tonfunk Lab</b> sind zweiundzwanzig Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
 <ul><li><b>LochLab:</b> Schaltungen auf der Lochrasterplatine planen und ausprobieren.</li>
 <li><b>SchaltLab:</b> Stromlaufpläne zeichnen und simulieren (Spannungen, Ströme, Graphen).</li>
 <li><b>SimLab:</b> Experimente und Hausinstallation (Wechselschaltung, Schütz, FI, Drehstrom, mit Schutzleiter PE), mit Aufgaben und Fehlersuche.</li>
@@ -28,6 +28,7 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>MessLab:</b> Messtechnik mit Werkbank: Multimeter, Oszilloskop, Netzgerät, Funktionsgenerator, Frequenzzähler, Leistungsmesser und Kennlinienschreiber, dazu Messaufgaben mit Zahlenfeldern, Messfehler und Fehlersuche.</li>
 <li><b>Sicherheits-Lab:</b> Elektrische Sicherheit an acht animierten Prüfständen: Stromwirkung auf den Körper, Netzformen mit Fehlerschleife, Sicherung und LS-Schalter, RCD, Schutzklassen und Schutzart, Isolation und Schutzleiter, Prüfplatz für die Geräteprüfung (mit Prüfprotokoll) sowie Sicherheitsregeln und Rettungskette. Alles ist Simulation und ersetzt keine Unterweisung; die Werte sind Übungswerte.</li>
 <li><b>Netzteil-Lab:</b> Netzteile und Schaltregler an acht animierten Prüfständen: Transformator, Gleichrichter mit Siebung, Z-Diode und Linearregler (7805, LM317), Tiefsetzsteller, Hochsetzsteller, Inverswandler und Sperrwandler, Gate-Ansteuerung und Schaltverluste, Regelkreis mit Labornetzteil sowie Fehlersuche. Brummspannung, Verlustleistung und Wirkungsgrad rechnen, Netzteile auslegen. Alles ist Simulation und ersetzt keine Unterweisung; die Bauteilwerte sind Übungswerte.</li>
+<li><b>Wechselstrom-Lab:</b> Wechselstrom und Schwingkreise an acht animierten Prüfständen: Sinusgrößen mit Zeigerbild, R-L-C-Reihen- und Parallelschaltung, Wirk-, Blind- und Scheinleistung, Blindleistungskompensation, Reihen- und Parallelschwingkreis mit Güte und Bandbreite, RC- und RL-Filter (mit aufklappbarer Bode-Vertiefung), Transformator und Drehstrom als Rechenvergleich. Zeitbild, Zeigerbild und Formel zeigen dieselbe Größe. Alles ist Simulation und ersetzt keine Unterweisung; die Werte sind Übungswerte.</li>
 <li><b>HausLab:</b> Elektroinstallation im 3D-Haus: drei Häuser (Einfamilienhaus, Altbau-Wohnung, Bürokomplex), freies Gestalten, Leitungen an Wänden und Decke, Verteilerkasten bestücken, Betrieb mit Auslösung von FI und Automaten.</li>
 <li><b>App-Werkstatt:</b> Eigene Apps mit einer KI bauen (Claude, ChatGPT oder andere), prüfen und weitergeben, dazu Notizen im Obsidian-Format. Ohne Vorkenntnisse. Die KI läuft außerhalb des Labs, in der Werkstatt startest und prüfst du den Code abgeschottet.</li>
 <li><b>SPS-Lab:</b> Eine speicherprogrammierbare Steuerung programmieren in Kontaktplan (KOP), Funktionsplan (FUP) und GRAFCET, mit Adressen nach IEC oder Siemens, und an vier animierten Anlagen testen: Förderband, Ampel, Tank und Garagentor.</li>
@@ -193,6 +194,15 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>Aufgaben:</b> 32 Aufgaben mit automatischer Prüfung, Tipps in drei Stufen, Musterlösung zum Ansehen, viele im Stil der Abschlussprüfung.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-nts.html">Netzteil-Lab: Netzteile und Schaltregler</a> mit Arbeitsblatt. Zur Prüfungsvorbereitung gehört das Thema Stromversorgung im Prüfungs-Lab (Link im Lernpfad und im Menü des Labs).</p>
 
+<h2>5l. Wechselstrom-Lab: Wechselstrom und Schwingkreise</h2>
+<ul><li><b>Sieben Bereiche</b> oben: <span class="k">Prüfstand</span> (Bild, Leiste Zeit – Zeiger – Formel, Bedienpult, Messgeräte, Ampel), <span class="k">Kennlinien</span> (Resonanzkurve, Betrag und Phase, mit Fadenkreuz, Tabelle und CSV-Export; beim Filter die aufklappbare Bode-Vertiefung), <span class="k">Messreihe</span> (Werte aufnehmen, Bericht gegen die Rechnung kontrollieren), <span class="k">Auslegen</span> (Assistent in vier Schritten für Kompensation, Schwingkreis, Filter oder Transformator), <span class="k">Rechnen</span> (Rechenweg zu allen Formeln, dazu Übungen), <span class="k">Aufgaben</span> und <span class="k">Lernen</span> (17 Abschnitte).</li>
+<li><b>Acht Prüfstände:</b> Sinus, R-L-C-Schaltung, Leistung, Kompensation, Schwingkreis, Filter, Transformator, Drehstrom. Alle Anlagen sind <b>Übungsanlagen mit Übungswerten</b>; belegt sind nur die Werte, die im Lab mit Haken gekennzeichnet sind.</li>
+<li><b>Zeit, Zeiger, Formel:</b> Dieselbe Größe wird als Kurve über der Zeit, als drehender Zeiger und als Formel gezeigt. Die Ampel zeigt Farbe, Symbol, Text und Marge, sobald eine Vorgabe gesetzt ist; <b>Grün heißt nicht gefahrlos</b>, sondern nur, dass die Übungswerte eingehalten sind.</li>
+<li><b>Kompensation und Schwingkreis:</b> Zu viel Kondensator ist eine Überkompensation und wird rot. Beim Reihenkreis warnt das Bild vor der Spannungsüberhöhung an Spule und Kondensator (Lehrbeispiel, nicht nachbauen). Drehstrom gibt es nur als Rechenvergleich mit Übungswerten.</li>
+<li><b>Fehler-Würfel:</b> Der Würfel verstellt zum Beispiel Kondensator, Verlustwiderstand oder Bauteilwerte. Die Auflösung nennt die Ursache mit Zahlen aus der Rechnung.</li>
+<li><b>Sicherheit des Labs:</b> Es gibt keine Anleitung zu Versuchen an Netzspannung und keine Mess- oder Aufbauanleitung für Netzspannung. Die Gefahr der Gleichspannung an der Primärwicklung eines Netztransformators steht nur als Begründung in einer Aufgabe. Das Lab ersetzt keine Unterweisung.</li>
+<li><b>Aufgaben:</b> 32 Aufgaben mit automatischer Prüfung, Tipps in drei Stufen, Musterlösung zum Ansehen, viele im Stil der Abschlussprüfung.</li></ul>
+<p class="mute">Weiter im Lernheft <a href="lernen-wsl.html">Wechselstrom-Lab: Wechselstrom und Schwingkreise</a> mit Arbeitsblatt. Zur Prüfungsvorbereitung gehört das Thema Wechselstrom und Filter im Prüfungs-Lab (Link im Lernpfad und im Menü des Labs).</p>
 <h2>6. Wenn etwas nicht klappt</h2>
 <table><tr><th>Problem</th><th>Lösung</th></tr>
 <tr><td>Seite zeigt alte Version oder neue Beispiele fehlen</td><td>App schließen und neu öffnen, notfalls Seite neu laden.</td></tr>

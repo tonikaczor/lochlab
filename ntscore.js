@@ -253,7 +253,8 @@
     L('dil_ausleg', 0.3, '', '=', 'A', '—', 'F13', 'Auslegungsfaktor der Drossel: ΔI_L = Faktor mal I_aus.'),
     L('ripple_naeh', 0.2, '', '<=', 'A', '—', 'F16', 'Gültigkeitsgrenze der Brummformel: ΔU höchstens dieser Anteil von Û.'),
     L('u_dc_max', 60, 'V', '<=', 'A', '—', 'F28', 'Obergrenze der Gleichspannung am Eingang der Prüfstände (Sicherheit).'),
-    L('u_ac_max', 50, 'V', '<=', 'A', '—', 'F28', 'Obergrenze der Wechselspannung am Eingang der Prüfstände (Sicherheit).')
+    L('u_ac_max', 50, 'V', '<=', 'A', '—', 'F28', 'Obergrenze der Wechselspannung am Eingang der Prüfstände (Sicherheit).'),
+    L('rc_r', 2.2, 'Ω', '=', 'A', '—', 'F29', 'Widerstand des RC-Glieds am Ausgang des Gleichrichter-Prüfstands.')
   ];
   C.limits = limits;
   C.limit = function (id) {
@@ -297,7 +298,7 @@
     ['L', 'L', 'die', 'Drossel', 'µH', 1, 'Die Drossel speichert im Schaltregler Energie im Magnetfeld.', 'Speicherdrossel'],
     ['Rv', 'R_V', 'der', 'Vorwiderstand', 'Ω', 1, 'Der Vorwiderstand begrenzt den Strom, etwa vor der Z-Diode oder beim Einschalten des Ladekondensators.'],
     ['Ri', 'R_i', 'der', 'Innenwiderstand', 'Ω', 2, 'Der Innenwiderstand lässt die Klemmenspannung unter Last sinken: U_Klemme = U_Leerlauf − I · R_i.'],
-    ['rz', 'r_z', 'der', 'dynamischer Widerstand der Z-Diode', 'Ω', 1, 'Er beschreibt, wie stark die Z-Spannung sich bei Stromänderung verschiebt.'],
+    ['rz', 'r_z', 'der', 'dynamische Widerstand der Z-Diode', 'Ω', 1, 'Er beschreibt, wie stark die Z-Spannung sich bei Stromänderung verschiebt.'],
     ['Rds', 'R_ds', 'der', 'Durchlasswiderstand des MOSFETs', 'mΩ', 0, 'Der Widerstand zwischen Drain und Source im eingeschalteten Zustand.'],
     ['RL', 'R_L', 'der', 'Kupferwiderstand der Drossel', 'mΩ', 0, 'Der ohmsche Widerstand der Drosselwicklung.'],
     ['Qg', 'Q_g', 'die', 'Gate-Ladung', 'nC', 0, 'Die Ladung, die das Gate zum Durchschalten braucht.'],

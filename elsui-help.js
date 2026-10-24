@@ -260,7 +260,7 @@
       OL(['Leiterwiderstand: ' + esc(n.xRl ? n.xRl.text : DASH), 'Schleifenimpedanz (Hin- und Rückleiter): ' + esc(n.xZs ? n.xZs.text : DASH), 'Fehlerstrom: ' + esc(n.xIf ? n.xIf.text : DASH), 'Berührungsspannung: ' + esc(n.xUb ? n.xUb.text : DASH),
         'Auslösestrom des LS-B, sichere Auslösung bei ' + esc(LT('faktor_b')) + ': ' + esc(n.xIa ? n.xIa.text : DASH), 'Größte Schleifenimpedanz: Zs_max = ' + esc(fz(n.zsB)) + ' Ω (' + esc(n.xZm ? n.xZm.text : DASH) + ')', 'Ergebnis: ' + esc(tn.text || DASH)]) +
       P(esc(n.lmax && n.lmax.text ? n.lmax.text : DASH) + ' Die Rechnung ist vereinfacht, ohne Spannungsfaktor, wie in der Prüfung (Übungswert (A), F19).') +
-      P('Abschaltzeit im TN-System (230 V): ' + esc(LT('tab_033')) + ' im Endstromkreis bis 32 A und ' + esc(LT('tab_5')) + ' im Verteilerstromkreis. Für TT und IT: ' + esc(LT('tab_tt')) + '.') +
+      P('Abschaltzeit im TN-System (230 V): ' + esc(LT('tab_033')) + ' im Endstromkreis bis 32 A (Steckdosenkreise bis 63 A) und ' + esc(LT('tab_5')) + ' im Verteilerstromkreis. Für TT und IT: ' + esc(LT('tab_tt')) + '.') +
       P('<b>TT-System:</b> ' + esc(n.xTT30 ? n.xTT30.text : DASH) + ' bei 30 mA, ' + esc(n.xTT300 ? n.xTT300.text : DASH) + ' bei 300 mA (R_A ≤ U_L / IΔn, Lehrregel, Übungswert (A), F6).') +
       P('<b>Schutzleiter unterbrochen:</b> ' + esc(n.tnPE ? n.tnPE.text : DASH) + ' ' + esc(TX('zusatzErsetztNicht'))), [5, 6]);
     /* 7 */
@@ -271,8 +271,8 @@
       P('Bereiche: ' + esc(LT('ls_bcd')) + '; belegt ist nur der Typ B: sichere Auslösung bei ' + esc(LT('faktor_b')) + ' (Zs_max steht in der Tabelle). ' + esc(LT('ls_thermisch'))) +
       LI([esc(n.t145 ? n.t145.text : DASH), esc(n.tUns ? n.tUns.text : DASH), esc(n.tSich ? n.tSich.text : DASH)]) +
       P('<b>Motoranlauf</b> mit dem 6-fachen Nennstrom: ' + esc(n.inB ? n.inB.text : DASH) + ' ' + esc(n.inC ? n.inC.text : DASH)) +
-      P('<b>Schmelzsicherung gG:</b> ' + esc(n.tGG ? n.tGG.text : DASH) + ' Das ist ein Lehrmodell (Übungswert (A), F8).') +
-      P('<b>Leitungsschutz:</b> Der Nennstrom muss zwischen dem Betriebsstrom und der Strombelastbarkeit der Leitung liegen. ' + esc(n.chk ? n.chk.text : DASH) + ' Strombelastbarkeit Iz (Übungswerte (A), F21, Tabellenbuch maßgeblich): ' + [1.5, 2.5, 4, 6].map(q => esc(ff(q, 1) + ' mm² → ' + fe(n.cable[q], 'A'))).join('; ') + '.') +
+      P('<b>Schmelzsicherung gG:</b> ' + esc(n.tGG ? n.tGG.text : DASH) + ' Das ist ein stark vereinfachtes Lehrmodell (Übungswert (A), F8): Reale gG-Kennlinien weichen davon ab, die Zeit bei 5 · In ist hier absichtlich einfach gewählt; die Herstellerkennlinie ist maßgeblich.') +
+      P('<b>Leitungsschutz:</b> Der Nennstrom muss zwischen dem Betriebsstrom und der Strombelastbarkeit der Leitung liegen. ' + esc(n.chk ? n.chk.text : DASH) + ' Strombelastbarkeit Iz (Übungswerte (A), Verlegeart B2, 3 belastete Adern, F21, Tabellenbuch maßgeblich): ' + [1.5, 2.5, 4, 6].map(q => esc(ff(q, 1) + ' mm² → ' + fe(n.cable[q], 'A'))).join('; ') + '.') +
       P('<b>Selektivität</b> heißt: Bei einem Fehler löst nur das Schutzorgan aus, das dem Fehler am nächsten liegt; das vorgeschaltete bleibt in Betrieb. Im Lab ist das nur ein Begriff (F26).'), [7]);
     /* 8 */
     const types = C && C.rcd && Array.isArray(C.rcd.types) ? C.rcd.types : [];
@@ -298,7 +298,7 @@
     add('ableit', '10 Schutzleiterstrom, Berührungsstrom, Ableitstrom', DRAW.ableit() + LI(['schutzleiterstrom', 'beruehrungsstrom', 'ableitstrom'].map(id => { const g = G(id); return g ? '<b>' + esc(g.term) + ':</b> ' + esc(g.text) : DASH; })) +
       P('Ein <b>Y-Kondensator</b> im Netzteil verbindet den Außenleiter mit dem berührbaren Teil und lässt dadurch einen kleinen Strom fließen: I = 2π · f · C · U. Beispiele bei 230 V und 50 Hz: ' + esc(n.xY22 ? n.xY22.text : DASH) + '; ' + esc(n.xY47 ? n.xY47.text : DASH) + '.') +
       P('Grenzwert Berührungsstrom Schutzklasse II: ' + esc(LT('ber_sk2')) + '. Größte Kapazität bei diesem Grenzstrom: ' + esc(n.xCmax ? n.xCmax.text : DASH) + '.') +
-      P('Schutzklasse I: Schutzleiterstrom ' + esc(LT('ipe_sk1')) + ', Berührungsstrom ' + esc(LT('ber_sk1')) + '. Das Messverfahren legt der Ausbilder fest (F3).') +
+      P('Schutzklasse I: Der Ableitstrom fließt über den Schutzleiter und gilt als Schutzleiterstrom, Grenzwert ' + esc(LT('ipe_sk1')) + '. Einen getrennten Berührungsstrom-Pfad ohne Schutzleiter modelliert das Lab nicht. Das Messverfahren legt der Ausbilder fest (F3).') +
       P('Gemessen werden diese Ströme unter Spannung: ' + esc(TX('messNurFachkraft')) + ' Im EMV-Lab zeigt der Netzfilter dieselben Y-Kondensatoren und denselben Ableitstrom.'), [12]);
     /* 11 */
     const flt = C && C.device && Array.isArray(C.device.faults) ? C.device.faults : [];

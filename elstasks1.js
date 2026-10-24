@@ -366,12 +366,12 @@
     const BASE = { dev: 'LS-B', In: 20, q: 1.5, ib: 14, ein: 1, sel: 'keine', i: 2 };
     const OWN = ['dev', 'In', 'q', 'ib'];
     const iz = q => CORE().prot.cable(q).iz;
-    const vals = () => once('v13', () => ({ ib: BASE.ib, iz15: iz(1.5), iz25: iz(2.5), iz4: iz(4), inMuster: 16, qMuster: 1.5, in0: BASE.In, q0: BASE.q }));
-    const text = () => { const v = vals(); return 'Ein Verbraucher nimmt dauernd Ib = ' + f(v.ib, 0) + ' A auf. Wähle im Prüfstand „Sicherung und LS-Schalter“ den Nennstrom In des LS-Schalters (Typ B) und den Leitungsquerschnitt so, dass Ib ≤ In ≤ Iz gilt: Der LS-Schalter soll im Betrieb nicht auslösen und die Leitung bei Überlast schützen. Iz steht im Messgerät (Übungstabelle, Verlegeart B2). Typ und Betriebsstrom bleiben unverändert.'; };
+    const vals = () => once('v13', () => { const ser = CORE().prot.series, i15 = iz(1.5); return { ib: BASE.ib, iz15: i15, iz25: iz(2.5), iz4: iz(4), inMuster: 16, qMuster: 2.5, inLow15: Math.max.apply(null, ser.filter(x => x <= i15)), in0: BASE.In, q0: BASE.q }; });
+    const text = () => { const v = vals(); return 'Ein Verbraucher nimmt dauernd Ib = ' + f(v.ib, 0) + ' A auf. Wähle im Prüfstand „Sicherung und LS-Schalter“ den Nennstrom In des LS-Schalters (Typ B) und den Leitungsquerschnitt so, dass Ib ≤ In ≤ Iz gilt: Der LS-Schalter soll im Betrieb nicht auslösen und die Leitung bei Überlast schützen. Iz steht im Messgerät (Übungstabelle, Verlegeart B2, 3 belastete Adern). Typ und Betriebsstrom bleiben unverändert.'; };
     const hint = () => { const v = vals(); return [
       'Zwei Seiten: In muss mindestens so groß sein wie Ib (sonst Fehlauslösung im Betrieb) und höchstens so groß wie die Strombelastbarkeit Iz der Leitung (sonst ist die Leitung bei Überlast nicht geschützt).',
       'Iz beträgt bei 1,5 mm² ' + f(v.iz15, 0) + ' A, bei 2,5 mm² ' + f(v.iz25, 0) + ' A und bei 4 mm² ' + f(v.iz4, 0) + ' A (Übungswerte). Der Start mit In = ' + f(v.in0, 0) + ' A auf ' + f(v.q0, 1) + ' mm² verletzt In ≤ Iz.',
-      'Musterlösung: In = ' + f(v.inMuster, 0) + ' A auf ' + f(v.qMuster, 1) + ' mm²: ' + f(v.ib, 0) + ' A ≤ ' + f(v.inMuster, 0) + ' A ≤ ' + f(v.iz15, 0) + ' A. Auch In = ' + f(v.inMuster, 0) + ' A auf ' + f(2.5, 1) + ' mm² ist richtig.'
+      'Musterlösung: In = ' + f(v.inMuster, 0) + ' A auf ' + f(v.qMuster, 1) + ' mm²: ' + f(v.ib, 0) + ' A ≤ ' + f(v.inMuster, 0) + ' A ≤ ' + f(v.iz25, 0) + ' A. Auf ' + f(1.5, 1) + ' mm² (Iz = ' + f(v.iz15, 0) + ' A) passt keine Nennstromstufe: ' + f(v.inLow15, 0) + ' A liegt unter Ib = ' + f(v.ib, 0) + ' A, ' + f(v.inMuster, 0) + ' A über Iz.'
     ]; };
     const check = mk('schutz', OWN, (c, r, a) => {
       const eff = effOf(c, 'schutz', OWN, BASE), sim = snap('schutz', eff), ch = CORE().prot.check(BASE.ib, eff.In, iz(eff.q));
@@ -380,7 +380,7 @@
       r(ch.ibOk === true, 'Der Nennstrom ist mindestens so groß wie der Betriebsstrom (Ib ≤ In)', 'In = ' + f(eff.In, 0) + ' A, Ib = ' + f(BASE.ib, 0) + ' A: ' + ch.text);
       r(ch.izOk === true, 'Der Nennstrom ist höchstens so groß wie die Strombelastbarkeit der Leitung (In ≤ Iz)', 'Leitung ' + f(eff.q, 1) + ' mm², In = ' + f(eff.In, 0) + ' A: ' + ch.text);
     });
-    return { vals, text, hint, check, OWN, BASE, consts: [BASE.q], start: () => S('schutz', BASE), sol: () => S('schutz', Object.assign({}, BASE, { In: 16, q: 1.5 })),
+    return { vals, text, hint, check, OWN, BASE, consts: [BASE.q], start: () => S('schutz', BASE), sol: () => S('schutz', Object.assign({}, BASE, { In: 16, q: 2.5 })),
       wrong: () => [{ name: 'In größer als Iz', answer: S('schutz', Object.assign({}, BASE, { In: 20, q: 1.5 })) }, { name: 'In kleiner als Ib', answer: S('schutz', Object.assign({}, BASE, { In: 13, q: 2.5 })) }] };
   })();
 
@@ -481,19 +481,19 @@
     return t;
   }
   T.register([
-    tk({ id: 'el1', lab: 'els', cat: 'Schutzklassen', title: 'Welche Zone ist das?', level: 1, rig: 'koerper' }, M1),
-    tk({ id: 'el2', lab: 'els', cat: 'Schutzklassen', title: 'Körperstrom berechnen', level: 2, rig: 'koerper' }, M2),
-    tk({ id: 'el3', lab: 'els', cat: 'Schutzklassen', title: 'Den Strom unter die Zone 2 bringen', level: 2, rig: 'koerper' }, M3),
+    tk({ id: 'el1', lab: 'els', cat: 'Stromwirkung', title: 'Welche Zone ist das?', level: 1, rig: 'koerper' }, M1),
+    tk({ id: 'el2', lab: 'els', cat: 'Stromwirkung', title: 'Körperstrom berechnen', level: 2, rig: 'koerper' }, M2),
+    tk({ id: 'el3', lab: 'els', cat: 'Stromwirkung', title: 'Den Strom unter die Zone 2 bringen', level: 2, rig: 'koerper' }, M3),
     tk({ id: 'el4', lab: 'els', cat: 'Prüfungsnah', title: 'Zs-Grenze für B16', level: 2, rig: 'netz' }, M4),
     tk({ id: 'el5', lab: 'els', cat: 'Prüfungsnah', title: 'Querschnitt wählen', level: 2, rig: 'netz' }, M5),
     tk({ id: 'el6', lab: 'els', cat: 'Prüfungsnah', title: 'Schleifenimpedanz und Fehlerstrom', level: 3, rig: 'netz' }, M6),
     tk({ id: 'el7', lab: 'els', cat: 'Schutzklassen', title: 'Schutzleiter unterbrochen', level: 3, rig: 'netz' }, M7),
     tk({ id: 'el8', lab: 'els', cat: 'Prüfungsnah', title: 'Welche Netzform ist das?', level: 2, rig: 'netz' }, M8),
     tk({ id: 'el9', lab: 'els', cat: 'Prüfungsnah', title: 'TT: größter Erdungswiderstand', level: 3, rig: 'netz' }, M9),
-    tk({ id: 'el10', lab: 'els', cat: 'Schutzklassen', title: 'Welcher LS-Typ?', level: 1, rig: 'schutz' }, M10),
-    tk({ id: 'el11', lab: 'els', cat: 'Schutzklassen', title: 'Motor-Anlauf ohne Auslösung', level: 2, rig: 'schutz' }, M11),
+    tk({ id: 'el10', lab: 'els', cat: 'Schutzorgane', title: 'Welcher LS-Typ?', level: 1, rig: 'schutz' }, M10),
+    tk({ id: 'el11', lab: 'els', cat: 'Schutzorgane', title: 'Motor-Anlauf ohne Auslösung', level: 2, rig: 'schutz' }, M11),
     tk({ id: 'el12', lab: 'els', cat: 'Prüfungsnah', title: 'Ia und Zs_max für C20', level: 2, rig: 'schutz' }, M12),
-    tk({ id: 'el13', lab: 'els', cat: 'Schutzklassen', title: 'Leitung und Automat abstimmen', level: 3, rig: 'schutz' }, M13),
+    tk({ id: 'el13', lab: 'els', cat: 'Schutzorgane', title: 'Leitung und Automat abstimmen', level: 3, rig: 'schutz' }, M13),
     tk({ id: 'el14', lab: 'els', cat: 'RCD', title: 'RCD einsetzen und prüfen', level: 1, rig: 'rcd' }, M14),
     tk({ id: 'el15', lab: 'els', cat: 'Prüfungsnah', title: 'Was prüft die Prüftaste?', level: 2, rig: 'rcd' }, M15),
     tk({ id: 'el16', lab: 'els', cat: 'RCD', title: 'Fehlauslösung beheben', level: 3, rig: 'rcd' }, M16)

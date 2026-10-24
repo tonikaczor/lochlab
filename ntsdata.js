@@ -17,7 +17,7 @@
  *   wrong() liefert [{ name, answer }] mit mindestens zwei absichtlich falschen Antworten (zu klein / zu gross bzw. falsch herum) fuer den Test (Regel 3).
  * window.TaskTest = async only => [ { id, pct, startPct, bad } ]
  *
- * NTS_TASKS.util (fuer ntstasks1.js, ntstasks2.js und die Tests; gleiche Huelle wie elsdata.js, emvdata.js und enrdata.js):
+ * NTS_TASKS.util (fuer ntstasks1.js, ntstasks2.js und die Tests; gleiche Huelle wie elsdata.js, wsldata.js, emvdata.js und enrdata.js):
  *   fm(x, d) Dezimalkomma; fin; clamp; clone; isObj; toNum(v); ctlDefs(rig); coerce(def, v); clean(answer, rig, own?) -> { controls, seq, problems };
  *   initial(c, own?); fullCtl(rig, over); snap(rigId, ctl, act?) -> { ok, rig, m (readMeters), a (assess), d (diagnose), s (state), rejected, errors }
  *   (Pruefstand frisch, Seed 1, Steuerwerte in fester Reihenfolge, gecacht; act = true | 'fire' | 'step:<ms>' | 'sicht' | 'messe:<punkt>' | 'tausche:<bauteil>' | Liste davon); effOf; cdef; dlabel; olabel; setRow;
@@ -528,10 +528,10 @@
       spec: () => ({ preset: 'einschaltstrom', ref: { rs: 0 }, fire: true }),
       text(X) {
         const { a, b, n } = X, C = CORE(), ri = lim('ri_trafo'), u = C.rect.inrush({ topo: gs(a, 'topo'), U2: g(a, 'u2'), ri, rs: g(a, 'rs') });
-        must(u.ok && close(u.Imax, m(a, 'imax'), 1e-9) && close(m(b, 'imax'), u.peak / ri, 1e-6) && st(a, 'fired') === true && diagIds(a).includes('einschalt-hoch'), 'Einschaltstrom = Û/(R_i + R_s), fire ausgelöst');
+        must(u.ok && close(u.Imax, m(a, 'imax'), 1e-9) && close(m(b, 'imax'), u.peak / ri, 1e-6) && st(a, 'fired') === true && diagIds(a).includes('einschalt-hoch') && m(a, 'umin') < m(b, 'umin'), 'Einschaltstrom = Û/(R_i + R_s), fire ausgelöst, U_min mit Vorwiderstand kleiner');
         return 'Ein leerer Ladekondensator wirkt im Einschaltmoment wie ein Kurzschluss: Nur der Innenwiderstand R_i = ' + n('ri', ri, 1) + ' Ω und ein Vorwiderstand begrenzen den Strom auf I = Û / (R_i + R_s). Ohne Vorwiderstand (R_s = ' + n('rs0', g(b, 'rs'), 0) +
           ' Ω) fließen bis zu ' + n('i0', m(b, 'imax'), 1) + ' A. Mit R_s = ' + n('rs', g(a, 'rs'), 1) + ' Ω sind es noch ' + n('i1', m(a, 'imax'), 2) + ' A bei Û = ' + n('uh', u.peak, 2) + ' V (Pool-Frage zum Vorwiderstand). Die Pulsfrequenz bleibt f_p = ' + n('fp', m(a, 'fp'), 0) +
-          ' Hz. In einer echten Schaltung kostet der Widerstand im Dauerbetrieb Spannung (U = I · R) und erzeugt Wärme, deshalb bleibt er klein; diesen Abfall zeigt der Prüfstand nicht.';
+          ' Hz. Im Dauerbetrieb kostet der Widerstand Spannung und erzeugt Wärme, deshalb bleibt er klein: Weil der Ladestrom nur in kurzen Impulsen fließt, sinkt die kleinste Spannung am Ladekondensator von ' + n('um0', m(b, 'umin'), 2) + ' V auf ' + n('um1', m(a, 'umin'), 2) + ' V, mehr als der mittlere Laststrom allein am Widerstand erwarten ließe (Zeitschrittmodell, Messgerät U_min).';
       } },
     { id: 'ntx9', name: 'RC-Sieb hinter dem Ladekondensator', cat: 'Gleichrichter', rig: 'gleich',
       spec: () => ({ preset: 'einweg-brueck', ctl: { topo: 'bruecke', rsieb: true }, ref: { topo: 'bruecke', rsieb: false } }),

@@ -171,7 +171,7 @@
     if (!(c >= 0) || c > 1 || !(u >= 0) || u > 1e6 || !(fr >= 0) || fr > 1e9) return NaN;
     return TWO_PI * fr * c * u;
   });
-  function leakLimit(sk) { return sk === 'I' ? 'ber_sk1' : (sk === 'II' ? 'ber_sk2' : null); }
+  function leakLimit(sk) { return sk === 'I' ? 'ipe_sk1' : (sk === 'II' ? 'ber_sk2' : null); } /* SK I: Strom über den Schutzleiter = Schutzleiterstrom (Fachreview v22, M1) */
   leak.touch = S(function (cfg) {
     const c = obj(cfg);
     let cap;
@@ -189,7 +189,7 @@
       o.grenzeId = lid; o.grenze = l.value; o.status = l.status; o.ratio = o.imA / l.value;
       o.cMaxNf = (l.value / 1000 - iBase / 1000) / (TWO_PI * f * u) * 1e9;
       o.bestanden = limitOK(lid, o.imA);
-      o.text = 'Berührungsstrom ' + fmt(o.imA, 3) + ' mA, Grenzwert ' + limitText(lid) + ': ' + (o.bestanden ? 'eingehalten.' : 'nicht bestanden.');
+      o.text = (sk === 'I' ? 'Schutzleiterstrom ' : 'Berührungsstrom ') + fmt(o.imA, 3) + ' mA, Grenzwert ' + limitText(lid) + ': ' + (o.bestanden ? 'eingehalten.' : 'nicht bestanden.');
     } else o.text = 'Berührungsstrom ' + fmt(o.imA, 3) + ' mA. Für Schutzklasse III gibt es im Lab keinen Grenzwert.';
     return o;
   });
@@ -352,7 +352,7 @@
         else { st.grenzText = lim.why; st.limitStatus = 'A'; }
         if (isFinite(v)) {
           if (lim.valid) { st.ok = limitOK(lim.id, v); st.status = st.ok ? 'ok' : 'rot'; }
-          else { st.status = 'kein Grenzwert'; st.ok = null; st.blockiert = !lim.kein; }
+          else { st.status = 'kein Grenzwert'; st.ok = null; st.blockiert = true; }
         }
       }
       if (st.status === 'nicht gemessen') fehlend.push(id);
@@ -999,7 +999,7 @@
           const sk = iso.leak.sk === undefined ? 'II' : iso.leak.sk;
           const m = E.leak.touch(iso.leak);
           if (m.ok && m.bestanden === false) {
-            if (String(m.sk) === 'I' && iso.leak.art === 'ipe') dpush(out, 'ipe-gross', { i: fmt(m.imA, 3) + ' mA', grenze: limitText('ipe_sk1') });
+            if (String(m.sk) === 'I') dpush(out, 'ipe-gross', { i: fmt(m.imA, 3) + ' mA', grenze: limitText(m.grenzeId) });
             else dpush(out, 'ber-gross', { i: fmt(m.imA, 3) + ' mA', grenze: limitText(m.grenzeId) });
           }
           if (iso.leak.ipe !== undefined && iso.leak.ipe !== null) {
@@ -1067,7 +1067,7 @@
             return { ok: false, value: NaN, why: why, text: why };
           }
           const t = weg.replace(/\{(\d+)\}/g, function (_, i) { const k = Number(i); const u = args[k] ? args[k][1] : ''; return args[k] ? (u === '#' ? fmt(a[k]) : fmtEng(a[k], u)) : ''; });
-          return { ok: true, value: v, text: t + ' = ' + fmtEng(v, unit), unit: unit };
+          return { ok: true, value: v, text: t + ' = ' + (unit === '' || unit === '#' ? fmt(v) : fmtEng(v, unit)), unit: unit };
         } catch (e) { return { ok: false, value: NaN, why: TEXTS.eingabe, text: TEXTS.eingabe }; }
       }
     };

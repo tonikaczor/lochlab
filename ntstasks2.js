@@ -1,6 +1,6 @@
 /* ntstasks2.js - NTS-Lab (Netzteile und Schaltregler): Aufgaben nt17 bis nt32 mit automatischer Pruefung (Rechnung, Simulation und Fehlersuche, ohne Browser lauffaehig) (WP4b)
  * Registrierung: NTS_TASKS.register([ ... ]) (NTS_TASKS kommt aus ntsdata.js; ntsdata.js VOR dieser Datei laden, in Node holt sich die Datei es per require).
- * Format wie SPEC 8 / elstasks2.js: { id:'ntN', lab:'nts', cat, title, level, rig, text, table?, hint[3], start(), sol(), wrong(), check(answer), hintVals(),
+ * Format wie SPEC 8 / wsltasks2.js: { id:'ntN', lab:'nts', cat, title, level, rig, text, table?, hint[3], start(), sol(), wrong(), check(answer), hintVals(),
  *   fields? | choices?, consts? }; answer = { rig, controls, ref, seq, rows, state, value, text, fields, choices, clicks, diagnose }.
  *   start() und sol() liefern { rig, controls, fields?, choices?, clicks?, diagnose? } (Startvorlage und Musterloesung / Auto-Weg); wrong() liefert mindestens zwei
  *   absichtlich falsche Antworten [{ name, answer }] (beide Richtungen, Regel 3); check(answer) liefert [{ ok, text, why }]; Prozent der Treffer = Ergebnis.

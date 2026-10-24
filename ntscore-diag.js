@@ -851,7 +851,7 @@
     const cmin = v.iLast > 0 ? C.rect.cmin({ topo: v.topo, I: v.iLast, dU: okLim, f: f }) : NaN;
     const valid = rip.valid;
     let dU = rip.dU, Umittel0 = rip.Umittel, Umin0 = rip.Umin;
-    if (!valid) {
+    if (!valid || v.rs > 0) {          /* mit Vorwiderstand gilt die Brummformel nicht (R_s vor dem Ladekondensator): Zeitschrittmodell (Fachreview v22, K1) */
       const wv = C.rect.wave(cfg, 400);
       if (!wv || !wv.ok) return GRAU(wv && wv.why || 'Die Anlage ist mit diesen Werten nicht rechenbar.');
       let mean = 0; for (let i = 0; i < wv.uc.length; i++) mean += wv.uc[i]; mean /= Math.max(1, wv.uc.length);

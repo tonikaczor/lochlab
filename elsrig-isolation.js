@@ -23,10 +23,10 @@
   const visArt = (a) => (st) => !st || st.art === a;
   const ART = { riso: 'Isolation', rpe: 'Schutzleiter', ableit: 'Ableitstrom' };
   const CONTROLS = [
-    { key: 'art', label: 'Messung', type: 'select', value: 'riso', options: opt([['riso', 'Isolationswiderstand'], ['rpe', 'Schutzleiterwiderstand'], ['ableit', 'Ableitstrom (Berührungsstrom)']]), ebene: null, group: G_A,
+    { key: 'art', label: 'Messung', type: 'select', value: 'riso', options: opt([['riso', 'Isolationswiderstand'], ['rpe', 'Schutzleiterwiderstand'], ['ableit', 'Ableitstrom (SK I: Schutzleiterstrom, SK II: Berührungsstrom)']]), ebene: null, group: G_A,
       help: 'Welche Messung beurteilt wird. Isolationswiderstand und Schutzleiterwiderstand nur am freigeschalteten, getrennten Prüfling. Den Ableitstrom misst die Elektrofachkraft mit geprüftem Prüfaufbau.' },
     { key: 'sk', label: 'Schutzklasse', type: 'select', value: 'I', options: opt([['I', 'Schutzklasse I'], ['II', 'Schutzklasse II'], ['III', 'Schutzklasse III']]), ebene: null, group: G_A,
-      help: 'Die Schutzklasse bestimmt den Grenzwert: Isolation ab 1 MΩ (SK I) oder 2 MΩ (SK II), Schutzleiterwiderstand nur bei SK I. Für SK III gibt es im Lab keinen Isolationsgrenzwert (F2).' },
+      help: 'Die Schutzklasse bestimmt den Grenzwert: Isolation ab 1 MΩ (SK I) oder 2 MΩ (SK II), Schutzleiterwiderstand nur bei SK I. Für SK III gibt es im Lab keinen Isolationsgrenzwert (F2). Der Ableitstrom gilt bei SK I als Schutzleiterstrom, bei SK II als Berührungsstrom.' },
     { key: 'feuchte', label: 'Feuchte', type: 'slider', scale: 'lin', min: 0, max: 1, step: 0.01, unit: '', unitKind: 'plain', value: 0, ebene: 'basis', group: G_I, visible: visArt('riso'),
       help: 'Feuchte der Isolierung von 0 (trocken) bis 1 (nass). Feuchte bildet einen Leckpfad parallel zum Material und senkt den Isolationswiderstand (Lehrmodell, Übungswerte).' },
     { key: 'schmutz', label: 'Verschmutzung', type: 'slider', scale: 'lin', min: 0, max: 1, step: 0.01, unit: '', unitKind: 'plain', value: 0, ebene: 'basis', group: G_I, visible: visArt('riso'),
@@ -54,7 +54,7 @@
   const METERS = [
     { key: 'riso', label: 'Isolationswiderstand R_iso', unit: 'MΩ', digits: 3, min: 0, max: 1000, warnBelow: 1, help: 'Gesamtwiderstand aller Leckpfade parallel bei 500 V (Übungswert).' },
     { key: 'rpe', label: 'Schutzleiterwiderstand R_pe', unit: 'Ω', digits: 3, min: 0, max: 2, warnAbove: 0.3, zeroIsNone: true, help: 'Widerstand des Schutzleiters in der Anschlussleitung, bei 2-Leiter-Messung mit Kontaktwiderstand. 0 heißt: entfällt, weil der Prüfling keinen Schutzleiter hat.' },
-    { key: 'iAbleit', label: 'Berührungsstrom I_ab', unit: 'mA', digits: 3, min: 0, max: 5, warnAbove: 0.5, help: 'Strom über den Y-Kondensator von 230 V und 50 Hz auf ein berührbares Teil.' },
+    { key: 'iAbleit', label: 'Ableitstrom I_ab (SK I: Schutzleiterstrom, SK II: Berührungsstrom)', unit: 'mA', digits: 3, min: 0, max: 5, help: 'Strom über den Y-Kondensator von 230 V und 50 Hz: bei Schutzklasse I fließt er über den Schutzleiter (Schutzleiterstrom), bei Schutzklasse II über ein berührbares Teil (Berührungsstrom). Der Grenzwert hängt von der Schutzklasse ab, das Urteil zeigt die Anzeige Urteil.' },
     { key: 'urteil', label: 'Urteil', unit: '', digits: 0, min: 0, max: 3, zeroIsNone: true, help: 'Urteil zur gewählten Messung: 1 bestanden, 2 nicht bestanden, 3 unvollständig (Wackelprüfung fehlt), 0 kein Urteil möglich.' }
   ];
   const PRESETS = [
@@ -138,7 +138,7 @@
         }
         out.push({ id: 'nur-frei', kind: 'info', text: CORE.TEXTS.isoNurFrei });
       } else {
-        if (r.ab.bestanden === false) out.push({ id: 'ableit-zu-gross', kind: 'error', text: 'Der Berührungsstrom ' + fm(r.ab.imA, 3) + ' mA ist zu groß; die größte Kapazität unter dem Grenzwert ist ' + fm(r.ab.cMaxNf, 2) + ' nF.' });
+        if (r.ab.bestanden === false) out.push({ id: 'ableit-zu-gross', kind: 'error', text: 'Der ' + (r.sk === 'I' ? 'Schutzleiterstrom ' : 'Berührungsstrom ') + fm(r.ab.imA, 3) + ' mA ist zu groß; die größte Kapazität unter dem Grenzwert ist ' + fm(r.ab.cMaxNf, 2) + ' nF.' });
         out.push({ id: 'nur-fachkraft', kind: 'info', text: CORE.TEXTS.messNurFachkraft });
       }
       return out;
@@ -169,7 +169,7 @@
       {
         const cap = Array.from({ length: 21 }, (_, k) => 0.1 * Math.pow(1000, k / 20));
         const pts = cap.map(cy => { const a = CORE.leak.touch({ cy, sk: ctl.sk }); return a && a.ok !== false ? [cy, a.imA] : null; }).filter(Boolean);
-        const c = { id: 'ableit-cy', title: 'Berührungsstrom über der Y-Kapazität (230 V, 50 Hz)', xLabel: 'Y-Kapazität', xUnit: 'nF', xScale: 'log', yLabel: 'Berührungsstrom', yUnit: 'mA', yScale: 'lin', series: [{ name: 'I_ab = 2π · f · C · U', points: pts }] };
+        const c = { id: 'ableit-cy', title: 'Ableitstrom über der Y-Kapazität (230 V, 50 Hz)', xLabel: 'Y-Kapazität', xUnit: 'nF', xScale: 'log', yLabel: 'Ableitstrom', yUnit: 'mA', yScale: 'lin', series: [{ name: 'I_ab = 2π · f · C · U', points: pts }] };
         if (r && r.ok !== false) { c.marker = { x: ctl.cy, y: r.ab.imA, label: 'Betriebspunkt ' + fm(r.ab.imA, 3) + ' mA' }; if (r.ab.grenze) c.limit = { y: r.ab.grenze, label: 'Grenzwert ' + fm(r.ab.grenze, 1) + ' mA (Schutzklasse ' + ctl.sk + ')' }; }
         cs.push(c);
       }

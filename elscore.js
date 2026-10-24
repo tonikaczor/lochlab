@@ -223,7 +223,7 @@
     ['rpe_5m', 0.3, 'Ω', '<=', 'belegt', 'pool:S2025-06, S2020-N32', null, 'Schutzleiterwiderstand bei Anschlussleitung bis 5 m', null],
     ['riso_sk1', 1, 'MΩ', '>=', 'belegt', 'pool:S2025-06', null, 'Isolationswiderstand Schutzklasse I', null],
     ['riso_sk2', 2, 'MΩ', '>=', 'belegt', 'pool:S2025-06, W-2024-Praxis', null, 'Isolationswiderstand Schutzklasse II', null],
-    ['tab_033', 0.4, 's', '<=', 'belegt', 'pool:W2022-N16', null, 'Abschaltzeit im TN-Netz 230 V, Endstromkreis bis 32 A', null],
+    ['tab_033', 0.4, 's', '<=', 'belegt', 'pool:W2022-N16', null, 'Abschaltzeit im TN-Netz 230 V, Endstromkreis bis 32 A (Steckdosenkreise bis 63 A)', null],
     ['tab_5', 5, 's', '<=', 'belegt', 'pool:W2022-N16', null, 'Abschaltzeit im TN-Netz, Verteilerstromkreis', null],
     ['ul_ac', 50, 'V', '<=', 'belegt', 'pool:W2025-01', null, 'Dauernd zulässige Berührungsspannung (Wechselspannung)', null],
     ['ul_dc', 120, 'V', '<=', 'belegt', 'pool:W2025-01', null, 'Dauernd zulässige Berührungsspannung (Gleichspannung, glatt)', null],
@@ -420,7 +420,7 @@
   prot.devices = DEVS.map(function (d) { return Object.freeze(Object.assign({}, d)); });
   prot.series = SERIES.slice();
   prot.ia = C(function (dev, In, tG) { return iaOf(devOf(dev), inOf(In), tG); });
-  function tripCalc(d, In, I) {
+  function tripCalc(d, In, I, tLim) {
     const x = I / In;
     const o = { ok: true, dev: d.id, In: In, I: I, x: x, bereich: 'nicht', tMin: Infinity, tMax: Infinity, text: '' };
     if (d.art === 'ls') {
@@ -442,7 +442,7 @@
     /* gG */
     if (x <= GG_NICHT) { o.text = 'Bei ' + fmtEng(I, 'A') + ' schmilzt die Sicherung nicht (unter ' + fmt(GG_NICHT) + ' · In, Lehrmodell).'; return o; }
     o.tMax = ggT(x); o.tMin = o.tMax / 2;
-    o.bereich = o.tMax <= L('tab_033').value + 1e-12 ? 'sicher' : 'thermisch';
+    o.bereich = o.tMax <= (tLim === undefined ? L('tab_033').value : tLim) + 1e-12 ? 'sicher' : 'thermisch';
     o.text = 'Schmelzzeit ' + fmtEng(o.tMin, 's') + ' bis ' + fmtEng(o.tMax, 's') + ' (Lehrmodell, ' + TEXTS.herstellerMassgeblich + ')';
     return o;
   }
@@ -469,11 +469,11 @@
     } else span(1.3, 100, 40);
     return out;
   });
-  const CABLE = { 1.5: 16, 2.5: 20, 4: 27, 6: 34 };
+  const CABLE = { 1.5: 15, 2.5: 20, 4: 27, 6: 34 }; /* Verlegeart B2, 3 belastete Adern (Fachreview v22, M2) */
   prot.cable = S(function (q) {
     const x = num(q, NaN);
     if (CABLE[x] === undefined) V('Für diesen Querschnitt gibt es keinen Übungswert (erlaubt: 1,5; 2,5; 4; 6 mm²).');
-    return { ok: true, q: x, iz: CABLE[x], status: 'A', frage: 'F21', text: 'Übungswert Kupfer, Verlegeart B2 (Übungstabelle, Tabellenbuch maßgeblich).' };
+    return { ok: true, q: x, iz: CABLE[x], status: 'A', frage: 'F21', text: 'Übungswert Kupfer, Verlegeart B2, 3 belastete Adern (Übungstabelle, Tabellenbuch maßgeblich).' };
   });
   prot.check = S(function (Ib, In, Iz) {
     const ib = reqNn(Ib, 'Der Betriebsstrom', 1e6), n = reqPos(In, 'Der Nennstrom', 1e6), iz = reqPos(Iz, 'Die Strombelastbarkeit', 1e6);
@@ -561,7 +561,7 @@
       o.hinweis = 'TT: Fehlerschleife über Anlagenerder R_A und Betriebserder R_B.';
     } else if (c.form === 'IT') {
       o.zs = c.zv + rl + rpe + c.rf;
-      o.hinweis = 'IT: Die Schleife gilt für den zweiten Fehler (Lehrmodell, wie TN).';
+      o.hinweis = 'IT: Die Schleife gilt für den zweiten Fehler (Lehrmodell wie TN, ohne Faktor 2 für die Doppelfehlerschleife).';
     } else {
       o.zs = c.zv + rl + rpe + c.rf;
       o.hinweis = c.form === 'TN-C-S' ? 'TN-C-S: Der PEN-Teil des Netzes steckt in der Netzimpedanz Zv.' : 'TN-S: Zs = Zv + R_L + R_PE.';
@@ -626,7 +626,7 @@
       o.iF = c.U0 / rs; o.uB = o.iF * c.ra; o.ia = NaN; o.zsMax = NaN;
       const ra = grid.tt(cfg);
       o.raMax = ra.ok ? ra.raMax : NaN; o.bedingung = c.rcd.on ? c.ra <= o.raMax + 1e-9 : false;
-      const t = tripCalc(devOf(c.dev), c.In, o.iF);
+      const t = tripCalc(devOf(c.dev), c.In, o.iF, tG.value);
       o.bereich = t.bereich;
       let tA = t.bereich === 'sicher' ? t.tMax : null;
       if (tA !== null) { o.ausgeloest = true; o.ausloeser = 'ls'; o.tAb = tA; }
@@ -643,7 +643,7 @@
     o.iF = c.U0 / lp.zs; o.uB = o.iF * lp.rpe;
     o.reserve = o.zsMax / lp.zs;
     o.bedingung = lp.zs <= o.zsMax * (1 + 1e-12);
-    const t = tripCalc(devOf(c.dev), c.In, o.iF);
+    const t = tripCalc(devOf(c.dev), c.In, o.iF, tG.value);
     o.bereich = t.bereich; o.trip = t;
     if (isFinite(t.tMax) && t.bereich !== 'nicht') { o.tAb = t.tMax; o.ausgeloest = true; o.ausloeser = 'ls'; }
     if (c.rcd.on) {
@@ -676,7 +676,7 @@
     const lp = loopOf(c);
     const i1 = c.U0 * TWO_PI * FN * c.cleck * 1e-9;
     const uB = i1 * (c.ra > 0 ? c.ra : lp.rpe);
-    return { ok: true, iF1: i1, uB: uB, abschaltung: false, meldung: true, zs2: lp.zs, text: 'Erster Fehler: I_F1 = ' + fmtEng(i1, 'A') + ' (Lehrmodell), keine Abschaltung, Meldung durch die Isolationsüberwachung; zweiter Fehler: Schleife wie TN, Abschaltung durch das Schutzorgan.' };
+    return { ok: true, iF1: i1, uB: uB, abschaltung: false, meldung: true, zs2: lp.zs, text: 'Erster Fehler: I_F1 = ' + fmtEng(i1, 'A') + ' (Lehrmodell), keine Abschaltung, Meldung durch die Isolationsüberwachung; zweiter Fehler: Schleife wie TN (Lehrmodell ohne Faktor 2), Abschaltung durch das Schutzorgan.' };
   });
   api.grid = grid;
 
@@ -781,7 +781,7 @@
   const CLS = {
     I: { id: 'I', name: 'Schutzklasse I', merkmal: 'Basisisolierung und Anschluss der Körper an den Schutzleiter (PE).', symbol: 'Schutzleiter-Symbol', zeichen: '⏚', pe: true, beispiel: 'Wasserkocher, Waschmaschine, Heizlüfter', pruefung: ['sicht', 'rpe', 'riso', 'ipe'], ebene: 'fehler' },
     II: { id: 'II', name: 'Schutzklasse II', merkmal: 'Schutzisolierung (verstärkte oder doppelte Isolierung), kein Schutzleiteranschluss.', symbol: 'Doppelquadrat', zeichen: '▣', pe: false, beispiel: 'Bohrmaschine, Haartrockner, Steckernetzteil', pruefung: ['sicht', 'riso', 'ipe'], ebene: 'fehler' },
-    III: { id: 'III', name: 'Schutzklasse III', merkmal: 'Betrieb mit Kleinspannung bis 50 V Wechselspannung (SELV), kein Schutzleiter.', symbol: 'römisch III in einer Raute', zeichen: '◇', pe: false, beispiel: 'Spielzeugeisenbahn, Handleuchte mit Schutzkleinspannung', pruefung: ['sicht', 'riso'], ebene: 'basis', hinweisPruefung: 'Für Schutzklasse III gibt es im Lab keinen Isolationsgrenzwert (F2).' }
+    III: { id: 'III', name: 'Schutzklasse III', merkmal: 'Betrieb mit Kleinspannung bis 50 V AC / 120 V DC, SELV oder PELV, kein Schutzleiter.', symbol: 'römisch III in einer Raute', zeichen: '◇', pe: false, beispiel: 'Spielzeugeisenbahn, Handleuchte mit Schutzkleinspannung', pruefung: ['sicht', 'riso'], ebene: 'basis', hinweisPruefung: 'Für Schutzklasse III gibt es im Lab keinen Isolationsgrenzwert (F2).' }
   };
   function clsId(id) {
     let s = String(id).toUpperCase().replace(/^SK\s*/, '').replace(/^SCHUTZKLASSE\s*/, '').trim();
@@ -802,7 +802,7 @@
     if (f === 'ohne') { o.text = 'Ohne Fehler ist das Gehäuse in jeder Schutzklasse spannungsfrei.'; return o; }
     if (k === 'I') { o.abschaltung = true; o.uBPfad = true; o.text = 'Schutzklasse I: Beim Körperschluss fließt der Fehlerstrom über den Schutzleiter, das Schutzorgan schaltet nach der Abschaltbedingung ab (Fehlerschutz). Ist der Schutzleiter unwirksam, bleibt das Gehäuse unter Spannung.'; }
     else if (k === 'II') o.text = 'Schutzklasse II: Die Schutzisolierung verhindert, dass ein berührbares Teil Spannung annimmt. Es gibt keinen Schutzleiter und keinen Berührungsspannungspfad am Gehäuse; geprüft wird die Isolierung.';
-    else o.text = 'Schutzklasse III: Es treten nur Kleinspannungen bis 50 V Wechselspannung auf, die Spannungsquelle trennt sicher vom Netz.';
+    else o.text = 'Schutzklasse III: Es treten nur Kleinspannungen bis 50 V AC / 120 V DC (SELV oder PELV) auf, die Spannungsquelle trennt sicher vom Netz.';
     return o;
   });
   const EXTRA = {
