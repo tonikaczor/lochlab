@@ -557,6 +557,8 @@
       else if (e.fx === 'tick') F.sound('tick', 0.5);
     } catch (er) {}
   }
+  /* Verdeckte Fehler: Aufgaben der Fehlersuche koennen Meldungen/Hinweise einer Diagnose-Kennung (task.maskDiag) bis zum Ende der Aufgabe ausblenden */
+  function masked(x) { try { const t = curTask(); return !!(t && Array.isArray(t.maskDiag) && x && t.maskDiag.indexOf(x.id) >= 0); } catch (e) { return false; } }
   function noteFault(e) {
     const key = S.rigId + ':' + (e.fx || String(e.text || '').slice(0, 28));
     const a = lsGet('reg.faults', []), s = new Set(Array.isArray(a) ? a : []); if (s.has(key)) return;
@@ -568,6 +570,7 @@
     let changed = false;
     for (let i = Math.max(0, ev.length - 30); i < ev.length; i++) {
       const e = ev[i]; if (!e || S.evSeen.has(e)) continue; S.evSeen.add(e); changed = true;
+      if (masked(e)) continue;
       if (e.kind === 'error' || (e.fx && FXKINDS[e.fx] && e.fx !== 'tick')) noteFault(e);
       if (e.fx === 'windup') { if (!S.windFx) { S.windFx = true; stat('regwind', 1, 'max'); } }
       if (e.kind === 'error') { S.faultUntil = performance.now() + 9000; S.faultText = e.text; if (S.tab !== 'rig' && S.running) toast('⚠ ' + e.text); }
@@ -592,7 +595,7 @@
   /* ---- Meldungsliste (Zeitstempel in der Zeiteinheit der Anlage) und Hinweise aus rig.diagnose() ---- */
   const tstamp = s => { const v = toU(+s || 0); return fnum(v, adig(v)) + ' ' + TU(); };
   function updateEvents(force) {
-    const l = $('#evList'); if (!l) return; const ev = (S.rig && S.rig.events) || [];
+    const l = $('#evList'); if (!l) return; const ev = ((S.rig && S.rig.events) || []).filter(x => !masked(x));
     const sig = ev.length + '|' + (ev.length ? (ev[ev.length - 1].text || '') + (ev[ev.length - 1].t || '') : '');
     if (!force && sig === S.evSig) return; S.evSig = sig;
     l.innerHTML = ev.length ? ev.slice(-40).reverse().map(x => `<li class="${esc(x.kind || 'info')}"><time>${esc(tstamp(x.t))}</time><span>${esc(x.text)}</span></li>`).join('') : '<li class="empty">Keine Meldungen. Meldet der Prüfstand etwas (zum Beispiel einen Fehler), steht es hier.</li>';
@@ -603,7 +606,7 @@
     const el = $('#diagList'); if (!el || !S.rig) return;
     const now = performance.now(); if (!force && now - lastDiag < 600) return; lastDiag = now;
     let d = []; try { d = typeof S.rig.diagnose === 'function' ? (S.rig.diagnose() || []) : []; } catch (e) { d = []; }
-    S.diag = d;
+    d = d.filter(x => !masked(x)); S.diag = d;
     d.forEach(x => { if (!x || !x.id || S.diagSeen[x.id]) return; S.diagSeen[x.id] = 1; if (x.id === 'dauer' || x.id === 'auf') stat('regosc', 1, 'max'); if (x.id === 'windup') stat('regwind', 1, 'max'); });
     const h = d.length ? d.map(x => `<li class="${esc(x.kind || 'info')}"><span>${esc(x.text)}</span></li>`).join('') : '<li class="empty">Keine Hinweise: Zu den aktuellen Einstellungen meldet der Prüfstand nichts.</li>';
     if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
@@ -1091,7 +1094,7 @@
     ['chr-stoer-0', 'CHR Störung, aperiodisch', 'step'], ['chr-stoer-20', 'CHR Störung, 20 % Überschwingen', 'step'], ['tsumme', 'T-Summe (Betragsoptimum)', 'tsum']];
   const methodName = id => { const C = CORE(), t = C && C.rules && C.rules.table, e = Array.isArray(t) ? t.find(x => x && x.id === id) : null; return (e && (e.name || e.title)) || (METHODS.find(m => m[0] === id) || [])[1] || id; };
   const TUNE = { method: 'zn-sprung', type: 'PI', vals: {} };
-  const TFIELDS = { swing: [['Kkrit', 'Kkrit', ''], ['Tkrit', 'Tkrit', 'T']], step: [['Ks', 'Ks', ''], ['Tu', 'Tu', 'T'], ['Tg', 'Tg', 'T']], tsum: [['Ks', 'Ks', ''], ['T1', 'T1 (größte Zeitkonstante)', 'T'], ['TsumKlein', 'TΣk (Summe der kleinen Zeitkonstanten und Totzeit)', 'T'], ['T2', 'T2 (nur für PID)', 'T'], ['Tu', 'oder Tu aus der Sprungantwort', 'T'], ['Tg', 'oder Tg aus der Sprungantwort', 'T']] };
+  const TFIELDS = { swing: [['Kkrit', 'Kkrit', ''], ['Tkrit', 'Tkrit', 'T']], step: [['Ks', 'Ks', ''], ['Tu', 'Tu', 'T'], ['Tg', 'Tg', 'T']], tsum: [['Ks', 'Ks', ''], ['T1', 'T1 (größte Zeitkonstante)', 'T'], ['TsumKlein', 'TΣk (Summe der kleinen Zeitkonstanten und Totzeit)', 'T'], ['T2', 'T2 (nur für PID: zweitgrößte Zeitkonstante, Tv = T2; im PID-Kp steht TΣk′ = TΣk − T2)', 'T'], ['Tu', 'oder Tu aus der Sprungantwort', 'T'], ['Tg', 'oder Tg aus der Sprungantwort', 'T']] };
   const strOf = () => (S.strecke && S.strecke.rig === S.rigId ? S.strecke : null);
   function tuneFieldsHtml() {
     const kind = (METHODS.find(m => m[0] === TUNE.method) || [])[2] || 'step', s = strOf();
@@ -1354,7 +1357,7 @@
   function renderSeqRes() {
     const el = $('#sqRes'); if (!el) return; const R = S.seqRes;
     if (!R || R.rigId !== S.rigId) { el.innerHTML = ''; return; }
-    const faults = (R.faults || []).map(f => (typeof f === 'string' ? f : f && (f.text || f.msg || f.name)) || '').filter(Boolean), evs = (R.events || []).slice(-30), st0 = R.metrics && R.metrics.step;
+    const faults = (R.faults || []).filter(f => !masked({ id: typeof f === 'string' ? f : f && f.id })).map(f => (typeof f === 'string' ? f : f && (f.text || f.msg || f.name)) || '').filter(Boolean), evs = (R.events || []).filter(e => !masked(e)).slice(-30), st0 = R.metrics && R.metrics.step;
     const first = R.samples[0], chg = st0 ? R.samples.find(s => Math.abs(s.w - first.w) >= 0.02 * (R.range.hi - R.range.lo)) : null, J = chg ? { w0: first.w, w1: chg.w } : null;
     el.innerHTML = `<div class="card pl"><h4>Ergebnis des Ablaufs</h4><div class="chartbox"><canvas id="sqCv" aria-label="Ergebnis: Sollwert und Istwert"></canvas></div><div class="chartbox lane"><canvas id="sqCv2" aria-label="Ergebnis: Stellgröße und Störgröße"></canvas></div>
       <label class="f" style="margin:8px 0 0"><span>Zeitleiste: Zeitpunkt auswählen</span><input type="range" id="sqScrub" min="0" max="${R.samples.length - 1}" step="1" value="${seqIdx}"></label><div class="readout" id="sqRead"></div>
@@ -1555,7 +1558,7 @@
     const c = rigPng(1200, 675), who = lsRaw('lm4.name', ''), vals = allCtl(); let mv = {}; try { mv = S.rig.readMeters(); } catch (e) {}
     const cv = ctlsOf().map(x => { const v = vals[x.key]; let t = v; if (x.type === 'switch' || x.type === 'button') t = v ? 'EIN' : 'AUS'; else if (x.type === 'select') { const o = (x.options || []).find(q => q.value === v); t = o ? o.label : v; } else t = ctlShow(x, v) + (ctlUnit(x) ? ' ' + ctlUnit(x) : ''); return `<tr><td>${esc(x.group || '')}</td><td>${esc(x.label)}</td><td>${esc(t)}</td></tr>`; }).join('');
     const mt = metersOf().map(m => `<tr><td>${esc(m.label)}</td><td>${fnum(mv[m.key], m.digits == null ? 1 : m.digits)} ${esc(m.unit || '')}</td></tr>`).join('');
-    const ev = ((S.rig.events) || []).slice(-15).map(e => `<tr><td>${esc(tstamp(e.t))}</td><td>${esc(e.text)}</td></tr>`).join('');
+    const ev = ((S.rig.events) || []).filter(e => !masked(e)).slice(-15).map(e => `<tr><td>${esc(tstamp(e.t))}</td><td>${esc(e.text)}</td></tr>`).join('');
     const rows = curRows().map(r => { const d = ctlDef(r.key); return `<tr><td>${fnum(toU(r.t), adig(toU(r.t)))} ${esc(TU())}</td><td>${r.kind === 'ramp' ? 'Rampe auf' : 'setze'} ${esc(d ? d.label : r.key)}</td><td>${esc(r.kind === 'ramp' ? String(r.to) + ' in ' + fnum(toU(r.dur), adig(toU(r.dur) || 1)) + ' ' + TU() : typeof r.value === 'boolean' ? (r.value ? 'EIN' : 'AUS') : String(r.value))}</td></tr>`; }).join('');
     const kw = strOf() ? kwHtml() : '';
     $('#printArea').innerHTML = `<div class="proto"><h1>${esc(S.name)}</h1><p>Prüfstand: ${esc(rigName(S.rigId))} · ${new Date().toLocaleDateString('de-DE')}${who ? ' · ' + esc(who) : ''} · Zeiten in Prozesszeit (${esc(TU())})</p>
@@ -1689,7 +1692,7 @@
       if (a === 'check') checkTask(); else if (a === 'hint') hintTask(); else if (a === 'rig') setTab('rig');
       else if (a === 'auto') { const t = curTask(); if (t && await confirmSheet('Auto-Weg?', 'Der Prüfstand spielt die Musterlösung ab. Das <b>zählt als Hilfe</b> (Stufe 3): Dein Ausbilder sieht es.', 'Abspielen')) autoWay(t); }
       else if (a === 'hand') { const t = curTask(); if (t && root.Auswertung) root.Auswertung.handIn(t.id, taskDone()[t.id] || 0, t.title); }
-      else if (a === 'end') { S.task = null; taskRes = null; updateChrome(); renderTasks(); toast('Aufgabe beendet'); }
+      else if (a === 'end') { S.task = null; S.evSig = ''; taskRes = null; updateChrome(); renderTasks(); toast('Aufgabe beendet'); }
     } else if (row) startTask(row.dataset.t);
   });
 

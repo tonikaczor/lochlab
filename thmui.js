@@ -618,6 +618,9 @@
       else if (e.fx === 'tick') F.sound('tick', 0.4);
     } catch (er) {}
   }
+  /* Verdeckte Fehler: Aufgaben der Fehlersuche blenden Meldungen/Hinweise bestimmter Diagnose-Kennungen (task.maskDiag) bis zum Ende der Aufgabe aus */
+  function masked(x) { try { const t = curTask(); return !!(t && Array.isArray(t.maskDiag) && x && t.maskDiag.indexOf(x.id) >= 0); } catch (e) { return false; } }
+  try { Object.defineProperty(root, 'THM_VEIL', { configurable: true, get() { const o = {}; try { const t = curTask(); if (t && Array.isArray(t.maskDiag)) t.maskDiag.forEach(i => { o[i] = 1; }); } catch (e) {} return o; } }); } catch (e) {}
   function noteFault(e) {
     const key = S.rigId + ':' + (e.fx || String(e.text || '').slice(0, 28));
     const a = lsGet('thm.faults', []), s = new Set(Array.isArray(a) ? a : []); if (s.has(key)) return;
@@ -629,6 +632,7 @@
     let changed = false;
     for (let i = Math.max(0, ev.length - 30); i < ev.length; i++) {
       const e = ev[i]; if (!e || S.evSeen.has(e)) continue; S.evSeen.add(e); changed = true;
+      if (masked(e)) continue;
       if (e.kind === 'error' || (e.fx && FXKINDS[e.fx] && e.fx !== 'tick' && e.fx !== 'ding')) noteFault(e);
       if (e.fx === 'shutdown') { S.shutSeen = true; S.shutNote = { lastT: fin(+e.t) ? +e.t : S.simT }; }
       if (e.kind === 'error') { S.faultUntil = performance.now() + 9000; S.faultText = sx(e.text); if (S.tab !== 'rig' && S.tab !== 'cmp' && S.running) toast('⚠ ' + sx(e.text)); }
@@ -652,7 +656,7 @@
 
   /* ---- Meldungsliste (Zeitstempel in Prozess-Minuten) und Hinweise aus rig.diagnose() ---- */
   function updateEvents(force) {
-    const l = $('#evList'); if (!l) return; const ev = (S.rig && S.rig.events) || [];
+    const l = $('#evList'); if (!l) return; const ev = ((S.rig && S.rig.events) || []).filter(x => !masked(x));
     const sig = ev.length + '|' + (ev.length ? (ev[ev.length - 1].text || '') + (ev[ev.length - 1].t || '') : '') + S.sym;
     if (!force && sig === S.evSig) return; S.evSig = sig;
     l.innerHTML = ev.length ? ev.slice(-40).reverse().map(x => `<li class="${esc(x.kind || 'info')}"><time>${esc(tstamp(x.t))}</time><span>${esc(sx(x.text))}</span></li>`).join('') : '<li class="empty">Keine Meldungen. Meldet der Prüfstand etwas (zum Beispiel eine Abschaltung), steht es hier.</li>';
@@ -663,7 +667,7 @@
     const el = $('#diagList'); if (!el || !S.rig) return;
     const now = performance.now(); if (!force && now - lastDiag < 600) return; lastDiag = now;
     let d = []; try { d = typeof S.rig.diagnose === 'function' ? (S.rig.diagnose() || []) : []; } catch (e) { d = []; }
-    S.diag = d;
+    d = d.filter(x => !masked(x)); S.diag = d;
     d.forEach(x => { if (x && x.id && !S.diagSeen[x.id]) S.diagSeen[x.id] = 1; });
     const h = d.length ? d.map(x => `<li class="${esc(x.kind || 'info')}"><span>${esc(sx(x.text))}</span></li>`).join('') : '<li class="empty">Keine Hinweise: Zu den aktuellen Einstellungen meldet der Prüfstand nichts.</li>';
     if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
@@ -1144,7 +1148,7 @@
   function renderSeqRes() {
     const el = $('#sqRes'); if (!el) return; const R = S.seqRes;
     if (!R || R.rigId !== S.rigId) { el.innerHTML = ''; return; }
-    const faults = (R.faults || []).map(f => (typeof f === 'string' ? f : f && (f.text || f.msg || f.name)) || '').filter(Boolean), evs = (R.events || []).slice(-30);
+    const faults = (R.faults || []).filter(f => !masked({ id: typeof f === 'string' ? f : f && f.id })).map(f => (typeof f === 'string' ? f : f && (f.text || f.msg || f.name)) || '').filter(Boolean), evs = (R.events || []).slice(-30);
     el.innerHTML = `<div class="card pl"><h4>Ergebnis des Ablaufs</h4><div class="chartbox"><canvas id="sqCv" aria-label="Ergebnis: Temperaturen"></canvas></div><div class="chartbox lane"><canvas id="sqCv2" aria-label="Ergebnis: Verlustleistung"></canvas></div>
       <label class="f" style="margin:8px 0 0"><span>Zeitleiste: Zeitpunkt auswählen</span><input type="range" id="sqScrub" min="0" max="${R.samples.length - 1}" step="1" value="${seqIdx}"></label><div class="readout" id="sqRead"></div>
       <div class="chips" style="margin-top:6px"><button class="chip s" data-q="keep">Lauf merken</button><button class="chip s" data-q="unkeep"${S.seqPrev ? ' ' : ' disabled '}>Gemerkten Lauf löschen</button><button class="chip s" data-q="csv">⬇ CSV</button></div>
@@ -1337,7 +1341,7 @@
     const c = rigPng(1200, 675), who = lsRaw('lm4.name', ''), vals = allCtl(); let mv = {}; try { mv = S.rig.readMeters(); } catch (e) {}
     const cv = ctlsOf().filter(x => x.type !== 'button').map(x => { const v = vals[x.key]; let t = v; if (x.type === 'switch') t = v ? 'EIN' : 'AUS'; else if (x.type === 'select') { const o = (x.options || []).find(q => q.value === v); t = o ? sx(o.label) : v; } else t = ctlShow(x, v) + (ctlUnit(x) ? ' ' + ctlUnit(x) : ''); return `<tr><td>${esc(sx(x.group || ''))}</td><td>${esc(sx(x.label))}</td><td>${esc(t)}</td></tr>`; }).join('');
     const mt = metersOf().map(m => `<tr><td>${esc(sx(m.label))}</td><td>${fnum(mv[m.key], m.digits == null ? 1 : m.digits)} ${esc(sx(m.unit || ''))}</td></tr>`).join('');
-    const ev = ((S.rig.events) || []).slice(-15).map(e => `<tr><td>${esc(tstamp(e.t))}</td><td>${esc(sx(e.text))}</td></tr>`).join('');
+    const ev = ((S.rig.events) || []).filter(e => !masked(e)).slice(-15).map(e => `<tr><td>${esc(tstamp(e.t))}</td><td>${esc(sx(e.text))}</td></tr>`).join('');
     const rows = curRows().map(r => { const d = ctlDef(r.key); return `<tr><td>${fnum(toU(r.t), adig(toU(r.t)))} ${esc(TU())}</td><td>${r.kind === 'ramp' ? 'Rampe auf' : 'setze'} ${esc(d ? sx(d.label) : r.key)}</td><td>${esc(r.kind === 'ramp' ? String(r.to) + ' in ' + fnum(toU(r.dur), adig(toU(r.dur) || 1)) + ' ' + TU() : typeof r.value === 'boolean' ? (r.value ? 'EIN' : 'AUS') : String(r.value))}</td></tr>`; }).join('');
     $('#printArea').innerHTML = `<div class="proto"><h1>${esc(S.name)}</h1><p>Prüfstand: ${esc(rigName(S.rigId))} · ${new Date().toLocaleDateString('de-DE')}${who ? ' · ' + esc(who) : ''} · Zeiten in Prozesszeit (${esc(TU())})</p>
       <h2>Prüfstand</h2><img src="${c.toDataURL('image/png')}" alt="">
@@ -1479,7 +1483,7 @@
       if (a === 'check') checkTask(); else if (a === 'hint') hintTask(); else if (a === 'rig') setTab(S.rigId === 'vergleich' ? 'cmp' : 'rig');
       else if (a === 'auto') { const t = curTask(); if (t && await confirmSheet('Auto-Weg?', 'Der Prüfstand spielt die Musterlösung ab. Das <b>zählt als Hilfe</b> (Stufe 3): Dein Ausbilder sieht es.', 'Abspielen')) autoWay(t); }
       else if (a === 'hand') { const t = curTask(); if (t && root.Auswertung) root.Auswertung.handIn(t.id, taskDone()[t.id] || 0, sx(t.title)); }
-      else if (a === 'end') { S.task = null; taskRes = null; updateChrome(); renderTasks(); toast('Aufgabe beendet'); }
+      else if (a === 'end') { S.task = null; S.evSig = ''; taskRes = null; updateChrome(); renderTasks(); toast('Aufgabe beendet'); }
     } else if (row) startTask(row.dataset.t);
   });
 

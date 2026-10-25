@@ -171,7 +171,7 @@
       '.spf svg{display:block;touch-action:manipulation;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}',
       '.spf svg text{pointer-events:none;fill:#e6edf3;font:12px system-ui,-apple-system,"Segoe UI",sans-serif}',
       '.spf svg .tb{font-weight:700;font-size:13px}.spf svg .tm{fill:#9aa7b5;font-size:10.5px}.spf svg .tv{font-size:10.5px;font-weight:700}',
-      '.spf svg .tt{font-size:11px;fill:#9aa7b5}',
+      '.spf svg .tt{font-size:12px;fill:#9aa7b5}',
       '.spf svg .hit{fill:transparent;cursor:pointer;pointer-events:all}',
       '.spf svg .hit:hover{fill:rgba(59,158,255,.10)}',
       '.spf svg .plus{fill:rgba(59,158,255,.12);stroke:#3b9eff;stroke-width:2;stroke-dasharray:4 3}',

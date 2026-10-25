@@ -1078,7 +1078,10 @@
     }
     return L;
   }
+  /* Verdeckte Fehler: waehrend einer Fehlersuche-Aufgabe (THM_VEIL, von der Oberflaeche gesetzt) tragen Beschriftungen keinen Fehlernamen; die Zeichnung selbst bleibt */
+  const veil = id => { try { return !!(root.THM_VEIL && root.THM_VEIL[id]); } catch (e) { return false; } };
   function jointText(b) {
+    if (veil('paste-fehlt') && b.paste === 'keine') return b.joint === 'direkt' ? 'direkt' : b.joint === 'glimmer' ? 'Glimmer' : 'Silikonfolie';
     if (b.jointName) return b.jointName;
     const pa = b.paste === 'keine' ? 'trocken' : b.paste === 'dick' ? 'dicke Paste' : 'Paste';
     if (b.joint === 'direkt') return b.paste === 'keine' ? 'direkt, trocken' : 'direkt + ' + pa;
@@ -1394,7 +1397,7 @@
           else if (b.fan !== 'aus') fl.push(L('Lüfter ' + b.fan + ' ×' + fg(ffac, 2), false));
           add((G.yFin0 + G.yFin1) / 2, cx1, (G.yFin0 + G.yFin1) / 2, fl);
           add(G.yFin0 + 4, cx1, G.yFin0 + 4, [L('Rippenspitze', false), L(T1(finTemp(b, 1)), true)]);
-          if (G.screw) { const sl = [L(b.screw === 'locker' ? 'Schraube locker!' : 'Schraube fest', b.screw === 'locker', b.screw === 'locker' ? P.warn : undefined)]; if (b.joint !== 'direkt') sl.push(L(b.bushing ? 'mit Isolierbuchse' : 'ohne Isolierbuchse', !b.bushing, b.bushing ? undefined : P.danger)); if (b.short) sl.push(L('Kurzschluss!', true, P.danger)); add(G.screw.yHead1 + 6, G.screw.x + G.screw.headW / 2, G.screw.yHead0 + 4, sl); }
+          if (G.screw) { const sl = [veil('locker') && b.screw === 'locker' ? L('Schraube', false) : L(b.screw === 'locker' ? 'Schraube locker!' : 'Schraube fest', b.screw === 'locker', b.screw === 'locker' ? P.warn : undefined)]; if (b.joint !== 'direkt') sl.push(L(b.bushing ? 'mit Isolierbuchse' : 'ohne Isolierbuchse', !b.bushing, b.bushing ? undefined : P.danger)); if (b.short) sl.push(L('Kurzschluss!', true, P.danger)); add(G.screw.yHead1 + 6, G.screw.x + G.screw.headW / 2, G.screw.yHead0 + 4, sl); }
         }
         add(G.top + 30, cx1, G.top + 30, [L('Luft', false), L(S.ta + ' = ' + T1(b.ta), true)]);
       }

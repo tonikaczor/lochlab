@@ -14,11 +14,11 @@
 <link rel="icon" href="icon-192.png">
 <title>Tonfunk Lab</title>
 <style>
-:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--danger:#ff5c5c;--line:#38424d;color-scheme:dark}
+:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--accent-bg:#1a6fd4;--danger:#ff5c5c;--line:#38424d;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{min-height:100%;margin:0;background:var(--bg);color:var(--fg);font:16px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif}
 .wrap{max-width:1320px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom))}
-header{display:flex;align-items:center;gap:16px;margin-bottom:28px}
+header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
 header img{height:64px}
 h1{margin:0;font-size:26px;letter-spacing:.01em}
 .slogan{font-weight:500;color:var(--accent);font-size:.78em;white-space:nowrap}
@@ -42,15 +42,20 @@ header p{margin:2px 0 0;color:var(--mute)}
 @keyframes cur{0%{opacity:1}50%{opacity:0}}
 @keyframes pinrun{0%,11%{fill:#fff59d}12%,100%{fill:#d8b24a}}
 @media(prefers-reduced-motion:reduce){.pic svg *{animation:none!important}}
-.q{font-size:18px;margin:0 0 14px;color:var(--mute)}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
-@media(min-width:1180px){.cards{grid-template-columns:repeat(6,1fr)}.cards .card{grid-column:span 2}.cards .card:last-child:nth-child(3n+1){grid-column:3 / span 2}.cards .card:nth-last-child(2):nth-child(3n+1){grid-column:2 / span 2}.cards .card:last-child:nth-child(3n+2){grid-column:4 / span 2}}
-@media(min-width:640px) and (max-width:1179px){.cards{grid-template-columns:repeat(2,1fr)}}
+/* Dauer-Animationen nur fuer Karten im sichtbaren Bereich oder unter Zeiger/Fokus (spart Akku, ruhigere Blickfuehrung); ohne Skript oder IntersectionObserver laufen alle wie bisher */
+html.anim-gate .pic svg *{animation-play-state:paused}
+html.anim-gate .card.inview .pic svg *,html.anim-gate .card:hover .pic svg *,html.anim-gate .card:focus-within .pic svg *{animation-play-state:running}
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+@media(min-width:1600px){.wrap{max-width:1600px}.cards{grid-template-columns:repeat(5,1fr)}}
+@media(min-width:1280px) and (max-width:1599px){.cards{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:900px) and (max-width:1279px){.cards{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:640px) and (max-width:899px){.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:639px){.cards{grid-template-columns:1fr}}
 .card.soon{opacity:.8;border-style:dashed}
 a.btn.off{pointer-events:none;color:var(--mute);background:transparent}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px}
 .card .tag{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
-.card h2{margin:0;font-size:22px}
+.card h3{margin:0;font-size:22px}
 .card p{margin:0;color:var(--mute)}
 .pic{height:120px;border-radius:12px;background:#080b0e;display:grid;place-items:center;overflow:hidden}
 .pic svg{width:100%;height:100%}
@@ -58,30 +63,34 @@ a.btn.off{pointer-events:none;color:var(--mute);background:transparent}
 .steps span{font-size:13px;padding:4px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--line)}
 .btns{display:flex;gap:10px;margin-top:auto;padding-top:6px}
 a.btn{flex:1;display:flex;align-items:center;justify-content:center;height:48px;border-radius:13px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);text-decoration:none;font-weight:600}
-a.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff;flex:2}
-/* kompakte Karten: vier Spalten am Desktop, kleineres Vorschaubild, kürzere Texte */
-.cards{gap:12px}
-.card{padding:14px;gap:8px;border-radius:14px}.card h2{font-size:18px}.card p{font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
-.pic{height:76px}.steps span{font-size:11px;padding:2px 8px}
-a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2px}.mp{margin:0}
-@media(min-width:1180px){.cards{grid-template-columns:repeat(4,1fr)}.cards .card,.cards .card:last-child:nth-child(n),.cards .card:nth-last-child(2):nth-child(n){grid-column:auto}}
-@media(min-width:640px) and (max-width:1179px){.cards{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:639px){.pic{height:64px}.card p{-webkit-line-clamp:2}}
+a.btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff;flex:2}
+/* kompakte Karten: kleineres Vorschaubild, kürzere Texte (Spalten: siehe .cards oben, Bereiche: home.css) */
+.card{padding:14px;gap:8px;border-radius:14px}.card h3{font-size:18px}.card p{font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+/* Beschreibungen: 4 Zeilen (Handy 3), Volltext per Antippen/Enter und als Tooltip; Skript setzt .cl nur bei tatsaechlich abgeschnittenem Text */
+.card p.cl{cursor:pointer}.card p.cl:hover{color:var(--fg)}.card p.open{-webkit-line-clamp:unset;overflow:visible;color:var(--fg)}
+.pic{height:76px}.steps span{font-size:12px;padding:2px 8px}
+a.btn{height:44px;min-height:44px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2px}.mp{margin:0}
+@media(max-width:639px){.pic{height:64px}.card p{-webkit-line-clamp:3}}
 /* Zeile Projekte (Verbund): eigene Zeile unter den Lab-Karten, kein Lab */
-.vbrow{margin-top:14px;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;border-color:#3b9eff;background:linear-gradient(135deg,rgba(59,158,255,.12),rgba(34,40,48,1) 60%)}
+.vbrow{grid-column:1/-1;margin-top:0;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;border-color:#3b9eff;background:linear-gradient(135deg,rgba(59,158,255,.12),rgba(34,40,48,1) 60%)}
 .vbrow .pic{flex:0 0 190px;height:76px}.vbrow .vbt{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}.vbrow .vbt p{-webkit-line-clamp:3}
 .vbrow .btns{flex:0 0 auto;margin:0;padding:0}.vbrow a.btn{min-width:150px;padding:0 18px}
 @media(max-width:639px){.vbrow .pic{flex:1 1 100%}.vbrow .btns{flex:1 1 100%}}
-.foot{margin-top:26px;color:var(--mute);font-size:13px;text-align:center}
+.foot{margin-top:26px;color:var(--mute);font-size:13px;text-align:center;line-height:1.6}
+.foot.standrow button{min-height:44px;min-width:44px;padding:0 18px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}.foot.standrow button:focus-visible{outline:3px solid #ffd166;outline-offset:2px}.foot.standrow span{font-size:12px}
+.foot a{display:inline-block;min-height:28px;padding:4px 3px;line-height:20px}
+html:root{--focus:#ffd166}
 #gate{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 #gate form{width:100%;max-width:340px;text-align:center}
 #gate img{width:96px;height:auto;margin-bottom:10px}
 #gate h1{margin:0 0 4px;font-size:22px}
 #gate p{margin:0 0 18px;color:var(--mute)}
 #gate input{text-align:center;margin-bottom:12px;width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-#gate .btn{width:100%;height:46px;border-radius:12px;background:var(--accent);border:0;color:#fff;font:inherit;font-weight:600}
+#gate .btn{width:100%;height:46px;border-radius:12px;background:var(--accent-bg,#1a6fd4);border:0;color:#fff;font:inherit;font-weight:600}
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 </style>
+<link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="home.css">
 </head>
 <body>
 <!--GATE-->
@@ -124,12 +133,18 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
   <header>
     <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
     <div><h1>Tonfunk Lab <span class="slogan">– es gibt immer eine Schaltung, die noch fehlt.</span></h1><p>Lehrwerkstatt · planen, drucken, simulieren</p></div>
+    <form class="srch" id="srch" role="search" hidden autocomplete="off" onsubmit="return false">
+      <input id="srchIn" type="search" placeholder="Lab, Heft oder Aufgabe suchen" aria-label="Labs, Hefte und Aufgaben suchen" aria-controls="srchRes" aria-expanded="false" role="combobox" aria-autocomplete="list" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+      <button type="button" class="clr" id="srchClr" aria-label="Suche leeren" hidden>&times;</button>
+      <div class="res" id="srchRes" role="listbox" aria-label="Suchergebnisse" hidden></div>
+      <div class="sr" id="srchLive" role="status" aria-live="polite"></div>
+    </form>
   </header>
-  <p class="q">Was möchtest du erstellen?</p>
-  <div class="cards">
-    <section class="card" data-lab="layout">
+  <div class="top" id="top"><a class="cont" id="contGo" href="schaltplan.html?trainer"><b>Starten</b><small>SchaltLab (Einführung)</small></a></div>
+  <div class="cards" id="cardsFlat">
+    <section class="card" data-lab="layout" data-group="grund">
       <span class="tag">LochLab</span>
-      <h2>Lochraster-Layout</h2>
+      <h3>Lochraster-Layout</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#d6a94c"/><g fill="#f3d89a"><circle cx="25" cy="25" r="4.5"/><circle cx="25" cy="41" r="4.5"/><circle cx="25" cy="57" r="4.5"/><circle cx="25" cy="73" r="4.5"/><circle cx="25" cy="89" r="4.5"/><circle cx="41" cy="25" r="4.5"/><circle cx="41" cy="41" r="4.5"/><circle cx="41" cy="57" r="4.5"/><circle cx="41" cy="73" r="4.5"/><circle cx="41" cy="89" r="4.5"/><circle cx="57" cy="25" r="4.5"/><circle cx="57" cy="41" r="4.5"/><circle cx="57" cy="57" r="4.5"/><circle cx="57" cy="73" r="4.5"/><circle cx="57" cy="89" r="4.5"/><circle cx="73" cy="25" r="4.5"/><circle cx="73" cy="41" r="4.5"/><circle cx="73" cy="57" r="4.5"/><circle cx="73" cy="73" r="4.5"/><circle cx="73" cy="89" r="4.5"/><circle cx="89" cy="25" r="4.5"/><circle cx="89" cy="41" r="4.5"/><circle cx="89" cy="57" r="4.5"/><circle cx="89" cy="73" r="4.5"/><circle cx="89" cy="89" r="4.5"/><circle cx="105" cy="25" r="4.5"/><circle cx="105" cy="41" r="4.5"/><circle cx="105" cy="57" r="4.5"/><circle cx="105" cy="73" r="4.5"/><circle cx="105" cy="89" r="4.5"/><circle cx="121" cy="25" r="4.5"/><circle cx="121" cy="41" r="4.5"/><circle cx="121" cy="57" r="4.5"/><circle cx="121" cy="73" r="4.5"/><circle cx="121" cy="89" r="4.5"/><circle cx="137" cy="25" r="4.5"/><circle cx="137" cy="41" r="4.5"/><circle cx="137" cy="57" r="4.5"/><circle cx="137" cy="73" r="4.5"/><circle cx="137" cy="89" r="4.5"/><circle cx="153" cy="25" r="4.5"/><circle cx="153" cy="41" r="4.5"/><circle cx="153" cy="57" r="4.5"/><circle cx="153" cy="73" r="4.5"/><circle cx="153" cy="89" r="4.5"/><circle cx="169" cy="25" r="4.5"/><circle cx="169" cy="41" r="4.5"/><circle cx="169" cy="57" r="4.5"/><circle cx="169" cy="73" r="4.5"/><circle cx="169" cy="89" r="4.5"/><circle cx="185" cy="25" r="4.5"/><circle cx="185" cy="41" r="4.5"/><circle cx="185" cy="57" r="4.5"/><circle cx="185" cy="73" r="4.5"/><circle cx="185" cy="89" r="4.5"/><circle cx="201" cy="25" r="4.5"/><circle cx="201" cy="41" r="4.5"/><circle cx="201" cy="57" r="4.5"/><circle cx="201" cy="73" r="4.5"/><circle cx="201" cy="89" r="4.5"/><circle cx="217" cy="25" r="4.5"/><circle cx="217" cy="41" r="4.5"/><circle cx="217" cy="57" r="4.5"/><circle cx="217" cy="73" r="4.5"/><circle cx="217" cy="89" r="4.5"/></g><g fill="#3b2a10"><circle cx="25" cy="25" r="1.8"/><circle cx="25" cy="41" r="1.8"/><circle cx="25" cy="57" r="1.8"/><circle cx="25" cy="73" r="1.8"/><circle cx="25" cy="89" r="1.8"/><circle cx="41" cy="25" r="1.8"/><circle cx="41" cy="41" r="1.8"/><circle cx="41" cy="57" r="1.8"/><circle cx="41" cy="73" r="1.8"/><circle cx="41" cy="89" r="1.8"/><circle cx="57" cy="25" r="1.8"/><circle cx="57" cy="41" r="1.8"/><circle cx="57" cy="57" r="1.8"/><circle cx="57" cy="73" r="1.8"/><circle cx="57" cy="89" r="1.8"/><circle cx="73" cy="25" r="1.8"/><circle cx="73" cy="41" r="1.8"/><circle cx="73" cy="57" r="1.8"/><circle cx="73" cy="73" r="1.8"/><circle cx="73" cy="89" r="1.8"/><circle cx="89" cy="25" r="1.8"/><circle cx="89" cy="41" r="1.8"/><circle cx="89" cy="57" r="1.8"/><circle cx="89" cy="73" r="1.8"/><circle cx="89" cy="89" r="1.8"/><circle cx="105" cy="25" r="1.8"/><circle cx="105" cy="41" r="1.8"/><circle cx="105" cy="57" r="1.8"/><circle cx="105" cy="73" r="1.8"/><circle cx="105" cy="89" r="1.8"/><circle cx="121" cy="25" r="1.8"/><circle cx="121" cy="41" r="1.8"/><circle cx="121" cy="57" r="1.8"/><circle cx="121" cy="73" r="1.8"/><circle cx="121" cy="89" r="1.8"/><circle cx="137" cy="25" r="1.8"/><circle cx="137" cy="41" r="1.8"/><circle cx="137" cy="57" r="1.8"/><circle cx="137" cy="73" r="1.8"/><circle cx="137" cy="89" r="1.8"/><circle cx="153" cy="25" r="1.8"/><circle cx="153" cy="41" r="1.8"/><circle cx="153" cy="57" r="1.8"/><circle cx="153" cy="73" r="1.8"/><circle cx="153" cy="89" r="1.8"/><circle cx="169" cy="25" r="1.8"/><circle cx="169" cy="41" r="1.8"/><circle cx="169" cy="57" r="1.8"/><circle cx="169" cy="73" r="1.8"/><circle cx="169" cy="89" r="1.8"/><circle cx="185" cy="25" r="1.8"/><circle cx="185" cy="41" r="1.8"/><circle cx="185" cy="57" r="1.8"/><circle cx="185" cy="73" r="1.8"/><circle cx="185" cy="89" r="1.8"/><circle cx="201" cy="25" r="1.8"/><circle cx="201" cy="41" r="1.8"/><circle cx="201" cy="57" r="1.8"/><circle cx="201" cy="73" r="1.8"/><circle cx="201" cy="89" r="1.8"/><circle cx="217" cy="25" r="1.8"/><circle cx="217" cy="41" r="1.8"/><circle cx="217" cy="57" r="1.8"/><circle cx="217" cy="73" r="1.8"/><circle cx="217" cy="89" r="1.8"/></g><rect x="57" y="40" width="64" height="20" rx="3" fill="#222" stroke="#666"/><path d="M137 41h46v16h-46z" fill="#d9bd85" stroke="#8a6b3a"/><path class="wire" d="M121 89H185V60"/><circle class="onglow" cx="201" cy="82" r="16" fill="#ff5a4a"/><circle class="on" cx="201" cy="82" r="9" fill="#e33"/></svg>
       </div>
@@ -137,9 +152,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Zeichnen</span><span>Drucken</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="layout.html">Öffnen</a><a class="btn" href="layout.html?neu">Neu</a><a class="btn" href="layout.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="schaltplan">
+    <section class="card" data-lab="schaltplan" data-group="grund">
       <span class="tag">SchaltLab</span>
-      <h2>Stromlaufplan</h2>
+      <h3>Stromlaufplan</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><g fill="none" stroke="#14e050" stroke-width="3"><path d="M40 90V30h60"/><path d="M140 30h60"/></g><g fill="none" stroke="#9aa0a6" stroke-width="3"><path d="M40 90h160V30"/></g><rect x="100" y="20" width="40" height="20" fill="none" stroke="#e8eaed" stroke-width="3"/><g stroke="#e8eaed" stroke-width="4"><path d="M28 62h24M33 72h14"/></g><path class="dots" d="M40 90V30H100M140 30H200V90H40"/></svg>
       </div>
@@ -147,9 +162,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Zeichnen</span><span>Drucken</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="schaltplan.html">Öffnen</a><a class="btn" href="schaltplan.html?neu">Neu</a><a class="btn" href="schaltplan.html?bsp">Beispiel</a></div>
     </section>
-  <section class="card" data-lab="simlab">
+  <section class="card" data-lab="simlab" data-group="sich">
       <span class="tag">SimLab</span>
-      <h2>Experimente und Hausinstallation</h2>
+      <h3>Experimente und Hausinstallation</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><g fill="none" stroke="#9aa0a6" stroke-width="3"><path d="M50 95V45h40M150 45h40v50H50"/></g><rect x="40" y="62" width="20" height="26" rx="3" fill="#2b2b2b" stroke="#e0b020" stroke-width="3"/><circle cx="120" cy="45" r="22" fill="#ffe14d" opacity=".9"/><circle class="glowp" cx="120" cy="45" r="30" fill="#ffe14d" opacity=".22"/><path d="M108 45h24M120 33v24" stroke="#8a6b10" stroke-width="3"/><path class="dots" d="M50 95V45H98M142 45H190V95H50"/></svg>
       </div>
@@ -157,9 +172,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Aufbauen</span><span>Schalten</span><span>Beobachten</span></div>
       <div class="btns"><a class="btn pri" href="simlab.html">Öffnen</a><a class="btn" href="simlab.html?neu">Neu</a><a class="btn" href="simlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="digilab">
+    <section class="card" data-lab="digilab" data-group="anadig">
       <span class="tag">DigiLab</span>
-      <h2>Digitaltechnik</h2>
+      <h3>Digitaltechnik</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#10261a"/><g fill="none" stroke="#6dff7a" stroke-width="3"><path d="M50 35h20a22 22 0 010 44H50z"/><path class="wire" d="M22 46h28M22 68h28" stroke-width="2.5"/><path d="M92 57h22"/></g><circle class="ledp" cx="124" cy="57" r="5" fill="#ffe14d"/><defs><clipPath id="dgc"><rect x="136" y="38" width="86" height="62"/></clipPath></defs><g clip-path="url(#dgc)"><path class="scr24" d="M124 85h12V50h12V85h12V50h12V85h12V50h12V85h12V50h12V85h12V50h12V85h12V50h12V85h12V50h12V85" fill="none" stroke="#ffe14d" stroke-width="3"/></g><text x="22" y="40" font-family="monospace" font-size="9" fill="#9fd18a">A</text><text x="22" y="62" font-family="monospace" font-size="9" fill="#9fd18a">B</text></svg>
       </div>
@@ -167,9 +182,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Verdrahten</span><span>Schalten</span><span>Programmieren</span></div>
       <div class="btns"><a class="btn pri" href="digilab.html">Öffnen</a><a class="btn" href="digilab.html?neu">Neu</a><a class="btn" href="digilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="messlab">
+    <section class="card" data-lab="messlab" data-group="mess">
       <span class="tag">MessLab</span>
-      <h2>Messtechnik</h2>
+      <h3>Messtechnik</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#0b1a10"/><g stroke="#1f4a2a" stroke-width="1"><path d="M10 35h220M10 60h220M10 85h220M65 10v100M120 10v100M175 10v100"/></g><defs><clipPath id="msc"><rect x="12" y="12" width="216" height="96"/></clipPath></defs><g clip-path="url(#msc)"><path class="scr84" d="M-72 60c14-40 28-40 42 0s28 40 42 0c14-40 28-40 42 0s28 40 42 0c14-40 28-40 42 0s28 40 42 0c14-40 28-40 42 0s28 40 42 0c14-40 28-40 42 0s28 40 42 0" fill="none" stroke="#6dff7a" stroke-width="3" style="filter:drop-shadow(0 0 3px #6dff7a)"/><rect class="sweep" x="12" y="12" width="2" height="96" fill="#ffe14d" opacity=".55"/></g><circle class="beat" cx="218" cy="20" r="3" fill="#4cd964"/></svg>
       </div>
@@ -177,9 +192,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Messen</span><span>Ablesen</span><span>Fehler finden</span></div>
       <div class="btns"><a class="btn pri" href="messlab.html">Öffnen</a><a class="btn" href="messlab.html?neu">Neu</a><a class="btn" href="messlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="elslab">
+    <section class="card" data-lab="elslab" data-group="sich">
       <span class="tag">SICHERHEITS-LAB</span>
-      <h2>Elektrische Sicherheit: Schutz, Prüfung, Rettung</h2>
+      <h3>Elektrische Sicherheit: Schutz, Prüfung, Rettung</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#1b1d24"/><path d="M120 20l42 14v26c0 22-16 34-42 44-26-10-42-22-42-44V34z" fill="#233447" stroke="#8ab4f8" stroke-width="3" stroke-linejoin="round"/><path class="dots" d="M120 20l42 14v26c0 22-16 34-42 44-26-10-42-22-42-44V34z"/><path class="beat" d="M128 34l-16 30h14l-6 24 22-34h-14z" fill="#ffd23f"/><circle class="ledp" cx="196" cy="86" r="9" fill="#14e050"/><path d="M191 86l4 4 7-8" fill="none" stroke="#0b1a10" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
@@ -187,9 +202,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Gefahr erkennen</span><span>Schutz wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="elslab.html">Öffnen</a><a class="btn" href="elslab.html?neu">Neu</a><a class="btn" href="elslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="ntslab">
+    <section class="card" data-lab="ntslab" data-group="anadig">
       <span class="tag">NETZTEIL-LAB</span>
-      <h2>Netzteile und Schaltregler</h2>
+      <h3>Netzteile und Schaltregler</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#14202b"/><g fill="none" stroke="#8ab4f8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M28 70h14M28 50h14"/><path d="M42 40c8 0 8 10 0 10s-8 10 0 10 8 10 0 10"/><path d="M62 40c-8 0-8 10 0 10s8 10 0 10-8 10 0 10"/><path d="M62 50h14M62 70h14"/></g><path class="beat" d="M84 50l12 8-12 8z" fill="#ffd23f" stroke="#ffd23f" stroke-width="2" stroke-linejoin="round"/><path d="M84 50v16M96 50v16M96 58h22" fill="none" stroke="#ffd23f" stroke-width="3"/><path d="M130 50v20" stroke="#e8eaed" stroke-width="3"/><path d="M124 56h12M124 62h12" stroke="#e8eaed" stroke-width="3"/><path d="M150 76c6-24 12-24 18 0s12 24 18 0 10-10 14-10" fill="none" stroke="#14e050" stroke-width="3" stroke-linecap="round"/><path class="dots" d="M150 76c6-24 12-24 18 0s12 24 18 0 10-10 14-10"/><path d="M150 40h72" stroke="#3b9eff" stroke-width="2" stroke-dasharray="4 4"/></svg>
       </div>
@@ -197,9 +212,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Wandeln</span><span>Regeln</span><span>Verluste bilanzieren</span></div>
       <div class="btns"><a class="btn pri" href="ntslab.html">Öffnen</a><a class="btn" href="ntslab.html?neu">Neu</a><a class="btn" href="ntslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="wsllab">
+    <section class="card" data-lab="wsllab" data-group="grund">
       <span class="tag">WECHSELSTROM-LAB</span>
-      <h2>Wechselstrom und Schwingkreise</h2>
+      <h3>Wechselstrom und Schwingkreise</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#14202b"/><path d="M20 60h200" stroke="#3a4a5a" stroke-width="1.5" fill="none"/><defs><clipPath id="wsc"><rect x="14" y="14" width="212" height="92"/></clipPath></defs><g clip-path="url(#wsc)"><g class="scr90"><path d="M20 60c15-44 30-44 45 0s30 44 45 0 30-44 45 0 30 44 45 0 30-44 45 0 30 44 45 0" fill="none" stroke="#ffe14d" stroke-width="3" stroke-linecap="round"/><path d="M20 60c15-30 30-30 45 0s30 30 45 0 30-30 45 0 30 30 45 0 30-30 45 0 30 30 45 0" fill="none" stroke="#8ab4f8" stroke-width="3" stroke-linecap="round" transform="translate(12 0)"/></g></g></svg>
       </div>
@@ -207,9 +222,19 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Zeiger lesen</span><span>Resonanz abstimmen</span><span>Filter auslegen</span></div>
       <div class="btns"><a class="btn pri" href="wsllab.html">Öffnen</a><a class="btn" href="wsllab.html?neu">Neu</a><a class="btn" href="wsllab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="hauslab">
+    <section class="card" data-lab="analab" data-group="anadig">
+      <span class="tag">ANALOGTECHNIK-LAB</span>
+      <h3>Halbleiter und Verstärker</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#14202b"/><path d="M20 60h200" stroke="#3a4a5a" stroke-width="1.5" fill="none"/><defs><clipPath id="anc"><rect x="14" y="14" width="212" height="92"/></clipPath></defs><g clip-path="url(#anc)"><g class="scr90"><path d="M20 60c15 44 30 44 45 0s30 -44 45 0 30 44 45 0 30 -44 45 0 30 44 45 0 30 -44 45 0 30 44 45 0 30 -44 45 0" fill="none" stroke="#ffe14d" stroke-width="3" stroke-linecap="round"/><path d="M20 60c15-15 30-15 45 0s30 15 45 0 30 -15 45 0 30 15 45 0 30 -15 45 0 30 15 45 0 30 -15 45 0 30 15 45 0" fill="none" stroke="#8ab4f8" stroke-width="3" stroke-linecap="round"/></g></g></svg>
+      </div>
+      <p>Acht animierte Prüfstände: Diode, LED und Z-Diode mit Vorwiderstand, Transistor als Schalter mit Relais und Freilaufdiode, Emitterschaltung mit Arbeitspunkt und Verstärkung, Emitterfolger und Stromquelle, invertierender und nichtinvertierender Operationsverstärker, Komparator mit Schmitt-Trigger sowie Integrierer und aktive Filter. Kennlinien und Verläufe lesen, Vorwiderstände und Arbeitspunkte rechnen, Verstärker auslegen und verdeckte Fehler suchen. Vier Vertiefungen klappst du bei Bedarf auf. Alle Werte sind Übungswerte.</p>
+      <div class="steps"><span>Kennlinie lesen</span><span>Arbeitspunkt einstellen</span><span>Verstärker auslegen</span></div>
+      <div class="btns"><a class="btn pri" href="analab.html">Öffnen</a><a class="btn" href="analab.html?neu">Neu</a><a class="btn" href="analab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="hauslab" data-group="sich">
       <span class="tag">HausLab</span>
-      <h2>Elektroinstallation im Haus</h2>
+      <h3>Elektroinstallation im Haus</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#14202b"/><path d="M60 95V55l60-30 60 30v40z" fill="#c9d3de" stroke="#5b6672" stroke-width="3"/><path d="M60 55l60-30 60 30" fill="none" stroke="#5b6672" stroke-width="3"/><path d="M80 90V60h20v30M130 70h35v20h-35z" fill="#7d8793"/><circle class="onglow" cx="120" cy="52" r="15" fill="#ffe14d"/><circle class="on" cx="120" cy="52" r="8" fill="#ffe14d"/><path d="M120 60v14l-20 0" fill="none" stroke="#d9a441" stroke-width="3"/><g class="on"><path class="dots" d="M120 60v14l-20 0"/></g><rect class="ledp" x="137" y="74" width="8" height="8" fill="#ffe14d"/><rect class="beat" x="152" y="74" width="8" height="8" fill="#ffe14d"/></svg>
       </div>
@@ -217,9 +242,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Planen</span><span>Verlegen</span><span>Verteilen</span></div>
       <div class="btns"><a class="btn pri" href="hauslab.html">Öffnen</a><a class="btn" href="hauslab.html?neu">Neu</a><a class="btn" href="hauslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="appwerkstatt">
+    <section class="card" data-lab="appwerkstatt" data-group="bau">
       <span class="tag">APP-WERKSTATT</span>
-      <h2>Eigene Apps mit KI bauen</h2>
+      <h3>Eigene Apps mit KI bauen</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#10182a"/><rect x="26" y="20" width="70" height="80" rx="9" fill="#1c2a44" stroke="#5b8bd6" stroke-width="3"/><rect x="34" y="32" width="54" height="8" rx="3" fill="#4cc3ff"/><rect x="34" y="46" width="40" height="6" rx="3" fill="#6dff7a"/><rect x="34" y="58" width="48" height="6" rx="3" fill="#ffe14d"/><rect x="34" y="78" width="22" height="14" rx="5" fill="#3b9eff"/><rect x="62" y="78" width="22" height="14" rx="5" fill="#2c3e5e"/><path class="wire" d="M100 60h28" fill="none"/><rect x="132" y="28" width="86" height="64" rx="8" fill="#0d1117" stroke="#38424d" stroke-width="2"/><text x="140" y="46" font-family="monospace" font-size="11" fill="#9fd18a">&lt;button&gt;</text><text x="140" y="62" font-family="monospace" font-size="11" fill="#e8eaed">Quiz.start()</text><text x="140" y="78" font-family="monospace" font-size="11" fill="#9fd18a">&lt;/button&gt;</text><rect class="cur" x="204" y="68" width="6" height="11" fill="#e8eaed"/><circle class="beat" cx="212" cy="38" r="4" fill="#4cd964"/></svg>
       </div>
@@ -227,9 +252,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Auftrag</span><span>Prüfen</span><span>Teilen</span></div>
       <div class="btns"><a class="btn pri" href="appwerkstatt.html">Öffnen</a><a class="btn" href="appwerkstatt.html?aufgabe=ap1">Erste App</a><a class="btn" href="appwerkstatt.html?aufgabe=ap11">Notizen</a></div>
     </section>
-    <section class="card" data-lab="spslab">
+    <section class="card" data-lab="spslab" data-group="auto">
       <span class="tag">SPS-LAB</span>
-      <h2>Steuerungen programmieren</h2>
+      <h3>Steuerungen programmieren</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#10182a"/><rect x="22" y="22" width="106" height="76" rx="6" fill="#0d1117" stroke="#38424d" stroke-width="2"/><g fill="none" stroke="#6dff7a" stroke-width="3"><path d="M30 44h16M58 44h22M92 44h20"/><path d="M46 36v16M58 36v16" /><circle cx="86" cy="44" r="6"/></g><g fill="none" stroke="#9fd18a" stroke-width="3"><path d="M30 76h24M66 76h46"/><path d="M54 68v16M66 68v16"/></g><rect x="150" y="62" width="64" height="12" rx="3" fill="#2c3e5e"/><g fill="#5b6672"><circle cx="160" cy="80" r="5"/><circle cx="178" cy="80" r="5"/><circle cx="196" cy="80" r="5"/><circle cx="206" cy="80" r="5"/></g><rect class="beat" x="164" y="48" width="14" height="14" rx="2" fill="#ffe14d"/><circle class="ledp" cx="196" cy="34" r="5" fill="#ffe14d"/></svg>
       </div>
@@ -237,9 +262,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Programmieren</span><span>Starten</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="spslab.html">Öffnen</a><a class="btn" href="spslab.html?neu">Neu</a><a class="btn" href="spslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="pcblab">
+    <section class="card" data-lab="pcblab" data-group="bau">
       <span class="tag">LEITERPLATTEN-LAB</span>
-      <h2>Leiterplatten entwerfen und prüfen</h2>
+      <h3>Leiterplatten entwerfen und prüfen</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#0f3d24"/><g fill="none" stroke="#d8a64a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M34 34h46l14 14h40"/><path d="M34 60h30l14 14h56"/><path d="M34 86h120l14-14h28"/><path d="M150 34h34l12 12v30" stroke="#5ab0ff"/></g><g fill="#f0d27a"><circle cx="34" cy="34" r="5"/><circle cx="34" cy="60" r="5"/><circle cx="34" cy="86" r="5"/><circle cx="204" cy="72" r="5"/></g><circle cx="150" cy="34" r="6" fill="#0f3d24" stroke="#f0d27a" stroke-width="2.5"/><rect x="104" y="46" width="38" height="28" rx="3" fill="#1b1f24" stroke="#5b6672" stroke-width="2"/><circle class="beat" cx="112" cy="54" r="2.5" fill="#6dff7a"/><path class="dots" d="M34 34h46l14 14h40"/></svg>
       </div>
@@ -247,9 +272,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Layout</span><span>Bestücken</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="pcblab.html">Öffnen</a><a class="btn" href="pcblab.html?neu">Neu</a><a class="btn" href="pcblab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="antlab">
+    <section class="card" data-lab="antlab" data-group="auto">
       <span class="tag">ANTRIEBS-LAB</span>
-      <h2>Motoren und Antriebe untersuchen</h2>
+      <h3>Motoren und Antriebe untersuchen</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><circle cx="84" cy="62" r="34" fill="#232d3d" stroke="#8a97a8" stroke-width="4"/><g stroke="#ffb020" stroke-width="5" stroke-linecap="round"><path d="M84 62V34"/><path d="M84 62l24 14"/><path d="M84 62l-24 14"/></g><circle cx="84" cy="62" r="8" fill="#5b6672"/><circle cx="160" cy="76" r="22" fill="#232d3d" stroke="#6dff7a" stroke-width="4"/><g stroke="#6dff7a" stroke-width="4" stroke-linecap="round"><path d="M160 54v-8M160 98v8M138 76h-8M182 76h8"/></g><circle cx="160" cy="76" r="5" fill="#5b6672"/><path d="M110 40h46" stroke="#5ab0ff" stroke-width="3" stroke-dasharray="6 5" fill="none"/><path class="dots" d="M110 40h46"/></svg>
       </div>
@@ -257,9 +282,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Prüfstand</span><span>Messen</span><span>Auslegen</span></div>
       <div class="btns"><a class="btn pri" href="antlab.html">Öffnen</a><a class="btn" href="antlab.html?neu">Neu</a><a class="btn" href="antlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="senlab">
+    <section class="card" data-lab="senlab" data-group="mess">
       <span class="tag">SENSORIK-LAB</span>
-      <h2>Sensoren und Messketten untersuchen</h2>
+      <h3>Sensoren und Messketten untersuchen</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#14222b"/><rect x="34" y="22" width="14" height="60" rx="7" fill="#232d3d" stroke="#8a97a8" stroke-width="3"/><rect x="38" y="46" width="6" height="34" rx="3" fill="#ff5a4d"/><circle cx="41" cy="88" r="11" fill="#ff5a4d" stroke="#8a97a8" stroke-width="3"/><path d="M64 70c10-34 20-34 30 0s20 34 30 0 20-34 30 0 20 34 30 0" fill="none" stroke="#6dff7a" stroke-width="3" stroke-linecap="round"/><path d="M64 70h120" stroke="#5b6672" stroke-width="2" stroke-dasharray="4 4"/><g fill="#5ab0ff"><rect x="194" y="40" width="12" height="12" rx="2"/><rect x="194" y="58" width="12" height="12" rx="2"/><rect x="194" y="76" width="12" height="12" rx="2"/></g><path class="dots" d="M110 40h46"/></svg>
       </div>
@@ -267,9 +292,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Messkette</span><span>Messen</span><span>Auslegen</span></div>
       <div class="btns"><a class="btn pri" href="senlab.html">Öffnen</a><a class="btn" href="senlab.html?neu">Neu</a><a class="btn" href="senlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="reglab">
+    <section class="card" data-lab="reglab" data-group="auto">
       <span class="tag">REGELUNGSTECHNIK-LAB</span>
-      <h2>Regelkreise einstellen und verstehen</h2>
+      <h3>Regelkreise einstellen und verstehen</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#14222b"/><circle class="beat" cx="34" cy="38" r="8" fill="none" stroke="#8a97a8" stroke-width="3"/><path d="M30 34l8 8M38 34l-8 8" stroke="#8a97a8" stroke-width="2"/><rect x="62" y="26" width="38" height="24" rx="4" fill="#232d3d" stroke="#5ab0ff" stroke-width="3"/><rect x="124" y="26" width="38" height="24" rx="4" fill="#232d3d" stroke="#8a97a8" stroke-width="3"/><g fill="none" stroke="#8a97a8" stroke-width="3" stroke-linecap="round"><path d="M14 38h12M42 38h18M100 38h22M162 38h30"/><path d="M180 38v22H34V46"/></g><path d="M62 98V84h20c10 0 14-18 26-18s16 10 24 10 12-4 20-4 14 2 22 2" fill="none" stroke="#6dff7a" stroke-width="3" stroke-linecap="round"/><path class="dots" d="M62 98V84h20c10 0 14-18 26-18s16 10 24 10 12-4 20-4 14 2 22 2"/><path d="M62 72h104" stroke="#ffb020" stroke-width="2" stroke-dasharray="4 4"/><text x="73" y="42" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#5ab0ff">R</text><text x="136" y="42" font-family="system-ui,sans-serif" font-size="12" font-weight="700" fill="#e8eaed">S</text></svg>
       </div>
@@ -277,9 +302,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Strecke messen</span><span>Regler einstellen</span><span>Beurteilen</span></div>
       <div class="btns"><a class="btn pri" href="reglab.html">Öffnen</a><a class="btn" href="reglab.html?neu">Neu</a><a class="btn" href="reglab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="thmlab">
+    <section class="card" data-lab="thmlab" data-group="anadig">
       <span class="tag">THERMIK-LAB</span>
-      <h2>Wärme, Kühlkörper und Wärmewiderstand</h2>
+      <h3>Wärme, Kühlkörper und Wärmewiderstand</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#241716"/><g class="heat" fill="none" stroke="#ff8a3d" stroke-width="3" stroke-linecap="round"><path d="M96 34c-6-6 6-10 0-16M120 34c-6-6 6-10 0-16M144 34c-6-6 6-10 0-16"/></g><rect x="104" y="38" width="32" height="20" rx="3" fill="#2f3a46" stroke="#8a97a8" stroke-width="3"/><rect x="108" y="30" width="24" height="8" rx="2" fill="#8a97a8"/><rect x="52" y="58" width="136" height="9" rx="2" fill="#9aa7b6"/><g fill="#9aa7b6"><rect x="58" y="67" width="9" height="30" rx="2"/><rect x="78" y="67" width="9" height="30" rx="2"/><rect x="98" y="67" width="9" height="30" rx="2"/><rect x="118" y="67" width="9" height="30" rx="2"/><rect x="138" y="67" width="9" height="30" rx="2"/><rect x="158" y="67" width="9" height="30" rx="2"/><rect x="178" y="67" width="4" height="30" rx="2"/></g><rect class="beat" x="104" y="56" width="32" height="3" fill="#ff8a3d"/></svg>
       </div>
@@ -287,9 +312,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Verlustleistung</span><span>Kühlkörper wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="thmlab.html">Öffnen</a><a class="btn" href="thmlab.html?neu">Neu</a><a class="btn" href="thmlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="emvlab">
+    <section class="card" data-lab="emvlab" data-group="mess">
       <span class="tag">EMV-LAB</span>
-      <h2>Störungen vermeiden: Kopplung, Filter, Schirmung</h2>
+      <h3>Störungen vermeiden: Kopplung, Filter, Schirmung</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#161b26"/><path d="M24 80h50l8-30 12 56 12-42 8 16h102" fill="none" stroke="#5ac8fa" stroke-width="3" stroke-linejoin="round"/><path class="dots" d="M24 80h50l8-30 12 56 12-42 8 16h102"/><g fill="none" stroke="#ffb340" stroke-width="3" stroke-linecap="round"><path class="rad" d="M150 34c8-8 8-16 0-24" transform="translate(0 14)"/><path class="rad" style="animation-delay:.4s" d="M164 38c12-12 12-24 0-36" transform="translate(0 14)"/><path class="rad" style="animation-delay:.8s" d="M178 42c16-16 16-32 0-48" transform="translate(0 14)"/></g><rect x="24" y="90" width="192" height="6" rx="3" fill="#2f3a46"/></svg>
       </div>
@@ -297,9 +322,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Störung messen</span><span>Maßnahme wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="emvlab.html">Öffnen</a><a class="btn" href="emvlab.html?neu">Neu</a><a class="btn" href="emvlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="enrlab">
+    <section class="card" data-lab="enrlab" data-group="sich">
       <span class="tag">ENERGIE-LAB</span>
-      <h2>Solarstrom: vom Modul zur Anlage</h2>
+      <h3>Solarstrom: vom Modul zur Anlage</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#141c2b"/><circle cx="190" cy="34" r="12" fill="#ffd23f"/><g class="spin" stroke="#ffd23f" stroke-width="3" stroke-linecap="round"><path d="M190 12v-5M190 56v5M168 34h-5M212 34h5M174 18l-4-4M206 50l4 4M206 18l4-4M174 50l-4 4"/></g><path d="M28 98l22-44h74l-22 44z" fill="#1d4f8c" stroke="#8ab4f8" stroke-width="2"/><g stroke="#8ab4f8" stroke-width="1.5"><path d="M42 76h74M36 87h74M62 54l-18 44M87 54l-18 44M112 54l-18 44"/></g><path d="M140 80c10-22 26-30 46-30" fill="none" stroke="#14e050" stroke-width="3" stroke-linecap="round"/><path class="dots" d="M140 80c10-22 26-30 46-30"/></svg>
       </div>
@@ -307,9 +332,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Sonne und Modul</span><span>Anlage auslegen</span><span>Ertrag prüfen</span></div>
       <div class="btns"><a class="btn pri" href="enrlab.html">Öffnen</a><a class="btn" href="enrlab.html?neu">Neu</a><a class="btn" href="enrlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="codelab">
+    <section class="card" data-lab="codelab" data-group="bau">
       <span class="tag">ARDUINO-LAB</span>
-      <h2>Arduino programmieren</h2>
+      <h3>Arduino programmieren</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="20" y="22" width="90" height="76" rx="6" fill="none" stroke="#e8eaed" stroke-width="3"/><g fill="none" stroke="#14e050" stroke-width="3"><path d="M110 40h40v-14M110 60h50"/></g><circle class="on" cx="165" cy="26" r="10" fill="#ffe14d"/><circle class="onglow" cx="165" cy="26" r="17" fill="#ffe14d"/><g class="on"><path class="dots" d="M110 40H150V36"/></g><text x="30" y="52" font-family="monospace" font-size="13" fill="#9fd18a">void loop() {</text><text x="38" y="68" font-family="monospace" font-size="13" fill="#9fd18a">blink();</text><text x="30" y="84" font-family="monospace" font-size="13" fill="#9fd18a">}</text><rect class="cur" x="42" y="74" width="7" height="11" fill="#e8eaed"/></svg>
       </div>
@@ -317,9 +342,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Verdrahten</span><span>Programmieren</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="codelab.html">Öffnen</a><a class="btn" href="codelab.html?neu">Neu</a><a class="btn" href="codelab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="pilab">
+    <section class="card" data-lab="pilab" data-group="bau">
       <span class="tag">PI-LAB</span>
-      <h2>Raspberry Pi programmieren</h2>
+      <h3>Raspberry Pi programmieren</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="14" y="16" width="110" height="88" rx="6" fill="#1c6b34" stroke="#0e3d1d" stroke-width="3"/><g fill="#e8eaed"><rect x="22" y="22" width="86" height="10" rx="2" fill="#2a2f35"/></g><g fill="#d8b24a"><circle class="pin" style="animation-delay:0.0s" cx="30" cy="27" r="2"/><circle class="pin" style="animation-delay:0.2s" cx="40" cy="27" r="2"/><circle class="pin" style="animation-delay:0.4s" cx="50" cy="27" r="2"/><circle class="pin" style="animation-delay:0.6s" cx="60" cy="27" r="2"/><circle class="pin" style="animation-delay:0.8s" cx="70" cy="27" r="2"/><circle class="pin" style="animation-delay:1.0s" cx="80" cy="27" r="2"/><circle class="pin" style="animation-delay:1.2s" cx="90" cy="27" r="2"/><circle class="pin" style="animation-delay:1.4s" cx="100" cy="27" r="2"/></g><rect x="52" y="52" width="26" height="26" rx="3" fill="#2a2f35"/><text x="140" y="46" fill="#7ee08a" font-size="13" font-family="monospace">from gpiozero</text><text x="140" y="64" fill="#7ee08a" font-size="13" font-family="monospace">import LED</text><text x="140" y="82" fill="#e8eaed" font-size="13" font-family="monospace">led = LED(17)</text><text x="140" y="100" fill="#e8eaed" font-size="13" font-family="monospace">led.blink()</text><rect class="cur" x="228" y="90" width="7" height="11" fill="#e8eaed"/><circle class="beat" cx="108" cy="94" r="3" fill="#4cd964"/></svg>
       </div>
@@ -327,9 +352,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Verdrahten</span><span>Programmieren</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="pilab.html">Öffnen</a><a class="btn" href="pilab.html?neu">Neu</a><a class="btn" href="pilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="dslab">
+    <section class="card" data-lab="dslab" data-group="grund">
       <span class="tag">DATENBLATT-LAB</span>
-      <h2>Datenblätter lesen und verstehen</h2>
+      <h3>Datenblätter lesen und verstehen</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="62" y="18" width="116" height="84" rx="4" fill="#f4f1e8" stroke="#8a97a8" stroke-width="2"/><g stroke="#8a97a8" stroke-width="2" stroke-linecap="round"><path d="M72 30h60"/><path d="M72 40h96"/><path d="M72 48h96"/></g><path d="M72 92C96 90 108 82 118 66S142 40 168 36" fill="none" stroke="#ff5a4d" stroke-width="3" stroke-linecap="round"/><path class="dots" d="M72 92C96 90 108 82 118 66S142 40 168 36"/><path d="M72 94h96M72 94V56" stroke="#5b6672" stroke-width="2" fill="none"/><circle class="cur" cx="118" cy="66" r="5" fill="#ffb020"/><path d="M118 66V94M72 66h46" stroke="#ffb020" stroke-width="1.5" stroke-dasharray="3 3" fill="none"/></svg>
       </div>
@@ -337,9 +362,9 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="steps"><span>Lesen</span><span>Rechnen</span><span>Auswählen</span></div>
       <div class="btns"><a class="btn pri" href="dslab.html">Öffnen</a><a class="btn" href="dslab.html?neu">Neu</a><a class="btn" href="dslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="pruefungslab">
+    <section class="card" data-lab="pruefungslab" data-group="pruef">
       <span class="tag">PRÜFUNGS-LAB</span>
-      <h2>Für die Abschlussprüfung üben</h2>
+      <h3>Für die Abschlussprüfung üben</h3>
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#10182a"/><rect x="24" y="18" width="104" height="84" rx="6" fill="#f2f4f8"/><rect x="34" y="30" width="12" height="12" rx="2" fill="none" stroke="#2a3a5c" stroke-width="2"/><path d="M36 36l3 3 6-8" fill="none" stroke="#2fbf4a" stroke-width="3"/><rect x="54" y="33" width="62" height="6" rx="3" fill="#9aa7c2"/><rect x="34" y="52" width="12" height="12" rx="2" fill="none" stroke="#2a3a5c" stroke-width="2"/><path d="M36 58l3 3 6-8" fill="none" stroke="#2fbf4a" stroke-width="3"/><rect x="54" y="55" width="48" height="6" rx="3" fill="#9aa7c2"/><rect x="34" y="74" width="12" height="12" rx="2" fill="none" stroke="#2a3a5c" stroke-width="2"/><rect class="cur" x="37" y="77" width="6" height="6" fill="#e0a020"/><rect x="54" y="77" width="56" height="6" rx="3" fill="#9aa7c2"/><circle cx="178" cy="60" r="34" fill="#1c2a44" stroke="#5b8bd6" stroke-width="3"/><circle class="wire" cx="178" cy="60" r="27" fill="none"/><path d="M178 60V40M178 60l14 8" stroke="#ffe14d" stroke-width="3" stroke-linecap="round"/><circle class="beat" cx="178" cy="60" r="4" fill="#4cd964"/><text x="160" y="104" font-family="system-ui" font-size="11" fill="#9fd18a">60:00</text></svg>
       </div>
@@ -348,27 +373,34 @@ a.btn{height:38px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2p
       <div class="btns"><a class="btn pri" href="pruefungslab.html">Öffnen</a><a class="btn" href="pruefungslab.html?aufgabe=pr1">Erstes Thema</a><a class="btn" href="pruefungslab.html?aufgabe=pr10">Probeprüfung</a></div>
     </section>
   </div>
-  <section class="card vbrow" id="vbRow" data-hub="vb">
+  <section class="card vbrow" id="vbRow" data-hub="vb" data-group="pruef">
     <div class="pic" aria-hidden="true">
       <svg viewBox="0 0 240 120"><g fill="none" stroke="#3b9eff" stroke-width="3" stroke-linecap="round"><path d="M40 60H92M148 60H200M120 30V90M92 60L120 30L148 60L120 90Z"/></g><path class="dots" d="M40 60H92L120 30L148 60H200" fill="none"/><g fill="#14181c" stroke="#e8eaed" stroke-width="3"><circle cx="40" cy="60" r="13"/><circle cx="120" cy="30" r="13"/><circle cx="120" cy="90" r="13"/><circle cx="200" cy="60" r="13"/></g><g fill="#ffe14d"><circle class="on" cx="40" cy="60" r="5"/><circle class="on" cx="120" cy="30" r="5" style="animation-delay:.4s"/><circle class="on" cx="200" cy="60" r="5" style="animation-delay:.8s"/><circle class="on" cx="120" cy="90" r="5" style="animation-delay:1.2s"/></g></svg>
     </div>
     <div class="vbt">
       <span class="tag">PROJEKTE · LABS ARBEITEN ZUSAMMEN</span>
-      <h2>Verbundprojekte: ein Gerät, alle Labs</h2>
+      <h3>Verbundprojekte: ein Gerät, alle Labs</h3>
       <p>Fünf Projekte wie in der Firma: Garagentor mit Funköffner, Ampelanlage, Digitale Uhr, Gartenbewässerung und Förderanlage. Datenblatt, Schaltplan, Platine, Messung, Antrieb, Sensorik, Steuerung und Programm: Jede Station liefert ihr Ergebnis an die nächste.</p>
       <div class="steps"><span>Lastenheft</span><span>Stationen in den Labs</span><span>Gesamttest</span><span>Zertifikat</span></div>
     </div>
     <div class="btns"><a class="btn pri" href="verbund.html">Projekte öffnen</a><a class="btn" href="lernen-vb.html">Projektheft</a></div>
   </section>
+  <div class="foot standrow" id="footBtns"><button type="button" id="standOpen" aria-haspopup="dialog">📤 Stand exportieren</button><button type="button" id="lsOpen">💾 Lernstand sichern oder laden</button><span>„Stand exportieren“ erzeugt eine kleine Datei mit deinem Lernstand für deinen Ausbilder (nur Kürzel, Ergebnisse und Abzeichen, keine Lösungen).</span></div>
   <p class="foot">In allen Programmen: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>
-  <p class="foot"><a href="#" id="lsOpen" style="color:var(--accent)">💾 Lernstand sichern oder laden</a> · <a href="projekte.html">Projekte für zuhause</a> · <a href="lernen.html">Lernhefte: Löten, Elektronik, Sicherheit, Netzteile, Wechselstrom, Installation, SPS, Leiterplatten, Antriebe, Sensorik, Regelung, Thermik, EMV, Energie, Datenblätter, Arduino, Pi, Projekte</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="loesungen.html">Lösungen für Ausbilder (Passwort)</a></p>
+  <p class="foot"><a href="projekte.html">Projekte für zuhause</a> · <a href="lernen.html">Lernhefte: Löten, Elektronik, Sicherheit, Netzteile, Wechselstrom, Analogtechnik, Installation, SPS, Leiterplatten, Antriebe, Sensorik, Regelung, Thermik, EMV, Energie, Datenblätter, Arduino, Pi, Projekte</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="loesungen.html">Lösungen für Ausbilder (Passwort)</a> · <a href="ausbilder-uebersicht.html">Ausbilder-Übersicht (Passwort)</a></p>
 </div>
 <script src="aufgaben.js"></script>
 <script src="kampagne.js"></script>
 <script src="lernpfad.js"></script>
 <script src="lernstand.js"></script>
+<script src="stand.js"></script>
+<script src="home-groups.js"></script>
+<script src="home-cont.js"></script>
+<script src="home-search.js"></script>
 <script src="home.js"></script>
 <script>document.addEventListener("click",function(e){var a=e.target.closest("#lsOpen");if(a){e.preventDefault();window.Lernstand.open();}});</script>
+<script>(function(){if(!('IntersectionObserver' in window))return;document.documentElement.classList.add('anim-gate');var io=new IntersectionObserver(function(es){es.forEach(function(e){e.target.classList.toggle('inview',e.isIntersecting);});},{threshold:.15});var seen=new WeakSet();function scan(){document.querySelectorAll('.card').forEach(function(c){if(!seen.has(c)){seen.add(c);io.observe(c);}});}scan();setTimeout(scan,1500);setTimeout(scan,4000);})();</script>
+<script>(function(){function mark(){document.querySelectorAll('.card p').forEach(function(p){var o=p.classList.contains('open'),over=p.scrollHeight>p.clientHeight+1;if(over||o){if(!p.classList.contains('cl')){p.classList.add('cl');p.setAttribute('role','button');p.tabIndex=0;p.setAttribute('aria-expanded',o?'true':'false');p.title='Volltext: '+p.textContent.trim().slice(0,400)+(p.textContent.length>400?' ...':'');}}else if(p.classList.contains('cl')){p.classList.remove('cl');p.removeAttribute('role');p.removeAttribute('tabindex');p.removeAttribute('aria-expanded');p.removeAttribute('title');}});}function tog(p){var o=p.classList.toggle('open');p.setAttribute('aria-expanded',o?'true':'false');}document.addEventListener('click',function(e){var p=e.target.closest&&e.target.closest('.card p.cl');if(p)tog(p);});document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.card p.cl')){e.preventDefault();tog(e.target);}});var tm;function soon(){clearTimeout(tm);tm=setTimeout(mark,150);}window.addEventListener('resize',soon);window.addEventListener('load',soon);setTimeout(mark,300);setTimeout(mark,1500);})();</script>
 <script src="ver.js"></script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 <script src="urheber.js"></script>

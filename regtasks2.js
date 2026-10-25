@@ -355,7 +355,7 @@
     return { START, MUSTER, WL, FIX, sim, vals, base, reqDir, yOp, good, BAND, W0, W1, TEND, T_STEP,
       text() { const v = vals(); return 'Der Hausmeister meldet: „Die Heizung wird kälter, wenn ich den Sollwert erhöhe.“ Am Prüfstand läuft ein PI-Regler (Kp = ' + fm(v.kp, 0) + ', Tn = ' + fm(v.tnMin, 0) + ' min Prozesszeit) bei ' + fm(v.tOut, 0) + ' °C Außentemperatur. Der Sollwert steigt nach ' + fm(v.hStep, 0) + ' Stunde Prozesszeit von ' + fm(v.w0, 0) + ' auf ' + fm(v.w1, 0) + ' °C, die Raumtemperatur fällt aber auf ' + fm(v.xEndStart, 1) + ' °C. Finde den Fehler und behebe ihn, sodass die Raumtemperatur nach ' + fm(v.hours, 0) + ' Stunden Prozesszeit höchstens ' + fm(v.band, 1) + ' K neben dem Sollwert liegt.'; },
       hint() { const v = vals(); return [
-        'Ein Regelkreis muss gegenkoppeln: Liegt der Istwert unter dem Sollwert, muss der Regler mehr Wärme stellen. Wirkt er andersherum, verstärkt er jede Abweichung. Sieh dir die Meldungen der Anlage an: Sie nennen den Wirkungssinn.',
+        'Ein Regelkreis muss gegenkoppeln: Liegt der Istwert unter dem Sollwert, muss der Regler mehr Wärme stellen. Wirkt er andersherum, verstärkt er jede Abweichung. Beobachte, wie Stellgröße und Raumtemperatur auf die Sollwerterhöhung reagieren.',
         'Beim Heizen steigt die Raumtemperatur, wenn die Ventilstellung (die Stellgröße) steigt. Dann muss der Regler bei zu kalter Raumtemperatur die Stellgröße vergrößern. Das ist der Wirkungssinn „' + reqDir() + '“. Mit dem falschen Wirkungssinn sinkt die Raumtemperatur im Versuch auf ' + fm(v.xEndStart, 1) + ' °C.',
         'Stelle den Wirkungssinn auf „' + reqDir() + '“. Dann steigt die Raumtemperatur nach der Erhöhung des Sollwerts auf ' + fm(v.xEndMuster, 1) + ' °C und liegt höchstens ' + fm(v.band, 1) + ' K neben dem Sollwert von ' + fm(v.w1, 0) + ' °C.'
       ]; } };
@@ -777,7 +777,7 @@
       start: () => S('thermostat', Object.assign({}, M20.FIX, M20.START), { seq: [{ t: M20.T_LOAD, set: { z: 1400 } }], dur: 14400 }),
       sol: () => S('thermostat', Object.assign({}, M20.FIX, M20.MUSTER), { seq: [{ t: M20.T_LOAD, set: { z: 1400 } }], dur: 14400 }),
        check: checkRg20, hintVals: () => M20.vals() }, M20),
-    L({ id: 'rg21', lab: 'reg', cat: 'Fehlersuche', title: 'Fehlersuche: Heizung wird kälter', level: 2, rig: 'raumtemp',
+    L({ id: 'rg21', lab: 'reg', cat: 'Fehlersuche', title: 'Fehlersuche: Heizung wird kälter', level: 2, rig: 'raumtemp', maskDiag: ['wirk'],
       start: () => S('raumtemp', Object.assign({}, M21.FIX, M21.START), { op: { y: M21.yOp() }, seq: [{ t: M21.T_STEP, set: { w: M21.W1 } }], dur: M21.TEND }),
       sol: () => S('raumtemp', Object.assign({}, M21.FIX, M21.MUSTER), { op: { y: M21.yOp() }, seq: [{ t: M21.T_STEP, set: { w: M21.W1 } }], dur: M21.TEND }),
        check: checkRg21, hintVals: () => M21.vals() }, M21),

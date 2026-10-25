@@ -962,7 +962,7 @@
   });
 
   /* ---- Entladung aufs Gehaeuse: Masseversatz dV = Rg*i + Lg*di/dt, kapazitiv auf die Reset-Leitung ---- */
-  const LG = { g360: 5e-9, g50: 50e-9, lose: 500e-9 };
+  const LG = { g360: 5e-9, g50: 50e-9, lose: 500e-9, geliefert: 500e-9 };   // 'geliefert': Anbindung noch nicht geprueft (Fehlersuche em31), physikalisch wie 'lose'
   const bounce = S(function (cfg) {
     cfg = obj(cfg);
     const kV = cfg.kV === undefined ? 4 : num(cfg.kV, NaN), wv = pulseEsd(kV, 'kontakt'); if (!wv.ok) return wv;

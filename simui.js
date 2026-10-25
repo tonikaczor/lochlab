@@ -244,7 +244,7 @@ body.sim #bView{opacity:.3;pointer-events:none}
 .sp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-variant-numeric:tabular-nums}
 .sp-top b{font-size:15px}
 .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
-.card h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
+.card h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
 .lcd{font:600 30px/1.15 ui-monospace,Menlo,Consolas,monospace;background:#c9d99d;color:#1d2a0c;border-radius:8px;padding:6px 10px;text-align:right;border:2px solid #7b8a58}
 .mmsub{margin-top:6px;font-size:12px;color:var(--mute);min-height:30px}
 .scrow{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px}

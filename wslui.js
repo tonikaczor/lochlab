@@ -6,7 +6,7 @@
    Kennlinien, Messreihe, Auslegen, Rechnen und Lernen kommen aus wslui-curve.js, wslui-report.js, wslui-design.js, wslui-calc.js und wslui-help.js über window.WSL_UI_EXT (VERTRAG 6.5);
    fehlt eine Erweiterung, steht dort ein Hinweis (kein Absturz).
    Es gibt hier KEINE zweite Formelimplementierung: assess, diagnose, runSeq, formulas, exercise, limits rufen immer den Kern bzw. den Prüfstand (SPEC Regel 7).
-   Speicher: wsl.cur, wsl.saves, wsl.tab, wsl.speed, wsl.seen, wsl.fx, wsl.faults, wsl.q, wsl.deep ({ bode: Wahrheitswert, n: Anzahl Aufklappungen }), wsl.hint, wsl.rigsused, wsl.digital, wsl.autohint, sim.done (gemeinsam mit den anderen Labs).
+   Speicher: wsl.cur, wsl.saves, wsl.tab, wsl.speed, wsl.seen, wsl.fx, wsl.faults, wsl.q, wsl.deep ({ bode: Wahrheitswert, n: Anzahl Aufklappungen }), wsl.hint, wsl.rigsused, wsl.digital, wsl.mview (Messgeräte-Ansicht: gauge, digital, front), wsl.autohint, sim.done (gemeinsam mit den anderen Labs).
    Erweiterungen schreiben selbst: wsl.report (Verlauf der Messreihen), wsl.design, S.bericht (laufende Messreihe, wird mit Speichern/Teilen/Abgabe mitgeführt). */
 (function (root) {
   const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
@@ -141,9 +141,12 @@ const RIGLIMITS = {
   /* ============================================================ Zustand */
   const mqReduce = (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)')) || { matches: false };
   const SPEEDS = [0.1, 0.5, 1, 2, 5];
+  /* Messgeräte-Ansicht: 'gauge' (Zeiger, Standard wie bisher), 'digital' (Zahlen) oder 'front' (Frontplatte, geraete.js); Wahl in wsl.mview, Rückfall auf den alten Schalter wsl.digital */
+  const MVIEWS = ['gauge', 'digital', 'front'], MVNAME = { gauge: 'Zeiger', digital: 'Zahlen', front: 'Frontplatte' };
+  const mviewInit = () => { const v = lsRaw('wsl.mview', ''); return MVIEWS.includes(v) ? v : lsRaw('wsl.digital', '0') === '1' ? 'digital' : 'gauge'; };
   const S = {
     tab: lsRaw('wsl.tab', 'rig'), rigId: null, rig: null, refRig: null, err: '', name: 'Neuer Versuch', id: null, task: null, dirty: false,
-    running: false, speed: +lsRaw('wsl.speed', '1') || 1, digital: lsRaw('wsl.digital', '0') === '1',
+    running: false, speed: +lsRaw('wsl.speed', '1') || 1, mview: mviewInit(), digital: mviewInit() === 'digital',
     ctl: {}, simT: 0, rows: {}, live: null, seqRes: null, readonly: false, ref: null, refMode: 'nachher', wipe: 0.5, gruppe: null,
     clicks: [], sichtHot: null, calcUsed: false, fired: false, bericht: null, simClosed: {},
     q: { mode: lsRaw('wsl.q', 'auto'), level: 'hoch', ms: [], lastSwitch: 0, fastSince: 0 }
@@ -506,10 +509,19 @@ function sichtOf() { const c = S.rig && S.rig.sicht; return c && typeof c === 'o
 
   /* ============================================================ Messgeräte aus rig.meters */
   let mEls = [];
+  /* Frontplatte (geraete.js): reiner Adapter, gleiche Regeln wie die Zahlenansicht (–, texts[], Dezimalkomma); Zahl, Einheit und digits kommen unverändert aus rig.meters[] */
+  const meterState = (m, v) => ({ value: v, unit: m.unit || '', digits: m.digits == null ? 1 : m.digits, label: m.label, help: m.help || '', text: fin(v) && m.texts && m.texts[Math.round(v)] != null ? String(m.texts[Math.round(v)]) : null });
+  const frontOk = () => !!(root.GERAETE && typeof root.GERAETE.renderMultimeter === 'function');
   function buildMeters() {
-    const H = $('#meters'); mEls = [];
+    const H = $('#meters'); mEls.forEach(x => { if (x.front) x.front.destroy(); }); mEls = [];
     if (!S.rig) { H.innerHTML = ''; return; }
     const ms = metersOf();
+    if (S.mview === 'front' && frontOk()) {
+      H.classList.add('ger'); H.innerHTML = ms.map((m, i) => `<div class="ger-slot" data-i="${i}"></div>`).join('');
+      mEls = $$('.ger-slot', H).map((el, i) => { const st = meterState(ms[i], NaN); return { el, m: ms[i], st, front: root.GERAETE.renderMultimeter(el, st, { compact: 'auto' }) }; });
+      return;
+    }
+    H.classList.remove('ger');
     H.innerHTML = ms.map((m, i) => {
       const gauge = !S.digital && !m.texts && fin(+m.min) && fin(+m.max) && m.max > m.min;
       return gauge ? `<div class="mt" data-i="${i}" aria-label="${esc(m.label)}"><canvas></canvas><div class="lbl">${esc(m.label)}</div></div>` : `<div class="mt dg" data-i="${i}"><div class="lbl">${esc(m.label)}</div><div class="num"><span class="v">–</span><small>${esc(m.unit || '')}</small></div></div>`;
@@ -549,6 +561,7 @@ function sichtOf() { const c = S.rig && S.rig.sicht; return c && typeof c === 'o
     const k = Math.min(1, dt / 90);
     mEls.forEach(x => {
       const t = vals[x.m.key]; if (!fin(t)) return;
+      if (x.front) { const st = x.st; st.value = t; st.text = x.m.texts && x.m.texts[Math.round(t)] != null ? String(x.m.texts[Math.round(t)]) : null; x.front.update(st); return; }
       if (x.cv) {
         if (x.disp == null || force) x.disp = t; else x.disp += (t - x.disp) * k;
         const rg = (x.m.max - x.m.min) || 1;
@@ -1468,7 +1481,7 @@ const rows = [
       ['tasks', 'Aufgaben', nT ? nT + ' Aufgaben mit automatischer Prüfung' : 'Aufgaben folgen'], ['print', 'Drucken', 'Einstellungen, Messwerte, Ampel und Prüfstandbild'], ['new', 'Neuer Versuch', 'Prüfstand wählen und von vorn beginnen'], ['ex', 'Beispielversuche', exampleList().length + ' Versuche zum Ausprobieren'],
       ['open', 'Öffnen', 'Gespeicherte Versuche auf diesem Gerät'], ['save', 'Speichern unter …', S.name], ['share', 'Teilen', 'Link zum Weitergeben (Versuch steckt im Link)'], ['import', 'Aus Code oder Link laden', 'Geteilten Versuch einfügen'],
       ['fx', 'Effekte und Ton: ' + (fxOn() ? 'an' : 'aus'), 'Töne und Effekte ein- oder ausschalten'], ['png', 'Prüfstandbild speichern (PNG)', 'Aktuelle Ansicht als Bilddatei'], ['csv', 'Kennlinie als CSV', 'Punkte der ersten Kennlinie für Excel'], ['dice', 'Fehler-Würfel', 'Einen Fehler auswürfeln und suchen'],
-      ['meters', 'Messgeräte: ' + (S.digital ? 'Zahlen' : 'Zeiger'), 'Zwischen Zeigerinstrument und Zahlenanzeige wechseln'], ['bode', 'Bode-Vertiefung', 'Aufklappbar am Prüfstand Hoch- und Tiefpass (Taste B)'], ['calc2', 'Rechnen', 'Sinusgrößen, Blindwiderstände, Leistung, Kompensation, Resonanz, Grenzfrequenz und Übungen'], ['calc', 'Taschenrechner', 'Ohm, Farbcode, Leitung und mehr'],
+      ['meters', 'Messgeräte: ' + (MVNAME[S.mview] || 'Zeiger'), 'Wechsel zwischen Zeigerinstrument, Zahlenanzeige und Frontplatte (Multimeter)'], ['bode', 'Bode-Vertiefung', 'Aufklappbar am Prüfstand Hoch- und Tiefpass (Taste B)'], ['calc2', 'Rechnen', 'Sinusgrößen, Blindwiderstände, Leistung, Kompensation, Resonanz, Grenzfrequenz und Übungen'], ['calc', 'Taschenrechner', 'Ohm, Farbcode, Leitung und mehr'],
       ['pool', 'Pool-Fragen zum Thema', 'Prüfungsfragen zu Wechselstrom und Schwingkreisen ansehen (nur lesen, im Prüfungs-Lab)'],
       ['abz', 'Abzeichen', 'Deine Sammlung und was noch fehlt'], ['kamp', 'Kampagne: Der Schwingkreis', 'Lernpfad mit Geschichte über alle Labs'], ['trainer', 'Trainer: Erste Schritte', 'Kurze Einführung zum Mitmachen'],
       ['neu', 'Neu in dieser Version', 'Was zuletzt dazukam und wo du es findest'], ['erg', 'Ergebnis senden', 'Code für den Ausbilder: meine bearbeiteten Aufgaben'], ['keys', 'Tastenkürzel', kk + ' und mehr (Taste ? drücken)'], ['help', 'Hilfe und Lernen', 'Grundlagen kurz erklärt'], ['start', 'Zur Startseite', '']];
@@ -1487,7 +1500,7 @@ const rows = [
     switch (m) {
       case 'tasks': setTab('tasks'); break; case 'new': newExperiment(); break; case 'ex': openExamples(); break; case 'open': openList(); break; case 'save': doSave(); break;
       case 'share': shareNow(); break; case 'import': importSheet(); break; case 'fx': toggleFx(); break; case 'png': exportPng(); break; case 'csv': exportCsv(); break; case 'dice': diceRoll(); break;
-      case 'meters': S.digital = !S.digital; lsPut('wsl.digital', S.digital ? '1' : '0'); buildMeters(); updateMeters(0, true); break;
+      case 'meters': { const ord = MVIEWS.filter(v => v !== 'front' || frontOk()); S.mview = ord[(ord.indexOf(S.mview) + 1) % ord.length]; S.digital = S.mview === 'digital'; lsPut('wsl.mview', S.mview); lsPut('wsl.digital', S.digital ? '1' : '0'); buildMeters(); updateMeters(0, true); break; }
       case 'print': printNow(); break; case 'calc2': setTab('calc'); break; case 'calc': if (root.Rechner) root.Rechner.open(); break; case 'abz': if (root.Badges) root.Badges.open(); break;
       case 'kamp': if (root.Kampagne) root.Kampagne.open(); break; case 'trainer': if (root.Trainer) root.Trainer.start(); break; case 'neu': if (root.LabNeu) root.LabNeu(); break;
       case 'erg': if (root.Auswertung) root.Auswertung.openSend(); break; case 'keys': if (root.LochKeys) root.LochKeys.help(); else keysSheet(); break;

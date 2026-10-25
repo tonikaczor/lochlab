@@ -343,14 +343,14 @@
       r(fin(st.hotP) && st.hotP <= v.thr, 'Die verschattete Zelle verliert höchstens ' + f(v.thr, 0) + ' W',
         'In der verschatteten Zelle bleiben ' + vk(st.hotP, 0) + ' W Verlustleistung. Mit intakten Bypassdioden sind es ' + vk(v.hotOk, 0) + ' W, ohne ' + vk(v.hotFehlt, 0) + ' W. Dein Modul verliert ' + vk(st.loss, 0) + ' % der Leistung.');
     });
-    return { vals, check,
+    return { vals, check, maskDiag: ['bypass-fehlt'],
       text: () => 'Das 60-Zellen-Modul wird schon bei einem kleinen Schatten (ein Laubblatt auf einer Zelle) sehr heiß. Die Hotspot-Anzeige im Prüfstand „Verschattung“ zeigt eine hohe Verlustleistung in der verschatteten Zelle. Finde den Fehler im Aufbau und behebe ihn.',
       hint: () => { const v = vals(); return [
         'Bei heißen Zellen im Schatten fehlt oft der Schutz, der den Strom an der verschatteten Zelle vorbeileitet. Schau dir die Bypassdioden an (Klick auf eine Diode wechselt den Zustand).',
         'Mit dem Fehler verliert die verschattete Zelle ' + f(v.hotFehlt, 0) + ' W, mit intakten Bypassdioden nur ' + f(v.hotOk, 0) + ' W.',
         'Musterlösung: Bypassdioden „in Ordnung“. Die Prüfung lässt bis ' + f(v.thr, 0) + ' W zu (Musterwert ' + f(v.hotOk, 0) + ' W plus Reserve).'
       ]; },
-      start: () => A('schatten', Object.assign({}, FIX), {}),
+      start: () => A('schatten', Object.assign({}, FIX, { bypass: 'geliefert' }), {}),   // 'geliefert' verhält sich wie 'fehlt', zeigt den Zustand aber nicht an (Verdeckte-Fehler-Muster)
       sol: () => A('schatten', Object.assign({}, FIX, { bypass: 'ok' }), {}),
       wrong: () => [{ name: 'Bypassdiode fehlt', answer: A('schatten', Object.assign({}, FIX, { bypass: 'fehlt' }), {}) }, { name: 'Bypassdiode durchlegiert', answer: A('schatten', Object.assign({}, FIX, { bypass: 'kurz' }), {}) }] };
   })();
@@ -422,7 +422,7 @@
     def('en10', 'Verschattung', 'Ein Laubblatt auf der Zelle', 1, 'schatten', M10),
     def('en11', 'Verschattung', 'Hecke von unten: hochkant oder quer', 2, 'schatten', M11),
     def('en12', 'Verschattung', 'Das globale Maximum finden', 2, 'schatten', M12),
-    def('en13', 'Fehlersuche', 'Das Modul wird heiß: Bypassdiode', 2, 'schatten', M13),
+    def('en13', 'Fehlersuche', 'Das Modul wird bei kleinem Schatten heiß', 2, 'schatten', M13),
     def('en14', 'Verschattung', 'Der Schatten der Hecke über den Tag', 3, 'schatten', M14),
     def('en15', 'Laderegler', 'PWM gegen MPPT am 12-V-Akku', 1, 'regler', M15)
   ]);

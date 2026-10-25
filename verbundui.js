@@ -330,11 +330,11 @@
   function berichtHtml(pid) {
     const def = defOf(pid), st = stateOf(pid), sta = statusOf(pid), rep = safe(() => V().report(pid), null); if (!def || !st || !sta || !rep) return '';
     const secs = rep.sections || [], kp = rep.kpis || (st.final && st.final.kpis) || [], md = medalOf(sta);
-    let h = '<div class="paper port"><div class="rep"><div style="display:flex;justify-content:space-between;align-items:center"><img src="logo-full.png" alt="Tonfunk" style="height:40px" onerror="this.remove()"><span style="font-size:11px;color:#555">' + dDate(Date.now()) + '</span></div>' +
+    let h = '<div class="paper port"><div class="rep"><div style="display:flex;justify-content:space-between;align-items:center"><img src="logo-full.png" alt="Tonfunk" style="height:40px" onerror="this.remove()"><span style="font-size:12px;color:#555">' + dDate(Date.now()) + '</span></div>' +
       '<h1>' + esc(rep.title || 'Abschlussbericht: ' + def.name) + '</h1><p>' + esc(st.name || '') + ' · ' + esc(rep.levelName || lvName(def, st.level)) + ' · ' + sta.done + ' von ' + sta.total + ' Stationen · ' + sta.points + ' von ' + sta.maxPoints + ' Punkten' + (md ? ' · ' + md[1] : '') + '</p>';
     secs.forEach(sec => { h += '<h2>' + esc(sec.h || '') + '</h2>' + (Array.isArray(sec.text) && sec.text.length ? '<ul>' + sec.text.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') + (sec.html != null ? String(sec.html) : rowsHtml(sec)); });
     if (kp.length) h += '<h2>Gesamttest: Kennzahlen</h2><p>' + kp.map(k => '<span class="kp ' + (k.ok ? 'ok' : 'no') + '">' + esc(k.label) + ': <b>' + kfmt(k.value) + ' ' + esc(k.unit || '') + '</b> ' + (k.ok ? '✓' : '✗') + '</span>').join('') + '</p>';
-    return h + '<p style="margin-top:18px;font-size:11px;color:#555">Zertifikatscode: ' + esc((rep.cert && rep.cert.code) || safe(() => V().certCode(pid), '')) + '</p></div></div>';
+    return h + '<p style="margin-top:18px;font-size:12px;color:#555">Zertifikatscode: ' + esc((rep.cert && rep.cert.code) || safe(() => V().certCode(pid), '')) + '</p></div></div>';
   }
   function docView(kind) {
     const pid = S.pid, def = defOf(pid); if (!def) { go('list', null, null, { noPush: true }); return; }

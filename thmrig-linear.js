@@ -61,11 +61,11 @@
           help: 'Fläche des Kühlbleches (beide Seiten zusammen gerechnet). Mehr Fläche, kleinerer Wärmewiderstand des Kühlkörpers.' },
         { key: 'joint', label: 'Übergang Gehäuse–Kühlkörper', type: 'select', value: 'glimmer', group: G_MOUNT, visible: hasHs, options: [{ value: 'direkt', label: 'direkt (ohne Isolierung)' }, { value: 'glimmer', label: 'Glimmerscheibe' }, { value: 'silikon', label: 'Silikonfolie' }],
           help: 'Direkt leitet die Wärme am besten, isoliert aber nicht. Glimmerscheibe und Silikonfolie isolieren elektrisch und kosten Wärmeleitung.' },
-        { key: 'paste', label: 'Wärmeleitpaste', type: 'select', value: 'duenn', group: G_MOUNT, visible: hasHs, options: [{ value: 'keine', label: 'keine' }, { value: 'duenn', label: 'dünn aufgetragen' }, { value: 'dick', label: 'dick aufgetragen' }],
+        { key: 'paste', label: 'Wärmeleitpaste', type: 'select', value: 'duenn', group: G_MOUNT, visible: hasHs, options: [{ value: 'keine', label: 'keine' }, { value: 'duenn', label: 'dünn aufgetragen' }, { value: 'dick', label: 'dick aufgetragen' }, { value: 'geliefert', label: 'wie geliefert (nicht geprüft)' }],
           help: 'Dünn aufgetragene Wärmeleitpaste füllt die Luftspalte zwischen Gehäuse und Kühlkörper. Zu viel Paste verschlechtert den Übergang wieder.' },
         { key: 'bushing', label: 'Isolierbuchse', type: 'switch', value: true, group: G_MOUNT, visible: s => !!s && s.heatsink !== 'none' && s.joint !== 'direkt',
           help: 'Die Isolierbuchse isoliert die Schraube gegen die Fahne. Fehlt sie, schließt die Schraube die Isolierscheibe kurz.' },
-        { key: 'screw', label: 'Schraube', type: 'select', value: 'fest', group: G_MOUNT, visible: hasHs, options: [{ value: 'fest', label: 'fest angezogen' }, { value: 'locker', label: 'locker' }],
+        { key: 'screw', label: 'Schraube', type: 'select', value: 'fest', group: G_MOUNT, visible: hasHs, options: [{ value: 'fest', label: 'fest angezogen' }, { value: 'locker', label: 'locker' }, { value: 'geliefert', label: 'wie geliefert (nicht geprüft)' }],
           help: 'Eine lockere Schraube lässt einen Spalt: Der Wärmewiderstand des Übergangs steigt. Das Anzugsmoment steht in der Herstellerangabe.' },
         { key: 'ksPot', label: 'Kühlkörper elektrisch', type: 'select', value: 'masse', group: G_MOUNT, visible: hasHs, options: [{ value: 'masse', label: 'an Gerätemasse' }, { value: 'frei', label: 'frei (isoliert eingebaut)' }],
           help: 'An Gerätemasse oder frei eingebaut. Berührt eine Fahne mit Spannung den Kühlkörper an Masse, gibt es einen Kurzschluss.' },
@@ -93,7 +93,9 @@
       let L = null; const C = coreOptional();
       if (C && typeof C.mountControls === 'function') { try { L = C.mountControls(); } catch (e) { L = null; } }
       if (!Array.isArray(L) || !L.length) L = fallbackMount();
-      return L.map(c => Object.assign({}, c, { group: c.group || G_MOUNT }));
+      /* Verdeckte Fehler (Fehlersuche th26): 'geliefert' = Montagezustand nicht geprueft; physikalisch wie 'keine' bzw. 'locker' (THM_CORE), ohne Fehlerhinweis */
+      const GELIEFERT = { value: 'geliefert', label: 'wie geliefert (nicht geprüft)', help: 'Der Zustand ist nicht geprüft. Die Temperaturen und Temperaturabfälle zeigen, was der Aufbau tut.' };
+      return L.map(c => Object.assign({}, c, { group: c.group || G_MOUNT }, (c.key === 'paste' || c.key === 'screw') && Array.isArray(c.options) && !c.options.some(o => o.value === 'geliefert') ? { options: c.options.concat([GELIEFERT]) } : {}));
     }
     function mountPresets() {
       let L = null; const C = coreOptional();
@@ -215,7 +217,7 @@
         beharrung: tj => ((CORE.TEXTS && CORE.TEXTS.rig && CORE.TEXTS.rig.beharrung) || 'Beharrungszustand') + ': Alle Temperaturen sind eingeschwungen (' + S('Tj') + ' = ' + fn(tj, 1) + ' °C).',
         keinBeharrung: 'Es gibt keinen Beharrungszustand: Die Abschaltung oder der Defekt greift. Die Anlage startet kalt und läuft bis zu diesem Ereignis.'
       };
-      const say = (text, kind, fx) => { const e = { t, text, kind: kind || 'info' }; if (fx) e.fx = fx; ev.push(e); if (ev.length > 150) ev.shift(); };
+      const say = (text, kind, fx, id) => { const e = { t, text, kind: kind || 'info' }; if (fx) e.fx = fx; if (id) e.id = id; ev.push(e); if (ev.length > 150) ev.shift(); };
       const X = { memo(key, fn) { if (memoKey === key) return memoVal; memoVal = fn(); memoKey = key; return memoVal; }, devData, ctl, params, CORE, h, S, fm, fn, clamp, num, say, getChain: () => getChain(), cfg: () => cfgNow(), nodes: () => nodes(), flags: () => flags(), time: () => t, shutTimes: () => shutTimes, shutCount: () => shutCount, helpers: { pzulOf, tjMaxOf, rthCKOf, steadyOf } };
 
       // ---- Kern-Adapter ----
@@ -333,7 +335,7 @@
         try { out = CORE.diagnose(diagCtx(Sx)) || []; } catch (e) { out = []; }
         const cur = {};
         // beim Pendeln kehrt eine Meldung im Sekundentakt wieder: dieselbe Meldung hoechstens alle 20 Prozess-Sekunden neu melden
-        out.forEach(d => { cur[d.id] = true; const was = lastSeen[d.id]; if (!prevAct[d.id] && !SELF_EVT[d.id] && !(was !== undefined && t - was <= 20)) say(d.text, d.kind, d.fx); lastSeen[d.id] = t; });
+        out.forEach(d => { cur[d.id] = true; const was = lastSeen[d.id]; if (!prevAct[d.id] && !SELF_EVT[d.id] && !(was !== undefined && t - was <= 20)) say(d.text, d.kind, d.fx, d.id); lastSeen[d.id] = t; });
         // Zurueck im gruenen Bereich nach einem Eingriff: nur einmal je Lauf
         const bad = out.some(d => d.kind === 'error' || d.id === 'abschalt' || d.id === 'pendeln');
         if (bad) problem = true;

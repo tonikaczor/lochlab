@@ -544,19 +544,19 @@
     const PPK = 100, TP = 0.001, T = 0.1, TA = 25, CFG = { device: 'irlz34n', heatsink: 'm', joint: 'glimmer', paste: 'duenn' };
     const vals = () => once('v29', () => {
       const C = CORE(), dev = C.devices.irlz34n, pj = C.pulseTj(CFG, PPK, TP, T, TA), st = C.steady(CFG, 1, TA);
-      return { ppk: PPK, tpMs: TP * 1000, tMs: T * 1000, tpT: (TP + T) * 1000, d: pj.d, dPct: pj.d * 100, ta: TA, rthJC: dev.rthJC, rthCK: st.rthCK, rthK: st.rthK, rth: pj.rthTotal, zTp: pj.zthTp, zT: pj.zthT, zTpT: pj.zthTpT, tj: pj.tj, tjAvg: pj.tjAvg, pAvg: pj.pAvg, zSum: pj.zthTpT - pj.zthT + pj.zthTp, d1: 1 - pj.d, tjDauer: TA + PPK * pj.rthTotal, tjNurZ: TA + PPK * pj.zthTp, tjMax: dev.tjMax, tol: 5 };
+      return { ppk: PPK, tpMs: TP * 1000, tMs: T * 1000, tpT: (TP + T) * 1000, d: pj.d, dPct: pj.d * 100, ta: TA, rthJC: dev.rthJC, rthCK: st.rthCK, rthK: st.rthK, rth: pj.rthTotal, zTp: pj.zthTp, zT: pj.zthT, zTpT: pj.zthTpT, tj: pj.tj, tjAvg: pj.tjAvg, pAvg: pj.pAvg, zSum: (1 - pj.d) * pj.zthTpT - pj.zthT + pj.zthTp, d1: 1 - pj.d, tjDauer: TA + PPK * pj.rthTotal, tjNurZ: TA + PPK * pj.zthTp, tjMax: dev.tjMax, tol: 2 };
     });
-    const items = () => { const v = vals(); return [{ key: 'value', label: 'Spitzen-Sperrschichttemperatur', unit: '°C', want: v.tj, tol: 0.05, mistakes: [
+    const items = () => { const v = vals(); return [{ key: 'value', label: 'Spitzen-Sperrschichttemperatur', unit: '°C', want: v.tj, tol: 0.02, mistakes: [
       [v.tjAvg, 'du nur mit der mittleren Leistung ' + fm(v.pAvg) + ' W gerechnet hast (die Spitze liegt darüber)'], [v.tjDauer, 'du die Spitzenleistung als Dauerleistung angesetzt hast'], [v.tjNurZ, 'du nur Zth(tp) benutzt hast (die vorangegangenen Impulse fehlen)']] }]; };
     return { vals, items,
       tables() { const v = vals(); return [
         tbl('Thermische Impedanz des Aufbaus (IRLZ34N, Glimmerscheibe, Wärmeleitpaste, Profil mittel)', ['Zeit', 'Zth in K/W'], [[fm(v.tpMs) + ' ms (= tp)', fm(v.zTp, 4)], [fm(v.tMs) + ' ms (= T)', fm(v.zT, 4)], [fm(v.tpT) + ' ms (= tp + T)', fm(v.zTpT, 4)], ['Dauerbetrieb ({sym:Rth_ges})', fm(v.rth, 2)]])
       ]; },
-      text() { const v = vals(); return 'Vertiefung: Ein IRLZ34N auf einem Kühlkörper (Aufbau und thermische Impedanz in der Tabelle) bekommt Leistungsimpulse von ' + fm(v.ppk) + ' W mit der Dauer tp = ' + fm(v.tpMs) + ' ms alle T = ' + fm(v.tMs) + ' ms (Tastverhältnis ' + fm(v.dPct) + ' %). Die Umgebung hat ' + fm(v.ta) + ' °C. Die Spitze der Sperrschichttemperatur im eingeschwungenen Zustand ist Tj = Ta + P_pk · [D · Rth_ges + (1 − D) · (Zth(tp + T) − Zth(T) + Zth(tp))], mit D = tp / T.\nBerechne die Spitzen-Sperrschichttemperatur.'; },
+      text() { const v = vals(); return 'Vertiefung: Ein IRLZ34N auf einem Kühlkörper (Aufbau und thermische Impedanz in der Tabelle) bekommt Leistungsimpulse von ' + fm(v.ppk) + ' W mit der Dauer tp = ' + fm(v.tpMs) + ' ms alle T = ' + fm(v.tMs) + ' ms (Tastverhältnis ' + fm(v.dPct) + ' %). Die Umgebung hat ' + fm(v.ta) + ' °C. Die Spitze der Sperrschichttemperatur im eingeschwungenen Zustand ist Tj = Ta + P_pk · [D · Rth_ges + (1 − D) · Zth(tp + T) − Zth(T) + Zth(tp)], mit D = tp / T.\nBerechne die Spitzen-Sperrschichttemperatur.'; },
       hint() { const v = vals(); return [
         'Ein kurzer Impuls heizt die Sperrschicht nur wenig auf, weil die Wärmekapazität die Wärme zunächst aufnimmt. Das beschreibt Zth(t) für die Dauer tp. Hinzu kommt die Erwärmung durch alle vorangegangenen Impulse; sie steckt in den Zth-Werten der Periode und im Mittelwert D · Rth_ges.',
         'Tastverhältnis D = tp / T = ' + fm(v.tpMs) + ' ms / ' + fm(v.tMs) + ' ms = ' + fm(v.d, 3) + '. Setze Zth(tp) = ' + fm(v.zTp, 4) + ' K/W, Zth(T) = ' + fm(v.zT, 4) + ' K/W, Zth(tp + T) = ' + fm(v.zTpT, 4) + ' K/W und {sym:Rth_ges} = ' + fm(v.rth, 2) + ' K/W in die Formel ein.',
-        'Musterlösung: Zth(tp + T) − Zth(T) + Zth(tp) = ' + fm(v.zSum, 4) + ' K/W. Spitze: {sym:Tj} = ' + fm(v.ta) + ' °C + ' + fm(v.ppk) + ' W · [' + fm(v.d, 3) + ' · ' + fm(v.rth, 2) + ' K/W + ' + fm(v.d1, 2) + ' · ' + fm(v.zSum, 4) + ' K/W] = ' + fm(v.tj, 1) + ' °C. Mit der mittleren Leistung ' + fm(v.pAvg) + ' W allein wären es nur ' + fm(v.tjAvg, 1) + ' °C.'
+        'Musterlösung: (1 − D) · Zth(tp + T) − Zth(T) + Zth(tp) = ' + fm(v.d1, 2) + ' · ' + fm(v.zTpT, 4) + ' K/W − ' + fm(v.zT, 4) + ' K/W + ' + fm(v.zTp, 4) + ' K/W = ' + fm(v.zSum, 4) + ' K/W. Spitze: {sym:Tj} = ' + fm(v.ta) + ' °C + ' + fm(v.ppk) + ' W · [' + fm(v.d, 3) + ' · ' + fm(v.rth, 2) + ' K/W + ' + fm(v.zSum, 4) + ' K/W] = ' + fm(v.tj, 1) + ' °C. Mit der mittleren Leistung ' + fm(v.pAvg) + ' W allein wären es nur ' + fm(v.tjAvg, 1) + ' °C.'
       ]; } };
   })();
 
@@ -677,9 +677,9 @@
       start: () => S('linear', Object.assign({}, M25.FIX, M25.START), { settle: true, choices: {} }),
       sol: () => S('linear', Object.assign({}, M25.FIX, M25.MUSTER), { settle: true, choices: { fehler: 'paste' } }),
       check: M25.check, hintVals: () => M25.vals() }, M25),
-    L({ id: 'th26', lab: 'thm', cat: 'Fehlersuche', title: 'Fehlersuche: Der Kühlkörper ist lauwarm, die Sperrschicht zu heiß', level: 3, rig: 'linear',
+    L({ id: 'th26', lab: 'thm', cat: 'Fehlersuche', title: 'Fehlersuche: Der Kühlkörper ist lauwarm, die Sperrschicht zu heiß', level: 3, rig: 'linear', maskDiag: ['locker', 'paste-fehlt', 'dick', 'buchse-fehlt'],
       fields: M26.fields,
-      start: () => S('linear', Object.assign({}, M26.FIX, M26.START), { settle: true, fields: noV(['tj', 'tc', 'tk']), choices: {} }),
+      start: () => S('linear', Object.assign({}, M26.FIX, M26.START, { paste: 'geliefert', screw: 'geliefert' }), { settle: true, fields: noV(['tj', 'tc', 'tk']), choices: {} }),   // 'geliefert' = physikalisch wie die Fehler, aber ohne Namen (Verdeckte-Fehler-Muster)
       sol: () => { const v = M26.vals(); return S('linear', Object.assign({}, M26.FIX, M26.START), { settle: true, fields: { tj: v.tj, tc: v.tc, tk: v.tk }, choices: { glied: v.glied, abhilfe: 'montage' } }); },
       check: M26.check, hintVals: () => flatVals(M26.vals()) }, M26),
     L({ id: 'th27', lab: 'thm', cat: 'Prüfungsstil', title: 'Prüfungsaufgabe: Netzteil mit Längsregler', level: 3, rig: 'linear',

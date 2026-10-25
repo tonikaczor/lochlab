@@ -521,7 +521,7 @@
 .pa-card2.bad{border-color:#a33;background:#3a1a1c}.pa-card2.ok{border-color:#3f9a55}
 .pa-n{width:28px;text-align:center;font-weight:700;color:var(--mute,#8d99a6)}
 .pa-grow{flex:1;min-width:0}
-.pa-tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:11.5px;background:#38424d;margin-right:4px}
+.pa-tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:12px;background:#38424d;margin-right:4px}
 .pa big{font-size:26px;font-weight:700}
 `;
     document.head.appendChild(st);

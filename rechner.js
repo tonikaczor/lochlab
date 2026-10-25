@@ -63,7 +63,7 @@ const TABS = [
     b.innerHTML = '<p style="margin-top:0;color:var(--mute)">Spannungsfall und Belastbarkeit einer Kupferleitung (Hin- und Rückleiter).</p>' + input('kP', 'Leistung des Verbrauchers in W', '', '2000') + input('kU', 'Spannung in V', '', '230') + input('kL', 'Länge der Leitung (einfach) in m', '', '50') + input('kA', 'Querschnitt in mm²', '', '1,5') + out('kOut');
     const IZ = [[1.5, 16.5], [2.5, 23], [4, 30], [6, 38], [10, 52], [16, 70]];
     const f = () => { const P = num(g(b, 'kP').value), U = num(g(b, 'kU').value), L = num(g(b, 'kL').value), A = num(g(b, 'kA').value), o = g(b, 'kOut'); if (!(P > 0 && U > 0 && L > 0 && A > 0)) { o.textContent = 'Werte eintragen.'; return; }
-      const I = P / U, R = 2 * 0.0178 * L / A, dU = I * R, pc = 100 * dU / U, iz = (IZ.find(x => x[0] >= A) || IZ[IZ.length - 1])[1], ls = [6, 10, 13, 16, 20, 25, 32].filter(x => x >= I && x <= iz);
+      const I = P / U, R = 2 * 0.0178 * L / A, dU = I * R, pc = 100 * dU / U, iz = (IZ.filter(x => x[0] <= A).pop() || IZ[0])[1], ls = [6, 10, 13, 16, 20, 25, 32].filter(x => x >= I && x <= iz);
       o.innerHTML = `Strom: <b>${I.toFixed(1).replace('.', ',')} A</b><br>Leitungswiderstand (hin und zurück): ${eng(R, 'Ω')}<br>Spannungsfall: <b>${dU.toFixed(1).replace('.', ',')} V = ${pc.toFixed(1).replace('.', ',')} %</b> ${pc <= 3 ? '✓ (höchstens 3 % ist gut)' : '✗ zu viel, größeren Querschnitt wählen'}<br>Belastbarkeit etwa ${iz} A<br>Passender Automat: ${ls.length ? 'B' + ls.join(', B') : 'keiner (Leitung zu dünn)'}`; };
     wire(b, ['kP', 'kU', 'kL', 'kA'], f); f();
   }],

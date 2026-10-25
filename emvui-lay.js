@@ -72,7 +72,7 @@
   const CSS = `.lyg{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:8px}
 .lyc{display:flex;flex-direction:column;gap:4px;text-align:left;padding:8px;border-radius:12px;background:var(--panel);border:1px solid var(--line);min-width:0;position:relative}
 .lyc canvas{width:100%;height:auto;aspect-ratio:10/7;border-radius:8px;background:var(--well);display:block}
-.lyc b{font-size:13.5px;line-height:1.2}.lyc small{color:var(--mute);font-size:11.5px;line-height:1.25}
+.lyc b{font-size:13.5px;line-height:1.2}.lyc small{color:var(--mute);font-size:12px;line-height:1.25}
 .lyc .ok{position:absolute;right:10px;top:10px;width:26px;height:26px;border-radius:50%;background:var(--ok);color:#06210d;display:grid;place-items:center;font-weight:800}
 .lyc.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 .lybd{position:relative;width:100%;touch-action:none}.lybd canvas{display:block;width:100%;height:auto;max-height:64vh;aspect-ratio:10/7;border-radius:10px;background:var(--well);border:1px solid var(--line);touch-action:none}
@@ -80,7 +80,7 @@
 .lywipe{position:absolute;top:0;bottom:0;left:var(--wp,50%);width:56px;transform:translateX(-50%);cursor:ew-resize;touch-action:none}
 .lywipe[hidden]{display:none}
 .lymet{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin-top:8px}
-.lymet div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 9px}.lymet small{display:block;color:var(--mute);font-size:11.5px}.lymet b{font-size:18px;font-variant-numeric:tabular-nums}.lymet span{color:var(--mute);font-size:12px;margin-left:3px}
+.lymet div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 9px}.lymet small{display:block;color:var(--mute);font-size:12px}.lymet b{font-size:18px;font-variant-numeric:tabular-nums}.lymet span{color:var(--mute);font-size:12px;margin-left:3px}
 .lyctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px 16px;margin-top:8px}
 .lyfx{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:52px;padding:4px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel);text-align:left;margin-top:6px}
 .lyfx[disabled]{opacity:.45}.lyfx .tg{flex:none;width:52px;height:30px;border-radius:15px;background:var(--tgl);position:relative}.lyfx .tg i{position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:var(--knob);transition:left .12s}

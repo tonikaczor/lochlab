@@ -1,0 +1,61 @@
+/* design.css (v23): gemeinsame Gestaltung aller Labs, aus DESIGN-TIPPS-FABLE.md.
+   Wird in jedem Lab NACH dem eigenen <style> eingebunden. Inhalt: Fokusring (QW4), Querformat-Kompaktmodus des Prüfstands (Punkt 1),
+   Überlauf-Hinweise für Tab-Leiste und Unterleiste (Punkt 7). Die Farbtokens (--accent-bg) stehen im jeweiligen Lab-CSS. */
+
+/* ---- QW4: sichtbarer Fokusring (Tastatur), Umriss statt Rahmen, daher kein Layoutsprung ---- */
+:root{--focus:#ffd166}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--focus:#0a4fb3}}
+:root[data-theme=light]{--focus:#0a4fb3}
+:root[data-theme=dark]{--focus:#ffd166}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex]:not([tabindex="-1"]):focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+summary:focus-visible,.card button:focus-visible,#tabs button:focus-visible,#pal button:focus-visible{outline-offset:-3px}
+input[type=range]:focus-visible{outline-offset:0}
+
+/* ---- Punkt 7: Überlauf-Hinweis (Fade + Pfeil), Klassen setzt design.js ---- */
+#tabs.ov-r,#pal.ov-r,#rigPick.ov-r{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 44px),transparent)}
+#tabs.ov-l,#pal.ov-l,#rigPick.ov-l{-webkit-mask-image:linear-gradient(90deg,transparent,#000 44px);mask-image:linear-gradient(90deg,transparent,#000 44px)}
+#tabs.ov-l.ov-r,#pal.ov-l.ov-r,#rigPick.ov-l.ov-r{-webkit-mask-image:linear-gradient(90deg,transparent,#000 44px,#000 calc(100% - 44px),transparent);mask-image:linear-gradient(90deg,transparent,#000 44px,#000 calc(100% - 44px),transparent)}
+.ovHint{position:fixed;z-index:6;width:30px;display:flex;align-items:center;justify-content:center;pointer-events:none;font:700 24px/1 system-ui,sans-serif;color:var(--fg,#e8ecf0);text-shadow:0 0 6px var(--bg,#14181c),0 0 2px var(--bg,#14181c)}
+.ovHint[hidden]{display:none}
+@media print{.ovHint{display:none}}
+
+/* ---- Punkt 1: iPad-Querformat (und jede flache Querformat-Ansicht): Prüfstand kompakt, Diagramm an die Höhe gebunden.
+   Nur für Labs, deren #pgRig die Klasse rigc trägt (gleiche Prüfstandsstruktur: analab, wsllab, elslab, emvlab, ntslab, thmlab, enrlab). ---- */
+@media (orientation:landscape) and (max-height:900px) and (min-width:900px){
+  /* Hinweisband, Sichtenleiste und Ampel nehmen deutlich weniger Höhe; Sichten und Ampel stehen nebeneinander */
+  #pgRig.rigc #rigMain{display:flex;flex-wrap:wrap;align-content:flex-start;align-items:flex-start;column-gap:8px;padding-top:6px}
+  #pgRig.rigc #rigMain>*{flex:0 0 100%;min-width:0;max-width:100%;order:5}
+  #pgRig.rigc #rigPick,#pgRig.rigc #simBand{order:0}
+  #pgRig.rigc #sichtBar,#pgRig.rigc #ampRow{order:1;flex:1 1 0}
+  #pgRig.rigc #sichtBar[hidden]{display:none}
+  #pgRig.rigc #faultHost{order:2}
+  /* Diagramm, dann Messgeräte; Merken-Zeile, Qualitätszeile und eingeklappte Karten folgen darunter */
+  #pgRig.rigc #cvw{order:3}
+  #pgRig.rigc #meters{order:4}
+  #pgRig.rigc #deepHost,#pgRig.rigc #cSweep{order:6}
+  #pgRig.rigc #rigPick{padding:0 0 6px}
+  #pgRig.rigc #simBand{padding:2px 4px 2px 12px;margin:0 0 6px;font-size:12px;line-height:1.3;align-items:center}
+  #pgRig.rigc #sichtBar{margin:0 0 6px;display:flex}
+  #pgRig.rigc #sichtBar .cnrow{flex:1;gap:4px}
+  #pgRig.rigc #sichtBar .cn{position:relative;padding:4px 8px;justify-content:center;min-width:0}
+  #pgRig.rigc #sichtBar .cn b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Langtexte bleiben im DOM und für Screenreader erhalten, werden aber nur im Hochformat angezeigt */
+  #pgRig.rigc #sichtBar .cn span,#pgRig.rigc #sichtBar .cn small,#pgRig.rigc #ampRow .atx small.nt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  #pgRig.rigc #ampRow{margin:0 0 6px;padding:4px 10px;gap:8px;min-height:50px}
+  #pgRig.rigc #ampRow .asym{width:32px;height:32px;font-size:18px}
+  #pgRig.rigc #ampRow .atx{gap:0}
+  #pgRig.rigc #ampRow .atx b{font-size:14px;line-height:1.25}
+  #pgRig.rigc #ampRow .atx small{font-size:12px;line-height:1.25}
+  #pgRig.rigc .avs{display:none}
+  /* Diagramm: an die Viewport-Höhe gebunden (dvh), nie unter 380 px, sonst legen die Szenen ihre Beschriftungen nicht mehr aus */
+  #pgRig.rigc #cvw{max-height:clamp(380px,calc(100vh - 440px),560px);max-height:clamp(380px,calc(100dvh - 440px),560px)}
+  /* Seitenleiste bei iPad-Breite 316 statt 370 px: das Diagramm bekommt Platz für den zweispaltigen Aufbau (Kennlinie | Schaltbild) */
+}
+@media (orientation:landscape) and (max-height:900px) and (min-width:900px) and (max-width:1100px){
+  #pgRig.rigc #rigSide{width:316px}
+}
+
+/* ---- Messgeräte-Frontplatte (geraete.js, dritte Ansicht): Querformat-Kompaktmodus, acht Geräte in zwei Reihen à vier flachen Leisten ---- */
+@media (orientation:landscape) and (max-height:900px) and (min-width:900px){
+  #pgRig.rigc #meters.ger{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:6px}
+}

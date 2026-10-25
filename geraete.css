@@ -1,0 +1,43 @@
+/* geraete.css: Frontplatten der Messgeräte (Phase 1: Multimeter .ger-dmm). Gehört zu geraete.js.
+   Farbtokens mit Rückfall; Hell und Dunkel wie design.css (prefers-color-scheme und data-theme). Keine Filter, keine Schatten (ältere iPads). */
+:root{--lcd-bg:#1d2a1c;--lcd-fg:#d6f3c8;--lcd-off:rgba(214,243,200,.12);--jack-red:#d8362a;--jack-black:#1b1f24}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--lcd-bg:#dfe8d2;--lcd-fg:#16321a;--lcd-off:rgba(22,50,26,.10)}}
+:root[data-theme=light]{--lcd-bg:#dfe8d2;--lcd-fg:#16321a;--lcd-off:rgba(22,50,26,.10)}
+:root[data-theme=dark]{--lcd-bg:#1d2a1c;--lcd-fg:#d6f3c8;--lcd-off:rgba(214,243,200,.12)}
+
+/* Raster der Frontplatten im Prüfstand (#meters.ger setzt das Lab-UI): Kacheln ab 150 px, auf dem Handy zwei je Reihe; Querformat-Kompakt steht in design.css */
+#meters.ger{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+@media(max-width:600px){#meters.ger{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}}
+.ger-slot{min-width:0}
+.ger-dmm{box-sizing:border-box;height:100%;display:flex;flex-direction:column;gap:5px;min-width:0;padding:6px 8px;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ger-dmm .gd-lbl{font-size:12px;line-height:1.25;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ger-dmm .gd-lcd{background:var(--lcd-bg);border:1px solid var(--line);border-radius:8px;padding:4px 6px 3px}
+.ger-dmm .gd-svg{display:block;width:100%;height:auto;max-height:52px}
+.ger-dmm .seg{fill:var(--lcd-fg)}
+.ger-dmm .seg.off{fill:var(--lcd-off)}
+.ger-dmm .unit,.ger-dmm .txt{fill:var(--lcd-fg);font-family:system-ui,sans-serif;font-weight:700}
+.ger-dmm .unit{font-size:13px}
+.ger-dmm .gd-flags{display:flex;justify-content:space-between;gap:6px;min-height:14px;font:700 11px/1.3 system-ui,sans-serif;color:var(--lcd-fg);white-space:nowrap}
+.ger-dmm .gd-auto{flex:none}
+.ger-dmm .gd-rng{overflow:hidden;text-overflow:ellipsis;text-align:right}
+.ger-dmm .gd-bw{display:block;line-height:0}
+.ger-dmm .gd-base{display:block;width:100%;height:auto;max-height:34px}
+.ger-dmm .gd-base .dial{fill:var(--panel2);stroke:var(--line);stroke-width:1.5}
+.ger-dmm .gd-base .tick{stroke:var(--mute);stroke-width:1.2}
+.ger-dmm .gd-base .kn{fill:var(--knob,#cfd6dd);stroke:var(--line);stroke-width:1.2}
+.ger-dmm .gd-base .ptr{fill:var(--accent)}
+.ger-dmm .gd-base .jack{stroke:var(--line);stroke-width:2}
+.ger-dmm .gd-base .jack.red{fill:var(--jack-red)}
+.ger-dmm .gd-base .jack.black{fill:var(--jack-black)}
+.ger-dmm .sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+.ger-dmm.warn{border-color:var(--danger)}
+
+/* Kompaktmodus (flache Leiste, Querformat): Label klein, LCD einzeilig, Flags und Drehschalter/Buchsen entfallen. Setzt geraete.js (compact:'auto' = Bedingung wie design.css Punkt 1). */
+.ger-dmm.compact{gap:1px;padding:3px 6px}
+.ger-dmm.compact .gd-lbl{font-size:11px;line-height:1.15}
+.ger-dmm.compact .gd-lcd{padding:1px 4px;border-radius:6px}
+.ger-dmm.compact .gd-svg{height:27px;max-height:none}
+.ger-dmm.compact .gd-flags,.ger-dmm.compact .gd-bw{display:none}
+
+@media(prefers-reduced-motion:reduce){.ger-dmm *{transition:none!important}}
+@media print{.ger-dmm{break-inside:avoid}}

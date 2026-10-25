@@ -382,7 +382,7 @@
       start: () => ({ rig: 'fuellstand', controls: FULL('fuellstand', { mode: 'auto', ctrl: 'P', kp: 2, tv: 0, u0: 0, w: 40, z: 0 }) }),
       sol: () => ({ rig: 'fuellstand', controls: FULL('fuellstand', { mode: 'auto', ctrl: 'P', kp: 10, tv: 0, u0: 0, w: 40, z: 0 }) }),
       check: check3 },
-    { id: 'rg4', lab: 'reg', cat: 'Grundlagen', title: 'Kühlschrank: falscher Wirkungssinn', level: 1, rig: 'thermostat',
+    { id: 'rg4', lab: 'reg', cat: 'Grundlagen', title: 'Kühlschrank wird wärmer statt kälter', level: 1, rig: 'thermostat', maskDiag: ['wirk'],
       text: 'Der Kühlschrank (Übungsanlage) soll 5 °C halten, wird aber wärmer statt kälter. Der Fehler liegt im Regler. Finde ihn und behebe ihn. Die Prüfung rechnet 8 h Prozesszeit.',
       hintVals() { return hv(this, () => { const m = muster4(), bad = sim4({ dir: 'direkt' }); return { w: m.w, tMitteFalsch: U.winMean(smp(bad), 28800 - 10800, 28800, x => x.x), tMitte: m.mean, tMin: m.min, tMax: m.max, band: m.band }; }); },
       get hint() { return hn(this, v => [

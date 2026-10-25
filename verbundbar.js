@@ -173,11 +173,11 @@ html.vbb-on #app{height:calc(100vh - var(--vbh,48px))!important;height:calc(100d
 .vbb-in{flex:0 1 auto;font-size:12px;color:#aab6c2;display:flex;gap:6px;flex-wrap:wrap}.vbb-in span{padding:2px 7px;border-radius:10px;background:#0006;border:1px solid #38424d;white-space:nowrap}.vbb-in span.ok{color:#4cd964;border-color:#2c7a3c}.vbb-in span.no{color:#ff8a7a;border-color:#a8433a}
 .vbb button,.vbb a.vbb-b{font:inherit;color:inherit;background:#2c343e;border:1px solid #4a5662;border-radius:20px;min-height:40px;padding:0 14px;cursor:pointer;touch-action:manipulation;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;text-decoration:none;font-weight:600;flex:none}
 .vbb button:active,.vbb a.vbb-b:active{background:#3b4652}
-.vbb button.pri{background:#2fae45;border-color:#2fae45;color:#fff}.vbb button.acc{background:#3b9eff;border-color:#3b9eff;color:#fff}
+.vbb button.pri{background:#1a7f37;border-color:#1a7f37;color:#fff}.vbb button.acc{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .vbb button[disabled]{opacity:.4;cursor:default}
 .vbb button.ic{padding:0;width:40px;justify-content:center}
 .vbb-panel{position:absolute;left:0;right:0;top:100%;max-height:min(64vh,560px);overflow:auto;background:#222a33;border-bottom:2px solid #3b9eff;box-shadow:0 10px 24px #0009;padding:10px 14px 16px;-webkit-user-select:text;user-select:text}
-.vbb-panel h4{margin:14px 0 6px;font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:#8d99a6}.vbb-panel h4:first-child{margin-top:0}
+.vbb-panel h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:#8d99a6}.vbb-panel h4:first-child{margin-top:0}
 .vbb-panel p{margin:.4em 0;line-height:1.45}.vbb-panel ul{margin:.3em 0;padding-left:20px}.vbb-panel li{margin:.15em 0}
 .vbb-panel table{border-collapse:collapse;width:100%;font-size:12.5px}.vbb-panel td{padding:3px 6px;border-top:1px solid #38424d;vertical-align:top}.vbb-panel td:first-child{color:#8d99a6;white-space:nowrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 .vbb-panel details{margin:4px 0}.vbb-panel summary{min-height:36px;display:flex;align-items:center;cursor:pointer;color:#3b9eff;font-weight:600}
@@ -197,7 +197,7 @@ html.vbb-on #app{height:calc(100vh - var(--vbh,48px))!important;height:calc(100d
 .vbb-sh .big{font-size:30px;font-weight:800;margin:0}.vbb-sh .big.ok{color:#4cd964}.vbb-sh .big.no{color:#ffb340}
 .vbb-sh ul.l{list-style:none;margin:8px 0;padding:0}.vbb-sh ul.l li{padding:6px 0 6px 26px;position:relative;border-top:1px solid #38424d;font-size:13.5px}.vbb-sh ul.l li:before{content:'✗';position:absolute;left:4px;color:#ff8a7a;font-weight:700}.vbb-sh ul.l li.ok:before{content:'✓';color:#4cd964}.vbb-sh ul.l li.ok{color:#c9d2da}
 .vbb-sh .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:#2c343e;border:1px solid #4a5662;color:#e8ecf0;font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
-.vbb-sh .btn.pri{background:#2fae45;border-color:#2fae45;color:#fff}
+.vbb-sh .btn.pri{background:#1a7f37;border-color:#1a7f37;color:#fff}
 .vbb-sh .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .vbb-toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000d;color:#fff;padding:9px 16px;border-radius:99px;z-index:520;font:14px system-ui,sans-serif;max-width:92vw;text-align:center;pointer-events:none}
 @media(max-width:700px){.vbb-in{display:none}}
@@ -426,7 +426,7 @@ html.vbb-on #app{height:calc(100vh - var(--vbh,48px))!important;height:calc(100d
     const box = $('#vbLive'); if (!box) return; let rows = null;
     try { rows = await T.ad.live(stationDef(), ctx()); } catch (e) { rows = [{ ok: false, text: 'Live-Hinweise gerade nicht möglich.' }]; }
     rows = Array.isArray(rows) ? rows : [];
-    box.innerHTML = '<h4 style="margin:14px 0 6px;font-size:11.5px;text-transform:uppercase;color:#8d99a6">Live-Hinweise</h4>' + (rows.length ? '<ul class="l" style="list-style:none;padding:0">' + rows.map(r => '<li>' + (r.ok ? '✓ ' : '✗ ') + esc(r.text) + '</li>').join('') + '</ul>' : '<p class="hintx">Keine Hinweise.</p>');
+    box.innerHTML = '<h4 style="margin:14px 0 6px;font-size:12px;text-transform:uppercase;color:#8d99a6">Live-Hinweise</h4>' + (rows.length ? '<ul class="l" style="list-style:none;padding:0">' + rows.map(r => '<li>' + (r.ok ? '✓ ' : '✗ ') + esc(r.text) + '</li>').join('') + '</ul>' : '<p class="hintx">Keine Hinweise.</p>');
   }
   function render() {
     const ae = document.activeElement;

@@ -9,8 +9,8 @@ const { sheet, esc, toast, userName } = UI;
 /* ---------- Grenzwerte ---------- */
 const LIM = {
   pe: len => (len <= 5 ? 0.3 : Math.min(1, 0.3 + 0.1 * Math.ceil((len - 5) / 7.5))),            // Ω: 0,3 Ω bis 5 m, je weitere 7,5 m +0,1 Ω, höchstens 1 Ω
-  iso: d => (d.sk === 1 ? (d.heater && d.pw > 3500 ? 0.3 : 1) : d.sk === 2 ? 2 : 0.25),          // MΩ
-  ab: d => (d.sk === 1 ? (d.heater && d.pw > 3500 ? Math.min(10, d.pw / 1000) : 3.5) : 0.5),     // mA
+  iso: d => (d.sk === 1 ? (d.heater && d.pw >= 3500 ? 0.3 : 1) : d.sk === 2 ? 2 : 0.25),          // MΩ
+  ab: d => (d.sk === 1 ? (d.heater && d.pw >= 3500 ? Math.min(10, d.pw / 1000) : 3.5) : 0.5),     // mA
 };
 const SK_TXT = { 1: 'Schutzklasse I (Schutzleiter)', 2: 'Schutzklasse II (Schutzisolierung, Symbol: Doppelquadrat)', 3: 'Schutzklasse III (Schutzkleinspannung)' };
 const VIS_ITEMS = ['Gehäuse', 'Anschlussleitung und Stecker', 'Zugentlastung und Knickschutz', 'Schalter und Bedienelemente', 'Lüftungsöffnungen und Verschmutzung', 'Kennzeichnung (Typenschild)'];
@@ -59,8 +59,8 @@ const Q = [
   ['Welchen Isolationswiderstand muss ein Gerät der Schutzklasse I (ohne große Heizleistung) mindestens haben?', ['0,25 MΩ', '0,3 MΩ', '1 MΩ', '2 MΩ'], 2, 'Schutzklasse I: mindestens 1 MΩ.'],
   ['Welchen Isolationswiderstand muss ein Gerät der Schutzklasse II mindestens haben?', ['0,25 MΩ', '1 MΩ', '2 MΩ', '5 MΩ'], 2, 'Schutzklasse II: mindestens 2 MΩ.'],
   ['Welchen Isolationswiderstand muss ein Gerät der Schutzklasse III (Kleinspannung) mindestens haben?', ['0,25 MΩ', '1 MΩ', '2 MΩ', '10 MΩ'], 0, 'Schutzklasse III: mindestens 0,25 MΩ, gemessen mit 250 V.'],
-  ['Für Geräte der Schutzklasse I mit Heizelementen über 3,5 kW darf der Isolationswiderstand niedriger sein. Wie niedrig?', ['0,1 MΩ', '0,3 MΩ', '0,5 MΩ', '1 MΩ'], 1, 'Bei Schutzklasse I mit Heizelementen (Gesamtleistung über 3,5 kW) genügen 0,3 MΩ.'],
-  ['Wie hoch darf der Schutzleiterstrom bei einem Gerät der Schutzklasse I höchstens sein?', ['0,5 mA', '3,5 mA', '10 mA', '30 mA'], 1, 'Schutzleiterstrom (und Ersatz-Ableitstrom) bei Schutzklasse I: höchstens 3,5 mA. Mit Heizelementen über 3,5 kW gilt 1 mA je kW, höchstens 10 mA.'],
+  ['Für Geräte der Schutzklasse I mit Heizelementen ab 3,5 kW darf der Isolationswiderstand niedriger sein. Wie niedrig?', ['0,1 MΩ', '0,3 MΩ', '0,5 MΩ', '1 MΩ'], 1, 'Bei Schutzklasse I mit Heizelementen (Gesamtleistung ab 3,5 kW) genügen 0,3 MΩ.'],
+  ['Wie hoch darf der Schutzleiterstrom bei einem Gerät der Schutzklasse I höchstens sein?', ['0,5 mA', '3,5 mA', '10 mA', '30 mA'], 1, 'Schutzleiterstrom (und Ersatz-Ableitstrom) bei Schutzklasse I: höchstens 3,5 mA. Mit Heizelementen ab 3,5 kW gilt 1 mA je kW, höchstens 10 mA.'],
   ['Wie hoch darf der Berührungsstrom bei einem Gerät der Schutzklasse II höchstens sein?', ['0,25 mA', '0,5 mA', '3,5 mA', '5 mA'], 1, 'Berührungsstrom bei Schutzklasse II: höchstens 0,5 mA.'],
   ['Wie wird der Schutzleiterwiderstand gemessen?', ['Zwischen Außenleiter und Neutralleiter', 'Zwischen Schutzkontakt des Steckers und berührbaren leitfähigen Gehäuseteilen, dabei die Leitung bewegen', 'Zwischen Gehäuse und Fußboden', 'Nur im eingeschalteten Zustand'], 1, 'Von den Schutzkontakten des Steckers zu allen berührbaren leitfähigen Teilen. Dabei die Anschlussleitung bewegen, um Wackelkontakte zu finden.'],
   ['Mit welchem Prüfstrom wird der Schutzleiterwiderstand mindestens gemessen?', ['20 mA', '50 mA', '200 mA', '1 A'], 2, 'Der Prüfstrom beträgt mindestens 200 mA, die Leerlaufspannung 4 V bis 24 V.'],
@@ -131,7 +131,7 @@ function renderResult() {
   const visUser = Object.keys(a.vis || {}).length === 6 ? (Object.values(a.vis).some(v => v === 'bad') ? 'bad' : 'ok') : 'ok';
   chk('Sichtprüfung', visUser, ev.visOk, ev.visOk ? 'Keine Mängel.' : 'Mangel: ' + ev.vis.filter(x => !x.ok).map(x => x.item + ' (' + x.text + ')').join('; '));
   if (d.sk === 1) chk('Schutzleiterwiderstand', a.pe, ev.peOk, `${d.pe >= 10 ? '> 10 Ω' : fmt(d.pe, 2) + ' Ω'} bei Grenzwert ${fmt(ev.peLim, 1)} Ω (${fmt(d.len, 1)} m Leitung: 0,3 Ω bis 5 m, +0,1 Ω je weitere 7,5 m, höchstens 1 Ω).`);
-  chk('Isolationswiderstand', a.iso, ev.isoOk, `${fmt(d.iso, d.iso < 1 ? 2 : 1)} MΩ bei Grenzwert mindestens ${fmt(ev.isoLim, 2)} MΩ (${d.sk === 1 ? (d.heater && d.pw > 3500 ? 'Schutzklasse I mit Heizleistung über 3,5 kW: 0,3 MΩ' : 'Schutzklasse I: 1 MΩ') : d.sk === 2 ? 'Schutzklasse II: 2 MΩ' : 'Schutzklasse III: 0,25 MΩ'}).`);
+  chk('Isolationswiderstand', a.iso, ev.isoOk, `${fmt(d.iso, d.iso < 1 ? 2 : 1)} MΩ bei Grenzwert mindestens ${fmt(ev.isoLim, 2)} MΩ (${d.sk === 1 ? (d.heater && d.pw >= 3500 ? 'Schutzklasse I mit Heizleistung ab 3,5 kW: 0,3 MΩ' : 'Schutzklasse I: 1 MΩ') : d.sk === 2 ? 'Schutzklasse II: 2 MΩ' : 'Schutzklasse III: 0,25 MΩ'}).`);
   if (d.sk !== 3) chk(d.sk === 1 ? 'Schutzleiterstrom' : 'Berührungsstrom', a.ab, ev.abOk, `${fmt(d.ab, 2)} mA bei Grenzwert höchstens ${fmt(ev.abLim, 1)} mA.`);
   chk('Funktionsprüfung', a.func, ev.funcOk, ev.funcOk ? 'Funktion in Ordnung.' : d.func[0]);
   const right = scoreLines.filter(l => l.ok).length, fin = ST.fin, finOk = fin != null && ((fin === 'pass') === ev.pass);

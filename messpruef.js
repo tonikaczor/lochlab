@@ -95,7 +95,7 @@
         fields: [{ id: 'uz', label: 'Spannung an D1', unit: 'V', tol: 0.04, truth: () => uAcross(ev(), 'D1') }, { id: 'ir', label: 'Strom durch R1', unit: 'mA', tol: 0.05, truth: () => iThrough(ev(), 'R1') }, { id: 'iz', label: 'Strom durch D1', unit: 'mA', tol: 0.08, truth: () => iThrough(ev(), 'D1') }, { id: 'pz', label: 'Verlustleistung von D1', unit: 'mW', tol: 0.1, truth: () => { const E = ev(); return uAcross(E, 'D1') * iThrough(E, 'D1'); } }] }),
       mk({ id: 'mp7', cat: 'Prüfung: Stromlaufplan', title: 'Spannungsregler 7805: Verlustleistung und Erwärmung', level: 2,
         text: 'Der Festspannungsregler U3 (7805) versorgt eine Last von 100 Ω aus 12 V. 1. Miss die Ausgangsspannung (2 Pkt.) und den Laststrom (2 Pkt.). 2. Berechne die Verlustleistung im Regler in mW (3 Pkt.). 3. Um wie viel Kelvin erwärmt sich das Gehäuse ohne Kühlkörper (Wärmewiderstand 50 K/W, 3 Pkt.)?',
-        hint: 'Verlustleistung PV = (Eingangsspannung − Ausgangsspannung) · Strom. Erwärmung ΔT = PV · Rth.',
+        hint: 'Verlustleistung PV = (Eingangsspannung − Ausgangsspannung) · Strom. Erwärmung ΔT = PV · Rth. (Der Ruhestrom des Reglers bleibt unberücksichtigt.)',
         start: () => cReg(), solMake: () => cReg(),
         solAns: () => { const E = ev(), ua = Math.abs(api.pinV(E, part('U3'), 2)), il = iThrough(E, 'RL'), pv = (12 - ua) * il; return { ua: String(rMeas(ua)), il: String(rMeas(il * 1000)), pv: String(rMeas(pv * 1000)), dt: String(rMeas(pv * 50)) }; },
         fields: [{ id: 'ua', label: 'Ausgangsspannung', unit: 'V', tol: 0.03, truth: () => Math.abs(api.pinV(ev(), part('U3'), 2)) }, { id: 'il', label: 'Laststrom', unit: 'mA', tol: 0.04, truth: () => iThrough(ev(), 'RL') }, { id: 'pv', label: 'Verlustleistung im Regler', unit: 'mW', tol: 0.08, truth: () => { const E = ev(); return (12 - Math.abs(api.pinV(E, part('U3'), 2))) * iThrough(E, 'RL'); } }, { id: 'dt', label: 'Erwärmung ohne Kühlkörper', unit: 'K', tol: 0.1, truth: () => { const E = ev(); return (12 - Math.abs(api.pinV(E, part('U3'), 2))) * iThrough(E, 'RL') * 50; } }] }),
@@ -115,13 +115,13 @@
       /* Fehlersuche an Prüfungsschaltungen */
       { id: 'mpf1', lab: 'mess', cat: 'Fehlersuche', title: 'Fehlersuche: Transistorstufe schaltet nicht', level: 3, debug: true, faultLabel: 'Rb', sol: 'x', solMake: () => cTrans(false), start: () => cTrans(true),
         text: 'Am Eingang liegen 5 V, aber die Last RL bekommt keinen Strom. Miss die Spannungen an Rb, an der Basis und am Kollektor und melde das defekte Bauteil.',
-        hint: 'Wenn kein Basisstrom fließt, fällt an Rb keine Spannung ab, und die Basis liegt auf 0 V. Eine Unterbrechung in Rb erklärt das.' },
+        hint: 'Miss die Spannung an Rb und an der Basis gegen Masse. Liegt an Rb fast die ganze Steuerspannung und an der Basis 0 V, ist der Weg durch Rb unterbrochen; liegt an Rb nichts und an der Basis 5 V, ist die B-E-Strecke offen.' },
       { id: 'mpf2', lab: 'mess', cat: 'Fehlersuche', title: 'Fehlersuche: Verstärker verstärkt nicht', level: 3, debug: true, faultLabel: 'Rg', sol: 'x', solMake: () => cOpv(false), start: () => cOpv(true),
         text: 'Der Verstärker soll 0,5 V auf etwa 2,85 V verstärken, am Ausgang stehen aber nur 0,5 V. Miss die Spannungen und melde das defekte Bauteil.',
-        hint: 'Ohne Rg gibt es keinen Spannungsteiler im Gegenkopplungszweig: V = 1 + Rf / ∞ = 1. Der Ausgang folgt dem Eingang.' },
+        hint: 'V = 1 + Rf/Rg: Welches Bauteil muss fehlen, damit V = 1 wird?' },
       { id: 'mpf3', lab: 'mess', cat: 'Fehlersuche', title: 'Fehlersuche: Poti stellt zu hoch ein', level: 3, debug: true, faultLabel: 'R2', sol: 'x', solMake: () => cPoti(false), start: () => cPoti(true),
         text: 'Der Einstellbereich des Potis stimmt nicht mehr: Die Spannung am Schleifer geht nie unter etwa 8 V. Miss die Spannungen am Teiler und melde das defekte Bauteil.',
-        hint: 'Unten im Teiler fehlt der Weg nach Masse. Ein unterbrochener R2 lässt die Spannung am Schleifer auf den hohen Wert steigen.' }
+        hint: 'Unten im Teiler fehlt der Weg nach Masse: Welches Bauteil liegt dort?' }
     ];
     function rangeOf() {   // Spannung an RL in beiden Endstellungen des Potis
       const p = part('P1'); if (!p) return [NaN, NaN]; const keep = p.pos, out = [];

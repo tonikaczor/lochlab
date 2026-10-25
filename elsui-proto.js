@@ -129,7 +129,7 @@
   /* ============================================================ Oberfläche */
   let A = null, H = null;
   const st = { entry: null, res: null, armed: 0, open: false };
-  const CSS = '.pr-err{color:var(--bad-fg);font-size:13px;margin:3px 0 0}.pr-bad input,.pr-bad select{border-color:var(--danger)}.pr-mw{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 10px}.pr-lim{font-size:12.5px;color:var(--mute);margin-top:3px}.pr-sec{margin:12px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}.pr-hist small{color:var(--mute)}';
+  const CSS = '.pr-err{color:var(--bad-fg);font-size:13px;margin:3px 0 0}.pr-bad input,.pr-bad select{border-color:var(--danger)}.pr-mw{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px 10px}.pr-lim{font-size:12.5px;color:var(--mute);margin-top:3px}.pr-sec{margin:12px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}.pr-hist small{color:var(--mute)}';
   function css() { try { if (typeof document !== 'undefined' && document.head && !document.getElementById('elsProtoCss')) { const s = document.createElement('style'); s.id = 'elsProtoCss'; s.textContent = CSS; document.head.appendChild(s); } } catch (e) {} }
   const hist = () => { const a = A && A.lsGet ? A.lsGet(KEY, []) : []; return Array.isArray(a) ? a : []; };
   const prefer = () => { try { const v = typeof localStorage !== 'undefined' ? localStorage.getItem('lm4.name') : ''; return v ? String(v).replace(/^"|"$/g, '') : ''; } catch (e) { return ''; } };

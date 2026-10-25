@@ -265,7 +265,7 @@
     const fams = ['Alle'].concat(famsOf());
     fl.innerHTML = fams.map(f => `<button class="chip s${S.fam === f ? ' on' : ''}" data-fam="${esc(f)}">${esc(f)}${f === 'Alle' ? ' (' + L.length + ')' : ''}</button>`).join('');
     const arr = filteredLib();
-    li.innerHTML = arr.length ? arr.map(d => `<button class="row${d.id === S.dsId ? ' on' : ''}" data-ds="${esc(d.id)}"><span class="ic">${famIcon(d)}</span><div class="grow"><b>${esc(d.part)}</b><small>${esc(d.title || d.family || '')}</small></div>${S.seen[d.id] ? '<span class="dot g" style="width:20px;height:20px;font-size:11px">✓</span>' : ''}</button>`).join('') : '<p class="hint2">Nichts gefunden. Probiere einen anderen Suchbegriff oder die Familie „Alle“.</p>';
+    li.innerHTML = arr.length ? arr.map(d => `<button class="row${d.id === S.dsId ? ' on' : ''}" data-ds="${esc(d.id)}"><span class="ic">${famIcon(d)}</span><div class="grow"><b>${esc(d.part)}</b><small>${esc(d.title || d.family || '')}</small></div>${S.seen[d.id] ? '<span class="dot g" style="width:20px;height:20px;font-size:12px">✓</span>' : ''}</button>`).join('') : '<p class="hint2">Nichts gefunden. Probiere einen anderen Suchbegriff oder die Familie „Alle“.</p>';
     const cur = dsById(S.dsId); $('#libSum').textContent = cur ? 'Datenblatt wählen: ' + cur.part : 'Datenblatt wählen';
   }
   function libHead() {

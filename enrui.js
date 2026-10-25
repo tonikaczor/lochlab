@@ -598,7 +598,7 @@
   function scenResultSheet(ex, res) {
     const d = defOf(ex.rig), meters = (d && d.meters) || [], keys = (SCENKEYS[ex.rig] || []).filter(k => meters.some(m => m.key === k)), tH = ex.rig && DAYRIGS.includes(ex.rig);
     sheet('Gerechnet: ' + ex.name, b => {
-      const faults = (res.faults || []).filter(f => typeof f === 'string'), daily = res.metrics && Array.isArray(res.metrics.daily) ? res.metrics.daily : [];
+      const faults = (res.faults || []).filter(f => typeof f === 'string' && !masked({ id: f })), daily = res.metrics && Array.isArray(res.metrics.daily) ? res.metrics.daily : [];
       b.innerHTML = `<div class="chartbox"><canvas id="scCv" aria-label="Verlauf des gerechneten Szenarios"></canvas></div><div class="readout" id="scRd"></div>
         ${daily.length ? `<div class="gh">Tagesbilanz je Tag</div><div style="overflow-x:auto"><table class="kt"><tr><th>Tag</th><th class="n">Solar Wh</th><th class="n">Last Wh</th><th class="n">Ladezustand min %</th></tr>${daily.slice(0, 10).map((q, i) => `<tr><td>${fin(q.N) ? q.N : i + 1}</td><td class="n">${fnum(q.ePv != null ? q.ePv : q.ePvAc, 0)}</td><td class="n">${fnum(q.eLast != null ? q.eLast : q.eHaus, 0)}</td><td class="n">${fin(q.socMin) ? fnum(q.socMin * (q.socMin <= 1 ? 100 : 1), 0) : '–'}</td></tr>`).join('')}</table></div>` : ''}
         ${faults.length ? `<p style="color:var(--warn);margin:8px 0 0"><b>Meldungen im Lauf:</b> ${faults.map(esc).join(', ')}</p>` : '<p class="hint2">Keine Fehler im Lauf.</p>'}${res.errors && res.errors.length ? `<p class="hint2" style="color:var(--warn)">${res.errors.map(esc).join(' ')}</p>` : ''}`;
@@ -630,6 +630,9 @@
       else if (e.fx === 'buzz' || e.fx === 'crash' || e.fx === 'ding' || e.fx === 'alarm') F.sound(e.fx, 0.4);
     } catch (er) { /* Effekte sind Beiwerk */ }
   }
+  /* Verdeckte Fehler: Aufgaben der Fehlersuche blenden Meldungen/Hinweise bestimmter Diagnose-Kennungen (task.maskDiag) bis zum Ende der Aufgabe aus */
+  function masked(x) { try { const t = curTask(); return !!(t && Array.isArray(t.maskDiag) && x && t.maskDiag.indexOf(x.id) >= 0); } catch (e) { return false; } }
+  try { Object.defineProperty(root, 'ENR_VEIL', { configurable: true, get() { const o = {}; try { const t = curTask(); if (t && Array.isArray(t.maskDiag)) t.maskDiag.forEach(i => { o[i] = 1; }); } catch (e) {} return o; } }); } catch (e) {}
   function noteFault(e) {
     const key = S.rigId + ':' + (e.id || String(e.text || '').slice(0, 28));
     const a = lsGet('enr.faults', []), s = new Set(Array.isArray(a) ? a : []); if (s.has(key)) return;
@@ -642,6 +645,7 @@
     let changed = false;
     for (let i = Math.max(0, ev.length - 30); i < ev.length; i++) {
       const e = ev[i]; if (!e || S.evSeen.has(e)) continue; S.evSeen.add(e); changed = true;
+      if (masked(e)) continue;
       if (e.kind === 'error' || e.kind === 'warn' || e.fx) noteFault(e);
       if (e.id === 'lvd-aus') stat('enrlvd', 1, 'max');
       if (e.kind === 'error') { S.faultUntil = performance.now() + 9000; S.faultText = e.text; if (S.tab !== 'rig' && S.running) toast('⚠ ' + e.text); }
@@ -669,7 +673,7 @@
     const t = e && fin(+e.t) ? +e.t : 0; if (S.rig && S.rig.tUnit === 'h') return fnum(t / 3600, 1) + ' h'; return fnum(t, t >= 100 ? 0 : 1) + ' s';
   }
   function updateEvents(force) {
-    const l = $('#evList'); if (!l) return; const ev = (S.rig && S.rig.events) || [];
+    const l = $('#evList'); if (!l) return; const ev = ((S.rig && S.rig.events) || []).filter(x => !masked(x));
     const sig = ev.length + '|' + (ev.length ? (ev[ev.length - 1].text || '') + (ev[ev.length - 1].t || '') : '');
     if (!force && sig === S.evSig) return; S.evSig = sig;
     l.innerHTML = ev.length ? ev.slice(-40).reverse().map(x => `<li class="${esc(x.kind || 'info')}"><time>${esc(evTime(x))}</time><span>${esc(x.text)}</span></li>`).join('') : '<li class="empty">Keine Meldungen. Meldet der Prüfstand etwas (zum Beispiel Sonnenaufgang oder einen Fehler), steht es hier.</li>';
@@ -680,7 +684,7 @@
     const el = $('#diagList'); if (!el || !S.rig) return;
     const now = performance.now(); if (!force && now - lastDiag < 600) return; lastDiag = now;
     let d = []; try { d = typeof S.rig.diagnose === 'function' ? (S.rig.diagnose() || []) : []; } catch (e) { d = []; }
-    S.diag = d; d.forEach(x => { if (x && x.id && !S.diagSeen[x.id]) S.diagSeen[x.id] = 1; });
+    d = d.filter(x => !masked(x)); S.diag = d; d.forEach(x => { if (x && x.id && !S.diagSeen[x.id]) S.diagSeen[x.id] = 1; });
     const h = d.length ? d.map(x => `<li class="${esc(x.kind || 'info')}"><span>${esc(x.text)}</span></li>`).join('') : '<li class="empty">Keine Hinweise: Zu den aktuellen Einstellungen meldet der Prüfstand nichts.</li>';
     if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
   }
@@ -1153,7 +1157,7 @@
     const ws = worldSz(), c = rigPng(1200, Math.round(1200 * ws.h / ws.w)), who = lsRaw('lm4.name', ''), vals = allCtl(); let mv = {}; try { mv = S.rig.readMeters(); } catch (e) {}
     const cv = ctlsOf().filter(x => x.type !== 'button').map(x => { const v = vals[x.key]; let t = v; if (x.type === 'switch') t = v ? 'EIN' : 'AUS'; else if (x.type === 'select') { const o = (x.options || []).find(q => q.value === v); t = o ? o.label : v; } else t = ctlShow(x, v) + (ctlUnit(x) ? ' ' + ctlUnit(x) : ''); return `<tr><td>${esc(x.group || '')}</td><td>${esc(x.label)}</td><td>${esc(t)}</td></tr>`; }).join('');
     const mt = metersOf().map(m => `<tr><td>${esc(m.label)}</td><td>${m.unitKind === 'clock' ? hhmm(mv[m.key]) : fnum(mv[m.key], m.digits == null ? 1 : m.digits)} ${esc(m.unit || '')}</td></tr>`).join('');
-    const ev = ((S.rig.events) || []).slice(-15).map(e => `<tr><td>${esc(evTime(e))}</td><td>${esc(e.text)}</td></tr>`).join('');
+    const ev = ((S.rig.events) || []).filter(e => !masked(e)).slice(-15).map(e => `<tr><td>${esc(evTime(e))}</td><td>${esc(e.text)}</td></tr>`).join('');
     const pts = S.curvePts.length && S.rigId === 'modul' ? `<h2>Eigene Messpunkte</h2><table><tr><th>Nr.</th><th>R in Ω</th><th>U in V</th><th>I in A</th><th>P in W</th></tr>${S.curvePts.map((p, i) => `<tr><td>${i + 1}</td><td>${fin(p.r) ? fauto(p.r) : '–'}</td><td>${fnum(p.u, 2)}</td><td>${fnum(p.i, 3)}</td><td>${fnum(p.p, 2)}</td></tr>`).join('')}</table>` : '';
     $('#printArea').innerHTML = `<div class="proto"><h1>${esc(S.name)}</h1><p>Prüfstand: ${esc(rigName(S.rigId))} · ${new Date().toLocaleDateString('de-DE')}${who ? ' · ' + esc(who) : ''} · Zeiten in Sonnenzeit bzw. Prozesszeit</p>
       <h2>Prüfstand</h2><img src="${c.toDataURL('image/png')}" alt="">
@@ -1314,7 +1318,7 @@
       if (a === 'check') checkTask(); else if (a === 'hint') hintTask(); else if (a === 'rig') setTab('rig');
       else if (a === 'auto') { const t = curTask(); if (t && await confirmSheet('Auto-Weg?', 'Der Prüfstand spielt die Musterlösung ab. Das <b>zählt als Hilfe</b> (Stufe 3): Dein Ausbilder sieht es.', 'Abspielen')) autoWay(t); }
       else if (a === 'hand') { const t = curTask(); if (t && root.Auswertung) root.Auswertung.handIn(t.id, taskDone()[t.id] || 0, t.title); }
-      else if (a === 'end') { S.task = null; taskRes = null; updateChrome(); renderTasks(); toast('Aufgabe beendet'); }
+      else if (a === 'end') { S.task = null; S.evSig = ''; taskRes = null; updateChrome(); renderTasks(); toast('Aufgabe beendet'); }
     } else if (row) startTask(row.dataset.t);
   });
 

@@ -14,6 +14,7 @@
   if (!B) { if (typeof console !== 'undefined') console.warn('enrrig-netz.js: Die Basis aus enrrig-insel.js fehlt (bitte davor laden).'); return; }
   const { clamp, num, fm, fin, isObj, TX, hhmm, LAT } = B;
 
+  const veil = id => { try { return !!(root.ENR_VEIL && root.ENR_VEIL[id]); } catch (e) { return false; } };   // Verdeckte Fehler: die Oberfläche setzt ENR_VEIL, solange eine Fehlersuche-Aufgabe läuft (nur Beschriftungen, nie die Physik)
   const PAR = { h: 60, tMinC: -10, tMaxC: 60, tBeginn: 6, schwelleW: 0.5 };
   // Rueckfallwerte der Wechselrichter-Typentabelle (SPEC 4.10), nur falls ENR_CORE.inv.gridTable nicht lesbar ist
   const GRID_FB = [{ Pn: 800, UdcMax: 60, mppMin: 28, mppMax: 48, start: 22, IdcMax: 25 }, { Pn: 1500, UdcMax: 600, mppMin: 120, mppMax: 500, start: 120, IdcMax: 12.5 }, { Pn: 3000, UdcMax: 600, mppMin: 150, mppMax: 500, start: 150, IdcMax: 12.5 },
@@ -163,7 +164,7 @@
     return { house: { kind: 'wohnhaus', lamps: st.pHaus > 1, pump: false, jet: false }, modules: { spec: ctl.modul, ns: ctl.ns, np: ctl.np, beta: ctl.neigung, gam: ctl.azimut, tc: st.tcell },
       flows: flows, tech: { inv: { on: !!st.wrOn, pDc: st.pDc, pAc: st.pAc, sn: pn, eta: st.eta, led: led, fan: st.pDc > 0.5 * pn, dead: st.wrDead },
         meter: { bezugWh: E.eBezug || 0, einspWh: E.eEinsp || 0, dir: st.pNetz > 0.5 ? 1 : (st.pNetz < -0.5 ? -1 : 0) }, grid: { ok: !!ctl.netz }, speicher: { soc: st.socSp, kWh: ctl.speicher, p: st.pSp } },
-      labels: { status: !ctl.netz ? 'Netzausfall: Mast dunkel, Wechselrichter aus' : (st.gPoa < 1 ? 'Nacht: Das Haus bezieht alles aus dem Netz' : ''), bubble: !ctl.netz ? 'Netz weg – ich schalte ab!' : (st.pCurt > 1 && st.pAc >= 0.98 * pn * ctl.limit / 100 ? 'Zu viel Sonne!' : '') } };
+      labels: { status: !ctl.netz ? (veil('netzausfall') ? 'Wechselrichter aus, 0 W' : 'Netzausfall: Mast dunkel, Wechselrichter aus') : (st.gPoa < 1 ? 'Nacht: Das Haus bezieht alles aus dem Netz' : ''), bubble: !ctl.netz ? (veil('netzausfall') ? '' : 'Netz weg – ich schalte ab!') : (st.pCurt > 1 && st.pAc >= 0.98 * pn * ctl.limit / 100 ? 'Zu viel Sonne!' : '') } };
   }
   function hit(k, c, st, u) {
     const ctl = c.ctl;

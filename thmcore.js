@@ -384,8 +384,8 @@
     const tab = has(MOUNT_TAB, pkg) ? MOUNT_TAB[pkg] : null;
     if (!tab) return NaN;
     const j = joint === undefined || joint === null ? 'direkt' : joint;
-    const p = paste === undefined || paste === null ? 'duenn' : paste;
-    const s = screw === undefined || screw === null ? 'fest' : screw;
+    const p = paste === undefined || paste === null ? 'duenn' : (paste === 'geliefert' ? 'keine' : paste);   // 'geliefert' = Aufbau noch nicht geprueft (Fehlersuche): physikalisch wie 'keine'
+    const s = screw === undefined || screw === null ? 'fest' : (screw === 'geliefert' ? 'locker' : screw);   // ... bzw. wie 'locker'
     if (JOINTS.indexOf(j) < 0 || PASTES.indexOf(p) < 0 || SCREWS.indexOf(s) < 0) return NaN;
     const row = tab[j];
     let v = p === 'keine' ? row.keine : row.duenn;
@@ -829,9 +829,9 @@
       device: dev,
       heatsink: c.heatsink === undefined || c.heatsink === null ? 'none' : c.heatsink,
       joint: c.joint === undefined || c.joint === null ? 'direkt' : c.joint,
-      paste: c.paste === undefined || c.paste === null ? 'duenn' : c.paste,
+      paste: c.paste === undefined || c.paste === null ? 'duenn' : (c.paste === 'geliefert' ? 'keine' : c.paste),
       bushing: c.bushing === undefined ? true : c.bushing !== false,
-      screw: c.screw === undefined || c.screw === null ? 'fest' : c.screw,
+      screw: c.screw === undefined || c.screw === null ? 'fest' : (c.screw === 'geliefert' ? 'locker' : c.screw),
       ksPot: c.ksPot === undefined || c.ksPot === null ? 'masse' : c.ksPot,
       fan: c.fan === undefined || c.fan === null ? 'aus' : c.fan,
       orient: c.orient === undefined || c.orient === null ? 'senkrecht' : c.orient,
@@ -1146,16 +1146,16 @@
     [['pa', 'Ausgangsleistung Pa', 'W', 2.5], ['eta', 'Wirkungsgrad η (0…1)', '', 0.9]],
     function (pa, eta) { pa = num(pa, NaN); eta = num(eta, NaN); return pa >= 0 && eta > 0 && eta <= 1 ? pa * (1 / eta - 1) : NaN; },
     function (pa, eta, v) { return 'P_V = ' + N_(pa) + ' W · (1/' + N_(eta) + ' − 1) = ' + N_(v) + ' W'; });
-  defF('pulse', 'Spitzentemperatur bei Impulsen (Einknotenmodell)', 'Tj', '{sym:Tj} = {sym:Ta} + P_pk · [D · Rth + (1 − D) · (Zth(tp + T) − Zth(T) + Zth(tp))],  Zth(t) = Rth · (1 − e^(−t/τ))', '°C',
+  defF('pulse', 'Spitzentemperatur bei Impulsen (Einknotenmodell)', 'Tj', '{sym:Tj} = {sym:Ta} + P_pk · [D · Rth + (1 − D) · Zth(tp + T) − Zth(T) + Zth(tp)],  Zth(t) = Rth · (1 − e^(−t/τ))', '°C',
     [['ta', 'Umgebungstemperatur', '°C', 25], ['ppk', 'Spitzenleistung P_pk', 'W', 100], ['rth', 'Rth_ges', 'K/W', 1], ['tau', 'Zeitkonstante τ', 's', 60], ['tp', 'Impulsdauer tp', 's', 0.001], ['T', 'Periode T', 's', 0.1]],
     function (ta, ppk, rth, tau, tp, T) {
       ta = num(ta, NaN); ppk = num(ppk, NaN); rth = num(rth, NaN); tau = num(tau, NaN); tp = num(tp, NaN); T = num(T, NaN);
       if (!isFinite(ta) || !(ppk >= 0) || !(rth >= 0) || !(tau > 0) || !(tp > 0) || !(T > 0)) return NaN;
       const D = tp / T, z = function (t) { return rth * (1 - Math.exp(-t / tau)); };
       if (D >= 1) return ta + ppk * rth;
-      return ta + ppk * (D * rth + (1 - D) * (z(tp + T) - z(T) + z(tp)));
+      return ta + ppk * (D * rth + (1 - D) * z(tp + T) - z(T) + z(tp));
     },
-    function (ta, ppk, rth, tau, tp, T, v) { return tpl('{sym:Tj}') + ' = ' + N_(ta) + ' °C + ' + N_(ppk) + ' W · [D · ' + N_(rth) + ' K/W + (1 − D) · (Zth(tp + T) − Zth(T) + Zth(tp))] = ' + N_(v) + ' °C'; });
+    function (ta, ppk, rth, tau, tp, T, v) { return tpl('{sym:Tj}') + ' = ' + N_(ta) + ' °C + ' + N_(ppk) + ' W · [D · ' + N_(rth) + ' K/W + (1 − D) · Zth(tp + T) − Zth(T) + Zth(tp)] = ' + N_(v) + ' °C'; });
   defF('widerstandNenn', 'Widerstandswert mit Reserve (E12 aufgerundet)', null, 'R ≥ Reserve · U² / P_nenn, dann nächster E12-Wert nach oben', 'Ω',
     [['u', 'Spannung U', 'V', 12], ['pn', 'Nennleistung P_nenn', 'W', 5], ['res', 'Reserve (2 = halbe Nennleistung)', '', 2]],
     function (u, pn, res) { u = num(u, NaN); pn = num(pn, NaN); res = num(res, 2); return u > 0 && pn > 0 && res >= 1 ? eSeries('E12', res * u * u / pn, 'up') : NaN; },
@@ -1602,7 +1602,7 @@
     return netResponse(net, tArr.map(function (t) { return num(t, 0); })).map(function (x) { return x.tj; });
   }
   /* pulseTj(cfg, Ppk, tp, T, ta): Spitzentemperatur bei periodischen Impulsen:
-   *   Tj = Ta + Ppk * [ D*Rth_ges + (1 - D) * (Zth(tp + T) - Zth(T) + Zth(tp)) ],  D = tp / T */
+   *   Tj = Ta + Ppk * [ D*Rth_ges + (1 - D) * Zth(tp + T) - Zth(T) + Zth(tp) ],  D = tp / T   (Superposition; der Faktor (1 - D) gehoert nur an Zth(tp + T)) */
   function pulseTj(cfgIn, Ppk, tp, T, ta) {
     const ch = chain(cfgIn);
     if (!ch.ok) return ch;
@@ -1612,12 +1612,12 @@
     const rth = ch.rthTotal, D = t1 / per;
     if (D >= 1) return { ok: true, dauer: true, d: 1, tj: a + pk * rth, tjAvg: a + pk * rth, pAvg: pk, rthTotal: rth, note: fill(TXT.dauerbetrieb, {}), steps: [sym('Tj') + ' = ' + sym('Ta') + ' + P · ' + sym('Rth_ges') + ' = ' + fmt(a + pk * rth) + ' °C (Dauerbetrieb)'] };
     const z = zth(ch.cfg, [t1 + per, per, t1]);
-    const zf = z[0] - z[1] + z[2];
-    const tj = a + pk * (D * rth + (1 - D) * zf);
+    const zf = (1 - D) * z[0] - z[1] + z[2];   // Zth-Anteil der Klammer: (1 - D) * Zth(tp + T) - Zth(T) + Zth(tp)
+    const tj = a + pk * (D * rth + zf);
     return { ok: true, dauer: false, d: D, tj: tj, tjAvg: a + pk * D * rth, pAvg: pk * D, zthTp: z[2], zthT: z[1], zthTpT: z[0], rthTotal: rth, note: '', steps: [
       'D = tp / T = ' + fmt(t1) + ' s / ' + fmt(per) + ' s = ' + fmt(D),
       'Zth(tp) = ' + fmt(z[2]) + ' K/W, Zth(T) = ' + fmt(z[1]) + ' K/W, Zth(tp + T) = ' + fmt(z[0]) + ' K/W',
-      sym('Tj') + ' = ' + sym('Ta') + ' + P_pk · [D · ' + sym('Rth_ges') + ' + (1 − D) · (Zth(tp + T) − Zth(T) + Zth(tp))] = ' + fmt(tj) + ' °C'] };
+      sym('Tj') + ' = ' + sym('Ta') + ' + P_pk · [D · ' + sym('Rth_ges') + ' + (1 − D) · Zth(tp + T) − Zth(T) + Zth(tp)] = ' + fmt(tj) + ' °C'] };
   }
   /* tauApprox(cfg): Naeherung tau ~ Rth_K,eff * (Cth_k + Cth_c + Cth_j) */
   function tauApprox(cfgIn) {
@@ -2184,12 +2184,12 @@
         const rth = chain(cfg).rthTotal, zv = zth(cfg, [tp, per, tp + per]).map(function (x) { return Number(x.toPrecision(4)); });
         given = { ppk: ppk, tp: tp, T: per, ta: ta, device: 'irlz34n', heatsink: hsId, z: zv, rth: rth };
         tables = [{ caption: 'Thermische Impedanz Zth des Aufbaus', head: ['Zeit', 'Zth'], rows: [[fmt(tp) + ' s', fmt(zv[0]) + ' K/W'], [fmt(per) + ' s', fmt(zv[1]) + ' K/W'], [fmt(tp + per) + ' s', fmt(zv[2]) + ' K/W']] }, { caption: 'Dauerbetrieb', head: ['Größe', 'Wert'], rows: [[sym('Rth_ges'), fmt(rth) + ' K/W']] }];
-        q = 'Ein Bauteil am Kühlkörper bekommt Leistungsimpulse von P_pk = ' + num2(ppk) + ' W, Dauer tp = ' + num2(tp) + ' s, Periode T = ' + num2(per) + ' s. Die Umgebungstemperatur beträgt ' + num2(ta) + ' °C. Berechne die Spitzen-Sperrschichttemperatur mit Tj = Ta + P_pk · [D · Rth_ges + (1 − D) · (Zth(tp + T) − Zth(T) + Zth(tp))]. Die Zth-Werte stehen in der Tabelle.';
-        const D = tp / per, v = ta + ppk * (D * rth + (1 - D) * (zv[2] - zv[1] + zv[0]));
+        q = 'Ein Bauteil am Kühlkörper bekommt Leistungsimpulse von P_pk = ' + num2(ppk) + ' W, Dauer tp = ' + num2(tp) + ' s, Periode T = ' + num2(per) + ' s. Die Umgebungstemperatur beträgt ' + num2(ta) + ' °C. Berechne die Spitzen-Sperrschichttemperatur mit Tj = Ta + P_pk · [D · Rth_ges + (1 − D) · Zth(tp + T) − Zth(T) + Zth(tp)]. Die Zth-Werte stehen in der Tabelle.';
+        const D = tp / per, v = ta + ppk * (D * rth + (1 - D) * zv[2] - zv[1] + zv[0]);
         ex(v, '°C', 0.03);
-        steps = ['D = tp / T = ' + fmt(tp) + ' s / ' + fmt(per) + ' s = ' + fmt(D), sym('Tj') + ' = ' + fmt(ta) + ' °C + ' + fmt(ppk) + ' W · [' + fmt(D) + ' · ' + fmt(rth) + ' K/W + ' + fmt(1 - D) + ' · (' + fmt(zv[2]) + ' K/W − ' + fmt(zv[1]) + ' K/W + ' + fmt(zv[0]) + ' K/W)] = ' + fmt(v) + ' °C'];
+        steps = ['D = tp / T = ' + fmt(tp) + ' s / ' + fmt(per) + ' s = ' + fmt(D), sym('Tj') + ' = ' + fmt(ta) + ' °C + ' + fmt(ppk) + ' W · [' + fmt(D) + ' · ' + fmt(rth) + ' K/W + ' + fmt(1 - D) + ' · ' + fmt(zv[2]) + ' K/W − ' + fmt(zv[1]) + ' K/W + ' + fmt(zv[0]) + ' K/W] = ' + fmt(v) + ' °C'];
         addWrong('dauer', ta + ppk * rth, 'Das ist die Temperatur bei Dauerbetrieb mit P_pk. Bei Impulsen liegt die Spitze darunter, weil der Kühlkörper zwischen den Impulsen abkühlt.');
-        addWrong('nur-zth', ta + ppk * zv[0], 'Du hast nur Zth(tp) benutzt. Dazu kommt der Beitrag der vorherigen Impulse: D · Rth_ges und der Zth-Term (1 − D) · (…).');
+        addWrong('nur-zth', ta + ppk * zv[0], 'Du hast nur Zth(tp) benutzt. Dazu kommt der Beitrag der vorherigen Impulse: D · Rth_ges, (1 − D) · Zth(tp + T) und − Zth(T).');
         addWrong('mittel', ta + ppk * D * rth, 'Das ist die Temperatur bei der mittleren Leistung. Die Spitze liegt darüber.');
         lowHint = 'Prüfe: Du brauchst D, Rth_ges und die drei Zth-Werte aus der Tabelle.'; highHint = lowHint;
         break;

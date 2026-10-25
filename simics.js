@@ -246,8 +246,8 @@ function update(e, vp, dt) {
       const pins = [13, 12, 11, 10, 9, 15, 14];
       pins.forEach((pin, i) => {
         let on = val <= 9 ? SEG7[val][i] === '1' : false;
-        if (!lt) on = true;
-        if (!bi && lt) on = false;
+        if (act) { if (!bi) on = false; else if (!lt) on = true; }   // 7447: BI (Low) hat Vorrang vor LT
+        else { if (!lt) on = true; if (!bi && lt) on = false; }   // 4511: LT hat Vorrang
         if (act) O(pin, on ? 0 : null, { rl: 22 });             // aktiv Low, offener Kollektor
         else O(pin, on ? 1 : 0, { rh: 120, rl: 60 });
       });

@@ -196,7 +196,7 @@ function buildCircuit(layout) {
         add({ type: 'THY', a: n(0), b: n(1), on: false, gd, part: p, sub: 'AK' });
         break; }
       case 'TRF': {
-        const m = String(p.v || '230V:12V').replace(',', '.').match(/([0-9.]+)\s*V?\s*[:/]\s*([0-9.]+)/), vp = m ? parseFloat(m[1]) : 230, vs = m ? parseFloat(m[2]) : 12, nr = vp / vs;
+        const m = String(p.v || '230V:12V').replace(',', '.').match(/([0-9.]+)\s*V?\s*[:/]\s*([0-9.]+)/), vp = m ? parseFloat(m[1]) : 230, vs = Math.max(m ? parseFloat(m[2]) : 12, 0.1), nr = vp / vs;
         const L1 = Math.max(vp / 9.4, 0.05), L2 = L1 / (nr * nr), M = 0.99 * Math.sqrt(L1 * L2), r1 = 0.01 * vp * vp, r2 = r1 / (nr * nr);
         add({ type: 'TRF', a: n(0), b: n(1), c: n(2), d: n(3), L1, L2, M, r1, r2, i1p: 0, i2p: 0, i1: 0, i2: 0, part: p });
         break; }

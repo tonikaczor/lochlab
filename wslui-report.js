@@ -178,8 +178,8 @@
   /* ============================================================ Oberfläche */
   let A = null, H = null;
   const st = { entry: null, res: null, armed: 0, open: false, col: null, w: 0 };
-  const CSS = '.rp-err{color:var(--bad-fg);font-size:13px;margin:3px 0 0}.rp-bad input{border-color:var(--danger)}.rp-sec{margin:14px 0 4px;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}' +
-    '.rp-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 10px}.rp-tb{margin:0;display:grid;gap:6px}.rp-tb .rp-r{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:6px}.rp-tb .rp-h{font-size:11px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em}' +
+  const CSS = '.rp-err{color:var(--bad-fg);font-size:13px;margin:3px 0 0}.rp-bad input{border-color:var(--danger)}.rp-sec{margin:14px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}' +
+    '.rp-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 10px}.rp-tb{margin:0;display:grid;gap:6px}.rp-tb .rp-r{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:6px}.rp-tb .rp-h{font-size:12px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em}' +
     '.rp-tb input{padding:10px 8px;min-width:0}.rp-tags{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);margin:2px 0 6px}.rp-hist small{color:var(--mute)}' +
     '.rp-svg{display:block;width:100%;height:auto;border-radius:8px}.rp-bg{fill:var(--well)}.rp-fr{fill:none;stroke:var(--chart-axis);stroke-width:1}.rp-gr{stroke:var(--chart-grid);stroke-width:1}.rp-tx{fill:var(--mute);font-size:12px;font-variant-numeric:tabular-nums}.rp-ti{fill:var(--fg);font-size:12px}' +
     '.rp-pt{fill:var(--accent);stroke:var(--bg);stroke-width:1.5}.rp-gh{fill:none;stroke:var(--mute);stroke-width:2.2;stroke-dasharray:3 3}.rp-leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;margin:6px 0 0}';

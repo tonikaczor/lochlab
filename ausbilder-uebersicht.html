@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="color-scheme" content="light dark">
+<title>Tonfunk Ausbilder-Übersicht</title>
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="ausbilder-uebersicht.css">
+<link rel="stylesheet" href="design.css">
+</head>
+<body>
+<div id="gate" class="card" role="main">
+  <h2>Ausbilder-Übersicht</h2>
+  <p class="mute">Diese Seite ist nur für Ausbilder. Bitte Passwort eingeben.</p>
+  <form id="gateForm" autocomplete="off">
+    <label class="sr" for="pw">Passwort</label>
+    <input id="pw" type="password" placeholder="Passwort" autocomplete="off">
+    <div class="row" style="justify-content:center"><button class="pri" type="submit" id="pwGo">Öffnen</button></div>
+  </form>
+  <p id="pwErr" role="alert"></p>
+</div>
+<div id="app" class="hide">
+<header class="top"><a class="home" href="index.html">← Start</a><h1>Ausbilder-Übersicht</h1><a class="home" href="auswertung.html">Auswertung (Codes)</a><a class="home" href="ausbilder.html">Hinweise für Ausbilder</a></header>
+<main id="main">
+  <p class="printonly"><b>Nur für Ausbilder.</b> Enthält Pseudonyme und Lernstände der Azubis. Nicht weitergeben, nach Gebrauch vernichten.</p>
+  <section class="card noprint" aria-label="Hinweise">
+    <p style="margin:0"><b>Nur für Ausbilder.</b> Die Seite liest die Dateien <code>tonfunk-stand-….json</code>, die Azubis in der App unter „Stand exportieren“ erzeugen. Alles geschieht in diesem Browser: es wird nichts hochgeladen und nichts gespeichert. Die Dateien enthalten nur ein Kürzel (Pseudonym), Ergebnisse, Abzeichen und Prüfungs-Ergebnisse, keine Lösungen und keine Namen. Datenschutz: Ordner mit den Dateien nur für Ausbilder und die beteiligten Azubis freigeben.</p>
+  </section>
+  <div id="ueb"></div>
+</main>
+</div>
+<script src="aufgaben.js"></script>
+<script src="badges.js"></script>
+<script src="ausbilder-uebersicht.js"></script>
+<script>
+(function () {
+  'use strict';
+  var GODH = 'a2fdecf55d194ed8cea8d52d7d0442778e86180b6d81c6c37e56278e55add6c6', $ = function (s) { return document.querySelector(s); };
+  async function sha256(t) { var b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(b)).map(function (x) { return x.toString(16).padStart(2, '0'); }).join(''); }
+  var started = false;
+  function start() {
+    $('#gate').classList.add('hide'); $('#app').classList.remove('hide');
+    if (!started) { started = true; window.UebPage = Ueb.mount($('#ueb'), { AUFGABEN: window.AUFGABEN, LAB_REG: window.LAB_REG, AUFGABEN_LABS: window.AUFGABEN_LABS }); }
+  }
+  var god = false; try { god = sessionStorage.getItem('lm4.god') === GODH; } catch (e) {}
+  async function tryPw(ev) {
+    if (ev) ev.preventDefault();
+    if (!(window.crypto && crypto.subtle)) { $('#pwErr').textContent = 'Bitte die Seite über https öffnen.'; return; }
+    if (await sha256($('#pw').value.trim()) === GODH) { try { sessionStorage.setItem('lm4.god', GODH); } catch (e) {} start(); }
+    else { $('#pwErr').textContent = 'Passwort falsch'; $('#pw').select(); }
+  }
+  $('#gateForm').addEventListener('submit', tryPw);
+  if (god) start(); else $('#pw').focus();
+  window.UebStart = start;
+})();
+</script>
+<script src="design.js"></script>
+<script src="ver.js"></script>
+</body>
+</html>

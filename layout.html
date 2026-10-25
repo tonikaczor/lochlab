@@ -15,7 +15,7 @@
 <title>Tonfunk LochLab</title>
 <style>
 :root{--bg:#e9edf1;--panel:#ffffff;--panel2:#eef1f4;--fg:#1c2329;--mute:#66727e;--accent:#1a7fe0;--danger:#d93636;--line:#d3d9df;--cvbg:#cfd6dd;color-scheme:light}
-:root[data-theme=dark]{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--danger:#ff5c5c;--line:#38424d;--cvbg:#14181c;color-scheme:dark}
+:root[data-theme=dark]{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--accent-bg:#1a6fd4;--danger:#ff5c5c;--line:#38424d;--cvbg:#14181c;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px/1.3 -apple-system,system-ui,"Segoe UI",sans-serif;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left)}
@@ -39,20 +39,20 @@ main{position:relative;flex:1;min-height:0;min-width:0}
 
 #parts{display:none;width:190px;flex:none;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:4px 6px 12px;scrollbar-width:thin}
 @media(min-width:640px){#parts{display:block}}
-#parts .pcat{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600;padding:12px 8px 4px}
+#parts .pcat{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600;padding:12px 8px 4px}
 #parts .pit{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px 9px;border-radius:9px;font-size:14px;line-height:1.2}
-#parts .pit:hover{background:var(--panel2)}#parts .pit.on{background:var(--accent);color:#fff}
+#parts .pit:hover{background:var(--panel2)}#parts .pit.on{background:var(--accent-bg,#1a6fd4);color:#fff}
 .psearch{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:6px;background:var(--panel);padding:6px 4px 4px;margin:0 -2px}.psearch input{flex:1;min-width:0;padding:6px 9px;font-size:14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}#parts [hidden]{display:none!important}.pnone{padding:10px 8px;font-size:13px;color:var(--mute)}
 #parts .pit img.th{width:26px;height:26px;border-radius:6px;object-fit:cover;flex:none}
 #side .ttl{font-weight:600;font-size:15px}
 #side .sub{color:var(--mute);font-size:13px;margin-top:1px}
-#side .sh{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:16px 0 6px}
+#side .sh{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:16px 0 6px}
 .srow{display:flex;align-items:center;justify-content:space-between;gap:6px}
 .sval{flex:1;text-align:center;font-variant-numeric:tabular-nums;font-weight:600}
 .sbtn{min-width:48px;height:46px;padding:0 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:19px;display:inline-flex;align-items:center;justify-content:center}
 .sbtn:active{background:var(--line)}
 .sbtn.wide{width:100%;font-size:14px;margin-bottom:6px}
-.sbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.sbtn.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .sbtn.danger{color:var(--danger)}
 .swg{display:flex;flex-wrap:wrap;gap:8px}
 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
@@ -67,10 +67,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displa
 }
 #ctx .hint{color:var(--mute);font-size:13px;padding:0 4px;white-space:nowrap}
 .chip{flex:none;height:38px;padding:0 13px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .chip.danger{color:var(--danger)}
 .chip.sub{height:34px;font-size:13px;background:transparent;border-style:dashed}
-.chip.sub.on{border-style:solid;background:var(--accent);border-color:var(--accent);color:#fff}
+.chip.sub.on{border-style:solid;background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .sw{flex:none;width:32px;height:32px;border-radius:50%;border:2px solid var(--line)}
 .sw.on{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
 .sep{flex:none;width:1px;height:26px;background:var(--line);margin:0 2px}
@@ -95,7 +95,7 @@ label.f{display:block;margin:0 0 12px}
 label.f span{display:block;font-size:12px;color:var(--mute);margin-bottom:4px}
 input,select{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;-webkit-user-select:text;user-select:text}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 18px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600}
-.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
 .btns .btn{flex:1}
 table{width:100%;border-collapse:collapse;font-size:14px}
@@ -117,13 +117,14 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 .chip .th{width:28px;height:28px;border-radius:7px;object-fit:cover;margin:0 7px 0 -6px;flex:none}
 .phimg{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;margin-top:8px;cursor:pointer}
-.phcap{font-size:11px;color:var(--mute);margin:3px 0 0}
-.shop{margin-top:10px;font-size:11px;color:var(--mute);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.phcap{font-size:12px;color:var(--mute);margin:3px 0 0}
+.shop{margin-top:10px;font-size:12px;color:var(--mute);display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .shop a{color:var(--accent);text-decoration:none;padding:3px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px}
 .hint3{margin-top:12px;font-size:12px;line-height:1.4;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-.hint3 b{color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+.hint3 b{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 .pre{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}.pre button{padding:5px 11px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
 </style>
+<link rel="stylesheet" href="design.css">
 </head>
 <body>
 <!--GATE-->
@@ -2127,5 +2128,6 @@ window.LochVerbund = (function () {
 <script src="hdr.js"></script>
 <script src="verbundbar.js" defer></script>
 <script src="urheber.js"></script>
+<script src="design.js"></script>
 </body>
 </html>

@@ -1,0 +1,56 @@
+/* home.css (v23.145): neu geordnete Startseite (SPEC-STARTSEITE-FABLE.md): Suche, Primär-Band mit "Weitermachen", Themenbereiche, Fußzeile.
+   Wird in index.html nach design.css eingebunden. Karten, Vorschaubilder und Animationen stehen unverändert im <style> von index.html. */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+/* ---- Suche (im Kopf rechts; unter 900 px darunter in voller Breite) ---- */
+header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
+.srch[hidden],.srch .res[hidden],.srch .clr[hidden]{display:none}
+.srch input{width:100%;min-height:44px;padding:0 44px 0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-size:16px}
+.srch input::placeholder{color:var(--mute);opacity:1}
+.srch input::-webkit-search-cancel-button,.srch input::-webkit-search-decoration{-webkit-appearance:none;appearance:none;display:none}
+.srch .clr{position:absolute;right:0;top:0;width:44px;height:44px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--fg);font:400 26px/1 system-ui,sans-serif;cursor:pointer}
+.srch .res{position:absolute;z-index:50;right:0;top:48px;width:min(560px,92vw);max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.55)}
+.srch .res a{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:44px;padding:6px 12px;color:var(--fg);text-decoration:none}
+.srch .res a:hover,.srch .res a[aria-selected=true]{background:var(--panel2)}
+.srch .res a[aria-selected=true]{outline:2px solid var(--focus,#ffd166);outline-offset:-2px}
+.srch .res .ty{flex:none;min-width:62px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.srch .res .nm{flex:1 1 160px;font-weight:600}
+.srch .res .sb{flex:1 0 100%;padding-left:72px;color:var(--mute);font-size:12px}
+.srch .res .ghd{padding:8px 12px 2px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+.srch .res .cnt,.srch .res .none{margin:0;padding:10px 12px;color:var(--mute);font-size:13px}
+@media(max-width:899px){header{flex-wrap:wrap}header>div:not(.srch){flex:1 1 200px;min-width:0}header .srch{flex:1 1 100%;max-width:none;margin-left:0;order:3}.srch .res{width:100%}}
+
+/* ---- Primär-Band: Weitermachen (3fr) und Lernpfad-Kopfzeile (2fr); der aufgeklappte Lernpfad nimmt die volle Breite ---- */
+.top{display:grid;grid-template-columns:3fr 2fr;gap:12px;align-items:stretch;margin:0 0 20px}
+.top>.lp{display:contents}
+.top .lp .body{grid-column:1/-1;margin-top:2px}
+.top .lp .hd{align-self:stretch}
+.cont{display:flex;align-items:center;gap:14px;min-width:0;min-height:72px;padding:12px 16px;border-radius:14px;background:var(--accent-bg,#1a6fd4);color:#fff;text-decoration:none;font-weight:600}
+.cont:hover{filter:brightness(1.08)}
+.cont .ic{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.25);font-size:16px}
+.cont .tx{min-width:0}
+.cont b{display:block;font-size:19px}
+.cont small{display:block;font-weight:400;font-size:14px;color:#fff;overflow-wrap:anywhere}
+@media(max-width:639px){.top{grid-template-columns:1fr}.cont{min-height:56px;padding:8px 14px}}
+.lp .lk a{display:inline-flex;align-items:center;min-height:44px}
+.lp #lpClose{height:44px!important}
+
+/* ---- Themenbereiche ---- */
+.grp{margin:0 0 22px}
+.grp.grp-empty{display:none}
+.grp>details>summary{display:flex;align-items:center;gap:10px;min-height:44px;margin:0 0 8px;padding:0 0 0 4px;list-style:none;cursor:pointer}
+.grp>details>summary::-webkit-details-marker{display:none}
+.grp h2{flex:1;display:flex;align-items:baseline;gap:10px;margin:0;font-size:19px}
+.grp h2 small{font-weight:400;font-size:13px;color:var(--mute)}
+.grp .chev{flex:none;display:grid;place-items:center;width:44px;height:44px;color:var(--mute)}
+.grp .chev::before{content:"";width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}
+.grp details:not([open]) .chev::before{transform:rotate(-45deg)}
+.card.srch-out{display:none}
+.cards+.vbrow{margin-top:14px}
+@media(max-width:639px){.grp>details>summary{position:sticky;top:0;z-index:3;padding:6px 0 6px 4px;background:var(--bg);border-bottom:1px solid var(--line)}}
+@media(prefers-reduced-motion:reduce){.grp .chev::before{transition:none}}
+
+/* ---- Fußzeile: Knopfzeile, Links mit 44-px-Zielen ---- */
+.foot.standrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px}
+.foot.standrow>span{flex:1 0 100%}
+.foot:not(.standrow) a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px}

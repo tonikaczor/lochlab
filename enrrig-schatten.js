@@ -24,7 +24,7 @@
     { key: 'np', label: 'Stränge parallel (np)', type: 'slider', scale: 'lin', min: 1, max: 2, step: 1, int: true, unit: '', value: 1, group: GRP.mod, help: 'Zahl der Stränge nebeneinander. Parallel haben alle Stränge dieselbe Spannung. Ein verschatteter Strang kann Strom aus dem anderen zurückbekommen.' },
     { key: 'orient', label: 'Aufstellung', type: 'select', value: 'hochkant', group: GRP.mod, options: [{ value: 'hochkant', label: 'hochkant' }, { value: 'quer', label: 'quer' }],
       help: 'Hochkant liegen die Teilstränge als senkrechte Streifen nebeneinander, quer als waagerechte Bänder übereinander. Ein Schatten von unten trifft hochkant alle Teilstränge, quer nur einen.' },
-    { key: 'bypass', label: 'Bypassdioden', type: 'select', value: 'ok', group: GRP.mod, options: [{ value: 'ok', label: 'in Ordnung' }, { value: 'fehlt', label: 'fehlen' }, { value: 'kurz', label: 'eine durchlegiert (Kurzschluss)' }],
+    { key: 'bypass', label: 'Bypassdioden', type: 'select', value: 'ok', group: GRP.mod, options: [{ value: 'ok', label: 'in Ordnung' }, { value: 'fehlt', label: 'fehlen' }, { value: 'kurz', label: 'eine durchlegiert (Kurzschluss)' }, { value: 'geliefert', label: 'wie geliefert (nicht geprüft)' }],
       help: 'In Ordnung: Die Diode übernimmt den Strom, wenn ihr Teilstrang verschattet ist. Fehlt sie, wird die verschattete Zelle zum Verbraucher. Durchlegiert: Ein Teilstrang des ersten Moduls liefert gar nichts mehr.' },
     { key: 'schatten', label: 'Schatten', type: 'select', value: 'keiner', group: GRP.sch, options: [{ value: 'keiner', label: 'kein Schatten' }, { value: 'kante', label: 'Kante von unten (Hecke, Schnee)' }, { value: 'seite', label: 'Kante von der Seite' }, { value: 'blatt', label: 'ein Blatt (eine Zelle)' }, { value: 'laub', label: 'Laub (verstreute Zellen)' }, { value: 'mast', label: 'Mast (eine Zellspalte)' }, { value: 'diagonal', label: 'Diagonal (Ecke)' }, { value: 'hecke', label: 'Hecke vor dem Modul (Sonnenstand)' }],
       help: 'Die Art des Schattens. Bei der Hecke bestimmen Sonnenhöhe, Höhe und Abstand der Hecke den Schatten, die Einstrahlung folgt dem klaren Himmel. Tippe im Bild auf eine Zelle, um ein Blatt zu setzen.' },
@@ -101,7 +101,7 @@
         if (!hk || !isFinite(hk.frac)) hk = { frac: 0, sShade: 0, alphaEff: 0, shaded: false };
       }
       const dark = !(G0 >= 1), Tc = ctl.tc, ss = shadeSpec(spec, G0, hk);
-      const cfg = { spec: spec.id || ctl.preset, ns: ctl.ns, np: ctl.np, cond: { G: dark ? 0 : G0, Tc, fd }, bypass: ctl.bypass === 'kurz' ? Array.from({ length: Math.max(1, ctl.ns * ctl.np * (spec.subs || 3)) }, (_, q) => (q === 0 ? 'kurz' : 'ok')) : ctl.bypass };
+      const cfg = { spec: spec.id || ctl.preset, ns: ctl.ns, np: ctl.np, cond: { G: dark ? 0 : G0, Tc, fd }, bypass: ctl.bypass === 'geliefert' ? 'fehlt' : ctl.bypass === 'kurz' ? Array.from({ length: Math.max(1, ctl.ns * ctl.np * (spec.subs || 3)) }, (_, q) => (q === 0 ? 'kurz' : 'ok')) : ctl.bypass };
       if (ss.kind !== 'keiner') cfg.shade = ss; const shapeKey = JSON.stringify(cfg);
       let sh = null; if (ss.kind !== 'keiner') { sh = C.pv.shade.make(spec, ctl.orient, ss.kind, Object.assign({ dunkel: ss.dunkel, seed: ss.seed }, ss.p)); }
       const nAff = ss.kind === 'keiner' ? 0 : (ctl.betroffen === 'alle' ? ctl.ns * ctl.np : ctl.betroffen === 'strang1' ? ctl.ns : 1);
@@ -274,7 +274,7 @@
         // Bypassdioden-Symbole je Teilstrang (unter dem Modul)
         for (let k = 0; k < spec.subs; k++) {
           const sd = (dt.subs || []).find(z => z.mod === (j === 0 ? i : i) && z.sub === k), on = j === 0 ? !!(sd && sd.bypassOn) : (ctl.betroffen === 'alle' && !!(sd && sd.bypassOn));
-          const kind = ctl.bypass === 'ok' ? 'ok' : ctl.bypass === 'fehlt' ? 'fehlt' : (i === 0 && j === 0 && k === 0 ? 'kurz' : 'ok'), dx = diodeX(q, k, spec.subs), dy = q.y + q.h + 15;
+          const kind = ctl.bypass === 'ok' || ctl.bypass === 'geliefert' ? 'ok' : ctl.bypass === 'fehlt' ? 'fehlt' : (i === 0 && j === 0 && k === 0 ? 'kurz' : 'ok'), dx = diodeX(q, k, spec.subs), dy = q.y + q.h + 15;
           G.diode(ctx, dx, dy, 7 * (g.wide ? 1 : 1.2), { on: on && kind === 'ok', kind });
           if (on && kind === 'ok') { G.arrow(ctx, dx - 16, dy, dx + 16, dy, COL.gold, 2, 7); }
         }

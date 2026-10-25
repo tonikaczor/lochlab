@@ -87,7 +87,7 @@
     const check = mk('regler', OWN, (c, r, a) => {
       const v = vals(), eff = U.effOf(c, 'regler', OWN, FIX), s = U.snap('regler', eff, T18, { sampleS: 120 }), st = s.st;
       inputRow(c, r, s, a, 'regler');
-      r(eff.ctrl !== 'direkt', 'Das Modul hängt nicht mehr direkt am Akku', 'Das Modul liegt noch ohne Laderegler am Akku. Stelle einen Reglertyp ein, der die Ladespannung begrenzt.');
+      r(eff.ctrl !== 'direkt' && eff.ctrl !== 'geliefert', 'Das Modul hängt nicht mehr direkt am Akku', 'Das Modul liegt noch ohne Laderegler am Akku. Stelle einen Reglertyp ein, der die Ladespannung begrenzt.');
       r(fin(st.gasAh) && st.gasAh <= v.thr, 'Der Akku gast nicht mehr (höchstens ' + f(v.thr, 2) + ' Ah in ' + f(v.stunden, 0) + ' h)',
         'Der Akku sammelt ' + vk(st.gasAh, 2) + ' Ah Gasung bei bis zu ' + vk(st.uBat, 1) + ' V. Ohne Fehler sind es ' + vk(v.gasOk, 2) + ' Ah, mit dem Fehler ' + vk(v.gasBad, 1) + ' Ah.');
     });
@@ -98,7 +98,7 @@
         'Mit dem Fehler entstehen ' + f(v.gasBad, 1) + ' Ah Gasung bei bis zu ' + f(v.uBad, 1) + ' V; mit einem Regler bleibt die Gasung bei ' + f(v.gasOk, 2) + ' Ah.',
         'Musterlösung: Reglertyp PWM oder MPPT statt „direkt“. Die Prüfung lässt bis ' + f(v.thr, 2) + ' Ah Gasung zu.'
       ]; },
-      start: () => A('regler', Object.assign({}, FIX), {}),
+      start: () => A('regler', Object.assign({}, FIX, { ctrl: 'geliefert' }), {}),   // 'geliefert' verhält sich wie 'direkt', zeigt den Aufbau aber nicht an (Verdeckte-Fehler-Muster)
       sol: () => A('regler', Object.assign({}, FIX, { ctrl: 'pwm' }), {}),
       wrong: () => [{ name: 'Fehler nicht behoben', answer: A('regler', Object.assign({}, FIX, { ctrl: 'direkt' }), {}) }, { name: 'Regler mit zu hoher Ladeschlussspannung', answer: A('regler', Object.assign({}, FIX, { ctrl: 'pwm', uAbs: 16.4 }), {}) }] };
   })();
@@ -378,8 +378,8 @@
       r(s.ok && fin(s.st.pAc) && s.st.pAc > 0, 'Die Anlage speist wieder ein', 'Die Wechselstromleistung beträgt ' + vk(s.st.pAc, 0) + ' W, obwohl das Feld ' + vk(s.st.pDc, 0) + ' W liefern könnte.');
       r(!none && g === reason(), 'Der Grund ist richtig benannt', none ? 'Wähle eine Antwort aus.' : 'Die Meldungen des Prüfstands (Diagnose) nennen im Ausgangszustand „' + (OPT.find(o => o.value === reason()) || {}).label + '“; deine Auswahl „' + ((OPT.find(o => o.value === g) || {}).label || g) + '“ passt dazu nicht.');
     });
-    return { vals, check,
-      text: () => 'Es ist ' + f(FIX.uhr, 0) + ' Uhr mittags (Sonnenzeit), die Sonne scheint, aber die Anlage speist nichts ein: Die Wechselstromleistung im Prüfstand „Netzeinspeisung“ ist null. Finde den Grund (Meldungsliste), benenne ihn und behebe ihn, sodass die Anlage wieder einspeist.',
+    return { vals, check, maskDiag: ['netzausfall'],
+      text: () => 'Es ist ' + f(FIX.uhr, 0) + ' Uhr mittags (Sonnenzeit), die Sonne scheint, aber die Anlage speist nichts ein: Die Wechselstromleistung im Prüfstand „Netzeinspeisung“ ist null. Finde den Grund (Messwerte und Anzeigen), benenne ihn und behebe ihn, sodass die Anlage wieder einspeist.',
       choices: () => [{ key: 'grund', q: 'Warum speist die Anlage nicht ein?', options: OPT }],
       hint: () => { const v = vals(); return [
         'Schau in die Meldungsliste und auf die Anzeigen: Das Feld liefert Gleichstromleistung, aber am Ausgang des Wechselrichters kommt nichts an. Was muss vorhanden sein, damit ein Netzwechselrichter einspeisen darf?',
@@ -455,7 +455,7 @@
   T.register([
     def('en16', 'Akku', 'C-Rate, Ladezeit und Autonomie rechnen', 1, 'regler', M16),
     def('en17', 'Laderegler', 'Ladeschlussspannung für Blei einstellen', 2, 'regler', M17),
-    def('en18', 'Fehlersuche', 'Der Akku gast: Regler fehlt', 2, 'regler', M18),
+    def('en18', 'Fehlersuche', 'Der Akku gast bei starker Sonne', 2, 'regler', M18),
     def('en19', 'Laderegler', 'Tiefentladeschutz in der Nacht einstellen', 2, 'regler', M19),
     def('en20', 'Fehlersuche', 'Das Kabel wird warm: Querschnitt wählen', 2, 'regler', M20),
     def('en21', 'Auslegung', 'Energie des Moduls an einem Sommertag', 2, 'insel', M21),

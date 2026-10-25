@@ -331,6 +331,7 @@
     if (M.fields) lazy('fields', () => M.fields());
     if (M.choices) lazy('choices', () => M.choices());
     if (M.ask) o.ask = M.ask;
+    if (M.maskDiag) o.maskDiag = M.maskDiag;   /* Fehlersuche: Diagnose-Kennungen, die bis zum Ende der Aufgabe nicht erscheinen (Verdeckte-Fehler-Muster) */
     if (M.consts) o.consts = M.consts;
     o.hintVals = () => M.vals(); o.start = () => M.start(); o.sol = () => M.sol(); o.wrong = () => M.wrong(); o.check = M.check;
     return o;

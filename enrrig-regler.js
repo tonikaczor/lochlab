@@ -76,7 +76,7 @@
     { key: 'modul', label: 'Solarmodul', type: 'select', value: 'si36', options: [{ value: 'si36', label: '36 Zellen (12-V-Modul)' }, { value: 'si60', label: '60 Zellen' }], group: G_ANL, help: 'Übungsmodul. Das 36-Zellen-Modul passt zur 12-V-Anlage, das 60-Zellen-Modul hat eine viel höhere Spannung.' },
     { key: 'ns', label: 'Module in Reihe', type: 'slider', scale: 'lin', min: 1, max: 2, step: 1, unit: '', value: 1, group: G_ANL, help: 'Module in Reihe: Die Spannungen addieren sich, der Strom bleibt gleich.' },
     { key: 'np', label: 'Stränge parallel', type: 'slider', scale: 'lin', min: 1, max: 3, step: 1, unit: '', value: 1, group: G_ANL, help: 'Stränge parallel: Die Ströme addieren sich, die Spannung bleibt gleich.' },
-    { key: 'ctrl', label: 'Reglertyp', type: 'select', value: 'pwm', options: [{ value: 'pwm', label: 'PWM' }, { value: 'mppt', label: 'MPPT' }, { value: 'direkt', label: 'direkt (ohne Regler)' }], group: G_REG, help: 'PWM schaltet das Modul auf die Akkuspannung. MPPT wandelt die Spannung und holt die volle Leistung heraus. Direkt ist der Fehlerfall: Das Modul hängt ohne Regler am Akku.' },
+    { key: 'ctrl', label: 'Reglertyp', type: 'select', value: 'pwm', options: [{ value: 'pwm', label: 'PWM' }, { value: 'mppt', label: 'MPPT' }, { value: 'direkt', label: 'direkt (ohne Regler)' }, { value: 'geliefert', label: 'wie geliefert (nicht geprüft)' }], group: G_REG, help: 'PWM schaltet das Modul auf die Akkuspannung. MPPT wandelt die Spannung und holt die volle Leistung heraus. Direkt: Das Modul hängt ohne Regler am Akku. Wie geliefert: Der Anschluss ist nicht geprüft; erst die Messwerte zeigen, was der Aufbau tut.' },
     { key: 'imax', label: 'Maximaler Ladestrom', type: 'select', value: 20, options: opts([[10, '10 A'], [20, '20 A'], [30, '30 A'], [40, '40 A']]), group: G_REG, help: 'Ausgangsstrom des Reglers. Mehr Strom wird abgeregelt: Das Feld arbeitet dann neben dem Punkt maximaler Leistung.' },
     { key: 'uocMax', label: 'Eingangsspannung maximal', type: 'select', value: 100, options: opts([[50, '50 V'], [100, '100 V'], [150, '150 V']]), group: G_REG, visible: s => s.ctrl === 'mppt', help: 'Höchste Leerlaufspannung des Feldes, die der MPPT-Regler verträgt. Bei Kälte steigt die Leerlaufspannung: Wird sie überschritten, ist der Regler zerstört.' },
     { key: 'tempComp', label: 'Temperaturkompensation', type: 'switch', value: true, group: G_REG, visible: s => s.chem === 'blei', help: 'Verschiebt Ladeschluss- und Erhaltungsspannung bei Blei mit der Akkutemperatur. Lithium wird nicht kompensiert.' },
@@ -140,7 +140,7 @@
     'regler-strom': v => 'Der Regler begrenzt den Strom auf ' + fn(v.imax, 0) + ' A. Das Feld könnte ' + fm(v.pot, 0) + ' W liefern, es werden nur ' + fm(v.used, 0) + ' W genutzt.',
     'regler-tot': v => 'Der Regler ist zerstört: Die Leerlaufspannung (' + fm(v.uoc, 1) + ' V) war höher als sein Eingang (' + fm(v.limit, 0) + ' V).',
     ladeschluss: v => 'Ladephase: ' + STAGE_TXT[v.stage] + ' (Spannung ' + fm(v.uBat, 2) + ' V, Strom ' + fm(v.iBat, 1) + ' A).',
-    ueberladung: v => 'Der Akku gast (Spannung ' + fm(v.uBat, 2) + ' V): Wasser geht verloren, bei Blei entsteht Knallgas. Hier fehlt die Laderegelung.',
+    ueberladung: v => 'Der Akku gast (Spannung ' + fm(v.uBat, 2) + ' V): Wasser geht verloren, bei Blei entsteht Knallgas. Die Ladespannung liegt über der Gasungsgrenze.',
     'bms-aus': () => 'Das Batteriemanagement hat abgeschaltet: Spannung oder Temperatur außerhalb des erlaubten Bereichs.',
     tiefentladung: v => 'Tiefentladung: Der Akku nimmt dauerhaft Schaden (Ladezustand ' + fm(v.soc * 100, 0) + ' %).',
     'lvd-aus': v => 'Tiefentladeschutz: Last getrennt bei ' + fm(v.uBat, 2) + ' V.',
@@ -263,7 +263,7 @@
       return {
         typ: 'insel', ort: cvals.ort, N: cl.N, tS: cl.tS, tage: 1, neigung: params.neigung, azimut: params.azimut, wetter: wx,
         feld: { spec: cvals.modul, ns: cvals.ns, np: cvals.np },
-        regler: { typ: cvals.ctrl, Imax: cvals.imax, Uocmax: cvals.uocMax, tempComp: !!cvals.tempComp, lvd: !!cvals.lvd, Uabs: ctlNow('uAbs'), Ufloat: ctlNow('uFloat'), lvdU: ctlNow('lvdU'), lLeitung: cvals.lPv, qLeitung: cvals.aPv },
+        regler: { typ: cvals.ctrl === 'geliefert' ? 'direkt' : cvals.ctrl, Imax: cvals.imax, Uocmax: cvals.uocMax, tempComp: !!cvals.tempComp, lvd: !!cvals.lvd, Uabs: ctlNow('uAbs'), Ufloat: ctlNow('uFloat'), lvdU: ctlNow('lvdU'), lLeitung: cvals.lPv, qLeitung: cvals.aPv },
         leitung: { pv: { l: cvals.lPv, q: cvals.aPv }, bat: { l: cvals.lBat, q: cvals.aBat }, kappa: KAPPA },
         akku: { chem: cvals.chem, Usys: cvals.usys, C: cvals.cap, soc0: soc0 === undefined ? cvals.soc0 / 100 : soc0, T: cvals.tbat },
         wr: { modell: 'kein' }, last: { profil: 'frei', faktor: 1, pFrei: cvals.load }, netz: { ok: true },
@@ -447,7 +447,7 @@
     function analysis() {
       ensureSim(); const s = last || readSim(), cab = cableInfo(s), kk = fieldKeys(s.gPoa, s.tcell);
       const ok = s.pMpp > 1;
-      return { ok: !!s.sim, why: s.sim ? '' : (simErr || 'Der Rechenkern fehlt.'), ctrl: cvals.ctrl, stage: s.stage, stageText: STAGE_TXT[s.stage], pPv: s.pPv, pMpp: s.pMpp, uPv: s.uPv, uMpp: s.uMpp, anteil: ok ? s.pPv / s.pMpp : null, verlustW: ok ? Math.max(0, s.pMpp - s.pPv) : 0, uoc: s.uoc, feld: kk, kabel: { pv: { dU: cab.dUpv, pct: cab.pctPv * 100, pVerlust: cab.pPvLoss, r: cab.rPv }, akku: { dU: cab.dUbat, pct: cab.pctBat * 100, pVerlust: cab.pBatLoss, r: cab.rBat } }, soc: s.soc, uBat: s.uBat, gasAh: s.gasAh, damage: s.damage, faults: (s.faults || []).slice() };
+      return { ok: !!s.sim, why: s.sim ? '' : (simErr || 'Der Rechenkern fehlt.'), ctrl: cvals.ctrl === 'geliefert' ? 'direkt' : cvals.ctrl, stage: s.stage, stageText: STAGE_TXT[s.stage], pPv: s.pPv, pMpp: s.pMpp, uPv: s.uPv, uMpp: s.uMpp, anteil: ok ? s.pPv / s.pMpp : null, verlustW: ok ? Math.max(0, s.pMpp - s.pPv) : 0, uoc: s.uoc, feld: kk, kabel: { pv: { dU: cab.dUpv, pct: cab.pctPv * 100, pVerlust: cab.pPvLoss, r: cab.rPv }, akku: { dU: cab.dUbat, pct: cab.pctBat * 100, pVerlust: cab.pBatLoss, r: cab.rBat } }, soc: s.soc, uBat: s.uBat, gasAh: s.gasAh, damage: s.damage, faults: (s.faults || []).slice() };
     }
 
     // ---- Kennlinien
@@ -597,7 +597,7 @@
         const rg = L.reg, ba = L.bat, la = L.lamp, fs = F(12);
         // Regler
         ctx.fillStyle = COL.panel2; rr(ctx, rg.x, rg.y, rg.w, rg.h, 12); ctx.fill(); ctx.strokeStyle = st.dead ? COL.bad : COL.line; ctx.lineWidth = 2.5; ctx.stroke();
-        drawText(ctx, 'Laderegler ' + (cvals.ctrl === 'pwm' ? 'PWM' : cvals.ctrl === 'mppt' ? 'MPPT' : '(fehlt: direkt)'), rg.x + 12, rg.y + 22, { size: F(15), bold: true });
+        drawText(ctx, 'Laderegler ' + (cvals.ctrl === 'pwm' ? 'PWM' : cvals.ctrl === 'mppt' ? 'MPPT' : cvals.ctrl === 'geliefert' ? '' : '(fehlt: direkt)'), rg.x + 12, rg.y + 22, { size: F(15), bold: true });
         ctx.fillStyle = '#0b1218'; rr(ctx, rg.x + 12, rg.y + 34, rg.w - 24, 72, 6); ctx.fill();
         drawText(ctx, st.dead ? 'DEFEKT' : 'Ub ' + fm(st.uBat, 2) + ' V   Ipv ' + fm(st.iPv, 1) + ' A', rg.x + 20, rg.y + 56, { size: F(13), bold: true, color: st.dead ? COL.bad : '#7ee787' });
         drawText(ctx, 'Phase: ' + STAGE_TXT[st.stage] + (st.lvdOff ? ' | Last getrennt' : ''), rg.x + 20, rg.y + 76, { size: F(12), color: '#cfe8ff' });
@@ -615,7 +615,7 @@
           ctx.strokeStyle = COL.gold; ctx.lineWidth = 2; ctx.beginPath(); const pm = Math.max(st.uoc, 1); for (let i = 0; i <= 24; i++) { const u = i / 24, p = u * (1 - Math.pow(u, 6)) * 1.35; const px = sx + 8 + (sw - 16) * u, py = sy + sh - (sh - 6) * clamp(p, 0, 1); if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py); } ctx.stroke(); void pm;
           const um = st.uoc > 0 ? clamp(st.uMpp / st.uoc, 0, 1) : 0.8, pu = um, pp2 = pu * (1 - Math.pow(pu, 6)) * 1.35; ctx.fillStyle = COL.ok; ctx.beginPath(); ctx.arc(sx + 8 + (sw - 16) * pu, sy + sh - (sh - 6) * clamp(pp2, 0, 1) + (rd ? 0 : Math.sin(tms / 300) * 1.5), 5, 0, 6.2832); ctx.fill();
           drawText(ctx, 'Wandler: Punkt maximaler Leistung', sx + 6, sy + sh + 22, { size: F(11), color: COL.mute });
-        } else drawText(ctx, 'ohne Regler: Modul direkt am Akku', sx + 8, sy + 28, { size: F(12), color: COL.warn });
+        } else drawText(ctx, cvals.ctrl === 'geliefert' ? 'Anschluss wie geliefert: Messwerte beobachten' : 'ohne Regler: Modul direkt am Akku', sx + 8, sy + 28, { size: F(12), color: cvals.ctrl === 'geliefert' ? COL.mute : COL.warn });
         // Akku
         ctx.fillStyle = COL.panel2; rr(ctx, ba.x, ba.y, ba.w, ba.h, 10); ctx.fill(); const warnB = st.lvdOff || st.soc < 0.1 || st.bms, blink = warnB && !rd && Math.floor(tms / 400) % 2 === 0; ctx.strokeStyle = blink ? COL.bad : COL.line; ctx.lineWidth = 2.5; ctx.stroke();
         drawText(ctx, 'Akku ' + cvals.usys + ' V ' + (cvals.chem === 'blei' ? 'Blei' : 'Li-Ion') + ', ' + cvals.cap + ' Ah', ba.x + ba.w / 2, ba.y + 20, { size: F(12), bold: true, align: 'center' });

@@ -34,8 +34,8 @@
   const ORT_DEFAULT = { esdk: 'io', esdl: 'io', burst: 'io', surge: 'netzln' };
   const PRUEF_NAME = { esdk: 'ESD Kontakt', esdl: 'ESD Luft', burst: 'Burst', surge: 'Surge' };
   const ORT_NAME = { io: 'Stecker-Pin', gehaeuse: 'Gehäuse', netzln: 'Netz L–N', netzlpe: 'Netz L–PE' };
-  const LG = { g360: 5e-9, g50: 50e-9, lose: 500e-9 };      // Masseverbindung Gehäuse (SPEC 4.8)
-  const MASSE_NAME = { g360: '360°-Verbindung (5 nH)', g50: 'Leitung (50 nH)', lose: 'lose (500 nH)' };
+  const LG = { g360: 5e-9, g50: 50e-9, lose: 500e-9, geliefert: 500e-9 };      // Masseverbindung Gehäuse (SPEC 4.8)
+  const MASSE_NAME = { g360: '360°-Verbindung (5 nH)', g50: 'Leitung (50 nH)', lose: 'lose (500 nH)', geliefert: 'wie geliefert (nicht geprüft)' };
   const KRIT = ['A', 'B', 'C', 'Ausfall'];
   const TVS_IDS = ['tvs3', 'tvs5', 'tvs12', 'tvs24'], VAR_IDS = ['v230', 'v275', 'v320'];
   const levelOf = (pr, kv) => { const l = LEVEL[pr] || LEVEL.esdk; let best = l[0]; l.forEach(v => { if (Math.abs(v - kv) < Math.abs(best - kv)) best = v; }); return best; };
@@ -73,7 +73,7 @@
     { key: 'kv', label: 'Prüfpegel', type: 'select', value: 4, options: [0.5, 1, 2, 4, 6, 8, 15].map(v => ({ value: v, label: kvLabel(v) })), optionsOf: s => (LEVEL[(s && s.pruef) || 'esdk'] || LEVEL.esdk).map(v => ({ value: v, label: kvLabel(v) })), unit: 'kV', group: 'Prüfgenerator', lever: 'quelle', help: TX.help.kv },
     { key: 'frep', label: 'Burst-Wiederholrate', type: 'select', value: 5000, options: [{ value: 5000, label: '5 kHz' }, { value: 100000, label: '100 kHz' }], unit: 'Hz', group: 'Prüfgenerator', lever: 'quelle', visible: s => !!s && s.pruef === 'burst', help: TX.help.frep },
     { key: 'ort', label: 'Einkoppelort', type: 'select', value: 'io', options: [{ value: 'io', label: 'Stecker-Pin' }, { value: 'gehaeuse', label: 'Gehäuse' }, { value: 'netzln', label: 'Netz L–N' }, { value: 'netzlpe', label: 'Netz L–PE' }], optionsOf: s => (ORTS[(s && s.pruef) || 'esdk'] || ORTS.esdk).map(o => ({ value: o, label: ORT_NAME[o] })), group: 'Weg zum Gerät', lever: 'pfad', help: TX.help.ort },
-    { key: 'masse', label: 'Gehäuseanbindung', type: 'select', value: 'g50', options: [{ value: 'g360', label: MASSE_NAME.g360 }, { value: 'g50', label: MASSE_NAME.g50 }, { value: 'lose', label: MASSE_NAME.lose }], group: 'Weg zum Gerät', lever: 'pfad', help: TX.help.masse },
+    { key: 'masse', label: 'Gehäuseanbindung', type: 'select', value: 'g50', options: [{ value: 'g360', label: MASSE_NAME.g360 }, { value: 'g50', label: MASSE_NAME.g50 }, { value: 'lose', label: MASSE_NAME.lose }, { value: 'geliefert', label: MASSE_NAME.geliefert }], group: 'Weg zum Gerät', lever: 'pfad', help: TX.help.masse },
     { key: 'schutz', label: 'Schutz', type: 'select', value: 'kein', options: [{ value: 'kein', label: 'kein Schutz' }, { value: 'rc', label: 'RC-Glied (Reihenwiderstand und Puffer-C)' }, { value: 'tvs', label: 'TVS-Diode' }, { value: 'tvsrs', label: 'TVS mit Reihenwiderstand' }, { value: 'varistor', label: 'Varistor am Netzeingang' }], group: 'Schutz', lever: 'senke', help: TX.help.schutz },
     { key: 'tvs', label: 'TVS-Typ', type: 'select', value: 'tvs5', options: TVS_IDS.map(v => ({ value: v, label: v.replace('tvs', 'TVS ') + ' V' })), group: 'Schutz', lever: 'senke', visible: s => !!s && (s.schutz === 'tvs' || s.schutz === 'tvsrs'), help: TX.help.tvs },
     { key: 'rs', label: 'Reihenwiderstand Rs', type: 'slider', scale: 'log', unitKind: 'res', min: 1, max: 1000, step: 1, unit: 'Ω', value: 100, group: 'Schutz', lever: 'senke', visible: s => !!s && (s.schutz === 'rc' || s.schutz === 'tvsrs'), help: TX.help.rs },

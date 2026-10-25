@@ -482,7 +482,7 @@
       r(k === 'A', 'Das Gerät besteht ' + fm(v.kv, 0) + ' kV mit Kriterium A', 'Der Prüfstand bewertet nach der Entladung: ' + KRIT[k] + '.');
     });
     return { FIX, START, MUSTER, WL, vals, check, run, choices,
-      text() { const v = vals(); return 'Reklamation: „Das Gerät fällt nach einer Entladung am Gehäuse aus.“ Im Prüfstand „Impulse“ ist der Fall nachgestellt (ESD Kontakt, ' + fm(v.kv, 0) + ' kV, Einkoppelort Gehäuse, Gehäuse lose angebunden, ' + NS + '). Die Bewertung ist ' + KRIT[v.kStart] + ', der Reset-Pegel fällt ' + fm(v.nR, 0) + ' ns unter die Schwelle. Wähle die Ursache und behebe sie, sodass das Gerät bei ' + fm(v.kv, 0) + ' kV Kriterium A erreicht. Prüfart, Pegel und Einkoppelort bleiben unverändert.'; },
+      text() { const v = vals(); return 'Reklamation: „Das Gerät fällt nach einer Entladung am Gehäuse aus.“ Im Prüfstand „Impulse“ ist der Fall nachgestellt (ESD Kontakt, ' + fm(v.kv, 0) + ' kV, Einkoppelort Gehäuse, ' + NS + '). Die Bewertung ist ' + KRIT[v.kStart] + ', der Reset-Pegel fällt ' + fm(v.nR, 0) + ' ns unter die Schwelle. Wähle die Ursache und behebe sie, sodass das Gerät bei ' + fm(v.kv, 0) + ' kV Kriterium A erreicht. Prüfart, Pegel und Einkoppelort bleiben unverändert.'; },
       hint() { const v = vals(); return [
         'Bei einer Entladung auf das Gehäuse fließt der Strom über die Verbindung des Gehäuses zur Masse der Platine. Jede Induktivität dieser Verbindung erzeugt bei dem schnellen Stromanstieg einen Spannungssprung L·di/dt, der die Masse der Platine gegenüber dem Reset-Eingang anhebt.',
         'Gehäuse lose (' + fm(v.lgL, 0) + ' nH): ' + KRIT[v.kStart] + '. Anbindung als Leitung (' + fm(v.lg50, 0) + ' nH): ' + KRIT[v.k50] + '. Schutz am Pin (TVS mit Reihenwiderstand): ' + KRIT[v.kTvs] + ' – er ändert nichts, weil der Strom nicht über den Pin fließt.',
@@ -686,7 +686,7 @@
       check: M30.check, hintVals: () => M30.vals() }, M30),
     L({ id: 'em31', lab: 'emv', cat: 'Fehlersuche', title: 'Reklamation: Das Gerät fällt nach einer Entladung am Gehäuse aus', level: 3, rig: 'esd',
       get choices() { return M31.choices(); },
-      start: () => S('esd', withCtl(M31.FIX, M31.START), { fired: false, choices: {} }),
+      start: () => S('esd', withCtl(M31.FIX, Object.assign({}, M31.START, { masse: 'geliefert' })), { fired: false, choices: {} }),   // 'geliefert' verhält sich wie 'lose', nennt den Fehler aber nicht (Verdeckte-Fehler-Muster)
       sol: () => S('esd', withCtl(M31.FIX, M31.MUSTER), { fired: true, choices: { ursache: M31.vals().cause } }),
       check: M31.check, hintVals: () => M31.vals() }, M31),
     L({ id: 'em32', lab: 'emv', cat: 'Prüfungsstil', title: 'Meisterstück: Das Steckernetzteil entstören', level: 3, rig: 'vorpruef',

@@ -93,7 +93,7 @@
   const P = t => `<p>${t}</p>`, LI = a => '<ul>' + a.map(x => `<li>${x}</li>`).join('') + '</ul>';
   const TB = (head, rows) => `<table class="rs"><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${rows.map(r => `<tr>${r.map((c, i) => `<td data-l="${esc(head[i] || '')}">${c}</td>`).join('')}</tr>`).join('')}</table>`;
   /* Auf dem Handy werden Tabellen zu Karten (Zeile = Karte, Spaltenkopf vor dem Inhalt), damit nichts seitlich abgeschnitten wird */
-  const CSS = '@media(max-width:600px){.hl table.rs,.hl table.rs tbody{display:block;overflow:visible}.hl table.rs tr:first-child{display:none}.hl table.rs tr{display:block;padding:6px 0;border-top:1px solid var(--line)}.hl table.rs td{display:block;border:0;padding:2px 4px}.hl table.rs td::before{content:attr(data-l) ": ";color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.hl table.rs td:first-child::before{content:""}}';
+  const CSS = '@media(max-width:600px){.hl table.rs,.hl table.rs tbody{display:block;overflow:visible}.hl table.rs tr:first-child{display:none}.hl table.rs tr{display:block;padding:6px 0;border-top:1px solid var(--line)}.hl table.rs td{display:block;border:0;padding:2px 4px}.hl table.rs td::before{content:attr(data-l) ": ";color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em}.hl table.rs td:first-child::before{content:""}}';
   const tryBtn = i => `<div class="tryit"><button class="btn pri" data-try="${i}">▶ Probier es aus</button></div>`;
   const LEVER_FALLBACK = { quelle: 'Quelle entschärfen', pfad: 'Kopplung verringern', senke: 'Senke härten', none: 'Anzeige und Vorgaben' };
   const levName = (api, k) => (api && api.LEVERS && api.LEVERS[k] && api.LEVERS[k].name) || LEVER_FALLBACK[k];

@@ -17,10 +17,10 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 22.143</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Anleitung für Azubis</h1><small>Stand: Oktober 2026 · Version 23.145</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen.html">Lernen (Arduino, Raspberry Pi)</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 
-<div class="box"><b>Tonfunk Lab</b> sind zweiundzwanzig Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
+<div class="box"><b>Tonfunk Lab</b> sind dreiundzwanzig Programme zum Lernen und Üben, die im Browser laufen (auf Handy, iPad und Laptop):
 <ul><li><b>LochLab:</b> Schaltungen auf der Lochrasterplatine planen und ausprobieren.</li>
 <li><b>SchaltLab:</b> Stromlaufpläne zeichnen und simulieren (Spannungen, Ströme, Graphen).</li>
 <li><b>SimLab:</b> Experimente und Hausinstallation (Wechselschaltung, Schütz, FI, Drehstrom, mit Schutzleiter PE), mit Aufgaben und Fehlersuche.</li>
@@ -203,6 +203,14 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li><b>Sicherheit des Labs:</b> Es gibt keine Anleitung zu Versuchen an Netzspannung und keine Mess- oder Aufbauanleitung für Netzspannung. Die Gefahr der Gleichspannung an der Primärwicklung eines Netztransformators steht nur als Begründung in einer Aufgabe. Das Lab ersetzt keine Unterweisung.</li>
 <li><b>Aufgaben:</b> 32 Aufgaben mit automatischer Prüfung, Tipps in drei Stufen, Musterlösung zum Ansehen, viele im Stil der Abschlussprüfung.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-wsl.html">Wechselstrom-Lab: Wechselstrom und Schwingkreise</a> mit Arbeitsblatt. Zur Prüfungsvorbereitung gehört das Thema Wechselstrom und Filter im Prüfungs-Lab (Link im Lernpfad und im Menü des Labs).</p>
+<h2>5m. Analogtechnik-Lab: Halbleiter und Verstärker</h2>
+<ul><li><b>Acht Bereiche</b> oben: <span class="k">Prüfstand</span> (Bild, Leiste Kennlinie – Signal – Formel, Bedienpult, Messgeräte, Ampel), <span class="k">Verläufe</span> (Zeitbilder mit Raster und Cursor zum Ablesen), <span class="k">Kennlinien</span> (Kennlinie mit Arbeitspunkt, Ausgangskennlinienfeld, Übertragungskennlinie, Hysterese, Frequenzgang; mit Fadenkreuz, Tabelle und CSV-Export), <span class="k">Messreihe</span> (Werte aufnehmen, Bericht gegen die Rechnung kontrollieren), <span class="k">Auslegen</span> (Assistent in vier Schritten für Vorwiderstand, Transistorschalter, Arbeitspunkt, Verstärker, Schmitt-Trigger oder Filter), <span class="k">Rechnen</span> (Rechenweg zu allen Formeln, dazu Übungen), <span class="k">Aufgaben</span> und <span class="k">Lernen</span>.</li>
+<li><b>Acht Prüfstände:</b> Diode, LED und Z-Diode; Transistor als Schalter; Emitterschaltung; Kollektorschaltung und Grundschaltungen; invertierender Verstärker und Summierer; nichtinvertierender Verstärker; Komparator und Schmitt-Trigger; Integrierer, aktive Filter und realer Operationsverstärker. Alle Schaltungen sind <b>Übungsschaltungen mit Übungswerten</b> (Kleinspannung, nur Simulation); belegt sind nur die Werte, die im Lab mit Haken gekennzeichnet sind.</li>
+<li><b>Kennlinie, Signal, Formel:</b> Dieselbe Schaltung wird als Kennlinie mit Arbeitspunkt, als Signal über der Zeit und als Formel gezeigt. Die Ampel zeigt Farbe, Symbol, Text und Marge; <b>Grün heißt nur</b>, dass die Übungswerte eingehalten sind.</li>
+<li><b>Vier aufklappbare Vertiefungen</b> (freiwillig, Taste <span class="k">B</span> für das Bode-Diagramm): Bode-Diagramm und Verstärkungs-Bandbreite-Produkt, Slew-Rate, Offset und Sättigung. Wer sie nicht öffnet, verpasst nichts für die Aufgaben der Abschlussprüfung.</li>
+<li><b>Fehlersuche und Fehler-Würfel:</b> Bei den Fehlersuche-Aufgaben und im Fehler-Würfel ist der Fehler <b>verdeckt</b> („Fehler: ?“). Du misst, liest die Ampel und wählst die Ursache aus einer Liste; erst danach zeigt das Lab die Auflösung mit der gemessenen Zahl.</li>
+<li><b>Aufgaben:</b> 32 Aufgaben mit automatischer Prüfung, Tipps in drei Stufen, Musterlösung zum Ansehen, viele im Stil der Abschlussprüfung.</li></ul>
+<p class="mute">Weiter im Lernheft <a href="lernen-ana.html">Analogtechnik-Lab: Halbleiter und Verstärker</a> mit Arbeitsblatt. Zur Prüfungsvorbereitung gehört das Thema Bauelemente im Prüfungs-Lab (Link im Lernpfad und im Menü des Labs).</p>
 <h2>6. Wenn etwas nicht klappt</h2>
 <table><tr><th>Problem</th><th>Lösung</th></tr>
 <tr><td>Seite zeigt alte Version oder neue Beispiele fehlen</td><td>App schließen und neu öffnen, notfalls Seite neu laden.</td></tr>
@@ -210,6 +218,8 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <tr><td>Meldung „Keine Spannungsquelle“</td><td>Quelle (Batterie, Netz, Arduino) und Masse im Plan vorhanden und verdrahtet?</td></tr>
 <tr><td>Bauteil verbindet nicht</td><td>Drahtenden müssen genau auf den Anschlüssen liegen. Anschluss antippen, Draht bis zum Zielpunkt ziehen.</td></tr>
 <tr><td>Programm macht nichts</td><td>Hast du <code>pinMode</code> gesetzt? Hast du ▶ Start gedrückt und „Sim“ eingeschaltet?</td></tr></table>
+<h2>7. Deinen Stand an den Ausbilder geben (ab v23.145)</h2>
+<p>Auf der Startseite tippst du auf <span class="k">Stand exportieren</span>, trägst ein Kürzel ein (kein Klarname nötig) und speicherst oder teilst die kleine Datei; sie enthält nur Kürzel, Ergebnisse, Abzeichen und Prüfungs-Ergebnisse, keine Lösungen und keine Passwörter.</p>
 
 </div><script src="urheber.js"></script>
 </body></html>
