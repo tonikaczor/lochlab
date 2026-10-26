@@ -54,7 +54,7 @@
     const m = /^(\d+(?:[.,]\d+)?)\s*([kKMmuµn]?)/.exec(s);
     return m ? parseFloat(m[1].replace(',', '.')) * ({ k: 1e3, K: 1e3, M: 1e6, m: 1e-3, u: 1e-6, 'µ': 1e-6, n: 1e-9 }[m[2]] || 1) : NaN;
   }
-  const E12 = [1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2];
+  const E12 = (root.ENORM || (function () { try { return typeof require === 'function' ? require('./enorm.js') : null; } catch (e) { return null; } })() || {}).E12;   // eine Quelle: enorm.js
   function isE(v, series) {                   // Wert in E12/E24?
     const d = DS(); if (!d || !fin(v) || v <= 0) return false;
     const n = d.eSeries(series || 'E12', v, 'nearest');

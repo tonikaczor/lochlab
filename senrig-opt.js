@@ -189,7 +189,7 @@
   const SCENE = { gabel: { x0: 152, k: 3.6 }, reflex: { x0: 120, k: 1.2 }, ultraschall: { x0: 120, k: 1.2 }, induktiv: { x0: 150, k: 13.75 }, kapazitiv: { x0: 150, k: 8.25 } };
 
   const CONTROLS = [
-    { key: 'sensor', label: 'Sensor', type: 'select', value: 'ldr', group: 'Sensor', options: Object.keys(SENS).map(k => ({ value: k, label: SENS[k].label })), help: 'Optische Sensoren (LDR, Fotodiode, Fototransistor, Gabel- und Reflexlichtschranke) und Näherungsschalter (induktiv, kapazitiv, Ultraschall). Beim Umschalten wird der Abstand auf einen passenden Wert gesetzt.' },
+    { key: 'sensor', label: 'Sensor', type: 'select', value: 'ldr', group: 'Sensor', options: Object.keys(SENS).map(k => ({ value: k, label: SENS[k].label })), help: 'Optische Sensoren (LDR, Fotodiode, Fototransistor, Gabellichtschranke und Reflexionslichttaster) und Näherungsschalter (induktiv, kapazitiv, Ultraschall). Beim Umschalten wird der Abstand auf einen passenden Wert gesetzt.' },
     { key: 'lux', label: 'Beleuchtungsstärke', type: 'slider', min: 0.1, max: 100000, step: 0.1, unit: 'lx', value: 500, scale: 'log', group: 'Licht', help: 'Licht der Lampe auf LDR, Fotodiode und Fototransistor. Büro etwa 500 lx, Sonne bis 100 000 lx.' },
     { key: 'dist', label: 'Abstand des Objekts', type: 'slider', min: 0, max: 300, step: 0.5, unit: 'mm', value: 20, curve: 3, group: 'Objekt', help: 'Abstand des Zielobjekts zur Sensorfläche. Du kannst das Objekt auch im Bild ziehen. Gabel: Strahl bei 30 mm.' },
     { key: 'material', label: 'Material des Objekts', type: 'select', value: 'stahl', group: 'Objekt', options: MATS.map(m => ({ value: m, label: MATLAB[m] })), help: 'Beim induktiven Sensor ändert das Material den Schaltabstand (Reduktionsfaktor): Stahl 1, Alu etwa 0,4, Kupfer etwa 0,3. Kunststoff und Wasser erkennt er nicht.' },
@@ -215,8 +215,8 @@
     { id: 'foto-saett', name: 'Fototransistor in der Sättigung', params: { sensor: 'fototransistor', lux: 20000, rLoad: 10000, thresh: 2.5, hyst: 0.2 } },
     { id: 'gabel', name: 'Gabellichtschranke mit Objekt', params: { sensor: 'gabel', dist: 30, thresh: 2.5, hyst: 0.2, ambient: 0 } },
     { id: 'gabel-fremd', name: 'Gabellichtschranke mit Fremdlicht', params: { sensor: 'gabel', dist: 30, thresh: 2.5, hyst: 0.2, ambient: 3000 } },
-    { id: 'reflex-hell', name: 'Reflexlichtschranke, helles Objekt', params: { sensor: 'reflex', dist: 120, target: 'hell', thresh: 2.5, hyst: 0.2, ambient: 0 } },
-    { id: 'reflex-dunkel', name: 'Reflexlichtschranke, dunkles Objekt', params: { sensor: 'reflex', dist: 40, target: 'dunkel', thresh: 2.5, hyst: 0.2, ambient: 0 } },
+    { id: 'reflex-hell', name: 'Reflexionslichttaster, helles Objekt', params: { sensor: 'reflex', dist: 120, target: 'hell', thresh: 2.5, hyst: 0.2, ambient: 0 } },
+    { id: 'reflex-dunkel', name: 'Reflexionslichttaster, dunkles Objekt', params: { sensor: 'reflex', dist: 40, target: 'dunkel', thresh: 2.5, hyst: 0.2, ambient: 0 } },
     { id: 'ind-stahl', name: 'Induktiv: Stahl bei 5 mm', params: { sensor: 'induktiv', material: 'stahl', dist: 5 } },
     { id: 'ind-alu', name: 'Induktiv: Alu bei 5 mm (zu weit)', params: { sensor: 'induktiv', material: 'alu', dist: 5 } },
     { id: 'kap-wasser', name: 'Kapazitiv: Wasser bei 8 mm', params: { sensor: 'kapazitiv', material: 'wasser', dist: 8 } },
@@ -728,7 +728,7 @@
 
   R.register({
     id: 'licht', name: 'Licht und Näherung', icon: '💡',
-    info: 'Optische Sensoren (LDR, Fotodiode, Fototransistor, Gabel- und Reflexlichtschranke) und Näherungsschalter (induktiv, kapazitiv, Ultraschall). Erkunde Schaltabstand, Reduktionsfaktor, Hysterese, Flattern und Fremdlicht und ziehe das Objekt im Bild.',
+    info: 'Optische Sensoren (LDR, Fotodiode, Fototransistor, Gabellichtschranke und Reflexionslichttaster) und Näherungsschalter (induktiv, kapazitiv, Ultraschall). Erkunde Schaltabstand, Reduktionsfaktor, Hysterese, Flattern und Fremdlicht und ziehe das Objekt im Bild.',
     controls: CONTROLS, meters: METERS, presets: PRESETS, create
   });
   if (typeof module !== 'undefined') module.exports = R;

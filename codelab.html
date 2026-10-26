@@ -11,38 +11,9 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Tonfunk Arduino-Lab</title>
+<link rel="stylesheet" href="lab.css">
 <style>
-:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--accent-bg:#1a6fd4;--danger:#ff5c5c;--line:#38424d;color-scheme:dark}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px/1.3 -apple-system,system-ui,"Segoe UI",sans-serif;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left)}
-header{display:flex;align-items:center;gap:4px;padding:calc(4px + env(safe-area-inset-top)) 8px 4px;background:var(--panel);border-bottom:1px solid var(--line);min-height:52px}
-header img{height:34px;margin-left:2px}
-header .title{flex:1;min-width:0;padding:0 8px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-header .title small{display:block;font-weight:400;color:var(--mute);font-size:12px}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
-.ib{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none;font-size:20px}
-.ib:active,.chip:active{background:var(--panel2)}
-.ib[disabled]{opacity:.3}
-svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.hb{height:38px;padding:0 12px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;margin:0 2px;flex:none}
-.hb:active{background:var(--panel)}
 @media(max-width:1100px){.hb span{display:none}.hb{padding:0 10px}}
-.run{height:38px;padding:0 16px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-weight:600;flex:none}
-.run.on{background:#1a7f37;border-color:#1a7f37;color:#fff}
-#mid{display:flex;flex:1;min-height:0}
-main{position:relative;flex:1;min-width:0;min-height:0}
-canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
-#side{width:310px;flex:none;background:var(--panel);border-left:1px solid var(--line);padding:12px;overflow-y:auto;-webkit-user-select:text;user-select:text}
-@media(max-width:719px){#mid{flex-direction:column}#side{width:auto;max-height:42%;border-left:0;border-top:1px solid var(--line)}main{min-height:200px}}
-#parts{display:none;width:178px;flex:none;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:4px 6px 12px;scrollbar-width:thin}
-.pit.ctl{display:flex;justify-content:space-between;align-items:center;gap:6px}.pit.ctl em{font-style:normal;font-size:12px;opacity:.75}
-.ctl-sl{display:block;padding:6px 10px;font-size:13px}.ctl-sl span{display:flex;justify-content:space-between;color:var(--mute);margin-bottom:2px}.ctl-sl em{font-style:normal;color:var(--fg);font-weight:600}
-.pre{display:flex;flex-wrap:wrap;gap:5px;margin:-4px 0 12px}.pre button{padding:3px 9px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:12px}
-.tl{list-style:none;margin:10px 0 0;padding:0;font-size:13px}.tl li{padding:4px 0 4px 2px}.tl li.ok{color:#4cd964}.tl li.bad{color:#ff8a7a}.score{margin-top:8px;font-weight:700;color:#ffb340}.score.ok{color:#4cd964}
-.lcd{font:600 30px/1.15 ui-monospace,Menlo,Consolas,monospace;background:#c9d99d;color:#1d2a0c;border-radius:8px;padding:6px 10px;text-align:right;border:2px solid #7b8a58}
-.mmsub{margin-top:6px;font-size:12px;color:var(--mute);min-height:30px}
-.wc{display:flex;flex-wrap:wrap;gap:6px}
 
 main{display:flex;flex-direction:column}
 #cvWrap{position:relative;flex:1;min-height:110px}
@@ -66,102 +37,12 @@ main{display:flex;flex-direction:column}
 @media(max-width:600px){#dock{height:52%;min-height:200px}#dockBar{gap:4px;padding:4px 6px}.btn2{height:30px;padding:0 9px;font-size:12px}#codeStatus{flex-basis:100%;max-width:100%;margin:0;text-align:left}#codeTa,#codeGut{font-size:13px!important}}
 @media(max-width:719px){#side{order:-1;flex:none;max-height:34%;border-top:0;border-bottom:1px solid var(--line)}#side.quiet{display:none}#mid>main{min-height:0;overflow:hidden}}
 
-.pcat{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600;padding:12px 8px 4px}
-.pit{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:9px;font-size:14px;line-height:1.2}
-.pit:hover{background:var(--panel2)}.pit.on{background:var(--accent-bg,#1a6fd4);color:#fff}
-#pal{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);min-height:54px;scrollbar-width:thin}
-.chip{flex:none;height:38px;padding:0 13px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;white-space:nowrap}
-.chip.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
-.chip.danger{color:var(--danger)}
-.sep{flex:none;width:1px;height:26px;background:var(--line);margin:0 2px}
-.card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px}
-.card h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
-.card.warn{border-color:#c97a1a}.card.warn ul{margin:0;padding-left:18px;font-size:13px}
-.kv{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:3px 0;gap:8px}.kv>span:first-child{color:var(--mute)}
-.row2{display:flex;gap:8px;align-items:center;margin-bottom:6px}.row2 .btn{flex:1}
-.sval{min-width:44px;text-align:center;font-weight:600}
-.btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-weight:600}
-.btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}.btn.danger{color:var(--danger)}
-.mini{height:28px;padding:0 8px;border-radius:8px;background:var(--panel);border:1px solid var(--line);font-size:12px;margin-left:3px}.mini.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
-.sl{display:block;margin:8px 0;font-size:13px}.sl span{color:var(--mute);display:flex;justify-content:space-between;margin-bottom:2px}.sl em{font-style:normal;font-weight:600;color:var(--fg)}
-input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;-webkit-user-select:text;user-select:text}
-input[type=range]{padding:0;height:34px;border:0;background:none}
-label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
-.hint2{color:var(--mute);font-size:13px;margin:6px 0 0}
-#toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;padding:9px 16px;border-radius:99px;z-index:300;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
-#toast.show{opacity:1}
-.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:150;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--panel);width:100%;max-width:560px;max-height:88dvh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
-@media(min-width:700px){.backdrop{align-items:center}.sheet{border-radius:16px}}
-.sh-h{display:flex;align-items:center;justify-content:space-between;padding:10px 8px 6px 16px;border-bottom:1px solid var(--line);font-size:16px}
-.sh-h button{width:40px;height:40px;font-size:18px;color:var(--mute)}
-.sh-b{overflow:auto;padding:10px 14px 16px;-webkit-user-select:text;user-select:text}
-.row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:13px 6px;border-bottom:1px solid var(--line)}.row:last-child{border:0}
-.row small{display:block;color:var(--mute)}.row .grow{flex:1;min-width:0}
-.btns{display:flex;gap:10px;margin-top:8px}.btns .btn{flex:1}
-.help p{margin:.5em 0}.help b{color:var(--accent)}
-#gate{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
-#gate form{width:100%;max-width:340px;text-align:center}
-#gate img{width:96px;height:auto;margin-bottom:10px}
-#gate h1{margin:0 0 4px;font-size:22px}
-#gate p{margin:0 0 18px;color:var(--mute)}
-#gate input{text-align:center;margin-bottom:12px}
-#gate .btn{width:100%}
-#gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
-.simsw{display:flex;align-items:center;gap:6px;height:36px;padding:0 8px;margin:0 4px;border-radius:18px;background:#2c343e;border:1px solid #38424d;color:#8d99a6;font-size:12px;flex:none}
-.simsw .trk{position:relative;width:38px;height:22px;border-radius:11px;background:#4a5561;transition:background .15s}
-.simsw .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
-.simsw[aria-checked=true] .trk{background:#2fae45}.simsw[aria-checked=true] .knob{left:18px}
-.simsw .lL,.simsw .lS{color:#8d99a6}
-.simsw[aria-checked=false] .lL,.simsw[aria-checked=true] .lS{color:#fff;font-weight:600}
-@media(max-width:560px){.simsw .lL,.simsw .lS{display:none}}
-#printArea{display:none}
-#printArea .proto{font:14px/1.4 Arial,sans-serif;color:#000;background:#fff}#printArea .proto h1{font-size:24px;margin:0 0 10px}#printArea .proto table{border-collapse:collapse;width:100%;margin:8px 0}#printArea .proto td,#printArea .proto th{border:1px solid #444;padding:6px 8px;text-align:left}#printArea .proto .pm td{height:30px}#printArea .proto .ln{border-bottom:1px solid #444;height:28px}#printArea .proto .ps td{height:70px;vertical-align:bottom;width:50%}
-@media print{#app,.backdrop,#toast,#gate{display:none!important}#printArea{display:block}#printArea img{width:100%;max-height:270mm;object-fit:contain}body{background:#fff}}
-.gh{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);padding:14px 6px 4px;font-weight:600}
-/* Kopfzeile besser lesbar (iPad): kräftigere Schrift, Schatten, deutlichere Trennlinie */
-header{box-shadow:0 3px 10px rgba(0,0,0,.35);position:relative;z-index:5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;border-bottom-color:var(--mute)}
-header .title{font-size:16px;font-weight:700}header .title small{color:var(--fg);opacity:.78;font-weight:500;font-size:12.5px}
-.hb{font-weight:700;border-color:var(--mute)}
 </style>
 <link rel="stylesheet" href="design.css">
 </head>
 <body>
 <!--GATE-->
-<div id="gate"><form id="gateForm" autocomplete="on">
-  <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
-  <h1>Tonfunk Arduino-Lab</h1>
-  <p id="gateHint">Bitte anmelden</p>
-  <input id="gateName" type="text" placeholder="Vor- und Nachname" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" aria-label="Name">
-  <input id="gatePw" type="password" placeholder="Passwort" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Passwort">
-  <button class="btn pri" type="submit">Öffnen</button>
-  <div id="gateErr" role="alert"></div>
-</form></div>
-<script>
-(function(){
-  var H='a969a208b4df4a7c43c54c888590813046cf4c30f07efa9bb162c4aff6aabfba';
-  var g=document.getElementById('gate');
-  var pwOk=false,name='';
-  try{pwOk=localStorage.getItem('lm4.gate')===H;name=localStorage.getItem('lm4.name')||'';}catch(e){}
-  if(pwOk&&name){g.remove();return;}
-  var f=document.getElementById('gateForm'),er=document.getElementById('gateErr'),pw=document.getElementById('gatePw'),nm=document.getElementById('gateName');
-  nm.value=name;
-  if(pwOk){pw.style.display='none';document.getElementById('gateHint').textContent='Bitte Namen eintragen';}
-  async function sha(t){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
-  f.addEventListener('submit',async function(ev){
-    ev.preventDefault();
-    var n=nm.value.trim().replace(/\s+/g,' ');
-    if(n.length<3||n.indexOf(' ')<0){er.textContent='Bitte Vor- und Nachnamen eintragen.';nm.focus();return;}
-    if(!pwOk){
-      if(!(window.crypto&&crypto.subtle)){er.textContent='Bitte die Seite über https öffnen.';return;}
-      if(await sha(pw.value.trim())!==H){er.textContent='Passwort falsch.';pw.select();return;}
-      try{localStorage.setItem('lm4.gate',H);}catch(_){}
-    }
-    try{localStorage.setItem('lm4.name',n);}catch(_){}
-    g.remove();
-  });
-})();
-</script>
+<script src="gate.js" data-title="Tonfunk Arduino-Lab"></script>
 <!--/GATE-->
 <div id="app">
   <header>

@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v23.146', items: [
+      ['Fachliche Korrekturen in Antrieb, SPS, Sensorik, Datenblatt, Leiterplatten und Haus', 'Texte, Hinweise und Rechenwerte in Heft und Lab sind fachlich nachgeschärft. Bei vielen Fehlersuche-Aufgaben steht in der Aufgabe jetzt nur noch das Symptom; die Ursache findest du selbst und liest sie erst im Hinweis nach. Außerdem: eine genauere Siemens-Anweisungsliste im SPS-Heft, eine klare Abgrenzung von Reflexionslichttaster und Reflexionslichtschranke, genauere Grenzwerte beim Motorstrom und neue Randbedingungen bei Datenblatt und Kabelquerschnitt.', 'Lernhefte und Labs Antrieb, SPS, Sensorik, Datenblatt, Leiterplatten, Haus'],
+      ['Aufgeräumt und schneller geladen', 'Gemeinsame Teile der Labs und Hefte liegen jetzt nur noch einmal vor (Zugang, Heft-Stil, Heft-Navigation, Normreihen, Grundstil der Labs). Dadurch ist der Download beim ersten Öffnen rund 460 KB kleiner. Aussehen und Bedienung bleiben gleich.', 'Alle Labs und Lernhefte'],
+      ['Mehr Hefte in der Heft-Navigation', 'Die Navigationszeile in den Lernheften verlinkt jetzt auch das Analogtechnik-Heft und das Heft zur Praxisprüfung W-2024.', 'Lernhefte ▸ Navigationszeile']
+    ] },
     { v: 'v23.145', items: [
       ['Stand exportieren', 'Auf der Startseite gibt es den Knopf „Stand exportieren“. Du gibst ein Kürzel ein (kein Klarname nötig) und bekommst eine kleine Datei mit deinen Aufgaben-Ergebnissen, Abzeichen und Prüfungs-Ergebnissen. Du kannst sie speichern oder teilen und deinem Ausbilder geben. Es stehen keine Lösungen, keine Passwörter und kein Name darin. Du kannst dir den Inhalt vorher ansehen.', 'Startseite ▸ Stand exportieren'],
       ['Ausbilder-Übersicht', 'Für Ausbilder: Eine neue Seite legt die Dateien aller Azubis zusammen und zeigt Fortschritt je Lab, Abzeichen, Prüfungs-Ergebnisse und letzte Aktivität. Die Seite ist mit dem Ausbilder-Passwort geschützt, alles bleibt im Browser, nichts wird hochgeladen.', 'Startseite ▸ Ausbilder-Übersicht (Passwort)'],

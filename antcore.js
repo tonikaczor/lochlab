@@ -202,7 +202,7 @@
     phasenausfall: 'Phasenausfall: Der Motor läuft nur an zwei Phasen.',
     zahnbruch: 'Zahnbruch: Das Grenzmoment des Getriebes wurde überschritten.',
     ueberdrehzahl: 'Überdrehzahl: Die Eingangsdrehzahl ist zu hoch für das Getriebe.',
-    trockenlauf: 'Das Getriebe läuft ohne Schmierung: Reibung und Temperatur steigen.'
+    trockenlauf: 'Reibung und Temperatur im Getriebe steigen, der Wirkungsgrad sinkt.'
   };
 
   /* =====================================================================================================

@@ -339,7 +339,9 @@
     ORDER.forEach(id => { if (!(root.THM_RIGS && root.THM_RIGS.defs && root.THM_RIGS.defs[id])) want.push(RIGFILE[id]); });
     if (!want.length) { setRig(S.rigId); toast('Alles geladen'); return Promise.resolve(); }
     toast('Lade fehlende Dateien …');
-    return Promise.all(want.map(f => new Promise(res => { const s = document.createElement('script'); s.src = f + '?t=' + Date.now(); s.onload = s.onerror = () => res(); document.head.appendChild(s); }))).then(() => {
+    const ld = f => new Promise(res => { const s = document.createElement('script'); s.src = f + '?t=' + Date.now(); s.onload = s.onerror = () => res(); document.head.appendChild(s); });
+    const needBase = want.some(f => f === RIGFILE.mosfet || f === RIGFILE.bauteil) && !(root.THM_RIGS && root.THM_RIGS.bbase);   /* mosfet und bauteil brauchen thmrig-b-base.js zuerst */
+    return (needBase ? ld('thmrig-b-base.js') : Promise.resolve()).then(() => Promise.all(want.map(ld))).then(() => {
       const still = ORDER.filter(i => !defOf(i)).length;
       const keep = S.rig ? allCtl() : ((lsGet('thm.cur', {}) || {}).ctl || {}); setRig(S.rigId); applyCtl(keep); buildPick();
       if (S.tab === 'tasks') renderTasks(); toast(still ? still + ' Prüfstand' + (still > 1 ? 'e fehlen' : ' fehlt') + ' noch' : 'Alle Prüfstände geladen');

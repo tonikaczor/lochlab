@@ -274,40 +274,7 @@ table.sq{width:100%;border-collapse:collapse;font-size:13.5px}
 </head>
 <body>
 <!--GATE-->
-<div id="gate"><form id="gateForm" autocomplete="on">
-  <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
-  <h1>Tonfunk Sensorik-Lab</h1>
-  <p id="gateHint">Bitte anmelden</p>
-  <input id="gateName" type="text" placeholder="Vor- und Nachname" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" aria-label="Name">
-  <input id="gatePw" type="password" placeholder="Passwort" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Passwort">
-  <button class="btn pri" type="submit">Öffnen</button>
-  <div id="gateErr" role="alert"></div>
-</form></div>
-<script>
-(function(){
-  var H='a969a208b4df4a7c43c54c888590813046cf4c30f07efa9bb162c4aff6aabfba';
-  var g=document.getElementById('gate');
-  var pwOk=false,name='';
-  try{pwOk=localStorage.getItem('lm4.gate')===H;name=localStorage.getItem('lm4.name')||'';}catch(e){}
-  if(pwOk&&name){g.remove();return;}
-  var f=document.getElementById('gateForm'),er=document.getElementById('gateErr'),pw=document.getElementById('gatePw'),nm=document.getElementById('gateName');
-  nm.value=name;
-  if(pwOk){pw.style.display='none';document.getElementById('gateHint').textContent='Bitte Namen eintragen';}
-  async function sha(t){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
-  f.addEventListener('submit',async function(ev){
-    ev.preventDefault();
-    var n=nm.value.trim().replace(/\s+/g,' ');
-    if(n.length<3||n.indexOf(' ')<0){er.textContent='Bitte Vor- und Nachnamen eintragen.';nm.focus();return;}
-    if(!pwOk){
-      if(!(window.crypto&&crypto.subtle)){er.textContent='Bitte die Seite über https öffnen.';return;}
-      if(await sha(pw.value.trim())!==H){er.textContent='Passwort falsch.';pw.select();return;}
-      try{localStorage.setItem('lm4.gate',H);}catch(_){}
-    }
-    try{localStorage.setItem('lm4.name',n);}catch(_){}
-    g.remove();
-  });
-})();
-</script>
+<script src="gate.js" data-title="Tonfunk Sensorik-Lab"></script>
 <!--/GATE-->
 <div id="app">
   <header>

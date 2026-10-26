@@ -302,7 +302,7 @@
   });
 
   /* ---- Platzhalter, wenn ein Prüfstand fehlt ---- */
-  const FILES = ['regcore.js', 'regdraw.js', 'regrig-fuell.js', 'regrig-fluss.js', 'regrig-bau.js', 'regrig-raum.js', 'regrig-thermo.js', 'regrig-drehz.js', 'regrig-pos.js', 'regdata.js'];
+  const FILES = ['regcore.js', 'regdraw.js', 'regrig-fuell.js', 'regrig-fluss.js', 'regrig-bau.js', 'regrig-raum.js', 'regrig-thermo.js', 'regrig-c-base.js', 'regrig-drehz.js', 'regrig-pos.js', 'regdata.js'];
   function placeholderHtml() {
     const why = S.err ? 'Der Prüfstand konnte nicht gestartet werden: ' + esc(S.err) : 'Die Datei für „' + esc(rigName(S.rigId)) + '“ ist noch nicht geladen.';
     return `<div class="ph2"><b>Prüfstand noch nicht geladen</b>${why}<br><button class="btn" data-retry>Erneut prüfen</button></div>`;
@@ -310,13 +310,14 @@
   function retryLoad() {
     const want = FILES.filter(f => {
       if (f === 'regcore.js') return !root.REG_CORE; if (f === 'regdraw.js') return !root.REG_DRAW; if (f === 'regdata.js') return !root.REG_DATA && !root.REG_TASKS;
+      if (f === 'regrig-c-base.js') return !(root.REG_RIGS && root.REG_RIGS.cbase);
       const id = ORDER.find(i => RIGMETA[i].file === f); return !(root.REG_RIGS && root.REG_RIGS.defs && root.REG_RIGS.defs[id]);
     });
     if (!want.length) { setRig(S.rigId); toast('Alles geladen'); return Promise.resolve(); }
     toast('Lade fehlende Dateien …');
-    return Promise.all(want.map(f => new Promise(res => {
-      const s = document.createElement('script'); s.src = f + '?t=' + Date.now(); s.onload = s.onerror = () => res(); document.head.appendChild(s);
-    }))).then(() => {
+    const ld = f => new Promise(res => { const s = document.createElement('script'); s.src = f + '?t=' + Date.now(); s.onload = s.onerror = () => res(); document.head.appendChild(s); });
+    const pre = want.filter(f => f === 'regrig-c-base.js'), rest = want.filter(f => f !== 'regrig-c-base.js');   /* die Basis muss vor drehz und pos laufen */
+    return pre.reduce((p, f) => p.then(() => ld(f)), Promise.resolve()).then(() => Promise.all(rest.map(ld))).then(() => {
       const still = ORDER.filter(i => !defOf(i)).length;
       const keep = S.rig ? allCtl() : ((lsGet('reg.cur', {}) || {}).ctl || {}); setRig(S.rigId); applyCtl(keep); buildPick();
       if (S.tab === 'tasks') renderTasks(); toast(still ? still + ' Prüfstand' + (still > 1 ? 'e fehlen' : ' fehlt') + ' noch' : 'Alle Prüfstände geladen');

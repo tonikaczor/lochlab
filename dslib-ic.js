@@ -744,7 +744,7 @@ function pcf8574() {
       'Supply voltage 2.5 V to 6 V',
       'I²C bus interface, standard mode up to 100 kHz',
       'Eight quasi-bidirectional ports: strong low, weak high',
-      'Output sink current IOL min. 25 mA, but source current only about 1 mA',
+      'Output sink current IOL min. 25 mA, but source current only about 100 µA (1 mA only during the low-to-high transition)',
       'Address range 0x20 to 0x27, selected by pins A0, A1, A2',
       'All ports are high (inputs) after power-on reset',
       'Open-drain interrupt output INT, active low',
@@ -843,7 +843,7 @@ function pcf8574() {
       { addr: '0x40', name: 'ADDRESS BYTE layout (A2 A1 A0 = 000, write)', bits: '7:0', rw: 'W', reset: '0x40', desc: 'First byte of every transaction: 0 1 0 0 A2 A1 A0 R/W. Bits 7:4 are fixed to 0100, bits 3:1 equal A2 A1 A0, bit 0 is R/W (0 = write, 1 = read). The 8-bit write byte is 0x40 to 0x4E, the read byte 0x41 to 0x4F.' }
     ].concat(addrRegs),
     app: [
-      { title: 'Driving LEDs: sink, not source', text: 'Because the high level is only a weak pull-up (IOH about 1 mA at best), LEDs are connected from VDD through a resistor to the port pin. A written 0 pulls the pin low and the LED lights. The IOL of 25 mA is the limit per pin.',
+      { title: 'Driving LEDs: sink, not source', text: 'Because the high level is only a weak pull-up (IOH about 100 µA in steady state, 1 mA only during the low-to-high transition), LEDs are connected from VDD through a resistor to the port pin. A written 0 pulls the pin low and the LED lights. The IOL of 25 mA is the limit per pin.',
         circuit: [
           'VDD ── R ── LED(A→K) ── Pn   (Pn = 0: LED on, Pn = 1: LED off)',
           'SDA ──────┬───── SDA   (PCF8574)   INT ──┬── to MCU',
@@ -863,7 +863,7 @@ function pcf8574() {
       ['I/O expander', 'Port-Erweiterung (zusätzliche Ein-/Ausgänge)', ''],
       ['quasi-bidirectional', 'quasi-bidirektional (starker Low-, schwacher High-Zustand)', 'Pin ist Ausgang und Eingang zugleich.'],
       ['sink current', 'Senkstrom (Strom in den Pin hinein)', 'IOL, hier bis 25 mA'],
-      ['source current', 'Quellstrom (Strom aus dem Pin heraus)', 'IOH, hier nur etwa 1 mA'],
+      ['source current', 'Quellstrom (Strom aus dem Pin heraus)', 'IOH, hier nur etwa 100 µA im Dauerbetrieb (1 mA nur beim Übergang von Low nach High)'],
       ['weak pull-up', 'schwacher Pull-up-Widerstand (Stromquelle)', ''],
       ['power-on reset', 'Rücksetzen beim Einschalten', 'Alle Ports high.'],
       ['slave address', 'Slave-Adresse (Bus-Adresse des Bausteins)', '0x20 bis 0x27'],

@@ -634,7 +634,7 @@
       { sensor: 'sht', temp: 23, rh: 45, addr: 68, addrPin: 'low', twin: true, pullup: 4700, busSpeed: 100000, busLength: 0.3, stretch: false },
       { dur: 25000, seq: [{ t: 12000, set: { addrPin: 'high', addr: 69 } }] }),
     E('dig-us', 'Ultraschall: Schallgeschwindigkeit hängt von der Temperatur ab', 'Digitale Sensoren', 'digital',
-      'Der Ultraschallsensor misst die Laufzeit des Echos und rechnet sie mit einer festen Schallgeschwindigkeit in den Abstand um. Bei 23 °C stimmt das, bei −20 °C ist der Schall langsamer und die Anzeige liegt um rund 7 % zu hoch. Für genaue Messungen braucht der Sensor eine Temperaturkompensation.',
+      'Der Ultraschallsensor misst die Laufzeit des Echos und rechnet sie mit einer festen Schallgeschwindigkeit in den Abstand um. Bei 23 °C stimmt das, bei −20 °C ist der Schall langsamer und die Anzeige liegt um rund 7,5 % zu hoch. Für genaue Messungen braucht der Sensor eine Temperaturkompensation.',
       { sensor: 'us', temp: 23, dist: 1000, pullup: 4700, busSpeed: 100000, busLength: 0.3 },
       { dur: 11000, seq: [{ t: 5000, set: { temp: -20 } }] }),
     /* ADU */

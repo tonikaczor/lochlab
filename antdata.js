@@ -173,7 +173,7 @@
     const s = run('gleichstrom', c.seq, 6000, ctl, { sampleMs: 5 }), f = s.final || {};
     inputRow(c, r, s);
     const ip = maxOf(s, 'iPeak');
-    r(ip <= 0.8, 'Der Strom bleibt beim Hochfahren unter 0,8 A', 'Gemessene Stromspitze: ' + fm(ip, 2) + ' A. Springt der Tastgrad auf einmal hoch, liegt fast die volle Spannung am Anker: I = U / R. Nimm mehr und kleinere Stufen.');
+    r(ip <= 0.75, 'Der Strom bleibt beim Hochfahren unter 0,75 A', 'Gemessene Stromspitze: ' + fm(ip, 2) + ' A. Springt der Tastgrad auf einmal hoch, liegt fast die volle Spannung am Anker: I = U / R. Nimm mehr und kleinere Stufen.');
     r(!faultRe(s, /overcurrent|überstrom/i), 'Die Überstrom-Meldung der Anlage bleibt aus', 'Die Anlage meldet Überstrom, sobald der Anlaufstrom über das 2,5-fache des Nennstroms (0,3 A) steigt.');
     r(fin(f.rpm) && f.rpm >= 4200, 'Nach 6 s läuft der Motor mit vollem Tastgrad (über 4200 1/min)', 'Am Ende: ' + fm(f.rpm, 0) + ' 1/min. Der Tastgrad muss spätestens nach 5 s bei 100 % stehen.');
     r(!faultRe(s, /shoot|kurzschluss/i), 'Es gibt keinen Brückenkurzschluss', 'Im PWM-Betrieb ist ein Brückenkurzschluss nicht möglich. Hast du die Betriebsart verstellt?');
@@ -302,10 +302,10 @@
     const ctl = Object.assign({}, GEAR_BASE, initial(c), { type: 'stirnrad', stages: 1, z1: 20, z2: 40, nIn: 1500, mIn: 10, load: 0, eta: 'auto' });
     const s = run('getriebe', [], 40000, ctl, { sampleMs: 100 }), f = s.final || {};
     inputRow(c, r, s);
-    r(effCtl(c, 'lube', false) === true, 'Die Schmierung ist eingeschaltet', 'Ohne Schmierung steigen Reibung und Temperatur. Schalte „Schmierung“ ein.');
+    r(effCtl(c, 'lube', false) === true, 'Die Ursache der Erwärmung ist beseitigt', 'Reibung und Temperatur steigen noch. Prüfe, was am Getriebe die Reibung senkt, und stelle es ein.');
     const tmax = maxOf(s, 'temp');
     r(tmax <= 70, 'Das Getriebe bleibt unter 70 °C (40 s Dauerbetrieb)', 'Höchste Temperatur: ' + fm(tmax, 0) + ' °C.');
-    r(!faultRe(s, /Überhitz|Schmierung/i), 'Es gibt keine Fehlermeldung der Anlage', 'Die Anlage meldet noch Überhitzung oder fehlende Schmierung.');
+    r(!faultRe(s, /Überhitz|Schmierung|Reibung/i), 'Es gibt keine Fehlermeldung der Anlage', 'Die Anlage meldet noch Überhitzung oder erhöhte Reibung.');
     r(fin(f.nOut) && f.nOut >= 700, 'Das Getriebe läuft (Abtrieb über 700 1/min)', 'Abtriebsdrehzahl: ' + fm(f.nOut, 0) + ' 1/min.');
   });
   const checkAn30 = mk('getriebe', (c, r) => {
@@ -389,8 +389,8 @@
       sol: () => S('gleichstrom', AN7_BASE, { dur: 6500, seq: [{ t: 0, set: { S1: true, S4: true } }, { t: 2000, set: { S1: false } }, { t: 2100, set: { S2: true } }, { t: 3000, set: { S4: false } }, { t: 3100, set: { S3: true } }, { t: 5000, set: { S2: false, S3: false } }] }),
       check: checkAn7 },
     { id: 'an8', lab: 'ant', cat: 'Gleichstrom und H-Brücke', title: 'Anlaufstrom mit Stufen begrenzen', level: 2, rig: 'gleichstrom',
-      text: 'Der Getriebemotor (Nennstrom etwa 0,3 A, 12 V, Nennlast 0,005 Nm) wird im PWM-Betrieb gestartet. In der Startvorlage springt der Tastgrad sofort auf 100 %: Der Anlaufstrom ist mit über 1,2 A viel zu hoch, und die Anlage meldet Überstrom. Ändere das Ablaufprogramm so, dass die Stromspitze 0,8 A nicht überschreitet und der Motor spätestens nach 5 s mit 100 % Tastgrad läuft.',
-      hint: ['Beim Anlauf ist die Gegenspannung noch null, deshalb begrenzt nur der Ankerwiderstand den Strom: I = U / R. Eine kleinere Spannung am Anfang gibt einen kleineren Strom.', 'Erhöhe den Tastgrad in mehreren kleinen Stufen mit etwas Zeit dazwischen (eine Rampe). Je kleiner die Stufe, desto kleiner die Stromspitze. Für 0,8 A genügen etwa vier gleich große Stufen.', 'Zum Beispiel: Tastgrad 25 % bei 0 s, 50 % bei 0,5 s, 75 % bei 1 s, 100 % bei 1,5 s. Alle Zeilen sind Steuerwert „duty“.'],
+      text: 'Der Getriebemotor (Nennstrom etwa 0,3 A, 12 V, Nennlast 0,005 Nm) wird im PWM-Betrieb gestartet. In der Startvorlage springt der Tastgrad sofort auf 100 %: Der Anlaufstrom ist mit über 1,2 A viel zu hoch, und die Anlage meldet Überstrom. Ändere das Ablaufprogramm so, dass die Stromspitze 0,75 A (das 2,5-fache des Nennstroms, darüber meldet die Anlage Überstrom) nicht überschreitet und der Motor spätestens nach 5 s mit 100 % Tastgrad läuft.',
+      hint: ['Beim Anlauf ist die Gegenspannung noch null, deshalb begrenzt nur der Ankerwiderstand den Strom: I = U / R. Eine kleinere Spannung am Anfang gibt einen kleineren Strom.', 'Erhöhe den Tastgrad in mehreren kleinen Stufen mit etwas Zeit dazwischen (eine Rampe). Je kleiner die Stufe, desto kleiner die Stromspitze. Für 0,75 A genügen etwa vier gleich große Stufen.', 'Zum Beispiel: Tastgrad 25 % bei 0 s, 50 % bei 0,5 s, 75 % bei 1 s, 100 % bei 1,5 s. Alle Zeilen sind Steuerwert „duty“.'],
       start: () => S('gleichstrom', DC_PWM, { dur: 6000, seq: [{ t: 0, set: { duty: 100 } }] }),
       sol: () => S('gleichstrom', DC_PWM, { dur: 6000, seq: stairs('duty', 0, 100, 4, 0, 500) }),
       check: checkAn8 },
@@ -436,7 +436,7 @@
       check: checkAn15 },
     { id: 'an16', lab: 'ant', cat: 'Schrittmotor', title: 'Hohe Frequenz ohne Schrittverlust', level: 3, rig: 'schritt',
       text: 'Der Schrittmotor (NEMA 17) treibt im Vollschritt eine Last von 0,15 Nm. Er soll 3 s lang mit mindestens 400 Schritten pro Sekunde laufen, ohne dass er Schritte verliert. Der Treiber liefert höchstens 2,5 A. Die Startvorlage (400 Schritte pro Sekunde bei 1 A) verliert Schritte. Stelle Schrittfrequenz und Motorstrom richtig ein.',
-      hint: ['Das Drehmoment des Schrittmotors fällt mit steigender Schrittfrequenz ab. Reicht es nicht mehr für die Last, springt der Rotor zurück.', 'Das Moment ist proportional zum Strom. Mehr Strom hebt die Kurve (Pull-out) an, aber die Wicklung wird wärmer. Probiere am Prüfstand und beobachte den Zähler für verlorene Schritte.', 'Stelle die Schrittfrequenz auf 400 bis 500 Schritte pro Sekunde und den Strom auf etwa 2 A (mindestens 1,5 A, höchstens 2,5 A).'],
+      hint: ['Das Drehmoment des Schrittmotors fällt mit steigender Schrittfrequenz ab. Reicht es nicht mehr für die Last, springt der Rotor zurück.', 'Das Moment ist etwa proportional zum Strom; oberhalb des Nennstroms sättigt das Eisen und der Zuwachs wird kleiner. Mehr Strom hebt die Kurve (Pull-out) an, aber die Wicklung wird wärmer. Probiere am Prüfstand und beobachte den Zähler für verlorene Schritte.', 'Stelle die Schrittfrequenz auf 400 bis 500 Schritte pro Sekunde und den Strom auf etwa 2 A (mindestens 1,5 A, höchstens 2,5 A).'],
       start: () => S('schritt', { mode: 'auto', stepMode: 'voll', dir: 'vor', rate: 400, current: 1, load: 0.15 }), sol: () => S('schritt', { mode: 'auto', stepMode: 'voll', dir: 'vor', rate: 400, current: 2, load: 0.15 }),
       check: checkAn16 },
     /* ------------------------------------------------------------ Drehstrom */
@@ -494,7 +494,7 @@
       check: checkAn25 },
     { id: 'an26', lab: 'ant', cat: 'Fehlersuche', title: 'Getriebe wird heiß', level: 2, rig: 'getriebe',
       text: 'Ein Stirnradgetriebe (20 zu 40 Zähne) läuft im Dauerbetrieb mit 1500 1/min am Eingang und 10 Nm Eingangsmoment. Nach einer halben Minute riecht es verbrannt, das Gehäuse ist über 90 °C heiß und die Anlage meldet Überhitzung. Finde die Ursache und behebe sie so, dass das Getriebe im Dauerbetrieb (40 s) kühl bleibt. Eingangsdrehzahl und Eingangsmoment bleiben unverändert.',
-      hint: ['Wenn ein Getriebe bei normaler Last zu heiß wird, entsteht zu viel Reibung. Lies die Meldungen der Anlage genau, du findest dort die Ursache.', 'Die Meldung nennt die Ursache: Es fehlt die Schmierung. Ohne Schmierfilm reiben die Zahnflanken aufeinander, die Verluste steigen stark.', 'Schalte den Schalter „Schmierung“ ein. Das Getriebe bleibt dann unter 50 °C.'],
+      hint: ['Wenn ein Getriebe bei normaler Last zu heiß wird, entsteht zu viel Reibung. Beobachte Temperatur und Wirkungsgrad am Prüfstand und prüfe die Einstellungen des Getriebes.', 'Es fehlt die Schmierung. Ohne Schmierfilm reiben die Zahnflanken aufeinander, die Verluste steigen stark.', 'Schalte den Schalter „Schmierung“ ein. Das Getriebe bleibt dann unter 50 °C.'],
       start: () => S('getriebe', { type: 'stirnrad', stages: 1, z1: 20, z2: 40, nIn: 1500, mIn: 10, load: 0, lube: false }), sol: () => S('getriebe', { type: 'stirnrad', stages: 1, z1: 20, z2: 40, nIn: 1500, mIn: 10, load: 0, lube: true }),
       check: checkAn26 },
     { id: 'an27', lab: 'ant', cat: 'Fehlersuche', title: 'Schrittmotor verliert Schritte', level: 2, rig: 'schritt',

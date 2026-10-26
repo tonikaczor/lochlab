@@ -297,7 +297,7 @@
   });
 
   /* ---- Platzhalter, wenn ein Prüfstand fehlt ---- */
-  const FILES = ['emvcore.js', 'emvcore-lay.js', 'emvdraw.js', 'emvrig-base.js', 'emvrig-quelle.js', 'emvrig-filter.js', 'emvrig-kopplung.js', 'emvrig-schirm.js', 'emvrig-antenne.js', 'emvrig-layout.js', 'emvrig-impuls.js', 'emvrig-messen.js', 'emvdata.js', 'emvtasks1.js', 'emvtasks2.js'];
+  const FILES = ['emvcore.js', 'emvcore-lay.js', 'emvdraw.js', 'emvrig-base.js', 'emvrig-kit.js', 'emvrig-quelle.js', 'emvrig-filter.js', 'emvrig-kopplung.js', 'emvrig-schirm.js', 'emvrig-antenne.js', 'emvrig-layout.js', 'emvrig-impuls.js', 'emvrig-messen.js', 'emvdata.js', 'emvtasks1.js', 'emvtasks2.js'];
   function placeholderHtml() {
     const why = S.err ? 'Der Prüfstand konnte nicht gestartet werden: ' + esc(S.err) : 'Die Datei für „' + esc(rigName(S.rigId)) + '“ ist noch nicht geladen.';
     return `<div class="ph2"><b>Prüfstand noch nicht geladen</b>${why}<br><button class="btn" data-retry>Erneut prüfen</button></div>`;
@@ -305,14 +305,14 @@
   function retryLoad() {
     const want = FILES.filter(f => {
       if (f === 'emvcore.js') return !root.EMV_CORE; if (f === 'emvcore-lay.js') return !(root.EMV_CORE && root.EMV_CORE.layout); if (f === 'emvdraw.js') return !root.EMV_DRAW; if (f === 'emvdata.js') return !root.EMV_DATA;
-      if (f === 'emvtasks1.js' || f === 'emvtasks2.js') return !root.EMV_TASKS; if (f === 'emvrig-base.js') return !(root.EMV_RIGS && root.EMV_RIGS.base);
+      if (f === 'emvtasks1.js' || f === 'emvtasks2.js') return !root.EMV_TASKS; if (f === 'emvrig-base.js') return !(root.EMV_RIGS && root.EMV_RIGS.base); if (f === 'emvrig-kit.js') return !(root.EMV_RIGS && root.EMV_RIGS.kit);
       const id = ORDER.find(i => RIGMETA[i].file === f); return !(root.EMV_RIGS && root.EMV_RIGS.defs && root.EMV_RIGS.defs[id]);
     });
     if (!want.length) { setRig(S.rigId); toast('Alles geladen'); return Promise.resolve(); }
     toast('Lade fehlende Dateien …');
-    return Promise.all(want.map(f => new Promise(res => {
-      const s = document.createElement('script'); s.src = f + '?t=' + Date.now(); s.onload = s.onerror = () => res(); document.head.appendChild(s);
-    }))).then(() => {
+    const ld = f => new Promise(res => { const s = document.createElement('script'); s.src = f + '?t=' + Date.now(); s.onload = s.onerror = () => res(); document.head.appendChild(s); });
+    const PRE = ['emvrig-base.js', 'emvrig-kit.js'], pre = PRE.filter(f => want.includes(f)), rest = want.filter(f => !PRE.includes(f));   /* Basis und Kit muessen vor den Pruefstaenden laufen */
+    return pre.reduce((p, f) => p.then(() => ld(f)), Promise.resolve()).then(() => Promise.all(rest.map(ld))).then(() => {
       const still = ORDER.filter(i => !defOf(i)).length;
       const keep = S.rig ? allCtl() : ((lsGet('emv.cur', {}) || {}).ctl || {}); setRig(S.rigId); applyCtl(keep); buildPick();
       if (S.tab === 'tasks') renderTasks(); toast(still ? still + ' Prüfstand' + (still > 1 ? 'e fehlen' : ' fehlt') + ' noch' : 'Alle Prüfstände geladen');
