@@ -200,14 +200,16 @@
   const examBase = o => Object.assign({ ans: {}, start: Date.now(), done: false, flags: {}, tq: {}, paused: { at: null, sum: 0 } }, o);
   function startExam(limit) { const seed = Date.now() % 1000000000; S.exam = examBase({ v: 'kurz', seed, qs: B.exam(seed, 20), limit }); persist(); render(); }
   const allGroups = teile => [...new Set(POOL.q.filter(p => teile.includes(p.teil)).map(p => p.g))];
-  function startOrig(v, limit) { // Prüfungsaufbau wie in der Kammerprüfung: Teil A gebunden mit Abwahl, Teil B Rechenaufgaben; Ziehen mit Niveau-Quote über pruefexam.js
-    const c = VARIANTS[v], seed = Date.now() % 1000000000, r = B.seeded(seed), gs = allGroups(c.pool), cfg = { teil: c.pool, groups: gs, niveau: 'mix' };
+  function startOrig(v, limit, gpo) { // Prüfungsaufbau wie in der Kammerprüfung: Teil A gebunden mit Abwahl, Teil B Rechenaufgaben; Ziehen mit Niveau-Quote über pruefexam.js
+    const c = gpo ? Object.assign({}, VARIANTS[v], { pool: ['SysE', 'FuSa'] }) : VARIANTS[v], seed = gpo ? gpo.seed : Date.now() % 1000000000, r = B.seeded(seed), gs = allGroups(c.pool), cfg = { teil: c.pool, groups: gs, niveau: 'mix' };
     const A = X.draw(POOL, Object.assign({ n: c.nA, only: 'mc' }, cfg), seed).items.map(p => poolQ(p, r));
     const Bq = c.nB ? X.draw(POOL, Object.assign({ n: c.nB, only: 'num' }, cfg), seed + 7).items.map(p => poolQ(p, r)) : [];
     A.forEach(q => { q.pts = 1; q.part = 'A'; }); Bq.forEach(q => { q.pts = 10; q.part = 'B'; });
     const fix = r.shuffle(A.map((q, i) => i)).slice(0, c.fix);
-    S.exam = examBase({ v, seed, qs: A.concat(Bq), limit: limit == null ? c.limit : limit, orig: { keep: c.keep, fix, skip: {} }, cfg: X.cfgShort({ groups: gs, niveau: 'mix', n: A.length + Bq.length }), area }); persist(); render();
+    S.exam = Object.assign(examBase({ v, seed, qs: A.concat(Bq), limit: limit == null ? c.limit : limit, orig: { keep: c.keep, fix, skip: {} }, cfg: Object.assign(X.cfgShort({ groups: gs, niveau: 'mix', n: A.length + Bq.length }), gpo ? { gp: 1, seed } : {}), area: gpo ? 'teil2' : area }), gpo ? { gp: 1 } : {}); persist(); render();
   }
+  /* Generalprobe (Karriere): Kammeraufbau Teil 2 (Systementwurf + Funktions- und Systemanalyse), fester Seed aus der URL, keine Pause, kein Zeitlimit-Aus */
+  function startGP(seed) { area = 'teil2'; lsSet('pr.area', area); startOrig('syse', null, { seed: Math.abs(parseInt(seed, 10)) % 1000000000 }); }
   /* Eigener Mix: c = { groups, n, calc (0 bis 1), niveau, weak (ja/nein), limit (Minuten, 0 = ohne Zeit) }; jede Aufgabe zählt einen Punkt */
   function startMix(c) {
     const seed = Date.now() % 1000000000, r = B.seeded(seed ^ 0x2545F491);
@@ -329,9 +331,9 @@
 
   /* ---- laufende Prüfung ---- */
   function vExamRun(v, e) {
-    const isGod = godOk(); if (e.paused && e.paused.at && !isGod) setPause(e, false);   // ohne Ausbildermodus gibt es keine Pause
+    const isGod = godOk() && !e.gp; if (e.paused && e.paused.at && !isGod) setPause(e, false);   // ohne Ausbildermodus gibt es keine Pause, in der Generalprobe nie
     const paused = !!(e.paused && e.paused.at), act = e.qs.filter(q => !(e.orig && e.orig.skip[q.id]));
-    v.innerHTML = '<div class="card tmr" id="exHead"><div class="row hrow"><b id="exTimer" role="timer">' + (paused ? 'Pausiert' : 'Restzeit: <span id="exLeft">' + (e.limit ? mmss(leftMs(e, Date.now())) : 'ohne Limit') + '</span>') + '</b><span class="mute small" id="exCnt"></span><span class="grow"></span>' + (isGod ? '<button class="btn s" id="exPause">' + (paused ? 'Weiter' : 'Pause') + '</button>' : '') + '<button class="btn pri" id="exFin">Abgeben</button></div>'
+    v.innerHTML = '<div class="card tmr" id="exHead"><div class="row hrow"><b id="exTimer" role="timer">' + (paused ? 'Pausiert' : 'Restzeit: <span id="exLeft">' + (e.limit ? mmss(leftMs(e, Date.now())) : 'ohne Limit') + '</span>') + '</b>' + (e.gp ? '<span class="small"><b>Generalprobe</b> (ohne Pause)</span>' : '') + '<span class="mute small" id="exCnt"></span><span class="grow"></span>' + (isGod ? '<button class="btn s" id="exPause">' + (paused ? 'Weiter' : 'Pause') + '</button>' : '') + '<button class="btn pri" id="exFin">Abgeben</button></div>'
       + (paused ? '' : '<div class="row jrow"><div id="exJump" role="toolbar" aria-label="Aufgabe wählen">' + e.qs.map((q, i) => '<button type="button" class="jc" data-j="' + esc(q.id) + '">' + esc(qLabel(e, q, i)) + '</button>').join('') + '</div><label class="inl"><input type="checkbox" id="exOnly"> nur offene</label></div>') + '<div class="sr" id="exAnn" role="status" aria-live="polite"></div></div>'
       + (paused ? '<div class="card"><h3>Die Prüfung ist pausiert</h3><p>Die Zeit steht. Die Aufgaben sind ausgeblendet, bis du auf „Weiter“ drückst.</p><div class="row"><button class="btn pri" id="exResume">Weiter</button></div></div>' : e.qs.map((q, i) => qRun(e, q, i, false, false, { flag: true })).join('') + '<div class="card"><button class="btn pri" id="exFin2">Prüfung abgeben</button></div>');
     const doPause = on => { const y = window.scrollY; setPause(e, on); render(); window.scrollTo(0, on ? 0 : y); };
@@ -497,7 +499,7 @@
       $$('.mi', b).forEach(btn => { btn.onclick = () => { $('.backdrop').remove(); items[+btn.dataset.i][1](); }; });
     });
   }
-  root.PrWerk = { go, W, TASKS, DATA, state: () => S, startExam, startOrig, startMix, finishExam, startTrain, isRight, count, NOTE, POOL, examLock, setPause, godOk };
+  root.PrWerk = { go, W, TASKS, DATA, state: () => S, startExam, startOrig, startGP, startMix, finishExam, startTrain, isRight, count, NOTE, POOL, examLock, setPause, godOk };
   root.LabTrainerAPI = { lab: 'pr', go, tab: () => tab, exam: () => !!S.exam, train: () => !!S.train, hist: () => S.hist.length };
 
   /* ----- Start ----- */
@@ -507,6 +509,8 @@
     /* ?tab=pruefung&teil=2 (Link aus der Lernempfehlung): Reiter und Bereich vorwählen; laufende Prüfung hat Vorrang */
     try { const tb = sp.get('tab'), tl = sp.get('teil'); if (tb && TABS.some(x => x[0] === tb) && !t0) tab = tb; if (tl === '1' || tl === '2') { area = tl === '1' ? 'teil1' : 'teil2'; lsSet('pr.area', area); } } catch (e) {}
     if (S.exam && !S.exam.done) tab = 'pruefung';
+    /* ?gp=1&seed=N (Karriere, Generalprobe): startet den Kammeraufbau Teil 2 mit festem Seed, nur wenn keine Prüfung läuft; Parameter danach entfernen */
+    try { if (sp.get('gp') === '1' && /^\d{1,10}$/.test(sp.get('seed') || '')) { if (!(S.exam && !S.exam.done)) { tab = 'pruefung'; startGP(sp.get('seed')); } try { history.replaceState(null, '', location.pathname + '?tab=pruefung'); } catch (e) {} } } catch (e) {}
     render();
     setInterval(() => { const e = S.exam; if (e && !e.done && e.limit > 0 && !(e.paused && e.paused.at) && leftMs(e, Date.now()) <= 0) finishExam(true); }, 4000);   // Zeit abgelaufen, auch wenn gerade ein anderer Reiter offen ist
     /* ?thema=sicherheit (Link aus dem Sicherheits-Lab und dem Lernpfad) ?thema=netzteile (Netzteil-Lab, Thema Stromversorgung) ?thema=wechselstrom (Wechselstrom-Lab, Thema Wechselstrom und Filter) und ?thema=analog (Analogtechnik-Lab, Thema Bauelemente): startet das Training zu diesem Thema */

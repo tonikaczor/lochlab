@@ -142,6 +142,8 @@
   }
   const rightOf = specs => { const o = {}; specs.forEach(s => { o[s.key] = s.right; }); return o; };
   const publicChoices = specs => specs.map(s => ({ key: s.key, q: s.q, options: s.options.map(o => ({ value: o.value, label: o.label })) }));
+  /* D4: nur im Duell (laufende Duell-Aufgabe id) wird die Reihenfolge der Antwortoptionen aus dem Runden-Code gedreht, damit die Position nichts verraet; Normalmodus unveraendert */
+  const duelMix = (list, id) => { let d = 0; try { d = root.Duell && typeof root.Duell.seedFor === 'function' ? root.Duell.seedFor(id) : 0; } catch (e) { d = 0; } if (!(d > 0)) return list; return list.map((c, i) => { const o = c.options.slice(), k = (d + i * 7) % (o.length || 1); return Object.assign({}, c, { options: o.slice(k).concat(o.slice(0, k)) }); }); };
   const choiceAudit = specs => specs.map(s => ({ key: s.key, right: s.right, options: s.options.map(o => ({ value: o.value, label: o.label, grund: o.grund, richtig: o.value === s.right })) }));
 
   /* Aufgabenobjekt aus einem Modul M bauen (ELS-Muster): text, hint, table, fields, choices erst beim ersten Zugriff rechnen */
@@ -152,7 +154,8 @@
     lazy('hint', () => M.hint());
     if (M.table) lazy('table', () => M.table());
     if (M.fields) lazy('fields', () => M.fields());
-    if (M.choices) lazy('choices', () => M.choices());
+    if (M.choices && M.duelMix) { let base = null; Object.defineProperty(o, 'choices', { enumerable: true, configurable: true, get() { if (base === null) base = M.choices(); return duelMix(base, head.id); } }); } /* D4: Reihenfolge nur im Duell gedreht */
+    else if (M.choices) lazy('choices', () => M.choices());
     if (M.audit) o.audit = () => M.audit();
     if (M.ask) o.ask = M.ask;
     o.consts = M.consts || [];
@@ -723,7 +726,7 @@
     return { vals, check, audit: () => choiceAudit(specs()), consts: [],
       text: () => 'Ein Kollege bringt dir zwei Netzteile zur Fehlersuche (Simulation, Übungsschaltungen, nur Kleinspannung und Gleichspannungskreis, keine Messung am Netz). Teil 1: Das Linearnetzteil ist im Prüfstand aufgebaut und brummt. Mache die Sichtprüfung, miss in der empfohlenen Reihenfolge, gib die Ursache als Diagnose ab und tausche erst danach das defekte Bauteil. Teil 2: Für den Tiefsetzsteller liegt nur die Messtabelle vor. Benenne die Ursache und wähle das Bauteil, das die Referenz wieder herstellt. Das Lab ersetzt keine Unterweisung; Arbeiten an Netzspannung nur durch Elektrofachkraft oder unterwiesene Person.',
       table: () => ({ caption: 'Messtabelle Tiefsetzsteller des Kollegen (Soll aus dem Kern)', head: ['Messpunkt', 'Ist', 'Soll'], rows: rowB().map(x => [x.name, x.ist, x.soll]) }),
-      choices: () => publicChoices(specs()),
+      choices: () => publicChoices(specs()), duelMix: true,
       hint: () => { const v = vals(); return [
         'Teil 1: Das Symptom ist Brummen, also schaut man auf den Zwischenkreis am Ladekondensator: Wie groß ist die Brummspannung gegenüber dem Soll? Teil 2: Vergleiche in der Tabelle Ist und Soll, besonders die Ausgangsspannung und die Spannung am Rückkopplungseingang; jede Ursache verschiebt andere Werte.',
         'Teil 1: Die Brummspannung am Ladekondensator ist ' + f(v.bruIst, 0) + ' mV statt ' + f(v.bruSoll, 0) + ' mV, die Sekundärspannung stimmt mit ' + f(v.usek, 2) + ' V (Soll ' + f(v.usekSoll, 2) + ' V). Teil 2: Die Ausgangsspannung liegt bei ' + f(v.uausB, 2) + ' V statt ' + f(v.uausBsoll, 0) + ' V, der Rückkopplungseingang meldet ' + f(v.ufbB, 2) + ' V.',

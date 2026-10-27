@@ -14,9 +14,18 @@
   const hints = () => get('sim.hints', {});
   const hintSave = h => { try { localStorage.setItem('sim.hints', JSON.stringify(h)); } catch (e) {} };
   function hintReset(id) { const h = hints(); if (h[id]) { delete h[id]; hintSave(h); } }
+  /* Challenge-Tipps (lm4.ctipps = { aufgabe: hoechste Stufe }): nur Tipps waehrend einer laufenden Challenge. Normales Ueben schreibt hier nie. */
+  const chalSave = (id, n) => { try { const c = get('lm4.ctipps', {}); c[id] = Math.max(c[id] || 0, n); localStorage.setItem('lm4.ctipps', JSON.stringify(c)); } catch (e) {} };
+  /* Karriere-Start-Flag lm4.kchal = { a, t }: gesetzt beim Start einer Spezialaufgabe aus dem Karriere-Dialog, gilt 4 h */
+  const chalOn = id => { try { const f = get('lm4.kchal', null); return !!(f && f.a === id && Date.now() - (+f.t || 0) < 4 * 3600 * 1000); } catch (e) { return false; } };
   function hint(o) {
     if (window.LochFX) { const v = LochFX.variant('hint'); if (v) LochFX.say(v.text); }
-    const u = ui(), h = hints(), n = Math.min(3, (h[o.id] || 0) + 1); h[o.id] = n; hintSave(h);
+    const u = ui(), h = hints(); let n = Math.min(3, (h[o.id] || 0) + 1);
+    const dd = window.Duell && window.Duell.hintDuell ? window.Duell.hintDuell(o.id) : null;   /* im Duell: jeder Tipp zaehlt, Stufe 3 gesperrt */
+    if (dd && dd.blocked) { u.toast('Im Duell gibt es keine Auflösung.'); return; }
+    if (dd) n = dd.n;
+    h[o.id] = Math.max(h[o.id] || 0, n); hintSave(h);
+    if (dd || chalOn(o.id)) chalSave(o.id, n);   /* Tipp-Abzug nur bei Challenges: Duell-Runde oder aus dem Karriere-Dialog gestartete Spezialaufgabe */
     const E = s => esc(s);
     u.sheet('Tipp, Stufe ' + n + ' von 3', (b, close) => {
       let t = `<p style="margin-top:0"><b>Stufe 1:</b> ${E(o.hint || 'Gehe die Aufgabe Schritt für Schritt durch.')}</p>`;
@@ -75,5 +84,5 @@
       ta.addEventListener('focus', () => ta.select());
     });
   }
-  window.Auswertung = { own, code, parse, openSend, handIn, qrSvg, name, hint, hintReset };
+  window.Auswertung = { own, code, parse, openSend, handIn, qrSvg, name, hint, hintReset, chalOn };
 })();

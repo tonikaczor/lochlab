@@ -1385,6 +1385,7 @@
       function measureNow(final) {
         if (!S.board) return;
         const A = S.probes.A, B = S.probes.B; if (!A || !B) { S.meter = null; stopBeep(); updateLcd(); return; }
+        if (final) { try { if (root.Duell && root.Duell.mess) root.Duell.mess('pcb', JSON.stringify([probeSpec(A), probeSpec(B), S.mmode])); } catch (e) { /* D4: Messung ans Duell melden */ } }
         const o = measure(S.board, probeSpec(A), probeSpec(B), S.mmode, { power: S.power, t: now(), op: S.power ? S.op : null }); S.meter = o; A.label = o.a; B.label = o.b;
         const mm = S.mmode;
         if (mm === 'cont') {

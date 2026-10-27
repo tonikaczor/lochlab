@@ -260,13 +260,38 @@
     if (typeof f.text === 'function') return f.text();
     return new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result)); fr.onerror = () => rej(new Error('Datei nicht lesbar')); fr.readAsText(f); });
   }
+  /* jsqr.js (251 KB) liegt nicht im Precache des Service Workers: erst bei Bedarf laden (Scan, Bild-Import, Vorbereiten-Knopf). Der Service Worker legt es danach in den Cache. */
+  let qrLade = null;
+  function loadJsQR() {
+    if (root.jsQR) return Promise.resolve(root.jsQR);
+    if (qrLade) return qrLade;
+    qrLade = new Promise((res, rej) => {
+      if (typeof document === 'undefined') { rej(new Error('Scanner nicht verfügbar')); return; }
+      const s = document.createElement('script'); s.src = 'jsqr.js';
+      s.onload = () => (root.jsQR ? res(root.jsQR) : rej(new Error('Scanner-Bibliothek defekt')));
+      s.onerror = () => { s.remove(); rej(new Error('Scanner (jsqr.js) nicht geladen: einmal online öffnen')); };
+      document.head.appendChild(s);
+    }).catch(e => { qrLade = null; throw e; });
+    return qrLade;
+  }
+  /* Für Offline-Nutzung vorbereiten: laden und sicherstellen, dass jsqr.js im Cache des Labs liegt (auch wenn der Service Worker die Seite noch nicht steuert). */
+  function prepareScanner() {
+    return loadJsQR().then(() => {
+      if (typeof caches === 'undefined') return 'geladen';
+      return caches.keys().then(ks => {
+        const k = ks.find(x => /^lochlab-/.test(x));
+        if (!k) return 'geladen';
+        return caches.open(k).then(c => c.match('jsqr.js').then(m => m ? 'bereit' : fetch('jsqr.js').then(r => (r.ok ? c.put('jsqr.js', r).then(() => 'bereit') : 'geladen'))));
+      });
+    });
+  }
   function decodeImage(file) {
-    return new Promise((res, rej) => {
+    return loadJsQR().catch(() => null).then(() => new Promise((res, rej) => {
       const url = URL.createObjectURL(file), im = new Image();
       im.onload = () => { try { const sc = Math.min(1, 1400 / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.width * sc)); c.height = Math.max(1, Math.round(im.height * sc));
         const cx = c.getContext('2d', { willReadFrequently: true }); cx.drawImage(im, 0, 0, c.width, c.height); const d = cx.getImageData(0, 0, c.width, c.height), r = root.jsQR && root.jsQR(d.data, c.width, c.height); URL.revokeObjectURL(url); res(r && r.data ? r.data : ''); } catch (e) { rej(e); } };
       im.onerror = () => { URL.revokeObjectURL(url); rej(new Error('Bild nicht lesbar')); }; im.src = url;
-    });
+    }));
   }
   const localSource = {
     name: 'lokal',
@@ -509,6 +534,7 @@ body.printdash #app,body.printdash #gate{display:none!important}body.printdash #
     };
   }
   Dash.ui = () => UI;
+  Dash.loadJsQR = loadJsQR; Dash.prepareScanner = prepareScanner;
   root.Dash = Dash;
   if (typeof module !== 'undefined' && module.exports) module.exports = Dash;
 })(typeof window !== 'undefined' ? window : globalThis);

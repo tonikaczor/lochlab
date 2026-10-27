@@ -81,25 +81,35 @@
     if (m.k === 'stat' && m.open === 'vb') { location.href = PAGE.vb || 'verbund.html'; return; }
     if (m.k === 'multi') { if (here === 'sch') { close(); if (root.LabUI && root.LabUI.toast) root.LabUI.toast('Simulation einschalten und unten „Messen“ wählen'); } else location.href = PAGE.sch + '?ex=Spannungsteiler'; return; }
   }
-  function open() {
-    if (document.getElementById('kampBox')) return; check(true);
-    const w = document.createElement('div'); w.id = 'kampBox';
-    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.62);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch';
+  const TOK = { '1f262e': 'var(--panel,#1f262e)', e8eaed: 'var(--fg,#e8eaed)', '38424d': 'var(--line,#38424d)', '252d36': 'var(--panel2,#252d36)', '9aa6b2': 'var(--fg,#e8eaed)', '10151a': 'var(--well,#10151a)', c8d2dc: 'var(--fg,#c8d2dc)', '6cb8ff': 'var(--accent,#6cb8ff)' };
+  /* Kampagne in einen beliebigen Container zeichnen (o.head=false ohne Titelzeile, o.tokens=true mit Designfarben, o.close = Schließen-Handler); gibt die Neuzeichnen-Funktion zurück */
+  function render(host, o) {
+    o = o || {};
     let first = CH.findIndex((c, i) => unlocked(i) && !cdone(i)); if (first < 0) first = CH.length - 1;
+    const w = host;
     const render = () => {
       const tot = CH.reduce((s, c) => s + c.m.length, 0), dn = CH.reduce((s, c) => s + prog(c).d, 0);
-      w.innerHTML = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:680px;width:100%;font:15px/1.45 system-ui,sans-serif">
+      let html = `<div style="background:#1f262e;color:#e8eaed;border:1px solid #38424d;border-radius:14px;padding:16px;max-width:680px;width:100%;font:15px/1.45 system-ui,sans-serif">
         <div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:19px">🎯 Kampagne: Das Abschlussgerät</b><button id="kX" style="background:none;border:0;color:#e8eaed;font-size:22px;cursor:pointer" aria-label="Schließen">✕</button></div>
         <p style="color:#9aa6b2;margin:6px 0">${MAIN.length} Kapitel, ein Ziel: Du baust mit Meister Funk ein Abschlussgerät. Danach wartet der Epilog mit den Verbundprojekten. Die Missionen sind Aufgaben und Übungen aus allen Labs. Dein Fortschritt zählt von selbst mit.</p>
         <div style="background:#10151a;border-radius:8px;height:12px;overflow:hidden;margin:8px 0"><div style="width:${Math.round(100 * dn / tot)}%;height:100%;background:#5ee27d"></div></div><div style="font-size:13px;color:#9aa6b2;margin-bottom:8px">${dn} von ${tot} Missionen erledigt</div>
         ${CH.map((c, i) => { const p = prog(c), un = unlocked(i), dd = cdone(i), op = i === first; return `<div style="border:1px solid ${dd ? '#2f7a45' : '#38424d'};border-radius:10px;margin:8px 0;background:#252d36;opacity:${un ? 1 : .55}"><button data-c="${i}" style="all:unset;display:flex;width:100%;box-sizing:border-box;padding:10px 12px;cursor:${un ? 'pointer' : 'default'};align-items:center;gap:8px"><span style="font-size:20px">${dd ? '✅' : un ? '▶️' : '🔒'}</span><b style="flex:1">${c.epilog ? '' : 'Kapitel ' + (i + 1) + ': '}${esc(c.t)}</b><span style="font-size:13px;color:#9aa6b2">${p.d}/${p.n}</span></button>${op && un ? `<div style="padding:0 12px 12px"><p style="margin:0 0 8px;font-style:italic;color:#c8d2dc">${esc(c.s)}</p>${c.m.map((m, j) => { const ok = mdone(m); return `<div style="display:flex;gap:8px;align-items:center;margin:6px 0"><span>${ok ? '✅' : '⬜'}</span><span style="flex:1;font-size:14px">${esc(mtitle(m))}${m.where ? '<br><span style="color:#6cb8ff;font-size:12px">' + esc(m.where) + '</span>' : ''}</span>${ok ? '' : `<button data-m="${i}.${j}" style="background:#ff9d00;border:0;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer">Los</button>`}</div>`; }).join('')}</div>` : ''}</div>`; }).join('')}
         <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:#9aa6b2"><input type="checkbox" id="kFree"${free() ? ' checked' : ''}> Alle Kapitel freischalten (für Ausbilder oder zum Stöbern)</label></div>`;
-      w.querySelector('#kX').onclick = () => w.remove();
+      if (o.head === false) html = html.replace(/<div style="display:flex;justify-content:space-between;align-items:center">[\s\S]*?id="kX"[\s\S]*?<\/div>/, '');
+      if (o.tokens) html = html.replace('max-width:680px', 'max-width:none').replace(/opacity:0?.55/g, 'opacity:.85').replace(/#(1f262e|e8eaed|38424d|252d36|9aa6b2|10151a|c8d2dc|6cb8ff)\b/g, (m, h) => TOK[h]);
+      w.innerHTML = html;
+      const kx = w.querySelector('#kX'); if (kx) kx.onclick = () => { if (o.close) o.close(); else w.remove(); };
       w.querySelector('#kFree').onchange = e => { try { localStorage.setItem('lm4.kamp.free', e.target.checked ? '1' : '0'); } catch (x) {} render(); };
       w.querySelectorAll('[data-c]').forEach(b => { b.onclick = () => { const i = +b.dataset.c; if (!unlocked(i)) return; first = first === i ? -1 : i; render(); }; });
       w.querySelectorAll('[data-m]').forEach(b => { b.onclick = () => { const [i, j] = b.dataset.m.split('.').map(Number); go(CH[i].m[j]); }; });
     };
-    document.body.appendChild(w); render();
+    render(); return render;
+  }
+  function open() {
+    if (document.getElementById('kampBox')) return; check(true);
+    const w = document.createElement('div'); w.id = 'kampBox';
+    w.style.cssText = 'position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.62);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(12px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch';
+    document.body.appendChild(w); render(w);
     w.addEventListener('pointerdown', e => { if (e.target === w) w.remove(); });
   }
   /* Startseite: Hinweiskarte unter den Lab-Karten */
@@ -112,7 +122,7 @@
     c.querySelector('button').onclick = open; cards.parentNode.insertBefore(c, cards.nextSibling);
   }
   if (document.body) indexCard(); else document.addEventListener('DOMContentLoaded', indexCard);
-  root.Kampagne = { open, check, CH, mdone, prog, results };
+  root.Kampagne = { open, render, check, CH, mdone, prog, results };
   if (/[?&]kampagne\b/.test(location.search)) setTimeout(() => { const g = document.getElementById('gate'); if (g && g.offsetParent !== null) { const t = setInterval(() => { const gg = document.getElementById('gate'); if (!gg || gg.offsetParent === null) { clearInterval(t); open(); } }, 500); } else open(); }, 1200);
   else setTimeout(() => check(false), 5000);
 })(typeof window !== 'undefined' ? window : globalThis);

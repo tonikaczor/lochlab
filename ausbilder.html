@@ -17,7 +17,7 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Hinweise für Ausbilder</h1><small>Stand: Oktober 2026 · Version 23.146</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Hinweise für Ausbilder</h1><small>Stand: Oktober 2026 · Version 23.147</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen.html">Lernen (Arduino, Raspberry Pi)</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="loesungen.html">Lösungen für Ausbilder</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
 
 <div class="box tip"><b>Kurz:</b> Azubis bearbeiten Aufgaben selbstständig, das Programm prüft die Lösung. Im <b>Lehrer-Bereich</b> verteilst du Aufgaben per Link, prüfst Abgaben und siehst eine Auswertung. Das Passwort für den Lehrer-Bereich und das automatische Layout kennst nur du. Gib es nicht weiter. Die Lösungsblätter zu den Lernheften und zur Praxisprüfung W-2024 liegen verschlüsselt im Lab: <a href="loesungen.html"><b>Lösungen für Ausbilder</b></a> (öffnet nur mit dem Ausbilder-Passwort).</div>
@@ -106,6 +106,15 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
 <li>Du: <b>ausbilder-uebersicht.html</b> öffnen, Passwort eingeben, alle Dateien aus dem Ordner auswählen (oder hineinziehen). Beschädigte oder fremde Dateien werden mit Grund gemeldet. Mehrere Stände eines Kürzels: der neueste zählt, die älteren stehen im Verlauf.</li>
 <li>Du siehst Tabelle mit Fortschritt je Lab, Heatmap (je Lab oder je Thema), Schwächen-Ranking über alle Azubis, Detailansicht je Azubi, CSV-Export und eine druckbare Seite.</li></ol>
 <p class="mute">Datenschutz: Die Dateien enthalten nur Pseudonyme (Kürzel), keine Klarnamen und keine Lösungen. Den Ordner nur für Ausbilder und die beteiligten Azubis freigeben und die interne Datenschutzfreigabe klären. Die App speichert keine Bearbeitungsdauer und keine Versuchszahl, deshalb zeigt die Übersicht beides nicht. Genaue Beschreibung: <code>quelle/dash/UEBERSICHT.md</code>.</p>
+
+<h2>7b. Duell-Auswertung und Karriere (ab v23.147)</h2>
+<p>Azubis spielen das Prüfungs-Duell auf ihren Geräten (Startseite, Band „Duell“; Runde per Code oder QR). Der Stand-Export (Schema 2) enthält die Duell-Ergebnisse, den Jahrgang und den Karriere-Rang. In der <span class="k">ausbilder-uebersicht.html</span> steht dafür der Abschnitt <b>5. Prüfungs-Duelle und Bestenliste</b>:</p>
+<ul><li>Auswahl nach Kalenderwoche und Jahrgang; Tabelle mit Runde, Aufgabe, Spieler, Punkten, Zeit, Tipps, Versuchen und Messungen. Zwei Ergebnis-Codes derselben Runde werden zum Paar zusammengefasst.</li>
+<li>Ergebnis-Codes lassen sich auch direkt einfügen oder per Kamera scannen (der Scanner lädt beim ersten Gebrauch nach; für Offline-Nutzung vorher „Scanner für Offline-Nutzung vorbereiten“ in <code>auswertung.html</code> antippen).</li>
+<li>Prüfhinweise (Flags) zeigen Auffälliges: Signatur falsch, Punkte passen nicht, geraten (keine Messung), zu schnell. Fälschungen sind nicht auszuschließen, die Flags sind ein Hinweis, kein Beweis.</li>
+<li>Bestenliste (beste 3 Runden): Als Code oder QR veröffentlichen; Azubis lesen sie in der Duell-Lobby ein. Es stehen nur Kürzel und Punkte darin. Die Spalte „Rang“ zeigt den Karriere-Rang; CSV-Export enthält Duelle und Rang.</li>
+<li>Jede Tipp-Anforderung kostet im Duell 5 Punkte. Stufe 3 und die Auflösung sind gesperrt. Die Generalprobe ist per <code>?gp=1&amp;seed=…</code> mit eigenem Aufgabensatz startbar.</li></ul>
+<p class="mute">Lösungen: Ab v23.147 liegen die Lösungen im Ausbilder-Bereich nur noch als PDF vor (die gleichlautenden HTML-Fassungen entfallen).</p>
 
 <h2>8. Technik und Datenschutz</h2>
 <ul><li>Die Programme sind statische Webseiten (GitHub Pages). Es gibt keinen Server mit Benutzerdaten und keine Anmeldung. Schaltungen, Ergebnisse und Namen liegen nur im Speicher des jeweiligen Geräts.</li>

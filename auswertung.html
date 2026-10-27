@@ -81,7 +81,7 @@ body.printqr #qrSheet{display:block!important}
     <h2>Abgaben scannen</h2>
     <p class="mute" style="margin-top:0">Azubis tippen in der Aufgabe auf <b>Abgeben</b> und zeigen den QR-Code. Hier mit der Kamera scannen: Das Ergebnis landet sofort in der Tabelle.</p>
     <video id="vid" playsinline muted></video><canvas id="cnv" class="hide"></canvas>
-    <div class="row"><button class="pri" id="scanBtn">Kamera starten</button><span id="scanMsg" class="mute"></span></div>
+    <div class="row"><button class="pri" id="scanBtn">Kamera starten</button><button id="scanPrep" title="Lädt den QR-Scanner einmal und legt ihn im Cache ab, damit das Scannen auch ohne Internet geht">Scanner für Offline-Nutzung vorbereiten</button><span id="scanMsg" class="mute"></span></div>
     <div id="scanSum" style="margin-top:10px;font-weight:600"></div>
     <div id="scanLog" class="mute" style="margin-top:4px;max-height:220px;overflow:auto"></div>
     <div class="row"><button id="sumCopy">Zusammenfassung kopieren</button><button id="xferCopy">Daten auf anderes Gerät übertragen</button><button class="danger" id="scanClr">Liste leeren</button></div>
@@ -122,7 +122,6 @@ body.printqr #qrSheet{display:block!important}
 <div id="qrSheet"></div>
 </div>
 <script src="qr.js"></script>
-<script src="jsqr.js"></script>
 <script src="aufgaben.js"></script>
 <script src="auswertung.js"></script>
 <script src="dash.js"></script>
@@ -271,6 +270,7 @@ function stopScan() { if (raf) cancelAnimationFrame(raf); raf = 0; if (stream) s
 async function startScan() {
   if (stream) { stopScan(); return; }
   try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } }); } catch (e) { $('#scanMsg').textContent = 'Kamera nicht verfügbar (Zugriff erlauben und die Seite über https öffnen)'; return; }
+  if (!window.jsQR) { $('#scanMsg').textContent = 'Scanner wird geladen …'; try { await Dash.loadJsQR(); } catch (e) { stopScan(); $('#scanMsg').textContent = 'Scanner konnte nicht geladen werden. Einmal mit Internet öffnen und „Scanner für Offline-Nutzung vorbereiten“ tippen.'; return; } }
   const v = $('#vid'), c = $('#cnv'), cx = c.getContext('2d', { willReadFrequently: true }); v.srcObject = stream; v.style.display = 'block'; await v.play(); $('#scanBtn').textContent = 'Kamera stoppen'; $('#scanMsg').textContent = 'Bitte QR-Code ins Bild halten …';
   const loop = () => {
     if (v.readyState >= 2 && v.videoWidth) {
@@ -295,6 +295,7 @@ function start() {
   $('#csv').onclick = csv; $('#prt').onclick = () => window.print();
   $('#clr').onclick = () => { if (confirm('Alle gesammelten Ergebnisse auf diesem Gerät löschen?')) { save({}); try { localStorage.removeItem('sim.class'); } catch (e) {} render(); } };
   if (window.Dash) Dash.mount($('#dash'));
+  $('#scanPrep').onclick = () => { $('#scanMsg').textContent = 'Scanner wird geladen …'; Dash.prepareScanner().then(r => { $('#scanMsg').textContent = r === 'bereit' ? 'Scanner bereit: Scannen geht jetzt auch ohne Internet.' : 'Scanner geladen (Offline-Cache folgt, sobald die Seite vom Service Worker gesteuert wird: Seite einmal neu laden und erneut tippen).'; }).catch(e => { $('#scanMsg').textContent = 'Scanner konnte nicht geladen werden: ' + (e && e.message || e); }); };
   buildQrList(); $('#qrPrint').onclick = qrPrint; $('#qrAll').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = true); $('#qrNone').onclick = () => document.querySelectorAll('#qrList input').forEach(i => i.checked = false); $('#scanBtn').onclick = startScan; $('#sumCopy').onclick = () => copyText(summaryText(), 'Zusammenfassung kopiert'); $('#xferCopy').onclick = () => copyText(transferText(), 'Alle Ergebnisse als Text kopiert'); $('#scanClr').onclick = () => { scans.length = 0; showScans(); };
   render();
 }

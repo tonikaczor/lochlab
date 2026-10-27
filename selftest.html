@@ -1174,8 +1174,39 @@
     document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + l[1] + '</td><td>' + ids.length + '</td><td class="' + (bad.length || res.missing ? 'bad' : 'ok') + '">' + (bad.length || res.missing ? 'FEHLER' : 'alle in Ordnung') + '</td><td>' + (bad.concat(res.missing ? [res.missing + ' ohne Ergebnis'] : [])).join('; ') + '</td></tr>');
     f.remove();
   }
+  /* Duell, Karriere und QR-Scanner (v23.147): Module laden, Kern-Smoke, jsqr.js wird NICHT mitgeladen (lazy). Keine Lab-Liste, eigene Zeilen. */
+  async function modulCheck() {
+    var f = document.createElement('iframe'); f.src = 'index.html'; document.body.appendChild(f);
+    for (var k = 0; k < 150 && !(f.contentWindow && f.contentWindow.Karriere && f.contentWindow.Duell); k++) await sleep(100);
+    var sq = f.contentDocument.createElement('script'); sq.src = 'qrscan.js'; f.contentDocument.body.appendChild(sq);
+    for (var k2 = 0; k2 < 50 && !f.contentWindow.QrScan; k2++) await sleep(100);
+    var w = f.contentWindow, bad = [], D = w.Duell, K = w.Karriere;
+    function row(name, probs) { if (probs.length) all.ok = false; all.labs.push({ lab: name, bad: probs }); document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + name + '</td><td></td><td class="' + (probs.length ? 'bad' : 'ok') + '">' + (probs.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + probs.join('; ') + '</td></tr>'); }
+    var pd = [], pk = [], pq = [];
+    if (!D || !D.core) pd.push('Duell.core fehlt'); else {
+      try {
+        var r = D.core.newRound(Date.now()), p = D.core.parseRound(r);
+        if (!p) pd.push('Runden-Code nicht lesbar');
+        if (D.core.seedNum(r) !== D.core.seedNum(r)) pd.push('Seed nicht stabil');
+        var a = D.core.score({ st: 2, pct: 100, ms: 60000, h: 0, f: 0, m: null, mp: null }), b = D.core.score({ st: 2, pct: 100, ms: 60000, h: 2, f: 0, m: null, mp: null });
+        if (!(a.pts >= 60 && b.pts <= a.pts)) pd.push('Wertung: Tipps duerfen nie mehr Punkte bringen');
+        if (!D.core.pick || !D.core.pool) pd.push('Aufgaben-Pool fehlt');
+      } catch (e) { pd.push('Ausnahme: ' + e); }
+    }
+    if (!K || !K.core) pk.push('Karriere.core fehlt'); else {
+      try {
+        var l0 = K.core.level(K.core.read(function () { return null; }, { CH: [], mdone: {} }), {});
+        if (!l0 || l0.n !== 1) pk.push('leerer Stand ist nicht Rang 1');
+        if (!K.DATA || !K.DATA.LEVELS || K.DATA.LEVELS.length !== 10) pk.push('Rang-Tabelle nicht 10 Raenge');
+      } catch (e) { pk.push('Ausnahme: ' + e); }
+    }
+    if (!w.QrScan) pq.push('QrScan fehlt'); else if (w.jsQR) pq.push('jsqr.js wird beim Start geladen (soll nachgeladen werden)');
+    f.remove();
+    row('Duell (Kern)', pd); row('Karriere (Kern)', pk); row('QR-Scanner (nachladen)', pq);
+  }
   (async function () {
     for (var i = 0; i < LABS.length; i++) { try { await lab(LABS[i]); } catch (e) { all.ok = false; all.labs.push({ lab: LABS[i][1], error: String(e) }); document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + LABS[i][1] + '</td><td></td><td class="bad">FEHLER</td><td>' + String(e) + '</td></tr>'); } }
+    if (!nur || nur[1].split(',').indexOf('duell') >= 0) { try { await modulCheck(); } catch (e) { all.ok = false; all.labs.push({ lab: 'Duell/Karriere/QR', error: String(e) }); } }
     document.title = all.ok ? 'SELFTEST OK' : 'SELFTEST FEHLER';
     document.getElementById('out').textContent = (all.ok ? 'ALLES IN ORDNUNG' : 'FEHLER GEFUNDEN') + '\n' + JSON.stringify(all);
   })();

@@ -4,7 +4,7 @@
    anderen Gerät wieder einlesen. Der Code enthält nur den Fortschritt (Aufgaben, Abzeichen, Kampagne, Trainer, Denkfragen), die Datei auch die
    gespeicherten Schaltungen. Das Gate-Passwort wird nie gesichert. */
 (function (root) {
-  const PROGRESS = ['sim.done', 'lm4.tdone', 'lm4.stats', 'lm4.trainer', 'lm4.trainerseen', 'lm4.kamp', 'lm4.think', 'lm4.badges', 'lm4.seen', 'lm4.daily', 'lm4.duels', 'lm4.escape', 'lm4.predictstats', 'sim.hints', 'lm4.name'];
+  const PROGRESS = ['sim.done', 'lm4.tdone', 'lm4.stats', 'lm4.trainer', 'lm4.trainerseen', 'lm4.kamp', 'lm4.think', 'lm4.badges', 'lm4.seen', 'lm4.daily', 'lm4.duels', 'lm4.duell', 'lm4.jahrgang', 'lm4.besten', 'lm4.escape', 'lm4.predictstats', 'sim.hints', 'lm4.name'];
   const ALLP = /^(lm4|sim|sch|code|pi|digi|mess|haus|loch|app|pr|verbund)\./, NEVER = /^lm4\.(gate|god)$/;
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} } };

@@ -2,7 +2,13 @@
 /* Tonfunk Lab: „Stand exportieren“ (ab v23.145). Azubis erzeugen aus ihrem Lernstand eine kleine JSON-Datei, die der Ausbilder in ausbilder-uebersicht.html
    mit den Dateien der anderen Azubis zusammenlegt. Dateiweg: kein Server, keine Anmeldung, die Datei liegt zuerst nur auf dem Gerät des Azubis.
 
-   ===== Schema „tonfunk-stand“, Version 1 (genaue Beschreibung: quelle/dash/UEBERSICHT.md) =====
+   ===== Schema „tonfunk-stand“, Version 2 (ab v23.147; Schema 1 bleibt lesbar, genaue Beschreibung: quelle/dash/UEBERSICHT.md) =====
+   NEU in Schema 2: jahrgang: '2025' | '' (lm4.jahrgang, Ausbildungsbeginn),
+     duell:    { jahrgang, n: Zahl aller Duelle, wins: gewonnene, hist: [ { r, a, lab, st, t, ms, pct, h, f, m, pr, pts, g, gp, sig, code } ] }   (höchstens 50, neueste zuerst; code = der signierte TFD1-Code,
+               damit die Übersicht die Signatur selbst prüft; nie Fehlerschlüssel, Ursache oder Fehlertext; nur Aufgaben-Id und Zähler),
+     karriere: { level, xp, gp: { t, pct, note } | null }   (nur wenn das Karriere-Modul geladen ist; XP und Rang werden neu gerechnet),
+     exam.hist[].gp: 1 bei einer Generalprobe (Feld fehlt sonst).
+   Schema 1 hat diese Felder nicht (Übersicht: „keine Duelle“).
    { format: 'tonfunk-stand', schema: 1, app: 'v23.145', created: ISO-Zeit, ts: ms, kuerzel: 'az07',
      tasks:  { aufgabenId: [prozent 0..100, höchste Tipp-Stufe 0..3] },          (aus sim.done + lm4.tdone, Tipps aus sim.hints)
      labs:   { labKey: [Aufgaben gesamt, davon 100 %, Durchschnitt % über alle Aufgaben] },   (Lernpfad-Fortschritt, wie auf der Startseite; ohne Hub „Projekte“)
@@ -16,7 +22,7 @@
    NICHT enthalten: Klarname (lm4.name), Passwort/Gate, Lösungen, Antworttexte, gespeicherte Schaltungen. Es gibt keine Bearbeitungsdauer und keine Versuchszahl in der App,
    deshalb stehen sie auch nicht in der Datei. Das Kürzel ist die einzige Kennung und soll ein Pseudonym sein. */
 (function (root) {
-  const SCHEMA = 1, FORMAT = 'tonfunk-stand', MAXHIST = 30;
+  const SCHEMA = 2, FORMAT = 'tonfunk-stand', MAXHIST = 30, MAXDUELL = 50;
   const KUERZEL_RE = /^[A-Za-z0-9ÄÖÜäöüß_.-]{2,24}$/;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -79,6 +85,7 @@
       (Array.isArray(ps.hist) ? ps.hist : []).filter(h => isObj(h) && (h.kind === 'exam' || h.kind == null)).slice(-MAXHIST).forEach(h => {
         const e = { v: String(h.v || '').replace(/[^\w-]/g, '').slice(0, 20), area: String(h.area || '').replace(/[^\w-]/g, '').slice(0, 20), t: Math.max(0, Math.round(num(h.t))), pct: clamp(Math.round(num(h.pct)), 0, 100), pts: num(h.pts), max: num(h.max), note: clamp(Math.round(num(h.note)), 0, 6), secs: Math.max(0, Math.round(num(h.secs))), topics: {} };
         if (isObj(h.topics)) Object.keys(h.topics).slice(0, 60).forEach(k => { const a = h.topics[k]; if (idOk(k.replace(/[:@]/g, '_')) && Array.isArray(a)) e.topics[k] = [Math.max(0, Math.round(num(a[0]))), Math.max(0, Math.round(num(a[1])))]; });
+        if (isObj(h.cfg) && h.cfg.gp) e.gp = 1;
         exam.hist.push(e);
         if (isObj(h.byNiveau)) [1, 2, 3].forEach(k => { const a = h.byNiveau[k]; if (Array.isArray(a)) { exam.niveau[k][0] += Math.max(0, Math.round(num(a[0]))); exam.niveau[k][1] += Math.max(0, Math.round(num(a[1]))); } });
         if (isObj(h.cfg)) exam.cfg.last = { v: e.v, g: (Array.isArray(h.cfg.g) ? h.cfg.g : []).filter(x => typeof x === 'string' && idOk(x)).slice(0, 14), nv: ['mix', 'leicht', 'schwer'].includes(h.cfg.nv) ? h.cfg.nv : 'mix', n: clamp(Math.round(num(h.cfg.n)), 0, 100) };
@@ -98,8 +105,29 @@
     weak.tasks.sort((a, b) => a.p - b.p || b.h - a.h || a.id.localeCompare(b.id)); weak.tasks = weak.tasks.slice(0, 80);
     Object.keys(exam.topics).forEach(k => { const t = exam.topics[k], p = Math.round(100 * t[0] / t[1]); if (t[1] >= 5 && p < 60) weak.topics.push({ k, t: exam.titles[k] || '', p, n: t[1] }); });
     weak.topics.sort((a, b) => a.p - b.p || b.n - a.n || a.k.localeCompare(b.k));
-    const kz = checkKuerzel(o.kuerzel);
-    return { format: FORMAT, schema: SCHEMA, app: String(o.app || ''), created: new Date(now).toISOString(), ts: now, kuerzel: kz.ok ? kz.value : String(o.kuerzel || ''), tasks, labs, badges, exam, path, weak };
+    /* Schema 2: Jahrgang, Duelle, Karriere */
+    const jg0 = String(get('lm4.jahrgang', '') == null ? '' : get('lm4.jahrgang', '')).replace(/"/g, '').trim(), jahrgang = /^\d{4}$/.test(jg0) ? jg0 : '';
+    const dh = get('lm4.duell', {}), dall = isObj(dh) && Array.isArray(dh.hist) ? dh.hist.filter(d => isObj(d) && /^K\d{2}-[0-9A-Fa-f]{4}$/.test(String(d.r || '')) && /^[A-Za-z0-9_-]{1,12}$/.test(String(d.a || ''))) : [], isWon = d => num(d.pct) >= 100 && (d.win != null ? d.win === 1 : d.gp != null && d.gp !== '' && Math.round(num(d.pts) * (d.pr ? 0.5 : 1)) > num(d.gp));
+    const idRe = /^[A-Za-z0-9_-]{1,12}$/;
+    const duell = { jahrgang, n: dall.length, wins: dall.filter(isWon).length, hist: [] };
+    dall.slice(-MAXDUELL).reverse().forEach(d => {
+      const e = { r: String(d.r).toUpperCase(), a: String(d.a), lab: /^[a-z]{2,5}$/.test(String(d.lab || '')) ? String(d.lab) : '', st: clamp(Math.round(num(d.st)), 1, 3), t: Math.max(0, Math.round(num(d.t))), ms: clamp(Math.round(num(d.ms)), 0, 3 * 3600 * 1000),
+        pct: clamp(Math.round(num(d.pct)), 0, 100), h: clamp(Math.round(num(d.h)), 0, 2), f: clamp(Math.round(num(d.f)), 0, 50), m: d.m == null ? null : clamp(Math.round(num(d.m)), 0, 200), pr: d.pr ? 1 : 0, pts: clamp(Math.round(num(d.pts)), 0, 100) };
+      if (d.g != null && idRe.test(String(d.g))) { e.g = String(d.g); e.gp = d.gp == null || d.gp === '' ? null : clamp(Math.round(num(d.gp)), 0, 100); }
+      const cm = /^TFD1\.[A-Za-z0-9_-]{1,600}\.(?:[0-9a-f]{12}|u)$/.exec(String(d.code || ''));
+      e.sig = cm ? cm[0].slice(cm[0].lastIndexOf('.') + 1) : ''; if (cm) e.code = cm[0];
+      duell.hist.push(e);
+    });
+    let karriere = null;
+    if (o.karriere && typeof o.karriere.level === 'function') {
+      try {
+        const D = o.karriere.read(get, o.karriere.extra), L = o.karriere.level(D, o.karriere.ctx), g = L.gp;
+        karriere = { level: clamp(Math.round(num(L.n)), 1, 20), xp: Math.max(0, Math.round(num(L.xp))), gp: g ? { t: Math.max(0, Math.round(num(g.t))), pct: clamp(Math.round(num(g.pct)), 0, 100), note: clamp(Math.round(num(g.note)), 0, 6) } : null };
+      } catch (e) { karriere = null; }
+    }
+    const kz = checkKuerzel(o.kuerzel), res = { format: FORMAT, schema: SCHEMA, app: String(o.app || ''), created: new Date(now).toISOString(), ts: now, kuerzel: kz.ok ? kz.value : String(o.kuerzel || ''), jahrgang, tasks, labs, badges, exam, path, weak, duell };
+    if (karriere) res.karriere = karriere;
+    return res;
   }
 
   /* Kontrolle: enthält die Datei verbotene Inhalte? (Test und Schutz gegen versehentliche Erweiterung) */
@@ -107,6 +135,11 @@
     const txt = JSON.stringify(obj), out = [];
     (secrets || []).forEach(s => { if (s && txt.indexOf(String(s)) >= 0) out.push(String(s)); });
     ['"lm4.name"', '"lm4.gate"', '"lm4.god"', 'passwort', 'password', 'loesung', 'lösung'].forEach(w => { if (txt.toLowerCase().indexOf(w.toLowerCase()) >= 0) out.push(w); });
+    /* Duell-Block: nie Fehler, Ursache oder Fehlerschlüssel (der Code selbst ist Base64 und wird hier nicht durchsucht; seine Felder sind fest) */
+    if (obj && obj.duell && Array.isArray(obj.duell.hist)) {
+      const dt = JSON.stringify(obj.duell.hist.map(h => { const c = Object.assign({}, h); delete c.code; delete c.sig; return c; })).toLowerCase();
+      ['fehler', 'fault', 'ursache', 'kind', 'fehlerid'].concat((secrets || []).map(String).filter(x => x && x.length > 2)).forEach(w => { if (dt.indexOf(w.toLowerCase()) >= 0 && out.indexOf('duell:' + w) < 0) out.push('duell:' + w); });
+    }
     return out;
   }
 
@@ -144,8 +177,14 @@
       if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && (i === f.length - 1)) { e.preventDefault(); f[0].focus(); }
     }
   }
+  /* Karriere-Kern (karriere.js) nur wenn geladen; JSON-Lesen wie Coach.read */
+  function karriereArg() {
+    const K = root.Karriere; if (!K || !K.core) return null;
+    const Kp = root.Kampagne, defs = root.Badges && root.Badges.DEFS ? root.Badges.DEFS.map(d => d[0]) : null;
+    return { read: (get, extra) => K.core.read(get, extra), level: K.core.level, extra: Kp && Kp.CH ? { CH: Kp.CH, mdone: Kp.mdone } : null, ctx: { AUFGABEN: root.AUFGABEN, DEFS: defs } };
+  }
   function makeObj(kuerzel) {
-    return build({ read: ls.get, G: { AUFGABEN: root.AUFGABEN, LAB_REG: root.LAB_REG }, app: root.LAB_VERSION || '', kuerzel, bank: root.PR_BANK, pool: root.PR_POOL, kampTotal: root.Kampagne && root.Kampagne.CH ? root.Kampagne.CH.length : null });
+    return build({ read: ls.get, G: { AUFGABEN: root.AUFGABEN, LAB_REG: root.LAB_REG }, app: root.LAB_VERSION || '', kuerzel, bank: root.PR_BANK, pool: root.PR_POOL, kampTotal: root.Kampagne && root.Kampagne.CH ? root.Kampagne.CH.length : null, karriere: karriereArg() });
   }
   async function open(from) {
     opener = from || document.activeElement; if (!document.getElementById('standCss')) { const s = document.createElement('style'); s.id = 'standCss'; s.textContent = CSS; document.head.appendChild(s); }

@@ -1,0 +1,45 @@
+/* duell.css - Oberflaeche des Pruefungs-Duells (duellui.js). Farben aus den Seiten-Tokens (lab.css), hell ueber data-theme=light. */
+.dl{--dl-bg:var(--panel,#222830);--dl-in:var(--panel2,#2c343e);--dl-fg:var(--fg,#e8ecf0);--dl-mute:var(--mute,#8d99a6);--dl-line:var(--line,#38424d);--dl-acc:var(--accent-bg,#1a6fd4);--dl-ok:#5ee27d;--dl-warn:#ffb454;--dl-bad:var(--danger,#ff5c5c);--dl-chip:#ff7a00;--dl-chipfg:#1b1100;--dl-qrbg:#fff;color:var(--dl-fg);font:15px/1.45 system-ui,-apple-system,Segoe UI,sans-serif}
+:root[data-theme=light] .dl{--dl-bg:#ffffff;--dl-in:#eef1f5;--dl-fg:#1b2430;--dl-mute:#566272;--dl-line:#c4ccd6;--dl-acc:#0a4fb3;--dl-ok:#1c7a3a;--dl-warn:#8a5200;--dl-bad:#b3261e;--dl-chip:#ffb454;--dl-chipfg:#1b1100}
+.dl *{box-sizing:border-box}
+.dl-ov{position:fixed;inset:0;z-index:92;background:rgba(0,0,0,.72);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(10px + env(safe-area-inset-top)) 12px calc(10px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.dl-box{background:var(--dl-bg);border:1px solid var(--dl-line);border-radius:14px;padding:14px 16px 16px;width:100%;max-width:560px;margin:auto 0}
+.dl-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.dl-hd b{font-size:19px}
+.dl-x0{background:none;border:0;color:var(--dl-fg);font-size:22px;min-width:44px;min-height:44px;cursor:pointer;border-radius:10px}
+.dl p{margin:6px 0}.dl small,.dl .dl-mute{color:var(--dl-mute)}
+.dl label{display:block;font-size:13px;color:var(--dl-mute);margin:10px 0 3px}
+.dl input[type=text],.dl select,.dl textarea{width:100%;min-height:44px;font:inherit;font-size:16px;color:var(--dl-fg);background:var(--dl-in);border:1px solid var(--dl-line);border-radius:10px;padding:8px 10px}
+.dl textarea{min-height:64px;font-family:ui-monospace,Consolas,monospace;font-size:13px;word-break:break-all}
+.dl-btn{min-height:44px;padding:8px 14px;border-radius:10px;border:1px solid var(--dl-line);background:var(--dl-in);color:var(--dl-fg);font:inherit;font-weight:600;cursor:pointer}
+.dl-btn.pri{background:var(--dl-acc);border-color:var(--dl-acc);color:#fff}
+.dl-btn:focus-visible,.dl input:focus-visible,.dl select:focus-visible,.dl textarea:focus-visible,.dl-x0:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}
+.dl-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.dl-row>.dl-btn{flex:1 1 150px}
+.dl-seg{display:flex;gap:6px}.dl-seg .dl-btn{flex:1;padding:8px 4px}.dl-seg .dl-btn[aria-pressed=true]{background:var(--dl-acc);border-color:var(--dl-acc);color:#fff}
+.dl-code{font:800 34px/1.1 ui-monospace,Consolas,monospace;letter-spacing:2px;text-align:center;margin:8px 0;word-break:break-all}
+.dl-qr{background:var(--dl-qrbg);border-radius:10px;padding:6px;width:200px;max-width:100%;margin:8px auto}.dl-qr svg{display:block;width:100%;height:auto}
+.dl-card{background:var(--dl-in);border:1px solid var(--dl-line);border-radius:10px;padding:10px 12px;margin:8px 0}
+.dl-big{font:800 40px/1.1 system-ui,sans-serif}
+.dl-err{color:var(--dl-bad);font-size:14px;min-height:1.2em;margin:4px 0}
+.dl-warn{color:var(--dl-warn)}.dl-ok{color:var(--dl-ok)}
+.dl-tbl{width:100%;border-collapse:collapse;font-size:14px}.dl-tbl th,.dl-tbl td{padding:5px 6px;border-bottom:1px solid var(--dl-line);text-align:left}.dl-tbl th{color:var(--dl-mute);font-weight:600}
+.dl-tbl td.n,.dl-tbl th.n{text-align:right}
+.dl-win{font-weight:800}
+.dl-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (min-width:900px) and (orientation:landscape){.dl-box.wide{max-width:760px}.dl-box.wide .dl-cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}}
+/* Chip im Lab: mittig oben, 36 px hoch */
+.dl-chip{position:fixed;left:50%;top:calc(8px + env(safe-area-inset-top));transform:translateX(-50%);z-index:60;height:36px;max-width:calc(100vw - 16px);background:var(--dl-chip);color:var(--dl-chipfg);font-weight:700;font-size:15px;padding:0 6px 0 14px;border-radius:18px;box-shadow:0 3px 12px rgba(0,0,0,.4);display:flex;gap:12px;align-items:center;white-space:nowrap}
+.dl-chip .dl-t{font-variant-numeric:tabular-nums;font-size:17px}
+.dl-chip button{min-width:44px;height:36px;border:0;border-radius:18px;background:rgba(0,0,0,.22);color:inherit;font:inherit;font-size:14px;cursor:pointer;padding:0 10px}
+.dl-chip button.sure{background:#b3261e;color:#fff}
+@media (max-width:599px){.dl-chip{gap:8px;padding-left:10px}.dl-chip .dl-m{display:none}}
+/* Countdown und Toast */
+.dl-cd{position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;color:#fff;font:900 140px system-ui}
+.dl-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:96;background:var(--dl-bg);color:var(--dl-fg);border:1px solid var(--dl-line);border-radius:12px;padding:10px 16px;box-shadow:0 4px 16px rgba(0,0,0,.4);max-width:calc(100vw - 24px)}
+/* Startseiten-Band */
+.dl-band{max-width:900px;margin:10px auto;padding:10px 14px;border:1px solid var(--dl-line);background:var(--dl-bg);border-radius:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.dl-band .dl-tx{flex:1 1 220px}.dl-band .dl-btn{min-height:44px}
+
+.dl-best{margin:6px 0;padding-left:22px}.dl-best li{margin:2px 0}
+/* D4: Chip (fixed, mittig oben) darf Kopfzeile/Titel der Labs nicht ueberdecken: waehrend eines Duells bekommt die Kopfzeile oben Platz fuer den Chip (nur wenn der Chip da ist) */
+html:has(#duelChip) body>header,html:has(#duelChip) #app>header,html:has(#duelChip) body>.app>header{padding-top:calc(48px + env(safe-area-inset-top))!important}

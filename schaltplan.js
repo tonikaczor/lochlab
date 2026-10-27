@@ -3027,50 +3027,17 @@ function openDaily() {
 }
 
 
-/* ============ Duell: zwei Azubis, dieselbe Zufallsaufgabe, wer ist schneller? Zeiten gehen per Ergebnis-QR in die Rangliste ============ */
+/* ============ Duell: Dialog, Chip, Zeiten und Speicher liegen in duell.js/duellui.js (Duell.open); hier bleiben nur die Zufallsaufgabe und die Anbindung ============ */
 let duelSeed = null;
 const withDuel = (seed, f) => { const o = duelSeed; duelSeed = seed; try { return f(); } finally { duelSeed = o; } };
-const dcur = () => { try { return JSON.parse(localStorage.getItem('lm4.duelcur') || '{}'); } catch (e) { return {}; } };
-const dduels = () => { try { return JSON.parse(localStorage.getItem('lm4.duels') || '{}'); } catch (e) { return {}; } };
+const dcur = () => (window.Duell && window.Duell.rechnen ? window.Duell.rechnen.cur() : {});
 const dbaseDuel = () => { const sd = String(dcur().seed || '0000'); return TASKS.find(t => t.id === ['r1', 'r2', 'r3', 'r4'][(parseInt(sd, 10) || 0) % 4]); };
 const fmtDuel = ms => { const s = ms / 1000, m = Math.floor(s / 60); return (m ? m + ':' : '') + (s - m * 60).toFixed(1).padStart(m ? 4 : 1, '0').replace('.', ',') + (m ? '' : ' s'); };
-let duelTimer = 0;
-function duelChip(on) {
-  let c = document.getElementById('duelChip');
-  if (!on) { if (duelTimer) clearInterval(duelTimer); duelTimer = 0; if (c) c.remove(); return; }
-  if (!c) { c = document.createElement('div'); c.id = 'duelChip'; c.style.cssText = 'position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:60;background:#ff7a00;color:#fff;font:700 18px system-ui;padding:8px 16px;border-radius:22px;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;gap:10px;align-items:center'; document.body.appendChild(c); }
-  const tick = () => { const cu = dcur(); if (!cu.start || cu.done) { duelChip(false); return; } c.innerHTML = '⚔️ Duell ' + esc(cu.seed) + ' · ' + esc(fmtDuel(Date.now() - cu.start)) + ' <button style="background:rgba(0,0,0,.25);border:0;color:#fff;border-radius:12px;padding:2px 9px;font-size:14px;cursor:pointer">✕</button>'; c.querySelector('button').onclick = () => { try { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: cu.seed, done: 1 })); } catch (e) {} duelChip(false); toast('Duell abgebrochen'); }; };
-  tick(); if (!duelTimer) duelTimer = setInterval(tick, 200);
-}
-function duelSolved() {
-  const cu = dcur(); if (!cu.start || cu.done) return; const ms = Date.now() - cu.start;
-  try { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: cu.seed, start: cu.start, done: 1, ms })); const du = dduels(); if (!du[cu.seed] || du[cu.seed][0] > ms) du[cu.seed] = [ms, dbaseDuel() ? dbaseDuel().id : '']; localStorage.setItem('lm4.duels', JSON.stringify(du)); } catch (e) {}
-  duelChip(false);
-  if (window.Badges) { window.Badges.stat('duelle', Object.keys(dduels()).length, 'max'); window.Badges.confetti(false); window.Badges.chime(false); }
-  sheet('🏁 Im Ziel!', b => {
-    b.innerHTML = `<p style="margin-top:0;font-size:22px"><b>${esc(fmtDuel(ms))}</b></p><p>Duell-Code <b>${esc(cu.seed)}</b>. Vergleicht eure Zeiten. Der Ausbilder trägt sie in die Rangliste ein: tippe auf „Ergebnis senden“ und zeige den QR-Code.</p><div class="row2"><button class="btn pri" id="dSend">Ergebnis senden</button></div>`;
-    b.querySelector('#dSend').onclick = () => { const bd = document.querySelector('.backdrop'); if (bd) bd.remove(); if (window.Auswertung) window.Auswertung.openSend(); };
-  });
-}
+function duelSolved() { if (window.Duell && window.Duell.loadUi) window.Duell.loadUi(u => u.rechnenSolved(dbaseDuel() ? dbaseDuel().id : '')); }
 function openDuel() {
   if (LAB !== 'sch') { location.href = 'schaltplan.html?duell'; return; }
-  const seed = String(1000 + Math.floor(Math.random() * 9000));
-  sheet('Duell', b => {
-    b.innerHTML = `<p style="margin-top:0">Zwei oder mehr Azubis lösen <b>dieselbe Aufgabe mit denselben Zahlen</b>. Wer zuerst richtig ist, gewinnt.</p>
-      <label class="hint2">Duell-Code (alle geben denselben ein)</label>
-      <input id="dSeed" inputmode="numeric" maxlength="6" value="${seed}" style="width:100%;font-size:26px;text-align:center;letter-spacing:4px;box-sizing:border-box">
-      <div class="row2" style="margin-top:10px"><button class="btn pri" id="dGo">Los! (3, 2, 1)</button></div>
-      <p class="hint2">Tipp: Einer denkt sich einen Code aus und sagt ihn laut. Gleichzeitig auf „Los“ tippen.</p>`;
-    b.querySelector('#dGo').onclick = () => {
-      const sd = (b.querySelector('#dSeed').value || '').replace(/\D/g, '') || seed; const bd = document.querySelector('.backdrop'); if (bd) bd.remove();
-      const go = () => {
-        let n = 3; const ov = document.createElement('div'); ov.style.cssText = 'position:fixed;inset:0;z-index:95;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;color:#fff;font:900 140px system-ui'; document.body.appendChild(ov);
-        const step = () => { if (n > 0) { ov.textContent = n--; if (window.LochFX) window.LochFX.sound('tick'); setTimeout(step, 800); } else { ov.remove(); try { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: sd, start: Date.now() })); } catch (e) {} startTask('duell'); duelChip(true); } };
-        try { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: sd })); } catch (e) {} step();
-      };
-      if (sch.parts.length || sch.wires.length) confirmNew(go); else go();
-    };
-  });
+  if (!window.Duell) { window.addEventListener('load', () => { if (window.Duell) openDuel(); }, { once: true }); return; }   /* duell.js laedt nach schaltplan.js */
+  window.Duell.open({ lab: 'sch', art: 'rechnen', start: () => startTask('duell'), hasWork: () => !!(sch.parts.length || sch.wires.length), confirmNew });
 }
 
 /* ============ Escape-Room: gelöste Aufgaben verraten die Ziffern des Türcodes ============ */
@@ -4672,7 +4639,7 @@ $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name
   else if (/[?&]aufgabe=/.test(location.search) && TASKS.some(t => t.id === location.search.match(/[?&]aufgabe=(\w*)/)[1] && (t.lab || 'sim') === LAB)) startTask(location.search.match(/[?&]aufgabe=(\w*)/)[1]);
   else if (/[?&]escape\b/.test(location.search)) openEscape();
   else if (/[?&]detektiv\b/.test(location.search)) openDetective();
-  else if (/[?&]duell\b/.test(location.search)) openDuel();
+  else if (/[?&]duell(&|$)/.test(location.search)) openDuel();
   else if (/[?&]bsp\b/.test(location.search)) loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1]));
   else if (d && d.parts && d.parts.length) loadCircuit(d); else { loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1])); }
   if (PROGLAB) { initDock(); }
@@ -4727,7 +4694,7 @@ window.SchaltLive = {                                                           
   events: () => (sim ? sim.events.splice(0).map(e => e.text || e.kind) : []),
   pinV: (id, i) => sv(gk(...pinsOf(byPart(id))[i])),
   stepN: n => { for (let k = 0; k < n; k++) sim.step(2e-4); return sim.t; },
-  csv: () => exportScopeCsv(), scopeLen: () => scopeBuf.map(b => b.t.length), route: (a, b) => routeWire(a, b), wireTo: (a, b) => wireTo(a, b), wires: () => sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), mm: { text: () => meterText(), dial: meterDial, jack: j => { meter.jack = j; }, pt: (which, id, i) => { const q = pinsOf(byPart(id))[i]; meter[which] = { key: gk(q[0], q[1]), x: q[0], y: q[1] }; meterReset(); }, part: id => { meter.part = id; meterReset(); }, sample: n => { for (let k = 0; k < n; k++) { meterSample(0.01); } }, fuse: () => [meter.fuse, meter.fuse10], fix: () => { meter.fuse = false; meter.fuse10 = false; }, tool: t => { setTool(t); }, clear: () => { meter.a = meter.b = null; meter.part = null; } }, water: on => setWater(on), det: { cases: DET_CASES, start: startCase, report: diceJudge, dice: () => sch.dice }, done: markDone, daily: openDaily, openEscape, openDuel, duel: { solved: duelSolved, cur: dcur, set: (sd) => { localStorage.setItem('lm4.duelcur', JSON.stringify({ seed: sd, start: Date.now() })); }, base: dbaseDuel, fmt: fmtDuel }, esc: { steps: ESC_STEPS, code: ESC_CODE, digits: escDigits }, render: () => { try { render(); return "ok"; } catch (e) { return String(e.stack || e); } }, tl: { n: () => tl.length, idx: () => tlIdx, go: tlGo, live: tlLive, fwd: tlStepFwd, adv: n => { for (let k = 0; k < n; k++) { tlLast = 0; advance(0.05); } return tl.length; }, t: () => sim.t, v: () => Array.from(sim.v).slice(0, 6) }, vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
+  csv: () => exportScopeCsv(), scopeLen: () => scopeBuf.map(b => b.t.length), route: (a, b) => routeWire(a, b), wireTo: (a, b) => wireTo(a, b), wires: () => sch.wires.map(w => [w.x1, w.y1, w.x2, w.y2]), mm: { text: () => meterText(), dial: meterDial, jack: j => { meter.jack = j; }, pt: (which, id, i) => { const q = pinsOf(byPart(id))[i]; meter[which] = { key: gk(q[0], q[1]), x: q[0], y: q[1] }; meterReset(); }, part: id => { meter.part = id; meterReset(); }, sample: n => { for (let k = 0; k < n; k++) { meterSample(0.01); } }, fuse: () => [meter.fuse, meter.fuse10], fix: () => { meter.fuse = false; meter.fuse10 = false; }, tool: t => { setTool(t); }, clear: () => { meter.a = meter.b = null; meter.part = null; } }, water: on => setWater(on), det: { cases: DET_CASES, start: startCase, report: diceJudge, dice: () => sch.dice }, done: markDone, daily: openDaily, openEscape, openDuel, duel: { solved: duelSolved, cur: dcur, set: (sd) => { if (window.Duell) window.Duell.rechnen.start(sd); }, base: dbaseDuel, fmt: fmtDuel }, esc: { steps: ESC_STEPS, code: ESC_CODE, digits: escDigits }, render: () => { try { render(); return "ok"; } catch (e) { return String(e.stack || e); } }, tl: { n: () => tl.length, idx: () => tlIdx, go: tlGo, live: tlLive, fwd: tlStepFwd, adv: n => { for (let k = 0; k < n; k++) { tlLast = 0; advance(0.05); } return tl.length; }, t: () => sim.t, v: () => Array.from(sim.v).slice(0, 6) }, vmax: () => vmax, pend: () => [[...relPend], [...pressT0], sim && sim.t],
 };
 
 /* Schnittstelle für den Trainer (trainer.js): liest den Zustand und lädt Beispiele, ohne etwas zu zerstören (die aktuelle Schaltung wird vorher gesichert) */

@@ -40,6 +40,9 @@
    * Der Fehler steht nur in start().controls (gesperrt und verdeckt). Die Ursachen-Auswahl nennt alle Kandidaten, die Messbilder sind aus dem Pruefstand gerechnet. */
   function faultM(spec) {
     const OWN = [], rig = spec.rig;
+    /* D4: im Duell (nur fuer die laufende Duell-Aufgabe, nur Aufgaben mit spec.duel) waehlt der Runden-Code den verdeckten Fehler aus spec.cands; sonst der feste Fehler wie bisher */
+    const TID = 'ae' + String(spec.key).replace(/^f/, '');
+    const FA = () => { let d = 0; if (spec.duel) { try { d = root.Duell && typeof root.Duell.seedFor === 'function' ? root.Duell.seedFor(TID) : 0; } catch (e) { d = 0; } } return d > 0 ? spec.cands[d % spec.cands.length] : spec.fault; };
     const withF = id => fullCtl(rig, Object.assign({}, spec.base, { fehler: id }));
     const pic = id => once(spec.key + ':' + id, () => { const sim = snap(rig, withF(id)); return sim.ok ? spec.pic(sim.m) : 'keine Messwerte'; });
     const allIds = () => once(spec.key + ':all', () => ((U.cdef(rig, 'fehler') || {}).options || []).map(o => (isO(o) ? o.value : o)).filter(v => v !== 'keiner'));
@@ -47,17 +50,17 @@
     const O1c = () => O1().filter(o => spec.cands.includes(o.value));
     const O2 = () => spec.cands.map(id => opt(id, pic(id), 'Diese Messwerte gehören zu einem anderen Fehlerbild. Vergleiche sie noch einmal mit deinen eigenen Messungen.'));
     const check = mk(rig, OWN, (c, r, a) => {
-      const sim = snap(rig, withF(spec.fault));
+      const fa = FA(), sim = snap(rig, withF(fa));
       inputRow(c, r, sim, a, rig);
-      U.choiceRow(r, faultAns(a), { key: 'ursache', right: spec.fault, opts: O1(), label: 'Ursache richtig gewählt' });
-      U.choiceRow(r, a, { key: 'beleg', right: spec.fault, opts: O2(), label: 'Die zur Ursache passenden Messwerte richtig gewählt' });
+      U.choiceRow(r, faultAns(a), { key: 'ursache', right: fa, opts: O1(), label: 'Ursache richtig gewählt' });
+      U.choiceRow(r, a, { key: 'beleg', right: fa, opts: O2(), label: 'Die zur Ursache passenden Messwerte richtig gewählt' });
     });
-    const ans = (u, b) => S(rig, Object.assign({}, spec.base, { fehler: spec.fault }), { lock: ['fehler'], hidden: ['fehler'], choices: u ? { ursache: u, beleg: b } : {} });
+    const ans = (u, b) => S(rig, Object.assign({}, spec.base, { fehler: FA() }), { lock: ['fehler'], hidden: ['fehler'], choices: u ? { ursache: u, beleg: b } : {} });
     return { vals: () => ({}), check, consts: [], text: () => spec.text,
       choices: () => [U.choiceDef('ursache', spec.frage1, O1c()), U.choiceDef('beleg', spec.frage2, O2())],
       hint: () => spec.hint,
       start: () => ans(null),
-      sol: () => ans(spec.fault, spec.fault),
+      sol: () => { const fa = FA(); return ans(fa, fa); },
       wrong: () => spec.wrongs.map(w => ({ name: w.name, answer: ans(w.ursache, w.beleg) })),
       pic, O1c, O2, fault: spec.fault, cands: spec.cands.slice() };
   }
@@ -113,7 +116,7 @@
   })();
 
   /* ====================================================================== ae3: Fehlersuche: Die LED leuchtet nicht */
-  const M3 = faultM({ key: 'f3', rig: 'diode', fault: 'verpolt', cands: ['verpolt', 'diode offen', 'diode kurz', 'rv offen'],
+  const M3 = faultM({ key: 'f3', duel: true, rig: 'diode', fault: 'verpolt', cands: ['verpolt', 'diode offen', 'diode kurz', 'rv offen'],
     base: { typ: 'led_rot', modell: 'kennlinie', uq: 5, rv: 330, uz: 5.1, rlast: 1e6, temp: 27, ziel: 0 },
     pic: m => 'U_D = ' + nz(m.ud, 1) + ' V, U_R = ' + nz(m.ur, 1) + ' V, I_D = ' + nz(m.id, 1) + ' mA',
     text: 'Eine rote LED mit Vorwiderstand an einer 5-V-Quelle leuchtet nicht. Der Fehlerfall ist verdeckt („Fehler: ?“). Miss die Spannung an der LED (U_D), die Spannung am Vorwiderstand (U_R) und den Strom (I_D). Vergleiche deine Messwerte mit den Messbildern der Auswahl, wähle die Ursache und wähle dann die Messwerte, die zu dieser Ursache gehören.',
@@ -370,7 +373,7 @@
   })();
 
   /* ====================================================================== ae13: Fehlersuche an der Emitterschaltung */
-  const M13 = faultM({ key: 'f13', rig: 'emitter', fault: 'r1 offen', cands: ['r1 offen', 'r2 offen', 'rc offen', 'ce offen'],
+  const M13 = faultM({ key: 'f13', duel: true, rig: 'emitter', fault: 'r1 offen', cands: ['r1 offen', 'r2 offen', 'rc offen', 'ce offen'],
     base: { ub: 12, ue: 0.02, f: 1000, rg: 600, r1: 47000, r2: 10000, rc: 2200, re1: 100, re2: 470, ce: true, c1: 1e-5, c2: 1e-5, b: 100, rl: 10000, zielUce: 0, zielVu: 0, ansicht: 'signal' },
     pic: m => 'U_CE = ' + nz(m.uce, 1) + ' V, U_E = ' + nz(m.ues, 1) + ' V, I_C = ' + nz(m.ic, 1) + ' mA, V_u = ' + nz(m.vu, 1),
     text: 'Eine Emitterschaltung (12 V, Basisspannungsteiler, Emitterkondensator, Last 10 kΩ, Eingang 20 mV bei 1 kHz) verstärkt nicht wie erwartet. Der Fehlerfall ist verdeckt („Fehler: ?“). Miss U_CE, die Emitterspannung U_E, den Kollektorstrom I_C und die Spannungsverstärkung V_u. Vergleiche mit den Messbildern der Auswahl, wähle die Ursache und danach die Messwerte, die zu dieser Ursache gehören.',

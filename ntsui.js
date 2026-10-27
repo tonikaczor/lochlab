@@ -689,7 +689,7 @@
     if (!S.rig || S.readonly) return false; if (typeof S.rig.fire !== 'function') { toast('Dieser Prüfstand hat keine Auslösung.'); return false; }
     let ok = true; try { ok = S.rig.fire() !== false; } catch (e) { console.error(e); ok = false; }
     S.fired = true; S.touched = true; S.dirty = true; stat('ntsfire', 1, 'max'); saveCurSoon();
-    if (S.rigId === 'fehler') { const m = (() => { try { return S.rig.readMeters() || {}; } catch (e) { return {}; } })(); S.clicks.push({ point: S.rig.getControl('messpunkt'), wert: fin(m.wert) ? m.wert : null }); buildFaultPanel(); }
+    if (S.rigId === 'fehler') { const m = (() => { try { return S.rig.readMeters() || {}; } catch (e) { return {}; } })(); S.clicks.push({ point: S.rig.getControl('messpunkt'), wert: fin(m.wert) ? m.wert : null }); buildFaultPanel(); if (ok) { try { if (root.Duell && root.Duell.mess) root.Duell.mess('nts', S.rig.getControl('messpunkt')); } catch (e) { /* D4: Messung ans Duell (nur im Duell aktiv) */ } } }
     if (!S.running) setRun(true, true);
     S.needDraw = true; readState(); updateEvents(); clickSnd('click');
     if (!ok) toast('Das ging nicht: ' + (FIRE[S.rigId] || 'Auslösen') + ' ist im Moment nicht möglich.');

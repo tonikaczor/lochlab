@@ -252,7 +252,14 @@
     b.parts.forEach(p => { const ps = P.filter(q => q.ref === p.ref); if (!ps.length) return; const q = last ? ps[ps.length - 1] : ps[0]; p.x = Math.round((p.x + Math.round(q.x / g) * g - q.x) * 10000) / 10000; p.y = Math.round((p.y + Math.round(q.y / g) * g - q.y) * 10000) / 10000; });
     return b;
   }
-  const repStart = (key, kinds) => { let r = { board: board(key) }; if (REP()) kinds.forEach(k => { const x = REP().inject(r.board, { kind: k[0], seed: k[1] }); if (x && x.board) r = x; }); return r.board; };
+  /* D4: im Duell (nur fuer die laufende Duell-Aufgabe id) kommt der Seed des verdeckten Fehlers aus dem Runden-Code: gleicher Code = gleicher Fehlerort; sonst fester Seed wie bisher */
+  const duelSeed = id => { try { const d = id && root.Duell && typeof root.Duell.seedFor === 'function' ? root.Duell.seedFor(id) : 0; return d > 0 ? d : 0; } catch (e) { return 0; } };
+  const repMake = (key, kinds, sd) => { let r = { board: board(key) }; if (REP()) kinds.forEach(k => { const x = REP().inject(r.board, { kind: k[0], seed: sd || k[1] }); if (x && x.board) r = x; }); return r.board; };
+  const repStart = (key, kinds, id) => {
+    const ds = duelSeed(id); if (!ds || !REP()) return repMake(key, kinds, 0);
+    for (let i = 0; i < 12; i++) { const b = repMake(key, kinds, 1 + ((ds + i) % 997)); try { const f = REP().autoFix(b); if (f && f.board && REP().verify(f.board).ok && !REP().verify(b).ok) return b; } catch (e) { /* naechster Seed */ } }
+    return repMake(key, kinds, 0);
+  };
   const repSol = b => (REP() ? REP().autoFix(b).board : b);
   const repLines = b => {
     const R = REP(); if (!R) return [L(false, 'Das Reparatur-Modul ist nicht geladen', 'pcbrepair.js fehlt.')];
@@ -605,27 +612,27 @@
     { id: 'pb33', lab: 'pcb', cat: 'Fehlersuche', title: 'Der Blinker blinkt nicht', level: 1,
       text: 'Der 555-Blinker leuchtet nicht, obwohl optisch alles in Ordnung aussieht. Prüfe mit dem Durchgangsprüfer die Netze und der Lupe die Platine, finde die Ursache und repariere sie. Arbeite im Fehlersuche-Tab.',
       hint: ['Fehlersuche heißt: erst messen, dann reparieren. Ein Netz muss von Pad zu Pad Durchgang haben.', 'Miss die Netze nacheinander mit dem Durchgangsprüfer. Das Netz, bei dem der Piepton fehlt, enthält den Riss. Mit der Lupe findest du ihn auf der Unterseite.', 'Der Riss liegt in einer Bahn der Unterseite. Überbrücke ihn mit Lötzinn oder lege einen Fädeldraht über die Stelle.'],
-      start: () => repStart('ex555', [['crack', 1]]), sol: () => repSol(repStart('ex555', [['crack', 1]])), check: b => repLines(b) },
+      start: () => repStart('ex555', [['crack', 1]], 'pb33'), sol: () => repSol(repStart('ex555', [['crack', 1]], 'pb33')), check: b => repLines(b) },
     { id: 'pb34', lab: 'pcb', cat: 'Fehlersuche', title: 'Das Netzteil bricht zusammen', level: 1,
       text: 'Das Netzteil liefert keine saubere Spannung und bricht unter Last zusammen. Prüfe die Platine anhand des Schaltplans mit Lupe und Messgerät, finde die Ursache und behebe sie. Arbeite im Fehlersuche-Tab.',
       hint: ['Gepolte Bauteile sind Elkos, Dioden und LEDs. Prüfe, wohin Plus und Minus laut Plan gehören.', 'Schau dir die Bauteile in der Lupe an und vergleiche die Markierung mit dem Schaltplan. Das Bauteil, das nicht zur Polung passt, ist falsch eingebaut.', 'Löte das verpolte Bauteil aus und setze es um 180 Grad gedreht wieder ein (Werkzeug Drehen am Lötkolben).'],
-      start: () => repStart('exnetz', [['reversed', 1]]), sol: () => repSol(repStart('exnetz', [['reversed', 1]])), check: b => repLines(b) },
+      start: () => repStart('exnetz', [['reversed', 1]], 'pb34'), sol: () => repSol(repStart('exnetz', [['reversed', 1]], 'pb34')), check: b => repLines(b) },
     { id: 'pb35', lab: 'pcb', cat: 'Fehlersuche', title: 'Der LED-Treiber wird warm', level: 2,
       text: 'Die LED-Treiber-Platine zieht zu viel Strom und wird warm. Suche mit dem Widerstandsmessgerät und der Lupe die Ursache und beseitige sie. Arbeite im Fehlersuche-Tab.',
       hint: ['Ein Kurzschluss zwischen zwei Netzen zeigt sich als Durchgang dort, wo keiner sein soll.', 'Prüfe die Netze gegeneinander: Zeigt das Messgerät zwischen zwei verschiedenen Netzen Durchgang, sitzt irgendwo dazwischen Lot. Die Lupe zeigt dir die Stelle bei eng liegenden Pads.', 'Lötbrücken saugst du mit der Entlötlitze weg. Pinzette und Messer sind für Zinnperlen und Kupferreste.'],
-      start: () => repStart('exled', [['bridge', 1]]), sol: () => repSol(repStart('exled', [['bridge', 1]])), check: b => repLines(b) },
+      start: () => repStart('exled', [['bridge', 1]], 'pb35'), sol: () => repSol(repStart('exled', [['bridge', 1]], 'pb35')), check: b => repLines(b) },
     { id: 'pb36', lab: 'pcb', cat: 'Fehlersuche', title: 'Die Platine läuft nur beim Antippen', level: 2,
       text: 'Die LED-Treiber-Platine funktioniert nur, wenn du sie leicht antippst. Prüfe mit der Lupe die Platine, finde die Ursache und behebe sie. Arbeite im Fehlersuche-Tab.',
       hint: ['Eine kalte Lötstelle sieht matt und körnig aus und leitet nur manchmal.', 'Schau mit der Lupe alle Lötstellen an. Die schlechte Stelle glänzt nicht und hat keinen sauberen Meniskus. Messen hilft hier nur zufällig, weil der Kontakt wackelt.', 'Mit dem Lötkolben die Stelle nachlöten (Reflow der Lötstelle). Danach glänzt sie wieder.'],
-      start: () => repStart('exled', [['cold', 1]]), sol: () => repSol(repStart('exled', [['cold', 1]])), check: b => repLines(b) },
+      start: () => repStart('exled', [['cold', 1]], 'pb36'), sol: () => repSol(repStart('exled', [['cold', 1]], 'pb36')), check: b => repLines(b) },
     { id: 'pb37', lab: 'pcb', cat: 'Fehlersuche', title: 'Das Netzteil läuft nur beim Biegen', level: 3,
       text: 'Das Netzteil funktioniert nur, wenn du die Platine biegst. Finde die Stelle durch Messen von Pad zu Pad auf beiden Seiten der Platine und repariere sie. Arbeite im Fehlersuche-Tab.',
       hint: ['Ein Via verbindet Ober- und Unterseite. Ist die Kupferhülse gebrochen, haben die Seiten keinen Durchgang mehr.', 'Miss das Netz, das ein Via enthält, getrennt auf der Oberseite und auf der Unterseite. Wo der Durchgang nach dem Via fehlt, ist es gebrochen.', 'Mit dem Werkzeug Draht durch das Via löten (Via reparieren). Der Fehler ist danach behoben.'],
-      start: () => repStart('exnetz', [['viabreak', 1]]), sol: () => repSol(repStart('exnetz', [['viabreak', 1]])), check: b => repLines(b) },
+      start: () => repStart('exnetz', [['viabreak', 1]], 'pb37'), sol: () => repSol(repStart('exnetz', [['viabreak', 1]], 'pb37')), check: b => repLines(b) },
     { id: 'pb38', lab: 'pcb', cat: 'Fehlersuche', title: 'Der Vorverstärker verstärkt zu wenig', level: 2,
       text: 'Der OPV-Vorverstärker verstärkt viel zu wenig. Miss die Bauteile im ausgeschalteten Zustand (Widerstandsmessung), vergleiche mit Schaltplan und Stückliste, finde die Ursache und behebe sie. Arbeite im Fehlersuche-Tab.',
       hint: ['Widerstände misst du aus dem Stromkreis oder ausgelötet. Vergleiche den Messwert mit dem Soll aus dem Schaltplan.', 'Miss die Widerstände nacheinander. Einer weicht stark vom Sollwert ab (zum Beispiel 1 kOhm statt 10 kOhm). Das ist der falsche.', 'Bauteil austauschen (Löten, Bauteil tauschen) und den Sollwert aus dem Schaltplan eintragen.'],
-      start: () => repStart('exopv', [['wrongvalue', 1]]), sol: () => repSol(repStart('exopv', [['wrongvalue', 1]])), check: b => repLines(b) },
+      start: () => repStart('exopv', [['wrongvalue', 1]]), sol: () => repSol(repStart('exopv', [['wrongvalue', 1]])), /* D4: bewusst fest (Symptomtext passt nur zum festen Bauteil) */ check: b => repLines(b) },
 
     /* ---------------- Prüfverfahren */
     { id: 'pb39', lab: 'pcb', cat: 'Prüfverfahren', title: 'Prüfaufwand aus der Netzliste berechnen', level: 2,
