@@ -33,11 +33,28 @@
       kuerzel: String(g('lm4.kuerzel', '') || ''), jahrgang: String(g('lm4.jahrgang', '') || ''),
       kar: isObj(kar) ? kar : {}
     };
+    /* Karriere-Start (v23.147b): lm4.karriere.k0 = Startstand; ohne k0 und mit extra.virtual startet die Rechnung gedanklich JETZT (0 XP, nichts wird gespeichert); ohne beides (Tests, Altaufrufe) rückwirkend */
+    const k0 = D.kar.k0;
+    if (isObj(k0) && num(k0.t) > 0) D.k0 = { t: num(k0.t), a: arr(k0.a), b: arr(k0.b), k: arr(k0.k), tr: arr(k0.tr), v: arr(k0.v), g: num(k0.g) };
     if (extra && extra.CH) {   // Kapitel live aus der Kampagne, nicht nur die gefeierten
       D.chAll = extra.CH.filter(c => !c.epilog).map(c => c.t);
       if (extra.mdone) extra.CH.forEach(c => { try { if (c.m.every(extra.mdone) && !D.kampDone.includes(c.t)) D.kampDone.push(c.t); } catch (e) {} });
     }
+    if (!D.k0 && extra && extra.virtual) D.k0 = snapshot(D, extra.now);
     return D;
+  }
+  /* Startstand der XP-Quellen (nur Daten VOR dem Start zählen nicht; Kapitel bleiben als Meilenstein anrechenbar):
+     Aufgaben/Abzeichen/Kapitel/Trainer/Verbund-Projekte als Listen (robust gegen Löschen und Wiederholen), Prüfungen und Duelle über den Zeitstempel t > Start, Verbund-Gold als Zählerstand */
+  function snapshot(D, now) {
+    return { t: num(now) > 0 ? num(now) : Date.now(), a: Object.keys(D.done).filter(k => num(D.done[k]) >= 100), b: D.badges.slice(), k: D.kampDone.slice(), tr: D.trainer.slice(), v: KD.VERBUND_PIDS.filter(k => num(D.stats[k]) >= 1), g: num(D.stats.vbgold) };
+  }
+  /* Karriere starten: speichert k0 einmalig (set(key, objekt)); gibt den Startstand zurück */
+  function start(get, set, extra, now) {
+    const D = read(get, extra ? Object.assign({}, extra, { virtual: false }) : null);
+    if (D.k0) return D.k0;
+    const k0 = snapshot(D, now);
+    try { set('lm4.karriere', Object.assign({ v: 1 }, D.kar, { k0 })); } catch (e) {}
+    return k0;
   }
   /* Aufgaben-XP: 10 je Level, +5 ohne Tipp, minus Tipp-Abzug je Tipp (D.hints = lm4.ctipps[id] = höchste Stufe 1 bis 3 = Zahl der Challenge-Tipps; Tipps aus normalem Üben in sim.hints zählen NIE), nie unter 0 */
   function taskXp(id, lv, D, X) {
@@ -52,16 +69,17 @@
   function xp(D, ctx) {
     const X = (ctx && ctx.XP) || KD.XP, rows = (ctx && ctx.AUFGABEN) || root.AUFGABEN || [];
     const P = { aufgaben: 0, abzeichen: 0, kapitel: 0, trainer: 0, pruefungen: 0, duelle: 0, verbund: 0 };
-    rows.forEach(r => { if (num(D.done[r[0]]) >= 100) P.aufgaben += taskXp(r[0], Math.max(1, Math.min(3, num(r[4]) || 1)), D, X); });
-    const defs = ctx && ctx.DEFS; P.abzeichen = X.abzeichen * D.badges.filter(b => !defs || defs.includes(b)).length;
-    P.kapitel = X.kapitel * new Set(D.kampDone).size;
-    P.trainer = X.trainer * D.trainer.length;
-    P.pruefungen = D.hist.filter(h => isObj(h) && h.kind === 'exam' && !h.self).map(h => X.pruefung[Math.round(num(h.note))] || 0).sort((a, b) => b - a).slice(0, X.pruefungMax).reduce((s, v) => s + v, 0);
+    const K0 = D.k0, ne = (list, v) => !K0 || !list.includes(v);   // zählt nur, was NACH dem Start dazukam
+    rows.forEach(r => { if (num(D.done[r[0]]) >= 100 && ne(K0 ? K0.a : [], r[0])) P.aufgaben += taskXp(r[0], Math.max(1, Math.min(3, num(r[4]) || 1)), D, X); });
+    const defs = ctx && ctx.DEFS; P.abzeichen = X.abzeichen * D.badges.filter(b => (!defs || defs.includes(b)) && ne(K0 ? K0.b : [], b)).length;
+    P.kapitel = X.kapitel * new Set(D.kampDone.filter(t => ne(K0 ? K0.k : [], t))).size;
+    P.trainer = X.trainer * D.trainer.filter(t => ne(K0 ? K0.tr : [], t)).length;
+    P.pruefungen = D.hist.filter(h => isObj(h) && h.kind === 'exam' && !h.self && (!K0 || num(h.t) > K0.t)).map(h => X.pruefung[Math.round(num(h.note))] || 0).sort((a, b) => b - a).slice(0, X.pruefungMax).reduce((s, v) => s + v, 0);
     const wk = {}, seen = {};   // Wochendeckel: höchstens duellProWoche Duelle je Kalenderwoche; nur zu Ende gespielte (pct >= 100), je Rundencode einmal
-    D.duell.forEach(d => { if (!isObj(d) || num(d.pct) < 100 || seen[d.r]) return; seen[d.r] = 1; const k = weekKey(num(d.t)); (wk[k] = wk[k] || []).push(d); });
+    D.duell.forEach(d => { if (!isObj(d) || num(d.pct) < 100 || seen[d.r] || (K0 && num(d.t) <= K0.t)) return; seen[d.r] = 1; const k = weekKey(num(d.t)); (wk[k] = wk[k] || []).push(d); });
     Object.keys(wk).forEach(k => wk[k].slice(0, X.duellProWoche).forEach(d => { P.duelle += X.duellGespielt + (won(d) ? X.duellGewonnen : 0); }));
-    const vb = KD.VERBUND_PIDS.filter(k => num(D.stats[k]) >= 1).length;   // nur bestandene Projekte, nicht vbstart/vbuebergabe/vbbericht/vbteilen
-    P.verbund = X.verbund * vb + X.verbundGold * Math.min(vb, num(D.stats.vbgold));
+    const vb = KD.VERBUND_PIDS.filter(k => num(D.stats[k]) >= 1 && ne(K0 ? K0.v : [], k)).length, vg = Math.max(0, num(D.stats.vbgold) - (K0 ? K0.g : 0));   // nur bestandene Projekte, nicht vbstart/vbuebergabe/vbbericht/vbteilen
+    P.verbund = X.verbund * vb + X.verbundGold * Math.min(vb, vg);
     return { total: Object.keys(P).reduce((s, k) => s + P[k], 0), parts: P };
   }
   /* Generalprobe: bester Prüfungseintrag mit cfg.gp (kleinere Note ist besser) */
@@ -115,7 +133,7 @@
     const datum = dmy(G.t), best = rang >= 10 && G.note <= KD.GP.notePruefungsbester;
     return { titel: best ? 'Prüfungsbester' : 'Generalprobe', rang, rangTitel: KD.LEVELS[Math.max(1, Math.min(rang, KD.LEVELS.length)) - 1].t, datum, note: G.note, pct: G.pct, name: String(name || D.kuerzel || '').trim().slice(0, 60), kuerzel: D.kuerzel, code: certCode(D.kuerzel, datum, G.note) };
   }
-  const core = { read, xp, level, specials, gp, taskXp, weekKey, certCode, fnv, duelWins, gpSeed, gpStatus, urkunde };
+  const core = { read, snapshot, start, xp, level, specials, gp, taskXp, weekKey, certCode, fnv, duelWins, gpSeed, gpStatus, urkunde };
   const Karriere = { core, DATA: KD };
   if (typeof module !== 'undefined' && module.exports) module.exports = Karriere;
   root.Karriere = Object.assign(root.Karriere || {}, Karriere);

@@ -16,7 +16,7 @@
   /* Anzeige-Modell aus Eingaben (D wie core.read) */
   function model(D, ctx, free) {
     const L = core.level(D, ctx), cur = KD.LEVELS[L.n - 1], nx = L.next ? KD.LEVELS[L.n] : null;
-    const pct = nx ? Math.max(0, Math.min(100, Math.round(100 * (L.xp - cur.xp) / Math.max(1, nx.xp - cur.xp)))) : 100;
+    const pct = nx ? Math.max(0, Math.min(100, Math.round(100 * (L.xp - cur.xp) / Math.max(1, nx.xp - cur.xp)))) : 100, xpDone = !!nx && L.xp >= nx.xp;   // xpDone: XP-Ziel erreicht, es fehlt nur noch ein Meilenstein
     const ranks = KD.LEVELS.map(lv => {
       const ms = (lv.kap || []).map(t => ({ t: 'Kapitel „' + t + '“', ok: D.kampDone.includes(t), kap: t }));
       if (lv.kampagne) ms.push({ t: 'Hauptkampagne abgeschlossen', ok: kampOK(D) });
@@ -32,15 +32,15 @@
       if (L.need.gp) need.push('Generalprobe mit Note ' + KD.GP.notePruefungsbester + ' oder besser');
     }
     const sp = core.specials(D, L.n, free);
-    return { L, cur, nx, pct, ranks, parts, need, sp, titleOf: n => (KD.LEVELS[n - 1] || {}).t || '' };
+    return { L, cur, nx, pct, xpDone, ranks, parts, need, sp, titleOf: n => (KD.LEVELS[n - 1] || {}).t || '' };
   }
   const bar = pct => '<div class="kr-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>';
   function rangHtml(M, extra) {
     extra = extra || {};
     const L = M.L, c = [];
     c.push('<div class="kr-c"><div class="kr-big">Rang ' + L.n + ' · ' + esc(L.t) + '</div>' + bar(M.pct)
-      + '<div class="kr-sub">' + (M.nx ? fmt(L.xp) + ' / ' + fmt(M.nx.xp) + ' XP' : fmt(L.xp) + ' XP · höchster Rang erreicht') + '</div>'
-      + (M.nx ? '<p class="kr-nx"><b>Nächster Rang: ' + esc(M.nx.t) + '</b><br>' + (M.need.length ? 'Braucht noch: ' + M.need.map(esc).join(' · ') : 'Alle Bedingungen erfüllt, der Aufstieg kommt gleich.') + '</p>' : '')
+      + '<div class="kr-sub">' + (M.nx ? (M.xpDone ? 'XP-Ziel erreicht (' + fmt(M.nx.xp) + ' XP)' : fmt(L.xp) + ' / ' + fmt(M.nx.xp) + ' XP') : fmt(L.xp) + ' XP · höchster Rang erreicht') + '</div>'
+      + (M.nx ? '<p class="kr-nx"><b>Nächster Rang: ' + esc(M.nx.t) + '</b><br>' + (M.need.length ? (M.xpDone ? 'Es fehlt noch: ' : 'Braucht noch: ') + M.need.map(esc).join(' · ') : 'Alle Bedingungen erfüllt, der Aufstieg kommt gleich.') + '</p>' : '')
       + (extra.up ? '<p class="kr-up">🎉 Neuer Rang erreicht!</p>' : '')
       + '<p class="kr-story"><span>Meister Funk</span> „' + esc(M.cur.story) + '“</p></div>');
     const right = ['<div class="kr-c"><h3>Nächste Schritte</h3>' + (extra.coach && extra.coach.length ? '<ol class="kr-co">' + extra.coach.map(s => '<li><b>' + esc(s.title) + '</b><span>' + esc(s.text || '') + '</span>' + (s.href ? '<a class="kr-b" href="' + esc(s.href) + '">Los</a>' : '') + '</li>').join('') + '</ol>' : '<p class="kr-sub">Öffne ein Lab und löse eine Aufgabe. Dann erscheinen hier deine nächsten Schritte.</p>')
@@ -103,7 +103,7 @@
   const freeOn = () => { try { return localStorage.getItem('lm4.kamp.free') === '1'; } catch (e) { return false; } };
   function state() {
     const Kp = root.Kampagne, B = root.Badges;
-    const D = core.read(lsGet, Kp ? { CH: Kp.CH, mdone: Kp.mdone } : null);
+    const D = core.read(lsGet, Kp ? { CH: Kp.CH, mdone: Kp.mdone, virtual: true } : { virtual: true });
     return { D, M: model(D, { AUFGABEN: root.AUFGABEN, DEFS: B && B.DEFS ? B.DEFS.map(d => Array.isArray(d) ? d[0] : d.id) : null }, freeOn()) };
   }
   /* kurze Zusammenfassung für Karte und Lernpfad-Band */
@@ -111,8 +111,15 @@
     try {
       const S = state(), M = S.M, Kp = root.Kampagne;
       const kt = Kp ? Kp.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = Kp ? Kp.CH.reduce((n, c) => n + Kp.prog(c).d, 0) : 0;
-      return { n: M.L.n, t: M.L.t, xp: M.L.xp, next: M.nx ? { t: M.nx.t, xp: M.nx.xp } : null, pct: M.pct, kt, kd };
+      return { n: M.L.n, t: M.L.t, xp: M.L.xp, xpDone: M.xpDone, next: M.nx ? { t: M.nx.t, xp: M.nx.xp } : null, pct: M.pct, kt, kd };
     } catch (e) { return null; }
+  }
+  /* Karriere-Start: beim ersten Öffnen des Dialogs wird der Startstand (lm4.karriere.k0) gespeichert; XP zählen ab da, Altdaten nicht. Der Rang-Marker beginnt bei 1. */
+  function start() {
+    try {
+      const Kp = root.Kampagne, had = lsGet('lm4.karriere', {}), fresh = !(had && had.k0);
+      core.start(lsGet, (k, v) => { try { if (fresh && v && typeof v === 'object') v.seen = { level: 1 }; localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, Kp ? { CH: Kp.CH, mdone: Kp.mdone } : null);
+    } catch (e) {}
   }
   /* Rang-Aufstieg einmalig feiern; speichert nur den „gesehen“-Marker, XP und Rang werden immer neu gerechnet */
   function check(silent) {
@@ -164,7 +171,7 @@
   }
   function open(tab) {
     if (document.getElementById('krBox')) return;
-    css(); const up = check(true), opener = document.activeElement; let cur = TABS.some(t => t[0] === tab) ? tab : 'rang';
+    start(); css(); const up = check(true), opener = document.activeElement; let cur = TABS.some(t => t[0] === tab) ? tab : 'rang';
     const w = document.createElement('div'); w.id = 'krBox'; w.className = 'kr-ov';
     w.innerHTML = '<div class="kr" role="dialog" aria-modal="true" aria-labelledby="krT"><div class="kr-hd"><b id="krT">🎓 Deine Karriere</b><button type="button" class="kr-x" id="krX" aria-label="Schließen">✕</button></div><div class="kr-tabs" role="tablist">'
       + TABS.map(t => '<button type="button" class="kr-tab" role="tab" data-t="' + t[0] + '">' + t[1] + '</button>').join('') + '</div><div id="krBody"></div></div>';
@@ -200,7 +207,7 @@
     const cards = document.querySelector('.cards'), s = summary(); if (!cards || !s) return;
     const c = document.createElement('div'); c.id = 'karCard'; c.className = 'kr-door';
     c.style.cssText = 'margin:14px auto;max-width:900px;padding:14px 16px;border-radius:14px;border:1px solid var(--line,#38424d);background:var(--panel,#1f262e);color:var(--fg,#e8eaed);display:flex;gap:12px;align-items:center;flex-wrap:wrap';
-    c.innerHTML = '<span style="font-size:28px">🎓</span><div style="flex:1;min-width:200px"><b>Deine Karriere: Rang ' + s.n + ' · ' + esc(s.t) + '</b><br><span class="kr-sub">' + fmt(s.xp) + ' XP' + (s.next ? ' · nächster Rang bei ' + fmt(s.next.xp) : '') + '</span></div><button type="button" class="kr-b">Öffnen</button>';
+    c.innerHTML = '<span style="font-size:28px">🎓</span><div style="flex:1;min-width:200px"><b>Deine Karriere: Rang ' + s.n + ' · ' + esc(s.t) + '</b><br><span class="kr-sub">' + fmt(s.xp) + ' XP' + (s.next ? (s.xpDone ? ' · XP-Ziel erreicht (' + fmt(s.next.xp) + ' XP)' : ' · nächster Rang bei ' + fmt(s.next.xp)) : '') + '</span></div><button type="button" class="kr-b">Öffnen</button>';
     css(); c.querySelector('button').onclick = () => open(); cards.parentNode.insertBefore(c, cards.nextSibling);
   }
   const init = () => { door(); const m = /[?&]karriere(?:=(\w+))?/.exec(location.search); if (m) setTimeout(() => { const g = document.getElementById('gate'); if (g && g.offsetParent !== null) { const t = setInterval(() => { const gg = document.getElementById('gate'); if (!gg || gg.offsetParent === null) { clearInterval(t); open(m[1]); } }, 500); } else open(m[1]); }, 600); else setTimeout(() => check(false), 4000); };

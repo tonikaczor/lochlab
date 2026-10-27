@@ -181,7 +181,7 @@
   function karriereArg() {
     const K = root.Karriere; if (!K || !K.core) return null;
     const Kp = root.Kampagne, defs = root.Badges && root.Badges.DEFS ? root.Badges.DEFS.map(d => d[0]) : null;
-    return { read: (get, extra) => K.core.read(get, extra), level: K.core.level, extra: Kp && Kp.CH ? { CH: Kp.CH, mdone: Kp.mdone } : null, ctx: { AUFGABEN: root.AUFGABEN, DEFS: defs } };
+    return { read: (get, extra) => K.core.read(get, extra), level: K.core.level, extra: Kp && Kp.CH ? { CH: Kp.CH, mdone: Kp.mdone, virtual: true } : { virtual: true }, ctx: { AUFGABEN: root.AUFGABEN, DEFS: defs } };
   }
   function makeObj(kuerzel) {
     return build({ read: ls.get, G: { AUFGABEN: root.AUFGABEN, LAB_REG: root.LAB_REG }, app: root.LAB_VERSION || '', kuerzel, bank: root.PR_BANK, pool: root.PR_POOL, kampTotal: root.Kampagne && root.Kampagne.CH ? root.Kampagne.CH.length : null, karriere: karriereArg() });
