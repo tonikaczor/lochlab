@@ -275,6 +275,7 @@
       + '<div class="hm-confirm" id="hmConfirm" hidden role="alertdialog" aria-label="Zurücksetzen bestätigen"><span>Soll deine Reihenfolge wirklich auf den Standard zurückgesetzt werden? Alle ausgeblendeten Labs kommen zurück.</span><button type="button" class="hm-btn dng" id="hmYes">Ja, zurücksetzen</button><button type="button" class="hm-btn" id="hmNo">Abbrechen</button></div>'
       + '<div class="hm-hint" id="hmHint" hidden><span>Ziehe die Karten an den Griffen oder nutze die Pfeile. Das Auge blendet ein Lab aus. Nur auf diesem Gerät gespeichert.</span><button type="button" class="hm-btn" id="hmOk">Verstanden</button></div>'
       + '<details class="hm-hidbox" id="hmHidBox"><summary id="hmHidSum">Ausgeblendete Labs (0)</summary><div class="hm-hidlist" id="hmHidList"></div></details>'
+      + '<div class="hm-row"><b>Karten</b><span class="hm-sub">Kacheln sind kompakt, große Karten zeigen die animierten Vorschaubilder.</span><button type="button" class="hm-btn" id="hmTiles" aria-pressed="false">Große Karten mit Vorschau</button></div>'
       + '<div class="hm-row"><b>Weitere Bereiche</b><span id="hmSecRow" class="hm-row"></span></div>';
     const foot = doc.getElementById('footBtns'), top = doc.getElementById('top');
     if (foot) foot.insertBefore(bar, foot.querySelector('span')); else rootEl.parentNode.insertBefore(bar, rootEl);   // Knopf in der Fußzeile, Bedienfeld unter dem Primär-Band
@@ -292,6 +293,10 @@
     defaults = fileIds();
     render();
 
+    const tb = g('hmTiles'), de = doc.documentElement;
+    const tiles = () => { const big = !de.classList.contains('tiles'); tb.setAttribute('aria-pressed', big ? 'true' : 'false'); };
+    tiles();
+    tb.addEventListener('click', () => { const on = de.classList.toggle('tiles'); try { localStorage.setItem('lm4.home.tiles', on ? '1' : '0'); } catch (e) {} tiles(); announce(on ? 'Kacheln aktiv.' : 'Große Karten aktiv.'); });
     ui.editBtn.addEventListener('click', () => setEdit(true));
     ui.done.addEventListener('click', () => setEdit(false));
     ui.reset.addEventListener('click', () => { ui.confirm.hidden = false; ui.reset.hidden = true; g('hmYes').focus(); });

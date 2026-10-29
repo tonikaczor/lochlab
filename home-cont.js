@@ -60,7 +60,11 @@
     const LP = root.Lernpfad;
     let r; try { r = resolve({ get, REG: root.LAB_REG, ROWS: root.AUFGABEN, stat: LP && LP.stat, recommend: LP && LP.recommend, now: Date.now() }); } catch (e) { return; }
     a.href = r.href;
-    a.innerHTML = '<span class="ic" aria-hidden="true">▶</span><span class="tx"><b>' + esc(r.label) + '</b><small>' + esc(r.sub) + '</small></span>';
+    // Hero (Werkbank): Fortschrittsring (Anteil erledigter Aufgaben über alle Labs), Rang aus Karriere.summary(); alles nur Anzeige, resolve() bleibt unberührt
+    let pct = 0, rk = '';
+    try { const ks = Object.keys(root.LAB_REG || {}).filter(k => !root.LAB_REG[k].hub); let n = 0, d = 0; ks.forEach(k => { const s = LP.stat(k); n += s.n; d += s.d; }); pct = n ? Math.round(100 * d / n) : 0; } catch (e) { pct = 0; }
+    try { const K = root.Karriere && root.Karriere.summary && root.Karriere.summary(); if (K && K.n) rk = 'Rang ' + K.n + (K.t ? ' · ' + K.t : ''); } catch (e) { rk = ''; }
+    a.innerHTML = '<span class="ring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle class="rt" cx="22" cy="22" r="19"/>' + (pct > 0 ? '<circle class="rf" cx="22" cy="22" r="19" pathLength="100" stroke-dasharray="' + pct + ' 100"/>' : '') + '</svg><i>' + pct + '&nbsp;%</i></span><span class="tx">' + (rk ? '<span class="rk">' + esc(rk) + '</span>' : '') + '<b>' + esc(r.label) + '</b><small>' + esc(r.sub) + '</small></span><span class="pill" aria-hidden="true">▶</span>';
     a.setAttribute('aria-label', r.label + ': ' + r.sub);
     // Handy: Bereich des Labs beim ersten Besuch offen halten
     const REG = root.LAB_REG || {}, f = REG[r.key] && REG[r.key].file;
@@ -69,16 +73,31 @@
       const g = card && root.HomeGroups.groupOf(card); if (g) root.HomeGroups.wantOpen(g);
     }
   }
-  /* Karte „Was übe ich als Nächstes?“ (coach.js, SPEC-PRUEFUNG-COACH-FABLE.md Teil B) im Primär-Band #top. coach.js wird erst hier nachgeladen; ohne die Datei oder bei einem Fehler bleibt die Startseite wie sie ist. */
+  /* Karte „Was übe ich als Nächstes?“ (coach.js, SPEC-PRUEFUNG-COACH-FABLE.md Teil B) im Primär-Band #top. coach.js wird erst hier nachgeladen; ohne die Datei oder bei einem Fehler bleibt die Startseite wie sie ist.
+     Reihenfolge im Band (= Tab-Reihenfolge = Bildschirmreihenfolge der Werkbank): Weitermachen, Heute (Coach, Duell-Zeile), Lernpfad-Kopf. */
+  function arrange() {
+    const top = doc.getElementById('top'); if (!top) return;
+    const lp = doc.getElementById('lernpfad'), ref = lp && lp.parentNode === top ? lp : null;
+    const co = top.querySelector(':scope > section.coach'), du = doc.getElementById('duellBand'), want = [co, du].filter(Boolean);
+    want.forEach(x => { if (!(x.parentNode === top && (!ref || (x.compareDocumentPosition(ref) & 4)))) top.insertBefore(x, ref); });
+    if (co && du && !(co.compareDocumentPosition(du) & 4)) top.insertBefore(co, du);
+  }
   function coachCard() {
     const top = doc.getElementById('top'); if (!top) return;
-    const go = () => { try { const sec = root.Coach && root.Coach.mount(top); if (sec) { const last = () => { if (top.lastElementChild !== sec) top.appendChild(sec); }; last(); root.addEventListener('load', last); setTimeout(last, 800); } } catch (e) {} };   // Karte steht im Band hinter dem Lernpfad (Tab-Reihenfolge = Bildschirmreihenfolge)
+    const go = () => { try { const sec = root.Coach && root.Coach.mount(top); if (sec) { const last = () => arrange(); last(); root.addEventListener('load', last); setTimeout(last, 800); } } catch (e) {} };   // Karte steht im Band hinter dem Weitermachen-Knopf, vor dem Lernpfad
     if (root.Coach) { go(); return; }
     if (doc.getElementById('coachJs')) return;
     try { const sc = doc.createElement('script'); sc.id = 'coachJs'; sc.src = 'coach.js'; sc.onload = go; doc.head.appendChild(sc); } catch (e) {}
   }
-  render(); coachCard();
-  root.addEventListener('pageshow', e => { if (e.persisted) { render(); coachCard(); } });
-  doc.addEventListener('visibilitychange', () => { if (!doc.hidden) { render(); coachCard(); } });
-  root.HomeCont = { render, resolve, coachCard };
+  /* Duell-Zeile (duellui.js hängt sie hinter #top) in die "Heute"-Spalte ins Band holen; sie entsteht erst nach dem Laden von duellui.js */
+  function duellIn() {
+    const top = doc.getElementById('top'); if (!top) return;
+    const mv = () => { const d = doc.getElementById('duellBand'); if (d && d.parentNode !== top) { top.appendChild(d); } arrange(); return !!(d && d.parentNode === top); };
+    if (mv()) return;
+    let n = 0; const t = setInterval(() => { if (mv() || ++n > 40) clearInterval(t); }, 250);
+  }
+  render(); coachCard(); duellIn();
+  root.addEventListener('pageshow', e => { if (e.persisted) { render(); coachCard(); duellIn(); } });
+  doc.addEventListener('visibilitychange', () => { if (!doc.hidden) { render(); coachCard(); duellIn(); } });
+  root.HomeCont = { render, resolve, coachCard, arrange };
 })(typeof window !== 'undefined' ? window : this);

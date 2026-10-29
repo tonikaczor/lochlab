@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tonfunk Wiki">
+<meta name="theme-color" content="#1b1f24">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Tonfunk Wiki</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schluessel lm4.theme wie die Startseite (nur der Umschalter schreibt ihn) */
+(function(){var K='lm4.theme',de=document.documentElement;
+function get(){try{var v=localStorage.getItem(K);return v==='light'||v==='dark'?v:''}catch(e){return ''}}
+function set(m){if(m)de.setAttribute('data-theme',m);else de.removeAttribute('data-theme');var b=document.getElementById('themeBtn');if(b)b.setAttribute('aria-label','Darstellung: '+(m==='light'?'hell':m==='dark'?'dunkel':'automatisch nach System')+' (antippen zum Wechseln)');}
+set(get());document.addEventListener('DOMContentLoaded',function(){set(get());});
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#themeBtn');if(!b)return;var c=get(),n=c===''?'light':c==='light'?'dark':'';try{if(n)localStorage.setItem(K,n);else localStorage.removeItem(K);}catch(x){}set(n);});
+})();</script>
+<link rel="stylesheet" href="wiki.css">
+</head>
+<body data-wiki="seite">
+<!--GATE-->
+<script src="gate.js" data-title="Tonfunk Wiki"></script>
+<!--/GATE-->
+<svg hidden xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+  <symbol id="i-wiki" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20"/><path d="M9 7h7M9 10.5h7"/></symbol>
+  <symbol id="i-bauteil" viewBox="0 0 24 24"><path d="M2 12h4M18 12h4"/><rect x="6" y="8.5" width="12" height="7" rx="1.5"/><path d="M9.5 8.5v7M12 8.5v7"/></symbol>
+  <symbol id="i-geraet" viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M12 17l4.2-6.5"/><circle cx="12" cy="17" r="1.6"/><path d="M4 20h16"/></symbol>
+  <symbol id="i-regler" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/><circle cx="7" cy="17" r="2" fill="currentColor"/></symbol>
+  <symbol id="i-messwert" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 13.5l2-3 2 4 2-5 2 4 2-3"/></symbol>
+  <symbol id="i-begriff" viewBox="0 0 24 24"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 11.5h8M8 15h5"/></symbol>
+  <symbol id="i-formel" viewBox="0 0 24 24"><path d="M5 18l4-12 2 6 2-6 4 12"/><path d="M4 12h16" stroke-dasharray="1.5 3"/></symbol>
+  <symbol id="i-norm" viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 7h2M9 10h2M9 13h2M9 16h2M13 7h2M13 10h2M13 13h2M13 16h2"/></symbol>
+  <symbol id="i-lab" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.5 9A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-3L14 9V3"/><path d="M8 15h8"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5.5 9.5V20h13V9.5"/></symbol>
+  <symbol id="i-theme-a" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></symbol>
+  <symbol id="i-theme-l" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></symbol>
+  <symbol id="i-theme-d" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+</svg>
+<a class="skip" href="#main">Zum Inhalt</a>
+<header class="wh">
+  <div class="wrap">
+    <h1><svg aria-hidden="true"><use href="#i-wiki"/></svg>Tonfunk <span>Wiki</span></h1>
+    <div class="srch">
+      <input id="q" type="search" role="combobox" aria-expanded="false" aria-controls="res" aria-autocomplete="list" autocomplete="off" placeholder="Begriff, Bauteil, Regler suchen…" aria-label="Im Wiki suchen">
+      <button type="button" class="clr" id="qClr" aria-label="Suche leeren" hidden>×</button>
+      <div id="res" class="res" role="listbox" aria-label="Treffer" hidden></div>
+    </div>
+    <button type="button" id="themeBtn" class="ib" aria-label="Darstellung: automatisch nach System (antippen zum Wechseln)" title="Darstellung wechseln: Auto, Hell, Dunkel"><svg class="t-a" aria-hidden="true"><use href="#i-theme-a"/></svg><svg class="t-l" aria-hidden="true"><use href="#i-theme-l"/></svg><svg class="t-d" aria-hidden="true"><use href="#i-theme-d"/></svg></button>
+    <a class="ib" href="index.html" aria-label="Zur Startseite" title="Startseite"><svg aria-hidden="true"><use href="#i-home"/></svg></a>
+  </div>
+</header>
+<main id="main" class="wrap">
+  <section id="vStart" class="view">
+    <h2>Kategorien</h2>
+    <ul class="kats" id="kats"></ul>
+    <div class="two">
+      <div class="box" id="wusst">
+        <h2>Wusstest du?</h2>
+        <p class="kurz" id="wKurz"></p>
+        <div class="tools"><a class="btn" id="wMehr" href="#">Mehr</a><button type="button" class="btn wk-speak" id="wSpeak" aria-pressed="false">🔊 Vorlesen</button><button type="button" class="btn" id="wNext">Nächster</button></div>
+      </div>
+      <div class="box">
+        <h2>Zuletzt gesehen <button type="button" class="lnk" id="rClr" style="float:right;font-size:13px">Leeren</button></h2>
+        <ul id="recent"></ul>
+      </div>
+    </div>
+    <h2>Nach Lab</h2>
+    <p class="chips" id="labs"></p>
+  </section>
+  <section id="vList" class="view" hidden>
+    <p class="back"><a class="btn" href="#">← Übersicht</a></p>
+    <h2 id="lTitel"></h2>
+    <div class="bar"><span class="mute" id="lN"></span><span class="chips" id="lLabs"></span></div>
+    <ul class="liste" id="liste"></ul>
+  </section>
+  <section id="vPruef" class="view" hidden>
+    <p class="back"><a class="btn" href="#">← Übersicht</a></p>
+    <h2>Prüfansicht (Ausbilder)</h2>
+    <p class="mute">Zeigt je Eintrag Status, Fragen-ID und Quelle. Kein Passwort nötig: Das Wiki enthält keine Lösungen und keine Fehlerfälle. Eric antwortet in der PDF; Status wird in den Dateien gepflegt.</p>
+    <div class="bar"><span class="chips" id="pFilter" role="group" aria-label="Status filtern"></span><button type="button" class="btn" id="pCopy">Fragenliste kopieren</button></div>
+    <p class="mute" id="pN" role="status" aria-live="polite"></p>
+    <div class="tw pt"><table id="pTab"><thead><tr><th>Eintrag</th><th>Kategorie</th><th>Status</th><th>Frage</th><th>Quelle</th><th>Labs</th><th>Zeichen</th></tr></thead><tbody></tbody></table></div>
+  </section>
+  <section id="vEntry" class="view" hidden>
+    <p class="back"><a class="btn" href="#" id="eBack">← Zurück</a></p>
+    <div id="entry"></div>
+  </section>
+</main>
+<footer class="wf"><div class="wrap">
+  <a href="lernen.html">Lernhefte</a> · <a href="anleitung.html">Anleitung</a> · <span id="stand"></span> · <span class="mute">Entwürfe sind noch nicht fachlich geprüft.</span> · <a href="#pruef" id="pruefLnk">Prüfansicht (Ausbilder)</a>
+</div></footer>
+<script src="ver.js"></script>
+<script src="wiki.js"></script>
+<script src="wiki-suche.js"></script>
+<script src="wiki-index.js"></script>
+<script src="wiki-bauteile.js"></script>
+<script src="urheber.js"></script>
+<script>
+(function () {
+  'use strict';
+  var W = window.Wiki, $ = function (s) { return document.querySelector(s); }, esc = W.esc, KAT = W.KAT, LABS = W.LABS;
+  var KATS = ['bauteil', 'geraet', 'regler', 'messwert', 'begriff', 'formel', 'norm', 'lab'];
+  var ICON = { bauteil: 'bauteil', geraet: 'geraet', regler: 'regler', messwert: 'messwert', begriff: 'begriff', formel: 'formel', norm: 'norm', lab: 'lab' };
+  var prevHash = '', pr = false;
+  try { $('#stand').textContent = 'Stand ' + (window.LAB_VERSION || ''); } catch (e) {}
+
+  function kats() {
+    $('#kats').innerHTML = KATS.map(function (k) {
+      var n = W.count(k), off = !n;
+      return '<li><a href="#k=' + k + '"' + (off ? ' aria-disabled="true" title="noch keine Einträge"' : '') + '><svg aria-hidden="true"><use href="#i-' + ICON[k] + '"/></svg>' + esc(KAT[k][1]) + '<span class="n">' + n + '</span></a></li>';
+    }).join('');
+    var labs = {};
+    W.all().forEach(function (e) { (e.labs || []).forEach(function (l) { labs[l] = (labs[l] || 0) + 1; }); });
+    $('#labs').innerHTML = Object.keys(LABS).filter(function (l) { return labs[l]; }).map(function (l) { return '<a class="lc" data-lab="' + l + '" href="#k=alle&lab=' + l + '">' + esc(LABS[l][0]) + ' <small>' + labs[l] + '</small></a>'; }).join('') || '<span class="mute">noch keine Lab-Zuordnung</span>';
+  }
+  // Wusstest du: Seed = Tag, "Naechster" zieht neu
+  var wSeed = Math.floor(Date.now() / 864e5), wCur = null;
+  function wusst(next) {
+    var pool = W.all().filter(function (e) { return (e.pruef || 0) >= 1 && (e.status === 'geprueft' || true); });   // W1: Entwuerfe zugelassen, solange nichts geprueft ist
+    var gp = pool.filter(function (e) { return e.status === 'geprueft'; }); if (gp.length) pool = gp;
+    if (!pool.length) { $('#wusst').hidden = true; return; }
+    if (next) wSeed = wSeed * 1103515245 + 12345 & 0x7fffffff;
+    wCur = pool[Math.abs(wSeed) % pool.length];
+    $('#wKurz').textContent = wCur.kurz; $('#wMehr').href = '#e=' + wCur.id; $('#wMehr').textContent = 'Mehr: ' + wCur.titel;
+  }
+  function recent() {
+    var r = W.recent().map(function (id) { return W.get(id); }).filter(Boolean);
+    $('#recent').innerHTML = r.map(function (e) { return '<li><a href="#e=' + e.id + '">' + esc(e.titel) + '<small>' + esc(KAT[e.kat][0]) + '</small></a></li>'; }).join('') || '<li class="mute">Noch nichts angesehen.</li>';
+  }
+  function show(v) { ['vStart', 'vList', 'vEntry', 'vPruef'].forEach(function (x) { document.getElementById(x).hidden = x !== v; }); }
+  function list(kat, lab) {
+    var arr = kat === 'alle' ? W.all().slice().sort(function (a, b) { return a.titel.localeCompare(b.titel, 'de'); }) : W.byKat(kat);
+    if (lab) arr = arr.filter(function (e) { return (e.labs || []).indexOf(lab) >= 0; });
+    $('#lTitel').textContent = kat === 'alle' ? (lab && LABS[lab] ? LABS[lab][0] : 'Alle Einträge') : KAT[kat][1];
+    $('#lN').textContent = arr.length + ' Einträge' + (lab && kat !== 'alle' ? ' · ' + LABS[lab][0] : '');
+    var labs = {}; arr.forEach(function (e) { (e.labs || []).forEach(function (l) { labs[l] = 1; }); });
+    $('#lLabs').innerHTML = kat === 'alle' ? '' : Object.keys(labs).map(function (l) { return '<a class="chip" aria-pressed="' + (lab === l) + '" href="#k=' + kat + (lab === l ? '' : '&lab=' + l) + '">' + esc(LABS[l][0]) + '</a>'; }).join('');
+    $('#liste').innerHTML = arr.map(function (e) { return '<li><a href="#e=' + e.id + '">' + esc(e.titel) + '<small>' + esc(KAT[e.kat][0]) + ((e.alias || []).length ? ' · ' + esc(e.alias.join(', ')) : '') + '</small></a></li>'; }).join('') || '<li class="mute" style="padding:12px 14px">Noch keine Einträge – folgt in einem späteren Paket.</li>';
+    show('vList');
+  }
+  function entry(id) {
+    var e = W.get(id);
+    if (!e) { W.needAll().then(function () { if (W.get(id)) entry(id); else { $('#entry').innerHTML = '<p class="mute">Kein Eintrag „' + esc(id) + '“.</p>'; show('vEntry'); } }); return; }
+    if (e.id !== id) { location.replace('#e=' + e.id + (pr ? '&pruef' : '')); return; }   // alte ID (alt) -> Weiterleitung
+    W.recentPush(e.id);
+    $('#entry').innerHTML = W.renderEntry(e, { h: 2, pruef: pr });
+    $('#eBack').href = pr ? '#pruef' : '#k=' + e.kat;
+    show('vEntry'); window.scrollTo(0, 0);
+    var t = $('#entry .wt'); if (t) { t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); }
+    document.title = e.titel + ' – Tonfunk Wiki';
+  }
+  // Pruefansicht (W6): alle Eintraege mit Status/Fragen-ID/Quelle, Filter, Fragenliste als Markdown (Format AUSBILDER.md)
+  var STT = { entwurf: 'Entwurf', frage: 'Frage offen', geprueft: '✓ geprüft' };
+  function pruef(st) {
+    show('vPruef'); document.title = 'Prüfansicht – Tonfunk Wiki';
+    W.needAll().then(function () {
+      var all = W.all().slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; });
+      var cnt = { alle: all.length }; Object.keys(STT).forEach(function (k) { cnt[k] = all.filter(function (e) { return e.status === k; }).length; });
+      if (!(st in cnt)) st = 'alle';
+      $('#pFilter').innerHTML = ['alle', 'entwurf', 'frage', 'geprueft'].map(function (k) { return '<a class="chip" aria-pressed="' + (st === k) + '" href="#pruef' + (k === 'alle' ? '' : '&status=' + k) + '">' + (k === 'alle' ? 'Alle' : STT[k]) + ' <small>' + cnt[k] + '</small></a>'; }).join('');
+      var arr = st === 'alle' ? all : all.filter(function (e) { return e.status === st; });
+      $('#pN').textContent = arr.length + ' von ' + all.length + ' Einträgen';
+      $('#pTab tbody').innerHTML = arr.map(function (e) {
+        return '<tr><td><a href="#e=' + esc(e.id) + '&pruef">' + esc(e.titel) + '</a><br><small class="mute">' + esc(e.id) + '</small></td><td>' + esc(KAT[e.kat][0]) + '</td><td><span class="stt ' + esc(e.status) + '">' + esc(STT[e.status] || e.status) + '</span></td><td>' + esc(e.frage ? e.frage.replace('wiki__', '') : '') + '</td><td>' + esc(e.quelle || '') + '</td><td>' + esc((e.labs || []).join(', ')) + '</td><td>' + ((e.kurz || '').length + (e.lang || '').length) + '</td></tr>';
+      }).join('') || '<tr><td colspan="7" class="mute">Keine Einträge mit diesem Status.</td></tr>';
+    });
+  }
+  $('#pCopy').addEventListener('click', function () {
+    var q = W.all().filter(function (e) { return e.status === 'frage'; }).sort(function (a, b) { return (parseInt((a.frage || '').replace(/\D/g, ''), 10) || 0) - (parseInt((b.frage || '').replace(/\D/g, ''), 10) || 0); });
+    var md = '| Nr | Frage (Eintrags-ID) | Vorschlag | Antwort |\n|---|---|---|---|\n' + q.map(function (e) { return '| ' + (e.frage || '').replace('wiki__', '') + ' | ' + e.id + ' (' + e.titel + ') ' + (e.quelle || '').replace(/\|/g, '/') + ' | | |'; }).join('\n');
+    var b = $('#pCopy'); try { navigator.clipboard.writeText(md); b.textContent = '✓ ' + q.length + ' Fragen kopiert'; } catch (x) { b.textContent = 'Kopieren nicht möglich'; } setTimeout(function () { b.textContent = 'Fragenliste kopieren'; }, 2000);
+  });
+  function route() {
+    var h = location.hash.slice(1), p = {};
+    h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    W.stopSpeak(); hideRes();
+    document.title = 'Tonfunk Wiki';
+    var pm = /(^|&)pruef(&|$)/.test(h); pr = pm;
+    if (p.e) entry(p.e);
+    else if (pm) pruef(p.status || 'alle');
+    else if (p.k) list(p.k, p.lab);
+    else { kats(); recent(); show('vStart'); if (p.q) { $('#q').value = p.q; search(); } }
+    prevHash = h;
+  }
+  // Suche (W4: wiki-suche.js; Synonyme, Tippfehler, Ranking; Index wiki-index.js)
+  var sel = -1, hits = [], tmr;
+  function hideRes() { $('#res').hidden = true; $('#q').setAttribute('aria-expanded', 'false'); sel = -1; }
+  function search() {
+    var q = $('#q').value.trim(); $('#qClr').hidden = !q;
+    if (!q) { hideRes(); return; }
+    hits = W.search(q); sel = -1; $('#q').removeAttribute('aria-activedescendant');
+    var meint = hits.meint ? '<p class="none" role="presentation">Meintest du <button type="button" class="lnk" id="resMeint">' + esc(hits.meint) + '</button>?</p>' : '';
+    $('#res').innerHTML = meint + hits.map(function (e, i) { return '<a role="option" id="r' + i + '" href="#e=' + e.id + '" aria-label="' + esc(e.titel) + ', ' + esc(KAT[e.kat][0]) + ', ' + (i + 1) + ' von ' + hits.length + '"><span class="ty">' + esc(KAT[e.kat][0]) + '</span>' + esc(e.titel) + '</a>'; }).join('') || '<p class="none">Kein Treffer' + (W.offen().length ? ' – <button type="button" class="lnk" id="resAll">alle Bereiche laden</button>' : '') + '</p>';
+    $('#res').hidden = false; $('#q').setAttribute('aria-expanded', 'true');
+  }
+  $('#q').addEventListener('input', function () { clearTimeout(tmr); tmr = setTimeout(search, 120); });
+  $('#q').addEventListener('keydown', function (ev) {
+    if ($('#res').hidden) return;
+    if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && hits.length) { ev.preventDefault(); sel = (sel + (ev.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length; Array.prototype.forEach.call($('#res').querySelectorAll('[role=option]'), function (a, i) { a.setAttribute('aria-selected', i === sel); }); $('#q').setAttribute('aria-activedescendant', 'r' + sel); }
+    else if (ev.key === 'Enter' && sel >= 0) { ev.preventDefault(); location.hash = '#e=' + hits[sel].id; $('#q').value = ''; }
+    else if (ev.key === 'Escape') hideRes();
+  });
+  $('#qClr').addEventListener('click', function () { $('#q').value = ''; search(); $('#q').focus(); });
+  document.addEventListener('click', function (ev) {
+    if (ev.target.id === 'resMeint') { $('#q').value = ev.target.textContent; search(); $('#q').focus(); return; }
+    if (ev.target.id === 'resAll') { W.needAll().then(search); return; }
+    if (!ev.target.closest('.srch')) hideRes();
+    var s = ev.target.closest('.wk-speak'); if (s) { var art = s.closest('.we'); W.speak(art ? W.get(art.dataset.id) : wCur, s); return; }
+    var al = ev.target.closest('.wk-all'); if (al) { W.needAll().then(route); return; }
+    var sh = ev.target.closest('.wk-share'); if (sh) { try { navigator.clipboard.writeText(location.href); sh.textContent = '✓ kopiert'; setTimeout(function () { sh.textContent = '⤴ Link'; }, 1500); } catch (e) {} }
+  });
+  $('#wNext').addEventListener('click', function () { W.stopSpeak(); wusst(true); });
+  $('#rClr').addEventListener('click', function () { W.recentClear(); recent(); });
+  W.onchange = function () { if (!$('#vStart').hidden) { kats(); } };
+  window.addEventListener('hashchange', route);
+  wusst(); route();
+})();
+</script>
+</body>
+</html>

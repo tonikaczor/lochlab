@@ -14,7 +14,11 @@
 <link rel="icon" href="icon-192.png">
 <title>Tonfunk Lab</title>
 <style>
-:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--accent:#3b9eff;--accent-bg:#1a6fd4;--danger:#ff5c5c;--line:#38424d;color-scheme:dark}
+:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--line:#38424d;--fg:#e8ecf0;--mute:#9aa6b2;--accent:#5fb0ff;--accent-bg:#1a6fd4;--accent-ink:#fff;--ok:#4fd58a;--warn:#ffd166;--danger:#ff7a7a;--g-grund:#f2b544;--g-mess:#4fd58a;--g-sich:#ff8a5c;--g-anadig:#5fb0ff;--g-auto:#b79cff;--g-bau:#45d4c8;--g-pruef:#ffd166;color-scheme:dark light}
+/* Hell-Modus: automatisch nach System, Umschalter setzt data-theme (lm4.theme); Werte aus FABLE-STARTSEITE-DESIGN.md 3.2 */
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;--g-grund:#9a6300;--g-mess:#107a3f;--g-sich:#b8431a;--g-anadig:#0a5fc4;--g-auto:#5e3fb8;--g-bau:#0b7f78;--g-pruef:#8a5a00}}
+:root[data-theme=light]{--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;--g-grund:#9a6300;--g-mess:#107a3f;--g-sich:#b8431a;--g-anadig:#0a5fc4;--g-auto:#5e3fb8;--g-bau:#0b7f78;--g-pruef:#8a5a00;color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{min-height:100%;margin:0;background:var(--bg);color:var(--fg);font:16px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif}
 .wrap{max-width:1320px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom))}
@@ -72,7 +76,7 @@ a.btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6f
 a.btn{height:44px;min-height:44px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2px}.mp{margin:0}
 @media(max-width:639px){.pic{height:64px}.card p{-webkit-line-clamp:3}}
 /* Zeile Projekte (Verbund): eigene Zeile unter den Lab-Karten, kein Lab */
-.vbrow{grid-column:1/-1;margin-top:0;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;border-color:#3b9eff;background:linear-gradient(135deg,rgba(59,158,255,.12),rgba(34,40,48,1) 60%)}
+.vbrow{grid-column:1/-1;margin-top:0;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;border-color:var(--accent);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,transparent),var(--panel) 60%)}
 .vbrow .pic{flex:0 0 190px;height:76px}.vbrow .vbt{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}.vbrow .vbt p{-webkit-line-clamp:3}
 .vbrow .btns{flex:0 0 auto;margin:0;padding:0}.vbrow a.btn{min-width:150px;padding:0 18px}
 @media(max-width:639px){.vbrow .pic{flex:1 1 100%}.vbrow .btns{flex:1 1 100%}}
@@ -89,6 +93,15 @@ html:root{--focus:#ffd166}
 #gate .btn{width:100%;height:46px;border-radius:12px;background:var(--accent-bg,#1a6fd4);border:0;color:#fff;font:inherit;font-weight:600}
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 </style>
+<script>/* Darstellung: Auto (Attribut fehlt) / Hell / Dunkel; lm4.theme wird nur vom Umschalter geschrieben */
+(function(){var K='lm4.theme',de=document.documentElement,N={light:'Hell',dark:'Dunkel'};
+function get(){try{var v=localStorage.getItem(K);return v==='light'||v==='dark'?v:''}catch(e){return ''}}
+function lab(m){var b=document.getElementById('themeBtn');if(!b)return;var n=N[m]||'Auto';b.querySelector('.tl').textContent=n;b.setAttribute('aria-label','Darstellung: '+(m?n.toLowerCase():'automatisch nach System')+' (antippen zum Wechseln)');}
+function set(m){if(m)de.setAttribute('data-theme',m);else de.removeAttribute('data-theme');lab(m);}
+set(get());try{if(localStorage.getItem('lm4.home.tiles')!=='0')de.classList.add('tiles');}catch(e){de.classList.add('tiles');}
+document.addEventListener('DOMContentLoaded',function(){lab(get());});
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#themeBtn');if(!b)return;var c=get(),n=c===''?'light':c==='light'?'dark':'';try{if(n)localStorage.setItem(K,n);else localStorage.removeItem(K);}catch(x){}set(n);});
+})();</script>
 <link rel="stylesheet" href="design.css">
 <link rel="stylesheet" href="home.css">
 </head>
@@ -96,16 +109,61 @@ html:root{--focus:#ffd166}
 <!--GATE-->
 <script src="gate.js" data-title="Tonfunk Lab" data-btn="btn"></script>
 <!--/GATE-->
+<svg class="sprite" id="iconSprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <symbol id="i-layout" viewBox="0 0 24 24"><circle cx="6" cy="7" r="1.1"/><circle cx="12" cy="7" r="1.1"/><circle cx="18" cy="7" r="1.1"/><circle cx="6" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="18" cy="12" r="1.1"/><circle cx="6" cy="17" r="1.1"/><circle cx="12" cy="17" r="1.1"/><circle cx="18" cy="17" r="1.1"/><path d="M6 12C7.5 6.5 16.5 6.5 18 12"/></symbol>
+  <symbol id="i-schaltplan" viewBox="0 0 24 24"><path d="M3 12V5h18v7M3 12v7h18v-7M3 12h5M16 12h5"/><rect x="8" y="9.5" width="8" height="5" rx="1"/></symbol>
+  <symbol id="i-wsllab" viewBox="0 0 24 24"><path d="M2 12c2-8 5-8 7.5 0s5 8 7.5 0 3.5-5.5 5-3"/><path d="M2 12h20" stroke-dasharray="1.5 3"/></symbol>
+  <symbol id="i-dslab" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5"/><path d="M8.5 18c3 0 5-1.5 8-7"/><path d="M8.5 18V11M8.5 18h8"/></symbol>
+  <symbol id="i-messlab" viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M6.5 11.5l-1-1M12 9V7.6M17.5 11.5l1-1M8.8 9.6l-.6-1.2M15.2 9.6l.6-1.2"/><path d="M12 17l4.2-6.5"/><circle cx="12" cy="17" r="1.6"/><path d="M4 20h16"/></symbol>
+  <symbol id="i-senlab" viewBox="0 0 24 24"><path d="M8 4a2 2 0 0 1 4 0v10a3.5 3.5 0 1 1-4 0z"/><path d="M10 9v7"/><circle cx="10" cy="16.5" r="1.3"/><path d="M15 9c1.5-2.5 3-2.5 4.5 0s3 2.5 4.5 0" transform="translate(-2.5 0)"/><path d="M15 14c1.5-2.5 3-2.5 4.5 0" transform="translate(-1 0)"/></symbol>
+  <symbol id="i-emvlab" viewBox="0 0 24 24"><path d="M2 12q2.5-4 5 0t5 0"/><path d="M2 7q2.5-4 5 0t5 0"/><path d="M2 17q2.5-4 5 0t5 0"/><path d="M15.5 3v18M19.5 3v18M15.5 8l4-4M15.5 13l4-4M15.5 18l4-4"/></symbol>
+  <symbol id="i-simlab" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M6.5 5.5l5 5M11.5 5.5l-5 5"/><path d="M9 12v7h5M14 19l4-3M19 19h2"/></symbol>
+  <symbol id="i-elslab" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/><path d="M13 7.5l-3 5h3.5l-2 4.5"/></symbol>
+  <symbol id="i-hauslab" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5.5 9.5V20h13V9.5"/><circle cx="12" cy="15" r="3.2"/><circle cx="10.8" cy="15" r=".4"/><circle cx="13.2" cy="15" r=".4"/></symbol>
+  <symbol id="i-enrlab" viewBox="0 0 24 24"><circle cx="7" cy="7" r="2.6"/><path d="M7 2.5v1M7 10.5v1M2.5 7h1M10.5 7h1M3.8 3.8l.7.7M9.5 9.5l.7.7M10.2 3.8l-.7.7"/><path d="M4 20l3-7h14l-3 7zM12.5 13L11 20M17 13l-1.5 7M5.5 16.5h14"/></symbol>
+  <symbol id="i-digilab" viewBox="0 0 24 24"><path d="M5 6h7a6 6 0 0 1 0 12H5zM2 9h3M2 15h3M18 12h4"/></symbol>
+  <symbol id="i-ntslab" viewBox="0 0 24 24"><path d="M5.5 5a2 2 0 0 1 0 4 2 2 0 0 1 0 4 2 2 0 0 1 0 4"/><path d="M9.5 5a2 2 0 0 0 0 4 2 2 0 0 0 0 4 2 2 0 0 0 0 4"/><path d="M7 4v1M7 17v1" stroke-dasharray="1 2"/><path d="M12.5 12H15M15 9l5 3-5 3zM20 9v6M20 12h2"/></symbol>
+  <symbol id="i-analab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M4 12h5M9 8v8M9 10.5l6-3.5V3M9 13.5l6 3.5v4"/><path d="M13.3 14.3l1.7 2.7-2.8.4"/></symbol>
+  <symbol id="i-thmlab" viewBox="0 0 24 24"><path d="M3 19h18M5.5 19v-8M9 19v-8M12.5 19v-8M16 19v-8M19.5 19v-8M4 11h17"/><path d="M7 7.5c1-2 2-2 3 0s2 2 3 0M12 5.5c1-2 2-2 3 0"/></symbol>
+  <symbol id="i-spslab" viewBox="0 0 24 24"><path d="M2 12h5M7 8v8M10 8v8M10 12h4"/><path d="M15.5 8.5c-1.5 2-1.5 5 0 7M19.5 8.5c1.5 2 1.5 5 0 7"/><path d="M14 12h1M20 12h2"/></symbol>
+  <symbol id="i-antlab" viewBox="0 0 24 24"><circle cx="9.5" cy="12" r="6.5"/><path d="M7 15V9l2.5 3L12 9v6"/><path d="M16 12h6M19 9.5v5"/></symbol>
+  <symbol id="i-reglab" viewBox="0 0 24 24"><path d="M12 4a8 8 0 1 0 8 8"/><path d="M12 4l-3-2.2M12 4l-3 2.2"/><path d="M8 17h3v-5c1.5-1.5 3 2 4.5 1.5S17 12 20 12"/></symbol>
+  <symbol id="i-pcblab" viewBox="0 0 24 24"><path d="M3 18h6l5-5h3"/><circle cx="19" cy="13" r="2.4"/><circle cx="6" cy="6" r="2.4"/><path d="M8.4 6h4l2 2v3"/><circle cx="14.4" cy="12.5" r=".6"/></symbol>
+  <symbol id="i-codelab" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M4 10h3M4 14h3M17 10h3M17 14h3M10 4v3M14 4v3M10 17v3M14 17v3"/><circle cx="10" cy="10" r=".6"/></symbol>
+  <symbol id="i-pilab" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="7" cy="8.5" r=".9"/><circle cx="10" cy="8.5" r=".9"/><circle cx="13" cy="8.5" r=".9"/><circle cx="16" cy="8.5" r=".9"/><circle cx="7" cy="11.5" r=".9"/><circle cx="10" cy="11.5" r=".9"/><circle cx="13" cy="11.5" r=".9"/><circle cx="16" cy="11.5" r=".9"/><rect x="7" y="14" width="5" height="3" rx=".5"/><path d="M15 15.5h3"/></symbol>
+  <symbol id="i-appwerkstatt" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 9l-2 3 2 3M13 9l2 3-2 3M11 5h2"/></symbol>
+  <symbol id="i-pruefungslab" viewBox="0 0 24 24"><path d="M3.5 6.5l1.3 1.3L7.5 5M3.5 12l1.3 1.3L7.5 10.5M10 6.5h10M10 12h5M4 17.5h6"/><circle cx="17" cy="17" r="4.5"/><path d="M17 14.5V17h2"/></symbol>
+  <symbol id="i-vb" viewBox="0 0 24 24"><circle cx="5" cy="5" r="2.2"/><circle cx="19" cy="5" r="2.2"/><circle cx="5" cy="19" r="2.2"/><circle cx="19" cy="19" r="2.2"/><path d="M7.2 5h9.6M5 7.2v9.6M19 7.2v9.6M7.2 19h9.6M6.6 6.6l10.8 10.8M17.4 6.6L6.6 17.4"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l12 8-12 8z"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M18.7 5.3l-1.8 1.8M7.1 16.9l-1.8 1.8"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M12 3.5a8.5 8.5 0 0 1 0 17" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l4-1L19.5 7.5a2.1 2.1 0 0 0-3-3L5 16z"/><path d="M14.5 6.5l3 3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8 12.5l2.7 2.7L16.5 9"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol>
+  <symbol id="i-swords" viewBox="0 0 24 24"><path d="M4 4l12 12M20 4L8 16M14 14l4 4M10 14l-4 4M17 17l2 2M7 17l-2 2"/></symbol>
+  <symbol id="i-export" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M4 15v4h16v-4"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5h6a2 2 0 0 1 2 2v13a2 2 0 0 0-2-2H4zM20 5h-6a2 2 0 0 0-2 2v13a2 2 0 0 1 2-2h6z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5.5 9.5V20h13V9.5M10 20v-6h4v6"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M4 12h14"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/><circle cx="20" cy="12" r="2"/></symbol>
+</svg>
 <div class="wrap">
   <header>
     <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
-    <div><h1>Tonfunk Lab <span class="slogan">– es gibt immer eine Schaltung, die noch fehlt.</span></h1><p>Lehrwerkstatt · planen, drucken, simulieren</p></div>
+    <div class="ttl"><h1 title="Es gibt immer eine Schaltung, die noch fehlt.">Tonfunk Lab <span class="slogan">– es gibt immer eine Schaltung, die noch fehlt.</span></h1><p>Lehrwerkstatt · planen, drucken, simulieren</p></div>
     <form class="srch" id="srch" role="search" hidden autocomplete="off" onsubmit="return false">
       <input id="srchIn" type="search" placeholder="Lab, Heft oder Aufgabe suchen" aria-label="Labs, Hefte und Aufgaben suchen" aria-controls="srchRes" aria-expanded="false" role="combobox" aria-autocomplete="list" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
       <button type="button" class="clr" id="srchClr" aria-label="Suche leeren" hidden>&times;</button>
       <div class="res" id="srchRes" role="listbox" aria-label="Suchergebnisse" hidden></div>
       <div class="sr" id="srchLive" role="status" aria-live="polite"></div>
     </form>
+    <a class="wikiBtn" id="wikiBtn" href="wiki.html" title="Tonfunk Wiki: Bauteile, Geräte, Begriffe nachschlagen"><svg class="ti" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/></svg><span class="tl">Wiki</span></a>
+    <button type="button" id="themeBtn" class="themeBtn" aria-label="Darstellung: automatisch nach System (antippen zum Wechseln)" title="Darstellung wechseln: Auto, Hell, Dunkel"><svg class="ti t-a" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/></svg><svg class="ti t-l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><svg class="ti t-d" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg><span class="tl">Auto</span></button>
   </header>
   <div class="top" id="top"><a class="cont" id="contGo" href="schaltplan.html?trainer"><b>Starten</b><small>SchaltLab (Einführung)</small></a></div>
   <div class="cards" id="cardsFlat">
@@ -352,9 +410,23 @@ html:root{--focus:#ffd166}
     </div>
     <div class="btns"><a class="btn pri" href="verbund.html">Projekte öffnen</a><a class="btn" href="lernen-vb.html">Projektheft</a></div>
   </section>
-  <div class="foot standrow" id="footBtns"><button type="button" id="standOpen" aria-haspopup="dialog">📤 Stand exportieren</button><button type="button" id="lsOpen">💾 Lernstand sichern oder laden</button><span>„Stand exportieren“ erzeugt eine kleine Datei mit deinem Lernstand für deinen Ausbilder (nur Kürzel, Ergebnisse und Abzeichen, keine Lösungen).</span></div>
-  <p class="foot">In allen Programmen: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>
-  <p class="foot"><a href="projekte.html">Projekte für zuhause</a> · <a href="lernen.html">Lernhefte: Löten, Elektronik, Sicherheit, Netzteile, Wechselstrom, Analogtechnik, Installation, SPS, Leiterplatten, Antriebe, Sensorik, Regelung, Thermik, EMV, Energie, Datenblätter, Arduino, Pi, Projekte</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="loesungen.html">Lösungen für Ausbilder (Passwort)</a> · <a href="ausbilder-uebersicht.html">Ausbilder-Übersicht (Passwort)</a></p>
+  <div class="foot ft" id="foot">
+    <div class="ftcol" id="ftAzubi"><p class="fth">Für Azubis</p>
+      <div class="foot standrow" id="footBtns"><button type="button" id="standOpen" aria-haspopup="dialog">Stand exportieren</button><button type="button" id="lsOpen">Lernstand sichern oder laden</button><span>„Stand exportieren“ erzeugt eine kleine Datei mit deinem Lernstand für deinen Ausbilder (nur Kürzel, Ergebnisse und Abzeichen, keine Lösungen).</span></div>
+      <p class="foot"><a href="projekte.html">Projekte für zuhause</a> · <a href="lernen.html">Lernhefte: Löten, Elektronik, Sicherheit, Netzteile, Wechselstrom, Analogtechnik, Installation, SPS, Leiterplatten, Antriebe, Sensorik, Regelung, Thermik, EMV, Energie, Datenblätter, Arduino, Pi, Projekte</a> · <a href="anleitung.html">Anleitung für Azubis</a></p>
+    </div>
+    <div class="ftcol" id="ftAusb"><p class="fth">Für Ausbilder</p>
+      <p class="foot"><a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="loesungen.html">Lösungen für Ausbilder (Passwort)</a> · <a href="ausbilder-uebersicht.html">Ausbilder-Übersicht (Passwort)</a></p>
+    </div>
+    <p class="foot ftnote">In allen Programmen: erst zeichnen, dann drucken oder mit dem Schalter oben in die Simulation wechseln.</p>
+  </div>
+  <nav class="bnav" id="bnav" aria-label="Schnellnavigation">
+    <a href="#top" data-t="top" aria-current="true"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-home"/></svg><span>Start</span></a>
+    <a href="#grp-grund" data-t="grp-grund"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-grid"/></svg><span>Labs</span></a>
+    <a href="#lpHd" data-t="lpHd"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-pen"/></svg><span>Üben</span></a>
+    <a href="#grp-pruef" data-t="grp-pruef"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-check"/></svg><span>Prüfen</span></a>
+    <a href="#footBtns" data-t="footBtns"><svg class="i" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><use href="#i-user"/></svg><span>Ich</span></a>
+  </nav>
 </div>
 <script src="aufgaben.js"></script>
 <script src="kampagne.js"></script>
@@ -372,7 +444,9 @@ html:root{--focus:#ffd166}
 <script>document.addEventListener("click",function(e){var a=e.target.closest("#lsOpen");if(a){e.preventDefault();window.Lernstand.open();}});</script>
 <script>(function(){if(!('IntersectionObserver' in window))return;document.documentElement.classList.add('anim-gate');var io=new IntersectionObserver(function(es){es.forEach(function(e){e.target.classList.toggle('inview',e.isIntersecting);});},{threshold:.15});var seen=new WeakSet();function scan(){document.querySelectorAll('.card').forEach(function(c){if(!seen.has(c)){seen.add(c);io.observe(c);}});}scan();setTimeout(scan,1500);setTimeout(scan,4000);})();</script>
 <script>(function(){function mark(){document.querySelectorAll('.card p').forEach(function(p){var o=p.classList.contains('open'),over=p.scrollHeight>p.clientHeight+1;if(over||o){if(!p.classList.contains('cl')){p.classList.add('cl');p.setAttribute('role','button');p.tabIndex=0;p.setAttribute('aria-expanded',o?'true':'false');p.title='Volltext: '+p.textContent.trim().slice(0,400)+(p.textContent.length>400?' ...':'');}}else if(p.classList.contains('cl')){p.classList.remove('cl');p.removeAttribute('role');p.removeAttribute('tabindex');p.removeAttribute('aria-expanded');p.removeAttribute('title');}});}function tog(p){var o=p.classList.toggle('open');p.setAttribute('aria-expanded',o?'true':'false');}document.addEventListener('click',function(e){var p=e.target.closest&&e.target.closest('.card p.cl');if(p)tog(p);});document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.card p.cl')){e.preventDefault();tog(e.target);}});var tm;function soon(){clearTimeout(tm);tm=setTimeout(mark,150);}window.addEventListener('resize',soon);window.addEventListener('load',soon);setTimeout(mark,300);setTimeout(mark,1500);})();</script>
+<script>(function(){var nav=document.getElementById('bnav');if(!nav)return;var links=[].slice.call(nav.querySelectorAll('a')),t=0;function upd(){t=0;var cur=links[0],y=window.innerHeight*.4;links.forEach(function(a){var e=document.getElementById(a.getAttribute('data-t'));if(e&&e.getBoundingClientRect().top<=y&&e.offsetParent!==null)cur=a;});if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4)cur=links[links.length-1];links.forEach(function(a){if(a===cur)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current');});}function q(){if(!t)t=requestAnimationFrame(upd);}window.addEventListener('scroll',q,{passive:true});window.addEventListener('resize',q);setTimeout(upd,400);})();</script>
 <script src="ver.js"></script>
+<script>(function(){var b=document.getElementById('verBadge'),h=document.querySelector('header');if(!b||!h)return;b.setAttribute('data-v',window.LAB_VERSION||'');h.appendChild(b);})();</script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 <script src="urheber.js"></script>
 </body>

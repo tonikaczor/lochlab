@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v23.148', items: [
+      ['Tonfunk Wiki', 'Zum Nachschlagen: Bauteile und Messgeräte mit Kurztext, Schaltzeichen und Beispielen, dazu eine Suche (auch bei Tippfehlern und Umlauten). In SchaltLab, SimLab und MessLab öffnet das „?“ den passenden Eintrag direkt neben der Schaltung. Alle Einträge sind noch als Entwurf markiert, bis der Ausbilder sie geprüft hat.', 'Startseite ▸ Wiki'],
+      ['Neue Startseite „Werkbank“', 'Die Labs sind jetzt Kacheln mit Symbol und Fortschrittsring, oben steht dein nächster Schritt als großer Knopf. Rubriken-Chips filtern die Liste, auf dem Handy gibt es eine Leiste unten. Mit dem Knopf im Kopf wechselst du zwischen Automatisch, Hell und Dunkel; große Karten gibt es weiter unter „Startseite anpassen“.', 'Startseite'],
+      ['Neue Sprachausgabe bei den Bauteilen', 'Die sprechenden Bauteile sind jetzt eine natürlichere Stimme (Aufnahmen, Piper mit der Stimme „Thorsten“). Sie laufen auch offline; wenn eine Aufnahme fehlt, spricht wie bisher die Stimme deines Geräts.', 'SchaltLab, SimLab, MessLab ▸ Bauteil antippen'],
+    ] },
     { v: 'v23.147', items: [
       ['Prüfungs-Duell', 'Du und ein Mitazubi löst dieselbe Aufgabe mit demselben Fehler: Einer startet eine Runde und zeigt den Code oder QR-Code, der andere gibt ihn ein. Punkte gibt es für Richtigkeit, saubere Arbeitsweise und Tempo. Tipps kosten nur in Duell und Challenges Punkte (je 5); zum Üben bleiben sie kostenlos. Im Duell sind Tipp 3 und die Auflösung gesperrt. Zum Schluss tauscht ihr eure Ergebnis-Codes und seht, wer vorn liegt. ', 'Startseite ▸ Band „Duell“'],
       ['Karriere-Modus „Vom Azubi zum Prüfungsbesten“', 'Aus Aufgaben, Kapiteln und Duellen sammelst du Erfahrungspunkte und steigst durch 10 Ränge auf, vom Neuling bis zum Prüfungsbesten. Ab Rang 8 gibt es die Generalprobe im IHK-Stil (ohne Pause-Knopf) und danach eine Urkunde zum Ausdrucken.', 'Startseite ▸ Deine Karriere'],

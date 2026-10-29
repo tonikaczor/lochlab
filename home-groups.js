@@ -46,6 +46,78 @@
       const gc = s.querySelector('.gc'); if (gc) gc.textContent = '(' + labs.length + ')';
       s.classList.toggle('grp-empty', vis.length === 0);
     });
+    chipsUpdate();
+  }
+
+  /* Werkbank: Kopfzeile je Karte (Icon aus dem Sprite in index.html, Tag, kleiner Fortschrittsring). Karten-Inhalte bleiben unverändert, es wird nur ein .th-Wrapper um .tag gelegt. */
+  function decorate() {
+    doc.querySelectorAll('.card').forEach(c => {
+      if (c.querySelector('.th')) return;
+      const key = c.dataset.lab || c.dataset.hub, tag = c.querySelector('.tag'); if (!key || !tag || !tag.parentNode) return;
+      const th = doc.createElement('div'); th.className = 'th';
+      const li = doc.createElement('span'); li.className = 'li'; li.setAttribute('aria-hidden', 'true');
+      li.innerHTML = '<svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-' + key + '"/></svg>';
+      tag.parentNode.insertBefore(th, tag); th.appendChild(li); th.appendChild(tag);
+    });
+  }
+  // Fortschrittsring aus der Leiste .mp (legt lernpfad.js erst nach dem Laden an)
+  function rings() {
+    doc.querySelectorAll('.card').forEach(c => {
+      const th = c.querySelector('.th'), bar = c.querySelector('.mp .bar i'); if (!th || !bar) return;
+      const p = Math.max(0, Math.min(100, Math.round(parseFloat(bar.style.width) || 0)));
+      let m = th.querySelector('.mini');
+      if (m && m.dataset.p === String(p)) return;
+      if (!m) { m = doc.createElement('span'); m.className = 'mini'; m.setAttribute('aria-hidden', 'true'); th.appendChild(m); }
+      m.dataset.p = String(p);
+      m.innerHTML = '<svg viewBox="0 0 34 34"><circle class="t" cx="17" cy="17" r="14"/>' + (p > 0 ? '<circle class="v" cx="17" cy="17" r="14" pathLength="100" stroke-dasharray="' + p + ' 100"/>' : '') + '</svg>'
+        + (p >= 100 ? '<svg class="i ck" viewBox="0 0 24 24" focusable="false"><use href="#i-check"/></svg>' : p > 0 ? '<b class="pv">' + p + '</b>' : '');
+    });
+  }
+  function watchRings() {
+    rings(); let t = 0;
+    const go = () => { if (t) return; t = setTimeout(() => { t = 0; rings(); }, 50); };
+    try { new MutationObserver(go).observe(doc.getElementById('groups') || doc.body, { subtree: true, childList: true }); } catch (e) { [200, 800, 2500].forEach(ms => setTimeout(rings, ms)); }
+  }
+
+  /* Werkbank: Rubrik-Chips (Fachgebiet filtern). Zustand wird nicht gespeichert; "Alle" ist Standard. Bei Suche und "Startseite anpassen" gilt der Filter nicht. */
+  let rubKey = '';
+  function chipsUpdate() {
+    const nav = doc.getElementById('rub'); if (!nav) return;
+    let total = 0;
+    nav.querySelectorAll('button[data-g]').forEach(b => {
+      const k = b.dataset.g; if (!k) return;
+      const s = doc.getElementById('grp-' + k), n = s ? s.querySelectorAll('.card:not(.vbrow):not(.hm-hid)').length : 0;
+      total += n; const e = b.querySelector('.n'); if (e) e.textContent = String(n);
+      if (b.parentNode && b.parentNode.tagName === 'LI') b.parentNode.hidden = !s;
+    });
+    const all = nav.querySelector('button[data-g=""] .n'); if (all) all.textContent = String(total);
+  }
+  function rubApply() {
+    if (!doc.getElementById('groups')) return;
+    secs().forEach(s => s.classList.toggle('rub-out', !!rubKey && s.dataset.grp !== rubKey));
+    const nav = doc.getElementById('rub');
+    if (nav) nav.querySelectorAll('button[data-g]').forEach(b => b.setAttribute('aria-pressed', b.dataset.g === rubKey ? 'true' : 'false'));
+    const t = rubKey ? doc.getElementById('grp-' + rubKey) : null, d = t ? detOf(t) : null;
+    if (d && !d.open) { d.open = true; const sm = d.querySelector(':scope>summary'); if (sm) sm.setAttribute('aria-expanded', 'true'); }
+  }
+  function rubHint() {
+    const ul = doc.querySelector('#rub ul'); if (!ul) return;
+    ul.classList.toggle('ov-l', ul.scrollLeft > 4); ul.classList.toggle('ov-r', ul.scrollLeft + ul.clientWidth < ul.scrollWidth - 4);
+  }
+  function mkChips(wrap) {
+    if (doc.getElementById('rub')) return;
+    const nav = doc.createElement('nav'); nav.className = 'rub'; nav.id = 'rub'; nav.setAttribute('aria-label', 'Fachgebiet filtern');
+    const ul = doc.createElement('ul');
+    const item = (k, n) => { const li = doc.createElement('li'); const b = doc.createElement('button'); b.type = 'button'; b.className = 'chip'; b.dataset.g = k; b.setAttribute('aria-pressed', k === '' ? 'true' : 'false'); if (k) b.style.setProperty('--c', 'var(--g-' + k + ')'); b.innerHTML = (k ? '<span class="sw" aria-hidden="true"></span>' : '') + '<span class="nm"></span> <span class="n"></span>'; b.querySelector('.nm').textContent = n; li.appendChild(b); ul.appendChild(li); };
+    item('', 'Alle'); GROUPS.forEach(g => item(g.k, g.n));
+    nav.appendChild(ul); wrap.parentNode.insertBefore(nav, wrap);
+    nav.addEventListener('click', e => {
+      const b = e.target.closest && e.target.closest('button[data-g]'); if (!b) return;
+      rubKey = b.dataset.g === rubKey ? '' : b.dataset.g; rubApply();
+      const t = rubKey ? doc.getElementById('grp-' + rubKey) : null; if (t && t.scrollIntoView) { try { t.scrollIntoView({ block: 'start' }); } catch (x) {} }
+    });
+    ul.addEventListener('scroll', rubHint, { passive: true }); root.addEventListener('resize', rubHint);
+    chipsUpdate(); setTimeout(rubHint, 100); setTimeout(rubHint, 800);
   }
 
   function build() {
@@ -76,13 +148,13 @@
       if (!forceEdit && !forceSearch) { map[k] = d.open ? 1 : 0; save(); }
     });
     if (root.matchMedia) { try { const mq = root.matchMedia('(max-width:' + MOBILE_MAX + 'px)'); (mq.addEventListener || mq.addListener).call(mq, 'change', apply); } catch (e) {} }
-    apply(); refresh();
+    apply(); refresh(); decorate(); watchRings(); mkChips(wrap);
   }
 
   root.HomeGroups = {
     GROUPS, OTHER, apply, refresh,
-    setEdit(on) { forceEdit = !!on; apply(); },
-    setSearch(keys) { forceSearch = keys && keys.size ? keys : null; apply(); refresh(); },
+    setEdit(on) { forceEdit = !!on; doc.documentElement.classList.toggle('rub-free', forceEdit || !!forceSearch); apply(); },
+    setSearch(keys) { forceSearch = keys && keys.size ? keys : null; doc.documentElement.classList.toggle('rub-free', forceEdit || !!forceSearch); apply(); refresh(); },
     wantOpen(k) { if (k) { wanted[k] = true; apply(); } },
     groupOf(el) { const s = el && el.closest && el.closest('section.grp'); return s ? s.dataset.grp : ''; },
     state() { return Object.assign({}, map); }
