@@ -296,7 +296,7 @@
     const tb = g('hmTiles'), de = doc.documentElement;
     const tiles = () => { const big = !de.classList.contains('tiles'); tb.setAttribute('aria-pressed', big ? 'true' : 'false'); };
     tiles();
-    tb.addEventListener('click', () => { const on = de.classList.toggle('tiles'); try { localStorage.setItem('lm4.home.tiles', on ? '1' : '0'); } catch (e) {} tiles(); announce(on ? 'Kacheln aktiv.' : 'Große Karten aktiv.'); });
+    tb.addEventListener('click', () => { const on = de.classList.toggle('tiles'); try { localStorage.setItem('lm4.home.tiles2', on ? '1' : '0'); } catch (e) {} tiles(); announce(on ? 'Kacheln aktiv.' : 'Große Karten aktiv.'); });
     ui.editBtn.addEventListener('click', () => setEdit(true));
     ui.done.addEventListener('click', () => setEdit(false));
     ui.reset.addEventListener('click', () => { ui.confirm.hidden = false; ui.reset.hidden = true; g('hmYes').focus(); });

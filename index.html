@@ -98,7 +98,7 @@ html:root{--focus:#ffd166}
 function get(){try{var v=localStorage.getItem(K);return v==='light'||v==='dark'?v:''}catch(e){return ''}}
 function lab(m){var b=document.getElementById('themeBtn');if(!b)return;var n=N[m]||'Auto';b.querySelector('.tl').textContent=n;b.setAttribute('aria-label','Darstellung: '+(m?n.toLowerCase():'automatisch nach System')+' (antippen zum Wechseln)');}
 function set(m){if(m)de.setAttribute('data-theme',m);else de.removeAttribute('data-theme');lab(m);}
-set(get());try{var tl=localStorage.getItem('lm4.home.tiles');if(tl==='1'||(tl===null&&!(window.matchMedia&&matchMedia('(max-width:639px)').matches)))de.classList.add('tiles');}catch(e){de.classList.add('tiles');}
+set(get());try{var tl=localStorage.getItem('lm4.home.tiles2');if(tl==='1'||(tl===null&&!(window.matchMedia&&matchMedia('(max-width:639px)').matches)))de.classList.add('tiles');}catch(e){de.classList.add('tiles');}
 document.addEventListener('DOMContentLoaded',function(){lab(get());});
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#themeBtn');if(!b)return;var c=get(),n=c===''?'light':c==='light'?'dark':'';try{if(n)localStorage.setItem(K,n);else localStorage.removeItem(K);}catch(x){}set(n);});
 })();</script>
