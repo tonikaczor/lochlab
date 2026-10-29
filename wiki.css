@@ -19,7 +19,7 @@ body[data-wiki=seite] *{box-sizing:border-box}
 .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
 header.wh svg,.kats svg{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 header.wh{position:sticky;top:0;z-index:40;background:var(--bg);border-bottom:1px solid var(--line)}
-header.wh .wrap{display:flex;align-items:center;gap:10px;min-height:60px;padding-top:6px;padding-bottom:6px}
+header.wh .wrap{display:flex;align-items:center;gap:10px;min-height:60px;padding-top:calc(6px + env(safe-area-inset-top));padding-bottom:6px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
 header.wh h1{margin:0;font-size:18px;white-space:nowrap;display:flex;align-items:center;gap:8px}
 header.wh h1 svg{width:24px;height:24px;color:var(--accent)}
 .srch{position:relative;flex:1;min-width:0}
