@@ -78,6 +78,17 @@
         ${c.length <= 1100 && qrSvg(c) ? '<div style="background:#fff;padding:8px;border-radius:12px;max-width:340px;margin:0 auto 10px">' + qrSvg(c) + '</div>' : ''}
         <textarea id="ergCode" rows="4" readonly style="width:100%;font:12px monospace;box-sizing:border-box">${esc(c)}</textarea>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn pri" id="ergCopy">Code kopieren</button>${navigator.share ? '<button class="btn" id="ergShare">Teilen</button>' : ''}</div>`;
+      /* Optional: freiwillig in ILIAS abgeben (Link, kein automatischer Versand) */
+      if (window.IliasLinks) {
+        const ex = window.IliasLinks.exercises();
+        if (ex.length) {
+          const box = document.createElement('div');
+          box.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px solid #38424d;font-size:13px';
+          box.innerHTML = '<div class="hint2" style="margin-bottom:6px">Freiwillig: Code als Textdatei speichern und in ILIAS hochladen. Nur wenn du magst, es wird nichts automatisch gesendet.</div>' +
+            ex.map(e => '<a class="btn" style="margin:2px 6px 2px 0" target="_blank" rel="noopener" href="' + e.url + '">In ILIAS abgeben (' + esc(e.title.split(' \u2013 ')[0]) + ')</a>').join('');
+          b.appendChild(box);
+        }
+      }
       const ta = b.querySelector('#ergCode');
       b.querySelector('#ergCopy').onclick = async () => { try { await navigator.clipboard.writeText(c); toast('Code kopiert'); } catch (e) { ta.select(); try { document.execCommand('copy'); toast('Code kopiert'); } catch (x) { toast('Bitte den Text markieren und kopieren'); } } };
       const sh = b.querySelector('#ergShare'); if (sh) sh.onclick = () => navigator.share({ title: 'Meine Ergebnisse', text: c }).catch(() => {});

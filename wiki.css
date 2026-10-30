@@ -232,3 +232,33 @@ html.wkd-open{overflow:hidden}
 :where(body[data-wiki=seite],.wkd) footer.wf{margin-top:36px;padding:16px 0 24px;border-top:1px solid var(--line);color:var(--mute);font-size:13px}
 :where(body[data-wiki=seite],.wkd) footer.wf a{color:var(--accent);text-decoration:underline;text-underline-offset:3px;padding:0 2px}
 :where(body[data-wiki=seite],.wkd) footer.wf .wrap{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+
+/* ---------- P3 (Design-Review): Treffer-Hervorhebung, Steckbrief (dl), A-Z-Leiste, zweispaltig ab 1024 px, Sheet ziehbar ---------- */
+:where(body[data-wiki=seite],.wkd) mark{background:none;color:inherit;font-weight:inherit;text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:3px}
+.we .steck{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 18px;margin:0;padding:12px 16px;font-size:15px}
+.we .steck dt{margin:0;color:var(--mute)}.we .steck dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.we .steck .st{margin-left:8px;font-size:11px;padding:1px 7px;vertical-align:middle;white-space:nowrap}
+.we .tw+.quelle{margin:6px 2px 0}
+@media(max-width:479px){.we .steck{grid-template-columns:minmax(0,1fr);gap:2px;padding:10px 14px}.we .steck dt{font-size:13px;margin-top:8px}.we .steck dt:first-child{margin-top:0}.we .steck dd{font-size:16px}}
+.wkd .we .steck{padding:10px 12px;font-size:14px}
+:where(body[data-wiki=seite],.wkd) .az{display:none}
+@media(min-width:900px){
+:where(body[data-wiki=seite],.wkd) .lwrap.hasaz{display:grid;grid-template-columns:minmax(0,1fr) 44px;column-gap:8px;align-items:start}
+:where(body[data-wiki=seite],.wkd) .lwrap.hasaz>.liste{grid-column:1;grid-row:1}
+:where(body[data-wiki=seite],.wkd) .lwrap.hasaz>.az{grid-column:2;grid-row:1;position:sticky;top:calc(var(--hdr) + var(--lbh) + 8px);height:min(640px,calc(100vh - var(--hdr) - var(--lbh) - 40px));height:min(640px,calc(100dvh - var(--hdr) - var(--lbh) - 40px));display:flex;flex-direction:column;align-items:stretch;padding:4px 0;border:1px solid var(--line);border-radius:12px;background:var(--panel);touch-action:none;-webkit-user-select:none;user-select:none}
+:where(body[data-wiki=seite],.wkd) .az>*{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:6px;background:none;color:var(--accent);font:700 12px/1 system-ui,sans-serif;cursor:pointer}
+:where(body[data-wiki=seite],.wkd) .az>span,:where(body[data-wiki=seite],.wkd) .az>button:disabled{color:var(--mute);opacity:.55;cursor:default}
+:where(body[data-wiki=seite],.wkd) .az>button:hover:not(:disabled){background:var(--panel2)}
+}
+:where(body[data-wiki=seite],.wkd) .liste li a[aria-current=true]{background:var(--panel2);box-shadow:inset 3px 0 0 var(--accent);font-weight:600}
+@media(min-width:1024px){
+:where(body[data-wiki=seite],.wkd) main.zwei2{display:grid;grid-template-columns:360px minmax(0,1fr);column-gap:28px;align-items:start}
+:where(body[data-wiki=seite],.wkd) main.zwei2>#vList{grid-column:1;grid-row:1;--hdr:0px;position:sticky;top:61px;max-height:calc(100vh - 77px);max-height:calc(100dvh - 77px);overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+:where(body[data-wiki=seite],.wkd) main.zwei2>#vEntry{grid-column:2;grid-row:1;min-width:0}
+:where(body[data-wiki=seite],.wkd) main.zwei2>#vList>.crumb{display:none}
+:where(body[data-wiki=seite],.wkd) main.zwei2 #vList .lhead h2{font-size:18px}
+:where(body[data-wiki=seite],.wkd) main.zwei2 #vList .lbar{margin:8px 0 12px;padding:8px 0}
+:where(body[data-wiki=seite],.wkd) main.zwei2 #vList .lbar .chips{flex-wrap:nowrap;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
+}
+.wkd.zieht{transition:none!important;animation:none}
+@media(max-width:899px){.wkd-hd{touch-action:none}}

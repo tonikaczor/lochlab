@@ -79,7 +79,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     <div class="lhead"><h2 id="lTitel"></h2><span class="mute" id="lN"></span></div>
     <div class="lbar" id="lBar"><span class="chips" id="lLabs"></span></div>
     <div class="filt" id="lFiltBox" hidden><input id="lFilt" type="search" placeholder="In dieser Liste filtern…" aria-label="Liste filtern" autocomplete="off"></div>
-    <ul class="liste" id="liste"></ul>
+    <div class="lwrap" id="lWrap"><div class="az" id="az" role="toolbar" aria-orientation="vertical" aria-label="Zum Buchstaben springen" hidden></div><ul class="liste" id="liste"></ul></div>
     <p class="mute" id="lNone" hidden>Nichts in dieser Liste passt zu deiner Eingabe.</p>
   </section>
   <section id="vPruef" class="view" hidden>
@@ -111,7 +111,10 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   var W = window.Wiki, $ = function (s) { return document.querySelector(s); }, esc = W.esc, KAT = W.KAT, LABS = W.LABS;
   var KATS = ['bauteil', 'geraet', 'regler', 'messwert', 'begriff', 'formel', 'norm', 'lab'];
   var ICON = { bauteil: 'bauteil', geraet: 'geraet', bedien: 'geraet', regler: 'regler', messwert: 'messwert', begriff: 'begriff', formel: 'formel', norm: 'norm', lab: 'lab' };
-  var prevHash = '', pr = false, lastList = '', backList = '', SY = {}, FV = {};
+  var prevHash = '', pr = false, lastList = '', backList = '', curList = '', SY = {}, FV = {};
+  var MQ = window.matchMedia ? window.matchMedia('(min-width:1024px)') : { matches: false };   // P3: ab 1024 px Liste links, Eintrag rechts
+  function wide() { return MQ.matches; }
+  function parseH(h) { var p = {}; String(h || '').split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); }); return p; }
   try { history.scrollRestoration = 'manual'; } catch (e) {}   // Scrollposition der Listen verwalten wir selbst (Zurueck aus dem Eintrag)
   var KAT_SUB = { bauteil: 'LED, Widerstand, Elko …', geraet: 'Oszi, Multimeter, Bedienelemente', regler: 'Steuerwerte der Prüfstände', messwert: 'Anzeigen der Prüfstände' };
   try { $('#stand').textContent = 'Stand ' + (window.LAB_VERSION || ''); } catch (e) {}
@@ -151,14 +154,55 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     var r = W.recent().map(function (id) { return W.get(id); }).filter(Boolean);
     $('#recent').innerHTML = r.map(function (e) { return '<li><a href="#e=' + e.id + '">' + W.formel(e.titel) + '<small>' + esc(KAT[e.kat][0]) + '</small></a></li>'; }).join('') || '<li class="mute leer">Noch nichts angesehen.' + (wCur ? ' <a class="lnk2" href="#e=' + wCur.id + '">Zufälligen Eintrag öffnen</a>' : '') + '</li>';
   }
-  function show(v) { ['vStart', 'vList', 'vEntry', 'vPruef'].forEach(function (x) { document.getElementById(x).hidden = x !== v; }); }
-  function list(kat, lab, qtext) {
+  function show(v, w) { ['vStart', 'vList', 'vEntry', 'vPruef'].forEach(function (x) { document.getElementById(x).hidden = !(x === v || x === w); }); $('#main').classList.toggle('zwei2', !!w); }   // w = zweite Spalte (P3, ab 1024 px: Liste neben dem Eintrag)
+  // A-Z-Leiste (P3): Buchstaben der Liste, Springen per Tippen, Ziehen (Zeigerereignisse) oder Tastatur (Pfeile); nur ab 900 px sichtbar (CSS)
+  function azL(e) { var c = W.fold(e.titel).charAt(0).toUpperCase(); return /[A-Z]/.test(c) ? c : '#'; }
+  function azBuild(on, arr) {
+    var b = $('#az'); b.hidden = !on; $('#lWrap').classList.toggle('hasaz', on);
+    if (!on) { b.innerHTML = ''; return; }
+    var have = {}, first = true; arr.forEach(function (e) { have[azL(e)] = 1; });
+    b.innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').concat(have['#'] ? ['#'] : []).map(function (c) {
+      if (!have[c]) return '<span aria-hidden="true">' + c + '</span>';
+      var t = first ? 0 : -1; first = false;
+      return '<button type="button" data-az="' + c + '" tabindex="' + t + '" aria-label="' + (c === '#' ? 'Ziffern und Sonstiges' : 'Buchstabe ' + c) + '">' + c + '</button>';
+    }).join('');
+  }
+  function azRefresh() {   // Buchstaben ohne sichtbaren Eintrag (Filtertext) sperren
+    var b = $('#az'); if (b.hidden) return; var rov = false;
+    Array.prototype.forEach.call(b.querySelectorAll('button'), function (x) {
+      x.disabled = !$('#liste').querySelector('li[data-az="' + x.dataset.az + '"]:not([hidden])');
+      x.tabIndex = !x.disabled && !rov ? 0 : -1; if (!x.disabled) rov = true;
+    });
+  }
+  function azGo(c) {
+    var t = $('#liste').querySelector('li[data-az="' + c + '"]:not([hidden])'); if (!t) return;
+    var box = $('#main').classList.contains('zwei2') ? $('#vList') : null, bar = $('#lBar'), st = (bar.hidden ? 0 : bar.offsetHeight) + ($('#liste .grp') ? 48 : 0) + 4;
+    var d = t.getBoundingClientRect().top - (box ? box.getBoundingClientRect().top : $('header.wh').offsetHeight) - st;
+    if (box) box.scrollTop += d; else window.scrollBy(0, d);
+  }
+  function azAt(y) {   // naechster aktiver Buchstabe zur Zeigerhoehe
+    var b = $('#az'), k = b.children, r = b.getBoundingClientRect(); if (!k.length || !r.height) return '';
+    var i = Math.min(k.length - 1, Math.max(0, Math.floor((y - r.top) / r.height * k.length)));
+    for (var d = 0; d < k.length; d++) { var a = k[i + d], z = k[i - d]; if (a && a.tagName === 'BUTTON' && !a.disabled) return a.dataset.az; if (z && z.tagName === 'BUTTON' && !z.disabled) return z.dataset.az; }
+    return '';
+  }
+  // aktuellen Eintrag in der Liste markieren und (zweispaltig) sichtbar halten
+  function markCur(id) {
+    var c = $('#liste'); Array.prototype.forEach.call(c.querySelectorAll('a[aria-current]'), function (a) { a.removeAttribute('aria-current'); });
+    var a = id ? c.querySelector('a[href="#e=' + id + '"]') : null; if (!a) return false;
+    a.setAttribute('aria-current', 'true');
+    var box = $('#vList'), r = a.getBoundingClientRect(), b = box.getBoundingClientRect(), top = b.top + $('#lBar').offsetHeight + ($('#liste .grp') ? 52 : 4);
+    if (r.top < top) box.scrollTop -= top - r.top; else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 8;
+    return true;
+  }
+  function list(kat, lab, qtext, hold) {
     if (lab && !LABS[lab]) lab = '';
     var base = kat === 'suche' ? 'q=' + encodeURIComponent(qtext) : 'k=' + kat;
     var arrKat = kat === 'suche' ? W.search(qtext, { limit: 400 }) : rows().filter(function (e) { return kat === 'alle' || e.kat === kat || (kat === 'geraet' && e.kat === 'bedien'); });
     if (kat !== 'suche') arrKat = arrKat.sort(function (a, b) { return a.titel.localeCompare(b.titel, 'de'); });
     var arr = lab ? arrKat.filter(function (e) { return (e.labs || []).indexOf(lab) >= 0; }) : arrKat;
     var name = kat === 'suche' ? 'Suche: „' + qtext + '“' : kat === 'alle' ? (lab ? LABS[lab][0] : 'Alle Einträge') : (KAT[kat] ? KAT[kat][1] : kat);
+    curList = base + (lab ? '&lab=' + lab : '');
     $('#lTitel').textContent = name; $('#lCrumb').textContent = name;
     $('#lN').textContent = arr.length + ' ' + (kat === 'suche' ? 'Treffer' : 'Einträge') + (lab && kat !== 'alle' ? ' · ' + LABS[lab][0] : '');
     // ein Lab-Filter (Chips, aus der ganzen Kategorie, nicht nur aus dem gewaehlten Lab); "Alle Labs" vorn
@@ -168,17 +212,20 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     $('#lLabs').innerHTML = $('#lBar').hidden ? '' : '<a class="chip" aria-pressed="' + !lab + '" href="#' + base + '">Alle Labs <small>' + arrKat.length + '</small></a>' + cl.map(function (l) { return '<a class="chip lc" data-lab="' + l + '" aria-pressed="' + (lab === l) + '" href="#' + base + (lab === l ? '' : '&lab=' + l) + '">' + esc(LABS[l][0]) + ' <small>' + labs[l] + '</small></a>'; }).join('');
     var li = function (e) {
       var sub = kat === 'suche' ? esc(W.katText(e)) : kat === 'alle' ? esc(KAT[e.kat][0]) + ((e.alias || []).length ? ' · ' + esc(e.alias.join(', ')) : '') : (e.alias || []).length ? esc(e.alias.join(', ')) : '';
-      return '<li><a href="#e=' + e.id + '"><span class="t">' + W.formel(e.titel) + (sub ? '<small>' + sub + '</small>' : '') + '</span><svg class="chev" aria-hidden="true"><use href="#i-chev"/></svg></a></li>';
+      return '<li data-az="' + azL(e) + '"><a href="#e=' + e.id + '"><span class="t">' + (kat === 'suche' ? W.hl(W.formel(e.titel), qtext) : W.formel(e.titel)) + (sub ? '<small>' + sub + '</small>' : '') + '</span><svg class="chev" aria-hidden="true"><use href="#i-chev"/></svg></a></li>';
     };
+    var azOK = false;
     if (kat === 'regler' || kat === 'messwert' || (kat === 'alle' && arr.length > 200)) {
       // nach Lab gruppiert; Gruppen offen (Kopf bleibt beim Scrollen kleben), Zuklappen bleibt moeglich
       var g = {}; arr.forEach(function (e) { var l = (e.labs || [])[0] || ''; (g[l] = g[l] || []).push(e); });
       var ls = Object.keys(LABS).filter(function (l) { return g[l]; }).concat(g[''] ? [''] : []);
       $('#liste').innerHTML = ls.map(function (l) { return '<li class="grp"' + (l ? ' data-lab="' + l + '"' : '') + '><details open><summary>' + esc(l ? LABS[l][0] : 'ohne Lab') + '<span class="n">' + g[l].length + '</span></summary><ul>' + g[l].map(li).join('') + '</ul></details></li>'; }).join('');
-    } else $('#liste').innerHTML = arr.map(li).join('') || '<li class="mute" style="padding:12px 14px">Noch keine Einträge – folgt in einem späteren Paket.</li>';
+      azOK = ls.length === 1;   // A-Z nur, wenn die Liste durchgehend alphabetisch ist (ein Lab)
+    } else { $('#liste').innerHTML = arr.map(li).join('') || '<li class="mute" style="padding:12px 14px">Noch keine Einträge – folgt in einem späteren Paket.</li>'; azOK = kat !== 'suche'; }
     $('#lFiltBox').hidden = arr.length < 30;
-    if (kat === 'suche' && !arr.length) $('#liste').innerHTML = '<li class="mute" style="padding:12px 14px">Nichts gefunden – andere Schreibweise oder ein anderes Lab versuchen.</li>'; $('#lFilt').value = FV[lastList] || ''; filt();
-    show('vList'); stick();
+    azBuild(azOK && arr.length >= 20, arr);
+    if (kat === 'suche' && !arr.length) $('#liste').innerHTML = '<li class="mute" style="padding:12px 14px">Nichts gefunden – andere Schreibweise oder ein anderes Lab versuchen.</li>'; $('#lFilt').value = FV[curList] || ''; filt();
+    if (!hold) show('vList'); stick();
   }
   // Filterfeld der Liste: blendet Zeilen aus, zaehlt die Gruppen neu
   function filt() {
@@ -189,6 +236,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     });
     Array.prototype.forEach.call($('#liste').querySelectorAll('li.grp'), function (g) { var m = g.querySelectorAll('li:not([hidden])').length; g.hidden = !m; var c = g.querySelector('summary .n'); if (c) c.textContent = m; });
     $('#lNone').hidden = !(q && !n && items.length);
+    azRefresh();
   }
   // Hoehe der Lab-Leiste fuer die klebenden Gruppenkoepfe (CSS --lbh)
   function stick() { var b = $('#lBar'); document.documentElement.style.setProperty('--lbh', (b.hidden ? 0 : b.offsetHeight) + 'px'); }
@@ -205,7 +253,14 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     var L = (e.labs || [])[0], KL = /^(regler|messwert)$/.test(e.kat);
     $('#eBack').href = pr ? '#pruef' : '#'; $('#eBack').textContent = pr ? '← Prüfansicht' : '← Wiki';
     $('#eCrumb').innerHTML = pr ? '' : bq ? ' › <a href="#' + esc(backList) + '">Suche</a>' : ' › <a href="' + bk + '">' + esc(KAT[e.kat] ? KAT[e.kat][1] : e.kat) + '</a>' + (L && KL && LABS[L] ? ' › <a href="#k=' + e.kat + '&lab=' + L + '">' + esc(LABS[L][0]) + '</a>' : '');
-    show('vEntry'); window.scrollTo(0, 0);
+    var two = wide() && !pr;
+    if (two) {   // P3: ab 1024 px Liste links (die, aus der man kam, sonst die Kategorie bzw. das Lab des Eintrags), Eintrag rechts
+      var dl = 'k=' + (e.kat === 'bedien' ? 'geraet' : e.kat) + (KL && L ? '&lab=' + L : ''), wl = backList || dl, wp = parseH(wl);
+      var put = function (h) { var p = parseH(h); if (h !== curList || !$('#liste').children.length) { if (p.k) list(p.k, p.lab, null, true); else if (p.q) list('suche', p.lab, p.q, true); } };
+      put(wl); show('vEntry', 'vList');
+      if (!markCur(e.id) && wl !== dl) { put(dl); markCur(e.id); }
+    } else show('vEntry');
+    window.scrollTo(0, 0);
     var t = $('#entry .wt'); if (t) { t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); }
     document.title = e.titel + ' – Tonfunk Wiki';
   }
@@ -266,7 +321,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     var gk = '', rows = hits.map(function (e, i) {
       var reg = /^(regler|messwert)$/.test(e.kat), k = reg ? 'lab:' + (e.labs || [])[0] : e.kat, gh = '';
       if (k !== gk) { gk = k; gh = '<div class="gh" role="presentation">' + esc(reg ? (i === A.length ? 'Regler und Messwerte · ' : '') + (LABS[(e.labs || [])[0]] ? LABS[e.labs[0]][0] : 'ohne Lab') : (KAT[e.kat] ? KAT[e.kat][1] : e.kat)) + '</div>'; }
-      return gh + '<a role="option" id="r' + i + '" href="#e=' + e.id + '" aria-label="' + esc(e.titel) + ', ' + esc(W.katText(e)) + ', ' + (i + 1) + ' von ' + hits.length + '"><svg class="ri" aria-hidden="true"><use href="#i-' + (ICON[e.kat] || 'begriff') + '"/></svg><span class="nm">' + W.formel(e.titel) + '</span><span class="lb">' + esc(KAT[e.kat] ? KAT[e.kat][0] : e.kat) + '</span>' + (reg && e.labs && e.labs[0] ? '<span class="sb">' + esc(LABS[e.labs[0]] ? LABS[e.labs[0]][0] : e.labs[0]) + '</span>' : '') + '</a>';
+      return gh + '<a role="option" id="r' + i + '" href="#e=' + e.id + '" aria-label="' + esc(e.titel) + ', ' + esc(W.katText(e)) + ', ' + (i + 1) + ' von ' + hits.length + '"><svg class="ri" aria-hidden="true"><use href="#i-' + (ICON[e.kat] || 'begriff') + '"/></svg><span class="nm">' + W.hl(W.formel(e.titel), q, meintTxt) + '</span><span class="lb">' + esc(KAT[e.kat] ? KAT[e.kat][0] : e.kat) + '</span>' + (reg && e.labs && e.labs[0] ? '<span class="sb">' + esc(LABS[e.labs[0]] ? LABS[e.labs[0]][0] : e.labs[0]) + '</span>' : '') + '</a>';
     });
     $('#res').innerHTML = meint + rows.join('') + (more ? '<a class="more" href="#q=' + encodeURIComponent(q) + '">' + more + ' weitere Treffer anzeigen</a>' : '') || noHit(q);
     $('#res').hidden = false; $('#q').setAttribute('aria-expanded', 'true');
@@ -278,7 +333,25 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     else if (ev.key === 'Enter' && hits.length) { ev.preventDefault(); location.hash = '#e=' + hits[sel >= 0 ? sel : 0].id; $('#q').value = ''; $('#qClr').hidden = true; }
     else if (ev.key === 'Escape') hideRes();
   });
-  $('#lFilt').addEventListener('input', function () { FV[lastList] = this.value; filt(); });
+  $('#lFilt').addEventListener('input', function () { FV[curList] = this.value; filt(); });
+  // A-Z-Leiste: Tippen/Ziehen springt, Tastatur: Pfeile/Pos1/Ende (eine Tabulator-Stelle), Eingabetaste/Leertaste springt
+  (function () {
+    var b = $('#az'), down = false, cur = '';
+    function go(y) { var c = azAt(y); if (c && c !== cur) { cur = c; azGo(c); } }
+    b.addEventListener('pointerdown', function (ev) { if (ev.button) return; down = true; cur = ''; try { b.setPointerCapture(ev.pointerId); } catch (x) {} go(ev.clientY); ev.preventDefault(); });
+    b.addEventListener('pointermove', function (ev) { if (down) go(ev.clientY); });
+    b.addEventListener('pointerup', function () { down = false; });
+    b.addEventListener('pointercancel', function () { down = false; });
+    b.addEventListener('click', function (ev) { var x = ev.target.closest('button[data-az]'); if (x && ev.detail === 0) azGo(x.dataset.az); });
+    b.addEventListener('keydown', function (ev) {
+      var k = ev.key, bt = Array.prototype.filter.call(b.querySelectorAll('button'), function (x) { return !x.disabled; }); if (!bt.length) return;
+      var i = bt.indexOf(document.activeElement), n = k === 'ArrowDown' || k === 'ArrowRight' ? i + 1 : k === 'ArrowUp' || k === 'ArrowLeft' ? i - 1 : k === 'Home' ? 0 : k === 'End' ? bt.length - 1 : -2;
+      if (n === -2) return; ev.preventDefault(); n = Math.max(0, Math.min(bt.length - 1, n));
+      Array.prototype.forEach.call(b.querySelectorAll('button'), function (x) { x.tabIndex = -1; }); bt[n].tabIndex = 0; bt[n].focus();
+    });
+  })();
+  // Breitenwechsel (Fenster/Drehen): Eintrags- und Listenansicht neu aufbauen
+  if (MQ.addEventListener) MQ.addEventListener('change', function () { if (!$('#vEntry').hidden || !$('#vList').hidden) route(); }); else if (MQ.addListener) MQ.addListener(function () { if (!$('#vEntry').hidden || !$('#vList').hidden) route(); });
   $('#tipX').addEventListener('click', function () { try { localStorage.setItem('lm4.wiki.tip', '1'); } catch (e) {} $('#tip').hidden = true; });
   $('#qClr').addEventListener('click', function () { $('#q').value = ''; search(); $('#q').focus(); });
   document.addEventListener('click', function (ev) {

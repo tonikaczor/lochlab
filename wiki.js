@@ -279,6 +279,35 @@
   W.index = suchIndex;
   // Typ-Text fuer Treffer: Regler/Messwerte mit Lab (gleiche Beschriftung gibt es in mehreren Labs)
   W.katText = function (e) { var t = KAT[e.kat] ? KAT[e.kat][0] : e.kat; return /^(regler|messwert)$/.test(e.kat) && e.labs && e.labs[0] && LABS[e.labs[0]] ? t + ' · ' + LABS[e.labs[0]][0] : t; };
+  // Treffer-Hervorhebung (P3): Suchwoerter im (HTML-)Titel per <mark> (nur Unterstreichung, CSS). Vergleich gefaltet wie die Suche (Umlaute, ss, Ohm ...),
+  // nur Textknoten (Indizes <sub> bleiben heil), "meint" = Korrekturvorschlag der Suche (Tippfehler) zaehlt mit.
+  function fch(c) { return String(c).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/ω/g, 'ohm').replace(/µ|μ/g, 'u').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' '); }
+  W.hl = function (html, q, meint) {
+    if (typeof document === 'undefined' || !q) return html;
+    try {
+      var toks = [], seen = {};
+      [q, meint].forEach(function (s) { fold(s || '').replace(/[.,]/g, '').split(' ').forEach(function (t) { if (t && !seen[t]) { seen[t] = 1; toks.push(t); } }); });
+      toks = toks.filter(function (t) { return t.length >= 2 || toks.length === 1; });
+      if (!toks.length) return html;
+      var box = document.createElement('div'); box.innerHTML = html;
+      var nodes = [], walk = function (n) { for (var c = n.firstChild; c; c = c.nextSibling) { if (c.nodeType === 3) nodes.push(c); else if (c.nodeType === 1) walk(c); } }; walk(box);
+      var any = false;
+      nodes.forEach(function (nd) {
+        var txt = nd.nodeValue, f = '', map = [], i, j, s;
+        for (i = 0; i < txt.length; i++) { s = fch(txt.charAt(i)); for (j = 0; j < s.length; j++) { f += s.charAt(j); map.push(i); } }
+        var rg = [];
+        toks.forEach(function (t) { var p = 0, k; while ((k = f.indexOf(t, p)) >= 0) { rg.push([map[k], map[k + t.length - 1] + 1]); p = k + t.length; } });
+        if (!rg.length) return;
+        rg.sort(function (a, b) { return a[0] - b[0] || b[1] - a[1]; });
+        var m = [rg[0].slice()]; rg.slice(1).forEach(function (r) { var l = m[m.length - 1]; if (r[0] <= l[1]) l[1] = Math.max(l[1], r[1]); else m.push(r.slice()); });
+        var fr = document.createDocumentFragment(), pos = 0;
+        m.forEach(function (r) { if (r[0] > pos) fr.appendChild(document.createTextNode(txt.slice(pos, r[0]))); var mk = document.createElement('mark'); mk.textContent = txt.slice(r[0], r[1]); fr.appendChild(mk); pos = r[1]; });
+        if (pos < txt.length) fr.appendChild(document.createTextNode(txt.slice(pos)));
+        nd.parentNode.replaceChild(fr, nd); any = true;
+      });
+      return any ? box.innerHTML : html;
+    } catch (x) { return html; }
+  };
   W.suchbereit = function () { return !!suchModul(); };
   W.needSuche = function () {
     if (suchModul() && root.WikiIndexRegler) return Promise.resolve(true);
@@ -348,9 +377,24 @@
   var ICO_LAB = '<svg class="ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.5 9A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-3L14 9V3"/><path d="M8 15h8"/></svg>';
   var ICO_CHEV = '<svg class="ico chev" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
   W.ICO = { spk: ICO_SPK, lab: ICO_LAB, chev: ICO_CHEV };
+  // Steckbrief (P3): Regler/Messwerte als Beschreibungsliste statt Tabelle und statt des Absatzes "Bedienelement:" bzw. "Messfeld:" (erster lang-Absatz);
+  // Felder: Bedienelement, Einheit, Werte aus werte[] (mit Pille), Gruppe. Kein passender Absatz -> null (Renderer bleibt bei Tabelle und Langtext).
+  function steckAus(e) {
+    var lang = String(e.lang || '').replace(/\r/g, ''), i = lang.search(/\n\s*\n/), first = (i < 0 ? lang : lang.slice(0, i)).trim(), rest = i < 0 ? '' : lang.slice(i).replace(/^\s+/, '');
+    var m = /^\*\*(Bedienelement|Messfeld):\*\*\s*([\s\S]+)$/.exec(first); if (!m) return null;
+    var body = m[2].trim(), k = body.indexOf('. '), spec = (k < 0 ? body : body.slice(0, k)).replace(/\.$/, ''), note = k < 0 ? '' : body.slice(k + 2).trim(), rows = [], gr = '';
+    if (m[1] === 'Messfeld') rows.push(['Messfeld', spec]);
+    else {
+      var be = [], ein = '';
+      spec.split(', ').forEach(function (p) { var x; if ((x = /^Einheit (.+)$/.exec(p))) ein = x[1]; else if ((x = /^Gruppe [„"](.+)[“"]$/.exec(p))) gr = x[1]; else be.push(p); });
+      rows.push(['Bedienelement', be.join(', ')]); if (ein) rows.push(['Einheit', ein]);
+    }
+    return { rows: rows, gruppe: gr, note: note, rest: rest };
+  }
+  function pille(s) { return s === 'ueb' ? '<span class="st ueb">Übungswert</span>' : s === 'belegt' ? '<span class="st ok">✓ belegt</span>' : '<span class="st norm">Normwert</span>'; }
   W.renderEntry = function (e, opt) {
     opt = opt || {};
-    var has = W.has, h = [], KL = /^(regler|messwert)$/.test(e.kat), L0 = (e.labs || [])[0];
+    var has = W.has, h = [], KL = /^(regler|messwert)$/.test(e.kat), L0 = (e.labs || [])[0], SB = KL ? steckAus(e) : null;
     var kat = KAT[e.kat] ? KAT[e.kat][0] : e.kat;
     h.push('<article class="we" data-id="' + esc(e.id) + '" data-kat="' + esc(e.kat) + '"' + (L0 ? ' data-lab="' + esc(L0) + '"' : '') + '>');
     // Kategoriezeile: Kategorie fett, Lab(s), bei Reglern/Messwerten der Pruefstand
@@ -360,13 +404,18 @@
     h.push('<h' + (opt.h || 3) + ' class="wt">' + formel(e.titel) + ((e.alias || []).length ? ' <small>(' + esc(e.alias.join(' · ')) + ')</small>' : '') + '</h' + (opt.h || 3) + '>');
     h.push('<div class="wk-top"><p class="kurz">' + formel(e.kurz) + '</p>' + (e.bild ? '<img class="bild" src="' + esc(e.bild) + '" alt="">' : e.svg ? '<div class="bild">' + e.svg + '</div>' : '') + '</div>');
     if (!opt.extern) h.push('<div class="wk-tools"><button type="button" class="btn wk-speak" aria-pressed="false" title="Kurztext vorlesen">' + ICO_SPK + 'Vorlesen</button><button type="button" class="btn wk-share" title="Link kopieren">Link kopieren</button></div>');
-    if (e.lang) h.push('<div class="lang">' + render(e.lang, has) + '</div>');
+    if (e.lang && (!SB || SB.rest)) h.push('<div class="lang">' + render(SB ? SB.rest : e.lang, has) + '</div>');
     if (e.formeln && e.formeln.length) {
       h.push('<h4>Formeln</h4><ul class="fo">' + e.formeln.map(function (f) {
         return '<li><code' + (f.sprich ? ' aria-label="' + esc(f.sprich) + '"' : '') + '>' + formel(f.text) + '</code>' + (f.sprich ? '<small>' + esc(f.sprich) + '</small>' : '') + (f.id && has(f.id) ? ' <a class="wl" href="#e=' + f.id + '" data-id="' + f.id + '">→ ' + formel(W.get(f.id).titel) + '</a>' : '') + '</li>';
       }).join('') + '</ul>');
     }
-    if (e.werte && e.werte.length) {
+    if (SB) {
+      h.push('<h4>Steckbrief</h4><div class="tw"><dl class="steck">' + SB.rows.map(function (r) { return '<dt>' + esc(r[0]) + '</dt><dd>' + formel(r[1]) + '</dd>'; }).join('') +
+        (e.werte || []).map(function (w) { return '<dt>' + esc(w[0]) + '</dt><dd>' + esc(w[1]) + pille(w[2]) + '</dd>'; }).join('') +
+        (SB.gruppe ? '<dt>Gruppe</dt><dd>' + esc(SB.gruppe) + '</dd>' : '') + '</dl></div>' +
+        (SB.note ? '<p class="quelle">' + formel(SB.note) + '</p>' : '') + (opt.pruef && e.quelle ? '<p class="quelle">Quelle: ' + esc(e.quelle) + '</p>' : ''));
+    } else if (e.werte && e.werte.length) {
       h.push('<h4>' + (KL ? 'Werte im Prüfstand' : 'Typische Werte') + '</h4><div class="tw"><table><thead><tr><th>Größe</th><th>Wert</th><th>Status</th></tr></thead><tbody>' + e.werte.map(function (w) {
         var st = w[2] === 'ueb' ? '<span class="st ueb">Übungswert</span>' : w[2] === 'belegt' ? '<span class="st ok">✓ belegt</span>' : '<span class="st norm">Normwert</span>';
         return '<tr><td>' + esc(w[0]) + '</td><td>' + esc(w[1]) + '</td><td>' + st + '</td></tr>';
@@ -471,7 +520,32 @@
     function suche(on) { qw.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) q.focus(); else { res.innerHTML = ''; q.value = ''; } }
     bd.addEventListener('click', close);
     d.querySelector('.wkd-x').addEventListener('click', close);
-    grip.addEventListener('click', function () { voll(!d.classList.contains('voll')); });
+    var hd = d.querySelector('.wkd-hd'), drag = false, moved = false, sy = 0, sh = 0, ly = 0, lt = 0, vel = 0, just = false;
+    // Ziehen (P3, Handy): Zeiger auf Griff/Kopf; beim Loslassen rastet das Sheet bei 92 % / 62 % ein oder schliesst (Richtung und Tempo zaehlen mit).
+    // Bewegung und Loslassen werden am document abgehoert (Maus verliert sonst den Kopf, sobald der Zeiger ihn verlaesst); ohne Zeigerfang bleibt das Tippen auf den Griff ein normaler Klick.
+    function sheet() { return getComputedStyle(grip).display !== 'none'; }
+    function dragMove(ev) {
+      if (!drag) return; var dy = ev.clientY - sy;
+      if (!moved) { if (Math.abs(dy) < 6) return; moved = true; d.classList.add('zieht'); }
+      var vh = window.innerHeight; d.style.height = Math.max(0.15 * vh, Math.min(0.94 * vh, sh - dy)) + 'px';
+      var dt = ev.timeStamp - lt; if (dt > 0) vel = (ev.clientY - ly) / dt; ly = ev.clientY; lt = ev.timeStamp;
+    }
+    function dragEnd(ev) {
+      document.removeEventListener('pointermove', dragMove); document.removeEventListener('pointerup', dragEnd); document.removeEventListener('pointercancel', dragEnd);
+      if (!drag) return; drag = false; if (!moved) return;
+      just = true; setTimeout(function () { just = false; }, 80);   // der Klick nach dem Ziehen (Loslassen auf dem Griff) darf nicht noch einmal umschalten
+      if (ev.timeStamp - lt > 120) vel = 0;   // Finger ruhte vor dem Loslassen: kein Schwung
+      var vh = window.innerHeight, tgt = d.offsetHeight - vel * 150;   // nach unten (vel > 0) zieht die Zielhoehe herunter
+      d.classList.remove('zieht'); d.style.height = '';
+      if (ev.type === 'pointercancel') return;
+      if (tgt < 0.4 * vh) { voll(false); close(); } else voll(tgt > 0.77 * vh);
+    }
+    hd.addEventListener('pointerdown', function (ev) {
+      if (!sheet() || ev.button || ev.target.closest('button:not(.wkd-grip)')) return;
+      drag = true; moved = false; sy = ly = ev.clientY; lt = ev.timeStamp; vel = 0; sh = d.offsetHeight;
+      document.addEventListener('pointermove', dragMove); document.addEventListener('pointerup', dragEnd); document.addEventListener('pointercancel', dragEnd);
+    });
+    grip.addEventListener('click', function () { if (just) return; voll(!d.classList.contains('voll')); });
     d.querySelector('.wkd-hd').addEventListener('dblclick', function (ev) { if (!ev.target.closest('button') && getComputedStyle(grip).display !== 'none') voll(!d.classList.contains('voll')); });
     sBtn.addEventListener('click', function () { suche(qw.hidden); });
     d.addEventListener('keydown', function (ev) {
@@ -493,7 +567,7 @@
       t = setTimeout(function () {
         W.needSuche().then(function () {
         var r = W.search(q.value, { lab: lab });
-        res.innerHTML = (r.meint ? '<p class="mute">Meintest du „' + esc(r.meint) + '“?</p>' : '') + r.map(function (e) { return '<button type="button" role="option" class="wkd-hit" data-id="' + e.id + '"><b>' + formel(e.titel) + '</b> <small>' + esc(W.katText(e)) + '</small></button>'; }).join('') || (q.value.trim() ? '<p class="mute">Kein Treffer</p>' : '');
+        res.innerHTML = (r.meint ? '<p class="mute">Meintest du „' + esc(r.meint) + '“?</p>' : '') + r.map(function (e) { return '<button type="button" role="option" class="wkd-hit" data-id="' + e.id + '"><b>' + W.hl(formel(e.titel), q.value, r.meint) + '</b> <small>' + esc(W.katText(e)) + '</small></button>'; }).join('') || (q.value.trim() ? '<p class="mute">Kein Treffer</p>' : '');
         });
       }, 120);
     });

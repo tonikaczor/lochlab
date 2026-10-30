@@ -154,17 +154,17 @@
     if (!root.PR_POOL) await loadScript('pruefpool.js');
   }
   const CSS = `#standBox{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(14px + env(safe-area-inset-top)) 14px calc(14px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
-#standBox .sb{background:#222830;color:#e8ecf0;border:1px solid #38424d;border-radius:16px;max-width:560px;width:100%;padding:16px 18px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
-#standBox h2{font-size:19px;margin:0 0 6px}#standBox p{margin:6px 0}#standBox .mu{color:#aab4bf;font-size:13px}
+#standBox .sb{background:var(--panel,#222830);color:var(--fg,#e8ecf0);border:1px solid var(--line,#38424d);border-radius:16px;max-width:560px;width:100%;padding:16px 18px;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
+#standBox h2{font-size:19px;margin:0 0 6px}#standBox p{margin:6px 0}#standBox .mu{color:var(--mute,#aab4bf);font-size:13px}
 #standBox label{display:block;font-weight:600;margin:12px 0 4px}
-#standBox input[type=text]{width:100%;min-height:44px;font:inherit;font-size:16px;color:#e8ecf0;background:#14181c;border:1px solid #5b6875;border-radius:10px;padding:8px 12px}
+#standBox input[type=text]::placeholder{color:var(--mute,#aab4bf);opacity:1}#standBox input[type=text]{width:100%;min-height:44px;font:inherit;font-size:16px;color:var(--fg,#e8ecf0);background:var(--bg,#14181c);border:1px solid var(--mute,#5b6875);border-radius:10px;padding:8px 12px}
 #standBox .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
-#standBox button{min-height:44px;min-width:44px;padding:0 16px;border-radius:10px;border:1px solid #5b6875;background:#2c343e;color:#fff;font:600 15px system-ui,sans-serif;cursor:pointer}
-#standBox button.pri{background:#1a6fd4;border-color:#1a6fd4}
-#standBox button:focus-visible,#standBox input:focus-visible,#standBox summary:focus-visible{outline:3px solid #ffd166;outline-offset:2px}
-#standBox .err{color:#ff9d92;min-height:20px;margin:6px 0 0}#standBox .ok{color:#6fe28a;min-height:20px;margin:6px 0 0}
+#standBox button{min-height:44px;min-width:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line,#5b6875);background:var(--panel2,#2c343e);color:var(--fg,#fff);font:600 15px system-ui,sans-serif;cursor:pointer}
+#standBox button.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:var(--accent-ink,#fff)}
+#standBox button:focus-visible,#standBox input:focus-visible,#standBox summary:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}
+#standBox .err{color:var(--danger,#ff9d92);min-height:20px;margin:6px 0 0}#standBox .ok{color:var(--ok,#6fe28a);min-height:20px;margin:6px 0 0}
 #standBox details{margin-top:12px}#standBox summary{cursor:pointer;min-height:44px;display:flex;align-items:center}
-#standBox pre{max-height:220px;overflow:auto;background:#14181c;border:1px solid #38424d;border-radius:8px;padding:8px;font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+#standBox pre{max-height:220px;overflow:auto;background:var(--bg,#14181c);border:1px solid var(--line,#38424d);border-radius:8px;padding:8px;font:12px/1.4 ui-monospace,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
 @media (prefers-reduced-motion:no-preference){#standBox .sb{animation:sbIn .15s ease-out}}@keyframes sbIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`;
   let opener = null;
   function close() { const w = document.getElementById('standBox'); if (w) w.remove(); document.removeEventListener('keydown', onKey, true); if (opener && opener.focus) { try { opener.focus(); } catch (e) {} } opener = null; }

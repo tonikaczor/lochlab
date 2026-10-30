@@ -10,7 +10,7 @@ p{margin:6px 0}small,.mute{color:var(--mute)}
 ol,ul{padding-left:22px;margin:6px 0}li{margin:3px 0}
 .k{display:inline-block;padding:0 7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);font-size:14px;white-space:nowrap}
 table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}th,td{text-align:left;padding:5px 8px;border-bottom:1px solid var(--line)}th{color:var(--mute);font-weight:600}
-a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}
+a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}@media screen and (max-width:640px){table,table.t{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}}
 .tip{border-left:4px solid var(--ok);padding-left:12px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 

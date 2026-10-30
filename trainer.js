@@ -7,6 +7,8 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const NEXTSTEPS = [
     { at: '#bMenu', t: 'Menü: Aufgaben, Öffnen, Drucken', x: 'Im Menü stehen ganz oben die Aufgaben mit Prüfung (das Lab sagt dir, was schon stimmt, auf Wunsch gibt es Tipps in drei Stufen), das Öffnen gespeicherter Arbeiten und das Drucken. Weiter unten: Rechner, Tagesaufgabe, Abzeichen, Tonwerkstatt und „Neu in dieser Version“. Diesen Trainer startest du dort jederzeit neu.' }];
+  /* Wiki-Hinweis (v23.150): nur in den Labs mit dem kleinen ? neben Reglern und Messfeldern */
+  const WIKISTEP = { at: () => $('button.wk'), t: 'Das kleine ?', x: 'Neben vielen Reglern und Messfeldern steht ein kleines ?. Tippe darauf: Dann erklärt dir das Wiki den Regler oder das Messfeld, ohne dass du das Lab verlässt.' };
   const END = (name) => ({ t: 'Geschafft!', x: 'Das war die Einführung ins ' + name + '. Jetzt bist du dran: Probiere Beispiele aus oder starte eine Aufgabe. Viel Spaß beim Tüfteln!' });
 
   const SCRIPTS = {
@@ -21,7 +23,7 @@
       { at: '#cv', prep: (a, st) => { st.sw = a.switchState(); }, gate: (a, st) => a.switchState() !== st.sw, t: 'Strom sehen', x: 'Die gelben Punkte zeigen den Strom, die Farbe der Leitung zeigt die Spannung. Tippe den Schalter in der Zeichnung an und sieh, wie die LED reagiert.' },
       { at: '#side', prep: (a, st) => { const p = a.part('R'); st.r = p ? p.v : null; }, gate: (a, st) => { const p = a.part('R'); return !!p && p.v !== st.r; }, t: 'Wert ändern', x: 'Wähle den Widerstand und ändere seinen Wert, zum Beispiel auf 100 Ω. Wird die LED heller? Mit sehr kleinem Wert brennt sie durch. Das ist hier ungefährlich, es ist nur Simulation.' },
       { at: '#bWater', gate: a => a.water(), optional: true, t: 'Wasser-Ansicht', x: 'Probiere den blauen Schalter: Der Strom wird zu Wasser im Rohr, die Spannung zum Druck. Das hilft beim Verstehen. (Du kannst den Schritt auch überspringen.)' },
-      NEXTSTEPS[0], END('SchaltLab')] },
+      WIKISTEP, NEXTSTEPS[0], END('SchaltLab')] },
     sim: { name: 'SimLab', steps: [
       { t: 'Willkommen im SimLab', x: 'Das SimLab ist dein Experimentierlabor für die Hausinstallation: Schalter, Sicherungsautomat, Steckdose und Lampe. Ich zeige dir die Grundlagen in wenigen Minuten.' },
       { prep: a => a.load('Ausschaltung'), at: '#cv', t: 'Eine Ausschaltung', x: 'Ich habe dir eine Ausschaltung geladen: Netz, Sicherungsautomat, Schalter und Lampe. Die farbigen Drähte entsprechen den echten Leitungsfarben (braun Außenleiter, blau Neutralleiter, grün-gelb Schutzleiter).' },
@@ -31,7 +33,7 @@
       { at: '#cv', prep: (a, st) => { st.sw = a.switchState(); }, gate: (a, st) => a.switchState() !== st.sw, t: 'Schalten', x: 'Tippe den Schalter in der Zeichnung an. Die Lampe geht an oder aus. Die Punkte zeigen, wo Strom fließt.' },
       { at: '#bCab', t: 'Schaltschrank', x: 'Die Schaltschrank-Ansicht zeigt Sicherungsautomaten und FI so, wie du sie im Verteiler bedienst. Nach einem Kurzschluss schaltest du hier wieder ein.' },
       { at: '#bPP', t: 'Prüfplatz', x: 'Im Prüfplatz übst du das Prüfen elektrischer Geräte nach VDE 0701 und 0702: Schutzleiter, Isolation, Ableitstrom.' },
-      NEXTSTEPS[0], END('SimLab')] },
+      WIKISTEP, NEXTSTEPS[0], END('SimLab')] },
     code: { name: 'Arduino-Lab', steps: [
       { t: 'Willkommen im Arduino-Lab', x: 'Hier programmierst du einen Arduino Uno und siehst sofort, was die Schaltung macht. Ich zeige dir das mit dem Klassiker: einer blinkenden LED.' },
       { prep: a => a.load('Blink'), at: '#cv', t: 'Die Schaltung', x: 'Links der Arduino Uno, an Pin 13 hängt eine LED mit Vorwiderstand. Das ist die Schaltung zum Programm.' },
@@ -107,7 +109,7 @@
       { at: '#tabs', gate: a => a.tab() === 'seq', t: 'Ablauf', x: 'Tippe auf „Ablauf“. Hier schreibst du eine Schaltfolge als Tabelle: nach so vielen Sekunden setze diesen Wert. Damit baust du einen Stern-Dreieck-Anlauf oder eine Richtungsumkehr ohne Kurzschluss.' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für Leistung, Wirkungsgrad, Schlupf und Übersetzung. Der Typenschild-Rechner ist wie in der Prüfung.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 30 Aufgaben mit automatischer Prüfung: von Leistung und Wirkungsgrad über PWM, Servo, Schrittmotor, Stern-Dreieck und Getriebe bis zur Fehlersuche und Aufgaben im Prüfungsstil. Dazu 22 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Antriebs-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Antriebs-Lab')] },
     sen: { name: 'Sensorik-Lab', steps: [
       { t: 'Willkommen im Sensorik-Lab', x: 'Hier untersuchst du Sensoren und Messketten an sieben animierten Prüfständen: Temperatur, Licht und Näherung, Kraft und Druck, Beschleunigung, Normsignale, digitale Sensoren und ADU. Ich zeige dir in wenigen Minuten, wo was ist.' },
       { prep: a => { a.load('NTC im Spannungsteiler'); a.go('rig'); }, at: '#cv', t: 'Die Messkette', x: 'Ich habe dir den NTC im Spannungsteiler geladen. Das Bild zeigt die Messkette: Messgröße, Sensor, Signalaufbereitung, Wandler und Anzeige. Dein bisheriger Versuch ist gesichert.' },
@@ -119,7 +121,7 @@
       { at: '#tabs', gate: a => a.tab() === 'seq', t: 'Ablauf', x: 'Tippe auf „Ablauf“. Hier schreibst du eine Folge als Tabelle: nach so vielen Sekunden setze diesen Wert. Damit baust du zum Beispiel einen Temperatursprung oder einen Drahtbruch zu einem bestimmten Zeitpunkt.' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für NTC und Pt100, Brückenspannung, Verstärkung, Bürde, ADU-Stufe und Aliasing.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 28 Aufgaben mit automatischer Prüfung: von der DMS-Brücke über Pt100 und Leitungsfehler, Schaltabstand, Kalibrierung, Normsignale und I²C bis zur Fehlersuche und Aufgaben im Prüfungsstil. Dazu 27 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Sensorik-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Sensorik-Lab')] },
     ds: { name: 'Datenblatt-Lab', steps: [
       { t: 'Willkommen im Datenblatt-Lab', x: 'Hier lernst du, Datenblätter zu lesen: Grenzwerte, Tabellen, Kennlinien, Thermik und Fachenglisch. Das brauchst du in der Abschlussprüfung. Die Datenblätter im Lab sind Übungsdatenblätter, angelehnt an echte Bauteile. Maßgeblich sind immer die Datenblätter der Hersteller.' },
       { prep: a => { a.load('Grenzwerte lesen'); a.go('lib'); }, at: '#vwLib', t: 'Das Datenblatt', x: 'Ich habe dir das Datenblatt des TF-BC547 geladen. Es sieht aus wie ein Blatt Papier: Titel und Merkmale, Pinbelegung, Grenzwerte, Kennwerte, Kennlinien, Thermik, Gehäuse und Anwendung. Dein bisheriger Arbeitsstand ist gesichert.' },
@@ -145,7 +147,7 @@
       { at: '#tabs', gate: a => a.tab() === 'tune', t: 'Regler einstellen', x: 'Tippe auf „Regler einstellen“. Aus den gemessenen Kennwerten berechnen Einstellregeln wie Ziegler-Nichols einen Vorschlag für Kp, Tn und Tv. Danach prüfst du am Prüfstand, wie gut er regelt: Überschwingen, Ausregelzeit und bleibende Abweichung.' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für Proportionalbereich, Kreisverstärkung, bleibende Abweichung, Einstellregeln, Zweipunktregler und die Umrechnung von Normsignalen in der SPS.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 30 Aufgaben mit automatischer Prüfung: von den Anlagenteilen und dem P-Regler über Sprungantwort, Einstellregeln, Zweipunktregler und Windup bis zur Stabilität, Fehlersuche und Aufgaben im Prüfungsstil. Dazu 24 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Regelungstechnik-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Regelungstechnik-Lab')] },
     thm: { name: 'Thermik-Lab', steps: [
       { t: 'Willkommen im Thermik-Lab', x: 'Hier lernst du, wo im Gerät die Wärme entsteht und wie sie abgeführt wird: Linearregler, Leistungstransistor, MOSFET, Diode, Widerstand und LED an fünf animierten Prüfständen. Ich zeige dir in wenigen Minuten, wo was ist. Alle Bauteile sind Übungsbauteile mit Übungswerten.' },
       { prep: a => { a.load('7805 ohne Kühlkörper: Abschaltung'); a.go('rig'); }, at: '#cv', t: 'Der Prüfstand', x: 'Ich habe dir den Spannungsregler 7805 ohne Kühlkörper geladen. Das Bild zeigt das Gehäuse im Schnitt: Die Wärme entsteht in der Sperrschicht und fließt über das Gehäuse in die Luft. Dein bisheriger Versuch ist gesichert.' },
@@ -159,7 +161,7 @@
       { prep: a => a.go('calc'), at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Prüfungsassistent führt dich Schritt für Schritt von der Verlustleistung über die Wärmewiderstandskette bis zum nötigen Kühlkörper. Jeder Rechenweg wird mit Zahlen und Einheiten gezeigt.' },
       { at: '#tabs', gate: a => a.tab() === 'cmp', t: 'Vergleichen', x: 'Tippe auf „Vergleichen“. Drei Aufbauten laufen nebeneinander, zum Beispiel ohne Paste, mit Paste und mit größerem Kühlkörper. So siehst du sofort, welche Maßnahme wie viel bringt.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 30 Aufgaben mit automatischer Prüfung: von der Verlustleistung über die Wärmekette, Montage und Kühlkörperwahl bis zu Fehlersuche und Prüfungsaufgaben. Dazu 24 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Thermik-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Thermik-Lab')] },
     emv: { name: 'EMV-Lab', steps: [
       { t: 'Willkommen im EMV-Lab', x: 'EMV heißt elektromagnetische Verträglichkeit: Ein Gerät darf andere nicht stören und soll sich selbst nicht stören lassen. Hier siehst du an neun animierten Prüfständen, woher Störungen kommen, auf welchem Weg sie wandern und was dagegen hilft. Alle Werte sind Übungswerte.' },
       { prep: a => { a.load('Zwei Leitungen: Der Abstand wirkt'); a.go('rig'); }, at: '#cv', t: 'Der Prüfstand', x: 'Ich habe dir zwei parallele Leitungen geladen: Die eine ist die Störquelle, die andere das gestörte Kabel. Das Bild zeigt, wie die Störung hinüberkommt. Dein bisheriger Versuch ist gesichert.' },
@@ -174,7 +176,7 @@
       { prep: a => a.go('spec'), at: '#tabs', gate: a => a.tab() === 'spec', t: 'Spektrum', x: 'Tippe auf „Spektrum“. Ein Rechtecksignal besteht aus einer Grundwelle und vielen Oberwellen. Hier siehst du, wie Flankensteilheit und Tastverhältnis das Spektrum und den Abstand zum Grenzwert verändern.' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für dB, Filter, Schirmdämpfung, Schleifenfläche und Impulse, immer mit Zahlen und Einheiten.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 32 Aufgaben mit automatischer Prüfung: von der Kopplung über Spektrum, Filter, Schirmung, Layout und Impulse bis zur Fehlersuche und zu Aufgaben im Prüfungsstil. Dazu 26 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('EMV-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('EMV-Lab')] },
     enr: { name: 'Energie-Lab', steps: [
       { t: 'Willkommen im Energie-Lab', x: 'Hier lernst du, wie aus Sonnenlicht Strom wird und wie eine Solaranlage ausgelegt wird. An fünf animierten Prüfständen siehst du Solarmodul, Verschattung, Laderegler mit Akku, Inselanlage und Netzeinspeisung. Ich zeige dir in wenigen Minuten, wo was ist. Alle Anlagen und Werte sind Übungswerte.' },
       { prep: a => { a.load('Das 60-Zellen-Modul bei STC'); a.go('rig'); }, at: '#cv', t: 'Der Prüfstand', x: 'Ich habe dir ein 60-Zellen-Modul unter Standardbedingungen geladen: 1000 Watt pro Quadratmeter Einstrahlung und 25 Grad Zelltemperatur. Das Bild zeigt Sonne, Modul und Last. Dein bisheriger Versuch ist gesichert.' },
@@ -188,7 +190,7 @@
       { at: '#tabs', gate: a => a.tab() === 'design', optional: true, t: 'Auslegen', x: 'Tippe auf „Auslegen“. Der Assistent führt dich in sechs Schritten durch die Auslegung einer Inselanlage: Verbraucher, Standort, Akku, Modul und Regler, Leitungen und Sicherungen. Am Ende prüft die Simulation, ob die Auslegung trägt. (Du kannst den Schritt auch überspringen.)' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für Leistung, Modul, Verschaltung, Akku, Leitung, Ertrag, Wechselrichter und Sonne, immer mit Zahlen und Einheiten. Dazu gibt es Übungen zum Selbstprüfen.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 30 Aufgaben mit automatischer Prüfung: von der Kennlinie über Verschattung, Laderegler und Akku bis zu Auslegung, Wechselrichter und Aufgaben im Prüfungsstil. Dazu 32 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Energie-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Energie-Lab')] },
     els: { name: 'Sicherheits-Lab', steps: [
       { t: 'Willkommen im Sicherheits-Lab', x: 'Hier lernst du, wie elektrische Anlagen und Geräte gegen Stromschlag geschützt sind und wie man sie prüft. An acht animierten Prüfständen siehst du Körperstrom, Netzformen, Sicherungen, RCD, Schutzklassen, Isolation, Geräteprüfung und die Sicherheitsregeln. Alles ist Simulation: Arbeiten an Netzspannung machen nur Elektrofachkräfte oder unterwiesene Personen. Alle Werte sind Übungswerte.' },
       { prep: a => { a.load('elx1'); a.go('rig'); }, at: '#cv', t: 'Der Prüfstand Körper', x: 'Ich habe dir den Prüfstand Körper geladen: 230 Volt an trockener Haut. Das Bild zeigt den Weg des Stroms durch den Menschen und die Zone, in der die Wirkung liegt. Dein bisheriger Versuch ist gesichert.' },
@@ -202,7 +204,7 @@
       { at: '#tabs', gate: a => a.tab() === 'design', optional: true, t: 'Auslegen', x: 'Tippe auf „Auslegen“. Der Assistent führt dich in vier Schritten durch einen Stromkreis: Verbraucher, Leitung und Schutzorgan, Netz und Abschaltbedingung und am Ende die Prüfung in der Simulation. (Du kannst den Schritt auch überspringen.)' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für Körperstrom, Leitung, Schleifenimpedanz, Abschaltbedingung, RCD, Ableitstrom und Isolation, immer mit Zahlen und Einheiten. Dazu gibt es Übungen zum Selbstprüfen.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 32 Aufgaben mit automatischer Prüfung: von der Zone über Netzform, Schutzorgane, RCD, Schutzklassen und Isolation bis zur Geräteprüfung mit Protokoll und zu den Sicherheitsregeln. Dazu 34 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Sicherheits-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Sicherheits-Lab')] },
     nts: { name: 'Netzteil-Lab', steps: [
       { t: 'Willkommen im Netzteil-Lab', x: 'Hier lernst du, wie aus der Netzspannung eine saubere Gleichspannung wird: Transformator, Gleichrichter, Siebung, Z-Diode, Linearregler und Schaltregler. An acht animierten Prüfständen siehst du die Spannungen, Ströme und Verluste. Alles ist Simulation: Arbeiten an Netzspannung machen nur Elektrofachkräfte oder unterwiesene Personen. Alle Werte sind Übungswerte.' },
       { prep: a => { a.load('ntx5'); a.go('rig'); }, at: '#cv', t: 'Der Prüfstand Gleichrichter', x: 'Ich habe dir den Prüfstand Gleichrichter und Siebung geladen: eine Brücke mit Ladekondensator. Das Bild zeigt die Spannung am Kondensator und die kurzen Stromimpulse. Dein bisheriger Versuch ist gesichert.' },
@@ -216,7 +218,7 @@
       { at: '#tabs', gate: a => a.tab() === 'design', optional: true, t: 'Auslegen', x: 'Tippe auf „Auslegen“. Der Assistent führt dich in vier Schritten durch ein Netzteil: Verbraucher, Netzteiltyp, Bauteile und am Ende das Ergebnis mit dem Verlustvergleich Linear gegen Schaltregler. (Du kannst den Schritt auch überspringen.)' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für Spitzenspannung, Brummspannung, Z-Diode, Linearregler, Tastverhältnis, Drosselstrom und Wirkungsgrad, immer mit Zahlen und Einheiten. Dazu gibt es Übungen zum Selbstprüfen.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 32 Aufgaben mit automatischer Prüfung: von Transformator und Gleichrichter über Z-Diode und Linearregler bis zu Schaltreglern, Gate-Ansteuerung, Labornetzteil und Fehlersuche. Dazu 34 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Netzteil-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Netzteil-Lab')] },
     wsl: { name: 'Wechselstrom-Lab', steps: [
       { t: 'Willkommen im Wechselstrom-Lab', x: 'Hier lernst du, wie sich Spannung und Strom im Wechselstromkreis verhalten: Sinusgrößen, Spule und Kondensator, Blindleistung und Kompensation, Schwingkreis, Filter, Transformator und Drehstrom. An acht animierten Prüfständen siehst du Zeitbild, Zeigerbild und Formel zur selben Größe. Alles ist Simulation: Arbeiten an Netzspannung machen nur Elektrofachkräfte oder unterwiesene Personen. Alle Werte sind Übungswerte.' },
       { prep: a => { a.load('wsx1'); a.go('rig'); }, at: '#cv', t: 'Der Prüfstand Sinus', x: 'Ich habe dir den Prüfstand Sinus geladen: die Netzspannung 230 V mit 50 Hz. Das Bild zeigt die Kurve über der Zeit mit Raster. Dein bisheriger Versuch ist gesichert.' },
@@ -230,7 +232,7 @@
       { at: '#tabs', gate: a => a.tab() === 'design', optional: true, t: 'Auslegen', x: 'Tippe auf „Auslegen“. Der Assistent führt dich in vier Schritten durch eine Aufgabe: Kompensation, Schwingkreis, Filter oder Transformator. Am Ende steht das Ergebnis mit Ampel. (Du kannst den Schritt auch überspringen.)' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für Blindwiderstand, Impedanz, Leistung, Kompensationskondensator, Resonanzfrequenz, Güte, Grenzfrequenz und Übersetzungsverhältnis, immer mit Zahlen und Einheiten. Dazu gibt es Übungen zum Selbstprüfen.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 32 Aufgaben mit automatischer Prüfung: von Sinus, Spule und Kondensator über Leistung und Kompensation bis zu Schwingkreis, Filter, Transformator, Drehstrom und dem Meisterstück. Dazu 34 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Wechselstrom-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Wechselstrom-Lab')] },
     ana: { name: 'Analogtechnik-Lab', steps: [
       { t: 'Willkommen im Analogtechnik-Lab', x: 'Hier lernst du, wie Halbleiter und Verstärker arbeiten: Diode und LED, Transistor als Schalter, Emitterschaltung, Emitterfolger und Operationsverstärker. An acht animierten Prüfständen siehst du Kennlinie, Signal und Formel zur selben Schaltung. Alles ist Simulation. Alle Werte sind Übungswerte.' },
       { prep: a => { a.load('aex1'); a.go('rig'); }, at: '#cv', t: 'Der Prüfstand Diode', x: 'Ich habe dir den Prüfstand Diode geladen: eine rote LED mit Vorwiderstand an 24 V. Das Bild zeigt die Schaltung mit Strömen und Spannungen. Dein bisheriger Versuch ist gesichert.' },
@@ -244,7 +246,7 @@
       { prep: a => a.go('wave'), at: '#tabs', gate: a => a.tab() === 'wave', t: 'Verläufe', x: 'Tippe auf „Verläufe“. Dort liest du Spannungen über der Zeit ab, mit Raster und Cursor für Amplitude, Periodendauer und Verstärkung. Bei Prüfständen mit Gleichgrößen gibt es keinen Zeitverlauf. Das Bode-Diagramm und die weiteren Vertiefungen klappst du bei Bedarf auf, sie sind freiwillig (Taste B).' },
       { at: '#tabs', gate: a => a.tab() === 'calc', t: 'Rechnen', x: 'Tippe auf „Rechnen“. Der Rechner zeigt den Rechenweg für Vorwiderstand, Transistorschalter, Arbeitspunkt, Verstärkung, Schmitt-Trigger und Grenzfrequenz, immer mit Zahlen und Einheiten. Dazu gibt es Übungen zum Selbstprüfen.' },
       { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 32 Aufgaben mit automatischer Prüfung: von LED-Vorwiderstand und Transistorschalter über Arbeitspunkt und Emitterschaltung bis zu Invertierer, Nichtinvertierer, Komparator, aktiven Schaltungen und Fehlersuche. Dazu 34 Beispiele. Tipps gibt es in drei Stufen.' },
-      NEXTSTEPS[0], END('Analogtechnik-Lab')] },
+      WIKISTEP, NEXTSTEPS[0], END('Analogtechnik-Lab')] },
     vb: { name: 'Verbundprojekte', steps: [
       { t: 'Willkommen bei den Verbundprojekten', x: 'Hier bauen alle Labs zusammen ein Gerät: Garagentor, Ampel, Uhr, Gartenbewässerung oder Förderanlage. Jede Station arbeitet in einem Lab und liefert ihr Ergebnis an die nächste. Ich zeige dir in wenigen Minuten, wie das geht.' },
       { at: () => document.getElementById('view'), t: 'Fünf Projekte', x: 'Wähle ein Projekt und eine Stufe: Einsteiger mit Starthilfen, Standard oder Profi. Dein Name und die Stufe bestimmen das Lastenheft, also die Zahlen deines Auftrags. Wer im Team arbeitet, nimmt denselben Teamnamen.' },
@@ -288,7 +290,7 @@
       { at: '.wbdock', t: 'Oszilloskop und mehr', x: 'Das Oszilloskop zeichnet den Spannungsverlauf über der Zeit. Mit „Messpunkt setzen“ wählst du, was du sehen willst. Die Beispiele „Sinus am Oszilloskop“ und „RC-Tiefpass mit Rechteck“ eignen sich zum Üben.' },
       { at: '#bMenu', t: 'Aufgaben mit Zahlen', x: 'Im Menü warten die Messaufgaben: Du misst, trägst die Zahl in ein Feld ein, und das Lab prüft sie gegen den simulierten Wert. Dazu gibt es Messfehler-Aufgaben: Warum zeigt das Gerät Unsinn?' },
       { at: '.wbdock', t: 'Neue Geräte', x: 'In der Werkbank gibt es jetzt den Frequenzgang (Bode-Messplatz mit Grenzfrequenz), den Logikanalysator (digitale Kanäle und Buswert) und das Messprotokoll zum Ausdrucken. Unter der Anzeige des Multimeters steht die Genauigkeit.' },
-      NEXTSTEPS[0], END('MessLab')] },
+      WIKISTEP, NEXTSTEPS[0], END('MessLab')] },
     loch: { name: 'LochLab', steps: [
       { t: 'Willkommen im LochLab', x: 'Im LochLab planst du eine Schaltung auf einer Lochrasterplatine, so wie du sie später lötest. Ich zeige dir die Grundlagen in wenigen Minuten.' },
       { prep: a => a.load('LED mit Vorwiderstand'), at: '#cv', t: 'Die Platine', x: 'Ich habe dir ein Beispiel geladen: eine LED mit Vorwiderstand und Schalter auf der Platine. Deine bisherige Arbeit ist gesichert. Mit zwei Fingern oder dem Mausrad zoomst du.' },

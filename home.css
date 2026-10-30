@@ -270,3 +270,6 @@ html.tiles .card.wikirow a.btn.pri{flex:1 1 64px;min-width:64px}
   html.tiles .card.wikirow .btns{flex:none}
   html.tiles .card.wikirow .wkn{font-size:13px}
 }
+
+/* ---- Aufklappbare Kartenbeschreibung (p.cl, role=button): Ziel mindestens 44 px hoch (vorher 41 px bei 2 Zeilen a 14/1,45) ---- */
+.card p.cl{min-height:44px}

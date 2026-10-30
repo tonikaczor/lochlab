@@ -2,6 +2,12 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v23.150', items: [
+      ['Wiki: Hilfetexte für alle Einträge', 'Alle 1329 Wiki-Einträge haben jetzt einen Hilfetext. Auch die letzten Regler und Messwerte aus Energie, EMV, Sensorik und anderen Labs sind erklärt: was sie bewirken und wie sie zusammenhängen. Das kleine „?“ im Trainer weist darauf hin.', 'Wiki, Labs ▸ „?“'],
+      ['Neues Wiki-Design: zwei Spalten, A bis Z, Steckbrief', 'Am PC steht links die Liste und rechts der Eintrag. Eine Leiste A bis Z springt in langen Listen zum Buchstaben, Suchwörter sind im Titel markiert, und Regler und Messwerte haben einen übersichtlichen Steckbrief. Auf dem Handy lässt sich das Fenster von unten mit dem Finger ziehen.', 'Startseite ▸ Wiki'],
+      ['Werkbank: Feinschliff', 'Die Dialoge „Lernstand“ und „Stand“ folgen jetzt Hell und Dunkel der Startseite. Die Beschreibung auf den Lab-Karten lässt sich bequem antippen, und Ausbilder-Seite und Lernhefte laufen auf dem Handy nicht mehr zur Seite über.', 'Startseite, Ich'],
+      ['Freiwillige Abgabe in ILIAS', 'Wer will, gibt sein Ergebnis über einen Link im Dialog „Ergebnis senden“ in der Lernplattform ab. Am Ende jedes Labs führt ein dezenter Link zum passenden Kurs. Es wird nichts automatisch gesendet.', 'Lab ▸ Ergebnis senden'],
+    ] },
     { v: 'v23.149', items: [
       ['Wiki erweitert: Regler und Messwerte', 'Das Wiki hat jetzt 1329 Einträge. Neu sind die Regler und Messwerte aus den Labs: Zu jedem Regler steht, was er bewirkt, in welchem Bereich er sich einstellen lässt und welche Grundeinstellung er hat. Alles weiter offline nutzbar.', 'Startseite ▸ Wiki'],
       ['Das „?“ in allen Labs mit Versuchsaufbau', 'Neben den Reglern steht das kleine „?“ jetzt auch in Analog, Antrieb, Sicherheit, EMV, Energie, Netzteil, Regelung, Sensorik, Thermik und Wechselstrom. Es öffnet den passenden Eintrag direkt neben dem Aufbau.', 'Labs ▸ „?“ neben einem Regler'],
