@@ -134,6 +134,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-appwerkstatt" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 9l-2 3 2 3M13 9l2 3-2 3M11 5h2"/></symbol>
   <symbol id="i-pruefungslab" viewBox="0 0 24 24"><path d="M3.5 6.5l1.3 1.3L7.5 5M3.5 12l1.3 1.3L7.5 10.5M10 6.5h10M10 12h5M4 17.5h6"/><circle cx="17" cy="17" r="4.5"/><path d="M17 14.5V17h2"/></symbol>
   <symbol id="i-vb" viewBox="0 0 24 24"><circle cx="5" cy="5" r="2.2"/><circle cx="19" cy="5" r="2.2"/><circle cx="5" cy="19" r="2.2"/><circle cx="19" cy="19" r="2.2"/><path d="M7.2 5h9.6M5 7.2v9.6M19 7.2v9.6M7.2 19h9.6M6.6 6.6l10.8 10.8M17.4 6.6L6.6 17.4"/></symbol>
+  <symbol id="i-wiki" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l12 8-12 8z"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
@@ -410,6 +411,16 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     </div>
     <div class="btns"><a class="btn pri" href="verbund.html">Projekte öffnen</a><a class="btn" href="lernen-vb.html">Projektheft</a></div>
   </section>
+  <section class="card vbrow wikirow" id="wikiRow" data-hub="wiki" data-group="grund">
+    <span class="tag">NACHSCHLAGEN</span>
+    <h3>Tonfunk Wiki</h3>
+    <div class="pic" aria-hidden="true">
+      <svg viewBox="0 0 240 120"><g fill="none" stroke="#e8eaed" stroke-width="3" stroke-linejoin="round"><path d="M34 26Q76 18 116 32V96Q76 84 34 92Z"/><path d="M206 26Q164 18 124 32V96Q164 84 206 92Z"/></g><g fill="none" stroke="#9aa0a6" stroke-width="3" stroke-linecap="round"><path d="M48 42Q76 38 102 46M48 56Q76 52 102 60M48 70Q76 66 102 74"/><path d="M138 44Q160 38 190 42"/></g><g fill="none" stroke="#ffe14d" stroke-width="4" stroke-linecap="round"><circle cx="164" cy="64" r="14"/><path d="M174 75L188 90"/></g></svg>
+    </div>
+    <p>Bauteile, Geräte, Regler, Messwerte – offline nachschlagen</p>
+    <div class="wkn" id="wikiN">Einträge zum Nachschlagen</div>
+    <div class="btns"><a class="btn pri" href="wiki.html">Öffnen</a></div>
+  </section>
   <div class="foot ft" id="foot">
     <div class="ftcol" id="ftAzubi"><p class="fth">Für Azubis</p>
       <div class="foot standrow" id="footBtns"><button type="button" id="standOpen" aria-haspopup="dialog">Stand exportieren</button><button type="button" id="lsOpen">Lernstand sichern oder laden</button><span>„Stand exportieren“ erzeugt eine kleine Datei mit deinem Lernstand für deinen Ausbilder (nur Kürzel, Ergebnisse und Abzeichen, keine Lösungen).</span></div>
@@ -445,6 +456,9 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <script>(function(){if(!('IntersectionObserver' in window))return;document.documentElement.classList.add('anim-gate');var io=new IntersectionObserver(function(es){es.forEach(function(e){e.target.classList.toggle('inview',e.isIntersecting);});},{threshold:.15});var seen=new WeakSet();function scan(){document.querySelectorAll('.card').forEach(function(c){if(!seen.has(c)){seen.add(c);io.observe(c);}});}scan();setTimeout(scan,1500);setTimeout(scan,4000);})();</script>
 <script>(function(){function mark(){document.querySelectorAll('.card p').forEach(function(p){var o=p.classList.contains('open'),over=p.scrollHeight>p.clientHeight+1;if(over||o){if(!p.classList.contains('cl')){p.classList.add('cl');p.setAttribute('role','button');p.tabIndex=0;p.setAttribute('aria-expanded',o?'true':'false');p.title='Volltext: '+p.textContent.trim().slice(0,400)+(p.textContent.length>400?' ...':'');}}else if(p.classList.contains('cl')){p.classList.remove('cl');p.removeAttribute('role');p.removeAttribute('tabindex');p.removeAttribute('aria-expanded');p.removeAttribute('title');}});}function tog(p){var o=p.classList.toggle('open');p.setAttribute('aria-expanded',o?'true':'false');}document.addEventListener('click',function(e){var p=e.target.closest&&e.target.closest('.card p.cl');if(p)tog(p);});document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.card p.cl')){e.preventDefault();tog(e.target);}});var tm;function soon(){clearTimeout(tm);tm=setTimeout(mark,150);}window.addEventListener('resize',soon);window.addEventListener('load',soon);setTimeout(mark,300);setTimeout(mark,1500);})();</script>
 <script>(function(){var nav=document.getElementById('bnav');if(!nav)return;var links=[].slice.call(nav.querySelectorAll('a')),t=0;function upd(){t=0;var cur=links[0],y=window.innerHeight*.4;links.forEach(function(a){var e=document.getElementById(a.getAttribute('data-t'));if(e&&e.getBoundingClientRect().top<=y&&e.offsetParent!==null)cur=a;});if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4)cur=links[links.length-1];links.forEach(function(a){if(a===cur)a.setAttribute('aria-current','true');else a.removeAttribute('aria-current');});}function q(){if(!t)t=requestAnimationFrame(upd);}window.addEventListener('scroll',q,{passive:true});window.addEventListener('resize',q);setTimeout(upd,400);})();</script>
+<script>/* Wiki-Kachel: Zahl der Eintraege aus wiki-zahl.js (winzige, vom Generator mkwikiindex.js erzeugte Datei, ~220 Byte), erst nach dem Laden der Seite; die grossen Indexdateien und wiki.js werden hier nicht geladen. Fehlt die Datei, bleibt der Text ohne Zahl. */
+(function(){function go(){var el=document.getElementById('wikiN');if(!el)return;var s=document.createElement('script');s.src='wiki-zahl.js';s.async=true;s.onload=function(){var z=window.WikiZahl;if(z&&z.n>0)el.textContent=z.n+' Einträge'};s.onerror=function(){};document.head.appendChild(s)}
+if(document.readyState==='complete')setTimeout(go,300);else window.addEventListener('load',function(){setTimeout(go,300)})})();</script>
 <script src="ver.js"></script>
 <script>(function(){var b=document.getElementById('verBadge'),h=document.querySelector('header');if(!b||!h)return;b.setAttribute('data-v',window.LAB_VERSION||'');h.appendChild(b);})();</script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>

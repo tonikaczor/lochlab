@@ -34,6 +34,8 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-formel" viewBox="0 0 24 24"><path d="M5 18l4-12 2 6 2-6 4 12"/><path d="M4 12h16" stroke-dasharray="1.5 3"/></symbol>
   <symbol id="i-norm" viewBox="0 0 24 24"><path d="M6 3h12v18H6z"/><path d="M9 7h2M9 10h2M9 13h2M9 16h2M13 7h2M13 10h2M13 13h2M13 16h2"/></symbol>
   <symbol id="i-lab" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.5 9A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-3L14 9V3"/><path d="M8 15h8"/></symbol>
+  <symbol id="i-spk" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5.5 9.5V20h13V9.5"/></symbol>
   <symbol id="i-theme-a" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor"/></symbol>
   <symbol id="i-theme-l" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></symbol>
@@ -42,9 +44,9 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <a class="skip" href="#main">Zum Inhalt</a>
 <header class="wh">
   <div class="wrap">
-    <h1><svg aria-hidden="true"><use href="#i-wiki"/></svg>Tonfunk <span>Wiki</span></h1>
+    <h1 aria-label="Tonfunk Wiki"><svg aria-hidden="true"><use href="#i-wiki"/></svg><span class="tx" aria-hidden="true">Tonfunk <span>Wiki</span></span></h1>
     <div class="srch">
-      <input id="q" type="search" role="combobox" aria-expanded="false" aria-controls="res" aria-autocomplete="list" autocomplete="off" placeholder="Begriff, Bauteil, Regler suchen…" aria-label="Im Wiki suchen">
+      <input id="q" type="search" role="combobox" aria-expanded="false" aria-controls="res" aria-autocomplete="list" autocomplete="off" placeholder="Bauteil, Regler, Messwert…" aria-label="Im Wiki suchen">
       <button type="button" class="clr" id="qClr" aria-label="Suche leeren" hidden>×</button>
       <div id="res" class="res" role="listbox" aria-label="Treffer" hidden></div>
     </div>
@@ -54,27 +56,31 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 </header>
 <main id="main" class="wrap">
   <section id="vStart" class="view">
+    <div class="einstieg" id="tip" hidden><svg aria-hidden="true"><use href="#i-wiki"/></svg><p><b id="tipN"></b><small>Tipp: Im Lab das kleine „?“ neben einem Regler antippen, dann landest du direkt beim passenden Eintrag.</small></p><button type="button" class="ib" id="tipX" aria-label="Hinweis schließen">×</button></div>
     <h2>Kategorien</h2>
     <ul class="kats" id="kats"></ul>
+    <p class="bald" id="bald"></p>
+    <h2 class="labsh">Nach Lab</h2>
+    <p class="chips" id="labs"></p>
     <div class="two">
       <div class="box" id="wusst">
         <h2>Wusstest du?</h2>
         <p class="kurz" id="wKurz"></p>
-        <div class="tools"><a class="btn" id="wMehr" href="#">Mehr</a><button type="button" class="btn wk-speak" id="wSpeak" aria-pressed="false">🔊 Vorlesen</button><button type="button" class="btn" id="wNext">Nächster</button></div>
+        <div class="tools"><a class="btn" id="wMehr" href="#">Mehr</a><button type="button" class="btn wk-speak" id="wSpeak" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-spk"/></svg>Vorlesen</button><button type="button" class="btn" id="wNext">Nächster</button></div>
       </div>
       <div class="box">
         <h2>Zuletzt gesehen <button type="button" class="lnk" id="rClr" style="float:right;font-size:13px">Leeren</button></h2>
         <ul id="recent"></ul>
       </div>
     </div>
-    <h2>Nach Lab</h2>
-    <p class="chips" id="labs"></p>
   </section>
   <section id="vList" class="view" hidden>
-    <p class="back"><a class="btn" href="#">← Übersicht</a></p>
-    <h2 id="lTitel"></h2>
-    <div class="bar"><span class="mute" id="lN"></span><span class="chips" id="lLabs"></span></div>
+    <nav class="crumb" aria-label="Pfad"><a href="#">← Wiki</a><span aria-hidden="true"> › </span><span aria-current="page" id="lCrumb"></span></nav>
+    <div class="lhead"><h2 id="lTitel"></h2><span class="mute" id="lN"></span></div>
+    <div class="lbar" id="lBar"><span class="chips" id="lLabs"></span></div>
+    <div class="filt" id="lFiltBox" hidden><input id="lFilt" type="search" placeholder="In dieser Liste filtern…" aria-label="Liste filtern" autocomplete="off"></div>
     <ul class="liste" id="liste"></ul>
+    <p class="mute" id="lNone" hidden>Nichts in dieser Liste passt zu deiner Eingabe.</p>
   </section>
   <section id="vPruef" class="view" hidden>
     <p class="back"><a class="btn" href="#">← Übersicht</a></p>
@@ -85,17 +91,18 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     <div class="tw pt"><table id="pTab"><thead><tr><th>Eintrag</th><th>Kategorie</th><th>Status</th><th>Frage</th><th>Quelle</th><th>Labs</th><th>Zeichen</th></tr></thead><tbody></tbody></table></div>
   </section>
   <section id="vEntry" class="view" hidden>
-    <p class="back"><a class="btn" href="#" id="eBack">← Zurück</a></p>
+    <nav class="crumb" aria-label="Pfad"><a href="#" id="eBack">← Wiki</a><span id="eCrumb"></span></nav>
     <div id="entry"></div>
   </section>
 </main>
 <footer class="wf"><div class="wrap">
-  <a href="lernen.html">Lernhefte</a> · <a href="anleitung.html">Anleitung</a> · <span id="stand"></span> · <span class="mute">Entwürfe sind noch nicht fachlich geprüft.</span> · <a href="#pruef" id="pruefLnk">Prüfansicht (Ausbilder)</a>
+  <a href="index.html">Startseite</a> · <a href="lernen.html">Lernhefte</a> · <a href="anleitung.html">Anleitung</a> · <span id="stand"></span> · <span class="mute">Entwürfe sind noch nicht fachlich geprüft.</span> · <a href="#pruef" id="pruefLnk">Prüfansicht (Ausbilder)</a>
 </div></footer>
 <script src="ver.js"></script>
 <script src="wiki.js"></script>
 <script src="wiki-suche.js"></script>
 <script src="wiki-index.js"></script>
+<script src="wiki-index-regler.js"></script>
 <script src="wiki-bauteile.js"></script>
 <script src="urheber.js"></script>
 <script>
@@ -103,17 +110,31 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   'use strict';
   var W = window.Wiki, $ = function (s) { return document.querySelector(s); }, esc = W.esc, KAT = W.KAT, LABS = W.LABS;
   var KATS = ['bauteil', 'geraet', 'regler', 'messwert', 'begriff', 'formel', 'norm', 'lab'];
-  var ICON = { bauteil: 'bauteil', geraet: 'geraet', regler: 'regler', messwert: 'messwert', begriff: 'begriff', formel: 'formel', norm: 'norm', lab: 'lab' };
-  var prevHash = '', pr = false;
+  var ICON = { bauteil: 'bauteil', geraet: 'geraet', bedien: 'geraet', regler: 'regler', messwert: 'messwert', begriff: 'begriff', formel: 'formel', norm: 'norm', lab: 'lab' };
+  var prevHash = '', pr = false, lastList = '', backList = '', SY = {}, FV = {};
+  try { history.scrollRestoration = 'manual'; } catch (e) {}   // Scrollposition der Listen verwalten wir selbst (Zurueck aus dem Eintrag)
+  var KAT_SUB = { bauteil: 'LED, Widerstand, Elko …', geraet: 'Oszi, Multimeter, Bedienelemente', regler: 'Steuerwerte der Prüfstände', messwert: 'Anzeigen der Prüfstände' };
   try { $('#stand').textContent = 'Stand ' + (window.LAB_VERSION || ''); } catch (e) {}
 
+  // W7: Zahlen und Listen aus dem Suchindex (wiki-index.js + wiki-index-regler.js) plus geladenen Eintraegen - Regler-Dateien bleiben ungeladen
+  function rows() {
+    var m = {}, out = [];
+    (W.index ? W.index() : []).forEach(function (r) { if (!m[r[0]]) { m[r[0]] = { id: r[0], kat: r[1], titel: r[2], labs: r[4] ? r[4].split(',') : [], stub: true }; out.push(m[r[0]]); } });
+    W.all().forEach(function (e) { if (m[e.id]) out[out.indexOf(m[e.id])] = e; else out.push(e); m[e.id] = e; });
+    return out;
+  }
   function kats() {
-    $('#kats').innerHTML = KATS.map(function (k) {
-      var n = W.count(k), off = !n;
-      return '<li><a href="#k=' + k + '"' + (off ? ' aria-disabled="true" title="noch keine Einträge"' : '') + '><svg aria-hidden="true"><use href="#i-' + ICON[k] + '"/></svg>' + esc(KAT[k][1]) + '<span class="n">' + n + '</span></a></li>';
+    var R = rows(), cnt = {}; R.forEach(function (e) { var k = e.kat === 'bedien' ? 'geraet' : e.kat; cnt[k] = (cnt[k] || 0) + 1; });   // Bedienelemente gehoeren zu den Messgeraeten
+    $('#kats').innerHTML = KATS.filter(function (k) { return cnt[k]; }).map(function (k) {
+      return '<li><a href="#k=' + k + '"><svg aria-hidden="true"><use href="#i-' + ICON[k] + '"/></svg><span class="kt"><b>' + esc(KAT[k][1]) + '</b>' + (KAT_SUB[k] ? '<small>' + esc(KAT_SUB[k]) + '</small>' : '') + '</span><span class="n">' + cnt[k] + '</span></a></li>';
     }).join('');
+    var bald = KATS.filter(function (k) { return !cnt[k]; }).map(function (k) { return KAT[k][1]; });
+    $('#bald').textContent = bald.length ? 'Bald: ' + bald.join(' · ') : ''; $('#bald').hidden = !bald.length;
+    $('#tipN').textContent = R.length + ' Einträge – offline nachschlagen.';
+    var tipOff = false; try { tipOff = localStorage.getItem('lm4.wiki.tip') === '1'; } catch (e) {}
+    $('#tip').hidden = tipOff;
     var labs = {};
-    W.all().forEach(function (e) { (e.labs || []).forEach(function (l) { labs[l] = (labs[l] || 0) + 1; }); });
+    R.forEach(function (e) { (e.labs || []).forEach(function (l) { labs[l] = (labs[l] || 0) + 1; }); });
     $('#labs').innerHTML = Object.keys(LABS).filter(function (l) { return labs[l]; }).map(function (l) { return '<a class="lc" data-lab="' + l + '" href="#k=alle&lab=' + l + '">' + esc(LABS[l][0]) + ' <small>' + labs[l] + '</small></a>'; }).join('') || '<span class="mute">noch keine Lab-Zuordnung</span>';
   }
   // Wusstest du: Seed = Tag, "Naechster" zieht neu
@@ -124,30 +145,66 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     if (!pool.length) { $('#wusst').hidden = true; return; }
     if (next) wSeed = wSeed * 1103515245 + 12345 & 0x7fffffff;
     wCur = pool[Math.abs(wSeed) % pool.length];
-    $('#wKurz').textContent = wCur.kurz; $('#wMehr').href = '#e=' + wCur.id; $('#wMehr').textContent = 'Mehr: ' + wCur.titel;
+    $('#wKurz').textContent = wCur.kurz; $('#wMehr').href = '#e=' + wCur.id; $('#wMehr').innerHTML = 'Mehr: ' + W.formel(wCur.titel);
   }
   function recent() {
     var r = W.recent().map(function (id) { return W.get(id); }).filter(Boolean);
-    $('#recent').innerHTML = r.map(function (e) { return '<li><a href="#e=' + e.id + '">' + esc(e.titel) + '<small>' + esc(KAT[e.kat][0]) + '</small></a></li>'; }).join('') || '<li class="mute">Noch nichts angesehen.</li>';
+    $('#recent').innerHTML = r.map(function (e) { return '<li><a href="#e=' + e.id + '">' + W.formel(e.titel) + '<small>' + esc(KAT[e.kat][0]) + '</small></a></li>'; }).join('') || '<li class="mute leer">Noch nichts angesehen.' + (wCur ? ' <a class="lnk2" href="#e=' + wCur.id + '">Zufälligen Eintrag öffnen</a>' : '') + '</li>';
   }
   function show(v) { ['vStart', 'vList', 'vEntry', 'vPruef'].forEach(function (x) { document.getElementById(x).hidden = x !== v; }); }
-  function list(kat, lab) {
-    var arr = kat === 'alle' ? W.all().slice().sort(function (a, b) { return a.titel.localeCompare(b.titel, 'de'); }) : W.byKat(kat);
-    if (lab) arr = arr.filter(function (e) { return (e.labs || []).indexOf(lab) >= 0; });
-    $('#lTitel').textContent = kat === 'alle' ? (lab && LABS[lab] ? LABS[lab][0] : 'Alle Einträge') : KAT[kat][1];
-    $('#lN').textContent = arr.length + ' Einträge' + (lab && kat !== 'alle' ? ' · ' + LABS[lab][0] : '');
-    var labs = {}; arr.forEach(function (e) { (e.labs || []).forEach(function (l) { labs[l] = 1; }); });
-    $('#lLabs').innerHTML = kat === 'alle' ? '' : Object.keys(labs).map(function (l) { return '<a class="chip" aria-pressed="' + (lab === l) + '" href="#k=' + kat + (lab === l ? '' : '&lab=' + l) + '">' + esc(LABS[l][0]) + '</a>'; }).join('');
-    $('#liste').innerHTML = arr.map(function (e) { return '<li><a href="#e=' + e.id + '">' + esc(e.titel) + '<small>' + esc(KAT[e.kat][0]) + ((e.alias || []).length ? ' · ' + esc(e.alias.join(', ')) : '') + '</small></a></li>'; }).join('') || '<li class="mute" style="padding:12px 14px">Noch keine Einträge – folgt in einem späteren Paket.</li>';
-    show('vList');
+  function list(kat, lab, qtext) {
+    if (lab && !LABS[lab]) lab = '';
+    var base = kat === 'suche' ? 'q=' + encodeURIComponent(qtext) : 'k=' + kat;
+    var arrKat = kat === 'suche' ? W.search(qtext, { limit: 400 }) : rows().filter(function (e) { return kat === 'alle' || e.kat === kat || (kat === 'geraet' && e.kat === 'bedien'); });
+    if (kat !== 'suche') arrKat = arrKat.sort(function (a, b) { return a.titel.localeCompare(b.titel, 'de'); });
+    var arr = lab ? arrKat.filter(function (e) { return (e.labs || []).indexOf(lab) >= 0; }) : arrKat;
+    var name = kat === 'suche' ? 'Suche: „' + qtext + '“' : kat === 'alle' ? (lab ? LABS[lab][0] : 'Alle Einträge') : (KAT[kat] ? KAT[kat][1] : kat);
+    $('#lTitel').textContent = name; $('#lCrumb').textContent = name;
+    $('#lN').textContent = arr.length + ' ' + (kat === 'suche' ? 'Treffer' : 'Einträge') + (lab && kat !== 'alle' ? ' · ' + LABS[lab][0] : '');
+    // ein Lab-Filter (Chips, aus der ganzen Kategorie, nicht nur aus dem gewaehlten Lab); "Alle Labs" vorn
+    var labs = {}; arrKat.forEach(function (e) { (e.labs || []).forEach(function (l) { labs[l] = (labs[l] || 0) + 1; }); });
+    var cl = Object.keys(LABS).filter(function (l) { return labs[l]; });
+    $('#lBar').hidden = kat === 'alle' || cl.length < 2;
+    $('#lLabs').innerHTML = $('#lBar').hidden ? '' : '<a class="chip" aria-pressed="' + !lab + '" href="#' + base + '">Alle Labs <small>' + arrKat.length + '</small></a>' + cl.map(function (l) { return '<a class="chip lc" data-lab="' + l + '" aria-pressed="' + (lab === l) + '" href="#' + base + (lab === l ? '' : '&lab=' + l) + '">' + esc(LABS[l][0]) + ' <small>' + labs[l] + '</small></a>'; }).join('');
+    var li = function (e) {
+      var sub = kat === 'suche' ? esc(W.katText(e)) : kat === 'alle' ? esc(KAT[e.kat][0]) + ((e.alias || []).length ? ' · ' + esc(e.alias.join(', ')) : '') : (e.alias || []).length ? esc(e.alias.join(', ')) : '';
+      return '<li><a href="#e=' + e.id + '"><span class="t">' + W.formel(e.titel) + (sub ? '<small>' + sub + '</small>' : '') + '</span><svg class="chev" aria-hidden="true"><use href="#i-chev"/></svg></a></li>';
+    };
+    if (kat === 'regler' || kat === 'messwert' || (kat === 'alle' && arr.length > 200)) {
+      // nach Lab gruppiert; Gruppen offen (Kopf bleibt beim Scrollen kleben), Zuklappen bleibt moeglich
+      var g = {}; arr.forEach(function (e) { var l = (e.labs || [])[0] || ''; (g[l] = g[l] || []).push(e); });
+      var ls = Object.keys(LABS).filter(function (l) { return g[l]; }).concat(g[''] ? [''] : []);
+      $('#liste').innerHTML = ls.map(function (l) { return '<li class="grp"' + (l ? ' data-lab="' + l + '"' : '') + '><details open><summary>' + esc(l ? LABS[l][0] : 'ohne Lab') + '<span class="n">' + g[l].length + '</span></summary><ul>' + g[l].map(li).join('') + '</ul></details></li>'; }).join('');
+    } else $('#liste').innerHTML = arr.map(li).join('') || '<li class="mute" style="padding:12px 14px">Noch keine Einträge – folgt in einem späteren Paket.</li>';
+    $('#lFiltBox').hidden = arr.length < 30;
+    if (kat === 'suche' && !arr.length) $('#liste').innerHTML = '<li class="mute" style="padding:12px 14px">Nichts gefunden – andere Schreibweise oder ein anderes Lab versuchen.</li>'; $('#lFilt').value = FV[lastList] || ''; filt();
+    show('vList'); stick();
   }
+  // Filterfeld der Liste: blendet Zeilen aus, zaehlt die Gruppen neu
+  function filt() {
+    var v = $('#lFilt').value, q = W.fold(v), n = 0, items = $('#liste').querySelectorAll('li:not(.grp)');
+    Array.prototype.forEach.call(items, function (li) {
+      if (li._f == null) li._f = W.fold(li.textContent);
+      var h = !!q && li._f.indexOf(q) < 0; li.hidden = h; if (!h) n++;
+    });
+    Array.prototype.forEach.call($('#liste').querySelectorAll('li.grp'), function (g) { var m = g.querySelectorAll('li:not([hidden])').length; g.hidden = !m; var c = g.querySelector('summary .n'); if (c) c.textContent = m; });
+    $('#lNone').hidden = !(q && !n && items.length);
+  }
+  // Hoehe der Lab-Leiste fuer die klebenden Gruppenkoepfe (CSS --lbh)
+  function stick() { var b = $('#lBar'); document.documentElement.style.setProperty('--lbh', (b.hidden ? 0 : b.offsetHeight) + 'px'); }
+  window.addEventListener('resize', function () { if (!$('#vList').hidden) stick(); });
   function entry(id) {
     var e = W.get(id);
-    if (!e) { W.needAll().then(function () { if (W.get(id)) entry(id); else { $('#entry').innerHTML = '<p class="mute">Kein Eintrag „' + esc(id) + '“.</p>'; show('vEntry'); } }); return; }
+    if (!e) { W.needFor(id).then(function () { if (W.get(id)) entry(id); else { $('#entry').innerHTML = '<p class="mute">Kein Eintrag „' + esc(id) + '“.' + (navigator.onLine === false ? ' Dieser Bereich ist noch nicht offline gespeichert – einmal online öffnen.' : '') + '</p>'; show('vEntry'); } }); return; }
     if (e.id !== id) { location.replace('#e=' + e.id + (pr ? '&pruef' : '')); return; }   // alte ID (alt) -> Weiterleitung
     W.recentPush(e.id);
     $('#entry').innerHTML = W.renderEntry(e, { h: 2, pruef: pr });
-    $('#eBack').href = pr ? '#pruef' : '#k=' + e.kat;
+    var bk = pr ? '#pruef' : '#k=' + e.kat;
+    var bq = !pr && /^q=/.test(backList);
+    if (!pr && backList && backList.indexOf('k=' + e.kat) === 0) bk = '#' + backList;   // Zurueck behaelt Lab-Filter, Filtertext und Scrollposition der Liste
+    var L = (e.labs || [])[0], KL = /^(regler|messwert)$/.test(e.kat);
+    $('#eBack').href = pr ? '#pruef' : '#'; $('#eBack').textContent = pr ? '← Prüfansicht' : '← Wiki';
+    $('#eCrumb').innerHTML = pr ? '' : bq ? ' › <a href="#' + esc(backList) + '">Suche</a>' : ' › <a href="' + bk + '">' + esc(KAT[e.kat] ? KAT[e.kat][1] : e.kat) + '</a>' + (L && KL && LABS[L] ? ' › <a href="#k=' + e.kat + '&lab=' + L + '">' + esc(LABS[L][0]) + '</a>' : '');
     show('vEntry'); window.scrollTo(0, 0);
     var t = $('#entry .wt'); if (t) { t.setAttribute('tabindex', '-1'); t.focus({ preventScroll: true }); }
     document.title = e.titel + ' – Tonfunk Wiki';
@@ -156,7 +213,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   var STT = { entwurf: 'Entwurf', frage: 'Frage offen', geprueft: '✓ geprüft' };
   function pruef(st) {
     show('vPruef'); document.title = 'Prüfansicht – Tonfunk Wiki';
-    W.needAll().then(function () {
+    W.needAll(true).then(function () {
       var all = W.all().slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; });
       var cnt = { alle: all.length }; Object.keys(STT).forEach(function (k) { cnt[k] = all.filter(function (e) { return e.status === k; }).length; });
       if (!(st in cnt)) st = 'alle';
@@ -176,33 +233,53 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   function route() {
     var h = location.hash.slice(1), p = {};
     h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    if (/^[kq]=/.test(prevHash) && !$('#vList').hidden) SY[prevHash] = window.scrollY;   // Scrollposition der verlassenen Liste merken
     W.stopSpeak(); hideRes();
     document.title = 'Tonfunk Wiki';
     var pm = /(^|&)pruef(&|$)/.test(h); pr = pm;
-    if (p.e) entry(p.e);
+    if (p.e) { if (lastList && prevHash === lastList) backList = lastList; else if (!/^e=/.test(prevHash)) backList = ''; entry(p.e); }
     else if (pm) pruef(p.status || 'alle');
-    else if (p.k) list(p.k, p.lab);
-    else { kats(); recent(); show('vStart'); if (p.q) { $('#q').value = p.q; search(); } }
+    else if (p.k) { lastList = h; list(p.k, p.lab); window.scrollTo(0, SY[h] != null ? SY[h] : 0); }
+    else if (p.q) { lastList = h; list('suche', p.lab, p.q); window.scrollTo(0, SY[h] != null ? SY[h] : 0); }
+    else { kats(); recent(); show('vStart'); }
     prevHash = h;
   }
   // Suche (W4: wiki-suche.js; Synonyme, Tippfehler, Ranking; Index wiki-index.js)
   var sel = -1, hits = [], tmr;
+  // leerer Zustand: konkrete Auswege statt nur "Kein Treffer"
+  function noHit(q) {
+    return '<div class="none"><b>Nichts gefunden für „' + esc(q) + '“.</b><p>Versuch die ausgeschriebene Form (Kondensator statt C), die Abkürzung ohne Unterstrich (RV statt R_V) oder stöbere nach Lab:</p><p class="chips">' +
+      ['ana', 'nts', 'els', 'wsl'].map(function (l) { return '<a class="chip lc" data-lab="' + l + '" href="#k=alle&lab=' + l + '">' + esc(LABS[l][0]) + '</a>'; }).join('') +
+      '<a class="chip" href="#k=bauteil">Alle Bauteile</a><a class="chip" href="#k=geraet">Messgeräte</a></p>' +
+      (W.offen().length ? '<button type="button" class="lnk" id="resAll">Alle Bereiche laden</button>' : '') + '</div>';
+  }
   function hideRes() { $('#res').hidden = true; $('#q').setAttribute('aria-expanded', 'false'); sel = -1; }
   function search() {
     var q = $('#q').value.trim(); $('#qClr').hidden = !q;
     if (!q) { hideRes(); return; }
-    hits = W.search(q); sel = -1; $('#q').removeAttribute('aria-activedescendant');
-    var meint = hits.meint ? '<p class="none" role="presentation">Meintest du <button type="button" class="lnk" id="resMeint">' + esc(hits.meint) + '</button>?</p>' : '';
-    $('#res').innerHTML = meint + hits.map(function (e, i) { return '<a role="option" id="r' + i + '" href="#e=' + e.id + '" aria-label="' + esc(e.titel) + ', ' + esc(KAT[e.kat][0]) + ', ' + (i + 1) + ' von ' + hits.length + '"><span class="ty">' + esc(KAT[e.kat][0]) + '</span>' + esc(e.titel) + '</a>'; }).join('') || '<p class="none">Kein Treffer' + (W.offen().length ? ' – <button type="button" class="lnk" id="resAll">alle Bereiche laden</button>' : '') + '</p>';
+    var all = W.search(q), meintTxt = all.meint; sel = -1; $('#q').removeAttribute('aria-activedescendant');
+    // Gruppen: erst Bauteile/Geraete/Begriffe ..., dann Regler und Messwerte nach Lab (innerhalb eines Labs bleibt die Trefferreihenfolge); hoechstens 8 Zeilen
+    var A = all.filter(function (e) { return !/^(regler|messwert)$/.test(e.kat); }), B = all.filter(function (e) { return /^(regler|messwert)$/.test(e.kat); });
+    var lo = Object.keys(LABS); B = B.map(function (e, i) { return [e, i]; }).sort(function (a, b) { return (lo.indexOf((a[0].labs || [])[0]) - lo.indexOf((b[0].labs || [])[0])) || a[1] - b[1]; }).map(function (x) { return x[0]; });
+    var ord = A.concat(B), more = Math.max(0, ord.length - 8); hits = ord.slice(0, 8); hits.meint = meintTxt;
+    var meint = meintTxt ? '<p class="none" role="presentation">Meintest du <button type="button" class="lnk" id="resMeint">' + esc(meintTxt) + '</button>?</p>' : '';
+    var gk = '', rows = hits.map(function (e, i) {
+      var reg = /^(regler|messwert)$/.test(e.kat), k = reg ? 'lab:' + (e.labs || [])[0] : e.kat, gh = '';
+      if (k !== gk) { gk = k; gh = '<div class="gh" role="presentation">' + esc(reg ? (i === A.length ? 'Regler und Messwerte · ' : '') + (LABS[(e.labs || [])[0]] ? LABS[e.labs[0]][0] : 'ohne Lab') : (KAT[e.kat] ? KAT[e.kat][1] : e.kat)) + '</div>'; }
+      return gh + '<a role="option" id="r' + i + '" href="#e=' + e.id + '" aria-label="' + esc(e.titel) + ', ' + esc(W.katText(e)) + ', ' + (i + 1) + ' von ' + hits.length + '"><svg class="ri" aria-hidden="true"><use href="#i-' + (ICON[e.kat] || 'begriff') + '"/></svg><span class="nm">' + W.formel(e.titel) + '</span><span class="lb">' + esc(KAT[e.kat] ? KAT[e.kat][0] : e.kat) + '</span>' + (reg && e.labs && e.labs[0] ? '<span class="sb">' + esc(LABS[e.labs[0]] ? LABS[e.labs[0]][0] : e.labs[0]) + '</span>' : '') + '</a>';
+    });
+    $('#res').innerHTML = meint + rows.join('') + (more ? '<a class="more" href="#q=' + encodeURIComponent(q) + '">' + more + ' weitere Treffer anzeigen</a>' : '') || noHit(q);
     $('#res').hidden = false; $('#q').setAttribute('aria-expanded', 'true');
   }
   $('#q').addEventListener('input', function () { clearTimeout(tmr); tmr = setTimeout(search, 120); });
   $('#q').addEventListener('keydown', function (ev) {
     if ($('#res').hidden) return;
     if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && hits.length) { ev.preventDefault(); sel = (sel + (ev.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length; Array.prototype.forEach.call($('#res').querySelectorAll('[role=option]'), function (a, i) { a.setAttribute('aria-selected', i === sel); }); $('#q').setAttribute('aria-activedescendant', 'r' + sel); }
-    else if (ev.key === 'Enter' && sel >= 0) { ev.preventDefault(); location.hash = '#e=' + hits[sel].id; $('#q').value = ''; }
+    else if (ev.key === 'Enter' && hits.length) { ev.preventDefault(); location.hash = '#e=' + hits[sel >= 0 ? sel : 0].id; $('#q').value = ''; $('#qClr').hidden = true; }
     else if (ev.key === 'Escape') hideRes();
   });
+  $('#lFilt').addEventListener('input', function () { FV[lastList] = this.value; filt(); });
+  $('#tipX').addEventListener('click', function () { try { localStorage.setItem('lm4.wiki.tip', '1'); } catch (e) {} $('#tip').hidden = true; });
   $('#qClr').addEventListener('click', function () { $('#q').value = ''; search(); $('#q').focus(); });
   document.addEventListener('click', function (ev) {
     if (ev.target.id === 'resMeint') { $('#q').value = ev.target.textContent; search(); $('#q').focus(); return; }
@@ -210,7 +287,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     if (!ev.target.closest('.srch')) hideRes();
     var s = ev.target.closest('.wk-speak'); if (s) { var art = s.closest('.we'); W.speak(art ? W.get(art.dataset.id) : wCur, s); return; }
     var al = ev.target.closest('.wk-all'); if (al) { W.needAll().then(route); return; }
-    var sh = ev.target.closest('.wk-share'); if (sh) { try { navigator.clipboard.writeText(location.href); sh.textContent = '✓ kopiert'; setTimeout(function () { sh.textContent = '⤴ Link'; }, 1500); } catch (e) {} }
+    var sh = ev.target.closest('.wk-share'); if (sh) { try { navigator.clipboard.writeText(location.href); sh.textContent = '✓ kopiert'; setTimeout(function () { sh.textContent = 'Link kopieren'; }, 1500); } catch (e) {} }
   });
   $('#wNext').addEventListener('click', function () { W.stopSpeak(); wusst(true); });
   $('#rClr').addEventListener('click', function () { W.recentClear(); recent(); });

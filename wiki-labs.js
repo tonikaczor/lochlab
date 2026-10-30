@@ -1,4 +1,8 @@
-/* wiki-labs.js - Tonfunk Wiki, "?"-Knoepfe in SchaltLab, SimLab und MessLab (Paket W5, SPEC-WIKI-FABLE.md Abschnitt 6).
+/* wiki-labs.js - Tonfunk Wiki, "?"-Knoepfe in SchaltLab, SimLab, MessLab (Paket W5) und den 10 Rig-Labs (Paket W8, SPEC-WIKI-FABLE.md Abschnitt 6).
+ * W8 (Rig-Labs ANA ANT ELS EMV ENR NTS REG SEN THM WSL): "?" an Reglern (.ct[data-k]) und Messfeldern (#meters .mt[data-i]), nur wenn Wiki.byKey fuer den
+ *   AKTIVEN Pruefstand (#rigPick [data-rig].on / aria-pressed) einen Eintrag liefert UND der Pruefstand in entry.rigs steht. Geladen wird nur wiki-regler-<lab>.js.
+ *   Verdeckte-Fehler-Prinzip: Fehlersuche-/Fehler-/Maengel-/Vorgabe-Regler haben keinen Eintrag (W7) und bekommen deshalb kein "?"; .hid/[data-t=hidden] nie.
+ *   Der Knopf traegt nur Eintrags-ID und Lab. Menue-Zeile "Wiki-Hilfe (?)" wird in das Menue-Sheet der Labs eingehaengt (data-m=wikih).
  * Laedt wiki.css/wiki.js im Leerlauf nach, haengt per MutationObserver kleine "?"-Knoepfe (button.wk) an Bauteile, Messgeraete und
  * Bedienelemente und laesst die zentrale Delegation in wiki.js den Drawer oeffnen (kein Seitenwechsel, Lab-Zustand bleibt).
  *
@@ -46,12 +50,14 @@
   var CHIPS = { meter: 'ger-dmm', scope: 'ger-oszi' };
   var HIDDEN_SEL = '.hid,[data-t="hidden"],[hidden],[aria-hidden="true"]';
   var KEY = 'lm4.wiki.hints', KEY_OLD = 'lm4.wiki.marks';
-  var api = { GER: GER, BEDIEN: BEDIEN, PIT_SEL: PIT_SEL, CARD_SEL: CARD_SEL, CHIPS: CHIPS, HIDDEN_SEL: HIDDEN_SEL, KEY: KEY };
+  var RIGLABS = ['ana', 'ant', 'els', 'emv', 'enr', 'nts', 'reg', 'sen', 'thm', 'wsl'];
+  var api = { RIGLABS: RIGLABS, GER: GER, BEDIEN: BEDIEN, PIT_SEL: PIT_SEL, CARD_SEL: CARD_SEL, CHIPS: CHIPS, HIDDEN_SEL: HIDDEN_SEL, KEY: KEY };
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
   if (typeof document === 'undefined' || root.WikiLabs) return;
 
   var doc = document, html = doc.documentElement;
-  var LAB = (['sim', 'mess', 'code', 'pi', 'digi', 'haus'].indexOf(root.LAB) >= 0 ? root.LAB : 'sch');
+  var LAB = (['sim', 'mess', 'code', 'pi', 'digi', 'haus'].concat(RIGLABS).indexOf(root.LAB) >= 0 ? root.LAB : 'sch');
+  var RIGLAB = RIGLABS.indexOf(LAB) >= 0;
   var ready = false, timer = 0, obs = null;
   html.classList.add('wk-lab');   // wiki.css: Lab-Tokens bleiben, nur Drawer und "?" kommen dazu
 
@@ -96,6 +102,12 @@
     if (!ready || !on()) return;
     if (obs) obs.disconnect();
     try {
+      if (RIGLAB) scanRig(); else scanClassic();
+    } catch (e) { /* ?-Knoepfe sind Beiwerk: nie die Lab-Funktion stoeren */ }
+    if (obs) obs.observe(doc.body, { childList: true, subtree: true });
+  }
+  function scanClassic() {
+    {
       var i, els;
       // Bauteil-Palette (Liste links)
       els = doc.querySelectorAll(PIT_SEL);
@@ -120,8 +132,75 @@
           for (var j = 0; j < cand.length; j++) { if (r[2] && (typeof r[2] === 'string' ? !cand[j].querySelector(r[2]) : !r[2].test(cand[j].textContent.trim()))) continue; place(cand[j], r[3], r[4], '', typeof r[2] === 'string' ? r[2] : null); }
         });
       }
-    } catch (e) { /* ?-Knoepfe sind Beiwerk: nie die Lab-Funktion stoeren */  }
-    if (obs) obs.observe(doc.body, { childList: true, subtree: true });
+    }
+  }
+
+  /* ---------- W8: Rig-Labs ---------- */
+  function foldS(t) { return root.Wiki && root.Wiki.fold ? root.Wiki.fold(t) : String(t || '').toLowerCase(); }
+  function rigId() {
+    var b = doc.querySelector('#rigPick [data-rig].on, #rigPick [data-rig][aria-pressed="true"]');
+    return b ? b.getAttribute('data-rig') : '';
+  }
+  function regDef(rig) {
+    var R = root[LAB.toUpperCase() + '_RIGS'], i; if (!R || !rig) return null;
+    if (R.defs && R.defs[rig]) return R.defs[rig];
+    for (i = 0; R.list && i < R.list.length; i++) if (R.list[i].id === rig) return R.list[i];
+    return null;
+  }
+  // Eintrag fuer Regler/Messwert des AKTIVEN Pruefstands; ohne Pruefstand oder ohne Eintrag (uebersprungen: Fehler, Maengel, Vorgaben, Fehlersuche) null
+  function rigEntry(key, rig, kat) {
+    var W = root.Wiki; if (!W || !W.byKey || !key || !rig) return null;
+    var e = W.byKey(LAB, key, rig, kat);
+    if (!e || e.kat !== kat || !e.rigs || e.rigs.indexOf(rig) < 0) return null;
+    return e;
+  }
+  function ctHidden(el) { return el.classList.contains('hid') || el.getAttribute('data-t') === 'hidden' || !!(el.closest && el.closest('[aria-hidden="true"]')); }
+  function meterKey(el, def) {
+    var ms = def && def.meters, i = +el.getAttribute('data-i'), lb = el.querySelector('.lbl'), t = lb ? foldS(lb.textContent) : '', j;
+    if (!ms || !ms.length || !(i >= 0)) return '';
+    if (ms[i] && ms[i].key && (!t || foldS(ms[i].label) === t)) return ms[i].key;
+    for (j = 0; j < ms.length; j++) if (ms[j] && ms[j].key && t && foldS(ms[j].label) === t) return ms[j].key;
+    return '';
+  }
+  function scanRig() {
+    var rig = rigId(), els, i, e, k, def;
+    if (!rig) return;
+    els = doc.querySelectorAll('.ct[data-k]');
+    for (i = 0; i < els.length; i++) {
+      if (ctHidden(els[i]) || els[i].querySelector('button.wk')) continue;
+      e = rigEntry(els[i].getAttribute('data-k'), rig, 'regler'); if (!e) continue;
+      var lab = els[i].querySelector(':scope > .ctl > span');
+      if (lab) lab.appendChild(mk(e.id, 'wk-r'));
+      else { els[i].classList.add('wk-has'); els[i].appendChild(mk(e.id, 'wk-ct')); }
+    }
+    def = regDef(rig);
+    els = doc.querySelectorAll('#meters .mt[data-i]');
+    for (i = 0; i < els.length; i++) {
+      var m = els[i];
+      if (m.querySelector('button.wk') || (m.parentNode.classList && m.parentNode.classList.contains('wk-cell') && m.parentNode.querySelector('button.wk'))) continue;
+      k = meterKey(m, def); e = k ? rigEntry(k, rig, 'messwert') : null; if (!e) continue;
+      if (m.tagName === 'BUTTON') {   // Messfeld ist selbst ein Knopf (ENR/NTS/THM): "?" daneben in einer Huelle, nie im Knopf verschachteln
+        var w = doc.createElement('div'); w.className = 'wk-cell';
+        m.parentNode.insertBefore(w, m); w.appendChild(m); w.appendChild(mk(e.id, 'wk-mt'));
+      } else { m.classList.add('wk-h'); m.appendChild(mk(e.id, 'wk-mt')); }
+    }
+  }
+  // Menue-Sheet der Rig-Labs: Zeile "Wiki-Hilfe (?)" an/aus (wie SchaltLab data-m=wikih); das Sheet schliesst selbst, menuAct kennt wikih nicht (tut nichts)
+  function menuRow() {
+    var neu = doc.querySelector('.row[data-m="neu"]'), erg = doc.querySelector('.row[data-m="erg"]');
+    if (!neu || !erg || neu.parentNode !== erg.parentNode || neu.parentNode.querySelector('[data-m="wikih"]')) return;
+    var r = doc.createElement('button'); r.className = 'row'; r.dataset.m = 'wikih';
+    r.innerHTML = '<div class="grow"><b>Wiki-Hilfe (?): ' + (on() ? 'an' : 'aus') + '</b><small>Kleine ?-Knöpfe an Reglern und Messfeldern (an/aus)</small></div>';
+    r.addEventListener('click', function () { toggle(); });
+    neu.parentNode.insertBefore(r, neu);
+  }
+  // W9 (Design-Review P2-2): "Wo im Lab?" im Wiki springt per <lab>.html#rig=<Pruefstand> hierher; der Pruefstand wird gewaehlt wie per Klick auf #rigPick.
+  // Aendert nichts an den Lab-Dateien (kein Hash-Leser ausser #s=/#z= in den *ui.js). Mehrere Versuche, falls das Lab seine Pruefstandsliste spaeter baut.
+  function rigFromHash(n) {
+    var m = /[#&]rig=([a-z0-9_]+)/i.exec(location.hash || ''); if (!RIGLAB || !m) return;
+    var b = doc.querySelector('#rigPick [data-rig="' + m[1] + '"]');
+    if (!b) { if ((n || 0) < 8) setTimeout(function () { rigFromHash((n || 0) + 1); }, 400); return; }
+    if (!(b.classList.contains('on') || b.getAttribute('aria-pressed') === 'true')) b.click();
   }
   function later() { if (!timer) timer = setTimeout(scan, 200); }
 
@@ -131,9 +210,10 @@
   }
   function start() {
     var W = root.Wiki; if (!W || !W.need) return;
-    W.need(['bauteile', 'geraete']).then(function () {
+    W.need(RIGLAB ? ['regler-' + LAB] : ['bauteile', 'geraete']).then(function () {
       ready = true; applyOff();
       obs = new MutationObserver(function (recs) {
+        if (RIGLAB) menuRow();
         for (var i = 0; i < recs.length; i++) {
           var a = recs[i].addedNodes;
           for (var j = 0; j < a.length; j++) if (a[j].nodeType === 1 && !(a[j].classList && a[j].classList.contains('wk'))) return later();
@@ -142,7 +222,7 @@
         }
       });
       obs.observe(doc.body, { childList: true, subtree: true });
-      scan();
+      scan(); rigFromHash();
     });
   }
   function boot() {

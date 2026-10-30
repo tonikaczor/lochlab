@@ -124,6 +124,7 @@
     const flat = doc.getElementById('cardsFlat'); if (!flat || doc.getElementById('groups')) return;
     const list = Array.from(flat.children).filter(c => c.classList && c.classList.contains('card'));
     const vb = doc.getElementById('vbRow'); if (vb) list.push(vb);
+    const wk = doc.getElementById('wikiRow'); if (wk) list.push(wk);   // Wiki-Kachel (kein Lab, Klasse vbrow = zählt nirgends mit), landet am Ende ihres Bereichs (grund)
     list.forEach((c, i) => { c.dataset.pos = String(i); });          // Dateireihenfolge merken (Standard für "Zurücksetzen")
     const wrap = doc.createElement('div'); wrap.id = 'groups';
     const boxes = {};

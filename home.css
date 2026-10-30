@@ -17,6 +17,14 @@ header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
 .srch .res .ty{flex:none;min-width:62px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .srch .res .nm{flex:1 1 160px;font-weight:600}
 .srch .res .sb{flex:1 0 100%;padding-left:72px;color:var(--mute);font-size:12px}
+.srch .res a.wkr{display:grid;grid-template-columns:28px 1fr auto;column-gap:10px;align-items:center;min-height:48px}
+.srch .res a.wkr .ri{grid-column:1;grid-row:1/3;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
+.srch .res a.wkr .nm{grid-column:2;grid-row:1;min-width:0;line-height:1.3}
+.srch .res a.wkr .ty{grid-column:3;grid-row:1/3;min-width:0;font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+.srch .res a.wkr .sb{grid-column:2;grid-row:2;flex:none;padding-left:0;line-height:1.3}
+.srch .res a.wkr.more{display:flex;justify-content:center;min-height:44px;border-top:1px solid var(--line);color:var(--accent);font-weight:600}
+.srch .res a.wkr.more .nm{flex:none;grid-column:auto;grid-row:auto}
+.srch .res a.wkr sub{font-size:.65em;line-height:0;vertical-align:-.2em}
 .srch .res .ghd{padding:8px 12px 2px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
 .srch .res .cnt,.srch .res .none{margin:0;padding:10px 12px;color:var(--mute);font-size:13px}
 @media(max-width:899px){header{flex-wrap:wrap}header>div:not(.srch){flex:1 1 200px;min-width:0}header .srch{flex:1 1 100%;max-width:none;margin-left:0;order:3}.srch .res{width:100%}}
@@ -245,4 +253,20 @@ html.rub-free .rub{display:none}
   .chip:active{transform:scale(.97)}
   .cont .pill{transition:transform .15s ease}
   .cont:hover .pill{transform:translateX(3px)}
+}
+
+/* ---- Wiki-Kachel (Rubrik Grundlagen & Werkstatt, kein Lab): normale Kachel statt breiter Projekte-Zeile; Klasse vbrow bleibt, damit sie in keinem Lab-Zähler mitzählt ---- */
+.cards .card.wikirow{grid-column:auto;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px;border-color:var(--line);background:var(--panel)}
+.card.wikirow .pic{flex:none;height:76px}
+.card.wikirow .btns{flex:none;margin-top:auto;padding-top:2px}
+.card.wikirow a.btn{min-width:0;padding:0 18px}
+.card.wikirow .wkn{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+html.tiles .cards .card.wikirow{grid-column:auto;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px}
+html.tiles .card.wikirow .wkn{order:3}
+html.tiles .card.wikirow .btns{flex:none;margin-top:auto;padding-top:6px;flex-wrap:wrap}
+html.tiles .card.wikirow a.btn.pri{flex:1 1 64px;min-width:64px}
+@media(max-width:639px){
+  html.tiles .cards .card.wikirow{flex-direction:column;flex-wrap:nowrap}
+  html.tiles .card.wikirow .btns{flex:none}
+  html.tiles .card.wikirow .wkn{font-size:13px}
 }

@@ -27,6 +27,15 @@
     begriffe: { src: 'wiki-begriffe.js', kat: ['begriff'], da: false },
     formeln: { src: 'wiki-formeln.js', kat: ['formel', 'norm', 'lab'], da: false }
   };
+  // W7: Regler + Messwerte je Rig-Lab (erzeugt von quelle/gen/mkwikireg.js); "lazy" = nur bei Bedarf (needFor, needAll(true)), nicht bei needAll()
+  var REGLER_LABS = ['ana', 'ant', 'els', 'emv', 'enr', 'nts', 'reg', 'sen', 'thm', 'wsl'];
+  REGLER_LABS.forEach(function (l) { DATEIEN['regler-' + l] = { src: 'wiki-regler-' + l + '.js', kat: ['regler', 'messwert'], lab: l, da: true, lazy: true }; });
+  // Datei-Name zu einer Eintrags-ID (ohne Index): rg-/mw-<lab>-... -> regler-<lab>, bt- -> bauteile, ger-/bd- -> geraete
+  function dateiFuer(id) {
+    var m = /^(rg|mw)-([a-z]+)-/.exec(id || ''); if (m && DATEIEN['regler-' + m[2]]) return 'regler-' + m[2];
+    if (/^bt-/.test(id)) return 'bauteile'; if (/^(ger|bd)-/.test(id)) return 'geraete'; if (/^bg-/.test(id)) return 'begriffe'; if (/^(fo|nw|lab)-/.test(id)) return 'formeln';
+    return '';
+  }
   var STATUS = ['entwurf', 'frage', 'geprueft'];
   var WERT_STATUS = ['ueb', 'belegt', 'norm'];
 
@@ -109,7 +118,9 @@
         if (!Array.isArray(e.formeln)) E(id, 'formeln kein Array');
         else e.formeln.forEach(function (f, k) { if (!f || typeof f.text !== 'string') E(id, 'formeln[' + k + '] ohne text'); if (f && f.fn) E(id, 'formeln[' + k + '] traegt fn (Rechner bleiben in den Kernen)'); });
       }
-      ['verweise', 'labs', 'rigs', 'stich', 'alias', 'alt'].forEach(function (f) { if (e[f] != null && !Array.isArray(e[f])) E(id, f + ' kein Array'); });
+      ['verweise', 'labs', 'rigs', 'rignamen', 'stich', 'alias', 'alt'].forEach(function (f) { if (e[f] != null && !Array.isArray(e[f])) E(id, f + ' kein Array'); });
+      if (e.rignamen && e.rigs && e.rignamen.length !== e.rigs.length) E(id, 'rignamen und rigs verschieden lang');
+      if (e.kopf != null && (typeof e.kopf !== 'string' || e.kopf.length < 10 || e.kopf.length > 320)) E(id, 'kopf: Text 10-320 Zeichen oder weglassen');
       (e.labs || []).forEach(function (l) { if (!LABS[l]) E(id, 'labs: unbekanntes Lab ' + l); });
       if ((e.kat === 'regler' || e.kat === 'messwert')) { if (!e.key) E(id, 'regler/messwert ohne key'); if (!e.labs || e.labs.length !== 1) E(id, 'regler/messwert: genau ein Lab'); }
       if (e.pruef != null && [0, 1, 2, 3].indexOf(e.pruef) < 0) E(id, 'pruef nicht 0-3');
@@ -138,11 +149,12 @@
     });
     // Dubletten ueber fold(titel)
     var seen = {};
-    entries.forEach(function (e) { if (!e || !e.titel) return; var k = e.kat + ':' + fold(e.titel); if (seen[k]) W(e.id, 'Titel-Dublette mit ' + seen[k]); else seen[k] = e.id; });
+    // Regler/Messwerte gelten je Lab (gleiche Beschriftung in zwei Labs = zwei Eintraege, Toni-Entscheidung 1)
+    entries.forEach(function (e) { if (!e || !e.titel) return; var k = e.kat + ':' + (/^(regler|messwert)$/.test(e.kat) ? (e.labs || []).join(',') + ':' : '') + fold(e.titel); if (seen[k]) W(e.id, 'Titel-Dublette mit ' + seen[k]); else seen[k] = e.id; });
     return { err: err, warn: warn, n: entries.length };
   }
 
-  var api = { KAT: KAT, KAT_PREFIX: KAT_PREFIX, LABS: LABS, DATEIEN: DATEIEN, STATUS: STATUS, fold: fold, render: render, formel: formel, links: links, validate: validate, esc: esc };
+  var api = { KAT: KAT, KAT_PREFIX: KAT_PREFIX, LABS: LABS, DATEIEN: DATEIEN, REGLER_LABS: REGLER_LABS, dateiFuer: dateiFuer, STATUS: STATUS, fold: fold, render: render, formel: formel, links: links, validate: validate, esc: esc };
   if (typeof module !== 'undefined' && module.exports) { module.exports = api; return; }
 
   /* ================= Browser-Teil ================= */
@@ -160,7 +172,11 @@
       (e.alt || []).forEach(function (a) { ALT[a] = e.id; });
       if (e.speak) SPEAK[e.speak] = e.id;
       (e.alias || []).forEach(function (a) { if (!SPEAK[a]) SPEAK[a] = e.id; });
-      if (e.key && e.labs) KEYS[e.labs[0] + ':' + e.key] = e.id;
+      if (e.key && e.labs) {   // W7: je Kategorie und Pruefstand (gleicher key kann Regler und Messfeld sein, oder je Pruefstand anders beschriftet)
+        var kk = e.kat + ':' + e.labs[0] + ':';
+        if (!KEYS[kk + e.key]) KEYS[kk + e.key] = e.id;
+        (e.rigs || []).forEach(function (r) { KEYS[kk + r + ':' + e.key] = e.id; });
+      }
     });
     BACK = null;
     W.onchange && W.onchange(name);
@@ -168,12 +184,21 @@
   W.get = function (id) { return E[id] || (ALT[id] ? E[ALT[id]] : null); };
   W.has = function (id) { return !!W.get(id); };
   W.bySpeak = function (k) { return E[SPEAK[k]] || null; };
-  W.byKey = function (lab, key, rig) { return E[KEYS[lab + ':' + key]] || E['rg-' + lab + '-' + key] || (rig && E['rg-' + lab + '-' + rig + '-' + key]) || E['mw-' + lab + '-' + key] || null; };
+  // byKey(lab, key, rig, kat): Pruefstand zuerst (eindeutig), dann Lab; kat 'regler' (Standard) oder 'messwert'
+  W.byKey = function (lab, key, rig, kat) {
+    var ks = kat ? [kat] : ['regler', 'messwert'];
+    for (var i = 0; i < ks.length; i++) {
+      var p = ks[i] + ':' + lab + ':';
+      var id = (rig && KEYS[p + rig + ':' + key]) || KEYS[p + key];
+      if (id && E[id]) return E[id];
+    }
+    return E['rg-' + lab + '-' + key] || (rig && E['rg-' + lab + '-' + rig + '-' + key]) || E['mw-' + lab + '-' + key] || null;
+  };
   W.all = function () { return ORDER.map(function (id) { return E[id]; }); };
   W.byKat = function (kat) { return W.all().filter(function (e) { return e.kat === kat; }).sort(function (a, b) { return a.titel.localeCompare(b.titel, 'de'); }); };
   W.count = function (kat) { return W.byKat(kat).length; };
   W.loaded = function (name) { return !!LOADED[name]; };
-  W.offen = function () { return Object.keys(DATEIEN).filter(function (n) { return DATEIEN[n].da && !LOADED[n]; }); };
+  W.offen = function () { return Object.keys(DATEIEN).filter(function (n) { return DATEIEN[n].da && !DATEIEN[n].lazy && !LOADED[n]; }); };
 
   // Lazy-Loader: <script>-Injektion, Promise; fehlende Datei (da:false oder 404) loest trotzdem auf
   W.need = function (names) {
@@ -191,7 +216,14 @@
       return PENDING[n];
     }));
   };
-  W.needAll = function () { return W.need(Object.keys(DATEIEN)); };
+  // needAll(): alle Grunddateien (ohne die lazy Regler-Dateien, ca. 1 MB); needAll(true): wirklich alles (Pruefansicht)
+  W.needAll = function (alles) { return W.need(Object.keys(DATEIEN).filter(function (n) { return alles === true || !DATEIEN[n].lazy; })); };
+  // needFor(id): genau die Datei, in der der Eintrag steht (aus dem ID-Praefix), sonst alle Grunddateien
+  W.needFor = function (id) {
+    if (W.get(id)) return Promise.resolve([true]);
+    var d = dateiFuer(id);
+    return d && DATEIEN[d] ? W.need(/^regler-/.test(d) ? [d, 'bauteile', 'geraete'] : [d]).then(function (r) { return W.get(id) ? r : W.needAll(); }) : W.needAll();
+  };
   W.needKat = function (kat) { return W.need(Object.keys(DATEIEN).filter(function (n) { return DATEIEN[n].kat.indexOf(kat) >= 0; })); };
 
   // Rueckverweise: Map id -> [ids], aus verweise + [[id]] + formeln[].id aller geladenen Eintraege
@@ -209,18 +241,48 @@
   // Zuletzt gesehen (localStorage lm4.wiki.recent, max. 12 IDs)
   var RK = 'lm4.wiki.recent';
   W.recent = function () { try { var v = JSON.parse(localStorage.getItem(RK) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
-  W.recentPush = function (id) { var r = W.recent().filter(function (x) { return x !== id; }); r.unshift(id); r = r.slice(0, 12); try { localStorage.setItem(RK, JSON.stringify(r)); } catch (e) {} };
+  W.recentPush = function (id) { var r = W.recent().filter(function (x) { return x !== id; }); r.unshift(id); r = r.slice(0, 12); try { localStorage.setItem(RK, JSON.stringify(r)); } catch (e) {} W.seenPush(id); };
+  // W12b: verschiedene geoeffnete Eintraege (rein lokal, lm4.wiki.seen, unabhaengig vom Loeschen der Zuletzt-Liste) -> Abzeichen "Nachschlager" (badges.js, ab 10)
+  var SK = 'lm4.wiki.seen', SEEN_MAX = 300;
+  W.NACHSCHLAGER = 10;
+  W.seen = function () { try { var v = JSON.parse(localStorage.getItem(SK) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
+  W.seenPush = function (id) {
+    if (!id) return;
+    var s = W.seen(); if (s.indexOf(id) < 0) { s.push(id); if (s.length > SEEN_MAX) s = s.slice(-SEEN_MAX); try { localStorage.setItem(SK, JSON.stringify(s)); } catch (e) {} }
+    W.nachschlager();
+  };
+  // Abzeichen vergeben: mit badges.js (Labs) ueber Badges.check (Popup, Konfetti), auf wiki.html ohne badges.js direkt in lm4.badges (gleiches Format) mit kleiner Meldung
+  W.nachschlager = function () {
+    if (W.seen().length < W.NACHSCHLAGER) return false;
+    try {
+      var B = root.Badges;
+      if (B && B.check) { B.check(); return true; }
+      var e = JSON.parse(localStorage.getItem('lm4.badges') || '{}'); if (!e || typeof e !== 'object' || Array.isArray(e)) e = {};
+      if (e.nachschlager) return false;
+      e.nachschlager = Date.now(); localStorage.setItem('lm4.badges', JSON.stringify(e));
+      var t = document.createElement('div'); t.className = 'wk-toast'; t.setAttribute('role', 'status'); t.textContent = 'Neues Abzeichen: Nachschlager – zehn Wiki-Einträge aufgeschlagen';
+      document.body.appendChild(t); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 4500);
+      return true;
+    } catch (x) { return false; }
+  };
   W.recentClear = function () { try { localStorage.removeItem(RK); } catch (e) {} };
 
   // Suche (W4): Logik in wiki-suche.js (Faltung, Synonyme, Tippfehler, Ranking), Index aus wiki-index.js + geladenen Eintraegen.
   // W.search(q, {lab}) -> Array von Eintraegen (nicht geladene als Stub {id,titel,kat,labs,stub:true}); Array.meint = "Meintest du ...?"-Vorschlag
   var SX = null, SXKEY = '';
   function suchModul() { return root.WikiSuche || (typeof require === 'function' ? (function () { try { return require('./wiki-suche.js'); } catch (e) { return null; } })() : null); }
-  function suchIndex() { return root.WikiIndex || (typeof require === 'function' ? (function () { try { return require('./wiki-index.js'); } catch (e) { return []; } })() : []); }
+  function suchIndex() {
+    var a = root.WikiIndex || (typeof require === 'function' ? (function () { try { return require('./wiki-index.js'); } catch (e) { return []; } })() : []);
+    var b = root.WikiIndexRegler || [];   // W7: Regler/Messwerte (wiki-index-regler.js)
+    return b.length ? a.concat(b) : a;
+  }
+  W.index = suchIndex;
+  // Typ-Text fuer Treffer: Regler/Messwerte mit Lab (gleiche Beschriftung gibt es in mehreren Labs)
+  W.katText = function (e) { var t = KAT[e.kat] ? KAT[e.kat][0] : e.kat; return /^(regler|messwert)$/.test(e.kat) && e.labs && e.labs[0] && LABS[e.labs[0]] ? t + ' · ' + LABS[e.labs[0]][0] : t; };
   W.suchbereit = function () { return !!suchModul(); };
   W.needSuche = function () {
-    if (suchModul()) return Promise.resolve(true);
-    return Promise.all(['wiki-suche.js', 'wiki-index.js'].map(function (src) {
+    if (suchModul() && root.WikiIndexRegler) return Promise.resolve(true);
+    return Promise.all(['wiki-suche.js', 'wiki-index.js', 'wiki-index-regler.js'].filter(function (src) { return !(src === 'wiki-suche.js' && suchModul()) && !(src === 'wiki-index.js' && root.WikiIndex) && !(src === 'wiki-index-regler.js' && root.WikiIndexRegler); }).map(function (src) {
       return new Promise(function (res) { var s = document.createElement('script'); s.src = src; s.async = true; s.onload = function () { res(true); }; s.onerror = function () { res(false); }; document.head.appendChild(s); });
     })).then(function () { return !!suchModul(); });
   };
@@ -247,35 +309,89 @@
     var L = LABS[l]; if (!L) return '';
     return '<a class="lc" data-lab="' + l + '" href="' + L[1] + '">' + esc(L[0]) + (rig ? ' · Prüfstand ' + esc(rig) : '') + '</a>';
   }
+  // Aehnliche Eintraege (W9, Design-Review P2-3): nur aus dem Index und den geladenen Eintraegen. Gleicher Schluessel in anderen Labs (Regler und Messwerte),
+  // dazu Nachbarn derselben Kategorie im selben Lab und Pruefstand. Hoechstens max (6).
+  function slug(t) { return String(t).replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
+  W.aehnlich = function (e, max) {
+    if (!/^(regler|messwert)$/.test(e.kat) || !e.key || !e.labs || !e.labs[0]) return [];
+    var out = [], seen = {}, suf = '-' + slug(e.key), lab = e.labs[0], n = max || 6;
+    var toks = function (t) { return fold(t).split(' ').filter(function (w) { return w.length >= 4; }); }, et = toks(e.titel);   // gleicher Schluessel allein reicht nicht (R_V kann in einem anderen Lab etwas anderes sein): mindestens ein gemeinsames Titelwort
+    seen[e.id] = 1;
+    (W.index ? W.index() : []).forEach(function (r) {
+      if (seen[r[0]] || !/^(rg|mw)-/.test(r[0]) || r[0].slice(-suf.length) !== suf) return;
+      var rl = r[4] ? r[4].split(',') : [];
+      if (rl[0] === lab) return;   // im selben Lab zaehlen die Nachbarn unten
+      if (!toks(r[2]).some(function (w) { return et.indexOf(w) >= 0; })) return;
+      seen[r[0]] = 1; out.push({ id: r[0], kat: r[1], titel: r[2], labs: rl });
+    });
+    out.sort(function (a, b) { return (a.kat === e.kat ? 0 : 1) - (b.kat === e.kat ? 0 : 1); });
+    var nb = W.all().filter(function (x) { return !seen[x.id] && x.kat === e.kat && x.labs && x.labs[0] === lab && (x.rigs || []).some(function (r) { return (e.rigs || []).indexOf(r) >= 0; }); })
+      .sort(function (a, b) { return a.titel.localeCompare(b.titel, 'de'); });
+    var pos = 0; nb.forEach(function (x, k) { if (x.titel.localeCompare(e.titel, 'de') < 0) pos = k + 1; });
+    nb = nb.slice(Math.max(0, pos - 2)).concat(nb.slice(0, Math.max(0, pos - 2)));   // erst die Nachbarn um den eigenen Titel
+    nb.forEach(function (x) { seen[x.id] = 1; out.push(x); });
+    return out.slice(0, n);
+  };
+  function chipLinks(arr, mitKat) {
+    return '<div class="lk">' + arr.map(function (t) {
+      var sm = [];
+      if (mitKat || /^(regler|messwert)$/.test(t.kat)) sm.push(KAT[t.kat] ? KAT[t.kat][0] : t.kat);
+      if (/^(regler|messwert)$/.test(t.kat) && t.labs && t.labs[0]) sm.push(LABS[t.labs[0]] ? LABS[t.labs[0]][0] : t.labs[0]);
+      return '<a class="wl" href="#e=' + esc(t.id) + '" data-id="' + esc(t.id) + '">' + formel(t.titel) + (sm.length ? '<small>' + esc(sm.join(' · ')) + '</small>' : '') + '</a>';
+    }).join('') + '</div>';
+  }
+  W.aehnlichHtml = function (e) {
+    var a = W.aehnlich(e, 6);
+    return a.length ? '<h4>Ähnliche Einträge</h4>' + chipLinks(a, false) : '';
+  };
+  var ICO_SPK = '<svg class="ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+  var ICO_LAB = '<svg class="ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6l-5.5 9A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-3L14 9V3"/><path d="M8 15h8"/></svg>';
+  var ICO_CHEV = '<svg class="ico chev" aria-hidden="true" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>';
+  W.ICO = { spk: ICO_SPK, lab: ICO_LAB, chev: ICO_CHEV };
   W.renderEntry = function (e, opt) {
     opt = opt || {};
-    var has = W.has, h = [];
+    var has = W.has, h = [], KL = /^(regler|messwert)$/.test(e.kat), L0 = (e.labs || [])[0];
     var kat = KAT[e.kat] ? KAT[e.kat][0] : e.kat;
-    h.push('<article class="we" data-id="' + esc(e.id) + '" data-kat="' + esc(e.kat) + '">');
-    h.push('<p class="wk-kat"><span>' + esc(kat) + '</span>' + ((e.labs || []).length ? ' · ' + esc(e.labs.map(function (l) { return LABS[l] ? LABS[l][0] : l; }).join(', ')) : '') + '</p>');
-    h.push('<h' + (opt.h || 3) + ' class="wt">' + esc(e.titel) + ((e.alias || []).length ? ' <small>(' + esc(e.alias.join(' · ')) + ')</small>' : '') + '</h' + (opt.h || 3) + '>');
-    h.push('<div class="wk-top"><p class="kurz">' + esc(e.kurz) + '</p>' + (e.bild ? '<img class="bild" src="' + esc(e.bild) + '" alt="">' : e.svg ? '<div class="bild">' + e.svg + '</div>' : '') + '</div>');
-    h.push('<div class="wk-tools"><button type="button" class="btn wk-speak" aria-pressed="false" title="Kurztext vorlesen">🔊 Vorlesen</button>' + (opt.extern ? '<a class="btn" href="wiki.html#e=' + esc(e.id) + '" target="_blank" rel="noopener">Im Wiki öffnen</a>' : '<button type="button" class="btn wk-share" title="Link kopieren">⤴ Link</button>') + '</div>');
+    h.push('<article class="we" data-id="' + esc(e.id) + '" data-kat="' + esc(e.kat) + '"' + (L0 ? ' data-lab="' + esc(L0) + '"' : '') + '>');
+    // Kategoriezeile: Kategorie fett, Lab(s), bei Reglern/Messwerten der Pruefstand
+    var lz = (e.labs || []).map(function (l) { return LABS[l] ? LABS[l][0] : l; }), rn = e.rignamen || [];
+    h.push('<p class="wk-kat"><b>' + esc(kat) + '</b>' + (lz.length ? ' · ' + (lz.length > 2 ? 'in ' + lz.length + ' Labs' : esc(lz.join(', '))) : '') +
+      (KL && rn.length ? ' · ' + (rn.length === 1 ? 'Prüfstand „' + esc(rn[0]) + '“' : rn.length === 2 ? 'Prüfstände „' + esc(rn[0]) + '“, „' + esc(rn[1]) + '“' : rn.length + ' Prüfstände') : '') + '</p>');
+    h.push('<h' + (opt.h || 3) + ' class="wt">' + formel(e.titel) + ((e.alias || []).length ? ' <small>(' + esc(e.alias.join(' · ')) + ')</small>' : '') + '</h' + (opt.h || 3) + '>');
+    h.push('<div class="wk-top"><p class="kurz">' + formel(e.kurz) + '</p>' + (e.bild ? '<img class="bild" src="' + esc(e.bild) + '" alt="">' : e.svg ? '<div class="bild">' + e.svg + '</div>' : '') + '</div>');
+    if (!opt.extern) h.push('<div class="wk-tools"><button type="button" class="btn wk-speak" aria-pressed="false" title="Kurztext vorlesen">' + ICO_SPK + 'Vorlesen</button><button type="button" class="btn wk-share" title="Link kopieren">Link kopieren</button></div>');
     if (e.lang) h.push('<div class="lang">' + render(e.lang, has) + '</div>');
     if (e.formeln && e.formeln.length) {
       h.push('<h4>Formeln</h4><ul class="fo">' + e.formeln.map(function (f) {
-        return '<li><code' + (f.sprich ? ' aria-label="' + esc(f.sprich) + '"' : '') + '>' + formel(f.text) + '</code>' + (f.id && has(f.id) ? ' <a class="wl" href="#e=' + f.id + '" data-id="' + f.id + '">→ ' + esc(W.get(f.id).titel) + '</a>' : '') + '</li>';
+        return '<li><code' + (f.sprich ? ' aria-label="' + esc(f.sprich) + '"' : '') + '>' + formel(f.text) + '</code>' + (f.sprich ? '<small>' + esc(f.sprich) + '</small>' : '') + (f.id && has(f.id) ? ' <a class="wl" href="#e=' + f.id + '" data-id="' + f.id + '">→ ' + formel(W.get(f.id).titel) + '</a>' : '') + '</li>';
       }).join('') + '</ul>');
     }
     if (e.werte && e.werte.length) {
-      h.push('<h4>Typische Werte</h4><div class="tw"><table><thead><tr><th>Größe</th><th>Wert</th><th>Status</th></tr></thead><tbody>' + e.werte.map(function (w) {
+      h.push('<h4>' + (KL ? 'Werte im Prüfstand' : 'Typische Werte') + '</h4><div class="tw"><table><thead><tr><th>Größe</th><th>Wert</th><th>Status</th></tr></thead><tbody>' + e.werte.map(function (w) {
         var st = w[2] === 'ueb' ? '<span class="st ueb">Übungswert</span>' : w[2] === 'belegt' ? '<span class="st ok">✓ belegt</span>' : '<span class="st norm">Normwert</span>';
         return '<tr><td>' + esc(w[0]) + '</td><td>' + esc(w[1]) + '</td><td>' + st + '</td></tr>';
       }).join('') + '</tbody></table></div>' + (opt.pruef && e.quelle ? '<p class="quelle">Quelle: ' + esc(e.quelle) + '</p>' : ''));
     }
-    if ((e.labs || []).length) h.push('<h4>Vorkommen</h4><p class="chips">' + e.labs.map(function (l) { return labChip(l, e.rigs && e.labs.length === 1 ? e.rigs.join(', ') : ''); }).join('') + '</p>');
+    // Wo im Lab? (Regler/Messwerte): eine Karte je Pruefstand, Sprung per #rig=<Pruefstand> (wiki-labs.js waehlt ihn). Im Drawer (man ist ja im Lab) entfaellt die Karte.
+    if (KL && L0 && LABS[L0] && (e.rigs || []).length) {
+      if (!opt.extern) h.push('<h4>Wo im Lab?</h4><div class="wo">' + e.rigs.map(function (r, i) {
+        return '<a href="' + LABS[L0][1] + '#rig=' + esc(r) + '" data-lab="' + esc(L0) + '">' + ICO_LAB + '<span><b>Prüfstand „' + esc(rn[i] || r) + '“</b><small>Im ' + esc(LABS[L0][0]) + ' öffnen</small></span>' + ICO_CHEV + '</a>';
+      }).join('') + '</div>');
+    } else if ((e.labs || []).length) h.push('<h4>Vorkommen</h4><p class="chips">' + e.labs.map(function (l) { return labChip(l, ''); }).join('') + '</p>');
+    h.push('<div class="wk-sim">' + W.aehnlichHtml(e) + '</div>');
     var sa = (e.verweise || []).map(function (id) { return W.get(id); }).filter(Boolean);
-    if (sa.length) h.push('<h4>Siehe auch</h4><p class="links">' + sa.map(function (t) { return '<a class="wl" href="#e=' + t.id + '" data-id="' + t.id + '">' + esc(t.titel) + '</a>'; }).join(' · ') + '</p>');
-    var bl = W.backlinks(e.id);
-    if (bl.length || W.offen().length) h.push('<h4>Wird erwähnt in</h4><p class="links">' + (bl.map(function (t) { return '<a class="wl" href="#e=' + t.id + '" data-id="' + t.id + '">' + esc(t.titel) + '</a>'; }).join(' · ') || '<span class="mute">noch keine</span>') + (W.offen().length ? ' <button type="button" class="lnk wk-all">weitere nach Laden aller Bereiche</button>' : '') + '</p>');
+    if (sa.length) h.push('<h4>Siehe auch</h4>' + chipLinks(sa, true));
+    var bl = W.backlinks(e.id), mehr = 0;
+    // Regler/Messwerte verweisen auf Bauteile -> Rueckverweise zuerst die uebrigen Kategorien, hoechstens 8 (Rest als Zahl)
+    bl.sort(function (a, b) { var ra = /^(regler|messwert)$/.test(a.kat) ? 1 : 0, rb = /^(regler|messwert)$/.test(b.kat) ? 1 : 0; return ra - rb; });
+    if (bl.length > 8) { mehr = bl.length - 8; bl = bl.slice(0, 8); }
+    if (bl.length) h.push('<h4>Wird erwähnt in</h4>' + chipLinks(bl, true).replace(/<\/div>$/, mehr ? '<span class="mute more-n">+ ' + mehr + ' weitere</span></div>' : '</div>') + (!opt.extern && W.offen().length ? '<p><button type="button" class="lnk wk-all">weitere nach Laden aller Bereiche</button></p>' : ''));
     if (e.heft) h.push('<p class="heft"><a href="' + esc(e.heft) + '">Mehr im Heft →</a></p>');
-    var p = e.pruef == null ? 0 : e.pruef;
-    h.push('<p class="meta"><span class="pr" title="Prüfungsrelevanz">' + '●'.repeat(p) + '○'.repeat(3 - p) + ' ' + PRUEF[p] + '</span> · <span class="stt ' + esc(e.status) + '">' + (e.status === 'geprueft' ? '✓ geprüft' : e.status === 'frage' ? 'Frage offen' + (opt.pruef && e.frage ? ' (' + esc(e.frage) + ')' : '') : 'Entwurf – noch nicht fachlich geprüft') + '</span></p>');
+    // Meta: Pruefungsrelevanz nur wenn gesetzt; Status kurz ("Entwurf" - der Hinweis zur fachlichen Pruefung steht in der Fusszeile der Seite)
+    var meta = [];
+    if (e.pruef != null) meta.push('<span class="pr" title="Prüfungsrelevanz">' + '●'.repeat(e.pruef) + '○'.repeat(3 - e.pruef) + ' ' + PRUEF[e.pruef] + '</span>');
+    meta.push('<span class="stt ' + esc(e.status) + '">' + (e.status === 'geprueft' ? '✓ geprüft' : e.status === 'frage' ? 'Frage offen' + (opt.pruef && e.frage ? ' (' + esc(e.frage) + ')' : '') : 'Entwurf') + '</span>');
+    h.push('<p class="meta">' + meta.join(' · ') + '</p>');
     h.push('</article>');
     return h.join('');
   };
@@ -287,9 +403,10 @@
     if (speaking === e.id) { W.stopSpeak(); return; }
     W.stopSpeak();
     speaking = e.id; if (btn) btn.setAttribute('aria-pressed', 'true');
+    var txt = /^(regler|messwert)$/.test(e.kat) && e.kopf ? e.kopf + ' ' + e.kurz : e.kurz;   // Regler/Messwerte: Kopfsatz (Titel, Typ, Lab, Pruefstand) mitsprechen, damit die Stimme den Kontext behaelt
     if (S && typeof S.speak === 'function' && e.speak) S.speak(e.speak, e.kurz);
-    else if (S && typeof S.say === 'function') S.say(e.kurz);
-    else if ('speechSynthesis' in root) { try { var u = new SpeechSynthesisUtterance(e.kurz); u.lang = 'de-DE'; u.onend = W.stopSpeak; root.speechSynthesis.speak(u); } catch (x) {} }
+    else if (S && typeof S.say === 'function') S.say(txt);
+    else if ('speechSynthesis' in root) { try { var u = new SpeechSynthesisUtterance(txt); u.lang = 'de-DE'; u.onend = W.stopSpeak; root.speechSynthesis.speak(u); } catch (x) {} }
     if (btn) btn.title = (S && S.speak && e.speak) ? 'Aufnahme' : 'Gerätestimme';
   };
   W.stopSpeak = function () {
@@ -299,59 +416,92 @@
     Array.prototype.forEach.call(document.querySelectorAll('.wk-speak[aria-pressed=true]'), function (b) { b.setAttribute('aria-pressed', 'false'); });
   };
 
-  /* ---------- Drawer (im Lab) ---------- */
+  /* ---------- Drawer (im Lab) ----------
+   * W9 (Design-Review P2-7): Handy = Bottom-Sheet mit zwei Hoehen (62 % / 92 %, Tippen auf den Griff oder Doppeltipp auf den Kopf), Desktop rechts 440 px.
+   * Kopf = Eintragstitel + Zeile Kategorie/Lab/Pruefstand, Lupe klappt die Suche auf (Treffer als Overlay), Fussleiste fest: Vorlesen, Im Wiki oeffnen.
+   * Seite dahinter bleibt stehen (html.wkd-open: overflow hidden), Inhalt scrollt mit overscroll-behavior:contain. */
   var drawer = null, lastFocus = null;
+  var ICO_LUPE = '<svg class="ico" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></svg>';
+  var ICO_X = '<svg class="ico" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   function labName() { var l = (root.LabUI && root.LabUI.LAB) || (root.WikiLabs && root.WikiLabs.lab && root.WikiLabs.lab()) || document.body.dataset.lab || (/(\w+)lab\.html|(\w+)\.html/.exec(location.pathname) || [])[1] || ''; return l; }
   W.lab = labName;
+  function drawerSub(e) {
+    var rn = e.rignamen || [];
+    return W.katText(e) + (/^(regler|messwert)$/.test(e.kat) && rn.length ? ' · ' + (rn.length === 1 ? 'Prüfstand „' + rn[0] + '“' : rn.length + ' Prüfstände') : '');
+  }
   W.open = function (id, ctx) {
     ctx = ctx || {};
     if (document.body.dataset.wiki === 'seite') { location.hash = '#e=' + id; return; }   // wiki.html: Hash-Navigation
     W.recentPush(id);
     var e = W.get(id);
     var d = W.drawer(ctx);
-    var body = d.querySelector('.wkd-body');
-    if (e) { body.innerHTML = W.renderEntry(e, { extern: true, h: 2 }); }
-    else { body.innerHTML = '<p class="mute">Kein Eintrag „' + esc(id) + '“ – Suche:</p>'; d.querySelector('.wkd-q').value = ctx.q || id; }
-    var f = body.querySelector('.wt') || d.querySelector('.wkd-q'); if (f) { f.setAttribute('tabindex', '-1'); f.focus(); }
+    var body = d.querySelector('.wkd-body'), t = d.querySelector('#wkdT'), sb = d.querySelector('#wkdS'), ext = d.querySelector('.wkd-ext');
+    W.stopSpeak(); d.dataset.id = e ? e.id : '';
+    if (e) {
+      body.innerHTML = W.renderEntry(e, { extern: true, h: 2 });
+      t.innerHTML = formel(e.titel); sb.textContent = drawerSub(e); ext.href = 'wiki.html#e=' + e.id; ext.hidden = false;
+      // Aehnliche Eintraege brauchen den Suchindex (im Lab nicht geladen): nachladen und dazuhaengen, falls der Eintrag noch offen ist
+      if (/^(regler|messwert)$/.test(e.kat) && !(root.WikiIndexRegler && W.suchbereit())) W.needSuche().then(function () { var sim = body.querySelector('.we[data-id="' + e.id + '"] .wk-sim'); if (sim && !sim.innerHTML) sim.innerHTML = W.aehnlichHtml(e); });
+    } else {
+      body.innerHTML = '<p class="mute">Kein Eintrag „' + esc(id) + '“ – Suche:</p>'; t.textContent = 'Nicht gefunden'; sb.textContent = 'Im Wiki suchen'; ext.hidden = true;
+      d.querySelector('.wkd-qw').hidden = false; d.querySelector('.wkd-q').value = ctx.q || id;
+    }
+    body.scrollTop = 0;
+    var f = e ? t : d.querySelector('.wkd-q'); if (f) { f.setAttribute('tabindex', '-1'); f.focus({ preventScroll: true }); }
     return d;
   };
   W.drawer = function (ctx) {
     ctx = ctx || {};
-    if (drawer) { if (drawer.hidden) lastFocus = document.activeElement; drawer.hidden = false; drawer.previousSibling.hidden = false; return drawer; }
+    if (drawer) { if (drawer.hidden) lastFocus = document.activeElement; drawer.hidden = false; drawer.previousSibling.hidden = false; document.documentElement.classList.add('wkd-open'); return drawer; }
     lastFocus = document.activeElement;
     var bd = document.createElement('div'); bd.className = 'wkd-bd';
-    var d = document.createElement('aside'); d.className = 'wkd'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-label', 'Wiki');
-    var lab = ctx.lab || labName(), L = LABS[lab];
-    d.innerHTML = '<div class="wkd-hd"><span class="wkd-grip" aria-hidden="true"></span><p class="wkd-aus">Aus: ' + esc(L ? L[0] : 'Lab') + (ctx.rig ? ' · Prüfstand ' + esc(ctx.rig) : '') + '</p><button type="button" class="wkd-x" aria-label="Schließen">×</button>' +
-      '<input class="wkd-q" type="search" placeholder="Im Wiki suchen…" aria-label="Im Wiki suchen" autocomplete="off"><div class="wkd-res" role="listbox"></div></div><div class="wkd-body"></div>';
+    var d = document.createElement('aside'); d.className = 'wkd'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.setAttribute('aria-labelledby', 'wkdT');
+    var lab = ctx.lab || labName();
+    d.innerHTML = '<div class="wkd-hd"><button type="button" class="wkd-grip" aria-label="Höhe wechseln" aria-expanded="false"></button>' +
+      '<div class="ti"><b id="wkdT"></b><small id="wkdS" class="wkd-aus"></small></div>' +
+      '<button type="button" class="ib wkd-s" aria-label="Im Wiki suchen" aria-expanded="false">' + ICO_LUPE + '</button><button type="button" class="ib wkd-x" aria-label="Schließen">' + ICO_X + '</button></div>' +
+      '<div class="wkd-qw" hidden><input class="wkd-q" type="search" placeholder="Im Wiki suchen…" aria-label="Im Wiki suchen" autocomplete="off"><div class="wkd-res" role="listbox" aria-label="Treffer"></div></div>' +
+      '<div class="wkd-body"></div>' +
+      '<div class="wkd-ft"><button type="button" class="btn wk-speak" aria-pressed="false" title="Kurztext vorlesen">' + ICO_SPK + 'Vorlesen</button><a class="btn wkd-ext" target="_blank" rel="noopener">Im Wiki öffnen</a></div>';
     document.body.appendChild(bd); document.body.appendChild(d); drawer = d;
+    document.documentElement.classList.add('wkd-open');
     var close = W.close;
+    var q = d.querySelector('.wkd-q'), res = d.querySelector('.wkd-res'), qw = d.querySelector('.wkd-qw'), sBtn = d.querySelector('.wkd-s'), grip = d.querySelector('.wkd-grip'), t;
+    function voll(on) { d.classList.toggle('voll', on); grip.setAttribute('aria-expanded', d.classList.contains('voll') ? 'true' : 'false'); }
+    function suche(on) { qw.hidden = !on; sBtn.setAttribute('aria-expanded', on ? 'true' : 'false'); if (on) q.focus(); else { res.innerHTML = ''; q.value = ''; } }
     bd.addEventListener('click', close);
     d.querySelector('.wkd-x').addEventListener('click', close);
+    grip.addEventListener('click', function () { voll(!d.classList.contains('voll')); });
+    d.querySelector('.wkd-hd').addEventListener('dblclick', function (ev) { if (!ev.target.closest('button') && getComputedStyle(grip).display !== 'none') voll(!d.classList.contains('voll')); });
+    sBtn.addEventListener('click', function () { suche(qw.hidden); });
     d.addEventListener('keydown', function (ev) {
       ev.stopPropagation();   // Lab-Tastenkuerzel (keys.js) bekommen nichts aus dem Drawer
-      if (ev.key === 'Escape') { ev.preventDefault(); close(); return; }
-      if (ev.key === 'Tab') {   // Fokusfalle
-        var f = d.querySelectorAll('button,[href],input,[tabindex]:not([tabindex="-1"])'); if (!f.length) return;
+      if (ev.key === 'Escape') {   // erst Suche/Treffer zu, dann der Drawer
+        ev.preventDefault();
+        if (!qw.hidden && (res.innerHTML || q.value)) { res.innerHTML = ''; q.value = ''; q.focus(); return; }
+        if (!qw.hidden) { suche(false); sBtn.focus(); return; }
+        close(); return;
+      }
+      if (ev.key === 'Tab') {   // Fokusfalle (nur sichtbare Elemente)
+        var f = [].filter.call(d.querySelectorAll('button,[href],input,[tabindex]:not([tabindex="-1"])'), function (x) { return !x.disabled && x.getClientRects().length > 0; }); if (!f.length) return;
         var a = f[0], z = f[f.length - 1];
-        if (ev.shiftKey && document.activeElement === a) { ev.preventDefault(); z.focus(); } else if (!ev.shiftKey && document.activeElement === z) { ev.preventDefault(); a.focus(); }
+        if (ev.shiftKey && (document.activeElement === a || !d.contains(document.activeElement))) { ev.preventDefault(); z.focus(); } else if (!ev.shiftKey && document.activeElement === z) { ev.preventDefault(); a.focus(); }
       }
     });
-    var q = d.querySelector('.wkd-q'), res = d.querySelector('.wkd-res'), t;
     q.addEventListener('input', function () {
       clearTimeout(t);
       t = setTimeout(function () {
         W.needSuche().then(function () {
         var r = W.search(q.value, { lab: lab });
-        res.innerHTML = (r.meint ? '<p class="mute">Meintest du „' + esc(r.meint) + '“?</p>' : '') + r.map(function (e) { return '<button type="button" role="option" class="wkd-hit" data-id="' + e.id + '"><b>' + esc(e.titel) + '</b> <small>' + esc(KAT[e.kat][0]) + '</small></button>'; }).join('') || (q.value.trim() ? '<p class="mute">Kein Treffer</p>' : '');
+        res.innerHTML = (r.meint ? '<p class="mute">Meintest du „' + esc(r.meint) + '“?</p>' : '') + r.map(function (e) { return '<button type="button" role="option" class="wkd-hit" data-id="' + e.id + '"><b>' + formel(e.titel) + '</b> <small>' + esc(W.katText(e)) + '</small></button>'; }).join('') || (q.value.trim() ? '<p class="mute">Kein Treffer</p>' : '');
         });
       }, 120);
     });
-    res.addEventListener('click', function (ev) { var b = ev.target.closest('.wkd-hit'); if (b) { var hid = b.dataset.id; res.innerHTML = ''; q.value = ''; W.needAll().then(function () { W.open(hid, ctx); }); } });
+    res.addEventListener('click', function (ev) { var b = ev.target.closest('.wkd-hit'); if (b) { var hid = b.dataset.id; res.innerHTML = ''; q.value = ''; suche(false); W.needFor(hid).then(function () { W.open(hid, ctx); }); } });
     d.addEventListener('click', function (ev) {
-      var a = ev.target.closest('a.wl[data-id]'); if (a) { ev.preventDefault(); W.open(a.dataset.id, ctx); return; }
-      var s = ev.target.closest('.wk-speak'); if (s) { var art = s.closest('.we'); W.speak(W.get(art.dataset.id), s); return; }
-      var al = ev.target.closest('.wk-all'); if (al) { W.needAll().then(function () { var art = al.closest('.we'); W.open(art.dataset.id, ctx); }); }
+      var a = ev.target.closest('a.wl[data-id]'); if (a) { ev.preventDefault(); var wid = a.dataset.id; W.needFor(wid).then(function () { W.open(wid, ctx); }); return; }
+      var s = ev.target.closest('.wk-speak'); if (s) { var en = W.get(d.dataset.id); if (en) W.speak(en, s); return; }
+      var al = ev.target.closest('.wk-all'); if (al) { W.needAll().then(function () { var art = al.closest('.we'); if (art) W.open(art.dataset.id, ctx); }); }
     });
     return d;
   };
@@ -359,6 +509,7 @@
     if (!drawer) return;
     W.stopSpeak();
     drawer.hidden = true; drawer.previousSibling.hidden = true;
+    document.documentElement.classList.remove('wkd-open');
     try { if (lastFocus && lastFocus.focus) lastFocus.focus(); } catch (x) {}
   };
 
@@ -368,7 +519,7 @@
     var b = ev.target.closest && ev.target.closest('button.wk'); if (!b || document.body.dataset.wiki === 'seite') return;
     ev.preventDefault(); ev.stopPropagation();
     var id = b.dataset.wiki || b.dataset.id, ctx = { lab: b.dataset.lab || labName(), rig: b.dataset.rig, key: b.dataset.key };
-    W.needAll().then(function () { W.open(id, ctx); });
+    W.needFor(id).then(function () { W.open(id, ctx); });
   });
   document.addEventListener('pointerdown', function (ev) { if (ev.target.closest && ev.target.closest('button.wk')) ev.stopPropagation(); }, true);
 })(typeof window !== 'undefined' ? window : this);

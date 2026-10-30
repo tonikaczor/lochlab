@@ -2,6 +2,13 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v23.149', items: [
+      ['Wiki erweitert: Regler und Messwerte', 'Das Wiki hat jetzt 1329 Einträge. Neu sind die Regler und Messwerte aus den Labs: Zu jedem Regler steht, was er bewirkt, in welchem Bereich er sich einstellen lässt und welche Grundeinstellung er hat. Alles weiter offline nutzbar.', 'Startseite ▸ Wiki'],
+      ['Das „?“ in allen Labs mit Versuchsaufbau', 'Neben den Reglern steht das kleine „?“ jetzt auch in Analog, Antrieb, Sicherheit, EMV, Energie, Netzteil, Regelung, Sensorik, Thermik und Wechselstrom. Es öffnet den passenden Eintrag direkt neben dem Aufbau.', 'Labs ▸ „?“ neben einem Regler'],
+      ['Wiki-Suche auf der Startseite', 'Das Suchfeld oben findet jetzt auch Wiki-Einträge, getrennt von Labs, Heften und Aufgaben in der Gruppe „Im Wiki“.', 'Startseite ▸ Suchfeld'],
+      ['Neues Wiki-Design und Abzeichen „Nachschlager“', 'Die Liste lässt sich nach Lab filtern, die Texte sind größer und auf dem Handy öffnet sich der Eintrag aus dem Lab als Fenster von unten. Wer zehn Wiki-Einträge aufschlägt, bekommt das Abzeichen „Nachschlager“.', 'Wiki, Ich ▸ Abzeichen'],
+      ['Wiki-Kachel auf der Startseite', 'In „Grundlagen & Werkstatt“ gibt es jetzt eine Kachel „Tonfunk Wiki“ mit der Zahl der Einträge. Sie ist kein Lab und zählt nicht beim Lernpfad mit.', 'Startseite ▸ Grundlagen & Werkstatt'],
+    ] },
     { v: 'v23.148', items: [
       ['Tonfunk Wiki', 'Zum Nachschlagen: Bauteile und Messgeräte mit Kurztext, Schaltzeichen und Beispielen, dazu eine Suche (auch bei Tippfehlern und Umlauten). In SchaltLab, SimLab und MessLab öffnet das „?“ den passenden Eintrag direkt neben der Schaltung. Alle Einträge sind noch als Entwurf markiert, bis der Ausbilder sie geprüft hat.', 'Startseite ▸ Wiki'],
       ['Neue Startseite „Werkbank“', 'Die Labs sind jetzt Kacheln mit Symbol und Fortschrittsring, oben steht dein nächster Schritt als großer Knopf. Rubriken-Chips filtern die Liste, auf dem Handy gibt es eine Leiste unten. Mit dem Knopf im Kopf wechselst du zwischen Automatisch, Hell und Dunkel; große Karten gibt es weiter unter „Startseite anpassen“.', 'Startseite'],

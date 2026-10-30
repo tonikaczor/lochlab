@@ -2,7 +2,10 @@
 /* Tonfunk Lab: Suche auf der Startseite (SPEC-STARTSEITE-FABLE.md, Abschnitt 6.3). Offline, ohne Bibliothek.
    Indexiert Lab-Karten (aus dem DOM), alle Lernhefte (statische Liste HEFTE, aus lernen.html abgeleitet) und alle Aufgaben (AUFGABEN aus aufgaben.js).
    Labs werden in den Bereichen gefiltert (.card.srch-out), darunter steht eine Trefferliste mit Heften und Aufgaben.
-   Tastatur: / oder Strg+K fokussiert, Esc leert, Pfeil auf/ab wählt, Enter öffnet. Die reine Suchlogik (norm, fold, search) wird in Node getestet. */
+   Tastatur: / oder Strg+K fokussiert, Esc leert, Pfeil auf/ab wählt, Enter öffnet. Die reine Suchlogik (norm, fold, search) wird in Node getestet.
+   W12a Wiki: Treffer aus dem Wiki (Bauteile, Geräte, Begriffe, höchstens 2 Regler/Messwerte) als Gruppe "Im Wiki", Link wiki.html#e=<id>. Die Wiki-Skripte
+   (wiki.js, wiki-suche.js, wiki-index.js) werden erst beim Fokus ins Suchfeld nachgeladen, der Regler-Index (wiki-index-regler.js) erst nach dem ersten Tastendruck;
+   beim Start der Startseite wird nichts vom Wiki geladen. */
 (function (root) {
   // [Datei, Titel, Kurztext]; Test test_home.js prüft, dass jede lernen-*.html (außer lernen.html) hier vorkommt
   const HEFTE = [
@@ -37,7 +40,14 @@
   const norm = s => toStr(s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
   const fold = s => toStr(s).toLowerCase().replace(/ß/g, 'ss').normalize('NFD').replace(/[̀-ͯ]/g, '');
   const toks = s => toStr(s).trim().split(/\s+/).filter(Boolean);
-  const MIN = 2, MAX_HEFT = 6, MAX_AUFG = 10;
+  const MIN = 2, MAX_HEFT = 6, MAX_AUFG = 10, MAX_WIKI = 4, MAX_WIKI_REGLER = 2;
+  // Wiki-Treffer ({id, kat, titel, labs}) in Eintraege (Bauteile, Geraete, Begriffe ...) und Regler/Messwerte trennen; Regler hoechstens 2, nie vor den Eintraegen
+  const isReg = e => e && (e.kat === 'regler' || e.kat === 'messwert');
+  function wikiSplit(hits) {
+    const a = (hits || []).filter(e => e && e.id && e.titel);
+    return { wiki: a.filter(e => !isReg(e)).slice(0, MAX_WIKI), reg: a.filter(isReg).slice(0, MAX_WIKI_REGLER) };
+  }
+  const wikiHref = id => 'wiki.html#e=' + encodeURIComponent(id);
   function prep(e) { const t = e.text || ''; e._n = norm(t); e._f = fold(t); e._nn = norm(e.name); e._nf = fold(e.name); return e; }
   const hit = (n, f, tn, tf) => tn.every((t, i) => n.indexOf(t) >= 0 || f.indexOf(tf[i]) >= 0);
   // Eintrag passt, wenn jedes Wort der Eingabe im Text vorkommt; Rang: Name vor Text, Labs vor Heften vor Aufgaben
@@ -53,7 +63,7 @@
     return { active: true, labs, hefte: hefte.slice(0, MAX_HEFT), aufg: aufg.slice(0, MAX_AUFG), n: { lab: labs.length, heft: hefte.length, aufg: aufg.length } };
   }
   const countText = n => {
-    const p = []; if (n.lab) p.push(n.lab + (n.lab === 1 ? ' Lab' : ' Labs')); if (n.heft) p.push(n.heft + (n.heft === 1 ? ' Heft' : ' Hefte')); if (n.aufg) p.push(n.aufg + (n.aufg === 1 ? ' Aufgabe' : ' Aufgaben'));
+    const p = []; if (n.lab) p.push(n.lab + (n.lab === 1 ? ' Lab' : ' Labs')); if (n.heft) p.push(n.heft + (n.heft === 1 ? ' Heft' : ' Hefte')); if (n.aufg) p.push(n.aufg + (n.aufg === 1 ? ' Aufgabe' : ' Aufgaben')); if (n.wiki) p.push(n.wiki + (n.wiki === 1 ? ' Wiki-Eintrag' : ' Wiki-Einträge'));
     return p.length ? p.join(', ') : 'Nichts gefunden';
   };
   function buildIndex(REG, ROWS, labEntries) {
@@ -63,7 +73,7 @@
     (ROWS || []).forEach(r => { const R = REG[r[1]]; if (!R) return; idx.push(prep({ typ: 'aufg', key: r[0], name: r[3], text: r[2] + ' ' + r[3] + ' ' + R.name + ' ' + (R.short || ''), href: R.file + '?aufgabe=' + r[0], lab: R.short || R.name, thema: r[2] })); });
     return idx;
   }
-  if (typeof module === 'object' && module.exports) module.exports = { norm, fold, search, countText, buildIndex, HEFTE, MIN, MAX_HEFT, MAX_AUFG };
+  if (typeof module === 'object' && module.exports) module.exports = { norm, fold, search, countText, buildIndex, wikiSplit, wikiHref, HEFTE, MIN, MAX_HEFT, MAX_AUFG, MAX_WIKI, MAX_WIKI_REGLER };
   if (typeof document === 'undefined') return;
 
   const doc = document, esc = s => toStr(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -72,10 +82,28 @@
   form.hidden = false;
   let idx = null, cards = [], active = -1, lastQ = '', tmr = 0;
 
+  /* ---- Wiki (W12a): Skripte lazy, nur auf Suchfokus bzw. ersten Tastendruck ---- */
+  const inj = {}, WBASE = ['wiki.js', 'wiki-suche.js', 'wiki-index.js'];
+  let wikiOk = false, wikiBaseP = null, wikiRegP = null;
+  const inject = src => inj[src] || (inj[src] = new Promise(res => { const sc = doc.createElement('script'); sc.src = src; sc.async = true; sc.onload = () => res(true); sc.onerror = () => res(false); doc.head.appendChild(sc); }));
+  function wikiBase() {
+    if (!wikiBaseP) wikiBaseP = Promise.all(WBASE.map(inject)).then(r => { wikiOk = r.every(Boolean) && !!(root.Wiki && root.Wiki.search && root.WikiSuche && root.WikiIndex); if (wikiOk && input.value.trim().length >= MIN) update(); return wikiOk; });
+    return wikiBaseP;
+  }
+  function wikiReg() {   // Regler-Index (195 KB) erst nach dem ersten Tastendruck
+    if (!wikiRegP) wikiRegP = wikiBase().then(ok => ok ? inject('wiki-index-regler.js') : false).then(ok => { if (ok && input.value.trim().length >= MIN) update(); return ok; });
+    return wikiRegP;
+  }
+  function wikiHits(q) {
+    if (!wikiOk) return { wiki: [], reg: [] };
+    try { return wikiSplit(root.Wiki.search(q)); } catch (e) { return { wiki: [], reg: [] }; }
+  }
+
   function init() {
     if (idx) return;
     cards = Array.from(doc.querySelectorAll('.card')).filter(c => !c.classList.contains('hm-ghost'));
-    const labs = cards.map(c => {
+    // Die Wiki-Kachel ist kein Lab: nicht im Suchindex (zählt nicht als "Lab"-Treffer), sie wird bei aktiver Suche ausgeblendet; Wiki-Treffer stehen in der Gruppe "Im Wiki"
+    const labs = cards.filter(c => !c.classList.contains('wikirow')).map(c => {
       const tag = c.querySelector('.tag'), h = c.querySelector('h3');
       const text = Array.from(c.querySelectorAll('.tag,h3,p,.steps span')).map(x => x.textContent).join(' ');
       return { key: c.dataset.lab || c.dataset.hub || '', name: (tag ? tag.textContent : '') + ' ' + (h ? h.textContent : ''), text, el: c };
@@ -96,6 +124,7 @@
     init();
     const q = input.value; lastQ = q; clr.hidden = !q;
     const r = search(idx, q), set = new Set(r.labs.map(e => e.el));
+    const wh = r.active ? wikiHits(q) : { wiki: [], reg: [] }, wl = wh.wiki.concat(wh.reg); r.n.wiki = wl.length;
     cards.forEach(c => c.classList.toggle('srch-out', r.active && !set.has(c)));
     const keys = new Set(); r.labs.forEach(e => { const g = root.HomeGroups && root.HomeGroups.groupOf(e.el); if (g) keys.add(g); });
     if (root.HomeGroups) root.HomeGroups.setSearch(r.active ? keys : null);
@@ -104,17 +133,21 @@
     let h = '', n = 0;
     const row = (e, ty, meta) => '<a role="option" id="srchO' + (n++) + '" href="' + esc(e.href) + '" tabindex="-1" aria-selected="false"><span class="ty">' + ty + '</span><span class="nm">' + esc(e.name) + '</span>' + (meta ? '<span class="sb">' + esc(meta) + '</span>' : '') + '</a>';
     if (r.hefte.length) h += '<div role="group" aria-label="Lernhefte"><div class="ghd" aria-hidden="true">Lernhefte</div>' + r.hefte.map(e => row(e, 'Heft', '')).join('') + '</div>';
+    // W9 (Design-Review P2-8): Wiki-Treffer zweizeilig wie im Wiki selbst (Icon, Titel mit Indizes, Pille Kategorie, Lab darunter) + Zeile "Alle Wiki-Treffer"
+    const wrow = e => { const W = root.Wiki, reg = /^(regler|messwert)$/.test(e.kat), lab = reg && e.labs && e.labs[0] && W.LABS[e.labs[0]] ? W.LABS[e.labs[0]][0] : '';
+      return '<a role="option" class="wkr" id="srchO' + (n++) + '" href="' + esc(wikiHref(e.id)) + '" tabindex="-1" aria-selected="false"><svg class="ri" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20"/><path d="M9 7h7M9 10.5h7"/></svg><span class="nm">' + (W.formel ? W.formel(e.titel) : esc(e.titel)) + '</span><span class="ty">' + esc(W.KAT && W.KAT[e.kat] ? W.KAT[e.kat][0] : e.kat) + '</span>' + (lab ? '<span class="sb">' + esc(lab) + '</span>' : '') + '</a>'; };
+    if (wl.length) h += '<div role="group" aria-label="Im Wiki"><div class="ghd" aria-hidden="true">Im Wiki</div>' + wl.map(wrow).join('') + '<a role="option" class="wkr more" id="srchO' + (n++) + '" href="wiki.html#q=' + encodeURIComponent(q.trim()) + '" tabindex="-1" aria-selected="false"><span class="nm">Alle Wiki-Treffer für „' + esc(q.trim()) + '“ →</span></a></div>';
     if (r.aufg.length) h += '<div role="group" aria-label="Aufgaben"><div class="ghd" aria-hidden="true">Aufgaben</div>' + r.aufg.map(e => row(e, 'Aufgabe', e.lab + ' · ' + e.thema)).join('') + '</div>';
     const ct = countText(r.n);
-    if (!r.n.heft && !r.n.aufg) h = '<p class="none">' + (r.n.lab ? esc(ct) + '. Die passenden Labs stehen unten in den Bereichen.' : 'Nichts gefunden – Begriff kürzer fassen.') + '</p>';
+    if (!r.n.heft && !r.n.aufg && !wl.length) h = '<p class="none">' + (r.n.lab ? esc(ct) + '. Die passenden Labs stehen unten in den Bereichen.' : 'Nichts gefunden – Begriff kürzer fassen.') + '</p>';
     else h = '<p class="cnt" aria-hidden="true">' + esc(ct) + (r.n.heft > r.hefte.length || r.n.aufg > r.aufg.length ? ' (die besten stehen hier)' : '') + '</p>' + h;
     res.innerHTML = h; showRes(true); active = -1; say(ct);
   }
   function clear() { input.value = ''; update(); }
   function go(a) { if (a && a.href) location.href = a.href; }
 
-  input.addEventListener('input', update);
-  input.addEventListener('focus', () => { if (input.value.trim().length >= MIN && res.innerHTML) showRes(true); });
+  input.addEventListener('input', () => { if (input.value.trim().length >= 1) wikiReg(); update(); });
+  input.addEventListener('focus', () => { wikiBase(); if (input.value.trim().length >= MIN && res.innerHTML) showRes(true); });
   input.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown') { if (res.hidden && res.innerHTML) showRes(true); e.preventDefault(); setActive(active + 1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active < 0 ? -1 : active - 1); }

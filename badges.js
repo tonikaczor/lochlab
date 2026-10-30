@@ -15,6 +15,8 @@
     return { d: d, h: h, st: st, R: R, ids: ids, n: n, all: all, fehler: R.filter(function (r) { return /Fehlersuche/.test(r[2]); }).map(function (r) { return r[0]; }) };
   }
   var both = function (c, a, b) { return (c.d[a] || 0) >= 100 && (c.d[b] || 0) >= 100 ? 2 : (((c.d[a] || 0) >= 100) + ((c.d[b] || 0) >= 100)); };
+  /* Wiki: verschiedene geöffnete Einträge (lm4.wiki.seen, rein lokal, schreibt wiki.js) */
+  var wikiSeen = function () { var a = get('lm4.wiki.seen', []); return Array.isArray(a) ? a.length : 0; };
   /* id, Symbol, Name, Beschreibung, Fortschritt [ist, soll] */
   var DEFS = [
     ['start', '🎯', 'Erster Treffer', 'Die erste Aufgabe vollständig richtig.', function (c) { return [c.n(c.all), 1]; }],
@@ -52,6 +54,7 @@
     ['duellsieg', '🏆', 'Duell-Sieger', 'Drei Prüfungs-Duelle gewonnen.', function (c) { return [c.st.duellsieg || 0, 3]; }],
     ['duellmess', '📏', 'Messen siegt', 'Ein Duell mit mindestens 3 Messungen gewonnen.', function (c) { return [c.st.duellmess || 0, 1]; }],
     ['duellwoche', '📅', 'Duell-Woche', 'Drei Duelle in einer Kalenderwoche.', function (c) { return [c.st.duellwoche || 0, 3]; }],
+    ['nachschlager', '📖', 'Nachschlager', 'Zehn verschiedene Einträge im Wiki aufgeschlagen.', function (c) { return [wikiSeen(), 10]; }],
     ['duell', '⚔️', 'Duellant', 'Ein Duell zu Ende gebracht.', function (c) { return [c.st.duelle || 0, 1]; }],
     ['escape', '🗝️', 'Ausbruchskünstler', 'Den Escape-Room geschafft.', function (c) { return [c.st.escape || 0, 1]; }],
     ['serie3', '🔥', 'Dreier-Serie', 'Drei Tage hintereinander die Tagesaufgabe gelöst.', function (c) { return [c.st.dailyBest || 0, 3]; }],

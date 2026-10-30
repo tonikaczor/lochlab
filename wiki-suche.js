@@ -2,7 +2,9 @@
  * Browser: window.WikiSuche; Node: module.exports. Eingabe ist der Suchindex (wiki-index.js, Zeilen siehe indexRow) oder aus Eintraegen gebaute Zeilen.
  *  - Faltung mit Doppelindex: ae/ae+a, oe/o, ue/u, ss; Akzente weg, Ω -> ohm, µ -> u, U_D -> "ud" + "u d", Bindestrich-Wort -> Teile + Zusammenschreibung, 0,7 = 0.7
  *  - Synonyme SYN (Gruppen), Praefix- und Teilwort-Treffer (deutsche Komposita), Tippfehler (Damerau-Levenshtein) nur bei < 3 Treffern
- *  - Ranking: Titel (100/60) > Alias+Stichwoerter (50) > Kurztext (20) > Langtext (5, nur geladene Eintraege); + Lab 15, + Bauteil/Geraet 10, + pruef*2 */
+ *  - Ranking: Titel (100/60) > Alias+Stichwoerter (50) > Kurztext (20) > Langtext (5, nur geladene Eintraege); + Lab 15, + Bauteil/Geraet 10, + pruef*2
+ *  - W7: Regler/Messwerte (ca. 1300 generierte Zeilen) zaehlen x0,5 (vor Lab-Bonus), damit Titel-/Alias-Treffer anderer Kategorien vorne bleiben;
+ *    indexRow nimmt bei Reglern/Messwerten den Kurztext ohne Kopfsatz-Woerter (Lab-/Typname), hoechstens 16 Woerter */
 (function () {
   'use strict';
 
@@ -154,7 +156,21 @@
     ['ne555', '555', 'timer', 'zeitgeber'],
     ['kühlkörper', 'kühler', 'heatsink'],
     ['verlustleistung', 'abwärme'],
-    ['abblockkondensator', 'entkopplungskondensator', 'stützkondensator', 'blockkondensator']
+    ['abblockkondensator', 'entkopplungskondensator', 'stützkondensator', 'blockkondensator'],
+    // W7: Begriffe der Regler/Messwerte (Rig-Labs)
+    ['drehzahl', 'rpm', 'umdrehungen pro minute', 'umdrehungszahl'],
+    ['kp', 'proportionalbeiwert', 'proportionalverstärkung', 'p anteil'],
+    ['nachstellzeit', 'tn', 'integrierzeit', 'i anteil'],
+    ['vorhaltzeit', 'tv', 'differenzierzeit', 'd anteil'],
+    ['sollwert', 'führungsgröße', 'setpoint'],
+    ['stellgröße', 'stellwert', 'stellsignal'],
+    ['einstrahlung', 'bestrahlungsstärke', 'globalstrahlung', 'irradiance'],
+    ['wirkungsgrad', 'eta', 'effizienz'],
+    ['abtastrate', 'abtastfrequenz', 'samplerate', 'sample rate'],
+    ['wärmewiderstand', 'rth', 'thermischer widerstand'],
+    ['drehmoment', 'torque', 'lastmoment'],
+    ['schirmdämpfung', 'abschirmung', 'schirmwirkung'],
+    ['mpp', 'mppt', 'maximum power point']
   ];
   var SYNMAP = null;
   function synMap() {
@@ -191,9 +207,13 @@
     for (i = 0; i < a.length; i++) { t = a[i]; if (t.length < 4 || STOPSET[t] || /^[0-9.]+$/.test(t) || seen[t]) continue; seen[t] = 1; out.push(t); if (max && out.length >= max) break; }
     return out;
   }
+  // Woerter des generierten Kopfsatzes der Regler ("<Label>: Schieberegler im Analogtechnik-Lab (Pruefstand ...), ...") tragen nichts zur Suche bei
+  var KOPF = {}; 'schieberegler auswahlfeld schalter taste steuerwert messwert anzeige auswahl moeglichkeiten mglichkeiten pruefstand pruefstaende prufstand prufstande analogtechnik antriebs sicherheits netzteil wechselstrom energie regelungstechnik sensorik thermik eingestellt angezeigt simulation analogtechniklab antriebslab sicherheitslab netzteillab wechselstromlab energielab regelungstechniklab sensoriklab thermiklab emvlab'.split(' ').forEach(function (w) { KOPF[w] = 1; });
   function indexRow(e, datei, mitLang) {
-    var st = (e.alias || []).concat(e.stich || []).join('|');
-    var r = [e.id, e.kat, e.titel, st, (e.labs || []).join(','), datei || '', e.pruef || 0, wordsOf(e.kurz, 40).join(' ')];
+    var st = (e.alias || []).concat(e.stich || []).join('|'), reg = e.kat === 'regler' || e.kat === 'messwert';
+    var tt = {}; if (reg) toks(e.titel, true).forEach(function (t) { tt[t] = 1; });
+    var kw = reg ? wordsOf(e.kurz, 50).filter(function (w) { return !KOPF[w] && !tt[w]; }).slice(0, 16) : wordsOf(e.kurz, 40);
+    var r = [e.id, e.kat, e.titel, st, (e.labs || []).join(','), datei || '', e.pruef || 0, kw.join(' ')];
     if (mitLang) r.push(wordsOf(e.lang, 120).join(' '));
     return r;
   }
@@ -261,6 +281,7 @@
     }
     return cl;
   }
+  var REG_FAKTOR = 0.5;
   function score(ix, clauses, ctx, mode) {
     var tot = {}, cnt = {}, dir = {}, lab = ctx && ctx.lab, id;
     clauses.forEach(function (c) {
@@ -275,6 +296,7 @@
       var r = ix.rows[id], s = tot[id], ti = ix.titles[id];
       if (dir[id]) s += 30;
       if (ti === q) s += 60; else if (q && ti.indexOf(q) === 0) s += 30;
+      if (r[1] === 'regler' || r[1] === 'messwert') s *= REG_FAKTOR;   // W7: Bauteile/Geraete/Begriffe mit Titel- oder Alias-Treffer vor den ca. 1300 Reglern
       if (lab && r[4] && (',' + r[4] + ',').indexOf(',' + lab + ',') >= 0) s += 15;
       if (r[1] === 'bauteil' || r[1] === 'geraet') s += 10;
       s += (r[6] || 0) * 2;
