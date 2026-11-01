@@ -78,15 +78,17 @@
         ${c.length <= 1100 && qrSvg(c) ? '<div style="background:#fff;padding:8px;border-radius:12px;max-width:340px;margin:0 auto 10px">' + qrSvg(c) + '</div>' : ''}
         <textarea id="ergCode" rows="4" readonly style="width:100%;font:12px monospace;box-sizing:border-box">${esc(c)}</textarea>
         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn pri" id="ergCopy">Code kopieren</button>${navigator.share ? '<button class="btn" id="ergShare">Teilen</button>' : ''}</div>`;
-      /* Optional: freiwillig in ILIAS abgeben (Link, kein automatischer Versand) */
+      /* Optional: freiwillig in ILIAS abgeben (ILIAS-Abgabe v2.1: Link, kein automatischer Versand; steht ueber dem QR-Code, damit man nicht scrollen muss) */
       if (window.IliasLinks) {
         const ex = window.IliasLinks.exercises();
         if (ex.length) {
           const box = document.createElement('div');
-          box.style.cssText = 'margin-top:12px;padding-top:10px;border-top:1px solid #38424d;font-size:13px';
-          box.innerHTML = '<div class="hint2" style="margin-bottom:6px">Freiwillig: Code als Textdatei speichern und in ILIAS hochladen. Nur wenn du magst, es wird nichts automatisch gesendet.</div>' +
-            ex.map(e => '<a class="btn" style="margin:2px 6px 2px 0" target="_blank" rel="noopener" href="' + e.url + '">In ILIAS abgeben (' + esc(e.title.split(' \u2013 ')[0]) + ')</a>').join('');
-          b.appendChild(box);
+          box.id = 'iliasSend';
+          box.style.cssText = 'margin:10px 0;padding:8px 10px;border:1px dashed var(--line,#38424d);border-radius:12px;font-size:13px';
+          box.innerHTML = '<div class="hint2" style="margin:0 0 6px"><b>Freiwillig:</b> Code kopieren, in eine Textdatei einfügen und diese in ILIAS hochladen. Es wird nichts automatisch gesendet.</div>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:6px">' + ex.map(e => '<a class="btn" style="min-height:44px;font-weight:500;font-size:14px;color:var(--fg,#e8ecf0);border-color:var(--accent,#3b9eff);text-decoration:none" target="_blank" rel="noopener" href="' + e.url + '">In ILIAS abgeben (' + esc(e.title.split(' – ')[0]) + ')</a>').join('') + '</div>';
+          const h = b.querySelector('p.hint2');
+          b.insertBefore(box, h ? h.nextSibling : null);
         }
       }
       const ta = b.querySelector('#ergCode');

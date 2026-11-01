@@ -67,7 +67,7 @@
     { key: 'iz', label: 'Z-Strom', type: 'slider', scale: 'log', min: 1e-3, max: 0.03, step: 1e-4, unit: 'A', unitKind: 'A', value: 0.012, gruppe: 'bauteile', sicht: 'formel', ...when('betrieb', ['zener']),
       help: 'Strom I_Z durch die Z-Diode (Übungswert). Der Vorwiderstand R_1 führt I_Z plus den Basisstrom; ist I_Z kleiner als der Basisstrom, wird die Referenz weich.' },
     { key: 'ic', label: 'Kollektorstrom', type: 'slider', scale: 'log', min: 1e-3, max: 0.5, step: 1e-3, unit: 'A', unitKind: 'A', value: 0.09, gruppe: 'last', sicht: 'formel', ...when('betrieb', ['zener', 'konstantstrom']),
-      help: 'Kollektorstrom I_C: beim Z-Folger der Laststrom, bei der Konstantstromquelle der einzustellende Strom. Übungswert; die Grenze I_C,max ist ein Übungswert (F4).' },
+      help: 'Kollektorstrom I_C: beim Z-Folger der Laststrom, bei der Konstantstromquelle der einzustellende Strom. Der Wert ist ein Übungswert, ebenso die Grenze I_C,max (F4).' },
     { key: 'nd', label: 'Anzahl Dioden in Reihe', type: 'slider', scale: 'lin', min: 1, max: 4, step: 1, unit: '', unitKind: '', value: 3, gruppe: 'bauteile', sicht: 'formel', ...when('betrieb', ['konstantstrom']),
       help: 'Zahl der Dioden in Reihe an der Basis der Konstantstromquelle. Die Summenspannung der Reihe muss über U_BE liegen, sonst entsteht keine Spannung am Emitterwiderstand.' },
     { key: 'ud', label: 'Flussspannung je Diode', type: 'slider', scale: 'lin', min: 0.5, max: 0.9, step: 0.01, unit: 'V', unitKind: 'V', value: 0.7, gruppe: 'bauteile', sicht: 'formel', ...when('betrieb', ['konstantstrom']),

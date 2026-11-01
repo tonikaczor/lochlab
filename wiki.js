@@ -446,20 +446,22 @@
   };
 
   // Vorlesen: Piper-Aufnahme (ueber Speak, wenn W2b die Bruecke liefert) sonst Geraetestimme
-  var speaking = null;
+  var speaking = null, spkTok = 0;
   W.speak = function (e, btn) {
     var S = root.Speak;
     if (speaking === e.id) { W.stopSpeak(); return; }
     W.stopSpeak();
+    var my = ++spkTok, done = function () { if (my === spkTok) W.stopSpeak(); };   // Ende der Wiedergabe setzt den Knopf zurueck (veraltete Rueckrufe nach stop/cancel zaehlen nicht)
     speaking = e.id; if (btn) btn.setAttribute('aria-pressed', 'true');
     var txt = /^(regler|messwert)$/.test(e.kat) && e.kopf ? e.kopf + ' ' + e.kurz : e.kurz;   // Regler/Messwerte: Kopfsatz (Titel, Typ, Lab, Pruefstand) mitsprechen, damit die Stimme den Kontext behaelt
-    if (S && typeof S.speak === 'function' && e.speak) S.speak(e.speak, e.kurz);
-    else if (S && typeof S.say === 'function') S.say(txt);
-    else if ('speechSynthesis' in root) { try { var u = new SpeechSynthesisUtterance(txt); u.lang = 'de-DE'; u.onend = W.stopSpeak; root.speechSynthesis.speak(u); } catch (x) {} }
-    if (btn) btn.title = (S && S.speak && e.speak) ? 'Aufnahme' : 'Gerätestimme';
+    var rec = false;
+    if (S && typeof S.speak === 'function' && e.speak) rec = S.speak(e.speak, e.kurz, '', done) === true;   // true = Aufnahme laeuft (Hash passt), sonst Geraetestimme
+    else if (S && typeof S.say === 'function') S.say(txt, done);
+    else if ('speechSynthesis' in root) { try { var u = new SpeechSynthesisUtterance(txt); u.lang = 'de-DE'; u.onend = u.onerror = done; root.speechSynthesis.speak(u); } catch (x) {} }
+    if (btn) btn.title = rec ? 'Aufnahme' : 'Gerätestimme';
   };
   W.stopSpeak = function () {
-    speaking = null;
+    speaking = null; spkTok++;
     try { if ('speechSynthesis' in root) root.speechSynthesis.cancel(); } catch (x) {}
     try { var S = root.Speak; if (S && S.stop) S.stop(); } catch (x) {}
     Array.prototype.forEach.call(document.querySelectorAll('.wk-speak[aria-pressed=true]'), function (b) { b.setAttribute('aria-pressed', 'false'); });

@@ -87,8 +87,8 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     <h2>Prüfansicht (Ausbilder)</h2>
     <p class="mute">Zeigt je Eintrag Status, Fragen-ID und Quelle. Kein Passwort nötig: Das Wiki enthält keine Lösungen und keine Fehlerfälle. Eric antwortet in der PDF; Status wird in den Dateien gepflegt.</p>
     <div class="bar"><span class="chips" id="pFilter" role="group" aria-label="Status filtern"></span><button type="button" class="btn" id="pCopy">Fragenliste kopieren</button></div>
-    <p class="mute" id="pN" role="status" aria-live="polite"></p>
-    <div class="tw pt"><table id="pTab"><thead><tr><th>Eintrag</th><th>Kategorie</th><th>Status</th><th>Frage</th><th>Quelle</th><th>Labs</th><th>Zeichen</th></tr></thead><tbody></tbody></table></div>
+    <div class="pbar" id="pBar"><div class="pfilt"><select id="pKat" aria-label="Kategorie filtern"></select><input id="pText" type="search" placeholder="Titel, ID, Frage…" aria-label="Einträge filtern" autocomplete="off"></div><p class="mute" id="pN" role="status" aria-live="polite"></p></div>
+    <div class="tw pt"><table id="pTab"><thead><tr><th>Eintrag</th><th>Kategorie</th><th>Status</th><th>Frage</th><th>Quelle</th><th>Labs</th><th class="c-z">Zeichen</th></tr></thead><tbody></tbody></table></div>
   </section>
   <section id="vEntry" class="view" hidden>
     <nav class="crumb" aria-label="Pfad"><a href="#" id="eBack">← Wiki</a><span id="eCrumb"></span></nav>
@@ -104,6 +104,8 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <script src="wiki-index.js"></script>
 <script src="wiki-index-regler.js"></script>
 <script src="wiki-bauteile.js"></script>
+<script src="sprache/index.js"></script>
+<script src="speak.js"></script>
 <script src="urheber.js"></script>
 <script>
 (function () {
@@ -111,10 +113,12 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   var W = window.Wiki, $ = function (s) { return document.querySelector(s); }, esc = W.esc, KAT = W.KAT, LABS = W.LABS;
   var KATS = ['bauteil', 'geraet', 'regler', 'messwert', 'begriff', 'formel', 'norm', 'lab'];
   var ICON = { bauteil: 'bauteil', geraet: 'geraet', bedien: 'geraet', regler: 'regler', messwert: 'messwert', begriff: 'begriff', formel: 'formel', norm: 'norm', lab: 'lab' };
-  var prevHash = '', pr = false, lastList = '', backList = '', curList = '', SY = {}, FV = {};
+  var prevHash = '', lastPruef = '#pruef', pr = false, lastList = '', backList = '', curList = '', SY = {}, FV = {};
   var MQ = window.matchMedia ? window.matchMedia('(min-width:1024px)') : { matches: false };   // P3: ab 1024 px Liste links, Eintrag rechts
   function wide() { return MQ.matches; }
-  function parseH(h) { var p = {}; String(h || '').split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); }); return p; }
+  function dec(s) { try { return decodeURIComponent(s); } catch (x) { return s; } }   // kaputtes %-Escape (von Hand bearbeiteter Link) darf das Routing nicht abbrechen
+  function parseH(h) { var p = {}; String(h || '').split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = dec(kv.slice(i + 1)); }); return p; }
+  function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
   try { history.scrollRestoration = 'manual'; } catch (e) {}   // Scrollposition der Listen verwalten wir selbst (Zurueck aus dem Eintrag)
   var KAT_SUB = { bauteil: 'LED, Widerstand, Elko …', geraet: 'Oszi, Multimeter, Bedienelemente', regler: 'Steuerwerte der Prüfstände', messwert: 'Anzeigen der Prüfstände' };
   try { $('#stand').textContent = 'Stand ' + (window.LAB_VERSION || ''); } catch (e) {}
@@ -251,7 +255,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     var bq = !pr && /^q=/.test(backList);
     if (!pr && backList && backList.indexOf('k=' + e.kat) === 0) bk = '#' + backList;   // Zurueck behaelt Lab-Filter, Filtertext und Scrollposition der Liste
     var L = (e.labs || [])[0], KL = /^(regler|messwert)$/.test(e.kat);
-    $('#eBack').href = pr ? '#pruef' : '#'; $('#eBack').textContent = pr ? '← Prüfansicht' : '← Wiki';
+    $('#eBack').href = pr ? lastPruef : '#'; $('#eBack').textContent = pr ? '← Prüfansicht' : '← Wiki';
     $('#eCrumb').innerHTML = pr ? '' : bq ? ' › <a href="#' + esc(backList) + '">Suche</a>' : ' › <a href="' + bk + '">' + esc(KAT[e.kat] ? KAT[e.kat][1] : e.kat) + '</a>' + (L && KL && LABS[L] ? ' › <a href="#k=' + e.kat + '&lab=' + L + '">' + esc(LABS[L][0]) + '</a>' : '');
     var two = wide() && !pr;
     if (two) {   // P3: ab 1024 px Liste links (die, aus der man kam, sonst die Kategorie bzw. das Lab des Eintrags), Eintrag rechts
@@ -266,20 +270,46 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   }
   // Pruefansicht (W6): alle Eintraege mit Status/Fragen-ID/Quelle, Filter, Fragenliste als Markdown (Format AUSBILDER.md)
   var STT = { entwurf: 'Entwurf', frage: 'Frage offen', geprueft: '✓ geprüft' };
-  function pruef(st) {
+  function pruef(st, kat, pf) {
     show('vPruef'); document.title = 'Prüfansicht – Tonfunk Wiki';
     W.needAll(true).then(function () {
       var all = W.all().slice().sort(function (a, b) { return a.id < b.id ? -1 : 1; });
       var cnt = { alle: all.length }; Object.keys(STT).forEach(function (k) { cnt[k] = all.filter(function (e) { return e.status === k; }).length; });
-      if (!(st in cnt)) st = 'alle';
-      $('#pFilter').innerHTML = ['alle', 'entwurf', 'frage', 'geprueft'].map(function (k) { return '<a class="chip" aria-pressed="' + (st === k) + '" href="#pruef' + (k === 'alle' ? '' : '&status=' + k) + '">' + (k === 'alle' ? 'Alle' : STT[k]) + ' <small>' + cnt[k] + '</small></a>'; }).join('');
-      var arr = st === 'alle' ? all : all.filter(function (e) { return e.status === st; });
-      $('#pN').textContent = arr.length + ' von ' + all.length + ' Einträgen';
-      $('#pTab tbody').innerHTML = arr.map(function (e) {
-        return '<tr><td><a href="#e=' + esc(e.id) + '&pruef">' + esc(e.titel) + '</a><br><small class="mute">' + esc(e.id) + '</small></td><td>' + esc(KAT[e.kat][0]) + '</td><td><span class="stt ' + esc(e.status) + '">' + esc(STT[e.status] || e.status) + '</span></td><td>' + esc(e.frage ? e.frage.replace('wiki__', '') : '') + '</td><td>' + esc(e.quelle || '') + '</td><td>' + esc((e.labs || []).join(', ')) + '</td><td>' + ((e.kurz || '').length + (e.lang || '').length) + '</td></tr>';
-      }).join('') || '<tr><td colspan="7" class="mute">Keine Einträge mit diesem Status.</td></tr>';
+      if (!has(cnt, st)) st = 'alle';
+      var nk = {}; all.forEach(function (e) { nk[e.kat] = (nk[e.kat] || 0) + 1; });
+      if (!has(nk, kat)) kat = ''; pf = pf || '';
+      var sel = $('#pKat'), txt = $('#pText');
+      sel.innerHTML = '<option value="">Alle Kategorien</option>' + Object.keys(nk).map(function (k) { return '<option value="' + esc(k) + '">' + esc((KAT[k] || [k])[0]) + ' (' + nk[k] + ')</option>'; }).join('');
+      sel.value = kat; txt.value = pf;
+      var rows = all.filter(function (e) { return st === 'alle' || e.status === st; }).map(function (e) {
+        return { e: e, k: W.fold([e.titel, e.id, e.frage || '', e.quelle || '', (e.labs || []).join(' ')].join(' ')),
+          h: '<tr><td><a href="#e=' + esc(e.id) + '&pruef">' + esc(e.titel) + '</a><small class="mute">' + esc(e.id) + '</small></td><td data-l="Kategorie">' + esc(KAT[e.kat][0]) + '</td><td data-l="Status"><span class="stt ' + esc(e.status) + '">' + esc(STT[e.status] || e.status) + '</span></td><td data-l="Frage">' + esc(e.frage ? e.frage.replace('wiki__', '') : '') + '</td><td data-l="Quelle">' + esc(e.quelle || '') + '</td><td data-l="Labs">' + esc((e.labs || []).join(', ')) + '</td><td class="c-z" data-l="Zeichen">' + ((e.kurz || '').length + (e.lang || '').length) + '</td></tr>' };
+      });
+      function ph() { return '#pruef' + (st === 'alle' ? '' : '&status=' + st) + (kat ? '&kat=' + kat : '') + (pf ? '&pf=' + encodeURIComponent(pf) : ''); }
+      lastPruef = ph();   // "← Prüfansicht" im Eintrag fuehrt mit Status, Kategorie und Filtertext zurueck
+      function chips() {
+        var q = (kat ? '&kat=' + kat : '') + (pf ? '&pf=' + encodeURIComponent(pf) : '');
+        $('#pFilter').innerHTML = ['alle', 'entwurf', 'frage', 'geprueft'].map(function (k) { return '<a class="chip" aria-pressed="' + (st === k) + '" href="#pruef' + (k === 'alle' ? '' : '&status=' + k) + q + '">' + (k === 'alle' ? 'Alle' : STT[k]) + ' <small>' + cnt[k] + '</small></a>'; }).join('');
+      }
+      function draw() {
+        var f = W.fold(pf.trim()), arr = rows.filter(function (r) { return (!kat || r.e.kat === kat) && (!f || r.k.indexOf(f) >= 0); });
+        $('#pN').textContent = arr.length + ' von ' + all.length + ' Einträgen';
+        $('#pTab tbody').innerHTML = arr.map(function (r) { return r.h; }).join('') || '<tr class="none"><td colspan="7" class="mute">Keine Einträge mit diesem Filter.</td></tr>';
+        chips(); pstick();
+      }
+      var tm = 0;
+      function sync() {   // Hash still nachfuehren (kein hashchange), damit Neuladen/Teilen den Filter behaelt
+        lastPruef = ph();
+        try { history.replaceState(null, '', lastPruef); } catch (x) {}
+      }
+      sel.onchange = function () { kat = sel.value; sync(); draw(); };
+      txt.oninput = function () { pf = txt.value; clearTimeout(tm); tm = setTimeout(function () { sync(); draw(); }, 120); };
+      draw();
     });
   }
+  // Hoehe der klebenden Filterleiste fuer den klebenden Tabellenkopf (CSS --pbh)
+  function pstick() { var b = $('#pBar'); document.documentElement.style.setProperty('--pbh', ($('#vPruef').hidden ? 0 : b.offsetHeight) + 'px'); }
+  window.addEventListener('resize', pstick);
   $('#pCopy').addEventListener('click', function () {
     var q = W.all().filter(function (e) { return e.status === 'frage'; }).sort(function (a, b) { return (parseInt((a.frage || '').replace(/\D/g, ''), 10) || 0) - (parseInt((b.frage || '').replace(/\D/g, ''), 10) || 0); });
     var md = '| Nr | Frage (Eintrags-ID) | Vorschlag | Antwort |\n|---|---|---|---|\n' + q.map(function (e) { return '| ' + (e.frage || '').replace('wiki__', '') + ' | ' + e.id + ' (' + e.titel + ') ' + (e.quelle || '').replace(/\|/g, '/') + ' | | |'; }).join('\n');
@@ -287,13 +317,13 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   });
   function route() {
     var h = location.hash.slice(1), p = {};
-    h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    h.split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = dec(kv.slice(i + 1)); });
     if (/^[kq]=/.test(prevHash) && !$('#vList').hidden) SY[prevHash] = window.scrollY;   // Scrollposition der verlassenen Liste merken
     W.stopSpeak(); hideRes();
     document.title = 'Tonfunk Wiki';
     var pm = /(^|&)pruef(&|$)/.test(h); pr = pm;
     if (p.e) { if (lastList && prevHash === lastList) backList = lastList; else if (!/^e=/.test(prevHash)) backList = ''; entry(p.e); }
-    else if (pm) pruef(p.status || 'alle');
+    else if (pm) pruef(p.status || 'alle', p.kat, p.pf);
     else if (p.k) { lastList = h; list(p.k, p.lab); window.scrollTo(0, SY[h] != null ? SY[h] : 0); }
     else if (p.q) { lastList = h; list('suche', p.lab, p.q); window.scrollTo(0, SY[h] != null ? SY[h] : 0); }
     else { kats(); recent(); show('vStart'); }

@@ -150,8 +150,31 @@ body[data-wiki=seite] *{box-sizing:border-box}
 @media(max-width:639px){body[data-wiki=seite] #verBadge{display:none}}
 body>svg[hidden]{position:absolute;width:0;height:0;overflow:hidden}   /* Symbol-Sprite: hidden gilt bei SVG nicht, sonst 150 px Leerraum oben */
 /* Pruefansicht (#pruef) */
-:where(body[data-wiki=seite],.wkd) .pt{border:1px solid var(--line);border-radius:12px;overflow-x:auto;background:var(--panel)}:where(body[data-wiki=seite],.wkd) .pt table{width:100%;border-collapse:collapse;font-size:14px;min-width:720px}:where(body[data-wiki=seite],.wkd) .pt th,:where(body[data-wiki=seite],.wkd) .pt td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}:where(body[data-wiki=seite],.wkd) .pt th{color:var(--mute);font-weight:600}:where(body[data-wiki=seite],.wkd) .pt tr:last-child td{border:0}:where(body[data-wiki=seite],.wkd) .pt .stt{font-weight:600}:where(body[data-wiki=seite],.wkd) .pt .stt.geprueft{color:var(--ok)}:where(body[data-wiki=seite],.wkd) .pt .stt.frage{color:var(--warn)}:where(body[data-wiki=seite],.wkd) .pt td a{color:var(--accent)}
+:where(body[data-wiki=seite],.wkd) .pt{border:1px solid var(--line);border-radius:12px;overflow:visible;overflow:clip;background:var(--panel)}:where(body[data-wiki=seite],.wkd) .pt table{width:100%;border-collapse:collapse;font-size:14px}:where(body[data-wiki=seite],.wkd) .pt th,:where(body[data-wiki=seite],.wkd) .pt td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}:where(body[data-wiki=seite],.wkd) .pt th{color:var(--mute);font-weight:600}:where(body[data-wiki=seite],.wkd) .pt tr:last-child td{border:0}:where(body[data-wiki=seite],.wkd) .pt .stt{font-weight:600}:where(body[data-wiki=seite],.wkd) .pt .stt.geprueft{color:var(--ok)}:where(body[data-wiki=seite],.wkd) .pt .stt.frage{color:var(--warn)}:where(body[data-wiki=seite],.wkd) .pt td a{color:var(--accent)}
 :where(body[data-wiki=seite],.wkd) #vPruef .bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:10px 0}
+/* Pruefansicht W11: Filterleiste (Kategorie, Text, Zaehler) und Tabellenkopf kleben; Handy = Karten */
+:where(body[data-wiki=seite],.wkd) .pbar{position:sticky;top:var(--hdr);z-index:30;margin:0 -16px 10px;padding:8px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+:where(body[data-wiki=seite],.wkd) .pfilt{display:flex;flex-wrap:wrap;gap:8px}
+:where(body[data-wiki=seite],.wkd) .pfilt select,:where(body[data-wiki=seite],.wkd) .pfilt input{min-height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-size:16px;min-width:0}
+:where(body[data-wiki=seite],.wkd) .pfilt select{flex:0 1 220px;max-width:100%}:where(body[data-wiki=seite],.wkd) .pfilt input{flex:1 1 200px}
+:where(body[data-wiki=seite],.wkd) .pbar #pN{margin:6px 2px 0;font-size:14px}
+:where(body[data-wiki=seite],.wkd) .pt td{overflow-wrap:anywhere}:where(body[data-wiki=seite],.wkd) .pt td:nth-child(2),:where(body[data-wiki=seite],.wkd) .pt td:nth-child(3){overflow-wrap:normal;hyphens:none}:where(body[data-wiki=seite],.wkd) .pt td:nth-child(3) .stt{white-space:nowrap}
+:where(body[data-wiki=seite],.wkd) .pt td:first-child a{display:inline-flex;align-items:center;min-height:44px;font-weight:600}
+:where(body[data-wiki=seite],.wkd) .pt td:first-child small{display:block;margin-top:-6px}
+:where(body[data-wiki=seite],.wkd) .pt .none td{padding:16px 12px}
+@media(min-width:640px){:where(body[data-wiki=seite],.wkd) .pt th{position:sticky;top:calc(var(--hdr) + var(--pbh,0px));z-index:5;background:var(--panel2);box-shadow:0 1px 0 var(--line)}}
+@media(max-width:1023px){:where(body[data-wiki=seite],.wkd) .pt .c-z{display:none}}
+@media(max-width:639px){
+:where(body[data-wiki=seite],.wkd) .pt table,:where(body[data-wiki=seite],.wkd) .pt tbody,:where(body[data-wiki=seite],.wkd) .pt tr,:where(body[data-wiki=seite],.wkd) .pt td{display:block}
+:where(body[data-wiki=seite],.wkd) .pt thead{display:none}
+:where(body[data-wiki=seite],.wkd) .pt tr{padding:6px 12px 10px;border-bottom:1px solid var(--line)}:where(body[data-wiki=seite],.wkd) .pt tr:last-child{border:0}
+:where(body[data-wiki=seite],.wkd) .pt td{border:0;padding:2px 0}
+:where(body[data-wiki=seite],.wkd) .pt td:empty{display:none}
+:where(body[data-wiki=seite],.wkd) .pt td[data-l]::before{content:attr(data-l) ": ";color:var(--mute);font-weight:500}
+:where(body[data-wiki=seite],.wkd) .pt td:first-child{padding:0}
+:where(body[data-wiki=seite],.wkd) .pbar{padding:6px 16px}
+:where(body[data-wiki=seite],.wkd) .pfilt select{flex:0 1 auto;max-width:50%}:where(body[data-wiki=seite],.wkd) .pfilt input{flex:1 1 0}
+}
 @media(max-width:639px){.we .wk-top{flex-direction:column}.we .bild{width:100px}}
 
 /* "?"-Knopf im Lab */

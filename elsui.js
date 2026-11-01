@@ -10,17 +10,8 @@
    Speicher: els.cur (laufende Arbeit), els.saves (gespeicherte Versuche), els.tab, els.speed, els.seen, els.fx, els.faults, els.q (Qualität), els.hint, els.rigsused, els.digital, els.autohint, sim.done (Aufgaben, gemeinsam mit den anderen Labs).
    Erweiterungen schreiben selbst: els.proto (Verlauf der Prüfprotokolle), els.design, S.protokoll (laufendes Protokoll, wird mit Speichern/Teilen/Abgabe mitgeführt). */
 (function (root) {
-  const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || ''); return v == null ? d : v; } catch (e) { return d; } };
-  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-  const lsRaw = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
-  const lsPut = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
-  const clone = o => JSON.parse(JSON.stringify(o));
-  const uid = () => 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const stat = (k, v, m) => { if (root.Badges) try { root.Badges.stat(k, v, m); } catch (e) {} };
-  const fin = v => typeof v === 'number' && isFinite(v);
-  const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
+  if (!root.RIGUI || !root.RIGUI.ok('els', '4f1dcca7')) { const a = document.getElementById('app') || document.body, d = document.createElement('div'); d.className = 'rigui-miss'; d.setAttribute('role', 'alert'); d.style.cssText = 'margin:12px;padding:12px 14px;border:2px solid #c0392b;border-radius:10px;background:#fff4f2;color:#5a1a12;font:15px/1.45 system-ui,sans-serif'; d.innerHTML = 'Der Oberfl\u00e4chen-Rahmen fehlt oder passt nicht zur Seite (rigui-base.js, rigui-pf.js). Bitte die Seite neu laden.' + (typeof navigator !== 'undefined' && navigator.onLine === false ? ' Du bist offline: Verbinde dich einmal mit dem Internet und lade die Seite danach neu, damit die fehlenden Dateien nachgeladen werden.' : '') + ' <button type="button" class="btn pri" onclick="location.reload()">Neu laden</button>'; if (a) a.insertBefore(d, a.firstChild); return; }
+  const { $, $$, AMP, B, NARROW_AR, QLEVELS, adig, ampKey, applyHit, assessOf, bgOf, canSound, choiceOpts, clamp, clickSnd, clone, confirmSheet, csvNum, defVal, esc, fauto, fin, fnum, fxOn, isWarn, limBadge, loadExampleByName, lsGet, lsPut, lsRaw, lsSet, margTxt, markDone, optNorm, packShare, parseCsv, pick, rowEnd, rowNorm, saveCsv, seqToRows, sgn, sheet, slPos, slVal, stat, taskDone, theme, toast, tstamp, typing, uid, unpackShare, FXKINDS, SPEEDS, dm } = root.RIGUI.pure('els', { root, loadExample, setCtl });
   const CORE = () => root.ELS_CORE;
   const DRAW = () => root.ELS_DRAW;
   const ORDER = ['koerper', 'netz', 'schutz', 'rcd', 'klassen', 'isolation', 'pruefplatz', 'regeln'];
@@ -52,84 +43,9 @@
     rcd: ['idn_zusatz', 'rcd_zeit', 'rcd_bereich'], klassen: ['ul_ac', 'ul_dc'], isolation: ['riso_sk1', 'riso_sk2', 'riso_sk3', 'upruef_iso', 'rpe_5m', 'rpe_zuschlag', 'ber_sk2'],
     pruefplatz: ['rpe_5m', 'riso_sk1', 'riso_sk2', 'ipe_sk1', 'ber_sk1', 'ber_sk2'], regeln: []
   };
-  const SIBASE = /^(Hz|F|H|Ω|V|A|W|s)$/;
-  const decs = step => { step = +step || 0; if (!step || step >= 1) return 0; return Math.min(3, Math.ceil(-Math.log10(step) - 1e-9)); };
-  const fnum = (v, d) => (fin(v) ? (+v).toFixed(d == null ? 1 : d).replace('.', ',') : '–');
-  const adig = v => { v = Math.abs(v); return v >= 100 ? 0 : v >= 10 ? 1 : v >= 1 ? 2 : v >= 0.1 ? 3 : 4; };
-  const fauto = v => (fin(v) ? fnum(v, adig(v)) : '–');
-  const PRE = [[1e9, 'G'], [1e6, 'M'], [1e3, 'k'], [1, ''], [1e-3, 'm'], [1e-6, 'µ'], [1e-9, 'n'], [1e-12, 'p']];
-  function fe(x, unit) {
-    const C = CORE(); if (C && typeof C.fmtEng === 'function') { try { const t = C.fmtEng(x, unit || ''); if (typeof t === 'string' && t) return t; } catch (e) {} }
-    if (!fin(x)) return '–'; if (x === 0) return '0 ' + (unit || ''); const a = Math.abs(x), p = PRE.find(q => a >= q[0] * 0.9995) || PRE[PRE.length - 1], v = x / p[0];
-    return String(+v.toFixed(Math.abs(v) >= 100 ? 0 : Math.abs(v) >= 10 ? 1 : 2)).replace('.', ',') + ' ' + p[1] + (unit || '');
-  }
-  function parseNum(s) {
-    const C = CORE(); if (typeof s === 'number') return fin(s) ? s : NaN;
-    if (C && typeof C.parseNum === 'function') { const v = C.parseNum(s); if (fin(v)) return v; return NaN; }
-    return parseFloat(String(s == null ? '' : s).replace(/\s/g, '').replace(',', '.'));
-  }
   /* Töne nur nach einer Bedienung durch den Nutzer (sonst Warnung des Browsers) */
-  const canSound = () => !root.navigator || !navigator.userActivation || navigator.userActivation.hasBeenActive;
-  const clickSnd = (k, v) => { if (root.LochFX && canSound()) try { root.LochFX.sound(k || 'tick', v); } catch (e) {} };
-  const pad2 = n => String(n).padStart(2, '0');
-  const AMP = { gruen: { sym: '✓', name: 'grün', cls: 'ok' }, gelb: { sym: '!', name: 'gelb', cls: 'warnc' }, rot: { sym: '✗', name: 'rot', cls: 'bad' }, grau: { sym: '–', name: 'grau', cls: '' } };
-  const ampKey = a => { a = String(a || 'grau').toLowerCase().replace('ü', 'ue'); return AMP[a] ? a : 'grau'; };
 
   /* ============================================================ Fenster, Meldungen, Dialoge */
-  function toast(m) { const t = $('#toast'); if (!t) return; t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), Math.max(2400, String(m).length * 55)); }
-  function sheet(title, build, onClose) {
-    const bd = document.createElement('div'); bd.className = 'backdrop';
-    bd.innerHTML = `<div class="sheet" role="dialog" aria-label="${esc(title)}"><div class="sh-h"><b>${esc(title)}</b><button class="x" aria-label="Schließen">✕</button></div><div class="sh-b"></div></div>`;
-    document.body.appendChild(bd);
-    let closed = false;
-    const close = () => { if (closed) return; closed = true; bd.remove(); if (onClose) onClose(); };
-    bd.addEventListener('pointerdown', e => { if (e.target === bd) close(); });
-    $('.x', bd).onclick = close;
-    build($('.sh-b', bd), close);
-    return close;
-  }
-  function pick(title, options, opt) {
-    opt = opt || {};
-    return new Promise(res => {
-      let done = false; const fin2 = v => { if (!done) { done = true; res(v); } };
-      sheet(title, (b, close) => {
-        b.innerHTML = (opt.intro ? `<p class="hint2" style="margin-top:0">${esc(opt.intro)}</p>` : '') + '<div id="pl"></div>';
-        $('#pl', b).innerHTML = options.map((o, i) => `<button class="row" data-i="${i}"${o.disabled ? ' disabled' : ''}>${o.icon ? `<span class="ric">${o.icon}</span>` : ''}<div class="grow"><b>${esc(o.label)}</b>${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</div>${o.mark ? `<span class="lv">${esc(o.mark)}</span>` : ''}</button>`).join('');
-        b.addEventListener('click', e => { const r = e.target.closest('.row[data-i]'); if (!r || r.disabled) return; fin2(options[+r.dataset.i].value); close(); });
-      }, () => fin2(null));
-    });
-  }
-  function ask(title, fields, opt) {
-    opt = opt || {};
-    return new Promise(res => {
-      let done = false; const fin2 = v => { if (!done) { done = true; res(v); } };
-      sheet(title, (b, close) => {
-        b.innerHTML = (opt.intro ? `<p class="hint2" style="margin-top:0">${esc(opt.intro)}</p>` : '') + fields.map((f, i) =>
-          `<label class="f"><span>${esc(f.label)}</span><input id="ak${i}" type="text" inputmode="${f.type === 'number' ? 'decimal' : 'text'}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(f.value == null ? '' : f.value)}"></label>`).join('') +
-          '<div id="akErr" class="hint2 err"></div><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>OK</button></div>';
-        const ok = () => {
-          const out = {};
-          for (let i = 0; i < fields.length; i++) {
-            const f = fields[i], raw = $('#ak' + i, b).value;
-            if (f.type === 'number') { const v = parseNum(raw); if (!fin(v)) { $('#akErr', b).textContent = f.label + ': Bitte eine Zahl eingeben.'; return; } out[f.key] = v; } else out[f.key] = raw;
-          }
-          fin2(out); close();
-        };
-        $('[data-c]', b).onclick = close; $('[data-ok]', b).onclick = ok;
-        b.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ok(); } });
-        if (!('ontouchstart' in window)) setTimeout(() => { const i = $('#ak0', b); if (i) { i.focus(); i.select(); } }, 60);
-      }, () => fin2(null));
-    });
-  }
-  function confirmSheet(title, text, okLabel, danger) {
-    return new Promise(res => {
-      let done = false; const fin2 = v => { if (!done) { done = true; res(v); } };
-      sheet(title, (b, close) => {
-        b.innerHTML = `<p style="margin-top:0">${text}</p><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn ${danger ? 'danger' : 'pri'}" data-ok>${esc(okLabel || 'OK')}</button></div>`;
-        $('[data-c]', b).onclick = close; $('[data-ok]', b).onclick = () => { fin2(true); close(); };
-      }, () => fin2(false));
-    });
-  }
   root.LabUI = { sheet, esc, toast, userName: () => lsRaw('lm4.name', ''), LAB: 'els' };
   root.sheet = sheet; root.toast = toast;
 
@@ -137,12 +53,9 @@
     const r = root.ELS_RIGS;
     return r && r.defs && r.defs[id] ? r.defs[id] : null;
   };
-  const rigName = id => { const d = defOf(id); return (d && d.name) || (RIGMETA[id] || {}).name || id; };
-  const rigIcon = id => { const d = defOf(id); return (d && d.icon) || (RIGMETA[id] || {}).icon || '🎛️'; };
 
   /* ============================================================ Zustand */
   const mqReduce = (root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)')) || { matches: false };
-  const SPEEDS = [0.1, 0.5, 1, 2, 5];
   const S = {
     tab: lsRaw('els.tab', 'rig'), rigId: null, rig: null, refRig: null, err: '', name: 'Neuer Versuch', id: null, task: null, dirty: false,
     running: false, speed: +lsRaw('els.speed', '1') || 1, digital: lsRaw('els.digital', '0') === '1',
@@ -154,7 +67,6 @@
   if (!TABS.some(x => x[0] === S.tab)) S.tab = 'rig';
   if (!SPEEDS.includes(S.speed)) S.speed = 1;
   if (!['auto', 'hoch', 'mittel', 'niedrig'].includes(S.q.mode)) S.q.mode = 'auto';
-  const QLEVELS = ['hoch', 'mittel', 'niedrig'];
 
   /* ---- Tastenkürzel: EINE Tabelle für Behandler, Hilfe-Blatt und Menü (Regel 5) ---- */
   const KEYS = [
@@ -170,42 +82,20 @@
     { id: 'enter', keys: ['Eingabe', 'F5'], ext: true, t: 'Starten und anhalten (gilt auch außerhalb der Bildfläche)' },
     { id: 'help', keys: ['?'], ext: true, t: 'Diese Übersicht' }
   ];
-  function keysHtml() {
-    const kd = a => a.map(x => `<code>${esc(x)}</code>`).join(' oder ');
-    return '<table>' + KEYS.map(k => `<tr><td class="nw">${kd(k.keys)}</td><td>${esc(k.t)}</td></tr>`).join('') + '</table><p class="hint2">Die Kürzel gelten nicht, solange ein Eingabefeld oder ein Fenster offen ist.</p>';
-  }
   root.ELS_KEYS = KEYS;
 
   let drawErr = false, curT = 0, taskRes = null; const taskAns = {};
   /* Auswahlfelder: Einträge als Text oder { value, label } erlaubt; die Oberfläche arbeitet mit Kopien, die Definition des Prüfstands bleibt unberührt */
-  const optNorm = o => (Array.isArray(o) ? o : []).map(x => (x && typeof x === 'object' ? { value: x.value, label: x.label != null ? x.label : String(x.value) } : { value: x, label: String(x) }));
   let ctlCache = { rig: null, list: [] };
   const ctlsOf = () => {
     if (!S.rig) return [];
     if (ctlCache.rig !== S.rig) { const src = S.rig.controls || (defOf(S.rigId) || {}).controls || []; ctlCache = { rig: S.rig, list: src.filter(Boolean).map(c => (c.type === 'select' ? Object.assign({}, c, { options: optNorm(c.options) }) : c)) }; }
     return ctlCache.list;
   };
-  const metersOf = () => (S.rig ? (S.rig.meters || (defOf(S.rigId) || {}).meters || []) : []);
   const ctlDef = (key, list) => (list || ctlsOf()).find(c => c.key === key);
-  const hasCtl = k => !!ctlDef(k);
   /* Wert an die Definition anpassen (Auswahl über Wert oder Beschriftung, Schieber begrenzen); undefined = nicht passend */
-  function coerce(def, v) {
-    if (!def) return undefined;
-    if (v && typeof v === 'object' && 'rel' in v && def.type === 'slider') v = def.min + (def.max - def.min) * (+v.rel || 0);
-    if (def.type === 'slider') { v = typeof v === 'string' ? parseNum(v) : +v; if (!fin(v)) return undefined; return clamp(v, def.min, def.max); }
-    if (def.type === 'switch' || def.type === 'button') return !!v;
-    if (def.type === 'select') {
-      const o = def.options || [];
-      const m = o.find(x => x.value === v) || o.find(x => String(x.value) === String(v)) || (typeof v === 'number' ? o.find(x => typeof x.value === 'number' && Math.abs(x.value - v) <= 1e-9 * Math.max(1, Math.abs(v))) : null) || o.find(x => String(x.label).toLowerCase() === String(v).toLowerCase());
-      return m ? m.value : undefined;
-    }
-    return v;
-  }
 
   /* ============================================================ Prüfstand wechseln, Steuerwerte */
-  function resetRun() {
-    S.running = false; S.simT = 0; S.live = null; S.seqRes = null; S.fired = false; S.diag = []; S.diagSeen = {}; S.fx = { amp: null, kazoo: false, flags: {} };
-  }
   function setRig(id, o) {
     o = o || {};
     if (!ORDER.includes(id)) id = ORDER[0];
@@ -220,17 +110,7 @@
     if (EXTHOST[S.tab]) renderExt(S.tab);
     saveCurSoon();
   }
-  const SELFIRST = c => (c && (c.type === 'select' || c.type === 'switch') ? 0 : 1);
   /* mehrere Steuerwerte setzen: map { key: Wert }, Auswahlfelder zuerst (Fall, Stapel, Prüfart), nur passende Schlüssel, ohne Hinweise */
-  function applyCtl(map) {
-    if (!S.rig || !map) return;
-    const keys = Object.keys(map).sort((a, b) => SELFIRST(ctlDef(a)) - SELFIRST(ctlDef(b)));
-    keys.forEach(k => {
-      const v = coerce(ctlDef(k), map[k]); if (v === undefined) return;
-      try { S.rig.setControl(k, v); S.ctl[k] = v; } catch (e) { console.error('Steuerwert ' + k, e); }
-    });
-    syncCtl(true);
-  }
   function setCtl(key, val, silent) {
     if (!S.rig || S.readonly) return false;
     const def = ctlDef(key), v = coerce(def, val); if (v === undefined) return false;
@@ -243,40 +123,15 @@
     }
     readState(); syncCtl(); return true;
   }
-  const allCtl = () => {
-    if (!S.rig) return {};
-    if (typeof S.rig.getControls === 'function') { try { const o = S.rig.getControls(); if (o && typeof o === 'object') return clone(o); } catch (e) {} }
-    const o = {}; ctlsOf().forEach(c => { try { const v = S.rig.getControl(c.key); if (v !== undefined) o[c.key] = v; } catch (e) {} }); return o;
-  };
-  const curRows = () => S.rows[S.rigId] || (S.rows[S.rigId] = []);
-  const snapshot = () => { let s = null; try { s = S.rig && typeof S.rig.snapshot === 'function' ? S.rig.snapshot() : null; } catch (e) { s = null; } return s ? clone(s) : { ctl: allCtl() }; };
   function saveCurSoon() { clearTimeout(curT); curT = setTimeout(saveCur, 400); }
   function saveCur() { if (!S.rig) return; lsSet('els.cur', { rig: S.rigId, ctl: allCtl(), ref: S.ref, refMode: S.refMode, rows: S.rows, name: S.name, id: S.id, task: S.task ? S.task.id : null, dirty: S.dirty, protokoll: S.protokoll }); }
   function usedRig() {
     if (!S.rigId || !defOf(S.rigId)) return;
     const a = lsGet('els.rigsused', []), s = new Set(Array.isArray(a) ? a : []); s.add(S.rigId); lsSet('els.rigsused', [...s]); stat('elsrigs', s.size, 'max');
   }
-  function readState() { if (!S.rig) { S.st = null; return null; } try { S.st = S.rig.state(); } catch (e) { S.st = S.st || null; } return S.st; }
 
   /* ---- Prüfstandwahl und Voreinstellungen ---- */
-  function buildPick() {
-    $('#rigPick').innerHTML = ORDER.map(id => {
-      const have = !!defOf(id);
-      return `<button class="chip${id === S.rigId ? ' on' : ''}${have ? '' : ' miss'}" data-rig="${id}">${rigIcon(id)} ${esc(rigName(id))}${have ? '' : ' ⚠'}</button>`;
-    }).join('');
-  }
   $('#rigPick').addEventListener('click', e => { const b = e.target.closest('[data-rig]'); if (b) usePick(b.dataset.rig); });
-  function usePick(id) {
-    if (id === S.rigId) return;
-    if (S.task) { toast('Während einer Aufgabe ist der Prüfstand fest. Beende zuerst die Aufgabe.'); return; }
-    stash(); S.name = 'Neuer Versuch'; S.id = null; S.dirty = false; setRig(id); toast('Prüfstand: ' + rigName(id));
-  }
-  const presetsOf = () => (S.rig && (S.rig.presets || (defOf(S.rigId) || {}).presets)) || [];
-  function buildPresets() {
-    const P = presetsOf(), el = $('#presetBar');
-    if (!P.length) { el.innerHTML = ''; return; }
-    el.innerHTML = `<div class="gh gh0">Voreinstellung</div><div class="chips">${P.map(p => `<button class="chip s${S.preset === p.id ? ' on' : ''}" data-pre="${esc(p.id)}">${esc(p.name)}</button>`).join('')}</div>`;
-  }
   $('#presetBar').addEventListener('click', e => {
     const b = e.target.closest('[data-pre]'); if (!b || !S.rig) return;
     const p = presetsOf().find(x => String(x.id) === b.dataset.pre); if (!p) return;
@@ -290,10 +145,6 @@
 
   /* ---- Platzhalter, wenn ein Prüfstand fehlt ---- */
   const FILES = ['elscore.js', 'elscore-pruef.js', 'elsdraw.js', 'elsrig-base.js', 'elsrig-koerper.js', 'elsrig-netz.js', 'elsrig-schutz.js', 'elsrig-rcd.js', 'elsrig-klassen.js', 'elsrig-isolation.js', 'elsrig-pruefplatz.js', 'elsrig-regeln.js', 'elsdata.js', 'elstasks1.js', 'elstasks2.js'];
-  function placeholderHtml() {
-    const why = S.err ? 'Der Prüfstand konnte nicht gestartet werden: ' + esc(S.err) : 'Die Datei für „' + esc(rigName(S.rigId)) + '“ ist noch nicht geladen.';
-    return `<div class="ph2"><b>Prüfstand noch nicht geladen</b>${why}<br><button class="btn" data-retry>Erneut prüfen</button></div>`;
-  }
   function retryLoad() {
     const want = FILES.filter(f => {
       if (f === 'elscore.js') return !root.ELS_CORE;
@@ -331,9 +182,6 @@
   }
   function updateChain() { $$('#chainBar .eb').forEach(n => n.classList.toggle('hot', n.dataset.lv === S.ebene)); }
   let ampSig = '';
-  const sgn = v => (v > 0 ? '+' : '');
-  function assessOf(rig) { let a = null; try { a = rig && typeof rig.assess === 'function' ? rig.assess() : null; } catch (e) { a = null; } return a && typeof a === 'object' ? a : null; }
-  const margTxt = a => (a && fin(a.margin) ? 'Marge ' + fnum(a.margin, 2) + (a.marginUnit ? ' ' + a.marginUnit : '') : '');
   const ampelHinweis = () => { const C = CORE(); return (C && C.TEXTS && typeof C.TEXTS.ampelHinweis === 'string' && C.TEXTS.ampelHinweis) || 'Grün heißt nicht: gefahrlos anfassen.'; };
   const simText = () => { const C = CORE(); return (C && C.TEXTS && typeof C.TEXTS.simOnly === 'string' && C.TEXTS.simOnly) || 'Simulation – kein Arbeiten an echter Netzspannung ohne Elektrofachkraft.'; };
   function updateAmp(force) {
@@ -348,25 +196,9 @@
     const cv = $('#cv'); if (cv) cv.setAttribute('aria-label', 'Bild des Prüfstands ' + rigName(S.rigId) + '. Ampel ' + A.name + (mt ? ', ' + mt : '') + '. ' + (a.text || ''));
   }
   /* Hinweisband (simOnly): einmal je Anlage, schließbar (nur für diese Sitzung) */
-  function updateSimBand() { const el = $('#simBand'); if (!el) return; $('#simTx').textContent = simText(); el.hidden = !!S.simClosed[S.rigId]; }
   $('#simX').onclick = () => { S.simClosed[S.rigId] = 1; updateSimBand(); };
   /* Grenzwerte mit Status (Quelle ELS_CORE.limits): belegt oder Übungswert (A) */
-  const limGet = id => { const C = CORE(); try { const l = C && typeof C.limit === 'function' ? C.limit(id) : null; return l && l.ok !== false && l.id ? l : null; } catch (e) { return null; } };
-  const limBadge = l => (l.status === 'belegt' ? '<span class="bdg ok" title="belegt: Prüfungspool oder Ausbilder">✓ belegt</span>' : '<span class="bdg uw" title="Übungswert: Der Ausbilder gleicht ab">Übungswert (A)</span>');
-  const CMPSYM = { '<=': '≤', '>=': '≥', '=': '=' };
-  const limSrc = l => (l.status !== 'belegt' ? 'Der Ausbilder gleicht ab' + (l.frage ? ' (' + l.frage + ')' : '') : /^pool:/.test(l.quelle || '') ? 'Quelle: Prüfungs-Pool ' + l.quelle.slice(5) : l.quelle === 'toni' ? 'Quelle: Ausbilder' : 'Quelle: ' + (l.quelle || '–'));
-  function limIds() { const ids = new Set(RIGLIMITS[S.rigId] || []); ctlsOf().forEach(c => { if (c && c.limit) ids.add(c.limit); }); metersOf().forEach(m => { if (m && m.limit) ids.add(m.limit); }); return [...ids]; }
-  function buildLimits() {
-    const card = $('#cLim'), host = $('#limList'); if (!card || !host) return;
-    const L = limIds().map(limGet).filter(Boolean);
-    card.hidden = !L.length; host.innerHTML = L.map(l => `<div class="lim"><span>${esc(l.text || l.id)}</span><span><b>${esc(CMPSYM[l.cmp] || '')} ${esc(fauto(l.value))}${l.unit ? ' ' + esc(l.unit) : ''}</b> ${limBadge(l)}</span><small>${esc(limSrc(l))}</small></div>`).join('');
-  }
   /* ============================================================ Vorher/Nachher: Merken, Geisterbild, Wischer */
-  function buildRefRig() {
-    S.refRig = null; if (!S.ref || !S.rig) return; const d = defOf(S.rigId); if (!d) return;
-    try { const r = d.create({ seed: 1 }); if (typeof r.restore === 'function') r.restore(clone(S.ref)); S.refRig = r; } catch (e) { console.error('Referenz:', e); S.refRig = null; }
-  }
-  function setRef(snap) { S.ref = snap ? clone(snap) : null; if (!S.ref) S.refMode = 'nachher'; buildRefRig(); buildBA(); updateAmp(true); extRefresh(); S.dirty = true; saveCurSoon(); }
   function merken() {
     if (!S.rig) { toast('Der Prüfstand fehlt.'); return; }
     let s = null; try { s = S.rig.snapshot(); } catch (e) { s = null; } if (!s) { toast('Dieser Prüfstand kann seinen Zustand nicht merken.'); return; }
@@ -380,16 +212,6 @@
   function toggleWipe() {
     if (!S.ref) { toast('Merke zuerst einen Zustand: Taste M oder „Merken“.'); return; }
     S.refMode = S.refMode === 'wischer' ? 'nachher' : 'wischer'; buildBA(); updateAmp(true); stat('elsref', 1, 'max'); if (S.tab !== 'rig') setTab('rig');
-  }
-  function backToRef() {
-    if (!S.ref || !S.rig) return; try { S.rig.restore(clone(S.ref)); } catch (e) { console.error(e); toast('Zurückstellen nicht möglich.'); return; }
-    S.refMode = 'nachher'; S.dirty = true; saveCurSoon(); syncCtl(true); readState(); buildBA(); updateAmp(true); toast('Zurück zum Vorher: Die Einstellungen sind wieder wie beim Merken.');
-  }
-  function buildBA() {
-    const el = $('#baBar'); if (!el) return;
-    const mode = (v, t, key) => `<button data-bm="${v}" class="${S.refMode === v ? 'on' : ''}" aria-pressed="${S.refMode === v}" title="${esc(key)}">${t}</button>`;
-    el.innerHTML = `<div class="barow"><button class="chip s" data-ba="merk" title="Taste M">📌 Merken</button>${S.ref ? `<span class="seg" aria-label="Anzeige">${mode('vorher', 'Vorher', 'V')}${mode('nachher', 'Nachher', 'V')}${mode('wischer', 'Wischer', 'W')}</span><button class="chip s${S.ghost ? ' on' : ''}" data-ba="ghost" aria-pressed="${S.ghost}" title="Vorher als blasses Geisterbild hinter dem Bild">👻 Geisterbild</button><button class="chip s" data-ba="back">↩ Zurück zum Vorher</button><button class="chip s" data-ba="clear">✕ Vergessen</button>` : '<span class="hint2 inl">Merke einen Zustand, ändere dann etwas und vergleiche: Vorher | Nachher | Wischer.</span>'}</div>`;
-    const wb = $('#wipeBar'); if (wb) { wb.hidden = !(S.ref && S.refMode === 'wischer'); updateWipeDom(); }
   }
   $('#baBar').addEventListener('click', e => {
     const b = e.target.closest('[data-ba]'), m = e.target.closest('[data-bm]');
@@ -410,21 +232,7 @@
 
   /* ============================================================ Bedienpult aus rig.controls (nach Schutzebenen gruppiert, mehrere Instanzen synchron) */
   let panels = [];
-  const slPos = (c, v) => { if (c.scale === 'log' && c.min > 0 && c.max > c.min) return Math.round(1000 * Math.log(clamp(v, c.min, c.max) / c.min) / Math.log(c.max / c.min)); return Math.round(1000 * (clamp(v, c.min, c.max) - c.min) / ((c.max - c.min) || 1)); };
-  function slVal(c, pos) {
-    let v = c.scale === 'log' && c.min > 0 && c.max > c.min ? c.min * Math.pow(c.max / c.min, pos / 1000) : c.min + (c.max - c.min) * pos / 1000;
-    if (c.step && c.scale !== 'log') v = Math.round(v / c.step) * c.step; else if (c.scale === 'log') { const d = fin(v) ? Math.pow(10, Math.floor(Math.log10(Math.max(1e-12, v))) - 2) : 0.01; v = Math.round(v / d) * d; }
-    return clamp(+v.toPrecision(10), c.min, c.max);
-  }
-  const siUnit = c => !!(c.unit && SIBASE.test(c.unit));
   /* Anzeige: Werte in SI-Basiseinheit (Ω, V, A, s ...) mit Vorsatz (1,5 kΩ), sonst in der Einheit des Reglers (mm², m, mA, nF ...) */
-  const ctlShow = (c, v) => (siUnit(c) && c.unitKind !== 'plain' ? fe(v, c.unit) : fnum(v, c.scale === 'log' ? adig(v) : decs(c.step)) + (c.unit ? ' ' + c.unit : ''));
-  function ctlParse(c, text) {
-    let t = String(text == null ? '' : text).trim(); if (!t) return NaN;
-    if (siUnit(c)) return parseNum(t);
-    if (c.unit && t.endsWith(c.unit)) t = t.slice(0, -c.unit.length).trim();
-    const v = parseFloat(t.replace(/\s/g, '').replace(',', '.')); return fin(v) ? v : NaN;
-  }
   function ctlHtml(c) {
     const k = esc(c.key), L = EBENEN[ebeneOf(c)], lim = c.limit ? limGet(c.limit) : null, bd = lim ? ' ' + limBadge(lim) : '', help = c.help ? `<small class="hp">${esc(c.help)}</small>` : '', lv = `data-lv="${ebeneOf(c)}" style="--lc:${L.color}"`;
     if (c.type === 'slider') return `<div class="ct" data-k="${k}" data-t="slider" ${lv}><div class="ctl"><span>${esc(c.label)}${bd}</span><span class="vi"><input class="num" inputmode="decimal" autocomplete="off" aria-label="${esc(c.label)}, Wert eingeben"></span></div>${help}<input type="range" min="0" max="1000" step="1" value="0" aria-label="${esc(c.label)}"></div>`;
@@ -438,7 +246,6 @@
     return '';
   }
   /* Auslöse-Taste oben im Bedienpult (rig.fire(): je Anlage Berührung, Körperschluss, Prüftaste, Messung, nächster Schritt) */
-  const fireHtml = () => (canFire() && !hasCtl('fire') ? `<div class="ct p0" data-fire="1"><button class="bt fire" title="Taste F" aria-label="${esc(FIRELBL[S.rigId] || 'Auslösen')} (Taste F)">⚡ ${esc(FIRELBL[S.rigId] || 'Auslösen')}</button><div class="bth"><small class="hp" style="padding:0 12px">${esc(FIREHINT[S.rigId] || '')}</small></div></div>` : '');
   function buildPanel(host, filter, title) {
     panels = panels.filter(p => p.host !== host && p.host.isConnected);
     if (!S.rig) { host.innerHTML = '<div class="card">' + placeholderHtml() + '</div>'; return; }
@@ -481,31 +288,6 @@
     if (S.rigId === 'rcd') { let m = {}; try { m = S.rig.readMeters() || {}; } catch (e) { m = {}; } if (+m.ausgeloest > 0) fxPlay('click', 0.25); }
     return true;
   }
-  function wirePanel(H) {
-    let hold = null;
-    H.addEventListener('input', e => {
-      const inp = e.target.closest('input[type=range]'); if (!inp) return; const el = inp.closest('.ct'), c = ctlDef(el.dataset.k); if (c) setCtl(c.key, slVal(c, +inp.value));
-    });
-    H.addEventListener('change', e => {
-      const num = e.target.closest('input.num'), sel = e.target.closest('select');
-      if (num) { const el = num.closest('.ct'), c = ctlDef(el.dataset.k); if (!c) return; const v = ctlParse(c, num.value); if (fin(v)) setCtl(c.key, v); syncCtl(true); return; }
-      if (sel) { const el = sel.closest('.ct'), c = ctlDef(el.dataset.k); if (c) setCtl(c.key, (c.options || [])[+sel.value].value); }
-    });
-    H.addEventListener('click', e => {
-      const sw = e.target.closest('.sw'), sg = e.target.closest('.seg button, .ctrlchips .chip'), sn = e.target.closest('[data-snap]'), fb = e.target.closest('.bt.fire');
-      if (fb) { doFire(); return; }
-      if (sw) { const k = sw.closest('.ct').dataset.k; setCtl(k, !S.rig.getControl(k)); clickSnd('click'); }
-      else if (sg) { const el = sg.closest('.ct'), c = ctlDef(el.dataset.k); if (c) { setCtl(c.key, (c.options || [])[+sg.dataset.i].value); clickSnd('tick'); } }
-      else if (sn) { const el = sn.closest('.ct'), c = ctlDef(el.dataset.k); if (c) { setCtl(c.key, +sn.dataset.snap); syncCtl(true); clickSnd('tick'); } }
-    });
-    H.addEventListener('pointerdown', e => {
-      const b = e.target.closest('.bt:not(.fire)'); if (!b || !S.rig) return; e.preventDefault(); const k = b.closest('.ct').dataset.k;
-      try { b.setPointerCapture(e.pointerId); } catch (x) {} hold = { id: e.pointerId, k }; setCtl(k, true); clickSnd('tick');
-    });
-    const up = e => { if (!hold || (e.pointerId != null && hold.id !== e.pointerId)) return; const k = hold.k; hold = null; setCtl(k, false, true); };
-    H.addEventListener('pointerup', up); H.addEventListener('pointercancel', up); H.addEventListener('lostpointercapture', up);
-    H.addEventListener('contextmenu', e => { if (e.target.closest('.bt,.sw')) e.preventDefault(); });
-  }
 
   /* ============================================================ Messgeräte aus rig.meters */
   let mEls = [];
@@ -519,7 +301,6 @@
     }).join('');
     mEls = $$('.mt', H).map((el, i) => ({ el, m: ms[i], cv: $('canvas', el), v: $('.v', el), disp: null, drawn: null, txt: '', warn: false }));
   }
-  const isWarn = (m, v) => (fin(+m.warnAbove) && v > +m.warnAbove) || (fin(+m.warnBelow) && v < +m.warnBelow);
   /* Farben der Zeigerinstrumente aus den Seitenvariablen (Hell und Dunkel) */
   let gpT = 0, gpV = null;
   function gaugePal() {
@@ -567,7 +348,6 @@
   const cvfx = document.createElement('canvas'); cvfx.id = 'cvfx'; cvfx.setAttribute('aria-hidden', 'true'); cvfx.style.pointerEvents = 'none'; cvw.appendChild(cvfx);
   const fxg = cvfx.getContext('2d'); let fxDrew = false;
   /* Handybreite: Die Szenen legen sich nach der echten Pixelgröße aus, ein hohes Bild gibt ihnen Platz für die Beschriftungen */
-  const NARROW_AR = '5/6';
   function worldSz() { try { let w = S.rig && S.rig.worldSize; if (typeof w === 'function') w = w.call(S.rig); if (w && w.w > 0 && w.h > 0) return w; } catch (e) {} return { w: 960, h: 600 }; }
   function fitCanvas() {
     const ws = worldSz(), narrow = (cvw.parentElement ? cvw.parentElement.clientWidth : 1000) < 600, ar = narrow ? NARROW_AR : ws.w + '/' + ws.h; if (cvw.style.aspectRatio !== ar) cvw.style.aspectRatio = ar;
@@ -579,22 +359,8 @@
   }
   if (root.ResizeObserver) new ResizeObserver(() => fitCanvas()).observe(cvw);
   root.addEventListener('resize', () => { fitCanvas(); redrawTab(); updateMeters(0, true); });
-  const isDark = () => { const a = document.documentElement.getAttribute('data-theme'); if (a === 'dark') return true; if (a === 'light') return false; try { return !(root.matchMedia && root.matchMedia('(prefers-color-scheme: light)').matches); } catch (e) { return true; } };
-  const theme = () => (isDark() ? 'dark' : 'light');
-  const bgOf = () => (getComputedStyle(document.documentElement).getPropertyValue('--cv') || '#14181c').trim();
 
   /* ---- Qualitätsstufen (SPEC 6.4): Bildzeit (gleitender Mittelwert über 30 Bilder) steuert eine Stufe zurück oder hoch ---- */
-  const reduced = () => !!mqReduce.matches;
-  const curQ = () => (reduced() ? 'niedrig' : S.q.mode === 'auto' ? S.q.level : S.q.mode);
-  function qualityFeed(ms, now) {
-    if (S.q.mode !== 'auto' || reduced() || !fin(ms)) return;
-    const q = S.q; now = now == null ? performance.now() : now;
-    q.ms.push(ms); if (q.ms.length > 30) q.ms.shift(); if (q.ms.length < 30) return;
-    const avg = q.ms.reduce((a, b) => a + b, 0) / q.ms.length, i = QLEVELS.indexOf(q.level);
-    if (avg > 22 && i < QLEVELS.length - 1 && now - q.lastSwitch > 800) { q.level = QLEVELS[i + 1]; q.lastSwitch = now; q.ms = []; q.fastSince = 0; updateQLine(true); }
-    else if (avg < 10 && i > 0) { if (!q.fastSince) q.fastSince = now; if (now - q.fastSince > 3000) { q.level = QLEVELS[i - 1]; q.lastSwitch = now; q.ms = []; q.fastSince = 0; updateQLine(true); } }
-    else q.fastSince = 0;
-  }
   function setQMode(m) { if (!['auto', ...QLEVELS].includes(m)) return; S.q.mode = m; lsPut('els.q', m); S.q.ms = []; S.q.fastSince = 0; updateQLine(true); }
   let qSig = '';
   function updateQLine(force) {
@@ -610,11 +376,6 @@
   try { if (mqReduce.addEventListener) mqReduce.addEventListener('change', () => { updateQLine(true); updateChrome(); }); } catch (e) {}
 
   /* ---- Zeichnen: Vorher | Nachher | Wischer (SPEC 6.1, 8.2) ---- */
-  function drawOpts() {
-    const o = { quality: curQ(), reduced: reduced(), theme: theme(), ghost: null, wipe: null };
-    if (S.ref && S.rig) { if (S.refMode === 'wischer') { o.ghost = S.ref; o.wipe = S.wipe; } else if (S.refMode === 'nachher' && S.ghost) o.ghost = S.ref; }
-    return o;
-  }
   function drawRig(ts) {
     if (!cw || cvw.offsetParent === null) return;
     g2.setTransform(dpr, 0, 0, dpr, 0, 0); g2.fillStyle = bgOf(); g2.fillRect(0, 0, cw, ch);
@@ -623,20 +384,8 @@
     try { r.draw(g2, cw, ch, ts, r === S.rig ? drawOpts() : { quality: curQ(), reduced: reduced(), theme: theme() }); }
     catch (e) { if (!drawErr) { drawErr = true; console.error('Zeichnung des Prüfstands:', e); } }
   }
-  const cvPos = e => { const r = cvs.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   const holdsC = new Map(); let drag = null;
   /* hitTest liefert { key, kind:'switch'|'select'|'button'|'slider'|'knob', to?, set? }: to = Zielwert (Antippen/Ziehen), set = mehrere Steuerwerte (Sonde) */
-  function toggleCtl(key, value) {
-    const def = ctlDef(key); if (!def || !S.rig) return;
-    if (value !== undefined) { setCtl(key, value); return; }
-    if (def.type === 'select') { const o = def.options || [], v = S.rig.getControl(key), i = o.findIndex(q => q.value === v || String(q.value) === String(v)); if (o.length) setCtl(key, o[(i + 1) % o.length].value); }
-    else if (def.type === 'switch') setCtl(key, !S.rig.getControl(key));
-  }
-  function applyHit(h) {
-    if (h.set && typeof h.set === 'object') { Object.keys(h.set).forEach(k => setCtl(k, h.set[k])); return true; }
-    if (h.to !== undefined) { setCtl(h.key, h.to); return true; }
-    return false;
-  }
   cvs.addEventListener('pointerdown', e => {
     e.preventDefault(); const r = S.rig; if (!r) return; try { cvs.setPointerCapture(e.pointerId); } catch (x) {}
     const [x, y] = cvPos(e); if (!r.hitTest || S.readonly) return; let h = null; try { h = r.hitTest(x, y, cw, ch); } catch (er) {} if (!h || !h.key) return;
@@ -667,11 +416,8 @@
   cvs.addEventListener('contextmenu', e => e.preventDefault());
 
   /* ---- Effekte (alles über LochFX, geschützt); die Zuordnung Name → Effekt steht NUR hier ---- */
-  const FXKINDS = { zap: 1, spark: 1, click: 1, trip: 1, defekt: 1, smoke: 1, buzz: 1, alarm: 1, ding: 1, tick: 1 };
   let fxCool = {}, fxBudgetT = 0;
   function fxReset() { fxCool = {}; fxDrew = false; if (S.fx) S.fx = { amp: null, kazoo: false, flags: {} }; if (root.LochFX && root.LochFX.clear) try { root.LochFX.clear(); } catch (e) {} }
-  const fxOn = () => !!(root.LochFX && !root.LochFX.isMuted());
-  const slowFx = () => S.speed > 2 || S.speed < 1;
   function worldToPx(x, y) {
     const ws = worldSz(), s = Math.min(cw / ws.w, ch / ws.h);
     if (!fin(x) || !fin(y)) return [cw / 2, ch / 2];
@@ -730,12 +476,6 @@
   }
 
   /* ---- Meldungsliste (Zeitstempel in Anlagenzeit) und Hinweise aus rig.diagnose() ---- */
-  const tstamp = t => (fin(+t) ? fnum(+t, 1) + ' s' : '');
-  function updateEvents(force) {
-    const l = $('#evList'); if (!l) return; const ev = (S.rig && S.rig.events) || [];
-    const sig = ev.length + '|' + (ev.length ? (ev[ev.length - 1].text || '') + (ev[ev.length - 1].t || '') : ''); if (!force && sig === S.evSig) return; S.evSig = sig;
-    l.innerHTML = ev.length ? ev.slice(-40).reverse().map(x => `<li class="${esc(x.kind || 'info')}"><time>${esc(tstamp(x.t))}</time><span>${esc(x.text)}</span></li>`).join('') : '<li class="empty">Keine Meldungen. Meldet der Prüfstand etwas (zum Beispiel eine Auslösung), steht es hier.</li>';
-  }
   $('#evClr').onclick = () => { if (S.rig && S.rig.events) { S.rig.events.length = 0; S.evSig = ''; updateEvents(true); } };
   let lastDiag = 0;
   function updateDiag(force) {
@@ -753,41 +493,8 @@
     S.running = !!on; updateChrome();
     if (on) { stat('elsrun', 1, 'max'); usedRig(); if (auto && !lsRaw('els.autohint', '')) { lsPut('els.autohint', '1'); toast('Die Animation läuft jetzt. Mit ⏸ unten hältst du sie an.'); } }
   }
-  function resetRig(quiet) {
-    if (!S.rig) return;
-    try { S.rig.reset(); } catch (e) { console.error(e); }
-    const keepRef = S.ref; resetRun(); S.ctl = {}; S.evSeen = new WeakSet(); S.evSig = ''; S.faultUntil = 0; fxReset(); S.ref = keepRef; buildRefRig();
-    readState(); syncCtl(true); updateMeters(0, true); updateEvents(true); updateDiag(true); updateAmp(true); updateChrome(); renderSweepLive(); extRefresh(); if (!quiet) toast('Prüfstand zurückgesetzt');
-  }
   function setSpeed(v) { if (!SPEEDS.includes(v)) return; S.speed = v; lsPut('els.speed', String(v)); palSig = ''; updateChrome(); }
   /* geplanten Ablauf im Prüfstand ausführen (Zeit in Sekunden Demo-Zeit): Setzen, Rampen, Auslösen */
-  function liveApply() {
-    const L = S.live; if (!L) return;
-    while (L.i < L.steps.length && L.steps[L.i].t <= L.t + 1e-9) {
-      const st = L.steps[L.i++];
-      if (st.set) Object.keys(st.set).forEach(k => setCtl(k, st.set[k], true));
-      if (st.ramp) { let from = NaN; try { from = +S.rig.getControl(st.ramp.key); } catch (e) {} L.ramps.push({ key: st.ramp.key, from, to: +st.ramp.to, t0: st.t, d: Math.max(1e-9, +st.ramp.durS || 1e-9), log: (ctlDef(st.ramp.key) || {}).unitKind === 'freq' }); }
-      if (st.fire) doFire();
-      if (st.do != null) { if (typeof S.rig.do === 'function') { try { S.rig.do(st.do); } catch (e) { console.error(e); } } else doFire(); }
-    }
-    L.ramps = L.ramps.filter(r => {
-      const f = clamp((L.t - r.t0) / r.d, 0, 1);
-      if (fin(r.from)) { const v = r.log && r.from > 0 && r.to > 0 ? r.from * Math.pow(r.to / r.from, f) : r.from + (r.to - r.from) * f; setCtl(r.key, v, true); }
-      return f < 1;
-    });
-  }
-  function simAdvance(dtMs) {
-    const r = S.rig; if (!r) return; const d = dtMs * S.speed;
-    if (S.live) { S.live.t += d / 1000; liveApply(); if (S.live && S.live.t >= S.live.end) seqLiveDone(); }
-    try { r.step(d); } catch (e) { throw e; }
-    if (S.ref && S.refRig && S.refMode === 'vorher') { try { S.refRig.step(d); } catch (e) {} }
-    S.simT += d / 1000;
-  }
-  function updateStat() {
-    const sEl = $('#stat'); if (!sEl) return;
-    const html = (S.running ? '<b class="run" style="color:var(--ok)">LÄUFT</b> ' : '<b>PAUSE</b> ') + 'Zeit ' + fnum(S.simT, 1) + ' s' + (S.speed !== 1 ? ' · ×' + String(S.speed).replace('.', ',') : '');
-    if (sEl.dataset.h !== html) { sEl.dataset.h = html; sEl.innerHTML = html; }
-  }
   /* Ergebnisse (Ampelwechsel, Statistik) regelmäßig aus dem Prüfstand lesen */
   function watchState() {
     const a = assessOf(S.rig); if (!a) return; fxAmpel(a);
@@ -795,7 +502,6 @@
   }
 
   /* ============================================================ CSV (Kennlinie), PNG, Druck */
-  function csvNum(v) { return fin(v) ? String(+(+v).toPrecision(9)).replace('.', ',') : ''; }
   /* Kennlinien als CSV: alle Kurven des Prüfstands in einer Datei (Format der Kennlinien-Seite, elsui-curve.js); ohne diese Erweiterung nur die erste Kurve */
   function csvText() {
     try {
@@ -807,28 +513,7 @@
     const rows = []; (cv.series || []).forEach(s => (s.points || []).forEach(p => rows.push([csvNum(p[0]), csvNum(p[1]), String(s.name || '').replace(/;/g, ',')].join(';'))));
     return '# Tonfunk Sicherheits-Lab;' + S.name + ';' + (cv.title || '') + ';Übungswerte\r\n' + (cv.xLabel || 'x') + (cv.xUnit ? ' in ' + cv.xUnit : '') + ';' + (cv.yLabel || 'y') + (cv.yUnit ? ' in ' + cv.yUnit : '') + ';Reihe\r\n' + rows.join('\r\n') + '\r\n';
   }
-  function parseCsv(txt) {
-    const out = []; String(txt || '').split(/\r?\n/).forEach(ln => {
-      if (!ln || ln[0] === '#') return; const c = ln.split(';'), n = v => { const x = parseFloat(String(v == null ? '' : v).replace(',', '.')); return fin(x) ? x : null; };
-      const x = n(c[0]), y = n(c[1]); if (x != null && y != null) out.push({ x, y, name: c[2] || '' });
-    });
-    return out;
-  }
-  function saveCsv(txt, fallbackName) {
-    const blob = new Blob(['﻿' + txt], { type: 'text/csv;charset=utf-8' });
-    if (root.LabExport && root.LabExport.saveBlob) { try { root.LabExport.saveBlob(blob, root.LabExport.fname ? root.LabExport.fname('csv') : fallbackName); return; } catch (e) {} }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = fallbackName; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-  }
   function exportCsv() { const t = csvText(); if (!t) { toast('Dieser Prüfstand hat keine Kennlinie zum Exportieren.'); return; } saveCsv(t, 'els-kennlinie.csv'); stat('csv'); toast('CSV gespeichert'); }
-  function rigPng(w, h) {
-    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
-    x.fillStyle = bgOf(); x.fillRect(0, 0, w, h); try { if (S.rig) S.rig.draw(x, w, h, 0, { quality: 'hoch', reduced: true, theme: theme() }); } catch (e) {} return c;
-  }
-  function exportPng() {
-    if (!S.rig) { toast('Der Prüfstand fehlt.'); return; }
-    const c = rigPng(1600, 1000);
-    c.toBlob(b => { if (b && root.LabExport) { root.LabExport.saveBlob(b, root.LabExport.fname('png')); stat('png'); } else toast('Bild konnte nicht erzeugt werden'); }, 'image/png');
-  }
   function printNow() {
     if (!S.rig) { toast('Der Prüfstand fehlt.'); return; }
     const c = rigPng(1200, 750), who = lsRaw('lm4.name', ''), vals = allCtl(); let mv = {}; try { mv = S.rig.readMeters(); } catch (e) {} const a = assessOf(S.rig) || {};
@@ -847,78 +532,12 @@
   }
 
   /* ============================================================ Sweep und Ablauf (eingeklappte Zeile im Tab Prüfstand, Läufer ELS_CORE.runSeq) */
-  const rowEnd = r => (+r.t || 0) + (r.kind === 'ramp' ? (+r.dur || 0) : 0);
-  const seqDur = () => { const d = S.seqDur && S.seqDur[S.rigId]; if (fin(d) && d > 0) return d; const rs = curRows(); return Math.max(10, rs.reduce((m, r) => Math.max(m, rowEnd(r)), 0) * 1.25); };
-  const defVal = c => (c.type === 'switch' || c.type === 'button' ? !!c.value : c.type === 'select' ? (c.value !== undefined ? c.value : (c.options && c.options[0] ? c.options[0].value : '')) : (c.value != null ? c.value : c.min));
-  const seqKeys = () => ctlsOf().filter(c => c.type !== 'button');
-  const canFire = () => !!(S.rig && typeof S.rig.fire === 'function');
-  const optLabel = (c, v) => { const o = (c.options || []).find(q => q.value === v || String(q.value) === String(v)); return o ? o.label : String(v); };
-  const valText = (c, v) => (!c ? String(v) : c.type === 'switch' ? (v ? 'EIN' : 'AUS') : c.type === 'select' ? optLabel(c, v) : ctlShow(c, +v));
-  function rowText(r) {
-    if (r.kind === 'fire') return 'löse aus: ' + (FIRELBL[S.rigId] || 'Auslösen');
-    if (r.kind === 'do') return 'führe aus: ' + r.key;
-    const c = ctlDef(r.key), nm = c ? c.label : r.key;
-    return r.kind === 'ramp' ? 'ändere ' + nm + ' in ' + fnum(r.dur, 1) + ' s auf ' + valText(c, r.to) : 'setze ' + nm + ' = ' + valText(c, r.value);
-  }
   function newRow() {
     const rs = curRows(), c = seqKeys()[0]; if (!c) return null;
     const last = rs.length ? rs[rs.length - 1] : null, t = last ? +(rowEnd(last) + 1).toPrecision(6) : 1;
     return { t, kind: 'set', key: c.key, value: defVal(c) };
   }
   /* Zeilen → Läufer-Format (Sekunden): { t, set:{key:Wert} }, { t, ramp:{key,to,durS} }, { t, fire:true } */
-  function seqSteps(rows) {
-    const m = new Map(), other = [];
-    (rows || []).forEach(r => {
-      if (!r) return; const t = Math.round(Math.max(0, +r.t || 0) * 1e6) / 1e6;
-      if (r.kind === 'fire') { other.push({ t, fire: true }); return; }
-      if (r.kind === 'do') { if (r.key) other.push({ t, do: String(r.key) }); return; }
-      const c = ctlDef(r.key); if (!c) return;
-      if (r.kind === 'ramp') { const to = coerce(c, r.to != null ? r.to : r.value); if (to !== undefined && c.type === 'slider') other.push({ t, ramp: { key: r.key, to, durS: Math.max(1e-6, +r.dur || 0) } }); return; }
-      if (!m.has(t)) m.set(t, {}); m.get(t)[r.key] = r.value;
-    });
-    return [...m.entries()].map(([t, set]) => ({ t, set })).concat(other).sort((a, b) => a.t - b.t);
-  }
-  function seqToRows(seq) {
-    const rows = []; if (!Array.isArray(seq)) return rows;
-    seq.forEach(s => {
-      if (!s) return;
-      if (s.fire) rows.push({ t: +s.t || 0, kind: 'fire' });
-      if (s.do != null) rows.push({ t: +s.t || 0, kind: 'do', key: String(s.do) });
-      if (s.ramp && typeof s.ramp === 'object' && s.ramp.key != null) rows.push({ t: +s.t || 0, kind: 'ramp', key: s.ramp.key, to: +s.ramp.to, dur: +s.ramp.durS || 0 });
-      if (s.set && typeof s.set === 'object') Object.keys(s.set).forEach(k => rows.push({ t: +s.t || 0, kind: 'set', key: k, value: s.set[k] }));
-      else if (s.key != null) rows.push({ t: +s.t || 0, kind: 'set', key: s.key, value: s.value });
-    });
-    return rows;
-  }
-  const rowNorm = rows => (rows || []).filter(r => r && typeof r === 'object').map(r => (r.kind === 'fire' ? { t: +r.t || 0, kind: 'fire' } : r.kind === 'do' ? { t: +r.t || 0, kind: 'do', key: String(r.key || '') } : r.kind === 'ramp' ? { t: +r.t || 0, kind: 'ramp', key: r.key, to: +r.to, dur: +r.dur || 0 } : { t: +r.t || 0, kind: 'set', key: r.key, value: r.value }));
-  function valueEd(r, i) {
-    const c = ctlDef(r.key); if (!c) return '<span class="hint2">Steuerwert unbekannt</span>';
-    const v = r.kind === 'ramp' ? r.to : r.value;
-    if (c.type === 'slider') return `<span class="vv"><input class="vIn" data-i="${i}" inputmode="decimal" autocomplete="off" value="${esc(ctlShow(c, +v))}" aria-label="Wert"></span>`;
-    if (c.type === 'switch') return `<select class="vSel" data-i="${i}" aria-label="Wert"><option value="1"${r.value ? ' selected' : ''}>EIN</option><option value="0"${r.value ? '' : ' selected'}>AUS</option></select>`;
-    const o = c.options || [], cur = o.findIndex(x => x.value === r.value || String(x.value) === String(r.value));
-    return `<select class="vSel" data-i="${i}" aria-label="Wert">${o.map((x, j) => `<option value="${j}"${j === cur ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select>`;
-  }
-  function rowHtml(r, i, n) {
-    const keys = seqKeys(), c = ctlDef(r.key), canRamp = c && c.type === 'slider', ramp = r.kind === 'ramp', fire = r.kind === 'fire', isDo = r.kind === 'do';
-    const kinds = `<option value="set"${r.kind === 'set' ? ' selected' : ''}>setze</option>${canRamp || ramp ? `<option value="ramp"${ramp ? ' selected' : ''}>ändere bis</option>` : ''}${canFire() ? `<option value="fire"${fire ? ' selected' : ''}>löse aus</option>` : ''}${isDo ? '<option value="do" selected>führe aus</option>' : ''}`;
-    return `<div class="sqr" data-i="${i}"><span class="n">${i + 1}</span><label class="tb"><small>nach</small><input class="tIn" data-i="${i}" inputmode="decimal" autocomplete="off" value="${fnum(r.t, adig(r.t))}" aria-label="Zeit in Sekunden"> <small>s</small></label>
-      <select class="kdSel" data-i="${i}" aria-label="Art">${kinds}</select>
-      ${fire ? `<span class="vb hint2">${esc(FIRELBL[S.rigId] || 'Auslösen')}</span>` : isDo ? `<span class="vb hint2">Aktion: ${esc(r.key)}</span>` : `<select class="kSel" data-i="${i}" aria-label="Steuerwert">${keys.map(k => `<option value="${esc(k.key)}"${k.key === r.key ? ' selected' : ''}>${esc(k.label)}</option>`).join('')}</select><span class="vb">${valueEd(r, i)}</span>`}${ramp ? `<label class="tb"><small>in</small><input class="dIn" data-i="${i}" inputmode="decimal" autocomplete="off" value="${fnum(r.dur, adig(r.dur || 1))}" aria-label="Dauer der Änderung in Sekunden"> <small>s</small></label>` : ''}
-      <span class="ac"><button class="ib2" data-a="up" data-i="${i}" aria-label="Nach oben"${i === 0 ? ' disabled' : ''}>↑</button><button class="ib2" data-a="dn" data-i="${i}" aria-label="Nach unten"${i === n - 1 ? ' disabled' : ''}>↓</button><button class="ib2" data-a="del" data-i="${i}" aria-label="Löschen">🗑</button></span></div>`;
-  }
-  function renderSweep() {
-    const V = $('#sweepView'); if (!V) return;
-    if (!S.rig) { V.innerHTML = placeholderHtml(); return; }
-    const rs = curRows();
-    V.innerHTML = `<p class="hint2" style="margin:0 0 8px">Jede Zeile heißt: <b>nach … s</b> (Anlagenzeit) wird ein Steuerwert gesetzt oder in einer Rampe verändert${canFire() ? ' oder ausgelöst (' + esc(FIRELBL[S.rigId] || 'Auslösen') + ')' : ''}. So fährst du Maßnahmen nacheinander, ohne selbst zu drücken, und siehst am Ende das Ampelband.</p>
-      <div class="chips"><button class="chip s on" data-q="add">➕ Zeile</button><button class="chip s" data-q="ex">📖 Beispiel-Ablauf</button><button class="chip s danger" data-q="clr"${rs.length ? '' : ' disabled'}>🗑 Leeren</button></div>
-      <div id="sqRows">${rs.length ? rs.map((r, i) => rowHtml(r, i, rs.length)).join('') : '<p class="hint2" style="padding:8px 4px">Noch keine Zeilen. Tippe auf „Zeile“ oder lade ein Beispiel.</p>'}</div>
-      <div class="frm" style="margin-top:10px"><label class="f"><span>Dauer des Ablaufs in s</span><input id="sqDur" inputmode="decimal" autocomplete="off" value="${fnum(seqDur(), adig(seqDur()))}"></label><label class="chk"><input type="checkbox" id="sqCur"${S.seqCur === false ? '' : ' checked'}> mit den aktuellen Steuerwerten des Prüfstands starten</label></div>
-      <div class="readout" id="sqLiveRead" aria-live="polite"></div>
-      <div class="btns"><button class="btn pri" data-q="bg"${rs.length ? '' : ' disabled'}>▶ Berechnen (Ampelband)</button><button class="btn" data-q="live"${rs.length ? '' : ' disabled'}>▶ Live im Prüfstand</button><button class="btn danger" data-q="stop">■ Stopp</button></div><div id="sqRes"></div>`;
-    renderSeqRes(); renderSweepLive();
-  }
   function seqRunBg() {
     if (!S.rig) return; const steps = seqSteps(curRows()), end = seqDur(), id = S.rigId, d = defOf(id), C = CORE();
     if (!steps.length) { toast('Der Ablauf ist leer.'); return; }
@@ -935,15 +554,7 @@
       if (res && typeof res.then === 'function') res.then(fin2, () => fin2(null)); else fin2(res);
     }, 30);
   }
-  function seqLive() {
-    if (!S.rig) return; const steps = seqSteps(curRows());
-    if (!steps.length) { toast('Der Ablauf ist leer.'); return; }
-    const keep = S.seqCur !== false ? allCtl() : null;
-    resetRig(true); if (keep) applyCtl(keep);
-    readState(); S.live = { steps, i: 0, t: 0, end: seqDur(), ramps: [] }; setRun(true); renderSweepLive(); toast('Der Ablauf läuft live. Oben siehst du die Animation.');
-  }
   function seqLiveDone() { S.live = null; stat('elsseq', 1, 'max'); toast('Ablauf beendet'); renderSweepLive(); }
-  function seqStop() { if (S.live) { S.live = null; S.running = false; updateChrome(); toast('Ablauf gestoppt'); renderSweepLive(); } else if (S.running) setRun(false); }
   function renderSweepLive() {
     const rd = $('#sqLiveRead'); if (!rd) return; const rows = $$('.sqr');
     rows.forEach(r => r.classList.remove('cur'));
@@ -959,20 +570,6 @@
       if (last && last.k === k) { last.t1 = s.t; if (fin(st.margin)) last.m = fin(last.m) ? Math.min(last.m, st.margin) : st.margin; } else out.push({ k, t0: s.t, t1: s.t, m: fin(st.margin) ? st.margin : null });
     });
     return out;
-  }
-  function renderSeqRes() {
-    const el = $('#sqRes'); if (!el) return; const R = S.seqRes;
-    if (!R || R.rigId !== S.rigId) { el.innerHTML = ''; return; }
-    const band = bandOf(R), faults = (R.faults || []).map(f => (typeof f === 'string' ? f : f && (f.text || f.msg || f.name)) || '').filter(Boolean), evs = (R.events || []).slice(-20), fm = (R.final && R.final.meters) || {};
-    const tot = Math.max(1e-9, R.end), a = R.assess || (R.final && R.final.assess) || null;
-    el.innerHTML = `<div class="card pl"><h4>Ergebnis des Ablaufs</h4>
-      <div class="bandbar" role="img" aria-label="Ampelband über die Zeit">${band.map(b => `<i class="bd-${b.k}" style="flex:${Math.max(0.5, (b.t1 - b.t0) / tot * 100).toFixed(2)}" title="${esc(AMP[b.k].name)}">${AMP[b.k].sym}</i>`).join('')}</div>
-      <ul class="tl">${band.map(b => `<li class="${AMP[b.k].cls === 'ok' ? 'ok' : AMP[b.k].cls === 'bad' ? 'bad' : ''}">${AMP[b.k].sym} ${fnum(b.t0, 1)} s bis ${fnum(b.t1, 1)} s: ${esc(AMP[b.k].name)}${fin(b.m) ? ', kleinste Marge ' + fnum(b.m, 2) : ''}</li>`).join('')}</ul>
-      ${a ? `<p style="margin:6px 0 0"><b>Am Ende:</b> ${esc((AMP[ampKey(a.ampel)] || AMP.grau).sym)} ${esc((AMP[ampKey(a.ampel)] || AMP.grau).name)}${margTxt(a) ? ', ' + esc(margTxt(a)) : ''}. ${esc(a.text || '')}</p>` : ''}
-      <table class="kt"><tr><th>Messgerät am Ende</th><th class="n">Wert</th></tr>${metersOf().map(m => `<tr><td>${esc(m.label)}</td><td class="n"><b>${fnum(fm[m.key], m.digits == null ? 1 : m.digits)}</b> ${esc(m.unit || '')}</td></tr>`).join('')}</table>
-      ${R.errors && R.errors.length ? `<p style="color:var(--warn);margin:6px 0 0"><b>Hinweis zum Ablauf:</b> ${R.errors.map(x => esc(typeof x === 'string' ? x : x && x.text || '')).join(' ')}</p>` : ''}
-      ${faults.length ? `<p style="color:var(--danger);margin:6px 0 0"><b>Fehler im Ablauf:</b> ${faults.map(esc).join('; ')}</p>` : '<p class="hint2" style="margin:6px 0 0">Keine Fehler im Ablauf.</p>'}
-      ${evs.length ? `<ul class="ev" style="padding:0">${evs.map(x => `<li class="${esc(x.kind || 'info')}"><time>${esc(tstamp(x.t))}</time><span>${esc(x.text)}</span></li>`).join('')}</ul>` : ''}</div>`;
   }
   (function () {
     const V = $('#sweepView');
@@ -1010,7 +607,6 @@
     });
   })();
   /* ============================================================ Beispiele (ELS_DATA.examples, eingebauter Rückfall ohne Zahlen im Text) */
-  const B = (id, name, cat, rig, desc, controls, extra) => Object.assign({ id, name, cat, rig, desc, controls }, extra || {});
   const BUILTIN = [
     B('bx-koerper', 'Stromwirkung: Hautzustand ändern', 'Körper', 'koerper', 'Verändere Haut und Boden und beobachte, wie sich Körperstrom und Zone ändern.', {}, {}),
     B('bx-netz', 'Fehlerschleife: Länge der Leitung', 'Netz', 'netz', 'Verändere Länge und Querschnitt der Leitung und beobachte die Abschaltbedingung.', {}, {}),
@@ -1023,12 +619,6 @@
     return a.map(e => ({ id: e.id, name: e.name, cat: e.cat || 'Beispiele', desc: e.desc || e.text || '', rig: e.rig, controls: e.controls || {}, dur: e.dur, ref: e.ref || null, rows: e.rows ? rowNorm(e.rows) : (e.seq ? seqToRows(e.seq) : null), seq: e.seq }));
   }
   /* Vorher-Zustand eines Beispiels: Steuerwerte des Beispiels, darüber die Werte aus ref (oder ein fertiger Schnappschuss) */
-  const ctlOfRig = (r, k) => { const c = (r.controls || []).find(x => x && x.key === k); return c && c.type === 'select' ? Object.assign({}, c, { options: optNorm(c.options) }) : c; };
-  function refFromExample(e) {
-    const rf = e.ref; if (!rf || typeof rf !== 'object') return null; if (rf.ctl && typeof rf.ctl === 'object') return clone(rf);
-    const d = defOf(e.rig); if (!d) return null;
-    try { const r = d.create({ seed: 1 }); Object.keys(e.controls || {}).forEach(k => { const v = coerce(ctlOfRig(r, k), e.controls[k]); if (v !== undefined) r.setControl(k, v); }); Object.keys(rf).forEach(k => { const v = coerce(ctlOfRig(r, k), rf[k]); if (v !== undefined) r.setControl(k, v); }); return clone(r.snapshot()); } catch (er) { return null; }
-  }
   function loadExample(e) {
     if (typeof e === 'string') { const n = e.toLowerCase(); e = exampleList().find(x => x.id === e || x.name.toLowerCase().includes(n)); }
     if (!e) return false; const had = stash(); S.task = null; taskRes = null;
@@ -1039,7 +629,6 @@
     toast(had ? 'Beispiel geladen, dein Versuch ist gesichert' : 'Beispiel geladen: ' + e.name);
     return true;
   }
-  const loadExampleByName = n => loadExample(String(n || ''));
   function openExamples() {
     const ex = exampleList();
     sheet('Beispielversuche', (b, close) => {
@@ -1054,32 +643,11 @@
 
   /* ============================================================ Speichern, Öffnen, Teilen */
   const PK = 'els.saves';
-  const saves = () => { const a = lsGet(PK, []); return Array.isArray(a) ? a : []; };
   function saveItem(name) {
     const a = saves(), id = S.id || uid(); S.id = id; S.name = name || S.name;
     const e = { id, name: S.name, t: Date.now(), rig: S.rigId, ctl: allCtl(), ref: S.ref ? clone(S.ref) : null, refMode: S.refMode, rows: clone(curRows()), dur: seqDur(), protokoll: S.protokoll ? clone(S.protokoll) : null };
     const i = a.findIndex(x => x.id === id); if (i >= 0) a[i] = e; else a.push(e);
     lsSet(PK, a.slice(-100)); S.dirty = false; updateChrome(); saveCur();
-  }
-  function stash() { if (!S.dirty || !S.rig || S.readonly) return false; if (S.task) return false; saveItem(S.name || 'Versuch'); S.id = null; return true; }
-  async function doSave() {
-    const r = await ask('Versuch speichern', [{ key: 'n', label: 'Name', type: 'text', value: S.name }]);
-    if (!r) return; const n = r.n.trim() || 'Versuch'; saveItem(n); toast('Gespeichert: ' + n);
-  }
-  function openList() {
-    sheet('Gespeicherte Versuche', (b, close) => {
-      const draw = () => {
-        const items = saves().slice().sort((a, b2) => b2.t - a.t);
-        if (!items.length) { b.innerHTML = '<p class="hint2">Noch nichts gespeichert. Speichern findest du im Menü („Speichern unter …“).</p>'; return; }
-        b.innerHTML = items.map(i => `<div class="row"><button class="grow" data-o="${esc(i.id)}" style="text-align:left"><b>${esc(i.name)}</b><small>${rigIcon(i.rig)} ${esc(rigName(i.rig))} · ${new Date(i.t).toLocaleDateString('de-DE')}</small></button><button class="chip danger s" data-d="${esc(i.id)}">Löschen</button></div>`).join('');
-      };
-      draw();
-      b.addEventListener('click', async e => {
-        const o = e.target.closest('[data-o]'), d = e.target.closest('[data-d]');
-        if (o) { const it = saves().find(x => x.id === o.dataset.o); if (!it) return; close(); loadItem(it); }
-        else if (d) { if (!await confirmSheet('Löschen?', 'Der gespeicherte Versuch wird gelöscht.', 'Löschen', true)) return; lsSet(PK, saves().filter(x => x.id !== d.dataset.d)); draw(); }
-      });
-    });
   }
   /* Zustand ohne Aufgaben-Vorbelegung wiederherstellen; unbekannte Schlüssel, Werte und Versionen werden toleriert (Regel 8) */
   function applyItem(it, suffix) {
@@ -1089,21 +657,6 @@
     S.rows[S.rigId] = Array.isArray(it.rows) ? rowNorm(it.rows.filter(r => r && typeof r === 'object' && (r.kind === 'fire' || typeof r.key === 'string'))) : []; S.seqDur[S.rigId] = fin(it.dur) && it.dur > 0 ? it.dur : null; S.seqRes = null;
     S.name = (it.name || 'Versuch') + (suffix || ''); S.dirty = false; updateChrome(); saveCurSoon();
     setTab('rig'); renderSweep();
-  }
-  function loadItem(it) { stash(); applyItem(it); S.id = it.id; toast('Geöffnet: ' + it.name); }
-  async function packShare(obj) {
-    const bytes = new TextEncoder().encode(JSON.stringify(obj)); let out = bytes, tag = 's';
-    if (root.CompressionStream) { try { const cs = new CompressionStream('deflate-raw'), w = cs.writable.getWriter(); w.write(bytes); w.close(); out = new Uint8Array(await new Response(cs.readable).arrayBuffer()); tag = 'z'; } catch (e) {} }
-    let bin = ''; out.forEach(b => { bin += String.fromCharCode(b); });
-    return tag + '=' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-  async function unpackShare(h) {
-    const m = String(h).match(/^#?([sz])=([\w-]+)$/); if (!m) return null;
-    let b64 = m[2].replace(/-/g, '+').replace(/_/g, '/'); while (b64.length % 4) b64 += '=';
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0)); let txt;
-    if (m[1] === 'z') { const ds = new DecompressionStream('deflate-raw'), w = ds.writable.getWriter(); w.write(bytes); w.close(); txt = new TextDecoder().decode(await new Response(ds.readable).arrayBuffer()); }
-    else txt = new TextDecoder().decode(bytes);
-    return JSON.parse(txt);
   }
   const shareObj = () => ({ k: 'els', name: S.name, rig: S.rigId, ctl: allCtl(), ref: S.ref ? clone(S.ref) : null, refMode: S.refMode, rows: clone(curRows()), dur: seqDur(), protokoll: S.protokoll ? clone(S.protokoll) : null });
   async function shareNow() {
@@ -1116,37 +669,9 @@
       $('#shCp', b).onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Link kopiert'); } catch (e) { ta.select(); toast('Bitte Text markieren und kopieren'); } };
     });
   }
-  async function loadShared(h) {
-    let d = null; try { d = await unpackShare(h); } catch (e) {}
-    if (!d || !d.rig || !ORDER.includes(d.rig)) { toast('Der Link oder Code ist ungültig'); return false; }
-    stash(); applyItem(d, ' (geteilt)'); S.id = null; S.dirty = true; toast('Geteilter Versuch geladen'); return true;
-  }
-  function importSheet() {
-    sheet('Aus Code oder Link laden', (b, close) => {
-      b.innerHTML = '<p class="hint2" style="margin-top:0">Füge einen Teilen-Link oder Code ein.</p><textarea id="tx" rows="6"></textarea><div class="btns"><button class="btn pri" id="ld">Laden</button></div>';
-      $('#ld', b).onclick = async () => { const t = $('#tx', b).value.trim(), h = t.includes('#') ? t.slice(t.indexOf('#')) : t; if (await loadShared(h.startsWith('#') ? h : '#' + h)) close(); };
-    });
-  }
 
   /* ============================================================ Aufgaben (ELS_TASKS) */
   const TK = () => (root.ELS_TASKS && Array.isArray(root.ELS_TASKS.tasks) && root.ELS_TASKS.tasks.length ? root.ELS_TASKS.tasks : null);
-  const taskDone = () => lsGet('sim.done', {});
-  function markDone(id, pct) {
-    try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {}
-    if (root.Badges) root.Badges.result(id, pct);
-  }
-  const curTask = () => { const a = TK(); return a && S.task ? a.find(t => t.id === S.task.id) : null; };
-  function updateTaskBadge() {
-    const a = TK(), b = $('#tkBd'); if (!b) return;
-    if (!a) { b.style.display = 'none'; return; }
-    const d = taskDone(), n = a.filter(t => (d[t.id] || 0) >= 100).length; b.style.display = ''; b.textContent = n + '/' + a.length;
-  }
-  function updateTaskBar() {
-    const t = curTask(), el = $('#taskBar'); if (!el) return;
-    if (!t) { el.className = ''; el.innerHTML = ''; el.dataset.s = ''; return; }
-    el.className = 'on'; const sig = t.id + S.readonly; if (el.dataset.s === sig) return; el.dataset.s = sig;
-    el.innerHTML = `<span>📝</span><b>${esc(t.title)}</b><button class="chip s" data-ta="info">Aufgabe</button><button class="chip s on" data-ta="check"${S.readonly ? ' disabled' : ''}>✓ Prüfen</button>`;
-  }
   $('#taskBar').addEventListener('click', e => { const b = e.target.closest('[data-ta]'); if (!b) return; if (b.dataset.ta === 'info') setTab('tasks'); else checkTask(); });
   /* Aufgabenzustand (start() und sol() liefern { rig?, controls?, seq?: [{t(s), set|ramp|fire}], dur(s)?, ref?, value? }) übernehmen */
   function applyTaskState(t, o) {
@@ -1155,8 +680,6 @@
     S.rows[S.rigId] = o.rows ? rowNorm(o.rows) : seqToRows(o.seq); S.seqDur[S.rigId] = o.dur && o.dur > 0 ? o.dur : null; S.seqRes = null; S.taskStart = o; S.clicks = []; S.protokoll = o.protokoll && typeof o.protokoll === 'object' ? clone(o.protokoll) : null;
     if (o.ref && typeof o.ref === 'object') { const rs = o.ref.ctl ? clone(o.ref) : refFromExample({ rig: S.rigId, controls: o.controls || {}, ref: o.ref }); if (rs) { S.ref = rs; S.refMode = 'nachher'; buildRefRig(); buildBA(); updateAmp(true); } }
   }
-  const fieldsOf = t => { let f = t.fields; if (typeof f === 'function') { try { f = f(S.taskStart); } catch (e) { f = []; } } return Array.isArray(f) ? f : []; };
-  const choicesOf = t => { let f = t.choices; if (typeof f === 'function') { try { f = f(S.taskStart); } catch (e) { f = []; } } return Array.isArray(f) ? f : []; };
   async function startTask(id) {
     const t = (TK() || []).find(x => x.id === id); if (!t) return;
     const had = stash(); taskRes = null;
@@ -1166,7 +689,6 @@
     setTab('tasks'); updateChrome();
     toast(had ? 'Aufgabe gestartet, dein Versuch ist gesichert' : 'Aufgabe gestartet'); renderTasksIfOpen();
   }
-  const renderTasksIfOpen = () => { if (S.tab === 'tasks') renderTasks(); };
   /* Abgabe: { rig, controls, ref, value, text, fields, choices, clicks, ... } (SPEC 8.5) */
   function collectAnswer(t) {
     let st = null; try { st = S.rig ? clone(S.rig.state()) : null; } catch (e) {}
@@ -1201,7 +723,6 @@
     const o = { id: t.id, hint: arr ? arr[0] : h, concrete: () => { if (arr && arr[1]) return arr[1]; const l = taskRes && taskRes.id === t.id ? taskRes.lines.find(x => !x.ok) : null; return l ? 'Noch nicht erfüllt: ' + l.text : taskRes && taskRes.id === t.id ? 'Alle Prüfpunkte sind erfüllt. Tippe auf „Lösung prüfen“.' : 'Tippe zuerst auf „Lösung prüfen“, dann kann ich dir den ersten offenen Punkt nennen.'; }, reveal: arr && arr[2] ? () => arr[2] : null, solution: typeof t.sol === 'function' ? () => autoWay(t) : null };
     if (root.Auswertung) root.Auswertung.hint(o); else sheet('Tipp', b => { b.innerHTML = '<p style="margin-top:0">' + esc(o.hint || '') + '</p>'; });
   }
-  const choiceOpts = c => (c.options || []).map(o => (o && typeof o === 'object' ? { value: o.value, label: o.label != null ? o.label : String(o.value) } : { value: o, label: String(o) }));
   function tableHtml(tb) {
     if (!tb) return ''; const list = Array.isArray(tb) && tb.length && !Array.isArray(tb[0]) && typeof tb[0] === 'object' ? tb : [tb];
     const cell = v => esc(typeof v === 'number' ? fauto(v) : v), one = t1 => {
@@ -1262,11 +783,6 @@
   });
 
   /* ============================================================ Fehler-Würfel: Fehler auswürfeln (wirkt auf Steuerwerte, je Prüfstand nur sinnvolle Arten, Tabelle DICE); "Finde den Fehler" prüft die Behebung mit runSeq gegen den Ausgangs-Ampelzustand */
-  const marg = () => { const a = assessOf(S.rig); return a && fin(a.margin) ? a.margin : null; };
-  const dm = (b, a) => (b != null && a != null ? ' Die Marge ändert sich von ' + fnum(b, 2) + ' auf ' + fnum(a, 2) + '.' : '');
-  const cval = k => { try { return S.rig.getControl(k); } catch (e) { return undefined; } };
-  const pickOpt = (id, re) => { const c = ctlDef(id); if (!c || c.type !== 'select') return undefined; const o = (c.options || []).find(x => re.test(String(x.value)) || re.test(String(x.label))); return o ? o.value : undefined; };
-  const cmax = id => { const c = ctlDef(id); return c && c.type === 'slider' ? c.max : undefined; };
   const DICE = {
     netz: [
       { id: 'pe-unterbrochen', name: 'PE unterbrochen', apply: () => ({ fehler: pickOpt('fehler', /pe-?unterbr/i) }), text: (b, a) => 'Der Schutzleiter ist unterbrochen: Der Leitungsschutz bleibt stumm, das Gehäuse kann Spannung führen. Ein RCD löst nur aus, wenn der Strom über den Menschen groß genug ist.' + dm(b, a) },
@@ -1289,27 +805,7 @@
       { id: 'reihenfolge', name: 'Reihenfolge vertauscht', apply: () => ({ reihenfolgeFrei: true }), text: (b, a) => 'Die Reihenfolge ist freigegeben: Du kannst die Schritte jetzt vertauschen. Bestätige sie in der richtigen Reihenfolge, jeder Fehler wird erklärt.' + dm(b, a) }]
   };
   root.ELS_DICE = DICE;
-  const diceKeys = d => { let m = null; try { m = d.apply(); } catch (e) { m = null; } if (!m || !Object.keys(m).length || !Object.values(m).every(v => v !== undefined)) return null; return Object.keys(m).some(k => String(cval(k)) !== String(m[k])) ? m : null; };
-  function updateDice() {
-    const el = $('#diceBar'); if (!el) return; const d = S.dice;
-    if (!d || d.rigId !== S.rigId) { el.hidden = true; el.innerHTML = ''; return; }
-    el.hidden = false;
-    el.innerHTML = `<b>🎲 Finde den Fehler${d.fixed ? ' – behoben' : ''}</b><button class="chip s on" data-d="check">✓ Behebung prüfen</button><button class="chip s" data-d="show">Auflösung</button><button class="chip s" data-d="undo">Fehler beheben</button>${d.result ? `<div class="hint2 inl" style="flex-basis:100%" role="status">${esc(d.result)}</div>` : ''}`;
-  }
-  const RANK = { grau: 0, rot: 1, gelb: 2, gruen: 3 };
   /* Behebung prüfen: runSeq (ein Schritt, aktuelle Steuerwerte) liefert die Ampel; sie muss mindestens so gut sein wie vor dem Fehler */
-  async function checkDice() {
-    const d = S.dice; if (!d || !S.rig) return; const C = CORE(); let res = null;
-    if (C && typeof C.runSeq === 'function') { try { res = await C.runSeq(() => defOf(S.rigId).create({ seed: 1 }), [{ t: 0, set: {} }], 1, { seed: 1, controls: allCtl() }); } catch (e) { console.error('runSeq:', e); res = null; } }
-    const a = res && (res.assess || (res.final && res.final.assess));
-    if (!a) { d.result = 'Die Prüfung konnte nicht ausgeführt werden: Der Läufer fehlt oder meldet einen Fehler.'; updateDice(); return; }
-    const now = ampKey(a.ampel), ba = d.base ? d.base.ampel : 'gruen', want = ba === 'grau' ? 'gelb' : ba;
-    d.fixed = RANK[now] >= RANK[want];
-    d.result = d.fixed ? 'Behoben: Die Ampel steht auf ' + AMP[now].name + ', wie vor dem Fehler (' + AMP[ba].name + ').' : 'Noch nicht behoben: Die Ampel steht auf ' + AMP[now].name + ', vorher war sie ' + AMP[ba].name + '. ' + (a.text || '');
-    updateDice(); toast(d.fixed ? 'Fehler behoben' : 'Noch nicht behoben');
-  }
-  function showDice() { const d = S.dice; if (!d) return; sheet('Auflösung: ' + d.name, b => { b.innerHTML = '<div class="ex">' + esc(d.text) + '</div>'; }); }
-  function undoDice() { const d = S.dice; if (!d || !S.rig) return; applyCtl(d.before); S.dice = null; updateDice(); readState(); updateAmp(true); toast('Fehler behoben'); }
   $('#diceBar').addEventListener('click', e => { const x = e.target.closest('[data-d]'); if (!x) return; if (x.dataset.d === 'check') checkDice(); else if (x.dataset.d === 'show') showDice(); else if (x.dataset.d === 'undo') undoDice(); });
   function diceRoll() {
     if (!S.rig) { toast('Der Prüfstand fehlt.'); return; } if (S.task) { toast('Beende zuerst die Aufgabe.'); return; }
@@ -1342,21 +838,11 @@
   }
   const EXTHOST = { curve: '#curveView', proto: '#protoView', design: '#designView', calc: '#calcView', help: '#helpView' }, EXTFILE = { curve: 'elsui-curve.js', proto: 'elsui-proto.js', design: 'elsui-design.js', calc: 'elsui-calc.js', help: 'elsui-help.js' }, EXTNAME = { curve: 'Kennlinien', proto: 'Prüfprotokoll', design: 'Auslegen', calc: 'Rechnen', help: 'Lernen' };
   const extOf = kind => root.ELS_UI_EXT && root.ELS_UI_EXT[kind];
-  function renderExt(kind) {
-    const host = $(EXTHOST[kind]), E = extOf(kind);
-    if (!host) return;
-    if (!E || typeof E.render !== 'function') { host.innerHTML = `<div class="card pl"><p class="big">Ansicht wird geladen</p><p class="hint2">Die Datei ${EXTFILE[kind]} ist noch nicht geladen (${EXTNAME[kind]}).</p><div class="btns"><button class="btn" data-retry>Erneut prüfen</button></div></div>`; host.dataset.ext = ''; return; }
-    if (kind === 'help' && host.dataset.ext === '1' && host.children.length) return;
-    try { E.render(host, extApi()); host.dataset.ext = '1'; } catch (e) { console.error('Erweiterung ' + kind + ':', e); host.innerHTML = '<div class="card pl"><p class="big">Das hat nicht geklappt</p><p class="hint2">' + esc((e && e.message) || e) + '</p></div>'; }
-  }
+  const { allCtl, ampelNow, applyCtl, ask, backToRef, buildBA, buildPick, buildTabs, canFire, choicesOf, coerce, curQ, curRows, curTask, cvPos, cval, exportPng, fe, fieldsOf, fireHtml, importSheet, keysHtml, keysSheet, limGet, limIds, loadShared, metersOf, newExperiment, openList, parseNum, placeholderHtml, presetsOf, qualityFeed, readState, reduced, refFromExample, renderSweep, renderTasksIfOpen, resetRun, rigIcon, rigName, rowText, saves, seqDur, seqLive, seqSteps, seqStop, setRef, snapshot, toggleCtl, updateChrome, updateSimBand, updateTaskBadge, updateTaskBar, usePick, wirePanel, buildLimits, buildPresets, buildRefRig, checkDice, cmax, ctlParse, ctlShow, diceKeys, doSave, drawOpts, marg, pickOpt, renderExt, renderSeqRes, resetRig, rigPng, seqKeys, showDice, simAdvance, slowFx, stash, undoDice, updateDice, updateEvents, updateStat } = root.RIGUI.kit('els', { CORE, EXTFILE, EXTHOST, EXTNAME, FIREHINT, FIRELBL, KEYS, ORDER, PK, RIGLIMITS, RIGMETA, S, TABS, TK, applyItem, bandOf, buildPal, ctlDef, ctlsOf, cvs, defOf, doFire, extApi, extOf, extRefresh, fxReset, mqReduce, renderSweepLive, renderTasks, saveCurSoon, saveItem, seqLiveDone, setRig, setRun, setTab, simText, syncCtl, updateAmp, updateDiag, updateMeters, updateQLine, updateTitle, updateWipeDom });
   function extRefresh() { if (S.tab === 'curve' || S.tab === 'proto') { const E = extOf(S.tab); if (E && typeof E.refresh === 'function') { try { E.refresh(); return; } catch (e) {} } renderExt(S.tab); } }
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-retry]') && EXTHOST[S.tab]) renderExt(S.tab); });
 
   /* ============================================================ Oberfläche: Kopf, Tabs, Leiste */
-  function buildTabs() {
-    $('#tabs').innerHTML = TABS.map(([k, i, n]) => `<button class="tab${S.tab === k ? ' on' : ''}" data-t="${k}" role="tab" aria-selected="${S.tab === k}">${i} ${n}${k === 'tasks' ? '<span class="bd" id="tkBd" style="display:none"></span>' : ''}</button>`).join('');
-    updateTaskBadge();
-  }
   $('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.t); });
   function redrawTab() { if (S.tab === 'curve' || S.tab === 'proto') { const E = extOf(S.tab); if (E && typeof E.redraw === 'function') { try { E.redraw(); } catch (e) {} } } }
   function setTab(t) {
@@ -1389,7 +875,6 @@
     if (b.dataset.sp) setSpeed(+b.dataset.sp);
     else if (b.dataset.a === 'run') setRun(!S.running); else if (b.dataset.a === 'reset') resetRig(); else if (b.dataset.a === 'fire') doFire(); else if (b.dataset.a === 'dice') diceRoll(); else if (b.dataset.a === 'fx') toggleFx();
   });
-  function updateChrome() { updateTitle(); buildPal(); updateTaskBar(); updateQLine(); }
   $('#bRun').onclick = () => setRun(!S.running);
   $('#bEx').onclick = openExamples; $('#bOpen').onclick = openList; $('#bTasks').onclick = () => setTab('tasks'); $('#bShare').onclick = shareNow; $('#bPrint').onclick = printNow;
 
@@ -1409,12 +894,6 @@
       b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); menuAct(r.dataset.m); });
     });
   }
-  async function newExperiment() {
-    if (S.task) { toast('Beende zuerst die Aufgabe.'); return; }
-    const v = await pick('Neuer Versuch: Prüfstand wählen', ORDER.map(id => ({ value: id, label: rigName(id), sub: ((defOf(id) || {}).info) || RIGMETA[id].info, icon: rigIcon(id), mark: defOf(id) ? '' : 'fehlt' })));
-    if (!v) return; const had = stash(); S.name = 'Neuer Versuch'; S.id = null; S.dirty = false; S.rows[v] = []; setRig(v); setTab('rig');
-    toast(had ? 'Neuer Versuch, dein bisheriger ist gesichert' : 'Neuer Versuch');
-  }
   function menuAct(m) {
     switch (m) {
       case 'tasks': setTab('tasks'); break; case 'new': newExperiment(); break; case 'ex': openExamples(); break; case 'open': openList(); break; case 'save': doSave(); break;
@@ -1427,10 +906,8 @@
     }
   }
   $('#bMenu').onclick = openMenu;
-  const keysSheet = () => sheet('Tastenkürzel', b => { b.innerHTML = keysHtml(); });
 
   /* ============================================================ Tastatur (liest die Tabelle KEYS) */
-  const typing = e => { const t = e.target; return t && (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) || t.isContentEditable); };
   root.addEventListener('keydown', e => {
     if (typing(e) || e.altKey || document.querySelector('.backdrop')) return;
     const k = KEYS.find(x => !x.ext && x.match && x.match(e)); if (!k) return;
@@ -1464,7 +941,6 @@
   }
 
   /* ============================================================ Schnittstellen für Trainer, Tasten, Tests */
-  const ampelNow = () => { const a = assessOf(S.rig); return a ? ampKey(a.ampel) : 'grau'; };
   root.LabTrainerAPI = {
     lab: 'els', tab: () => S.tab, go: setTab, simMode: () => S.running, running: () => S.running, rig: () => S.rigId, speed: () => S.speed,
     load: loadExampleByName, examples: () => exampleList().map(e => e.name), task: () => (S.task ? S.task.id : null), saved: () => saves().length,

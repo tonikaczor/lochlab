@@ -63,7 +63,7 @@
     { id: 'ug-zu-klein', name: 'Gate-Spannung zu klein', info: 'U_G = 4 V liegt unter der Plateauspannung: Der MOSFET schaltet nicht durch.', params: { ug: 4, rg: 10, qg: 20, qgd: 5, f: 100000, uin: 12, i: 1, halbbruecke: false, ton: 100, toff: 0 } },
     { id: 'totzeit', name: 'Halbbrücke mit zu kurzer Totzeit', info: 'Totzeit 20 ns ist kürzer als die Ausschaltzeit: Beide Schalter leiten gleichzeitig.', params: { ug: 10, rg: 10, qg: 20, qgd: 5, f: 100000, uin: 12, i: 1, halbbruecke: true, ton: 20, toff: 0 } }
   ];
-  const PFAD = { quelle: 'Treiber mit Gate-Spannung U_G und Gate-Widerstand R_g, Schaltspannung bis 60 V (Kleinspannung)', wandlung: 'MOSFET: Gate-Ladung bestimmt Schaltzeit, Schaltverlust und Gate-Verlust', senke: 'Last mit konstantem Strom am Schalter (Halbbrücke nur als Begriff und Prüfung der Totzeit)', art: 'getaktet' };
+  const PFAD = { quelle: 'Treiber mit Gate-Spannung U_G und Gate-Widerstand R_g, Schaltspannung bis 60 V (Übungsgrenze im Lab, Kleinspannung)', wandlung: 'MOSFET: Gate-Ladung bestimmt Schaltzeit, Schaltverlust und Gate-Verlust', senke: 'Last mit konstantem Strom am Schalter (Halbbrücke nur als Begriff und Prüfung der Totzeit)', art: 'getaktet' };
 
   function plant(P0) {
     const CORE = P0.CORE;

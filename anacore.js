@@ -373,7 +373,7 @@
     simOnly: 'Simulation – Übungswerte. Aufbau und Messung am Labortisch nur nach Anweisung der Ausbilder.',
     ampelHinweis: 'Grün heißt: Vorgabe der Simulation erfüllt, nicht: Schaltung ist für jeden Einsatz geeignet.',
     protoHinweis: 'Übungsbericht, kein Nachweis.',
-    kleinspannung: 'Alle Schaltungen in diesem Lab arbeiten mit Kleinspannung (bis ' + api.limitText('u_klein').replace(' (Übungswert)', '').replace('≤ ', '') + '). Netzspannung kommt hier nicht vor.',
+    kleinspannung: 'Alle Schaltungen in diesem Lab arbeiten mit Kleinspannung. Im Lab gilt als Obergrenze ' + api.limitText('u_klein').replace(' (Übungswert)', '').replace('≤ ', '') + ' (Übungswert); Kleinspannung bedeutet bis 50 V AC / 120 V DC. Netzspannung kommt hier nicht vor.',
     uebungswert: 'Übungswert: Der Ausbilder gleicht den Wert noch ab.',
     opvModell: 'Idealer Operationsverstärker: Eingangswiderstand unendlich, Ausgangswiderstand null, Verstärkung unendlich.',
     gegenkopplung: 'Ohne Gegenkopplung arbeitet der Operationsverstärker als Komparator und läuft in die Sättigung.',

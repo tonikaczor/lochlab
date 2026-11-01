@@ -33,7 +33,7 @@
   const opt = arr => arr.map(a => ({ value: a[0], label: a[1] }));
   const CONTROLS = B.fillControls([
     { key: 'ub', label: 'Betriebsspannung U_B', type: 'slider', scale: 'lin', min: 3, max: 30, step: 0.1, unit: 'V', unitKind: 'V', value: 5, gruppe: 'quelle', sicht: 'formel',
-      help: 'Betriebsspannung der Last. Kleinspannung (' + LT('u_klein') + '). Übungswert. Reicht sie nicht für U_CE,sat und die Flussspannung der LED, bekommt die Last keinen Strom.' },
+      help: 'Betriebsspannung der Last. Im Lab gilt als Obergrenze ' + LT('u_klein') + '. Kleinspannung bedeutet allgemein bis 50 V Wechselspannung oder 120 V Gleichspannung; wo Kinder, Kleintiere oder Nutztiere berühren können, gelten nur 25 V Wechselspannung oder 60 V Gleichspannung, in Feuchträumen und bei nasser Haut noch weniger. Reicht sie nicht für U_CE,sat und die Flussspannung der LED, bekommt die Last keinen Strom.' },
     { key: 'ust', label: 'Steuerspannung U_St (High)', type: 'slider', scale: 'lin', min: 0, max: 30, step: 0.1, unit: 'V', unitKind: 'V', value: 5, gruppe: 'quelle', sicht: 'signal',
       help: 'Spannung des Steuersignals im Zustand High, zum Beispiel ein Ausgang einer Steuerung. Liegt sie nicht über U_BE (' + LT('ube') + ' belegt), sperrt der Transistor. Übungswert.' },
     { key: 'last', label: 'Last', type: 'select', value: 'led', options: opt([['led', 'LED mit Vorwiderstand'], ['relais', 'Relais (Spule)'], ['ohm', 'Ohmscher Verbraucher']]), gruppe: 'last', sicht: 'formel',

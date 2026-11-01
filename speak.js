@@ -45,11 +45,12 @@
      (Wiki noch nicht geladen oder nicht erreichbar) und enthalten denselben Text (test_wiki_speak.js). Nachgeladen wird im Leerlauf nach dem Laden der Seite;
      bis dahin antwortet part() synchron aus T, damit das Abspielen im Tipp-Handler bleibt (iOS). */
   var wikiTried = false;
+  var LAZY = false; try { LAZY = document.currentScript.getAttribute('data-wiki') === 'lazy'; } catch (x) {}   /* Rig-Labs: nur Vorlesen fuer den Wiki-Drawer, Wiki und Bauteildaten nicht im Leerlauf nachladen (wiki-labs.js laedt bei Bedarf) */
   function wiki(k) {
     try { var W = window.Wiki, e = W && W.bySpeak ? W.bySpeak(k) : null; return e && e.kat === 'bauteil' && e.speak && e.kurz ? e : null; } catch (x) { return null; }
   }
   function loadWiki() {
-    if (wikiTried) return; wikiTried = true;
+    if (wikiTried || LAZY) return; wikiTried = true;
     try {
       var need = function () { try { window.Wiki.need(['bauteile']); } catch (x) {} };
       if (window.Wiki && window.Wiki.need) return need();
@@ -79,8 +80,8 @@
     try { var best = -1; voice = null; (window.speechSynthesis.getVoices() || []).forEach(function (v) { var s = score(v); if (s > best) { best = s; voice = v; } }); } catch (e) {}
   }
   try { if ('speechSynthesis' in window) { pick(); window.speechSynthesis.addEventListener('voiceschanged', pick); } } catch (e) {}
-  function sayRaw(txt) {
-    try { if (!('speechSynthesis' in window)) return; if (!voice) pick(); var u = new SpeechSynthesisUtterance(txt); u.lang = 'de-DE'; u.rate = 0.95; if (voice) u.voice = voice; window.speechSynthesis.speak(u); } catch (e) {}
+  function sayRaw(txt, onend) {
+    try { if (!('speechSynthesis' in window)) { if (onend) onend(); return; } if (!voice) pick(); var u = new SpeechSynthesisUtterance(txt); u.lang = 'de-DE'; u.rate = 0.95; if (voice) u.voice = voice; if (onend) u.onend = u.onerror = onend; window.speechSynthesis.speak(u); } catch (e) { if (onend) onend(); }
   }
   /* Aufnahmen (sprache/index.js, Piper-Stimme): Hash schützt davor, dass ein später geänderter Text mit alter Aufnahme gesprochen wird */
   var cur = null, tok = 0;
@@ -90,19 +91,21 @@
     if (cur) { try { cur.onended = cur.onerror = null; cur.pause(); } catch (e) {} cur = null; }
     try { if ('speechSynthesis' in window) window.speechSynthesis.cancel(); } catch (e) {}
   }
-  function say(txt) { stop(); sayRaw(txt); }
+  function say(txt, onend) { stop(); sayRaw(txt, onend); }
   /* base = Text der Aufnahme, extra = dynamischer Zusatz (immer Geräte-Stimme, nach dem Ende der Aufnahme) */
-  function speak(k, base, extra) {
+  /* onend (optional): wird gerufen, wenn alles gesprochen ist (nicht nach stop()). Rueckgabe: true = Aufnahme laeuft, false = Geraetestimme */
+  function speak(k, base, extra, onend) {
     stop();
     var my = tok, A = window.SpeakAudio, e = A && A[key(k)], all = base + (extra ? ' ' + extra : '');
-    var fb = function () { cur = null; if (my === tok) sayRaw(all); };
-    if (!e || e.h !== hash(base) || !window.Audio) return fb();
+    var fb = function () { cur = null; if (my === tok) sayRaw(all, onend); };
+    if (!e || e.h !== hash(base) || !window.Audio) { fb(); return false; }
     try {
       var a = new Audio('sprache/' + e.f + '.mp3'); cur = a;
-      a.onended = function () { cur = null; if (my === tok && extra) sayRaw(extra); };
+      a.onended = function () { cur = null; if (my === tok) { if (extra) sayRaw(extra, onend); else if (onend) onend(); } };
       a.onerror = fb;
       var p = a.play(); if (p && p.catch) p.catch(function () { if (cur === a) fb(); });
-    } catch (x) { fb(); }
+      return true;
+    } catch (x) { fb(); return false; }
   }
   /* Knopf "Im Wiki" (W5): nur dort, wo wiki-labs.js den Drawer samt Stil mitbringt, und nur mit vorhandenem Eintrag; uebergeben wird allein die Eintrags-ID */
   function wikiBtn(k) { return k && window.WikiLabs ? wiki(k) : null; }

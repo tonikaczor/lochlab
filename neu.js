@@ -2,6 +2,13 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v23.151', items: [
+      ['Wiki: Prüfansicht mit Filter', 'Die Prüfansicht des Wikis hat eine feste Leiste oben mit Filter nach Kategorie und Text. Auf dem Handy werden die Einträge als Karten gezeigt.', 'Wiki ▸ Prüfansicht'],
+      ['Vorlesen auch für Geräte', 'Die Messgeräte und Bedienelemente im Wiki können jetzt vorgelesen werden, mit der Piper-Stimme ohne Internet. Auch im Wiki-Fenster neben den Labs funktioniert das.', 'Wiki ▸ Eintrag ▸ Vorlesen'],
+      ['ILIAS-Link oben im Dialog', 'Im Dialog „Ergebnis senden“ steht der freiwillige Link zur Abgabe in ILIAS jetzt oben, über dem QR-Code. Es wird weiterhin nichts automatisch gesendet.', 'Lab ▸ Ergebnis senden'],
+      ['Kleinspannung richtig angegeben', 'Kleinspannung bedeutet bis 50 V Wechselspannung und 120 V Gleichspannung. Die Hinweise im Analog-Lab und im Lernheft nennen das jetzt so; die 30 V im Lab bleiben ein Übungswert. In den Analog-Hinweisen stehen auch die strengeren Werte für Kinder, Kleintiere und Nutztiere (25 V AC / 60 V DC).', 'Analog-Lab, Lernheft Analog'],
+      ['Aufgeräumt', 'Interne Aufräumarbeiten in Wechselstrom, Analog und Sicherheit: weniger doppelter Code, etwas kleinere Dateien, ein paar kleine Fehler behoben.', 'im Hintergrund'],
+    ] },
     { v: 'v23.150', items: [
       ['Wiki: Hilfetexte für alle Einträge', 'Alle 1329 Wiki-Einträge haben jetzt einen Hilfetext. Auch die letzten Regler und Messwerte aus Energie, EMV, Sensorik und anderen Labs sind erklärt: was sie bewirken und wie sie zusammenhängen. Das kleine „?“ im Trainer weist darauf hin.', 'Wiki, Labs ▸ „?“'],
       ['Neues Wiki-Design: zwei Spalten, A bis Z, Steckbrief', 'Am PC steht links die Liste und rechts der Eintrag. Eine Leiste A bis Z springt in langen Listen zum Buchstaben, Suchwörter sind im Titel markiert, und Regler und Messwerte haben einen übersichtlichen Steckbrief. Auf dem Handy lässt sich das Fenster von unten mit dem Finger ziehen.', 'Startseite ▸ Wiki'],
