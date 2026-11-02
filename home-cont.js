@@ -61,10 +61,14 @@
     let r; try { r = resolve({ get, REG: root.LAB_REG, ROWS: root.AUFGABEN, stat: LP && LP.stat, recommend: LP && LP.recommend, now: Date.now() }); } catch (e) { return; }
     a.href = r.href;
     // Hero (Werkbank): Fortschrittsring (Anteil erledigter Aufgaben über alle Labs), Rang aus Karriere.summary(); alles nur Anzeige, resolve() bleibt unberührt
-    let pct = 0, rk = '';
+    let pct = 0, rk = '', rn = 0;
+    const ORDEN = ['🔰', '🔧', '💡', '📏', '🔍', '🔌', '🏭', '📋', '🎓', '🥇'];   // je Rang ein Orden, Symbole wie in badges.js
     try { const ks = Object.keys(root.LAB_REG || {}).filter(k => !root.LAB_REG[k].hub); let n = 0, d = 0; ks.forEach(k => { const s = LP.stat(k); n += s.n; d += s.d; }); pct = n ? Math.round(100 * d / n) : 0; } catch (e) { pct = 0; }
-    try { const K = root.Karriere && root.Karriere.summary && root.Karriere.summary(); if (K && K.n) rk = 'Rang ' + K.n + (K.t ? ' · ' + K.t : ''); } catch (e) { rk = ''; }
-    a.innerHTML = '<span class="ring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle class="rt" cx="22" cy="22" r="19"/>' + (pct > 0 ? '<circle class="rf" cx="22" cy="22" r="19" pathLength="100" stroke-dasharray="' + pct + ' 100"/>' : '') + '</svg><i>' + pct + '&nbsp;%</i></span><span class="tx">' + (rk ? '<span class="rk">' + esc(rk) + '</span>' : '') + '<b>' + esc(r.label) + '</b><small>' + esc(r.sub) + '</small></span><span class="pill" aria-hidden="true">▶</span>';
+    try { const K = root.Karriere && root.Karriere.summary && root.Karriere.summary(); if (K && K.n) { rn = Math.max(1, Math.min(ORDEN.length, K.n | 0)); rk = 'Rang ' + K.n + (K.t ? ' · ' + K.t : ''); } } catch (e) { rk = ''; rn = 0; }
+    // Orden-Reihe (erreichte Ränge hell, aktueller pulsiert) und großer Orden rechts; nur Anzeige
+    const pips = rn ? '<span class="pips" aria-hidden="true">' + ORDEN.map((o, i) => '<i class="' + (i + 1 < rn ? 'got' : i + 1 === rn ? 'now' : '') + '">' + o + '</i>').join('') + '</span>' : '';
+    const medal = rn ? '<span class="medal t' + (rn >= 10 ? 4 : rn >= 7 ? 3 : rn >= 4 ? 2 : 1) + '" aria-hidden="true"><em>' + ORDEN[rn - 1] + '</em></span>' : '';
+    a.innerHTML = '<span class="ring" aria-hidden="true"><svg viewBox="0 0 44 44"><circle class="rt" cx="22" cy="22" r="19"/>' + (pct > 0 ? '<circle class="rf" cx="22" cy="22" r="19" pathLength="100" stroke-dasharray="' + pct + ' 100"/>' : '') + '</svg><i>' + pct + '&nbsp;%</i></span><span class="tx">' + (rk ? '<span class="rk">' + esc(rk) + '</span>' : '') + '<b>' + esc(r.label) + '</b><small>' + esc(r.sub) + '</small>' + pips + '</span>' + medal + '<span class="pill" aria-hidden="true">▶</span>';
     a.setAttribute('aria-label', r.label + ': ' + r.sub);
     // Handy: Bereich des Labs beim ersten Besuch offen halten
     const REG = root.LAB_REG || {}, f = REG[r.key] && REG[r.key].file;

@@ -11,7 +11,7 @@
       var s = document.createElement('div');
       s.id = 'urheber-sprache';
       s.style.cssText = 'margin-top:4px';
-      s.innerHTML = 'Sprachausgabe: <a href="https://github.com/rhasspy/piper" target="_blank" rel="noopener" style="color:inherit">Piper</a> (TTS) mit der Stimme &bdquo;Thorsten&ldquo; von Thorsten M&uuml;ller / <a href="https://www.thorsten-voice.de" target="_blank" rel="noopener" style="color:inherit">Thorsten-Voice</a> (CC0, Public Domain).';
+      s.innerHTML = 'Sprachausgabe: KI-Stimme, erzeugt mit <a href="https://github.com/resemble-ai/chatterbox" target="_blank" rel="noopener" style="color:inherit">Chatterbox</a> (Resemble AI, MIT-Lizenz) nach einer Aufnahme von Toni Kaczor.';
       d.appendChild(s);
     }
     (document.body || document.documentElement).appendChild(d);

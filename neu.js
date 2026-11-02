@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v23.152', items: [
+      ['Neue Vorlesestimme', 'Die Stimme zum Vorlesen klingt jetzt gottähnlich fantastisch! Es ist die Stimme von Toni: eine KI-Stimme, die nach seiner Aufnahme erzeugt wurde. Sie liest alle Bauteile, Messgeräte und Bedienelemente im Wiki und in den Labs vor, weiterhin ohne Internet.', 'Wiki ▸ Eintrag ▸ Vorlesen'],
+      ['Orden für jeden Rang', 'Das blaue Feld auf der Startseite zeigt jetzt einen Orden für deinen Rang, der leicht schwebt und glänzt, und darunter die Reihe aller 10 Orden. Erreichte Orden leuchten, der aktuelle pulsiert. Bei Bewegungsreduzierung im System bleibt alles ruhig.', 'Startseite'],
+      ['Große Karten auf der Startseite', 'Die Startseite zeigt die Labs überall als große Karten mit animierter Vorschau. Wer lieber die kleinen Kacheln mag, schaltet sie oben weiter um.', 'Startseite'],
+    ] },
     { v: 'v23.151', items: [
       ['Wiki: Prüfansicht mit Filter', 'Die Prüfansicht des Wikis hat eine feste Leiste oben mit Filter nach Kategorie und Text. Auf dem Handy werden die Einträge als Karten gezeigt.', 'Wiki ▸ Prüfansicht'],
       ['Vorlesen auch für Geräte', 'Die Messgeräte und Bedienelemente im Wiki können jetzt vorgelesen werden, mit der Piper-Stimme ohne Internet. Auch im Wiki-Fenster neben den Labs funktioniert das.', 'Wiki ▸ Eintrag ▸ Vorlesen'],

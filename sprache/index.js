@@ -1,4 +1,4 @@
-/* erzeugt von quelle/gen/mksprache.py: Piper de_DE-thorsten (CC0); h = Hash des Anzeigetextes (kurz) aus wiki-bauteile.js bzw. wiki-geraete.js (Schluessel GER_*, BD_*) */
+/* Stimme Toni (KI-Klon mit Chatterbox, nach Tonis Aufnahme), erzeugt mit quelle/gen/stimme_einbinden.py; h = Hash des Anzeigetextes (kurz) aus wiki-bauteile.js bzw. wiki-geraete.js (Schluessel GER_*, BD_*); Vorgaenger: Piper de_DE-thorsten (CC0), Sicherung quelle/bak_v23_152 */
 window.SpeakAudio = {"R":{"f":"R","h":"13zy75g"},
 "POT":{"f":"POT","h":"p58faf"},
 "C":{"f":"C","h":"3o2mnv"},

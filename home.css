@@ -46,6 +46,16 @@ header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
 .cont .ring i{font-style:normal;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
 .cont .tx{min-width:0;flex:1}
 .cont .rk{display:block;margin:0 0 2px;font-size:13px;font-weight:600;letter-spacing:.02em}
+/* Orden: Reihe der 10 Ränge unter dem Text, großer Orden rechts (Farbe nach Stufe: Bronze, Silber, Gold, Prüfungsbester) */
+.cont .pips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.cont .pips i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(0,0,0,.14);font-style:normal;font-size:12px;line-height:1;filter:grayscale(1);opacity:.45}
+.cont .pips i.got{border-color:rgba(255,255,255,.85);background:rgba(255,255,255,.18);filter:none;opacity:1}
+.cont .pips i.now{border-color:#fff;background:rgba(255,255,255,.3);filter:none;opacity:1;box-shadow:0 0 0 3px rgba(255,255,255,.18)}
+.cont .medal{--m1:#e0a46b;--m2:#8a5424;position:relative;flex:none;display:grid;place-items:center;width:76px;height:76px;margin-left:auto;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 32% 28%,var(--m1),var(--m2));box-shadow:inset 0 0 0 3px rgba(255,255,255,.35),inset 0 0 0 7px rgba(0,0,0,.18),0 6px 14px -6px rgba(0,0,0,.6)}
+.cont .medal.t2{--m1:#eef2f7;--m2:#7d8794}.cont .medal.t3{--m1:#ffe08a;--m2:#b57f10}.cont .medal.t4{--m1:#fff3b0;--m2:#d98a00}
+.cont .medal em{font-style:normal;font-size:34px;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
+.cont .medal::after{content:"";position:absolute;inset:-20% auto -20% -60%;width:40%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-12deg);pointer-events:none}
+.cont .medal+.pill{margin-left:0}
 .cont b{display:block;font-size:26px;line-height:1.2}
 .cont small{display:block;margin-top:2px;font-weight:400;font-size:15px;color:inherit;overflow-wrap:anywhere}
 .cont .pill{flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:#fff;color:var(--accent-bg,#1a6fd4);font-size:18px;padding-left:3px}
@@ -76,6 +86,7 @@ header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
   .cont{gap:12px;min-height:84px;padding:12px 14px;border-radius:14px}
   .cont .ring{width:60px;height:60px}.cont .ring i{font-size:13px}.cont .ring svg{stroke-width:5}
   .cont b{font-size:20px}.cont small{font-size:14px}.cont .pill{width:44px;height:44px}
+  .cont .medal{display:none}.cont .pips{gap:3px;margin-top:8px}.cont .pips i{width:20px;height:20px;font-size:10px}
   #top #duellBand{flex-wrap:nowrap;gap:8px;padding:8px 10px}
   #top #duellBand .dl-tx{flex:1 1 0;min-width:0}#top #duellBand .dl-tx small{display:none}
   #top #duellBand .dl-btn{padding:0 10px;font-size:14px;white-space:nowrap}
@@ -247,6 +258,13 @@ html.rub-free .rub{display:none}
   @keyframes ringpulse{0%,100%{filter:drop-shadow(0 0 0 rgba(255,255,255,0))}50%{filter:drop-shadow(0 0 5px rgba(255,255,255,.55))}}
   .cont .ring .rf,.mini .v{animation:ringfill .6s ease-out}
   .cont .ring svg{animation:ringpulse 3.6s ease-in-out 1s infinite}
+  @keyframes medalfloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
+  @keyframes medalshine{0%,55%{left:-60%}100%{left:130%}}
+  @keyframes pipnow{0%,100%{box-shadow:0 0 0 3px rgba(255,255,255,.18)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}}
+  .cont .medal{animation:medalfloat 4.2s ease-in-out infinite}
+  .cont .medal::after{animation:medalshine 4.2s ease-in-out infinite}
+  .cont .pips i.now{animation:pipnow 2.4s ease-out infinite}
+  .cont:hover .medal{animation-duration:1.6s}
   html.tiles .card{transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
   html.tiles .card:hover,html.tiles .card:focus-within{transform:translateY(-2px);box-shadow:0 10px 24px -14px rgba(0,0,0,.55)}
   .chip{transition:transform .08s ease,background .12s ease,color .12s ease}
