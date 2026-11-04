@@ -995,14 +995,16 @@
   };
   function buildFaultPanel() {
     const H = $('#faultHost'); if (!H) return; const d = S.dice, hid = isHid('fehler');
-    if (!S.rig || (!hid && !d)) { H.innerHTML = ''; return; }
+    const tz = !hid && !d && !S.task && tauschAnaOk(), tk = !!(d && d.tausch && !d.revealed);   /* Fehler-Tausch (T3b): Knopf zum Weitergeben, laufende Karte ohne Auflösung */
+    if (!S.rig || (!hid && !d && !tz)) { H.innerHTML = ''; return; }
     const b = [];
-    if (hid) { b.push('<button class="btn pri" data-fa="diag">🩺 Diagnose abgeben</button>'); b.push('<button class="btn" data-fa="reveal">Auflösung zeigen</button>'); }
+    if (hid) { b.push('<button class="btn pri" data-fa="diag">🩺 Diagnose abgeben</button>'); if (!tk) b.push('<button class="btn" data-fa="reveal">Auflösung zeigen</button>'); }
     if (d && d.kind === 'fehler' && d.revealed && !d.done) b.push('<button class="btn pri" data-fa="repair">🔧 Fehler beheben und prüfen</button>');
     if (d && d.kind === 'wert' && !d.done) { b.push('<button class="btn pri" data-fa="check">✓ Behebung prüfen</button>'); b.push('<button class="btn" data-fa="reveal">Auflösung</button>'); }
-    if (d && !d.done) b.push('<button class="btn" data-fa="undo">↩ Abbrechen</button>'); if (d && d.done) b.push('<button class="btn" data-fa="close">Schließen</button>');
-    const title = d ? '🎲 Finde den Fehler' + (d.done ? ' – erledigt' : '') : '🩺 Fehlersuche (Simulation)';
-    const intro = hid ? 'Der Fehlerfall ist verdeckt („Fehler: ?“). Miss mit den Messgeräten, lies Ampel und Hinweise und gib deine Diagnose ab. Ein defekter Aufbau wird hier nur simuliert.' : 'Am Aufbau stimmt etwas nicht. Beobachte Ampel, Messgeräte und Hinweise. Mit „Behebung prüfen“ kontrolliert der Prüfstand, ob keine neue Warnung mehr kommt.';
+    if (d && !d.done && !tk) b.push('<button class="btn" data-fa="undo">↩ Abbrechen</button>'); if (d && d.done) b.push('<button class="btn" data-fa="close">Schließen</button>');
+    if (tz) b.push('<button class="btn" data-fa="tausch">🔁 Als Fehlerkarte weitergeben</button>');
+    const title = d && d.tausch ? '🔁 Fehlerkarte' + (d.done ? ' – erledigt' : '') : d ? '🎲 Finde den Fehler' + (d.done ? ' – erledigt' : '') : '🩺 Fehlersuche (Simulation)';
+    const intro = hid ? 'Der Fehlerfall ist verdeckt („Fehler: ?“). Miss mit den Messgeräten, lies Ampel und Hinweise und gib deine Diagnose ab. Ein defekter Aufbau wird hier nur simuliert.' : tz ? 'Baue einen Fehler aus der Liste dieses Prüfstands ein und gib ihn als Fehlerkarte (Code oder QR) an andere weiter. Die Einstellung von jetzt wird übernommen.' : 'Am Aufbau stimmt etwas nicht. Beobachte Ampel, Messgeräte und Hinweise. Mit „Behebung prüfen“ kontrolliert der Prüfstand, ob keine neue Warnung mehr kommt.';
     H.innerHTML = `<div class="card pl fault"><h4>${title}</h4><p class="hint2" style="margin:0 0 6px">${esc(intro)}</p><div class="btns" style="margin-top:0">${b.join('')}</div>${S.diagnose && hid ? `<p class="hint2">Abgegebene Diagnose: <b>${esc(S.diagnose.label)}</b></p>` : ''}${d && d.result ? `<div class="hint2 inl" role="status">${esc(d.result)}</div>` : ''}</div>`;
   }
   async function diagnosePick() {
@@ -1021,9 +1023,22 @@
     const d = S.dice; if (!d || !S.diagnose) return; d.attempts = (d.attempts || 0) + 1;
     if (S.diagnose.id === d.fehler) { revealDice(); d.result = 'Richtig: ' + S.diagnose.label + '. ' + diagTexts().join(' ') + ' Tippe auf „Fehler beheben und prüfen“.'; toast('Richtig gefunden: ' + S.diagnose.label); }
     else { d.result = 'Nicht ganz: „' + S.diagnose.label + '“ passt nicht zu deinen Messwerten.' + predictText(S.diagnose.id) + ' Miss weiter und gib eine neue Diagnose ab.'; toast('Die Diagnose passt nicht zu den Messwerten'); }
+    if (d.tausch && root.LabTauschAPI && root.LabTauschAPI.lab === 'ana' && typeof root.LabTauschAPI._diag === 'function') { try { root.LabTauschAPI._diag(S.diagnose.id === d.fehler, S.diagnose.id); } catch (e) { console.error(e); } }
+  }
+  /* Fehler-Tausch (Paket T3b): nur wenn tausch.js geladen ist; der Adapter tauschad-ana.js wird bei Bedarf nachgeladen */
+  function tauschAnaOk() { try { return !!(root.Tausch && typeof root.Tausch.registerAdapter === 'function' && !(root.Duell && typeof root.Duell.active === 'function' && root.Duell.active())); } catch (e) { return false; } }
+  function tauschAna(fn) {
+    if (!root.Tausch) return; const api = () => (root.LabTauschAPI && root.LabTauschAPI.lab === 'ana' ? root.LabTauschAPI : null);
+    if (api()) { fn(api()); return; }
+    loadFile('tauschad-ana.js').then(() => { if (api()) fn(api()); else toast('Die Fehler-Tauschbörse ist nicht geladen (tauschad-ana.js).'); });
+  }
+  function tauschAnaHash() {
+    if (!/^#t=/.test(location.hash) || !root.Tausch) return; const h = location.hash; history.replaceState(null, '', location.pathname + location.search);
+    tauschAna(api => { if (!api.entry(h)) toast('Fehlerkarte erkannt. Die Tausch-Oberfläche ist noch nicht geladen.'); });
   }
   async function revealFault() {
     const d = S.dice;
+    if (d && d.tausch && !d.revealed) { toast('Bei einer Fehlerkarte gibt es die Auflösung erst nach der richtigen Diagnose oder nach dem Aufgeben.'); return; }
     if (d && d.kind === 'wert') { d.revealed = true; d.result = 'Auflösung: ' + d.name + '. ' + d.text; buildFaultPanel(); return; }
     if (S.task) { if (!await confirmSheet('Auflösung zeigen?', 'Das <b>zählt als Hilfe</b> (Stufe 3): Dein Ausbilder sieht es.', 'Zeigen')) return; const h = lsGet('sim.hints', {}); h[S.task.id] = 3; lsSet('sim.hints', h); }
     if (d) { revealDice(); d.result = 'Auflösung: ' + optLab('fehler', d.fehler) + '. ' + diagTexts().join(' '); } else { applyLockHidden(S.lock, []); toast('Auflösung: ' + optLab('fehler', cval('fehler'))); }
@@ -1056,11 +1071,13 @@
   $('#faultHost').addEventListener('click', e => {
     const b = e.target.closest('[data-fa]'); if (!b || !S.rig || S.readonly) return; const a = b.dataset.fa;
     if (a === 'diag') diagnosePick(); else if (a === 'reveal') revealFault(); else if (a === 'repair') repairDice(); else if (a === 'check') checkDice(); else if (a === 'undo') undoDice();
+    else if (a === 'tausch') tauschAna(api => { const r = api.share(); if (r && !r.ok && r.why) toast(r.why); });
     else if (a === 'close') { S.dice = null; S.diagnose = null; buildFaultPanel(); saveCurSoon(); }
   });
   /* Würfeln: bei Fehlerfällen aus der Liste verdeckt (lock + hidden), sonst als sichtbares Fehlerbild mit gesetzten Werten */
   async function diceRoll() {
     if (!S.rig) { toast('Der Prüfstand fehlt.'); return; } if (S.task) { toast('Beende zuerst die Aufgabe.'); return; }
+    if (S.dice && S.dice.tausch && !S.dice.revealed) { toast('Beende zuerst die Fehlerkarte (Diagnose oder Aufgeben).'); return; }
     if (S.dice) undoDice();
     const ok = (DICE[S.rigId] || []).filter(diceMap); if (!ok.length) { toast('An diesem Prüfstand lässt sich nichts auswürfeln.'); return; }
     const d = ok[Math.floor(Math.random() * ok.length)], m = diceMap(d), before = {}; Object.keys(m).forEach(k => { before[k] = cval(k); });
@@ -1381,6 +1398,8 @@
     } catch (e) { console.error(e); }
     if (/^#[sz]=/.test(location.hash)) { const h = location.hash; history.replaceState(null, '', location.pathname + location.search); loadShared(h); }
     root.addEventListener('hashchange', () => { if (/^#[sz]=/.test(location.hash)) { const h = location.hash; history.replaceState(null, '', location.pathname + location.search); loadShared(h); } });
+    /* Fehler-Tausch: tausch.js steht nach duell.js (nach dieser Datei), daher erst nach dem Laden der Seite */
+    root.addEventListener('load', () => { if (root.Tausch) { buildFaultPanel(); tauschAnaHash(); root.addEventListener('hashchange', tauschAnaHash); } });
     root.addEventListener('beforeunload', saveCur);
   }
   init();

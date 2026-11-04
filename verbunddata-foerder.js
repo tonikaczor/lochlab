@@ -84,12 +84,13 @@
     const vSoll = level === 1 ? pick(r, [0.25, 0.30, 0.40]) : level === 2 ? rd(0.20 + 0.05 * Math.floor(r() * 7), 2) : rd(0.20 + 0.01 * Math.floor(r() * 31), 2);
     const werkstoff = level === 1 ? 'stahl' : level === 2 ? pick(r, ['stahl', 'alu']) : pick(r, ['stahl', 'alu', 'kupfer']);
     const iLogikMa = level === 1 ? pick(r, [90, 110, 130]) : level === 2 ? pick(r, [20, 50, 70, 90, 110]) : pick(r, [20, 50, 70, 90, 110, 130]);   // (A)
-    const fault = level === 3 ? pick(r, ['cWrong', 'divSwap']) : null;
+    const fv = level === 3 ? r() : 0, fi = Math.floor(fv * FAULTS.length) % FAULTS.length, fSeed = level === 3 ? fi + FAULTS.length * (1 + Math.floor((fv * FAULTS.length - fi) * 900)) : null;   // opaker Fehler-Zufall, Katalog nur in faultKey
+    const fault = fSeed;
     const pauseStart = 40 + Math.floor(r() * 31), pauseDur = 6 + Math.floor(r() * 9);                                                                   // Stillstand im Protokolllauf (s)
     const p = {
       dRolle: 0.10, vSoll: vSoll, lWerk: 40, lLuecke: 60, fensterMm: 44, sWeg: 142, tZylMs: 100, mBand: 3, pMotorW: 550, uNetz: 400, uSteuer: 24,
       nSens: 2, iSensMa: 10, uTol: 0.10, tAmb: 40, iLogikMa: iLogikMa, cycleMs: 10, werkstoff: werkstoff, tFilterMinMs: 2, tTaktS: 4, metalRatio: 0.4,
-      boardW: 100, boardH: 60, layers: 2, clearance: 0.3, uRef: 5, fault: fault, pauseStart: pauseStart, pauseDur: pauseDur
+      boardW: 100, boardH: 60, layers: 2, clearance: 0.3, uRef: 5, fSeed: fault, hidden: ['fSeed'], pauseStart: pauseStart, pauseDur: pauseDur
     };
     p.uMax = rd(p.uSteuer * (1 + p.uTol), 2); p.uMin = rd(p.uSteuer * (1 - p.uTol), 2);
     p.tPulsMs = rd((p.lWerk + p.fensterMm) / vSoll, 1);
@@ -185,7 +186,15 @@
   const valueIs = (value, ds) => { const a = lc(value).replace(/[\s-]/g, ''), b = lc(refOf(ds)).replace(/[\s-]/g, ''); return !!b && (a === b || a.indexOf(b) >= 0); };
 
   /* ====================================================================== Gemeinsame Infrastruktur der Stationen */
-  const P_ = ctx => { const s = ctx && ctx.spec; return isObj(s) && isObj(s.params) ? s.params : (isObj(s) ? s : {}); };
+  /* P9/R1: params enthält nur fSeed (Zahl, hidden); der Fehler wird zur Laufzeit aus dem Katalog bestimmt. Alte Spielstände mit params.fault bleiben lesbar. */
+  const FAULTS = ['cWrong', 'divSwap'];
+  function faultKey(P) {
+    if (!P) return null;
+    if (typeof P.fault === 'string') return P.fault;                                    // alter Spielstand (vor P9)
+    const f = P.fSeed; if (typeof f !== 'number' || !isFinite(f) || f < 0) return null;
+    return FAULTS[Math.floor(f) % FAULTS.length];
+  }
+  const P_ = ctx => { const s = ctx && ctx.spec, p = isObj(s) && isObj(s.params) ? s.params : (isObj(s) ? s : {}); if (p.fault !== undefined || p.fSeed === undefined) return p; const k = faultKey(p), q = Object.assign({}, p); if (k) Object.defineProperty(q, 'fault', { value: k, enumerable: false }); return q; };
   const TOL = ctx => (ctx && fin(ctx.tol) ? ctx.tol : 1);
   const LEVEL = ctx => (ctx && (ctx.level === 1 || ctx.level === 3) ? ctx.level : 2);
   const unwrap = d => (isObj(d) && isObj(d.data) && typeof d.type === 'string' ? d.data : d);
@@ -854,7 +863,8 @@
     if (!faulty) { const hi = hiTol('uhi'); lines.push(L(hi.ok, 'Pegel High (Eingang 24 V): ' + (fin(hi.v) ? 'gemessen ' + fm(hi.v, 2) + ' V' : 'nicht eingetragen') + ', erwartet ' + fm(hi.t, 2) + ' V (±' + fm(hi.tl, 2) + ' V)', 10)); }
     else {
       const f = arr(data && data.findings).map(lc).join(' | '), re = FIND_RE[P.fault];
-      lines.push(L(re(f), 'Fehler benannt: ' + (P.fault === 'cWrong' ? 'Filterkondensator zehnmal zu groß' : 'Teilerwiderstände vertauscht') + (f ? '' : ' – kein Befund eingetragen'), 25));
+      const okD = re(f);
+      lines.push(L(okD, okD ? 'Fehler benannt: ' + (P.fault === 'cWrong' ? 'Filterkondensator zehnmal zu groß' : 'Teilerwiderstände vertauscht') : f ? 'Fehler benannt: Diagnose stimmt nicht: Befund passt nicht zu den Messwerten' : 'Fehler benannt: Diagnose fehlt, kein Befund eingetragen', 25));
     }
     const rv = data && isObj(data.values) && fin(+data.values.tFilterMs) ? +data.values.tFilterMs : rowVal(rowOf(rows, 'tfilterms') || rowOf(rows, 'tfilter'), 'ms');
     lines.push(L(fin(rv) && Math.abs(rv - truth.tFilterMs) <= 0.2 * tol * truth.tFilterMs, 'Anstiegszeit des Eingangsfilters: ' + (fin(rv) ? 'gemessen ' + fm(rv, 2) + ' ms' : 'nicht eingetragen') + ', erwartet ' + fm(truth.tFilterMs, 2) + ' ms (aus der Simulation, ±' + fm(20 * tol, 0) + ' %)', 30));
@@ -1439,6 +1449,7 @@
     labs: ['ant', 'sim', 'sen', 'ds', 'sch', 'pcb', 'mess', 'sps', 'pi', 'pr'],
     levels: { 1: { name: 'Einsteiger', pass: 70, tolMul: 1.5 }, 2: { name: 'Standard', pass: 80, tolMul: 1 }, 3: { name: 'Profi', pass: 90, tolMul: 0.6 } },
     lastenheft: lastenheft,
+    faultKey: faultKey,
     stations: STATIONS,
     final: {
       id: 'vfF', title: 'Abschlusstest: Förder- und Sortieranlage', check: finalCheck,

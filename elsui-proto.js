@@ -53,8 +53,14 @@
     n.ergebnis = '';
     return n;
   }
+  /* P12 (E6): Im Verbund und in der Tausch-Suche bleibt der Fehler verdeckt: Kontrolle nur als Gesamt-Ampel, kein Mangelname im Ergebnis und in der CSV */
+  const hid = () => { try { const L = root.LabTauschAPI; return !!((root.VerbundBar && root.VerbundBar.active === true) || (L && L.lab === 'els' && typeof L.active === 'function' && L.active())); } catch (er) { return false; } };
   /* Kontrolle: ausschließlich ELS_CORE.protocol.check */
   function checkEntry(e) {
+    const r = checkEntry0(e);
+    return hid() && !r.nocore && !r.nodev && r.ok !== undefined && !r.why ? { ok: r.ok, abw: [], text: r.ok ? 'Das Protokoll stimmt mit dem Prüfling überein.' : 'Das Protokoll stimmt nicht überein. Prüfe Sichtprüfung, Messwerte und Ergebnis noch einmal.' } : r;
+  }
+  function checkEntry0(e) {
     const C = CORE(); if (!C || !C.protocol || typeof C.protocol.check !== 'function') return { ok: false, nocore: true, abw: [], text: NOCORE };
     const n = norm(e); if (!n.dev) return { ok: false, nodev: true, abw: [], text: 'Zum Vergleichen fehlt der Prüfling: Öffne den Prüfplatz, führe die Schritte aus und übernimm die Werte hier.' };
     let r = null; try { r = C.protocol.check(n, n.dev); } catch (er) { r = null; }
@@ -76,7 +82,7 @@
       else if (f.key === 'messwerte') { if (n.messwerte) Object.keys(MW).forEach(k => { if (n.messwerte[k] !== undefined) rows.push('messwerte.' + k + ';' + cq(n.messwerte[k]) + ';' + MW[k][1]); }); }
       else rows.push(f.key + ';' + cq(n[f.key]) + ';');
     });
-    if (n.dev) rows.push('dev.id;' + cq(n.dev.id) + ';', 'dev.faults;' + cq(n.dev.faults.join('|')) + ';', 'dev.seed;' + n.dev.seed + ';');
+    if (n.dev) hid() ? rows.push('dev.id;' + cq(n.dev.id) + ';', 'dev.seed;' + n.dev.seed + ';') : rows.push('dev.id;' + cq(n.dev.id) + ';', 'dev.faults;' + cq(n.dev.faults.join('|')) + ';', 'dev.seed;' + n.dev.seed + ';');
     return rows.join('\r\n') + '\r\n';
   }
   /* Zeilen und Felder in einem Zug lesen: Anführungszeichen dürfen Semikolon und Zeilenumbruch einschließen */

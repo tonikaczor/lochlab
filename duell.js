@@ -195,7 +195,7 @@
   /* ---------- Bestenliste TFB1 ---------- */
   /* recs: normalisierte Datensaetze (aus parse). Summe der besten W.best Duelle je Kuerzel in KW/Jahrgang; pr zaehlt halb. */
   function bestenliste(recs, opt) {
-    opt = opt || {}; const by = {};
+    opt = opt || {}; const by = Object.create(null);   /* kein {}: Kuerzel __proto__ darf nicht stoeren */
     (Array.isArray(recs) ? recs : []).forEach(r => {
       if (!r || (opt.kw != null && (parseRound(r.r) || {}).kw !== opt.kw) || (opt.j && r.j !== opt.j)) return;
       (by[r.k] = by[r.k] || []).push(r);
@@ -235,10 +235,12 @@
   const active = s => { const c = current(s); return !!(c && c.start); };
   const history = s => { const h = jget(s, KEYS.hist, null); return h && Array.isArray(h.hist) ? h.hist : []; };
   /* Start: legt lm4.duellcur an. Vorwissen (pr) und Tipp-Grundstand werden jetzt festgehalten. */
-  function start(runde, task, st, s, now) {
+  function start(runde, task, st, s, now, wo) {
+    if (now && typeof now === 'object') { wo = now; now = null; }   /* W2: start(r, task, st, s, { w, wi }) */
     const r = roundBase(runde); if (!r || !task || !task[0]) return null;
     const a = task[0], h0 = int(jget(s, 'sim.hints', {})[a], 0, 99, 0), done = Math.max(num((jget(s, 'sim.done', {}))[a], 0), num((jget(s, 'lm4.tdone', {}))[a], 0));
-    const c = { r, a, lab: task[1] || '', st: int(st, 1, 3, 2), start: now == null ? Date.now() : now, tries: 0, h0: int(jget(s, 'sim.hints', {})[a], 0, 99, 0), pct: 0, done: 0, pr: (done >= 100 || (h0 >= 3 && !SEEDLABS.includes(task[1]))) ? 1 : 0 };   /* gesehene Aufloesung (Stufe 3) = Vorkenntnis, ausser Seed-Labs (Fehler variiert) */
+    const c = { r, a, lab: task[1] || '', st: int(st, 1, 3, 2), start: now == null ? Date.now() : now, tries: 0, h0: int(jget(s, 'sim.hints', {})[a], 0, 99, 0), pct: 0, done: 0, pr: (done >= 100 || (h0 >= 3 && !SEEDLABS.includes(task[1]))) ? 1 : 0 };
+    if (wo && wo.w != null && /^[0-9A-Fa-f]{6}$/.test(String(wo.w)) && Number.isInteger(+wo.wi) && +wo.wi >= 0 && +wo.wi <= 5) { c.w = String(wo.w).toUpperCase(); c.wi = +wo.wi; }   /* W2: Wettbewerbsrunde */   /* gesehene Aufloesung (Stufe 3) = Vorkenntnis, ausser Seed-Labs (Fehler variiert) */
     const old = current(s); if (old && old.start && old.r !== r) return null;   /* laufendes Duell nie stumm ueberschreiben (UI fragt vorher) */
     if (!jset(s, KEYS.cur, c)) return null; return c;
   }
@@ -267,7 +269,9 @@
     else if (MESSLABS[c.lab]) { rec.m = c.mz || 0; if (!(api && api.mp != null) && c.mp > 0) api = Object.assign({}, api || {}, { mp: c.mp }); } /* D4: Messzaehler der Lab-Adapter */
     const sc = score({ st: rec.st, pct: rec.pct, ms: rec.ms, h: hintsUsed(c, s), f: rec.f, m: rec.m == null ? null : rec.m, mp: api && api.mp != null ? api.mp : null });
     rec.pts = sc.pts; rec.k = k; rec.j = j; rec.sc = sc;
-    const store = { v: 1, hist: history(s).concat([{ r: rec.r, a: rec.a, lab: rec.lab, st: rec.st, t: rec.t, ms: rec.ms, pct: rec.pct, h: rec.h, f: rec.f, m: rec.m, pr: rec.pr, pts: rec.pts }]).slice(-W.histMax) };
+    const H = history(s), e = { r: rec.r, a: rec.a, lab: rec.lab, st: rec.st, t: rec.t, ms: rec.ms, pct: rec.pct, h: rec.h, f: rec.f, m: rec.m, pr: rec.pr, pts: rec.pts };
+    if (c.w) { rec.w = e.w = c.w; rec.wi = e.wi = c.wi; rec.wd = e.wd = H.some(x => x && x.r === rec.r) ? 0 : 1; if (api && api.mp != null) rec.mp = e.mp = api.mp; }   /* W2: wd = erste beendete Runde dieses r */
+    const store = { v: 1, hist: H.concat([e]).slice(-W.histMax) };
     jset(s, KEYS.hist, store);
     jset(s, KEYS.cur, Object.assign({}, c, { done: 1, ms: rec.ms, pct: rec.pct, pts: rec.pts }));
     return rec;
@@ -345,7 +349,7 @@
     };
     Duell.loadUi = loadUi;
     Duell.open = o => loadUi(u => u.open(o || {}));
-    Duell.onFinish = rec => loadUi(u => u.finished(rec));
+    Duell.onFinish = rec => { if (rec && rec.w) { const u = root.Wett && root.Wett.ui; if (u && typeof u.finished === 'function') { try { u.finished(rec); } catch (e) {} } return; } loadUi(u => u.finished(rec)); };   /* W2: Wettbewerb -> Wett.ui (W3) */
     try { Duell.hook(root); Duell.store.migrate(); } catch (e) {}
     const boot = () => {
       let need = false;

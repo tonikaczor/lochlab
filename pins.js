@@ -58,7 +58,7 @@ const SCH = {
   PIR: [E('VCC'), E('OUT', 'Ausgang'), E('GND')],
   MOTOR3: [E('U'), E('V'), E('W'), E('PE', 'Schutzleiter')],
   BRUECKE: [E('AC1', '~'), E('AC2', '~'), E('+'), E(MINUS)],
-  REG: [E('IN', 'Eingang'), E('GND', 'Masse'), E('OUT', 'Ausgang')],
+  REG: p => [E('IN', 'Eingang'), /^(LM)?[23]17[A-Z]*$/.test(String(p && p.v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')) ? E('ADJ', 'Einstellung') : E('GND', 'Masse'), E('OUT', 'Ausgang')],   /* LM317: Mittelpin = ADJ (wie simcore.js isLM317), 78xx unverändert */
   XTAL: T2, KREUZ: num(4),
   IMP: [E('A1', 'Spule'), E('A2', 'Spule'), E('K1', 'Kontakt'), E('K2', 'Kontakt')],
   HEAT: [E('1'), E('2'), E('PE', 'Schutzleiter')], SD: [E('L'), E('N'), E('PE', 'Schutzleiter')], JUN5: num(5), FAULT: T2,

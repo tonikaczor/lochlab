@@ -85,12 +85,13 @@
     const travelS = level === 3 ? pick(r, [5, 6, 8]) : 6;
     const fremdLux = level === 1 ? pick(r, [0, 200, 400]) : level === 2 ? pick(r, [300, 500, 700, 900]) : pick(r, [800, 1000, 1100]);   // (A) Fremdlicht an der Lichtschranke
     const zielDist = level === 1 ? pick(r, [30, 40]) : level === 2 ? pick(r, [30, 35, 40, 45]) : pick(r, [30, 35, 40]);                   // (A) Abstand des dunklen Ziels in mm
-    const fault = level === 3 ? pick(r, ['rb10', 'diodeRev']) : null;
+    const fv = level === 3 ? r() : 0, fi = Math.floor(fv * FAULTS.length) % FAULTS.length, fSeed = level === 3 ? fi + FAULTS.length * (1 + Math.floor((fv * FAULTS.length - fi) * 900)) : null;   // opaker Fehler-Zufall, Katalog nur in faultKey
+    const fault = fSeed;
     const p = {
       addrBits: addrBits, addr: addr, uCoil: uCoil, rCoil: rCoil, iCoil: rd(uCoil / rCoil * 1000, 2),   // iCoil in mA
       vOH: 5, iOutMax: 1, tAmb: 50, hub: hub, travelS: travelS, dT: 0.10, fLast: fLast, uMotor: 24,
       tReactMaxMs: 150, cycleMs: 10, sStopMaxMm: 50, boardW: 60, boardH: 40, layers: 2, tVorwarn: 2,
-      fremdLux: fremdLux, zielDist: zielDist, fault: fault, mTor: 25
+      fremdLux: fremdLux, zielDist: zielDist, fSeed: fault, hidden: ['fSeed'], mTor: 25
     };
     const bin = addr.toString(2).padStart(addrBits, '0');
     const text = [
@@ -321,7 +322,15 @@
   }
 
   /* ====================================================================== Gemeinsame Infrastruktur der Stationen */
-  const P_ = ctx => { const s = ctx && ctx.spec; return isObj(s) && isObj(s.params) ? s.params : (isObj(s) ? s : {}); };
+  /* P9/R1: params enthält nur fSeed (Zahl, hidden); der Fehler wird zur Laufzeit aus dem Katalog bestimmt. Alte Spielstände mit params.fault bleiben lesbar. */
+  const FAULTS = ['rb10', 'diodeRev'];
+  function faultKey(P) {
+    if (!P) return null;
+    if (typeof P.fault === 'string') return P.fault;                                    // alter Spielstand (vor P9)
+    const f = P.fSeed; if (typeof f !== 'number' || !isFinite(f) || f < 0) return null;
+    return FAULTS[Math.floor(f) % FAULTS.length];
+  }
+  const P_ = ctx => { const s = ctx && ctx.spec, p = isObj(s) && isObj(s.params) ? s.params : (isObj(s) ? s : {}); if (p.fault !== undefined || p.fSeed === undefined) return p; const k = faultKey(p), q = Object.assign({}, p); if (k) Object.defineProperty(q, 'fault', { value: k, enumerable: false }); return q; };
   const TOL = ctx => (ctx && fin(ctx.tol) ? ctx.tol : 1);
   const LEVEL = ctx => (ctx && (ctx.level === 1 || ctx.level === 3) ? ctx.level : 2);
   const unwrap = d => (isObj(d) && isObj(d.data) && typeof d.type === 'string' ? d.data : d);
@@ -787,7 +796,8 @@
       const f = arr(data && data.findings).map(lc).join(' | ');
       const words = P.fault === 'rb10' ? ['basis', 'r_b', 'rb', 'vorwiderstand', 'widerstand'] : ['diode', 'freilauf'];
       const kind = P.fault === 'rb10' ? /(zu gro|zu hoch|zehn|10 ?x|10-fach|10fach|verzehnfacht|statt)/.test(f) : /(verpol|falsch ?herum|umgekehrt|falsch gepolt|polarit|falsch eingebaut)/.test(f);
-      lines.push(L(words.some(w => f.indexOf(w) >= 0) && kind, 'Fehler benannt: ' + (P.fault === 'rb10' ? 'Basiswiderstand zehnmal zu groß' : 'Freilaufdiode verpolt') + (f ? '' : ' – kein Befund eingetragen'), 15));
+      const okD = words.some(w => f.indexOf(w) >= 0) && kind;
+      lines.push(L(okD, okD ? 'Fehler benannt: ' + (P.fault === 'rb10' ? 'Basiswiderstand zehnmal zu groß' : 'Freilaufdiode verpolt') : f ? 'Fehler benannt: Diagnose stimmt nicht: Befund passt nicht zu den Messwerten' : 'Fehler benannt: Diagnose fehlt, kein Befund eingetragen', 15));
     }
     const rv = data && isObj(data.values) && fin(+data.values.tRelaisMs) ? +data.values.tRelaisMs : rowVal(rowOf(rows, 'trelaisms') || rowOf(rows, 'trelais'), 'ms');
     const tr = relayMs(P);
@@ -1566,6 +1576,7 @@
     labs: ['digi', 'ds', 'sch', 'pcb', 'mess', 'sen', 'ant', 'sps', 'app'],
     levels: { 1: { name: 'Einsteiger', pass: 70, tolMul: 1.5 }, 2: { name: 'Standard', pass: 80, tolMul: 1 }, 3: { name: 'Profi', pass: 90, tolMul: 0.6 } },
     lastenheft: lastenheft,
+    faultKey: faultKey,
     stations: STATIONS,
     final: {
       id: 'vgF', title: 'Abschlusstest: Garagentor', check: finalCheck,

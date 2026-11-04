@@ -9,11 +9,11 @@
    und laufen auch in Node (quelle/verbund/test_verbundbar.js). Auch der Hub (verbundui.js) nutzt die reinen Teile. */
 (function (root) {
   /* ============================================================ reine Teile */
-  const FILE2LAB = { 'layout.html': 'loch', 'schaltplan.html': 'sch', 'simlab.html': 'sim', 'digilab.html': 'digi', 'messlab.html': 'mess', 'hauslab.html': 'haus', 'appwerkstatt.html': 'app', 'pruefungslab.html': 'pr', 'spslab.html': 'sps', 'pcblab.html': 'pcb', 'antlab.html': 'ant', 'senlab.html': 'sen', 'dslab.html': 'ds', 'codelab.html': 'code', 'pilab.html': 'pi', 'verbund.html': 'vb' };
+  const FILE2LAB = { 'layout.html': 'loch', 'schaltplan.html': 'sch', 'simlab.html': 'sim', 'digilab.html': 'digi', 'messlab.html': 'mess', 'hauslab.html': 'haus', 'appwerkstatt.html': 'app', 'pruefungslab.html': 'pr', 'spslab.html': 'sps', 'pcblab.html': 'pcb', 'antlab.html': 'ant', 'senlab.html': 'sen', 'dslab.html': 'ds', 'codelab.html': 'code', 'pilab.html': 'pi', 'ntslab.html': 'nts', 'reglab.html': 'reg', 'thmlab.html': 'thm', 'elslab.html': 'els', 'enrlab.html': 'enr', 'emvlab.html': 'emv', 'wsllab.html': 'wsl', 'analab.html': 'ana', 'verbund.html': 'vb' };
   const LAB2FILE = {}; Object.keys(FILE2LAB).forEach(f => { LAB2FILE[FILE2LAB[f]] = f; });
-  const LAB_NAME = { loch: 'LochLab', sch: 'SchaltLab', sim: 'SimLab', digi: 'DigiLab', mess: 'MessLab', haus: 'HausLab', app: 'App-Werkstatt', pr: 'Prüfungs-Lab', sps: 'SPS-Lab', pcb: 'Leiterplatten-Lab', ant: 'Antriebs-Lab', sen: 'Sensorik-Lab', ds: 'Datenblatt-Lab', code: 'Arduino-Lab', pi: 'Pi-Lab', vb: 'Projekte' };
-  const LAB_ICON = { loch: '🔳', sch: '📐', sim: '🧪', digi: '🔢', mess: '📟', haus: '🏠', app: '📝', pr: '🎓', sps: '🤖', pcb: '🟩', ant: '⚙️', sen: '📡', ds: '📑', code: '💻', pi: '🍓', vb: '🧩' };
-  const ADAPTER_FILE = { sch: 'verbundad-eng.js', sim: 'verbundad-eng.js', digi: 'verbundad-eng.js', mess: 'verbundad-eng.js', haus: 'verbundad-eng.js', code: 'verbundad-mcu.js', pi: 'verbundad-mcu.js', loch: 'verbundad-loch.js', pcb: 'verbundad-pcb.js', sps: 'verbundad-sps.js', ant: 'verbundad-ant.js', sen: 'verbundad-sen.js', ds: 'verbundad-ds.js', app: 'verbundad-app.js', pr: 'verbundad-pr.js' };
+  const LAB_NAME = { loch: 'LochLab', sch: 'SchaltLab', sim: 'SimLab', digi: 'DigiLab', mess: 'MessLab', haus: 'HausLab', app: 'App-Werkstatt', pr: 'Prüfungs-Lab', sps: 'SPS-Lab', pcb: 'Leiterplatten-Lab', ant: 'Antriebs-Lab', sen: 'Sensorik-Lab', ds: 'Datenblatt-Lab', code: 'Arduino-Lab', pi: 'Pi-Lab', nts: 'Netzteil-Lab', reg: 'Regelungstechnik-Lab', thm: 'Thermik-Lab', els: 'Sicherheits-Lab', enr: 'Energie-Lab', emv: 'EMV-Lab', wsl: 'Wechselstrom-Lab', ana: 'Analogtechnik-Lab', vb: 'Projekte' };
+  const LAB_ICON = { loch: '🔳', sch: '📐', sim: '🧪', digi: '🔢', mess: '📟', haus: '🏠', app: '📝', pr: '🎓', sps: '🤖', pcb: '🟩', ant: '⚙️', sen: '📡', ds: '📑', code: '💻', pi: '🍓', nts: '🔌', reg: '🎛️', thm: '🌡️', els: '🛡️', enr: '☀️', emv: '📶', wsl: '〰️', ana: '📈', vb: '🧩' };
+  const ADAPTER_FILE = { sch: 'verbundad-eng.js', sim: 'verbundad-eng.js', digi: 'verbundad-eng.js', mess: 'verbundad-eng.js', haus: 'verbundad-eng.js', code: 'verbundad-mcu.js', pi: 'verbundad-mcu.js', loch: 'verbundad-loch.js', pcb: 'verbundad-pcb.js', sps: 'verbundad-sps.js', ant: 'verbundad-ant.js', sen: 'verbundad-sen.js', ds: 'verbundad-ds.js', app: 'verbundad-app.js', pr: 'verbundad-pr.js', nts: 'verbundad-rig.js', reg: 'verbundad-rig.js', thm: 'verbundad-rig.js', els: 'verbundad-rig.js', enr: 'verbundad-rig.js', emv: 'verbundad-rig.js', wsl: 'verbundad-rig.js', ana: 'verbundad-rig.js' };
   const PID_RE = /^[a-z][a-z0-9]*$/, SID_RE = /^v[a-z]\w*$/;
   const NUMW = { null: 0, ein: 1, eins: 1, eine: 1, zwei: 2, drei: 3, vier: 4, fünf: 5, fuenf: 5, sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10, elf: 11, zwölf: 12, zwoelf: 12, dreizehn: 13, vierzehn: 14, fünfzehn: 15, fuenfzehn: 15 };
 
@@ -36,13 +36,52 @@
     ampel: CORE_COMMON.concat(['dslib-ic.js', 'spscore.js', 'spsplant-ampel.js', 'arduino.js', 'pyrun.js']),
     uhr: CORE_COMMON.concat(['dslib-ic.js', 'pcbcore.js', 'simics.js', 'simcore.js', 'arduino.js']),
     giess: CORE_COMMON.concat(['pcbcore.js', 'antcore.js', 'spscore.js', 'spsplant-tank.js', 'arduino.js', 'pyrun.js']),
-    foerder: CORE_COMMON.concat(['dslib-ic.js', 'pcbcore.js', 'sencore.js', 'senrig-opt.js', 'antcore.js', 'spscore.js', 'spsplant-foerderband.js', 'pyrun.js'])
+    foerder: CORE_COMMON.concat(['dslib-ic.js', 'pcbcore.js', 'sencore.js', 'senrig-opt.js', 'antcore.js', 'spscore.js', 'spsplant-foerderband.js', 'pyrun.js']),
+    /* netzteil und heizung (P6): eine Tabelle für alle sieben Projekte. Ihre Kerne stehen NICHT in verbund.html, sondern werden im Hub bei Bedarf nachgeladen (LAZY_PIDS, makeLazy). */
+    netzteil: CORE_COMMON.concat(['dslib-ic.js', 'simics.js', 'simcore.js', 'pcbcore.js', 'sencore.js', 'ntscore.js', 'ntscore-sw.js', 'ntscore-diag.js', 'ntsrig-base.js', 'ntsrig-trafo.js', 'ntsrig-gleich.js', 'ntsrig-stabil.js', 'ntsrig-fehler.js', 'thmcore.js', 'thmrig-linear.js', 'elscore.js', 'elscore-pruef.js', 'elsrig-base.js', 'elsrig-pruefplatz.js']),
+    /* heizung: nur, was die Prüfung braucht (mit dem Test von P5 gemessen: vh1 bis vh9 je 100 % mit genau diesen Kernen); Sketch- und Python-Läufer (arduino.js, pyrun.js) für vh7/vh8 */
+    heizung: ['sencore.js', 'senrig-temp.js', 'regcore.js', 'regrig-raum.js', 'thmcore.js', 'arduino.js', 'pyrun.js']
   };
+  const LAZY_PIDS = ['netzteil', 'heizung'];
+  const LAZY_CORES = {}; LAZY_PIDS.forEach(p => { LAZY_CORES[p] = PROJECT_CORES[p]; });   /* Sicht auf dieselben Listen (Kompatibilität), keine zweite Pflege */
   function coreList(pid) { return (PROJECT_CORES[pid] || []).slice(); }
   function scriptList(pid, lab) {
     const l = [{ src: 'verbund.js', must: true }, { src: 'verbundnl.js' }, { src: 'verbundrun.js' }, { src: 'verbunddata-' + (DATA_NAME[pid] || pid) + '.js', must: true }];
     if (ADAPTER_FILE[lab]) l.push({ src: ADAPTER_FILE[lab], adapter: true });
     return l;
+  }
+  /* Lazy-Laden der Prüfkerne im Hub (E4): keine festen Skript-Tags für nts/reg/thm/els. ensure(pid) lädt fehlende Kerne in Reihenfolge,
+     wrap(name, pidOf) fängt Aktionen ab, solange Kerne fehlen: Antwort { ok:false, err:'kerne', pending:true }, nach dem Laden läuft die Aktion einmal selbst.
+     Projekte ohne fehlende Kerne (die fünf bisherigen: Kerne stehen fest in verbund.html) laufen unverändert durch. loader(src) -> Promise<bool>, present(src) -> bool. */
+  function makeLazy(V, loader, present) {
+    const pend = {};
+    const missing = pid => coreList(pid).filter(f => !present(f));
+    function ensure(pid) {
+      const m = missing(pid); if (!m.length) return Promise.resolve(true);
+      if (pend[pid]) return pend[pid];
+      pend[pid] = (async () => {
+        let ok = true;
+        for (const f of m) { let r = false; try { r = await loader(f); } catch (e) { r = false; } if (!r) { ok = false; break; } }
+        delete pend[pid]; return ok;
+      })();
+      return pend[pid];
+    }
+    function wrap(name, pidOf) {
+      const orig = V && V[name]; if (typeof orig !== 'function') return false;
+      V[name] = function () {
+        const args = arguments, self = this; let pid = null;
+        try { pid = pidOf.apply(null, args); } catch (e) { pid = null; }
+        if (typeof pid !== 'string' || !missing(pid).length) return orig.apply(self, args);
+        ensure(pid).then(ok => { if (ok) { try { orig.apply(self, args); } catch (e) { /* egal */ } } });
+        return { ok: false, err: 'kerne', pending: true, msg: 'Die Prüfkerne werden geladen. Einen Moment, die Aktion läuft gleich von selbst.' };
+      };
+      return true;
+    }
+    function wrapAll() {
+      const byPid = pid => pid, bySlot = slot => String(slot).split('.')[0];
+      return ['start', 'demo', 'final'].map(n => wrap(n, byPid)).concat([wrap('deliver', bySlot)]);
+    }
+    return { missing, ensure, wrap, wrapAll, pending: () => Object.keys(pend) };
   }
   const isNum = x => typeof x === 'number' && isFinite(x);
   /* deutsche Zahl: "4,7", " 1 000,5 ", "-3" */
@@ -94,7 +133,7 @@
   /* Lesbare Zeilen aus beliebigen Daten (für „Eingangsdaten ansehen“): [{k, v}] */
   function humanRows(data, opt) {
     opt = opt || {}; const max = opt.max || 80, rows = []; let more = 0;
-    if (data && !Array.isArray(data) && typeof data === 'object' && Array.isArray(data.hidden)) { const d = {}; Object.keys(data).forEach(k => { if (k !== 'hidden' && data.hidden.indexOf(k) < 0) d[k] = data[k]; }); data = d; }   // params.hidden: Lösungswerte des Lastenhefts nicht anzeigen (Uhr)
+    if (data && !Array.isArray(data) && typeof data === 'object' && (Array.isArray(data.hidden) || typeof data.fault === 'string')) { const d = {}, hid = Array.isArray(data.hidden) ? data.hidden : []; Object.keys(data).forEach(k => { if (k !== 'hidden' && k !== 'fault' && hid.indexOf(k) < 0) d[k] = data[k]; }); data = d; }   // params.hidden: Lösungswerte des Lastenhefts nicht anzeigen (Uhr)
     const prim = x => x == null || ['string', 'number', 'boolean'].indexOf(typeof x) >= 0;
     const val = x => { if (x == null) return '–'; if (typeof x === 'boolean') return x ? 'ja' : 'nein'; if (isNum(x)) return fmtNum(x); if (typeof x === 'number') return '–'; const s = String(x).replace(/\s+/g, ' '); return s.length > 140 ? s.slice(0, 137) + ' …' : s; };
     const flat = o => Object.keys(o).map(k => k + '=' + (prim(o[k]) ? val(o[k]) : Array.isArray(o[k]) && o[k].every(prim) ? '[' + o[k].map(val).join(' ') + ']' : '…')).join(', ');
@@ -143,7 +182,7 @@
   }
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const hintKey = (pid, sid) => 'verbund.ht.' + pid + '.' + sid;
-  const pure = { DATA_NAME, PROJECT_CORES, coreList, hintKey, FILE2LAB, LAB2FILE, LAB_NAME, LAB_ICON, ADAPTER_FILE, PID_RE, SID_RE, parseTarget, labFromPath, scriptList, parseNum, fmtNum, normFields, formToData, dataToForm, humanRows, parseVoice, labUrl, hintMerge, esc };
+  const pure = { DATA_NAME, PROJECT_CORES, LAZY_PIDS, LAZY_CORES, coreList, makeLazy, hintKey, FILE2LAB, LAB2FILE, LAB_NAME, LAB_ICON, ADAPTER_FILE, PID_RE, SID_RE, parseTarget, labFromPath, scriptList, parseNum, fmtNum, normFields, formToData, dataToForm, humanRows, parseVoice, labUrl, hintMerge, esc };
   const BAR = { pure, version: '1.0', active: false };
   root.VerbundBar = BAR;
   if (typeof module !== 'undefined' && module.exports) module.exports = BAR;
@@ -154,7 +193,15 @@
   const ls = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } } };
   const labId = () => root.LAB || (root.LabTrainerAPI && root.LabTrainerAPI.lab) || labFromPath(location.pathname) || '';
   const LAB = labId();
-  if (LAB === 'vb') return;                       /* der Hub hat seine eigene Oberfläche */
+  if (LAB === 'vb') {                             /* der Hub hat seine eigene Oberfläche; hier nur das Lazy-Laden der Prüfkerne (E4) */
+    try {
+      const present = f => !!document.querySelector('script[src="' + f + '"],script[src^="' + f + '?"],script[data-vb="' + f + '"]');
+      const lz = makeLazy(root.Verbund, loadScript, present); BAR.lazy = lz; lz.wrapAll();
+      /* bereits gestartete Projekte: Kerne gleich im Hintergrund holen, damit Prüfungen nach dem Neuladen nicht ins Leere laufen */
+      Object.keys(root.Verbund && root.Verbund.projects ? root.Verbund.projects().reduce((o, p) => { o[p.id] = 1; return o; }, {}) : {}).forEach(pid => { try { if (root.Verbund.state(pid)) lz.ensure(pid); } catch (e) { /* egal */ } });
+    } catch (e) { /* Hub läuft auch ohne Lazy-Laden */ }
+    return;
+  }
   const target = parseTarget(location.search, ss.get('verbund.active'));
   if (!target) return;
   BAR.active = true;

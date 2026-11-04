@@ -87,9 +87,9 @@ header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
   .cont .ring{width:60px;height:60px}.cont .ring i{font-size:13px}.cont .ring svg{stroke-width:5}
   .cont b{font-size:20px}.cont small{font-size:14px}.cont .pill{width:44px;height:44px}
   .cont .medal{display:none}.cont .pips{gap:3px;margin-top:8px}.cont .pips i{width:20px;height:20px;font-size:10px}
-  #top #duellBand{flex-wrap:nowrap;gap:8px;padding:8px 10px}
-  #top #duellBand .dl-tx{flex:1 1 0;min-width:0}#top #duellBand .dl-tx small{display:none}
-  #top #duellBand .dl-btn{padding:0 10px;font-size:14px;white-space:nowrap}
+  #top #duellBand{flex-wrap:wrap;gap:8px;padding:8px 10px}
+  #top #duellBand .dl-tx{flex:1 1 100%;min-width:0}#top #duellBand .dl-tx small{display:block;font-size:13px;line-height:1.3}
+  #top #duellBand .dl-btn{flex:1 1 calc(50% - 8px);padding:0 10px;font-size:14px;white-space:nowrap}
   .top .lp .hd .nx{display:none}
 }
 

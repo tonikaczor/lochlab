@@ -124,7 +124,15 @@
     { key: 'Q0.4', sym: 'H5_Fuss_gruen', text: 'H5 Fußgängerampel grün' }
   ];
   const PIN_NACHT = 7, PIN_PWM = 9;
-  function faultOf(P) { const m = P && typeof P.fault === 'string' ? /^(rv10|ledRev):(\d+)$/.exec(P.fault) : null; return m ? { kind: m[1], ch: +m[2] } : null; }   // Aufbaufehler Stufe 3
+  /* P9/R1: params enthält nur fSeed (Zahl, hidden). Katalog: 2 Fehlerarten x nCh Kanäle; Dekodierung nur hier. Alte Spielstände mit params.fault ('rv10:2') bleiben lesbar. */
+  const FAULTS = ['rv10', 'ledRev'];
+  function faultKey(P) {
+    if (!P) return null;
+    if (typeof P.fault === 'string') return P.fault;
+    const f = P.fSeed, n = Math.max(1, Math.floor(+P.nCh) || 1); if (typeof f !== 'number' || !isFinite(f) || f < 0) return null;
+    const k = Math.floor(f); return FAULTS[k % FAULTS.length] + ':' + (1 + Math.floor(k / FAULTS.length) % n);
+  }
+  function faultOf(P) { const key = faultKey(P), m = typeof key === 'string' ? /^(rv10|ledRev):(\d+)$/.exec(key) : null; return m ? { kind: m[1], ch: +m[2] } : null; }   // Aufbaufehler Stufe 3
 
   function lastenheft(seed, level) {
     level = level === 1 || level === 3 ? level : 2;
@@ -135,12 +143,14 @@
     const luxNacht = level === 1 ? pick(r, [10, 20, 30]) : level === 2 ? 10 + 5 * Math.floor(r() * 5) : 10 + Math.floor(r() * 21);
     const iLogik = pick(r, [80, 100, 120]);
     const dev12 = pick(r, level === 1 ? [-0.1, 0.1] : [-0.2, -0.1, 0.1, 0.2]), dev5 = pick(r, [-0.08, -0.05, -0.03, 0.03, 0.05, 0.08]);
-    const fault = level === 3 ? pick(r, ['rv10', 'ledRev']) + ':' + (1 + Math.floor(r() * nCh)) : null;      // 'rv10:<Kanal>' oder 'ledRev:<Kanal>'
+    let fSeed = null;                                                                                   // opaker Fehler-Zufall (Art und Kanal nur über faultKey)
+    if (level === 3) { const v1 = r(), i1 = Math.floor(v1 * FAULTS.length) % FAULTS.length, ch = 1 + Math.floor(r() * nCh); fSeed = i1 + FAULTS.length * ((ch - 1) + nCh * (1 + Math.floor((v1 * FAULTS.length - i1) * 900))); }
+    const fault = fSeed;
     const p = {
       lWeg: lWeg, vPed: vPed, tPedGruen: Math.ceil(lWeg / vPed - 1e-9), tGelb: 3, tRotGelb: 1, tSperr: 2, tMinKfzGruen: 8, tMaxWait: 40,
       uSup: 12, uLogik: 5, nCh: nCh, iLed: iLed, tAmb: 40, iLogik: iLogik, iNetz: 300,
       luxNacht: luxNacht, luxTag: 2 * luxNacht, dutyNacht: 30, adcBits: 10, noiseMv: [20, 25, 30][level - 1],
-      dev12: dev12, dev5: dev5, fault: fault, plantSeed: 1 + Math.floor(r() * 9000), pinNacht: PIN_NACHT, pinPwm: PIN_PWM
+      dev12: dev12, dev5: dev5, fSeed: fault, hidden: ['fSeed'], plantSeed: 1 + Math.floor(r() * 9000), pinNacht: PIN_NACHT, pinPwm: PIN_PWM
     };
     const text = [
       'Projekt Ampelanlage / Verkehr, Stufe ' + level + ' (' + (level === 1 ? 'Einsteiger' : level === 2 ? 'Standard' : 'Profi') + ').',
@@ -314,7 +324,7 @@
   }
 
   /* ====================================================================== Gemeinsame Infrastruktur der Stationen */
-  const P_ = ctx => { const s = ctx && ctx.spec; return isObj(s) && isObj(s.params) ? s.params : (isObj(s) ? s : {}); };
+  const P_ = ctx => { const s = ctx && ctx.spec, p = isObj(s) && isObj(s.params) ? s.params : (isObj(s) ? s : {}); if (p.fault !== undefined || p.fSeed === undefined) return p; const k = faultKey(p), q = Object.assign({}, p); if (k) Object.defineProperty(q, 'fault', { value: k, enumerable: false }); return q; };
   const TOL = ctx => (ctx && fin(ctx.tol) ? ctx.tol : 1);
   const LEVEL = ctx => (ctx && (ctx.level === 1 || ctx.level === 3) ? ctx.level : 2);
   const unwrap = d => (isObj(d) && isObj(d.data) && typeof d.type === 'string' ? d.data : d);
@@ -607,7 +617,8 @@
       let kindOk;
       if (ft.kind === 'rv10') kindOk = /(vorwiderstand|widerstand|r_?v|rv)/.test(f) && /(zu gro|zu hoch|zehn|10 ?x|10-fach|10fach|verzehnfacht|statt)/.test(f);
       else kindOk = /led/.test(f) && /(verpol|falsch ?herum|umgekehrt|verkehrt|falsch gepolt|polarit|falsch eingebaut)/.test(f);
-      lines.push(L(chOk && kindOk, 'Fehler benannt: ' + (ft.kind === 'rv10' ? 'Vorwiderstand in Kanal ' + k + ' zehnmal zu groß' : 'LED in Kanal ' + k + ' verpolt') + (f ? '' : ' – kein Befund eingetragen') + (f && !chOk ? ' – der Kanal fehlt im Befund' : ''), 20));
+      const okD = chOk && kindOk;
+      lines.push(L(okD, okD ? 'Fehler benannt: ' + (ft.kind === 'rv10' ? 'Vorwiderstand in Kanal ' + k + ' zehnmal zu groß' : 'LED in Kanal ' + k + ' verpolt') : f ? 'Fehler benannt: Diagnose stimmt nicht: Befund passt nicht zu den Messwerten (Fehlerart und Kanal angeben)' : 'Fehler benannt: Diagnose fehlt, kein Befund eingetragen', 20));
     }
     return lines;
   }
@@ -1287,6 +1298,7 @@
     labs: ['ds', 'sch', 'loch', 'mess', 'sen', 'code', 'sps', 'pi'],
     levels: { 1: { name: 'Einsteiger', pass: 70, tolMul: 1.5 }, 2: { name: 'Standard', pass: 80, tolMul: 1 }, 3: { name: 'Profi', pass: 90, tolMul: 0.6 } },
     lastenheft: lastenheft,
+    faultKey: faultKey,
     stations: STATIONS,
     final: {
       id: 'vaF', title: 'Abschlusstest: Ampelanlage', check: finalCheck,

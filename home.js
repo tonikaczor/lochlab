@@ -4,10 +4,10 @@
    Seit v23.145 stehen die Karten in Themenbereichen (home-groups.js, je ein .cards-Container): Verschieben geht nur innerhalb eines Bereichs, die
    Reihenfolge wird weiter als eine Liste in lm4.home gespeichert. Der Knopf "Startseite anpassen" sitzt in der Fußzeile (#footBtns), das Bedienfeld unter dem Primär-Band.
    Lab-IDs: data-lab der Karte, sonst Dateiname der ersten Ziel-URL (spslab.html -> spslab). Neue Karten in index.html erscheinen
-   automatisch an der Dateiposition (relativ zu bekannten Nachbarn). Ausgeblendete Bereiche stehen als "@name" in hidden (derzeit: @lernpfad, @projekte; die Zeile Projekte ist kein Lab und steht außerhalb der Karten). */
+   automatisch an der Dateiposition (relativ zu bekannten Nachbarn). Ausgeblendete Bereiche stehen als "@name" in hidden (derzeit: @lernpfad, @projekte, @werkbank; die Zeile Projekte ist kein Lab und steht außerhalb der Karten). */
 (function () {
   const KEY = 'lm4.home', SEEN = 'lm4.home.seen';
-  const SECTIONS = [{ id: '@lernpfad', name: 'Lernpfad', css: '#lernpfad{display:none!important}#top .cont{grid-column:1/-1}' }, { id: '@projekte', name: 'Projekte', css: '#vbRow{display:none!important}' }];
+  const SECTIONS = [{ id: '@lernpfad', name: 'Lernpfad', css: '#lernpfad{display:none!important}#top .cont{grid-column:1/-1}' }, { id: '@projekte', name: 'Projekte', css: '#vbRow{display:none!important}' }, { id: '@werkbank', name: 'Werkbank (Duell, Tausch, Wettbewerb)', css: '#duellBand{display:none!important}' }];
   const doc = document, win = window;
   let rootEl = null, st = { order: [], hidden: [] }, defaults = [], edit = false, showAll = false, obs = null, drag = null, armed = '';
   let ui = {};

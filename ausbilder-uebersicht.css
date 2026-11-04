@@ -68,6 +68,25 @@ input[type=text]{font:inherit;min-height:44px;color:var(--fg);background:var(--b
 .pub{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;margin:10px 0}.pub>div:last-child{flex:1 1 280px}.qrbox{background:#fff;padding:8px;border-radius:8px;width:190px;height:190px;flex:none}.qrbox svg{width:100%;height:100%;display:block}
 a.nach{text-decoration:none;white-space:nowrap}
 @media(max-width:700px){ol.best li{grid-template-columns:30px 1fr auto}ol.best li .mute{grid-column:2/4}}
+/* Abschnitt 6: Fehler-Tausch und Wettbewerb (W4) */
+.wtabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+.wtabs button{flex:1 1 110px}
+.wtabs button[aria-selected=true]{background:var(--acc);border-color:var(--acc);color:var(--on-acc);font-weight:600}
+.wf{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px 12px;align-items:end;margin:8px 0}
+.wf label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mute);min-width:0}
+.wf input,.wf select{width:100%;min-width:0;color:var(--fg)}
+input[type=date]{font:inherit;min-height:44px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:0 10px}
+button:disabled{opacity:.55;cursor:not-allowed}
+.fw{position:relative}
+.fw.more::after{content:"";position:absolute;top:1px;right:1px;bottom:1px;width:34px;pointer-events:none;border-radius:0 8px 8px 0;background:linear-gradient(to left,var(--panel),transparent)}
+.tw.tk{max-height:260px;padding:4px 8px}
+.tkl{display:flex;align-items:flex-start;gap:8px;min-height:44px;margin:0;padding:4px 0;border-bottom:1px solid var(--line);white-space:normal;width:100%}
+.tkl input{flex:none;margin-top:6px}
+table.wt td.l{text-align:left;white-space:normal;min-width:130px}
+table.wt ul.fl{margin:2px 0 0;padding-left:16px;font-size:12px;color:var(--mute);text-align:left}
+table.wt tr.chk th.nm{box-shadow:inset 4px 0 0 var(--warn)}
+.pubbox{border:2px solid var(--line);border-radius:12px;padding:6px 14px 12px;margin-top:16px}.pubbox h3{margin-top:8px}
+@media(max-width:700px){.wtabs button{flex:1 1 45%}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{
   :root{--bg:#fff;--panel:#fff;--fg:#000;--mute:#333;--line:#888;--none:#ddd}

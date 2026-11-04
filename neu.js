@@ -2,6 +2,16 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v23.153', items: [
+      ['Fehler-Tauschbörse', 'Baue im Netzteil-Lab, im Analog-Lab oder am Prüfplatz im Sicherheits-Lab eine Fehlerkarte und gib sie an Mitazubis weiter. Der Fehler bleibt verdeckt; wer die Karte löst, bekommt eine Wertung und du eine Rückmeldung mit Güte. Die Karte wird als QR-Code, Text oder Datei weitergegeben, es wird nichts automatisch gesendet.', 'Startseite ▸ Fehler-Tausch'],
+      ['Wettbewerb', 'Dein Ausbilder kann einen Wettbewerb mit mehreren Aufgaben ausschreiben. Du liest den Code ein, löst die Aufgaben als Duell-Runden und gibst deine Abgabe als Code zurück. Die Rangliste kommt wieder als Code.', 'Startseite ▸ Wettbewerb'],
+      ['Werkbank-Zeile mit Duell, Tausch und Wettbewerb', 'Auf der Startseite stehen Duell, Fehler-Tausch und Wettbewerb jetzt in einer Zeile mit kurzer Statusanzeige. Die Zeile lässt sich unter „Startseite anpassen“ ausblenden. Im Duell-Fenster gibt es dieselben Knöpfe.', 'Startseite'],
+      ['Sieben neue Abzeichen', 'Fünf Abzeichen für Fehler-Tausch und Wettbewerb und zwei für die neuen Projekte. Im Karriere-Dialog zeigt der Reiter Rang eine Zeile mit deinem Stand bei Tausch und Wettbewerb.', 'Abzeichen, Karriere ▸ Rang'],
+      ['Projekt Labornetzteil', 'Neues Verbundprojekt: Ein einstellbares Labornetzteil mit Längsregler (LM317) auslegen, kühlen, aufbauen, messen, im Fehlerfall suchen und nach Norm prüfen. Die Ergebnisse gehen von Lab zu Lab, vom Netzteil-Lab bis zum Sicherheits-Lab.', 'Projekte'],
+      ['Projekt Heizungsregelung', 'Neues Verbundprojekt: Eine Raumheizung regeln: Stromkreis planen, Temperaturfühler messen, Strecke bestimmen, PI-Regler einstellen und als Arduino-Programm umsetzen, am Ende mit Fachgespräch.', 'Projekte'],
+      ['Fehler in den Verbundprojekten verdeckt', 'In den Projekten Ampel, Garagentor, Bewässerung und Förderanlage steht der Fehler nicht mehr im Klartext. Du findest ihn durch Messen; sein Name erscheint erst nach der bestandenen Diagnose.', 'Projekte'],
+      ['LM317 im Schaltplan-Lab richtig', 'Der einstellbare Spannungsregler LM317 rechnet jetzt wie in echt: Die Ausgangsspannung folgt aus den beiden Widerständen am ADJ-Anschluss. Der Mittelpin heißt dort ADJ.', 'Schaltplan-Lab'],
+    ] },
     { v: 'v23.152', items: [
       ['Neue Vorlesestimme', 'Die Stimme zum Vorlesen klingt jetzt gottähnlich fantastisch! Es ist die Stimme von Toni: eine KI-Stimme, die nach seiner Aufnahme erzeugt wurde. Sie liest alle Bauteile, Messgeräte und Bedienelemente im Wiki und in den Labs vor, weiterhin ohne Internet.', 'Wiki ▸ Eintrag ▸ Vorlesen'],
       ['Orden für jeden Rang', 'Das blaue Feld auf der Startseite zeigt jetzt einen Orden für deinen Rang, der leicht schwebt und glänzt, und darunter die Reihe aller 10 Orden. Erreichte Orden leuchten, der aktuelle pulsiert. Bei Bewegungsreduzierung im System bleibt alles ruhig.', 'Startseite'],

@@ -317,6 +317,13 @@
     ['vbuhr', '⏰', 'Uhrmacher', 'Das Projekt Digitale Uhr mit Wecker abgeschlossen.', function (c) { return [c.st.vbuhr || 0, 1]; }],
     ['vbgiess', '💧', 'Gartenmeister', 'Das Projekt Gartenbewässerung abgeschlossen.', function (c) { return [c.st.vbgiess || 0, 1]; }],
     ['vbfoerder', '📦', 'Anlagenbauer', 'Das Projekt Förder- und Sortieranlage abgeschlossen.', function (c) { return [c.st.vbfoerder || 0, 1]; }],
+    ['vbnetzteil', '🔋', 'Netzteilbauer', 'Das Projekt Labornetzteil mit Längsregler abgeschlossen.', function (c) { return [c.st.vbnetzteil || 0, 1]; }],
+    ['vbheizung', '🌡️', 'Heizungsregler', 'Das Projekt Heizungsregelung für einen Raum abgeschlossen.', function (c) { return [c.st.vbheizung || 0, 1]; }],
+    ['tauschbau', '🔁', 'Kartenbauer', 'Eine Fehlerkarte gebaut, die drei andere Azubis gelöst haben.', function (c) { return [c.st.tauschbau || 0, 1]; }],
+    ['tauschloeser', '🔎', 'Fehlerjäger', 'Fünf Fehlerkarten von anderen Azubis gelöst.', function (c) { return [c.st.tauschloeser || 0, 5]; }],
+    ['tauschguete', '💎', 'Gute Karte', 'Eine Fehlerkarte mit Güte ab 80 gebaut.', function (c) { return [c.st.tauschguete || 0, 1]; }],
+    ['wettteil', '🏁', 'Wettbewerber', 'An einem Wettbewerb teilgenommen und die Abgabe erzeugt.', function (c) { return [c.st.wettteil || 0, 1]; }],
+    ['wettpodium', '🥇', 'Auf dem Podium', 'In der Rangliste eines Wettbewerbs unter den ersten drei.', function (c) { return [c.st.wettpodium || 0, 1]; }],
   ];
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });
   DEFS.find(function (d) { return d.id === 'wuerfel5'; }).icon = '👑';

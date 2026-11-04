@@ -226,6 +226,7 @@
   const SELFIRST = c => (c && (c.type === 'select' || c.type === 'switch') ? 0 : 1);
   function applyCtl(map) {
     if (!S.rig || !map || typeof map !== 'object') return;
+    if (THon()) map = TH().filterMap(map) || {};
     const keys = Object.keys(map).sort((a, b) => SELFIRST(ctlDef(a)) - SELFIRST(ctlDef(b)));
     keys.forEach(k => {
       const v = coerce(ctlDef(k), map[k]); if (v === undefined) return;
@@ -235,10 +236,12 @@
   }
   function setCtl(key, val, silent) {
     if (!S.rig || S.readonly) return false;
+    if (THlock(key)) { syncCtl(true); return false; }
     const def = ctlDef(key), v = coerce(def, val); if (v === undefined) return false;
     let ok = true; try { ok = S.rig.setControl(key, v) !== false; } catch (e) { console.error(e); return false; }
     if (!ok) { syncCtl(true); toast('Diesen Wert gibt es an dieser Anlage nicht.'); return false; }
     S.ctl[key] = v;
+    if (key === 'diagnose' && v && THon()) { try { TH().onDiagnose(v); } catch (e) { console.error(e); } }
     if (!silent) {
       S.dirty = true; S.touched = true; saveCurSoon();
       if (!S.running && S.autoRun && def.type !== 'button' && !S.live && S.tab === 'rig') setRun(true, true);
@@ -283,6 +286,7 @@
   $('#presetBar').addEventListener('click', e => {
     const b = e.target.closest('[data-pre]'); if (!b || !S.rig) return;
     if (S.task) { toast('Während einer Aufgabe gelten die Einstellungen der Aufgabe.'); return; }
+    if (THon()) { toast(TH().lockText('preset')); return; }
     const p = presetsOf().find(x => String(x.id) === b.dataset.pre); if (!p) return;
     let ok = true;
     if (typeof S.rig.applyPreset === 'function') { try { ok = S.rig.applyPreset(p.id) !== false; } catch (er) { console.error(er); ok = false; } }
@@ -356,7 +360,15 @@
   }
   function buildControls() { buildPanel($('#ctlHost')); }
   /* Würfel-Fehler (fehler = zufall): Die Auswahl zeigt "Zufall" statt der gewürfelten Id, bis aufgelöst, behoben oder eine Diagnose abgegeben ist */
+  /* Fehler-Tausch (T3a, tauschad-nts.js): Haken nur, wenn Tausch und LabTauschAPI geladen sind; sonst ändert sich nichts */
+  function TH() { const a = root.Tausch && root.LabTauschAPI; return a && a.lab === 'nts' && a.hooks ? a.hooks : null; }
+  function THon() { const h = TH(); try { return !!(h && h.active()); } catch (e) { return false; } }
+  function THbuild() { let d = false; try { d = !!(root.Duell && root.Duell.active && root.Duell.active()); } catch (e) { d = false; } return !!(TH() && root.Tauschui && typeof root.Tauschui.build === 'function') && !S.task && !d && !THon(); }
+  function THlock(k) { const h = TH(); let l = false; try { l = !!(h && h.locked(k)); } catch (e) { l = false; } if (l) toast(h.lockText(k)); return l; }
+  /* P11: Im Verbundbetrieb (Verbund-Leiste aktiv) bleibt der Fehler auch nach der Diagnose verdeckt, Auflösen gesperrt; ohne Leiste unverändert */
+  function VBon() { try { return !!(root.VerbundBar && root.VerbundBar.active === true); } catch (e) { return false; } }
   function faultHidden(st) {
+    if (THon() || VBon()) return S.rigId === 'fehler';
     if (S.rigId !== 'fehler' || !st || st.zufall !== true) return false;
     return !(st.behoben || S.diagnose || (S.dice && S.dice.shown));
   }
@@ -514,7 +526,7 @@
   function updateAmpel(force) {
     const el = $('#ampRow'); if (!el) return;
     let a = null; if (S.rig && typeof S.rig.assess === 'function') { try { a = S.rig.assess(); } catch (e) { a = null; } }
-    const i = ampInfo(a && a.ampel), tx = a && a.text ? String(a.text) : (S.rig ? '' : 'Prüfstand noch nicht geladen.');
+    const i = ampInfo(a && a.ampel), tx0 = a && a.text ? String(a.text) : (S.rig ? '' : 'Prüfstand noch nicht geladen.'), tx = THon() ? TH().mask(tx0) : tx0;
     const mg = a && fin(a.margin) ? a.margin : null;
     const sig = i.state + '|' + tx + '|' + mg; if (!force && sig === ampSig) return; ampSig = sig;
     const prev = S.amp; S.amp = i.state;
@@ -650,15 +662,15 @@
     const r = S.rig; if (!r) return; const ev = r.events || []; let changed = false;
     for (let i = Math.max(0, ev.length - 30); i < ev.length; i++) {
       const e = ev[i]; if (!e || S.evSeen.has(e)) continue; S.evSeen.add(e); changed = true;
-      if (e.kind === 'error') { S.faultUntil = performance.now() + 9000; S.faultText = e.text || ''; if (S.tab !== 'rig' && S.running) toast('⚠ ' + (e.text || 'Fehler')); noteFault(e.text); }
+      if (e.kind === 'error') { const et = THon() ? TH().mask(e.text || '') : e.text; S.faultUntil = performance.now() + 9000; S.faultText = et || ''; if (S.tab !== 'rig' && S.running) toast('⚠ ' + (et || 'Fehler')); noteFault(et); }
     }
     if (changed || ev.length !== S.evLen) { S.evLen = ev.length; updateEvents(); }
   }
   function updateEvents(force) {
     const l = $('#evList'); if (!l) return; const ev = (S.rig && S.rig.events) || [];
     const sig = ev.length + '|' + (ev.length ? (ev[ev.length - 1].text || '') + (ev[ev.length - 1].t || '') : '');
-    if (!force && sig === S.evSig) return; S.evSig = sig;
-    l.innerHTML = ev.length ? ev.slice(-40).reverse().map(x => `<li class="${esc(x.kind || 'info')}"><span class="dk" aria-hidden="true">${esc(KIND[x.kind] || 'i')}</span><time>${esc(evTime(x))}</time><span>${esc(x.text || x.type || '')}</span></li>`).join('') : '<li class="empty">Keine Meldungen. Meldet der Prüfstand etwas (zum Beispiel eine Grenzverletzung), steht es hier.</li>';
+    if (!force && sig === S.evSig) return; S.evSig = sig; const tm = THon() ? TH().mask : (s => s);
+    l.innerHTML = ev.length ? ev.slice(-40).reverse().map(x => `<li class="${esc(x.kind || 'info')}"><span class="dk" aria-hidden="true">${esc(KIND[x.kind] || 'i')}</span><time>${esc(evTime(x))}</time><span>${esc(tm(x.text || x.type || ''))}</span></li>`).join('') : '<li class="empty">Keine Meldungen. Meldet der Prüfstand etwas (zum Beispiel eine Grenzverletzung), steht es hier.</li>';
   }
   $('#evClr').onclick = () => { if (S.rig && S.rig.events) { S.rig.events.length = 0; S.evSig = ''; updateEvents(true); } };
   let lastDiag = 0;
@@ -666,6 +678,7 @@
     const el = $('#diagList'); if (!el || !S.rig) return;
     const now = performance.now(); if (!force && now - lastDiag < 600) return; lastDiag = now;
     let d = []; try { d = typeof S.rig.diagnose === 'function' ? (S.rig.diagnose() || []) : []; } catch (e) { d = []; }
+    if (THon()) d = TH().maskList(d);
     S.diag = d;
     const h = d.length ? d.map(x => `<li class="${esc(x.kind || 'info')}"><span class="dk" aria-hidden="true">${esc(KIND[x.kind] || 'i')}</span><span>${esc(x.text || x)}</span></li>`).join('') : '<li class="empty">Keine Hinweise: Zu den aktuellen Einstellungen meldet der Prüfstand nichts.</li>';
     if (el.dataset.h !== h) { el.dataset.h = h; el.innerHTML = h; }
@@ -689,7 +702,7 @@
     if (!S.rig || S.readonly) return false; if (typeof S.rig.fire !== 'function') { toast('Dieser Prüfstand hat keine Auslösung.'); return false; }
     let ok = true; try { ok = S.rig.fire() !== false; } catch (e) { console.error(e); ok = false; }
     S.fired = true; S.touched = true; S.dirty = true; stat('ntsfire', 1, 'max'); saveCurSoon();
-    if (S.rigId === 'fehler') { const m = (() => { try { return S.rig.readMeters() || {}; } catch (e) { return {}; } })(); S.clicks.push({ point: S.rig.getControl('messpunkt'), wert: fin(m.wert) ? m.wert : null }); buildFaultPanel(); if (ok) { try { if (root.Duell && root.Duell.mess) root.Duell.mess('nts', S.rig.getControl('messpunkt')); } catch (e) { /* D4: Messung ans Duell (nur im Duell aktiv) */ } } }
+    if (S.rigId === 'fehler') { const m = (() => { try { return S.rig.readMeters() || {}; } catch (e) { return {}; } })(); S.clicks.push({ point: S.rig.getControl('messpunkt'), wert: fin(m.wert) ? m.wert : null }); buildFaultPanel(); if (ok) { try { if (root.Duell && root.Duell.mess) root.Duell.mess('nts', S.rig.getControl('messpunkt')); } catch (e) { /* D4: Messung ans Duell (nur im Duell aktiv) */ } if (THon()) { try { TH().onMess(S.rig.getControl('messpunkt')); } catch (e) { /* T3a: Messzaehler Fehler-Tausch */ } } } }
     if (!S.running) setRun(true, true);
     S.needDraw = true; readState(); updateEvents(); clickSnd('click');
     if (!ok) toast('Das ging nicht: ' + (FIRE[S.rigId] || 'Auslösen') + ' ist im Moment nicht möglich.');
@@ -712,10 +725,12 @@
     const H = $('#faultHost'); if (!H) return;
     if (S.rigId !== 'fehler' || !S.rig) { H.innerHTML = ''; return; }
     const log = S.clicks.slice(-8).map(c => c.sicht ? 'Sichtprüfung' : c.tausche ? 'Getauscht: ' + c.tausche : 'Messpunkt ' + esc(String(c.point)) + (c.wert != null ? ': ' + fauto(c.wert) : '')).map((t, i) => `<li>${i + 1}. ${t}</li>`).join('');
-    H.innerHTML = `<div class="card pl"><h4>Fehlersuche (Simulation)</h4><p class="hint2" style="margin:0 0 6px">${esc(simOnlyText())} ${esc(TX().unterweisung || '')}</p><div class="btns" style="margin-top:0"><button class="btn" data-fa="sicht">👁 Sichtprüfung</button><button class="btn" data-fa="messen">📏 Messpunkt messen</button><button class="btn" data-fa="tausche">🔧 Bauteil tauschen</button><button class="btn pri" data-fa="diagnose">🩺 Diagnose abgeben</button></div>${log ? `<ul class="tl" style="margin-top:8px">${log}</ul>` : '<p class="hint2">Noch nichts geprüft. Beginne mit der Sichtprüfung, dann Versorgung, Zwischenkreis, Regler, Last.</p>'}${S.diagnose ? `<p class="hint2">Abgegebene Diagnose: <b>${esc(S.diagnose.label)}</b></p>` : ''}</div>`;
+    H.innerHTML = `<div class="card pl"><h4>Fehlersuche (Simulation)</h4><p class="hint2" style="margin:0 0 6px">${esc(simOnlyText())} ${esc(TX().unterweisung || '')}</p><div class="btns" style="margin-top:0"><button class="btn" data-fa="sicht">👁 Sichtprüfung</button><button class="btn" data-fa="messen">📏 Messpunkt messen</button><button class="btn" data-fa="tausche">🔧 Bauteil tauschen</button><button class="btn pri" data-fa="diagnose">🩺 Diagnose abgeben</button>${THbuild() ? '<button class="btn" data-fa="tauschkarte">🔁 Als Fehlerkarte weitergeben</button>' : ''}</div>${log ? `<ul class="tl" style="margin-top:8px">${log}</ul>` : '<p class="hint2">Noch nichts geprüft. Beginne mit der Sichtprüfung, dann Versorgung, Zwischenkreis, Regler, Last.</p>'}${S.diagnose ? `<p class="hint2">Abgegebene Diagnose: <b>${esc(S.diagnose.label)}</b></p>` : ''}</div>`;
   }
   $('#faultHost').addEventListener('click', async e => {
     const b = e.target.closest('[data-fa]'); if (!b || !S.rig || S.readonly) return; const a = b.dataset.fa;
+    if ((a === 'sicht' || a === 'tausche') && THlock(a)) return;
+    if (a === 'tauschkarte') { if (THbuild()) { try { root.Tauschui.build('nts'); } catch (er) { console.error(er); } } return; }
     if (a === 'sicht') { let r = null; if (typeof S.rig.sicht === 'function') { try { r = S.rig.sicht(); } catch (er) { r = null; } } S.clicks.push({ sicht: true }); S.dirty = true; buildFaultPanel(); toast(typeof r === 'string' && r ? r : typeof S.rig.sicht === 'function' ? 'Sichtprüfung gemacht. Siehe Meldungen.' : 'Sichtprüfung notiert. Der Prüfstand liefert dazu noch keinen Text.'); updateEvents(); }
     else if (a === 'messen') fireRig();
     else if (a === 'tausche') {
@@ -865,6 +880,7 @@
   /* Aktion { t, do } eines Beispiel-Ablaufs (nur Prüfstand fehler): sicht, messe:<punkt>, tausche:<bauteil>, gleiche Wirkung wie die Knöpfe der Fehlersuche */
   function liveAct(name) {
     if (S.rigId !== 'fehler' || !S.rig) return false; const m = /^(sicht|messe|tausche)(?::(.+))?$/.exec(String(name || '')); if (!m || (m[1] !== 'sicht' && !m[2])) return false;
+    if (m[1] !== 'messe' && THon() && TH().locked(m[1])) return false;
     if (m[1] === 'sicht') { try { if (typeof S.rig.sicht === 'function') S.rig.sicht(); } catch (e) { return false; } S.clicks.push({ sicht: true }); S.dirty = true; buildFaultPanel(); updateEvents(); return true; }
     if (m[1] === 'messe') { setCtl('messpunkt', m[2], true); return fireRig(); }
     setCtl('tausche', m[2], true); S.clicks.push({ tausche: m[2] }); S.dirty = true; buildFaultPanel(); updateEvents(); return true;
@@ -976,6 +992,7 @@
   /* Zustand ohne Aufgaben-Vorbelegung wiederherstellen; unbekannte Schlüssel und Werte werden ignoriert (Regel 8) */
   function applyItem(it, suffix) {
     if (!it || typeof it !== 'object') return false;
+    if (THon()) { toast(TH().lockText('laden')); return false; }
     S.task = null; const rid = ORDER.includes(it.rig) ? it.rig : ORDER[0];
     setRig(rid, { run: true }); applyCtl(it.ctl && typeof it.ctl === 'object' ? it.ctl : {});
     S.rows = Array.isArray(it.rows) ? it.rows.map(cleanRow).filter(Boolean).slice(0, 40) : [];
@@ -1001,6 +1018,7 @@
   }
   async function shareNow() {
     if (!S.rig) { toast('Es gibt noch nichts zu teilen: der Prüfstand fehlt.'); return; }
+    if (THon()) { toast(TH().lockText('teilen')); return; }
     let url; try { url = location.href.split('#')[0].split('?')[0] + '#' + await packShare(stateObj()); } catch (e) { toast('Teilen nicht möglich'); return; }
     if (navigator.share) { try { await navigator.share({ title: 'Tonfunk Netzteil-Lab: ' + S.name, text: 'Schau dir meinen Netzteil-Versuch „' + S.name + '“ an:', url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
     sheet('Teilen', b => {
@@ -1033,6 +1051,7 @@
   }
   function printNow() {
     if (!S.rig) { toast('Der Prüfstand fehlt.'); return; }
+    if (THon()) { toast(TH().lockText('drucken')); return; }
     const ws = worldSz(), c = rigPng(1200, Math.round(1200 * ws.h / ws.w)), who = lsRaw('lm4.name', ''), vals = allCtl(); let mv = {}, a = null; try { mv = S.rig.readMeters(); } catch (e) {} try { a = S.rig.assess(); } catch (e) {}
     const cv = ctlsOf().filter(x => x.type !== 'button').map(x => { const v = vals[x.key]; let t = v; if (x.type === 'switch') t = v ? 'EIN' : 'AUS'; else if (x.type === 'select') { const o = optsOf(x).find(q => q.value === v); t = o ? o.label : v; } else t = ctlShow(x, v) + (x.unit ? ' ' + x.unit : ''); return `<tr><td>${esc(x.group || '')}</td><td>${esc(x.label)}</td><td>${esc(t)}</td></tr>`; }).join('');
     const mt = metersOf().map(m => `<tr><td>${esc(m.label || m.key)}</td><td>${fnum(mv[m.key], mdig(m, mv[m.key]))} ${esc(m.unit || '')}</td></tr>`).join('');
@@ -1083,6 +1102,7 @@
   const choicesOf = t => { let f = t.choices; if (typeof f === 'function') { try { f = f(S.taskStart); } catch (e) { f = []; } } return Array.isArray(f) ? f : []; };
   async function startTask(id) {
     const t = (TK() || []).find(x => x.id === id); if (!t) return;
+    if (THon()) { toast(TH().lockText('aufgabe')); return; }
     const had = stash(); taskRes = null;
     if (root.Auswertung) root.Auswertung.hintReset(id);
     let o; try { o = typeof t.start === 'function' ? t.start() : {}; } catch (e) { console.error(e); toast('Die Startvorlage der Aufgabe fehlt'); return; }
@@ -1199,13 +1219,14 @@
     buck: { id: 'l-zu-klein', label: 'L zu klein', ok: () => has('l'), apply: () => ({ l: ctlDef('l').min }), text: (b, a) => 'Die Drossel ist zu klein: ' + fmtV('l', a.l) + ' (vorher ' + fmtV('l', b.l) + ').' },
     gate: { id: 'ug-zu-klein', label: 'Ug zu klein', ok: () => has('ug'), apply: () => ({ ug: ctlDef('ug').min }), text: (b, a) => 'Die Gate-Spannung ist zu klein: ' + fmtV('ug', a.ug) + ' (vorher ' + fmtV('ug', b.ug) + ').' },
     topo: { id: 'topologie-falsch', label: 'Topologie falsch', ok: () => has('topo'), apply: () => ({ topo: nextOpt('topo', curV('topo')) }), text: (b, a) => 'Die Topologie passt nicht zur Aufgabe: ' + fmtV('topo', a.topo) + ' statt ' + fmtV('topo', b.topo) + '.' },
-    fehler: { id: 'messpunkt-fehler', label: 'Messpunkt-Fehler', ok: () => has('fehler'), apply: () => ({ fehler: 'zufall', seed: 1 + Math.floor(Math.random() * 98) }), text: () => { let n = ''; try { n = (S.rig.state() || {}).fehlerName || ''; } catch (e) { n = ''; } return 'Im Netzteil steckt ein zufälliger Fehler' + (n ? ': ' + n : '') + '. Grenze ihn mit Sichtprüfung und Messpunkten ein und gib deine Diagnose ab.'; } }
+    fehler: { id: 'messpunkt-fehler', label: 'Messpunkt-Fehler', ok: () => has('fehler'), apply: () => ({ fehler: 'zufall', seed: 1 + Math.floor(Math.random() * 98) }), text: () => { let n = ''; try { n = VBon() ? '' : (S.rig.state() || {}).fehlerName || ''; } catch (e) { n = ''; } return 'Im Netzteil steckt ein zufälliger Fehler' + (n ? ': ' + n : '') + '. Grenze ihn mit Sichtprüfung und Messpunkten ein und gib deine Diagnose ab.'; } }
   };
   /* gleich: Diode offen oder C ausgetrocknet; regel: R1 offen oder R2 offen (je zur Hälfte, wenn beides möglich ist) */
   const DICE_ALT = { gleich: 'gleichdiode', regel: 'regel2' };
   const diceFor = id => { const alt = DICE_ALT[id] && DICE[DICE_ALT[id]]; let ok = false; try { ok = !!(alt && alt.ok()); } catch (e) { ok = false; } return ok && Math.random() < 0.5 ? alt : DICE[id]; };
   function diceRoll() {
     if (!S.rig) { toast('Der Prüfstand fehlt.'); return; } if (S.task) { toast('Beende zuerst die Aufgabe.'); return; }
+    if (THon()) { toast(TH().lockText('wuerfel')); return; }
     const d = diceFor(S.rigId); let ok = false; try { ok = !!(d && d.ok()); } catch (e) { ok = false; }
     if (!ok) { toast('An diesem Prüfstand lässt sich im Moment nichts auswürfeln.'); return; }
     const before = allCtl(), keys = d.apply(); Object.keys(keys).forEach(k => { if (keys[k] === undefined) delete keys[k]; });
@@ -1221,7 +1242,7 @@
     const el = $('#diceBar'); if (!el) return; const d = S.dice;
     if (!d || !S.rig) { el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false;
-    el.innerHTML = `<b>🎲 Finde den Fehler: Die Anlage ist nicht in Ordnung. Beobachte Ampel, Meldungen und Messwerte.</b><button class="chip s" data-dc="show">Auflösung zeigen</button><button class="chip s fire" data-dc="check">Behebung prüfen</button><button class="chip s" data-dc="undo">Fehler beheben</button><button class="chip s danger" data-dc="end">Beenden</button>${d.shown ? `<div class="hint2" style="flex:1 1 100%;color:var(--fg)">${esc(d.text)}</div>` : ''}${d.res ? `<div class="hint2" style="flex:1 1 100%;color:var(--fg)">${esc(d.res)}</div>` : ''}`;
+    el.innerHTML = `<b>🎲 Finde den Fehler: Die Anlage ist nicht in Ordnung. Beobachte Ampel, Meldungen und Messwerte.</b>${VBon() ? '' : '<button class="chip s" data-dc="show">Auflösung zeigen</button>'}<button class="chip s fire" data-dc="check">Behebung prüfen</button><button class="chip s" data-dc="undo">Fehler beheben</button><button class="chip s danger" data-dc="end">Beenden</button>${d.shown ? `<div class="hint2" style="flex:1 1 100%;color:var(--fg)">${esc(d.text)}</div>` : ''}${d.res ? `<div class="hint2" style="flex:1 1 100%;color:var(--fg)">${esc(d.res)}</div>` : ''}`;
   }
   /* Behebung prüfen: Ampel des gewürfelten Standes (jetzt) gegen den Ausgangs-Ampelzustand, beide über NTS_CORE.runSeq gerechnet */
   function diceCheck() {
@@ -1240,7 +1261,7 @@
   }
   $('#diceBar').addEventListener('click', e => {
     const b = e.target.closest('[data-dc]'); if (!b || !S.dice) return; const a = b.dataset.dc;
-    if (a === 'show') { S.dice.shown = true; syncCtl(true); buildDiceBar(); } else if (a === 'check') diceCheck();
+    if (a === 'show') { if (VBon()) { toast('Im Verbundbetrieb gesperrt: Die Auflösung gibt es erst nach der Abgabe im Verbund.'); return; } S.dice.shown = true; syncCtl(true); buildDiceBar(); } else if (a === 'check') diceCheck();
     else if (a === 'undo') { applyCtl(S.dice.before); S.dice = null; buildDiceBar(); toast('Fehler behoben'); } else { S.dice = null; buildDiceBar(); }
   });
 
@@ -1434,7 +1455,14 @@
       else if (q.has('neu')) setTimeout(newExperiment, 400);
     } catch (e) { console.error(e); }
     if (/^#[sz]=/.test(location.hash)) { const h = location.hash; history.replaceState(null, '', location.pathname + location.search); loadShared(h); }
-    root.addEventListener('hashchange', () => { if (/^#[sz]=/.test(location.hash)) { const h = location.hash; history.replaceState(null, '', location.pathname + location.search); loadShared(h); } });
+    root.addEventListener('hashchange', () => { if (/^#[sz]=/.test(location.hash)) { const h = location.hash; history.replaceState(null, '', location.pathname + location.search); loadShared(h); } else tEntry(); });
+    /* Fehler-Tausch #t=TFF1... (T3a): nur wenn tausch.js und tauschui.js geladen sind (nach dem Laden der Seite), sonst bleibt alles wie bisher */
+    function tEntry() {
+      if (!/^#t=/.test(location.hash)) return;
+      const go = () => { const h = location.hash; if (!/^#t=/.test(h) || !(root.Tausch && root.Tauschui && typeof root.Tauschui.open === 'function')) return; history.replaceState(null, '', location.pathname + location.search); try { root.Tauschui.open(h.slice(3), 'nts'); } catch (e) { console.error(e); } };
+      if (document.readyState === 'complete') go(); else root.addEventListener('load', go, { once: true });
+    }
+    tEntry();
     root.addEventListener('beforeunload', saveCur);
   }
   init();

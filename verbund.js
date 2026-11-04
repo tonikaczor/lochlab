@@ -139,6 +139,7 @@
     'pcb.board'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isO(d.board), 'board fehlt'); if (!isO(d.report)) { e.push('report fehlt'); return e; } ['w', 'h', 'layers', 'drcErrors', 'drcWarns', 'unrouted', 'shorts', 'cost', 'bomCount'].forEach(k => need(e, isN(d.report[k]), 'report.' + k + ' fehlt oder ist keine Zahl')); return e; },
     'mess.protocol'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isA(d.rows) && d.rows.every(r => isO(r) && isS(r.id) && isS(r.label) && isS(r.unit) && isN(r.soll) && (r.ist === null || isN(r.ist)) && isN(r.tol) && isS(r.instrument)), 'rows: Zeilen mit id, label, unit, soll, ist, tol, instrument fehlen'); need(e, isO(d.values), 'values fehlt'); need(e, isA(d.findings), 'findings fehlt'); return e; },
     'sen.chain'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isS(d.rig) && d.rig, 'rig fehlt'); need(e, isS(d.preset), 'preset fehlt'); need(e, isO(d.ctl), 'ctl fehlt'); need(e, isO(d.state), 'state fehlt'); need(e, isO(d.derived), 'derived fehlt'); return e; },
+    'rig.state'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isS(d.lab) && d.lab && d.lab.length <= 16, 'lab fehlt (Kürzel des Labs, höchstens 16 Zeichen)'); need(e, isS(d.rig) && d.rig && d.rig.length <= 64, 'rig fehlt (Kennung des Prüfstands, höchstens 64 Zeichen)'); need(e, d.preset === undefined || (isS(d.preset) && d.preset.length <= 200), 'preset muss Text sein'); need(e, isO(d.ctl) && Object.keys(d.ctl).length <= 300, 'ctl fehlt (Steuerwerte als Objekt, höchstens 300 Einträge)'); need(e, d.seq === undefined || (isA(d.seq) && d.seq.length <= 500 && d.seq.every(x => isO(x) && isN(x.t))), 'seq muss eine Liste von Schritten mit Zeit t sein (höchstens 500)'); need(e, isO(d.state), 'state fehlt'); need(e, d.derived === undefined || isO(d.derived), 'derived muss ein Objekt sein'); need(e, d.meas === undefined || (isO(d.meas) && Object.keys(d.meas).length <= 300 && Object.keys(d.meas).every(k => isN(d.meas[k]) || d.meas[k] === null)), 'meas muss Zahlen enthalten'); return e; },
     'ant.setup'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isS(d.rig) && d.rig, 'rig fehlt'); need(e, isS(d.preset), 'preset fehlt'); need(e, isO(d.ctl), 'ctl fehlt'); need(e, d.gear === undefined || isO(d.gear), 'gear muss ein Objekt sein'); need(e, isO(d.state), 'state fehlt'); need(e, isO(d.derived), 'derived fehlt'); return e; },
     'sps.program'(d) { const e = []; if (!objOf(d, e)) return e; need(e, d.prog !== null && typeof d.prog === 'object', 'prog (Programm) fehlt'); need(e, isS(d.plant) && d.plant, 'plant fehlt'); need(e, isO(d.opts), 'opts fehlt'); need(e, isS(d.lang) && d.lang, 'lang fehlt'); need(e, d.notes === undefined || isS(d.notes), 'notes muss Text sein'); return e; },
     'sps.log'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isS(d.plant) && d.plant, 'plant fehlt'); need(e, isN(d.seed), 'seed fehlt'); need(e, isN(d.dtMs) && d.dtMs > 0, 'dtMs muss eine positive Zahl sein'); need(e, isA(d.series) && d.series.every(r => isO(r) && isN(r.t)), 'series: Liste von Zeilen mit t fehlt'); need(e, isO(d.counters), 'counters fehlt'); return e; },
@@ -428,24 +429,32 @@
     return ids;
   }
   function globalStats() {
-    let fertig = 0, profi = false, ohne = false, uebergaben = 0, team = false, gestartet = 0, gold = 0;
+    let fertig = 0, profi = false, ohne = false, uebergaben = 0, team = false, gestartet = 0, gold = 0; const fertigIds = [];
     Object.keys(P).forEach(k => {
       const f = projFlags(k); if (!f) return;
       if (f.ev.list.some(r => r.delivered)) gestartet++;
       f.ev.list.forEach(r => { uebergaben += r.tries; });
       if (f.stt.team) team = true;
       if (f.fin.state === 'passed') {
-        fertig++; if (f.stt.level === 3) profi = true;
+        fertig++; fertigIds.push(k); if (f.stt.level === 3) profi = true;
         if (f.stt.level >= 2 && !f.ev.list.some(r => r.hints > 0 || r.assisted)) ohne = true;
         if (medalOf(f.p, f.fin) === 'gold') gold++;
       }
     });
-    return { fertig, profi, ohne, uebergaben, team, gestartet, gold };
+    return { fertig, fertigIds, profi, ohne, uebergaben, team, gestartet, gold };
+  }
+  /* vb_alle: alle registrierten Projekte fertig (mindestens 5). Ein einmal erreichtes Abzeichen bleibt (Marker), auch wenn später Projekte dazukommen;
+     Altstand: wer die fünf ersten Projekte fertig hat, behält es ohne Marker. */
+  const ALLE_KEY = 'lm4.vb.alle', ALLE_ALT = ['garage', 'ampel', 'uhr', 'giess', 'foerder'];
+  V.alleZahl = () => Math.max(5, Object.keys(P).length);
+  function alleErreicht(g) {
+    if (g.fertig >= V.alleZahl() || (ALLE_ALT.every(k => P[k]) && ALLE_ALT.every(k => g.fertigIds.indexOf(k) >= 0))) { if (sget(ALLE_KEY) !== '1') sset(ALLE_KEY, '1'); return true; }
+    return sget(ALLE_KEY) === '1';
   }
   V.badges = guard(function (pid) {
     const f = projFlags(pid); if (!f) return [];
     const ids = badgeIds(f.def, f.stt, f.ev, f.fin, f.p), g = globalStats();
-    if (g.fertig >= 2) ids.push('vb_zwei'); if (g.fertig >= 5) ids.push('vb_alle'); if (g.profi) ids.push('vb_profi');
+    if (g.fertig >= 2) ids.push('vb_zwei'); if (alleErreicht(g)) ids.push('vb_alle'); if (g.profi) ids.push('vb_profi');
     if (g.ohne) ids.push('vb_ohnehilfe'); if (g.uebergaben >= 10) ids.push('vb_uebergabe'); if (g.team) ids.push('vb_team');
     return ids;
   }, () => []);
@@ -465,9 +474,14 @@
     keysOf(slotKey(pid, '')).forEach(k => { const e = jget(k, null); if (isO(e) && e.data !== undefined) { const n = k.slice(slotKey(pid, '').length); m[n] = e.data; m[pid + '.' + n] = e.data; } });
     return m;
   }
+  /* P9/R1: Die Fehler-ID steht nie in params (nur fSeed, hidden). Stationen/Adapter lesen ctx.spec.fault: dort als nicht aufzählbare Eigenschaft aus def.faultKey(params) ergänzt (nicht im Slot, nicht in Hub/Bericht). */
+  function specWithFault(def, sp) {
+    try { if (isO(sp) && sp.fault === undefined && sp.fSeed !== undefined && def && typeof def.faultKey === 'function') { const k = def.faultKey(sp), q = Object.assign({}, sp); if (k) Object.defineProperty(q, 'fault', { value: k, enumerable: false }); return q; } } catch (e) { /* egal */ }
+    return sp;
+  }
   function ctxFor(pid, sid) {
     const def = P[pid], stt = state(pid), L = levelCfg(def, stt ? stt.level : 2);
-    const ctx = { pid, sid, level: L.level, tol: L.tolMul, spec: V.spec(pid) || {}, station: def.stations.find(s => s.id === sid) || null, V, get: n => V.get(qual(pid, n)) };
+    const ctx = { pid, sid, level: L.level, tol: L.tolMul, spec: specWithFault(def, V.spec(pid) || {}), station: def.stations.find(s => s.id === sid) || null, V, get: n => V.get(qual(pid, n)) };
     let cache = null; Object.defineProperty(ctx, 'slots', { get() { return cache || (cache = slotMap(pid)); }, enumerable: true });
     return ctx;
   }
@@ -750,7 +764,7 @@
     const def = P[pid], stt = def && state(pid); if (!stt) return null;
     const s = V.status(pid), spec = V.spec(pid) || {}, lh = V.get(pid + '.lastenheft') || { text: [] };
     const sections = [];
-    sections.push({ h: 'Lastenheft', head: ['Größe', 'Wert'], rows: Object.keys(spec).filter(k => k !== 'hidden' && !(isA(spec.hidden) && spec.hidden.indexOf(k) >= 0)).map(k => [k, fmtV(spec[k])]), text: isA(lh.text) ? lh.text.slice() : [] });
+    sections.push({ h: 'Lastenheft', head: ['Größe', 'Wert'], rows: Object.keys(spec).filter(k => k !== 'hidden' && k !== 'fault' && !(isA(spec.hidden) && spec.hidden.indexOf(k) >= 0)).map(k => [k, fmtV(spec[k])]), text: isA(lh.text) ? lh.text.slice() : [] });
     sections.push({ h: 'Stationen', head: ['Station', 'Titel', 'Lab', 'Ergebnis', 'Stand', 'Versuche', 'Tipps'], rows: s.stations.map((r, i) => [(i + 1) + ' (' + r.id + ')', r.title, r.on, r.delivered ? r.pct + ' %' : '-', r.state, r.tries, r.hints]) });
     try { const c = ctxFor(pid, def.final.id); if (typeof def.report === 'function') { const x = def.report(c.slots, spec); if (isA(x)) x.filter(isO).forEach(sec => sections.push(sec)); } } catch (e) { sections.push({ h: 'Zusatzabschnitte', rows: [['Fehler', msgOf(e)]] }); }
     const fin = stt.final;

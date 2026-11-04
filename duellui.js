@@ -160,10 +160,12 @@
     b.innerHTML = `<p>Zwei Azubis lösen <b>dieselbe Fehlersuche</b> mit demselben verdeckten Fehler. Gewertet werden Richtigkeit, saubere Arbeitsweise und Zeit. Jeder Tipp kostet ${W.tipp} Punkte, eine Auflösung gibt es im Duell nicht.</p>
       ${cur && cur.start ? `<div class="dl-card"><b>Ein Duell läuft:</b> ${esc(cur.r)} <div class="dl-row"><button type="button" class="dl-btn pri" id="dlCont">Zum Duell</button></div></div>` : ''}
       <div class="dl-row"><button type="button" class="dl-btn pri" id="dlN">Neues Duell</button><button type="button" class="dl-btn" id="dlJ2">Beitreten</button><button type="button" class="dl-btn" id="dlBl">Blitz-Duell (Rechnen)</button></div>
+      <div class="dl-row"><button type="button" class="dl-btn" id="dlTa">🔁 Fehler-Tausch</button><button type="button" class="dl-btn" id="dlWe">🏆 Wettbewerb</button></div>
       <div id="dlH"></div><details style="margin-top:12px"><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer"><b>Bestenliste vom Ausbilder</b></summary><div id="dlBest"></div></details>`;
     bestenUi(b.querySelector('#dlBest'));
     b.querySelector('#dlN').onclick = () => neu(); b.querySelector('#dlJ2').onclick = () => beitreten();
     b.querySelector('#dlBl').onclick = () => { m.close(); blitz(root.__duellRechOpt || {}); };
+    b.querySelector('#dlTa').onclick = () => { m.close(); openTausch(); }; b.querySelector('#dlWe').onclick = () => { m.close(); openWett(); };
     const c = b.querySelector('#dlCont'); if (c) c.onclick = () => { m.close(); const r = taskRow(cur.a); if (r) location.href = labFile(r[1]) + '?aufgabe=' + r[0] + '&duell=' + cur.r + '&st=' + cur.st; };
     if (h.length) { b.querySelector('#dlH').innerHTML = '<p style="margin-top:14px"><b>Letzte Duelle</b></p><table class="dl-tbl"><thead><tr><th>Runde</th><th>Aufgabe</th><th class="n">Punkte</th><th></th></tr></thead><tbody>' + h.map((x, i) => { const r = taskRow(x.a); return `<tr><td>${esc(x.r)}</td><td>${esc(r ? r[3] : x.a)}</td><td class="n">${x.pts}</td><td><button type="button" class="dl-btn" data-h="${i}">Code</button></td></tr>`; }).join('') + '</tbody></table>'; b.querySelectorAll('[data-h]').forEach(x => { x.onclick = () => finished(Object.assign({}, h[+x.dataset.h], { k: lsGet('lm4.kuerzel'), j: jgDefault(), sc: null, again: 1 })); }); }
   }
@@ -182,7 +184,7 @@
       chipEl.querySelector('.dl-xx').onclick = e => {
         const bt = e.currentTarget; if (!sure) { sure = 1; bt.classList.add('sure'); bt.textContent = 'Sicher?'; setTimeout(() => { sure = 0; bt.classList.remove('sure'); bt.innerHTML = '✕<span class="dl-m"> Aufgeben</span>'; }, 3000); return; }
         sure = 0; const c2 = D.store.current(null);
-        if (c2 && c2.start) { const rec = D.store.giveUp(null, Date.now(), labApi()); chip(); if (rec) finished(rec); }
+        if (c2 && c2.start) { const rec = D.store.giveUp(null, Date.now(), labApi()); chip(); if (rec) { if (rec.w && root.Wett && root.Wett.ui && typeof D.onFinish === 'function') D.onFinish(rec); else finished(rec); } }   /* Wettbewerbsrunde: Ergebnis-Sheet von Wett.ui (I1, offener Punkt W3) */
         else { D.rechnen.cancel(); chip(); toast('Duell abgebrochen'); }
       };
     }
@@ -297,15 +299,39 @@
     if (hit && !t.closest('.dl')) { e.preventDefault(); e.stopImmediatePropagation(); toast('Im Duell gibt es keine Auflösung.'); }
   }, true);
 
-  /* ---------- Startseiten-Band ---------- */
+  /* ---------- Fehler-Tausch und Wettbewerb (Werkbank-Zeile, Lobby): Module bei Bedarf nachladen ---------- */
+  function loadSeq(list, cb) {
+    const next = () => { const f = list.shift(); if (!f) { cb(true); return; } const s = doc.createElement('script'); s.src = f; s.onload = next; s.onerror = () => cb(false); doc.head.appendChild(s); };
+    next();
+  }
+  function openTausch() {
+    const go = () => { try { root.Tauschui.open(); } catch (e) { toast('Die Fehler-Tauschbörse ist nicht verfügbar.'); } };
+    if (root.Tauschui && typeof root.Tauschui.open === 'function') { go(); return; }
+    loadSeq([root.Tausch ? '' : 'tausch.js', 'codebus.js', 'tauschui.js'].filter(Boolean), ok => { if (ok && root.Tauschui) go(); else toast('Die Fehler-Tauschbörse ist nicht verfügbar.'); });
+  }
+  function openWett() {
+    const go = () => { try { root.Wett.ui.open(); } catch (e) { toast('Der Wettbewerb ist nicht verfügbar.'); } };
+    if (root.Wett && root.Wett.ui && typeof root.Wett.ui.open === 'function') { go(); return; }
+    loadSeq([root.Wett ? '' : 'wett.js', 'wettui.js'].filter(Boolean), ok => { if (ok && root.Wett && root.Wett.ui) go(); else toast('Der Wettbewerb ist nicht verfügbar.'); });
+  }
+  function bandStatus(h, best) {
+    const p = [];
+    if (h.length) p.push('Diese Woche: ' + h.length + (h.length === 1 ? ' Duell' : ' Duelle') + ', bester Wert ' + best);
+    try { const t = root.Tauschui && root.Tauschui.statusZeile ? root.Tauschui.statusZeile() : ''; if (t) p.push(t); } catch (e) {}
+    try { const w = root.Wett && root.Wett.ui && root.Wett.ui.statusZeile ? root.Wett.ui.statusZeile() : ''; if (w) p.push(w); } catch (e) {}
+    return p.length ? p.join(' · ') : 'Duell gegen einen Mitazubi, Fehlerkarten tauschen, Wettbewerb';
+  }
+
+  /* ---------- Startseiten-Band (Werkbank-Zeile) ---------- */
   function band() {
     const top = doc.getElementById('top'); if (!top || doc.getElementById('duellBand')) return;
     const w = C.kw(Date.now()), h = D.store.history(null).filter(x => C.kw(x.t) === w), best = h.reduce((a, x) => Math.max(a, x.pts), 0);
     const d = el('div', 'dl dl-band'); d.id = 'duellBand';
-    d.innerHTML = `<div class="dl-tx">⚔️ <b>Prüfungs-Duell</b><br><small>${h.length ? 'Diese Woche: ' + h.length + (h.length === 1 ? ' Duell' : ' Duelle') + ', bester Wert ' + best : 'Fehlersuche gegen einen Mitazubi, mit Runden-Code'}</small></div>
-      <button type="button" class="dl-btn pri" data-b="neu">Neues Duell</button><button type="button" class="dl-btn" data-b="beitreten">Beitreten</button>`;
+    d.innerHTML = `<div class="dl-tx">⚔️ <b>Duell</b> · 🔁 <b>Fehler-Tausch</b> · 🏆 <b>Wettbewerb</b><br><small>${esc(bandStatus(h, best))}</small></div>
+      <button type="button" class="dl-btn pri" data-b="neu">Neues Duell</button><button type="button" class="dl-btn" data-b="beitreten">Beitreten</button><button type="button" class="dl-btn" data-b="tausch">Fehler-Tausch</button><button type="button" class="dl-btn" data-b="wett">Wettbewerb</button>`;
     top.parentNode.insertBefore(d, top.nextSibling);
     d.querySelector('[data-b=neu]').onclick = () => neu(); d.querySelector('[data-b=beitreten]').onclick = () => beitreten();
+    d.querySelector('[data-b=tausch]').onclick = () => openTausch(); d.querySelector('[data-b=wett]').onclick = () => openWett();
   }
 
   D.ui = { open, finished, chip, rechnenSolved, lobby, neu, beitreten, blitz, parseJoin, hinweis, toast };

@@ -33,7 +33,7 @@
     ["lernen-ds.html", "Datenblatt-Lab: Datenblätter lesen und verstehen", "Aufbau eines Datenblatts, Grenzwerte und Betriebswerte, Min, Typ und Max, Kennlinien mit logarithmischer Achse, Thermik und Derating, Auslegung mit LED, Transistor und Regler, Bauteilwahl, Zeitdiagramme und Register sowie Fachenglisch. Die Datenblätter im Lab sind fiktive Übungsdatenblätter. Mit…"],
     ["lernen-pr.html", "Prüfungs-Lab: Für die Abschlussprüfung üben", "Aufbau der Prüfung, sicher rechnen, die acht Themen, Lernplan und Strategie. Mit Arbeitsblatt."],
     ["lernen-w24.html", "Praxisschaltung W-2024 verstehen", "Die Schaltung der Praxisprüfung W-2024 Schritt für Schritt: Aufbau, Bauteile, Wirkungsweise und Fehlersuche, mit sieben Arbeitsblättern und einer Probeprüfung zum Ausdrucken. Die Lösungen sind für Ausbilder gedacht und liegen verschlüsselt im Lab."],
-    ["lernen-vb.html", "Projekte: Verbundprojekte", "Fünf Projekte, in denen alle Labs zusammen ein Gerät fertigstellen: Garagentor, Ampelanlage, Digitale Uhr, Gartenbewässerung und Förderanlage. Ablauf, Stufen und Punkte, Datenübergabe, die Projekte mit Beispiel-Lastenheft, Formeln, Tipps, Abschlussbericht und Hinweise für die Gruppenarbeit. Mit…"]
+    ["lernen-vb.html", "Projekte: Verbundprojekte", "Sieben Projekte, in denen alle Labs zusammen ein Gerät fertigstellen: Garagentor, Ampelanlage, Digitale Uhr, Gartenbewässerung, Förderanlage, Labornetzteil und Heizungsregelung. Ablauf, Stufen und Punkte, Datenübergabe, die Projekte mit Beispiel-Lastenheft, Formeln, Tipps, Abschlussbericht und Hinweise für die Gruppenarbeit. Mit…"]
   ];
   const toStr = s => String(s == null ? '' : s);
   // Umlaute zu ae/oe/ue/ss (Eingabe "waerme" findet "Wärme"); fold: zusätzlich Akzente weg ("warme" findet auch "Wärme")

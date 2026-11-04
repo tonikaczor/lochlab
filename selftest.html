@@ -1001,7 +1001,7 @@
     var bad = [], n = 0, V = w.Verbund;
     if (!V) return { n: 0, bad: ['Verbund fehlt'] };
     var ps = V.projects() || [];
-    if (ps.length !== 5) bad.push('Projekte: ' + ps.length + ' statt 5');
+    if (ps.length !== 7) bad.push('Projekte: ' + ps.length + ' statt 7');   /* v23.153: + netzteil, heizung */
     var labsSeen = {};
     ps.forEach(function (p) {
       var def = V.project(p.id); if (!def) { bad.push(p.id + ': Definition fehlt'); return; }
@@ -1025,6 +1025,7 @@
     try {
       for (var i = 0; i < ps.length; i++) {
         var pid = ps[i].id;
+        try { if (w.VerbundBar && w.VerbundBar.lazy && w.VerbundBar.lazy.ensure) await w.VerbundBar.lazy.ensure(pid); } catch (e) { bad.push(pid + ': Prüfkerne nicht ladbar'); }   /* netzteil/heizung: Kerne werden im Hub bei Bedarf nachgeladen */
         for (var lv = 1; lv <= 3; lv++) {
           var r = V.demo(pid, { name: 'Selbsttest Team', level: lv, again: true });
           n++;
@@ -1182,7 +1183,7 @@
     for (var k2 = 0; k2 < 50 && !f.contentWindow.QrScan; k2++) await sleep(100);
     var w = f.contentWindow, bad = [], D = w.Duell, K = w.Karriere;
     function row(name, probs) { if (probs.length) all.ok = false; all.labs.push({ lab: name, bad: probs }); document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + name + '</td><td></td><td class="' + (probs.length ? 'bad' : 'ok') + '">' + (probs.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + probs.join('; ') + '</td></tr>'); }
-    var pd = [], pk = [], pq = [];
+    var pd = [], pk = [], pq = [], pt = [], pc = [], pw = [];
     if (!D || !D.core) pd.push('Duell.core fehlt'); else {
       try {
         var r = D.core.newRound(Date.now()), p = D.core.parseRound(r);
@@ -1201,8 +1202,32 @@
       } catch (e) { pk.push('Ausnahme: ' + e); }
     }
     if (!w.QrScan) pq.push('QrScan fehlt'); else if (w.jsQR) pq.push('jsqr.js wird beim Start geladen (soll nachgeladen werden)');
+    /* Fehler-Tausch, Transport, Wettbewerb (v23.153): geladen, Kern-Funktionen vorhanden, Aufruf wirft nicht; kein Netzaufruf */
+    var T = w.Tausch, C = w.Codebus, Wt = w.Wett;
+    if (!T || !T.core || !T.store) pt.push('Tausch fehlt'); else {
+      try {
+        ['makeCard', 'parseCards', 'peek', 'verifyCard', 'makeErg', 'verifyErg', 'guete', 'bestenliste', 'flags', 'pts'].forEach(function (n) { if (typeof T.core[n] !== 'function') pt.push('Tausch.core.' + n + ' fehlt'); });
+        if (!T.WT || !T.registerAdapter) pt.push('Tausch.WT/registerAdapter fehlt');
+        if (T.core.peek('Muell') !== null && T.core.peek('Muell') !== undefined) pt.push('peek akzeptiert Muell');
+        if (!w.Tauschui || typeof w.Tauschui.open !== 'function' || typeof w.Tauschui.statusZeile !== 'function') pt.push('Tauschui fehlt');
+      } catch (e) { pt.push('Ausnahme: ' + e); }
+    }
+    if (!C || typeof C.send !== 'function' || typeof C.receive !== 'function' || !C.core) pc.push('Codebus fehlt'); else {
+      try {
+        var cc = C.core.parseCodes('TFF1.a.b.c Muell TFE1.x.y'); if (!cc || cc.length < 2) pc.push('parseCodes findet keine Codes');
+        if (C.core.serverActive && C.core.serverActive()) pc.push('Server-Weg ist ohne Konfiguration aktiv');
+      } catch (e) { pc.push('Ausnahme: ' + e); }
+    }
+    if (!Wt || !Wt.core || !Wt.store) pw.push('Wett fehlt'); else {
+      try {
+        ['newWid', 'encodeAus', 'parseAus', 'runden', 'runde', 'rangliste', 'platzVon', 'median'].forEach(function (n) { if (typeof Wt.core[n] !== 'function') pw.push('Wett.core.' + n + ' fehlt'); });
+        if (Wt.core.parseAus('Muell') && Wt.core.parseAus('Muell').length) pw.push('parseAus akzeptiert Muell');
+        if (!Wt.ui || typeof Wt.ui.open !== 'function' || typeof Wt.ui.statusZeile !== 'function') pw.push('Wett.ui fehlt');
+      } catch (e) { pw.push('Ausnahme: ' + e); }
+    }
     f.remove();
     row('Duell (Kern)', pd); row('Karriere (Kern)', pk); row('QR-Scanner (nachladen)', pq);
+    row('Fehler-Tausch (Kern)', pt); row('Transport Codebus', pc); row('Wettbewerb (Kern)', pw);
   }
   (async function () {
     for (var i = 0; i < LABS.length; i++) { try { await lab(LABS[i]); } catch (e) { all.ok = false; all.labs.push({ lab: LABS[i][1], error: String(e) }); document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + LABS[i][1] + '</td><td></td><td class="bad">FEHLER</td><td>' + String(e) + '</td></tr>'); } }

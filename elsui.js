@@ -831,6 +831,30 @@
     setTab(o.tab || 'rig'); updateChrome(); saveCurSoon(); toast(had ? 'Geladen, dein Versuch ist gesichert' : (o.toast || 'Im Prüfstand geladen: ' + rigName(id)));
     return true;
   }
+  /* Fehler-Tausch (Paket T3c): nur wenn tausch.js geladen ist; der Adapter tauschad-els.js wird bei Bedarf nachgeladen, die Oberfläche baut T4 */
+  function tauschElsOk() { try { return !!(root.Tausch && typeof root.Tausch.registerAdapter === 'function' && !(root.Duell && typeof root.Duell.active === 'function' && root.Duell.active())); } catch (e) { return false; } }
+  function tauschEls(fn) {
+    if (!root.Tausch) return; if (root.ElsTausch) { fn(root.ElsTausch); return; }
+    const s = document.createElement('script'); s.src = 'tauschad-els.js'; s.onload = () => { if (root.ElsTausch) fn(root.ElsTausch); else toast('Die Fehler-Tauschbörse ist nicht geladen (tauschad-els.js).'); }; s.onerror = () => toast('Die Fehler-Tauschbörse ist nicht geladen (tauschad-els.js).'); document.head.appendChild(s);
+  }
+  /* vom Adapter gerufen: Prüfplatz mit den Steuerwerten der Karte laden und gesperrt/verdeckt umhüllen (o.wrap) */
+  function tauschLoad(o) {
+    if (!o || !root.Tausch || S.task || !defOf(o.rig)) return null;
+    stash(); S.name = 'Fehlerkarte'; S.id = null; S.dirty = false; S.ref = null; S.refMode = 'nachher'; S.rows[o.rig] = [];
+    setRig(o.rig, { opts: { controls: o.controls } });
+    if (!S.rig) return null; if (typeof o.wrap === 'function') o.wrap(S.rig);
+    buildControls(); buildMeters(); buildPresets(); updateEvents(true); updateDiag(true); updateAmp(true); setTab('rig'); palSig = ''; updateChrome();
+    return S.rig;
+  }
+  root.ELS_TAUSCH_UI = { load: tauschLoad };
+  function tauschBau() {
+    if (!tauschElsOk()) { toast('Während eines Duells ist der Fehler-Tausch gesperrt.'); return; } if (S.task) { toast('Beende zuerst die Aufgabe.'); return; }
+    tauschEls(X => { if (root.Tausch.active && root.Tausch.active()) { toast('Es läuft gerade eine Fehlersuche.'); return; } const r = X.bau(S.rig); if (!r.ok) toast(r.why || 'Diese Einstellung ergibt keine Fehlerkarte.'); else if (!(root.TauschUI && typeof root.TauschUI.bau === 'function')) toast('Fehlerkarte geprüft. Die Tausch-Oberfläche ist noch nicht geladen.'); });
+  }
+  function tauschHash() {
+    if (!/^#t=/.test(location.hash) || !root.Tausch) return false; const h = location.hash; history.replaceState(null, '', location.pathname + location.search);
+    setTimeout(() => tauschEls(X => { if (!X.entry(h)) toast('Die Fehlerkarte ist nicht lesbar.'); }), 300); return true;
+  }
   function extApi() {
     return { get S() { return S; }, get rig() { return S.rig; }, setTab, loadExample, startTask, toast, esc, stat: (k, v, m) => { if (k === 'elscalc') S.calcUsed = true; stat(k, v, m); }, lsGet, lsSet, get ELS_CORE() { return CORE(); }, get ELS_DRAW() { return DRAW(); }, snapshot, setRef, get quality() { return curQ(); }, get reduced() { return reduced(); }, get theme() { return theme(); },
       KEYS, EBENEN, ORDER, SPEEDS, loadRig, setCtl, applyCtl, ctlShow, ctlParse, rigName, rigIcon, defOf, fnum, fe, parseNum, setRun, resetRig, merken, toggleVN, doFire, assessOf, allCtl, limGet, limBadge,
@@ -861,11 +885,12 @@
   $('#title').onclick = async () => { const r = await ask('Name des Versuchs', [{ key: 'n', label: 'Name', type: 'text', value: S.name }]); if (r && r.n.trim()) { S.name = r.n.trim(); S.dirty = true; updateChrome(); saveCurSoon(); } };
   let palSig = '';
   function buildPal() {
-    const fx2 = fxOn(), fire = canFire(), sig = [S.running, S.speed, fx2, !!S.rig, !!S.live, fire, S.rigId, reduced()].join('|');
+    const tz = S.rigId === 'pruefplatz' && !(S.rig && S.rig.__tausch) && tauschElsOk();   /* Fehler-Tausch (T3c): Knopf nur am Prüfplatz, nicht während einer Suche */
+    const fx2 = fxOn(), fire = canFire(), sig = [S.running, S.speed, fx2, !!S.rig, !!S.live, fire, S.rigId, reduced(), tz].join('|');
     if (sig === palSig) return; palSig = sig; const F = !!root.LochFX;
     $('#pal').innerHTML = `<button class="chip ${S.running ? 'on' : 'go'}" data-a="run" aria-label="${S.running ? 'Pause' : 'Start'}">${S.running ? '⏸ Pause' : '▶ Start'}</button><button class="chip" data-a="reset" aria-label="Zurücksetzen">⟲ Reset</button>${fire ? `<button class="chip fire" data-a="fire" aria-label="${esc(FIRELBL[S.rigId] || 'Auslösen')} (Taste F)" title="Taste F">⚡ ${esc(FIRELBL[S.rigId] || 'Auslösen')}</button>` : ''}<span class="sep"></span>
       <span class="seg" aria-label="Zeitlupe und Zeitraffer">${SPEEDS.map((v, i) => `<button data-sp="${v}" class="${S.speed === v ? 'on' : ''}" title="Taste ${i + 1}">×${String(v).replace('.', ',')}</button>`).join('')}</span><span class="sep"></span>
-      <button class="chip" data-a="dice" aria-label="Fehler würfeln" title="Fehler würfeln">🎲 Fehler</button>${F ? `<button class="chip ${fx2 ? 'on' : ''}" data-a="fx" aria-pressed="${fx2}" aria-label="Effekte und Ton" title="Effekte und Ton">${fx2 ? '🎉' : '🔇'} Effekte</button>` : ''}
+      <button class="chip" data-a="dice" aria-label="Fehler würfeln" title="Fehler würfeln">🎲 Fehler</button>${tz ? '<button class="chip" data-a="tausch" aria-label="Als Fehlerkarte weitergeben" title="Als Fehlerkarte weitergeben">🔁 Als Fehlerkarte weitergeben</button>' : ''}${F ? `<button class="chip ${fx2 ? 'on' : ''}" data-a="fx" aria-pressed="${fx2}" aria-label="Effekte und Ton" title="Effekte und Ton">${fx2 ? '🎉' : '🔇'} Effekte</button>` : ''}
       <span id="stat"></span>`;
     const r = $('#bRun'); r.textContent = S.running ? '⏸' : '▶'; r.classList.toggle('on', S.running); r.setAttribute('aria-label', S.running ? 'Pause' : 'Start');
     updateStat();
@@ -873,7 +898,7 @@
   $('#pal').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.sp) setSpeed(+b.dataset.sp);
-    else if (b.dataset.a === 'run') setRun(!S.running); else if (b.dataset.a === 'reset') resetRig(); else if (b.dataset.a === 'fire') doFire(); else if (b.dataset.a === 'dice') diceRoll(); else if (b.dataset.a === 'fx') toggleFx();
+    else if (b.dataset.a === 'run') setRun(!S.running); else if (b.dataset.a === 'reset') resetRig(); else if (b.dataset.a === 'fire') doFire(); else if (b.dataset.a === 'dice') diceRoll(); else if (b.dataset.a === 'tausch') tauschBau(); else if (b.dataset.a === 'fx') toggleFx();
   });
   $('#bRun').onclick = () => setRun(!S.running);
   $('#bEx').onclick = openExamples; $('#bOpen').onclick = openList; $('#bTasks').onclick = () => setTab('tasks'); $('#bShare').onclick = shareNow; $('#bPrint').onclick = printNow;
@@ -980,6 +1005,7 @@
     } catch (e) { console.error(e); }
     if (/^#[sz]=/.test(location.hash)) { const h = location.hash; history.replaceState(null, '', location.pathname + location.search); loadShared(h); }
     root.addEventListener('hashchange', () => { if (/^#[sz]=/.test(location.hash)) { const h = location.hash; history.replaceState(null, '', location.pathname + location.search); loadShared(h); } });
+    if (root.Tausch) { tauschHash(); root.addEventListener('hashchange', tauschHash); }   /* Fehler-Tausch (T3c): #t=TFF1... */
     root.addEventListener('beforeunload', saveCur);
   }
   init();

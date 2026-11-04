@@ -90,11 +90,12 @@
     const pMech = RHO * G * (qSoll / 60000) * H / PUMP.eta;
     const pAvailW = pMech <= 11 ? 40 : 60;
     const thr = level === 3 ? { min: pick(r, [10, 15, 20]), mid: 50, max: pick(r, [85, 90]) } : { min: 15, mid: 50, max: 90 };
-    const fault = level === 3 ? pick(r, ['rgs', 'diodeRev']) : null;
+    const fv = level === 3 ? r() : 0, fi = Math.floor(fv * FAULTS.length) % FAULTS.length, fSeed = level === 3 ? fi + FAULTS.length * (1 + Math.floor((fv * FAULTS.length - fi) * 900)) : null;   // opaker Fehler-Zufall, Katalog nur in faultKey
+    const fault = fSeed;
     const p = {
       uSup: 24, pAvailW: pAvailW, lenM: lenM, qSoll: qSoll, H: H, etaP: PUMP.eta, pumpK: PUMP.K, tAmb: 40, vGate: 5,
       hTank: 1.0, tankL: 100, pSensMbar: 100, uMinLoop: 12, uRef: 5, adcBits: 10, rLine: 20, iLimit: PUMP.iLimit,
-      vBeetL: vBeetL, thr: thr, fault: fault, boardW: 70, boardH: 45, layers: 2, cycleMs: 20
+      vBeetL: vBeetL, thr: thr, fSeed: fault, hidden: ['fSeed'], boardW: 70, boardH: 45, layers: 2, cycleMs: 20
     };
     const text = [
       'Projekt Smarte Gartenbewässerung, Stufe ' + level + ' (' + (level === 1 ? 'Einsteiger' : level === 2 ? 'Standard' : 'Profi') + ').',
@@ -177,7 +178,15 @@
   }
 
   /* ====================================================================== Gemeinsame Infrastruktur der Stationen */
-  const P_ = ctx => { const s = ctx && ctx.spec; return isObj(s) && isObj(s.params) ? s.params : (isObj(s) ? s : {}); };
+  /* P9/R1: params enthält nur fSeed (Zahl, hidden); der Fehler wird zur Laufzeit aus dem Katalog bestimmt. Alte Spielstände mit params.fault bleiben lesbar. */
+  const FAULTS = ['rgs', 'diodeRev'];
+  function faultKey(P) {
+    if (!P) return null;
+    if (typeof P.fault === 'string') return P.fault;                                    // alter Spielstand (vor P9)
+    const f = P.fSeed; if (typeof f !== 'number' || !isFinite(f) || f < 0) return null;
+    return FAULTS[Math.floor(f) % FAULTS.length];
+  }
+  const P_ = ctx => { const s = ctx && ctx.spec, p = isObj(s) && isObj(s.params) ? s.params : (isObj(s) ? s : {}); if (p.fault !== undefined || p.fSeed === undefined) return p; const k = faultKey(p), q = Object.assign({}, p); if (k) Object.defineProperty(q, 'fault', { value: k, enumerable: false }); return q; };
   const TOL = ctx => (ctx && fin(ctx.tol) ? ctx.tol : 1);
   const LEVEL = ctx => (ctx && (ctx.level === 1 || ctx.level === 3) ? ctx.level : 2);
   const unwrap = d => (isObj(d) && isObj(d.data) && typeof d.type === 'string' ? d.data : d);
@@ -644,7 +653,8 @@
       const f = arr(data && data.findings).map(lc).join(' | ');
       const words = P.fault === 'rgs' ? ['pulldown', 'r_gs', 'rgs', 'gate'] : ['diode', 'freilauf'];
       const kind = P.fault === 'rgs' ? /(fehlt|fehlen|nicht vorhanden|weggelassen|offen|schwebt|schwebend|kein)/.test(f) : /(verpol|falsch ?herum|umgekehrt|falsch gepolt|polarit|falsch eingebaut)/.test(f);
-      lines.push(L(words.some(w => f.indexOf(w) >= 0) && kind, 'Fehler benannt: ' + (P.fault === 'rgs' ? 'Pulldown R_GS fehlt, das Gate schwebt' : 'Freilaufdiode verpolt') + (f ? '' : ' – kein Befund eingetragen'), 20));
+      const okD = words.some(w => f.indexOf(w) >= 0) && kind;
+      lines.push(L(okD, okD ? 'Fehler benannt: ' + (P.fault === 'rgs' ? 'Pulldown R_GS fehlt, das Gate schwebt' : 'Freilaufdiode verpolt') : f ? 'Fehler benannt: Diagnose stimmt nicht: Befund passt nicht zu den Messwerten' : 'Fehler benannt: Diagnose fehlt, kein Befund eingetragen', 20));
     } else {
       const um = rowVal(rowOf(rows, 'umean'), 'V'), tU = Math.max(0.05 * tol * truth.U_mean, 0.05);
       lines.push(L(fin(um) && Math.abs(um - truth.U_mean) <= tU, 'Mittlere Motorspannung bei PWM: ' + (fin(um) ? 'gemessen ' + fm(um, 2) + ' V' : 'nicht eingetragen') + ', erwartet ' + fm(truth.U_mean, 2) + ' V (Tastgrad · Versorgung, ±' + fm(5 * tol, 1) + ' %)', 20));
@@ -1127,7 +1137,7 @@
       open: { ex: 'Motortreiber messen' },
       hint: ['Den Widerstand des durchgeschalteten MOSFETs bekommst du aus Spannung und Strom: R_DS(on) = U_DS / I. Er liegt im Bereich des Datenblatts bei 4,5 V Gate-Spannung.',
         'Die Versorgung bricht unter Last etwas ein, weil das Netzteil einen Innenwiderstand hat. Miss sie direkt an der Klemme bei laufender Pumpe und gib drei Stellen an, denn du brauchst den Wert in der nächsten Station.',
-        'Die mittlere Motorspannung ist ungefähr Tastgrad mal Versorgungsspannung. Weicht ein Wert stark ab, ist die Schaltung fehlerhaft: Fehlt der Pulldown, schwebt das Gate, eine verpolte Freilaufdiode belastet die Versorgung. Trage den gemessenen Wert trotzdem ein und notiere den Befund.'],
+        'Die mittlere Motorspannung ist ungefähr Tastgrad mal Versorgungsspannung. Weicht ein Wert stark ab, ist die Schaltung fehlerhaft. Gehe die Schaltung entlang des Signalwegs durch, miss Punkt für Punkt und halbiere den Weg, bis du die Stelle gefunden hast. Trage den gemessenen Wert trotzdem ein und notiere deinen Befund.'],
       check: safe(checkMess, 'Messprotokoll'),
       starter: ctx => ({ rows: [], values: {}, findings: [] }),
       solution: ctx => messSolution(ctx),
@@ -1281,6 +1291,7 @@
     labs: ['haus', 'ant', 'ds', 'sch', 'pcb', 'mess', 'sen', 'code', 'pi', 'sps'],
     levels: { 1: { name: 'Einsteiger', pass: 70, tolMul: 1.5 }, 2: { name: 'Standard', pass: 80, tolMul: 1 }, 3: { name: 'Profi', pass: 90, tolMul: 0.6 } },
     lastenheft: lastenheft,
+    faultKey: faultKey,
     stations: STATIONS,
     final: {
       id: 'vwF', title: 'Abschlusstest: Ein Tag im Garten', check: finalCheck,

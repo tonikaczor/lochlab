@@ -49,7 +49,7 @@
     notePruefungsbester: 2, wiederholung: true
   };
   const XPKEY = { aufgaben: 'Aufgaben', abzeichen: 'Abzeichen', kapitel: 'Kapitel', trainer: 'Trainer', pruefungen: 'Prüfungen', duelle: 'Duelle', verbund: 'Verbundprojekte' };
-  const D = { LEVELS, SPECIALS, XP, GP, XPKEY, VERBUND_AGG: ['vbfertig', 'vbprofi', 'vbgold'], VERBUND_PIDS: ['vbgarage', 'vbampel', 'vbuhr', 'vbgiess', 'vbfoerder'] };
+  const D = { LEVELS, SPECIALS, XP, GP, XPKEY, VERBUND_AGG: ['vbfertig', 'vbprofi', 'vbgold'], VERBUND_PIDS: ['vbgarage', 'vbampel', 'vbuhr', 'vbgiess', 'vbfoerder', 'vbnetzteil', 'vbheizung'] };
   if (typeof module !== 'undefined' && module.exports) module.exports = D;
   root.KarriereData = D;
 })(typeof window !== 'undefined' ? window : globalThis);

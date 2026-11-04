@@ -93,6 +93,9 @@ function ledKey(v) {
   return 'rot';
 }
 const LEDIMAX = { '18': 0.03, '3': 0.045, '5': 0.06, '8': 0.08, '10': 0.1 };
+/* LM317 (einstellbar, positiv): Mittelpin = ADJ, nicht GND. Referenz 1,25 V zwischen OUT und ADJ, I_adj ~ 50 µA, Dropout ~ 2 V. Wert z. B. LM317, LM317T, LM217. */
+const LM317 = { vref: 1.25, iadj: 50e-6, drop: 2 };
+const isLM317 = v => /^(LM)?[23]17[A-Z]*$/.test(String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, ''));
 const REGV = { '7805': 5, '7806': 6, '7808': 8, '7809': 9, '7810': 10, '7812': 12, '7815': 15, '7824': 24, 'LM7805': 5, 'LM7812': 12 };
 
 /* ---------- Netzliste aus dem Lochraster ----------
@@ -427,6 +430,7 @@ function buildCircuit(layout) {
         add({ type: 'Q', c, b, e, s: pnp ? -1 : 1, is: 1e-14, bf: 250, br: 4, part: p, vbe: 0, vbc: 0 });
         break; }
       case 'U': {
+        if (isLM317(p.v)) { add({ type: 'REG', lm: true, ni: n(0), ng: n(1), no: n(2), vset: LM317.vref, part: p, vtar: 0, adjOpen: false }); break; }
         const vset = REGV[String(p.v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')] || 5;
         add({ type: 'REG', ni: n(0), ng: n(1), no: n(2), vset, part: p, vtar: 0 });
         break; }
@@ -457,6 +461,7 @@ function buildCircuit(layout) {
     if (e.type === 'IC') { for (let i = 1; i <= e.np; i++) touch[e.n[i]]++; }
     else ['a', 'b', 'c', 'e', 'ni', 'ng', 'no'].forEach(f => { if (typeof e[f] === 'number') touch[e[f]]++; });
   });
+  elems.forEach(e => { if (e.type === 'REG' && e.lm) e.adjOpen = e.ng > 0 && touch[e.ng] === 1; });   // ADJ offen: kein I_adj, Ausgang = U_ref
   elems.forEach(e => { if (e.type === 'IC') for (let i = 1; i <= e.np; i++) e.fl[i] = e.n[i] > 0 && touch[e.n[i]] === 1; });
   // Verknüpfung: Welcher Arduino-Pin hängt am selben Knoten wie ein Sensor-/Servo-/LCD-Anschluss?
   const mcuEl = elems.find(e => e.type === 'MCU' || e.type === 'PI40');
@@ -667,6 +672,14 @@ function createSim(circ) {
           case 'IC': ICS.stamp(e, S, v); break;
           case 'REG': {
             const vin = v[e.ni] - v[e.ng];
+            if (e.lm) {   // LM317: Quelle OUT-ADJ = 1,25 V, Strom kommt vom Eingang (nicht aus ADJ); I_adj fliesst aus dem ADJ-Pin ins Teilernetz
+              const g = 1 / 0.05;
+              e.dropout = v[e.ni] - LM317.drop < v[e.ng] + LM317.vref;   // Durchlasstransistor gesaettigt: OUT folgt IN - 2 V (stabil, ohne Rueckkopplung ueber ADJ)
+              if (e.dropout) { addA(e.no, e.no, g); addA(e.no, e.ni, -g); inj(e.no, -g * LM317.drop); addA(e.ni, e.no, -g); addA(e.ni, e.ni, g); inj(e.ni, g * LM317.drop); e.vtar = Math.max(0, v[e.no] - v[e.ng]); }
+              else { e.vtar = LM317.vref; addA(e.no, e.no, g); addA(e.no, e.ng, -g); inj(e.no, g * e.vtar); addA(e.ni, e.no, -g); addA(e.ni, e.ng, g); inj(e.ni, -g * e.vtar); }
+              if (!e.adjOpen) { inj(e.ng, LM317.iadj); inj(e.ni, -LM317.iadj); }
+              break;
+            }
             e.vtar = Math.max(0, Math.min(e.vset, vin - 2));
             const gout = 1 / 0.05;
             stampG(e.no, e.ng, gout); inj(e.no, e.vtar * gout); inj(e.ng, -e.vtar * gout);

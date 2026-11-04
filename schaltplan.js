@@ -76,7 +76,7 @@ const KINDS = {
   NETZ3:{ name: 'Drehstrom 400 V (L1, L2, L3, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 0], [8, 0]], v: '400V', core: 'NETZ3', box: [-1, -3, 9, 0.3], props: [['v', 'Außenleiterspannung', 'text', 'z. B. 400V']] },
   MOTOR3:{ name: 'Drehstrommotor', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 3]], v: '400V 2.2kW', core: 'MOTOR3', box: [-0.6, -0.4, 6.6, 4.8], toggle: true, props: [['v', 'Spannung, Leistung (D = Dreieck)', 'text', 'z. B. 400V 2.2kW']] },
   BRUECKE:{ name: 'Brückengleichrichter', cat: 'Halbleiter', pins: [[0, 2], [4, 2], [2, 0], [2, 4]], v: '', core: 'BRUECKE', box: [0, -0.4, 4, 4.4], props: [] },
-  REG: { name: 'Spannungsregler 78xx', cat: 'Halbleiter', pins: [[0, 0], [2, 2], [4, 0]], v: '7805', core: 'U', box: [0, -1, 4, 2.4], props: [['v', 'Typ', 'text', 'z. B. 7805 oder 7812']] },
+  REG: { name: 'Spannungsregler 78xx', cat: 'Halbleiter', pins: [[0, 0], [2, 2], [4, 0]], v: '7805', core: 'U', box: [0, -1, 4, 2.4], props: [['v', 'Typ', 'text', 'z. B. 7805 oder 7812; LM317 ist einstellbar (Mittelpin ADJ, Ausgang über zwei Widerstände)']] },
   XTAL:{ name: 'Schwingquarz', cat: 'Passiv', pins: T2, v: '4.1943M', core: 'XTAL', box: [0, -1.1, 4, 1.1], props: [['v', 'Frequenz', 'text', 'z. B. 4.1943M, 32768 oder 16M']] },
   SEG8:{ name: '7-Segment-Anzeige', cat: 'Halbleiter', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [6, 14]], v: 'rot', core: 'SEG8', vr: 'k', box: [-0.6, -0.8, 6.6, 15], props: [['vr', 'Bauart', 'select', ['k', 'a'], { k: 'gemeinsame Kathode', a: 'gemeinsame Anode' }]] },
   PBC: { name: 'Taster (Öffner)', cat: 'Schalter', lab: 'sim', pins: T2, v: '', core: 'SWNC', box: [0, -1.4, 4, 1], momentary: true, props: [] },
@@ -788,7 +788,7 @@ function drawPart(p, selected) {
     case 'REG': {
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[2]); lead(2, 2, 2, 1.4, pc[1]); c.strokeStyle = body; c.strokeRect(1, -0.8, 2, 2.2);
       c.save(); c.translate(2, 0.3); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .62px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(p.v || '78xx', 0, 0); c.restore();
-      c.save(); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; [['IN', 1.35, -0.35], ['OUT', 2.65, -0.35], ['GND', 2, 1.15]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; [['IN', 1.35, -0.35], ['OUT', 2.65, -0.35], [/^(LM)?[23]17[A-Z]*$/.test(String(p.v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')) ? 'ADJ' : 'GND', 2, 1.15]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'SEG8': {
       [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => lead(0, i * 2, 1, i * 2, pc[i])); lead(5, 14, 6, 14, pc[8]);

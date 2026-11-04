@@ -116,7 +116,7 @@
   /* ============================================================ 1. Projektwahl */
   function renderList() {
     setTitle('Projekte');
-    const ps = projects(); let h = '<h1 class="vh1">Verbundprojekte</h1><p class="vlead">Fünf Projekte, in denen alle Labs zusammen ein Gerät oder eine Anlage fertigstellen. Jede Station bekommt die Ergebnisse der vorigen: Datenblatt, Schaltung, Platine, Messung, Programm.</p>';
+    const ps = projects(); let h = '<h1 class="vh1">Verbundprojekte</h1><p class="vlead">' + (['Kein', 'Ein', 'Zwei', 'Drei', 'Vier', 'Fünf', 'Sechs', 'Sieben', 'Acht', 'Neun', 'Zehn'][ps.length] || ps.length) + (ps.length === 1 ? ' Projekt' : ' Projekte') + ', in denen alle Labs zusammen ein Gerät oder eine Anlage fertigstellen. Jede Station bekommt die Ergebnisse der vorigen: Datenblatt, Schaltung, Platine, Messung, Programm.</p>';
     if (!ps.length) h += '<div class="errbox"><b>Projektdaten fehlen.</b> Es ist kein Projekt geladen. Seite neu laden oder einmal mit Netz öffnen.</div>';
     h += '<div class="pgrid">' + ps.map(p => {
       const def = defOf(p.id) || p, st = stateOf(p.id), sta = st ? statusOf(p.id) : null, md = medalOf(sta);
@@ -149,6 +149,7 @@
           const had = !!st; close();
           if (had) safe(() => V().reset(pid, {}), null);
           const r = safe(() => V().start(pid, { name, level, again: true }), null);
+          if (r && r.pending) { toast(r.msg || 'Die Prüfkerne werden geladen.'); render(); return; }   /* Lazy-Laden (E4): kein Fehler, die Aktion läuft nach dem Laden von selbst */
           if (!r || !r.ok) { toast('Das Projekt konnte nicht gestartet werden' + (r && (r.msg || r.err) ? ': ' + (r.msg || r.err) : '.')); render(); return; }
           if (!lsRaw('lm4.name', '')) lsPut('lm4.name', name);
           toast('Projekt gestartet. Lies das Lastenheft und beginne mit Station 1.'); go('project', pid);
@@ -490,6 +491,7 @@
   }
   async function testProject(pid) {
     const out = {}, v = V(), def = defOf(pid); if (!v || !def || typeof v.setStorage !== 'function') return null;
+    try { const lz = root.VerbundBar && root.VerbundBar.lazy; if (lz && typeof lz.ensure === 'function') await lz.ensure(pid); } catch (e) { /* ohne Lazy-Laden weiter */ }   /* netzteil/heizung: Prüfkerne erst nachladen (E4), sonst antwortet start() mit "pending" */
     const g = snapGuard(); let active = null; try { active = sessionStorage.getItem('verbund.active'); } catch (e) {}
     const mem = memStorage(); mem.setItem('lm4.kamp.free', '1');           /* Musterlösungen freigeben, alles in einem Wegwerf-Speicher */
     if (!v.setStorage(mem)) return { __err: 'Wegwerf-Speicher nicht angenommen' };
@@ -525,7 +527,7 @@
     const pid = S.pid && stateOf(S.pid) ? S.pid : null, sta = pid ? statusOf(pid) : null, nxt = pid ? safe(() => V().next(pid), null) : null;
     const rows = [
       ['print', 'Drucken', pid ? (sta && sta.finalState === 'passed' ? 'Zertifikat und Abschlussbericht (A4)' : 'Abschlussbericht (A4)') : 'Bericht oder Zertifikat eines gestarteten Projekts'],
-      ['proj', 'Alle Projekte', 'Die fünf Verbundprojekte'],
+      ['proj', 'Alle Projekte', 'Alle Verbundprojekte'],
       pid ? ['next', nxt === 'final' ? 'Weiter zum Gesamttest' : 'Weiter mit der nächsten Station', defOf(pid).name] : null,
       pid ? ['final', 'Gesamttest', 'Das fertige Gerät prüfen'] : null, pid ? ['bericht', 'Abschlussbericht', 'Alle Stationen mit Daten'] : null, pid ? ['zert', 'Zertifikat', 'Nach bestandenem Gesamttest'] : null,
       pid && messSlot(pid) ? ['csv', 'Messprotokoll als CSV', 'Messwerte für Excel (Semikolon, Komma als Dezimalzeichen)'] : null,

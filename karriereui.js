@@ -35,6 +35,14 @@
     return { L, cur, nx, pct, xpDone, ranks, parts, need, sp, titleOf: n => (KD.LEVELS[n - 1] || {}).t || '' };
   }
   const bar = pct => '<div class="kr-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i style="width:' + pct + '%"></i></div>';
+  /* Nur-lesen-Zeile (I1): Fehler-Tausch und Wettbewerb. tz = { n: eigene Karten, best: beste Güte oder null, gel: gelöste fremde Karten, platz, von }. Keine XP-Quelle. */
+  function tauschZeile(tz) {
+    if (!tz || typeof tz !== 'object') return '';
+    const p = [], n = Math.max(0, Math.floor(+tz.n) || 0), gel = Math.max(0, Math.floor(+tz.gel) || 0), pl = Math.floor(+tz.platz) || 0, von = Math.floor(+tz.von) || 0;
+    if (n > 0 || gel > 0) p.push('Tausch: ' + n + (n === 1 ? ' Karte' : ' Karten') + (tz.best != null && isFinite(+tz.best) ? ' (beste Güte ' + Math.round(+tz.best) + ')' : '') + ', ' + gel + ' gelöst');
+    if (pl > 0 && von >= pl) p.push('Wettbewerb: Platz ' + pl + ' von ' + von);
+    return p.join(' · ');
+  }
   function rangHtml(M, extra) {
     extra = extra || {};
     const L = M.L, c = [];
@@ -44,6 +52,7 @@
       + (extra.up ? '<p class="kr-up">🎉 Neuer Rang erreicht!</p>' : '')
       + '<p class="kr-story"><span>Meister Funk</span> „' + esc(M.cur.story) + '“</p></div>');
     const right = ['<div class="kr-c"><h3>Nächste Schritte</h3>' + (extra.coach && extra.coach.length ? '<ol class="kr-co">' + extra.coach.map(s => '<li><b>' + esc(s.title) + '</b><span>' + esc(s.text || '') + '</span>' + (s.href ? '<a class="kr-b" href="' + esc(s.href) + '">Los</a>' : '') + '</li>').join('') + '</ol>' : '<p class="kr-sub">Öffne ein Lab und löse eine Aufgabe. Dann erscheinen hier deine nächsten Schritte.</p>')
+      + (tauschZeile(extra.tz) ? '<p class="kr-sub" id="krTw">' + esc(tauschZeile(extra.tz)) + '</p>' : '')
       + (extra.badges ? '<p class="kr-sub">Abzeichen ' + extra.badges.n + ' von ' + extra.badges.of + ' <button type="button" class="kr-b" data-act="badges">alle ansehen</button></p>' : '') + '</div>'];
     const parts = '<p class="kr-xp"><b>XP-Herkunft:</b> ' + M.parts.map(p => esc(p.label) + ' ' + fmt(p.v)).join(' · ') + '</p>';
     const list = '<div class="kr-c kr-full"><h3>Rangliste und Meilensteine</h3><ol class="kr-rk">' + M.ranks.map(r =>
@@ -93,12 +102,33 @@
       + '<div class="kr-cp">hat die Generalprobe zur Abschlussprüfung (Kammeraufbau Teil 2) am ' + esc(U.datum) + ' mit <b>Note ' + esc(String(U.note).replace('.', ',')) + '</b> (' + esc(U.pct) + ' %) abgelegt<br>und den Rang <b>' + esc(U.rang) + ' · ' + esc(U.rangTitel) + '</b> erreicht.</div>'
       + '<div class="kr-cc">Prüfcode ' + esc(U.code) + '</div><div class="kr-sig"><div>Ort, Datum</div><div>Unterschrift Ausbilder</div></div></div></div>';
   }
-  const ui = { model, rangHtml, spezHtml, target, kampOK, fmt, gpHtml, urkundeHtml };
+  const ui = { model, rangHtml, tauschZeile, spezHtml, target, kampOK, fmt, gpHtml, urkundeHtml };
 
   if (isNode) { module.exports = ui; }
   if (typeof document === 'undefined') { Karriere.ui = ui; return; }
 
   /* ---------- Browser: Zustand, Dialog, Startseiten-Tür ---------- */
+  /* Tausch/Wettbewerb nur lesen (Browser): Zahlen aus lm4.tausch und dem eingelesenen TFR1; ohne die Module oder Daten leer */
+  function tauschDaten() {
+    const tz = { n: 0, best: null, gel: 0, platz: 0, von: 0 };
+    try { const T = root.Tausch; if (T && T.store && T.store.get) { const s = T.store.get(); tz.n = (s.eigene || []).length; tz.gel = (s.erg || []).filter(x => x.p >= 100).length; } } catch (e) {}
+    try {
+      const Wt = root.Wett, k = String(lsGet('lm4.kuerzel', '') || '').replace(/"/g, '').trim();
+      if (Wt && Wt.store && Wt.store.getRang && Wt.core && Wt.core.platzVon && k) { const r = Wt.store.getRang(); if (r && r.parsed && Array.isArray(r.parsed.rows)) { tz.platz = Wt.core.platzVon(r.parsed, k); tz.von = r.parsed.rows.length; } }
+    } catch (e) {}
+    return tz;
+  }
+  /* beste Güte braucht eine asynchrone Prüfung der Rückmeldungen (nur wenn tauschui.js geladen ist); die Zeile wird danach ergänzt */
+  function tauschGuete(tz, body) {
+    try {
+      const U = root.Tauschui && root.Tauschui.core, T = root.Tausch; if (!U || !U.gueteInfo || !T || !T.store || !tz.n) return;
+      const own = (T.store.get().eigene || []).map(e => e.cid);
+      Promise.all(own.map(c => U.gueteInfo(c).catch(() => null))).then(list => {
+        const g = list.filter(x => x && x.gk != null).map(x => x.gk); if (!g.length) return;
+        tz.best = Math.max.apply(null, g); const el = body.querySelector('#krTw'); if (el) el.textContent = tauschZeile(tz);
+      }).catch(() => {});
+    } catch (e) {}
+  }
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); if (v == null) return d; try { return JSON.parse(v); } catch (e) { return v; } } catch (e) { return d; } };
   const freeOn = () => { try { return localStorage.getItem('lm4.kamp.free') === '1'; } catch (e) { return false; } };
   function state() {
@@ -185,7 +215,9 @@
       if (cur === 'rang') {
         let coach = null; try { coach = root.Coach && root.Coach.current ? root.Coach.current() : null; } catch (e) { coach = null; }
         const B = root.Badges;
-        body.innerHTML = rangHtml(S.M, { up, coach: coach && coach.slice(0, 3), badges: B && B.DEFS && B.earnedIds ? { n: B.earnedIds().length, of: B.DEFS.length } : null });
+        const tz = tauschDaten();
+        body.innerHTML = rangHtml(S.M, { up, coach: coach && coach.slice(0, 3), badges: B && B.DEFS && B.earnedIds ? { n: B.earnedIds().length, of: B.DEFS.length } : null, tz });
+        tauschGuete(tz, body);
       } else if (cur === 'gp') {
         const nm = body.querySelector('#krName') ? body.querySelector('#krName').value : null; body.innerHTML = gpHtml(S.D, S.M, freeOn(), Date.now(), nm);
       } else body.innerHTML = spezHtml(S.M, { AUFGABEN: root.AUFGABEN, LAB_REG: root.LAB_REG, duell: !!(root.Duell && root.Duell.open) });
