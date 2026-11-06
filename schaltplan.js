@@ -4641,7 +4641,7 @@ $('#title').onclick = () => form('Name', [{ l: 'Name der Schaltung', v: sch.name
   else if (/[?&]escape\b/.test(location.search)) openEscape();
   else if (/[?&]detektiv\b/.test(location.search)) openDetective();
   else if (/[?&]duell(&|$)/.test(location.search)) openDuel();
-  else if (/[?&]bsp\b/.test(location.search)) { loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1])); if (LAB === 'mess') setTimeout(openExamples, 0); }   // MessLab: Startseiten-Knopf "Beispiel" zeigt gleich die Auswahl
+  else if (/[?&]bsp\b/.test(location.search)) { loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1])); setTimeout(openExamples, 0); }   // Startseiten-Knopf "Beispiel" zeigt in allen Schaltungs-Labs gleich die Auswahl
   else if (d && d.parts && d.parts.length) loadCircuit(d); else { loadCircuit(buildExample(LAB !== 'sch' ? defEx() : EXAMPLES[1])); }
   if (PROGLAB) { initDock(); }
 loadShared();
