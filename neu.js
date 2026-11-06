@@ -2,6 +2,10 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v23.154', items: [
+      ['MessLab: Beispiel', 'Der Knopf „Beispiel“ auf der MessLab-Karte der Startseite öffnet jetzt gleich die Auswahl aller Beispielschaltungen, statt immer nur den Spannungsteiler zu laden.', 'Startseite ▸ MessLab ▸ Beispiel'],
+      ['Links ohne Netz', 'Links mit Beispiel oder Aufgabe (zum Beispiel aus dem Lernheft) führen auch bei schlechter Verbindung oder offline ins richtige Lab und nicht mehr auf die Startseite.', 'Alle Labs'],
+    ] },
     { v: 'v23.153', items: [
       ['Fehler-Tauschbörse', 'Baue im Netzteil-Lab, im Analog-Lab oder am Prüfplatz im Sicherheits-Lab eine Fehlerkarte und gib sie an Mitazubis weiter. Der Fehler bleibt verdeckt; wer die Karte löst, bekommt eine Wertung und du eine Rückmeldung mit Güte. Die Karte wird als QR-Code, Text oder Datei weitergegeben, es wird nichts automatisch gesendet.', 'Startseite ▸ Fehler-Tausch'],
       ['Wettbewerb', 'Dein Ausbilder kann einen Wettbewerb mit mehreren Aufgaben ausschreiben. Du liest den Code ein, löst die Aufgaben als Duell-Runden und gibst deine Abgabe als Code zurück. Die Rangliste kommt wieder als Code.', 'Startseite ▸ Wettbewerb'],
