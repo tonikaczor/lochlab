@@ -15,10 +15,10 @@
   ];
   // Vorschau: geplante Labs je Beruf (Stand: Ideensammlung, Fachinhalt wird mit den Ausbildern abgestimmt)
   const PLAN = {
-    tpd: ['Normteile und Stücklisten', 'Form- und Lagetoleranzen', 'Maschinenelemente', 'Fertigungsgerecht konstruieren', 'Räumliches Vorstellen'],
-    fll: ['Lagerstrategien und Kommissionieren', 'Gefahrgut und Kennzeichnung', 'Wareneingang und Inventur', 'Stapler und Tragfähigkeit'],
-    ik: ['Recht: Kaufvertrag und Fristen', 'Personal und Lohnabrechnung', 'ERP-Simulation Auftragsabwicklung'],
-    fi: ['Datenbank und SQL', 'Algorithmen (Struktogramm, PAP)', 'Linux-Terminal', 'Hardware', 'Projekt: Lasten- und Pflichtenheft']
+    tpd: ['Räumliches Vorstellen'],
+    fll: ['Gefahrgut und Kennzeichnung', ],
+    ik: ['ERP-Simulation Auftragsabwicklung'],
+    fi: ['Hardware', 'Projekt: Lasten- und Pflichtenheft']
   };
   const DEFAULT = 'egs';
   const keys = () => BERUFE.map(b => b.k);

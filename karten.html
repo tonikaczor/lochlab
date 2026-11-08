@@ -9,7 +9,7 @@ set(get());document.addEventListener('DOMContentLoaded',function(){set(get());})
 document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#themeBtn');if(!b)return;var c=get(),n=c===''?'light':c==='light'?'dark':'';try{if(n)localStorage.setItem(K,n);else localStorage.removeItem(K);}catch(x){}set(n);});
 })();</script>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Lernkarten</h1><small>Begriffe, Formeln und Bauteile aus dem Wiki · Version 41.159</small></div></header>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Lernkarten</h1><small>Begriffe, Formeln und Bauteile aus dem Wiki · Version 47.160</small></div></header>
 <p class="nav"><a href="index.html">← Startseite</a> · <a href="wiki.html">Wiki</a> · <a href="formelheft.html">Formelheft</a> · <a href="pruefungslab.html">Prüfungs-Lab</a></p>
 <p><label for="art">Kartenart: </label><select id="art"></select> <button type="button" class="btn" id="reset" style="background:#555">Lernstand löschen</button></p>
 <p class="mute">So geht es: Karte lesen, selbst antworten, dann „Antwort zeigen“ und ehrlich sagen, ob du es wusstest. Gewusste Karten rutschen ein Fach weiter und kommen später wieder (nach 1, 3, 7 und 14 Tagen), nicht gewusste sofort. Tasten: Leertaste = Antwort zeigen, Pfeil rechts = gewusst, Pfeil links = nicht gewusst. Der Lernstand bleibt nur auf diesem Gerät. Die Inhalte sind teilweise noch Entwürfe und nicht fachlich abgenommen.</p>

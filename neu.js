@@ -2,6 +2,15 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v47.160', items: [
+      ['Konstruktions-Lab', 'Normteile und Stücklisten, Schrauben, Wälzlager, Federn, Form- und Lagetoleranzen im Toleranzrahmen, Oberflächenangaben und fertigungsgerechtes Konstruieren. Mit Beispielen.', 'Startseite ▸ Produktdesigner oder Industriemechaniker ▸ Konstruktions-Lab'],
+      ['Warenfluss-Lab', 'Wareneingang prüfen, Lagerstrategien (FIFO, LIFO, FEFO), Kommissionieren, Traglastdiagramm des Gabelstaplers, Inventur und Versandpapiere. Mit Beispielen.', 'Startseite ▸ Lagerlogistik ▸ Warenfluss-Lab'],
+      ['Auftrag-und-Recht-Lab', 'Kaufvertrag und Vertragsstörungen, Fristen und Zahlungsbedingungen, Belegkette der Auftragsabwicklung und einfache Lohnabrechnung. Mit Beispielen.', 'Startseite ▸ Industriekaufmann ▸ Auftrag-und-Recht-Lab'],
+      ['Datenbank-Lab (SQL)', 'Eigene Übungsdatenbank mit Abfrage-Editor: SELECT, JOIN, GROUP BY, Änderungsabfragen, ER-Modelle und Normalformen. Mit Beispielen.', 'Startseite ▸ Fachinformatiker ▸ Datenbank-Lab'],
+      ['Linux-Terminal-Lab', 'Simuliertes Terminal mit virtuellem Dateisystem: Navigieren, Dateirechte, Textwerkzeuge mit Pipes, Prozesse und Logdateien. Läuft nicht auf deinem Rechner.', 'Startseite ▸ Fachinformatiker ▸ Linux-Terminal-Lab'],
+      ['Algorithmen-Lab', 'Programmablaufplan und Struktogramm lesen, Schleifen im Einzelschritt (Schreibtischtest), Suchen und Sortieren von Hand durchspielen. Mit Beispielen.', 'Startseite ▸ Fachinformatiker oder Elektroniker ▸ Algorithmen-Lab'],
+      ['Neue Abzeichen', 'Zu jedem neuen Lab gibt es ein Praktiker- und ein Meister-Abzeichen.', 'Startseite ▸ Abzeichen'],
+    ] },
     { v: 'v41.159', items: [
       ['Regelungstechnik-Lab: Einsteigeraufgaben', '17 neue Aufgaben und 6 Beispiele zum Einstieg: Steuerung oder Regelung, Größen benennen, Kurven lesen, Totzeit und Ordnung, Reglerkennlinie, Überschwingen und Stabilität. Mit Diagrammen und ohne Prüfstand.', 'Startseite ▸ Elektroniker oder Industriemechaniker ▸ Regelungstechnik-Lab ▸ Aufgaben'],
       ['Technisches-Englisch-Lab', 'Fachvokabeln, Datenblätter und Warnhinweise lesen, Fach-E-Mails prüfen, False Friends. Mit Vokabeltrainer und Beispielen, für alle Berufe.', 'Startseite ▸ Grundlagen ▸ Technisches Englisch'],
