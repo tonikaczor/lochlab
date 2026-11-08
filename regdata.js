@@ -1,5 +1,5 @@
 /* regdata.js - Regelungstechnik-Lab: Beispiele (REG_DATA) und Aufgabenregister (REG_TASKS), ohne Browser lauffähig.
- * window.REG_DATA  = { examples: [ { id:'rgx1'..'rgx24', name, cat, rig, desc, controls, seq?, dur?, op?, vals } ] }
+ * window.REG_DATA  = { examples: [ { id:'rgx1'..'rgx30', name, cat, rig, desc, controls, seq?, dur?, op?, vals } ] }
  *   Alle Zahlen in `desc` kommen aus Simulation und Kern (REG_CORE, REG_RIGS) und stehen in `vals`. `examples` wird beim ersten Zugriff
  *   gerechnet (Getter); fehlen Kern oder Prüfstände, ist die Liste leer (regui.js nimmt dann seine eingebauten Beispiele).
  *   controls = alle Steuerwerte des Prüfstands, seq im Format von REG_CORE.runSeq (t in Prozess-SEKUNDEN, set | ramp), dur in Sekunden,
@@ -292,7 +292,7 @@
     }
     return out;
   };
-  /* ====================================================================== Beispiele (24) */
+  /* ====================================================================== Beispiele (30) */
   /* Jedes Beispiel: spec() liefert das Szenario (alle Steuerwerte, Arbeitspunkt, Ablauf), die Simulation rechnet es genau wie die Oberfläche
    * (Steuerwerte, Arbeitspunkt, Ablauf mit REG_CORE.runSeq), und text(res, n) formuliert die Beschreibung. Jede Zahl der Beschreibung läuft über
    * n(schlüssel, wert, stellen): Sie steht danach in `vals` und stammt aus Simulation, Prüfstand oder Kern (Regel 1). */
@@ -475,6 +475,44 @@
       text(res, n, d) {
         const L = smp(res), first = L.find(s => s.t > 5.1 && (s.y >= 99.5 || s.y <= 0.5)), p1 = winP2P(L, 5, 40, s => s.x), p2 = winP2P(L, 160, 200, s => s.x), o = CORE().oscillation(win(L, 100, 200).map(s => s.t), win(L, 100, 200).map(s => s.x), { range: 100 });
         return 'Mit der kritischen Verstärkung Kkrit = ' + n('Kkrit', d.ult.Kkrit, 1) + ' schwingt dieser Kreis gerade noch gleichmäßig. Hier ist Kp = ' + n('kp', d.controls.kp, 0) + ' deutlich größer: Schon ein Sollwertsprung von ' + n('w0', 50, 0) + ' auf ' + n('w1', 51, 0) + ' % genügt, damit die Schwingung bei jeder Periode wächst. Die Schwingweite (Spitze-Spitze) beträgt in den ersten ' + n('t35', 35, 0) + ' s nach dem Sprung ' + n('p1', p1, 1) + ' %, in den letzten ' + n('t40', 40, 0) + ' s ' + n('p2', p2, 1) + ' %' + (first ? '; ab ' + n('tSat', first.t, 0) + ' s Prozesszeit stößt die Stellgröße an eine Grenze (0 oder 100 %), und die Schwingweite wächst nicht weiter' : '') + '. Die gemessene Periode ist ' + n('per', o.period, 1) + ' s. Die Regelstrecke allein ist stabil: Erst der Regler mit zu großem Kp macht den geschlossenen Kreis instabil.';
+      } },
+    /* ---------------------------------------------------------------- Einsteiger-Beispiele (aus dem früheren Regelkreis-Lab rkr, rgx25 bis rgx30) */
+    /* PRUEFEN P22: Die Beispiele rgx25 bis rgx30 verwenden Übungswerte (Förderband 6 m mit 0,5 m/s, PT1 mit T = 10 s, PT3 mit 10, 5 und 2 s) am Füllstand und am Streckenbaukasten. Passen die Beispiele zum Unterricht, und sollen sie an echten Anlagen hängen? */
+    { id: 'rgx25', name: 'Steuern und Regeln: erst Hand, dann Automatik', cat: 'Grundlagen', rig: 'fuellstand',
+      spec: () => ({ controls: fc('fuellstand', { mode: 'hand', yHand: 50, ctrl: 'PI', kp: 5, tn: 40, tv: 0, aw: 'rueck', w: 50, z: 0, outflow: 'sqrt', noise: 0 }), op: { y: 50 }, seq: [{ t: 30, set: { z: 60 } }, { t: 300, set: { mode: 'auto' } }], dur: 600, sampleS: 1 }),
+      text(res, n) {
+        const L = smp(res); let last = 300; L.forEach(s => { if (s.t >= 300 && Math.abs(s.x - 50) > 2) last = s.t; });
+        return 'Zuerst läuft die Anlage im Handbetrieb mit fester Stellgröße y = ' + n('y0', 50, 0) + ' %: Der Füllstand wird nicht zurückgemeldet, das ist eine Steuerung (offener Wirkungsablauf). Er steht bei ' + n('h0', winMean(L, 20, 29, s => s.x), 1) + ' cm. Nach ' + n('tz', 30, 0) + ' s Prozesszeit öffnet das Entnahmeventil auf ' + n('z', 60, 0) + ' %: Die feste Stellgröße kann nicht reagieren, der Füllstand sinkt auf ' + n('h1', winMean(L, 290, 299, s => s.x), 1) + ' cm und bleibt dort. Nach ' + n('tA', 300, 0) + ' s wird auf Automatik umgeschaltet: Jetzt wird der Füllstand gemessen, mit dem Sollwert ' + n('w', 50, 0) + ' cm verglichen und die Pumpe nachgestellt (Regelung, geschlossener Wirkungsablauf, PI-Regler mit Kp = ' + n('kp', 5, 0) + ' und Tn = ' + n('tn', 40, 0) + ' s). Der Füllstand steigt wieder, ist nach ' + n('tBack', Math.max(0, last - 300), 0) + ' s im Band von ±' + n('band', 2, 0) + ' cm und liegt am Ende bei ' + n('h2', winMean(L, 580, 600, s => s.x), 1) + ' cm. Der Regler gleicht die Störung aus, die Steuerung konnte es nicht.';
+      } },
+    { id: 'rgx26', name: 'Sprungantwort einer Strecke: Zeitkonstante bei 63 Prozent', cat: 'Strecke und Regler', rig: 'baukasten',
+      spec: () => ({ controls: fc('baukasten', { mode: 'hand', yHand: 50, w: 50, type: 'pt1', ks: 2, t1: 10, z: 0, noise: 0 }), op: { y: 50 }, seq: [{ t: 10, set: { yHand: 55 } }], dur: 100, sampleS: 0.1 }),
+      text(res, n) {
+        const L = smp(res), xEnd = winMean(L, 90, 100, s => s.x), dx = xEnd - 50, f63 = L.find(s => s.t >= 10 && s.x >= 50 + 0.632 * dx), f95 = L.find(s => s.t >= 10 && s.x >= 50 + 0.95 * dx);
+        return 'Eine Strecke mit Ausgleich und einem Speicher (PT1) steht im Handbetrieb bei y = ' + n('y0', 50, 0) + ' % und x = ' + n('x0', 50, 0) + ' %. Nach ' + n('tS', 10, 0) + ' s Prozesszeit springt die Stellgröße um ' + n('dy', 5, 0) + ' % auf ' + n('y1', 55, 0) + ' %. Die Regelgröße läuft auf ' + n('xe', xEnd, 1) + ' % zu: Die Streckenverstärkung ist Ks = Δx / Δy = ' + n('dx', dx, 0) + ' / ' + n('dy2', 5, 0) + ' = ' + n('Ks', 2, 0) + '. Die Zeitkonstante T liest du dort ab, wo x ' + n('p63', 63, 0) + ' % des Anstiegs erreicht hat, das ist bei ' + n('x63', 50 + 0.632 * dx, 1) + ' %: Das ist nach ' + n('T', f63 ? f63.t - 10 : NaN, 0) + ' s der Fall (eingestellt: T = ' + n('T1', 10, 0) + ' s). Nach etwa 3 · T, hier ' + n('t95', f95 ? f95.t - 10 : NaN, 0) + ' s, sind ' + n('p95', 95, 0) + ' % erreicht.';
+      } },
+    { id: 'rgx27', name: 'Ordnung der Strecke: ein, zwei, drei Speicher', cat: 'Strecke und Regler', rig: 'baukasten',
+      spec: () => { const seq = []; ['pt1', 'pt2', 'pt3'].forEach((ty, i) => { const t0 = i * 120; if (i) { seq.push({ t: t0, set: { yHand: 50 } }); seq.push({ t: t0 + 1, set: { type: ty } }); } seq.push({ t: t0 + 10, set: { yHand: 60 } }); }); return { controls: fc('baukasten', { mode: 'hand', yHand: 50, w: 50, type: 'pt1', ks: 1, t1: 10, t2: 5, t3: 2, z: 0, noise: 0 }), op: { y: 50 }, seq, dur: 360, sampleS: 0.1 }; },
+      text(res, n) {
+        const L = smp(res), out = [0, 1, 2].map(i => { const t0 = i * 120 + 10, f = L.find(s => s.t >= t0 && s.x >= 59.5); return { x5: xAt(L, t0 + 5) - 50, t95: f ? f.t - t0 : NaN }; });
+        return 'Dieselbe Stellgrößenänderung von ' + n('y0', 50, 0) + ' auf ' + n('y1', 60, 0) + ' % wird nacheinander auf drei Strecken gegeben, die sich nur in der Zahl der Speicher unterscheiden (Ordnung n = Zahl der Speicher): ein Speicher (PT1, T = ' + n('T1', 10, 0) + ' s), zwei Speicher (PT2, zusätzlich T = ' + n('T2', 5, 0) + ' s) und drei Speicher (PT3, zusätzlich T = ' + n('T3', 2, 0) + ' s). Fünf Sekunden nach dem Sprung ist x bei n = 1 erst ' + n('a1', out[0].x5, 1) + ' %, bei n = 2 ' + n('a2', out[1].x5, 1) + ' % und bei n = 3 nur ' + n('a3', out[2].x5, 1) + ' % über dem Ausgangswert gestiegen: Je mehr Speicher, desto flacher beginnt die Kurve (S-Form). Bis auf ' + n('p95', 95, 0) + ' % des Endwerts dauert es ' + n('b1', out[0].t95, 0) + ' s, ' + n('b2', out[1].t95, 0) + ' s und ' + n('b3', out[2].t95, 0) + ' s. Der Endwert ist überall derselbe (Ks = ' + n('Ks', 1, 0) + ').';
+      } },
+    { id: 'rgx28', name: 'Totzeit: Transport auf dem Förderband', cat: 'Strecke und Regler', rig: 'baukasten',
+      spec: () => ({ controls: fc('baukasten', { mode: 'hand', yHand: 50, w: 50, type: 'pt1tt', ks: 1, t1: 10, tt: 12, z: 0, noise: 0 }), op: { y: 50 }, seq: [{ t: 10, set: { yHand: 60 } }], dur: 120, sampleS: 0.1 }),
+      text(res, n) {
+        const L = smp(res), f = L.find(s => s.t >= 10 && Math.abs(s.x - 50) > 0.05);
+        return 'Am Anfang eines ' + n('L', 6, 0) + ' m langen Förderbandes dosiert ein Stellglied Schüttgut, am Bandende misst eine Waage. Das Band läuft mit ' + n('v', 0.5, 1) + ' m/s: Das Gut braucht ' + n('Tt', 6 / 0.5, 0) + ' s bis zur Waage (Totzeit = Länge / Geschwindigkeit). Nach ' + n('tS', 10, 0) + ' s Prozesszeit steigt die Dosierung von ' + n('y0', 50, 0) + ' auf ' + n('y1', 60, 0) + ' %. Die Waage merkt davon zunächst nichts: Erst nach ' + n('tR', f ? f.t - 10 : NaN, 0) + ' s beginnt die Regelgröße zu steigen. Danach läuft sie wie bei einer Strecke mit einem Speicher (T = ' + n('T1', 10, 0) + ' s) auf den Endwert ' + n('xe', winMean(L, 110, 120, s => s.x), 1) + ' % zu. Während der Totzeit kann kein Regler etwas bewirken: Er sieht keine Reaktion auf seine Stellgröße.';
+      } },
+    { id: 'rgx29', name: 'Totzeit lässt den Regelkreis schwingen', cat: 'Strecke und Regler', rig: 'baukasten',
+      spec: () => ({ controls: fc('baukasten', { mode: 'auto', ctrl: 'PI', kp: 1.2, tn: 10, tv: 0, u0: 50, w: 50, ymax: 100, ta: 0.01, aw: 'rueck', z: 0, noise: 0, type: 'pt1', ks: 1, t1: 10, tt: 8 }), op: { y: 50 }, seq: [{ t: 0, set: { mode: 'auto' } }, { t: 5, set: { w: 60 } }, { t: 200, set: { type: 'pt1tt' } }, { t: 205, set: { w: 50 } }], dur: 400, sampleS: 0.1 }),
+      text(res, n) {
+        const L = smp(res), a = stepSeg(L, 5, 200, 50, 60, 100), b = stepSeg(L, 205, 400, 60, 50, 100);
+        return 'Ein PI-Regler (Kp = ' + n('kp', 1.2, 1) + ', Tn = ' + n('tn', 10, 0) + ' s) regelt eine Strecke mit einem Speicher (T = ' + n('T1', 10, 0) + ' s). Beim ersten Sollwertsprung von ' + n('w0', 50, 0) + ' auf ' + n('w1', 60, 0) + ' % hat die Strecke keine Totzeit: Das Überschwingen beträgt ' + n('u1', Math.max(0, a.ueberPct), 1) + ' %, die Ausregelzeit (2 %) ' + n('t1', a.tAus2, 0) + ' s. Nach ' + n('tU', 200, 0) + ' s Prozesszeit kommt eine Totzeit von ' + n('Tt', 8, 0) + ' s in die Strecke (die Wirkung der Stellgröße kommt verspätet am Messort an), und der Sollwert springt wieder auf ' + n('w2', 50, 0) + ' %. Jetzt beträgt das Überschwingen ' + n('u2', Math.max(0, b.ueberPct), 1) + ' % und die Ausregelzeit ' + n('t2', b.tAus2, 0) + ' s: Der Regler baut in der Totzeit weiter Stellgröße auf, und es ist zu viel, wenn die Wirkung ankommt.';
+      } },
+    { id: 'rgx30', name: 'PID-Regler an einer trägen Strecke', cat: 'Strecke und Regler', rig: 'baukasten',
+      spec: () => ({ controls: fc('baukasten', { mode: 'auto', ctrl: 'PI', kp: 3, tn: 20, tv: 0, u0: 50, w: 50, ymax: 100, ta: 0.01, aw: 'rueck', z: 0, noise: 0, type: 'pt3', ks: 1, t1: 10, t2: 5, t3: 2 }), op: { y: 50 }, seq: [{ t: 0, set: { mode: 'auto' } }, { t: 5, set: { w: 60 } }, { t: 200, set: { ctrl: 'PID', tv: 3 } }, { t: 205, set: { w: 50 } }], dur: 400, sampleS: 0.1 }),
+      text(res, n) {
+        const L = smp(res), a = stepSeg(L, 5, 200, 50, 60, 100), b = stepSeg(L, 205, 400, 60, 50, 100);
+        return 'Die Strecke hat drei Speicher (T = ' + n('T1', 10, 0) + ' s, ' + n('T2', 5, 0) + ' s und ' + n('T3', 2, 0) + ' s) und reagiert träge. Zuerst regelt ein PI-Regler (Kp = ' + n('kp', 3, 0) + ', Tn = ' + n('tn', 20, 0) + ' s) den Sollwertsprung von ' + n('w0', 50, 0) + ' auf ' + n('w1', 60, 0) + ' %: Überschwingen ' + n('u1', Math.max(0, a.ueberPct), 1) + ' %, Ausregelzeit (2 %) ' + n('t1', a.tAus2, 0) + ' s. Nach ' + n('tU', 200, 0) + ' s Prozesszeit kommt ein D-Anteil dazu (PID, Vorhaltezeit Tv = ' + n('tv', 3, 0) + ' s), und der Sollwert springt zurück auf ' + n('w2', 50, 0) + ' %: Überschwingen ' + n('u2', Math.max(0, b.ueberPct), 1) + ' %, Ausregelzeit ' + n('t2', b.tAus2, 0) + ' s. Der D-Anteil reagiert auf die Steigung der Regelabweichung und bremst früh: Der Kreis schwingt weniger über und ist schneller ausgeregelt. Bei starkem Messrauschen kann der D-Anteil aber stören.';
       } }
   ];
 

@@ -2,8 +2,8 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
-    { v: 'v42.159', items: [
-      ['Regelkreis-Lab', 'Regelkreis mit Regler und Strecke, P-, I-, PI- und PID-Regler einstellen, Sprungantwort lesen, Totzeit, Schwingen und Zweipunktregler. Mit Simulation und Beispielen.', 'Startseite ▸ Elektroniker oder Industriemechaniker ▸ Regelkreis-Lab'],
+    { v: 'v41.159', items: [
+      ['Regelungstechnik-Lab: Einsteigeraufgaben', '17 neue Aufgaben und 6 Beispiele zum Einstieg: Steuerung oder Regelung, Größen benennen, Kurven lesen, Totzeit und Ordnung, Reglerkennlinie, Überschwingen und Stabilität. Mit Diagrammen und ohne Prüfstand.', 'Startseite ▸ Elektroniker oder Industriemechaniker ▸ Regelungstechnik-Lab ▸ Aufgaben'],
       ['Technisches-Englisch-Lab', 'Fachvokabeln, Datenblätter und Warnhinweise lesen, Fach-E-Mails prüfen, False Friends. Mit Vokabeltrainer und Beispielen, für alle Berufe.', 'Startseite ▸ Grundlagen ▸ Technisches Englisch'],
       ['Berichtsheft-Helfer', 'Stichpunkte zu deinem Arbeitstag eingeben, Sätze prüfen und verbessern und ein Berichtsgerüst drucken. Es wird kein Name gespeichert.', 'Startseite ▸ Grundlagen ▸ Berichtsheft-Helfer'],
       ['Lernkarten', 'Karteikasten mit Begriffen, Formeln und Bauteilen aus dem Wiki. Gewusste Karten kommen später wieder, nicht gewusste sofort.', 'Startseite ▸ Wiki ▸ Lernkarten (oder Lernhefte ▸ Lernkarten)'],

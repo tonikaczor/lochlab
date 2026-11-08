@@ -127,8 +127,8 @@
     return `<p>Die <b>Regelstrecke</b> ist der Teil der Anlage, in dem die Regelgröße entsteht. Wie sie auf eine Änderung der Stellgröße antwortet, zeigt die <b>Sprungantwort</b>. Alle Zeiten stehen hier in Prozess-Sekunden.</p>${h}${note}
       <ul><li><b>Mit Ausgleich (P-Strecke):</b> Die Regelgröße läuft auf einen festen Endwert zu. Das Verhältnis <b>Ks = Δx / Δy</b> (Streckenverstärkung, beide in % des Bereichs) beschreibt ihn. Beispiele: Temperatur, Füllstand mit Auslauf, Drehzahl.</li>
       <li><b>Ohne Ausgleich (I-Strecke):</b> Die Regelgröße steigt dauernd weiter, solange die Stellgröße anliegt. Beispiele: Position einer Spindelachse, ein Tank ohne Abfluss.</li>
-      <li><b>Verzögerung (PT1, PT2, PTn):</b> Jeder Speicher (Wärme, Masse, Volumen) verzögert die Antwort. Mehrere Speicher hintereinander ergeben eine S-förmige Kurve.</li>
-      <li><b>Totzeit Tt:</b> Eine Strecke antwortet erst nach einer Wartezeit, zum Beispiel weil das Heizwasser durchs Rohr fließen muss. Totzeit macht das Regeln schwer.</li>
+      <li><b>Verzögerung (PT1, PT2, PTn):</b> Jeder Speicher (Wärme, Masse, Volumen) verzögert die Antwort. Mehrere Speicher hintereinander ergeben eine S-förmige Kurve. Die <b>Ordnung n</b> ist die Zahl der Speicher hintereinander: n = 1 (PT1), n = 2 (PT2), n = 3 (PT3). Ohne Speicher (n = 0) antwortet die Strecke sofort.</li>
+      <li><b>Totzeit Tt:</b> Eine Strecke antwortet erst nach einer Wartezeit, zum Beispiel weil das Heizwasser durchs Rohr fließen muss. Totzeit macht das Regeln schwer. Auf einem Förderband ist sie die Transportzeit: <b>Tt = Länge / Geschwindigkeit</b>.</li>
       <li><b>Arbeitspunkt:</b> Viele Strecken sind nicht linear. Beim Tank mit Düse ändert sich Ks mit dem Füllstand, beim gleichprozentigen Ventil mit dem Hub. Ks gilt deshalb nur in der Nähe des Arbeitspunkts.</li>
       <li><b>Stellglied:</b> Es kann nicht mehr als 100 % liefern (Sättigung). Dann hilft auch ein größerer Reglerausgang nicht.</li></ul>`;
   }
