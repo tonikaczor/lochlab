@@ -583,7 +583,7 @@
       }
       if (hasOG(H()) || !sim) h += chip('lv0', 'EG', stt.view === 0) + chip('lv1', 'OG', stt.view === 1) + '<span class="sep"></span>';
       h += chip('turnl', '↺', false) + chip('turnr', '↻', false) + chip('top', stt.top ? '◫ Schräg' : '◫ Oben', false) + chip('zin', '＋', false) + chip('zout', '−', false) + chip('fit', '⤢', false);
-      if (!sim) h += '<span class="sep"></span>' + chip('verteiler', '▤ Verteiler öffnen', false) + chip('calc', '≈ Leitungen prüfen', false);
+      if (!sim) h += '<span class="sep"></span>' + chip('verteiler', '▤ Verteiler öffnen', false) + chip('calc', '≈ Leitungen prüfen', false) + chip('hcheck', '✔ Haus-Check', false);
       else h += '<span class="sep"></span>' + chip('verteiler', '▤ Verteiler', false) + chip('meas', '⌁ Multimeter', stt.tool === 'meas') + chip('calc', '≈ Leitungen', false);
       return h;
     };
@@ -596,6 +596,7 @@
       else if (x === 'turnl') turn(-1); else if (x === 'turnr') turn(1); else if (x === 'top') toggleTop(); else if (x === 'zin') zoom(1.25); else if (x === 'zout') zoom(0.8); else if (x === 'fit') { root.HAUS_FIT(); api.draw(); }
       else if (x === 'verteiler') { openPanel(); return; }
       else if (x === 'calc') { openCalc(); return; }
+      else if (x === 'hcheck') { openHausCheck(); return; }
       else if (x === 'meas') { stt.tool = stt.tool === 'meas' ? 'sel' : 'meas'; stt.meas = null; api.toast(stt.tool === 'meas' ? 'Multimeter: Gerät oder Leitung antippen' : 'Multimeter aus'); }
       else if (x === 'reset') { api.setSimMode(false); return; }
       api.refreshUI(); api.draw(); const pal = document.getElementById('pal'); if (pal) { const bar = root.HAUS_PALETTE(isSim()); pal.innerHTML = bar; }
@@ -620,9 +621,10 @@
       let u8 = unb64u(m[2]); if (m[1] === '1') { if (typeof DecompressionStream === 'undefined') throw new Error('Dieses Gerät kann den Code nicht lesen.'); u8 = await pipeBytes(u8, new DecompressionStream('deflate-raw')); }
       const o = JSON.parse(new TextDecoder().decode(u8)); if (!o || !Array.isArray(o.rooms) || !Array.isArray(o.objs) || !Array.isArray(o.cables) || !o.panel) throw new Error('Der Code enthält kein Haus.'); return o;
     }
-    root.LAB_EXTRA_MENU = () => [['hshare', 'Haus teilen oder laden (Code)', 'Dein Haus als Text weitergeben oder ein fremdes Haus einlesen'], ['hcalc', 'Leitungen prüfen', 'Strombelastbarkeit und Spannungsfall je Stromkreis']];
+    root.LAB_EXTRA_MENU = () => [['hshare', 'Haus teilen oder laden (Code)', 'Dein Haus als Text weitergeben oder ein fremdes Haus einlesen'], ['hcalc', 'Leitungen prüfen', 'Strombelastbarkeit und Spannungsfall je Stromkreis'], ['hcheck', 'Haus-Check', 'Schutz, Spannungsfall, FI, Phasen und Ausstattung deines Hauses prüfen']];
     root.LAB_EXTRA_ACT = m => {
       if (m === 'hcalc') { openCalc(); return true; }
+      if (m === 'hcheck') { openHausCheck(); return true; }
       if (m !== 'hshare') return false;
       houseCode(H()).then(code => root.LabUI.sheet('Haus teilen oder laden', (b, close) => {
         b.innerHTML = '<p class="hint2" style="margin-top:0"><b>Teilen:</b> Kopiere diesen Code und schicke ihn weiter. Wer ihn einliest, bekommt eine Kopie deines Hauses (Räume, Geräte, Leitungen, Verteiler).</p><textarea id="hsC" readonly rows="4" style="width:100%;font:12px ui-monospace,monospace;background:#14181c;color:#e8ecf0;border:1px solid #38424d;border-radius:8px;padding:6px">' + esc(code) + '</textarea><div class="row2"><button class="btn pri" id="hsCp">Code kopieren</button></div><hr style="border:0;border-top:1px solid #38424d;margin:12px 0"><p class="hint2"><b>Laden:</b> Code eines anderen Hauses einfügen. Dein aktuelles Haus wird dabei ersetzt (speichere es vorher über „Speichern“, wenn du es behalten willst).</p><textarea id="hsI" rows="3" placeholder="Code hier einfügen (beginnt mit TFH)" style="width:100%;font:12px ui-monospace,monospace;background:#14181c;color:#e8ecf0;border:1px solid #38424d;border-radius:8px;padding:6px"></textarea><div class="row2"><button class="btn" id="hsLd">Haus einlesen</button></div><div id="hsM" class="hint2"></div>';
@@ -750,6 +752,7 @@
       return out.sort((a, b) => a.slot - b.slot);
     }
     const lsAmp = ls => parseFloat(String(ls || '').replace(/[^0-9.]/g, '')) || 0;
+    function openHausCheck() { if (root.HausCheck && root.HausCheck.open) root.HausCheck.open(H()); else api.toast('Der Haus-Check ist nicht geladen'); }
     function openCalc() {
       const h = H(); if (!h) return;
       root.LabUI.sheet('Leitungen prüfen', (b) => {

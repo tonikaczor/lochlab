@@ -114,6 +114,9 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-schaltplan" viewBox="0 0 24 24"><path d="M3 12V5h18v7M3 12v7h18v-7M3 12h5M16 12h5"/><rect x="8" y="9.5" width="8" height="5" rx="1"/></symbol>
   <symbol id="i-wsllab" viewBox="0 0 24 24"><path d="M2 12c2-8 5-8 7.5 0s5 8 7.5 0 3.5-5.5 5-3"/><path d="M2 12h20" stroke-dasharray="1.5 3"/></symbol>
   <symbol id="i-dslab" viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6zM14 3v5h5"/><path d="M8.5 18c3 0 5-1.5 8-7"/><path d="M8.5 18V11M8.5 18h8"/></symbol>
+  <symbol id="i-tollab" viewBox="0 0 24 24"><path d="M3 9h18v6H3z"/><path d="M7 9v3M11 9v3M15 9v3M19 9v3"/><path d="M5 18h6"/></symbol>
+  <symbol id="i-zerlab" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4.5"/><path d="M12.5 12H21M16 9l5 3-5 3"/></symbol>
+  <symbol id="i-pnelab" viewBox="0 0 24 24"><rect x="3" y="8" width="13" height="8" rx="1"/><path d="M16 12h5M3 12H1M9 8V4M9 16v4"/></symbol>
   <symbol id="i-messlab" viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M6.5 11.5l-1-1M12 9V7.6M17.5 11.5l1-1M8.8 9.6l-.6-1.2M15.2 9.6l.6-1.2"/><path d="M12 17l4.2-6.5"/><circle cx="12" cy="17" r="1.6"/><path d="M4 20h16"/></symbol>
   <symbol id="i-senlab" viewBox="0 0 24 24"><path d="M8 4a2 2 0 0 1 4 0v10a3.5 3.5 0 1 1-4 0z"/><path d="M10 9v7"/><circle cx="10" cy="16.5" r="1.3"/><path d="M15 9c1.5-2.5 3-2.5 4.5 0s3 2.5 4.5 0" transform="translate(-2.5 0)"/><path d="M15 14c1.5-2.5 3-2.5 4.5 0" transform="translate(-1 0)"/></symbol>
   <symbol id="i-emvlab" viewBox="0 0 24 24"><path d="M2 12q2.5-4 5 0t5 0"/><path d="M2 7q2.5-4 5 0t5 0"/><path d="M2 17q2.5-4 5 0t5 0"/><path d="M15.5 3v18M19.5 3v18M15.5 8l4-4M15.5 13l4-4M15.5 18l4-4"/></symbol>
@@ -388,6 +391,36 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Lesen</span><span>Rechnen</span><span>Auswählen</span></div>
       <div class="btns"><a class="btn pri" href="dslab.html">Öffnen</a><a class="btn" href="dslab.html?neu">Neu</a><a class="btn" href="dslab.html?bsp">Beispiel</a></div>
     </section>
+    <section class="card" data-lab="tollab" data-group="mess" data-beruf="im tpd">
+      <span class="tag">TOLERANZ-LAB</span>
+      <h3>Messen, Toleranzen und Passungen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="24" y="44" width="192" height="22" rx="3" fill="#cfd5dc"/><g stroke="#2a3340" stroke-width="2"><path d="M40 44v10M56 44v10M72 44v10M88 44v10M104 44v10M120 44v10M136 44v10M152 44v10M168 44v10M184 44v10M200 44v10"/></g><rect x="96" y="66" width="62" height="24" rx="3" fill="#ffd166"/><g stroke="#2a3340" stroke-width="2"><path d="M102 66v8M110 66v8M118 66v8M126 66v8M134 66v8M142 66v8M150 66v8"/></g><path d="M24 96h72" stroke="#5fb0ff" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+      <p>Messschieber und Bügelmessschraube ablesen, Höchst- und Mindestmaß berechnen, ISO-Passungen im Toleranzfeld verstehen und das passende Messmittel wählen.</p>
+      <div class="steps"><span>Ablesen</span><span>Rechnen</span><span>Passung wählen</span></div>
+      <div class="btns"><a class="btn pri" href="tollab.html">Öffnen</a><a class="btn" href="tollab.html?aufgabe=tol1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="zerlab" data-group="grund" data-beruf="im">
+      <span class="tag">ZERSPAN-LAB</span>
+      <h3>Drehen, Fräsen und Bohren berechnen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="22" y="40" width="30" height="40" rx="3" fill="#6b7684"/><rect x="52" y="46" width="130" height="28" fill="#cfd5dc"/><path d="M182 60h14" stroke="#9aa6b2" stroke-width="3"/><path d="M130 46l-10-14h24l-6 14z" fill="#ffd166"/><circle cx="170" cy="30" r="3" fill="#ffe14d"/><path d="M60 94h112" stroke="#5fb0ff" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+      <p>Drehzahl, Schnittgeschwindigkeit, Vorschub und Hauptzeit an einer animierten Maschine einstellen, Richtwerte nachschlagen und Fehlersuche bei rauer Oberfläche üben.</p>
+      <div class="steps"><span>Einstellen</span><span>Rechnen</span><span>Fehler finden</span></div>
+      <div class="btns"><a class="btn pri" href="zerlab.html">Öffnen</a><a class="btn" href="zerlab.html?aufgabe=zer1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="pnelab" data-group="auto" data-beruf="im">
+      <span class="tag">PNEUMATIK-LAB</span>
+      <h3>Schaltpläne verschlauchen und simulieren</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="40" y="26" width="110" height="26" rx="2" fill="none" stroke="#e8eaed" stroke-width="3"/><path d="M110 39h60" stroke="#9aa6b2" stroke-width="4"/><rect x="104" y="30" width="6" height="18" fill="#5fb0ff"/><rect x="170" y="32" width="16" height="14" fill="#ffd166"/><g fill="none" stroke="#5fb0ff" stroke-width="3"><path d="M50 90h40v-38"/><path d="M130 90h40v-38" stroke="#14e050"/></g><rect x="86" y="82" width="48" height="16" rx="2" fill="#2c343e" stroke="#e8eaed" stroke-width="2"/></svg>
+      </div>
+      <p>Pneumatik-Symbole kennen, Zylinder und Ventile verschlauchen, die Anlage laufen lassen und Kolbenkraft und Luftverbrauch berechnen.</p>
+      <div class="steps"><span>Verschlauchen</span><span>Simulieren</span><span>Rechnen</span></div>
+      <div class="btns"><a class="btn pri" href="pnelab.html">Öffnen</a><a class="btn" href="pnelab.html?aufgabe=pne1">Erste Aufgabe</a></div>
+    </section>
     <section class="card" data-lab="pruefungslab" data-group="pruef">
       <span class="tag">PRÜFUNGS-LAB</span>
       <h3>Für die Abschlussprüfung üben</h3>
@@ -454,6 +487,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <script src="lernstand.js"></script>
 <script src="stand.js"></script>
 <script src="home-groups.js"></script>
+<script src="berufe.js"></script>
 <script src="home-cont.js"></script>
 <script src="home-search.js"></script>
 <script src="home.js"></script>

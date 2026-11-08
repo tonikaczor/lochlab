@@ -41,8 +41,8 @@
   // Zähler (ohne ausgeblendete Karten) und leere Bereiche ausblenden (Suche, Startseite anpassen)
   function refresh() {
     secs().forEach(s => {
-      const all = Array.from(s.querySelectorAll('.card')), vis = all.filter(c => !c.classList.contains('hm-hid') && !c.classList.contains('srch-out'));
-      const labs = all.filter(c => !c.classList.contains('vbrow') && !c.classList.contains('hm-hid'));
+      const all = Array.from(s.querySelectorAll('.card')), vis = all.filter(c => !c.classList.contains('hm-hid') && !c.classList.contains('srch-out') && !c.classList.contains('be-out'));
+      const labs = all.filter(c => !c.classList.contains('vbrow') && !c.classList.contains('hm-hid') && !c.classList.contains('be-out'));
       const gc = s.querySelector('.gc'); if (gc) gc.textContent = '(' + labs.length + ')';
       s.classList.toggle('grp-empty', vis.length === 0);
     });
@@ -86,9 +86,9 @@
     let total = 0;
     nav.querySelectorAll('button[data-g]').forEach(b => {
       const k = b.dataset.g; if (!k) return;
-      const s = doc.getElementById('grp-' + k), n = s ? s.querySelectorAll('.card:not(.vbrow):not(.hm-hid)').length : 0;
+      const s = doc.getElementById('grp-' + k), n = s ? s.querySelectorAll('.card:not(.vbrow):not(.hm-hid):not(.be-out)').length : 0;
       total += n; const e = b.querySelector('.n'); if (e) e.textContent = String(n);
-      if (b.parentNode && b.parentNode.tagName === 'LI') b.parentNode.hidden = !s;
+      if (b.parentNode && b.parentNode.tagName === 'LI') b.parentNode.hidden = !s || (!!doc.querySelector('.be-tabs') && n === 0);
     });
     const all = nav.querySelector('button[data-g=""] .n'); if (all) all.textContent = String(total);
   }

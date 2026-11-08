@@ -2,6 +2,14 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v26.155', items: [
+      ['Berufe-Reiter', 'Oben auf der Startseite wählst du deinen Beruf: Elektroniker, Industriemechaniker, Techn. Produktdesigner, Lagerlogistik, Industriekaufmann oder Fachinformatiker. Die Labs und Hinweise passen sich an. Bei den neuen Berufen siehst du, welche Labs geplant sind.', 'Startseite ▸ oben'],
+      ['Toleranz-Lab', 'Messschieber und Bügelmessschraube ablesen, Höchst- und Mindestmaß berechnen, ISO-Passungen im Toleranzfeld verstehen und das passende Messmittel wählen. 33 Aufgaben mit Tipps und ein Trainer.', 'Startseite ▸ Industriemechaniker ▸ Toleranz-Lab'],
+      ['Zerspan-Lab', 'Drehzahl, Schnittgeschwindigkeit, Vorschub und Hauptzeit beim Drehen, Fräsen und Bohren an einer animierten Maschine einstellen und berechnen. 34 Aufgaben, Richtwert-Tafel und Fehlersuche.', 'Startseite ▸ Industriemechaniker ▸ Zerspan-Lab'],
+      ['Pneumatik-Lab', 'Pneumatik-Symbole kennen, Zylinder und Ventile verschlauchen, die Anlage simulieren und Kolbenkraft und Luftverbrauch berechnen. 32 Aufgaben, neun Schaltungen zum Verschlauchen.', 'Startseite ▸ Industriemechaniker ▸ Pneumatik-Lab'],
+      ['Haus-Check im HausLab', 'Baue ein Haus nach und lass prüfen, ob die Installation passt: Leitungsschutz, Spannungsfall, Schleifenimpedanz, FI, Selektivität, Phasenverteilung und Anschlusswert. Die Mängel werden benannt, nicht gelöst. Mit Bericht zum Drucken.', 'HausLab ▸ Haus-Check'],
+      ['Beispiel-Knopf', 'Der Knopf „Beispiel“ auf der Startseite öffnet in allen Schaltungs-Labs gleich die Auswahl der Beispiele.', 'Startseite ▸ Labs'],
+    ] },
     { v: 'v23.154', items: [
       ['MessLab: Beispiel', 'Der Knopf „Beispiel“ auf der MessLab-Karte der Startseite öffnet jetzt gleich die Auswahl aller Beispielschaltungen, statt immer nur den Spannungsteiler zu laden.', 'Startseite ▸ MessLab ▸ Beispiel'],
       ['Links ohne Netz', 'Links mit Beispiel oder Aufgabe (zum Beispiel aus dem Lernheft) führen auch bei schlechter Verbindung oder offline ins richtige Lab und nicht mehr auf die Startseite.', 'Alle Labs'],
