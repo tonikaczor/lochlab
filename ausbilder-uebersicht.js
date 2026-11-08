@@ -70,6 +70,7 @@
     }
     /* Schema 2: Jahrgang, Duelle, Karriere (bei Schema 1 gibt es die Blöcke nicht: keine Duelle) */
     r.jahrgang = /^\d{4}$/.test(String(o.jahrgang || '')) ? String(o.jahrgang) : '';
+    r.beruf = /^(egs|im|tpd|fll|ik|fi)$/.test(String(o.beruf || '')) ? String(o.beruf) : '';
     if (o.schema >= 2 && isObj(o.duell)) {
       const d = o.duell; r.duell.jahrgang = /^\d{4}$/.test(String(d.jahrgang || '')) ? String(d.jahrgang) : r.jahrgang; if (!r.jahrgang) r.jahrgang = r.duell.jahrgang;
       r.duell.n = Math.max(0, int(d.n)); r.duell.wins = Math.max(0, int(d.wins));
@@ -117,7 +118,7 @@
     Object.keys(LABS).forEach(add); Object.keys(REG).forEach(add); T.forEach(t => add(t[1]));
     const tasks = T.filter(t => !(REG[t[1]] || {}).hub).map(t => ({ id: t[0], lab: t[1], cat: String(t[2]), title: String(t[3]), level: t[4] })), byId = {};
     T.forEach(t => { byId[t[0]] = { id: t[0], lab: t[1], cat: String(t[2]), title: String(t[3]), level: t[4] }; });
-    const labs = order.map(k => ({ key: k, name: LABS[k] || (REG[k] || {}).name || k, short: (REG[k] || {}).short || LABS[k] || k })).filter(l => tasks.some(t => t.lab === l.key));
+    const labs = order.map(k => ({ key: k, name: LABS[k] || (REG[k] || {}).name || k, short: (REG[k] || {}).short || LABS[k] || k, beruf: (REG[k] || {}).beruf || null })).filter(l => tasks.some(t => t.lab === l.key));
     return { labs, tasks, byId };
   };
 
@@ -132,8 +133,10 @@
   core.activity = rec => Math.max.apply(null, [0].concat(Object.keys(rec.badges).map(k => rec.badges[k]), rec.exam.hist.map(h => h.t)));
 
   /* ---------- Auswertung ---------- */
-  core.aggregate = function (state, cat) {
-    const labKeys = cat.labs.map(l => l.key);
+  core.BERUFE = { egs: 'Elektroniker', im: 'Industriemechaniker', tpd: 'Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker' };
+  core.aggregate = function (state, cat, ber) {
+    if (ber) state = Object.assign({}, state, { students: state.students.filter(s => (s.latest.beruf || 'egs') === ber) });
+    const labKeys = cat.labs.filter(l => !ber || !l.beruf || l.beruf.indexOf(ber) >= 0).map(l => l.key);
     state.students.forEach(s => Object.keys(s.latest.labs).forEach(k => { if (!labKeys.includes(k)) labKeys.push(k); }));
     const labs = labKeys.map(k => cat.labs.find(l => l.key === k) || { key: k, name: k, short: k });
     const rows = state.students.map(s => {
@@ -343,7 +346,7 @@
   function mount(host, G, doc) {
     const D = doc || document, cat = core.catalog(G || {});
     const BD = (root.Badges && root.Badges.DEFS) || [], bname = id => { const d = BD.find(x => x[0] === id); return d ? { icon: d[1], name: d[2], desc: d[3] } : { icon: '🏅', name: id, desc: '' }; };
-    const S = { inputs: [], sort: 'name', dir: 1, heat: 'lab', heatLab: '', detail: null, msg: '', dKw: '', dJg: 'alle', codes: [], dv: null, dmsg: '', pub: null, imp: null };
+    const S = { inputs: [], sort: 'name', dir: 1, heat: 'lab', heatLab: '', detail: null, msg: '', dKw: '', dJg: 'alle', codes: [], dv: null, dmsg: '', pub: null, imp: null, beruf: '' };
     let M = null, A = null;
     const wettEl = D.createElement('div'); wettEl.id = 'wettHost';   /* Abschnitt 6 bleibt beim Neuzeichnen der übrigen Abschnitte erhalten (Eingaben gehen nicht verloren) */
     const $ = s => host.querySelector(s);
@@ -354,7 +357,7 @@
       <ul id="errs" class="errs" aria-label="Meldungen zu Dateien"></ul></section>
       <div id="out"></div>`;
     const out = $('#out');
-    function rerun() { M = core.combine(S.inputs); A = core.aggregate(M, cat); if (S.detail && !M.students.some(s => s.key === S.detail)) S.detail = null; if (!S.heatLab || !cat.labs.some(l => l.key === S.heatLab)) { const withData = A.labs.find(l => A.rows.some(r => r.lp[l.key] && r.lp[l.key].started)); S.heatLab = withData ? withData.key : (cat.labs[0] || {}).key || ''; } S.dv = null; render(); duelRefresh(); }
+    function rerun() { M = core.combine(S.inputs); A = core.aggregate(M, cat, S.beruf); if (S.detail && !M.students.some(s => s.key === S.detail)) S.detail = null; if (!S.heatLab || !cat.labs.some(l => l.key === S.heatLab)) { const withData = A.labs.find(l => A.rows.some(r => r.lp[l.key] && r.lp[l.key].started)); S.heatLab = withData ? withData.key : (cat.labs[0] || {}).key || ''; } S.dv = null; render(); duelRefresh(); }
     function readText(f) { if (typeof f.text === 'function') return f.text(); return new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result)); fr.onerror = () => rej(new Error('Datei nicht lesbar')); fr.readAsText(f); }); }
     async function add(list) {
       list = Array.from(list || []); if (!list.length) return;
@@ -385,9 +388,11 @@
     function render() {
       $('#errs').innerHTML = M.errors.map(e => `<li><b>${esc(e.name)}</b>: ${esc(e.error)}</li>`).join('');
       $('#stat').textContent = M.files ? (M.ok + ' Azubis aus ' + M.files + ' Dateien' + (M.errors.length ? ', ' + M.errors.length + ' Datei(en) nicht lesbar' : '') + (M.dups ? ', ' + M.dups + ' doppelte übersprungen' : '') + (M.older ? ', ' + M.older + ' ältere Stände im Verlauf' : '') + '.' + (S.msg ? ' ' + S.msg : '')) : 'Noch keine Dateien geladen.';
+      if (!A.rows.length && S.beruf) { out.innerHTML = '<p class="row nb"><label for="berSel">Beruf: </label><select id="berSel"><option value="">alle Berufe</option>' + Object.keys(core.BERUFE).map(k => '<option value="' + k + '"' + (S.beruf === k ? ' selected' : '') + '>' + core.BERUFE[k] + '</option>').join('') + '</select></p><p class="mute">Für diesen Beruf liegt keine Datei vor.</p><div id="duellHost"></div><div id="wettSlot"></div>'; const bs0 = out.querySelector('#berSel'); bs0.onchange = () => { S.beruf = bs0.value; rerun(); }; renderDuell(); slot(); return; }
       if (!A.rows.length) { out.innerHTML = '<p class="mute">Noch keine Daten. Lade oben die Dateien der Azubis (Duell-Codes kannst du unten auch ohne Dateien einlesen).</p><div id="duellHost"></div><div id="wettSlot"></div>'; renderDuell(); slot(); return; }
       const rows = A.rows.slice().sort((a, b) => (cmp[S.sort](a, b) || a.name.localeCompare(b.name, 'de')) * S.dir);
       let h = `<section class="card" aria-labelledby="hTab"><h2 id="hTab">2. Übersicht je Azubi</h2>
+        <p class="row nb"><label for="berSel">Beruf: </label><select id="berSel"><option value="">alle Berufe</option>${Object.keys(core.BERUFE).map(k => `<option value="${k}"${S.beruf === k ? ' selected' : ''}>${core.BERUFE[k]}</option>`).join('')}</select> <span class="mute">zeigt nur die Azubis und Lab-Spalten dieses Berufs (Dateien ohne Berufsangabe zählen als Elektroniker)</span></p>
         <div class="kpis"><div class="kpi"><b>${A.kpi.n}</b><span>Azubis</span></div><div class="kpi"><b>${A.kpi.pct} %</b><span>Ø Fortschritt (gelöste Aufgaben)</span></div><div class="kpi"><b>${A.kpi.solved}</b><span>gelöste Aufgaben insgesamt</span></div><div class="kpi"><b>${A.kpi.badges}</b><span>Abzeichen insgesamt</span></div><div class="kpi"><b>${A.kpi.exams}</b><span>Probeprüfungen</span></div><div class="kpi"><b class="sm">${esc(fmtD(A.kpi.oldest))} bis ${esc(fmtD(A.kpi.newest))}</b><span>Zeitraum der Stände</span></div></div>
         <p class="mute">Fortschritt = Anteil der Aufgaben mit 100 %, wie auf der Startseite des Azubis. „Stand vom“ ist der Zeitpunkt des Exports. „Letzte Aktivität“ ist das jüngste Abzeichen oder die jüngste Probeprüfung (die App speichert keine Bearbeitungsdauer und keine Versuchszahl).</p>
         <div class="tw" tabindex="0" role="region" aria-label="Tabelle Azubis, waagerecht scrollbar"><table><caption class="sr">Azubis mit Fortschritt je Lab</caption><thead><tr>${th('name', 'Kürzel')}${th('pct', 'Fortschritt')}${th('solved', 'Gelöst')}${th('badges', 'Abzeichen')}<th scope="col" title="Karriere-Rang laut Stand-Datei (ab Schema 2)">Rang</th>${th('exam', 'Beste Prüfung', 'Beste Probeprüfung in Prozent')}${th('weak', 'Schwächen', 'Versuchte, noch nicht gelöste Aufgaben')}${th('ts', 'Stand vom')}${th('act', 'Letzte Aktivität')}${A.labs.map(l => `<th scope="col" class="t" title="${esc(l.name)}"><span>${esc(l.short)}</span></th>`).join('')}</tr></thead><tbody>`;
@@ -419,6 +424,7 @@
       /* Export */
       h += `<section class="card noprint" aria-labelledby="hExp"><h2 id="hExp">8. Export</h2><p class="mute">CSV öffnet sich in Excel (Semikolon, UTF-8). Die Druckansicht zeigt Tabelle, Heatmap, Ranking und Detail; ein Hinweis zum Datenschutz steht oben. Die Dateien enthalten nur Pseudonyme, bitte nur im Ausbilder-Ordner ablegen.</p><div class="row"><button type="button" class="pri" id="bCsv">Übersicht als CSV</button><button type="button" id="bCsvW">Schwächen als CSV</button><button type="button" id="bPrint">Druckansicht (Drucken oder PDF)</button></div></section>`;
       out.innerHTML = h; renderDuell(); slot();
+      const bs = out.querySelector('#berSel'); if (bs) bs.onchange = () => { S.beruf = bs.value; S.heatLab = ''; rerun(); const n = out.querySelector('#berSel'); if (n) n.focus(); };
       out.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { const k = b.dataset.sort; if (S.sort === k) S.dir = -S.dir; else { S.sort = k; S.dir = (k === 'name') ? 1 : -1; } render(); const nb = out.querySelector('[data-sort="' + k + '"]'); if (nb) nb.focus(); });
       out.querySelectorAll('[data-det]').forEach(b => b.onclick = () => { S.detail = b.dataset.det; render(); const t = out.querySelector('#hDet'); if (t) { t.scrollIntoView({ block: 'start' }); t.focus({ preventScroll: true }); } });
       out.querySelectorAll('input[name=heat]').forEach(r => r.onchange = () => { S.heat = r.value; render(); const x = out.querySelector('input[name=heat][value=' + S.heat + ']'); if (x) x.focus(); });

@@ -3,6 +3,7 @@
    mit den Dateien der anderen Azubis zusammenlegt. Dateiweg: kein Server, keine Anmeldung, die Datei liegt zuerst nur auf dem Gerät des Azubis.
 
    ===== Schema „tonfunk-stand“, Version 2 (ab v23.147; Schema 1 bleibt lesbar, genaue Beschreibung: quelle/dash/UEBERSICHT.md) =====
+   NEU ab v42.159 (Schema bleibt 2): beruf: 'egs'|'im'|'tpd'|'fll'|'ik'|'fi'|'' (lm4.beruf, gewählter Beruf-Reiter; fehlt in älteren Dateien).
    NEU in Schema 2: jahrgang: '2025' | '' (lm4.jahrgang, Ausbildungsbeginn),
      duell:    { jahrgang, n: Zahl aller Duelle, wins: gewonnene, hist: [ { r, a, lab, st, t, ms, pct, h, f, m, pr, pts, g, gp, sig, code } ] }   (höchstens 50, neueste zuerst; code = der signierte TFD1-Code,
                damit die Übersicht die Signatur selbst prüft; nie Fehlerschlüssel, Ursache oder Fehlertext; nur Aufgaben-Id und Zähler),
@@ -125,7 +126,8 @@
         karriere = { level: clamp(Math.round(num(L.n)), 1, 20), xp: Math.max(0, Math.round(num(L.xp))), gp: g ? { t: Math.max(0, Math.round(num(g.t))), pct: clamp(Math.round(num(g.pct)), 0, 100), note: clamp(Math.round(num(g.note)), 0, 6) } : null };
       } catch (e) { karriere = null; }
     }
-    const kz = checkKuerzel(o.kuerzel), res = { format: FORMAT, schema: SCHEMA, app: String(o.app || ''), created: new Date(now).toISOString(), ts: now, kuerzel: kz.ok ? kz.value : String(o.kuerzel || ''), jahrgang, tasks, labs, badges, exam, path, weak, duell };
+    const bw = String(get('lm4.beruf', '') == null ? '' : get('lm4.beruf', '')).replace(/"/g, '').trim(), beruf = /^(egs|im|tpd|fll|ik|fi)$/.test(bw) ? bw : '';
+    const kz = checkKuerzel(o.kuerzel), res = { format: FORMAT, schema: SCHEMA, app: String(o.app || ''), created: new Date(now).toISOString(), ts: now, kuerzel: kz.ok ? kz.value : String(o.kuerzel || ''), jahrgang, beruf, tasks, labs, badges, exam, path, weak, duell };
     if (karriere) res.karriere = karriere;
     return res;
   }

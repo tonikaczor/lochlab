@@ -2,6 +2,14 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v42.159', items: [
+      ['Regelkreis-Lab', 'Regelkreis mit Regler und Strecke, P-, I-, PI- und PID-Regler einstellen, Sprungantwort lesen, Totzeit, Schwingen und Zweipunktregler. Mit Simulation und Beispielen.', 'Startseite ▸ Elektroniker oder Industriemechaniker ▸ Regelkreis-Lab'],
+      ['Technisches-Englisch-Lab', 'Fachvokabeln, Datenblätter und Warnhinweise lesen, Fach-E-Mails prüfen, False Friends. Mit Vokabeltrainer und Beispielen, für alle Berufe.', 'Startseite ▸ Grundlagen ▸ Technisches Englisch'],
+      ['Berichtsheft-Helfer', 'Stichpunkte zu deinem Arbeitstag eingeben, Sätze prüfen und verbessern und ein Berichtsgerüst drucken. Es wird kein Name gespeichert.', 'Startseite ▸ Grundlagen ▸ Berichtsheft-Helfer'],
+      ['Lernkarten', 'Karteikasten mit Begriffen, Formeln und Bauteilen aus dem Wiki. Gewusste Karten kommen später wieder, nicht gewusste sofort.', 'Startseite ▸ Wiki ▸ Lernkarten (oder Lernhefte ▸ Lernkarten)'],
+      ['Prüfungsfragen für jeden Beruf', 'Das Prüfungs-Lab hat jetzt auch Fragen für Industriemechaniker, Produktdesigner, Lagerlogistik, Industriekaufleute und Fachinformatiker.', 'Startseite ▸ Prüfungs-Lab ▸ Fragen für deinen Beruf'],
+      ['Ausbilder-Übersicht nach Beruf', 'Die Übersicht kann nach Beruf gefiltert werden und zeigt dann nur die Azubis und Lab-Spalten dieses Berufs. Der exportierte Stand enthält jetzt den gewählten Beruf.', 'Ausbilder-Übersicht ▸ Übersicht je Azubi ▸ Beruf'],
+    ] },
     { v: 'v39.158', items: [
       ['Lernpfad, Rang und Abzeichen für jeden Beruf', 'Wähle oben deinen Beruf: Lernpfad, Weitermachen, Rang, Meisterstücke und Abzeichen zählen jetzt die Labs deines Berufs. Jede gelöste Aufgabe in den neuen Labs bringt XP.', 'Startseite ▸ Beruf wählen'],
       ['IT-Sicherheits-Lab', 'Passwortstärke, Verschlüsselung und Hashes, Phishing erkennen, Rechte und Firewall-Regeln, Backup und Verfügbarkeit.', 'Startseite ▸ Fachinformatiker ▸ IT-Sicherheits-Lab'],
