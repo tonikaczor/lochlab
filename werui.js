@@ -41,7 +41,7 @@
   const TASKS = D.tasks, MATS = D.materials, mat = id => MATS.find(m => m.id === id) || MATS[0];
 
   /* ============================================================ Zustand */
-  const TABS = [['zug', '📈', 'Zugversuch'], ['haerte', '🔨', 'Härteprüfung'], ['name', '🏷️', 'Bezeichnungen'], ['fec', '🌡️', 'Fe-C-Diagramm'], ['wb', '🔥', 'Wärmebehandlung'], ['wahl', '🧰', 'Werkstoffwahl'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
+  const TABS = [['zug', '📈', 'Zugversuch'], ['haerte', '🔨', 'Härteprüfung'], ['name', '🏷️', 'Bezeichnungen'], ['fec', '🌡️', 'Fe-C-Diagramm'], ['wb', '🔥', 'Wärmebehandlung'], ['wahl', '🧰', 'Werkstoffwahl'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
   const ZC0 = { d: '10', F: '20', L0: '50', dL: '0,35', L0b: '80', Lu: '98,4', E: '210000', eps: '0,1' };
   const S = {
     tab: lsGet('tab', 'zug'),
@@ -689,7 +689,7 @@
     if (!TABS.some(x => x[0] === t)) t = 'zug'; stopTween('zug'); stopTween('h'); S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     if (t === 'zug') renderZug(); else if (t === 'haerte') renderHaerte(); else if (t === 'name') renderName(); else if (t === 'fec') renderFec(); else if (t === 'wb') renderWb(); else if (t === 'wahl') renderWahl();
-    else if (t === 'tasks') renderTasks(); else if (t === 'rt') renderTrainer(); else if (t === 'help') renderHelp();
+    else if (t === 'bsp') renderBsp(); else if (t === 'tasks') renderTasks(); else if (t === 'rt') renderTrainer(); else if (t === 'help') renderHelp();
     const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'Werkstoff-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'Werkstoff-Lab: ' + T[2];
   }
   function setExam(on) { lsSet('exam', on ? '1' : '0'); updatePal(); $('#bExam').classList.toggle('on', on); $('#bExam').setAttribute('aria-pressed', on); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks') renderTasks(false); }
@@ -728,8 +728,27 @@
   /* Schnittstelle für Karriere/Lernpfad */
   root.WER_LAB = { id: 'wer', title: 'Werkstoff-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.WER_TASKS };
 
+  /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
+  const BSP = D.beispiele || [], BSP_INTRO = "Fertige Beispiele zum Anschauen und Weiterspielen. „Laden“ öffnet das Beispiel im passenden Reiter.", BSP_BTN = 'Laden';
+  function renderBsp() {
+    const V = $('#bspView'); if (!V) return;
+    V.innerHTML = '<div class="card pl"><h4>Beispiele</h4><p class="hint2" style="margin:0">' + BSP_INTRO + '</p></div>' +
+      BSP.map((b, i) => '<div class="card pl"><h4>' + esc(b.titel) + '</h4><p style="margin:0 0 4px;line-height:1.45">' + esc(b.text) + '</p>' + '<p class="hint2" style="margin:0 0 4px">Öffnet: ' + esc((TABS.find(t => t[0] === b.tab) || [0, 0, ''])[2]) + '</p>' + '<div class="btns"><button class="btn pri" data-bsp="' + i + '" style="min-height:44px">' + BSP_BTN + '</button></div></div>').join('');
+    V.onclick = e => { const x = e.target.closest('[data-bsp]'); if (x && BSP[+x.dataset.bsp]) loadBsp(BSP[+x.dataset.bsp]); };
+  }
+  function loadBsp(b) {
+    const s = b.set;
+    if (b.tab === 'zug') { Object.assign(S.zug, { mat: s.mat, show: !!s.show, off: !!s.off, eps: 0 }); lsSet('zug', { mat: S.zug.mat, calc: S.zug.calc }); }
+    else if (b.tab === 'haerte') { Object.assign(S.haerte, s, { p: 1 }); lsSet('haerte', S.haerte); }
+    else if (b.tab === 'name') { S.name.v = s.v; lsSet('name', S.name); }
+    else if (b.tab === 'wb') { Object.assign(S.wb, s); lsSet('wb', S.wb); }
+    setTab(b.tab); toast('Beispiel geladen: ' + b.titel);
+  }
+
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'tasks' && curTask() && !$('#tkIn:focus')) { /* Diagramme skalieren per CSS */ } }, 150); });
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufruf ?aufgabe=wer1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
   try { const qa = new URLSearchParams(location.search).get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); } } catch (e) {}
+  /* Aufruf ?bsp: gleich die Beispielauswahl zeigen */
+  try { const qb = new URLSearchParams(location.search); if (qb.has('bsp') && !qb.get('aufgabe')) { setTab('bsp'); } } catch (e) {}
 })(typeof window !== 'undefined' ? window : globalThis);

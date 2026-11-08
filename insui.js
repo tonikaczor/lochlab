@@ -37,7 +37,7 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['begr', '📚', 'Grundbegriffe'], ['diag', '🔍', 'Fehlersuche'], ['schm', '🛢️', 'Schmierung'], ['scha', '🔧', 'Schäden'], ['kenn', '📊', 'Kennzahlen'], ['plan', '📅', 'Wartungsplan'], ['sich', '🦺', 'Sicherheit'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
+  const TABS = [['begr', '📚', 'Grundbegriffe'], ['diag', '🔍', 'Fehlersuche'], ['schm', '🛢️', 'Schmierung'], ['scha', '🔧', 'Schäden'], ['kenn', '📊', 'Kennzahlen'], ['plan', '📅', 'Wartungsplan'], ['sich', '🦺', 'Sicherheit'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
   const VIEW = { begr: 'begrView', diag: 'diagView', schm: 'schmView', scha: 'schaView', kenn: 'kennView', plan: 'planView', sich: 'sichView', tasks: 'taskView', rt: 'rtView', help: 'helpView' };
   const QCAT = { begr: 'Begriffe', schm: 'Schmierung', scha: 'Schäden', sich: 'Sicherheit', kenn: 'Kennzahlen' };
   const R0 = (() => { const m = /[?&]seed=([^&]+)/.exec(location.search); return C.rng(m ? decodeURIComponent(m[1]) : String(Math.random()) + Date.now()); })();
@@ -504,7 +504,7 @@
   function setTab(t) {
     if (!TABS.some(x => x[0] === t)) t = 'begr'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    ({ begr: renderBegr, diag: () => renderDiag(true), schm: renderSchm, scha: renderScha, kenn: renderKenn, plan: renderPlan, sich: renderSich, tasks: renderTasks, rt: renderRt, help: renderHelp })[t]();
+    ({ begr: renderBegr, diag: () => renderDiag(true), schm: renderSchm, scha: renderScha, kenn: renderKenn, plan: renderPlan, sich: renderSich, bsp: renderBsp, tasks: renderTasks, rt: renderRt, help: renderHelp })[t]();
     const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'Instandhaltungs-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'Instandhaltungs-Lab: ' + T[2];
   }
   function setExam(on) { lsSet('exam', on ? '1' : '0'); updatePal(); $('#bExam').classList.toggle('on', on); $('#bExam').setAttribute('aria-pressed', on); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks') renderTasks(false); else if (S.tab === 'diag') renderDiag(); }
@@ -562,8 +562,35 @@
   /* Schnittstelle für Karriere/Lernpfad */
   root.INS_LAB = { id: 'ins', title: 'Instandhaltungs-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.INS_TASKS };
 
+  /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
+  const BSP = D.beispiele || [], BSP_INTRO = 'Fertige Lösungsbeispiele zum Lernen. Sie zeigen den richtigen Weg und sind keine Aufgaben: Die Fälle im Prüfplatz bleiben verdeckt.';
+  const BSP_BTNS = { fall: 'Ansehen', plan: 'Ansehen', schaden: 'Ansehen', kenn: 'Laden' };
+  function renderBsp() {
+    const V = $('#bspView'); if (!V) return;
+    V.innerHTML = '<div class="card pl"><h4>Beispiele</h4><p class="hint2" style="margin:0">' + BSP_INTRO + '</p></div>' +
+      BSP.map((b, i) => '<div class="card pl"><h4>' + esc(b.titel) + '</h4><p style="margin:0 0 4px;line-height:1.45">' + esc(b.text) + '</p><div class="btns"><button class="btn pri" data-bsp="' + i + '" style="min-height:44px">' + BSP_BTNS[b.typ] + '</button></div></div>').join('');
+    V.onclick = e => { const x = e.target.closest('[data-bsp]'); if (x && BSP[+x.dataset.bsp]) loadBsp(BSP[+x.dataset.bsp]); };
+  }
+  function loadBsp(b) {
+    if (b.typ === 'kenn') { Object.assign(S.kc, b.kc); lsSet('kc', S.kc); setTab('kenn'); toast('Beispielwerte geladen'); return; }
+    sheet(b.titel, (box, close) => {
+      if (b.typ === 'fall') {
+        box.innerHTML = '<div class="rdout ok"><b>Lösungsbeispiel zum Lernen, kein Aufgabenfall.</b> Hier wird die Lösung gezeigt. Die Fälle im Prüfplatz musst du selbst lösen.</div><p>' + esc(b.fall.intro) + '</p><ol style="padding-left:20px;margin:0">' +
+          b.fall.schritte.map(s => '<li style="margin-bottom:10px"><b>' + esc(s.phase) + ': ' + esc(s.titel) + '</b><br>' + esc(s.text) + '</li>').join('') + '</ol><div class="btns"><button class="btn pri" data-x="diag" style="min-height:44px">Selbst üben: Fehlersuche</button></div>';
+      } else if (b.typ === 'plan') {
+        box.innerHTML = '<table class="tt"><tr><th>Schmierstelle</th><th>Schmierstoff</th><th>Intervall</th><th>Menge</th></tr>' + D.schmierplan.map(r => '<tr><td><b>' + esc(r.stelle) + '</b></td><td>' + esc(r.stoff) + '</td><td>' + esc(r.intervall) + '</td><td>' + esc(r.menge) + '</td></tr>').join('') + '</table><div class="btns"><button class="btn pri" data-x="schm" style="min-height:44px">Zum Reiter Schmierung</button></div>';
+      } else if (b.typ === 'schaden') {
+        const s = D.schaeden.find(x => x.id === b.schaden), u = D.ursachen.find(x => x.id === s.ursache);
+        box.innerHTML = '<p><b>' + esc(s.teil + ': ' + s.name) + '</b></p><div class="rdout"><b>Schadensbild:</b> ' + esc(s.desc) + '</div><div class="rdout"><b>Ursache (' + esc(u.name) + '):</b> ' + esc(s.warum) + '</div><div class="rdout ok"><b>Maßnahme:</b> ' + esc(s.mass) + '</div><div class="btns"><button class="btn pri" data-x="scha" style="min-height:44px">Zum Reiter Schäden</button></div>';
+      }
+      box.addEventListener('click', e => { const x = e.target.closest('[data-x]'); if (x) { close(); setTab(x.dataset.x); } });
+    });
+  }
+
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'diag' && S.diag.sid) renderDiag(); }, 150); });
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufruf ?aufgabe=ins1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
   try { const qa = new URLSearchParams(location.search).get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); } } catch (e) {}
+  /* Aufruf ?bsp: gleich die Beispielauswahl zeigen */
+  try { const qb = new URLSearchParams(location.search); if (qb.has('bsp') && !qb.get('aufgabe')) { setTab('bsp'); } } catch (e) {}
 })(typeof window !== 'undefined' ? window : globalThis);

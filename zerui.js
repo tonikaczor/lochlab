@@ -39,7 +39,7 @@
   root.LabUI = { sheet, esc, toast, userName: () => { try { return localStorage.getItem('lm4.name') || ''; } catch (e) { return ''; } }, LAB: 'zer' };
 
   /* ============================================================ Zustand */
-  const TABS = [['dreh', 'Drehen'], ['fraes', 'Fräsen'], ['bohr', 'Bohren'], ['tafel', 'Richtwerte'], ['tasks', 'Aufgaben'], ['train', 'Trainer'], ['fehler', 'Fehlersuche'], ['help', 'Hilfe']];
+  const TABS = [['dreh', 'Drehen'], ['fraes', 'Fräsen'], ['bohr', 'Bohren'], ['tafel', 'Richtwerte'], ['tasks', 'Aufgaben'], ['train', 'Trainer'], ['fehler', 'Fehlersuche'], ['help', 'Hilfe'], ['bsp', 'Beispiele']];   /* Beispiele am Ende: Tasten 1 bis 8 bleiben unverändert */
   const DEF_SIM = {
     dreh: { d: 40, l: 100, n: 500, f: 0.2, ap: 1.5, i: 1, la: 3, lu: 2, mat: 's235', cut: 'hss', fc: true },
     fraes: { d: 63, z: 5, vc: 150, fz: 0.1, l: 150, la: 5, lu: 5, gr: 'stahl', cut: 'hm' },
@@ -617,7 +617,7 @@ ${tr('Schnittkraft (vereinfacht)', 'Fc = A · kc', 'N')}${tr('Schnittleistung', 
     if (!TABS.some(x => x[0] === t)) return;
     S.tab = t; lsS('tab', t); $('#mid').dataset.tab = t;
     if (t === 'tasks' && !keepTask) { /* Liste oder offene Aufgabe wie zuletzt */ }
-    if (!built[t]) { built[t] = true; ({ dreh: buildDreh, fraes: buildFraes, bohr: buildBohr, tafel: () => { renderTafel(); bindTafel(); }, tasks: () => { bindTasks(); renderTasks(); }, train: () => { bindTrain(); renderTrain(); }, fehler: renderFehler, help: renderHelp })[t](); }
+    if (!built[t]) { built[t] = true; ({ dreh: buildDreh, fraes: buildFraes, bohr: buildBohr, tafel: () => { renderTafel(); bindTafel(); }, tasks: () => { bindTasks(); renderTasks(); }, train: () => { bindTrain(); renderTrain(); }, fehler: renderFehler, help: renderHelp, bsp: renderBsp })[t](); }
     else if (t === 'tasks') renderTasks(); else if (t === 'dreh' || t === 'fraes' || t === 'bohr') update(t);
     A.t = 0; A.prog = 0; updateChrome();
     const tb = $('#tab-' + t), bar = $('#tabs'); if (tb && bar) bar.scrollLeft = Math.max(0, tb.offsetLeft - (bar.clientWidth - tb.offsetWidth) / 2);
@@ -678,12 +678,25 @@ ${tr('Schnittkraft (vereinfacht)', 'Fc = A · kc', 'N')}${tr('Schnittleistung', 
   function init() {
     buildTabs(); bindFrame();
     let go = S.tab, task = null;
-    try { const q = new URLSearchParams(location.search), a = q.get('aufgabe'), tb = q.get('tab'); if (a && DEFS[a]) { task = a; } else if (tb && TABS.some(x => x[0] === tb)) go = tb; } catch (e) {}
+    try { const q = new URLSearchParams(location.search), a = q.get('aufgabe'), tb = q.get('tab'); if (a && DEFS[a]) { task = a; } else if (tb && TABS.some(x => x[0] === tb)) go = tb; if (q.has('bsp') && !(a && DEFS[a])) go = 'bsp'; } catch (e) {}
     if (task) { go = 'tasks'; S.task = task; }
     setTab(go);
     if (task) openTask(task);
     A.raf = requestAnimationFrame(loop);
     try { if (!localStorage.getItem(P + 'welcome')) { localStorage.setItem(P + 'welcome', '1'); setTimeout(() => toast('Willkommen im Zerspan-Lab! Stelle n, f und ap ein und schau, wie vc und die Hauptzeit reagieren.'), 900); } } catch (e) {}
+  }
+  /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
+  const BSP = root.ZER_BEISPIELE || [], BSP_INTRO = 'Fertige Parameter-Voreinstellungen. „Laden“ übernimmt die Werte in Drehen, Fräsen oder Bohren. Die Richtwerte gelten nur als Anhalt, Werkzeughersteller beachten.', BSP_BTN = 'Laden';
+  function renderBsp() {
+    const V = $('#bspView'); if (!V) return;
+    V.innerHTML = '<div class="card pl"><h4>Beispiele</h4><p class="hint2" style="margin:0">' + BSP_INTRO + '</p></div>' +
+      BSP.map((b, i) => '<div class="card pl"><h4>' + esc(b.titel) + '</h4><p style="margin:0 0 4px;line-height:1.45">' + esc(b.text) + '</p>' + '<p class="hint2" style="margin:0 0 4px">Lädt in: ' + ({ dreh: 'Drehen', fraes: 'Fräsen', bohr: 'Bohren' }[b.sim]) + '</p>' + '<div class="btns"><button class="btn pri" data-bsp="' + i + '" style="min-height:44px">' + BSP_BTN + '</button></div></div>').join('');
+    V.onclick = e => { const x = e.target.closest('[data-bsp]'); if (x && BSP[+x.dataset.bsp]) loadBsp(BSP[+x.dataset.bsp]); };
+  }
+  function loadBsp(b) {
+    const s = S.sim[b.sim], def = DEF_SIM[b.sim];
+    Object.keys(b.set).forEach(k => { if (k in def && typeof b.set[k] === typeof def[k]) s[k] = b.set[k]; });
+    saveSim(); setTab(b.sim); syncCtl(b.sim); update(b.sim); toast('Beispiel geladen: ' + b.titel);
   }
   root.ZER_UI = { S, setTab, openTask, model, update, setVal, TF, newPractice, toggleExam, A };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

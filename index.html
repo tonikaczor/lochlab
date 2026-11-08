@@ -121,6 +121,12 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-cnclab" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M6 8h6M6 11h9M8 20h8M12 16v4"/></symbol>
   <symbol id="i-werlab" viewBox="0 0 24 24"><path d="M4 20V5M4 20h16"/><path d="M4 20l5-9 3-2h5l3 3"/><circle cx="20" cy="12" r="1.2"/></symbol>
   <symbol id="i-inslab" viewBox="0 0 24 24"><circle cx="9" cy="10" r="5"/><circle cx="9" cy="10" r="1.6"/><path d="M13 14l7 7M16 17l3-3"/></symbol>
+  <symbol id="i-netlab" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="2" y="16" width="6" height="5" rx="1"/><rect x="16" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M12 12H5v4M12 12h7v4"/></symbol>
+  <symbol id="i-kallab" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 11h2M12 11h2M16 11h0M8 15h2M12 15h2M8 18h8"/></symbol>
+  <symbol id="i-laglab" viewBox="0 0 24 24"><path d="M3 20V9l5-3 5 3v11M13 20V6l4-2 4 2v14M3 20h18M7 13h2M7 16h2M16 11h2M16 14h2"/></symbol>
+  <symbol id="i-arblab" viewBox="0 0 24 24"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17h0"/></symbol>
+  <symbol id="i-matlab" viewBox="0 0 24 24"><path d="M5 7h6M8 4v6M13 8h6M5 17h6M13 15l6 4M19 15l-6 4"/></symbol>
+  <symbol id="i-zeilab" viewBox="0 0 24 24"><rect x="3" y="4" width="10" height="8"/><rect x="3" y="14" width="10" height="6"/><rect x="15" y="4" width="6" height="8"/><path d="M6 15v4M10 15v4"/></symbol>
   <symbol id="i-messlab" viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M6.5 11.5l-1-1M12 9V7.6M17.5 11.5l1-1M8.8 9.6l-.6-1.2M15.2 9.6l.6-1.2"/><path d="M12 17l4.2-6.5"/><circle cx="12" cy="17" r="1.6"/><path d="M4 20h16"/></symbol>
   <symbol id="i-senlab" viewBox="0 0 24 24"><path d="M8 4a2 2 0 0 1 4 0v10a3.5 3.5 0 1 1-4 0z"/><path d="M10 9v7"/><circle cx="10" cy="16.5" r="1.3"/><path d="M15 9c1.5-2.5 3-2.5 4.5 0s3 2.5 4.5 0" transform="translate(-2.5 0)"/><path d="M15 14c1.5-2.5 3-2.5 4.5 0" transform="translate(-1 0)"/></symbol>
   <symbol id="i-emvlab" viewBox="0 0 24 24"><path d="M2 12q2.5-4 5 0t5 0"/><path d="M2 7q2.5-4 5 0t5 0"/><path d="M2 17q2.5-4 5 0t5 0"/><path d="M15.5 3v18M19.5 3v18M15.5 8l4-4M15.5 13l4-4M15.5 18l4-4"/></symbol>
@@ -205,7 +211,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Aufbauen</span><span>Schalten</span><span>Beobachten</span></div>
       <div class="btns"><a class="btn pri" href="simlab.html">Öffnen</a><a class="btn" href="simlab.html?neu">Neu</a><a class="btn" href="simlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="digilab" data-group="anadig">
+    <section class="card" data-lab="digilab" data-group="anadig" data-beruf="egs fi">
       <span class="tag">DigiLab</span>
       <h3>Digitaltechnik</h3>
       <div class="pic" aria-hidden="true">
@@ -215,7 +221,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verdrahten</span><span>Schalten</span><span>Programmieren</span></div>
       <div class="btns"><a class="btn pri" href="digilab.html">Öffnen</a><a class="btn" href="digilab.html?neu">Neu</a><a class="btn" href="digilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="messlab" data-group="mess">
+    <section class="card" data-lab="messlab" data-group="mess" data-beruf="egs im">
       <span class="tag">MessLab</span>
       <h3>Messtechnik</h3>
       <div class="pic" aria-hidden="true">
@@ -225,7 +231,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Messen</span><span>Ablesen</span><span>Fehler finden</span></div>
       <div class="btns"><a class="btn pri" href="messlab.html">Öffnen</a><a class="btn" href="messlab.html?neu">Neu</a><a class="btn" href="messlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="elslab" data-group="sich">
+    <section class="card" data-lab="elslab" data-group="sich" data-beruf="egs im">
       <span class="tag">SICHERHEITS-LAB</span>
       <h3>Elektrische Sicherheit: Schutz, Prüfung, Rettung</h3>
       <div class="pic" aria-hidden="true">
@@ -275,7 +281,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Planen</span><span>Verlegen</span><span>Verteilen</span></div>
       <div class="btns"><a class="btn pri" href="hauslab.html">Öffnen</a><a class="btn" href="hauslab.html?neu">Neu</a><a class="btn" href="hauslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="appwerkstatt" data-group="bau">
+    <section class="card" data-lab="appwerkstatt" data-group="bau" data-beruf="egs fi">
       <span class="tag">APP-WERKSTATT</span>
       <h3>Eigene Apps mit KI bauen</h3>
       <div class="pic" aria-hidden="true">
@@ -285,7 +291,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Auftrag</span><span>Prüfen</span><span>Teilen</span></div>
       <div class="btns"><a class="btn pri" href="appwerkstatt.html">Öffnen</a><a class="btn" href="appwerkstatt.html?aufgabe=ap1">Erste App</a><a class="btn" href="appwerkstatt.html?aufgabe=ap11">Notizen</a></div>
     </section>
-    <section class="card" data-lab="spslab" data-group="auto">
+    <section class="card" data-lab="spslab" data-group="auto" data-beruf="egs im">
       <span class="tag">SPS-LAB</span>
       <h3>Steuerungen programmieren</h3>
       <div class="pic" aria-hidden="true">
@@ -305,7 +311,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Layout</span><span>Bestücken</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="pcblab.html">Öffnen</a><a class="btn" href="pcblab.html?neu">Neu</a><a class="btn" href="pcblab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="antlab" data-group="auto">
+    <section class="card" data-lab="antlab" data-group="auto" data-beruf="egs im">
       <span class="tag">ANTRIEBS-LAB</span>
       <h3>Motoren und Antriebe untersuchen</h3>
       <div class="pic" aria-hidden="true">
@@ -315,7 +321,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Prüfstand</span><span>Messen</span><span>Auslegen</span></div>
       <div class="btns"><a class="btn pri" href="antlab.html">Öffnen</a><a class="btn" href="antlab.html?neu">Neu</a><a class="btn" href="antlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="senlab" data-group="mess">
+    <section class="card" data-lab="senlab" data-group="mess" data-beruf="egs im">
       <span class="tag">SENSORIK-LAB</span>
       <h3>Sensoren und Messketten untersuchen</h3>
       <div class="pic" aria-hidden="true">
@@ -325,7 +331,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Messkette</span><span>Messen</span><span>Auslegen</span></div>
       <div class="btns"><a class="btn pri" href="senlab.html">Öffnen</a><a class="btn" href="senlab.html?neu">Neu</a><a class="btn" href="senlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="reglab" data-group="auto">
+    <section class="card" data-lab="reglab" data-group="auto" data-beruf="egs im">
       <span class="tag">REGELUNGSTECHNIK-LAB</span>
       <h3>Regelkreise einstellen und verstehen</h3>
       <div class="pic" aria-hidden="true">
@@ -335,7 +341,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Strecke messen</span><span>Regler einstellen</span><span>Beurteilen</span></div>
       <div class="btns"><a class="btn pri" href="reglab.html">Öffnen</a><a class="btn" href="reglab.html?neu">Neu</a><a class="btn" href="reglab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="thmlab" data-group="anadig">
+    <section class="card" data-lab="thmlab" data-group="anadig" data-beruf="egs im">
       <span class="tag">THERMIK-LAB</span>
       <h3>Wärme, Kühlkörper und Wärmewiderstand</h3>
       <div class="pic" aria-hidden="true">
@@ -365,7 +371,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Sonne und Modul</span><span>Anlage auslegen</span><span>Ertrag prüfen</span></div>
       <div class="btns"><a class="btn pri" href="enrlab.html">Öffnen</a><a class="btn" href="enrlab.html?neu">Neu</a><a class="btn" href="enrlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="codelab" data-group="bau">
+    <section class="card" data-lab="codelab" data-group="bau" data-beruf="egs fi">
       <span class="tag">ARDUINO-LAB</span>
       <h3>Arduino programmieren</h3>
       <div class="pic" aria-hidden="true">
@@ -375,7 +381,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verdrahten</span><span>Programmieren</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="codelab.html">Öffnen</a><a class="btn" href="codelab.html?neu">Neu</a><a class="btn" href="codelab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="pilab" data-group="bau">
+    <section class="card" data-lab="pilab" data-group="bau" data-beruf="egs fi">
       <span class="tag">PI-LAB</span>
       <h3>Raspberry Pi programmieren</h3>
       <div class="pic" aria-hidden="true">
@@ -385,7 +391,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verdrahten</span><span>Programmieren</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="pilab.html">Öffnen</a><a class="btn" href="pilab.html?neu">Neu</a><a class="btn" href="pilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="dslab" data-group="grund">
+    <section class="card" data-lab="dslab" data-group="grund" data-beruf="egs fi">
       <span class="tag">DATENBLATT-LAB</span>
       <h3>Datenblätter lesen und verstehen</h3>
       <div class="pic" aria-hidden="true">
@@ -403,7 +409,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       </div>
       <p>Messschieber und Bügelmessschraube ablesen, Höchst- und Mindestmaß berechnen, ISO-Passungen im Toleranzfeld verstehen und das passende Messmittel wählen.</p>
       <div class="steps"><span>Ablesen</span><span>Rechnen</span><span>Passung wählen</span></div>
-      <div class="btns"><a class="btn pri" href="tollab.html">Öffnen</a><a class="btn" href="tollab.html?aufgabe=tol1">Erste Aufgabe</a></div>
+      <div class="btns"><a class="btn pri" href="tollab.html">Öffnen</a><a class="btn" href="tollab.html?aufgabe=tol1">Erste Aufgabe</a><a class="btn" href="tollab.html?bsp">Beispiel</a></div>
     </section>
     <section class="card" data-lab="zerlab" data-group="grund" data-beruf="im">
       <span class="tag">ZERSPAN-LAB</span>
@@ -413,7 +419,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       </div>
       <p>Drehzahl, Schnittgeschwindigkeit, Vorschub und Hauptzeit an einer animierten Maschine einstellen, Richtwerte nachschlagen und Fehlersuche bei rauer Oberfläche üben.</p>
       <div class="steps"><span>Einstellen</span><span>Rechnen</span><span>Fehler finden</span></div>
-      <div class="btns"><a class="btn pri" href="zerlab.html">Öffnen</a><a class="btn" href="zerlab.html?aufgabe=zer1">Erste Aufgabe</a></div>
+      <div class="btns"><a class="btn pri" href="zerlab.html">Öffnen</a><a class="btn" href="zerlab.html?aufgabe=zer1">Erste Aufgabe</a><a class="btn" href="zerlab.html?bsp">Beispiel</a></div>
     </section>
     <section class="card" data-lab="pnelab" data-group="auto" data-beruf="im">
       <span class="tag">PNEUMATIK-LAB</span>
@@ -423,7 +429,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       </div>
       <p>Pneumatik-Symbole kennen, Zylinder und Ventile verschlauchen, die Anlage laufen lassen und Kolbenkraft und Luftverbrauch berechnen.</p>
       <div class="steps"><span>Verschlauchen</span><span>Simulieren</span><span>Rechnen</span></div>
-      <div class="btns"><a class="btn pri" href="pnelab.html">Öffnen</a><a class="btn" href="pnelab.html?aufgabe=pne1">Erste Aufgabe</a></div>
+      <div class="btns"><a class="btn pri" href="pnelab.html">Öffnen</a><a class="btn" href="pnelab.html?aufgabe=pne1">Erste Aufgabe</a><a class="btn" href="pnelab.html?bsp">Beispiel</a></div>
     </section>
     <section class="card" data-lab="hydlab" data-group="auto" data-beruf="im">
       <span class="tag">HYDRAULIK-LAB</span>
@@ -433,7 +439,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       </div>
       <p>Hydraulik-Symbole kennen, Pumpe, Ventile und Zylinder verschlauchen, die Anlage laufen lassen und Kraft, Volumenstrom, Geschwindigkeit und Leistung berechnen.</p>
       <div class="steps"><span>Verschlauchen</span><span>Simulieren</span><span>Rechnen</span></div>
-      <div class="btns"><a class="btn pri" href="hydlab.html">Öffnen</a><a class="btn" href="hydlab.html?aufgabe=hyd1">Erste Aufgabe</a></div>
+      <div class="btns"><a class="btn pri" href="hydlab.html">Öffnen</a><a class="btn" href="hydlab.html?aufgabe=hyd1">Erste Aufgabe</a><a class="btn" href="hydlab.html?bsp">Beispiel</a></div>
     </section>
     <section class="card" data-lab="cnclab" data-group="bau" data-beruf="im">
       <span class="tag">CNC-LAB</span>
@@ -443,7 +449,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       </div>
       <p>Programme für Drehen und Fräsen schreiben und die Werkzeugbahn live ansehen. Koordinaten übersetzen, Programme ergänzen und Fehler im Programm finden.</p>
       <div class="steps"><span>Programmieren</span><span>Simulieren</span><span>Fehler finden</span></div>
-      <div class="btns"><a class="btn pri" href="cnclab.html">Öffnen</a><a class="btn" href="cnclab.html?aufgabe=cnc1">Erste Aufgabe</a></div>
+      <div class="btns"><a class="btn pri" href="cnclab.html">Öffnen</a><a class="btn" href="cnclab.html?aufgabe=cnc1">Erste Aufgabe</a><a class="btn" href="cnclab.html?bsp">Beispiel</a></div>
     </section>
     <section class="card" data-lab="werlab" data-group="grund" data-beruf="im">
       <span class="tag">WERKSTOFF-LAB</span>
@@ -453,7 +459,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       </div>
       <p>Zugversuch mit Spannungs-Dehnungs-Diagramm, Härteprüfung, Werkstoffbezeichnungen entschlüsseln, Eisen-Kohlenstoff-Diagramm, Wärmebehandlung und Werkstoffwahl.</p>
       <div class="steps"><span>Prüfen</span><span>Ablesen</span><span>Auswählen</span></div>
-      <div class="btns"><a class="btn pri" href="werlab.html">Öffnen</a><a class="btn" href="werlab.html?aufgabe=wer1">Erste Aufgabe</a></div>
+      <div class="btns"><a class="btn pri" href="werlab.html">Öffnen</a><a class="btn" href="werlab.html?aufgabe=wer1">Erste Aufgabe</a><a class="btn" href="werlab.html?bsp">Beispiel</a></div>
     </section>
     <section class="card" data-lab="inslab" data-group="mess" data-beruf="im">
       <span class="tag">INSTANDHALTUNGS-LAB</span>
@@ -463,7 +469,68 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       </div>
       <p>Fehler an Maschinen eingrenzen, ohne die Ursache vorgesagt zu bekommen: Prüfschritte wählen, Sicherheit beachten und Stillstandskosten im Blick behalten. Dazu Schmierplan, Schadensbilder, Kennzahlen und Wartungsplan.</p>
       <div class="steps"><span>Eingrenzen</span><span>Beheben</span><span>Vorbeugen</span></div>
-      <div class="btns"><a class="btn pri" href="inslab.html">Öffnen</a><a class="btn" href="inslab.html?aufgabe=ins1">Erste Aufgabe</a></div>
+      <div class="btns"><a class="btn pri" href="inslab.html">Öffnen</a><a class="btn" href="inslab.html?aufgabe=ins1">Erste Aufgabe</a><a class="btn" href="inslab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="netlab" data-group="bau" data-beruf="fi">
+      <span class="tag">NETZWERK-LAB</span>
+      <h3>Subnetting, Adressen und Schichten</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><g fill="#2c343e" stroke="#9aa6b2" stroke-width="2"><rect x="96" y="22" width="48" height="22" rx="3"/><rect x="30" y="76" width="48" height="22" rx="3"/><rect x="162" y="76" width="48" height="22" rx="3"/></g><g fill="none" stroke="#5fb0ff" stroke-width="3"><path d="M120 44v16M120 60H54v16M120 60h66v16"/></g><g fill="#14e050"><circle cx="120" cy="33" r="3"/><circle cx="54" cy="87" r="3"/><circle cx="186" cy="87" r="3"/></g></svg>
+      </div>
+      <p>IP-Adressen binär lesen, Subnetze berechnen, Netze mit VLSM aufteilen und Protokolle den Schichten zuordnen. Mit Beispielen zum Nachvollziehen.</p>
+      <div class="steps"><span>Umrechnen</span><span>Subnetting</span><span>VLSM</span></div>
+      <div class="btns"><a class="btn pri" href="netlab.html">Öffnen</a><a class="btn" href="netlab.html?aufgabe=net1">Erste Aufgabe</a><a class="btn" href="netlab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="kallab" data-group="grund" data-beruf="ik">
+      <span class="tag">KALKULATIONS-LAB</span>
+      <h3>Von den Kosten zum Verkaufspreis</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="44" y="22" width="152" height="76" rx="6" fill="#f4f1e8"/><g stroke="#8a97a8" stroke-width="2" stroke-linecap="round"><path d="M58 38h70"/><path d="M58 52h70"/><path d="M58 66h70"/></g><g fill="#2a3340" font-family="monospace" font-size="12"><text x="140" y="42">120,00</text><text x="140" y="56">-6,00</text><text x="140" y="70">114,00</text></g><path d="M58 82h124" stroke="#ff7a7a" stroke-width="3"/></svg>
+      </div>
+      <p>Bezugs-, Selbstkosten- und Angebotskalkulation Schritt für Schritt ausfüllen, rückwärts rechnen, Deckungsbeitrag und Break-even bestimmen. Mit Beispielen.</p>
+      <div class="steps"><span>Schema füllen</span><span>Rückwärts rechnen</span><span>Break-even</span></div>
+      <div class="btns"><a class="btn pri" href="kallab.html">Öffnen</a><a class="btn" href="kallab.html?aufgabe=kal1">Erste Aufgabe</a><a class="btn" href="kallab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="laglab" data-group="grund" data-beruf="fll">
+      <span class="tag">LAGER-LAB</span>
+      <h3>Lagerkennzahlen und Disposition</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><path d="M30 92L58 52 58 92 96 40 96 92 134 56 134 92 172 44 172 92 210 60" fill="none" stroke="#5fb0ff" stroke-width="3" stroke-linejoin="round"/><path d="M26 74h188" stroke="#ffd166" stroke-width="2" stroke-dasharray="6 4"/><path d="M26 92h188" stroke="#9aa6b2" stroke-width="2"/></svg>
+      </div>
+      <p>Umschlagshäufigkeit, Lagerdauer und Meldebestand berechnen, die optimale Bestellmenge finden und Artikel nach ABC einteilen. Mit Beispielen.</p>
+      <div class="steps"><span>Kennzahlen</span><span>Meldebestand</span><span>ABC-Analyse</span></div>
+      <div class="btns"><a class="btn pri" href="laglab.html">Öffnen</a><a class="btn" href="laglab.html?aufgabe=lag1">Erste Aufgabe</a><a class="btn" href="laglab.html?bsp">Beispiel</a></div>
+    </section>
+    <!-- ARBEITSSCHUTZ-LAB: bis zur Prüfung durch die Fachkraft für Arbeitssicherheit ausgeblendet (Beruf-Kürzel "wartet" passt zu keinem Reiter). Zum Freischalten data-beruf="alle" setzen. Das Lab selbst (arblab.html) ist fertig. -->
+    <section class="card" data-lab="arblab" data-group="sich" data-beruf="wartet">
+      <span class="tag">ARBEITSSCHUTZ-LAB</span>
+      <h3>Sicherheit bei der Arbeit üben</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><path d="M60 88L96 28l36 60z" fill="#ffd166" stroke="#2a3340" stroke-width="4" stroke-linejoin="round"/><path d="M96 48v20" stroke="#2a3340" stroke-width="5" stroke-linecap="round"/><circle cx="96" cy="78" r="3.5" fill="#2a3340"/><circle cx="172" cy="58" r="26" fill="#1a6fd4" stroke="#fff" stroke-width="3"/><path d="M160 60l8 8 14-18" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <p>Sicherheitszeichen, Brandschutz, Gefahrstoffe und Erste Hilfe üben, eine Gefährdungsbeurteilung durchspielen und eine Teilnahmebestätigung für den Ausbilder erzeugen.</p>
+      <div class="steps"><span>Zeichen lernen</span><span>Gefährdungen beurteilen</span><span>Abschlussrunde</span></div>
+      <div class="btns"><a class="btn pri" href="arblab.html">Öffnen</a><a class="btn" href="arblab.html?aufgabe=arb1">Erste Aufgabe</a><a class="btn" href="arblab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="matlab" data-group="grund" data-beruf="alle">
+      <span class="tag">RECHEN-LAB</span>
+      <h3>Technische Mathematik sicher beherrschen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><g fill="#e8eaed" font-family="system-ui,sans-serif" font-weight="700"><text x="34" y="52" font-size="26">3 : 4</text><text x="120" y="52" font-size="26">= x : 12</text><text x="34" y="92" font-size="22" fill="#ffd166">x = 9</text></g><path d="M150 96l14-24 14 24z" fill="none" stroke="#5fb0ff" stroke-width="3"/></svg>
+      </div>
+      <p>Einheiten, Dreisatz, Prozent, Formeln umstellen, Geometrie und Winkelfunktionen mit vollständigem Lösungsweg. Mit Beispielen zum Nachvollziehen.</p>
+      <div class="steps"><span>Einheiten</span><span>Dreisatz</span><span>Formeln</span></div>
+      <div class="btns"><a class="btn pri" href="matlab.html">Öffnen</a><a class="btn" href="matlab.html?aufgabe=mat1">Erste Aufgabe</a><a class="btn" href="matlab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="zeilab" data-group="grund" data-beruf="tpd im">
+      <span class="tag">ZEICHNUNGS-LAB</span>
+      <h3>Ansichten, Linien, Maße und Schnitte</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><g fill="none" stroke="#e8eaed" stroke-width="3"><rect x="40" y="30" width="56" height="40"/><rect x="40" y="76" width="56" height="22"/><rect x="108" y="30" width="36" height="40"/></g><path d="M52 78v18M84 78v18" stroke="#9aa6b2" stroke-width="2" stroke-dasharray="4 3"/><path d="M160 86l22-14 22 14-22 14z" fill="#2c343e" stroke="#5fb0ff" stroke-width="3"/></svg>
+      </div>
+      <p>Körper in drei Ansichten lesen, fehlende Ansichten ergänzen, Linienarten und Bemaßung anwenden, Maßstäbe rechnen. Mit Beispielen.</p>
+      <div class="steps"><span>Ansichten</span><span>Ergänzen</span><span>Bemaßen</span></div>
+      <div class="btns"><a class="btn pri" href="zeilab.html">Öffnen</a><a class="btn" href="zeilab.html?aufgabe=zei1">Erste Aufgabe</a><a class="btn" href="zeilab.html?bsp">Beispiel</a></div>
     </section>
     <section class="card" data-lab="pruefungslab" data-group="pruef">
       <span class="tag">PRÜFUNGS-LAB</span>

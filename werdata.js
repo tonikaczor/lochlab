@@ -299,7 +299,18 @@
   ];
   const tasks = T.map((t, i) => Object.assign({ id: 'wer' + (i + 1) }, t));
 
-  root.WER_DATA = { materials, hardness, hardUses, hardOptions, nameExamples, nameQuizList, nameInfo, heat, heatGoals, heatOptions, groups, propLabels, wahlCases, tasks, cats: ['Zugversuch', 'Härte', 'Bezeichnungen', 'Gefüge und Wärmebehandlung', 'Werkstoffwahl'] };
+  /* Beispiele (Reiter "Beispiele", Aufruf ?bsp): fertige Einstellungen, die "Laden" im passenden Reiter übernimmt.
+     Kennwerte stammen aus materials und heat, Rechenergebnisse aus wercore.js (siehe Test). */
+  const beispiele = [
+    { id: 'wb1', tab: 'zug', titel: 'Zugversuch S235JR mit Kennwerten', text: 'Baustahl mit ausgeprägter Streckgrenze: Re = 235 N/mm², Rm = 380 N/mm², Bruchdehnung A = 26 %. Das Diagramm zeigt die Kennwerte als Markierungen.', set: { mat: 's235', show: true, off: false } },
+    { id: 'wb2', tab: 'zug', titel: 'Zugversuch C45+QT mit Dehngrenze', text: 'Vergüteter Stahl ohne ausgeprägte Streckgrenze: Rp0,2 = 430 N/mm², Rm = 700 N/mm², A = 16 %. Die Parallele im Abstand von 0,2 % Dehnung ist eingeblendet.', set: { mat: 'c45', show: true, off: true } },
+    { id: 'wb3', tab: 'haerte', titel: 'Härteprüfung HBW: Beispielrechnung', text: 'Kugel D = 10 mm, Kennzahl X = 30 (Stahl), Eindruckdurchmesser d = 4,0 mm: Prüfkraft 29 420 N, Ergebnis 229 HBW 10/3000. Der Eindruck liegt im gültigen Bereich 0,24 · D bis 0,6 · D.', set: { m: 'hb', D: 10, X: 30, d: '4,0' } },
+    { id: 'wb4', tab: 'haerte', titel: 'Härteprüfung Vickers: HV 10', text: 'Prüfkraft 98,07 N (HV 10), beide Diagonalen 0,25 mm: HV = 0,1891 · F / d² ergibt 297 HV 10.', set: { m: 'hv', hvF: 98.07, d1: '0,25', d2: '0,25' } },
+    { id: 'wb5', tab: 'name', titel: 'Bezeichnung S235JR entschlüsselt', text: 'S = Stahl für den Stahlbau, 235 = Mindest-Streckgrenze Re in N/mm², JR = Kerbschlagarbeit 27 J bei +20 °C.', set: { v: 'S235JR' } },
+    { id: 'wb6', tab: 'name', titel: 'Bezeichnung 42CrMo4 entschlüsselt', text: 'Niedrig legierter Stahl: 42 bedeutet 0,42 % Kohlenstoff, dann kommen die Legierungselemente Chrom und Molybdän. Die 4 gehört zu Chrom und bedeutet 1 % Cr.', set: { v: '42CrMo4' } },
+    { id: 'wb7', tab: 'wb', titel: 'Wärmebehandlung: Vergüten von C45', text: 'Vergüten ist Härten und hohes Anlassen bei ca. 500 bis 680 °C. Die Anlasstemperatur ist auf 550 °C eingestellt: hohe Zähigkeit bei guter Festigkeit, typisch für Wellen und Achsen aus C45.', set: { id: 'verg', Ta: 550 } }
+  ];
+  root.WER_DATA = { beispiele, materials, hardness, hardUses, hardOptions, nameExamples, nameQuizList, nameInfo, heat, heatGoals, heatOptions, groups, propLabels, wahlCases, tasks, cats: ['Zugversuch', 'Härte', 'Bezeichnungen', 'Gefüge und Wärmebehandlung', 'Werkstoffwahl'] };
   root.WER_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { DATA: root.WER_DATA, TASKS: root.WER_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

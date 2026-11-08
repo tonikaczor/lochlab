@@ -462,7 +462,7 @@
   }
 
   /* ============================================================ Tabs */
-  const TABS = [['sym', 'Symbole'], ['anl', 'Schaltpläne'], ['aufg', 'Aufgaben'], ['rech', 'Rechnen'], ['trn', 'Trainer'], ['help', 'Hilfe']];
+  const TABS = [['sym', 'Symbole'], ['anl', 'Schaltpläne'], ['bsp', 'Beispiele'], ['aufg', 'Aufgaben'], ['rech', 'Rechnen'], ['trn', 'Trainer'], ['help', 'Hilfe']];
   function buildTabs() {
     const d = doneMap(), n = TASKS().filter(t => d[t.id]).length;
     $('#tabs').innerHTML = TABS.map(t => `<button class="tab${S.tab === t[0] ? ' on' : ''}" role="tab" aria-selected="${S.tab === t[0]}" data-t="${t[0]}">${t[1]}${t[0] === 'aufg' ? `<span class="bd">${n}/${TASKS().length}</span>` : ''}</button>`).join('');
@@ -471,9 +471,9 @@
   }
   function setTab(t) {
     S.tab = t; lsPut(K.tab, t); $('#mid').dataset.tab = t; buildTabs();
-    if (t === 'sym') renderSym(); else if (t === 'anl') renderAnl(); else if (t === 'aufg') renderTasks(); else if (t === 'rech') renderCalc(); else if (t === 'trn') renderTrn(); else renderHelp();
+    if (t === 'sym') renderSym(); else if (t === 'anl') renderAnl(); else if (t === 'bsp') renderBsp(); else if (t === 'aufg') renderTasks(); else if (t === 'rech') renderCalc(); else if (t === 'trn') renderTrn(); else renderHelp();
     buildPal();
-    const s = $('#pg' + { sym: 'Sym', anl: 'Anl', aufg: 'Tasks', rech: 'Calc', trn: 'Trn', help: 'Help' }[t]); if (s) s.scrollTop = 0;
+    const s = $('#pg' + { sym: 'Sym', anl: 'Anl', bsp: 'Bsp', aufg: 'Tasks', rech: 'Calc', trn: 'Trn', help: 'Help' }[t]); if (s) s.scrollTop = 0;
     $('#title').textContent = 'Pneumatik-Lab';
   }
 
@@ -697,12 +697,23 @@
     window.addEventListener('resize', () => { PL.sig = ''; });
     let tab = lsRaw(K.tab, 'sym'); if (!TABS.some(t => t[0] === tab)) tab = 'sym';
     S.tab = tab; buildTabs(); setTab(tab);
+  /* Aufruf ?bsp: gleich die Beispielauswahl zeigen */
+  try { const qb = new URLSearchParams(location.search); if (qb.has('bsp') && !qb.get('aufgabe')) { setTab('bsp'); } } catch (e) {}
     try {
       const q = new URLSearchParams(location.search), a = q.get('aufgabe');
       if (a && D.TASKS[a]) setTimeout(() => openTask(a), 200);
     } catch (e) {}
     requestAnimationFrame(frame);
   }
+  /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
+  const BSP = D.BEISPIELE || [], BSP_INTRO = 'Die fertigen Schaltungen aus „Schaltpläne“ als Auswahl. „Simulation öffnen“ lädt die Schaltung, dort kannst du Taster betätigen und die Luft verfolgen.', BSP_BTN = 'Simulation öffnen';
+  function renderBsp() {
+    const V = $('#bspView'); if (!V) return;
+    V.innerHTML = '<div class="card pl"><h4>Beispiele</h4><p class="hint2" style="margin:0">' + BSP_INTRO + '</p></div>' +
+      BSP.map((b, i) => '<div class="card pl"><h4>' + esc(b.titel) + '</h4><p style="margin:0 0 4px;line-height:1.45">' + esc(b.text) + '</p>' + '' + '<div class="btns"><button class="btn pri" data-bsp="' + i + '" style="min-height:44px">' + BSP_BTN + '</button></div></div>').join('');
+    V.onclick = e => { const x = e.target.closest('[data-bsp]'); if (x && BSP[+x.dataset.bsp]) loadBsp(BSP[+x.dataset.bsp]); };
+  }
+  function loadBsp(b) { S.task = null; S.res = null; S.sel = null; plLoad(b.cir); setTab('anl'); toast('Schaltung geladen: ' + b.titel); }
   root.PNE_UI = { S, PL, setTab, openTask, plLoad, plDraw, checkTask, symSVG, drawPart, genCalc, route, markDone };
   init();
 })(window);

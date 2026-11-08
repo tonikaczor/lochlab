@@ -39,7 +39,7 @@
   const TASKS = D.tasks, ISO = root.TOL_ISO;
 
   /* ============================================================ Zustand */
-  const TABS = [['cal', '📏', 'Messschieber'], ['mic', '🔩', 'Bügelmessschraube'], ['calc', '🧮', 'Toleranz-Rechner'], ['fit', '🎯', 'Passungen'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
+  const TABS = [['cal', '📏', 'Messschieber'], ['mic', '🔩', 'Bügelmessschraube'], ['calc', '🧮', 'Toleranz-Rechner'], ['fit', '🎯', 'Passungen'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'cal'),
     cal: Object.assign({ den: 20, mode: 'erkl', v: 23.35, zoom: 1, guide: false, shown: false, res: null, ans: '' }, lsGet('cal', {})),
@@ -539,7 +539,7 @@
     if (!TABS.some(x => x[0] === t)) t = 'cal'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     if (t === 'cal') renderInst('cal'); else if (t === 'mic') renderInst('mic'); else if (t === 'calc') renderCalc(); else if (t === 'fit') renderFit();
-    else if (t === 'tasks') renderTasks(); else if (t === 'rt') renderTrainer(); else if (t === 'help') renderHelp();
+    else if (t === 'bsp') renderBsp(); else if (t === 'tasks') renderTasks(); else if (t === 'rt') renderTrainer(); else if (t === 'help') renderHelp();
     const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'Toleranz-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'Toleranz-Lab: ' + T[2];
   }
   function setExam(on) { lsSet('exam', on ? '1' : '0'); updatePal(); $('#bExam').classList.toggle('on', on); $('#bExam').setAttribute('aria-pressed', on); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks') renderTasks(false); }
@@ -575,6 +575,23 @@
     });
   }
 
+  /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
+  const BSP = D.beispiele || [], BSP_INTRO = "Fertige Beispiele zum Anschauen und Weiterspielen. „Laden“ öffnet das Beispiel im passenden Reiter.", BSP_BTN = 'Laden';
+  function renderBsp() {
+    const V = $('#bspView'); if (!V) return;
+    V.innerHTML = '<div class="card pl"><h4>Beispiele</h4><p class="hint2" style="margin:0">' + BSP_INTRO + '</p></div>' +
+      BSP.map((b, i) => '<div class="card pl"><h4>' + esc(b.titel) + '</h4><p style="margin:0 0 4px;line-height:1.45">' + esc(b.text) + '</p>' + '' + '<div class="btns"><button class="btn pri" data-bsp="' + i + '" style="min-height:44px">' + BSP_BTN + '</button></div></div>').join('');
+    V.onclick = e => { const x = e.target.closest('[data-bsp]'); if (x && BSP[+x.dataset.bsp]) loadBsp(BSP[+x.dataset.bsp]); };
+  }
+  function loadBsp(b) {
+    const s = b.set;
+    if (b.tab === 'cal') { Object.assign(S.cal, { den: s.den, v: s.v, mode: 'erkl', zoom: 1, shown: false, res: null, ans: '' }); saveInst('cal'); }
+    else if (b.tab === 'mic') { Object.assign(S.mic, { base: s.base, v: s.v, mode: 'erkl', shown: false, res: null, ans: '' }); saveInst('mic'); }
+    else if (b.tab === 'calc') Object.assign(S.calc, s);
+    else if (b.tab === 'fit') Object.assign(S.fit, s);
+    setTab(b.tab); toast('Beispiel geladen: ' + b.titel);
+  }
+
   /* Schnittstelle für Karriere/Lernpfad */
   root.TOL_LAB = { id: 'tol', title: 'Toleranz-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.TOL_TASKS };
 
@@ -582,4 +599,6 @@
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufruf ?aufgabe=tol1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
   try { const qa = new URLSearchParams(location.search).get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); } } catch (e) {}
+  /* Aufruf ?bsp: gleich die Beispielauswahl zeigen */
+  try { const qb = new URLSearchParams(location.search); if (qb.has('bsp') && !qb.get('aufgabe')) { setTab('bsp'); } } catch (e) {}
 })(typeof window !== 'undefined' ? window : globalThis);

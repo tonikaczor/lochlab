@@ -256,7 +256,7 @@
   }
 
   /* ============================================================ Zustand */
-  const TABS = [['sim', '⚙️', 'Schaltpläne'], ['sym', '🔣', 'Symbole'], ['calc', '🧮', 'Rechner'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
+  const TABS = [['sim', '⚙️', 'Schaltpläne'], ['bsp', '💡', 'Beispiele'], ['sym', '🔣', 'Symbole'], ['calc', '🧮', 'Rechner'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
   const R0 = (() => { const m = /[?&]seed=([^&]+)/.exec(location.search); return C.rng(m ? decodeURIComponent(m[1]) : String(Math.random()) + Date.now()); })();
   const S = {
     tab: lsGet('tab', 'sim'), simId: lsGet('sim', 'C1'),
@@ -534,7 +534,7 @@
   function setTab(t) {
     if (!TABS.some(x => x[0] === t)) t = 'sim'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    if (t === 'sim') renderSim(); else if (t === 'sym') renderSym(); else if (t === 'calc') renderCalc(); else if (t === 'tasks') renderTasks(false); else if (t === 'rt') renderTrainer(); else if (t === 'help') renderHelp();
+    if (t === 'sim') renderSim(); else if (t === 'sym') renderSym(); else if (t === 'calc') renderCalc(); else if (t === 'bsp') renderBsp(); else if (t === 'tasks') renderTasks(false); else if (t === 'rt') renderTrainer(); else if (t === 'help') renderHelp();
     const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'Hydraulik-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'Hydraulik-Lab: ' + T[2];
   }
   function setExam(on) { lsSet('exam', on ? '1' : '0'); updatePal(); $('#bExam').classList.toggle('on', on); $('#bExam').setAttribute('aria-pressed', on); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks') renderTasks(false); }
@@ -570,10 +570,22 @@
     });
   }
 
+  /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
+  const BSP = D.beispiele || [], BSP_INTRO = 'Die fertigen Schaltungen aus „Schaltpläne“ als Auswahl. „Simulation öffnen“ lädt die Schaltung, dort kannst du Ventil und Drossel verstellen und den Ölstrom verfolgen.', BSP_BTN = 'Simulation öffnen';
+  function renderBsp() {
+    const V = $('#bspView'); if (!V) return;
+    V.innerHTML = '<div class="card pl"><h4>Beispiele</h4><p class="hint2" style="margin:0">' + BSP_INTRO + '</p></div>' +
+      BSP.map((b, i) => '<div class="card pl"><h4>' + esc(b.titel) + '</h4><p style="margin:0 0 4px;line-height:1.45">' + esc(b.text) + '</p>' + '' + '<div class="btns"><button class="btn pri" data-bsp="' + i + '" style="min-height:44px">' + BSP_BTN + '</button></div></div>').join('');
+    V.onclick = e => { const x = e.target.closest('[data-bsp]'); if (x && BSP[+x.dataset.bsp]) loadBsp(BSP[+x.dataset.bsp]); };
+  }
+  function loadBsp(b) { S.simId = b.cir; lsSet('sim', b.cir); setTab('sim'); toast('Schaltung geladen: ' + b.titel); }
+
   /* Schnittstelle für Karriere/Lernpfad */
   root.HYD_LAB = { id: 'hyd', title: 'Hydraulik-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.HYD_TASKS };
 
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufruf ?aufgabe=hyd1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
   try { const qa = new URLSearchParams(location.search).get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); } } catch (e) {}
+  /* Aufruf ?bsp: gleich die Beispielauswahl zeigen */
+  try { const qb = new URLSearchParams(location.search); if (qb.has('bsp') && !qb.get('aufgabe')) { setTab('bsp'); } } catch (e) {}
 })(typeof window !== 'undefined' ? window : globalThis);

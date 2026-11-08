@@ -577,7 +577,28 @@
     mu('ins40', 'Sicherheit', 3, 'Restenergien an der Hydraulikpresse', 'Welche Energien können an einer Hydraulikpresse auch nach dem Abschalten noch vorhanden sein? Wähle alle richtigen.', ['Druck im Hydrospeicher', 'Eine Last, die an einem Zylinder hängt oder oben abgestützt ist', 'Eingeschlossener Druck in Leitungen und Zylindern', 'Nach dem Ausschalten ist die Anlage immer energiefrei', 'Heißes Öl'], [0, 1, 2, 4], 'Auch nach dem Abschalten bleiben Druck, Lastgewicht und Wärme. Energiefreiheit muss hergestellt und festgestellt werden.', ['Eine Antwort behauptet das Gegenteil dessen, was die Regeln lehren.', 'Denke an Druck, Gewicht und Wärme.'])
   ];
 
-  root.INS_DATA = { GROUPS, scenarios, measX, begriffe, begriffeItems, strategien, strategieItems, schmier, schmierAufgaben, schmierItems, schmierplan, schaeden, ursachen, sicherheit, planPool, cats, tasks };
+  /* Beispiele (Reiter "Beispiele", Aufruf ?bsp). Der Beispielfall ist ein LÖSUNGSBEISPIEL zum Lernen und kein Aufgabenfall:
+     Er hat eine eigene Ursache, die in KEINEM Szenario der Fehlersuche vorkommt (Test prüft Fehlernamen und Sperrwörter aller Szenarien),
+     und enthält bewusst keine Zahlen. Sicherheitsschritte und Maßnahmen verweisen auf sicherheit.ablauf und sicherheit.rest. */
+  const beispiele = [
+    { id: 'ib1', typ: 'fall', titel: 'Durchgespielter Fall: Kühlmittelpumpe fördert nicht', text: 'Lösungsbeispiel zum Lernen, kein Aufgabenfall: Der Idealweg von der Störungsmeldung bis zur Maßnahme, Schritt für Schritt erklärt. Die Aufgaben im Prüfplatz bleiben für dich verdeckt.',
+      fall: {
+        intro: 'An einer Drehmaschine kommt kein Kühlschmierstoff mehr an der Schneide an, obwohl die Pumpe eingeschaltet ist.',
+        schritte: [
+          { phase: 'Vorbereitung', titel: 'Erst fragen und lesen', text: 'Bediener befragen und Wartungsbuch einsehen. Das kostet keine Zeit an der Maschine und ist ohne Gefahr. Ergebnis: Gestern wurde ein Schlauch am Kühlkreislauf erneuert, seitdem kommt nichts mehr an. Das Wartungsbuch bestätigt den Schlauchwechsel.' },
+          { phase: 'Prüfen laufend', titel: 'Ansehen, anhören, ablesen, ohne Eingriff', text: 'Füllstand im Behälter ablesen: in Ordnung. Pumpe anhören: gleichmäßiges Brummen, kaum Strömungsgeräusch. Stromaufnahme ablesen: niedriger als sonst, die Pumpe arbeitet gegen einen versperrten Weg und braucht wenig Leistung. Motorschutz: hat nicht angesprochen. Ein Befund ist erst eine Spur, noch kein Beweis.' },
+          { phase: 'Sicherheit', titel: 'Vor jedem Eingriff sichern', text: 'Bevor jemand ins Innere greift oder Teile öffnet, wird die Anlage gesichert, in dieser Reihenfolge: ' + sicherheit.ablauf.join(', ') + '. Beim Nachlauf des Lüfterrads gilt: ' + sicherheit.rest.find(r => r.id === 'kin').mass + '.' },
+          { phase: 'Prüfen gesichert', titel: 'Eingriff nur so weit wie nötig', text: 'Von der Pumpe zur Düse verfolgen: Saugseite sauber, Schlauch bis zum Absperrhahn frei, Pumpe lässt sich leicht von Hand drehen. Am Absperrhahn in der Druckleitung steht der Hebel quer zur Leitung: Der Hahn ist geschlossen.' },
+          { phase: 'Befund', titel: 'Befund ordnen', text: 'Pumpe und Motor sind in Ordnung, Behälter ist gefüllt, aber der Weg zur Düse ist versperrt. Das passt zu allen Beobachtungen: wenig Strom, kaum Strömungsgeräusch, kein Strahl.' },
+          { phase: 'Ursache', titel: 'Ursache benennen', text: 'Der Absperrhahn in der Druckleitung wurde nach dem Schlauchwechsel nicht wieder geöffnet. Die Pumpe lief gegen die geschlossene Leitung. Ein Bauteilschaden liegt nicht vor.' },
+          { phase: 'Maßnahme', titel: 'Beheben, freigeben, vorbeugen', text: 'Hahn öffnen, Sicherung nur durch die Person aufheben, die sie angebracht hat, Maschine wieder einschalten und den Strahl an der Düse prüfen. Danach Eintrag ins Wartungsbuch. Vorbeugen: Nach jedem Eingriff die Stellung der Absperrorgane in einer Checkliste abhaken und die Stellung am Hahn kennzeichnen.' }
+        ]
+      } },
+    { id: 'ib2', typ: 'plan', titel: 'Beispiel-Schmierplan einer Werkzeugmaschine', text: 'Der Schmierplan aus dem Reiter „Schmierung“ als Tabelle: Schmierstelle, Schmierstoff, Intervall und Menge. Zum Lernen, wie ein vollständiger Plan aufgebaut ist.' },
+    { id: 'ib3', typ: 'schaden', schaden: 'lager-schmutz', titel: 'Beispiel-Schadensbild: Verschleiß durch Fremdkörper', text: 'Ein Wälzlager mit mattem, zerkratztem Laufbahnbild. Das Beispiel zeigt Schadensbild, Ursache und Maßnahme zusammen.' },
+    { id: 'ib4', typ: 'kenn', titel: 'Kennzahlen-Beispielrechnung: MTBF, MTTR, Verfügbarkeit, Ausfallkosten', text: 'Eine Anlage läuft 1200 h und fällt 6 Mal aus; die Reparaturen dauern zusammen 14 h bei 4 Reparaturen. „Laden“ trägt die Werte in den Kennzahlen-Rechner ein.', kc: { b: '1200', n: '6', r: '14', rn: '4', m1: '200', m2: '8', st: '6', kh: '450', pe: '2', rh: '5', lo: '48', te: '320' } }
+  ];
+  root.INS_DATA = { beispiele, GROUPS, scenarios, measX, begriffe, begriffeItems, strategien, strategieItems, schmier, schmierAufgaben, schmierItems, schmierplan, schaeden, ursachen, sicherheit, planPool, cats, tasks };
   root.INS_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { DATA: root.INS_DATA, TASKS: root.INS_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

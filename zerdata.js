@@ -348,8 +348,18 @@
   }
   var TASKS = ORDER.filter(function (id) { return !DEFS[id].extra; }).map(function (id) { var d = DEFS[id]; return { id: id, lab: 'zer', cat: CATS[d.cat], title: d.title, level: d.level }; });
 
+  /* Beispiele (Reiter "Beispiele", Aufruf ?bsp): Parameter-Voreinstellungen für Drehen, Fräsen, Bohren.
+     vc liegt jeweils im Richtwert-Fenster von zercore.js (VC_TAB). Vorschub, Zustellung und Zahnvorschub sind übliche Startwerte, Hersteller beachten. PRUEFEN */
+  var BEISPIELE = [
+    { id: 'zb1', sim: 'dreh', titel: 'Schruppen: Stahl S235, Hartmetall, Ø60', text: 'Hartmetall im Stahl-Fenster (120 bis 220 m/min), hier vc ≈ 151 m/min bei n = 800 min⁻¹. Schruppen: große Zustellung (3 mm) und kräftiger Vorschub.', set: { d: 60, l: 100, n: 800, f: 0.4, ap: 3, i: 3, la: 3, lu: 2, mat: 's235', cut: 'hm', fc: true } }, /* PRUEFEN: f und ap */
+    { id: 'zb2', sim: 'dreh', titel: 'Schlichten: Aluminium, Hartmetall, Ø60', text: 'Aluminium verträgt hohe Schnittgeschwindigkeit (Fenster 250 bis 500 m/min): bei n = 2120 min⁻¹ ist vc ≈ 400 m/min. Schlichten: kleine Zustellung (0,3 mm) und feiner Vorschub (0,1 mm/U).', set: { d: 60, l: 100, n: 2120, f: 0.1, ap: 0.3, i: 1, la: 3, lu: 2, mat: 'alu', cut: 'hm', fc: true } }, /* PRUEFEN: f und ap */
+    { id: 'zb3', sim: 'bohr', titel: 'Bohren: Ø10 mm HSS in Stahl', text: 'HSS-Bohrer im Stahl-Fenster (20 bis 30 m/min): vc = 25 m/min ergibt n ≈ 796 min⁻¹. Durchgangsbohrung 20 mm tief mit f = 0,15 mm/U.', set: { d: 10, vc: 25, f: 0.15, t: 20, durch: true, lu: 1, sigma: 118, gr: 'stahl', cut: 'hss' } },
+    { id: 'zb4', sim: 'fraes', titel: 'Planfräsen: Stahl, Messerkopf Ø63, Hartmetall', text: 'Fräser Ø63 mm mit 5 Schneiden, vc = 150 m/min (Fenster 100 bis 200). Mit fz = 0,1 mm folgt der Vorschub vf = fz · z · n über die Drehzahl.', set: { d: 63, z: 5, vc: 150, fz: 0.1, l: 150, la: 5, lu: 5, gr: 'stahl', cut: 'hm' } }, /* PRUEFEN: fz */
+    { id: 'zb5', sim: 'bohr', titel: 'Bohren: Ø8 mm HSS in Aluminium', text: 'Aluminium erlaubt mit HSS deutlich mehr als Stahl (Fenster 60 bis 100 m/min): vc = 80 m/min. Der kleinere Durchmesser braucht eine höhere Drehzahl.', set: { d: 8, vc: 80, f: 0.15, t: 16, durch: true, lu: 1, sigma: 118, gr: 'alu', cut: 'hss' } } /* PRUEFEN: f */
+  ];
+  root.ZER_BEISPIELE = BEISPIELE;
   root.ZER_DEFS = DEFS; root.ZER_ORDER = ORDER; root.ZER_CATS = CATS; root.ZER_CAT_KEYS = CAT_KEYS;
   root.ZER_BUILD = build;
   root.ZER_TASKS = TASKS;
-  if (typeof module !== 'undefined' && module.exports) module.exports = { ZER_TASKS: TASKS, ZER_DEFS: DEFS, ZER_ORDER: ORDER, ZER_CATS: CATS, ZER_CAT_KEYS: CAT_KEYS, ZER_BUILD: build };
+  if (typeof module !== 'undefined' && module.exports) module.exports = { ZER_BEISPIELE: BEISPIELE, ZER_TASKS: TASKS, ZER_DEFS: DEFS, ZER_ORDER: ORDER, ZER_CATS: CATS, ZER_CAT_KEYS: CAT_KEYS, ZER_BUILD: build };
 })(typeof window !== 'undefined' ? window : globalThis);

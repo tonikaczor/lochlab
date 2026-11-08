@@ -2,6 +2,16 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v36.157', items: [
+      ['Neue Labs für alle Berufe', 'Fachinformatiker: Netzwerk-Lab. Industriekaufmann: Kalkulations-Lab. Lagerlogistik: Lager-Lab. Technischer Produktdesigner: Zeichnungs-Lab. Für alle Berufe: Rechen-Lab. Du findest sie auf der Startseite unter deinem Beruf.', 'Startseite ▸ Beruf wählen'],
+      ['Rechen-Lab', 'Einheiten, Dreisatz, Prozent, Formeln umstellen, Geometrie und Winkelfunktionen mit vollständigem Lösungsweg.', 'Startseite ▸ Rechen-Lab'],
+      ['Mehr Labs bei deinem Beruf', 'Industriemechaniker finden jetzt auch SPS-, Sensorik-, Antriebs-, Regelungs-, Thermik-, Mess- und Sicherheits-Lab, Fachinformatiker Digital-, Arduino-, Pi-, App-Werkstatt- und Datenblatt-Lab.', 'Startseite ▸ Beruf wählen'],
+      ['Netzwerk-Lab', 'IP-Adressen binär lesen, Subnetze berechnen, Netze mit VLSM aufteilen, Protokolle den Schichten zuordnen.', 'Startseite ▸ Fachinformatiker ▸ Netzwerk-Lab'],
+      ['Kalkulations-Lab', 'Bezugs-, Selbstkosten- und Angebotskalkulation, Rückwärtsrechnung, Deckungsbeitrag und Break-even.', 'Startseite ▸ Industriekaufmann ▸ Kalkulations-Lab'],
+      ['Lager-Lab', 'Umschlagshäufigkeit, Lagerdauer, Meldebestand, optimale Bestellmenge und ABC-Analyse.', 'Startseite ▸ Lagerlogistik ▸ Lager-Lab'],
+      ['Zeichnungs-Lab', 'Körper in drei Ansichten lesen, fehlende Ansichten ergänzen, Linienarten, Bemaßung, Maßstab und Schnitte.', 'Startseite ▸ Techn. Produktdesigner ▸ Zeichnungs-Lab'],
+      ['Beispiele in allen neuen Labs', 'Jedes neue Lab hat jetzt fertige Beispiele. Der Knopf „Beispiel“ auf der Startseite öffnet gleich die Auswahl.', 'Startseite ▸ Beispiel'],
+    ] },
     { v: 'v30.156', items: [
       ['Hydraulik-Lab', 'Hydraulik-Symbole kennen, Pumpe, Ventile und Zylinder verschlauchen, die Anlage laufen lassen und Kraft, Volumenstrom, Geschwindigkeit und Leistung berechnen.', 'Startseite ▸ Industriemechaniker ▸ Hydraulik-Lab'],
       ['CNC-Lab', 'G-Code für Drehen und Fräsen schreiben, die Werkzeugbahn live ansehen, Koordinaten übersetzen und Fehler im Programm finden.', 'Startseite ▸ Industriemechaniker ▸ CNC-Lab'],

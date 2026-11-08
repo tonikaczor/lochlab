@@ -15,10 +15,10 @@
   ];
   // Vorschau: geplante Labs je Beruf (Stand: Ideensammlung, Fachinhalt wird mit den Ausbildern abgestimmt)
   const PLAN = {
-    tpd: ['Technisches Zeichnen: Ansichten und Schnitte', 'Normteile und Stücklisten', 'Form- und Lagetoleranzen', 'Maschinenelemente', 'Fertigungsgerecht konstruieren', 'Räumliches Vorstellen'],
-    fll: ['Ladungssicherung', 'Lagerkennzahlen und Disposition', 'Lagerstrategien und Kommissionieren', 'Gefahrgut und Kennzeichnung', 'Wareneingang und Inventur', 'Stapler und Tragfähigkeit'],
-    ik: ['Buchführung (Buchungssätze, Bilanz, GuV)', 'Kalkulation und Kostenrechnung', 'Beschaffung und Angebotsvergleich', 'Recht: Kaufvertrag und Fristen', 'Personal und Lohnabrechnung', 'ERP-Simulation Auftragsabwicklung'],
-    fi: ['Netzwerk und Subnetting', 'Datenbank und SQL', 'Algorithmen (Struktogramm, PAP)', 'IT-Sicherheit', 'Linux-Terminal', 'Hardware', 'Projekt: Lasten- und Pflichtenheft']
+    tpd: ['Normteile und Stücklisten', 'Form- und Lagetoleranzen', 'Maschinenelemente', 'Fertigungsgerecht konstruieren', 'Räumliches Vorstellen'],
+    fll: ['Ladungssicherung', 'Lagerstrategien und Kommissionieren', 'Gefahrgut und Kennzeichnung', 'Wareneingang und Inventur', 'Stapler und Tragfähigkeit'],
+    ik: ['Buchführung (Buchungssätze, Bilanz, GuV)', 'Recht: Kaufvertrag und Fristen', 'Personal und Lohnabrechnung', 'ERP-Simulation Auftragsabwicklung'],
+    fi: ['Datenbank und SQL', 'Algorithmen (Struktogramm, PAP)', 'IT-Sicherheit', 'Linux-Terminal', 'Hardware', 'Projekt: Lasten- und Pflichtenheft']
   };
   const DEFAULT = 'egs';
   const keys = () => BERUFE.map(b => b.k);

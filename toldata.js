@@ -199,8 +199,19 @@
       tips: ['Rechne die Toleranz in mm um: 13 µm = 0,013 mm.', 'Ein Zehntel davon ist rund 0,0013 mm. Welches Messmittel liest so fein ab?'] }
   ];
 
+  /* Beispiele (Reiter "Beispiele", Aufruf ?bsp): fertige Einstellungen, die "Laden" im passenden Reiter übernimmt.
+     Zahlen nur aus den Rechnungen des Labs (Hilfe-Beispiel Nonius, ISO-Tabelle, Toleranz-Rechner). */
+  const beispiele = [
+    { id: 'tb1', tab: 'cal', titel: 'Messschieber 1/20: 23,35 mm', text: 'Hauptskala: 23 mm. Der 7. Strich des 1/20-Nonius deckt sich mit einem Strich der Hauptskala: 7 · 0,05 = 0,35 mm. Messwert 23,35 mm.', set: { den: 20, v: 23.35 } },
+    { id: 'tb2', tab: 'mic', titel: 'Bügelmessschraube: 7,38 mm', text: 'Hülse: 7 ganze Millimeter. Auf der Trommel deckt sich der Strich 38 mit der Hülsenlinie: 0,38 mm. Messwert 7,38 mm.', set: { base: 0, v: 7.38 } },
+    { id: 'tb3', tab: 'fit', titel: 'Passung Gleitlager H7/f7, Ø25', text: 'Bohrung H7, Welle f7 bei Nennmaß 25 mm: Spielpassung mit Mindestspiel 20 µm und Höchstspiel 62 µm. Im Toleranzfeld-Bild liegt die Welle immer unter der Bohrung.', set: { hole: 'H7', shaft: 'f7', N: '25' } },
+    { id: 'tb4', tab: 'calc', titel: 'Toleranz-Rechner: Welle Ø30 −0,010/−0,030, gemessen 29,980 (Gut)', text: 'Höchstmaß 29,990 mm, Mindestmaß 29,970 mm, Toleranz 0,020 mm. Das gemessene Maß 29,980 mm liegt dazwischen: Die Welle ist gut.', set: { part: 'welle', N: '30', hi: '-0,010', lo: '-0,030', unit: 'mm', m: '29,980' } },
+    { id: 'tb5', tab: 'calc', titel: 'Toleranz-Rechner: Welle Ø30 −0,010/−0,030, gemessen 29,960 (Ausschuss)', text: 'Gleiche Welle, gemessen 29,960 mm: 10 µm unter dem Mindestmaß. Die Welle ist zu dünn, es fehlt Material: Ausschuss.', set: { part: 'welle', N: '30', hi: '-0,010', lo: '-0,030', unit: 'mm', m: '29,960' } },
+    { id: 'tb6', tab: 'calc', titel: 'Toleranz-Rechner: Welle Ø30, gemessen 29,992 (Nacharbeit)', text: 'Gleiche Welle, gemessen 29,992 mm: 2 µm über dem Höchstmaß. Die Welle ist zu dick, Material kann noch abgetragen werden: Nacharbeit.', set: { part: 'welle', N: '30', hi: '-0,010', lo: '-0,030', unit: 'mm', m: '29,992' } }
+  ];
+
   root.TOL_ISO = ISO;
-  root.TOL_DATA = { tasks, uses, useOptions, devices, cats: ['Ablesen', 'Toleranzen', 'Passungen', 'Messmittel wählen'] };
+  root.TOL_DATA = { beispiele, tasks, uses, useOptions, devices, cats: ['Ablesen', 'Toleranzen', 'Passungen', 'Messmittel wählen'] };
   root.TOL_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { ISO, DATA: root.TOL_DATA, TASKS: root.TOL_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

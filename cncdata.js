@@ -348,7 +348,9 @@
     return { ok: lines.every(l => l.ok), lines, sol: it.fields.map((f, i) => f.label.split(' ')[0] + ' ' + C.fmtNum(it.values[i]) + ' ' + f.unit).join(', ') };
   }
 
-  root.CNC_DATA = { examples, tasks, cats, check, gen, checkItem, figCoord, posAfter };
+  /* Beispiele (Reiter "Beispiele", Aufruf ?bsp): die Beispielprogramme aus "Beispielprogramm laden" mit ihrer Erklärung. */
+  const beispiele = examples.map(e => ({ id: e.id, ex: e.id, machine: e.machine, titel: e.title, text: e.note }));
+  root.CNC_DATA = { beispiele, examples, tasks, cats, check, gen, checkItem, figCoord, posAfter };
   root.CNC_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { DATA: root.CNC_DATA, TASKS: root.CNC_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

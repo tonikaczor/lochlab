@@ -397,7 +397,10 @@
     return k === 'sym' ? trainerSymbol(R) : k === 'port' ? trainerPort(R) : trainerCalc(R);
   }
 
-  root.HYD_DATA = { symbols, circuits, circuitList, tasks, cats, trainerQuestion, simFlow };
+  /* Beispiele (Reiter "Beispiele", Aufruf ?bsp): alle fertigen Schaltungen aus "Schaltpläne" mit den ersten zwei Sätzen ihrer Erklärung. */
+  const sentences = (s, n) => (String(s).match(/[^.!?]+[.!?]+(?:\s|$)/g) || [String(s)]).slice(0, n).join('').trim();
+  const beispiele = circuitList.map(id => ({ id, cir: id, titel: circuits[id].title, text: sentences(circuits[id].info, 2) }));
+  root.HYD_DATA = { beispiele, symbols, circuits, circuitList, tasks, cats, trainerQuestion, simFlow };
   root.HYD_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { DATA: root.HYD_DATA, TASKS: root.HYD_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

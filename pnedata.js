@@ -303,7 +303,10 @@
   T.forEach((t, i) => { t.id = 'pne' + (i + 1); if (t.cir) t.cirObj = CIRCUITS[t.cir]; });
   const TASKS = {}; T.forEach(t => { TASKS[t.id] = t; });
 
-  const DATA = { geom, partName, partDesc, SYMS, CIRCUITS, TASKS, LIST: T, CATS, NAMES };
+  /* Beispiele (Reiter "Beispiele", Aufruf ?bsp): alle fertigen Schaltungen aus "Schaltpläne" mit den ersten zwei Sätzen ihrer Beschreibung. */
+  const sentences = (s, n) => (String(s).match(/[^.!?]+[.!?]+(?:\s|$)/g) || [String(s)]).slice(0, n).join('').trim();
+  const BEISPIELE = Object.keys(CIRCUITS).map(id => ({ id, cir: id, titel: CIRCUITS[id].title, text: sentences(CIRCUITS[id].desc, 2) }));
+  const DATA = { geom, partName, partDesc, SYMS, CIRCUITS, TASKS, LIST: T, CATS, NAMES, BEISPIELE };
   root.PNE_DATA = DATA;
   root.PNE_TASKS = T.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = DATA;

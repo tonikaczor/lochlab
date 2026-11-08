@@ -36,7 +36,7 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['prog', '⌨', 'Programm'], ['tr', '📍', 'Trainer'], ['tasks', '📝', 'Aufgaben'], ['help', '📘', 'Hilfe']];
+  const TABS = [['prog', '⌨', 'Programm'], ['bsp', '💡', 'Beispiele'], ['tr', '📍', 'Trainer'], ['tasks', '📝', 'Aufgaben'], ['help', '📘', 'Hilfe']];
   const DEF = { turn: { d: 40, l: 52 }, mill: { w: 80, h: 60, d: 20 } };
   const S = {
     tab: lsGet('tab', 'prog'), mach: lsGet('mach', 'turn'), src: lsGet('src', null), stk: Object.assign({ turn: Object.assign({}, DEF.turn), mill: Object.assign({}, DEF.mill) }, lsGet('stk', {})), speed: lsGet('speed', 3),
@@ -544,7 +544,7 @@
   function setTab(t) {
     if (!TABS.some(x => x[0] === t)) t = 'prog'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    if (t === 'tr') renderTrainer(); else if (t === 'tasks') renderTasks(); else if (t === 'help') renderHelp();
+    if (t === 'bsp') renderBsp(); else if (t === 'tr') renderTrainer(); else if (t === 'tasks') renderTasks(); else if (t === 'help') renderHelp();
     const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'CNC-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'CNC-Lab: ' + T[2];
   }
   function setExam(on) { lsSet('exam', on ? '1' : '0'); palSig = ''; updatePal(); $('#bExam').classList.toggle('on', on); $('#bExam').setAttribute('aria-pressed', on); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks') renderTasks(false); }
@@ -580,6 +580,16 @@
     });
   }
 
+  /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
+  const BSP = D.beispiele || [], BSP_INTRO = 'Die Beispielprogramme mit Erklärung. „Programm laden“ öffnet das Programm im Reiter „Programm“, dort kannst du es starten und Satz für Satz verfolgen.', BSP_BTN = 'Programm laden';
+  function renderBsp() {
+    const V = $('#bspView'); if (!V) return;
+    V.innerHTML = '<div class="card pl"><h4>Beispiele</h4><p class="hint2" style="margin:0">' + BSP_INTRO + '</p></div>' +
+      BSP.map((b, i) => '<div class="card pl"><h4>' + esc(b.titel) + '</h4><p style="margin:0 0 4px;line-height:1.45">' + esc(b.text) + '</p>' + '<p class="hint2" style="margin:0 0 4px">' + (b.machine === 'turn' ? 'Drehmaschine' : 'Fräsmaschine') + '</p>' + '<div class="btns"><button class="btn pri" data-bsp="' + i + '" style="min-height:44px">' + BSP_BTN + '</button></div></div>').join('');
+    V.onclick = e => { const x = e.target.closest('[data-bsp]'); if (x && BSP[+x.dataset.bsp]) loadBsp(BSP[+x.dataset.bsp]); };
+  }
+  function loadBsp(b) { setTab('prog'); loadExample(b.ex); }
+
   /* Schnittstelle für Karriere/Lernpfad */
   root.CNC_LAB = { id: 'cnc', title: 'CNC-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.CNC_TASKS };
 
@@ -587,4 +597,6 @@
   buildTabs(); updatePal(); renderProg(); setTab(S.tab);
   /* Aufruf ?aufgabe=cnc1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
   try { const qa = new URLSearchParams(location.search).get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); } } catch (e) {}
+  /* Aufruf ?bsp: gleich die Beispielauswahl zeigen */
+  try { const qb = new URLSearchParams(location.search); if (qb.has('bsp') && !qb.get('aufgabe')) { if (BSP.length) { setTab('prog'); loadExample(BSP[0].ex); } setTab('bsp'); } } catch (e) {}
 })(typeof window !== 'undefined' ? window : globalThis);
