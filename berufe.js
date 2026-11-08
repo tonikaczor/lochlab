@@ -15,7 +15,6 @@
   ];
   // Vorschau: geplante Labs je Beruf (Stand: Ideensammlung, Fachinhalt wird mit den Ausbildern abgestimmt)
   const PLAN = {
-    im: ['Hydraulik', 'CNC-Programmierung (G-Code)', 'Werkstoffe und Prüfverfahren', 'Instandhaltung und Fehlersuche'],
     tpd: ['Technisches Zeichnen: Ansichten und Schnitte', 'Normteile und Stücklisten', 'Form- und Lagetoleranzen', 'Maschinenelemente', 'Fertigungsgerecht konstruieren', 'Räumliches Vorstellen'],
     fll: ['Ladungssicherung', 'Lagerkennzahlen und Disposition', 'Lagerstrategien und Kommissionieren', 'Gefahrgut und Kennzeichnung', 'Wareneingang und Inventur', 'Stapler und Tragfähigkeit'],
     ik: ['Buchführung (Buchungssätze, Bilanz, GuV)', 'Kalkulation und Kostenrechnung', 'Beschaffung und Angebotsvergleich', 'Recht: Kaufvertrag und Fristen', 'Personal und Lohnabrechnung', 'ERP-Simulation Auftragsabwicklung'],

@@ -2,6 +2,12 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v30.156', items: [
+      ['Hydraulik-Lab', 'Hydraulik-Symbole kennen, Pumpe, Ventile und Zylinder verschlauchen, die Anlage laufen lassen und Kraft, Volumenstrom, Geschwindigkeit und Leistung berechnen.', 'Startseite ▸ Industriemechaniker ▸ Hydraulik-Lab'],
+      ['CNC-Lab', 'G-Code für Drehen und Fräsen schreiben, die Werkzeugbahn live ansehen, Koordinaten übersetzen und Fehler im Programm finden.', 'Startseite ▸ Industriemechaniker ▸ CNC-Lab'],
+      ['Werkstoff-Lab', 'Zugversuch mit Diagramm, Härteprüfung, Werkstoffbezeichnungen entschlüsseln, Eisen-Kohlenstoff-Diagramm, Wärmebehandlung und Werkstoffwahl.', 'Startseite ▸ Industriemechaniker ▸ Werkstoff-Lab'],
+      ['Instandhaltungs-Lab', 'Fehler an Maschinen eingrenzen, ohne die Ursache vorgesagt zu bekommen: Prüfschritte wählen, Sicherheit beachten, Stillstandskosten im Blick behalten. Dazu Schmierplan, Schadensbilder, Kennzahlen und Wartungsplan.', 'Startseite ▸ Industriemechaniker ▸ Instandhaltungs-Lab'],
+    ] },
     { v: 'v26.155', items: [
       ['Berufe-Reiter', 'Oben auf der Startseite wählst du deinen Beruf: Elektroniker, Industriemechaniker, Techn. Produktdesigner, Lagerlogistik, Industriekaufmann oder Fachinformatiker. Die Labs und Hinweise passen sich an. Bei den neuen Berufen siehst du, welche Labs geplant sind.', 'Startseite ▸ oben'],
       ['Toleranz-Lab', 'Messschieber und Bügelmessschraube ablesen, Höchst- und Mindestmaß berechnen, ISO-Passungen im Toleranzfeld verstehen und das passende Messmittel wählen. 33 Aufgaben mit Tipps und ein Trainer.', 'Startseite ▸ Industriemechaniker ▸ Toleranz-Lab'],

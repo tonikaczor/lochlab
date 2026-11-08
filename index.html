@@ -117,6 +117,10 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-tollab" viewBox="0 0 24 24"><path d="M3 9h18v6H3z"/><path d="M7 9v3M11 9v3M15 9v3M19 9v3"/><path d="M5 18h6"/></symbol>
   <symbol id="i-zerlab" viewBox="0 0 24 24"><circle cx="8" cy="12" r="4.5"/><path d="M12.5 12H21M16 9l5 3-5 3"/></symbol>
   <symbol id="i-pnelab" viewBox="0 0 24 24"><rect x="3" y="8" width="13" height="8" rx="1"/><path d="M16 12h5M3 12H1M9 8V4M9 16v4"/></symbol>
+  <symbol id="i-hydlab" viewBox="0 0 24 24"><rect x="3" y="8" width="13" height="8" rx="1"/><path d="M16 12h5M3 12H1M9 8V4M9 16v4"/><circle cx="19" cy="5" r="2"/></symbol>
+  <symbol id="i-cnclab" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M6 8h6M6 11h9M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-werlab" viewBox="0 0 24 24"><path d="M4 20V5M4 20h16"/><path d="M4 20l5-9 3-2h5l3 3"/><circle cx="20" cy="12" r="1.2"/></symbol>
+  <symbol id="i-inslab" viewBox="0 0 24 24"><circle cx="9" cy="10" r="5"/><circle cx="9" cy="10" r="1.6"/><path d="M13 14l7 7M16 17l3-3"/></symbol>
   <symbol id="i-messlab" viewBox="0 0 24 24"><path d="M4 17a8 8 0 0 1 16 0"/><path d="M6.5 11.5l-1-1M12 9V7.6M17.5 11.5l1-1M8.8 9.6l-.6-1.2M15.2 9.6l.6-1.2"/><path d="M12 17l4.2-6.5"/><circle cx="12" cy="17" r="1.6"/><path d="M4 20h16"/></symbol>
   <symbol id="i-senlab" viewBox="0 0 24 24"><path d="M8 4a2 2 0 0 1 4 0v10a3.5 3.5 0 1 1-4 0z"/><path d="M10 9v7"/><circle cx="10" cy="16.5" r="1.3"/><path d="M15 9c1.5-2.5 3-2.5 4.5 0s3 2.5 4.5 0" transform="translate(-2.5 0)"/><path d="M15 14c1.5-2.5 3-2.5 4.5 0" transform="translate(-1 0)"/></symbol>
   <symbol id="i-emvlab" viewBox="0 0 24 24"><path d="M2 12q2.5-4 5 0t5 0"/><path d="M2 7q2.5-4 5 0t5 0"/><path d="M2 17q2.5-4 5 0t5 0"/><path d="M15.5 3v18M19.5 3v18M15.5 8l4-4M15.5 13l4-4M15.5 18l4-4"/></symbol>
@@ -420,6 +424,46 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <p>Pneumatik-Symbole kennen, Zylinder und Ventile verschlauchen, die Anlage laufen lassen und Kolbenkraft und Luftverbrauch berechnen.</p>
       <div class="steps"><span>Verschlauchen</span><span>Simulieren</span><span>Rechnen</span></div>
       <div class="btns"><a class="btn pri" href="pnelab.html">Öffnen</a><a class="btn" href="pnelab.html?aufgabe=pne1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="hydlab" data-group="auto" data-beruf="im">
+      <span class="tag">HYDRAULIK-LAB</span>
+      <h3>Hydraulik-Anlagen verschlauchen und berechnen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><circle cx="52" cy="82" r="16" fill="none" stroke="#e8eaed" stroke-width="3"/><path d="M46 76l12 6-12 6z" fill="#ff7a4d"/><rect x="104" y="30" width="96" height="24" rx="2" fill="none" stroke="#e8eaed" stroke-width="3"/><path d="M130 42h60" stroke="#9aa6b2" stroke-width="4"/><rect x="124" y="34" width="6" height="16" fill="#ff7a4d"/><g fill="none" stroke="#ff7a4d" stroke-width="3"><path d="M68 82h36v-28"/><path d="M52 66V42h44"/></g><path d="M84 96h72" stroke="#5fb0ff" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+      <p>Hydraulik-Symbole kennen, Pumpe, Ventile und Zylinder verschlauchen, die Anlage laufen lassen und Kraft, Volumenstrom, Geschwindigkeit und Leistung berechnen.</p>
+      <div class="steps"><span>Verschlauchen</span><span>Simulieren</span><span>Rechnen</span></div>
+      <div class="btns"><a class="btn pri" href="hydlab.html">Öffnen</a><a class="btn" href="hydlab.html?aufgabe=hyd1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="cnclab" data-group="bau" data-beruf="im">
+      <span class="tag">CNC-LAB</span>
+      <h3>G-Code lesen, schreiben und simulieren</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="26" y="24" width="84" height="72" rx="4" fill="#0e141b" stroke="#38424d" stroke-width="2"/><g stroke="#5fb0ff" stroke-width="2" stroke-linecap="round"><path d="M34 40h40"/><path d="M34 52h56"/><path d="M34 64h30"/><path d="M34 76h48"/></g><path d="M130 86h30l16-36h24" fill="none" stroke="#14e050" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M130 86h-8M200 50l6-8" fill="none" stroke="#ffd166" stroke-width="3" stroke-dasharray="5 4" stroke-linecap="round"/><circle cx="200" cy="50" r="4" fill="#ffe14d"/></svg>
+      </div>
+      <p>Programme für Drehen und Fräsen schreiben und die Werkzeugbahn live ansehen. Koordinaten übersetzen, Programme ergänzen und Fehler im Programm finden.</p>
+      <div class="steps"><span>Programmieren</span><span>Simulieren</span><span>Fehler finden</span></div>
+      <div class="btns"><a class="btn pri" href="cnclab.html">Öffnen</a><a class="btn" href="cnclab.html?aufgabe=cnc1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="werlab" data-group="grund" data-beruf="im">
+      <span class="tag">WERKSTOFF-LAB</span>
+      <h3>Werkstoffe prüfen, kennen und auswählen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><path d="M30 92V28M30 92h180" stroke="#9aa6b2" stroke-width="2" fill="none"/><path d="M30 92L58 52 72 46H100L140 40 168 42 180 52" fill="none" stroke="#ffd166" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="180" cy="52" r="4" fill="#ff7a7a"/><path d="M58 52v40" stroke="#5fb0ff" stroke-width="2" stroke-dasharray="4 3"/></svg>
+      </div>
+      <p>Zugversuch mit Spannungs-Dehnungs-Diagramm, Härteprüfung, Werkstoffbezeichnungen entschlüsseln, Eisen-Kohlenstoff-Diagramm, Wärmebehandlung und Werkstoffwahl.</p>
+      <div class="steps"><span>Prüfen</span><span>Ablesen</span><span>Auswählen</span></div>
+      <div class="btns"><a class="btn pri" href="werlab.html">Öffnen</a><a class="btn" href="werlab.html?aufgabe=wer1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="inslab" data-group="mess" data-beruf="im">
+      <span class="tag">INSTANDHALTUNGS-LAB</span>
+      <h3>Wartung, Inspektion und Fehlersuche an Maschinen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><circle cx="92" cy="60" r="26" fill="none" stroke="#9aa6b2" stroke-width="6" stroke-dasharray="10 5"/><circle cx="92" cy="60" r="9" fill="#2c343e" stroke="#e8eaed" stroke-width="3"/><path d="M130 82l36-36 12 12-36 36z" fill="#ffd166" stroke="#2a3340" stroke-width="2"/><circle cx="178" cy="40" r="10" fill="none" stroke="#ff7a7a" stroke-width="4"/></svg>
+      </div>
+      <p>Fehler an Maschinen eingrenzen, ohne die Ursache vorgesagt zu bekommen: Prüfschritte wählen, Sicherheit beachten und Stillstandskosten im Blick behalten. Dazu Schmierplan, Schadensbilder, Kennzahlen und Wartungsplan.</p>
+      <div class="steps"><span>Eingrenzen</span><span>Beheben</span><span>Vorbeugen</span></div>
+      <div class="btns"><a class="btn pri" href="inslab.html">Öffnen</a><a class="btn" href="inslab.html?aufgabe=ins1">Erste Aufgabe</a></div>
     </section>
     <section class="card" data-lab="pruefungslab" data-group="pruef">
       <span class="tag">PRÜFUNGS-LAB</span>
