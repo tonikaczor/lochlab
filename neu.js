@@ -9,6 +9,7 @@
       ['Ladungssicherungs-Lab', 'Zurrkräfte und Reibung, Paletten auf der Ladefläche, Kippgrenzen und Gefahrgut-Kennzeichen.', 'Startseite ▸ Lagerlogistik ▸ Ladungssicherungs-Lab'],
       ['Neue Abzeichen', 'Zu jedem neuen Lab gibt es ein Praktiker- und ein Meister-Abzeichen. Allrounder zählt die Labs deines Berufs.', 'Startseite ▸ Abzeichen'],
       ['Schulwissen im Wiki', 'Neue Wiki-Einträge zu Begriffen, Formeln und Normwerten aus dem Berufsschulunterricht: Netzsysteme, Baugruppen, IT-Systeme, Programmieren, Qualität und Fachenglisch.', 'Startseite ▸ Wiki'],
+      ['Formelheft zum Ausdrucken', 'Alle Formeln des Wiki als druckbares Heft, dazu Formelzeichen, Vorsätze, Normreihen, Farbcode und Zahlensysteme. Ohne eingesetzte Werte, dein eigenes Tabellenbuch.', 'Wiki ▸ Formelheft'],
       ['Mehr Prüfungsfragen', 'Das Prüfungs-Lab hat viele neue Mehrfachwahl-Fragen aus dem Schulstoff.', 'Startseite ▸ Prüfungs-Lab'],
     ] },
     { v: 'v36.157', items: [
