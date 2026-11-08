@@ -17,6 +17,11 @@
   var both = function (c, a, b) { return (c.d[a] || 0) >= 100 && (c.d[b] || 0) >= 100 ? 2 : (((c.d[a] || 0) >= 100) + ((c.d[b] || 0) >= 100)); };
   /* Wiki: verschiedene geöffnete Einträge (lm4.wiki.seen, rein lokal, schreibt wiki.js) */
   var wikiSeen = function () { var a = get('lm4.wiki.seen', []); return Array.isArray(a) ? a.length : 0; };
+  /* Labs des gewählten Berufs (ohne Hubs); ohne BerufReg (alte Seiten, Tests) alle Labs wie bisher */
+  var bLabs = function () {
+    if (window.BerufReg) return window.BerufReg.labs();
+    return Object.keys(window.AUFGABEN_LABS || { loch: 1, sch: 1, sim: 1, code: 1, pi: 1 }).filter(function (l) { return !((window.LAB_REG || {})[l] || {}).hub; });
+  };
   /* id, Symbol, Name, Beschreibung, Fortschritt [ist, soll] */
   var DEFS = [
     ['start', '🎯', 'Erster Treffer', 'Die erste Aufgabe vollständig richtig.', function (c) { return [c.n(c.all), 1]; }],
@@ -29,7 +34,7 @@
     ['elektro', '⚡', 'Elektroniker', 'Acht Aufgaben im SchaltLab geschafft.', function (c) { return [c.n(c.ids('sch')), 8]; }],
     ['haus', '🏠', 'Haustechniker', 'Sechs Aufgaben im SimLab geschafft.', function (c) { return [c.n(c.ids('sim')), 6]; }],
     ['prog', '💻', 'Programmierer', 'Fünf Aufgaben im Arduino-Lab oder Pi-Lab geschafft.', function (c) { return [c.n(c.ids('code').concat(c.ids('pi'))), 5]; }],
-    ['allround', '🌍', 'Allrounder', 'In jedem Lab mindestens eine Aufgabe geschafft.', function (c) { var labs = Object.keys(window.AUFGABEN_LABS || { loch: 1, sch: 1, sim: 1, code: 1, pi: 1 }).filter(function (l) { return !((window.LAB_REG || {})[l] || {}).hub; }); return [labs.filter(function (l) { return c.n(c.ids(l)) > 0; }).length, labs.length]; }],
+    ['allround', '🌍', 'Allrounder', 'In jedem Lab mindestens eine Aufgabe geschafft.', function (c) { var labs = bLabs(); return [labs.filter(function (l) { return c.n(c.ids(l)) > 0; }).length, labs.length]; }],
     ['ampel', '🚦', 'Ampelmeister', 'Projekt Ampel: Plan und Aufbau geschafft.', function (c) { return [both(c, 's17', 'l15'), 2]; }],
     ['daemmer', '🌙', 'Nachtschwärmer', 'Projekt Dämmerungsschalter: Plan und Aufbau geschafft.', function (c) { return [both(c, 's18', 'l16'), 2]; }],
     ['netzteil', '🔌', 'Stromversorger', 'Projekt Netzteil: Plan und Aufbau geschafft.', function (c) { return [both(c, 's19', 'l17'), 2]; }],
@@ -50,7 +55,7 @@
     ['detektiv', '🕵️', 'Schaltungs-Detektiv', 'Drei Detektiv-Fälle gelöst.', function (c) { return [c.st.detektiv || 0, 3]; }],
     ['dmm', '🔌', 'Multimeter-Profi', 'Spannung, Wechselspannung, Strom und Widerstand richtig gemessen.', function (c) { return [(c.st.mmV ? 1 : 0) + (c.st.mmAC ? 1 : 0) + (c.st.mmA ? 1 : 0) + (c.st.mmR ? 1 : 0), 4]; }],
     ['einsteiger', '🎓', 'Erste Schritte', 'Den Trainer eines Labs bis zum Ende durchgespielt.', function (c) { return [c.st.trainer || 0, 1]; }],
-    ['trainer5', '🧭', 'Alle Labs erkundet', 'Den Trainer in allen Labs durchgespielt.', function (c) { return [c.st.trainer || 0, Object.keys(window.AUFGABEN_LABS || { a: 1, b: 1, c: 1, d: 1, e: 1 }).filter(function (l) { return !((window.LAB_REG || {})[l] || {}).hub; }).length]; }],
+    ['trainer5', '🧭', 'Alle Labs erkundet', 'Den Trainer in allen Labs durchgespielt.', function (c) { return [c.st.trainer || 0, Math.max(1, bLabs().filter(function (l) { return !((window.LAB_REG || {})[l] || {}).eig; }).length)]; }],
     ['duellsieg', '🏆', 'Duell-Sieger', 'Drei Prüfungs-Duelle gewonnen.', function (c) { return [c.st.duellsieg || 0, 3]; }],
     ['duellmess', '📏', 'Messen siegt', 'Ein Duell mit mindestens 3 Messungen gewonnen.', function (c) { return [c.st.duellmess || 0, 1]; }],
     ['duellwoche', '📅', 'Duell-Woche', 'Drei Duelle in einer Kalenderwoche.', function (c) { return [c.st.duellwoche || 0, 3]; }],
@@ -325,6 +330,15 @@
     ['wettteil', '🏁', 'Wettbewerber', 'An einem Wettbewerb teilgenommen und die Abgabe erzeugt.', function (c) { return [c.st.wettteil || 0, 1]; }],
     ['wettpodium', '🥇', 'Auf dem Podium', 'In der Rangliste eines Wettbewerbs unter den ersten drei.', function (c) { return [c.st.wettpodium || 0, 1]; }],
   ];
+  /* Eigenständige Labs der Berufe (v39.158): je Lab ein Einsteiger- und ein Meister-Abzeichen, aus LAB_REG erzeugt (Labs ohne Beruf, z. B. noch gesperrt, fehlen) */
+  (function () {
+    var REG = window.LAB_REG || {}, IC = { tol: '📐', zer: '⚙️', pne: '💨', hyd: '🛢️', cnc: '🕹️', wer: '🔩', ins: '🧰', net: '🌐', kal: '🧾', lag: '📦', zei: '✏️', arb: '🦺', mat: '🧮', its: '🔐', buc: '📒', lad: '🚚' };
+    Object.keys(REG).filter(function (k) { return REG[k].eig && (REG[k].beruf || []).length; }).forEach(function (k) {
+      var R = REG[k];
+      DEFS.push([k + '5', IC[k] || '🏅', R.short + '-Praktiker', 'Fünf Aufgaben im ' + R.name + ' geschafft.', function (c) { return [c.n(c.ids(k)), 5]; }]);
+      DEFS.push([k + 'alle', '🏆', R.short + '-Meister', 'Alle Aufgaben im ' + R.name + ' geschafft.', function (c) { return [c.n(c.ids(k)), c.ids(k).length || 30]; }]);
+    });
+  })();
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });
   DEFS.find(function (d) { return d.id === 'wuerfel5'; }).icon = '👑';
 

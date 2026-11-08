@@ -49,7 +49,41 @@
     notePruefungsbester: 2, wiederholung: true
   };
   const XPKEY = { aufgaben: 'Aufgaben', abzeichen: 'Abzeichen', kapitel: 'Kapitel', trainer: 'Trainer', pruefungen: 'Prüfungen', duelle: 'Duelle', verbund: 'Verbundprojekte' };
-  const D = { LEVELS, SPECIALS, XP, GP, XPKEY, VERBUND_AGG: ['vbfertig', 'vbprofi', 'vbgold'], VERBUND_PIDS: ['vbgarage', 'vbampel', 'vbuhr', 'vbgiess', 'vbfoerder', 'vbnetzteil', 'vbheizung'] };
+  /* ---------- Berufe (v39.158) ----------
+     use(beruf, rows, reg) setzt LEVELS und SPECIALS IN PLACE (alle Verweise bleiben gültig). egs = Original. Andere Berufe: Rangtitel je Beruf,
+     XP-Schwellen als Anteil der erreichbaren Aufgaben-XP der Labs des Berufs, keine Kapitel-, Kampagnen- und Generalprobe-Meilensteine, Meisterstücke aus den eigenen Labs. */
+  const ORIG = { LEVELS: LEVELS.slice(), SPECIALS: SPECIALS.slice() };
+  const TITEL = {
+    im: ['Neuling', 'Werkstatt-Azubi', 'Passungskenner', 'Zerspan-Praktiker', 'Pneumatik-Praktiker', 'Steuerungspraktiker', 'Instandhaltungsprofi', 'Geselle in spe', 'Geselle', 'Fachprofi'],
+    tpd: ['Neuling', 'Zeichen-Azubi', 'Linienkenner', 'Ansichten-Praktiker', 'Bemaßungsprofi', 'Toleranzkenner', 'Konstruktionspraktiker', 'Geselle in spe', 'Geselle', 'Fachprofi'],
+    fll: ['Neuling', 'Lager-Azubi', 'Wareneingangspraktiker', 'Kommissionier-Praktiker', 'Bestandsprofi', 'Dispositionspraktiker', 'Ladungsprofi', 'Geselle in spe', 'Geselle', 'Fachprofi'],
+    ik: ['Neuling', 'Büro-Azubi', 'Rechenpraktiker', 'Kalkulationspraktiker', 'Buchungspraktiker', 'Bilanzkenner', 'Controlling-Praktiker', 'Geselle in spe', 'Geselle', 'Fachprofi'],
+    fi: ['Neuling', 'IT-Azubi', 'Bitjongleur', 'Netzwerkpraktiker', 'Subnetz-Profi', 'Sicherheitspraktiker', 'Systempraktiker', 'Geselle in spe', 'Geselle', 'Fachprofi']
+  };
+  const STORY = ['Erster Tag. Aufgaben lösen, Wissen sammeln, los.', 'Du kennst die Werkstatt. Jetzt zeig, dass du die Grundlagen sicher beherrschst.', 'Die ersten Themen sitzen. Jede gelöste Aufgabe bringt dich weiter.',
+    'Du rechnest und prüfst, bevor du rätst.', 'Du bist auf dem Weg: Die Basis steht, jetzt kommt die Vertiefung.', 'Du erkennst Muster und Fehler, bevor andere sie sehen.', 'Was du hier übst, kannst du bald in der Praxis.',
+    'Du bist bereit für die Prüfung: Zeit, Genauigkeit, Ruhe.', 'Fast alles geschafft. Nur noch die letzten Lücken schließen.', 'Du hast dein Fach im Griff. Gib dein Wissen an die Neuen weiter.'];
+  const ANTEIL = [0, 0.02, 0.05, 0.09, 0.14, 0.20, 0.26, 0.32, 0.38, 0.45];   // Rang n ab Anteil der erreichbaren Aufgaben-XP (n = 1 bis 10)
+  function use(beruf, rows, reg) {
+    const set = (arr, list) => { arr.length = 0; list.forEach(x => arr.push(x)); };
+    if (!beruf || beruf === 'egs' || !TITEL[beruf]) { set(LEVELS, ORIG.LEVELS); set(SPECIALS, ORIG.SPECIALS); return 'egs'; }
+    reg = reg || {}; rows = rows || [];
+    const labs = Object.keys(reg).filter(k => !reg[k].hub && (reg[k].beruf || ['egs']).indexOf(beruf) >= 0);
+    const mine = rows.filter(r => labs.indexOf(r[1]) >= 0);
+    const max = mine.reduce((n, r) => n + XP.aufgabe * Math.max(1, Math.min(3, +r[4] || 1)) + XP.ohneTipp, 0);
+    // Meisterstücke: je eigenem (eigenständigem) Lab die letzte schwere Aufgabe, höchstens acht
+    const own = labs.filter(k => reg[k].eig && k !== 'mat');
+    const ms = [];
+    own.forEach(k => { const hard = mine.filter(r => r[1] === k && +r[4] === 3); const r = hard[hard.length - 1] || mine.filter(x => x[1] === k).pop(); if (r) ms.push(r); });
+    const sp = ms.slice(0, 8).map((r, i, a) => ({ k: 'task', id: r[0], ab: 3 + Math.floor(i * 6 / Math.max(1, a.length)), t: 'Meisterstück: ' + r[3] }));
+    const lv = TITEL[beruf].map((t, i) => {
+      const fr = sp.filter(x => x.ab === i + 1).map(x => x.t.replace('Meisterstück: ', ''));
+      return { n: i + 1, t, xp: Math.round(max * ANTEIL[i] / 10) * 10, kap: [], frei: fr.length ? 'Meisterstück: ' + fr.join(', ') : (i === 0 ? 'Alle Labs deines Berufs' : 'Weiter üben, nächster Abschnitt'), story: STORY[i] };
+    });
+    set(LEVELS, lv); set(SPECIALS, sp);
+    return beruf;
+  }
+  const D = { LEVELS, SPECIALS, XP, GP, XPKEY, use, VERBUND_AGG: ['vbfertig', 'vbprofi', 'vbgold'], VERBUND_PIDS: ['vbgarage', 'vbampel', 'vbuhr', 'vbgiess', 'vbfoerder', 'vbnetzteil', 'vbheizung'] };
   if (typeof module !== 'undefined' && module.exports) module.exports = D;
   root.KarriereData = D;
 })(typeof window !== 'undefined' ? window : globalThis);

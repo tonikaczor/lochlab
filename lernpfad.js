@@ -12,6 +12,38 @@
     { t: 'Programmieren und Steuern', s: 'Eigene Apps mit KI bauen, dann Schaltungen mit Programmen steuern: Arduino und Raspberry Pi.', labs: ['app', 'code', 'pi'], pre: 'Die App-Werkstatt braucht kein Vorwissen. Für Arduino und Pi empfohlen: SchaltLab' },
     { t: 'Verbundprojekte', s: 'Alle Labs arbeiten zusammen an einem Gerät: Garagentor, Ampel, Digitale Uhr, Gartenbewässerung, Förderanlage, Labornetzteil und Heizungsregelung. Jede Station liefert ihr Ergebnis an die nächste, am Ende gibt es Gesamttest und Zertifikat.', labs: ['vb'], pre: 'Am besten nach den Labs, die ein Projekt braucht (Datenblatt, Schaltplan, Leiterplatte, Messen, Antrieb, Sensorik, SPS)' }
   ];
+  /* Spuren der anderen Berufe (v39.158). Labs, die der Beruf hat, aber in keiner Spur stehen, kommen unter „Weitere Labs“; Labs ohne Beruf-Zuordnung (z. B. noch gesperrt) fehlen. */
+  const TRACKS_B = {
+    im: [
+      { t: 'Grundlagen der Fertigung', s: 'Rechnen, Toleranzen und Passungen, Werkstoffe und Zeichnungen: das Handwerkszeug für jede Werkstatt.', labs: ['mat', 'tol', 'wer', 'zei'], pre: 'Das Rechen-Lab ist ein guter Start' },
+      { t: 'Zerspanen und CNC', s: 'Schnittwerte berechnen, Drehzahlen und Vorschübe wählen, CNC-Programme lesen und verstehen.', labs: ['zer', 'cnc'], pre: 'Empfohlen vorher: Toleranz-Lab' },
+      { t: 'Pneumatik, Hydraulik und Steuern', s: 'Schaltpläne lesen, Zylinder und Ventile ansteuern, Sensoren, Antriebe, SPS und Regelung.', labs: ['pne', 'hyd', 'sen', 'sps', 'ant', 'reg'], pre: 'Empfohlen vorher: Pneumatik-Lab' },
+      { t: 'Instandhaltung und Sicherheit', s: 'Anlagen warten, Fehler systematisch suchen, sicher arbeiten, messen und Wärme verstehen.', labs: ['ins', 'els', 'mess', 'thm'], pre: '' }
+    ],
+    tpd: [
+      { t: 'Zeichnen und Toleranzen', s: 'Ansichten und Schnitte, Bemaßung nach Norm, Toleranzen und Passungen und das Rechnen dazu.', labs: ['mat', 'zei', 'tol'], pre: 'Das Rechen-Lab ist ein guter Start' }
+    ],
+    fll: [
+      { t: 'Lager und Logistik', s: 'Kennzahlen, ABC-Analyse, Bestellmengen und Flurförderzeuge; dazu das Rechnen, das du täglich brauchst.', labs: ['mat', 'lag', 'lad'], pre: 'Das Rechen-Lab ist ein guter Start' }
+    ],
+    ik: [
+      { t: 'Kaufmännisches Rechnen', s: 'Prozent, Dreisatz, Bezugs- und Selbstkostenkalkulation, Handelsspanne und Break-even; dazu die Buchführung.', labs: ['mat', 'kal', 'buc'], pre: 'Das Rechen-Lab ist ein guter Start' }
+    ],
+    fi: [
+      { t: 'Netze und Sicherheit', s: 'Binär, Subnetting, Ports und Protokolle; dazu die Grundlagen der IT-Sicherheit.', labs: ['net', 'its', 'mat'], pre: 'Netzwerk-Lab zuerst' },
+      { t: 'Digitaltechnik und Programmieren', s: 'Logik und Zahlensysteme, eigene Apps, Arduino und Raspberry Pi, Datenblätter lesen.', labs: ['digi', 'app', 'code', 'pi', 'ds'], pre: 'Die App-Werkstatt braucht kein Vorwissen' }
+    ]
+  };
+  const beruf = () => (root.BerufReg ? root.BerufReg.cur() : 'egs');
+  const inBeruf = k => !root.BerufReg || root.BerufReg.has(k, beruf());
+  function tracksFor() {
+    const b = beruf(), base = b === 'egs' || !TRACKS_B[b] ? TRACKS : TRACKS_B[b];
+    const tr = base.map(t => Object.assign({}, t, { labs: t.labs.filter(k => REG[k] && inBeruf(k) || (REG[k] && REG[k].hub && b === 'egs')) })).filter(t => t.labs.length);
+    const listed = tr.reduce((a, t) => a.concat(t.labs), []);
+    const rest = Object.keys(REG).filter(k => !REG[k].hub && inBeruf(k) && listed.indexOf(k) < 0);
+    if (rest.length) tr.push({ t: 'Weitere Labs', s: 'Noch mehr zum Üben und Vertiefen.', labs: rest, pre: '' });
+    return tr;
+  }
   const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', els: 'Fortgeschritten', nts: 'Fortgeschritten', wsl: 'Fortgeschritten', ana: 'Fortgeschritten', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', pr: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten', sps: 'Mittel', pcb: 'Mittel', ant: 'Mittel', sen: 'Mittel', reg: 'Fortgeschritten', thm: 'Mittel', emv: 'Fortgeschritten', enr: 'Mittel', ds: 'Mittel', vb: 'Fortgeschritten' };
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
   const results = () => { const m = {}; [get('sim.done', {}), get('lm4.tdone', {})].forEach(o => Object.keys(o || {}).forEach(k => { const v = +o[k] || 0; if (v > (m[k] || 0)) m[k] = v; })); return m; };
@@ -24,9 +56,9 @@
   // Empfehlung "wo weiter": erstes begonnenes, noch nicht fertiges Lab in der Spurenreihenfolge, sonst das erste unfertige (build() und Startseite "Weitermachen" nutzen dieselbe Logik)
   function recommend(stc) {
     const st = stc || (() => { const o = {}; Object.keys(REG).forEach(k => { o[k] = stat(k); }); return o; })();
-    const order = TRACKS.reduce((a, t) => a.concat(t.labs), []).filter(k => REG[k]);
+    const order = tracksFor().reduce((a, t) => a.concat(t.labs), []).filter(k => REG[k]);
     let rec = order.find(k => st[k].n && st[k].pct < 100 && st[k].started) || order.find(k => st[k].n && st[k].pct < 100) || null;
-    if (rec && REG.sch && !order.some(k => st[k].started || trained(k))) rec = 'sch';   // ganz neu: SchaltLab (wie der Hinweis "Neu hier? Beginne mit dem SchaltLab.")
+    if (rec && REG.sch && order.indexOf('sch') >= 0 && !order.some(k => st[k].started || trained(k))) rec = 'sch';   // ganz neu: SchaltLab (wie der Hinweis "Neu hier? Beginne mit dem SchaltLab.")
     const nx = rec && st[rec].next ? st[rec] : null, R0 = rec ? REG[rec] : null;
     const began = !!rec && (st[rec].started || trained(rec));
     const href = !rec ? '' : (began ? (nx ? `${R0.file}?aufgabe=${nx.next[0]}` : R0.file) : `${R0.file}?trainer`);
@@ -42,9 +74,9 @@
     const top = document.getElementById('top'); if (!top || document.getElementById('lernpfad')) return;   // Einfügepunkt: Primär-Band der Startseite
     const st = {}; Object.keys(REG).forEach(k => { st[k] = stat(k); });
     const rc = recommend(st), rec = rc.rec;
-    const labKeys = Object.keys(st).filter(k => !(REG[k] || {}).hub);   // der Hub Projekte zählt nicht als Lab
+    const labKeys = Object.keys(st).filter(k => !(REG[k] || {}).hub && inBeruf(k));   // der Hub Projekte zählt nicht als Lab
     const total = labKeys.reduce((n, k) => n + st[k].n, 0), done = labKeys.reduce((n, k) => n + st[k].d, 0);
-    const K = root.Kampagne, kt = K ? K.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = K ? K.CH.reduce((n, c) => n + K.prog(c).d, 0) : 0;
+    const K = beruf() === 'egs' ? root.Kampagne : null, kt = K ? K.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = K ? K.CH.reduce((n, c) => n + K.prog(c).d, 0) : 0;
     const goHref = rc.href, goTxt = rc.txt;
     const open = (() => { try { return localStorage.getItem('lm4.lp.open') === '1'; } catch (e) { return false; } })();
     let h = `<style>${css}.lp .hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;text-align:left;color:var(--fg);cursor:pointer}.lp .hd .ar{font-size:14px;transition:transform .15s;display:inline-block}.lp.open .hd .ar{transform:rotate(90deg)}.lp .hd b{font-size:17px}.lp .hd .sum{flex:1;min-width:160px;color:var(--mute);font-size:13px}.lp .hd .nx{display:inline-flex;align-items:center;min-height:44px;padding:7px 12px;border-radius:10px;background:var(--accent-bg,#1a6fd4);color:#fff;font-weight:600;font-size:13px;text-decoration:none;max-width:100%}.lp .body{display:none;margin-top:14px}.lp.open .body{display:block}</style>`
@@ -52,7 +84,7 @@
     const KR = root.Karriere && root.Karriere.summary ? root.Karriere.summary() : null;
     if (KR) h += `<div class="kamp"><span style="font-size:26px">🎓</span><div style="flex:1;min-width:200px"><b>Deine Karriere: Rang ${KR.n} · ${esc(KR.t)}</b><br><span style="color:var(--mute);font-size:13px">${KR.xp} XP${KR.next ? ' · nächster Rang bei ' + KR.next.xp : ''} · Kampagne ${kd} von ${kt} Missionen</span></div><div class="bar"><i style="width:${KR.pct}%"></i></div><a href="#" id="lpKamp" class="btn pri" style="flex:none;padding:0 18px;height:44px">Karriere öffnen</a></div>`;
     else if (K) h += `<div class="kamp"><span style="font-size:26px">🎯</span><div style="flex:1;min-width:200px"><b>Kampagne: Das Abschlussgerät</b><br><span style="color:var(--mute);font-size:13px">${K.CH.length} Kapitel mit Meister Funk durch alle Labs. ${kd} von ${kt} Missionen erledigt.</span></div><div class="bar"><i style="width:${kt ? Math.round(100 * kd / kt) : 0}%"></i></div><a href="#" id="lpKamp" class="btn pri" style="flex:none;padding:0 18px;height:44px">Kampagne öffnen</a></div>`;
-    TRACKS.forEach(tr => {
+    tracksFor().forEach(tr => {
       const labs = tr.labs.filter(k => REG[k]); if (!labs.length) return;
       h += `<div class="trk"><h3>${esc(tr.t)}${tr.pre ? `<small>${esc(tr.pre)}</small>` : ''}</h3><p>${esc(tr.s)}</p>${(tr.links || []).length ? `<p class="lk">${tr.links.map(l => `<a href="${esc(l[0])}" style="color:var(--accent);margin-right:14px;display:inline-block;padding:5px 0">${esc(l[1])}</a>`).join('')}</p>` : ''}<div class="st">`;
       labs.forEach((k, i) => {
@@ -79,5 +111,5 @@
   }
   const run = () => { try { build(); } catch (e) { console.error(e); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(run, 60)); else setTimeout(run, 60);
-  root.Lernpfad = { build, stat, recommend, TRACKS };
+  root.Lernpfad = { build, stat, recommend, TRACKS, TRACKS_B, tracksFor };
 })(window);

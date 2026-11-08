@@ -24,8 +24,8 @@
   var DATEIEN = {
     bauteile: { src: 'wiki-bauteile.js', kat: ['bauteil'], da: true },
     geraete: { src: 'wiki-geraete.js', kat: ['geraet', 'bedien'], da: true },
-    begriffe: { src: 'wiki-begriffe.js', kat: ['begriff'], da: false },
-    formeln: { src: 'wiki-formeln.js', kat: ['formel', 'norm', 'lab'], da: false }
+    begriffe: { src: 'wiki-begriffe.js', kat: ['begriff'], da: true },
+    formeln: { src: 'wiki-formeln.js', kat: ['formel', 'norm', 'lab'], da: true }
   };
   // W7: Regler + Messwerte je Rig-Lab (erzeugt von quelle/gen/mkwikireg.js); "lazy" = nur bei Bedarf (needFor, needAll(true)), nicht bei needAll()
   var REGLER_LABS = ['ana', 'ant', 'els', 'emv', 'enr', 'nts', 'reg', 'sen', 'thm', 'wsl'];

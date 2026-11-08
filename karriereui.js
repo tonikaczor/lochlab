@@ -10,6 +10,10 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const fmt = n => String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   const TABS = [['rang', 'Rang'], ['spez', 'Spezialaufgaben'], ['gp', 'Generalprobe'], ['story', 'Geschichte']];
+  /* Beruf (v39.158): Elektroniker wie bisher mit Kampagne und Generalprobe; die anderen Berufe haben Rang und Meisterstücke aus ihren Labs. */
+  const berufNow = () => (root.BerufReg ? root.BerufReg.cur() : 'egs');
+  const tabsNow = () => (berufNow() === 'egs' ? TABS : TABS.filter(t => t[0] === 'rang' || t[0] === 'spez'));
+  function useBeruf() { const b = berufNow(); try { if (KD.use) KD.use(b, root.AUFGABEN || [], root.LAB_REG || {}); } catch (e) {} return b; }
 
   /* ---------- reine Funktionen ---------- */
   function kampOK(D) { return (D.chAll && D.chAll.length ? D.chAll.every(t => D.kampDone.includes(t)) : false) || (+D.stats.kampagne || 0) >= 1; }
@@ -132,14 +136,14 @@
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); if (v == null) return d; try { return JSON.parse(v); } catch (e) { return v; } } catch (e) { return d; } };
   const freeOn = () => { try { return localStorage.getItem('lm4.kamp.free') === '1'; } catch (e) { return false; } };
   function state() {
-    const Kp = root.Kampagne, B = root.Badges;
+    const b = useBeruf(), Kp = b === 'egs' ? root.Kampagne : null, B = root.Badges;
     const D = core.read(lsGet, Kp ? { CH: Kp.CH, mdone: Kp.mdone, virtual: true } : { virtual: true });
-    return { D, M: model(D, { AUFGABEN: root.AUFGABEN, DEFS: B && B.DEFS ? B.DEFS.map(d => Array.isArray(d) ? d[0] : d.id) : null }, freeOn()) };
+    return { D, M: model(D, { AUFGABEN: root.BerufReg ? root.BerufReg.rows(b) : root.AUFGABEN, DEFS: B && B.DEFS ? B.DEFS.map(d => Array.isArray(d) ? d[0] : d.id) : null }, freeOn()) };
   }
   /* kurze Zusammenfassung für Karte und Lernpfad-Band */
   function summary() {
     try {
-      const S = state(), M = S.M, Kp = root.Kampagne;
+      const S = state(), M = S.M, Kp = berufNow() === 'egs' ? root.Kampagne : null;
       const kt = Kp ? Kp.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = Kp ? Kp.CH.reduce((n, c) => n + Kp.prog(c).d, 0) : 0;
       return { n: M.L.n, t: M.L.t, xp: M.L.xp, xpDone: M.xpDone, next: M.nx ? { t: M.nx.t, xp: M.nx.xp } : null, pct: M.pct, kt, kd };
     } catch (e) { return null; }
@@ -201,10 +205,10 @@
   }
   function open(tab) {
     if (document.getElementById('krBox')) return;
-    start(); css(); const up = check(true), opener = document.activeElement; let cur = TABS.some(t => t[0] === tab) ? tab : 'rang';
+    start(); css(); const up = check(true), opener = document.activeElement; let cur = tabsNow().some(t => t[0] === tab) ? tab : 'rang';
     const w = document.createElement('div'); w.id = 'krBox'; w.className = 'kr-ov';
     w.innerHTML = '<div class="kr" role="dialog" aria-modal="true" aria-labelledby="krT"><div class="kr-hd"><b id="krT">🎓 Deine Karriere</b><button type="button" class="kr-x" id="krX" aria-label="Schließen">✕</button></div><div class="kr-tabs" role="tablist">'
-      + TABS.map(t => '<button type="button" class="kr-tab" role="tab" data-t="' + t[0] + '">' + t[1] + '</button>').join('') + '</div><div id="krBody"></div></div>';
+      + tabsNow().map(t => '<button type="button" class="kr-tab" role="tab" data-t="' + t[0] + '">' + t[1] + '</button>').join('') + '</div><div id="krBody"></div></div>';
     const close = () => { w.remove(); document.removeEventListener('keydown', onKey); if (opener && opener.focus) try { opener.focus(); } catch (e) {} };
     const onKey = e => { if (e.key === 'Escape') close(); };
     const body = w.querySelector('#krBody');

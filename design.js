@@ -47,7 +47,7 @@
    Dazu lm4.when = {"aufgabeId": ms}: Zeitpunkt der letzten Änderung je Aufgabe (v23.145, Lernempfehlung coach.js, SPEC-PRUEFUNG-COACH-FABLE.md 4.1). Nur lokal, nicht im Export. */
 (function (root) {
   'use strict';
-  var FILES = ['layout.html', 'schaltplan.html', 'simlab.html', 'digilab.html', 'messlab.html', 'elslab.html', 'ntslab.html', 'wsllab.html', 'analab.html', 'hauslab.html', 'appwerkstatt.html', 'spslab.html', 'pcblab.html', 'antlab.html', 'senlab.html', 'reglab.html', 'thmlab.html', 'emvlab.html', 'enrlab.html', 'codelab.html', 'pilab.html', 'dslab.html', 'pruefungslab.html', 'verbund.html'];
+  var FILES = ['layout.html', 'schaltplan.html', 'simlab.html', 'digilab.html', 'messlab.html', 'elslab.html', 'ntslab.html', 'wsllab.html', 'analab.html', 'hauslab.html', 'appwerkstatt.html', 'spslab.html', 'pcblab.html', 'antlab.html', 'senlab.html', 'reglab.html', 'thmlab.html', 'emvlab.html', 'enrlab.html', 'codelab.html', 'pilab.html', 'dslab.html', 'pruefungslab.html', 'verbund.html', 'tollab.html', 'zerlab.html', 'pnelab.html', 'hydlab.html', 'cnclab.html', 'werlab.html', 'inslab.html', 'netlab.html', 'kallab.html', 'laglab.html', 'zeilab.html', 'arblab.html', 'matlab.html', 'itslab.html', 'buclab.html', 'ladlab.html'];
   var KEY = 'lm4.last', TASK = /^[A-Za-z0-9_.-]{1,40}$/;
   try {
     var file = String(root.location.pathname || '').split('/').pop();

@@ -2,6 +2,15 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v39.158', items: [
+      ['Lernpfad, Rang und Abzeichen für jeden Beruf', 'Wähle oben deinen Beruf: Lernpfad, Weitermachen, Rang, Meisterstücke und Abzeichen zählen jetzt die Labs deines Berufs. Jede gelöste Aufgabe in den neuen Labs bringt XP.', 'Startseite ▸ Beruf wählen'],
+      ['IT-Sicherheits-Lab', 'Passwortstärke, Verschlüsselung und Hashes, Phishing erkennen, Rechte und Firewall-Regeln, Backup und Verfügbarkeit.', 'Startseite ▸ Fachinformatiker ▸ IT-Sicherheits-Lab'],
+      ['Buchführungs-Lab', 'Buchungssätze mit T-Konten, Umsatzsteuer, Abschreibung und Abschluss, mit Buchungssatz-Editor.', 'Startseite ▸ Industriekaufmann ▸ Buchführungs-Lab'],
+      ['Ladungssicherungs-Lab', 'Zurrkräfte und Reibung, Paletten auf der Ladefläche, Kippgrenzen und Gefahrgut-Kennzeichen.', 'Startseite ▸ Lagerlogistik ▸ Ladungssicherungs-Lab'],
+      ['Neue Abzeichen', 'Zu jedem neuen Lab gibt es ein Praktiker- und ein Meister-Abzeichen. Allrounder zählt die Labs deines Berufs.', 'Startseite ▸ Abzeichen'],
+      ['Schulwissen im Wiki', 'Neue Wiki-Einträge zu Begriffen, Formeln und Normwerten aus dem Berufsschulunterricht: Netzsysteme, Baugruppen, IT-Systeme, Programmieren, Qualität und Fachenglisch.', 'Startseite ▸ Wiki'],
+      ['Mehr Prüfungsfragen', 'Das Prüfungs-Lab hat viele neue Mehrfachwahl-Fragen aus dem Schulstoff.', 'Startseite ▸ Prüfungs-Lab'],
+    ] },
     { v: 'v36.157', items: [
       ['Neue Labs für alle Berufe', 'Fachinformatiker: Netzwerk-Lab. Industriekaufmann: Kalkulations-Lab. Lagerlogistik: Lager-Lab. Technischer Produktdesigner: Zeichnungs-Lab. Für alle Berufe: Rechen-Lab. Du findest sie auf der Startseite unter deinem Beruf.', 'Startseite ▸ Beruf wählen'],
       ['Rechen-Lab', 'Einheiten, Dreisatz, Prozent, Formeln umstellen, Geometrie und Winkelfunktionen mit vollständigem Lösungsweg.', 'Startseite ▸ Rechen-Lab'],

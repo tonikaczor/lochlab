@@ -176,7 +176,7 @@
   }
   function css() { if (typeof document === 'undefined' || document.getElementById('coachCss')) return; const s = document.createElement('style'); s.id = 'coachCss'; s.textContent = CSS; document.head.appendChild(s); }
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); if (v == null) return d; return k === 'lm4.kuerzel' ? v : JSON.parse(v); } catch (e) { return d; } };   // das Kürzel steht als einfacher Text im Speicher (stand.js)
-  function context() { return { AUFGABEN: root.AUFGABEN, LAB_REG: root.LAB_REG, groups: (root.PR_POOL && root.PR_POOL.groups) || [], topics: (root.PR_BANK && root.PR_BANK.TOPICS) || [], recommend: root.Lernpfad && root.Lernpfad.recommend ? () => root.Lernpfad.recommend() : null }; }
+  function context() { return { AUFGABEN: root.BerufReg ? root.BerufReg.rows() : root.AUFGABEN, LAB_REG: root.LAB_REG, groups: (root.PR_POOL && root.PR_POOL.groups) || [], topics: (root.PR_BANK && root.PR_BANK.TOPICS) || [], recommend: root.Lernpfad && root.Lernpfad.recommend ? () => root.Lernpfad.recommend() : null }; }
   function current(extra) { return suggest(read(lsGet), Date.now(), Object.assign(context(), extra || {})); }
   /* Karte in host einhängen (ersetzt eine vorhandene). Fehler dürfen die Seite nie stören. */
   function mount(host, o) {

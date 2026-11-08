@@ -63,7 +63,7 @@
     // Hero (Werkbank): Fortschrittsring (Anteil erledigter Aufgaben über alle Labs), Rang aus Karriere.summary(); alles nur Anzeige, resolve() bleibt unberührt
     let pct = 0, rk = '', rn = 0;
     const ORDEN = ['🔰', '🔧', '💡', '📏', '🔍', '🔌', '🏭', '📋', '🎓', '🥇'];   // je Rang ein Orden, Symbole wie in badges.js
-    try { const ks = Object.keys(root.LAB_REG || {}).filter(k => !root.LAB_REG[k].hub); let n = 0, d = 0; ks.forEach(k => { const s = LP.stat(k); n += s.n; d += s.d; }); pct = n ? Math.round(100 * d / n) : 0; } catch (e) { pct = 0; }
+    try { const ks = Object.keys(root.LAB_REG || {}).filter(k => !root.LAB_REG[k].hub && (!root.BerufReg || root.BerufReg.has(k))); let n = 0, d = 0; ks.forEach(k => { const s = LP.stat(k); n += s.n; d += s.d; }); pct = n ? Math.round(100 * d / n) : 0; } catch (e) { pct = 0; }
     try { const K = root.Karriere && root.Karriere.summary && root.Karriere.summary(); if (K && K.n) { rn = Math.max(1, Math.min(ORDEN.length, K.n | 0)); rk = 'Rang ' + K.n + (K.t ? ' · ' + K.t : ''); } } catch (e) { rk = ''; rn = 0; }
     // Orden-Reihe (erreichte Ränge hell, aktueller pulsiert) und großer Orden rechts; nur Anzeige
     const pips = rn ? '<span class="pips" aria-hidden="true">' + ORDEN.map((o, i) => '<i class="' + (i + 1 < rn ? 'got' : i + 1 === rn ? 'now' : '') + '">' + o + '</i>').join('') + '</span>' : '';

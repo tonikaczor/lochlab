@@ -298,7 +298,7 @@
       if (ti === q) s += 60; else if (q && ti.indexOf(q) === 0) s += 30;
       if (r[1] === 'regler' || r[1] === 'messwert') s *= REG_FAKTOR;   // W7: Bauteile/Geraete/Begriffe mit Titel- oder Alias-Treffer vor den ca. 1300 Reglern
       if (lab && r[4] && (',' + r[4] + ',').indexOf(',' + lab + ',') >= 0) s += 15;
-      if (r[1] === 'bauteil' || r[1] === 'geraet') s += 10;
+      if (r[1] === 'bauteil' || r[1] === 'geraet') s += 25;   // v39.158: Schulwissen-Begriffe und -Formeln sollen Bauteile und Geräte nicht verdrängen
       s += (r[6] || 0) * 2;
       out.push({ i: +id, s: s });
     }

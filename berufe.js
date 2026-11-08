@@ -16,9 +16,9 @@
   // Vorschau: geplante Labs je Beruf (Stand: Ideensammlung, Fachinhalt wird mit den Ausbildern abgestimmt)
   const PLAN = {
     tpd: ['Normteile und Stücklisten', 'Form- und Lagetoleranzen', 'Maschinenelemente', 'Fertigungsgerecht konstruieren', 'Räumliches Vorstellen'],
-    fll: ['Ladungssicherung', 'Lagerstrategien und Kommissionieren', 'Gefahrgut und Kennzeichnung', 'Wareneingang und Inventur', 'Stapler und Tragfähigkeit'],
-    ik: ['Buchführung (Buchungssätze, Bilanz, GuV)', 'Recht: Kaufvertrag und Fristen', 'Personal und Lohnabrechnung', 'ERP-Simulation Auftragsabwicklung'],
-    fi: ['Datenbank und SQL', 'Algorithmen (Struktogramm, PAP)', 'IT-Sicherheit', 'Linux-Terminal', 'Hardware', 'Projekt: Lasten- und Pflichtenheft']
+    fll: ['Lagerstrategien und Kommissionieren', 'Gefahrgut und Kennzeichnung', 'Wareneingang und Inventur', 'Stapler und Tragfähigkeit'],
+    ik: ['Recht: Kaufvertrag und Fristen', 'Personal und Lohnabrechnung', 'ERP-Simulation Auftragsabwicklung'],
+    fi: ['Datenbank und SQL', 'Algorithmen (Struktogramm, PAP)', 'Linux-Terminal', 'Hardware', 'Projekt: Lasten- und Pflichtenheft']
   };
   const DEFAULT = 'egs';
   const keys = () => BERUFE.map(b => b.k);
@@ -39,7 +39,6 @@
     if (doc.getElementById('beCss')) return;
     const st = doc.createElement('style'); st.id = 'beCss';
     st.textContent = '.card.be-out{display:none!important}'
-      + 'html[data-beruf]:not([data-beruf=egs]) #top,html[data-beruf]:not([data-beruf=egs]) #karCard{display:none}'   // Weitermachen, Lernpfad, Karriere zählen bisher nur die Elektronik-Labs
       + '.be-tabs{margin:0 0 14px}.be-tabs ul{list-style:none;margin:0;padding:0;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.be-tabs ul::-webkit-scrollbar{display:none}'
       + '.be-tab{flex:none;min-height:46px;padding:6px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line);color:var(--fg);font-weight:600;font-size:15px;line-height:1.15;font-family:inherit;cursor:pointer;display:flex;flex-direction:column;justify-content:center;text-align:left;touch-action:manipulation}'
       + '.be-tab small{font-weight:500;font-size:11.5px;color:var(--mute);margin-top:1px;white-space:nowrap}'
@@ -91,7 +90,7 @@
       li.appendChild(bt); ul.appendChild(li);
     });
     nav.appendChild(ul);
-    nav.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.be-tab'); if (!b || b.dataset.k === cur) return; cur = b.dataset.k; apply(true); });
+    nav.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.be-tab'); if (!b || b.dataset.k === cur) return; cur = b.dataset.k; apply(true); try { if (doc.getElementById('lernpfad') || doc.getElementById('top')) location.reload(); } catch (err) {} });   // Lernpfad, Weitermachen und Karriere richten sich nach dem Beruf: Seite neu aufbauen
     const soon = doc.createElement('section'); soon.className = 'be-soon'; soon.id = 'beSoon'; soon.hidden = true;
     const anchor = doc.getElementById('top') || doc.getElementById('groups');
     if (!anchor || !anchor.parentNode) return;
