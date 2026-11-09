@@ -58,6 +58,7 @@
       case 'kosten': return kosten(c[1], c[2], c[3], c[4], c[5], c[6]);
       case 'hub': return (c[1] / c[2]) * c[3] * c[4];
       case 'wechsel': return c[1] / (c[2] * c[3]);
+      case 'heiz': return rd(c[1] * c[1] / c[2], 2);   /* R = U² : P, Widerstand eines Heizleiters im Betrieb */
       default: return NaN;
     }
   }

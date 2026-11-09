@@ -5,11 +5,12 @@
    Jede Aufgabe entsteht aus einem Generator mit festem Seed (id): dieselben Zahlen bei jedem Aufruf; der Zufalls-Trainer nutzt dieselben Generatoren mit freiem Seed.
    Die Lösung kommt immer aus dem Interpreter (ALG_CORE.run); viele Aufgaben tragen zusätzlich eine unabhängig in JavaScript gerechnete Gegenprobe (q.cross), die der Test vergleicht.
    Antwortarten (q.ask.type): num, choice, out (Ausgabe tippen), line (Fehlerzeile markieren), order (Reihenfolge), table (Tabellentest), code (Zeile ergänzen, wird gegen Testfälle ausgeführt).
+   Aufgaben 43 bis 48 (gleiche Kategorie, Berufsschulstoff Lernfeld 12: Mikrocontroller, Projektablauf) sind reine Fragen und Rechnungen ohne Programmtext. Aufgaben 35 bis 42 (Kategorie Programmierung und Software, Berufsschulstoff Lernfeld 11) zeigen C++-Ausschnitte im Feld q.cpp (nur Anzeige, wird nicht vom Interpreter ausgeführt; die Lösung rechnet der Generator selbst, die Gegenprobe q.cross unabhängig).
    Verdeckte-Fehler-Prinzip: Titel und Texte verraten weder Ergebnis noch Fehlerart (die Fehlersuche heißt neutral "Fehlersuche A" bis "D"). */
 (function (root) {
   const C = () => root.ALG_CORE;
   const f = (v, d) => C().fmtN(v, d == null ? 2 : d, true);
-  const CATS = ['Variablen und Verzweigung', 'Schleifen', 'Ablaufplan und Struktogramm', 'Schreibtischtest und Fehlersuche', 'Suchen und Sortieren', 'Rekursion und Aufwand', 'Zahlenalgorithmen'];
+  const CATS = ['Variablen und Verzweigung', 'Schleifen', 'Ablaufplan und Struktogramm', 'Schreibtischtest und Fehlersuche', 'Suchen und Sortieren', 'Rekursion und Aufwand', 'Zahlenalgorithmen', 'Programmierung und Software'];
 
   /* ---------- Bausteine ---------- */
   const join = a => a.join('\n');
@@ -337,6 +338,227 @@
     };
   };
 
+  /* ---------- 8. Programmierung und Software (Berufsschule Lernfeld 11: Phasen der Softwareentwicklung, Entwurf, C++) ---------- */
+  /* PRUEFEN P23: Phasenmodell mit sechs Phasen: Problemanalyse, Funktionsanalyse, Programmentwurf, Codierung, Systemtest, Einführung und Pflege. Stimmen Namen und Reihenfolge mit dem Unterricht überein (manche Bücher fassen sie anders zusammen, etwa Analyse, Entwurf, Implementierung, Test, Wartung)? */
+  const PHASES = [
+    ['Problemanalyse', 'Aufgabe und Ziel klären', 'Der Kunde beschreibt, was die Auswertung am Ende leisten soll, und der Auftrag wird aufgeschrieben.'],
+    ['Funktionsanalyse', 'Lösungswege und Machbarkeit prüfen', 'Das Team untersucht, ob sich die gewünschte Auswertung mit dem vorhandenen Gerät überhaupt umsetzen lässt.'],
+    ['Programmentwurf', 'Aufbau und Teilaufgaben festlegen', 'Das Programm wird in Teilaufgaben (Module) zerlegt und ihre Reihenfolge wird festgelegt.'],
+    ['Codierung', 'In einer Programmiersprache schreiben', 'Der Entwurf wird Anweisung für Anweisung in C++ geschrieben.'],
+    ['Systemtest', 'Mit Testdaten prüfen', 'Das fertige Programm wird mit vorbereiteten Eingabewerten durchgespielt und das Ergebnis mit dem Sollwert verglichen.'],
+    ['Einführung und Pflege', 'Beim Kunden einrichten und anpassen', 'Das Programm wird beim Kunden installiert und später an neue Wünsche angepasst.']
+  ];
+  G.sw1 = R => {
+    const c = C(), skip = c.ri(R, 1, 4), use = PHASES.filter((p, i) => i !== skip), texts = use.map(p => p[0] + ': ' + p[1]);
+    let sh, tries = 0; do { sh = c.shuffle(R, texts); tries++; } while (sh.join('|') === texts.join('|') && tries < 20);
+    return { text: 'Eine Auszubildende soll ein Programm schreiben, das die Messwerte einer Prüfstation auswertet. Fünf Schritte der Softwareentwicklung sind durcheinander geraten. Tippe sie in der Reihenfolge an, in der sie ablaufen.', ask: { type: 'order', items: sh, correct: texts }, value: texts.join(' → '), tol: 0,
+      expl: 'Die Reihenfolge im Phasenmodell: ' + PHASES.map(p => p[0]).join(' → ') + '. Hier fehlt die Phase „' + PHASES[skip][0] + '“. Erst wird geklärt und geplant, dann geschrieben, dann geprüft, zuletzt eingeführt.',
+      tips: ['Am Anfang steht die Frage, was das Programm überhaupt leisten soll. Ganz am Ende steht der Einsatz beim Kunden.', 'Erst wird geplant (klären, entwerfen), dann geschrieben, dann geprüft, zuletzt eingeführt. Kein Test ohne fertigen Code.'] };
+  };
+  G.sw2 = R => {
+    const c = C(), k = c.ri(R, 0, 5), right = PHASES[k][0], wrong = c.shuffle(R, PHASES.filter((p, i) => i !== k).map(p => p[0])).slice(0, 3);
+    return qChoice(R, 'In einem Softwareprojekt geschieht gerade Folgendes: „' + PHASES[k][2] + '“ In welcher Phase der Softwareentwicklung steht das Projekt?', right, wrong,
+      'Das ist die Phase „' + right + '“: ' + PHASES[k][1] + '. Die Reihenfolge aller Phasen: ' + PHASES.map(p => p[0]).join(' → ') + '.',
+      ['Frage dich: Wird noch geklärt und geplant, wird schon geschrieben, oder wird bereits geprüft und eingesetzt?', 'Die Planungsphasen heißen Problem-, Funktionsanalyse und Entwurf. Danach folgen Codierung, Test und Einführung.'], { cross: right });
+  };
+  const VORGEHEN = [
+    ['Für ein Programm zur Lagerverwaltung wird zuerst die Gesamtaufgabe festgehalten. Danach wird sie in Teilaufgaben zerlegt, jede Teilaufgabe wieder in kleinere, bis jeder Teil leicht zu programmieren ist.', 'Top-down'],
+    ['Für ein Messprogramm gibt es schon geprüfte Bausteine zum Einlesen des Sensors, zum Umrechnen und zum Anzeigen. Daraus wird Stück für Stück das fertige Programm zusammengesetzt.', 'Bottom-up'],
+    ['Eine Lohnabrechnung wird entworfen: Oben steht „Abrechnung erstellen“, darunter „Brutto berechnen“, „Abzüge berechnen“ und „Ausdrucken“. Jeder dieser Punkte wird danach weiter verfeinert.', 'Top-down'],
+    ['Ein Azubi programmiert zuerst die Ansteuerung eines Motors und die Auswertung eines Tasters und testet beides einzeln. Erst danach überlegt er, wie die Teile zur ganzen Maschinensteuerung zusammenpassen.', 'Bottom-up']
+  ];
+  G.sw3 = R => {
+    const c = C(), v = c.pick(R, VORGEHEN), right = v[1], other = right === 'Top-down' ? 'Bottom-up' : 'Top-down', wrong = [other].concat(c.shuffle(R, ['Zyklus', 'Selektion', 'Systemtest', 'Schreibtischtest', 'Datenflussplan']).slice(0, 2));
+    return qChoice(R, 'Ein Team beschreibt sein Vorgehen: „' + v[0] + '“ Welcher Begriff passt dazu?', right, wrong,
+      right === 'Top-down' ? 'Top-down heißt von oben nach unten: Die Gesamtaufgabe steht am Anfang und wird schrittweise in Teilaufgaben zerlegt (Modularisierung).' : 'Bottom-up heißt von unten nach oben: Man geht von Teilaufgaben und Grundfunktionen aus und setzt sie später zur Gesamtlösung zusammen.',
+      ['Frage dich: Womit beginnt das Team, mit dem Ganzen oder mit den kleinen Bausteinen?', 'Top-down heißt von oben nach unten, Bottom-up von unten nach oben. Die anderen Begriffe beschreiben Prüfungen, Grundstrukturen oder Pläne und kein Entwurfsverfahren.'], { cross: right });
+  };
+  const SYMFRAGEN = [
+    ['Im Programmablaufplan steht für eine Eingabe oder Ausgabe ein bestimmtes Symbol. Welche Form hat es?', 'Parallelogramm', ['Rechteck', 'Raute', 'Abgerundetes Rechteck'], 'Im Ablaufplan sind Ein- und Ausgaben Parallelogramme.'],
+    ['Welches Symbol zeigt im Programmablaufplan eine Verzweigung, bei der es je nach Antwort mit „Ja“ oder „Nein“ weitergeht?', 'Raute', ['Rechteck', 'Parallelogramm', 'Abgerundetes Rechteck'], 'Eine Verzweigung (Entscheidung) wird als Raute gezeichnet, aus ihr führen zwei Wege heraus.'],
+    ['Welches Symbol steht im Programmablaufplan für eine Verarbeitung, zum Beispiel eine Berechnung oder Zuweisung?', 'Rechteck', ['Raute', 'Parallelogramm', 'Abgerundetes Rechteck'], 'Eine Verarbeitung ist ein einfaches Rechteck.'],
+    ['Welches Symbol markiert im Programmablaufplan Anfang und Ende?', 'Abgerundetes Rechteck', ['Rechteck', 'Raute', 'Parallelogramm'], 'Start und Ende sind abgerundete Rechtecke.'],
+    ['Ein Programm liest die Lufttemperatur ein. Über 20 Grad gibt es „Fahrrad“ aus, sonst „Bus“. Welche Grundstruktur eines Programmablaufs ist das?', 'Selektion', ['Sequenz', 'Zyklus'], 'Eine Auswahl zwischen zwei Wegen ist eine Selektion.'],
+    ['Ein Programm liest so lange Messwerte ein und addiert sie, bis der Wert 0 eingegeben wird. Welche Grundstruktur eines Programmablaufs steckt darin?', 'Zyklus', ['Sequenz', 'Selektion'], 'Das Wiederholen von Schritten ist ein Zyklus (eine Schleife).'],
+    ['Ein Programm liest Länge und Breite ein, berechnet die Fläche und gibt sie aus, ohne Entscheidung und ohne Wiederholung. Welche Grundstruktur ist das?', 'Sequenz', ['Selektion', 'Zyklus'], 'Schritte, die nur nacheinander ablaufen, bilden eine Sequenz.']
+  ];
+  G.sw4 = R => {
+    const c = C(), v = c.pick(R, SYMFRAGEN);
+    return qChoice(R, v[0], v[1], v[2], v[3] + ' Die Grundstrukturen heißen Sequenz (Reihenfolge), Selektion (Auswahl) und Zyklus (Wiederholung).', ['Gehe die Formen im Kopf durch: Welche gehört zu welcher Art von Schritt? Bei den Grundstrukturen hilft die Frage, ob etwas nacheinander, ausgewählt oder wiederholt wird.', 'Sequenz = nacheinander, Selektion = entweder oder, Zyklus = immer wieder.'], { cross: v[1] });
+  };
+  /* PRUEFEN P24: Die C++-Ausschnitte nutzen die heute übliche Schreibweise (#include <iostream> und using namespace std;), die Unterlagen zeigen noch <iostream.h>. Schleifen, Operatoren und Datentypen entsprechen dem Unterricht; bool und const kommen nur kurz vor. Passt das? */
+  const cppRun = lines => {
+    const s = {}, val = t => (/^\d+$/.test(t) ? +t : s[t]);
+    lines.forEach(l => {
+      let m;
+      if ((m = /^int (\w) = (\d+);$/.exec(l))) s[m[1]] = +m[2];
+      else if ((m = /^(\w)(\+\+|--);$/.exec(l))) s[m[1]] += m[2] === '++' ? 1 : -1;
+      else if ((m = /^(\w) (\+|-|\*|\/|%)= (\w+);$/.exec(l))) { const a = s[m[1]], b = val(m[3]); s[m[1]] = m[2] === '+' ? a + b : m[2] === '-' ? a - b : m[2] === '*' ? a * b : m[2] === '/' ? Math.trunc(a / b) : a % b; }
+    });
+    return s;
+  };
+  const CPPOPS = [
+    { t: 'x += y;', ok: s => s.x < 90, f: s => { s.x += s.y; } },
+    { t: 'x -= 4;', ok: s => s.x > 8, f: s => { s.x -= 4; } },
+    { t: 'x *= 2;', ok: s => s.x < 50, f: s => { s.x *= 2; } },
+    { t: 'x /= 3;', ok: s => s.x >= 7, f: s => { s.x = Math.trunc(s.x / 3); } },
+    { t: 'x %= 7;', ok: s => s.x >= 8, f: s => { s.x %= 7; } },
+    { t: 'y++;', ok: s => s.y < 12, f: s => { s.y++; } },
+    { t: 'y--;', ok: s => s.y > 3, f: s => { s.y--; } }
+  ];
+  G.sw5 = R => {
+    const c = C(); let lines, x0, y0, st, ops;
+    for (let tries = 0; ; tries++) {
+      x0 = c.ri(R, 14, 40); y0 = c.ri(R, 4, 9); st = { x: x0, y: y0 }; ops = [];
+      for (let k = 0; k < 4; k++) { const cand = CPPOPS.filter(o => o.ok(st) && (ops.indexOf(o) < 0)); if (!cand.length) break; const o = c.pick(R, cand); o.f(st); ops.push(o); }
+      if (ops.length === 4 && st.x >= 1 && ops.some(o => /[\/%]/.test(o.t)) && ops.some(o => /x/.test(o.t))) break;
+      if (tries > 200) throw new Error('ALG-Aufgabe sw5: keine Rechnung gefunden');
+    }
+    lines = ['int x = ' + x0 + ';', 'int y = ' + y0 + ';'].concat(ops.map(o => o.t));
+    const cross = cppRun(lines).x;
+    const steps = []; { const s2 = { x: x0, y: y0 }; steps.push('Start: x = ' + x0 + ', y = ' + y0); ops.forEach(o => { o.f(s2); steps.push(o.t + '  ->  x = ' + s2.x + ', y = ' + s2.y); }); }
+    return qNum('Gegeben ist ein Ausschnitt aus einem C++-Programm. Alle Variablen sind vom Typ int. Welchen Wert hat x nach dem letzten Befehl?', null, null, st.x, '', 'Wert von x',
+      ['Gehe Zeile für Zeile durch und notiere nach jedem Befehl x und y. „x += y;“ bedeutet dasselbe wie „x = x + y;“.', 'Bei int wird ganzzahlig gerechnet: „x /= 3;“ schneidet den Rest ab. „x %= 7;“ liefert den Rest der Division durch 7. „y++;“ erhöht y um 1, „y--;“ senkt es um 1.'],
+      'Schritt für Schritt:\n' + steps.join('\n') + '\nAm Ende ist x = ' + st.x + '.', cross, { cpp: lines.join('\n') });
+  };
+  G.sw6 = R => {
+    const c = C(), v = c.ri(R, 0, 2); let code, exp, cross, expl, tips;
+    if (v === 0) {
+      const a = c.ri(R, 2, 9), s = c.ri(R, 2, 4), n = c.ri(R, 4, 6), b = a + s * (n - 1) + c.ri(R, 0, s - 1);
+      code = ['for (int i = ' + a + '; i <= ' + b + '; i += ' + s + ')', '  cout << i << " ";']; exp = []; for (let i = a; i <= b; i += s) exp.push(String(i));
+      cross = []; for (let k = 0; k <= Math.floor((b - a) / s); k++) cross.push(String(a + k * s));
+      expl = 'i startet bei ' + a + ', die Bedingung i <= ' + b + ' wird vor jedem Durchlauf geprüft, danach wird i um ' + s + ' erhöht. Ausgegeben wird ' + exp.join(' ') + '. Der nächste Wert ' + (a + s * exp.length) + ' ist größer als ' + b + ', die Schleife endet.';
+      tips = ['Die for-Schleife hat drei Teile: Anfangswert, Bedingung, Schrittweite. Gib bei jedem Durchlauf i aus.', 'Die Bedingung wird vor jedem Durchlauf geprüft. Hör auf, sobald i größer als der Grenzwert ist.'];
+    } else if (v === 1) {
+      const n0 = c.ri(R, 1, 5), lim = c.ri(R, 30, 70);
+      code = ['int n = ' + n0 + ';', 'while (n < ' + lim + ')', '{', '  n = n * 2;', '  cout << n << " ";', '}']; exp = []; { let n = n0; while (n < lim) { n *= 2; exp.push(String(n)); } }
+      cross = []; for (let k = 1; n0 * Math.pow(2, k - 1) < lim; k++) cross.push(String(n0 * Math.pow(2, k)));
+      expl = 'Vor jedem Durchlauf wird n < ' + lim + ' geprüft, im Körper wird verdoppelt und ausgegeben. Ausgabe: ' + exp.join(' ') + '. Danach ist n = ' + exp[exp.length - 1] + ' nicht mehr kleiner als ' + lim + '.';
+      tips = ['Bei while wird die Bedingung am Anfang geprüft. Verdopple n im Körper und gib es danach aus.', 'Die letzte Ausgabe kann größer als der Grenzwert sein: Geprüft wird vor dem Verdoppeln.'];
+    } else {
+      const s0 = c.ri(R, 12, 40), lim = c.ri(R, 3, 10);
+      code = ['int t = ' + s0 + ';', 'do', '{', '  cout << t << " ";', '  t = t * 2;', '  cout << t << " ";', '} while (t < ' + lim + ');']; exp = [String(s0), String(s0 * 2)]; cross = [String(s0), String(s0 + s0)];
+      expl = 'Bei do-while wird der Körper zuerst ausgeführt und die Bedingung erst am Ende geprüft. Der Körper läuft also genau einmal (Ausgabe ' + exp.join(' ') + '), obwohl t = ' + s0 * 2 + ' nicht kleiner als ' + lim + ' ist. Die Schleife endet danach.';
+      tips = ['Bei do-while steht die Bedingung hinter dem Körper. Wann wird sie zum ersten Mal geprüft?', 'Der Körper läuft mindestens einmal, auch wenn die Bedingung von Anfang an falsch ist.'];
+    }
+    return { text: 'Was gibt dieser Ausschnitt aus einem C++-Programm aus? Schreibe die Zahlen in der Reihenfolge der Ausgabe auf, durch Leerzeichen getrennt.', cpp: code.join('\n'), ask: { type: 'out', label: 'Ausgabe', expected: exp }, value: exp.join(' '), tol: 0, expl, tips, cross };
+  };
+  const CPPFRAGEN = [
+    ['Welcher Datentyp passt am besten zur Anzahl der Schrauben in einer Packung (zum Beispiel 250)?', 'int', ['double', 'char', 'bool'], 'Eine Anzahl ist eine ganze Zahl, dafür gibt es int.'],
+    ['Welcher Datentyp passt am besten für einen Messwert wie die Betriebsspannung 3,3 Volt?', 'double', ['int', 'char', 'bool'], 'Zahlen mit Nachkommastellen sind Gleitpunktzahlen: double (oder float).'],
+    ['Welcher Datentyp passt am besten für ein einzelnes Zeichen, etwa den Buchstaben J für „Ja“?', 'char', ['int', 'double', 'float'], 'Ein einzelnes Zeichen wird in einer Variablen vom Typ char gespeichert.'],
+    ['Welche Zeile definiert in C++ eine Variable für ganze Zahlen mit dem Namen alter?', 'int alter;', ['alter int;', 'int alter', 'integer: alter;'], 'Eine Variable wird mit Datentyp, Leerzeichen, Name und Semikolon definiert.'],
+    ['Welche Zeile gibt den Text Hallo auf dem Bildschirm aus?', 'cout << "Hallo";', ['cin >> "Hallo";', 'cout >> "Hallo";', 'cout << Hallo'], 'cout schreibt mit dem Operator << auf den Bildschirm, der Text steht in Anführungszeichen, am Ende steht ein Semikolon.'],
+    ['Welches Schlüsselwort legt fest, dass sich der Wert einer Variablen im ganzen Programmablauf nicht mehr ändern lässt?', 'const', ['int', 'cout', 'return'], 'Mit const wird eine symbolische Konstante vereinbart.'],
+    ['Welcher Name ist für eine Variable in C++ zulässig?', 'summe_1', ['mess wert 2', '3spannung', 'return'], 'Namen dürfen keine Leerzeichen enthalten, nicht mit einer Ziffer beginnen und nicht wie ein Schlüsselwort heißen. Auch auf Groß- und Kleinschreibung achtet C++.'],
+    ['Welche Zeile erhöht die Variable zaehler um 1?', 'zaehler++;', ['zaehler==1;', 'zaehler =+ 1', 'zaehler + 1'], 'zaehler++; ist die Kurzform von zaehler = zaehler + 1; (Inkrement).']
+  ];
+  G.sw7 = R => {
+    const c = C(), v = c.pick(R, CPPFRAGEN);
+    return qChoice(R, v[0], v[1], v[2], v[3], ['Schau auf das, was die Zeile oder der Typ genau tun soll: Welche Zeichen gehören dazu und was bedeuten sie?', 'Beachte die Regeln aus dem Unterricht: Ein Befehl endet mit einem Semikolon, Namen haben keine Leerzeichen, C++ unterscheidet Groß- und Kleinschreibung.'], { cross: v[1] });
+  };
+  /* PRUEFEN P25: Fehlersuche E in C++: Aus der Fehlermeldung des Übersetzers geht oft die Folgezeile hervor (fehlendes Semikolon), die Bedingung if (n = 5) ist kein Übersetzerfehler, und (a + b) / 2 mit int rechnet ganzzahlig. Sind diese drei typischen Fehler für das Niveau der Klasse passend, oder sollen andere vorkommen? */
+  G.sw8 = R => {
+    const c = C(), v = c.ri(R, 0, 2), head = ['#include <iostream>', 'using namespace std;', 'int main()', '{']; let bad, fix, bug, text, expl, tips;
+    if (v === 0) {
+      const N = c.ri(R, 4, 9), body = n => ['  int summe = 0;', '  for (int i = 1; i <= ' + N + '; i++)', '    summe += i' + n, '  cout << summe;', '  return 0;', '}'];
+      bad = head.concat(body('')); fix = head.concat(body(';')); bug = 6;
+      text = 'Das Programm soll die Summe der Zahlen von 1 bis ' + N + ' ausgeben. Der Übersetzer (Compiler) bricht aber mit einem Fehler ab und zeigt auf die Zeile 8 („cout << summe;“). Welche Zeile muss geändert werden? Tippe sie an.';
+      expl = 'In Zeile 7 fehlt das Semikolon am Ende von „summe += i“. Der Compiler merkt es erst, wenn er in der Zeile danach ankommt. Jede Anweisung wird mit ; abgeschlossen. Richtig: summe += i;';
+      tips = ['Der Compiler zeigt die Zeile, in der er den Fehler bemerkt. Die Ursache kann eine Zeile davor liegen.', 'Prüfe, ob jede Anweisung vor der gemeldeten Zeile ordentlich abgeschlossen ist.'];
+    } else if (v === 1) {
+      const K = c.pick(R, [5, 7, 9, 12]), body = op => ['  int n;', '  cin >> n;', '  if (n ' + op + ' ' + K + ')', '    cout << "gleich";', '  else', '    cout << "ungleich";', '  return 0;', '}'];
+      bad = head.concat(body('=')); fix = head.concat(body('==')); bug = 6;
+      text = 'Das Programm soll „gleich“ ausgeben, wenn die eingegebene Zahl ' + K + ' ist, und sonst „ungleich“. Es lässt sich übersetzen und starten, gibt aber bei jeder Eingabe „gleich“ aus. Welche Zeile enthält den Fehler?';
+      expl = 'Ein einzelnes = ist die Zuweisung: n bekommt den Wert ' + K + ', und der Wert ' + K + ' gilt als wahr. Zum Vergleichen braucht man ==. Richtig: if (n == ' + K + ')';
+      tips = ['Das Programm läuft, die Bedingung ist aber immer wahr. Schau dir an, was in der Bedingung tatsächlich passiert.', 'In C++ ist = die Zuweisung und == der Vergleich auf Gleichheit.'];
+    } else {
+      const a = 2 * c.ri(R, 2, 6) + 1, b = 2 * c.ri(R, 2, 6), body = d => ['  int a = ' + a + ';', '  int b = ' + b + ';', '  double mittel = (a + b) / ' + d + ';', '  cout << mittel;', '  return 0;', '}'];
+      bad = head.concat(body('2')); fix = head.concat(body('2.0')); bug = 6;
+      text = 'Das Programm soll den Mittelwert von a = ' + a + ' und b = ' + b + ' ausgeben, also ' + String((a + b) / 2).replace('.', ',') + '. Es gibt aber ' + Math.trunc((a + b) / 2) + ' aus. Welche Zeile enthält den Fehler?';
+      expl = 'a, b und die 2 sind ganze Zahlen (int): (a + b) / 2 wird ganzzahlig gerechnet und der Rest abgeschnitten, erst danach landet das Ergebnis in der double-Variablen. Richtig: (a + b) / 2.0 rechnet mit Kommazahlen.';
+      tips = ['Rechne den Ausdruck rechts vom Gleichheitszeichen von Hand und überlege, mit welchem Datentyp gerechnet wird.', 'Teilt man int durch int, gibt es auch wieder ein int: Der Nachkommateil geht verloren, bevor er in der Variablen ankommt.'];
+    }
+    return { text, ask: { type: 'line', lines: bad, correct: [bug] }, value: bug, tol: 0, expl: 'Die Zeile ' + (bug + 1) + ' ist falsch. ' + expl, tips, meta: { bad: bad.join('\n'), fix: fix.join('\n'), kind: 'cpp' } };
+  };
+
+  /* ---------- 8b. Mikrocontroller und Projekt (Berufsschulstoff Lernfeld 12: Mikrocontroller, Projektbearbeitung) ---------- */
+  /* PRUEFEN P26: Die Fragen zu Aufbau und Begriffen des Mikrocontrollers (Aufgabe 43) folgen der Unterlage: Mikrocontroller nach der Harvard-Architektur (getrennter Programm- und Datenspeicher), CPU nach von Neumann (gemeinsamer Speicher), On-Chip-Peripherie mit ADU, DAU, Timer, Schnittstellen, Stack für Rückkehradressen, Spezialfunktionsregister für die Betriebsart der Ports. Manche Controller (zum Beispiel einfache ARM-Kerne) arbeiten mit einem gemeinsamen Speicher. Soll die Aussage „Controller = Harvard“ im Lab so stehen bleiben? */
+  const MCFRAGEN = [
+    ['Ein Mikrocontroller hat einen Programmspeicher und einen davon getrennten Datenspeicher. Wie heißt diese Bauweise?', 'Harvard-Architektur', ['Von-Neumann-Architektur', 'Ring-Architektur', 'Stern-Architektur'], 'Bei der Harvard-Architektur liegen Programm und Daten in getrennten Speichern. Eine klassische CPU nach von Neumann hat einen gemeinsamen Speicher für beides.', 'Denke an die Namen der beiden Bauweisen: Eine davon trennt Programm und Daten, die andere legt sie zusammen.'],
+    ['Bei einem klassischen Prozessor (CPU) liegen Programm und Daten gemeinsam in einem Speicher. Wie heißt diese Bauweise?', 'Von-Neumann-Architektur', ['Harvard-Architektur', 'Ring-Architektur', 'Stern-Architektur'], 'Der gemeinsame Speicher für Programm und Daten kennzeichnet die Von-Neumann-Architektur. Beim Mikrocontroller sind beide getrennt (Harvard).', 'Es gibt zwei bekannte Bauweisen für Rechner. Eine trennt Programm- und Datenspeicher, die andere nicht.'],
+    ['Welche Bausteine sind beim Mikrocontroller auf einem einzigen Chip vereint?', 'CPU, Speicher, Peripherie und Interruptsystem', ['nur die CPU, Speicher und Peripherie sind einzelne Chips', 'nur Speicher und Peripherie, die CPU ist ein eigener Chip', 'CPU und Netzteil, die übrigen Bausteine außerhalb'], 'Ein Mikrocontroller ist ein vollständiges Mikrocomputersystem auf einem Chip: Kern (CPU), Speicher, Peripheriekomponenten und Interruptsystem sind über einen Bus verbunden.', 'Das Besondere am Mikrocontroller: Er ist ein ganzer kleiner Computer in einem Gehäuse.'],
+    ['Ein Sensor liefert eine veränderliche Spannung. Welche Baugruppe des Mikrocontrollers macht daraus eine Zahl?', 'Analog-Digital-Umsetzer (ADU)', ['Digital-Analog-Umsetzer (DAU)', 'Timer', 'Interruptsystem'], 'Der ADU wandelt eine analoge Spannung in einen digitalen Zahlenwert. Der DAU arbeitet in der Gegenrichtung.', 'Die Spannung ist ein analoges Signal, gebraucht wird eine Zahl. In welche Richtung wird umgesetzt?'],
+    ['Eine Lampe soll im Takt von zwei Sekunden angesteuert werden. Welche Baugruppe misst Zeiten und erzeugt zeitabhängige Impulse?', 'Timer (Zeitgeber)', ['Analog-Digital-Umsetzer', 'Stack', 'serielle Schnittstelle'], 'Der Timer misst Zeiten und erzeugt zyklisch zeitabhängige Impulse.', 'Gesucht ist die Baugruppe, deren Aufgabe das Messen und Erzeugen von Zeiten ist.'],
+    ['Welcher Speicher behält das Programm eines Mikrocontrollers auch ohne Betriebsspannung?', 'Flash-EEPROM als Programmspeicher', ['SRAM als Datenspeicher', 'Arbeitsregister', 'Stack'], 'Der Programmspeicher ist nichtflüchtig (zum Beispiel Flash-EEPROM, ROM). SRAM, Register und Stack verlieren ihren Inhalt beim Abschalten.', 'Das Programm muss nach dem Einschalten wieder da sein. Welcher Speichertyp ist nichtflüchtig?'],
+    ['Wofür wird der Stack (Stapelspeicher) im Datenspeicher benutzt?', 'Er merkt sich Rückkehradressen von Unterprogrammen', ['Er legt die Betriebsart der Ports fest', 'Er speichert das Programm dauerhaft', 'Er erzeugt zeitabhängige Impulse'], 'Beim Aufruf eines Unterprogramms legt der Controller die Rückkehradresse auf den Stack. Am Ende des Unterprogramms springt er dorthin zurück.', 'Frage dich, was der Controller wissen muss, wenn ein Unterprogramm fertig ist.'],
+    ['Wo werden die Betriebsarten der On-Chip-Peripherie, zum Beispiel der Ports, eingestellt?', 'In den Spezialfunktionsregistern (SFR)', ['Im Stack', 'Im Programmspeicher', 'Im Arbeitsregister'], 'Die Spezialfunktionsregister (SFR) im Datenspeicher stellen die Betriebsarten der Peripherie ein, vor allem die der Ports.', 'Es gibt im Datenspeicher einen Bereich, der extra für die Steuerung der Peripherie gedacht ist.'],
+    ['Ein Controller fragt in einer Schleife immer wieder ab, ob ein Taster gedrückt ist. Wie heißt dieses Verfahren?', 'Polling (Abfrageschleife)', ['Interrupt (Programmunterbrechung)', 'Handshake', 'Zeitgeber'], 'Beim Polling fragt das Programm selbst ständig nach. Es kostet Rechenzeit, auch wenn nichts passiert.', 'Wer fragt hier nach: das Programm selbst oder ein Signal von außen?'],
+    ['Ein Tastendruck unterbricht das laufende Programm sofort. Danach läuft das Programm an der alten Stelle weiter. Wie heißt dieses Verfahren?', 'Interrupt (Programmunterbrechung)', ['Polling (Abfrageschleife)', 'Handshake', 'Zeitgeber'], 'Beim Interrupt meldet sich die Peripherie bei der CPU, das Hauptprogramm wird kurz unterbrochen und danach fortgesetzt.', 'Wer meldet sich hier: das Programm oder die Peripherie?'],
+    ['Wie werden die Bits eines Zeichens bei der seriellen Datenübertragung gesendet?', 'nacheinander über eine Datenleitung', ['gleichzeitig über je eine eigene Leitung', 'immer nur zwei Bits auf einmal', 'zuerst alle Nullen, dann alle Einsen'], 'Seriell bedeutet nacheinander: Die Bits eines Zeichens laufen einzeln hintereinander über eine Leitung. Gleichzeitig über mehrere Leitungen geht es bei der parallelen Übertragung.', 'Seriell und parallel sind Gegenteile. Überlege, was jeweils gleichzeitig und was nacheinander geschieht.'],
+    ['Was ist bei der asynchronen seriellen Übertragung typisch?', 'Jedes Zeichen wird von Startbit und Stoppbit eingerahmt', ['Die Daten werden ohne Start- und Stoppbit aneinandergereiht', 'Alle Bits eines Zeichens kommen gleichzeitig an', 'Sender und Empfänger brauchen keinen Takt'], 'Bei der asynchronen Übertragung rahmen Startbit und Stoppbit jedes Zeichen ein. Beide Seiten haben eigene Taktgeneratoren, die mit derselben Frequenz laufen müssen. Ohne Start- und Stoppbit arbeitet die synchrone Übertragung.', 'Der Empfänger muss den Anfang und das Ende jedes Zeichens erkennen. Wie hilft ihm dabei der Rahmen?'],
+    ['Wofür steht die Abkürzung UART?', 'Universeller asynchroner Sende- und Empfangsbaustein', ['Universelle Anschlussleiste für Ports', 'Unterprogramm-Adressregister', 'Universeller Analog-Rechner mit Timer'], 'UART (Universal Asynchronous Receiver Transmitter) ist der Baustein für die asynchrone serielle Übertragung. Der USART kann auch synchron arbeiten.', 'Im Namen stehen die Wörter asynchron, Empfänger (Receiver) und Sender (Transmitter).'],
+    ['Bei der parallelen Übertragung meldet der Sender „Daten bereit“. Was geschieht beim Handshake-Verfahren danach?', 'Der Empfänger übernimmt die Daten und quittiert den Empfang', ['Der Empfänger sendet sofort selbst Daten', 'Der Empfänger schaltet die Datenleitungen ab', 'Der Empfänger wartet ohne Rückmeldung'], 'Beim Handshake meldet der Sender die Bereitstellung der Daten, der Empfänger quittiert die Übernahme. Erst dann darf der Sender das nächste Zeichen einstellen.', 'Handshake heißt Händedruck: Auf die Meldung des Senders folgt eine Antwort des Empfängers.']
+  ];
+  G.mc1 = R => {
+    const c = C(), v = c.pick(R, MCFRAGEN);
+    return qChoice(R, v[0], v[1], v[2], v[3], [v[4], 'Gehe die vier Antworten der Reihe nach durch. Streiche die, die zu einem anderen Baustein oder Verfahren gehören.'], { cross: v[1] });
+  };
+  /* PRUEFEN P27: Handshake bei der parallelen Datenübertragung als fünf Schritte: Daten einstellen, „Daten bereit“, Daten übernehmen, Empfang quittieren, nächstes Zeichen. Die Unterlage beschreibt Leitungen S0 bis S6 für die Daten, S7 „Daten bereit“ und S8 „Empfangsquittung“. Stimmen Reihenfolge und Wortwahl (ohne Namen der Leitungen) mit dem Unterricht überein? */
+  const HANDSHAKE = ['Sender: Datenbits an den Datenleitungen einstellen', 'Sender: Meldung „Daten bereit“ geben', 'Empfänger: Daten übernehmen', 'Empfänger: Empfang quittieren', 'Sender: nächstes Zeichen einstellen'];
+  G.mc2 = R => {
+    const c = C(); let sh, tries = 0; do { sh = c.shuffle(R, HANDSHAKE); tries++; } while (sh.join('|') === HANDSHAKE.join('|') && tries < 20);
+    return { text: 'Ein Sender schickt Zeichen parallel an einen Empfänger, nach dem Handshake-Verfahren. Die fünf Schritte eines Durchlaufs sind durcheinander geraten. Tippe sie in der Reihenfolge an, in der sie ablaufen.', ask: { type: 'order', items: sh, correct: HANDSHAKE.slice() }, value: HANDSHAKE.join(' → '), tol: 0,
+      expl: 'Erst stellt der Sender die Daten ein und meldet „Daten bereit“. Dann übernimmt der Empfänger sie und quittiert den Empfang. Erst nach der Quittung darf der Sender das nächste Zeichen einstellen, sonst würden Daten verloren gehen oder falsch gelesen.',
+      tips: ['Frage dich: Wann kann der Empfänger wissen, dass die Daten stehen? Und wann weiß der Sender, dass er das nächste Zeichen schicken darf?', 'Der Sender meldet, der Empfänger quittiert. Das nächste Zeichen kommt immer erst nach der Quittung.'] };
+  };
+  /* PRUEFEN P28: Zeichen pro Sekunde bei asynchroner serieller Übertragung: Ein Zeichen braucht 1 Startbit, 7 oder 8 Datenbits, optional 1 Paritätsbit und 1 Stoppbit; abgerundet auf ganze Zeichen. Die Unterlage nennt Startbit, Datenbits und Stoppbit; das Paritätsbit ist ergänzt (optional). Ist das so im Unterricht behandelt? */
+  G.mc3 = R => {
+    const c = C(), baud = c.pick(R, [2400, 4800, 9600, 19200]), d = c.pick(R, [7, 8]), par = c.ri(R, 0, 1), frame = 1 + d + par + 1, cps = Math.floor(baud / frame);
+    const cross = (() => { let n = 0, bits = 0; while (bits + frame <= baud) { bits += frame; n++; } return n; })();
+    return qNum('Zwei Mikrocontroller tauschen Zeichen über eine asynchrone serielle Leitung aus. Jedes Zeichen wird mit 1 Startbit, ' + d + ' Datenbits' + (par ? ', 1 Paritätsbit (Fehlererkennung)' : '') + ' und 1 Stoppbit gesendet. Die Leitung überträgt ' + baud + ' Bit pro Sekunde. Wie viele Zeichen können höchstens je Sekunde ankommen? Runde auf ganze Zeichen ab.', null, null, cps, 'Zeichen pro Sekunde', 'Zeichen je Sekunde',
+      ['Zähle zuerst, wie viele Bits ein einzelnes Zeichen auf der Leitung braucht. Das Startbit, das Stoppbit' + (par ? ' und das Paritätsbit' : '') + ' gehören dazu.', 'Teile die Übertragungsrate in Bit pro Sekunde durch die Bitzahl je Zeichen und runde auf ganze Zeichen ab.'],
+      'Ein Zeichen braucht 1 + ' + d + (par ? ' + 1' : '') + ' + 1 = ' + frame + ' Bit. Bei ' + baud + ' Bit pro Sekunde sind das ' + baud + ' : ' + frame + ' = ' + (baud / frame).toFixed(2).replace('.', ',').replace(/,00$/, '') + ', abgerundet ' + cps + ' Zeichen je Sekunde.', cross);
+  };
+  /* PRUEFEN P29: Timer-Aufgabe mit 8-Bit-Zählregister, Startwert (Vorladen) und Vorteiler. Die Unterlage nennt nur die Aufgaben des Timers (Zeiten messen, zeitabhängige Impulse erzeugen); Vorteiler und Zählregister sind allgemeines Wissen. Soll die Rechenaufgabe im Unterricht vorkommen? */
+  G.mc4 = R => {
+    const c = C(), f = c.pick(R, [2, 4, 8, 16]), V = c.pick(R, [8, 64, 256]), n = c.pick(R, [256, 200, 100, 50]), S = 256 - n, T = n * V / f;
+    const cross = (() => { let reg = S, takte = 0, t = 0; while (reg < 256) { takte++; if (takte % V === 0) reg++; t = takte; } return t / f; })();
+    return qNum('Der Timer eines Mikrocontrollers hat ein 8-Bit-Zählregister (Werte 0 bis 255). Bei jedem Zählimpuls wird es um 1 erhöht. Springt es von 255 auf 0, meldet der Timer, dass die Zeit abgelaufen ist. Das Register wird mit dem Startwert ' + S + ' geladen. Der Systemtakt beträgt ' + f + ' MHz, ein Vorteiler lässt aber nur jeden ' + V + '. Takt als Zählimpuls durch. Nach wie vielen Mikrosekunden meldet der Timer das Ende?', null, null, T, 'µs', 'Zeit bis zur Meldung',
+      ['Wie viele Zählschritte braucht das Register vom Startwert bis zum Sprung von 255 auf 0? Rechne 256 minus Startwert.', 'Jeder Zählschritt dauert so viele Systemtakte, wie der Vorteiler angibt. Ein Takt bei ' + f + ' MHz dauert 1 : ' + f + ' µs.'],
+      'Das Register muss 256 − ' + S + ' = ' + n + ' Schritte zählen. Jeder Schritt dauert ' + V + ' Takte. Das sind ' + n + ' · ' + V + ' = ' + (n * V) + ' Takte. Ein Takt dauert 1 : ' + f + ' µs, also ' + (n * V) + ' : ' + f + ' = ' + T + ' µs.', cross);
+  };
+  /* PRUEFEN P30: Stapeltiefe: Jeder Unterprogrammaufruf legt eine Rückkehradresse auf den Stack, jedes Ende nimmt sie wieder herunter; gefragt ist die größte Zahl gleichzeitig gespeicherter Adressen (Hauptprogramm ruft A auf = 1 Adresse, wenn A läuft). Die Unterlage sagt nur, dass der Stack Rückkehradressen bei Unterprogrammaufrufen speichert. Ist die Zählweise (ohne die Adresse des Hauptprogramms selbst) so in Ordnung? */
+  G.mc5 = R => {
+    const c = C(), depth = c.ri(R, 3, 5), names = [], mk = () => { const nm = String.fromCharCode(65 + names.length); names.push(nm); return nm; };
+    const kids = {}, add = (p, ch) => { (kids[p] = kids[p] || []).push(ch); };
+    let prev = 'Hauptprogramm'; const chain = [];
+    for (let i = 0; i < depth; i++) { const nm = mk(); add(prev, nm); chain.push(nm); prev = nm; }
+    const extra = c.ri(R, 1, 2);
+    for (let i = 0; i < extra; i++) { const hosts = ['Hauptprogramm'].concat(chain.slice(0, Math.max(0, depth - 2))); const h = c.pick(R, hosts), nm = mk(); add(h, nm); }
+    const order = Object.keys(kids).sort((a, b) => (a === 'Hauptprogramm' ? -1 : b === 'Hauptprogramm' ? 1 : a < b ? -1 : 1));
+    const sent = order.map(p => { const k = kids[p].slice(); if (R() < 0.5) k.reverse(); kids[p] = k; const nm = p === 'Hauptprogramm' ? 'Das Hauptprogramm' : 'Unterprogramm ' + p, calls = k.map(x => 'Unterprogramm ' + x); return nm + ' ruft ' + (calls.length === 1 ? calls[0] : calls.join(' und danach ')) + ' auf.'; });
+    const height = n => 1 + Math.max(0, ...(kids[n] || []).map(height)), value = height('Hauptprogramm') - 1;
+    const ev = []; (function walk(n) { (kids[n] || []).forEach(ch => { ev.push(1); walk(ch); ev.push(-1); }); })('Hauptprogramm');
+    let cur = 0, mx = 0; ev.forEach(e => { cur += e; if (cur > mx) mx = cur; });
+    return qNum('Bei der Programmausführung gilt: ' + sent.join(' ') + ' Alle anderen Unterprogramme rufen keine weiteren auf. Bei jedem Aufruf legt der Controller die Rückkehradresse auf den Stack, am Ende des Unterprogramms nimmt er sie wieder herunter. Wie viele Rückkehradressen liegen höchstens gleichzeitig auf dem Stack?', null, null, value, 'Adressen', 'Größte Zahl Adressen',
+      ['Zeichne dir die Aufrufe als Baum auf. Aufrufe, die nacheinander kommen, belegen den Stack nicht gleichzeitig. Verschachtelte Aufrufe schon.', 'Suche die längste Kette von Aufrufen, in der jedes Unterprogramm das nächste aufruft. Jeder Aufruf in dieser Kette belegt eine Adresse.'],
+      'Die längste Kette von verschachtelten Aufrufen hat ' + value + ' Aufrufe: ' + 'Hauptprogramm → ' + chain.join(' → ') + '. Während das letzte Unterprogramm läuft, liegen ' + value + ' Rückkehradressen auf dem Stack. Aufrufe nacheinander belegen die Adresse jeweils nur kurz.', mx);
+  };
+  /* PRUEFEN P31: Projektphasen nach der Unterlage: Sondierung, Projektdefinition, Projektdurchführung, Projektabschluss. Die Zuordnung der Tätigkeiten ist aus Stichworten der Mitschrift abgeleitet (Ziel und Vorarbeiten, Ist-/Soll-Zustand, Kosten- und Zeitplan, Projektauftrag, Statusberichte, Soll-Ist-Analyse, Präsentation). Passt die Zuordnung zu den Unterlagen? */
+  const PROJEKT = [
+    ['Das Team klärt, welches Ziel erreicht werden soll und welche Vorarbeiten es dazu schon gibt.', 'Sondierung'],
+    ['Ist-Zustand und Soll-Zustand werden ermittelt, ein Kosten- und ein Zeitplan aufgestellt und der Projektauftrag wird formuliert.', 'Projektdefinition'],
+    ['Die Lösung wird entwickelt, und das Team schreibt regelmäßig Statusberichte.', 'Projektdurchführung'],
+    ['Geplante und tatsächliche Kosten und Termine werden verglichen (Soll-Ist-Analyse), und das Ergebnis wird vorgestellt.', 'Projektabschluss']
+  ];
+  G.mc6 = R => {
+    const c = C(), v = c.pick(R, PROJEKT), right = v[1], wrong = PROJEKT.map(p => p[1]).filter(p => p !== right);
+    return qChoice(R, 'In einem Projekt geschieht gerade Folgendes: „' + v[0] + '“ In welcher Phase des Projektablaufs steht das Team?', right, wrong,
+      'Das gehört zur Phase „' + right + '“. Die Reihenfolge im Projektablauf: Sondierung → Projektdefinition → Projektdurchführung → Projektabschluss.',
+      ['Frage dich: Wird noch geklärt, schon geplant und beauftragt, gerade gearbeitet oder schon ausgewertet?', 'Die Phasen laufen in dieser Reihenfolge: Sondierung, Projektdefinition, Projektdurchführung, Projektabschluss.'], { cross: right });
+  };
+
   /* ---------- Aufgabenliste ---------- */
   const defs = [
     [0, 1, 'Werte nach Zuweisungen', 'vars1'], [0, 1, 'Verzweigung mit mehreren Zweigen', 'vars2'], [0, 2, 'Wert nach n Schritten', 'vars3'], [0, 2, 'Zwei Werte vertauschen', 'vars4'], [0, 3, 'Verschachtelte Entscheidung', 'vars5'],
@@ -345,7 +567,10 @@
     [3, 2, 'Tabellentest mit Zählschleife', 'tab1'], [3, 3, 'Tabellentest mit Verzweigung', 'tab2'], [3, 2, 'Fehlersuche A', 'err1'], [3, 2, 'Fehlersuche B', 'err2'], [3, 2, 'Fehlersuche C', 'err3'], [3, 3, 'Fehlersuche D', 'err4'],
     [4, 1, 'Suche im Feld', 'search1'], [4, 2, 'Suche im sortierten Feld', 'search2'], [4, 2, 'Sortieren Schritt für Schritt 1', 'sort1'], [4, 2, 'Sortieren Schritt für Schritt 2', 'sort2'], [4, 3, 'Sortieren Schritt für Schritt 3', 'sort3'], [4, 3, 'Verfahren erkennen', 'sort4'],
     [5, 2, 'Rekursive Funktion 1', 'rek1'], [5, 3, 'Rekursive Funktion 2', 'rek2'], [5, 2, 'Vergleiche zählen', 'kompl1'],
-    [6, 2, 'Zahl prüfen', 'zahl1'], [6, 1, 'Alle Teiler', 'zahl2'], [6, 3, 'Rest und Tausch', 'zahl3'], [6, 3, 'Zahl umrechnen', 'zahl4']
+    [6, 2, 'Zahl prüfen', 'zahl1'], [6, 1, 'Alle Teiler', 'zahl2'], [6, 3, 'Rest und Tausch', 'zahl3'], [6, 3, 'Zahl umrechnen', 'zahl4'],
+    [7, 1, 'Schritte der Softwareentwicklung ordnen', 'sw1'], [7, 1, 'Tätigkeit der richtigen Phase zuordnen', 'sw2'], [7, 2, 'Vorgehen beim Programmentwurf', 'sw3'], [7, 1, 'Symbole und Grundstrukturen', 'sw4'],
+    [7, 2, 'Zuweisungen in C++ verfolgen', 'sw5'], [7, 2, 'Schleifen in C++ lesen', 'sw6'], [7, 1, 'Datentypen und Schreibweise in C++', 'sw7'], [7, 3, 'Fehlersuche E in C++', 'sw8'],
+    [7, 1, 'Mikrocontroller: Aufbau und Begriffe', 'mc1'], [7, 2, 'Datenübergabe mit Handshake ordnen', 'mc2'], [7, 2, 'Zeichen pro Sekunde bei serieller Übertragung', 'mc3'], [7, 3, 'Zeitgeber im Mikrocontroller rechnen', 'mc4'], [7, 2, 'Verschachtelte Unterprogramme und Stapel', 'mc5'], [7, 1, 'Projektphasen zuordnen', 'mc6']
   ];
   const tasks = defs.map((d, i) => ({ id: 'alg' + (i + 1), cat: CATS[d[0]], level: d[1], title: d[2], gen: d[3] }));
 

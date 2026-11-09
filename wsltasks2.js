@@ -1,4 +1,4 @@
-/* wsltasks2.js - WSL-Lab (Wechselstrom und Schwingkreise): Aufgaben ws17 bis ws32 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b)
+/* wsltasks2.js - WSL-Lab (Wechselstrom und Schwingkreise): Aufgaben ws17 bis ws47 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b; ws33 bis ws39 neu: Drehstrom und Leistungsuebertragung, ws40 bis ws47 neu: Induktion, Spannungserzeugung, Wirk- und Blindwiderstand, Berufsschulstoff 1. Lehrjahr)
  * Registrierung: WSL_TASKS.register([ ... ]) (WSL_TASKS kommt aus wsldata.js; wsldata.js VOR dieser Datei laden, in Node holt sich die Datei es per require).
  * Format wie SPEC 8 / elstasks2.js: { id:'wsN', lab:'wsl', cat, title, level, rig, text, table?, hint[3], start(), sol(), wrong(), check(answer), hintVals(),
  *   fields? | choices?, consts? }; answer = { rig, controls, ref, seq, rows, state, fired, value, text, fields, choices, clicks, bericht }.
@@ -661,6 +661,486 @@
       } };
   })();
 
+  /* ====================================================================== ws33 bis ws39: Drehstrom und Leistungsuebertragung (Berufsschulstoff Netzsysteme, Drehstrom, Leistung zum Verbraucher)
+   * Reine Rechenaufgaben (fields) mit eigenen Zahlen; Referenzwerte stehen in vals() und werden hier selbst gerechnet (Formeln wie im Kern: U_L = √3 · U_Str, P = √3 · U_L · I_L · cos φ). */
+  const DS = { ul: 400, rstr: 23, cosphi: 0.8, ansicht: 'zeit', schaltung: 'stern' };
+  const dsCtl = over => Object.assign({}, DS, over || {});
+  const D3 = k => Object.assign({ kind: 'pDrehstrom' }, k || {});
+
+  /* ---------- ws33: Verkettung der Straenge im Generator ---------- */
+  const M33 = (() => {
+    const G = { ustr: 127 };
+    const vals = () => once('v33', () => ({ ustr: G.ustr, w3: SQ3, uY: SQ3 * G.ustr, uD: G.ustr, dreimal: 3 * G.ustr }));
+    const rfY = () => { const v = vals(); return own(v.uY, 'V', [{ v: v.uD, id: 'ohne-wurzel3', text: 'Dein Wert ' + f(v.uD, 0) + ' V ist die Strangspannung selbst. Im Stern liegen zwischen zwei Außenleitern zwei Stränge hintereinander, deren Spannungen um 120° versetzt sind: U_L = √3 · U_Str = ' + f(v.uY, 0) + ' V.' }, { v: v.dreimal, id: 'mal3', text: 'Dein Wert ' + f(v.dreimal, 0) + ' V ist das Dreifache der Strangspannung. Zwei um 120° versetzte Spannungen ergeben geometrisch nur das √3-Fache: U_L = √3 · U_Str = ' + f(v.uY, 0) + ' V.' }]); };
+    const rfD = () => { const v = vals(); return own(v.uD, 'V', [{ v: v.uY, id: 'sqrt3-im-dreieck', text: 'Dein Wert ' + f(v.uY, 0) + ' V entspricht √3 · U_Str. Das ist die Sternschaltung. Im Dreieck liegt jeder Strang direkt zwischen zwei Außenleitern: U_L = U_Str = ' + f(v.uD, 0) + ' V.' }]); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'uy'), Object.assign(rfY(), D3()), 'Die Außenleiterspannung bei Sternschaltung ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'ud'), Object.assign(rfD(), D3()), 'Die Außenleiterspannung bei Dreieckschaltung ist richtig berechnet', 0);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Drehstromgenerator (Übungswerte) induziert in jedem seiner drei Stränge eine Strangspannung von ' + f(G.ustr, 0) + ' V. Die Stränge werden verkettet. Wie groß ist die Spannung zwischen zwei Außenleitern (Außenleiterspannung U_L), wenn die drei Stränge a) im Stern und b) im Dreieck geschaltet sind?',
+      fields: () => [{ key: 'uy', label: 'U_L bei Sternschaltung', unit: 'V' }, { key: 'ud', label: 'U_L bei Dreieckschaltung', unit: 'V' }],
+      hint: () => { const v = vals(); return [
+        'Bei der Verkettung werden die Stränge zu einem gemeinsamen System verbunden. Im Stern sind die Strangenden im Sternpunkt verbunden, im Dreieck liegt Strangende an Strangbeginn des nächsten Strangs. Frage dich jedes Mal: Zwischen welchen Punkten misst du die Spannung?',
+        'Im Stern liegen zwischen zwei Außenleitern zwei Stränge, deren Spannungen um 120° verschoben sind. Geometrisch ergibt das das ' + f(v.w3, 2) + '-Fache (√3) der Strangspannung. Im Dreieck liegt jeder Strang direkt zwischen zwei Außenleitern.',
+        'Musterlösung: Stern: U_L = √3 · ' + f(v.ustr, 0) + ' V = ' + f(v.uY, 0) + ' V. Dreieck: U_L = U_Str = ' + f(v.uD, 0) + ' V. Mit dem Dreifachen (' + f(v.dreimal, 0) + ' V) wäre die Verkettung falsch gerechnet.'
+      ]; },
+      start: () => A('drehstrom', dsCtl({ ul: 220 }), { fields: { uy: null, ud: null } }),
+      sol: () => A('drehstrom', dsCtl({ ul: 220 }), { fields: { uy: vals().uY, ud: vals().uD }, value: vals().uY }),
+      wrong: () => { const v = vals(); return [{ name: 'Stern ohne √3, Dreieck mit √3 (vertauscht)', answer: A('drehstrom', {}, { fields: { uy: v.uD, ud: v.uY } }) }, { name: 'Stern mit dem Faktor 3 statt √3', answer: A('drehstrom', {}, { fields: { uy: v.dreimal, ud: v.uD } }) }]; } };
+  })();
+
+  /* ---------- ws34: Generatorfrequenz und Zeitversatz der Straenge ---------- */
+  const M34 = (() => {
+    const G = { p: 2, n: 1800 };
+    const vals = () => once('v34', () => { const fq = G.p * G.n / 60, T = 1 / fq; return { p: G.p, n: G.n, f: fq, tms: T * 1e3, dtms: T / 3 * 1e3, dtHalbMs: T / 2 * 1e3, fOhneP: G.n / 60, T: T, dt: T / 3 }; });
+    const rfF = () => { const v = vals(); return own(v.f, 'Hz', [{ v: v.fOhneP, id: 'ohne-p', text: 'Dein Wert ' + f(v.fOhneP, 0) + ' Hz ist die Drehzahl in 1/s. Bei zwei Polpaaren durchläuft die Spannung je Umdrehung zwei Perioden: f = p · n.' }, { v: v.n, id: 'min', text: 'Dein Wert ' + f(v.n, 0) + ' passt zur Drehzahl in 1/min. Für f = p · n muss n in 1/s eingesetzt werden (Drehzahl durch 60).' }]); };
+    const rfT = () => { const v = vals(); return own(v.dt, 's', [{ v: v.T, id: 'ganze-periode', text: 'Dein Wert ' + f(v.tms, 2) + ' ms ist die ganze Periodendauer T. 120° sind nur ein Drittel einer Periode: Δt = T / 3.' }, { v: v.T / 2, id: 'halbe-periode', text: 'Dein Wert ' + f(v.dtHalbMs, 2) + ' ms ist die halbe Periodendauer; das entspricht 180°. 120° sind ein Drittel: Δt = T / 3.' }], { factor: 1e-3, dispUnit: 'ms' }); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'f'), rfF(), 'Die Frequenz f der erzeugten Spannung ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'dt'), rfT(), 'Der Zeitversatz Δt zwischen zwei Strängen ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Synchrongenerator hat ' + f(G.p, 0) + ' Polpaare (vierpolig) und wird mit n = ' + f(G.n, 0) + ' 1/min angetrieben (Übungswerte). Das Polrad induziert in den drei Strängen je eine Wechselspannung. Die Spulen sind so angeordnet, dass die Spannungen um 120° gegeneinander verschoben sind. Berechne a) die Frequenz f der Spannung und b) den Zeitversatz Δt, um den die Spannung im nächsten Strang später ihren Höchstwert erreicht. Trage Δt in ms ein.',
+      fields: () => [{ key: 'f', label: 'Frequenz f', unit: 'Hz' }, { key: 'dt', label: 'Zeitversatz Δt', unit: 'ms' }],
+      hint: () => { const v = vals(); return [
+        'Bei jeder Umdrehung des Polrads durchläuft die Spannung so viele Perioden, wie der Generator Polpaare hat. Die Drehzahl musst du in 1/s einsetzen. Eine Verschiebung um 120° ist ein fester Bruchteil einer Periode.',
+        'Die Drehzahl ist ' + f(v.n / 60, 0) + ' 1/s, bei ' + f(v.p, 0) + ' Polpaaren folgt daraus f. Die Periodendauer ist T = 1 / f = ' + f(v.tms, 2) + ' ms; 120° sind ein Drittel einer Periode.',
+        'Musterlösung: f = ' + f(v.p, 0) + ' · ' + f(v.n / 60, 0) + ' 1/s = ' + f(v.f, 0) + ' Hz. T = ' + f(v.tms, 2) + ' ms, Δt = T / 3 = ' + f(v.dtms, 2) + ' ms. Ohne die Polpaarzahl käme nur ' + f(v.fOhneP, 0) + ' Hz heraus.'
+      ]; },
+      start: () => A('drehstrom', dsCtl({ ul: 400 }), { fields: { f: null, dt: null } }),
+      sol: () => A('drehstrom', dsCtl({ ul: 400 }), { fields: { f: vals().f, dt: vals().dtms }, value: vals().f }),
+      wrong: () => { const v = vals(); return [{ name: 'Polpaarzahl vergessen, ganze Periode', answer: A('drehstrom', {}, { fields: { f: v.fOhneP, dt: v.tms } }) }, { name: 'Drehzahl in 1/min, halbe Periode', answer: A('drehstrom', {}, { fields: { f: v.n, dt: v.dtHalbMs } }) }]; } };
+  })();
+
+  /* ---------- ws35: Strom im Neutralleiter bei ungleicher Belastung ---------- */
+  const M35 = (() => {
+    const G = { i1: 16, i2: 10, i3: 10, j1: 10, j2: 10, j3: 0 };
+    const sumN = (a, b, c) => { const k = Math.PI * 2 / 3, re = a + b * Math.cos(-k) + c * Math.cos(k), im = b * Math.sin(-k) + c * Math.sin(k); return Math.hypot(re, im); };
+    const vals = () => once('v35', () => ({ i1: G.i1, i2: G.i2, i3: G.i3, j1: G.j1, j2: G.j2, j3: G.j3, nA: sumN(G.i1, G.i2, G.i3), nB: sumN(G.j1, G.j2, G.j3), betraege: G.i1 + G.i2 + G.i3, betraegeB: G.j1 + G.j2 + G.j3, falschA: Math.abs(G.i1 - G.i2 - G.i3), paar: sumN(0, G.i2, G.i3) }));
+    const rfA = () => { const v = vals(); return own(v.nA, 'A', [{ v: v.betraege, id: 'betraege-addiert', text: 'Dein Wert ' + f(v.betraege, 0) + ' A ist die Summe der drei Beträge. Die Ströme sind um 120° gegeneinander verschoben und werden als Zeiger addiert, nicht als Zahlen.' }, { v: v.falschA, id: 'betraege-abgezogen', text: 'Dein Wert ' + f(v.falschA, 0) + ' A ergibt sich, wenn du die beiden 10-A-Ströme einfach von 16 A abziehst. Die beiden Zeiger stehen im Winkel von 120° und ergeben zusammen nur ' + f(v.paar, 0) + ' A, nicht 20 A.' }]); };
+    const rfB = () => { const v = vals(); return own(v.nB, 'A', [{ v: v.betraegeB, id: 'betraege-addiert', text: 'Dein Wert ' + f(v.betraegeB, 0) + ' A ist die Summe der Beträge. Zwei gleich große Ströme im Winkel von 120° ergeben als Zeiger einen Strom derselben Größe: ' + f(v.nB, 0) + ' A.' }, { v: 0, id: 'null', text: 'Null gilt nur bei drei gleich großen Strömen (symmetrische Last). Hier fehlt der dritte Strom, die Summe der beiden anderen Zeiger bleibt als Neutralleiterstrom übrig.' }]); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'na'), rfA(), 'Der Neutralleiterstrom bei 16 A, 10 A und 10 A ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'nb'), rfB(), 'Der Neutralleiterstrom bei 10 A, 10 A und 0 A ist richtig berechnet', 1);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Drei ohmsche Verbraucher (Übungswerte) hängen in Sternschaltung mit Neutralleiter an einem Drehstromnetz, je einer zwischen Außenleiter und Neutralleiter. a) Die Außenleiterströme sind I_L1 = ' + f(G.i1, 0) + ' A, I_L2 = ' + f(G.i2, 0) + ' A und I_L3 = ' + f(G.i3, 0) + ' A. Wie groß ist der Strom im Neutralleiter? b) Wie groß ist er, wenn nur I_L1 = ' + f(G.j1, 0) + ' A und I_L2 = ' + f(G.j2, 0) + ' A fließen und der dritte Außenleiter stromlos ist (I_L3 = ' + f(G.j3, 0) + ' A)?',
+      fields: () => [{ key: 'na', label: 'Neutralleiterstrom bei 16 A, 10 A, 10 A', unit: 'A' }, { key: 'nb', label: 'Neutralleiterstrom bei 10 A, 10 A, 0 A', unit: 'A' }],
+      hint: () => { const v = vals(); return [
+        'Im Sternpunkt fließen die drei Außenleiterströme zusammen; was nicht durch die anderen ausgeglichen wird, fließt im Neutralleiter. Weil die drei Ströme um 120° versetzt sind, musst du sie als Zeiger addieren und darfst nicht die Beträge zusammenzählen.',
+        'Zwei gleich große Zeiger im Abstand von 120° ergeben einen Zeiger derselben Länge, der genau dem dritten Zeiger entgegenzeigt. In a) heben sich die beiden Ströme von ' + f(v.i2, 0) + ' A also gegen einen Teil des Stroms von ' + f(v.i1, 0) + ' A auf.',
+        'Musterlösung: a) I_N = ' + f(v.i1, 0) + ' A − ' + f(v.paar, 0) + ' A = ' + f(v.nA, 0) + ' A. b) Zwei gleich große Zeiger im Abstand von 120° ergeben ' + f(v.nB, 0) + ' A. Die Summe der Beträge (' + f(v.betraege, 0) + ' A bzw. ' + f(v.betraegeB, 0) + ' A) wäre falsch.'
+      ]; },
+      start: () => A('drehstrom', dsCtl({}), { fields: { na: null, nb: null } }),
+      sol: () => A('drehstrom', dsCtl({}), { fields: { na: vals().nA, nb: vals().nB }, value: vals().nA }),
+      wrong: () => { const v = vals(); return [{ name: 'Beträge addiert', answer: A('drehstrom', {}, { fields: { na: v.betraege, nb: v.betraegeB } }) }, { name: 'Beträge abgezogen, bei b) null', answer: A('drehstrom', {}, { fields: { na: v.falschA, nb: 0 } }) }]; } };
+  })();
+
+  /* ---------- ws36: Wirk- und Scheinleistung im Drehstromnetz ---------- */
+  const M36 = (() => {
+    const G = { ul: 400, il: 12, cos: 0.8 };
+    const vals = () => once('v36', () => { const s = SQ3 * G.ul * G.il, p = s * G.cos; return { ul: G.ul, il: G.il, cos: G.cos, w3: SQ3, s, p, q: s * Math.sqrt(1 - G.cos * G.cos), pKw: p / 1e3, sKva: s / 1e3, pOhne: G.ul * G.il * G.cos, pOhneKw: G.ul * G.il * G.cos / 1e3, sOhne: G.ul * G.il, pDrei: 3 * G.ul * G.il * G.cos }; });
+    const rfP = () => { const v = vals(); return own(v.p, 'W', [{ v: v.pOhne, id: 'ohne-wurzel3', text: 'Dein Wert ' + f(v.pOhne / 1e3, 2) + ' kW entsteht mit U · I · cos φ. Im Drehstromnetz kommt der Verkettungsfaktor √3 dazu: P = √3 · U_L · I_L · cos φ.' }, { v: v.pDrei, id: 'drei-statt-wurzel3', text: 'Dein Wert ' + f(v.pDrei / 1e3, 2) + ' kW passt zu 3 · U_L · I_L · cos φ. Mit der Außenleiterspannung gilt der Faktor √3; der Faktor 3 gehört nur zur Strangspannung: P = 3 · U_Str · I · cos φ.' }, { v: v.s, id: 'cos-vergessen', text: 'Dein Wert ' + f(v.sKva, 2) + ' ist die Scheinleistung S. Die Wirkleistung ist P = S · cos φ.' }], { factor: 1e3, dispUnit: 'kW' }); };
+    const rfS = () => { const v = vals(); return own(v.s, 'VA', [{ v: v.sOhne, id: 'ohne-wurzel3', text: 'Dein Wert ' + f(v.sOhne / 1e3, 2) + ' kVA entsteht mit U · I. Im Drehstromnetz gilt S = √3 · U_L · I_L.' }, { v: v.p, id: 'wirkleistung', text: 'Dein Wert ' + f(v.pKw, 2) + ' ist die Wirkleistung P. Die Scheinleistung S = √3 · U_L · I_L ist größer, weil cos φ kleiner als 1 ist.' }], { factor: 1e3, dispUnit: 'kVA' }); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'p'), D3(rfP()), 'Die Wirkleistung P ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 's'), D3(rfS()), 'Die Scheinleistung S ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein symmetrischer Drehstromverbraucher nimmt am Übungsnetz mit einer Außenleiterspannung von ' + f(G.ul, 0) + ' V einen Leiterstrom von ' + f(G.il, 0) + ' A auf. Der Leistungsfaktor ist cos φ = ' + f(G.cos, 1) + '. Berechne die Wirkleistung P in kW und die Scheinleistung S in kVA.',
+      fields: () => [{ key: 'p', label: 'Wirkleistung P', unit: 'kW' }, { key: 's', label: 'Scheinleistung S', unit: 'kVA' }],
+      hint: () => { const v = vals(); return [
+        'Im Drehstromnetz gibt es einen Verkettungsfaktor, der Außenleiterspannung und Leiterstrom verbindet. Zuerst die Scheinleistung aus Spannung und Strom, danach die Wirkleistung mit dem Leistungsfaktor.',
+        'S = √3 · U_L · I_L mit √3 = ' + f(v.w3, 2) + '. Setze ' + f(v.ul, 0) + ' V und ' + f(v.il, 0) + ' A ein; das Ergebnis liegt bei über 8 kVA. Danach P = S · cos φ.',
+        'Musterlösung: S = ' + f(v.w3, 3) + ' · ' + f(v.ul, 0) + ' V · ' + f(v.il, 0) + ' A = ' + f(v.sKva, 2) + ' kVA. P = ' + f(v.sKva, 2) + ' kVA · ' + f(v.cos, 1) + ' = ' + f(v.pKw, 2) + ' kW. Ohne √3 käme ' + f(v.pOhneKw, 2) + ' kW heraus.'
+      ]; },
+      start: () => A('drehstrom', dsCtl({}), { fields: { p: null, s: null } }),
+      sol: () => A('drehstrom', dsCtl({}), { fields: { p: vals().pKw, s: vals().sKva }, value: vals().pKw }),
+      wrong: () => { const v = vals(); return [{ name: '√3 vergessen', answer: A('drehstrom', {}, { fields: { p: v.pOhne / 1e3, s: v.sOhne / 1e3 } }) }, { name: 'S und P vertauscht', answer: A('drehstrom', {}, { fields: { p: v.sKva, s: v.pKw } }) }]; } };
+  })();
+
+  /* ---------- ws37: Spannungsfall und Verlust einer Drehstromleitung ---------- */
+  const M37 = (() => {
+    const G = { l: 35, a: 4, kappa: 56, i: 20, ul: 400 };
+    const vals = () => once('v37', () => { const rl = G.l / (G.kappa * G.a), du = SQ3 * G.i * rl; return { l: G.l, a: G.a, kappa: G.kappa, i: G.i, ul: G.ul, w3: SQ3, rl, du, duPct: du / G.ul * 100, pv: 3 * G.i * G.i * rl, strang: G.i * rl, zwei: 2 * G.i * rl, pvEin: G.i * G.i * rl, pvZwei: 2 * G.i * G.i * rl }; });
+    const rfD = () => { const v = vals(); return own(v.du, 'V', [{ v: v.zwei, id: 'einphasig', text: 'Dein Wert ' + f(v.zwei, 2) + ' V passt zu 2 · I · R, der Rechnung für Hin- und Rückleiter einer einphasigen Leitung. Bei symmetrischer Drehstromlast fließt im Neutralleiter kein Strom; der Spannungsfall zwischen zwei Außenleitern ist ΔU = √3 · I · R = ' + f(v.du, 2) + ' V.' }, { v: v.strang, id: 'strangspannung', text: 'Dein Wert ' + f(v.strang, 2) + ' V ist I · R, der Spannungsfall in einem Leiter (gegen den Sternpunkt). Zwischen zwei Außenleitern gilt ΔU = √3 · I · R = ' + f(v.du, 2) + ' V.' }], { tol: 0.05 }); };
+    const rfP = () => { const v = vals(); return own(v.pv, 'W', [{ v: v.pvEin, id: 'ein-leiter', text: 'Dein Wert ' + f(v.pvEin, 1) + ' W ist die Verlustleistung eines einzelnen Leiters, I² · R. Bei Drehstrom tragen drei Außenleiter Strom: P_V = 3 · I² · R = ' + f(v.pv, 1) + ' W.' }, { v: v.pvZwei, id: 'zwei-leiter', text: 'Dein Wert ' + f(v.pvZwei, 0) + ' W passt zu zwei stromführenden Leitern (einphasig). Bei Drehstrom sind es drei Außenleiter: P_V = 3 · I² · R = ' + f(v.pv, 1) + ' W.' }], { tol: 0.05 }); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'du'), D3(rfD()), 'Der Spannungsfall ΔU zwischen zwei Außenleitern ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'pv'), rfP(), 'Die Verlustleistung P_V der Leitung ist richtig berechnet', 1);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein rein ohmscher Drehstromverbraucher (cos φ = 1) nimmt ' + f(G.i, 0) + ' A auf. Er hängt am Übungsnetz mit ' + f(G.ul, 0) + ' V Außenleiterspannung an einer Kupferleitung mit ' + f(G.a, 0) + ' mm² je Leiter und der einfachen Länge ' + f(G.l, 0) + ' m (κ = ' + f(G.kappa, 0) + ' m/(Ω·mm²)). Die Last ist symmetrisch, im Neutralleiter fließt kein Strom. Berechne a) den Spannungsfall ΔU zwischen zwei Außenleitern in V und b) die gesamte Verlustleistung P_V der drei Außenleiter in W.',
+      fields: () => [{ key: 'du', label: 'Spannungsfall ΔU zwischen zwei Außenleitern', unit: 'V' }, { key: 'pv', label: 'Verlustleistung P_V der Leitung', unit: 'W' }],
+      hint: () => { const v = vals(); return [
+        'Rechne zuerst den Widerstand eines Leiters: R = l / (κ · A). Der Spannungsfall zwischen zwei Außenleitern ist bei symmetrischer ohmscher Last das √3-Fache des Spannungsfalls in einem Leiter. Verluste entstehen in allen drei Außenleitern.',
+        'R = ' + f(v.l, 0) + ' m / (' + f(v.kappa, 0) + ' · ' + f(v.a, 0) + ') = ' + f(v.rl, 4) + ' Ω je Leiter. Der Spannungsfall in einem Leiter ist I · R = ' + f(v.strang, 3) + ' V; daraus folgt ΔU mit √3. P_V ist dreimal I² · R.',
+        'Musterlösung: ΔU = √3 · ' + f(v.i, 0) + ' A · ' + f(v.rl, 4) + ' Ω = ' + f(v.du, 2) + ' V (das sind ' + f(v.duPct, 2) + ' % von ' + f(v.ul, 0) + ' V). P_V = 3 · (' + f(v.i, 0) + ' A)² · ' + f(v.rl, 4) + ' Ω = ' + f(v.pv, 1) + ' W. Mit 2 · I · R käme ' + f(v.zwei, 2) + ' V heraus.'
+      ]; },
+      start: () => A('drehstrom', dsCtl({ cosphi: 1 }), { fields: { du: null, pv: null } }),
+      sol: () => A('drehstrom', dsCtl({ cosphi: 1 }), { fields: { du: vals().du, pv: vals().pv }, value: vals().du }),
+      wrong: () => { const v = vals(); return [{ name: 'einphasig gerechnet (Hin- und Rückleiter)', answer: A('drehstrom', {}, { fields: { du: v.zwei, pv: v.pvZwei } }) }, { name: 'ein Leiter, kein √3', answer: A('drehstrom', {}, { fields: { du: v.strang, pv: v.pvEin } }) }]; } };
+  })();
+
+  /* ---------- ws38: gleiche Leistung bei hoeherer Spannung uebertragen ---------- */
+  const M38 = (() => {
+    const G = { p: 30000, rl: 0.4, u1: 400, u2: 800 };
+    const iOf = u => G.p / (SQ3 * u);
+    const vals = () => once('v38', () => { const i1 = iOf(G.u1), i2 = iOf(G.u2), pv1 = 3 * i1 * i1 * G.rl, pv2 = 3 * i2 * i2 * G.rl; return { pKw: G.p / 1e3, rl: G.rl, u1: G.u1, u2: G.u2, i1, i2, pv1, pv2, pct1: pv1 / G.p * 100, pct2: pv2 / G.p * 100, halb: pv1 / 2, ein: pv1 / 3 }; });
+    const rf1 = () => { const v = vals(); return own(v.pv1, 'W', [{ v: v.ein, id: 'ein-leiter', text: 'Dein Wert ' + f(v.ein, 0) + ' W ist die Verlustleistung eines einzelnen Leiters. Es tragen drei Außenleiter Strom: P_V = 3 · I² · R = ' + f(v.pv1, 0) + ' W.' }]); };
+    const rf2 = () => { const v = vals(); return own(v.pv2, 'W', [{ v: v.halb, id: 'halbiert', text: 'Dein Wert ' + f(v.halb, 0) + ' W ist die Hälfte des Verlusts bei ' + f(v.u1, 0) + ' V. Bei doppelter Spannung halbiert sich der Strom, die Verlustleistung hängt aber vom Quadrat des Stroms ab: P_V sinkt auf ein Viertel (' + f(v.pv2, 1) + ' W).' }, { v: v.pv1, id: 'unveraendert', text: 'Dein Wert ist der Verlust bei ' + f(v.u1, 0) + ' V. Bei höherer Spannung ist der Strom für dieselbe Leistung kleiner, und damit sinkt die Verlustleistung der Leitung.' }]); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'v1'), rf1(), 'Die Verlustleistung bei 400 V ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'v2'), rf2(), 'Die Verlustleistung bei 800 V ist richtig berechnet', 1);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Über eine Drehstromleitung mit ' + f(G.rl, 1) + ' Ω je Außenleiter sollen ' + f(G.p / 1e3, 0) + ' kW an einen rein ohmschen Verbraucher (cos φ = 1) übertragen werden (Übungswerte). Der Verbraucher bekommt immer dieselbe Wirkleistung. Berechne die gesamte Verlustleistung der drei Außenleiter a) bei einer Außenleiterspannung von ' + f(G.u1, 0) + ' V und b) bei ' + f(G.u2, 0) + ' V. Die Spannungsfälle darfst du dabei vernachlässigen.',
+      fields: () => [{ key: 'v1', label: 'Verlustleistung bei 400 V', unit: 'W' }, { key: 'v2', label: 'Verlustleistung bei 800 V', unit: 'W' }],
+      hint: () => { const v = vals(); return [
+        'Die Leitung sieht nur den Strom. Aus der übertragenen Wirkleistung bekommst du den Leiterstrom über P = √3 · U_L · I_L (mit cos φ = 1). Die Verluste entstehen in allen drei Leitern: P_V = 3 · I² · R.',
+        'Bei ' + f(v.u1, 0) + ' V fließen ' + f(v.i1, 2) + ' A, bei ' + f(v.u2, 0) + ' V nur ' + f(v.i2, 2) + ' A. Setze jeden Strom in P_V = 3 · I² · ' + f(v.rl, 1) + ' Ω ein. Vergleiche am Ende die beiden Ergebnisse.',
+        'Musterlösung: bei ' + f(v.u1, 0) + ' V ist P_V = ' + f(v.pv1, 0) + ' W (' + f(v.pct1, 1) + ' % der Leistung), bei ' + f(v.u2, 0) + ' V ist P_V = ' + f(v.pv2, 1) + ' W (' + f(v.pct2, 2) + ' %). Die doppelte Spannung bringt ein Viertel der Verluste, nicht die Hälfte (' + f(v.halb, 0) + ' W).'
+      ]; },
+      start: () => A('drehstrom', dsCtl({ cosphi: 1 }), { fields: { v1: null, v2: null } }),
+      sol: () => A('drehstrom', dsCtl({ cosphi: 1 }), { fields: { v1: vals().pv1, v2: vals().pv2 }, value: vals().pv1 }),
+      wrong: () => { const v = vals(); return [{ name: 'Verlust nur halbiert', answer: A('drehstrom', {}, { fields: { v1: v.pv1, v2: v.halb } }) }, { name: 'nur ein Leiter gerechnet', answer: A('drehstrom', {}, { fields: { v1: v.ein, v2: v.pv2 } }) }]; } };
+  })();
+
+  /* ---------- ws39: Blindleistungskompensation am Drehstromnetz ---------- */
+  const M39 = (() => {
+    const G = { p: 12000, c1: 0.8, c2: 0.95, ul: 400, f: 50 };
+    const tn = c => Math.tan(Math.acos(c));
+    const vals = () => once('v39', () => { const w = 2 * Math.PI * G.f, qc = G.p * (tn(G.c1) - tn(G.c2)), cD = qc / (3 * w * G.ul * G.ul); return { pKw: G.p / 1e3, c1: G.c1, c2: G.c2, ul: G.ul, f: G.f, t1: tn(G.c1), t2: tn(G.c2), qc, qcKvar: qc / 1e3, cD: cD * 1e6, cY: qc / (w * G.ul * G.ul) * 1e6, sinQc: G.p * (Math.sin(Math.acos(G.c1)) - Math.sin(Math.acos(G.c2))), w }; });
+    const rfQ = () => { const v = vals(); return own(v.qc, 'var', [{ v: v.sinQc, id: 'sinus', text: 'Dein Wert ' + f(v.sinQc, 0) + ' var passt zu P · (sin φ₁ − sin φ₂). Aus der Wirkleistung folgt die Blindleistung über den Tangens: Q = P · tan φ, also Q_C = P · (tan φ₁ − tan φ₂) = ' + f(v.qc, 0) + ' var.' }]); };
+    const rfC = () => { const v = vals(); return own(v.cD * 1e-6, 'F', [{ v: v.cY * 1e-6, id: 'dreifach', text: 'Dein Wert ' + f(v.cY, 1) + ' µF ist dreimal so groß wie der Sollwert: Q_C verteilt sich auf drei Kondensatoren, die im Dreieck je an der vollen Außenleiterspannung liegen: C = Q_C / (3 · ω · U_L²) = ' + f(v.cD, 2) + ' µF.' }], { factor: 1e-6, dispUnit: 'µF' }); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'qc'), rfQ(), 'Die Blindleistung Q_C der Kondensatoren ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'c'), rfC(), 'Die Kapazität eines Kondensators im Dreieck ist richtig berechnet', 1);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Drehstromverbraucher nimmt am Übungsnetz mit ' + f(G.ul, 0) + ' V Außenleiterspannung (' + f(G.f, 0) + ' Hz) eine Wirkleistung von ' + f(G.p / 1e3, 0) + ' kW bei cos φ = ' + f(G.c1, 2) + ' (induktiv) auf. Der Leistungsfaktor soll mit drei gleichen Kondensatoren, die im Dreieck geschaltet sind, auf cos φ = ' + f(G.c2, 2) + ' verbessert werden. Berechne a) die nötige Blindleistung Q_C der Kondensatoren (insgesamt) in var und b) die Kapazität C eines einzelnen Kondensators in µF.',
+      fields: () => [{ key: 'qc', label: 'Blindleistung Q_C (insgesamt)', unit: 'var' }, { key: 'c', label: 'Kapazität C je Kondensator', unit: 'µF' }],
+      hint: () => { const v = vals(); return [
+        'Die Wirkleistung P bleibt beim Kompensieren gleich, nur die Blindleistung sinkt. Die Kondensatoren müssen die Differenz der Blindleistungen vor und nach der Kompensation liefern. Danach verteilst du Q_C auf die drei Kondensatoren im Dreieck.',
+        'Mit tan φ₁ = ' + f(v.t1, 2) + ' und tan φ₂ = ' + f(v.t2, 3) + ' ist Q_C = P · (tan φ₁ − tan φ₂). Im Dreieck liegt jeder Kondensator an U_L; je Kondensator ist die Blindleistung Q_C / 3 = ω · C · U_L².',
+        'Musterlösung: Q_C = ' + f(v.pKw, 0) + ' kW · (' + f(v.t1, 2) + ' − ' + f(v.t2, 3) + ') = ' + f(v.qcKvar, 3) + ' kvar. C = Q_C / (3 · ω · U_L²) = ' + f(v.cD, 2) + ' µF mit ω = ' + f(v.w, 1) + ' 1/s. Ohne die Aufteilung auf drei Kondensatoren käme ' + f(v.cY, 1) + ' µF heraus.'
+      ]; },
+      start: () => A('drehstrom', dsCtl({ cosphi: 0.8 }), { fields: { qc: null, c: null } }),
+      sol: () => A('drehstrom', dsCtl({ cosphi: 0.8 }), { fields: { qc: vals().qc, c: vals().cD }, value: vals().qc }),
+      wrong: () => { const v = vals(); return [{ name: 'Sinus statt Tangens, Aufteilung auf drei vergessen', answer: A('drehstrom', {}, { fields: { qc: v.sinQc, c: v.cY } }) }, { name: 'Kapazität zu klein (Kondensatorblindleistung halbiert)', answer: A('drehstrom', {}, { fields: { qc: v.qc, c: v.cD * 0.5 } }) }]; } };
+  })();
+
+  /* ====================================================================== ws40 bis ws47: Induktion, Spannungserzeugung, Wirkwiderstand und Blindwiderstaende (Berufsschulstoff 1. Lehrjahr, Phasenwechselstrom)
+   * Eigene Uebungszahlen; Referenzwerte stehen in vals() und sind von Hand gerechnet: U_ind = N · ΔΦ / Δt, U_XY = φ_X − φ_Y, R = U² / P, X_C = 1 / (2π · f · C), p̂ = û · î = 2 · P.
+   * Quelle: Mitschrift Phasenwechselstrom (Induktionsgesetz, Lenzsche Regel, Spannungserzeugung, Wirkwiderstand, induktiver und kapazitiver Blindwiderstand). */
+  const TRCTL = () => ({ u1: lv('u_netz'), n1: 1150, n2: 60, modus: 'ideal', dc: 'wechsel' });
+  const RLCCTL = o => Object.assign({ aufbau: 'RL', u: 230, f: 50, r: 100, l: 0.1 }, o || {});
+  const SINCTL = () => ({ f: 50, ampl: 325, form: 'sinus' });
+
+  /* ---------- ws40: Induktionsspannung aus dem Flussverlauf ---------- */
+  /* PRUEFEN P1: ws40 rechnet mit Betraegen (ohne das Minus des Induktionsgesetzes) und fragt die Polaritaet getrennt nach Lenz. Flussangabe in mVs (wie in der Mitschrift), gleich mWb. Passt das zur Schreibweise im Unterricht (u = −N · ΔΦ / Δt)? */
+  const M40 = (() => {
+    const G = { n: 250, dphi: 1.2e-3, t1: 4e-3, th: 2e-3, t3: 6e-3 };
+    const vals = () => once('v40', () => {
+      const u1 = G.n * G.dphi / G.t1, u3 = G.n * G.dphi / G.t3, tg = G.t1 + G.th + G.t3;
+      return { n: G.n, dphi: G.dphi * 1e3, t1: G.t1 * 1e3, th: G.th * 1e3, t3: G.t3 * 1e3, tg: tg * 1e3, u1, u3, u1h: u1 / 2, proWdg: G.dphi / G.t1, ganz: G.n * G.dphi / tg, verk: G.n * G.dphi };
+    });
+    const rfU1 = () => { const v = vals(); return own(v.u1, 'V', [
+      { v: v.proWdg, id: 'ohne-n', text: 'Dein Wert ' + f(v.proWdg, 1) + ' V ist die Spannung je Windung (ΔΦ / Δt). Das Ergebnis muss noch mit der Windungszahl N multipliziert werden: U = N · ΔΦ / Δt.' },
+      { v: v.ganz, id: 'ganze-zeit', text: 'Dein Wert ' + f(v.ganz, 0) + ' V gehört zur gesamten Zeit von ' + f(v.tg, 0) + ' ms. Für den Anstieg zählt nur seine eigene Dauer Δt = ' + f(v.t1, 0) + ' ms.' }]); };
+    const rfU3 = () => { const v = vals(); return own(v.u3, 'V', [
+      { v: v.u1, id: 'anstiegszeit', text: 'Dein Wert ' + f(v.u1, 0) + ' V passt zur Dauer des Anstiegs (' + f(v.t1, 0) + ' ms). Der Abfall dauert ' + f(v.t3, 0) + ' ms, bei gleicher Flussänderung ist die Spannung deshalb kleiner.' },
+      { v: v.ganz, id: 'ganze-zeit', text: 'Dein Wert ' + f(v.ganz, 0) + ' V gehört zur gesamten Zeit von ' + f(v.tg, 0) + ' ms. Für den Abfall zählt nur seine eigene Dauer Δt = ' + f(v.t3, 0) + ' ms.' }]); };
+    const specs = () => { const v = vals(); return [
+      { key: 'halt', q: 'Der Fluss bleibt ' + f(v.th, 0) + ' ms lang konstant auf ' + f(v.dphi, 1) + ' mVs. Welche Spannung wird in dieser Zeit induziert?', short: 'Die Spannung bei konstantem Fluss ist richtig beurteilt', right: 'null', options: [
+        { value: 'anstieg', label: 'Weiter ' + f(v.u1, 0) + ' V, solange der Fluss vorhanden ist', grund: 'Ein vorhandener Fluss induziert nichts. Die ' + f(v.u1, 0) + ' V gehören nur zum Anstieg; entscheidend ist die Änderung des Flusses, nicht sein Betrag.' },
+        { value: 'null', label: 'Keine, denn der Fluss ändert sich in dieser Zeit nicht (0 V)', grund: 'Ohne Änderung ist ΔΦ / Δt gleich null, also wird keine Spannung induziert, obwohl der Fluss da ist.' },
+        { value: 'prop', label: 'Eine Spannung von ' + f(v.verk, 2) + ' V, weil N · Φ = ' + f(v.verk, 2) + ' ist', grund: 'Das Produkt N · Φ = ' + f(v.verk, 2) + ' Vs ist der Verkettungsfluss und keine Spannung. Eine Spannung entsteht erst durch dessen Änderung je Zeit.' },
+        { value: 'halb', label: 'Die halbe Anstiegsspannung (' + f(v.u1h, 1) + ' V)', grund: 'In dieser Zeit ändert sich der Fluss gar nicht; die Änderungsgeschwindigkeit ist null und nicht halb so groß wie beim Anstieg.' }] },
+      { key: 'pol', q: 'Wie ist die Polarität der Induktionsspannung beim Abfall des Flusses im Vergleich zum Anstieg?', short: 'Die Polarität beim Abfall ist richtig beurteilt', right: 'um', options: [
+        { value: 'gl', label: 'Gleiche Polarität, weil der Betrag nur von der Windungszahl abhängt', grund: 'Der Betrag hängt von N und der Flussänderung ab, die Polarität vom Vorzeichen dieser Änderung. Beim Abfall ist es ein anderes Vorzeichen.' },
+        { value: 'kein', label: 'Keine Spannung, weil ein abnehmender Fluss nichts induziert', grund: 'Auch eine Abnahme ist eine Flussänderung und induziert eine Spannung, mit der Dauer von ' + f(v.t3, 0) + ' ms hier ' + f(v.u3, 0) + ' V.' },
+        { value: 'klein', label: 'Gleiche Polarität, nur schwächer, weil der Abfall langsamer ist', grund: 'Die Spannung ist zwar kleiner (' + f(v.u3, 0) + ' V gegen ' + f(v.u1, 0) + ' V), aber die Richtung der Flussänderung kehrt sich um, also auch die Polarität.' },
+        { value: 'um', label: 'Umgekehrte Polarität, weil die Flussänderung das Vorzeichen wechselt', grund: 'Nach Lenz wirkt der Induktionsstrom seiner Ursache entgegen: bei Zunahme des Flusses anders herum als bei Abnahme. Das Vorzeichen der Spannung wechselt.' }] }]; };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'u1'), rfU1(), 'Die Induktionsspannung beim Anstieg ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'u3'), rfU3(), 'Die Induktionsspannung beim Abfall ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, consts: [], audit: () => choiceAudit(specs()),
+      text: () => 'Eine Spule mit N = ' + f(G.n, 0) + ' Windungen (Übungsspule) wird von einem Magnetfluss durchsetzt. Der Fluss steigt gleichmäßig in ' + f(G.t1 * 1e3, 0) + ' ms von 0 auf ' + f(G.dphi * 1e3, 1) + ' mVs, bleibt dann ' + f(G.th * 1e3, 0) + ' ms konstant und fällt danach gleichmäßig in ' + f(G.t3 * 1e3, 0) + ' ms wieder auf 0. Berechne die Beträge der induzierten Spannung beim Anstieg und beim Abfall und beantworte die beiden Fragen zur Pause und zur Polarität.',
+      fields: () => [{ key: 'u1', label: 'Induktionsspannung beim Anstieg (Betrag)', unit: 'V' }, { key: 'u3', label: 'Induktionsspannung beim Abfall (Betrag)', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Die Induktionsspannung hängt von der Änderung des Magnetflusses ab: U = N · ΔΦ / Δt. Rechne jede Phase einzeln mit ihrer eigenen Flussänderung und ihrer eigenen Dauer. Überlege, was passiert, wenn sich der Fluss gar nicht ändert.',
+        'Beim Anstieg ändert sich der Fluss um ' + f(v.dphi, 1) + ' mVs in ' + f(v.t1, 0) + ' ms, beim Abfall um denselben Betrag in ' + f(v.t3, 0) + ' ms. Je Windung ergeben sich beim Anstieg ' + f(v.proWdg, 1) + ' V, das musst du noch mit N multiplizieren.',
+        'Musterlösung: Anstieg U = ' + f(v.n, 0) + ' · ' + f(v.dphi, 1) + ' mVs / ' + f(v.t1, 0) + ' ms = ' + f(v.u1, 0) + ' V, Abfall U = ' + f(v.u3, 0) + ' V. In der Pause ist U = 0, beim Abfall wechselt die Polarität (Lenz). Mit der Gesamtzeit von ' + f(v.tg, 0) + ' ms käme nur ' + f(v.ganz, 0) + ' V heraus.'
+      ]; },
+      start: () => A('trafo', TRCTL(), { fields: { u1: null, u3: null }, choices: {} }),
+      sol: () => A('trafo', TRCTL(), { fields: { u1: vals().u1, u3: vals().u3 }, choices: rightOf(specs()), value: vals().u1 }),
+      wrong: () => { const v = vals(); return [
+        { name: 'Windungszahl vergessen, Spannung bleibt in der Pause', answer: A('trafo', {}, { fields: { u1: v.proWdg, u3: v.u1 }, choices: { halt: 'anstieg', pol: 'gl' } }) },
+        { name: 'Gesamtzeit eingesetzt, keine Spannung beim Abfall', answer: A('trafo', {}, { fields: { u1: v.ganz, u3: v.ganz }, choices: { halt: 'prop', pol: 'kein' } }) }]; } };
+  })();
+
+  /* ---------- ws41: Was verändert die Induktionsspannung? (Faktoren, Lenz) ---------- */
+  const M41 = (() => {
+    const G = { n: 200, dphi: 0.5e-3, dt: 5e-3 };
+    const vals = () => once('v41', () => { const u0 = G.n * G.dphi / G.dt; return { n: G.n, dphi: G.dphi * 1e3, dt: G.dt * 1e3, u0, u2n: 2 * u0, u4: 4 * u0, uh: u0 / 2, u16: 16 * u0, dtv: G.dt * 1e3 / 4, u0q: u0 / 4 }; });
+    const specs = () => { const v = vals(); return [
+      { key: 'n2', q: 'Eine Spule hat N = ' + f(v.n, 0) + ' Windungen; der Fluss ändert sich um ' + f(v.dphi, 1) + ' mVs in ' + f(v.dt, 0) + ' ms, das ergibt ' + f(v.u0, 0) + ' V. Die Windungszahl wird bei gleicher Flussänderung verdoppelt. Wie groß ist die Spannung dann?', short: 'Der Einfluss der Windungszahl ist richtig beurteilt', right: 'u40', options: [
+        { value: 'u10', label: f(v.uh, 0) + ' V', grund: 'Mehr Windungen vergrößern die Spannung, sie halbieren sie nicht. Alle Windungen werden von derselben Flussänderung durchsetzt und liefern je ihren Beitrag.' },
+        { value: 'u20', label: f(v.u0, 0) + ' V', grund: 'Die Windungszahl steht im Zähler von U = N · ΔΦ / Δt. Verdoppelt sich N, verdoppelt sich U; die Spannung bleibt nicht gleich.' },
+        { value: 'u40', label: f(v.u2n, 0) + ' V', grund: 'U ist proportional zu N: Mit doppelter Windungszahl gilt U = ' + f(2 * v.n, 0) + ' · ' + f(v.dphi, 1) + ' mVs / ' + f(v.dt, 0) + ' ms = ' + f(v.u2n, 0) + ' V.' },
+        { value: 'u80', label: f(v.u4, 0) + ' V', grund: 'Die Spannung wächst linear mit N, nicht quadratisch. Doppelte Windungszahl ergibt nur die doppelte Spannung (' + f(v.u2n, 0) + ' V), nicht die vierfache.' }] },
+      { key: 'zeit', q: 'Die Flussänderung von ' + f(v.dphi, 1) + ' mVs geschieht bei N = ' + f(v.n, 0) + ' nun in einem Viertel der Zeit (' + f(v.dtv, 2) + ' ms). Wie groß ist die Spannung?', short: 'Der Einfluss der Änderungsdauer ist richtig beurteilt', right: 'u80', options: [
+        { value: 'u5', label: f(v.u0q, 0) + ' V', grund: 'Eine kürzere Zeit macht die Änderung schneller und die Spannung größer. Die Spannung wird dadurch nicht kleiner.' },
+        { value: 'u20', label: f(v.u0, 0) + ' V', grund: 'Δt steht im Nenner von U = N · ΔΦ / Δt. Ändert sich die Zeit, ändert sich auch die Spannung.' },
+        { value: 'u40', label: f(v.u2n, 0) + ' V', grund: 'Das wäre die Spannung bei halber Zeit. Bei einem Viertel der Zeit vervierfacht sich die Spannung.' },
+        { value: 'u80', label: f(v.u4, 0) + ' V', grund: 'U ist umgekehrt proportional zur Dauer: Ein Viertel der Zeit ergibt das Vierfache, also ' + f(v.u4, 0) + ' V.' }] },
+      { key: 'lenz', q: 'Die Spule ist über einen Widerstand geschlossen, der Fluss durch sie nimmt zu. Wie wirkt der Induktionsstrom nach der Regel von Lenz?', short: 'Die Wirkung des Induktionsstroms nach Lenz ist richtig beurteilt', right: 'gegen', options: [
+        { value: 'verstaerkt', label: 'Sein Magnetfeld verstärkt die Zunahme des Flusses noch', grund: 'Dann würde sich der Vorgang selbst aufschaukeln. Nach Lenz wirkt der Induktionsstrom seiner Ursache entgegen und bremst die Flussänderung.' },
+        { value: 'gegen', label: 'Sein Magnetfeld wirkt der Zunahme des Flusses entgegen', grund: 'Der Induktionsstrom ist so gerichtet, dass er die Entstehungsursache, die Änderung des Flusses, zu verhindern sucht.' },
+        { value: 'immer', label: 'Er fließt immer rechtsherum, egal wie sich der Fluss ändert', grund: 'Die Richtung hängt von der Flussänderung ab: Bei Zunahme fließt er anders herum als bei Abnahme.' },
+        { value: 'wechselt', label: 'Er fließt abwechselnd hin und her, ohne feste Richtung', grund: 'Bei steigendem Fluss hat der Strom eine feste Richtung, nämlich die, die der Zunahme entgegenwirkt. Ein Richtungswechsel kommt erst mit der Umkehr des Flusses.' }] }]; };
+    const check = mk((r, a) => { choiceRows(r, a, specs()); });
+    const START = () => A('trafo', TRCTL(), { choices: {} });
+    return { vals, check, consts: [], audit: () => choiceAudit(specs()),
+      text: () => 'Die Induktionsspannung einer Spule beträgt U = N · ΔΦ / Δt. Für eine Übungsspule mit N = ' + f(G.n, 0) + ' Windungen und einer Flussänderung von ' + f(G.dphi * 1e3, 1) + ' mVs in ' + f(G.dt * 1e3, 0) + ' ms ergeben sich ' + f(G.n * G.dphi / G.dt, 0) + ' V. Beantworte, wie sich die Spannung ändert, wenn du die Windungszahl oder die Zeit änderst, und wie der Induktionsstrom gerichtet ist.',
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Schau dir die Formel U = N · ΔΦ / Δt an: Was steht im Zähler, was im Nenner? Eine Größe im Zähler wirkt direkt auf die Spannung, eine Größe im Nenner umgekehrt. Bei Lenz geht es um die Richtung, nicht um die Größe.',
+        'Mit N = ' + f(v.n, 0) + ' und ' + f(v.dphi, 1) + ' mVs in ' + f(v.dt, 0) + ' ms erhältst du ' + f(v.u0, 0) + ' V. Verdoppelst du N, wird auch die Spannung doppelt so groß. Teilst du die Zeit durch vier, wird die Spannung viermal so groß.',
+        'Musterlösung: ' + f(v.u2n, 0) + ' V bei doppelter Windungszahl, ' + f(v.u4, 0) + ' V bei einem Viertel der Zeit. Der Induktionsstrom wirkt seiner Ursache entgegen. Das Quadrat von N (' + f(v.u4, 0) + ' V bei doppeltem N) wäre falsch.'
+      ]; },
+      start: START, sol: () => A('trafo', TRCTL(), { choices: rightOf(specs()) }),
+      wrong: () => [{ name: 'Faktoren vertauscht', answer: A('trafo', {}, { choices: { n2: 'u10', zeit: 'u5', lenz: 'verstaerkt' } }) }, { name: 'Windungszahl quadratisch, Richtung ohne Regel', answer: A('trafo', {}, { choices: { n2: 'u80', zeit: 'u40', lenz: 'immer' } }) }] };
+  })();
+
+  /* ---------- ws42: Wie entsteht eine Spannung? (Wirkungen, Wechselspannung) ---------- */
+  /* PRUEFEN P2: ws42 uebernimmt die Wirkungen der Spannungserzeugung aus der Mitschrift (Induktion, Chemie, Wärme, Licht, Kristallverformung, Reibung bewusst weggelassen) und nennt den Generator als Wechselspannungsquelle. Ist Reibung (Gewitter) pruefungsrelevant? */
+  const M42 = (() => {
+    const O = {
+      ind: { value: 'ind', label: 'Induktion: Bewegung eines Leiters im Magnetfeld' },
+      chem: { value: 'chem', label: 'Chemische Reaktion in einem galvanischen Element' },
+      licht: { value: 'licht', label: 'Lichtstrahlung, die auf eine Halbleiterschicht fällt' },
+      waerme: { value: 'waerme', label: 'Wärme an der Verbindungsstelle zweier Metalle' },
+      druck: { value: 'druck', label: 'Verformung eines Kristalls durch Druck' } };
+    const GR = {
+      ind: 'Induktion trennt Ladungen durch magnetische Energie: Ein bewegter Leiter oder ein sich ändernder Fluss in der Spule. Das nutzen Generatoren und Dynamos.',
+      chem: 'Eine chemische Reaktion trennt Ladungen im galvanischen Element, zum Beispiel in einer Batterie. Das ist nicht die Erzeugung durch Bewegung im Magnetfeld.',
+      licht: 'Strahlungsenergie trennt Ladungen in Fotoelementen, also in Solarzellen. Bei diesem Vorgang bewegt sich nichts im Magnetfeld.',
+      waerme: 'Wärme trennt Ladungen im Thermoelement. Das nutzt man zur Temperaturmessung.',
+      druck: 'Beim Piezokristall werden Ladungen durch Verformung, also durch Druck, getrennt. Das nutzt man in Drucksensoren.' };
+    const opt = k => Object.assign({}, O[k], { grund: GR[k] });
+    const specs = () => [
+      { key: 'dynamo', q: 'Wodurch werden im Dynamo eines Fahrrads die Ladungen getrennt?', short: 'Die Wirkung im Fahrraddynamo ist richtig benannt', right: 'ind', options: ['chem', 'ind', 'licht', 'waerme'].map(opt) },
+      { key: 'solar', q: 'Wodurch werden in einer Solarzelle die Ladungen getrennt?', short: 'Die Wirkung in der Solarzelle ist richtig benannt', right: 'licht', options: ['druck', 'ind', 'chem', 'licht'].map(opt) },
+      { key: 'thermo', q: 'Ein Thermoelement dient zur Temperaturmessung. Wodurch werden dort die Ladungen getrennt?', short: 'Die Wirkung im Thermoelement ist richtig benannt', right: 'waerme', options: ['waerme', 'licht', 'druck', 'chem'].map(opt) },
+      { key: 'piezo', q: 'Ein Drucksensor enthält einen Piezokristall. Wodurch werden dort die Ladungen getrennt?', short: 'Die Wirkung im Piezokristall ist richtig benannt', right: 'druck', options: ['ind', 'waerme', 'druck', 'licht'].map(opt) },
+      { key: 'wechsel', q: 'Welche dieser Quellen liefert von sich aus eine Wechselspannung, wenn sich ihr Läufer gleichmäßig dreht?', short: 'Die Quelle mit Wechselspannung ist richtig gewählt', right: 'gen', options: [
+        { value: 'batt', label: 'Eine Batterie mit galvanischem Element', grund: 'Eine Batterie liefert Gleichspannung mit fester Polarität; ihre Spannung entsteht chemisch und nicht durch Drehen.' },
+        { value: 'sol', label: 'Eine Solarzelle in wechselndem Licht', grund: 'Eine Solarzelle liefert Gleichspannung. Schwankt das Licht, ändert sich nur der Betrag, die Polarität bleibt.' },
+        { value: 'gen', label: 'Ein Generator mit Spule im Magnetfeld', grund: 'Dreht sich die Spule im Magnetfeld, ändert sich der Fluss periodisch und die induzierte Spannung wechselt die Polarität: Wechselspannung.' },
+        { value: 'tel', label: 'Ein Thermoelement an einer heißen Stelle', grund: 'Ein Thermoelement liefert eine Gleichspannung, die vom Temperaturunterschied abhängt, und hat keinen Läufer.' }] }];
+    const check = mk((r, a) => { choiceRows(r, a, specs()); });
+    return { vals: () => ({ anzahl: 5 }), check, consts: [], audit: () => choiceAudit(specs()),
+      text: () => 'Es gibt unterschiedliche Wege, in einer Spannungsquelle Ladungen zu trennen. Ordne vier technischen Beispielen die jeweilige Wirkung zu und entscheide, welche Quelle von sich aus eine Wechselspannung liefert.',
+      choices: () => publicChoices(specs()),
+      hint: () => [
+        'Frage dich bei jedem Bauteil, welche Energieform die Ladungen trennt: Bewegung im Magnetfeld, eine chemische Reaktion, Licht, Wärme oder mechanischer Druck. Der Name des Bauteils verrät dir meist die Energieform.',
+        'Der Dynamo und der Generator arbeiten mit magnetischer Energie. Solarzelle und Thermoelement haben eine Energieform im Namen. Wechselspannung entsteht, wenn sich der Fluss durch eine Spule periodisch ändert, so wie bei einem Läufer, der sich dreht.',
+        'Musterlösung: Dynamo: Induktion. Solarzelle: Licht. Thermoelement: Wärme. Piezokristall: Verformung durch Druck. Eine Wechselspannung liefert der Generator mit Spule im Magnetfeld; Batterie, Solarzelle und Thermoelement liefern Gleichspannung.'
+      ],
+      start: () => A('sinus', SINCTL(), { choices: {} }), sol: () => A('sinus', SINCTL(), { choices: rightOf(specs()) }),
+      wrong: () => [{ name: 'alle Wirkungen verwechselt', answer: A('sinus', {}, { choices: { dynamo: 'chem', solar: 'druck', thermo: 'licht', piezo: 'ind', wechsel: 'batt' } }) }, { name: 'Wärme und Licht vertauscht, Solarzelle als Wechselspannungsquelle', answer: A('sinus', {}, { choices: { dynamo: 'ind', solar: 'chem', thermo: 'licht', piezo: 'druck', wechsel: 'sol' } }) }] };
+  })();
+
+  /* ---------- ws43: Spannung als Potentialunterschied ---------- */
+  /* PRUEFEN P3: ws43 rechnet Spannungen aus Potentialen gegen Masse (U_XY = φ_X − φ_Y). Die Mitschrift zeigt solche Differenzen nur als kleine Skizze; die Zahlen sind eigene. Gehoert die Aufgabe im Wechselstrom-Lab hierher oder besser in ein Grundlagen-Lab? */
+  const M43 = (() => {
+    const G = { a: 9, b: 3, c: -4 };
+    const vals = () => once('v43', () => ({ a: G.a, b: G.b, c: Math.abs(G.c), uab: G.a - G.b, ubc: G.b - G.c, uac: G.a - G.c, ubcF: G.b + G.c, uacF: G.a + G.c, summe: G.a + G.b }));
+    const rfAB = () => { const v = vals(); return own(v.uab, 'V', [
+      { v: -v.uab, id: 'vertauscht', text: 'Dein Wert ' + f(-v.uab, 0) + ' V hat das falsche Vorzeichen. U_AB = φ_A − φ_B: Punkt A hat das höhere Potential, die Spannung ist positiv.' },
+      { v: v.summe, id: 'summe', text: 'Dein Wert ' + f(v.summe, 0) + ' V ist die Summe der beiden Potentiale. Die Spannung ist die Differenz: U_AB = φ_A − φ_B.' }]); };
+    const rfBC = () => { const v = vals(); return own(v.ubc, 'V', [
+      { v: -v.ubc, id: 'vertauscht', text: 'Dein Wert ' + f(-v.ubc, 0) + ' V hat das falsche Vorzeichen. U_BC = φ_B − φ_C: Punkt B liegt höher als C, die Spannung ist positiv.' },
+      { v: v.ubcF, id: 'vorzeichen', text: 'Dein Wert ' + f(v.ubcF, 0) + ' V entsteht, wenn das Minuszeichen von φ_C unter den Tisch fällt. Es ist U_BC = 3 V − (−4 V): Minus mal Minus gibt Plus.' }]); };
+    const rfAC = () => { const v = vals(); return own(v.uac, 'V', [
+      { v: -v.uac, id: 'vertauscht', text: 'Dein Wert ' + f(-v.uac, 0) + ' V hat das falsche Vorzeichen. U_AC = φ_A − φ_C: Punkt A liegt höher als C, die Spannung ist positiv.' },
+      { v: v.uacF, id: 'vorzeichen', text: 'Dein Wert ' + f(v.uacF, 0) + ' V entsteht, wenn das Minuszeichen von φ_C unter den Tisch fällt. Es ist U_AC = 9 V − (−4 V): Minus mal Minus gibt Plus.' }]); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'uab'), rfAB(), 'Die Spannung U_AB ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'ubc'), rfBC(), 'Die Spannung U_BC ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'uac'), rfAC(), 'Die Spannung U_AC ist richtig berechnet', 0);
+    });
+    return { vals, check, consts: [],
+      text: () => 'In einer Übungsschaltung haben die drei Punkte A, B und C gegenüber dem Bezugspunkt (Masse) die Potentiale φ_A = +' + f(G.a, 0) + ' V, φ_B = +' + f(G.b, 0) + ' V und φ_C = −' + f(Math.abs(G.c), 0) + ' V. Eine Spannung ist ein Potentialunterschied: U_XY = φ_X − φ_Y. Berechne die Spannungen U_AB, U_BC und U_AC.',
+      fields: () => [{ key: 'uab', label: 'Spannung U_AB', unit: 'V' }, { key: 'ubc', label: 'Spannung U_BC', unit: 'V' }, { key: 'uac', label: 'Spannung U_AC', unit: 'V' }],
+      hint: () => { const v = vals(); return [
+        'Eine Spannung ist der Unterschied zweier Potentiale: Du ziehst das Potential des zweiten Punktes vom Potential des ersten ab. Beachte die Vorzeichen der Potentiale, besonders bei dem Punkt unter dem Bezugspunkt.',
+        'Bei U_AB rechnest du ' + f(v.a, 0) + ' V − ' + f(v.b, 0) + ' V. Bei U_BC und U_AC steht das Potential von C mit dem Minus im Abzug: ' + f(v.b, 0) + ' V − (−' + f(v.c, 0) + ' V). Minus mal Minus gibt Plus.',
+        'Musterlösung: U_AB = ' + f(v.uab, 0) + ' V, U_BC = ' + f(v.ubc, 0) + ' V, U_AC = ' + f(v.uac, 0) + ' V. Probe: U_AB + U_BC = U_AC. Mit dem Vorzeichenfehler käme U_BC = ' + f(v.ubcF, 0) + ' V heraus.'
+      ]; },
+      start: () => A('rlc', RLCCTL(), { fields: { uab: null, ubc: null, uac: null } }),
+      sol: () => A('rlc', RLCCTL(), { fields: { uab: vals().uab, ubc: vals().ubc, uac: vals().uac }, value: vals().uab }),
+      wrong: () => { const v = vals(); return [{ name: 'Potentiale addiert, Vorzeichen von φ_C ignoriert', answer: A('rlc', {}, { fields: { uab: v.summe, ubc: v.ubcF, uac: v.uacF } }) }, { name: 'Reihenfolge vertauscht (alle negativ)', answer: A('rlc', {}, { fields: { uab: -v.uab, ubc: -v.ubc, uac: -v.uac } }) }]; } };
+  })();
+
+  /* ---------- ws44: Heizwiderstand am Wechselstromnetz (Wirkwiderstand) ---------- */
+  const M44 = (() => {
+    const G = { u: 230, p: 1200, u2: 115 };
+    const vals = () => once('v44', () => { const r = G.u * G.u / G.p, i = G.p / G.u, p2 = G.u2 * G.u2 / r; return { u: G.u, p: G.p, u2: G.u2, r, i, p2, rFalsch: G.u / G.p, p2Halb: G.p / 2 }; });
+    const rfR = () => { const v = vals(); return own(v.r, 'Ω', [
+      { v: v.i, id: 'strom', text: 'Dein Wert ' + f(v.i, 2) + ' ist der Strom P / U in A. Der Widerstand folgt aus R = U² / P (oder R = U / I).' },
+      { v: v.rFalsch, id: 'u-durch-p', text: 'Dein Wert ' + f(v.rFalsch, 2) + ' Ω passt zu U / P. Das ist keine Formel für R: R = U² / P, weil P = U · I und I = U / R.' }]); };
+    const rfI = () => { const v = vals(); return own(v.i, 'A', [
+      { v: v.r, id: 'widerstand', text: 'Dein Wert ' + f(v.r, 1) + ' ist der Widerstand in Ω. Der Strom ist I = P / U.' }]); };
+    const rfP = () => { const v = vals(); return own(v.p2, 'W', [
+      { v: v.p2Halb, id: 'halb', text: 'Dein Wert ' + f(v.p2Halb, 0) + ' W gilt für eine halbierte Leistung. Weil P = U² / R gilt und U im Quadrat eingeht, bringt die halbe Spannung nur ein Viertel der Leistung.' },
+      { v: v.p, id: 'gleich', text: 'Dein Wert ' + f(v.p, 0) + ' W ist die Leistung bei ' + f(v.u, 0) + ' V. Bei kleinerer Spannung fließt weniger Strom und die Leistung sinkt: P = U² / R.' }]); };
+    const specs = () => [
+      { key: 'phi', q: 'Wie liegen Strom und Spannung am Heizwiderstand zueinander?', short: 'Die Phasenlage am Wirkwiderstand ist richtig beurteilt', right: 'phase', options: [
+        { value: 'nach', label: 'Der Strom eilt der Spannung um 90° nach', grund: 'Diese Nacheilung gehört zur Spule, bei der die Selbstinduktion den Strom verzögert. Ein Heizwiderstand ist ein Wirkwiderstand.' },
+        { value: 'vor', label: 'Der Strom eilt der Spannung um 90° vor', grund: 'Diese Voreilung gehört zum Kondensator. Ein Heizwiderstand hat keine Kapazität und damit keine Phasenverschiebung.' },
+        { value: 'gegen', label: 'Strom und Spannung sind um 180° gegeneinander versetzt', grund: 'Bei 180° würde der Widerstand Leistung abgeben statt aufnehmen. Am Wirkwiderstand sind Strom und Spannung zu jedem Zeitpunkt im gleichen Takt.' },
+        { value: 'phase', label: 'Strom und Spannung sind in Phase (φ = 0°)', grund: 'Am Wirkwiderstand sind Strom und Spannung phasengleich: Beide erreichen Nulldurchgang und Höchstwert gleichzeitig, die elektrische Energie wird in Wärme umgesetzt.' }] }];
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'r'), rfR(), 'Der Widerstand R des Heizelements ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'i'), rfI(), 'Der Strom I (Effektivwert) ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'p2'), rfP(), 'Die Leistung bei der halben Spannung ist richtig berechnet', 0);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, consts: [], audit: () => choiceAudit(specs()),
+      text: () => 'Ein Heizwiderstand (Übungsschaltung) nimmt am Netz mit ' + f(G.u, 0) + ' V (Effektivwert) eine Leistung von ' + f(G.p, 0) + ' W auf. Berechne den Widerstand R, den Strom I und die Leistung, wenn derselbe Widerstand nur an ' + f(G.u2, 0) + ' V liegt (R bleibt gleich). Beantworte dann die Frage zur Phasenlage.',
+      fields: () => [{ key: 'r', label: 'Widerstand R', unit: 'Ω' }, { key: 'i', label: 'Strom I bei ' + f(G.u, 0) + ' V', unit: 'A' }, { key: 'p2', label: 'Leistung bei ' + f(G.u2, 0) + ' V', unit: 'W' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Am Wirkwiderstand gilt im Wechselstromkreis dasselbe wie im Gleichstromkreis, wenn du die Effektivwerte einsetzt: P = U · I und U = R · I. Daraus lässt sich R aus U und P bestimmen. Für die zweite Spannung bleibt R unverändert.',
+        'Der Strom ist I = P / U = ' + f(v.i, 2) + ' A. Der Widerstand ist R = U² / P. Bei der kleineren Spannung rechnest du P = U² / R mit demselben R; die Spannung geht im Quadrat ein.',
+        'Musterlösung: R = (' + f(v.u, 0) + ' V)² / ' + f(v.p, 0) + ' W = ' + f(v.r, 1) + ' Ω, I = ' + f(v.i, 2) + ' A, P₂ = (' + f(v.u2, 0) + ' V)² / ' + f(v.r, 1) + ' Ω = ' + f(v.p2, 0) + ' W. Mit halber Spannung käme nicht die halbe Leistung (' + f(v.p2Halb, 0) + ' W) heraus.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'R' }), { fields: { r: null, i: null, p2: null }, choices: {} }),
+      sol: () => A('rlc', RLCCTL({ aufbau: 'R' }), { fields: { r: vals().r, i: vals().i, p2: vals().p2 }, choices: rightOf(specs()), value: vals().r }),
+      wrong: () => { const v = vals(); return [
+        { name: 'R und I vertauscht, halbe Leistung, Strom eilt vor', answer: A('rlc', {}, { fields: { r: v.i, i: v.r, p2: v.p2Halb }, choices: { phi: 'vor' } }) },
+        { name: 'U / P gerechnet, Leistung unverändert, Strom eilt nach', answer: A('rlc', {}, { fields: { r: v.rFalsch, i: v.r, p2: v.p }, choices: { phi: 'nach' } }) }]; } };
+  })();
+
+  /* ---------- ws45: Kapazität aus der Strommessung (kapazitiver Blindwiderstand) ---------- */
+  const M45 = (() => {
+    const G = { u: 230, f: 50, i: 0.2, f2: 100 };
+    const vals = () => once('v45', () => { const xc = G.u / G.i, c = 1 / (2 * Math.PI * G.f * xc), i2 = G.i * G.f2 / G.f; return { u: G.u, f: G.f, i: G.i, f2: G.f2, xc, c: c * 1e6, cF: c, i2, cOhne: 1 / (G.f * xc) * 1e6, iHalb: G.i / 2, p: G.u * G.i }; });
+    const rfX = () => { const v = vals(); return own(v.xc, 'Ω', [
+      { v: v.p, id: 'produkt', text: 'Dein Wert ' + f(v.p, 0) + ' ist das Produkt U · I. Der Widerstand ist der Quotient: X_C = U / I.' },
+      { v: 1 / v.xc, id: 'kehrwert', text: 'Dein Wert ist der Kehrwert (I / U). Der Blindwiderstand ist X_C = U / I.' }]); };
+    const rfC = () => { const v = vals(); return own(v.cF, 'F', [
+      { v: v.cOhne * 1e-6, id: 'ohne-2pi', text: 'Dein Wert ' + f(v.cOhne, 1) + ' µF entsteht ohne den Faktor 2π. Es gilt X_C = 1 / (ω · C) mit ω = 2π · f, also C = 1 / (2π · f · X_C).' }], { factor: 1e-6, dispUnit: 'µF' }); };
+    const rfI = () => { const v = vals(); return own(v.i2, 'A', [
+      { v: v.iHalb, id: 'halb', text: 'Dein Wert ' + f(v.iHalb, 2) + ' A ist halb so groß wie bei ' + f(v.f, 0) + ' Hz. Beim Kondensator sinkt X_C mit steigender Frequenz, der Strom wird größer, nicht kleiner.' },
+      { v: v.i, id: 'gleich', text: 'Dein Wert ' + f(v.i, 2) + ' A ist der Strom bei ' + f(v.f, 0) + ' Hz. Der Blindwiderstand X_C hängt von der Frequenz ab, der Strom ändert sich mit.' }]); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'xc'), rfX(), 'Der Blindwiderstand X_C ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'c'), rfC(), 'Die Kapazität C ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'i2'), rfI(), 'Der Strom bei der höheren Frequenz ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Kondensator liegt an ' + f(G.u, 0) + ' V (Effektivwert, ' + f(G.f, 0) + ' Hz). Ein Messgerät zeigt den Strom ' + f(G.i, 1) + ' A. Berechne den Blindwiderstand X_C, die Kapazität C in µF und den Strom, der bei gleicher Spannung, aber ' + f(G.f2, 0) + ' Hz fließt. Verlustfrei gerechnet.',
+      fields: () => [{ key: 'xc', label: 'Blindwiderstand X_C', unit: 'Ω' }, { key: 'c', label: 'Kapazität C', unit: 'µF' }, { key: 'i2', label: 'Strom bei ' + f(G.f2, 0) + ' Hz', unit: 'A' }],
+      hint: () => { const v = vals(); return [
+        'Für einen reinen Kondensator gilt wie für jeden Widerstand X_C = U / I mit den Effektivwerten. Danach stellst du X_C = 1 / (2π · f · C) nach C um. Beim Kondensator wird der Blindwiderstand mit steigender Frequenz kleiner.',
+        'X_C = ' + f(v.xc, 0) + ' Ω. Für C brauchst du 2π · f · X_C im Nenner. Bei ' + f(v.f2, 0) + ' Hz ist die Frequenz doppelt so hoch wie bei ' + f(v.f, 0) + ' Hz; was geschieht dann mit X_C und damit mit dem Strom?',
+        'Musterlösung: X_C = ' + f(v.u, 0) + ' V / ' + f(v.i, 1) + ' A = ' + f(v.xc, 0) + ' Ω. C = 1 / (2π · ' + f(v.f, 0) + ' Hz · ' + f(v.xc, 0) + ' Ω) = ' + f(v.c, 2) + ' µF. Bei ' + f(v.f2, 0) + ' Hz halbiert sich X_C, der Strom verdoppelt sich auf ' + f(v.i2, 1) + ' A. Ohne 2π käme ' + f(v.cOhne, 1) + ' µF heraus.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'C', c: 2.7e-6 }), { fields: { xc: null, c: null, i2: null } }),
+      sol: () => A('rlc', RLCCTL({ aufbau: 'C', c: vals().cF }), { fields: { xc: vals().xc, c: vals().c, i2: vals().i2 }, value: vals().xc }),
+      wrong: () => { const v = vals(); return [
+        { name: '2π vergessen, Strom sinkt', answer: A('rlc', {}, { fields: { xc: v.xc, c: v.cOhne, i2: v.iHalb } }) },
+        { name: 'U mal I gerechnet, Strom gleich', answer: A('rlc', {}, { fields: { xc: v.p, c: v.c, i2: v.i } }) }]; } };
+  })();
+
+  /* ---------- ws46: Spitzenleistung am Wirkwiderstand ---------- */
+  /* PRUEFEN P4: ws46 fragt die Spitzenleistung p̂ = û · î = 2 · P. Die Mitschrift nennt Momentan-, Scheitel- und Mittelwert der Leistung, aber ohne sicher lesbare Formel; p̂ = 2 · P ist selbst gerechnet (p = û · î · sin² ωt). Wird die Spitzenleistung im Unterricht so behandelt? */
+  const M46 = (() => {
+    const G = { u: 230, p: 1600, f: 50 };
+    const vals = () => once('v46', () => { const r = G.u * G.u / G.p, uh = G.u * SQ2, ih = uh / r, ph = uh * ih; return { u: G.u, p: G.p, f: G.f, r, uh, ih, ph, ie: G.p / G.u, pwz: G.p * SQ2, tp: 1000 / (2 * G.f), t: 1000 / G.f }; });
+    const rfR = () => { const v = vals(); return own(v.r, 'Ω', [{ v: v.ie, id: 'strom', text: 'Dein Wert ' + f(v.ie, 2) + ' ist der Effektivwert des Stroms in A. Der Widerstand ist R = U² / P.' }]); };
+    const rfI = () => { const v = vals(); return own(v.ih, 'A', [
+      { v: v.ie, id: 'effektiv', text: 'Dein Wert ' + f(v.ie, 2) + ' A ist der Effektivwert I = P / U. Der Scheitelwert ist beim Sinus um den Faktor √2 größer: î = √2 · I.' }]); };
+    const rfP = () => { const v = vals(); return own(v.ph, 'W', [
+      { v: v.p, id: 'mittelwert', text: 'Dein Wert ' + f(v.p, 0) + ' W ist die Wirkleistung P, also der Mittelwert der Momentanleistung. Der Höchstwert p̂ = û · î liegt höher.' },
+      { v: v.pwz, id: 'wurzel2', text: 'Dein Wert ' + f(v.pwz, 0) + ' W benutzt nur einen Faktor √2. Die Leistung ist das Produkt aus Spannung und Strom, beide haben den Scheitelfaktor √2: p̂ = û · î = 2 · P.' }]); };
+    const specs = () => { const v = vals(); return [
+      { key: 'tp', q: 'Wie oft erreicht die Momentanleistung p am Widerstand in jeder Periode (' + f(v.t, 0) + ' ms) ihren Höchstwert?', short: 'Der zeitliche Verlauf der Momentanleistung ist richtig beurteilt', right: 'zwei', options: [
+        { value: 'ein', label: 'Einmal je Periode, zusammen mit dem Maximum der Spannung', grund: 'Die Leistung p = u · i ist auch dann positiv, wenn u und i negativ sind (minus mal minus). Die Momentanleistung hat zwei Maxima je Periode, nicht eines.' },
+        { value: 'zwei', label: 'Zweimal je Periode, also alle ' + f(v.tp, 0) + ' ms', grund: 'p = u · i ist am positiven und am negativen Scheitelpunkt von u (und i) am größten. Die Momentanleistung hat die doppelte Frequenz, also alle ' + f(v.tp, 0) + ' ms ein Maximum.' },
+        { value: 'vier', label: 'Viermal je Periode, bei jedem Nulldurchgang', grund: 'Bei einem Nulldurchgang von u und i ist p gleich null, also am kleinsten. Die Höchstwerte liegen bei den Scheitelwerten, zweimal je Periode.' },
+        { value: 'konst', label: 'Gar nicht, die Leistung ist stets ' + f(v.p, 0) + ' W', grund: 'Nur der Mittelwert ist ' + f(v.p, 0) + ' W. Die Momentanleistung schwankt zwischen null und ' + f(v.ph, 0) + ' W, weil Spannung und Strom sinusförmig sind.' }] }]; };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'r'), rfR(), 'Der Widerstand R des Heizelements ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'ih'), rfI(), 'Der Scheitelwert î des Stroms ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'ph'), rfP(), 'Die Spitzenleistung p̂ ist richtig berechnet', 0);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, consts: [], audit: () => choiceAudit(specs()),
+      text: () => 'Ein Heizelement (Übungsschaltung) nimmt am Netz mit ' + f(G.u, 0) + ' V (Effektivwert, ' + f(G.f, 0) + ' Hz) die Wirkleistung ' + f(G.p, 0) + ' W auf. Berechne den Widerstand R, den Scheitelwert î des Stroms und die Spitzenleistung p̂ = û · î, den größten Momentanwert der Leistung. Beantworte dann die Frage zum zeitlichen Verlauf der Leistung.',
+      fields: () => [{ key: 'r', label: 'Widerstand R', unit: 'Ω' }, { key: 'ih', label: 'Scheitelwert des Stroms î', unit: 'A' }, { key: 'ph', label: 'Spitzenleistung p̂', unit: 'W' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Die Wirkleistung P ist der Mittelwert der Momentanleistung. Rechne zuerst mit den Effektivwerten (R = U² / P), dann mit den Scheitelwerten: û und î sind beim Sinus √2-mal so groß wie die Effektivwerte. Für p̂ multiplizierst du û mit î.',
+        'û = √2 · ' + f(v.u, 0) + ' V = ' + f(v.uh, 1) + ' V und R = ' + f(v.r, 2) + ' Ω ergeben î. Das Produkt û · î steht in einem festen Verhältnis zu P; prüfe es mit der Wirkleistung ' + f(v.p, 0) + ' W.',
+        'Musterlösung: R = ' + f(v.r, 2) + ' Ω, î = ' + f(v.uh, 1) + ' V / ' + f(v.r, 2) + ' Ω = ' + f(v.ih, 2) + ' A, p̂ = ' + f(v.uh, 1) + ' V · ' + f(v.ih, 2) + ' A = ' + f(v.ph, 0) + ' W, also das Doppelte von P. Die Momentanleistung hat alle ' + f(v.tp, 0) + ' ms einen Höchstwert.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'R' }), { fields: { r: null, ih: null, ph: null }, choices: {} }),
+      sol: () => A('rlc', RLCCTL({ aufbau: 'R' }), { fields: { r: vals().r, ih: vals().ih, ph: vals().ph }, choices: rightOf(specs()), value: vals().r }),
+      wrong: () => { const v = vals(); return [
+        { name: 'Effektivstrom statt Scheitelwert, Mittelwert als Spitze', answer: A('rlc', {}, { fields: { r: v.r, ih: v.ie, ph: v.p }, choices: { tp: 'konst' } }) },
+        { name: 'Strom als Widerstand, Faktor √2 statt 2', answer: A('rlc', {}, { fields: { r: v.ie, ih: v.ie, ph: v.pwz }, choices: { tp: 'ein' } }) }]; } };
+  })();
+
+  /* ---------- ws47: Blindwiderstände und Ströme bei doppelter Frequenz ---------- */
+  const M47 = (() => {
+    const G = { l: 0.2, c: 10e-6, f1: 50, f2: 100, u: 230 };
+    const vals = () => once('v47', () => {
+      const w1 = TWO_PI * G.f1, w2 = TWO_PI * G.f2, xl1 = w1 * G.l, xl2 = w2 * G.l, xc1 = 1 / (w1 * G.c), xc2 = 1 / (w2 * G.c);
+      return { l: G.l, c: G.c * 1e6, f1: G.f1, f2: G.f2, u: G.u, xl1, xl2, xl4: 2 * xl2, xlh: xl1 / 2, xc1, xc2, xcv: 2 * xc1, xc4: xc2 / 2, il1: G.u / xl1, il2: G.u / xl2, ilv: G.u / xl1 * 2, ilz: G.u / xl1 * 4, ic1: G.u / xc1, ic2: G.u / xc2, ich: G.u / xc1 / 2, icv: G.u / xc1 * 4 };
+    });
+    const specs = () => { const v = vals(), z = (x, d) => f(x, d == null ? 1 : d); return [
+      { key: 'xl', q: 'Die Frequenz steigt von ' + z(v.f1, 0) + ' Hz auf ' + z(v.f2, 0) + ' Hz. Was geschieht mit dem Blindwiderstand der Spule (L = ' + z(v.l, 1) + ' H, bei ' + z(v.f1, 0) + ' Hz ist X_L = ' + z(v.xl1, 1) + ' Ω)?', short: 'Die Änderung von X_L ist richtig beurteilt', right: 'verdoppelt', options: [
+        { value: 'halbiert', label: 'Er halbiert sich auf ' + z(v.xlh, 1) + ' Ω', grund: 'X_L = 2π · f · L wächst mit der Frequenz. Bei doppelter Frequenz verdoppelt sich X_L, es halbiert sich nicht.' },
+        { value: 'gleich', label: 'Er bleibt bei ' + z(v.xl1, 1) + ' Ω', grund: 'X_L enthält die Frequenz im Zähler. Nur der Wirkwiderstand eines Drahtes ist unabhängig von f, der Blindwiderstand nicht.' },
+        { value: 'verdoppelt', label: 'Er verdoppelt sich auf ' + z(v.xl2, 1) + ' Ω', grund: 'X_L ist proportional zu f: Aus ' + z(v.xl1, 1) + ' Ω bei ' + z(v.f1, 0) + ' Hz werden ' + z(v.xl2, 1) + ' Ω bei ' + z(v.f2, 0) + ' Hz.' },
+        { value: 'vervierfacht', label: 'Er vervierfacht sich auf ' + z(v.xl4, 1) + ' Ω', grund: 'X_L steigt linear, nicht quadratisch, mit der Frequenz. Doppelte Frequenz ergibt nur den doppelten Wert (' + z(v.xl2, 1) + ' Ω).' }] },
+      { key: 'xc', q: 'Dieselbe Frequenzänderung: Was geschieht mit dem Blindwiderstand des Kondensators (C = ' + z(v.c, 0) + ' µF, bei ' + z(v.f1, 0) + ' Hz ist X_C = ' + z(v.xc1, 1) + ' Ω)?', short: 'Die Änderung von X_C ist richtig beurteilt', right: 'halbiert', options: [
+        { value: 'verdoppelt', label: 'Er verdoppelt sich auf ' + z(v.xcv, 1) + ' Ω', grund: 'X_C = 1 / (2π · f · C) hat die Frequenz im Nenner. Mit steigender Frequenz wird X_C kleiner, nicht größer.' },
+        { value: 'halbiert', label: 'Er halbiert sich auf ' + z(v.xc2, 1) + ' Ω', grund: 'X_C ist umgekehrt proportional zu f: Aus ' + z(v.xc1, 1) + ' Ω bei ' + z(v.f1, 0) + ' Hz werden ' + z(v.xc2, 1) + ' Ω bei ' + z(v.f2, 0) + ' Hz.' },
+        { value: 'gleich', label: 'Er bleibt bei ' + z(v.xc1, 1) + ' Ω', grund: 'Der Blindwiderstand des Kondensators hängt von der Frequenz ab, er bleibt nicht gleich.' },
+        { value: 'viertel', label: 'Er sinkt auf ein Viertel (' + z(v.xc4, 1) + ' Ω)', grund: 'Doppelte Frequenz halbiert X_C nur; ein Viertel gäbe es erst bei vierfacher Frequenz.' }] },
+      { key: 'il', q: 'Die Spule liegt an ' + z(v.u, 0) + ' V (Effektivwert) und nimmt bei ' + z(v.f1, 0) + ' Hz ' + z(v.il1, 2) + ' A auf. Wie groß ist der Strom bei ' + z(v.f2, 0) + ' Hz?', short: 'Die Änderung des Spulenstroms ist richtig beurteilt', right: 'il-halb', options: [
+        { value: 'il-verdoppelt', label: 'Er verdoppelt sich auf ' + z(v.ilv, 2) + ' A', grund: 'Der Strom ist I = U / X_L. Weil X_L mit der Frequenz wächst, sinkt der Strom bei höherer Frequenz.' },
+        { value: 'il-gleich', label: 'Er bleibt bei ' + z(v.il1, 2) + ' A', grund: 'Bei gleicher Spannung bestimmt X_L den Strom. X_L hat sich verdoppelt, also kann der Strom nicht gleich bleiben.' },
+        { value: 'il-halb', label: 'Er halbiert sich auf ' + z(v.il2, 2) + ' A', grund: 'I = U / X_L mit X_L = ' + z(v.xl2, 1) + ' Ω ergibt ' + z(v.il2, 2) + ' A. Der Spulenstrom sinkt mit steigender Frequenz.' },
+        { value: 'il-vier', label: 'Er steigt auf das Vierfache (' + z(v.ilz, 2) + ' A)', grund: 'Der Strom steigt nicht, denn X_L wird größer. Der Faktor vier passt auch nicht zu einer Verdopplung der Frequenz.' }] },
+      { key: 'ic', q: 'Der Kondensator liegt an ' + z(v.u, 0) + ' V und nimmt bei ' + z(v.f1, 0) + ' Hz ' + z(v.ic1, 2) + ' A auf. Wie groß ist der Strom bei ' + z(v.f2, 0) + ' Hz?', short: 'Die Änderung des Kondensatorstroms ist richtig beurteilt', right: 'ic-doppelt', options: [
+        { value: 'ic-halb', label: 'Er halbiert sich auf ' + z(v.ich, 2) + ' A', grund: 'Das wäre das Verhalten der Spule. Beim Kondensator sinkt X_C mit der Frequenz, also steigt der Strom.' },
+        { value: 'ic-gleich', label: 'Er bleibt bei ' + z(v.ic1, 2) + ' A', grund: 'X_C hat sich halbiert. Bei gleicher Spannung muss der Strom deshalb größer werden.' },
+        { value: 'ic-vier', label: 'Er vervierfacht sich auf ' + z(v.icv, 2) + ' A', grund: 'Der Strom wächst proportional zur Frequenz, nicht mit ihrem Quadrat. Doppelte Frequenz ergibt den doppelten Strom (' + z(v.ic2, 2) + ' A).' },
+        { value: 'ic-doppelt', label: 'Er verdoppelt sich auf ' + z(v.ic2, 2) + ' A', grund: 'I = U / X_C mit X_C = ' + z(v.xc2, 1) + ' Ω ergibt ' + z(v.ic2, 2) + ' A. Der Kondensatorstrom steigt mit der Frequenz.' }] }]; };
+    const check = mk((r, a) => { choiceRows(r, a, specs()); });
+    return { vals, check, consts: [], audit: () => choiceAudit(specs()),
+      text: () => 'Eine Spule (L = ' + f(G.l, 1) + ' H) und ein Kondensator (C = ' + f(G.c * 1e6, 0) + ' µF) liegen einzeln an einer Wechselspannung von ' + f(G.u, 0) + ' V (Effektivwert, verlustfrei gerechnet). Die Frequenz wird von ' + f(G.f1, 0) + ' Hz auf ' + f(G.f2, 0) + ' Hz verdoppelt. Beantworte, wie sich die beiden Blindwiderstände und die Ströme ändern.',
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Beachte, wo die Frequenz in den Formeln steht: X_L = 2π · f · L hat sie im Zähler, X_C = 1 / (2π · f · C) im Nenner. Der Strom ist jeweils I = U / X bei gleicher Spannung.',
+        'Mit ' + f(v.f1, 0) + ' Hz ist X_L = ' + f(v.xl1, 1) + ' Ω und X_C = ' + f(v.xc1, 1) + ' Ω. Bei doppelter Frequenz wird der Widerstand mit f im Zähler größer, der mit f im Nenner kleiner. Der Strom verhält sich dazu entgegengesetzt.',
+        'Musterlösung: X_L steigt auf ' + f(v.xl2, 1) + ' Ω, X_C sinkt auf ' + f(v.xc2, 1) + ' Ω. Der Spulenstrom sinkt auf ' + f(v.il2, 2) + ' A, der Kondensatorstrom steigt auf ' + f(v.ic2, 2) + ' A. Merke: Die Spule lässt hohe Frequenzen schlechter durch, der Kondensator besser.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'L' }), { choices: {} }), sol: () => A('rlc', RLCCTL({ aufbau: 'L' }), { choices: rightOf(specs()) }),
+      wrong: () => [{ name: 'Spule und Kondensator vertauscht', answer: A('rlc', {}, { choices: { xl: 'halbiert', xc: 'verdoppelt', il: 'il-verdoppelt', ic: 'ic-halb' } }) }, { name: 'Frequenz ohne Einfluss', answer: A('rlc', {}, { choices: { xl: 'gleich', xc: 'gleich', il: 'il-gleich', ic: 'ic-gleich' } }) }] };
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'ws17', lab: 'wsl', cat: 'Prüfungsnah', title: 'Resonanzfrequenz berechnen', level: 1, rig: 'schwing' }, M17),
@@ -678,9 +1158,24 @@
     tk({ id: 'ws29', lab: 'wsl', cat: 'Prüfungsnah', title: 'Trafo an Gleichspannung', level: 2, rig: 'trafo' }, M29),
     tk({ id: 'ws30', lab: 'wsl', cat: 'Drehstrom', title: 'Stern oder Dreieck?', level: 2, rig: 'drehstrom' }, M30),
     tk({ id: 'ws31', lab: 'wsl', cat: 'Prüfungsnah', title: 'Teil-A-Rechnung Wechselstrom', level: 3, rig: 'rlc' }, M31),
-    tk({ id: 'ws32', lab: 'wsl', cat: 'Meisterstück', title: 'Meisterstück: Der Labortisch-Wechselstrom', level: 3, rig: 'schwing' }, M32)
+    tk({ id: 'ws32', lab: 'wsl', cat: 'Meisterstück', title: 'Meisterstück: Der Labortisch-Wechselstrom', level: 3, rig: 'schwing' }, M32),
+    tk({ id: 'ws33', lab: 'wsl', cat: 'Drehstrom', title: 'Verkettung der Stränge', level: 1, rig: 'drehstrom' }, M33),
+    tk({ id: 'ws34', lab: 'wsl', cat: 'Drehstrom', title: 'Vom Polrad zum Zeitversatz', level: 2, rig: 'drehstrom' }, M34),
+    tk({ id: 'ws35', lab: 'wsl', cat: 'Drehstrom', title: 'Der vierte Leiter bei ungleicher Last', level: 3, rig: 'drehstrom' }, M35),
+    tk({ id: 'ws36', lab: 'wsl', cat: 'Drehstrom', title: 'Leistung aus Leiterstrom und Außenleiterspannung', level: 2, rig: 'drehstrom' }, M36),
+    tk({ id: 'ws37', lab: 'wsl', cat: 'Leistungsübertragung', title: 'Zuleitung zum Drehstromverbraucher', level: 3, rig: 'drehstrom' }, M37),
+    tk({ id: 'ws38', lab: 'wsl', cat: 'Leistungsübertragung', title: 'Gleiche Leistung, andere Spannung', level: 2, rig: 'drehstrom' }, M38),
+    tk({ id: 'ws39', lab: 'wsl', cat: 'Drehstrom', title: 'Kondensatoren am Drehstromnetz', level: 3, rig: 'drehstrom' }, M39),
+    tk({ id: 'ws40', lab: 'wsl', cat: 'Induktion', title: 'Induktionsspannung aus dem Flussverlauf', level: 2, rig: 'trafo' }, M40),
+    tk({ id: 'ws41', lab: 'wsl', cat: 'Induktion', title: 'Was verändert die Induktionsspannung?', level: 1, rig: 'trafo' }, M41),
+    tk({ id: 'ws42', lab: 'wsl', cat: 'Wechselspannung', title: 'Wie entsteht eine Spannung?', level: 1, rig: 'sinus' }, M42),
+    tk({ id: 'ws43', lab: 'wsl', cat: 'Wechselspannung', title: 'Spannung als Potentialunterschied', level: 1, rig: 'rlc' }, M43),
+    tk({ id: 'ws44', lab: 'wsl', cat: 'R, L, C', title: 'Heizwiderstand am Wechselstromnetz', level: 2, rig: 'rlc' }, M44),
+    tk({ id: 'ws45', lab: 'wsl', cat: 'R, L, C', title: 'Kapazität aus der Strommessung', level: 2, rig: 'rlc' }, M45),
+    tk({ id: 'ws46', lab: 'wsl', cat: 'Leistung', title: 'Spitzenleistung am Wirkwiderstand', level: 3, rig: 'rlc' }, M46),
+    tk({ id: 'ws47', lab: 'wsl', cat: 'R, L, C', title: 'Blindwiderstände bei doppelter Frequenz', level: 2, rig: 'rlc' }, M47)
   ];
-  const MODS = { ws17: M17, ws18: M18, ws19: M19, ws20: M20, ws21: M21, ws22: M22, ws23: M23, ws24: M24, ws25: M25, ws26: M26, ws27: M27, ws28: M28, ws29: M29, ws30: M30, ws31: M31, ws32: M32 };
+  const MODS = { ws17: M17, ws18: M18, ws19: M19, ws20: M20, ws21: M21, ws22: M22, ws23: M23, ws24: M24, ws25: M25, ws26: M26, ws27: M27, ws28: M28, ws29: M29, ws30: M30, ws31: M31, ws32: M32, ws33: M33, ws34: M34, ws35: M35, ws36: M36, ws37: M37, ws38: M38, ws39: M39, ws40: M40, ws41: M41, ws42: M42, ws43: M43, ws44: M44, ws45: M45, ws46: M46, ws47: M47 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);

@@ -730,6 +730,334 @@
       } };
   })();
 
+  /* ====================================================================== ae33 bis ae40: Anbindung an den Berufsschulstoff (Halbleiter, Arbeitspunkt, Transistor, integrierte Schaltkreise)
+   * Alle Zahlen stammen aus dem Kern (ANA_CORE.tr, ANA_CORE.limit) oder aus dem Pruefstand (sim); Bauteilwerte sind Aufgabenwerte (Uebungsschaltung).
+   * Auswahlaufgaben ohne Rechnung (ae37, ae38, ae39, ae40) nutzen den Baustein pick(): Fachgrund je Antwort, richtige Antwort nicht systematisch die laengste. */
+  /* Baustein: reine Auswahlaufgabe; o = { rig, ctl(), specs(), vals(), text(), hint() } */
+  function pick(o) {
+    const wrongSet = k => { const c = {}; o.specs().forEach(s => { const w = s.options.filter(x => x.value !== s.right); c[s.key] = w[k % w.length].value; }); return c; };
+    return { vals: o.vals, consts: [], audit: () => choiceAudit(o.specs()), check: mk((r, a) => { choiceRows(r, a, o.specs()); }),
+      text: o.text, hint: o.hint, choices: () => publicChoices(o.specs()),
+      start: () => A(o.rig, o.ctl(), { choices: {} }), sol: () => A(o.rig, o.ctl(), { choices: rightOf(o.specs()) }),
+      wrong: () => [{ name: 'durchgehend die erste falsche Antwort', answer: A(o.rig, {}, { choices: wrongSet(0) }) }, { name: 'durchgehend die zweite falsche Antwort', answer: A(o.rig, {}, { choices: wrongSet(1) }) }] };
+  }
+  const mAf = x => f(x, 2) + ' mA';
+
+  /* ====================================================================== ae33: Arbeitsgerade und Arbeitspunkt der LED (Lernfeld 6.1, grafische Arbeitspunktermittlung) */ /* PRUEFEN P1: Arbeitspunkt wird gerechnet und im Prüfstand abgelesen, nicht von Hand gezeichnet; LED-Kennlinie ist das Lehrmodell (Übungswerte) */
+  const M33 = (() => {
+    const G = { uq: 9, rv: 470, uq2: 6 };
+    const FIX = { typ: 'led_rot', modell: 'kennlinie', temp: 27, fehler: 'keiner', ziel: 0 };
+    const ctl = (uq, rv) => Object.assign({}, FIX, { uq, rv });
+    const S = (uq, rv) => once('s33|' + uq + '|' + rv, () => { const s = sim('diode', ctl(uq, rv)); if (!s.ok || !fin(s.m.id)) throw new Error('Prüfstand ae33'); return s; });
+    const vals = () => once('v33', () => { const a = S(G.uq, G.rv).m, b = S(G.uq2, G.rv).m, c = S(G.uq, 2 * G.rv).m; return {
+      uq: G.uq, rv: G.rv, uq2: G.uq2, rv2: 2 * G.rv, ik: G.uq / G.rv * 1e3, ud: a.ud, id: a.id, ur: a.ur, ik2: G.uq2 / G.rv * 1e3, id2: b.id, ud2: b.ud, ik3: G.uq / (2 * G.rv) * 1e3, id3: c.id, idProp: a.id * G.uq2 / G.uq }; });
+    const rIk = () => once('r33k', () => { const v = vals(); return own(G.uq / G.rv, 'A', [{ v: v.id / 1e3, id: 'ap', text: 'Dein Wert (' + mAf(v.id) + ') ist der Strom im Arbeitspunkt, (U_q − U_D) / R_V. Der Achsenabschnitt I_k gilt für U = 0, also ohne Spannungsfall an der Diode: I_k = U_q / R_V.' }], { factor: 1e-3, dispUnit: 'mA', disp: v.ik }); });
+    const rId = () => once('r33i', () => { const v = vals(); return own(v.id / 1e3, 'A', [{ v: v.ik / 1e3, id: 'ik', text: 'Dein Wert (' + mAf(v.ik) + ') ist der Achsenabschnitt U_q / R_V. So groß wäre der Strom ohne Spannungsfall an der Diode. Im Arbeitspunkt fällt U_D an der Diode ab, der Strom ist (U_q − U_D) / R_V.' }], { factor: 1e-3, dispUnit: 'mA', disp: v.id, tol: AMP_TOL() }); });
+    const rUd = () => once('r33u', () => { const v = vals(); return own(v.ud, 'V', [{ v: v.ur, id: 'ur', text: 'Dein Wert (' + f(v.ur, 2) + ' V) ist die Spannung am Vorwiderstand, U_R = U_q − U_D. Gefragt ist die Spannung an der LED.' }, { v: G.uq, id: 'uq', text: 'Dein Wert ist die Quellenspannung. Diese teilt sich auf: Ein kleiner Teil fällt an der LED ab, der Rest am Vorwiderstand.' }], { tol: AMP_TOL() }); });
+    const rId2 = () => once('r33j', () => { const v = vals(); return own(v.id2 / 1e3, 'A', [{ v: v.idProp / 1e3, id: 'prop', text: 'Dein Wert (' + mAf(v.idProp) + ') entsteht, wenn der Strom im Verhältnis der Quellenspannungen umgerechnet wird. Das stimmt nicht: Die LED hält U_D fast fest, nur der Rest (U_q − U_D) liegt am Widerstand.' }, { v: v.ik2 / 1e3, id: 'ik2', text: 'Dein Wert (' + mAf(v.ik2) + ') ist der Achsenabschnitt U_q / R_V der neuen Geraden. Im Arbeitspunkt fällt zusätzlich U_D an der LED ab.' }], { factor: 1e-3, dispUnit: 'mA', disp: v.id2, tol: AMP_TOL() }); });
+    const specs = () => once('sp33', () => { const v = vals(); return [
+      { key: 'rvdopp', q: 'Der Vorwiderstand wird verdoppelt (R_V = ' + eng(v.rv2 * 1, 'Ω') + ', U_q bleibt ' + eng(G.uq, 'V') + '). Wie liegt die neue Arbeitsgerade zur alten?', short: 'Die Arbeitsgerade bei doppeltem Vorwiderstand ist richtig beschrieben', right: 'flacher',
+        options: [
+          { value: 'parallel', label: 'Parallel nach links verschoben, gleiche Steigung', grund: 'Eine Parallelverschiebung entsteht, wenn sich die Quellenspannung ändert. Hier ändert sich R_V und damit der Anstieg −1 / R_V: Die neue Gerade verläuft nicht parallel zur alten.' },
+          { value: 'flacher', label: 'Flacher, Punkt U_q auf der Spannungsachse bleibt', grund: 'Bei I = 0 liegt die ganze Quellenspannung an der Diode: Der Punkt (U_q | 0) bleibt. Bei U = 0 fließt nur noch U_q / R_V = ' + mAf(v.ik3) + ' statt ' + mAf(v.ik) + ', die Gerade dreht sich um (U_q | 0) und wird flacher. Der Arbeitspunkt rutscht auf I_D = ' + mAf(v.id3) + ' (Simulation).' },
+          { value: 'steiler', label: 'Steiler, I_k verdoppelt sich auf der Stromachse', grund: 'Ein größerer Widerstand macht die Gerade flacher, nicht steiler: I_k = U_q / R_V sinkt auf ' + mAf(v.ik3) + ' (vorher ' + mAf(v.ik) + ').' },
+          { value: 'kennlinie', label: 'Die LED-Kennlinie ändert sich, die Gerade bleibt', grund: 'Die Kennlinie gehört zur LED und bleibt gleich. Die Arbeitsgerade gehört zu Quelle und Vorwiderstand: Die Gerade dreht sich, wenn R_V verdoppelt wird (I_k sinkt von ' + mAf(v.ik) + ' auf ' + mAf(v.ik3) + ').' }] },
+      { key: 'uq6', q: 'Die Quellenspannung sinkt auf ' + eng(G.uq2, 'V') + ' (R_V = ' + eng(G.rv, 'Ω') + '). Was geschieht mit Arbeitsgerade und Arbeitspunkt?', short: 'Die Wirkung der kleineren Quellenspannung ist richtig beschrieben', right: 'wandert',
+        options: [
+          { value: 'dreht', label: 'Die Gerade dreht sich, der Arbeitspunkt bleibt fast gleich', grund: 'Eine Drehung entsteht durch einen anderen Widerstand. Bei kleinerer Quellenspannung bleibt der Anstieg −1 / R_V, die Gerade wird parallel verschoben, und der Strom sinkt von ' + mAf(v.id) + ' auf ' + mAf(v.id2) + '.' },
+          { value: 'gleich', label: 'Nichts ändert sich, die LED hält ihre Spannung fest', grund: 'Die LED hält nur ihre Flussspannung (hier ' + f(v.ud2, 2) + ' V) annähernd fest. Der Strom folgt dem Rest: Bei ' + eng(G.uq2, 'V') + ' ist I_D = ' + mAf(v.id2) + ' statt ' + mAf(v.id) + '.' },
+          { value: 'wandert', label: 'Gerade parallel verschoben, der Arbeitspunkt sinkt', grund: 'Die Quellenspannung verschiebt die Gerade parallel (I_k = ' + mAf(v.ik2) + ', Punkt U_q auf der Spannungsachse bei ' + eng(G.uq2, 'V') + '). Der Arbeitspunkt wandert auf der LED-Kennlinie nach unten: I_D = ' + mAf(v.id2) + ' statt ' + mAf(v.id) + '.' },
+          { value: 'kennlinie', label: 'Die LED-Kennlinie rückt nach links, die Gerade bleibt', grund: 'Die Kennlinie gehört zur LED und ändert sich durch die Quelle nicht. Es ist die Arbeitsgerade, die sich verschiebt: Ihre Schnittpunkte sind jetzt ' + eng(G.uq2, 'V') + ' und ' + mAf(v.ik2) + '.' }] }]; });
+    const check = mk((r, a) => {
+      inputRow(r, a, S(G.uq, G.rv), 'diode');
+      numRow(r, rawOf(a, 'ik'), rIk(), 'Der Achsenabschnitt I_k = U_q / R_V ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'id'), rId(), 'Der Strom I_D im Arbeitspunkt (U_q = ' + f(G.uq, 0) + ' V) stimmt', 2);
+      numRow(r, rawOf(a, 'ud'), rUd(), 'Die Spannung U_D an der LED im Arbeitspunkt stimmt', 2);
+      numRow(r, rawOf(a, 'id2'), rId2(), 'Der Strom I_D bei U_q = ' + f(G.uq2, 0) + ' V stimmt', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Eine rote LED liegt in Reihe mit einem Vorwiderstand R_V = ' + eng(G.rv, 'Ω') + ' an U_q = ' + eng(G.uq, 'V') + ' (Übungsschaltung). Die Arbeitsgerade des Vorwiderstands ist die Gerade I = (U_q − U) / R_V; sie schneidet die Spannungsachse bei U_q und die Stromachse bei I_k. Berechne I_k und lies im Prüfstand „' + rname('diode') + '“ (Ansicht Kennlinie) den Arbeitspunkt der LED ab, also I_D und U_D. Danach sinkt die Quellenspannung auf ' + eng(G.uq2, 'V') + ': Wie groß wird I_D? Beantworte zuletzt zwei Fragen zur Lage der Arbeitsgeraden.',
+      fields: () => [{ key: 'ik', label: 'Achsenabschnitt I_k (bei U = 0)', unit: 'mA' }, { key: 'id', label: 'Strom I_D im Arbeitspunkt', unit: 'mA' }, { key: 'ud', label: 'Spannung U_D im Arbeitspunkt', unit: 'V' }, { key: 'id2', label: 'Strom I_D bei kleinerer Quellenspannung', unit: 'mA' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Die Arbeitsgerade gehört zum Vorwiderstand: Bei I = 0 liegt die ganze Quellenspannung an der Diode (Punkt U_q auf der Spannungsachse), bei U = 0 fließt I_k = U_q / R_V (Punkt auf der Stromachse). Der Arbeitspunkt ist der Schnittpunkt der Geraden mit der Kennlinie der LED.',
+        'I_k = ' + f(v.uq, 0) + ' V / ' + f(v.rv, 0) + ' Ω ergibt etwa ' + f(v.ik, 1) + ' mA. Der Arbeitspunkt liegt bei einer viel kleineren Spannung, weil an einer LED nur wenig Spannung abfällt; der Rest liegt am Widerstand. Im Arbeitspunkt ist der Strom deshalb kleiner als I_k.',
+        'Musterlösung: I_k = ' + f(v.ik, 2) + ' mA. Arbeitspunkt: U_D = ' + f(v.ud, 2) + ' V, I_D = ' + f(v.id, 2) + ' mA. Bei ' + f(v.uq2, 0) + ' V verschiebt sich die Gerade parallel (I_k = ' + f(v.ik2, 2) + ' mA), und I_D sinkt auf ' + f(v.id2, 2) + ' mA. Mit doppeltem R_V käme I_k = ' + f(v.ik3, 2) + ' mA.'
+      ]; },
+      start: () => A('diode', ctl(G.uq, G.rv), { fields: { ik: null, id: null, ud: null, id2: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('diode', ctl(G.uq, G.rv), { fields: { ik: v.ik, id: v.id, ud: v.ud, id2: v.id2 }, choices: rightOf(specs()), value: v.id }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Achsenabschnitt und Arbeitspunktstrom vertauscht, U_R statt U_D', answer: A('diode', {}, { fields: { ik: v.id, id: v.ik, ud: v.ur, id2: v.idProp }, choices: { rvdopp: 'parallel', uq6: 'dreht' } }) },
+        { name: 'Zahlen richtig, Lage der Geraden falsch beschrieben', answer: A('diode', {}, { fields: { ik: v.ik, id: v.id, ud: v.ud, id2: v.id2 }, choices: { rvdopp: 'steiler', uq6: 'gleich' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae34: Verlustleistungshyperbel (Lernfeld 6.1, Ausgangskennlinienfeld) */ /* PRUEFEN P2: P_tot = 0,5 W ist der Übungswert des Labs (limit ptot, Frage F4), nicht ein Datenblattwert */
+  const M34 = (() => {
+    const U1 = 4, U2 = 12, IC3 = 0.06, APS = [{ k: 'pa', u: 6, i: 0.06 }, { k: 'pb', u: 10, i: 0.07 }, { k: 'pc', u: 3, i: 0.15 }];
+    const P = () => lv('ptot');
+    const FIX = { ub: 12, ust: 5, last: 'ohm', rlast: 100, rb: 4700, b: 100, eingang: 'dauer-ein', fehler: 'keiner', ziel: 0 };
+    const vals = () => once('v34', () => { const p = P(); return { p: p * 1e3, u1: U1, u2: U2, i1: p / U1 * 1e3, i2: p / U2 * 1e3, ic3: IC3 * 1e3, umax: p / IC3, pa: APS[0].u * APS[0].i * 1e3, pb: APS[1].u * APS[1].i * 1e3, pc: APS[2].u * APS[2].i * 1e3, wrongI1: p * U1, wrongU: p * IC3 }; });
+    const rI1 = () => once('r34a', () => { const p = P(), v = vals(); return own(p / U1, 'A', [{ v: p * U1, id: 'mal', text: 'Du hast P_tot · U_CE gerechnet (' + f(v.wrongI1, 1) + ' W). Auf der Hyperbel gilt P_tot = U_CE · I_C, also I_C = P_tot / U_CE.' }, { v: U1 / p, id: 'kehr', text: 'Du hast U_CE / P_tot gerechnet. Der Strom ist I_C = P_tot / U_CE, die Leistung durch die Spannung.' }], { factor: 1e-3, dispUnit: 'mA', disp: v.i1 }); });
+    const rI2 = () => once('r34b', () => { const p = P(), v = vals(); return own(p / U2, 'A', [{ v: p * U2, id: 'mal', text: 'Du hast P_tot · U_CE gerechnet. Auf der Hyperbel gilt I_C = P_tot / U_CE; bei größerer Spannung wird der zulässige Strom kleiner, nicht größer.' }], { factor: 1e-3, dispUnit: 'mA', disp: v.i2 }); });
+    const rU = () => once('r34c', () => { const p = P(), v = vals(); return own(p / IC3, 'V', [{ v: p * IC3, id: 'mal', text: 'Du hast P_tot · I_C gerechnet (' + f(v.wrongU, 2) + '). Gesucht ist die Spannung, bei der U_CE · I_C genau P_tot ergibt: U_CE = P_tot / I_C.' }], { dispUnit: 'V', disp: v.umax }); });
+    const specs = () => once('sp34', () => { const v = vals(), p = v.p, lab = ['zulässig: Punkt unter der Hyperbel', 'unzulässig: Punkt über der Hyperbel'], pw = { pa: v.pa, pb: v.pb, pc: v.pc };
+      const order = { pa: ['nein', 'ok'], pb: ['ok', 'nein'], pc: ['ok', 'nein'] };
+      return APS.map(a => { const pv = pw[a.k], ok = pv <= p, ap = 'U_CE = ' + f(a.u, 0) + ' V, I_C = ' + f(a.i * 1e3, 0) + ' mA';
+        const g = pv <= p ? 'Die Verlustleistung ist ' + f(a.u, 0) + ' V · ' + f(a.i * 1e3, 0) + ' mA = ' + f(pv, 0) + ' mW und liegt unter P_tot = ' + f(p, 0) + ' mW: Der Punkt liegt unterhalb der Hyperbel.' : 'Die Verlustleistung ist ' + f(a.u, 0) + ' V · ' + f(a.i * 1e3, 0) + ' mA = ' + f(pv, 0) + ' mW und liegt über P_tot = ' + f(p, 0) + ' mW: Der Punkt liegt oberhalb der Hyperbel.';
+        const gOpp = pv <= p ? 'Die Verlustleistung ' + f(pv, 0) + ' mW (= ' + f(a.u, 0) + ' V · ' + f(a.i * 1e3, 0) + ' mA) liegt unter P_tot = ' + f(p, 0) + ' mW, der Punkt liegt also unter der Hyperbel und ist zulässig.' : 'Die Verlustleistung ' + f(pv, 0) + ' mW (= ' + f(a.u, 0) + ' V · ' + f(a.i * 1e3, 0) + ' mA) liegt über P_tot = ' + f(p, 0) + ' mW, der Punkt liegt über der Hyperbel und ist nicht zulässig.';
+        const opts = { ok: { value: 'ok', label: lab[0], grund: ok ? g : gOpp }, nein: { value: 'nein', label: lab[1], grund: ok ? gOpp : g } };
+        return { key: a.k, q: 'Betriebspunkt ' + ap + ': Ist er bezüglich der Verlustleistung zulässig?', short: 'Der Betriebspunkt ' + ap + ' ist richtig beurteilt', right: ok ? 'ok' : 'nein', options: order[a.k].map(k => opts[k]) }; }); });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'i1'), rI1(), 'Der Strom auf der Hyperbel bei U_CE = ' + f(U1, 0) + ' V ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'i2'), rI2(), 'Der Strom auf der Hyperbel bei U_CE = ' + f(U2, 0) + ' V ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'umax'), rU(), 'Die größte Spannung U_CE bei I_C = ' + f(IC3 * 1e3, 0) + ' mA ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein Transistor darf höchstens die Verlustleistung P_tot = ' + eng(P(), 'W') + ' umsetzen (Übungswert). Im Ausgangskennlinienfeld ist die Verlustleistungshyperbel die Linie I_C = P_tot / U_CE; darüber ist der Betrieb unzulässig. Berechne den Strom I_C auf der Hyperbel für U_CE = ' + f(U1, 0) + ' V und für U_CE = ' + f(U2, 0) + ' V und bestimme, bis zu welcher Spannung U_CE ein Kollektorstrom von ' + f(IC3 * 1e3, 0) + ' mA zulässig bleibt. Beurteile dann drei Betriebspunkte. Im Prüfstand „' + rname('schalter') + '“ zeigt das Messgerät „Verlustleistung Transistor“ die Warnmarke bei P_tot.',
+      fields: () => [{ key: 'i1', label: 'Strom I_C bei U_CE = ' + f(U1, 0) + ' V', unit: 'mA' }, { key: 'i2', label: 'Strom I_C bei U_CE = ' + f(U2, 0) + ' V', unit: 'mA' }, { key: 'umax', label: 'Größte Spannung U_CE bei ' + f(IC3 * 1e3, 0) + ' mA', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Die Verlustleistung im Transistor ist ungefähr P = U_CE · I_C. Auf der Hyperbel gilt U_CE · I_C = P_tot. Daraus folgen I_C = P_tot / U_CE und U_CE = P_tot / I_C. Ein Punkt ist zulässig, wenn sein Produkt U_CE · I_C unter P_tot liegt.',
+        'Rechne in A, V und W: I_C(' + f(v.u1, 0) + ' V) = ' + f(v.p, 0) + ' mW / ' + f(v.u1, 0) + ' V, danach in mA umrechnen. Bei doppelter Spannung halbiert sich der zulässige Strom. Zur Beurteilung bildest du für jeden Punkt U_CE · I_C und vergleichst mit ' + f(v.p, 0) + ' mW.',
+        'Musterlösung: I_C(' + f(v.u1, 0) + ' V) = ' + f(v.i1, 1) + ' mA, I_C(' + f(v.u2, 0) + ' V) = ' + f(v.i2, 2) + ' mA, U_CE,max(' + f(v.ic3, 0) + ' mA) = ' + f(v.umax, 2) + ' V. Die Punkte haben ' + f(v.pa, 0) + ' mW, ' + f(v.pb, 0) + ' mW und ' + f(v.pc, 0) + ' mW: zulässig, unzulässig, zulässig.'
+      ]; },
+      start: () => A('schalter', FIX, { fields: { i1: null, i2: null, umax: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('schalter', FIX, { fields: { i1: v.i1, i2: v.i2, umax: v.umax }, choices: rightOf(specs()), value: v.i1 }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Leistung mal Spannung gerechnet (zu groß), alles zulässig', answer: A('schalter', {}, { fields: { i1: v.wrongI1 * 1e3, i2: v.p / 1e3 * U2 * 1e3, umax: v.wrongU }, choices: { pa: 'ok', pb: 'ok', pc: 'ok' } }) },
+        { name: 'Kehrwert gerechnet, alles unzulässig', answer: A('schalter', {}, { fields: { i1: U1 / (v.p / 1e3) * 1e3, i2: v.i2, umax: v.umax }, choices: { pa: 'nein', pb: 'nein', pc: 'nein' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae35: Betriebszustaende des Transistors (Lernfeld 6.1, Zustaende einer Transistorschaltstufe) */ /* PRUEFEN P3: Das Lab kennt die Zustände gesperrt, aktiv, gesättigt (ü ab 1); der Unterricht trennt Sättigungsbeginn und Übersteuerung */
+  const M35 = (() => {
+    const G = { ub: 12, rl: 470, rb: 22000, b: 100 }, USTS = [0.5, 2, 4, 8];
+    const FIX = { ub: G.ub, last: 'ohm', rlast: G.rl, rb: G.rb, b: G.b, eingang: 'dauer-ein', fehler: 'keiner', ziel: 0 };
+    const sw = ust => once('sw35|' + ust, () => { const s = C().tr.switch({ ub: G.ub, ust, rb: G.rb, b: G.b, last: 'ohm', rlast: G.rl }); if (!s || !s.ok) throw new Error('tr.switch ae35'); return s; });
+    const ube0 = () => lv('ube');
+    const ustmin = () => ube0() + G.rb * sw(20).ibmin;
+    const vals = () => once('v35', () => { const s = sw(20), o = {}; USTS.forEach((u, k) => { const r = sw(u); o['ust' + k] = u; o['ib' + k] = r.ib * 1e6; o['ic' + k] = r.ic * 1e3; o['uce' + k] = r.uce; o['ueb' + k] = r.ueb; });
+      return Object.assign(o, { ub: G.ub, rl: G.rl, rb: G.rb / 1e3, b: G.b, ube: ube0(), icsat: s.icSat * 1e3, ibmin: s.ibmin * 1e6, ucesat: lv('ucesat'), ustmin: ustmin(), ohneUbe: G.rb * s.ibmin }); });
+    const rU = () => once('r35', () => { const v = vals(); return own(v.ustmin, 'V', [{ v: v.ohneUbe, id: 'ubeVergessen', text: 'Dein Wert (' + f(v.ohneUbe, 2) + ' V) ist nur der Spannungsfall an R_B. Die Steuerspannung muss zusätzlich die Basis-Emitter-Spannung U_BE = ' + f(v.ube, 1) + ' V aufbringen.' }, { v: G.ub, id: 'ub', text: 'Die Steuerspannung muss nicht so groß sein wie die Betriebsspannung. Nötig sind nur U_BE plus den Spannungsfall R_B · I_B,min, wobei I_B,min = I_C,sat / B der Basisstrom ist, der den Transistor gerade sättigt.' }], {}); });
+    const zname = { sperrt: 'Sperrbereich', aktiv: 'aktiver Bereich', saettigung: 'Sättigung' };
+    const OPTS = [['sperrt', 'Sperrbereich (Schalter offen)'], ['aktiv', 'Aktiver Bereich (verstärkend)'], ['saettigung', 'Sättigung (Schalter geschlossen)']];
+    const specs = () => once('sp35', () => { const v = vals(); const orders = [[1, 0, 2], [2, 1, 0], [0, 2, 1], [1, 2, 0]];
+      return USTS.map((u, k) => { const r = sw(u), z = r.zustand, ibU = f(v['ib' + k], 0) + ' µA', icM = f(v['ic' + k], 1) + ' mA', uceV = f(v['uce' + k], 2) + ' V';
+        const g = {
+          sperrt: z === 'sperrt' ? 'U_BE = ' + f(u, 1) + ' V liegt unter der Schwelle von ' + f(v.ube, 1) + ' V: Es fließt kein Basisstrom, I_C = 0 und U_CE = U_B = ' + f(G.ub, 0) + ' V.' : 'Gesperrt wäre der Transistor nur ohne Basisstrom (U_BE unter ' + f(v.ube, 1) + ' V). Hier fließt aber I_B = ' + ibU + ' und I_C = ' + icM + '.',
+          aktiv: z === 'aktiv' ? 'I_B = ' + ibU + ' wird verstärkt: I_C = B · I_B = ' + icM + ', U_CE = ' + uceV + ' liegt deutlich über U_CE,sat = ' + f(v.ucesat, 1) + ' V, und ü = ' + f(v['ueb' + k], 2) + ' liegt unter 1.' : (z === 'sperrt' ? 'Im aktiven Bereich müsste ein Basisstrom fließen. Hier liegt U_BE = ' + f(u, 1) + ' V unter der Schwelle von ' + f(v.ube, 1) + ' V, der Transistor sperrt.' : 'Im aktiven Bereich wäre I_C = B · I_B = ' + f(G.b * v['ib' + k] / 1e3, 1) + ' mA. Die Last erlaubt aber höchstens I_C,sat = ' + f(v.icsat, 1) + ' mA, und U_CE ist auf ' + uceV + ' gefallen: Der Transistor ist gesättigt.'),
+          saettigung: z === 'saettigung' ? 'I_B = ' + ibU + ' liegt über I_B,min = ' + f(v.ibmin, 0) + ' µA (ü = ' + f(v['ueb' + k], 2) + '): I_C wird von der Last bestimmt (I_C,sat = ' + f(v.icsat, 1) + ' mA), U_CE ist nur noch ' + uceV + '.' : (z === 'sperrt' ? 'Zur Sättigung wäre ein Basisstrom über I_B,min = ' + f(v.ibmin, 0) + ' µA nötig. Hier fließt gar keiner, U_CE = ' + uceV + '.' : 'Zur Sättigung wäre I_B über I_B,min = ' + f(v.ibmin, 0) + ' µA nötig; hier sind es ' + ibU + ' (ü = ' + f(v['ueb' + k], 2) + '). U_CE = ' + uceV + ' liegt noch weit über U_CE,sat.')
+        };
+        return { key: 'z' + k, q: 'Zeile U_St = ' + f(u, 1) + ' V (U_BE = ' + f(Math.min(u, v.ube), 1) + ' V, I_B = ' + ibU + ', I_C = ' + icM + ', U_CE = ' + uceV + '): In welchem Zustand arbeitet der Transistor?', short: 'Der Zustand bei U_St = ' + f(u, 1) + ' V ist richtig bestimmt', right: z,
+          options: orders[k].map(i => ({ value: OPTS[i][0], label: OPTS[i][1], grund: g[OPTS[i][0]] })) }; }); });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'ustmin'), rU(), 'Die kleinste Steuerspannung für die Sättigung ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein npn-Transistor schaltet im Prüfstand „' + rname('schalter') + '“ einen ohmschen Verbraucher R_L = ' + eng(G.rl, 'Ω') + ' an U_B = ' + eng(G.ub, 'V') + '; der Basisvorwiderstand beträgt R_B = ' + eng(G.rb, 'Ω') + ', die Gleichstromverstärkung B = ' + f(G.b, 0) + ' (Übungsschaltung; U_BE = ' + f(ube0(), 1) + ' V im leitenden Zustand, U_CE,sat = ' + f(lv('ucesat'), 1) + ' V). Die Tabelle zeigt vier Betriebspunkte bei verschiedenen Steuerspannungen U_St. Bestimme für jeden Punkt den Zustand und berechne die kleinste Steuerspannung, bei der die Sättigung beginnt (ü = 1).',
+      table: () => { const v = vals(); return { caption: 'Betriebspunkte (Simulation, Übungswerte)', head: ['U_St', 'U_BE', 'I_B', 'I_C', 'U_CE'], rows: USTS.map((u, k) => [f(u, 1) + ' V', f(Math.min(u, v.ube), 1) + ' V', f(v['ib' + k], 0) + ' µA', f(v['ic' + k], 1) + ' mA', f(v['uce' + k], 2) + ' V']) }; },
+      fields: () => [{ key: 'ustmin', label: 'Kleinste Steuerspannung für die Sättigung', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Gesperrt: U_BE unter der Schwelle, I_B = 0, I_C = 0. Aktiv: I_C = B · I_B und U_CE deutlich über U_CE,sat. Sättigung: I_B ist größer als I_B,min = I_C,sat / B (ü über 1), I_C wird von der Last bestimmt und U_CE fällt auf U_CE,sat. Die Sättigung beginnt bei I_B = I_B,min.',
+        'I_C,sat = (U_B − U_CE,sat) / R_L = ' + f(v.icsat, 1) + ' mA, daraus I_B,min = I_C,sat / B = ' + f(v.ibmin, 0) + ' µA. Die Steuerspannung muss U_BE und den Spannungsfall an R_B (R_B · I_B,min = ' + f(v.ohneUbe, 2) + ' V) liefern.',
+        'Musterlösung: Zustände gesperrt, aktiv, aktiv (ü = ' + f(v.ueb2, 2) + '), Sättigung (ü = ' + f(v.ueb3, 2) + '). U_St,min = U_BE + R_B · I_B,min = ' + f(v.ube, 1) + ' V + ' + f(v.ohneUbe, 2) + ' V = ' + f(v.ustmin, 2) + ' V.'
+      ]; },
+      start: () => A('schalter', Object.assign({}, FIX, { ust: 0.5 }), { fields: { ustmin: null }, choices: {} }),
+      sol: () => A('schalter', Object.assign({}, FIX, { ust: vals().ustmin }), { fields: { ustmin: vals().ustmin }, choices: rightOf(specs()), value: vals().ustmin }),
+      wrong: () => { const v = vals(); return [
+        { name: 'U_BE vergessen (zu klein), jede Zeile aktiv', answer: A('schalter', {}, { fields: { ustmin: v.ohneUbe }, choices: { z0: 'aktiv', z1: 'aktiv', z2: 'aktiv', z3: 'aktiv' } }) },
+        { name: 'Betriebsspannung als Schwelle (zu groß), Zustände vertauscht', answer: A('schalter', {}, { fields: { ustmin: G.ub }, choices: { z0: 'saettigung', z1: 'sperrt', z2: 'saettigung', z3: 'aktiv' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae36: Stromverstaerkung aus der Messreihe (Lernfeld 6.1, Stromsteuerkennlinie; E9-Labor Bipolartransistor) */ /* PRUEFEN P4: B = 140 und die Messreihe sind Simulationswerte (Modell ohne Early-Effekt, B konstant bis zur Sättigung) */
+  const M36 = (() => {
+    const G = { ub: 12, rl: 220, rb: 10000, b: 140 }, IBS = [20, 60, 120, 300, 800];
+    const FIX = { ub: G.ub, last: 'ohm', rlast: G.rl, rb: G.rb, b: G.b, eingang: 'dauer-ein', fehler: 'keiner', ziel: 0 };
+    const ustOf = ib => Math.round((lv('ube') + G.rb * ib * 1e-6) * 10) / 10;
+    const sw = ib => once('sw36|' + ib, () => { const s = C().tr.switch({ ub: G.ub, ust: ustOf(ib), rb: G.rb, b: G.b, last: 'ohm', rlast: G.rl }); if (!s || !s.ok) throw new Error('tr.switch ae36'); return s; });
+    const vals = () => once('v36', () => { const o = {}; IBS.forEach((ib, k) => { const r = sw(ib); o['ib' + k] = r.ib * 1e6; o['ic' + k] = r.ic * 1e3; o['uce' + k] = r.uce; o['ust' + k] = ustOf(ib); o['b' + k] = r.ic / r.ib; });
+      const s = sw(800); return Object.assign(o, { b: G.b, bsat: s.ic / s.ib, icsat: s.icSat * 1e3, ibmin: s.ibmin * 1e6, rl: G.rl, ib2: IBS[2], ic2: o.ic2, kehr: 1 / G.b }); });
+    const rB = () => once('r36b', () => { const v = vals(); return own(G.b, '', [{ v: 1 / G.b, id: 'kehr', text: 'Dein Wert ist der Kehrwert I_B / I_C. Die Gleichstromverstärkung ist B = I_C / I_B (Ausgangsstrom durch Eingangsstrom).' }], { tol: 0.03 }); });
+    const rBs = () => once('r36s', () => { const v = vals(); return own(v.bsat, '', [{ v: G.b, id: 'linear', text: 'Dein Wert ist die Verstärkung des linearen Bereichs. In der letzten Zeile ist der Transistor gesättigt: I_C = ' + f(v.ic4, 1) + ' mA wird von der Last begrenzt, das Verhältnis I_C / I_B fällt deshalb deutlich ab.' }], { tol: 0.03 }); });
+    const specs = () => once('sp36', () => { const v = vals(); return [
+      { key: 'letzte', q: 'Die letzte Zeile (I_B = ' + f(IBS[4], 0) + ' µA) liefert einen viel kleineren Wert I_C / I_B als die anderen. Woran liegt das?', short: 'Die Ursache der kleineren Verstärkung in der letzten Zeile ist richtig erkannt', right: 'saettigung',
+        options: [
+          { value: 'fehler', label: 'Das Messgerät hat bei großem Strom falsch angezeigt', grund: 'Dafür gibt es keinen Hinweis: Die Spannung U_CE = ' + f(v.uce4, 2) + ' V zeigt, dass der Transistor ausgesteuert ist. Er kann nicht mehr Strom führen, als die Last mit R_L = ' + f(G.rl, 0) + ' Ω bei U_B zulässt (' + f(v.icsat, 1) + ' mA).' },
+          { value: 'saettigung', label: 'Der Transistor ist gesättigt, die Last begrenzt I_C', grund: 'Mit I_B = ' + f(IBS[4], 0) + ' µA liegt der Basisstrom über I_B,min = ' + f(v.ibmin, 0) + ' µA. I_C ist auf I_C,sat = ' + f(v.icsat, 1) + ' mA begrenzt, U_CE ist nur noch ' + f(v.uce4, 2) + ' V. B = I_C / I_B ist hier nur noch ' + f(v.bsat, 0) + '.' },
+          { value: 'heiss', label: 'Der Transistor ist heiß geworden und hat B verloren', grund: 'Die Verlustleistung ist hier sogar klein (U_CE ist nur ' + f(v.uce4, 2) + ' V). Der Abfall von B kommt von der Sättigung: I_C ist auf ' + f(v.icsat, 1) + ' mA begrenzt, obwohl B · I_B größer wäre.' },
+          { value: 'sperr', label: 'Der Transistor beginnt zu sperren, weil I_B zu groß ist', grund: 'Ein großer Basisstrom sperrt nicht, er sättigt: I_B = ' + f(IBS[4], 0) + ' µA liegt über I_B,min = ' + f(v.ibmin, 0) + ' µA, U_CE fällt auf ' + f(v.uce4, 2) + ' V.' }] },
+      { key: 'kennlinie', q: 'Welche Aussage über die Stromsteuerkennlinie I_C = f(I_B) trifft zu?', short: 'Die Stromsteuerkennlinie ist richtig beschrieben', right: 'gerade',
+        options: [
+          { value: 'expon', label: 'Exponentieller Anstieg, wie bei der Diodenkennlinie', grund: 'Exponentiell verläuft die Eingangskennlinie I_B = f(U_BE). Die Stromsteuerkennlinie I_C = f(I_B) ist bis zur Sättigung nahezu eine Gerade, die Steigung ist B (hier ' + f(G.b, 0) + ').' },
+          { value: 'waag', label: 'Waagerechte Linie: I_C hängt nicht von I_B ab', grund: 'Der Basisstrom steuert den Kollektorstrom: In der Messreihe wächst I_C von ' + f(v.ic0, 1) + ' mA auf ' + f(v.ic3, 1) + ' mA, wenn I_B von ' + f(IBS[0], 0) + ' µA auf ' + f(IBS[3], 0) + ' µA steigt.' },
+          { value: 'gerade', label: 'Bis zur Sättigung nahezu eine Ursprungsgerade', grund: 'Im aktiven Bereich gilt I_C = B · I_B: Die Punkte liegen auf einer Geraden durch den Ursprung mit der Steigung B = ' + f(G.b, 0) + '. Erst in der Sättigung knickt sie ab (I_C,sat = ' + f(v.icsat, 1) + ' mA).' },
+          { value: 'fallend', label: 'Fallende Linie: mehr I_B bringt weniger I_C', grund: 'Mehr Basisstrom bringt im aktiven Bereich mehr Kollektorstrom (I_C = B · I_B). Die Kennlinie knickt erst in der Sättigung ab, sie fällt nie.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'b'), rB(), 'Die Gleichstromverstärkung B im linearen Bereich ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'bsat'), rBs(), 'Das Verhältnis I_C / I_B der letzten Zeile ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Im Prüfstand „' + rname('schalter') + '“ wurde ein npn-Transistor an U_B = ' + eng(G.ub, 'V') + ' mit einem ohmschen Verbraucher R_L = ' + eng(G.rl, 'Ω') + ' untersucht (Übungsschaltung, Basisvorwiderstand R_B = ' + eng(G.rb, 'Ω') + '). Die Tabelle enthält die Messreihe I_C in Abhängigkeit von I_B. Berechne die Gleichstromverstärkung B = I_C / I_B im linearen Bereich und das Verhältnis I_C / I_B der letzten Zeile; erkläre dann die Abweichung und beschreibe die Stromsteuerkennlinie.',
+      table: () => { const v = vals(); return { caption: 'Messreihe (Simulation, Übungswerte)', head: ['U_St', 'I_B', 'I_C', 'U_CE'], rows: IBS.map((ib, k) => [f(v['ust' + k], 1) + ' V', f(v['ib' + k], 0) + ' µA', f(v['ic' + k], 1) + ' mA', f(v['uce' + k], 2) + ' V']) }; },
+      fields: () => [{ key: 'b', label: 'Gleichstromverstärkung B im linearen Bereich', unit: '' }, { key: 'bsat', label: 'I_C / I_B in der letzten Zeile', unit: '' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Die Gleichstromverstärkung ist B = I_C / I_B. Rechne dazu in gleichen Einheiten (mA durch µA gibt den Faktor 1000). Im aktiven Bereich ist B für alle Zeilen nahezu gleich; eine Zeile, die herausfällt, gehört zu einem anderen Zustand.',
+        'Beispiel: I_C = ' + f(v.ic2, 1) + ' mA bei I_B = ' + f(v.ib2, 0) + ' µA ergibt B = ' + f(v.ic2, 1) + ' mA / ' + f(v.ib2, 0) + ' µA. Die letzte Zeile hat U_CE = ' + f(v.uce4, 2) + ' V und damit I_C,sat = ' + f(v.icsat, 1) + ' mA; teile auch dort I_C durch I_B.',
+        'Musterlösung: B = ' + f(v.b, 0) + ' (alle Zeilen außer der letzten). Letzte Zeile: ' + f(v.icsat, 1) + ' mA / ' + f(v.ib4, 0) + ' µA = ' + f(v.bsat, 1) + ': Der Transistor ist gesättigt, I_C wird von der Last begrenzt (I_B,min = ' + f(v.ibmin, 0) + ' µA).'
+      ]; },
+      start: () => A('schalter', Object.assign({}, FIX, { ust: 0.9 }), { fields: { b: null, bsat: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('schalter', Object.assign({}, FIX, { ust: ustOf(IBS[4]) }), { fields: { b: v.b, bsat: v.bsat }, choices: rightOf(specs()), value: v.b }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Kehrwert gerechnet, Messfehler vermutet', answer: A('schalter', {}, { fields: { b: v.kehr, bsat: v.b }, choices: { letzte: 'fehler', kennlinie: 'expon' } }) },
+        { name: 'B der Sättigung gleich dem linearen B, Kennlinie fallend', answer: A('schalter', {}, { fields: { b: v.b, bsat: v.b }, choices: { letzte: 'heiss', kennlinie: 'fallend' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae37: Dotierung und Sperrschicht (Lernfeld 6.1, Halbleitergrundlagen) */ /* PRUEFEN P5: Diffusionsspannung Silizium etwa 0,7 V und Temperaturgang etwa 2 mV/K stammen aus dem Lehrmodell des Prüfstands */
+  const M37 = (() => {
+    const CTL = () => ({ typ: 'si', modell: 'kennlinie', uq: 5, rv: 220, temp: 27, fehler: 'keiner', ziel: 0 });
+    const T1 = 87;
+    const d = t => once('d37|' + t, () => { const s = sim('diode', Object.assign(CTL(), { temp: t })); if (!s.ok) throw new Error('Prüfstand ae37'); return s.m; });
+    const vals = () => once('v37', () => { const a = d(27), b = d(T1); return { uf: C().diode.types.find(x => x.id === 'si').uf, t0: 27, t1: T1, dt: T1 - 27, ud0: a.ud, ud1: b.ud, dud: (a.ud - b.ud) * 1e3, kmv: (a.ud - b.ud) * 1e3 / (T1 - 27) }; });
+    const specs = () => once('sp37', () => { const v = vals(); return [
+      { key: 'dotierung', q: 'Reines Silizium (vierwertig) wird mit Phosphor dotiert, einem Element mit fünf Valenzelektronen. Was entsteht?', short: 'Das Ergebnis der Phosphor-Dotierung ist richtig bestimmt', right: 'n',
+        options: [
+          { value: 'p', label: 'p-Halbleiter, die Phosphoratome nehmen Elektronen auf', grund: 'Phosphor bringt ein Elektron mehr mit, als das Gitter für die Bindungen braucht. Er gibt es ab (Donator), es entsteht ein n-Halbleiter. Akzeptoren (dreiwertig, zum Beispiel Bor) nehmen Elektronen auf und erzeugen p-Leitung.' },
+          { value: 'n', label: 'n-Halbleiter, Elektronen sind die Majoritätsträger', grund: 'Das fünfte Valenzelektron wird nicht zur Bindung gebraucht und ist frei beweglich. Die Phosphoratome sind Donatoren und bleiben als ortsfeste positive Ionen im Gitter. Die Elektronen sind die Majoritätsträger.' },
+          { value: 'loch', label: 'n-Halbleiter, Löcher sind die Majoritätsträger', grund: 'Beim n-Halbleiter sind die Elektronen in der Mehrzahl. Die Löcher stammen nur aus der Eigenleitung und sind die Minoritätsträger.' },
+          { value: 'iso', label: 'Ein Isolator, weil die Fremdatome Bindungen blockieren', grund: 'Dotieren erhöht die Leitfähigkeit stark, weil zusätzliche bewegliche Ladungsträger entstehen. Ein Isolator entsteht dabei nicht.' }] },
+      { key: 'sperrschicht', q: 'Ein p-Gebiet und ein n-Gebiet werden aneinandergefügt, ohne äußere Spannung. Wie entsteht die Sperrschicht?', short: 'Die Entstehung der Sperrschicht ist richtig erklärt', right: 'diff',
+        options: [
+          { value: 'quelle', label: 'Durch die Spannung der Quelle, die Ladungsträger abzieht', grund: 'Es ist keine Quelle angeschlossen. Die Sperrschicht entsteht von selbst durch Diffusion der Ladungsträger über die Grenze.' },
+          { value: 'wander', label: 'Die Fremdatome wandern über die Grenze und mischen sich', grund: 'Die Fremdatome sind im Gitter ortsfest. Es diffundieren die beweglichen Ladungsträger (Elektronen und Löcher), nicht die Atome.' },
+          { value: 'warm', label: 'Durch starke Erwärmung, die alle Ladungsträger zerstört', grund: 'Wärme erzeugt zusätzliche Ladungsträgerpaare, sie zerstört keine. Die Bewegung über die Grenze kommt aus der Diffusion, danach bleibt eine Raumladung zurück.' },
+          { value: 'diff', label: 'Diffusion und Rekombination lassen ortsfeste Ionen zurück', grund: 'Elektronen wandern ins p-Gebiet, Löcher ins n-Gebiet und rekombinieren dort. Zurück bleiben ortsfeste Ionen (Raumladung); sie bauen die Diffusionsspannung auf und stoppen die weitere Diffusion.' }] },
+      { key: 'durchlass', q: 'Eine Siliziumdiode liegt in Durchlassrichtung an einer Spannung. Was geschieht mit der Sperrschicht?', short: 'Das Verhalten der Sperrschicht in Durchlassrichtung ist richtig beschrieben', right: 'abbau',
+        options: [
+          { value: 'abbau', label: 'Schmaler: ab etwa ' + f(v.uf, 1) + ' V fließt nennenswert Strom', grund: 'Die äußere Spannung wirkt der Diffusionsspannung entgegen (bei Silizium etwa ' + f(v.uf, 1) + ' V): Die Sperrschicht wird abgebaut, Ladungsträger fließen über den Übergang.' },
+          { value: 'breiter', label: 'Breiter: der Strom bleibt klein', grund: 'Breiter wird die Sperrschicht in Sperrrichtung. In Durchlassrichtung schwächt die Spannung die Raumladung, die Schicht wird schmaler.' },
+          { value: 'gleich', label: 'Unverändert: die Diode leitet schon bei kleinen Spannungen', grund: 'Bei Silizium fließt erst ab etwa ' + f(v.uf, 1) + ' V nennenswert Strom, weil die Diffusionsspannung überwunden werden muss; dabei wird die Sperrschicht abgebaut.' },
+          { value: 'ionen', label: 'Verschwunden erst, wenn die Ionen das Gitter verlassen', grund: 'Die Ionen sind ortsfest und verlassen das Gitter nicht. Die Sperrschicht wird abgebaut, weil Ladungsträger sie wieder füllen.' }] },
+      { key: 'temperatur', q: 'Die Temperatur einer Siliziumdiode steigt um ' + f(v.dt, 0) + ' K (Prüfstand: ' + f(v.t0, 0) + ' °C auf ' + f(v.t1, 0) + ' °C, Quelle und Vorwiderstand bleiben). Was ist die Folge?', short: 'Die Wirkung der Erwärmung ist richtig beschrieben', right: 'mehrLT',
+        options: [
+          { value: 'mehrLT', label: 'Mehr Ladungsträgerpaare, die Flussspannung sinkt', grund: 'Wärme erzeugt mehr Elektron-Loch-Paare (Generation), die Diode leitet früher: U_D sinkt hier von ' + f(v.ud0, 2) + ' V auf ' + f(v.ud1, 2) + ' V, etwa ' + f(v.kmv, 1) + ' mV je Kelvin (Simulation).' },
+          { value: 'weniger', label: 'Weniger Ladungsträger, die Flussspannung steigt', grund: 'Bei höherer Temperatur entstehen mehr Ladungsträgerpaare, nicht weniger. Die Flussspannung sinkt von ' + f(v.ud0, 2) + ' V auf ' + f(v.ud1, 2) + ' V (Simulation).' },
+          { value: 'kein', label: 'Keine Wirkung, die Flussspannung bleibt gleich', grund: 'Die Eigenleitung steigt mit der Temperatur, deshalb verschiebt sich die Kennlinie: U_D fällt um ' + f(v.dud, 0) + ' mV (von ' + f(v.ud0, 2) + ' V auf ' + f(v.ud1, 2) + ' V).' },
+          { value: 'sperr', label: 'Die Diode sperrt, weil die Sperrschicht wächst', grund: 'Die Sperrschicht wächst nicht durch Wärme. Es entstehen mehr Ladungsträgerpaare, die Diode leitet früher: U_D sinkt von ' + f(v.ud0, 2) + ' V auf ' + f(v.ud1, 2) + ' V.' }] }]; });
+    return pick({ rig: 'diode', ctl: CTL, specs, vals,
+      text: () => 'Beantworte vier Fragen zu den Grundlagen der Halbleiter und der Diode: Dotierung, Sperrschicht, Durchlassrichtung und Temperatur. Im Prüfstand „' + rname('diode') + '“ ist eine Siliziumdiode mit Vorwiderstand aufgebaut (Übungsschaltung); mit dem Regler „Temperatur“ kannst du die letzte Frage nachprüfen.',
+      hint: () => { const v = vals(); return [
+        'Dotieren heißt, Fremdatome einzubauen: Fünfwertige Atome (zum Beispiel Phosphor) geben ein Elektron ab (Donatoren, n-Leitung), dreiwertige (zum Beispiel Bor) nehmen eines auf (Akzeptoren, p-Leitung). Am Übergang diffundieren Ladungsträger über die Grenze und hinterlassen ortsfeste Ionen.',
+        'Die Ionen der Sperrschicht sitzen fest im Gitter und bauen die Diffusionsspannung auf (bei Silizium etwa ' + f(v.uf, 1) + ' V). Eine äußere Spannung in Durchlassrichtung wirkt ihr entgegen. Zur Temperatur: Wärme erzeugt zusätzliche Ladungsträgerpaare.',
+        'Musterlösung: n-Halbleiter mit Elektronen als Majoritätsträgern; Sperrschicht durch Diffusion, Rekombination und ortsfeste Ionen; in Durchlassrichtung wird sie schmaler (ab etwa ' + f(v.uf, 1) + ' V); bei Erwärmung sinkt U_D von ' + f(v.ud0, 2) + ' V auf ' + f(v.ud1, 2) + ' V.'
+      ]; } });
+  })();
+
+  /* ====================================================================== ae38: Diodentypen und ihr Einsatz (Lernfeld 6.1, Dioden mit besonderen Eigenschaften) */ /* PRUEFEN P6: Durchlassspannungen Schottky 0,3 V und LED 2 V sind Übungswerte; Suppressordiode "meist bidirektional" wie im Unterricht */
+  const M38 = (() => {
+    const CTL = () => ({ typ: 'si', modell: 'kennlinie', uq: 5, rv: 220, temp: 27, fehler: 'keiner', ziel: 0 });
+    const vals = () => once('v38', () => { const t = C().diode.types, g = id => t.find(x => x.id === id).uf; return { ufSi: g('si'), ufSchottky: g('schottky'), ufLed: g('led_rot') }; });
+    const TYPES = [['z', 'Z-Diode'], ['kap', 'Kapazitätsdiode'], ['schottky', 'Schottky-Diode'], ['supp', 'Suppressordiode'], ['foto', 'Fotodiode'], ['led', 'Leuchtdiode']];
+    const WHY = v => ({
+      z: 'Die Z-Diode arbeitet in Sperrrichtung und hält im Durchbruch ihre Z-Spannung fest; damit stabilisiert man eine Spannung.',
+      kap: 'Die Kapazitätsdiode nutzt die Sperrschichtkapazität, die sich mit der Sperrspannung ändert; damit stimmt man Schwingkreise spannungsgesteuert ab.',
+      schottky: 'Die Schottky-Diode hat einen Metall-Halbleiter-Übergang, schaltet sehr schnell und hat eine kleine Durchlassspannung (hier ' + f(v.ufSchottky, 1) + ' V gegenüber ' + f(v.ufSi, 1) + ' V bei der Siliziumdiode, Übungswerte).',
+      supp: 'Die Suppressordiode wird oberhalb einer Spannungsschwelle schnell leitend und leitet Spannungsspitzen ab; sie liegt parallel zum Schutzobjekt und ist meist bidirektional.',
+      foto: 'Die Fotodiode arbeitet in Sperrrichtung: Licht erzeugt Ladungsträgerpaare, der Sperrstrom steigt mit der Beleuchtung (Lichtschranke, Belichtungsmesser).',
+      led: 'Die Leuchtdiode arbeitet in Durchlassrichtung (mit Vorwiderstand) und sendet Licht aus; sie ist die Umkehrung der Fotodiode (hier U_F = ' + f(v.ufLed, 1) + ' V für die rote LED, Übungswert).' });
+    const CASES = [
+      { k: 'f1', right: 'kap', q: 'Der Schwingkreis eines Radios soll über eine Gleichspannung abgestimmt werden, ohne einen Drehkondensator zu bewegen. Welches Bauteil dient als einstellbare Kapazität?', short: 'Die Diode für die Abstimmung des Schwingkreises ist richtig gewählt', order: [2, 0, 5, 1, 3, 4] },
+      { k: 'f2', right: 'schottky', q: 'Ein hochfrequentes Signal soll gleichgerichtet werden. Die Diode muss sehr schnell schalten und dabei wenig Spannung verlieren. Welches Bauteil passt?', short: 'Die Diode für die schnelle Gleichrichtung ist richtig gewählt', order: [3, 4, 2, 0, 5, 1] },
+      { k: 'f3', right: 'supp', q: 'Ein Signaleingang soll vor kurzen Spannungsspitzen geschützt werden. Das Bauteil liegt parallel zum Eingang und wird erst über einer bestimmten Spannung schnell leitend. Welches ist es?', short: 'Die Diode für den Überspannungsschutz ist richtig gewählt', order: [1, 2, 0, 3, 5, 4] },
+      { k: 'f4', right: 'foto', q: 'In einer Lichtschranke soll der Empfänger bei Lichteinfall mehr Strom führen. Er sitzt in Sperrrichtung in der Schaltung. Welches Bauteil ist das?', short: 'Die Diode für den Lichtschranken-Empfänger ist richtig gewählt', order: [5, 4, 1, 2, 0, 3] },
+      { k: 'f5', right: 'z', q: 'Eine Gleichspannung soll trotz schwankender Eingangsspannung konstant bleiben. Das Bauteil liegt mit Vorwiderstand in Sperrrichtung parallel zur Last. Welches ist es?', short: 'Die Diode zur Spannungsstabilisierung ist richtig gewählt', order: [0, 3, 1, 4, 2, 5] }];
+    const specs = () => once('sp38', () => { const w = WHY(vals()); return CASES.map(c => ({ key: c.k, q: c.q, short: c.short, right: c.right, options: c.order.map(i => { const t = TYPES[i], own = t[0] === c.right; return { value: t[0], label: t[1], grund: own ? w[t[0]] + ' Das passt zur Aufgabe.' : w[t[0]] + ' Das passt nicht zur Aufgabe.' }; }) })); });
+    return pick({ rig: 'diode', ctl: CTL, specs, vals,
+      text: () => 'Fünf Anwendungen, ein Bauteil je Anwendung: Wähle für jeden Fall die Diodenart, die zur Aufgabe passt. Zur Auswahl stehen Z-Diode, Kapazitätsdiode, Schottky-Diode, Suppressordiode, Fotodiode und Leuchtdiode. Im Prüfstand „' + rname('diode') + '“ kannst du Siliziumdiode, Schottky-Diode, LED und Z-Diode vergleichen.',
+      hint: () => { const v = vals(); return [
+        'Frage dich bei jedem Fall: In welche Richtung wird die Diode betrieben, und welche Eigenschaft wird genutzt? Z-Diode: Durchbruchspannung. Kapazitätsdiode: Sperrschichtkapazität. Schottky: schnell, kleine Durchlassspannung. Suppressor: leitet Spannungsspitzen ab. Fotodiode: Licht steuert den Sperrstrom. LED: sendet Licht.',
+        'Im Prüfstand siehst du den Unterschied bei der Durchlassspannung: Siliziumdiode etwa ' + f(v.ufSi, 1) + ' V, Schottky-Diode etwa ' + f(v.ufSchottky, 1) + ' V, rote LED etwa ' + f(v.ufLed, 1) + ' V. Die Fälle zwei und vier unterscheiden sich in der Betriebsrichtung.',
+        'Musterlösung: Abstimmung mit Gleichspannung: Kapazitätsdiode; schnelle Gleichrichtung: Schottky-Diode; Schutz vor Spannungsspitzen: Suppressordiode; Lichtschranken-Empfänger: Fotodiode; Spannung konstant halten: Z-Diode.'
+      ]; } });
+  })();
+
+  /* ====================================================================== ae39: Basisvorspannung und Ruhearbeitspunkt (Lernfeld 6.1, Arbeitspunkteinstellung) */ /* PRUEFEN P7: Schwelle 0,7 V (Lehrmodell); die Faustregel aus dem Unterricht (Sperren bei etwa 0,5 V, Übersteuern bei etwa 0,9 V) wurde nicht übernommen */
+  const M39 = (() => {
+    const CTL = () => ({ ub: 12, ue: 0.02, f: 1000, rg: 600, r1: 47000, r2: 10000, rc: 2200, re1: 100, re2: 470, ce: true, c1: 0.00001, c2: 0.00001, b: 100, rl: 10000, fehler: 'keiner', zielUce: 0, zielVu: 0, ansicht: 'signal' });
+    const UHAT = 0.3;
+    const vals = () => once('v39', () => { const s = sim('emitter', CTL()); if (!s.ok) throw new Error('Prüfstand ae39'); return { ube: lv('ube'), uhat: UHAT, ic: s.m.ic, uce: s.m.uce, ib: s.m.ib, pruhe: s.m.uce * s.m.ic, ub: CTL().ub }; });
+    const specs = () => once('sp39', () => { const v = vals(); return [
+      { key: 'ohne', q: 'Eine Emitterstufe hat keine Basisvorspannung: Der Ruhearbeitspunkt liegt bei U_BE = 0. An die Basis wird eine Sinusspannung mit dem Scheitelwert û = ' + f(UHAT, 1) + ' V gelegt. Was erscheint am Ausgang?', short: 'Das Verhalten ohne Basisvorspannung ist richtig beschrieben', right: 'nichts',
+        options: [
+          { value: 'volle', label: 'Eine verstärkte Sinusspannung, um 180° gedreht', grund: 'Ohne Vorspannung erreicht die Basis-Emitter-Spannung nur ±' + f(UHAT, 1) + ' V. Das liegt unter der Schwelle von ' + f(v.ube, 1) + ' V: Der Transistor leitet nie, es gibt keine Verstärkung.' },
+          { value: 'nichts', label: 'Praktisch nichts: Der Transistor bleibt gesperrt', grund: 'Der Scheitelwert ' + f(UHAT, 1) + ' V erreicht die Schwelle von etwa ' + f(v.ube, 1) + ' V nicht. Es fließt kein Basisstrom und kein Kollektorstrom, der Ausgang bleibt bei ' + f(v.ub, 0) + ' V.' },
+          { value: 'halb', label: 'Nur die negative Halbwelle, verstärkt', grund: 'Die negative Halbwelle sperrt die Basis-Emitter-Strecke erst recht. Bei û = ' + f(UHAT, 1) + ' V bleibt auch die positive Halbwelle unter der Schwelle ' + f(v.ube, 1) + ' V.' },
+          { value: 'klirr', label: 'Eine stark verzerrte, aber vorhandene Sinusspannung', grund: 'Verzerrt würde die Spannung erst, wenn die positive Spitze die Schwelle von ' + f(v.ube, 1) + ' V überschreitet. Bei û = ' + f(UHAT, 1) + ' V geschieht das nicht.' }] },
+      { key: 'lage', q: 'Wohin legt man den Ruhearbeitspunkt einer Verstärkerstufe für eine möglichst lineare Verstärkung?', short: 'Die Lage des Ruhearbeitspunkts ist richtig gewählt', right: 'mitte',
+        options: [
+          { value: 'sperr', label: 'Knapp an die Sperrgrenze, damit kaum Ruhestrom fließt', grund: 'Dort würde schon eine Halbwelle in den Sperrbereich laufen und abgeschnitten. Der Arbeitspunkt gehört in den linearen Teil der Eingangskennlinie, mit Platz nach beiden Seiten.' },
+          { value: 'mitte', label: 'In den geraden Kennlinienteil, mit Platz nach beiden Seiten', grund: 'So kann das Signal nach oben und unten ausschlagen, ohne zu sperren oder in die Sättigung zu laufen. Im Prüfstand liegt U_CE = ' + f(v.uce, 1) + ' V etwa in der Mitte der Betriebsspannung von ' + f(v.ub, 0) + ' V.' },
+          { value: 'sat', label: 'Nahe an die Sättigung, damit U_CE möglichst klein ist', grund: 'Dort läuft die Aussteuerung schnell in die Sättigung, die Halbwelle wird abgeflacht. Besser ist ein Arbeitspunkt mit U_CE in der Mitte der Betriebsspannung.' },
+          { value: 'null', label: 'Auf U_BE = 0, denn dort ist der Ruhestrom gleich null', grund: 'Bei U_BE = 0 sperrt der Transistor, das Signal wird von der Schwelle ' + f(v.ube, 1) + ' V verschluckt. Ohne Vorspannung gibt es keine lineare Verstärkung.' }] },
+      { key: 'preis', q: 'Welchen Preis hat die Basisvorspannung, die den Ruhearbeitspunkt festlegt?', short: 'Der Nachteil der Vorspannung ist richtig benannt', right: 'ruhe',
+        options: [
+          { value: 'ruhe', label: 'Schon ohne Signal fließt Strom und Leistung wird umgesetzt', grund: 'Im Ruhebetrieb fließen I_B = ' + f(v.ib, 1) + ' µA und I_C = ' + f(v.ic, 2) + ' mA; im Transistor werden etwa U_CE · I_C = ' + f(v.pruhe, 1) + ' mW umgesetzt, auch ohne Eingangssignal.' },
+          { value: 'phase', label: 'Das Signal wird bei der Vorspannung um 90° gedreht', grund: 'Die Phase hat mit der Vorspannung nichts zu tun. Die Emitterschaltung dreht die Phase wegen der Schaltungsart um 180°; die Vorspannung legt nur den Arbeitspunkt fest.' },
+          { value: 'schwelle', label: 'Die Schwellspannung der Basis-Emitter-Strecke steigt deutlich', grund: 'Die Schwelle ist eine Eigenschaft der Basis-Emitter-Strecke (etwa ' + f(v.ube, 1) + ' V bei Silizium) und bleibt gleich. Die Vorspannung verschiebt nur den Arbeitspunkt.' },
+          { value: 'gleich', label: 'Es gibt keinen Nachteil, der Strom ist nur Signalstrom', grund: 'Der Ruhestrom fließt auch ohne Signal: I_C = ' + f(v.ic, 2) + ' mA, P ≈ ' + f(v.pruhe, 1) + ' mW. Das ist der Preis für den festen Arbeitspunkt.' }] }]; });
+    return pick({ rig: 'emitter', ctl: CTL, specs, vals,
+      text: () => 'Eine Transistorstufe soll als Verstärker arbeiten. Beantworte drei Fragen zum Ruhearbeitspunkt und zur Basisvorspannung. Im Prüfstand „' + rname('emitter') + '“ steht eine Emitterschaltung (Übungsschaltung) mit Basisspannungsteiler; dort kannst du Strom und Spannung im Ruhezustand ablesen.',
+      hint: () => { const v = vals(); return [
+        'Der Ruhearbeitspunkt ist der Arbeitspunkt ohne Signal. Die Basis-Emitter-Strecke leitet erst ab etwa ' + f(v.ube, 1) + ' V. Damit auch kleine Signale und beide Halbwellen verarbeitet werden, bringt man die Basis mit einer Gleichspannung (Vorspannung) in den linearen Teil der Kennlinie.',
+        'Ohne Vorspannung bleibt ein Signal mit û = ' + f(v.uhat, 1) + ' V unter der Schwelle von ' + f(v.ube, 1) + ' V. Mit der Vorspannung fließen im Ruhezustand I_B = ' + f(v.ib, 1) + ' µA und I_C = ' + f(v.ic, 2) + ' mA, die Betriebsspannung wird teilweise schon im Ruhebetrieb umgesetzt.',
+        'Musterlösung: Ohne Vorspannung bleibt der Transistor gesperrt (praktisch kein Ausgangssignal); der Ruhearbeitspunkt liegt im geraden Teil der Kennlinie mit Platz nach beiden Seiten; der Preis ist der Ruhestrom mit etwa ' + f(v.pruhe, 1) + ' mW Ruheleistung.'
+      ]; } });
+  })();
+
+  /* ====================================================================== ae40: Integrierte Schaltkreise (Lernfeld 9.1, Vorteile monolithischer Schaltungen) */ /* PRUEFEN P8: nur der Teil "integrierte Schaltungen allgemein" aus Lernfeld 9.1; TTL, Lastfaktoren und Pegel gehören in das Digitaltechnik-Lab */
+  const M40 = (() => {
+    const CTL = () => ({ schaltung: 'invertierer', opv: 'ideal', form: 'gleich', ue: 0.5, r1: 4700, rf: 47000 });
+    const DT = 40;
+    const dd = t => once('d40|' + t, () => { const s = sim('diode', { typ: 'si', modell: 'kennlinie', uq: 5, rv: 220, temp: t, fehler: 'keiner', ziel: 0 }); if (!s.ok) throw new Error('Prüfstand ae40'); return s.m; });
+    const vals = () => once('v40', () => { const a = dd(27), b = dd(27 + 60), k = (a.ud - b.ud) * 1e3 / 60; return { kmv: k, dt: DT, dub: k * DT, dub2: 2 * k * DT, rest: 0 }; });
+    const specs = () => once('sp40', () => { const v = vals(); return [
+      { key: 'monolith', q: 'Was bedeutet „monolithisch integrierte Schaltung“?', short: 'Der Begriff monolithisch integriert ist richtig erklärt', right: 'chip',
+        options: [
+          { value: 'gehaeuse', label: 'Einzelne Bauteile stecken fertig in einem gemeinsamen Gehäuse', grund: 'Das beschreibt eine Hybridschaltung. Bei der monolithischen Schaltung entstehen alle Elemente gemeinsam im selben Fertigungsprozess auf einem Plättchen, nicht einzeln.' },
+          { value: 'chip', label: 'Alle Elemente entstehen gemeinsam auf einem Siliziumplättchen', grund: 'Transistoren, Dioden und Widerstände werden zusammen auf einem Siliziumplättchen (Chip) hergestellt und intern verbunden: eine vollständige Funktionseinheit.' },
+          { value: 'platine', label: 'Alle Bauteile sitzen besonders eng gepackt auf einer Leiterplatte', grund: 'Auf einer Leiterplatte stehen weiterhin einzelne Bauteile mit Lötstellen und Leitungen. Bei der integrierten Schaltung gehört das alles in den Chip.' },
+          { value: 'groesse', label: 'Der Chip ist besonders groß und sehr leistungsstark', grund: 'Die Größe ist nicht gemeint. Monolithisch heißt: alles aus einem Stück, hergestellt im gemeinsamen Prozess auf einem Siliziumplättchen.' }] },
+      { key: 'streuung', q: 'Zwei Transistoren auf demselben Chip haben deutlich ähnlichere Kennwerte als zwei einzeln gekaufte Transistoren. Warum?', short: 'Der Grund für die kleine Streuung auf dem Chip ist richtig benannt', right: 'prozess',
+        options: [
+          { value: 'prozess', label: 'Gleicher Prozess und gleiche Temperatur gleichen Abweichungen aus', grund: 'Beide entstehen im selben Prozess, auf engstem Raum und bei gleicher Temperatur. Herstellungsbedingte Abweichungen heben sich zum Teil auf, die Kennwerte streuen weniger.' },
+          { value: 'sortiert', label: 'Jeder Chip wird von Hand ausgesucht und paarweise sortiert', grund: 'Aussortiert wird nicht von Hand. Der Grund liegt im gemeinsamen Prozess und in der gemeinsamen Temperatur der Elemente auf dem Chip.' },
+          { value: 'gross', label: 'Auf dem Chip sind die Transistoren größer und deshalb genauer', grund: 'Größer sind sie nicht, meist sind sie winzig. Genauer passen sie zusammen, weil sie im selben Prozess und bei gleicher Temperatur entstehen.' },
+          { value: 'kuehl', label: 'Das Gehäuse kühlt alle Transistoren gleichmäßig auf null Grad', grund: 'Der Chip wird nicht auf null Grad gekühlt. Wichtig ist, dass alle Elemente dieselbe Temperatur haben, sodass sich temperaturbedingte Änderungen gleichsinnig auswirken.' }] },
+      { key: 'temperatur', q: 'Die beiden Eingangstransistoren eines Differenzverstärkers auf einem Chip erwärmen sich um ' + f(DT, 0) + ' K. U_BE sinkt dabei je Transistor um etwa ' + f(v.kmv, 1) + ' mV/K, also um etwa ' + f(v.dub, 0) + ' mV (Wert aus dem Prüfstand). Was bleibt als Unterschied zwischen den beiden Eingängen?', short: 'Die Wirkung gleicher Temperaturänderung ist richtig beurteilt', right: 'klein',
+        options: [
+          { value: 'doppelt', label: 'Etwa ' + f(v.dub2, 0) + ' mV, weil sich beide Änderungen addieren', grund: 'Die Änderungen addieren sich nicht, sie wirken gleichsinnig. Der Differenzverstärker wertet die Differenz der Eingangsspannungen aus; sie bleibt nahezu null.' },
+          { value: 'klein', label: 'Nahezu nichts, weil beide gleich driften', grund: 'Beide U_BE sinken um etwa ' + f(v.dub, 0) + ' mV. Die Differenz bleibt nahezu null, der Differenzverstärker unterdrückt diese gemeinsame Änderung: temperaturbedingte Änderungen wirken teilweise gegeneinander.' },
+          { value: 'einer', label: 'Etwa ' + f(v.dub, 0) + ' mV, so groß wie bei einem Transistor', grund: 'Das gälte nur, wenn sich ein einziger Transistor erwärmt. Hier erwärmen sich beide gleich stark; die Differenz bleibt nahezu null.' },
+          { value: 'steigt', label: 'Die Differenz wächst mit der Temperatur stetig an', grund: 'Weil beide Transistoren gleich warm werden und gleich driften, wächst die Differenz nicht, sie bleibt nahezu null.' }] },
+      { key: 'zuverl', q: 'Warum sind integrierte Schaltungen im Allgemeinen zuverlässiger als dieselbe Schaltung aus einzelnen Bauteilen?', short: 'Der Grund für die höhere Zuverlässigkeit ist richtig benannt', right: 'loet',
+        options: [
+          { value: 'material', label: 'Der Chip besteht aus einem besonders harten Spezialmaterial', grund: 'Nicht das Material ist entscheidend. Die Zuverlässigkeit steigt, weil Lötstellen und Leitungsverbindungen zwischen den Elementen entfallen.' },
+          { value: 'groesser', label: 'Der Chip verträgt meist höhere Spannungen als einzelne Bauteile', grund: 'Das stimmt im Allgemeinen nicht. Der Vorteil ist, dass viele fehleranfällige Verbindungen (Lötstellen, Leitungen) im Chip entfallen und die internen Leitungen sehr kurz sind.' },
+          { value: 'loet', label: 'Lötstellen und Leitungen als Ausfallursache entfallen weitgehend', grund: 'Lötstellen und Leitungsverbindungen sind eine häufige Ausfallursache elektronischer Geräte. Im Chip sind sie intern und kurz; das erhöht die Zuverlässigkeit und verringert eingestreute Störungen.' },
+          { value: 'wechsel', label: 'Der Chip lässt sich im Fehlerfall besonders leicht nachlöten', grund: 'Nachlöten lässt sich ein Chip-Innenleben nicht. Der Vorteil liegt im Gegenteil darin, dass die fehleranfälligen Verbindungen gar nicht erst nötig sind.' }] }]; });
+    return pick({ rig: 'opv_inv', ctl: CTL, specs, vals,
+      text: () => 'Ein Operationsverstärker ist ein integrierter Schaltkreis. Beantworte vier Fragen zu den Eigenschaften und Vorteilen integrierter Schaltungen. Im Prüfstand „' + rname('opv_inv') + '“ steht ein Verstärker mit einem solchen Baustein (Übungsschaltung); die dritte Frage nutzt den Temperaturgang einer Siliziumdiode aus dem Prüfstand „' + rname('diode') + '“.',
+      hint: () => { const v = vals(); return [
+        'Monolithisch heißt: Alle Elemente entstehen gemeinsam auf einem Siliziumplättchen. Daraus folgen Vorteile: kurze Verbindungen, keine Lötstellen zwischen den Elementen, geringe Streuung und gleiche Temperatur aller Elemente.',
+        'Bei gleicher Temperatur driften gleichartige Transistoren gleich: Eine Erwärmung um ' + f(v.dt, 0) + ' K verschiebt beide U_BE um etwa ' + f(v.dub, 0) + ' mV. Ein Differenzverstärker bildet die Differenz, die Wirkung hebt sich auf.',
+        'Musterlösung: gemeinsamer Fertigungsprozess auf einem Siliziumplättchen; kleine Streuung durch gleichen Prozess und gleiche Temperatur; die gemeinsame Drift von etwa ' + f(v.dub, 0) + ' mV hebt sich in der Differenz nahezu auf; weniger Lötstellen und Leitungen, deshalb höhere Zuverlässigkeit.'
+      ]; } });
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'ae17', lab: 'ana', cat: 'Prüfungsnah', title: 'Verstärkung des Invertierers', level: 1, rig: 'opv_inv' }, M17),
@@ -747,9 +1075,17 @@
     tk({ id: 'ae29', lab: 'ana', cat: 'Prüfungsnah', title: 'Integrierer: Eingangswiderstand', level: 2, rig: 'opv_aktiv' }, M29),
     tk({ id: 'ae30', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Slew-Rate: höchste Frequenz', level: 3, rig: 'opv_aktiv' }, M30),
     tk({ id: 'ae31', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Aktiver Tiefpass: Grenzfrequenz', level: 2, rig: 'opv_aktiv' }, M31),
-    tk({ id: 'ae32', lab: 'ana', cat: 'Fehlersuche', title: 'Meisterstück: Fehler finden, Stufe auslegen und messen', level: 3, rig: 'opv_inv' }, M32)
+    tk({ id: 'ae32', lab: 'ana', cat: 'Fehlersuche', title: 'Meisterstück: Fehler finden, Stufe auslegen und messen', level: 3, rig: 'opv_inv' }, M32),
+    tk({ id: 'ae33', lab: 'ana', cat: 'Diode', title: 'Arbeitsgerade und Arbeitspunkt der LED', level: 2, rig: 'diode' }, M33),
+    tk({ id: 'ae34', lab: 'ana', cat: 'Transistorschalter', title: 'Verlustleistungshyperbel', level: 2, rig: 'schalter' }, M34),
+    tk({ id: 'ae35', lab: 'ana', cat: 'Transistorschalter', title: 'Betriebszustände des Transistors', level: 2, rig: 'schalter' }, M35),
+    tk({ id: 'ae36', lab: 'ana', cat: 'Transistorschalter', title: 'Stromverstärkung aus der Messreihe', level: 2, rig: 'schalter' }, M36),
+    tk({ id: 'ae37', lab: 'ana', cat: 'Diode', title: 'Dotierung und Sperrschicht', level: 1, rig: 'diode' }, M37),
+    tk({ id: 'ae38', lab: 'ana', cat: 'Diode', title: 'Diodenarten und ihr Einsatz', level: 1, rig: 'diode' }, M38),
+    tk({ id: 'ae39', lab: 'ana', cat: 'Transistorverstärker', title: 'Basisvorspannung und Ruhearbeitspunkt', level: 2, rig: 'emitter' }, M39),
+    tk({ id: 'ae40', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Vorteile integrierter Schaltungen', level: 1, rig: 'opv_inv' }, M40)
   ];
-  const MODS = { ae17: M17, ae18: M18, ae19: M19, ae20: M20, ae21: M21, ae22: M22, ae23: M23, ae24: M24, ae25: M25, ae26: M26, ae27: M27, ae28: M28, ae29: M29, ae30: M30, ae31: M31, ae32: M32 };
+  const MODS = { ae17: M17, ae18: M18, ae19: M19, ae20: M20, ae21: M21, ae22: M22, ae23: M23, ae24: M24, ae25: M25, ae26: M26, ae27: M27, ae28: M28, ae29: M29, ae30: M30, ae31: M31, ae32: M32, ae33: M33, ae34: M34, ae35: M35, ae36: M36, ae37: M37, ae38: M38, ae39: M39, ae40: M40 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);

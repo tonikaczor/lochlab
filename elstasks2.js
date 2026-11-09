@@ -1,4 +1,4 @@
-/* elstasks2.js - ELS-Lab: Aufgaben el17 bis el32 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b)
+/* elstasks2.js - ELS-Lab: Aufgaben el17 bis el38 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b; el33 bis el38: Wissensaufgaben Brandschutz, Kennzeichnung, Maschinensicherheit, Berufsschulstoff)
  * Registrierung: ELS_TASKS.register([ ... ]) (ELS_TASKS kommt aus elsdata.js; elsdata.js VOR dieser Datei laden, in Node holt sich die Datei es per require).
  * Format, Regeln und answer-Objekt wie in elsdata.js: { id:'elN', lab:'els', cat, title, level, rig, text, table?, hint[3], start(), sol(), wrong(), check(answer), hintVals(),
  *   fields? | choices?, consts? }; answer = { rig, controls, ref, seq, rows, state, fired, value, text, fields, choices, clicks, protokoll }.
@@ -665,6 +665,157 @@
         { name: 'Fehlurteil und Nennstrom erhöht', answer: A('pruefplatz', Object.assign({}, FIX), { fired: true, seq: musterSeq(cat.sk), protokoll: musterEntry(FIX, { ergebnis: 'bestanden', massnahme: 'weiterverwenden' }), fields: { lmax: v.zsMax / (2 * C().const.rho / v.q) }, choices: { bed: 'ja', massnahme: 'in' } }) }]; } };
   })();
 
+  /* ====================================================================== el33 bis el38: Wissensaufgaben aus dem Berufsschulstoff
+     Brandschutz, Kennzeichnung und Maschinensicherheit. Reine Auswahlaufgaben ohne Rechnung und ohne Zahlen aus der Simulation; der Prüfstand
+     "Sicherheitsregeln und Erste Hilfe" dient nur als Rahmen. Alle Texte sind eigene Formulierungen, Fachaussagen stehen mit PRUEFEN Pn im Quelltext
+     und in quelle/elslab/PRUEFEN.md (Fragen an den Ausbilder). Jede falsche Wahl bekommt eine Begründung, die nur beschreibt, was die gewählte Antwort bedeutet. */
+  const KNOW = spec => {
+    const rows = spec.rows, ctl = { modus: 'regeln', szene: 'maschine', reihenfolgeFrei: true };
+    const optsOf = row => row.options || spec.options;
+    const optOf = (row, v) => optsOf(row).find(o => String(o.value) === String(v));
+    const vals = () => once('v' + spec.id, () => ({ fragen: rows.length, optionen: optsOf(rows[0]).length }));
+    const check = mkCheck((a, r) => {
+      rows.forEach(row => {
+        choiceRow(r, a, row.key, row.correct, row.ok, w => {
+          const o = optOf(row, w);
+          return o ? 'Du hast „' + o.label + '“ gewählt. ' + o.why : 'Die Auswahl gehört nicht zu dieser Frage.';
+        });
+      });
+    });
+    const pickWrong = (row, last) => { const bad = optsOf(row).filter(o => String(o.value) !== String(row.correct)); return bad[last ? bad.length - 1 : 0].value; };
+    const mk = last => { const c = {}; rows.forEach(row => { c[row.key] = pickWrong(row, last); }); return c; };
+    return { vals, check,
+      text: () => spec.text,
+      choices: () => rows.map(row => ({ key: row.key, q: row.q, options: optsOf(row).map(o => ({ value: o.value, label: o.label })) })),
+      hint: () => [spec.h1, spec.h2, 'Musterlösung: ' + rows.map(row => row.short + ': ' + optOf(row, row.correct).label).join('; ') + '.'],
+      start: () => A('regeln', Object.assign({}, ctl), { choices: {} }),
+      sol: () => { const c = {}; rows.forEach(row => { c[row.key] = row.correct; }); return A('regeln', Object.assign({}, ctl), { choices: c }); },
+      wrong: () => [{ name: 'erste Verwechslung bei jeder Frage', answer: A('regeln', Object.assign({}, ctl), { choices: mk(false) }) }, { name: 'andere Verwechslung bei jeder Frage', answer: A('regeln', Object.assign({}, ctl), { choices: mk(true) }) }] };
+  };
+
+  /* el33: Brandklassen. PRUEFEN P1 */
+  const M33 = KNOW({ id: 'el33',
+    text: 'Vier Brände in einer Werkstatt: Welcher Brandklasse gehört jeder? Die Brandklasse richtet sich nach dem brennenden Stoff, damit das passende Löschmittel gewählt wird. Wissensaufgabe: Die Brandschutzordnung und die Unterweisung im Betrieb sind maßgeblich.',
+    h1: 'Die Brandklasse richtet sich nach dem brennenden Stoff, nicht nach dem Ort: fest, flüssig, gasförmig oder Metall.',
+    h2: 'Die Klassen folgen der Reihe der Aggregatzustände: A fest, B flüssig, C gasförmig, D Metall.',
+    options: [
+      { value: 'A', label: 'Brandklasse A: feste Stoffe, die meist unter Glutbildung brennen', why: 'Klasse A sind feste Stoffe wie Holz, Papier und Textilien.' },
+      { value: 'B', label: 'Brandklasse B: flüssige oder flüssig werdende Stoffe', why: 'Klasse B sind brennbare Flüssigkeiten und Stoffe, die beim Brennen flüssig werden, zum Beispiel Lösungsmittel.' },
+      { value: 'C', label: 'Brandklasse C: Gase', why: 'Klasse C sind brennbare Gase wie Propan oder Methan.' },
+      { value: 'D', label: 'Brandklasse D: Metalle', why: 'Klasse D sind brennbare Metalle wie Magnesium oder Titan, auch als Späne.' }],
+    rows: [
+      { key: 'papier', q: 'Papier und Holzreste im Abfalleimer brennen.', ok: 'Papier und Holzreste: Brandklasse A', short: 'Papier und Holz', correct: 'A' },
+      { key: 'metall', q: 'Magnesiumspäne an einer Drehmaschine brennen.', ok: 'Magnesiumspäne: Brandklasse D', short: 'Magnesiumspäne', correct: 'D' },
+      { key: 'loesung', q: 'Lösungsmittel in einer offenen Wanne brennt.', ok: 'Lösungsmittel: Brandklasse B', short: 'Lösungsmittel', correct: 'B' },
+      { key: 'gas', q: 'Propan aus einer undichten Gasflasche brennt.', ok: 'Propan: Brandklasse C', short: 'Propangas', correct: 'C' }] });
+
+  /* el34: richtig löschen. PRUEFEN P2 */
+  const M34 = KNOW({ id: 'el34',
+    text: 'Drei Situationen aus dem Brandschutz: Fettbrand, Brand im Schaltschrank, Brand entdeckt. Entscheide jeweils, was richtig ist. Wissensaufgabe: Die Brandschutzordnung deines Betriebs ist maßgeblich; dieses Lab ersetzt keine Unterweisung.',
+    h1: 'Das Löschmittel muss zum brennenden Stoff passen, und du darfst dich beim Löschen nicht selbst gefährden.',
+    h2: 'Fett und Wasser vertragen sich nicht, Strom und Wasser ebenfalls nicht. Und die Meldung des Brandes kommt vor dem Versuch zu löschen.',
+    rows: [
+      { key: 'fett', q: 'Fett brennt in einer Pfanne in der Kantine. Was tust du?', ok: 'Fettbrand: Hitzequelle abschalten und mit Deckel oder Löschdecke ersticken', short: 'Fettbrand', correct: 'deckel',
+        options: [
+          { value: 'wasser', label: 'Wasser aufgießen, um die Flammen sofort zu ersticken', why: 'Wasser verdampft auf heißem Fett schlagartig und schleudert das brennende Fett heraus.' },
+          { value: 'deckel', label: 'Hitzequelle abschalten und mit Deckel oder Löschdecke ersticken', why: 'Ohne Luft erlischt das Feuer.' },
+          { value: 'tragen', label: 'Die Pfanne rasch ins Freie tragen und dort abkühlen lassen', why: 'Brennendes Fett darf nicht getragen werden: Es verspritzt und verbrennt dich.' },
+          { value: 'pusten', label: 'Die Flammen kräftig auspusten, bis sie nicht mehr zu sehen sind', why: 'Das facht das Feuer eher an und verteilt brennendes Fett.' }] },
+      { key: 'schrank', q: 'In einem Schaltschrank mit Niederspannung brennt es. Was gehört zu einer richtigen Reaktion?', ok: 'Schaltschrank: wenn möglich abschalten, mit CO2-Löscher löschen, kein Wasser', short: 'Schaltschrank', correct: 'co2',
+        options: [
+          { value: 'wasser', label: 'Sofort mit dem Wasserstrahl löschen, die Spannung spielt keine Rolle', why: 'Wasser leitet den Strom: Auf Teile, die unter Spannung stehen könnten, gehört kein Wasser.' },
+          { value: 'schaum', label: 'Mit dem Schaumlöscher aus nächster Nähe löschen', why: 'Schaum enthält Wasser und leitet den Strom, bei Anlagen unter Spannung ist er ungeeignet.' },
+          { value: 'nichts', label: 'Nichts tun, elektrische Anlagen können nicht brennen', why: 'Kabel, Isolierungen und Bauteile brennen, und elektrische Anlagen sind eine häufige Brandursache.' },
+          { value: 'co2', label: 'Wenn möglich abschalten und mit einem CO2-Löscher löschen, nicht mit Wasser', why: 'Kohlendioxid leitet nicht und hinterlässt keine Rückstände.' }] },
+      { key: 'melden', q: 'Du entdeckst einen Brand. Was gehört zu den ersten Handlungen?', ok: 'Brand entdeckt: Alarm auslösen bzw. Notruf absetzen und andere warnen', short: 'Brand entdeckt', correct: 'melden',
+        options: [
+          { value: 'allein', label: 'Erst allein löschen, nur bei Misserfolg Alarm auslösen', why: 'Die Meldung darf nicht aufgeschoben werden, solange du allein löschst, geht Zeit verloren.' },
+          { value: 'fenster', label: 'Fenster und Türen weit öffnen, damit der Rauch abziehen kann', why: 'Frischluft facht das Feuer an: Türen und Fenster werden geschlossen, um die Ausbreitung zu bremsen.' },
+          { value: 'melden', label: 'Alarm auslösen bzw. Notruf absetzen und andere warnen', why: 'Das ist die richtige erste Handlung.' },
+          { value: 'aufzug', label: 'Mit dem Aufzug in die Sicherheit fahren', why: 'Aufzüge dürfen im Brandfall nicht benutzt werden: Die Kabine kann stehen bleiben und zur Falle werden.' }] }] });
+
+  /* el35: Sicherheitszeichen. PRUEFEN P3 */
+  const M35 = KNOW({ id: 'el35',
+    text: 'Fünf Sicherheitszeichen aus der Werkstatt. Welcher Zeichenart gehört jedes? Achte auf Farbe und Form. Wissensaufgabe nach den üblichen Sicherheitskennzeichen; die Unterweisung im Betrieb ist maßgeblich.',
+    h1: 'Achte auf Farbe und Form: Rund bedeutet Verbot oder Gebot, dreieckig bedeutet Warnung, rechteckig bedeutet Rettung oder Brandschutz.',
+    h2: 'Rot rund ist ein Verbot, blau rund ein Gebot, gelb dreieckig eine Warnung, grün rechteckig eine Rettung, rot rechteckig der Brandschutz.',
+    options: [
+      { value: 'verbot', label: 'Verbotszeichen: rot, rund, durchgestrichen', why: 'Verbotszeichen sind rund mit rotem Rand und Querbalken. Sie sagen, was nicht erlaubt ist.' },
+      { value: 'gebot', label: 'Gebotszeichen: blau, rund', why: 'Gebotszeichen sind blau und rund. Sie sagen, was getan oder getragen werden muss.' },
+      { value: 'warn', label: 'Warnzeichen: gelb, dreieckig', why: 'Warnzeichen sind gelbe Dreiecke mit schwarzem Rand. Sie warnen vor einer Gefahr.' },
+      { value: 'rettung', label: 'Rettungszeichen: grün, rechteckig', why: 'Rettungszeichen sind grün und weisen auf Fluchtwege, Erste Hilfe und Rettungsmittel hin.' },
+      { value: 'brand', label: 'Brandschutzzeichen: rot, rechteckig', why: 'Brandschutzzeichen sind rote Rechtecke und zeigen Löschgeräte und Melder an.' }],
+    rows: [
+      { key: 'ausgang', q: 'Notausgang', ok: 'Notausgang: Rettungszeichen (grün, rechteckig)', short: 'Notausgang', correct: 'rettung' },
+      { key: 'rauch', q: 'Rauchen verboten', ok: 'Rauchverbot: Verbotszeichen (rot, rund)', short: 'Rauchverbot', correct: 'verbot' },
+      { key: 'ex', q: 'Warnung vor explosionsfähiger Atmosphäre (Ex)', ok: 'Warnung vor explosionsfähiger Atmosphäre: Warnzeichen (gelb, dreieckig)', short: 'Ex-Warnung', correct: 'warn' },
+      { key: 'augen', q: 'Augenschutz benutzen', ok: 'Augenschutz benutzen: Gebotszeichen (blau, rund)', short: 'Augenschutz', correct: 'gebot' },
+      { key: 'loescher', q: 'Feuerlöscher', ok: 'Feuerlöscher: Brandschutzzeichen (rot, rechteckig)', short: 'Feuerlöscher', correct: 'brand' }] });
+
+  /* el36: Gefahrstoff-Piktogramme. PRUEFEN P4 */
+  const M36 = KNOW({ id: 'el36',
+    text: 'Vier Stoffe aus der Werkstatt tragen ein Gefahrstoff-Piktogramm. Welches gehört zu welchem Stoff? Wissensaufgabe: Das Sicherheitsdatenblatt und die Betriebsanweisung sind maßgeblich.',
+    h1: 'Frage dich, welche Gefahr im Vordergrund steht: Brand, Reizung, Schaden für die Umwelt oder Verätzung.',
+    h2: 'Entzündbar heißt Flamme, Reizung heißt Ausrufezeichen, Gewässerschaden heißt Umwelt, Verätzung heißt Ätzwirkung.',
+    options: [
+      { value: 'flamme', label: 'Flamme', why: 'Die Flamme kennzeichnet entzündbare Stoffe, zum Beispiel viele Lösungsmittel.' },
+      { value: 'ausruf', label: 'Ausrufezeichen', why: 'Das Ausrufezeichen steht unter anderem für Stoffe, die Haut und Augen reizen oder in geringerem Maß gesundheitsschädlich sind.' },
+      { value: 'umwelt', label: 'Toter Baum und toter Fisch (Umwelt)', why: 'Dieses Piktogramm warnt vor Stoffen, die Gewässer schädigen.' },
+      { value: 'aetz', label: 'Ätzwirkung (Hand und Metall unter Tropfen)', why: 'Die Ätzwirkung warnt vor Stoffen, die Haut und Augen verätzen oder Metalle angreifen, zum Beispiel Säuren.' },
+      { value: 'gift', label: 'Totenkopf mit gekreuzten Knochen', why: 'Der Totenkopf kennzeichnet akut giftige Stoffe, die schon in kleiner Menge lebensgefährlich sein können.' }],
+    rows: [
+      { key: 'lack', q: 'Lackabfall, der Gewässer schädigt', ok: 'Lackabfall: Piktogramm Umwelt (toter Baum und toter Fisch)', short: 'Lackabfall', correct: 'umwelt' },
+      { key: 'reiniger', q: 'Reinigungsmittel, das Haut und Augen reizt', ok: 'Reiniger: Ausrufezeichen', short: 'Reinigungsmittel', correct: 'ausruf' },
+      { key: 'saeure', q: 'Salzsäure, die die Haut verätzt', ok: 'Salzsäure: Piktogramm Ätzwirkung', short: 'Salzsäure', correct: 'aetz' },
+      { key: 'loesung', q: 'Lösungsmittel, dessen Dämpfe sich leicht entzünden', ok: 'Lösungsmittel: Flamme', short: 'Lösungsmittel', correct: 'flamme' }] });
+
+  /* el37: Risiko mindern in drei Stufen. PRUEFEN P5 */
+  const STUFE = [
+    { value: 's1', label: 'Stufe 1: sichere Konstruktion', why: 'Stufe 1 vermeidet die Gefahr schon beim Entwurf, zum Beispiel durch Abstände, abgerundete Kanten oder kleinere Kräfte.' },
+    { value: 's2', label: 'Stufe 2: technische Schutzmaßnahme', why: 'Stufe 2 sichert die Gefahrstelle mit Technik ab, zum Beispiel mit Schutzhauben, Verriegelungen oder Lichtvorhängen.' },
+    { value: 's3', label: 'Stufe 3: Benutzerinformation', why: 'Stufe 3 informiert die Benutzer durch Warnschilder, Betriebsanleitung und Unterweisung. Sie ist das schwächste Mittel.' }];
+  const M37 = KNOW({ id: 'el37',
+    text: 'Von Maschinen können Quetsch-, Schneid- oder Fangstellen ausgehen. Die Hersteller beurteilen das Risiko und mindern es in drei Stufen, vom wirksamsten zum schwächsten Mittel. Beantworte die vier Fragen. Wissensaufgabe: Norm und Betriebsanweisung sind maßgeblich.',
+    h1: 'Zuerst wird das Risiko ermittelt, erst dann wird es gemindert. Die Minderung geht vom wirksamsten zum schwächsten Mittel.',
+    h2: 'Zuerst die Gefahr durch Konstruktion vermeiden, danach technisch absichern, zuletzt über Hinweise informieren.',
+    rows: [
+      { key: 'zuerst', q: 'Was kommt zuerst?', ok: 'Zuerst: die Risikobeurteilung (Gefährdungen erkennen, Risiko bewerten)', short: 'Zuerst', correct: 'beurt',
+        options: [
+          { value: 'schutz', label: 'Der Einbau von Schutzeinrichtungen nach dem ersten Probebetrieb', why: 'Schutzeinrichtungen werden erst gewählt, wenn bekannt ist, welche Gefahren sie sichern sollen.' },
+          { value: 'ce', label: 'Das Anbringen des CE-Zeichens am Gehäuse der Maschine', why: 'Das CE-Zeichen steht am Ende, wenn alle Anforderungen nachgewiesen sind.' },
+          { value: 'beurt', label: 'Die Risikobeurteilung: Gefährdungen erkennen, Risiko bewerten', why: 'Ohne Beurteilung weiß man nicht, welche Maßnahmen nötig sind.' },
+          { value: 'anl', label: 'Das Schreiben der Betriebsanleitung für die Benutzer der Maschine', why: 'Die Anleitung beschreibt das Restrisiko, sie entsteht nach der Minderung.' }] },
+      { key: 'konstr', q: 'Eine Quetschstelle wird durch größere Abstände der bewegten Teile von vornherein vermieden.', ok: 'Quetschstelle durch Abstände vermieden: Stufe 1, sichere Konstruktion', short: 'Abstände', correct: 's1', options: STUFE },
+      { key: 'tuer', q: 'Eine verriegelte Schutztür schaltet den Antrieb ab, sobald sie geöffnet wird.', ok: 'Verriegelte Schutztür: Stufe 2, technische Schutzmaßnahme', short: 'Schutztür', correct: 's2', options: STUFE },
+      { key: 'schild', q: 'Ein Warnschild und ein Hinweis in der Betriebsanleitung weisen auf die Restgefahr hin.', ok: 'Warnschild und Hinweis in der Anleitung: Stufe 3, Benutzerinformation', short: 'Warnschild', correct: 's3', options: STUFE }] });
+
+  /* el38: Sicherheitsfunktion und Nachweis. PRUEFEN P6 */
+  const SFKT = [
+    { value: 'sensor', label: 'Sensor (Eingabe)', why: 'Der Sensor erfasst die Gefahrensituation, zum Beispiel einen Griff in den Gefahrbereich oder eine geöffnete Tür.' },
+    { value: 'logik', label: 'Auswerteeinheit (Logik)', why: 'Die Auswerteeinheit verarbeitet die Signale und entscheidet, ob der Aktor abschalten muss.' },
+    { value: 'aktor', label: 'Aktor (Ausgabe)', why: 'Der Aktor führt den Befehl aus und bringt die Maschine in den sicheren Zustand, zum Beispiel durch Trennen des Antriebs.' }];
+  const M38 = KNOW({ id: 'el38',
+    text: 'Eine Maschine bekommt eine Sicherheitsfunktion, zum Beispiel „Der Antrieb stoppt, sobald jemand in den Gefahrbereich greift“. Sie besteht aus Sensor, Auswerteeinheit und Aktor. Beantworte die fünf Fragen. Wissensaufgabe: Norm und Betriebsanweisung sind maßgeblich.',
+    h1: 'Eine Sicherheitsfunktion läuft in drei Schritten: erfassen, entscheiden, abschalten. Jedes Bauteil gehört genau zu einem dieser Schritte.',
+    h2: 'Erfassen ist die Aufgabe des Sensors, entscheiden die der Auswerteeinheit, abschalten die des Aktors. Beim Sicherheitsniveau zählt der Buchstabe: je weiter hinten, desto höher. Verantwortlich für die Konformität ist, wer die Maschine in Verkehr bringt.',
+    rows: [
+      { key: 'vorhang', q: 'Ein Lichtvorhang vor der Gefahrstelle', ok: 'Lichtvorhang: Sensor', short: 'Lichtvorhang', correct: 'sensor', options: SFKT },
+      { key: 'relais', q: 'Ein Sicherheitsrelais, das die Signale beider Türschalter auswertet', ok: 'Sicherheitsrelais: Auswerteeinheit', short: 'Sicherheitsrelais', correct: 'logik', options: SFKT },
+      { key: 'schuetz', q: 'Ein Schütz, das den Motor vom Netz trennt', ok: 'Schütz zum Trennen des Motors: Aktor', short: 'Schütz', correct: 'aktor', options: SFKT },
+      { key: 'pl', q: 'Das Sicherheitsniveau einer Sicherheitsfunktion wird als Performance Level (PL) angegeben. Welche Stufe ist die höchste?', ok: 'Höchstes Sicherheitsniveau: PL e', short: 'Sicherheitsniveau', correct: 'e',
+        options: [
+          { value: 'a', label: 'PL a', why: 'PL a ist die niedrigste Stufe.' },
+          { value: 'b', label: 'PL b', why: 'PL b liegt über PL a, aber weit unter der höchsten Stufe.' },
+          { value: 'e', label: 'PL e', why: 'PL e ist die höchste Stufe.' },
+          { value: 'c', label: 'PL c', why: 'PL c liegt in der Mitte der Skala, die Skala geht weiter.' }] },
+      { key: 'konform', q: 'Wer bestätigt mit der Konformitätserklärung, dass die Maschine alle Anforderungen erfüllt, bevor das CE-Zeichen angebracht wird?', ok: 'Konformitätserklärung und CE-Zeichen: Der Hersteller der Maschine', short: 'Konformität', correct: 'hersteller',
+        options: [
+          { value: 'kaeufer', label: 'Der Käufer der Maschine', why: 'Der Käufer betreibt die Maschine, die Konformität bestätigt er nicht.' },
+          { value: 'hersteller', label: 'Der Hersteller der Maschine', why: 'Der Hersteller trägt die Verantwortung und stellt die Konformitätserklärung aus.' },
+          { value: 'amt', label: 'Eine Behörde für jede einzelne Maschine', why: 'Das Verfahren liegt beim Hersteller, nicht bei einer Behörde für jede einzelne Maschine.' },
+          { value: 'spedi', label: 'Der Spediteur beim Transport', why: 'Der Transport hat mit der Konformität nichts zu tun.' }] }] });
+
+
   /* ====================================================================== Registrierung */
   function def(head, M) {
     const o = Object.assign({}, head);
@@ -694,9 +845,15 @@
     def({ id: 'el29', lab: 'els', cat: 'Sicherheitsregeln', title: 'Rettungskette', level: 2, rig: 'regeln' }, M29),
     def({ id: 'el30', lab: 'els', cat: 'Sicherheitsregeln', title: 'Welche Regel fehlt?', level: 2, rig: 'regeln' }, M30),
     def({ id: 'el31', lab: 'els', cat: 'Prüfungsnah', title: 'Teil-A-Rechnung Abschaltung', level: 3, rig: 'netz' }, M31),
-    def({ id: 'el32', lab: 'els', cat: 'Prüfungsnah', title: 'Meisterstück: Der Prüfdienst', level: 3, rig: 'pruefplatz' }, M32)
+    def({ id: 'el32', lab: 'els', cat: 'Prüfungsnah', title: 'Meisterstück: Der Prüfdienst', level: 3, rig: 'pruefplatz' }, M32),
+    def({ id: 'el33', lab: 'els', cat: 'Brandschutz', title: 'Brandklassen zuordnen', level: 1, rig: 'regeln' }, M33),
+    def({ id: 'el34', lab: 'els', cat: 'Brandschutz', title: 'Richtig löschen', level: 2, rig: 'regeln' }, M34),
+    def({ id: 'el35', lab: 'els', cat: 'Kennzeichnung', title: 'Sicherheitszeichen lesen', level: 1, rig: 'regeln' }, M35),
+    def({ id: 'el36', lab: 'els', cat: 'Kennzeichnung', title: 'Gefahrstoff-Piktogramme', level: 2, rig: 'regeln' }, M36),
+    def({ id: 'el37', lab: 'els', cat: 'Maschinensicherheit', title: 'Risiko in drei Stufen mindern', level: 2, rig: 'regeln' }, M37),
+    def({ id: 'el38', lab: 'els', cat: 'Maschinensicherheit', title: 'Sicherheitsfunktion und Nachweis', level: 3, rig: 'regeln' }, M38)
   ]);
   /* Musterwerte der Aufgaben el17-el32 (aus dem Kern, Stand 2026-10-22) fuer Tests und Ausbilder */
-  T.thresholds2 = () => ({ el17: M17.vals(), el18: M18.vals(), el19: M19.vals(), el20: M20.vals(), el21: M21.vals(), el22: M22.vals(), el23: M23.vals(), el24: M24.vals(), el25: M25.vals(), el26: M26.vals(), el27: M27.vals(), el28: M28.vals(), el29: M29.vals(), el30: M30.vals(), el31: M31.vals(), el32: M32.vals() });
+  T.thresholds2 = () => ({ el17: M17.vals(), el18: M18.vals(), el19: M19.vals(), el20: M20.vals(), el21: M21.vals(), el22: M22.vals(), el23: M23.vals(), el24: M24.vals(), el25: M25.vals(), el26: M26.vals(), el27: M27.vals(), el28: M28.vals(), el29: M29.vals(), el30: M30.vals(), el31: M31.vals(), el32: M32.vals(), el33: M33.vals(), el34: M34.vals(), el35: M35.vals(), el36: M36.vals(), el37: M37.vals(), el38: M38.vals() });
   if (typeof module !== 'undefined') module.exports = { tasks: T.tasks };
 })(typeof window !== 'undefined' ? window : globalThis);

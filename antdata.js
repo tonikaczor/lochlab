@@ -2,6 +2,7 @@
  * window.ANT_DATA  = { examples: [ { id, name, cat, rig, desc, controls, seq?, dur? } ] }
  * window.ANT_TASKS = { tasks: [ { id, lab:'ant', cat, title, level, rig, text, hint[3], ask?, start(), sol(), check(answer) } ], run(task, answer) }
  * window.TaskTest  = async only => [ { id, pct, startPct, bad } ]
+ * an39-an45 (Kategorie Asynchronmotor): Rechenaufgaben aus dem Berufsschulstoff (Polzahl, Läuferfrequenz, Generatorbetrieb, Kippschlupf, Läuferkreisverlust, Kippmoment).
  * Die Prüfungen laufen headless mit ANT_CORE.runSeq und den Prüfständen (ANT_RIGS): Sie messen Verhalten (Simulation, feste Szenarien),
  * nicht die Form der Eingabe. Benötigt: antcore.js und die fünf Prüfstände (antrig-*.js).
  * answer = { rig, controls:{key:Wert}, seq:[{t(ms), set}], rows:[{t(s), key, value}], dur(ms), state, simTime(ms), value:(Zahl|null), text }
@@ -20,7 +21,7 @@
   const ctlDefs = rig => { const R = RIGS(); const d = R && R.defs && R.defs[rig]; return d && Array.isArray(d.controls) ? d.controls : null; };
   function toNum(v) {
     if (typeof v === 'number') return v;
-    if (typeof v === 'string' && v.trim() !== '') { const x = parseFloat(v.replace(/\s/g, '').replace(',', '.')); return x; }
+    if (typeof v === 'string' && v.trim() !== '') { const x = parseFloat(v.replace(/\s/g, '').replace(',', '.').replace(/−/g, '-')); return x; }
     return NaN;
   }
   /* Wert an die Steuerelement-Definition anpassen (wie die Oberfläche); undefined = unpassend */
@@ -577,7 +578,50 @@
       text: 'Ein Drehstrommotor treibt ein Förderband an (Last 8 Nm, am Netz). Nach dem Einschalten läuft er nicht auf Nenndrehzahl, brummt und wird schnell heiß, die Anlage meldet „Kippmoment überschritten“. Die Last darf nicht verringert werden. Finde die Ursache an den Einstellungen des Prüfstands und behebe sie, sodass der Motor im Dauerbetrieb normal läuft.',
       hint: ['Die Last ist für diesen Motor eigentlich nicht zu groß. Schau, wie er geschaltet ist: Das Moment hängt vom Quadrat der Spannung an der Wicklung ab.', 'In der Startvorlage steht der Motor in der falschen Wicklungsschaltung. Im Stern liegt nur etwa 58 % der Spannung am Strang, das Moment sinkt dadurch auf ein Drittel.', 'Stelle die Schaltung auf Dreieck (400 V am Strang), K1 bleibt an. Der Motor läuft dann mit rund 1436 1/min und bleibt kühl.'],
       start: () => S('drehstrom', { source: 'netz', connection: 'stern', K1: true, K2: false, K3: false, reverse: false, phaseLoss: false, load: 8 }), sol: () => S('drehstrom', { source: 'netz', connection: 'dreieck', K1: true, K2: false, K3: false, reverse: false, phaseLoss: false, load: 8 }),
-      check: checkAn38 }
+      check: checkAn38 },
+    /* ------------------------------------------------------------ Asynchronmotor (Berufsschulstoff, Vortrag Asynchronmotor) */
+    { id: 'an39', lab: 'ant', cat: 'Asynchronmotor', title: 'Polzahl aus der Nenndrehzahl', level: 1, rig: 'drehstrom',
+      text: 'Auf dem Typenschild eines Drehstrom-Asynchronmotors steht eine Nenndrehzahl von 960 1/min. Der Motor wird am 50-Hz-Netz betrieben und läuft im Nennbetrieb mit einem kleinen Schlupf. Bestimme die Polzahl des Motors. Gib die Zahl der Pole an, nicht die Zahl der Polpaare.',
+      ask: { label: 'Polzahl des Motors', unit: 'Pole' },
+      hint: ['Die Nenndrehzahl liegt wegen des Schlupfs knapp unter der Drehfelddrehzahl. Suche zuerst die Drehfelddrehzahl, die zu 50 Hz passt und knapp über 960 1/min liegt.', 'Am 50-Hz-Netz sind die möglichen Drehfelddrehzahlen 3000, 1500, 1000 und 750 1/min (n_s = 60 · f / p). Nimm die Drehzahl, die knapp über der Nenndrehzahl liegt, und stelle die Formel nach p um.', 'Passend ist n_s = 1000 1/min (Schlupf 4 %). Aus 1000 = 60 · 50 / p folgt p = 3 Polpaare, also 6 Pole.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 6 }),
+      check: askCheck(6, [[3, 'Das ist die Polpaarzahl p. Gefragt ist die Polzahl: Jedes Polpaar hat zwei Pole.'], [4, 'Vier Pole gehören zur Drehfelddrehzahl 1500 1/min. Dann wäre der Schlupf mit 36 % viel zu hoch für einen Nennbetrieb; die Drehfelddrehzahl muss knapp über der Nenndrehzahl liegen.']]) },
+    { id: 'an40', lab: 'ant', cat: 'Asynchronmotor', title: 'Frequenz in den Läuferstäben', level: 2, rig: 'drehstrom',
+      text: 'Ein vierpoliger Drehstrom-Asynchronmotor hängt am 50-Hz-Netz. Das Drehfeld läuft mit 1500 1/min, die Welle im Nennbetrieb mit 1440 1/min. Weil der Läufer dem Drehfeld nachläuft, wird in seinen Leiterstäben eine Spannung induziert. Berechne die Frequenz dieser Läuferspannung in Hz.',
+      ask: { label: 'Läuferfrequenz', unit: 'Hz' },
+      hint: ['Nur der Unterschied zwischen Drehfeld und Läufer ändert den magnetischen Fluss im Läufer. Je kleiner dieser Unterschied ist, desto niedriger ist die Frequenz der induzierten Spannung.', 'Berechne zuerst den Schlupf s = (n_s − n) / n_s. Die Läuferfrequenz ist der Schlupf mal die Netzfrequenz: f_2 = s · f_1.', 's = (1500 − 1440) / 1500 = 0,04. f_2 = 0,04 · 50 Hz = 2 Hz. Im Stillstand (s = 1) wären es dagegen die vollen 50 Hz.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 2 }),
+      check: askCheck(2, [[50, 'Das ist die Netzfrequenz. Sie gilt für den stehenden Läufer (s = 1); im Nennbetrieb ist die Läuferfrequenz nur der Schlupf mal die Netzfrequenz.'], [48, 'Das ist f · (1 − s). Die Läuferfrequenz ist nicht der Rest, sondern der Schlupfanteil: f_2 = s · f_1.'], [24, 'Das ist die Läuferdrehzahl in 1/s. Gefragt ist die Frequenz der induzierten Spannung, sie hängt vom Schlupf ab.']]) },
+    { id: 'an41', lab: 'ant', cat: 'Asynchronmotor', title: 'Wellendrehzahl bei negativem Schlupf', level: 2, rig: 'drehstrom',
+      text: 'Ein vierpoliger Asynchronmotor hängt am 50-Hz-Netz, sein Drehfeld läuft mit 1500 1/min. An einem Hubwerk treibt die absinkende Last die Welle an, dabei wird ein Schlupf von −3 % gemessen. Berechne die Drehzahl der Welle in 1/min.',
+      ask: { label: 'Wellendrehzahl n', unit: '1/min' },
+      hint: ['Ein negativer Schlupf heißt, dass die Welle nicht langsamer, sondern schneller als das Drehfeld läuft. Mit dem Vorzeichen kehrt sich das Ergebnis der Schlupfformel um.', 'Stelle s = (n_s − n) / n_s nach der Wellendrehzahl um: n = n_s · (1 − s). Setze s = −0,03 mit Vorzeichen ein.', 'n = 1500 · (1 − (−0,03)) = 1500 · 1,03 = 1545 1/min. Die Welle ist schneller als das Drehfeld: Die Maschine arbeitet als Generator und gibt Energie ins Netz ab.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 1500 * 1.03 }),
+      check: askCheck(1545, [[1455, 'Du hast den Schlupf mit positivem Vorzeichen gerechnet (n = n_s · 0,97). Bei negativem Schlupf ist die Welle schneller als das Drehfeld.'], [1500, 'Das ist die Drehfelddrehzahl. Bei einem Schlupf von −3 % liegt die Welle um 3 % darüber.'], [45, 'Das ist die Schlupfdrehzahl n_s · 3 %, also der Unterschied zum Drehfeld. Gefragt ist die Wellendrehzahl selbst.']]) },
+    { id: 'an42', lab: 'ant', cat: 'Asynchronmotor', title: 'Fünf Drehzahlen auf der Welle', level: 2, rig: 'drehstrom',
+      text: 'Eine vierpolige Drehstrom-Asynchronmaschine liegt am 50-Hz-Netz. Auf der Welle werden nacheinander fünf Drehzahlen gemessen: 1380, 1440, 1500, 1520 und 1560 1/min. Wie viele dieser Betriebspunkte gehören zum Generatorbetrieb, bei dem die Maschine elektrische Energie an das Netz liefert? Berechne dazu zuerst die Drehfelddrehzahl.',
+      ask: { label: 'Betriebspunkte mit Generatorbetrieb', unit: 'Stück' },
+      hint: ['Ob die Maschine als Motor oder als Generator arbeitet, entscheidet der Vergleich der Wellendrehzahl mit der Drehfelddrehzahl. Berechne zuerst die Drehfelddrehzahl.', 'n_s = 60 · f / p mit p = 2. Vergleiche jede der fünf Drehzahlen mit n_s. Bei genau n = n_s ist der Schlupf null und die Maschine gibt kein Drehmoment ab.', 'n_s = 60 · 50 / 2 = 1500 1/min. Darüber liegen nur 1520 und 1560 1/min, also zwei Betriebspunkte. 1380 und 1440 1/min sind Motorbetrieb, 1500 1/min ist die Grenze ohne Drehmoment.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 2 }),
+      check: askCheck(2, [[3, 'Du hast 1500 1/min mitgezählt. Bei der Drehfelddrehzahl ist der Schlupf null, der Läufer bekommt kein Drehmoment und die Maschine liefert keine Energie.'], [1, 'Es gibt noch einen weiteren Betriebspunkt über der Drehfelddrehzahl. Gezählt werden alle Drehzahlen, die größer als n_s sind.'], [4, 'Du hast Betriebspunkte unterhalb der Drehfelddrehzahl mitgezählt. Dort arbeitet die Maschine als Motor.']]) },
+    { id: 'an43', lab: 'ant', cat: 'Asynchronmotor', title: 'Zusatzwiderstand im Läuferkreis', level: 3, rig: 'drehstrom',
+      text: 'Ein vierpoliger Schleifringläufermotor am 50-Hz-Netz (Drehfelddrehzahl 1500 1/min) hat bei kurzgeschlossenen Schleifringen einen Kippschlupf von 12 %. Über die Schleifringe wird ein Zusatzwiderstand in den Läuferkreis geschaltet, der den gesamten Läuferwiderstand verdoppelt. Bei welcher Wellendrehzahl in 1/min gibt der Motor jetzt sein Kippmoment ab?',
+      ask: { label: 'Wellendrehzahl beim Kippmoment', unit: '1/min' },
+      hint: ['Ein Zusatzwiderstand im Läuferkreis verschiebt das Kippmoment zu einem höheren Schlupf, ohne dass es kleiner oder größer wird. Der Kippschlupf ist proportional zum gesamten Läuferwiderstand.', 'Der doppelte Läuferwiderstand ergibt den doppelten Kippschlupf. Aus dem neuen Kippschlupf bekommst du die Drehzahl mit n = n_s · (1 − s).', 'Neuer Kippschlupf: 2 · 12 % = 24 %. n = 1500 · (1 − 0,24) = 1140 1/min. Ohne Zusatzwiderstand lag die Kippdrehzahl bei 1320 1/min.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 1500 * (1 - 0.24) }),
+      check: askCheck(1140, [[1320, 'Das ist die Kippdrehzahl ohne Zusatzwiderstand. Der Zusatzwiderstand verschiebt das Kippmoment zu höherem Schlupf, also zu niedrigerer Drehzahl.'], [1410, 'Du hast den Kippschlupf halbiert. Ein größerer Läuferwiderstand vergrößert den Kippschlupf im gleichen Verhältnis.'], [1500 * 0.24, 'Du hast n_s mit dem Schlupf multipliziert. Das ist die Schlupfdrehzahl; gefragt ist die Wellendrehzahl n = n_s · (1 − s).']]) },
+    { id: 'an44', lab: 'ant', cat: 'Asynchronmotor', title: 'Wärme im Läuferkreis', level: 3, rig: 'drehstrom',
+      text: 'Ein Schleifringläufermotor (Drehfelddrehzahl 1500 1/min) wird mit Läuferwiderständen auf eine Wellendrehzahl von 1200 1/min eingestellt. Über das Drehfeld wird dabei eine Leistung von 10 kW vom Ständer auf den Läufer übertragen (Luftspaltleistung). Berechne die Verlustleistung, die im Läuferkreis (Läuferwicklung und Widerstände) als Wärme entsteht, in Watt. Reibung und Eisenverluste bleiben unberücksichtigt.',
+      ask: { label: 'Verlustleistung im Läuferkreis', unit: 'W' },
+      hint: ['Die Leistung, die vom Drehfeld auf den Läufer übertragen wird, teilt sich auf: Ein Teil wird mechanische Leistung an der Welle, der Rest wird im Läuferkreis zu Wärme. Der Schlupf bestimmt das Verhältnis.', 'Berechne den Schlupf s = (n_s − n) / n_s. Der Anteil s der Luftspaltleistung geht als Wärme im Läuferkreis verloren, der Anteil (1 − s) wird mechanisch.', 's = (1500 − 1200) / 1500 = 0,2. P_V = 0,2 · 10 kW = 2 kW = 2000 W. An der Welle bleiben 8 kW.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 0.2 * 10000 }),
+      check: askCheck(2000, [[8000, 'Das ist die mechanische Leistung (1 − s) · P. Gefragt ist der Rest, der im Läuferkreis als Wärme entsteht: s · P.'], [2, 'Das ist der Wert in kW. Die Antwort wird in Watt verlangt: 2 kW sind 2000 W.'], [10000 * 300 / 1200, 'Du hast mit dem Verhältnis zur Wellendrehzahl gerechnet. Der Schlupf bezieht sich auf die Drehfelddrehzahl 1500 1/min.']]) },
+    { id: 'an45', lab: 'ant', cat: 'Asynchronmotor', title: 'Wie viel Last erträgt der Motor kurzzeitig?', level: 2, rig: 'drehstrom',
+      text: 'Ein Drehstrom-Asynchronmotor hat laut Typenschild eine Leistung von 2,2 kW bei einer Nenndrehzahl von 1430 1/min. Sein Kippmoment ist nach dem Datenblatt das 2,4-Fache des Nennmoments (Übungswert). Berechne das Kippmoment in Nm. Ein größeres Lastmoment lässt den Motor kippen, er bleibt dann stehen.',
+      ask: { label: 'Kippmoment M_k', unit: 'Nm' },
+      hint: ['Das Kippmoment ist das größte Moment, das der Motor abgeben kann. Das Datenblatt nennt es als Vielfaches des Nennmoments, also brauchst du erst das Nennmoment.', 'M_N = P / ω mit ω = 2π · n / 60 und P in Watt. Danach wird M_N mit dem Faktor 2,4 multipliziert.', 'ω = 2π · 1430 / 60 = 149,7 rad/s. M_N = 2200 W / 149,7 rad/s = 14,69 Nm. M_k = 2,4 · 14,69 Nm = 35,3 Nm.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 2.4 * 2200 / (2 * Math.PI * 1430 / 60) }),
+      check: askCheck(2.4 * 2200 / (2 * Math.PI * 1430 / 60), [[2200 / (2 * Math.PI * 1430 / 60), 'Das ist nur das Nennmoment. Das Kippmoment ist das 2,4-Fache davon.'], [2.4 * 2.2 / (2 * Math.PI * 1430 / 60), 'Die Leistung muss in Watt eingesetzt werden (2,2 kW = 2200 W), sonst ist das Ergebnis 1000-mal zu klein.'], [2.4 * 2200 / 1430, 'Du hast P / n gerechnet. Die Drehzahl muss erst in ω = 2π · n / 60 umgerechnet werden.']]) }
   ];
 
   /* ====================================================================== Beispiele */

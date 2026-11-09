@@ -277,6 +277,7 @@
   const PROF_ANS = [{ k: 'ramp', label: 'Aufheizrate', unit: '°C/s', type: 'num', min: 0.3, max: 8, step: 0.1 }, { k: 'soakTime', label: 'Haltezeit Soak', unit: 's', type: 'num', min: 10, max: 240, step: 5 }, { k: 'soakEnd', label: 'Temperatur am Ende des Soak', unit: '°C', type: 'num', min: 120, max: 230, step: 5 },
     { k: 'peak', label: 'Spitzentemperatur (Peak)', unit: '°C', type: 'num', min: 180, max: 290, step: 1 }, { k: 'tal', label: 'Zeit über 217 °C (Liquidus)', unit: 's', type: 'num', min: 5, max: 150, step: 1 }, { k: 'cool', label: 'Abkühlrate', unit: '°C/s', type: 'num', min: 0.2, max: 8, step: 0.1 }];
   const profOf = a => { const p = {}; PROF_ANS.forEach(f => { p[f.k] = num(a[f.k]); }); return p; };
+  const NETZ_BLOECKE = [['Transformation', 'Spannung herunter transformieren'], ['Gleichrichtung', 'Gleichrichtung'], ['Glättung', 'Glättung und Siebung'], ['Stabilisierung', 'Stabilisierung'], ['Anzeige', 'Betriebsanzeige']];
   const TIP_OPTS = [['meissel', 'Meißelspitze 2,4 mm'], ['kegel', 'Kegelspitze 1,0 mm'], ['fein', 'Feinspitze 0,4 mm'], ['messer', 'Messerspitze 3 mm (zum Schleppen)']];
 
   const tasks = [
@@ -689,6 +690,83 @@
         const f = werte42(b), a = A(b), bad = k => (a[k] === undefined || a[k] === '' ? 'Hier fehlt noch deine Antwort.' : 'Dein Wert ' + a[k] + ' stimmt nicht.');
         return [L(near(a.pw, f.pw, 0), 'a) Versorgungsnetze: ' + f.pw, bad('pw') + ' Zähle im Netz-Dialog die Netze der Klasse Versorgung.'), L(near(a.via, f.via, 0), 'b) Vias: ' + f.via, bad('via') + ' Zähle die Vias im Layout.'),
           L(near(a.wmin, f.wmin, 0.015), 'c) IPC-Mindestbreite etwa ' + f2(f.wmin) + ' mm', bad('wmin') + ' 0,5 A, 1 oz, außen, 10 K Erwärmung.'), L(near(a.wsel, f.wsel, 0.005), 'd) gewählte Breite ' + f2(f.wsel) + ' mm', bad('wsel') + ' Nimm den größeren Wert aus IPC und Herstellerminimum.'), L(near(a.lay, f.lay, 0), 'e) Lagen: ' + f.lay, bad('lay') + ' Die Lagenzahl steht in den Platinen-Eigenschaften.')];
+      } },
+
+    /* ---------------- Berufsschulstoff (Lernfeld 5.3 Netzgeräte, Lernfeld 6.2 Operationsverstärker): bleibt in der Kategorie Prüfungsstil, weil die Ids positionsgebunden sind */
+    /* PRUEFEN P1: pb44 nimmt an, dass das 9-V-Steckernetzteil Trafo und Gleichrichter schon enthält und die Platine nur Glättung, Stabilisierung und Anzeige trägt. Die Aufgabe lässt die Diode D1 bewusst aus der Zuordnung (Verpolschutz oder Gleichrichter? im Unterricht klären). */
+    { id: 'pb44', lab: 'pcb', cat: 'Prüfungsstil', title: 'Funktionsblöcke der Netzteil-Platine', level: 1,
+      text: 'Das Blockschaltbild eines Netzteils kennt die Blöcke Spannung herunter transformieren, Gleichrichtung, Glättung und Siebung sowie Stabilisierung. Die Platine "Netzteil 5 V mit LM7805" bekommt ihre 9 V aus einem Steckernetzteil, in dem Transformator und Gleichrichter in der Regel schon stecken. Ordne den Bauteilen C1 (470 µF), U1 (LM7805) und D2 (LED mit Vorwiderstand R1) den Funktionsblock zu, den sie auf dieser Platine übernehmen.',
+      hint: ['Frage dich bei jedem Bauteil: Was würde fehlen, wenn es nicht auf der Platine wäre? Ohne das eine bliebe eine Restwelligkeit auf der Spannung, ohne das andere würde die Spannung mit der Last schwanken.', 'Ein großer Elko speichert Ladung und füllt die Lücken zwischen den Spannungsspitzen. Ein Spannungsregler hält die Ausgangsspannung konstant. Eine LED mit Vorwiderstand ist kein Teil der Spannungsaufbereitung.', 'C1: Glättung und Siebung. U1: Stabilisierung. D2: Betriebsanzeige.'],
+      start: () => withAnswers(board('exnetz'), {}), sol: () => withAnswers(board('exnetz'), { c1: 'Glättung', u1: 'Stabilisierung', d2: 'Anzeige' }),
+      answer: [{ k: 'c1', label: 'C1 (470 µF, Elektrolytkondensator)', type: 'select', options: NETZ_BLOECKE }, { k: 'u1', label: 'U1 (Festspannungsregler LM7805)', type: 'select', options: NETZ_BLOECKE }, { k: 'd2', label: 'D2 (grüne LED) mit Vorwiderstand R1', type: 'select', options: NETZ_BLOECKE }],
+      check(b) {
+        const a = A(b), row = (k, lab, want, why) => L(a[k] === want, lab, a[k] ? 'Deine Zuordnung "' + a[k] + '" passt nicht. ' + why : 'Hier fehlt noch deine Zuordnung.');
+        return [row('c1', 'C1 übernimmt die Glättung und Siebung', 'Glättung', 'Ein großer Kondensator hinter dem Gleichrichter speichert Ladung und gleicht die Lücken zwischen den Spannungsspitzen aus.'),
+          row('u1', 'U1 übernimmt die Stabilisierung', 'Stabilisierung', 'Ein Festspannungsregler hält die Ausgangsspannung konstant, auch wenn Eingangsspannung oder Last schwanken.'),
+          row('d2', 'D2 mit R1 ist die Betriebsanzeige', 'Anzeige', 'Die LED mit Vorwiderstand meldet nur, dass am Ausgang Spannung liegt, sie bereitet die Spannung nicht auf.')];
+      } },
+    /* PRUEFEN P2: pb45 rechnet die Brummspannung als Spitze-Spitze-Wert mit Delta U = I / (f · C), f = 100 Hz (Brückenschaltung) und Diodenspannung 0,7 V. Im Unterricht kommen Siebglieder (RC) und evtl. andere Brummspannungsformeln vor; passt die Näherung? */
+    { id: 'pb45', lab: 'pcb', cat: 'Prüfungsstil', title: 'Netzteil mit eigenem Trafo: Sollwerte der Messpunkte', level: 2,
+      text: 'Das 5-V-Netzteil (Beispiel "Netzteil 5 V mit LM7805", C1 = 470 µF) soll einen eigenen Netztransformator bekommen: primär 230 V, sekundär 12 V (Effektivwert). Dahinter folgt ein Brückengleichrichter mit Siliziumdioden (je 0,7 V Durchlassspannung, im Strompfad liegen immer zwei Dioden), dann der Ladeelko C1. Der Laststrom beträgt 0,1 A. Berechne als Sollwerte für die Prüfung: a) das Übersetzungsverhältnis ü des Trafos (auf 0,1), b) die Spitzenspannung am Elko in V, c) die Brummspannung am Elko (Spitze-Spitze in V; Näherung: zwischen zwei Ladeimpulsen liefert der Elko den Laststrom allein, Brummfrequenz 100 Hz), d) den tiefsten Wert der Spannung am Elko in V.',
+      hint: ['Das Übersetzungsverhältnis ist das Verhältnis der Spannungen (und der Windungszahlen). Am Elko liegt der Spitzenwert, nicht der Effektivwert der Wechselspannung.', 'Spitzenwert = Effektivwert mal Wurzel aus 2. Davon gehen die Durchlassspannungen der zwei leitenden Dioden ab. Die Brummspannung ist die Ladung, die der Laststrom in einer Brummperiode (10 ms) aus dem Elko holt, geteilt durch die Kapazität.', 'ü = 230 V / 12 V = 19,2. Û = 12 V · 1,414 − 2 · 0,7 V = 15,6 V. ΔU = 0,1 A / (100 Hz · 470 µF) = 2,13 V. Tiefster Wert = 15,57 V − 2,13 V = 13,4 V.'],
+      start: () => withAnswers(board('exnetz'), {}), sol: () => { const f = netz45(); return withAnswers(board('exnetz'), { ue: f.ue, up: f.up, br: f.br, umin: f.umin }); },
+      answer: [{ k: 'ue', label: 'a) Übersetzungsverhältnis ü = U1 / U2', type: 'num', min: 0, max: 999, step: 0.1 }, { k: 'up', label: 'b) Spitzenspannung am Elko', unit: 'V', type: 'num', min: 0, max: 99, step: 0.01 }, { k: 'br', label: 'c) Brummspannung (Spitze-Spitze)', unit: 'V', type: 'num', min: 0, max: 99, step: 0.01 }, { k: 'umin', label: 'd) tiefster Wert der Spannung am Elko', unit: 'V', type: 'num', min: 0, max: 99, step: 0.01 }],
+      check(b) {
+        const f = netz45(), a = A(b), bad = k => (a[k] === undefined || a[k] === '' ? 'Hier fehlt noch deine Antwort.' : 'Dein Wert ' + a[k] + ' stimmt nicht.');
+        return [L(near(a.ue, f.ue, 0.1), 'a) ü etwa ' + f2(f.ue, 1), bad('ue') + ' ü = U1 / U2 = 230 V / 12 V.'),
+          L(near(a.up, f.up, 0.1), 'b) Spitzenspannung etwa ' + f2(f.up, 1) + ' V', bad('up') + ' Û = U2 · Wurzel 2 minus zweimal die Diodenspannung.'),
+          L(near(a.br, f.br, 0.05), 'c) Brummspannung etwa ' + f2(f.br) + ' V', bad('br') + ' ΔU = I / (f · C) mit f = 100 Hz und C = 470 µF.'),
+          L(near(a.umin, f.umin, 0.1), 'd) tiefster Wert etwa ' + f2(f.umin, 1) + ' V', bad('umin') + ' Spitzenspannung minus Brummspannung.')];
+      } },
+    /* PRUEFEN P3: pb46 verwendet angenommene thermische Widerstände (50, 5, 1 und 12 K/W) und 125 °C Sperrschichtgrenze, keine Datenblattwerte. In der Mitschrift gilt Silizium bis 150 °C. Sollen echte Datenblattwerte oder die 150 °C verwendet werden? */
+    { id: 'pb46', lab: 'pcb', cat: 'Prüfungsstil', title: 'Erwärmung des Spannungsreglers', level: 3,
+      text: 'Auf der Platine "Netzteil 5 V mit LM7805" liegen am Reglereingang 8,6 V (hinter der Diode D1), der Ausgang liefert 5 V bei 0,6 A. Den Ruhestrom des Reglers lässt du weg. Angenommene Werte für die Aufgabe (nicht aus einem Datenblatt): Umgebungstemperatur 40 °C; thermischer Widerstand Sperrschicht-Umgebung ohne Kühlkörper 50 K/W; Sperrschicht-Gehäuse 5 K/W; Gehäuse-Kühlkörper (Wärmeleitpaste) 1 K/W; Kühlkörper-Umgebung 12 K/W; zulässige Sperrschichttemperatur 125 °C. Berechne: a) die Verlustleistung des Reglers in W, b) die Sperrschichttemperatur ohne Kühlkörper in °C, c) die Sperrschichttemperatur mit dem Kühlkörper in °C, d) den größten thermischen Widerstand Kühlkörper-Umgebung (in K/W), bei dem 125 °C gerade nicht überschritten werden.',
+      hint: ['Die Verlustleistung entsteht im Regler: Die Spannungsdifferenz zwischen Ein- und Ausgang fällt an ihm ab, und der ganze Laststrom fließt hindurch. Die Wärme muss über mehrere thermische Widerstände in Reihe nach außen.', 'Pv = (Uein − Uaus) · I. Sperrschichttemperatur = Umgebung + Pv · (Summe der thermischen Widerstände auf dem Weg). Mit Kühlkörper zählen Sperrschicht-Gehäuse, Gehäuse-Kühlkörper und Kühlkörper-Umgebung, ohne Kühlkörper der direkte Wert zur Umgebung.', 'a) 3,6 V · 0,6 A = 2,16 W. b) 40 °C + 2,16 W · 50 K/W = 148 °C, also über der Grenze. c) Summe 5 + 1 + 12 = 18 K/W: 40 °C + 2,16 W · 18 K/W = 78,9 °C. d) Gesamt höchstens 85 K / 2,16 W = 39,35 K/W, davon 5 + 1 = 6 K/W abziehen: 33,4 K/W.'],
+      start: () => withAnswers(board('exnetz'), {}), sol: () => { const f = kuehl46(); return withAnswers(board('exnetz'), { pv: f.pv, tj0: f.tj0, tj1: f.tj1, rsa: f.rsa }); },
+      answer: [{ k: 'pv', label: 'a) Verlustleistung des Reglers', unit: 'W', type: 'num', min: 0, max: 99, step: 0.01 }, { k: 'tj0', label: 'b) Sperrschichttemperatur ohne Kühlkörper', unit: '°C', type: 'num', min: 0, max: 999, step: 0.1 }, { k: 'tj1', label: 'c) Sperrschichttemperatur mit Kühlkörper', unit: '°C', type: 'num', min: 0, max: 999, step: 0.1 }, { k: 'rsa', label: 'd) größter zulässiger Rth Kühlkörper-Umgebung', unit: 'K/W', type: 'num', min: 0, max: 999, step: 0.1 }],
+      check(b) {
+        const f = kuehl46(), a = A(b), bad = k => (a[k] === undefined || a[k] === '' ? 'Hier fehlt noch deine Antwort.' : 'Dein Wert ' + a[k] + ' stimmt nicht.');
+        return [L(near(a.pv, f.pv, 0.05), 'a) Verlustleistung etwa ' + f2(f.pv) + ' W', bad('pv') + ' Pv = (Uein − Uaus) · I, hier (8,6 V − 5 V) · 0,6 A.'),
+          L(near(a.tj0, f.tj0, 2.5), 'b) ohne Kühlkörper etwa ' + f2(f.tj0, 0) + ' °C', bad('tj0') + ' Umgebung plus Pv mal 50 K/W.'),
+          L(near(a.tj1, f.tj1, 1.5), 'c) mit Kühlkörper etwa ' + f2(f.tj1, 1) + ' °C', bad('tj1') + ' Umgebung plus Pv mal (5 + 1 + 12) K/W.'),
+          L(near(a.rsa, f.rsa, 1), 'd) Kühlkörper höchstens etwa ' + f2(f.rsa, 1) + ' K/W', bad('rsa') + ' Erlaubter Gesamtwiderstand = (125 °C − 40 °C) / Pv, davon Sperrschicht-Gehäuse und Gehäuse-Kühlkörper abziehen.')];
+      } },
+    /* PRUEFEN P4: pb47 nimmt für den Schaltregler einen Wirkungsgrad von 90 % an (Mitschrift nennt 60 bis 95 % für Schaltnetzteile, 20 bis 50 % für Linearnetzteile). Passt der gewählte Wert? */
+    { id: 'pb47', lab: 'pcb', cat: 'Prüfungsstil', title: 'Linearregler oder Schaltregler: Verluste vergleichen', level: 2,
+      text: 'Die 5-V-Versorgung der Platine "Netzteil 5 V mit LM7805" soll künftig 0,8 A liefern und wird mit 12 V gespeist. Vergleiche den Festspannungsregler mit einem Schaltregler. Den Ruhestrom des Linearreglers lässt du weg, für den Schaltregler nimmst du einen Wirkungsgrad von 90 % an. Berechne: a) den Wirkungsgrad des Linearreglers in Prozent, b) seine Verlustleistung in W, c) die Verlustleistung des Schaltreglers bei gleicher Ausgangsleistung in W. d) Wähle den Regler, der besser passt, wenn die Platine ohne großen Kühlkörper auskommen soll.',
+      hint: ['Der Wirkungsgrad ist das Verhältnis von abgegebener zu aufgenommener Leistung. Beim Linearregler fließt der Ausgangsstrom durch den Regler, er verheizt die überschüssige Spannung.', 'Linearregler: η = Uaus / Uein, Verlust = (Uein − Uaus) · I. Schaltregler: Aufnahme = Ausgangsleistung / η, Verlust = Aufnahme − Ausgangsleistung.', 'a) 5 V / 12 V = 41,7 %. b) (12 V − 5 V) · 0,8 A = 5,6 W. c) Ausgang 4 W, Aufnahme 4 W / 0,9 = 4,44 W, Verlust 0,44 W. d) Schaltregler.'],
+      start: () => withAnswers(board('exnetz'), {}), sol: () => { const f = regler47(); return withAnswers(board('exnetz'), { eta: f.eta, pv: f.pv, pvs: f.pvs, wahl: 'Schaltregler' }); },
+      answer: [{ k: 'eta', label: 'a) Wirkungsgrad des Linearreglers', unit: '%', type: 'num', min: 0, max: 100, step: 0.1 }, { k: 'pv', label: 'b) Verlustleistung des Linearreglers', unit: 'W', type: 'num', min: 0, max: 99, step: 0.01 }, { k: 'pvs', label: 'c) Verlustleistung des Schaltreglers', unit: 'W', type: 'num', min: 0, max: 99, step: 0.01 }, { k: 'wahl', label: 'd) besser geeignet ohne großen Kühlkörper', type: 'select', options: [['Linearregler', 'Linearregler'], ['Schaltregler', 'Schaltregler']] }],
+      check(b) {
+        const f = regler47(), a = A(b), bad = k => (a[k] === undefined || a[k] === '' ? 'Hier fehlt noch deine Antwort.' : 'Dein Wert ' + a[k] + ' stimmt nicht.');
+        return [L(near(a.eta, f.eta, 0.5), 'a) Wirkungsgrad etwa ' + f2(f.eta, 1) + ' %', bad('eta') + ' η = Uaus / Uein, weil der Strom durch den Regler gleich dem Ausgangsstrom ist. Das Ergebnis gehört in Prozent.'),
+          L(near(a.pv, f.pv, 0.05), 'b) Verlustleistung etwa ' + f2(f.pv) + ' W', bad('pv') + ' Pv = (Uein − Uaus) · I.'),
+          L(near(a.pvs, f.pvs, 0.03), 'c) Verlust des Schaltreglers etwa ' + f2(f.pvs) + ' W', bad('pvs') + ' Aufnahme = Ausgangsleistung / 0,9, Verlust = Aufnahme − Ausgangsleistung.'),
+          L(a.wahl === 'Schaltregler', 'd) Der Schaltregler ist besser geeignet', bad('wahl') + ' Vergleiche die Verlustleistung: Sie muss als Wärme von der Platine weg.')];
+      } },
+    /* PRUEFEN P5: pb48 und pb49 rechnen mit idealem OPV, v = 1 + R2 / R1 für Signalfrequenzen (C6 als Kurzschluss) und mit der Reihe E24 als Normwerte. Reicht E24, oder arbeitet der Unterricht mit E12? */
+    { id: 'pb48', lab: 'pcb', cat: 'Prüfungsstil', title: 'OPV-Vorverstärker: Verstärkung aus der Stückliste', level: 2,
+      text: 'Der OPV-Vorverstärker (Beispiel "OPV-Vorverstärker mit Massefläche", LM358 an 5 V Einzelspannung) ist ein nichtinvertierender Verstärker: Ein Widerstand führt vom Ausgang zum invertierenden Eingang, ein zweiter von dort über C6 nach Masse (für Signalfrequenzen wirkt C6 wie ein Kurzschluss). Der nichtinvertierende Eingang liegt über R3 an einem Spannungsteiler aus R4 und R5 zwischen VCC und GND. Lies die Werte aus Netzliste und Stückliste ab und berechne: a) die Spannungsverstärkung (ohne Einheit), b) die Ausgangsspannung (Spitzenwert in V), wenn am Eingang ein Signal mit 50 mV Spitze liegt, c) die Gleichspannung am Teilerpunkt VMID in V.',
+      hint: ['Die Verstärkung eines nichtinvertierenden Verstärkers hängt nur von zwei Widerständen ab. Suche im Netz INN (invertierender Eingang), welche Widerstände dort angeschlossen sind und wohin ihr anderes Ende führt.', 'v = 1 + Rückkopplungswiderstand / Widerstand nach Masse. Der Rückkopplungswiderstand liegt zwischen Ausgang (Netz OUT) und INN. Der Teilerpunkt liegt bei zwei gleich großen Widerständen genau in der Mitte der Versorgung.', 'R2 (10 kΩ) liegt zwischen OUT und INN, R1 (1 kΩ) zwischen INN und Masse. a) v = 1 + 10 kΩ / 1 kΩ = 11. b) 50 mV · 11 = 0,55 V. c) R4 = R5 = 100 kΩ: VMID = 5 V / 2 = 2,5 V.'],
+      start: () => withAnswers(board('exopv'), {}), sol: () => { const f = opvWerte(board('exopv')); return withAnswers(board('exopv'), { v: f.v, uout: f.uout, vmid: f.vmid }); },
+      answer: [{ k: 'v', label: 'a) Spannungsverstärkung', type: 'num', min: 0, max: 9999, step: 0.1 }, { k: 'uout', label: 'b) Ausgangsspannung (Spitze) bei 50 mV Eingang', unit: 'V', type: 'num', min: 0, max: 99, step: 0.01 }, { k: 'vmid', label: 'c) Gleichspannung am Teilerpunkt VMID', unit: 'V', type: 'num', min: 0, max: 99, step: 0.01 }],
+      check(b) {
+        const f = opvWerte(b), a = A(b), bad = k => (a[k] === undefined || a[k] === '' ? 'Hier fehlt noch deine Antwort.' : 'Dein Wert ' + a[k] + ' stimmt nicht.');
+        return [L(isFinite(f.v) && near(a.v, f.v, 0.05), 'a) Verstärkung etwa ' + f2(f.v, 1), bad('v') + ' v = 1 + R2 / R1: R2 liegt zwischen Ausgang und invertierendem Eingang, R1 zwischen diesem Eingang und Masse.'),
+          L(isFinite(f.uout) && near(a.uout, f.uout, 0.01), 'b) Ausgangsspitze etwa ' + f2(f.uout) + ' V', bad('uout') + ' Ausgang = Verstärkung · 50 mV, das Ergebnis gehört in Volt.'),
+          L(isFinite(f.vmid) && near(a.vmid, f.vmid, 0.05), 'c) VMID etwa ' + f2(f.vmid) + ' V', bad('vmid') + ' Spannungsteiler: VCC · R5 / (R4 + R5).')];
+      } },
+    { id: 'pb49', lab: 'pcb', cat: 'Prüfungsstil', title: 'Verstärkung des Vorverstärkers anpassen', level: 3,
+      text: 'Der OPV-Vorverstärker (Beispiel "OPV-Vorverstärker mit Massefläche") bekommt ein Mikrofon, das 20 mV Spitze liefert. Am Ausgang sollen etwa 0,42 V Spitze erscheinen (Abweichung der Verstärkung höchstens 5 %). Ändere dazu den Wert eines der beiden Widerstände, die die Verstärkung festlegen, auf einen Wert aus der Reihe E24. Alle anderen Bauteilwerte, die Netzliste und die Leiterbahnen bleiben unverändert, der DRC muss sauber sein. Den Wert änderst du in den Eigenschaften des Bauteils.',
+      hint: ['Die gesuchte Verstärkung ist das Verhältnis von Ausgangs- zu Eingangsspitze. Welche beiden Widerstände sie festlegen, zeigt dir das Netz INN (invertierender Eingang).', 'v = 1 + Rückkopplungswiderstand / Widerstand nach Masse. Du kannst entweder den Rückkopplungswiderstand größer oder den Widerstand nach Masse kleiner machen. Beide Werte müssen zur Reihe E24 gehören.', 'v = 0,42 V / 20 mV = 21. Mit R1 = 1 kΩ muss R2 = 20 kΩ sein. Auch R1 = 510 Ω bei R2 = 10 kΩ liefert v = 20,6 und liegt innerhalb der 5 %.'],
+      start: () => board('exopv'), sol: () => { const b = board('exopv'); b.parts.find(p => p.ref === 'R2').value = '20k'; return b; },
+      check(b) {
+        const ref = DEF.exopv(), P = r => arr(b.parts).find(p => p.ref === r) || {}, r1 = ohm(P('R1').value), r2 = ohm(P('R2').value), v = 1 + r2 / r1, bad = [];
+        ref.parts.forEach(rp => { if (rp.ref !== 'R1' && rp.ref !== 'R2') { const p = P(rp.ref); if (String(p.value) !== String(rp.value)) bad.push(rp.ref); } });
+        const e24 = x => { if (!(x > 0) || !isFinite(x)) return false; const m = Math.round(x / Math.pow(10, Math.floor(Math.log10(x))) * 10) / 10; return [1, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2, 2.2, 2.4, 2.7, 3, 3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1, 10].indexOf(m) >= 0; };
+        return [L(isFinite(v) && v >= 21 * 0.95 && v <= 21 * 1.05, 'Die Spannungsverstärkung passt zu 20 mV Eingang und etwa 0,42 V Ausgang', 'Mit R1 = ' + f2(r1 / 1000, 2) + ' kΩ und R2 = ' + f2(r2 / 1000, 2) + ' kΩ ist die Verstärkung 1 + R2 / R1 = ' + f2(v, 1) + '. Aus 20 mV soll rund 0,42 V werden, das verlangt die Verstärkung 21 (±5 %).'),
+          L(e24(r1) && e24(r2), 'R1 und R2 sind Werte der Reihe E24', 'Mindestens einer der beiden Werte (R1 = ' + f2(r1, 0) + ' Ω, R2 = ' + f2(r2, 0) + ' Ω) gehört nicht zur Reihe E24. Nimm den nächstgelegenen Normwert, zum Beispiel 20 kΩ statt 19 kΩ.'),
+          L(bad.length === 0, 'Alle anderen Bauteilwerte sind unverändert', 'Verändert wurde auch ' + bad[0] + '. Nur R1 und R2, die beiden Widerstände, die die Verstärkung festlegen, dürfen einen neuen Wert bekommen.')].concat(routeLines(b, ref));
       } }
   ];
 
@@ -704,6 +782,30 @@
   function werte42(b) {
     const C = CORE(), wmin = Math.round(C.ipcWidth(0.5, { oz: b.copperOz || 1, rise: 10, external: true }) * 100) / 100;
     return { pw: arr(b.nets).filter(n => n.cls === 'power').length, via: arr(b.vias).length, wmin, wsel: Math.max(wmin, 0.2), lay: +b.layers };
+  }
+  /* Berufsschulstoff pb44 bis pb49: Rechenwerte (alle Zahlen stehen im Aufgabentext, nichts aus Normen oder Datenblättern) */
+  function netz45() {                                                          /* pb45: 230 V auf 12 V, B2U mit 2 x 0,7 V, C1 = 470 uF, 0,1 A, 100 Hz */
+    const up = 12 * Math.SQRT2 - 2 * 0.7, br = 0.1 / (100 * 470e-6);
+    return { ue: Math.round(230 / 12 * 100) / 100, up: Math.round(up * 100) / 100, br: Math.round(br * 100) / 100, umin: Math.round((up - br) * 100) / 100 };
+  }
+  function kuehl46() {                                                         /* pb46: Verlustleistung und Sperrschichttemperatur */
+    const pv = (8.6 - 5) * 0.6, lim = (125 - 40) / pv;
+    return { pv: Math.round(pv * 100) / 100, tj0: Math.round((40 + pv * 50) * 10) / 10, tj1: Math.round((40 + pv * (5 + 1 + 12)) * 10) / 10, rsa: Math.round((lim - 6) * 10) / 10 };
+  }
+  function regler47() {                                                        /* pb47: Linear- gegen Schaltregler */
+    const pout = 5 * 0.8;
+    return { eta: Math.round(5 / 12 * 1000) / 10, pv: Math.round((12 - 5) * 0.8 * 100) / 100, pvs: Math.round((pout / 0.9 - pout) * 100) / 100 };
+  }
+  function ohm(v) {                                                            /* Widerstandswert lesen: 10k, 4k7, 510, 20K, 1M */
+    if (typeof v === 'number') return v;
+    const s = String(v == null ? '' : v).trim().replace(/[Ω\s]/g, '').replace(/ohm$/i, '').replace(',', '.'), mul = { R: 1, k: 1e3, K: 1e3, M: 1e6 };
+    let m = /^(\d+)([RkKM])(\d+)?$/.exec(s); if (m) return parseFloat(m[1] + '.' + (m[3] || '0')) * mul[m[2]];
+    m = /^(\d*\.?\d+)([kKM]?)$/.exec(s); if (m) return parseFloat(m[1]) * (m[2] ? mul[m[2]] : 1);
+    return NaN;
+  }
+  function opvWerte(b) {                                                       /* pb48: Werte aus der Stückliste der OPV-Platine */
+    const P = r => arr(b && b.parts).find(p => p && p.ref === r) || {}, r1 = ohm(P('R1').value), r2 = ohm(P('R2').value), r4 = ohm(P('R4').value), r5 = ohm(P('R5').value), v = 1 + r2 / r1;
+    return { v: Math.round(v * 100) / 100, uout: Math.round(0.05 * v * 1000) / 1000, vmid: Math.round(5 * r5 / (r4 + r5) * 100) / 100 };
   }
   /* Handlöten: Parameter aus dem Antwortblatt in das Modell geben */
   function handLines(b, kind, keys, extra) {
@@ -809,5 +911,5 @@
     }
     return out;
   };
-  if (typeof module !== 'undefined') module.exports = { examples, tasks, run, board, DEF, BAKE, spike, ACID, acidStart, mk, planes, snapGrid, repStart, repSol, viasBad, mfgStart, reflip, setW, setCur, withAnswers, pruefWerte, rechne41, werte42, pctOf, roleOf, ipcFor, answerSheet };
+  if (typeof module !== 'undefined') module.exports = { examples, tasks, run, board, DEF, BAKE, spike, ACID, acidStart, mk, planes, snapGrid, repStart, repSol, viasBad, mfgStart, reflip, setW, setCur, withAnswers, pruefWerte, rechne41, werte42, pctOf, roleOf, ipcFor, answerSheet, ohm, netz45, kuehl46, regler47, opvWerte };
 })(typeof window !== 'undefined' ? window : globalThis);

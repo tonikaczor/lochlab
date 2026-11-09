@@ -153,6 +153,13 @@
   const LOOP1424 = 4 + 3.2 / 5 * 16;                                                   /* se32: 14,24 mA */
   const ADC1024 = 1.25 / 5 * 4096;                                                     /* se34: 1024 */
   const I2C650 = (9 * 7 + 2) / 100 * 1000;                                             /* se35: 650 µs */
+  /* Berufsschulstoff (Lernfeld 6.2 Operationsverstärker, Lernfeld 8.2 Signalumwandlung) */
+  const ADC614 = 614 / 1024 * 5;                                                       /* se37: 2,998 V */
+  const DS48 = 100 * 1.2 / 2.5;                                                        /* se38: 48 ms Entladezeit (Zweiflankenverfahren) */
+  const DAU1011 = 11 * 5 / 16;                                                         /* se39: 3,4375 V */
+  const INV12 = -(47 / 4.7) * 0.12;                                                    /* se41: -1,2 V */
+  const NINV360 = 30 * (1 + 22 / 2);                                                   /* se42: 360 mV */
+  const LM35RES = 5 / 1024 * 1000 / 4 / 10;                                            /* se43: 0,122 K je Digit */
 
   /* ====================================================================== Prüfungen der Simulationsaufgaben */
   const BASE2 = { sensor: 'ldr', lux: 500, rLoad: 10000, thresh: 2.5, hyst: 0.2, fdelay: 0, target: 'hell', dist: 3, material: 'stahl', ambient: 0 };
@@ -294,6 +301,19 @@
     r(+ctl.fs <= 5000, 'Die Abtastrate bleibt höchstens 5000 Hz (Speicher und Rechenzeit)', 'fs = ' + fm(+ctl.fs, 0) + ' Hz ist unnötig hoch. Der Mikrocontroller schafft höchstens 5000 Messungen je Sekunde.');
   });
 
+  /* se40: Auflösung eines Wandlers wählen (Stufe höchstens 1 mV, höchstens 14 Bit, Sensorbereich bis 3,3 V) */
+  const BASE40 = { wave: 'dc', fSig: 100, amp: 0, offset: 1.2, noise: 0, bits: 8, vref: 3.3, fs: 1000, sampleHold: true, aaf: false };
+  const checkSe40 = mk('adu', (c, r) => {
+    const ctl = Object.assign({}, BASE40, initial(c), { wave: 'dc', amp: 0, offset: 1.2, noise: 0 });
+    const s = run('adu', [], 500, ctl), f = s.final || {};
+    inputRow(c, r, s);
+    const bits = +ctl.bits, vref = +ctl.vref, lsb = vref / Math.pow(2, bits);
+    r(fin(lsb) && lsb <= 0.001 + 1e-12, 'Eine Stufe (1 LSB) ist höchstens 1 mV hoch', 'Bei ' + fm(bits, 0) + ' Bit und ' + fm(vref, 1) + ' V Referenz ist eine Stufe ' + fm(lsb * 1000, 2) + ' mV hoch. Die Stufenhöhe ist Uref / 2ⁿ; sie wird mit jedem Bit halbiert.');
+    r(bits <= 14, 'Der Wandler verwendet höchstens 14 Bit', 'Der Mikrocontroller schafft höchstens 14 Bit; du hast ' + fm(bits, 0) + ' Bit eingestellt. Mehr Bits verlängern außerdem die Wandlungszeit.');
+    r(vref >= 3.3 - 1e-9, 'Die Referenzspannung deckt den Sensorbereich bis 3,3 V ab', 'Mit ' + fm(vref, 1) + ' V Referenz würde ein Sensorsignal von 3,3 V den Wandler übersteuern. Stelle mindestens 3,3 V ein.');
+    r(!f.clipping && !hasFault(s, 'clip'), 'Die Anlage meldet keine Übersteuerung bei der Messspannung von 1,2 V', 'Der Prüfstand meldet Übersteuerung; die Eingangsspannung liegt außerhalb des Wandlerbereichs.');
+  });
+
   /* se22: Pull-up wählen (Standardmodus, 2 m Kabel) */
   const BASE22 = { sensor: 'sht', addr: 68, addrPin: 'low', twin: false, pullup: 47000, busSpeed: 100000, busLength: 2, stretch: false };
   const checkSe22 = mk('digital', (c, r) => {
@@ -410,6 +430,19 @@
       hint: ['Überlege, welche Messgröße zum Stahlbolzen passt: Licht, Abstand oder die Nähe von Metall? Und was stört im Hellen?', 'Optische Sensoren leiden unter Fremdlicht. Ein Näherungsschalter erkennt Metall berührungslos, ganz ohne Licht. Der Ultraschallsensor schaltet erst bei 150 mm und passt nicht.', 'Wähle den induktiven Näherungsschalter (Sn = 8 mm). Auch der kapazitive Schalter erkennt Stahl, er ist aber eher für Kunststoff und Flüssigkeiten gedacht.'],
       start: () => S('licht', { sensor: 'ldr', dist: 3, material: 'stahl', ambient: 20000 }), sol: () => S('licht', { sensor: 'induktiv', dist: 3, material: 'stahl', ambient: 20000 }),
       check: checkSe2 },
+    /* PRUEFEN P4: OPV-Aufgaben se41 und se42 rechnen mit dem idealen Verstärker (Gegenkopplung, virtueller Kurzschluss). Soll die endliche Leerlaufverstärkung auch vorkommen? */
+    { id: 'se41', lab: 'sen', cat: 'Grundlagen', title: 'Messverstärker mit Rückkopplungswiderständen', level: 1, rig: 'kraft',
+      text: 'Das schwache Signal eines Sensors wird mit einem Operationsverstärker (als ideal angenommen) aufbereitet. Der Verstärker ist so aufgebaut, dass das Sensorsignal über den Widerstand R1 = 4,7 kΩ auf den invertierenden Eingang geführt wird; vom Ausgang führt der Rückkopplungswiderstand R2 = 47 kΩ zu diesem Eingang zurück, der andere Eingang liegt an Masse. Am Eingang liegen +0,12 V. Berechne die Ausgangsspannung in Volt (mit Vorzeichen).',
+      ask: { label: 'Ausgangsspannung', unit: 'V' },
+      hint: ['Wenn das Signal am invertierenden Eingang liegt, kehrt der Verstärker die Phase um: Das Ausgangssignal hat das entgegengesetzte Vorzeichen. Die Größe der Verstärkung hängt nur von den beiden Widerständen ab.', 'Verstärkung v = −R2 / R1. Ausgangsspannung = v · Eingangsspannung. Das Minuszeichen gehört zum Ergebnis.', 'v = −47 kΩ / 4,7 kΩ = −10. Ua = −10 · 0,12 V = −1,2 V.'],
+      start: () => S('kraft', {}, { value: null }), sol: () => S('kraft', {}, { value: INV12 }),
+      check: askCheck('kraft', INV12, [[1.2, 'Das Vorzeichen fehlt. Das Signal liegt am invertierenden Eingang, deshalb ist die Ausgangsspannung gegenphasig, also negativ.'], [1.32, 'Du hast mit v = 1 + R2/R1 gerechnet. Diese Formel gilt für das nichtinvertierende Prinzip; hier liegt das Signal am invertierenden Eingang.'], [-0.012, 'Du hast R1 durch R2 geteilt. Die Verstärkung ist R2 / R1, der Rückkopplungswiderstand steht im Zähler.'], [0.012, 'Du hast R1 durch R2 geteilt und das Vorzeichen vergessen. Die Verstärkung ist −R2 / R1.']]) },
+    { id: 'se42', lab: 'sen', cat: 'Grundlagen', title: 'Spannungsverstärkung mit zwei Widerständen', level: 2, rig: 'kraft',
+      text: 'Ein Messwertgeber liefert 30 mV. Das Signal wird auf den nichtinvertierenden Eingang eines Operationsverstärkers (ideal) gegeben. Vom Ausgang führt der Widerstand R2 = 22 kΩ auf den invertierenden Eingang, von dort geht R1 = 2 kΩ nach Masse. Berechne die Ausgangsspannung in Millivolt.',
+      ask: { label: 'Ausgangsspannung', unit: 'mV' },
+      hint: ['Das Ausgangssignal hat hier dieselbe Phase wie das Eingangssignal. Die Verstärkung hängt nur von den beiden Widerständen ab, nicht vom Operationsverstärker selbst.', 'Beim nichtinvertierenden Verstärker gilt v = 1 + R2 / R1. Die Eins kommt dadurch dazu, dass der Eingang selbst mit angehoben wird.', 'v = 1 + 22 kΩ / 2 kΩ = 12. Ua = 12 · 30 mV = 360 mV.'],
+      start: () => S('kraft', {}, { value: null }), sol: () => S('kraft', {}, { value: NINV360 }),
+      check: askCheck('kraft', NINV360, [[330, 'Du hast ohne die Eins gerechnet (v = R2 / R1). Beim nichtinvertierenden Verstärker gilt v = 1 + R2 / R1.'], [-330, 'Das Signal liegt am nichtinvertierenden Eingang: Die Phase bleibt gleich und die Verstärkung ist 1 + R2 / R1, ohne Minuszeichen.'], [2.7, 'Du hast R1 durch R2 geteilt. Der Rückkopplungswiderstand R2 steht im Zähler.'], [0.36, 'Das ist das Ergebnis in Volt. Gefragt sind Millivolt: mal 1000.']]) },
     /* ------------------------------------------------------------ Temperatur */
     { id: 'se3', lab: 'sen', cat: 'Temperatur', title: 'NTC-Kennlinie: Widerstand bei 50 Grad', level: 1, rig: 'temperatur',
       text: 'Ein NTC hat bei 25 °C einen Widerstand von 10 kΩ und einen B-Wert von 3950 K. Berechne seinen Widerstand bei 50 °C. Rechne dafür mit der B-Wert-Gleichung. Gib das Ergebnis in Ohm an.',
@@ -557,6 +590,38 @@
       hint: ['Der Zählwert sagt, wie viele Stufen der Wandler bis zur Eingangsspannung zählt. Er ist proportional zur Eingangsspannung.', 'Zählwert = Uin / Uref · 2ⁿ. Die Eingangsspannung steht im Verhältnis zur Referenzspannung, der Bereich hat 2ⁿ Stufen.', '1,25 V / 5 V = 0,25. 0,25 · 4096 = 1024. Die Eingangsspannung liegt also bei einem Viertel des Bereichs.'],
       start: () => S('adu', { bits: 12, vref: 5 }, { value: null }), sol: () => S('adu', { bits: 12, vref: 5 }, { value: ADC1024 }),
       check: askCheck('adu', ADC1024, [[256, 'Du hast mit 1024 Stufen gerechnet (10 Bit). Ein 12-Bit-Wandler hat 2¹² = 4096 Stufen.'], [5120, 'Du hast nicht durch die Referenzspannung geteilt. Der Zählwert hängt vom Verhältnis Uin / Uref ab.'], [0.25, 'Das ist nur das Verhältnis Uin / Uref. Multipliziere es mit der Zahl der Stufen (4096).']]) },
+    /* PRUEFEN P1: Wandler-Aufgaben (se37, se39, se40, se43) rechnen mit 2 hoch n Stufen, LSB = Uref / 2^n, wie in der Mitschrift. Manche Lehrbücher nehmen 2^n - 1; bei 10 Bit und mehr liegt der Unterschied unter der Toleranz von 2 Prozent, beim 4-Bit-DAU (se39) nicht. Welche Schreibweise gilt im Unterricht? */
+    { id: 'se37', lab: 'sen', cat: 'ADU', title: 'Eingangsspannung aus dem Zählwert', level: 1, rig: 'adu',
+      text: 'Ein 10-Bit-ADU hat die Referenzspannung 5 V und teilt den Bereich von 0 bis 5 V in 1024 gleich große Stufen. Der Wandler gibt den Zählwert 614 aus. Berechne die Spannung, die am Eingang anliegt, in Volt.',
+      ask: { label: 'Eingangsspannung', unit: 'V' },
+      hint: ['Jede Stufe des Wandlers hat dieselbe Höhe. Der Zählwert sagt, wie viele solcher Stufen die Eingangsspannung hoch ist.', 'Eingangsspannung = Zählwert · Stufenhöhe. Die Stufenhöhe ist Uref / 2ⁿ.', 'Stufenhöhe = 5 V / 1024 = 4,883 mV. 614 · 4,883 mV = 2,998 V, also rund 3,0 V.'],
+      start: () => S('adu', { bits: 10, vref: 5 }, { value: null }), sol: () => S('adu', { bits: 10, vref: 5 }, { value: ADC614 }),
+      check: askCheck('adu', ADC614, [[3070, 'Du hast den Zählwert mit der Referenzspannung multipliziert, aber nicht durch die Zahl der Stufen geteilt. Mit n = 10 Bit sind es 2¹⁰ = 1024 Stufen.'], [0.6, 'Das ist nur das Verhältnis Zählwert / 1024. Multipliziere es mit der Referenzspannung, damit eine Spannung herauskommt.'], [307, 'Du hast durch die Bitzahl (10) geteilt. Die Zahl der Stufen ist 2 hoch Bitzahl, hier 1024.'], [2998, 'Das ist das Ergebnis in Millivolt. Gefragt sind Volt: durch 1000.']]) },
+    /* PRUEFEN P2: Zweiflankenverfahren (se38): Ladezeit 100 ms, Uref 2,5 V und Ue 1,2 V sind frei gewählt; Takt 10 kHz nur im Tipp. Reicht der Umfang (nur Zeitverhältnis, ohne Kondensator- und Widerstandswerte)? */
+    { id: 'se38', lab: 'sen', cat: 'ADU', title: 'Entladephase im Zweiflankenverfahren', level: 2, rig: 'adu',
+      text: 'Ein Zweiflanken-Umsetzer lädt in der ersten Phase den Integrationskondensator genau 100 ms lang mit der unbekannten Eingangsspannung Ue auf. In der zweiten Phase wird der Kondensator mit der Referenzspannung Uref = 2,5 V (umgekehrte Polarität) wieder bis auf null entladen. Die Eingangsspannung beträgt Ue = 1,2 V. Berechne, wie lange die Entladephase dauert, in Millisekunden.',
+      ask: { label: 'Dauer der Entladephase', unit: 'ms' },
+      hint: ['Beim Entladen fließt dieselbe Ladungsmenge wieder ab, die beim Aufladen auf den Kondensator gekommen ist. Eine größere Spannung braucht deshalb eine kürzere Zeit für die gleiche Ladung.', 'Aufgeladene Ladung ~ Ue · T1, abgeführte Ladung ~ Uref · T2. Beide sind gleich, also T2 = T1 · Ue / Uref.', 'T2 = 100 ms · 1,2 V / 2,5 V = 48 ms. Die Größe des Kondensators fällt aus der Rechnung heraus. Zählt ein Zähler mit 10 kHz mit, bekommst du in dieser Zeit 480 Impulse.'],
+      start: () => S('adu', {}, { value: null }), sol: () => S('adu', {}, { value: DS48 }),
+      check: askCheck('adu', DS48, [[208.3, 'Du hast das Spannungsverhältnis umgekehrt: Die Entladezeit wächst mit der Eingangsspannung, also T2 = T1 · Ue / Uref.'], [100, 'Die Entladezeit ist nur dann gleich der Ladezeit, wenn Ue = Uref wäre. Hier ist Ue kleiner als Uref, die Entladung dauert kürzer.'], [120, 'Du hast mit Ue multipliziert, aber nicht durch Uref geteilt. Das Spannungsverhältnis Ue / Uref gehört in die Rechnung.'], [0.048, 'Das ist das Ergebnis in Sekunden. Gefragt sind Millisekunden: mal 1000.']]) },
+    /* PRUEFEN P3: DAU (se39): Ausgang als Uref mal Code durch 2^n (Betrag, Leiternetzwerk mit invertierendem OPV). In der Mitschrift stehen auch gestufte Widerstände (Rk) und eine Kettenleiter mit anderer Skalierung. Welche Schaltung und welche Formel gilt im Unterricht? */
+    { id: 'se39', lab: 'sen', cat: 'ADU', title: 'Ausgangsspannung eines 4-Bit-Digital-Analog-Umsetzers', level: 2, rig: 'adu',
+      text: 'Ein 4-Bit-DAU wird mit der Referenzspannung 5 V betrieben. Seine Ausgangsspannung wächst mit jedem Codeschritt um denselben Betrag, ein Schritt (1 LSB) entspricht Uref / 16. Am Eingang liegt das Codewort 1011 (D3 = 1, D2 = 0, D1 = 1, D0 = 1). Berechne den Betrag der Ausgangsspannung in Volt (das Vorzeichen eines invertierenden Ausgangsverstärkers lässt du weg).',
+      ask: { label: 'Ausgangsspannung', unit: 'V' },
+      hint: ['Wandle zuerst das Codewort in eine Dezimalzahl um. Das Bit ganz links hat die höchste Wertigkeit.', 'Die Wertigkeiten sind 8, 4, 2 und 1. Ausgangsspannung = Dezimalwert · LSB, mit LSB = Uref / 16.', '1011 = 8 + 0 + 2 + 1 = 11. LSB = 5 V / 16 = 0,3125 V. Ua = 11 · 0,3125 V = 3,4375 V.'],
+      start: () => S('adu', {}, { value: null }), sol: () => S('adu', {}, { value: DAU1011 }),
+      check: askCheck('adu', DAU1011, [[4.0625, 'Du hast die Bits in umgekehrter Reihenfolge gelesen (1101 = 13). Das Bit ganz links (D3) hat die höchste Wertigkeit 8.'], [3.667, 'Du hast durch 15 statt durch 16 geteilt. Mit 4 Bit gibt es 2⁴ = 16 Stufen, ein Schritt ist Uref / 16.'], [11, 'Das ist der Dezimalwert des Codeworts. Multipliziere ihn mit der Stufenhöhe Uref / 16, damit eine Spannung herauskommt.'], [0.3125, 'Das ist die Spannung einer Stufe (1 LSB). Das Codewort 1011 bedeutet 11 solche Stufen.']]) },
+    { id: 'se40', lab: 'sen', cat: 'ADU', title: 'Auflösung des Wandlers für die Sensorspannung', level: 2, rig: 'adu',
+      text: 'Ein Sensor liefert eine Gleichspannung zwischen 0 und 3,3 V (im Moment 1,2 V). Du willst die Spannung so genau messen, dass eine Stufe des Wandlers (1 LSB) höchstens 1 mV hoch ist. Der Mikrocontroller schafft höchstens 14 Bit. Stelle am ADU-Prüfstand die Auflösung und die Referenzspannung so ein, dass beide Bedingungen erfüllt sind und der Sensorbereich nicht übersteuert.',
+      hint: ['Die Stufenhöhe ist der Wandlerbereich geteilt durch die Zahl der Stufen. Mit jedem Bit mehr halbiert sie sich.', 'Es muss gelten Uref / 2ⁿ ≤ 1 mV. Mit Uref = 3,3 V ist 2ⁿ ≥ 3300 nötig. 2¹¹ = 2048 reicht nicht, 2¹² = 4096 reicht.', 'Stelle mindestens 12 Bit ein (Stufe 0,81 mV), höchstens 14 Bit. Die Referenzspannung bleibt bei 3,3 V (oder 5 V, dann brauchst du 13 Bit).'],
+      start: () => S('adu', BASE40), sol: () => S('adu', Object.assign({}, BASE40, { bits: 12 })),
+      check: checkSe40 },
+    { id: 'se43', lab: 'sen', cat: 'ADU', title: 'Temperaturauflösung der Messkette', level: 3, rig: 'temperatur',
+      text: 'Ein Temperatursensor liefert 10 mV je Kelvin (0 V bei 0 °C). Das Signal wird vierfach verstärkt und dann von einem 10-Bit-ADU mit der Referenzspannung 5 V gewandelt (1024 Stufen). Berechne, um wie viele Kelvin sich die Temperatur ändern muss, damit sich der Zählwert um 1 Digit ändert (Temperaturauflösung in K je Digit).',
+      ask: { label: 'Temperaturauflösung', unit: 'K je Digit' },
+      hint: ['Gehe die Messkette rückwärts durch: Eine Stufe des Wandlers entspricht einer Spannung am Wandlereingang. Diese Spannung musst du in eine Spannung am Sensor und dann in eine Temperatur umrechnen.', 'Stufe = Uref / 2ⁿ am Wandlereingang. Der Verstärker vergrößert die Sensorspannung, deshalb ist die Stufe am Sensor um den Faktor 4 kleiner. Teile sie durch 10 mV/K.', 'Stufe am Wandler: 5 V / 1024 = 4,883 mV. Am Sensor: 4,883 mV / 4 = 1,221 mV. Temperatur: 1,221 mV / 10 mV/K = 0,122 K je Digit.'],
+      start: () => S('temperatur', { sensor: 'lm35', adcBits: 10, vref: 5, gain: 4 }, { value: null }), sol: () => S('temperatur', { sensor: 'lm35', adcBits: 10, vref: 5, gain: 4 }, { value: LM35RES }),
+      check: askCheck('temperatur', LM35RES, [[0.488, 'Du hast den Verstärkungsfaktor 4 nicht berücksichtigt. Der Verstärker vergrößert die Sensorspannung, am Sensor entspricht eine Wandlerstufe also nur einem Viertel.'], [1.953, 'Du hast mit dem Verstärkungsfaktor multipliziert statt zu teilen. Eine Stufe am Wandler ist am Sensor um den Faktor 4 kleiner.'], [0.0122, 'Du hast die Einheit nicht umgerechnet: 4,883 mV / 4 = 1,221 mV, geteilt durch 10 mV/K ergibt 0,122 K und nicht 0,0122 K.'], [1.221, 'Das ist die Stufe in Millivolt am Sensor. Teile sie noch durch die Empfindlichkeit 10 mV/K, damit Kelvin herauskommen.']]) },
     /* ------------------------------------------------------------ Digitale Sensoren */
     { id: 'se22', lab: 'sen', cat: 'Digitale Sensoren', title: 'Pull-up-Widerstand für den I2C-Bus wählen', level: 2, rig: 'digital',
       text: 'Ein SHT-Sensor hängt am I2C-Bus (Standardmodus, 100 kHz, 3,3 V) an einem 2 m langen Kabel; die Buskapazität beträgt dabei etwa 210 pF. Mit 47 kΩ Pull-up sind die Flanken viel zu langsam, alle Übertragungen schlagen fehl. Die Anstiegszeit darf höchstens 1000 ns betragen. Wähle den Pull-up so, dass alle Übertragungen fehlerfrei laufen und der Widerstand nicht so klein ist, dass der Sensor ihn nicht mehr nach Masse ziehen kann.',

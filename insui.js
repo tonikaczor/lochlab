@@ -524,7 +524,7 @@
   $('#bTasks').onclick = () => setTab('tasks'); $('#bHelp').onclick = () => setTab('help'); $('#bExam').onclick = () => setExam(!exam());
   $('#title').onclick = () => setTab('begr');
   $('#bMenu').onclick = () => {
-    const rows = [['diag', 'Fehlersuche (Prüfplatz)', 'Neun Maschinen mit verdeckter Ursache'], ['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Fragen mit Serien-Zähler'], ['help', 'Hilfe und Spickzettel', 'Begriffe, Formeln, Prüfschritt-Ideen, Sicherheit'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Trainer-Serie auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
+    const rows = [['diag', 'Fehlersuche (Prüfplatz)', 'Zehn Maschinen und Geräte mit verdeckter Ursache'], ['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Fragen mit Serien-Zähler'], ['help', 'Hilfe und Spickzettel', 'Begriffe, Formeln, Prüfschritt-Ideen, Sicherheit'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Trainer-Serie auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
     sheet('Menü', (b, close) => {
       b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${esc(r[1])}</b><small>${esc(r[2])}</small></div></button>`).join('');
       b.addEventListener('click', e => {

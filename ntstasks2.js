@@ -740,6 +740,279 @@
         { name: 'Teil 1 ohne Messung, Teil 2 richtig', answer: A('fehler', Object.assign({ diagnose: A_.fid }, STARTC), { clicks: ['tausche:gleichrichter'], diagnose: A_.fid, choices: rightOf(specs()) }) }] };
   })();
 
+  /* ====================================================================== nt33 bis nt38: Anbindung an den Berufsschulstoff (Spannungsstabilisierung: Quer- und Laengsstabilisierung, Z-Diode, Regelschaltung)
+   * Alle Zahlen stammen aus dem Kern (NTS_CORE.zener, NTS_CORE.lin, NTS_CORE.limit); Bauteilwerte und Grenzen sind Aufgabenwerte (Uebungsschaltung, Datenblatt massgeblich).
+   * Auswahlaufgaben nutzen den Baustein pick(): Fachgrund je Antwort, richtige Antwort nicht systematisch die laengste, Position gestreut. */
+  function pick(o) {
+    const wrongSet = k => { const c = {}; o.specs().forEach(s => { const w = s.options.filter(x => x.value !== s.right); c[s.key] = w[k % w.length].value; }); return c; };
+    return { vals: o.vals, consts: [], audit: () => choiceAudit(o.specs()), check: mk((r, a) => { choiceRows(r, a, o.specs()); }),
+      text: o.text, hint: o.hint, choices: () => publicChoices(o.specs()),
+      start: () => A(o.rig, o.ctl(), { choices: {} }), sol: () => A(o.rig, o.ctl(), { choices: rightOf(o.specs()) }),
+      wrong: () => [{ name: 'durchgehend die erste falsche Antwort', answer: A(o.rig, {}, { choices: wrongSet(0) }) }, { name: 'durchgehend die zweite falsche Antwort', answer: A(o.rig, {}, { choices: wrongSet(1) }) }] };
+  }
+  const mAf = x => f(x, 2) + ' mA';
+  const zst = cfg => { const s = C().zener.stage(cfg); if (!s || !s.ok) throw new Error('zener.stage'); return s; };
+  const rot = (specs, ks) => specs.map((sp, i) => { const k = (ks[i] || 0) % sp.options.length; return Object.assign({}, sp, { options: sp.options.slice(k).concat(sp.options.slice(0, k)) }); });
+  const rname = id => { const R = rigs(id), d = R && R.defs && R.defs[id]; return d ? d.name : id; };
+
+  /* ====================================================================== nt33: Querstabilisierung und Laengsstabilisierung (Lernfeld 9.2, Prinzip der Spannungsstabilisierung) */ /* PRUEFEN P1: Begriffe Quer-, Parallel- und Längsstabilisierung wie im Unterricht; das Wort "Längsregler" ist im Lab-Glossar reserviert und kommt in Aufgabentexten nicht vor */
+  const M33 = (() => {
+    const G = { ue: 14, ue2: 17, uz: 6.8, rv: 220, rl1: 680, rl2: 3300, uaus: 5, i1: 0.1, i2: 0.02 };
+    const CTL = () => ({ art: 'zener', ue: G.ue, uz: G.uz, rv: G.rv, rlast: G.rl1, kurz: false });
+    const vals = () => once('v33', () => { const a = zst({ Ue: G.ue, Uz: G.uz, Rv: G.rv, Rlast: G.rl1 }), b = zst({ Ue: G.ue, Uz: G.uz, Rv: G.rv, Rlast: G.rl2 }), c = zst({ Ue: G.ue2, Uz: G.uz, Rv: G.rv, Rlast: G.rl1 }), iq = lv('iq_7805');
+      return { ue: G.ue, ue2: G.ue2, uz: G.uz, rv: G.rv, rl1: G.rl1, rl2: G.rl2, iges: a.Iges * 1e3, iz1: a.Iz * 1e3, iz2: b.Iz * 1e3, iz3: c.Iz * 1e3, iges3: c.Iges * 1e3, il1: a.Ilast * 1e3, il2: b.Ilast * 1e3,
+        uaus: G.uaus, p1: C().lin.loss(G.ue, G.uaus, G.i1), p2: C().lin.loss(G.ue2, G.uaus, G.i1), i1: G.i1 * 1e3, i2: G.i2 * 1e3, iq: iq * 1e3, iein1: (G.i1 + iq) * 1e3, iein2: (G.i2 + iq) * 1e3, uzRv: G.uz / G.rv * 1e3, ueRv: G.ue / G.rv * 1e3 }; });
+    const rIges = () => once('r33', () => { const v = vals(); return own(v.iges / 1e3, 'A', { factor: 1e-3, wrongs: [{ v: v.uzRv / 1e3, text: 'Du hast U_Z / R_V gerechnet (' + mAf(v.uzRv) + '). Am Vorwiderstand liegt nur die Differenz U_E − U_Z, daher I_ges = (U_E − U_Z) / R_V.' }, { v: v.ueRv / 1e3, text: 'Du hast U_E / R_V gerechnet (' + mAf(v.ueRv) + '). Am Vorwiderstand liegt nur U_E − U_Z, nicht die ganze Eingangsspannung.' }] }); });
+    const specs0 = () => once('sp33', () => { const v = vals(); return [
+      { key: 'zuordnung', q: 'Zwei Schaltungen stabilisieren eine Spannung: die Z-Diode mit Vorwiderstand und der Festspannungsregler 7805. Welche Zuordnung stimmt?', short: 'Die Zuordnung von Quer- und Längsstabilisierung ist richtig', right: 'zl',
+        options: [
+          { value: 'zz', label: 'Beide arbeiten mit einem Stellglied parallel zur Last', grund: 'Der 7805 liegt mit seiner Regelstrecke zwischen Eingang und Ausgang, in Reihe zur Last. Nur die Z-Diode liegt parallel zur Last.' },
+          { value: 'lz', label: 'Z-Diode: Längs (in Reihe), 7805: Quer (parallel)', grund: 'Genau umgekehrt: Die Z-Diode liegt parallel zur Last (Querstabilisierung), der 7805 liegt in Reihe zur Last (Längsstabilisierung).' },
+          { value: 'zl', label: 'Z-Diode: Quer (parallel), 7805: Längs (in Reihe)', grund: 'Die Z-Diode liegt als spannungsregelndes Bauelement parallel zur Last (Parallel- oder Querstabilisierung). Der 7805 liegt mit seinem Stellglied in Reihe zur Last (Längsstabilisierung).' },
+          { value: 'll', label: 'Beide arbeiten mit einem Stellglied in Reihe zur Last', grund: 'Bei der Z-Diode fließt der Strom über den Vorwiderstand (in Reihe), die regelnde Z-Diode selbst liegt aber parallel zur Last. Das macht sie zur Querstabilisierung.' }] },
+      { key: 'eingang', q: 'Die Eingangsspannung steigt (Z-Stufe: ' + f(v.ue, 0) + ' V auf ' + f(v.ue2, 0) + ' V; 7805 bei ' + f(v.i1, 0) + ' mA Last: ebenfalls ' + f(v.ue, 0) + ' V auf ' + f(v.ue2, 0) + ' V). Wie muss sich das Stellglied ändern, damit der Ausgang konstant bleibt?', short: 'Die Änderung des Stellglieds bei steigender Eingangsspannung ist richtig bestimmt', right: 'qlh',
+        options: [
+          { value: 'beide-klein', label: 'Bei beiden wird das Stellglied niederohmiger', grund: 'Beim 7805 liegt das Stellglied in Reihe: Es muss hochohmiger werden und mehr Spannung übernehmen (hier steigt die Verlustleistung von ' + f(v.p1, 2) + ' W auf ' + f(v.p2, 2) + ' W). Nur bei der Parallelstabilisierung wird es niederohmiger.' },
+          { value: 'beide-gross', label: 'Bei beiden wird das Stellglied hochohmiger', grund: 'Bei der Z-Diode liegt das Stellglied parallel zur Last: Es muss mehr Strom aufnehmen, also niederohmiger werden (der Z-Strom steigt von ' + mAf(v.iz1) + ' auf ' + mAf(v.iz3) + '). Nur in der Längsstabilisierung wird es hochohmiger.' },
+          { value: 'lqh', label: 'Quer: hochohmiger, Längs: niederohmiger', grund: 'Genau umgekehrt: Das parallele Stellglied (Z-Diode) wird bei steigender Eingangsspannung niederohmiger, das Stellglied in Reihe (7805) wird hochohmiger.' },
+          { value: 'qlh', label: 'Quer: niederohmiger, Längs: hochohmiger', grund: 'Quer: Die Z-Diode nimmt mehr Strom auf (' + mAf(v.iz1) + ' auf ' + mAf(v.iz3) + '), ihr Wechselstromwiderstand sinkt. Längs: Der 7805 muss die größere Differenz übernehmen; sein Stellglied wird hochohmiger (P_V von ' + f(v.p1, 2) + ' W auf ' + f(v.p2, 2) + ' W).' }] },
+      { key: 'last', q: 'Der Laststrom sinkt (Z-Stufe: R_L von ' + eng(v.rl1, 'Ω') + ' auf ' + eng(v.rl2, 'Ω') + '; 7805: Laststrom von ' + f(v.i1, 0) + ' mA auf ' + f(v.i2, 0) + ' mA). Was ändert sich am Strom aus der Quelle?', short: 'Die Wirkung des kleineren Laststroms auf den Quellenstrom ist richtig bestimmt', right: 'konst',
+        options: [
+          { value: 'beide-sinkt', label: 'Bei beiden sinkt der Strom aus der Quelle deutlich', grund: 'Bei der Z-Stufe bleibt der Gesamtstrom durch R_V gleich (' + mAf(v.iges) + '), weil die Z-Diode den Rest übernimmt (I_Z steigt von ' + mAf(v.iz1) + ' auf ' + mAf(v.iz2) + '). Nur der 7805 nimmt weniger Strom auf.' },
+          { value: 'konst', label: 'Quer bleibt gleich (Z-Strom steigt), Längs sinkt', grund: 'Quer: I_ges = ' + mAf(v.iges) + ' bleibt, die Z-Diode nimmt den Rest auf (' + mAf(v.iz1) + ' auf ' + mAf(v.iz2) + '). Längs: Der Eingangsstrom folgt dem Laststrom und sinkt von ' + mAf(v.iein1) + ' auf ' + mAf(v.iein2) + ' (mit Ruhestrom ' + mAf(v.iq) + ').' },
+          { value: 'umgekehrt', label: 'Quer sinkt mit dem Laststrom, Längs bleibt gleich', grund: 'Genau umgekehrt: Die Parallelstabilisierung nimmt immer denselben Strom auf (' + mAf(v.iges) + '), die Längsstabilisierung nur so viel, wie die Last und ihr Ruhestrom brauchen (' + mAf(v.iein2) + ' bei ' + f(v.i2, 0) + ' mA Last).' },
+          { value: 'beide-gleich', label: 'Bei beiden bleibt der Strom aus der Quelle gleich', grund: 'Der 7805 gibt nur den Strom weiter, den die Last braucht (plus Ruhestrom): Er sinkt von ' + mAf(v.iein1) + ' auf ' + mAf(v.iein2) + '. Gleich bleibt er nur bei der Z-Stufe (' + mAf(v.iges) + ').' }] }]; });
+    const specs = () => once('rot33', () => rot(specs0(), [0, 0, 1]));
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'iges'), rIges(), 'Der Gesamtstrom I_ges durch den Vorwiderstand ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Eine Z-Diode mit Vorwiderstand (U_Z = ' + f(G.uz, 1) + ' V, R_V = ' + eng(G.rv, 'Ω') + ', U_E = ' + f(G.ue, 0) + ' V, Übungsschaltung) und ein Festspannungsregler 7805 stabilisieren beide eine Ausgangsspannung. Berechne zuerst den Gesamtstrom I_ges durch den Vorwiderstand der Z-Stufe und beantworte dann drei Fragen zum Prinzip der Stabilisierung. Im Prüfstand „' + rname('stabil') + '“ kannst du beide Schaltungen aufbauen und Last und Eingangsspannung ändern.',
+      fields: () => [{ key: 'iges', label: 'Gesamtstrom I_ges durch R_V', unit: 'mA' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Bei der Querstabilisierung liegt das regelnde Bauelement parallel zur Last (Z-Diode): Der Strom durch den Vorwiderstand ist fast konstant, die Z-Diode nimmt den Teil auf, den die Last nicht braucht. Bei der Längsstabilisierung liegt das Stellglied in Reihe zur Last (7805): Es übernimmt die überschüssige Spannung.',
+        'I_ges = (U_E − U_Z) / R_V = (' + f(v.ue, 0) + ' V − ' + f(v.uz, 1) + ' V) / ' + f(v.rv, 0) + ' Ω. Bei der Z-Stufe ändert sich I_ges nicht, wenn die Last sich ändert; nur die Aufteilung zwischen Last und Z-Diode ändert sich. Der 7805 nimmt nur Laststrom plus Ruhestrom auf.',
+        'Musterlösung: I_ges = ' + f(v.iges, 2) + ' mA. Z-Diode: Querstabilisierung, 7805: Längsstabilisierung. Steigt U_E, wird das parallele Stellglied niederohmiger (I_Z von ' + f(v.iz1, 1) + ' mA auf ' + f(v.iz3, 1) + ' mA), das Stellglied in Reihe hochohmiger. Sinkt der Laststrom, bleibt bei der Z-Stufe I_ges = ' + f(v.iges, 2) + ' mA.'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { iges: null }, choices: {} }),
+      sol: () => A('stabil', CTL(), { fields: { iges: vals().iges }, choices: rightOf(specs()), value: vals().iges }),
+      wrong: () => { const v = vals(); return [
+        { name: 'U_Z statt U_E − U_Z, Quer und Längs vertauscht', answer: A('stabil', {}, { fields: { iges: v.uzRv }, choices: { zuordnung: 'lz', eingang: 'lqh', last: 'umgekehrt' } }) },
+        { name: 'Ganze Eingangsspannung am Vorwiderstand, beide gleich behandelt', answer: A('stabil', {}, { fields: { iges: v.ueRv }, choices: { zuordnung: 'zz', eingang: 'beide-klein', last: 'beide-gleich' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt34: Z-Diode bei schwankender Eingangsspannung (Lernfeld 9.2, Arbeitspunkt und Arbeitsbereich) */ /* PRUEFEN P2: P_max = 650 mW (Aufgabenwert), r_z = 10 Ω und I_Z,min = 5 mA sind Übungswerte des Labs, nicht die Werte einer bestimmten Z-Diode */
+  const M34 = (() => {
+    const G = { uz: 9.1, ue: 18, due: 3, rv: 150, pmax: 0.65, rv2: 200, rv3: 100 };
+    const CTL = () => ({ art: 'zener', ue: G.ue, uz: G.uz, rv: G.rv, rlast: 47000, kurz: false });
+    const S = (ue, rv) => once('z34|' + ue + '|' + rv, () => zst({ Ue: ue, Uz: G.uz, Rv: rv, Ilast: 0, Pmax: G.pmax }));
+    const vals = () => once('v34', () => { const n = S(G.ue, G.rv), h = S(G.ue + G.due, G.rv), t = S(G.ue - G.due, G.rv), g = S(G.ue + G.due, G.rv2), k = S(G.ue + G.due, G.rv3), rg = C().zener.regulation({ dUe: G.due, Rv: G.rv });
+      return { uz: G.uz, ue: G.ue, due: G.due, ueMax: G.ue + G.due, ueMin: G.ue - G.due, rv: G.rv, pmax: G.pmax * 1e3, rz: lv('rz'), izmin: lv('iz_min') * 1e3, iz0: n.Iz * 1e3, izMax: h.Iz * 1e3, izMin: t.Iz * 1e3, pzMax: h.Pz * 1e3, pz0: n.Pz * 1e3, dua: rg.dUa, rv2: G.rv2, pzG: g.Pz * 1e3, izG: g.Iz * 1e3, rv3: G.rv3, pzK: k.Pz * 1e3, izK: k.Iz * 1e3 }; });
+    const rI0 = () => once('r34a', () => { const v = vals(); return own(v.iz0 / 1e3, 'A', { factor: 1e-3, wrongs: [{ v: G.uz / G.rv, text: 'Du hast U_Z / R_V gerechnet (' + mAf(G.uz / G.rv * 1e3) + '). Am Vorwiderstand liegt U_E − U_Z, und im Leerlauf fließt dieser Strom ganz durch die Z-Diode.' }, { v: G.ue / G.rv, text: 'Du hast U_E / R_V gerechnet. Am Vorwiderstand liegt nur die Differenz U_E − U_Z.' }] }); });
+    const rIm = () => once('r34b', () => { const v = vals(); return own(v.izMax / 1e3, 'A', { factor: 1e-3, wrongs: [{ v: v.iz0 / 1e3, text: 'Dein Wert gehört zur Nenn-Eingangsspannung ' + f(G.ue, 0) + ' V. Gefragt ist der Strom bei der höchsten Eingangsspannung ' + f(v.ueMax, 0) + ' V.' }, { v: v.izMin / 1e3, text: 'Dein Wert gehört zur niedrigsten Eingangsspannung ' + f(v.ueMin, 0) + ' V. Gefragt ist die höchste (' + f(v.ueMax, 0) + ' V).' }] }); });
+    const rPm = () => once('r34c', () => { const v = vals(); return own(v.pzMax / 1e3, 'W', { factor: 1e-3, wrongs: [{ v: v.pz0 / 1e3, text: 'Dein Wert (' + f(v.pz0, 0) + ' mW) gehört zur Nenn-Eingangsspannung. Bei ' + f(v.ueMax, 0) + ' V ist der Z-Strom größer und damit auch P_Z = U_Z · I_Z.' }, { v: G.ue * v.izMax / 1e3, text: 'Du hast mit der Eingangsspannung multipliziert. In der Z-Diode wird U_Z · I_Z umgesetzt, nicht U_E · I_Z.' }] }); });
+    const rDu = () => once('r34d', () => { const v = vals(); return own(v.dua, 'V', { wrongs: [{ v: G.due, text: 'Du hast die ganze Eingangsänderung (' + f(G.due, 0) + ' V) übernommen. Die Z-Diode hält die Ausgangsspannung bis auf einen kleinen Rest konstant: ΔU_a = ΔU_E · r_z / (R_V + r_z).' }, { v: G.due * v.rz / G.rv, text: 'Du hast durch R_V geteilt, ohne r_z zu addieren. Der Teiler ist r_z / (R_V + r_z).' }] }); });
+    const specs0 = () => once('sp34', () => { const v = vals(); return [
+      { key: 'ueberlast', q: 'Die Z-Diode darf höchstens P_max = ' + f(v.pmax, 0) + ' mW umsetzen (Aufgabenwert). Wie ist die Stufe bei der höchsten Eingangsspannung ' + f(v.ueMax, 0) + ' V zu beurteilen?', short: 'Die Belastung der Z-Diode bei der höchsten Eingangsspannung ist richtig beurteilt', right: 'ja',
+        options: [
+          { value: 'nein', label: 'Zulässig, P_Z bleibt unter P_max', grund: 'Bei ' + f(v.ueMax, 0) + ' V ist I_Z = ' + mAf(v.izMax) + ' und P_Z = U_Z · I_Z = ' + f(v.pzMax, 0) + ' mW, das liegt über P_max = ' + f(v.pmax, 0) + ' mW. Zulässig wäre die Stufe nur bis zur Nenn-Eingangsspannung (P_Z = ' + f(v.pz0, 0) + ' mW).' },
+          { value: 'ja', label: 'Überlastet, P_Z liegt über P_max', grund: 'Bei ' + f(v.ueMax, 0) + ' V fließen I_Z = ' + mAf(v.izMax) + ', und P_Z = ' + f(v.uz, 1) + ' V · ' + mAf(v.izMax) + ' = ' + f(v.pzMax, 0) + ' mW liegt über P_max = ' + f(v.pmax, 0) + ' mW (Überlast).' },
+          { value: 'nenn', label: 'Überlastet schon bei Nenn-Eingangsspannung', grund: 'Bei der Nenn-Eingangsspannung ' + f(v.ue, 0) + ' V ist P_Z = ' + f(v.pz0, 0) + ' mW noch unter P_max = ' + f(v.pmax, 0) + ' mW. Zu hoch wird sie erst bei ' + f(v.ueMax, 0) + ' V (' + f(v.pzMax, 0) + ' mW).' },
+          { value: 'min', label: 'Kritisch nur bei der niedrigsten Spannung', grund: 'Bei der niedrigsten Spannung ' + f(v.ueMin, 0) + ' V ist I_Z am kleinsten (' + mAf(v.izMin) + ') und P_Z am geringsten. Die größte Belastung entsteht bei der höchsten Eingangsspannung.' }] },
+      { key: 'abhilfe', q: 'Welche Änderung allein senkt die Belastung der Z-Diode bei ' + f(v.ueMax, 0) + ' V unter P_max?', short: 'Die Abhilfe gegen die Überlast ist richtig gewählt', right: 'gross',
+        options: [
+          { value: 'klein', label: 'Den Vorwiderstand verkleinern', grund: 'Ein kleinerer Vorwiderstand erhöht den Strom: Mit R_V = ' + eng(v.rv3, 'Ω') + ' wären es I_Z = ' + mAf(v.izK) + ' und P_Z = ' + f(v.pzK, 0) + ' mW, noch mehr als vorher.' },
+          { value: 'nichts', label: 'Nichts ändern, die Z-Diode regelt das selbst', grund: 'Die Z-Diode hält die Spannung konstant, begrenzt ihren Strom aber nicht: Er wird nur durch R_V bestimmt. Bei ' + f(v.ueMax, 0) + ' V sind es ' + mAf(v.izMax) + ' (P_Z = ' + f(v.pzMax, 0) + ' mW).' },
+          { value: 'gross', label: 'Den Vorwiderstand vergrößern', grund: 'Ein größerer Vorwiderstand senkt den Strom: Mit R_V = ' + eng(v.rv2, 'Ω') + ' fließen bei ' + f(v.ueMax, 0) + ' V nur I_Z = ' + mAf(v.izG) + ', und P_Z = ' + f(v.pzG, 0) + ' mW liegt unter P_max = ' + f(v.pmax, 0) + ' mW.' }] }]; });
+    const specs = () => once('rot34', () => rot(specs0(), [3, 2]));
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'iz0'), rI0(), 'Der Z-Strom bei U_E = ' + f(G.ue, 0) + ' V (Leerlauf) ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'izmax'), rIm(), 'Der Z-Strom bei der höchsten Eingangsspannung ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'pzmax'), rPm(), 'Die Verlustleistung der Z-Diode bei der höchsten Eingangsspannung ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'dua'), rDu(), 'Die Änderung der Ausgangsspannung bei ΔU_E = +' + f(G.due, 0) + ' V ist richtig berechnet', 3);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Eine Z-Diode mit U_Z = ' + f(G.uz, 1) + ' V wird aus U_E = ' + f(G.ue, 0) + ' V über R_V = ' + eng(G.rv, 'Ω') + ' gespeist; die Eingangsspannung schwankt um ΔU_E = ±' + f(G.due, 0) + ' V (Übungsschaltung, Last abgeklemmt, dynamischer Widerstand r_z = ' + eng(lv('rz'), 'Ω') + ' als Übungswert). Berechne den Z-Strom bei der Nenn-Eingangsspannung und bei der höchsten Eingangsspannung, die Verlustleistung der Z-Diode bei der höchsten Eingangsspannung und die Änderung der Ausgangsspannung bei +' + f(G.due, 0) + ' V. Beurteile dann die Belastung. Im Prüfstand „' + rname('stabil') + '“ (Z-Diode) kannst du die Eingangsspannung verstellen.',
+      fields: () => [{ key: 'iz0', label: 'Z-Strom bei Nenn-Eingangsspannung', unit: 'mA' }, { key: 'izmax', label: 'Z-Strom bei der höchsten Eingangsspannung', unit: 'mA' }, { key: 'pzmax', label: 'Verlustleistung P_Z bei der höchsten Eingangsspannung', unit: 'mW' }, { key: 'dua', label: 'Änderung ΔU_a bei ΔU_E = +' + f(G.due, 0) + ' V', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Ohne Last fließt der ganze Strom durch die Z-Diode: I_Z = (U_E − U_Z) / R_V. Die Verlustleistung der Z-Diode ist P_Z = U_Z · I_Z. Die Ausgangsspannung ändert sich nur wenig: ΔU_a = ΔU_E · r_z / (R_V + r_z).',
+        'Rechne bei der Nenn-Eingangsspannung ' + f(v.ue, 0) + ' V und bei der höchsten ' + f(v.ueMax, 0) + ' V (U_E + ΔU_E). Beispiel: I_Z = (' + f(v.ueMax, 0) + ' V − ' + f(v.uz, 1) + ' V) / ' + f(v.rv, 0) + ' Ω. Der Teiler für ΔU_a ist ' + f(v.rz, 0) + ' Ω / (' + f(v.rv, 0) + ' Ω + ' + f(v.rz, 0) + ' Ω).',
+        'Musterlösung: I_Z = ' + f(v.iz0, 2) + ' mA bei ' + f(v.ue, 0) + ' V und ' + f(v.izMax, 2) + ' mA bei ' + f(v.ueMax, 0) + ' V, P_Z = ' + f(v.pzMax, 0) + ' mW (über P_max = ' + f(v.pmax, 0) + ' mW: Überlast), ΔU_a = ' + f(v.dua, 4) + ' V. Mit R_V = ' + f(v.rv2, 0) + ' Ω wäre P_Z nur ' + f(v.pzG, 0) + ' mW.'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { iz0: null, izmax: null, pzmax: null, dua: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('stabil', Object.assign(CTL(), { ue: v.ueMax }), { fields: { iz0: v.iz0, izmax: v.izMax, pzmax: v.pzMax, dua: v.dua }, choices: rightOf(specs()), value: v.izMax }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'U_Z / R_V und Nennwerte statt der Höchstwerte', answer: A('stabil', {}, { fields: { iz0: v.uz / v.rv * 1e3, izmax: v.iz0, pzmax: v.pz0, dua: v.due }, choices: { ueberlast: 'nein', abhilfe: 'klein' } }) },
+        { name: 'Niedrigste Spannung verwendet, Teiler ohne r_z', answer: A('stabil', {}, { fields: { iz0: v.iz0, izmax: v.izMin, pzmax: v.ue * v.izMax / 1e3, dua: v.due * v.rz / v.rv }, choices: { ueberlast: 'min', abhilfe: 'nichts' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt35: Vorwiderstand fuer den gewuenschten Z-Strom (Lernfeld 9.2, Dimensionierung der Z-Diode-Schaltung) */ /* PRUEFEN P3: Normbelastbarkeiten 0,125 / 0,25 / 0,5 / 1 W für Widerstände; die E-Reihe wird nicht verlangt (R_V wird auf Ω genau gerechnet) */
+  const M35 = (() => {
+    const G = { ue: 12, uz: 5.6, rl: 470, iz: 0.01 };
+    const CTL = () => ({ art: 'zener', ue: G.ue, uz: G.uz, rv: 270, rlast: G.rl, kurz: false });
+    const vals = () => once('v35', () => { const il = G.uz / G.rl, ig = il + G.iz, rv = (G.ue - G.uz) / ig, s = zst({ Ue: G.ue, Uz: G.uz, Rv: rv, Rlast: G.rl }), l = zst({ Ue: G.ue, Uz: G.uz, Rv: rv, Ilast: 0 });
+      return { ue: G.ue, uz: G.uz, rl: G.rl, iz: G.iz * 1e3, il: il * 1e3, ig: ig * 1e3, rv, rvK: rv, prv: s.Pr * 1e3, pz: s.Pz * 1e3, pzLeer: l.Pz * 1e3, izProbe: s.Iz * 1e3, ohneLast: (G.ue - G.uz) / G.iz, mitUe: G.ue / ig, mitUz: G.uz / ig, izmin: lv('iz_min') * 1e3 }; });
+    const rRv = () => once('r35a', () => { const v = vals(); return own(v.rv, 'Ω', { wrongs: [{ v: v.ohneLast, text: 'Dein Wert (' + f(v.ohneLast, 0) + ' Ω) rechnet nur mit dem Z-Strom ' + f(v.iz, 0) + ' mA. Durch R_V fließen aber Z-Strom und Laststrom zusammen (' + mAf(v.ig) + ').' }, { v: v.mitUe, text: 'Du hast U_E / I_ges gerechnet. Am Vorwiderstand liegt nur U_E − U_Z.' }, { v: v.mitUz, text: 'Du hast U_Z / I_ges gerechnet. Am Vorwiderstand liegt die Differenz U_E − U_Z, nicht die Z-Spannung.' }] }); });
+    const rPz = () => once('r35b', () => { const v = vals(); return own(v.pzLeer / 1e3, 'W', { factor: 1e-3, wrongs: [{ v: v.pz / 1e3, text: 'Dein Wert (' + f(v.pz, 0) + ' mW) gehört zur angeschlossenen Last. Ohne Last fließt der ganze Strom (' + mAf(v.ig) + ') durch die Z-Diode.' }] }); });
+    const OPTS = ['0,125 W', '0,25 W', '0,5 W', '1 W'];
+    const specs = () => once('sp35', () => { const v = vals(), p = v.prv, need = x => x >= p / 1e3 - 1e-12;
+      const g = (w, k) => { const nom = [0.125, 0.25, 0.5, 1][k]; return nom === 0.25 ? 'R_V setzt P = (U_E − U_Z) · I_ges = ' + f(v.prv, 0) + ' mW um. ' + OPTS[1] + ' ist die kleinste Normbelastbarkeit, die das verträgt.' : nom < 0.25 ? 'R_V setzt P = (U_E − U_Z) · I_ges = ' + f(v.prv, 0) + ' mW um; ' + OPTS[0] + ' (125 mW) reichen dafür nicht.' : OPTS[k] + ' würden reichen, sind aber nicht die kleinste ausreichende Normbelastbarkeit: R_V setzt nur ' + f(v.prv, 0) + ' mW um.'; };
+      return [{ key: 'prv', q: 'Welche kleinste Normbelastbarkeit (0,125 W, 0,25 W, 0,5 W, 1 W) muss der Vorwiderstand mindestens haben?', short: 'Die Belastbarkeit des Vorwiderstands ist richtig gewählt', right: '0,25',
+        options: [{ value: '1', label: OPTS[3], grund: g(0, 3) }, { value: '0,25', label: OPTS[1], grund: g(0, 1) }, { value: '0,125', label: OPTS[0], grund: g(0, 0) }, { value: '0,5', label: OPTS[2], grund: g(0, 2) }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'rv'), rRv(), 'Der Vorwiderstand R_V ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'pz'), rPz(), 'Die Verlustleistung der Z-Diode ohne Last ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [0.25],
+      text: () => 'Eine Z-Diode mit U_Z = ' + f(G.uz, 1) + ' V soll aus U_E = ' + f(G.ue, 0) + ' V eine Last mit R_L = ' + eng(G.rl, 'Ω') + ' versorgen (Übungsschaltung). Damit die Z-Diode sicher stabilisiert, soll im Betrieb ein Z-Strom von ' + f(G.iz * 1e3, 0) + ' mA fließen (Aufgabenwert). Berechne den Vorwiderstand R_V und die Verlustleistung der Z-Diode für den Fall, dass die Last abgeklemmt wird. Wähle dann die Belastbarkeit des Vorwiderstands. Im Prüfstand „' + rname('stabil') + '“ (Z-Diode) kannst du das Ergebnis nachstellen.',
+      fields: () => [{ key: 'rv', label: 'Vorwiderstand R_V', unit: 'Ω' }, { key: 'pz', label: 'Verlustleistung P_Z ohne Last', unit: 'mW' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Durch den Vorwiderstand fließt der Strom für die Z-Diode und für die Last zusammen: I_ges = I_Z + I_L mit I_L = U_Z / R_L. Am Vorwiderstand liegt die Differenz U_E − U_Z, daher R_V = (U_E − U_Z) / I_ges. Ohne Last fließt I_ges ganz durch die Z-Diode.',
+        'Laststrom I_L = ' + f(v.uz, 1) + ' V / ' + f(v.rl, 0) + ' Ω = ' + f(v.il, 2) + ' mA, dazu ' + f(v.iz, 0) + ' mA Z-Strom ergibt I_ges = ' + f(v.ig, 2) + ' mA. Die Leistung im Vorwiderstand ist (U_E − U_Z) · I_ges und bleibt auch ohne Last gleich.',
+        'Musterlösung: R_V = (' + f(v.ue, 0) + ' V − ' + f(v.uz, 1) + ' V) / ' + f(v.ig, 2) + ' mA = ' + f(v.rv, 1) + ' Ω. Ohne Last gilt P_Z = ' + f(v.uz, 1) + ' V · ' + f(v.ig, 2) + ' mA = ' + f(v.pzLeer, 1) + ' mW; im Vorwiderstand werden ' + f(v.prv, 0) + ' mW umgesetzt, also 0,25 W.'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { rv: null, pz: null }, choices: {} }),
+      sol: () => A('stabil', Object.assign(CTL(), { rv: Math.round(vals().rv) }), { fields: { rv: vals().rv, pz: vals().pzLeer }, choices: rightOf(specs()), value: vals().rv }),
+      wrong: () => { const v = vals(); return [
+        { name: 'Laststrom vergessen (zu groß), zu kleine Belastbarkeit', answer: A('stabil', {}, { fields: { rv: v.ohneLast, pz: v.pz }, choices: { prv: '0,125' } }) },
+        { name: 'U_E statt U_E − U_Z (zu groß), Leistung zu hoch gewählt', answer: A('stabil', {}, { fields: { rv: v.mitUe, pz: v.pz }, choices: { prv: '1' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt36: Zener- und Lawinendurchbruch (Lernfeld 9.2, Z-Diode: Durchbruch und Temperaturverhalten) */ /* PRUEFEN P4: Grenze Zener/Lawine: Mitschrift nennt etwa 5 V, das Lab sagt bis etwa 5 V Zener, ab etwa 7 V Lawine, dazwischen gemischt; temperaturstabile Referenz bei etwa 5 bis 6 V */
+  const M36 = (() => {
+    const CTL = () => ({ art: 'zener', ue: 12, uz: 5.1, rv: 470, rlast: 4700, kurz: false });
+    const vals = () => once('v36', () => ({ u1: 3.3, u2: 12, g1: 5, g2: 7, g3: 6, ref: 5.6 }));
+    const specs0 = () => once('sp36', () => { const v = vals(); return [
+      { key: 'klein', q: 'Eine Z-Diode hat U_Z = ' + f(v.u1, 1) + ' V. Welcher Durchbruch bestimmt vor allem ihr Verhalten?', short: 'Der Durchbruch bei kleiner Z-Spannung ist richtig benannt', right: 'zener',
+        options: [
+          { value: 'lawine', label: 'Lawineneffekt (Stoßionisation)', grund: 'Der Lawineneffekt ist maßgeblich bei größeren Z-Spannungen (ab etwa ' + f(v.g2, 0) + ' V). Bei ' + f(v.u1, 1) + ' V reißt das starke Feld die Valenzelektronen direkt aus ihren Bindungen.' },
+          { value: 'zener', label: 'Zener-Effekt (Felddurchbruch)', grund: 'Bei kleinen Z-Spannungen (bis etwa ' + f(v.g1, 0) + ' V) reißt das starke elektrische Feld in der dünnen Sperrschicht Valenzelektronen aus ihren Bindungen: Es entstehen freie Ladungsträger, die Diode wird leitend.' },
+          { value: 'therm', label: 'Thermischer Durchbruch durch Erwärmung', grund: 'Ein thermischer Durchbruch zerstört das Bauteil und ist kein Betriebseffekt. Der Durchbruch einer Z-Diode ist umkehrbar und wird durch Feld oder Stoßionisation verursacht.' },
+          { value: 'kein', label: 'Kein Durchbruch, sie sperrt wie eine Diode', grund: 'Eine Z-Diode wird gerade in Sperrrichtung betrieben: Bei der Z-Spannung bricht sie durch und leitet. Das ist ihre Aufgabe, der Strom wird dabei durch den Vorwiderstand begrenzt.' }] },
+      { key: 'gross', q: 'Eine Z-Diode hat U_Z = ' + f(v.u2, 0) + ' V. Welcher Durchbruch bestimmt vor allem ihr Verhalten?', short: 'Der Durchbruch bei großer Z-Spannung ist richtig benannt', right: 'lawine',
+        options: [
+          { value: 'zener', label: 'Zener-Effekt (Felddurchbruch)', grund: 'Der Zener-Effekt bestimmt die Dioden mit kleiner Z-Spannung (bis etwa ' + f(v.g1, 0) + ' V). Bei ' + f(v.u2, 0) + ' V werden die Ladungsträger zuerst stark beschleunigt und lösen weitere aus.' },
+          { value: 'kein', label: 'Kein Durchbruch, sie sperrt wie eine Diode', grund: 'Die Z-Diode wird in Sperrrichtung betrieben und bricht bei ihrer Z-Spannung durch. Das ist die gewollte Betriebsart, der Strom bleibt durch den Vorwiderstand begrenzt.' },
+          { value: 'lawine', label: 'Lawineneffekt (Stoßionisation)', grund: 'Bei höheren Z-Spannungen (ab etwa ' + f(v.g2, 0) + ' V) beschleunigt das Feld die vorhandenen Ladungsträger so stark, dass sie weitere durch Stoßionisation freisetzen: eine Ladungsträgerlawine entsteht.' },
+          { value: 'therm', label: 'Thermischer Durchbruch durch Erwärmung', grund: 'Thermisch bricht ein Bauteil nur durch Überlast, ohne Rückkehr. Der Durchbruch der Z-Diode ist umkehrbar und kommt vom Feld.' }] },
+      { key: 'temp', q: 'Die Temperatur steigt. Wie ändert sich die Z-Spannung einer Z-Diode mit U_Z = ' + f(v.u1, 1) + ' V (Zener-Effekt)?', short: 'Der Temperaturgang der kleinen Z-Spannung ist richtig beschrieben', right: 'sinkt',
+        options: [
+          { value: 'steigt', label: 'Die Z-Spannung steigt, ähnlich einem PTC-Widerstand', grund: 'Beim Zener-Effekt sinkt die nötige Sperrspannung mit der Temperatur, weil mehr Ladungsträgerpaare entstehen (Verhalten wie ein NTC). Eine steigende Z-Spannung gehört zum Lawineneffekt.' },
+          { value: 'sinkt', label: 'Die Z-Spannung sinkt, ähnlich einem NTC-Widerstand', grund: 'Bei höherer Temperatur entstehen leichter Ladungsträgerpaare; das Feld muss weniger stark sein, die Z-Spannung sinkt (Temperaturkoeffizient negativ, Deutung als NTC).' },
+          { value: 'gleich', label: 'Die Z-Spannung bleibt immer gleich, Temperatur ohne Einfluss', grund: 'Die Z-Spannung hängt von der Temperatur ab: Bei kleinen Z-Spannungen (Zener-Effekt) sinkt sie, bei großen (Lawineneffekt) steigt sie.' },
+          { value: 'null', label: 'Die Z-Spannung fällt auf null, die Diode wird zum Kurzschluss', grund: 'Der Temperaturgang ist klein und stetig, die Diode wird nicht zum Kurzschluss. Bei Zener-Dioden sinkt die Z-Spannung nur etwas.' }] },
+      { key: 'ref', q: 'Welche Z-Spannung eignet sich als besonders temperaturstabile Referenz?', short: 'Die temperaturstabile Z-Spannung ist richtig gewählt', right: 'mitte',
+        options: [
+          { value: 'klein', label: 'Möglichst klein, etwa 2 V bis 3 V', grund: 'Bei kleinen Z-Spannungen dominiert der Zener-Effekt, die Z-Spannung sinkt deutlich mit der Temperatur. Besser ist der Bereich, in dem sich die beiden Temperaturgänge ausgleichen.' },
+          { value: 'gross', label: 'Möglichst groß, über 20 V', grund: 'Bei großen Z-Spannungen dominiert der Lawineneffekt, die Z-Spannung steigt deutlich mit der Temperatur. Besser ist der Bereich, in dem sich beide Effekte ausgleichen.' },
+          { value: 'mitte', label: 'Etwa ' + f(v.g1, 0) + ' V bis ' + f(v.g3, 0) + ' V (Übergangsbereich)', grund: 'Im Übergangsbereich um etwa ' + f(v.g1, 0) + ' bis ' + f(v.g3, 0) + ' V haben Zener- und Lawineneffekt gegenläufigen Temperaturgang: Er hebt sich nahezu auf, die Z-Spannung ist am stabilsten.' },
+          { value: 'egal', label: 'Jede, der Temperaturgang ist überall gleich', grund: 'Der Temperaturgang ändert sich mit der Z-Spannung, sogar sein Vorzeichen: bei kleinen Spannungen negativ, bei großen positiv.' }] }]; });
+    const specs = () => once('rot36', () => rot(specs0(), [1, 0, 2, 0]));
+    return pick({ rig: 'stabil', ctl: CTL, specs, vals,
+      text: () => 'Eine Z-Diode wird in Sperrrichtung betrieben und bricht bei ihrer Z-Spannung durch. Beantworte vier Fragen zu den beiden Durchbruchsarten und zum Temperaturverhalten (Übungswerte, Datenblatt maßgeblich). Im Prüfstand „' + rname('stabil') + '“ (Z-Diode) siehst du die Stufe mit Vorwiderstand; die Z-Spannung kannst du dort verstellen.',
+      hint: () => { const v = vals(); return [
+        'Zwei Effekte führen zum Durchbruch: Beim Zener-Effekt (Felddurchbruch) reißt das starke Feld Valenzelektronen aus den Bindungen; er dominiert bei kleinen Z-Spannungen. Beim Lawineneffekt beschleunigen sich vorhandene Ladungsträger und lösen durch Stoßionisation weitere aus; er dominiert bei größeren Z-Spannungen.',
+        'Als Faustwert gilt: Bis etwa ' + f(v.g1, 0) + ' V überwiegt der Zener-Effekt, ab etwa ' + f(v.g2, 0) + ' V der Lawineneffekt, dazwischen mischen sich beide. Der Temperaturgang hat bei beiden entgegengesetztes Vorzeichen: Zener: Z-Spannung sinkt (NTC), Lawine: Z-Spannung steigt (PTC).',
+        'Musterlösung: ' + f(v.u1, 1) + ' V: Zener-Effekt, ' + f(v.u2, 0) + ' V: Lawineneffekt; bei steigender Temperatur sinkt die Z-Spannung der ' + f(v.u1, 1) + '-V-Diode. Eine temperaturstabile Referenz liegt im Übergangsbereich bei etwa ' + f(v.g1, 0) + ' V bis ' + f(v.g3, 0) + ' V (zum Beispiel ' + f(v.ref, 1) + ' V).'
+      ]; } });
+  })();
+
+  /* ====================================================================== nt37: Regelschaltung mit Z-Referenz und Laengstransistor (Lernfeld 9.2, Stabilisierung mit Regelverstaerker) */ /* PRUEFEN P5: Z-Referenz am nicht invertierenden, Teiler am invertierenden Eingang, Längstransistor als Emitterfolger; B = 50 ist Aufgabenwert, Grenzen des Operationsverstärker-Ausgangs bleiben unberücksichtigt */
+  const M37 = (() => {
+    const G = { uref: 4.7, uaus: 12, rb: 4700, uein: 18, i: 0.4, b: 50 };
+    const CTL = () => ({ art: 'lm317', ue: G.uein, r1: 240, r2: 2064, iLast: G.i, kurz: false });
+    const vals = () => once('v37', () => { const ra = C().lin.r2For(G.uaus, G.rb, G.uref), probe = C().lin.lm317({ R1: G.rb, R2: ra, Uref: G.uref });
+      return { uref: G.uref, uaus: G.uaus, rb: G.rb / 1e3, ra: ra / 1e3, raOhm: ra, probe: probe.Uaus, uein: G.uein, i: G.i * 1e3, b: G.b, pv: C().lin.loss(G.uein, G.uaus, G.i), pLast: G.uaus * G.i, pEin: G.uein * G.i, ib: G.i / G.b * 1e3, gesamt: G.rb * G.uaus / G.uref / 1e3, kehr: G.rb * G.uref / (G.uaus - G.uref) / 1e3, ud: G.uein - G.uaus, ibMal: G.i * G.b }; });
+    const rRa = () => once('r37a', () => { const v = vals(); return own(v.raOhm, 'Ω', { factor: 1e3, wrongs: [{ v: v.gesamt * 1e3, text: 'Dein Wert (' + f(v.gesamt, 2) + ' kΩ) ist R_a + R_b, der Gesamtwiderstand des Teilers. R_a ist nur der obere Teil: R_a = R_b · (U_aus / U_Z − 1).' }, { v: v.kehr * 1e3, text: 'Du hast das Verhältnis umgekehrt (R_b · U_Z / (U_aus − U_Z)). Die Referenz liegt am unteren Widerstand R_b: U_Z = U_aus · R_b / (R_a + R_b).' }] }); });
+    const rPv = () => once('r37b', () => { const v = vals(); return own(v.pv, 'W', { wrongs: [{ v: v.pLast, text: 'Dein Wert (' + f(v.pLast, 1) + ' W) ist die Leistung der Last, U_aus · I. Der Längstransistor setzt (U_ein − U_aus) · I um.' }, { v: v.pEin, text: 'Dein Wert (' + f(v.pEin, 1) + ' W) ist die aufgenommene Eingangsleistung U_ein · I. Im Transistor fällt nur die Differenz U_ein − U_aus ab.' }] }); });
+    const rIb = () => once('r37c', () => { const v = vals(); return own(v.ib / 1e3, 'A', { factor: 1e-3, wrongs: [{ v: v.ibMal, text: 'Du hast I_C · B gerechnet. Der Basisstrom ist kleiner als der Kollektorstrom: I_B = I_C / B.' }, { v: v.i / 1e3, text: 'Dein Wert ist der Kollektorstrom (Laststrom). Der Basisstrom ist I_B = I_C / B, hier viel kleiner.' }] }); });
+    const specs0 = () => once('sp37', () => { const v = vals(); return [
+      { key: 'regel', q: 'Die Last wird kleiner (der Laststrom steigt), die Ausgangsspannung sinkt etwas. Wie reagiert die Regelschaltung? Die Z-Referenz liegt am nicht invertierenden Eingang, der Teiler (Istwert) am invertierenden Eingang des Operationsverstärkers, dessen Ausgang den Längstransistor ansteuert.', short: 'Die Reaktion der Regelschaltung auf eine Laständerung ist richtig beschrieben', right: 'nach',
+        options: [
+          { value: 'weiter', label: 'Der Istwert sinkt, der Verstärkerausgang sinkt, der Transistor sperrt mehr', grund: 'Sinkt U_aus, sinkt der Istwert am invertierenden Eingang unter die Referenz: Der Ausgang des Verstärkers steigt, der Transistor wird stärker durchgesteuert und hebt U_aus wieder an. Ein Sperren würde U_aus weiter senken (Mitkopplung).' },
+          { value: 'nach', label: 'Der Istwert sinkt, der Verstärkerausgang steigt, der Transistor leitet mehr', grund: 'Sinkt U_aus, sinkt der Istwert unter ' + f(v.uref, 1) + ' V: Die Eingangsdifferenz wird positiv, der Verstärkerausgang steigt und steuert den Längstransistor weiter auf. U_aus steigt zurück auf den Sollwert ' + f(v.uaus, 0) + ' V (Gegenkopplung).' },
+          { value: 'egal', label: 'Nichts, die Z-Diode allein hält die Ausgangsspannung konstant', grund: 'Die Z-Diode liefert hier nur die Referenz ' + f(v.uref, 1) + ' V; sie trägt keinen Laststrom. Die Ausgangsspannung ' + f(v.uaus, 0) + ' V hält der Regelverstärker mit dem Längstransistor.' },
+          { value: 'teiler', label: 'Der Teiler ändert sein Verhältnis und gleicht den Fehler aus', grund: 'Der Teiler ist aus festen Widerständen aufgebaut und ändert sein Verhältnis nicht. Die Regelung geschieht über den Verstärker und den Längstransistor.' }] },
+      { key: 'vertauscht', q: 'Der Techniker vertauscht die Eingänge: Die Z-Referenz kommt an den invertierenden, der Teiler an den nicht invertierenden Eingang. Was geschieht?', short: 'Die Folge der vertauschten Eingänge ist richtig beschrieben', right: 'mit',
+        options: [
+          { value: 'besser', label: 'Die Regelung arbeitet unverändert, nur invertiert', grund: 'Mit vertauschten Eingängen wird aus der Gegenkopplung eine Mitkopplung: Die Abweichung wird nicht kleiner, sondern größer. Unverändert arbeitet die Regelung nicht.' },
+          { value: 'mit', label: 'Mitkopplung: Verstärker und Transistor laufen in die Sättigung', grund: 'Steigt U_aus, steigt der Istwert am nicht invertierenden Eingang, der Verstärkerausgang steigt weiter und steuert den Transistor noch mehr auf: Die Abweichung verstärkt sich, bis Verstärker und Transistor in der Sättigung stehen. Die Spannung ist nicht geregelt.' },
+          { value: 'halb', label: 'Die Ausgangsspannung halbiert sich, die Regelung bleibt', grund: 'Halbiert würde die Spannung nur bei geändertem Teilerverhältnis. Hier liegt das Problem im Vorzeichen: Mitkopplung statt Gegenkopplung, die Regelung bricht zusammen.' },
+          { value: 'ref', label: 'Die Referenzspannung steigt auf die Eingangsspannung', grund: 'Die Referenz bleibt bei ' + f(v.uref, 1) + ' V, sie hängt an der Z-Diode. Verändert wird das Vorzeichen der Rückkopplung: Mitkopplung, Verstärker und Transistor laufen in die Sättigung.' }] }]; });
+    const specs = () => once('rot37', () => rot(specs0(), [2, 3]));
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'ra'), rRa(), 'Der obere Teilerwiderstand R_a ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'pv'), rPv(), 'Die Verlustleistung des Längstransistors ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'ib'), rIb(), 'Der Basisstrom des Längstransistors ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Eine Spannungsstabilisierung mit Regelverstärker (Übungsschaltung): Eine Z-Diode liefert die Referenz U_Z = ' + f(G.uref, 1) + ' V an den nicht invertierenden Eingang eines Operationsverstärkers. Die Ausgangsspannung wird über einen Teiler (R_a vom Ausgang zum Teilerpunkt, R_b = ' + eng(G.rb, 'Ω') + ' vom Teilerpunkt nach Masse) als Istwert an den invertierenden Eingang geführt. Der Verstärkerausgang steuert die Basis eines Längstransistors (B = ' + f(G.b, 0) + '). Es gilt U_aus = U_Z · (1 + R_a / R_b). Gesucht: R_a für U_aus = ' + f(G.uaus, 0) + ' V, die Verlustleistung des Längstransistors bei U_ein = ' + f(G.uein, 0) + ' V und I_aus = ' + f(G.i * 1e3, 0) + ' mA und sein Basisstrom. Beantworte dann zwei Fragen zur Regelung. Der LM317 im Prüfstand „' + rname('stabil') + '“ arbeitet nach demselben Prinzip (Referenz 1,25 V).',
+      fields: () => [{ key: 'ra', label: 'Oberer Teilerwiderstand R_a', unit: 'kΩ' }, { key: 'pv', label: 'Verlustleistung des Längstransistors', unit: 'W' }, { key: 'ib', label: 'Basisstrom des Längstransistors', unit: 'mA' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der Regelverstärker hält die Spannung am invertierenden Eingang auf dem Wert der Referenz. Der Teiler liefert dort U_aus · R_b / (R_a + R_b) = U_Z, also U_aus = U_Z · (1 + R_a / R_b). Der Längstransistor übernimmt die Differenz U_ein − U_aus.',
+        'Aus der Formel folgt R_a / R_b = U_aus / U_Z − 1 = ' + f(v.uaus, 0) + ' V / ' + f(v.uref, 1) + ' V − 1. Die Verlustleistung ist (U_ein − U_aus) · I_aus mit U_ein − U_aus = ' + f(v.ud, 0) + ' V; der Basisstrom ist I_B = I_C / B bei I_C = I_aus = ' + f(v.i, 0) + ' mA.',
+        'Musterlösung: R_a = ' + f(v.rb, 1) + ' kΩ · (' + f(v.uaus, 0) + ' V / ' + f(v.uref, 1) + ' V − 1) = ' + f(v.ra, 2) + ' kΩ; P_V = ' + f(v.ud, 0) + ' V · ' + f(v.i, 0) + ' mA = ' + f(v.pv, 1) + ' W; I_B = ' + f(v.i, 0) + ' mA / ' + f(v.b, 0) + ' = ' + f(v.ib, 1) + ' mA.'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { ra: null, pv: null, ib: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('stabil', CTL(), { fields: { ra: v.ra, pv: v.pv, ib: v.ib }, choices: rightOf(specs()), value: v.ra }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Gesamtwiderstand statt R_a, Last- statt Transistorleistung', answer: A('stabil', {}, { fields: { ra: v.gesamt, pv: v.pLast, ib: v.ibMal }, choices: { regel: 'weiter', vertauscht: 'besser' } }) },
+        { name: 'Verhältnis umgekehrt, Eingangsleistung, Kollektorstrom als Basisstrom', answer: A('stabil', {}, { fields: { ra: v.kehr, pv: v.pEin, ib: v.i }, choices: { regel: 'egal', vertauscht: 'halb' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt38: Strom- und Lastbereich der Z-Diode-Stufe (Lernfeld 9.2, Z-Diode: Grenzwerte) */ /* PRUEFEN P6: I_Z,min = 5 mA ist der Übungswert des Labs; im Unterricht kann eine Faustregel (Bruchteil von I_Z,max) gelten, die Mitschrift ist hier unleserlich */
+  const M38 = (() => {
+    const G = { ue: 12, uz: 3.9, ptot: 0.4, rv: 82, rlk: 30 };
+    const CTL = () => ({ art: 'zener', ue: G.ue, uz: G.uz, rv: G.rv, rlast: 100, kurz: false });
+    const vals = () => once('v38', () => { const izmin = lv('iz_min'), izmax = G.ptot / G.uz, l0 = zst({ Ue: G.ue, Uz: G.uz, Rv: G.rv, Ilast: 0, Pmax: G.ptot }), ig = l0.Iges, ilmax = ig - izmin, rlmin = G.uz / ilmax, k = zst({ Ue: G.ue, Uz: G.uz, Rv: G.rv, Rlast: G.rlk });
+      return { ue: G.ue, uz: G.uz, ptot: G.ptot * 1e3, rv: G.rv, izmin: izmin * 1e3, izmax: izmax * 1e3, ig: ig * 1e3, pzLeer: l0.Pz * 1e3, ilmax: ilmax * 1e3, rlmin, rlk: G.rlk, uk: k.Uaus, ik: k.Ilast * 1e3, iz0: l0.Iz * 1e3, malU: G.ptot * G.uz * 1e3, geteilt: G.uz / G.ptot * 1e3, izmaxLast: (izmax - 0) * 1e3 }; });
+    const rImax = () => once('r38a', () => { const v = vals(); return own(v.izmax / 1e3, 'A', { factor: 1e-3, wrongs: [{ v: v.malU / 1e6, text: 'Du hast P_tot · U_Z gerechnet. Aus P = U_Z · I folgt I_Z,max = P_tot / U_Z.' }, { v: G.uz / G.ptot, text: 'Du hast U_Z / P_tot gerechnet. Der größte Strom ist die zulässige Leistung durch die Z-Spannung: I_Z,max = P_tot / U_Z.' }] }); });
+    const rIl = () => once('r38b', () => { const v = vals(); return own(v.ilmax / 1e3, 'A', { factor: 1e-3, wrongs: [{ v: v.ig / 1e3, text: 'Dein Wert (' + mAf(v.ig) + ') ist der Gesamtstrom I_ges. Vom Gesamtstrom muss der kleinste Z-Strom ' + mAf(v.izmin) + ' für die Regelung abgezogen werden: I_L,max = I_ges − I_Z,min.' }, { v: (v.ig + v.izmin) / 1e3, text: 'Du hast den Mindest-Z-Strom addiert. Er bleibt in der Diode und steht der Last nicht zur Verfügung: I_L,max = I_ges − I_Z,min.' }] }); });
+    const rRl = () => once('r38c', () => { const v = vals(); return own(v.rlmin, 'Ω', { wrongs: [{ v: G.uz / (v.ig / 1e3), text: 'Du hast mit dem ganzen Gesamtstrom gerechnet (' + f(G.uz / (v.ig / 1e3), 1) + ' Ω). Die kleinste Last gehört zu I_L,max = I_ges − I_Z,min.' }, { v: G.ue / (v.ilmax / 1e3), text: 'Du hast U_E statt U_Z durch I_L,max geteilt. Die Last liegt an der Z-Spannung: R_L,min = U_Z / I_L,max.' }] }); });
+    const specs0 = () => once('sp38', () => { const v = vals(); return [
+      { key: 'zukleinlast', q: 'Die Last wird auf R_L = ' + eng(v.rlk, 'Ω') + ' verkleinert (kleiner als R_L,min). Was geschieht mit der Ausgangsspannung?', short: 'Die Folge einer zu kleinen Last ist richtig beschrieben', right: 'bricht',
+        options: [
+          { value: 'bleibt', label: 'Die Spannung bleibt bei U_Z, die Z-Diode regelt weiter', grund: 'Die Last würde bei U_Z = ' + f(v.uz, 1) + ' V mehr Strom ziehen (' + mAf(v.uz / v.rlk * 1e3) + ') als der Vorwiderstand liefern kann (I_ges = ' + mAf(v.ig) + '). Der Z-Strom fiele auf null, die Diode regelt nicht mehr.' },
+          { value: 'bricht', label: 'Die Spannung bricht ein, weil I_Z unter I_Z,min fällt', grund: 'Die Last verlangt mehr Strom, als R_V liefert. Der Z-Strom fällt unter I_Z,min = ' + mAf(v.izmin) + ', die Z-Diode sperrt wieder: Die Ausgangsspannung ist nur noch der Teiler aus R_V und R_L, hier ' + f(v.uk, 2) + ' V statt ' + f(v.uz, 1) + ' V.' },
+          { value: 'steigt', label: 'Die Spannung steigt über U_Z, weil mehr Strom fließt', grund: 'Mehr Laststrom heißt mehr Spannungsfall am Vorwiderstand, nicht mehr Ausgangsspannung. Die Ausgangsspannung fällt auf ' + f(v.uk, 2) + ' V.' },
+          { value: 'diode', label: 'Die Z-Diode wird überlastet und zerstört', grund: 'Ein kleinerer Lastwiderstand entlastet die Z-Diode: Die Z-Diode bekommt weniger Strom. Das Problem ist die Spannung, die einbricht (' + f(v.uk, 2) + ' V), nicht die Z-Diode.' }] },
+      { key: 'leerlauf', q: 'Die Last wird abgeklemmt (Leerlauf). Wie ist die Z-Diode belastet?', short: 'Die Belastung der Z-Diode im Leerlauf ist richtig beurteilt', right: 'ok',
+        options: [
+          { value: 'zerstoert', label: 'Die Z-Diode ist überlastet, P_Z liegt über P_tot', grund: 'Im Leerlauf fließen I_ges = ' + mAf(v.iz0) + ' durch die Z-Diode, P_Z = ' + f(v.uz, 1) + ' V · ' + mAf(v.iz0) + ' = ' + f(v.pzLeer, 0) + ' mW. Das liegt unter P_tot = ' + f(v.ptot, 0) + ' mW.' },
+          { value: 'ok', label: 'Die Z-Diode ist zulässig belastet, P_Z knapp unter P_tot', grund: 'Der ganze Strom I_ges = ' + mAf(v.iz0) + ' geht durch die Z-Diode (I_Z,max = ' + mAf(v.izmax) + '). P_Z = ' + f(v.pzLeer, 0) + ' mW liegt unter P_tot = ' + f(v.ptot, 0) + ' mW.' },
+          { value: 'null', label: 'Die Z-Diode ist unbelastet, im Leerlauf fließt kein Strom', grund: 'Ohne Last fließt der gesamte Strom durch die Z-Diode: ' + mAf(v.iz0) + '. Der Leerlauf ist für die Z-Diode der ungünstigste Betriebsfall.' },
+          { value: 'ruhe', label: 'Die Z-Diode sperrt, weil die Last fehlt und kein Strom fließt', grund: 'Ohne Last steht der ganze Strom (' + mAf(v.iz0) + ') der Z-Diode zur Verfügung. Sie leitet am stärksten, sie sperrt nicht.' }] }]; });
+    const specs = () => once('rot38', () => rot(specs0(), [2, 0]));
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'izmax'), rImax(), 'Der größte Z-Strom I_Z,max ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'ilmax'), rIl(), 'Der größte Laststrom I_L,max ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'rlmin'), rRl(), 'Der kleinste Lastwiderstand R_L,min ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Eine Z-Diode mit U_Z = ' + f(G.uz, 1) + ' V und der zulässigen Verlustleistung P_tot = ' + f(G.ptot * 1e3, 0) + ' mW (Aufgabenwert) wird aus U_E = ' + f(G.ue, 0) + ' V über R_V = ' + eng(G.rv, 'Ω') + ' gespeist (Übungsschaltung). Der kleinste Z-Strom für eine sichere Stabilisierung beträgt I_Z,min = ' + eng(lv('iz_min'), 'A') + ' (Übungswert). Berechne den größten zulässigen Z-Strom I_Z,max, den größten Laststrom I_L,max und den kleinsten Lastwiderstand R_L,min, bei dem die Stufe noch stabilisiert. Beantworte dann zwei Fragen zu den Grenzfällen. Im Prüfstand „' + rname('stabil') + '“ (Z-Diode) kannst du die Last verstellen.',
+      fields: () => [{ key: 'izmax', label: 'Größter Z-Strom I_Z,max', unit: 'mA' }, { key: 'ilmax', label: 'Größter Laststrom I_L,max', unit: 'mA' }, { key: 'rlmin', label: 'Kleinster Lastwiderstand R_L,min', unit: 'Ω' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Aus der zulässigen Leistung folgt der größte Z-Strom: I_Z,max = P_tot / U_Z. Durch R_V fließt der Gesamtstrom I_ges = (U_E − U_Z) / R_V; er teilt sich in Z-Strom und Laststrom. Die Stufe stabilisiert, solange I_Z mindestens I_Z,min beträgt, also I_L,max = I_ges − I_Z,min.',
+        'I_Z,max = ' + f(v.ptot, 0) + ' mW / ' + f(v.uz, 1) + ' V. I_ges = (' + f(v.ue, 0) + ' V − ' + f(v.uz, 1) + ' V) / ' + f(v.rv, 0) + ' Ω = ' + f(v.ig, 2) + ' mA. Von I_ges ziehst du I_Z,min = ' + f(v.izmin, 0) + ' mA ab. Der kleinste Lastwiderstand ist R_L,min = U_Z / I_L,max.',
+        'Musterlösung: I_Z,max = ' + f(v.izmax, 2) + ' mA, I_L,max = ' + f(v.ig, 2) + ' mA − ' + f(v.izmin, 0) + ' mA = ' + f(v.ilmax, 2) + ' mA, R_L,min = ' + f(v.uz, 1) + ' V / ' + f(v.ilmax, 2) + ' mA = ' + f(v.rlmin, 2) + ' Ω. Im Leerlauf ist P_Z = ' + f(v.pzLeer, 0) + ' mW (zulässig).'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { izmax: null, ilmax: null, rlmin: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('stabil', Object.assign(CTL(), { rlast: Math.round(v.rlmin) }), { fields: { izmax: v.izmax, ilmax: v.ilmax, rlmin: v.rlmin }, choices: rightOf(specs()), value: v.rlmin }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Leistung mal Spannung, ganzer Gesamtstrom, Last bleibt stabil', answer: A('stabil', {}, { fields: { izmax: v.malU, ilmax: v.ig, rlmin: v.uz / (v.ig / 1e3) }, choices: { zukleinlast: 'bleibt', leerlauf: 'zerstoert' } }) },
+        { name: 'Mindest-Z-Strom addiert, U_E statt U_Z, Diode überlastet', answer: A('stabil', {}, { fields: { izmax: v.geteilt, ilmax: v.ig + v.izmin, rlmin: v.ue / (v.ilmax / 1e3) }, choices: { zukleinlast: 'diode', leerlauf: 'null' } }) }]; } };
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'nt17', lab: 'nts', cat: 'Prüfungsnah', title: 'Strombegrenzung dimensionieren (Pool W2024-23)', level: 3, rig: 'stabil' }, M17),
@@ -757,9 +1030,15 @@
     tk({ id: 'nt29', lab: 'nts', cat: 'Regelkreis', title: 'Labornetzteil: CV oder CC?', level: 2, rig: 'regel' }, M29),
     tk({ id: 'nt30', lab: 'nts', cat: 'Regelkreis', title: 'Labornetzteil einstellen', level: 3, rig: 'regel' }, M30),
     tk({ id: 'nt31', lab: 'nts', cat: 'Fehlersuche', title: 'Netzteil repariert? (Fehlersuche)', level: 3, rig: 'fehler' }, M31),
-    tk({ id: 'nt32', lab: 'nts', cat: 'Fehlersuche', title: 'Meisterstück: Das Netzteil des Kollegen', level: 3, rig: 'fehler' }, M32)
+    tk({ id: 'nt32', lab: 'nts', cat: 'Fehlersuche', title: 'Meisterstück: Das Netzteil des Kollegen', level: 3, rig: 'fehler' }, M32),
+    tk({ id: 'nt33', lab: 'nts', cat: 'Z-Diode', title: 'Quer- und Längsstabilisierung', level: 1, rig: 'stabil' }, M33),
+    tk({ id: 'nt34', lab: 'nts', cat: 'Z-Diode', title: 'Z-Diode bei schwankender Eingangsspannung', level: 2, rig: 'stabil' }, M34),
+    tk({ id: 'nt35', lab: 'nts', cat: 'Z-Diode', title: 'Vorwiderstand für den Z-Strom', level: 2, rig: 'stabil' }, M35),
+    tk({ id: 'nt36', lab: 'nts', cat: 'Z-Diode', title: 'Zener- und Lawinendurchbruch', level: 2, rig: 'stabil' }, M36),
+    tk({ id: 'nt37', lab: 'nts', cat: 'Linearregler', title: 'Regelschaltung mit Referenz und Längstransistor', level: 3, rig: 'stabil' }, M37),
+    tk({ id: 'nt38', lab: 'nts', cat: 'Z-Diode', title: 'Strom- und Lastbereich der Z-Diode-Stufe', level: 2, rig: 'stabil' }, M38)
   ];
-  const MODS = { nt17: M17, nt18: M18, nt19: M19, nt20: M20, nt21: M21, nt22: M22, nt23: M23, nt24: M24, nt25: M25, nt26: M26, nt27: M27, nt28: M28, nt29: M29, nt30: M30, nt31: M31, nt32: M32 };
+  const MODS = { nt17: M17, nt18: M18, nt19: M19, nt20: M20, nt21: M21, nt22: M22, nt23: M23, nt24: M24, nt25: M25, nt26: M26, nt27: M27, nt28: M28, nt29: M29, nt30: M30, nt31: M31, nt32: M32, nt33: M33, nt34: M34, nt35: M35, nt36: M36, nt37: M37, nt38: M38 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);

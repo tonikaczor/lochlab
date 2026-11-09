@@ -213,6 +213,7 @@
     let h = `<p style="margin:8px 0">${esc(q.text)}</p>`;
     if (q.inputs && q.inputs.length) h += `<p class="hint2" style="margin:0 0 4px">Die Eingaben (der Reihe nach, für die „Eingabe“-Befehle): <b>${esc(q.inputs.join(', '))}</b></p>`;
     if (q.prog) h += codeView(q.prog);
+    if (q.cpp) h += codeView(q.cpp);   // C++-Ausschnitt (nur zum Lesen, wird nicht vom Interpreter ausgeführt)
     if (q.fig) h += fig(q.fig.kind, q.fig.src, q.fig.blank);
     return h;
   }

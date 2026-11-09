@@ -1,4 +1,4 @@
-/* enrtasks2.js - Energie-Lab: Aufgaben en16 bis en30 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP5b)
+/* enrtasks2.js - Energie-Lab: Aufgaben en16 bis en36 (en31-en36 neu: Netzanschluss und Leistungsuebertragung, Berufsschulstoff) mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP5b)
  * Registrierung: ENR_TASKS.register([ ... ]) (ENR_TASKS und ENR_TASKS.util kommen aus enrdata.js; enrdata.js VOR dieser Datei laden, in Node holt sich die
  * Datei fehlende Teile per require). Format, Regeln und answer-Objekt wie in enrtasks1.js und enrdata.js.
  * Schwellwerte: aus der gerechneten Musterloesung (Reserven: 25 % bei Verlusten, 3 Prozentpunkte bei Anteilen, siehe Konstanten je Aufgabe), ENR_TASKS.thresholds2() nennt sie.
@@ -451,6 +451,156 @@
       wrong: () => { const v = vals(); return [{ name: 'zu klein', answer: A('netz', {}, { fields: { uocKalt: v.uocKalt * 0.5, ertrag: v.ertrag * 0.5, quote: Math.max(0, v.quote - 30), amorti: v.amorti * 0.5 }, choices: { uocok: v.uocOk ? 'nein' : 'ja', fenster: v.fensterOk ? 'nein' : 'ja' } }) }, { name: 'zu groß', answer: A('netz', {}, { fields: { uocKalt: v.uocKalt * 1.6, ertrag: v.ertrag * 2, quote: Math.min(100, v.quote + 30), amorti: v.amorti * 2 }, choices: { uocok: v.uocOk ? 'nein' : 'ja', fenster: v.fensterOk ? 'nein' : 'ja' } }) }]; } };
   })();
 
+  /* ====================================================================== en31 bis en36: Netzanschluss und Leistungsuebertragung (Berufsschulstoff Drehstrom, Leistung zum Verbraucher)
+   * Reine Rechen- und Auswahlaufgaben mit eigenen Zahlen am Prüfstand `netz` (Steuerwerte nur als gueltige Startvorlage); Referenzwerte rechnet vals() selbst. */
+  const SQ3 = Math.sqrt(3);
+  const NSTART = () => Object.assign({}, NFIX);
+
+  /* ---------- en31: Einspeisestrom einphasig und dreiphasig ---------- */
+  const M31 = (() => {
+    const G = { s: 6000, u1: 230, u3: 400 };
+    const vals = () => once('v31', () => ({ s: G.s, u1: G.u1, u3: G.u3, w3: SQ3, ia: G.s / G.u1, ib: G.s / (SQ3 * G.u3), ibOhne: G.s / G.u3, kva: G.s / 1000 }));
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'ia'), { label: 'Der Strom bei einphasiger Einspeisung ist richtig berechnet', refs: [{ v: v.ia }], unit: 'A', digits: 1, wrong: [{ v: v.ibOhne, msg: 'Das ist S / U_L mit der Außenleiterspannung. Einphasig liegt der Wechselrichter zwischen Außenleiter und Neutralleiter an ' + f(v.u1, 0) + ' V: I = S / U = ' + f(v.ia, 1) + ' A.' }, { v: v.ib, msg: 'Das ist der Strom bei dreiphasiger Einspeisung. Einphasig fließt der gesamte Strom in einem Außenleiter: I = S / U = ' + f(v.ia, 1) + ' A.' }] });
+      numRow(r, U.fieldNum(a, 'ib'), { label: 'Der Strom je Außenleiter bei dreiphasiger Einspeisung ist richtig berechnet', refs: [{ v: v.ib }], unit: 'A', digits: 1, wrong: [{ v: v.ibOhne, msg: 'Das ist S / U_L ohne den Verkettungsfaktor √3. Bei dreiphasiger Einspeisung gilt S = √3 · U_L · I: I = ' + f(v.ib, 1) + ' A.' }, { v: v.ia, msg: 'Das ist der Strom bei einphasiger Einspeisung. Dreiphasig verteilt sich die Leistung auf drei Außenleiter: I = S / (√3 · U_L) = ' + f(v.ib, 1) + ' A.' }] });
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Wechselrichter speist eine Scheinleistung von ' + f(G.s / 1000, 0) + ' kVA ins Netz ein (cos φ = 1, Übungswerte). Wie groß ist der Strom im Außenleiter a) bei einphasiger Einspeisung an ' + f(G.u1, 0) + ' V (Außenleiter gegen Neutralleiter) und b) bei dreiphasiger, symmetrischer Einspeisung in ein Netz mit ' + f(G.u3, 0) + ' V Außenleiterspannung (Strom je Außenleiter)?',
+      fields: () => [{ key: 'ia', label: 'Strom bei einphasiger Einspeisung', unit: 'A' }, { key: 'ib', label: 'Strom je Außenleiter bei dreiphasiger Einspeisung', unit: 'A' }],
+      hint: () => { const v = vals(); return [
+        'Einphasig fließt der ganze Strom in einem Außenleiter. Dreiphasig teilt sich die Leistung auf drei Außenleiter auf, und für die Scheinleistung gilt mit der Außenleiterspannung der Verkettungsfaktor √3.',
+        'Einphasig ist S = U · I, setze ' + f(v.s, 0) + ' VA und ' + f(v.u1, 0) + ' V ein. Dreiphasig ist S = √3 · U_L · I mit √3 = ' + f(v.w3, 2) + ' und U_L = ' + f(v.u3, 0) + ' V; der Strom wird deutlich kleiner.',
+        'Musterlösung: a) I = ' + f(v.s, 0) + ' VA / ' + f(v.u1, 0) + ' V = ' + f(v.ia, 1) + ' A. b) I = ' + f(v.s, 0) + ' VA / (√3 · ' + f(v.u3, 0) + ' V) = ' + f(v.ib, 1) + ' A. Ohne √3 käme ' + f(v.ibOhne, 1) + ' A heraus.'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { ia: null, ib: null } }),
+      sol: () => A('netz', NSTART(), { fields: { ia: vals().ia, ib: vals().ib } }),
+      wrong: () => { const v = vals(); return [{ name: 'Außenleiterspannung einphasig, kein √3 dreiphasig', answer: A('netz', {}, { fields: { ia: v.ibOhne, ib: v.ibOhne } }) }, { name: 'Werte vertauscht', answer: A('netz', {}, { fields: { ia: v.ib, ib: v.ia } }) }]; } };
+  })();
+
+  /* ---------- en32: Spannungsanhebung und Verlust der Einspeiseleitung ---------- */
+  const M32 = (() => {
+    const G = { p: 3000, u: 230, l: 30, a: 2.5, kappa: 56 };
+    const vals = () => once('v32', () => { const i = G.p / G.u, rl = 2 * G.l / (G.kappa * G.a), du = i * rl; return { p: G.p, u: G.u, l: G.l, a: G.a, kappa: G.kappa, i, rl, du, duPct: du / G.u * 100, pv: i * i * rl, duEin: i * rl / 2, pvEin: i * i * rl / 2 }; });
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'i'), { label: 'Der Strom des Wechselrichters ist richtig berechnet', refs: [{ v: v.i }], unit: 'A', digits: 2 });
+      numRow(r, U.fieldNum(a, 'du'), { label: 'Die Spannungsanhebung ΔU auf Hin- und Rückleiter ist richtig berechnet', refs: [{ v: v.du }], tol: 0.05, unit: 'V', digits: 2, wrong: [{ v: v.duEin, msg: 'Das ist der Spannungsfall nur eines Leiters. Der Strom fließt über Hin- und Rückleiter, der Leitungswiderstand ist doppelt so groß: R = 2 · l / (κ · A) = ' + f(v.rl, 3) + ' Ω, ΔU = I · R = ' + f(v.du, 2) + ' V.' }] });
+      numRow(r, U.fieldNum(a, 'pv'), { label: 'Die Verlustleistung der Leitung ist richtig berechnet', refs: [{ v: v.pv }], tol: 0.05, unit: 'W', digits: 1, wrong: [{ v: v.pvEin, msg: 'Das ist die Verlustleistung eines einzelnen Leiters. Hin- und Rückleiter führen denselben Strom: P_V = I² · R mit R = ' + f(v.rl, 3) + ' Ω = ' + f(v.pv, 1) + ' W.' }] });
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein einphasiger Wechselrichter speist ' + f(G.p / 1000, 1) + ' kW (cos φ = 1) bei ' + f(G.u, 0) + ' V über eine Kupferleitung ein: einfache Länge ' + f(G.l, 0) + ' m, Querschnitt ' + f(G.a, 1) + ' mm² je Leiter, κ = ' + f(G.kappa, 0) + ' m/(Ω·mm²). Berechne a) den Strom I, b) wie viel Volt die Spannung am Wechselrichter höher liegt als am Anschlusspunkt (Spannungsanhebung ΔU auf Hin- und Rückleiter, nur Wirkwiderstand) und c) die Verlustleistung der Leitung.',
+      fields: () => [{ key: 'i', label: 'Strom I', unit: 'A' }, { key: 'du', label: 'Spannungsanhebung ΔU', unit: 'V' }, { key: 'pv', label: 'Verlustleistung der Leitung', unit: 'W' }],
+      hint: () => { const v = vals(); return [
+        'Der Strom folgt aus P = U · I. Der Strom fließt über Hin- und Rückleiter, also über die doppelte Leitungslänge. Aus dem Leitungswiderstand folgen Spannungsanhebung und Verlustleistung.',
+        'I = ' + f(v.p, 0) + ' W / ' + f(v.u, 0) + ' V = ' + f(v.i, 2) + ' A. Der Widerstand der Leitung ist R = 2 · l / (κ · A) = ' + f(v.rl, 3) + ' Ω. Dann ΔU = I · R und P_V = I² · R.',
+        'Musterlösung: ΔU = ' + f(v.i, 2) + ' A · ' + f(v.rl, 3) + ' Ω = ' + f(v.du, 2) + ' V (' + f(v.duPct, 1) + ' % von ' + f(v.u, 0) + ' V), P_V = ' + f(v.i, 2) + '² A² · ' + f(v.rl, 3) + ' Ω = ' + f(v.pv, 1) + ' W. Mit nur einem Leiter käme ' + f(v.duEin, 2) + ' V heraus.'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { i: null, du: null, pv: null } }),
+      sol: () => A('netz', NSTART(), { fields: { i: vals().i, du: vals().du, pv: vals().pv } }),
+      wrong: () => { const v = vals(); return [{ name: 'nur ein Leiter gerechnet', answer: A('netz', {}, { fields: { i: v.i, du: v.duEin, pv: v.pvEin } }) }, { name: 'Strom zu klein, Folgewerte zu klein', answer: A('netz', {}, { fields: { i: v.i * 0.5, du: v.du * 0.5, pv: v.pv * 0.25 } }) }]; } };
+  })();
+
+  /* ---------- en33: Wirk- und Blindleistung am Wechselrichter ---------- */
+  const M33 = (() => {
+    const G = { s: 5000, cos: 0.95 };
+    const vals = () => once('v33', () => { const p = G.s * G.cos, q = G.s * Math.sqrt(1 - G.cos * G.cos); return { s: G.s, cos: G.cos, p, q, sinphi: Math.sqrt(1 - G.cos * G.cos), diff: G.s - p, ueber: G.s / G.cos }; });
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'p'), { label: 'Die Wirkleistung P ist richtig berechnet', refs: [{ v: v.p }], tol: 0.02, unit: 'W', digits: 0, wrong: [{ v: v.s, msg: 'Das ist die Scheinleistung S. Die Wirkleistung ist P = S · cos φ.' }, { v: v.ueber, msg: 'Das ist S / cos φ und damit größer als die Scheinleistung selbst. Die Wirkleistung kann nie größer als S sein: P = S · cos φ.' }] });
+      numRow(r, U.fieldNum(a, 'q'), { label: 'Die Blindleistung Q ist richtig berechnet', refs: [{ v: v.q }], tol: 0.03, unit: 'var', digits: 0, wrong: [{ v: v.diff, msg: 'Das ist die Differenz S − P. Wirk- und Blindleistung stehen im rechten Winkel, sie werden geometrisch addiert: S² = P² + Q², also Q = √(S² − P²).' }] });
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Wechselrichter darf höchstens eine Scheinleistung von ' + f(G.s / 1000, 0) + ' kVA abgeben (Übungswert). Er speist mit einem Leistungsfaktor von cos φ = ' + f(G.cos, 2) + ' ein und nutzt die Scheinleistung voll aus. Wie groß sind die abgegebene Wirkleistung P in W und der Betrag der Blindleistung Q in var?',
+      fields: () => [{ key: 'p', label: 'Wirkleistung P', unit: 'W' }, { key: 'q', label: 'Blindleistung Q (Betrag)', unit: 'var' }],
+      hint: () => { const v = vals(); return [
+        'Scheinleistung, Wirkleistung und Blindleistung bilden ein rechtwinkliges Dreieck. Der Leistungsfaktor cos φ ist das Verhältnis von Wirkleistung zu Scheinleistung.',
+        'P = S · cos φ mit S = ' + f(v.s, 0) + ' VA. Für Q brauchst du sin φ = √(1 − cos² φ) = ' + f(v.sinphi, 3) + ' oder den Satz des Pythagoras: Q = √(S² − P²).',
+        'Musterlösung: P = ' + f(v.s, 0) + ' VA · ' + f(v.cos, 2) + ' = ' + f(v.p, 0) + ' W. Q = ' + f(v.s, 0) + ' VA · ' + f(v.sinphi, 3) + ' = ' + f(v.q, 0) + ' var. Die Differenz S − P (' + f(v.diff, 0) + ') wäre kein richtiger Weg.'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { p: null, q: null } }),
+      sol: () => A('netz', NSTART(), { fields: { p: vals().p, q: vals().q } }),
+      wrong: () => { const v = vals(); return [{ name: 'S statt P, Differenz statt Pythagoras', answer: A('netz', {}, { fields: { p: v.s, q: v.diff } }) }, { name: 'durch cos φ geteilt', answer: A('netz', {}, { fields: { p: v.ueber, q: v.q * 2 } }) }]; } };
+  })();
+
+  /* ---------- en34: Hausanschlusskasten als Schnittstelle (Auswahl) ---------- */
+  const M34 = (() => {
+    const OPT1 = [
+      { value: 'schnittstelle', label: 'Er verbindet das Versorgungsnetz mit der Anlage des Kunden' },
+      { value: 'zaehler', label: 'Er erfasst die bezogene und die eingespeiste Energie' },
+      { value: 'wechselrichter', label: 'Er formt die Gleichspannung der Module in Wechselspannung um' },
+      { value: 'speicher', label: 'Er speichert den Überschuss der Anlage für die Nachtstunden' }
+    ];
+    const OPT2 = [
+      { value: 'erdkabel', label: 'ein Erdkabel, das durch die Wand ins Haus führt' },
+      { value: 'dach', label: 'eine Freileitung, die auf einem Dachständer endet' },
+      { value: 'wand', label: 'eine Freileitung mit Anschluss an der Wand' }
+    ];
+    const vals = () => ({ anzahl: 2 });
+    const check = mk('netz', [], (c, r, a) => {
+      const g1 = choiceOf(a, 'rolle'), g2 = choiceOf(a, 'art'), none = g => g === undefined || g === null || g === '';
+      const lab = (o, g) => (o.find(x => x.value === g) || {}).label || g;
+      r(!none(g1) && g1 === 'schnittstelle', 'Die Aufgabe des Hausanschlusskastens ist richtig benannt', none(g1) ? 'Wähle eine Antwort aus.' : 'Du hast „' + lab(OPT1, g1) + '“ gewählt. Das beschreibt ein anderes Bauteil der Anlage. Der Hausanschlusskasten ist die Schnittstelle zum Versorgungsnetz: Er verbindet Kabel- oder Freileitungsnetz mit der Verbraucheranlage.');
+      r(!none(g2) && g2 === 'erdkabel', 'Die heute bevorzugte Art des Hausanschlusses ist richtig benannt', none(g2) ? 'Wähle eine Antwort aus.' : 'Du hast „' + lab(OPT2, g2) + '“ gewählt. Bevorzugt wird heute der Anschluss mit Erdkabel; eine Freileitung ist möglich, aber nicht die erste Wahl.');
+    });
+    return { vals, check, consts: [],
+      text: () => 'Eine Photovoltaikanlage speist über den Hausanschluss ins öffentliche Netz ein. Das Netz kommt als Kabel- oder als Freileitungsnetz zum Gebäude. Beantworte zwei Fragen zum Netzanschluss: Welche Aufgabe hat der Hausanschlusskasten (HAK), und welche Art des Hausanschlusses wird heute bevorzugt?',
+      choices: () => [{ key: 'rolle', q: 'Welche Aufgabe hat der Hausanschlusskasten?', options: OPT1 }, { key: 'art', q: 'Welche Art des Hausanschlusses wird heute bevorzugt?', options: OPT2 }],
+      hint: () => [
+        'Der Hausanschlusskasten sitzt dort, wo das Netz des Versorgers endet und die Anlage des Kunden beginnt. Er ist weder ein Zähler noch ein Teil der Photovoltaikanlage.',
+        'Zwei Hausanschlussarten stehen sich gegenüber: oben über Dachständer oder Wandanschluss, unten im Erdreich. Heute wird der Weg bevorzugt, der unsichtbar und wettergeschützt unter der Oberfläche liegt.',
+        'Musterlösung: Der Hausanschlusskasten ist die Schnittstelle zum Versorgungsnetz und verbindet Kabel- oder Freileitungsnetz mit der Verbraucheranlage. Bevorzugt wird das Erdkabel.'
+      ],
+      start: () => A('netz', NSTART(), { choices: {} }),
+      sol: () => A('netz', NSTART(), { choices: { rolle: 'schnittstelle', art: 'erdkabel' } }),
+      wrong: () => [{ name: 'Zähler und Freileitung gewählt', answer: A('netz', {}, { choices: { rolle: 'zaehler', art: 'dach' } }) }, { name: 'Wechselrichter und Leitung am Modulfeld', answer: A('netz', {}, { choices: { rolle: 'wechselrichter', art: 'solar' } }) }] };
+  })();
+
+  /* ---------- en35: gleiche Leistung, andere Strangspannung (Verlust im Gleichstromkabel) ---------- */
+  const M35 = (() => {
+    const G = { p: 3000, r: 0.5, ua: 380, ub: 190 };
+    const vals = () => once('v35', () => { const ia = G.p / G.ua, ib = G.p / G.ub, va = ia * ia * G.r, vb = ib * ib * G.r; return { p: G.p, r: G.r, ua: G.ua, ub: G.ub, ia, ib, va, vb, pa: va / G.p * 100, pb: vb / G.p * 100, halb: va / 2, doppelt: va * 2 }; });
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'va'), { label: 'Die Verlustleistung bei 380 V ist richtig berechnet', refs: [{ v: v.va }], tol: 0.03, unit: 'W', digits: 1, wrong: [{ v: v.p * v.r / v.ua, msg: 'Das ist P · R / U. Die Verlustleistung der Leitung ist P_V = I² · R mit dem Leitungsstrom I = P / U = ' + f(v.ia, 2) + ' A.' }] });
+      numRow(r, U.fieldNum(a, 'vb'), { label: 'Die Verlustleistung bei 190 V ist richtig berechnet', refs: [{ v: v.vb }], tol: 0.03, unit: 'W', digits: 1, wrong: [{ v: v.va * 2, msg: 'Das ist das Doppelte des Verlusts bei ' + f(v.ua, 0) + ' V. Der Strom verdoppelt sich, die Verlustleistung hängt aber vom Quadrat des Stroms ab: Der Verlust wird viermal so groß (' + f(v.vb, 1) + ' W).' }, { v: v.va, msg: 'Das ist der Verlust bei ' + f(v.ua, 0) + ' V. Bei der halben Spannung fließt für dieselbe Leistung der doppelte Strom, und der Verlust steigt.' }] });
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Modulstrang liefert ' + f(G.p / 1000, 1) + ' kW an den Wechselrichter. Die Gleichstromleitung (Hin- und Rückleiter zusammen) hat einen Widerstand von ' + f(G.r, 1) + ' Ω (Übungswert). Wie groß ist die Verlustleistung der Leitung, wenn der Strang a) mit ' + f(G.ua, 0) + ' V (zehn Module in Reihe) oder b) mit ' + f(G.ub, 0) + ' V (fünf Module in Reihe) arbeitet? Die Leistung am Wechselrichter bleibt gleich.',
+      fields: () => [{ key: 'va', label: 'Verlustleistung bei 380 V', unit: 'W' }, { key: 'vb', label: 'Verlustleistung bei 190 V', unit: 'W' }],
+      hint: () => { const v = vals(); return [
+        'Die Leitung merkt nur den Strom, nicht die Spannung. Aus der Leistung und der Strangspannung bekommst du den Strom; der Verlust in der Leitung ist P_V = I² · R.',
+        'Bei ' + f(v.ua, 0) + ' V fließen I = P / U = ' + f(v.ia, 2) + ' A, bei ' + f(v.ub, 0) + ' V sind es ' + f(v.ib, 2) + ' A. Rechne beide Ströme einzeln in P_V = I² · ' + f(v.r, 1) + ' Ω ein und vergleiche.',
+        'Musterlösung: bei ' + f(v.ua, 0) + ' V ist P_V = ' + f(v.va, 1) + ' W (' + f(v.pa, 2) + ' % der Leistung), bei ' + f(v.ub, 0) + ' V ist P_V = ' + f(v.vb, 1) + ' W (' + f(v.pb, 2) + ' %). Die halbe Spannung bringt viermal so viel Verlust, nicht doppelt so viel (' + f(v.doppelt, 1) + ' W).'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { va: null, vb: null } }),
+      sol: () => A('netz', NSTART(), { fields: { va: vals().va, vb: vals().vb } }),
+      wrong: () => { const v = vals(); return [{ name: 'Verlust nur verdoppelt', answer: A('netz', {}, { fields: { va: v.va, vb: v.va * 2 } }) }, { name: 'Strangspannung nicht berücksichtigt', answer: A('netz', {}, { fields: { va: v.va, vb: v.va } }) }]; } };
+  })();
+
+  /* ---------- en36: Neutralleiterstrom bei einphasigen Wechselrichtern (Schieflast) ---------- */
+  const M36 = (() => {
+    const G = { u: 230, a: [4600, 2300, 2300], b: [3000, 3000, 0] };
+    const iN = ps => { const i = ps.map(p => p / G.u), k = 2 * Math.PI / 3, re = i[0] + i[1] * Math.cos(-k) + i[2] * Math.cos(k), im = i[1] * Math.sin(-k) + i[2] * Math.sin(k); return Math.hypot(re, im); };
+    const vals = () => once('v36', () => { const ia = G.a.map(p => p / G.u), ib = G.b.map(p => p / G.u); return { u: G.u, a1: G.a[0] / 1000, a2: G.a[1] / 1000, b1: G.b[0] / 1000, ia1: ia[0], ia2: ia[1], ib1: ib[0], na: iN(G.a), nb: iN(G.b), summeA: ia[0] + ia[1] + ia[2], summeB: ib[0] + ib[1] + ib[2], falschA: Math.abs(ia[0] - ia[1] - ia[2]) }; });
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'na'), { label: 'Der Neutralleiterstrom bei 4,6 kW, 2,3 kW und 2,3 kW ist richtig berechnet', refs: [{ v: v.na }], tol: 0.03, unit: 'A', digits: 1, wrong: [{ v: v.summeA, msg: 'Das ist die Summe der drei Beträge. Die Ströme der drei Außenleiter sind um 120° verschoben und werden als Zeiger addiert: Es bleibt ' + f(v.na, 0) + ' A.' }, { v: 0, msg: 'Null gilt nur bei drei gleich großen Strömen. Hier sind die Leistungen verschieden, die Zeigersumme ist nicht null (' + f(v.na, 0) + ' A).' }] });
+      numRow(r, U.fieldNum(a, 'nb'), { label: 'Der Neutralleiterstrom bei 3,0 kW, 3,0 kW und 0 kW ist richtig berechnet', refs: [{ v: v.nb }], tol: 0.03, unit: 'A', digits: 1, wrong: [{ v: v.summeB, msg: 'Das ist die Summe der Beträge. Zwei gleich große Ströme im Winkel von 120° ergeben als Zeiger einen Strom derselben Größe (' + f(v.nb, 1) + ' A), nicht den doppelten.' }, { v: 0, msg: 'Null gilt nur bei drei gleich großen Strömen. Hier fehlt der dritte Außenleiter, deshalb bleibt die Summe der beiden anderen Zeiger übrig (' + f(v.nb, 1) + ' A).' }] });
+    });
+    return { vals, check, consts: [120],
+      text: () => 'Drei einphasige Wechselrichter speisen je an einem Außenleiter ein (cos φ = 1, ' + f(G.u, 0) + ' V gegen Neutralleiter, Übungswerte). Wie groß ist der Strom im Neutralleiter a) bei den Leistungen L1: ' + f(G.a[0] / 1000, 1) + ' kW, L2: ' + f(G.a[1] / 1000, 1) + ' kW, L3: ' + f(G.a[2] / 1000, 1) + ' kW und b) bei L1: ' + f(G.b[0] / 1000, 1) + ' kW, L2: ' + f(G.b[1] / 1000, 1) + ' kW, L3: ' + f(G.b[2] / 1000, 0) + ' kW?',
+      fields: () => [{ key: 'na', label: 'Neutralleiterstrom bei 4,6 / 2,3 / 2,3 kW', unit: 'A' }, { key: 'nb', label: 'Neutralleiterstrom bei 3,0 / 3,0 / 0 kW', unit: 'A' }],
+      hint: () => { const v = vals(); return [
+        'Zuerst bekommst du aus jeder Leistung den Strom des Außenleiters. Die drei Ströme sind um 120° versetzt. Im Neutralleiter fließt, was sich nicht gegenseitig aufhebt: die Zeigersumme, nicht die Summe der Beträge.',
+        'Die Ströme in a) sind ' + f(v.ia1, 0) + ' A, ' + f(v.ia2, 0) + ' A und ' + f(v.ia2, 0) + ' A, in b) zweimal ' + f(v.ib1, 2) + ' A und ein stromloser Außenleiter. Zwei gleich große Zeiger im Abstand von 120° ergeben einen Zeiger derselben Länge, der dem dritten entgegenzeigt.',
+        'Musterlösung: a) ' + f(v.ia1, 0) + ' A − ' + f(v.ia2, 0) + ' A = ' + f(v.na, 0) + ' A. b) Zwei Zeiger mit je ' + f(v.ib1, 2) + ' A im Abstand von 120° ergeben ' + f(v.nb, 2) + ' A. Die Summe der Beträge (' + f(v.summeA, 0) + ' A bzw. ' + f(v.summeB, 1) + ' A) wäre falsch.'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { na: null, nb: null } }),
+      sol: () => A('netz', NSTART(), { fields: { na: vals().na, nb: vals().nb } }),
+      wrong: () => { const v = vals(); return [{ name: 'Beträge addiert', answer: A('netz', {}, { fields: { na: v.summeA, nb: v.summeB } }) }, { name: 'Neutralleiterstrom null angenommen', answer: A('netz', {}, { fields: { na: 0, nb: 0 } }) }]; } };
+  })();
+
   /* ====================================================================== Registrierung */
   T.register([
     def('en16', 'Akku', 'C-Rate, Ladezeit und Autonomie rechnen', 1, 'regler', M16),
@@ -467,9 +617,15 @@
     def('en27', 'Wechselrichter', 'Wechselrichter nicht zu klein, nicht zu groß', 2, 'netz', M27),
     def('en28', 'Fehlersuche', 'Die Sonne scheint, aber nichts wird eingespeist', 2, 'netz', M28),
     def('en29', 'Prüfungsstil', 'Autarkie mit möglichst kleinem Speicher', 3, 'netz', M29),
-    def('en30', 'Prüfungsstil', 'Teil-B-Stil: 7-kWp-Anlage prüfen und rechnen', 3, 'netz', M30)
+    def('en30', 'Prüfungsstil', 'Teil-B-Stil: 7-kWp-Anlage prüfen und rechnen', 3, 'netz', M30),
+    def('en31', 'Wechselrichter', 'Strom je Außenleiter bei der Einspeisung', 1, 'netz', M31),
+    def('en32', 'Rechnen', 'Die lange Einspeiseleitung', 2, 'netz', M32),
+    def('en33', 'Wechselrichter', 'Leistungen bei Leistungsfaktor unter eins', 2, 'netz', M33),
+    def('en34', 'Grundlagen', 'Die Schnittstelle zum Netz', 1, 'netz', M34),
+    def('en35', 'Rechnen', 'Gleiche Leistung bei anderer Strangspannung', 2, 'netz', M35),
+    def('en36', 'Wechselrichter', 'Drei Wechselrichter, ungleiche Leistung', 3, 'netz', M36)
   ]);
   /* Musterwerte der Aufgaben en16-en30 (Schwellen aus Musterloesung, Stand 2026-10-22) fuer Tests und Ausbilder */
-  T.thresholds2 = () => ({ en16: M16.vals(), en17: M17.vals(), en18: M18.vals(), en19: M19.vals(), en20: M20.vals(), en21: M21.vals(), en22: M22.vals(), en23: M23.vals(), en24: M24.vals(), en25: M25.vals(), en26: M26.vals(), en27: M27.vals(), en28: M28.vals(), en29: M29.vals(), en30: M30.vals() });
+  T.thresholds2 = () => ({ en16: M16.vals(), en17: M17.vals(), en18: M18.vals(), en19: M19.vals(), en20: M20.vals(), en21: M21.vals(), en22: M22.vals(), en23: M23.vals(), en24: M24.vals(), en25: M25.vals(), en26: M26.vals(), en27: M27.vals(), en28: M28.vals(), en29: M29.vals(), en30: M30.vals(), en31: M31.vals(), en32: M32.vals(), en33: M33.vals(), en34: M34.vals(), en35: M35.vals(), en36: M36.vals() });
   if (typeof module !== 'undefined') module.exports = { tasks: T.tasks };
 })(typeof window !== 'undefined' ? window : globalThis);

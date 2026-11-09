@@ -212,7 +212,14 @@
       U: [[BOTH + '· R', 'P*R = U^2', [BOTH + ': R', BOTH + '− R']], ['Wurzel ziehen (√)', 'sqrt(P*R) = U', ['Quadrieren (²)', BOTH + ': 2']], ['Seiten tauschen', 'U = sqrt(P*R)', []]],
       R: [[BOTH + '· R', 'P*R = U^2', [BOTH + ': R', BOTH + '− R']], [BOTH + ': P', 'R = U^2/P', [BOTH + '· P', BOTH + '− P']]] } },
     { id: 'zyl', name: 'Zylindervolumen', eq: 'V = pi*d^2/4*h', vars: { V: ['Volumen', 'cm³'], d: ['Durchmesser', 'cm'], h: ['Höhe', 'cm'] }, sol: {
-      h: [[BOTH + '· 4', '4*V = pi*d^2*h', [BOTH + ': 4', BOTH + '− 4']], [BOTH + ': (π · d²)', '4*V/(pi*d^2) = h', [BOTH + '· (π · d²)', BOTH + '− h']], ['Seiten tauschen', 'h = 4*V/(pi*d^2)', []]] } }
+      h: [[BOTH + '· 4', '4*V = pi*d^2*h', [BOTH + ': 4', BOTH + '− 4']], [BOTH + ': (π · d²)', '4*V/(pi*d^2) = h', [BOTH + '· (π · d²)', BOTH + '− h']], ['Seiten tauschen', 'h = 4*V/(pi*d^2)', []]] } },
+    /* Neu (Berufsschulstoff Grundlagen Elektrotechnik): Ladung und Leiterwiderstand */
+    { id: 'ladung', name: 'Ladung und Strom (Akku)', eq: 'Q = I*t', vars: { Q: ['Ladung', 'mAh'], I: ['Strom', 'mA'], t: ['Zeit', 'h'] }, sol: {
+      I: [[BOTH + ': t', 'Q/t = I', [BOTH + '· t', BOTH + '− t']], ['Seiten tauschen', 'I = Q/t', []]],
+      t: [[BOTH + ': I', 'Q/I = t', [BOTH + '· I', BOTH + '− I']], ['Seiten tauschen', 't = Q/I', []]] } },
+    { id: 'draht', name: 'Widerstand eines Leiters', eq: 'R = rho*l/A', vars: { R: ['Widerstand', OHM], rho: ['spezifischer Widerstand', OHM + '·mm²/m'], l: ['Länge', 'm'], A: ['Querschnitt', 'mm²'] }, sol: {
+      l: [[BOTH + '· A', 'R*A = rho*l', [BOTH + ': A', BOTH + '− A']], [BOTH + ': ρ', 'R*A/rho = l', [BOTH + '· ρ', BOTH + '− ρ']], ['Seiten tauschen', 'l = R*A/rho', []]],
+      A: [[BOTH + '· A', 'R*A = rho*l', [BOTH + ': A', BOTH + '− A']], [BOTH + ': R', 'A = rho*l/R', [BOTH + '· R', BOTH + '− R']]] } }
   ];
   const formel = id => FORMELN.find(f => f.id === id) || null;
   const lhsOf = f => f.eq.split('=')[0].trim(), rhsOf = f => f.eq.split('=')[1].trim();

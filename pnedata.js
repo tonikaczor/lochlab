@@ -171,6 +171,24 @@
         { text: 'Eingeschaltet fährt der Zylinder selbsttätig hin und her (mindestens 2 Hübe)', steps: [{ set: { sw: 1 }, wait: 7, cycles: { z1: 2 } }] },
         { text: 'Ausgeschaltet bleibt der Zylinder in einer Endlage stehen', steps: [{ set: { sw: 1 }, wait: 2.2 }, { set: { sw: 0 }, wait: 4, expect: { z1: 'end' } }] }
       ]
+    },
+    /* PRUEFEN P1: Presse mit Zweihandstart, Abluftdrosselung und Not-Aus (Anlehnung an die Komplexaufgabe im Lernfeld Pneumatik). Vereinfachtes Modell:
+       Liegen Startsignal (14) und Rückhubsignal (12) am Impulsventil gleichzeitig an, bleibt die Stellung erhalten; in einer echten Presse muss das Not-Aus-Signal Vorrang haben. */
+    presse: {
+      id: 'presse', title: 'Presse mit Zweihandstart, Drosselung und Not-Aus', W: 790, H: 525,
+      desc: 'Die Presse fährt nur aus, wenn beide Taster 1S1 und 1S2 gedrückt sind: Das Zweidruckventil 1V3 (UND) gibt dann ein Impulssignal an 14 des Impulsventils 1V1. Die Drossel 1V2 bremst die Abluft der Stangenseite, der Stempel fährt langsam aus. Zurück geht es über Anschluss 12: Das Wechselventil 1V4 (ODER) führt das Signal des Rollenhebels 1B2 (vordere Endlage) und des Not-Aus-Ventils 0S1 zusammen, eines von beiden genügt.',
+      parts: SUP(10, 470).concat([P('z1', 'zyl_da', 451, 10, { label: '1A1', marks: [{ at: 'out', label: '1B2' }] }), P('d1', 'dr', 522, 95, { label: '1V2', vert: true }), P('v1', 'v52', 300, 235, { label: '1V1', s14: 'pilot', s12: 'pilot' }), P('s1', 'v32', 80, 372, { label: '1S1', rest: 'NC', act: 'taster' }), P('s2', 'v32', 235, 372, { label: '1S2', rest: 'NC', act: 'taster' }), P('u1', 'uv', 200, 290, { label: '1V3' }), P('b2', 'v32', 440, 372, { label: '1B2', rest: 'NC', act: 'rolle', sensor: { cyl: 'z1', at: 'out' } }), P('na', 'v32', 600, 372, { label: '0S1', rest: 'NC', act: 'schalter' }), P('w1', 'wv', 560, 296, { label: '1V4' })]),
+      fixed: FIXQ,
+      ref: [['we.aus', 's1.1'], ['we.aus', 's2.1'], ['we.aus', 'v1.1'], ['we.aus', 'b2.1'], ['we.aus', 'na.1'], ['s1.2', 'u1.1a'], ['s2.2', 'u1.1b'], ['u1.2', 'v1.14'], ['b2.2', 'w1.1a'], ['na.2', 'w1.1b'], ['w1.2', 'v1.12'], ['v1.4', 'z1.K'], ['v1.2', 'd1.V'], ['d1.Z', 'z1.S']],
+      wrong: [['we.aus', 's1.1'], ['we.aus', 's2.1'], ['we.aus', 'v1.1'], ['we.aus', 'b2.1'], ['we.aus', 'na.1'], ['s1.2', 'u1.1a'], ['s2.2', 'u1.1b'], ['u1.2', 'v1.14'], ['b2.2', 'v1.12'], ['na.2', 'v1.12'], ['v1.4', 'z1.K'], ['v1.2', 'd1.V'], ['d1.Z', 'z1.S']],
+      checks: [
+        { text: 'Nur ein Taster gedrückt: Der Stempel bleibt eingefahren', steps: [{ set: { s1: 1 }, wait: 2.5, expect: { z1: 'in' } }] },
+        { text: 'Beide Taster gedrückt: Der Stempel fährt aus', steps: [{ set: { s1: 1, s2: 1 }, reach: { z1: 'out' }, max: 10 }] },
+        { text: 'Das Ausfahren geschieht langsam (gedrosselt)', steps: [{ set: { s1: 1, s2: 1 }, reach: { z1: 'out' }, max: 10, tmin: 2 }] },
+        { text: 'In der vorderen Endlage fährt der Stempel zurück, sobald beide Taster losgelassen sind', steps: [{ set: { s1: 1, s2: 1 }, reach: { z1: 'out' }, max: 10 }, { set: { s1: 0, s2: 0 }, reach: { z1: 'in' }, max: 4 }] },
+        { text: 'Not-Aus mitten im Hub: Der Stempel fährt sofort zurück', steps: [{ set: { s1: 1, s2: 1 }, wait: 0.6 }, { set: { s1: 0, s2: 0 }, wait: 0.3 }, { set: { na: 1 }, reach: { z1: 'in' }, max: 3 }] },
+        { text: 'Ohne Betätigung bleibt der Stempel eingefahren', steps: [{ wait: 2, expect: { z1: 'in' } }] }
+      ]
     }
   };
 
@@ -178,11 +196,11 @@
 
   /* ---------------------------------------------------------------- Aufgaben */
   const fm = CORE.calc.fmt;
-  const CATS = ['Symbole erkennen', 'Anschlussbezeichnungen', 'Schaltplan lesen', 'Verschlauchen', 'Kraft und Luftverbrauch'];
+  const CATS = ['Symbole erkennen', 'Anschlussbezeichnungen', 'Schaltplan lesen', 'Verschlauchen', 'Kraft und Luftverbrauch', 'Druckluft erzeugen und aufbereiten'];
   const T = [];
   const mc = (cat, level, title, text, sym, opts, ans, tips, expl) => T.push({ cat, level, title, type: 'mc', text, sym, opts, ans, tips, expl });
   const tap = (cat, level, title, text, sym, ans, tips, expl) => T.push({ cat, level, title, type: 'tap', text, sym, ans, tips, expl });
-  const SY = 'Symbole erkennen', AN = 'Anschlussbezeichnungen', LE = 'Schaltplan lesen', VE = 'Verschlauchen', KR = 'Kraft und Luftverbrauch';
+  const SY = 'Symbole erkennen', AN = 'Anschlussbezeichnungen', LE = 'Schaltplan lesen', VE = 'Verschlauchen', KR = 'Kraft und Luftverbrauch', DL = 'Druckluft erzeugen und aufbereiten';
   const V32 = (o) => Object.assign({ t: 'v32', id: 'v', rest: 'NC', act: 'taster' }, o || {});
   const V52 = (o) => Object.assign({ t: 'v52', id: 'v', s14: 'taster', s12: 'feder' }, o || {});
 
@@ -299,6 +317,46 @@
   num(3, 'Nutzkraft mit Reibung', 'Ein Zylinder (Kolbendurchmesser 63 mm) wird mit 6 bar betrieben. Rechne mit einem Reibungsverlust von 15 % (Richtwert: 10 bis 20 %). Wie groß ist die Nutzkraft beim Ausfahren?', 'N', f32,
     ['Erst die theoretische Kraft F = p · A bestimmen, dann die Reibung abziehen.', 'F_theor = 0,6 N/mm² · π/4 · 63² mm². Nutzkraft = F_theor · (1 − 0,15).', 'F_theor ≈ 1870 N;  Nutzkraft ≈ 1870 N · 0,85 ≈ 1590 N.'],
     'Die Reibung der Dichtungen und Führungen verringert die Kraft. Ein Wirkungsgrad von etwa 80 bis 90 % ist ein üblicher Richtwert, für die genaue Auslegung zählen die Herstellerangaben.', ['F_theor = ' + fm(C.kraftAus(6, 63), 1) + ' N', 'Nutzkraft = F_theor · 0,85 = ' + fm(f32, 0) + ' N']);
+
+  /* ---------------------------------------------------------------- Aufgaben aus dem Berufsschulstoff (Lernfeld Pneumatik); neue Aufgaben werden immer hinten angehängt, damit die Nummern der bisherigen Aufgaben gleich bleiben.
+     PRUEFEN Pn: Fragen an den Ausbilder stehen in quelle/pne/PRUEFEN.md */
+  /* PRUEFEN P2 */
+  mc(DL, 1, 'Druckluft erzeugen', 'Ein einstufiger Kolbenverdichter liefert die Druckluft. Was geschieht, wenn sich der Kolben vom oberen zum unteren Totpunkt bewegt?', null,
+    ['Das Volumen im Zylinder wird kleiner, die Luft wird verdichtet', 'Die Druckluft wird über das Auslassventil in den Druckbehälter gedrückt', 'Das Volumen wird größer, über das Einlassventil strömt Umgebungsluft nach', 'Beide Ventile bleiben offen, damit sich der Druck ausgleicht'], 2,
+    ['Stell dir den Kolben im Zylinder vor: Beim Weg nach unten wird der Raum über dem Kolben größer.', 'Ein größer werdender Raum saugt Luft an. Welches Ventil lässt Luft von außen herein?', 'Abwärts saugt der Kolben über das Einlassventil an. Erst beim Weg nach oben wird die Luft verdichtet und das Auslassventil öffnet.'],
+    'Beim Weg zum unteren Totpunkt vergrößert sich das Volumen, der Druck im Zylinder sinkt und Umgebungsluft strömt über das Einlassventil nach. Beim Weg zum oberen Totpunkt schließt das Einlassventil, das Volumen wird kleiner, der Druck steigt, und bei genügend hohem Druck öffnet das Auslassventil zum Druckbehälter.');
+  /* PRUEFEN P3 */
+  mc(DL, 1, 'Druckluft als Energieträger', 'Welche Aussage über Druckluft als Energieträger ist richtig?', null,
+    ['Druckluft lässt sich nicht speichern, sie muss sofort verbraucht werden', 'Wegen der geringen Verluste hat Druckluft den besten Wirkungsgrad aller Energieträger', 'Druckluft lässt sich ohne Verluste über viele Kilometer durch dünne Rohre leiten', 'Der übliche Arbeitsdruck beträgt rund 6 bar, in der Hydraulik ist er deutlich höher'], 3,
+    ['Drei Aussagen versprechen etwas, das Druckluft nicht hält: unbegrenzte Reichweite, bestes Ergebnis, keine Speicherung.', 'Druckluft wird verdichtet, strömt durch Leitungen und dehnt sich aus. Dabei entstehen Verluste. Welche Zahl nennt man für den Druck in der Werkstatt?', 'Rund 6 bar sind der übliche Arbeitsdruck. Hydrauliköl arbeitet mit deutlich höherem Druck, dafür ist die Luft im Druckbehälter speicherbar.'],
+    'Druckluft arbeitet üblicherweise mit rund 6 bar, die Hydraulik mit einem Vielfachen davon. Druckluft lässt sich in einem Druckbehälter speichern, aber Verdichten und Strömen kosten Energie: Der Wirkungsgrad ist vergleichsweise gering, und die Reichweite im Rohrnetz ist begrenzt.');
+  /* PRUEFEN P4 */
+  mc(DL, 2, 'Wann kein Öler?', 'Hinter dem Filter und dem Druckregler kann ein Öler sitzen. In welchem Fall darf die Druckluft nicht geölt werden?', null,
+    ['Wenn der Zylinder einen Kolbendurchmesser von mehr als 50 mm hat und deshalb viel Luft braucht', 'Wenn die Abluft Lebensmittel oder frischen Lack berühren kann oder die Bauteile dauergeschmiert sind', 'Wenn der Betriebsdruck unter 6 bar liegt, weil das Öl dann nicht mehr zerstäubt wird', 'Wenn nur einfachwirkende Zylinder angeschlossen sind, da diese ohne Schmierung auskommen'], 1,
+    ['Öl in der Abluft gelangt in die Umgebung und kann Produkte verunreinigen.', 'Es geht um die Frage: Verträgt die Anwendung ölhaltige Abluft, und sind die Bauteile dauergeschmiert?', 'Lebensmittel, Medizin und Lackierarbeiten verlangen ölfreie Luft. Bauteile, die ab Werk dauergeschmiert sind, brauchen kein Öl. Mit Druck oder Zylindergröße hat es nichts zu tun.'],
+    'Wo Abluft mit Lebensmitteln, Medikamenten oder frischem Lack in Berührung kommt, darf kein Öl in der Luft sein. Auch für dauergeschmierte Bauteile ist kein Öler nötig. Merke: Wurde eine Anlage einmal mit Öl betrieben, ist das Erstfett der Bauteile ausgewaschen, und sie muss dauerhaft weiter geölt werden.');
+  /* PRUEFEN P5 */
+  mc(SY, 1, 'Pfeil und T im Ventilsymbol', 'In den Feldern eines Wegeventil-Symbols stehen Pfeile und T-Striche. Was bedeuten sie?', V32(),
+    ['Der Pfeil zeigt die Betätigungsrichtung des Tasters, das T den Anschluss für Steuerluft', 'Pfeil und T zeigen beide die Strömungsrichtung, nur in unterschiedlicher Stärke', 'Der Pfeil zeigt die Strömungsrichtung in dieser Stellung, das T einen gesperrten Anschluss', 'Der Pfeil kennzeichnet den Druckanschluss, das T den Anschluss der Entlüftung ins Freie'], 2,
+    ['Jedes Feld zeigt, was das Ventil in einer Schaltstellung tut.', 'Ein Pfeil zeigt eine Bewegung, ein T zeigt eine Sperre. Was bewegt sich in einem Ventil?', 'Pfeil = Luft strömt in diese Richtung. T = hier ist der Anschluss in dieser Stellung verschlossen.'],
+    'Im Ventilsymbol zeigt jedes Feld eine Schaltstellung. Ein Pfeil gibt die Strömungsrichtung der Druckluft in dieser Stellung an, ein T (Querstrich) bedeutet: Der Anschluss ist in dieser Stellung gesperrt.');
+  mc(SY, 2, 'Dreieck an der Entlüftung', 'Das Symbol zeigt eine Entlüftung. Was bedeutet das Dreieck an den Anschlüssen 3 und 5 eines Wegeventils?', { t: 'sd' },
+    ['Hier wird Druckluft aus dem Netz zugeführt', 'Die verbrauchte Luft strömt ins Freie ab', 'Der Anschluss ist dauerhaft fest verschlossen', 'Hier sitzt der Filter der Wartungseinheit'], 1,
+    ['Die Anschlüsse 3 und 5 sind die Anschlüsse, über die ein Zylinder entlüftet wird.', 'Was geschieht mit der Luft, die aus dem Zylinder herausgedrückt wird? Sie muss irgendwohin.', 'Die Abluft darf über 3 und 5 ins Freie entweichen. Das Dreieck steht für die Entlüftung (meist mit Schalldämpfer).'],
+    'Das Dreieck an 3 und 5 bedeutet: Abluft strömt ins Freie. Über diese Anschlüsse wird der Zylinder entlüftet, damit er zurückfahren kann. Meist sitzt ein Schalldämpfer davor.');
+  /* PRUEFEN P6 */
+  const f38 = C.kraftAus(5, 50) - 60;
+  num(2, 'Kraft beim einfachwirkenden Zylinder', 'Ein einfachwirkender Zylinder mit 50 mm Kolbendurchmesser wird mit 5 bar betrieben. Die Rückstellfeder wirkt beim Ausfahren mit 60 N dagegen. Reibung bleibt unberücksichtigt. Wie groß ist die Kraft an der Kolbenstange beim Ausfahren?', 'N', f38,
+    ['Die Druckkraft ist F = p · A. Die Feder arbeitet dagegen.', 'Erst die theoretische Kraft aus Druck und Kolbenfläche (5 bar = 0,5 N/mm²), dann die Federkraft abziehen.', 'A = π/4 · 50² = 1963,5 mm²; F = 0,5 N/mm² · 1963,5 mm² = 981,7 N; davon 60 N Federkraft abziehen: etwa 922 N.'],
+    'Beim einfachwirkenden Zylinder muss die Druckkraft die Feder zusammendrücken. Die Kraft an der Kolbenstange ist deshalb kleiner als die reine Druckkraft: Von etwa 981,7 N bleiben nach Abzug der 60 N Federkraft etwa 922 N.', ['A = π/4 · d² = ' + fm(C.flaeche(50), 1) + ' mm²', 'F_theor = p · A = 0,5 N/mm² · ' + fm(C.flaeche(50), 1) + ' mm² = ' + fm(C.kraftAus(5, 50), 1) + ' N', 'F = F_theor − F_Feder = ' + fm(C.kraftAus(5, 50), 1) + ' N − 60 N = ' + fm(f38, 1) + ' N']);
+  /* PRUEFEN P1 */
+  lesen(2, 'Presse: Not-Aus und Endlage', 'Öffne die Presse. Drücke beide Taster 1S1 und 1S2 (Schalter „Taster rasten“ benutzen, danach wieder loslassen) und beobachte, wie der Stempel ausfährt. Drücke dann während des Ausfahrens den Not-Aus 0S1 und beobachte, was geschieht.', 'presse', null,
+    { q: 'Welche Aufgabe hat das Wechselventil 1V4 in dieser Presse?', opts: ['Es verknüpft beide Taster, damit der Stempel nur bei zwei Händen ausfährt', 'Es verknüpft Rollenhebel und Not-Aus: Eines von beiden löst den Rückhub aus', 'Es bremst die Abluft der Stangenseite und stellt so die Geschwindigkeit ein', 'Es speichert den Startimpuls der Taster, bis der Stempel vorn ist'], ans: 1 },
+    ['Verfolge die Leitung zum Steueranschluss 12 des Impulsventils: Welche Ventile liefern dorthin ihr Signal?', 'An 12 ankommen soll das Signal von zwei verschiedenen Stellen. Beide dürfen unabhängig voneinander einfahren lassen. Welche Verknüpfung ist das?', 'Der Rollenhebel 1B2 meldet die vordere Endlage, der Not-Aus 0S1 den Notfall. Das Wechselventil (ODER) lässt beide den Rückhub auslösen.'],
+    'Der Rückhub wird über Anschluss 12 des Impulsventils ausgelöst. Das Wechselventil (ODER) gibt Druck an 12, sobald der Rollenhebel in der vorderen Endlage oder der Not-Aus betätigt ist. Das Zweidruckventil 1V3 (UND) macht dagegen den Start von beiden Tastern abhängig.');
+  verschl(3, 'Presse mit Zweihandstart und Not-Aus', 'Die Presse soll nur ausfahren, wenn beide Taster 1S1 und 1S2 gedrückt sind. Der Stempel soll langsam ausfahren. Er soll zurückfahren, sobald die vordere Endlage erreicht ist (und beide Taster losgelassen sind) oder wenn der Not-Aus 0S1 betätigt wird. Verschlauche die Anlage.', 'presse',
+    ['Zerlege die Aufgabe: Start (UND), Geschwindigkeit (Drossel), Rückhub (ODER aus Endlage und Not-Aus). Jede Teilaufgabe braucht ihr Ventil.', 'Das Impulsventil 1V1 bekommt Druck an 1, Startsignal an 14 und Rückhubsignal an 12. Alle Signalventile (Taster, Rollenhebel, Not-Aus) brauchen Druck an Anschluss 1.', 'Wartungseinheit an 1S1.1, 1S2.1, 1B2.1, 0S1.1 und 1V1.1. 1S1.2 und 1S2.2 an 1V3, 1V3.2 an 1V1.14. 1B2.2 und 0S1.2 an 1V4, 1V4.2 an 1V1.12. 1V1.4 an K, 1V1.2 an 1V2.V, 1V2.Z an S.'],
+    'Zweihandstart: Das Zweidruckventil 1V3 lässt nur Druck an 14, wenn beide Taster gedrückt sind. Der Rückhub: Das Wechselventil 1V4 verknüpft Endlage 1B2 und Not-Aus 0S1 mit ODER, damit eines genügt. Die Drossel 1V2 in der Abluft der Stangenseite bremst das Ausfahren, beim Einfahren umgeht die Luft sie über das Rückschlagventil.');
 
   T.forEach((t, i) => { t.id = 'pne' + (i + 1); if (t.cir) t.cirObj = CIRCUITS[t.cir]; });
   const TASKS = {}; T.forEach(t => { TASKS[t.id] = t; });
