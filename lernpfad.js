@@ -14,6 +14,13 @@
   ];
   /* Spuren der anderen Berufe (v39.158). Labs, die der Beruf hat, aber in keiner Spur stehen, kommen unter „Weitere Labs“; Labs ohne Beruf-Zuordnung (z. B. noch gesperrt) fehlen. */
   const TRACKS_B = {
+    ige: [
+      { t: 'Grundlagen und Grundschaltungen', s: 'Rechnen, Schaltpläne lesen, einfache Schaltungen aufbauen und simulieren, dazu Wechselstrom ohne Formelstress.', labs: ['mat', 'loch', 'sch', 'sim', 'wsl'], pre: 'Das Rechen-Lab ist ein guter Start' },
+      { t: 'Sicherungen, Hausinstallation und Sicherheit', s: 'Wie Strom im Haus abgesichert, verteilt und geschaltet wird, was bei der elektrischen Sicherheit zählt und was Energie kostet.', labs: ['els', 'haus', 'enr'], pre: 'Empfohlen vorher: SchaltLab' },
+      { t: 'Messen, Netzteile und Elektronik', s: 'Mit dem Multimeter sicher messen, Netzteile und einfache Halbleiterschaltungen verstehen, Logikschaltungen kennenlernen und Datenblätter lesen.', labs: ['mess', 'nts', 'ana', 'digi', 'ds'], pre: '' },
+      { t: 'Steuerungen, Antriebe und Sensoren', s: 'Schaltschrank-Steuerungen einfach erklärt: SPS, Motoren und Sensoren.', labs: ['sps', 'ant', 'sen'], pre: 'Empfohlen vorher: SchaltLab' },
+      { t: 'Prüfung und Berufsalltag', s: 'Die Abschlussprüfung üben, Fachenglisch und das Berichtsheft.', labs: ['pr', 'eng', 'bhf'], pre: '' }
+    ],
     im: [
       { t: 'Grundlagen der Fertigung', s: 'Rechnen, Toleranzen und Passungen, Werkstoffe und Zeichnungen: das Handwerkszeug für jede Werkstatt.', labs: ['mat', 'tol', 'wer', 'zei'], pre: 'Das Rechen-Lab ist ein guter Start' },
       { t: 'Zerspanen und CNC', s: 'Schnittwerte berechnen, Drehzahlen und Vorschübe wählen, CNC-Programme lesen und verstehen.', labs: ['zer', 'cnc'], pre: 'Empfohlen vorher: Toleranz-Lab' },

@@ -16,7 +16,7 @@
   const GROUPS = [['elek', 'Elektrik und Elektronik'], ['mech', 'Mechanik'], ['it', 'IT'], ['log', 'Logistik'], ['buero', 'Büro und Kaufmännisches'], ['sich', 'Arbeitssicherheit']];
   /* PRUEFEN P7: Welche Fachgruppe zu welchem Beruf gehört (Karten-Filter): Elektrik für Elektroniker und Industriemechaniker; Mechanik für Industriemechaniker, Produktdesigner, Elektroniker; IT für Fachinformatiker, Elektroniker, Industriekaufmann;
      Logistik für Lagerlogistik, Industriekaufmann, Industriemechaniker; Büro für Industriekaufmann, Lagerlogistik, Produktdesigner, Fachinformatiker; Arbeitssicherheit für alle. Passt das? */
-  const GJ = { elek: ['egs', 'im'], mech: ['im', 'tpd', 'egs'], it: ['fi', 'egs', 'ik'], log: ['fll', 'ik', 'im'], buero: ['ik', 'fll', 'tpd', 'fi'], sich: ['egs', 'im', 'tpd', 'fll', 'ik', 'fi'] };
+  const GJ = { elek: ['egs', 'ige', 'im'], mech: ['im', 'tpd', 'egs', 'ige'], it: ['fi', 'egs', 'ik'], log: ['fll', 'ik', 'im'], buero: ['ik', 'fll', 'tpd', 'fi'], sich: ['egs', 'ige', 'im', 'tpd', 'fll', 'ik', 'fi'] };
   /* PRUEFEN P8: Fachwörter mit mehreren Übersetzungen: circuit breaker = Leitungsschutzschalter (auch Sicherungsautomat), RCD = Fehlerstrom-Schutzschalter, carrier = Frachtführer (freight forwarder = Spediteur),
      lockout = Freischalten und gegen Wiedereinschalten sichern, guard = Schutzeinrichtung, quotation = Angebot, order = Bestellung oder Auftrag. Stimmen diese Standardübersetzungen für euren Betrieb? */
   const V = {

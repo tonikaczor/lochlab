@@ -544,7 +544,7 @@ function commit(){
   afterChange();
 }
 function restore(i){
-  const s=JSON.parse(hist[i]);if(!('boards' in s))delete doc.boards;Object.assign(doc,s);hi=i;sel=null;chain=null;afterChange();
+  const s=JSON.parse(hist[i]);if(!('boards' in s))delete doc.boards;Object.assign(doc,s);hi=i;sel=null;msel.clear();chain=null;afterChange();
 }
 function afterChange(){
   clearTimeout(saveT);saveT=setTimeout(save,350);
@@ -588,13 +588,14 @@ function sanitize(d){
 function load(d){
   doc=sanitize(Object.assign(newDoc(),d));
   doc.nid=Math.max(parseInt(doc.nid,10)||0,Math.max(0,...doc.items.map(i=>i.id||0))+1);
-  sel=null;chain=null;resetHist();fit();save();afterChange();
+  sel=null;msel.clear();chain=null;resetHist();fit();save();afterChange();
 }
 
 /* ============ Zustand ============ */
 let view={s:24,ox:20,oy:20}, tool='select', mode='both';
 let ribStart=null, ribbonN=10;
 let sel=null, partKind='R', partRot=0, wireColor='#d6dbe1';
+let msel=new Set(), multiMode=false, shiftHeld=false;   // Mehrfachauswahl: mehrere Bauteile/Bahnen gemeinsam verschieben
 let autoSocket=true;
 let ghost=null, chain=null, cursor=null, act=null, erased=false;
 const WCOL=['#d6dbe1','#e03a3a','#2f7de1','#2fae45','#f0c020','#ececec','#222'];
@@ -908,7 +909,7 @@ function drawScene(c,V,o){
     }
   });
   const items=doc.items;
-  const hl=(it,fn)=>{if(o.sel===it.id){c.save();fn();c.restore();}};
+  const hl=(it,fn)=>{if(o.sel===it.id||(o.msel&&o.msel.has(it.id))){c.save();fn();c.restore();}};
   // Unterseite: Bahnen & Lötpunkte
   if(o.mode!=='top'){
     c.lineCap='round';
@@ -1004,12 +1005,13 @@ function drawScene(c,V,o){
     c.beginPath();c.arc(o.chain.x,o.chain.y,.5,0,7);c.strokeStyle='#3b9eff';c.lineWidth=.1;c.stroke();
   }
   if(o.cursor&&!o.export){c.beginPath();c.arc(o.cursor[0],o.cursor[1],.55,0,7);c.strokeStyle='#3b9eff';c.lineWidth=.09;c.stroke();}
+  if(o.band&&!o.export){c.save();c.fillStyle='rgba(30,120,255,.25)';c.strokeStyle='#0a66ff';c.lineWidth=.16;c.setLineDash([.45,.3]);c.fillRect(o.band[0],o.band[1],o.band[2]-o.band[0],o.band[3]-o.band[1]);c.strokeRect(o.band[0],o.band[1],o.band[2]-o.band[0],o.band[3]-o.band[1]);c.restore();}
   c.restore();
 }
 function render(){
   cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--cvbg')||'#14181c';cx.fillRect(0,0,cv.width,cv.height);
   if(!doc)return;
-  drawScene(cx,view,{mode,sel,ghost:tool==='part'?ghost:null,chain:(tool==='wire'||tool==='track')?chain:null,cursor:(tool==='select'||tool==='hand')?null:cursor});
+  drawScene(cx,view,{mode,sel,msel,band:act&&act.t==='band'?[Math.min(act.a[0],act.b[0]),Math.min(act.a[1],act.b[1]),Math.max(act.a[0],act.b[0]),Math.max(act.a[1],act.b[1])]:null,ghost:tool==='part'?ghost:null,chain:(tool==='wire'||tool==='track')?chain:null,cursor:(tool==='select'||tool==='hand')?null:cursor});
 }
 
 /* ============ Treffer-Test ============ */
@@ -1041,7 +1043,7 @@ const snap=(gx,gy)=>[clamp(Math.round(gx),0,doc.cols-1),clamp(Math.round(gy),0,d
 function readout(g){$('#readout').textContent=g?`Spalte ${g[0]+1} · Zeile ${g[1]+1}`:'';}
 
 cv.addEventListener('pointerdown',e=>{
-  e.preventDefault();
+  e.preventDefault();shiftHeld=!!e.shiftKey;
   // Rechtsklick (oder Strg+Klick) beendet das aktive Werkzeug, andere Maustasten tun nichts
   if((e.pointerType==='mouse'&&e.button!==0)||(e.button===0&&e.ctrlKey)){
     if(e.button===2||e.ctrlKey)rightClickExit();
@@ -1090,6 +1092,7 @@ cv.addEventListener('contextmenu',e=>{e.preventDefault();rightClickExit();});
 cv.addEventListener('auxclick',e=>{e.preventDefault();});
 
 function cancelAct(){
+  if(act&&act.t==='gmove'&&act.moved){act.ids.forEach(id=>{const it=byId(id);if(it)Object.assign(it,JSON.parse(act.orig[id]));});}
   if(act&&act.t==='move'&&act.moved){const it=byId(act.id);if(it)Object.assign(it,JSON.parse(act.orig));}
   act=null;ghost=null;invalidate();
 }
@@ -1168,14 +1171,30 @@ function addLine(t,x1,y1,x2,y2){
 function eraseAt(fx,fy){
   const h=hit(fx,fy);if(h){doc.items=doc.items.filter(i=>i!==h);if(sel===h.id)sel=null;erased=true;invalidate();}
 }
+function gmoveAct(id,gx,gy,was){
+  const ids=[...msel],orig={};ids.forEach(i=>{const it=byId(i);if(it)orig[i]=JSON.stringify(it);});
+  return{t:'gmove',ids,orig,g0:[gx,gy],moved:false,tap:was?id:null};
+}
+function inBand(it,b){
+  const ins=q=>q[0]>=b[0]&&q[0]<=b[2]&&q[1]>=b[1]&&q[1]<=b[3];
+  if('x1' in it)return ins([it.x1,it.y1])&&ins([it.x2,it.y2]);
+  if(it.t==='part')return ins([it.x,it.y])||pinsOf(it).some(ins);
+  return 'x' in it&&ins([it.x,it.y]);
+}
 function onDown(p){
   const[fx,fy]=toGrid(p.x,p.y),[gx,gy]=snap(fx,fy);cursor=[gx,gy];readout(cursor);
   switch(tool){
     case 'hand':act={t:'pan',lx:p.x,ly:p.y};break;
     case 'select':{
-      const h=hit(fx,fy);
-      if(h){sel=h.id;act={t:'move',id:h.id,g0:[gx,gy],orig:JSON.stringify(h),moved:false};if(h.t==='part'&&window.Speak&&Speak.auto())Speak.part(h.k);}
-      else{sel=null;act={t:'pan',lx:p.x,ly:p.y};}
+      const h=hit(fx,fy),multi=multiMode||shiftHeld;
+      if(multi){   // Mehrfachauswahl: tippen = zur Auswahl hinzufügen, auf Leerfläche ziehen = Rahmen aufziehen, auf Gewähltes ziehen = alle verschieben
+        if(sel!=null){msel.add(sel);sel=null;}
+        if(h){const was=msel.has(h.id);if(!was)msel.add(h.id);act=gmoveAct(h.id,gx,gy,was);}
+        else act={t:'band',a:[fx,fy],b:[fx,fy]};
+      }
+      else if(h&&msel.size>1&&msel.has(h.id))act=gmoveAct(h.id,gx,gy,false);
+      else if(h){msel.clear();sel=h.id;act={t:'move',id:h.id,g0:[gx,gy],orig:JSON.stringify(h),moved:false};if(h.t==='part'&&window.Speak&&Speak.auto())Speak.part(h.k);}
+      else{msel.clear();sel=null;act={t:'pan',lx:p.x,ly:p.y};}
       renderCtx();break;}
     case 'wire':case 'track':
       if(chain){
@@ -1213,6 +1232,12 @@ function onMove(p){
       if('x1' in o){it.x1=o.x1+dx;it.y1=o.y1+dy;it.x2=o.x2+dx;it.y2=o.y2+dy;}
       else{it.x=o.x+dx;it.y=o.y+dy;}
       break;}
+    case 'gmove':{
+      const dx=gx-act.g0[0],dy=gy-act.g0[1];if(dx||dy)act.moved=true;
+      act.ids.forEach(id=>{const it=byId(id),o=act.orig[id]&&JSON.parse(act.orig[id]);if(!it||!o)return;
+        if('x1' in o){it.x1=o.x1+dx;it.y1=o.y1+dy;it.x2=o.x2+dx;it.y2=o.y2+dy;}else{it.x=o.x+dx;it.y=o.y+dy;}});
+      break;}
+    case 'band':act.b=[fx,fy];break;
     case 'place':ghost=[gx,gy];break;
     case 'line':cursor=lineEnd(act.start,[gx,gy]);break;
     case 'erase':eraseAt(fx,fy);break;
@@ -1223,6 +1248,13 @@ function onUp(p){
   const a=act;act=null;if(!a)return;
   switch(a.t){
     case 'move':if(a.moved)commit();break;
+    case 'gmove':if(a.moved)commit();else if(a.tap!=null)msel.delete(a.tap);renderCtx();break;
+    case 'band':{
+      const b=[Math.min(a.a[0],a.b[0]),Math.min(a.a[1],a.b[1]),Math.max(a.a[0],a.b[0]),Math.max(a.a[1],a.b[1])];
+      if(b[2]-b[0]>.3||b[3]-b[1]>.3)doc.items.forEach(it=>{if(inBand(it,b))msel.add(it.id);});
+      if(!multiMode&&msel.size===1){sel=[...msel][0];msel.clear();}
+      if(msel.size)toast(msel.size+' gewählt');
+      renderCtx();break;}
     case 'place':if(ghost){
       const k=partKind,P=PARTS[k];
       doc.items.push({id:nid(),t:'part',k,x:ghost[0],y:ghost[1],r:partRot,imax:(k==='BAT'||k==='SIG')?(partVals.imax||''):undefined,vr:curVar(k),sk:k==='IC'&&autoSocket,n:sizes[k],v:partVals[k]!=null?partVals[k]:(varVal(k)!=null?varVal(k):P.val),l:autoLabel(k)});commit();}
@@ -1239,24 +1271,38 @@ window.addEventListener('keydown',e=>{
   const tg=e.target;if(tg&&(/^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName)||tg.isContentEditable))return;   // Tippen in Feldern und Auswahllisten darf nichts auf der Platine löschen
   if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();e.shiftKey?redo():undo();}
   else if(e.key==='Delete'||e.key==='Backspace')delSel();
-  else if(e.key==='Escape'){chain=null;sel=null;renderCtx();invalidate();}
+  else if(e.key==='Escape'){chain=null;sel=null;msel.clear();renderCtx();invalidate();}
+  else if((e.ctrlKey||e.metaKey)&&(e.key==='a'||e.key==='A')&&tool==='select'&&doc){e.preventDefault();sel=null;msel=new Set(doc.items.map(i=>i.id));renderCtx();invalidate();}
 });
 
 /* ============ Aktionen ============ */
 function undo(){if(hi>0)restore(hi-1);}
 function redo(){if(hi<hist.length-1)restore(hi+1);}
-function delSel(){if(sel==null)return;doc.items=doc.items.filter(i=>i.id!==sel);sel=null;commit();}
+function delSel(){if(msel.size){doc.items=doc.items.filter(i=>!msel.has(i.id));msel.clear();sel=null;commit();return;}if(sel==null)return;doc.items=doc.items.filter(i=>i.id!==sel);sel=null;commit();}
+function rotGroup(d){
+  const its=[...msel].map(byId).filter(Boolean);if(!its.length)return;
+  const pts=[];its.forEach(it=>{if('x1' in it)pts.push([it.x1,it.y1],[it.x2,it.y2]);else{pts.push([it.x,it.y]);if(it.t==='part')pinsOf(it).forEach(q=>pts.push(q));}});
+  const xs=pts.map(q=>q[0]),ys=pts.map(q=>q[1]),cx=Math.round((Math.min(...xs)+Math.max(...xs))/2),cy=Math.round((Math.min(...ys)+Math.max(...ys))/2);
+  const tr=(x,y)=>{const q=rot(x-cx,y-cy,d);return[cx+q[0],cy+q[1]];};
+  const neu=its.map(it=>{if('x1' in it){const a=tr(it.x1,it.y1),b=tr(it.x2,it.y2);return{it,a,b};}return{it,a:tr(it.x,it.y)};});
+  if(neu.some(n=>n.a[0]<0||n.a[1]<0||(n.b&&(n.b[0]<0||n.b[1]<0)))){toast('Drehen nicht möglich: Die Auswahl würde über den Rand der Platine hinausragen. Erst weiter in die Mitte schieben.');return;}
+  neu.forEach(n=>{const it=n.it;if(n.b){it.x1=n.a[0];it.y1=n.a[1];it.x2=n.b[0];it.y2=n.b[1];}else{it.x=n.a[0];it.y=n.a[1];if(it.t==='part')it.r=(it.r+d)&3;}});
+  commit();
+}
 function rotSel(d=1){
+  if(tool==='select'&&msel.size){rotGroup(d&3);return;}
   if(tool==='part'&&sel==null){partRot=(partRot+d)&3;invalidate();return;}
   const it=byId(sel);if(it&&it.t==='part'){it.r=(it.r+d)&3;commit();}
 }
 function dupSel(){
+  if(msel.size>1){const ids=[...msel];msel.clear();ids.forEach(id=>{const it=byId(id);if(!it)return;const c=JSON.parse(JSON.stringify(it));c.id=nid();
+    if('x1' in c){c.x1++;c.y1++;c.x2++;c.y2++;}else{c.x++;c.y++;}if(c.t==='part')c.l=autoLabel(c.k);doc.items.push(c);msel.add(c.id);});commit();return;}
   const it=byId(sel);if(!it)return;const c=JSON.parse(JSON.stringify(it));c.id=nid();
   if('x1' in c){c.x1++;c.y1++;c.x2++;c.y2++;}else{c.x++;c.y++;}
   if(c.t==='part')c.l=autoLabel(c.k);
   doc.items.push(c);sel=c.id;commit();
 }
-function setTool(t){tool=t;ribStart=null;chain=null;ghost=null;act=null;if(t!=='select')sel=null;buildNav();renderCtx();invalidate();}
+function setTool(t){tool=t;ribStart=null;chain=null;ghost=null;act=null;if(t!=='select'){sel=null;msel.clear();}buildNav();renderCtx();invalidate();}
 
 /* ============ Oberfläche ============ */
 const ICONS={
@@ -1311,7 +1357,9 @@ function renderCtx(){
   const wide=matchMedia('(min-width:640px)').matches;
   const chip=(id,l,cls='')=>`<button class="chip ${cls}" data-a="${id}">${l}</button>`;
   const it=sel!=null?byId(sel):null;
-  if(tool==='select'&&it){
+  if(tool==='select'&&msel.size){
+    h+=`<span class="hint"><b>${msel.size}</b> gewählt · ziehen verschiebt alle</span>`+chip('rl','↺ Links drehen')+chip('rot','↻ Rechts drehen')+chip('dup','⧉ Kopie')+chip('del','Löschen','danger')+chip('clr','Auswahl aufheben');
+  }else if(tool==='select'&&it){
     if(it.t==='wire')h+=wireSw(it.c)+'<span class="sep"></span>';
     if(it.t==='part'&&wide){
       sh=sideCtl(it.k,it.r,it.n,it);
@@ -1347,9 +1395,10 @@ function renderCtx(){
     if(tool==='wire')h+=wireSw(wireColor)+'<span class="sep"></span>';
     h+=chip('autoroute','⤳ Auto-Weg '+(autoRoute?'an':'aus'),autoRoute?'on':'')+chip('done','Fertig','')+`<span class="hint">${chain?'Nächsten Punkt setzen · letzten Punkt nochmal antippen = Ende':'Ziehen oder antippen · gleichen Punkt nochmal = Ende'}</span>`;
   }else{
-    const hints={select:'Tippen = auswählen, ziehen = verschieben · 2 Finger = Zoom',hand:'Ziehen zum Verschieben · 2 Finger = Zoom',dot:'Tippen setzt oder entfernt einen Lötpunkt',text:'Tippen, um Text zu platzieren',erase:'Tippen oder darüberwischen zum Löschen'};
+    const hints={select:'Tippen = auswählen, ziehen = verschieben · Mehrere: Schalter Mehrfach oder Umschalttaste, dann Rahmen ziehen · 2 Finger = Zoom',hand:'Ziehen zum Verschieben · 2 Finger = Zoom',dot:'Tippen setzt oder entfernt einen Lötpunkt',text:'Tippen, um Text zu platzieren',erase:'Tippen oder darüberwischen zum Löschen'};
     h=`<span class="hint">${hints[tool]||''}</span>`;
   }
+  if(tool==='select')h=chip('multi','☑ Mehrfach '+(multiMode?'an':'aus'),multiMode?'on':'').replace('<button','<button role="switch" aria-checked="'+multiMode+'" title="Mehrere Bauteile wählen: auf Leerfläche einen Rahmen ziehen oder Bauteile nacheinander antippen"')+'<span class="sep"></span>'+h;
   {const T=window.TfPins;
     if(T){const on=pinsOn();
       if(sh||matchMedia('(min-width:720px)').matches)sh+=`<div class="sh">Anzeige</div><button class="sbtn wide ${on?'on':''}" data-a="pins" role="switch" aria-checked="${on}" title="${T.TIP}">📌 Pins anzeigen: ${on?'an':'aus'}</button><div class="phcap">${T.TIP}. Pin-Nummern, Polung und Belegung stehen am Bauteil.</div>`;
@@ -1431,6 +1480,8 @@ const ctxClick=e=>{
   else if(a==='done'){chain=null;}
   else if(a==='autoroute'){autoRoute=!autoRoute;try{localStorage.setItem('lm4.autoroute',autoRoute?'1':'0');}catch(e){}toast(autoRoute?'Auto-Weg an: Lötbahn und Draht suchen den Weg mit 90°-Knicken selbst':'Auto-Weg aus: gerade Stücke, Knickpunkte selbst setzen');}
   else if(a==='speak'){if(window.Speak)Speak.part(b.dataset.k);}
+  else if(a==='multi'){multiMode=!multiMode;if(!multiMode&&msel.size===1){sel=[...msel][0];msel.clear();}else if(multiMode&&sel!=null){msel.add(sel);sel=null;}toast(multiMode?'Mehrfachauswahl an: Rahmen aufziehen oder Bauteile antippen':'Mehrfachauswahl aus');}
+  else if(a==='clr'){msel.clear();sel=null;}
   else if(a==='dup')dupSel();
   else if(a==='del')delSel();
   else if(a==='edit'){const it=byId(sel);if(it)it.t==='text'?editText(it):editPart(it);}
@@ -1455,7 +1506,7 @@ function updateHeader(){
 }
 $('#bUndo').onclick=undo;$('#bRedo').onclick=redo;$('#bFit').onclick=fit;
 $('#bEx').onclick=()=>menuAct('ex');$('#bOpen').onclick=()=>menuAct('open');$('#bShare').onclick=()=>menuAct('share');$('#bPrint').onclick=()=>menuAct('print');
-$('#bView').onclick=()=>{mode=MODES[(MODES.findIndex(m=>m[0]===mode)+1)%3][0];sel=null;updateHeader();renderCtx();invalidate();toast(mode==='bottom'?'Lötseite (gespiegelt)':mode==='top'?'Bestückungsseite':'Beide Seiten');};
+$('#bView').onclick=()=>{mode=MODES[(MODES.findIndex(m=>m[0]===mode)+1)%3][0];sel=null;msel.clear();updateHeader();renderCtx();invalidate();toast(mode==='bottom'?'Lötseite (gespiegelt)':mode==='top'?'Bestückungsseite':'Beide Seiten');};
 $('#title').onclick=renameDoc;
 $('#bMenu').onclick=openMenu;
 

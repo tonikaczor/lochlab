@@ -23,7 +23,7 @@
     histMax: 100, rowsMax: 10
   };
   const KATS = ['Fehlersuche', 'Fehlersuche im Code', 'Messfehler'];
-  const NOLABS = ['app', 'vb', 'pr', 'tol', 'zer', 'pne', 'hyd', 'cnc', 'wer', 'ins', 'net', 'kal', 'lag', 'zei', 'arb', 'mat', 'its', 'buc', 'lad'];   /* eigenständige Labs der Berufe (v39.158) haben keinen Duell-Modus */
+  const NOLABS = ['app', 'vb', 'pr', 'tol', 'zer', 'pne', 'hyd', 'cnc', 'wer', 'ins', 'net', 'kal', 'lag', 'zei', 'arb', 'mat', 'its', 'buc', 'lad', 'hwl'];   /* eigenständige Labs der Berufe (v39.158) haben keinen Duell-Modus */
   const EXTRA = ['sl3', 'sl5', 'sl6', 'cp4', 'el14', 'el16', 'el23'];   /* Fehlersuchen mit anderer Kategorie (Ids, keine Lab-Liste) */
   const SEEDLABS = ['nts', 'ana', 'pcb', 'els'];                        /* Seed-variabler Fehler: im Pool doppelt gewichtet */
   const KEYS = { cur: 'lm4.duellcur', hist: 'lm4.duell', old: 'lm4.duelcur', duels: 'lm4.duels' };

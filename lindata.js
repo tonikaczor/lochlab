@@ -12,7 +12,7 @@
 (function (root) {
   const C = () => root.LIN_CORE;
   const f = (v, d) => C().fmtN(v, d == null ? 0 : d, true);
-  const CATS = ['Dateisystem und Pfade', 'Dateirechte', 'Textwerkzeuge und Pipes', 'Prozesse', 'Benutzer, sudo und Pakete', 'Netzwerk und Logdateien', 'Shell-Skripte und Cron'];
+  const CATS = ['Dateisystem und Pfade', 'Dateirechte', 'Textwerkzeuge und Pipes', 'Prozesse', 'Benutzer, sudo und Pakete', 'Netzwerk und Logdateien', 'Shell-Skripte und Cron', 'Auswerten und Dienste'];
   const NL = String.fromCharCode(10);
 
   /* ============================================================ Das virtuelle System (Abbild "std") */
@@ -112,7 +112,8 @@
   const topOf = m => Object.keys(m).sort((a, b) => m[b] - m[a])[0];
   const ipCnt = cnt(ACC, r => r[0]), p404 = cnt(ACC.filter(r => r[3] === 404), r => r[1] + ' ' + r[2] + ' HTTP/1.1');
   const FACTS = { topIp: topOf(ipCnt), topIpCount: ipCnt[topOf(ipCnt)], top404: topOf(p404), top404Count: p404[topOf(p404)], failed: AUTH_ROWS.filter(r => r[1].includes('Failed password')).length, authTail5: AUTH_ROWS.slice(-5).map(r => 'Nov  8 ' + r[0] + ' tonfunk-pc ' + r[1]).join(NL) + NL,
-    errLines: SERVERLOG.split(NL).filter(l => /error/i.test(l)).join(NL) + NL, head3: CSV.split(NL).slice(0, 3).join(NL) + NL };
+    errLines: SERVERLOG.split(NL).filter(l => /error/i.test(l)).join(NL) + NL, head3: CSV.split(NL).slice(0, 3).join(NL) + NL,
+    bytes200: ACC.filter(r => r[3] === 200).reduce((a, r) => a + r[4], 0), line3: SERVERLOG.split(NL)[2] + NL };
 
   /* ============================================================ Terminal-Aufgaben */
   const items = sys => sys.rec.items;
@@ -169,7 +170,7 @@
       check: sys => { const t = C().readText(sys, '/home/azubi/fehler.txt'); if (t === null) return 'Die Datei ~/fehler.txt gibt es noch nicht.'; return t === FACTS.errLines ? true : 'fehler.txt enthält nicht genau die passenden Zeilen. Beachte die Schreibweise (error, ERROR).'; },
       solution: ['grep -i error Projekt/server.log > fehler.txt'], wrong: [['grep ERROR Projekt/server.log > fehler.txt'], ['grep error Projekt/server.log >> fehler.txt']], tips: ['grep sucht Zeilen mit einem Muster.', 'Die Option -i ignoriert Groß- und Kleinschreibung.'],
       expl: 'grep -i error Projekt/server.log > fehler.txt. Ohne -i fehlt die Zeile mit kleingeschriebenem "error".' },
-    /* PRUEFEN P14: Auswertungen (Aufgaben 14, 27, 28) nutzen nur cut, grep, sort, uniq, wc, weil awk und sed nicht simuliert sind. Sollen awk und sed (z. B. awk '{pri... */
+    /* PRUEFEN P14: Auswertungen (Aufgaben 14, 27, 28) nutzen cut, grep, sort, uniq, wc; awk und sed kommen erst in den Aufgaben 35 bis 38 vor (P22 bis P25). Soll awk '{print $1}' auch ... */
     { n: 14, kind: 'term', cat: 2, level: 3, title: 'Besucher zählen',
       text: 'In der Webserver-Logdatei /var/log/nginx/access.log steht in jeder Zeile zuerst die IP-Adresse des Besuchers, getrennt durch ein Leerzeichen. Zeige jede IP-Adresse mit der Zahl ihrer Anfragen an, die häufigste ganz oben (eine Befehlskette mit Pipes).',
       check: sys => { const ok = items(sys).find(x => pipes(x.cmd) >= 2 && new RegExp('^\\s*' + FACTS.topIpCount + '\\s+' + FACTS.topIp.replace(/\./g, '\\.') + '\\s*$').test(firstLine(x.out))); return ok ? true : 'Noch keine Ausgabe, bei der oben die häufigste IP mit ihrer Anzahl steht (mindestens zwei Pipes).'; },
@@ -232,7 +233,49 @@
       },
       solution: ["echo '30 2 * * * /home/azubi/Projekt/backup.sh' > cronjobs.txt"], wrong: [["echo '2 30 * * * /home/azubi/Projekt/backup.sh' > cronjobs.txt"], ["echo '30 2 * * 1 /home/azubi/Projekt/backup.sh' > cronjobs.txt"]],
       tips: ['Die fünf Felder heißen: Minute, Stunde, Tag des Monats, Monat, Wochentag. Ein Stern bedeutet "jeder".', 'Mit echo und > schreibst du eine Zeile in eine Datei. Setze den Text in einfache Anführungszeichen, damit der Stern nicht durch Dateinamen ersetzt wird.'],
-      expl: "30 2 * * * bedeutet Minute 30, Stunde 2, an jedem Tag, in jedem Monat, an jedem Wochentag. Als Zeile: 30 2 * * * /home/azubi/Projekt/backup.sh. Die Reihenfolge ist Minute vor Stunde, nicht umgekehrt." }
+      expl: "30 2 * * * bedeutet Minute 30, Stunde 2, an jedem Tag, in jedem Monat, an jedem Wochentag. Als Zeile: 30 2 * * * /home/azubi/Projekt/backup.sh. Die Reihenfolge ist Minute vor Stunde, nicht umgekehrt." },
+    /* PRUEFEN P22: Aufgabe 35: Kontonamen mit awk -F: aus /etc/passwd holen. Die Prüfung verlangt awk (cut liefert dasselbe Ergebnis, wird hier aber nicht anerkannt). Ist es in Ordnung, ein Werkzeug vorzuschreiben, oder soll jeder richtige Weg zählen? */
+    { n: 35, kind: 'term', cat: 7, level: 1, title: 'Namen sammeln',
+      text: 'Auf diesem Rechner gibt es Benutzerkonten (die Liste steht in /etc/passwd). Jede Zeile hat mehrere Felder, getrennt durch Doppelpunkte, das erste Feld ist der Kontoname. Schreibe mit dem Programm awk nur die Kontonamen, einen pro Zeile, in die neue Datei ~/konten.txt.',
+      check: sys => { const c = C(), t = c.readText(sys, '/home/azubi/konten.txt'); if (t === null) return 'Die Datei ~/konten.txt gibt es noch nicht.'; const want = c.textLines(c.readText(sys, '/etc/passwd')).map(l => l.split(':')[0]).join(NL) + NL; if (t !== want) return 'konten.txt enthält nicht genau die Kontonamen, einen pro Zeile (sonst nichts).'; return used(sys, /(^|[\s|;&])awk\b/) ? true : 'Die Namen stimmen, aber es wurde kein awk benutzt.'; },
+      solution: ["awk -F: '{print $1}' /etc/passwd > konten.txt"], wrong: [["awk '{print $1}' /etc/passwd > konten.txt"], ['cut -d: -f1 /etc/passwd > konten.txt']],
+      tips: ['awk zerlegt jede Zeile in Felder: $1 ist das erste, $2 das zweite. Der Trenner ist normalerweise das Leerzeichen.', 'Mit der Option -F legst du den Trenner fest (-F: für den Doppelpunkt). Die Ausgabe leitest du mit > in die Datei um.'],
+      expl: "awk -F: '{print $1}' /etc/passwd teilt jede Zeile an den Doppelpunkten und gibt das erste Feld aus, > schreibt das Ergebnis in konten.txt. Ohne -F trennt awk an Leerzeichen; in der passwd gibt es keine, dann wäre $1 die ganze Zeile." },
+    /* PRUEFEN P23: Aufgabe 36: Wort mit sed s/alt/neu/ ersetzen und in neue Datei schreiben, das Original bleibt. Falscher Weg ist sed -i (ändert das Original). Soll sed -i im Unterricht vorkommen, und ist die Aufgabe so eindeutig genug? */
+    { n: 36, kind: 'term', cat: 7, level: 2, title: 'Begriff austauschen',
+      text: 'In der Datei ~/Projekt/README.md kommt das Wort Sensordaten vor. Erzeuge eine neue Datei ~/README_neu.md mit demselben Inhalt, in der dieses Wort durch Messwerte ersetzt ist. Die Originaldatei bleibt unverändert.',
+      check: sys => { const c = C(), t = c.readText(sys, '/home/azubi/README_neu.md'); if (c.readText(sys, '/home/azubi/Projekt/README.md') !== README) return 'Die Originaldatei ~/Projekt/README.md wurde verändert. Sie soll bleiben, wie sie ist.'; if (t === null) return 'Die Datei ~/README_neu.md gibt es noch nicht.'; if (t !== README.replace('Sensordaten', 'Messwerte')) return 'README_neu.md hat noch nicht den erwarteten Inhalt (nur das eine Wort ersetzt, sonst alles gleich).'; return used(sys, /(^|[\s|;&])sed\b/) ? true : 'Der Inhalt stimmt, aber es wurde kein sed benutzt.'; },
+      solution: ["sed 's/Sensordaten/Messwerte/' Projekt/README.md > README_neu.md"], wrong: [["sed -i 's/Sensordaten/Messwerte/' Projekt/README.md"], ['cp Projekt/README.md README_neu.md']],
+      tips: ['sed ersetzt Text mit s/alt/neu/. Ohne weitere Option ändert sed die Datei nicht, es gibt das Ergebnis nur aus.', 'Die Ausgabe leitest du mit > in die neue Datei um. Vorsicht: Die Option -i schreibt das Ergebnis zurück in die Originaldatei.'],
+      expl: "sed 's/Sensordaten/Messwerte/' Projekt/README.md gibt den Text mit dem ersetzten Wort aus (s/alt/neu/ ersetzt das erste Vorkommen je Zeile), > README_neu.md schreibt ihn in die neue Datei. Mit sed -i hätte sich die Originaldatei geändert." },
+    /* PRUEFEN P24: Aufgabe 37: Bytesumme der Anfragen mit Statuscode 200 per awk (Feld 9 = Status, Feld 10 = Bytes im Common Log Format). Passt der Umfang (Muster plus Summe) für Stufe 3? */
+    { n: 37, kind: 'term', cat: 7, level: 3, title: 'Ausgelieferte Datenmenge',
+      text: 'Im Webserver-Protokoll /var/log/nginx/access.log steht in jeder Zeile hinten die Zahl der gelieferten Bytes, direkt davor der Statuscode (200 bedeutet erfolgreich). Wie viele Bytes wurden insgesamt bei Anfragen mit dem Statuscode 200 geliefert? Dein Befehl soll nur diese Summe ausgeben.',
+      check: sys => (items(sys).some(x => x.out.trim() === String(FACTS.bytes200) && /(^|[\s|;&])awk\b/.test(x.cmd)) ? true : 'Noch keine Ausgabe mit nur der Summe der Bytes aller Anfragen mit Statuscode 200 (mit awk berechnet).'),
+      solution: ["awk '$9==200 {s+=$10} END {print s}' /var/log/nginx/access.log"], wrong: [["awk '{s+=$10} END {print s}' /var/log/nginx/access.log"], ["awk '$9==200 {print $10}' /var/log/nginx/access.log"]],
+      tips: ['awk zählt die Felder einer Zeile ab $1, getrennt durch Leerzeichen. Im Protokoll ist das neunte Feld der Statuscode und das zehnte die Bytezahl.', 'Ein awk-Programm kann ein Muster vor den geschweiften Klammern haben: $9==200 { ... } wirkt nur auf passende Zeilen. Mit s+=$10 summierst du, END { print s } gibt am Ende die Summe aus.'],
+      expl: "awk '$9==200 {s+=$10} END {print s}' addiert für jede Zeile mit Statuscode 200 das zehnte Feld (Bytes) zur Variable s und gibt am Ende s aus: " + FACTS.bytes200 + '. Ohne das Muster würden auch die Fehlerseiten (404, 500 ...) mitgezählt.' },
+    /* PRUEFEN P25: Aufgabe 38: genau eine Zeile mit sed -n 'Np' ausgeben (hier Zeile 3 von server.log). Sollen auch Bereiche (2,4p) und Löschen (Nd) in Aufgaben vorkommen? */
+    { n: 38, kind: 'term', cat: 7, level: 1, title: 'Eine einzelne Zeile',
+      text: 'Zeige aus der Datei ~/Projekt/server.log genau die dritte Zeile an und sonst nichts. Benutze dafür das Programm sed.',
+      check: sys => (items(sys).some(x => /(^|[\s|;&])sed\b/.test(x.cmd) && x.out === FACTS.line3) ? true : 'Noch keine Ausgabe, die nur aus der dritten Zeile von server.log besteht (mit sed).'),
+      solution: ["sed -n '3p' Projekt/server.log"], wrong: [['sed 3p Projekt/server.log'], ['head -n 3 Projekt/server.log']],
+      tips: ['sed kann mit einer Zeilennummer arbeiten: 3p heißt "Zeile 3 ausgeben" (p wie print).', 'Ohne Option gibt sed außerdem jede Zeile von selbst aus. Die Option -n schaltet das ab, dann erscheint nur, was p ausgibt.'],
+      expl: "sed -n '3p' Projekt/server.log gibt nur Zeile 3 aus. Ohne -n käme jede Zeile von selbst, Zeile 3 sogar doppelt (einmal durch p, einmal automatisch)." },
+    /* PRUEFEN P26: Aufgabe 39: Dienst fail2ban (frei gewählt, im Abbild gestoppt und nicht aktiviert) starten und aktivieren, mit sudo systemctl. Ist der Dienstname als Beispiel passend, oder lieber ein Dienst aus eurer Ausbildung? */
+    { n: 39, kind: 'term', cat: 7, level: 2, title: 'Schutzdienst einschalten',
+      text: 'Auf diesem Rechner ist der Dienst fail2ban eingerichtet, läuft aber nicht und startet auch nicht automatisch beim Hochfahren. Sorge dafür, dass er jetzt läuft und nach einem Neustart des Rechners von selbst wieder startet.',
+      check: sys => { const s = sys.svc.fail2ban; if (!s.on) return 'Der Dienst läuft noch nicht (systemctl status zeigt die Zeile Active).'; return s.en ? true : 'Der Dienst läuft, startet aber noch nicht automatisch beim Hochfahren (Zeile Loaded: enabled).'; },
+      solution: ['systemctl status fail2ban', 'sudo systemctl start fail2ban', 'sudo systemctl enable fail2ban'], wrong: [['systemctl start fail2ban', 'systemctl enable fail2ban'], ['sudo systemctl start fail2ban']],
+      tips: ['Dienste verwaltet systemd mit dem Befehl systemctl. systemctl status DIENST zeigt, ob der Dienst läuft (Active) und ob er beim Start aktiviert ist (Loaded).', 'start startet einen Dienst jetzt, enable aktiviert den Start beim Hochfahren. Beides ändert das System und braucht Administratorrechte.'],
+      expl: 'sudo systemctl start fail2ban startet den Dienst sofort, sudo systemctl enable fail2ban nimmt ihn in den Autostart auf. Mit sudo systemctl enable --now fail2ban geht beides in einem Schritt. Ohne sudo meldet Linux "Interactive authentication required".' },
+    /* PRUEFEN P27: Aufgabe 40: nginx stoppen und deaktivieren (sudo systemctl stop und disable); alle anderen Dienste bleiben unverändert. Reicht das als Stufe-3-Aufgabe, oder soll noch ein Fehlerfall (Dienst startet nicht) dazukommen? */
+    { n: 40, kind: 'term', cat: 7, level: 3, title: 'Webserver abschalten',
+      text: 'Der Webserver nginx soll auf diesem Rechner nicht mehr betrieben werden. Er soll sofort aufhören zu laufen und beim nächsten Hochfahren auch nicht wieder automatisch starten. Alle anderen Dienste bleiben unverändert.',
+      check: sys => { const v = sys.svc, s = v.nginx; if (s.on) return 'nginx läuft noch (systemctl status nginx zeigt es).'; if (s.en) return 'nginx läuft nicht mehr, würde aber beim Hochfahren wieder starten (Zeile Loaded: enabled).'; return ['ssh', 'cron', 'rsyslog'].every(n => v[n].on && v[n].en) && !v.fail2ban.on && !v.fail2ban.en ? true : 'Es wurden auch andere Dienste verändert.'; },
+      solution: ['sudo systemctl stop nginx', 'sudo systemctl disable nginx'], wrong: [['sudo systemctl stop nginx'], ['sudo systemctl disable nginx'], ['systemctl stop nginx', 'systemctl disable nginx']],
+      tips: ['Ein Dienst hat zwei Eigenschaften: Läuft er gerade (Active)? Startet er beim Hochfahren automatisch (enabled oder disabled in der Zeile Loaded)? systemctl status zeigt beides.', 'stop beendet den Dienst jetzt, disable nimmt ihn aus dem Autostart. Beides verlangt Administratorrechte (sudo).'],
+      expl: 'sudo systemctl stop nginx beendet den Dienst sofort, sudo systemctl disable nginx verhindert den Start beim Hochfahren. Nur eines von beiden reicht nicht: ein gestoppter, aber aktivierter Dienst käme nach dem Neustart zurück, ein deaktivierter, aber laufender Dienst läuft bis dahin weiter.' }
   ];
 
   /* ============================================================ Auswahl- und Zahlenaufgaben (Generatoren) */
@@ -373,11 +416,11 @@
     }
   };
 
-  /* ============================================================ Aufgabenliste (lin1 .. lin34) */
+  /* ============================================================ Aufgabenliste (lin1 .. lin40) */
   /* Reihenfolge: Kategorie-Index, Stufe, Titel, Generator (für Auswahl-/Zahlenaufgaben) */
   const GEN = { 1: ['pfad1', 0, 1, 'Pfad erkennen'], 3: ['pfad2', 0, 2, 'Ziel eines Wechselbefehls'], 6: ['rwxlesen', 1, 1, 'Rechte lesen'], 7: ['oktal', 1, 2, 'Rechte als Zahl'], 8: ['chmodbed', 1, 2, 'Zahl als Rechte'], 11: ['textbefehl', 2, 1, 'Das passende Werkzeug'], 15: ['pipeles', 2, 3, 'Ausgabe einer Befehlskette'],
     16: ['prozbegr', 3, 1, 'Prozesse und Signale'], 19: ['userid', 4, 1, 'Benutzer und Gruppen lesen'], 23: ['ipa', 5, 1, 'Netzwerkangaben lesen'], 25: ['ss', 5, 2, 'Offene Ports lesen'], 26: ['logzeile', 5, 2, 'Logzeile lesen'], 29: ['cronlesen', 6, 1, 'Zeitangabe lesen'], 30: ['cronzahl', 6, 2, 'Läufe pro Tag'], 31: ['skriptlesen', 6, 2, 'Skript lesen'], 32: ['skriptfor', 6, 3, 'Schleife zählen'], 33: ['skriptfehler', 6, 3, 'Skript mit Fehler'] };
-  const tasks = []; for (let n = 1; n <= 34; n++) {
+  const tasks = []; for (let n = 1; n <= 40; n++) {
     const tm = TERM.find(x => x.n === n);
     if (tm) tasks.push(Object.assign({ id: 'lin' + n }, tm, { cat: CATS[tm.cat], catIdx: tm.cat }));
     else { const g = GEN[n]; tasks.push({ id: 'lin' + n, kind: 'choice', cat: CATS[g[1]], catIdx: g[1], level: g[2], title: g[3], gen: g[0] }); }
@@ -409,6 +452,8 @@
     { id: 'netz1', tab: 'term', title: 'Netzwerk: ip a, ping, ss', text: 'ip a zeigt Adressen, ping prüft die Erreichbarkeit (-c begrenzt die Pakete), ss -tuln zeigt lauschende Ports.', cmds: ['ip -br a', 'ip r', 'ping -c 2 192.168.10.1', 'ping -c 2 192.168.10.99', 'ss -tuln'] },
     { id: 'log1', tab: 'term', title: 'Logdateien lesen', text: 'Protokolle liegen unter /var/log. Manche darf nur root oder die Gruppe adm lesen. tail zeigt das Neueste, grep filtert.', cmds: ['ls -l /var/log', 'tail -n 3 /var/log/auth.log', 'sudo tail -n 3 /var/log/auth.log', "sudo grep -c 'Failed password' /var/log/auth.log"] },
     { id: 'skript1', tab: 'term', title: 'Ein Skript lesen und starten', text: 'Skripte liest du mit cat. Die erste Zeile (#!/bin/bash) nennt den Interpreter. Starten geht nur mit Ausführungsrecht. (Im Lab laufen Skripte als Simulation.)', cmds: ['cd Projekt', 'cat backup.sh', './backup.sh', 'chmod u+x backup.sh', './backup.sh', 'cat zaehle.sh'] },
+    { id: 'awksed1', tab: 'term', title: 'awk und sed: Spalten auswerten, Text ersetzen', text: 'awk teilt jede Zeile in Felder ($1, $2 ...; -F legt den Trenner fest) und kann mit einem Muster filtern oder Summen bilden. sed ersetzt Text (s/alt/neu/) oder wählt Zeilen (-n mit Np). Beide lesen Dateien oder die Eingabe einer Pipe.', cmds: ["awk -F: '{print $1}' /etc/passwd", "awk -F, 'NR==2 {print $2, $3}' Projekt/daten.csv", "cat Projekt/daten.csv | awk -F, '{s+=$3} END {print s}'", "awk '/ERROR/ {print $2, $3}' Projekt/server.log", "sed 's/Sensordaten/Messwerte/' Projekt/README.md", "sed -n '2,3p' notizen.txt", "grep ' 404 ' /var/log/nginx/access.log | awk '{print $7}' | sort | uniq -c | sort -rn | head -n 2"] },
+    { id: 'dienst1', tab: 'term', title: 'Dienste prüfen und steuern (systemctl)', text: 'systemctl status zeigt, ob ein Dienst läuft (Active) und ob er beim Hochfahren startet (Loaded: enabled/disabled). start, stop, restart, enable und disable ändern den Zustand und brauchen sudo. list-units listet die Dienste.', cmds: ['systemctl status cron', 'systemctl status fail2ban', 'systemctl start fail2ban', 'sudo systemctl start fail2ban', 'systemctl status fail2ban', 'sudo systemctl enable fail2ban', 'systemctl list-units --type=service'] },
     { id: 'cron1', tab: 'cron', title: 'Cron: Zeitangaben lesen', text: 'Fünf Felder: Minute, Stunde, Tag des Monats, Monat, Wochentag. * heißt jeder, */n alle n, a-b Bereich, a,b Liste.', p: { expr: '*/15 8-17 * * 1-5' } },
     { id: 'cron2', tab: 'cron', title: 'Cron: Backup jede Nacht um 02:30', text: '30 2 * * * bedeutet Minute 30, Stunde 2, an jedem Tag. Die Zeile steht in der crontab (crontab -l zeigt sie, crontab -e bearbeitet sie).', p: { expr: '30 2 * * *' } },
     { id: 'chmod1', tab: 'rechte', title: 'chmod 754: wer darf was?', text: '7 = rwx (Besitzer), 5 = r-x (Gruppe), 4 = r-- (andere). Im Rechner siehst du die Zahl, die Buchstabenfolge und den Befehl.', p: { mode: '754' } }

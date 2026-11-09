@@ -68,6 +68,15 @@
     ['In welcher Einheit wird die Rauheit Ra in Zeichnungen angegeben?', 'Mikrometer (µm)', ['Millimeter (mm)', 'Newton pro Quadratmillimeter (N/mm²)', 'Grad (°)'], 'Ra und Rz werden in Mikrometern angegeben (1 µm = 0,001 mm).', ['Die Rauheit ist viel kleiner als ein Millimeter.', 'Tausendstel Millimeter.']]
   ];
 
+  /* PRUEFEN P26: Gewindebezeichnungen: M12x1,25 als Feingewinde (zweite Zahl = Steigung), LH = Linksgewinde, ohne Zusatz Rechtsgewinde, Tr 20x4 = Trapezgewinde (Nenndurchmesser x Steigung bei eingängigem Gewinde). Stimmen Schreibweise und Beispiele mit euren Zeichnungen überein? */
+  const GEWQ = [
+    ['Auf einer Zeichnung steht "M12x1,25". Was sagt die zweite Zahl aus?', 'Die Steigung in mm: Es ist ein Feingewinde', ['Die Gewindelänge in mm', 'Die Festigkeitsklasse der Schraube', 'Die Schlüsselweite in mm'], 'Bei einem metrischen Gewinde folgt auf den Nenndurchmesser nach dem x die Steigung. M12x1,25 hat 1,25 mm Steigung, das Regelgewinde M12 dagegen 1,75 mm. Eine kleinere Steigung als beim Regelgewinde heißt Feingewinde.', ['Ohne zweite Zahl gilt immer die Steigung des Regelgewindes.', 'Länge und Festigkeitsklasse stehen bei Schrauben in der Normbezeichnung, nicht in der Gewindebezeichnung.']],
+    ['Ein Gewinde ist mit "M10 LH" bezeichnet. Was bedeutet LH?', 'Linksgewinde (englisch Left Hand): Es wird gegen den Uhrzeigersinn festgezogen', ['Langes Gewinde mit besonders viel Auslauf', 'Gewinde in einer hochfesten Ausführung', 'Leichtgängiges Gewinde mit viel Spiel'], 'LH steht für Left Hand, also Linksgewinde. Man dreht es gegen den Uhrzeigersinn zu. Linksgewinde sind selten und werden zum Beispiel eingesetzt, wenn sich eine Verbindung durch die Drehrichtung selbst lösen würde.', ['Die Buchstaben kommen aus dem Englischen.', 'Das Gegenstück ist das Rechtsgewinde, das ohne Zusatz gemeint ist.']],
+    ['Eine Schraube trägt in der Bezeichnung keinen Zusatz zur Gewinderichtung. Wie wird sie festgezogen?', 'Im Uhrzeigersinn, sie hat ein Rechtsgewinde', ['Gegen den Uhrzeigersinn, es ist ein Linksgewinde', 'Beides ist möglich, die Richtung hängt von der Mutter ab', 'Sie wird nicht gedreht, sondern eingeschlagen'], 'Ohne Zusatz gilt das Rechtsgewinde: Im Uhrzeigersinn wird die Verbindung festgezogen. Nur Linksgewinde bekommen den Zusatz LH.', ['Der Normalfall braucht keinen Zusatz.', 'Denke an den Drehsinn beim Zudrehen eines Wasserhahns.']],
+    ['Eine Spindel an einer Maschine hat das Gewinde "Tr 20x4". Um welches Gewinde handelt es sich?', 'Trapezgewinde mit 20 mm Nenndurchmesser und 4 mm Steigung, geeignet für Bewegungsspindeln', ['Metrisches Regelgewinde für Befestigungsschrauben', 'Rohrgewinde zum Abdichten von Leitungen', 'Spitzgewinde für Blechschrauben'], 'Tr steht für Trapezgewinde. Es hat einen trapezförmigen Querschnitt, nimmt hohe Kräfte auf und eignet sich zum Bewegen, etwa als Spindel an Drehmaschinen. 20 ist der Nenndurchmesser, 4 die Steigung in mm.', ['Der Buchstabe M kommt in der Bezeichnung nicht vor.', 'Trapezgewinde werden oft für Spindeln zum Verfahren von Schlitten genutzt.']],
+    ['Es gibt die Gewinde M12 (Regelgewinde) und M12x1,25. Welche Aussage stimmt?', 'Das Feingewinde hat die kleinere Steigung und lässt sich feiner einstellen', ['Das Regelgewinde hat die kleinere Steigung', 'Beide Gewinde haben dieselbe Steigung, nur der Name ist anders', 'Das Feingewinde hat die größere Steigung und ist deshalb schneller verstellt'], 'Das Regelgewinde M12 hat 1,75 mm Steigung, das Feingewinde M12x1,25 nur 1,25 mm. Je Umdrehung wandert es weniger weit, dadurch lässt es sich genauer einstellen und löst sich schwerer.', ['Vergleiche die Steigungen 1,75 mm und 1,25 mm.', 'Kleine Steigung bedeutet wenig Weg je Umdrehung.']]
+  ];
+
   /* Gewindelängen-Hilfen */
   const NAMES6 = () => [C().NORMS['4017'].n, C().NORMS['4762'].n, C().NORMS['4032'].n, C().NORMS['7089'].n, C().NORMS['2338'].n, C().NORMS['6885'].n];
   const symDesc = {
@@ -285,21 +294,62 @@
         'Δ = h · tan α = ' + h + ' mm · tan ' + a + '° = ' + h + ' · ' + f(Math.tan(a * Math.PI / 180), 4) + ' = ' + f(v, 3) + ' mm.', ['Die Schräge bildet mit der Höhe ein rechtwinkliges Dreieck.', 'Gegenkathete = Höhe · tan(Winkel).']);
     },
     dreh: pq(DREHQ),
-    wst: pq(WSTQ)
+    wst: pq(WSTQ),
+    /* ----- Erweiterung (kon35 bis kon40) ----- */
+    gewbez: pq(GEWQ),
+    /* PRUEFEN P27: Faustformel für das Anzugsmoment M_A ≈ 0,2 · F_V · d (Gesamtreibwert etwa 0,14, Schmierzustand und Schraubenkopfauflage vernachlässigt); gewählte Vorspannkräfte höchstens 70 % der Streckgrenzenkraft. Ist die Faustformel für das Lehrjahr in Ordnung, oder sollen Tabellenwerte (Anziehdrehmoment je Festigkeitsklasse) verwendet werden? */
+    anzug: R => {
+      const c = C(), d = c.pick(R, [8, 10, 12, 16]), fk = c.pick(R, ['8.8', '10.9']), ys = c.forceYield(fk, d) / 1000, F = c.pick(R, [6, 8, 10, 12, 15, 20, 25].filter(x => x <= 0.7 * ys)), M = c.rd(0.2 * F * d, 2), askM = R() < 0.5;
+      const rule = ' Als Faustformel gilt M_A ≈ 0,2 · F_V · d (M_A in N·mm, F_V in N, d in mm).', chk = ' Die Streckgrenzenkraft der Schraube liegt bei ' + f(ys, 1) + ' kN, die Vorspannkraft von ' + f(F, 0) + ' kN bleibt darunter.';
+      return askM ? numQ('Eine Schraube M' + d + ' der Festigkeitsklasse ' + fk + ' soll mit einer Vorspannkraft von ' + f(F, 0) + ' kN montiert werden.' + rule + ' Mit welchem Anzugsmoment in N·m ziehst du sie an?', M, 'N·m', 'Anzugsmoment', 0.1,
+        'F_V = ' + f(F, 0) + ' kN = ' + f(F * 1000, 0) + ' N. M_A = 0,2 · ' + f(F * 1000, 0) + ' N · ' + d + ' mm = ' + f(0.2 * F * 1000 * d, 0) + ' N·mm = ' + f(M, 2) + ' N·m.' + chk, ['Rechne die Kraft zuerst in N um.', 'Das Ergebnis kommt in N·mm heraus. Teile durch 1.000 für N·m.'])
+        : numQ('Eine Schraube M' + d + ' der Festigkeitsklasse ' + fk + ' wird mit einem Anzugsmoment von ' + f(M, 1) + ' N·m angezogen.' + rule + ' Welche Vorspannkraft in kN entsteht ungefähr?', F, 'kN', 'Vorspannkraft', 0.05,
+          'M_A = ' + f(M, 1) + ' N·m = ' + f(M * 1000, 0) + ' N·mm. F_V = M_A / (0,2 · d) = ' + f(M * 1000, 0) + ' / (0,2 · ' + d + ') = ' + f(F * 1000, 0) + ' N = ' + f(F, 1) + ' kN.' + chk, ['Rechne das Moment zuerst in N·mm um (mal 1.000).', 'Stelle die Formel nach F_V um: F_V = M_A / (0,2 · d). Das Ergebnis in N durch 1.000 teilen für kN.']);
+    },
+    nutgrund: R => {
+      const c = C(), p = c.pick(R, c.PF.slice(2, 10)), d = c.ri(R, p.from + 1, p.to - 1), v = c.keyGroove(d, p);
+      return numQ('In eine Welle mit ⌀ ' + d + ' mm wird eine Passfedernut für die Passfeder ' + c.keyLabel(p) + ' mm gefräst. Zum Prüfen misst du vom Nutgrund bis zur gegenüberliegenden Seite der Welle. Welches Maß in mm soll der Messschieber anzeigen? (Nuttiefe t1 aus der Passfeder-Tabelle im Reiter Hilfe)', v, 'mm', 'Prüfmaß', 0.05,
+        'In der Tabelle gehört zur Passfeder ' + c.keyLabel(p) + ' die Nuttiefe t1 = ' + f(p.t1, 1) + ' mm. Prüfmaß = Wellendurchmesser − t1 = ' + d + ' − ' + f(p.t1, 1) + ' = ' + f(v, 1) + ' mm.', ['Suche die Passfeder in der Tabelle und lies die Nuttiefe t1 ab.', 'Vom Wellendurchmesser ziehst du die Nuttiefe ab.']);
+    },
+    fedarb: R => {
+      const c = C(), Rr = c.pick(R, [4, 5, 8, 10, 20]), s = c.pick(R, [10, 20, 30, 40, 50]), F = Rr * s, W = c.springWork(F, s);
+      return numQ('Eine Druckfeder mit der Federrate ' + Rr + ' N/mm wird um ' + s + ' mm zusammengedrückt. Wie groß ist die dabei gespeicherte Federarbeit in J? (Federarbeit W = ½ · F · s, 1 J = 1.000 N·mm)', W, 'J', 'Federarbeit', 0.01,
+        'Federkraft F = R · s = ' + Rr + ' N/mm · ' + s + ' mm = ' + f(F, 0) + ' N. W = ½ · F · s = ½ · ' + f(F, 0) + ' N · ' + s + ' mm = ' + f(F * s / 2, 0) + ' N·mm = ' + f(W, 3) + ' J.', ['Berechne zuerst die Kraft am Ende des Federwegs.', 'Die Kraft steigt linear an, deshalb gilt der Faktor ½. Teile das Ergebnis in N·mm durch 1.000 für J.']);
+    },
+    bezbau: R => {
+      const c = C();
+      if (R() < 0.65) {
+        const no = c.pick(R, ['4017', '4014', '4762']), d = c.pick(R, [6, 8, 10, 12]), l = c.pick(R, [20, 25, 30, 35, 40, 50]), fk = c.pick(R, ['8.8', '10.9', '12.9']), right = c.bez.schraube(no, d, l, fk);
+        const l2 = c.pick(R, [16, 20, 25, 30, 35, 40, 45, 50, 60].filter(x => x !== l)), fk2 = c.pick(R, c.FKS.filter(x => x !== fk)), no2 = c.pick(R, ['4017', '4014', '4762'].filter(x => x !== no)), d2 = c.pick(R, [6, 8, 10, 12].filter(x => x !== d));
+        return choiceQ(R, 'Du bestellst eine ' + c.NORMS[no].n + ' mit Gewinde M' + d + ', ' + l + ' mm Länge und Festigkeitsklasse ' + fk + '. Wie lautet die Bezeichnung in der Stückliste?', right, c.shuffle(R, [c.bez.schraube(no, d, l2, fk), c.bez.schraube(no, d, l, fk2), c.bez.schraube(no2, d, l, fk), c.bez.schraube(no, d2, l, fk)]).slice(0, 3),
+          'Die Bezeichnung besteht aus der Norm (ISO ' + no + ' für ' + c.NORMS[no].n + '), dem Gewinde M' + d + ', der Länge ' + l + ' mm und der Festigkeitsklasse ' + fk + ': "' + right + '".', ['Die Normnummer legt fest, welche Bauform gemeint ist.', 'Reihenfolge: Norm, Gewinde x Länge, Strich, Festigkeitsklasse.']);
+      }
+      const p = c.pick(R, c.PF.slice(5, 10)), form = c.pick(R, ['A', 'B']), l = c.pick(R, [25, 32, 40, 45, 50, 56]), right = c.bez.passfeder(form, p.b, p.h, l), q2 = c.PF.find(x => x.b > p.b && x.b !== x.h) || c.PF[5];
+      const l2 = c.pick(R, [25, 32, 40, 45, 50, 56, 63].filter(x => x !== l));
+      return choiceQ(R, 'Du brauchst eine ' + (form === 'A' ? 'rundstirnige Passfeder (Form A)' : 'eckige Passfeder (Form B)') + ' mit ' + p.b + ' mm Breite, ' + p.h + ' mm Höhe und ' + l + ' mm Länge. Wie lautet die Bezeichnung?', right, [c.bez.passfeder(form === 'A' ? 'B' : 'A', p.b, p.h, l), c.bez.passfeder(form, p.b, p.h, l2), c.bez.passfeder(form, q2.b, q2.h, l)],
+        'Die Passfeder wird nach DIN 6885 bezeichnet: Form, Breite x Höhe x Länge. Hier "' + right + '". Form A ist rundstirnig, Form B eckig.', ['Der Buchstabe nach der Norm gibt die Form an.', 'Dann folgen Breite, Höhe und Länge, durch x getrennt.']);
+    },
+    /* PRUEFEN P28: Sacklochgewinde: Kernlochtiefe = nutzbare Gewindelänge + 3 Steigungen als Übungsregel für den Auslauf des Gewindebohrers. Welche Regel gilt im Betrieb (z. B. 2 Gewindegänge plus Bohrerspitze)? */
+    sackloch: R => {
+      const c = C(), d = c.pick(R, [6, 8, 10, 12]), L = c.pick(R, [12, 16, 20, 24, 30]), t = c.thread(d), v = L + 3 * t.P;
+      return numQ('In ein Bauteil soll ein Sacklochgewinde M' + d + ' mit einer nutzbaren Gewindelänge von ' + L + ' mm geschnitten werden. Das Kernloch soll um drei Steigungen tiefer gebohrt werden als die nutzbare Gewindelänge, damit der Gewindebohrer auslaufen kann. Wie tief in mm bohrst du das Kernloch?', v, 'mm', 'Kernlochtiefe', 0.05,
+        'Für M' + d + ' gilt die Steigung P = ' + f(t.P, 2) + ' mm. Drei Steigungen sind ' + f(3 * t.P, 2) + ' mm. Kernlochtiefe = ' + L + ' + ' + f(3 * t.P, 2) + ' = ' + f(v, 2) + ' mm.', ['Die Steigung findest du in der Gewindetabelle.', 'Addiere drei Steigungen zur nutzbaren Gewindelänge.']);
+    }
   };
   function rd2(v) { return Math.round(v * 1000) / 1000; }
 
   /* Aufgabenliste: Kategorie, Stufe, Titel (neutral), Generator, Argument (Indexliste für Pools) */
   const defs = [
-    ['Normteile und Stücklisten', 1, 'Normteil benennen', 'normname'], ['Normteile und Stücklisten', 1, 'Bezeichnung lesen', 'bezlen'], ['Normteile und Stücklisten', 2, 'Passende Mutter', 'mutter'], ['Normteile und Stücklisten', 2, 'Stückliste auswerten', 'stkauswert'], ['Normteile und Stücklisten', 3, 'Stückliste prüfen', 'stkpruef'],
-    ['Schrauben und Gewinde', 1, 'Gewinde nachschlagen', 'gewinde'], ['Schrauben und Gewinde', 1, 'Festigkeitsklasse lesen', 'fk'], ['Schrauben und Gewinde', 2, 'Bohrungsdurchmesser wählen', 'bohr'], ['Schrauben und Gewinde', 3, 'Passende Schraubenlänge', 'laenge'], ['Schrauben und Gewinde', 3, 'Belastbarkeit einer Schraube', 'kraft'], ['Schrauben und Gewinde', 2, 'Verbindung gegen Lockern', 'sicherung'],
-    ['Welle-Nabe-Verbindungen', 1, 'Verbindungsart bestimmen', 'verb', [0, 1, 2, 3]], ['Welle-Nabe-Verbindungen', 2, 'Passfeder wählen', 'passfeder'], ['Welle-Nabe-Verbindungen', 2, 'Länge der Passfeder', 'tragl'], ['Welle-Nabe-Verbindungen', 2, 'Kraft an der Welle', 'umfang'], ['Welle-Nabe-Verbindungen', 3, 'Nabe aufschrumpfen', 'press'],
-    ['Wälzlager und Federn', 1, 'Lagerart erkennen', 'lagerart'], ['Wälzlager und Federn', 1, 'Lager lesen', 'lagerbohr'], ['Wälzlager und Federn', 2, 'Lager aussuchen', 'lagerwahl'], ['Wälzlager und Federn', 2, 'Federkennlinie', 'feder'], ['Wälzlager und Federn', 3, 'Federn kombinieren', 'kombi'],
+    ['Normteile und Stücklisten', 1, 'Normteil benennen', 'normname'], ['Normteile und Stücklisten', 1, 'Bezeichnung lesen', 'bezlen'], ['Normteile und Stücklisten', 2, 'Passende Mutter', 'mutter'], ['Normteile und Stücklisten', 2, 'Stückliste auswerten', 'stkauswert'], ['Normteile und Stücklisten', 3, 'Stückliste prüfen', 'stkpruef'], ['Normteile und Stücklisten', 2, 'Bezeichnung zusammensetzen', 'bezbau', null, 'kon39'],
+    ['Schrauben und Gewinde', 1, 'Gewinde nachschlagen', 'gewinde'], ['Schrauben und Gewinde', 1, 'Festigkeitsklasse lesen', 'fk'], ['Schrauben und Gewinde', 2, 'Bohrungsdurchmesser wählen', 'bohr'], ['Schrauben und Gewinde', 3, 'Passende Schraubenlänge', 'laenge'], ['Schrauben und Gewinde', 3, 'Belastbarkeit einer Schraube', 'kraft'], ['Schrauben und Gewinde', 2, 'Verbindung gegen Lockern', 'sicherung'], ['Schrauben und Gewinde', 1, 'Gewindebezeichnung deuten', 'gewbez', null, 'kon35'], ['Schrauben und Gewinde', 3, 'Anzugsmoment und Vorspannkraft', 'anzug', null, 'kon36'],
+    ['Welle-Nabe-Verbindungen', 1, 'Verbindungsart bestimmen', 'verb', [0, 1, 2, 3]], ['Welle-Nabe-Verbindungen', 2, 'Passfeder wählen', 'passfeder'], ['Welle-Nabe-Verbindungen', 2, 'Länge der Passfeder', 'tragl'], ['Welle-Nabe-Verbindungen', 2, 'Kraft an der Welle', 'umfang'], ['Welle-Nabe-Verbindungen', 3, 'Nabe aufschrumpfen', 'press'], ['Welle-Nabe-Verbindungen', 3, 'Prüfmaß am Nutgrund', 'nutgrund', null, 'kon37'],
+    ['Wälzlager und Federn', 1, 'Lagerart erkennen', 'lagerart'], ['Wälzlager und Federn', 1, 'Lager lesen', 'lagerbohr'], ['Wälzlager und Federn', 2, 'Lager aussuchen', 'lagerwahl'], ['Wälzlager und Federn', 2, 'Federkennlinie', 'feder'], ['Wälzlager und Federn', 3, 'Federn kombinieren', 'kombi'], ['Wälzlager und Federn', 2, 'Federarbeit berechnen', 'fedarb', null, 'kon38'],
     ['Form- und Lagetoleranzen', 1, 'Symbol erkennen', 'symerk'], ['Form- und Lagetoleranzen', 1, 'Toleranzart zuordnen', 'symzu'], ['Form- und Lagetoleranzen', 2, 'Toleranzrahmen lesen', 'rahmen'], ['Form- und Lagetoleranzen', 2, 'Mit oder ohne Bezug', 'bezug'], ['Form- und Lagetoleranzen', 3, 'Lage der Bohrung prüfen', 'posprf'],
     ['Oberflächenangaben', 1, 'Rauheitsangaben', 'rauk'], ['Oberflächenangaben', 1, 'Bearbeitungszeichen', 'bearbz'], ['Oberflächenangaben', 2, 'Verfahren und Rauheit', 'verfrau'], ['Oberflächenangaben', 3, 'Rauheit passend wählen', 'rauwahl'],
-    ['Fertigungsgerecht konstruieren', 1, 'Gussteil gestalten', 'guss'], ['Fertigungsgerecht konstruieren', 2, 'Schräge am Gussteil', 'schraege'], ['Fertigungsgerecht konstruieren', 2, 'Dreh- und Frästeil gestalten', 'dreh'], ['Fertigungsgerecht konstruieren', 3, 'Werkstoff anwenden', 'wst']
+    ['Fertigungsgerecht konstruieren', 1, 'Gussteil gestalten', 'guss'], ['Fertigungsgerecht konstruieren', 2, 'Schräge am Gussteil', 'schraege'], ['Fertigungsgerecht konstruieren', 2, 'Dreh- und Frästeil gestalten', 'dreh'], ['Fertigungsgerecht konstruieren', 3, 'Sackloch vorbohren', 'sackloch', null, 'kon40'], ['Fertigungsgerecht konstruieren', 3, 'Werkstoff anwenden', 'wst']
   ];
-  const tasks = defs.map((d, i) => ({ id: 'kon' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3], arg: d[4] }));
+  let seq = 0;
+  const tasks = defs.map(d => ({ id: d[5] || 'kon' + (++seq), cat: d[0], level: d[1], title: d[2], gen: d[3], arg: d[4] }));
 
   function make(t, R) {
     const q = G[t.gen](R, t.arg); q.id = t.id; q.cat = t.cat; q.level = t.level; q.title = t.title; return q;

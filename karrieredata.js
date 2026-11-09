@@ -54,6 +54,7 @@
      XP-Schwellen als Anteil der erreichbaren Aufgaben-XP der Labs des Berufs, keine Kapitel-, Kampagnen- und Generalprobe-Meilensteine, Meisterstücke aus den eigenen Labs. */
   const ORIG = { LEVELS: LEVELS.slice(), SPECIALS: SPECIALS.slice() };
   const TITEL = {
+    ige: ['Neuling', 'Elektro-Azubi', 'Schaltungskenner', 'Installationspraktiker', 'Sicherungsprofi', 'Schaltschrank-Praktiker', 'Steuerungspraktiker', 'Geselle in spe', 'Geselle', 'Fachprofi'],
     im: ['Neuling', 'Werkstatt-Azubi', 'Passungskenner', 'Zerspan-Praktiker', 'Pneumatik-Praktiker', 'Steuerungspraktiker', 'Instandhaltungsprofi', 'Geselle in spe', 'Geselle', 'Fachprofi'],
     tpd: ['Neuling', 'Zeichen-Azubi', 'Linienkenner', 'Ansichten-Praktiker', 'Bemaßungsprofi', 'Toleranzkenner', 'Konstruktionspraktiker', 'Geselle in spe', 'Geselle', 'Fachprofi'],
     fll: ['Neuling', 'Lager-Azubi', 'Wareneingangspraktiker', 'Kommissionier-Praktiker', 'Bestandsprofi', 'Dispositionspraktiker', 'Ladungsprofi', 'Geselle in spe', 'Geselle', 'Fachprofi'],

@@ -133,6 +133,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-sqllab" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3 3 7 3s7-1.3 7-3"/></symbol>
   <symbol id="i-linlab" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 16h5"/></symbol>
   <symbol id="i-alglab" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="4" rx="2"/><path d="M12 7v3M12 10l5 3-5 3-5-3zM17 13h3v6H9"/></symbol>
+  <symbol id="i-hwllab" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8M12 17v3M7 9h4v4H7zM14 9h3M14 12h3"/></symbol>
   <symbol id="i-englab" viewBox="0 0 24 24"><path d="M4 7h8M8 7v10M4 17h8M14 9h6M17 9v8M14 17h6"/></symbol>
   <symbol id="i-bhflab" viewBox="0 0 24 24"><rect x="5" y="3" width="13" height="18" rx="2"/><path d="M8 8h7M8 12h7M8 16h4"/></symbol>
   <symbol id="i-itslab" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v3"/></symbol>
@@ -192,7 +193,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   </header>
   <div class="top" id="top"><a class="cont" id="contGo" href="schaltplan.html?trainer"><b>Starten</b><small>SchaltLab (Einführung)</small></a></div>
   <div class="cards" id="cardsFlat">
-    <section class="card" data-lab="layout" data-group="grund">
+    <section class="card" data-lab="layout" data-group="grund" data-beruf="egs ige">
       <span class="tag">LochLab</span>
       <h3>Lochraster-Layout</h3>
       <div class="pic" aria-hidden="true">
@@ -202,7 +203,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Zeichnen</span><span>Drucken</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="layout.html">Öffnen</a><a class="btn" href="layout.html?neu">Neu</a><a class="btn" href="layout.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="schaltplan" data-group="grund">
+    <section class="card" data-lab="schaltplan" data-group="grund" data-beruf="egs ige">
       <span class="tag">SchaltLab</span>
       <h3>Stromlaufplan</h3>
       <div class="pic" aria-hidden="true">
@@ -212,7 +213,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Zeichnen</span><span>Drucken</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="schaltplan.html">Öffnen</a><a class="btn" href="schaltplan.html?neu">Neu</a><a class="btn" href="schaltplan.html?bsp">Beispiel</a></div>
     </section>
-  <section class="card" data-lab="simlab" data-group="sich">
+  <section class="card" data-lab="simlab" data-group="sich" data-beruf="egs ige">
       <span class="tag">SimLab</span>
       <h3>Experimente und Hausinstallation</h3>
       <div class="pic" aria-hidden="true">
@@ -222,7 +223,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Aufbauen</span><span>Schalten</span><span>Beobachten</span></div>
       <div class="btns"><a class="btn pri" href="simlab.html">Öffnen</a><a class="btn" href="simlab.html?neu">Neu</a><a class="btn" href="simlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="digilab" data-group="anadig" data-beruf="egs fi">
+    <section class="card" data-lab="digilab" data-group="anadig" data-beruf="egs ige fi">
       <span class="tag">DigiLab</span>
       <h3>Digitaltechnik</h3>
       <div class="pic" aria-hidden="true">
@@ -232,7 +233,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verdrahten</span><span>Schalten</span><span>Programmieren</span></div>
       <div class="btns"><a class="btn pri" href="digilab.html">Öffnen</a><a class="btn" href="digilab.html?neu">Neu</a><a class="btn" href="digilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="messlab" data-group="mess" data-beruf="egs im">
+    <section class="card" data-lab="messlab" data-group="mess" data-beruf="egs ige im">
       <span class="tag">MessLab</span>
       <h3>Messtechnik</h3>
       <div class="pic" aria-hidden="true">
@@ -242,7 +243,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Messen</span><span>Ablesen</span><span>Fehler finden</span></div>
       <div class="btns"><a class="btn pri" href="messlab.html">Öffnen</a><a class="btn" href="messlab.html?neu">Neu</a><a class="btn" href="messlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="elslab" data-group="sich" data-beruf="egs im">
+    <section class="card" data-lab="elslab" data-group="sich" data-beruf="egs ige im">
       <span class="tag">SICHERHEITS-LAB</span>
       <h3>Elektrische Sicherheit: Schutz, Prüfung, Rettung</h3>
       <div class="pic" aria-hidden="true">
@@ -252,7 +253,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Gefahr erkennen</span><span>Schutz wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="elslab.html">Öffnen</a><a class="btn" href="elslab.html?neu">Neu</a><a class="btn" href="elslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="ntslab" data-group="anadig">
+    <section class="card" data-lab="ntslab" data-group="anadig" data-beruf="egs ige">
       <span class="tag">NETZTEIL-LAB</span>
       <h3>Netzteile und Schaltregler</h3>
       <div class="pic" aria-hidden="true">
@@ -262,7 +263,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Wandeln</span><span>Regeln</span><span>Verluste bilanzieren</span></div>
       <div class="btns"><a class="btn pri" href="ntslab.html">Öffnen</a><a class="btn" href="ntslab.html?neu">Neu</a><a class="btn" href="ntslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="wsllab" data-group="grund">
+    <section class="card" data-lab="wsllab" data-group="grund" data-beruf="egs ige">
       <span class="tag">WECHSELSTROM-LAB</span>
       <h3>Wechselstrom und Schwingkreise</h3>
       <div class="pic" aria-hidden="true">
@@ -272,7 +273,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Zeiger lesen</span><span>Resonanz abstimmen</span><span>Filter auslegen</span></div>
       <div class="btns"><a class="btn pri" href="wsllab.html">Öffnen</a><a class="btn" href="wsllab.html?neu">Neu</a><a class="btn" href="wsllab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="analab" data-group="anadig">
+    <section class="card" data-lab="analab" data-group="anadig" data-beruf="egs ige">
       <span class="tag">ANALOGTECHNIK-LAB</span>
       <h3>Halbleiter und Verstärker</h3>
       <div class="pic" aria-hidden="true">
@@ -282,7 +283,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Kennlinie lesen</span><span>Arbeitspunkt einstellen</span><span>Verstärker auslegen</span></div>
       <div class="btns"><a class="btn pri" href="analab.html">Öffnen</a><a class="btn" href="analab.html?neu">Neu</a><a class="btn" href="analab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="hauslab" data-group="sich">
+    <section class="card" data-lab="hauslab" data-group="sich" data-beruf="egs ige">
       <span class="tag">HausLab</span>
       <h3>Elektroinstallation im Haus</h3>
       <div class="pic" aria-hidden="true">
@@ -302,7 +303,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Auftrag</span><span>Prüfen</span><span>Teilen</span></div>
       <div class="btns"><a class="btn pri" href="appwerkstatt.html">Öffnen</a><a class="btn" href="appwerkstatt.html?aufgabe=ap1">Erste App</a><a class="btn" href="appwerkstatt.html?aufgabe=ap11">Notizen</a></div>
     </section>
-    <section class="card" data-lab="spslab" data-group="auto" data-beruf="egs im">
+    <section class="card" data-lab="spslab" data-group="auto" data-beruf="egs ige im">
       <span class="tag">SPS-LAB</span>
       <h3>Steuerungen programmieren</h3>
       <div class="pic" aria-hidden="true">
@@ -322,7 +323,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Layout</span><span>Bestücken</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="pcblab.html">Öffnen</a><a class="btn" href="pcblab.html?neu">Neu</a><a class="btn" href="pcblab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="antlab" data-group="auto" data-beruf="egs im">
+    <section class="card" data-lab="antlab" data-group="auto" data-beruf="egs ige im">
       <span class="tag">ANTRIEBS-LAB</span>
       <h3>Motoren und Antriebe untersuchen</h3>
       <div class="pic" aria-hidden="true">
@@ -332,7 +333,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Prüfstand</span><span>Messen</span><span>Auslegen</span></div>
       <div class="btns"><a class="btn pri" href="antlab.html">Öffnen</a><a class="btn" href="antlab.html?neu">Neu</a><a class="btn" href="antlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="senlab" data-group="mess" data-beruf="egs im">
+    <section class="card" data-lab="senlab" data-group="mess" data-beruf="egs ige im">
       <span class="tag">SENSORIK-LAB</span>
       <h3>Sensoren und Messketten untersuchen</h3>
       <div class="pic" aria-hidden="true">
@@ -372,7 +373,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Störung messen</span><span>Maßnahme wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="emvlab.html">Öffnen</a><a class="btn" href="emvlab.html?neu">Neu</a><a class="btn" href="emvlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="enrlab" data-group="sich">
+    <section class="card" data-lab="enrlab" data-group="sich" data-beruf="egs ige">
       <span class="tag">ENERGIE-LAB</span>
       <h3>Solarstrom: vom Modul zur Anlage</h3>
       <div class="pic" aria-hidden="true">
@@ -402,7 +403,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verdrahten</span><span>Programmieren</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="pilab.html">Öffnen</a><a class="btn" href="pilab.html?neu">Neu</a><a class="btn" href="pilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="dslab" data-group="grund" data-beruf="egs fi">
+    <section class="card" data-lab="dslab" data-group="grund" data-beruf="egs ige fi">
       <span class="tag">DATENBLATT-LAB</span>
       <h3>Datenblätter lesen und verstehen</h3>
       <div class="pic" aria-hidden="true">
@@ -653,7 +654,17 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>PAP</span><span>Struktogramm</span><span>Sortieren</span></div>
       <div class="btns"><a class="btn pri" href="alglab.html">Öffnen</a><a class="btn" href="alglab.html?aufgabe=alg1">Erste Aufgabe</a><a class="btn" href="alglab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="pruefungslab" data-group="pruef">
+    <section class="card" data-lab="hwllab" data-group="bau" data-beruf="fi">
+      <span class="tag">PC-HARDWARE-LAB</span>
+      <h3>Aufbau, RAID und Fehlersuche am PC</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="24" y="26" width="92" height="68" rx="6" fill="#2c343e" stroke="#9aa6b2" stroke-width="3"/><rect x="40" y="42" width="28" height="28" fill="#5fb0ff"/><path d="M76 46h26M76 58h26M76 70h26" stroke="#9aa6b2" stroke-width="3" stroke-linecap="round"/><g fill="#ffd166"><rect x="134" y="40" width="10" height="40"/><rect x="150" y="40" width="10" height="40"/><rect x="166" y="40" width="10" height="40"/><rect x="182" y="40" width="10" height="40"/></g><path d="M128 90h70" stroke="#6bd48a" stroke-width="4" stroke-linecap="round"/></svg>
+      </div>
+      <p>Netzteil und Stromverbrauch rechnen, RAID-Verbünde durchspielen, Bauteile im Konfigurator auf Verträglichkeit prüfen und Fehlerbilder per Entscheidungsbaum eingrenzen. Mit Beispielen.</p>
+      <div class="steps"><span>PC-Aufbau</span><span>RAID</span><span>Fehlersuche</span></div>
+      <div class="btns"><a class="btn pri" href="hwllab.html">Öffnen</a><a class="btn" href="hwllab.html?aufgabe=hwl1">Erste Aufgabe</a><a class="btn" href="hwllab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="pruefungslab" data-group="pruef" data-beruf="egs ige">
       <span class="tag">PRÜFUNGS-LAB</span>
       <h3>Für die Abschlussprüfung üben</h3>
       <div class="pic" aria-hidden="true">

@@ -212,7 +212,7 @@
   /* Prüfmodus: jede Tipp-Stufe kostet 25 Prozent (höchstens zwei Stufen); beim normalen Üben nichts */
   const pctFor = (exam, tips) => (exam ? 100 - 25 * Math.min(2, Math.max(0, tips || 0)) : 100);
 
-  const JOBS = [['egs', 'Elektroniker'], ['im', 'Industriemechaniker'], ['tpd', 'Techn. Produktdesigner'], ['fll', 'Lagerlogistik'], ['ik', 'Industriekaufmann'], ['fi', 'Fachinformatiker']];
+  const JOBS = [['egs', 'Elektroniker'], ['ige', 'Industrieelektriker'], ['im', 'Industriemechaniker'], ['tpd', 'Techn. Produktdesigner'], ['fll', 'Lagerlogistik'], ['ik', 'Industriekaufmann'], ['fi', 'Fachinformatiker']];
 
   const API = { rd, num, hashStr, rng, ri, pick, shuffle,
     isNotation, parseNum, convertNotation, fmtDe, fmtEn, fmtN, fmtEnN, sayInt, sayNumber,

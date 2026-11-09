@@ -1,9 +1,9 @@
 'use strict';
-/* Tonfunk Lab: Fragen für deinen Beruf (v42.159). Übungsfragen (Mehrfachwahl) für Industriemechaniker, Produktdesigner, Lagerlogistik,
+/* Tonfunk Lab: Fragen für deinen Beruf (v42.159). Übungsfragen (Mehrfachwahl) für Industrieelektriker, Industriemechaniker, Produktdesigner, Lagerlogistik,
    Industriekaufleute und Fachinformatiker aus pruefbank-beruf.js. Reines Üben: kein Eintrag in die Prüfungs-Historie, kein Tipp-Abzug.
    Der Kern (core) hat keinen DOM-Zugriff und ist in Node testbar. */
 (function (root) {
-  const NAMEN = { im: 'Industriemechaniker', tpd: 'Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker' };
+  const NAMEN = { ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker' };
   const core = {
     NAMEN,
     themen(B, beruf) { return B && B.themenFuer ? B.themenFuer(beruf).map(t => ({ k: t.k, t: t.t, n: B.MC.filter(m => m[0] === t.k).length })) : []; },

@@ -70,7 +70,7 @@
     }
     /* Schema 2: Jahrgang, Duelle, Karriere (bei Schema 1 gibt es die Blöcke nicht: keine Duelle) */
     r.jahrgang = /^\d{4}$/.test(String(o.jahrgang || '')) ? String(o.jahrgang) : '';
-    r.beruf = /^(egs|im|tpd|fll|ik|fi)$/.test(String(o.beruf || '')) ? String(o.beruf) : '';
+    r.beruf = /^(egs|ige|im|tpd|fll|ik|fi)$/.test(String(o.beruf || '')) ? String(o.beruf) : '';
     if (o.schema >= 2 && isObj(o.duell)) {
       const d = o.duell; r.duell.jahrgang = /^\d{4}$/.test(String(d.jahrgang || '')) ? String(d.jahrgang) : r.jahrgang; if (!r.jahrgang) r.jahrgang = r.duell.jahrgang;
       r.duell.n = Math.max(0, int(d.n)); r.duell.wins = Math.max(0, int(d.wins));
@@ -133,7 +133,7 @@
   core.activity = rec => Math.max.apply(null, [0].concat(Object.keys(rec.badges).map(k => rec.badges[k]), rec.exam.hist.map(h => h.t)));
 
   /* ---------- Auswertung ---------- */
-  core.BERUFE = { egs: 'Elektroniker', im: 'Industriemechaniker', tpd: 'Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker' };
+  core.BERUFE = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker' };
   core.aggregate = function (state, cat, ber) {
     if (ber) state = Object.assign({}, state, { students: state.students.filter(s => (s.latest.beruf || 'egs') === ber) });
     const labKeys = cat.labs.filter(l => !ber || !l.beruf || l.beruf.indexOf(ber) >= 0).map(l => l.key);

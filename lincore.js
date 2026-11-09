@@ -54,7 +54,11 @@
     NOPKG: 'Hinweis: Das Paket gibt es in der Paketliste nicht. Mit apt search suchst du nach Paketnamen.',
     LOCK: 'Hinweis: Paketverwaltung braucht Administratorrechte: sudo davor setzen.',
     NOSUDO: 'Hinweis: Dieser Benutzer steht nicht in der Gruppe sudo und darf sudo nicht nutzen.',
-    SIM: 'Hinweis: Dieses Programm wird im Lab nicht simuliert. Im echten Terminal funktioniert es.'
+    SIM: 'Hinweis: Dieses Programm wird im Lab nicht simuliert. Im echten Terminal funktioniert es.',
+    SVCAUTH: 'Hinweis: Dienste starten, stoppen, aktivieren oder deaktivieren darf nur der Administrator. Setze sudo davor. Lesen (status, list-units, is-active) geht auch ohne.',
+    NOUNIT: 'Hinweis: Diesen Dienst kennt systemd nicht (Tippfehler oder nicht installiert). systemctl list-units --type=service --all zeigt die vorhandenen Dienste.',
+    AWKSIM: 'Hinweis: Das Lab simuliert awk nur in einfacher Form: print mit $1, $2, $NF, NR, -F Trenner, Muster wie /text/ oder NR==2 und Summen mit END. Im echten Terminal kann awk deutlich mehr.',
+    SEDSIM: 'Hinweis: Das Lab simuliert sed nur in einfacher Form: s/alt/neu/ (mit g), p, d, q mit Zeilennummern oder /muster/ als Adresse, dazu -n, -e, -E und -i. Im echten Terminal kann sed deutlich mehr.'
   };
   const ETXT = { ENOENT: 'No such file or directory', EACCES: 'Permission denied', ENOTDIR: 'Not a directory', EISDIR: 'Is a directory', EEXIST: 'File exists', ENOTEMPTY: 'Directory not empty', EPERM: 'Operation not permitted' };
 
@@ -162,6 +166,14 @@
 
   /* ---------- System ---------- */
   const DEF_USERS = [{ n: 'root', uid: 0, home: '/root', groups: ['root'], gecos: 'root' }, { n: 'azubi', uid: 1000, home: '/home/azubi', groups: ['azubi', 'sudo'], gecos: 'Azubi' }];
+  /* Dienste (systemctl): n Name, alias, d Beschreibung, on läuft, en beim Start aktiviert, pid/exe/cmd Hauptprozess, worker Kindprozess, sysv Dienst mit SysV-Skript, broken startet nicht */
+  const DEF_SVC = [
+    { n: 'ssh', alias: ['sshd'], d: 'OpenBSD Secure Shell server', on: true, en: true, pid: 688, exe: 'sshd', cmd: 'sshd: /usr/sbin/sshd -D', sysv: true, since: 'Thu 2026-11-05 09:12:41 CET; 3 days ago' },
+    { n: 'cron', alias: [], d: 'Regular background program processing daemon', on: true, en: true, pid: 531, exe: 'cron', cmd: '/usr/sbin/cron -f', sysv: true, since: 'Thu 2026-11-05 09:12:40 CET; 3 days ago' },
+    { n: 'nginx', alias: [], d: 'A high performance web server and a reverse proxy server', on: true, en: true, pid: 745, exe: 'nginx', cmd: 'nginx: master process /usr/sbin/nginx', worker: { user: 'www-data', cmd: 'nginx: worker process' }, sysv: true, since: 'Thu 2026-11-05 10:02:20 CET; 3 days ago' },
+    { n: 'rsyslog', alias: ['syslog'], d: 'System Logging Service', on: true, en: true, pid: 412, exe: 'rsyslogd', cmd: '/usr/sbin/rsyslogd -n -iNONE', user: 'syslog', since: 'Thu 2026-11-05 09:12:39 CET; 3 days ago' },
+    { n: 'fail2ban', alias: [], d: 'Fail2Ban Service', on: false, en: false, pid: 0, exe: 'fail2ban-server', cmd: '/usr/bin/python3 /usr/bin/fail2ban-server -xf start' }
+  ];
   function newSystem(spec) {
     spec = spec || {};
     const sys = { fs: mkNode('d', 0o755, 'root', 'root'), cwd: spec.cwd || '/home/azubi', user: spec.user || 'azubi', host: spec.host || 'tonfunk-pc', users: {}, groups: {}, procs: [], jobs: [], notices: [], nextPid: 3100, nextJob: 1, umask: 0o022, lastCode: 0, hist: [], sudoSeen: false, oldpwd: null,
@@ -178,6 +190,7 @@
     if (spec.pkgs) { sys.pkgs.inst = Object.assign({}, spec.pkgs.inst); sys.pkgs.avail = Object.assign({}, spec.pkgs.avail); }
     sys.net = spec.net || { ip: '192.168.10.25', prefix: 24, gw: '192.168.10.1', hosts: { localhost: '127.0.0.1', '127.0.0.1': '127.0.0.1' }, down: [] };
     sys.sockets = spec.sockets || []; sys.cron = spec.cron || '';
+    sys.svc = {}; (spec.svc || DEF_SVC).forEach(s => { sys.svc[s.n] = Object.assign({ alias: [], sock: [] }, s); });
     sys.env = Object.assign({ HOME: sys.users[sys.user] ? sys.users[sys.user].home : '/', USER: sys.user, SHELL: '/bin/bash', PATH: '/usr/local/bin:/usr/bin:/bin', LANG: 'en_US.UTF-8', HOSTNAME: sys.host, TERM: 'xterm' }, spec.env || {});
     Object.keys(CMDS).forEach(n => { if (!CMDS[n].pkg && !CMDS[n].bi && !getNode(sys, '/usr/bin/' + n)) put(sys, { p: '/usr/bin/' + n, m: 0o755, c: '' }); });
     return sys;
@@ -475,7 +488,7 @@
   }
 
   /* ---------- Befehle ---------- */
-  /* PRUEFEN P21: Nicht simuliert (Meldung "wird im Lab nicht simuliert"): awk, sed, tar, ssh, git, vim, nano, systemctl, journalctl, python3 u. a. Soll systemctl st... */
+  /* PRUEFEN P21: Nicht simuliert (Meldung "wird im Lab nicht simuliert"): tar, ssh, git, vim, nano, journalctl, python3 u. a. (awk, sed und systemctl gibt es seit Version 2 in einfacher Form, siehe P28 und P29). Soll journalctl ... */
   const CMDS = {}, USAGE = {}, STUBS = {};
   const def = (names, usage, fn, extra) => { (Array.isArray(names) ? names : [names]).forEach(n => { CMDS[n] = Object.assign({ fn }, extra || {}); if (usage) USAGE[n] = usage; }); };
 
@@ -941,7 +954,493 @@
   }, { pkg: 'tree' });
   def('cowsay', 'cowsay Text', c => { const t = c.args.join(' ') || 'Moo'; c.ln(' ' + '_'.repeat(t.length + 2)); c.ln('< ' + t + ' >'); c.ln(' ' + '-'.repeat(t.length + 2)); c.ln('        \\   ^__^'); c.ln('         \\  (oo)\\_______'); c.ln('            (__)\\       )\\/\\'); c.ln('                ||----w |'); c.ln('                ||     ||'); }, { pkg: 'cowsay' });
   ['htop', 'curl', 'nmap', 'vim'].forEach(n => def(n, null, c => { c.er('bash: ' + n + ': ' + 'Das Programm ist installiert, wird aber im Lab nicht simuliert.', 'SIM'); return 1; }, { pkg: n }));
-  ['awk', 'sed', 'tar', 'nano', 'vi', 'systemctl', 'journalctl', 'ssh', 'scp', 'rsync', 'git', 'python3', 'wget', 'nc', 'ifconfig', 'netstat', 'zip', 'unzip', 'gzip', 'ln', 'diff', 'watch', 'lsof', 'dmesg', 'service', 'shutdown', 'reboot', 'mount'].forEach(n => { STUBS[n] = n === 'ifconfig' || n === 'netstat' ? 'Das alte Werkzeug ist auf neuen Systemen nicht mehr installiert. Moderner Ersatz: ' + (n === 'ifconfig' ? 'ip a' : 'ss -tuln') : 'Dieses Programm wird im Lab nicht simuliert.'; });
+  /* ---------- awk (einfache Form) ---------- */
+  /* PRUEFEN P28: awk und sed werden nur in einfacher Form simuliert (awk: print, $N, $NF, NR, -F, Muster, Summen mit END; sed: s///g, p, d, q, Adressen). Fehlermeldungen folgen mawk (Ubuntu) bzw. GNU sed. Reicht dieser Umfang? */
+  const AWK_SYN = { syn: 1 }, AWK_UNS = { uns: 1 };
+  const AWK_KW = new Set(['print', 'printf', 'if', 'else', 'for', 'while', 'do', 'next', 'exit', 'getline', 'delete', 'function', 'return', 'break', 'continue', 'nextfile', 'in', 'BEGIN', 'END']);
+  const AWK_FN = { length: 1, toupper: 1, tolower: 1, substr: 1, int: 1 };
+  const awkLooks = s => /^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?\s*$/.test(s);
+  const awkNum = s => { const m = /^\s*[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?/.exec(String(s)); return m ? parseFloat(m[0]) : 0; };
+  const awkFmt = v => { if (!fin(v)) return v !== v ? 'nan' : (v > 0 ? 'inf' : '-inf'); if (Number.isInteger(v) && Math.abs(v) < 1e16) return String(v); return String(parseFloat(v.toPrecision(6))); };
+  /* Werte: Zahl, Text oder {sn: Text} (Feld, das wie eine Zahl aussieht), undefined = nicht gesetzt */
+  const aN = v => (v === undefined ? 0 : typeof v === 'number' ? v : typeof v === 'string' ? awkNum(v) : awkNum(v.sn));
+  const aS = v => (v === undefined ? '' : typeof v === 'number' ? awkFmt(v) : typeof v === 'string' ? v : v.sn);
+  const aB = v => (v === undefined ? false : typeof v === 'number' ? v !== 0 : typeof v === 'string' ? v !== '' : awkNum(v.sn) !== 0);
+  const aIsNum = v => v === undefined || typeof v === 'number' || typeof v === 'object';
+  const mkF = s => (awkLooks(s) ? { sn: s } : s);
+  const awkReOf = s => { try { return new RegExp(s.replace(/\[:(\w+):\]/g, (m, k) => POSIX[k] || m)); } catch (ex) { throw AWK_SYN; } };
+  function awkLex(src) {
+    const T = [], n = src.length; let i = 0;
+    const opEnd = () => { const l = T[T.length - 1]; return !!l && (l.t === 'num' || l.t === 'str' || l.t === 'name' || (l.t === 'op' && l.v === ')')); };
+    while (i < n) {
+      const ch = src[i], rest = src.slice(i); let m;
+      if (ch === ' ' || ch === '\t' || ch === '\r') { i++; continue; }
+      if (ch === '\n') { T.push({ t: 'op', v: ';' }); i++; continue; }
+      if (ch === '#') { while (i < n && src[i] !== '\n') i++; continue; }
+      if ((m = /^(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?/.exec(rest))) { T.push({ t: 'num', v: parseFloat(m[0]) }); i += m[0].length; continue; }
+      if ((m = /^[A-Za-z_]\w*/.exec(rest))) { T.push({ t: 'name', v: m[0] }); i += m[0].length; continue; }
+      if (ch === '"') {
+        let s = '', j = i + 1;
+        for (; j < n && src[j] !== '"'; j++) { if (src[j] === '\n') throw AWK_SYN; if (src[j] === '\\' && j + 1 < n) { const e = src[++j]; s += e === 'n' ? '\n' : e === 't' ? '\t' : e === '\\' ? '\\' : e === '"' ? '"' : e === '/' ? '/' : '\\' + e; } else s += src[j]; }
+        if (j >= n) throw AWK_SYN; T.push({ t: 'str', v: s }); i = j + 1; continue;
+      }
+      if (ch === '/' && !opEnd()) {
+        let s = '', j = i + 1;
+        for (; j < n && src[j] !== '/'; j++) { if (src[j] === '\n') throw AWK_SYN; if (src[j] === '\\' && j + 1 < n) { if (src[j + 1] === '/') s += '/'; else s += src[j] + src[j + 1]; j++; } else s += src[j]; }
+        if (j >= n) throw AWK_SYN; T.push({ t: 're', v: s }); i = j + 1; continue;
+      }
+      const two = rest.slice(0, 2);
+      if (['==', '!=', '<=', '>=', '&&', '||', '+=', '-=', '*=', '/=', '%=', '++', '--', '!~', '>>'].includes(two)) { T.push({ t: 'op', v: two }); i += 2; continue; }
+      if ('{}()[];,$+-*/%<>~!=?:|^'.includes(ch)) { T.push({ t: 'op', v: ch }); i++; continue; }
+      throw AWK_SYN;
+    }
+    return T;
+  }
+  function awkParse(src) {
+    const T = awkLex(src); let p = 0, noGt = false;
+    const isOp = v => !!T[p] && T[p].t === 'op' && T[p].v === v;
+    const eat = v => { if (isOp(v)) { p++; return true; } return false; };
+    const need = v => { if (!eat(v)) throw AWK_SYN; };
+    const skipSep = () => { while (isOp(';')) p++; };
+    const expr = ng => { const sv = noGt; noGt = ng; try { return orE(); } finally { noGt = sv; } };
+    const orE = () => { let l = andE(); while (eat('||')) l = { k: 'or', l, r: andE() }; return l; };
+    const andE = () => { let l = matE(); while (eat('&&')) l = { k: 'and', l, r: matE() }; return l; };
+    const matE = () => { let l = cmpE(); while (isOp('~') || isOp('!~')) { const neg = T[p++].v === '!~'; l = { k: 'mat', l, r: cmpE(), neg }; } return l; };
+    const cmpE = () => { const l = catE(), t = T[p]; if (t && t.t === 'op' && ['<', '<=', '==', '!=', '>', '>='].includes(t.v) && !(t.v === '>' && noGt)) { p++; return { k: 'cmp', op: t.v, l, r: catE() }; } return l; };
+    const startsOperand = () => { const t = T[p]; if (!t) return false; if (t.t === 'num' || t.t === 'str') return true; if (t.t === 'name') return !AWK_KW.has(t.v); return t.t === 'op' && (t.v === '$' || t.v === '('); };
+    const catE = () => { let l = addE(); while (startsOperand()) l = { k: 'cat', l, r: addE() }; return l; };
+    const addE = () => { let l = mulE(); while (isOp('+') || isOp('-')) { const o = T[p++].v; l = { k: 'bin', o, l, r: mulE() }; } return l; };
+    const mulE = () => { let l = unE(); while (isOp('*') || isOp('/') || isOp('%')) { const o = T[p++].v; l = { k: 'bin', o, l, r: unE() }; } return l; };
+    const unE = () => { if (eat('!')) return { k: 'not', e: unE() }; if (eat('-')) return { k: 'neg', e: unE() }; if (eat('+')) return { k: 'pos', e: unE() }; return prim(); };
+    const prim = () => {
+      const t = T[p]; if (!t) throw AWK_SYN;
+      if (t.t === 'num' || t.t === 'str') { p++; return { k: 'lit', v: t.v }; }
+      if (t.t === 're') { p++; return { k: 're', re: awkReOf(t.v) }; }
+      if (t.t === 'op') {
+        if (t.v === '$') { p++; return { k: 'fld', e: prim() }; }
+        if (t.v === '(') { p++; const e = expr(false); need(')'); return { k: 'grp', e }; }
+        if (t.v === '?' || t.v === '[' || t.v === '|' || t.v === '^') throw AWK_UNS;
+        throw AWK_SYN;
+      }
+      if (AWK_KW.has(t.v)) throw AWK_UNS;
+      p++;
+      if (isOp('(')) { if (!AWK_FN[t.v]) throw AWK_UNS; p++; const a = []; if (!isOp(')')) { a.push(expr(false)); while (eat(',')) a.push(expr(false)); } need(')'); return { k: 'fn', nm: t.v, a }; }
+      if (isOp('[')) throw AWK_UNS;
+      if (t.v === 'length') return { k: 'fn', nm: 'length', a: [] };
+      return { k: 'var', nm: t.v };
+    };
+    const stmt = () => {
+      const t = T[p];
+      if (t.t === 'name') {
+        if (t.v === 'print') {
+          p++; const a = [];
+          if (isOp('>') || isOp('>>') || isOp('|')) throw AWK_UNS;
+          if (!isOp(';') && !isOp('}') && p < T.length) { a.push(expr(true)); while (eat(',')) a.push(expr(true)); }
+          if (isOp('>') || isOp('>>') || isOp('|')) throw AWK_UNS;
+          return { k: 'print', a };
+        }
+        if (AWK_KW.has(t.v)) throw AWK_UNS;
+        p++; const nx = T[p];
+        if (nx && nx.t === 'op') {
+          if (['=', '+=', '-=', '*=', '/=', '%='].includes(nx.v)) { p++; return { k: 'set', nm: t.v, o: nx.v, e: expr(false) }; }
+          if (nx.v === '++' || nx.v === '--') { p++; return { k: 'inc', nm: t.v, d: nx.v === '++' ? 1 : -1 }; }
+        }
+        throw AWK_UNS;
+      }
+      if (t.t === 'op' && (t.v === '++' || t.v === '--')) { p++; const nm = T[p]; if (!nm || nm.t !== 'name') throw AWK_SYN; p++; return { k: 'inc', nm: nm.v, d: t.v === '++' ? 1 : -1 }; }
+      throw AWK_UNS;
+    };
+    const stmts = () => {
+      const L = []; skipSep();
+      while (!isOp('}')) { if (p >= T.length) throw AWK_SYN; L.push(stmt()); if (!isOp('}') && !isOp(';')) throw (isOp('?') || isOp('[') || isOp('|') ? AWK_UNS : AWK_SYN); skipSep(); }
+      return L;
+    };
+    const prog = { begin: [], main: [], end: [] }; skipSep();
+    while (p < T.length) {
+      let pat = null, kind = 'main';
+      if (T[p].t === 'name' && (T[p].v === 'BEGIN' || T[p].v === 'END')) { kind = T[p].v === 'BEGIN' ? 'begin' : 'end'; p++; if (!isOp('{')) throw AWK_SYN; }
+      else if (!isOp('{')) { pat = expr(false); if (isOp(',')) throw AWK_UNS; }
+      let body = null;
+      if (isOp('{')) { p++; body = stmts(); need('}'); }
+      prog[kind].push({ pat, body }); skipSep();
+    }
+    return prog;
+  }
+  function awkSplit(line, FS) {
+    if (FS === ' ') { const t = line.replace(/^[ \t\n]+|[ \t\n]+$/g, ''); return t ? t.split(/[ \t\n]+/) : []; }
+    if (line === '') return [];
+    if (FS.length === 1) return line.split(FS);
+    let re; try { re = new RegExp(FS.replace(/\[:(\w+):\]/g, (m, k) => POSIX[k] || m), 'g'); } catch (ex) { return [line]; }
+    const out = []; let last = 0, m; while ((m = re.exec(line)) && m[0] !== '') { out.push(line.slice(last, m.index)); last = m.index + m[0].length; } out.push(line.slice(last)); return out;
+  }
+  const AWK_UNSMSG = 'awk: Dieser awk-Ausdruck wird im Lab nicht simuliert.';
+  def('awk', "awk [-F Trenner] [-v var=wert] 'Programm' [Datei]...   (einfache Form: print $1, Muster, NR, Summen mit END)", c => {
+    const a = c.args; let FS = ' ', i = 0; const vars = {};
+    for (; i < a.length; i++) {
+      const x = a[i];
+      if (x === '--') { i++; break; }
+      if (x === '-F' || x === '-v') { if (i + 1 >= a.length) { c.er("awk: option requires an argument -- '" + x[1] + "'", 'USAGE'); return 2; } const val = a[++i]; if (x === '-F') FS = val; else { const eq = val.indexOf('='); if (eq < 1) { c.er('awk: improper assignment: -v ' + val, 'USAGE'); return 2; } vars[val.slice(0, eq)] = mkF(val.slice(eq + 1)); } continue; }
+      if (x.startsWith('-F') && x.length > 2) { FS = x.slice(2); continue; }
+      if (x.startsWith('-v') && x.length > 2) { const eq = x.indexOf('='); if (eq < 3) { c.er('awk: improper assignment: ' + x, 'USAGE'); return 2; } vars[x.slice(2, eq)] = mkF(x.slice(eq + 1)); continue; }
+      if (x === '-f' || x === '--file' || x === '-W') { c.er(AWK_UNSMSG, 'AWKSIM'); return 2; }
+      if (x[0] === '-' && x.length > 1) { c.er("awk: invalid option -- '" + x.replace(/^-+/, '')[0] + "'", 'OPT'); return 2; }
+      break;
+    }
+    if (i >= a.length) { c.er('Usage: awk [-F fs] [-v var=value] \'program\' [file ...]', 'USAGE'); return 2; }
+    const src = a[i++], files = a.slice(i);
+    let prog;
+    try { prog = awkParse(src); } catch (ex) {
+      if (ex === AWK_UNS) { c.er(AWK_UNSMSG, 'AWKSIM'); return 2; }
+      c.er('awk: line 1: syntax error', 'Hinweis: Das awk-Programm ist falsch aufgebaut. Das Programm steht in einfachen Anführungszeichen, Anweisungen in geschweiften Klammern: awk \'{print $1}\' datei. Prüfe Klammern und Anführungszeichen.'); return 2;
+    }
+    if (FS.length > 1 && FS === '\\t') FS = '\t';
+    const S = { v: Object.assign({}, vars), NR: 0, FNR: 0, f: [], line: '', file: '' }; if (FS !== ' ') S.v.FS = FS; else if (S.v.FS === undefined) S.v.FS = ' ';
+    const out = [];
+    const ofs = () => (S.v.OFS === undefined ? ' ' : aS(S.v.OFS));
+    const ev = e => {
+      switch (e.k) {
+        case 'lit': return e.v;
+        case 're': return e.re.test(S.line) ? 1 : 0;
+        case 'grp': return ev(e.e);
+        case 'fld': { const n = Math.trunc(aN(ev(e.e))); if (n === 0) return mkF(S.line); if (n < 0) return ''; return n > S.f.length ? undefined : mkF(S.f[n - 1]); }
+        case 'var': return e.nm === 'NR' ? S.NR : e.nm === 'NF' ? S.f.length : e.nm === 'FNR' ? S.FNR : e.nm === 'FILENAME' ? S.file : S.v[e.nm];
+        case 'cat': return aS(ev(e.l)) + aS(ev(e.r));
+        case 'bin': { const x = aN(ev(e.l)), y = aN(ev(e.r)); if ((e.o === '/' || e.o === '%') && y === 0) throw { run: 'division by zero' }; return e.o === '+' ? x + y : e.o === '-' ? x - y : e.o === '*' ? x * y : e.o === '/' ? x / y : x % y; }
+        case 'neg': return -aN(ev(e.e));
+        case 'pos': return aN(ev(e.e));
+        case 'not': return aB(ev(e.e)) ? 0 : 1;
+        case 'or': return aB(ev(e.l)) || aB(ev(e.r)) ? 1 : 0;
+        case 'and': return aB(ev(e.l)) && aB(ev(e.r)) ? 1 : 0;
+        case 'mat': { const s = aS(ev(e.l)), re = e.r.k === 're' ? e.r.re : awkReOf(aS(ev(e.r))); return re.test(s) !== e.neg ? 1 : 0; }
+        case 'cmp': {
+          const x = ev(e.l), y = ev(e.r); let r;
+          if (aIsNum(x) && aIsNum(y)) { const p = aN(x), q = aN(y); r = p < q ? -1 : p > q ? 1 : 0; } else { const p = aS(x), q = aS(y); r = p < q ? -1 : p > q ? 1 : 0; }
+          return (e.op === '<' ? r < 0 : e.op === '<=' ? r <= 0 : e.op === '==' ? r === 0 : e.op === '!=' ? r !== 0 : e.op === '>' ? r > 0 : r >= 0) ? 1 : 0;
+        }
+        case 'fn': {
+          const A = e.a.map(ev);
+          if (e.nm === 'length') return [...(A.length ? aS(A[0]) : S.line)].length;
+          if (e.nm === 'toupper') return aS(A[0]).toUpperCase();
+          if (e.nm === 'tolower') return aS(A[0]).toLowerCase();
+          if (e.nm === 'int') return Math.trunc(aN(A[0]));
+          const s = aS(A[0]), m = Math.round(aN(A[1])), len = A.length > 2 ? Math.round(aN(A[2])) : Infinity;
+          const from = Math.max(m, 1), to = len === Infinity ? s.length : m + len - 1; return s.slice(from - 1, Math.max(to, 0));
+        }
+      }
+      return undefined;
+    };
+    const exec = L => {
+      for (const s of L) {
+        if (s.k === 'print') out.push((s.a.length ? s.a.map(x => aS(ev(x))).join(ofs()) : S.line) + '\n');
+        else if (s.k === 'set') {
+          const v = ev(s.e);
+          if (s.o === '=') S.v[s.nm] = v;
+          else { const x = aN(S.v[s.nm]), y = aN(v); if ((s.o === '/=' || s.o === '%=') && y === 0) throw { run: 'division by zero' }; S.v[s.nm] = s.o === '+=' ? x + y : s.o === '-=' ? x - y : s.o === '*=' ? x * y : s.o === '/=' ? x / y : x % y; }
+        } else S.v[s.nm] = aN(S.v[s.nm]) + s.d;
+      }
+    };
+    const runItems = L => { for (const it of L) { if (!it.pat || aB(ev(it.pat))) { if (it.body) exec(it.body); else out.push(S.line + '\n'); } } };
+    const flush = () => { c.o(out.join('')); out.length = 0; };
+    try {
+      prog.begin.forEach(it => { if (it.body) exec(it.body); });
+      if (prog.main.length || prog.end.length) {
+        const srcs = files.length ? files : ['-'];
+        for (const f of srcs) {
+          let text;
+          if (f === '-') text = c.stdin;
+          else {
+            const w = c.get(f);
+            if (w.err) { flush(); c.er('awk: cannot open ' + f + ' (' + ETXT[w.err] + ')', w.err); return 2; }
+            if (w.n.t === 'd') { flush(); c.er('awk: read error (' + ETXT.EISDIR + ')', 'EISDIR'); return 2; }
+            if (!w.n.dev && !c.can(w.n, 4)) { flush(); c.er('awk: cannot open ' + f + ' (' + ETXT.EACCES + ')', 'EACCES'); return 2; }
+            text = w.n.dev ? '' : w.n.content;
+          }
+          S.file = f === '-' ? '' : f; S.FNR = 0;
+          for (const ln of textLines(text)) { S.NR++; S.FNR++; S.line = ln; S.f = awkSplit(ln, S.v.FS === undefined ? ' ' : aS(S.v.FS)); runItems(prog.main); }
+        }
+        runItems(prog.end);
+      }
+    } catch (ex) {
+      flush();
+      if (ex && ex.run) { c.er('awk: ' + ex.run, 'Hinweis: Durch null kann man nicht teilen. Prüfe den Teiler.'); return 2; }
+      if (ex === AWK_SYN) { c.er('awk: line 1: syntax error', 'Hinweis: Das awk-Programm ist falsch aufgebaut. Prüfe Klammern, Anführungszeichen und reguläre Ausdrücke.'); return 2; }
+      throw ex;
+    }
+    flush(); return 0;
+  });
+
+  /* ---------- sed (einfache Form) ---------- */
+  const SED_USAGE = 'Usage: sed [OPTION]... {script-only-if-no-other-script} [input-file]...';
+  function sedErrRe(pat, ere) {
+    return ere ? (/\(/.test(pat) && !/\)/.test(pat) ? 'Unmatched ( or \\(' : /\)/.test(pat) && !/\(/.test(pat) ? 'Unmatched ) or \\)' : /\[/.test(pat) ? 'Unmatched [, [^, [:, [., or [=' : 'Invalid preceding regular expression')
+      : (/\\\(/.test(pat) && !/\\\)/.test(pat) ? 'Unmatched ( or \\(' : /\\\)/.test(pat) && !/\\\(/.test(pat) ? 'Unmatched ) or \\)' : /\[/.test(pat) ? 'Unmatched [, [^, [:, [., or [=' : 'Invalid preceding regular expression');
+  }
+  /* Skript zerlegen; wirft {msg} (Fehlertext nach "char N: ") oder {uns} */
+  function sedParse(s, ere) {
+    const cmds = []; let i = 0; const n = s.length;
+    const E = (m, at) => ({ msg: m, at: at == null ? i : at });
+    const delimRead = (d, what) => {
+      let out = '';
+      for (; i < n; i++) {
+        const ch = s[i];
+        if (ch === '\\' && i + 1 < n) { if (s[i + 1] === d) { out += d; i++; } else { out += ch + s[i + 1]; i++; } continue; }
+        if (ch === d) { i++; return out; }
+        if (ch === '\n' && what === 'p') break;
+        out += ch;
+      }
+      throw E("unterminated `s' command", n);
+    };
+    const addr = () => {
+      const ch = s[i];
+      if (ch >= '0' && ch <= '9') { const m = /^\d+/.exec(s.slice(i)); i += m[0].length; if (s[i] === '~') throw { uns: 1 }; if (+m[0] === 0) throw E('invalid usage of line address 0'); return { t: 'n', n: +m[0] }; }
+      if (ch === '$') { i++; return { t: '$' }; }
+      if (ch === '/') {
+        i++; let out = '';
+        for (; i < n; i++) { const c2 = s[i]; if (c2 === '\\' && i + 1 < n) { if (s[i + 1] === '/') out += '/'; else out += c2 + s[i + 1]; i++; continue; } if (c2 === '/') break; out += c2; }
+        if (i >= n) throw E('unterminated address regex', n);
+        i++; if (s[i] === 'I' || s[i] === 'M') throw { uns: 1 };
+        if (out === '') throw { uns: 1 };
+        let re; try { re = toRegex(out, { E: ere }); } catch (ex) { throw E(sedErrRe(out, ere)); }
+        return { t: 're', re };
+      }
+      return null;
+    };
+    for (;;) {
+      while (i < n && (s[i] === ' ' || s[i] === '\t' || s[i] === ';' || s[i] === '\n')) i++;
+      if (i >= n) break;
+      const cm = { a1: null, a2: null, neg: false, active: false };
+      cm.a1 = addr();
+      if (cm.a1 && s[i] === ',') { i++; if (s[i] === '+' || s[i] === '~') throw { uns: 1 }; cm.a2 = addr(); if (!cm.a2) throw E('unexpected `,\'', i + 1); }
+      while (s[i] === ' ') i++;
+      while (s[i] === '!') { cm.neg = true; i++; while (s[i] === ' ') i++; }
+      if (i >= n) throw E('missing command', n);
+      const ch = s[i++]; cm.c = ch;
+      if (ch === 's') {
+        if (i >= n) throw E("unterminated `s' command", n);
+        const d = s[i++]; if (d === '\n' || d === '\\') throw E("unterminated `s' command", n);
+        const pat = delimRead(d, 's'), rep = delimRead(d, 's'); cm.g = false; cm.p = false; let ic = false;
+        for (; i < n; i++) {
+          const f = s[i];
+          if (f === 'g') cm.g = true; else if (f === 'p') cm.p = true; else if (f === 'I' || f === 'i') ic = true;
+          else if (f === ';' || f === '\n' || f === '}') break; else if (f === ' ') continue;
+          else if (/[0-9wemME]/.test(f)) throw { uns: 1 };
+          else throw E("unknown option to `s'", i + 1);
+        }
+        if (pat === '') throw { uns: 1 };
+        let re; try { re = toRegex(pat, { E: ere, i: ic }); } catch (ex) { throw E(sedErrRe(pat, ere)); }
+        cm.re = new RegExp(re.source, (cm.g ? 'g' : '') + (ic ? 'i' : ''));
+        const ng = new RegExp(re.source + '|').exec('').length - 1; cm.rep = [];
+        for (let k = 0; k < rep.length; k++) {
+          const r = rep[k];
+          if (r === '&') cm.rep.push({ t: 'a' });
+          else if (r === '\\' && k + 1 < rep.length) {
+            const x = rep[++k];
+            if (/[0-9]/.test(x)) { if (+x > ng) throw E("invalid reference \\" + x + " on `s' command's RHS"); cm.rep.push(+x === 0 ? { t: 'a' } : { t: 'g', n: +x }); }
+            else cm.rep.push({ t: 'l', s: x === 'n' ? '\n' : x === 't' ? '\t' : x });
+          } else cm.rep.push({ t: 'l', s: r });
+        }
+      } else if (ch === 'p' || ch === 'd' || ch === 'q') {
+        while (s[i] === ' ') i++;
+        if (ch === 'q' && /[0-9]/.test(s[i] || '')) throw { uns: 1 };
+        if (i < n && s[i] !== ';' && s[i] !== '\n' && s[i] !== '}') throw E('extra characters after command', i + 1);
+      } else if ('aicyDGgHhlNnPrwxzF=bt:{'.includes(ch)) throw { uns: 1 };
+      else if (ch === '}') throw E("unexpected `}'", i);
+      else if (ch === '#') { while (i < n && s[i] !== '\n') i++; continue; }
+      else throw E("unknown command: `" + ch + "'", i);
+      cmds.push(cm);
+    }
+    return cmds;
+  }
+  function sedStream(cmds, units, quiet) {
+    let out = '', no = 0, quit = false; cmds.forEach(cm => { cm.active = false; });
+    const total = units.reduce((a, u) => a + u.length, 0); let seen = 0;
+    const hit = (a, ps, last) => (a.t === 'n' ? no === a.n : a.t === '$' ? last : a.re.test(ps));
+    const sel = (cm, ps, last) => {
+      let r;
+      if (!cm.a1) r = true;
+      else if (!cm.a2) r = hit(cm.a1, ps, last);
+      else if (cm.active) {
+        r = true; const e = cm.a2;
+        if (e.t === 'n') { if (no >= e.n) cm.active = false; } else if (e.t === '$') { if (last) cm.active = false; } else if (e.re.test(ps)) cm.active = false;
+      } else if (hit(cm.a1, ps, last)) {
+        r = true; const e = cm.a2;
+        if (e.t === 'n') { if (e.n > no) cm.active = true; } else if (e.t === '$') { if (!last) cm.active = true; } else cm.active = true;
+      } else r = false;
+      return cm.neg ? !r : r;
+    };
+    for (const lines of units) {
+      for (const line of lines) {
+        if (quit) break;
+        no++; seen++; let ps = line, del = false; const last = seen === total;
+        for (const cm of cmds) {
+          if (!sel(cm, ps, last)) continue;
+          if (cm.c === 'p') out += ps + '\n';
+          else if (cm.c === 'd') { del = true; break; }
+          else if (cm.c === 'q') { quit = true; break; }
+          else if (cm.c === 's') {
+            let did = false;
+            const res = ps.replace(cm.re, (...m) => { did = true; const gr = m.slice(1, m.length - 2); return cm.rep.map(r => (r.t === 'l' ? r.s : r.t === 'a' ? m[0] : (gr[r.n - 1] === undefined ? '' : gr[r.n - 1]))).join(''); });
+            if (did) { ps = res; if (cm.p) out += ps + '\n'; }
+          }
+        }
+        if (!del && !quiet) out += ps + '\n';
+      }
+    }
+    return out;
+  }
+  def('sed', "sed [-n] [-E] [-i] [-e] 'Skript' [Datei]...   (s/alt/neu/g, Np, Nd, /muster/d)", c => {
+    const a = c.args; let quiet = false, ere = false, inplace = false, suffix = '', code = 0; const scripts = [], rest = []; let end = false;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i];
+      if (end || x === '-' || x[0] !== '-') { rest.push(x); continue; }
+      if (x === '--') { end = true; continue; }
+      if (x.startsWith('--')) {
+        const nm = x.slice(2).split('=')[0], eq = x.indexOf('=');
+        if (nm === 'quiet' || nm === 'silent') quiet = true; else if (nm === 'regexp-extended') ere = true; else if (nm === 'separate') continue;
+        else if (nm === 'in-place') { inplace = true; if (eq > 0) suffix = x.slice(eq + 1); } else if (nm === 'expression') { if (eq > 0) scripts.push(x.slice(eq + 1)); else if (i + 1 < a.length) scripts.push(a[++i]); else { c.er("sed: option '--expression' requires an argument", 'USAGE'); c.er(SED_USAGE); return 1; } }
+        else { c.er("sed: unrecognized option '" + x + "'", 'OPT'); c.er(SED_USAGE); return 1; }
+        continue;
+      }
+      for (let j = 1; j < x.length; j++) {
+        const ch = x[j];
+        if (ch === 'n') quiet = true; else if (ch === 'E' || ch === 'r') ere = true; else if (ch === 's') continue;
+        else if (ch === 'i') { inplace = true; suffix = x.slice(j + 1); break; }
+        else if (ch === 'e') { const r = x.slice(j + 1); if (r) scripts.push(r); else if (i + 1 < a.length) scripts.push(a[++i]); else { c.er("sed: option requires an argument -- 'e'", 'USAGE'); c.er(SED_USAGE); return 1; } break; }
+        else if (ch === 'f') { c.er('sed: Option -f wird im Lab nicht simuliert.', 'SEDSIM'); return 1; }
+        else { c.er("sed: invalid option -- '" + ch + "'", 'OPT'); c.er(SED_USAGE); return 1; }
+      }
+    }
+    if (!scripts.length) { if (!rest.length) { c.er(SED_USAGE, 'USAGE'); return 1; } scripts.push(rest.shift()); }
+    let cmds = [];
+    for (let k = 0; k < scripts.length; k++) {
+      try { cmds = cmds.concat(sedParse(scripts[k], ere)); } catch (ex) {
+        if (ex && ex.uns) { c.er('sed: Dieser sed-Befehl wird im Lab nicht simuliert.', 'SEDSIM'); return 1; }
+        if (ex && ex.msg) { c.er('sed: -e expression #' + (k + 1) + ', char ' + ex.at + ': ' + ex.msg, 'Hinweis: Das sed-Skript ist falsch aufgebaut. Typisch: s/alt/neu/ mit drei Schrägstrichen, p zum Ausgeben, d zum Löschen, davor optional eine Zeilennummer. Das Skript steht in einfachen Anführungszeichen.'); return 1; }
+        throw ex;
+      }
+    }
+    if (inplace && !rest.length) { c.er('sed: no input files', 'USAGE'); return 1; }
+    const load = p => {
+      if (p === '-') return { text: c.stdin };
+      const w = c.get(p);
+      if (w.err) { c.er("sed: can't read " + p + ': ' + ETXT[w.err], w.err); code = 2; return null; }
+      if (w.n.t === 'd') { c.er(inplace ? "sed: couldn't edit " + p + ': not a regular file' : 'sed: read error on ' + p + ': ' + ETXT.EISDIR, 'EISDIR'); code = inplace ? 4 : 2; return null; }
+      if (!w.n.dev && !c.can(w.n, 4)) { c.er("sed: can't read " + p + ': ' + ETXT.EACCES, 'EACCES'); code = 2; return null; }
+      return { text: w.n.dev ? '' : w.n.content, node: w.n, abs: w.abs };
+    };
+    if (!inplace) {
+      const units = [], srcs = rest.length ? rest : ['-'];
+      srcs.forEach(p => { const r = load(p); if (r) units.push(textLines(r.text)); });
+      c.o(sedStream(cmds, units, quiet)); return code;
+    }
+    rest.forEach(p => {
+      const r = load(p); if (!r || r.node.dev) return;
+      const par = parentOf(c.sys, r.abs, c.user);
+      if (par.err || !c.can(par.dir, 2)) { const d = p.includes('/') ? p.replace(/\/[^/]*$/, '') || '/' : '.'; c.er("sed: couldn't open temporary file " + d + '/sedFx3K9a: ' + ETXT.EACCES, 'EACCES'); code = 4; return; }
+      const res = sedStream(cmds, [textLines(r.text)], quiet);
+      if (suffix) { const bn = suffix.includes('*') ? suffix.replace(/\*/g, basename(r.abs)) : basename(r.abs) + suffix; const nb = mkNode('f', r.node.mode, c.user, primGroup(c.sys, c.user), r.text); par.dir.ch[bn] = nb; }
+      r.node.content = res; r.node.mt = NOW;
+    });
+    return code;
+  });
+
+  /* ---------- systemctl (kleine simulierte Dienstliste) ---------- */
+  /* PRUEFEN P29: systemctl simuliert eine kleine Dienstliste (ssh, cron, nginx, rsyslog, fail2ban). status zeigt nur die wichtigsten Zeilen (Loaded, Active, Main PID). start/stop/restart/enable/disable gehen nur als root (sudo), sonst "Interactive authentication required." (echtes Ubuntu fragt im Terminal oft per Passwortdialog). Ausgaben von enable/disable (SysV-Zeilen, Symlinks) sind vereinfacht. Passt das zum Unterricht? */
+  const SVC_AT = 'Sun 2026-11-08 09:30:20 CET; 5s ago';
+  const svcUnit = nm => (/\.[a-z]+$/.test(nm) ? nm : nm + '.service');
+  function svcFind(sys, nm) {
+    if (!/\.service$/.test(svcUnit(nm))) return null; const base = svcUnit(nm).replace(/\.service$/, '');
+    const k = Object.keys(sys.svc).find(x => x === base || (sys.svc[x].alias || []).includes(base)); return k ? sys.svc[k] : null;
+  }
+  function svcStop(sys, s) {
+    if (!s.on) return; s.on = false; s.failed = false; s.since = SVC_AT;
+    const gone = sys.procs.filter(p => p.pid === s.pid || p.ppid === s.pid).map(p => p.pid); sys.procs = sys.procs.filter(p => !gone.includes(p.pid));
+    s.sock = sys.sockets.filter(k => k.pid === s.pid && k.state === 'LISTEN'); sys.sockets = sys.sockets.filter(k => !(k.pid === s.pid && k.state === 'LISTEN')); s.pid = 0;
+  }
+  function svcStart(sys, s) {
+    if (s.on) return; s.on = true; s.failed = false; s.since = SVC_AT;
+    const pid = sys.nextPid++, base = { ppid: 1, cpu: 0, mem: 0.1, vsz: 10000, rss: 3000, tty: '?', stat: 'Ss', start: '09:30', time: '0:00' }; s.pid = pid;
+    sys.procs.push(Object.assign({}, base, { pid, user: s.user || 'root', cmd: s.cmd }));
+    if (s.worker) sys.procs.push(Object.assign({}, base, { pid: sys.nextPid++, ppid: pid, user: s.worker.user, cmd: s.worker.cmd }));
+    (s.sock || []).forEach(k => sys.sockets.push(Object.assign({}, k, { pid }))); s.sock = [];
+  }
+  def('systemctl', 'systemctl status|start|stop|restart|enable|disable|is-active|is-enabled DIENST...   |   systemctl list-units [--all]', c => {
+    const sys = c.sys, O = {}; let verb = null; const names = [];
+    for (let i = 0; i < c.args.length; i++) {
+      const x = c.args[i];
+      if (x.startsWith('--')) {
+        const nm = x.slice(2).split('=')[0], eq = x.indexOf('=');
+        if (['no-pager', 'full', 'plain', 'no-legend', 'quiet', 'now', 'all', 'failed'].includes(nm)) O[nm] = true; else if ((nm === 'type' || nm === 'state') && eq > 0) O[nm] = x.slice(eq + 1);
+        else { c.er("systemctl: unrecognized option '" + x + "'", 'OPT'); return 1; }
+      } else if (x.length > 1 && x[0] === '-') {
+        for (let j = 1; j < x.length; j++) { const ch = x[j]; if (ch === 'l') O.full = true; else if (ch === 'a') O.all = true; else if (ch === 'q') O.quiet = true; else if (ch === 't') { O.type = x.slice(j + 1) || c.args[++i]; break; } else { c.er("systemctl: invalid option -- '" + ch + "'", 'OPT'); return 1; } }
+      } else if (verb === null) verb = x; else names.push(x);
+    }
+    if (verb === null) verb = 'list-units';
+    const act = s => (s.on ? 'active' : s.failed ? 'failed' : 'inactive');
+    if (verb === 'list-units') {
+      const type = O.type || 'service'; let L = type === 'service' ? Object.keys(sys.svc).sort().map(k => sys.svc[k]) : [];
+      if (O.failed) L = L.filter(s => s.failed); else if (!O.all) L = L.filter(s => s.on || s.failed);
+      if (O.state) L = L.filter(s => act(s) === O.state);
+      const rows = L.map(s => [s.n + '.service', 'loaded', act(s), s.on ? 'running' : s.failed ? 'failed' : 'dead', s.d, s.failed]);
+      if (!O['no-legend']) {
+        const w0 = Math.max(4, ...rows.map(r => r[0].length)), w3 = Math.max(3, ...rows.map(r => r[3].length));
+        c.ln('  ' + pad('UNIT', w0) + ' ' + pad('LOAD', 6) + ' ' + pad('ACTIVE', 6) + ' ' + pad('SUB', w3) + ' DESCRIPTION');
+        rows.forEach(r => c.ln((r[5] ? '● ' : '  ') + pad(r[0], w0) + ' ' + pad(r[1], 6) + ' ' + pad(r[2], 6) + ' ' + pad(r[3], w3) + ' ' + r[4]));
+        c.ln(''); c.ln('LOAD   = Reflects whether the unit definition was properly loaded.'); c.ln('ACTIVE = The high-level unit activation state, i.e. generalization of SUB.'); c.ln('SUB    = The low-level unit activation state, values depend on unit type.'); c.ln('');
+        c.ln(rows.length + ' loaded units listed.' + (O.all || O.failed ? '' : ' Pass --all to see loaded but inactive units, too.')); c.ln("To show all installed unit files use 'systemctl list-unit-files'.");
+      } else rows.forEach(r => c.ln(pad(r[0], Math.max(...rows.map(q => q[0].length))) + ' ' + pad(r[1], 6) + ' ' + pad(r[2], 6) + ' ' + r[3] + ' ' + r[4]));
+      c.hint('Hinweis: Das echte list-units zeigt alle Einheiten des Systems (Dienste, Sockets, Timer ...). Das Lab zeigt nur die Dienste (service). Ohne --all stehen nur laufende und fehlgeschlagene Dienste in der Liste.'); return 0;
+    }
+    const STATE = ['start', 'stop', 'restart', 'enable', 'disable'], READ = ['status', 'is-active', 'is-enabled'];
+    if (!STATE.includes(verb) && !READ.includes(verb)) {
+      if (['reload', 'try-restart', 'reload-or-restart', 'mask', 'unmask', 'daemon-reload', 'show', 'cat', 'list-unit-files', 'list-timers', 'list-sockets', 'is-failed', 'reset-failed', 'kill', 'edit', 'reboot', 'poweroff', 'halt', 'suspend', 'isolate', 'get-default', 'set-default'].includes(verb)) { c.er('systemctl: Dieser Unterbefehl wird im Lab nicht simuliert.', 'SIM'); return 1; }
+      c.er('Unknown command verb ' + verb + '.', 'Hinweis: Diesen Unterbefehl kennt systemctl nicht. Im Lab gibt es status, start, stop, restart, enable, disable, is-active, is-enabled und list-units.'); return 1;
+    }
+    if (!names.length) { if (verb === 'status') { c.er('systemctl: Der Systemstatus ohne Dienstnamen wird im Lab nicht simuliert. Nenne einen Dienst: systemctl status ssh.', 'SIM'); return 1; } c.er('Too few arguments.', 'USAGE'); return 1; }
+    let code = 0;
+    if (verb === 'status') {
+      names.forEach((nm, i) => {
+        const u = svcUnit(nm), s = svcFind(sys, nm);
+        if (!s) { c.er('Unit ' + u + ' could not be found.', 'NOUNIT'); code = 4; return; }
+        if (i > 0) c.ln('');
+        c.ln((s.on ? '●' : s.failed ? '×' : '○') + ' ' + s.n + '.service - ' + s.d);
+        c.ln('     Loaded: loaded (/lib/systemd/system/' + s.n + '.service; ' + (s.en ? 'enabled' : 'disabled') + '; vendor preset: enabled)');
+        c.ln('     Active: ' + (s.on ? 'active (running)' : s.failed ? 'failed (Result: exit-code)' : 'inactive (dead)') + (s.since ? ' since ' + s.since : ''));
+        if (s.on) c.ln('   Main PID: ' + s.pid + ' (' + s.exe + ')');
+        if (!s.on) code = code || 3;
+      });
+      c.hint('Hinweis: Die echte Ausgabe von systemctl status ist länger (Docs, Speicher, Prozessbaum, letzte Logzeilen). Das Lab zeigt die wichtigsten Zeilen: Loaded (beim Start aktiviert?) und Active (läuft gerade?).'); return code;
+    }
+    if (verb === 'is-active') { names.forEach(nm => { const s = svcFind(sys, nm); if (!O.quiet) c.ln(s ? act(s) : 'inactive'); }); return names.some(nm => { const s = svcFind(sys, nm); return s && s.on; }) ? 0 : (names.every(nm => !svcFind(sys, nm)) ? 4 : 3); }
+    if (verb === 'is-enabled') {
+      names.forEach(nm => { const s = svcFind(sys, nm); if (!s) { c.er('Failed to get unit file state for ' + svcUnit(nm) + ': No such file or directory', 'NOUNIT'); code = 1; return; } if (!O.quiet) c.ln(s.en ? 'enabled' : 'disabled'); if (!s.en) code = 1; }); return code;
+    }
+    /* Zustandsänderungen: erst Einheit suchen, dann Berechtigung */
+    const found = names.map(nm => ({ nm, u: svcUnit(nm), s: svcFind(sys, nm) })), enOnly = verb === 'enable' || verb === 'disable';
+    for (const f of found) if (!f.s) { c.er((enOnly ? 'Failed to ' + verb + ' unit: Unit file ' + f.u + ' does not exist.' : 'Failed to ' + verb + ' ' + f.u + ': Unit ' + f.u + (verb === 'stop' ? ' not loaded.' : ' not found.')), 'NOUNIT'); code = enOnly ? 1 : 5; }
+    if (code) return code;
+    if (c.user !== 'root') { if (enOnly) c.er('Failed to ' + verb + ' unit: Interactive authentication required.', 'SVCAUTH'); else { c.er('Failed to ' + verb + ' ' + found[0].u + ': Interactive authentication required.', 'SVCAUTH'); c.er("See system logs and 'systemctl status " + found[0].u + "' for details."); } return 1; }
+    for (const f of found) {
+      const s = f.s;
+      if (verb === 'stop') svcStop(sys, s);
+      else if (verb === 'start' || verb === 'restart') {
+        if (verb === 'restart') svcStop(sys, s);
+        if (s.broken) { s.failed = true; s.since = SVC_AT; c.er('Job for ' + f.u + ' failed because the control process exited with error code.'); c.er('See "systemctl status ' + f.u + '" and "journalctl -xeu ' + f.u + '" for details.', 'Hinweis: Der Dienst startet nicht, weil seine Einrichtung einen Fehler hat. Die Ursache steht im Protokoll (journalctl wird im Lab nicht simuliert).'); code = 1; } else svcStart(sys, s);
+      } else if (verb === 'enable') {
+        if (s.sysv) { c.ln('Synchronizing state of ' + s.n + '.service with SysV service script with /lib/systemd/systemd-sysv-install.'); c.ln('Executing: /lib/systemd/systemd-sysv-install enable ' + s.n); }
+        if (!s.en) { s.en = true; c.ln('Created symlink /etc/systemd/system/multi-user.target.wants/' + s.n + '.service → /lib/systemd/system/' + s.n + '.service.'); }
+        if (O.now) svcStart(sys, s);
+      } else {
+        if (s.sysv) { c.ln('Synchronizing state of ' + s.n + '.service with SysV service script with /lib/systemd/systemd-sysv-install.'); c.ln('Executing: /lib/systemd/systemd-sysv-install disable ' + s.n); }
+        if (s.en) { s.en = false; c.ln('Removed /etc/systemd/system/multi-user.target.wants/' + s.n + '.service.'); }
+        if (O.now) svcStop(sys, s);
+      }
+    }
+    return code;
+  });
+
+  ['tar', 'nano', 'vi', 'journalctl', 'ssh', 'scp', 'rsync', 'git', 'python3', 'wget', 'nc', 'ifconfig', 'netstat', 'zip', 'unzip', 'gzip', 'ln', 'diff', 'watch', 'lsof', 'dmesg', 'service', 'shutdown', 'reboot', 'mount'].forEach(n => { STUBS[n] = n === 'ifconfig' || n === 'netstat' ? 'Das alte Werkzeug ist auf neuen Systemen nicht mehr installiert. Moderner Ersatz: ' + (n === 'ifconfig' ? 'ip a' : 'ss -tuln') : 'Dieses Programm wird im Lab nicht simuliert.'; });
 
   /* Netzwerk */
   const maskOf = p => { const m = p === 0 ? 0 : (0xFFFFFFFF << (32 - p)) >>> 0; return [m >>> 24, (m >>> 16) & 255, (m >>> 8) & 255, m & 255].join('.'); };
