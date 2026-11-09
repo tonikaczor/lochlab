@@ -1,4 +1,4 @@
-/* thmtasks2.js - Thermik-Lab: Aufgaben th16 bis th30 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig)
+/* thmtasks2.js - Thermik-Lab: Aufgaben th16 bis th38 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig)
  * Registrierung: THM_TASKS.register([ ... ]) (THM_TASKS kommt aus thmdata.js; fehlt es, legt diese Datei ein gleichwertiges Geruest an).
  * Format je Aufgabe: { id, lab:'thm', cat, title, level, rig, text, table?, hint[3], start(), sol(), check(answer), hintVals(), ask? | fields? , choices? }
  *   start() und sol() liefern { rig, controls, settle?, fields?, choices?, value? } (Steuerwerte des Pruefstands, Beharrungszustand, Selbsttest-Antworten).
@@ -614,6 +614,183 @@
       ]; } };
   })();
 
+  /* ====================================================================== th31 bis th38 (neu, Rechenaufgaben; alle Zahlen aus THM_CORE) */
+
+  /* ====================================================================== th31: BD139 ohne Kuehlkoerper */
+  const M31 = (() => {
+    const UCE = 8, IC = 0.25, TA = 25;
+    const vals = () => once('v31', () => {
+      const C = CORE(), dev = C.devices.bd139, p = C.power.bipolar(UCE, IC).p;
+      return { uce: UCE, ic: IC, ta: TA, p, tjMax: dev.tjMax, rthJA: dev.rthJA, rthJC: dev.rthJC, dT: p * dev.rthJA, tj: TA + p * dev.rthJA, tjGeh: TA + p * dev.rthJC, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'p', label: 'Verlustleistung des Transistors', unit: 'W', want: v.p, tol: 0.02, mistakes: [[v.uce / v.ic, 'du die Spannung durch den Strom geteilt hast'], [v.uce + v.ic, 'du Spannung und Strom addiert hast']] },
+      { key: 'tj', label: 'Sperrschichttemperatur ohne Kühlkörper', unit: '°C', want: v.tj, tol: 0.02, mistakes: [[v.dT, 'du {sym:Ta} nicht addiert hast (P · {sym:Rth_JA} ist nur die Übertemperatur)'], [v.tjGeh, 'du {sym:Rth_JC} statt {sym:Rth_JA} genommen hast (ohne Kühlkörper fließt die Wärme von der Sperrschicht in die freie Luft)']] }
+    ]; };
+    const fields = [{ key: 'p', label: 'Verlustleistung {sym:P}', unit: 'W' }, { key: 'tj', label: 'Sperrschichttemperatur {sym:Tj} ohne Kühlkörper', unit: '°C' }];
+    const ctl = { mode: 'ap', uce: UCE, ic: IC, count: 1, ta: TA, heatsink: 'none' };
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein BD139 arbeitet als Längstransistor in einem Netzteil: ' + fm(v.uce) + ' V zwischen Kollektor und Emitter, Kollektorstrom ' + fm(v.ic) + ' A (den Basisstrom vernachlässigst du). Im Gerät herrschen ' + fm(v.ta) + ' °C. Der Transistor ist ohne Kühlkörper eingebaut und gibt seine Wärme direkt an die Luft ab.\nBerechne die Verlustleistung und die Sperrschichttemperatur und entscheide danach, ob die Grenze {sym:Tjmax} = ' + fm(v.tjMax) + ' °C eingehalten wird.'; },
+      hint() { const v = vals(); return [
+        'Die Verlustleistung ist das Produkt aus der Spannung, die am Bauteil abfällt, und dem Strom, der hindurchfließt. Ohne Kühlkörper gibt das Gehäuse die Wärme direkt an die Luft ab: Dafür gibt das Datenblatt einen eigenen Wärmewiderstand an, der die Sperrschicht mit der Umgebung verbindet.',
+        'P = UCE · IC = ' + fm(v.uce) + ' V · ' + fm(v.ic) + ' A = ' + fm(v.p) + ' W. Der Wärmewiderstand von der Sperrschicht zur Umgebung beträgt {sym:Rth_JA} = ' + fm(v.rthJA) + ' K/W (Datenblatt, ohne Kühlkörper). Der Temperaturanstieg ist P · {sym:Rth_JA}, dazu kommt {sym:Ta}.',
+        'Musterlösung: P = ' + fm(v.p, 1) + ' W. {sym:Tj} = ' + fm(v.ta) + ' °C + ' + fm(v.p, 1) + ' W · ' + fm(v.rthJA) + ' K/W = ' + fm(v.tj, 1) + ' °C. Das liegt weit über {sym:Tjmax} = ' + fm(v.tjMax) + ' °C: Der BD139 braucht bei dieser Last einen Kühlkörper.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th32: Zeitkonstante aus Rth und Cth */
+  const M32 = (() => {
+    const P = 5;
+    const vals = () => once('v32', () => {
+      const C = CORE(), hs = C.heatsinks.byId.m, tau = hs.rthK * hs.cthK, dEnd = P * hs.rthK, fracF = 1 - Math.exp(-1);
+      return { p: P, rth: hs.rthK, cth: hs.cthK, tau, tauMin: tau / 60, dEnd, frac: fracF * 100, fracF, dTau: dEnd * fracF, dHalb: dEnd * 0.5, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'tau', label: 'Zeitkonstante des Kühlkörpers', unit: 's', want: v.tau, tol: 0.02, mistakes: [[v.tauMin, 'du die Zeitkonstante in Minuten statt in Sekunden angegeben hast'], [v.rth + v.cth, 'du Rth und Cth addiert hast (die Zeitkonstante ist das Produkt)'], [v.cth / v.rth, 'du Cth durch Rth geteilt hast']] },
+      { key: 'dtau', label: 'Übertemperatur nach einer Zeitkonstante', unit: 'K', want: v.dTau, tol: 0.03, mistakes: [[v.dEnd, 'du die Endübertemperatur P · Rth genannt hast (nach einer Zeitkonstante sind erst ' + fm(v.frac, 1) + ' % davon erreicht)'], [v.dHalb, 'du die Hälfte der Endübertemperatur genommen hast']] }
+    ]; };
+    const fields = [{ key: 'tau', label: 'Zeitkonstante {sym:tau}', unit: 's' }, { key: 'dtau', label: 'Übertemperatur nach einer Zeitkonstante', unit: 'K' }];
+    const ctl = { device: '7805', loadMode: 'strom', ue: 15, iLoad: 0.5, iq: false, ta: 25, heatsink: 'm', joint: 'glimmer', paste: 'duenn' };
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein Kühlkörper (Profil mittel) hat laut Tabelle des Labs den Wärmewiderstand ' + fm(v.rth) + ' K/W und die Wärmekapazität ' + fm(v.cth) + ' J/K. Er wird aus dem kalten Zustand mit konstant ' + fm(v.p) + ' W Verlustleistung beheizt. Betrachte ihn vereinfacht als einen einzigen Wärmespeicher (Näherung).\nBerechne die Zeitkonstante {sym:tau} in Sekunden und die Übertemperatur des Kühlkörpers gegenüber der Umgebung, die er nach genau einer Zeitkonstante erreicht hat.'; },
+      hint() { const v = vals(); return [
+        'Die Zeitkonstante verbindet den Wärmewiderstand mit der Wärmekapazität, genau wie beim Kondensator an einem Widerstand. Die Übertemperatur steigt nicht gleichmäßig, sondern läuft auf einen Endwert zu; nach einer Zeitkonstante ist ein fester Bruchteil dieses Endwerts erreicht.',
+        '{sym:tau} = Rth · {sym:Cth} = ' + fm(v.rth) + ' K/W · ' + fm(v.cth) + ' J/K = ' + fm(v.tau) + ' s. Endübertemperatur: P · Rth = ' + fm(v.p) + ' W · ' + fm(v.rth) + ' K/W = ' + fm(v.dEnd) + ' K. Nach einer Zeitkonstante sind ' + fm(v.frac, 1) + ' % davon erreicht (1 − e^−1).',
+        'Musterlösung: {sym:tau} = ' + fm(v.tau, 1) + ' s (das sind ' + fm(v.tauMin, 1) + ' min). Übertemperatur nach {sym:tau}: ' + fm(v.dEnd) + ' K · ' + fm(v.fracF, 3) + ' = ' + fm(v.dTau, 1) + ' K.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th33: groesste zulaessige Verlustleistung und Strom */
+  const M33 = (() => {
+    const TA = 40, UE = 12;
+    const vals = () => once('v33', () => {
+      const C = CORE(), dev = C.devices['7805'], ck = rthCK('TO-220', 'glimmer', 'duenn'), rk = hsRth('s'), tot = dev.rthJC + ck + rk, dT = dev.tjMax - TA, pmax = dT / tot, du = UE - dev.uaFix;
+      return { ta: TA, ue: UE, ua: dev.uaFix, du, tjMax: dev.tjMax, rthJC: dev.rthJC, rthCK: ck, rthK: rk, tot, dT, pmax, imax: pmax / du, tol: 3 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'pmax', label: 'Größte zulässige Verlustleistung', unit: 'W', want: v.pmax, tol: 0.02, mistakes: [[v.dT / (v.rthCK + v.rthK), 'du {sym:Rth_JC} vergessen hast'], [v.tjMax / v.tot, 'du {sym:Ta} nicht von {sym:Tjmax} abgezogen hast']] },
+      { key: 'imax', label: 'Größter Laststrom', unit: 'A', want: v.imax, tol: 0.03, mistakes: [[v.pmax / v.ue, 'du durch Ue statt durch den Spannungsabfall Ue − Ua geteilt hast'], [v.pmax / v.ua, 'du durch Ua statt durch Ue − Ua geteilt hast'], [v.pmax, 'du die Verlustleistung als Strom angegeben hast']] }
+    ]; };
+    const fields = [{ key: 'pmax', label: 'Größte zulässige Verlustleistung {sym:P}', unit: 'W' }, { key: 'imax', label: 'Größter Laststrom', unit: 'A' }];
+    const tables = () => { const v = vals(); return [tbl('Wärmekette des Aufbaus (Glimmerscheibe, dünne Wärmeleitpaste, Profil klein)', ['Glied', 'Wärmewiderstand'], [['{sym:Rth_JC} (7805)', kW(v.rthJC)], ['{sym:Rth_CK}', kW(v.rthCK)], ['{sym:Rth_K}', kW(v.rthK)]])]; };
+    const ctl = (i) => ({ device: '7805', loadMode: 'strom', ue: UE, iLoad: i, iq: false, ta: TA, heatsink: 's', joint: 'glimmer', paste: 'duenn' });
+    return { vals, items, fields, tables, ctl,
+      text() { const v = vals(); return 'Ein 7805 sitzt mit Glimmerscheibe und dünn aufgetragener Wärmeleitpaste auf dem Profil klein (Werte in der Tabelle). Im Gerät herrschen ' + fm(v.ta) + ' °C. Der Regler bekommt ' + fm(v.ue) + ' V Eingangsspannung, sein Ausgang liegt bei ' + fm(v.ua) + ' V. Die Sperrschicht darf höchstens {sym:Tjmax} = ' + fm(v.tjMax) + ' °C erreichen.\nBerechne die größte Verlustleistung, die dieser Aufbau abführen kann, und daraus den größten Laststrom, den der Regler dabei liefern darf. Den Ruhestrom vernachlässigst du.'; },
+      hint() { const v = vals(); return [
+        'Rechne die Kühlung rückwärts: Aus dem erlaubten Temperaturunterschied und dem Gesamt-Wärmewiderstand der Kette folgt die größte Verlustleistung. Der Laststrom folgt danach aus dem Spannungsabfall, der am Regler in Wärme umgesetzt wird.',
+        '{sym:Rth_ges} = ' + fm(v.rthJC) + ' K/W + ' + fm(v.rthCK) + ' K/W + ' + fm(v.rthK) + ' K/W = ' + fm(v.tot) + ' K/W. Erlaubter Unterschied: ' + fm(v.tjMax) + ' °C − ' + fm(v.ta) + ' °C = ' + fm(v.dT) + ' K. P_max = ' + fm(v.dT) + ' K / ' + fm(v.tot) + ' K/W = ' + fm(v.pmax, 3) + ' W. Spannungsabfall am Regler: ' + fm(v.ue) + ' V − ' + fm(v.ua) + ' V = ' + fm(v.du) + ' V.',
+        'Musterlösung: P_max = ' + fm(v.dT) + ' K / ' + fm(v.tot) + ' K/W = ' + fm(v.pmax, 2) + ' W. I_max = P_max / (Ue − Ua) = ' + fm(v.pmax, 2) + ' W / ' + fm(v.du) + ' V = ' + fm(v.imax, 3) + ' A.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th34: hoechste Umgebungstemperatur */
+  const M34 = (() => {
+    const UE = 15, IA = 0.4;
+    const vals = () => once('v34', () => {
+      const C = CORE(), dev = C.devices['7805'], ck = rthCK('TO-220', 'glimmer', 'duenn'), rk = hsRth('m'), tot = dev.rthJC + ck + rk, p = C.power.linear(UE, dev.uaFix, IA).p, pIq = C.power.linear(UE, dev.uaFix, IA, dev.iq).p;
+      return { ue: UE, ua: dev.uaFix, ia: IA, du: UE - dev.uaFix, p, pIq, tjMax: dev.tjMax, rthJC: dev.rthJC, rthCK: ck, rthK: rk, tot, dT: p * tot, taMax: dev.tjMax - p * tot, taMaxIq: dev.tjMax - pIq * tot, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [{ key: 'value', label: 'Höchste zulässige Umgebungstemperatur', unit: '°C', want: v.taMax, alts: [v.taMaxIq], tol: 0.02, mistakes: [
+      [v.tjMax - v.p * (v.rthJC + v.rthK), 'du {sym:Rth_CK} vergessen hast'], [v.tjMax - v.p * v.rthK, 'du nur den Wärmewiderstand des Kühlkörpers angesetzt hast'], [v.dT, 'du den Temperaturanstieg P · {sym:Rth_ges} angegeben hast, statt ihn von {sym:Tjmax} abzuziehen']] }]; };
+    const ctl = ta => ({ device: '7805', loadMode: 'strom', ue: UE, iLoad: IA, iq: false, ta, heatsink: 'm', joint: 'glimmer', paste: 'duenn' });
+    return { vals, items, ctl,
+      text() { const v = vals(); return 'Ein 7805 setzt ' + fm(v.ue) + ' V Eingangsspannung auf ' + fm(v.ua) + ' V um und liefert ' + fm(v.ia) + ' A. Er sitzt mit Glimmerscheibe und dünn aufgetragener Wärmeleitpaste auf dem Profil mittel. Die Sperrschicht darf höchstens {sym:Tjmax} = ' + fm(v.tjMax) + ' °C erreichen. Den Ruhestrom darfst du vernachlässigen; rechnest du ihn mit, gilt auch dieser Wert.\nBerechne die höchste Umgebungstemperatur, bei der die Sperrschicht gerade diese Grenze erreicht.'; },
+      hint() { const v = vals(); return [
+        'Rechne vom Ergebnis her: Die Sperrschicht darf höchstens ihre Grenztemperatur erreichen. Von dieser Grenze ziehst du den Temperaturanstieg ab, den die Verlustleistung über die ganze Wärmekette erzeugt. Übrig bleibt die höchste Umgebungstemperatur.',
+        'Verlustleistung: P = (' + fm(v.ue) + ' V − ' + fm(v.ua) + ' V) · ' + fm(v.ia) + ' A = ' + fm(v.p) + ' W. Wärmewiderstand der Kette: {sym:Rth_ges} = ' + fm(v.rthJC) + ' K/W + ' + fm(v.rthCK) + ' K/W + ' + fm(v.rthK) + ' K/W = ' + fm(v.tot) + ' K/W. Anstieg: P · {sym:Rth_ges} = ' + fm(v.p) + ' W · ' + fm(v.tot) + ' K/W = ' + fm(v.dT) + ' K.',
+        'Musterlösung: {sym:Ta} = ' + fm(v.tjMax) + ' °C − ' + fm(v.dT) + ' K = ' + fm(v.taMax, 1) + ' °C. Mit Ruhestrom (P = ' + fm(v.pIq, 3) + ' W) wären es ' + fm(v.taMaxIq, 1) + ' °C.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th35: Luefter am Kuehlkoerper */
+  const M35 = (() => {
+    const UE = 15, IA = 0.5, TA = 40;
+    const vals = () => once('v35', () => {
+      const C = CORE(), dev = C.devices['7805'], ck = rthCK('TO-220', 'glimmer', 'duenn'), rk = hsRth('m'), f = C.fan.mittel, rkf = rk * f, p = C.power.linear(UE, dev.uaFix, IA).p, tot0 = dev.rthJC + ck + rk;
+      return { ue: UE, ua: dev.uaFix, ia: IA, ta: TA, p, rthJC: dev.rthJC, rthCK: ck, rthK: rk, fanF: f, rkFan: rkf, tjMax: dev.tjMax, tj: TA + p * (dev.rthJC + ck + rkf), tjOhne: TA + p * tot0, tjGanz: TA + p * tot0 * f, dTj: p * rk * (1 - f), tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'rkfan', label: 'Wirksamer Wärmewiderstand des Kühlkörpers mit Lüfter', unit: 'K/W', want: v.rkFan, tol: 0.02, mistakes: [[v.rthK / v.fanF, 'du durch den Faktor geteilt statt mit ihm multipliziert hast'], [v.rthK, 'du den Lüfter nicht berücksichtigt hast'], [(v.rthJC + v.rthCK + v.rthK) * v.fanF, 'du den Faktor auf die ganze Kette angewendet hast (der Lüfter wirkt nur auf den Kühlkörper)']] },
+      { key: 'tj', label: 'Sperrschichttemperatur mit Lüfter', unit: '°C', want: v.tj, tol: 0.02, mistakes: [[v.tjOhne, 'du den Lüfter nicht berücksichtigt hast'], [v.tjGanz, 'du den Faktor auf die ganze Kette angewendet hast (der Lüfter wirkt nur auf den Kühlkörper)'], [v.p * (v.rthJC + v.rthCK + v.rkFan), 'du {sym:Ta} nicht addiert hast']] }
+    ]; };
+    const fields = [{ key: 'rkfan', label: 'Wirksames {sym:Rth_K} mit Lüfter', unit: 'K/W' }, { key: 'tj', label: 'Sperrschichttemperatur {sym:Tj} mit Lüfter', unit: '°C' }];
+    const tables = () => { const C = CORE(); return [tbl('Lüfterstufen (Übungswerte des Labs)', ['Stufe', 'Faktor auf {sym:Rth_K}'], [['aus', fm(C.fan.aus, 2)], ['leise', fm(C.fan.leise, 2)], ['mittel', fm(C.fan.mittel, 2)], ['stark', fm(C.fan.stark, 2)]])]; };
+    const ctl = fan => ({ device: '7805', loadMode: 'strom', ue: UE, iLoad: IA, iq: false, ta: TA, heatsink: 'm', joint: 'glimmer', paste: 'duenn', fan });
+    return { vals, items, fields, tables, ctl,
+      text() { const v = vals(); return 'Ein 7805 setzt ' + fm(v.ue) + ' V Eingangsspannung auf ' + fm(v.ua) + ' V um und liefert ' + fm(v.ia) + ' A. Er sitzt mit Glimmerscheibe und dünner Wärmeleitpaste auf dem Profil mittel ({sym:Rth_K} ohne Lüfter ' + fm(v.rthK) + ' K/W). Ein Lüfter in der Stufe „mittel“ senkt den Wärmewiderstand des Kühlkörpers auf das ' + fm(v.fanF) + '-Fache (Übungswert laut Tabelle). Im Gerät herrschen ' + fm(v.ta) + ' °C. Den Ruhestrom vernachlässigst du.\nBerechne den wirksamen Wärmewiderstand des Kühlkörpers mit Lüfter und die Sperrschichttemperatur.'; },
+      hint() { const v = vals(); return [
+        'Der Lüfter verbessert nur den Übergang vom Kühlkörper in die Luft: Er verkleinert den Wärmewiderstand des Kühlkörpers, aber nicht den von der Sperrschicht zum Gehäuse und nicht den des Übergangs. Die drei Glieder der Kette rechnest du danach wie gewohnt zusammen.',
+        'Wirksamer Wert: {sym:Rth_K} mit Lüfter = Faktor · {sym:Rth_K} = ' + fm(v.fanF) + ' · ' + fm(v.rthK) + ' K/W = ' + fm(v.rkFan) + ' K/W. Dazu kommen {sym:Rth_JC} = ' + fm(v.rthJC) + ' K/W und {sym:Rth_CK} = ' + fm(v.rthCK) + ' K/W. Verlustleistung: P = (' + fm(v.ue) + ' V − ' + fm(v.ua) + ' V) · ' + fm(v.ia) + ' A = ' + fm(v.p) + ' W.',
+        'Musterlösung: {sym:Rth_K} mit Lüfter = ' + fm(v.rkFan) + ' K/W. {sym:Tj} = ' + fm(v.ta) + ' °C + ' + fm(v.p) + ' W · (' + fm(v.rthJC) + ' K/W + ' + fm(v.rthCK) + ' K/W + ' + fm(v.rkFan) + ' K/W) = ' + fm(v.tj, 1) + ' °C. Ohne Lüfter wären es ' + fm(v.tjOhne, 1) + ' °C.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th36: Tj aus der gemessenen Gehaeusetemperatur */
+  const M36 = (() => {
+    const UE = 12, UA = 5, IA = 0.5, TC = 70;
+    const vals = () => once('v36', () => {
+      const C = CORE(), dev = C.devices.lm317, p = C.power.linear(UE, UA, IA).p, dJC = p * dev.rthJC;
+      return { ue: UE, ua: UA, ia: IA, du: UE - UA, tc: TC, p, rthJC: dev.rthJC, rthJA: dev.rthJA, tjMax: dev.tjMax, dJC, tj: TC + dJC, reserve: dev.tjMax - TC - dJC, tjA: TC + p * dev.rthJA, resTc: dev.tjMax - TC, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'tj', label: 'Sperrschichttemperatur', unit: '°C', want: v.tj, tol: 0.02, mistakes: [[v.tjA, 'du {sym:Rth_JA} statt {sym:Rth_JC} genommen hast (der Weg Sperrschicht–Gehäuse ist nur ein Teil der Kette)'], [v.dJC, 'du die Gehäusetemperatur nicht addiert hast'], [v.tc, 'du die Gehäusetemperatur als Sperrschichttemperatur angegeben hast']] },
+      { key: 'reserve', label: 'Reserve bis zur Grenztemperatur', unit: 'K', want: v.reserve, tol: 0.03, mistakes: [[v.resTc, 'du den Temperaturabfall im Bauteil vergessen hast (Reserve von {sym:Tc}, nicht von {sym:Tj} aus gerechnet)'], [v.dJC, 'du nur den Temperaturabfall zwischen Sperrschicht und Gehäuse angegeben hast']] }
+    ]; };
+    const fields = [{ key: 'tj', label: 'Sperrschichttemperatur {sym:Tj}', unit: '°C' }, { key: 'reserve', label: 'Reserve bis {sym:Tjmax}', unit: 'K' }];
+    const ctl = { device: 'lm317', loadMode: 'strom', ue: UE, ua: UA, iLoad: IA, iq: true, ta: 25, heatsink: 'm', joint: 'glimmer', paste: 'duenn' };
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein LM317 stellt aus ' + fm(v.ue) + ' V Eingangsspannung ' + fm(v.ua) + ' V ein und liefert ' + fm(v.ia) + ' A. Du misst mit einem Thermoelement an der Anschlussfahne des Gehäuses im Beharrungszustand ' + fm(v.tc) + ' °C. Die Sperrschicht selbst lässt sich nicht messen. Ruhestrom und Teilerstrom vernachlässigst du.\nBerechne die Sperrschichttemperatur aus der Messung und die Reserve bis zur Grenze {sym:Tjmax} = ' + fm(v.tjMax) + ' °C.'; },
+      hint() { const v = vals(); return [
+        'Du kennst die Gehäusetemperatur und die Verlustleistung. Zwischen Sperrschicht und Gehäuse liegt genau ein Wärmewiderstand; mit ihm bekommst du den Temperaturabfall im Bauteil. Die Reserve ist der Abstand zur Grenztemperatur.',
+        'P = (' + fm(v.ue) + ' V − ' + fm(v.ua) + ' V) · ' + fm(v.ia) + ' A = ' + fm(v.p) + ' W. Der Wärmewiderstand von der Sperrschicht zum Gehäuse beträgt {sym:Rth_JC} = ' + fm(v.rthJC) + ' K/W (Datenblatt). Temperaturabfall im Bauteil: P · {sym:Rth_JC} = ' + fm(v.p) + ' W · ' + fm(v.rthJC) + ' K/W = ' + fm(v.dJC, 1) + ' K.',
+        'Musterlösung: {sym:Tj} = {sym:Tc} + P · {sym:Rth_JC} = ' + fm(v.tc) + ' °C + ' + fm(v.dJC, 1) + ' K = ' + fm(v.tj, 1) + ' °C. Reserve: ' + fm(v.tjMax) + ' °C − ' + fm(v.tj, 1) + ' °C = ' + fm(v.reserve, 1) + ' K.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th37: RDS(on) bei heisser Sperrschicht */
+  const M37 = (() => {
+    const I = 10, VGS = 5, TJ = 100, TREF = 25;
+    const vals = () => once('v37', () => {
+      const C = CORE(), dev = C.devices.irlz34n, rds25 = dev.rdsTyp[String(VGS)], dT = TJ - TREF, fac = 1 + dev.alpha * dT, rdsHot = rds25 * fac;
+      return { i: I, vgs: VGS, tj: TJ, tRef: TREF, dT, alpha: dev.alpha, alphaPct: dev.alpha * 100, rds25, rds25m: rds25 * 1000, fac, rdsHot, rdsHotm: rdsHot * 1000, p25: I * I * rds25, pHot: I * I * rdsHot, facFalsch: 1 + dev.alpha * TJ, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'rds', label: 'RDS(on) bei heißer Sperrschicht', unit: 'mΩ', want: v.rdsHotm, tol: 0.02, mistakes: [[v.rds25m * v.facFalsch, 'du den Temperaturunterschied mit ' + fm(v.tj) + ' K statt mit ' + fm(v.dT) + ' K angesetzt hast (der Bezug ist ' + fm(v.tRef) + ' °C)'], [v.rds25m, 'du mit RDS(on) bei ' + fm(v.tRef) + ' °C gerechnet hast'], [v.rdsHot, 'du in Ω statt in mΩ gerechnet hast']] },
+      { key: 'p', label: 'Verlustleistung im Durchlasszustand', unit: 'W', want: v.pHot, tol: 0.02, mistakes: [[v.p25, 'du mit RDS(on) bei ' + fm(v.tRef) + ' °C gerechnet hast (die heiße Sperrschicht hat den größeren Widerstand)'], [v.i * v.rdsHot, 'du den Strom nicht quadriert hast (P = I² · RDS(on))']] }
+    ]; };
+    const fields = [{ key: 'rds', label: 'RDS(on) bei heißer Sperrschicht', unit: 'mΩ' }, { key: 'p', label: 'Verlustleistung {sym:P}', unit: 'W' }];
+    const ctl = hot => ({ id: I, u: 5, duty: 100, vgs: VGS, spec: 'typ', hot, pulse: false, ta: 25, heatsink: 'l', joint: 'glimmer', paste: 'duenn' });
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein IRLZ34N schaltet eine Last dauerhaft ein: ' + fm(v.i) + ' A bei ' + fm(v.vgs) + ' V am Gate (keine Schaltverluste). Sein Durchlasswiderstand RDS(on) beträgt bei ' + fm(v.tRef) + ' °C typisch ' + fm(v.rds25m) + ' mΩ und wächst mit der Temperatur um ' + fm(v.alphaPct) + ' % je Kelvin, bezogen auf den Wert bei ' + fm(v.tRef) + ' °C (lineare Näherung). Die Sperrschicht ist ' + fm(v.tj) + ' °C heiß (Übungsannahme).\nBerechne RDS(on) bei dieser Temperatur in mΩ und die Verlustleistung im Durchlasszustand.'; },
+      hint() { const v = vals(); return [
+        'Der Durchlasswiderstand eines MOSFET steigt mit der Temperatur: Wird die Sperrschicht heiß, wird der Widerstand größer und damit auch die Verlustleistung. Rechne zuerst den Widerstand für die heiße Sperrschicht aus, dann die Leistung mit dem Strom im Quadrat.',
+        'Temperaturunterschied zu ' + fm(v.tRef) + ' °C: ' + fm(v.tj) + ' °C − ' + fm(v.tRef) + ' °C = ' + fm(v.dT) + ' K. RDS(on) heiß = ' + fm(v.rds25m) + ' mΩ · (1 + ' + fm(v.alpha, 4) + ' 1/K · ' + fm(v.dT) + ' K) = ' + fm(v.rds25m) + ' mΩ · ' + fm(v.fac, 4) + ' = ' + fm(v.rdsHotm, 2) + ' mΩ. Verlustleistung: P = I² · RDS(on).',
+        'Musterlösung: RDS(on) = ' + fm(v.rdsHotm, 2) + ' mΩ. P = (' + fm(v.i) + ' A)² · ' + fm(v.rdsHotm, 2) + ' mΩ = ' + fm(v.pHot, 2) + ' W. Bei ' + fm(v.tRef) + ' °C wären es nur ' + fm(v.p25, 1) + ' W.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th38: Temperatur des Kuehlkoerpers und Beruehrgrenze */
+  const M38 = (() => {
+    const UE = 15, UA = 5, IA = 0.6, TA = 30;
+    const vals = () => once('v38', () => {
+      const C = CORE(), dev = C.devices.lm317, ck = rthCK('TO-220', 'glimmer', 'duenn'), rk = hsRth('m'), p = C.power.linear(UE, UA, IA).p, lim = C.const.T_HAND, tk = TA + p * rk, rkmax = (lim - TA) / p;
+      return { ue: UE, ua: UA, ia: IA, ta: TA, p, lim, rthJC: dev.rthJC, rthCK: ck, rthK: rk, tk, ueber: tk - lim, dT: lim - TA, rkmax, tjKette: TA + p * (dev.rthJC + ck + rk), rkL: hsRth('l'), tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'tk', label: 'Temperatur des Kühlkörpers', unit: '°C', want: v.tk, tol: 0.02, mistakes: [[v.p * v.rthK, 'du {sym:Ta} nicht addiert hast'], [v.tjKette, 'du die ganze Wärmekette gerechnet hast (das ist die Sperrschicht, nicht der Kühlkörper)']] },
+      { key: 'rkmax', label: 'Größter Wärmewiderstand des Kühlkörpers', unit: 'K/W', want: v.rkmax, tol: 0.03, mistakes: [[v.lim / v.p, 'du {sym:Ta} nicht von der Grenze abgezogen hast'], [v.rkmax - v.rthJC - v.rthCK, 'du {sym:Rth_JC} und {sym:Rth_CK} abgezogen hast (für die Temperatur des Kühlkörpers zählt nur sein eigener Wärmewiderstand)']] }
+    ]; };
+    const fields = [{ key: 'tk', label: 'Temperatur des Kühlkörpers {sym:Tk}', unit: '°C' }, { key: 'rkmax', label: 'Größter Wärmewiderstand {sym:Rth_K}', unit: 'K/W' }];
+    const ctl = hs => ({ device: 'lm317', loadMode: 'strom', ue: UE, ua: UA, iLoad: IA, iq: true, ta: TA, heatsink: hs, joint: 'glimmer', paste: 'duenn' });
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein LM317 liefert aus ' + fm(v.ue) + ' V Eingangsspannung ' + fm(v.ua) + ' V bei ' + fm(v.ia) + ' A. Er sitzt mit Glimmerscheibe und Wärmeleitpaste auf dem Profil mittel ({sym:Rth_K} = ' + fm(v.rthK) + ' K/W). Im Gerät herrschen ' + fm(v.ta) + ' °C. Ruhestrom und Teilerstrom vernachlässigst du.\nAls Übungsvorgabe (kein Normwert) soll ein Kühlkörper, den man im Betrieb anfassen kann, höchstens ' + fm(v.lim) + ' °C heiß werden. Berechne die Temperatur des Kühlkörpers im Beharrungszustand und den größten Wärmewiderstand {sym:Rth_K}, den ein Kühlkörper für diese Grenze haben darf.'; },
+      hint() { const v = vals(); return [
+        'Die Temperatur des Kühlkörpers hängt nur von der Verlustleistung, seinem eigenen Wärmewiderstand und der Umgebungstemperatur ab. Die Glieder zwischen Sperrschicht und Kühlkörper liegen auf der heißen Seite und zählen dafür nicht. Für die Grenze stellst du die Formel nach dem Wärmewiderstand um.',
+        'P = (' + fm(v.ue) + ' V − ' + fm(v.ua) + ' V) · ' + fm(v.ia) + ' A = ' + fm(v.p) + ' W. {sym:Tk} = {sym:Ta} + P · {sym:Rth_K} = ' + fm(v.ta) + ' °C + ' + fm(v.p) + ' W · ' + fm(v.rthK) + ' K/W = ' + fm(v.tk) + ' °C. Für die Grenze gilt: {sym:Rth_K} = (' + fm(v.lim) + ' °C − ' + fm(v.ta) + ' °C) / ' + fm(v.p) + ' W.',
+        'Musterlösung: {sym:Tk} = ' + fm(v.tk, 1) + ' °C, also ' + fm(v.ueber) + ' K über der Grenze von ' + fm(v.lim) + ' °C. Erlaubt ist {sym:Rth_K} ≤ ' + fm(v.dT) + ' K / ' + fm(v.p) + ' W = ' + fm(v.rkmax, 2) + ' K/W. Das Profil groß ({sym:Rth_K} = ' + fm(v.rkL) + ' K/W) hält die Grenze ein.'
+      ]; } };
+  })();
+
   /* ====================================================================== Aufgabenliste */
   /* text, table und hint werden erst beim ersten Zugriff gerechnet (Kern und Pruefstaende), danach gemerkt */
   const L = (t, M) => {
@@ -700,7 +877,47 @@
     L({ id: 'th30', lab: 'thm', cat: 'Prüfungsstil', title: 'Meisterstück: Linearregler mit möglichst wenig Aufwand kühlen', level: 3, rig: 'linear',
       start: () => S('linear', Object.assign({}, M30.FIX, M30.START), { settle: true }),
       sol: () => S('linear', Object.assign({}, M30.FIX, M30.START, M30.vals().muster), { settle: true }),
-      check: M30.check, hintVals: () => M30.vals() }, M30)
+      check: M30.check, hintVals: () => M30.vals() }, M30),
+    L({ id: 'th31', lab: 'thm', cat: 'Verlustleistung', title: 'BD139 ohne Kühlkörper: Verlustleistung und Sperrschichttemperatur', level: 1, rig: 'transistor',
+      fields: M31.fields,
+      start: () => S('transistor', M31.ctl, { settle: true, fields: noV(['p', 'tj']) }),
+      sol: () => { const v = M31.vals(); return S('transistor', M31.ctl, { settle: true, fields: { p: v.p, tj: v.tj } }); },
+      check: calcCheck(M31), hintVals: () => M31.vals() }, M31),
+    L({ id: 'th32', lab: 'thm', cat: 'Zeitverhalten', title: 'Zeitkonstante aus Wärmewiderstand und Wärmekapazität berechnen', level: 1, rig: 'linear',
+      fields: M32.fields,
+      start: () => S('linear', M32.ctl, { settle: false, fields: noV(['tau', 'dtau']) }),
+      sol: () => { const v = M32.vals(); return S('linear', M32.ctl, { settle: false, fields: { tau: v.tau, dtau: v.dTau } }); },
+      check: calcCheck(M32), hintVals: () => M32.vals() }, M32),
+    L({ id: 'th33', lab: 'thm', cat: 'Kühlkörper wählen', title: 'Größte Verlustleistung und größter Strom für einen gegebenen Aufbau', level: 2, rig: 'linear',
+      fields: M33.fields,
+      start: () => S('linear', M33.ctl(0.5), { settle: true, fields: noV(['pmax', 'imax']) }),
+      sol: () => { const v = M33.vals(); return S('linear', M33.ctl(+v.imax.toFixed(2)), { settle: true, fields: { pmax: v.pmax, imax: v.imax } }); },
+      check: calcCheck(M33), hintVals: () => M33.vals() }, M33),
+    L({ id: 'th34', lab: 'thm', cat: 'Derating', title: 'Höchste zulässige Umgebungstemperatur berechnen', level: 3, rig: 'linear',
+      ask: { label: 'Höchste zulässige Umgebungstemperatur {sym:Ta}', unit: '°C' },
+      start: () => S('linear', M34.ctl(25), { settle: true, value: null }),
+      sol: () => S('linear', M34.ctl(Math.round(M34.vals().taMax)), { settle: true, value: M34.vals().taMax }),
+      check: calcCheck(M34), hintVals: () => M34.vals() }, M34),
+    L({ id: 'th35', lab: 'thm', cat: 'Montage', title: 'Lüfter am Kühlkörper: Wirkung auf die Sperrschichttemperatur', level: 2, rig: 'linear',
+      fields: M35.fields,
+      start: () => S('linear', M35.ctl('aus'), { settle: true, fields: noV(['rkfan', 'tj']) }),
+      sol: () => { const v = M35.vals(); return S('linear', M35.ctl('mittel'), { settle: true, fields: { rkfan: v.rkFan, tj: v.tj } }); },
+      check: calcCheck(M35), hintVals: () => M35.vals() }, M35),
+    L({ id: 'th36', lab: 'thm', cat: 'Wärmekette', title: 'Sperrschichttemperatur aus der gemessenen Gehäusetemperatur', level: 2, rig: 'linear',
+      fields: M36.fields,
+      start: () => S('linear', M36.ctl, { settle: true, fields: noV(['tj', 'reserve']) }),
+      sol: () => { const v = M36.vals(); return S('linear', M36.ctl, { settle: true, fields: { tj: v.tj, reserve: v.reserve } }); },
+      check: calcCheck(M36), hintVals: () => M36.vals() }, M36),
+    L({ id: 'th37', lab: 'thm', cat: 'Schalter', title: 'MOSFET bei heißer Sperrschicht: RDS(on) und Verlustleistung', level: 3, rig: 'mosfet',
+      fields: M37.fields,
+      start: () => S('mosfet', M37.ctl(false), { settle: true, fields: noV(['rds', 'p']) }),
+      sol: () => { const v = M37.vals(); return S('mosfet', M37.ctl(true), { settle: true, fields: { rds: v.rdsHotm, p: v.pHot } }); },
+      check: calcCheck(M37), hintVals: () => M37.vals() }, M37),
+    L({ id: 'th38', lab: 'thm', cat: 'Praxis', title: 'Kühlkörper berührbar? Temperatur und größter Wärmewiderstand', level: 2, rig: 'linear',
+      fields: M38.fields,
+      start: () => S('linear', M38.ctl('m'), { settle: true, fields: noV(['tk', 'rkmax']) }),
+      sol: () => { const v = M38.vals(); return S('linear', M38.ctl('l'), { settle: true, fields: { tk: v.tk, rkmax: v.rkmax } }); },
+      check: calcCheck(M38), hintVals: () => M38.vals() }, M38)
   ];
 
   /* ====================================================================== Registrierung */
@@ -735,6 +952,6 @@
       return out;
     };
   }
-  const api = { tasks, answerOf, models: { M16, M17, M18, M19, M20, M21, M22, M23, M24, M25, M26, M27, M28, M29, M30 }, helpers: { numRow, fm, pick, build, aufwand: M30.aufwand } };
+  const api = { tasks, answerOf, models: { M16, M17, M18, M19, M20, M21, M22, M23, M24, M25, M26, M27, M28, M29, M30, M31, M32, M33, M34, M35, M36, M37, M38 }, helpers: { numRow, fm, pick, build, aufwand: M30.aufwand } };
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

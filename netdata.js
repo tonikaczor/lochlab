@@ -7,6 +7,7 @@
   const CATS = ['Binär', 'Subnetting', 'VLSM', 'Adressierung', 'Schichten/Ports'];
   const D4 = [{ n: 'Vertrieb', h: 100 }, { n: 'Technik', h: 50 }, { n: 'Verwaltung', h: 25 }, { n: 'Server', h: 10 }];
   const D4B = [{ n: 'Entwicklung', h: 12 }, { n: 'Lager', h: 60 }, { n: 'Büro', h: 30 }, { n: 'Drucker', h: 2 }];
+  const D4C = [{ n: 'Fertigung', h: 28 }, { n: 'Büro', h: 14 }, { n: 'Gäste-WLAN', h: 60 }, { n: 'Lager', h: 5 }];
   const t = (cat, level, title, kind, p) => ({ cat, level, title, kind, p });
   const list = [
     t('Binär', 1, 'Binär nach Dezimal', 'bin2dec', { bits: '10110101' }),
@@ -37,7 +38,17 @@
     t('Schichten/Ports', 1, 'Switch im OSI-Modell', 'osi', { item: 'Switch (Layer 2)' }),
     t('Schichten/Ports', 2, 'Router im OSI-Modell', 'osi', { item: 'Router' }),
     t('Schichten/Ports', 1, 'TCP im TCP/IP-Modell', 'tcpip', { item: 'TCP' }),
-    t('Schichten/Ports', 1, 'Standard-Port von SSH', 'port', { name: 'SSH' })
+    t('Schichten/Ports', 1, 'Standard-Port von SSH', 'port', { name: 'SSH' }),
+    t('Binär', 1, 'Binäre Oktettfolge in Dezimal', 'bin2dec', { bits: '11001010' }),
+    t('Binär', 2, 'Kurze Präfixlänge in Maske', 'prefix2mask', { p: 13 }),
+    t('Subnetting', 2, 'Broadcast-Adresse bei /27', 'bcast', { ip: '10.10.10.130', p: 27 }),
+    t('Subnetting', 3, 'Netzadresse bei /19', 'netaddr', { ip: '192.168.77.130', p: 19 }),
+    t('Subnetting', 3, 'Präfix für 1000 Hosts', 'prefixForHosts', { h: 1000 }),
+    t('VLSM', 3, 'VLSM: Netzadresse bei unsortierter Liste', 'vlsmnet', { net: '192.168.5.0/24', deps: D4C, who: 1 }),
+    t('Adressierung', 2, 'Gateway-Adresse prüfen', 'gwok', { host: '172.16.5.20', gw: '172.16.5.255', p: 24 }),
+    t('Adressierung', 2, 'Adressbereich einer 169.254-Adresse', 'private', { ip: '169.254.12.7' }),
+    t('Schichten/Ports', 2, 'ICMP im TCP/IP-Modell', 'tcpip', { item: 'ICMP (Ping)' }),
+    t('Schichten/Ports', 2, 'Standard-Port von IMAP', 'port', { name: 'IMAP' })
   ].map((x, i) => Object.assign({ id: 'net' + (i + 1) }, x));
 
   /* ===== Beispiele =====

@@ -147,6 +147,12 @@
   const LEAD_ERR = 2 * 1.5 / 0.385;                                                    /* se5: 7,79 K */
   const PITCH = Math.atan2(0.40, Math.hypot(0.30, 0.86)) * 180 / Math.PI;              /* se14: 23,7° */
   const LSB12 = 5 / 4096 * 1000;                                                       /* se20: 1,2207 mV */
+  const TC125 = 25 + 4.1 * 1000 / 41;                                                  /* se29: 125 °C */
+  const US686 = 343 * 0.004 / 2 * 1000;                                                /* se30: 686 mm */
+  const DMS750 = 0.18 / 120 / 2 * 1e6;                                                 /* se31: 750 µm/m */
+  const LOOP1424 = 4 + 3.2 / 5 * 16;                                                   /* se32: 14,24 mA */
+  const ADC1024 = 1.25 / 5 * 4096;                                                     /* se34: 1024 */
+  const I2C650 = (9 * 7 + 2) / 100 * 1000;                                             /* se35: 650 µs */
 
   /* ====================================================================== Prüfungen der Simulationsaufgaben */
   const BASE2 = { sensor: 'ldr', lux: 500, rLoad: 10000, thresh: 2.5, hyst: 0.2, fdelay: 0, target: 'hell', dist: 3, material: 'stahl', ambient: 0 };
@@ -363,6 +369,32 @@
     r(!hasFault(s100, 'selfheat') && fin(f100.dTself) && f100.dTself < 1, 'Der Messstrom erwärmt den Pt100 um weniger als 1 K', 'Selbsterwärmung: ' + fm(f100.dTself, 2) + ' K. Ein Pt100 verträgt nur etwa 1 mA Messstrom, ohne spürbar warm zu werden.');
   });
 
+  /* se33: 50-Hz-Störung auf der Messleitung */
+  const BASE33 = { signal: '010', value: 5, lo: 0, hi: 10, uSupply: 24, rBurden: 250, rLine: 20, adcBits: 12, emi: 300, wireBreak: false, short: false };
+  const checkSe33 = mk('normsignal', (c, r) => {
+    const ctl = Object.assign({}, BASE33, initial(c), { value: 5, lo: 0, hi: 10, uSupply: 24, rLine: 20, emi: 300, wireBreak: false, short: false });
+    const s = run('normsignal', [], 2500, ctl, { sampleMs: 3 }), f = s.final || {};
+    inputRow(c, r, s);
+    const v = s.samples.filter(x => x.t >= 800).map(x => +x.state.shown).filter(fin);
+    const mn = Math.min.apply(null, v), mx = Math.max.apply(null, v), mean = v.reduce((a, b) => a + b, 0) / Math.max(1, v.length);
+    r(effCtl(c, 'emi', 300) >= 100, 'Die Störung bleibt bestehen (die Leitung lässt sich nicht einfach störungsfrei stellen)', 'Die Einkopplung der Motorleitung ist in der Anlage fest vorhanden. Du kannst nur die Messung dagegen unempfindlicher machen.');
+    r(v.length > 0 && mx - mn <= 0.1, 'Die Anzeige schwankt höchstens 0,1 bar (Spitze zu Spitze)', 'Die Anzeige schwankt um ' + fm(mx - mn, 2) + ' bar. Eine Störspannung von 300 mV liegt voll auf einem Spannungssignal. Beim Stromsignal wirkt sie kaum, weil der Messumformer den Strom unabhängig von kleinen Störspannungen einprägt.');
+    r(v.length > 0 && Math.abs(mean - 5) <= 0.1, 'Der Mittelwert der Anzeige liegt bei 5 bar (±0,1 bar)', 'Der Mittelwert ist ' + fm(mean, 2) + ' bar. Prüfe, ob Signalart und Bürde zum Messbereich 0 bis 10 bar passen.');
+    r(!f.saturated && !f.adcClip && !hasFault(s, 'burden'), 'Messumformer und Wandler bleiben im Bereich', 'Der Messumformer oder der Wandler läuft an den Anschlag. Wähle die Bürde so, dass der Strom in der Schleife nicht begrenzt wird und der Wandler nicht übersteuert.');
+  });
+
+  /* se36: Fast-Mode-Bus mit 400 kHz */
+  const BASE36 = { sensor: 'sht', addr: 68, addrPin: 'low', twin: false, pullup: 4700, busSpeed: 400000, busLength: 1, stretch: false };
+  const checkSe36 = mk('digital', (c, r) => {
+    const ctl = Object.assign({}, BASE36, initial(c), { sensor: 'sht', twin: false, addr: 68, addrPin: 'low', busLength: 1 });
+    const s = run('digital', [], 10000, ctl), f = s.final || {};
+    inputRow(c, r, s);
+    r(+ctl.busSpeed === 400000, 'Der Bus läuft weiter mit 400 kHz (Fast-Mode)', 'Die Busgeschwindigkeit wurde heruntergestellt. Die Aufgabe verlangt, dass der Bus mit 400 kHz läuft: Dann bleibt mehr Zeit für den Controller und der Pull-up muss die schnelleren Flanken liefern.');
+    r(fin(f.tr) && fin(f.trLimit) && f.tr <= f.trLimit, 'Die Anstiegszeit liegt innerhalb der Grenze von 300 ns', 'Anstiegszeit: ' + fm(f.tr, 0) + ' ns (Grenze ' + fm(f.trLimit, 0) + ' ns). Aus t_r = 0,8473 · R · C folgt bei 130 pF: R ≤ 300 ns / (0,8473 · 130 pF) = 2,7 kΩ.');
+    r(f.pullupLow === false, 'Der Pull-up ist nicht zu klein (Ausgangsstrom des Sensors bleibt zulässig)', 'Mit so wenig Widerstand müsste der Sensor mehr als 3 mA nach Masse ziehen. Der untere Grenzwert liegt bei etwa (3,3 V − 0,4 V) / 3 mA = 1 kΩ.');
+    r(fin(f.txCount) && f.txCount >= 1 && f.txFail === 0 && f.lastOk === true, 'Alle Übertragungen laufen fehlerfrei', 'Fehlgeschlagene Übertragungen: ' + f.txFail + ' von ' + f.txCount + ' (Grund: ' + (f.lastReason || '?') + '). Zu langsame Flanken verfälschen bei 400 kHz die Bits.');
+  });
+
   /* ====================================================================== Aufgaben */
   const S = (rig, controls, extra) => Object.assign({ rig, controls }, extra || {});
   const ttl = [
@@ -407,6 +439,12 @@
       hint: ['Die Kennlinie eines NTC ist stark gekrümmt. Eine Gerade passt nur an wenigen Stellen.', 'Am Prüfstand gibt es drei Arten der Auswertung: Gerade, Tabelle und Rechnung. Überlege, welche der Kurve folgt.', 'Wähle „Rechnung (Steinhart-Hart / Kennlinie)“. Die Tabelle mit Stützstellen alle 20 K reicht mit etwa 1,5 K Restfehler ebenfalls aus.'],
       start: () => S('temperatur', BASE7), sol: () => S('temperatur', Object.assign({}, BASE7, { lin: 'sh' })),
       check: checkSe7 },
+    { id: 'se29', lab: 'sen', cat: 'Temperatur', title: 'Thermoelement: Temperatur der Messstelle', level: 2, rig: 'temperatur',
+      text: 'Ein Thermoelement vom Typ K liefert etwa 41 µV je Kelvin Temperaturunterschied zwischen Messstelle und Vergleichsstelle. Die Vergleichsstelle (Klemmstelle im Schaltschrank) hat 25 °C, am Messeingang liegt eine Thermospannung von 4,1 mV. Berechne die Temperatur der Messstelle in Grad Celsius.',
+      ask: { label: 'Temperatur der Messstelle', unit: '°C' },
+      hint: ['Ein Thermoelement misst keine absolute Temperatur, sondern den Unterschied zwischen Messstelle und Vergleichsstelle.', 'Aus der Spannung folgt zuerst der Temperaturunterschied: ΔT = U / Empfindlichkeit. Danach musst du die Temperatur der Vergleichsstelle wieder dazuzählen.', '4,1 mV / 41 µV/K = 100 K. Zur Vergleichsstelle addieren: 25 °C + 100 K = 125 °C.'],
+      start: () => S('temperatur', { sensor: 'tck', tMeas: 125 }, { value: null }), sol: () => S('temperatur', { sensor: 'tck', tMeas: 125 }, { value: TC125 }),
+      check: askCheck('temperatur', TC125, [[100, 'Du hast die Temperatur der Vergleichsstelle vergessen. Die Spannung gehört zum Unterschied zwischen Mess- und Vergleichsstelle, also kommen die 25 °C dazu.'], [-75, 'Du hast die Vergleichsstelle abgezogen statt addiert. Die Messstelle ist um den Temperaturunterschied wärmer als die Vergleichsstelle.'], [4.1 * 41, 'Du hast mit der Empfindlichkeit multipliziert statt zu teilen. Spannung geteilt durch Spannung je Kelvin ergibt Kelvin.']]) },
     /* ------------------------------------------------------------ Licht und Näherung */
     { id: 'se8', lab: 'sen', cat: 'Licht und Näherung', title: 'Schaltabstand bei Aluminium', level: 1, rig: 'licht',
       text: 'Ein induktiver Näherungsschalter hat den Nennschaltabstand Sn = 8 mm (gemessen an einer Stahlplatte). Du willst ein Bauteil aus Aluminium erkennen. Der Reduktionsfaktor für Aluminium beträgt 0,4. Berechne den tatsächlichen Schaltabstand in Millimetern.',
@@ -424,6 +462,12 @@
       hint: ['Der Empfänger ist ein Fototransistor: Mehr Licht gibt mehr Strom und damit mehr Spannungsabfall am Arbeitswiderstand. Bei zu viel Licht läuft er in die Sättigung.', 'Wähle den Arbeitswiderstand kleiner, damit der Empfänger auch bei Fremdlicht und freiem Strahl nicht an den Anschlag läuft. Die Schwelle muss mit und ohne Fremdlicht richtig schalten: Sie liegt über dem Pegel des freien Strahls ohne Fremdlicht und unter dem Pegel mit Teil bei Fremdlicht.', 'Zum Beispiel Arbeitswiderstand 5 kΩ und Schwelle 3,25 V. Ohne Fremdlicht liegt der freie Strahl dann bei 3,0 V (aus) und mit Teil bei 5,0 V (ein). Mit 700 lx Fremdlicht sind es 1,7 V und 3,7 V.'],
       start: () => S('licht', BASE10), sol: () => S('licht', Object.assign({}, BASE10, { rLoad: 5000, thresh: 3.25 })),
       check: checkSe10 },
+    { id: 'se30', lab: 'sen', cat: 'Licht und Näherung', title: 'Ultraschallsensor: Abstand aus der Laufzeit', level: 1, rig: 'licht',
+      text: 'Ein Ultraschallsensor sendet einen Schallimpuls zu einem Hindernis und empfängt das Echo nach 4,0 ms. Die Schallgeschwindigkeit beträgt bei der herrschenden Lufttemperatur 343 m/s. Berechne den Abstand zwischen Sensor und Hindernis in Millimetern.',
+      ask: { label: 'Abstand zum Hindernis', unit: 'mm' },
+      hint: ['Die gemessene Zeit gehört zu einem Weg des Schalls. Überlege, welchen Weg der Impuls in dieser Zeit zurücklegt.', 'Der Schall läuft zum Hindernis und wieder zurück. Der Abstand ist deshalb nur die Hälfte des Gesamtwegs: s = c · t / 2. Rechne die Zeit in Sekunden.', '343 m/s · 0,004 s = 1,372 m für Hin- und Rückweg. Die Hälfte sind 0,686 m = 686 mm.'],
+      start: () => S('licht', { sensor: 'ultraschall', dist: 150 }, { value: null }), sol: () => S('licht', { sensor: 'ultraschall', dist: 150 }, { value: US686 }),
+      check: askCheck('licht', US686, [[1372, 'Du hast den Weg nicht halbiert. Der Schall läuft hin und zurück, der Abstand ist nur der halbe Weg.'], [0.686, 'Das ist das Ergebnis in Metern. Gefragt sind Millimeter: mal 1000.'], [68.6, 'Das ist das Ergebnis in Zentimetern. Gefragt sind Millimeter: mal 10.']]) },
     /* ------------------------------------------------------------ Kraft und Druck */
     { id: 'se11', lab: 'sen', cat: 'Kraft und Druck', title: 'Brückenspannung der DMS-Viertelbrücke', level: 2, rig: 'kraft',
       text: 'Ein einzelner DMS mit dem k-Faktor 2 ist in einer Viertelbrücke geschaltet und wird mit 5 V gespeist. Der Federkörper dehnt den DMS um 800 µm/m. Berechne die Brückenspannung in Millivolt. Rechne mit der Näherungsformel für die Viertelbrücke.',
@@ -442,6 +486,12 @@
       start: () => S('kraft', BASE13, { seq: [{ t: 0, set: { force: 0 } }, { t: 1500, set: { force: 100 } }], dur: 6000 }),
       sol: () => S('kraft', BASE13, { seq: [{ t: 0, set: { force: 0 } }, { t: 500, set: { calZero: true } }, { t: 700, set: { calZero: false } }, { t: 1500, set: { force: 100 } }, { t: 4500, set: { calSpan: true } }, { t: 4700, set: { calSpan: false } }], dur: 6000 }),
       check: checkSe13 },
+    { id: 'se31', lab: 'sen', cat: 'Kraft und Druck', title: 'DMS: Dehnung aus der Widerstandsänderung', level: 1, rig: 'kraft',
+      text: 'Ein Dehnungsmessstreifen (DMS) hat unbelastet 120 Ω und den k-Faktor 2. Unter Last steigt sein Widerstand um 0,18 Ω. Berechne die Dehnung ε des Messstreifens in Mikrometer je Meter (µm/m).',
+      ask: { label: 'Dehnung ε', unit: 'µm/m' },
+      hint: ['Der k-Faktor verbindet die relative Widerstandsänderung mit der relativen Längenänderung (Dehnung) des Messstreifens.', 'Es gilt ΔR / R = k · ε, also ε = (ΔR / R) / k. Das Ergebnis ist zuerst eine reine Zahl (m/m), mal 10⁶ ergibt µm/m.', 'ΔR / R = 0,18 Ω / 120 Ω = 0,0015. Geteilt durch k = 2 ergibt ε = 0,00075 = 750 µm/m.'],
+      start: () => S('kraft', { bridge: 'viertel' }, { value: null }), sol: () => S('kraft', { bridge: 'viertel' }, { value: DMS750 }),
+      check: askCheck('kraft', DMS750, [[1500, 'Du hast den k-Faktor vergessen. Die relative Widerstandsänderung ist k-mal so groß wie die Dehnung: ε = (ΔR / R) / k.'], [3000, 'Du hast mit dem k-Faktor multipliziert statt geteilt. Die Dehnung ist kleiner als die relative Widerstandsänderung.'], [0.00075, 'Das ist die Dehnung in m/m. Gefragt sind Mikrometer je Meter: mal 1 000 000.'], [0.75, 'Das ist die Dehnung in mm/m. Gefragt sind Mikrometer je Meter: mal 1000.']]) },
     /* ------------------------------------------------------------ Beschleunigung */
     { id: 'se14', lab: 'sen', cat: 'Beschleunigung', title: 'Nickwinkel aus den Beschleunigungswerten', level: 2, rig: 'beschleunigung',
       text: 'Ein MEMS-Sensor liegt ruhig in einer Maschine und liefert die Beschleunigungen ax = 0,40 g, ay = 0,30 g und az = 0,86 g. Berechne den Nickwinkel θ (Neigung um die y-Achse) in Grad. Rechne mit θ = atan2(ax, √(ay² + az²)).',
@@ -478,6 +528,17 @@
       hint: ['Bei einem Drahtbruch fließt kein Strom mehr und die Spannung am Eingang fällt auf null. Entscheidend ist, ob null ein gültiger Messwert sein kann.', 'Ein Signal ist nur dann sicher, wenn der Nullpunkt nicht bei 0 liegt (Live Zero). Dann steht 0 mA oder 0 V eindeutig für einen Fehler.', 'Wähle 4…20 mA (Bürde 250 Ω) oder 1…5 V. Bei 4…20 mA unterschreitet der Strom 3,6 mA und die Anlage erkennt den Bruch.'],
       start: () => S('normsignal', BASE19), sol: () => S('normsignal', Object.assign({}, BASE19, { signal: '420' })),
       check: checkSe19 },
+    { id: 'se32', lab: 'sen', cat: 'Normsignale', title: 'Füllstand in den Schleifenstrom umrechnen', level: 1, rig: 'normsignal',
+      text: 'Ein Füllstandsensor misst von 0 bis 5 m und gibt sein Messsignal als 4…20 mA aus. Der Behälter ist gerade 3,2 m hoch gefüllt. Berechne den Strom, den der Sensor in der Schleife einprägt, in Milliampere.',
+      ask: { label: 'Schleifenstrom', unit: 'mA' },
+      hint: ['Bei 4…20 mA entspricht 0 m dem Strom 4 mA und 5 m dem Strom 20 mA. Der Strom wächst linear mit dem Füllstand.', 'Berechne zuerst den Anteil am Messbereich: 3,2 m / 5 m. Dieser Anteil gilt für die Spanne von 16 mA. Danach addierst du den Nullpunkt 4 mA.', '3,2 / 5 = 0,64. 0,64 · 16 mA = 10,24 mA. Plus 4 mA ergibt 14,24 mA.'],
+      start: () => S('normsignal', { signal: '420', lo: 0, hi: 5 }, { value: null }), sol: () => S('normsignal', { signal: '420', lo: 0, hi: 5 }, { value: LOOP1424 }),
+      check: askCheck('normsignal', LOOP1424, [[12.8, 'Du hast den Nullpunkt bei 0 mA angesetzt. Bei 4…20 mA beginnt der Messbereich bei 4 mA, der Strom ist also immer mindestens 4 mA.'], [10.24, 'Du hast nur die 16-mA-Spanne verrechnet. Der Nullpunkt von 4 mA kommt noch dazu.'], [0.64, 'Das ist nur der Anteil am Messbereich. Rechne ihn auf die Spanne von 16 mA um und addiere 4 mA.']]) },
+    { id: 'se33', lab: 'sen', cat: 'Normsignale', title: 'Störung auf der Messleitung', level: 2, rig: 'normsignal',
+      text: 'Ein Drucksensor (0 bis 10 bar) hängt am Signaleingang einer Anlage; die Leitung läuft neben einer Motorleitung. Dort koppelt sich eine 50-Hz-Störung von 300 mV ein. Mit dem Signal 0…10 V schwankt die angezeigte 5-bar-Messung um etwa ±0,3 bar. Stelle den Prüfstand so ein, dass die Anzeige höchstens 0,1 bar schwankt, der Mittelwert bei 5 bar bleibt und weder Messumformer noch Wandler übersteuert werden.',
+      hint: ['Eine eingekoppelte Spannung addiert sich bei einem Spannungssignal direkt zum Nutzsignal. Überlege, welche Signalarten gegen solche Störungen unempfindlicher sind.', 'Ein Stromsignal wird vom Messumformer eingeprägt. Eine kleine Störspannung in der Leitung ändert den Strom kaum. Die Bürde wandelt ihn am Empfänger in eine Spannung um.', 'Wähle 4…20 mA mit einer Bürde von 250 Ω. Auch 0…20 mA beruhigt die Anzeige, hat aber keinen Live Zero. Mehr Bit am Wandler ändern an der Störung nichts.'],
+      start: () => S('normsignal', BASE33), sol: () => S('normsignal', Object.assign({}, BASE33, { signal: '420' })),
+      check: checkSe33 },
     /* ------------------------------------------------------------ ADU */
     { id: 'se20', lab: 'sen', cat: 'ADU', title: 'Stufenhöhe eines 12-Bit-Wandlers', level: 1, rig: 'adu',
       text: 'Ein 12-Bit-ADU hat die Referenzspannung 5 V und wandelt Spannungen von 0 bis 5 V in Zählwerte von 0 bis 4095. Berechne die Spannung einer Stufe (1 LSB) in Millivolt.',
@@ -490,6 +551,12 @@
       hint: ['Wenn ein ADU zu langsam abtastet, spiegelt sich das Signal in einen niedrigeren Frequenzbereich. Die Abtastrate muss deutlich über der doppelten Signalfrequenz liegen.', 'Das Abtasttheorem verlangt fs > 2 · f_max. Praktisch rechnest du mit dem 2,5- bis 5-fachen. Das Signal selbst mit einem Filter zu verändern, hilft nicht, du willst ja die 900 Hz messen.', 'Zum Beispiel fs = 2500 Hz oder 4000 Hz. Dann ist fs = 2,8 beziehungsweise 4,4 mal so groß wie die Signalfrequenz.'],
       start: () => S('adu', BASE21), sol: () => S('adu', Object.assign({}, BASE21, { fs: 2500 })),
       check: checkSe21 },
+    { id: 'se34', lab: 'sen', cat: 'ADU', title: 'Zählwert eines 12-Bit-Wandlers', level: 2, rig: 'adu',
+      text: 'Ein 12-Bit-ADU hat die Referenzspannung 5 V und teilt den Bereich von 0 bis 5 V in 4096 gleich große Stufen. Am Eingang liegen 1,25 V. Berechne den Zählwert, den der Wandler ausgibt (ganze Zahl, ohne Einheit).',
+      ask: { label: 'Zählwert', unit: 'Digit' },
+      hint: ['Der Zählwert sagt, wie viele Stufen der Wandler bis zur Eingangsspannung zählt. Er ist proportional zur Eingangsspannung.', 'Zählwert = Uin / Uref · 2ⁿ. Die Eingangsspannung steht im Verhältnis zur Referenzspannung, der Bereich hat 2ⁿ Stufen.', '1,25 V / 5 V = 0,25. 0,25 · 4096 = 1024. Die Eingangsspannung liegt also bei einem Viertel des Bereichs.'],
+      start: () => S('adu', { bits: 12, vref: 5 }, { value: null }), sol: () => S('adu', { bits: 12, vref: 5 }, { value: ADC1024 }),
+      check: askCheck('adu', ADC1024, [[256, 'Du hast mit 1024 Stufen gerechnet (10 Bit). Ein 12-Bit-Wandler hat 2¹² = 4096 Stufen.'], [5120, 'Du hast nicht durch die Referenzspannung geteilt. Der Zählwert hängt vom Verhältnis Uin / Uref ab.'], [0.25, 'Das ist nur das Verhältnis Uin / Uref. Multipliziere es mit der Zahl der Stufen (4096).']]) },
     /* ------------------------------------------------------------ Digitale Sensoren */
     { id: 'se22', lab: 'sen', cat: 'Digitale Sensoren', title: 'Pull-up-Widerstand für den I2C-Bus wählen', level: 2, rig: 'digital',
       text: 'Ein SHT-Sensor hängt am I2C-Bus (Standardmodus, 100 kHz, 3,3 V) an einem 2 m langen Kabel; die Buskapazität beträgt dabei etwa 210 pF. Mit 47 kΩ Pull-up sind die Flanken viel zu langsam, alle Übertragungen schlagen fehl. Die Anstiegszeit darf höchstens 1000 ns betragen. Wähle den Pull-up so, dass alle Übertragungen fehlerfrei laufen und der Widerstand nicht so klein ist, dass der Sensor ihn nicht mehr nach Masse ziehen kann.',
@@ -501,6 +568,17 @@
       hint: ['Auf einem I2C-Bus darf jede Adresse nur einmal vorkommen. Antworten zwei Geräte gleichzeitig, mischen sich ihre Bits.', 'Ein Sensor muss auf eine andere Adresse umgestellt werden. Dafür gibt es den Adress-Pin. Danach muss der Controller auch die neue Adresse benutzen.', 'Stelle „ADDR-Pin des SHT“ auf High (Adresse 0x45) und „Adresse im Controller“ auf 0x45.'],
       start: () => S('digital', BASE23), sol: () => S('digital', Object.assign({}, BASE23, { addrPin: 'high', addr: 69 })),
       check: checkSe23 },
+    { id: 'se35', lab: 'sen', cat: 'Digitale Sensoren', title: 'Dauer eines I2C-Telegramms', level: 2, rig: 'digital',
+      text: 'Ein Controller liest einen Sensor am I2C-Bus aus (Standardmodus, 100 kHz): Er sendet ein Adressbyte und empfängt danach 6 Datenbytes. Rechne je Byte mit 9 Taktperioden (8 Datenbit plus ein Quittierbit) und für Start- und Stoppbedingung zusammen mit 2 Taktperioden. Berechne die Dauer des Telegramms in Mikrosekunden.',
+      ask: { label: 'Dauer des Telegramms', unit: 'µs' },
+      hint: ['Zähle zuerst die Taktperioden des ganzen Telegramms. Das Adressbyte ist ein Byte wie jedes andere und zählt mit.', 'Es sind 1 + 6 = 7 Bytes mit je 9 Takten, dazu 2 Takte für Start und Stopp. Die Dauer ist die Zahl der Takte geteilt durch die Taktfrequenz.', '7 · 9 + 2 = 65 Takte. Bei 100 kHz dauert ein Takt 10 µs: 65 · 10 µs = 650 µs.'],
+      start: () => S('digital', { busSpeed: 100000 }, { value: null }), sol: () => S('digital', { busSpeed: 100000 }, { value: I2C650 }),
+      check: askCheck('digital', I2C650, [[580, 'Du hast nur 8 Takte je Byte gerechnet. Das Quittierbit (ACK) gehört zu jedem Byte, also sind es 9 Takte.'], [560, 'Das Adressbyte fehlt. Der Controller sendet es zuerst, es zählt wie ein Datenbyte mit 9 Takten.'], [65, 'Das ist die Zahl der Taktperioden. Teile durch die Taktfrequenz, jede Periode dauert bei 100 kHz 10 µs.'], [0.65, 'Das ist das Ergebnis in Millisekunden. Gefragt sind Mikrosekunden: mal 1000.']]) },
+    { id: 'se36', lab: 'sen', cat: 'Digitale Sensoren', title: 'Pull-up für den Fast-Mode-Bus wählen', level: 3, rig: 'digital',
+      text: 'Ein SHT-Sensor hängt an einem 1 m langen Kabel am I2C-Bus (Buskapazität etwa 130 pF, 3,3 V). Der Bus soll im Fast-Mode mit 400 kHz laufen. Dort darf die Anstiegszeit höchstens 300 ns betragen. Mit 4,7 kΩ Pull-up sind die Flanken zu langsam und alle Übertragungen schlagen fehl. Wähle den Pull-up so, dass bei 400 kHz alles fehlerfrei läuft und der Sensor den Pegel noch nach Masse ziehen kann.',
+      hint: ['Die Anstiegszeit ergibt sich aus Pull-up und Buskapazität. Bei Fast-Mode bleibt weniger Zeit als bei 100 kHz, der Widerstand muss also kleiner sein.', 'Aus t_r = 0,8473 · R · C folgt R ≤ t_r / (0,8473 · C). Nach unten begrenzt der Strom, den der Sensor beim Low-Pegel aufnehmen muss: R ≥ (3,3 V − 0,4 V) / 3 mA, etwa 1 kΩ.', 'R ≤ 300 ns / (0,8473 · 130 pF) = 2,7 kΩ. Aus der Reihe der Werte passt 2,2 kΩ. 1 kΩ ist zu klein, 4,7 kΩ zu groß. Die Busgeschwindigkeit bleibt bei 400 kHz.'],
+      start: () => S('digital', BASE36), sol: () => S('digital', Object.assign({}, BASE36, { pullup: 2200 })),
+      check: checkSe36 },
     /* ------------------------------------------------------------ Fehlersuche */
     { id: 'se24', lab: 'sen', cat: 'Fehlersuche', title: 'Pt100 zeigt 10 Kelvin zu viel an', level: 2, rig: 'temperatur',
       text: 'Ein Pt100 misst eine Messstelle mit 60 °C, die Anlage zeigt aber etwa 71 °C an. Die Leitung ist 40 m lang (2 Ω je Ader, fest verlegt) und der Pt100 in 2-Leiter-Technik in der Brücke angeschlossen. Behebe den Fehler am Prüfstand so, dass die Anzeige höchstens 0,5 K danebenliegt und der Leitungswiderstand ausgeglichen wird. Sensor und Kabel bleiben unverändert.',

@@ -625,6 +625,168 @@
   const checkSp23 = mkCheck((prog, r) => checkBand(prog, r, { stoer: true }));
   const checkSp24 = mkCheck((prog, r) => checkTankPumpe(prog, r));
 
+  /* ---- Erweiterung: Aufgaben sp25 bis sp32 (Programme und Prüfungen) ---- */
+  // sp25 Tank: Rührwerk mit Trockenlaufschutz
+  const tankRuehrSol = () => kop('tank', [
+    net('N1', 'Rührwerk', AND(v('I0.0'), v('I0.3'), v('I0.6')), [coil('Q0.2')]),
+    net('N2', 'Störlampe', nv('I0.6'), [coil('Q0.5')])]);
+  const tankRuehrStart = () => kop('tank', [net('N1', 'Rührwerk', v('I0.0'), [coil('Q0.2')])]);
+  // sp26 Garagentor: Zweihandbedienung
+  const torZweihandSol = () => kop('garagentor', [
+    net('N1', 'Wartungsfahrt Auf (Zweihandbedienung)', AND(v('I0.0'), v('I0.1'), nv('I0.2'), v('I0.5')), [coil('Q0.0')]),
+    net('N2', 'Blinklicht', v('Q0.0'), [coil('Q0.2')])]);
+  const torZweihandStart = () => kop('garagentor', [net('N1', 'Wartungsfahrt Auf', v('I0.0'), [coil('Q0.0')])]);
+  // sp27 Ampel: Fußgänger-Grün als Impuls
+  const ampelImpulsSol = () => fup('ampel', [
+    net('N1', 'Fußgänger-Grün als Impuls', TP('T1', 6000, v('I0.0')), [coil('Q0.4')]),
+    net('N2', 'Fußgänger Rot', nv('T1.Q'), [coil('Q0.3')]),
+    net('N3', 'Straße Rot', v('T1.Q'), [coil('Q0.0')]),
+    net('N4', 'Straße Grün', nv('T1.Q'), [coil('Q0.2')])]);
+  const ampelImpulsStart = () => kop('ampel', [net('N1', 'Fußgänger-Grün', v('I0.0'), [coil('Q0.4')])]);
+  // sp28 Förderband: Staumelder
+  const bandStauSol = () => kop('foerderband', [
+    net('N1', 'Stau erkennen', TON('T1', 5000, v('I0.6')), [coil('Q0.3')]),
+    net('N2', 'Band', AND(OR(v('I0.0'), v('Q0.0')), v('I0.1'), v('I0.7'), nv('T1.Q')), [coil('Q0.0')])]);
+  const bandStauStart = () => kop('foerderband', [net('N1', 'Band', AND(OR(v('I0.0'), v('Q0.0')), v('I0.1'), v('I0.7')), [coil('Q0.0')])]);
+  // sp29 Tank: Ventil vor Pumpe
+  const tankVentilSol = () => kop('tank', [
+    net('N1', 'Abpumpen merken', AND(OR(AND(v('I0.0'), v('I0.2')), v('M0.0')), v('I0.1'), v('I0.6'), v('I0.2')), [coil('M0.0')]),
+    net('N2', 'Ablaufventil', v('M0.0'), [coil('Q0.3')]),
+    net('N3', 'Pumpe nach 2 s', TON('T1', 2000, v('M0.0')), [coil('Q0.4')])], { 'M0.0': 'M_Abpumpen' });
+  const tankVentilStart = () => kop('tank', [
+    net('N1', 'Abpumpen merken', AND(OR(AND(v('I0.0'), v('I0.2')), v('M0.0')), v('I0.1'), v('I0.6'), v('I0.2')), [coil('M0.0')]),
+    net('N2', 'Ablaufventil', v('M0.0'), [coil('Q0.3')]),
+    net('N3', 'Pumpe', v('M0.0'), [coil('Q0.4')])], { 'M0.0': 'M_Abpumpen' });
+  // sp30 Tank: Min-Meldung mit Entprellzeit
+  const tankEntprellSol = () => kop('tank', [
+    net('N1', 'Min länger als 2 s unterschritten', TON('T1', 2000, nv('I0.2')), [coil('M0.0')]),
+    net('N2', 'Pumpe P1', AND(OR(AND(v('I0.0'), v('I0.2')), v('Q0.4')), v('I0.1'), v('I0.6'), nv('M0.0')), [coil('Q0.4')])], { 'M0.0': 'M_MinLang' });
+  const tankEntprellStart = () => kop('tank', [
+    net('N1', 'Pumpe P1', AND(OR(AND(v('I0.0'), v('I0.2')), v('Q0.4')), v('I0.1'), v('I0.6'), v('I0.2')), [coil('Q0.4')])], { 'M0.0': 'M_MinLang' });
+  // sp31 Garagentor: Zuschließautomatik
+  const torZuSol = () => kop('garagentor', [
+    net('N1', 'Wartezeit im offenen Zustand', TON('T1', 8000, AND(v('I0.2'), nv('I0.4'), v('I0.5'))), [coil('M0.0')]),
+    net('N2', 'Motor Auf (Tippbetrieb)', AND(v('I0.0'), nv('I0.2'), nv('Q0.1')), [coil('Q0.0')]),
+    net('N3', 'Motor Ab (Zuschließautomatik)', AND(OR(v('M0.0'), v('Q0.1')), nv('I0.3'), nv('I0.4'), v('I0.5'), nv('Q0.0')), [coil('Q0.1')]),
+    net('N4', 'Blinklicht', OR(v('Q0.0'), v('Q0.1')), [coil('Q0.2')])], { 'M0.0': 'M_Wartezeit' });
+  const torZuStart = () => kop('garagentor', [
+    net('N1', 'Motor Auf (Tippbetrieb)', AND(v('I0.0'), nv('I0.2'), nv('Q0.1')), [coil('Q0.0')]),
+    net('N2', 'Blinklicht', OR(v('Q0.0'), v('Q0.1')), [coil('Q0.2')])], { 'M0.0': 'M_Wartezeit' });
+  // sp32 Fehlersuche: Zähler
+  const bandZaehlBug = () => kop('foerderband', [
+    net('N1', 'Werkstücke zählen', CTU('C1', 4, v('I0.2')), [coil('Q0.3')]),
+    net('N2', 'Band', AND(OR(v('I0.0'), v('Q0.0')), v('I0.1'), v('I0.7'), nv('C1.Q')), [coil('Q0.0')])]);
+
+  const checkSp25 = mkCheck((prog, r) => {
+    const rows = [];
+    for (let m = 0; m < 8; m++) {
+      const s1 = !!(m & 1), b2 = !!(m & 2), nh = !!(m & 4);
+      const S = logic(prog, 'tank', [{ in: { 'I0.0': s1, 'I0.1': true, 'I0.3': b2, 'I0.6': !nh }, n: 3 }]);
+      rows.push({ m, got: !!S[0].last['Q0.2'], want: s1 && b2 && !nh, h: !!S[0].last['Q0.5'], wantH: nh });
+    }
+    const grp = f => rows.filter(f).every(x => x.got === x.want);
+    r(grp(x => (x.m & 1) && (x.m & 2) && !(x.m & 4)), 'Taster gedrückt, Tank mindestens halb voll: Das Rührwerk läuft', 'Das Rührwerk M1 (Q0.2) braucht S1 UND B2 (I0.3 = 1) UND einen nicht betätigten Not-Halt.');
+    r(grp(x => (x.m & 1) && !(x.m & 2) && !(x.m & 4)), 'Tank unter der Mitte: Das Rührwerk bleibt aus', 'B2 (I0.3) = 0 heißt: unter 50 %. Dann darf M1 nicht laufen, sonst dreht das Rührwerk fast trocken. B2 gehört als Schließer in die UND-Verknüpfung.');
+    r(grp(x => !(x.m & 1)), 'Ohne Tastendruck bleibt das Rührwerk aus', 'S1 (I0.0) muss Teil der UND-Verknüpfung sein.');
+    r(grp(x => !!(x.m & 4)), 'Bei betätigtem Not-Halt ist das Rührwerk immer aus', 'S3 (I0.6) ist ein Öffner: Im Ruhezustand liefert er 1. Als Schließer-Kontakt in Reihe unterbricht er beim Betätigen.');
+    r(rows.every(x => x.h === x.wantH), 'Die Störlampe H1 leuchtet genau bei betätigtem Not-Halt', 'H1 (Q0.5) = NICHT S3 (I0.6), also ein Öffner-Kontakt auf I0.6.');
+    r(rows.every(x => x.got === x.want), 'Wahrheitstabelle vollständig richtig (alle 8 Fälle)', 'M1 = S1 UND B2 UND S3.');
+  });
+  const checkSp26 = mkCheck((prog, r) => {
+    const rows = [];
+    for (let m = 0; m < 16; m++) {
+      const s1 = !!(m & 1), s2 = !!(m & 2), oben = !!(m & 4), stp = !!(m & 8);
+      const S = logic(prog, 'garagentor', [{ in: { 'I0.0': s1, 'I0.1': s2, 'I0.2': oben, 'I0.3': false, 'I0.4': false, 'I0.5': !stp }, n: 3 }]);
+      rows.push({ m, s1, s2, oben, stp, got: !!S[0].last['Q0.0'], ab: !!S[0].last['Q0.1'], h: !!S[0].last['Q0.2'], want: s1 && s2 && !oben && !stp });
+    }
+    r(rows.filter(x => x.s1 && x.s2 && !x.oben && !x.stp).every(x => x.got), 'Beide Taster gedrückt: Das Tor fährt auf', 'Motor Auf (Q0.0) läuft bei S1 UND S2 (beide gleichzeitig gedrückt).');
+    r(rows.filter(x => (x.s1 !== x.s2) || (!x.s1 && !x.s2)).every(x => !x.got), 'Mit nur einem Taster (oder keinem) bleibt der Motor aus', 'Das ist der Sinn der Zweihandbedienung: Beide Hände sind an den Tastern. Verknüpfe S1 und S2 mit UND, nicht mit ODER.');
+    r(rows.filter(x => x.oben).every(x => !x.got), 'Ist das Tor oben (Endschalter B1), fährt es nicht weiter', 'B1 (I0.2) = 1 muss den Auf-Motor sperren (Öffner-Kontakt).');
+    r(rows.filter(x => x.stp).every(x => !x.got), 'Der Stopp-Taster sperrt den Motor', 'S3 (I0.5) ist ein Öffner: Im Ruhezustand liefert er 1. Als Schließer-Kontakt in Reihe unterbricht er beim Betätigen.');
+    r(rows.every(x => !x.ab), 'Der Ab-Motor läuft in dieser Aufgabe nie', 'Nur Q0.0 wird angesteuert, Q0.1 bleibt unbenutzt.');
+    r(rows.every(x => x.h === x.got), 'Das Blinklicht H1 leuchtet genau dann, wenn der Motor läuft', 'H1 (Q0.2) folgt Q0.0.');
+    r(rows.every(x => x.got === x.want), 'Wahrheitstabelle vollständig richtig (alle 16 Fälle)', 'Q0.0 = S1 UND S2 UND NICHT B1 UND S3.');
+  });
+  const checkSp27 = mkCheck((prog, r) => {
+    const S = logic(prog, 'ampel', [{ in: { 'I0.0': false }, n: 10 }, { in: { 'I0.0': true }, n: 20 }, { in: { 'I0.0': false }, n: 300 }, { in: { 'I0.0': false }, n: 250 }, { in: { 'I0.0': false }, n: 60 },
+      { in: { 'I0.0': true }, n: 1500 }, { in: { 'I0.0': false }, n: 20 }, { in: { 'I0.0': true }, n: 50 }]);
+    const cyc = S.reduce((a, s) => a.concat(s.cycles), []);
+    r(S[0].last['Q0.2'] && S[0].last['Q0.3'] && !S[0].any['Q0.4'] && !S[0].any['Q0.0'], 'Grundstellung: Die Straße hat Grün, die Fußgänger haben Rot', 'H3 (Q0.2) grün und H4 (Q0.3) rot, solange niemand gedrückt hat.');
+    r(S[1].last['Q0.4'] && !S[1].last['Q0.3'] && S[1].last['Q0.0'] && !S[1].last['Q0.2'], 'Nach dem Tastendruck bekommen die Fußgänger Grün, die Straße Rot', 'H5 (Q0.4) an, H4 (Q0.3) aus, Straße: H1 (Q0.0) an, H3 (Q0.2) aus.');
+    r(S[2].last['Q0.4'] && S[3].last['Q0.4'], 'Das Fußgänger-Grün bleibt nach dem Loslassen bestehen', 'Der Impuls (TP) läuft unabhängig vom Taster weiter. TP braucht PT = 6000 ms.');
+    r(!S[4].last['Q0.4'] && S[4].last['Q0.3'] && S[4].last['Q0.2'] && !S[4].last['Q0.0'], 'Nach etwa 6 Sekunden ist die Grundstellung wieder da', 'Der Impuls soll genau 6 s dauern, danach Fußgänger Rot und Straße Grün.');
+    const n = S[5].cycles.filter(c => c['Q0.4']).length;
+    r(n >= 560 && n <= 640 && !S[5].last['Q0.4'], 'Bei dauernd gedrücktem Taster dauert das Fußgänger-Grün trotzdem nur 6 Sekunden', 'Gemessen: ' + (Math.round(n / 10) / 10).toString().replace('.', ',') + ' s. Ein Impuls (TP) startet mit der steigenden Flanke und läuft dann seine Zeit ab, auch wenn der Taster gehalten wird.');
+    r(cyc.every(c => !!c['Q0.0'] === !!c['Q0.4'] && !!c['Q0.2'] === !c['Q0.4']), 'Die Straße zeigt genau dann Rot, wenn die Fußgänger Grün haben', 'H1 (Q0.0) folgt H5 (Q0.4), H3 (Q0.2) ist deren Gegenteil.');
+    r(cyc.every(c => !!c['Q0.3'] !== !!c['Q0.4']), 'Die Fußgängerampel zeigt immer genau Rot oder Grün', 'H4 (Q0.3) leuchtet, solange H5 (Q0.4) nicht leuchtet.');
+    r(S[7].last['Q0.4'], 'Ein neuer Tastendruck löst das Fußgänger-Grün erneut aus', 'Nach Ablauf muss ein neuer Tastendruck wieder einen Impuls starten.');
+  });
+  const checkSp28 = mkCheck((prog, r) => {
+    const b = e => Object.assign({ 'I0.0': false, 'I0.1': true, 'I0.7': true, 'I0.6': false }, e);
+    const S = logic(prog, 'foerderband', [{ in: b(), n: 10 }, { in: b({ 'I0.0': true }), n: 10 }, { in: b(), n: 50 }, { in: b({ 'I0.6': true }), n: 300 }, { in: b(), n: 50 },
+      { in: b({ 'I0.6': true }), n: 480 }, { in: b({ 'I0.6': true }), n: 40 }, { in: b({ 'I0.6': true }), n: 200 }, { in: b(), n: 50 }, { in: b({ 'I0.0': true }), n: 10 }, { in: b(), n: 50 }, { in: b({ 'I0.7': false }), n: 10 }]);
+    r(!S[0].any['Q0.0'] && !S[0].any['Q0.3'] && S[1].last['Q0.0'] && S[2].last['Q0.0'], 'Das Band startet mit Selbsthaltung, ohne Störmeldung', 'K1 (Q0.0) hält sich selbst, H2 (Q0.3) bleibt im Normalbetrieb aus.');
+    r(S[3].last['Q0.0'] && !S[3].any['Q0.3'] && S[4].last['Q0.0'], 'Ein Werkstück, das nur 3 Sekunden am Sensor steht, löst keine Störung aus', 'Die Einschaltverzögerung (TON) soll erst nach 5 s ununterbrochener Belegung ansprechen.');
+    r(S[5].last['Q0.0'] && !S[5].any['Q0.3'], 'Nach knapp 5 Sekunden Belegung läuft das Band noch', 'TON mit PT = 5000 ms und dem Sensor B5 (I0.6) als Eingang.');
+    r(S[6].last['Q0.3'] && !S[6].last['Q0.0'], 'Nach 5 Sekunden Belegung leuchtet H2 und das Band steht', 'T1.Q muss H2 (Q0.3) einschalten und die Selbsthaltung des Bandes unterbrechen.');
+    r(S[7].last['Q0.3'] && !S[7].any['Q0.0'], 'Solange B5 belegt ist, bleibt die Störung und das Band aus', 'Das Band darf bei Stau nicht wieder anlaufen.');
+    r(!S[8].last['Q0.3'] && !S[8].any['Q0.0'], 'Ist der Stau weg, erlischt H2, das Band bleibt aber aus', 'Nach dem Beseitigen des Staus muss erst neu gestartet werden: Die Selbsthaltung ist ja gelöscht.');
+    r(S[10].last['Q0.0'] && !S[10].any['Q0.3'], 'Ein neuer Start fährt das Band wieder an', 'S1 startet die Selbsthaltung, sobald T1.Q nicht mehr gesetzt ist.');
+    r(!S[11].last['Q0.0'], 'Der Not-Halt schaltet das Band weiterhin ab', 'S3 (I0.7) ist ein Öffner und gehört in Reihe zur Selbsthaltung.');
+  });
+  const checkSp29 = mkCheck((prog, r) => {
+    const b = e => Object.assign({ 'I0.0': false, 'I0.1': true, 'I0.2': true, 'I0.5': true, 'I0.6': true }, e);
+    const S = logic(prog, 'tank', [{ in: b(), n: 10 }, { in: b({ 'I0.0': true }), n: 10 }, { in: b(), n: 100 }, { in: b(), n: 130 }, { in: b(), n: 50 },
+      { in: b({ 'I0.1': false }), n: 10 }, { in: b(), n: 300 }, { in: b({ 'I0.0': true, 'I0.2': false }), n: 10 }, { in: b(), n: 300 },
+      { in: b({ 'I0.0': true }), n: 10 }, { in: b(), n: 300 }, { in: b({ 'I0.2': false }), n: 10 }, { in: b(), n: 300 },
+      { in: b({ 'I0.0': true }), n: 10 }, { in: b(), n: 250 }, { in: b({ 'I0.6': false }), n: 10 }, { in: b(), n: 100 }]);
+    const cyc = S.reduce((a, s) => a.concat(s.cycles), []);
+    r(!S[0].any['Q0.3'] && !S[0].any['Q0.4'], 'Ohne Start bleibt alles aus', 'Ventil Y3 (Q0.3) und Pumpe P1 (Q0.4) dürfen im Ruhezustand nicht eingeschaltet sein.');
+    r(S[1].last['Q0.3'] && !S[1].any['Q0.4'] && S[2].last['Q0.3'] && !S[2].any['Q0.4'], 'Nach dem Start öffnet zuerst das Ablaufventil, die Pumpe wartet noch', 'Y3 (Q0.3) folgt dem Merker sofort, P1 (Q0.4) kommt über ein Zeitglied.');
+    r(S[3].last['Q0.3'] && S[3].last['Q0.4'] && S[4].last['Q0.4'], 'Nach 2 Sekunden läuft auch die Pumpe', 'Einschaltverzögerung (TON) mit PT = 2000 ms, Eingang ist der Merker M0.0.');
+    r(cyc.every(c => !c['Q0.4'] || c['Q0.3']), 'Die Pumpe läuft nie bei geschlossenem Ventil', 'Y3 muss immer an sein, wenn P1 an ist. Beide hängen am selben Merker.');
+    r(!S[5].last['Q0.3'] && !S[5].last['Q0.4'] && !S[6].any['Q0.3'] && !S[6].any['Q0.4'], 'Stopp schaltet Ventil und Pumpe aus, nichts läuft von selbst wieder an', 'S2 (I0.1) ist ein Öffner und gehört in Reihe zur Selbsthaltung des Merkers.');
+    r(!S[8].any['Q0.3'] && !S[8].any['Q0.4'], 'Bei leerem Behälter (B1 = 0) startet der Ablauf nicht, auch nicht später', 'Der Start gilt nur bei B1 (I0.2) = 1. Danach darf er nicht nachträglich anlaufen, wenn B1 wieder 1 wird.');
+    r(S[10].last['Q0.3'] && S[10].last['Q0.4'] && !S[11].last['Q0.3'] && !S[11].last['Q0.4'] && !S[12].any['Q0.3'] && !S[12].any['Q0.4'], 'Fällt der Füllstand unter Min, schalten Ventil und Pumpe aus', 'B1 (I0.2) gehört als Schließer in die Selbsthaltung des Merkers, nicht nur zum Start-Zweig.');
+    r(S[14].last['Q0.4'] && !S[15].last['Q0.3'] && !S[15].last['Q0.4'] && !S[16].any['Q0.3'], 'Der Not-Halt schaltet beides sofort ab', 'S3 (I0.6) ist ein Öffner und gehört in Reihe zur Selbsthaltung.');
+  });
+  const checkSp30 = mkCheck((prog, r) => {
+    const b = e => Object.assign({ 'I0.0': false, 'I0.1': true, 'I0.2': true, 'I0.6': true }, e);
+    const lo = b({ 'I0.2': false });
+    const S = logic(prog, 'tank', [{ in: b(), n: 10 }, { in: b({ 'I0.0': true }), n: 10 }, { in: b(), n: 100 }, { in: lo, n: 100 }, { in: b(), n: 20 }, { in: lo, n: 180 }, { in: b(), n: 20 },
+      { in: lo, n: 150 }, { in: lo, n: 100 }, { in: b(), n: 300 }, { in: b({ 'I0.0': true }), n: 10 }, { in: b(), n: 50 }, { in: b({ 'I0.1': false }), n: 10 },
+      { in: b({ 'I0.0': true }), n: 10 }, { in: b(), n: 30 }, { in: b({ 'I0.6': false }), n: 10 }, { in: b({ 'I0.0': true, 'I0.2': false }), n: 50 }]);
+    r(!S[0].any['Q0.4'] && S[1].last['Q0.4'] && S[2].last['Q0.4'], 'Start schaltet die Pumpe ein, sie hält sich selbst', 'P1 (Q0.4) mit Selbsthaltung. Gestartet wird nur bei B1 (I0.2) = 1.');
+    r(S[3].last['Q0.4'] && S[4].last['Q0.4'], 'Ein Aussetzer von B1 über 1 Sekunde schaltet die Pumpe nicht ab', 'Die Abschaltung kommt erst nach einer Verzögerung. Dafür eignet sich eine Einschaltverzögerung (TON) auf „B1 meldet 0“.');
+    r(S[5].last['Q0.4'] && S[6].last['Q0.4'], 'Auch ein zweiter Aussetzer über 1,8 Sekunden schaltet nicht ab (die Zeit startet jedes Mal neu)', 'Meldet B1 zwischendurch wieder 1, wird das Zeitglied zurückgesetzt. Die Zeit muss also ununterbrochen laufen.');
+    r(S[7].last['Q0.4'], 'Nach 1,5 Sekunden ohne B1 läuft die Pumpe noch', 'TON mit PT = 2000 ms.');
+    r(!S[8].last['Q0.4'], 'Nach 2,5 Sekunden ohne B1 schaltet die Pumpe ab', 'Der Ausgang des TON (T1.Q) sperrt die Selbsthaltung der Pumpe. Der Eingang des TON ist die Negation von B1.');
+    r(!S[9].any['Q0.4'], 'Wird B1 danach wieder 1, läuft die Pumpe nicht von selbst wieder an', 'Die Selbsthaltung wurde gelöscht. Ein neuer Start ist nötig.');
+    r(S[11].last['Q0.4'] && !S[12].last['Q0.4'], 'Stopp schaltet die Pumpe sofort ab', 'S2 (I0.1) ist ein Öffner in Reihe zur Selbsthaltung, ohne Verzögerung.');
+    r(S[14].last['Q0.4'] && !S[15].last['Q0.4'], 'Not-Halt schaltet die Pumpe sofort ab', 'S3 (I0.6) ist ein Öffner in Reihe zur Selbsthaltung, ohne Verzögerung.');
+    r(!S[16].any['Q0.4'], 'Bei Min unterschritten (B1 = 0) lässt sich die Pumpe nicht starten', 'Der Start-Zweig braucht UND B1 (I0.2).');
+  });
+  const checkSp31 = mkCheck((prog, r) => {
+    const sA = script();
+    const a = sim(prog, 'garagentor', { ms: 24000, scen: 'offen', drive: sA.drive, sample: p => ({ pos: p.state().doorPos }) });
+    const f = first(a.rec, x => x.o['Q0.1']);
+    r(!someOf(win(a.rec, 0, 7500), x => x.o['Q0.1']) && !!f && f.t >= 7700 && f.t <= 8800, 'Das offene Tor wartet etwa 8 Sekunden, dann fährt es von selbst zu', 'Eine Einschaltverzögerung (TON) mit PT = 8000 ms, Eingang: B1 (I0.2) = 1. Ihr Ausgang startet den Motor Ab (Q0.1).' + (f ? ' Gemessen: Start nach ' + sec(f.t) + ' s.' : ' Gemessen: Das Tor schließt nicht.'));
+    r(!!f && at(a.rec, 23900).s.pos <= 2 && !someOf(win(a.rec, 22000, 24000), x => x.o['Q0.1']) && !a.st.overrun && !a.st.crash, 'Es fährt bis zum Endschalter unten, dort schaltet der Motor ab', 'Q0.1 muss sich selbst halten, auch wenn das Tor B1 verlässt (die Wartezeit läuft dann nicht mehr). B2 (I0.3) schaltet ab.');
+    r(a.st.crashes === 0 && allOf(win(a.rec, 0, 24000).filter(x => x.o['Q0.0'] || x.o['Q0.1']), x => x.o['Q0.2']), 'Das Blinklicht H1 leuchtet bei jeder Motorfahrt', 'H1 (Q0.2) = Motor Auf ODER Motor Ab.');
+    const sB = script().at(10000, p => p.setObstacle(true, 'auto')).at(13000, p => p.setObstacle(false)).press('I0.0', 14000, 1500);
+    const b = sim(prog, 'garagentor', { ms: 18000, scen: 'offen', drive: sB.drive, sample: p => ({ pos: p.state().doorPos }) });
+    const pb = t => at(b.rec, t).s.pos;
+    r(!b.st.crash && pb(10600) > 50 && !someOf(win(b.rec, 10200, 14000), x => x.o['Q0.1']), 'Taucht beim Schließen ein Hindernis auf, stoppt das Tor sofort (kein Crash)', 'B3 (I0.4) = 1 muss die Selbsthaltung von Motor Ab lösen.');
+    r(Math.abs(pb(13900) - pb(10600)) < 1, 'Ist das Hindernis weg, bleibt das Tor stehen und schließt nicht von selbst weiter', 'Die Wartezeit läuft nur, wenn das Tor ganz oben steht (B1). In der Mitte darf der Motor nicht neu anlaufen.');
+    r(pb(16500) > pb(13900) + 15 && !someOf(win(b.rec, 15600, 18000), x => x.o['Q0.0']), 'Mit S1 fährt das Tor im Tippbetrieb wieder auf, solange der Taster gedrückt ist', 'Motor Auf (Q0.0) läuft nur bei S1, nicht oben (B1) und nur, wenn Motor Ab nicht läuft.');
+    const sC = script().set('I0.5', 0, false).set('I0.5', 9000, true);
+    const c = sim(prog, 'garagentor', { ms: 19000, scen: 'offen', drive: sC.drive });
+    r(!someOf(win(c.rec, 0, 16500), x => x.o['Q0.1']) && someOf(win(c.rec, 16500, 19000), x => x.o['Q0.1']), 'Solange Stopp gedrückt ist, läuft die Wartezeit nicht, sie beginnt erst nach dem Loslassen neu', 'S3 (I0.5) ist ein Öffner. Als Schließer-Kontakt am Eingang des TON setzt ein gedrückter Stopp das Zeitglied zurück.');
+    const d = sim(prog, 'garagentor', { ms: 12000, scen: 'hindernis_auto' });
+    r(!someOf(d.rec, x => x.o['Q0.1']) && !d.st.crash, 'Steht ein Hindernis im Tor, schließt das Tor nicht von selbst', 'Die Wartezeit läuft nur bei B3 (I0.4) = 0. Mit Hindernis kommt der Motor nie.');
+  });
+  const checkSp32 = checkSp8;
+
   /* ====================================================================== Aufgaben */
   const tasks = [
     { id: 'sp1', lab: 'sps', cat: 'Grundlagen', title: 'Verknüpfung: Beleuchtung am Garagentor', level: 1, plant: 'garagentor',
@@ -730,7 +892,40 @@
     { id: 'sp24', lab: 'sps', cat: 'Prüfungsstil', title: 'Netzwerk ergänzen: Pumpensteuerung', level: 2, plant: 'tank',
       text: 'Die Ablaufpumpe P1_Pumpe (Q0.4) des Tanks soll so gesteuert werden: Ein Tastendruck auf S1_Start (I0.0) schaltet sie ein, aber nur, wenn Behälter 2 leer ist (B4_Beh2Leer, I0.5 = 1). Sie hält sich selbst. Sie schaltet ab bei S2_Stopp (I0.1, Öffner), bei S3_NotHalt (I0.6, Öffner) und wenn der Füllstand unter Min fällt (B1_Min, I0.2 = 0), sonst läuft sie trocken. ' + EIN('tank', ['I0.0', 'I0.1', 'I0.2', 'I0.5', 'I0.6']) + AUS('tank', ['Q0.4']) + 'Die Startvorlage zeigt die Selbsthaltung mit Stopp, es fehlen Not-Halt, die Min-Abschaltung und die Freigabe durch Behälter 2.' + ADR,
       hint: ['Unterscheide: Was gilt nur beim Einschalten, und was gilt dauernd, solange die Pumpe läuft?', 'Die Freigabe durch Behälter 2 wirkt nur auf den Start-Taster (UND-Verknüpfung im Start-Zweig). Not-Halt und Min gelten für die ganze Selbsthaltung.', 'N1: (((I0.0 UND I0.5) ODER Q0.4) UND I0.1 UND I0.6 UND I0.2) → Q0.4.'],
-      start: tankPumpeStart, sol: tankPumpe, check: checkSp24 }
+      start: tankPumpeStart, sol: tankPumpe, check: checkSp24 },
+
+    { id: 'sp25', lab: 'sps', cat: 'Vertiefung', title: 'Rührwerk nur bei genug Füllstand', level: 1, plant: 'tank',
+      text: 'Das Rührwerk M1_Ruehrwerk (Q0.2) des Tanks darf nicht trocken laufen. Es soll nur laufen, solange der Taster S1_Start (I0.0) gedrückt ist UND der Tank mindestens halb voll ist (B2_Mitte, I0.3 = 1) UND der Not-Halt nicht betätigt ist. Die Störlampe H1_Stoerung (Q0.5) leuchtet genau dann, wenn der Not-Halt betätigt ist. ' + EIN('tank', ['I0.0', 'I0.3', 'I0.6']) + AUS('tank', ['Q0.2', 'Q0.5']) + 'In der Startvorlage hängt das Rührwerk nur am Taster.' + ADR,
+      hint: ['Mehrere Bedingungen, die alle gleichzeitig erfüllt sein müssen, verknüpfst du mit UND (Reihenschaltung im KOP).', 'Der Not-Halt ist ein Öffner: Im Ruhezustand liefert er 1. Für das Rührwerk brauchst du ihn deshalb als normalen Kontakt, für die Störlampe als Gegenteil davon.', 'N1: (I0.0 UND I0.3 UND I0.6) → Q0.2. N2: NICHT I0.6 → Q0.5.'],
+      start: tankRuehrStart, sol: tankRuehrSol, check: checkSp25 },
+    { id: 'sp26', lab: 'sps', cat: 'Vertiefung', title: 'Zweihandbedienung für die Wartungsfahrt', level: 1, plant: 'garagentor',
+      text: 'Bei der Wartung soll das Tor nur fahren, wenn der Monteur beide Hände an den Tastern hat, damit keine Hand im Gefahrenbereich ist (Zweihandbedienung). K1_MotorAuf (Q0.0) läuft nur, solange S1_Auf (I0.0) UND S2_Ab (I0.1) gleichzeitig gedrückt sind. Oben schaltet der Endschalter B1_EndeOben (I0.2) den Motor ab, und der Stopp-Taster S3_Stopp (I0.5) sperrt ihn jederzeit. H1_Blinklicht (Q0.2) leuchtet, solange der Motor läuft. ' + EIN('garagentor', ['I0.0', 'I0.1', 'I0.2', 'I0.5']) + AUS('garagentor', ['Q0.0', 'Q0.2']) + 'Der Motor Ab (Q0.1) wird hier nicht benutzt.' + ADR,
+      hint: ['Bei einer Zweihandbedienung müssen beide Taster gedrückt sein. Welche Verknüpfung passt, UND oder ODER?', 'Zusätzlich brauchst du den Endschalter B1 als Öffner-Kontakt (Tor oben = Sperre) und den Stopp als Schließer-Kontakt, weil S3 ein Öffner ist.', 'N1: (I0.0 UND I0.1 UND NICHT I0.2 UND I0.5) → Q0.0. N2: Q0.0 → Q0.2.'],
+      start: torZweihandStart, sol: torZweihandSol, check: checkSp26 },
+    { id: 'sp27', lab: 'sps', cat: 'Vertiefung', title: 'Fußgänger-Grün als Impuls', level: 2, plant: 'ampel',
+      text: 'Eine einfache Fußgängerampel (vereinfacht, ohne Gelbphase) arbeitet so: Im Normalzustand hat die Straße Grün (H3, Q0.2) und die Fußgänger Rot (H4, Q0.3). Ein Druck auf S1_Fussgaengertaster (I0.0) schaltet für genau 6 Sekunden um: Fußgänger-Grün H5 (Q0.4) leuchtet, die Fußgänger-Rot-Lampe ist aus, und die Straße zeigt Rot (H1_Strasse_rot, Q0.0). Die Dauer ist unabhängig davon, wie lange der Taster gedrückt bleibt. Danach ist wieder alles im Normalzustand. ' + EIN('ampel', ['I0.0']) + AUS('ampel', ['Q0.0', 'Q0.2', 'Q0.3', 'Q0.4']) + ADR,
+      hint: ['Die 6 Sekunden sollen immer gleich lang sein, auch bei gehaltenem Taster. Welches der drei Zeitglieder (TON, TOF, TP) leistet das?', 'Der Ausgang des Zeitglieds ist dein Signal „Fußgänger haben Grün“. Straße Rot folgt ihm, Straße Grün und Fußgänger Rot sind sein Gegenteil.', 'N1: TP T1 (PT = 6000 ms, Eingang I0.0) → Q0.4. N2: NICHT T1.Q → Q0.3. N3: T1.Q → Q0.0. N4: NICHT T1.Q → Q0.2.'],
+      start: ampelImpulsStart, sol: ampelImpulsSol, check: checkSp27 },
+    { id: 'sp28', lab: 'sps', cat: 'Vertiefung', title: 'Staumelder am Bandende', level: 2, plant: 'foerderband',
+      text: 'Am Bandende kann sich Ware stauen. Die Bandsteuerung (Start, Stopp, Not-Halt mit Selbsthaltung) ist schon fertig. Ergänze einen Staumelder: Ist der Sensor B5_Bandende (I0.6) länger als 5 Sekunden ununterbrochen belegt, soll das Band K1_Band (Q0.0) abschalten und H2_Stoerung (Q0.3) leuchten. Ein Werkstück, das nur kurz vorbeiläuft, darf nichts auslösen. Ist B5 wieder frei, erlischt die Meldung, das Band bleibt aber aus, bis neu gestartet wird. ' + EIN('foerderband', ['I0.0', 'I0.1', 'I0.6', 'I0.7']) + AUS('foerderband', ['Q0.0', 'Q0.3']) + ADR,
+      hint: ['Gesucht ist ein Zeitglied, das erst nach einer Wartezeit anspricht, und nur, wenn die Belegung nicht zwischendurch endet.', 'Eine Einschaltverzögerung (TON) mit B5 als Eingang liefert die Störung. Mit ihrem Ausgang sperrst du zusätzlich die Selbsthaltung des Bandes (als Öffner-Kontakt in Reihe).', 'N1: TON T1 (PT = 5000 ms, Eingang I0.6) → Q0.3. N2: ((I0.0 ODER Q0.0) UND I0.1 UND I0.7 UND NICHT T1.Q) → Q0.0.'],
+      start: bandStauStart, sol: bandStauSol, check: checkSp28 },
+    { id: 'sp29', lab: 'sps', cat: 'Vertiefung', title: 'Abpumpen: erst Ventil, dann Pumpe', level: 2, plant: 'tank',
+      text: 'Beim Abpumpen soll sich zuerst das Ablaufventil Y3_Ablauf (Q0.3) öffnen. Die Pumpe P1_Pumpe (Q0.4) darf erst 2 Sekunden später anlaufen, damit sie nicht gegen ein geschlossenes Ventil arbeitet. S1_Start (I0.0) startet den Vorgang, aber nur, wenn B1_Min (I0.2) meldet, dass noch Flüssigkeit im Tank ist. Beim Abschalten schließen Ventil und Pumpe gleichzeitig. Abgeschaltet wird mit S2_Stopp (I0.1, Öffner), S3_NotHalt (I0.6, Öffner) oder wenn B1_Min 0 meldet. ' + EIN('tank', ['I0.0', 'I0.1', 'I0.2', 'I0.6']) + AUS('tank', ['Q0.3', 'Q0.4']) + 'In der Startvorlage hält der Merker M0.0 den Vorgang fest, die Pumpe läuft aber noch ohne Verzögerung.' + ADR,
+      hint: ['Der Merker M0.0 bedeutet „Abpumpen läuft“. Das Ventil kann ihm direkt folgen, die Pumpe braucht eine Verzögerung.', 'Verwende eine Einschaltverzögerung (TON) mit dem Merker als Eingang. Ihr Ausgang steuert die Pumpe. Wird der Merker gelöscht, fällt das Zeitglied zurück.', 'N2: M0.0 → Q0.3. N3: TON T1 (PT = 2000 ms, Eingang M0.0) → Q0.4.'],
+      start: tankVentilStart, sol: tankVentilSol, check: checkSp29 },
+    { id: 'sp30', lab: 'sps', cat: 'Vertiefung', title: 'Pumpe: Min-Meldung mit Entprellzeit', level: 3, plant: 'tank',
+      text: 'Beim Abpumpen schwappt die Flüssigkeit. Der Sensor B1_Min (I0.2) meldet deshalb kurz 0, obwohl noch genug im Tank ist, und die Pumpe bleibt dauernd stehen. Die Pumpe P1_Pumpe (Q0.4) soll nur dann wegen Unterschreiten von Min abschalten, wenn B1 länger als 2 Sekunden ununterbrochen 0 meldet. Kürzere Aussetzer sind zu ignorieren. Gestartet wird mit S1_Start (I0.0) nur bei B1 = 1, die Pumpe hält sich selbst. S2_Stopp (I0.1) und S3_NotHalt (I0.6), beide Öffner, schalten sofort ab, ohne Verzögerung. ' + EIN('tank', ['I0.0', 'I0.1', 'I0.2', 'I0.6']) + AUS('tank', ['Q0.4']) + 'Die Startvorlage schaltet bei Min sofort ab.' + ADR,
+      hint: ['Die Abschaltung bei Min soll nicht sofort gelten. Du brauchst ein Zeitglied, dessen Eingang „B1 meldet 0“ ist.', 'Mit einem TON erreichst du das: Er spricht nur an, wenn sein Eingang die ganze Zeit anliegt, und fällt bei jeder kurzen Unterbrechung zurück. Sein Ausgang sperrt die Selbsthaltung der Pumpe. Stopp und Not-Halt bleiben ohne Zeitglied.', 'N1: TON T1 (PT = 2000 ms, Eingang NICHT I0.2) → M0.0. N2: (((I0.0 UND I0.2) ODER Q0.4) UND I0.1 UND I0.6 UND NICHT M0.0) → Q0.4.'],
+      start: tankEntprellStart, sol: tankEntprellSol, check: checkSp30 },
+    { id: 'sp31', lab: 'sps', cat: 'Vertiefung', title: 'Tor schließt automatisch nach der Wartezeit', level: 3, plant: 'garagentor',
+      text: 'Das Tor soll sich selbst schließen, wenn es vergessen wurde. Steht das Tor ganz oben (B1_EndeOben, I0.2 = 1), die Lichtschranke B3 (I0.4) ist frei und S3_Stopp (I0.5, Öffner) ist nicht gedrückt, und das 8 Sekunden lang ununterbrochen, fährt K2_MotorAb (Q0.1) selbstständig bis B2_EndeUnten (I0.3). Meldet die Lichtschranke dabei ein Hindernis, bleibt das Tor sofort stehen und fährt nicht von selbst weiter. Mit S1_Auf (I0.0) fährt das Tor im Tippbetrieb wieder auf, solange der Taster gedrückt ist (nicht über B1 hinaus). H1_Blinklicht (Q0.2) leuchtet bei jeder Motorfahrt. ' + EIN('garagentor', ['I0.0', 'I0.2', 'I0.3', 'I0.4', 'I0.5']) + AUS('garagentor', ['Q0.0', 'Q0.1', 'Q0.2']) + 'Die Startvorlage kann das Tor schon aufmachen. Fährt das Tor gegen ein Hindernis, ist es ein Crash.' + ADR,
+      hint: ['Die Wartezeit läuft nur, solange das Tor oben steht. Sobald es sich nach unten bewegt, verlässt es B1. Wie hält der Motor dann seine Fahrt?', 'Das Zeitglied (TON) startet die Fahrt, danach hält sich Motor Ab selbst (Selbsthaltung). Stopp, Hindernis und Endschalter unten lösen die Selbsthaltung. Am Eingang des TON stehen B1, die Lichtschranke als Öffner und der Stopp.', 'N1: TON T1 (PT = 8000 ms, Eingang I0.2 UND NICHT I0.4 UND I0.5) → M0.0. N3: ((M0.0 ODER Q0.1) UND NICHT I0.3 UND NICHT I0.4 UND I0.5 UND NICHT Q0.0) → Q0.1. N4: Q0.0 ODER Q0.1 → Q0.2.'],
+      start: torZuStart, sol: torZuSol, check: checkSp31 },
+    { id: 'sp32', lab: 'sps', cat: 'Vertiefung', title: 'Fehlersuche: Die Kiste ist nie richtig voll', level: 2, plant: 'foerderband',
+      text: 'Die Kistenzählung am Band funktioniert nicht richtig: Das Band bleibt stehen, bevor die vier Werkstücke in der Kiste sind, und nach einem neuen Start bleibt die Meldung „Kiste voll“ bestehen. Soll-Verhalten: Die Kiste ist voll, wenn vier Werkstücke den Sensor B5_Bandende (I0.6) erreicht haben. Dann hält K1_Band (Q0.0) an und H2_Stoerung (Q0.3) zeigt „Kiste voll“. Ein Druck auf S1_Start (I0.0) leert die Kiste und das Band läuft wieder. S2_Stopp und S3_NotHalt sind Öffner. ' + EIN('foerderband', ['I0.0', 'I0.1', 'I0.6', 'I0.7']) + AUS('foerderband', ['Q0.0', 'Q0.3']) + 'Es sind zwei Fehler im Programm.' + ADR,
+      hint: ['Prüfe zuerst, welcher Sensor den Zähler schaltet. Das Band hält zu früh: Zählt er wirklich die Werkstücke am Bandende?', 'Fehler 1: Der Zähler bekommt den falschen Sensor. Fehler 2: Dem Zähler fehlt ein Eingang, mit dem er zurückgesetzt wird (Neustart durch S1).', 'N1: CTU C1 (PV 4, Zähleingang I0.6, Reset-Eingang I0.0) → Q0.3.'],
+      start: bandZaehlBug, sol: bandZaehl, check: checkSp32 }
   ];
 
   /* ====================================================================== Ausführung, Selbsttest */

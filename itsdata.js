@@ -329,7 +329,76 @@
       return { kind: 'choice', text: x.q, opts: m.opts, correct: m.correct, steps: ['Richtig: ' + x.right, x.why], tips: ['Lies jede Antwort und streiche, was offensichtlich nicht zum Begriff passt.', 'Denke an den Sinn des Begriffs: Es geht um den Schutz von Menschen und ihren Daten beziehungsweise um ein systematisches Vorgehen.'] };
     }]
   ];
-  const tasks = defs.map((d, i) => ({ id: 'its' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3] }));
+
+  /* ===== Weitere Aufgaben (its35 bis its42): bekommen die nächsten freien Nummern, damit alte Nummern (Fortschritt, Verweise) gleich bleiben; unten werden sie in ihre Kategorie einsortiert ===== */
+  const poolChoice = (pool, tips) => R => { const x = pick(R, pool), m = mk(R, x.right, x.wrongs); return { kind: 'choice', text: x.q, opts: m.opts, correct: m.correct, steps: ['Richtig: ' + x.right, x.why], tips }; };
+  const HASHES = [['MD5', 128], ['SHA-1', 160], ['SHA-256', 256], ['SHA-512', 512]];
+  const ANGRIFF = ['Phishing (E-Mail)', 'Vishing (Telefon)', 'Smishing (SMS)', 'Tailgating (Zutritt)'];
+  const ANG_POOL = [
+    ['Eine Mail enthält einen Link zu einer nachgebauten Anmeldeseite der Firma.', 0, 'Der Weg ist eine E-Mail mit Link auf eine gefälschte Seite.'],
+    ['Eine Rechnung kommt als Anhang von einem unbekannten Absender, du sollst sie dringend öffnen.', 0, 'Der Weg ist eine E-Mail mit gefährlichem Anhang.'],
+    ['Ein Anrufer gibt sich als Bankmitarbeiter aus und fragt nach der TAN, die gerade auf dein Handy kam.', 1, 'Der Weg ist ein Telefonanruf (Voice-Phishing).'],
+    ['Am Telefon meldet sich angeblich die IT und bittet dich, dein Passwort zu nennen.', 1, 'Der Weg ist ein Telefonanruf (Voice-Phishing).'],
+    ['Eine SMS meldet ein Paket, das du über einen Kurzlink freigeben sollst.', 2, 'Der Weg ist eine Kurznachricht (SMS).'],
+    ['Eine Kurznachricht warnt vor einer Kontosperrung und nennt einen Link zur Bestätigung.', 2, 'Der Weg ist eine Kurznachricht (SMS).'],
+    ['Eine fremde Person folgt dir mit Paketen im Arm durch die Chipkartentür.', 3, 'Die Person schlüpft hinter dir durch eine gesicherte Tür (Zutritt erschleichen).'],
+    ['Jemand in Warnweste bittet dich, ihm die Tür zum Serverraum aufzuhalten.', 3, 'Die Person verschafft sich mit einer Rolle Zutritt vor Ort.']
+  ];
+  const TOM_POOL = [
+    ['Die Festplatte im Laptop wird verschlüsselt.', 0], ['Ein Virenscanner prüft eingehende Dateien.', 0], ['Eine Firewall trennt das Firmennetz vom Internet.', 0], ['Der Serverraum öffnet nur mit Chipkarte.', 0],
+    ['Neue Mitarbeiter werden zu Datenschutz und Datensicherheit geschult.', 1], ['Ein Notfallplan legt fest, wer bei einem Ausfall wen informiert.', 1], ['Eine Dienstanweisung verbietet private USB-Sticks am Arbeitsplatz.', 1], ['Ein Vertretungsplan regelt, wer bei Urlaub auf welche Daten zugreifen darf.', 1]
+  ];
+  const defsNeu = [
+    ['Passwörter', 1, 'Konten und Passwörter richtig behandeln', poolChoice([
+      { q: 'Welche Maßnahme schützt ein Konto am besten, wenn das Passwort bekannt geworden ist?', right: 'Eine zweite Anmeldeprüfung zusätzlich zum Passwort (Zwei-Faktor)', wrongs: ['Das Passwort bei jedem Wechsel nur um eine Ziffer erhöhen', 'Das Passwort zur Sicherheit auf einem Zettel am Arbeitsplatz notieren', 'Für alle Dienste dasselbe Passwort nutzen, damit man es nie vergisst'], why: 'Mit einem zweiten Faktor reicht das gestohlene Passwort allein nicht mehr aus. Kleine Änderungen, Zettel und Wiederverwendung machen es dem Angreifer leichter.' },
+      { q: 'Wie verwaltest du viele verschiedene, lange Passwörter am sichersten?', right: 'In einem Passwortmanager mit einem starken Hauptpasswort', wrongs: ['In einer Textdatei auf dem Desktop, die „passwoerter“ heißt', 'In einer Notiz-App, die ohne Sperre für jeden offen ist', 'Im Browser eines Rechners, den sich mehrere Personen teilen'], why: 'Ein Passwortmanager verschlüsselt alle Zugangsdaten und schützt sie mit einem einzigen starken Hauptpasswort. Offene Dateien und geteilte Rechner sind für andere lesbar.' },
+      { q: 'Was gilt für das Weitergeben eines Passworts an Kollegen?', right: 'Passwörter bleiben persönlich, für Vertretungen richtet die IT Rechte ein', wrongs: ['Bei Urlaub ist die Weitergabe per Chat in Ordnung, wenn man dem Kollegen vertraut', 'Die Weitergabe ist erlaubt, wenn das Passwort danach sofort geändert wird', 'Nur die Weitergabe per E-Mail ist verboten, mündlich darf man es sagen'], why: 'Ein Konto muss einer Person eindeutig zuzuordnen sein. Für Vertretungen gibt es Rechte oder Weiterleitungen, die die IT einrichtet.' },   /* PRUEFEN: Passwortweitergabe ist in der Firmenrichtlinie meist verboten; gilt das so bei Tonfunk? */
+      { q: 'Am Telefon will ein angeblicher Support-Mitarbeiter dein Passwort wissen. Was ist richtig?', right: 'Nichts verraten, auflegen und die IT über die bekannte Nummer zurückrufen', wrongs: ['Das Passwort nennen, wenn die angezeigte Rufnummer zur Firma zu gehören scheint', 'Das Passwort nennen, wenn der Anrufer den Namen deines Vorgesetzten kennt', 'Das Passwort in zwei Teilen nennen, erst den vorderen und später den hinteren'], why: 'Rufnummern und Namen lassen sich fälschen oder herausfinden. Die IT fragt nie nach Passwörtern. Rufe selbst unter einer bekannten Nummer zurück.' }
+    ], ['Streiche zuerst Antworten, bei denen ein Passwort leichter in fremde Hände geraten kann.', 'Ein Passwort gehört nur dir. Es wird nicht weitergegeben, nicht wiederverwendet und nicht offen aufbewahrt.'])],
+    ['Passwörter', 3, 'Entropie: größerer Zeichenvorrat', R => {
+      const [N1, N2] = pick(R, [[26, 52], [26, 62], [52, 62], [62, 94], [36, 62]]), L = ri(R, 8, 12), e1 = C.entropy(N1, L), e2 = C.entropy(N2, L);
+      return { text: `Ein Passwort besteht aus ${L} zufällig gewählten Zeichen. Zuerst stehen pro Stelle ${N1} verschiedene Zeichen zur Verfügung, nach einer geänderten Regel ${N2}. Um wie viele Bit steigt die Entropie dadurch?`, unit: 'Bit', label: 'Zuwachs', raw: e2.bits - e1.bits, dec: 1, meta: { N1, N2, L },
+        steps: [`Vorher: ${L} · log₂(${N1}) = ${fmt(rd(e1.bits, 2), 2)} Bit`, `Nachher: ${L} · log₂(${N2}) = ${fmt(rd(e2.bits, 2), 2)} Bit`, `Unterschied: ${fmt(rd(e2.bits, 2), 2)} − ${fmt(rd(e1.bits, 2), 2)} Bit`],
+        tips: ['Berechne die Entropie einmal für den kleinen und einmal für den großen Zeichenvorrat und bilde die Differenz.', `Die Entropie ist L · log₂(N) mit L = ${L}. Rechne mit dem Zweierlogarithmus, also log₂(N) = ln(N) : ln(2).`] };
+    }],
+    ['Verschlüsselung und Hash', 2, 'Länge eines Hashwerts', R => {
+      const [name, bits] = pick(R, HASHES);
+      return { text: `Die Hashfunktion ${name} liefert einen Hashwert mit ${bits} Bit. Er wird als Hexadezimalzahl angezeigt, jedes Zeichen steht für 4 Bit. Aus wie vielen Zeichen besteht die Anzeige?`, unit: 'Zeichen', label: 'Zeichenanzahl', raw: bits / 4, dec: 0, meta: { name, bits },
+        steps: [`Eine Hexadezimalstelle umfasst 4 Bit (16 = 2⁴ Werte).`, `${bits} Bit : 4 Bit je Zeichen = ${bits / 4} Zeichen`],
+        tips: ['Eine Hexadezimalziffer (0 bis F) kann 16 Werte annehmen. Wie viele Bit sind das?', 'Teile die Bitlänge des Hashwerts durch die Bits pro Hexziffer.'] };
+    }],
+    ['Phishing und Social Engineering', 2, 'Angriffsart zuordnen', R => {
+      const rows = shuffle(R, ANG_POOL).slice(0, 5).map(x => ({ q: x[0], opts: ANGRIFF, correct: x[1], why: x[2] }));
+      return { kind: 'rows', text: 'Welche Angriffsart passt zu jeder Schilderung? Entscheide nach dem Weg, auf dem der Täter dich erreicht.', rows,
+        steps: rows.map(r => `${r.q} → ${ANGRIFF[r.correct]}. ${r.why}`).concat(['Gemeinsam ist allen Arten: Täter erzeugen Vertrauen oder Druck und fordern eine Handlung, die du auf diesem Weg nicht ausführen solltest.']),
+        tips: ['Achte auf den Übertragungsweg: Mail, Telefon, Kurznachricht oder persönlich vor Ort.', 'Der Name verrät den Weg: Phishing läuft über E-Mail, Vishing über Telefon (Voice), Smishing über SMS, Tailgating heißt „dicht hinterherlaufen“ durch eine gesicherte Tür.'] };
+    }],
+    ['Rechte und Firewall', 2, 'Oktalzahl in Rechte übersetzen', R => {
+      const oct = pick(R, ['640', '644', '750', '600', '755', '664', '700', '740']), right = C.octalToPerm(oct).perm, others = ['640', '644', '750', '600', '755', '664', '700', '740', '660', '444'].filter(o => o !== oct), w = shuffle(R, others).slice(0, 3).map(o => C.octalToPerm(o).perm), m = mk(R, right, w);
+      return { kind: 'choice', text: `Eine Datei unter Linux bekommt mit chmod ${oct} neue Rechte. Welche Rechte stehen danach bei ls -l (Besitzer, Gruppe, Andere)?`, opts: m.opts, correct: m.correct, meta: { oct },
+        steps: C.octalToPerm(oct).steps.concat([`Zusammen: ${right}`]),
+        tips: ['Jede Ziffer steht für eine Gruppe: Besitzer, Gruppe, Andere. Zerlege jede Ziffer in 4 + 2 + 1.', 'Ziffer 6 = 4 + 2 = rw-, Ziffer 5 = 4 + 1 = r-x, Ziffer 4 = r--, Ziffer 0 = ---.'] };
+    }],
+    ['Backup', 3, 'Speicherbedarf bei Aufbewahrung', R => {
+      const F = pick(R, [100, 200, 500]), c = pick(R, [5, 10, 20]), n = pick(R, [2, 3, 4]), wk = F + 6 * c;   /* PRUEFEN: Gezählt werden genau n volle Wochen (Vollsicherung am Sonntag plus 6 inkrementelle Tage). Reicht diese Vereinfachung ohne Rotation und Löschfristen der Kette? */
+      return { text: `Jeden Sonntag gibt es eine Vollsicherung mit ${F} GB. Von Montag bis Samstag wird täglich inkrementell gesichert, dabei kommen jeden Tag ${c} GB neue Daten dazu. Vorgehalten werden die Sicherungen von genau ${n} vollständigen Wochen (je eine Vollsicherung und sechs inkrementelle Sicherungen). Wie viel Speicherplatz belegen sie zusammen?`, unit: 'GB', label: 'Gesamtgröße', raw: n * wk, dec: 0, meta: { F, c, n },
+        steps: [`Eine Woche: ${F} GB + 6 · ${c} GB = ${wk} GB`, `${n} Wochen: ${n} · ${wk} GB = ${n * wk} GB`],
+        tips: ['Berechne zuerst den Speicher einer einzigen Woche: Vollsicherung plus sechs inkrementelle Tage.', 'Multipliziere das Ergebnis einer Woche mit der Anzahl der vorgehaltenen Wochen.'] };
+    }],
+    ['Verfügbarkeit', 3, 'Verfügbarkeit aus MTBF und MTTR', R => {
+      const [b, r] = pick(R, [[1000, 5], [800, 2], [2000, 10], [1500, 3], [400, 8], [900, 6]]), a = b / (b + r) * 100;   /* PRUEFEN: Vereinfachtes Modell A = MTBF / (MTBF + MTTR), ohne geplante Wartung. Kommt MTBF/MTTR im Unterricht vor? */
+      return { text: `Ein Server fällt im Mittel alle ${fmt(b)} Stunden aus (mittlere Zeit zwischen zwei Ausfällen, MTBF). Eine Reparatur dauert im Mittel ${r} Stunden (MTTR). Wie hoch ist die Verfügbarkeit in Prozent?`, unit: '%', label: 'Verfügbarkeit', raw: a, dec: 2, meta: { b, r },
+        steps: [`Ein Zyklus besteht aus Betrieb (${fmt(b)} h) und Reparatur (${r} h): ${fmt(b + r)} h.`, `Verfügbarkeit = Betriebszeit : Gesamtzeit = ${fmt(b)} : ${fmt(b + r)} = ${fmt(rd(a / 100, 6), 6)}`, `In Prozent: ${fmt(rd(a, 2), 2)} %`],
+        tips: ['Verfügbarkeit ist der Anteil der Zeit, in der der Server läuft. Eine Betriebsphase und die anschließende Reparatur bilden einen Zyklus.', 'Teile die Betriebszeit (MTBF) durch die Gesamtdauer eines Zyklus (MTBF plus MTTR) und rechne in Prozent um.'] };
+    }],
+    ['Schutzziele und Recht', 2, 'Technische oder organisatorische Maßnahme', R => {   /* PRUEFEN: Chipkarten-Zutritt zählt hier als technische Maßnahme; manche Lehrbücher nennen Zutrittsregeln baulich-organisatorisch. */
+      const O = ['Technische Maßnahme', 'Organisatorische Maßnahme'], rows = shuffle(R, TOM_POOL).slice(0, 5).map(x => ({ q: x[0], opts: O, correct: x[1] }));
+      return { kind: 'rows', text: 'Ordne jede Schutzmaßnahme zu: Wird sie durch Technik umgesetzt oder durch Regeln und Abläufe festgelegt?', rows,
+        steps: rows.map(r => `${r.q} → ${O[r.correct]}`).concat(['Technische und organisatorische Maßnahmen (TOM) ergänzen sich: Technik schützt automatisch, Regeln und Schulungen steuern das Verhalten der Menschen.']),
+        tips: ['Technisch heißt: Ein Gerät oder eine Software setzt die Maßnahme durch. Organisatorisch heißt: Menschen halten Regeln, Pläne und Abläufe ein.', 'Frage dich: Würde die Maßnahme auch ohne Zutun der Mitarbeiter wirken (technisch) oder nur, wenn sich alle daran halten (organisatorisch)?'] };
+    }]
+  ];
+  const tasks = defs.concat(defsNeu).map((d, i) => ({ id: 'its' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3] })).map((x, i) => [x, i]).sort((a, b) => cats.indexOf(a[0].cat) - cats.indexOf(b[0].cat) || a[1] - b[1]).map(x => x[0]);
 
   /* Fertige Aufgabe aus Aufgabe + Seed (gleicher Seed = gleiche Zahlen und Fälle) */
   function build(t, seed) {

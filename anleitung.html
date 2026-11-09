@@ -84,7 +84,7 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}@media screen and (m
 <li><b>Drei Sprachen:</b> Im Editor wechselst du zwischen <b>KOP</b> (Kontaktplan wie ein Stromlaufplan), <b>FUP</b> (Funktionsplan mit Gattern) und <b>GRAFCET</b> (Schrittkette). KOP und FUP sind dasselbe Programm in zwei Darstellungen, GRAFCET ist eine eigene Sprache und beginnt ein neues Programm. „📄 Text“ zeigt die Anweisungsliste.</li>
 <li><b>IEC oder Siemens:</b> In der unteren Leiste schaltest du die Anzeige um (%IX0.0 und AND oder E0.0 und U). Das Programm selbst ändert sich nicht. Mit „🏷 Symbole“ zeigst du statt der Adressen die Namen (S1_Start).</li>
 <li><b>Starten:</b> ▶ startet die SPS. Tippe in der Liste auf einen Taster oder Schalter (oder in die Anlage), um einen Eingang zu betätigen. <b>Schritt</b> rechnet genau einen Zyklus, der <b>Zeitraffer</b> (×0,5 bis ×4) beschleunigt die Anlage. Mit dem kleinen <b>F</b> an einem Ein- oder Ausgang erzwingst du einen Wert (Zwangssetzen). Bitte nicht vergessen, ihn wieder zu lösen.</li>
-<li><b>Aufgaben:</b> 24 Aufgaben mit automatischer Prüfung. Die Prüfung lässt die Anlage das Programm durchlaufen, Tipps gibt es in drei Stufen.</li>
+<li><b>Aufgaben:</b> 32 Aufgaben mit automatischer Prüfung. Die Prüfung lässt die Anlage das Programm durchlaufen, Tipps gibt es in drei Stufen.</li>
 <li><b>Effekte und Ton</b> (Knopf „Effekte“ in der unteren Leiste, in den anderen Labs im Menü): Funken, Sprechblasen, Konfetti und kleine Töne bei Erfolgen und Pannen. Wer es ruhig mag, schaltet sie aus.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-sps.html">SPS-Lab: Steuerungen programmieren</a> mit Arbeitsblatt zu allen Aufgaben.</p>
 
@@ -105,7 +105,7 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}@media screen and (m
 <li><b>Kennlinien:</b> Die Kurven (zum Beispiel Drehmoment über Drehzahl, Pull-out-Kurve des Schrittmotors, Sprungantwort) werden aus dem Modell berechnet. Der Marker zeigt deinen aktuellen Betriebspunkt. Der Zeitschreiber zeigt die letzten 20 Sekunden und lässt sich als CSV speichern.</li>
 <li><b>Ablauf:</b> Eine Tabelle „nach X Sekunden setze Steuerwert = Wert“, zum Beispiel für den Stern-Dreieck-Anlauf, eine Rampe oder eine Richtungsumkehr mit Pause. Das Ergebnis erscheint als Diagramm.</li>
 <li><b>Rechnen:</b> Formelrechner für Drehzahl, Moment, Leistung, Wirkungsgrad, Schlupf, Übersetzung und Typenschild mit Rechenweg, dazu ein Übungsgenerator mit zufälligen Aufgaben.</li>
-<li><b>Aufgaben:</b> 30 Aufgaben mit automatischer Prüfung (Rechnen, Einstellen am Prüfstand, Ablaufprogramme, Fehlersuche, Prüfungsstil). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
+<li><b>Aufgaben:</b> 38 Aufgaben mit automatischer Prüfung (Rechnen, Einstellen am Prüfstand, Ablaufprogramme, Fehlersuche, Prüfungsstil). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-ant.html">Antriebs-Lab: Motoren, Regelung und Getriebe</a> mit Arbeitsblatt zu allen Aufgaben.</p>
 
 <h2>5c. Sensorik-Lab: Sensoren und Messketten untersuchen</h2>
@@ -115,7 +115,7 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}@media screen and (m
 <li><b>Kennlinien:</b> Sensorkennlinien, Hysterese-Schleifen, Bürden-Arbeitsbereich und Spektrum werden aus dem Modell berechnet. Der Marker zeigt deinen aktuellen Betriebspunkt. Der Zeitschreiber lässt sich als CSV speichern.</li>
 <li><b>Ablauf:</b> Eine Tabelle „nach X Sekunden setze Steuerwert = Wert“, zum Beispiel für einen Temperatursprung, eine Hysterese-Schleife oder einen Drahtbruch zu einem bestimmten Zeitpunkt. Das Ergebnis erscheint als Diagramm.</li>
 <li><b>Rechnen:</b> Formelrechner für NTC und Pt100, Brückenspannung, Verstärkung, Bürde, ADU-Stufe, Rauschabstand und Aliasing mit Rechenweg, dazu ein Übungsgenerator mit zufälligen Aufgaben.</li>
-<li><b>Aufgaben:</b> 28 Aufgaben mit automatischer Prüfung (Rechnen, Einstellen am Prüfstand, Ablaufprogramme, Fehlersuche, Prüfungsstil). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
+<li><b>Aufgaben:</b> 36 Aufgaben mit automatischer Prüfung (Rechnen, Einstellen am Prüfstand, Ablaufprogramme, Fehlersuche, Prüfungsstil). Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-sen.html">Sensorik-Lab: Sensoren, Messketten und Normsignale</a> mit Arbeitsblatt zu allen Aufgaben.</p>
 
 <h2>5d. Datenblatt-Lab: Datenblätter lesen und verstehen</h2>
@@ -147,7 +147,7 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}@media screen and (m
 <li><b>Vier Prüfstände</b> plus Vergleich: Linearregler (7805 und LM317 mit Last), Leistungstransistor (BD139, Längstransistor und Endstufe), MOSFET als Schalter (IRLZ34N, Leit- und Schaltverluste) sowie Diode, Widerstand und LED. Bauteile und Kühlkörper sind <b>Übungsbauteile mit Übungswerten</b> (aus den Übungsdatenblättern des Datenblatt-Labs), keine Katalogwerte.</li>
 <li><b>Montage:</b> Kühlkörper (Fahne, Profile in vier Größen, Rippenkörper, Blech), Isolierscheibe (Glimmer, Silikonfolie), Wärmeleitpaste, Isolierbuchse, Schraube, Lüfter und Einbaulage stellst du am Prüfstand ein. Das Lab zeigt Tj, Tc und Tk, die Temperaturabfälle über der Kette und meldet Überhitzung, Abschalten des Reglers, Kurzschluss über die Fahne und Pendeln.</li>
 <li><b>Rechnen und Lernen:</b> neun Rechner-Karten: Prüfungsassistent (sieben Schritte), Verlustleistung, Wärmekette, erforderlicher Kühlkörper, Wirkungsgrad Linear- gegen Schaltregler, Zeitverhalten, Wärmewiderstand einer Schicht, Formelsammlung und Übungsgenerator, jeweils mit Rechenweg; der Bereich Lernen erklärt die Begriffe und die Analogie zum elektrischen Stromkreis.</li>
-<li><b>Aufgaben:</b> 30 Aufgaben mit automatischer Prüfung, die der Prüfstand simuliert. Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
+<li><b>Aufgaben:</b> 38 Aufgaben mit automatischer Prüfung, die der Prüfstand simuliert. Tipps in drei Stufen, Musterlösung zum Ansehen.</li></ul>
 <p class="mute">Weiter im Lernheft <a href="lernen-thm.html">Thermik-Lab: Wärme, Kühlkörper und Wärmewiderstand</a> mit Arbeitsblatt zu Verlustleistung, Wärmewiderstandskette, Montage, Kühlkörper, Berechnungsgang, Aufheizen und Schaltregler.</p>
 
 <h2>5g. Verbundprojekte: alle Labs zusammen</h2>

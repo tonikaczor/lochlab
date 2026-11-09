@@ -1,6 +1,6 @@
 'use strict';
 /* Tonfunk Kalkulations-Lab: Aufgaben und Beispiele (Lab-Kennung 'kal', Präfix lm4.kal.).
-   KAL_DATA.tasks: 28 Aufgaben (Stufe 1-3) in 6 Kategorien; jede hat make(R, C) mit seed-fähigem Zufallsgenerator R und KAL_CORE C.
+   KAL_DATA.tasks: 36 Aufgaben (Stufe 1-3) in 6 Kategorien; jede hat make(R, C) mit seed-fähigem Zufallsgenerator R und KAL_CORE C.
    make liefert eine Aufgabeninstanz { text, rows, ask | fill, tips[], expl }:
      ask  = { key, label, unit, tol, value }  -> eine Zahl eingeben (Antwort = Zeile key des Lösungswegs)
      fill = [Schlüssel]                       -> Schema-Tabelle: diese Zeilen ausfüllen, die übrigen sind vorgegeben
@@ -174,6 +174,43 @@
     return { text: 'Ein Betrieb ist nicht ausgelastet und prüft einen Zusatzauftrag. Je Stück fallen an: Material ' + C.eur(m) + ', Fertigungslohn ' + C.eur(l) + ', variable Gemeinkosten ' + C.eur(g) + '. Die Fixkosten (' + C.eur(kfix) + ') fallen ohnehin an. Welchen Preis je Stück muss der Auftrag kurzfristig mindestens bringen?', rows: res.rows, ask: { key: 'puk', label: 'Kurzfristige Preisuntergrenze', unit: '€', tol: 0.01, value: kv }, tips: ['Kurzfristig zählen nur die Kosten, die der Zusatzauftrag wirklich auslöst: die variablen Stückkosten. Fixkosten sind schon da.'], expl: 'Kurzfristige Preisuntergrenze = variable Stückkosten (Deckungsbeitrag ≥ 0). Langfristig müsste der Preis auch die Fixkosten decken.' };
   });
 
+  /* ---------- Erweiterung (kal29 bis kal36): kleine Einzelschritte und Zusatzaufgaben ---------- */
+  add('Bezug', 'Zieleinkaufspreis', 1, (R, C) => {
+    const p = { lep: ri(R, 200, 3000, 10), rab: pick(R, [5, 10, 12, 15, 20, 25]), sko: 0, bk: 0 }, res = C.bezug(p);
+    return { text: 'Ein Lieferer berechnet für eine Warenlieferung ' + C.eur(p.lep) + ' (Listeneinkaufspreis) und gewährt ' + p.rab + ' % Rabatt. Wie hoch ist der Zieleinkaufspreis?', rows: res.rows.slice(0, 3), ask: num(C, res, 'zep', 'Zieleinkaufspreis', '€'), tips: ['Der Rabatt wird vom Listeneinkaufspreis berechnet und abgezogen. Was übrig bleibt, ist der Zieleinkaufspreis.'], expl: 'Rabatt = Listeneinkaufspreis × Prozentsatz : 100; Zieleinkaufspreis = Listeneinkaufspreis − Rabatt.' };
+  });
+  add('Bezug', 'Skontobetrag berechnen', 2, (R, C) => {
+    const p = { lep: ri(R, 300, 3000, 10), rab: pick(R, [10, 15, 20, 25]), sko: pick(R, [2, 3]), bk: 0 }, res = C.bezug(p);
+    return { text: 'Eine Rechnung lautet auf ' + C.eur(p.lep) + ' (Listeneinkaufspreis) abzüglich ' + p.rab + ' % Liefererrabatt. Bei Zahlung innerhalb der Skontofrist dürfen ' + p.sko + ' % Skonto abgezogen werden. Wie viel Euro Skonto sind das?', rows: res.rows.slice(0, 4), ask: num(C, res, 'sko', 'Skontobetrag', '€'), tips: ['Das Skonto gilt für den Rechnungsbetrag nach Rabatt (Zieleinkaufspreis), nicht für den Listenpreis.'], expl: 'Erst den Zieleinkaufspreis bestimmen, dann Skonto = Zieleinkaufspreis × Skontosatz : 100.' };
+  });
+  add('Selbstkosten', 'Fertigungskosten', 2, (R, C) => {
+    const p = skP(R), res = C.selbstkosten(p);
+    return { text: 'Fertigungslöhne ' + C.eur(p.fl) + ', Fertigungsgemeinkosten-Zuschlag ' + p.fgk + ' % (auf die Fertigungslöhne). Wie hoch sind die Fertigungskosten?', rows: res.rows.slice(3, 6), ask: num(C, res, 'fk', 'Fertigungskosten', '€'), tips: ['Fertigungskosten sind Fertigungslöhne plus Fertigungsgemeinkosten. Der Zuschlagssatz bezieht sich auf die Fertigungslöhne.'], expl: 'FGK = Fertigungslöhne × Zuschlagssatz : 100; Fertigungskosten = Fertigungslöhne + FGK.' };
+  });
+  add('Selbstkosten', 'Selbstkosten je Stück', 3, (R, C) => {
+    const p = skP(R), res = C.selbstkosten(p), n = pick(R, [50, 100, 200, 250, 400, 500]), st = C.rd2(res.val.sk / n);
+    res.rows.push({ k: 'stk', label: 'Selbstkosten je Stück', op: '', v: st, u: '€', sum: true, calc: C.eur(res.val.sk) + ' : ' + C.fmtDe(n, 0) + ' Stück' });
+    return { text: 'Ein Auftrag über ' + C.fmtDe(n, 0) + ' Stück wird kalkuliert: ' + skTxt(C, p) + '. Wie hoch sind die Selbstkosten je Stück (auf Cent gerundet)?', rows: res.rows, ask: num(C, { val: { stk: st } }, 'stk', 'Selbstkosten je Stück', '€'), tips: [TIP_SK + ' Rechne das ganze Schema für den Auftrag und teile erst zum Schluss durch die Stückzahl.'], expl: 'Selbstkosten des Auftrags : Stückzahl = Selbstkosten je Stück. Nur das Endergebnis wird gerundet.' };
+  });
+  add('Angebot', 'Bruttopreis aus Nettopreis', 1, (R, C) => {
+    const ust = pick(R, [19, 7]), net = ri(R, 100, 2000, 10), u = C.rd2(net * ust / 100), br = C.rd2(net + u);
+    const rows = [{ k: 'lvp', label: 'Listenverkaufspreis (netto)', op: '', v: net, u: '€' }, { k: 'ust', label: 'Umsatzsteuer', op: '+', v: u, u: '€', pct: ust, bas: 'auf den Nettopreis (auf Hundert)', calc: C.eur(net) + ' × ' + ust + ' % : 100' }, { k: 'brutto', label: 'Bruttoverkaufspreis', op: '=', v: br, u: '€', sum: true, calc: C.eur(net) + ' + ' + C.eur(u) }];
+    return { text: 'Ein ' + (ust === 7 ? 'Fachbuch (ermäßigter Satz 7 %)' : 'Gerät (Regelsatz 19 %)') + ' kostet netto ' + C.eur(net) + '. Wie hoch ist der Bruttoverkaufspreis mit Umsatzsteuer?', rows, ask: { key: 'brutto', label: 'Bruttoverkaufspreis', unit: '€', tol: 0.01, value: br }, tips: ['Die Umsatzsteuer wird auf den Nettopreis aufgeschlagen: Netto × Steuersatz : 100. Danach addierst du sie zum Nettopreis.'], expl: 'Brutto = Netto + Umsatzsteuer, kurz Netto × (1 + Steuersatz : 100).' };
+  });
+  add('Angebot', 'Gewinnzuschlag in Prozent', 2, (R, C) => {
+    const sk = ri(R, 100, 3000, 50), g = pick(R, [8, 10, 12, 15, 20, 25]), gw = C.rd2(sk * g / 100), bvp = C.rd2(sk + gw);
+    const rows = [{ k: 'sk', label: 'Selbstkosten', op: '', v: sk, u: '€' }, { k: 'gew', label: 'Gewinn', op: '+', v: gw, u: '€', calc: C.eur(bvp) + ' − ' + C.eur(sk) }, { k: 'bvp', label: 'Barverkaufspreis', op: '=', v: bvp, u: '€', sum: true }, { k: 'satz', label: 'Gewinnzuschlag', op: '', v: g, u: '%', calc: C.eur(gw) + ' : ' + C.eur(sk) + ' × 100', bas: 'Gewinn in % der Selbstkosten' }];
+    return { text: 'Die Selbstkosten eines Auftrags betragen ' + C.eur(sk) + '. Der Barverkaufspreis soll ' + C.eur(bvp) + ' betragen. Mit wie viel Prozent Gewinnzuschlag auf die Selbstkosten ist kalkuliert?', rows, ask: { key: 'satz', label: 'Gewinnzuschlag', unit: '%', tol: 0.1, value: g }, tips: ['Gewinn = Barverkaufspreis − Selbstkosten. Der Gewinnzuschlag bezieht sich auf die Selbstkosten (100 %).'], expl: 'Gewinnzuschlag = (Barverkaufspreis − Selbstkosten) : Selbstkosten × 100.' };
+  });
+  add('Spanne/Faktor', 'Verkaufspreis mit Kalkulationsfaktor', 2, (R, C) => {
+    const f = pick(R, [1.25, 1.5, 1.6, 2, 2.5]), bzp = ri(R, 8, 200, 4), res = C.spFrom({ g: 'f', wert: f, bzp });
+    return { text: 'Ein Händler kalkuliert mit dem Kalkulationsfaktor ' + C.fmtDe(f, 2) + '. Der Bezugspreis eines Artikels beträgt ' + C.eur(bzp) + '. Zu welchem Verkaufspreis (netto) wird der Artikel angeboten?', rows: res.rows, ask: num(C, res, 'vp', 'Verkaufspreis (netto)', '€'), tips: ['Mit dem Kalkulationsfaktor multiplizierst du den Bezugspreis direkt zum Verkaufspreis. Er fasst Handlungskosten und Gewinn zusammen.'], expl: 'Verkaufspreis = Bezugspreis × Kalkulationsfaktor.' };
+  });
+  add('Deckungsbeitrag', 'Absatzmenge für Zielgewinn', 3, (R, C) => {
+    const q = dbP(R), e = ri(R, 100, 500, 50), dbs = q.p - q.kv, g = dbs * e, N = q.N + e;
+    const rows = [{ k: 'dbs', label: 'Stückdeckungsbeitrag db', op: '', v: dbs, u: '€', calc: C.eur(q.p) + ' − ' + C.eur(q.kv) }, { k: 'need', label: 'Nötiger Gesamtdeckungsbeitrag', op: '', v: q.kfix + g, u: '€', calc: C.eur(q.kfix) + ' + ' + C.eur(g) }, { k: 'menge', label: 'Absatzmenge', op: '', v: N, u: 'Stück', sum: true, calc: C.eur(q.kfix + g) + ' : ' + C.eur(dbs) }];
+    return { text: dbTxt(C, q) + '. Der Betrieb will einen Gewinn von ' + C.eur(g) + ' erzielen. Wie viele Stück muss er dafür absetzen?', rows, ask: { key: 'menge', label: 'Absatzmenge', unit: 'Stück', tol: 0.01, value: N }, tips: ['Der Gesamtdeckungsbeitrag muss die Fixkosten und zusätzlich den Zielgewinn decken. Teile diese Summe durch den Stückdeckungsbeitrag.'], expl: 'Menge = (Fixkosten + Zielgewinn) : Stückdeckungsbeitrag.' };
+  });
 
   /* ---------- Beispiele (fertig durchgerechnet, werden im Rechner geladen) ---------- */
   const examples = [

@@ -338,6 +338,16 @@
     r(!faultRe(s, /Kippmoment/i), 'Er kippt nicht und bleibt nicht stehen', 'Kippmoment überschritten: Die Last ist größer als das Motormoment.');
     r(fin(f.temp) && f.temp <= 60, 'Die Wicklung bleibt kühl (höchstens 60 °C)', 'Temperatur: ' + fm(f.temp, 0) + ' °C.');
   });
+  /* an38: Last 8 Nm bleibt fest; Stern-Schaltung im Netzbetrieb kippt, Dreieck läuft */
+  const checkAn38 = mk('drehstrom', (c, r) => {
+    const ctl = Object.assign({}, AC_BASE, initial(c), { load: 8 });
+    const s = run('drehstrom', [], 12000, ctl), f = s.final || {};
+    inputRow(c, r, s);
+    r(!faultRe(s, /Kippmoment/i), 'Der Motor kippt nicht mehr (kein Alarm „Kippmoment überschritten“)', 'Das Lastmoment ist größer als das Moment, das der Motor in dieser Schaltung abgeben kann. Das Moment hängt vom Quadrat der Spannung an der Wicklung ab.');
+    r(ctl.connection === 'dreieck', 'Die Wicklung liegt im Dreieck an 400 V (so ist der Motor für das Netz ausgelegt)', 'Der Motor ist im Stern geschaltet: Jeder Strang bekommt nur etwa 58 % der Spannung, das Moment sinkt auf ein Drittel. Schalte auf Dreieck.');
+    r(fin(f.rpm) && f.rpm >= 1400, 'Er erreicht seine Betriebsdrehzahl (mindestens 1400 1/min)', 'Drehzahl: ' + fm(f.rpm, 0) + ' 1/min. Er brummt oder steht noch.');
+    r(fin(f.temp) && f.temp <= 60, 'Die Wicklung bleibt kühl (höchstens 60 °C)', 'Temperatur: ' + fm(f.temp, 0) + ' °C.');
+  });
 
   /* ====================================================================== Aufgabenzustände (Start und Lösung) */
   const S = (rig, controls, extra) => Object.assign({ rig, controls }, extra || {});
@@ -519,7 +529,55 @@
       text: 'Für ein Hubwerk dreht ein Motor mit 1500 1/min und liefert 1,5 Nm. Die Seiltrommel soll mit 100 1/min (±5 %) laufen und ein Moment von mindestens 20 Nm abgeben. Der Gesamtwirkungsgrad des Getriebes soll mindestens 90 % betragen. Lege das Getriebe am Prüfstand aus: Getriebeart, Stufenzahl und die Zähnezahlen z1 bis z4. Beachte, dass die Zähnezahlen nur zwischen 8 und 80 liegen können.',
       hint: ['Aus den Drehzahlen bekommst du die Gesamtübersetzung. Bei zwei Stufen multiplizieren sich die Einzelübersetzungen. Eine Stufe allein schafft bei Zähnezahlen von 8 bis 80 höchstens i = 10.', 'i_ges = 1500 / 100 = 15 = i1 · i2 mit i1 = z2 / z1 und i2 = z4 / z3. Teile zum Beispiel 15 in 3 · 5. Schnecke fällt wegen des Wirkungsgrads weg: nimm Stirnräder.', 'Stirnrad, 2 Stufen, z1 = 20, z2 = 60 (i1 = 3), z3 = 16, z4 = 80 (i2 = 5). Dann ist n_aus = 100 1/min und M_aus ≈ 1,5 Nm · 15 · 0,94 = 21 Nm.'],
       start: () => S('getriebe', { type: 'stirnrad', stages: 1, z1: 20, z2: 60, z3: 20, z4: 40, nIn: 1500, mIn: 1.5, load: 0 }), sol: () => S('getriebe', { type: 'stirnrad', stages: 2, z1: 20, z2: 60, z3: 16, z4: 80, nIn: 1500, mIn: 1.5, load: 0 }),
-      check: checkAn30 }
+      check: checkAn30 },
+    /* ------------------------------------------------------------ Vertiefung (neu: an31 bis an38) */
+    { id: 'an31', lab: 'ant', cat: 'Vertiefung', title: 'Drehfelddrehzahl eines 6-poligen Motors', level: 1, rig: 'drehstrom',
+      text: 'Ein Drehstrommotor hat 6 Pole (drei Polpaare) und hängt am 50-Hz-Netz. Berechne die Drehzahl des Drehfelds, die sogenannte synchrone Drehzahl. Gib das Ergebnis in 1/min an. Die Läuferdrehzahl liegt wegen des Schlupfs etwas darunter und ist hier nicht gefragt.',
+      ask: { label: 'Synchrone Drehzahl n_s', unit: '1/min' },
+      hint: ['Das Drehfeld dreht sich mit der Netzfrequenz, aber je mehr Polpaare der Motor hat, desto langsamer. Zähle zuerst die Polpaare, nicht die Pole.', 'n_s = 60 · f / p mit f in Hz und der Polpaarzahl p. Der Faktor 60 rechnet von 1/s auf 1/min um.', 'Sechs Pole sind p = 3 Polpaare. n_s = 60 · 50 Hz / 3 = 1000 1/min.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 60 * 50 / 3 }),
+      check: askCheck(1000, [[500, 'Du hast mit 6 statt mit 3 geteilt. In der Formel steht die Polpaarzahl p, nicht die Polzahl.'], [50 / 3, 'Du hast den Faktor 60 vergessen. Die Drehzahl soll in 1/min stehen, nicht in 1/s.'], [3000, 'Du hast die Polpaarzahl nicht eingerechnet. Mehr Polpaare machen das Drehfeld langsamer.']]) },
+    { id: 'an32', lab: 'ant', cat: 'Vertiefung', title: 'Zahnriemen zwischen zwei Scheiben', level: 1, rig: 'getriebe',
+      text: 'Ein Motor dreht mit 1450 1/min und treibt über einen Zahnriemen eine Welle an. Die treibende Scheibe hat einen Durchmesser von 80 mm, die getriebene Scheibe 200 mm. Ein Zahnriemen arbeitet ohne Schlupf. Berechne die Drehzahl der getriebenen Welle in 1/min.',
+      ask: { label: 'Drehzahl der getriebenen Welle', unit: '1/min' },
+      hint: ['Die größere Scheibe läuft langsamer. Ohne Schlupf legen beide Scheiben am Riemen in jeder Sekunde dieselbe Strecke zurück.', 'Die Übersetzung ist i = d2 / d1 (getrieben durch treibend). Danach gilt n2 = n1 / i.', 'i = 200 mm / 80 mm = 2,5. n2 = 1450 1/min / 2,5 = 580 1/min.'],
+      start: () => S('getriebe', {}, { value: null }), sol: () => S('getriebe', {}, { value: 1450 / (200 / 80) }),
+      check: askCheck(580, [[3625, 'Du hast mit i multipliziert. Die große Scheibe dreht langsamer: n2 = n1 / i.'], [1450 * 80 / 200 * 80 / 200, 'Du hast die Übersetzung zweimal angewendet.']]) },
+    { id: 'an33', lab: 'ant', cat: 'Vertiefung', title: 'Anlaufstrom mit Stern-Dreieck-Schaltung', level: 2, rig: 'drehstrom',
+      text: 'Ein Drehstrommotor nimmt beim Direktanlauf in Dreieckschaltung am 400-V-Netz kurzzeitig einen Strom von 24 A aus dem Netz auf. Er soll stattdessen mit der Stern-Dreieck-Schaltung anlaufen. Berechne den Strom, den das Netz in der Sternphase liefert, in Ampere.',
+      ask: { label: 'Netzstrom in der Sternphase', unit: 'A' },
+      hint: ['Im Stern liegt an jedem Wicklungsstrang eine kleinere Spannung als im Dreieck. Dadurch sinkt der Strom, aber auch das Moment.', 'Vergleiche den Netzstrom im Stern mit dem im Dreieck am selben Netz: Es ist ein fester Bruchteil.', 'Der Netzstrom im Stern ist ein Drittel des Stroms im Dreieck: 24 A / 3 = 8 A. Das Anlaufmoment sinkt ebenfalls auf ein Drittel.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 24 / 3 }),
+      check: askCheck(8, [[24 / Math.sqrt(3), 'Du hast durch √3 geteilt. Das gilt nur für die Spannung am Strang. Beim Netzstrom kommt der Faktor 3 heraus, weil Spannung und Strangstrom sinken.'], [72, 'Du hast mit 3 multipliziert. Im Stern ist der Strom kleiner als im Dreieck.']]) },
+    { id: 'an34', lab: 'ant', cat: 'Vertiefung', title: 'Schlitten mit Spindel verfahren', level: 2, rig: 'schritt',
+      text: 'Ein Schrittmotor mit 1,8° Schrittwinkel (200 Schritte pro Umdrehung im Vollschritt) treibt direkt eine Spindel mit 4 mm Steigung an. Der Treiber arbeitet im Halbschritt. Ein Schlitten soll um 25 mm verfahren. Berechne, wie viele Halbschritte dafür nötig sind.',
+      ask: { label: 'Anzahl der Halbschritte', unit: 'Schritte' },
+      hint: ['Rechne zuerst aus, wie viele Umdrehungen der Spindel für den Weg nötig sind. Die Steigung ist der Weg pro Umdrehung.', 'Im Halbschritt hat der Motor doppelt so viele Schritte pro Umdrehung wie im Vollschritt. Multipliziere die Umdrehungen mit den Schritten pro Umdrehung.', '25 mm / 4 mm = 6,25 Umdrehungen. Im Halbschritt sind es 400 Schritte pro Umdrehung: 6,25 · 400 = 2500 Halbschritte.'],
+      start: () => S('schritt', {}, { value: null }), sol: () => S('schritt', {}, { value: 25 / 4 * 400 }),
+      check: askCheck(2500, [[1250, 'Du hast mit 200 Schritten pro Umdrehung gerechnet. Das gilt nur für den Vollschritt. Im Halbschritt sind es 400.'], [25 * 400, 'Du hast den Weg direkt mit den Schritten multipliziert. Erst die Umdrehungen ausrechnen: Weg geteilt durch Steigung.']]) },
+    { id: 'an35', lab: 'ant', cat: 'Vertiefung', title: 'Zwei Stufen hintereinander', level: 2, rig: 'getriebe',
+      text: 'Ein Motor dreht mit 1440 1/min und treibt ein zweistufiges Stirnradgetriebe an. Die erste Stufe hat die Übersetzung i1 = 3, die zweite i2 = 4,5. Berechne die Drehzahl an der Abtriebswelle in 1/min.',
+      ask: { label: 'Abtriebsdrehzahl n_aus', unit: '1/min' },
+      hint: ['Die zweite Stufe bekommt als Eingang die Drehzahl, die die erste liefert. Die Stufen wirken also nacheinander.', 'Bei hintereinander geschalteten Stufen multiplizierst du die Einzelübersetzungen zur Gesamtübersetzung. Danach teilst du die Eingangsdrehzahl durch i_ges.', 'i_ges = 3 · 4,5 = 13,5. n_aus = 1440 1/min / 13,5 = 106,7 1/min.'],
+      start: () => S('getriebe', {}, { value: null }), sol: () => S('getriebe', {}, { value: 1440 / (3 * 4.5) }),
+      check: askCheck(1440 / 13.5, [[1440 / (3 + 4.5), 'Du hast die Übersetzungen addiert. Bei hintereinander geschalteten Stufen werden sie multipliziert.'], [1440 * 13.5, 'Du hast mit i_ges multipliziert. Eine Untersetzung macht die Drehzahl kleiner: n_aus = n_ein / i_ges.']]) },
+    { id: 'an36', lab: 'ant', cat: 'Vertiefung', title: 'Motorleistung für ein Hubwerk', level: 3, rig: 'getriebe',
+      text: 'Ein Hubwerk hebt eine Last von 250 kg mit einer gleichbleibenden Geschwindigkeit von 0,4 m/s. Der Gesamtwirkungsgrad von Getriebe und Seiltrommel beträgt 0,8. Berechne die Leistung, die der Motor an der Welle mindestens abgeben muss, in Watt. Rechne mit g = 9,81 m/s².',
+      ask: { label: 'Motorleistung an der Welle', unit: 'W' },
+      hint: ['Beginne mit der Leistung, die zum Anheben der Last nötig ist: Kraft mal Geschwindigkeit. Die Kraft ist die Gewichtskraft der Last.', 'F = m · g, dann P_nutz = F · v. Der Motor muss mehr abgeben, weil das Getriebe Verluste hat. Teile durch den Wirkungsgrad, multipliziere nicht.', 'F = 250 kg · 9,81 m/s² = 2452,5 N. P_nutz = 2452,5 N · 0,4 m/s = 981 W. P_Motor = 981 W / 0,8 = 1226 W.'],
+      start: () => S('getriebe', {}, { value: null }), sol: () => S('getriebe', {}, { value: 250 * 9.81 * 0.4 / 0.8 }),
+      check: askCheck(250 * 9.81 * 0.4 / 0.8, [[250 * 9.81 * 0.4, 'Du hast den Wirkungsgrad vergessen. Der Motor muss zusätzlich die Verluste des Getriebes decken.'], [250 * 9.81 * 0.4 * 0.8, 'Du hast mit dem Wirkungsgrad multipliziert. Der Motor muss mehr leisten als die Nutzleistung, also durch η teilen.']]) },
+    { id: 'an37', lab: 'ant', cat: 'Vertiefung', title: 'Nennstrom aus den Typenschilddaten', level: 3, rig: 'drehstrom',
+      text: 'Ein Drehstrommotor gibt laut Typenschild an der Welle 4 kW ab. Sein Wirkungsgrad beträgt 0,85, der Leistungsfaktor cos φ ist 0,83. Er hängt am 400-V-Netz (Spannung zwischen den Außenleitern). Berechne den Strom, den er im Nennbetrieb aus dem Netz aufnimmt, in Ampere.',
+      ask: { label: 'Strom aus dem Netz I', unit: 'A' },
+      hint: ['Drehe die Rechnung vom Typenschild um: Aus der Wellenleistung bekommst du zuerst die elektrisch aufgenommene Leistung, dann den Strom.', 'P_zu = P_ab / η. Außerdem gilt für Drehstrom P_zu = √3 · U · I · cos φ. Stelle nach I um.', 'P_zu = 4000 W / 0,85 = 4706 W. I = 4706 W / (1,732 · 400 V · 0,83) = 8,18 A.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 4000 / (Math.sqrt(3) * 400 * 0.83 * 0.85) }),
+      check: askCheck(4000 / (Math.sqrt(3) * 400 * 0.83 * 0.85), [[4000 / (400 * 0.83 * 0.85), 'Du hast den Verkettungsfaktor √3 vergessen. Im Drehstromnetz gilt P = √3 · U · I · cos φ.'], [4000 / (Math.sqrt(3) * 400 * 0.83), 'Du hast den Wirkungsgrad nicht berücksichtigt. Die Typenschildleistung ist die abgegebene Leistung, der Motor nimmt mehr auf.'], [4000 / (Math.sqrt(3) * 400 * 0.85), 'Du hast cos φ vergessen. Nur der Wirkanteil des Stroms leistet Arbeit.']]) },
+    { id: 'an38', lab: 'ant', cat: 'Vertiefung', title: 'Förderband: Motor läuft nicht hoch', level: 2, rig: 'drehstrom',
+      text: 'Ein Drehstrommotor treibt ein Förderband an (Last 8 Nm, am Netz). Nach dem Einschalten läuft er nicht auf Nenndrehzahl, brummt und wird schnell heiß, die Anlage meldet „Kippmoment überschritten“. Die Last darf nicht verringert werden. Finde die Ursache an den Einstellungen des Prüfstands und behebe sie, sodass der Motor im Dauerbetrieb normal läuft.',
+      hint: ['Die Last ist für diesen Motor eigentlich nicht zu groß. Schau, wie er geschaltet ist: Das Moment hängt vom Quadrat der Spannung an der Wicklung ab.', 'In der Startvorlage steht der Motor in der falschen Wicklungsschaltung. Im Stern liegt nur etwa 58 % der Spannung am Strang, das Moment sinkt dadurch auf ein Drittel.', 'Stelle die Schaltung auf Dreieck (400 V am Strang), K1 bleibt an. Der Motor läuft dann mit rund 1436 1/min und bleibt kühl.'],
+      start: () => S('drehstrom', { source: 'netz', connection: 'stern', K1: true, K2: false, K3: false, reverse: false, phaseLoss: false, load: 8 }), sol: () => S('drehstrom', { source: 'netz', connection: 'dreieck', K1: true, K2: false, K3: false, reverse: false, phaseLoss: false, load: 8 }),
+      check: checkAn38 }
   ];
 
   /* ====================================================================== Beispiele */

@@ -81,6 +81,20 @@
     ask: choice(['G40', 'G41', 'G42', 'G17'], 1), solve: () => ({ correct: 1 }), bad: [2],
     expl: 'G41 schaltet die Werkzeugradiuskorrektur links der Kontur ein (in Vorschubrichtung gesehen), bei M3 ergibt das Gleichlauf. G42 ist rechts, G40 schaltet die Korrektur aus, G17 wählt nur die Ebene. In diesem Lab wird die Korrektur nur erklärt, die Simulation fährt die programmierte Bahn.',
     tips: ['Links und rechts gelten in Vorschubrichtung gesehen.', 'Es gibt G41 für links und G42 für rechts. G40 schaltet aus.'] });
+  /* Neue Aufgaben (cnc30 bis cnc38): stehen in ihrer Kategorie, die Nummern setzen die Liste fort */
+  const P30 = L('N80 G0 Z50', 'N90 M5 M9', 'N100 M30');
+  add({ id: 'cnc30', cat: 'G-Code lesen', level: 1, title: 'Was bedeutet M30?', machine: 'mill', prog: P30, progMode: 'show',
+    text: 'Im letzten Satz steht M30. Was bewirkt dieser Befehl?',
+    ask: choice(['Das Kühlmittel wird ausgeschaltet, die Spindel läuft aber weiter.', 'Das Werkzeug mit der Nummer 30 wird in die Spindel eingewechselt.', 'Das Programm ist beendet, die Steuerung springt zum Anfang zurück.', 'Die Spindel wird mit einer Drehzahl von 30 Umdrehungen pro Minute eingeschaltet.'], 2), solve: () => ({ correct: 2 }), bad: [1],
+    expl: 'M30 ist das Programmende mit Rücksprung auf den Programmanfang. Die Spindel und das Kühlmittel schaltest du vorher aus (M5 und M9, wie im Satz davor). Ein Werkzeug wird mit T und M6 gewechselt, die Spindel läuft mit M3 und einer Drehzahl S.',
+    tips: ['Mit M-Befehlen werden Schaltfunktionen der Maschine gesteuert. Schau dir die Sätze davor an: Was ist dort schon abgeschaltet?', 'Am Ende eines Programms muss die Steuerung wissen, dass nichts mehr folgt.'] });
+  /* PRUEFEN: U und W als inkrementale X/Z-Adressen beim Drehen (Schreibweise Typ A, z. B. Fanuc-nah); andere Steuerungen (z. B. Siemens) nutzen dafür G91 oder IC. Passt das zum Unterricht? */
+  const P31 = L('(WELLE MIT U UND W)', 'N10 G54 G90 G95 G18', 'N20 T1', 'N30 M3 S1000', 'N40 G0 X30 Z2', 'N50 G1 Z-10 F0.2', 'N60 G1 U6 W-4', 'N70 G1 W-16', 'N80 G0 X100 Z50', 'N90 M5', 'N100 M30');
+  add({ id: 'cnc31', cat: 'G-Code lesen', level: 3, title: 'Position mit U und W', machine: 'turn', prog: P31, progMode: 'show',
+    text: 'In diesem Drehprogramm stehen die Adressen U und W. Das Programm ist insgesamt im Maßsystem G90 geschrieben. Wo steht das Werkzeug nach Satz N70? Gib X als Durchmesser und Z an.',
+    ask: nums(['X (Durchmesser)'], ['Z']), solve: Cc => { const p = posAfter(Cc.run(P31, { machine: 'turn' }), 70); return { values: [p[0], p[2]], tol: 0.01 }; }, bad: [[33, -30], [36, -26]],
+    expl: 'U und W sind beim Drehen inkrementale Werte (Wege), egal ob G90 oder G91 gilt: U ist die Änderung des Durchmessers, W die Änderung in Z. N50 fährt auf X30 Z-10. N60: U6 macht den Durchmesser 36 (nicht 33), W-4 gibt Z-14. N70: W-16 fährt weitere 16 mm: Z-30. Ergebnis: X36 Z-30.',
+    tips: ['U gehört zu X, W gehört zu Z. Es sind Wege, keine Zielpunkte.', 'X ist ein Durchmesser: Rechne die Änderung U auf den Durchmesser auf, nicht auf den Radius.'] });
 
   /* ---------- Koordinaten ---------- */
   const WELLE = { kind: 'turn', dim: 'd', pts: [[20, 0], [20, -15], [30, -15], [30, -35], [40, -35], [40, -50]] };
@@ -116,6 +130,11 @@
     ask: nums(['X'], ['Y']), solve: () => ({ values: [-30, 20], tol: 0.01 }), bad: [[30, -20], [10, 50]],
     expl: 'P4 liegt bei 40/30, P6 bei 10/50 (Maße von links unten). Kettenmaß ist Ziel minus Start: X = 10 - 40 = -30, Y = 50 - 30 = +20. Im Kettenmaß fällt der Nullpunkt heraus. Satz: G91 G1 X-30 Y20.',
     tips: ['Im Kettenmaß zählt nur der Unterschied zwischen Start und Ziel.', 'Ziel minus Start: erst für X, dann für Y. Beachte die Vorzeichen.'] });
+  add({ id: 'cnc32', cat: 'Koordinaten', level: 3, title: 'Nullpunkt in der rechten oberen Ecke', machine: 'mill', fig: RECHT('tr'),
+    text: 'Der Werkstücknullpunkt liegt in der rechten oberen Ecke des Rohteils (80 × 60). Gib die Koordinaten der Ecke P4 absolut (G90) an. Vorsicht bei den Vorzeichen.',
+    ask: nums(['X'], ['Y']), solve: () => ({ values: [-65, -20], tol: 0.01 }), bad: [[15, 40], [65, 20]],
+    expl: 'P4 liegt 15 mm von links und 40 mm von unten. Die rechte obere Ecke des Rohteils liegt bei 80 von links und 60 von unten. Also X = 15 - 80 = -65 und Y = 40 - 60 = -20. Alles, was links oder unterhalb des Nullpunkts liegt, hat negative Werte.',
+    tips: ['Wo liegt der Nullpunkt, gemessen von der linken unteren Ecke? Das sind die Rohteilmaße.', 'Rechne Maß minus Nullpunktlage, getrennt für X und Y.'] });
 
   /* ---------- Programm ergänzen ---------- */
   const NUT = a => L('(RECHTECKNUT)', 'N10 G54 G90 G94 G17', 'N20 T1 M6', 'N30 M3 S2500 M8', 'N40 G0 X20 Y10', 'N50 G0 Z2', 'N60 G1 Z-2 F100', ...a, 'N110 G0 Z50', 'N120 M5 M9', 'N130 M30');
@@ -153,6 +172,20 @@
     ask: { type: 'prog' }, bad: [IK(['N50 G91', 'N60 G1 Z-22 F0.2', 'N70 X5', 'N80 Z-15', 'N90 G90'])],
     expl: 'G91 einschalten, dann G1 Z-22 F0.2, X10 (X ist die Änderung des DURCHMESSERS: 20 auf 30, nicht 5), Z-15. Zum Schluss G90, sonst würde der Satz G0 X100 Z50 als Weg von 100 mm und 50 mm gelesen und das Werkzeug fährt an eine falsche Stelle.',
     tips: ['Kettenmaß einschalten: G91. Die Werte sind Wege, kein Zielpunkt.', 'X10 ändert den Durchmesser um 10 mm. Vergiss G90 am Ende nicht.'] });
+  const FA = a => L('(WELLE MIT FASE)', 'N10 G54 G90 G95 G18', 'N20 T1', 'N30 M3 S1200 M8', 'N40 G0 X16 Z2', ...a, 'N100 G0 X100 Z50', 'N110 M5 M9', 'N120 M30');
+  const FAREF = FA(['N50 G1 Z0 F0.1', 'N60 X20 Z-2', 'N70 Z-25']);
+  add({ id: 'cnc33', cat: 'Programm ergänzen', level: 2, title: 'Welle mit Fase drehen', machine: 'turn', prog: FA(['(HIER ERGAENZEN)']), progMode: 'edit', ref: FAREF, target: true,
+    text: 'Das Werkzeug steht bei X16 Z2. Drehe eine Welle Ø20 mit einer Fase 2×45° an der Planfläche, 25 mm lang. Ergänze: 1. Auf Z0 fahren (Vorschub 0,1 mm/U). 2. Die Fase bis Ø20 bei Z-2. 3. Längsdrehen bis Z-25. Alle Werte absolut (G90).',
+    ask: { type: 'prog' }, bad: [FA(['N50 G1 Z0 F0.1', 'N60 X20 Z-4', 'N70 Z-25'])],
+    expl: 'Die Fase beginnt auf der Planfläche bei Ø16: Radius 8 mm, Fase 2 mm in X-Richtung des Radius, also 4 mm im Durchmesser: von X16 auf X20. Bei 45° ist der Weg in Z ebenfalls 2 mm. Sätze: G1 Z0 F0.1, X20 Z-2 (die Fase), Z-25 (Längsdrehen). Beim Drehen ist X der Durchmesser: Eine Fase von 2 mm am Radius verändert X um 4 mm.',
+    tips: ['Bei 45° sind die Fasenschenkel gleich lang: 2 mm in Z und 2 mm am Radius.', 'In X steht der Durchmesser. Welchen Durchmesser hat die Welle am Anfang der Fase, welchen danach?'] });
+  const B4 = a => L('(BOHRBILD 4 BOHRUNGEN)', 'N10 G54 G90 G94 G17 G40 G80', 'N20 T3 M6', 'N30 M3 S1500 M8', 'N40 G0 Z5', 'N50 G0 X20 Y20', ...a, 'N110 G0 Z50', 'N120 M5 M9', 'N130 M30');
+  const B4REF = B4(['N60 G99 G81 X20 Y20 Z-10 R2 F120', 'N70 X60', 'N80 Y40', 'N90 X20', 'N100 G80']);
+  add({ id: 'cnc34', cat: 'Programm ergänzen', level: 2, title: 'Vier Bohrungen im Rechteck', machine: 'mill', prog: B4(['(HIER ERGAENZEN)']), progMode: 'edit', ref: B4REF, target: false, cmp: { path: false },
+    text: 'Bohre mit T3 (Ø8) vier Bohrungen in den Ecken eines Rechtecks: X20 Y20, X60 Y20, X60 Y40 und X20 Y40. Tiefe 10 mm, Vorschub 120 mm/min, Rückzugsebene R2. Du kannst G81 nutzen oder einzeln mit G1 bohren. Am Ende muss der Zyklus abgewählt sein.',
+    ask: { type: 'prog' }, bad: [B4(['N60 G99 G81 X20 Y20 Z-10 R2 F120', 'N70 X60', 'N80 Y40', 'N100 G80'])],
+    expl: 'Die erste Bohrung steht im Satz mit G81 (Z-10, R2, F120). Der Zyklus bleibt aktiv: N70 X60 bohrt die zweite Bohrung, N80 Y40 die dritte (X60 bleibt stehen), N90 X20 die vierte. G80 beendet den Zyklus. Geprüft wird das Ergebnis am Rohteil: vier Bohrungen an den richtigen Orten in der richtigen Tiefe.',
+    tips: ['Fahre die vier Ecken nacheinander an. Immer nur die Achse schreiben, die sich ändert, der Zyklus gilt weiter.', 'Zähle am Ende nach, ob du vier Positionen programmiert hast, und schalte den Zyklus wieder ab.'] });
 
   /* ---------- Fehler im Programm finden (Verdeckte-Fehler-Prinzip: nur das Symptom wird genannt) ---------- */
   add({ id: 'cnc19', cat: 'Fehler im Programm finden', level: 1, title: 'Nut zu kurz', machine: 'mill', prog: NUT(['N70 G1 X50 F300', 'N80 Y30', 'N90 X20', 'N100 Y10']), progMode: 'edit', ref: NUTREF, target: true,
@@ -195,6 +228,18 @@
     ask: { type: 'prog' }, bad: [G9([])],
     expl: 'Für die Fase wurde in N60 auf Kettenmaß (G91) umgeschaltet, aber nie wieder auf G90 zurück. Z-30 in N80 wurde deshalb als Weg gelesen (2 mm Fase plus 30 mm = Z-32), und auch die Freifahrsätze N90/N100 laufen im Kettenmaß. Lösung: Nach der Fase G90 schreiben.',
     tips: ['G90 und G91 sind modal. Welcher Satz schaltet um, und wo wird zurückgeschaltet?', 'Ein Schaltbefehl, der einmal eingeschaltet wurde, bleibt aktiv, bis er überschrieben wird.'] });
+  const NT = z => L('(NUT)', 'N10 G54 G90 G94 G17', 'N20 T1 M6', 'N30 M3 S2500 M8', 'N40 G0 X20 Y10', 'N50 G0 Z2', 'N60 G1 Z' + z + ' F100', 'N70 G1 X60 F300', 'N80 Y30', 'N90 X20', 'N100 Y10', 'N110 G0 Z50', 'N120 M5 M9', 'N130 M30');
+  add({ id: 'cnc35', cat: 'Fehler im Programm finden', level: 1, title: 'Die Nut ist zu tief', machine: 'mill', prog: NT('-4'), progMode: 'edit', ref: NT('-2'), target: true,
+    text: 'Das Programm läuft ohne Alarm. Die Nut hat die richtige Lage und Länge, ist aber doppelt so tief wie in der Zeichnung. Finde den Fehler und korrigiere ihn.',
+    ask: { type: 'prog' }, bad: [NT('-4')],
+    expl: 'Die Tiefe wird in dem Satz bestimmt, in dem das Werkzeug mit Vorschub ins Material eintaucht. Dort stand Z-4 statt Z-2. Alle folgenden Sätze fahren auf dieser Z-Höhe weiter, die ganze Nut wird deshalb 4 mm tief. Prüfe bei solchen Fehlern die Z-Werte mit den Maßen der Zeichnung.',
+    tips: ['Form und Lage stimmen. Welche Achse bestimmt dann die Tiefe?', 'Suche den Satz, in dem das Werkzeug eintaucht, und lies den Z-Wert.'] });
+  const BF = x => L('(DREI BOHRUNGEN)', 'N10 G54 G90 G94 G17 G40 G80', 'N20 T3 M6', 'N30 M3 S1500 M8', 'N40 G0 Z5', 'N50 G0 X20 Y30', 'N60 G99 G81 X20 Y30 Z-8 R2 F120', 'N70 X' + x, 'N80 X60', 'N90 G80', 'N110 G0 Z50', 'N120 M5 M9', 'N130 M30');
+  add({ id: 'cnc36', cat: 'Fehler im Programm finden', level: 2, title: 'Die mittlere Bohrung sitzt schief', machine: 'mill', prog: BF('35'), progMode: 'edit', ref: BF('40'), target: true, cmp: { path: false },
+    text: 'Das Programm läuft ohne Alarm. Die drei Bohrungen sollen auf einer Linie mit gleichen Abständen liegen. Die mittlere ist aber zu nah an der linken. Finde den Fehler und korrigiere ihn.',
+    ask: { type: 'prog' }, bad: [BF('35')],
+    expl: 'Die Bohrungen liegen bei X20, X40 und X60 (gleicher Abstand 20 mm). Im zweiten Positionssatz stand X35. Weil der Zyklus G81 modal aktiv bleibt, bohrt jeder neue Positionssatz sofort an der angegebenen Stelle. Kontrolliere bei Lochbildern die Koordinaten jeder Position mit der Zeichnung.',
+    tips: ['Vergleiche die Lage der Bohrungen im Simulator mit der Sollzeichnung.', 'Lies die Positionssätze nach dem G81-Satz: Welche X-Werte stehen dort, und stimmen die Abstände?'] });
 
   /* ---------- Zeit rechnen ---------- */
   const Z1 = L('(LAENGSDREHEN)', 'N10 G54 G90 G95 G18', 'N20 T1', 'N30 M3 S800', 'N40 G0 X34 Z2', 'N50 G1 Z-40 F0.25', 'N60 G0 X100 Z50', 'N70 M5', 'N80 M30');
@@ -221,6 +266,16 @@
     ask: nums(['Hauptzeit th', 'min']), solve: Cc => ({ values: [Cc.run(Z4, { machine: 'turn' }).time.main], tol: 0.006 }), bad: [[0.75], [0.49]],
     expl: 'Plandrehen N50: X42 nach X-1 sind 43 mm im Durchmesser, aber der Radiusweg ist 21,5 mm. vf = 0,1 · 1000 = 100 mm/min, also 0,215 min. Längsdrehen N80 und N110: je Z2 bis Z-30 = 32 mm, vf = 0,2 · 1000 = 200 mm/min: je 0,16 min. Summe 0,535 min.',
     tips: ['Rechne drei Arbeitsgänge einzeln: ein Plandrehen und zwei Längsdrehen.', 'Beim Plandrehen ist der Weg der halbe Durchmesserunterschied. Die Längsdrehwege beginnen bei Z2.'] });
+  add({ id: 'cnc37', cat: 'Zeit rechnen', level: 1, title: 'Drehzahl aus der Schnittgeschwindigkeit', machine: 'turn', progMode: 'none',
+    text: 'Ein Bolzen Ø40 wird mit der Schnittgeschwindigkeit vc = 120 m/min gedreht. Berechne die Drehzahl n. Runde auf ganze Umdrehungen pro Minute.',
+    ask: nums(['Drehzahl n', '1/min']), solve: () => ({ values: [120 * 1000 / (Math.PI * 40)], tol: 1 }), bad: [[3820], [477]],
+    expl: 'n = vc · 1000 / (π · d). Der Faktor 1000 rechnet Meter in Millimeter um, der Durchmesser d steht in mm. n = 120 · 1000 / (π · 40) = 120000 / 125,66 ≈ 955 1/min. Mit dem Radius statt dem Durchmesser käme die doppelte Drehzahl heraus.',
+    tips: ['Die Umfangsstrecke pro Umdrehung ist π · d.', 'vc steht in m/min, d in mm. Rechne beides in dieselbe Einheit um (1 m = 1000 mm).'] });
+  add({ id: 'cnc38', cat: 'Zeit rechnen', level: 2, title: 'Vorschubgeschwindigkeit beim Fräsen', machine: 'mill', progMode: 'none',
+    text: 'Ein Schaftfräser mit 4 Schneiden läuft mit n = 2400 1/min. Der Vorschub pro Zahn beträgt fz = 0,05 mm. Berechne die Vorschubgeschwindigkeit vf, die du im Programm als F eingibst (Fräsen, Vorschub in mm/min).',
+    ask: nums(['Vorschubgeschwindigkeit vf', 'mm/min']), solve: () => ({ values: [2400 * 4 * 0.05], tol: 0.5 }), bad: [[120], [0.48]],
+    expl: 'vf = n · z · fz = 2400 1/min · 4 · 0,05 mm = 480 mm/min. Jede der 4 Schneiden trägt pro Umdrehung 0,05 mm Vorschub, also ist der Vorschub pro Umdrehung 0,2 mm. Beim Fräsen gilt G94 (Vorschub in mm/min), deshalb schreibst du F480.',
+    tips: ['Wie viel Vorschub entsteht pro Umdrehung, wenn jeder Zahn fz zurücklegt?', 'Multipliziere den Vorschub pro Umdrehung mit der Drehzahl.'] });
 
   tasks.forEach(t => { if (!t.tips || t.tips.length < 2) throw new Error('Tipps fehlen: ' + t.id); });
 

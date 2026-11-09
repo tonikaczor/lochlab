@@ -5,7 +5,7 @@
  *   controls = alle Steuerwerte des Prüfstands, seq im Format von THM_CORE.runSeq (t in Prozess-SEKUNDEN, set | ramp), dur in Sekunden,
  *   settle = true: Der Versuch beginnt im Beharrungszustand (rig.settle()), false: kalt bei Ta. Texte tragen {sym:key}-Platzhalter (THM_CORE.tpl).
  * window.THM_TASKS = { tasks, register(list), run(task, answer) -> Promise<[{ok,text,why}]>, util, byId(id), audit, auditExample, answerOf }
- *   Die Aufgaben stehen in thmtasks1.js (th1-th15) und thmtasks2.js (th16-th30) und melden sich mit THM_TASKS.register([...]) an;
+ *   Die Aufgaben stehen in thmtasks1.js (th1-th15) und thmtasks2.js (th16-th38) und melden sich mit THM_TASKS.register([...]) an;
  *   die Reihenfolge der Registry ist immer th1, th2, ... (unabhängig von der Ladereihenfolge).
  *   Aufgabe: { id:'thN', lab:'thm', cat, title, level, rig, text, table?, hint[3], start(), sol(), check(answer), fields?, choices?, ask?, hintVals() }
  *   hint[1] und hint[2] enthalten nur Zahlen aus hintVals() (Regel 1); hint ist ein Getter, der beim ersten Zugriff rechnet.
