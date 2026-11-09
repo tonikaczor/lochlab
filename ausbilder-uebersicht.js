@@ -175,6 +175,47 @@
     return { tasks, topics, exam };
   };
 
+  /* ---------- LF-AUSWERTUNG-START: Schwächen nach Lernfeld (Abschnitt 4b). Zuordnung Aufgabe -> Lernfeld aus lernfelder.js (LERNFELDER.zuordnung,
+     dieselbe wie auf der Seite lernfelder.html des Azubis). Rechnet nur mit den Aufgaben-Einträgen der geladenen Stände (rec.tasks), nichts Neues.
+     Fortschritt = Anteil der Aufgaben mit 100 %; begonnen = über 0 % oder Tipp benutzt, aber nicht 100 % (wie das Schwächen-Ranking); offen = nicht 100 %.
+     Schwächste zuerst: nur begonnene Lernfelder, aufsteigend nach Fortschritt, dann Ø Prozent, dann mehr offene Aufgaben, dann Katalog-Reihenfolge.
+     Probetest je Lernfeld (lm4.lf.probe): steht nicht im Stand-Export (stand.js) und wird von normalize nicht übernommen; core.lfProbe liest ihn nur,
+     falls ein Datensatz ihn einmal enthält (rec.lf.probe). ---------- */
+  core.lfProbe = rec => { const p = rec && isObj(rec.lf) && rec.lf.probe; return isObj(p) ? p : null; };
+  core.lernfelder = function (rows, G, L) {
+    if (!L || !Array.isArray(L.LF) || typeof L.zuordnung !== 'function') return { ok: false, lfs: [], azubis: [], gruppe: [], nie: [], ohne: 0, probe: false };
+    const T = G && Array.isArray(G.AUFGABEN) ? G.AUFGABEN : [], ZU = L.zuordnung(T);
+    const lfs = L.LF.filter(l => (ZU.byLf[l.k] || []).length).map((l, i) => ({ k: l.k, t: l.t, lj: l.lj, n: ZU.byLf[l.k].length, i }));
+    const pos = {}; lfs.forEach(l => { pos[l.k] = l.i; });
+    const avg = a => a.length ? sum(a) / a.length : 0;
+    let probe = false;
+    const azubis = (rows || []).map(r => {
+      const rec = r.rec || r.latest || r, tk = isObj(rec.tasks) ? rec.tasks : {}, pr = core.lfProbe(rec), per = {};
+      lfs.forEach(l => {
+        const ps = ZU.byLf[l.k].map(t => (Array.isArray(tk[t[0]]) ? tk[t[0]] : [0, 0])), done = ps.filter(a => a[0] >= 100).length, begun = ps.filter(a => a[0] < 100 && (a[0] > 0 || a[1] > 0)).length;
+        const q = pr && isObj(pr[l.k]) && isFinite(+pr[l.k].pct) && +pr[l.k].pct >= 0 ? pr[l.k] : null;
+        const pb = q ? { pct: clamp(int(q.pct), 0, 100), note: clamp(int(q.note) || 6, 1, 6), versuche: Math.max(0, int(q.versuche)) } : null; if (pb) probe = true;
+        per[l.k] = { k: l.k, t: l.t, lj: l.lj, n: l.n, done, begun, open: l.n - done, pct: Math.round(100 * done / l.n), avg: Math.round(avg(ps.map(a => a[0]))), started: done + begun > 0, probe: pb };
+      });
+      const list = lfs.map(l => per[l.k]), st = list.filter(x => x.started);
+      const schwach = st.slice().sort((a, b) => a.pct - b.pct || a.avg - b.avg || b.open - a.open || pos[a.k] - pos[b.k]);
+      const nS = sum(st.map(x => x.n)), nA = sum(list.map(x => x.n));
+      return { key: r.key, name: r.name, per, schwach, nie: list.filter(x => !x.started), gestartet: st.length, offen: sum(list.map(x => x.open)), begonnen: sum(list.map(x => x.begun)),
+        pct: nS ? Math.round(100 * sum(st.map(x => x.done)) / nS) : 0, gesamt: nA ? Math.round(100 * sum(list.map(x => x.done)) / nA) : 0, probeN: list.filter(x => x.probe).length,
+        noteBest: list.some(x => x.probe) ? Math.min.apply(null, list.filter(x => x.probe).map(x => x.probe.note)) : null };
+    });
+    const alle = lfs.map(l => {
+      const xs = azubis.map(a => a.per[l.k]), st = xs.filter(x => x.started), pbs = xs.filter(x => x.probe).map(x => x.probe);
+      return { k: l.k, t: l.t, lj: l.lj, n: l.n, i: l.i, az: xs.length, begonnen: st.length, pct: Math.round(avg(st.map(x => x.pct))), pctAlle: Math.round(avg(xs.map(x => x.pct))),
+        offen: Math.round(10 * avg(xs.map(x => x.open))) / 10, unter50: st.filter(x => x.pct < 50).length,
+        probe: pbs.length ? { n: pbs.length, pct: Math.round(avg(pbs.map(p => p.pct))), note: Math.min.apply(null, pbs.map(p => p.note)) } : null };
+    });
+    const gruppe = alle.filter(g => g.begonnen > 0).sort((a, b) => a.pct - b.pct || b.unter50 - a.unter50 || a.pctAlle - b.pctAlle || a.i - b.i);
+    return { ok: true, lfs, azubis, gruppe, nie: alle.filter(g => !g.begonnen), ohne: ZU.ohne.length, probe };
+  };
+  core.lfKurz = x => x.k + ' (' + x.pct + ' %)';
+  /* ---------- LF-AUSWERTUNG-ENDE (Kern) ---------- */
+
   /* ---------- CSV (Semikolon, Excel-tauglich; Formeln werden entschärft) ---------- */
   core.csvCell = v => { let s = v == null ? '' : String(v); if (/^[=+\-@\t\r]/.test(s) && isNaN(+s)) s = "'" + s; return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   core.csv = function (agg) {
@@ -346,7 +387,7 @@
   function mount(host, G, doc) {
     const D = doc || document, cat = core.catalog(G || {});
     const BD = (root.Badges && root.Badges.DEFS) || [], bname = id => { const d = BD.find(x => x[0] === id); return d ? { icon: d[1], name: d[2], desc: d[3] } : { icon: '🏅', name: id, desc: '' }; };
-    const S = { inputs: [], sort: 'name', dir: 1, heat: 'lab', heatLab: '', detail: null, msg: '', dKw: '', dJg: 'alle', codes: [], dv: null, dmsg: '', pub: null, imp: null, beruf: '' };
+    const S = { inputs: [], sort: 'name', dir: 1, heat: 'lab', heatLab: '', detail: null, msg: '', dKw: '', dJg: 'alle', codes: [], dv: null, dmsg: '', pub: null, imp: null, beruf: '', lfAz: '' };
     let M = null, A = null;
     const wettEl = D.createElement('div'); wettEl.id = 'wettHost';   /* Abschnitt 6 bleibt beim Neuzeichnen der übrigen Abschnitte erhalten (Eingaben gehen nicht verloren) */
     const $ = s => host.querySelector(s);
@@ -418,13 +459,13 @@
       h += '<h3>Themen (Lab und Kategorie)</h3>' + (W.topics.length ? `<ol class="rank">${W.topics.slice(0, 10).map(t => `<li><span class="lb">${esc(t.cat)} <span class="mute">(${esc(lname(t.lab))})</span></span><span class="bar2" role="img" aria-label="${Math.round(100 * t.share)} Prozent nicht gelöst"><i style="width:${Math.round(100 * t.share)}%"></i></span><span class="nm">${t.unsolved} von ${t.tried} Bearbeitungen nicht gelöst (${Math.round(100 * t.share)} %)</span></li>`).join('')}</ol>` : '<p class="mute">Zu wenige Daten für Themen (mindestens 3 Bearbeitungen je Thema).</p>');
       h += '<h3>Prüfungsthemen (Prüfungs-Lab)</h3>' + (W.exam.length ? `<ol class="rank">${W.exam.slice(0, 10).map(t => `<li><span class="lb">${esc(t.t || t.k)}</span><span class="bar2" role="img" aria-label="${t.p} Prozent richtig"><i class="g" style="width:${t.p}%"></i></span><span class="nm">${t.p} % richtig (${t.r} von ${t.n} Fragen, ${t.az} Azubis)</span></li>`).join('')}</ol>` : '<p class="mute">Keine Prüfungsdaten (mindestens 5 beantwortete Fragen je Thema).</p>');
       h += '</section>';
-      h += '<div id="duellHost"></div><div id="wettSlot"></div>';
+      h += '<div id="lfSlot"></div><div id="duellHost"></div><div id="wettSlot"></div>';
       /* Detail */
       h += `<section class="card" aria-labelledby="hDet"><h2 id="hDet" tabindex="-1">7. Detail je Azubi</h2><label class="rb">Azubi <select id="detSel" aria-label="Azubi für die Detailansicht">${'<option value="">(bitte wählen)</option>' + rows.map(r => `<option value="${esc(r.key)}"${r.key === S.detail ? ' selected' : ''}>${esc(r.name)}</option>`).join('')}</select></label><div id="det">${S.detail ? detail(S.detail) : '<p class="mute">Wähle einen Azubi oder klicke in der Tabelle auf ein Kürzel.</p>'}</div></section>`;
       /* Export */
       h += `<section class="card noprint" aria-labelledby="hExp"><h2 id="hExp">8. Export</h2><p class="mute">CSV öffnet sich in Excel (Semikolon, UTF-8). Die Druckansicht zeigt Tabelle, Heatmap, Ranking und Detail; ein Hinweis zum Datenschutz steht oben. Die Dateien enthalten nur Pseudonyme, bitte nur im Ausbilder-Ordner ablegen.</p><div class="row"><button type="button" class="pri" id="bCsv">Übersicht als CSV</button><button type="button" id="bCsvW">Schwächen als CSV</button><button type="button" id="bPrint">Druckansicht (Drucken oder PDF)</button></div></section>`;
-      out.innerHTML = h; renderDuell(); slot();
-      const bs = out.querySelector('#berSel'); if (bs) bs.onchange = () => { S.beruf = bs.value; S.heatLab = ''; rerun(); const n = out.querySelector('#berSel'); if (n) n.focus(); };
+      out.innerHTML = h; renderDuell(); slot(); lfInto(out.querySelector('#lfSlot'));
+      const bs =out.querySelector('#berSel'); if (bs) bs.onchange = () => { S.beruf = bs.value; S.heatLab = ''; rerun(); const n = out.querySelector('#berSel'); if (n) n.focus(); };
       out.querySelectorAll('[data-sort]').forEach(b => b.onclick = () => { const k = b.dataset.sort; if (S.sort === k) S.dir = -S.dir; else { S.sort = k; S.dir = (k === 'name') ? 1 : -1; } render(); const nb = out.querySelector('[data-sort="' + k + '"]'); if (nb) nb.focus(); });
       out.querySelectorAll('[data-det]').forEach(b => b.onclick = () => { S.detail = b.dataset.det; render(); const t = out.querySelector('#hDet'); if (t) { t.scrollIntoView({ block: 'start' }); t.focus({ preventScroll: true }); } });
       out.querySelectorAll('input[name=heat]').forEach(r => r.onchange = () => { S.heat = r.value; render(); const x = out.querySelector('input[name=heat][value=' + S.heat + ']'); if (x) x.focus(); });
@@ -434,6 +475,72 @@
       out.querySelector('#bCsvW').onclick = () => download('tonfunk-schwaechen-' + isoDay() + '.csv', '﻿' + core.csvWeak(core.weakness(M, cat)), 'text/csv;charset=utf-8');
       out.querySelector('#bPrint').onclick = () => root.print();
     }
+    /* ---------- LF-OBERFLAECHE-START: Abschnitt 4b „Schwächen nach Lernfeld“, nur createElement/textContent (keine Texte als HTML) ---------- */
+    function el(tag, props, kids) {
+      const e = D.createElement(tag);
+      Object.keys(props || {}).forEach(k => { const v = props[k]; if (v == null || v === false) return; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = String(v); else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v); else e.setAttribute(k, String(v)); });
+      (kids || []).forEach(c => { if (c == null || c === false) return; e.appendChild(typeof c === 'string' ? D.createTextNode(c) : c); });
+      return e;
+    }
+    function lfTd(p, started, title) {
+      const td = el('td', { class: started ? 'pc' : 'pc none', title });
+      if (started) { td.style.background = core.color(p); td.textContent = p + ' %'; } else td.appendChild(el('span', { class: 'sr', text: 'nicht begonnen' }));
+      return td;
+    }
+    function lfBar(p, label) { const i = el('i'); i.style.width = clamp(p, 0, 100) + '%'; return el('span', { class: 'bar2', role: 'img', 'aria-label': label }, [i]); }
+    const probeTxt = p => p ? 'Note ' + p.note + ' (' + p.pct + ' %, ' + p.versuche + (p.versuche === 1 ? ' Versuch)' : ' Versuche)') : 'kein Probetest';
+    function lfSection() {
+      const R = core.lernfelder(A.rows, G || {}, root.LERNFELDER), sec = el('section', { class: 'card', id: 'lfSec', 'aria-labelledby': 'hLf' });
+      sec.appendChild(el('h2', { id: 'hLf', text: '4b. Schwächen nach Lernfeld' }));
+      if (!R.ok) { sec.appendChild(el('p', { class: 'mute', text: 'Die Lernfeld-Zuordnung (lernfelder.js) ist nicht geladen. Seite neu laden.' })); return sec; }
+      sec.appendChild(el('p', { class: 'mute', text: 'Jede Aufgabe ist genau einem Lernfeld des Elektronikers für Geräte und Systeme zugeordnet (wie auf der Seite „Lernfelder“ des Azubis). Fortschritt = Anteil der Aufgaben mit 100 %. Offen = noch nicht mit 100 % gelöst. Schwächste Lernfelder zuerst; gezählt werden nur Lernfelder, in denen der Azubi schon etwas bearbeitet hat (über 0 % oder Tipp). ' + R.ohne + ' Aufgaben ohne Lernfeld (vor allem Labs anderer Berufe, dazu z. B. Regelungs- und EMV-Lab, Probeprüfungen, Tagesaufgaben) zählen hier nicht.' }));
+      if (!R.probe) sec.appendChild(el('p', { class: 'mute', text: 'Probetest-Ergebnisse je Lernfeld stehen nicht in den Stand-Dateien (sie bleiben auf dem Gerät des Azubis). Darum gibt es hier keine Spalte „Probetest“.' }));
+      /* Gruppe */
+      sec.appendChild(el('h3', { text: 'Gruppe: schwächste Lernfelder zuerst' }));
+      if (!R.gruppe.length) sec.appendChild(el('p', { class: 'mute', text: 'Noch kein Lernfeld begonnen (keine bearbeiteten Aufgaben mit Lernfeld in den Ständen).' }));
+      else {
+        const head = ['Rang', 'Lernfeld', 'Lehrjahr', 'Aufgaben', 'Ø Fortschritt', 'Begonnen von', 'Unter 50 %', 'Ø offen'].concat(R.probe ? ['Probetest'] : []);
+        const tb = el('tbody');
+        R.gruppe.forEach((g, i) => tb.appendChild(el('tr', {}, [
+          el('td', { text: i + 1 }), el('td', { class: 'l' }, [el('b', { text: g.k }), ' ' + g.t]), el('td', { text: g.lj ? g.lj + '.' : 'alle' }), el('td', { text: g.n }),
+          lfTd(g.pct, true, g.k + ': Ø ' + g.pct + ' % gelöst bei den Azubis, die begonnen haben (alle: Ø ' + g.pctAlle + ' %)'),
+          el('td', { text: g.begonnen + ' von ' + g.az }), el('td', { text: g.unter50 }), el('td', { text: String(g.offen).replace('.', ',') })
+        ].concat(R.probe ? [el('td', { text: g.probe ? 'Ø ' + g.probe.pct + ' %, beste Note ' + g.probe.note + ' (' + g.probe.n + ')' : '–' })] : []))));
+        sec.appendChild(el('div', { class: 'tw', tabindex: 0, role: 'region', 'aria-label': 'Tabelle Lernfelder der Gruppe, waagerecht scrollbar' }, [el('table', { class: 'lft' }, [
+          el('caption', { class: 'sr', text: 'Lernfelder der Gruppe, schwächste zuerst' }), el('thead', {}, [el('tr', {}, head.map(t => el('th', { scope: 'col', text: t })))]), tb])]));
+      }
+      if (R.nie.length) sec.appendChild(el('details', {}, [el('summary', { text: 'Von niemandem begonnen (' + R.nie.length + ' Lernfelder)' }), el('ul', { class: 'plain' }, R.nie.map(g => el('li', { text: g.k + ' ' + g.t + ' (' + g.n + ' Aufgaben)' })))]));
+      /* je Azubi */
+      sec.appendChild(el('h3', { text: 'Je Azubi' }));
+      const tb2 = el('tbody');
+      R.azubis.forEach(a => tb2.appendChild(el('tr', {}, [
+        el('th', { scope: 'row', class: 'nm' }, [el('button', { type: 'button', class: 'lnk', 'data-lfaz': a.key, text: a.name, onclick: () => { S.lfAz = a.key; lfRedraw('#lfDet'); } })]),
+        el('td', { text: a.gestartet + ' von ' + R.lfs.length }), lfTd(a.pct, a.gestartet > 0, a.name + ': ' + a.pct + ' % gelöst in den begonnenen Lernfeldern (alle Lernfelder: ' + a.gesamt + ' %)'),
+        el('td', { text: a.offen + ' (' + a.begonnen + ' begonnen)' }),
+        el('td', { class: 'l', text: a.schwach.length ? a.schwach.slice(0, 3).map(core.lfKurz).join(' · ') : '–' })
+      ].concat(R.probe ? [el('td', { text: a.probeN ? a.probeN + ' Lernfeld(er), beste Note ' + a.noteBest : '–' })] : []))));
+      sec.appendChild(el('div', { class: 'tw', tabindex: 0, role: 'region', 'aria-label': 'Tabelle Lernfelder je Azubi, waagerecht scrollbar' }, [el('table', { class: 'lft' }, [
+        el('caption', { class: 'sr', text: 'Lernfeld-Fortschritt je Azubi' }),
+        el('thead', {}, [el('tr', {}, ['Kürzel', 'Lernfelder begonnen', 'Fortschritt (begonnene)', 'Offene Aufgaben', 'Schwächste Lernfelder'].concat(R.probe ? ['Probetest'] : []).map(t => el('th', { scope: 'col', text: t })))]), tb2])]));
+      /* Detail */
+      const sel = el('select', { id: 'lfAzSel', 'aria-label': 'Azubi für die Lernfeld-Ansicht', onchange: e => { S.lfAz = e.target.value || ''; lfRedraw('#lfAzSel'); } }, [el('option', { value: '', text: '(bitte wählen)' })].concat(R.azubis.map(a => el('option', { value: a.key, text: a.name, selected: a.key === S.lfAz }))));
+      sec.appendChild(el('label', { class: 'rb noprint' }, ['Azubi ', sel]));
+      const a = R.azubis.find(x => x.key === S.lfAz), det = el('div', { id: 'lfDet', tabindex: -1 });
+      if (!a) det.appendChild(el('p', { class: 'mute', text: 'Wähle einen Azubi oder tippe in der Tabelle auf ein Kürzel: alle Lernfelder, schwächste zuerst.' }));
+      else {
+        const d = el('div', { class: 'det' }, [el('h3', { text: a.name + ': Lernfelder, schwächste zuerst' }), el('p', { text: a.gestartet + ' von ' + R.lfs.length + ' Lernfeldern begonnen, ' + a.pct + ' % der Aufgaben darin gelöst. Offene Aufgaben mit Lernfeld: ' + a.offen + ' (davon ' + a.begonnen + ' begonnen).' })]);
+        if (a.schwach.length) d.appendChild(el('ul', { class: 'labs lfl' }, a.schwach.map(x => el('li', {}, [el('span', { class: 'lb', text: x.k + ' ' + x.t }), lfBar(x.pct, x.pct + ' Prozent gelöst'),
+          el('span', { class: 'nm', text: x.done + ' von ' + x.n + ' gelöst · ' + x.begun + ' begonnen · ' + x.open + ' offen' + (R.probe ? ' · Probetest: ' + probeTxt(x.probe) : '') })]))));
+        else d.appendChild(el('p', { class: 'mute', text: 'Noch kein Lernfeld begonnen.' }));
+        if (a.nie.length) d.appendChild(el('details', {}, [el('summary', { text: 'Noch nicht begonnen (' + a.nie.length + ' Lernfelder)' }), el('ul', { class: 'plain' }, a.nie.map(x => el('li', { text: x.k + ' ' + x.t + ' (' + x.n + ' Aufgaben offen)' + (x.probe ? ', Probetest ' + probeTxt(x.probe) : '') })))]));
+        det.appendChild(d);
+      }
+      sec.appendChild(det);
+      return sec;
+    }
+    function lfInto(slotEl) { if (slotEl) slotEl.replaceWith(lfSection()); }
+    function lfRedraw(focusSel) { const old = out.querySelector('#lfSec'); if (!old) return; old.replaceWith(lfSection()); const f = out.querySelector(focusSel); if (f) f.focus(); }
+    /* ---------- LF-OBERFLAECHE-ENDE ---------- */
     const isoDay = () => { const d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); };
     function download(name, text, type) { const a = D.createElement('a'), url = URL.createObjectURL(new Blob([text], { type })); a.href = url; a.download = name; D.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 4000); }
     function detail(key) {

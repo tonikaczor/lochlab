@@ -915,6 +915,157 @@
     r(!S[13].any['Q0.3'] && !S[14].any['Q0.3'], 'Bei leerem Tank (B1 = 0) lässt sich das Ventil nicht öffnen', 'Der Start braucht B1 (I0.2) = 1.');
   });
 
+  /* ---- Erweiterung: Aufgaben sp38 bis sp43 (nach dem Berufsschulstoff GRAFCET, Lernfeld E10.1: Zeitaktionen D und L, speichernde Aktion S und R,
+     parallele Ablaufkette, Zeitbedingung zu kurz, Fehlersuche mit verdecktem zweitem Fehler). Alle Prüfungen laufen über logic() mit festen Eingangsfolgen. ---- */
+  // sp38 Garagentor: Zeitaktionen statt Warteschritt
+  const GRA_TOR_D = (start) => gra('garagentor', [
+    step('S0', 'Grundstellung', [], true),
+    step('S1', 'Tor fährt auf', start ? [A('N', 'Q0.2'), A('N', 'Q0.0')] : [A('N', 'Q0.2'), A('D', 'Q0.0', 3000)]),
+    step('S2', 'Tor offen', start ? [A('N', 'Q0.3')] : [A('L', 'Q0.3', 5000)]),
+    step('S3', 'Tor fährt zu', start ? [A('N', 'Q0.2'), A('N', 'Q0.1')] : [A('N', 'Q0.2'), A('D', 'Q0.1', 3000)])],
+  [tr('T1', 'S0', 'S1', 'I0.0 AND I0.5'), tr('T2', 'S1', 'S2', 'I0.2'), tr('T3', 'S2', 'S3', 'I0.1 AND I0.5'), tr('T4', 'S3', 'S0', 'I0.3')]);
+  // sp39 Förderband: speichernde Aktion, Betriebsleuchte bleibt nach dem Stopp an
+  const GRA_BAND_S = (start) => gra('foerderband', [
+    step('S0', 'Bereit', [], true),
+    step('S1', 'Band läuft', start ? [A('N', 'Q0.0'), A('N', 'Q0.2')] : [A('N', 'Q0.0'), A('S', 'Q0.2')]),
+    step('S2', 'Teil entnehmen', []),
+    step('S3', 'Not-Halt', start ? [] : [A('R', 'Q0.2')])],
+  [tr('T1', 'S1', 'S3', 'NOT I0.7'), tr('T2', 'S2', 'S3', 'NOT I0.7'), tr('T3', 'S0', 'S3', 'NOT I0.7'), tr('T4', 'S0', 'S1', 'I0.0 AND I0.1 AND I0.7'), tr('T5', 'S1', 'S0', 'NOT I0.1'), tr('T6', 'S2', 'S0', 'NOT I0.1'),
+    tr('T7', 'S1', 'S2', 'I0.6'), tr('T8', 'S2', 'S1', 'NOT I0.6'), tr('T9', 'S3', 'S0', 'I0.7')]);
+  // sp40 Tank: zeitbegrenzte Aktion, Rührwerk 4 s
+  const GRA_TANK_L = (start) => gra('tank', [
+    step('S0', 'Grundstellung', [], true),
+    step('S1', 'Füllen', [A('N', 'Q0.0')]),
+    step('S2', 'Mischen', start ? [A('N', 'Q0.2')] : [A('L', 'Q0.2', 4000)]),
+    step('S3', 'Ablassen', [A('N', 'Q0.3')])],
+  [tr('T1', 'S0', 'S1', 'I0.0 AND I0.1 AND I0.6 AND NOT I0.4'), tr('T2', 'S1', 'S2', 'I0.4'), tr('T3', 'S2', 'S3', 't/S2/6s'), tr('T4', 'S3', 'S0', 'NOT I0.2')]);
+  // sp41 Ampel: Fehlersuche, Fußgänger-Grün kommt nie (Zeitbedingung zu kurz; verdeckt: Fußgänger-Rot bleibt im Schritt dauernd an)
+  const GRA_FUSS = (bug) => gra('ampel', [
+    step('S0', 'Straße grün', [A('N', 'Q0.2'), A('N', 'Q0.3')], true),
+    step('S1', 'Straße gelb', [A('N', 'Q0.1'), A('N', 'Q0.3')]),
+    step('S2', 'Straße rot, Fußgänger grün', bug ? [A('N', 'Q0.0'), A('N', 'Q0.3'), A('D', 'Q0.4', 1000)] : [A('N', 'Q0.0'), A('L', 'Q0.3', 1000), A('D', 'Q0.4', 1000)]),
+    step('S3', 'Räumzeit', [A('N', 'Q0.0'), A('N', 'Q0.3')]),
+    step('S4', 'Straße rot-gelb', [A('N', 'Q0.0'), A('N', 'Q0.1'), A('N', 'Q0.3')])],
+  [tr('T1', 'S0', 'S1', 'I0.0'), tr('T2', 'S1', 'S2', 't/S1/3s'), tr('T3', 'S2', 'S3', bug ? 't/S2/1s' : 't/S2/8s'), tr('T4', 'S3', 'S4', 't/S3/2s'), tr('T5', 'S4', 'S0', 't/S4/1s')]);
+  // sp42 Tank: parallele Ablaufkette (Zulauf A bis Mitte und Warten auf leeren Behälter 2 gleichzeitig)
+  const GRA_TANK_PAR = (start) => {
+    const steps = [
+      step('S0', 'Grundstellung', [], true),
+      step('S1', 'Zulauf A bis Mitte', [A('N', 'Q0.0')]),
+      step('S2', 'A fertig', []),
+      step('S3', 'Warten auf Behälter 2', [A('N', 'Q0.5')]),
+      step('S4', 'Behälter 2 bereit', []),
+      step('S5', 'Zulauf B bis Max', [A('N', 'Q0.1')]),
+      step('S6', 'Mischen', [A('N', 'Q0.2')]),
+      step('S7', 'Ablassen', [A('N', 'Q0.3'), A('N', 'Q0.4')])];
+    const tail = [tr('T5', 'S5', 'S6', 'I0.4'), tr('T6', 'S6', 'S7', 't/S6/5s'), tr('T7', 'S7', 'S0', 'NOT I0.2')];
+    return gra('tank', steps, start
+      ? [tr('T1', 'S0', 'S1', 'I0.0 AND I0.1 AND I0.6'), tr('T2', 'S1', 'S5', 'I0.3')].concat(tail)
+      : [tr('T1', 'S0', ['S1', 'S3'], 'I0.0 AND I0.1 AND I0.6'), tr('T2', 'S1', 'S2', 'I0.3'), tr('T3', 'S3', 'S4', 'I0.5'), tr('T4', ['S2', 'S4'], 'S5', 'true')].concat(tail));
+  };
+  // sp43 Tank: Fehlersuche, Störlampe erlischt nie (Rücksetzen fehlt; verdeckt: Quittieren mit Öffner falsch abgefragt)
+  const GRA_TANK_STOER = (bug) => gra('tank', [
+    step('S0', 'Bereit', [], true),
+    step('S1', 'Füllen', [A('N', 'Q0.0')]),
+    step('S2', 'Störung', [A('S', 'Q0.5')]),
+    step('S3', 'Quittiert', bug ? [] : [A('R', 'Q0.5')])],
+  [tr('T1', 'S0', 'S1', 'I0.0 AND I0.6 AND NOT I0.4'), tr('T2', 'S1', 'S0', 'I0.4'), tr('T3', 'S1', 'S2', 't/S1/20s'), tr('T4', 'S2', 'S3', bug ? 'I0.1' : 'NOT I0.1'), tr('T5', 'S3', 'S0', 'I0.1')]);
+
+  const flatL = S => S.reduce((a, s) => a.concat(s.cycles), []);
+  const firstIdx = (c, f, from, to) => { for (let i = from || 0; i < (to == null ? c.length : to); i++) if (f(c[i])) return i; return -1; };
+  const allIn = (c, a, b, f) => b > a && c.slice(a, b).every(f);
+  const anyIn = (c, a, b, f) => c.slice(a, b).some(f);
+  const checkSp38 = mkCheck((prog, r) => {
+    const m = e => Object.assign({ 'I0.0': false, 'I0.1': false, 'I0.2': false, 'I0.3': true, 'I0.4': false, 'I0.5': true }, e);
+    const c = flatL(logic(prog, 'garagentor', [{ in: m(), n: 20 }, { in: m({ 'I0.0': true }), n: 10 }, { in: m({ 'I0.3': false }), n: 400 }, { in: m({ 'I0.3': false, 'I0.2': true }), n: 700 },
+      { in: m({ 'I0.3': false, 'I0.2': true, 'I0.1': true }), n: 10 }, { in: m({ 'I0.3': false }), n: 400 }, { in: m(), n: 50 }, { in: m({ 'I0.0': true }), n: 10 }, { in: m({ 'I0.3': false }), n: 50 }]));
+    const up = firstIdx(c, x => x['Q0.0'], 20, 430), dn = firstIdx(c, x => x['Q0.1'], 1130, 1540), h2off = firstIdx(c, x => !x['Q0.3'], 431, 1130);
+    r(allIn(c, 0, 20, x => !x['Q0.0'] && !x['Q0.1'] && !x['Q0.2'] && !x['Q0.3']), 'In der Grundstellung ist alles aus', 'S0 hat keine Aktion.');
+    r(allIn(c, 21, 300, x => x['Q0.2'] && !x['Q0.0']), 'Nach dem Tastendruck blinkt H1 sofort, der Motor steht noch', 'Im Schritt „Tor fährt auf“ gehört H1 (Q0.2) als normale Aktion (N) hinein, der Motor als verzögerte Aktion (D).');
+    r(up >= 315 && up <= 330, 'Der Motor Auf startet etwa 3 s nach dem Tastendruck' + (up > 0 ? ' (gemessen: ' + sec((up - 20) * 10) + ' s)' : ''), 'Verzögerte Aktion: Q0.0 mit Qualifier D und t = 3000 ms. Der Schritt beginnt mit dem Tastendruck, die Aktion erst 3 s später.');
+    r(up > 0 && allIn(c, up, 430, x => x['Q0.0'] && x['Q0.2']), 'Danach fährt das Tor mit Blinklicht auf', 'Die verzögerte Aktion bleibt an, bis der Schritt verlassen wird.');
+    r(allIn(c, 431, 900, x => !x['Q0.0'] && !x['Q0.2']) && allIn(c, 431, 900, x => x['Q0.3']) && h2off >= 925 && h2off <= 940 && allIn(c, 945, 1130, x => !x['Q0.3']), 'Oben: Motor aus, H2 leuchtet etwa 5 s und geht dann von selbst aus, das Tor bleibt offen' + (h2off > 0 ? ' (gemessen: ' + sec((h2off - 430) * 10) + ' s)' : ''), 'Zeitbegrenzte Aktion: Q0.3 mit Qualifier L und t = 5000 ms im Schritt „Tor offen“. Der Schritt selbst bleibt aktiv, bis S2 gedrückt wird.');
+    r(allIn(c, 1131, 1425, x => x['Q0.2'] && !x['Q0.1']) && dn >= 1425 && dn <= 1440, 'Zufahren: H1 blinkt sofort, der Motor Ab startet erst etwa 3 s später' + (dn > 0 ? ' (gemessen: ' + sec((dn - 1130) * 10) + ' s)' : ''), 'Im Schritt „Tor fährt zu“: Q0.2 mit N, Q0.1 mit D und t = 3000 ms.');
+    r(allIn(c, 1541, 1590, x => !x['Q0.1'] && !x['Q0.2']) && anyIn(c, 1601, 1650, x => x['Q0.2']), 'Unten ist alles aus, und ein neuer Druck auf S1 startet den nächsten Zyklus', 'B2 (I0.3) führt von „Tor fährt zu“ zurück in die Grundstellung.');
+    r(!c.some(x => x['Q0.0'] && x['Q0.1']), 'Auf und Ab laufen nie gleichzeitig', 'Die Motoren gehören in verschiedene Schritte.');
+  });
+  const checkSp39 = mkCheck((prog, r) => {
+    const m = e => Object.assign({ 'I0.0': false, 'I0.1': true, 'I0.2': false, 'I0.3': false, 'I0.4': true, 'I0.5': false, 'I0.6': false, 'I0.7': true }, e);
+    const S = logic(prog, 'foerderband', [
+      { in: m(), n: 20 }, { in: m({ 'I0.0': true }), n: 5 }, { in: m(), n: 30 },                 // 0 bis 2: Start
+      { in: m({ 'I0.6': true }), n: 30 }, { in: m(), n: 30 },                                     // 3, 4: Teil am Bandende, entnommen
+      { in: m({ 'I0.1': false }), n: 5 }, { in: m(), n: 50 },                                     // 5, 6: Stopp
+      { in: m({ 'I0.0': true }), n: 5 }, { in: m(), n: 30 },                                      // 7, 8: neuer Start
+      { in: m({ 'I0.7': false }), n: 20 }, { in: m(), n: 50 },                                    // 9, 10: Not-Halt, entriegelt
+      { in: m({ 'I0.0': true }), n: 5 }, { in: m(), n: 30 }]);                                    // 11, 12: Start nach Not-Halt
+    const all = (i, f) => S[i].cycles.every(f);
+    r(all(0, x => !x['Q0.2'] && !x['Q0.0']), 'Nach dem Einschalten der Steuerung ist die Betriebsleuchte aus', 'Im Schritt „Bereit“ darf H1 nicht als normale Aktion stehen, sonst leuchtet sie schon beim Einschalten.');
+    r(S[1].last['Q0.0'] && S[1].last['Q0.2'] && all(2, x => x['Q0.0'] && x['Q0.2']), 'Mit S1 läuft das Band und die Betriebsleuchte geht an', 'Im Schritt „Band läuft“: Q0.0 mit N, Q0.2 speichernd setzen (S).');
+    r(all(3, x => x['Q0.2']) && !S[3].last['Q0.0'] && all(4, x => x['Q0.2']) && S[4].last['Q0.0'], 'Teil am Bandende: Das Band hält an, die Leuchte bleibt an, nach dem Entnehmen läuft das Band weiter', 'Die Leuchte darf im Schritt „Teil entnehmen“ nicht ausgehen. Mit S bleibt sie gespeichert, auch wenn der Schritt wechselt.');
+    r(!S[6].last['Q0.0'] && all(6, x => x['Q0.2'] && !x['Q0.0']), 'Nach dem Stopp steht das Band, die Betriebsleuchte bleibt an', 'Stopp führt zurück in „Bereit“. Die gesetzte Leuchte bleibt an, weil in „Bereit“ nichts zurücksetzt.');
+    r(S[8].last['Q0.0'] && S[8].last['Q0.2'], 'Ein neuer Start lässt das Band wieder laufen', 'Aus „Bereit“ führt S1 wieder nach „Band läuft“.');
+    r(!S[9].last['Q0.0'] && !S[9].last['Q0.2'] && all(10, x => !x['Q0.2'] && !x['Q0.0']), 'Not-Halt schaltet Band und Betriebsleuchte aus, auch nach dem Entriegeln bleibt die Leuchte aus', 'Im Schritt „Not-Halt“ wird Q0.2 zurückgesetzt (R).');
+    r(S[12].last['Q0.0'] && S[12].last['Q0.2'], 'Nach dem Not-Halt startet S1 Band und Leuchte wieder', 'Vom Schritt „Not-Halt“ geht es nach dem Entriegeln zurück nach „Bereit“.');
+  });
+  const checkSp40 = mkCheck((prog, r) => {
+    const m = e => Object.assign({ 'I0.0': false, 'I0.1': true, 'I0.2': true, 'I0.3': true, 'I0.4': false, 'I0.5': false, 'I0.6': true }, e);
+    const c = flatL(logic(prog, 'tank', [{ in: m({ 'I0.2': false, 'I0.3': false }), n: 20 }, { in: m({ 'I0.0': true, 'I0.2': false, 'I0.3': false }), n: 5 }, { in: m(), n: 200 },
+      { in: m({ 'I0.4': true }), n: 650 }, { in: m(), n: 100 }, { in: m({ 'I0.2': false, 'I0.3': false }), n: 100 }]));
+    const offM = firstIdx(c, x => !x['Q0.2'], 226, 875), ab = firstIdx(c, x => x['Q0.3'], 225, 875);
+    r(allIn(c, 0, 20, x => !x['Q0.0'] && !x['Q0.2'] && !x['Q0.3']), 'In der Grundstellung ist alles aus', 'S0 hat keine Aktion.');
+    r(allIn(c, 21, 225, x => x['Q0.0'] && !x['Q0.2'] && !x['Q0.3']), 'Nach dem Start füllt Zulauf A, bis Max meldet', 'Schritt „Füllen“ mit Q0.0, Transition I0.4.');
+    r(c[226]['Q0.2'] && !c[226]['Q0.0'] && offM >= 620 && offM <= 635 && allIn(c, 640, 820, x => !x['Q0.2']), 'Das Rührwerk läuft beim Mischen sofort an und nach etwa 4 s von selbst aus' + (offM > 0 ? ' (gemessen: ' + sec((offM - 225) * 10) + ' s)' : ''), 'Zeitbegrenzte Aktion: Q0.2 mit Qualifier L und t = 4000 ms. Der Schritt „Mischen“ dauert trotzdem 6 s.');
+    r(ab >= 820 && ab <= 835, 'Das Ablaufventil öffnet etwa 6 s nach Max' + (ab > 0 ? ' (gemessen: ' + sec((ab - 225) * 10) + ' s)' : ''), 'Transition aus „Mischen“: 6s/X2 bzw. t/S2/6s.');
+    r(ab > 0 && allIn(c, ab, 975, x => x['Q0.3']) && allIn(c, 985, 1075, x => !x['Q0.3'] && !x['Q0.0']), 'Ablassen, bis Min frei wird, danach Grundstellung ohne neuen Start', 'Aus „Ablassen“ führt NICHT I0.2 zurück nach S0.');
+    r(!c.some(x => x['Q0.0'] && x['Q0.3']), 'Zulauf und Ablauf sind nie gleichzeitig offen', 'Zulauf und Ablauf gehören in verschiedene Schritte.');
+  });
+  const checkSp41 = mkCheck((prog, r) => {
+    const m = e => Object.assign({ 'I0.0': false, 'I0.1': true, 'I0.2': false }, e);
+    const c = flatL(logic(prog, 'ampel', [{ in: m(), n: 50 }, { in: m({ 'I0.0': true }), n: 5 }, { in: m(), n: 1600 }]));
+    const ph = x => (x['Q0.2'] && !x['Q0.1'] && !x['Q0.0'] ? 'G' : x['Q0.1'] && !x['Q0.0'] && !x['Q0.2'] ? 'Y' : x['Q0.0'] && !x['Q0.1'] && !x['Q0.2'] ? 'R' : x['Q0.0'] && x['Q0.1'] && !x['Q0.2'] ? 'RY' : 'X');
+    const red = firstIdx(c, x => ph(x) === 'R', 50), gr = firstIdx(c, x => x['Q0.4'], 50), grOff = gr > 0 ? firstIdx(c, x => !x['Q0.4'], gr) : -1, back = red > 0 ? firstIdx(c, x => ph(x) === 'G', red) : -1;
+    r(allIn(c, 0, 50, x => ph(x) === 'G' && x['Q0.3'] && !x['Q0.4']), 'Ohne Anforderung: Straße grün, Fußgänger rot', 'Schritt „Straße grün“ mit Q0.2 und Q0.3.');
+    r(red >= 345 && red <= 360 && allIn(c, 51, red, x => ph(x) === 'Y'), 'Nach dem Tastendruck zeigt die Straße 3 s Gelb, dann Rot', 'Transition aus „Straße gelb“: t/S1/3s.');
+    r(gr > 0 && gr - red >= 95 && gr - red <= 110, 'Fußgänger-Grün kommt etwa 1 s nach Straßen-Rot' + (gr > 0 ? ' (gemessen: ' + sec((gr - red) * 10) + ' s)' : ' (gemessen: nie)'), 'Verzögerte Aktion D mit 1000 ms für Q0.4. Prüfe, ob der Schritt lange genug aktiv bleibt, damit die Verzögerung ablaufen kann.');
+    r(grOff > 0 && grOff - gr >= 690 && grOff - gr <= 710, 'Fußgänger-Grün dauert etwa 7 s' + (grOff > 0 ? ' (gemessen: ' + sec((grOff - gr) * 10) + ' s)' : ''), 'Der Schritt mit Straßen-Rot dauert 8 s: 1 s Räumen plus 7 s Grün für die Fußgänger.');
+    r(gr > 0 && !c.some(x => x['Q0.3'] && x['Q0.4']), 'Fußgänger-Rot und Fußgänger-Grün leuchten nie gleichzeitig', 'Fußgänger-Rot darf im Schritt „Straße rot, Fußgänger grün“ nur die erste Sekunde leuchten (zeitbegrenzte Aktion L).');
+    r(!c.some(x => x['Q0.4'] && (x['Q0.2'] || x['Q0.1'])) && !c.some(x => ph(x) === 'X') && c.every(x => x['Q0.3'] || x['Q0.4']), 'Fußgänger-Grün nur bei Straßen-Rot, gültige Lichtfolgen, die Fußgängerampel ist nie dunkel', 'Q0.4 gehört nur in den Schritt mit Straßen-Rot. Zu jedem Zeitpunkt leuchtet eine der beiden Fußgängerlampen.');
+    r(back > 0 && back - red >= 1095 && back - red <= 1110 && allIn(c, back, back + 50, x => ph(x) === 'G' && x['Q0.3']), 'Nach 2 s Räumzeit und 1 s Rot-Gelb ist die Straße wieder grün', 'Räumzeit t/S3/2s, Rot-Gelb t/S4/1s, dann zurück nach S0.');
+  });
+  const checkSp42 = mkCheck((prog, r) => {
+    const m = e => Object.assign({ 'I0.0': false, 'I0.1': true, 'I0.2': false, 'I0.3': false, 'I0.4': false, 'I0.5': false, 'I0.6': true }, e);
+    /* Fall A: Behälter 2 wird erst nach Mitte leer; Fall B: Behälter 2 ist schon vorher leer */
+    const A1 = logic(prog, 'tank', [{ in: m(), n: 20 }, { in: m({ 'I0.0': true }), n: 5 }, { in: m({ 'I0.2': true }), n: 100 }, { in: m({ 'I0.2': true, 'I0.3': true }), n: 150 },
+      { in: m({ 'I0.2': true, 'I0.3': true, 'I0.5': true }), n: 100 }, { in: m({ 'I0.2': true, 'I0.3': true, 'I0.4': true, 'I0.5': true }), n: 560 }, { in: m({ 'I0.3': false, 'I0.5': true }), n: 50 }]);
+    const B1 = logic(prog, 'tank', [{ in: m({ 'I0.5': true }), n: 20 }, { in: m({ 'I0.0': true, 'I0.5': true }), n: 5 }, { in: m({ 'I0.2': true, 'I0.5': true }), n: 100 }, { in: m({ 'I0.2': true, 'I0.3': true, 'I0.5': true }), n: 50 }]);
+    const ev = (S, i, f) => S[i].cycles.every(f);
+    r(ev(A1, 0, x => !x['Q0.0'] && !x['Q0.1'] && !x['Q0.5']) && A1[1].last['Q0.0'] && ev(A1, 2, x => x['Q0.0'] && !x['Q0.1']), 'Nach dem Start öffnet Zulauf A sofort, auch wenn Behälter 2 noch nicht leer ist', 'Der Start verzweigt parallel: Zweig 1 füllt mit Zulauf A, Zweig 2 wartet auf Behälter 2. Beide Schritte werden durch dieselbe Transition aktiv.');
+    r(A1[1].last['Q0.5'] && ev(A1, 2, x => x['Q0.0'] && x['Q0.5']), 'Während Zulauf A füllt, meldet H1 gleichzeitig, dass Behälter 2 noch nicht leer ist', 'Beide Zweige laufen gleichzeitig: Der Schritt „Warten auf Behälter 2“ mit Q0.5 ist schon während des Füllens aktiv, nicht erst danach.');
+    r(ev(A1, 3, x => !x['Q0.0'] && !x['Q0.1']), 'Bei Mitte schließt Zulauf A, Zulauf B wartet, solange Behälter 2 nicht leer ist', 'Zulauf B darf erst starten, wenn beide Zweige fertig sind: parallele Zusammenführung von „A fertig“ und „Behälter 2 bereit“.');
+    r(A1[4].last['Q0.1'] && !A1[4].last['Q0.0'] && !A1[4].last['Q0.5'], 'Sobald Behälter 2 leer meldet, erlischt H1 und Zulauf B öffnet', 'Die Zusammenführung schaltet, wenn beide Quellschritte aktiv sind.');
+    r(B1[3].last['Q0.1'] && !B1[3].last['Q0.0'] && !B1[2].last['Q0.1'], 'Ist Behälter 2 schon vorher leer, öffnet Zulauf B direkt bei Mitte', 'Zweig 2 ist dann schon fertig, die Zusammenführung wartet nur noch auf Zweig 1.');
+    const mi = A1[5].cycles, mOn = mi.filter(x => x['Q0.2']).length, abI = firstIdx(mi, x => x['Q0.3']);
+    r(!mi[1]['Q0.1'] && mi[2]['Q0.2'] && mOn >= 490 && mOn <= 510 && abI >= 495 && abI <= 510, 'Bei Max schließt Zulauf B, das Rührwerk läuft 5 s, dann wird abgelassen', 'Nach der Zusammenführung läuft die Kette wie bisher: Zulauf B bis Max, Mischen 5 s, Ablassen mit Ventil und Pumpe.');
+    r(abI > 0 && mi.slice(abI).every(x => x['Q0.3'] && x['Q0.4']) && ev(A1, 6, x => !x['Q0.3'] && !x['Q0.4']) && A1[6].cycles.slice(2).every(x => !x['Q0.0'] && !x['Q0.1']), 'Ablassen mit Ventil und Pumpe, bis Min frei wird, danach Grundstellung', 'Aus „Ablassen“ führt NICHT I0.2 zurück nach S0.');
+    r(![A1, B1].some(S => flatL(S).some(x => (x['Q0.0'] && x['Q0.1']) || ((x['Q0.0'] || x['Q0.1']) && x['Q0.3']))), 'Die Zuläufe sind nie gleichzeitig offen, und nie zusammen mit dem Ablauf', 'Zulauf A, Zulauf B und Ablassen gehören in verschiedene Schritte, die nicht gleichzeitig aktiv sind.');
+  });
+  const checkSp43 = mkCheck((prog, r) => {
+    const m = e => Object.assign({ 'I0.0': false, 'I0.1': true, 'I0.2': true, 'I0.3': true, 'I0.4': false, 'I0.5': false, 'I0.6': true }, e);
+    const S = logic(prog, 'tank', [
+      { in: m(), n: 20 }, { in: m({ 'I0.0': true }), n: 5 }, { in: m(), n: 300 }, { in: m({ 'I0.4': true }), n: 30 }, { in: m(), n: 30 },     // 0 bis 4: normaler Füllvorgang
+      { in: m({ 'I0.0': true }), n: 5 }, { in: m(), n: 2050 },                                                                              // 5, 6: Max kommt nicht
+      { in: m(), n: 500 }, { in: m({ 'I0.0': true }), n: 5 }, { in: m(), n: 30 },                                                           // 7 bis 9: Störung steht, Start gesperrt
+      { in: m({ 'I0.1': false }), n: 10 }, { in: m(), n: 30 },                                                                              // 10, 11: Quittieren
+      { in: m({ 'I0.0': true }), n: 5 }, { in: m(), n: 30 }]);                                                                              // 12, 13: neuer Start
+    const all = (i, f) => S[i].cycles.every(f), any = (i, f) => S[i].cycles.some(f);
+    r(all(0, x => !x['Q0.5'] && !x['Q0.0']) && S[1].last['Q0.0'] && all(2, x => x['Q0.0'] && !x['Q0.5']) && !S[3].last['Q0.0'] && all(4, x => !x['Q0.0'] && !x['Q0.5']), 'Normalbetrieb: Zulauf A füllt bis Max, die Störlampe bleibt aus', 'Schritt „Füllen“ mit Q0.0, Transition I0.4 zurück nach „Bereit“.');
+    const c6 = S[6].cycles, st = firstIdx(c6, x => x['Q0.5']);
+    r(st >= 1990 && st <= 2010 && !c6[c6.length - 1]['Q0.0'], 'Kommt Max nicht innerhalb von 20 s, schließt Zulauf A und die Störlampe geht an', 'Transition t/S1/20s in den Schritt „Störung“ mit gespeicherter Lampe (S).');
+    r(all(7, x => x['Q0.5']) && !any(8, x => x['Q0.0']) && !any(9, x => x['Q0.0']), 'Ohne Quittieren bleibt die Störung stehen: Lampe an, Start gesperrt', 'Die Kette darf den Schritt „Störung“ erst verlassen, wenn quittiert wird. Prüfe, wie der Stopp-Taster (Öffner) abgefragt wird.');
+    r(!S[11].last['Q0.5'] && all(11, x => !x['Q0.0']), 'Quittieren mit S2 löscht die Störlampe', 'Eine gesetzte Aktion (S) bleibt an, bis sie in einem Schritt zurückgesetzt wird (R).');
+    r(S[13].last['Q0.0'] && !S[13].last['Q0.5'], 'Nach dem Quittieren lässt sich der Füllvorgang wieder starten', 'Nach „Quittiert“ führt das Loslassen des Stopp-Tasters zurück nach „Bereit“.');
+  });
+
   /* ====================================================================== Aufgaben */
   const tasks = [
     { id: 'sp1', lab: 'sps', cat: 'Grundlagen', title: 'Verknüpfung: Beleuchtung am Garagentor', level: 1, plant: 'garagentor',
@@ -1080,7 +1231,39 @@
     { id: 'sp37', lab: 'sps', cat: 'Vertiefung', title: 'Fehlersuche: Das Ablaufventil öffnet nie', level: 2, plant: 'tank',
       text: 'Der Tank soll sich über das Ablaufventil Y3_Ablauf (Q0.3) entleeren. Soll-Verhalten: S1_Start (I0.0) öffnet das Ventil, aber nur, wenn B1_Min (I0.2 = 1) meldet, dass noch Flüssigkeit im Tank ist. Das Ventil hält sich selbst. S2_Stopp (I0.1, Öffner), S3_NotHalt (I0.6, Öffner) oder ein Füllstand unter Min schließen es sofort, und es öffnet nicht von selbst wieder. In der Anlage öffnet das Ventil aber nie, obwohl der Tank gefüllt ist. ' + EIN('tank', ['I0.0', 'I0.1', 'I0.2', 'I0.6']) + AUS('tank', ['Q0.3']) + 'Es sind zwei Fehler im Programm.' + ADR,
       hint: ['Beginne beim Start: Welche Bedingungen müssen erfüllt sein, damit das Ventil öffnet, und welche davon ist im Ruhezustand der Anlage wirklich 1? Öffner-Taster liefern im Ruhezustand eine 1.', 'Fehler 1: Ein Öffner-Taster wird als Öffner-Kontakt abgefragt, so dass das Ventil im Ruhezustand blockiert ist. Fehler 2: Ein Sicherheitsschalter fehlt in der Reihenschaltung. Schaue nach, ob die Aufgabe jeden der genannten Abschaltgründe im Programm hat.', 'N1: (((I0.0 UND I0.2) ODER Q0.3) UND I0.1 UND I0.6 UND I0.2) → Q0.3. Alle drei Öffner-Signale stehen als normale Schließer-Kontakte in Reihe.'],
-      start: tankAblaufBug, sol: tankAblaufSol, check: checkSp37 }
+      start: tankAblaufBug, sol: tankAblaufSol, check: checkSp37 },
+
+    /* Neue Aufgaben nach dem Berufsschulstoff GRAFCET (Lernfeld E10.1: Zeitaktionen, speichernde Aktion, parallele Kette). PRUEFEN-Marker: siehe quelle/spslab/PRUEFEN.md */
+    /* PRUEFEN P6: sp38 zeigt verzögerte (D) und zeitbegrenzte (L) Aktion als Ersatz für einen eigenen Warteschritt (Vergleich mit sp19). In DIN EN 60848 werden Zeitaktionen als zugeordnete Bedingung „3s/X1“ an der Aktion geschrieben; das Lab nutzt die IEC-Qualifier D und L. Ist diese Gleichsetzung für den Unterricht in Ordnung? */
+    { id: 'sp38', lab: 'sps', cat: 'Vertiefung', title: 'GRAFCET: Zeitaktionen statt Warteschritt', level: 3, plant: 'garagentor',
+      text: 'Das Tor soll mit nur drei Arbeitsschritten auskommen, die Wartezeiten stecken in den Aktionen. S1_Auf (I0.0, wenn S3_Stopp I0.5 nicht gedrückt ist) startet den Schritt „Tor fährt auf“: H1_Blinklicht (Q0.2) leuchtet sofort, K1_MotorAuf (Q0.0) läuft aber erst 3 Sekunden nach Schrittbeginn an (verzögerte Aktion). Oben (B1_EndeOben I0.2) folgt „Tor offen“: H2_Beleuchtung (Q0.3) leuchtet nur die ersten 5 Sekunden (zeitbegrenzte Aktion), das Tor bleibt offen. S2_Ab (I0.1) startet „Tor fährt zu“: Blinklicht sofort, K2_MotorAb (Q0.1) erst nach 3 Sekunden. Unten (B2_EndeUnten I0.3) geht es zurück in die Grundstellung. ' + EIN('garagentor', ['I0.0', 'I0.1', 'I0.2', 'I0.3', 'I0.5']) + AUS('garagentor', ['Q0.0', 'Q0.1', 'Q0.2', 'Q0.3']) + 'In der Startvorlage stehen Schritte und Transitionen schon richtig, alle Aktionen sind aber normale Aktionen (N).' + ADR,
+      hint: ['Eine Aktion kann eine Zeit haben: Die verzögerte Aktion schaltet erst nach einer Wartezeit ab Schrittbeginn ein, die zeitbegrenzte Aktion schaltet nach einer Zeit wieder aus, obwohl der Schritt aktiv bleibt.', 'Motoren: Qualifier D (verzögert) mit t = 3000 ms. Beleuchtung: Qualifier L (zeitbegrenzt) mit t = 5000 ms. Das Blinklicht bleibt N.', 'S1: N Q0.2, D Q0.0 (3000 ms). S2: L Q0.3 (5000 ms). S3: N Q0.2, D Q0.1 (3000 ms). Transitionen: T1 I0.0 UND I0.5, T2 I0.2, T3 I0.1 UND I0.5, T4 I0.3.'],
+      start: () => GRA_TOR_D(true), sol: () => GRA_TOR_D(false), check: checkSp38 },
+    /* PRUEFEN P7: sp39 erzwingt die speichernde Aktion über das Verhalten: Nach dem Einschalten ist die Betriebsleuchte aus, nach einem Stopp (zurück in den Anfangsschritt) bleibt sie an, erst Not-Halt setzt sie zurück. Die Mitschrift nennt außerdem die Zuweisung bei Flanke („EA22 := 1 bei Flanke von C4“), die das Lab nicht kennt. Reicht S/R als Ersatz? */
+    { id: 'sp39', lab: 'sps', cat: 'Vertiefung', title: 'GRAFCET: Betriebsleuchte speichernd setzen', level: 2, plant: 'foerderband',
+      text: 'Die Ablaufkette des Bandes hat vier Schritte: „Bereit“ (Anfangsschritt), „Band läuft“, „Teil entnehmen“ und „Not-Halt“. Mit S1_Start (I0.0) läuft K1_Band (Q0.0). Erreicht ein Teil B5_Bandende (I0.6), hält das Band, bis das Teil entnommen ist. S2_Stopp (I0.1, Öffner) führt zurück nach „Bereit“, S3_NotHalt (I0.7, Öffner) in den Schritt „Not-Halt“. Die Betriebsleuchte H1_Betrieb (Q0.2) soll mit dem ersten Start angehen und an bleiben, auch beim Entnehmen und nach einem Stopp. Erst der Not-Halt schaltet sie aus. Nach dem Einschalten der Steuerung ist sie aus. ' + EIN('foerderband', ['I0.0', 'I0.1', 'I0.6', 'I0.7']) + AUS('foerderband', ['Q0.0', 'Q0.2']) + 'Schritte und Transitionen stehen schon. In der Startvorlage ist H1 eine normale Aktion im Schritt „Band läuft“.' + ADR,
+      hint: ['Eine normale Aktion (N) ist nur an, solange ihr Schritt aktiv ist. Hier soll die Leuchte über mehrere Schritte und sogar im Anfangsschritt an bleiben. Dafür gibt es eine Aktion, die einen Wert speichert.', 'Setze Q0.2 im Schritt „Band läuft“ speichernd (Qualifier S) und setze es im Schritt „Not-Halt“ zurück (Qualifier R). Im Anfangsschritt steht keine Aktion für Q0.2.', 'S1 „Band läuft“: N Q0.0, S Q0.2. S2 „Teil entnehmen“: keine Aktion. S3 „Not-Halt“: R Q0.2. S0 „Bereit“: keine Aktion.'],
+      start: () => GRA_BAND_S(true), sol: () => GRA_BAND_S(false), check: checkSp39 },
+    /* PRUEFEN P8: sp40 lässt das Rührwerk mit einer zeitbegrenzten Aktion (L, 4 s) laufen, der Schritt „Mischen“ dauert 6 s (Zeitbedingung 6s/X2). Werte eigene Festlegung. */
+    { id: 'sp40', lab: 'sps', cat: 'Vertiefung', title: 'GRAFCET: Rührwerk als zeitbegrenzte Aktion', level: 2, plant: 'tank',
+      text: 'Der Tank wird in drei Schritten bearbeitet. S1_Start (I0.0, nur wenn Stopp I0.1 und Not-Halt I0.6 nicht betätigt sind und der Tank nicht voll ist) startet „Füllen“ mit Y1_ZulaufA (Q0.0) bis B3_Max (I0.4). Dann folgt „Mischen“: Der Schritt dauert 6 Sekunden (Zeitbedingung 6s/X2 nach DIN EN 60848, im Lab t/S2/6s), M1_Ruehrwerk (Q0.2) soll aber nur die ersten 4 Sekunden laufen, damit sich der Schaum setzt. Danach „Ablassen“ mit Y3_Ablauf (Q0.3), bis B1_Min (I0.2) frei wird, und zurück in die Grundstellung. ' + EIN('tank', ['I0.0', 'I0.1', 'I0.2', 'I0.4', 'I0.6']) + AUS('tank', ['Q0.0', 'Q0.2', 'Q0.3']) + 'In der Startvorlage läuft das Rührwerk den ganzen Schritt.' + ADR,
+      hint: ['Das Rührwerk soll früher aufhören, als der Schritt endet. Welche Art von Aktion schaltet nach einer festen Zeit von selbst ab, obwohl der Schritt noch aktiv ist?', 'Zeitbegrenzte Aktion: Qualifier L mit t = 4000 ms im Schritt „Mischen“. Die Transition t/S2/6s bleibt unverändert.', 'S2 „Mischen“: L Q0.2 (4000 ms). Alles andere bleibt: S1 N Q0.0, S3 N Q0.3, T1 I0.0 UND I0.1 UND I0.6 UND NICHT I0.4, T2 I0.4, T3 t/S2/6s, T4 NICHT I0.2.'],
+      start: () => GRA_TANK_L(true), sol: () => GRA_TANK_L(false), check: checkSp40 },
+    /* PRUEFEN P9: sp41 nimmt den Fall aus dem Unterricht auf, dass eine verzögerte Aktion nie wirksam wird, wenn der Schritt kürzer ist als die Verzögerung („4s/X314“ bei kürzerem Schritt). Zweiter, verdeckter Fehler: Fußgänger-Rot bleibt im Grün-Schritt an. Zeiten (Gelb 3 s, Räumen 1 s, Grün 7 s, Räumzeit 2 s, Rot-Gelb 1 s) sind Übungswerte, keine Ampelnorm. */
+    { id: 'sp41', lab: 'sps', cat: 'Vertiefung', title: 'Fehlersuche: Fußgänger-Grün kommt nie', level: 2, plant: 'ampel',
+      text: 'Bedarfsampel als GRAFCET. Soll-Verhalten: Die Straße hat Grün, die Fußgänger Rot. Nach einem Druck auf S1_Fussgaengertaster (I0.0) zeigt die Straße 3 s Gelb, dann Rot. Im Schritt „Straße rot, Fußgänger grün“ leuchtet Fußgänger-Rot (Q0.3) noch 1 s, dann Fußgänger-Grün (Q0.4) für 7 s. Danach 2 s Räumzeit (alles Rot) und 1 s Rot-Gelb für die Straße, dann wieder Straßen-Grün. Zu jeder Zeit leuchtet genau eine Fußgängerlampe. In der Anlage zeigt die Fußgängerampel aber nie Grün. ' + EIN('ampel', ['I0.0']) + AUS('ampel', ['Q0.0', 'Q0.1', 'Q0.2', 'Q0.3', 'Q0.4']) + 'Im Programm stecken zwei Fehler.' + ADR,
+      hint: ['Eine verzögerte Aktion (D) wird erst wirksam, wenn ihr Schritt länger aktiv ist als die Verzögerung. Vergleiche die Verzögerung von Q0.4 mit der Zeitbedingung, die den Schritt verlässt.', 'Fehler 1 steckt in einer Transition: Der Schritt mit Straßen-Rot muss 8 s dauern (1 s Räumen plus 7 s Grün). Ist er behoben, siehst du den zweiten Fehler: Fußgänger-Rot darf in diesem Schritt nur die erste Sekunde leuchten.', 'T3: t/S2/8s statt t/S2/1s. S2: N Q0.0, L Q0.3 (1000 ms), D Q0.4 (1000 ms).'],
+      start: () => GRA_FUSS(true), sol: () => GRA_FUSS(false), check: checkSp41 },
+    /* PRUEFEN P10: sp42 zeigt Simultanverzweigung und Zusammenführung (Doppellinie, gemeinsame Transition erst, wenn alle Zweige am Ende sind). Der zweite Zweig wartet auf den Sensor B4 „Behälter 2 leer“ und meldet das Warten mit der Störlampe H1 (eigene Festlegung, damit parallel und nacheinander unterscheidbar sind). Passt die Störlampe als Wartehinweis, oder soll eine andere Meldung gelten? */
+    { id: 'sp42', lab: 'sps', cat: 'Vertiefung', title: 'GRAFCET: Füllen und Warten parallel', level: 3, plant: 'tank',
+      text: 'Nach dem Start (S1_Start I0.0, Stopp I0.1 und Not-Halt I0.6 nicht betätigt) sollen zwei Dinge gleichzeitig ablaufen: Zweig 1 füllt mit Y1_ZulaufA (Q0.0) bis B2_Mitte (I0.3). Zweig 2 wartet, bis B4_Beh2Leer (I0.5) meldet, dass Behälter 2 leer ist. Solange er wartet, leuchtet H1_Stoerung (Q0.5) als Hinweis „Behälter 2 noch nicht leer“. Erst wenn beide Zweige fertig sind, öffnet Y2_ZulaufB (Q0.1) bis B3_Max (I0.4). Dann läuft M1_Ruehrwerk (Q0.2) 5 Sekunden, danach werden Y3_Ablauf (Q0.3) und P1_Pumpe (Q0.4) eingeschaltet, bis B1_Min (I0.2) frei wird, und die Kette ist wieder in der Grundstellung. ' + EIN('tank', ['I0.0', 'I0.1', 'I0.2', 'I0.3', 'I0.4', 'I0.5', 'I0.6']) + AUS('tank', ['Q0.0', 'Q0.1', 'Q0.2', 'Q0.3', 'Q0.4', 'Q0.5']) + 'Alle Schritte sind angelegt. In der Startvorlage läuft die Kette aber gerade durch und Zulauf B wartet nicht auf Behälter 2: Die Schritte S2 bis S4 sind noch nicht eingebunden.' + ADR,
+      hint: ['Zwei Abläufe, die gleichzeitig starten und aufeinander warten, sind eine parallele Verzweigung mit anschließender Zusammenführung (im GRAFCET die Doppellinie). Eine Transition kann mehrere Zielschritte und mehrere Quellschritte haben.', 'T1 aktiviert S1 und S3 gleichzeitig. S1 geht bei I0.3 nach S2 („A fertig“), S3 bei I0.5 nach S4 („Behälter 2 bereit“). Die Zusammenführung von S2 und S4 nach S5 schaltet mit der Bedingung true, sobald beide aktiv sind.', 'T1: S0 → S1 und S3 (I0.0 UND I0.1 UND I0.6). T2: S1 → S2 (I0.3). T3: S3 → S4 (I0.5). T4: S2 und S4 → S5 (true). T5: S5 → S6 (I0.4). T6: S6 → S7 (t/S6/5s). T7: S7 → S0 (NICHT I0.2).'],
+      start: () => GRA_TANK_PAR(true), sol: () => GRA_TANK_PAR(false), check: checkSp42 },
+    /* PRUEFEN P11: sp43 ist eine Fehlersuche zur speichernden Aktion mit verdecktem zweitem Fehler (Quittier-Taster als Öffner falsch abgefragt). Die Füllzeit-Überwachung mit 20 s ist eine eigene Festlegung. */
+    { id: 'sp43', lab: 'sps', cat: 'Vertiefung', title: 'Fehlersuche: Die Störlampe erlischt nie', level: 3, plant: 'tank',
+      text: 'Der Füllvorgang wird überwacht. Soll-Verhalten: S1_Start (I0.0, Not-Halt I0.6 nicht betätigt, Tank nicht voll) öffnet Y1_ZulaufA (Q0.0), bis B3_Max (I0.4) meldet. Meldet Max nicht innerhalb von 20 Sekunden, schließt der Zulauf und H1_Stoerung (Q0.5) leuchtet gespeichert. Solange die Störung steht, lässt sich nicht neu starten. Quittiert wird mit S2_Stopp (I0.1, Öffner): Die Lampe erlischt, nach dem Loslassen ist die Anlage wieder bereit. In der Anlage erlischt die Störlampe aber nie. ' + EIN('tank', ['I0.0', 'I0.1', 'I0.4', 'I0.6']) + AUS('tank', ['Q0.0', 'Q0.5']) + 'Im Programm stecken zwei Fehler.' + ADR,
+      hint: ['Die Lampe wird im Schritt „Störung“ mit S gesetzt. Eine gesetzte Aktion bleibt an, bis ein anderer Schritt sie zurücksetzt. Gibt es diesen Schritt?', 'Fehler 1: Im Schritt „Quittiert“ fehlt das Rücksetzen R Q0.5. Ist er behoben, siehst du den zweiten Fehler: Die Störung verschwindet sofort, ohne dass du quittierst. Prüfe, wie der Öffner S2 in der Transition abgefragt wird.', 'S3 „Quittiert“: R Q0.5. T4: NICHT I0.1 (Taster gedrückt liefert 0). T5: I0.1. Alles andere bleibt.'],
+      start: () => GRA_TANK_STOER(true), sol: () => GRA_TANK_STOER(false), check: checkSp43 }
   ];
 
   /* ====================================================================== Ausführung, Selbsttest */

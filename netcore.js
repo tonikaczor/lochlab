@@ -247,6 +247,11 @@
       return { text: 'Zu welcher Schicht des TCP/IP-Modells (4 Schichten) gehört „' + p.item + '“?', ask: { type: 'choice', choices: TCPIP.slice() }, ans: it[2],
         expl: p.item + ' gehört zur TCP/IP-Schicht „' + TCPIP[it[2]] + '“. Zuordnung: Anwendung = OSI 5 bis 7, Transport = OSI 4, Internet = OSI 3, Netzzugang = OSI 1 und 2.',
         tips: ['TCP/IP fasst zusammen: Anwendung (OSI 5–7), Transport (OSI 4), Internet (OSI 3), Netzzugang (OSI 1–2).', 'Ordne zuerst die OSI-Schicht zu und übersetze sie dann in die TCP/IP-Schicht.'] }; },
+    /* Wissensfrage aus dem Berufsschulstoff (net39 bis net42): p = { q, right, wrong[3], expl, tips[2] }; die Reihenfolge der Antworten
+       hängt fest am Fragetext (gleiche Frage, gleiche Reihenfolge), damit die richtige Antwort nicht immer an derselben Stelle steht. */
+    wissen: p => { const R = rng('wissen-' + p.q), ch = [p.right].concat(p.wrong);
+      for (let i = ch.length - 1; i > 0; i--) { const j = Math.floor(R() * (i + 1)); const t = ch[i]; ch[i] = ch[j]; ch[j] = t; }
+      return { text: p.q, ask: { type: 'choice', choices: ch }, ans: ch.indexOf(p.right), expl: p.expl, tips: p.tips.slice() }; },
     port: p => { const it = PORTS.find(x => x[0] === p.name);
       return { text: 'Welcher Standard-Port gehört zu ' + it[0] + '?', ask: num('Portnummer'), ans: it[1],
         expl: it[0] + ' nutzt standardmäßig Port ' + it[1] + ' (' + it[2] + '). Merkliste: HTTP 80, HTTPS 443, SSH 22, DNS 53, DHCP 67/68, SMTP 25, FTP 21, Telnet 23, POP3 110, IMAP 143, RDP 3389.',

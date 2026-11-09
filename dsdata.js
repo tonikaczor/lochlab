@@ -176,6 +176,7 @@
       return x.ok ? 3 : 2;
     },
     /* ds33 */ pcfR() { const d = need('tf-pcf8574'), vol = val(d, 'elec', 'vol', 'typ'), volMax = val(d, 'elec', 'vol', 'max'); return { r: (5 - 2 - vol) / 0.01, rMax: (5 - 2 - volMax) / 0.01, none: (5 - 2) / 0.01 }; },
+    /* ds35 */ mono555() { const a = (need('tf-ne555').app || []).find(x => /Monostable/.test(x.title)); if (!a || !a.formulas.some(f => /T = 1\.1 · R · C/.test(f))) throw new Error('Monostabil-Formel fehlt'); return { t: 1.1 * 470000 * 22e-6, astH: 0.693 * 470000 * 22e-6, idx: need('tf-ne555').app.indexOf(a) }; },
     /* ds34 */ mcpN() { const d = need('tf-mcp4151'), rw = val(d, 'elec', 'rw_55', 'typ'), rab = val(d, 'elec', 'rab_10', 'typ') * 1000, n = (3300 - rw) * 128 / rab; return { n: Math.round(n), exact: n, rw, rab }; }
   };
 
@@ -483,7 +484,16 @@
       sol() { return { ds: 'tf-mcp4151', focus: { section: 'app', key: '0' }, value: W.mcpN().n }; },
       check: numCheck({ unit: '', want: () => W.mcpN().n, absTol: 0.5,
         mistakes: () => { const w = W.mcpN(); return [[3300 * 128 / w.rab, 'Du hast den Wiper-Widerstand RW nicht abgezogen. Der Wiper selbst hat bei Code 0 schon etwa 75 Ω.'], [w.rab / 128, 'Das ist die Schrittweite in Ω, nicht der Code.'], [Math.round(w.exact) + 1, 'Rechne genau und runde auf den nächsten ganzen Code.']]; },
-        extra: (r, a, v) => { r(v !== null && v >= 0 && v <= 128, 'Der Code liegt im gültigen Bereich 0 bis 128', 'Das 7-Bit-Poti hat die Codes 0 bis 128 (129 Stufen).'); } }) }
+        extra: (r, a, v) => { r(v !== null && v >= 0 && v <= 128, 'Der Code liegt im gültigen Bereich 0 bis 128', 'Das 7-Bit-Poti hat die Codes 0 bis 128 (129 Stufen).'); } }) },
+    /* PRUEFEN: ds35 (Berufsschulstoff Lernfeld 9.1, Monoflop mit 555): Formelwahl aus zwei Anwendungsbeispielen, eigene Werte R = 470 kΩ, C = 22 µF. */
+    { id: 'ds35', lab: 'ds', cat: 'Prüfungsstil', title: 'Nachlaufzeit mit dem NE555 (Prüfungsaufgabe)', level: 2, ds: 'tf-ne555',
+      text: 'Prüfungsaufgabe: Ein Lüfter soll nach dem Ausschalten des Lichts noch eine Zeit lang nachlaufen. Du setzt dafür einen TF-NE555 als Zeitglied ein: Ein kurzer Impuls am Trigger startet genau einen Ausgangsimpuls. Gewählt sind R = 470 kΩ und C = 22 µF. Suche im Datenblatt TF-NE555 das passende Anwendungsbeispiel (es gibt zwei) und berechne, wie lange der Ausgangsimpuls dauert. Gib das Ergebnis in Sekunden an.',
+      ask: { label: 'Impulsdauer', unit: 's' },
+      hint: ['Ein Impuls je Auslösung heißt monostabiler Betrieb. Das andere Anwendungsbeispiel (astabil) schwingt dauernd und hat andere Formeln.', 'Im Beispiel „Monostable multivibrator“ steht T = 1,1 · R · C. Rechne in Ω und F: 470 000 Ω und 0,000022 F.', 'T = 1,1 · 470 kΩ · 22 µF = 1,1 · 10,34 s = 11,37 s. Mit der Formel 0,693 · R · C aus dem astabilen Beispiel kämen nur etwa 7,17 s heraus, das ist dort die High-Zeit einer Schwingung.'],
+      start() { return { ds: 'tf-ne555', focus: { section: 'app', key: '0' } }; },
+      sol() { return { ds: 'tf-ne555', focus: { section: 'app', key: String(W.mono555().idx) }, value: W.mono555().t }; },
+      check: numCheck({ unit: 's', want: () => W.mono555().t, tol: 0.02,
+        mistakes: () => [[W.mono555().astH, 'Das ist die Formel 0,693 · R · C aus dem astabilen Beispiel (High-Zeit einer Schwingung). Für einen einzelnen Impuls gilt das monostabile Beispiel: T = 1,1 · R · C.'], [470000 * 22e-6, 'Der Faktor 1,1 aus der Formel fehlt: T = 1,1 · R · C.'], [1.1 * 470 * 22, 'Achte auf die Einheiten: 470 kΩ sind 470 000 Ω, 22 µF sind 0,000022 F.']] }) }
   ];
 
   /* ====================================================================== Beispiele */

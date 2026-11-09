@@ -100,6 +100,11 @@
     { cat: 'Schieberegister', name: '4-Bit-Schieberegister', info: 'Bei jeder Taktflanke rutscht das Bit eine Stelle weiter. Schalter D legt fest, was von links hineinläuft.',
       inputs: ['D'], clk: '1Hz', gates: [{ id: 'f1', t: 'DFF', in: ['D', 'CLK'] }, { id: 'f2', t: 'DFF', in: ['f1', 'CLK'] }, { id: 'f3', t: 'DFF', in: ['f2', 'CLK'] }, { id: 'f4', t: 'DFF', in: ['f3', 'CLK'] }],
       outputs: [{ name: 'Q1', src: 'f1', color: 'grün' }, { name: 'Q2', src: 'f2', color: 'grün' }, { name: 'Q3', src: 'f3', color: 'gelb' }, { name: 'Q4', src: 'f4', color: 'rot' }], scope: [], win: 8 },
+    { cat: 'Speicher', name: 'JK-Flipflop: Setzen, Rücksetzen, Kippen', info: 'Bei jeder steigenden Taktflanke gilt: J = 1 und K = 0 setzt, J = 0 und K = 1 setzt zurück, J = K = 1 kippt, J = K = 0 speichert. Stelle J und K um und beobachte Q im Zeitdiagramm.',
+      inputs: ['J', 'K'], clk: '1Hz', gates: [{ id: 'ff', t: 'JKFF', in: ['J', 'K', 'CLK'] }], outputs: [{ name: 'Takt', src: 'CLK', color: 'gelb' }, { name: 'Q', src: 'ff', color: 'grün' }], tempo: 0.75, win: 6 },
+    { cat: 'Zähler', name: 'Asynchroner Rückwärtszähler (3 Bit)', info: 'Drei T-Flipflops, jedes wird vom Ausgang Q seines Vorgängers getaktet: Die Kette zählt 7, 6, 5 … 0 rückwärts. Mit Q̄ als Takt (wie beim Binärzähler) zählt sie aufwärts.',
+      inputs: [], clk: '2Hz', gates: [{ id: 'f0', t: 'TFF', in: ['H', 'CLK'] }, { id: 'f1', t: 'TFF', in: ['H', 'f0'] }, { id: 'f2', t: 'TFF', in: ['H', 'f1'] }],
+      outputs: [{ name: 'Q0', src: 'f0', color: 'grün' }, { name: 'Q1', src: 'f1', color: 'gelb' }, { name: 'Q2', src: 'f2', color: 'rot' }], scope: [], win: 8 },
   ];
 
   /* ---------- Vereinfachen (Quine-McCluskey) ---------- */
@@ -425,6 +430,36 @@
     /* Gemeinsame Muster für d33/df5 (Zweierkomplement, 3 Bit) und d36 (Bus mit Freigaben) */
     const NEG3 = { inputs: ['A2', 'A1', 'A0'], gates: [{ id: 'o', t: 'OR', in: ['A1', 'A0'] }, { id: 'x1', t: 'XOR', in: ['A1', 'A0'] }, { id: 'x2', t: 'XOR', in: ['A2', 'o'] }], outputs: [{ name: 'N2', src: 'x2', color: 'grün' }, { name: 'N1', src: 'x1', color: 'gelb' }, { name: 'N0', src: 'A0', color: 'rot' }] };
     const BUS2 = { inputs: ['DA', 'DB', 'EA', 'EB'], gates: [{ id: 'a1', t: 'AND', in: ['DA', 'EA'] }, { id: 'a2', t: 'AND', in: ['DB', 'EB'] }, { id: 'b', t: 'OR', in: ['a1', 'a2'] }, { id: 'k', t: 'AND', in: ['EA', 'EB'] }], outputs: [{ name: 'BUS', src: 'b', color: 'grün' }, { name: 'KON', src: 'k', color: 'rot' }] };
+    /* Neue Aufgaben nach dem Berufsschulstoff E2/E3 (Wahrheitstabelle mit Hilfsgrößen, NOR-Technik) und E9.1/E9.2 (Flipflop-Arten, asynchrone Zähler, Dekodieren): d38 bis d45, df8, df9 */
+    const swByL = l => api.sch.parts.find(p => p.k === 'SPST' && p.l === l);
+    const ledByL = l => ledsOf().find(p => p.l === l);
+    const readL = (E, names) => names.map(n => { const l = ledByL(n); return l && ledOn(E, l.id) ? 1 : 0; }).join('');
+    const setSw = (E, st) => Object.keys(st).forEach(l => { const p = swByL(l), w = p && E.wm && E.wm.get(p.id); if (w) w.sw = st[l]; });
+    /* Schritte mit Takt: vor jeder steigenden Flanke die Schalter stellen, danach die LEDs lesen */
+    function stepClocked(steps, names) { const T = 1 / clkHz(), E = api.simEval({ set: {} }), out = []; steps.forEach((st, k) => { setSw(E, st); E.run(k ? T : 1.3 * T); out.push(readL(E, names)); }); return out; }
+    /* Schritte ohne Takt (Speicher aus Gattern): Schalter stellen, kurz laufen lassen, LEDs lesen */
+    function stepLatch(steps, names) { const E = api.simEval({}), out = []; steps.forEach(st => { setSw(E, st); E.run(0.05); out.push(readL(E, names)); }); return out; }
+    const need = (labels, nLed) => { const miss = labels.filter(l => !swByL(l)); return miss.length ? 'Es fehlen die Schalter ' + miss.join(', ') : (ledsOf().length < nLed ? 'Es werden ' + nLed + ' LEDs erwartet' : ''); };
+    const JK1 = { inputs: ['J', 'K'], clk: '1Hz', gates: [{ id: 'ff', t: 'JKFF', in: ['J', 'K', 'CLK'] }], outputs: [{ name: 'Q', src: 'ff', color: 'grün' }, { name: 'Q̄', src: 'ff.n', color: 'rot' }], scope: [] };
+    const JKT = { inputs: [], clk: '2Hz', gates: [{ id: 'f0', t: 'JKFF', in: ['H', 'H', 'CLK'] }, { id: 'f1', t: 'JKFF', in: ['H', 'H', 'f0.n'] }], outputs: [{ name: 'Q0', src: 'f0', color: 'grün' }, { name: 'Q1', src: 'f1', color: 'gelb' }], scope: [], win: 8 };
+    const ABW3 = { inputs: [], clk: '2Hz', gates: [{ id: 'f0', t: 'TFF', in: ['H', 'CLK'] }, { id: 'f1', t: 'TFF', in: ['H', 'f0'] }, { id: 'f2', t: 'TFF', in: ['H', 'f1'] }], outputs: [{ name: 'Q0', src: 'f0', color: 'grün' }, { name: 'Q1', src: 'f1', color: 'gelb' }, { name: 'Q2', src: 'f2', color: 'rot' }], scope: [], win: 8 };
+    const DEK5 = { inputs: [], clk: '2Hz', gates: [{ id: 'f0', t: 'TFF', in: ['H', 'CLK'] }, { id: 'f1', t: 'TFF', in: ['H', 'f0.n'] }, { id: 'f2', t: 'TFF', in: ['H', 'f1.n'] }, { id: 'z1', t: 'AND', in: ['f0', 'f1.n'] }, { id: 'z', t: 'AND', in: ['z1', 'f2'] }], outputs: [{ name: 'Q0', src: 'f0', color: 'grün' }, { name: 'Q1', src: 'f1', color: 'grün' }, { name: 'Q2', src: 'f2', color: 'gelb' }, { name: 'Z', src: 'z', color: 'rot' }], scope: [], win: 8 };
+    const SVOR = { inputs: ['S', 'R'], gates: [{ id: 'nS', t: 'NOT', in: ['S'] }, { id: 'r2', t: 'AND', in: ['R', 'nS'] }, { id: 'g1', t: 'NOR', in: ['r2', 'g2'] }, { id: 'g2', t: 'NOR', in: ['S', 'g1'] }], outputs: [{ name: 'Q', src: 'g1', color: 'grün' }, { name: 'Q̄', src: 'g2', color: 'rot' }], scope: [] };
+    const DLAT = { inputs: ['D', 'E'], gates: [{ id: 'nD', t: 'NOT', in: ['D'] }, { id: 's', t: 'AND', in: ['D', 'E'] }, { id: 'r', t: 'AND', in: ['nD', 'E'] }, { id: 'g1', t: 'NOR', in: ['r', 'g2'] }, { id: 'g2', t: 'NOR', in: ['s', 'g1'] }], outputs: [{ name: 'Q', src: 'g1', color: 'grün' }, { name: 'Q̄', src: 'g2', color: 'rot' }], scope: [] };
+    const NOR2 = { inputs: ['A', 'B'], gates: [{ id: 'n1', t: 'NOR', in: ['A', 'B'] }, { id: 'o', t: 'NOR', in: ['n1', 'n1'] }, { id: 'na', t: 'NOR', in: ['A', 'A'] }, { id: 'nb', t: 'NOR', in: ['B', 'B'] }, { id: 'u', t: 'NOR', in: ['na', 'nb'] }], outputs: [{ name: 'U', src: 'u', color: 'grün' }, { name: 'O', src: 'o', color: 'gelb' }] };
+    const HILF = { inputs: ['A', 'B', 'C'], gates: [{ id: 'v', t: 'NAND', in: ['A', 'B'], l: 'V' }, { id: 'w', t: 'NOR', in: ['B', 'C'], l: 'W' }, { id: 'x', t: 'AND', in: ['v', 'C'], l: 'X' }, { id: 'z', t: 'OR', in: ['x', 'w'], l: 'Z' }], outputs: [{ name: 'Z', src: 'z', color: 'grün' }] };
+    const hilfFn = b => { const v = (b[0] & b[1]) ? 0 : 1, w = (b[1] | b[2]) ? 0 : 1, x = v & b[2]; return [(x | w) ? 1 : 0]; };
+    /* Pruefung der Zaehler-Aufgaben: Zaehlerstand aus den LEDs Q0 (niedrigstes Bit) bis Qn */
+    const cntOf = s => s.split('').reduce((a, c, i) => a + (c === '1' ? 1 << i : 0), 0);
+    function checkCount(nBits, want, withZ) {
+      const q = Array.from({ length: nBits }, (_, i) => 'Q' + i), miss = q.concat(withZ ? ['Z'] : []).filter(n => !ledByL(n));
+      if (miss.length) return [RES(false, 'Es fehlen die LEDs ' + miss.join(', '))];
+      const ff = api.sch.parts.filter(p => p.k === 'TFF' || p.k === 'JKFF' || p.k === 'DFF').length;
+      const seq = clocked(want.length, E => readL(E, q.concat(withZ ? ['Z'] : []))), vals = seq.map(s => cntOf(s.slice(0, nBits))), ok = vals.join() === want.join();
+      const L = [RES(ff >= nBits, ff >= nBits ? nBits + ' Flipflops vorhanden' : 'Es werden ' + nBits + ' Flipflops gebraucht'), RES(ok, ok ? 'Der Zähler zählt ' + want.slice(0, 4).join(', ') + ' …' : 'Nach den ersten ' + want.length + ' Taktflanken sollte ' + want.join(', ') + ' dastehen (ist: ' + vals.join(', ') + ')')];
+      if (withZ) { const z = seq.map(s => s[nBits]).join(''), zw = want.map(v => (v === withZ ? '1' : '0')).join(''); L.push(RES(z === zw, z === zw ? 'Z leuchtet genau beim Zählerstand ' + withZ : 'Z soll nur beim Zählerstand ' + withZ + ' leuchten (Z nach den Flanken: ' + z + ', erwartet ' + zw + ')')); }
+      return L;
+    }
     const T1 = [
       { id: 'd1', cat: 'Grundgatter', title: 'UND-Gatter verdrahten', level: 1, spec: { inputs: ['A', 'B'], gates: [{ id: 'g', t: 'AND', in: ['A', 'B'] }], outputs: [{ name: 'Y', src: 'g' }] },
         text: 'Verdrahte Batterie, zwei Schalter, das UND-Gatter und die LED so, dass die LED nur leuchtet, wenn beide Schalter geschlossen sind. Die Bauteile stehen schon, es fehlen die Drähte.', hint: 'Plus der Batterie geht an beide Schalter. Hinter jedem Schalter geht ein Draht an einen Eingang des Gatters. Der Ausgang des Gatters geht an den Widerstand, dahinter die LED nach Masse.', check: ttCheck(2, 1, b => [b[0] & b[1]]) },
@@ -573,6 +608,70 @@
         text: 'Eine Schaltung soll das Zweierkomplement einer dreistelligen Dualzahl A2, A1, A0 bilden (die Zahl −A modulo 8, zum Beispiel A = 1 (001) ergibt 111, A = 2 (010) ergibt 110). Die Schaltung ist fertig verdrahtet, aber bei einigen Zahlen zeigen die LEDs ein falsches Ergebnis. Rechne einige Fälle nach, finde das falsche Bauteil und ersetze es.',
         hint: 'Stelle die Tabelle der Schaltung auf und vergleiche sie mit der Rechnung „alle Bits kippen, eins addieren“. Der Fehler liegt im höchsten Bit N2, es wird bei manchen Zahlen nicht gekippt. Ein Bit kippt, wenn mindestens eines der Bits darunter 1 ist: Welches Gatter prüft das?',
         check: ttCheck(3, 3, b => { const a = 4 * b[0] + 2 * b[1] + b[2], n = (8 - a) & 7; return [(n >> 2) & 1, (n >> 1) & 1, n & 1]; }) },
+      /* Neue Aufgaben nach dem Berufsschulstoff E9.1 (Flipflop-Arten, asynchrone Zähler, Dekodieren) und E2/E3 (NOR-Technik, Wahrheitstabelle mit Hilfsgrößen) */
+      /* PRUEFEN P18: Aufgabe d38 (JK-Flipflop) prüft die Folge J/K = 10, 00, 01, 11, 11, 00 an steigenden Flanken (Q: 1, 1, 0, 1, 0, 0). Im Lab ist das JK-Flipflop ein einfaches flankengesteuertes Bauteil ohne Master-Slave und ohne Setz- und Rücksetzeingänge. Reicht das für den Unterricht? */
+      { id: 'd38', cat: 'Speicher und Zähler', title: 'JK-Flipflop: Setzen, Rücksetzen, Kippen', level: 2, spec: JK1,
+        text: 'Ein JK-Flipflop hat die Eingänge J und K und einen Takteingang. Bei jeder steigenden Taktflanke gilt: J = 1 und K = 0 setzt Q auf 1, J = 0 und K = 1 setzt Q auf 0, J = K = 0 speichert, und J = K = 1 kippt Q in den anderen Zustand. Verdrahte die Schalter J und K, den Taktgeber und die LEDs Q und Q̄ mit dem JK-Flipflop. Die Prüfung stellt nacheinander J und K vor jeder Flanke ein.',
+        hint: 'Schalter J an den oberen Eingang J, Schalter K an den unteren Eingang K, der Taktgeber an den mittleren Takteingang. Der Ausgang Q geht über den Widerstand an die LED Q, der Ausgang Q̄ an die LED Q̄. Das Flipflop reagiert nur im Moment der steigenden Flanke, nicht solange der Takt 1 ist.',
+        check() {
+          const nd = need(['J', 'K'], 2); if (nd) return [RES(false, nd)];
+          if (!api.sch.parts.some(p => p.k === 'JKFF') || !api.sch.parts.some(p => p.k === 'CLK')) return [RES(false, 'JK-Flipflop und Taktgeber werden gebraucht')];
+          const steps = [{ J: 1, K: 0 }, { J: 0, K: 0 }, { J: 0, K: 1 }, { J: 1, K: 1 }, { J: 1, K: 1 }, { J: 0, K: 0 }], s = stepClocked(steps, ['Q', 'Q̄']), q = s.map(x => x[0]).join(''), inv = s.every(x => x[0] !== x[1]);
+          return [RES(true, 'JK-Flipflop und Taktgeber vorhanden'), RES(q === '110100', q === '110100' ? 'Setzen, Speichern, Rücksetzen und Kippen stimmen (Q: 1, 1, 0, 1, 0, 0)' : 'Mit J/K = 10, 00, 01, 11, 11, 00 sollte Q nach den Flanken 1, 1, 0, 1, 0, 0 zeigen (ist: ' + q.split('').join(', ') + ')'), RES(inv, inv ? 'Q̄ ist immer das Gegenteil von Q' : 'Die LED Q̄ soll immer das Gegenteil von Q zeigen')];
+        } },
+      { id: 'd39', cat: 'Speicher und Zähler', title: 'Frequenzteiler aus zwei JK-Flipflops', level: 2, spec: JKT,
+        text: 'Zwei JK-Flipflops sollen den Takt durch 4 teilen. Liegen J und K beide fest auf 1, kippt das Flipflop bei jeder steigenden Flanke (es teilt durch 2). Das zweite Flipflop bekommt seinen Takt vom ersten. Die LED Q0 soll mit dem halben Takt blinken, die LED Q1 mit einem Viertel. Verdrahte die Schaltung.',
+        hint: 'J und K beider Flipflops gehen an Plus der Batterie (fest 1). Der Taktgeber geht an den Takteingang des ersten Flipflops. Das zweite soll kippen, wenn Q0 von 1 auf 0 fällt: Bei einem Flipflop mit steigender Flanke nimmst du dafür den Ausgang Q̄ des ersten als Takt.',
+        check() {
+          const q0 = ledByL('Q0'), q1 = ledByL('Q1'); if (!q0 || !q1) return [RES(false, 'Die LEDs Q0 und Q1 werden erwartet')];
+          const s = clocked(8, E => readL(E, ['Q0', 'Q1'])), a = s.map(x => x[0]).join(''), b = s.map(x => x[1]).join('');
+          return [RES(api.sch.parts.filter(p => p.k === 'JKFF').length >= 2, 'Zwei JK-Flipflops vorhanden'), RES(a === '10101010', a === '10101010' ? 'Q0 kippt bei jeder Flanke (Takt durch 2)' : 'Q0 sollte nach jeder Flanke kippen: 1, 0, 1, 0 … (ist: ' + a + ')'), RES(b === '01100110', b === '01100110' ? 'Q1 kippt bei jeder zweiten Flanke (Takt durch 4)' : 'Q1 sollte nach den Flanken 0, 1, 1, 0, 0, 1, 1, 0 zeigen (ist: ' + b + ')')];
+        } },
+      /* PRUEFEN P19: Aufgabe d40 (asynchroner Rückwärtszähler): Die Flipflops des Labs schalten bei steigender Flanke, deshalb zählt die Kette mit Q als Takt rückwärts und mit Q̄ als Takt aufwärts (d13). Die Signallaufzeit (Beispiel 25 ns je Stufe) steht nur im Text, das Lab simuliert keine Gatterlaufzeiten. Passt das? */
+      { id: 'd40', cat: 'Speicher und Zähler', title: 'Asynchroner Rückwärtszähler mit drei Flipflops', level: 3, spec: ABW3,
+        text: 'Drei T-Flipflops (T fest auf 1) sollen als asynchroner Zähler rückwärts zählen: Nach dem Start (000) zeigen die LEDs Q2 Q1 Q0 nach jeder Taktflanke 7, 6, 5 … 0 und dann wieder 7. Beim asynchronen Zähler bekommt nur das erste Flipflop den Takt, jedes weitere wird vom Ausgang seines Vorgängers getaktet. Deshalb schalten die Stufen nacheinander: Braucht jedes Flipflop zum Beispiel 25 ns, steht der neue Zählerstand beim Übergang von 000 auf 111 erst nach 75 ns sicher an, dazwischen erscheinen kurz falsche Werte. Verdrahte die Kette.',
+        hint: 'T-Eingänge aller drei Flipflops an Plus. Der Taktgeber geht an das erste Flipflop. Die Flipflops kippen bei steigender Flanke am Takteingang. Vergleiche mit dem Aufwärtszähler (Aufgabe „4-Bit-Zähler verdrahten“): Dort ist Q̄ des Vorgängers der Takt. Welcher Ausgang hat eine steigende Flanke, wenn das niedrigere Bit von 0 auf 1 geht?',
+        check() { return checkCount(3, [7, 6, 5, 4, 3, 2, 1, 0, 7]); } },
+      /* PRUEFEN P20: Aufgabe d41 und Fehlersuche df8 (Zählerstand 5 dekodieren): Der Zählerstand wird mit zwei UND-Gattern aus Q0, Q̄1 und Q2 erkannt (im Unterricht mit einem NAND mit vier Eingängen, zum Beispiel 7420). Das Lab hat nur Gatter mit zwei Eingängen. In df8 ist ein Eingang an Q1 statt an Q̄1 angeschlossen (erkennt 7 statt 5). Ist der Fehler passend? */
+      { id: 'd41', cat: 'Speicher und Zähler', title: 'Zählerstand 5 erkennen', level: 3, spec: DEK5,
+        text: 'Ein 3-Bit-Zähler aus drei T-Flipflops zählt aufwärts (Q0 ist das niedrigste Bit). Zusätzlich soll die LED Z genau dann leuchten, wenn der Zählerstand 5 ist (binär 101). Verdrahte den Zähler wie beim 4-Bit-Zähler und baue die Erkennung aus den zwei UND-Gattern. Die Flipflops haben auch einen Ausgang Q̄, ein NICHT-Gatter brauchst du nicht.',
+        hint: 'Zähler: T-Eingänge an Plus, Takt an das erste Flipflop, Q̄ jedes Flipflops an den Takt des nächsten. Erkennung: 5 = 101 heißt Q2 = 1, Q1 = 0, Q0 = 1. Das erste UND-Gatter verknüpft Q0 und Q̄1, das zweite verknüpft dessen Ausgang mit Q2 und geht an die LED Z.',
+        check() { return checkCount(3, [1, 2, 3, 4, 5, 6, 7, 0], 5); } },
+      { id: 'df8', cat: 'Fehlersuche', title: 'Fehlersuche: die Anzeige des Zählerstands', level: 3, spec: DEK5, faulty: spec => Object.assign({}, spec, { gates: spec.gates.map(g => g.id === 'z1' ? Object.assign({}, g, { in: ['f0', 'f1'] }) : g) }),
+        text: 'Ein 3-Bit-Aufwärtszähler aus T-Flipflops ist fertig verdrahtet. Die LED Z soll genau beim Zählerstand 5 (binär 101) leuchten. Beobachte im Zeitdiagramm, bei welchem Zählerstand Z wirklich leuchtet, finde die falsche Verbindung und korrigiere sie.',
+        hint: 'Schreibe für jeden Zählerstand auf, welche LEDs Q2, Q1, Q0 leuchten und ob Z an ist. Vergleiche das Bitmuster beim Aufleuchten von Z mit 101. Prüfe dann bei den UND-Gattern, ob jedes Bit vom passenden Ausgang kommt (Q oder Q̄).',
+        check() { return checkCount(3, [1, 2, 3, 4, 5, 6, 7, 0], 5); } },
+      /* PRUEFEN P21: Aufgabe d42 (Setzvorrang): Der Vorrang entsteht durch ein UND-Gatter, das R nur bei S = 0 durchlässt. Im Unterricht kommen RS-Flipflops mit dominantem Setz- oder Rücksetzeingang als Symbol vor. Ist der Aufbau aus Gattern passend? */
+      { id: 'd42', cat: 'Speicher und Zähler', title: 'Speicher mit Vorrang für Setzen', level: 3, spec: SVOR, start: () => strip(SVOR),
+        text: 'Beim SR-Speicher aus zwei NOR-Gattern ist S = R = 1 verboten. Ein Speicher mit Setzvorrang löst das: Sind S und R gleichzeitig 1, gewinnt S, und Q wird 1. Baue ihn aus den zwei NOR-Gattern im Kreuz und einem Vorschaltgatter: R darf nur dann wirken, wenn S nicht betätigt ist. Die Prüfung schaltet S und R nacheinander, auch beide zugleich.',
+        hint: 'Q = NOR(R′, Q̄) und Q̄ = NOR(S, Q) wie beim SR-Speicher. R′ ist R UND (NICHT S): Das NICHT-Gatter bekommt S, das UND-Gatter bekommt R und den Ausgang des NICHT-Gatters. Sind S und R beide 1, ist R′ = 0, und S setzt den Speicher.',
+        check() {
+          const nd = need(['S', 'R'], 2); if (nd) return [RES(false, nd)];
+          const s = stepLatch([{ S: 1, R: 0 }, { S: 0, R: 0 }, { S: 0, R: 1 }, { S: 1, R: 1 }, { S: 0, R: 1 }, { S: 0, R: 0 }], ['Q', 'Q̄']), q = s.map(x => x[0]).join('');
+          return [RES(q.slice(0, 3) === '110', q.slice(0, 3) === '110' ? 'Setzen, Speichern und Rücksetzen arbeiten' : 'S = 1 soll setzen, S = R = 0 speichern, R = 1 löschen (Q ist: ' + q.slice(0, 3).split('').join(', ') + ')'), RES(q[3] === '1' && s[3][1] === '0', q[3] === '1' && s[3][1] === '0' ? 'Bei S = R = 1 hat Setzen Vorrang (Q = 1, Q̄ = 0)' : 'Bei S = R = 1 soll Q = 1 und Q̄ = 0 sein (ist: Q = ' + q[3] + ', Q̄ = ' + s[3][1] + ')'), RES(q.slice(4) === '00', q.slice(4) === '00' ? 'Lässt man S los, löscht R den Speicher wieder' : 'Nach dem Loslassen von S soll R = 1 löschen (Q ist: ' + q.slice(4).split('').join(', ') + ')')];
+        } },
+      /* PRUEFEN P22: Aufgabe d43 (D-Speicher, pegelgesteuert): Die Unterscheidung pegelgesteuert / flankengesteuert wird am Gatteraufbau gezeigt (d43) und am D-Flipflop des Labs (d12, d14). Sollen die Schaltzeichen (Dreieck am Takteingang) zusätzlich abgefragt werden? */
+      { id: 'd43', cat: 'Speicher und Zähler', title: 'D-Speicher mit Freigabe (pegelgesteuert)', level: 3, spec: DLAT, start: () => strip(DLAT),
+        text: 'Ein pegelgesteuerter D-Speicher hat einen Dateneingang D und einen Freigabeeingang E. Solange E = 1 ist, folgt Q dem Eingang D; bei E = 0 hält Q den letzten Wert, egal wie D steht. Im Gegensatz dazu übernimmt ein flankengesteuertes D-Flipflop D nur im Moment der Taktflanke. Baue den D-Speicher aus einem NICHT-Gatter, zwei UND-Gattern und zwei NOR-Gattern im Kreuz.',
+        hint: 'Aus D wird S = D UND E, aus dem umgekehrten D wird R = (NICHT D) UND E. Diese beiden gehen an den SR-Speicher aus zwei NOR-Gattern: Q = NOR(R, Q̄), Q̄ = NOR(S, Q). So kann der verbotene Fall S = R = 1 nie auftreten.',
+        check() {
+          const nd = need(['D', 'E'], 2); if (nd) return [RES(false, nd)];
+          const s = stepLatch([{ D: 1, E: 1 }, { D: 0, E: 1 }, { D: 1, E: 1 }, { D: 1, E: 0 }, { D: 0, E: 0 }, { D: 0, E: 1 }, { D: 0, E: 0 }, { D: 1, E: 0 }], ['Q', 'Q̄']), q = s.map(x => x[0]).join(''), inv = s.every(x => x[0] !== x[1]);
+          return [RES(q.slice(0, 3) === '101', q.slice(0, 3) === '101' ? 'Bei E = 1 folgt Q dem Eingang D' : 'Bei E = 1 soll Q dem Eingang D folgen: 1, 0, 1 (ist: ' + q.slice(0, 3).split('').join(', ') + ')'), RES(q.slice(3, 5) === '11', q.slice(3, 5) === '11' ? 'Bei E = 0 hält Q den Wert, auch wenn D wechselt' : 'Bei E = 0 soll Q bei 1 bleiben, obwohl D auf 0 geht (ist: ' + q.slice(3, 5).split('').join(', ') + ')'), RES(q[5] === '0', q[5] === '0' ? 'Mit E = 1 übernimmt der Speicher wieder D' : 'Mit E = 1 und D = 0 soll Q wieder 0 werden'), RES(q.slice(6) === '00', q.slice(6) === '00' ? 'Bei E = 0 bleibt Q auch dann 0, wenn D auf 1 geht' : 'Bei E = 0 darf D = 1 den Speicher nicht setzen (Q ist: ' + q.slice(6).split('').join(', ') + ')'), RES(inv, inv ? 'Q̄ ist immer das Gegenteil von Q' : 'Die LED Q̄ soll immer das Gegenteil von Q zeigen')];
+        } },
+      { id: 'd44', cat: 'Grundgatter', title: 'UND und ODER nur aus NOR-Gattern', level: 2, spec: NOR2,
+        text: 'Mit NOR-Gattern allein lässt sich jede Verknüpfung bauen. Verdrahte die fünf NOR-Gatter so, dass die LED U wie ein UND-Gatter (A und B) und die LED O wie ein ODER-Gatter (A oder B) arbeitet. Andere Gatter sind nicht erlaubt.',
+        hint: 'Ein NOR mit zusammengelegten Eingängen ist ein NICHT. ODER: Kehre das NOR von A und B noch einmal um. UND: Kehre A und B je einzeln um (zwei NOR als NICHT) und verknüpfe die beiden Ergebnisse mit einem NOR. Das ist die Regel von De Morgan: A · B = NICHT(NICHT A + NICHT B).',
+        check: ttCheck(2, 2, b => [b[0] & b[1], b[0] | b[1]], [() => { const fremd = api.sch.parts.filter(p => ['AND', 'OR', 'NAND', 'XOR', 'NOT', 'SNOT'].includes(p.k)).length; return RES(fremd === 0, fremd === 0 ? 'Nur NOR-Gatter verwendet' : 'Es sollen nur NOR-Gatter verwendet werden (' + fremd + ' andere Gatter gefunden)'); }]) },
+      /* PRUEFEN P23: Aufgabe d45 und Fehlersuche df9 (Gatternetz mit Hilfsgrößen V, W, X wie im Unterricht E2/E3): eigenes Netz mit Z = (V UND C) ODER W, V = A NAND B, W = B NOR C; vereinfacht Z = NICHT B ODER (NICHT A UND C). In df9 ist das NOR für W durch ein ODER ersetzt. Passt die Schwierigkeit? */
+      { id: 'd45', cat: 'Schaltnetze', title: 'Gatternetz mit Hilfsgrößen nachbauen', level: 2, spec: HILF,
+        text: 'Ein Gatternetz ist mit Hilfsgrößen beschrieben: V = A NAND B, W = B NOR C, X = V UND C und der Ausgang Z = X ODER W. Die vier Gatter tragen die Namen V, W, X und Z. Verdrahte die Schalter A, B, C, die Gatter und die LED Z nach dieser Beschreibung. Stelle zur Kontrolle die Wahrheitstabelle mit den Hilfsspalten V, W und X auf.',
+        hint: 'Gehe Spalte für Spalte vor: V hängt nur von A und B ab, W nur von B und C, X von V und C, Z von X und W. In der Tabelle mit acht Zeilen trägst du zuerst V und W ein, dann X, zuletzt Z. Zur Probe: Z ist 0 genau bei den Eingängen 010, 110 und 111 (A B C).',
+        check: ttCheck(3, 1, hilfFn) },
+      { id: 'df9', cat: 'Fehlersuche', title: 'Fehlersuche: das Gatternetz mit Hilfsgrößen', level: 2, spec: HILF, faulty: spec => Object.assign({}, spec, { gates: spec.gates.map(g => g.id === 'w' ? Object.assign({}, g, { t: 'OR' }) : g) }),
+        text: 'Ein fertig verdrahtetes Gatternetz soll Z nach dieser Beschreibung bilden: V = A NAND B, W = B NOR C, X = V UND C, Z = X ODER W. In einigen Zeilen der Wahrheitstabelle stimmt Z aber nicht. Stelle die Tabelle mit den Hilfsspalten auf, vergleiche sie mit der Schaltung, finde das falsche Bauteil und ersetze es.',
+        hint: 'Rechne die Hilfsspalten von Hand aus und miss dann in der Schaltung nach (Werkzeug „Wahrheitstabelle“). Die erste Hilfsspalte, die nicht passt, zeigt dir das Gatter mit dem Fehler. Achte darauf, welche Gatter ein umgekehrtes Ergebnis liefern sollen.',
+        check: ttCheck(3, 1, hilfFn) },
     ];
     /* Mini-CPU-Aufgaben: Programm schreiben, Prüfung läuft den Prozessor */
     const cpuRun = (nClocks, setInputs) => {

@@ -10,7 +10,7 @@
   const REG = root.LAB_REG || {}, ROWS = root.AUFGABEN || [];
   const POOL_JS = ['pruefbank.js', 'pruefbank-schule.js', 'pruefbank-beruf.js', 'pruefpool.js'];
   const S = { lj: 2, lf: null, tab: 'auf', filter: 'alle', pt: null, timer: 0, poolState: 'none' };
-  const ZU = L.zuordnung(ROWS), NEU = {}; L.NEU_V48_163.forEach(i => { NEU[i] = 1; });
+  const ZU = L.zuordnung(ROWS), NEU = {}; L.NEU_V48_163.forEach(i => { NEU[i] = 'v48.163'; }); (L.NEU_V50_165 || []).forEach(i => { NEU[i] = 'v50.165'; });
   const LABORDER = Object.keys(REG);
 
   /* ---------- Hilfen ---------- */
@@ -86,7 +86,7 @@
       if (r[1] !== lab) { lab = r[1]; wrap.appendChild(h('div', { class: 'labh', text: (REG[lab] && REG[lab].name) || lab })); }
       const v = +res[r[0]] || 0, R = REG[r[1]], href = R ? R.file + '?aufgabe=' + encodeURIComponent(r[0]) : '#';
       wrap.appendChild(h('div', { class: 'task' }, [
-        h('div', { class: 'tt' }, [h('a', { href, text: r[3] }), h('small', { text: r[2] + ' · Stufe ' + r[4] + (NEU[r[0]] ? ' · neu in v48.163' : '') })]),
+        h('div', { class: 'tt' }, [h('a', { href, text: r[3] }), h('small', { text: r[2] + ' · Stufe ' + r[4] + (NEU[r[0]] ? ' · neu in ' + NEU[r[0]] : '') })]),
         h('span', { class: 'st ' + (v >= 100 ? 'ok' : v > 0 ? 'mid' : ''), text: v >= 100 ? 'gelöst' : v > 0 ? v + ' %' : 'offen' })
       ]));
     });

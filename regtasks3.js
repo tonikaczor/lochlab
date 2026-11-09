@@ -1,4 +1,5 @@
-/* regtasks3.js - Regelungstechnik-Lab: Einsteiger-Aufgaben rg31 bis rg47 (Grundlagen, Kurven ablesen, Totzeit und Ordnung, Reglerkennlinie, Stabilität, Störung und Führung).
+/* regtasks3.js - Regelungstechnik-Lab: Einsteiger-Aufgaben rg31 bis rg47 (Grundlagen, Kurven ablesen, Totzeit und Ordnung, Reglerkennlinie, Stabilität, Störung und Führung)
+ * und rg48 bis rg53 (Berufsschulstoff Lernfeld 7.2: Übertragungsbeiwert, Zweipunktregler mit Schwankungsbreite, Streckenarten, Größen am Drehzahlregelkreis).
  * Stammt aus dem früheren Regelkreis-Lab (rkr), das in dieses Lab eingearbeitet wurde; übernommen sind nur Themen, die rg1 bis rg30 nicht schon haben.
  * Meldet sich mit REG_TASKS.register([...]) bei regdata.js an (Registry und Hilfsfunktionen in REG_TASKS.util). Läuft ohne Browser.
  * Form wie regtasks1.js und regtasks2.js: { id, lab:'reg', cat, title, level, rig:'', text, hint[3], start(), sol(), check(answer), hintVals(), fields?, choices?, figure? }.
@@ -357,6 +358,67 @@
     r(sameChoice(c, 'nein'), 'Die bleibende Regelabweichung ist richtig beurteilt', c === undefined ? 'Wähle eine Antwort.' : 'Die Kurve läuft genau auf den Sollwert: Es bleibt keine Regelabweichung. Ein Regler mit I-Anteil gleicht sie vollständig aus.');
   });
 
+  /* ====================================================================== rg48 bis rg53 (Berufsschulstoff Lernfeld 7.2: Strecke, Zweipunktregler, Regelkreisgrößen; eigene Übungszahlen) */
+  /* rg48 Übertragungsbeiwert einer Ofenstrecke: Ks = Δx / Δy aus zwei Beharrungswerten, danach linear weitergerechnet */
+  const M48 = { y1: 6, y2: 9, x1: 140, x2: 182, y3: 10 };
+  M48.Ks = (M48.x2 - M48.x1) / (M48.y2 - M48.y1); M48.x3 = M48.x2 + M48.Ks * (M48.y3 - M48.y2);
+  const check48 = mk((r, a) => {
+    numRow(r, 'Der Übertragungsbeiwert Ks stimmt', fieldNum(a, 'Ks'), M48.Ks, 0.2, [[M48.x2 / M48.y2, 'Du hast die Beharrungswerte selbst geteilt (182 °C / 9 A). Ks ist das Verhältnis der Änderungen: Δx / Δy.'], [(M48.y2 - M48.y1) / (M48.x2 - M48.x1), 'Du hast den Kehrwert gebildet. Ks = Änderung der Regelgröße / Änderung der Stellgröße.']], 'K/A');
+    numRow(r, 'Die Temperatur beim neuen Strom stimmt', fieldNum(a, 'x3'), M48.x3, 1, [[M48.Ks * M48.y3, 'Du hast nur Ks · I gerechnet. Die Strecke startet nicht bei 0 °C: Rechne vom bekannten Beharrungswert aus weiter.'], [M48.x2 + M48.Ks, 'Fast richtig gedacht, aber der Stromschritt ist nicht 1 A. Multipliziere Ks mit der Stromänderung.']], '°C');
+  });
+  /* rg49 Zweipunktregler: Kennwerte aus den Beharrungswerten und den Schaltpunkten */
+  const M49 = { y0: 0, x0: 18, ym: 12, xm: 78, xo: 52, xu: 48 };
+  M49.Ks = (M49.xm - M49.x0) / (M49.ym - M49.y0); M49.xsd = M49.xo - M49.xu; M49.xmit = (M49.xo + M49.xu) / 2; M49.Xh = M49.xm - M49.x0;
+  const check49 = mk((r, a) => {
+    numRow(r, 'Der Übertragungsbeiwert Ks stimmt', fieldNum(a, 'Ks'), M49.Ks, 0.1, [[M49.xm / M49.ym, 'Du hast 78 °C / 12 A gerechnet. Die Strecke beginnt bei der Umgebungstemperatur: Ks = (x_max − x_min) / (I_max − 0 A).']], 'K/A');
+    numRow(r, 'Die Schaltdifferenz x_sd stimmt', fieldNum(a, 'xsd'), M49.xsd, 0.05, [[M49.xsd / 2, 'Das ist nur der halbe Abstand. Die Schaltdifferenz ist der ganze Abstand zwischen Aus- und Einschaltpunkt.']], 'K');
+    numRow(r, 'Der Mittelwert der Regelgröße stimmt', fieldNum(a, 'xmit'), M49.xmit, 0.1, [[M49.xo, 'Das ist der obere Schaltpunkt. Ohne Verzug pendelt die Temperatur zwischen beiden Schaltpunkten, der Mittelwert liegt dazwischen.']], '°C');
+    numRow(r, 'Der Stellbereich der Regelgröße stimmt', fieldNum(a, 'Xh'), M49.Xh, 0.1, [[M49.xm, 'Das ist die höchste Temperatur. Der Stellbereich ist der Unterschied zwischen ganz ein und ganz aus.']], 'K');
+  });
+  /* rg50 Zweipunktregler mit Verzugszeit: Anstiegsgeschwindigkeit v = Xh / Tg (Wendetangente), Überschwingen ≈ v · Tu, Schwankungsbreite Δx ≈ x_sd + Xh · Tu / Tg (Näherung) */
+  const M50 = { x0: 20, xm: 60, Tu: 0.8, Tg: 16, xo: 41, xu: 39 };
+  M50.Xh = M50.xm - M50.x0; M50.xsd = M50.xo - M50.xu; M50.v = M50.Xh / M50.Tg; M50.ueb = M50.v * M50.Tu; M50.dx = M50.xsd + M50.ueb;
+  M50.g = K.regelbar(M50.Tu, M50.Tg);
+  const check50 = mk((r, a) => {
+    numRow(r, 'Die Anstiegsgeschwindigkeit stimmt', fieldNum(a, 'v'), M50.v, 0.05, [[M50.Xh / M50.Tu, 'Du hast durch die Verzugszeit geteilt. Die Wendetangente durchläuft den ganzen Stellbereich in der Ausgleichszeit Tg: v = Xh / Tg.'], [M50.xm / M50.Tg, 'Du hast mit der Endtemperatur statt mit dem Stellbereich gerechnet. Xh ist der Unterschied zwischen ganz ein und ganz aus.']], 'K/min');
+    numRow(r, 'Das Überschwingen über den Schaltpunkt stimmt', fieldNum(a, 'ueb'), M50.ueb, 0.1, [[M50.v * M50.Tg, 'Du hast mit der Ausgleichszeit multipliziert. Nach dem Abschalten steigt die Temperatur nur noch während der Verzugszeit Tu weiter.']], 'K');
+    numRow(r, 'Die Schwankungsbreite stimmt', fieldNum(a, 'dx'), M50.dx, 0.1, [[M50.xsd, 'Das ist nur die Schaltdifferenz. Wegen der Verzugszeit schwingt die Temperatur zusätzlich über die Schaltpunkte hinaus.'], [M50.ueb, 'Das ist nur das Überschwingen. Die Schaltdifferenz gehört zur Schwankungsbreite dazu.']], 'K');
+    const c = choiceOf(a, 'urteil');
+    r(sameChoice(c, M50.g.urteil), 'Die Regelbarkeit der Strecke ist richtig beurteilt', c === undefined || c === null ? 'Wähle eine Antwort.' : 'Tg / Tu = ' + fm(M50.Tg, 0) + ' / ' + fm(M50.Tu, 1) + ' = ' + fm(M50.g.ratio, 0) + '. Über ' + fm(10, 0) + ' gilt eine Strecke als gut regelbar, von ' + fm(3, 0) + ' bis ' + fm(10, 0) + ' als noch regelbar.');
+  });
+  /* rg51 Streckenart aus dem Verhalten */
+  const OPT51 = [['P0', 'P ohne Verzögerung'], ['P1', 'P mit einem Speicher (PT1)'], ['P2', 'P mit mehreren Speichern'], ['TT', 'Strecke mit Totzeit'], ['I', 'I-Strecke ohne Ausgleich']];
+  const EXPL51 = ' Merke: Mit Ausgleich läuft x auf einen neuen Endwert, ohne Ausgleich steigt x immer weiter. Speicher verzögern, eine Totzeit verschiebt nur.';
+  const Q51 = quiz([
+    { key: 'k1', name: 'Behälter mit dichtem Ablauf', q: 'Eine Pumpe fördert gleichmäßig Wasser in einen Behälter, dessen Ablauf geschlossen ist. Gemessen wird der Füllstand.', opts: OPT51, right: 'I', why: 'Der Füllstand steigt, solange die Pumpe läuft, und findet keinen neuen Endwert: Strecke ohne Ausgleich (I-Verhalten).' + EXPL51 },
+    { key: 'k2', name: 'Hebel am Stellventil', q: 'Ein Hebel überträgt den Weg eines Antriebs auf den Ventilhub. Gemessen wird der Hub, er folgt dem Antrieb ohne merkliche Verzögerung.', opts: OPT51, right: 'P0', why: 'Der Hub ist sofort proportional zum Antriebsweg, es gibt keinen Speicher: P-Strecke ohne Verzögerung.' + EXPL51 },
+    { key: 'k3', name: 'Schüttgut auf dem Band', q: 'Ein Schieber ändert die Menge Schüttgut, die auf ein langes Band fällt. Eine Waage am Bandende meldet die Änderung erst, wenn das Gut dort ankommt, dann aber sofort in voller Höhe.', opts: OPT51, right: 'TT', why: 'Die Wirkung kommt unverändert, aber erst nach der Transportzeit an: reine Totzeit.' + EXPL51 },
+    { key: 'k4', name: 'Motor mit Schwungscheibe', q: 'Die Ankerspannung eines Gleichstrommotors springt auf einen höheren Wert. Die Drehzahl steigt sofort an, wird dann langsamer und erreicht einen neuen festen Wert.', opts: OPT51, right: 'P1', why: 'Die Schwungmasse ist der einzige Speicher, die Drehzahl läuft mit sofortigem Anstieg auf einen Endwert: PT1.' + EXPL51 },
+    { key: 'k5', name: 'Heizkreis mit Raum', q: 'Ein Kessel erwärmt Wasser, das Wasser erwärmt Heizkörper, die Heizkörper erwärmen den Raum. Die Raumtemperatur beginnt flach zu steigen und erreicht später einen neuen festen Wert.', opts: OPT51, right: 'P2', why: 'Mehrere Wärmespeicher hintereinander: Die Kurve startet flach (Wendepunkt) und läuft auf einen Endwert. P-Strecke höherer Ordnung.' + EXPL51 },
+    { key: 'k6', name: 'Spindel mit Motor', q: 'Ein Motor dreht bei fester Spannung eine Gewindespindel mit gleichbleibender Drehzahl. Gemessen wird der Weg des Schlittens.', opts: OPT51, right: 'I', why: 'Bei fester Drehzahl wächst der Weg gleichmäßig weiter, ohne Endwert: Der Weg ist das Integral der Drehzahl, also I-Verhalten.' + EXPL51 }
+  ]);
+  const check51 = mk((r, a) => { Q51.rows(r, a); });
+  /* rg52 Größen am Drehzahlregelkreis mit Tachogenerator */
+  const OPT52 = [['x', 'Regelgröße x'], ['r', 'Rückführgröße r'], ['w', 'Führungsgröße w'], ['e', 'Regelabweichung e'], ['y', 'Stellgröße y'], ['z', 'Störgröße z']];
+  const EXPL52 = ' Merke: x ist die geregelte Größe selbst, r ihr gemessenes Abbild aus der Messeinrichtung, e = w − r wird im Vergleicher gebildet.';
+  const Q52 = quiz([
+    { key: 'd1', name: 'Drehzahl der Welle', q: 'Die tatsächliche Drehzahl der Motorwelle, die konstant bleiben soll.', opts: OPT52, right: 'x', why: 'Die Drehzahl selbst ist die Regelgröße x.' + EXPL52 },
+    { key: 'd2', name: 'Spannung des Tachogenerators', q: 'Die Spannung, die der Tachogenerator an den Vergleicher liefert (proportional zur Drehzahl).', opts: OPT52, right: 'r', why: 'Die Tachospannung ist das gemessene Abbild der Drehzahl, das zurückgeführt wird: Rückführgröße r.' + EXPL52 },
+    { key: 'd3', name: 'Spannung am Sollwertpoti', q: 'Die Spannung, die der Bediener mit dem Sollwertpotentiometer einstellt.', opts: OPT52, right: 'w', why: 'Der vom Bediener vorgegebene Wert ist die Führungsgröße w.' + EXPL52 },
+    { key: 'd4', name: 'Ausgang des Stromrichters', q: 'Die Ankerspannung, die der Stromrichter auf Befehl des Reglers an den Motor legt.', opts: OPT52, right: 'y', why: 'Damit greift der Regler über das Stellglied in die Strecke ein: Stellgröße y.' + EXPL52 },
+    { key: 'd5', name: 'Bremsmoment der Last', q: 'Ein Werkstück wird eingespannt und belastet die Welle zusätzlich.', opts: OPT52, right: 'z', why: 'Die zusätzliche Last wirkt ungewollt von außen: Störgröße z.' + EXPL52 },
+    { key: 'd6', name: 'Differenz am Vergleicher', q: 'Der Unterschied zwischen Sollwertspannung und Tachospannung am Eingang des Reglers.', opts: OPT52, right: 'e', why: 'Die Differenz aus Führungsgröße und Rückführgröße ist die Regelabweichung e.' + EXPL52 }
+  ]);
+  const check52 = mk((r, a) => { Q52.rows(r, a); });
+  /* rg53 Regelabweichung im Drehzahlkreis: Tachokonstante (V je 1000 1/min) */
+  const M53 = { kT: 6, w: 9, r: 8.4 };
+  M53.n = M53.r / M53.kT * 1000; M53.e = M53.w - M53.r; M53.dn = M53.e / M53.kT * 1000; M53.ns = M53.w / M53.kT * 1000;
+  const check53 = mk((r, a) => {
+    numRow(r, 'Die Istdrehzahl stimmt', fieldNum(a, 'n'), M53.n, 5, [[M53.r * M53.kT * 1000, 'Du hast mit der Tachokonstante multipliziert. Die Spannung wird durch die Konstante geteilt, um auf die Drehzahl zu kommen.'], [M53.ns, 'Das ist die Solldrehzahl. Die Istdrehzahl gehört zur Tachospannung.']], '1/min');
+    numRow(r, 'Die Regelabweichung in Volt stimmt', fieldNum(a, 'e'), M53.e, 0.02, [[-M53.e, 'Du hast das Vorzeichen vertauscht: e = w − r (Sollwert minus Rückführgröße).']], 'V');
+    numRow(r, 'Die fehlende Drehzahl stimmt', fieldNum(a, 'dn'), M53.dn, 3, [[M53.e * M53.kT * 1000, 'Du hast mit der Tachokonstante multipliziert. Teile die Spannungsdifferenz durch die Konstante.']], '1/min');
+  });
+
   /* ====================================================================== Aufgabenliste */
   /* PRUEFEN P18: Alle Zahlen der Aufgaben (Zeitkonstanten 2 bis 20 s, Verstärkungen 1 bis 3, Sollwert 50 oder 60 %) sind frei gewählte Übungswerte, nicht an eine echte Anlage angelehnt. Sollen echte Betriebsanlagen (Brennofen, Härteofen, Förderband) als Vorbild dienen? */
   /* PRUEFEN P21: Die Ablesetoleranzen der Kurvenaufgaben (z. B. 12 % bei der Zeitkonstante, 4 Prozentpunkte beim Überschwingen, 1,5 s beim Zeitpunkt) sind Schätzwerte. Sind sie für Azubis angemessen? */
@@ -526,11 +588,64 @@
         'Die Ausregelzeit ist der Zeitpunkt, ab dem die Kurve das Toleranzband nicht mehr verlässt. Gehe die Kurve von rechts nach links, bis sie zum letzten Mal das Band verlässt.',
         'Das Band liegt von ' + fm(v.lo, 0) + ' % bis ' + fm(v.hi, 0) + ' %. Suche den Punkt, an dem die Kurve die untere Bandkante ' + fm(v.lo, 0) + ' % zum letzten Mal von unten nach oben durchläuft.',
         'Die Kurve tritt bei t = ' + fm(v.taus, 1) + ' s ins Band ein und bleibt darin: Ausregelzeit ' + fm(v.taus, 1) + ' s. Sie endet beim Sollwert ' + fm(v.w, 0) + ' %: keine bleibende Regelabweichung.']); },
-      start: () => S({ fields: nulls(['taus']), choices: {} }), sol: () => S({ fields: { taus: M47.an.taus }, choices: { ebl: 'nein' } }), check: check47 }
+      start: () => S({ fields: nulls(['taus']), choices: {} }), sol: () => S({ fields: { taus: M47.an.taus }, choices: { ebl: 'nein' } }), check: check47 },
+    { id: 'rg48', lab: 'reg', cat: 'Strecke messen', title: 'Übertragungsbeiwert eines Ofens', level: 1, rig: '',
+      get text() { const m = M48; return 'Ein elektrisch beheizter Ofen wird mit dem Heizstrom gestellt. Bei ' + fm(m.y1, 0) + ' A stellt sich nach langer Zeit eine Temperatur von ' + fm(m.x1, 0) + ' °C ein, bei ' + fm(m.y2, 0) + ' A sind es ' + fm(m.x2, 0) + ' °C (Beharrungswerte, Übungswerte). Berechne (1) den Übertragungsbeiwert Ks der Strecke und (2) die Temperatur, die sich bei ' + fm(m.y3, 0) + ' A einstellt, wenn sich die Strecke in diesem Bereich gleich verhält.'; },
+      fields: [{ key: 'Ks', question: '(1) Übertragungsbeiwert Ks', label: 'Ks', unit: 'K/A' }, { key: 'x3', question: '(2) Temperatur beim neuen Strom', label: 'Temperatur', unit: '°C' }],
+      hintVals() { return hv(this, () => ({ dx: M48.x2 - M48.x1, dy: M48.y2 - M48.y1, Ks: M48.Ks, x2: M48.x2, dy3: M48.y3 - M48.y2, x3: M48.x3 })); },
+      get hint() { return hn(this, v => [
+        'Der Übertragungsbeiwert sagt, um wie viel sich die Regelgröße im Beharrungszustand ändert, wenn die Stellgröße um eine Einheit geändert wird. Es zählen die Änderungen, nicht die Werte selbst.',
+        'Die Temperatur ändert sich um ' + fm(v.dx, 0) + ' K, der Strom um ' + fm(v.dy, 0) + ' A. Für Teil (2) rechnest du vom höheren Beharrungswert aus mit der neuen Stromänderung weiter.',
+        'Ks = ' + fm(v.dx, 0) + ' K / ' + fm(v.dy, 0) + ' A = ' + fm(v.Ks, 0) + ' K/A. Temperatur = ' + fm(v.x2, 0) + ' °C + ' + fm(v.Ks, 0) + ' K/A · ' + fm(v.dy3, 0) + ' A = ' + fm(v.x3, 0) + ' °C.']); },
+      start: () => S({ fields: nulls(['Ks', 'x3']) }), sol: () => S({ fields: { Ks: M48.Ks, x3: M48.x3 } }), check: check48 },
+    { id: 'rg49', lab: 'reg', cat: 'Zweipunkt', title: 'Kennwerte eines Zweipunktreglers', level: 2, rig: '',
+      get text() { const m = M49; return 'Ein Wärmeschrank wird von einem Zweipunktregler geheizt: Die Heizung ist entweder ganz aus (' + fm(m.y0, 0) + ' A) oder ganz ein (' + fm(m.ym, 0) + ' A). Ganz aus stellt sich die Raumtemperatur von ' + fm(m.x0, 0) + ' °C ein, dauernd ein würden ' + fm(m.xm, 0) + ' °C erreicht. Der Regler schaltet die Heizung bei ' + fm(m.xo, 0) + ' °C aus und bei ' + fm(m.xu, 0) + ' °C wieder ein. Berechne den Übertragungsbeiwert Ks, die Schaltdifferenz x_sd, den Mittelwert der Temperatur (ohne Verzugszeit gerechnet) und den Stellbereich Xh der Regelgröße.'; },
+      fields: [{ key: 'Ks', question: 'Übertragungsbeiwert Ks', label: 'Ks', unit: 'K/A' }, { key: 'xsd', question: 'Schaltdifferenz x_sd', label: 'x_sd', unit: 'K' }, { key: 'xmit', question: 'Mittelwert der Temperatur', label: 'Mittelwert', unit: '°C' }, { key: 'Xh', question: 'Stellbereich Xh der Regelgröße', label: 'Xh', unit: 'K' }],
+      hintVals() { return hv(this, () => ({ Xh: M49.Xh, ym: M49.ym, Ks: M49.Ks, xo: M49.xo, xu: M49.xu, xsd: M49.xsd, xmit: M49.xmit, xm: M49.xm, x0: M49.x0 })); },
+      get hint() { return hn(this, v => [
+        'Beim Zweipunktregler gibt es nur zwei Stellungen. Der Stellbereich der Regelgröße ist der Unterschied der Temperaturen bei ganz ein und ganz aus, der Übertragungsbeiwert bezieht ihn auf den Stromunterschied. Die Schaltdifferenz ist der Abstand der beiden Schaltpunkte.',
+        'Stellbereich: ' + fm(v.xm, 0) + ' °C − ' + fm(v.x0, 0) + ' °C. Diesen Wert teilst du durch ' + fm(v.ym, 0) + ' A. Schaltdifferenz: ' + fm(v.xo, 0) + ' °C − ' + fm(v.xu, 0) + ' °C. Der Mittelwert liegt genau zwischen den Schaltpunkten.',
+        'Xh = ' + fm(v.Xh, 0) + ' K, Ks = ' + fm(v.Xh, 0) + ' K / ' + fm(v.ym, 0) + ' A = ' + fm(v.Ks, 0) + ' K/A. x_sd = ' + fm(v.xsd, 0) + ' K. Mittelwert = (' + fm(v.xo, 0) + ' + ' + fm(v.xu, 0) + ') / 2 = ' + fm(v.xmit, 0) + ' °C.']); },
+      start: () => S({ fields: nulls(['Ks', 'xsd', 'xmit', 'Xh']) }), sol: () => S({ fields: { Ks: M49.Ks, xsd: M49.xsd, xmit: M49.xmit, Xh: M49.Xh } }), check: check49 },
+    { id: 'rg50', lab: 'reg', cat: 'Zweipunkt', title: 'Wie weit pendelt die Temperatur?', level: 3, rig: '',
+      get text() { const m = M50; return 'Ein Trockenschrank wird mit einem Zweipunktregler beheizt. Ganz aus hat er ' + fm(m.x0, 0) + ' °C, dauernd geheizt würde er ' + fm(m.xm, 0) + ' °C erreichen. Aus der Sprungantwort sind die Verzugszeit Tu = ' + fm(m.Tu, 1) + ' min und die Ausgleichszeit Tg = ' + fm(m.Tg, 0) + ' min bekannt. Der Regler schaltet bei ' + fm(m.xo, 0) + ' °C aus und bei ' + fm(m.xu, 0) + ' °C ein. Berechne (Näherung wie im Unterricht) die Anstiegsgeschwindigkeit der Temperatur, das Überschwingen über den Ausschaltpunkt und die Schwankungsbreite der Temperatur. Beurteile danach die Regelbarkeit der Strecke.'; },
+      fields: [{ key: 'v', question: 'Anstiegsgeschwindigkeit v', label: 'v', unit: 'K/min' }, { key: 'ueb', question: 'Überschwingen über den Ausschaltpunkt', label: 'Überschwingen', unit: 'K' }, { key: 'dx', question: 'Schwankungsbreite Δx', label: 'Δx', unit: 'K' }],
+      choices: [{ key: 'urteil', q: 'Wie ist die Strecke nach dem Verhältnis Tg / Tu zu beurteilen?', options: [{ value: 'gut', label: 'Gut regelbar' }, { value: 'noch', label: 'Noch regelbar' }, { value: 'schwer', label: 'Schwer regelbar' }] }],
+      hintVals() { return hv(this, () => ({ Xh: M50.Xh, Tg: M50.Tg, Tu: M50.Tu, v: M50.v, ueb: M50.ueb, xsd: M50.xsd, dx: M50.dx, ratio: M50.g.ratio, xm: M50.xm, x0: M50.x0 })); },
+      get hint() { return hn(this, v => [
+        'Nach dem Abschalten steigt die Temperatur während der Verzugszeit noch weiter, nach dem Einschalten fällt sie noch weiter. Die Wendetangente der Sprungantwort durchläuft den ganzen Stellbereich in der Ausgleichszeit: Daraus folgt die Anstiegsgeschwindigkeit.',
+        'Stellbereich Xh = ' + fm(v.xm, 0) + ' °C − ' + fm(v.x0, 0) + ' °C = ' + fm(v.Xh, 0) + ' K. v = Xh / Tg, Überschwingen ≈ v · Tu, Schwankungsbreite ≈ x_sd + Überschwingen. Für die Regelbarkeit bildest du Tg / Tu.',
+        'v = ' + fm(v.Xh, 0) + ' K / ' + fm(v.Tg, 0) + ' min = ' + fm(v.v, 1) + ' K/min. Überschwingen = ' + fm(v.v, 1) + ' K/min · ' + fm(v.Tu, 1) + ' min = ' + fm(v.ueb, 0) + ' K. Δx = ' + fm(v.xsd, 0) + ' K + ' + fm(v.ueb, 0) + ' K = ' + fm(v.dx, 0) + ' K. Tg / Tu = ' + fm(v.ratio, 0) + ': gut regelbar.']); },
+      start: () => S({ fields: nulls(['v', 'ueb', 'dx']), choices: {} }), sol: () => S({ fields: { v: M50.v, ueb: M50.ueb, dx: M50.dx }, choices: { urteil: M50.g.urteil } }), check: check50 },
+    { id: 'rg51', lab: 'reg', cat: 'Strecke messen', title: 'Streckenart aus dem Verhalten', level: 2, rig: '',
+      text: 'Ordne jeder Anlage die passende Streckenart zu. Beschrieben ist jeweils, wie sich die gemessene Größe nach einer sprunghaften Änderung am Eingang verhält.',
+      choices: Q51.choices, hintVals() { return hv(this, () => ({})); },
+      get hint() { return hn(this, () => [
+        'Frage zuerst: Findet die Größe nach dem Sprung einen neuen festen Wert (mit Ausgleich) oder wächst sie immer weiter (ohne Ausgleich)? Frage dann: Reagiert sie sofort, verzögert über Speicher oder erst nach einer Wartezeit?',
+        'Sofort und ohne Verzögerung: P-Strecke. Sofortiger Anstieg, der langsam abflacht: ein Speicher. Flacher Beginn mit Wendepunkt: mehrere Speicher. Unverändert, aber später: Totzeit. Gleichmäßiges Weiterwachsen: I-Strecke.',
+        'Behälter mit dichtem Ablauf: I-Strecke. Hebel: P ohne Verzögerung. Schüttgut auf dem Band: Totzeit. Motor mit Schwungscheibe: PT1. Heizkreis mit Raum: mehrere Speicher. Spindel: I-Strecke.']); },
+      start: () => S({ choices: {} }), sol: () => S({ choices: Q51.sol() }), check: check51 },
+    { id: 'rg52', lab: 'reg', cat: 'Grundlagen', title: 'Größen am Drehzahlregelkreis', level: 1, rig: '',
+      text: 'Die Drehzahl eines Gleichstrommotors wird geregelt: Ein Sollwertpotentiometer gibt den Sollwert vor, ein Tachogenerator auf der Welle misst die Drehzahl, ein Regler vergleicht beide und steuert einen Stromrichter, der die Ankerspannung liefert. Ordne jeder Beschreibung die passende Größe zu.',
+      choices: Q52.choices, hintVals() { return hv(this, () => ({})); },
+      get hint() { return hn(this, () => [
+        'Unterscheide die Drehzahl selbst von dem Signal, das die Messeinrichtung daraus macht. Der Vergleicher bekommt nicht die Drehzahl, sondern eine Spannung.',
+        'Die Größe, die konstant bleiben soll, ist die Regelgröße. Ihr gemessenes Abbild, das zum Vergleicher zurückläuft, ist die Rückführgröße. Was der Bediener einstellt, ist die Führungsgröße, was der Regler ausgibt, die Stellgröße.',
+        'Drehzahl: x. Tachospannung: r. Sollwertpoti: w. Ankerspannung: y. Bremsmoment der Last: z. Differenz am Vergleicher: e.']); },
+      start: () => S({ choices: {} }), sol: () => S({ choices: Q52.sol() }), check: check52 },
+    { id: 'rg53', lab: 'reg', cat: 'Grundlagen', title: 'Drehzahlabweichung aus der Tachospannung', level: 2, rig: '',
+      get text() { const m = M53; return 'Ein Tachogenerator liefert ' + fm(m.kT, 0) + ' V je 1000 1/min. Am Sollwertpotentiometer sind ' + fm(m.w, 0) + ' V eingestellt, der Tachogenerator liefert gerade ' + fm(m.r, 1) + ' V. Berechne (1) die Istdrehzahl, (2) die Regelabweichung e in Volt (Vorzeichen beachten) und (3), wie viele Umdrehungen pro Minute bis zum Sollwert fehlen.'; },
+      fields: [{ key: 'n', question: '(1) Istdrehzahl', label: 'Istdrehzahl', unit: '1/min' }, { key: 'e', question: '(2) Regelabweichung e', label: 'e', unit: 'V' }, { key: 'dn', question: '(3) fehlende Drehzahl', label: 'fehlende Drehzahl', unit: '1/min' }],
+      hintVals() { return hv(this, () => ({ kT: M53.kT, r: M53.r, w: M53.w, n: M53.n, e: M53.e, dn: M53.dn, ns: M53.ns })); },
+      get hint() { return hn(this, v => [
+        'Die Tachospannung ist proportional zur Drehzahl. Wenn du weißt, wie viel Volt zu 1000 1/min gehören, kannst du jede Spannung in eine Drehzahl umrechnen. Die Regelabweichung ist Sollwert minus Rückführgröße.',
+        'Drehzahl = Tachospannung / ' + fm(v.kT, 0) + ' V · 1000 1/min. e = ' + fm(v.w, 0) + ' V − ' + fm(v.r, 1) + ' V. Die fehlende Drehzahl rechnest du genauso aus der Spannungsdifferenz.',
+        'n = ' + fm(v.r, 1) + ' / ' + fm(v.kT, 0) + ' · 1000 = ' + fm(v.n, 0) + ' 1/min. e = ' + fm(v.e, 1) + ' V. Fehlend: ' + fm(v.e, 1) + ' / ' + fm(v.kT, 0) + ' · 1000 = ' + fm(v.dn, 0) + ' 1/min (Solldrehzahl ' + fm(v.ns, 0) + ' 1/min).']); },
+      start: () => S({ fields: nulls(['n', 'e', 'dn']) }), sol: () => S({ fields: { n: M53.n, e: M53.e, dn: M53.dn } }), check: check53 }
   ];
   /* start() und sol() werfen nie */
   list.forEach(k => ['start', 'sol'].forEach(f => { const g = k[f]; k[f] = function () { try { return g.apply(k, arguments); } catch (e) { return { rig: '', controls: {}, error: String(e && e.message || e) }; } }; }));
-  T.sims3 = { M34, M35, M36, M37, M38, M40, M41, M42, M43, M44, M45, M46, M47, Q31, Q32, Q33, Q39, Q41, Q45, K };
+  T.sims3 = { M34, M35, M36, M37, M38, M40, M41, M42, M43, M44, M45, M46, M47, M48, M49, M50, M53, Q31, Q32, Q33, Q39, Q41, Q45, Q51, Q52, K };
   T.register(list);
   if (typeof module !== 'undefined') module.exports = { tasks: list, kurve: K, sims: T.sims3 };
 })(typeof window !== 'undefined' ? window : globalThis);

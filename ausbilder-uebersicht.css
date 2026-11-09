@@ -87,6 +87,11 @@ table.wt ul.fl{margin:2px 0 0;padding-left:16px;font-size:12px;color:var(--mute)
 table.wt tr.chk th.nm{box-shadow:inset 4px 0 0 var(--warn)}
 .pubbox{border:2px solid var(--line);border-radius:12px;padding:6px 14px 12px;margin-top:16px}.pubbox h3{margin-top:8px}
 @media(max-width:700px){.wtabs button{flex:1 1 45%}}
+/* Abschnitt 4b: Schwächen nach Lernfeld */
+table.lft td.l{text-align:left;white-space:normal;min-width:220px;max-width:420px}
+table.lft td,table.lft th{height:44px}
+ul.lfl li{grid-template-columns:minmax(150px,40%) minmax(80px,1fr) minmax(220px,36%)}
+@media(max-width:700px){ul.lfl li{grid-template-columns:1fr}ul.lfl li .bar2{grid-column:auto;order:0}ul.lfl li .nm{text-align:left}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 @media print{
   :root{--bg:#fff;--panel:#fff;--fg:#000;--mute:#333;--line:#888;--none:#ddd}

@@ -1,4 +1,4 @@
-/* elstasks2.js - ELS-Lab: Aufgaben el17 bis el38 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b; el33 bis el38: Wissensaufgaben Brandschutz, Kennzeichnung, Maschinensicherheit, Berufsschulstoff)
+/* elstasks2.js - ELS-Lab: Aufgaben el17 bis el46 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b; el33 bis el38: Wissensaufgaben Brandschutz, Kennzeichnung, Maschinensicherheit, Berufsschulstoff; el39 bis el46: TT-System, Stromwirkung, LS-Schalter, Schmelzsicherung, Schutzmassnahmen, Berufsschulstoff)
  * Registrierung: ELS_TASKS.register([ ... ]) (ELS_TASKS kommt aus elsdata.js; elsdata.js VOR dieser Datei laden, in Node holt sich die Datei es per require).
  * Format, Regeln und answer-Objekt wie in elsdata.js: { id:'elN', lab:'els', cat, title, level, rig, text, table?, hint[3], start(), sol(), wrong(), check(answer), hintVals(),
  *   fields? | choices?, consts? }; answer = { rig, controls, ref, seq, rows, state, fired, value, text, fields, choices, clicks, protokoll }.
@@ -815,6 +815,233 @@
           { value: 'amt', label: 'Eine Behörde für jede einzelne Maschine', why: 'Das Verfahren liegt beim Hersteller, nicht bei einer Behörde für jede einzelne Maschine.' },
           { value: 'spedi', label: 'Der Spediteur beim Transport', why: 'Der Transport hat mit der Konformität nichts zu tun.' }] }] });
 
+  /* ====================================================================== el39 bis el46: Rechen- und Auswahlaufgaben aus dem Berufsschulstoff
+     TT-System (Fehlerkreis, Fehler- und Berührungsspannung), Stromwirkung, LS-Schalter B/C/D und thermischer Auslöser, Schmelzsicherung, Schutzmaßnahmen.
+     Eigene Zahlen; Rechenwerte aus dem Kern (grid.fault, body.zone, limit 'ls_bcd', 'ls_thermisch', 'ul_ac', 'rk') oder als feste Übungswerte (consts).
+     MIX verbindet Zahlenfelder (numRow) und Auswahlfragen (choiceRow); jede Zeile wird einzeln geprüft. Fachaussagen mit PRUEFEN P7 bis P14 (quelle/elslab/PRUEFEN.md). */
+  const MIX = spec => {
+    const rows = spec.rows || [], flds = spec.fields || [], rig = spec.rig || 'regeln';
+    const ctl = () => Object.assign({}, spec.ctl || { modus: 'regeln', szene: 'maschine', reihenfolgeFrei: true });
+    const optsOf = row => row.options || spec.options;
+    const optOf = (row, v) => optsOf(row).find(o => String(o.value) === String(v));
+    const vals = () => once('v' + spec.id, () => spec.vals());
+    const check = mkCheck((a, r) => {
+      const fl = obj(a.fields), v = vals();
+      flds.forEach(fd => numRow(r, fd.ok(v), fl[fd.key], Object.assign({ unit: fd.unit, tol: 0.03 }, fd.num(v))));
+      rows.forEach(row => choiceRow(r, a, row.key, row.correct, row.ok, w => { const o = optOf(row, w); return o ? 'Du hast „' + o.label + '“ gewählt. ' + o.why : 'Die Auswahl gehört nicht zu dieser Frage.'; }));
+    });
+    const pickWrong = (row, last) => { const bad = optsOf(row).filter(o => String(o.value) !== String(row.correct)); return bad[last ? bad.length - 1 : 0].value; };
+    const mkC = last => { const c = {}; rows.forEach(row => { c[row.key] = pickWrong(row, last); }); return c; };
+    const solF = () => { const v = vals(), o = {}; flds.forEach(fd => { o[fd.key] = fd.num(v).targets[0]; }); return o; };
+    const emptyF = () => { const o = {}; flds.forEach(fd => { o[fd.key] = null; }); return o; };
+    const M = { vals, check, consts: spec.consts || [],
+      text: () => (typeof spec.text === 'function' ? spec.text(vals()) : spec.text),
+      hint: () => { const v = vals(); return [spec.h1, typeof spec.h2 === 'function' ? spec.h2(v) : spec.h2, 'Musterlösung: ' + flds.map(fd => fd.label + ' = ' + f(fd.num(v).targets[0], fd.d == null ? 1 : fd.d) + ' ' + fd.unit).concat(rows.map(row => row.short + ': ' + optOf(row, row.correct).label)).join('; ') + '.']; },
+      start: () => A(rig, ctl(), { fields: emptyF(), choices: {} }),
+      sol: () => { const c = {}; rows.forEach(row => { c[row.key] = row.correct; }); return A(rig, ctl(), { fields: solF(), choices: c }); },
+      wrong: () => { const v = vals(), w = spec.wrongF ? spec.wrongF(v) : [solF(), solF()]; return [{ name: 'erste Verwechslung, Rechenfehler 1', answer: A(rig, ctl(), { fields: w[0], choices: mkC(false) }) }, { name: 'andere Verwechslung, Rechenfehler 2', answer: A(rig, ctl(), { fields: w[1], choices: mkC(true) }) }]; } };
+    if (flds.length) M.fields = () => flds.map(fd => ({ key: fd.key, label: fd.label, unit: fd.unit }));
+    if (rows.length) M.choices = () => rows.map(row => ({ key: row.key, q: row.q, options: optsOf(row).map(o => ({ value: o.value, label: o.label })) }));
+    return M;
+  };
+
+  /* el39: TT-Fehlerkreis. PRUEFEN P7 (Werte aus dem Netz-Prüfstand: Fehlerschleife R_A + R_B + Leitung, Fehlerspannung I_F · R_A) */
+  const TTFIX = { form: 'TT', ra: 20, rb: 2, l: 10, q: 2.5, qpe: 2.5, dev: 'LS-B', In: 16, rcd: 0, fehler: 'koerperschluss' };
+  const ttVals = () => { const c = C(), o = c.grid.fault(Object.assign({}, TTFIX)), bcd = c.limit('ls_bcd').extra, u0 = c.const.U0; return { u0, ra: TTFIX.ra, rb: TTFIX.rb, l: TTFIX.l, q: TTFIX.q, In: TTFIX.In, zs: o.zs, iF: o.iF, uF: o.uB, iF0: u0 / (TTFIX.ra + TTFIX.rb), iaB: bcd.B[1] * TTFIX.In, iaB10: bcd.B[1] * 10, fB: bcd.B[1], ul: c.limit('ul_ac').value, rl: o.zs - TTFIX.ra - TTFIX.rb }; };
+  const M39 = MIX({ id: 'el39', rig: 'netz', ctl: TTFIX, vals: ttVals, consts: [10, 0.14],
+    text: v => 'TT-System (Übungsanlage, Prüfstand „Netzform und Fehlerschleife“, Form TT): Ein Gerät der Schutzklasse I hat einen Körperschluss. Betriebserder R_B = ' + f(v.rb, 0) + ' Ω, Anlagenerder R_A = ' + f(v.ra, 0) + ' Ω, Leitung ' + f(v.l, 0) + ' m mit ' + f(v.q, 1) + ' mm² (Außen- und Schutzleiter zusammen etwa 0,14 Ω), U0 = ' + f(v.u0, 0) + ' V, Schutz durch einen LS-Schalter B' + f(v.In, 0) + ', kein RCD. Berechne den Fehlerstrom I_F und die Fehlerspannung U_F zwischen Gehäuse und Bezugserde. Beantworte dann die beiden Fragen.',
+    h1: 'Im TT-System fließt der Fehlerstrom nicht über einen Leiter zurück, sondern über den Anlagenerder, das Erdreich und den Betriebserder zum Sternpunkt. Beide Erderwiderstände liegen in der Schleife.',
+    h2: v => 'I_F = U0 / (R_A + R_B + Leitung) = ' + f(v.u0, 0) + ' V / ' + f(v.zs, 2) + ' Ω. Die Fehlerspannung fällt am Anlagenerder ab: U_F = I_F · R_A. Der LS-Schalter B' + f(v.In, 0) + ' löst erst ab ' + f(v.fB, 0) + ' · In = ' + f(v.iaB, 0) + ' A sicher schnell aus.',
+    fields: [
+      { key: 'if', label: 'Fehlerstrom I_F', unit: 'A', d: 2, ok: v => 'Der Fehlerstrom ist richtig (' + f(v.iF, 2) + ' A)', num: v => ({ targets: [v.iF, v.iF0], errs: [{ v: v.u0 / (v.ra + v.rl), text: 'Der Betriebserder R_B fehlt in deiner Rechnung: Der Strom fließt über beide Erder zurück zum Sternpunkt.' }, { v: v.u0 / v.rb, text: 'Du hast nur den Betriebserder gerechnet. Der Anlagenerder R_A liegt ebenfalls in der Schleife und ist hier der größte Widerstand.' }], hint: 'I_F = U0 / (R_A + R_B + Leitung).' }) },
+      { key: 'uf', label: 'Fehlerspannung U_F (Gehäuse gegen Bezugserde)', unit: 'V', d: 1, ok: v => 'Die Fehlerspannung ist richtig (' + f(v.uF, 1) + ' V)', num: v => ({ targets: [v.uF, v.iF0 * v.ra], errs: [{ v: v.u0, text: 'Am Betriebserder R_B fällt ebenfalls ein Teil der Spannung ab. Am Gehäuse liegt nur U_F = I_F · R_A.' }, { v: v.iF * v.rb, text: 'Das ist die Spannung am Betriebserder. Die Fehlerspannung am Gehäuse ist I_F · R_A.' }], hint: 'U_F = I_F · R_A.' }) }],
+    rows: [
+      { key: 'ls', q: 'Schaltet der LS-Schalter den Fehler schnell genug ab?', ok: 'LS-Schalter: Nein, I_F liegt weit unter dem Strom für die sichere Schnellauslösung', short: 'LS-Schalter', correct: 'nein',
+        options: [
+          { value: 'ja', label: 'Ja, jeder Kurzschluss löst den Magnetauslöser sofort aus', why: 'Der Magnetauslöser braucht beim Typ B mindestens das Fünffache des Nennstroms. Der Fehlerstrom im TT-System ist dafür viel zu klein.' },
+          { value: 'nein', label: 'Nein, I_F liegt weit unter dem Strom dafür', why: 'Das ist richtig.' },
+          { value: 'therm', label: 'Ja, der Bimetallauslöser trennt in weniger als einer Sekunde', why: 'Der Fehlerstrom liegt sogar unter dem kleinen Prüfstrom von 1,13 · In. Der Bimetallauslöser löst damit gar nicht sicher aus.' },
+          { value: 'rb', label: 'Nur dann, wenn der Betriebserder R_B kleiner gewählt wird', why: 'R_B ist schon klein. Auch mit R_B = 0 Ω bliebe der Strom wegen R_A weit unter dem Auslösestrom.' }] },
+      { key: 'abhilfe', q: 'Welche Maßnahme sorgt für eine sichere Abschaltung?', ok: 'Abhilfe: Fehlerstrom-Schutzeinrichtung (RCD) mit 30 mA einbauen', short: 'Abhilfe', correct: 'rcd',
+        options: [
+          { value: 'b10', label: 'Den B16 gegen einen kleineren B10 tauschen', why: 'Auch ein B10 braucht für die Schnellauslösung bis zum Fünffachen von 10 A. Der Fehlerstrom bleibt darunter.' },
+          { value: 'quer', label: 'Den Leitungsquerschnitt auf 6 mm² vergrößern', why: 'Die Leitung hat nur etwa 0,14 Ω. Die Erderwiderstände bestimmen den Strom, ein größerer Querschnitt ändert fast nichts.' },
+          { value: 'rcd', label: 'Einen RCD mit 30 mA vor den Stromkreis setzen', why: 'Das ist richtig.' },
+          { value: 'pe', label: 'Den Schutzleiter am Gerät zusätzlich mit N verbinden', why: 'Im TT-System werden Schutzleiter und Neutralleiter in der Anlage nicht verbunden. Die Verbindung würde den Fehlerschutz aufheben.' }] }],
+    wrongF: v => [{ if: v.u0 / (v.ra + v.rl), uf: v.u0 }, { if: v.u0 / v.rb, uf: v.iF * v.rb }] });
+
+  /* el40: Fehlerspannung und Berührungsspannung. PRUEFEN P8 (Standortwiderstand als Übungswert, Rechenwert des Körpers aus dem Kern) */
+  const M40 = MIX({ id: 'el40', rig: 'netz', ctl: TTFIX, consts: [208, 1500],
+    vals: () => { const rk = C().limit('rk').value, uf = 208, rst = 1500, ub = uf * rk / (rk + rst); return { uf, rst, rk, ub, ik: ub / rk * 1000, ul: C().limit('ul_ac').value, summe: rk + rst }; },
+    text: v => 'Fortsetzung zum TT-Fehlerkreis: Am fehlerhaften Gehäuse liegen gegen Bezugserde U_F = ' + f(v.uf, 0) + ' V. Ein Mensch fasst das Gehäuse an und steht mit Schuhen auf einem Boden, der zusammen einen Standortwiderstand von ' + f(v.rst, 0) + ' Ω bildet. Der Körperwiderstand ist ' + f(v.rk, 0) + ' Ω (Rechenwert). Körper und Standort liegen in Reihe an U_F. Berechne die Berührungsspannung U_B und den Körperstrom. Beantworte dann die drei Begriffsfragen.',
+    h1: 'Der Mensch und sein Standort bilden einen Spannungsteiler an der Fehlerspannung. Nur der Teil über dem Körper ist die Berührungsspannung.',
+    h2: v => 'U_B = U_F · R_K / (R_K + R_St) = ' + f(v.uf, 0) + ' V · ' + f(v.rk, 0) + ' Ω / ' + f(v.summe, 0) + ' Ω. Der Körperstrom ist I_K = U_B / R_K.',
+    fields: [
+      { key: 'ub', label: 'Berührungsspannung U_B', unit: 'V', d: 1, ok: v => 'Die Berührungsspannung ist richtig (' + f(v.ub, 1) + ' V)', num: v => ({ targets: [v.ub], errs: [{ v: v.uf, text: 'Du hast die ganze Fehlerspannung genommen. Ein Teil davon fällt am Standortwiderstand ab.' }, { v: v.uf - v.ub, text: 'Das ist die Spannung am Standortwiderstand. Gefragt ist die Spannung über dem Körper.' }], hint: 'U_B = U_F · R_K / (R_K + R_St).' }) },
+      { key: 'ik', label: 'Körperstrom I_K', unit: 'mA', d: 1, ok: v => 'Der Körperstrom ist richtig (' + f(v.ik, 1) + ' mA)', num: v => ({ targets: [v.ik], scale: 0.001, errs: [{ v: v.uf / v.rk * 1000, text: 'Der Standortwiderstand fehlt: Der Strom fließt durch Körper und Standort in Reihe.' }], hint: 'I_K = U_B / R_K oder U_F / (R_K + R_St).' }) }],
+    rows: [
+      { key: 'uf', q: 'Was ist die Fehlerspannung U_F?', ok: 'Fehlerspannung: Spannung zwischen fehlerhaftem Körper und Bezugserde', short: 'Fehlerspannung', correct: 'koerper',
+        options: [
+          { value: 'ln', label: 'Die Spannung zwischen Außenleiter und Neutralleiter', why: 'Das ist die Netzspannung U0. Sie liegt auch ohne Fehler an.' },
+          { value: 'mensch', label: 'Die Spannung, die über dem Körper des Menschen liegt', why: 'Das ist die Berührungsspannung. Sie ist nur ein Teil der Fehlerspannung.' },
+          { value: 'koerper', label: 'Die Spannung zwischen Gehäuse und Bezugserde', why: 'Das ist richtig.' },
+          { value: 'll', label: 'Die Spannung zwischen zwei Außenleitern im Netz', why: 'Das ist die Leiterspannung (400 V). Sie hat mit dem Fehler am Gehäuse nichts zu tun.' }] },
+      { key: 'ub', q: 'Was ist die Berührungsspannung U_B?', ok: 'Berührungsspannung: Teil der Fehlerspannung, den der Mensch überbrückt', short: 'Berührungsspannung', correct: 'teil',
+        options: [
+          { value: 'teil', label: 'Der Teil der Fehlerspannung, den der Mensch überbrückt', why: 'Das ist richtig.' },
+          { value: 'erder', label: 'Die Spannung, die am Betriebserder des Netzes abfällt', why: 'Die Spannung am Betriebserder liegt nicht am Menschen. Sie gehört zum Rückweg des Fehlerstroms.' },
+          { value: 'pruef', label: 'Die Prüfspannung bei der Messung des Isolationswiderstands', why: 'Die Isolationsmessung arbeitet mit einer eigenen Gleichspannung. Sie hat mit der Berührungsspannung nichts zu tun.' },
+          { value: 'netz', label: 'Immer die volle Netzspannung von Außenleiter gegen Erde', why: 'Die volle Spannung liegt nur im ungünstigsten Fall am Menschen. Meist teilt sie sich auf Erder, Standort und Körper auf.' }] },
+      { key: 'gleich', q: 'Wann sind U_B und U_F gleich groß?', ok: 'U_B = U_F: wenn der Mensch ohne Standortwiderstand direkt auf Bezugserde steht', short: 'Gleich groß', correct: 'direkt',
+        options: [
+          { value: 'trocken', label: 'Wenn der Mensch trockene Haut und gute Schuhe hat', why: 'Gute Schuhe vergrößern den Standortwiderstand. Dann wird U_B kleiner als U_F.' },
+          { value: 'rcd', label: 'Wenn eine Fehlerstrom-Schutzeinrichtung eingebaut ist', why: 'Die Schutzeinrichtung verkürzt die Dauer. Am Verhältnis von U_B zu U_F ändert sie nichts.' },
+          { value: 'nie', label: 'Nie, die Berührungsspannung ist immer kleiner', why: 'Ohne Standortwiderstand liegt die ganze Fehlerspannung am Menschen. Das ist der ungünstigste Fall, mit dem gerechnet wird.' },
+          { value: 'direkt', label: 'Wenn er ohne Standortwiderstand auf Erde steht', why: 'Das ist richtig.' }] }],
+    wrongF: v => [{ ub: v.uf, ik: v.uf / v.rk * 1000 }, { ub: v.uf - v.ub, ik: v.ik * 10 }] });
+
+  /* el41: Körperwiderstand zusammensetzen, Bereich der Stromwirkung. PRUEFEN P9 (Zonen aus dem Kern, Lehrdarstellung; 230 V sind nie harmlos) */
+  const KFIX = { u: 230, typ: 'wechsel', haut: 'feucht', weg: 'hand-fuss', rv: 0, t: 200, rcd: 0 };
+  const M41 = MIX({ id: 'el41', rig: 'koerper', ctl: KFIX, consts: [400, 500, 600],
+    vals: () => { const c = C(), rk = 400 + 500 + 600, ik = KFIX.u / rk, z = c.body.zone(ik, KFIX.t); return { u: KFIX.u, t: KFIX.t, rk, ik: ik * 1000, zone: z.zone, ifl: z.iFl * 1000, z2: c.limit('zonen').extra.z2 * 1000 }; },
+    text: v => 'Ein Mensch berührt mit feuchter Hand ein Teil, das ' + f(v.u, 0) + ' V Wechselspannung gegen Erde führt, und steht ohne isolierende Schuhe auf feuchtem Boden. Der Strom fließt von der Hand zum Fuß. Übergangswiderstand an der Hand 400 Ω, Körperinneres 500 Ω, Übergangswiderstand am Fuß 600 Ω. Der Strom fließt ' + f(v.t, 0) + ' ms lang. Berechne den Körperwiderstand und den Körperstrom und bestimme den Bereich der Stromwirkung (Zonen wie im Prüfstand „Stromwirkung auf den Körper“).',
+    h1: 'Die drei Widerstände liegen hintereinander auf dem Stromweg, sie addieren sich. Den Bereich liest du aus Strom und Einwirkdauer ab, wie im Zeit-Strom-Diagramm.',
+    h2: v => 'R_K = 400 Ω + 500 Ω + 600 Ω = ' + f(v.rk, 0) + ' Ω. I_K = ' + f(v.u, 0) + ' V / ' + f(v.rk, 0) + ' Ω. Bei ' + f(v.t, 0) + ' ms beginnt die Flimmergefahr im Lehrmodell bei etwa ' + f(v.ifl, 0) + ' mA.',
+    fields: [
+      { key: 'rk', label: 'Körperwiderstand R_K', unit: 'Ω', d: 0, ok: v => 'Der Körperwiderstand ist richtig (' + f(v.rk, 0) + ' Ω)', num: v => ({ targets: [v.rk], errs: [{ v: 500, text: 'Die Übergangswiderstände an Hand und Fuß gehören dazu, sie liegen in Reihe zum Körperinneren.' }, { v: 1 / (1 / 400 + 1 / 500 + 1 / 600), text: 'Die Widerstände liegen nicht parallel, sondern hintereinander auf demselben Stromweg.' }], hint: 'Reihenschaltung: Widerstände addieren.' }) },
+      { key: 'ik', label: 'Körperstrom I_K', unit: 'mA', d: 1, ok: v => 'Der Körperstrom ist richtig (' + f(v.ik, 1) + ' mA)', num: v => ({ targets: [v.ik], scale: 0.001, errs: [{ v: v.u / 500 * 1000, text: 'Du hast nur das Körperinnere gerechnet. Mit den Übergangswiderständen ist der Strom kleiner.' }], hint: 'I_K = U / R_K, in mA umrechnen.' }) }],
+    rows: [
+      { key: 'zone', q: 'In welchem Bereich liegt dieser Strom bei dieser Dauer?', ok: 'Bereich: Zone 4, Herzkammerflimmern möglich, lebensgefährlich', short: 'Bereich', correct: 'z4',
+        options: [
+          { value: 'z1', label: 'Zone 1: kaum wahrnehmbar, keine Wirkung', why: 'Zone 1 reicht nur bis 0,5 mA. Der Strom hier ist mehr als hundertmal größer.' },
+          { value: 'z2', label: 'Zone 2: spürbar, Loslassen ist noch möglich', why: 'Zone 2 endet bei 10 mA. Darüber verkrampfen die Muskeln.' },
+          { value: 'z3', label: 'Zone 3: Verkrampfung, aber kein Herzflimmern', why: 'Der Strom liegt bei dieser Dauer über der Flimmergrenze des Lehrmodells.' },
+          { value: 'z4', label: 'Zone 4: Herzkammerflimmern ist möglich', why: 'Das ist richtig.' }] },
+      { key: 'kurz', q: 'Ein Mitschüler meint: „Bei 230 V und kurzer Zeit ist so ein Strom harmlos.“ Was stimmt?', ok: 'Einschätzung: falsch, schon Bruchteile einer Sekunde reichen bei diesem Strom für Lebensgefahr', short: 'Einschätzung', correct: 'falsch',
+        options: [
+          { value: 'stimmt', label: 'Stimmt, unter einer Sekunde passiert dem Herzen nichts', why: 'Bei über 100 mA kann schon eine Einwirkung von wenigen hundert Millisekunden Herzkammerflimmern auslösen.' },
+          { value: 'falsch', label: 'Falsch, auch Bruchteile einer Sekunde sind lebensgefährlich', why: 'Das ist richtig.' },
+          { value: 'trocken', label: 'Stimmt, solange die Haut der Hand etwas trocken ist', why: 'Trockene Haut verkleinert den Strom, aber bei 230 V bleibt die Gefahr. Mit feuchter Haut wie hier ist sie besonders groß.' },
+          { value: 'wechsel', label: 'Stimmt, weil Wechselstrom ungefährlicher ist als Gleichstrom', why: 'Wechselstrom mit 50 Hz ist für das Herz besonders gefährlich, nicht ungefährlicher.' }] },
+      { key: 'rcd', q: 'Was bewirkt eine Fehlerstrom-Schutzeinrichtung mit 30 mA in diesem Fall?', ok: 'RCD 30 mA: schaltet sehr schnell ab und verkürzt die Einwirkdauer, den Strom selbst begrenzt sie nicht', short: 'RCD', correct: 'dauer',
+        options: [
+          { value: 'strom', label: 'Sie begrenzt den Körperstrom auf höchstens 30 mA', why: 'Die Schutzeinrichtung begrenzt keinen Strom. Sie misst den Differenzstrom und schaltet dann ab.' },
+          { value: 'dauer', label: 'Sie schaltet schnell ab und verkürzt die Dauer', why: 'Das ist richtig.' },
+          { value: 'nichts', label: 'Sie reagiert nicht, weil kein Kurzschluss vorliegt', why: 'Der Strom durch den Menschen fließt nicht über N zurück. Genau diesen Differenzstrom erkennt die Schutzeinrichtung.' }] }],
+    wrongF: v => [{ rk: 500, ik: v.u / 500 * 1000 }, { rk: 1 / (1 / 400 + 1 / 500 + 1 / 600), ik: v.ik / 10 }] });
+
+  /* el42: LS-Schalter B, C, D bei einem Kurzschlussstrom. PRUEFEN P10 (Auslösebereiche aus dem Kern, Lehrmodell) */
+  const BCD3 = [
+    { value: 'sicher', label: 'löst sicher und sofort über den Magnetauslöser aus', why: 'Das gilt nur, wenn der Strom mindestens die obere Grenze des Magnetbereichs erreicht.' },
+    { value: 'kann', label: 'kann sofort auslösen, muss es aber nicht sicher', why: 'Das gilt, wenn der Strom innerhalb des Magnetbereichs liegt, also zwischen unterer und oberer Grenze.' },
+    { value: 'therm', label: 'löst nicht sofort aus, sondern erst verzögert über das Bimetall', why: 'Das gilt, wenn der Strom unter der unteren Grenze des Magnetbereichs bleibt.' }];
+  const M42 = MIX({ id: 'el42', rig: 'schutz', ctl: { dev: 'LS-C', In: 16 }, consts: [120],
+    vals: () => { const x = C().limit('ls_bcd').extra, In = 16, ik = 120; return { In, ik, bLo: x.B[0] * In, bHi: x.B[1] * In, cLo: x.C[0] * In, cHi: x.C[1] * In, dLo: x.D[0] * In, dHi: x.D[1] * In, fb0: x.B[0], fb1: x.B[1], fc0: x.C[0], fc1: x.C[1], fd0: x.D[0], fd1: x.D[1] }; },
+    text: v => 'Am Ende einer langen Leitung fließt bei einem Kurzschluss ein Strom von ' + f(v.ik, 0) + ' A. Zur Auswahl stehen drei LS-Schalter mit In = ' + f(v.In, 0) + ' A: Typ B, Typ C und Typ D (Prüfstand „Sicherung und LS-Schalter“, Lehrmodell der Magnetbereiche). Berechne für den C' + f(v.In, 0) + ' die untere und die obere Grenze des Magnetbereichs. Entscheide dann für jeden Typ, wie er bei ' + f(v.ik, 0) + ' A reagiert.',
+    h1: 'Der Magnetauslöser hat einen Bereich: Unter der unteren Grenze löst er nie aus, ab der oberen Grenze immer. Die Grenzen sind Vielfache des Nennstroms und hängen vom Typ ab.',
+    h2: v => 'Typ B: ' + f(v.fb0, 0) + ' bis ' + f(v.fb1, 0) + ' · In, Typ C: ' + f(v.fc0, 0) + ' bis ' + f(v.fc1, 0) + ' · In, Typ D: ' + f(v.fd0, 0) + ' bis ' + f(v.fd1, 0) + ' · In. Für In = ' + f(v.In, 0) + ' A: B ' + f(v.bLo, 0) + ' bis ' + f(v.bHi, 0) + ' A, D ' + f(v.dLo, 0) + ' bis ' + f(v.dHi, 0) + ' A. Vergleiche jeweils mit ' + f(v.ik, 0) + ' A.',
+    fields: [
+      { key: 'clo', label: 'C' + 16 + ': untere Grenze des Magnetbereichs', unit: 'A', d: 0, ok: v => 'Die untere Grenze beim C' + f(v.In, 0) + ' ist richtig (' + f(v.cLo, 0) + ' A)', num: v => ({ targets: [v.cLo], tol: 0.01, errs: [{ v: v.bLo, text: 'Das ist die untere Grenze beim Typ B. Typ C beginnt beim Fünffachen.' }, { v: v.cHi, text: 'Das ist die obere Grenze. Gefragt ist zuerst die untere.' }], hint: 'Untere Grenze Typ C: 5 · In.' }) },
+      { key: 'chi', label: 'C' + 16 + ': obere Grenze des Magnetbereichs', unit: 'A', d: 0, ok: v => 'Die obere Grenze beim C' + f(v.In, 0) + ' ist richtig (' + f(v.cHi, 0) + ' A)', num: v => ({ targets: [v.cHi], tol: 0.01, errs: [{ v: v.dHi, text: 'Das ist die obere Grenze beim Typ D.' }, { v: v.cLo, text: 'Das ist die untere Grenze. Die obere ist doppelt so groß.' }], hint: 'Obere Grenze Typ C: 10 · In.' }) }],
+    options: BCD3,
+    rows: [
+      { key: 'b', q: 'LS-Schalter B16 bei 120 A:', ok: 'B16: löst sicher und sofort aus (120 A über der oberen Grenze von 80 A)', short: 'B16', correct: 'sicher' },
+      { key: 'c', q: 'LS-Schalter C16 bei 120 A:', ok: 'C16: kann sofort auslösen, aber nicht sicher (120 A liegt zwischen 80 A und 160 A)', short: 'C16', correct: 'kann' },
+      { key: 'd', q: 'LS-Schalter D16 bei 120 A:', ok: 'D16: kein sofortiges Auslösen, nur verzögert über das Bimetall (120 A unter 160 A)', short: 'D16', correct: 'therm' }],
+    wrongF: v => [{ clo: v.bLo, chi: v.bHi }, { clo: v.cHi, chi: v.dHi }] });
+
+  /* el43: Thermischer Auslöser, kleiner und großer Prüfstrom. PRUEFEN P11 (1,13 · In und 1,45 · In aus dem Kern) */
+  const M43 = MIX({ id: 'el43', rig: 'schutz', ctl: { dev: 'LS-B', In: 20 }, consts: [25],
+    vals: () => { const x = C().limit('ls_thermisch').extra, In = 20; return { In, kn: x.nicht, ka: x.aus, inf: x.nicht * In, ia: x.aus * In, last: 25, std: x.tAus / 3600 }; },
+    text: v => 'Ein LS-Schalter B' + f(v.In, 0) + ' hat neben dem Magnetauslöser einen thermischen Auslöser (Bimetall) für Überlast. Er darf bis zum kleinen Prüfstrom ' + f(v.kn, 2) + ' · In nicht auslösen und muss ab dem großen Prüfstrom ' + f(v.ka, 2) + ' · In innerhalb einer Stunde auslösen. Berechne beide Prüfströme für den B' + f(v.In, 0) + '. Beantworte dann die beiden Fragen.',
+    h1: 'Die beiden Prüfströme sind Vielfache des Nennstroms. Dazwischen liegt ein Bereich, in dem der Schalter auslösen kann, aber nicht muss.',
+    h2: v => 'Kleiner Prüfstrom ' + f(v.kn, 2) + ' · ' + f(v.In, 0) + ' A, großer Prüfstrom ' + f(v.ka, 2) + ' · ' + f(v.In, 0) + ' A. Vergleiche dann den Dauerstrom von ' + f(v.last, 0) + ' A mit beiden Werten.',
+    fields: [
+      { key: 'inf', label: 'Kleiner Prüfstrom (kein Auslösen)', unit: 'A', d: 1, ok: v => 'Der kleine Prüfstrom ist richtig (' + f(v.inf, 1) + ' A)', num: v => ({ targets: [v.inf], tol: 0.01, errs: [{ v: v.ia, text: 'Das ist der große Prüfstrom. Der kleine ist das 1,13-Fache.' }], hint: 'kleiner Prüfstrom = 1,13 · In.' }) },
+      { key: 'ia', label: 'Großer Prüfstrom (Auslösen in 1 h)', unit: 'A', d: 1, ok: v => 'Der große Prüfstrom ist richtig (' + f(v.ia, 1) + ' A)', num: v => ({ targets: [v.ia], tol: 0.01, errs: [{ v: v.inf, text: 'Das ist der kleine Prüfstrom. Der große ist das 1,45-Fache.' }], hint: 'großer Prüfstrom = 1,45 · In.' }) }],
+    rows: [
+      { key: 'last', q: 'Ein Gerät zieht dauernd 25 A über den B20. Was gilt?', ok: '25 A am B20: liegt zwischen beiden Prüfströmen, der Schalter kann auslösen, muss aber nicht innerhalb einer Stunde', short: '25 A dauernd', correct: 'kann',
+        options: [
+          { value: 'nie', label: 'Er löst nie aus, weil 25 A unter dem Magnetbereich liegen', why: 'Der Magnetbereich ist für Kurzschlüsse. Für Überlast ist das Bimetall zuständig, und 25 A liegen über dem kleinen Prüfstrom.' },
+          { value: 'sofort', label: 'Er löst sofort aus, weil 25 A über dem Nennstrom liegen', why: 'Ein kleiner Überstrom löst nicht sofort aus. Das Bimetall braucht Zeit, um sich zu erwärmen.' },
+          { value: 'kann', label: 'Er kann nach einiger Zeit auslösen, muss aber nicht', why: 'Das ist richtig.' },
+          { value: 'sicher', label: 'Er löst sicher innerhalb einer Stunde über das Bimetall aus', why: 'Sicher innerhalb einer Stunde erst ab dem großen Prüfstrom. 25 A liegen darunter.' }] },
+      { key: 'iz', q: 'Warum darf der Nennstrom des LS-Schalters nicht größer sein als die Belastbarkeit Iz der Leitung?', ok: 'In ≤ Iz: Erst ab 1,45 · In löst der Schalter sicher aus, und mehr als 1,45 · Iz darf die Leitung nicht tragen', short: 'In ≤ Iz', correct: 'grosser',
+        options: [
+          { value: 'grosser', label: 'Weil er Überlast erst ab 1,45 · In sicher abschaltet', why: 'Das ist richtig.' },
+          { value: 'kurz', label: 'Weil sonst der Magnetauslöser bei jedem Kurzschluss zu spät auslöst', why: 'Der Kurzschlussschutz hängt am Magnetbereich und an der Schleifenimpedanz, nicht an In ≤ Iz.' },
+          { value: 'span', label: 'Weil bei zu großem Nennstrom der Spannungsfall der Leitung steigt', why: 'Der Spannungsfall hängt vom Betriebsstrom und der Leitung ab, nicht vom Nennstrom des Schalters.' },
+          { value: 'norm', label: 'Weil die Leitung sonst den Schalter von innen beschädigt', why: 'Die Gefahr ist umgekehrt: Bei Überlast wird die Leitung zu heiß, wenn der Schalter zu spät auslöst.' }] }],
+    wrongF: v => [{ inf: v.ia, ia: v.inf }, { inf: v.In, ia: v.ia * 10 }] });
+
+  /* el44: Schmelzsicherung, Kennfarbe des Kennmelders. PRUEFEN P12 (Farben der D- und D0-Sicherungseinsätze) */
+  const M44 = MIX({ id: 'el44', rig: 'schutz', ctl: { dev: 'gG', In: 16 }, vals: () => ({ fragen: 5 }), consts: [2, 4, 6, 10, 16, 20, 25, 35, 50, 63],
+    text: 'Bei Schmelzsicherungen im D- und D0-System (Schraubsicherungen) zeigt der farbige Kennmelder am Einsatz den Nennstrom. Er springt ab, wenn der Einsatz ausgelöst hat. Fünf Einsätze liegen in der Werkstatt. Ordne jedem Nennstrom die Farbe des Kennmelders zu. Wissensaufgabe: Aufdruck und Datenblatt des Einsatzes sind maßgeblich.',
+    h1: 'Die Farben folgen einer festen Reihe vom kleinen zum großen Nennstrom. Für 10 A und 16 A kennst du sie vielleicht schon aus dem Verteiler zu Hause.',
+    h2: 'Die Reihe lautet: 2 A rosa, 4 A braun, 6 A grün, 10 A rot, 16 A grau, 20 A blau, 25 A gelb, 35 A schwarz, 50 A weiß, 63 A kupferfarben.',
+    options: [
+      { value: 'rot', label: 'rot', why: 'Rot kennzeichnet 10 A.' }, { value: 'gruen', label: 'grün', why: 'Grün kennzeichnet 6 A.' },
+      { value: 'grau', label: 'grau', why: 'Grau kennzeichnet 16 A.' }, { value: 'braun', label: 'braun', why: 'Braun kennzeichnet 4 A.' },
+      { value: 'blau', label: 'blau', why: 'Blau kennzeichnet 20 A.' }, { value: 'weiss', label: 'weiß', why: 'Weiß kennzeichnet 50 A.' },
+      { value: 'gelb', label: 'gelb', why: 'Gelb kennzeichnet 25 A.' }, { value: 'schwarz', label: 'schwarz', why: 'Schwarz kennzeichnet 35 A.' }],
+    rows: [
+      { key: 'i16', q: 'Einsatz mit 16 A', ok: '16 A: grau', short: '16 A', correct: 'grau' },
+      { key: 'i35', q: 'Einsatz mit 35 A', ok: '35 A: schwarz', short: '35 A', correct: 'schwarz' },
+      { key: 'i10', q: 'Einsatz mit 10 A', ok: '10 A: rot', short: '10 A', correct: 'rot' },
+      { key: 'i25', q: 'Einsatz mit 25 A', ok: '25 A: gelb', short: '25 A', correct: 'gelb' },
+      { key: 'i20', q: 'Einsatz mit 20 A', ok: '20 A: blau', short: '20 A', correct: 'blau' }] });
+
+  /* el45: Schmelzsicherung, Gewinde, Passeinsatz, Betriebsklasse. PRUEFEN P13 (DIAZED DII E27 bis 25 A, DIII E33 bis 63 A; NEOZED D01 bis 16 A, D02 bis 63 A) */
+  const M45 = MIX({ id: 'el45', rig: 'schutz', ctl: { dev: 'gG', In: 25 }, vals: () => ({ fragen: 4 }), consts: [16, 20, 25, 35, 50, 63],
+    text: 'Vier Fragen zu Schmelzsicherungen im Verteiler: Passeinsatz, Gewindegröße im DIAZED-System (Gewinde E27 oder E33), Baugröße im NEOZED-System (D01, D02 oder D03) und die Betriebsklasse gG. Wissensaufgabe: Aufdruck, Datenblatt und Norm sind maßgeblich.',
+    h1: 'Ein Sicherungssockel nimmt nur Einsätze auf, die zu Gewinde und Passeinsatz passen. Die Baugröße wächst mit dem Nennstrom.',
+    h2: 'DIAZED: DII mit Gewinde E27 bis 25 A, DIII mit E33 von 35 A bis 63 A. NEOZED: D01 bis 16 A, D02 von 20 A bis 63 A. Der erste Buchstabe der Betriebsklasse sagt, ob die Sicherung im ganzen Bereich (g) oder nur bei Kurzschluss (a) schützt.',
+    rows: [
+      { key: 'pass', q: 'Wozu dient der Passeinsatz im Sockel?', ok: 'Passeinsatz: verhindert, dass ein Einsatz mit größerem Nennstrom eingesetzt wird', short: 'Passeinsatz', correct: 'gross',
+        options: [
+          { value: 'halt', label: 'Er hält den Sicherungseinsatz bei Erschütterungen fest', why: 'Den Einsatz hält die Schraubkappe. Der Passeinsatz begrenzt den Nennstrom.' },
+          { value: 'melde', label: 'Er zeigt an, ob der Einsatz schon ausgelöst hat', why: 'Das zeigt der Kennmelder am Einsatz, nicht der Passeinsatz im Sockel.' },
+          { value: 'gross', label: 'Er sperrt Einsätze mit einem größeren Nennstrom aus', why: 'Das ist richtig.' },
+          { value: 'kuehl', label: 'Er leitet die Wärme des Einsatzes an den Sockel ab', why: 'Eine Kühlfunktion hat der Passeinsatz nicht. Er ist eine mechanische Sperre.' }] },
+      { key: 'diazed', q: 'Ein DIAZED-Einsatz mit 35 A: welches Gewinde hat der Sockel?', ok: 'DIAZED 35 A: DIII mit Gewinde E33', short: 'DIAZED 35 A', correct: 'e33',
+        options: [
+          { value: 'e14', label: 'E14', why: 'E14 gehört zu NEOZED D01 bis 16 A.' },
+          { value: 'e27', label: 'E27', why: 'DII mit E27 reicht nur bis 25 A.' },
+          { value: 'e18', label: 'E18', why: 'E18 gehört zum NEOZED-System D02, nicht zu DIAZED.' },
+          { value: 'e33', label: 'E33', why: 'Das ist richtig: DIII hat das Gewinde E33.' }] },
+      { key: 'neozed', q: 'Welche NEOZED-Baugröße brauchst du für einen Einsatz mit 50 A?', ok: 'NEOZED 50 A: Baugröße D02', short: 'NEOZED 50 A', correct: 'd02',
+        options: [
+          { value: 'd01', label: 'D01, die kleinste Baugröße', why: 'D01 reicht nur bis 16 A.' },
+          { value: 'd02', label: 'D02, die mittlere Baugröße', why: 'Das ist richtig.' },
+          { value: 'd03', label: 'D03, die größte Baugröße', why: 'D03 ist für 80 A und 100 A gedacht.' }] },
+      { key: 'gg', q: 'Was bedeutet die Betriebsklasse gG?', ok: 'gG: Ganzbereichsschutz für Kabel und Leitungen (Überlast und Kurzschluss)', short: 'gG', correct: 'ganz',
+        options: [
+          { value: 'ganz', label: 'Leitungsschutz bei Überlast und Kurzschluss', why: 'Das ist richtig.' },
+          { value: 'motor', label: 'Nur Kurzschlussschutz von Motoren beim Anlauf', why: 'Das ist die Betriebsklasse aM (Teilbereich, Motorschutz).' },
+          { value: 'halb', label: 'Schutz von Halbleitern in Stromrichtern', why: 'Halbleiter schützen superflinke Einsätze der Klassen gR oder aR.' },
+          { value: 'trafo', label: 'Nur Überlastschutz von Transformatoren im Netz', why: 'Die Klasse gG schützt Kabel und Leitungen in beiden Bereichen.' }] }] });
+
+  /* el46: Basisschutz, Fehlerschutz, Zusatzschutz. PRUEFEN P14 (Einteilung aus dem Kern: basis, fehler, zusatz) */
+  const SCHUTZ3 = [
+    { value: 'basis', label: 'Basisschutz (gegen direktes Berühren)', why: 'Der Basisschutz verhindert, dass aktive Teile im Normalbetrieb berührt werden, zum Beispiel durch Isolierung und Abdeckung.' },
+    { value: 'fehler', label: 'Fehlerschutz (bei indirektem Berühren)', why: 'Der Fehlerschutz wirkt, wenn ein Körper durch einen Fehler Spannung führt, zum Beispiel durch Schutzleiter und Abschaltung.' },
+    { value: 'zusatz', label: 'Zusatzschutz (wenn die anderen versagen)', why: 'Der Zusatzschutz greift, wenn Basis- und Fehlerschutz versagen oder jemand unvorsichtig ist, zum Beispiel durch einen RCD mit 30 mA.' }];
+  const M46 = MIX({ id: 'el46', vals: () => ({ fragen: 5, idn: 30 }),
+    text: 'Schutzmaßnahmen gegen elektrischen Schlag bestehen aus Basisschutz, Fehlerschutz und Zusatzschutz. Ordne die vier Vorkehrungen zu und beantworte die Begriffsfrage zum Berühren. Wissensaufgabe: Die Norm ist maßgeblich.',
+    h1: 'Frage dich bei jeder Vorkehrung: Wirkt sie schon im fehlerfreien Betrieb, erst bei einem Fehler am Gerät oder zusätzlich, wenn alles andere versagt?',
+    h2: 'Isolierung und Abdeckung sind Basisschutz. Schutzleiter mit Abschaltung ist Fehlerschutz. Der RCD mit 30 mA vor Steckdosen ist Zusatzschutz. Indirekt berührst du ein Gehäuse, das nur durch einen Fehler Spannung führt.',
+    options: SCHUTZ3,
+    rows: [
+      { key: 'iso', q: 'Die Isolierung der Adern einer Leitung', ok: 'Isolierung der Adern: Basisschutz', short: 'Isolierung', correct: 'basis' },
+      { key: 'pe', q: 'Schutzleiter am Gehäuse und automatische Abschaltung durch den LS-Schalter', ok: 'Schutzleiter mit Abschaltung: Fehlerschutz', short: 'Schutzleiter', correct: 'fehler' },
+      { key: 'rcd', q: 'Fehlerstrom-Schutzeinrichtung (RCD) mit 30 mA vor den Steckdosen', ok: 'RCD 30 mA: Zusatzschutz', short: 'RCD 30 mA', correct: 'zusatz' },
+      { key: 'abdeck', q: 'Abdeckung über den Klemmen im Verteiler', ok: 'Abdeckung im Verteiler: Basisschutz', short: 'Abdeckung', correct: 'basis' },
+      { key: 'beruehr', q: 'Ein Gehäuse führt wegen eines Körperschlusses Spannung, und du fasst es an. Wie heißt das?', ok: 'Berühren eines Gehäuses mit Körperschluss: indirektes Berühren', short: 'Berühren', correct: 'indirekt',
+        options: [
+          { value: 'direkt', label: 'Direktes Berühren eines aktiven Teils', why: 'Direkt berührst du ein Teil, das schon im Normalbetrieb Spannung führt, zum Beispiel eine blanke Ader.' },
+          { value: 'indirekt', label: 'Indirektes Berühren eines Körpers', why: 'Das ist richtig.' },
+          { value: 'nah', label: 'Annäherung an ein aktives Teil', why: 'Annäherung ohne Berührung ist hier nicht gemeint. Du fasst das Gehäuse an.' }] }] });
+
 
   /* ====================================================================== Registrierung */
   function def(head, M) {
@@ -851,9 +1078,17 @@
     def({ id: 'el35', lab: 'els', cat: 'Kennzeichnung', title: 'Sicherheitszeichen lesen', level: 1, rig: 'regeln' }, M35),
     def({ id: 'el36', lab: 'els', cat: 'Kennzeichnung', title: 'Gefahrstoff-Piktogramme', level: 2, rig: 'regeln' }, M36),
     def({ id: 'el37', lab: 'els', cat: 'Maschinensicherheit', title: 'Risiko in drei Stufen mindern', level: 2, rig: 'regeln' }, M37),
-    def({ id: 'el38', lab: 'els', cat: 'Maschinensicherheit', title: 'Sicherheitsfunktion und Nachweis', level: 3, rig: 'regeln' }, M38)
+    def({ id: 'el38', lab: 'els', cat: 'Maschinensicherheit', title: 'Sicherheitsfunktion und Nachweis', level: 3, rig: 'regeln' }, M38),
+    def({ id: 'el39', lab: 'els', cat: 'TT-System', title: 'TT-Fehlerkreis: Fehlerstrom und Fehlerspannung', level: 3, rig: 'netz' }, M39),
+    def({ id: 'el40', lab: 'els', cat: 'TT-System', title: 'Fehlerspannung und Berührungsspannung', level: 2, rig: 'netz' }, M40),
+    def({ id: 'el41', lab: 'els', cat: 'Stromwirkung', title: 'Körperwiderstand zusammensetzen, Bereich bestimmen', level: 2, rig: 'koerper' }, M41),
+    def({ id: 'el42', lab: 'els', cat: 'Schutzorgane', title: 'B, C oder D: Wer löst beim Kurzschluss sofort aus?', level: 2, rig: 'schutz' }, M42),
+    def({ id: 'el43', lab: 'els', cat: 'Schutzorgane', title: 'Thermischer Auslöser: kleiner und großer Prüfstrom', level: 2, rig: 'schutz' }, M43),
+    def({ id: 'el44', lab: 'els', cat: 'Schmelzsicherung', title: 'Kennfarbe des Sicherungseinsatzes', level: 1, rig: 'schutz' }, M44),
+    def({ id: 'el45', lab: 'els', cat: 'Schmelzsicherung', title: 'Passeinsatz, Gewinde und Betriebsklasse', level: 2, rig: 'schutz' }, M45),
+    def({ id: 'el46', lab: 'els', cat: 'Schutzmaßnahmen', title: 'Basisschutz, Fehlerschutz, Zusatzschutz', level: 1, rig: 'regeln' }, M46)
   ]);
-  /* Musterwerte der Aufgaben el17-el32 (aus dem Kern, Stand 2026-10-22) fuer Tests und Ausbilder */
-  T.thresholds2 = () => ({ el17: M17.vals(), el18: M18.vals(), el19: M19.vals(), el20: M20.vals(), el21: M21.vals(), el22: M22.vals(), el23: M23.vals(), el24: M24.vals(), el25: M25.vals(), el26: M26.vals(), el27: M27.vals(), el28: M28.vals(), el29: M29.vals(), el30: M30.vals(), el31: M31.vals(), el32: M32.vals(), el33: M33.vals(), el34: M34.vals(), el35: M35.vals(), el36: M36.vals(), el37: M37.vals(), el38: M38.vals() });
+  /* Musterwerte der Aufgaben el17-el46 (aus dem Kern, Stand 2026-11-09) fuer Tests und Ausbilder */
+  T.thresholds2 = () => ({ el17: M17.vals(), el18: M18.vals(), el19: M19.vals(), el20: M20.vals(), el21: M21.vals(), el22: M22.vals(), el23: M23.vals(), el24: M24.vals(), el25: M25.vals(), el26: M26.vals(), el27: M27.vals(), el28: M28.vals(), el29: M29.vals(), el30: M30.vals(), el31: M31.vals(), el32: M32.vals(), el33: M33.vals(), el34: M34.vals(), el35: M35.vals(), el36: M36.vals(), el37: M37.vals(), el38: M38.vals(), el39: M39.vals(), el40: M40.vals(), el41: M41.vals(), el42: M42.vals(), el43: M43.vals(), el44: M44.vals(), el45: M45.vals(), el46: M46.vals() });
   if (typeof module !== 'undefined') module.exports = { tasks: T.tasks };
 })(typeof window !== 'undefined' ? window : globalThis);

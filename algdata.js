@@ -559,6 +559,102 @@
       ['Frage dich: Wird noch geklärt, schon geplant und beauftragt, gerade gearbeitet oder schon ausgewertet?', 'Die Phasen laufen in dieser Reihenfolge: Sondierung, Projektdefinition, Projektdurchführung, Projektabschluss.'], { cross: right });
   };
 
+  /* ---------- 8c. Datenflussplan, Dokumentation, Mehrfachauswahl und C++-Feinheiten (Berufsschulstoff Lernfeld 11.1 und 11.2, Aufgaben 49 bis 56) ---------- */
+  /* PRUEFEN P32: Datenflussplan nach DIN 66001: Rechteck = Bearbeitung, Symbol mit gewellter Unterkante = Schriftstück (Ausdruck), Pfeillinie = Datenfluss. Die Schrittfolgen (Lagerauskunft, Messdatenerfassung) sind eigene Beispiele nach dem Muster der Mitschrift (Benutzerkennung, Berechtigung prüfen, Anfrage, Protokoll, Daten ermitteln, Ausgabe). Passt das zum Unterricht? */
+  const DFP = [
+    { t: 'Ein Programm für die Lagerauskunft soll als Datenflussplan dargestellt werden. Bringe die Schritte in die Reihenfolge, in der die Daten verarbeitet werden.', s: ['Anmeldedaten eingeben', 'Zugriffsberechtigung prüfen', 'Artikelnummer eingeben', 'Zugriff im Protokoll speichern', 'Bestand aus der Artikeldatei lesen', 'Ergebnis auf Bildschirm oder Drucker ausgeben'] },
+    { t: 'Eine Prüfstation erfasst Messwerte und druckt einen Bericht. Bringe die Schritte des Datenflussplans in die Reihenfolge, in der die Daten verarbeitet werden.', s: ['Messwerte vom Sensor einlesen', 'Messwerte auf Plausibilität prüfen', 'Gültige Werte in der Messdatei speichern', 'Mittelwert und Höchstwert berechnen', 'Prüfbericht drucken'] }
+  ];
+  G.dfp1 = R => {
+    const c = C(), v = c.pick(R, DFP), want = v.s.slice(); let sh, tries = 0; do { sh = c.shuffle(R, want); tries++; } while (sh.join('|') === want.join('|') && tries < 20);
+    return { text: v.t, ask: { type: 'order', items: sh, correct: want }, value: want.join(' → '), tol: 0,
+      expl: 'Richtige Reihenfolge: ' + want.join(' → ') + '. Ein Datenflussplan folgt dem Weg der Daten: Erst müssen sie eingegeben und geprüft werden, dann werden sie gespeichert oder verarbeitet, am Ende steht die Ausgabe.',
+      tips: ['Frage dich bei jedem Schritt: Welche Daten braucht er, und woher kommen sie? Ein Schritt kann erst laufen, wenn seine Daten da sind.', 'Prüfen kommt vor dem Weiterverarbeiten, die Ausgabe auf Bildschirm, Drucker oder Papier steht immer am Ende.'] };
+  };
+  const DFPFRAGEN = [
+    ['Was stellt ein Datenflussplan im Unterschied zum Programmablaufplan dar?', 'Welche Daten auf welchen Datenträgern wie verarbeitet werden', ['In welcher Reihenfolge die einzelnen Befehle eines Programms ablaufen', 'Wie die Bauteile einer Schaltung miteinander verbunden sind', 'Wie die Leitungen in einem Gebäude verlegt werden'], 'Der Datenflussplan zeigt den Weg der Daten durch ein System: Eingabe, Bearbeitung, Datenträger und Ausgabe. Der Programmablaufplan zeigt dagegen den Ablauf der Befehle mit Verzweigungen und Schleifen.'],
+    ['Im Datenflussplan steht ein einfaches Rechteck. Was bedeutet es?', 'Eine Verarbeitung der Daten (Bearbeitung)', ['Einen Datenträger, zum Beispiel eine Datei', 'Eine Verzweigung mit Ja und Nein', 'Den Anfang oder das Ende des Programms'], 'Das Rechteck steht für eine Bearbeitung: Hier werden Daten verändert, geprüft oder berechnet. Datenträger haben eigene Symbole, Verzweigungen gibt es nur im Programmablaufplan.'],
+    ['Ein Datenflussplan zeigt den Weg von der Eingabe bis zum Ausdruck. Wofür steht dort das Symbol mit der gewellten Unterkante?', 'Ein Schriftstück, zum Beispiel ein Ausdruck', ['Eine Verarbeitung mit mehreren Rechenschritten', 'Eine Verzweigung nach einer Bedingung', 'Eine Schleife, die sich mehrfach wiederholt'], 'Das Symbol mit der gewellten Unterkante sieht aus wie ein abgerissenes Blatt: Es steht für ein Schriftstück, etwa einen Ausdruck oder einen Beleg.'],
+    ['Welcher Plan eignet sich am besten, um zu zeigen, wie die Daten einer Lohnabrechnung zwischen Eingabe, Dateien und Ausdruck fließen?', 'Datenflussplan', ['Programmablaufplan', 'Struktogramm', 'Stromlaufplan'], 'Wo die Daten herkommen, wo sie gespeichert werden und wohin sie gehen, zeigt der Datenflussplan. Programmablaufplan und Struktogramm beschreiben den Ablauf eines einzelnen Programms.']
+  ];
+  G.dfp2 = R => {
+    const c = C(), v = c.pick(R, DFPFRAGEN);
+    return qChoice(R, v[0], v[1], v[2], v[3], ['Ein Datenflussplan beantwortet die Frage: Welche Daten kommen woher, wo werden sie verarbeitet, wo gespeichert, wohin ausgegeben?', 'Rechteck = Bearbeitung, gewellte Unterkante = Schriftstück. Verzweigungen und Schleifen gehören in den Programmablaufplan.'], { cross: v[1] });
+  };
+  /* PRUEFEN P33: Mehrfachauswahl (Fallunterscheidung) am Beispiel einer Prämie nach Betriebsjahren; Beträge und Grenzen sind eigene Übungswerte (ab 3, 5 und 10 Jahren). Die Grenzen werden mit „größer oder gleich“ von oben nach unten geprüft. Passt diese Darstellung zum Struktogramm im Unterricht? */
+  G.c11 = R => {
+    const c = C(), a = c.pick(R, [[100, 220, 500], [120, 250, 600], [150, 300, 650]]), j = c.pick(R, [1, 2, 3, 4, 5, 6, 8, 10, 12]), g = c.ri(R, 48, 68) * 50;
+    const src = join(['Eingabe jahre', 'Eingabe grundlohn', 'Wenn jahre >= 10 dann', '  Setze praemie auf ' + a[2], 'Sonst Wenn jahre >= 5 dann', '  Setze praemie auf ' + a[1], 'Sonst Wenn jahre >= 3 dann', '  Setze praemie auf ' + a[0], 'Sonst', '  Setze praemie auf 0', 'Ende Wenn', 'Setze brutto auf grundlohn + praemie', 'Ausgabe brutto']);
+    const r = mustRun(src, { inputs: [j, g] }), v = +r.out[0], p = j >= 10 ? a[2] : j >= 5 ? a[1] : j >= 3 ? a[0] : 0, cross = g + p;
+    return qNum('Ein Programm berechnet den Bruttolohn mit einer Prämie für langjährige Mitarbeiter (Mehrfachauswahl). Eingegeben werden jahre = ' + j + ' und grundlohn = ' + g + '. Welchen Wert gibt das Programm aus?', src, [j, g], v, '€', 'Ausgabe brutto',
+      ['Gehe die Bedingungen von oben nach unten durch. Es wird nur der erste Zweig ausgeführt, dessen Bedingung wahr ist.', 'Achte auf „>=“: Bei genau ' + (j >= 10 ? 10 : j >= 5 ? 5 : 3) + ' Jahren ist die Bedingung „jahre >= ' + (j >= 10 ? 10 : j >= 5 ? 5 : 3) + '“ schon wahr.'],
+      'jahre = ' + j + ': ' + (j >= 10 ? 'Die erste Bedingung (jahre >= 10) ist wahr' : j >= 5 ? 'jahre >= 10 ist falsch, jahre >= 5 ist wahr' : j >= 3 ? 'jahre >= 10 und jahre >= 5 sind falsch, jahre >= 3 ist wahr' : 'Keine Bedingung ist wahr, es gilt der Sonst-Zweig') + ', also praemie = ' + p + '. brutto = ' + g + ' + ' + p + ' = ' + cross + '.', cross);
+  };
+  /* PRUEFEN P34: switch mit fehlendem break (Durchfallen in den nächsten Fall) und default. In C++ ist das gültig, viele Firmen-Richtlinien verlangen dann einen Kommentar. Ist das Durchfallen im Unterricht behandelt worden? */
+  const SWW = ['Licht', 'Pumpe', 'Heizung', 'Alarm'];
+  G.c12 = R => {
+    const c = C(), vals = [1, 2, 3], miss = c.ri(R, 0, 2), k = c.ri(R, 1, 4), w = c.shuffle(R, SWW);
+    const cases = vals.map((v, i) => ({ lab: 'case ' + v + ':', v, word: w[i], brk: i !== miss })).concat([{ lab: 'default:', v: null, word: w[3], brk: false }]);
+    const code = ['int modus = ' + k + ';', 'switch (modus)', '{'];
+    cases.forEach(cs => { code.push('  ' + cs.lab); code.push('    cout << "' + cs.word + ' ";'); if (cs.brk) code.push('    break;'); });
+    code.push('}');
+    let start = cases.findIndex(cs => cs.v === k); if (start < 0) start = cases.length - 1;
+    const exp = []; for (let i = start; i < cases.length; i++) { exp.push(cases[i].word); if (cases[i].brk) break; }
+    /* Gegenprobe: Zeilen des Codes von der Sprungmarke an abarbeiten, bis break oder Ende */
+    const cross = []; { let on = false; for (const l of code.slice(3, -1)) { const t = l.trim(); if (!on && (t === 'case ' + k + ':' || (t === 'default:' && k > 3))) on = true; if (!on) continue; const m = /^cout << "(\w+) ";$/.exec(t); if (m) cross.push(m[1]); if (t === 'break;') break; } }
+    return { text: 'Was gibt dieser Ausschnitt aus einem C++-Programm aus? Schreibe die Wörter in der Reihenfolge der Ausgabe auf, durch Leerzeichen getrennt.', cpp: code.join('\n'), ask: { type: 'out', label: 'Ausgabe', expected: exp }, value: exp.join(' '), tol: 0,
+      expl: 'modus = ' + k + ': Die Ausführung springt ' + (start < 3 ? 'zur Marke „case ' + k + ':“' : 'zu „default:“, weil keine case-Marke passt') + '. Von dort laufen alle Anweisungen weiter, bis ein break kommt oder der switch endet. Ausgabe: ' + exp.join(' ') + '.',
+      tips: ['Suche zuerst die Marke, die zum Wert von modus passt. Gibt es keine, geht es bei default weiter.', 'Ein case ohne break endet nicht: Das Programm läuft in die Anweisungen des nächsten Falls weiter, bis es auf ein break trifft.'], cross };
+  };
+  /* PRUEFEN P35: Vorher- und Nachher-Erhöhen (++x, x++) und Verringern (x--) in einem Ausdruck. In der Mitschrift stehen nur x++ und ++x als eigene Anweisungen; der Unterschied im Ausdruck ist ergänzt. Gewünscht? */
+  G.c13 = R => {
+    const c = C(), A = c.ri(R, 3, 12), v = c.ri(R, 0, 3); let lines, val, ask, exp2;
+    if (v === 0) { lines = ['int x = ' + A + ';', 'int y = x++;', 'y = y + x;']; val = A + (A + 1); ask = 'y'; exp2 = 'y = x++ übergibt erst den alten Wert ' + A + ' an y und erhöht dann x auf ' + (A + 1) + '. Danach y = ' + A + ' + ' + (A + 1) + ' = ' + val + '.'; }
+    else if (v === 1) { lines = ['int x = ' + A + ';', 'int y = ++x;', 'y = y * 2;']; val = (A + 1) * 2; ask = 'y'; exp2 = 'y = ++x erhöht zuerst x auf ' + (A + 1) + ' und übergibt dann diesen Wert an y. Danach y = ' + (A + 1) + ' · 2 = ' + val + '.'; }
+    else if (v === 2) { lines = ['int x = ' + A + ';', 'int y = x--;', 'y = y * x;']; val = A * (A - 1); ask = 'y'; exp2 = 'y = x-- übergibt erst den alten Wert ' + A + ' an y und verringert dann x auf ' + (A - 1) + '. Danach y = ' + A + ' · ' + (A - 1) + ' = ' + val + '.'; }
+    else { lines = ['int x = ' + A + ';', 'int y = 2 * x++;', 'int z = y + x;']; val = 3 * A + 1; ask = 'z'; exp2 = '2 * x++ rechnet mit dem alten Wert: y = 2 · ' + A + ' = ' + 2 * A + ', danach ist x = ' + (A + 1) + '. z = ' + 2 * A + ' + ' + (A + 1) + ' = ' + val + '.'; }
+    /* Gegenprobe mit einem kleinen eigenen Auswerter (Nachher-Operator: erst lesen, dann ändern) */
+    const st = {}; lines.forEach(l => { let m;
+      if ((m = /^int (\w) = (\d+);$/.exec(l))) st[m[1]] = +m[2];
+      else if ((m = /^(?:int )?(\w) = (\d \* )?(\+\+|--)?(\w)(\+\+|--)?;$/.exec(l))) { const pre = m[3], post = m[5], vn = m[4]; if (pre) st[vn] += pre === '++' ? 1 : -1; let r = st[vn]; if (post) st[vn] += post === '++' ? 1 : -1; if (m[2]) r *= +m[2][0]; st[m[1]] = r; }
+      else if ((m = /^(?:int )?(\w) = (\w) ([+*]) (\w|\d+);$/.exec(l))) { const b = /^\d+$/.test(m[4]) ? +m[4] : st[m[4]]; st[m[1]] = m[3] === '+' ? st[m[2]] + b : st[m[2]] * b; } });
+    return qNum('Gegeben ist ein Ausschnitt aus einem C++-Programm, alle Variablen sind vom Typ int. Welchen Wert hat ' + ask + ' nach dem letzten Befehl?', null, null, val, '', 'Wert von ' + ask,
+      ['Steht ++ oder -- hinter der Variablen, wird im Ausdruck zuerst der alte Wert benutzt und die Variable erst danach geändert.', 'Steht ++ vor der Variablen, wird zuerst erhöht und dann der neue Wert benutzt. Notiere nach jeder Zeile x und y.'],
+      exp2, st[ask], { cpp: lines.join('\n') });
+  };
+  /* PRUEFEN P36: Logische Ausdrücke mit &&, || und ! über einen Zahlenbereich auszählen. && bindet stärker als ||, so wie in C++. Ist die Zählfrage (für wie viele n ist der Ausdruck wahr) als Übung geeignet? */
+  G.c14 = R => {
+    const c = C(), N = 20, a = c.ri(R, 1, 8), b = a + c.ri(R, 4, 9), v = c.ri(R, 0, 3); let ex, f, form;
+    if (v === 0) { ex = '(n > ' + a + ') && (n < ' + b + ')'; f = n => n > a && n < b; form = b - a - 1; }
+    else if (v === 1) { const cc = c.pick(R, [0, b + 1, b + 2, N].filter(x => x > b || x < a)); ex = '(n > ' + a + ') && (n < ' + b + ') || (n == ' + cc + ')'; f = n => (n > a && n < b) || n === cc; form = b - a - 1 + 1; }
+    else if (v === 2) { ex = '!((n > ' + a + ') && (n < ' + b + '))'; f = n => !(n > a && n < b); form = (N + 1) - (b - a - 1); }
+    else { ex = '(n < ' + a + ') || (n > ' + b + ')'; f = n => n < a || n > b; form = a + (N - b); }
+    let cnt = 0; for (let n = 0; n <= N; n++) if (f(n)) cnt++;
+    return qNum('Für welche ganzen Zahlen n von 0 bis ' + N + ' ist der abgebildete C++-Ausdruck wahr? Gib an, für wie viele Zahlen das gilt.', null, null, cnt, 'Zahlen', 'Anzahl der n',
+      ['Bestimme zuerst, für welche n jede Klammer einzeln wahr ist. && heißt: beide müssen wahr sein, || heißt: eine genügt, ! kehrt um.', 'Achte auf die Ränder: n > ' + a + ' schließt ' + a + ' selbst aus. && wird vor || ausgewertet.'],
+      'Der Ausdruck ist wahr für ' + cnt + ' der ' + (N + 1) + ' Zahlen von 0 bis ' + N + '. ' + (v === 0 ? 'Wahr sind n = ' + (a + 1) + ' bis ' + (b - 1) + '.' : v === 1 ? 'Wahr sind n = ' + (a + 1) + ' bis ' + (b - 1) + ' und zusätzlich die einzelne Zahl aus dem Vergleich mit ==.' : v === 2 ? 'Die Klammer ist für n = ' + (a + 1) + ' bis ' + (b - 1) + ' wahr, das ! kehrt das um: wahr für alle übrigen Zahlen.' : 'Wahr sind n = 0 bis ' + (a - 1) + ' und n = ' + (b + 1) + ' bis ' + N + '.'), form, { cpp: ex });
+  };
+  /* PRUEFEN P37: Fußgesteuerte Wiederholung (Wiederhole … Bis) am Beispiel eines Sparplans: Die Bedingung wird erst nach der Einzahlung geprüft. Raten und Ziele sind eigene Übungswerte. */
+  G.c15 = R => {
+    const c = C(), rate = c.ri(R, 13, 19) * 5, ziel = c.ri(R, 12, 30) * 50;
+    const src = join(['Setze konto auf 0', 'Setze anzahl auf 0', 'Wiederhole', '  Setze konto auf konto + ' + rate, '  Setze anzahl auf anzahl + 1', 'Bis konto >= ' + ziel, 'Ausgabe anzahl']);
+    const r = mustRun(src), v = +r.out[0], cross = Math.ceil(ziel / rate);
+    return qNum('Ein Sparplan zahlt jeden Monat ' + rate + ' € ein, bis mindestens ' + ziel + ' € auf dem Konto sind. Das Struktogramm nutzt eine fußgesteuerte Wiederholung. Welche Zahl gibt das Programm aus?', src, null, v, '', 'Ausgabe anzahl',
+      ['Bei „Wiederhole … Bis“ wird erst eingezahlt und danach geprüft. Die Schleife endet, sobald die Bedingung wahr ist.', 'Teile das Ziel durch die Rate. Bleibt ein Rest, braucht es noch eine weitere Einzahlung.'],
+      ziel + ' : ' + rate + ' = ' + String(Math.round(ziel / rate * 100) / 100).replace('.', ',') + '. Nach ' + (cross - 1) + ' Einzahlungen sind erst ' + (cross - 1) * rate + ' € da, nach ' + cross + ' Einzahlungen ' + cross * rate + ' €. Dann ist konto >= ' + ziel + ' wahr und die Schleife endet. Ausgabe: ' + cross + '.', cross);
+  };
+  /* PRUEFEN P38: Dokumentation: Benutzerhandbuch (Bedienung) und Programmbeschreibung (Aufgabenstellung, Lösungsweg, Struktogramm, Testdaten) nach der Mitschrift. Weitere Arten (Installationsanleitung, Änderungsprotokoll) fehlen. Reicht das? */
+  const DOKU = [
+    ['Welche Angabe gehört in das Benutzerhandbuch eines Messprogramms?', 'Wie das Programm gestartet und bedient wird', ['Wie die Schleifen im Quelltext aufgebaut sind', 'Welche Variablen intern verwendet werden', 'Welche Testfälle der Entwickler geprüft hat'], 'Das Benutzerhandbuch richtet sich an die Anwender: Start, Bedienung, Eingaben und Meldungen. Quelltext, Variablen und Tests stehen in der Programmbeschreibung.'],
+    ['Für wen ist die Programmbeschreibung (Entwicklerdokumentation) vor allem gedacht?', 'Für Fachleute, die das Programm später ändern oder pflegen', ['Für Kunden, die das fertige Programm nur bedienen und nutzen wollen', 'Für die Werbung, damit sich das Programm gut verkauft', 'Für das Finanzamt, das die Kosten des Programms prüft'], 'Die Programmbeschreibung enthält Aufgabenstellung, Lösungsweg, Struktogramm oder Ablaufplan, Quelltext und Testdaten. Gebraucht wird sie von allen, die das Programm später ändern, erweitern oder Fehler suchen.'],
+    ['Ein Programm wurde geändert, die Dokumentation aber nicht. Welche Folge ist am wahrscheinlichsten?', 'Wer das Programm später pflegt, sucht Fehler an der falschen Stelle', ['Das Programm läuft dadurch langsamer als vor der Änderung', 'Der Compiler meldet einen Fehler und übersetzt nicht mehr', 'Die Änderung wird beim nächsten Start automatisch rückgängig gemacht'], 'Eine veraltete Dokumentation beschreibt ein Programm, das es so nicht mehr gibt. Wer sich später darauf verlässt, verliert Zeit oder baut neue Fehler ein. Auf den Programmlauf selbst hat sie keinen Einfluss.'],
+    ['Welche Unterlage beschreibt die Aufgabenstellung, den Lösungsweg mit Struktogramm und die Testdaten eines Programms?', 'Die Programmbeschreibung (Programmdokumentation)', ['Das Benutzerhandbuch mit der Anleitung für die Bedienung', 'Die Rechnung des Softwarelieferanten', 'Die Kurzanleitung auf der Verpackung'], 'Aufgabenstellung, Lösungsweg, Struktogramm und Testdaten gehören in die Programmbeschreibung. Das Benutzerhandbuch erklärt nur die Bedienung.']
+  ];
+  G.c16 = R => {
+    const c = C(), v = c.pick(R, DOKU);
+    return qChoice(R, v[0], v[1], v[2], v[3], ['Unterscheide, wer die Unterlage liest: jemand, der das Programm nur benutzt, oder jemand, der es ändern muss.', 'Das Benutzerhandbuch erklärt die Bedienung, die Programmbeschreibung den inneren Aufbau mit Lösungsweg und Testdaten.'], { cross: v[1] });
+  };
+
   /* ---------- Aufgabenliste ---------- */
   const defs = [
     [0, 1, 'Werte nach Zuweisungen', 'vars1'], [0, 1, 'Verzweigung mit mehreren Zweigen', 'vars2'], [0, 2, 'Wert nach n Schritten', 'vars3'], [0, 2, 'Zwei Werte vertauschen', 'vars4'], [0, 3, 'Verschachtelte Entscheidung', 'vars5'],
@@ -570,7 +666,9 @@
     [6, 2, 'Zahl prüfen', 'zahl1'], [6, 1, 'Alle Teiler', 'zahl2'], [6, 3, 'Rest und Tausch', 'zahl3'], [6, 3, 'Zahl umrechnen', 'zahl4'],
     [7, 1, 'Schritte der Softwareentwicklung ordnen', 'sw1'], [7, 1, 'Tätigkeit der richtigen Phase zuordnen', 'sw2'], [7, 2, 'Vorgehen beim Programmentwurf', 'sw3'], [7, 1, 'Symbole und Grundstrukturen', 'sw4'],
     [7, 2, 'Zuweisungen in C++ verfolgen', 'sw5'], [7, 2, 'Schleifen in C++ lesen', 'sw6'], [7, 1, 'Datentypen und Schreibweise in C++', 'sw7'], [7, 3, 'Fehlersuche E in C++', 'sw8'],
-    [7, 1, 'Mikrocontroller: Aufbau und Begriffe', 'mc1'], [7, 2, 'Datenübergabe mit Handshake ordnen', 'mc2'], [7, 2, 'Zeichen pro Sekunde bei serieller Übertragung', 'mc3'], [7, 3, 'Zeitgeber im Mikrocontroller rechnen', 'mc4'], [7, 2, 'Verschachtelte Unterprogramme und Stapel', 'mc5'], [7, 1, 'Projektphasen zuordnen', 'mc6']
+    [7, 1, 'Mikrocontroller: Aufbau und Begriffe', 'mc1'], [7, 2, 'Datenübergabe mit Handshake ordnen', 'mc2'], [7, 2, 'Zeichen pro Sekunde bei serieller Übertragung', 'mc3'], [7, 3, 'Zeitgeber im Mikrocontroller rechnen', 'mc4'], [7, 2, 'Verschachtelte Unterprogramme und Stapel', 'mc5'], [7, 1, 'Projektphasen zuordnen', 'mc6'],
+    [7, 2, 'Datenflussplan ordnen', 'dfp1'], [7, 1, 'Datenflussplan oder Ablaufplan', 'dfp2'], [7, 2, 'Mehrfachauswahl verfolgen', 'c11'], [7, 3, 'switch-Anweisung verfolgen', 'c12'],
+    [7, 2, 'Vorher oder nachher erhöhen', 'c13'], [7, 2, 'Logische Ausdrücke auszählen', 'c14'], [7, 2, 'Wiederholen bis zum Ziel', 'c15'], [7, 1, 'Unterlagen zum Programm', 'c16']
   ];
   const tasks = defs.map((d, i) => ({ id: 'alg' + (i + 1), cat: CATS[d[0]], level: d[1], title: d[2], gen: d[3] }));
 

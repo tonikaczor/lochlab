@@ -4,7 +4,7 @@
    window.NET_TASKS  Kurzliste für Karriere/Lernpfad: [{id, cat, title, level}] (Lab-Kennung 'net', Status in localStorage 'lm4.net.done' = {id:true})
    Aufgaben sind reine Daten: {id, cat, level, title, kind, p}; die Frage (Text, Lösung, Erklärung, Tipps) baut NET_CORE.mk(kind, p). */
 (function (root) {
-  const CATS = ['Binär', 'Subnetting', 'VLSM', 'Adressierung', 'Schichten/Ports'];
+  const CATS = ['Binär', 'Subnetting', 'VLSM', 'Adressierung', 'Schichten/Ports', 'Übertragungstechnik'];
   const D4 = [{ n: 'Vertrieb', h: 100 }, { n: 'Technik', h: 50 }, { n: 'Verwaltung', h: 25 }, { n: 'Server', h: 10 }];
   const D4B = [{ n: 'Entwicklung', h: 12 }, { n: 'Lager', h: 60 }, { n: 'Büro', h: 30 }, { n: 'Drucker', h: 2 }];
   const D4C = [{ n: 'Fertigung', h: 28 }, { n: 'Büro', h: 14 }, { n: 'Gäste-WLAN', h: 60 }, { n: 'Lager', h: 5 }];
@@ -48,7 +48,23 @@
     t('Adressierung', 2, 'Gateway-Adresse prüfen', 'gwok', { host: '172.16.5.20', gw: '172.16.5.255', p: 24 }),
     t('Adressierung', 2, 'Adressbereich einer 169.254-Adresse', 'private', { ip: '169.254.12.7' }),
     t('Schichten/Ports', 2, 'ICMP im TCP/IP-Modell', 'tcpip', { item: 'ICMP (Ping)' }),
-    t('Schichten/Ports', 2, 'Standard-Port von IMAP', 'port', { name: 'IMAP' })
+    t('Schichten/Ports', 2, 'Standard-Port von IMAP', 'port', { name: 'IMAP' }),
+    /* ---- Berufsschulstoff (Übertragungstechnik, OSI-Schicht 1 und 2, Nebensprechen): Wissensfragen, eigene Worte. Neue Aufgaben stehen hinten, die Nummern der bisherigen bleiben. */
+    t('Schichten/Ports', 1, 'Dateneinheit der Sicherungsschicht', 'wissen', { q: 'Auf der Sicherungsschicht (OSI-Schicht 2) werden die Bits zu Einheiten mit Absender- und Ziel-MAC-Adresse und Prüfsumme zusammengefasst. Wie heißt diese Dateneinheit?', right: 'Rahmen (Frame)', wrong: ['Paket (Packet)', 'Segment (TCP)', 'Bitfolge (Bits)'],
+      expl: 'Auf Schicht 2 heißt die Dateneinheit Rahmen (englisch Frame). Er trägt die MAC-Adressen von Absender und Ziel und eine Prüfsumme, mit der der Empfänger Übertragungsfehler erkennt. Pakete gehören zu Schicht 3 (IP), Segmente zu Schicht 4 (TCP), einzelne Bits zu Schicht 1.',
+      tips: ['Jede Schicht hat für ihre Dateneinheit einen eigenen Namen. Schicht 2 ist die Schicht des Switches und der MAC-Adressen.', 'Schicht 1: Bits, Schicht 3: Pakete, Schicht 4: Segmente. Welcher Name bleibt für Schicht 2?'] }),
+    t('Schichten/Ports', 2, 'Dateneinheiten von unten nach oben', 'wissen', { q: 'Wie heißen die Dateneinheiten der OSI-Schichten 1 bis 4, von der untersten Schicht aus gezählt?', right: 'Bits, Rahmen, Pakete, Segmente', wrong: ['Bits, Pakete, Rahmen, Segmente', 'Rahmen, Bits, Segmente, Pakete', 'Bits, Segmente, Pakete, Rahmen'],
+      expl: 'Schicht 1 (Bitübertragung) überträgt Bits, Schicht 2 (Sicherung) bildet daraus Rahmen, Schicht 3 (Vermittlung) arbeitet mit Paketen und IP-Adressen, Schicht 4 (Transport) mit Segmenten und Ports. Beim Senden packt jede Schicht die Einheit der Schicht darüber in ihre eigene ein.',
+      tips: ['Denke an die Geräte: Hub auf Schicht 1, Switch auf Schicht 2, Router auf Schicht 3. Welche Einheit bearbeitet jedes Gerät?', 'Der Router leitet Pakete weiter, der Switch Rahmen. Ganz oben in dieser Reihe steht die Einheit von TCP.'] }),
+    t('Übertragungstechnik', 1, 'Störquelle im Blockbild', 'wissen', { q: 'Im Blockbild der Nachrichtenübertragung stehen Quelle, Sender, Kanal, Empfänger und Senke. Zusätzlich wird eine Störquelle eingezeichnet. Wo wirkt sie in der Regel ein?', right: 'am Übertragungskanal (Leitung oder Funkstrecke)', wrong: ['an der Quelle, bevor die Nachricht den Sender erreicht', 'an der Senke, nachdem der Empfänger fertig ist', 'nur am Netzteil des Empfängers'],
+      expl: 'Der Sender wandelt die Nachricht der Quelle in ein Signal, das über den Kanal (Kabel, Lichtwellenleiter, Funkstrecke) läuft. Auf diesem Weg wirken die meisten Störungen ein, zum Beispiel Einkopplung von Nachbarleitungen oder Funkstörungen. Der Empfänger gewinnt die Nachricht zurück und gibt sie an die Senke weiter.',
+      tips: ['Überlege, welcher Teil der Strecke am längsten und am wenigsten geschützt ist.', 'Quelle, Sender, Empfänger und Senke sitzen in Geräten. Dazwischen liegt der Weg durch Kabel oder Luft.'] }),
+    t('Übertragungstechnik', 2, 'Übersprechen am Kabelende', 'wissen', { q: 'In einem Datenkabel koppelt das Signal eines Aderpaares in ein benachbartes Paar über. Gemessen wird das Übersprechen an dem Kabelende, an dem auch gesendet wird. Wie heißt diese Größe?', right: 'NEXT (Nahnebensprechen)', wrong: ['FEXT (Fernnebensprechen)', 'Alien Crosstalk (Fremdnebensprechen)', 'Dämpfung (Einfügedämpfung)'],
+      expl: 'NEXT (Near End Crosstalk) ist das Übersprechen am nahen Ende, also dort, wo das störende Paar eingespeist wird. FEXT (Far End Crosstalk) misst man am fernen Ende. Als Alien Crosstalk bezeichnet man das Übersprechen zwischen verschiedenen, nebeneinander verlegten Kabeln. Die Dämpfung beschreibt, wie stark das eigene Signal auf dem Weg abnimmt.',
+      tips: ['Die Abkürzungen kommen aus dem Englischen: near heißt nah, far heißt fern.', 'Entscheidend ist der Messort: Liegt er beim Sender oder am anderen Ende des Kabels?'] }),
+    t('Übertragungstechnik', 3, 'Übersprechen verringern', 'wissen', { q: 'Wodurch wird das Übersprechen zwischen den Aderpaaren eines Datenkabels vor allem klein gehalten?', right: 'Jedes Paar ist verdrillt, und die Paare haben verschiedene Schlaglängen', wrong: ['Alle Paare sind mit genau derselben Schlaglänge eng miteinander verdrillt', 'Die Adern liegen ohne Verdrillung parallel, damit alle gleich lang bleiben', 'Das Kabel wird möglichst lang gewählt, damit es die Störung dämpft'],
+      expl: 'Übersprechen entsteht durch kapazitive und induktive Kopplung zwischen den Paaren. Durch das Verdrillen heben sich die eingekoppelten Spannungen der beiden Adern eines Paares weitgehend auf. Mit verschiedenen Schlaglängen liegen die Adern zweier Paare nie lange parallel nebeneinander. Gleiche Schlaglängen, parallele Adern oder lange Kabel verschlechtern das Übersprechen.',
+      tips: ['Das Übersprechen kommt von der Kopplung zwischen Adern, die dicht und lange nebeneinander liegen.', 'Wenn zwei Paare gleich verdrillt sind, laufen ihre Adern immer wieder parallel. Wie verhindert man das?'] })
   ].map((x, i) => Object.assign({ id: 'net' + (i + 1) }, x));
 
   /* ===== Beispiele =====

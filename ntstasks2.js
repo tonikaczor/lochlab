@@ -25,7 +25,7 @@
   if (!T || typeof T.register !== 'function') { if (typeof console !== 'undefined') console.warn('ntstasks2.js: ntsdata.js fehlt, die Aufgaben nt17 bis nt32 werden nicht angemeldet.'); return; }
 
   /* ====================================================================== Hilfsfunktionen */
-  const RIGFILES = ['./ntsrig-base.js', './ntsrig-stabil.js', './ntsrig-buck.js', './ntsrig-topo.js', './ntsrig-gate.js', './ntsrig-regel.js', './ntsrig-fehler.js'];
+  const RIGFILES = ['./ntsrig-base.js', './ntsrig-trafo.js', './ntsrig-gleich.js', './ntsrig-stabil.js', './ntsrig-buck.js', './ntsrig-topo.js', './ntsrig-gate.js', './ntsrig-regel.js', './ntsrig-fehler.js'];
   const core = () => { if (!root.NTS_CORE || !root.NTS_CORE.runSeq) { nodeReq('./ntscore.js'); nodeReq('./ntscore-sw.js'); nodeReq('./ntscore-diag.js'); } return root.NTS_CORE || null; };
   const rigs = id => { let R = root.NTS_RIGS; if (!(R && R.defs && (!id || R.defs[id]))) { core(); RIGFILES.forEach(nodeReq); R = root.NTS_RIGS; } return R || null; };
   const C = () => { const c = core(); if (!c || !c.exercise || !c.runSeq || !c.formulas || !c.fault) throw new Error('Rechenkern fehlt'); return c; };
@@ -1013,6 +1013,360 @@
         { name: 'Mindest-Z-Strom addiert, U_E statt U_Z, Diode überlastet', answer: A('stabil', {}, { fields: { izmax: v.geteilt, ilmax: v.ig + v.izmin, rlmin: v.ue / (v.ilmax / 1e3) }, choices: { zukleinlast: 'diode', leerlauf: 'null' } }) }]; } };
   })();
 
+  /* ====================================================================== nt39 bis nt47: Anbindung an den Berufsschulstoff, zweiter Teil (Lernfeld 5.3 Transformator, Gleichrichtung, Siebung; Lernfeld 9.2 Laengstransistor, LM317, Z-Diode)
+   * Eigene Zahlen (Uebungswerte), unabhaengig nachgerechnet in quelle/ntslab/test_schule.js; Grenzwerte (U_F, U_BE, U_ref, Dropout, Adjust-Strom, I_Z,min) aus NTS_CORE.limit.
+   * Die fragwuerdigen Mitschriftstellen (R_V,max der Z-Diode in Lernfeld 5.3, Verlustleistung im Blatt E9.2) wurden nicht uebernommen, nt47 rechnet die Grenzen neu mit eigenen Zahlen. */
+  const TRAFO = () => ({ n1: 1150, n2: 69, ri: 0.4, gleichspannung: false, last: 'R', iLast: 0 });
+  const GLEICH = () => ({ u2: 12, topo: 'bruecke', diode: 'si', rs: 0, c: 2200, rsieb: false, iLast: 0 });
+
+  /* ====================================================================== nt39: Windungszahlen aus den Spannungen (Lernfeld 5.3, Transformator) */
+  const M39 = (() => {
+    const G = { u1: 230, u2: 18, n2: 90, n1b: 1380, n2b: 72, i2: 2 };
+    const vals = () => once('v39', () => { const ue = G.u1 / G.u2, n1 = G.n2 * ue, u2b = G.u1 * G.n2b / G.n1b, i1 = G.i2 * G.n2b / G.n1b;
+      return { u1: G.u1, u2: G.u2, n2: G.n2, ue, n1, n1b: G.n1b, n2b: G.n2b, u2b, i2: G.i2, i1: i1 * 1e3, n1Kehr: G.n2 / ue, u2bKehr: G.u1 * G.n1b / G.n2b, i1Kehr: G.i2 * G.n1b / G.n2b, s: G.u1 * i1 }; });
+    const rN1 = () => once('r39a', () => { const v = vals(); return own(v.n1, '', { wrongs: [{ v: v.n1Kehr, text: 'Du hast das Verhältnis umgedreht. Die Spannungen verhalten sich wie die Windungszahlen: Die Seite mit der höheren Spannung hat mehr Windungen, N_1 = N_2 · U_1 / U_2.' }] }); });
+    const rU2 = () => once('r39b', () => { const v = vals(); return own(v.u2b, 'V', { wrongs: [{ v: v.u2bKehr, text: 'Du hast mit N_1 / N_2 multipliziert. Die Sekundärseite hat weniger Windungen, also weniger Spannung: U_2 = U_1 · N_2 / N_1.' }] }); });
+    const rI1 = () => once('r39c', () => { const v = vals(); return own(v.i1 * 1e-3, 'A', { factor: 1e-3, wrongs: [{ v: v.i1Kehr, text: 'Du hast den Strom im Verhältnis der Spannungen umgerechnet. Die Ströme verhalten sich umgekehrt: Die Seite mit mehr Windungen führt weniger Strom, I_1 = I_2 · N_2 / N_1.' }, { v: G.i2, text: 'Das ist der Sekundärstrom. Auf der Primärseite fließt nur der N_2 / N_1-te Teil davon.' }] }); });
+    const specs = () => once('sp39', () => { const v = vals(); return [
+      { key: 'leistung', q: 'Was gilt beim idealen Transformator für die Scheinleistung auf beiden Seiten?', short: 'Die Leistungsbilanz des idealen Transformators ist richtig beschrieben', right: 'gleich',
+        options: [
+          { value: 'ue', label: 'Die Primärseite hat die ü-fache Leistung der Sekundärseite', grund: 'Dann würde Energie verschwinden. Der ideale Transformator hat keine Verluste: U_1 · I_1 = U_2 · I_2 (hier ' + f(v.s, 0) + ' VA).' },
+          { value: 'gleich', label: 'Primär- und Sekundärseite haben dieselbe Leistung', grund: 'Ohne Verluste wird alles übertragen: U_1 · I_1 = U_2 · I_2 = ' + f(v.s, 0) + ' VA. Deshalb ist der Strom auf der Seite mit der höheren Spannung kleiner.' },
+          { value: 'sek', label: 'Die Sekundärseite hat mehr Leistung, weil der Strom größer ist', grund: 'Der größere Strom kommt mit einer kleineren Spannung zusammen. Das Produkt bleibt gleich: ' + f(v.s, 0) + ' VA auf beiden Seiten.' },
+          { value: 'null', label: 'Die Sekundärseite hat ohne Last schon volle Leistung', grund: 'Ohne Last fließt sekundär kein Strom, es wird keine Leistung übertragen. Erst die Last bestimmt die Leistung (hier ' + f(v.s, 0) + ' VA bei ' + f(v.i2, 0) + ' A).' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'n1'), rN1(), 'Die primäre Windungszahl N_1 ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'u2'), rU2(), 'Die Sekundärspannung des zweiten Transformators ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'i1'), rI1(), 'Der Primärstrom des zweiten Transformators ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Transformator 1 soll aus U_1 = ' + f(G.u1, 0) + ' V die Spannung U_2 = ' + f(G.u2, 0) + ' V machen, die Sekundärwicklung hat N_2 = ' + f(G.n2, 0) + ' Windungen. Berechne N_1. Transformator 2 hat N_1 = ' + f(G.n1b, 0) + ' und N_2 = ' + f(G.n2b, 0) + ' Windungen und liegt ebenfalls an ' + f(G.u1, 0) + ' V. Berechne seine Sekundärspannung und den Primärstrom, wenn sekundär I_2 = ' + f(G.i2, 0) + ' A fließen (idealer Transformator, Übungswerte). Im Prüfstand „' + rname('trafo') + '“ kannst du die Windungszahlen einstellen.',
+      fields: () => [{ key: 'n1', label: 'Transformator 1: Windungszahl N_1', unit: '' }, { key: 'u2', label: 'Transformator 2: Sekundärspannung U_2', unit: 'V' }, { key: 'i1', label: 'Transformator 2: Primärstrom I_1', unit: 'mA' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Beim idealen Transformator verhalten sich die Spannungen wie die Windungszahlen: U_1 / U_2 = N_1 / N_2 = ü. Die Ströme verhalten sich umgekehrt: I_1 / I_2 = N_2 / N_1.',
+        'Übersetzungsverhältnis von Transformator 1: ü = ' + f(v.u1, 0) + ' V / ' + f(v.u2, 0) + ' V = ' + f(v.ue, 2) + ', also N_1 = ü · ' + f(v.n2, 0) + '. Transformator 2: U_2 = ' + f(v.u1, 0) + ' V · ' + f(v.n2b, 0) + ' / ' + f(v.n1b, 0) + ', I_1 = ' + f(v.i2, 0) + ' A · ' + f(v.n2b, 0) + ' / ' + f(v.n1b, 0) + '.',
+        'Musterlösung: N_1 = ' + f(v.n1, 0) + ', U_2 = ' + f(v.u2b, 1) + ' V, I_1 = ' + f(v.i1, 1) + ' mA. Probe: ' + f(v.u1, 0) + ' V · ' + f(v.i1, 1) + ' mA = ' + f(v.u2b, 0) + ' V · ' + f(v.i2, 0) + ' A = ' + f(v.s, 0) + ' VA.'
+      ]; },
+      start: () => A('trafo', TRAFO(), { fields: { n1: null, u2: null, i1: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('trafo', Object.assign(TRAFO(), { n1: G.n1b, n2: G.n2b }), { fields: { n1: v.n1, u2: v.u2b, i1: v.i1 }, choices: rightOf(specs()), value: v.u2b }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Verhältnis umgedreht (N_1 und U_2), ü-fache Leistung', answer: A('trafo', {}, { fields: { n1: v.n1Kehr, u2: v.u2bKehr, i1: v.i1 }, choices: { leistung: 'ue' } }) },
+        { name: 'Strom wie die Spannung umgerechnet, mehr Leistung sekundär', answer: A('trafo', {}, { fields: { n1: v.n1, u2: v.u2b, i1: v.i1Kehr * 1e3 }, choices: { leistung: 'sek' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt40: Widerstandsuebersetzung des Transformators (Lernfeld 5.3, Anpassung mit Transformator) */ /* PRUEFEN P8: Übertrager für einen Lautsprecher; der Begriff Impedanz steht nur als Klammerzusatz, gerechnet wird mit Widerständen */
+  const M40 = (() => {
+    const G = { n1: 1200, n2: 100, r2: 4, r2b: 8, r1b: 800 };
+    const vals = () => once('v40', () => { const ue = G.n1 / G.n2, r1 = ue * ue * G.r2, ueb = Math.sqrt(G.r1b / G.r2b), n2b = G.n1 / ueb;
+      return { n1: G.n1, n2: G.n2, ue, ue2: ue * ue, r2: G.r2, r1, r2b: G.r2b, r1b: G.r1b, ueb, ueb2: ueb * ueb, n2b, r1Lin: ue * G.r2, n2Lin: G.n1 / (G.r1b / G.r2b) }; });
+    const rUe = () => once('r40a', () => { const v = vals(); return own(v.ue, '', { wrongs: [{ v: 1 / v.ue, text: 'Du hast den Kehrwert gebildet. Das Übersetzungsverhältnis ist ü = N_1 / N_2.' }] }); });
+    const rR1 = () => once('r40b', () => { const v = vals(); return own(v.r1, 'Ω', { wrongs: [{ v: v.r1Lin, text: 'Du hast nur mit ü multipliziert. Widerstände werden mit ü² übersetzt, weil die Spannung mit ü steigt und der Strom zugleich mit ü sinkt.' }, { v: G.r2 / (v.ue * v.ue), text: 'Du hast durch ü² geteilt. Auf der Seite mit mehr Windungen erscheint der Widerstand größer: R_1 = ü² · R_2.' }] }); });
+    const rN2 = () => once('r40c', () => { const v = vals(); return own(v.n2b, '', { wrongs: [{ v: v.n2Lin, text: 'Du hast das Widerstandsverhältnis direkt als Windungsverhältnis genommen. Das Windungsverhältnis ist die Wurzel daraus: ü = √(R_1 / R_2).' }] }); });
+    const specs = () => once('sp40', () => { const v = vals(); return [
+      { key: 'warum', q: 'Warum geht das Übersetzungsverhältnis beim Widerstand im Quadrat ein?', short: 'Der Grund für ü² ist richtig benannt', right: 'beide',
+        options: [
+          { value: 'kern', label: 'Weil der Eisenkern den Widerstand quadratisch verstärkt', grund: 'Der Kern führt den magnetischen Fluss, er verstärkt keinen Widerstand. Das Quadrat kommt aus Spannung und Strom: U wird mit ü übersetzt, I mit 1 / ü, R = U / I also mit ü² (hier ' + f(v.ue2, 0) + ').' },
+          { value: 'beide', label: 'Weil Spannung mit ü und Strom mit 1 / ü übersetzt werden', grund: 'Primär ist die Spannung ü-mal größer und der Strom ü-mal kleiner. R = U / I wird damit ü · ü = ' + f(v.ue2, 0) + '-mal so groß.' },
+          { value: 'zwei', label: 'Weil der Transformator zwei Wicklungen hat', grund: 'Die Zahl der Wicklungen ist nicht der Grund. U wird mit ü übersetzt, I mit 1 / ü; im Verhältnis R = U / I steht deshalb ü².' },
+          { value: 'leist', label: 'Weil die Leistung auf der Primärseite ü-mal größer ist', grund: 'Die Leistung ist beim idealen Transformator auf beiden Seiten gleich. Das Quadrat entsteht aus der Übersetzung von Spannung (ü) und Strom (1 / ü).' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'ue'), rUe(), 'Das Übersetzungsverhältnis ü ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'r1'), rR1(), 'Der Widerstand, der primär wirksam ist, ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'n2'), rN2(), 'Die Windungszahl N_2 für die zweite Anpassung ist richtig berechnet', 0);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein Übertrager (Transformator) hat N_1 = ' + f(G.n1, 0) + ' und N_2 = ' + f(G.n2, 0) + ' Windungen. Sekundär ist ein Lautsprecher mit R_2 = ' + f(G.r2, 0) + ' Ω angeschlossen (Wechselstromwiderstand, auch Impedanz genannt; Übungswerte). Berechne das Übersetzungsverhältnis ü und den Widerstand, den die Primärseite sieht. Danach soll ein Lautsprecher mit ' + f(G.r2b, 0) + ' Ω an derselben Primärwicklung wie ' + f(G.r1b, 0) + ' Ω wirken: Wie viele Windungen braucht die Sekundärwicklung? Im Prüfstand „' + rname('trafo') + '“ kannst du die Windungszahlen einstellen.',
+      fields: () => [{ key: 'ue', label: 'Übersetzungsverhältnis ü', unit: '' }, { key: 'r1', label: 'Primär wirksamer Widerstand R_1', unit: 'Ω' }, { key: 'n2', label: 'Windungszahl N_2 für die zweite Anpassung', unit: '' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Spannungen werden mit ü = N_1 / N_2 übersetzt, Ströme mit 1 / ü. Daraus folgt für Widerstände R_1 = ü² · R_2. Umgekehrt ist ü = √(R_1 / R_2), und N_2 = N_1 / ü.',
+        'ü = ' + f(v.n1, 0) + ' / ' + f(v.n2, 0) + ', R_1 = ü² · ' + f(v.r2, 0) + ' Ω. Für die zweite Anpassung: ü = √(' + f(v.r1b, 0) + ' Ω / ' + f(v.r2b, 0) + ' Ω), dann N_2 = ' + f(v.n1, 0) + ' / ü.',
+        'Musterlösung: ü = ' + f(v.ue, 0) + ', R_1 = ' + f(v.ue2, 0) + ' · ' + f(v.r2, 0) + ' Ω = ' + f(v.r1, 0) + ' Ω. Zweite Anpassung: ü = ' + f(v.ueb, 0) + ', N_2 = ' + f(v.n2b, 0) + ' Windungen.'
+      ]; },
+      start: () => A('trafo', TRAFO(), { fields: { ue: null, r1: null, n2: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('trafo', TRAFO(), { fields: { ue: v.ue, r1: v.r1, n2: v.n2b }, choices: rightOf(specs()), value: v.r1 }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Widerstand nur mit ü übersetzt, Widerstandsverhältnis als Windungsverhältnis', answer: A('trafo', {}, { fields: { ue: v.ue, r1: v.r1Lin, n2: v.n2Lin }, choices: { warum: 'kern' } }) },
+        { name: 'Kehrwert von ü, durch ü² geteilt', answer: A('trafo', {}, { fields: { ue: 1 / v.ue, r1: G.r2 / (v.ue * v.ue), n2: v.n2b }, choices: { warum: 'leist' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt41: Mittelwert hinter der Bruecke, 0,9 · U minus 2 · U_F (Lernfeld 5.3, Gleichrichterschaltungen) */ /* PRUEFEN P9: U_di = 0,9 · U ist der lineare Mittelwert der Zweiweggleichrichtung (2√2 / π); 2 · U_F wird als Näherung abgezogen, wie im Unterricht */
+  const M41 = (() => {
+    const G = { u: 12 };
+    const vals = () => once('v41', () => { const uf = lv('uf_si'), udi = 0.9 * G.u, ud = udi - 2 * uf, uhat = G.u * Math.SQRT2, uc = uhat - 2 * uf;
+      return { u: G.u, uf, udi, ud, uhat, uc, uein: 0.45 * G.u, ud1: udi - uf, faktor: 2 * Math.SQRT2 / Math.PI, zweiUf: 2 * uf }; });
+    const rUdi = () => once('r41a', () => { const v = vals(); return own(v.udi, 'V', { wrongs: [{ v: v.uein, text: 'Dein Wert (0,45 · U) gilt für den Einweggleichrichter. Die Brücke nutzt beide Halbwellen: U_di = 0,9 · U.' }, { v: v.uhat, text: 'Das ist der Scheitelwert. Ohne Kondensator zeigt ein Gleichspannungsmessgerät den Mittelwert 0,9 · U.' }] }); });
+    const rUd = () => once('r41b', () => { const v = vals(); return own(v.ud, 'V', { wrongs: [{ v: v.ud1, text: 'Du hast nur eine Diode abgezogen. In der Brücke leiten in jeder Halbwelle zwei Dioden in Reihe: 2 · U_F.' }, { v: v.udi, text: 'Du hast die Dioden nicht berücksichtigt. An den zwei leitenden Dioden fallen zusammen etwa 2 · U_F ab.' }] }); });
+    const rUc = () => once('r41c', () => { const v = vals(); return own(v.uc, 'V', { wrongs: [{ v: v.ud, text: 'Das ist der Mittelwert ohne Kondensator. Ohne Last lädt sich der Kondensator auf den Scheitelwert minus 2 · U_F auf.' }, { v: v.uhat, text: 'Du hast die Dioden vergessen: Der Kondensator lädt sich nur auf Û − 2 · U_F auf.' }] }); });
+    const specs = () => once('sp41', () => { const v = vals(); return [
+      { key: 'last', q: 'Am Kondensator wird nun eine Last angeschlossen. Was geschieht mit der Gleichspannung?', short: 'Die Wirkung der Last auf die Gleichspannung ist richtig beschrieben', right: 'sinkt',
+        options: [
+          { value: 'sinkt', label: 'Die Spannung sinkt etwas unter ' + f(v.uc, 1) + ' V, es entsteht Brumm', grund: 'Zwischen den Ladeimpulsen entlädt die Last den Kondensator: Die Spannung schwankt (Brummspannung) und ihr Mittelwert liegt unter ' + f(v.uc, 2) + ' V, aber deutlich über ' + f(v.ud, 1) + ' V.' },
+          { value: 'udi', label: 'Die Spannung fällt genau auf den Mittelwert ' + f(v.ud, 1) + ' V', grund: 'Auf den Mittelwert ohne Kondensator fällt sie nur, wenn der Kondensator fehlt. Mit Kondensator bleibt sie bei mäßiger Last nahe am Scheitelwert, mit etwas Brumm.' },
+          { value: 'steigt', label: 'Die Spannung steigt auf den Scheitelwert ' + f(v.uhat, 1) + ' V', grund: 'Die Last nimmt Ladung weg, die Spannung kann nicht steigen. Außerdem fallen an den Dioden immer 2 · U_F ab.' },
+          { value: 'gleich', label: 'Die Spannung bleibt bei ' + f(v.uc, 1) + ' V, ganz ohne Brumm', grund: 'Ohne Last bleibt die Ladung erhalten. Mit Last entlädt sich der Kondensator zwischen den Ladeimpulsen, es entsteht eine Brummspannung.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'udi'), rUdi(), 'Der ideale Mittelwert U_di der Brücke ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'ud'), rUd(), 'Der Mittelwert mit den Durchlassspannungen ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'uc'), rUc(), 'Die Spannung am Kondensator ohne Last ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [0.9, 0.45],
+      text: () => 'Ein Brückengleichrichter mit Siliziumdioden (U_F = ' + f(lv('uf_si'), 1) + ' V) liegt an einer Wechselspannung mit dem Effektivwert U = ' + f(G.u, 0) + ' V. Ohne Kondensator misst ein Gleichspannungsmessgerät den linearen Mittelwert. Berechne den idealen Mittelwert U_di = 0,9 · U, den Mittelwert mit den Durchlassspannungen der Dioden und die Spannung, auf die sich ein Ladekondensator ohne Last auflädt. Im Prüfstand „' + rname('gleich') + '“ kannst du Scheitelwert und Gleichspannung ablesen.',
+      fields: () => [{ key: 'udi', label: 'Idealer Mittelwert U_di', unit: 'V' }, { key: 'ud', label: 'Mittelwert mit Durchlassspannungen', unit: 'V' }, { key: 'uc', label: 'Spannung am Kondensator ohne Last', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der lineare Mittelwert einer zweiweg-gleichgerichteten Sinusspannung ist 0,9 · U (genauer 2√2 / π · U). In der Brücke leiten je Halbwelle zwei Dioden, an ihnen fallen etwa 2 · U_F ab. Ein Kondensator ohne Last lädt sich auf den Scheitelwert minus 2 · U_F auf.',
+        'U_di = 0,9 · ' + f(v.u, 0) + ' V. Davon ziehst du 2 · ' + f(v.uf, 1) + ' V = ' + f(v.zweiUf, 1) + ' V ab. Scheitelwert: Û = ' + f(v.u, 0) + ' V · √2 = ' + f(v.uhat, 2) + ' V.',
+        'Musterlösung: U_di = ' + f(v.udi, 1) + ' V, mit Dioden ' + f(v.ud, 1) + ' V, am Kondensator ohne Last ' + f(v.uhat, 2) + ' V − ' + f(v.zweiUf, 1) + ' V = ' + f(v.uc, 2) + ' V. Der Einweggleichrichter käme nur auf 0,45 · U = ' + f(v.uein, 1) + ' V.'
+      ]; },
+      start: () => A('gleich', GLEICH(), { fields: { udi: null, ud: null, uc: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('gleich', GLEICH(), { fields: { udi: v.udi, ud: v.ud, uc: v.uc }, choices: rightOf(specs()), value: v.ud }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Einweg-Faktor, eine Diode, Mittelwert als Kondensatorspannung', answer: A('gleich', {}, { fields: { udi: v.uein, ud: v.ud1, uc: v.ud }, choices: { last: 'udi' } }) },
+        { name: 'Scheitelwert als Mittelwert, Dioden vergessen', answer: A('gleich', {}, { fields: { udi: v.uhat, ud: v.udi, uc: v.uhat }, choices: { last: 'steigt' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt42: RC-Siebglied, Siebfaktor und Brummspannung (Lernfeld 5.3, Siebung) */ /* PRUEFEN P10: Siebfaktor S = √(R² + X_C²) / X_C; die Näherung S ≈ ω · R · C wird ebenfalls angenommen (Toleranz 3 %) */
+  const M42 = (() => {
+    const G = { r: 10, c: 1e-3, fp: 100, ubr: 1.2, il: 0.25, fp3: 300 };
+    const vals = () => once('v42', () => { const w = 2 * Math.PI * G.fp, xc = 1 / (w * G.c), s = Math.sqrt(G.r * G.r + xc * xc) / xc, xc3 = 1 / (2 * Math.PI * G.fp3 * G.c), s3 = Math.sqrt(G.r * G.r + xc3 * xc3) / xc3, xc50 = 1 / (2 * Math.PI * 50 * G.c);
+      return { r: G.r, c: G.c * 1e6, fp: G.fp, ubr: G.ubr, il: G.il, xc, s, sNah: w * G.r * G.c, ubr2: G.ubr / s * 1e3, du: G.il * G.r, fp3: G.fp3, xc3, s3, xc50, s50: Math.sqrt(G.r * G.r + xc50 * xc50) / xc50, ubrMal: G.ubr * s }; });
+    const rXc = () => once('r42a', () => { const v = vals(); return own(v.xc, 'Ω', { wrongs: [{ v: v.xc50, text: 'Du hast mit 50 Hz gerechnet. Hinter der Brücke hat die Brummspannung die Pulsfrequenz f_p = ' + f(v.fp, 0) + ' Hz.' }, { v: 2 * Math.PI * v.fp * G.c, text: 'Du hast ω · C gerechnet. Der Blindwiderstand ist der Kehrwert: X_C = 1 / (ω · C).' }] }); });
+    const rS = () => once('r42b', () => { const v = vals(); return own(v.s, '', { alts: [v.sNah], wrongs: [{ v: v.s50, text: 'Dein Siebfaktor passt zu 50 Hz. Rechne mit der Pulsfrequenz ' + f(v.fp, 0) + ' Hz der Brücke.' }, { v: 1 / v.s, text: 'Du hast den Kehrwert gebildet. Der Siebfaktor ist größer als 1: S = U_Br1 / U_Br2 ≈ R / X_C.' }] }); });
+    const rU = () => once('r42c', () => { const v = vals(); return own(v.ubr2 * 1e-3, 'V', { factor: 1e-3, alts: [G.ubr / v.sNah], wrongs: [{ v: v.ubrMal, text: 'Du hast mit dem Siebfaktor multipliziert. Das Siebglied verkleinert die Brummspannung: U_Br2 = U_Br1 / S.' }] }); });
+    const rDu = () => once('r42d', () => { const v = vals(); return own(v.du, 'V', { wrongs: [{ v: G.il * v.xc, text: 'Du hast mit X_C gerechnet. Der Gleichstrom fließt durch R und nicht durch den Kondensator: ΔU = I · R.' }] }); });
+    const specs = () => once('sp42', () => { const v = vals(); return [
+      { key: 'drei', q: 'Dasselbe Siebglied sitzt hinter einem Drehstrom-Brückengleichrichter (sechs Pulse, f_p = ' + f(v.fp3, 0) + ' Hz). Wie ändert sich der Siebfaktor?', short: 'Die Wirkung der höheren Pulsfrequenz ist richtig beurteilt', right: 'drei',
+        options: [
+          { value: 'gleich', label: 'Er bleibt gleich, weil R und C gleich bleiben', grund: 'Der Blindwiderstand hängt von der Frequenz ab: Bei ' + f(v.fp3, 0) + ' Hz ist X_C nur noch ' + f(v.xc3, 3) + ' Ω. Der Siebfaktor steigt auf etwa ' + f(v.s3, 1) + '.' },
+          { value: 'drittel', label: 'Er sinkt auf ein Drittel, weil die Frequenz steigt', grund: 'Höhere Frequenz heißt kleinerer Blindwiderstand, der Kondensator schließt die Brummspannung besser kurz. Der Siebfaktor steigt auf etwa ' + f(v.s3, 1) + '.' },
+          { value: 'drei', label: 'Er wird etwa dreimal so groß, X_C sinkt', grund: 'X_C sinkt von ' + f(v.xc, 3) + ' Ω auf ' + f(v.xc3, 3) + ' Ω, der Siebfaktor steigt von ' + f(v.s, 2) + ' auf ' + f(v.s3, 1) + ', also etwa auf das Dreifache.' },
+          { value: 'neun', label: 'Er wird etwa neunmal so groß, Frequenz im Quadrat', grund: 'Im Quadrat geht die Frequenz beim LC-Siebglied ein. Beim RC-Glied steigt S etwa linear mit der Frequenz: von ' + f(v.s, 2) + ' auf ' + f(v.s3, 1) + '.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'xc'), rXc(), 'Der Blindwiderstand X_C bei der Pulsfrequenz ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 's'), rS(), 'Der Siebfaktor S ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'ubr2'), rU(), 'Die Brummspannung hinter dem Siebglied ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'du'), rDu(), 'Der Gleichspannungsverlust am Siebwiderstand ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Hinter einem Brückengleichrichter am 50-Hz-Netz (Pulsfrequenz f_p = ' + f(G.fp, 0) + ' Hz) liegt am Ladekondensator eine Brummspannung U_Br1 = ' + f(G.ubr, 1) + ' V (Spitze–Spitze). Ein RC-Siebglied mit R = ' + f(G.r, 0) + ' Ω und einem Kondensator C = ' + f(G.c * 1e6, 0) + ' µF soll sie verkleinern; der Laststrom beträgt ' + f(G.il * 1e3, 0) + ' mA (Übungswerte). Berechne den Blindwiderstand X_C, den Siebfaktor S, die Brummspannung U_Br2 hinter dem Siebglied und den Gleichspannungsverlust am Widerstand. Im Prüfstand „' + rname('gleich') + '“ kannst du ein RC-Glied hinter den Ladekondensator schalten.',
+      fields: () => [{ key: 'xc', label: 'Blindwiderstand X_C', unit: 'Ω' }, { key: 's', label: 'Siebfaktor S', unit: '' }, { key: 'ubr2', label: 'Brummspannung U_Br2', unit: 'mV' }, { key: 'du', label: 'Gleichspannungsverlust am Widerstand', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Das Siebglied ist ein Spannungsteiler aus R und dem Kondensator: X_C = 1 / (2π · f_p · C). Der Siebfaktor ist S = U_Br1 / U_Br2 = √(R² + X_C²) / X_C, für R viel größer als X_C ungefähr ω · R · C. Der Gleichstrom fließt durch R und erzeugt dort einen Spannungsfall.',
+        'X_C = 1 / (2π · ' + f(v.fp, 0) + ' Hz · ' + f(v.c, 0) + ' µF) = ' + f(v.xc, 3) + ' Ω. Für S teilst du √(' + f(v.r, 0) + '² + X_C²) durch X_C. U_Br2 = ' + f(v.ubr, 1) + ' V / S, ΔU = ' + f(v.il, 2) + ' A · ' + f(v.r, 0) + ' Ω.',
+        'Musterlösung: X_C = ' + f(v.xc, 3) + ' Ω, S = ' + f(v.s, 2) + ' (Näherung ω · R · C = ' + f(v.sNah, 2) + '), U_Br2 = ' + f(v.ubr2, 1) + ' mV, ΔU = ' + f(v.du, 1) + ' V.'
+      ]; },
+      start: () => A('gleich', GLEICH(), { fields: { xc: null, s: null, ubr2: null, du: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('gleich', Object.assign(GLEICH(), { rsieb: true }), { fields: { xc: v.xc, s: v.s, ubr2: v.ubr2, du: v.du }, choices: rightOf(specs()), value: v.s }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Mit 50 Hz gerechnet, Siebfaktor bleibt gleich', answer: A('gleich', {}, { fields: { xc: v.xc50, s: v.s50, ubr2: G.ubr / v.s50 * 1e3, du: v.du }, choices: { drei: 'gleich' } }) },
+        { name: 'Brumm mit S multipliziert, Spannungsfall an X_C, Frequenz im Quadrat', answer: A('gleich', {}, { fields: { xc: v.xc, s: v.s, ubr2: v.ubrMal * 1e3, du: G.il * v.xc }, choices: { drei: 'neun' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt43: LC-Siebglied, Induktivitaet bestimmen (Lernfeld 5.3, Siebung) */ /* PRUEFEN P11: S = ω² · L · C − 1 (unbelastetes LC-Glied); die Näherung S ≈ ω² · L · C der Mitschrift wird ebenfalls angenommen; Drosselwiderstand 1,5 Ω ist ein Übungswert */
+  const M43 = (() => {
+    const G = { c: 1e-3, s: 40, fp: 100, il: 0.5, rl: 1.5 };
+    const vals = () => once('v43', () => { const w = 2 * Math.PI * G.fp, w2 = w * w, l = (G.s + 1) / (w2 * G.c), xc = 1 / (w * G.c), rrc = xc * Math.sqrt(G.s * G.s - 1);
+      return { c: G.c * 1e6, s: G.s, s1: G.s + 1, fp: G.fp, w, w2, l: l * 1e3, lNah: G.s / (w2 * G.c) * 1e3, il: G.il, rl: G.rl, dul: G.il * G.rl, xc, rrc, durc: G.il * rrc, lOhneQuadrat: (G.s + 1) / (w * G.c) * 1e3 }; });
+    const rL = () => once('r43a', () => { const v = vals(); return own(v.l * 1e-3, 'H', { factor: 1e-3, alts: [v.lNah * 1e-3], wrongs: [{ v: v.lOhneQuadrat * 1e-3, text: 'Du hast ω nicht quadriert. Beim LC-Siebglied gilt S + 1 = ω² · L · C, die Frequenz geht im Quadrat ein.' }] }); });
+    const rR = () => once('r43b', () => { const v = vals(); return own(v.rrc, 'Ω', { alts: [G.s * v.xc], wrongs: [{ v: v.xc, text: 'Das ist der Blindwiderstand des Kondensators. Für den Siebfaktor ' + f(G.s, 0) + ' muss R etwa ' + f(G.s, 0) + '-mal so groß sein: R ≈ S · X_C.' }] }); });
+    const rDu = () => once('r43c', () => { const v = vals(); return own(v.durc, 'V', { alts: [G.il * G.s * v.xc], wrongs: [{ v: v.dul, text: 'Das ist der Spannungsfall an der Drossel. Gefragt ist der Spannungsfall am Widerstand des RC-Glieds mit demselben Siebfaktor.' }] }); });
+    const specs = () => once('sp43', () => { const v = vals(); return [
+      { key: 'wahl', q: 'Warum nimmt man bei großen Lastströmen eher ein LC-Siebglied als ein RC-Siebglied?', short: 'Der Vorteil des LC-Siebglieds ist richtig benannt', right: 'klein',
+        options: [
+          { value: 'billig', label: 'Die Drossel ist kleiner und billiger als ein Widerstand', grund: 'Eine Drossel für große Ströme ist groß, schwer und teurer als ein Widerstand. Der Vorteil der Drossel ist der kleine Gleichstromwiderstand: ' + f(v.dul, 2) + ' V Verlust statt ' + f(v.durc, 1) + ' V.' },
+          { value: 'klein', label: 'Die Drossel hat nur einen kleinen Gleichstromverlust', grund: 'Für Gleichstrom wirkt nur der Drahtwiderstand der Drossel (' + f(v.rl, 1) + ' Ω, ' + f(v.dul, 2) + ' V Verlust). Das RC-Glied bräuchte für denselben Siebfaktor ' + f(v.rrc, 1) + ' Ω und verlöre ' + f(v.durc, 1) + ' V.' },
+          { value: 'gleich', label: 'Beide verlieren gleich viel Gleichspannung', grund: 'Das RC-Glied mit demselben Siebfaktor verliert ' + f(v.durc, 1) + ' V, die Drossel nur ' + f(v.dul, 2) + ' V. Genau deshalb nimmt man bei großen Strömen das LC-Glied.' },
+          { value: 'frequenz', label: 'Die Drossel macht aus 100 Hz eine höhere Frequenz', grund: 'Eine Drossel ändert die Frequenz nicht. Die Drossel hat für Wechselstrom einen großen Blindwiderstand, für Gleichstrom aber nur ihren kleinen Drahtwiderstand (' + f(v.rl, 1) + ' Ω).' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'l'), rL(), 'Die Induktivität L der Drossel ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'r'), rR(), 'Der Widerstand eines RC-Glieds mit gleichem Siebfaktor ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'du'), rDu(), 'Der Gleichspannungsverlust des RC-Glieds ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein LC-Siebglied hinter einem Brückengleichrichter (Pulsfrequenz f_p = ' + f(G.fp, 0) + ' Hz) soll den Siebfaktor S = ' + f(G.s, 0) + ' erreichen; der Kondensator hat C = ' + f(G.c * 1e6, 0) + ' µF. Berechne die Induktivität L der Drossel (S = ω² · L · C − 1). Vergleiche dann mit einem RC-Siebglied: Welcher Widerstand R ergibt mit demselben Kondensator denselben Siebfaktor, und wie viel Gleichspannung verliert er bei ' + f(G.il * 1e3, 0) + ' mA Laststrom? Die Drossel hat einen Drahtwiderstand von ' + f(G.rl, 1) + ' Ω (Übungswerte). Im Prüfstand „' + rname('gleich') + '“ kannst du zum Vergleich das RC-Glied einschalten.',
+      fields: () => [{ key: 'l', label: 'Induktivität L', unit: 'mH' }, { key: 'r', label: 'Widerstand R des RC-Glieds', unit: 'Ω' }, { key: 'du', label: 'Gleichspannungsverlust des RC-Glieds', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Beim LC-Siebglied gilt S = ω² · L · C − 1, also L = (S + 1) / (ω² · C) mit ω = 2π · f_p. Beim RC-Glied ist S = √(R² + X_C²) / X_C, für große S ungefähr R / X_C. Der Gleichstrom erzeugt am Widerstand einen Spannungsfall I · R.',
+        'ω = 2π · ' + f(v.fp, 0) + ' Hz = ' + f(v.w, 1) + ' 1/s, ω² = ' + f(v.w2, 0) + ' 1/s². L = ' + f(v.s1, 0) + ' / (ω² · ' + f(v.c, 0) + ' µF). X_C = 1 / (ω · C) = ' + f(v.xc, 3) + ' Ω, R ≈ ' + f(v.s, 0) + ' · X_C.',
+        'Musterlösung: L = ' + f(v.l, 1) + ' mH (Näherung ohne − 1: ' + f(v.lNah, 1) + ' mH). RC-Glied: R = ' + f(v.rrc, 1) + ' Ω, ΔU = ' + f(v.il, 1) + ' A · ' + f(v.rrc, 1) + ' Ω = ' + f(v.durc, 1) + ' V; an der Drossel nur ' + f(v.dul, 2) + ' V.'
+      ]; },
+      start: () => A('gleich', GLEICH(), { fields: { l: null, r: null, du: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('gleich', GLEICH(), { fields: { l: v.l, r: v.rrc, du: v.durc }, choices: rightOf(specs()), value: v.l }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'ω nicht quadriert, R gleich X_C, Drossel billiger', answer: A('gleich', {}, { fields: { l: v.lOhneQuadrat, r: v.xc, du: G.il * v.xc }, choices: { wahl: 'billig' } }) },
+        { name: 'Spannungsfall der Drossel für das RC-Glied, gleicher Verlust', answer: A('gleich', {}, { fields: { l: v.l, r: v.rrc, du: v.dul }, choices: { wahl: 'gleich' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt44: Laengstransistor mit Z-Diode auslegen (Lernfeld 9.2, Reihenstabilisierung) */ /* PRUEFEN P12: Z-Strom 10 mA im Betrieb, B = 50 und U_BE = 0,7 V sind Aufgabenwerte; Leerlauf und Kurzschluss als Grenzfälle wie im Unterricht */
+  const M44 = (() => {
+    const G = { u1: 20, uz: 10, il: 1, b: 50, iz: 0.01 };
+    const CTL = () => ({ art: 'zener', ue: G.u1, uz: G.uz, rv: 330, rlast: 1000, kurz: false });
+    const vals = () => once('v44', () => { const ube = lv('ube'), ua = G.uz - ube, ib = G.il / G.b, irv = ib + G.iz, rv = (G.u1 - G.uz) / irv, uce = G.u1 - ua, pv = uce * G.il, izl = irv, pzl = G.uz * izl, ibk = (G.u1 - ube) / rv, ick = G.b * ibk, pk = G.u1 * ick;
+      return { u1: G.u1, uz: G.uz, ube, ua, il: G.il, b: G.b, ib: ib * 1e3, iz: G.iz * 1e3, irv: irv * 1e3, rv, uce, pv, izl: izl * 1e3, pzl: pzl * 1e3, ibk: ibk * 1e3, ick, pk, rvOhneIb: (G.u1 - G.uz) / G.iz, pvOhneUbe: (G.u1 - G.uz) * G.il }; });
+    const rUa = () => once('r44a', () => { const v = vals(); return own(v.ua, 'V', { wrongs: [{ v: G.uz, text: 'Du hast U_BE vergessen. Der Emitter liegt um U_BE = ' + f(v.ube, 1) + ' V unter der Basis: U_A = U_Z − U_BE.' }] }); });
+    const rRv = () => once('r44b', () => { const v = vals(); return own(v.rv, 'Ω', { wrongs: [{ v: v.rvOhneIb, text: 'Du hast den Basisstrom vergessen. Durch R_V fließen Z-Strom und Basisstrom zusammen (' + mAf(v.irv) + ').' }, { v: (G.u1 - G.uz) / (v.ib / 1e3), text: 'Du hast nur mit dem Basisstrom gerechnet. Die Z-Diode braucht zusätzlich ihren Betriebsstrom von ' + f(v.iz, 0) + ' mA.' }] }); });
+    const rPv = () => once('r44c', () => { const v = vals(); return own(v.pv, 'W', { wrongs: [{ v: v.pvOhneUbe, text: 'Du hast mit U_1 − U_Z gerechnet. Am Transistor liegt U_CE = U_1 − U_A, und U_A ist um U_BE kleiner als U_Z.' }, { v: G.u1 * G.il, text: 'Das ist die aufgenommene Leistung. Im Transistor bleibt nur U_CE · I_L.' }] }); });
+    const specs0 = () => once('sp44', () => { const v = vals(); return [
+      { key: 'leer', q: 'Die Last wird abgeklemmt (Leerlauf). Was geschieht?', short: 'Der Leerlauf ist richtig beurteilt', right: 'zdiode',
+        options: [
+          { value: 'trans', label: 'Der Transistor wird heiß, weil er den ganzen Strom führt', grund: 'Ohne Last fließt kein Kollektorstrom, der Transistor ist entlastet. Der Basisstrom fällt weg, und sein Anteil geht zusätzlich durch die Z-Diode (' + mAf(v.izl) + ').' },
+          { value: 'zdiode', label: 'Die Z-Diode übernimmt den ganzen Strom durch R_V', grund: 'Ohne Last braucht der Transistor keinen Basisstrom. Der ganze Strom ' + mAf(v.irv) + ' fließt durch die Z-Diode, P_Z = ' + f(v.pzl, 0) + ' mW. Die Z-Diode muss dafür ausgelegt sein.' },
+          { value: 'nichts', label: 'Nichts ändert sich, alle Ströme bleiben gleich', grund: 'Der Basisstrom fällt weg (' + mAf(v.ib) + '), dafür steigt der Z-Strom von ' + mAf(v.iz) + ' auf ' + mAf(v.izl) + '.' },
+          { value: 'ua', label: 'Die Ausgangsspannung steigt auf U_1', grund: 'Die Ausgangsspannung bleibt durch die Z-Diode etwa bei ' + f(v.ua, 1) + ' V. Die Änderung trifft die Z-Diode: Die Z-Diode führt jetzt ' + mAf(v.izl) + '.' }] },
+      { key: 'kurz', q: 'Der Ausgang wird kurzgeschlossen (ohne Strombegrenzung). Was geschieht?', short: 'Der Kurzschluss ist richtig beurteilt', right: 'ueber',
+        options: [
+          { value: 'zd', label: 'Die Z-Diode brennt durch, der Transistor bleibt heil', grund: 'Die Z-Diode wird eher entlastet, weil der Basisstrom steigt. Belastet wird der Transistor: An ihm liegen ' + f(v.u1, 0) + ' V bei einem Strom von bis zu ' + f(v.ick, 1) + ' A.' },
+          { value: 'aus', label: 'Die Schaltung schaltet sich von selbst ab, nichts passiert', grund: 'Ohne Strombegrenzung gibt es keine Abschaltung. Der Basisstrom steigt auf ' + mAf(v.ibk) + ', der Kollektorstrom auf etwa ' + f(v.ick, 1) + ' A.' },
+          { value: 'ueber', label: 'Der Transistor wird überlastet, er braucht Strombegrenzung', grund: 'Bei U_A = 0 liegt die ganze Eingangsspannung ' + f(v.u1, 0) + ' V am Transistor, der Kollektorstrom steigt auf etwa B · I_B = ' + f(v.ick, 1) + ' A. Das wären rund ' + f(v.pk, 0) + ' W: Ohne Strombegrenzung wird er zerstört.' },
+          { value: 'ua', label: 'Der Strom bleibt bei ' + f(v.il, 0) + ' A, weil die Z-Diode regelt', grund: 'Die Z-Diode regelt die Spannung, nicht den Strom. Im Kurzschluss bestimmt nur noch der Basisstrom (' + mAf(v.ibk) + ') den Kollektorstrom.' }] }]; });
+    const specs = () => once('rot44', () => rot(specs0(), [0, 0]));
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'ua'), rUa(), 'Die Ausgangsspannung U_A ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'rv'), rRv(), 'Der Vorwiderstand R_V ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'pv'), rPv(), 'Die Verlustleistung des Längstransistors ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Eine Stabilisierung mit Längstransistor (Emitterfolger) wird aus U_1 = ' + f(G.u1, 0) + ' V gespeist. Die Basis liegt an einer Z-Diode mit U_Z = ' + f(G.uz, 0) + ' V, die über R_V versorgt wird. Die Last zieht I_L = ' + f(G.il, 0) + ' A, der Transistor hat B = ' + f(G.b, 0) + ', U_BE = ' + f(lv('ube'), 1) + ' V; die Z-Diode soll im Betrieb ' + f(G.iz * 1e3, 0) + ' mA führen (Aufgabenwerte). Berechne die Ausgangsspannung U_A, den Vorwiderstand R_V und die Verlustleistung im Transistor. Beurteile dann Leerlauf und Kurzschluss. Im Prüfstand „' + rname('stabil') + '“ (Z-Diode) kannst du die Z-Stufe allein untersuchen.',
+      fields: () => [{ key: 'ua', label: 'Ausgangsspannung U_A', unit: 'V' }, { key: 'rv', label: 'Vorwiderstand R_V', unit: 'Ω' }, { key: 'pv', label: 'Verlustleistung im Transistor', unit: 'W' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der Transistor arbeitet als Emitterfolger: Der Emitter liegt um U_BE unter der Basis, also U_A = U_Z − U_BE. Der Basisstrom ist I_B = I_L / B; durch R_V fließen I_B und der Z-Strom. Am Transistor liegt U_CE = U_1 − U_A.',
+        'U_A = ' + f(v.uz, 0) + ' V − ' + f(v.ube, 1) + ' V. I_B = ' + f(v.il, 0) + ' A / ' + f(v.b, 0) + ' = ' + f(v.ib, 0) + ' mA, dazu ' + f(v.iz, 0) + ' mA: R_V = (' + f(v.u1, 0) + ' V − ' + f(v.uz, 0) + ' V) / ' + f(v.irv, 0) + ' mA. P_V = U_CE · I_L.',
+        'Musterlösung: U_A = ' + f(v.ua, 1) + ' V, R_V = ' + f(v.rv, 1) + ' Ω, U_CE = ' + f(v.uce, 1) + ' V, P_V = ' + f(v.pv, 1) + ' W. Leerlauf: Die Z-Diode führt ' + f(v.izl, 0) + ' mA. Kurzschluss: etwa ' + f(v.ick, 1) + ' A am Transistor, Strombegrenzung nötig.'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { ua: null, rv: null, pv: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('stabil', CTL(), { fields: { ua: v.ua, rv: v.rv, pv: v.pv }, choices: rightOf(specs()), value: v.pv }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'U_BE vergessen, Basisstrom vergessen, Transistor im Leerlauf heiß', answer: A('stabil', {}, { fields: { ua: G.uz, rv: v.rvOhneIb, pv: v.pvOhneUbe }, choices: { leer: 'trans', kurz: 'zd' } }) },
+        { name: 'Aufgenommene Leistung statt Verlust, nichts ändert sich', answer: A('stabil', {}, { fields: { ua: v.ua, rv: v.rv, pv: G.u1 * G.il }, choices: { leer: 'nichts', kurz: 'aus' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt45: LM317 mit Einstellbereich (Lernfeld 9.2, einstellbarer Spannungsregler) */ /* PRUEFEN P13: Dropout 2 V und Adjust-Strom 50 µA sind die Übungswerte des Labs; der Bereich 3 bis 12 V ist eigen */
+  const M45 = (() => {
+    const G = { r1: 240, umin: 3, umax: 12 };
+    const CTL = () => ({ art: 'lm317', ue: 14, iLast: 0.3, r1: 240, r2: 970 });
+    const vals = () => once('v45', () => { const ur = lv('uref_317'), drop = lv('dropout_317'), iadj = lv('iadj_317'), r2min = G.r1 * (G.umin / ur - 1), r2max = G.r1 * (G.umax / ur - 1), poti = r2max - r2min;
+      return { r1: G.r1, umin: G.umin, umax: G.umax, ur, drop, iadj: iadj * 1e6, r2min, r2max, poti, uemin: G.umax + drop, uadj: G.umax + iadj * r2max, dadj: iadj * r2max * 1e3, ir1: ur / G.r1 * 1e3, r2minFalsch: G.r1 * G.umin / ur, r2maxFalsch: G.r1 * G.umax / ur, umin0: ur }; });
+    const rMin = () => once('r45a', () => { const v = vals(); return own(v.r2min, 'Ω', { wrongs: [{ v: v.r2minFalsch, text: 'Du hast die Eins vergessen. Aus U = U_ref · (1 + R_2 / R_1) folgt R_2 = R_1 · (U / U_ref − 1).' }] }); });
+    const rMax = () => once('r45b', () => { const v = vals(); return own(v.r2max, 'Ω', { wrongs: [{ v: v.r2maxFalsch, text: 'Du hast die Eins vergessen: R_2 = R_1 · (U / U_ref − 1).' }, { v: v.poti, text: 'Das ist die Änderung von R_2 über den Bereich. Gefragt ist der ganze Widerstand R_2 bei ' + f(G.umax, 0) + ' V.' }] }); });
+    const rUe = () => once('r45c', () => { const v = vals(); return own(v.uemin, 'V', { wrongs: [{ v: G.umax, text: 'Der Regler braucht einen Mindest-Spannungsabfall (Dropout, hier ' + f(v.drop, 0) + ' V): U_E muss um diesen Betrag über der höchsten Ausgangsspannung liegen.' }, { v: G.umin + v.drop, text: 'Du hast mit der kleinsten Ausgangsspannung gerechnet. Die Eingangsspannung muss auch für ' + f(G.umax, 0) + ' V reichen.' }] }); });
+    const rUa = () => once('r45d', () => { const v = vals(); return own(v.dadj * 1e-3, 'V', { factor: 1e-3, wrongs: [{ v: v.iadj * 1e-6 * v.r2min, text: 'Du hast mit R_2,min gerechnet. Gefragt ist die größte Ausgangsspannung, also R_2,max = ' + f(v.r2max, 0) + ' Ω.' }, { v: v.iadj * 1e-6 * G.r1, text: 'Du hast mit R_1 gerechnet. Der Adjust-Strom fließt aus dem ADJ-Anschluss durch R_2 nach Masse: ΔU = I_adj · R_2.' }] }); });
+    const specs = () => once('sp45', () => { const v = vals(); return [
+      { key: 'r0', q: 'Das Poti für R_2 wird ohne Festwiderstand eingesetzt und auf 0 Ω gedreht. Welche Ausgangsspannung entsteht?', short: 'Die Ausgangsspannung bei R_2 = 0 ist richtig bestimmt', right: 'uref',
+        options: [
+          { value: 'null', label: '0 V, der Ausgang ist abgeschaltet', grund: 'Der LM317 hält immer U_ref zwischen Ausgang und ADJ. Bei R_2 = 0 liegt ADJ auf Masse, der Ausgang also bei ' + f(v.ur, 2) + ' V.' },
+          { value: 'uref', label: f(v.ur, 2) + ' V, die Referenzspannung', grund: 'Mit R_2 = 0 wird U = U_ref · (1 + 0) = ' + f(v.ur, 2) + ' V. Deshalb setzt man einen Festwiderstand R_2,min = ' + f(v.r2min, 0) + ' Ω in Reihe, damit der Bereich bei ' + f(G.umin, 0) + ' V beginnt.' },
+          { value: 'ue', label: 'Die volle Eingangsspannung', grund: 'Der Regler bleibt in Betrieb und hält U_ref = ' + f(v.ur, 2) + ' V zwischen Ausgang und ADJ. Die Eingangsspannung erscheint nicht am Ausgang, der Rest fällt am Regler ab.' },
+          { value: 'min', label: f(G.umin, 0) + ' V, der untere Bereichswert', grund: 'Die ' + f(G.umin, 0) + ' V gibt es nur mit dem Festwiderstand ' + f(v.r2min, 0) + ' Ω in Reihe zum Poti. Ohne ihn sinkt die Spannung auf ' + f(v.ur, 2) + ' V.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'r2min'), rMin(), 'R_2 für die kleinste Ausgangsspannung ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'r2max'), rMax(), 'R_2 für die größte Ausgangsspannung ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'uemin'), rUe(), 'Die kleinste Eingangsspannung ist richtig bestimmt', 1);
+      numRow(r, rawOf(a, 'dadj'), rUa(), 'Die Anhebung durch den Adjust-Strom ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein LM317 (U_ref = ' + f(lv('uref_317'), 2) + ' V) soll mit R_1 = ' + f(G.r1, 0) + ' Ω eine Ausgangsspannung von ' + f(G.umin, 0) + ' V bis ' + f(G.umax, 0) + ' V liefern. Berechne R_2 für beide Enden des Bereichs und die kleinste Eingangsspannung (Dropout ' + f(lv('dropout_317'), 0) + ' V, Übungswert). Berechne dann, um wie viel die größte Ausgangsspannung steigt, wenn der Adjust-Strom I_adj = ' + f(lv('iadj_317') * 1e6, 0) + ' µA durch R_2 mitfließt. Im Prüfstand „' + rname('stabil') + '“ (LM317) kannst du R_1 und R_2 einstellen.',
+      fields: () => [{ key: 'r2min', label: 'R_2 für ' + f(G.umin, 0) + ' V', unit: 'Ω' }, { key: 'r2max', label: 'R_2 für ' + f(G.umax, 0) + ' V', unit: 'Ω' }, { key: 'uemin', label: 'Kleinste Eingangsspannung', unit: 'V' }, { key: 'dadj', label: 'Anhebung der größten Spannung durch den Adjust-Strom', unit: 'mV' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der LM317 hält U_ref zwischen Ausgang und ADJ. Mit dem Teiler gilt U = U_ref · (1 + R_2 / R_1), umgestellt R_2 = R_1 · (U / U_ref − 1). Die Eingangsspannung muss um den Dropout über der höchsten Ausgangsspannung liegen. Der Adjust-Strom erzeugt an R_2 zusätzlich I_adj · R_2.',
+        'R_2 = ' + f(v.r1, 0) + ' Ω · (' + f(v.umin, 0) + ' V / ' + f(v.ur, 2) + ' V − 1) und ' + f(v.r1, 0) + ' Ω · (' + f(v.umax, 0) + ' V / ' + f(v.ur, 2) + ' V − 1). U_E,min = ' + f(v.umax, 0) + ' V + ' + f(v.drop, 0) + ' V. Mit Adjust-Strom: ' + f(v.iadj, 0) + ' µA · R_2,max dazuzählen.',
+        'Musterlösung: R_2 = ' + f(v.r2min, 0) + ' Ω bis ' + f(v.r2max, 0) + ' Ω (Poti ' + f(v.poti, 0) + ' Ω mit ' + f(v.r2min, 0) + ' Ω in Reihe), U_E,min = ' + f(v.uemin, 0) + ' V, U_max = ' + f(v.uadj, 3) + ' V (' + f(v.dadj, 0) + ' mV durch den Adjust-Strom).'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { r2min: null, r2max: null, uemin: null, dadj: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('stabil', Object.assign(CTL(), { r2: Math.round(v.r2max) }), { fields: { r2min: v.r2min, r2max: v.r2max, uemin: v.uemin, dadj: v.dadj }, choices: rightOf(specs()), value: v.r2max }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Eins vergessen, ohne Dropout, ohne Adjust-Strom', answer: A('stabil', {}, { fields: { r2min: v.r2minFalsch, r2max: v.r2maxFalsch, uemin: G.umax, dadj: v.iadj * 1e-3 * v.r2min }, choices: { r0: 'null' } }) },
+        { name: 'Änderung als R_2,max, Dropout zur kleinsten Spannung, unterer Bereichswert', answer: A('stabil', {}, { fields: { r2min: v.r2min, r2max: v.poti, uemin: G.umin + v.drop, dadj: v.dadj }, choices: { r0: 'min' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt46: Z-Diode, Kennwerte aus der Typbezeichnung (Lernfeld 9.2, Z-Diode: Datenblatt) */ /* PRUEFEN P14: Faustregel I_Z,min ≈ 0,1 · I_Z,max wie in der Mitschrift; das Lab rechnet sonst mit I_Z,min = 5 mA (Übungswert). Kennbuchstabe C = ±5 % */
+  const M46 = (() => {
+    const G = { uz: 6.8, tol: 0.05, ptot: 0.5 };
+    const CTL = () => ({ art: 'zener', ue: 12, uz: 6.8, rv: 470, rlast: 4700, kurz: false });
+    const vals = () => once('v46', () => { const izmax = G.ptot / G.uz; return { uz: G.uz, tol: G.tol * 100, ptot: G.ptot * 1e3, uzmin: G.uz * (1 - G.tol), uzmax: G.uz * (1 + G.tol), izmax: izmax * 1e3, izmin: izmax * 100, zehn: 10, malU: G.ptot * G.uz * 1e3, labMin: lv('iz_min') * 1e3 }; });
+    const rUmin = () => once('r46a', () => { const v = vals(); return own(v.uzmin, 'V', { wrongs: [{ v: G.uz * 0.9, text: 'Du hast mit ±10 % gerechnet. Der Kennbuchstabe C steht für ±5 %.' }, { v: G.uz * 0.98, text: 'Du hast mit ±2 % gerechnet (Kennbuchstabe B). C steht für ±5 %.' }] }); });
+    const rUmax = () => once('r46b', () => { const v = vals(); return own(v.uzmax, 'V', { wrongs: [{ v: G.uz * 1.1, text: 'Du hast mit ±10 % gerechnet. Der Kennbuchstabe C steht für ±5 %.' }] }); });
+    const rImax = () => once('r46c', () => { const v = vals(); return own(v.izmax * 1e-3, 'A', { factor: 1e-3, wrongs: [{ v: v.malU * 1e-3, text: 'Du hast P_tot · U_Z gerechnet. Aus P = U · I folgt I_Z,max = P_tot / U_Z.' }] }); });
+    const rImin = () => once('r46d', () => { const v = vals(); return own(v.izmin * 1e-3, 'A', { factor: 1e-3, wrongs: [{ v: v.izmax * 1e-3, text: 'Das ist I_Z,max. Nach der Faustregel ist der kleinste Z-Strom etwa ein Zehntel davon.' }] }); });
+    const specs = () => once('sp46', () => { const v = vals(); return [
+      { key: 'v', q: 'Wofür steht das V in der Kennzeichnung 6V8?', short: 'Die Bedeutung des V ist richtig erkannt', right: 'komma',
+        options: [
+          { value: 'volt', label: 'Für die Einheit Volt hinter der Zahl 6', grund: 'Dann stünde dort 6 V und eine 8 ohne Bedeutung. Das V ersetzt das Komma: 6V8 heißt ' + f(v.uz, 1) + ' V; so geht beim Druck kein Komma verloren.' },
+          { value: 'komma', label: 'Für das Komma: 6V8 bedeutet ' + f(v.uz, 1) + ' V', grund: 'Das V steht an der Stelle des Kommas, wie bei Widerständen das R oder k (4k7). 6V8 bedeutet U_Z = ' + f(v.uz, 1) + ' V.' },
+          { value: 'reihe', label: 'Für die Bauform V (bedrahtet)', grund: 'Die Bauform steht im Typnamen oder Gehäuse, nicht in der Spannungsangabe. Das V ersetzt das Komma: ' + f(v.uz, 1) + ' V.' },
+          { value: 'max', label: 'Für die größte Sperrspannung von 68 V', grund: 'Die Zahl bezeichnet die Z-Spannung, und das V ist ein Komma: ' + f(v.uz, 1) + ' V, nicht 68 V.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'uzmin'), rUmin(), 'Die kleinste Z-Spannung nach Toleranz ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'uzmax'), rUmax(), 'Die größte Z-Spannung nach Toleranz ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'izmax'), rImax(), 'Der größte Z-Strom I_Z,max ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'izmin'), rImin(), 'Der kleinste Z-Strom nach der Faustregel ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [0.1, 0.05, 4.7, 68, 6, 8],
+      text: () => 'Auf einer Z-Diode steht die Kennzeichnung C6V8, im Datenblatt die zulässige Verlustleistung P_tot = ' + f(G.ptot * 1e3, 0) + ' mW (Aufgabenwerte). Der Kennbuchstabe C bedeutet eine Toleranz von ±5 %. Berechne den Bereich, in dem die Z-Spannung liegen darf, den größten zulässigen Z-Strom und den kleinsten Z-Strom nach der Faustregel I_Z,min ≈ 0,1 · I_Z,max. Im Prüfstand „' + rname('stabil') + '“ (Z-Diode) ist eine solche Diode eingestellt.',
+      fields: () => [{ key: 'uzmin', label: 'Kleinste Z-Spannung', unit: 'V' }, { key: 'uzmax', label: 'Größte Z-Spannung', unit: 'V' }, { key: 'izmax', label: 'Größter Z-Strom I_Z,max', unit: 'mA' }, { key: 'izmin', label: 'Kleinster Z-Strom I_Z,min (Faustregel)', unit: 'mA' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'In der Kennzeichnung steht das V an der Stelle des Kommas. Die Toleranz gilt nach oben und unten. Aus der zulässigen Leistung folgt I_Z,max = P_tot / U_Z; nach der Faustregel ist I_Z,min etwa ein Zehntel davon.',
+        'Toleranz: ' + f(v.uz, 1) + ' V · (1 ± 0,05). I_Z,max = ' + f(v.ptot, 0) + ' mW / ' + f(v.uz, 1) + ' V, I_Z,min = I_Z,max / ' + f(v.zehn, 0) + '.',
+        'Musterlösung: U_Z = ' + f(v.uzmin, 2) + ' V bis ' + f(v.uzmax, 2) + ' V, I_Z,max = ' + f(v.izmax, 1) + ' mA, I_Z,min ≈ ' + f(v.izmin, 2) + ' mA. Das Lab rechnet in anderen Aufgaben mit I_Z,min = ' + f(v.labMin, 0) + ' mA als Übungswert.'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { uzmin: null, uzmax: null, izmax: null, izmin: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('stabil', CTL(), { fields: { uzmin: v.uzmin, uzmax: v.uzmax, izmax: v.izmax, izmin: v.izmin }, choices: rightOf(specs()), value: v.izmax }); },
+      wrong: () => { const v = vals(); return [
+        { name: '±10 % statt ±5 %, Leistung mal Spannung, V als Volt', answer: A('stabil', {}, { fields: { uzmin: G.uz * 0.9, uzmax: G.uz * 1.1, izmax: v.malU, izmin: v.izmin }, choices: { v: 'volt' } }) },
+        { name: '±2 %, I_Z,max als I_Z,min, Sperrspannung 68 V', answer: A('stabil', {}, { fields: { uzmin: G.uz * 0.98, uzmax: v.uzmax, izmax: v.izmax, izmin: v.izmax }, choices: { v: 'max' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt47: Vorwiderstand fuer schwankende Spannung und Last (Lernfeld 9.2, Z-Diode: Arbeitsbereich) */ /* PRUEFEN P15: eigene Werte; R_V,max aus U_E,min und I_L,max, R_V,min aus U_E,max und I_L,min (neu gerechnet, die Zahl der Mitschrift wurde nicht übernommen); E12-Reihe */
+  const M47 = (() => {
+    const G = { uz: 5.1, ptot: 0.5, uemin: 10, uemax: 14, ilmin: 0.01, ilmax: 0.04 };
+    const CTL = () => ({ art: 'zener', ue: 12, uz: 5.1, rv: 470, rlast: 4700, kurz: false });
+    const vals = () => once('v47', () => { const izmin = lv('iz_min'), izmax = G.ptot / G.uz, rvmax = (G.uemin - G.uz) / (G.ilmax + izmin), rvmin = (G.uemax - G.uz) / (izmax + G.ilmin), iz82 = (G.uemax - G.uz) / 82 - G.ilmin, iz120 = (G.uemin - G.uz) / 120 - G.ilmax, iz100a = (G.uemax - G.uz) / 100 - G.ilmin, iz100b = (G.uemin - G.uz) / 100 - G.ilmax;
+      return { uz: G.uz, ptot: G.ptot * 1e3, uemin: G.uemin, uemax: G.uemax, ilmin: G.ilmin * 1e3, ilmax: G.ilmax * 1e3, izmin: izmin * 1e3, izmax: izmax * 1e3, rvmax, rvmin, dmin: G.uemin - G.uz, dmax: G.uemax - G.uz, imax1: (G.ilmax + izmin) * 1e3, imin1: (izmax + G.ilmin) * 1e3,
+        iz82: iz82 * 1e3, iz120: iz120 * 1e3, iz100a: iz100a * 1e3, iz100b: iz100b * 1e3, iz68: ((G.uemax - G.uz) / 68 - G.ilmin) * 1e3, rvmaxFalsch: (G.uemax - G.uz) / (G.ilmax + izmin), rvminFalsch: (G.uemin - G.uz) / (izmax + G.ilmin), rvmaxOhne: (G.uemin - G.uz) / G.ilmax }; });
+    const rMax = () => once('r47a', () => { const v = vals(); return own(v.rvmax, 'Ω', { wrongs: [{ v: v.rvmaxFalsch, text: 'Du hast mit der höchsten Eingangsspannung gerechnet. Der größte Vorwiderstand muss auch im ungünstigsten Fall reichen: kleinste Eingangsspannung und größter Laststrom.' }, { v: v.rvmaxOhne, text: 'Du hast den kleinsten Z-Strom vergessen. Auch bei größter Last muss die Z-Diode noch I_Z,min = ' + f(v.izmin, 0) + ' mA führen.' }] }); });
+    const rMin = () => once('r47b', () => { const v = vals(); return own(v.rvmin, 'Ω', { wrongs: [{ v: v.rvminFalsch, text: 'Du hast mit der kleinsten Eingangsspannung gerechnet. Die Z-Diode wird am stärksten belastet bei höchster Eingangsspannung und kleinstem Laststrom.' }] }); });
+    const specs = () => once('sp47', () => { const v = vals(); return [
+      { key: 'e12', q: 'Welcher Normwert der E12-Reihe (68 Ω, 82 Ω, 100 Ω, 120 Ω) erfüllt beide Grenzen?', short: 'Der Normwert für R_V ist richtig gewählt', right: '100',
+        options: [
+          { value: '82', label: '82 Ω', grund: 'Mit 82 Ω fließen bei ' + f(v.uemax, 0) + ' V und ' + f(v.ilmin, 0) + ' mA Last ' + f(v.iz82, 1) + ' mA durch die Z-Diode, mehr als I_Z,max = ' + f(v.izmax, 1) + ' mA. 82 Ω liegt knapp unter R_V,min = ' + f(v.rvmin, 1) + ' Ω.' },
+          { value: '100', label: '100 Ω', grund: '100 Ω liegt zwischen ' + f(v.rvmin, 1) + ' Ω und ' + f(v.rvmax, 1) + ' Ω: Der Z-Strom bleibt zwischen ' + f(v.iz100b, 1) + ' mA und ' + f(v.iz100a, 1) + ' mA, also über I_Z,min und unter I_Z,max.' },
+          { value: '120', label: '120 Ω', grund: 'Mit 120 Ω bleiben bei ' + f(v.uemin, 0) + ' V und ' + f(v.ilmax, 0) + ' mA Last nur ' + f(v.iz120, 2) + ' mA für die Z-Diode, weniger als I_Z,min = ' + f(v.izmin, 0) + ' mA: Die Z-Diode stabilisiert nicht mehr.' },
+          { value: '68', label: '68 Ω', grund: 'Mit 68 Ω fließen im ungünstigsten Fall ' + f(v.iz68, 1) + ' mA durch die Z-Diode, deutlich mehr als I_Z,max = ' + f(v.izmax, 1) + ' mA.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'rvmax'), rMax(), 'Der größte zulässige Vorwiderstand R_V,max ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'rvmin'), rMin(), 'Der kleinste zulässige Vorwiderstand R_V,min ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [68, 82, 100, 120],
+      text: () => 'Eine Z-Diode mit U_Z = ' + f(G.uz, 1) + ' V und P_tot = ' + f(G.ptot * 1e3, 0) + ' mW soll eine Last versorgen, deren Strom zwischen ' + f(G.ilmin * 1e3, 0) + ' mA und ' + f(G.ilmax * 1e3, 0) + ' mA schwankt. Die Eingangsspannung schwankt zwischen ' + f(G.uemin, 0) + ' V und ' + f(G.uemax, 0) + ' V; der kleinste Z-Strom ist I_Z,min = ' + f(lv('iz_min') * 1e3, 0) + ' mA (Übungswerte). Berechne den größten und den kleinsten zulässigen Vorwiderstand und wähle einen Normwert. Im Prüfstand „' + rname('stabil') + '“ (Z-Diode) kannst du die Grenzfälle mit Eingangsspannung und Last nachstellen.',
+      fields: () => [{ key: 'rvmax', label: 'Größter Vorwiderstand R_V,max', unit: 'Ω' }, { key: 'rvmin', label: 'Kleinster Vorwiderstand R_V,min', unit: 'Ω' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Zwei ungünstigste Fälle: Damit die Z-Diode noch stabilisiert, muss bei kleinster Eingangsspannung und größtem Laststrom noch I_Z,min fließen (daraus R_V,max). Damit sie nicht überlastet wird, darf bei größter Eingangsspannung und kleinstem Laststrom höchstens I_Z,max = P_tot / U_Z fließen (daraus R_V,min).',
+        'R_V,max = (' + f(v.uemin, 0) + ' V − ' + f(v.uz, 1) + ' V) / (' + f(v.ilmax, 0) + ' mA + ' + f(v.izmin, 0) + ' mA). I_Z,max = ' + f(v.ptot, 0) + ' mW / ' + f(v.uz, 1) + ' V = ' + f(v.izmax, 2) + ' mA. R_V,min = (' + f(v.uemax, 0) + ' V − ' + f(v.uz, 1) + ' V) / (' + f(v.izmax, 2) + ' mA + ' + f(v.ilmin, 0) + ' mA).',
+        'Musterlösung: R_V,max = ' + f(v.dmin, 1) + ' V / ' + f(v.imax1, 0) + ' mA = ' + f(v.rvmax, 1) + ' Ω, R_V,min = ' + f(v.dmax, 1) + ' V / ' + f(v.imin1, 2) + ' mA = ' + f(v.rvmin, 1) + ' Ω. Normwert: 100 Ω.'
+      ]; },
+      start: () => A('stabil', CTL(), { fields: { rvmax: null, rvmin: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('stabil', Object.assign(CTL(), { rv: 100 }), { fields: { rvmax: v.rvmax, rvmin: v.rvmin }, choices: rightOf(specs()), value: v.rvmax }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Grenzfälle vertauscht, zu kleiner Normwert', answer: A('stabil', {}, { fields: { rvmax: v.rvmaxFalsch, rvmin: v.rvminFalsch }, choices: { e12: '82' } }) },
+        { name: 'I_Z,min vergessen, zu großer Normwert', answer: A('stabil', {}, { fields: { rvmax: v.rvmaxOhne, rvmin: v.rvmin }, choices: { e12: '120' } }) }]; } };
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'nt17', lab: 'nts', cat: 'Prüfungsnah', title: 'Strombegrenzung dimensionieren (Pool W2024-23)', level: 3, rig: 'stabil' }, M17),
@@ -1036,9 +1390,18 @@
     tk({ id: 'nt35', lab: 'nts', cat: 'Z-Diode', title: 'Vorwiderstand für den Z-Strom', level: 2, rig: 'stabil' }, M35),
     tk({ id: 'nt36', lab: 'nts', cat: 'Z-Diode', title: 'Zener- und Lawinendurchbruch', level: 2, rig: 'stabil' }, M36),
     tk({ id: 'nt37', lab: 'nts', cat: 'Linearregler', title: 'Regelschaltung mit Referenz und Längstransistor', level: 3, rig: 'stabil' }, M37),
-    tk({ id: 'nt38', lab: 'nts', cat: 'Z-Diode', title: 'Strom- und Lastbereich der Z-Diode-Stufe', level: 2, rig: 'stabil' }, M38)
+    tk({ id: 'nt38', lab: 'nts', cat: 'Z-Diode', title: 'Strom- und Lastbereich der Z-Diode-Stufe', level: 2, rig: 'stabil' }, M38),
+    tk({ id: 'nt39', lab: 'nts', cat: 'Transformator', title: 'Windungszahlen aus den Spannungen', level: 1, rig: 'trafo' }, M39),
+    tk({ id: 'nt40', lab: 'nts', cat: 'Transformator', title: 'Widerstandsübersetzung des Transformators', level: 2, rig: 'trafo' }, M40),
+    tk({ id: 'nt41', lab: 'nts', cat: 'Gleichrichter', title: 'Mittelwert hinter der Brücke: 0,9 · U minus 2 · U_F', level: 2, rig: 'gleich' }, M41),
+    tk({ id: 'nt42', lab: 'nts', cat: 'Gleichrichter', title: 'RC-Siebglied: Siebfaktor und Brummspannung', level: 2, rig: 'gleich' }, M42),
+    tk({ id: 'nt43', lab: 'nts', cat: 'Gleichrichter', title: 'LC-Siebglied: Induktivität bestimmen', level: 3, rig: 'gleich' }, M43),
+    tk({ id: 'nt44', lab: 'nts', cat: 'Linearregler', title: 'Längstransistor mit Z-Diode auslegen', level: 3, rig: 'stabil' }, M44),
+    tk({ id: 'nt45', lab: 'nts', cat: 'Linearregler', title: 'LM317 mit Einstellbereich 3 bis 12 V', level: 2, rig: 'stabil' }, M45),
+    tk({ id: 'nt46', lab: 'nts', cat: 'Z-Diode', title: 'Z-Diode: Kennwerte aus der Typbezeichnung', level: 1, rig: 'stabil' }, M46),
+    tk({ id: 'nt47', lab: 'nts', cat: 'Z-Diode', title: 'Vorwiderstand für schwankende Spannung und Last', level: 3, rig: 'stabil' }, M47)
   ];
-  const MODS = { nt17: M17, nt18: M18, nt19: M19, nt20: M20, nt21: M21, nt22: M22, nt23: M23, nt24: M24, nt25: M25, nt26: M26, nt27: M27, nt28: M28, nt29: M29, nt30: M30, nt31: M31, nt32: M32, nt33: M33, nt34: M34, nt35: M35, nt36: M36, nt37: M37, nt38: M38 };
+  const MODS = { nt17: M17, nt18: M18, nt19: M19, nt20: M20, nt21: M21, nt22: M22, nt23: M23, nt24: M24, nt25: M25, nt26: M26, nt27: M27, nt28: M28, nt29: M29, nt30: M30, nt31: M31, nt32: M32, nt33: M33, nt34: M34, nt35: M35, nt36: M36, nt37: M37, nt38: M38, nt39: M39, nt40: M40, nt41: M41, nt42: M42, nt43: M43, nt44: M44, nt45: M45, nt46: M46, nt47: M47 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);

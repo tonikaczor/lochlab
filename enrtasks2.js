@@ -1,4 +1,4 @@
-/* enrtasks2.js - Energie-Lab: Aufgaben en16 bis en36 (en31-en36 neu: Netzanschluss und Leistungsuebertragung, Berufsschulstoff) mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP5b)
+/* enrtasks2.js - Energie-Lab: Aufgaben en16 bis en42 (en31-en36: Netzanschluss und Leistungsuebertragung, en37-en42: Trafo, Hubwerk-Zuleitung, Akku-Laufzeit; Berufsschulstoff) mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP5b)
  * Registrierung: ENR_TASKS.register([ ... ]) (ENR_TASKS und ENR_TASKS.util kommen aus enrdata.js; enrdata.js VOR dieser Datei laden, in Node holt sich die
  * Datei fehlende Teile per require). Format, Regeln und answer-Objekt wie in enrtasks1.js und enrdata.js.
  * Schwellwerte: aus der gerechneten Musterloesung (Reserven: 25 % bei Verlusten, 3 Prozentpunkte bei Anteilen, siehe Konstanten je Aufgabe), ENR_TASKS.thresholds2() nennt sie.
@@ -601,6 +601,153 @@
       wrong: () => { const v = vals(); return [{ name: 'Beträge addiert', answer: A('netz', {}, { fields: { na: v.summeA, nb: v.summeB } }) }, { name: 'Neutralleiterstrom null angenommen', answer: A('netz', {}, { fields: { na: 0, nb: 0 } }) }]; } };
   })();
 
+  /* ====================================================================== en37 bis en42: Transformator, Zuleitung zum Hubwerk, Akku-Laufzeit (Berufsschulstoff LF 5.3 und LF 8.1)
+   * Reine Rechen- und Auswahlaufgaben mit eigenen Zahlen (Uebungswerte, idealer Trafo ohne Verluste); Referenzwerte rechnet vals() selbst. */
+
+  /* ---------- en37: Ortsnetztrafo, Strom auf der Mittelspannungsseite ---------- */
+  const M37 = (() => {
+    const G = { u1: 10000, u2: 400, i2: 330 };
+    const vals = () => once('v37', () => { const ue = G.u1 / G.u2, i1 = G.i2 / ue; return { u1kv: G.u1 / 1000, u2: G.u2, u2kv: G.u2 / 1000, i2: G.i2, ue, i1, falsch: G.i2 * ue, s: SQ3 * G.u2 * G.i2 / 1000 }; });
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'ue'), { label: 'Das Übersetzungsverhältnis ü = U₁ / U₂ ist richtig berechnet', refs: [{ v: v.ue }], unit: '', digits: 1, wrong: [{ v: 1 / v.ue, msg: 'Das ist U₂ / U₁. Das Übersetzungsverhältnis setzt die Oberspannung ins Verhältnis zur Unterspannung: ü = U₁ / U₂.' }] });
+      numRow(r, U.fieldNum(a, 'i1'), { label: 'Der Strom je Außenleiter auf der Mittelspannungsseite ist richtig berechnet', refs: [{ v: v.i1 }], unit: 'A', digits: 1, wrong: [{ v: v.falsch, msg: 'Du hast den Strom mit ü multipliziert. Beim Trafo verhalten sich die Ströme umgekehrt wie die Spannungen: Auf der Seite mit der höheren Spannung fließt der kleinere Strom, I₁ = I₂ / ü.' }, { v: v.i2, msg: 'Das ist der Strom auf der Niederspannungsseite. Die Leistung bleibt (ohne Verluste) gleich, bei höherer Spannung ist der Strom kleiner.' }] });
+    });
+    return { vals, check, consts: [],
+      text: () => 'Eine Photovoltaik-Freiflächenanlage speist über einen Ortsnetztrafo in das Mittelspannungsnetz ein. Der Trafo setzt die Außenleiterspannung von ' + f(G.u2, 0) + ' V auf ' + f(G.u1 / 1000, 0) + ' kV herauf. Auf der Niederspannungsseite fließen je Außenleiter ' + f(G.i2, 0) + ' A (Übungswerte, Trafo ideal gerechnet, ohne Verluste). Berechne a) das Übersetzungsverhältnis ü = U₁ / U₂ (U₁ Mittelspannung) und b) den Strom je Außenleiter auf der Mittelspannungsseite.',
+      fields: () => [{ key: 'ue', label: 'Übersetzungsverhältnis ü', unit: '' }, { key: 'i1', label: 'Strom je Außenleiter auf der Mittelspannungsseite', unit: 'A' }],
+      hint: () => { const v = vals(); return [
+        'Ein idealer Trafo überträgt die Leistung ohne Verluste. Steigt die Spannung, muss der Strom im gleichen Verhältnis sinken. Spannungen und Ströme stehen also im umgekehrten Verhältnis.',
+        'ü = U₁ / U₂ mit U₁ = ' + f(v.u1kv, 0) + ' kV und U₂ = ' + f(v.u2kv, 1) + ' kV. Für die Ströme gilt I₁ / I₂ = U₂ / U₁ = 1 / ü. Achte darauf, beide Spannungen in derselben Einheit einzusetzen.',
+        'Musterlösung: ü = ' + f(v.u1kv, 0) + ' kV / ' + f(v.u2kv, 1) + ' kV = ' + f(v.ue, 0) + '. I₁ = ' + f(v.i2, 0) + ' A / ' + f(v.ue, 0) + ' = ' + f(v.i1, 1) + ' A. Die übertragene Scheinleistung ist auf beiden Seiten rund ' + f(v.s, 0) + ' kVA.'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { ue: null, i1: null } }),
+      sol: () => A('netz', NSTART(), { fields: { ue: vals().ue, i1: vals().i1 } }),
+      wrong: () => { const v = vals(); return [{ name: 'Strom mit ü multipliziert', answer: A('netz', {}, { fields: { ue: v.ue, i1: v.falsch } }) }, { name: 'Verhältnis umgedreht, Strom unverändert', answer: A('netz', {}, { fields: { ue: 1 / v.ue, i1: v.i2 } }) }]; } };
+  })();
+
+  /* ---------- en38: Kleintrafo im Ladegerät, Netzstrom und Windungszahl ---------- */
+  const M38 = (() => {
+    const G = { u1: 230, u2: 12, i2: 5, n1: 1150 };
+    const vals = () => once('v38', () => { const i1 = G.i2 * G.u2 / G.u1, n2 = G.n1 * G.u2 / G.u1; return { u1: G.u1, u2: G.u2, i2: G.i2, n1: G.n1, i1, i1mA: i1 * 1000, n2, falschI: G.i2 * G.u1 / G.u2, falschN: G.n1 * G.u1 / G.u2, p: G.u2 * G.i2 }; });
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'i1'), { label: 'Der Strom auf der Netzseite ist richtig berechnet', refs: [{ v: v.i1 }], unit: 'A', digits: 3, wrong: [{ v: v.falschI, msg: 'Du hast das Spannungsverhältnis verkehrt herum eingesetzt. Auf der Netzseite liegt die höhere Spannung, dort fließt der kleinere Strom: I₁ = I₂ · U₂ / U₁.' }, { v: v.i1mA, msg: 'Das ist der Wert in mA. Die Antwort wird in A verlangt.' }] });
+      numRow(r, U.fieldNum(a, 'n2'), { label: 'Die Windungszahl der Sekundärwicklung ist richtig berechnet', refs: [{ v: v.n2 }], unit: '', digits: 0, wrong: [{ v: v.falschN, msg: 'Du hast mit U₁ / U₂ multipliziert. Die Windungszahlen verhalten sich wie die Spannungen: Die Wicklung mit der kleineren Spannung hat weniger Windungen, N₂ = N₁ · U₂ / U₁.' }] });
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Ladegerät für einen ' + f(G.u2, 0) + '-V-Akku hat einen Kleintrafo für ' + f(G.u1, 0) + ' V / ' + f(G.u2, 0) + ' V. Die Primärwicklung hat ' + f(G.n1, 0) + ' Windungen, auf der Sekundärseite fließen ' + f(G.i2, 0) + ' A (Übungswerte, Trafo ideal gerechnet). Berechne a) den Strom, den der Trafo auf der Netzseite aufnimmt, in A und b) die Windungszahl der Sekundärwicklung.',
+      fields: () => [{ key: 'i1', label: 'Strom auf der Netzseite I₁', unit: 'A' }, { key: 'n2', label: 'Windungszahl der Sekundärwicklung N₂', unit: '' }],
+      hint: () => { const v = vals(); return [
+        'Beim idealen Trafo verhalten sich die Spannungen wie die Windungszahlen. Die Ströme verhalten sich umgekehrt: Die Leistung ist auf beiden Seiten gleich.',
+        'Die Sekundärseite gibt ' + f(v.p, 0) + ' W ab, die Netzseite nimmt dieselbe Leistung bei ' + f(v.u1, 0) + ' V auf. Für die Windungen gilt N₂ / N₁ = U₂ / U₁.',
+        'Musterlösung: I₁ = ' + f(v.i2, 0) + ' A · ' + f(v.u2, 0) + ' V / ' + f(v.u1, 0) + ' V = ' + f(v.i1, 3) + ' A (' + f(v.i1mA, 0) + ' mA). N₂ = ' + f(v.n1, 0) + ' · ' + f(v.u2, 0) + ' V / ' + f(v.u1, 0) + ' V = ' + f(v.n2, 0) + ' Windungen.'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { i1: null, n2: null } }),
+      sol: () => A('netz', NSTART(), { fields: { i1: vals().i1, n2: vals().n2 } }),
+      wrong: () => { const v = vals(); return [{ name: 'Verhältnisse verkehrt herum', answer: A('netz', {}, { fields: { i1: v.falschI, n2: v.falschN } }) }, { name: 'Strom in mA eingetragen', answer: A('netz', {}, { fields: { i1: v.i1mA, n2: v.n2 } }) }]; } };
+  })();
+
+  /* ---------- en39: Hubwerk, aufgenommene Leistung und Strom am Drehstromnetz ---------- */
+  const M39 = (() => {
+    const G = { m: 400, h: 12, t: 20, g: 9.81, eta: 0.75, u: 400, cos: 0.8 };
+    const vals = () => once('v39', () => { const fkr = G.m * G.g, pab = fkr * G.h / G.t, pzu = pab / G.eta, i = pzu / (SQ3 * G.u * G.cos); return { m: G.m, h: G.h, t: G.t, g: G.g, eta: G.eta, u: G.u, cos: G.cos, fkr, pab, pzu, i, w3: SQ3, pMal: pab * G.eta, iOhneEta: pab / (SQ3 * G.u * G.cos), iOhneW3: pzu / (G.u * G.cos), iOhneCos: pzu / (SQ3 * G.u) }; });
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'pzu'), { label: 'Die aufgenommene elektrische Leistung ist richtig berechnet', refs: [{ v: v.pzu }], unit: 'W', digits: 0, wrong: [{ v: v.pab, msg: 'Das ist die Hubleistung an der Last. Antrieb und Getriebe haben Verluste, das Netz muss mehr liefern: P_zu = P_ab / η.' }, { v: v.pMal, msg: 'Du hast mit dem Wirkungsgrad multipliziert. Die aufgenommene Leistung ist größer als die abgegebene, also durch η teilen.' }] });
+      numRow(r, U.fieldNum(a, 'i'), { label: 'Der Strom je Außenleiter ist richtig berechnet', refs: [{ v: v.i }], unit: 'A', digits: 2, wrong: [{ v: v.iOhneW3, msg: 'Du hast den Verkettungsfaktor √3 vergessen. Im Drehstromnetz gilt P = √3 · U · I · cos φ.' }, { v: v.iOhneEta, msg: 'Du hast mit der Hubleistung statt mit der aufgenommenen Leistung gerechnet. Der Strom fließt für die Leistung, die der Antrieb aus dem Netz nimmt.' }, { v: v.iOhneCos, msg: 'Du hast cos φ vergessen. Nur der Wirkanteil des Stroms überträgt die Wirkleistung.' }] });
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Hubwerk hebt eine Last von ' + f(G.m, 0) + ' kg in ' + f(G.t, 0) + ' s gleichmäßig um ' + f(G.h, 0) + ' m an. Der Wirkungsgrad von Motor und Getriebe zusammen beträgt ' + f(G.eta, 2) + ', der Motor hängt am Drehstromnetz mit ' + f(G.u, 0) + ' V Außenleiterspannung und hat cos φ = ' + f(G.cos, 1) + ' (Übungswerte, g = ' + f(G.g, 2) + ' m/s²). Berechne für die Auslegung der Zuleitung a) die elektrische Leistung, die der Antrieb aufnimmt, in W und b) den Strom je Außenleiter.',
+      fields: () => [{ key: 'pzu', label: 'Aufgenommene Leistung P_zu', unit: 'W' }, { key: 'i', label: 'Strom je Außenleiter I', unit: 'A' }],
+      hint: () => { const v = vals(); return [
+        'Rechne in drei Schritten: Hubleistung aus Gewichtskraft, Hubhöhe und Zeit, dann die aufgenommene Leistung mit dem Wirkungsgrad, zuletzt den Strom aus der Drehstrom-Leistungsformel.',
+        'F = m · g = ' + f(v.fkr, 0) + ' N, P_ab = F · h / t = ' + f(v.pab, 1) + ' W. P_zu ist größer als P_ab. Für den Strom gilt P_zu = √3 · U · I · cos φ mit √3 = ' + f(v.w3, 3) + '.',
+        'Musterlösung: P_zu = ' + f(v.pab, 1) + ' W / ' + f(v.eta, 2) + ' = ' + f(v.pzu, 1) + ' W. I = ' + f(v.pzu, 1) + ' W / (√3 · ' + f(v.u, 0) + ' V · ' + f(v.cos, 1) + ') = ' + f(v.i, 2) + ' A.'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { pzu: null, i: null } }),
+      sol: () => A('netz', NSTART(), { fields: { pzu: vals().pzu, i: vals().i } }),
+      wrong: () => { const v = vals(); return [{ name: 'Wirkungsgrad vergessen', answer: A('netz', {}, { fields: { pzu: v.pab, i: v.iOhneEta } }) }, { name: 'mit η multipliziert, √3 vergessen', answer: A('netz', {}, { fields: { pzu: v.pMal, i: v.iOhneW3 } }) }]; } };
+  })();
+
+  /* ---------- en40: Spannungsfall der Drehstrom-Zuleitung zum Hubwerk, kleinster Normquerschnitt ---------- */
+  const M40 = (() => {
+    const G = { i: 5.7, l: 60, cos: 0.8, kappa: 56, a: 1.5, u: 400, proz: 1 }, NORM = [1.5, 2.5, 4, 6, 10, 16];
+    const vals = () => once('v40', () => {
+      const du = SQ3 * G.i * G.l * G.cos / (G.kappa * G.a), duMax = G.proz / 100 * G.u, amin = SQ3 * G.i * G.l * G.cos / (G.kappa * duMax), norm = NORM.find(x => x + 1e-9 >= amin);
+      return { i: G.i, l: G.l, cos: G.cos, kappa: G.kappa, a: G.a, u: G.u, proz: G.proz, w3: SQ3, du, duProz: du / G.u * 100, duMax, amin, norm, duOhneW3: G.i * G.l * G.cos / (G.kappa * G.a), du1ph: 2 * G.i * G.l * G.cos / (G.kappa * G.a), duOhneCos: SQ3 * G.i * G.l / (G.kappa * G.a), naechste: NORM[NORM.indexOf(norm) + 1] };
+    });
+    const check = mk('netz', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.fieldNum(a, 'du'), { label: 'Der Spannungsfall bei ' + f(v.a, 1) + ' mm² ist richtig berechnet', refs: [{ v: v.du }], tol: 0.05, unit: 'V', digits: 2, wrong: [{ v: v.du1ph, msg: 'Das ist die Formel für Wechselstrom mit Hin- und Rückleiter (Faktor 2). Bei symmetrischer Drehstromlast fließt im Neutralleiter kein Strom, der Faktor ist √3: ΔU = √3 · I · l · cos φ / (κ · A).' }, { v: v.duOhneW3, msg: 'Du hast den Faktor √3 vergessen. Der Spannungsfall zwischen den Außenleitern ist um √3 größer als auf einem einzelnen Leiter.' }, { v: v.duOhneCos, msg: 'Du hast cos φ vergessen. Beim Spannungsfall auf der Leitung zählt hier der Wirkanteil: ΔU = √3 · I · l · cos φ / (κ · A).' }] });
+      numRow(r, U.fieldNum(a, 'norm'), { label: 'Der kleinste ausreichende Normquerschnitt ist richtig gewählt', refs: [{ v: v.norm }], absTol: 0.01, unit: 'mm²', digits: 1, wrong: [{ v: v.a, msg: 'Mit ' + f(v.a, 1) + ' mm² fallen ' + f(v.du, 2) + ' V ab, mehr als die erlaubten ' + f(v.duMax, 0) + ' V. Der Querschnitt muss größer werden.' }, { v: v.naechste, msg: 'Dieser Querschnitt reicht, ist aber nicht der kleinste. Der Mindestquerschnitt ist ' + f(v.amin, 2) + ' mm², der nächste Normquerschnitt darüber genügt.' }] });
+    });
+    return { vals, check, consts: NORM,
+      text: () => 'Das Hubwerk nimmt im Betrieb je Außenleiter ' + f(G.i, 1) + ' A bei cos φ = ' + f(G.cos, 1) + ' auf. Es hängt über eine ' + f(G.l, 0) + ' m lange Drehstrom-Zuleitung aus Kupfer (κ = ' + f(G.kappa, 0) + ' m/(Ω·mm²)) am Netz mit ' + f(G.u, 0) + ' V Außenleiterspannung, die Last ist symmetrisch (Übungswerte). Berechne a) den Spannungsfall ΔU in V bei ' + f(G.a, 1) + ' mm² und b) wähle den kleinsten Normquerschnitt (1,5 / 2,5 / 4 / 6 / 10 / 16 mm²), bei dem der Spannungsfall höchstens ' + f(G.proz, 0) + ' % der Außenleiterspannung beträgt.',
+      fields: () => [{ key: 'du', label: 'Spannungsfall ΔU bei ' + f(G.a, 1) + ' mm²', unit: 'V' }, { key: 'norm', label: 'Kleinster ausreichender Normquerschnitt', unit: 'mm²' }],
+      hint: () => { const v = vals(); return [
+        'Bei symmetrischer Drehstromlast rechnest du den Spannungsfall zwischen den Außenleitern mit dem Faktor √3 statt mit dem Faktor 2 für Hin- und Rückleiter. Für den Querschnitt stellst du dieselbe Formel nach A um.',
+        'ΔU = √3 · I · l · cos φ / (κ · A). Erlaubt sind ' + f(v.proz, 0) + ' % von ' + f(v.u, 0) + ' V, also ' + f(v.duMax, 0) + ' V. Der Mindestquerschnitt ist A = √3 · I · l · cos φ / (κ · ΔU_max); danach aufrunden.',
+        'Musterlösung: ΔU = √3 · ' + f(v.i, 1) + ' A · ' + f(v.l, 0) + ' m · ' + f(v.cos, 1) + ' / (' + f(v.kappa, 0) + ' · ' + f(v.a, 1) + ' mm²) = ' + f(v.du, 2) + ' V (' + f(v.duProz, 2) + ' %). A_min = ' + f(v.amin, 2) + ' mm², gewählt ' + f(v.norm, 1) + ' mm².'
+      ]; },
+      start: () => A('netz', NSTART(), { fields: { du: null, norm: null } }),
+      sol: () => A('netz', NSTART(), { fields: { du: vals().du, norm: vals().norm } }),
+      wrong: () => { const v = vals(); return [{ name: 'Wechselstromformel, Querschnitt unverändert', answer: A('netz', {}, { fields: { du: v.du1ph, norm: v.a } }) }, { name: 'ohne √3, zu großer Querschnitt', answer: A('netz', {}, { fields: { du: v.duOhneW3, norm: v.naechste } }) }]; } };
+  })();
+
+  /* ---------- en41: Laufzeit am 12-V-Akku ---------- */
+  const M41 = (() => {
+    const G = { c: 60, dod: 80, i1: 3, i2: 0.5, u: 12 };
+    const vals = () => once('v41', () => { const ig = G.i1 + G.i2, nutz = G.c * G.dod / 100, t = nutz / ig; return { c: G.c, dod: G.dod, i1: G.i1, i2: G.i2, u: G.u, ig, nutz, t, ohneDod: G.c / ig, nurMotor: nutz / G.i1, wh: nutz * G.u, p: ig * G.u }; });
+    const check = mk('regler', [], (c, r, a) => {
+      const v = vals();
+      numRow(r, U.numAns(a), { label: 'Die Laufzeit bis zur zulässigen Entladetiefe ist richtig berechnet', refs: [{ v: v.t }], unit: 'h', digits: 1, wrong: [{ v: v.ohneDod, msg: 'Du hast die ganze Kapazität eingesetzt. Der Akku darf nur bis zur angegebenen Entladetiefe entladen werden: nutzbar ist ' + f(v.dod, 0) + ' % der Kapazität.' }, { v: v.nurMotor, msg: 'Du hast nur den Strom des Antriebs eingesetzt. Die Steuerung zieht zusätzlich Strom, die Ströme werden addiert.' }] });
+    });
+    return { vals, check, consts: [],
+      text: () => 'Eine bewegte Werbefigur läuft an einem ' + f(G.u, 0) + '-V-Akku mit ' + f(G.c, 0) + ' Ah. Der Antrieb zieht im Mittel ' + f(G.i1, 0) + ' A, die Steuerung mit Lautsprecher zusätzlich ' + f(G.i2, 1) + ' A. Der Akku darf bis zu einer Entladetiefe von ' + f(G.dod, 0) + ' % entladen werden (Übungswerte, Kapazität unabhängig vom Strom gerechnet). Wie viele Stunden läuft die Figur, bis diese Grenze erreicht ist?',
+      ask: { label: 'Laufzeit', unit: 'h' },
+      hint: () => { const v = vals(); return [
+        'Die Laufzeit ist die nutzbare Ladung geteilt durch den Gesamtstrom. Nutzbar ist nicht die ganze Kapazität, sondern nur der Anteil bis zur Entladetiefe. Alle Verbraucher hängen am selben Akku, ihre Ströme addieren sich.',
+        'Nutzbare Ladung: ' + f(v.c, 0) + ' Ah · ' + f(v.dod, 0) + ' % = ' + f(v.nutz, 0) + ' Ah. Der Gesamtstrom ist die Summe aus Antrieb und Steuerung.',
+        'Musterlösung: I = ' + f(v.i1, 0) + ' A + ' + f(v.i2, 1) + ' A = ' + f(v.ig, 1) + ' A. t = ' + f(v.nutz, 0) + ' Ah / ' + f(v.ig, 1) + ' A = ' + f(v.t, 1) + ' h. Als Energie gerechnet: ' + f(v.wh, 0) + ' Wh / ' + f(v.p, 0) + ' W ergibt dasselbe.'
+      ]; },
+      start: () => A('regler', {}, { value: null }),
+      sol: () => A('regler', {}, { value: vals().t }),
+      wrong: () => { const v = vals(); return [{ name: 'ganze Kapazität', answer: A('regler', {}, { value: v.ohneDod }) }, { name: 'nur Antriebsstrom', answer: A('regler', {}, { value: v.nurMotor }) }]; } };
+  })();
+
+  /* ---------- en42: Ströme und Drahtstärke am Trafo (Auswahl) ---------- */
+  const M42 = (() => {
+    const OPT1 = [
+      { value: 'hoch', label: 'auf der Seite mit der größeren Spannung' },
+      { value: 'nieder', label: 'auf der Seite mit kleinerer Spannung' },
+      { value: 'gleich', label: 'auf beiden Seiten gleich groß' }
+    ];
+    const OPT2 = [
+      { value: 'viel', label: 'die Wicklung mit den meisten Windungen' },
+      { value: 'gleich', label: 'beide Wicklungen sind gleich dick' },
+      { value: 'wenig', label: 'die Wicklung mit weniger Windungen' }
+    ];
+    const vals = () => ({ anzahl: 2 });
+    const check = mk('netz', [], (c, r, a) => {
+      const g1 = choiceOf(a, 'strom'), g2 = choiceOf(a, 'draht'), none = g => g === undefined || g === null || g === '';
+      const lab = (o, g) => (o.find(x => x.value === g) || {}).label || g;
+      r(!none(g1) && g1 === 'nieder', 'Die Seite mit dem größeren Strom ist richtig benannt', none(g1) ? 'Wähle eine Antwort aus.' : 'Du hast „' + lab(OPT1, g1) + '“ gewählt. Ohne Verluste ist die Leistung auf beiden Seiten gleich. Wo die Spannung kleiner ist, muss deshalb der Strom größer sein.');
+      r(!none(g2) && g2 === 'wenig', 'Die Wicklung mit dem dickeren Draht ist richtig benannt', none(g2) ? 'Wähle eine Antwort aus.' : 'Du hast „' + lab(OPT2, g2) + '“ gewählt. Den dickeren Draht braucht die Wicklung mit dem größeren Strom. Das ist die Unterspannungswicklung, und sie hat weniger Windungen, weil die Windungszahlen sich wie die Spannungen verhalten.');
+    });
+    return { vals, check, consts: [],
+      text: () => 'In einem Trafo für 20 kV / 0,4 kV (Übungswerte) haben die beiden Wicklungen sehr unterschiedliche Drähte. Beantworte zwei Fragen zum idealen Trafo: Auf welcher Seite fließt der größere Strom, und welche Wicklung braucht deshalb den dickeren Draht?',
+      choices: () => [{ key: 'strom', q: 'Auf welcher Seite fließt der größere Strom?', options: OPT1 }, { key: 'draht', q: 'Welche Wicklung braucht den dickeren Draht?', options: OPT2 }],
+      hint: () => [
+        'Ein idealer Trafo nimmt auf der einen Seite genau die Leistung auf, die er auf der anderen abgibt. Leistung ist Spannung mal Strom.',
+        'Die Spannungen verhalten sich wie die Windungszahlen, die Ströme umgekehrt. Ein größerer Strom braucht einen größeren Leiterquerschnitt, damit der Draht nicht zu warm wird.',
+        'Musterlösung: Der größere Strom fließt auf der Seite mit der kleineren Spannung. Diese Wicklung hat weniger Windungen und braucht den dickeren Draht.'
+      ],
+      start: () => A('netz', NSTART(), { choices: {} }),
+      sol: () => A('netz', NSTART(), { choices: { strom: 'nieder', draht: 'wenig' } }),
+      wrong: () => [{ name: 'große Spannung, viele Windungen', answer: A('netz', {}, { choices: { strom: 'hoch', draht: 'viel' } }) }, { name: 'alles gleich', answer: A('netz', {}, { choices: { strom: 'gleich', draht: 'gleich' } }) }] };
+  })();
+
   /* ====================================================================== Registrierung */
   T.register([
     def('en16', 'Akku', 'C-Rate, Ladezeit und Autonomie rechnen', 1, 'regler', M16),
@@ -623,9 +770,15 @@
     def('en33', 'Wechselrichter', 'Leistungen bei Leistungsfaktor unter eins', 2, 'netz', M33),
     def('en34', 'Grundlagen', 'Die Schnittstelle zum Netz', 1, 'netz', M34),
     def('en35', 'Rechnen', 'Gleiche Leistung bei anderer Strangspannung', 2, 'netz', M35),
-    def('en36', 'Wechselrichter', 'Drei Wechselrichter, ungleiche Leistung', 3, 'netz', M36)
+    def('en36', 'Wechselrichter', 'Drei Wechselrichter, ungleiche Leistung', 3, 'netz', M36),
+    def('en37', 'Rechnen', 'Ströme am Ortsnetztrafo', 1, 'netz', M37),
+    def('en38', 'Rechnen', 'Kleintrafo im Akku-Ladegerät', 2, 'netz', M38),
+    def('en39', 'Rechnen', 'Hubwerk am Drehstromnetz', 2, 'netz', M39),
+    def('en40', 'Rechnen', 'Zuleitung zum Hubwerk', 3, 'netz', M40),
+    def('en41', 'Akku', 'Wie lange läuft die Werbefigur?', 1, 'regler', M41),
+    def('en42', 'Grundlagen', 'Zwei Wicklungen, zwei Drahtstärken', 1, 'netz', M42)
   ]);
   /* Musterwerte der Aufgaben en16-en30 (Schwellen aus Musterloesung, Stand 2026-10-22) fuer Tests und Ausbilder */
-  T.thresholds2 = () => ({ en16: M16.vals(), en17: M17.vals(), en18: M18.vals(), en19: M19.vals(), en20: M20.vals(), en21: M21.vals(), en22: M22.vals(), en23: M23.vals(), en24: M24.vals(), en25: M25.vals(), en26: M26.vals(), en27: M27.vals(), en28: M28.vals(), en29: M29.vals(), en30: M30.vals(), en31: M31.vals(), en32: M32.vals(), en33: M33.vals(), en34: M34.vals(), en35: M35.vals(), en36: M36.vals() });
+  T.thresholds2 = () => ({ en16: M16.vals(), en17: M17.vals(), en18: M18.vals(), en19: M19.vals(), en20: M20.vals(), en21: M21.vals(), en22: M22.vals(), en23: M23.vals(), en24: M24.vals(), en25: M25.vals(), en26: M26.vals(), en27: M27.vals(), en28: M28.vals(), en29: M29.vals(), en30: M30.vals(), en31: M31.vals(), en32: M32.vals(), en33: M33.vals(), en34: M34.vals(), en35: M35.vals(), en36: M36.vals(), en37: M37.vals(), en38: M38.vals(), en39: M39.vals(), en40: M40.vals(), en41: M41.vals(), en42: M42.vals() });
   if (typeof module !== 'undefined') module.exports = { tasks: T.tasks };
 })(typeof window !== 'undefined' ? window : globalThis);

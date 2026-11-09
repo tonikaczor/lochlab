@@ -1,6 +1,6 @@
 'use strict';
 /* Tonfunk Kalkulations-Lab: Aufgaben und Beispiele (Lab-Kennung 'kal', Präfix lm4.kal.).
-   KAL_DATA.tasks: 36 Aufgaben (Stufe 1-3) in 6 Kategorien; jede hat make(R, C) mit seed-fähigem Zufallsgenerator R und KAL_CORE C.
+   KAL_DATA.tasks: 41 Aufgaben (Stufe 1-3) in 7 Kategorien; jede hat make(R, C) mit seed-fähigem Zufallsgenerator R und KAL_CORE C.
    make liefert eine Aufgabeninstanz { text, rows, ask | fill, tips[], expl }:
      ask  = { key, label, unit, tol, value }  -> eine Zahl eingeben (Antwort = Zeile key des Lösungswegs)
      fill = [Schlüssel]                       -> Schema-Tabelle: diese Zeilen ausfüllen, die übrigen sind vorgegeben
@@ -13,7 +13,7 @@
   const tries = (gen, ok) => { let p; for (let i = 0; i < 80; i++) { p = gen(); if (ok(p)) return p; } return p; };
   const exact = p => Object.assign({}, p, { exact: true });
   const neat = (fn, key) => p => { const a = fn(p), b = fn(exact(p)); return a.ok && b.ok && Math.abs(a.val[key] - b.val[key]) < 0.0045; };
-  const CATS = ['Bezug', 'Selbstkosten', 'Angebot', 'Rückwärts/Differenz', 'Spanne/Faktor', 'Deckungsbeitrag'];
+  const CATS = ['Bezug', 'Selbstkosten', 'Angebot', 'Rückwärts/Differenz', 'Spanne/Faktor', 'Deckungsbeitrag', 'Qualität und Projekt'];
   const tasks = [];
   const add = (cat, title, level, make) => tasks.push({ id: 'kal' + (tasks.length + 1), cat, title, level, make });
   const num = (C, res, key, label, unit) => ({ key, label, unit, tol: C.tolOf(unit), value: res.val[key] });
@@ -210,6 +210,44 @@
     const q = dbP(R), e = ri(R, 100, 500, 50), dbs = q.p - q.kv, g = dbs * e, N = q.N + e;
     const rows = [{ k: 'dbs', label: 'Stückdeckungsbeitrag db', op: '', v: dbs, u: '€', calc: C.eur(q.p) + ' − ' + C.eur(q.kv) }, { k: 'need', label: 'Nötiger Gesamtdeckungsbeitrag', op: '', v: q.kfix + g, u: '€', calc: C.eur(q.kfix) + ' + ' + C.eur(g) }, { k: 'menge', label: 'Absatzmenge', op: '', v: N, u: 'Stück', sum: true, calc: C.eur(q.kfix + g) + ' : ' + C.eur(dbs) }];
     return { text: dbTxt(C, q) + '. Der Betrieb will einen Gewinn von ' + C.eur(g) + ' erzielen. Wie viele Stück muss er dafür absetzen?', rows, ask: { key: 'menge', label: 'Absatzmenge', unit: 'Stück', tol: 0.01, value: N }, tips: ['Der Gesamtdeckungsbeitrag muss die Fixkosten und zusätzlich den Zielgewinn decken. Teile diese Summe durch den Stückdeckungsbeitrag.'], expl: 'Menge = (Fixkosten + Zielgewinn) : Stückdeckungsbeitrag.' };
+  });
+
+  /* ---------- Qualität und Projekt (kal37 bis kal41, Berufsschulstoff 4. Lehrjahr: Qualitätskosten, Pareto, Projektkosten, magisches Dreieck) ----------
+     Gliederung der Qualitätskosten nach der Mitschrift: Fehlerverhütung (Qualitätsplanung, Schulung, Lieferantenbewertung), Prüfkosten (Wareneingangs- und Endprüfung),
+     Fehlerkosten intern (Ausschuss, Nacharbeit) und extern (Gewährleistung, Kulanz). Alle Beträge sind frei gewählte Übungswerte. */
+  const qkP = R => ({ sch: ri(R, 800, 3000, 50), lief: ri(R, 300, 1500, 50), we: ri(R, 1000, 4000, 100), end: ri(R, 2000, 6000, 100), aus: ri(R, 1500, 8000, 100), na: ri(R, 1000, 5000, 100), gew: ri(R, 2000, 9000, 100) });
+  const qkPosten = (C, v) => [['Schulung zur Fehlervermeidung', v.sch], ['Ausschuss in der Fertigung', v.aus], ['Wareneingangsprüfung', v.we], ['Gewährleistung beim Kunden', v.gew], ['Lieferantenbewertung', v.lief], ['Nacharbeit', v.na], ['Endprüfung', v.end]].map(x => x[0] + ' ' + C.eur(x[1])).join(', ');
+  const qkRows = (C, v) => {
+    const vk = C.rd2(v.sch + v.lief), pk = C.rd2(v.we + v.end), fk = C.rd2(v.aus + v.na + v.gew), qk = C.rd2(vk + pk + fk);
+    return { vk, pk, fk, qk, rows: [{ k: 'vk', label: 'Fehlerverhütungskosten', op: '', v: vk, u: '€', calc: C.eur(v.sch) + ' + ' + C.eur(v.lief) }, { k: 'pk', label: 'Prüfkosten', op: '+', v: pk, u: '€', calc: C.eur(v.we) + ' + ' + C.eur(v.end) }, { k: 'fk', label: 'Fehlerkosten (intern und extern)', op: '+', v: fk, u: '€', calc: C.eur(v.aus) + ' + ' + C.eur(v.na) + ' + ' + C.eur(v.gew) }, { k: 'qk', label: 'Qualitätskosten gesamt', op: '=', v: qk, u: '€', sum: true, calc: C.eur(vk) + ' + ' + C.eur(pk) + ' + ' + C.eur(fk) }] };
+  };
+  const TIP_QK = 'Fehlerverhütung: alles, was Fehler gar nicht erst entstehen lässt (Schulung, Lieferantenbewertung). Prüfkosten: alles Prüfen (Wareneingang, Endprüfung). Fehlerkosten: was ein entstandener Fehler kostet, im Betrieb (Ausschuss, Nacharbeit) oder beim Kunden (Gewährleistung).';
+  add('Qualität und Projekt', 'Qualitätskosten gliedern', 2, (R, C) => {
+    const v = qkP(R), q = qkRows(C, v);
+    return { text: 'Ein Elektronikbetrieb hat im Quartal folgende Kosten rund um die Qualität erfasst: ' + qkPosten(C, v) + '. Fasse sie zu den drei Gruppen der Qualitätskosten zusammen und bilde die Summe.', rows: q.rows, fill: ['vk', 'pk', 'fk', 'qk'], tips: [TIP_QK], expl: 'Qualitätskosten = Fehlerverhütungskosten + Prüfkosten + Fehlerkosten. Geld für die Verhütung lohnt sich oft, weil es Fehlerkosten an anderer Stelle spart.' };
+  });
+  add('Qualität und Projekt', 'Anteil an den Qualitätskosten', 3, (R, C) => {
+    const v = qkP(R), q = qkRows(C, v), ant = C.rd2(q.fk / q.qk * 100);
+    const rows = q.rows.concat([{ k: 'ant', label: 'Anteil der Fehlerkosten', op: '', v: ant, u: '%', sum: true, calc: C.eur(q.fk) + ' : ' + C.eur(q.qk) + ' × 100', bas: 'in % der Qualitätskosten' }]);
+    return { text: 'Kosten rund um die Qualität im letzten Quartal: ' + qkPosten(C, v) + '. Wie viel Prozent der gesamten Qualitätskosten sind Fehlerkosten (intern und extern zusammen)?', rows, ask: { key: 'ant', label: 'Anteil der Fehlerkosten', unit: '%', tol: 0.1, value: ant }, tips: [TIP_QK + ' Erst alle Qualitätskosten addieren, dann den Anteil der Fehlerkosten daran berechnen.'], expl: 'Anteil = Fehlerkosten : Qualitätskosten × 100. Ein hoher Anteil zeigt: Es wird zu wenig in Verhütung investiert.' };
+  });
+  /* Pareto: Anteil der zwei häufigsten Ursachen an allen Ausfällen */
+  const URS = ['Steckverbinder locker', 'Kalte Lötstelle', 'Bauteil defekt', 'Bedienfehler', 'Feuchtigkeit im Gehäuse'];
+  add('Qualität und Projekt', 'Die wichtigsten Ursachen', 2, (R, C) => {
+    const p = tries(() => URS.map(() => ri(R, 3, 60)), a => new Set(a).size === a.length && a.reduce((x, y) => x + y, 0) >= 80), sum = p.reduce((x, y) => x + y, 0);
+    const srt = URS.map((u, i) => [u, p[i]]).sort((a, b) => b[1] - a[1]), two = srt[0][1] + srt[1][1], ant = C.rd2(two / sum * 100);
+    const rows = [{ k: 'sum', label: 'Ausfälle insgesamt', op: '', v: sum, u: 'Stück', calc: p.join(' + ') }, { k: 'two', label: 'Zwei häufigste Ursachen (' + srt[0][0] + ', ' + srt[1][0] + ')', op: '', v: two, u: 'Stück', calc: srt[0][1] + ' + ' + srt[1][1] }, { k: 'ant', label: 'Anteil der zwei häufigsten Ursachen', op: '', v: ant, u: '%', sum: true, calc: two + ' : ' + sum + ' × 100' }];
+    return { text: 'Eine Fehlersammelliste zu den Ausfällen einer Steuerung zeigt nach drei Monaten: ' + URS.map((u, i) => u + ' ' + p[i] + '-mal').join(', ') + '. Für ein Pareto-Diagramm werden die Ursachen nach Häufigkeit sortiert. Wie viel Prozent aller Ausfälle gehen auf die zwei häufigsten Ursachen zurück?', rows, ask: { key: 'ant', label: 'Anteil der zwei häufigsten Ursachen', unit: '%', tol: 0.1, value: ant }, tips: ['Sortiere die Ursachen absteigend nach ihrer Anzahl. Addiere die zwei obersten und teile durch die Summe aller Ausfälle.'], expl: 'Im Pareto-Diagramm stehen die häufigsten Ursachen links. Sie zuerst zu beheben bringt die größte Wirkung. Anteil = (erste + zweite Ursache) : alle Ausfälle × 100.' };
+  });
+  add('Qualität und Projekt', 'Kosten eines Projekts', 1, (R, C) => {
+    const h = ri(R, 40, 120, 4), satz = pick(R, [42, 45, 48, 52, 55]), mat = ri(R, 150, 900, 10), zus = pick(R, [5, 10, 15]), pers = C.rd2(h * satz), su = C.rd2(pers + mat), z = C.rd2(su * zus / 100), tot = C.rd2(su + z);
+    const rows = [{ k: 'pers', label: 'Personalkosten', op: '', v: pers, u: '€', calc: h + ' h × ' + C.eur(satz) }, { k: 'mat', label: 'Material', op: '+', v: mat, u: '€' }, { k: 'su', label: 'Zwischensumme', op: '=', v: su, u: '€', calc: C.eur(pers) + ' + ' + C.eur(mat) }, { k: 'z', label: 'Zuschlag für Unvorhergesehenes', op: '+', v: z, u: '€', pct: zus, bas: 'auf die Zwischensumme', calc: C.eur(su) + ' × ' + zus + ' % : 100' }, { k: 'tot', label: 'Geplante Projektkosten', op: '=', v: tot, u: '€', sum: true, calc: C.eur(su) + ' + ' + C.eur(z) }];
+    return { text: 'Für den Umbau einer Prüfvorrichtung werden ' + h + ' Arbeitsstunden zu je ' + C.eur(satz) + ' und Material für ' + C.eur(mat) + ' geplant. Auf die Summe kommt ein Zuschlag von ' + zus + ' % für Unvorhergesehenes. Wie hoch sind die geplanten Projektkosten?', rows, ask: { key: 'tot', label: 'Geplante Projektkosten', unit: '€', tol: 0.01, value: tot }, tips: ['Erst die Personalkosten (Stunden × Stundensatz), dann das Material dazu, zuletzt den Zuschlag auf diese Summe.'], expl: 'Projektkosten = (Stunden × Stundensatz + Material) × (1 + Zuschlag : 100). Der Zuschlag ist ein Puffer für Risiken, die bei der Planung noch nicht bekannt sind.' };
+  });
+  add('Qualität und Projekt', 'Preis für den früheren Termin', 2, (R, C) => {
+    const n = ri(R, 2, 4), uh = ri(R, 6, 16), satz = pick(R, [40, 44, 48, 52]), zp = pick(R, [25, 30, 50]), std = n * uh, zs = C.rd2(satz * zp / 100), mk = C.rd2(std * zs);
+    const rows = [{ k: 'std', label: 'Überstunden insgesamt (Stunden)', op: '', v: std, u: 'h', dec: 0, calc: n + ' × ' + uh + ' h' }, { k: 'zs', label: 'Zuschlag je Stunde', op: '', v: zs, u: '€', calc: C.eur(satz) + ' × ' + zp + ' % : 100' }, { k: 'mk', label: 'Mehrkosten durch Zuschläge', op: '', v: mk, u: '€', sum: true, calc: std + ' h × ' + C.eur(zs) }];
+    return { text: 'Ein Kunde möchte seine Anlage eine Woche früher haben, der Leistungsumfang bleibt gleich. Dafür leisten ' + n + ' Beschäftigte je ' + uh + ' Überstunden. Der Stundensatz beträgt ' + C.eur(satz) + ', für Überstunden kommt ein Zuschlag von ' + zp + ' % hinzu. Die Arbeitsstunden selbst sind schon im Budget eingeplant. Um wie viel Euro steigen die Projektkosten durch die Zuschläge?', rows, ask: { key: 'mk', label: 'Mehrkosten durch Zuschläge', unit: '€', tol: 0.01, value: mk }, tips: ['Gezahlt werden zusätzlich nur die Zuschläge. Rechne alle Überstunden zusammen und dann den Zuschlag je Stunde.'], expl: 'Das ist das magische Dreieck in Zahlen: Termin früher bei gleicher Leistung heißt höhere Kosten. Mehrkosten = Personen × Überstunden × Stundensatz × Zuschlag : 100.' };
   });
 
   /* ---------- Beispiele (fertig durchgerechnet, werden im Rechner geladen) ---------- */

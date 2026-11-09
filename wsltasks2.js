@@ -1,4 +1,4 @@
-/* wsltasks2.js - WSL-Lab (Wechselstrom und Schwingkreise): Aufgaben ws17 bis ws47 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b; ws33 bis ws39 neu: Drehstrom und Leistungsuebertragung, ws40 bis ws47 neu: Induktion, Spannungserzeugung, Wirk- und Blindwiderstand, Berufsschulstoff 1. Lehrjahr)
+/* wsltasks2.js - WSL-Lab (Wechselstrom und Schwingkreise): Aufgaben ws17 bis ws54 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b; ws33 bis ws39 neu: Drehstrom und Leistungsuebertragung, ws40 bis ws47 neu: Induktion, Spannungserzeugung, Wirk- und Blindwiderstand, ws48 bis ws54 neu: R, L, C am Wechselstrom und Phasenlage an Hoch- und Tiefpass, Berufsschulstoff 1. Lehrjahr)
  * Registrierung: WSL_TASKS.register([ ... ]) (WSL_TASKS kommt aus wsldata.js; wsldata.js VOR dieser Datei laden, in Node holt sich die Datei es per require).
  * Format wie SPEC 8 / elstasks2.js: { id:'wsN', lab:'wsl', cat, title, level, rig, text, table?, hint[3], start(), sol(), wrong(), check(answer), hintVals(),
  *   fields? | choices?, consts? }; answer = { rig, controls, ref, seq, rows, state, fired, value, text, fields, choices, clicks, bericht }.
@@ -1141,6 +1141,219 @@
       wrong: () => [{ name: 'Spule und Kondensator vertauscht', answer: A('rlc', {}, { choices: { xl: 'halbiert', xc: 'verdoppelt', il: 'il-verdoppelt', ic: 'ic-halb' } }) }, { name: 'Frequenz ohne Einfluss', answer: A('rlc', {}, { choices: { xl: 'gleich', xc: 'gleich', il: 'il-gleich', ic: 'ic-gleich' } }) }] };
   })();
 
+  /* ====================================================================== ws48 bis ws54: R, L, C am Wechselstrom und Phasenlage an Hoch- und Tiefpass (Berufsschulstoff 1. Lehrjahr und Labor E6, eigene Zahlen)
+   * Rechenaufgaben mit eigenen Uebungswerten; die Steuerwerte der Pruefstaende sind nur Start- und Mustervorlage (Kontrolle am Pruefstand moeglich). */
+  const DEG = 180 / Math.PI;
+
+  /* ---------- ws48: R-C-Reihenschaltung am Generator ---------- */
+  const M48 = (() => {
+    const G = { r: 560, c: 2.2e-6, u: 10, f: 100 };
+    const vals = () => once('v48', () => { const xc = 1 / (TWO_PI * G.f * G.c), z = Math.hypot(G.r, xc), i = G.u / z; return { r: G.r, c: G.c * 1e6, u: G.u, f: G.f, xc, z, i, imA: i * 1000, ur: i * G.r, uc: i * xc, zSumme: G.r + xc, iSumme: G.u / (G.r + xc) * 1000, urucSumme: i * G.r + i * xc, phi: Math.atan(xc / G.r) * DEG }; });
+    const rfX = () => { const v = vals(); return own(v.xc, 'Ω', [{ v: v.xc / TWO_PI, id: 'ohne-2pi', text: 'Dein Wert entsteht ohne den Faktor 2π. Es gilt X_C = 1 / (2π · f · C).' }]); };
+    const rfZ = () => { const v = vals(); return own(v.z, 'Ω', [{ v: v.zSumme, id: 'summe', text: 'Dein Wert ' + f(v.zSumme, 0) + ' Ω ist die einfache Summe R + X_C. Wirk- und Blindwiderstand stehen im rechten Winkel zueinander und werden geometrisch addiert: Z = √(R² + X_C²).' }]); };
+    const rfI = () => { const v = vals(); return own(v.i, 'A', [{ v: v.iSumme / 1000, id: 'summe', text: 'Dein Wert passt zu U / (R + X_C). Der Strom ist I = U / Z mit dem geometrisch addierten Scheinwiderstand.' }], { factor: 1e-3, dispUnit: 'mA' }); };
+    const rfU = (val, other, name) => own(val, 'V', [{ v: other, id: 'vertauscht', text: 'Dein Wert ist die Spannung am anderen Bauteil. ' + name }]);
+    const check = mk((r, a) => {
+      const v = vals();
+      numRow(r, rawOf(a, 'xc'), rfX(), 'Der Blindwiderstand X_C ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'z'), rfZ(), 'Der Scheinwiderstand Z ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'i'), rfI(), 'Der Strom I ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'ur'), rfU(v.ur, v.uc, 'Am Widerstand gilt U_R = I · R.'), 'Die Spannung am Widerstand U_R ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'uc'), rfU(v.uc, v.ur, 'Am Kondensator gilt U_C = I · X_C.'), 'Die Spannung am Kondensator U_C ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Widerstand R = ' + f(G.r, 0) + ' Ω und ein Kondensator C = ' + f(G.c * 1e6, 1) + ' µF liegen in Reihe an einem Funktionsgenerator mit ' + f(G.u, 0) + ' V (Effektivwert) und ' + f(G.f, 0) + ' Hz (Übungsschaltung). Berechne den Blindwiderstand X_C, den Scheinwiderstand Z, den Strom I in mA sowie die Teilspannungen U_R und U_C. Im Prüfstand „R, L, C im Wechselstromkreis“ (Aufbau R und C in Reihe) kannst du die Werte kontrollieren.',
+      fields: () => [{ key: 'xc', label: 'Blindwiderstand X_C', unit: 'Ω' }, { key: 'z', label: 'Scheinwiderstand Z', unit: 'Ω' }, { key: 'i', label: 'Strom I', unit: 'mA' }, { key: 'ur', label: 'Spannung am Widerstand U_R', unit: 'V' }, { key: 'uc', label: 'Spannung am Kondensator U_C', unit: 'V' }],
+      hint: () => { const v = vals(); return [
+        'Rechne der Reihe nach: Blindwiderstand aus f und C, dann den Scheinwiderstand der Reihenschaltung, dann den Strom, der durch beide Bauteile gleich fließt, zuletzt die beiden Teilspannungen mit dem Ohmschen Gesetz.',
+        'X_C = 1 / (2π · f · C) = ' + f(v.xc, 1) + ' Ω. R und X_C stehen senkrecht aufeinander, deshalb Z = √(R² + X_C²) und nicht R + X_C. Die Teilspannungen ergeben zusammen ebenfalls nicht einfach ' + f(v.u, 0) + ' V, sondern nur geometrisch addiert.',
+        'Musterlösung: Z = √(' + f(v.r, 0) + '² + ' + f(v.xc, 1) + '²) Ω = ' + f(v.z, 1) + ' Ω, I = ' + f(v.u, 0) + ' V / ' + f(v.z, 1) + ' Ω = ' + f(v.imA, 2) + ' mA, U_R = ' + f(v.ur, 2) + ' V, U_C = ' + f(v.uc, 2) + ' V. Probe: √(U_R² + U_C²) = ' + f(v.u, 0) + ' V; die einfache Summe wäre ' + f(v.urucSumme, 2) + ' V.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'RC', u: G.u, f: G.f, r: G.r, c: G.c }), { fields: { xc: null, z: null, i: null, ur: null, uc: null } }),
+      sol: () => { const v = vals(); return A('rlc', RLCCTL({ aufbau: 'RC', u: G.u, f: G.f, r: G.r, c: G.c }), { fields: { xc: v.xc, z: v.z, i: v.imA, ur: v.ur, uc: v.uc }, value: v.z }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'R und X_C einfach addiert', answer: A('rlc', {}, { fields: { xc: v.xc, z: v.zSumme, i: v.iSumme, ur: v.ur, uc: v.uc } }) },
+        { name: '2π vergessen, Teilspannungen vertauscht', answer: A('rlc', {}, { fields: { xc: v.xc / TWO_PI, z: v.z, i: v.imA, ur: v.uc, uc: v.ur } }) }]; } };
+  })();
+
+  /* ---------- ws49: Drosselspule am Netz (ideal, ohne Wirkwiderstand) ---------- */
+  const M49 = (() => {
+    const G = { l: 0.5, u: 230, f: 50 };
+    const vals = () => once('v49', () => { const xl = TWO_PI * G.f * G.l, i = G.u / xl, q = G.u * i; return { l: G.l, u: G.u, f: G.f, xl, i, q, omega: TWO_PI * G.f, xlOhne: G.f * G.l, iOhne: G.u / (G.f * G.l), qMal: G.u * G.u * xl }; });
+    const rfX = () => { const v = vals(); return own(v.xl, 'Ω', [{ v: v.xlOhne, id: 'ohne-2pi', text: 'Dein Wert ' + f(v.xlOhne, 0) + ' Ω entsteht ohne den Faktor 2π. Es gilt X_L = 2π · f · L.' }]); };
+    const rfI = () => { const v = vals(); return own(v.i, 'A', [{ v: v.iOhne, id: 'ohne-2pi', text: 'Dein Wert passt zu X_L ohne 2π. Mit X_L = 2π · f · L wird der Blindwiderstand größer und der Strom kleiner.' }]); };
+    const rfQ = () => { const v = vals(); return own(v.q, 'var', [{ v: v.qMal, id: 'mal', text: 'Dein Wert ist viel zu groß: Du hast U² mit X_L multipliziert. Die Blindleistung ist Q_L = U² / X_L = U · I.' }]); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'xl'), rfX(), 'Der Blindwiderstand X_L ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'i'), rfI(), 'Der Strom I ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'q'), rfQ(), 'Die Blindleistung Q_L ist richtig berechnet', 0);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Eine Drosselspule mit L = ' + f(G.l, 1) + ' H wird an ' + f(G.u, 0) + ' V und ' + f(G.f, 0) + ' Hz betrieben. Der Wirkwiderstand der Wicklung ist so klein, dass du ihn vernachlässigen darfst (Übungsschaltung). Berechne den induktiven Blindwiderstand X_L, den Strom I und die Blindleistung Q_L, die die Spule aufnimmt.',
+      fields: () => [{ key: 'xl', label: 'Blindwiderstand X_L', unit: 'Ω' }, { key: 'i', label: 'Strom I', unit: 'A' }, { key: 'q', label: 'Blindleistung Q_L', unit: 'var' }],
+      hint: () => { const v = vals(); return [
+        'Bei der idealen Spule begrenzt nur der Blindwiderstand den Strom. Er wächst mit der Frequenz und der Induktivität. Die Blindleistung ist das Produkt aus Spannung und Strom, sie wird in var angegeben.',
+        'Die Kreisfrequenz ist ω = 2π · f = ' + f(v.omega, 2) + ' 1/s, damit X_L = ω · L. Der Strom folgt aus I = U / X_L, die Blindleistung aus Q_L = U · I oder U² / X_L.',
+        'Musterlösung: X_L = ' + f(v.omega, 2) + ' 1/s · ' + f(v.l, 1) + ' H = ' + f(v.xl, 1) + ' Ω, I = ' + f(v.u, 0) + ' V / ' + f(v.xl, 1) + ' Ω = ' + f(v.i, 3) + ' A, Q_L = ' + f(v.u, 0) + ' V · ' + f(v.i, 3) + ' A = ' + f(v.q, 0) + ' var.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'L', l: 0.1 }), { fields: { xl: null, i: null, q: null } }),
+      sol: () => { const v = vals(); return A('rlc', RLCCTL({ aufbau: 'L', l: G.l }), { fields: { xl: v.xl, i: v.i, q: v.q }, value: v.xl }); },
+      wrong: () => { const v = vals(); return [
+        { name: '2π vergessen', answer: A('rlc', {}, { fields: { xl: v.xlOhne, i: v.iOhne, q: v.u * v.iOhne } }) },
+        { name: 'Q als U² · X_L', answer: A('rlc', {}, { fields: { xl: v.xl, i: v.i, q: v.qMal } }) }]; } };
+  })();
+
+  /* ---------- ws50: Frequenz für einen geforderten Blindwiderstand ---------- */
+  const M50 = (() => {
+    const G = { x: 1500, c: 47e-9, l: 25e-3 };
+    const vals = () => once('v50', () => { const fc = 1 / (TWO_PI * G.x * G.c), fl = G.x / (TWO_PI * G.l); return { x: G.x, xk: G.x / 1000, c: G.c * 1e9, l: G.l * 1000, fc, fl, fcOhne: 1 / (G.x * G.c), flOhne: G.x / G.l, flFalsch: TWO_PI * G.x * G.l, fcFalsch: TWO_PI * G.x * G.c }; });
+    const rfC = () => { const v = vals(); return own(v.fc, 'Hz', [{ v: v.fcOhne, id: 'ohne-2pi', text: 'Dein Wert entsteht ohne den Faktor 2π. Aus X_C = 1 / (2π · f · C) folgt f = 1 / (2π · X_C · C).' }]); };
+    const rfL = () => { const v = vals(); return own(v.fl, 'Hz', [{ v: v.flOhne, id: 'ohne-2pi', text: 'Dein Wert entsteht ohne den Faktor 2π. Aus X_L = 2π · f · L folgt f = X_L / (2π · L).' }, { v: v.flFalsch, id: 'mal', text: 'Du hast X_L mit 2π und L multipliziert. Beim Umstellen nach f kommen 2π und L in den Nenner: f = X_L / (2π · L).' }]); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'fc'), rfC(), 'Die Frequenz für den Kondensator ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'fl'), rfL(), 'Die Frequenz für die Spule ist richtig berechnet', 0);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Für einen Versuch soll ein Bauteil genau ' + f(G.x / 1000, 1) + ' kΩ Blindwiderstand haben (Übungswerte). Berechne, bei welcher Frequenz in Hz a) ein Kondensator mit C = ' + f(G.c * 1e9, 0) + ' nF und b) eine Spule mit L = ' + f(G.l * 1000, 0) + ' mH diesen Blindwiderstand erreicht. Stelle dazu die Formeln für X_C und X_L nach f um.',
+      fields: () => [{ key: 'fc', label: 'Frequenz für den Kondensator', unit: 'Hz' }, { key: 'fl', label: 'Frequenz für die Spule', unit: 'Hz' }],
+      hint: () => { const v = vals(); return [
+        'Beim Kondensator sinkt der Blindwiderstand mit der Frequenz, bei der Spule steigt er. Stelle X_C = 1 / (2π · f · C) und X_L = 2π · f · L jeweils nach f um und setze alle Werte in Grundeinheiten ein.',
+        'f = 1 / (2π · X_C · C) mit X_C = ' + f(v.x, 0) + ' Ω und C = ' + f(v.c, 0) + ' nF, f = X_L / (2π · L) mit L = ' + f(v.l, 0) + ' mH. Rechne nF und mH vorher in F und H um.',
+        'Musterlösung: a) f = 1 / (2π · ' + f(v.x, 0) + ' Ω · ' + f(v.c, 0) + ' nF) = ' + f(v.fc, 0) + ' Hz. b) f = ' + f(v.x, 0) + ' Ω / (2π · ' + f(v.l, 0) + ' mH) = ' + f(v.fl, 0) + ' Hz.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'C', u: 10, c: G.c, f: 1000 }), { fields: { fc: null, fl: null } }),
+      sol: () => { const v = vals(); return A('rlc', RLCCTL({ aufbau: 'C', u: 10, c: G.c, f: v.fc }), { fields: { fc: v.fc, fl: v.fl }, value: v.fc }); },
+      wrong: () => { const v = vals(); return [
+        { name: '2π vergessen', answer: A('rlc', {}, { fields: { fc: v.fcOhne, fl: v.flOhne } }) },
+        { name: 'Spule falsch umgestellt', answer: A('rlc', {}, { fields: { fc: v.fc, fl: v.flFalsch } }) }]; } };
+  })();
+
+  /* ---------- ws51: Kondensatoren parallel und in Reihe ---------- */
+  const M51 = (() => {
+    const G = { c: [10, 22, 47], f: 50 };
+    const vals = () => once('v51', () => { const par = G.c.reduce((s, x) => s + x, 0), kehr = G.c.reduce((s, x) => s + 1 / x, 0), reihe = 1 / kehr, xc = 1 / (TWO_PI * G.f * par * 1e-6); return { c1: G.c[0], c2: G.c[1], c3: G.c[2], f: G.f, par, reihe, kehr, xc, mittel: par / 3 }; });
+    const rfP = () => { const v = vals(); return own(v.par * 1e-6, 'F', [{ v: v.reihe * 1e-6, id: 'vertauscht', text: 'Dein Wert ist die Ersatzkapazität der Reihenschaltung. Parallel geschaltete Kondensatoren wirken wie größere Plattenflächen, die Kapazitäten werden addiert.' }], { factor: 1e-6, dispUnit: 'µF' }); };
+    const rfR = () => { const v = vals(); return own(v.reihe * 1e-6, 'F', [{ v: v.par * 1e-6, id: 'vertauscht', text: 'Dein Wert ist die Summe der Kapazitäten, also die Parallelschaltung. In Reihe addierst du die Kehrwerte: 1 / C = 1 / C₁ + 1 / C₂ + 1 / C₃.' }, { v: v.kehr * 1e-6, id: 'kehrwert', text: 'Dein Wert ist die Summe der Kehrwerte. Davon musst du noch den Kehrwert bilden, um C zu erhalten.' }], { factor: 1e-6, dispUnit: 'µF' }); };
+    const rfX = () => { const v = vals(); return own(v.xc, 'Ω', [{ v: 1 / (TWO_PI * v.f * v.reihe * 1e-6), id: 'reihe', text: 'Dein Wert gehört zur Reihenschaltung. Gefragt ist der Blindwiderstand der Parallelschaltung.' }]); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'par'), rfP(), 'Die Ersatzkapazität der Parallelschaltung ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'reihe'), rfR(), 'Die Ersatzkapazität der Reihenschaltung ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'xc'), rfX(), 'Der Blindwiderstand der Parallelschaltung bei ' + f(G.f, 0) + ' Hz ist richtig berechnet', 1);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Drei Kondensatoren mit ' + f(G.c[0], 0) + ' µF, ' + f(G.c[1], 0) + ' µF und ' + f(G.c[2], 0) + ' µF stehen zur Verfügung (Übungswerte). Berechne die Ersatzkapazität in µF, wenn du sie a) parallel und b) in Reihe schaltest, und c) den Blindwiderstand der Parallelschaltung bei ' + f(G.f, 0) + ' Hz.',
+      fields: () => [{ key: 'par', label: 'Ersatzkapazität parallel', unit: 'µF' }, { key: 'reihe', label: 'Ersatzkapazität in Reihe', unit: 'µF' }, { key: 'xc', label: 'Blindwiderstand der Parallelschaltung', unit: 'Ω' }],
+      hint: () => { const v = vals(); return [
+        'Bei Kondensatoren ist es umgekehrt wie bei Widerständen: Parallel addieren sich die Kapazitäten, in Reihe addieren sich die Kehrwerte. In Reihe ist die Ersatzkapazität deshalb kleiner als die kleinste Einzelkapazität.',
+        'Parallel: C = C₁ + C₂ + C₃. In Reihe: 1 / C = 1 / C₁ + 1 / C₂ + 1 / C₃ = ' + f(v.kehr, 4) + ' 1/µF, danach den Kehrwert bilden. Für X_C setzt du die Parallelkapazität in F ein.',
+        'Musterlösung: a) ' + f(v.par, 0) + ' µF. b) 1 / ' + f(v.kehr, 4) + ' 1/µF = ' + f(v.reihe, 2) + ' µF, kleiner als ' + f(v.c1, 0) + ' µF. c) X_C = 1 / (2π · ' + f(v.f, 0) + ' Hz · ' + f(v.par, 0) + ' µF) = ' + f(v.xc, 1) + ' Ω.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'C', c: 10e-6 }), { fields: { par: null, reihe: null, xc: null } }),
+      sol: () => { const v = vals(); return A('rlc', RLCCTL({ aufbau: 'C', c: v.par * 1e-6 }), { fields: { par: v.par, reihe: v.reihe, xc: v.xc }, value: v.xc }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Parallel und Reihe vertauscht', answer: A('rlc', {}, { fields: { par: v.reihe, reihe: v.par, xc: 1 / (TWO_PI * v.f * v.reihe * 1e-6) } }) },
+        { name: 'Kehrwert nicht gebildet', answer: A('rlc', {}, { fields: { par: v.par, reihe: v.kehr, xc: v.xc } }) }]; } };
+  })();
+
+  /* ---------- ws52: Grenzfrequenz und Phasenwinkel am RC-Tiefpass ---------- */
+  const M52 = (() => {
+    const G = { r: 2200, c: 47e-9, f1: 500, f2: 5000 };
+    const vals = () => once('v52', () => { const fg = 1 / (TWO_PI * G.r * G.c), p1 = Math.atan(G.f1 / fg) * DEG, p2 = Math.atan(G.f2 / fg) * DEG; return { r: G.r / 1000, c: G.c * 1e9, f1: G.f1, f2: G.f2, f2k: G.f2 / 1000, fg, p1, p2, pg: 45, q90: 90, p1F: Math.atan(fg / G.f1) * DEG, p2F: Math.atan(fg / G.f2) * DEG, fgOhne: 1 / (G.r * G.c), v1: G.f1 / fg, v2: G.f2 / fg }; });
+    const rfG = () => { const v = vals(); return own(v.fg, 'Hz', [{ v: v.fgOhne, id: 'ohne-2pi', text: 'Dein Wert entsteht ohne den Faktor 2π: f_g = 1 / (2π · R · C).' }]); };
+    const rfP = (val, falsch) => own(val, '°', [{ v: falsch, id: 'kehrwert', text: 'Du hast das Verhältnis f_g / f eingesetzt. Beim Tiefpass gilt tan φ = f / f_g: Unterhalb von f_g ist der Winkel klein, oberhalb geht er gegen 90°.' }]);
+    const specs = () => { const v = vals(); return [
+      { key: 'lage', q: 'Wie liegt die Ausgangsspannung am Kondensator gegenüber der Eingangsspannung?', short: 'Die Phasenlage am Tiefpass ist richtig beurteilt', right: 'nach', options: [
+        { value: 'vor', label: 'Der Ausgang eilt dem Eingang voraus', grund: 'Voreilen tut die Ausgangsspannung am Hochpass, wo sie am Widerstand abgegriffen wird. Am Tiefpass liegt der Ausgang am Kondensator.' },
+        { value: 'gleich', label: 'Ausgang und Eingang sind in Phase', grund: 'In Phase wären die Spannungen nur ohne Kondensator. Der Kondensator verschiebt die Phase, bei f_g um ' + f(v.pg, 0) + '°.' },
+        { value: 'nach', label: 'Der Ausgang eilt dem Eingang nach', grund: 'Am Kondensator eilt die Spannung dem Strom um 90° nach. Deshalb hinkt die Ausgangsspannung des Tiefpasses der Eingangsspannung hinterher, um 0° bis 90°.' },
+        { value: 'gegen', label: 'Der Ausgang ist um 180° gedreht', grund: 'Eine Drehung um 180° schafft ein einzelnes RC-Glied nicht. Die Phasenverschiebung bleibt zwischen 0° und 90°.' }] }]; };
+    const check = mk((r, a) => {
+      const v = vals();
+      numRow(r, rawOf(a, 'fg'), rfG(), 'Die Grenzfrequenz f_g ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'p1'), rfP(v.p1, v.p1F), 'Der Phasenwinkel bei ' + f(v.f1, 0) + ' Hz ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'p2'), rfP(v.p2, v.p2F), 'Der Phasenwinkel bei ' + f(v.f2k, 0) + ' kHz ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, consts: [], audit: () => choiceAudit(specs()),
+      text: () => 'Ein passiver RC-Tiefpass besteht aus R = ' + f(G.r / 1000, 1) + ' kΩ in Reihe und C = ' + f(G.c * 1e9, 0) + ' nF gegen Masse (Übungsschaltung, Ausgang unbelastet). Berechne die Grenzfrequenz f_g und den Betrag des Phasenwinkels zwischen Ausgangs- und Eingangsspannung bei ' + f(G.f1, 0) + ' Hz und bei ' + f(G.f2 / 1000, 0) + ' kHz in Grad. Beantworte dann, in welche Richtung die Ausgangsspannung verschoben ist. Im Prüfstand „Hoch- und Tiefpass“ kannst du die Phase im Zeigerbild ablesen.',
+      fields: () => [{ key: 'fg', label: 'Grenzfrequenz f_g', unit: 'Hz' }, { key: 'p1', label: 'Phasenwinkel bei ' + f(G.f1, 0) + ' Hz (Betrag)', unit: '°' }, { key: 'p2', label: 'Phasenwinkel bei ' + f(G.f2 / 1000, 0) + ' kHz (Betrag)', unit: '°' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Bei der Grenzfrequenz sind X_C und R gleich groß, dort beträgt die Phasenverschiebung genau 45°. Weit unterhalb von f_g ist sie fast null, weit oberhalb fast 90°. Für jede Frequenz gilt beim Tiefpass tan φ = f / f_g.',
+        'f_g = 1 / (2π · R · C). Bei ' + f(v.f1, 0) + ' Hz ist f / f_g = ' + f(v.v1, 3) + ', bei ' + f(v.f2, 0) + ' Hz ist f / f_g = ' + f(v.v2, 3) + '. Den Winkel liefert die Umkehrfunktion arctan.',
+        'Musterlösung: f_g = 1 / (2π · ' + f(v.r, 1) + ' kΩ · ' + f(v.c, 0) + ' nF) = ' + f(v.fg, 0) + ' Hz. φ = arctan(' + f(v.v1, 3) + ') = ' + f(v.p1, 1) + '° und arctan(' + f(v.v2, 3) + ') = ' + f(v.p2, 1) + '°. Die Ausgangsspannung eilt nach.'
+      ]; },
+      start: () => A('filter', { art: 'RC', typ: 'tief', r: G.r, c: G.c, f: 1000 }, { fields: { fg: null, p1: null, p2: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('filter', { art: 'RC', typ: 'tief', r: G.r, c: G.c, f: G.f1 }, { fields: { fg: v.fg, p1: v.p1, p2: v.p2 }, choices: rightOf(specs()), value: v.fg }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Verhältnis umgedreht, Ausgang eilt vor', answer: A('filter', {}, { fields: { fg: v.fg, p1: v.p1F, p2: v.p2F }, choices: { lage: 'vor' } }) },
+        { name: '2π vergessen, keine Phasenverschiebung', answer: A('filter', {}, { fields: { fg: v.fgOhne, p1: v.p1, p2: v.p2 }, choices: { lage: 'gleich' } }) }]; } };
+  })();
+
+  /* ---------- ws53: Phasenwinkel und Spannungsverhältnis am RC-Hochpass ---------- */
+  const M53 = (() => {
+    const G = { r: 3300, c: 22e-9, f1: 1000, f2: 4000 };
+    const vals = () => once('v53', () => { const fg = 1 / (TWO_PI * G.r * G.c), p1 = Math.atan(fg / G.f1) * DEG, p2 = Math.atan(fg / G.f2) * DEG, k2 = 1 / Math.sqrt(1 + (fg / G.f2) ** 2); return { r: G.r / 1000, c: G.c * 1e9, f1: G.f1, f2: G.f2, f1k: G.f1 / 1000, f2k: G.f2 / 1000, fg, p1, p2, k2, pg: 45, q90: 90, w1: fg / G.f1, w2: fg / G.f2, p1F: Math.atan(G.f1 / fg) * DEG, p2F: Math.atan(G.f2 / fg) * DEG, k2F: 1 / Math.sqrt(1 + (G.f2 / fg) ** 2) }; });
+    const rfG = () => { const v = vals(); return own(v.fg, 'Hz', [{ v: v.fg * TWO_PI, id: 'ohne-2pi', text: 'Dein Wert entsteht ohne den Faktor 2π: f_g = 1 / (2π · R · C).' }]); };
+    const rfP = (val, falsch) => own(val, '°', [{ v: falsch, id: 'tiefpass', text: 'Du hast mit tan φ = f / f_g gerechnet, das gilt für den Tiefpass. Beim Hochpass ist tan φ = f_g / f: Je höher die Frequenz, desto kleiner der Winkel.' }]);
+    const rfK = () => { const v = vals(); return own(v.k2, '', [{ v: v.k2F, id: 'tiefpass', text: 'Das ist das Spannungsverhältnis eines Tiefpasses. Beim Hochpass oberhalb von f_g kommt der größte Teil der Spannung durch.' }]); };
+    const specs = () => { const v = vals(); return [
+      { key: 'trend', q: 'Die Frequenz wird weit über ' + f(v.f2k, 0) + ' kHz erhöht. Was geschieht mit dem Phasenwinkel am Hochpass?', short: 'Der Verlauf des Phasenwinkels ist richtig beurteilt', right: 'null', options: [
+        { value: 'neunzig', label: 'Er wächst und nähert sich 90°', grund: 'Gegen 90° geht der Winkel beim Hochpass für sehr tiefe Frequenzen, wenn X_C viel größer als R ist. Bei hohen Frequenzen wird X_C klein.' },
+        { value: 'konst', label: 'Er bleibt fest bei 45°', grund: '45° gelten nur genau bei der Grenzfrequenz, wo X_C = R ist. Bei anderen Frequenzen ändert sich das Verhältnis und damit der Winkel.' },
+        { value: 'null', label: 'Er wird kleiner, gegen 0°', grund: 'Mit steigender Frequenz wird X_C gegenüber R immer kleiner, der Kreis verhält sich fast wie ein reiner Widerstand. tan φ = f_g / f geht gegen null.' },
+        { value: 'kippt', label: 'Er springt auf 180°', grund: 'Ein einzelnes RC-Glied verschiebt die Phase höchstens um 90°. Einen Sprung auf 180° gibt es hier nicht.' }] }]; };
+    const check = mk((r, a) => {
+      const v = vals();
+      numRow(r, rawOf(a, 'fg'), rfG(), 'Die Grenzfrequenz f_g ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'p1'), rfP(v.p1, v.p1F), 'Der Phasenwinkel bei ' + f(v.f1k, 0) + ' kHz ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'p2'), rfP(v.p2, v.p2F), 'Der Phasenwinkel bei ' + f(v.f2k, 0) + ' kHz ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'k2'), rfK(), 'Das Spannungsverhältnis U₂ / U₁ bei ' + f(v.f2k, 0) + ' kHz ist richtig berechnet', 3);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, consts: [], audit: () => choiceAudit(specs()),
+      text: () => 'Ein RC-Hochpass besteht aus C = ' + f(G.c * 1e9, 0) + ' nF in Reihe und R = ' + f(G.r / 1000, 1) + ' kΩ gegen Masse, der Ausgang liegt am Widerstand (Übungsschaltung, unbelastet). Berechne die Grenzfrequenz f_g, den Betrag des Phasenwinkels zwischen Ausgangs- und Eingangsspannung bei ' + f(G.f1 / 1000, 0) + ' kHz und bei ' + f(G.f2 / 1000, 0) + ' kHz in Grad sowie das Spannungsverhältnis U₂ / U₁ bei ' + f(G.f2 / 1000, 0) + ' kHz. Beantworte dann die Frage zu sehr hohen Frequenzen.',
+      fields: () => [{ key: 'fg', label: 'Grenzfrequenz f_g', unit: 'Hz' }, { key: 'p1', label: 'Phasenwinkel bei ' + f(G.f1 / 1000, 0) + ' kHz (Betrag)', unit: '°' }, { key: 'p2', label: 'Phasenwinkel bei ' + f(G.f2 / 1000, 0) + ' kHz (Betrag)', unit: '°' }, { key: 'k2', label: 'Spannungsverhältnis U₂ / U₁ bei ' + f(G.f2 / 1000, 0) + ' kHz', unit: '' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Beim Hochpass liegt der Ausgang am Widerstand, die Ausgangsspannung eilt vor. Unterhalb von f_g ist X_C groß und der Winkel nähert sich 90°, oberhalb wird er klein. Es gilt tan φ = f_g / f und U₂ / U₁ = 1 / √(1 + (f_g / f)²).',
+        'f_g = 1 / (2π · R · C) = ' + f(v.fg, 0) + ' Hz. Bei ' + f(v.f1, 0) + ' Hz ist f_g / f = ' + f(v.w1, 3) + ', bei ' + f(v.f2, 0) + ' Hz ist f_g / f = ' + f(v.w2, 3) + '. Den Winkel liefert arctan.',
+        'Musterlösung: φ = arctan(' + f(v.w1, 3) + ') = ' + f(v.p1, 1) + '° bei ' + f(v.f1k, 0) + ' kHz und arctan(' + f(v.w2, 3) + ') = ' + f(v.p2, 1) + '° bei ' + f(v.f2k, 0) + ' kHz. U₂ / U₁ = ' + f(v.k2, 3) + '. Je höher die Frequenz, desto kleiner der Winkel.'
+      ]; },
+      start: () => A('filter', { art: 'RC', typ: 'hoch', r: G.r, c: G.c, f: 1000 }, { fields: { fg: null, p1: null, p2: null, k2: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('filter', { art: 'RC', typ: 'hoch', r: G.r, c: G.c, f: G.f2 }, { fields: { fg: v.fg, p1: v.p1, p2: v.p2, k2: v.k2 }, choices: rightOf(specs()), value: v.fg }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'wie Tiefpass gerechnet, Winkel gegen 90°', answer: A('filter', {}, { fields: { fg: v.fg, p1: v.p1F, p2: v.p2F, k2: v.k2F }, choices: { trend: 'neunzig' } }) },
+        { name: '2π vergessen, Winkel fest', answer: A('filter', {}, { fields: { fg: v.fg * TWO_PI, p1: v.p1, p2: v.p2, k2: v.k2 }, choices: { trend: 'konst' } }) }]; } };
+  })();
+
+  /* ---------- ws54: Kondensator aus der geforderten Blindleistung (Rückwärtsrechnung) ---------- */
+  const M54 = (() => {
+    const G = { q: 750, u: 230, f: 50 };
+    const vals = () => once('v54', () => { const i = G.q / G.u, xc = G.u / i, c = 1 / (TWO_PI * G.f * xc); return { q: G.q, u: G.u, f: G.f, i, xc, c: c * 1e6, cF: c, cOhne: 1 / (G.f * xc) * 1e6, xcFalsch: G.q / (G.u * G.u), u2: G.u * G.u, iFalsch: G.u / G.q }; });
+    const rfI = () => { const v = vals(); return own(v.i, 'A', [{ v: v.iFalsch, id: 'kehrwert', text: 'Du hast U / Q gerechnet. Die Blindleistung ist Q = U · I, also I = Q / U.' }]); };
+    const rfX = () => { const v = vals(); return own(v.xc, 'Ω', [{ v: v.xcFalsch, id: 'kehrwert', text: 'Du hast Q / U² gerechnet. Aus Q = U² / X_C folgt X_C = U² / Q.' }]); };
+    const rfC = () => { const v = vals(); return own(v.cF, 'F', [{ v: v.cOhne * 1e-6, id: 'ohne-2pi', text: 'Dein Wert entsteht ohne den Faktor 2π. Es gilt C = 1 / (2π · f · X_C).' }], { factor: 1e-6, dispUnit: 'µF' }); };
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'i'), rfI(), 'Der Strom I ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'xc'), rfX(), 'Der Blindwiderstand X_C ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'c'), rfC(), 'Die Kapazität C ist richtig berechnet', 1);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein einzelner Kondensator soll am Netz mit ' + f(G.u, 0) + ' V und ' + f(G.f, 0) + ' Hz eine kapazitive Blindleistung von ' + f(G.q, 0) + ' var liefern (Übungswerte, verlustfrei gerechnet). Rechne rückwärts: Berechne den Strom I, den Blindwiderstand X_C und die nötige Kapazität C in µF.',
+      fields: () => [{ key: 'i', label: 'Strom I', unit: 'A' }, { key: 'xc', label: 'Blindwiderstand X_C', unit: 'Ω' }, { key: 'c', label: 'Kapazität C', unit: 'µF' }],
+      hint: () => { const v = vals(); return [
+        'Die Blindleistung des Kondensators ist Q = U · I = U² / X_C. Daraus bekommst du zuerst den Strom und den Blindwiderstand. Danach stellst du X_C = 1 / (2π · f · C) nach C um.',
+        'I = Q / U und X_C = U / I oder X_C = U² / Q mit U² = ' + f(v.u2, 0) + ' V². Für C gilt C = 1 / (2π · f · X_C).',
+        'Musterlösung: I = ' + f(v.q, 0) + ' var / ' + f(v.u, 0) + ' V = ' + f(v.i, 2) + ' A, X_C = ' + f(v.u, 0) + ' V / ' + f(v.i, 2) + ' A = ' + f(v.xc, 1) + ' Ω, C = 1 / (2π · ' + f(v.f, 0) + ' Hz · ' + f(v.xc, 1) + ' Ω) = ' + f(v.c, 1) + ' µF.'
+      ]; },
+      start: () => A('rlc', RLCCTL({ aufbau: 'C', c: 2.7e-6 }), { fields: { i: null, xc: null, c: null } }),
+      sol: () => { const v = vals(); return A('rlc', RLCCTL({ aufbau: 'C', c: v.cF }), { fields: { i: v.i, xc: v.xc, c: v.c }, value: v.xc }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Formeln umgedreht', answer: A('rlc', {}, { fields: { i: v.iFalsch, xc: v.xcFalsch, c: v.c } }) },
+        { name: '2π vergessen', answer: A('rlc', {}, { fields: { i: v.i, xc: v.xc, c: v.cOhne } }) }]; } };
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'ws17', lab: 'wsl', cat: 'Prüfungsnah', title: 'Resonanzfrequenz berechnen', level: 1, rig: 'schwing' }, M17),
@@ -1173,9 +1386,16 @@
     tk({ id: 'ws44', lab: 'wsl', cat: 'R, L, C', title: 'Heizwiderstand am Wechselstromnetz', level: 2, rig: 'rlc' }, M44),
     tk({ id: 'ws45', lab: 'wsl', cat: 'R, L, C', title: 'Kapazität aus der Strommessung', level: 2, rig: 'rlc' }, M45),
     tk({ id: 'ws46', lab: 'wsl', cat: 'Leistung', title: 'Spitzenleistung am Wirkwiderstand', level: 3, rig: 'rlc' }, M46),
-    tk({ id: 'ws47', lab: 'wsl', cat: 'R, L, C', title: 'Blindwiderstände bei doppelter Frequenz', level: 2, rig: 'rlc' }, M47)
+    tk({ id: 'ws47', lab: 'wsl', cat: 'R, L, C', title: 'Blindwiderstände bei doppelter Frequenz', level: 2, rig: 'rlc' }, M47),
+    tk({ id: 'ws48', lab: 'wsl', cat: 'R, L, C', title: 'Widerstand und Kondensator in Reihe', level: 2, rig: 'rlc' }, M48),
+    tk({ id: 'ws49', lab: 'wsl', cat: 'R, L, C', title: 'Drosselspule am Netz', level: 1, rig: 'rlc' }, M49),
+    tk({ id: 'ws50', lab: 'wsl', cat: 'R, L, C', title: 'Frequenz für einen geforderten Blindwiderstand', level: 2, rig: 'rlc' }, M50),
+    tk({ id: 'ws51', lab: 'wsl', cat: 'R, L, C', title: 'Drei Kondensatoren zusammenschalten', level: 1, rig: 'rlc' }, M51),
+    tk({ id: 'ws52', lab: 'wsl', cat: 'Filter', title: 'Phasenwinkel am RC-Tiefpass', level: 2, rig: 'filter' }, M52),
+    tk({ id: 'ws53', lab: 'wsl', cat: 'Filter', title: 'Phasenwinkel am RC-Hochpass', level: 3, rig: 'filter' }, M53),
+    tk({ id: 'ws54', lab: 'wsl', cat: 'R, L, C', title: 'Kondensator für eine vorgegebene Blindleistung', level: 3, rig: 'rlc' }, M54)
   ];
-  const MODS = { ws17: M17, ws18: M18, ws19: M19, ws20: M20, ws21: M21, ws22: M22, ws23: M23, ws24: M24, ws25: M25, ws26: M26, ws27: M27, ws28: M28, ws29: M29, ws30: M30, ws31: M31, ws32: M32, ws33: M33, ws34: M34, ws35: M35, ws36: M36, ws37: M37, ws38: M38, ws39: M39, ws40: M40, ws41: M41, ws42: M42, ws43: M43, ws44: M44, ws45: M45, ws46: M46, ws47: M47 };
+  const MODS = { ws17: M17, ws18: M18, ws19: M19, ws20: M20, ws21: M21, ws22: M22, ws23: M23, ws24: M24, ws25: M25, ws26: M26, ws27: M27, ws28: M28, ws29: M29, ws30: M30, ws31: M31, ws32: M32, ws33: M33, ws34: M34, ws35: M35, ws36: M36, ws37: M37, ws38: M38, ws39: M39, ws40: M40, ws41: M41, ws42: M42, ws43: M43, ws44: M44, ws45: M45, ws46: M46, ws47: M47, ws48: M48, ws49: M49, ws50: M50, ws51: M51, ws52: M52, ws53: M53, ws54: M54 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);

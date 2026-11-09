@@ -59,6 +59,7 @@
       case 'hub': return (c[1] / c[2]) * c[3] * c[4];
       case 'wechsel': return c[1] / (c[2] * c[3]);
       case 'heiz': return rd(c[1] * c[1] / c[2], 2);   /* R = U² : P, Widerstand eines Heizleiters im Betrieb */
+      case 'idreh': return rd(c[1] / (Math.sqrt(3) * c[2] * c[3] * c[4]), 2);   /* Bemessungsstrom eines Drehstrommotors: I = P_ab : (Wurzel 3 · U · cos phi · eta) */
       default: return NaN;
     }
   }

@@ -3,6 +3,8 @@
  * window.ANT_TASKS = { tasks: [ { id, lab:'ant', cat, title, level, rig, text, hint[3], ask?, start(), sol(), check(answer) } ], run(task, answer) }
  * window.TaskTest  = async only => [ { id, pct, startPct, bad } ]
  * an39-an45 (Kategorie Asynchronmotor): Rechenaufgaben aus dem Berufsschulstoff (Polzahl, Läuferfrequenz, Generatorbetrieb, Kippschlupf, Läuferkreisverlust, Kippmoment).
+ * an46-an54 (Kategorien Typenschild und Betrieb, Gleichstrom- und Schrittmotor): Wärmeklasse, IP-Code, Betriebsarten S1-S3, Einschaltdauer, M = 9550 · P / n,
+ *   Gegenspannung, Anlaufstrom und Anlasswiderstand beim Gleichstrommotor, Schrittwinkel. Kennziffern (Wärmeklasse, IP, Betriebsart) prüft exactCheck ohne Toleranz.
  * Die Prüfungen laufen headless mit ANT_CORE.runSeq und den Prüfständen (ANT_RIGS): Sie messen Verhalten (Simulation, feste Szenarien),
  * nicht die Form der Eingabe. Benötigt: antcore.js und die fünf Prüfstände (antrig-*.js).
  * answer = { rig, controls:{key:Wert}, seq:[{t(ms), set}], rows:[{t(s), key, value}], dur(ms), state, simTime(ms), value:(Zahl|null), text }
@@ -138,6 +140,19 @@
         why = hit ? hit[1] : 'Dein Wert ' + fm(v, 3) + ' weicht mehr als 2 % vom richtigen Ergebnis ab. Rechne mit den Formeln aus dem Tipp noch einmal nach und achte auf die Einheit.';
       }
       r(ok, 'Das Ergebnis stimmt (Toleranz 2 %)', why);
+    });
+  }
+
+  /* Kennziffern (IP-Code, Wärmeklasse, Ziffernfolgen): nur der genaue Wert zählt, typische Verwechslungen haben einen eigenen Fachgrund */
+  function exactCheck(want, mistakes) {
+    return mk('gleichstrom', (c, r, a) => {
+      const v = numAns(a);
+      r(v !== null, 'Du hast eine Zahl in das Antwortfeld eingetragen', 'Tippe die Kennzahl als Zahl in das Feld.');
+      if (v === null) { r(false, 'Die Angabe stimmt genau', 'Ohne Zahl kann nichts geprüft werden.'); return; }
+      const ok = Math.abs(v - want) < 1e-9;
+      let why = '';
+      if (!ok) { const hit = (mistakes || []).find(m => Math.abs(v - m[0]) < 1e-9); why = hit ? hit[1] : 'Deine Angabe ' + fm(v, 0) + ' passt nicht. Hier zählt nur der genaue Wert, lies die Bedeutung der Kennziffern im Tipp nach.'; }
+      r(ok, 'Die Angabe stimmt genau', why);
     });
   }
 
@@ -621,7 +636,63 @@
       ask: { label: 'Kippmoment M_k', unit: 'Nm' },
       hint: ['Das Kippmoment ist das größte Moment, das der Motor abgeben kann. Das Datenblatt nennt es als Vielfaches des Nennmoments, also brauchst du erst das Nennmoment.', 'M_N = P / ω mit ω = 2π · n / 60 und P in Watt. Danach wird M_N mit dem Faktor 2,4 multipliziert.', 'ω = 2π · 1430 / 60 = 149,7 rad/s. M_N = 2200 W / 149,7 rad/s = 14,69 Nm. M_k = 2,4 · 14,69 Nm = 35,3 Nm.'],
       start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 2.4 * 2200 / (2 * Math.PI * 1430 / 60) }),
-      check: askCheck(2.4 * 2200 / (2 * Math.PI * 1430 / 60), [[2200 / (2 * Math.PI * 1430 / 60), 'Das ist nur das Nennmoment. Das Kippmoment ist das 2,4-Fache davon.'], [2.4 * 2.2 / (2 * Math.PI * 1430 / 60), 'Die Leistung muss in Watt eingesetzt werden (2,2 kW = 2200 W), sonst ist das Ergebnis 1000-mal zu klein.'], [2.4 * 2200 / 1430, 'Du hast P / n gerechnet. Die Drehzahl muss erst in ω = 2π · n / 60 umgerechnet werden.']]) }
+      check: askCheck(2.4 * 2200 / (2 * Math.PI * 1430 / 60), [[2200 / (2 * Math.PI * 1430 / 60), 'Das ist nur das Nennmoment. Das Kippmoment ist das 2,4-Fache davon.'], [2.4 * 2.2 / (2 * Math.PI * 1430 / 60), 'Die Leistung muss in Watt eingesetzt werden (2,2 kW = 2200 W), sonst ist das Ergebnis 1000-mal zu klein.'], [2.4 * 2200 / 1430, 'Du hast P / n gerechnet. Die Drehzahl muss erst in ω = 2π · n / 60 umgerechnet werden.']]) },
+    /* ------------------------------------------------------------ Typenschild und Betrieb (Berufsschulstoff Lernfeld 8.1, Vortrag Asynchronmotor) */
+    { id: 'an46', lab: 'ant', cat: 'Typenschild und Betrieb', title: 'Wärmeklasse auf dem Typenschild', level: 1, rig: 'drehstrom',
+      text: 'Auf dem Typenschild eines Drehstrommotors steht unter anderem „Th.Cl. F“ und „IP55“. Die Wärmeklasse sagt etwas über die Isolierung der Wicklung aus. Welche Temperatur in °C darf die Isolierstoffklasse F im Dauerbetrieb höchstens erreichen? Gib nur die Zahl in °C an.',
+      ask: { label: 'Grenztemperatur der Wärmeklasse', unit: '°C' },
+      hint: ['Die Wärmeklasse (Isolierstoffklasse) nennt mit einem Buchstaben die höchste Dauertemperatur, die die Wicklungsisolierung aushält. Gemeint ist nicht die Temperatur der Umgebung.', 'Die üblichen Klassen bei Motoren sind B, F und H. Die Grenztemperaturen liegen in Schritten von 25 K auseinander, beginnend bei Klasse B mit 130 °C.', 'B = 130 °C, F = 155 °C, H = 180 °C. Klasse F erlaubt also 155 °C. Die Bemessungsleistung gilt bei einer Kühlmitteltemperatur bis 40 °C.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 155 }),
+      check: exactCheck(155, [[130, 'Das ist die Grenze der Wärmeklasse B. Klasse F liegt eine Stufe (25 K) darüber.'], [180, 'Das ist die Grenze der Wärmeklasse H. Klasse F liegt eine Stufe (25 K) darunter.'], [40, 'Das ist die höchste Kühlmitteltemperatur, für die die Bemessungsleistung gilt. Gefragt ist die Grenztemperatur der Isolierung.']]) },
+    { id: 'an47', lab: 'ant', cat: 'Typenschild und Betrieb', title: 'Schutzart für die Waschhalle', level: 1, rig: 'drehstrom',
+      text: 'Ein Motor für einen Lüfter in einer Waschhalle soll gegen Staub in schädlicher Menge geschützt sein (nicht staubdicht) und gegen Wasserstrahlen aus beliebiger Richtung. Welchen IP-Code braucht er genau für diese Anforderung? Gib die beiden Kennziffern als zweistellige Zahl an (für IP23 also 23).',
+      ask: { label: 'Kennziffern des IP-Codes', unit: 'IP' },
+      hint: ['Der IP-Code hat zwei Kennziffern. Die erste steht für den Schutz gegen Berührung und Fremdkörper (Staub), die zweite für den Schutz gegen Wasser.', 'Erste Ziffer: 4 = Draht ab 1 mm, 5 = staubgeschützt, 6 = staubdicht. Zweite Ziffer: 4 = Spritzwasser, 5 = Strahlwasser, 6 = starkes Strahlwasser, 7 = zeitweiliges Untertauchen.', 'Staubgeschützt ergibt die 5, Strahlwasser aus beliebiger Richtung ebenfalls die 5: IP55.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 55 }),
+      check: exactCheck(55, [[65, 'Die 6 an erster Stelle heißt staubdicht. Verlangt ist nur staubgeschützt, das ist die 5.'], [54, 'Die 4 an zweiter Stelle schützt nur gegen Spritzwasser. Für Strahlwasser braucht es die 5.'], [56, 'Die 6 an zweiter Stelle steht für starkes Strahlwasser. Verlangt ist normales Strahlwasser, das ist die 5.'], [45, 'Die erste Ziffer 4 schützt nur gegen Fremdkörper ab 1 mm, nicht gegen Staub. Prüfe die Reihenfolge: erst Staub, dann Wasser.']]) },
+    { id: 'an48', lab: 'ant', cat: 'Typenschild und Betrieb', title: 'Drei Antriebe und ihre Betriebsart', level: 2, rig: 'drehstrom',
+      text: 'Drei Antriebe sollen der Betriebsart S1, S2 oder S3 zugeordnet werden: (1) die Umwälzpumpe einer Heizung, die über Monate gleichmäßig läuft, (2) ein Garagentorantrieb, der 25 Sekunden fährt und danach so lange steht, bis er wieder kalt ist, (3) ein Kompressor, der in festen Spielen kurz läuft und kurz pausiert, ohne zwischendurch abzukühlen. Gib die Ziffern der Betriebsarten in der Reihenfolge (1), (2), (3) als dreistellige Zahl an, zum Beispiel 213.',
+      ask: { label: 'Betriebsarten als Ziffernfolge', unit: 'S' },
+      hint: ['Die Betriebsarten unterscheiden sich darin, wie lange der Motor belastet wird und ob er in den Pausen wieder auf Umgebungstemperatur abkühlt.', 'S1 heißt Dauerbetrieb bis zur Beharrungstemperatur. S2 ist Kurzzeitbetrieb: kurze Belastung, dann Pause bis zur vollständigen Abkühlung. S3 ist Aussetzbetrieb: gleiche Spiele aus Last und Pause, die Pausen reichen nicht zum Abkühlen.', 'Pumpe = S1 (Dauerbetrieb), Garagentor = S2 (Kurzzeitbetrieb), Kompressor = S3 (Aussetzbetrieb). Die Ziffernfolge ist 123.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 123 }),
+      check: exactCheck(123, [[132, 'Garagentor und Kompressor sind vertauscht. Beim Garagentor kühlt der Motor in der langen Pause ganz ab (S2), beim Kompressor nicht (S3).'], [111, 'Nicht jeder Antrieb läuft im Dauerbetrieb. Das Garagentor und der Kompressor haben Pausen, die Betriebsart richtet sich nach Last und Abkühlung.'], [133, 'Beim Garagentor kühlt der Motor in der Pause vollständig ab. Das ist Kurzzeitbetrieb S2, nicht Aussetzbetrieb.']]) },
+    { id: 'an49', lab: 'ant', cat: 'Typenschild und Betrieb', title: 'Relative Einschaltdauer eines Hebezeugs', level: 2, rig: 'drehstrom',
+      text: 'Ein Kettenzug im Aussetzbetrieb hebt in jedem Spiel 1,5 Minuten lang eine Last und steht danach 4,5 Minuten still. Danach beginnt das nächste Spiel, ohne dass der Motor ganz abkühlt. Berechne die relative Einschaltdauer in Prozent, mit der du den passenden Motor für die Betriebsart S3 auswählst.',
+      ask: { label: 'relative Einschaltdauer', unit: '%' },
+      hint: ['Die relative Einschaltdauer vergleicht die Belastungszeit mit der ganzen Spieldauer, nicht mit der Pause allein.', 'Spieldauer = Belastungszeit + Pause. Relative Einschaltdauer = Belastungszeit / Spieldauer · 100 %.', 'Spieldauer = 1,5 min + 4,5 min = 6 min. ED = 1,5 / 6 · 100 % = 25 %. Gewählt wird ein Motor für S3 mit 25 % Einschaltdauer.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 1.5 / 6 * 100 }),
+      check: askCheck(25, [[1.5 / 4.5 * 100, 'Du hast die Laufzeit durch die Pause geteilt. Bezug ist die ganze Spieldauer aus Laufzeit und Pause.'], [75, 'Das ist der Anteil der Pause. Gefragt ist der Anteil, in dem der Motor belastet wird.'], [0.25, 'Du hast die Einschaltdauer als Anteil angegeben. Gefragt ist Prozent: mal 100.']]) },
+    { id: 'an50', lab: 'ant', cat: 'Typenschild und Betrieb', title: 'Wellenleistung aus der Drehmomentmessung', level: 1, rig: 'drehstrom',
+      text: 'An der Welle eines Motors misst eine Drehmomentmesswelle 48 Nm bei einer Drehzahl von 1460 1/min. Berechne die Leistung, die der Motor an der Welle abgibt, in Kilowatt. Benutze die Zahlenwertgleichung M = 9550 · P / n mit M in Nm, P in kW und n in 1/min.',
+      ask: { label: 'abgegebene Leistung P', unit: 'kW' },
+      hint: ['Die Zahlenwertgleichung verbindet Moment, Leistung und Drehzahl direkt, ohne Umrechnung in die Winkelgeschwindigkeit. Die Gleichung gilt nur mit den angegebenen Einheiten.', 'Stelle M = 9550 · P / n nach P um: P = M · n / 9550.', 'P = 48 Nm · 1460 1/min / 9550 = 7,34 kW.'],
+      start: () => S('drehstrom', {}, { value: null }), sol: () => S('drehstrom', {}, { value: 48 * 1460 / 9550 }),
+      check: askCheck(48 * 1460 / 9550, [[48 * 1460 / 9550 * 1000, 'Das ist der Wert in Watt. Die Zahlenwertgleichung liefert P schon in kW.'], [9550 * 48 / 1460, 'Du hast falsch umgestellt (9550 · M / n). Aus M = 9550 · P / n folgt P = M · n / 9550.'], [48 * 1460, 'Du hast den Faktor 9550 vergessen. Er enthält die Umrechnung von 1/min in 1/s, 2π und kW.']]) },
+    /* ------------------------------------------------------------ Gleichstrom- und Schrittmotor (Berufsschulstoff Lernfeld 8.1 und 10.2) */
+    { id: 'an51', lab: 'ant', cat: 'Gleichstrom- und Schrittmotor', title: 'Gegenspannung im Anker', level: 2, rig: 'gleichstrom',
+      text: 'Ein fremderregter Gleichstrommotor liegt an 48 V und nimmt im Nennbetrieb einen Ankerstrom von 6 A auf. Der Widerstand der Ankerwicklung beträgt 0,9 Ω, an den beiden Kohlebürsten fallen zusammen 2 V ab (Übungswerte). Berechne die im drehenden Anker induzierte Gegenspannung in Volt.',
+      ask: { label: 'induzierte Spannung U_i', unit: 'V' },
+      hint: ['Im Motorbetrieb wirkt die induzierte Spannung der angelegten Spannung entgegen. Die Differenz treibt den Strom durch Ankerwiderstand und Bürsten.', 'Maschengleichung: U = U_i + I_A · R_A + U_B. Stelle nach U_i um.', 'I_A · R_A = 6 A · 0,9 Ω = 5,4 V. U_i = 48 V − 5,4 V − 2 V = 40,6 V.'],
+      start: () => S('gleichstrom', {}, { value: null }), sol: () => S('gleichstrom', {}, { value: 48 - 6 * 0.9 - 2 }),
+      check: askCheck(48 - 6 * 0.9 - 2, [[48 - 6 * 0.9, 'Du hast den Spannungsfall an den Bürsten vergessen. Er wird wie der Spannungsfall am Ankerwiderstand abgezogen.'], [48 + 6 * 0.9 + 2, 'Du hast die Spannungsfälle addiert. Das gilt für den Generator; beim Motor ist die Gegenspannung kleiner als die Klemmenspannung.'], [48 - 6 * 0.9 - 1, 'Die 2 V gelten schon für beide Bürsten zusammen. Ziehe sie einmal ganz ab.']]) },
+    { id: 'an52', lab: 'ant', cat: 'Gleichstrom- und Schrittmotor', title: 'Einschaltstrom im Stillstand', level: 2, rig: 'gleichstrom',
+      text: 'Ein Gleichstrommotor (48 V, Ankerwiderstand 0,9 Ω, Nennstrom 6 A) wird aus dem Stillstand direkt an die volle Spannung geschaltet. Die Bürstenspannung vernachlässigst du hier. Berechne, um welchen Faktor der Strom im ersten Moment größer ist als der Nennstrom.',
+      ask: { label: 'Faktor Anlaufstrom / Nennstrom', unit: 'fach' },
+      hint: ['Im Stillstand dreht sich der Anker nicht, also wird noch keine Gegenspannung induziert. Den Strom begrenzt dann nur der Ankerwiderstand.', 'Anlaufstrom I_an = U / R_A. Den Faktor bekommst du, wenn du I_an durch den Nennstrom teilst.', 'I_an = 48 V / 0,9 Ω = 53,3 A. Faktor = 53,3 A / 6 A = 8,9. Deshalb braucht ein größerer Gleichstrommotor einen Anlasser oder eine Strombegrenzung.'],
+      start: () => S('gleichstrom', {}, { value: null }), sol: () => S('gleichstrom', {}, { value: 48 / 0.9 / 6 }),
+      check: askCheck(48 / 0.9 / 6, [[48 / 0.9, 'Das ist der Anlaufstrom in Ampere. Gefragt ist das Verhältnis zum Nennstrom.'], [6 / (48 / 0.9), 'Du hast den Kehrwert gebildet. Der Anlaufstrom ist größer als der Nennstrom, der Faktor also größer als 1.'], [(48 - 40.6) / 0.9 / 6, 'Du hast mit der Gegenspannung aus dem Nennbetrieb gerechnet. Im Stillstand ist sie null.']]) },
+    { id: 'an53', lab: 'ant', cat: 'Gleichstrom- und Schrittmotor', title: 'Anlasswiderstand vor dem Anker', level: 3, rig: 'gleichstrom',
+      text: 'Beim Gleichstrommotor mit 48 V, einem Ankerwiderstand von 0,9 Ω und 6 A Nennstrom soll der Strom beim Einschalten aus dem Stillstand höchstens das Doppelte des Nennstroms erreichen. Dazu wird ein Anlasswiderstand in Reihe zum Anker geschaltet. Berechne seinen Wert in Ohm, die Bürstenspannung bleibt unberücksichtigt.',
+      ask: { label: 'Anlasswiderstand R_v', unit: 'Ω' },
+      hint: ['Im Stillstand gibt es keine Gegenspannung. Der Strom wird von der Summe aus Anlasswiderstand und Ankerwiderstand begrenzt.', 'Berechne zuerst den erlaubten Strom und daraus den Gesamtwiderstand R_ges = U / I. Der Ankerwiderstand ist schon vorhanden, er wird abgezogen.', 'I = 2 · 6 A = 12 A. R_ges = 48 V / 12 A = 4 Ω. R_v = 4 Ω − 0,9 Ω = 3,1 Ω.'],
+      start: () => S('gleichstrom', {}, { value: null }), sol: () => S('gleichstrom', {}, { value: 48 / 12 - 0.9 }),
+      check: askCheck(48 / 12 - 0.9, [[48 / 12, 'Das ist der Gesamtwiderstand im Kreis. Der Ankerwiderstand ist schon vorhanden, ziehe ihn ab.'], [48 / 12 + 0.9, 'Du hast den Ankerwiderstand addiert. Er ist Teil des Gesamtwiderstands, der Anlasswiderstand ist nur der fehlende Rest.'], [48 / 6 - 0.9, 'Du hast mit dem einfachen Nennstrom gerechnet. Erlaubt ist das Doppelte, also 12 A.']]) },
+    { id: 'an54', lab: 'ant', cat: 'Gleichstrom- und Schrittmotor', title: 'Schrittwinkel aus Strängen und Polpaaren', level: 2, rig: 'schritt',
+      text: 'Ein Schrittmotor hat drei Stränge in der Ständerwicklung, sein Läufer hat acht Polpaare. Er wird im Vollschritt betrieben. Berechne den Schrittwinkel in Grad, um den sich der Läufer bei jedem Schritt weiterdreht.',
+      ask: { label: 'Schrittwinkel α', unit: '°' },
+      hint: ['Je mehr Stränge und Polpaare ein Schrittmotor hat, desto feiner wird die Umdrehung aufgeteilt. Ein voller Kreis hat 360°.', 'Für den Vollschritt gilt α = 360° / (2 · m · p) mit der Strangzahl m und der Polpaarzahl p.', 'α = 360° / (2 · 3 · 8) = 360° / 48 = 7,5°. Für eine Umdrehung braucht der Motor 48 Schritte.'],
+      start: () => S('schritt', {}, { value: null }), sol: () => S('schritt', {}, { value: 360 / (2 * 3 * 8) }),
+      check: askCheck(360 / (2 * 3 * 8), [[360 / (3 * 8), 'Du hast den Faktor 2 vergessen. Im Vollschritt wechselt jeder Strang zweimal die Polarität je Polteilung: α = 360° / (2 · m · p).'], [360 / (2 * 8), 'Du hast die Strangzahl nicht eingerechnet. Sie steht mit im Nenner.'], [48, 'Das ist die Schrittzahl je Umdrehung. Gefragt ist der Winkel eines Schrittes.']]) }
   ];
 
   /* ====================================================================== Beispiele */

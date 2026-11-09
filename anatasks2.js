@@ -1058,6 +1058,407 @@
       ]; } });
   })();
 
+  /* ====================================================================== ae41 bis ae50: Anbindung an den Berufsschulstoff, zweiter Teil (Operationsverstaerker-Schaltungen, Basisvorwiderstand, R-2R-Umsetzer, Diodenschaltungen)
+   * Eigene Zahlen (Uebungswerte), unabhaengig nachgerechnet in quelle/analab/test_schule.js; Pruefstaende nur zum Nachstellen, die Rechnung steht in vals().
+   * Auswahlfragen: Fachgrund je Antwort, richtige Antwort nicht systematisch die laengste, Position gestreut. */
+
+  /* ====================================================================== ae41: Virtueller Kurzschluss am realen Operationsverstaerker (Lernfeld 9.1, Kennwerte des realen OPV) */ /* PRUEFEN P10: V_0 = 200000 und r_D = 2 MΩ sind Übungswerte, nicht die Werte eines bestimmten Typs */
+  const M41 = (() => {
+    const G = { v0: 200000, rd: 2e6, r1: 10000, rf: 100000, ua: -6 };
+    const CTL = () => ({ schaltung: 'real', opv: 'langsam', uv: 12, form: 'sinus', ue: 1, f: 5000, r1: 10000, rf: 100000, c: 1e-6 });
+    const vals = () => once('v41', () => { const ud = Math.abs(G.ua) / G.v0, id = ud / G.rd, ue = -G.ua * G.r1 / G.rf, i1 = (ue - ud) / G.r1;
+      return { v0: G.v0, rd: G.rd / 1e6, r1: G.r1 / 1e3, rf: G.rf / 1e3, ua: Math.abs(G.ua), ue, udMikro: ud * 1e6, idPiko: id * 1e12, i1Mikro: i1 * 1e6, anteil: ud / ue * 100, verh: Math.round(i1 / id / 1e6), udMal: Math.abs(G.ua) * G.v0, idFalsch: Math.abs(G.ua) / G.rd * 1e6 }; });
+    const rUd = () => once('r41a', () => { const v = vals(); return own(v.udMikro * 1e-6, 'V', [{ v: v.udMal, id: 'mal', text: 'Du hast U_a · V_0 gerechnet. Der Verstärker vergrößert die Differenzspannung: U_a = V_0 · U_D, also U_D = |U_a| / V_0.' }, { v: Math.abs(G.ua), id: 'ua', text: 'Das ist die Ausgangsspannung selbst. Zwischen den Eingängen liegt nur der V_0-te Teil davon: U_D = |U_a| / V_0.' }], { factor: 1e-6, dispUnit: 'µV', disp: v.udMikro }); });
+    const rId = () => once('r41b', () => { const v = vals(); return own(v.idPiko * 1e-12, 'A', [{ v: v.idFalsch * 1e-6, id: 'ua', text: 'Du hast die Ausgangsspannung durch r_D geteilt. Am Eingangswiderstand liegt nur die Differenzspannung U_D, daher I_D = U_D / r_D.' }], { factor: 1e-12, dispUnit: 'pA', disp: v.idPiko }); });
+    const rI1 = () => once('r41c', () => { const v = vals(); return own(v.i1Mikro * 1e-6, 'A', [{ v: v.ua / (G.r1), id: 'ua', text: 'Du hast U_a durch R_1 geteilt. An R_1 liegt die Eingangsspannung (bis auf die winzige Differenzspannung), der Strom ist I_1 = U_e / R_1.' }], { factor: 1e-6, dispUnit: 'µA', disp: v.i1Mikro }); });
+    const specs = () => once('sp41', () => { const v = vals(); return [
+      { key: 'vk', q: 'Warum darf man beim Rechnen mit dem idealen Verstärker U_D = 0 setzen (virtueller Kurzschluss)?', short: 'Der Grund für den virtuellen Kurzschluss ist richtig benannt', right: 'klein',
+        options: [
+          { value: 'kurz', label: 'Die beiden Eingänge sind im Inneren leitend verbunden', grund: 'Die Eingänge sind nicht verbunden, zwischen ihnen liegt der große Widerstand r_D = ' + f(v.rd, 0) + ' MΩ. Die Spannung ist nur so klein (' + f(v.udMikro, 0) + ' µV), dass man sie vernachlässigt.' },
+          { value: 'klein', label: 'U_D ist winzig gegen U_e und wird vernachlässigt', grund: 'U_D = ' + f(v.udMikro, 0) + ' µV ist nur ' + f(v.anteil, 3) + ' % von U_e = ' + f(v.ue, 1) + ' V. Wegen der großen Leerlaufverstärkung reicht diese winzige Spannung, um den Ausgang auf ' + f(v.ua, 0) + ' V zu treiben.' },
+          { value: 'masse', label: 'Der invertierende Eingang ist fest mit Masse verbunden', grund: 'Mit Masse verbunden ist nur der nicht invertierende Eingang. Der invertierende Eingang liegt über R_1 und R_f an Ein- und Ausgang; er ist nur virtuell auf 0 V, weil U_D so klein ist.' },
+          { value: 'strom', label: 'Durch R_1 fließt kein Strom, deshalb gibt es keine Spannung', grund: 'Durch R_1 fließt sehr wohl Strom: I_1 = ' + f(v.i1Mikro, 1) + ' µA. In den Eingang des Verstärkers fließt dagegen fast nichts (' + f(v.idPiko, 0) + ' pA).' }] },
+      { key: 'rf', q: 'Welcher Strom fließt durch den Rückkopplungswiderstand R_f?', short: 'Der Strom durch R_f ist richtig beurteilt', right: 'gleich',
+        options: [
+          { value: 'halb', label: 'Die Hälfte von I_1, der Rest fließt in den Eingang', grund: 'In den Eingang fließen nur ' + f(v.idPiko, 0) + ' pA. Das ist rund ' + f(v.verh, 0) + ' Millionen-mal weniger als I_1 = ' + f(v.i1Mikro, 1) + ' µA; fast der ganze Strom fließt über R_f weiter.' },
+          { value: 'null', label: 'Gar keiner, der ganze Strom geht in den Eingang', grund: 'Der Eingang ist sehr hochohmig (r_D = ' + f(v.rd, 0) + ' MΩ) und nimmt nur ' + f(v.idPiko, 0) + ' pA auf. Der Strom I_1 muss über R_f zum Ausgang weiter.' },
+          { value: 'gleich', label: 'Praktisch derselbe Strom wie durch R_1', grund: 'Der Eingangsstrom I_D = ' + f(v.idPiko, 0) + ' pA ist gegen I_1 = ' + f(v.i1Mikro, 1) + ' µA vernachlässigbar. Deshalb gilt I_f = I_1 und daraus V_u = −R_f / R_1.' },
+          { value: 'doppelt', label: 'Den doppelten Strom von R_1, wegen der Verstärkung', grund: 'Ströme werden am Knoten nicht vervielfacht: Was über R_1 ankommt, fließt über R_f ab (bis auf ' + f(v.idPiko, 0) + ' pA in den Eingang).' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'ud'), rUd(), 'Die Differenzspannung U_D ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'id'), rId(), 'Der Eingangsstrom I_D ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'i1'), rI1(), 'Der Strom I_1 durch R_1 ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein realer Operationsverstärker hat die Leerlaufverstärkung V_0 = ' + f(G.v0, 0) + ' und zwischen seinen Eingängen den Widerstand r_D = ' + eng(G.rd, 'Ω') + ' (Übungswerte). Er arbeitet als Invertierer mit R_1 = ' + eng(G.r1, 'Ω') + ' und R_f = ' + eng(G.rf, 'Ω') + ' und liefert U_a = −' + f(Math.abs(G.ua), 0) + ' V. Berechne die Differenzspannung U_D zwischen den Eingängen, den Strom I_D in den Eingang und den Strom I_1 durch R_1. Beantworte dann zwei Fragen zum virtuellen Kurzschluss. Im Prüfstand „' + rname('opv_aktiv') + '“ (Schaltung „Realer Operationsverstärker“) kannst du den realen Baustein untersuchen.',
+      fields: () => [{ key: 'ud', label: 'Differenzspannung U_D (Betrag)', unit: 'µV' }, { key: 'id', label: 'Eingangsstrom I_D', unit: 'pA' }, { key: 'i1', label: 'Strom I_1 durch R_1', unit: 'µA' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der Verstärker vergrößert die Spannung zwischen seinen Eingängen um V_0: U_a = V_0 · U_D. Der Strom in den Eingang folgt aus dem Ohmschen Gesetz mit r_D. Die Eingangsspannung des Invertierers ist U_e = |U_a| · R_1 / R_f.',
+        'U_D = ' + f(v.ua, 0) + ' V / ' + f(v.v0, 0) + ', in µV umrechnen. I_D = U_D / ' + f(v.rd, 0) + ' MΩ. U_e = ' + f(v.ua, 0) + ' V · ' + f(v.r1, 0) + ' kΩ / ' + f(v.rf, 0) + ' kΩ = ' + f(v.ue, 1) + ' V, und I_1 ≈ U_e / R_1.',
+        'Musterlösung: U_D = ' + f(v.udMikro, 0) + ' µV, I_D = ' + f(v.idPiko, 0) + ' pA, I_1 = ' + f(v.i1Mikro, 1) + ' µA. U_D ist nur ' + f(v.anteil, 3) + ' % von U_e, der Eingangsstrom etwa ' + f(v.verh, 0) + ' Millionen-mal kleiner als I_1: Deshalb rechnet man mit U_D = 0 und I_f = I_1.'
+      ]; },
+      start: () => A('opv_aktiv', CTL(), { fields: { ud: null, id: null, i1: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_aktiv', CTL(), { fields: { ud: v.udMikro, id: v.idPiko, i1: v.i1Mikro }, choices: rightOf(specs()), value: v.udMikro }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'U_a mal V_0 und U_a durch r_D gerechnet, Eingänge verbunden', answer: A('opv_aktiv', {}, { fields: { ud: v.udMal * 1e6, id: v.idFalsch * 1e6, i1: v.i1Mikro }, choices: { vk: 'kurz', rf: 'null' } }) },
+        { name: 'Ausgangsspannung als U_D, I_1 aus U_a, Strom halbiert', answer: A('opv_aktiv', {}, { fields: { ud: v.ua * 1e6, id: v.idPiko, i1: v.ua / G.r1 * 1e6 }, choices: { vk: 'strom', rf: 'halb' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae42: Invertierer aus Eingangsstrom und Ausgangsspannung auslegen (Lernfeld 9.1, Grundschaltungen) */
+  const M42 = (() => {
+    const G = { ue: 3, i: 0.0002, ua: -9 };
+    const CTL = () => ({ schaltung: 'invertierer', opv: 'ideal', form: 'gleich', ue: 0.5, r1: 4700, rf: 47000 });
+    const vals = () => once('v42', () => { const r1 = G.ue / G.i, vu = G.ua / G.ue, rf = Math.abs(vu) * r1; return { ue: G.ue, i: G.i * 1e3, ua: Math.abs(G.ua), r1: r1 / 1e3, vu, vb: Math.abs(vu), rf: rf / 1e3, rfNin: (Math.abs(vu) + 1) * r1 / 1e3, r1Ua: Math.abs(G.ua) / G.i / 1e3 }; });
+    const rR1 = () => once('r42a', () => { const v = vals(); return own(v.r1 * 1e3, 'Ω', [{ v: v.r1Ua * 1e3, id: 'ua', text: 'Du hast U_a / I gerechnet. Der Strom fließt vom Eingang über R_1 zum invertierenden Eingang (virtuelle Masse, 0 V): An R_1 liegt U_e, also R_1 = U_e / I.' }], { factor: 1e3, dispUnit: 'kΩ', disp: v.r1 }); });
+    const rVu = () => once('r42b', () => { const v = vals(); return own(v.vu, '', [{ v: -v.vu, id: 'vorzeichen', text: 'Dein Wert hat das falsche Vorzeichen: Der Invertierer dreht die Spannung um, U_a ist negativ bei positivem U_e. V_u = U_a / U_e ist negativ.' }, { v: 1 / v.vu, id: 'kehr', text: 'Dein Wert ist der Kehrwert: V_u = U_a / U_e, Ausgang durch Eingang.' }]); });
+    const rRf = () => once('r42c', () => { const v = vals(); return own(v.rf * 1e3, 'Ω', [{ v: v.rfNin * 1e3, id: 'nin', text: 'Du hast (|V_u| + 1) · R_1 gerechnet. Das ist die Formel des Nichtinvertierers; beim Invertierer gilt R_f = |V_u| · R_1.' }, { v: v.r1 * 1e3, id: 'r1', text: 'Dein Wert ist R_1. Der Strom I fließt auch durch R_f, an R_f liegt aber die Ausgangsspannung: R_f = |U_a| / I.' }], { factor: 1e3, dispUnit: 'kΩ', disp: v.rf }); });
+    const specs = () => once('sp42', () => { const v = vals(); return [
+      { key: 'knoten', q: 'Welche Spannung misst du am invertierenden Eingang gegen Masse?', short: 'Die Spannung am invertierenden Eingang ist richtig bestimmt', right: 'null',
+        options: [
+          { value: 'ue', label: 'Die Eingangsspannung, ' + f(v.ue, 0) + ' V', grund: 'Die Eingangsspannung liegt am linken Ende von R_1. Über R_1 fällt sie ganz ab, am invertierenden Eingang bleiben (fast) 0 V übrig.' },
+          { value: 'mitte', label: 'Die Mitte aus U_e und U_a, ' + fs((v.ue - v.ua) / 2, 0) + ' V', grund: 'Die Mitte entstünde bei R_1 = R_f. Hier regelt der Verstärker den Knoten auf 0 V: An R_1 liegen ' + f(v.ue, 0) + ' V, an R_f liegen ' + f(v.ua, 0) + ' V.' },
+          { value: 'null', label: 'Etwa 0 V, virtuelle Masse', grund: 'Der nicht invertierende Eingang liegt an Masse, und der Verstärker hält die Differenz zwischen den Eingängen nahe null. Am invertierenden Eingang stehen also etwa 0 V (virtuelle Masse).' },
+          { value: 'ua', label: 'Die Ausgangsspannung, −' + f(v.ua, 0) + ' V', grund: 'Die Ausgangsspannung liegt am rechten Ende von R_f und fällt über R_f ganz ab. Der Knoten dazwischen bleibt auf etwa 0 V.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'r1'), rR1(), 'Der Eingangswiderstand R_1 ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'vu'), rVu(), 'Die Verstärkung V_u ist richtig berechnet (mit Vorzeichen)', 1);
+      numRow(r, rawOf(a, 'rf'), rRf(), 'Der Rückkopplungswiderstand R_f ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein invertierender Verstärker mit idealem Operationsverstärker soll aus U_e = ' + f(G.ue, 0) + ' V die Ausgangsspannung U_a = −' + f(Math.abs(G.ua), 0) + ' V machen. Die Signalquelle darf dabei nur mit I = ' + f(G.i * 1e3, 1) + ' mA belastet werden (Übungswerte). Berechne R_1, die Verstärkung V_u und R_f. Im Prüfstand „' + rname('opv_inv') + '“ kannst du deine Werte einstellen und U_a ablesen.',
+      fields: () => [{ key: 'r1', label: 'Eingangswiderstand R_1', unit: 'kΩ' }, { key: 'vu', label: 'Verstärkung V_u', unit: '' }, { key: 'rf', label: 'Rückkopplungswiderstand R_f', unit: 'kΩ' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der invertierende Eingang ist eine virtuelle Masse. Der Strom aus der Quelle fließt durch R_1 und weiter durch R_f zum Ausgang. An R_1 liegt U_e, an R_f liegt U_a. Die Verstärkung ist V_u = U_a / U_e = −R_f / R_1.',
+        'R_1 = ' + f(v.ue, 0) + ' V / ' + f(v.i, 1) + ' mA. V_u = −' + f(v.ua, 0) + ' V / ' + f(v.ue, 0) + ' V. Für R_f nimmst du |V_u| · R_1 oder gleich |U_a| / I.',
+        'Musterlösung: R_1 = ' + f(v.r1, 0) + ' kΩ, V_u = ' + fs(v.vu, 0) + ', R_f = ' + f(v.vb, 0) + ' · ' + f(v.r1, 0) + ' kΩ = ' + f(v.rf, 0) + ' kΩ. Der invertierende Eingang bleibt auf etwa 0 V.'
+      ]; },
+      start: () => A('opv_inv', CTL(), { fields: { r1: null, vu: null, rf: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_inv', Object.assign(CTL(), { ue: G.ue, r1: v.r1 * 1e3, rf: v.rf * 1e3 }), { fields: { r1: v.r1, vu: v.vu, rf: v.rf }, choices: rightOf(specs()), value: v.rf }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'U_a durch I für R_1, Formel des Nichtinvertierers', answer: A('opv_inv', {}, { fields: { r1: v.r1Ua, vu: v.vu, rf: v.rfNin }, choices: { knoten: 'ue' } }) },
+        { name: 'Vorzeichen vergessen, R_f gleich R_1, Knoten am Ausgang', answer: A('opv_inv', {}, { fields: { r1: v.r1, vu: -v.vu, rf: v.r1 }, choices: { knoten: 'ua' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae43: Nichtinvertierer, Eingangsspannung aus dem Ausgang (Lernfeld 9.1, Grundschaltungen; Scheitel- und Effektivwert) */
+  const M43 = (() => {
+    const G = { rg: 12000, rf: 220000, uahat: 5.8 };
+    const CTL = () => ({ schaltung: 'nichtinvertierend', opv: 'ideal', form: 'gleich', ue: 0.3, rg: G.rg, rf: G.rf });
+    const vals = () => once('v43', () => { const vu = 1 + G.rf / G.rg, uehat = G.uahat / vu, ueeff = uehat / Math.SQRT2, vfalsch = G.rf / G.rg;
+      return { rg: G.rg / 1e3, rf: G.rf / 1e3, uahat: G.uahat, vu, quot: vfalsch, uehat: uehat * 1e3, ueeff: ueeff * 1e3, uehatFalsch: G.uahat / vfalsch * 1e3, ueeffMal: uehat * Math.SQRT2 * 1e3, uaeff: G.uahat / Math.SQRT2 }; });
+    const rVu = () => once('r43a', () => { const v = vals(); return own(v.vu, '', [{ v: v.quot, id: 'quot', text: 'Dein Wert ist R_f / R_g. Beim Nichtinvertierer kommt die Eins dazu: V_u = 1 + R_f / R_g, weil die Eingangsspannung selbst am Ausgang mit erscheint.' }, { v: -v.vu, id: 'vorzeichen', text: 'Der Nichtinvertierer dreht die Spannung nicht um, V_u ist positiv.' }]); });
+    const rHat = () => once('r43b', () => { const v = vals(); return own(v.uehat * 1e-3, 'V', [{ v: v.uehatFalsch * 1e-3, id: 'quot', text: 'Du hast mit V_u = R_f / R_g gerechnet. Mit V_u = 1 + R_f / R_g wird die Eingangsspannung etwas kleiner.' }, { v: G.uahat * v.vu, id: 'mal', text: 'Du hast mit V_u multipliziert. Der Eingang ist kleiner als der Ausgang: û_e = û_a / V_u.' }], { factor: 1e-3, dispUnit: 'mV', disp: v.uehat }); });
+    const rEff = () => once('r43c', () => { const v = vals(); return own(v.ueeff * 1e-3, 'V', [{ v: v.ueeffMal * 1e-3, id: 'mal', text: 'Du hast den Scheitelwert mit √2 multipliziert. Der Effektivwert einer Sinusspannung ist kleiner als der Scheitelwert: U_eff = û / √2.' }, { v: v.uehat * 1e-3, id: 'hat', text: 'Das ist der Scheitelwert. Gefragt ist der Effektivwert: U_eff = û / √2.' }], { factor: 1e-3, dispUnit: 'mV', disp: v.ueeff }); });
+    const specs = () => once('sp43', () => { const v = vals(); return [
+      { key: 'phase', q: 'Wie liegen Eingangs- und Ausgangsspannung des Nichtinvertierers zueinander (Sinus)?', short: 'Die Phasenlage ist richtig bestimmt', right: 'gleich',
+        options: [
+          { value: 'gegen', label: 'Um 180° gegeneinander verschoben', grund: 'Um 180° dreht der invertierende Verstärker. Beim Nichtinvertierer liegt das Signal am nicht invertierenden Eingang, Ein- und Ausgang sind gleichphasig.' },
+          { value: 'vor', label: 'Ausgang eilt um 90° voraus', grund: 'Eine Verschiebung um 90° gäbe es nur mit einem Kondensator (Integrierer, Differenzierer). Der Verstärker aus zwei Widerständen ist gleichphasig.' },
+          { value: 'gleich', label: 'Gleichphasig, ohne Verschiebung', grund: 'Das Signal liegt am nicht invertierenden Eingang: Steigt U_e, steigt U_a. Die Spannungen sind gleichphasig, nur um V_u = ' + f(v.vu, 2) + ' größer.' },
+          { value: 'nach', label: 'Ausgang eilt um 90° nach', grund: 'Ohne Kondensator gibt es keine 90°-Verschiebung. Der Nichtinvertierer liefert ein gleichphasiges, um V_u = ' + f(v.vu, 2) + ' vergrößertes Signal.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'vu'), rVu(), 'Die Verstärkung V_u ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'uehat'), rHat(), 'Der Scheitelwert û_e der Eingangsspannung ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'ueeff'), rEff(), 'Der Effektivwert U_e der Eingangsspannung ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein nichtinvertierender Verstärker mit idealem Operationsverstärker hat R_f = ' + eng(G.rf, 'Ω') + ' und R_g = ' + eng(G.rg, 'Ω') + ' (Übungsschaltung). Am Ausgang misst du eine Sinusspannung mit dem Scheitelwert û_a = ' + f(G.uahat, 1) + ' V. Berechne die Verstärkung V_u, den Scheitelwert û_e und den Effektivwert U_e der Eingangsspannung. Im Prüfstand „' + rname('opv_nin') + '“ kannst du die Stufe nachstellen.',
+      fields: () => [{ key: 'vu', label: 'Verstärkung V_u', unit: '' }, { key: 'uehat', label: 'Scheitelwert û_e', unit: 'mV' }, { key: 'ueeff', label: 'Effektivwert U_e', unit: 'mV' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Beim Nichtinvertierer ist V_u = 1 + R_f / R_g. Die Eingangsspannung ist der V_u-te Teil der Ausgangsspannung. Bei einer Sinusspannung gilt zwischen Scheitelwert und Effektivwert U_eff = û / √2.',
+        'V_u = 1 + ' + f(v.rf, 0) + ' kΩ / ' + f(v.rg, 0) + ' kΩ. Dann û_e = ' + f(v.uahat, 1) + ' V / V_u, in mV umrechnen, und daraus U_e = û_e / √2.',
+        'Musterlösung: V_u = ' + f(v.vu, 2) + ', û_e = ' + f(v.uehat, 0) + ' mV, U_e = ' + f(v.ueeff, 1) + ' mV. Ein- und Ausgang sind gleichphasig. Mit R_f / R_g allein (' + f(v.quot, 2) + ') kämen ' + f(v.uehatFalsch, 1) + ' mV heraus.'
+      ]; },
+      start: () => A('opv_nin', CTL(), { fields: { vu: null, uehat: null, ueeff: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_nin', CTL(), { fields: { vu: v.vu, uehat: v.uehat, ueeff: v.ueeff }, choices: rightOf(specs()), value: v.uehat }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'R_f / R_g ohne die Eins, Phase 180°', answer: A('opv_nin', {}, { fields: { vu: v.quot, uehat: v.uehatFalsch, ueeff: v.uehatFalsch / Math.SQRT2 }, choices: { phase: 'gegen' } }) },
+        { name: 'Scheitelwert mal √2 als Effektivwert, 90° Verschiebung', answer: A('opv_nin', {}, { fields: { vu: v.vu, uehat: v.uehat, ueeff: v.ueeffMal }, choices: { phase: 'vor' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae44: Summierer mit Gewichtung entwerfen (Lernfeld 9.1, Addierer) */ /* PRUEFEN P11: drei Eingänge mit den Gewichten 0,2 / 0,5 / 1; der Prüfstand hat nur zwei Eingänge, die dritte Spannung wird von Hand ergänzt */
+  const M44 = (() => {
+    const G = { rf: 30000, k: [0.2, 0.5, 1], u: [2, -1, 0.5] };
+    const CTL = () => ({ schaltung: 'invertierer', opv: 'ideal', form: 'gleich', ue: 0.5, r1: 4700, rf: 47000 });
+    const vals = () => once('v44', () => { const r = G.k.map(k => G.rf / k), ua = -G.k.reduce((s, k, i) => s + k * G.u[i], 0);
+      return { rf: G.rf / 1e3, k1: G.k[0], k2: G.k[1], k3: G.k[2], r1: r[0] / 1e3, r2: r[1] / 1e3, r3: r[2] / 1e3, u1: G.u[0], u2: G.u[1], u3: G.u[2], ua, uab: Math.abs(ua), t1: G.k[0] * G.u[0], t2: G.k[1] * G.u[1], t3: G.k[2] * G.u[2], r1mal: G.rf * G.k[0] / 1e3, r2mal: G.rf * G.k[1] / 1e3, uaPlus: -ua }; });
+    const rR = (i, key) => () => once('r44' + i, () => { const v = vals(); return own(v['r' + i] * 1e3, 'Ω', [{ v: v.rf * 1e3 * v['k' + i], id: 'mal', text: 'Du hast R_f · k gerechnet. Je kleiner das Gewicht, desto größer muss der Eingangswiderstand sein: R = R_f / k.' }], { factor: 1e3, dispUnit: 'kΩ', disp: v['r' + i] }); });
+    const rR1 = rR(1), rR2 = rR(2), rR3 = rR(3);
+    const rUa = () => once('r44u', () => { const v = vals(); return own(v.ua, 'V', [{ v: v.uaPlus, id: 'vorzeichen', text: 'Dein Wert hat das falsche Vorzeichen: Der Summierer ist ein invertierender Verstärker, U_a = −(0,2 · U_1 + 0,5 · U_2 + U_3).' }, { v: -(G.u[0] + G.u[1] + G.u[2]), id: 'ohne', text: 'Du hast die Spannungen ohne Gewichte addiert. Jede Eingangsspannung zählt mit ihrem Gewicht R_f / R.' }]); });
+    const specs = () => once('sp44', () => { const v = vals(); return [
+      { key: 'entkoppelt', q: 'Warum beeinflussen sich die drei Eingangsspannungen gegenseitig nicht?', short: 'Der Grund für die Entkopplung der Eingänge ist richtig benannt', right: 'masse',
+        options: [
+          { value: 'gleich', label: 'Weil alle Eingangswiderstände gleich groß sind', grund: 'Die Widerstände sind hier verschieden (' + f(v.r1, 0) + ' kΩ, ' + f(v.r2, 0) + ' kΩ, ' + f(v.r3, 0) + ' kΩ). Die Entkopplung kommt vom Summenpunkt, der auf 0 V gehalten wird.' },
+          { value: 'rf', label: 'Weil R_f die Eingänge voneinander abtrennt', grund: 'R_f liegt zwischen Summenpunkt und Ausgang und trennt die Eingänge nicht. Jeder Eingangsstrom hängt nur von seiner Spannung und seinem Widerstand ab, weil der Summenpunkt auf 0 V liegt.' },
+          { value: 'quelle', label: 'Weil jede Quelle eine eigene Masse besitzt', grund: 'Alle Quellen haben dieselbe Masse. Entscheidend ist, dass der Summenpunkt virtuell auf 0 V liegt: Jeder Strom ist U / R, egal was an den anderen Eingängen anliegt.' },
+          { value: 'masse', label: 'Weil der Summenpunkt virtuell auf 0 V liegt', grund: 'Der Verstärker hält den Summenpunkt auf 0 V. Jeder Eingang treibt deshalb den Strom U / R, unabhängig von den anderen; über R_f werden die Ströme addiert.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'r1'), rR1(), 'Der Widerstand R_1 für das Gewicht ' + f(G.k[0], 1) + ' ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'r2'), rR2(), 'Der Widerstand R_2 für das Gewicht ' + f(G.k[1], 1) + ' ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'r3'), rR3(), 'Der Widerstand R_3 für das Gewicht ' + f(G.k[2], 0) + ' ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'ua'), rUa(), 'Die Ausgangsspannung U_a für die Probe ist richtig berechnet (mit Vorzeichen)', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Entwirf einen Summierer mit idealem Operationsverstärker und drei Eingängen, der U_a = −(' + f(G.k[0], 1) + ' · U_1 + ' + f(G.k[1], 1) + ' · U_2 + U_3) liefert. Der Rückkopplungswiderstand ist R_f = ' + eng(G.rf, 'Ω') + ' (Übungswert). Berechne die drei Eingangswiderstände R_1, R_2 und R_3. Mache dann die Probe für U_1 = ' + f(G.u[0], 0) + ' V, U_2 = −' + f(Math.abs(G.u[1]), 0) + ' V und U_3 = ' + f(G.u[2], 1) + ' V. Im Prüfstand „' + rname('opv_inv') + '“ (Schaltung Summierer, zwei Eingänge) kannst du die Gewichtung für zwei Eingänge nachprüfen.',
+      fields: () => [{ key: 'r1', label: 'Eingangswiderstand R_1', unit: 'kΩ' }, { key: 'r2', label: 'Eingangswiderstand R_2', unit: 'kΩ' }, { key: 'r3', label: 'Eingangswiderstand R_3', unit: 'kΩ' }, { key: 'ua', label: 'Ausgangsspannung U_a (Probe)', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Beim Summierer gilt U_a = −R_f · (U_1 / R_1 + U_2 / R_2 + U_3 / R_3). Jeder Eingang hat also das Gewicht R_f / R. Für ein gewünschtes Gewicht k ist R = R_f / k.',
+        'R_1 = ' + f(v.rf, 0) + ' kΩ / ' + f(v.k1, 1) + ', R_2 = ' + f(v.rf, 0) + ' kΩ / ' + f(v.k2, 1) + ', R_3 = ' + f(v.rf, 0) + ' kΩ / 1. Für die Probe: ' + f(v.k1, 1) + ' · ' + f(v.u1, 0) + ' V = ' + f(v.t1, 1) + ' V, ' + f(v.k2, 1) + ' · (−' + f(Math.abs(v.u2), 0) + ' V) = −' + f(Math.abs(v.t2), 1) + ' V, dazu ' + f(v.t3, 1) + ' V; die Summe bekommt ein Minus.',
+        'Musterlösung: R_1 = ' + f(v.r1, 0) + ' kΩ, R_2 = ' + f(v.r2, 0) + ' kΩ, R_3 = ' + f(v.r3, 0) + ' kΩ. Probe: U_a = −(' + f(v.t1, 1) + ' V − ' + f(Math.abs(v.t2), 1) + ' V + ' + f(v.t3, 1) + ' V) = ' + fs(v.ua, 1) + ' V.'
+      ]; },
+      start: () => A('opv_inv', CTL(), { fields: { r1: null, r2: null, r3: null, ua: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_inv', CTL(), { fields: { r1: v.r1, r2: v.r2, r3: v.r3, ua: v.ua }, choices: rightOf(specs()), value: v.ua }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'R_f mal Gewicht statt durch Gewicht, gleiche Widerstände', answer: A('opv_inv', {}, { fields: { r1: v.r1mal, r2: v.r2mal, r3: v.r3, ua: v.ua }, choices: { entkoppelt: 'gleich' } }) },
+        { name: 'Probe ohne Minuszeichen, R_f trennt die Eingänge', answer: A('opv_inv', {}, { fields: { r1: v.r1, r2: v.r2, r3: v.r3, ua: v.uaPlus }, choices: { entkoppelt: 'rf' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae45: Differenzierer, Ausgang bei Dreieck, Rechteck und Sinus (Lernfeld 9.1, Differenzierer) */
+  const M45 = (() => {
+    const G = { rf: 10000, c: 1e-7, uhat: 1, f: 500 };
+    const CTL = () => ({ schaltung: 'differenzierer', opv: 'ideal', form: 'dreieck', ue: G.uhat, f: G.f, rf: G.rf, c: G.c });
+    const vals = () => once('v45', () => { const tau = G.rf * G.c, steil = 4 * G.uhat * G.f, ua = -tau * steil;
+      return { rf: G.rf / 1e3, c: G.c * 1e9, uhat: G.uhat, f: G.f, tau: tau * 1e3, steil, ua, uab: Math.abs(ua), phi: 90, uss: 2 * G.uhat, halb: 1 / (2 * G.f) * 1e3, steilHalb: 2 * G.uhat * G.f, uaHalb: -tau * 2 * G.uhat * G.f }; });
+    const rS = () => once('r45a', () => { const v = vals(); return own(v.steil, 'V/s', [{ v: v.steilHalb, id: 'halb', text: 'Du hast nur mit dem Scheitelwert gerechnet. Die Flanke läuft von −û nach +û, also über ' + f(v.uss, 0) + ' V in einer halben Periode: du/dt = 2 · û / (T / 2) = 4 · û · f.' }]); });
+    const rUa = () => once('r45b', () => { const v = vals(); return own(v.ua, 'V', [{ v: -v.ua, id: 'vorzeichen', text: 'Dein Wert hat das falsche Vorzeichen: Der Differenzierer invertiert. Bei steigender Flanke ist u_a negativ, u_a = −R_f · C · du/dt.' }, { v: v.uaHalb, id: 'halb', text: 'Dein Wert passt zur halben Steilheit. Rechne die Steilheit der Flanke mit 4 · û · f.' }]); });
+    const specs = () => once('sp45', () => { const v = vals(); return [
+      { key: 'rechteck', q: 'Am Eingang liegt eine Rechteckspannung. Was zeigt der Ausgang?', short: 'Der Ausgang bei Rechteckeingang ist richtig beschrieben', right: 'nadel',
+        options: [
+          { value: 'dreieck', label: 'Eine Dreieckspannung mit gleicher Frequenz', grund: 'Aus dem Rechteck macht der Integrierer ein Dreieck. Der Differenzierer reagiert auf die Änderung: Nur an den Flanken ändert sich die Spannung, dort entstehen kurze Spitzen.' },
+          { value: 'nadel', label: 'Kurze Nadelimpulse an den Flanken', grund: 'Auf den waagerechten Teilen ist du/dt = 0, der Ausgang bleibt bei 0 V. Nur an den steilen Flanken ist du/dt sehr groß: Es entstehen Nadelimpulse, bei steigender Flanke negativ.' },
+          { value: 'gleich', label: 'Ein umgedrehtes Rechteck gleicher Höhe', grund: 'Ein umgedrehtes Rechteck liefert der Invertierer mit Widerständen. Beim Differenzierer zählt nur die Änderung; auf den waagerechten Teilen ist der Ausgang 0 V.' },
+          { value: 'sinus', label: 'Eine Sinusspannung mit gleicher Frequenz', grund: 'Eine Sinusspannung entsteht aus dem Rechteck nicht. Der Differenzierer liefert nur an den Flanken Spitzen, dazwischen 0 V.' }] },
+      { key: 'sinus', q: 'Am Eingang liegt eine Sinusspannung. Was zeigt der Ausgang?', short: 'Der Ausgang bei Sinuseingang ist richtig beschrieben', right: 'cos',
+        options: [
+          { value: 'cos', label: 'Wieder eine Sinusform, um 90° verschoben', grund: 'Die Ableitung einer Sinusspannung ist eine Kosinusspannung: wieder sinusförmig, um 90° verschoben (mit der Umkehr des invertierenden Verstärkers zusammen).' },
+          { value: 'nadel', label: 'Kurze Nadelimpulse in den Nulldurchgängen', grund: 'Nadelimpulse gibt es nur bei sprunghaften Änderungen. Die Sinusspannung ändert sich stetig, ihre Ableitung ist wieder sinusförmig.' },
+          { value: 'rechteck', label: 'Eine Rechteckspannung gleicher Frequenz', grund: 'Ein Rechteck entsteht beim Differenzieren eines Dreiecks, weil dessen Flanken gerade sind. Die Sinusspannung liefert abgeleitet wieder eine Sinusform.' },
+          { value: 'gleich', label: 'Eine konstante Gleichspannung', grund: 'Eine Gleichspannung käme nur bei konstanter Steigung heraus. Die Steigung des Sinus ändert sich ständig, der Ausgang ist eine um 90° verschobene Sinusform.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'steil'), rS(), 'Die Steilheit du/dt der Dreieckflanke ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'ua'), rUa(), 'Die Ausgangsspannung während der steigenden Flanke ist richtig berechnet (mit Vorzeichen)', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [4],
+      text: () => 'Ein Differenzierer mit idealem Operationsverstärker hat C = ' + eng(G.c, 'F') + ' am Eingang und R_f = ' + eng(G.rf, 'Ω') + ' in der Rückkopplung (Übungsschaltung). Am Eingang liegt eine Dreieckspannung mit dem Scheitelwert û = ' + f(G.uhat, 0) + ' V und der Frequenz f = ' + f(G.f, 0) + ' Hz. Berechne die Steilheit du/dt einer Flanke und die Ausgangsspannung während der steigenden Flanke. Beantworte dann, was bei Rechteck- und Sinuseingang am Ausgang erscheint. Im Prüfstand „' + rname('opv_aktiv') + '“ (Schaltung Differenzierer) kannst du alle drei Eingangsformen ausprobieren.',
+      fields: () => [{ key: 'steil', label: 'Steilheit du/dt der Flanke', unit: 'V/s' }, { key: 'ua', label: 'Ausgangsspannung u_a bei steigender Flanke', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der Differenzierer liefert u_a = −R_f · C · du/dt. Bei der Dreieckspannung ist die Steigung auf jeder Flanke konstant, der Ausgang ist deshalb eine Rechteckspannung. Eine Flanke läuft in einer halben Periode von −û bis +û.',
+        'Steilheit: ' + f(v.uss, 0) + ' V in ' + f(v.halb, 0) + ' ms, also du/dt = 4 · û · f. Die Zeitkonstante ist R_f · C = ' + f(v.tau, 0) + ' ms. Bei steigender Flanke ist u_a negativ.',
+        'Musterlösung: du/dt = ' + f(v.steil, 0) + ' V/s, u_a = −' + f(v.tau, 0) + ' ms · ' + f(v.steil, 0) + ' V/s = ' + fs(v.ua, 0) + ' V (bei fallender Flanke +' + f(v.uab, 0) + ' V). Rechteck am Eingang gibt Nadelimpulse, Sinus gibt eine um 90° verschobene Sinusform.'
+      ]; },
+      start: () => A('opv_aktiv', CTL(), { fields: { steil: null, ua: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_aktiv', CTL(), { fields: { steil: v.steil, ua: v.ua }, choices: rightOf(specs()), value: v.ua }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Steilheit nur mit û, Rechteck wird Dreieck', answer: A('opv_aktiv', {}, { fields: { steil: v.steilHalb, ua: v.uaHalb }, choices: { rechteck: 'dreieck', sinus: 'rechteck' } }) },
+        { name: 'Vorzeichen vergessen, Nadeln beim Sinus', answer: A('opv_aktiv', {}, { fields: { steil: v.steil, ua: -v.ua }, choices: { rechteck: 'gleich', sinus: 'nadel' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae46: Idealer und realer Operationsverstaerker (Lernfeld 9.1, Kennwerte) */ /* PRUEFEN P12: reale Größenordnungen (V_0 etwa 100000, Eingangswiderstand im MΩ-Bereich, Ausgangswiderstand einige 10 Ω, Offset einige mV) sind Lehrwerte */
+  const M46 = (() => {
+    const CTL = () => ({ schaltung: 'real', opv: 'langsam', uv: 12, form: 'sinus', ue: 1, f: 5000, r1: 10000, rf: 100000, c: 1e-6 });
+    const vals = () => once('v46', () => ({ gbw: 1, v0: 100000, raus: 10 }));
+    const specs = () => once('sp46', () => [
+      { key: 'v0', q: 'Leerlaufverstärkung V_0 (ohne Gegenkopplung): Welche Zuordnung stimmt?', short: 'Die Leerlaufverstärkung ist richtig zugeordnet', right: 'gross',
+        options: [
+          { value: 'eins', label: 'Ideal unendlich, real etwa 1', grund: 'Mit V_0 = 1 wäre der Baustein ein Spannungsfolger ohne Verstärkung. Reale Operationsverstärker erreichen ohne Gegenkopplung etwa 100000 und mehr.' },
+          { value: 'gross', label: 'Ideal unendlich, real etwa 100000', grund: 'Der reale Baustein hat eine sehr große, aber endliche Leerlaufverstärkung (Größenordnung 100000). Deshalb bleibt die Differenzspannung klein, aber nicht null.' },
+          { value: 'null', label: 'Ideal null, real etwa 100000', grund: 'Ideal ist die Leerlaufverstärkung unendlich groß, nicht null. Daraus folgt der virtuelle Kurzschluss zwischen den Eingängen.' },
+          { value: 'gleich', label: 'Ideal und real gleich, beide etwa 100000', grund: 'Die Leerlaufverstärkung ist im Modell unendlich, im realen Baustein endlich (etwa 100000) und sinkt mit der Frequenz (Grenze durch das Verstärkungs-Bandbreite-Produkt).' }] },
+      { key: 'rein', q: 'Eingangswiderstand: Welche Zuordnung stimmt?', short: 'Der Eingangswiderstand ist richtig zugeordnet', right: 'hoch',
+        options: [
+          { value: 'hoch', label: 'Ideal unendlich, real sehr groß (MΩ)', grund: 'In die Eingänge fließt fast kein Strom. Ideal ist der Eingangswiderstand unendlich, real liegt er bei bipolaren Bausteinen im MΩ-Bereich, mit Feldeffekt-Eingang noch viel höher.' },
+          { value: 'klein', label: 'Ideal null, real nur einige Ohm', grund: 'Ein Eingangswiderstand von null würde die Quelle kurzschließen. Gewünscht ist das Gegenteil: Ideal ist er unendlich, real im MΩ-Bereich.' },
+          { value: 'kilo', label: 'Ideal und real beide etwa 1 kΩ', grund: 'Dann würde der Verstärker die Signalquelle stark belasten. Der Eingang ist sehr hochohmig, ideal unendlich, real MΩ und mehr.' },
+          { value: 'gleich', label: 'Ideal unendlich, real ebenfalls unendlich', grund: 'Unendlich groß ist nur das Modell. Real gibt es einen kleinen Eingangsstrom; der Widerstand ist groß, aber endlich.' }] },
+      { key: 'raus', q: 'Ausgangswiderstand: Welche Zuordnung stimmt?', short: 'Der Ausgangswiderstand ist richtig zugeordnet', right: 'nieder',
+        options: [
+          { value: 'hoch', label: 'Ideal unendlich, real einige MΩ', grund: 'Ein hochohmiger Ausgang würde schon bei kleiner Last einbrechen. Der Ausgang soll eine Spannungsquelle sein: ideal 0 Ω, real wenige 10 Ω.' },
+          { value: 'gleich', label: 'Ideal null, real genau null', grund: 'Null ist nur das Modell. Real hat der Ausgang einige 10 Ω; durch die Gegenkopplung wirkt er aber noch viel kleiner.' },
+          { value: 'nieder', label: 'Ideal null, real einige 10 Ω', grund: 'Der Ausgang soll eine Spannungsquelle sein, deren Spannung bei Last nicht einbricht: ideal 0 Ω, real einige 10 Ω, mit Gegenkopplung wirksam noch kleiner.' },
+          { value: 'kilo', label: 'Ideal und real etwa 10 kΩ', grund: 'Dann würde schon eine Last von einigen kΩ die Ausgangsspannung stark senken. Ideal ist der Ausgangswiderstand 0 Ω, real einige 10 Ω.' }] },
+      { key: 'offset', q: 'Beide Eingänge liegen an 0 V. Was zeigt der Ausgang ohne Gegenkopplung?', short: 'Die Wirkung der Offsetspannung ist richtig beschrieben', right: 'grenze',
+        options: [
+          { value: 'null', label: 'Ideal und real genau 0 V, weil nichts anliegt', grund: 'Ideal ja. Real hat jeder Baustein eine kleine Offsetspannung (einige mV); mit der großen Leerlaufverstärkung reicht sie, um den Ausgang an eine Aussteuergrenze zu treiben.' },
+          { value: 'grenze', label: 'Real an einer Aussteuergrenze (Offset)', grund: 'Die Offsetspannung von einigen mV wird mit etwa 100000 verstärkt: Das sind mehrere 100 V rechnerisch, also läuft der Ausgang an eine Aussteuergrenze. Mit Gegenkopplung bleibt nur ein kleiner Fehler übrig.' },
+          { value: 'halb', label: 'Real die Hälfte der Versorgungsspannung', grund: 'Eine feste Mitte gibt es nicht. Der Ausgang folgt der verstärkten Offsetspannung und läuft ohne Gegenkopplung an eine Aussteuergrenze.' },
+          { value: 'schwing', label: 'Real eine Sinusspannung mit Netzfrequenz', grund: 'Eine Schwingung entsteht so nicht. Die kleine Offsetspannung wird verstärkt und treibt den Ausgang an eine Aussteuergrenze.' }] }]);
+    return pick({ rig: 'opv_aktiv', ctl: CTL, specs, vals,
+      text: () => 'Beim Rechnen nimmt man meist den idealen Operationsverstärker an. Ordne für vier Kennwerte zu, was im Modell gilt und was ein realer Baustein ungefähr erreicht. Im Prüfstand „' + rname('opv_aktiv') + '“ (Schaltung „Realer Operationsverstärker“) kannst du den realen Baustein mit dem idealen vergleichen.',
+      hint: () => { const v = vals(); return [
+        'Der ideale Operationsverstärker hat unendliche Leerlaufverstärkung, unendlichen Eingangswiderstand, Ausgangswiderstand null und keine Offsetspannung. Überlege bei jedem Kennwert, in welche Richtung der reale Baustein davon abweicht.',
+        'Realer Baustein: Leerlaufverstärkung etwa ' + f(v.v0, 0) + ', fällt mit der Frequenz (im Prüfstand: Verstärkungs-Bandbreite-Produkt ' + f(v.gbw, 0) + ' MHz). Eingang sehr hochohmig, Ausgang niederohmig. Eine kleine Offsetspannung wird ohne Gegenkopplung voll verstärkt.',
+        'Musterlösung: V_0 ideal unendlich, real etwa ' + f(v.v0, 0) + '; Eingangswiderstand ideal unendlich, real MΩ und mehr; Ausgangswiderstand ideal null, real einige 10 Ω; ohne Gegenkopplung treibt die Offsetspannung den Ausgang an eine Aussteuergrenze.'
+      ]; } });
+  })();
+
+  /* ====================================================================== ae47: Basisvorwiderstand, Stromverstaerkung aus der Messung (Lernfeld 6.1, Transistor als Schalter) */ /* PRUEFEN P13: Übersteuerungsfaktor ü = 2 und U_CE,sat = 0,2 V sind Übungswerte; E12-Reihe für den Normwert */
+  const M47 = (() => {
+    const G = { icm: 0.024, ibm: 0.00015, ub: 24, rsp: 400, ucesat: 0.2, ust: 5, ube: 0.7, ue: 2 };
+    const CTL = () => ({ ub: 12, last: 'ohm', rlast: 220, rb: 10000, b: 140, eingang: 'dauer-ein', fehler: 'keiner', ziel: 0, ust: 0.9 });
+    const vals = () => once('v47', () => { const b = G.icm / G.ibm, ic = (G.ub - G.ucesat) / G.rsp, ib = G.ue * ic / b, rb = (G.ust - G.ube) / ib, ueb = n => (G.ust - G.ube) / n / (ic / b);
+      return { icm: G.icm * 1e3, ibm: G.ibm * 1e6, b, ub: G.ub, rsp: G.rsp, ucesat: G.ucesat, ust: G.ust, ube: G.ube, ue: G.ue, ic: ic * 1e3, ib: ib * 1e3, rb: rb / 1e3, ubRb: G.ust - G.ube, kehr: G.ibm / G.icm,
+        rbOhneUe: (G.ust - G.ube) / (ic / b) / 1e3, rbOhneUbe: G.ust / ib / 1e3, ue56: ueb(5600), ue68: ueb(6800), ue47: ueb(4700), ue10: ueb(10000) }; });
+    const rB = () => once('r47a', () => { const v = vals(); return own(v.b, '', [{ v: v.kehr, id: 'kehr', text: 'Dein Wert ist der Kehrwert I_B / I_C. Die Gleichstromverstärkung ist B = I_C / I_B.' }]); });
+    const rIc = () => once('r47b', () => { const v = vals(); return own(v.ic * 1e-3, 'A', [{ v: v.icm * 1e-3, id: 'mess', text: 'Das ist der Strom aus der Messung. Gefragt ist der Spulenstrom: I_C = (U_B − U_CE,sat) / R_Spule.' }], { factor: 1e-3, dispUnit: 'mA', disp: v.ic }); });
+    const rRb = () => once('r47c', () => { const v = vals(); return own(v.rb * 1e3, 'Ω', [{ v: v.rbOhneUe * 1e3, id: 'ue', text: 'Du hast ohne Übersteuerung gerechnet. Damit der Transistor sicher durchschaltet, soll der Basisstrom ü = ' + f(G.ue, 0) + '-mal so groß sein wie I_C / B.' }, { v: v.rbOhneUbe * 1e3, id: 'ube', text: 'Du hast U_BE vergessen. Am Basisvorwiderstand liegt nur U_St − U_BE = ' + f(v.ubRb, 1) + ' V.' }], { factor: 1e3, dispUnit: 'kΩ', disp: v.rb }); });
+    const specs = () => once('sp47', () => { const v = vals(), g = (n, x) => 'Mit ' + n + ' wird ü = ' + f(x, 2) + '.';
+      return [{ key: 'norm', q: 'Welchen Normwert der E12-Reihe setzt du ein, damit ü mindestens ' + f(G.ue, 0) + ' bleibt und der Basisstrom nicht unnötig groß wird?', short: 'Der Normwert für R_B ist richtig gewählt', right: '5k6',
+        options: [
+          { value: '6k8', label: '6,8 kΩ', grund: g('6,8 kΩ', v.ue68) + ' Das liegt unter ' + f(G.ue, 0) + ': Der nächstgrößere Normwert lässt zu wenig Basisstrom fließen.' },
+          { value: '4k7', label: '4,7 kΩ', grund: g('4,7 kΩ', v.ue47) + ' Das reicht sicher, ist aber nicht der nächste Normwert unter ' + f(v.rb, 2) + ' kΩ: Der Basisstrom wird größer als nötig.' },
+          { value: '10k', label: '10 kΩ', grund: g('10 kΩ', v.ue10) + ' Der Transistor wird nicht sicher in die Sättigung gesteuert.' },
+          { value: '5k6', label: '5,6 kΩ', grund: g('5,6 kΩ', v.ue56) + ' Das ist der nächstkleinere Normwert zu ' + f(v.rb, 2) + ' kΩ, ü bleibt knapp über ' + f(G.ue, 0) + '.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'b'), rB(), 'Die Gleichstromverstärkung B aus der Messung ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'ic'), rIc(), 'Der Spulenstrom I_C ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'rb'), rRb(), 'Der Basisvorwiderstand R_B ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [5.6, 6.8, 4.7, 10],
+      text: () => 'An einem npn-Transistor wurde gemessen: I_C = ' + f(G.icm * 1e3, 0) + ' mA bei I_B = ' + f(G.ibm * 1e6, 0) + ' µA (aktiver Bereich). Der Transistor soll nun ein Relais mit dem Spulenwiderstand R_Spule = ' + f(G.rsp, 0) + ' Ω an U_B = ' + f(G.ub, 0) + ' V schalten; die Steuerspannung ist U_St = ' + f(G.ust, 0) + ' V (Übungswerte: U_BE = ' + f(G.ube, 1) + ' V, U_CE,sat = ' + f(G.ucesat, 1) + ' V, Übersteuerungsfaktor ü = ' + f(G.ue, 0) + '). Berechne B, den Spulenstrom I_C und den Basisvorwiderstand R_B und wähle den Normwert. Im Prüfstand „' + rname('schalter') + '“ kannst du die Stufe mit einer Widerstandslast nachstellen.',
+      fields: () => [{ key: 'b', label: 'Gleichstromverstärkung B', unit: '' }, { key: 'ic', label: 'Spulenstrom I_C', unit: 'mA' }, { key: 'rb', label: 'Basisvorwiderstand R_B (gerechnet)', unit: 'kΩ' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Aus der Messung im aktiven Bereich folgt B = I_C / I_B. Im Schalterbetrieb liegt am durchgeschalteten Transistor nur U_CE,sat, der Rest an der Spule. Mit Übersteuerung ist I_B = ü · I_C / B, und am Basisvorwiderstand liegt U_St − U_BE.',
+        'B = ' + f(v.icm, 0) + ' mA / ' + f(v.ibm, 0) + ' µA (Einheiten angleichen). I_C = (' + f(v.ub, 0) + ' V − ' + f(v.ucesat, 1) + ' V) / ' + f(v.rsp, 0) + ' Ω. I_B = ' + f(v.ue, 0) + ' · I_C / B, R_B = ' + f(v.ubRb, 1) + ' V / I_B.',
+        'Musterlösung: B = ' + f(v.b, 0) + ', I_C = ' + f(v.ic, 2) + ' mA, I_B = ' + f(v.ib, 3) + ' mA, R_B = ' + f(v.rb, 2) + ' kΩ. Nächstkleinerer E12-Wert: 5,6 kΩ (ü = ' + f(v.ue56, 2) + ').'
+      ]; },
+      start: () => A('schalter', CTL(), { fields: { b: null, ic: null, rb: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('schalter', CTL(), { fields: { b: v.b, ic: v.ic, rb: v.rb }, choices: rightOf(specs()), value: v.rb }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Kehrwert für B, ohne Übersteuerung, nächstgrößerer Normwert', answer: A('schalter', {}, { fields: { b: v.kehr, ic: v.ic, rb: v.rbOhneUe }, choices: { norm: '6k8' } }) },
+        { name: 'Messstrom als Spulenstrom, U_BE vergessen, 10 kΩ', answer: A('schalter', {}, { fields: { b: v.b, ic: v.icm, rb: v.rbOhneUbe }, choices: { norm: '10k' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae48: R-2R-Netzwerk am Umkehrverstaerker (Lernfeld E10/E12, Digital-Analog-Umsetzer) */ /* PRUEFEN P14: Kettenleiter mit Eingangswiderstand R, Strom Uref / R auf alle Bits verteilt (MSB Uref / 2R); Ausgang an virtueller Masse */
+  const M48 = (() => {
+    const G = { uref: 5, r: 10000, rf: 20000, code: 13, n: 4 };
+    const CTL = () => ({ schaltung: 'invertierer', opv: 'ideal', form: 'gleich', ue: 0.5, r1: 4700, rf: 47000 });
+    const vals = () => once('v48', () => { const iv = G.uref / G.r, i = iv * G.code / 16, ua = -G.rf * i, lsb = G.rf * iv / 16, rev = parseInt(G.code.toString(2).padStart(4, '0').split('').reverse().join(''), 2);
+      return { uref: G.uref, r: G.r / 1e3, r2: 2 * G.r / 1e3, rf: G.rf / 1e3, code: G.code, iv: iv * 1e3, imsb: iv / 2 * 1e3, i: i * 1e6, ua, uab: Math.abs(ua), lsb, umax: G.rf * iv * 15 / 16, rev, iRev: iv * rev / 16 * 1e6, uaRev: -G.rf * iv * rev / 16, lsb15: G.rf * iv / 15, i8: iv / 2 * 1e6, i4: iv / 4 * 1e6, i1: iv / 16 * 1e6 }; });
+    const rI = () => once('r48a', () => { const v = vals(); return own(v.i * 1e-6, 'A', [{ v: v.iRev * 1e-6, id: 'rev', text: 'Dein Wert passt zum Code mit vertauschter Bitreihenfolge (' + f(v.rev, 0) + '). Das linke Bit ist das höchstwertige (MSB) und liefert den halben Strom U_ref / (2 · R).' }, { v: v.iv * 1e-3, id: 'voll', text: 'Das ist der ganze Strom U_ref / R, der nur bei allen Bits auf 1 fast erreicht wird. Jedes Bit trägt nur seinen Anteil bei.' }], { factor: 1e-6, dispUnit: 'µA', disp: v.i }); });
+    const rU = () => once('r48b', () => { const v = vals(); return own(v.ua, 'V', [{ v: -v.ua, id: 'vorzeichen', text: 'Dein Wert hat das falsche Vorzeichen: Der Strom fließt in den Summenpunkt des invertierenden Verstärkers, U_a = −R_f · I.' }, { v: v.uaRev, id: 'rev', text: 'Dein Wert passt zum Code mit vertauschter Bitreihenfolge. Das linke Bit ist das MSB.' }]); });
+    const rL = () => once('r48c', () => { const v = vals(); return own(v.lsb, 'V', [{ v: v.lsb15, id: 'f15', text: 'Du hast durch 15 geteilt. Beim 4-Bit-Kettenleiter ist der kleinste Schritt R_f · U_ref / (16 · R); 15 Schritte ergeben den Höchstwert.' }]); });
+    const specs = () => once('sp48', () => { const v = vals(); return [
+      { key: 'vorteil', q: 'Warum nimmt man für viele Bits lieber einen R-2R-Kettenleiter als binär gestufte Widerstände (R, 2R, 4R, 8R …)?', short: 'Der Vorteil des R-2R-Netzwerks ist richtig benannt', right: 'zwei',
+        options: [
+          { value: 'opv', label: 'Er braucht keinen Operationsverstärker', grund: 'Auch der Kettenleiter braucht den Verstärker: Er addiert die Ströme an der virtuellen Masse und macht daraus U_a = −R_f · I.' },
+          { value: 'zwei', label: 'Er braucht nur zwei Widerstandswerte', grund: 'Mit binär gestuften Widerständen wächst der größte Wert mit jedem Bit (bei 12 Bit bis 2048 · R) und muss trotzdem genau sein. Der Kettenleiter kommt mit R und 2R aus, die sich gut genau herstellen lassen.' },
+          { value: 'gleich', label: 'Jeder Schalter führt den MSB-Strom', grund: 'Die Bitströme sind binär gestuft: MSB ' + f(v.i8, 0) + ' µA, dann ' + f(v.i4, 0) + ' µA und so weiter bis ' + f(v.i1, 2) + ' µA beim LSB.' },
+          { value: 'positiv', label: 'Die Ausgangsspannung wird positiv', grund: 'Am invertierenden Verstärker ist U_a negativ (hier ' + fs(v.ua, 3) + ' V). Das Vorzeichen hängt von der Schaltung des Verstärkers ab, nicht vom Netzwerk.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'i'), rI(), 'Der Strom I in den Summenpunkt beim Code ' + G.code.toString(2) + ' ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'ua'), rU(), 'Die Ausgangsspannung U_a ist richtig berechnet (mit Vorzeichen)', 3);
+      numRow(r, rawOf(a, 'lsb'), rL(), 'Die Stufenhöhe (ein LSB) ist richtig berechnet', 3);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [16, 15, 2048, 12, 1111],
+      text: () => 'Ein 4-Bit-Digital-Analog-Umsetzer besteht aus einem R-2R-Kettenleiter (R = ' + eng(G.r, 'Ω') + ', 2R = ' + eng(2 * G.r, 'Ω') + ') an der Referenzspannung U_ref = ' + f(G.uref, 0) + ' V und einem invertierenden Verstärker mit R_f = ' + eng(G.rf, 'Ω') + ' (Übungsschaltung). Der Kettenleiter nimmt aus U_ref den Strom U_ref / R auf; das höchstwertige Bit schaltet davon die Hälfte auf den Summenpunkt, jedes weitere Bit die Hälfte des vorigen. Am Eingang liegt das Datenwort ' + G.code.toString(2) + ' (links das MSB). Berechne den Strom I in den Summenpunkt, die Ausgangsspannung U_a und die Stufenhöhe eines LSB. Den Summenpunkt (virtuelle Masse) kannst du im Prüfstand „' + rname('opv_inv') + '“ untersuchen.',
+      fields: () => [{ key: 'i', label: 'Strom I in den Summenpunkt', unit: 'µA' }, { key: 'ua', label: 'Ausgangsspannung U_a', unit: 'V' }, { key: 'lsb', label: 'Stufenhöhe (1 LSB)', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Die Bitströme sind binär gestuft: MSB U_ref / (2R), das nächste Bit die Hälfte davon und so weiter. Für ein 4-Bit-Wort gilt I = (U_ref / R) · Z / 16 mit dem Dezimalwert Z des Datenworts. Der Verstärker macht daraus U_a = −R_f · I.',
+        'U_ref / R = ' + f(v.uref, 0) + ' V / ' + f(v.r, 0) + ' kΩ = ' + f(v.iv, 1) + ' mA. Das Datenwort hat den Dezimalwert ' + f(v.code, 0) + '. Ein LSB ist R_f · (U_ref / R) / 16 mit R_f = ' + f(v.rf, 0) + ' kΩ.',
+        'Musterlösung: I = ' + f(v.iv, 1) + ' mA · ' + f(v.code, 0) + ' / 16 = ' + f(v.i, 2) + ' µA, U_a = −' + f(v.rf, 0) + ' kΩ · ' + f(v.i, 2) + ' µA = ' + fs(v.ua, 3) + ' V, LSB = ' + f(v.lsb, 3) + ' V (Höchstwert bei 1111: −' + f(v.umax, 3) + ' V).'
+      ]; },
+      start: () => A('opv_inv', CTL(), { fields: { i: null, ua: null, lsb: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_inv', CTL(), { fields: { i: v.i, ua: v.ua, lsb: v.lsb }, choices: rightOf(specs()), value: v.ua }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Bitreihenfolge vertauscht, LSB durch 15', answer: A('opv_inv', {}, { fields: { i: v.iRev, ua: v.uaRev, lsb: v.lsb15 }, choices: { vorteil: 'gleich' } }) },
+        { name: 'Vorzeichen vergessen, ganzer Strom U_ref / R', answer: A('opv_inv', {}, { fields: { i: v.iv * 1e3, ua: -v.ua, lsb: v.lsb }, choices: { vorteil: 'opv' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae49: Diodenschaltungen, Spannung am Ausgang (Lernfeld 6.1, Diode im Gleichstromkreis) */ /* PRUEFEN P15: eigene Schaltungen und Zahlen (U_F = 0,7 V Silizium); die Fälle der Mitschrift mit unklarer Lösung wurden nicht übernommen */
+  const M49 = (() => {
+    const G = { ue: 6, r: 1000 };
+    const CTL = () => ({ typ: 'si', modell: 'kennlinie', uq: 5, rv: 220, temp: 27, fehler: 'keiner', ziel: 0 });
+    const vals = () => once('v49', () => { const uf = C().diode.types.find(x => x.id === 'si').uf; return { ue: G.ue, r: G.r / 1e3, uf, ua: G.ue - uf, ub: uf, uc: 2 * uf, ia: (G.ue - uf) / G.r * 1e3, ic: (G.ue - 2 * uf) / G.r * 1e3, ur2: G.ue - 2 * uf }; });
+    const rA = () => once('r49a', () => { const v = vals(); return own(v.ua, 'V', [{ v: v.ue, id: 'ue', text: 'Du hast U_F nicht abgezogen. An der leitenden Siliziumdiode fallen etwa ' + f(v.uf, 1) + ' V ab, am Widerstand bleibt U_E − U_F.' }, { v: v.uf, id: 'uf', text: 'Das ist die Spannung an der Diode. Gefragt ist die Spannung am Widerstand: U_E − U_F.' }]); });
+    const rB = () => once('r49b', () => { const v = vals(); return own(v.ub, 'V', [{ v: v.ua, id: 'ur', text: 'Das ist die Spannung am Widerstand. An der leitenden Diode selbst liegt nur ihre Durchlassspannung U_F.' }, { v: v.ue, id: 'ue', text: 'Die Diode leitet, an ihr liegt nicht die ganze Eingangsspannung, sondern nur U_F.' }]); });
+    const rC = () => once('r49c', () => { const v = vals(); return own(v.uc, 'V', [{ v: v.uf, id: 'eins', text: 'Du hast nur eine Diode gezählt. Zwei Dioden in Reihe haben zusammen 2 · U_F.' }]); });
+    const rI = () => once('r49i', () => { const v = vals(); return own(v.ia * 1e-3, 'A', [{ v: v.ue / G.r, id: 'ue', text: 'Du hast U_E / R gerechnet. Am Widerstand liegt nur U_E − U_F.' }], { factor: 1e-3, dispUnit: 'mA', disp: v.ia }); });
+    const specs = () => once('sp49', () => { const v = vals(); return [
+      { key: 'sperrR', q: 'Schaltung D: Die Diode ist in Sperrrichtung eingebaut, sonst wie Schaltung A. Welche Spannung liegt am Widerstand?', short: 'Die Spannung am Widerstand bei gesperrter Diode ist richtig bestimmt', right: 'null',
+        options: [
+          { value: 'ua', label: f(v.ua, 1) + ' V wie bei Schaltung A', grund: 'In Sperrrichtung fließt (fast) kein Strom. Ohne Strom fällt am Widerstand nichts ab: U_R = I · R = 0 V.' },
+          { value: 'null', label: '0 V, es fließt kein Strom', grund: 'Die gesperrte Diode lässt (bis auf einen winzigen Sperrstrom) keinen Strom durch. Ohne Strom ist U_R = I · R = 0 V.' },
+          { value: 'ue', label: f(v.ue, 0) + ' V, die ganze Eingangsspannung', grund: 'Die ganze Eingangsspannung liegt an der gesperrten Diode, nicht am Widerstand. Am Widerstand ist U_R = I · R = 0 V.' },
+          { value: 'uf', label: f(v.uf, 1) + ' V, die Durchlassspannung', grund: 'U_F gilt nur für eine leitende Diode. Gesperrt fließt kein Strom, am Widerstand fällt nichts ab.' }] },
+      { key: 'sperrD', q: 'Schaltung E: wie Schaltung D, gemessen wird aber an der gesperrten Diode. Welche Spannung zeigt das Messgerät?', short: 'Die Spannung an der gesperrten Diode ist richtig bestimmt', right: 'ue',
+        options: [
+          { value: 'null', label: '0 V, weil durch den Kreis kein Strom fließt', grund: 'Kein Strom heißt: kein Spannungsfall am Widerstand. Die Eingangsspannung liegt dann vollständig an der Diode.' },
+          { value: 'uf', label: f(v.uf, 1) + ' V, die Durchlassspannung', grund: 'U_F gilt in Durchlassrichtung. In Sperrrichtung liegt an der Diode die ganze Eingangsspannung (' + f(v.ue, 0) + ' V).' },
+          { value: 'ue', label: f(v.ue, 0) + ' V, die ganze Eingangsspannung', grund: 'Ohne Strom fällt am Widerstand nichts ab. Nach der Maschenregel liegt die ganze Eingangsspannung ' + f(v.ue, 0) + ' V an der gesperrten Diode.' },
+          { value: 'ua', label: f(v.ua, 1) + ' V, U_E − U_F', grund: 'U_E − U_F wäre die Spannung am Widerstand bei leitender Diode. Gesperrt liegt die ganze Eingangsspannung an der Diode.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'ua'), rA(), 'Schaltung A: Die Spannung am Widerstand ist richtig bestimmt', 1);
+      numRow(r, rawOf(a, 'ia'), rI(), 'Schaltung A: Der Strom ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'ub'), rB(), 'Schaltung B: Die Spannung an der Diode ist richtig bestimmt', 1);
+      numRow(r, rawOf(a, 'uc'), rC(), 'Schaltung C: Die Spannung an beiden Dioden ist richtig bestimmt', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Eine Gleichspannung U_E = ' + f(G.ue, 0) + ' V speist eine Reihenschaltung aus Siliziumdiode (U_F = ' + f(vals().uf, 1) + ' V, Übungswert) und Widerstand R = ' + eng(G.r, 'Ω') + '. Schaltung A: Diode in Durchlassrichtung, gemessen wird am Widerstand; berechne auch den Strom. Schaltung B: wie A, gemessen wird an der Diode. Schaltung C: zwei gleiche Dioden in Reihe in Durchlassrichtung, gemessen wird an beiden Dioden zusammen. Danach folgen zwei Fragen zur Diode in Sperrrichtung. Im Prüfstand „' + rname('diode') + '“ kannst du U_q auch negativ stellen und so die Sperrrichtung ausprobieren.',
+      fields: () => [{ key: 'ua', label: 'Schaltung A: Spannung am Widerstand', unit: 'V' }, { key: 'ia', label: 'Schaltung A: Strom', unit: 'mA' }, { key: 'ub', label: 'Schaltung B: Spannung an der Diode', unit: 'V' }, { key: 'uc', label: 'Schaltung C: Spannung an beiden Dioden', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Eine leitende Siliziumdiode hält etwa U_F fest, der Rest der Eingangsspannung liegt am Widerstand (Maschenregel). Eine gesperrte Diode lässt keinen Strom durch: Am Widerstand fällt dann nichts ab, die ganze Spannung liegt an der Diode.',
+        'Schaltung A: U_R = ' + f(v.ue, 0) + ' V − ' + f(v.uf, 1) + ' V, I = U_R / ' + f(v.r, 0) + ' kΩ. Schaltung B: an der Diode liegt U_F. Schaltung C: zwei Dioden, also 2 · U_F; am Widerstand bleiben ' + f(v.ur2, 1) + ' V.',
+        'Musterlösung: A: ' + f(v.ua, 1) + ' V und ' + f(v.ia, 1) + ' mA; B: ' + f(v.ub, 1) + ' V; C: ' + f(v.uc, 1) + ' V. Gesperrt: am Widerstand 0 V, an der Diode ' + f(v.ue, 0) + ' V.'
+      ]; },
+      start: () => A('diode', CTL(), { fields: { ua: null, ia: null, ub: null, uc: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('diode', CTL(), { fields: { ua: v.ua, ia: v.ia, ub: v.ub, uc: v.uc }, choices: rightOf(specs()), value: v.ua }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'U_F nicht beachtet, eine Diode statt zwei', answer: A('diode', {}, { fields: { ua: v.ue, ia: v.ue / G.r * 1e3, ub: v.ue, uc: v.uf }, choices: { sperrR: 'ua', sperrD: 'null' } }) },
+        { name: 'Diode und Widerstand vertauscht, Sperrrichtung wie Durchlass', answer: A('diode', {}, { fields: { ua: v.uf, ia: v.ia, ub: v.ua, uc: v.uc }, choices: { sperrR: 'uf', sperrD: 'uf' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae50: Verlustleistung der Diode in Durchlass- und Sperrrichtung (Lernfeld 6.1, Grenzwerte der Diode) */ /* PRUEFEN P16: eigene Werte einer Gleichrichterdiode (U_R = 800 V, I_R = 5 µA, I_F = 3 A, U_F = 1,1 V); Datenblatt maßgeblich */
+  const M50 = (() => {
+    const G = { ur: 800, ir: 5e-6, iF: 3, uF: 1.1 };
+    const CTL = () => ({ typ: 'si', modell: 'kennlinie', uq: 5, rv: 220, temp: 27, fehler: 'keiner', ziel: 0 });
+    const vals = () => once('v50', () => { const rs = G.ur / G.ir, ps = G.ur * G.ir, pf = G.uF * G.iF; return { ur: G.ur, ir: G.ir * 1e6, iF: G.iF, uF: G.uF, rs: rs / 1e6, ps: ps * 1e3, pf, verh: pf / ps, psFalsch: G.ur * G.ur * G.ir * 1e3, rf: G.uF / G.iF }; });
+    const rRs = () => once('r50a', () => { const v = vals(); return own(v.rs * 1e6, 'Ω', [{ v: G.ir / G.ur, id: 'kehr', text: 'Dein Wert ist der Kehrwert I_R / U_R. Der Widerstand ist Spannung durch Strom: R = U_R / I_R.' }], { factor: 1e6, dispUnit: 'MΩ', disp: v.rs }); });
+    const rPs = () => once('r50b', () => { const v = vals(); return own(v.ps * 1e-3, 'W', [{ v: v.psFalsch * 1e-3, id: 'quadrat', text: 'Du hast U_R² · I_R gerechnet. Die Leistung ist P = U · I, in Sperrrichtung also P_R = U_R · I_R.' }], { factor: 1e-3, dispUnit: 'mW', disp: v.ps }); });
+    const rPf = () => once('r50c', () => { const v = vals(); return own(v.pf, 'W', [{ v: G.ur * G.iF, id: 'ur', text: 'Du hast die Sperrspannung mit dem Durchlassstrom multipliziert. Beide treten nie gleichzeitig auf: In Durchlassrichtung liegt nur U_F an der Diode, P_F = U_F · I_F.' }]); });
+    const specs = () => once('sp50', () => { const v = vals(); return [
+      { key: 'warm', q: 'In welchem Betriebszustand wird die Diode am stärksten erwärmt?', short: 'Der Zustand mit der größeren Verlustleistung ist richtig erkannt', right: 'durch',
+        options: [
+          { value: 'sperr', label: 'In Sperrrichtung, weil dort ' + f(v.ur, 0) + ' V anliegen', grund: 'Die Spannung ist zwar groß, der Strom aber winzig (' + f(v.ir, 0) + ' µA): P_R = ' + f(v.ps, 0) + ' mW. In Durchlassrichtung sind es ' + f(v.pf, 1) + ' W.' },
+          { value: 'gleich', label: 'In beiden Richtungen etwa gleich stark', grund: 'Die Leistungen unterscheiden sich um den Faktor ' + f(v.verh, 0) + ': ' + f(v.pf, 1) + ' W in Durchlassrichtung gegen ' + f(v.ps, 0) + ' mW in Sperrrichtung.' },
+          { value: 'durch', label: 'In Durchlassrichtung, wegen des großen Stroms', grund: 'P_F = ' + f(v.uF, 1) + ' V · ' + f(v.iF, 0) + ' A = ' + f(v.pf, 1) + ' W ist rund ' + f(v.verh, 0) + '-mal so groß wie P_R = ' + f(v.ps, 0) + ' mW. Die Durchlassverluste bestimmen die Erwärmung und den Kühlkörper.' },
+          { value: 'keiner', label: 'Gar nicht, eine Diode hat grundsätzlich keine Verluste', grund: 'Jede Diode setzt Leistung um: In Durchlassrichtung ' + f(v.pf, 1) + ' W, in Sperrrichtung ' + f(v.ps, 0) + ' mW.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'rs'), rRs(), 'Der Sperrwiderstand R_R ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'ps'), rPs(), 'Die Verlustleistung in Sperrrichtung ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'pf'), rPf(), 'Die Verlustleistung in Durchlassrichtung ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Eine Gleichrichterdiode sperrt die Spannung U_R = ' + f(G.ur, 0) + ' V; dabei fließt der Sperrstrom I_R = ' + f(G.ir * 1e6, 0) + ' µA. In Durchlassrichtung führt sie I_F = ' + f(G.iF, 0) + ' A bei U_F = ' + f(G.uF, 1) + ' V (Übungswerte). Berechne den Widerstand der Diode in Sperrrichtung, die Verlustleistung in Sperrrichtung und die Verlustleistung in Durchlassrichtung. Im Prüfstand „' + rname('diode') + '“ kannst du die Kennlinie einer Siliziumdiode in beiden Richtungen ansehen.',
+      fields: () => [{ key: 'rs', label: 'Widerstand in Sperrrichtung R_R', unit: 'MΩ' }, { key: 'ps', label: 'Verlustleistung in Sperrrichtung P_R', unit: 'mW' }, { key: 'pf', label: 'Verlustleistung in Durchlassrichtung P_F', unit: 'W' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'In jeder Richtung gilt P = U · I mit der Spannung an der Diode und dem Strom durch sie. Der Widerstand in Sperrrichtung ist R = U_R / I_R. Achte auf die Vorsätze µ, m und M.',
+        'Sperrrichtung: R_R = ' + f(v.ur, 0) + ' V / ' + f(v.ir, 0) + ' µA, P_R = ' + f(v.ur, 0) + ' V · ' + f(v.ir, 0) + ' µA. Durchlassrichtung: P_F = ' + f(v.uF, 1) + ' V · ' + f(v.iF, 0) + ' A.',
+        'Musterlösung: R_R = ' + f(v.rs, 0) + ' MΩ, P_R = ' + f(v.ps, 0) + ' mW, P_F = ' + f(v.pf, 1) + ' W. Die Durchlassverluste sind rund ' + f(v.verh, 0) + '-mal so groß.'
+      ]; },
+      start: () => A('diode', CTL(), { fields: { rs: null, ps: null, pf: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('diode', CTL(), { fields: { rs: v.rs, ps: v.ps, pf: v.pf }, choices: rightOf(specs()), value: v.pf }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Kehrwert als Widerstand, U_R² · I_R, Sperrrichtung wärmer', answer: A('diode', {}, { fields: { rs: G.ir / G.ur / 1e6, ps: v.psFalsch, pf: v.pf }, choices: { warm: 'sperr' } }) },
+        { name: 'Sperrspannung mal Durchlassstrom, beide gleich warm', answer: A('diode', {}, { fields: { rs: v.rs, ps: v.ps, pf: G.ur * G.iF }, choices: { warm: 'gleich' } }) }]; } };
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'ae17', lab: 'ana', cat: 'Prüfungsnah', title: 'Verstärkung des Invertierers', level: 1, rig: 'opv_inv' }, M17),
@@ -1083,9 +1484,19 @@
     tk({ id: 'ae37', lab: 'ana', cat: 'Diode', title: 'Dotierung und Sperrschicht', level: 1, rig: 'diode' }, M37),
     tk({ id: 'ae38', lab: 'ana', cat: 'Diode', title: 'Diodenarten und ihr Einsatz', level: 1, rig: 'diode' }, M38),
     tk({ id: 'ae39', lab: 'ana', cat: 'Transistorverstärker', title: 'Basisvorspannung und Ruhearbeitspunkt', level: 2, rig: 'emitter' }, M39),
-    tk({ id: 'ae40', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Vorteile integrierter Schaltungen', level: 1, rig: 'opv_inv' }, M40)
+    tk({ id: 'ae40', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Vorteile integrierter Schaltungen', level: 1, rig: 'opv_inv' }, M40),
+    tk({ id: 'ae41', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Virtueller Kurzschluss am realen Verstärker', level: 2, rig: 'opv_aktiv' }, M41),
+    tk({ id: 'ae42', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Invertierer aus Strom und Spannung auslegen', level: 2, rig: 'opv_inv' }, M42),
+    tk({ id: 'ae43', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Nichtinvertierer: Eingangsspannung aus dem Ausgang', level: 2, rig: 'opv_nin' }, M43),
+    tk({ id: 'ae44', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Summierer mit Gewichtung entwerfen', level: 3, rig: 'opv_inv' }, M44),
+    tk({ id: 'ae45', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Differenzierer: Ausgang bei Dreieck, Rechteck und Sinus', level: 2, rig: 'opv_aktiv' }, M45),
+    tk({ id: 'ae46', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Idealer und realer Operationsverstärker', level: 1, rig: 'opv_aktiv' }, M46),
+    tk({ id: 'ae47', lab: 'ana', cat: 'Transistorschalter', title: 'Basisvorwiderstand mit B aus der Messung', level: 2, rig: 'schalter' }, M47),
+    tk({ id: 'ae48', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'R-2R-Umsetzer am invertierenden Verstärker', level: 3, rig: 'opv_inv' }, M48),
+    tk({ id: 'ae49', lab: 'ana', cat: 'Diode', title: 'Diodenschaltungen: Spannung am Ausgang', level: 1, rig: 'diode' }, M49),
+    tk({ id: 'ae50', lab: 'ana', cat: 'Diode', title: 'Verlustleistung in Durchlass- und Sperrrichtung', level: 2, rig: 'diode' }, M50)
   ];
-  const MODS = { ae17: M17, ae18: M18, ae19: M19, ae20: M20, ae21: M21, ae22: M22, ae23: M23, ae24: M24, ae25: M25, ae26: M26, ae27: M27, ae28: M28, ae29: M29, ae30: M30, ae31: M31, ae32: M32, ae33: M33, ae34: M34, ae35: M35, ae36: M36, ae37: M37, ae38: M38, ae39: M39, ae40: M40 };
+  const MODS = { ae17: M17, ae18: M18, ae19: M19, ae20: M20, ae21: M21, ae22: M22, ae23: M23, ae24: M24, ae25: M25, ae26: M26, ae27: M27, ae28: M28, ae29: M29, ae30: M30, ae31: M31, ae32: M32, ae33: M33, ae34: M34, ae35: M35, ae36: M36, ae37: M37, ae38: M38, ae39: M39, ae40: M40, ae41: M41, ae42: M42, ae43: M43, ae44: M44, ae45: M45, ae46: M46, ae47: M47, ae48: M48, ae49: M49, ae50: M50 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);

@@ -1,4 +1,4 @@
-/* emvtasks2.js - EMV-Lab: Aufgaben em17 bis em32 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig), Paket WP4b.
+/* emvtasks2.js - EMV-Lab: Aufgaben em17 bis em35 mit automatischer Pruefung (em33 bis em35: Wissensfragen wie em30) (Rechnung und Simulation, ohne Browser lauffaehig), Paket WP4b.
  * Registrierung: EMV_TASKS.register([ ... ]) (EMV_TASKS kommt aus emvdata.js; fehlt es, legt diese Datei ein gleichwertiges Geruest an).
  * Format je Aufgabe: { id, lab:'emv', cat, title, level, rig, text, table?, hint[3], start(), sol(), check(answer), hintVals(), fields? | choices? | ask? | clicks? }
  *   start() und sol() liefern { rig, controls, fields?, choices?, value?, clicks? } (Steuerwerte des Pruefstands in SI-Einheiten, Selbsttest-Antworten).
@@ -609,6 +609,58 @@
       ]; } };
   })();
 
+  /* ====================================================================== em33 bis em35: Wissensfragen aus dem Berufsschulstoff (Schirmung, Influenz, Frequenzumrichter)
+     Aufbau wie em30: mehrere Fragen mit je vier Antworten, jede falsche Antwort nennt ihren Fachgrund. Ohne Prüfstand (rig null), ohne Zahlen in den Tipps. */
+  const QUIZ = (items, txt, hints) => {
+    const optsOf = (it, i) => { const all = [it.richtig].concat(it.falsch.map(f => f.text)); const k = (i * 3 + 1) % all.length; return all.slice(k).concat(all.slice(0, k)); };
+    const choices = () => items.map((it, i) => ({ key: 'n' + (i + 1), q: (i + 1) + '. ' + it.frage, options: optsOf(it, i).map(t => ({ value: t, label: t })) }));
+    const check = mk((r, a) => {
+      items.forEach((it, i) => {
+        const got = choiceOf(a, 'n' + (i + 1)), none = got === undefined || got === null || got === '', ok = !none && got === it.richtig, f = it.falsch.find(x => x.text === got);
+        r(ok, 'Frage ' + (i + 1) + ': ' + it.frage, none ? 'Wähle eine Antwort aus.' : (f ? f.grund : 'Diese Antwort gibt es nicht.'));
+      });
+    });
+    return { items: () => items, choices, check, vals: () => ({ n: items.length }), text: () => txt, hint: () => hints.slice() };
+  };
+  const F = (text, grund) => ({ text, grund });
+  /* PRUEFEN (Ausbilder): em33 folgt der Schirmungstabelle der Mitschrift (Folie, Geflecht, Folie und Geflecht) nur in gesicherten Grundaussagen; Herstellerdokumentation maßgeblich. */
+  const M33 = QUIZ([
+    { frage: 'Ein dünner Folienschirm umschließt die Adern lückenlos. Wogegen wirkt er gut?', richtig: 'Gegen elektrische Felder und gegen hochfrequente Störungen.', falsch: [F('Vor allem gegen niederfrequente Magnetfelder, etwa von Trafos.', 'Eine dünne Folie lässt niederfrequente Magnetfelder fast ungehindert durch.'), F('Gegen gar nichts, Schirme wirken nur bei Gleichstrom.', 'Ein Schirm wirkt gerade gegen Wechselfelder, bei Gleichstrom gibt es nichts zu schirmen.'), F('Nur gegen mechanische Beschädigung der Adern.', 'Die Folie ist mechanisch schwach, sie dient der Schirmung.')] },
+    { frage: 'Welchen Vorteil hat ein Geflechtschirm gegenüber einer Folie?', richtig: 'Kleiner Widerstand, robust und gut großflächig anzuschließen.', falsch: [F('Er bedeckt die Adern immer lückenlos und ohne Öffnungen.', 'Ein Geflecht hat kleine Öffnungen, lückenlos ist die Folie.'), F('Er schirmt niederfrequente Magnetfelder vollständig und sicher ab.', 'Auch ein Geflecht hilft gegen niederfrequente Magnetfelder nur wenig.'), F('Er braucht keinen Anschluss an das Gehäuse oder die Masse.', 'Ein Schirm wirkt nur, wenn er angeschlossen ist.')] },
+    { frage: 'Ein Signalkabel liegt dicht neben einem Netztransformator. Was hilft gegen dessen niederfrequentes Magnetfeld am meisten?', richtig: 'Adern verdrillen und den Abstand zum Transformator vergrößern.', falsch: [F('Einen zweiten dünnen Folienschirm über den ersten Schirm legen.', 'Dünne Folien schwächen niederfrequente Magnetfelder kaum.'), F('Den Schirm nur an einem Kabelende auf die Masse auflegen.', 'Das hilft gegen niederfrequente elektrische Felder, nicht gegen das Magnetfeld.'), F('Die Signalspannung möglichst klein wählen.', 'Ein kleineres Nutzsignal macht die Störung im Verhältnis sogar größer.')] },
+    { frage: 'Welche Ausführung schirmt ein Kabel über einen großen Frequenzbereich am besten?', richtig: 'Folie und Geflecht zusammen, großflächig angeschlossen.', falsch: [F('Nur ein Geflecht, das über eine lange Litze angelötet ist.', 'Ein Anschluss über eine dünne Litze wirkt bei hohen Frequenzen wie eine Spule und verschlechtert die Schirmung.'), F('Nur eine Folie ohne Beidraht und ohne Anschluss.', 'Ein Schirm ohne Anschluss wirkt kaum.'), F('Gar kein Schirm, dafür eine dickere Isolierung.', 'Die Isolierung schirmt keine Felder ab.')] }
+  ], 'Beantworte vier Fragen zur Schirmung von Kabeln: Was leistet ein Folienschirm, was ein Geflechtschirm, was hilft gegen niederfrequente Magnetfelder, und welche Ausführung ist am besten? Es geht um gesicherte Grundaussagen. Herstellerdokumentation maßgeblich. Wähle bei jeder Frage genau eine Antwort.', [
+    'Unterscheide zwei Arten von Feldern: Gegen elektrische Felder genügt eine dünne, leitende Hülle. Niederfrequente Magnetfelder gehen durch dünne Schirme fast ungehindert hindurch.',
+    'Die Folie ist lückenlos, aber dünn und hochohmig. Das Geflecht hat kleine Öffnungen, ist aber robust und niederohmig. Gegen das Magnetfeld eines Trafos helfen Verdrillen und Abstand mehr als jeder dünne Schirm.',
+    'Musterlösung: Folie gegen elektrische Felder und Hochfrequenz; Geflecht mit kleinem Widerstand, robust und gut anschließbar; gegen das Trafo-Magnetfeld verdrillen und Abstand halten; am besten Folie und Geflecht zusammen, großflächig angeschlossen.'
+  ]);
+  const M34 = QUIZ([
+    { frage: 'Ein geschlossenes Metallgehäuse steht in einem elektrischen Feld. Wie stark ist das elektrische Feld im Inneren?', richtig: 'Praktisch null, das Innere bleibt feldfrei.', falsch: [F('Genauso stark wie außen, Metall lässt Felder durch.', 'Die Ladungen im Metall verschieben sich und heben das Feld innen auf.'), F('Doppelt so stark wie außen, weil das Metall es bündelt.', 'Das Metall bündelt nichts ins Innere, es schirmt ab.'), F('So stark, wie es die Farbe des Gehäuses zulässt.', 'Die Farbe des Lacks spielt für das Feld keine Rolle.')] },
+    { frage: 'Wie nennt man die Verschiebung der Ladungen in einem Leiter, der in ein elektrisches Feld gebracht wird?', richtig: 'Influenz', falsch: [F('Induktion', 'Induktion entsteht durch ein sich änderndes Magnetfeld.'), F('Polarisation', 'Polarisation ist die Ausrichtung der Ladungen in einem Isolierstoff.'), F('Resonanz', 'Resonanz ist das Aufschaukeln einer Schwingung bei ihrer Eigenfrequenz.')] },
+    { frage: 'Was geschieht in einem Isolierstoff, der in ein elektrisches Feld gebracht wird?', richtig: 'Die Ladungen in den Molekülen richten sich aus.', falsch: [F('Freie Elektronen wandern an die Oberfläche des Stoffes.', 'Ein Isolierstoff hat kaum freie Elektronen, das ist das Verhalten von Leitern (Influenz).'), F('Durch den Stoff fließt ein dauernder Strom.', 'Ein Isolierstoff leitet praktisch nicht.'), F('Der Stoff wird dauerhaft magnetisch.', 'Ein elektrisches Feld macht einen Isolierstoff nicht magnetisch.')] },
+    { frage: 'Warum schützt ein Faradayscher Käfig empfindliche Elektronik?', richtig: 'Äußere elektrische Felder enden an der leitenden Hülle.', falsch: [F('Die leitende Hülle verstärkt alle Felder, die von innen kommen.', 'Die Hülle verstärkt nichts, sie schirmt ab.'), F('Die Hülle führt die Wärme der Bauteile schneller nach außen.', 'Mit Kühlung hat die Schirmwirkung nichts zu tun.'), F('Die Hülle erhöht die Versorgungsspannung der Bauteile.', 'Die Versorgung bleibt gleich, die Hülle wirkt nur auf äußere Felder.')] }
+  ], 'Beantworte vier Fragen zu Influenz, Polarisation und dem Faradayschen Käfig. Sie erklären, warum ein leitendes Gehäuse gegen elektrische Felder schirmt. Es geht um gesicherte Grundaussagen. Wähle bei jeder Frage genau eine Antwort.', [
+    'Ein Leiter hat frei bewegliche Ladungen, ein Isolierstoff nicht. Daraus folgen zwei verschiedene Vorgänge im elektrischen Feld.',
+    'Im Leiter verschieben sich die freien Ladungen (Influenz), bis das Feld im Inneren aufgehoben ist. Im Isolierstoff richten sich nur die gebundenen Ladungen aus (Polarisation).',
+    'Musterlösung: Im geschlossenen Metallgehäuse ist das Feld praktisch null; Ladungsverschiebung im Leiter heißt Influenz; im Isolierstoff richten sich die Ladungen aus (Polarisation); der Faradaysche Käfig schützt, weil äußere Felder an der Hülle enden.'
+  ]);
+  /* PRUEFEN (Ausbilder): em35 Frequenzumrichter: Oberschwingungen durch den Gleichrichter mit Zwischenkreis, hochfrequente Störungen durch steile Schaltflanken, geschirmtes Motorkabel mit beidseitig großflächig aufgelegtem Schirm, Netzfilter und Netzdrossel. Herstellerdokumentation des Umrichters maßgeblich. */
+  const M35 = QUIZ([
+    { frage: 'Warum belastet ein Frequenzumrichter das Netz mit Oberschwingungen?', richtig: 'Sein Gleichrichter nimmt den Strom nur in kurzen Spitzen auf.', falsch: [F('Der Motor dreht sich schneller, als die Netzfrequenz erlaubt.', 'Die Drehzahl des Motors erzeugt keine Oberschwingungen im Netz.'), F('Er hebt die Netzspannung über ihren Nennwert an.', 'Die Netzspannung bestimmt das Netz, nicht der Umrichter.'), F('Er schaltet den Motor ständig ganz ein und wieder aus.', 'Der Motor läuft durch, geschaltet wird im Umrichter mit hoher Frequenz.')] },
+    { frage: 'Woher kommen die hochfrequenten Störungen am Motorkabel eines Frequenzumrichters?', richtig: 'Von den sehr steilen Schaltflanken der Ausgangsspannung.', falsch: [F('Von der Netzfrequenz, die auch durch das Motorkabel läuft.', 'Die Netzfrequenz ist niederfrequent und erzeugt keine hochfrequenten Störungen.'), F('Vom ohmschen Widerstand der Motorwicklung.', 'Ein ohmscher Widerstand erzeugt keine hochfrequenten Störungen.'), F('Von der Drehrichtung, mit der der Motor gerade läuft.', 'Die Drehrichtung spielt für die Störungen keine Rolle.')] },
+    { frage: 'Wie wird das Motorkabel eines Frequenzumrichters üblicherweise ausgeführt?', richtig: 'Geschirmt, der Schirm an beiden Enden großflächig aufgelegt.', falsch: [F('Ungeschirmt, aber möglichst lang und in großen Schlaufen gelegt.', 'Schlaufen vergrößern die Fläche, die abstrahlt und einkoppelt.'), F('Geschirmt, der Schirm an beiden Enden offen gelassen.', 'Ein Schirm ohne Anschluss wirkt kaum.'), F('Im selben Kanal direkt neben den Signalleitungen.', 'Das Motorkabel koppelt dann in die Signalleitungen ein, sie werden getrennt verlegt.')] },
+    { frage: 'Was setzt man auf der Netzseite eines Frequenzumrichters gegen Störungen und Oberschwingungen ein?', richtig: 'Netzfilter und Netzdrossel', falsch: [F('Einen größeren Motor', 'Ein größerer Motor ändert nichts an den Rückwirkungen auf das Netz.'), F('Eine längere Zuleitung', 'Eine längere Leitung filtert nicht, sie kann zusätzlich abstrahlen.'), F('Einen Schalter mit Goldkontakten', 'Die Kontakte eines Schalters haben mit Netzrückwirkungen nichts zu tun.')] }
+  ], 'Beantworte vier Fragen zu den Störungen eines Frequenzumrichters: Oberschwingungen im Netz, hochfrequente Störungen am Motorkabel und die üblichen Gegenmaßnahmen. Es geht um gesicherte Grundaussagen. Herstellerdokumentation maßgeblich. Wähle bei jeder Frage genau eine Antwort.', [
+    'Ein Frequenzumrichter richtet die Netzspannung gleich und schaltet sie danach mit hoher Frequenz zum Motor. Beide Stufen erzeugen eigene Störungen.',
+    'Netzseitig nimmt der Gleichrichter den Strom nur in kurzen Spitzen auf (Oberschwingungen), motorseitig erzeugen die steilen Schaltflanken hochfrequente Störungen. Dagegen helfen Filter, Drossel und ein gut aufgelegter Schirm.',
+    'Musterlösung: Oberschwingungen kommen vom Gleichrichter, hochfrequente Störungen von den steilen Schaltflanken; das Motorkabel ist geschirmt, der Schirm an beiden Enden großflächig aufgelegt; auf der Netzseite helfen Netzfilter und Netzdrossel.'
+  ]);
+  const quizTask = (t, M) => L(Object.assign(t, {
+    get choices() { return M.choices(); },
+    start: () => ({ rig: null, controls: {}, choices: {} }),
+    sol: () => ({ rig: null, controls: {}, choices: M.items().reduce((o, it, i) => { o['n' + (i + 1)] = it.richtig; return o; }, {}) }),
+    check: M.check, hintVals: () => M.vals() }), M);
+
   /* ====================================================================== Aufgabenliste */
   const noV = keys => keys.reduce((o, k) => { o[k] = null; return o; }, {});
   const withCtl = (fix, over) => Object.assign({}, fix, over);
@@ -693,7 +745,10 @@
       fields: M32.fields,
       start: () => S('vorpruef', withCtl(M32.fixAll(), M32.START), { fields: noV(['lmax', 'marge']) }),
       sol: () => { const v = M32.vals(); return S('vorpruef', withCtl(M32.fixAll(), M32.MUSTER), { fields: { lmax: v.lMax, marge: v.margin } }); },
-      check: M32.check, hintVals: () => M32.vals() }, M32)
+      check: M32.check, hintVals: () => M32.vals() }, M32),
+    quizTask({ id: 'em33', lab: 'emv', cat: 'Grundwissen', title: 'Folie oder Geflecht: Kabelschirme vergleichen', level: 2, rig: null }, M33),
+    quizTask({ id: 'em34', lab: 'emv', cat: 'Grundwissen', title: 'Leiter und Isolierstoff im elektrischen Feld', level: 1, rig: null }, M34),
+    quizTask({ id: 'em35', lab: 'emv', cat: 'Grundwissen', title: 'Störungen rund um den Frequenzumrichter', level: 2, rig: null }, M35)
   ];
   void ctlOf; void LAY; void tbl;
 

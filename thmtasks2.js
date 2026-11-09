@@ -1,4 +1,4 @@
-/* thmtasks2.js - Thermik-Lab: Aufgaben th16 bis th38 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig)
+/* thmtasks2.js - Thermik-Lab: Aufgaben th16 bis th42 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig)
  * Registrierung: THM_TASKS.register([ ... ]) (THM_TASKS kommt aus thmdata.js; fehlt es, legt diese Datei ein gleichwertiges Geruest an).
  * Format je Aufgabe: { id, lab:'thm', cat, title, level, rig, text, table?, hint[3], start(), sol(), check(answer), hintVals(), ask? | fields? , choices? }
  *   start() und sol() liefern { rig, controls, settle?, fields?, choices?, value? } (Steuerwerte des Pruefstands, Beharrungszustand, Selbsttest-Antworten).
@@ -791,6 +791,96 @@
       ]; } };
   })();
 
+  /* ====================================================================== th39 bis th42 (Berufsschulstoff E13: zulaessige Verlustleistung aus Rth_JA, Derating; alle Zahlen aus THM_CORE) */
+
+  /* ====================================================================== th39: LM317 ohne Kuehlkoerper, P_max und I_max */
+  const M39 = (() => {
+    const TA = 35, UE = 12, UA = 5;
+    const vals = () => once('v39', () => {
+      const C = CORE(), dev = C.devices.lm317, dT = dev.tjMax - TA, pmax = dT / dev.rthJA, du = UE - UA;
+      return { ta: TA, ue: UE, ua: UA, du, tjMax: dev.tjMax, rthJA: dev.rthJA, rthJC: dev.rthJC, dT, pmax, imax: pmax / du, pNoTa: dev.tjMax / dev.rthJA, pJC: dT / dev.rthJC, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'pmax', label: 'Größte zulässige Verlustleistung ohne Kühlkörper', unit: 'W', want: v.pmax, tol: 0.02, mistakes: [[v.pNoTa, 'du {sym:Ta} nicht von {sym:Tjmax} abgezogen hast'], [v.pJC, 'du {sym:Rth_JC} statt {sym:Rth_JA} genommen hast (ohne Kühlkörper fließt die Wärme vom Gehäuse direkt in die Luft)']] },
+      { key: 'imax', label: 'Größter Laststrom ohne Kühlkörper', unit: 'A', want: v.imax, tol: 0.03, mistakes: [[v.pmax / v.ue, 'du durch Ue statt durch den Spannungsabfall Ue − Ua geteilt hast'], [v.pmax / v.ua, 'du durch Ua statt durch Ue − Ua geteilt hast']] }
+    ]; };
+    const fields = [{ key: 'pmax', label: 'Größte zulässige Verlustleistung {sym:P}', unit: 'W' }, { key: 'imax', label: 'Größter Laststrom', unit: 'A' }];
+    const ctl = i => ({ device: 'lm317', loadMode: 'strom', ue: UE, ua: UA, iLoad: i, iq: false, ta: TA, heatsink: 'none' });
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein LM317 im Gehäuse TO-220 ist ohne Kühlkörper auf die Platine gelötet. Laut Datenblatt (Werte des Labs) beträgt der Wärmewiderstand von der Sperrschicht zur Umgebung {sym:Rth_JA} = ' + fm(v.rthJA) + ' K/W, die Sperrschicht darf höchstens {sym:Tjmax} = ' + fm(v.tjMax) + ' °C erreichen. Im Gerät herrschen ' + fm(v.ta) + ' °C. Der Regler bekommt ' + fm(v.ue) + ' V und gibt ' + fm(v.ua) + ' V ab.\nBerechne die größte Verlustleistung, die der Regler ohne Kühlkörper umsetzen darf, und den größten Laststrom dabei. Ruhestrom und Teilerstrom vernachlässigst du.'; },
+      hint() { const v = vals(); return [
+        'Ohne Kühlkörper gibt das Bauteil seine Wärme nur über das eigene Gehäuse an die Luft ab. Dafür nennt das Datenblatt den Wärmewiderstand von der Sperrschicht zur Umgebung. Aus dem erlaubten Temperaturunterschied folgt die größte Verlustleistung, daraus mit dem Spannungsabfall am Regler der Strom.',
+        'Erlaubter Unterschied: ' + fm(v.tjMax) + ' °C − ' + fm(v.ta) + ' °C = ' + fm(v.dT) + ' K. Die größte Verlustleistung ist dieser Unterschied geteilt durch {sym:Rth_JA}. Am Regler fallen ' + fm(v.ue) + ' V − ' + fm(v.ua) + ' V = ' + fm(v.du) + ' V ab, und es gilt P = (Ue − Ua) · I.',
+        'Musterlösung: P_max = ' + fm(v.dT) + ' K / ' + fm(v.rthJA) + ' K/W = ' + fm(v.pmax, 2) + ' W. I_max = ' + fm(v.pmax, 2) + ' W / ' + fm(v.du) + ' V = ' + fm(v.imax, 3) + ' A. Für mehr Strom braucht der Regler einen Kühlkörper.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th40: Derating-Faktor aus Rth_JA */
+  const M40 = (() => {
+    const TREF = 25, TA = 70;
+    const vals = () => once('v40', () => {
+      const C = CORE(), dev = C.devices.irlz34n, fak = 1 / dev.rthJA, d25 = dev.tjMax - TREF, d70 = dev.tjMax - TA, p25 = d25 / dev.rthJA, dTa = TA - TREF;
+      return { tRef: TREF, ta: TA, tjMax: dev.tjMax, rthJA: dev.rthJA, rthJC: dev.rthJC, fak, fakm: fak * 1000, d25, d70, dTa, p25, abn: fak * dTa, p70: p25 - fak * dTa, pNoTa: dev.tjMax / dev.rthJA, pAb0: p25 - fak * TA, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'fak', label: 'Derating-Faktor', unit: 'mW/K', want: v.fakm, tol: 0.02, mistakes: [[1000 / v.rthJC, 'du {sym:Rth_JC} statt {sym:Rth_JA} genommen hast (ohne Kühlkörper zählt der Weg bis zur Umgebung)'], [v.rthJA, 'du den Wärmewiderstand selbst angegeben hast (der Derating-Faktor ist sein Kehrwert)'], [v.fak, 'du den Faktor in W/K statt in mW/K angegeben hast']] },
+      { key: 'p70', label: 'Zulässige Verlustleistung bei warmer Umgebung', unit: 'W', want: v.p70, tol: 0.02, mistakes: [[v.p25, 'du die Leistung bei ' + fm(v.tRef) + ' °C nicht abgesenkt hast'], [v.pNoTa, 'du {sym:Ta} nicht von {sym:Tjmax} abgezogen hast'], [v.pAb0, 'du ab 0 °C statt ab ' + fm(v.tRef) + ' °C abgesenkt hast']] }
+    ]; };
+    const fields = [{ key: 'fak', label: 'Derating-Faktor', unit: 'mW/K' }, { key: 'p70', label: 'Zulässige Verlustleistung {sym:P} bei warmer Umgebung', unit: 'W' }];
+    const ctl = ta => ({ id: 2, u: 12, duty: 100, vgs: 10, spec: 'typ', hot: false, pulse: false, ta, heatsink: 'none' });
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Das Datenblatt eines IRLZ34N (Werte des Labs) nennt für den Betrieb ohne Kühlkörper {sym:Rth_JA} = ' + fm(v.rthJA) + ' K/W und {sym:Tjmax} = ' + fm(v.tjMax) + ' °C. Die volle zulässige Verlustleistung gilt bis ' + fm(v.tRef) + ' °C Umgebungstemperatur, darüber sinkt sie geradlinig und erreicht bei {sym:Tjmax} null (Deratingkurve).\nBerechne den Derating-Faktor in mW/K, um den die zulässige Verlustleistung je Kelvin wärmerer Umgebung sinkt, und die zulässige Verlustleistung bei ' + fm(v.ta) + ' °C Umgebung.'; },
+      hint() { const v = vals(); return [
+        'Die Deratingkurve ist eine Gerade: Je wärmer die Umgebung, desto kleiner ist der Temperaturunterschied bis zur Grenze, den die Wärme über den Wärmewiderstand überwinden darf. Die Steigung der Geraden hängt nur vom Wärmewiderstand ab.',
+        'Derating-Faktor = 1 / {sym:Rth_JA}. Bei ' + fm(v.tRef) + ' °C darf der MOSFET (' + fm(v.tjMax) + ' °C − ' + fm(v.tRef) + ' °C) / ' + fm(v.rthJA) + ' K/W = ' + fm(v.p25, 3) + ' W umsetzen. Von ' + fm(v.tRef) + ' °C bis ' + fm(v.ta) + ' °C wird die Umgebung um ' + fm(v.dTa) + ' K wärmer.',
+        'Musterlösung: Faktor = 1 / ' + fm(v.rthJA) + ' K/W = ' + fm(v.fakm, 2) + ' mW/K. P = ' + fm(v.p25, 3) + ' W − ' + fm(v.dTa) + ' K · ' + fm(v.fakm, 2) + ' mW/K = ' + fm(v.p70, 3) + ' W. Probe: ' + fm(v.d70) + ' K / ' + fm(v.rthJA) + ' K/W ergibt denselben Wert.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th41: Rth_JA aus der Datenblattleistung zurueckrechnen */
+  const M41 = (() => {
+    const TREF = 25, UCE = 4, IC = 0.2, TA = 40;
+    const vals = () => once('v41', () => {
+      const C = CORE(), dev = C.devices.bd139, dRef = dev.tjMax - TREF, ptot25 = dRef / dev.rthJA, rthja = dRef / ptot25, p = UCE * IC;
+      return { tRef: TREF, tjMax: dev.tjMax, rthJC: dev.rthJC, dRef, ptot25, rthja, uce: UCE, ic: IC, ta: TA, p, dT: p * rthja, tj: TA + p * rthja, reserve: dev.tjMax - TA - p * rthja, rthNoTa: dev.tjMax / ptot25, tjJC: TA + p * dev.rthJC, tj25: TREF + p * rthja, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'rthja', label: 'Wärmewiderstand zur Umgebung', unit: 'K/W', want: v.rthja, tol: 0.02, mistakes: [[v.rthNoTa, 'du {sym:Tjmax} durch die Leistung geteilt hast, ohne die ' + fm(v.tRef) + ' °C der Datenblattangabe abzuziehen'], [v.ptot25 / v.dRef, 'du den Bruch umgedreht hast (Leistung durch Temperaturunterschied)']] },
+      { key: 'tj', label: 'Sperrschichttemperatur im Gerät', unit: '°C', want: v.tj, tol: 0.02, mistakes: [[v.dT, 'du {sym:Ta} nicht addiert hast'], [v.tjJC, 'du {sym:Rth_JC} statt {sym:Rth_JA} genommen hast'], [v.tj25, 'du mit ' + fm(v.tRef) + ' °C statt mit der Temperatur im Gerät gerechnet hast']] }
+    ]; };
+    const fields = [{ key: 'rthja', label: 'Wärmewiderstand {sym:Rth_JA}', unit: 'K/W' }, { key: 'tj', label: 'Sperrschichttemperatur {sym:Tj}', unit: '°C' }];
+    const ctl = { mode: 'ap', uce: UCE, ic: IC, count: 1, ta: TA, heatsink: 'none' };
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Im Datenblatt eines BD139 (Werte des Labs) steht für den Betrieb ohne Kühlkörper nur: zulässige Verlustleistung ' + fm(v.ptot25, 2) + ' W bei ' + fm(v.tRef) + ' °C Umgebung und {sym:Tjmax} = ' + fm(v.tjMax) + ' °C. Den Wärmewiderstand zur Umgebung nennt es nicht.\nBerechne daraus {sym:Rth_JA}. Danach arbeitet der Transistor ohne Kühlkörper mit ' + fm(v.uce) + ' V zwischen Kollektor und Emitter und ' + fm(v.ic) + ' A Kollektorstrom in einem Gerät mit ' + fm(v.ta) + ' °C Innentemperatur: Berechne seine Sperrschichttemperatur.'; },
+      hint() { const v = vals(); return [
+        'Die Leistungsangabe im Datenblatt ist genau die Leistung, bei der die Sperrschicht bei der genannten Umgebungstemperatur ihre Grenze erreicht. Stelle die Gleichung für die Sperrschichttemperatur nach dem Wärmewiderstand um, danach rechnest du mit ihm vorwärts.',
+        'Temperaturunterschied bei der Datenblattangabe: ' + fm(v.tjMax) + ' °C − ' + fm(v.tRef) + ' °C = ' + fm(v.dRef) + ' K. {sym:Rth_JA} = Unterschied / Leistung. Im Gerät: P = ' + fm(v.uce) + ' V · ' + fm(v.ic) + ' A = ' + fm(v.p) + ' W.',
+        'Musterlösung: {sym:Rth_JA} = ' + fm(v.dRef) + ' K / ' + fm(v.ptot25, 2) + ' W = ' + fm(v.rthja, 1) + ' K/W. {sym:Tj} = ' + fm(v.ta) + ' °C + ' + fm(v.p) + ' W · ' + fm(v.rthja) + ' K/W = ' + fm(v.tj, 1) + ' °C, also ' + fm(v.reserve) + ' K unter {sym:Tjmax}.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th42: 7805 ohne Kuehlkoerper im warmen Schaltschrank */
+  const M42 = (() => {
+    const TA1 = 25, TA2 = 55, UE = 9;
+    const vals = () => once('v42', () => {
+      const C = CORE(), dev = C.devices['7805'], d1 = dev.tjMax - TA1, d2 = dev.tjMax - TA2, p1 = d1 / dev.rthJA, p2 = d2 / dev.rthJA, du = UE - dev.uaFix;
+      return { ta1: TA1, ta2: TA2, ue: UE, ua: dev.uaFix, du, tjMax: dev.tjMax, rthJA: dev.rthJA, d1, d2, p1, p2, pct: p2 / p1 * 100, frac: p2 / p1, abn: (1 - p2 / p1) * 100, taPct: TA1 / TA2 * 100, imax: p2 / du, imax1: p1 / du, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'pct', label: 'Verbleibender Anteil der zulässigen Verlustleistung', unit: '%', want: v.pct, tol: 0.02, mistakes: [[v.abn, 'du die Abnahme statt des verbleibenden Anteils angegeben hast'], [v.frac, 'du den Anteil als Faktor statt in Prozent angegeben hast'], [v.taPct, 'du die Umgebungstemperaturen ins Verhältnis gesetzt hast (es zählt der Abstand bis {sym:Tjmax})']] },
+      { key: 'imax', label: 'Größter Laststrom im Schaltschrank', unit: 'A', want: v.imax, tol: 0.03, mistakes: [[v.p2 / v.ue, 'du durch Ue statt durch den Spannungsabfall Ue − Ua geteilt hast'], [v.imax1, 'du mit der Leistung bei ' + fm(v.ta1) + ' °C gerechnet hast'], [v.p2 / v.ua, 'du durch Ua statt durch Ue − Ua geteilt hast']] }
+    ]; };
+    const fields = [{ key: 'pct', label: 'Verbleibende Verlustleistung', unit: '%' }, { key: 'imax', label: 'Größter Laststrom im Schaltschrank', unit: 'A' }];
+    const ctl = i => ({ device: '7805', loadMode: 'strom', ue: UE, iLoad: i, iq: false, ta: TA2, heatsink: 'none' });
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Eine Steuerplatine mit einem 7805 ohne Kühlkörper ({sym:Rth_JA} = ' + fm(v.rthJA) + ' K/W, {sym:Tjmax} = ' + fm(v.tjMax) + ' °C, Werte des Labs) wurde für ' + fm(v.ta1) + ' °C Umgebung ausgelegt. Jetzt wird sie in einen Schaltschrank eingebaut, in dem es ' + fm(v.ta2) + ' °C warm wird. Der Regler bekommt ' + fm(v.ue) + ' V und gibt ' + fm(v.ua) + ' V ab.\nBerechne, wie viel Prozent der bei ' + fm(v.ta1) + ' °C zulässigen Verlustleistung im Schaltschrank noch erlaubt sind, und den größten Laststrom im Schaltschrank. Den Ruhestrom vernachlässigst du.'; },
+      hint() { const v = vals(); return [
+        'Die zulässige Verlustleistung hängt vom Abstand zwischen Umgebungstemperatur und Grenztemperatur der Sperrschicht ab, nicht vom Verhältnis der beiden Umgebungstemperaturen. Rechne beide Leistungen aus und vergleiche sie, danach folgt der Strom aus dem Spannungsabfall am Regler.',
+        'Bei ' + fm(v.ta1) + ' °C: (' + fm(v.tjMax) + ' °C − ' + fm(v.ta1) + ' °C) / ' + fm(v.rthJA) + ' K/W = ' + fm(v.p1) + ' W. Bei ' + fm(v.ta2) + ' °C: (' + fm(v.tjMax) + ' °C − ' + fm(v.ta2) + ' °C) / ' + fm(v.rthJA) + ' K/W = ' + fm(v.p2) + ' W. Am Regler fallen ' + fm(v.ue) + ' V − ' + fm(v.ua) + ' V = ' + fm(v.du) + ' V ab.',
+        'Musterlösung: ' + fm(v.p2) + ' W / ' + fm(v.p1) + ' W = ' + fm(v.pct, 1) + ' %. I_max = ' + fm(v.p2) + ' W / ' + fm(v.du) + ' V = ' + fm(v.imax, 2) + ' A (bei ' + fm(v.ta1) + ' °C wären es ' + fm(v.imax1, 2) + ' A gewesen).'
+      ]; } };
+  })();
+
   /* ====================================================================== Aufgabenliste */
   /* text, table und hint werden erst beim ersten Zugriff gerechnet (Kern und Pruefstaende), danach gemerkt */
   const L = (t, M) => {
@@ -917,7 +1007,27 @@
       fields: M38.fields,
       start: () => S('linear', M38.ctl('m'), { settle: true, fields: noV(['tk', 'rkmax']) }),
       sol: () => { const v = M38.vals(); return S('linear', M38.ctl('l'), { settle: true, fields: { tk: v.tk, rkmax: v.rkmax } }); },
-      check: calcCheck(M38), hintVals: () => M38.vals() }, M38)
+      check: calcCheck(M38), hintVals: () => M38.vals() }, M38),
+    L({ id: 'th39', lab: 'thm', cat: 'Derating', title: 'LM317 ohne Kühlkörper: zulässige Leistung und Laststrom', level: 1, rig: 'linear',
+      fields: M39.fields,
+      start: () => S('linear', M39.ctl(0.5), { settle: true, fields: noV(['pmax', 'imax']) }),
+      sol: () => { const v = M39.vals(); return S('linear', M39.ctl(Math.floor(v.imax * 100) / 100), { settle: true, fields: { pmax: v.pmax, imax: v.imax } }); },
+      check: calcCheck(M39), hintVals: () => M39.vals() }, M39),
+    L({ id: 'th40', lab: 'thm', cat: 'Derating', title: 'Deratingkurve des IRLZ34N ohne Kühlkörper', level: 2, rig: 'mosfet',
+      fields: M40.fields,
+      start: () => S('mosfet', M40.ctl(25), { settle: true, fields: noV(['fak', 'p70']) }),
+      sol: () => { const v = M40.vals(); return S('mosfet', M40.ctl(70), { settle: true, fields: { fak: v.fakm, p70: v.p70 } }); },
+      check: calcCheck(M40), hintVals: () => M40.vals() }, M40),
+    L({ id: 'th41', lab: 'thm', cat: 'Verlustleistung', title: 'Wärmewiderstand zur Umgebung aus der Datenblattleistung', level: 2, rig: 'transistor',
+      fields: M41.fields,
+      start: () => S('transistor', M41.ctl, { settle: true, fields: noV(['rthja', 'tj']) }),
+      sol: () => { const v = M41.vals(); return S('transistor', M41.ctl, { settle: true, fields: { rthja: v.rthja, tj: v.tj } }); },
+      check: calcCheck(M41), hintVals: () => M41.vals() }, M41),
+    L({ id: 'th42', lab: 'thm', cat: 'Derating', title: 'Steuerplatine im warmen Schaltschrank ohne Kühlkörper', level: 3, rig: 'linear',
+      fields: M42.fields,
+      start: () => S('linear', M42.ctl(0.5), { settle: true, fields: noV(['pct', 'imax']) }),
+      sol: () => { const v = M42.vals(); return S('linear', M42.ctl(Math.floor(v.imax * 100) / 100), { settle: true, fields: { pct: v.pct, imax: v.imax } }); },
+      check: calcCheck(M42), hintVals: () => M42.vals() }, M42)
   ];
 
   /* ====================================================================== Registrierung */
@@ -952,6 +1062,6 @@
       return out;
     };
   }
-  const api = { tasks, answerOf, models: { M16, M17, M18, M19, M20, M21, M22, M23, M24, M25, M26, M27, M28, M29, M30, M31, M32, M33, M34, M35, M36, M37, M38 }, helpers: { numRow, fm, pick, build, aufwand: M30.aufwand } };
+  const api = { tasks, answerOf, models: { M16, M17, M18, M19, M20, M21, M22, M23, M24, M25, M26, M27, M28, M29, M30, M31, M32, M33, M34, M35, M36, M37, M38, M39, M40, M41, M42 }, helpers: { numRow, fm, pick, build, aufwand: M30.aufwand } };
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

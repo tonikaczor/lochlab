@@ -76,22 +76,22 @@
   /* ---------------------------------------------------------------- 2. Zuordnung der Aufgaben */
   /* Regeln: Lab -> { Kategorie: Lernfeld, '*': Lernfeld für alle anderen Kategorien }. Kein Eintrag = nicht zugeordnet. */
   const REGELN = {
-    sim: { 'Grundlagen': 'E2', 'Hausinstallation': 'E2', 'Fehlersuche': 'E2', 'Drehstrom': '5.2', 'Leitungen und Messen': '5.1' },
+    sim: { 'Grundlagen': 'E2', 'Hausinstallation': 'E2', 'Fehlersuche': 'E2', 'Drehstrom': '5.2', 'Leitungen und Messen': '5.1', 'Steuerungstechnik': 'E3' },
     haus: { 'Licht': 'E2', 'Steckdosen': 'E2', 'Verteiler': '5.1', 'Schutz': '5.2', 'Fehlersuche': 'E2', 'Büro': '5.1', 'Leitungen': '5.1', 'Gesamtaufgabe': '5.1', 'Frei gestalten': 'E2', 'Drehstrom': '5.2', 'Geschosse': 'E2', 'Hausanschluss': '5.2', 'Kundenauftrag': '10.1' },
     sch: { 'Grundlagen': 'E1', 'Transistoren': '6.1', 'Filter und Gleichrichter': 'E2', 'Fehlersuche': 'E1', 'Halbleiter': '9.2', 'Aufbau nach Plan': '6.1', 'Projekt: Ampel': '9.1', 'Projekt: Dämmerungsschalter': '6.1', 'Projekt: Netzteil': '5.3', 'Zufallsaufgaben': 'E1', 'Tagesaufgabe': null, 'Duell': null, 'Schaltungs-Detektiv': null },
     loch: { 'Aufbau': 'E1', 'Arduino und Pi': '11.2', 'Projekt Ampel': '9.1', 'Projekt Dämmerungsschalter': '6.1', 'Projekt Netzteil': '5.3', 'Fehlersuche': 'E2' },
     digi: { 'Grundgatter': '7.2', 'Schaltnetze': '7.2', 'Speicher und Zähler': '9.1', 'Fehlersuche': '7.2', 'Rechnerbausteine': '7.1', 'Zahlen und Codes': '7.1', 'Logikfamilien': '9.1', 'Mini-CPU': '11.3', 'Prozessor 8085': '11.3', 'Kundenauftrag': '10.1', 'Vereinfachen': '7.2', 'Zustandsautomaten': '9.1' },
     mess: { 'Multimeter': 'E1', 'Leistung und Kennlinien': 'E1', 'Netzgerät und Generator': 'E1', 'Oszilloskop': 'E6', 'Messfehler': 'E1', 'Frequenzgang': 'E6', 'Logik': '9.1', 'Kundenauftrag': '10.1', 'Fehlersuche': 'E1', 'Prüfung: Stromlaufplan': 'E1' },
-    els: { 'Stromwirkung': '5.1', 'Prüfungsnah': '5.1', 'Schutzklassen': '5.2', 'Schutzorgane': '5.1', 'RCD': '5.1', 'Isolation und Schutzleiter': '5.2', 'Geräteprüfung': '5.2', 'Sicherheitsregeln': 'E13', 'Brandschutz': 'E13', 'Kennzeichnung': 'E13', 'Maschinensicherheit': '10.1' },
+    els: { 'Stromwirkung': '5.1', 'Prüfungsnah': '5.1', 'Schutzklassen': '5.2', 'Schutzorgane': '5.1', 'RCD': '5.1', 'Isolation und Schutzleiter': '5.2', 'Geräteprüfung': '5.2', 'Sicherheitsregeln': 'E13', 'Brandschutz': 'E13', 'Kennzeichnung': 'E13', 'Maschinensicherheit': '10.1', 'TT-System': '5.1', 'Schmelzsicherung': '5.1', 'Schutzmaßnahmen': '5.2' },
     nts: { 'Prüfungsnah': '5.3', 'Transformator': '5.3', 'Gleichrichter': '5.3', 'Z-Diode': '9.2', 'Linearregler': '9.2', 'Schaltregler': '9.2', 'Gate': '9.2', 'Regelkreis': '9.2', 'Fehlersuche': '9.2' },
-    wsl: { '*': '5.2', 'Transformator': '5.3' },
+    wsl: { '*': '5.2', 'Transformator': '5.3', 'Filter': 'E6' },
     ana: { 'Prüfungsnah': '6.1', 'Fehlersuche': '6.1', 'Transistorverstärker': '6.1', 'Komparator und Schmitt-Trigger': '6.2', 'Aktive Schaltungen': '6.2', 'Diode': '6.1', 'Transistorschalter': '6.1', 'OPV-Grundschaltungen': '9.1' },
     sps: { '*': '10.1', 'Grundlagen': 'E3' },
     pcb: { '*': '8.3' },
     ant: { '*': '10.1' },
     sen: { '*': '8.2' },
     thm: { '*': '5.3' },
-    enr: { 'Grundlagen': '6.1', 'Kennlinie': '6.1', 'Rechnen': '6.1', 'Verschaltung': '6.1', 'Verschattung': '6.1', 'Laderegler': '9.2', 'Wechselrichter': '5.2' },
+    enr: { 'Grundlagen': '6.1', 'Kennlinie': '6.1', 'Rechnen': '6.1', 'Verschaltung': '6.1', 'Verschattung': '6.1', 'Laderegler': '9.2', 'Wechselrichter': '5.2', 'Akku': '6.1' },
     ds: { 'Datenblatt-Aufbau': '6.1', 'Grenzwerte und Betriebsbedingungen': '6.1', 'Kennwerte lesen': '6.1', 'Kennlinien ablesen': '6.1', 'Berechnungen': '6.1', 'Thermik und Derating': '5.3', 'Bauteilwahl': '6.1', 'Zeitdiagramm und Register': '9.1', 'Fachenglisch': 'FE', 'Fehlersuche': '6.1', 'Prüfungsstil': 'E12' },
     code: { 'Grundlagen': '11.2', 'Mehrere LEDs': '11.2', 'Fehlersuche im Code': '11.2', 'Sensoren und Töne': 'E12', 'Prüfungspraxis': 'E12' },
     pi: { 'Grundlagen': '11.2', 'Fehlersuche im Code': '11.2', 'Sensoren und Töne': 'E12', 'Analoge Sensoren (MCP3008)': '8.2', 'I²C-Sensoren': 'E12' },
@@ -102,12 +102,18 @@
     zei: { '*': '8.1' },
     pne: { '*': '10.2' },
     ins: { '*': '9.3' },
+    net: { 'Schichten/Ports': 'E13', 'Übertragungstechnik': 'E13' },
+    emv: { 'Grundwissen': 'E13' },
+    rec: { 'Qualität und Projekt': 'E13' },
+    kal: { 'Qualität und Projekt': 'E13' },
     hwl: { '*': '7.1' },
     sys: { '*': '7.1' },
     ssl: { 'Schutzorgane wählen': '5.1', 'Strom und Querschnitt': '5.1', 'Netzteil und Wärme': '5.3', '*': '10.1' }
   };
   /* Ausnahmen je Aufgaben-ID (gehen den Regeln vor) */
   const AUSNAHMEN = {
+    // HausLab: Herd-Fehlersuche aus der Mitschrift E13.3 (Instandsetzung)
+    ha38: 'E13',
     // SimLab, HausLab
     schutz: '5.1', fi: '5.2', pe1: '5.2', vt1: '5.1', schuetz: 'E3', selbst: 'E3', zh: 'E3', f3: 'E3', f2: '5.1', sl3: '5.2', sl5: '5.2', sl6: '5.2', ha9: '5.2',
     // SchaltLab
@@ -116,7 +122,7 @@
     l4: '6.1', l5: '6.1', l6: '6.1', l13: '6.1', l14: '6.1', l7: '5.3', l19: '5.3', l8: '9.1', l22: '9.1', l18: 'E2', l20: '9.2', l21: 'E2',
     l11: 'E12', l12: 'E12', lf3: '5.3', lf5: '5.3', lf6: '6.1', lf7: '9.1', lf8: '9.1', lf4: 'E12',
     // DigiLab
-    df2: '9.1', df4: '7.1', df5: '7.1', df6: '11.3', df7: '11.3',
+    df2: '9.1', df4: '7.1', df5: '7.1', df6: '11.3', df7: '11.3', df8: '9.1',
     // MessLab
     m13: '6.1', m23: '6.1', m14: '9.2', m20: 'E6', m40: 'E13', m24: 'E13', mf3: '9.2', mf4: 'E6', mf5: 'E6', mpf1: '6.1', mpf2: '6.2', mpf3: '6.2',
     mp3: '6.2', mp4: '6.2', mp5: '6.1', mp6: '9.2', mp7: '9.2', mp8: '6.1',
@@ -126,6 +132,7 @@
     ws26: '5.3', ws28: '5.3', ws29: '5.3',
     // Analogtechnik-Lab
     ae2: '9.2', ae15: '9.2', ae17: '6.2', ae18: '6.2', ae19: '6.2', ae20: '6.2', ae21: '6.2', ae22: '6.2', ae23: '6.2', ae24: '6.2', ae25: '6.2', ae26: '6.2', ae28: '6.2', ae29: '6.2', ae32: '6.2',
+    ae41: '6.2', ae42: '6.2', ae43: '6.2', ae44: '6.2', ae46: '6.2', ae48: 'E12',
     // Leiterplatten-Lab, Sensorik-Lab, Energie-Lab, Datenblatt-Lab
     pb44: '5.3', pb45: '5.3', pb46: '9.2', pb47: '9.2', pb48: '6.2', pb49: '6.2',
     se41: '6.2', se42: '6.2',
@@ -133,11 +140,18 @@
     ds4: '6.2', ds10: '9.2', ds11: '9.1', ds14: '9.2', ds15: '9.2', ds21: '5.3', ds24: 'E12', ds25: 'E12', ds32: '9.2',
     // Algorithmen-Lab: C++ und Mikrocontroller (Mitschriften 11.2 und E12.3)
     alg39: '11.2', alg40: '11.2', alg41: '11.2', alg42: '11.2', alg43: 'E12', alg44: 'E12', alg45: 'E12', alg46: 'E12', alg47: 'E12', alg48: 'E12',
+    // v50.165 (Mitschrift-Aufgaben): Zuordnung gezielt
+    alg52: '11.2', alg53: '11.2', alg54: '11.2', c24: 'E12', c26: '10.1', rec43: 'E12', rec44: 'E12', kal40: 'E12', kal41: 'E12',
+    ins47: '10.1', ins48: '10.1', ins49: '10.1', ins50: '10.1', em34: 'E1', em35: '10.1', zei56: 'E2', ds35: '9.1',
+    en37: '5.3', en38: '5.3', en42: '5.3', f10: 'E3',
     // Prüfungs-Lab: die acht Themen-Aufgaben; Probeprüfungen und Prüfungsaufbau sind lernfeldübergreifend und bleiben ohne Zuordnung
     pr1: 'E1', pr2: '6.1', pr3: '5.2', pr4: '7.2', pr5: 'E1', pr6: '5.3', pr7: 'E12', pr8: '5.1'
   };
   /* Aufgaben, die in v48.163 neu hinzugekommen sind (Differenz aufgaben.js zu release-v48.162; gezielt in AUSNAHMEN/REGELN eingeordnet) */
   const NEU_V48_163 = ['d28', 'df4', 'd29', 'd30', 'd31', 'd32', 'd33', 'd34', 'd35', 'd36', 'd37', 'df5', 'dc7', 'dc8', 'dc9', 'm30', 'm31', 'm32', 'm33', 'm34', 'm35', 'm36', 'm37', 'm38', 'm39', 'm40', 'm41', 'm42', 'mf4', 'mf5', 'mf6', 'mf7', 'sp33', 'sp34', 'sp35', 'sp36', 'sp37', 'pb44', 'pb45', 'pb46', 'pb47', 'pb48', 'pb49', 'an39', 'an40', 'an41', 'an42', 'an43', 'an44', 'an45', 'se41', 'se42', 'se37', 'se38', 'se39', 'se40', 'se43', 'en31', 'en32', 'en33', 'en34', 'en35', 'en36', 'el33', 'el34', 'el35', 'el36', 'el37', 'el38', 'nt33', 'nt34', 'nt35', 'nt36', 'nt37', 'nt38', 'ws33', 'ws34', 'ws35', 'ws36', 'ws37', 'ws38', 'ws39', 'ws40', 'ws41', 'ws42', 'ws43', 'ws44', 'ws45', 'ws46', 'ws47', 'ae33', 'ae34', 'ae35', 'ae36', 'ae37', 'ae38', 'ae39', 'ae40', 'pne33', 'pne34', 'pne35', 'pne36', 'pne37', 'pne38', 'pne39', 'pne40', 'ins41', 'ins42', 'ins43', 'ins44', 'ins45', 'ins46', 'zei37', 'zei38', 'zei39', 'zei40', 'zei41', 'zei42', 'zei43', 'zei44', 'zei45', 'zei46', 'zei47', 'zei48', 'zei49', 'zei50', 'zei51', 'zei52', 'mat36', 'mat37', 'mat38', 'mat39', 'mat40', 'mat41', 'mat42', 'mat43', 'eng35', 'eng36', 'eng37', 'eng38', 'eng39', 'eng40', 'eng41', 'eng42', 'eng43', 'eng44', 'alg35', 'alg36', 'alg37', 'alg38', 'alg39', 'alg40', 'alg41', 'alg42', 'alg43', 'alg44', 'alg45', 'alg46', 'alg47', 'alg48'];
+
+  /* Aufgaben, die in v50.165 neu hinzugekommen sind (Differenz aufgaben.js zu release-v50.164) */
+  const NEU_V50_165 = ['c24', 'c25', 'c26', 'st1', 'st2', 'st3', 'st4', 'st5', 'f10', 'd38', 'd39', 'd40', 'd41', 'df8', 'd42', 'd43', 'd44', 'd45', 'df9', 'm43', 'm44', 'm45', 'm46', 'm47', 'm48', 'ha36', 'ha37', 'ha38', 'ha39', 'ha40', 'ha41', 'sp38', 'sp39', 'sp40', 'sp41', 'sp42', 'sp43', 'an46', 'an47', 'an48', 'an49', 'an50', 'an51', 'an52', 'an53', 'an54', 'se47', 'se48', 'se49', 'se44', 'se45', 'se46', 'ds35', 'rg48', 'rg49', 'rg50', 'rg51', 'rg52', 'rg53', 'th39', 'th40', 'th41', 'th42', 'em33', 'em34', 'em35', 'en37', 'en38', 'en39', 'en40', 'en41', 'en42', 'el39', 'el40', 'el41', 'el42', 'el43', 'el44', 'el45', 'el46', 'nt39', 'nt40', 'nt41', 'nt42', 'nt43', 'nt44', 'nt45', 'nt46', 'nt47', 'ws48', 'ws49', 'ws50', 'ws51', 'ws52', 'ws53', 'ws54', 'ae41', 'ae42', 'ae43', 'ae44', 'ae45', 'ae46', 'ae47', 'ae48', 'ae49', 'ae50', 'pne41', 'pne42', 'pne43', 'pne44', 'ins47', 'ins48', 'ins49', 'ins50', 'net39', 'net40', 'net41', 'net42', 'net43', 'kal37', 'kal38', 'kal39', 'kal40', 'kal41', 'zei53', 'zei54', 'zei55', 'zei56', 'mat44', 'mat45', 'mat46', 'mat47', 'mat48', 'rec43', 'rec44', 'rec45', 'rec46', 'rec47', 'rec48', 'alg49', 'alg50', 'alg51', 'alg52', 'alg53', 'alg54', 'alg55', 'alg56'];
 
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
   /* Hauptlernfeld einer Aufgabenzeile [id, lab, kategorie, titel, level]; null = keinem Lernfeld zugeordnet */
@@ -283,7 +297,7 @@
     return { pts, max, pct, note: nt, richtig, n: items.length, bestanden: pct >= BESTEHT };
   }
 
-  const API = { LJ, LF, lf, REGELN, AUSNAHMEN, NEU_V48_163, lfOf, zuordnung, abdeckung, stand,
+  const API = { LJ, LF, lf, REGELN, AUSNAHMEN, NEU_V48_163, NEU_V50_165, lfOf, zuordnung, abdeckung, stand,
     MIN_FRAGEN, STD_FRAGEN, MIN_JE_A, MIN_JE_B, PTS_A, PTS_B, BESTEHT, note, poolLF, bankLF, fragen, fragenZahl, probe, isRight, bewerte, minuten, seeded };
   root.LERNFELDER = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
