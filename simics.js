@@ -60,14 +60,16 @@ const CATALOG = {
   '324':    { name: 'LM324 4×Operationsverstärker', np: 14, vcc: 4, gnd: 11, labels: ['1OUT', '1IN−', '1IN+', 'V+', '2IN+', '2IN−', '2OUT', '3OUT', '3IN−', '3IN+', 'V−', '4IN+', '4IN−', '4OUT'], oa: [{ p: 3, n: 2, o: 1 }, { p: 5, n: 6, o: 7 }, { p: 10, n: 9, o: 8 }, { p: 12, n: 13, o: 14 }], rail: 1.5, rlow: 0.05 },
 };
 CATALOG.cpu4 = { name: 'Mini-CPU 4 Bit (TF-4)', np: 16, vcc: 16, gnd: 8, labels: ['CLK', 'RST', 'IN0', 'IN1', 'IN2', 'IN3', 'HLT', 'GND', 'CF', 'ZF', 'OUT3', 'OUT2', 'OUT1', 'OUT0', 'NC', 'VCC'], cpu: true };
+CATALOG.cpu85 = { name: 'Mini-CPU 8085 (8 Bit, Ausschnitt)', np: 24, vcc: 24, gnd: 12, labels: ['CLK', 'RST', 'IN0', 'IN1', 'IN2', 'IN3', 'IN4', 'IN5', 'IN6', 'IN7', 'NC', 'GND', 'OUT0', 'OUT1', 'OUT2', 'OUT3', 'OUT4', 'OUT5', 'OUT6', 'OUT7', 'HLT', 'CF', 'ZF', 'VCC'], cpu: true };
 CATALOG.opa = { name: 'Operationsverstärker', np: 5, vcc: 4, gnd: 5, labels: ['IN+', 'IN−', 'OUT', 'V+', 'V−'], oa: [{ p: 1, n: 2, o: 3 }], rail: 1.5, hidden: true };
-const SORT = ['cpu4', '555', '7400', '7402', '7404', '7408', '7432', '7486', '7414', '4011', '4001', '4081', '4071', '4070', '4002', '4082', '4093', '4069', '7474', '4013', '4017', '4020', '7490', '7447', '4511', '4543', '4518', '4060', '4585', '74138', '741', '358', '072', '324'];
+const SORT = ['cpu4', 'cpu85', '555', '7400', '7402', '7404', '7408', '7432', '7486', '7414', '4011', '4001', '4081', '4071', '4070', '4002', '4082', '4093', '4069', '7474', '4013', '4017', '4020', '7490', '7447', '4511', '4543', '4518', '4060', '4585', '74138', '741', '358', '072', '324'];
 
 /* Typ aus der Wertangabe erkennen (NE555, SN74HC00N, CD4017, LM358 ...) */
 function find(v) {
   const s = String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!s) return null;
   if (/^(CPU4|MINICPU|TF4)/.test(s)) return { key: 'cpu4', fam: 'cmos' };
+  if (/^(CPU85|TF85|8085)/.test(s)) return { key: 'cpu85', fam: 'cmos' };
   if (/555/.test(s)) return { key: '555', fam: /TLC|LMC|7555|ICM/.test(s) ? 'cmos' : 'bip' };
   if (/^(LM|UA|MC|NE)?741[A-Z]*$/.test(s)) return { key: '741', fam: 'oa' };
   if (/(LM|NE)?358/.test(s)) return { key: '358', fam: 'oa' };
@@ -158,6 +160,7 @@ function update(e, vp, dt) {
       O(7, q ? null : 0, { rl: 12 });                                    // Entladetransistor
       return; }
     case 'cpu4': return root.CPU4 ? root.CPU4.update(e, vp, lv, O, rise) : undefined;
+    case 'cpu85': return root.CPU85 ? root.CPU85.update(e, vp, lv, O, rise) : undefined;
     case '7474': {
       [[1, 2, 3, 4, 5, 6, 'a'], [13, 12, 11, 10, 9, 8, 'b']].forEach(([clr, d, clk, pre, q, qn, id]) => {
         const c = lv(e, vp, clr), p = lv(e, vp, pre), D = lv(e, vp, d), edge = rise(e, 'clk' + id, lv(e, vp, clk));

@@ -23,8 +23,18 @@ function netList(d) {
 const byIdIn = (d, id) => d.items.find(i => i.t === 'part' && i.id === +id);
 function pinText(d, key) {
   const [id, pin] = String(key).split('.'), it = byIdIn(d, id); if (!it) return '?';
-  const L = labelsOf(it), nm = (it.l || PARTS[it.k].name) + ' ' + (L && L[+pin] ? L[+pin] : 'Pin ' + (+pin + 1));
-  return nm;
+  const nm = it.l || PARTS[it.k].name;
+  // Anschlussnamen aus pins.js (Plus, Anode, COM, Kollektor ...), sonst Beschriftung des Bauteils, sonst "Pin n"
+  let P = null; try { P = window.TfPins && TfPins.loch ? TfPins.loch(it) : null; } catch (e) { P = null; }
+  const e = P && P[+pin];
+  if (e && e.n) {
+    const n = String(e.n), x = e.x ? String(e.x).replace(/\s*\(.*\)\s*$/, '') : '';
+    if (/^\d+$/.test(n)) return nm + ' Pin ' + n + (x ? ' (' + x + ')' : '');
+    if (/^[+\-−]$/.test(n)) return nm + ' ' + (x || n);
+    return nm + ' ' + n + (x ? ' (' + x + ')' : '');
+  }
+  const L = labelsOf(it);
+  return nm + ' ' + (L && L[+pin] ? L[+pin] : 'Pin ' + (+pin + 1));
 }
 const listText = (d, keys) => { const s = keys.slice(0, 3).map(k => pinText(d, k)); return s.join(', ') + (keys.length > 3 ? ' …' : ''); };
 
@@ -57,7 +67,7 @@ function withFault(d, kind) {
 }
 const T = (id, cat, level, title, ex, text, hint, extra) => Object.assign({ id, cat, level, title, ex, text, hint }, extra || {});
 const TASKS = [
-  T('l1', 'Aufbau', 1, 'Spannungsteiler aufbauen', 'Spannungsteiler', 'Die Bauteile liegen schon auf der Platine. Verbinde sie so, wie es der Stromlaufplan des Spannungsteilers verlangt: Batterie, zwei Widerstände in Reihe. Benutze Silberdraht auf der Lötseite (Werkzeug „Lötbahn“) oder Drahtbrücken.', 'Die beiden Widerstände hängen hintereinander an der Batterie. Der Abgriff liegt zwischen ihnen. Plus der Batterie geht an den oberen, Minus an den unteren Widerstand.'),
+  T('l1', 'Aufbau', 1, 'Spannungsteiler aufbauen', 'Spannungsteiler', 'Die Bauteile liegen schon auf der Platine. Verbinde sie so, wie es der Stromlaufplan des Spannungsteilers verlangt: Batterie, zwei Widerstände in Reihe. Benutze Silberdraht auf der Lötseite (Werkzeug „Lötbahn“) oder Drahtbrücken.', 'Die beiden Widerstände hängen hintereinander an der Batterie. Der Abgriff liegt zwischen ihnen. Plus der Batterie geht an R1, Minus an R2, sonst stimmt die Spannung am Abgriff nicht.', { keepOrder: true }),   // keepOrder: Am Abgriff hängt die Reihenfolge, R1 muss an Plus liegen
   T('l2', 'Aufbau', 1, 'LED mit Vorwiderstand und Schalter', 'LED mit Vorwiderstand und Schalter', 'Verdrahte die Batterie, den Schalter, den Vorwiderstand und die LED in einer Reihe. Der Strom soll von Plus über Schalter und Widerstand durch die LED nach Minus fließen.', 'Reihenfolge ist egal, aber alles muss einen geschlossenen Kreis bilden. Achte auf die Polung der LED (Anode zum Plus).'),
   T('l3', 'Aufbau', 2, 'Lampen in Reihe und parallel', 'Lampen in Reihe und parallel', 'Zwei Lampen sollen in Reihe und zwei parallel an der Batterie liegen. Verdrahte die Platine nach dem Stromlaufplan des Beispiels „Lampen in Reihe und parallel“.', 'Parallel heißt: beide Anschlüsse der Lampen liegen an denselben zwei Punkten. In Reihe heißt: der Ausgang der einen ist der Eingang der nächsten.'),
   T('l4', 'Aufbau', 2, 'Transistor als Schalter', 'Transistor als Schalter', 'Verdrahte den Transistorschalter: Basiswiderstand, Transistor, LED mit Vorwiderstand und die Batterie.', 'Emitter an Minus, Kollektor über LED und Vorwiderstand an Plus, die Basis über den Basiswiderstand zum Schalter.'),
@@ -95,8 +105,11 @@ const list = () => TASKS.filter(t => t.sol);
 const byTask = id => list().find(t => t.id === id);
 
 /* ---------- Prüfung ---------- */
-function checkTask(t, d) {
-  const out = [], sol = netList(t.sol), mine = netList(d);
+// Netzliste für die Gleichwertigkeitsprüfung (netequiv.js): Bauteile mit Art, Wert, Variante und Pinzahl, Netze als Gruppen 'id.pin'
+function nlOf(d) { return { parts: partsOf(d).map(i => ({ id: i.id, k: i.k, v: i.v, vr: i.vr, n: i.n, npins: pinsOf(i).length, label: i.l })), nets: netList(d).list }; }
+// Strenger Vergleich Netz für Netz (nur noch Rückfall, falls netequiv.js nicht geladen ist)
+function checkStrict(t, d, out) {
+  const sol = netList(t.sol), mine = netList(d);
   const missingParts = [];
   partsOf(t.sol).forEach(p => { if (!byIdIn(d, p.id)) missingParts.push(p.l || PARTS[p.k].name); });
   if (missingParts.length) out.push({ ok: false, text: 'Bauteil fehlt oder wurde ersetzt: ' + missingParts.join(', ') + '. Lass die vorgegebenen Bauteile auf der Platine.' });
@@ -104,7 +117,6 @@ function checkTask(t, d) {
   const nodeNets = new Map();
   sol.list.forEach((keys, ni) => {
     const groups = new Map(); keys.forEach(k => { const nd = nodeOf(k); if (nd === -2) return; const g = nd < 0 ? 'x' + k : nd; if (!groups.has(g)) groups.set(g, []); groups.get(g).push(k); });
-    // Erlaubte Aufteilung: Ein Stromkreis darf eine eigene Masse haben (t.sepOk = Anschlüsse, die zusammen getrennt liegen dürfen, z. B. Relaiskontakt und Minus der Lastbatterie)
     const sepG = groups.size === 2 && (t.sepOk || []).map(sp => [...groups.values()].find(g => g.length === sp.length && sp.every(k => g.includes(k)))).find(Boolean);
     if (groups.size <= 1) { out.push({ ok: true, text: 'Verbunden: ' + listText(t.sol, keys) }); }
     else if (sepG) { out.push({ ok: true, text: 'Getrennter Stromkreis: ' + listText(t.sol, sepG) + ' liegen zusammen und haben keine Verbindung zur übrigen Masse. Das ist ebenfalls richtig.' }); }
@@ -112,6 +124,17 @@ function checkTask(t, d) {
     groups.forEach((ks, g) => { if (typeof g === 'number') { if (!nodeNets.has(g)) nodeNets.set(g, new Set()); nodeNets.get(g).add(ni); } });
   });
   nodeNets.forEach((nis, nd) => { if (nis.size > 1) { const a = [...nis]; out.push({ ok: false, text: 'Kurzschluss: ' + listText(t.sol, sol.list[a[0]]) + ' ist mit ' + listText(t.sol, sol.list[a[1]]) + ' verbunden. Das gehört nicht zusammen.' }); } });
+}
+function checkTask(t, d) {
+  const out = [], NE = window.NetEquiv;
+  if (NE && NE.compare) {
+    // Elektrische Gleichwertigkeit statt exakter Musterverdrahtung: Anschlüsse symmetrischer Teile dürfen getauscht sein, Reihenketten
+    // in beliebiger Reihenfolge liegen, gleiche Bauteile die Rollen tauschen. Fehlende Verbindung, Kurzschluss, Verpolung, falsch
+    // gesteckte IC-/Transistorpins, zusätzliche Verbindungen und veränderte Bauteile werden benannt (Verfahren: netequiv.js).
+    const partName = id => { const it = byIdIn(d, id) || byIdIn(t.sol, id); return it ? (it.l || PARTS[it.k].name) : 'Bauteil ' + id; };
+    const r = NE.compare(nlOf(t.sol), nlOf(d), { model: NE.lochModel, sig: NE.lochSig, sepOk: t.sepOk, keepOrder: !!t.keepOrder, pinName: (id, pin) => pinText(byIdIn(d, id) ? d : t.sol, id + '.' + pin), partName });
+    r.lines.forEach(l => out.push({ ok: l.ok, text: l.text }));
+  } else checkStrict(t, d, out);
   // Zerstörung in der Simulation
   try {
     const hasSrc = partsOf(d).some(i => i.k === 'BAT' || i.k === 'SIG');

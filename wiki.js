@@ -18,7 +18,8 @@
     wsl: ['Wechselstrom-Lab', 'wsllab.html'], ana: ['Analogtechnik-Lab', 'analab.html'], haus: ['HausLab', 'hauslab.html'], app: ['App-Werkstatt', 'appwerkstatt.html'],
     sps: ['SPS-Lab', 'spslab.html'], pcb: ['Leiterplatten-Lab', 'pcblab.html'], ant: ['Antriebs-Lab', 'antlab.html'], sen: ['Sensorik-Lab', 'senlab.html'],
     reg: ['Regelungstechnik-Lab', 'reglab.html'], thm: ['Thermik-Lab', 'thmlab.html'], emv: ['EMV-Lab', 'emvlab.html'], enr: ['Energie-Lab', 'enrlab.html'],
-    code: ['Arduino-Lab', 'codelab.html'], pi: ['Pi-Lab', 'pilab.html'], ds: ['Datenblatt-Lab', 'dslab.html'], pr: ['Prüfungs-Lab', 'pruefungslab.html'], vb: ['Projekte', 'verbund.html']
+    code: ['Arduino-Lab', 'codelab.html'], pi: ['Pi-Lab', 'pilab.html'], ds: ['Datenblatt-Lab', 'dslab.html'], pr: ['Prüfungs-Lab', 'pruefungslab.html'], vb: ['Projekte', 'verbund.html'],
+    pne: ['Pneumatik-Lab', 'pnelab.html'], arb: ['Arbeitsschutz-Lab', 'arblab.html']
   };
   // Datendateien (Abschnitt 3.3): Name -> Datei; "da" = in diesem Stand vorhanden (sonst laedt need() nicht, kein 404)
   var DATEIEN = {

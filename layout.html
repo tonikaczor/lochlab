@@ -1173,7 +1173,8 @@ function eraseAt(fx,fy){
 }
 function gmoveAct(id,gx,gy,was){
   const ids=[...msel],orig={};ids.forEach(i=>{const it=byId(i);if(it)orig[i]=JSON.stringify(it);});
-  return{t:'gmove',ids,orig,g0:[gx,gy],moved:false,tap:was?id:null};
+  const bb=[1e9,1e9,-1e9,-1e9];ids.forEach(i=>{const o=orig[i]&&JSON.parse(orig[i]);if(!o)return;const q=[];if('x1' in o)q.push([o.x1,o.y1],[o.x2,o.y2]);else{q.push([o.x,o.y]);if(o.t==='part')pinsOf(o).forEach(z=>q.push(z));}q.forEach(z=>{bb[0]=Math.min(bb[0],z[0]);bb[1]=Math.min(bb[1],z[1]);bb[2]=Math.max(bb[2],z[0]);bb[3]=Math.max(bb[3],z[1]);});});
+  return{t:'gmove',ids,orig,bb,g0:[gx,gy],moved:false,tap:was?id:null};
 }
 function inBand(it,b){
   const ins=q=>q[0]>=b[0]&&q[0]<=b[2]&&q[1]>=b[1]&&q[1]<=b[3];
@@ -1233,7 +1234,9 @@ function onMove(p){
       else{it.x=o.x+dx;it.y=o.y+dy;}
       break;}
     case 'gmove':{
-      const dx=gx-act.g0[0],dy=gy-act.g0[1];if(dx||dy)act.moved=true;
+      let dx=gx-act.g0[0],dy=gy-act.g0[1];
+      if(act.bb&&act.bb[0]<=act.bb[2]){dx=clamp(dx,Math.min(0,-act.bb[0]),Math.max(0,doc.cols-1-act.bb[2]));dy=clamp(dy,Math.min(0,-act.bb[1]),Math.max(0,doc.rows-1-act.bb[3]));}   // Gruppe bleibt auf der Platine
+      if(dx||dy)act.moved=true;
       act.ids.forEach(id=>{const it=byId(id),o=act.orig[id]&&JSON.parse(act.orig[id]);if(!it||!o)return;
         if('x1' in o){it.x1=o.x1+dx;it.y1=o.y1+dy;it.x2=o.x2+dx;it.y2=o.y2+dy;}else{it.x=o.x+dx;it.y=o.y+dy;}});
       break;}
@@ -1279,15 +1282,18 @@ window.addEventListener('keydown',e=>{
 function undo(){if(hi>0)restore(hi-1);}
 function redo(){if(hi<hist.length-1)restore(hi+1);}
 function delSel(){if(msel.size){doc.items=doc.items.filter(i=>!msel.has(i.id));msel.clear();sel=null;commit();return;}if(sel==null)return;doc.items=doc.items.filter(i=>i.id!==sel);sel=null;commit();}
+let rotPiv=null;   // Drehpunkt bleibt bei wiederholtem Drehen derselben Auswahl gleich (sonst wandert die Gruppe bei ungerader Spannweite)
+function grpPts(its){const pts=[];its.forEach(it=>{if('x1' in it)pts.push([it.x1,it.y1],[it.x2,it.y2]);else{pts.push([it.x,it.y]);if(it.t==='part')pinsOf(it).forEach(q=>pts.push(q));}});return pts;}
 function rotGroup(d){
   const its=[...msel].map(byId).filter(Boolean);if(!its.length)return;
-  const pts=[];its.forEach(it=>{if('x1' in it)pts.push([it.x1,it.y1],[it.x2,it.y2]);else{pts.push([it.x,it.y]);if(it.t==='part')pinsOf(it).forEach(q=>pts.push(q));}});
-  const xs=pts.map(q=>q[0]),ys=pts.map(q=>q[1]),cx=Math.round((Math.min(...xs)+Math.max(...xs))/2),cy=Math.round((Math.min(...ys)+Math.max(...ys))/2);
+  const key=[...msel].sort().join(',');let cx,cy;
+  if(rotPiv&&rotPiv.key===key&&rotPiv.snap===hist[hi]){cx=rotPiv.c[0];cy=rotPiv.c[1];}
+  else{const pts=grpPts(its),xs=pts.map(q=>q[0]),ys=pts.map(q=>q[1]);cx=Math.round((Math.min(...xs)+Math.max(...xs))/2);cy=Math.round((Math.min(...ys)+Math.max(...ys))/2);}
   const tr=(x,y)=>{const q=rot(x-cx,y-cy,d);return[cx+q[0],cy+q[1]];};
-  const neu=its.map(it=>{if('x1' in it){const a=tr(it.x1,it.y1),b=tr(it.x2,it.y2);return{it,a,b};}return{it,a:tr(it.x,it.y)};});
-  if(neu.some(n=>n.a[0]<0||n.a[1]<0||(n.b&&(n.b[0]<0||n.b[1]<0)))){toast('Drehen nicht möglich: Die Auswahl würde über den Rand der Platine hinausragen. Erst weiter in die Mitte schieben.');return;}
-  neu.forEach(n=>{const it=n.it;if(n.b){it.x1=n.a[0];it.y1=n.a[1];it.x2=n.b[0];it.y2=n.b[1];}else{it.x=n.a[0];it.y=n.a[1];if(it.t==='part')it.r=(it.r+d)&3;}});
-  commit();
+  const orig=its.map(it=>JSON.stringify(it));
+  its.forEach(it=>{if('x1' in it){const a=tr(it.x1,it.y1),b=tr(it.x2,it.y2);it.x1=a[0];it.y1=a[1];it.x2=b[0];it.y2=b[1];}else{const a=tr(it.x,it.y);it.x=a[0];it.y=a[1];if(it.t==='part')it.r=(it.r+d)&3;}});
+  if(grpPts(its).some(q=>q[0]<0||q[1]<0||q[0]>doc.cols-1||q[1]>doc.rows-1)){its.forEach((it,i)=>Object.assign(it,JSON.parse(orig[i])));toast('Drehen nicht möglich: Die Auswahl würde über den Rand der Platine hinausragen. Erst weiter in die Mitte schieben.');return;}
+  commit();rotPiv={key,c:[cx,cy],snap:hist[hi]};
 }
 function rotSel(d=1){
   if(tool==='select'&&msel.size){rotGroup(d&3);return;}
@@ -2073,6 +2079,7 @@ if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostnam
 <script src="simui.js"></script>
 <script src="lochbeispiele.js"></script>
 <script src="lochuhr.js"></script>
+<script src="netequiv.js"></script>
 <script src="lochtasks.js"></script>
 <script>
 window.LabTrainerAPI = {                                                               // Schnittstelle für den Trainer (trainer.js)

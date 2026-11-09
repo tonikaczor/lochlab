@@ -191,7 +191,7 @@ function resolvePin(part, name) {
   if (names.includes(name)) return name;
   const ci = names.find(n => n.toLowerCase() === name.toLowerCase()); if (ci) return ci;
   if (part.kind === 'ICX' || part.kind === 'CPU') {
-    const L = part.kind === 'CPU' ? (ICS() && ICS().CATALOG.cpu4.labels) : labelsOf(part);
+    const L = part.kind === 'CPU' && !/85/.test(S(part.value)) ? (ICS() && ICS().CATALOG.cpu4.labels) : labelsOf(part);
     if (L) {
       const hit = []; L.forEach((l, i) => { if (l.toLowerCase() === name.toLowerCase() && l !== 'NC') hit.push(i + 1); });
       if (hit.length === 1) return String(hit[0]);

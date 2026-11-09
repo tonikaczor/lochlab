@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tonfunk Lernfelder">
+<meta name="theme-color" content="#1b1f24">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Tonfunk Lernfelder</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schluessel lm4.theme wie die Startseite (nur der Umschalter schreibt ihn) */
+(function(){var K='lm4.theme',de=document.documentElement;
+function get(){try{var v=localStorage.getItem(K);return v==='light'||v==='dark'?v:''}catch(e){return ''}}
+function set(m){if(m)de.setAttribute('data-theme',m);else de.removeAttribute('data-theme');var b=document.getElementById('themeBtn');if(b)b.setAttribute('aria-label','Darstellung: '+(m==='light'?'hell':m==='dark'?'dunkel':'automatisch nach System')+' (antippen zum Wechseln)');}
+set(get());document.addEventListener('DOMContentLoaded',function(){set(get());});
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#themeBtn');if(!b)return;var c=get(),n=c===''?'light':c==='light'?'dark':'';try{if(n)localStorage.setItem(K,n);else localStorage.removeItem(K);}catch(x){}set(n);});
+})();</script>
+<style>
+:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--line:#38424d;--fg:#e8ecf0;--mute:#9aa6b2;--accent:#5fb0ff;--accent-bg:#1a6fd4;--accent-ink:#fff;--ok:#4fd58a;--warn:#ffd166;--danger:#ff7a7a;color-scheme:dark light}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e}}
+:root[data-theme=light]{--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+a{color:var(--accent)}
+.wrap{max-width:980px;margin:0 auto;padding:14px 16px 40px}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
+.btn.pri{background:var(--accent-bg);border-color:var(--accent-bg);color:var(--accent-ink)}
+.btn[disabled]{opacity:.55;cursor:default}
+h1{margin:4px 0 2px;font-size:26px}h2{margin:0 0 6px;font-size:20px}h3{margin:14px 0 6px;font-size:16px}
+.lead{color:var(--mute);margin:0 0 14px;font-size:15px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch}
+.tabs button{flex:none;min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--accent-bg);border-color:var(--accent-bg);color:var(--accent-ink)}
+.tabs small{font-weight:400;opacity:.8;margin-left:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px;margin:6px 0 14px}
+.lfc{display:flex;flex-direction:column;gap:6px;text-align:left;width:100%;min-height:44px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;cursor:pointer}
+.lfc[aria-pressed=true]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.k{display:inline-block;min-width:44px;text-align:center;padding:1px 9px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:700;margin-right:8px}
+.lfc b{font-size:15px;line-height:1.3}
+.bar{height:8px;border-radius:4px;background:var(--panel2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:4px}
+.meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{display:inline-block;padding:2px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
+.chip.ok{border-color:var(--ok);color:var(--ok)}.chip.warn{border-color:var(--warn);color:var(--warn)}.chip.neu{border-color:var(--accent);color:var(--accent)}
+.seg{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.seg button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.seg button[aria-pressed=true],.seg button[aria-selected=true]{background:var(--accent-bg);border-color:var(--accent-bg);color:var(--accent-ink)}
+.task{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 4px;border-bottom:1px solid var(--line)}
+.task:last-child{border-bottom:0}
+.task .tt{flex:1;min-width:0}.task .tt a{color:var(--fg);text-decoration:none;font-weight:600;display:block;padding:6px 0}
+.task .tt small{color:var(--mute);display:block}
+.st{flex:none;min-width:74px;text-align:center;padding:3px 8px;border-radius:10px;font-size:13px;font-weight:700;border:1px solid var(--line);background:var(--panel2)}
+.st.ok{color:var(--ok);border-color:var(--ok)}.st.mid{color:var(--warn);border-color:var(--warn)}
+.labh{margin:14px 0 2px;font-size:14px;color:var(--mute);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.note{margin:10px 0;padding:9px 12px;border-radius:8px;background:rgba(255,179,64,.1);border:1px solid rgba(255,179,64,.45);font-size:14px}
+.warnbox{margin:10px 0;padding:10px 12px;border-radius:8px;background:rgba(255,122,122,.1);border:1px solid var(--danger);font-size:15px}
+.pt-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:0;background:var(--bg);padding:8px 0;z-index:5;border-bottom:1px solid var(--line)}
+.timer{font:700 22px/1 ui-monospace,Menlo,Consolas,monospace}.timer.low{color:var(--danger)}
+.dots{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}
+.dots button{min-width:44px;min-height:44px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-weight:700;cursor:pointer}
+.dots button.done{background:var(--panel2);border-color:var(--accent)}.dots button[aria-current=true]{background:var(--accent-bg);border-color:var(--accent-bg);color:var(--accent-ink)}
+.q{font-size:18px;line-height:1.45;margin:8px 0 12px;white-space:pre-wrap}
+.opt{display:flex;align-items:center;gap:12px;min-height:52px;padding:8px 12px;margin:0 0 8px;border:1px solid var(--line);border-radius:12px;background:var(--panel);cursor:pointer}
+.opt input{width:22px;height:22px;flex:none;accent-color:var(--accent)}
+.opt.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.numin{width:100%;max-width:260px;min-height:48px;font:inherit;font-size:18px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.score{font-size:34px;font-weight:800;margin:4px 0}
+.res{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0 0 8px;background:var(--panel)}
+.res.r{border-color:var(--ok)}.res.f{border-color:var(--danger)}
+.res b.r{color:var(--ok)}.res b.f{color:var(--danger)}
+table{border-collapse:collapse;width:100%;font-size:14px}td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+details>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600}
+.sr{position:absolute;left:-9999px}
+#gate{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+#gate form{width:100%;max-width:340px;text-align:center}
+#gate img{width:96px;height:auto;margin-bottom:10px}
+#gate h1{margin:0 0 4px;font-size:22px}
+#gate p{margin:0 0 18px;color:var(--mute)}
+#gate input{text-align:center;margin-bottom:12px;width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+#gate .btn{width:100%;height:46px;border-radius:12px;background:var(--accent-bg);border:0;color:#fff;font:inherit;font-weight:600}
+#gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
+@media print{.noprint{display:none!important}body{background:#fff;color:#000}.card,.res,.lfc{background:#fff;border-color:#999}}
+</style>
+<link rel="stylesheet" href="design.css">
+</head>
+<body>
+<!--GATE-->
+<script src="gate.js" data-title="Tonfunk Lernfelder"></script>
+<!--/GATE-->
+<div class="wrap">
+  <div class="top noprint"><a class="btn" href="index.html">Startseite</a></div>
+  <h1>Lernfelder</h1>
+  <p class="lead">Die Themen deiner Berufsschule (Elektroniker/in für Geräte und Systeme), geordnet nach Lehrjahr. Zu jedem Lernfeld findest du die passenden Aufgaben aus den Labs mit deinem Stand und einen Probetest mit Zeitlimit und Note nach IHK-Schlüssel.</p>
+  <div id="lfApp" aria-live="polite"><p class="lead">Lade Lernfelder …</p></div>
+</div>
+<script src="ver.js"></script>
+<script src="aufgaben.js"></script>
+<script src="lernfelder.js"></script>
+<script src="lernfelder-ui.js"></script>
+<script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+<script src="urheber.js"></script>
+<script src="design.js"></script>
+</body>
+</html>

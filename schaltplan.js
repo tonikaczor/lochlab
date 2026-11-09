@@ -2256,6 +2256,23 @@ function netsOfDoc(d) {
 }
 function schNetCheck(makeFn, opt) {   // opt.sep = Anschlüsse, die zusammen getrennt von der übrigen Masse liegen dürfen; opt.optional = Teile-Nummern, die fehlen dürfen
   const sol = buildExample({ name: 'Lösung', make: makeFn }), S = netsOfDoc(sol), M = netsOfDoc({ parts: sch.parts, wires: sch.wires });
+  const NE = window.NetEquiv;
+  if (NE && NE.compare) {
+    // Elektrische Gleichwertigkeit statt exakter Musterverdrahtung (netequiv.js): symmetrische Anschlüsse dürfen getauscht sein, Reihenketten in
+    // beliebiger Reihenfolge liegen, gleiche Bauteile die Rollen tauschen; fehlende Verbindung, Kurzschluss, Verpolung, falsche IC-Pins werden benannt.
+    // Alle Masse-Symbole zählen als EIN Anschluss "Masse" (es dürfen beliebig viele sein, auch die laut opt.optional entbehrlichen).
+    const toNL = (ps, N) => {
+      const g = new Set(ps.filter(p => p.k === 'GND').map(p => p.id));
+      const parts = ps.filter(p => p.k !== 'GND' && !INSTR[p.k]).map(p => ({ id: p.id, k: p.k, v: p.v, vr: p.vr, n: p.n, npins: pinsOf(p).length, label: p.l }));
+      if (g.size) parts.push({ id: 0, k: 'GND', v: '', npins: 1, label: 'Masse' });
+      const nets = N.list.map(ks => { const o = []; ks.forEach(k => { const kk = g.has(+k.split('.')[0]) ? '0.0' : k; if (!o.includes(kk)) o.push(kk); }); return o; });
+      return { parts, nets };
+    };
+    const pn = id => { if (id === 0) return 'Masse'; const q = sch.parts.find(x => x.id === id) || sol.parts.find(x => x.id === id); return q ? (q.l || KINDS[q.k].name) : 'Bauteil ' + id; };
+    const r = NE.compare(toNL(sol.parts, S), toNL(sch.parts, M), { model: NE.schModel, sig: NE.schSig, sepOk: opt && opt.sep, optional: opt && opt.optional, pinName: (id, pin) => (id === 0 ? 'Masse' : pn(id) + ' Pin ' + (pin + 1)), partName: pn });
+    return r.lines.map(l => RES(l.ok, l.text));
+  }
+  // Rückfall ohne netequiv.js: strenger Vergleich Netz für Netz
   const nm = key => { const [id, pin] = key.split('.'), p = sol.parts.find(q => q.id === +id); return p ? (p.l || KINDS[p.k].name) + ' Pin ' + (+pin + 1) : key; }, lt = ks => ks.slice(0, 3).map(nm).join(', ') + (ks.length > 3 ? ' …' : '');
   const where = new Map(); M.list.forEach((ks, ni) => ks.forEach(k => where.set(k, ni)));
   const out = [], hit = new Map();

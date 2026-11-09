@@ -584,7 +584,11 @@ function createSim(circ) {
           case 'D': {
             const nvt = e.nn * VT, vc = vcrit(e.is, nvt);
             let vj = vd(e.a, e.b);
-            const lim = pnjlim(vj, e.vj, nvt, vc);
+            let lim = pnjlim(vj, e.vj, nvt, vc);
+            if (e.vz) {   // Z-Diode: den Durchbruch in Sperrrichtung genauso dämpfen wie den Flussbereich, sonst springt die Iteration
+              const nz = 1.2 * VT, vz2 = e.vz - 0.45, xn = -vj - vz2;   // (exp läuft an die Klammer, die Matrix wird unlösbar und die Z-Diode bleibt scheinbar zu)
+              if (xn > 0) { const xl = pnjlim(xn, -e.vj - vz2, nz, vcrit(1e-9, nz)); if (xl !== xn) lim = -(xl + vz2); }
+            }
             if (lim !== vj) limited = true;
             vj = lim; e.vj = vj;
             const ev = diodeEval(e, vj);
