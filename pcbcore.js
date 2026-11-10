@@ -268,6 +268,23 @@
       [tp(1, -1.25, 0, 1.5, 0.8, true), tp(2, 1.25, 0, 1.5, 0.8)], [sCirc(0, 0, 2.6)], { bodyH: 11, body: { w: 5, h: 5 } });
     addFP('C_RADIAL_5', 'Elko radial 5', 'tht', 'Radialkondensator, Rastermaß 5 mm (10 mm Durchmesser), Pin 1 = Plus',
       [tp(1, -2.5, 0, 2, 1, true), tp(2, 2.5, 0, 2, 1)], [sCirc(0, 0, 5.2)], { bodyH: 16, body: { w: 10, h: 10 } });
+    /* Zusätzliche reale Baugrößen (Lehrwerte, vor der Fertigung am Datenblatt prüfen). Bestehende Footprints bleiben unverändert. */
+    addFP('R_AXIAL_12.7', 'Widerstand axial 12,7 (0,5 W)', 'tht', 'Bedrahteter Widerstand 0,5 W (Bauform 0309, Körper etwa 9 x 3,2 mm), Rastermaß 12,7 mm liegend',
+      [tp(1, -6.35, 0, 2, 0.9, true), tp(2, 6.35, 0, 2, 0.9)], [sRect(-4.5, -1.6, 9, 3.2)], { bodyH: 3.2, body: { w: 9, h: 3.2 } });
+    addFP('R_AXIAL_15', 'Widerstand axial 15,24 (1 W)', 'tht', 'Bedrahteter Widerstand 1 W (Körper etwa 11,5 x 4,5 mm), Rastermaß 15,24 mm liegend',
+      [tp(1, -7.62, 0, 2.2, 1, true), tp(2, 7.62, 0, 2.2, 1)], [sRect(-5.75, -2.25, 11.5, 4.5)], { bodyH: 4.5, body: { w: 11.5, h: 4.5 } });
+    addFP('R_AXIAL_20', 'Widerstand axial 20,32 (2 W)', 'tht', 'Bedrahteter Widerstand 2 W (Körper etwa 15 x 5,5 mm), Rastermaß 20,32 mm liegend',
+      [tp(1, -10.16, 0, 2.4, 1.1, true), tp(2, 10.16, 0, 2.4, 1.1)], [sRect(-7.5, -2.75, 15, 5.5)], { bodyH: 5.5, body: { w: 15, h: 5.5 } });
+    addFP('C_RADIAL_3.5', 'Elko radial 3,5', 'tht', 'Radialkondensator, Rastermaß 3,5 mm (8 mm Durchmesser), Pin 1 = Plus',
+      [tp(1, -1.75, 0, 1.8, 0.9, true), tp(2, 1.75, 0, 1.8, 0.9)], [sCirc(0, 0, 4.1)], { bodyH: 11.5, body: { w: 8, h: 8 } });
+    addFP('C_RADIAL_7.5', 'Elko radial 7,5', 'tht', 'Radialkondensator, Rastermaß 7,5 mm (16 mm Durchmesser), Pin 1 = Plus',
+      [tp(1, -3.75, 0, 2.4, 1.1, true), tp(2, 3.75, 0, 2.4, 1.1)], [sCirc(0, 0, 8.2)], { bodyH: 25, body: { w: 16, h: 16 } });
+    addFP('C_CER_5', 'Keramik radial 5,08', 'tht', 'Keramik-Vielschichtkondensator radial, Rastermaß 5,08 mm, ungepolt, Körper etwa 5 x 2,5 mm',
+      [tp(1, -2.54, 0, 1.8, 0.8), tp(2, 2.54, 0, 1.8, 0.8)], [sRect(-2.5, -1.25, 5, 2.5)], { bodyH: 5.5, body: { w: 5, h: 2.5 } });
+    addFP('C_FILM_5', 'Folie Box 5', 'tht', 'Folienkondensator (Box), Rastermaß 5 mm, ungepolt, Körper etwa 7,2 x 3,5 mm',
+      [tp(1, -2.5, 0, 1.8, 0.8), tp(2, 2.5, 0, 1.8, 0.8)], [sRect(-3.6, -1.75, 7.2, 3.5)], { bodyH: 7.5, body: { w: 7.2, h: 3.5 } });
+    addFP('C_FILM_10', 'Folie Box 10', 'tht', 'Folienkondensator (Box), Rastermaß 10 mm, ungepolt, Körper etwa 13 x 5 mm',
+      [tp(1, -5, 0, 2, 1), tp(2, 5, 0, 2, 1)], [sRect(-6.5, -2.5, 13, 5)], { bodyH: 11.5, body: { w: 13, h: 5 } });
     addFP('LED_5MM', 'LED 5 mm', 'tht', 'LED 5 mm bedrahtet, Pin 1 = Kathode (flache Seite), Pin 2 = Anode',
       [tp(1, -1.27, 0, 1.8, 1, true), tp(2, 1.27, 0, 1.8, 1)], [sCirc(0, 0, 2.9)], { bodyH: 8.6, body: { w: 5.8, h: 5.8 } });
     [8, 14, 16].forEach(function (n) {

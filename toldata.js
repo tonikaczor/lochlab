@@ -196,7 +196,52 @@
     { id: 'tol33', cat: 'Messmittel wählen', level: 3, title: 'Passungsmaß prüfen', text: 'Eine Welle Ø20 h6 hat eine Toleranz von 13 µm. Welches Messmittel erfüllt die Faustregel (Ablesung höchstens 1/10 der Toleranz)?',
       ask: choice(devices.slice(1).map(d => d.name), 4), solve: () => ({ correct: 4 }),
       expl: 'Erlaubte Ablesung: 13 µm / 10 = 1,3 µm = 0,0013 mm. Nur der Feinzeiger mit 0,001 mm Skalenwert erfüllt das. Bügelmessschraube und Messschieber sind für so kleine Toleranzen zu grob.',
-      tips: ['Rechne die Toleranz in mm um: 13 µm = 0,013 mm.', 'Ein Zehntel davon ist rund 0,0013 mm. Welches Messmittel liest so fein ab?'] }
+      tips: ['Rechne die Toleranz in mm um: 13 µm = 0,013 mm.', 'Ein Zehntel davon ist rund 0,0013 mm. Welches Messmittel liest so fein ab?'] },
+    /* ----- Neue Aufgaben tol34 bis tol44 (Industriemechaniker: Prüfen und Qualitätssicherung). PRUEFEN Pn: Fragen an den Ausbilder in quelle/tol/PRUEFEN.md ----- */
+    { id: 'tol34', cat: 'Messabweichung und Prüfmittel', level: 1, title: 'Messabweichung bestimmen', text: 'Ein Prüfnormal (Endmaß) hat das Nennmaß 30,000 mm. Eine Bügelmessschraube zeigt am Endmaß 29,992 mm an. Wie groß ist die Messabweichung (Anzeige minus richtiger Wert)? Gib auch das Vorzeichen an.',
+      ask: num('mm', 'Messabweichung'), solve: () => ({ value: Math.round((29.992 - 30.0) * 1000) / 1000, tol: 0.0005 }),
+      expl: 'Messabweichung = Anzeige − richtiger Wert = 29,992 mm − 30,000 mm = −0,008 mm. Das Minuszeichen sagt: Das Messmittel zeigt 8 µm zu wenig an.',
+      tips: ['Das Endmaß liefert den richtigen Wert. Die Messabweichung ist der Unterschied zur Anzeige.', 'Ziehe den richtigen Wert von der Anzeige ab und achte auf das Vorzeichen.'] },
+    { id: 'tol35', cat: 'Messabweichung und Prüfmittel', level: 2, title: 'Berichtigtes Messergebnis', text: 'Aus dem Kalibrierschein eines Messschiebers ist bekannt: Er zeigt 0,04 mm zu viel an (Messabweichung +0,04 mm). Du liest an einer Welle 48,36 mm ab. Welchen Wert hat die Welle tatsächlich (berichtigtes Messergebnis)?',
+      ask: num('mm', 'Berichtigter Wert'), solve: () => ({ value: Math.round((48.36 - 0.04) * 100) / 100, tol: 0.005 }),
+      expl: 'Berichtigter Wert = Anzeige − Messabweichung = 48,36 mm − 0,04 mm = 48,32 mm. Eine bekannte Abweichung nach oben wird vom Messwert abgezogen.',
+      tips: ['Das Messmittel zeigt zu viel an. Wie musst du den abgelesenen Wert deshalb verändern?', 'Berichtigter Wert = Anzeige minus Messabweichung.'] },
+    { id: 'tol36', cat: 'Messabweichung und Prüfmittel', level: 2, title: 'Systematisch oder zufällig?', text: 'Ein Messschieber zeigt bei geschlossenen Backen schon 0,05 mm an. Alle Messungen mit ihm fallen deshalb um denselben Betrag zu groß aus. Um welche Art von Messabweichung handelt es sich?',
+      ask: choice(['Eine zufällige Abweichung, die mal größer und mal kleiner ausfällt', 'Eine grobe Abweichung durch einen einmaligen Ablesefehler', 'Eine systematische Abweichung, die jede Messung gleich verfälscht', 'Eine Fertigungstoleranz, die zum Werkstück gehört'], 2), solve: () => ({ correct: 2 }),
+      expl: 'Systematische Messabweichungen wirken bei jeder Messung in gleicher Richtung und Größe, hier der verstellte Nullpunkt. Man kann sie bestimmen und herausrechnen oder das Messmittel neu einstellen. Zufällige Abweichungen streuen dagegen unvorhersehbar um den Mittelwert.',
+      tips: ['Überlege, ob die Abweichung bei jeder Messung gleich ist oder schwankt.', 'Gleich bleibende, wiederholbare Abweichungen nennt man systematisch.'] },
+    { id: 'tol37', cat: 'Messabweichung und Prüfmittel', level: 2, title: 'Mittelwert mehrerer Messungen', text: 'Ein Bolzen wird fünfmal an derselben Stelle gemessen: 12,43 mm, 12,45 mm, 12,44 mm, 12,46 mm und 12,42 mm. Wie groß ist der Mittelwert der Messreihe?',
+      ask: num('mm', 'Mittelwert'), solve: () => ({ value: Math.round((12.43 + 12.45 + 12.44 + 12.46 + 12.42) / 5 * 1000) / 1000, tol: 0.005 }),
+      expl: 'Summe: 12,43 + 12,45 + 12,44 + 12,46 + 12,42 = 62,20 mm. Mittelwert = 62,20 mm : 5 = 12,44 mm. Der Mittelwert verringert den Einfluss zufälliger Abweichungen einzelner Messungen.',
+      tips: ['Der Mittelwert ist die Summe aller Werte geteilt durch ihre Anzahl.', 'Es sind fünf Messwerte, also durch 5 teilen.'] },
+    { id: 'tol38', cat: 'Messabweichung und Prüfmittel', level: 1, title: 'Prüfmittelüberwachung', text: 'In vielen Betrieben werden Messschieber, Messschrauben und Lehren in festen Abständen kontrolliert und mit einer Prüfnummer oder Plakette gekennzeichnet. Wozu dient diese Prüfmittelüberwachung?',
+      ask: choice(['Die Plakette macht das Prüfmittel genauer, als es gebaut wurde', 'Es ist nur für die Inventarliste der Buchhaltung nötig', 'Es ist belegt, dass die Abweichung des Prüfmittels bekannt und klein genug ist', 'Die Prüfmittel dürfen sonst nicht in der Werkstatt liegen'], 2), solve: () => ({ correct: 2 }),
+      expl: 'Prüfmittel verschleißen, werden beschädigt oder verstellen sich. Die regelmäßige Kontrolle gegen ein Normal zeigt, ob die Abweichung noch klein genug ist, und dokumentiert das. Abweichende Prüfmittel werden eingestellt, repariert oder ausgesondert.',
+      tips: ['Überlege, was mit einem Messschieber passiert, der jahrelang benutzt wird.', 'Es geht um den Nachweis, dass man dem Messergebnis vertrauen kann.'] },
+    { id: 'tol39', cat: 'Lehren und Oberfläche', level: 1, title: 'Grenzlehrdorn benutzen', text: 'Eine Bohrung wird mit einem Grenzlehrdorn geprüft. Er hat eine Gutseite und eine Ausschussseite. Wann ist die Bohrung in Ordnung?',
+      ask: choice(['Beide Seiten des Dorns gehen in die Bohrung hinein', 'Die Gutseite geht hinein, die Ausschussseite geht nicht hinein', 'Die Gutseite geht nicht hinein, die Ausschussseite geht hinein', 'Keine der beiden Seiten geht in die Bohrung hinein'], 1), solve: () => ({ correct: 1 }),
+      expl: 'Die Gutseite hat das Mindestmaß der Bohrung und muss sich einführen lassen, sonst ist die Bohrung zu klein. Die Ausschussseite hat das Höchstmaß und darf nicht hinein, sonst ist die Bohrung zu groß. Nur wenn beides stimmt, liegt das Maß innerhalb der Toleranz.',
+      tips: ['Die Gutseite steht für die kleinste erlaubte Bohrung, die Ausschussseite für die größte erlaubte.', 'Eine gute Bohrung nimmt die Gutseite auf und lässt die Ausschussseite draußen.'] },
+    { id: 'tol40', cat: 'Lehren und Oberfläche', level: 2, title: 'Maß der Ausschussseite', text: 'Eine Bohrung Ø16 H7 wird mit einem Grenzlehrdorn geprüft. Die Gutseite hat das Mindestmaß, die Ausschussseite das Höchstmaß der Bohrung (Fertigungstoleranzen der Lehre bleiben unberücksichtigt). Der Toleranzgrad IT7 beträgt bei 16 mm Nennmaß 18 µm. Welches Maß hat die Ausschussseite des Dorns?',
+      ask: num('mm', 'Maß der Ausschussseite'), solve: () => ({ value: 16 + ISO.IT[7][1] / 1000, tol: 0.0005 }),
+      expl: 'Bei H7 liegt das untere Abmaß bei 0 und das obere bei +18 µm. Das Mindestmaß ist 16,000 mm (Gutseite), das Höchstmaß 16,018 mm. Die Ausschussseite des Dorns hat also 16,018 mm.',
+      tips: ['H bedeutet: Das untere Abmaß ist null, das obere Abmaß ist gleich dem Toleranzgrad.', 'Höchstmaß = Nennmaß + 18 µm = Nennmaß + 0,018 mm.'] },
+    { id: 'tol41', cat: 'Lehren und Oberfläche', level: 2, title: 'Rautiefe auf der Zeichnung', text: 'Auf einer Zeichnung steht für eine Gleitfläche die Angabe „Rz 6,3“. Was sagt dieser Wert aus?',
+      ask: choice(['Der Höhenunterschied zwischen Profilspitzen und Profiltälern beträgt höchstens etwa 6,3 µm', 'Die Fläche muss in einer Tiefe von 6,3 mm abgetragen werden', 'Die Randschicht der Fläche hat eine Härte von 6,3 HRC', 'Der Mittelwert der Fläche liegt bei 6,3 mm Höhe'], 0), solve: () => ({ correct: 0 }),
+      expl: 'Rz ist die Rautiefe in µm: Der größte Höhenunterschied zwischen Spitzen und Tälern des Rauheitsprofils. Ra dagegen ist der Mittenrauwert, der Mittelwert aller Abweichungen vom Mittellinienprofil. Rz reagiert stärker auf einzelne Riefen und Spitzen als Ra.',
+      tips: ['Rauheit wird in der Einheit µm angegeben, nicht in mm.', 'Das Z in Rz steht für die Höhe zwischen höchster Spitze und tiefstem Tal.'] },
+    { id: 'tol42', cat: 'Lehren und Oberfläche', level: 3, title: 'Rauheit und Fertigungsverfahren', text: 'Eine Passfläche soll eine Rauheit von Ra 0,4 µm haben. Mit welchem Verfahren ist das üblicherweise zu erreichen (Richtwert)?',
+      ask: choice(['Schruppen auf der Drehmaschine', 'Sägen mit der Bandsäge', 'Bohren mit dem Spiralbohrer', 'Feinschleifen auf der Schleifmaschine'], 3), solve: () => ({ correct: 3 }),
+      expl: 'Schleifen erreicht Rauheiten im Bereich von etwa Ra 0,2 bis 1,6 µm. Schruppen, Sägen und Bohren hinterlassen deutlich gröbere Flächen (mehrere µm bis zu einigen zehn µm). Je feiner die geforderte Rauheit, desto aufwändiger und teurer ist die Fertigung.',
+      tips: ['Ra 0,4 µm ist eine sehr glatte Fläche. Welches Verfahren arbeitet mit vielen winzigen Schneiden?', 'Schruppen, Sägen und Bohren sind Verfahren für das grobe Abtragen von Material.'] },
+    { id: 'tol43', cat: 'Form- und Lagetoleranz', level: 2, title: 'Zeichen im Toleranzrahmen', text: 'Im Toleranzrahmen einer Zeichnung steht das Zeichen ⊥ (zwei Linien im rechten Winkel), dahinter 0,05 und der Bezugsbuchstabe A. Welche Eigenschaft wird damit toleriert?',
+      ask: choice(['Die Parallelität zur Bezugsfläche A', 'Die Ebenheit der Fläche A', 'Die Rechtwinkligkeit zur Bezugsfläche A', 'Die Rundheit einer Welle'], 2), solve: () => ({ correct: 2 }),
+      expl: 'Das Zeichen ⊥ steht für die Rechtwinkligkeit. Die tolerierte Fläche oder Achse muss zwischen zwei Ebenen im Abstand 0,05 mm liegen, die genau senkrecht auf der Bezugsfläche A stehen. Der Buchstabe A zeigt die Bezugsfläche, die Zahl die Breite der Toleranzzone.',
+      tips: ['Das Zeichen sieht aus wie zwei Linien, die senkrecht aufeinander stehen.', 'Der Buchstabe im Rahmen nennt die Fläche, auf die sich die Toleranz bezieht (Bezug).'] },
+    { id: 'tol44', cat: 'Form- und Lagetoleranz', level: 3, title: 'Parallelität prüfen', text: 'Eine Fläche soll nach Zeichnung parallel zur Auflagefläche sein, die Toleranz beträgt 0,04 mm. Du verfährst eine Messuhr über die Fläche. Der kleinste Wert ist −0,015 mm, der größte +0,035 mm (jeweils gegen den Startwert null). Ist die Toleranz eingehalten?',
+      ask: choice(['Ja, denn der größte Ausschlag von +0,035 mm bleibt unter 0,04 mm', 'Nein, die Anzeige schwankt insgesamt um 0,05 mm und damit mehr als erlaubt', 'Ja, denn der Mittelwert der Anzeige liegt bei fast null', 'Nein, denn die Anzeige zeigt auch negative Werte'], 1), solve: () => ({ correct: 1 }),
+      expl: 'Bei der Parallelität zählt der gesamte Anzeigeunterschied (Spanne) über die Fläche: +0,035 mm − (−0,015 mm) = 0,050 mm. Erlaubt sind 0,04 mm. Die Spanne ist größer, die Fläche ist nicht in Toleranz. Einzelne Werte oder der Mittelwert sagen darüber nichts.',
+      tips: ['Die Toleranzzone ist der Abstand zwischen zwei parallelen Ebenen. Die ganze Fläche muss dazwischen liegen.', 'Bilde die Differenz zwischen dem größten und dem kleinsten Anzeigewert.'] }
   ];
 
   /* Beispiele (Reiter "Beispiele", Aufruf ?bsp): fertige Einstellungen, die "Laden" im passenden Reiter übernimmt.
@@ -211,7 +256,7 @@
   ];
 
   root.TOL_ISO = ISO;
-  root.TOL_DATA = { beispiele, tasks, uses, useOptions, devices, cats: ['Ablesen', 'Toleranzen', 'Passungen', 'Messmittel wählen'] };
+  root.TOL_DATA = { beispiele, tasks, uses, useOptions, devices, cats: ['Ablesen', 'Toleranzen', 'Passungen', 'Messmittel wählen', 'Messabweichung und Prüfmittel', 'Lehren und Oberfläche', 'Form- und Lagetoleranz'] };
   root.TOL_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { ISO, DATA: root.TOL_DATA, TASKS: root.TOL_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

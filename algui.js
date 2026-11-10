@@ -36,7 +36,7 @@
   const fmt = v => C.fmt(v);
 
   /* ============================================================ Zustand */
-  const TABS = [['ed', '▶️', 'Editor'], ['draw', '📐', 'PAP & Struktogramm'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['bsp', '📖', 'Beispiele'], ['help', '📘', 'Hilfe']];
+  const TABS = [['ed', '▶️', 'Editor'], ['draw', '📐', 'PAP & Struktogramm'], ['viz', '📊', 'Sortieren & Suchen'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['bsp', '📖', 'Beispiele'], ['help', '📘', 'Hilfe']];
   const DEF_SRC = D.examples[0].src;
   const S = {
     tab: lsGet('tab', 'ed'),
@@ -57,6 +57,8 @@
   const seg = (attr, opts, cur) => `<div class="seg">${opts.map(o => `<button ${attr}="${esc(o[0])}" class="${String(cur) === String(o[0]) ? 'on' : ''}">${esc(o[1])}</button>`).join('')}</div>`;
   const parseInputs = s => String(s || '').split(/[\s;]+/).filter(Boolean);
   const fig = (kind, src, blank, hi) => { const svg = kind === 'pap' ? C.drawPap(src, { blank, hi }) : C.drawNsd(src, { blank, hi }); return svg ? `<div class="inst fg"><div class="tw">${svg}</div></div>` : ''; };
+  /* Visualisierung (algviz.js); ohne die Datei bleibt alles wie vorher */
+  const VZ = (k, a, b) => { try { return root.ALG_VIZ ? root.ALG_VIZ[k](a, b) : ''; } catch (e) { return ''; } };
   /* Programmtext mit Zeilennummern; o.on = aktuelle Zeile, o.err = Fehlerzeile, o.pick = Zeilen sind antippbar (Index ab 0), o.sel/o.ok/o.bad = Markierungen (Index ab 0) */
   function codeView(src, o) {
     o = o || {}; const ls = String(src).split('\n');
@@ -118,7 +120,7 @@
     } else h += `<div class="rdout">Vor dem ersten Schritt. Tippe auf „⏭ Einzelschritt“.</div>`;
     h += `<div class="rdout ${last && res.finished ? 'ok' : ''}"><span class="st">Ausgabe${last && res.finished ? ' (Programm beendet)' : ''}</span>${outs.length ? outs.map(esc).join('<br>') : '–'}</div>`;
     if (last && res.error) h += note(errText(res), 'bad');
-    el.innerHTML = h + `<div class="card pl"><h4>Schreibtischtest</h4>${deskTable(res, R.idx, 300)}</div>`;
+    el.innerHTML = h + VZ('trace', res, R.idx) + `<div class="card pl"><h4>Schreibtischtest</h4>${deskTable(res, R.idx, 300)}</div>`;
     const c = $('#dtCur'); if (c && c.scrollIntoView && R.idx > 0) try { c.scrollIntoView({ block: 'nearest' }); } catch (e) {}
   }
   $('#edView').addEventListener('input', e => {
@@ -162,7 +164,7 @@
     let h = '';
     if (S.dr.view !== 'nsd') h += `<div class="card pl"><h4>Programmablaufplan (PAP)</h4><div class="tw">${C.drawPap(src)}</div></div>`;
     if (S.dr.view !== 'pap') h += `<div class="card pl"><h4>Struktogramm (Nassi-Shneiderman)</h4><div class="tw">${C.drawNsd(src)}</div></div>`;
-    el.innerHTML = h + '<p class="hint2">Die Zeichnung entsteht direkt aus dem Pseudocode. Rechtecke sind Zuweisungen, Parallelogramme Ein- und Ausgaben, Rauten Entscheidungen.</p>';
+    el.innerHTML = h + VZ('legend') + '<p class="hint2">Die Zeichnung entsteht direkt aus dem Pseudocode. Rechtecke sind Zuweisungen, Parallelogramme Ein- und Ausgaben, Rauten Entscheidungen.</p>';
   }
   $('#drawView').addEventListener('input', e => { if (e.target.dataset.d === 'src') { S.dr.src = e.target.value; lsSet('dr', S.dr); renderDrawOut(); } });
   $('#drawView').addEventListener('click', e => {
@@ -327,6 +329,7 @@
       return `<div class="card pl" id="ex_${esc(e.id)}"><h4>Beispiel</h4><div class="big">${esc(e.title)}</div><p style="margin:4px 0 8px">${esc(e.text)}</p>${e.inputs ? `<p class="hint2" style="margin:0 0 4px">Eingaben: <b>${esc(e.inputs.join(', '))}</b></p>` : ''}${codeView(e.src)}
         <div class="rdout ${r.error ? 'warn' : 'ok'}"><span class="st">Ausgabe</span>${r.out.length ? r.out.map(esc).join('<br>') : '–'}${r.error ? '<br><b>' + esc(errText(r)) + '</b>' : ''}</div>
         <details><summary>Schreibtischtest anzeigen (${r.steps} Schritte)</summary>${deskTable(r, -1, 60)}</details>
+        ${VZ('trace', r, -1) ? `<details><summary>Ablauf als Bild</summary>${VZ('trace', r, -1)}</details>` : ''}
         <div class="btns"><button class="btn pri" data-ex="${esc(e.id)}" data-exa="ed">▶ Im Editor öffnen</button><button class="btn" data-ex="${esc(e.id)}" data-exa="draw">📐 Zeichnen</button></div></div>`;
     }).join('');
   }
@@ -366,7 +369,7 @@
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
-  const RENDER = { ed: renderEd, draw: renderDraw, tasks: renderTasks, rt: renderTrainer, bsp: renderBsp, help: renderHelp };
+  const RENDER = { ed: renderEd, draw: renderDraw, viz: () => { const v = $('#vizView'); if (v && root.ALG_VIZ) root.ALG_VIZ.mount(v); }, tasks: renderTasks, rt: renderTrainer, bsp: renderBsp, help: renderHelp };
   function buildTabs() {
     $('#tabs').innerHTML = TABS.map(([k, i, n]) => `<button class="tab${S.tab === k ? ' on' : ''}" data-t="${k}" role="tab" aria-selected="${S.tab === k}">${i} ${n}${k === 'tasks' ? '<span class="bd" id="tkBd"></span>' : ''}</button>`).join('');
     updateBadge();
@@ -395,7 +398,7 @@
   $('#bTasks').onclick = () => setTab('tasks'); $('#bHelp').onclick = () => setTab('help'); $('#bExam').onclick = () => setExam(!exam());
   $('#title').onclick = () => setTab('ed');
   $('#bMenu').onclick = () => {
-    const rows = [['ed', 'Editor', 'Pseudocode ausführen, Einzelschritt, Schreibtischtest'], ['draw', 'PAP und Struktogramm', 'Zeichnung aus dem Pseudocode'], ['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Aufgaben mit Serien-Zähler'], ['bsp', 'Beispiele', 'Algorithmen fertig durchgerechnet'], ['help', 'Hilfe', 'Pseudocode, Symbole, Verfahren'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Serien'], ['home', 'Startseite', 'Zurück zur Übersicht']];
+    const rows = [['ed', 'Editor', 'Pseudocode ausführen, Einzelschritt, Schreibtischtest'], ['draw', 'PAP und Struktogramm', 'Zeichnung aus dem Pseudocode'], ['viz', 'Sortieren und Suchen', 'Bubble-, Selection-, Insertion-Sort, lineare und binäre Suche als Balken'], ['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Aufgaben mit Serien-Zähler'], ['bsp', 'Beispiele', 'Algorithmen fertig durchgerechnet'], ['help', 'Hilfe', 'Pseudocode, Symbole, Verfahren'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Serien'], ['home', 'Startseite', 'Zurück zur Übersicht']];
     sheet('Menü', (b, close) => {
       b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${esc(r[1])}</b><small>${esc(r[2])}</small></div></button>`).join('');
       b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); const m = r.dataset.m; if (m === 'home') location.href = 'index.html'; else if (m === 'exam') setExam(!exam()); else if (m === 'reset') resetAll(); else setTab(m); });

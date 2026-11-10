@@ -96,6 +96,38 @@
     expl: 'U und W sind beim Drehen inkrementale Werte (Wege), egal ob G90 oder G91 gilt: U ist die Änderung des Durchmessers, W die Änderung in Z. N50 fährt auf X30 Z-10. N60: U6 macht den Durchmesser 36 (nicht 33), W-4 gibt Z-14. N70: W-16 fährt weitere 16 mm: Z-30. Ergebnis: X36 Z-30.',
     tips: ['U gehört zu X, W gehört zu Z. Es sind Wege, keine Zielpunkte.', 'X ist ein Durchmesser: Rechne die Änderung U auf den Durchmesser auf, nicht auf den Radius.'] });
 
+  /* Neue Aufgaben cnc39 bis cnc48 (Industriemechaniker: CNC-Fertigung): stehen in ihrer Kategorie, die Nummern setzen die Liste fort. PRUEFEN Pn: quelle/cnc/PRUEFEN.md */
+  const P39 = L('(WERKZEUG 2)', 'N10 G54 G90 G94 G17', 'N20 T2 M6', 'N30 M3 S2500 M8', 'N40 G0 X20 Y20 Z5', 'N50 G1 Z-2 F120', 'N60 G1 X60 F300', 'N70 G0 Z50', 'N80 M5 M9', 'N90 M30');
+  add({ id: 'cnc39', cat: 'G-Code lesen', level: 1, title: 'Die Adressen S, F und T', machine: 'mill', prog: P39, progMode: 'show',
+    text: 'In diesem Fräsprogramm stehen die Adressen S, F und T mit Zahlenwerten (S2500, F300 und T2). Welche Zuordnung stimmt?',
+    ask: choice(['S ist der Vorschub, F die Spindeldrehzahl und T die Zeit in Sekunden', 'S ist die Schnitttiefe, F die Länge des Fräsers und T die Nummer des Teils', 'S ist die Drehzahl der Spindel, F der Vorschub und T die Nummer des Werkzeugs', 'S ist die Spindelrichtung, F die Kühlmittelmenge und T die Dauer des Programms'], 2), solve: () => ({ correct: 2 }), bad: [0],
+    expl: 'S gibt die Spindeldrehzahl an (S2500 = 2500 1/min), F den Vorschub (beim Fräsen in mm/min, F300 = 300 mm/min) und T die Nummer des Werkzeugs im Magazin (T2 = Werkzeug 2). Eingewechselt wird es mit M6.',
+    tips: ['Die Buchstaben sind Abkürzungen: Spindel, Feed (englisch für Vorschub), Tool.', 'Schau dir an, in welchen Sätzen die Buchstaben stehen: S neben dem Einschalten der Spindel, F neben einer Fahrbewegung.'] });
+  const P40 = L('(WERKZEUGWECHSEL)', 'N10 G54 G90 G94 G17', 'N20 T3 M6', 'N30 M3 S1800 M8', 'N40 G0 X10 Y10 Z5', 'N50 G1 Z-2 F100', 'N60 G1 X50 F250', 'N70 G0 Z50', 'N80 M5 M9', 'N90 M30');
+  /* PRUEFEN: Spindelstillstand beim Werkzeugwechsel ist bei den meisten Fräsmaschinen üblich; Details (automatisches M5 vor M6) hängen von der Maschine ab. */
+  add({ id: 'cnc40', cat: 'G-Code lesen', level: 2, title: 'Reihenfolge beim Werkzeugwechsel', machine: 'mill', prog: P40, progMode: 'show',
+    text: 'Im Programm steht der Werkzeugwechsel T3 M6 vor dem Einschalten der Spindel mit M3 S1800. Warum ist diese Reihenfolge sinnvoll?',
+    ask: choice(['Die Steuerung kann M6 nur ausführen, wenn M3 im selben Satz steht', 'Das Werkzeug wird nur bei laufender Spindel in die Aufnahme gezogen', 'Die Reihenfolge der Sätze ist beliebig, die Steuerung sortiert sie von selbst', 'Die Spindel soll beim Wechsel stillstehen, erst mit dem neuen Werkzeug läuft sie an'], 3), solve: () => ({ correct: 3 }), bad: [0],
+    expl: 'Beim Werkzeugwechsel muss die Spindel stillstehen, sonst kann das Werkzeug nicht sicher gespannt werden und es besteht Verletzungs- und Crashgefahr. Deshalb wird erst gewechselt (T3 M6) und dann die Spindel mit der passenden Drehzahl eingeschaltet (M3 S1800). Die Reihenfolge der Sätze bestimmt den Ablauf: Die Steuerung führt sie genau so aus.',
+    tips: ['Wann kann ein Werkzeug sicher aus der Spindel genommen und eingesetzt werden: wenn sie dreht oder wenn sie steht?', 'Die Steuerung arbeitet die Sätze in der geschriebenen Reihenfolge ab.'] });
+  /* PRUEFEN: Unterprogrammaufruf und Schreibweise hängen von der Steuerung ab (z. B. M98, L oder Programmname); die Simulation dieses Labs kennt keine Unterprogramme, deshalb nur als Textaufgabe. */
+  add({ id: 'cnc41', cat: 'G-Code lesen', level: 2, title: 'Wozu ein Unterprogramm?', machine: 'mill', progMode: 'none',
+    text: 'Auf einer Platte sollen fünf gleiche Taschen gefräst werden. Du schreibst die Bearbeitung einer Tasche einmal als Unterprogramm und rufst sie fünfmal auf. Was ist der Vorteil?',
+    ask: choice(['Die Maschine fährt schneller, weil Unterprogramme grundsätzlich im Eilgang laufen', 'Die Taschen werden genauer, weil die Steuerung Unterprogramme besonders prüft', 'Das Programm wird kürzer, und eine Änderung an der Tasche muss nur einmal erfolgen', 'Im Hauptprogramm ist dann kein Werkstücknullpunkt (G54) mehr nötig'], 2), solve: () => ({ correct: 2 }), bad: [0],
+    expl: 'Ein Unterprogramm enthält eine Bearbeitung, die mehrfach vorkommt. Man schreibt sie einmal und ruft sie so oft auf, wie sie gebraucht wird, meist mit einer verschobenen Position. Das Programm wird kürzer und übersichtlicher, und eine Änderung muss nur an einer Stelle gemacht werden. Auf Geschwindigkeit und Genauigkeit hat es keinen Einfluss.',
+    tips: ['Überlege, was du bei fünf gleichen Taschen sonst fünfmal abschreiben müsstest.', 'Was passiert, wenn sich die Tiefe der Taschen ändert: an wie vielen Stellen musst du sie im Programm anpassen?'] });
+  /* PRUEFEN: G83 = Tieflochbohrzyklus (Spanbrechen/Entspanen) in DIN-nahen Steuerungen; Schreibweise und Parameter hängen von der Steuerung ab. Die Simulation kennt nur G81. */
+  add({ id: 'cnc42', cat: 'G-Code lesen', level: 2, title: 'Tiefes Loch bohren', machine: 'mill', progMode: 'none',
+    text: 'Ein Loch Ø6 mm soll 36 mm tief gebohrt werden, das ist das Sechsfache des Durchmessers. Der einfache Bohrzyklus G81 bohrt in einem Zug bis zur Tiefe. Welcher Zyklus ist hier besser geeignet?',
+    ask: choice(['G80, weil er den Bohrzyklus einschaltet und die Späne gleich beim Bohren löst', 'Ein Tieflochbohrzyklus wie G83, der in Stufen bohrt und die Späne dazwischen entfernt', 'G0, weil im Eilgang weniger Wärme entsteht und die Späne herausfliegen', 'Ein Gewindezyklus, weil er die Späne beim Bohren zerkleinert und herausdrückt'], 1), solve: () => ({ correct: 1 }), bad: [0],
+    expl: 'Bei tiefen Bohrungen können die Späne den Bohrer verklemmen, und der Kühlschmierstoff erreicht die Schneide nicht mehr. Ein Tieflochbohrzyklus (zum Beispiel G83) bohrt in mehreren Stufen, zieht dazwischen heraus, entfernt die Späne und bricht sie dabei. G80 schaltet einen Zyklus nur aus, G0 ist der Eilgang.',
+    tips: ['Wohin sollen die Späne aus einem tiefen Loch gelangen?', 'Es gibt Zyklen, bei denen der Bohrer zwischendurch zurückzieht.'] });
+  add({ id: 'cnc48', cat: 'G-Code lesen', level: 1, title: 'Sicherheit beim ersten Programmlauf', machine: 'mill', progMode: 'none',
+    text: 'Du fährst ein neues Programm zum ersten Mal an der Maschine ab. Welche Vorgehensweise ist sinnvoll?',
+    ask: choice(['Sofort im Automatikbetrieb bei vollem Vorschub und vollem Eilgang starten, damit Fehler gleich auffallen', 'Die Schutztür einen Spalt offen lassen, damit man das Werkstück besser sehen kann', 'Die Verriegelung der Tür vorher überbrücken, damit die Maschine nicht unnötig stoppt', 'Einzelsatzbetrieb, Vorschub und Eilgang am Regler verringern, Restweg beobachten und die Hand am Not-Halt lassen'], 3), solve: () => ({ correct: 3 }), bad: [0],
+    expl: 'Beim ersten Lauf kann noch jeder Fehler im Programm stecken. Im Einzelsatz mit verringertem Vorschub und Eilgang läuft die Maschine langsam, du erkennst Fehler früh und kannst anhalten. Der Restweg zeigt, wie weit das Werkzeug noch fahren will. Die Schutztür bleibt geschlossen, Verriegelungen werden nie überbrückt.',
+    tips: ['Was ist besser: ein Fehler bei langsamer oder bei voller Geschwindigkeit?', 'Sicherheitseinrichtungen wie Schutztür und Not-Halt dürfen nie umgangen werden.'] });
+
   /* ---------- Koordinaten ---------- */
   const WELLE = { kind: 'turn', dim: 'd', pts: [[20, 0], [20, -15], [30, -15], [30, -35], [40, -35], [40, -50]] };
   const WELLER = { kind: 'turn', dim: 'r', pts: [[24, 0], [24, -10], [34, -10], [34, -35], [40, -35], [40, -50]] };
@@ -135,6 +167,17 @@
     ask: nums(['X'], ['Y']), solve: () => ({ values: [-65, -20], tol: 0.01 }), bad: [[15, 40], [65, 20]],
     expl: 'P4 liegt 15 mm von links und 40 mm von unten. Die rechte obere Ecke des Rohteils liegt bei 80 von links und 60 von unten. Also X = 15 - 80 = -65 und Y = 40 - 60 = -20. Alles, was links oder unterhalb des Nullpunkts liegt, hat negative Werte.',
     tips: ['Wo liegt der Nullpunkt, gemessen von der linken unteren Ecke? Das sind die Rohteilmaße.', 'Rechne Maß minus Nullpunktlage, getrennt für X und Y.'] });
+
+  add({ id: 'cnc43', cat: 'Koordinaten', level: 3, title: 'Bahn der Werkzeugmitte', machine: 'mill', progMode: 'none',
+    text: 'Du fräst die Außenkontur eines Rechtecks 60 × 40 mm mit einem Fräser Ø10, ohne Radiuskorrektur. Du programmierst deshalb die Bahn der Werkzeugmitte als Rechteck mit scharfen Ecken, das überall um den Fräserradius größer ist als die Kontur. Wie lang ist diese Bahn der Werkzeugmitte einmal ringsherum?',
+    ask: nums(['Weg der Werkzeugmitte', 'mm']), solve: () => ({ values: [2 * ((60 + 10) + (40 + 10))], tol: 0.5 }), bad: [[200], [220]],
+    expl: 'Die Werkzeugmitte läuft im Abstand des Fräserradius (5 mm) außen an der Kontur entlang. Das Rechteck der Mittenbahn ist deshalb auf jeder Seite 5 mm größer: 60 + 10 = 70 mm und 40 + 10 = 50 mm. Umfang: 2 · (70 + 50) = 240 mm. Mit Radiuskorrektur G41/G42 rechnet die Steuerung diese Bahn selbst aus, und du programmierst die Kontur direkt.',
+    tips: ['Um wie viel ist die Bahn der Werkzeugmitte links und rechts größer als das Werkstück?', 'Pro Richtung kommt zweimal der Fräserradius dazu, also der Fräserdurchmesser.'] });
+  add({ id: 'cnc44', cat: 'Koordinaten', level: 1, title: 'Maschinen- und Werkstücknullpunkt', machine: 'mill', progMode: 'none',
+    text: 'Die Steuerung kennt einen Maschinennullpunkt M und einen Werkstücknullpunkt W. Welche Aussage stimmt?',
+    ask: choice(['Beide Nullpunkte sind immer identisch und liegen in der Spindel', 'Der Maschinennullpunkt ist vom Hersteller fest vorgegeben, den Werkstücknullpunkt legst du für das Werkstück fest', 'Der Werkstücknullpunkt ist fest in der Maschine, der Maschinennullpunkt wird auf dem Werkstück gesetzt', 'Beim Fräsen gilt allein der Maschinennullpunkt, W wird nur beim Drehen verwendet'], 1), solve: () => ({ correct: 1 }), bad: [0],
+    expl: 'Der Maschinennullpunkt liegt fest in der Maschine, die Position legt der Hersteller fest. Den Werkstücknullpunkt wählst du je Werkstück so, dass die Maße der Zeichnung direkt als Koordinaten verwendbar sind. Mit G54 wird er im Programm aktiviert. Er wird sowohl beim Fräsen als auch beim Drehen gebraucht.',
+    tips: ['Ein Werkstück wird an verschiedenen Stellen im Maschinenraum gespannt. Welcher Nullpunkt muss sich deshalb anpassen lassen?', 'Der Befehl G54 aktiviert eine Nullpunktverschiebung für das Werkstück.'] });
 
   /* ---------- Programm ergänzen ---------- */
   const NUT = a => L('(RECHTECKNUT)', 'N10 G54 G90 G94 G17', 'N20 T1 M6', 'N30 M3 S2500 M8', 'N40 G0 X20 Y10', 'N50 G0 Z2', 'N60 G1 Z-2 F100', ...a, 'N110 G0 Z50', 'N120 M5 M9', 'N130 M30');
@@ -186,6 +229,14 @@
     ask: { type: 'prog' }, bad: [B4(['N60 G99 G81 X20 Y20 Z-10 R2 F120', 'N70 X60', 'N80 Y40', 'N100 G80'])],
     expl: 'Die erste Bohrung steht im Satz mit G81 (Z-10, R2, F120). Der Zyklus bleibt aktiv: N70 X60 bohrt die zweite Bohrung, N80 Y40 die dritte (X60 bleibt stehen), N90 X20 die vierte. G80 beendet den Zyklus. Geprüft wird das Ergebnis am Rohteil: vier Bohrungen an den richtigen Orten in der richtigen Tiefe.',
     tips: ['Fahre die vier Ecken nacheinander an. Immer nur die Achse schreiben, die sich ändert, der Zyklus gilt weiter.', 'Zähle am Ende nach, ob du vier Positionen programmiert hast, und schalte den Zyklus wieder ab.'] });
+
+  const ST = a => L('(ZAPFEN MIT ABSATZ)', 'N10 G54 G90 G95 G18', 'N20 T1', 'N30 M3 S1200 M8', 'N40 G0 X16 Z2', ...a, 'N100 G0 X100 Z50', 'N110 M5 M9', 'N120 M30');
+  const STREF = ST(['N50 G1 Z-20 F0.2', 'N60 X26', 'N70 Z-35']);
+  add({ id: 'cnc45', cat: 'Programm ergänzen', level: 2, title: 'Zapfen mit Absatz drehen', machine: 'turn', prog: ST(['(HIER ERGAENZEN)']), progMode: 'edit', ref: STREF, target: true,
+    text: 'Das Werkzeug steht bei X16 Z2. Drehe einen Zapfen Ø16 bis Z-20 (Vorschub 0,2 mm/U). Danach fährt das Werkzeug bei Z-20 auf Ø26 und dreht diesen Durchmesser bis Z-35. Alle Werte absolut (G90).',
+    ask: { type: 'prog' }, bad: [ST(['N50 G1 Z-20 F0.2', 'N60 X13', 'N70 Z-35'])],
+    expl: 'Erst die Längsdrehung des Zapfens: G1 Z-20 F0.2 (X16 steht schon). Dann fährt das Werkzeug an der Stufe auf den größeren Durchmesser: X26, danach Z-35. Beim Drehen steht in X der Durchmesser: Ø26 heißt X26, nicht X13 (das wäre der Radius).',
+    tips: ['Beim Drehen ist X der Durchmesser. Welche Durchmesser kommen im Programm vor?', 'Reihenfolge: Zapfen längsdrehen, an der Stufe auf den größeren Durchmesser fahren, weiter längsdrehen.'] });
 
   /* ---------- Fehler im Programm finden (Verdeckte-Fehler-Prinzip: nur das Symptom wird genannt) ---------- */
   add({ id: 'cnc19', cat: 'Fehler im Programm finden', level: 1, title: 'Nut zu kurz', machine: 'mill', prog: NUT(['N70 G1 X50 F300', 'N80 Y30', 'N90 X20', 'N100 Y10']), progMode: 'edit', ref: NUTREF, target: true,
@@ -241,6 +292,13 @@
     expl: 'Die Bohrungen liegen bei X20, X40 und X60 (gleicher Abstand 20 mm). Im zweiten Positionssatz stand X35. Weil der Zyklus G81 modal aktiv bleibt, bohrt jeder neue Positionssatz sofort an der angegebenen Stelle. Kontrolliere bei Lochbildern die Koordinaten jeder Position mit der Zeichnung.',
     tips: ['Vergleiche die Lage der Bohrungen im Simulator mit der Sollzeichnung.', 'Lies die Positionssätze nach dem G81-Satz: Welche X-Werte stehen dort, und stimmen die Abstände?'] });
 
+  const BZ = (z, r) => L('(BOHRUNG)', 'N10 G54 G90 G94 G17 G40 G80', 'N20 T3 M6', 'N30 M3 S1500 M8', 'N40 G0 Z5', 'N50 G0 X30 Y25', 'N60 G99 G81 X30 Y25 Z' + z + ' R' + r + ' F100', 'N70 G80', 'N80 G0 Z50', 'N90 M5 M9', 'N100 M30');
+  add({ id: 'cnc46', cat: 'Fehler im Programm finden', level: 2, title: 'Alarm im Bohrzyklus', machine: 'mill', prog: BZ('2', '-8'), progMode: 'edit', ref: BZ('-8', '2'), target: true, cmp: { path: false },
+    text: 'Die Steuerung bricht beim Bohren mit einem Alarm ab, bevor die Bohrung entsteht. Die Position der Bohrung stimmt. Finde den Fehler und korrigiere ihn.',
+    ask: { type: 'prog' }, bad: [BZ('2', '-8')],
+    expl: 'Im Bohrzyklus G81 bedeuten Z die Bohrtiefe und R die Rückzugsebene. Die Rückzugsebene liegt knapp über dem Werkstück (R2), die Bohrtiefe tief im Material (Z-8). Hier waren beide Werte vertauscht: Die Tiefe lag über der Rückzugsebene, und die Steuerung meldet den Alarm.',
+    tips: ['Lies die Alarmmeldung genau: Welche beiden Größen werden verglichen?', 'Die Rückzugsebene R liegt über dem Werkstück, die Bohrtiefe Z liegt darunter. Stimmen die Vorzeichen?'] });
+
   /* ---------- Zeit rechnen ---------- */
   const Z1 = L('(LAENGSDREHEN)', 'N10 G54 G90 G95 G18', 'N20 T1', 'N30 M3 S800', 'N40 G0 X34 Z2', 'N50 G1 Z-40 F0.25', 'N60 G0 X100 Z50', 'N70 M5', 'N80 M30');
   add({ id: 'cnc26', cat: 'Zeit rechnen', level: 1, title: 'Hauptzeit Längsdrehen', machine: 'turn', prog: Z1, progMode: 'show',
@@ -276,6 +334,12 @@
     ask: nums(['Vorschubgeschwindigkeit vf', 'mm/min']), solve: () => ({ values: [2400 * 4 * 0.05], tol: 0.5 }), bad: [[120], [0.48]],
     expl: 'vf = n · z · fz = 2400 1/min · 4 · 0,05 mm = 480 mm/min. Jede der 4 Schneiden trägt pro Umdrehung 0,05 mm Vorschub, also ist der Vorschub pro Umdrehung 0,2 mm. Beim Fräsen gilt G94 (Vorschub in mm/min), deshalb schreibst du F480.',
     tips: ['Wie viel Vorschub entsteht pro Umdrehung, wenn jeder Zahn fz zurücklegt?', 'Multipliziere den Vorschub pro Umdrehung mit der Drehzahl.'] });
+
+  add({ id: 'cnc47', cat: 'Zeit rechnen', level: 3, title: 'Hauptzeit beim Bohrzyklus', machine: 'mill', prog: B4REF, progMode: 'show',
+    text: 'Berechne die Hauptzeit für alle vier Bohrungen in Sekunden. Der Vorschub wirkt von der Rückzugsebene R bis zur Bohrtiefe Z. Eilgänge und Rückzug zählen nicht zur Hauptzeit.',
+    ask: nums(['Hauptzeit th', 's']), solve: Cc => ({ values: [Cc.run(B4REF, { machine: 'mill' }).time.main * 60], tol: 0.5 }), bad: [[20], [12]],
+    expl: 'Je Bohrung läuft der Bohrer mit F120 von R2 bis Z-10: Weg 2 + 10 = 12 mm. Zeit: 12 mm / 120 mm/min = 0,1 min = 6 s. Vier Bohrungen: 4 · 6 s = 24 s. Der Weg von R bis zur Werkstückoberfläche (2 mm) zählt mit, weil dort schon mit Vorschub gefahren wird.',
+    tips: ['Wie lang ist der Weg mit Vorschub für eine Bohrung? Beginne bei der Rückzugsebene R.', 'Zeit = Weg / Vorschub. Rechne eine Bohrung aus und multipliziere mit der Anzahl.'] });
 
   tasks.forEach(t => { if (!t.tips || t.tips.length < 2) throw new Error('Tipps fehlen: ' + t.id); });
 

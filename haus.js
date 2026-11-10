@@ -340,11 +340,11 @@
       } else {
         const w = k * 1.5; cx.fillStyle = o.t === 'junc' ? '#a8744c' : '#f2f4f6'; cx.strokeStyle = '#2a323b'; cx.lineWidth = 1.5; cx.beginPath(); (cx.roundRect ? cx.roundRect(x - w / 2, y - w / 2, w, w, 3) : cx.rect(x - w / 2, y - w / 2, w, w)); cx.fill(); cx.stroke();
         cx.fillStyle = '#2a323b';
-        if (o.t === 'sock') { cx.beginPath(); cx.arc(x - w * .18, y, w * .09, 0, 7); cx.arc(x + w * .18, y, w * .09, 0, 7); cx.fill(); cx.beginPath(); cx.arc(x, y, w * .3, 0, 7); cx.stroke(); }
+        if (o.t === 'sock') { cx.fillStyle = '#e3e7eb'; cx.beginPath(); cx.arc(x, y, w * .33, 0, 7); cx.fill(); cx.stroke(); cx.fillStyle = '#2a323b'; cx.beginPath(); cx.arc(x - w * .15, y, w * .07, 0, 7); cx.arc(x + w * .15, y, w * .07, 0, 7); cx.fill(); cx.fillStyle = '#9aa3ad'; cx.fillRect(x - w * .06, y - w * .4, w * .12, w * .09); cx.fillRect(x - w * .06, y + w * .31, w * .12, w * .09); }
         else if (o.t === 'tast') { cx.fillStyle = '#d7dbe0'; cx.beginPath(); cx.arc(x, y, w * .3, 0, 7); cx.fill(); cx.stroke(); if (partOf(o.id, 'tast') && partOf(o.id, 'tast').pressed) { cx.fillStyle = '#4cd964'; cx.beginPath(); cx.arc(x, y, w * .17, 0, 7); cx.fill(); } }
         else if (o.t === 'imp') { cx.fillStyle = '#c9ced4'; cx.fillRect(x - w * .38, y - w * .38, w * .76, w * .76); cx.strokeRect(x - w * .38, y - w * .38, w * .76, w * .76); cx.fillStyle = '#2a323b'; cx.font = '700 ' + Math.round(k * .75) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText('SS', x, y + k * .27); }
         else if (o.t === 'wet') { cx.fillStyle = '#7cc4ee'; cx.fillRect(x - w * .45, y - w * .3, w * .9, w * .6); cx.strokeRect(x - w * .45, y - w * .3, w * .9, w * .6); cx.fillStyle = '#10324a'; cx.font = '700 ' + Math.round(k * .75) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText('~', x, y + k * .27); }
-        else if (o.t === 'swi' || o.t === 'swc' || o.t === 'swk') { cx.fillStyle = o.on ? '#4cd964' : '#8a949f'; cx.fillRect(x - w * .22, y - w * .32 + (o.on ? 0 : w * .32), w * .44, w * .32); if (o.t === 'swc' || o.t === 'swk') { cx.fillStyle = '#2a323b'; cx.font = '700 ' + Math.round(k * .7) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText(o.t === 'swk' ? 'K' : 'W', x, y + w * .08); } }
+        else if (o.t === 'swi' || o.t === 'swc' || o.t === 'swk') { cx.fillStyle = '#dfe3e8'; cx.fillRect(x - w * .3, y - w * .36, w * .6, w * .72); cx.strokeRect(x - w * .3, y - w * .36, w * .6, w * .72); cx.fillStyle = o.on ? '#4cd964' : '#8a949f'; cx.fillRect(x - w * .22, y - w * .32 + (o.on ? 0 : w * .32), w * .44, w * .32); cx.fillStyle = '#2a323b'; cx.font = '700 ' + Math.max(7, Math.round(k * .5)) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText(o.on ? 'I' : '0', x, y + (o.on ? -w * .1 : w * .22)); if (o.t === 'swc' || o.t === 'swk') { cx.fillStyle = '#2a323b'; cx.font = '700 ' + Math.round(k * .7) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText(o.t === 'swk' ? 'K' : 'W', x, y + w * .08); } }
         else if (o.t === 'dev') { cx.fillStyle = b > 0.2 ? '#ff7a45' : '#b8a69a'; cx.fillRect(x - w * .4, y - w * .3, w * .8, w * .6); if (b > 0.2) { cx.fillStyle = 'rgba(255,120,60,.35)'; cx.beginPath(); cx.arc(x, y, w * 1.1, 0, 7); cx.fill(); } }
         if (o.t === 'dev3' || o.t === 'sock3') {
           cx.fillStyle = o.t === 'sock3' ? '#c0392b' : (b > 0.2 ? '#ff7a45' : '#b8a69a'); if (o.t === 'sock3') { cx.beginPath(); cx.arc(x, y, w * .42, 0, 7); cx.fill(); } else cx.fillRect(x - w * .42, y - w * .34, w * .84, w * .68);
@@ -402,7 +402,7 @@
           } else front.push([a, b]);
         });
         // Raumname auf dem Boden
-        const c = proj(r.x + r.w / 2, r.y + r.d / 2, 0.02); cx.fillStyle = 'rgba(255,255,255,.55)'; cx.font = '600 ' + clamp(Math.round(cam.s * .45), 10, 18) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText(r.n, c[0], c[1]);
+        const c = proj(r.x + r.w / 2, r.y + r.d / 2, 0.02); cx.fillStyle = 'rgba(255,255,255,.55)'; cx.font = '600 ' + clamp(Math.round(cam.s * .45), 10, 18) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText(r.n, c[0], c[1]); if (top && cam.s > 22) { cx.font = '500 ' + clamp(Math.round(cam.s * .34), 9, 13) + 'px sans-serif'; cx.fillText(num(r.w, 1) + ' × ' + num(r.d, 1) + ' m · ' + num(r.w * r.d, 1) + ' m²', c[0], c[1] + clamp(Math.round(cam.s * .45), 10, 18)); }
         h.objs.filter(o => o.room === r.id && o.t === 'wet' && vo(h, o)).forEach(o => { const p0 = pos(h, o), z0 = []; for (let a = 0; a <= 24; a++) { const t0 = a / 24 * Math.PI * 2; z0.push(proj(p0[0] + Math.cos(t0) * 0.6, p0[1] + Math.sin(t0) * 0.6, 0.03)); } cx.beginPath(); z0.forEach((q, i) => (i ? cx.lineTo(q[0], q[1]) : cx.moveTo(q[0], q[1]))); cx.closePath(); cx.fillStyle = 'rgba(80,170,255,.18)'; cx.fill(); cx.setLineDash([4, 3]); cx.strokeStyle = 'rgba(120,200,255,.8)'; cx.stroke(); cx.setLineDash([]); });
         h.objs.filter(o => o.room === r.id && o.t !== 'lamp' && vo(h, o)).forEach(o => drawObj(cx, o, h, k, sim));
         // vordere Wände: nur Kante und niedriger Sockel (Durchsicht)
@@ -701,8 +701,15 @@
         out += '</div>';
       }
       if (lastWarn.length) out += `<div class="card warn"><h4>Hinweise</h4><ul>${lastWarn.map(t => `<li>${esc(t)}</li>`).join('')}</ul></div>`;
+      if (root.HAUS_VIZ && !S().task && !(sim && stt.tool === 'meas')) { try { out += root.HAUS_VIZ.side({ o, c, r, h, sim, task: S().task, slots: (!o && !c && !r) ? slotRows(h) : null }); } catch (e) { /* Bilder sind Zugabe */ } }
       return out;
     };
+    /* Zeilen der Stromkreis-Übersicht: bestückte Abgänge mit Last (aus den Nennleistungen) */
+    function slotRows(h) {
+      const pl = phaseLoads(h), rows = [];
+      h.panel.slots.forEach((sl, i) => { if (!sl.ls) return; const a = pl[i] ? Math.max(...pl[i]) : 0; rows.push({ n: i + 1, ls: sl.ls, p3: !!sl.p3, ph: sl.ph || 0, fi: sl.fi || 0, a }); });
+      return rows;
+    }
     const cabIdUp = oid => { const p = S().parts.find(q => q.hx && q.hx.role === 'cab'); const h = H(); const cs = h.cables.filter(c => c.a === oid || c.b === oid); const up = cs.find(c => cabParts(c.id).length); return up ? up.id : null; };
     root.LAB_EXTRA_CLICK = (a, b) => {
       if (a !== 'hx') return false; const h = H(), op = b.dataset.op, v = b.dataset.v, o = selObj(), c = selCab(), r = selRoom();

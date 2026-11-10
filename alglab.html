@@ -87,7 +87,7 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 @media print{#app,.backdrop,#toast,#gate,#verBadge{display:none!important}body{background:#fff;height:auto}html{height:auto}}
 /* ===== Algorithmen-Lab ===== */
-#mid[data-tab=ed] #pgEd,#mid[data-tab=draw] #pgDraw,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=help] #pgHelp{display:flex}
+#mid[data-tab=ed] #pgEd,#mid[data-tab=draw] #pgDraw,#mid[data-tab=viz] #pgViz,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=help] #pgHelp{display:flex}
 .rdout{background:var(--bg);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;margin:8px 0;font-size:14px;line-height:1.45}
 .rdout.bad{border-color:var(--danger)}.rdout.ok{border-color:var(--ok)}.rdout.warn{border-color:var(--warn)}
 .rdout b{color:var(--accent)}
@@ -168,6 +168,7 @@ svg.algsvg{display:block;max-width:none;margin:0 auto}
   <div id="mid" data-tab="ed">
     <section class="pg scroll" id="pgEd"><div class="wrap" id="edView"></div></section>
     <section class="pg scroll" id="pgDraw"><div class="wrap" id="drawView"></div></section>
+    <section class="pg scroll" id="pgViz"><div class="wrap" id="vizView"></div></section>
     <section class="pg scroll" id="pgTasks"><div class="wrap" id="taskView"></div></section>
     <section class="pg scroll" id="pgRt"><div class="wrap" id="rtView"></div></section>
     <section class="pg scroll" id="pgBsp"><div class="wrap" id="bspView"></div></section>
@@ -182,9 +183,12 @@ svg.algsvg{display:block;max-width:none;margin:0 auto}
 <script src="algdata.js"></script>
 <script>window.LAB='alg';</script>
 <script src="algui.js"></script>
+<script src="algviz.js"></script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script src="tutorial-data.js"></script>
+<script src="tutorial.js"></script>
 </body>
 </html>

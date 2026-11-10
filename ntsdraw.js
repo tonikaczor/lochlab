@@ -415,7 +415,7 @@
     if (!E) return false;
     const kind = d.kind === 'einweg' ? 'einweg' : 'bruecke', half = d.half === -1 ? -1 : 1, on = bridgePath(kind, half), P = E.P, b0 = E.box;
     const cx = rect.x + rect.w * 0.42, cy = rect.y + rect.h * 0.46, R = Math.min(rect.w * 0.2, rect.h * 0.26, 60), ds = Math.max(6, R * 0.2);
-    const lx = rect.x + rect.w * 0.82;
+    const lx = rect.x + rect.w * 0.78;
     return draw(ctx, () => {
       bgFill(ctx, E);
       const lead = (pts, hot) => polyline(ctx, pts, hot ? P.out : P.gnd, hot ? 3.5 : 2);
@@ -432,7 +432,7 @@
         diodeGlyph(ctx, Bt[0], Bt[1], A[0], A[1], on.indexOf('D3') >= 0, P, ds);   /* D3: minus nach A */
         diodeGlyph(ctx, Bt[0], Bt[1], B[0], B[1], on.indexOf('D4') >= 0, P, ds);   /* D4: minus nach B */
         [[A, 'D1', -1, -1], [B, 'D2', 1, -1], [A, 'D3', -1, 1], [B, 'D4', 1, 1]].forEach(q => T(ctx, b0, P, q[1], cx + q[2] * R * 0.62 + (q[2] > 0 ? 10 : -10), cy + q[3] * R * 0.62 + (q[3] > 0 ? 6 : -6), { color: on.indexOf(q[1]) >= 0 ? P.out : P.mute, bold: on.indexOf(q[1]) >= 0, size: 11 }));
-        lead([[Tp[0], Tp[1]], [Tp[0], rect.y + 12], [lx, rect.y + 12], [lx, cy - 22]], false);
+        lead([[Tp[0], Tp[1]], [Tp[0], rect.y + 26], [lx, rect.y + 26], [lx, cy - 22]], false);
         lead([[Bt[0], Bt[1]], [Bt[0], rect.y + rect.h - 26], [lx, rect.y + rect.h - 26], [lx, cy + 22]], false);
         T(ctx, b0, P, '+', Tp[0] + 9, Tp[1] - 4, { color: P.out, bold: true, size: 12 });
         T(ctx, b0, P, '−', Bt[0] + 9, Bt[1] + 4, { color: P.gnd, bold: true, size: 12 });
@@ -449,7 +449,7 @@
       /* Last (und Ladekondensator) rechts */
       const hasC = d.c !== false;
       ctx.fillStyle = P.panel; ctx.strokeStyle = P.out; ctx.lineWidth = 2; ctx.fillRect(lx - 9, cy - 22, 18, 44); ctx.strokeRect(lx - 9, cy - 22, 18, 44);
-      T(ctx, b0, P, str(d.rl) || 'Last', lx, cy, { color: P.fg, size: 11, maxw: 30, bg: false });
+      T(ctx, b0, P, str(d.rl) || 'Last', lx + 13, cy, { color: P.fg, size: 11, maxw: Math.max(30, rect.x + rect.w - lx - 15), bg: true, align: 'left' });
       if (hasC) { const px = lx - 22; line(ctx, px - 8, cy - 4, px + 8, cy - 4, P.il, 2.5); line(ctx, px - 8, cy + 4, px + 8, cy + 4, P.il, 2.5); T(ctx, b0, P, 'C', px - 12, cy - 12, { color: P.il, bold: true, size: 11, align: 'right' }); }
       /* Text */
       const path = on.length ? 'Strompfad über ' + on.join(' und ') : 'Halbwelle sperrt: Strom fließt aus dem Kondensator';
@@ -726,7 +726,7 @@
     const d = obj(data), E = env(ctx, rect, opts, 160, 130);
     if (!E || !TOPO[d.topo] || (d.phase !== 'on' && d.phase !== 'off')) return false;
     const P = E.P, b0 = E.box, els = TOPO[d.topo], ph = d.phase;
-    const textH = 40, areaH = rect.h - textH, s = Math.min(rect.w / 100, areaH / 62), ox = rect.x + (rect.w - 100 * s) / 2, oy = rect.y + 4 + (areaH - 62 * s) / 2;
+    const textH = 52, areaH = rect.h - textH, s = Math.min(rect.w / 100, areaH / 62), ox = rect.x + (rect.w - 100 * s) / 2, oy = rect.y + 4 + (areaH - 62 * s) / 2;
     const X = x => ox + x * s, Y = y => oy + y * s, size = Math.max(7, 4.5 * s);
     return draw(ctx, () => {
       bgFill(ctx, E);
@@ -757,7 +757,7 @@
       if (fin(d.iL)) vals.push('I_L ' + fe(d.iL, 'A'));
       if (vals.length) T(ctx, b0, P, vals.join('   '), rect.x + rect.w / 2, rect.y + rect.h - 12, { maxw: rect.w - 8, size: 11, color: P.fg });
       /* Zweitcodierung neben der Farbe: Strompfad in Blau mit Text */
-      T(ctx, b0, P, 'blau: Strompfad ' + phasePath(d.topo, ph).join('–'), rect.x + rect.w / 2, rect.y + rect.h - 44 + 10, { maxw: rect.w - 8, size: 11, color: P.il, bg: true });
+      T(ctx, b0, P, 'blau: Strompfad ' + phasePath(d.topo, ph).join('–'), rect.x + rect.w / 2, rect.y + rect.h - 46, { maxw: rect.w - 8, size: 11, color: P.il, bg: true });
       return true;
     });
   }
@@ -800,7 +800,7 @@
       line(ctx, A.pl.x, A.Y(sh.hi), A.pl.x + A.pl.w, A.Y(sh.hi), P.mute, 1, [2, 4]);
       if (sh.mode === 'ccm') line(ctx, A.pl.x, A.Y(sh.lo), A.pl.x + A.pl.w, A.Y(sh.lo), P.mute, 1, [2, 4]);
       line(ctx, A.X(sh.d), A.pl.y, A.X(sh.d), A.pl.y + A.pl.h, P.sw, 1, [3, 3]);
-      T(ctx, b0, P, 'Schalter ein', A.X(sh.d / 2), A.pl.y + 10, { size: 11, color: P.sw });
+      T(ctx, b0, P, 'Schalter ein', A.X(sh.d / 2), A.pl.y + A.pl.h - 26, { size: 11, color: P.sw });
       T(ctx, b0, P, 'Mittelwert ' + fe(mean, 'A'), A.pl.x + A.pl.w - 4, A.Y(mean) + (mean > ymax * 0.4 ? 10 : -10), { align: 'right', size: 11, color: P.out, bold: true });
       T(ctx, b0, P, 'ΔI_L = ' + fe(sh.mode === 'ccm' ? d.dI : sh.hi, 'A') + '   Spitze ' + fe(sh.hi, 'A'), rect.x + rect.w / 2, rect.y + 24, { size: 11, color: P.il, bold: true, maxw: rect.w - 8 });
       const mt = sh.mode === 'ccm' ? 'nicht lückend: Strom bleibt über 0 A' : sh.mode === 'grenz' ? 'Grenzfall: Strom erreicht gerade 0 A' : 'lückend: Strom fällt auf 0 A';

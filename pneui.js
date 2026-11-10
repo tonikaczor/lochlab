@@ -330,6 +330,7 @@
     if (S.tab !== 'anl' || !PL.model || document.hidden) return;
     if (PL.running) { PL.acc += dt * PL.speed; let n = 0; while (PL.acc >= C.DT && n++ < 40) { C.step(PL.model, PL.st, C.DT); PL.acc -= C.DT; } }
     plDraw();
+    if (root.PNEVIZ) root.PNEVIZ.tick(PL, S);
   }
 
   /* ============================================================ Fortschritt, Aufgaben */
@@ -573,10 +574,10 @@
     v.innerHTML = `
     <div class="card pl"><h4>Kolbenkraft  F = p · A</h4>
       <div class="dsrow"><label class="f"><span>Druck p (bar)</span><input id="cP" inputmode="decimal" value="${esc(cv.p)}"></label><label class="f"><span>Kolben D (mm)</span><input id="cD" inputmode="decimal" value="${esc(cv.D)}"></label><label class="f"><span>Kolbenstange d (mm)</span><input id="cd" inputmode="decimal" value="${esc(cv.d)}"></label><label class="f"><span>Reibung (%) Richtwert 10 bis 20</span><input id="cR" inputmode="decimal" value="${esc(cv.r)}"></label></div>
-      <div id="outF" class="calcout"></div></div>
+      <div id="outF" class="calcout"></div><div id="vzF"></div></div>
     <div class="card pl"><h4>Luftverbrauch  V = A · s · (p + 1)</h4>
       <div class="dsrow"><label class="f"><span>Hub s (mm)</span><input id="cS" inputmode="decimal" value="${esc(cv.s)}"></label><label class="f"><span>Doppelhübe je Minute</span><input id="cN" inputmode="decimal" value="${esc(cv.n || '10')}"></label></div>
-      <div id="outV" class="calcout"></div><p class="hint2">Druck und Durchmesser kommen aus der Kraftrechnung oben. Atmosphärendruck vereinfacht 1 bar (Richtwert).</p></div>
+      <div id="outV" class="calcout"></div><div id="vzV"></div><p class="hint2">Druck und Durchmesser kommen aus der Kraftrechnung oben. Atmosphärendruck vereinfacht 1 bar (Richtwert).</p></div>
     <div class="card pl"><h4>Kolbengeschwindigkeit  v = s / t</h4>
       <div class="dsrow"><label class="f"><span>Hub s (mm), wie oben</span><input id="cS2" disabled></label><label class="f"><span>Zeit t (s)</span><input id="cT" inputmode="decimal" value="${esc(cv.t)}"></label></div>
       <div id="outG" class="calcout"></div></div>
@@ -595,12 +596,14 @@
         h += '</table><p class="hint2">Reibung (Dichtungen, Führung) macht etwa 10 bis 20 % aus: Richtwert, für genaue Auslegung zählen die Herstellerangaben.</p>';
       } else h = '<p class="hint2">Gib Druck und Kolbendurchmesser ein.</p>';
       $('#outF').innerHTML = h;
+      $('#vzF').innerHTML = root.PNEVIZ ? root.PNEVIZ.kraft({ p, D: Dm, d, r }) : '';
       let hv = '';
       if (ok && isFinite(s) && s > 0) {
         const a = C.calc.luftHub(p, Dm, s), e = isFinite(d) && d > 0 && d < Dm ? C.calc.luftHub(p, Dm, s, d, 'ein') : null;
         hv = `<table class="iot"><tr><td>Ausfahrhub</td><td class="a"><b>${fm(a, 3)} l</b></td></tr>${e != null ? `<tr><td>Einfahrhub (Ringfläche)</td><td class="a"><b>${fm(e, 3)} l</b></td></tr><tr><td>Doppelhub</td><td class="a"><b>${fm(a + e, 3)} l</b></td></tr>${isFinite(n) && n > 0 ? `<tr><td>Je Minute (${fm(n, 0)} Doppelhübe)</td><td class="a"><b>${fm((a + e) * n, 1)} l/min</b></td></tr>` : ''}` : ''}</table>`;
       } else hv = '<p class="hint2">Gib den Hub ein.</p>';
       $('#outV').innerHTML = hv;
+      $('#vzV').innerHTML = root.PNEVIZ ? root.PNEVIZ.luft({ p, D: Dm, d, s }) : '';
       $('#outG').innerHTML = isFinite(s) && isFinite(t) && t > 0 ? `<table class="iot"><tr><td>Geschwindigkeit</td><td class="a"><b>${fm(C.calc.geschw(s, t), 1)} mm/s = ${fm(C.calc.geschw(s, t) / 1000, 3)} m/s</b></td></tr></table>` : '<p class="hint2">Gib Hub und Zeit ein.</p>';
       lsSet('lm4.pne.calc', { p: $('#cP').value, D: $('#cD').value, d: $('#cd').value, s: $('#cS').value, t: $('#cT').value, r: $('#cR').value, n: $('#cN').value });
     };

@@ -385,7 +385,7 @@
   }
 
   /* ---------- Bestückungsreihenfolge ---------- */
-  const HEIGHTS = [[/^R_AXIAL/, 2.5], [/C_RADIAL_2\.5/, 7], [/C_RADIAL_5/, 11], [/LED_5MM/, 8.6], [/DIP/, 4.5], [/TO-92/, 5], [/TO-220/, 10], [/HDR_1x/, 8.5], [/HDR_2x/, 8.5], [/DC_JACK/, 11], [/SWITCH/, 5],
+  const HEIGHTS = [[/R_AXIAL_12/, 3.2], [/R_AXIAL_15/, 4.5], [/R_AXIAL_20/, 5.5], [/C_RADIAL_3\.5/, 11], [/C_RADIAL_7\.5/, 25], [/C_CER/, 5.5], [/C_FILM_5/, 7.5], [/C_FILM_10/, 11.5], [/^R_AXIAL/, 2.5], [/C_RADIAL_2\.5/, 7], [/C_RADIAL_5/, 11], [/LED_5MM/, 8.6], [/DIP/, 4.5], [/TO-92/, 5], [/TO-220/, 10], [/HDR_1x/, 8.5], [/HDR_2x/, 8.5], [/DC_JACK/, 11], [/SWITCH/, 5],
     [/0402/, 0.35], [/R0603|C0603|LED0603/, 0.5], [/0805/, 0.65], [/1206/, 0.6], [/SOT-223/, 1.8], [/SOT-23/, 1.1], [/SOIC|SOP/, 1.75], [/TSSOP/, 1.2], [/QFP/, 1.6], [/QFN/, 0.9], [/SOD-123/, 1.1]];
   function fpInfo(fpId, opts) {
     const C = core(), tbl = (opts && opts.footprints) || (C && C.footprints) || {};

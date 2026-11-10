@@ -493,7 +493,8 @@
     let key = '';
     try { key = (document.documentElement.getAttribute('data-theme') || '') + '|' + (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'd' : 'l') + '|' + (getComputedStyle(document.documentElement).getPropertyValue('--bg') || '').trim(); } catch (e) { key = ''; }
     if (key !== pcKey) { pcKey = key; try { pcVal = D.cssColors(document.documentElement); } catch (e) { pcVal = undefined; } }
-    return pcVal && Object.keys(pcVal).length ? pcVal : undefined;
+    /* Signalfarben wie im Messschreiber (w orange, x blau, y grün, z rot, e violett), damit der Wirkungsplan dieselbe Farbsprache spricht */
+    return Object.assign({}, pcVal && Object.keys(pcVal).length ? pcVal : {}, { sig: { w: '#ffb340', x: '#3b9eff', y: '#4cd964', z: '#ff5c5c', e: '#c792ea', xm: '#3b9eff' } });
   }
   function planData() {
     const st = S.st || {}, r = S.rig || {}, t = TU();
@@ -1280,7 +1281,7 @@
   function tlHtml() {
     const end = seqDur(), st = seqSteps(curRows()); let h = '<div id="tl">';
     st.forEach(s => { const p = Math.min(100, s.t / end * 100); h += `<i class="tk" style="left:${p.toFixed(2)}%"></i>`; });
-    for (let k = 0; k <= 4; k++) h += `<span class="sc" style="left:${k * 25}%;${k === 4 ? 'transform:translateX(-100%)' : ''}">${fnum(toU(end * k / 4), adig(toU(end * k / 4)))} ${esc(TU())}</span>`;
+    for (let k = 0; k <= 4; k++) h += `<span class="sc" style="left:${k * 25}%;${k === 4 ? 'transform:translateX(-100%)' : ''}">${k === 0 ? '0' : fnum(toU(end * k / 4), adig(toU(end * k / 4)))} ${esc(TU())}</span>`;
     return h + '<b class="hd" id="tlHd" style="left:0%"></b></div>';
   }
   function renderSeq() {

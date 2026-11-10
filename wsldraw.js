@@ -450,6 +450,7 @@
       line(ctx, cx - R - 6, cy, cx + R + 6, cy, P.grid, 1); line(ctx, cx, cy - R - 6, cx, cy + R + 6, P.grid, 1);
       const bz = d.bezug === 'strom' ? 'Bezugszeiger: Strom, φ = φ_u − φ_i' : d.bezug === 'spannung' ? 'Bezugszeiger: Spannung, φ = φ_u − φ_i' : 'Zeiger drehen gegen den Uhrzeigersinn';
       T(ctx, E.box, P, bz, rect.x + 4, rect.y + 8, { size: 11, align: 'left', color: P.mute, bg: false, maxw: rect.w - 8 });
+      const placed = [];   /* schon belegte Beschriftungsflaechen: neue Namen weichen aus, statt darueber zu liegen */
       /* Winkelbogen phi = angle(a) - angle(b) */
       const ar = obj(d.arc), za = L.find(z => z.name === ar.a), zb = L.find(z => z.name === ar.b);
       if (za && zb) {
@@ -459,14 +460,20 @@
           ctx.strokeStyle = P.fg; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, r0, -rad(zb.angle + rot), -rad(za.angle + rot), phi > 0); ctx.stroke();
         }
         const mid = zb.angle + phi / 2 + rot;
-        T(ctx, E.box, P, lab + (Math.abs(phi) < 0.5 ? ' (in Phase)' : phi > 0 ? ' (' + za.name + ' eilt vor)' : ' (' + za.name + ' eilt nach)'), cx + (r0 + 8) * Math.cos(rad(mid)), cy - (r0 + 8) * Math.sin(rad(mid)) + (Math.abs(Math.sin(rad(mid))) < 0.3 ? 14 : 0), { size: 11, bold: true, align: Math.cos(rad(mid)) >= 0 ? 'left' : 'right', maxw: areaW * 0.8 });
+        const pl = T(ctx, E.box, P, lab + (Math.abs(phi) < 0.5 ? ' (in Phase)' : phi > 0 ? ' (' + za.name + ' eilt vor)' : ' (' + za.name + ' eilt nach)'), cx + (r0 + 8) * Math.cos(rad(mid)), cy - (r0 + 8) * Math.sin(rad(mid)) + (Math.abs(Math.sin(rad(mid))) < 0.3 ? 14 : 0), { size: 11, bold: true, align: Math.cos(rad(mid)) >= 0 ? 'left' : 'right', maxw: areaW * 0.8 });
+        if (pl) placed.push({ x0: pl.x0, x1: pl.x1, y: pl.y });
       }
       /* Zeiger mit Pfeil, Strichart und Beschriftung */
       L.forEach(z => {
         const kd = KINDS[kindOf(z.kind, z.name)], col = P[kd.key], tip = pos(z.len, z.angle);
         if (z.len * k < 1) { dot(ctx, cx, cy, 3, col); } else arrow(ctx, cx, cy, tip[0], tip[1], col, 3, kd.dash, 11);
         const ux = Math.cos(rad(z.angle + rot)), uy = -Math.sin(rad(z.angle + rot));
-        T(ctx, E.box, P, z.name + (unit ? ' = ' + fe(z.len, unit) : ''), tip[0] + ux * 12, tip[1] + uy * 12, { size: 11, bold: true, color: col, align: ux > 0.2 ? 'left' : ux < -0.2 ? 'right' : 'center', maxw: areaW * 0.7 });
+        const al = ux > 0.2 ? 'left' : ux < -0.2 ? 'right' : 'center', zu = typeof z.unit === 'string' ? z.unit : unit, txt = z.name + (zu ? ' = ' + fe(z.len < maxLen * 1e-9 ? 0 : z.len, zu) : ''), lw = Math.min(areaW * 0.7, tw(ctx, txt, 11, true)), lx = tip[0] + ux * 12;
+        let ly = tip[1] + uy * 12;
+        const x0 = al === 'left' ? lx : al === 'right' ? lx - lw : lx - lw / 2;
+        for (let tries = 0; tries < 6 && placed.some(q => Math.abs(q.y - ly) < 13 && x0 < q.x1 + 2 && x0 + lw > q.x0 - 2); tries++) ly += (uy > 0.2 || tries % 2 ? 13 : -13) * (tries < 2 ? 1 : tries < 4 ? 2 : 3);
+        placed.push({ x0, x1: x0 + lw, y: ly });
+        T(ctx, E.box, P, txt, lx, ly, { size: 11, bold: true, color: col, align: al, maxw: areaW * 0.7 });
         if (project) {
           const px = rect.x + rect.w - 34;
           line(ctx, tip[0], tip[1], px, tip[1], col, 1, [2, 3]);

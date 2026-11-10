@@ -60,6 +60,10 @@
       case 'wechsel': return c[1] / (c[2] * c[3]);
       case 'heiz': return rd(c[1] * c[1] / c[2], 2);   /* R = U² : P, Widerstand eines Heizleiters im Betrieb */
       case 'idreh': return rd(c[1] / (Math.sqrt(3) * c[2] * c[3] * c[4]), 2);   /* Bemessungsstrom eines Drehstrommotors: I = P_ab : (Wurzel 3 · U · cos phi · eta) */
+      case 'l10h': return rd(1e6 / (60 * c[3]) * Math.pow(c[1] / c[2], c[4]), 0);   /* nominelle Lebensdauer in Stunden: L10h = 1e6 : (60 · n) · (C : P)^p, c = ['l10h', C, P, n, p] (p = 3 für Kugellager) */
+      case 'meld': return c[1] * c[2] + c[3];   /* Meldebestand = Verbrauch je Zeiteinheit · Wiederbeschaffungszeit + Sicherheitsbestand */
+      case 'oee': return rd(c[1] * c[2] * c[3] / 10000, 2);   /* Gesamtanlageneffektivität in Prozent aus Verfügbarkeit, Leistungsgrad, Qualitätsrate (je in Prozent) */
+      case 'fett': return rd(0.005 * c[1] * c[2], 2);   /* Nachschmiermenge in g: G = 0,005 · D · B (D, B in mm) */
       default: return NaN;
     }
   }

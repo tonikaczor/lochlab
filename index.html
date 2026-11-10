@@ -136,6 +136,11 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-hwllab" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 20h8M12 17v3M7 9h4v4H7zM14 9h3M14 12h3"/></symbol>
   <symbol id="i-syslab" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1.5"/><path d="M10 3v4M14 3v4M10 17v4M14 17v4M3 10h4M3 14h4M17 10h4M17 14h4"/></symbol>
   <symbol id="i-ssllab" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M7 7h10M7 11h3M13 11h4M7 15h10"/></symbol>
+  <symbol id="i-fuglab" viewBox="0 0 24 24"><path d="M3 15h10v4H3zM7 15V6h4v9"/><path d="M11 15l3-3M15 6h6v3h-6zM17 9v8"/></symbol>
+  <symbol id="i-maslab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
+  <symbol id="i-mchlab" viewBox="0 0 24 24"><path d="M3 14l18-4"/><path d="M12 12.6V19M8.5 19h7"/><rect x="4.5" y="9.6" width="3.2" height="3.2" rx=".6"/><path d="M18.5 9.4v5M16.8 12.9l1.7 1.9 1.7-1.9"/></symbol>
+  <symbol id="i-ferlab" viewBox="0 0 24 24"><path d="M3 7h13a4 4 0 0 1-4 4h-1l1 3h3v3H8v-3h3l-1-3H7a4 4 0 0 1-4-4z"/><path d="M19 7h2"/></symbol>
+  <symbol id="i-maklab" viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="5" rx="1"/><path d="M12 8v7M10 15h4l-2 5zM5 21h14"/></symbol>
   <symbol id="i-englab" viewBox="0 0 24 24"><path d="M4 7h8M8 7v10M4 17h8M14 9h6M17 9v8M14 17h6"/></symbol>
   <symbol id="i-bhflab" viewBox="0 0 24 24"><rect x="5" y="3" width="13" height="18" rx="2"/><path d="M8 8h7M8 12h7M8 16h4"/></symbol>
   <symbol id="i-itslab" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3M12 15v3"/></symbol>
@@ -435,6 +440,16 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Einstellen</span><span>Rechnen</span><span>Fehler finden</span></div>
       <div class="btns"><a class="btn pri" href="zerlab.html">Öffnen</a><a class="btn" href="zerlab.html?aufgabe=zer1">Erste Aufgabe</a><a class="btn" href="zerlab.html?bsp">Beispiel</a></div>
     </section>
+    <section class="card" data-lab="ferlab" data-group="grund" data-beruf="im">
+      <span class="tag">FERTIGUNGS-LAB</span>
+      <h3>Fertigen, planen und prüfen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><path d="M26 30v40q0 10 10 10h40" fill="none" stroke="#5fb0ff" stroke-width="8" stroke-linecap="round" stroke-opacity=".75"/><path d="M26 30v40q0 10 10 10h40" fill="none" stroke="#e8ecf0" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M92 92c12 0 14-52 28-52s16 52 28 52" fill="none" stroke="#6bd48a" stroke-width="3.5" stroke-linecap="round"/><path d="M104 30v64M136 30v64" stroke="#ffd1a0" stroke-width="3"/><path d="M88 94h64" stroke="#9aa6b2" stroke-width="2"/><rect x="170" y="28" width="46" height="66" rx="4" fill="#2c343e" stroke="#9aa6b2" stroke-width="3"/><path d="M183 32l7 7-7 7 7 7-7 7 7 7-7 7 7 7M203 32l-7 7 7 7-7 7 7 7-7 7 7 7-7 7" fill="none" stroke="#ff9f1c" stroke-width="2.5" stroke-linejoin="round"/></svg>
+      </div>
+      <p>Die Fertigung der Grundausbildung: Verfahren nach DIN 8580 auf der Landkarte, Blech biegen mit gestreckter Länge, Gewinde von Hand mit Kernloch, Zuschnitt und Schachtelung, Zeit und Kosten, Qualitätsregelkarte und Prozessfähigkeit, Vorrichtungen nach der 3-2-1-Regel. Mit Beispielen.</p>
+      <div class="steps"><span>Verfahren</span><span>Biegen</span><span>Planung</span><span>Qualität</span></div>
+      <div class="btns"><a class="btn pri" href="ferlab.html">Öffnen</a><a class="btn" href="ferlab.html?aufgabe=fer1">Erste Aufgabe</a><a class="btn" href="ferlab.html?bsp">Beispiel</a></div>
+    </section>
     <section class="card" data-lab="pnelab" data-group="auto" data-beruf="im">
       <span class="tag">PNEUMATIK-LAB</span>
       <h3>Schaltpläne verschlauchen und simulieren</h3>
@@ -455,6 +470,16 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verschlauchen</span><span>Simulieren</span><span>Rechnen</span></div>
       <div class="btns"><a class="btn pri" href="hydlab.html">Öffnen</a><a class="btn" href="hydlab.html?aufgabe=hyd1">Erste Aufgabe</a><a class="btn" href="hydlab.html?bsp">Beispiel</a></div>
     </section>
+    <section class="card" data-lab="maslab" data-group="auto" data-beruf="im">
+      <span class="tag">MASCHINENELEMENTE-LAB</span>
+      <h3>Getriebe und Antriebselemente</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><g transform="translate(76 60) rotate(0)"><path d="M18.77 -2.97L27.94 -1.9L27.94 1.9L18.77 2.97A19 19 0 0 1 17.74 6.81L25.14 12.32L23.24 15.62L14.77 11.96A19 19 0 0 1 11.96 14.77L15.62 23.24L12.32 25.14L6.81 17.74A19 19 0 0 1 2.97 18.77L1.9 27.94L-1.9 27.94L-2.97 18.77A19 19 0 0 1 -6.81 17.74L-12.32 25.14L-15.62 23.24L-11.96 14.77A19 19 0 0 1 -14.77 11.96L-23.24 15.62L-25.14 12.32L-17.74 6.81A19 19 0 0 1 -18.77 2.97L-27.94 1.9L-27.94 -1.9L-18.77 -2.97A19 19 0 0 1 -17.74 -6.81L-25.14 -12.32L-23.24 -15.62L-14.77 -11.96A19 19 0 0 1 -11.96 -14.77L-15.62 -23.24L-12.32 -25.14L-6.81 -17.74A19 19 0 0 1 -2.97 -18.77L-1.9 -27.94L1.9 -27.94L2.97 -18.77A19 19 0 0 1 6.81 -17.74L12.32 -25.14L15.62 -23.24L11.96 -14.77A19 19 0 0 1 14.77 -11.96L23.24 -15.62L25.14 -12.32L17.74 -6.81A19 19 0 0 1 18.77 -2.97Z" fill="#5fb0ff" fill-opacity=".35" stroke="#5fb0ff" stroke-width="2" stroke-linejoin="round"/><circle r="11" fill="none" stroke="#5fb0ff" stroke-width="1.5"/><circle r="4" fill="#17202e" stroke="#5fb0ff" stroke-width="2"/></g><g transform="translate(140 60) rotate(189)"><path d="M34.84 -3.29L43.96 -1.8L43.96 1.8L34.84 3.29A35 35 0 0 1 34.16 7.64L42.37 11.88L41.26 15.29L32.12 13.9A35 35 0 0 1 30.13 17.82L36.62 24.39L34.51 27.29L26.25 23.15A35 35 0 0 1 23.15 26.25L27.29 34.51L24.39 36.62L17.82 30.13A35 35 0 0 1 13.9 32.12L15.29 41.26L11.88 42.37L7.64 34.16A35 35 0 0 1 3.29 34.84L1.8 43.96L-1.8 43.96L-3.29 34.84A35 35 0 0 1 -7.64 34.16L-11.88 42.37L-15.29 41.26L-13.9 32.12A35 35 0 0 1 -17.82 30.13L-24.39 36.62L-27.29 34.51L-23.15 26.25A35 35 0 0 1 -26.25 23.15L-34.51 27.29L-36.62 24.39L-30.13 17.82A35 35 0 0 1 -32.12 13.9L-41.26 15.29L-42.37 11.88L-34.16 7.64A35 35 0 0 1 -34.84 3.29L-43.96 1.8L-43.96 -1.8L-34.84 -3.29A35 35 0 0 1 -34.16 -7.64L-42.37 -11.88L-41.26 -15.29L-32.12 -13.9A35 35 0 0 1 -30.13 -17.82L-36.62 -24.39L-34.51 -27.29L-26.25 -23.15A35 35 0 0 1 -23.15 -26.25L-27.29 -34.51L-24.39 -36.62L-17.82 -30.13A35 35 0 0 1 -13.9 -32.12L-15.29 -41.26L-11.88 -42.37L-7.64 -34.16A35 35 0 0 1 -3.29 -34.84L-1.8 -43.96L1.8 -43.96L3.29 -34.84A35 35 0 0 1 7.64 -34.16L11.88 -42.37L15.29 -41.26L13.9 -32.12A35 35 0 0 1 17.82 -30.13L24.39 -36.62L27.29 -34.51L23.15 -26.25A35 35 0 0 1 26.25 -23.15L34.51 -27.29L36.62 -24.39L30.13 -17.82A35 35 0 0 1 32.12 -13.9L41.26 -15.29L42.37 -11.88L34.16 -7.64A35 35 0 0 1 34.84 -3.29Z" fill="#ffd1a0" fill-opacity=".35" stroke="#ffd1a0" stroke-width="2" stroke-linejoin="round"/><circle r="21" fill="none" stroke="#ffd1a0" stroke-width="1.5"/><circle r="4" fill="#17202e" stroke="#ffd1a0" stroke-width="2"/></g><path d="M186 50q8 -6 16 0t16 0M186 70q8 -6 16 0t16 0" stroke="#6bd48a" stroke-width="3" fill="none" stroke-linecap="round" transform="translate(0 -10)"/></svg>
+      </div>
+      <p>Getriebe und Antriebselemente verstehen: Zahnräder greifen sichtbar ineinander und drehen sich mit der gewählten Übersetzung, dazu Zahnradmaße, Riemen- und Kettentriebe, Wälzlager im Schnitt aus dem Kurzzeichen, Fest-Los-Lagerung, Kupplungen, Bremsen, Dichtungen und Federn. Mit Rechnern, Beispielen und Fehlersuchen.</p>
+      <div class="steps"><span>Zahnräder</span><span>Riemen und Ketten</span><span>Lager</span><span>Federn</span></div>
+      <div class="btns"><a class="btn pri" href="maslab.html">Öffnen</a><a class="btn" href="maslab.html?aufgabe=mas1">Erste Aufgabe</a><a class="btn" href="maslab.html?bsp">Beispiel</a></div>
+    </section>
     <section class="card" data-lab="cnclab" data-group="bau" data-beruf="im">
       <span class="tag">CNC-LAB</span>
       <h3>G-Code lesen, schreiben und simulieren</h3>
@@ -465,6 +490,26 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Programmieren</span><span>Simulieren</span><span>Fehler finden</span></div>
       <div class="btns"><a class="btn pri" href="cnclab.html">Öffnen</a><a class="btn" href="cnclab.html?aufgabe=cnc1">Erste Aufgabe</a><a class="btn" href="cnclab.html?bsp">Beispiel</a></div>
     </section>
+    <section class="card" data-lab="fuglab" data-group="bau" data-beruf="im">
+      <span class="tag">FÜGE-LAB</span>
+      <h3>Schweißen, Löten, Kleben, Schrauben: richtig fügen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="24" y="80" width="104" height="14" fill="#9aa6b2"/><rect x="66" y="34" width="14" height="46" fill="#9aa6b2"/><path d="M80 80V62L98 80Z" fill="#ffb340"/><path d="M66 80V64L52 80Z" fill="#ffb340"/><path d="M104 40l-14 18" stroke="#ffd1a0" stroke-width="3" stroke-linecap="round"/><path d="M96 52l-7-6M100 56l8-2M92 60l-9 2" stroke="#ffb340" stroke-width="2.5" stroke-linecap="round"/><rect x="150" y="50" width="70" height="14" fill="#9aa6b2"/><rect x="150" y="64" width="70" height="18" fill="#7f8b97"/><rect x="180" y="38" width="10" height="62" fill="#5fb0ff"/><rect x="171" y="30" width="28" height="9" rx="2" fill="#5fb0ff"/><path d="M165 28a24 24 0 0 1 40 0" fill="none" stroke="#6bd48a" stroke-width="3" stroke-linecap="round"/><path d="M180 100h10" stroke="#5fb0ff" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+      <p>Fügeverfahren nach DIN 8593 im Berufsalltag: Schweißnähte mit a-Maß und Nahtsymbol, Lötspalt, Klebfläche und Zugscherfestigkeit, Nieten, Schrauben mit Anzugsmoment und Vorspannkraft, Passfeder und Pressverband. Jeder Rechner hat eine lebendige Grafik, dazu Aufgaben, Fehlersuche und Beispiele.</p>
+      <div class="steps"><span>Schweißen</span><span>Löten und Kleben</span><span>Schrauben</span><span>Welle-Nabe</span></div>
+      <div class="btns"><a class="btn pri" href="fuglab.html">Öffnen</a><a class="btn" href="fuglab.html?aufgabe=fug1">Erste Aufgabe</a><a class="btn" href="fuglab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="maklab" data-group="bau" data-beruf="im">
+      <span class="tag">MASCHINEN-LAB</span>
+      <h3>Maschinen der Werkstatt bedienen und rechnen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="40" y="96" width="100" height="8" rx="2" fill="#4a5666"/><rect x="82" y="26" width="14" height="70" fill="#8a97a8"/><rect x="58" y="22" width="62" height="26" rx="5" fill="#2c4a6e" stroke="#5fb0ff" stroke-width="2"/><rect x="72" y="14" width="34" height="10" rx="2" fill="#4a5666"/><circle cx="76" cy="35" r="5" fill="#ff5c5c"/><rect x="56" y="78" width="66" height="8" fill="#6a7686"/><path d="M89 48v26" stroke="#e8ecf0" stroke-width="3"/><path d="M120 34l34-14" stroke="#e8ecf0" stroke-width="3" stroke-linecap="round"/><circle cx="154" cy="20" r="5" fill="#ffb340"/><rect x="156" y="40" width="64" height="58" rx="4" fill="#0d1117" stroke="#38424d" stroke-width="2"/><g fill="#6bd48a" font-family="monospace" font-size="9"><text x="162" y="55">AUTO</text><text x="162" y="68">X 20.000</text><text x="162" y="81">F-OVR 80%</text></g><circle cx="170" cy="91" r="3.5" fill="#ff5c5c"/><circle cx="182" cy="91" r="3.5" fill="#6bd48a"/></svg>
+      </div>
+      <p>Die Maschinen der mechanischen Werkstatt als bedienbare Zeichnung: Bauteile antippen, Hebel und Drehzahltafeln lesen, Drehzahl und Stufe der gewählten Maschine berechnen, Spannen, Sicherheit, Maschinenwahl und das Bedienfeld einer CNC-Steuerung üben. Mit Beispielen.</p>
+      <div class="steps"><span>Maschinen</span><span>Tafeln lesen</span><span>Sicherheit</span><span>CNC-Bedienfeld</span></div>
+      <div class="btns"><a class="btn pri" href="maklab.html">Öffnen</a><a class="btn" href="maklab.html?aufgabe=mak1">Erste Aufgabe</a><a class="btn" href="maklab.html?bsp">Beispiel</a></div>
+    </section>
     <section class="card" data-lab="werlab" data-group="grund" data-beruf="im">
       <span class="tag">WERKSTOFF-LAB</span>
       <h3>Werkstoffe prüfen, kennen und auswählen</h3>
@@ -474,6 +519,16 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <p>Zugversuch mit Spannungs-Dehnungs-Diagramm, Härteprüfung, Werkstoffbezeichnungen entschlüsseln, Eisen-Kohlenstoff-Diagramm, Wärmebehandlung und Werkstoffwahl.</p>
       <div class="steps"><span>Prüfen</span><span>Ablesen</span><span>Auswählen</span></div>
       <div class="btns"><a class="btn pri" href="werlab.html">Öffnen</a><a class="btn" href="werlab.html?aufgabe=wer1">Erste Aufgabe</a><a class="btn" href="werlab.html?bsp">Beispiel</a></div>
+    </section>
+    <section class="card" data-lab="mchlab" data-group="grund" data-beruf="im">
+      <span class="tag">MECHANIK-LAB</span>
+      <h3>Kräfte, Hebel und Festigkeit im Berufsalltag</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><path d="M36 74H204" stroke="#9aa6b2" stroke-width="6" stroke-linecap="round"/><polygon points="120,78 106,100 134,100" fill="#2c343e" stroke="#9aa6b2" stroke-width="3" stroke-linejoin="round"/><rect x="46" y="50" width="28" height="20" rx="3" fill="#ffd1a0"/><rect x="176" y="58" width="16" height="12" rx="2" fill="#5fb0ff"/><path d="M184 22V50" stroke="#ff9f1c" stroke-width="3" stroke-linecap="round"/><polygon points="184,56 178,46 190,46" fill="#ff9f1c"/><path d="M96 56A26 26 0 0 1 144 56" fill="none" stroke="#6bd48a" stroke-width="3" stroke-linecap="round"/><polygon points="148,58 138,60 144,50" fill="#6bd48a"/></svg>
+      </div>
+      <p>Kräfte zerlegen und zusammensetzen, Hebel und Drehmoment, Auflagerkräfte am Träger mit Querkraft- und Momentenverlauf, Schwerpunkt, Reibung an der schiefen Ebene, Spannung und Dehnung, Flächenpressung, Abscheren, Biegung und Sicherheit, Arbeit und Wirkungsgrad. Mit ziehbaren Zeichnungen und Beispielen.</p>
+      <div class="steps"><span>Kräfte</span><span>Träger</span><span>Festigkeit</span><span>Prüfen</span></div>
+      <div class="btns"><a class="btn pri" href="mchlab.html">Öffnen</a><a class="btn" href="mchlab.html?aufgabe=mch1">Erste Aufgabe</a><a class="btn" href="mchlab.html?bsp">Beispiel</a></div>
     </section>
     <section class="card" data-lab="inslab" data-group="mess" data-beruf="im">
       <span class="tag">INSTANDHALTUNGS-LAB</span>

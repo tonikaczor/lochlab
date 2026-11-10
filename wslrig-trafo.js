@@ -152,7 +152,7 @@
       if (r.dc) return { ok: false, why: 'Gleichspannung: kein Wechselfluss, daher kein Zeigerbild.' };
       if (!(ctl.u1 > 0)) return { ok: false, why: CORE.TEXTS.eingabe };
       // U1 und U2 sind in Phase, der Fluss eilt der Spannung um 90 Grad nach (u = N dPhi/dt); Phi hat freien Massstab
-      const list = [{ name: 'U₁', len: ctl.u1, angle: 0, kind: 'u' }, { name: 'Φ (Maßstab frei)', len: ctl.u1 * 0.8, angle: -90, kind: 's' }, { name: 'U₂', len: r.u2, angle: 0, kind: 'p' }];
+      const list = [{ name: 'U₁', len: ctl.u1, angle: 0, kind: 'u' }, { name: 'Φ (Maßstab frei)', len: ctl.u1 * 0.8, angle: -90, kind: 's', unit: '' }, { name: 'U₂', len: r.u2, angle: 0, kind: 'p' }];
       return { ok: true, art: 'trafo', bezug: 'spannung', effektiv: true, unit: 'V', list };
     }
     function curves(r, ctl) {

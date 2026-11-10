@@ -70,7 +70,10 @@
   const endHint = e => (C.isWeekend(e) ? note('Das Fristende fällt auf einen ' + C.WDL[C.weekday(e)] + ' (§ 193 BGB, vereinfacht): Die Frist endet erst am nächsten Werktag, ' + C.fmtDateWd(C.nextWerktag(e)) + '. Feiertage prüfst du selbst.') : '');
 
   /* ============================================================ Vertrag (Zustandekommen) */
-  function vertOut(p) {
+  /* Visualisierung (recviz.js) vor dem Text; ohne die Datei bleibt alles wie vorher */
+  const VZ = (k, a, b, c) => { try { return root.REC_VIZ ? root.REC_VIZ[k](a, b, c) : ''; } catch (e) { return ''; } };
+  function vertOut(p) { return VZ('vert', p) + vertOut0(p); }
+  function vertOut0(p) {
     const bis = PD(p.bis), best = PD(p.best), hasB = String(p.best || '').trim() !== '';
     if (p.angebot === 'bindend' && !Number.isFinite(bis)) return dateMsg('das Datum "Angebot gültig bis"');
     if (hasB && !Number.isFinite(best)) return dateMsg('das Bestelldatum');
@@ -97,7 +100,8 @@
   /* PRUEFEN P25: Fall-Prüfer: Eingaben stark vereinfacht (Handelskauf ja/nein, Fixgeschäft, Mangel offen/versteckt/arglistig). Beim bürgerlichen Kauf (Handelskauf = Nein) entfällt die Rügepflicht; Verbrauchsgüterkauf-Sonderregeln fehlen. Fachliche Schwerpunkte und Reihenfolge der Rechte hier nach Lehrbuch-Schema (siehe P9): passt das so? */
   const yn = v => v === 'ja';
   const fallParams = s => ({ stoerung: s.stoerung, handel: yn(s.handel), mangelart: s.mangelart, ruege: yn(s.ruege), nacherf: s.nacherf, erheblich: yn(s.erheblich), verschulden: yn(s.verschulden), kalender: yn(s.kalender), mahnung: yn(s.mahnung), fix: yn(s.fix), nachfrist: yn(s.nachfrist) });
-  function fallOut(s) {
+  function fallOut(s) { return VZ('fall', s) + fallOut0(s); }
+  function fallOut0(s) {
     const r = C.kaeuferRechte(fallParams(s)); let h = '';
     if (r.blocked) h += note(r.blocked, 'bad');
     if (r.rights.length) h += `<div class="rdout ok"><span class="st">Rechte des Käufers</span><ul class="tl">${r.rights.map(k => `<li class="ok">✓ <b>${esc(C.RECHTE[k].n)}</b>: ${esc(C.RECHTE[k].d)}</li>`).join('')}</ul></div>`;
@@ -118,7 +122,8 @@
 
   /* ============================================================ Fristen (Datumsrechner) */
   const MODES = [['verj', 'Verjährung'], ['gew', 'Gewährleistung'], ['ruege', 'Rüge'], ['verzug', 'Zahlungsverzug'], ['skonto', 'Zahlungsziel'], ['kuend', 'Kündigung'], ['add', 'Frist addieren']];
-  function fristOut(p) {
+  function fristOut(p) { return VZ('frist', p) + fristOut0(p); }
+  function fristOut0(p) {
     const d1 = PD(p.d1), d2 = PD(p.d2); let h = '';
     const need1 = what => dateMsg(what);
     switch (p.mode) {
@@ -215,6 +220,7 @@
     const o = S.bl.order, res = S.bl.res;
     let h = ueb() + `<div class="card pl"><h4>${esc(set.title)}</h4><div class="fbar"><div class="seg">${Object.keys(C.ORDER).map(k => `<button data-bs="${k}" class="${S.beleg.set === k ? 'on' : ''}">${esc(C.ORDER[k].title)}</button>`).join('')}</div></div><p class="hint2" style="margin:0 0 6px">${esc(set.hint)} Mit den Pfeilen verschiebst du einen Schritt.</p>`;
     h += o.map((idx, i) => `<div class="row" style="cursor:default"><span class="dot ${res ? (res[i] ? 'g' : 'p') : ''}">${res ? (res[i] ? '✓' : '✗') : i + 1}</span><div class="grow"><b>${esc(set.items[idx].n)}</b>${res && res[i] ? `<small>${esc(set.items[idx].wer)}: ${esc(set.items[idx].d)}</small>` : ''}</div><button class="ib" data-bm="${i}:-1" aria-label="nach oben"${i === 0 ? ' disabled' : ''}>▲</button><button class="ib" data-bm="${i}:1" aria-label="nach unten"${i === o.length - 1 ? ' disabled' : ''}>▼</button></div>`).join('');
+    h += VZ('beleg', S.beleg.set, o, res);
     h += `<div class="btns"><button class="btn pri" data-ba="chk">✓ Prüfen</button><button class="btn" data-ba="mix">Neu mischen</button><button class="btn" data-ba="sol">Lösung zeigen</button></div>`;
     if (res) { const n = res.filter(Boolean).length; h += note(n === res.length ? '🎉 Alles richtig! Reihenfolge: ' + C.orderRight(S.beleg.set).join(' → ') : n + ' von ' + res.length + ' Schritten stehen richtig. Verschiebe die anderen und prüfe noch einmal.', n === res.length ? 'ok' : 'warn'); }
     $('#belegView').innerHTML = h + '</div>';
@@ -229,11 +235,12 @@
       else { S.bl.res = C.orderCheck(S.beleg.set, S.bl.order); if (S.bl.res.every(Boolean)) ding(); else sad(); renderBeleg(); }
     }
   });
-  const belegStatic = key => { const set = C.ORDER[key]; return `<div class="tw"><table class="tt"><tr><th class="n">Nr.</th><th>Schritt</th><th>erstellt von</th></tr>${set.items.map((x, i) => `<tr><td class="n">${i + 1}</td><td><b>${esc(x.n)}</b><br><span class="hint2">${esc(x.d)}</span></td><td>${esc(x.wer)}</td></tr>`).join('')}</table></div>`; };
+  const belegStatic = key => { const set = C.ORDER[key]; return VZ('beleg', key, set.items.map((x, i) => i), set.items.map(() => true)) + `<div class="tw"><table class="tt"><tr><th class="n">Nr.</th><th>Schritt</th><th>erstellt von</th></tr>${set.items.map((x, i) => `<tr><td class="n">${i + 1}</td><td><b>${esc(x.n)}</b><br><span class="hint2">${esc(x.d)}</span></td><td>${esc(x.wer)}</td></tr>`).join('')}</table></div>`; };
 
   /* ============================================================ Brutto-Netto-Rechner */
   /* PRUEFEN P27: Der Arbeitgeberanteil wird im Brutto-Netto-Rechner nur erklärt, nicht berechnet (Vorgabe: nur erklären). Reicht die Erklärung (zahlt der Arbeitgeber zusätzlich, nicht vom Brutto abgezogen, erhöht Personalkosten)? Die Rechnung mit Prozentsätzen ist ein Übungsmodell ohne Steuerklassen. */
-  function lohnOut(s) {
+  function lohnOut(s) { return VZ('lohn', s) + lohnOut0(s); }
+  function lohnOut0(s) {
     const b = P(s.brutto), L = { lst: P(s.lst), rv: P(s.rv), kv: P(s.kv), pv: P(s.pv), av: P(s.av) };
     if (!(b >= 0)) return note('Gib ein Bruttogehalt als Zahl ein (zum Beispiel 2800).');
     if (!Object.values(L).every(v => Number.isFinite(v) && v >= 0 && v <= 60)) return note('Alle Prozentsätze müssen Zahlen zwischen 0 und 60 sein.');

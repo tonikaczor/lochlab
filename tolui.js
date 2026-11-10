@@ -289,8 +289,9 @@
             : `Das Maß liegt ${C.fmtDe(k.dev_um, 1).replace(/,0$/, '')} µm unter dem Mindestmaß. ${c.part === 'welle' ? 'Die Welle ist zu dünn: Es fehlt Material, das sich nicht ersetzen lässt.' : 'Die Bohrung ist zu klein: Material kann noch weggenommen werden (aufbohren, aufreiben).'}`;
         h += `<div class="rdout ${k.state === 'gut' ? 'ok' : k.state === 'ausschuss' ? 'bad' : ''}"><span class="badge ${k.state}">${C.STATE_TEXT[k.state]}</span> ${esc(why)}</div>`;
         h += svgStrip(d, m, c.part);
+        if (root.TOLVIZ) h += root.TOLVIZ.shape(c.part, d, m);
       }
-    } else h += svgStrip(d, null, c.part);
+    } else { h += svgStrip(d, null, c.part); if (root.TOLVIZ) h += root.TOLVIZ.shape(c.part, d, null); }
     h += '<p class="hint2">Regel: Zu viel Material (Welle zu dick, Bohrung zu klein) ist meist Nacharbeit. Zu wenig Material (Welle zu dünn, Bohrung zu groß) ist Ausschuss.</p>';
     host.innerHTML = h;
   }
@@ -320,7 +321,7 @@
     if (!F) { host.innerHTML = `<div class="rdout bad">Die Tabelle gilt für Nennmaße über 6 bis 50 mm (Bereiche: über 6 bis 10, über 10 bis 18, über 18 bis 30, über 30 bis 50 mm). Bitte ein Nennmaß in diesem Bereich eingeben.</div>`; $('#fCmp').innerHTML = ''; return; }
     const lines = C.fitLines(F);
     let h = `<p class="hint2" style="margin:0 0 6px">Nennmaßbereich: <b>${esc(C.rangeLabel(F.range))}</b> · Passung <b>Ø${esc(String(f0.N).trim())} ${esc(F.code)}</b></p>`;
-    h += svgFit(F);
+    h += svgFit(F) + (root.TOLVIZ ? root.TOLVIZ.fit(F) : '');
     h += `<table class="tt"><tr><th></th><th class="n">oben</th><th class="n">unten</th><th class="n">Höchstmaß</th><th class="n">Mindestmaß</th></tr>
       <tr><td><b>Bohrung ${esc(F.hole.code)}</b></td><td class="n">ES ${sg(F.hole.ES)} µm</td><td class="n">EI ${sg(F.hole.EI)} µm</td><td class="n">${C.fmtDe(F.holeGo, 3)} mm</td><td class="n">${C.fmtDe(F.holeGu, 3)} mm</td></tr>
       <tr><td><b>Welle ${esc(F.shaft.code)}</b></td><td class="n">es ${sg(F.shaft.es)} µm</td><td class="n">ei ${sg(F.shaft.ei)} µm</td><td class="n">${C.fmtDe(F.shaftGo, 3)} mm</td><td class="n">${C.fmtDe(F.shaftGu, 3)} mm</td></tr></table>
@@ -339,7 +340,7 @@
       <div class="opts" id="pkOpts">${opts.map((o, i) => `<button data-po="${i}" ${p.res ? 'disabled' : ''} class="${p.res ? (o === u.correct ? 'ok' : i === p.sel ? 'bad' : '') : i === p.sel ? 'on' : ''}">${esc(o)}</button>`).join('')}</div>`;
     if (p.res) {
       const code = u.correct.split('/')[1], F = C.fit('H7', code, 25), L = C.fitLines(F);
-      h += `<div class="fb ${p.res.ok ? 'ok' : 'bad'}"><span class="v">${p.res.ok ? '✓ Richtig!' : '✗ Leider nicht.'}</span> Passend ist ${esc(u.correct)}. ${esc(u.why)}<br><span class="hint2">Beispiel Ø25: ${esc(F.artText)}, ${L.map(l => l[0] + ' ' + l[1] + ' µm').join(', ')}.</span></div><div class="btns"><button class="btn pri" data-pn="next">Nächster Fall</button></div>`;
+      h += `<div class="fb ${p.res.ok ? 'ok' : 'bad'}"><span class="v">${p.res.ok ? '✓ Richtig!' : '✗ Leider nicht.'}</span> Passend ist ${esc(u.correct)}. ${esc(u.why)}<br><span class="hint2">Beispiel Ø25: ${esc(F.artText)}, ${L.map(l => l[0] + ' ' + l[1] + ' µm').join(', ')}.</span></div>${root.TOLVIZ ? root.TOLVIZ.fit(F) : ''}<div class="btns"><button class="btn pri" data-pn="next">Nächster Fall</button></div>`;
     } else h += `<div class="btns"><button class="btn pri" data-pn="chk"${p.sel >= 0 ? '' : ' disabled'}>✓ Prüfen</button></div>`;
     host.innerHTML = h + '</div>';
   }
@@ -409,7 +410,7 @@
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
       if (r) {
         h += `<ul class="tl">${r.lines.map(l => `<li class="${l.info ? '' : l.ok ? 'ok' : 'bad'}">${l.info ? 'ℹ' : l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-        if (r.ok || !exam()) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(r.sol)}<br>${esc(t.expl)}${t.inst ? '<br><br><b>Ablesung:</b> ' + esc(C.describe(t.inst)) : ''}</div>`;
+        if (r.ok || !exam()) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(r.sol)}<br>${esc(t.expl)}${t.inst ? '<br><br><b>Ablesung:</b> ' + esc(C.describe(t.inst)) : ''}</div>${root.TOLVIZ ? root.TOLVIZ.task(t.id) : ''}`;
         else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
         if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
       }
@@ -505,7 +506,7 @@
       <tr><td><span class="badge uebergang" style="font-size:12px">Übergangspassung</span></td><td>je nach Istmaßen Spiel oder Übermaß</td><td>H7/j6 Zentrierung, H7/k6, H7/m6, H7/n6</td></tr>
       <tr><td><span class="badge press" style="font-size:12px">Übermaßpassung</span></td><td>Höchstspiel ≤ 0, die Welle ist nie kleiner als die Bohrung</td><td>H7/p6, H7/s6 Presssitz</td></tr></table>
       <p>Toleranzfeld-Diagramme für Ø25: H7/f7 (Spiel), H7/j6 (Übergang), H7/s6 (Übermaß).</p>
-      <div class="cols l3"><div>${svgFit(F1)}</div><div>${svgFit(F2)}</div></div><div style="max-width:440px;margin:0 auto">${svgFit(F3)}</div></div></details>
+      <div class="cols l3"><div>${svgFit(F1)}</div><div>${svgFit(F2)}</div></div><div style="max-width:440px;margin:0 auto">${svgFit(F3)}</div>${root.TOLVIZ ? root.TOLVIZ.arten() : ''}</div></details>
     <details><summary>🧮 Formeln</summary><div class="hb2">
       <span class="eq">Höchstmaß G_o = N + ES (Bohrung) bzw. N + es (Welle)</span>
       <span class="eq">Mindestmaß G_u = N + EI (Bohrung) bzw. N + ei (Welle)</span>

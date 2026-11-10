@@ -95,7 +95,7 @@
       <div class="card pl"><h4>ER-Modell</h4><div class="inst">${erSvg(S.db)}</div><p class="hint2">Lesebeispiel: Ein Kunde (1) hat viele Bestellungen (n). Eine Bestellung hat viele Positionen (n), und jede Position zeigt auf genau einen Artikel (1). Zwischen bestellung und artikel gibt es daher eine n:m-Beziehung über die Tabelle bestellposition.</p></div>
       <div class="card pl"><h4>Tabellen und Inhalt</h4>${S.dirty ? '<p class="hint2" style="margin:0 0 6px">Stand nach deinen Änderungen im Editor. <button class="chip s" data-a="reset">↺ Zurücksetzen</button></p>' : ''}`;
     h += '<div class="dt">' + info.map(t => { const tb = S.db.tables[t.name]; return `<details><summary>${esc(t.name)} <span class="hint2" style="margin-left:8px">${t.n} Zeilen</span></summary><div class="hb2"><p>${esc(D.desc[t.name] || '')}</p><p class="hint2">${t.cols.map(c => esc(c.n) + ' ' + esc(c.type) + (c.pk ? '<span class="tg pk">PK</span>' : '') + (c.fk ? '<span class="tg fk">FK → ' + esc(c.fk) + '</span>' : '')).join(' · ')}</p>${tableHtml(tb.cols.map(c => c.n), tb.rows, 60)}</div></details>`; }).join('') + '</div></div>';
-    $('#dbView').innerHTML = h;
+    $('#dbView').innerHTML = h; if (root.SQL_VIZ) root.SQL_VIZ.mount($('#dbView'), S.db);
   }
   $('#dbView').addEventListener('click', e => { if (e.target.closest('[data-a=reset]')) resetDb(); });
   function resetDb() { S.db = C.cloneDb(D.makeDb()); S.dirty = false; S.edOut = ''; toast('Datenbank zurückgesetzt'); if (S.tab === 'db') renderDb(); else if (S.tab === 'ed') renderEd(); }
@@ -112,8 +112,9 @@
   function insertAt(txt) { const ta = $('#edSql'); if (!ta) return; const a = ta.selectionStart || 0, b = ta.selectionEnd || 0; ta.value = ta.value.slice(0, a) + txt + ta.value.slice(b); const p = a + txt.length; ta.focus(); try { ta.setSelectionRange(p, p); } catch (e) {} edSql = ta.value; lsSet('ed', edSql); }
   function runEd() {
     const ta = $('#edSql'); edSql = ta ? ta.value : edSql; lsSet('ed', edSql);
+    const vz = root.SQL_VIZ ? root.SQL_VIZ.html(edSql, S.db) : ''; /* Visualisierung (sqlviz.js), vor der Ausführung berechnet */
     const r = C.exec(S.db, edSql); if (r.ok && r.results.some(x => x.kind !== 'select')) S.dirty = true; else if (!r.ok && r.results.some(x => x.kind !== 'select')) S.dirty = true;
-    S.edOut = resultHtml(r, S.db, true); const o = $('#edOut'); if (o) o.innerHTML = S.edOut; if (S.dirty) { const p = $('#edView .hint2'); if (p) p.innerHTML = 'Strg+Enter führt aus. Mehrere Anweisungen trennst du mit einem Semikolon. <b>Die Datenbank ist verändert</b> (INSERT, UPDATE oder DELETE wurde ausgeführt).'; }
+    S.edOut = resultHtml(r, S.db, true) + vz; const o = $('#edOut'); if (o) o.innerHTML = S.edOut; if (S.dirty) { const p = $('#edView .hint2'); if (p) p.innerHTML = 'Strg+Enter führt aus. Mehrere Anweisungen trennst du mit einem Semikolon. <b>Die Datenbank ist verändert</b> (INSERT, UPDATE oder DELETE wurde ausgeführt).'; }
     if (!r.ok) sad();
   }
   $('#edView').addEventListener('input', e => { if (e.target.id === 'edSql') { edSql = e.target.value; lsSet('ed', edSql); } });
@@ -180,7 +181,8 @@
     const t = curTask(); if (!t) return; const ta = $('#tkSql'); const a = (S.tAns[t.id] = S.tAns[t.id] || {}); if (ta) a.s = ta.value;
     if (!(a.s || '').trim()) { toast('Schreibe zuerst deine SQL-Anweisung.'); return; }
     if (!S.twdb) S.twdb = C.cloneDb(D.makeDb());
-    const r = C.exec(S.twdb, a.s); S.tOut = resultHtml(r, S.twdb, false); const o = $('#tkOut'); if (o) o.innerHTML = S.tOut; if (!r.ok) sad();
+    const vz = root.SQL_VIZ ? root.SQL_VIZ.html(a.s, S.twdb, { task: true }) : '';
+    const r = C.exec(S.twdb, a.s); S.tOut = resultHtml(r, S.twdb, false) + vz; const o = $('#tkOut'); if (o) o.innerHTML = S.tOut; if (!r.ok) sad();
   }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
@@ -221,7 +223,7 @@
   function renderBsp() {
     $('#bspView').innerHTML = `<p class="hint2" style="margin:0 0 8px">Fertig durchgerechnete Beispiele. Jedes wird auf einer frischen Datenbank ausgeführt. Mit „In den Editor laden“ kannst du die Abfrage verändern und selbst ausprobieren.</p>` + D.examples.map(e => {
       const db = C.cloneDb(D.makeDb()), r = C.exec(db, e.sql);
-      return `<div class="card pl" id="ex_${e.id}"><h4>Beispiel</h4><div class="big">${esc(e.title)}</div><p style="margin:4px 0 8px">${esc(e.text)}</p>${codeBlock(e.sql)}${resultHtml(r, db, false)}<div class="btns"><button class="btn pri" data-ex="${e.id}">In den Editor laden</button></div></div>`;
+      return `<div class="card pl" id="ex_${e.id}"><h4>Beispiel</h4><div class="big">${esc(e.title)}</div><p style="margin:4px 0 8px">${esc(e.text)}</p>${codeBlock(e.sql)}${resultHtml(r, db, false)}${root.SQL_VIZ ? root.SQL_VIZ.html(e.sql, C.cloneDb(D.makeDb())) : ''}<div class="btns"><button class="btn pri" data-ex="${e.id}">In den Editor laden</button></div></div>`;
     }).join('');
   }
   $('#bspView').addEventListener('click', e => {

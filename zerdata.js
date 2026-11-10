@@ -312,6 +312,95 @@
     };
   });
 
+  /* ====================== Neue Aufgaben zer35 bis zer44 (Industriemechaniker: Fertigen mit Maschinen). PRUEFEN Pn: quelle/zer/PRUEFEN.md ====================== */
+  def('zer35', 'praxis', 2, 'Standzeit und Schnittgeschwindigkeit', 'choice', function (r) {
+    var m = r.pick(['S235', 'C45', 'Grauguss']), p = r.pick([20, 30, 40]);
+    return {
+      text: 'Beim Drehen von ' + m + ' mit einer Hartmetall-Wendeplatte wird die Drehzahl um ' + p + ' % erhöht, alle anderen Einstellungen bleiben gleich. Wie wirkt sich das auf die Standzeit der Schneide aus?',
+      opts: ['Die Standzeit sinkt deutlich, weil die Schneide heißer wird und schneller verschleißt', 'Die Standzeit steigt, weil die Schneide kürzer im Eingriff ist und weniger leidet', 'Die Standzeit bleibt gleich, denn nur der Vorschub bestimmt den Verschleiß', 'Die Standzeit ändert sich nicht in einer festen Richtung, das hängt vom Zufall ab'], correct: 0,
+      steps: ['Die Standzeit ist die Zeit, die eine Schneide bis zum Erreichen des Verschleißkriteriums schneiden kann.', 'Mit der Schnittgeschwindigkeit steigt die Temperatur an der Schneide. Schon eine kleine Erhöhung von vc verkürzt die Standzeit stark.', 'Darum wählt man vc im Richtwert-Fenster und nicht am oberen Rand, wenn lange Standzeiten gefragt sind.'],
+      tips: tipps('Eine höhere Drehzahl bei gleichem Durchmesser bedeutet eine höhere Schnittgeschwindigkeit.', 'Was passiert mit der Temperatur an der Schneide, wenn der Span schneller abläuft?')
+    };
+  });
+  def('zer36', 'praxis', 1, 'Aufgaben des Kühlschmierstoffs', 'choice', function (r) {
+    var pr = r.pick(['Bohren', 'Fräsen', 'Gewindebohren', 'Drehen']);
+    return {
+      text: 'Beim ' + pr + ' wird Kühlschmierstoff in die Zerspanungszone geleitet. Welche Aufgaben erfüllt er dort?',
+      opts: ['Er kühlt, verringert die Reibung und transportiert die Späne ab', 'Er erhöht die Schnittgeschwindigkeit, ohne dass die Schneide warm wird', 'Er härtet die Schneide während der Arbeit immer weiter nach', 'Er macht den Vorschub überflüssig, weil das Werkzeug von selbst eindringt'], correct: 0,
+      steps: ['Kühlschmierstoff hat drei Aufgaben: Kühlen (Wärme abführen), Schmieren (Reibung an Span und Freifläche verringern) und Spülen (Späne aus der Zerspanungszone wegtransportieren).', 'Er ersetzt weder Vorschub noch Schnittgeschwindigkeit und verändert nicht die Härte der Schneide.'],
+      tips: tipps('Denke an die drei Wörter Kühlen, Schmieren, Spülen.', 'Die anderen Antworten behaupten Wirkungen, die ein Kühlschmierstoff gar nicht haben kann.')
+    };
+  });
+  def('zer37', 'praxis', 2, 'Spanform beeinflussen', 'choice', function (r) {
+    var m = r.pick(['S235', 'C45', 'einem rostfreien Stahl']), d = r.pick([30, 40, 50]);
+    return {
+      text: 'Beim Längsdrehen von ' + m + ' (Ø ' + d + ' mm) entstehen sehr lange Bandspäne, die sich um Werkstück und Meißel wickeln. Welche Maßnahme führt am ehesten zu kürzeren, abbrechenden Spänen?',
+      opts: ['Den Vorschub etwas erhöhen und eine Wendeplatte mit Spanleitstufe verwenden', 'Den Vorschub deutlich verkleinern, damit der Span dünner wird', 'Die Zustellung auf 0,1 mm verringern', 'Mehr Kühlschmierstoff auf das Werkstück gießen, um den Span zu bremsen'], correct: 0,
+      steps: ['Dünne Späne sind biegsam und reißen nicht ab. Dickere Späne, die über eine Spanleitstufe (Spanbrecher) gelenkt werden, brechen leichter.', 'Ein kleinerer Vorschub oder eine kleinere Zustellung macht den Span dünner und länger. Zusätzlicher Kühlschmierstoff ändert die Spanform kaum.'],
+      tips: tipps('Überlege, ob ein dünner oder ein dicker Span leichter bricht.', 'Der Spanbrecher auf der Wendeplatte biegt den Span so stark, dass er abbricht.')
+    };
+  });
+  def('zer38', 'bohr', 2, 'Kernlochdurchmesser für ein Gewinde', 'num', function (r) {
+    var g = r.pick([[6, 1], [8, 1.25], [10, 1.5], [12, 1.75], [16, 2], [20, 2.5]]), s = g[0] - g[1];
+    return {
+      text: 'In einem Werkstück soll ein Regelgewinde M' + g[0] + ' (Steigung P = ' + N(g[1]) + ' mm) mit dem Gewindebohrer geschnitten werden. Als Faustformel für das Kernloch gilt: Kernlochdurchmesser = Gewindenenndurchmesser minus Steigung. Welchen Bohrerdurchmesser rechnest du aus?', unit: 'mm', sol: s, tol: 0.5,
+      steps: ['Faustformel: d_Kern = d − P', 'd_Kern = ' + g[0] + ' mm − ' + N(g[1]) + ' mm = ' + N(s) + ' mm', 'Im Tabellenbuch stehen die genormten Bohrerdurchmesser, zum Beispiel 6,8 mm für M8.'],
+      tips: tipps('Das Kernloch muss kleiner sein als der Nenndurchmesser, damit die Gewindegänge Material zum Schneiden haben.', 'Ziehe von dem Zahlenwert hinter dem M die Steigung P ab.')
+    };
+  });
+  def('zer39', 'bohr', 2, 'Reiben: Wozu eine Reibahle?', 'choice', function (r) {
+    var d = r.pick([8, 10, 12, 16]);
+    return {
+      text: 'Eine Passbohrung Ø' + d + ' H7 soll hergestellt werden. Sie wird zuerst mit dem Spiralbohrer vorgebohrt und dann gerieben. Wozu dient das Reiben?',
+      opts: ['Es schneidet nur wenig Werkstoff ab und macht Maß und Oberfläche der Bohrung genauer', 'Es vergrößert die Bohrung um mehrere Millimeter in einem Arbeitsgang', 'Es schneidet das Gewinde in die Bohrung, das später die Schraube hält', 'Es entfernt die Späne aus dem Sackloch, damit der Bohrer wieder greift'], correct: 0,
+      steps: ['Ein Spiralbohrer erzeugt keine Bohrung in der Qualität H7: Das Maß streut und die Wand ist rau.', 'Die Reibahle trägt nur wenige Zehntel Millimeter ab (Reibzugabe), glättet die Wand und bringt die Bohrung auf Maß.'],
+      tips: tipps('Eine Passbohrung braucht ein genaues Maß und eine glatte Wand.', 'Die Reibahle hat viele feine Schneiden und nimmt nur sehr wenig Material weg.')
+    };
+  });
+  def('zer40', 'bohr', 1, 'Senken und Entgraten', 'choice', function (r) {
+    var d = r.pick([6, 8, 9, 11]);
+    return {
+      text: 'In ein Blech wird eine Durchgangsbohrung Ø' + d + ' mm gebohrt. Eine Senkkopfschraube soll später bündig mit der Oberfläche abschließen. Welches Werkzeug erzeugt die dafür nötige kegelige Vertiefung?',
+      opts: ['Der Kegelsenker mit 90° Öffnungswinkel', 'Der Gewindebohrer', 'Die Reibahle', 'Der Spiralbohrer mit größerem Durchmesser'], correct: 0,
+      steps: ['Senkkopfschrauben haben einen kegeligen Kopf mit 90° Öffnungswinkel. Die Vertiefung wird mit einem Kegelsenker erzeugt.', 'Ein Gewindebohrer schneidet Gewinde, die Reibahle macht eine Bohrung maßgenau, ein größerer Spiralbohrer ergäbe nur eine zylindrische Stufe.'],
+      tips: tipps('Der Schraubenkopf ist kegelig. Die Vertiefung muss die gleiche Form haben.', 'Nur ein Werkzeug mit kegeliger Schneide passt zur Form des Schraubenkopfes.')
+    };
+  });
+  def('zer41', 'fraes', 2, 'Gleichlauf und Gegenlauf', 'choice', function (r) {
+    var d = r.pick([20, 25, 32, 40]);
+    return {
+      text: 'Du fräst mit einem Schaftfräser (d = ' + d + ' mm) die Seitenfläche einer Nut. Welche Aussage über das Gleichlauffräsen stimmt?',
+      opts: ['Die Schneide trifft zuerst auf einen ganz dünnen Span und reibt dabei am Werkstoff', 'Der Span ist beim Eintritt am dicksten und läuft dünn aus, der Tischvorschub muss spielfrei sein', 'Gleichlauf ist nur bei weichen Werkstoffen wie Aluminium überhaupt erlaubt', 'Die Schnittkraft hebt das Werkstück von der Auflage ab und lockert die Spannung'], correct: 1,
+      steps: ['Beim Gleichlauf dreht der Fräser in Vorschubrichtung. Die Schneide schneidet sofort mit voller Spanungsdicke an und der Span läuft dünn aus. Das ergibt gute Oberflächen und lange Standzeit.', 'Der Fräser zieht das Werkstück in die Schneide hinein. Deshalb braucht die Maschine einen spielfreien Vorschub, sonst kann der Tisch ruckartig mitgezogen werden.', 'Die beiden Aussagen mit dünnem Anschnitt und Abheben des Werkstücks beschreiben den Gegenlauf.'],
+      tips: tipps('Beim Gleichlauf zeigt die Vorschubrichtung des Werkstücks in dieselbe Richtung wie die Schneide am Eingriffspunkt.', 'Denke an die Spanform: Wo beginnt der Span, dünn oder dick?')
+    };
+  });
+  def('zer42', 'fraes', 3, 'Nut in mehreren Schnitten fräsen', 'num', function (r) {
+    var l = r.pick([80, 100, 120]), la = r.pick([4, 5]), lu = r.pick([3, 4]), t = r.pick([5, 6, 7]), ap = r.pick([2, 2.5]), fz = r.pick([0.05, 0.08]), z = r.pick([2, 3, 4]), n = r.pick([800, 1000, 1250]),
+      vf = C.vfFraes(fz, z, n), i = Math.ceil(t / ap - 1e-9), s = C.thFraes(l, la, lu, i, vf);
+    return {
+      text: 'Eine Nut (Länge l = ' + l + ' mm, Tiefe ' + t + ' mm) wird mit einem Schaftfräser in mehreren Schnitten gleicher Länge gefräst. Je Schnitt darf höchstens ap = ' + N(ap) + ' mm zugestellt werden. Anlauf ' + la + ' mm, Überlauf ' + lu + ' mm, z = ' + z + ' Schneiden, fz = ' + N(fz) + ' mm, n = ' + n + ' min⁻¹. Wie groß ist die gesamte Hauptzeit?', unit: 'min', sol: s,
+      steps: ['Zahl der Schnitte: ' + t + ' mm / ' + N(ap) + ' mm = ' + N(t / ap) + ', aufgerundet ' + i + ' Schnitte', 'vf = fz · z · n = ' + N(fz) + ' · ' + z + ' · ' + n + ' = ' + N(vf) + ' mm/min', 'th = L · i / vf = ' + (l + la + lu) + ' mm · ' + i + ' / ' + N(vf) + ' mm/min = ' + N(s) + ' min (' + C.fmtZeit(s) + ')'],
+      tips: tipps('Rechne erst aus, wie viele Schnitte für die Tiefe nötig sind. Angefangene Schnitte zählen voll.', 'Die Hauptzeit eines Schnitts ist (l + la + lü) / vf. Das Ergebnis mal die Zahl der Schnitte.', 'Es sind ' + i + ' Schnitte, jeder mit einem Weg von ' + (l + la + lu) + ' mm.')
+    };
+  });
+  def('zer43', 'praxis', 3, 'Standzeit nach Taylor abschätzen', 'num', function (r) {
+    var p = r.pick([[100, 120], [100, 125], [120, 150], [150, 180], [80, 100]]), T1 = r.pick([30, 45, 60]), k = 4, s = T1 * Math.pow(p[0] / p[1], k);
+    return {
+      text: 'Bei vc = ' + p[0] + ' m/min erreicht eine Wendeplatte eine Standzeit von T = ' + T1 + ' min. Für eine Abschätzung gilt der Zusammenhang T2 = T1 · (vc1 / vc2)^k, hier mit dem Übungswert k = ' + k + '. Welche Standzeit ist bei vc = ' + p[1] + ' m/min zu erwarten?', unit: 'min', sol: s,
+      steps: ['Verhältnis der Schnittgeschwindigkeiten: ' + p[0] + ' / ' + p[1] + ' = ' + N(p[0] / p[1]), 'Potenz: (' + N(p[0] / p[1]) + ')^' + k + ' = ' + N(Math.pow(p[0] / p[1], k)), 'T2 = ' + T1 + ' min · ' + N(Math.pow(p[0] / p[1], k)) + ' = ' + N(s) + ' min. Schon ' + F((p[1] / p[0] - 1) * 100, 0) + ' % mehr vc verkürzen die Standzeit stark.'],
+      tips: tipps('Die Standzeit wird kürzer, wenn vc steigt. Das Ergebnis muss also kleiner sein als T1.', 'Bilde das Verhältnis vc1 / vc2 und hebe es in die vierte Potenz (viermal mit sich selbst multiplizieren).')
+    };
+  });
+  def('zer44', 'praxis', 1, 'Kühlschmierstoff ansetzen', 'num', function (r) {
+    var V = r.pick([20, 40, 50, 80, 100]), c = r.pick([4, 5, 6, 8]), s = V * c / 100;
+    return {
+      text: 'In den Behälter einer Fräsmaschine sollen ' + V + ' Liter Kühlschmier-Emulsion mit einer Konzentration von ' + c + ' % angesetzt werden (Anteil Konzentrat am Gesamtvolumen, der Rest ist Wasser). Wie viel Konzentrat in Litern brauchst du?', unit: 'l', sol: s,
+      steps: ['Konzentrat = Gesamtvolumen · Konzentration', 'Konzentrat = ' + V + ' l · ' + c + ' / 100 = ' + N(s) + ' l', 'Wasser: ' + V + ' l − ' + N(s) + ' l = ' + N(V - s) + ' l. In der Praxis gibt man das Konzentrat in das Wasser und rührt dabei um.'],
+      tips: tipps('Eine Konzentration von ' + c + ' % bedeutet: ' + c + ' Teile Konzentrat auf 100 Teile Gemisch.', 'Konzentrat = Gesamtvolumen mal Prozentsatz durch 100.')
+    };
+  });
+
   /* zusätzliche Fehlersuche-Karten, nur im Tab Fehlersuche (keine Aufgabe in der Liste) */
   fs('zerx1', 2, 'Fehlersuche: Platte verschleißt sofort', function (r) {
     var d = r.pick([40, 50]), n = r.pick([2800, 3200]), v = C.vc(d, n);

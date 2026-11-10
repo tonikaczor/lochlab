@@ -263,7 +263,10 @@
     lines.forEach((q, i) => {
       const y = r.y + rh * (i + 0.5);
       if (i % 2 === 0) { rr(ctx, r.x - 3, y - rh / 2 + 1, r.w + 6, rh - 2, 4); ctx.fillStyle = ink(0.06); ctx.fill(); }
-      txt(ctx, q[0], r.x, y, 12, COL.dim, 'left', '600');
+      /* Beschriftung kürzen, wenn sie in den Platz vor dem Wert nicht passt (schmale Bilder auf dem Handy: sonst überlappen Name und Zahl) */
+      let lab = String(q[0]); const room = r.w - tw(q[1], 12, '800') - 8;
+      if (tw(lab, 12, '600') > room) { while (lab.length > 3 && tw(lab + '…', 12, '600') > room) lab = lab.slice(0, -1); lab = lab.replace(/\s+$/, '') + '…'; }
+      txt(ctx, lab, r.x, y, 12, COL.dim, 'left', '600');
       txt(ctx, q[1], r.x + r.w, y, 12, q[2] || COL.text, 'right', '800');
     });
   }

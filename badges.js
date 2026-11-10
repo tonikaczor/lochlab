@@ -332,7 +332,7 @@
   ];
   /* Eigenständige Labs der Berufe (v39.158): je Lab ein Einsteiger- und ein Meister-Abzeichen, aus LAB_REG erzeugt (Labs ohne Beruf, z. B. noch gesperrt, fehlen) */
   (function () {
-    var REG = window.LAB_REG || {}, IC = { tol: '📐', zer: '⚙️', pne: '💨', hyd: '🛢️', cnc: '🕹️', wer: '🔩', ins: '🧰', net: '🌐', kal: '🧾', lag: '📦', zei: '✏️', arb: '🦺', mat: '🧮', its: '🔐', buc: '📒', lad: '🚚', sys: '💻', ssl: '🗄️' };
+    var REG = window.LAB_REG || {}, IC = { tol: '📐', zer: '⚙️', pne: '💨', hyd: '🛢️', cnc: '🕹️', wer: '🔩', ins: '🧰', net: '🌐', kal: '🧾', lag: '📦', zei: '✏️', arb: '🦺', mat: '🧮', its: '🔐', buc: '📒', lad: '🚚', sys: '💻', ssl: '🗄️', fug: '🔗', mas: '⛓️', mch: '⚖️', fer: '🔧', mak: '🏭' };
     Object.keys(REG).filter(function (k) { return REG[k].eig && (REG[k].beruf || []).length; }).forEach(function (k) {
       var R = REG[k];
       DEFS.push([k + '5', IC[k] || '🏅', R.short + '-Praktiker', 'Fünf Aufgaben im ' + R.name + ' geschafft.', function (c) { return [c.n(c.ids(k)), 5]; }]);

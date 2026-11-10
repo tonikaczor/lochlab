@@ -173,6 +173,7 @@
     if (res) res.innerHTML = `<table class="iot"><tr><th>Größe</th><th>Rechnung</th><th style="text-align:right">Ergebnis</th></tr>${rows(sim, m).map(r => `<tr><td>${r[0]}</td><td class="a">${r[1]}</td><td class="v">${r[2]}</td></tr>`).join('')}</table>`;
     if (live) live.innerHTML = liveHtml(sim, m);
     if (win) win.innerHTML = winHtml(m, whatOf(sim, m));
+    const vz = $('#' + sim + '-viz', host); if (vz && root.ZERVIZ) vz.innerHTML = root.ZERVIZ.sim(sim, m);
     const note = $('#' + sim + '-note', host); if (note) note.textContent = zeitNote(m);
     draw(sim, m);
   }
@@ -327,6 +328,7 @@
     return `<div class="sim-grid"><div class="card simL">${svg}<div class="live" id="${sim}-live" aria-live="polite"></div><div class="simbar"><span id="${sim}-note"></span></div></div>
 <div><div class="card"><h4>Einstellungen</h4><div class="cb">${ctrls}</div></div>
 <div class="card"><h4>Rechenweg und Ergebnis</h4><div class="cb"><div id="${sim}-res"></div><div id="${sim}-win"></div></div></div>
+<div class="card"><h4>Schnittgrößen im Bild</h4><div class="cb" id="${sim}-viz"></div></div>
 ${extra || ''}</div></div>`;
   }
   const lernBox = (t, h) => `<details class="card"><summary>${t}</summary><div class="cb" style="font-size:14px;line-height:1.5">${h}</div></details>`;
@@ -380,7 +382,7 @@ ${extra || ''}</div></div>`;
       return `<p><b>Übung:</b> ${esc(q.what)}, Ø ${q.d} mm. Sollwert vc = ${q.vcT} m/min. Tippe die <b>nächstliegende Drehzahlstufe</b> der Maschine an.</p>${seriesHtml({ id: 'tfSer', d: q.d, sel: q.sel, disabled: !!q.sel, cls: n => q.sel ? (n === best ? 'ok' : n === q.sel ? 'bad' : '') : '' })}${res}<div class="btns"><button class="btn pri" data-tf="newpr">Neue Übung</button></div>`;
     }
     const sel = TF.sel, v = sel ? C.vc(TF.d, sel) : NaN, st = sel ? C.vcStatus(v, win) : '';
-    return `<p>Für Ø ${F(TF.d)} mm und vc = ${winTxt(win)} m/min liegt die Drehzahl zwischen <b>${F(nLo, 0)}</b> und <b>${F(nHi, 0)} min⁻¹</b>. Grün: Stufen im Fenster.</p>${seriesHtml({ id: 'tfSer', d: TF.d, win, sel, mark: true })}${sel ? `<div class="fb ${st === 'ok' ? 'ok' : 'bad'}">Gewählt: <b>${sel} min⁻¹</b> ergibt vc = <b>${F(v)} m/min</b>, das ist ${st === 'ok' ? 'im Richtwert-Fenster.' : st === 'niedrig' ? 'zu niedrig (Aufbauschneide, schlechte Oberfläche).' : 'zu hoch (Schneide überhitzt, hoher Verschleiß).'}</div>` : '<p class="hint2">Tippe eine Stufe an, um vc zu sehen.</p>'}`;
+    return `<p>Für Ø ${F(TF.d)} mm und vc = ${winTxt(win)} m/min liegt die Drehzahl zwischen <b>${F(nLo, 0)}</b> und <b>${F(nHi, 0)} min⁻¹</b>. Grün: Stufen im Fenster.</p>${root.ZERVIZ ? root.ZERVIZ.nBand(win, TF.d, sel) : ''}${seriesHtml({ id: 'tfSer', d: TF.d, win, sel, mark: true })}${sel ? `<div class="fb ${st === 'ok' ? 'ok' : 'bad'}">Gewählt: <b>${sel} min⁻¹</b> ergibt vc = <b>${F(v)} m/min</b>, das ist ${st === 'ok' ? 'im Richtwert-Fenster.' : st === 'niedrig' ? 'zu niedrig (Aufbauschneide, schlechte Oberfläche).' : 'zu hoch (Schneide überhitzt, hoher Verschleiß).'}</div>` : '<p class="hint2">Tippe eine Stufe an, um vc zu sehen.</p>'}`;
   }
   function newPractice() {
     const combos = []; ['dreh', 'fraes', 'bohr'].forEach(p => C.GRUPPEN.forEach(g => ['hss', 'hm'].forEach(c => { const w = C.vcWindow(p, g[0], c); if (w) combos.push({ p, g, c, w }); })));
@@ -391,7 +393,7 @@ ${extra || ''}</div></div>`;
   function renderTafel() {
     const h = $('#tafelView');
     const opts = (arr, cur) => arr.map(o => `<option value="${o[0]}"${String(cur) === String(o[0]) ? ' selected' : ''}>${esc(o[1])}</option>`).join('');
-    h.innerHTML = `<div class="card"><h4>Richtwert-Tafel: Schnittgeschwindigkeit vc</h4><div class="cb"><div class="seg" id="tfProc">${Object.keys(C.PROCS).map(k => `<button data-p="${k}" class="${TF.proc === k ? 'on' : ''}">${C.PROCS[k]}</button>`).join('')}</div><div style="margin-top:8px">${tafelTable()}</div></div></div>
+    h.innerHTML = `<div class="card"><h4>Richtwert-Tafel: Schnittgeschwindigkeit vc</h4><div class="cb"><div class="seg" id="tfProc">${Object.keys(C.PROCS).map(k => `<button data-p="${k}" class="${TF.proc === k ? 'on' : ''}">${C.PROCS[k]}</button>`).join('')}</div><div style="margin-top:8px">${tafelTable()}</div>${root.ZERVIZ ? root.ZERVIZ.tafel(TF.proc) : ''}</div></div>
 <details class="card"><summary>kc-Richtwerte (spezifische Schnittkraft)</summary><div class="cb"><table class="iot"><tr><th>Werkstoff</th><th>kc in N/mm²</th></tr>${Object.keys(C.MATERIALS).map(k => `<tr><td>${C.MATERIALS[k].name}</td><td class="a">${C.MATERIALS[k].kc}</td></tr>`).join('')}</table><p class="hint2">Richtwerte, vereinfacht für übliche Spanungsdicken. Echte kc-Werte hängen von der Spanungsdicke ab (Tabellenbuch). Fc = A · kc.</p></div></details>
 <div class="card"><h4>Drehzahl wählen</h4><div class="cb"><div class="seg" id="tfMode"><button data-m="frei" class="${TF.mode === 'frei' ? 'on' : ''}">Frei probieren</button><button data-m="ueb" class="${TF.mode === 'ueb' ? 'on' : ''}">Übung</button></div>
 ${TF.mode === 'frei' ? `<div style="margin-top:10px"><div class="two"><label class="f"><span>Verfahren</span><select id="tfP">${opts(Object.keys(C.PROCS).map(k => [k, C.PROCS[k]]), TF.proc)}</select></label><label class="f"><span>Werkstoff</span><select id="tfG">${opts(C.GRUPPEN, TF.gr)}</select></label></div><div class="two"><label class="f"><span>Schneidstoff</span><select id="tfC">${opts(cutOpts, TF.cut)}</select></label><label class="f"><span>Durchmesser d in mm</span><input id="tfD" inputmode="decimal" value="${dispNum(TF.d, 1)}"></label></div></div>` : ''}
@@ -449,7 +451,7 @@ ${TF.mode === 'frei' ? `<div style="margin-top:10px"><div class="two"><label cla
       const exam = cfg.exam && cfg.exam(), maxT = o.tips.length;
       const meta = `<div class="qm"><span class="tag">${esc(o.catName)}</span><span class="tag lv" aria-label="Stufe ${o.level}">${stars(o.level)}</span>${exam ? '<span class="badge-exam">Prüfmodus</span>' : ''}</div>`;
       const btns = q.checked ? (cfg.afterHtml ? cfg.afterHtml(q) : '') : `<div class="btns"><button class="btn pri" data-a="check">✓ Prüfen</button>${cfg.tips ? `<button class="btn" data-a="hint"${q.hint >= maxT ? ' disabled' : ''}>💡 Tipp (${q.hint}/${maxT})</button>` : ''}${cfg.skip ? `<button class="btn" data-a="skip">Überspringen</button>` : ''}</div>${exam && cfg.tips ? `<p class="hint2">Prüfmodus: Tipp 1 kostet ${ABZUG[1]} %, Tipp 2 ${ABZUG[2]} %, Tipp 3 ${ABZUG[3]} % der Punkte.</p>` : ''}`;
-      host.innerHTML = `${cfg.head ? cfg.head(q) : ''}<div class="qcard">${meta}<div class="qt">${esc(o.text)}</div>${answerHtml()}${hintHtml()}${btns}${fbHtml()}</div>`;
+      host.innerHTML = `${cfg.head ? cfg.head(q) : ''}<div class="qcard">${meta}<div class="qt">${esc(o.text)}</div><div data-zv="${esc(o.id)}" data-exam="${exam ? 1 : 0}">${root.ZERVIZ ? root.ZERVIZ.task(o.id, exam) : ''}</div>${answerHtml()}${hintHtml()}${btns}${fbHtml()}</div>`;
     }
     function sync() { const i = $('#' + cfg.id + 'In', host); if (i) q.val = i.value; }
     function check() {

@@ -406,3 +406,18 @@
     alias: ['PI'], speak: 'PI', pruef: 1, status: 'frage', frage: 'wiki__F10'
   }
 ]);
+/* Bauformen und Groessen (Fotoersatz-Zeichnung, Massangaben, Groessenvergleich): haengt sich nur im Browser an Wiki.renderEntry (Daten oben bleiben reiner Text).
+ * Zeichnung und Tabelle kommen aus bauviz.js; fehlt die Datei (z. B. im Lab-Drawer), wird sie nachgeladen und ab dem naechsten Oeffnen genutzt. */
+(function () {
+  if (typeof window === 'undefined' || !window.Wiki || !window.Wiki.renderEntry || window.Wiki.renderEntry.bv) return;
+  var W = window.Wiki, alt = W.renderEntry;
+  if (!window.BAUVIZ && typeof document !== 'undefined') { var s = document.createElement('script'); s.src = 'bauviz.js'; s.async = true; document.head.appendChild(s); }
+  W.renderEntry = function (e, opt) {
+    var h = alt.apply(this, arguments);
+    if (!e || e.kat !== 'bauteil' || !window.BAUVIZ) return h;
+    var f = window.BAUVIZ.wikiHtml(e.id); if (!f) return h;
+    var i = h.indexOf('<h4>Vorkommen</h4>'); if (i < 0) i = h.indexOf('<div class="wk-sim">');
+    return i < 0 ? h : h.slice(0, i) + f + h.slice(i);
+  };
+  W.renderEntry.bv = true;
+})();

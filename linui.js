@@ -103,9 +103,11 @@
     $('#termView').innerHTML = sim() + `<div class="card pl"><h4>Terminal (virtuelles System)</h4><div id="termHost"></div>
       <div class="btns"><button class="btn" data-tm="reset">↺ Neu starten</button><button class="btn" data-tm="hint">${hintsOn() ? 'Deutsche Hinweise: an' : 'Deutsche Hinweise: aus'}</button></div>
       <p class="hint2">Hinweise erscheinen nach Fehlern in Gelb. Die Fehlermeldungen selbst sind so englisch wie auf einem echten Server, damit du sie später wiedererkennst.</p></div>
+      <div id="vizTerm"></div>
       <div class="card pl"><h4>Zum Ausprobieren (Tippen fügt den Befehl ein)</h4><div class="ctl">${TRY.map(c => `<button class="chip s" data-try="${esc(c)}">${esc(c)}</button>`).join('')}</div>
       <p class="hint2">Dein Benutzer ist <b>azubi</b> (Gruppe sudo). Es gibt ein Projekt (~/Projekt), Logdateien unter /var/log und einen kleinen Webserver-Ordner unter /srv/web. Mehr zeigt dir die Hilfe.</p></div>`;
-    termCtl = mountTerm($('#termHost'), S.term, {});
+    const vzT = line => { if (root.LIN_VIZ) root.LIN_VIZ.term(document.getElementById('vizTerm'), S.term, line); };
+    termCtl = mountTerm($('#termHost'), S.term, { onCmd: (r, line) => vzT(line) }); vzT('');
   }
   $('#termView').addEventListener('click', e => {
     const t = e.target.closest('[data-tm]'), y = e.target.closest('[data-try]');
@@ -114,6 +116,8 @@
   });
 
   /* ============================================================ Reiter Rechte */
+  /* Visualisierung (linviz.js); ohne die Datei bleibt alles wie vorher */
+  const VZ = (k, a, b) => { try { return root.LIN_VIZ ? root.LIN_VIZ[k](a, b) : ''; } catch (e) { return ''; } };
   const permWords = b => (b === 7 ? 'lesen, schreiben und ausführen' : b === 0 ? 'nichts' : [b & 4 ? 'lesen' : '', b & 2 ? 'schreiben' : '', b & 1 ? 'ausführen' : ''].filter(Boolean).join(' und '));
   function renderRechte() {
     const s = S.rechte, ok = /^[0-7]{3}$/.test(s.mode), m = ok ? parseInt(s.mode, 8) : 0o754;
@@ -123,9 +127,9 @@
     let h = sim() + `<div class="card pl"><h4>Rechte-Rechner</h4>
       <div class="tw"><table class="tt"><tr><th></th><th>lesen (4)</th><th>schreiben (2)</th><th>ausführen (1)</th><th class="n">Ziffer</th></tr>${row('Besitzer (u)', 6)}${row('Gruppe (g)', 3)}${row('Andere (o)', 0)}</table></div>
       <label class="f"><span>Oktalzahl (drei Ziffern 0 bis 7)</span><input data-k="mode" inputmode="numeric" maxlength="3" autocomplete="off" value="${esc(s.mode)}"></label></div>`;
-    h += ok ? box('Als Buchstaben (ls -l)', '-' + sym + '  (Datei)   d' + sym + '  (Ordner)') + box('chmod, oktal', 'chmod ' + C.modeOct(m) + ' datei') + box('chmod, symbolisch', 'chmod u=' + permSym((m >> 6) & 7) + ',g=' + permSym((m >> 3) & 7) + ',o=' + permSym(m & 7) + ' datei') + `<div class="rdout"><span class="st">Bedeutung</span>Besitzer: ${esc(permWords((m >> 6) & 7))}<br>Gruppe: ${esc(permWords((m >> 3) & 7))}<br>Andere: ${esc(permWords(m & 7))}</div>` + (m & 0o111 ? '' : note('Ohne x darf niemand die Datei als Programm oder Skript starten. Bei Ordnern fehlt dann auch das Betreten (cd).', 'warn')) : note('Gib genau drei Ziffern von 0 bis 7 ein, z. B. 754.');
+    h += ok ? VZ('rechte', m) + box('Als Buchstaben (ls -l)', '-' + sym + '  (Datei)   d' + sym + '  (Ordner)') + box('chmod, oktal', 'chmod ' + C.modeOct(m) + ' datei') + box('chmod, symbolisch', 'chmod u=' + permSym((m >> 6) & 7) + ',g=' + permSym((m >> 3) & 7) + ',o=' + permSym(m & 7) + ' datei') + `<div class="rdout"><span class="st">Bedeutung</span>Besitzer: ${esc(permWords((m >> 6) & 7))}<br>Gruppe: ${esc(permWords((m >> 3) & 7))}<br>Andere: ${esc(permWords(m & 7))}</div>` + (m & 0o111 ? '' : note('Ohne x darf niemand die Datei als Programm oder Skript starten. Bei Ordnern fehlt dann auch das Betreten (cd).', 'warn')) : note('Gib genau drei Ziffern von 0 bis 7 ein, z. B. 754.');
     h += `<div class="card pl"><h4>umask (nur zum Kennenlernen)</h4><p class="hint2" style="margin:0 0 8px">Die umask nimmt Rechte von neuen Dateien weg. Dateien starten mit 666, Ordner mit 777, davon wird die umask abgezogen (Ziffer für Ziffer).</p>
-      <label class="f"><span>umask (Standard auf vielen Systemen: 022)</span><input data-k="um" inputmode="numeric" maxlength="4" autocomplete="off" value="${esc(s.um)}"></label>` + (um == null ? note('Gib die umask als Oktalzahl ein, z. B. 022 oder 077.') : box('Neue Datei', C.modeOct(0o666 & ~um) + '  (-' + C.modeSym(0o666 & ~um) + ')') + box('Neuer Ordner', C.modeOct(0o777 & ~um) + '  (d' + C.modeSym(0o777 & ~um) + ')')) + '</div>';
+      <label class="f"><span>umask (Standard auf vielen Systemen: 022)</span><input data-k="um" inputmode="numeric" maxlength="4" autocomplete="off" value="${esc(s.um)}"></label>` + (um == null ? note('Gib die umask als Oktalzahl ein, z. B. 022 oder 077.') : VZ('umask', um) + box('Neue Datei', C.modeOct(0o666 & ~um) + '  (-' + C.modeSym(0o666 & ~um) + ')') + box('Neuer Ordner', C.modeOct(0o777 & ~um) + '  (d' + C.modeSym(0o777 & ~um) + ')')) + '</div>';
     $('#rechteView').innerHTML = h;
   }
   const permSym = b => (b & 4 ? 'r' : '') + (b & 2 ? 'w' : '') + (b & 1 ? 'x' : '');
@@ -144,7 +148,7 @@
     const p = C.cronParse(expr); if (!p.ok) return note(p.err, 'bad');
     const names = ['Minute', 'Stunde', 'Tag des Monats', 'Monat', 'Wochentag'], WD = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
     const vals = i => { const a = [...p.sets[i].set].sort((x, y) => x - y); return p.sets[i].star ? 'jeder Wert' : a.length > 12 ? a.slice(0, 12).join(', ') + ' ... (' + a.length + ' Werte)' : (i === 4 ? a.map(x => WD[x]).join(', ') : a.join(', ')); };
-    let h = `<div class="rdout ok"><span class="st">Bedeutung</span><b>${esc(C.cronExplain(expr))}</b></div><div class="tw"><table class="tt"><tr><th>Feld</th><th>Angabe</th><th>Passende Werte</th></tr>${p.raw.map((r, i) => `<tr><td>${names[i]}</td><td><code>${esc(r)}</code></td><td>${esc(vals(i))}</td></tr>`).join('')}</table></div>`;
+    let h = VZ('cron', expr) + `<div class="rdout ok"><span class="st">Bedeutung</span><b>${esc(C.cronExplain(expr))}</b></div><div class="tw"><table class="tt"><tr><th>Feld</th><th>Angabe</th><th>Passende Werte</th></tr>${p.raw.map((r, i) => `<tr><td>${names[i]}</td><td><code>${esc(r)}</code></td><td>${esc(vals(i))}</td></tr>`).join('')}</table></div>`;
     const nx = C.cronNext(expr, null, 5); h += `<div class="rdout"><span class="st">Die nächsten Läufe (ab So 2026-11-08 09:30, als Beispiel)</span>${nx.map(x => esc(x)).join('<br>') || 'keine'}</div>`;
     h += box('Läufe pro Tag (an einem Tag, an dem der Job laufen darf)', f(C.cronPerDay(expr)) + ' mal');
     if (!p.sets[2].star && !p.sets[4].star) h += note('Sind Tag des Monats und Wochentag beide gesetzt, läuft der Job, wenn EINE der beiden Angaben passt (ODER), nicht beide gemeinsam.', 'warn');
@@ -290,7 +294,7 @@
     if (e.tab === 'cron') return cronOut(e.p.expr);
     return rechteOut(e.p.mode);
   }
-  function rechteOut(mode) { const m = parseInt(mode, 8); return box('Als Buchstaben', '-' + C.modeSym(m)) + box('Befehl', 'chmod ' + C.modeOct(m) + ' datei') + `<div class="rdout">Besitzer: ${esc(permWords((m >> 6) & 7))}<br>Gruppe: ${esc(permWords((m >> 3) & 7))}<br>Andere: ${esc(permWords(m & 7))}</div>`; }
+  function rechteOut(mode) { const m = parseInt(mode, 8); return VZ('rechte', m) + box('Als Buchstaben', '-' + C.modeSym(m)) + box('Befehl', 'chmod ' + C.modeOct(m) + ' datei') + `<div class="rdout">Besitzer: ${esc(permWords((m >> 6) & 7))}<br>Gruppe: ${esc(permWords((m >> 3) & 7))}<br>Andere: ${esc(permWords(m & 7))}</div>`; }
   function renderBsp() {
     $('#bspView').innerHTML = sim() + `<p class="hint2" style="margin:0 0 8px">Fertig durchgespielte Beispiele. Die Ausgaben entstehen live aus dem simulierten System. Mit „Im Terminal ausprobieren“ führst du dieselben Befehle selbst aus.</p>` + D.examples.map(e => `<div class="card pl" id="ex_${e.id}"><h4>Beispiel</h4><div class="big">${esc(e.title)}</div><p style="margin:4px 0 8px">${esc(e.text)}</p>${exBody(e)}<div class="btns"><button class="btn pri" data-ex="${e.id}">${e.tab === 'term' ? 'Im Terminal ausprobieren' : 'In den Rechner laden'}</button></div></div>`).join('');
   }

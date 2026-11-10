@@ -302,7 +302,7 @@
         panel(ctx, bx, y, bw, h, on ? pal.panel2 : pal.panel, col, 8);
         if (on) { ctx.lineWidth = 2.5; ctx.strokeStyle = col; rr(ctx, bx, y, bw, h, 8); ctx.stroke(); }
         ctx.fillStyle = col; ctx.fillRect(bx + 1, y + 6, 4, h - 12);
-        text(ctx, LEVERS[k].short.toUpperCase() + ' · ' + LEVERS[k].name, bx + 11, y + size + 2, { size: size, bold: true, color: col, max: bw - 16 });
+        text(ctx, bw < 150 ? LEVERS[k].short.toUpperCase() : LEVERS[k].short.toUpperCase() + ' · ' + LEVERS[k].name, bx + 11, y + size + 2, { size: size, bold: true, color: col, max: bw - 16 });   // schmal (Handy): nur der Hebelname, nicht abgeschnitten
         text(ctx, chain[k] || '', bx + 11, y + h - 8, { size: size, color: pal.fg, max: bw - 16 });
         if (i < 2) arrow(ctx, bx + bw + 2, y + h / 2, bx + bw + gap - 2, y + h / 2, pal.mute, 2, 5);
       });

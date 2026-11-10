@@ -285,3 +285,14 @@ html.wkd-open{overflow:hidden}
 }
 .wkd.zieht{transition:none!important;animation:none}
 @media(max-width:899px){.wkd-hd{touch-action:none}}
+/* ---------- Bauformen und Groessen (bauviz.js): Zeichnung, Tabelle ---------- */
+.we .bv-fig{margin-top:6px}
+.we .bv-f{margin:10px 0 8px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.we .bv-t{font-size:14px;font-weight:700}
+.we .bv-f figcaption{margin:6px 0 2px;font-size:14px;color:var(--mute);line-height:1.45}
+.we .bv-tab{width:100%;border-collapse:collapse;font-size:13px}
+.we .bv-tab th,.we .bv-tab td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
+.we .bv-tab thead th{color:var(--mute);font-weight:600}
+.we .bv-tab tbody th{font-weight:600}
+.we .bv-n{margin:8px 0 0;font-size:13px;color:var(--mute)}
+@media(max-width:639px){.we .bv-tab thead{display:none}.we .bv-tab,.we .bv-tab tbody,.we .bv-tab tr,.we .bv-tab th,.we .bv-tab td{display:block}.we .bv-tab tr{padding:6px 0;border-bottom:1px solid var(--line)}.we .bv-tab th,.we .bv-tab td{border:0;padding:2px 10px}.we .bv-tab td:last-child{color:var(--mute)}}

@@ -192,7 +192,7 @@
       if (res.overp) h += '<div class="rdl warn">⚠ Der Druck steigt unzulässig: kein Weg zum Tank über ein Druckbegrenzungsventil. In der Praxis würden Leitungen oder Dichtungen versagen.</div>';
       if (res.kav) h += '<div class="rdl warn">⚠ Unterdruck in einer Kammer (Kavitation): Die Last läuft schneller, als die Pumpe nachfördert. Ohne Bremsventil ist das gefährlich.</div>';
       if (!res.overp && !res.kav && p && p.p > 1.5 && !(cyls[0] && res.cyl[cyls[0].id].dir) && Object.keys(res.dbv).some(k => res.dbv[k].open)) h += '<div class="rdl hint">Der Zylinder steht, der Pumpenstrom fließt über das Druckbegrenzungsventil ab: Der Druck steht auf dem Einstelldruck.</div>';
-      rd.innerHTML = `<div class="rdout">${h}</div>` + (o.mode === 'tab' ? `<div class="rdout"><b>Schaltung:</b> ${esc(circ.info)}<ul class="tl" style="margin:6px 0 0">${circ.tryIt.map(t => '<li>' + esc(t) + '</li>').join('')}</ul></div>` : '') + '<p class="hint2">Farben: blau = drucklos (Tank, Rücklauf), gelb bis rot = steigender Druck. Laufende Striche zeigen den Ölstrom.</p>';
+      rd.innerHTML = `<div class="rdout">${h}</div>` + (o.mode === 'tab' ? `<div class="rdout"><b>Schaltung:</b> ${esc(circ.info)}<ul class="tl" style="margin:6px 0 0">${circ.tryIt.map(t => '<li>' + esc(t) + '</li>').join('')}</ul></div>` : '') + '<p class="hint2">Farben: blau = drucklos (Tank, Rücklauf), gelb bis rot = steigender Druck. Laufende Striche zeigen den Ölstrom.</p>' + (root.HYDVIZ && !task ? root.HYDVIZ.gauges(circ, res, st) : '');
     }
     function draw() { box.innerHTML = anlageSvg(circ, { mode: 'sim', lines, st, res }); }
     function solveAll() { res = C.solve(circ, lines, st); draw(); buildCtl(); readout(); }
@@ -287,11 +287,11 @@
   function renderCalc() {
     const c = S.calc, inp = (id, lab, v, u) => `<label class="f"><span>${lab}</span><div class="qin"><input id="${id}" inputmode="decimal" autocomplete="off" value="${esc(v)}"><span class="u">${u}</span></div></label>`;
     $('#calcView').innerHTML = `<div class="card pl"><h4>Zylinder: Fläche, Kraft, Geschwindigkeit</h4>
-      <div class="dsrow">${inp('cD', 'Kolbendurchmesser D', c.D, 'mm')}${inp('cd', 'Stangendurchmesser d', c.d, 'mm')}${inp('cp', 'Druck p', c.p, 'bar')}${inp('cQ', 'Volumenstrom Q', c.Q, 'l/min')}${inp('cs', 'Hub s', c.s, 'mm')}</div><div id="cylRes"></div></div>
+      <div class="dsrow">${inp('cD', 'Kolbendurchmesser D', c.D, 'mm')}${inp('cd', 'Stangendurchmesser d', c.d, 'mm')}${inp('cp', 'Druck p', c.p, 'bar')}${inp('cQ', 'Volumenstrom Q', c.Q, 'l/min')}${inp('cs', 'Hub s', c.s, 'mm')}</div><div id="cylRes"></div><div id="vzCyl"></div></div>
       <div class="card pl"><h4>Pumpe: Förderstrom und Antriebsleistung</h4>
-      <div class="dsrow">${inp('cVg', 'Verdrängungsvolumen V<sub>g</sub>', c.Vg, 'cm³/U')}${inp('cn', 'Drehzahl n', c.n, '1/min')}${inp('cev', 'Volumetr. Wirkungsgrad η<sub>v</sub>', c.ev, '')}${inp('ceta', 'Gesamtwirkungsgrad η<sub>ges</sub>', c.eta, '')}</div><div id="pumpRes"></div></div>
+      <div class="dsrow">${inp('cVg', 'Verdrängungsvolumen V<sub>g</sub>', c.Vg, 'cm³/U')}${inp('cn', 'Drehzahl n', c.n, '1/min')}${inp('cev', 'Volumetr. Wirkungsgrad η<sub>v</sub>', c.ev, '')}${inp('ceta', 'Gesamtwirkungsgrad η<sub>ges</sub>', c.eta, '')}</div><div id="pumpRes"></div><div id="vzPump"></div></div>
       <div class="card pl"><h4>Hydraulische Presse (Kraftübersetzung)</h4>
-      <div class="dsrow">${inp('cF1', 'Kraft am kleinen Kolben F₁', c.F1, 'kN')}${inp('cd1', 'Durchmesser klein d₁', c.d1, 'mm')}${inp('cd2', 'Durchmesser groß d₂', c.d2, 'mm')}</div><div id="pressRes"></div></div>
+      <div class="dsrow">${inp('cF1', 'Kraft am kleinen Kolben F₁', c.F1, 'kN')}${inp('cd1', 'Durchmesser klein d₁', c.d1, 'mm')}${inp('cd2', 'Durchmesser groß d₂', c.d2, 'mm')}</div><div id="pressRes"></div><div id="vzPress"></div></div>
       <div class="card pl"><h4>Einheiten umrechnen</h4><div class="dsrow">${inp('uV', 'Wert', c.uV || '1', '')}</div><div id="unitRes"></div></div>`;
     updateCalc();
   }
@@ -316,15 +316,18 @@
         <p class="hint2">Reibung und Wirkungsgrad sind nicht berücksichtigt. Die Ausfahrkraft ist größer als die Einfahrkraft (A<sub>K</sub> &gt; A<sub>R</sub>), das Einfahren ist schneller.</p>`;
     }
     $('#cylRes').innerHTML = h;
+    $('#vzCyl').innerHTML = root.HYDVIZ ? root.HYDVIZ.zylinder({ D: D1, d: d1, p, Q, s }) : '';
     const Vg = g('cVg'), n = g('cn'), ev = g('cev'), et = g('ceta'); let h2 = '';
     if (ok(Vg) && ok(n)) {
       const Qp = C.pumpFlow(Vg, n, ok(ev) && ev <= 1 ? ev : 1), Ph = isFinite(p) && p > 0 ? C.power(p, Qp) : null;
       h2 = `<table class="tt"><tr><td>Förderstrom Q = V<sub>g</sub> · n · η<sub>v</sub> / 1000</td><td class="n"><b>${f2(Qp)} l/min</b></td></tr>${Ph != null ? `<tr><td>Hydraulische Leistung bei ${fa(p)} bar</td><td class="n"><b>${f2(Ph)} kW</b></td></tr>` : ''}${Ph != null && ok(et) && et <= 1 ? `<tr><td>Antriebsleistung P<sub>an</sub> = P<sub>hyd</sub> / η<sub>ges</sub></td><td class="n"><b>${f2(Ph / et)} kW</b></td></tr>` : ''}</table><p class="hint2">Der Druck p wird aus dem Zylinder-Rechner oben übernommen.</p>`;
     } else h2 = '<div class="rdout bad">Bitte V<sub>g</sub> und n eingeben.</div>';
     $('#pumpRes').innerHTML = h2;
+    $('#vzPump').innerHTML = root.HYDVIZ ? root.HYDVIZ.pumpe({ Vg, n, ev, et, p }) : '';
     const F1 = g('cF1'), a1 = g('cd1'), a2 = g('cd2'); let h3 = '';
     if (ok(F1) && ok(a1) && ok(a2)) { const A1 = C.areaCircle(a1), A2 = C.areaCircle(a2), p1 = C.pressureOf(F1 * 1000, A1), F2 = C.pressForce(F1, A1, A2); h3 = `<table class="tt"><tr><td>Druck p = F₁ / A₁</td><td class="n"><b>${f1(p1)} bar</b></td></tr><tr><td>Kraft am großen Kolben F₂ = p · A₂</td><td class="n"><b>${f2(F2)} kN</b></td></tr><tr><td>Übersetzung F₂ / F₁ = (d₂ / d₁)²</td><td class="n"><b>${f2(F2 / F1)}</b></td></tr><tr><td>Wegverhältnis s₂ / s₁</td><td class="n"><b>1 : ${f2(F2 / F1)}</b></td></tr></table><p class="hint2">Verlustfrei gerechnet. Wirkungsgrad-Richtwert für reale Pressen: 0,85 bis 0,95 (Reibung).</p>`; } else h3 = '<div class="rdout bad">Bitte alle drei Werte eingeben.</div>';
     $('#pressRes').innerHTML = h3;
+    $('#vzPress').innerHTML = root.HYDVIZ ? root.HYDVIZ.presse({ F1, d1: a1, d2: a2 }) : '';
     const v = g('uV'); let h4 = '';
     if (isFinite(v)) h4 = `<table class="tt"><tr><td>${fa(v)} bar</td><td class="n">${fa(v / 10)} MPa · ${fa(v * 1e5)} Pa · ${fa(v * 10)} N/cm²</td></tr><tr><td>${fa(v)} MPa</td><td class="n">${fa(v * 10)} bar</td></tr><tr><td>${fa(v)} l/min</td><td class="n">${fa(v * 1000 / 60)} cm³/s · ${fa(v / 60000)} m³/s</td></tr><tr><td>${fa(v)} cm³/s</td><td class="n">${fa(v * 60 / 1000)} l/min</td></tr><tr><td>${fa(v)} m/s</td><td class="n">${fa(v * 60)} m/min · ${fa(v * 100)} cm/s</td></tr><tr><td>${fa(v)} kN</td><td class="n">${fa(v * 1000)} N</td></tr><tr><td>${fa(v)} kW</td><td class="n">${fa(v * 1000)} W</td></tr></table><p class="hint2">1 bar = 0,1 MPa = 100 000 Pa = 10 N/cm². 1 l/min = 1000 cm³ / 60 s ≈ 16,7 cm³/s.</p>`;
     else h4 = '<div class="rdout bad">Bitte eine Zahl eingeben.</div>';

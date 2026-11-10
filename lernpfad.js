@@ -22,8 +22,9 @@
       { t: 'Prüfung und Berufsalltag', s: 'Die Abschlussprüfung üben, Fachenglisch und das Berichtsheft.', labs: ['pr', 'eng', 'bhf'], pre: '' }
     ],
     im: [
-      { t: 'Grundlagen der Fertigung', s: 'Rechnen, Toleranzen und Passungen, Werkstoffe und Zeichnungen: das Handwerkszeug für jede Werkstatt.', labs: ['mat', 'tol', 'wer', 'zei'], pre: 'Das Rechen-Lab ist ein guter Start' },
-      { t: 'Zerspanen und CNC', s: 'Schnittwerte berechnen, Drehzahlen und Vorschübe wählen, CNC-Programme lesen und verstehen.', labs: ['zer', 'cnc'], pre: 'Empfohlen vorher: Toleranz-Lab' },
+      { t: 'Grundlagen der Fertigung', s: 'Rechnen, Toleranzen und Passungen, Werkstoffe und Zeichnungen: das Handwerkszeug für jede Werkstatt.', labs: ['mat', 'mch', 'tol', 'wer', 'zei'], pre: 'Das Rechen-Lab ist ein guter Start' },
+      { t: 'Zerspanen und CNC', s: 'Schnittwerte berechnen, Drehzahlen und Vorschübe wählen, CNC-Programme lesen und verstehen.', labs: ['zer', 'fer', 'mak', 'cnc'], pre: 'Empfohlen vorher: Toleranz-Lab' },
+      { t: 'Fügen und Maschinenelemente', s: 'Schweißen, Löten, Kleben und Schrauben richtig wählen und rechnen, dazu Zahnräder, Riemen, Lager und Federn.', labs: ['fug', 'mas'], pre: 'Empfohlen vorher: Werkstoff-Lab' },
       { t: 'Pneumatik, Hydraulik und Steuern', s: 'Schaltpläne lesen, Zylinder und Ventile ansteuern, Sensoren, Antriebe, SPS und Regelung.', labs: ['pne', 'hyd', 'sen', 'sps', 'ant', 'reg'], pre: 'Empfohlen vorher: Pneumatik-Lab' },
       { t: 'Instandhaltung und Sicherheit', s: 'Anlagen warten, Fehler systematisch suchen, sicher arbeiten, messen und Wärme verstehen.', labs: ['ins', 'els', 'mess', 'thm'], pre: '' }
     ],

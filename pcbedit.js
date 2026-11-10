@@ -165,7 +165,7 @@
     if (fp && fp.bodyH) return fp.bodyH;
     const t = {
       R0402: 0.35, R0603: 0.5, R0805: 0.6, R1206: 0.6, C0603: 0.5, C0805: 0.6, LED0603: 0.5, 'SOT-23': 1.1, 'SOT-223': 1.7, 'SOIC-8': 1.7, 'SOIC-14': 1.7, 'SOIC-16': 1.7,
-      'TSSOP-16': 1.1, 'QFP-32': 1.6, 'QFN-16': 0.9, 'SOD-123': 1.0, R_AXIAL_10: 2.5, R_AXIAL_7: 2.5, 'C_RADIAL_2.5': 6, C_RADIAL_5: 11, LED_5MM: 8.6,
+      'TSSOP-16': 1.1, 'QFP-32': 1.6, 'QFN-16': 0.9, 'SOD-123': 1.0, R_AXIAL_10: 2.5, R_AXIAL_7: 2.5, 'R_AXIAL_12.7': 3.2, R_AXIAL_15: 4.5, R_AXIAL_20: 5.5, 'C_RADIAL_3.5': 11.5, 'C_RADIAL_7.5': 25, C_CER_5: 5.5, C_FILM_5: 7.5, C_FILM_10: 11.5, 'C_RADIAL_2.5': 6, C_RADIAL_5: 11, LED_5MM: 8.6,
       'DIP-8': 3.8, 'DIP-14': 3.8, 'DIP-16': 3.8, 'TO-92': 5, 'TO-220': 4.5, HDR_1x2: 8.5, HDR_1x4: 8.5, HDR_2x5: 8.5, DC_JACK: 11, SWITCH_6MM: 5
     };
     return t[id] || (fp && fp.kind === 'tht' ? 6 : 1);
@@ -188,6 +188,79 @@
     if (/^SOD/.test(id)) return '#2a2a2e';
     return '#1f1f24';
   }
+
+  // ------------------------------------------------------------ Realistische Bauteilkörper (nur Darstellung, Draufsicht)
+  // Farbcode des Widerstands: Wert (z. B. 4k7, 330R, 10k, 2,2k) -> vier Ringe (zwei Ziffern, Multiplikator, Toleranz gold) oder null
+  const RING = ['#111111', '#7a4a24', '#d2362b', '#f08a24', '#e6c619', '#3aa745', '#2f5fd0', '#8a3fb8', '#8a8a8a', '#f2f2f2'], RING_GOLD = '#c9a227', RING_SILVER = '#bfc3c7';
+  function ohmsOf(v) {
+    const t = String(v == null ? '' : v).trim().replace(/\s+/g, '').replace(/[Ωω]$|ohm$/i, '').replace(',', '.');
+    let m = /^(\d+)([RrKkMm])(\d+)$/.exec(t);                 // 4k7, 2R2
+    if (m) return parseFloat(m[1] + '.' + m[3]) * ({ r: 1, k: 1e3, m: 1e6 })[m[2].toLowerCase()];
+    m = /^(\d+(?:\.\d+)?)([RrKkMm]?)$/.exec(t);                // 330R, 10k, 1M, 220
+    if (!m) return NaN;
+    return parseFloat(m[1]) * ({ '': 1, r: 1, k: 1e3, m: 1e6 })[m[2].toLowerCase()];
+  }
+  function ringColors(value) {
+    const o = ohmsOf(value);
+    if (!isFinite(o) || o < 0.1 || o > 99e9) return null;
+    let e = Math.floor(Math.log10(o + 1e-12)), sig = Math.round(o / Math.pow(10, e - 1));
+    if (sig >= 100) { sig = Math.round(sig / 10); e += 1; }
+    const mult = e - 1;
+    if (mult < -2 || mult > 9) return null;
+    return [RING[Math.floor(sig / 10)], RING[sig % 10], mult === -1 ? RING_GOLD : mult === -2 ? RING_SILVER : RING[mult], RING_GOLD];
+  }
+  function rrPts(x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2)); const pts = [], n = 4;
+    [[x + w - r, y + r, -90], [x + w - r, y + h - r, 0], [x + r, y + h - r, 90], [x + r, y + r, 180]].forEach(function (c) {
+      for (let i = 0; i <= n; i++) { const a = (c[2] + 90 * i / n) * Math.PI / 180; pts.push([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)]); }
+    });
+    return pts;
+  }
+  function arcPts(cx, cy, r, a0, a1, n) { const pts = []; for (let i = 0; i <= n; i++) { const a = (a0 + (a1 - a0) * i / n) * Math.PI / 180; pts.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]); } return pts; }
+  const CHIP = { R0402: [1, 0.5], R0603: [1.6, 0.8], R0805: [2, 1.25], R1206: [3.2, 1.6], C0603: [1.6, 0.8], C0805: [2, 1.25], LED0603: [1.6, 0.8], 'SOD-123': [2.7, 1.6] };
+  /* Liefert die Körper eines Bauteils als Liste { pts: [[x,y]...] (Footprint-Koordinaten), fill, stroke? } oder [] (dann bleibt es beim Silk-Umriss). */
+  function bodyShapes(p, fp, opt) {
+    const id = String(p.fp), out = [], ST = 'rgba(0,0,0,.55)';
+    if (!fp) return out;
+    const bd = fp.body, P = function (pts, fill, stroke) { out.push({ pts: pts, fill: fill, stroke: stroke }); };
+    if (/^R_AXIAL/.test(id) && bd) {
+      const w = bd.w, h = bd.h, x0 = -w / 2, y0 = -h / 2, rings = opt && opt.neutral ? ['#8a7448', '#8a7448', '#8a7448', '#8a7448'] : (ringColors(p.value) || [RING[1], RING[0], RING[2], RING_GOLD]);   // neutral: ohne Wertringe (Aufgaben/Prüfung)
+      P(rrPts(x0, y0, w, h, h * 0.38), '#d6b676', ST);
+      [0.17, 0.31, 0.45, 0.76].forEach(function (f, i) { const bw = Math.max(0.35, w * 0.07), bx = x0 + w * f; P([[bx, y0 + h * 0.06], [bx + bw, y0 + h * 0.06], [bx + bw, y0 + h * 0.94], [bx, y0 + h * 0.94]], rings[i]); });
+    } else if (/^C_RADIAL/.test(id) && bd) {
+      const r = bd.w / 2; P(arcPts(0, 0, r, 0, 360, 28), '#233a73', ST); P(arcPts(0, 0, r * 0.72, 0, 360, 24), '#2c4a8a');
+      P(arcPts(0, 0, r, -48, 48, 10), '#b9bcc2');            // Minusstreifen auf der Seite von Pin 2
+    } else if (id === 'LED_5MM' && bd) {
+      const r = bd.w / 2; P(arcPts(0, 0, r, 0, 360, 28).map(function (q) { return [Math.max(q[0], -r * 0.78), q[1]]; }), partColor(p), ST);
+      P(arcPts(-0.3, -0.3, r * 0.45, 0, 360, 14), 'rgba(255,255,255,.35)');
+    } else if (/^C_CER|^C_FILM/.test(id) && bd) {
+      P(rrPts(-bd.w / 2, -bd.h / 2, bd.w, bd.h, 0.4), /CER/.test(id) ? '#c99a3b' : '#3a63b0', ST);
+    } else if (/^DIP-/.test(id)) {
+      const xs = fp.pads.map(function (q) { return Math.abs(q.x) - q.w / 2; }), hw = Math.max(1, Math.min.apply(null, xs) - 0.1), hh = (bd ? bd.h : 10) / 2;
+      P(rrPts(-hw, -hh, 2 * hw, 2 * hh, 0.4), '#26262b', ST);
+      P(arcPts(0, -hh, 0.8, 0, 180, 10), '#0d1013', '#9aa0a8'); P(arcPts(-hw + 0.9, -hh + 1.0, 0.35, 0, 360, 8), '#9aa0a8');
+    } else if (/^(SOIC|TSSOP)-/.test(id)) {
+      const side = fp.pads.filter(function (q) { return Math.abs(q.x) > 0.5; });
+      if (side.length) {
+        const hw = Math.min.apply(null, side.map(function (q) { return Math.abs(q.x) - q.w / 2; })) - 0.05, hh = Math.max.apply(null, side.map(function (q) { return Math.abs(q.y) + q.h / 2; })) + 0.15;
+        P(rrPts(-hw, -hh, 2 * hw, 2 * hh, 0.25), '#26262b', ST); P(arcPts(-hw + 0.6, -hh + 0.6, 0.28, 0, 360, 8), '#9aa0a8');
+      }
+    } else if (id === 'SOT-23') {
+      P(rrPts(-0.6, -1.3, 1.2, 2.6, 0.15), '#26262b', ST);
+    } else if (id === 'TO-92') {
+      P([[-2.3, -0.6], [-2.3, -1.3]].concat(arcPts(0, -1.3, 2.3, 180, 360, 14), [[2.3, -0.6]]), '#26262b', ST);
+    } else if (id === 'TO-220') {
+      P(rrPts(-5.1, -5.8, 10.2, 4.2, 0.3), '#26262b', ST); P([[-5.1, -5.8], [5.1, -5.8], [5.1, -4.6], [-5.1, -4.6]], '#b9bcc2'); P(arcPts(0, -5.2, 1.6, 0, 360, 16), '#0d1013', '#5a606a');
+    } else if (CHIP[id]) {
+      const L = CHIP[id][0], W = CHIP[id][1], isR = /^R/.test(id), isLed = /^LED/.test(id), body = isLed ? partColor(p) : isR ? '#2b2b30' : /SOD/.test(id) ? '#2a2a2e' : '#a9805a', cap = Math.max(0.15, L * 0.18);
+      P([[-L / 2, -W / 2], [L / 2, -W / 2], [L / 2, W / 2], [-L / 2, W / 2]], body, ST);
+      if (/SOD/.test(id)) P([[-L / 2, -W / 2], [-L / 2 + 0.35, -W / 2], [-L / 2 + 0.35, W / 2], [-L / 2, W / 2]], '#b9bcc2');
+      else { P([[-L / 2, -W / 2], [-L / 2 + cap, -W / 2], [-L / 2 + cap, W / 2], [-L / 2, W / 2]], '#c0c4c9'); P([[L / 2 - cap, -W / 2], [L / 2, -W / 2], [L / 2, W / 2], [L / 2 - cap, W / 2]], '#c0c4c9'); }
+    }
+    return out;
+  }
+
+  root.PCB_BODY = { ohmsOf: ohmsOf, ringColors: ringColors, bodyShapes: bodyShapes, CHIP: CHIP };
 
   // ------------------------------------------------------------ CSS
   let cssDone = false;
@@ -796,6 +869,20 @@
       const rest = cu.filter(function (l) { return l !== act; }).reverse();
       return { act: act, rest: rest };
     }
+    function drawBodies(c, layer) {   // Bauteilkoerper in Draufsicht (nur Darstellung), unter dem Bestueckungsdruck
+      const b = B(), side = layer === 'B.Silk' ? 'bot' : 'top', neutral = !!task() || readOnly();   // laufende Aufgabe oder Ansichtsmodus: Farbringe verraten sonst den Wert
+      (b.parts || []).forEach(function (p) {
+        if ((p.side === 'bot' ? 'bot' : 'top') !== side) return;
+        let shapes; try { shapes = bodyShapes(p, fpOf(p.fp), { neutral: neutral }); } catch (e) { return; }
+        if (!shapes.length) return;
+        const xf = xfPart(p); c.lineWidth = 0.07; c.lineJoin = 'round'; c.globalAlpha = 0.82;   // leicht durchscheinend: Bahnen und Pads darunter bleiben erkennbar
+        shapes.forEach(function (sh) {
+          c.beginPath(); sh.pts.forEach(function (q, i) { const m = xf(q[0], q[1]); if (i) c.lineTo(m[0], m[1]); else c.moveTo(m[0], m[1]); }); c.closePath();
+          c.fillStyle = sh.fill; c.fill(); if (sh.stroke) { c.strokeStyle = sh.stroke; c.stroke(); }
+        });
+        c.globalAlpha = 1;
+      });
+    }
     function scene(c) {
       const ord = copperOrder();
       if (S.dim !== 'hide') ord.rest.forEach(function (l) { if (visible(l)) drawCopper(c, l, S.dim === 'full' ? 0.8 : 0.34); });
@@ -804,7 +891,7 @@
       ['F.Mask', 'B.Mask'].forEach(function (l) { if (visible(l)) drawMask(c, l); });
       drawHiNet(c);
       drawPadLabels(c);
-      ['B.Silk', 'F.Silk'].forEach(function (l) { if (visible(l)) drawSilk(c, l); });
+      ['B.Silk', 'F.Silk'].forEach(function (l) { if (visible(l)) { drawBodies(c, l); drawSilk(c, l); } });
       if (visible('Edge')) drawEdge(c);
     }
     function drawCourts(c) {
@@ -1083,7 +1170,7 @@
         return pts;
       }
       if (/^R_AXIAL/.test(id)) {
-        const horiz = Math.abs(w) >= Math.abs(hh), len = Math.min(Math.max(w, hh) * 0.62, 6.4), th = 2.4;
+        const horiz = Math.abs(w) >= Math.abs(hh), bdy = fp && fp.body, len = bdy ? bdy.w : Math.min(Math.max(w, hh) * 0.62, 6.4), th = bdy ? bdy.h : 2.4;
         const a = horiz ? len : th, bb = horiz ? th : len;
         return [[cx - a / 2, cy - bb / 2], [cx + a / 2, cy - bb / 2], [cx + a / 2, cy + bb / 2], [cx - a / 2, cy + bb / 2]];
       }

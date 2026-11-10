@@ -563,9 +563,14 @@
   const fxg = cvfx.getContext('2d'); let fxDrew = false;
   /* Handybreite: Die Szenen legen sich nach der echten Pixelgröße aus, ein hohes Bild gibt ihnen Platz für die Beschriftungen */
   const NARROW_AR = '5/6';
+  const STACK_TALL = { kopplung: 600, schirm: 670, abstrahlung: 600 };   /* Bildhöhe in px für die gestapelte Anordnung */
   function worldSz() { try { const w = S.rig && S.rig.worldSize && S.rig.worldSize(); if (w && w.w > 0 && w.h > 0) return w; } catch (e) {} return { w: 960, h: 600 }; }
   function fitCanvas() {
-    const ws = worldSz(), narrow = (cvw.parentElement ? cvw.parentElement.clientWidth : 1000) < 600, ar = narrow ? NARROW_AR : ws.w + '/' + ws.h; if (cvw.style.aspectRatio !== ar) cvw.style.aspectRatio = ar;
+    const ws = worldSz(), narrow = (cvw.parentElement ? cvw.parentElement.clientWidth : 1000) < 600; let ar = narrow ? NARROW_AR : ws.w + '/' + ws.h, mh = '';
+    /* Gestapelte Szenen (Bildbreite unter 940 px, siehe split in emvrig-kit.js): drei Felder übereinander brauchen Höhe, sonst bleiben
+       Querschnitt, Oszilloskop und Bilanz leer, weil ein Feld unter seiner Mindestgröße nichts zeichnet. Die 56-vh-Grenze gilt dann nicht. */
+    const cwid = cvw.clientWidth; if (STACK_TALL[S.rigId] && cwid > 0 && cwid < 940) { ar = cwid + '/' + STACK_TALL[S.rigId]; mh = 'none'; }
+    if (cvw.style.aspectRatio !== ar) cvw.style.aspectRatio = ar; if (cvw.style.maxHeight !== mh) cvw.style.maxHeight = mh;
     const w = cvw.clientWidth, h = cvw.clientHeight; if (!w || !h) return;
     dpr = Math.min(2, root.devicePixelRatio || 1); const W = Math.round(w * dpr), H = Math.round(h * dpr);
     if (cvs.width !== W || cvs.height !== H) { cvs.width = W; cvs.height = H; }

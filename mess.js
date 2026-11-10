@@ -154,19 +154,22 @@
           for (let i = 0; i <= DX; i++) { g.moveTo(i * sx, 0); g.lineTo(i * sx, H); } for (let j = 0; j <= DY; j++) { g.moveTo(0, j * sy); g.lineTo(W, j * sy); } g.stroke();
           g.strokeStyle = '#2c6b3b'; g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.moveTo(W / 2, 0); g.lineTo(W / 2, H); g.stroke();
           g.strokeStyle = '#2c6b3b'; for (let i = 0; i < DX * 5; i++) { const x = i * sx / 5; g.beginPath(); g.moveTo(x, H / 2 - 3); g.lineTo(x, H / 2 + 3); g.stroke(); } for (let j = 0; j < DY * 5; j++) { const y = j * sy / 5; g.beginPath(); g.moveTo(W / 2 - 3, y); g.lineTo(W / 2 + 3, y); g.stroke(); }
+          const vg = g.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.62); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.4)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);   // Röhrenrand dunkler
           const nch = (S().scopes || []).length, win = 10 * TDIV[OSC.ti], t0 = trigStart();
           if (!OSC.freeze) OSC.snap = null;
           for (let k = 0; k < Math.min(nch, 4); k++) {
-            const d = series(k); if (!d) continue; const c = OSC.ch[k]; g.strokeStyle = LANECOL[k]; g.lineWidth = 2; g.beginPath(); let first = true;
+            const d = series(k); if (!d) continue; const c = OSC.ch[k]; g.strokeStyle = LANECOL[k]; g.lineWidth = 2.2; g.lineJoin = 'round'; g.shadowColor = LANECOL[k]; g.shadowBlur = 7; g.beginPath(); let first = true;
             for (let i = 0; i < d.t.length; i++) { const x = (d.t[i] - t0) / win * W; if (x < 0 || x > W || !isFinite(d.v[i])) continue; const y = H / 2 - (d.v[i] / VDIV[c.vd] + c.pos) * sy; if (first) { g.moveTo(x, y); first = false; } else g.lineTo(x, y); }
-            g.stroke(); g.fillStyle = LANECOL[k]; g.font = '700 11px sans-serif'; g.textAlign = 'left'; const ym = H / 2 - c.pos * sy; g.fillText('▶' + (k + 1), 1, Math.min(H - 4, Math.max(12, ym + 4)));
+            g.stroke(); g.shadowBlur = 0; g.fillStyle = LANECOL[k]; g.font = '700 13px sans-serif'; g.textAlign = 'left'; const ym = H / 2 - c.pos * sy; g.fillText('▶' + (k + 1), 1, Math.min(H - 4, Math.max(12, ym + 4)));
           }
+          // Beschriftung je Kanal: Spannung pro Teil (Ablenkkoeffizient), wie auf dem Bildschirm eines Oszilloskops
+          for (let k = 0; k < Math.min(nch, 4); k++) { const c = OSC.ch[k], lbl = 'K' + (k + 1) + '  ' + vTxt(VDIV[c.vd]).replace('.', ',') + '/T' + (c.ac ? '  AC' : ''); g.font = '700 13px sans-serif'; g.textAlign = 'left'; g.lineWidth = 3; g.strokeStyle = 'rgba(5,14,8,.85)'; g.strokeText(lbl, 8 + k * 118, H - 8); g.fillStyle = LANECOL[k]; g.fillText(lbl, 8 + k * 118, H - 8); }
           // Triggerpfeil
           const tc = OSC.ch[OSC.trig.ch]; if (tc && OSC.trig.on) { const y = H / 2 - (OSC.trig.lv / VDIV[tc.vd] + tc.pos) * sy; g.fillStyle = '#ffffff'; g.beginPath(); g.moveTo(W, y); g.lineTo(W - 9, y - 5); g.lineTo(W - 9, y + 5); g.fill(); }
           // Cursor
           [OSC.cur1, OSC.cur2].forEach((c, i) => { if (c == null) return; g.strokeStyle = i ? '#ff9ad5' : '#7ad7ff'; g.setLineDash([5, 4]); g.beginPath(); g.moveTo(c * W, 0); g.lineTo(c * W, H); g.stroke(); g.setLineDash([]); });
           if (!nch) { g.fillStyle = '#9fe3b0'; g.font = '14px sans-serif'; g.textAlign = 'center'; g.fillText('Keine Messpunkte. Unten „Messpunkt setzen“ und dann Bauteil oder Draht antippen.', W / 2, H / 2 - 10); }
-          g.fillStyle = '#9fe3b0'; g.font = '12px sans-serif'; g.textAlign = 'right'; g.fillText(tTxt(TDIV[OSC.ti]) + '/Teil' + (OSC.freeze ? ' · STOP' : ''), W - 6, H - 6);
+          g.font = '700 13px sans-serif'; g.textAlign = 'right'; g.lineWidth = 3; g.strokeStyle = 'rgba(5,14,8,.85)'; g.strokeText(tTxt(TDIV[OSC.ti]).replace('.', ',') + '/Teil' + (OSC.freeze ? ' · STOP' : ''), W - 6, H - 8); g.fillStyle = '#9fe3b0'; g.fillText(tTxt(TDIV[OSC.ti]).replace('.', ',') + '/Teil' + (OSC.freeze ? ' · STOP' : ''), W - 6, H - 8);
           // Messwerte
           const m = q('[data-meas]'), k = Math.min(OSC.cur, Math.max(0, nch - 1)); const r = nch ? measure(k, t0, win) : null;
           let h = '<b style="color:' + LANECOL[k] + '">K' + (k + 1) + '</b> ';

@@ -18,18 +18,18 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const T2 = [[0, 0], [4, 0]];
 const LEDC = ['rot', 'grün', 'gelb', 'blau', 'weiß', 'orange'];
 const KINDS = {
-  R:   { name: 'Widerstand',      cat: 'Passiv', pins: T2, v: '1k', core: 'R',  box: [0, -1, 4, 1], props: [['v', 'Widerstand', 'text', 'z. B. 4k7']] },
+  R:   { name: 'Widerstand',      cat: 'Passiv', pins: T2, v: '1k', core: 'R',  box: [0, -1, 4, 1], props: [['v', 'Widerstand', 'text', 'z. B. 4k7'], ['w', 'Nennleistung', 'select', ['', '0.25', '0.5', '1', '2'], { '': 'Standard (0,25 W)', '0.25': '0,25 W', '0.5': '0,5 W', '1': '1 W', '2': '2 W' }]] },
   POT: { name: 'Poti',            cat: 'Passiv', pins: [[0, 0], [4, 0], [2, -2]], v: '10k', core: 'P', map: [0, 2, 1], box: [0, -2.2, 4, 1], pos: true, props: [['v', 'Gesamtwiderstand', 'text', 'z. B. 10k'], ['pos', 'Schleifer', 'range']] },
-  C:   { name: 'Kondensator',     cat: 'Passiv', pins: T2, v: '1u', core: 'C',  box: [0, -1.3, 4, 1.3], props: [['v', 'Kapazität', 'text', 'z. B. 100n']] },
-  CE:  { name: 'Elko',            cat: 'Passiv', pins: T2, v: '100u', core: 'CE', box: [0, -1.3, 4, 1.3], props: [['v', 'Kapazität', 'text', 'z. B. 100u']] },
+  C:   { name: 'Kondensator',     cat: 'Passiv', pins: T2, v: '1u', core: 'C',  box: [0, -1.3, 4, 1.3], props: [['v', 'Kapazität', 'text', 'z. B. 100n'], ['bf', 'Bauform (Anzeige)', 'select', ['', 'disc', 'mlcc', 'folie'], { '': 'automatisch', disc: 'Keramik-Scheibe', mlcc: 'Keramik-Vielschicht', folie: 'Folie' }]] },
+  CE:  { name: 'Elko',            cat: 'Passiv', pins: T2, v: '100u', core: 'CE', box: [0, -1.3, 4, 1.3], props: [['v', 'Kapazität', 'text', 'z. B. 100u'], ['uf', 'Spannungsfestigkeit', 'select', ['', '6.3', '10', '16', '25', '35', '50', '63', '100'], { '': 'Standard (35 V)', '6.3': '6,3 V', '10': '10 V', '16': '16 V', '25': '25 V', '35': '35 V', '50': '50 V', '63': '63 V', '100': '100 V' }]] },
   L:   { name: 'Spule',           cat: 'Passiv', pins: T2, v: '10m', core: 'L',  box: [0, -1, 4, 1], props: [['v', 'Induktivität', 'text', 'z. B. 10m']] },
   LDR: { name: 'Fotowiderstand',  cat: 'Passiv', pins: T2, v: '', core: 'LDR', box: [0, -1.3, 4, 1.3], pos: true, props: [['pos', 'Helligkeit', 'range']] },
   LAMP:{ name: 'Glühlampe',       cat: 'Passiv', pins: T2, v: '6V 0.1A', core: 'LAMP', box: [0, -1, 4, 1], dyn: p => (/230\s*V/i.test(String(p.v || '')) ? { pins: [[0, 0], [4, 0], [2, 2]], box: [0, -1, 4, 2.6], toggle: true } : {}), props: [['v', 'Nenndaten', 'text', 'z. B. 6V 0.1A']] },
   D:   { name: 'Diode',           cat: 'Halbleiter', pins: T2, v: '1N4148', core: 'D', box: [0, -1, 4, 1], props: [] },
-  ZD:  { name: 'Z-Diode',         cat: 'Halbleiter', pins: T2, v: '5.1', core: 'ZD', box: [0, -1, 4, 1], props: [['v', 'Z-Spannung (V)', 'text', 'z. B. 5.1']] },
-  LED: { name: 'LED',             cat: 'Halbleiter', pins: T2, v: 'rot', core: 'LED', box: [0, -1.6, 4, 1], props: [['v', 'Farbe', 'select', LEDC]] },
-  NPN: { name: 'NPN-Transistor',  cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'BC547', core: 'T', vr: 'npn-cbe', map: [1, 0, 2], box: [-.2, -2.2, 2.6, 2.2], props: [] },
-  PNP: { name: 'PNP-Transistor',  cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'BC557', core: 'T', vr: 'pnp-cbe', map: [1, 0, 2], box: [-.2, -2.2, 2.6, 2.2], props: [] },
+  ZD:  { name: 'Z-Diode',         cat: 'Halbleiter', pins: T2, v: '5.1', core: 'ZD', box: [0, -1, 4, 1], props: [['v', 'Z-Spannung (V)', 'text', 'z. B. 5.1'], ['w', 'Nennleistung', 'select', ['', '0.5', '1.3'], { '': 'Standard (0,5 W)', '0.5': '0,5 W (DO-35)', '1.3': '1,3 W (DO-41)' }]] },
+  LED: { name: 'LED',             cat: 'Halbleiter', pins: T2, v: 'rot', core: 'LED', box: [0, -1.6, 4, 1], bf: '5', props: [['v', 'Farbe', 'select', LEDC], ['bf', 'Bauform', 'select', ['3', '5', '10', 'smd'], { 3: '3 mm', 5: '5 mm', 10: '10 mm', smd: 'SMD 3528' }]] },
+  NPN: { name: 'NPN-Transistor',  cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'BC547', core: 'T', vr: 'npn-cbe', map: [1, 0, 2], box: [-.2, -2.2, 2.6, 2.2], bf: 'to92', props: [['bf', 'Gehäuse', 'select', ['to92', 'to220', 'sot23'], { to92: 'TO-92', to220: 'TO-220', sot23: 'SOT-23 (SMD)' }], ['ks', 'Kühlkörper (nur TO-220)', 'select', ['', '1'], { '': 'ohne Kühlkörper', 1: 'mit Kühlkörper' }]] },
+  PNP: { name: 'PNP-Transistor',  cat: 'Halbleiter', pins: [[0, 0], [2, -2], [2, 2]], v: 'BC557', core: 'T', vr: 'pnp-cbe', map: [1, 0, 2], box: [-.2, -2.2, 2.6, 2.2], bf: 'to92', props: [['bf', 'Gehäuse', 'select', ['to92', 'to220', 'sot23'], { to92: 'TO-92', to220: 'TO-220', sot23: 'SOT-23 (SMD)' }], ['ks', 'Kühlkörper (nur TO-220)', 'select', ['', '1'], { '': 'ohne Kühlkörper', 1: 'mit Kühlkörper' }]] },
   BAT: { name: 'Gleichspannung',  cat: 'Quellen', pins: T2, v: '9', core: 'BAT', box: [0, -1.2, 4, 1.2], props: [['v', 'Spannung (V)', 'text', 'z. B. 9'], ['imax', 'Max. Strom', 'text', 'leer = unbegrenzt, z. B. 100mA']] },
   AC:  { name: 'Wechselspannung', cat: 'Quellen', pins: T2, v: '5V 1kHz', core: 'SIG', vr: 'sin', box: [0, -1.2, 4, 1.2], props: [['v', 'Amplitude und Frequenz', 'text', 'z. B. 5V 1kHz'], ['vr', 'Kurvenform', 'select', ['sin', 'sq', 'tri'], { sin: 'Sinus', sq: 'Rechteck', tri: 'Dreieck' }]] },
   GND: { name: 'Masse',           cat: 'Quellen', pins: [[0, 0]], v: '', core: null, box: [-.8, -.3, .8, 1.3], props: [] },
@@ -37,7 +37,7 @@ const KINDS = {
   PB:  { name: 'Taster',          cat: 'Schalter', pins: T2, v: '', core: 'SW', box: [0, -1.4, 4, 1], momentary: true, props: [] },
   SPDT:{ name: 'Wechsler',        cat: 'Schalter', pins: [[0, 0], [4, -1], [4, 1]], v: '', core: 'SCH', map: [1, 0, 2], box: [0, -1.5, 4, 1.5], toggle: true, props: [] },
   CABLE: { name: 'Leitung (Kupfer)', cat: 'Netz & Schutz', lab: 'sim', pins: T2, v: '1.5mm2 20m', core: 'CABLE', box: [0, -0.7, 4, 0.7], props: [['v', 'Querschnitt und Länge', 'text', 'z. B. 2.5mm2 30m']] },
-  FUSE:{ name: 'Sicherung',   cat: 'Passiv', pins: T2, v: '250mA', core: 'FUSE', box: [0, -0.6, 4, 0.6], props: [['v', 'Nennstrom', 'text', 'z. B. 250mA']] },
+  FUSE:{ name: 'Sicherung',   cat: 'Passiv', pins: T2, v: '250mA', core: 'FUSE', box: [0, -0.6, 4, 0.6], bf: 'f5', props: [['v', 'Nennstrom', 'text', 'z. B. 250mA'], ['bf', 'Bauform (Anzeige)', 'select', ['f5', 'f63', 'fsmd'], { f5: '5 × 20 mm', f63: '6,3 × 32 mm', fsmd: 'SMD 1206' }]] },
   NTC: { name: 'NTC (Heißleiter)', cat: 'Passiv', pins: T2, v: '10k', core: 'NTC', box: [0, -1.3, 4, 1.3], pos: true, pos0: 0.32, props: [['v', 'Widerstand bei 25 °C', 'text', 'z. B. 10k'], ['pos', 'Temperatur (-20 … 120 °C)', 'range']] },
   PTC: { name: 'PTC (Kaltleiter)', cat: 'Passiv', pins: T2, v: '100', core: 'PTC', box: [0, -1.3, 4, 1.3], pos: true, pos0: 0.32, props: [['v', 'Widerstand bei 25 °C', 'text', 'z. B. 100'], ['pos', 'Temperatur (-20 … 120 °C)', 'range']] },
   MOTOR:{ name: 'Gleichstrommotor', cat: 'Passiv', pins: T2, v: '6V', core: 'MOTOR', box: [0, -1.2, 4, 1.2], pos: true, pos0: 0, props: [['v', 'Nennspannung', 'text', 'z. B. 6V'], ['pos', 'Bremse / Last', 'range']] },
@@ -76,7 +76,7 @@ const KINDS = {
   NETZ3:{ name: 'Drehstrom 400 V (L1, L2, L3, N, PE)', cat: 'Netz & Schutz', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 0], [8, 0]], v: '400V', core: 'NETZ3', box: [-1, -3, 9, 0.3], props: [['v', 'Außenleiterspannung', 'text', 'z. B. 400V']] },
   MOTOR3:{ name: 'Drehstrommotor', cat: 'Verbraucher', lab: 'sim', pins: [[0, 0], [2, 0], [4, 0], [6, 3]], v: '400V 2.2kW', core: 'MOTOR3', box: [-0.6, -0.4, 6.6, 4.8], toggle: true, props: [['v', 'Spannung, Leistung (D = Dreieck)', 'text', 'z. B. 400V 2.2kW']] },
   BRUECKE:{ name: 'Brückengleichrichter', cat: 'Halbleiter', pins: [[0, 2], [4, 2], [2, 0], [2, 4]], v: '', core: 'BRUECKE', box: [0, -0.4, 4, 4.4], props: [] },
-  REG: { name: 'Spannungsregler 78xx', cat: 'Halbleiter', pins: [[0, 0], [2, 2], [4, 0]], v: '7805', core: 'U', box: [0, -1, 4, 2.4], props: [['v', 'Typ', 'text', 'z. B. 7805 oder 7812; LM317 ist einstellbar (Mittelpin ADJ, Ausgang über zwei Widerstände)']] },
+  REG: { name: 'Spannungsregler 78xx', cat: 'Halbleiter', pins: [[0, 0], [2, 2], [4, 0]], v: '7805', core: 'U', box: [0, -1, 4, 2.4], props: [['v', 'Typ', 'text', 'z. B. 7805 oder 7812; LM317 ist einstellbar (Mittelpin ADJ, Ausgang über zwei Widerstände)'], ['ks', 'Kühlkörper', 'select', ['', '1'], { '': 'ohne Kühlkörper (TO-220)', 1: 'mit Kühlkörper' }]] },
   XTAL:{ name: 'Schwingquarz', cat: 'Passiv', pins: T2, v: '4.1943M', core: 'XTAL', box: [0, -1.1, 4, 1.1], props: [['v', 'Frequenz', 'text', 'z. B. 4.1943M, 32768 oder 16M']] },
   SEG8:{ name: '7-Segment-Anzeige', cat: 'Halbleiter', pins: [[0, 0], [0, 2], [0, 4], [0, 6], [0, 8], [0, 10], [0, 12], [0, 14], [6, 14]], v: 'rot', core: 'SEG8', vr: 'k', box: [-0.6, -0.8, 6.6, 15], props: [['vr', 'Bauart', 'select', ['k', 'a'], { k: 'gemeinsame Kathode', a: 'gemeinsame Anode' }]] },
   PBC: { name: 'Taster (Öffner)', cat: 'Schalter', lab: 'sim', pins: T2, v: '', core: 'SWNC', box: [0, -1.4, 4, 1], momentary: true, props: [] },
@@ -156,6 +156,10 @@ let simTime = 0, lastFrame = 0, imax = 1e-9, vmax = 1;
 const flows = new Map();       // wire id -> Strom (Ende 1 -> Ende 2)
 const bodyI = new Map();       // part id -> [Pfade mit Strom]
 let scopeBuf = [];             // je Graph: {t:[],v:[],i:[]}
+/* Wärme und Ausfall (thermviz.js): nur im freien SchaltLab in der Simulation; Aufgaben, Duell, Fehlersuche, Prüfmodus und die anderen Labs rechnen wie bisher (Kern allein) */
+let thermFail = true, thermView = false;       // „Bauteile dürfen ausfallen“ (Standard an), Wärmebild
+try { thermFail = localStorage.getItem(SK + 'thfail') !== '0'; } catch (e) {}
+const tracker = window.THERM ? window.THERM.create({ aktiv: () => thermFrei() && simMode, ausfall: () => thermFail, name: p => p.l || (KINDS[p.k] && KINDS[p.k].name) || p.k }) : null;
 const nid = () => sch.nid++;
 const byPart = id => sch.parts.find(p => p.id === id);
 const byWire = id => sch.wires.find(w => w.id === id);
@@ -235,6 +239,7 @@ function rebuild() {
   });
   circ = LS.buildCircuit({ parts, tracks: [], wires: sch.wires, ground });
   sim = LS.createSim(circ);
+  if (tracker) tracker.bind(circ, sim, sch.parts);
   if (old) {                                      // Kondensator- und Spulenzustände übernehmen
     const find = e => old.elems.find(o => o.part && e.part && o.part.id === e.part.id && o.type === e.type && (o.sub || '') === (e.sub || ''));
     circ.elems.forEach(e => { const o = find(e); if (!o) return; if (e.type === 'C') e.vprev = o.vprev; if (e.type === 'L') e.iprev = o.iprev; });
@@ -265,7 +270,8 @@ const srcMax = () => Math.max(0, ...sch.parts.filter(q => ['BAT', 'AC', 'SIG', '
 function explainIncident(inc) {
   const ev = inc.ev, p = ev.part && ev.part.item, k = p ? p.k : '', s = (ev.snap && ev.snap.els && ev.snap.els[0]) || {}, I = Math.abs(s.i || s.ic || 0), U = srcMax() || (ev.snap && ev.snap.net) || vmax, name = p ? nm(p) : 'Das Bauteil';
   const sc = x => fmt(x, 'V'); let why = '', fix = '';
-  if (ev.kind === 'shock') { why = 'Das Gehäuse von ' + name + ' stand unter Spannung, weil der Schutzleiter (PE) nicht angeschlossen war und ein Körperschluss auftrat. Wer das Gehäuse berührt, bekommt einen Schlag.'; fix = 'Schutzleiter (grün-gelb) vom Gerät an PE des Netzes anschließen. Dann löst bei einem Körperschluss der Automat oder FI aus, bevor jemand gefährdet wird.'; }
+  if (ev.therm && window.THERM) { const x = window.THERM.erklaerung(ev.therm); why = x.why; fix = x.fix; }
+  else if (ev.kind === 'shock') { why = 'Das Gehäuse von ' + name + ' stand unter Spannung, weil der Schutzleiter (PE) nicht angeschlossen war und ein Körperschluss auftrat. Wer das Gehäuse berührt, bekommt einen Schlag.'; fix = 'Schutzleiter (grün-gelb) vom Gerät an PE des Netzes anschließen. Dann löst bei einem Körperschluss der Automat oder FI aus, bevor jemand gefährdet wird.'; }
   else if (ev.kind === 'trip') {
     if (k === 'RCD') { why = 'Der FI-Schutzschalter hat ausgelöst, weil ein Strom nicht über den Neutralleiter zurückfloss, sondern woanders hin (Fehlerstrom über ca. 30 mA, zum Beispiel über das Gehäuse oder einen Menschen).'; fix = 'Fehlerstelle suchen: ein Gerät mit Körperschluss oder Isolationsfehler, N und PE vertauscht oder verbunden. Danach den FI wieder einschalten (Schaltschrank-Ansicht).'; }
     else { why = 'Der Sicherungsautomat hat bei ' + fmt(I, 'A') + ' ausgelöst. Das ist ein Kurzschluss (sofortiges Auslösen) oder eine Überlast (Strom dauerhaft über dem Nennstrom, Auslösen nach einigen Sekunden).'; fix = 'Erst den Fehler beseitigen (Kurzschluss zwischen L und N oder zu viele Verbraucher an einem Stromkreis), dann den Automaten wieder einschalten. Sonst löst er gleich wieder aus.'; }
@@ -336,7 +342,7 @@ function tlSnap() {
     }
     return o;
   });
-  return { t: sim.t, v: Float64Array.from(sim.v), els };
+  return { t: sim.t, v: Float64Array.from(sim.v), els, th: tracker ? tracker.snapshot() : null };
 }
 function tlCapture() {
   if (!sim || !circ || prog || tlIdx >= 0) return;
@@ -351,7 +357,7 @@ function tlLabel() {
 function tlGo(i) {
   if (!tl.length || !sim) return; i = Math.max(0, Math.min(tl.length - 1, i)); const sn = tl[i];
   if (sn.els.length !== circ.elems.length) { tlClear(); tlLabel(); return; }
-  running = false; tlIdx = i; sim.v.set(sn.v); sim.t = sn.t; sn.els.forEach((o, k) => Object.assign(circ.elems[k], o)); sim.events.length = 0;
+  running = false; tlIdx = i; sim.v.set(sn.v); sim.t = sn.t; sn.els.forEach((o, k) => Object.assign(circ.elems[k], o)); sim.events.length = 0; if (tracker && sn.th) tracker.restore(sn.th);
   scopeBuf.forEach(b => { while (b.t.length > 1 && b.t[b.t.length - 1] > sn.t) { b.t.pop(); b.v.pop(); b.i.pop(); } });
   computeFlows(); lastSample = sn.t; dirtyDraw = true; draw(); tlLabel();
   const br = $('#bRun'); if (br) { br.textContent = '▶'; br.classList.remove('on'); }
@@ -367,14 +373,15 @@ function advance(realDt) {
   if (!sim || circ.nn === 0) return;
   const target = rateOf(tempo) * realDt, dt = dtFor(rateOf(tempo));
   const n = Math.max(1, Math.round(target / dt)), t0 = performance.now();
-  const every = graphWin / 400;
+  const every = graphWin / 400, thermOn = !!tracker && tracker.aktiv();
   for (let i = 0; i < n; i++) {
-    sim.step(dt);
+    sim.step(dt); if (thermOn) tracker.sample();
     if (prog) stepProgram();
     sampleScopes(every); trackInstr(); if (window.LAB_STEP) window.LAB_STEP(dt);
     if (tool === 'meter') meterSample(dt);
     if ((i & 15) === 15 && performance.now() - t0 > 11) break;
   }
+  if (thermOn) tracker.advance(Math.max(rateOf(tempo), 1) * realDt);          // Wärmezeit: mindestens Echtzeit, bei Zeitraffer entsprechend schneller
   if (relPend.size) relPend.forEach(id => { const p = byPart(id); if (!p || sim.t - (pressT0.get(id) || 0) >= 0.1) { if (p) releasePart(p, true); relPend.delete(id); if (refreshControls) refreshControls(); } });
   while (sim.events.length) onBurn(sim.events.shift());
   computeFlows(); tlCapture(); if (window.Feel) window.Feel.watch(circ.elems, running);
@@ -993,6 +1000,8 @@ function drawPart(p, selected) {
       }
     }
   }
+  // Wärme: Glühen und Verfärbung des Körpers
+  if (showSim() && thermAn()) { const ti = tracker.info(p.id); if (ti) window.THERM.zeichneKoerper(c, K.box, ti.T, ti.status === 'defekt'); }
   // Strompunkte im Körper
   if (showSim()) {
     c.fillStyle = '#ffe14d';
@@ -1014,6 +1023,7 @@ function drawPart(p, selected) {
     }
   }
   c.restore();
+  if (showSim() && thermAn()) thermOverlay(p);
   // Beschriftung und Werte
   const [mx, my] = (p.k === 'ICX' || p.k === 'CPU') ? rot(3, 0, p.r) : rot(K.pins.length > 1 ? 2 : 0, 0, p.r);
   const lx = X(p.x + mx), ly = Y(p.y + my);
@@ -1042,7 +1052,7 @@ function drawPart(p, selected) {
 function valueText(p) {
   const K = KINDS[p.k];
   switch (p.k) {
-    case 'R': case 'POT': return fmtVal(p.v, 'Ω');
+    case 'R': case 'POT': return fmtVal(p.v, 'Ω') + (p.k === 'R' && p.w && LAB === 'sch' ? ' · ' + String(p.w).replace('.', ',') + ' W' : '');
     case 'C': case 'CE': return fmtVal(p.v, 'F');
     case 'XTAL': return String(p.v || '').replace(/\s*hz$/i, '') + ' Hz';
     case 'L': return fmtVal(p.v, 'H');
@@ -1220,6 +1230,7 @@ function render() {
     for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) cx.fillRect(X(x) - 1, Y(y) - 1, 2, 2);
   }
   drawCircuit();
+  if (thermView && thermAn()) thermHeat(W, H);
   // Vorschau
   if (ghost && tool === 'place' && placeKind) {
     const L = leg1 ? legShape(leg1, ghost) : null;
@@ -1706,7 +1717,7 @@ function setSimMode(on) {
   setSimModeNow(on);
 }
 function setSimModeNow(on) {
-  tlClear(); if (!on) incident = null;
+  tlClear(); thermReset(); if (!on) incident = null;
   if (on && !sch.parts.length) { toast('Noch keine Bauteile gezeichnet'); return; }
   simMode = on; sel = null; wireStart = null; ghost = null; act = null;
   if (on) { tool = 'select'; rebuild(); sim.reset(); phase.clear(); lastSample = -1; running = true; lastFrame = performance.now(); startProgram(); }
@@ -1716,7 +1727,7 @@ function setSimModeNow(on) {
   if (window.LochFX) { LochFX.showBtn(on); LochFX.clear(); if (on) LochFX.unlock(); }
   buildPalette(); refreshUI(); draw();
 }
-function resetSim() { tlClear(); if (window.LochFX) LochFX.clear(); rebuild(); startProgram(); if (window.LochFX) LochFX.toneOff(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
+function resetSim() { tlClear(); thermReset(); if (window.LochFX) LochFX.clear(); rebuild(); startProgram(); if (window.LochFX) LochFX.toneOff(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
 function refreshUI() {
   const side = $('#side'); if (!side) return;
   $('#bRun').textContent = running ? '⏸' : '▶';
@@ -1734,7 +1745,7 @@ function refreshUI() {
     <div style="margin-top:8px"><div class="kv"><span>⏪ Zeitreise</span><b id="tlT">–</b></div><input type="range" id="tlR" min="0" max="0" value="0" step="1" aria-label="Zeitreise"><div class="row2"><button class="btn" data-a="tlback">◀ Schritt</button><button class="btn" data-a="tlfwd">Schritt ▶</button><button class="btn" data-a="tllive">Live</button></div><div class="row2" style="margin-top:6px"><button class="btn" data-a="water">${water ? '💧 Wasser-Ansicht: an' : '💧 Wasser-Ansicht'}</button></div>${prog ? '<p class="hint2">Bei Programmen (Arduino, Pi) gibt es keine Zeitreise.</p>' : ''}</div>
     <label class="sl"><span>Strompunkte</span><input type="range" id="slDot" min="0" max="1" step="0.01" value="${dotSpeed}"></label>
     <div class="kv"><span>Graph-Zeitfenster</span><span>${[0.001, 0.01, 0.1, 1, 10].map(w => `<button class="mini ${Math.abs(w - graphWin) < 1e-9 ? 'on' : ''}" data-win="${w}">${w >= 1 ? w + ' s' : w * 1000 + ' ms'}</button>`).join('')}</span></div>
-  </div><div id="warn"></div>`;
+  </div><div id="warn"></div>` + thermCardHtml();
   }
   if (LAB === 'haus' && window.HAUS_SIDE) { h = h.replace(/<button[^>]*data-a="water"[^>]*>[\s\S]*?<\/button>/, '').replace(/<label class="sl"><span>Strompunkte<\/span>[\s\S]*?<\/label>/, '').replace(/<div class="kv"><span>Graph-Zeitfenster<\/span>[\s\S]*?<\/span><\/div>/, ''); h += window.HAUS_SIDE(simMode); side.innerHTML = h; side.classList.toggle('quiet', false); return; }
   if (!simMode && tool === 'place' && placeKind) {
@@ -1745,6 +1756,8 @@ function refreshUI() {
       const K = KINDS[p.k];
       h += `<div class="card"><h4 data-wk="${p.k}">${esc(p.l ? p.l + ' · ' : '')}${esc(K.name)}</h4>`;
       K.props.forEach(([key, label, type, opt, names]) => {
+        if ((key === 'w' || key === 'bf') && !bvFrei()) return;
+        if ((key === 'ks' || key === 'uf') && !bvFrei()) return;
         if (type === 'ictype' && window.LochSimICs) { const cur = LochSimICs.find(p.v), ck = cur ? cur.key : ''; h += `<label class="f"><span>Typ</span><select data-ic="1">${ck ? '' : '<option value="">(eigener Wert)</option>'}${LochSimICs.SORT.map(q => `<option value="${q}" ${q === ck ? 'selected' : ''}>${esc(LochSimICs.CATALOG[q].name)}</option>`).join('')}</select></label><label class="f"><span>Wert</span><input data-p="v" value="${esc(p.v || '')}"></label>`; return; }
         if (type === 'text') h += `<label class="f"><span>${label}</span><input data-p="${key}" value="${esc(p[key] == null ? '' : p[key])}" placeholder="${esc(opt || '')}"></label>` + (key === 'v' && LS.PRESETS[p.k] ? `<div class="pre">${LS.PRESETS[p.k].filter(x => x !== '').map(x => `<button data-a="preset" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div>` : '');
         else if (type === 'range' && key === 'pos' && K.pos) { const u = posUnit(p), v = posVal(p), multi = posUnits(p).length > 1; h += `<div class="sl"><span>${label}<em id="posEm">${posText(u, v)}</em></span><div style="display:flex;gap:6px;align-items:center"><input type="range" data-p="pos" data-pu="1" min="${u.min}" max="${u.max}" step="${u.step}" value="${posNum(u, v)}" style="flex:1;min-width:0"><input type="number" data-pn="1" min="${u.min}" max="${u.max}" step="${u.step}" value="${posNum(u, v)}" style="width:72px" aria-label="Wert"></div>${multi ? `<button class="btn" data-a="posunit" style="margin-top:4px;padding:3px 10px;font-size:12px">Einheit wechseln: ${esc(u.u)} → ${esc(posUnits(p).find(x => x.id !== u.id).u)}</button>` : ''}</div>`; }
@@ -1753,10 +1766,11 @@ function refreshUI() {
       });
       if (LAB === 'sim' && !simMode && isGod()) h += `<label class="f"><span>Fehler (Lehrer)</span><select data-p="defect">${[['', 'keiner'], ['open', 'unterbrochen'], ['short', 'Kurzschluss']].map(([v, l]) => `<option value="${v}" ${(p.defect || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
       if (K.toggle) h += `<button class="btn" data-a="sw">Schalter umlegen (${p.sw ? 'an' : 'aus'})</button>`;
+      if (bvFrei()) h += window.BAUVIZ.kartenHtml(p.k, p);
       if (!simMode) h += `<label class="f" style="margin-top:8px"><span>Bezeichnung</span><input data-p="l" value="${esc(p.l || '')}"></label><div class="row2" style="margin-top:8px"><button class="btn" data-a="rotl">↺</button><button class="btn" data-a="rotr">↻</button><button class="btn" data-a="dup">⧉</button><button class="btn danger" data-a="del">Löschen</button></div>`;
       if (K.props.some(q => q[2] === 'ictype')) { const dt = String(p.v || '').replace(/[^A-Za-z0-9._-]/g, ''); if (dt) h += `<p class="hint2" style="margin-top:8px"><a href="https://www.google.com/search?q=${encodeURIComponent(dt + ' datasheet')}" target="_blank" rel="noopener noreferrer">Datenblatt im Web suchen</a> (${esc(dt)}, öffnet neuen Tab, braucht Internet)</p>`; }
       if (window.Speak && window.Speak.info(p.k)) h += '<div class="row2" style="margin-top:8px"><button class="btn" data-a="speak">🔊 Erkläre dich</button></div>';
-      if (simMode) h += '<div id="live"></div>';
+      if (simMode) h += '<div id="live"></div>' + (thermAn() ? '<div id="thmLive"></div>' : '');
       h += '</div>';
     }
   } else if (!simMode && sel && sel.t === 'wire') {
@@ -1770,6 +1784,63 @@ function refreshUI() {
   if (!simMode) h += `<div class="card"><h4>Drucken und Simulieren</h4><p class="hint2">Oben den Schalter auf „Sim“ stellen, um die Schaltung laufen zu lassen. Im Menü findest du „Drucken“ für den Plan und die Bauteilliste.</p></div>`;
   side.innerHTML = h; side.classList.toggle('quiet', !sch.task && !simMode);
 }
+/* ============ Wärme und Ausfall (thermviz.js): Anzeige und Bedienung; Rechnung und Ausfall stehen in thermviz.js, den Kern ändern wir nicht ============ */
+const thermFrei = () => LAB === 'sch' && !sch.task && !sch.dice && !!window.THERM;
+const thermAn = () => !!tracker && thermFrei() && simMode;
+function thermReset() { if (tracker) tracker.reset(); }
+function thermOverlay(p) {                              // Rauch, „defekt“-Marke und Temperatur am Bauteil (Bildschirmkoordinaten)
+  const ti = tracker.info(p.id); if (!ti) return;
+  const TH = window.THERM, [sx, sy] = partCenter(p), S = view.s;
+  if (ti.status === 'defekt' && ti.T > 45) TH.zeichneRauch(cx, sx, sy, S, performance.now() / 1000, true);
+  if (ti.status !== 'ok') { TH.zeichneDefekt(cx, sx, sy + S * 1.7, ti.status === 'defekt' ? 'defekt' : 'abgeschaltet'); return; }
+  if (ti.T >= 45 && !thermView) { cx.save(); cx.font = '600 ' + Math.max(10, S * 0.5) + 'px system-ui,sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.lineJoin = 'round'; cx.lineWidth = 3; cx.strokeStyle = '#080b0e'; const t = TH.grad(ti.T); cx.strokeText(t, sx, sy + S * 1.7); cx.fillStyle = TH.farbe(Math.max(ti.T, 95)); cx.fillText(t, sx, sy + S * 1.7); cx.restore(); }
+}
+function thermHeat(W, H) {                              // Wärmebild der ganzen Schaltung
+  const TH = window.THERM, blobs = [];
+  tracker.ids().forEach(id => { const p = byPart(id), ti = tracker.info(id); if (!p || !ti) return; const [sx, sy] = partCenter(p); blobs.push({ x: sx, y: sy, r: view.s * 2.6, T: ti.T, text: TH.grad(ti.T) + ' · ' + ti.stufe.text.split(',')[0] + (ti.status === 'defekt' ? ' · defekt' : ti.status === 'abgeschaltet' ? ' · abgeschaltet' : '') }); });
+  TH.zeichneWaermebild(cx, W, H, blobs, {});
+}
+function thermCardHtml() {
+  if (!simMode || !thermFrei()) return '';
+  return `<div class="card" id="thmSet"><h4>🌡 Wärme und Ausfall</h4>
+    <div class="row2"><button class="btn" data-a="thview" role="switch" aria-checked="${thermView}" style="min-height:44px">${thermView ? '🌡 Wärmebild: an' : '🌡 Wärmebild'}</button></div>
+    <div class="row2" style="margin-top:6px"><button class="btn" data-a="thfail" role="switch" aria-checked="${thermFail}" style="min-height:44px">${thermFail ? '☑' : '☐'} Bauteile dürfen ausfallen</button></div>
+    <p class="hint2">${thermFail ? 'An: Wird ein Bauteil zu heiß, geht es kaputt (Widerstand brennt durch, LED erlischt, Sicherung schmilzt). Die Leistung ist P = U · I. Je weiter über der Nennleistung, desto schneller geht es.' : 'Aus: Nichts geht durch Wärme kaputt, die Temperaturen werden nur angezeigt. Es gilt die einfache Regel von früher (zum Beispiel Widerstand ab 1,5 W kaputt).'} Die Wärme läuft mindestens in Echtzeit; mit dem Tempo-Regler läuft sie schneller. Vereinfachtes Lehrmodell.</p><div id="thmFix"></div></div>`;
+}
+function thermPartHtml(p) {                             // Karte für das gewählte Bauteil in der Simulation
+  const TH = window.THERM, ti = tracker.info(p.id); if (ti) return TH.kartenHtml(ti, { ausfall: thermFail });
+  const es = circ ? circ.elems.filter(e => e.part && e.part.id === p.id) : [];
+  if (p.k === 'FUSE') {
+    const e = es.find(x => x.fuse); if (!e) return '';
+    const i = Math.abs(e.i || 0), ir = e.fuse.ir, hz = Math.min(Math.max(e.heat || 0, 0), 1);
+    return '<div class="thm">' + TH.balkenRoh({ titel: 'Strom', pct: i / ir * 100, detail: fmt(i, 'A') + ' von ' + fmt(ir, 'A'), texte: { ok: 'unter dem Nennstrom', warn: 'nahe am Nennstrom', hoch: 'über dem Nennstrom: Sie schmilzt, je größer der Überstrom, desto schneller' } })
+      + TH.balkenRoh({ titel: 'Erwärmung (I²t)', pct: hz * 100, detail: Math.round(hz * 100) + ' % bis zum Schmelzen', texte: { ok: 'kalt', warn: 'wird warm', hoch: 'schmilzt gleich' } })
+      + '<p class="thn">Die Sicherung schmilzt nach dem I²t-Prinzip: Überstrom heizt den Draht auf, je größer, desto schneller (grobes Modell).</p></div>';
+  }
+  if (p.k === 'CE' || p.k === 'C') {
+    const e = es.find(x => x.type === 'C'); if (!e || !sim) return '';
+    const vc = sim.v[e.a] - sim.v[e.b], vm = e.vmax || 0; if (!(vm > 0)) return '';
+    return '<div class="thm">' + TH.balkenRoh({ titel: 'Spannung', pct: Math.abs(vc) / vm * 100, detail: fmt(Math.abs(vc), 'V') + ' von ' + vm + ' V', texte: { ok: 'im grünen Bereich', warn: 'nahe an der Spannungsfestigkeit', hoch: 'über der Spannungsfestigkeit: Das Dielektrikum bricht durch' } })
+      + (p.k === 'CE' && vc < -0.2 ? '<p class="thn"><b>⚠ Der Elko liegt verkehrt herum</b> (Minus am höheren Potential). Das zerstört ihn.</p>' : '')
+      + (p.k === 'CE' ? '<p class="thn">Spannungsfestigkeit oben einstellbar (Standard 35 V). Auch die Polung zählt: Das Plus-Ende muss am höheren Potential liegen.</p>' : '') + '</div>';
+  }
+  return '';
+}
+function thermUpdate() {                                // alle 120 ms aus updateLive: Ersetzen-Knöpfe und Bauteilkarte
+  if (!thermAn()) return;
+  const fx = $('#thmFix');
+  if (fx) {
+    const ids = [];
+    if (sim) sim.burnt.forEach(id => { const g = tracker.get(id); if (byPart(id) && !(g && g.st.status === 'abgeschaltet')) ids.push(id); });
+    tracker.ids().forEach(id => { const g = tracker.get(id); if (g && g.st.status === 'defekt' && !ids.includes(id)) ids.push(id); });
+    const key = ids.join(',');
+    if (fx.dataset.k !== key) { fx.dataset.k = key; fx.innerHTML = ids.map(id => `<button class="btn" data-a="threp" data-id="${id}" style="min-height:44px;width:100%;margin-top:6px">🔧 Bauteil ersetzen: ${esc(nm(byPart(id)))}</button>`).join(''); }
+  }
+  const tl = $('#thmLive');
+  if (tl) { const p = sel && sel.t === 'part' && byPart(sel.id), html = p ? thermPartHtml(p) : ''; if (tl.innerHTML !== html) tl.innerHTML = html; }
+}
+/* Bauform-Vorschau und Belastungsbalken: nur im freien SchaltLab, nie in Aufgaben, Duell oder Fehlersuche; reine Anzeige */
+const bvFrei = () => LAB === 'sch' && !sch.task && !sch.dice && !!window.BAUVIZ;
 const fmtT = t => (t < 1e-3 ? (t * 1e6).toFixed(1) + ' µs' : t < 1 ? (t * 1e3).toFixed(2) + ' ms' : t.toFixed(3) + ' s');
 /* Hinweis bei niedrigem Tempo: Relais, Schütze und Thyristoren brauchen einige Millisekunden Simulationszeit, bei 4 ms pro Sekunde also mehrere Sekunden */
 function tempoHintHtml() {
@@ -1785,6 +1856,9 @@ $('#side').addEventListener('click', e => {
   if (a === 'pins') { togglePins(); return; }
   if (a === 'why') { if (incident) { incident.open = true; refreshUI(); } return; }
   if (a === 'whyx') { incident = null; refreshUI(); return; }
+  if (a === 'thview') { thermView = !thermView; refreshUI(); draw(); return; }
+  if (a === 'thfail') { thermFail = !thermFail; try { localStorage.setItem(SK + 'thfail', thermFail ? '1' : '0'); } catch (e) {} refreshUI(); return; }
+  if (a === 'threp') { const id = +b.dataset.id; if (tracker && tracker.repair(id)) { toast('Bauteil ersetzt: neu und kalt'); if (incident && incident.ev.part && incident.ev.part.id === id) incident = null; } refreshUI(); draw(); return; }
   if (a === 'mmD') { meterDial(b.dataset.v); refreshUI(); draw(); return; }
   if (a === 'mmJ') { meter.jack = b.dataset.v; refreshUI(); return; }
   if (a === 'mmFuse') { meter.fuse = false; meter.fuse10 = false; toast('Neue Messgerätesicherung eingesetzt'); refreshUI(); return; }
@@ -1858,7 +1932,7 @@ function loop(now) {
 let lastLive = 0;
 function updateLive() {
   const now = performance.now(); if (now - lastLive < 120) return; lastLive = now;
-  refreshControls(); codeTick();
+  refreshControls(); codeTick(); thermUpdate();
   if (simMode && tool === 'meter') { const mv = $('#mmVal'); if (mv) { const t = meterText(); mv.textContent = t.main; const ms = $('#mmSub'); if (ms) ms.textContent = t.sub; const fb = $('#mmFuseBtn'); if (fb) fb.disabled = !(meter.fuse || meter.fuse10); const fs = $('#mmFuseSt'); if (fs) fs.textContent = meter.fuse || meter.fuse10 ? 'defekt' : 'in Ordnung'; } }
   const t = $('#tLbl'); if (t && sim) t.textContent = fmtT(sim.t);
   const w = $('#warn'); if (w) {
@@ -1866,7 +1940,8 @@ function updateLive() {
     else if (!hasGround()) msgs.push('Keine Masse gesetzt. Es wird der Minuspol der Quelle als Masse genommen.');
     circ && circ.warnings.forEach(x => { const it = x.part && x.part.item; if (it) msgs.push((it.l || KINDS[it.k].name) + ': ' + x.text); });
     circ && circ.elems.forEach(e => { if (e.type === 'V' && e.cc && e.part && e.part.item) msgs.push((e.part.item.l || 'Quelle') + ' begrenzt den Strom auf ' + fmt(e.imax, 'A') + ': die Spannung bricht ein.'); });
-    sim && sim.burnt.forEach(id => { const p = byPart(id); if (p) msgs.push(KINDS[p.k].name + ' ist durchgebrannt (mit „Zurück“ wiederherstellen).'); });
+    sim && sim.burnt.forEach(id => { const p = byPart(id), g = thermAn() && tracker.get(id); if (p && !(g && g.st.status !== 'ok')) msgs.push(KINDS[p.k].name + ' ist durchgebrannt (mit „Zurück“ wiederherstellen).'); });
+    if (thermAn()) tracker.meldungen().forEach(m => msgs.push(m.text));
     const html = msgs.length ? `<div class="card warn"><ul>${msgs.map(m => `<li>${esc(m)}</li>`).join('')}</ul></div>` : '';
     if (w.innerHTML !== html) w.innerHTML = html;
   }
@@ -1878,7 +1953,8 @@ function updateLive() {
       if (e0.type === 'Q') { rows.push(['Uce', fmt(sv(gk(...pins[1])) - sv(gk(...pins[2])), 'V')], ['Ic', fmt(e0.ic, 'A')], ['Ib', fmt(e0.ib, 'A')]); }
       else { const u = sv(gk(...pins[0])) - sv(gk(...pins[1])); rows.push(['Spannung', fmt(u, 'V')], ['Strom', fmt(e0.type === 'V' ? -e0.i : e0.i, 'A')], ['Leistung', fmt(Math.abs(u * (e0.type === 'V' ? -e0.i : e0.i)), 'W')]); }
     } else rows.push(['', 'Start drücken']);
-    const html = rows.map(([a, b]) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`).join('');
+    let html = rows.map(([a, b]) => `<div class="kv"><span>${a}</span><b>${b}</b></div>`).join('');
+    if (p.k === 'R' && p.w && bvFrei() && !thermAn() && e0 && showSim() && e0.type !== 'Q') { const u0 = sv(gk(...pins[0])) - sv(gk(...pins[1])), i0 = e0.type === 'V' ? -e0.i : e0.i; html += window.BAUVIZ.balkenHtml(u0 * i0, parseFloat(p.w)); }
     if (L.innerHTML !== html) L.innerHTML = html;
   }
 }
@@ -4232,7 +4308,7 @@ function loadCircuit(d) {
   taskRes = null; prog = null; serLog = ''; lcdState = null;
   assignLabels(sch.parts);
   sch.nid = Math.max(sch.nid, 1 + Math.max(0, ...sch.parts.map(p => p.id || 0), ...sch.wires.map(w => w.id || 0)));
-  circ = null; sim = null; phase.clear(); lastSample = -1; rebuild(); hist = [snap()]; hi = 0;
+  thermReset(); circ = null; sim = null; phase.clear(); lastSample = -1; rebuild(); hist = [snap()]; hi = 0;
   try { localStorage.setItem((SK + 'cur'), snap()); } catch (e) {}
   { const sw = $('#bSim'); if (sw) sw.setAttribute('aria-checked', 'false'); $('#bRun').style.display = 'none'; const ws = $('#bWater'); if (ws) ws.style.display = 'none'; }
   setTool('select'); fit(); refreshUI(); draw(); syncCode();
