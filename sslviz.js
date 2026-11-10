@@ -1,7 +1,7 @@
 'use strict';
 /* Tonfunk Schaltschrank-Lab: Visualisierungen (inline-SVG, ohne Bibliotheken). Datei sslviz.js, eingebunden NACH sslui.js.
    1) Montageplatte (überall, wo die Platte gezeichnet wird, also auch in Aufgaben und Beispielen): Bauteil-Symbole (Hebel, Spule, Klemmenschrauben ...),
-      Schraubklemmen an den Kanten und ein Maßraster (1 TE = 18 mm, Linien alle 5 TE). Das ist reine Optik und sagt nichts über die Regeln.
+      Schraubklemmen an den Kanten und ein Maßraster (1 TE = 17,5 mm, Linien alle 5 TE). Das ist reine Optik und sagt nichts über die Regeln.
    2) Nur im Reiter Schrank-Layout und nur ohne Prüfmodus: Ampel der Regelprüfung (grün: alle Regeln erfüllt, gelb: mindestens die Hälfte, rot: weniger) mit einer Lampe je Regel,
       Auslastung der Schienen gegen die 80-%-Marke, Wärmebild als Skizze (Glühen nach Verlustleistung, Wärme steigt auf) und Wärmebilanz gegen die Gehäusewand.
       Die Ampel nutzt dieselbe Prüfung wie die Regelliste darunter (checkLayout) und zeigt keine Einzelheiten.
@@ -53,14 +53,14 @@
     for (let i = 0; i < k; i++) { const tx = x + (i + .5) * (w + 2) / k; s += `<rect x="${num(tx - 4.5)}" y="${num(y + 1.5)}" width="9" height="4.5" rx="1.5" fill="var(--fg)" fill-opacity=".35"/><rect x="${num(tx - 4.5)}" y="${num(y + h - 6)}" width="9" height="4.5" rx="1.5" fill="var(--fg)" fill-opacity=".35"/>`; }
     return s;
   }
-  /* Maßraster: Lineal oben (1 TE = 18 mm) und senkrechte Linien alle 5 TE in jeder Schiene */
+  /* Maßraster: Lineal oben (1 TE = 17,5 mm) und senkrechte Linien alle 5 TE in jeder Schiene */
   function gridSvg() {
     const n = C.RAIL_TE; let s = '';
     s += T(3, 17, 'TE', 'vz-s m', ' style="font-size:10px"');
     for (let i = 0; i <= n; i++) {
       const x = ML + i * TEP, major = i % 5 === 0;
       s += `<line x1="${x}" x2="${x}" y1="${major ? 12 : 15}" y2="19" stroke="var(--mute)" stroke-width="${major ? 1.6 : 1}"/>`;
-      if (major && i > 0) s += T(x, 10, i + ' TE · ' + f(i * C.TE_MM, 0) + ' mm', 'vz-s m', ' text-anchor="middle" style="font-size:9px"');
+      if (major && i > 0) s += T(x, 10, i + ' TE · ' + f(i * C.TE_MM, 1) + ' mm', 'vz-s m', ' text-anchor="middle" style="font-size:9px"');
     }
     s += `<line x1="${ML}" x2="${ML + n * TEP}" y1="19" y2="19" stroke="var(--mute)" stroke-width="1.2"/>`;
     for (let r = 0; r < C.RAILS; r++) for (let i = 5; i < n; i += 5) { const x = ML + i * TEP; s += `<line x1="${x}" x2="${x}" y1="${railY(r) - 2}" y2="${railY(r) + RHT + 8}" stroke="var(--line)" stroke-width="1" stroke-dasharray="2 5"/>`; }

@@ -16,13 +16,13 @@
     RHO: 0.0178,             // Ohm mm² / m, Kupfer (elscore.js: RHO_NEU), wie "Leitungen prüfen" mit Reserve je Leitung aus route()
     ZV: 0.4,                 // Ohm, Netzimpedanz am Hausanschluss: Übungswert (elscore.js: ZV_DEF) /* PRUEFEN: Ausbilder gegenlesen */
     T_END: 0.4,              // s, Abschaltzeit Endstromkreis bis 32 A, TN, 230 V (elscore.js: tab_033, belegt)
-    T_VERT: 5,               // s, Verteilerstromkreis bzw. Stromkreis über 32 A (elscore.js: tab_5, belegt)
+    T_VERT: 5,               // s, sonst 5 s: Verteilerstromkreise und Endstromkreise mit In über 32 A (elscore.js: tab_5, belegt). 0,4 s gelten für Endstromkreise bis 32 A (Steckdosenkreise bis 63 A nach 411.3.2.2 sind hier nicht abgebildet; die Logik unterscheidet nur In > 32 A)
     IA: { B: 5, C: 10 },     // Auslösestrom Ia = Faktor · In; Faktor 5 für B belegt (elscore.js: faktor_b), 10 für C ist Übungswert /* PRUEFEN: Ausbilder gegenlesen */
     ZS_RESERVE: 0.8,         // ab 80 % von Zs_max: Hinweis (Messwert und Erwärmung der Leitung bringen Unsicherheit) /* PRUEFEN: Übungswert */
     DROP_MAX: 3,             // %, wie "Leitungen prüfen" in haus.js
     DROP_WARN: 2.4,          // %, 80 % des Grenzwertes: Hinweis /* PRUEFEN: Übungswert */
     RCD_IDN: '30mA',         // Zusatzschutz bei Steckdosen für Laien (elscore.js: idn_zusatz 30 mA, belegt)
-    RCD_MAX_IN: 20,          // A, Steckdosenkreise bis 20 A /* PRUEFEN: Ausbilder gegenlesen */
+    RCD_MAX_IN: 32,          // A, Steckdosen-Endstromkreise bis 32 A (DIN VDE 0100-410:2018-10)
     SELEK_MIN: 1.6,          // Hauptsicherung mindestens 1,6 · größter Abgangsnennstrom: vereinfachter Faustwert /* PRUEFEN: Ausbilder gegenlesen */
     SCHIEF_HINWEIS: 10,      // A Unterschied zwischen größter und kleinster Phase: Übungswert /* PRUEFEN: Ausbilder gegenlesen */
     SCHIEF_MANGEL: 20,       // A, entspricht etwa 4,6 kVA je Phase (Schieflastgrenze Netzbetreiber, Idee) /* PRUEFEN: Ausbilder gegenlesen */
@@ -144,7 +144,7 @@
 
   const fiOk = (h, ci) => ci.fi > 0 && h.panel.fi[ci.fi - 1] && h.panel.fi[ci.fi - 1].type === NORM.RCD_IDN;
   add('fi', 'FI/RCD-Schutz (30 mA)',
-    'Ein Fehlerstrom-Schutzschalter mit 30 mA Bemessungsdifferenzstrom schützt Menschen als Zusatzschutz: Er schaltet ab, wenn Strom über den Körper zur Erde fließt, lange bevor es gefährlich wird. Die Idee der VDE-0100-Bestimmungen (Teil 410, Schutz gegen elektrischen Schlag): Steckdosenkreise für den allgemeinen Gebrauch bis 20 A und Bereiche mit erhöhter Gefahr wie Bäder und Außenbereich bekommen diesen Zusatzschutz. Ein 300-mA-FI ist ein Brandschutz-FI und schützt Menschen nicht ausreichend. Das ist hier eine Prüfidee; welche Paragraphen und Ausnahmen im Einzelfall gelten, entscheidet die Elektrofachkraft.',
+    'Ein Fehlerstrom-Schutzschalter mit 30 mA Bemessungsdifferenzstrom schützt Menschen als Zusatzschutz: Er schaltet ab, wenn Strom über den Körper zur Erde fließt, lange bevor es gefährlich wird. Die Idee der VDE-0100-Bestimmungen (Teil 410, Schutz gegen elektrischen Schlag): Steckdosen-Endstromkreise bis 32 A (DIN VDE 0100-410:2018-10) und Bereiche mit erhöhter Gefahr wie Bäder und Außenbereich bekommen diesen Zusatzschutz. Ein 300-mA-FI ist ein Brandschutz-FI und schützt Menschen nicht ausreichend. Das ist hier eine Prüfidee; welche Paragraphen und Ausnahmen im Einzelfall gelten, entscheidet die Elektrofachkraft.',
     c => {
       if (!c.circs.length) return { na: 'Noch keine Leitung vom Verteiler: nichts zu prüfen.' };
       const d = []; let n = 0;
@@ -158,7 +158,7 @@
         else if (ci.fi > 0 && c.h.panel.fi[ci.fi - 1] && c.h.panel.fi[ci.fi - 1].type) d.push(D('mangel', ci.name + ': ' + why.join(', ') + ' sind nur über einen FI mit ' + c.h.panel.fi[ci.fi - 1].type.replace('mA', ' mA') + ' geführt. Das ist kein Personenschutz.'));
         else d.push(D('mangel', ci.name + ': ' + why.join(', ') + ' ohne FI-Schutzschalter. Bei einem Körperschluss schützt nur der Leitungsschutz, und der löst Menschen gegenüber zu spät oder gar nicht aus.'));
       });
-      if (!n) return { d: [D('ok', 'Kein Stromkreis mit Steckdosen bis 20 A, Bad oder Außenbereich vorhanden.')] };
+      if (!n) return { d: [D('ok', 'Kein Stromkreis mit Steckdosen bis 32 A, Bad oder Außenbereich vorhanden.')] };
       return { d };
     });
 

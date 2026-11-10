@@ -75,7 +75,7 @@
   function thBohr(tiefe, d, f, n, opt) { return th(bohrWeg(tiefe, d, opt), 1, vf(f, n)); }
 
   /* ---------- Drehzahlreihe einer Maschine ---------- */
-  /* Normzahlreihe R20/2, Beispielmaschine Drehbank (min^-1) */
+  /* Normzahlreihe R20/3, Beispielmaschine Drehbank (min^-1) */
   var SERIES_STD = [45, 63, 90, 125, 180, 250, 355, 500, 710, 1000, 1400, 2000];
   /* nächstliegende Stufe (kleinster Abstand zum Sollwert; bei Gleichstand die niedrigere) */
   function nearestSpeed(series, nSoll) {

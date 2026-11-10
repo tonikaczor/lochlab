@@ -1,4 +1,4 @@
-/* erzeugt von quelle/gen/mkwikiindex.js - nicht von Hand aendern. Suchindex Tonfunk Wiki, Regler und Messwerte (1260 Eintraege): [id, kat, titel, alias|stich, labs, datei, pruef, kurzwoerter] */
+/* erzeugt von quelle/gen/mkwikiindex.js - nicht von Hand aendern. Suchindex Tonfunk Wiki, Regler und Messwerte (1261 Eintraege): [id, kat, titel, alias|stich, labs, datei, pruef, kurzwoerter] */
 (function (a) { if (typeof module !== 'undefined' && module.exports) module.exports = a; else window.WikiIndexRegler = a; })([
 ["mw-ana-a1","messwert","Verstärkung von U_1","a1","ana","regler-ana",0,"nichtinvertierender verstaerker folger differenzverstaerker"],
 ["mw-ana-a2","messwert","Verstärkung von U_2","a2","ana","regler-ana",0,"differenzverstaerker"],
@@ -243,7 +243,9 @@
 ["mw-els-ipok","messwert","Schutzart ohne Hinweis","ipok","els","regler-els",0,"heisst kein umgebung zweite ziffer wasserschutz aussen"],
 ["mw-els-iz","messwert","Strombelastbarkeit Iz","iz","els","regler-els",0,"leitung uebungstabelle"],
 ["mw-els-klassen-tab","messwert","Abschaltzeit","tab","els","regler-els",0,"schutzklassen schutzart"],
+["mw-els-klassen-ub","messwert","Berührungsspannung U_B","ub","els","regler-els",0,"spannung beruehrbaren gehaeuse koerperschluss"],
 ["mw-els-netz-tab","messwert","Abschaltzeit t_ab","tab","els","regler-els",0,"hoechste schutzorgans diesem fehlerstrom heisst keine abschaltung"],
+["mw-els-netz-ub","messwert","U_B (ungünstigster Fall, gleich Fehlerspannung U_F)","ub","els","regler-els",0,"spannung gehaeuse gegen erde dauernd zulaessige grenze steht elscore.limits"],
 ["mw-els-pruefplatz-schritte","messwert","Durchgeführte Schritte","schritte","els","regler-els",0,"anzahl pruefschritte durchgefuehrt hast sichtpruefung gilt alle drei stellen geprueft"],
 ["mw-els-ratio","messwert","Verhältnis IΔ / IΔn","ratio","els","regler-els",0,"differenzstrom nennfehlerstrom ausloesen loest sicher lehrfaustwert"],
 ["mw-els-regeln-schritte","messwert","Richtige Schritte (von 5)","schritte","els","regler-els",0,"viele stehen anfang richtigen reihenfolge fuenf vollstaendig"],
@@ -258,7 +260,6 @@
 ["mw-els-t-max","messwert","Späteste Auslösezeit","tMax","els","regler-els",0,"diesem strom lehrmodell heisst keine sichere ausloesung"],
 ["mw-els-t-min","messwert","Früheste Auslösezeit","tMin","els","regler-els",0,"diesem strom lehrmodell heisst keine ausloesung"],
 ["mw-els-t-trip","messwert","Auslösezeit","tTrip","els","regler-els",0,"hoechste diesem differenzstrom lehrmodell heisst keine sichere ausloesung"],
-["mw-els-ub","messwert","Berührungsspannung U_B","ub","els","regler-els",0,"spannung gehaeuse gegen erde dauernd zulaessige grenze steht elscore.limits"],
 ["mw-els-urteil","messwert","Urteil","urteil","els","regler-els",0,"kein ergebnis abgefragt bestanden unvollstaendig fehlen schritte"],
 ["mw-els-zone","messwert","Zone","zone","els","regler-els",0,"lehrdarstellung heisst gleichstrom gerechnet"],
 ["mw-els-zs","messwert","Schleifenimpedanz Zs","zs","els","regler-els",0,"gesamtwiderstand fehlerschleife netzimpedanz leitungswiderstaenden erdern"],

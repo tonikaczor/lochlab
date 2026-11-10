@@ -49,7 +49,7 @@
       [1, ['Tragbar, Tastatur, Bildschirm und Laufwerke sind im Gehäuse untergebracht', 'Kann an einer Dockingstation weitere Anschlüsse bekommen']],
       [2, ['Mobil, in einem sehr flachen Gehäuse und ohne Maus und Tastatur', 'Wird mit dem Finger auf dem Bildschirm bedient']],
       [3, ['Kleinstcomputer, auf dem man eigene Anwendungen installiert, mit Telefon- und Sensorfunktion', 'Hat GPS, Bewegungs- und Fingerabdrucksensor eingebaut']],
-      [4, ['Rechner im würfelförmigen Gehäuse', 'Kompakter Würfel, der wenig Platz braucht']],
+      [4, ['Gehäuse mit Netzteil und Mainboard zum Selbstbestücken (oft würfelförmig)', 'Kompaktes Gehäuse, das wenig Platz braucht']],
       [5, ['Muss Hitze, Stöße und Wasser vertragen und lange lieferbar bleiben', 'Rechner für Aufgaben im industriellen Bereich']]] },
     phone: { cats: ['Kommunikation', 'Datenverbindung', 'Sensoren', 'Organizer-Funktionen', 'Navigation'], groups: [
       [0, ['Telefonanruf', 'SMS', 'E-Mail']],
@@ -74,7 +74,7 @@
       [1, ['Der Speicher übernimmt die Information vom Datenbus']],
       [2, ['Die Eingabeeinheit schaltet ihre Information auf den Datenbus']],
       [3, ['Die Ausgabeeinheit übernimmt die Information vom Datenbus und gibt sie an ihre Ausgangsleitungen']]] },
-    mem: { cats: ['Schreib-Lese-Speicher (RAM)', 'Festwertspeicher, einmal programmierbar', 'Festwertspeicher, mehrfach programmierbar'], groups: [
+    mem: { cats: ['Schreib-Lese-Speicher (RAM)', 'Festwertspeicher, einmal programmiert (ROM ab Werk, PROM vom Anwender)', 'Festwertspeicher, mehrfach programmierbar'], groups: [
       [0, ['SRAM (statischer RAM)', 'DRAM (dynamischer RAM)']],
       [1, ['PROM', 'ROM']],
       [2, ['EPROM', 'EEPROM']]] },
@@ -85,12 +85,12 @@
       [3, ['Schaltungen, über die der Rechner mit peripheren Geräten Daten austauscht', 'Hier hängen zum Beispiel Schalter und Anzeigen an']],
       [4, ['Wählt anhand der Adressleitungen genau einen Baustein aus', 'Macht aus den oberen Adressbits ein Auswahlsignal für einen Baustein']],
       [5, ['Leitungsbündel, an dem alle Funktionseinheiten parallel angeschlossen sind', 'Sammelleitungen für Adressen, Daten und Steuersignale']]] },
-    cpu: { cats: ['ALU', 'Steuerwerk', 'Registersatz', 'Adresswerk', 'Stapelspeicher (Stack)', 'Systembusschnittstelle'], groups: [
+    cpu: { cats: ['ALU', 'Steuerwerk', 'Registersatz', 'Adresswerk', 'Stapelzeiger (Stack Pointer)', 'Systembusschnittstelle'], groups: [
       [0, ['Führt arithmetische, logische und Schiebeoperationen aus', 'Rechnet mit dem Akkumulator und liefert das Ergebnis dorthin zurück']],
       [1, ['Regelt, in welcher Reihenfolge Befehle geholt und decodiert werden', 'Sorgt dafür, dass eine Funktionseinheit nur eine Aufgabe zur Zeit ausübt']],
       [2, ['Speichert kurzzeitig Ergebnisse, Adressen und Operanden', 'Kurzzeitspeicher für Zwischenwerte bei Rechnungen']],
       [3, ['Berechnet die Adresse eines Operanden oder Befehls im Speicher', 'Liefert nach Vorgabe des Steuerwerks die Speicheradresse']],
-      [4, ['Das zuletzt eingeschriebene Datum wird als erstes wieder ausgelesen', 'Ein Stackpointer zeigt auf seine aktuelle Position']],
+      [4, ['Zeigt auf die oberste Stelle des Stapels im RAM', 'Gibt an, wo das zuletzt abgelegte Datum des Stapels (LIFO) liegt']],
       [5, ['Puffert Adressen und Daten und passt die Signale elektrisch an die äußeren Bausteine an', 'Verbindung zwischen dem Prozessorinneren und den Systembussen']]] },
     cmd: { cats: ['Datentransport', 'Arithmetik', 'Logik', 'Schieben', 'Sprung', 'Ein-/Ausgabe', 'Sonstiges'], groups: [
       [0, ['MOV B, A', 'MVI A, 00']],
@@ -135,7 +135,7 @@
     ['Welche Geräteklasse ist ein tragbarer PC, in dessen Gehäuse Tastatur, Bildschirm und Laufwerke untergebracht sind?', 'Notebook', ['Desktop-PC', 'Tablet', 'Barebone-PC'], 'Beim Notebook ist alles, was zum Arbeiten nötig ist, im tragbaren Gehäuse vereint.', ['Er ist tragbar und hat die Tastatur eingebaut.', 'Er braucht keinen getrennten Monitor.']],
     ['Welche Geräteklasse ist ein mobiler PC in einem sehr flachen Gehäuse ohne Maus und Tastatur?', 'Tablet', ['Notebook', 'Small-Form-Factor-PC', 'Netbook'], 'Das Tablet wird über den Touchscreen bedient. Konvertible Tablets (Two-in-One) bekommen bei Bedarf eine Tastatur.', ['Die Bedienung geschieht mit dem Finger.', 'Das Gehäuse ist besonders flach.']],
     ['Welche Geräteklasse ist für Aufgaben im industriellen Bereich gebaut und muss zum Beispiel Stöße und Wasser vertragen?', 'Industrie-PC', ['Desktop-PC', 'Small-Form-Factor-PC', 'Barebone-PC'], 'Typische Anforderungen sind Temperatur-, Schock- und Wasserfestigkeit, EMV-Schutz, Ausfallsicherheit und Langzeitverfügbarkeit.', ['Denk an die Umgebung in der Werkhalle.', 'Es geht um raue Umgebungsbedingungen.']],
-    ['Welche Geräteklasse steckt in einem würfelförmigen Gehäuse?', 'Barebone-PC', ['Desktop-PC im Tower', 'Notebook mit Dockingstation', 'Tablet mit Hülle'], 'Der Barebone ist ein kleiner, würfelförmiger PC, der wenig Platz braucht.', ['Die Form gibt den Hinweis.', 'Es ist ein Kompakt-PC.']],
+    ['Welche Geräteklasse ist ein Gehäuse mit Netzteil und Mainboard zum Selbstbestücken (oft würfelförmig)?', 'Barebone-PC', ['Desktop-PC im Tower', 'Notebook mit Dockingstation', 'Tablet mit Hülle'], 'Der Barebone ist ein kompaktes Gehäuse mit Netzteil und Mainboard, das man selbst bestückt; es ist oft würfelförmig und braucht wenig Platz.', ['Die Form gibt den Hinweis.', 'Es ist ein Kompakt-PC.']],
     ['Wie heißt die Zusatzeinrichtung, die einem Notebook Erweiterungssteckplätze und Anschlüsse für weitere Peripheriegeräte bietet?', 'Dockingstation', ['Hauptplatine', 'Netzfilter', 'Barebone-Gehäuse'], 'Das Notebook wird in die Dockingstation gesteckt oder an sie angeschlossen und bekommt so zusätzliche Anschlüsse.', ['Das Notebook wird dort „angedockt“.', 'Es ist ein Zubehör, kein Rechner.']],
     ['Welche Geräteklasse ist ein Kleinstcomputer, auf dem der Benutzer eigene Anwendungen installieren kann?', 'Smartphone', ['Netbook', 'Industrie-PC', 'E-Book-Reader'], 'Das Betriebssystem erlaubt die Installation individueller Anwendungen. Dazu kommen Telefon, Sensoren und Navigation.', ['Er passt in die Hosentasche.', 'Er kann telefonieren.']],
     ['Welche Geräteklasse hat deutlich weniger Ausstattung und Rechenleistung als ein Notebook?', 'Netbook', ['Tablet', 'Desktop-PC', 'Industrie-PC'], 'Das Netbook ist eine abgespeckte, kleine Notebook-Bauart für einfache Aufgaben.', ['Es ist ein „Notebook light“.', 'Rechenleistung und Ausstattung sind geringer.']],
@@ -143,7 +143,7 @@
     ['Welcher Rechner gehört zu den Small-Form-Factor-PCs, weil der Rechner im Bildschirmgehäuse steckt?', 'All-in-One-PC', ['Desktop-PC im Tower', 'Industrie-PC im Schaltschrank', 'Notebook mit Dockingstation'], 'Zu den kleinen Bauformen zählen Nettop, All-in-One-PC, Ultra-Mobile-PC, E-Book-Reader und Wearable-Computer.', ['Alles in einem Gerät.', 'Der Bildschirm ist zugleich das Gehäuse.']],
     ['Welches Gerät gehört als Wearable-Computer zu den Small-Form-Factor-PCs?', 'Ein Fitnessarmband mit Prozessor und Sensoren', ['Ein Rechner im Schaltschrank neben der Maschine', 'Ein Tower mit drei Festplatten und Grafikkarte', 'Ein Notebook mit Dockingstation am Schreibtisch'], 'Wearable bedeutet am Körper getragen. Solche Kleinstrechner stecken in Armbändern oder Uhren.', ['Wearable lässt sich von „tragen“ ableiten.', 'Gemeint ist ein Gerät, das du am Körper trägst.']]
   ];
-  /* PRUEFEN P10: Busse nach der Mitschrift: Datenbus bidirektional mit Tri-State-Ausgängen, Adress- und Steuerbus unidirektional, Datenverkehr immer zwischen CPU und einer von ihr ausgewählten Funktionseinheit, Vorteil wenige Leitungen, Nachteil nur nacheinander (sequenziell). In der Mitschrift steht "Adressbuch" (Schreibfehler für Adressbus). Passt das? */
+  /* PRUEFEN P10: Busse nach der Mitschrift: Datenbus bidirektional mit Tri-State-Ausgängen, Adressbus unidirektional, Steuerbus überwiegend von der CPU ausgehend (einzelne Leitungen wie READY, HOLD, INTR laufen zur CPU), Datenverkehr immer zwischen CPU und einer von ihr ausgewählten Funktionseinheit, Vorteil wenige Leitungen, Nachteil nur nacheinander (sequenziell). In der Mitschrift steht "Adressbuch" (Schreibfehler für Adressbus). Passt das? */
   const BUSQ = [
     ['Was ist ein Bus im Rechner?', 'Ein Leitungsbündel, an das alle Funktionseinheiten parallel angeschlossen sind', ['Ein Speicherbaustein, der Daten auch ohne Betriebsspannung dauerhaft speichert', 'Ein Programm im Betriebssystem, das Eingaben auswertet und weiterleitet', 'Ein Schaltkreis im Netzteil, der die Netzspannung gleichrichtet und glättet'], 'Der Bus fasst mehrere Verbindungsleitungen mit gleichartigen Signalen zusammen. Alle Bausteine hängen parallel daran.', ['Er ist eine Sammelleitung.', 'Er überträgt Signale, er speichert nicht.']],
     ['Was ist ein Vorteil der Bus-Technik?', 'Mit verhältnismäßig wenigen Leitungen tauschen viele Bausteine Informationen aus', ['Mehrere Bausteine können gleichzeitig senden, ohne sich dabei gegenseitig zu stören', 'Es werden keine Adressen mehr gebraucht, weil alle Bausteine alles mitlesen', 'Die Übertragung ist stets um ein Vielfaches schneller als mit Einzelleitungen'], 'Alle Bausteine teilen sich dieselben Leitungen. Das spart Leitungen, aber die Bausteine müssen sich abwechseln.', ['Es geht um die Zahl der Leitungen.', 'Denk daran, wie viele Leitungen ohne Bus nötig wären.']],

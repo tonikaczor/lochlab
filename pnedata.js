@@ -35,7 +35,7 @@
 
   /* ---------------------------------------------------------------- Symbolbibliothek */
   const SYMS = [
-    { id: 'quelle', name: 'Druckluftquelle', part: { t: 'quelle' }, desc: 'Kompressor bzw. Druckluftnetz. Der gefüllte Pfeil zeigt, dass Druckluft aus dem Symbol herausströmt.', ports: [['P', 'Druckluft (Energiezufuhr)']] },
+    { id: 'quelle', name: 'Druckluftquelle', part: { t: 'quelle' }, desc: 'Kompressor bzw. Druckluftnetz. Das Dreieck (in der Pneumatik unausgefüllt) zeigt, dass Druckluft aus dem Symbol herausströmt.', ports: [['P', 'Druckluft (Energiezufuhr)']] },
     { id: 'we', name: 'Wartungseinheit', part: { t: 'we' }, desc: 'Filter mit Wasserabscheider und Druckregler, vereinfacht als Raute. Reinigt die Druckluft und stellt den Arbeitsdruck ein (häufig 6 bar).', ports: [['ein', 'Eingang (von der Quelle)'], ['aus', 'Ausgang (zur Anlage)']] },
     { id: 'zyl_ea', name: 'Einfachwirkender Zylinder', part: { t: 'zyl_ea' }, desc: 'Druckluft bewegt den Kolben nur in eine Richtung (Ausfahren). Die Feder stellt ihn zurück. Es gibt einen Druckanschluss.', ports: [['K', 'Kolbenseite (Druckluft zum Ausfahren)']] },
     { id: 'zyl_da', name: 'Doppeltwirkender Zylinder', part: { t: 'zyl_da' }, desc: 'Druckluft bewegt den Kolben in beide Richtungen. Zwei Anschlüsse, keine Feder.', ports: [['K', 'Kolbenseite (Ausfahren)'], ['S', 'Stangenseite (Einfahren)']] },

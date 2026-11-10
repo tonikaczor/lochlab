@@ -2869,7 +2869,7 @@ const CODE_TASKS = [
         RES(dir(1.2) === '01', 'Nach dem ersten Tastendruck: IN1 ' + (s(1.2).lv[5] ? 'HIGH' : 'LOW') + ', IN2 ' + (s(1.2).lv[7] ? 'HIGH' : 'LOW') + ' (soll LOW und HIGH, Drehrichtung links).'),
         RES(dir(2.4) === '10', 'Nach dem zweiten Tastendruck: IN1 ' + (s(2.4).lv[5] ? 'HIGH' : 'LOW') + ', IN2 ' + (s(2.4).lv[7] ? 'HIGH' : 'LOW') + ' (soll wieder HIGH und LOW).'),
         RES(stop(0.5) && stop(1.5), stop(0.5) && stop(1.5) ? 'Vor jedem Wechsel steht der Motor kurz still.' : 'Vor dem Wechsel fehlt der Stillstand (IN1 und IN2 kurz beide LOW).'),
-        RES(!both, both ? 'Zeitweise sind IN1 und IN2 gleichzeitig HIGH. Das bremst den Motor hart und kann den Treiber überlasten.' : 'IN1 und IN2 sind nie gleichzeitig HIGH.')]; } },
+        RES(!both, both ? 'Zeitweise sind IN1 und IN2 gleichzeitig HIGH. Das bremst den Motor (Schnellstopp); hier als Regel verboten.' : 'IN1 und IN2 sind nie gleichzeitig HIGH.')]; } },
 ];
 
 /* ---- Pi-Lab: Python-Programm im Hintergrund ausführen und beobachten ---- */

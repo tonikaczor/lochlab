@@ -165,7 +165,7 @@
       'Die Energie fließt vom Netz über den Hauptschalter (Trennen der ganzen Anlage), den FI (Fehlerstromschutz für mehrere Abgänge) und den Leitungsschutzschalter (Schutz des Abgangs) zum Schütz (Schalten) und zum Motor.', ['Der Schalter für die ganze Anlage steht am Anfang.', 'Das Gerät, das den Verbraucher schaltet, steht direkt vor dem Verbraucher.']),
     selq: pq(SELQ),
     i1ph: R => {
-      const c = C(), I = c.pick(R, [2, 4, 5, 8, 10, 12, 16]), P = I * 230, it = c.pick(R, ['Heizlüfter', 'Lötstation', 'Absaugung', 'Werkstattleuchte']);
+      const c = C(), I = c.pick(R, [2, 4, 5, 8, 10, 12, 16]), P = I * 230, it = c.pick(R, ['Heizlüfter', 'Heizstrahler', 'Backofen']);
       return numQ('Ein ' + it + ' hat eine Leistung von ' + f(P, 0) + ' W und hängt an 230 V (cos φ = 1, einphasig). Wie groß ist der Strom?', I, 'A', 'Strom', 0.05, 'I = P / (U · cos φ) = ' + f(P, 0) + ' W / (230 V · 1) = ' + f(I, 2) + ' A.', ['Strom = Leistung durch Spannung.', 'Bei cos φ = 1 entfällt der Faktor.']);
     },
     /* PRUEFEN P24: Strom des Drehstrommotors aus Wellenleistung, cos φ (0,8 bis 0,85) und Wirkungsgrad (0,8 bis 0,9) als Übungswerte; Heizregister und Heizgeräte mit cos φ = 1. Entspricht das euren Rechenaufgaben, oder wird mit der aufgenommenen Leistung gerechnet? */
@@ -229,12 +229,12 @@
       return numQ('Ein Schaltschrank soll ' + P + ' W Verlustleistung durch einen Filterlüfter abführen. Außenluft und Schrankinneres dürfen sich um höchstens ' + dT + ' K unterscheiden. Für den Volumenstrom gilt die Näherung V = 3,1 · P / ΔT (V in m³/h, P in W, ΔT in K). Wie groß muss der Volumenstrom sein (ganze m³/h)?', v, 'm³/h', 'Volumenstrom', 0.6,
         'V = 3,1 · ' + P + ' / ' + dT + ' = ' + f(v, 1) + ' m³/h. (Der Faktor 3,1 folgt aus Dichte und Wärmekapazität der Luft; die Näherung gilt in Meereshöhe.)', ['Setze die Zahlen direkt in die Formel ein.', 'Leistung im Zähler, Temperaturdifferenz im Nenner.']);
     },
-    /* PRUEFEN P7: Breiten in TE als Übungswerte (1 TE = 18 mm). */
+    /* PRUEFEN P7: Breiten in TE als Übungswerte (1 TE = 17,5 mm). */
     te: R => {
       const c = C(), sc = c.pick(R, Object.values(SCEN)), ids = c.shuffle(R, sc.need.filter((x, i, a) => a.indexOf(x) === i)).slice(0, 5), n = ids.map(id => c.ri(R, 1, id === 'ls1' || id === 'rel' ? 4 : 2));
       const tot = ids.reduce((s, id, i) => s + n[i] * c.part(id).w, 0);
-      return numQ('Auf einer Hutschiene sollen folgende Bauteile sitzen: ' + ids.map((id, i) => n[i] + ' × ' + c.part(id).s + ' (je ' + c.part(id).w + ' TE)').join(', ') + '. Wie viele TE brauchen sie zusammen (1 TE = 18 mm)?', tot, 'TE', 'Gesamtbreite', 0,
-        'Summe = ' + ids.map((id, i) => n[i] + ' · ' + c.part(id).w).join(' + ') + ' = ' + tot + ' TE (' + f(tot * c.TE_MM, 0) + ' mm).', ['Rechne Stückzahl mal Breite für jedes Bauteil.', 'Dann alle Teilsummen addieren.']);
+      return numQ('Auf einer Hutschiene sollen folgende Bauteile sitzen: ' + ids.map((id, i) => n[i] + ' × ' + c.part(id).s + ' (je ' + c.part(id).w + ' TE)').join(', ') + '. Wie viele TE brauchen sie zusammen (1 TE = 17,5 mm)?', tot, 'TE', 'Gesamtbreite', 0,
+        'Summe = ' + ids.map((id, i) => n[i] + ' · ' + c.part(id).w).join(' + ') + ' = ' + tot + ' TE (' + f(tot * c.TE_MM, 1) + ' mm).', ['Rechne Stückzahl mal Breite für jedes Bauteil.', 'Dann alle Teilsummen addieren.']);
     },
     ruleq: pq(RLQ),
     railfree: R => {

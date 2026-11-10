@@ -1,5 +1,7 @@
 /* spsedit-gra.js - GRAFCET-Editor des SPS-Labs (Editor-ID 'gra')
  * Grafische Ablaufsprache nach DIN EN 60848: Schritte, Aktionen (N S R D L), Transitionen mit Bedingungstext,
+ * (Hinweis: Die Kennbuchstaben N, S, R, D, L stammen aus der Ablaufsprache nach IEC 61131-3. In GRAFCET nach DIN EN 60848
+ * schreibt man eine Zeit als Bedingung, z. B. 3s/X1.)
  * Verzweigungen (alternativ / parallel), Ruecksprung-Pfeile, automatisches Layout, Livewerte.
  * Vanilla-JS, SVG, kein eval, keine externen Abhaengigkeiten. Registriert sich bei window.SPS_EDIT.
  *

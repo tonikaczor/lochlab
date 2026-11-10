@@ -1121,7 +1121,7 @@
       hint: () => { const v = vals(); return [
         'Der lineare Mittelwert einer zweiweg-gleichgerichteten Sinusspannung ist 0,9 · U (genauer 2√2 / π · U). In der Brücke leiten je Halbwelle zwei Dioden, an ihnen fallen etwa 2 · U_F ab. Ein Kondensator ohne Last lädt sich auf den Scheitelwert minus 2 · U_F auf.',
         'U_di = 0,9 · ' + f(v.u, 0) + ' V. Davon ziehst du 2 · ' + f(v.uf, 1) + ' V = ' + f(v.zweiUf, 1) + ' V ab. Scheitelwert: Û = ' + f(v.u, 0) + ' V · √2 = ' + f(v.uhat, 2) + ' V.',
-        'Musterlösung: U_di = ' + f(v.udi, 1) + ' V, mit Dioden ' + f(v.ud, 1) + ' V, am Kondensator ohne Last ' + f(v.uhat, 2) + ' V − ' + f(v.zweiUf, 1) + ' V = ' + f(v.uc, 2) + ' V. Der Einweggleichrichter käme nur auf 0,45 · U = ' + f(v.uein, 1) + ' V.'
+        'Musterlösung: U_di = ' + f(v.udi, 1) + ' V, mit Dioden ' + f(v.ud, 1) + ' V, am Kondensator ohne Last ' + f(v.uhat, 2) + ' V − ' + f(v.zweiUf, 1) + ' V = ' + f(v.uc, 2) + ' V. Der Einweggleichrichter käme nur auf 0,45 · U = ' + f(v.uein, 1) + ' V. Der Abzug 2 · U_F ist eine Näherung (genauer etwa ' + f(v.faktor * v.u - v.zweiUf, 2) + ' V statt ' + f(v.ud, 1) + ' V).'
       ]; },
       start: () => A('gleich', GLEICH(), { fields: { udi: null, ud: null, uc: null }, choices: {} }),
       sol: () => { const v = vals(); return A('gleich', GLEICH(), { fields: { udi: v.udi, ud: v.ud, uc: v.uc }, choices: rightOf(specs()), value: v.ud }); },

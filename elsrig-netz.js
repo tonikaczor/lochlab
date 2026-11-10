@@ -61,7 +61,7 @@
     { key: 'zs', label: 'Schleifenimpedanz Zs', unit: 'Ω', digits: 3, min: 0, max: 60, help: 'Gesamtwiderstand der Fehlerschleife aus Netzimpedanz und Leitungswiderständen (TT: mit Erdern).' },
     { key: 'zsMax', label: 'Zs_max (TT: R_A,max)', unit: 'Ω', digits: 3, min: 0, max: 2000, zeroIsNone: true, help: 'Höchste zulässige Schleifenimpedanz aus U0 / Ia; im TT-System der Höchstwert von R_A (nur mit RCD). 0 heißt: kein Grenzwert.' },
     { key: 'ifehler', label: 'Fehlerstrom I_F', unit: 'A', digits: 1, min: 0, max: 2000, help: 'Strom an der Fehlerstelle bei Körperschluss.' },
-    { key: 'ub', label: 'Berührungsspannung U_B', unit: 'V', digits: 1, min: 0, max: 250, warnAbove: 50, help: 'Spannung am Gehäuse gegen Erde. Die dauernd zulässige Grenze steht in ELS_CORE.limits.' },
+    { key: 'ub', label: 'U_B (ungünstigster Fall, gleich Fehlerspannung U_F)', unit: 'V', digits: 1, min: 0, max: 250, warnAbove: 50, help: 'Spannung am Gehäuse gegen Erde. Die dauernd zulässige Grenze steht in ELS_CORE.limits.' },
     { key: 'tab', label: 'Abschaltzeit t_ab', unit: 's', digits: 3, min: 0, max: 5, zeroIsNone: true, help: 'Höchste Abschaltzeit des Schutzorgans bei diesem Fehlerstrom; 0 heißt: keine Abschaltung.' },
     { key: 'reserve', label: 'Reserve', unit: '', digits: 2, min: 0, max: 10, zeroIsNone: true, help: 'Grenzwert geteilt durch Istwert (TN: Zs_max / Zs, TT: R_A,max / R_A). Reserve 1,2 ist ein Lehrfaustwert, kein Normwert.' }
   ];

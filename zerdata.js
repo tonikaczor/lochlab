@@ -298,7 +298,7 @@
   def('zer33', 'praxis', 3, 'Tatsächliche vc nach der Stufenwahl', 'num', function (r) {
     var d = r.pick([30, 40, 50, 60]), v = r.pick([25, 30, 35]), ns = C.nFromVc(v, d), st = C.lowerSpeed(C.SERIES_STD, ns), s = C.vc(d, st);
     return {
-      text: 'Ø ' + d + ' mm, HSS in Stahl, Richtwert vc = ' + v + ' m/min. Die Drehbank hat die Stufen ' + C.SERIES_STD.join(', ') + ' min⁻¹. Du wählst die nächstniedrigere Stufe unter der rechnerischen Drehzahl, damit der Richtwert nicht überschritten wird. Welche Schnittgeschwindigkeit liegt dann tatsächlich an?', unit: 'm/min', sol: s,
+      text: 'Ø ' + d + ' mm, HSS in Stahl, Richtwert vc = ' + v + ' m/min. Die Drehbank hat die Stufen ' + C.SERIES_STD.join(', ') + ' min⁻¹. Du wählst die nächstniedrigere Stufe unter der rechnerischen Drehzahl, damit der Richtwert nicht überschritten wird. Diese Regel gilt auch dann, wenn die Schnittgeschwindigkeit dadurch knapp unter dem üblichen Fenster für HSS in Stahl (etwa 20 bis 35 m/min) liegt. Welche Schnittgeschwindigkeit liegt dann tatsächlich an?', unit: 'm/min', sol: s,
       steps: ['Soll-Drehzahl: n = ' + v + ' · 1000 / (π · ' + d + ') = ' + N(ns) + ' min⁻¹', 'Nächstniedrigere Stufe: ' + st + ' min⁻¹', 'vc = π · ' + d + ' · ' + st + ' / 1000 = ' + N(s) + ' m/min (Richtwert ' + v + ' m/min nicht überschritten)'],
       tips: tipps('Rechne zuerst die Soll-Drehzahl und suche dann die Stufe darunter.', 'n = vc · 1000 / (π · d), dann die Stufe wählen, die nicht größer ist. Mit dieser Stufe vc neu berechnen.', 'Die Soll-Drehzahl liegt bei etwa ' + F(ns, 0) + ' min⁻¹, die gewählte Stufe ist ' + st + ' min⁻¹.')
     };

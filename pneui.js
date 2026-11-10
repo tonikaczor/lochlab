@@ -131,7 +131,7 @@
       s += ln('M34 50V76', pc('K')) + (da ? ln('M106 50V76', pc('S')) : '');
       (q.marks || []).forEach(m => { const x = m.at === 'in' ? 30 : 90; s += fl(`${x - 4},12 ${x + 4},12 ${x},20`, 'ac') + tx(x, 9, m.label, 'm', 'middle'); });
     } else if (q.t === 'quelle') {
-      s += `<circle class="ln" cx="22" cy="20" r="14"/>` + fl('16,12 16,28 30,20', pc('P') || '') + ln('M36 20H60', pc('P'));
+      s += `<circle class="ln" cx="22" cy="20" r="14"/>` + `<polygon class="ln ${pc('P') || ''}" points="16,12 16,28 30,20"/>` + ln('M36 20H60', pc('P'));
     } else if (q.t === 'we') {
       s += ln('M0 25H15', pc('ein')) + ln('M55 25H70', pc('aus')) + ln('M35 5L55 25L35 45L15 25Z') + fl('26,19 26,31 37,25') + ln('M44 17V33', '') ;
     } else if (q.t === 'sd') {

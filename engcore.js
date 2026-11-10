@@ -148,8 +148,8 @@
   const signalWordOf = t => { const m = /^\s*(DANGER|WARNING|CAUTION|NOTICE)\b/.exec(String(t == null ? '' : t)); return m ? m[1] : ''; };
 
   /* ---------- Buchstabiertafel (ICAO) ----------
-     PRUEFEN P6: Englisch wird nach ICAO buchstabiert (Alpha ... Zulu, "Juliett", "X-ray"). Im deutschen Betrieb gilt sonst die Tafel nach DIN 5009 (Anton, Berta, Cäsar). Passt ICAO für englische Telefonate? */
-  const NATO = { A: 'Alpha', B: 'Bravo', C: 'Charlie', D: 'Delta', E: 'Echo', F: 'Foxtrot', G: 'Golf', H: 'Hotel', I: 'India', J: 'Juliett', K: 'Kilo', L: 'Lima', M: 'Mike', N: 'November', O: 'Oscar', P: 'Papa', Q: 'Quebec', R: 'Romeo', S: 'Sierra', T: 'Tango', U: 'Uniform', V: 'Victor', W: 'Whiskey', X: 'X-ray', Y: 'Yankee', Z: 'Zulu' };
+     PRUEFEN P6: Englisch wird nach ICAO buchstabiert (Alfa ... Zulu, amtliche Schreibung "Alfa"; "Alpha" ist die übliche englische Schreibweise, "Juliett", "X-ray"). Im deutschen Betrieb gilt sonst die Buchstabiertafel nach DIN 5009 (seit 2022-06 mit Städtenamen; die alte Tafel Anton, Berta, Cäsar ist abgelöst). Passt ICAO für englische Telefonate? */
+  const NATO = { A: 'Alfa', B: 'Bravo', C: 'Charlie', D: 'Delta', E: 'Echo', F: 'Foxtrot', G: 'Golf', H: 'Hotel', I: 'India', J: 'Juliett', K: 'Kilo', L: 'Lima', M: 'Mike', N: 'November', O: 'Oscar', P: 'Papa', Q: 'Quebec', R: 'Romeo', S: 'Sierra', T: 'Tango', U: 'Uniform', V: 'Victor', W: 'Whiskey', X: 'X-ray', Y: 'Yankee', Z: 'Zulu' };
   function natoSpell(word) { const out = []; String(word == null ? '' : word).toUpperCase().split('').forEach(c => { if (NATO[c]) out.push(NATO[c]); }); return out.join(' – '); }
 
   /* ---------- Stückliste und Lieferschein (Beträge in Cent, damit nichts falsch rundet) ---------- */

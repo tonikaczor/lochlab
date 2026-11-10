@@ -2,7 +2,7 @@
 /* Tonfunk Schaltschrank-Lab: reine Rechenlogik (Kennung 'ssl'). window.SSL_CORE bzw. module.exports.
    Alle Bauteilgrößen, Verlustleistungen, Reserven und Zuordnungstabellen sind ÜBUNGSWERTE für die Ausbildung, nicht für die Planung echter Anlagen.
    Maßgebend sind Datenblätter, die Normen (DIN VDE 0100, DIN EN 60204-1) und die Vorgaben des Betriebs. Bauteile heißen neutral (z. B. "Netzteil 24 V").
-   Konventionen: Strom in A, Leistung in W, Querschnitt in mm², Breite in TE (1 TE = 18 mm), Temperatur in °C, Differenz in K.
+   Konventionen: Strom in A, Leistung in W, Querschnitt in mm², Breite in TE (1 TE = 17,5 mm, DIN 43880), Temperatur in °C, Differenz in K.
    Ungültige Eingaben (Division durch 0, negative Werte, fehlende Zahlen) liefern NaN, nie Infinity.
    Schaltschrank-Layout: { items: [ { p: Teile-Kennung, r: Schiene 0..2 (0 = oben), x: Startposition in TE, lab: beschriftet } ], sep: [Trennsteg Kanal 0/1, Kanal 1/2] } */
 (function (root) {
@@ -89,8 +89,8 @@
   const tInside = (Tout, Pv, A, k) => (num(Tout) === Tout && num(Pv) >= 0 && num(A) > 0 ? Tout + Pv / ((k == null ? K_WALL : k) * A) : NAN);
 
   /* ============================================================ Bauteile und Layout */
-  /* PRUEFEN P7: Bauteilgrößen in TE (1 TE = 18 mm) und Verlustleistungen sind Übungswerte (Datenblätter weichen ab). Als Wärmequelle gilt ab 8 W (HEAT_MIN), als wärmeempfindlich gelten SPS und Relais (Elektronik). */
-  const TE_MM = 18, HEAT_MIN = 8;
+  /* PRUEFEN P7: Bauteilgrößen in TE (1 TE = 17,5 mm, DIN 43880) und Verlustleistungen sind Übungswerte (Datenblätter weichen ab). Als Wärmequelle gilt ab 8 W (HEAT_MIN), als wärmeempfindlich gelten SPS und Relais (Elektronik). */
+  const TE_MM = 17.5, HEAT_MIN = 8;
   const PARTS = {
     hs: { n: 'Hauptschalter 3-polig', s: 'Hauptschalter', w: 3, pv: 3, z: 'L', k: 'Q', sens: false },
     fi: { n: 'FI-Schutzschalter 4-polig', s: 'FI', w: 4, pv: 3, z: 'L', k: 'F', sens: false },

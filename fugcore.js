@@ -45,11 +45,11 @@
   function shuffle(R, arr) { const o = arr.slice(); for (let j = o.length - 1; j > 0; j--) { const k = Math.floor(R() * (j + 1)); [o[j], o[k]] = [o[k], o[j]]; } return o; }
 
   /* ============================================================ Fügen nach DIN 8593 */
-  /* PRUEFEN P1: Gliederung des Fügens (Fertigungshauptgruppe 4) nach DIN 8593 als Nummernfolge 4.1 Zusammensetzen, 4.2 Füllen, 4.3 An- und Einpressen, 4.4 Fügen durch Urformen, 4.5 Fügen durch Umformen, 4.6 Fügen durch Schweißen, 4.7 Fügen durch Löten, 4.8 Kleben, 4.9 Textiles Fügen. Zuordnung der Beispiele: Schrauben, Stifte und Bolzen = 4.1; Pressverband = 4.3; Nieten, Clinchen, Bördeln = 4.5. Stimmen Nummern und Zuordnung mit dem Tabellenbuch eurer Berufsschule überein? */
+  /* PRUEFEN P1: Gliederung des Fügens (Fertigungshauptgruppe 4) nach DIN 8593 als Nummernfolge 4.1 Zusammensetzen, 4.2 Füllen, 4.3 An- und Einpressen, 4.4 Fügen durch Urformen, 4.5 Fügen durch Umformen, 4.6 Fügen durch Schweißen, 4.7 Fügen durch Löten, 4.8 Kleben, 4.9 Textiles Fügen. Zuordnung der Beispiele: Stifte, Bolzen und Einlegen (Passfeder) = 4.1; Schrauben, Pressverband und Klemmen = 4.3; Nieten, Clinchen, Bördeln = 4.5. Stimmen Nummern und Zuordnung mit dem Tabellenbuch eurer Berufsschule überein? */
   const DIN8593 = [
-    { n: '4.1', t: 'Zusammensetzen', ex: 'Schrauben, Stifte, Bolzen, Einlegen' },
+    { n: '4.1', t: 'Zusammensetzen', ex: 'Stifte, Bolzen, Einlegen (Passfeder)' },
     { n: '4.2', t: 'Füllen', ex: 'Tränken, Einfüllen' },
-    { n: '4.3', t: 'An- und Einpressen', ex: 'Pressverband, Klemmverbindung' },
+    { n: '4.3', t: 'An- und Einpressen', ex: 'Schrauben, Pressverband, Klemmen' },
     { n: '4.4', t: 'Fügen durch Urformen', ex: 'Eingießen, Umspritzen' },
     { n: '4.5', t: 'Fügen durch Umformen', ex: 'Nieten, Clinchen, Bördeln' },
     { n: '4.6', t: 'Fügen durch Schweißen', ex: 'Lichtbogenschweißen, MAG, WIG' },
@@ -63,7 +63,7 @@
     lo: { n: 'Löten', s: 'Stoffschluss', lo: false, din: '4.7', ex: 'Kupferrohr, Kühler, Hartmetallplatte', e: 'Nur das Lot schmilzt, die Werkstücke bleiben fest. Das flüssige Lot wird in den engen Spalt gesaugt (Kapillarwirkung).' },
     kl: { n: 'Kleben', s: 'Stoffschluss', lo: false, din: '4.8', ex: 'Typschild, Sensorhalter, Blechverkleidung', e: 'Ein Klebstoff haftet an beiden Flächen (Adhäsion) und hält in sich zusammen (Kohäsion). Belastet wird auf Schub, nicht auf Schälen.' },
     ni: { n: 'Nieten', s: 'Formschluss', lo: false, din: '4.5', ex: 'Blechverbindung, Blindniet am Gehäuse', e: 'Der Niet füllt das Loch und wird durch einen Schließkopf gesichert. Er wird auf Abscheren und Lochleibung belastet.' },
-    sr: { n: 'Schrauben', s: 'Kraftschluss', lo: true, din: '4.1', ex: 'Flansch, Lagerdeckel, Maschinenfuß', e: 'Das Anziehen spannt die Schraube vor. Die Vorspannkraft presst die Teile zusammen, Reibung überträgt die Querkraft.' },
+    sr: { n: 'Schrauben', s: 'Kraftschluss', lo: true, din: '4.3', ex: 'Flansch, Lagerdeckel, Maschinenfuß', e: 'Das Anziehen spannt die Schraube vor. Die Vorspannkraft presst die Teile zusammen, Reibung überträgt die Querkraft.' },
     wn: { n: 'Welle-Nabe (Passfeder)', s: 'Formschluss', lo: true, din: '4.1', ex: 'Zahnrad auf Welle, Kupplung', e: 'Die Passfeder sitzt in Nuten von Welle und Nabe und überträgt das Drehmoment über ihre Flanken.' },
     pv: { n: 'Pressverband', s: 'Kraftschluss', lo: false, din: '4.3', ex: 'Lagerring, Zahnkranz, Buchse', e: 'Die Welle ist etwas größer als die Bohrung (Übermaß). Die Teile werden gepresst oder durch Erwärmen gefügt, die Pressung hält sie.' },
     kl2: { n: 'Klemmen und Stecken', s: 'Kraftschluss / Formschluss', lo: true, din: '4.3', ex: 'Spannhülse, Bolzen mit Sicherungsring', e: 'Klemmen hält durch Reibung (Kraftschluss), Stecken mit Bolzen oder Stift durch die Form (Formschluss). Beides ist schnell lösbar.' }

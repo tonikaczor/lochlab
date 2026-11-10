@@ -133,7 +133,7 @@
     s += txt(x + w / 2, y + 90, `${c.t}${inn}`, 'es-big', 'middle') + txt(x + w / 2, y + 112, `${inn} A`, 'es-s', 'middle');
     s += txt(x + w / 2, y + 136, '1 TE', 'es-s', 'middle');
     s += txt(130, 34, 'Leitungsschutzschalter', 'es-t') + txt(130, 54, `Charakteristik ${c.t}`, 'es-s') + txt(130, 74, `Magnet löst bei ${c.mag} · In`, 'es-s');
-    s += txt(130, 94, 'thermisch: Bimetall bei Überlast', 'es-s') + txt(130, 114, 'Hebel: Ein und Aus', 'es-s') + txt(130, 134, 'Breite: 1 Teilungseinheit (18 mm)', 'es-s');
+    s += txt(130, 94, 'thermisch: Bimetall bei Überlast', 'es-s') + txt(130, 114, 'Hebel: Ein und Aus', 'es-s') + txt(130, 134, 'Breite: 1 Teilungseinheit (17,5 mm)', 'es-s');
     return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Leitungsschutzschalter ${c.t} ${inn} Ampere: Magnetauslöser bei ${c.mag} mal Nennstrom">${s}</svg>`;
   }
   /* Kennfarben der Schraubsicherungen (Kennmelder), DIN 49515 */

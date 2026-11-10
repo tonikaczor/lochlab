@@ -54,12 +54,12 @@
   const toDaN = N => N / 10;
 
   /* Reibbeiwerte µ (Gleitreibung) als Übungswerte */
-  /* PRUEFEN P2: Die µ-Werte (Holz/Siebdruck trocken 0,45 und nass 0,3, Antirutschmatte 0,6, Kunststoff/Stahl 0,2, Stahl geölt 0,1) sind Übungswerte in Anlehnung an VDI 2700 Blatt 2 / EN 12195-1. Mit der Tabelle im Lehrmaterial vergleichen. */
+  /* PRUEFEN P2: Die µ-Werte (Holz/Siebdruck trocken 0,45 und nass 0,3, Antirutschmatte 0,6, Kunststoff/Stahl 0,15 nach EN 12195-1:2011, Stahl geölt 0,1) sind Übungswerte in Anlehnung an VDI 2700 Blatt 2 / EN 12195-1. Mit der Tabelle im Lehrmaterial vergleichen. */
   const MU = [
     { id: 'holz', n: 'Holzpalette auf Siebdruck-Ladeboden, trocken', mu: 0.45 },
     { id: 'holzn', n: 'Holzpalette auf Siebdruck-Ladeboden, nass', mu: 0.3 },
     { id: 'matte', n: 'Holzpalette auf Antirutschmatte', mu: 0.6 },
-    { id: 'kunst', n: 'Kunststoffpalette auf Stahlblech', mu: 0.2 },
+    { id: 'kunst', n: 'Kunststoffpalette auf Stahlblech', mu: 0.15 },
     { id: 'stahl', n: 'Stahl auf Stahl, geölt', mu: 0.1 }
   ];
   /* Beschleunigungsbeiwerte c (Vielfaches von g) */

@@ -901,12 +901,12 @@
     wrongF: v => [{ ub: v.uf, ik: v.uf / v.rk * 1000 }, { ub: v.uf - v.ub, ik: v.ik * 10 }] });
 
   /* el41: Körperwiderstand zusammensetzen, Bereich der Stromwirkung. PRUEFEN P9 (Zonen aus dem Kern, Lehrdarstellung; 230 V sind nie harmlos) */
-  const KFIX = { u: 230, typ: 'wechsel', haut: 'feucht', weg: 'hand-fuss', rv: 0, t: 200, rcd: 0 };
-  const M41 = MIX({ id: 'el41', rig: 'koerper', ctl: KFIX, consts: [400, 500, 600],
+  const KFIX = { u: 230, typ: 'wechsel', haut: 'feucht', weg: 'hand-fuss', rv: 0, t: 1000, rcd: 0 };
+  const M41 = MIX({ id: 'el41', rig: 'koerper', ctl: KFIX, consts: [400, 500, 600, 60479],
     vals: () => { const c = C(), rk = 400 + 500 + 600, ik = KFIX.u / rk, z = c.body.zone(ik, KFIX.t); return { u: KFIX.u, t: KFIX.t, rk, ik: ik * 1000, zone: z.zone, ifl: z.iFl * 1000, z2: c.limit('zonen').extra.z2 * 1000 }; },
-    text: v => 'Ein Mensch berührt mit feuchter Hand ein Teil, das ' + f(v.u, 0) + ' V Wechselspannung gegen Erde führt, und steht ohne isolierende Schuhe auf feuchtem Boden. Der Strom fließt von der Hand zum Fuß. Übergangswiderstand an der Hand 400 Ω, Körperinneres 500 Ω, Übergangswiderstand am Fuß 600 Ω. Der Strom fließt ' + f(v.t, 0) + ' ms lang. Berechne den Körperwiderstand und den Körperstrom und bestimme den Bereich der Stromwirkung (Zonen wie im Prüfstand „Stromwirkung auf den Körper“).',
+    text: v => 'Ein Mensch berührt mit feuchter Hand ein Teil, das ' + f(v.u, 0) + ' V Wechselspannung gegen Erde führt, und steht ohne isolierende Schuhe auf feuchtem Boden. Der Strom fließt von der Hand zum Fuß. Übergangswiderstand an der Hand 400 Ω, Körperinneres 500 Ω, Übergangswiderstand am Fuß 600 Ω. Der Strom fließt etwa eine Sekunde lang (' + f(v.t, 0) + ' ms). Berechne den Körperwiderstand und den Körperstrom und bestimme den Bereich der Stromwirkung (Zonen wie im Prüfstand „Stromwirkung auf den Körper“).',
     h1: 'Die drei Widerstände liegen hintereinander auf dem Stromweg, sie addieren sich. Den Bereich liest du aus Strom und Einwirkdauer ab, wie im Zeit-Strom-Diagramm.',
-    h2: v => 'R_K = 400 Ω + 500 Ω + 600 Ω = ' + f(v.rk, 0) + ' Ω. I_K = ' + f(v.u, 0) + ' V / ' + f(v.rk, 0) + ' Ω. Bei ' + f(v.t, 0) + ' ms beginnt die Flimmergefahr im Lehrmodell bei etwa ' + f(v.ifl, 0) + ' mA.',
+    h2: v => 'R_K = 400 Ω + 500 Ω + 600 Ω = ' + f(v.rk, 0) + ' Ω. I_K = ' + f(v.u, 0) + ' V / ' + f(v.rk, 0) + ' Ω. Bei ' + f(v.t, 0) + ' ms beginnt die Flimmergefahr im Lehrmodell bei etwa ' + f(v.ifl, 0) + ' mA. Zonen nach dem vereinfachten Lehrmodell dieses Labs, nicht nach dem Originaldiagramm der IEC 60479-1.',
     fields: [
       { key: 'rk', label: 'Körperwiderstand R_K', unit: 'Ω', d: 0, ok: v => 'Der Körperwiderstand ist richtig (' + f(v.rk, 0) + ' Ω)', num: v => ({ targets: [v.rk], errs: [{ v: 500, text: 'Die Übergangswiderstände an Hand und Fuß gehören dazu, sie liegen in Reihe zum Körperinneren.' }, { v: 1 / (1 / 400 + 1 / 500 + 1 / 600), text: 'Die Widerstände liegen nicht parallel, sondern hintereinander auf demselben Stromweg.' }], hint: 'Reihenschaltung: Widerstände addieren.' }) },
       { key: 'ik', label: 'Körperstrom I_K', unit: 'mA', d: 1, ok: v => 'Der Körperstrom ist richtig (' + f(v.ik, 1) + ' mA)', num: v => ({ targets: [v.ik], scale: 0.001, errs: [{ v: v.u / 500 * 1000, text: 'Du hast nur das Körperinnere gerechnet. Mit den Übergangswiderständen ist der Strom kleiner.' }], hint: 'I_K = U / R_K, in mA umrechnen.' }) }],
@@ -916,11 +916,11 @@
           { value: 'z1', label: 'Zone 1: kaum wahrnehmbar, keine Wirkung', why: 'Zone 1 reicht nur bis 0,5 mA. Der Strom hier ist mehr als hundertmal größer.' },
           { value: 'z2', label: 'Zone 2: spürbar, Loslassen ist noch möglich', why: 'Zone 2 endet bei 10 mA. Darüber verkrampfen die Muskeln.' },
           { value: 'z3', label: 'Zone 3: Verkrampfung, aber kein Herzflimmern', why: 'Der Strom liegt bei dieser Dauer über der Flimmergrenze des Lehrmodells.' },
-          { value: 'z4', label: 'Zone 4: Herzkammerflimmern ist möglich', why: 'Das ist richtig.' }] },
-      { key: 'kurz', q: 'Ein Mitschüler meint: „Bei 230 V und kurzer Zeit ist so ein Strom harmlos.“ Was stimmt?', ok: 'Einschätzung: falsch, schon Bruchteile einer Sekunde reichen bei diesem Strom für Lebensgefahr', short: 'Einschätzung', correct: 'falsch',
+          { value: 'z4', label: 'Zone 4: Herzkammerflimmern ist möglich', why: 'Das ist richtig. Zonen nach dem vereinfachten Lehrmodell dieses Labs, nicht nach dem Originaldiagramm der IEC 60479-1.' }] },
+      { key: 'kurz', q: 'Ein Mitschüler meint: „Bei 230 V und so kurzer Zeit (etwa eine Sekunde) ist so ein Strom harmlos.“ Was stimmt?', ok: 'Einschätzung: falsch, schon etwa eine Sekunde reicht bei diesem Strom für Lebensgefahr', short: 'Einschätzung', correct: 'falsch',
         options: [
-          { value: 'stimmt', label: 'Stimmt, unter einer Sekunde passiert dem Herzen nichts', why: 'Bei über 100 mA kann schon eine Einwirkung von wenigen hundert Millisekunden Herzkammerflimmern auslösen.' },
-          { value: 'falsch', label: 'Falsch, auch Bruchteile einer Sekunde sind lebensgefährlich', why: 'Das ist richtig.' },
+          { value: 'stimmt', label: 'Stimmt, bei so kurzer Zeit passiert dem Herzen nichts', why: 'Bei über 100 mA kann schon eine Einwirkung von etwa einer Sekunde Herzkammerflimmern auslösen.' },
+          { value: 'falsch', label: 'Falsch, schon etwa eine Sekunde ist lebensgefährlich', why: 'Das ist richtig.' },
           { value: 'trocken', label: 'Stimmt, solange die Haut der Hand etwas trocken ist', why: 'Trockene Haut verkleinert den Strom, aber bei 230 V bleibt die Gefahr. Mit feuchter Haut wie hier ist sie besonders groß.' },
           { value: 'wechsel', label: 'Stimmt, weil Wechselstrom ungefährlicher ist als Gleichstrom', why: 'Wechselstrom mit 50 Hz ist für das Herz besonders gefährlich, nicht ungefährlicher.' }] },
       { key: 'rcd', q: 'Was bewirkt eine Fehlerstrom-Schutzeinrichtung mit 30 mA in diesem Fall?', ok: 'RCD 30 mA: schaltet sehr schnell ab und verkürzt die Einwirkdauer, den Strom selbst begrenzt sie nicht', short: 'RCD', correct: 'dauer',

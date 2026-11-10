@@ -147,7 +147,7 @@
   const stuckAddr = (addr, line) => (isInt(addr) && isInt(line) && line >= 0 && line < 31 ? addr & ~(1 << line) : NAN);
 
   /* ---------- Geräteklassen und Konfigurator ---------- */
-  /* PRUEFEN P6: Merkmale der Geräteklassen nach der Mitschrift: Desktop (Hauptplatine mit Anschlüssen, Peripherie getrennt), Notebook (alles im Gehäuse, Dockingstation), Tablet (flach, ohne Maus und Tastatur), Smartphone (Kleinstcomputer mit Betriebssystem und Apps), Barebone (würfelförmiges Gehäuse), Industrie-PC (Temperatur, Schock, Wasser, EMV, Ausfallsicherheit, Langzeitverfügbarkeit), Small-Form-Factor (Nettop, All-in-One, Ultra-Mobile-PC, E-Book-Reader, Wearable). Die Zuordnung "Anforderung -> Gerät" in der Tabelle ist vereinfacht. Stimmt sie so? */
+  /* PRUEFEN P6: Merkmale der Geräteklassen nach der Mitschrift: Desktop (Hauptplatine mit Anschlüssen, Peripherie getrennt), Notebook (alles im Gehäuse, Dockingstation), Tablet (flach, ohne Maus und Tastatur), Smartphone (Kleinstcomputer mit Betriebssystem und Apps), Barebone (Gehäuse mit Netzteil und Mainboard zum Selbstbestücken, oft würfelförmig), Industrie-PC (Temperatur, Schock, Wasser, EMV, Ausfallsicherheit, Langzeitverfügbarkeit), Small-Form-Factor (Nettop, All-in-One, Ultra-Mobile-PC, E-Book-Reader, Wearable). Die Zuordnung "Anforderung -> Gerät" in der Tabelle ist vereinfacht. Stimmt sie so? */
   const REQS = [
     { id: 'mob', t: 'Muss unterwegs ohne Steckdose arbeiten (Akku, tragbar)' },
     { id: 'tast', t: 'Tastatur und Bildschirm sollen fest im Gerät eingebaut sein' },
@@ -156,7 +156,7 @@
     { id: 'gross', t: 'Bildschirm mindestens so groß wie eine Heftseite' },
     { id: 'ind', t: 'Einsatz in der Werkhalle: Hitze und Kälte, Stöße, Spritzwasser, Störstrahlung, Dauerbetrieb, Ersatz noch in vielen Jahren' },
     { id: 'erw', t: 'Viele Steckplätze für Erweiterungen auf der Hauptplatine, Monitor, Tastatur und Maus getrennt' },
-    { id: 'klein', t: 'Kleiner würfelförmiger Rechner ohne Akku, der wenig Platz braucht' },
+    { id: 'klein', t: 'Kompaktes Gehäuse mit Netzteil und Mainboard zum Selbstbestücken (oft würfelförmig), ohne Akku, braucht wenig Platz' },
     { id: 'aio', t: 'Bildschirm und Rechner in einem Gehäuse, fest am Platz' },
     { id: 'dock', t: 'Soll an einer Dockingstation weitere Anschlüsse und Steckplätze bekommen' }
   ];
@@ -165,7 +165,7 @@
     { id: 'note', n: 'Notebook', has: ['mob', 'tast', 'gross', 'dock'], d: 'Tragbarer PC: alle nötigen Komponenten, Laufwerke, Tastatur und Bildschirm im Gehäuse. Eine Dockingstation bietet zusätzliche Erweiterungssteckplätze und Anschlüsse für Peripherie.' },
     { id: 'tab', n: 'Tablet', has: ['mob', 'touch', 'gross'], d: 'Mobiler PC in einem sehr flachen Gehäuse ohne Maus und Tastatur, bedient über den Touchscreen. Konvertible Tablets (Hybrid, Two-in-One) bekommen eine Tastatur.' },
     { id: 'phone', n: 'Smartphone', has: ['mob', 'touch', 'tel'], d: 'Kleinstcomputer mit Betriebssystem, auf dem man eigene Anwendungen installiert. Kommunikation, Datenverbindung, Sensoren, Organizer und Navigation sind eingebaut.' },
-    { id: 'bare', n: 'Barebone-PC', has: ['klein'], d: 'PC im würfelförmigen Gehäuse: braucht wenig Platz.' },
+    { id: 'bare', n: 'Barebone-PC', has: ['klein'], d: 'Gehäuse mit Netzteil und Mainboard zum Selbstbestücken (oft würfelförmig): braucht wenig Platz.' },
     { id: 'indu', n: 'Industrie-PC', has: ['ind'], d: 'Computer für Aufgaben im industriellen Bereich: temperaturresistent, schockresistent, wasserdicht, EMV-geschützt, ausfallsicher und langzeitverfügbar.' },
     { id: 'sff', n: 'Small-Form-Factor-PC (z. B. All-in-One)', has: ['aio', 'gross'], d: 'Kleine Bauformen wie Nettop, All-in-One-PC, Ultra-Mobile-PC, E-Book-Reader oder Wearable-Computer. Beim All-in-One-PC sitzt der Rechner im Bildschirmgehäuse.' }
   ];

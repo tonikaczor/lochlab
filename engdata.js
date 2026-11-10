@@ -72,7 +72,7 @@
   };
 
   /* ---------- Datenblatt ---------- */
-  /* PRUEFEN P10: Der Datenblatt-Auszug (5-V-Linearregler) enthält frei gewählte Übungswerte (Eingangsspannung 30 bis 45 V, Ausgangsstrom 0,5 bis 2 A, Betriebstemperatur −40 bis 125 °C, Lagertemperatur bis −65 / 150 °C).
+  /* PRUEFEN P10: Der Datenblatt-Auszug (5-V-Linearregler) enthält frei gewählte Übungswerte (Eingangsspannung 15 bis 35 V (reale 78xx: höchstens 35 V), Ausgangsstrom 0,5 bis 2 A, Betriebstemperatur −40 bis 125 °C, Lagertemperatur bis −65 / 150 °C).
      "Operating temperature" wird vereinfacht als zulässige Umgebungstemperatur gelesen (nicht Sperrschichttemperatur). Passt das zum Lehrmaterial? */
   const GLOSS = [
     ['maximum ratings', 'Grenzwerte, die nie überschritten werden dürfen'], ['operating temperature', 'zulässiger Temperaturbereich im Betrieb'], ['storage temperature', 'zulässiger Temperaturbereich bei der Lagerung ohne Betrieb'],
@@ -86,7 +86,7 @@
   };
   function sheetVals(R) {
     const c = C();
-    return { vin: c.pick(R, [30, 35, 40, 45]), vmin: 4.8, vtyp: 5, vmax: 5.2, iout: c.pick(R, [0.5, 1, 1.5, 2]), ptot: c.pick(R, [1.5, 2, 5, 10]), tmin: c.pick(R, [-40, -25, 0]), tmax: c.pick(R, [70, 85, 105, 125]), smin: c.pick(R, [-65, -55, -40]), smax: c.pick(R, [125, 150]) };
+    return { vin: c.pick(R, [15, 20, 25, 30, 35]), vmin: 4.8, vtyp: 5, vmax: 5.2, iout: c.pick(R, [0.5, 1, 1.5, 2]), ptot: c.pick(R, [1.5, 2, 5, 10]), tmin: c.pick(R, [-40, -25, 0]), tmax: c.pick(R, [70, 85, 105, 125]), smin: c.pick(R, [-65, -55, -40]), smax: c.pick(R, [125, 150]) };
   }
   function sheetDoc(v) {
     const n = x => C().fmtEn(x, 1, false), d = '–';
@@ -286,7 +286,7 @@
   const tbuch = R => {
     const c = C(), words = ['relay', 'drive', 'pump', 'valve', 'cable', 'sensor', 'router', 'fuse', 'motor', 'plug'], w = c.pick(R, words), right = c.natoSpell(w), wrong = [], L = w.toUpperCase().split('');
     let k = 0; while (wrong.length < 3 && k < 60) { k++; const i = c.ri(R, 0, L.length - 1), sw = c.pick(R, 'ABCDEFGHIKLMNOPRSTUVWY'.split('')), l2 = L.slice(); l2[i] = sw; const t = c.natoSpell(l2.join('')); if (t !== right && wrong.indexOf(t) < 0) wrong.push(t); }
-    return choiceQ(R, 'Du sollst das Wort „' + w.toUpperCase() + '“ am Telefon buchstabieren. Welche Folge ist richtig (internationale Buchstabiertafel)?', right, wrong, w.toUpperCase() + ' = ' + right + '.', ['Jeder Buchstabe hat ein festes Wort (A = Alpha, B = Bravo, C = Charlie …).', 'Vergleiche Buchstabe für Buchstabe.']);
+    return choiceQ(R, 'Du sollst das Wort „' + w.toUpperCase() + '“ am Telefon buchstabieren. Welche Folge ist richtig (internationale Buchstabiertafel)?', right, wrong, w.toUpperCase() + ' = ' + right + '.', ['Jeder Buchstabe hat ein festes Wort (A = Alfa, B = Bravo, C = Charlie …; im Englischen oft auch Alpha geschrieben).', 'Vergleiche Buchstabe für Buchstabe.']);
   };
   /* ---------- False Friends ---------- */
   /* PRUEFEN P15: Auswahl der False Friends (actual, eventually, sensible, gift, become, chef, fabric, brief, sympathetic, preservative, decent, ordinary, kind). Sind es die Wörter, die im Unterricht und in der Praxis wirklich Fehler verursachen? "eventually" wird als „schließlich“ geführt. */

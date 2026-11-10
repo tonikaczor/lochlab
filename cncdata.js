@@ -91,7 +91,7 @@
   /* PRUEFEN: U und W als inkrementale X/Z-Adressen beim Drehen (Schreibweise Typ A, z. B. Fanuc-nah); andere Steuerungen (z. B. Siemens) nutzen dafür G91 oder IC. Passt das zum Unterricht? */
   const P31 = L('(WELLE MIT U UND W)', 'N10 G54 G90 G95 G18', 'N20 T1', 'N30 M3 S1000', 'N40 G0 X30 Z2', 'N50 G1 Z-10 F0.2', 'N60 G1 U6 W-4', 'N70 G1 W-16', 'N80 G0 X100 Z50', 'N90 M5', 'N100 M30');
   add({ id: 'cnc31', cat: 'G-Code lesen', level: 3, title: 'Position mit U und W', machine: 'turn', prog: P31, progMode: 'show',
-    text: 'In diesem Drehprogramm stehen die Adressen U und W. Das Programm ist insgesamt im Maßsystem G90 geschrieben. Wo steht das Werkzeug nach Satz N70? Gib X als Durchmesser und Z an.',
+    text: 'In diesem Drehprogramm stehen die Adressen U und W. Das Programm ist insgesamt im Maßsystem G90 geschrieben. Wo steht das Werkzeug nach Satz N70? Gib X als Durchmesser und Z an. (U und W sind die inkrementale Schreibweise einer Fanuc-artigen Steuerung; bei Siemens schreibt man dafür G91 bzw. IC.)',
     ask: nums(['X (Durchmesser)'], ['Z']), solve: Cc => { const p = posAfter(Cc.run(P31, { machine: 'turn' }), 70); return { values: [p[0], p[2]], tol: 0.01 }; }, bad: [[33, -30], [36, -26]],
     expl: 'U und W sind beim Drehen inkrementale Werte (Wege), egal ob G90 oder G91 gilt: U ist die Änderung des Durchmessers, W die Änderung in Z. N50 fährt auf X30 Z-10. N60: U6 macht den Durchmesser 36 (nicht 33), W-4 gibt Z-14. N70: W-16 fährt weitere 16 mm: Z-30. Ergebnis: X36 Z-30.',
     tips: ['U gehört zu X, W gehört zu Z. Es sind Wege, keine Zielpunkte.', 'X ist ein Durchmesser: Rechne die Änderung U auf den Durchmesser auf, nicht auf den Radius.'] });

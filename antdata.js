@@ -359,7 +359,8 @@
     const ctl = Object.assign({}, AC_BASE, initial(c), { load: 8 });
     const s = run('drehstrom', [], 12000, ctl), f = s.final || {};
     inputRow(c, r, s);
-    r(!faultRe(s, /Kippmoment/i), 'Der Motor kippt nicht mehr (kein Alarm „Kippmoment überschritten“)', 'Das Lastmoment ist größer als das Moment, das der Motor in dieser Schaltung abgeben kann. Das Moment hängt vom Quadrat der Spannung an der Wicklung ab.');
+    r(!f.tipped && !f.stalled, 'Der Motor kippt nicht mehr und bleibt nicht stehen (am Ende des Laufs kein Kippen)', 'Das Lastmoment ist größer als das Moment, das der Motor in dieser Schaltung abgeben kann. Das Moment hängt vom Quadrat der Spannung an der Wicklung ab.');
+    r(ctl.source === 'netz', 'Der Motor läuft am Netz (kein Umrichter)', 'Die Aufgabe verlangt Netzbetrieb: Der Motor soll direkt am Netz laufen, nicht am Frequenzumrichter.');
     r(ctl.connection === 'dreieck', 'Die Wicklung liegt im Dreieck an 400 V (so ist der Motor für das Netz ausgelegt)', 'Der Motor ist im Stern geschaltet: Jeder Strang bekommt nur etwa 58 % der Spannung, das Moment sinkt auf ein Drittel. Schalte auf Dreieck.');
     r(fin(f.rpm) && f.rpm >= 1400, 'Er erreicht seine Betriebsdrehzahl (mindestens 1400 1/min)', 'Drehzahl: ' + fm(f.rpm, 0) + ' 1/min. Er brummt oder steht noch.');
     r(fin(f.temp) && f.temp <= 60, 'Die Wicklung bleibt kühl (höchstens 60 °C)', 'Temperatur: ' + fm(f.temp, 0) + ' °C.');

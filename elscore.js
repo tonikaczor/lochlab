@@ -636,7 +636,7 @@
       }
       o.tOK = null;
       if (!o.ausgeloest) o.warn.push('Im TT-System löst der Leitungsschutz bei ' + fmtEng(o.iF, 'A') + ' nicht sicher aus' + (c.rcd.on ? ', und der RCD löst nicht aus.' : '; ohne RCD gibt es keine sichere Abschaltung.'));
-      o.text = 'TT: I_F = ' + fmtEng(o.iF, 'A') + ', U_B = ' + fmt(o.uB, 1) + ' V' + (c.rcd.on ? ', R_A ' + (o.bedingung ? '≤' : '>') + ' R_A,max = ' + fmt(o.raMax, 1) + ' Ω.' : '.') + (o.warn.length ? ' ' + o.warn.join(' ') : '');
+      o.text = 'TT: I_F = ' + fmtEng(o.iF, 'A') + ', U_B (ungünstigster Fall, gleich Fehlerspannung U_F) = ' + fmt(o.uB, 1) + ' V' + (c.rcd.on ? ', R_A ' + (o.bedingung ? '≤' : '>') + ' R_A,max = ' + fmt(o.raMax, 1) + ' Ω.' : '.') + (o.warn.length ? ' ' + o.warn.join(' ') : '');
       return o;
     }
     /* TN (und zweiter Fehler im IT) */
