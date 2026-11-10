@@ -27,8 +27,8 @@
   const secs = () => Array.from(doc.querySelectorAll('section.grp'));
   const detOf = s => s.querySelector(':scope>details');
 
-  // gewünschter Zustand eines Bereichs: eigene Wahl, sonst Standard (Desktop alle offen; Handy nur der erste und der des Weitermachen-Labs)
-  const want = k => (k in map) ? !!map[k] : (!mobile() || k === GROUPS[0].k || !!wanted[k]);
+  // gewünschter Zustand eines Bereichs: eigene Wahl, sonst Standard (v50.166 auf Desktop und Handy nur der erste und der des Weitermachen-Labs)
+  const want = k => (k in map) ? !!map[k] : (k === GROUPS[0].k || !!wanted[k]);
   function apply() {
     secs().forEach(s => {
       const k = s.dataset.grp, d = detOf(s); if (!d) return;

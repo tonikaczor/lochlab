@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release hier oben einen Block ergänzen. */
 (function (root) {
   const LOG = [
+    { v: 'v50.166', items: [
+      ['Startseite aufgeräumt', 'Die Bereiche starten auch am Computer nur mit dem ersten geöffnet. Neue Knöpfe „Alle aufklappen“ und „Alle zuklappen“ sowie „Ansicht: Karten“ oder „Kompakt“ (nur Titel). Das Duell-Band und der Fußbereich lassen sich einklappen, sind zunächst zu, und deine Wahl wird auf diesem Gerät gemerkt.', 'Startseite'],
+      ['Neue Vorschaubilder', 'Für 35 Labs gibt es neu gezeichnete Bilder auf der Startseite, zum Beispiel Schaltschrank, Mainboard mit Lüfter, Bus mit Chips, Sensor mit Messkurve, Flussdiagramm und Messschieber. Einige bewegen sich. Wer Bewegung abgeschaltet hat, sieht sie ruhig.', 'Startseite'],
+      ['Lernhefte Antrieb, Sensorik und SPS vollständig', 'Die drei Lernhefte haben jetzt Kapitel zu allen Aufgaben, auch zu den neuen (Antrieb an46 bis an54, Sensorik se44 bis se49, SPS sp38 bis sp43). Die Lösungs-PDFs der drei Labs sind neu gedruckt.', 'Startseite ▸ Lernhefte, Antriebs-Lab, Sensorik-Lab, SPS-Lab'],
+    ] },
     { v: 'v50.165', items: [
       ['147 neue Aufgaben nach dem Berufsschulstoff', 'In 25 Labs sind neue Aufgaben dazugekommen, wieder in eigenen Worten und mit eigenen Zahlen: Digitaltechnik und Analogtechnik, Netzteile, Schutzmaßnahmen, Steuerungen, Antriebe, Messtechnik, Programmieren, Qualität und Projekte, Pneumatik, Zeichnen. Insgesamt gibt es jetzt 2140 Aufgaben. Sie gelten für die Berufe, für die das jeweilige Lab freigegeben ist.', 'Startseite ▸ Labs'],
       ['DigiLab, Analog- und Netzteil-Lab: 29 neue Aufgaben', 'DigiLab (jetzt 69): JK-Flipflop, Frequenzteiler, asynchroner Rückwärtszähler samt Laufzeit, Zählerstand erkennen, Speicher mit Vorrang, D-Speicher mit Freigabe, UND und ODER nur aus NOR, Gatternetz mit Hilfsgrößen und zwei Fehlersuchen. Analog (jetzt 50): virtueller Kurzschluss, Invertierer, Nichtinvertierer, Summierer, Differenzierer, R-2R-Umsetzer, Basisvorwiderstand, Diodenschaltungen. Netzteil (jetzt 47): Trafo, Brücke mit Diodenspannung, RC- und LC-Siebung, Längstransistor mit Z-Diode, LM317, Vorwiderstand bei schwankender Last.', 'DigiLab, Analog-Lab, Netzteil-Lab ▸ Aufgaben'],

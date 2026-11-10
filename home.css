@@ -30,13 +30,13 @@ header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
 @media(max-width:899px){header{flex-wrap:wrap}header>div:not(.srch){flex:1 1 200px;min-width:0}header .srch{flex:1 1 100%;max-width:none;margin-left:0;order:3}.srch .res{width:100%}}
 
 /* ---- Primär-Band "Werkbank": Hero (Weitermachen mit Ring und Rang) links, "Heute" (Coach + Duell-Zeile) rechts, darunter die Lernpfad-Kopfzeile; der aufgeklappte Lernpfad nimmt die volle Breite ---- */
-.top{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);grid-template-areas:"hero today" "hero duell" "lp lp";gap:12px;align-items:stretch;margin:0 0 20px;min-height:330px}
+.top{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);grid-template-areas:"hero today" "hero tg" "hero duell" "lp lp";gap:12px;align-items:stretch;margin:0 0 20px;min-height:330px}
 .top>.cont{grid-area:hero}
 .top>section.coach{grid-area:today}
 .top>#duellBand{grid-area:duell}
 .top>.lp{display:contents}
 .top .lp .hd{grid-area:lp;align-self:stretch}
-.top .lp .body{grid-column:1/-1;grid-row:4;margin-top:2px}
+.top .lp .body{grid-column:1/-1;grid-row:5;margin-top:2px}
 .cont{display:flex;align-items:center;gap:18px;min-width:0;min-height:96px;padding:18px 20px;border-radius:16px;background:var(--accent-bg,#1a6fd4);color:var(--accent-ink,#fff);text-decoration:none;font-weight:600}
 .cont:hover{filter:brightness(1.08)}
 .cont .ic{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.25);font-size:16px}
@@ -78,8 +78,8 @@ header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
 .lp .lk a{display:inline-flex;align-items:center;min-height:44px}
 .lp #lpClose{height:44px!important}
 @media(max-width:899px){
-  .top{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "today" "duell" "lp";min-height:430px}
-  .top .lp .body{grid-row:5}
+  .top{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "today" "tg" "duell" "lp";min-height:430px}
+  .top .lp .body{grid-row:6}
 }
 @media(max-width:639px){
   .top{gap:10px;margin-bottom:14px;min-height:420px}
@@ -291,3 +291,20 @@ html.tiles .card.wikirow a.btn.pri{flex:1 1 64px;min-width:64px}
 
 /* ---- Aufklappbare Kartenbeschreibung (p.cl, role=button): Ziel mindestens 44 px hoch (vorher 41 px bei 2 Zeilen a 14/1,45) ---- */
 .card p.cl{min-height:44px}
+
+/* v50.166 Startseite aufgeräumt (home-clean.js): einklappbare Bänder, Kompaktansicht */
+.cl-bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.cl-b{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--fg,inherit);font:inherit;font-size:.9rem;cursor:pointer}
+.cl-b:hover{border-color:var(--ac,#5fb0ff)}
+.cl-tg{display:flex;align-items:center;gap:8px;min-height:44px;margin:6px 0;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:.92rem;cursor:pointer;width:100%;max-width:900px;text-align:left}
+.cl-tg .ch{width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
+.cl-tg[aria-expanded="true"] .ch{transform:rotate(45deg)}
+html.cl-duell-zu #duellBand{display:none}
+html.cl-foot-zu #foot{display:none}
+html.cl-komp .grp .card .pic,html.cl-komp .grp .card>p,html.cl-komp .grp .card .steps{display:none}
+html.cl-komp .grp .cards{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+html.cl-komp .grp .card{padding-bottom:10px}
+@media (max-width:639px){.cl-bar{margin-bottom:6px}}
+
+/* Der Knopf zum Ein- und Ausklappen sitzt im Raster über dem Duell-Band (sonst landet er in einer freien Zelle) */
+.top>#clDuell{grid-area:tg;margin:0;max-width:none;align-self:start}
