@@ -32,7 +32,7 @@ const TOOLS = {
 TOOLS.sim = TOOLS.sch; TOOLS.code = TOOLS.sch; TOOLS.pi = TOOLS.sch;
 const OTHER = {
   loch: [['Eingabe oder F5', 'Simulation ein / aus (zwischen Bauen und Simulieren wechseln)'], ['Leertaste', 'Bauteil drehen'], ['Strg + Z', 'Rückgängig'], ['Strg + Umschalt + Z', 'Wiederholen'], ['Entf', 'Auswahl löschen'], ['Strg + D', 'Auswahl kopieren'], ['M', 'Ansicht: Beide / Oben / Unten'], ['F oder Pos1', 'Platine einpassen'], ['/', 'Bauteil suchen'], ['Esc', 'Abbrechen, Auswahl aufheben'], ['?', 'Diese Übersicht']],
-  sch: [['Eingabe oder F5', 'Simulation ein / aus (zwischen Bauen und Simulieren wechseln)'], ['Tab', 'Bauteil drehen'], ['Strg + Z', 'Rückgängig'], ['Strg + Umschalt + Z', 'Wiederholen'], ['Entf', 'Auswahl löschen'], ['Strg + D', 'Auswahl kopieren'], ['Leertaste', 'Simulation starten und anhalten'], ['Pos1', 'Schaltung einpassen'], ['/', 'Bauteil suchen'], ['Esc', 'Abbrechen, Auswahl aufheben'], ['?', 'Diese Übersicht']],
+  sch: [['Eingabe oder F5', 'Simulation ein / aus (zwischen Bauen und Simulieren wechseln)'], ['Tab', 'Bauteil drehen'], ['Umschalt + Tab', 'Bauteil spiegeln (Transistor, Operationsverstärker, Poti, Wechsler …)'], ['Strg + Z', 'Rückgängig'], ['Strg + Umschalt + Z', 'Wiederholen'], ['Entf', 'Auswahl löschen'], ['Strg + D', 'Auswahl kopieren'], ['Leertaste', 'Simulation starten und anhalten'], ['Pos1', 'Schaltung einpassen'], ['/', 'Bauteil suchen'], ['Esc', 'Abbrechen, Auswahl aufheben'], ['?', 'Diese Übersicht']],
 };
 OTHER.sim = OTHER.sch; OTHER.code = OTHER.sch; OTHER.pi = OTHER.sch;
 
@@ -46,7 +46,7 @@ function onKey(e) {
   if (k === '?') { e.preventDefault(); help(); return; }
   if (k === '/' && A.search) { e.preventDefault(); A.search(); return; }
   if (A.sim && ((k === 'Enter' && (e.target === document.body || e.target.tagName === 'CANVAS')) || k === 'F5')) { e.preventDefault(); A.sim(); return; }
-  if (A.rotateKey && k === A.rotateKey) { e.preventDefault(); A.rotate(); return; }
+  if (A.rotateKey && k === A.rotateKey) { e.preventDefault(); if (e.shiftKey && A.mirror) A.mirror(); else A.rotate(); return; }
   if ((k === 'Home' || (A.lab === 'loch' && (k === 'f' || k === 'F'))) && A.fit) { e.preventDefault(); A.fit(); return; }
   if (A.lab === 'loch' && (k === 'm' || k === 'M') && A.mode) { e.preventDefault(); A.mode(); return; }
   if (A.busy && A.busy()) return;

@@ -88,7 +88,7 @@
 })(window);
 /* lm4.last:end */
 /* feedback.js nachladen (Ein-Klick-Rückmeldung je Aufgabe, nur Lab-Seiten, prüft sich selbst; ohne die Datei passiert nichts) */
-(function () { try { if (!/lab\.html$|^(layout|schaltplan|verbund)\.html$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'feedback.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();
+(function () { try { if (!/lab\.html$|^(layout|schaltplan|verbund|appwerkstatt)\.html$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'feedback.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();
 /* vbhint:begin
    Hinweis "Dieses Lab ist Station im Projekt X" (v55.170): unter der Kopfzeile eines Labs, wenn dieses Lab in einem Verbundprojekt deines Berufs vorkommt
    (als Arbeits-Lab einer Station oder über eine Lab-Aufgabe). Quelle: window.VB_INDEX und BerufReg aus aufgaben.js (wird von jedem Lab geladen). Ohne diese Daten

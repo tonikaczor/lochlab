@@ -1358,6 +1358,7 @@ function sideCtl(k,rotV,n,it){
   if(window.Speak&&Speak.info(k))o+=`<button class="sbtn wide" data-a="speak" data-k="${k}" style="margin-top:6px">🔊 Erkläre dich</button>`;
   { const ph=photoOf(k,V&&V.id); if(ph)o+=`<img class="phimg" src="bauteile/${ph}.jpg" alt="Foto" data-a="photo" data-id="${ph}"><div class="phcap">Foto antippen: alle Ansichten</div>`; }
   o+=`<div class="sh">Ausrichtung</div><div class="srow"><button class="sbtn" data-a="rl" aria-label="Links drehen">↺</button><span class="sval">${rotV*90}°</span><button class="sbtn" data-a="rot" aria-label="Rechts drehen">↻</button></div>`;
+  if(!it)o+=`<canvas id="plPrev" aria-label="Vorschau: so wird das Bauteil gesetzt" style="position:static;inset:auto;display:block;width:100%;height:120px;touch-action:auto;border-radius:8px;background:rgba(127,127,127,.12);margin-top:6px"></canvas>`;
   if(P.kind!=='fixed')o+=`<div class="sh">${P.kind==='span'?'Länge':'Anzahl Pins'}</div><div class="srow"><button class="sbtn" data-a="sm" aria-label="weniger">−</button><span class="sval">${n}</span><button class="sbtn" data-a="sp" aria-label="mehr">+</button></div>`;
   o+=grUI(k,it,true);
   { const mt=window.LochGr&&LochGr.massText?LochGr.massText(k,it||{n:sizes[k],pw:partGr.R,bf:partGr.C},V):''; if(mt)o+=`<div class="phcap">${esc(mt)}</div>`; }
@@ -1377,6 +1378,27 @@ function openGallery(id){
   sheet('Bauteilfotos',(bd)=>{
     bd.innerHTML='<p style="margin-top:0;color:var(--mute);font-size:13px">So sieht das Bauteil aus (Fotos aus der Lehrwerkstatt). Maße und Anschlüsse im Layout sind danach gezeichnet.</p>'+files.map(f=>`<img src="bauteile/${f}" alt="" style="width:100%;border-radius:10px;margin-bottom:10px;display:block">`).join('');
   });
+}
+/* Vorschau in der Seitenleiste: zeigt das Bauteil so, wie es gesetzt wird (am Tablet gibt es keinen Mauszeiger mit Vorschau) */
+function drawPlacePreview(){
+  const el=document.getElementById('plPrev');if(!el||tool!=='part'||!PARTS[partKind])return;
+  try{
+    const it={t:'part',k:partKind,vr:curVar(partKind),sk:partKind==='IC'&&autoSocket,pw:partKind==='R'?partGr.R:undefined,bf:partKind==='C'?partGr.C:undefined,n:sizes[partKind],x:0,y:0,r:partRot,v:partVals[partKind]!=null?partVals[partKind]:PARTS[partKind].val};
+    it.id=-1;
+    const W=el.clientWidth||200,H=el.clientHeight||120,d=window.devicePixelRatio||1,ps=pinsOf(it);
+    let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;ps.forEach(([x,y])=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);});
+    const pd=W<100?1:2;x0=Math.floor(x0)-pd;y0=Math.floor(y0)-pd;x1=Math.ceil(x1)+pd;y1=Math.ceil(y1)+pd;
+    const s=Math.max(3,Math.min(22,W/(x1-x0+1),H/(y1-y0+1)));
+    el.width=Math.round(W*d);el.height=Math.round(H*d);
+    const c=el.getContext('2d');c.setTransform(d,0,0,d,0,0);
+    c.fillStyle='#8c6b2c';c.fillRect(0,0,W,H);
+    c.save();c.translate(W/2-(x0+x1)/2*s,H/2-(y0+y1)/2*s);c.scale(s,s);
+    for(let gx=x0-8;gx<=x1+8;gx++)for(let gy=y0-4;gy<=y1+4;gy++){c.beginPath();c.arc(gx,gy,.3,0,7);c.fillStyle='#c7a25a';c.fill();c.beginPath();c.arc(gx,gy,.12,0,7);c.fillStyle='#3a2a12';c.fill();}
+    drawPart(c,it);
+    try{const T=window.TfPins;if(T&&T.lochLabels){const meas=(t,fs)=>{c.save();c.font='700 100px -apple-system,system-ui,Segoe UI,sans-serif';const w=c.measureText(t).width;c.restore();return w*fs/100;};
+      T.paint(c,T.lochLabels({items:[it],pinsOf,bodyRect,rot,segs:[],s,meas,LI:window.LochSimICs,isSpan:q=>PARTS[q.k]&&PARTS[q.k].kind==='span'}),{fill:'#ffd166',halo:'rgba(10,12,16,.92)',mir:false});}}catch(e){}
+    c.restore();
+  }catch(e){}
 }
 function renderCtx(){
   const el=$('#ctx'),sd=$('#side');let h='',sh='';
@@ -1410,7 +1432,8 @@ function renderCtx(){
       if(k===partKind&&PARTS[k].variants)t+='<span class="sep"></span>'+varChips(k,curVar(k),'pv')+'<span class="sep"></span>';
       return t;}).join('');
     if(!wide){
-      h+='<span class="sep"></span>'+grUI(partKind,null,false)+chip('rot','↻ '+partRot*90+'°');
+      /* Handy: Vorschau und Drehen stehen vorn, damit man die Lage sieht, ohne die Bauteilliste durchzuschieben */
+      h='<canvas id="plPrev" aria-label="Vorschau: so wird das Bauteil gesetzt" style="position:static;inset:auto;flex:none;display:block;width:72px;height:46px;border-radius:8px;touch-action:auto"></canvas>'+chip('rot','↻ '+partRot*90+'°')+'<span class="sep"></span>'+h+'<span class="sep"></span>'+grUI(partKind,null,false);
       if(partKind==='IC')h+=chip('ask','Sockel darunter '+(autoSocket?'✓':'–'),autoSocket?'on':'');
       const P=PARTS[partKind];
       if(P.kind!=='fixed'){
@@ -1431,7 +1454,7 @@ function renderCtx(){
       if(sh||matchMedia('(min-width:720px)').matches)sh+=`<div class="sh">Anzeige</div><button class="sbtn wide ${on?'on':''}" data-a="pins" role="switch" aria-checked="${on}" title="${T.TIP}">📌 Pins anzeigen: ${on?'an':'aus'}</button><div class="phcap">${T.TIP}. Pin-Nummern, Polung und Belegung stehen am Bauteil.</div>`;
       else h=chip('pins','📌 Pins '+(on?'an':'aus'),on?'on':'').replace('<button','<button role="switch" aria-checked="'+on+'" title="'+T.TIP+'"')+'<span class="sep"></span>'+h;}
   }
-  el.innerHTML=h;sd.innerHTML=sh;sd.classList.toggle('on',!!sh);
+  el.innerHTML=h;sd.innerHTML=sh;sd.classList.toggle('on',!!sh);drawPlacePreview();
   renderParts();
 }
 const PCATS=[['Quellen',['BAT','SIG']],['Passive Bauteile',['R','P','TP','C','CE','CF','L','LDR','NTC','PTC','LAMP','FUSE']],['Halbleiter',['D','LED','DUOLED','T','FET','THY','TRIAC','VDR','PHT','OPTO','U','GL']],['ICs und Module',['IC','SOCK','NANO','UNO','PI','SEG7','Q','BZ','SPK','RLY','TRF']],['Schalter',['SW','SCH','DSW']],['Anschlüsse',['KL','KL5','SIP','BU','PIN']]];

@@ -447,6 +447,7 @@
 
   buildTabs(); updatePal(); setTab(TABS.some(x => x[0] === S.tab) ? S.tab : 'uebs'); V.motion(S.mot);
   /* Aufruf ?aufgabe=mas1 (Startseite, Lernhefte) öffnet die Aufgabe, ?bsp die Beispiele (?bsp=uebs1 springt zu einem Beispiel) */
+  root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   try {
     const qp = new URLSearchParams(location.search), qa = qp.get('aufgabe');
     if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); }

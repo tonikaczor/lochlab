@@ -122,7 +122,11 @@ const kindsOf = cat => {
 const rot = (x, y, r) => { switch (r & 3) { case 0: return [x, y]; case 1: return [-y, x]; case 2: return [-x, -y]; default: return [y, -x]; } };
 // Zweipolige Bauteile mit gezogenen Beinen: p.len ist der Abstand der beiden Anschlüsse (mindestens die Körperlänge 4), der Körper bleibt gleich groß
 const KD = p => { const K = KINDS[p.k]; let r = K.dyn ? Object.assign({}, K, K.dyn(p)) : K; if (p.len > 4 && r.pins === T2) r = Object.assign({}, r, { pins: [[0, 0], [p.len, 0]], box: [r.box[0], r.box[1], p.len, r.box[3]] }); return r; };
-const pinsOf = p => KD(p).pins.map(([x, y]) => { const [a, b] = rot(x, y, p.r); return [p.x + a, p.y + b]; });
+const MIRK = { NPN: 1, PNP: 1, NMOS: 1, PMOS: 1, OPA: 1, SPDT: 1, TRIAC: 1, THY: 1, POT: 1, BRUECKE: 1 };   // spiegelbare Bauteile: p.m = 1 spiegelt an der Längsachse durch die Mitte der Anschlüsse (z. B. C und E, + und − tauschen die Seite)
+const mirY2 = p => { const ys = KD(p).pins.map(q => q[1]); return Math.min(...ys) + Math.max(...ys); };   // doppelte Lage der Spiegelachse (ganzzahlig, Anschlüsse bleiben im Raster)
+const tfd = (x, y, p) => rot(x, p.m ? -y : y, p.r);   // wie tf, aber für Richtungen (ohne Verschiebung)
+const tf = (x, y, p) => rot(x, p.m ? mirY2(p) - y : y, p.r);
+const pinsOf = p => KD(p).pins.map(([x, y]) => { const [a, b] = tf(x, y, p); return [p.x + a, p.y + b]; });
 const gk = (x, y) => x + ',' + y;
 // IC-Kästchen: 555 mit Funktionsschaltbild, sonst DIP-Kästchen (Pins 1..n/2 links von oben nach unten, Rest rechts von unten nach oben)
 function icDyn(p) {
@@ -146,7 +150,7 @@ function assignLabels(parts) { parts.forEach(q => { if (!q.l && PRE[q.k]) q.l = 
 let sch = { name: 'Neue Schaltung', parts: [], wires: [], nid: 1, scopes: [] };
 let hist = [], hi = -1;
 let view = { s: 22, ox: 60, oy: 60 };
-let tool = 'select', placeKind = null, placeRot = 0;
+let tool = 'select', placeKind = null, placeRot = 0, placeMir = 0;
 let sel = null;                // {t:'part'|'wire', id}
 let leg1 = null, ghost = null, wireStart = null, cursor = null, act = null, dirtyDraw = true;
 let running = false, sim = null, circ = null, wrapMap = new Map();
@@ -261,7 +265,7 @@ function dtFor(rate) {            // Zeitschritt aus dem gewünschten Tempo (sim
 }
 const rateOf = s => Math.pow(10, -6 + 8 * s);     // Regler 0..1 -> 1 µs/s ... 100 s/s
 const LEDRGB = { rot: '255,59,47', 'grün': '47,224,90', gelb: '255,224,51', blau: '61,139,255', 'weiß': '255,255,255', orange: '255,154,47' };
-function partCenter(p) { const K = KD(p), [a, b] = rot((K.box[0] + K.box[2]) / 2, (K.box[1] + K.box[3]) / 2, p.r); return [X(p.x + a), Y(p.y + b)]; }
+function partCenter(p) { const K = KD(p), [a, b] = tf((K.box[0] + K.box[2]) / 2, (K.box[1] + K.box[3]) / 2, p); return [X(p.x + a), Y(p.y + b)]; }
 
 /* ============ Nachbesprechung: nach Kurzschluss, Durchbrennen oder Auslösen gibt es auf Wunsch eine Erklärung ============ */
 let incident = null;
@@ -526,7 +530,7 @@ const partText = new Map();   // Rechteck des Bezeichnungs- und Werttextes je Ba
 function drawPart(p, selected) {
   partText.delete(p.id);
   const K = KD(p), S = view.s, c = cx, pins = pinsOf(p);
-  c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(p.r * Math.PI / 2); c.scale(S, S);
+  c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(p.r * Math.PI / 2); c.scale(S, S); if (p.m) { c.translate(0, mirY2(p)); c.scale(1, -1); }
   c.lineCap = 'round'; c.lineJoin = 'round';
   const pc = pins.map(q => keyV(gk(q[0], q[1])));
   const body = PRINT ? '#111' : '#e8eaed';
@@ -536,7 +540,7 @@ function drawPart(p, selected) {
   const circle = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); };
   const peStub = (x0, y0, x1, y1, col, fault) => {        // Schutzleiter-Anschluss am Gehäuse (grün-gelb)
     lead(x0, y0, x1, y1, col); c.fillStyle = '#35c24a'; c.beginPath(); c.arc(x1, y1, 0.26, 0, 7); c.fill(); c.strokeStyle = '#f2d21b'; c.lineWidth = 0.1; c.setLineDash([0.18, 0.18]); c.beginPath(); c.arc(x1, y1, 0.26, 0, 7); c.stroke(); c.setLineDash([]);
-    c.save(); c.translate(x1 === x0 ? x1 + 0.7 : x1 + 0.2, x1 === x0 ? y1 : y1 - 0.7); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('PE', 0, 0); c.restore();
+    c.save(); c.translate(x1 === x0 ? x1 + 0.7 : x1 + 0.2, x1 === x0 ? y1 : y1 - 0.7); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('PE', 0, 0); c.restore();
     if (fault) { c.strokeStyle = '#ff4d3a'; c.lineWidth = 0.14; c.beginPath(); c.moveTo(x0 - 0.5, y0 - 0.2); c.lineTo(x0 - 0.1, y0 + 0.3); c.lineTo(x0 - 0.4, y0 + 0.3); c.lineTo(x0, y0 + 0.9); c.stroke(); }
   };
   if (p.len > 4 && KINDS[p.k].pins === T2) { const s = (p.len - 4) / 2; lead(0, 0, s, 0, pc[0]); lead(s + 4, 0, p.len, 0, pc[1]); c.translate(s, 0); }   // gezogene Beine: Körper mittig, Zuleitungen verlängert
@@ -602,7 +606,7 @@ function drawPart(p, selected) {
       else { lead(0, 1, 1, 1, pc[0]); lead(3.45, yo, 4, yo, pc[1]); }
       c.strokeRect(1, y0, 2, y1 - y0);
       if (neg) { c.beginPath(); c.arc(3.22, yo, .22, 0, 7); c.stroke(); }
-      c.save(); c.translate(2, yo); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = `600 ${p.k === 'OR' || p.k === 'NOR' ? .8 : 1}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.save(); c.translate(2, yo); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = `600 ${p.k === 'OR' || p.k === 'NOR' ? .8 : 1}px sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
       c.fillText({ AND: '&', NAND: '&', OR: '≥1', NOR: '≥1', XOR: '=1', NOT: '1', SNOT: '1' }[p.k], 0, .08); c.restore();
       if (p.k === 'SNOT') { c.lineWidth = .08; c.beginPath(); c.moveTo(1.35, y1 - .35); c.lineTo(1.7, y1 - .35); c.lineTo(1.7, y1 - .75); c.lineTo(2.05, y1 - .75); c.stroke(); }
       break; }
@@ -611,7 +615,7 @@ function drawPart(p, selected) {
       c.strokeRect(1, -.6, 2, 3.2); c.beginPath(); c.arc(3.22, 2, .22, 0, 7); c.stroke();
       c.beginPath(); c.moveTo(1, 1.75); c.lineTo(1.4, 2); c.lineTo(1, 2.25); c.stroke();
       c.save(); c.fillStyle = body; c.font = '600 .8px sans-serif'; c.textBaseline = 'middle';
-      [['D', 1.2, 0, 'left'], ['Q', 2.8, 0, 'right'], ['C', 1.5, 2, 'left'], ['Q̄', 2.8, 2, 'right']].forEach(([t, x, y, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = al; c.fillText(t, 0, 0); c.restore(); });
+      [['D', 1.2, 0, 'left'], ['Q', 2.8, 0, 'right'], ['C', 1.5, 2, 'left'], ['Q̄', 2.8, 2, 'right']].forEach(([t, x, y, al]) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.textAlign = al; c.fillText(t, 0, 0); c.restore(); });
       c.restore(); break; }
     case 'JKFF': case 'TFF': {
       const jk = p.k === 'JKFF', yq = jk ? 4 : 2, ycl = 2, ymax = jk ? 4.6 : 2.6;
@@ -620,13 +624,13 @@ function drawPart(p, selected) {
       c.strokeRect(1, -.6, 2, ymax + .6); c.beginPath(); c.arc(3.22, yq, .22, 0, 7); c.stroke();
       c.beginPath(); c.moveTo(1, ycl - .25); c.lineTo(1.4, ycl); c.lineTo(1, ycl + .25); c.stroke();
       c.save(); c.fillStyle = body; c.font = '600 .8px sans-serif'; c.textBaseline = 'middle';
-      (jk ? [['J', 1.2, 0, 'left'], ['C', 1.5, 2, 'left'], ['K', 1.2, 4, 'left'], ['Q', 2.8, 0, 'right'], ['Q̄', 2.8, 4, 'right']] : [['T', 1.2, 0, 'left'], ['C', 1.5, 2, 'left'], ['Q', 2.8, 0, 'right'], ['Q̄', 2.8, 2, 'right']]).forEach(([t, x, y, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = al; c.fillText(t, 0, 0); c.restore(); });
+      (jk ? [['J', 1.2, 0, 'left'], ['C', 1.5, 2, 'left'], ['K', 1.2, 4, 'left'], ['Q', 2.8, 0, 'right'], ['Q̄', 2.8, 4, 'right']] : [['T', 1.2, 0, 'left'], ['C', 1.5, 2, 'left'], ['Q', 2.8, 0, 'right'], ['Q̄', 2.8, 2, 'right']]).forEach(([t, x, y, al]) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.textAlign = al; c.fillText(t, 0, 0); c.restore(); });
       c.restore(); break; }
     case 'OPA': {
       lead(0, 0, 1, 0, pc[1]); lead(0, 2, 1, 2, pc[0]); lead(3.4, 1, 4, 1, pc[2]); lead(2, -2, 2, -.2, pc[3]); lead(2, 4, 2, 2.2, pc[4]);
       c.beginPath(); c.moveTo(1, -1); c.lineTo(1, 3); c.lineTo(3.4, 1); c.closePath(); c.stroke();
       c.save(); c.fillStyle = body; c.font = '600 .9px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'center';
-      [['−', 1.45, 0], ['+', 1.45, 2]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); });
+      [['−', 1.45, 0], ['+', 1.45, 2]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); });
       c.restore(); break; }
     case 'ICX': case 'CPU': {
       const I = window.LochSimICs, def = I && I.find(p.v), info = def && I.CATALOG[def.key], cfg = K.sym555;
@@ -639,7 +643,7 @@ function drawPart(p, selected) {
       });
       c.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
       c.save(); c.fillStyle = body;
-      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
+      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
       kp.forEach(([x, y], i) => {
         const nm = labs ? labs[i] : '', top = y < 0, bottom = y > by1;
         T(String(i + 1), x + (top || bottom ? .45 : (x === 0 ? .45 : -.45)), top ? y + .45 : bottom ? y - .45 : y - .42, .5);
@@ -658,28 +662,28 @@ function drawPart(p, selected) {
         c.strokeStyle = body; c.lineWidth = 0.1; c.beginPath(); c.arc(6, y, 0.12, 0, 7); c.fill(); c.beginPath(); c.arc(8, y, 0.12, 0, 7); c.fill();
       });
       c.setLineDash([0.25, 0.2]); c.lineWidth = 0.07; line(1.4, 3, 5.6, 3); c.setLineDash([]);
-      c.save(); c.translate(3.4, -0.1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Schütz', 0, 0); c.restore();
+      c.save(); c.translate(3.4, -0.1); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Schütz', 0, 0); c.restore();
       break; }
     case 'I2CTEMP': case 'I2CLUX': {
       for (let i = 0; i < 4; i++) lead(5, i * 2, 4, i * 2, pc[i]);
       c.strokeStyle = body; c.fillStyle = PRINT ? '#eceff2' : 'rgba(120,130,145,.25)'; c.fillRect(0, -0.8, 4, 7.6); c.strokeRect(0, -0.8, 4, 7.6);
-      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al; c.textBaseline = 'middle'; c.fillStyle = body; c.fillText(t, 0, 0); c.restore(); };
+      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al; c.textBaseline = 'middle'; c.fillStyle = body; c.fillText(t, 0, 0); c.restore(); };
       ['VCC', 'SDA', 'SCL', 'GND'].forEach((t, i) => T(t, 3.8, i * 2, 0.5, 'right'));
       const pos = p.pos == null ? K.pos0 : p.pos;
       T(p.k === 'I2CTEMP' ? (-25 + 125 * pos).toFixed(1) + ' °C' : Math.round(pos * pos * 2000) + ' lx', 0.25, 6.1, 0.5, 'left');
-      c.save(); c.translate(1.2, 2.2); c.rotate(-p.r * Math.PI / 2 - Math.PI / 2); c.font = '700 .75px sans-serif'; c.textAlign = 'center'; c.fillStyle = body; c.fillText(p.k === 'I2CTEMP' ? 'LM75' : 'BH1750', 0, 0); c.restore();
+      c.save(); c.translate(1.2, 2.2); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2 - Math.PI / 2); c.font = '700 .75px sans-serif'; c.textAlign = 'center'; c.fillStyle = body; c.fillText(p.k === 'I2CTEMP' ? 'LM75' : 'BH1750', 0, 0); c.restore();
       break; }
     case 'MCP3008': {
       for (let i = 0; i < 16; i++) { const [px, py] = K.pins[i]; if (px === 0) lead(0, py, 1, py, pc[i]); else lead(6, py, 5, py, pc[i]); }
       c.strokeStyle = body; c.fillStyle = PRINT ? '#eceff2' : 'rgba(120,130,145,.25)'; c.fillRect(1, -1, 4, 16); c.strokeRect(1, -1, 4, 16);
-      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al; c.textBaseline = 'middle'; c.fillStyle = body; c.fillText(t, 0, 0); c.restore(); };
+      const T = (t, x, y, size, al) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${size}px sans-serif`; c.textAlign = al; c.textBaseline = 'middle'; c.fillStyle = body; c.fillText(t, 0, 0); c.restore(); };
       ['VDD', 'VREF', 'AGND', 'DGND', 'CLK', 'DOUT', 'DIN', 'CS'].forEach((t, i) => T(t, 1.2, i * 2, 0.5, 'left'));
       for (let i = 0; i < 8; i++) T('CH' + i, 4.8, i * 2, 0.5, 'right');
-      c.save(); c.translate(3, 7); c.rotate(-p.r * Math.PI / 2 - Math.PI / 2); c.font = '700 .8px sans-serif'; c.textAlign = 'center'; c.fillStyle = body; c.fillText('MCP3008', 0, 0); c.restore();
+      c.save(); c.translate(3, 7); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2 - Math.PI / 2); c.font = '700 .8px sans-serif'; c.textAlign = 'center'; c.fillStyle = body; c.fillText('MCP3008', 0, 0); c.restore();
       break; }
     case 'PI': {
       const o = showSim() && bodyI.get(String(p.id)), mm = o && o.e.mcu;
-      const T = (t, x, y, size, al, rotv) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2 + (rotv || 0)); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
+      const T = (t, x, y, size, al, rotv) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2 + (rotv || 0)); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
       for (let i = 0; i < 40; i++) { const [px, py] = K.pins[i]; if (px === 0) lead(0, py, 1, py, pc[i]); else lead(8, py, 7, py, pc[i]); }
       c.strokeStyle = body; c.fillStyle = PRINT ? '#f2f7ee' : 'rgba(60,150,60,.20)'; c.fillRect(1, -1.5, 6, 41); c.strokeRect(1, -1.5, 6, 41);
       c.fillStyle = body;
@@ -690,7 +694,7 @@ function drawPart(p, selected) {
       break; }
     case 'UNO': {
       const o = showSim() && bodyI.get(String(p.id)), mm = o && o.e.mcu;
-      const T = (t, x, y, size, al, rotv) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2 + (rotv || 0)); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
+      const T = (t, x, y, size, al, rotv) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2 + (rotv || 0)); c.font = `600 ${size}px sans-serif`; c.textAlign = al || 'center'; c.textBaseline = 'middle'; c.fillText(t, 0, 0); c.restore(); };
       for (let i = 0; i < 26; i++) { const [px, py] = K.pins[i]; if (px === 0) lead(0, py, 1, py, pc[i]); else lead(8, py, 7, py, pc[i]); }
       c.strokeStyle = body; c.fillStyle = PRINT ? '#eef6f8' : 'rgba(14,110,131,.22)'; c.fillRect(1, -2.9, 6, 32.8); c.strokeRect(1, -2.9, 6, 32.8);
       c.fillStyle = body;
@@ -706,7 +710,7 @@ function drawPart(p, selected) {
       const cur = nm => { const o = showSim() && bodyI.get(p.id + nm); return o ? Math.pow(clamp(Math.abs(o.e.iav != null ? o.e.iav : o.e.i) / 0.02, 0, 1), 0.6) : 0; };
       const r2 = cur('r'), g2 = cur('g'), R = Math.round(255 * Math.min(1, r2 * 1.0 + g2 * 0.15)), G = Math.round(255 * Math.min(1, g2 + r2 * 0.1)), B = Math.round(60 * Math.min(1, g2 * 0.5));
       c.strokeStyle = body; circle(2.3, 2, 1.1); line(2.3, 0.9, 2.3, 3.1);
-      c.fillStyle = body; c.font = '600 .55px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.save(); c.translate(1.2, 3.3); c.rotate(-p.r * Math.PI / 2); c.fillText(/^A/i.test(String(p.v || '')) ? 'gem. A' : 'gem. K', 0.2, 0); c.restore();
+      c.fillStyle = body; c.font = '600 .55px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.save(); c.translate(1.2, 3.3); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillText(/^A/i.test(String(p.v || '')) ? 'gem. A' : 'gem. K', 0.2, 0); c.restore();
       if (r2 + g2 > 0.03) {
         const mx = Math.min(1, Math.max(r2, g2));
         c.save(); c.globalCompositeOperation = 'lighter'; const gr = c.createRadialGradient(2.3, 2, 0, 2.3, 2, 3.4); gr.addColorStop(0, `rgba(${R},${G},${B},${0.9 * mx})`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`); c.fillStyle = gr; c.beginPath(); c.arc(2.3, 2, 3.4, 0, 7); c.fill(); c.restore();
@@ -724,14 +728,14 @@ function drawPart(p, selected) {
         c.save(); c.globalCompositeOperation = 'lighter'; const gr = c.createRadialGradient(2.3, 2, 0, 2.3, 2, 3.4); gr.addColorStop(0, `rgba(${R},${G},${B},${0.9 * mx})`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`); c.fillStyle = gr; c.beginPath(); c.arc(2.3, 2, 3.4, 0, 7); c.fill(); c.restore();
         c.fillStyle = `rgb(${R},${G},${B})`; c.beginPath(); c.arc(2.3, 2, 0.95, 0, 7); c.fill();
       }
-      c.save(); c.translate(2.3, 2); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('RGB', 0, 0); c.restore();
-      c.save(); c.fillStyle = body; c.font = '600 .42px sans-serif'; c.textBaseline = 'middle'; [['R', 0.35, -0.5], ['G', 0.35, 1.5], ['B', 0.35, 3.5]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'left'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      c.save(); c.translate(2.3, 2); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('RGB', 0, 0); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .42px sans-serif'; c.textBaseline = 'middle'; [['R', 0.35, -0.5], ['G', 0.35, 1.5], ['B', 0.35, 3.5]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'left'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'TMP36': {
       lead(4, 0, 3, 0, pc[0]); lead(4, 2, 3, 2, pc[1]); lead(4, 4, 3, 4, pc[2]);
       c.strokeStyle = body; c.strokeRect(0.5, -0.8, 2.5, 5.6);
       c.save(); c.fillStyle = body; c.textBaseline = 'middle';
-      [['TMP36', 1.75, 1, 0.62, 'center'], [((-40 + 165 * (p.pos == null ? 0.394 : p.pos)).toFixed(0)) + ' °C', 1.75, 3.2, 0.62, 'center'], ['+5V', 2.85, -0.2, 0.42, 'right'], ['OUT', 2.85, 1.8, 0.42, 'right'], ['GND', 2.85, 3.8, 0.42, 'right']].forEach(([t, x, y, sz, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${sz}px sans-serif`; c.textAlign = al; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      [['TMP36', 1.75, 1, 0.62, 'center'], [((-40 + 165 * (p.pos == null ? 0.394 : p.pos)).toFixed(0)) + ' °C', 1.75, 3.2, 0.62, 'center'], ['+5V', 2.85, -0.2, 0.42, 'right'], ['OUT', 2.85, 1.8, 0.42, 'right'], ['GND', 2.85, 3.8, 0.42, 'right']].forEach(([t, x, y, sz, al]) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${sz}px sans-serif`; c.textAlign = al; c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'PIEZO': {
       lead(4, 0, 3, 0, pc[0]); lead(4, 2, 3, 2, pc[1]);
@@ -748,40 +752,40 @@ function drawPart(p, selected) {
       lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]);
       c.strokeStyle = body; c.strokeRect(1, -0.8, 4, 5.6); const act = (p.pos || 0) > 0.5;
       c.fillStyle = act ? 'rgba(255,225,77,.85)' : 'rgba(232,234,237,.15)'; c.beginPath(); c.arc(3.2, 2, 1.3, 0, 7); c.fill(); c.strokeStyle = body; circle(3.2, 2, 1.3);
-      c.save(); c.translate(3.2, 4.2); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText('PIR', 0, 0); c.restore();
+      c.save(); c.translate(3.2, 4.2); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText('PIR', 0, 0); c.restore();
       break; }
     case 'HCSR04': {
       lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]); lead(0, 6, 1, 6, pc[3]);
       c.strokeStyle = body; c.strokeRect(1, -1.2, 5, 8.4); circle(3.5, 1.4, 1.1); circle(3.5, 4.8, 1.1);
       c.save(); c.fillStyle = body; c.textBaseline = 'middle';
-      [['HC-SR04', 4.6, -0.5, 0.5, 'center'], [(2 + 398 * (p.pos == null ? 0.246 : p.pos)).toFixed(0) + ' cm', 3.5, 3.1, 0.55, 'center'], ['VCC', 1.2, 0, 0.35, 'left'], ['TRIG', 1.2, 2, 0.35, 'left'], ['ECHO', 1.2, 4, 0.35, 'left'], ['GND', 1.2, 6, 0.35, 'left']].forEach(([t, x, y, sz, al]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${sz}px sans-serif`; c.textAlign = al; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      [['HC-SR04', 4.6, -0.5, 0.5, 'center'], [(2 + 398 * (p.pos == null ? 0.246 : p.pos)).toFixed(0) + ' cm', 3.5, 3.1, 0.55, 'center'], ['VCC', 1.2, 0, 0.35, 'left'], ['TRIG', 1.2, 2, 0.35, 'left'], ['ECHO', 1.2, 4, 0.35, 'left'], ['GND', 1.2, 6, 0.35, 'left']].forEach(([t, x, y, sz, al]) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.font = `600 ${sz}px sans-serif`; c.textAlign = al; c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'SERVO': {
       lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]);
       c.strokeStyle = body; c.strokeRect(1, -0.8, 5, 5.6);
       const o = showSim() && bodyI.get(String(p.id)), mm = circ && circ.mcu && circ.mcu.mcu, pin = o && o.e.pin, ang = (mm && pin != null && pin >= 0 && mm.servo[pin] != null) ? mm.servo[pin] : 90;
       const a = (180 - ang) * Math.PI / 180; c.fillStyle = body; c.beginPath(); c.arc(4.4, 2, 0.35, 0, 7); c.fill(); c.strokeStyle = '#ffe14d'; c.lineWidth = 0.22; c.beginPath(); c.moveTo(4.4, 2); c.lineTo(4.4 + 1.9 * Math.cos(a), 2 - 1.9 * Math.sin(a)); c.stroke();
-      c.save(); c.translate(2.4, 3.9); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText(Math.round(ang) + '°', 0, 0); c.restore();
-      c.save(); c.fillStyle = body; c.font = '600 .38px sans-serif'; c.textBaseline = 'middle'; [['SIG', 0], ['V+', 2], ['GND', 4]].forEach(([t, y]) => { c.save(); c.translate(1.2, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'left'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      c.save(); c.translate(2.4, 3.9); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText(Math.round(ang) + '°', 0, 0); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .38px sans-serif'; c.textBaseline = 'middle'; [['SIG', 0], ['V+', 2], ['GND', 4]].forEach(([t, y]) => { c.save(); c.translate(1.2, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'left'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'LCDI2C': {
       lead(9, 0, 8, 0, pc[0]); lead(9, 2, 8, 2, pc[1]); lead(9, 4, 8, 4, pc[2]); lead(9, 6, 8, 6, pc[3]);
       const o = showSim() && bodyI.get(String(p.id)), ok = o && o.e.ok;
       c.fillStyle = '#1d6b3d'; c.fillRect(0, -1.2, 8, 8.4); c.strokeStyle = body; c.strokeRect(0, -1.2, 8, 8.4);
       c.fillStyle = ok && lcdState ? '#9fd18a' : '#4a6a4a'; c.fillRect(0.4, 0.4, 7.2, 3.6);
-      if (ok && lcdState) { c.save(); c.fillStyle = '#1b3b12'; c.font = '600 .78px monospace'; c.textBaseline = 'middle'; c.textAlign = 'left'; lcdState.rows.forEach((r, i) => { c.save(); c.translate(0.55, 1.35 + i * 1.5); c.rotate(-p.r * Math.PI / 2); for (let k2 = 0; k2 < 16; k2++) c.fillText(r[k2] || ' ', k2 * 0.43, 0); c.restore(); }); c.restore(); }
-      c.save(); c.fillStyle = '#e8eaed'; c.font = '600 .42px sans-serif'; c.textBaseline = 'middle'; [['GND', 0], ['VCC', 2], ['SDA', 4], ['SCL', 6]].forEach(([t, y]) => { c.save(); c.translate(7.8, y); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'right'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      if (ok && lcdState) { c.save(); c.fillStyle = '#1b3b12'; c.font = '600 .78px monospace'; c.textBaseline = 'middle'; c.textAlign = 'left'; lcdState.rows.forEach((r, i) => { c.save(); c.translate(0.55, 1.35 + i * 1.5); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); for (let k2 = 0; k2 < 16; k2++) c.fillText(r[k2] || ' ', k2 * 0.43, 0); c.restore(); }); c.restore(); }
+      c.save(); c.fillStyle = '#e8eaed'; c.font = '600 .42px sans-serif'; c.textBaseline = 'middle'; [['GND', 0], ['VCC', 2], ['SDA', 4], ['SCL', 6]].forEach(([t, y]) => { c.save(); c.translate(7.8, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'right'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'NETZ3': {
       [0, 1, 2, 3, 4].forEach(i => lead(i * 2, 0, i * 2, -0.9, pc[i])); c.strokeStyle = body; c.strokeRect(-1, -3, 10, 2.1);
       c.save(); c.fillStyle = body; c.textAlign = 'center'; c.textBaseline = 'middle';
-      ['L1', 'L2', 'L3', 'N', 'PE'].forEach((t, i) => { c.save(); c.translate(i * 2, -1.25); c.rotate(-p.r * Math.PI / 2); c.font = '700 .55px sans-serif'; c.fillText(t, 0, 0); c.restore(); });
-      c.save(); c.translate(4, -2.05); c.rotate(-p.r * Math.PI / 2); c.font = '700 .85px sans-serif'; c.fillText('3~ ' + (p.v || '400V'), 0, 0); c.restore(); c.restore();
+      ['L1', 'L2', 'L3', 'N', 'PE'].forEach((t, i) => { c.save(); c.translate(i * 2, -1.25); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.font = '700 .55px sans-serif'; c.fillText(t, 0, 0); c.restore(); });
+      c.save(); c.translate(4, -2.05); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.font = '700 .85px sans-serif'; c.fillText('3~ ' + (p.v || '400V'), 0, 0); c.restore(); c.restore();
       break; }
     case 'MOTOR3': {
       [0, 1, 2].forEach(i => lead(i * 2, 0, i * 2, 1.5, pc[i]));
       c.strokeStyle = body; circle(2, 3, 1.5); if (K.pins.length > 3) peStub(3.5, 3, 6, 3, pc[3], p.sw);
-      c.save(); c.translate(2, 3); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, -0.2); c.font = '600 .6px sans-serif'; c.fillText('3~', 0, 0.55); c.restore();
+      c.save(); c.translate(2, 3); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, -0.2); c.font = '600 .6px sans-serif'; c.fillText('3~', 0, 0.55); c.restore();
       { const o = showSim() && bodyI.get(p.id + 'w0'), ph0 = o && o.e && o.e.phase ? o.e.phase : 0;
         if (o && (o.e.w || 0) > 5) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.9 * Math.cos(a), 3 + 0.9 * Math.sin(a)); c.lineTo(2 + 1.3 * Math.cos(a), 3 + 1.3 * Math.sin(a)); c.stroke(); } }
       break; }
@@ -790,12 +794,12 @@ function drawPart(p, selected) {
       c.strokeStyle = body; c.beginPath(); c.moveTo(0.8, 2); c.lineTo(2, 0.8); c.lineTo(3.2, 2); c.lineTo(2, 3.2); c.closePath(); c.stroke();
       const arrow = (x0, y0, x1, y1) => { const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, a = Math.atan2(y1 - y0, x1 - x0); c.save(); c.translate(mx, my); c.rotate(a); c.beginPath(); c.moveTo(-0.3, -0.28); c.lineTo(-0.3, 0.28); c.lineTo(0.3, 0); c.closePath(); c.fill(); line(0.3, -0.3, 0.3, 0.3); c.restore(); };
       arrow(0.8, 2, 2, 0.8); arrow(3.2, 2, 2, 0.8); arrow(2, 3.2, 0.8, 2); arrow(2, 3.2, 3.2, 2);
-      c.save(); c.translate(0.45, 1.5); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText('~', 0, 0); c.restore();
+      c.save(); c.translate(0.45, 1.5); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText('~', 0, 0); c.restore();
       break; }
     case 'REG': {
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[2]); lead(2, 2, 2, 1.4, pc[1]); c.strokeStyle = body; c.strokeRect(1, -0.8, 2, 2.2);
-      c.save(); c.translate(2, 0.3); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .62px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(p.v || '78xx', 0, 0); c.restore();
-      c.save(); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; [['IN', 1.35, -0.35], ['OUT', 2.65, -0.35], [/^(LM)?[23]17[A-Z]*$/.test(String(p.v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')) ? 'ADJ' : 'GND', 2, 1.15]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      c.save(); c.translate(2, 0.3); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .62px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(p.v || '78xx', 0, 0); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; [['IN', 1.35, -0.35], ['OUT', 2.65, -0.35], [/^(LM)?[23]17[A-Z]*$/.test(String(p.v || '').toUpperCase().replace(/[^A-Z0-9]/g, '')) ? 'ADJ' : 'GND', 2, 1.15]].forEach(([t, x, y]) => { c.save(); c.translate(x, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'SEG8': {
       [0, 1, 2, 3, 4, 5, 6, 7].forEach(i => lead(0, i * 2, 1, i * 2, pc[i])); lead(5, 14, 6, 14, pc[8]);
@@ -803,7 +807,7 @@ function drawPart(p, selected) {
       const segs = [[1.9, 1.6, 4.1, 1.6], [4.5, 2.2, 4.5, 6], [4.5, 7.4, 4.5, 11.2], [1.9, 12.4, 4.1, 12.4], [1.5, 7.4, 1.5, 11.2], [1.5, 2.2, 1.5, 6], [1.9, 7, 4.1, 7]];
       segs.forEach((s2, i) => { const o = showSim() && bodyI.get(p.id + 's' + i), b2 = o ? Math.pow(clamp(Math.abs(o.e.i) / 0.02, 0, 1), 0.6) : 0; c.strokeStyle = b2 > 0.05 ? `rgba(255,${Math.round(60 + 40 * (1 - b2))},50,${0.45 + 0.55 * Math.min(b2, 1)})` : '#3a2a2c'; c.lineWidth = 0.55; c.lineCap = 'round'; c.beginPath(); c.moveTo(s2[0], s2[1]); c.lineTo(s2[2], s2[3]); c.stroke(); });
       { const o = showSim() && bodyI.get(p.id + 's7'), b2 = o ? Math.abs(o.e.i) / 0.02 : 0; c.fillStyle = b2 > 0.05 ? '#ff5a40' : '#3a2a2c'; c.beginPath(); c.arc(4.6, 12.4, 0.3, 0, 7); c.fill(); }
-      c.save(); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle'; ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'].forEach((t, i) => { c.save(); c.translate(0.9, i * 2 - 0.55); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); }); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'right'; c.textBaseline = 'middle'; ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'].forEach((t, i) => { c.save(); c.translate(0.9, i * 2 - 0.55); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'PBC': {
       lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]);
@@ -823,21 +827,21 @@ function drawPart(p, selected) {
     case 'NETZ': {
       [0, 1, 2].forEach(i => lead(i * 2, 0, i * 2, -0.9, pc[i])); c.strokeStyle = body; c.strokeRect(-1, -3, 6, 2.1);
       c.save(); c.fillStyle = body; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '700 .85px sans-serif';
-      [['L', 0], ['N', 2], ['PE', 4]].forEach(([t, x]) => { c.save(); c.translate(x, -1.25); c.rotate(-p.r * Math.PI / 2); c.font = '700 .6px sans-serif'; c.fillText(t, 0, 0); c.restore(); });
-      c.save(); c.translate(2, -2.05); c.rotate(-p.r * Math.PI / 2); c.fillText('~ ' + (p.v || '230V'), 0, 0); c.restore(); c.restore();
+      [['L', 0], ['N', 2], ['PE', 4]].forEach(([t, x]) => { c.save(); c.translate(x, -1.25); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.font = '700 .6px sans-serif'; c.fillText(t, 0, 0); c.restore(); });
+      c.save(); c.translate(2, -2.05); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillText('~ ' + (p.v || '230V'), 0, 0); c.restore(); c.restore();
       break; }
     case 'LSS': {
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]);
       line(1, 0, 1.1, 0); c.beginPath(); c.arc(1, 0, 0.1, 0, 7); c.fill(); c.beginPath(); c.arc(3, 0, 0.1, 0, 7); c.fill();
       c.strokeStyle = p.sw ? body : '#ff8a5c'; c.lineWidth = 0.13; line(1, 0, p.sw ? 2.9 : 2.7, p.sw ? 0 : -1.1); c.strokeStyle = body; c.lineWidth = 0.07;
       c.strokeRect(1.55, -0.95, 0.9, 0.5); line(1.8, -0.7, 2.2, -0.7);
-      c.save(); c.translate(2, 0.75); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .6px sans-serif'; c.textAlign = 'center'; c.fillText(p.v || '', 0, 0); c.restore();
+      c.save(); c.translate(2, 0.75); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .6px sans-serif'; c.textAlign = 'center'; c.fillText(p.v || '', 0, 0); c.restore();
       break; }
     case 'RCD': {
       lead(0, 0, 0, 1, pc[0]); lead(2, 0, 2, 1, pc[1]); lead(0, 3, 0, 4, pc[2]); lead(2, 3, 2, 4, pc[3]);
       c.strokeRect(-0.6, 1, 3.2, 2);
       c.strokeStyle = p.sw ? body : '#ff8a5c'; c.lineWidth = 0.1; if (p.sw) { line(0, 1, 0, 3); line(2, 1, 2, 3); } else { line(0, 1, 0.5, 2.2); line(2, 1, 2.5, 2.2); }
-      c.save(); c.translate(1, 2); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .65px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('FI ' + (p.v || ''), 0, 0); c.restore();
+      c.save(); c.translate(1, 2); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .65px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('FI ' + (p.v || ''), 0, 0); c.restore();
       break; }
     case 'KREUZ': {
       lead(0, 0, 0, 1, pc[0]); lead(2, 0, 2, 1, pc[1]); lead(0, 3, 0, 4, pc[2]); lead(2, 3, 2, 4, pc[3]);
@@ -851,7 +855,7 @@ function drawPart(p, selected) {
       lead(6, 0, 6, 1, pc[2]); lead(6, 3, 6, 4, pc[3]);
       c.strokeStyle = la ? '#ffe14d' : body; c.lineWidth = 0.13; line(6, 1, la ? 6 : 5.2, la ? 3 : 2.6);
       c.strokeStyle = body; c.lineWidth = 0.07; c.setLineDash([0.25, 0.2]); line(1.4, 2, 4.9, 2); c.setLineDash([]);
-      c.save(); c.translate(3.4, 3.4); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Stromstoß', 0, 0); c.restore();
+      c.save(); c.translate(3.4, 3.4); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Stromstoß', 0, 0); c.restore();
       break; }
     case 'HEAT': {
       lead(0, 0, 0.8, 0, pc[0]); lead(3.2, 0, 4, 0, pc[1]); c.strokeRect(0.8, -0.8, 2.4, 1.6); peStub(2, 0.8, 2, 2, pc[2], p.sw);
@@ -871,11 +875,11 @@ function drawPart(p, selected) {
     case 'NTC': case 'PTC':
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8);
       c.beginPath(); c.moveTo(0.8, p.k === 'NTC' ? 1.1 : -1.1); c.lineTo(1.3, p.k === 'NTC' ? 1.1 : -1.1); c.lineTo(2.7, p.k === 'NTC' ? -1.1 : 1.1); c.stroke();
-      c.save(); c.translate(3.0, p.k === 'NTC' ? -1.0 : 1.0); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(p.k === 'NTC' ? '−ϑ' : '+ϑ', 0, 0); c.restore();
+      c.save(); c.translate(3.0, p.k === 'NTC' ? -1.0 : 1.0); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .8px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(p.k === 'NTC' ? '−ϑ' : '+ϑ', 0, 0); c.restore();
       break;
     case 'MOTOR': {
       lead(0, 0, 0.9, 0, pc[0]); lead(3.1, 0, 4, 0, pc[1]); circle(2, 0, 1.1);
-      c.save(); c.translate(2, 0); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 1.1px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, 0.06); c.restore();
+      c.save(); c.translate(2, 0); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 1.1px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, 0.06); c.restore();
       { const o = showSim() && bodyI.get(String(p.id)), ph0 = o && o.e && o.e.phase ? o.e.phase : 0, dead = showSim() && sim.burnt.has(p.id);
         if (o && !dead) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.62 * Math.cos(a), 0.62 * Math.sin(a)); c.lineTo(2 + 0.98 * Math.cos(a), 0.98 * Math.sin(a)); c.stroke();
           if (Math.abs(o.e.w || 0) > 20) { c.strokeStyle = 'rgba(255,225,77,.35)'; c.lineWidth = 0.08; c.beginPath(); c.arc(2, 0, 1.25, a, a + 1.6); c.stroke(); } }
@@ -938,8 +942,8 @@ function drawPart(p, selected) {
         segs.forEach((s2, i) => { const o = showSim() && bodyI.get(p.id + 'd' + dg + 's' + i), b2 = o ? Math.pow(clamp(Math.abs(o.e.i) / 0.02, 0, 1), 0.6) : 0; c.strokeStyle = b2 > 0.05 ? `rgba(255,${Math.round(60 + 40 * (1 - b2))},50,${0.45 + 0.55 * Math.min(1, b2)})` : '#3a2a2c'; c.lineWidth = 0.5; line(s2[0], s2[1], s2[2], s2[3]); });
         { const o = showSim() && bodyI.get(p.id + 'd' + dg + 's7'), b2 = o ? Math.abs(o.e.i) / 0.02 : 0; c.fillStyle = b2 > 0.05 ? '#ff5a40' : '#3a2a2c'; c.beginPath(); c.arc(ox + 3.2, 12.4, 0.28, 0, 7); c.fill(); }
       });
-      c.save(); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'right'; ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'].forEach((t, i) => { c.save(); c.translate(0.9, i * 2 - 0.55); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); });
-      c.textAlign = 'left'; [['K1', 2], ['K2', 12]].forEach(([t, y]) => { c.save(); c.translate(9.1, y - 0.6); c.rotate(-p.r * Math.PI / 2); c.fillText(/a/i.test(p.vr || '') ? t.replace('K', 'A') : t, 0, 0); c.restore(); }); c.restore();
+      c.save(); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textBaseline = 'middle'; c.textAlign = 'right'; ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'dp'].forEach((t, i) => { c.save(); c.translate(0.9, i * 2 - 0.55); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillText(t, 0, 0); c.restore(); });
+      c.textAlign = 'left'; [['K1', 2], ['K2', 12]].forEach(([t, y]) => { c.save(); c.translate(9.1, y - 0.6); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillText(/a/i.test(p.vr || '') ? t.replace('K', 'A') : t, 0, 0); c.restore(); }); c.restore();
       break; }
     case 'THY': {
       lead(0, 0, 1.4, 0, pc[0]); lead(2.6, 0, 4, 0, pc[1]); lead(3, 2, 2.95, 1.2, pc[2]);
@@ -1025,7 +1029,7 @@ function drawPart(p, selected) {
   c.restore();
   if (showSim() && thermAn()) thermOverlay(p);
   // Beschriftung und Werte
-  const [mx, my] = (p.k === 'ICX' || p.k === 'CPU') ? rot(3, 0, p.r) : rot(K.pins.length > 1 ? 2 : 0, 0, p.r);
+  const [mx, my] = (p.k === 'ICX' || p.k === 'CPU') ? rot(3, 0, p.r) : tf(K.pins.length > 1 ? 2 : 0, 0, p);
   const lx = X(p.x + mx), ly = Y(p.y + my);
   c.fillStyle = PRINT ? '#111' : '#cfd5db'; c.font = `${Math.max(10, S * 0.62)}px -apple-system,Segoe UI,sans-serif`; c.textBaseline = 'middle';
   let txt = valueText(p);
@@ -1033,6 +1037,7 @@ function drawPart(p, selected) {
   if (INSTR[p.k] && showSim()) txt = instrText(p);
   if (p.k === 'AM' && showSim()) { const o = [...bodyI.entries()].find(([k]) => k === String(p.id)); txt = o ? fmt(o[1].e.i, 'A') : ''; }
   if (p.l && p.k !== 'GND') txt = p.l + (txt ? '  ' + txt : '');
+  if (p.noLab) txt = '';   // Vorschau in der Seitenleiste: nur das Symbol
   if (txt) {
     const vert = (p.r & 1) === 1;
     c.textAlign = vert ? 'left' : 'center';
@@ -1043,7 +1048,7 @@ function drawPart(p, selected) {
     else if (p.k !== 'GND') fillText(txt, vert ? lx + (p.k === 'LED' || p.k === 'LAMP' ? 2.1 : 1.3) * S : lx, vert ? ly : ly - off * S);
   }
   if (selected) {
-    const [bx0, by0, bx1, by1] = K.box, cs = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([a, b]) => { const [ra, rb] = rot(a, b, p.r); return [X(p.x + ra), Y(p.y + rb)]; });
+    const [bx0, by0, bx1, by1] = K.box, cs = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([a, b]) => { const [ra, rb] = tf(a, b, p); return [X(p.x + ra), Y(p.y + rb)]; });
     const xs = cs.map(q => q[0]), ys = cs.map(q => q[1]);
     c.strokeStyle = '#3b9eff'; c.lineWidth = 2; c.setLineDash([6, 4]);
     c.strokeRect(Math.min(...xs) - 3, Math.min(...ys) - 3, Math.max(...xs) - Math.min(...xs) + 6, Math.max(...ys) - Math.min(...ys) + 6); c.setLineDash([]);
@@ -1115,7 +1120,7 @@ const pinsOn = () => !!(PINS && PINS.on());
 let pinCache = { key: '', labs: [] };
 function pinsKey(W, H, fs) {
   let k = view.s + '|' + Math.round(view.ox) + '|' + Math.round(view.oy) + '|' + W + 'x' + H + '|' + fs;
-  sch.parts.forEach(p => { k += ';' + p.k + p.x + ',' + p.y + ',' + p.r + (p.len || '') + (p.k === 'LAMP' || p.k === 'DUOLED' || p.k === 'RGBLED' ? p.v : '') + (p.vr || ''); });
+  sch.parts.forEach(p => { k += ';' + p.k + p.x + ',' + p.y + ',' + p.r + (p.m ? 'm' : '') + (p.len || '') + (p.k === 'LAMP' || p.k === 'DUOLED' || p.k === 'RGBLED' ? p.v : '') + (p.vr || ''); });
   partText.forEach((r, id) => { k += ';t' + id + ':' + Math.round(r[0]) + ',' + Math.round(r[1]) + ',' + Math.round(r[2]) + ',' + Math.round(r[3]); });
   sch.wires.forEach(w => { k += ';' + w.x1 + ',' + w.y1 + ',' + w.x2 + ',' + w.y2; });
   return k;
@@ -1130,7 +1135,7 @@ function drawPinLabels() {
     const vis = p => { const x = X(p.x), y = Y(p.y); return x > -400 && x < W + 400 && y > -400 && y < H + 400; };
     const ids = new Set(sch.parts.map(p => p.id)), texts = [];
     partText.forEach((r, id) => { if (ids.has(id)) texts.push(r); });
-    pinCache = { key, labs: PINS.schLabels({ parts: sch.parts.filter(vis), wires: sch.wires, KD, pinsOf, rot, X, Y, S, meas, texts }) };
+    pinCache = { key, labs: PINS.schLabels({ parts: sch.parts.filter(vis), wires: sch.wires, KD, pinsOf, rot, tf, tfd, X, Y, S, meas, texts }) };
   }
   cx.restore();
   PINS.paint(cx, pinCache.labs, { fill: '#ffd166', halo: '#080b0e' });
@@ -1157,7 +1162,7 @@ function waterBadges() {
   const rr = (x, y, w, h, r) => { cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r); cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath(); };
   sch.parts.forEach(p => {
     const K = KD(p); if (!K || !K.box) return;
-    const [ra, rb] = rot((K.box[0] + K.box[2]) / 2, (K.box[1] + K.box[3]) / 2, p.r), px = X(p.x + ra), py = Y(p.y + rb), s = view.s, w = s * 1.9, h = s * 1.15;
+    const [ra, rb] = tf((K.box[0] + K.box[2]) / 2, (K.box[1] + K.box[3]) / 2, p), px = X(p.x + ra), py = Y(p.y + rb), s = view.s, w = s * 1.9, h = s * 1.15;
     const kind = ['R', 'POT', 'NTC', 'PTC', 'LDR', 'LAMP', 'VDR'].includes(p.k) ? 'r' : (['C', 'CE', 'CF'].includes(p.k) ? 'c' : (p.k === 'BAT' ? 'p' : (p.k === 'L' ? 'l' : '')));
     if (!kind) return;
     cx.save(); cx.translate(px, py); cx.fillStyle = 'rgba(8,11,14,.92)'; cx.strokeStyle = '#6cb8ff'; cx.lineWidth = 2; rr(-w / 2, -h / 2, w, h, 6); cx.fill(); cx.stroke();
@@ -1213,7 +1218,7 @@ function drawCircuit() {
   if (simMode && !PRINT) sch.parts.forEach(p => {
     const K = KD(p); if (!K.pos) return;
     let y1 = -1e9, xc = 0, n = 0;
-    [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); y1 = Math.max(y1, p.y + rb); xc += p.x + ra; n++; });
+    [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = tf(a, b, p); y1 = Math.max(y1, p.y + rb); xc += p.x + ra; n++; });
     const w = Math.max(104, view.s * 3.8), r = drawPill(cx, X(xc / n), Y(y1) + 20, w, clamp(p.pos == null ? (K.pos0 != null ? K.pos0 : 0.5) : p.pos, 0, 1), p.k === 'MOTOR' ? 'Bremse' : (p.k === 'NTC' || p.k === 'PTC' || p.k === 'TMP36' || p.k === 'I2CTEMP' ? 'Temp. ' + posText(posUnit(p), posVal(p)) : (p.k === 'POT' ? 'Poti ' + posText(posUnit(p), posVal(p)) : (p.k === 'HCSR04' ? 'Abstand ' + posText(posUnit(p), posVal(p)) : (p.k === 'PIEZO' ? 'Klopfen' : (p.k === 'TOUCH' ? 'Finger' : (p.k === 'PIR' ? 'Bewegung' : 'Licht')))))));
     sliderHits.push(Object.assign({ id: p.id }, r));
   });
@@ -1234,7 +1239,7 @@ function render() {
   // Vorschau
   if (ghost && tool === 'place' && placeKind) {
     const L = leg1 ? legShape(leg1, ghost) : null;
-    cx.globalAlpha = 0.6; drawPart(L ? { id: -1, k: placeKind, x: leg1[0], y: leg1[1], r: L.r, len: L.len > 4 ? L.len : undefined, v: KINDS[placeKind].v, sw: 0 } : { id: -1, k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: KINDS[placeKind].v, sw: 0 }, false); cx.globalAlpha = 1;
+    cx.globalAlpha = 0.6; drawPart(L ? { id: -1, k: placeKind, x: leg1[0], y: leg1[1], r: L.r, len: L.len > 4 ? L.len : undefined, v: KINDS[placeKind].v, sw: 0 } : { id: -1, k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, m: placeMirOn() ? 1 : undefined, v: KINDS[placeKind].v, sw: 0 }, false); cx.globalAlpha = 1;
   }
   if (wireStart && cursor) {
     /* Vorschau: mit Auto-Weg der berechnete Weg mit 90°-Knicken (rot und gerade, wenn es keinen freien Weg gibt), sonst das gerade Stück */
@@ -1305,7 +1310,7 @@ function drawGraphs(W, H) {
 /* ============ Treffertest ============ */
 function partAt(fx, fy) {
   for (let i = sch.parts.length - 1; i >= 0; i--) {
-    const p = sch.parts[i], K = KD(p), [a, b] = rot(fx - p.x, fy - p.y, (4 - p.r) & 3);
+    const p = sch.parts[i], K = KD(p), [a, b0] = rot(fx - p.x, fy - p.y, (4 - p.r) & 3), b = p.m ? mirY2(p) - b0 : b0;
     if (a >= K.box[0] - 0.2 && a <= K.box[2] + 0.2 && b >= K.box[1] - 0.2 && b <= K.box[3] + 0.2) return p;
   }
   return null;
@@ -1322,7 +1327,7 @@ function routeWire(a, b) {
   let minX = Math.min(a[0], b[0]), maxX = Math.max(a[0], b[0]), minY = Math.min(a[1], b[1]), maxY = Math.max(a[1], b[1]);
   const grow = (x, y) => { minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); };
   sch.parts.forEach(p => {
-    const K = KD(p), cs = [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].map(([x, y]) => { const [rx, ry] = rot(x, y, p.r); return [p.x + rx, p.y + ry]; });
+    const K = KD(p), cs = [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].map(([x, y]) => { const [rx, ry] = tf(x, y, p); return [p.x + rx, p.y + ry]; });
     const x1 = Math.min(cs[0][0], cs[1][0]) - 0.3, x2 = Math.max(cs[0][0], cs[1][0]) + 0.3, y1 = Math.min(cs[0][1], cs[1][1]) - 0.3, y2 = Math.max(cs[0][1], cs[1][1]) + 0.3;
     grow(x1, y1); grow(x2, y2);
     for (let x = Math.ceil(x1); x <= Math.floor(x2); x++) for (let y = Math.ceil(y1); y <= Math.floor(y2); y++) blocked.add(key(x, y));
@@ -1364,7 +1369,7 @@ function routeWire(a, b) {
 }
 let prevKey = '', prevPath = null;
 function routePreview(a, b) {
-  const k = a + '|' + b + '|' + sch.wires.length + '|' + sch.parts.length + '|' + sch.parts.map(p => p.x + ',' + p.y + ',' + p.r).join(';');
+  const k = a + '|' + b + '|' + sch.wires.length + '|' + sch.parts.length + '|' + sch.parts.map(p => p.x + ',' + p.y + ',' + p.r + (p.m ? 'm' : '')).join(';');
   if (k !== prevKey) { prevKey = k; try { prevPath = routeWire(a, b); } catch (e) { prevPath = null; } }
   return prevPath;
 }
@@ -1509,7 +1514,7 @@ function onUp(p) {
     case 'leg': {   // Loslassen: war es ein Zug vom ersten Bein weg, wird das Bauteil gesetzt, sonst bleibt das erste Bein stehen
       if (leg1 && ghost && (ghost[0] !== leg1[0] || ghost[1] !== leg1[1])) { const L = legShape(leg1, ghost), K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: leg1[0], y: leg1[1], r: L.r, len: L.len > 4 ? L.len : undefined, v: K.v, sw: K.sw0 || 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); leg1 = null; ghost = null; commit(); refreshUI(); }
       break; }
-    case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, v: K.v, sw: K.sw0 || 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); commit(); } break;
+    case 'place': if (ghost) { const K = KINDS[placeKind]; sch.parts.push({ id: nid(), k: placeKind, x: ghost[0], y: ghost[1], r: placeRot, m: placeMirOn() ? 1 : undefined, v: K.v, sw: K.sw0 || 0, pos: K.pos0 != null ? K.pos0 : 0.5, vr: K.vr, n: K.n, l: nextLabel(placeKind) }); commit(); } break;
     case 'wire': if (cursor && (cursor[0] !== a.start[0] || cursor[1] !== a.start[1])) { wireStart = wireTo(a.start, cursor); } break;
     case 'erase': if (a.did) commit(); break;
   }
@@ -1553,6 +1558,12 @@ function rotSel(d) {
   if (simMode) return;
   if (tool === 'place' && !sel) { placeRot = (placeRot + d) & 3; draw(); refreshUI(); return; }
   if (sel && sel.t === 'part') { const p = byPart(sel.id); p.r = (p.r + d) & 3; commit(); }
+}
+const placeMirOn = () => !!(placeMir && placeKind && MIRK[placeKind]);
+function mirSel() {   // Transistor spiegeln: beim Setzen die Vorschau, sonst das gewählte Bauteil
+  if (simMode) return;
+  if (tool === 'place' && !sel) { if (MIRK[placeKind]) { placeMir = placeMir ? 0 : 1; draw(); refreshUI(); } return; }
+  if (sel && sel.t === 'part') { const p = byPart(sel.id); if (p && MIRK[p.k]) { if (p.m) delete p.m; else p.m = 1; commit(); } }
 }
 function dupSel() { if (simMode || !sel || sel.t !== 'part') return; const p = JSON.parse(JSON.stringify(byPart(sel.id))); p.id = nid(); p.l = ''; p.x += 2; p.y += 2; p.l = nextLabel(p.k); sch.parts.push(p); sel = { t: 'part', id: p.id }; commit(); }
 
@@ -1674,9 +1685,9 @@ function refreshControls() {
 const listMode = () => window.matchMedia('(min-width:720px)').matches;
 window.matchMedia('(min-width:720px)').addEventListener && window.matchMedia('(min-width:720px)').addEventListener('change', () => buildPalette());
 $('#parts').addEventListener('input', e => { if (e.target.id === 'pq') { partQuery = e.target.value; applyPartFilter(); } });
-$('#parts').addEventListener('keydown', e => { if (e.target.id !== 'pq') return; if (e.key === 'Enter') { const one = [...$('#parts').querySelectorAll('.pit:not([hidden])')]; if (one.length) { placeRot = 0; setTool('place', one[0].dataset.k); } } else if (e.key === 'Escape') { partQuery = ''; e.target.value = ''; applyPartFilter(); } });
-$('#parts').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) { placeRot = 0; setTool('place', b.dataset.k); } });
-$('#pal').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; if (b.dataset.t === 'place') { placeRot = 0; setTool('place', b.dataset.k); } else if (b.dataset.t === 'reset') resetSim(); else if (b.dataset.t === 'autoroute') { autoRoute = !autoRoute; try { localStorage.setItem('lm4.autoroute', autoRoute ? '1' : '0'); } catch (e2) {} buildPalette(); toast(autoRoute ? 'Auto-Weg an: der Draht sucht den Weg mit 90°-Knicken selbst' : 'Auto-Weg aus: gerade Stücke, Knickpunkte selbst setzen'); } else setTool(b.dataset.t); });
+$('#parts').addEventListener('keydown', e => { if (e.target.id !== 'pq') return; if (e.key === 'Enter') { const one = [...$('#parts').querySelectorAll('.pit:not([hidden])')]; if (one.length) { placeRot = 0; placeMir = 0; setTool('place', one[0].dataset.k); } } else if (e.key === 'Escape') { partQuery = ''; e.target.value = ''; applyPartFilter(); } });
+$('#parts').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (b) { placeRot = 0; placeMir = 0; setTool('place', b.dataset.k); } });
+$('#pal').addEventListener('click', e => { const b = e.target.closest('[data-t]'); if (!b) return; if (b.dataset.t === 'place') { placeRot = 0; placeMir = 0; setTool('place', b.dataset.k); } else if (b.dataset.t === 'reset') resetSim(); else if (b.dataset.t === 'autoroute') { autoRoute = !autoRoute; try { localStorage.setItem('lm4.autoroute', autoRoute ? '1' : '0'); } catch (e2) {} buildPalette(); toast(autoRoute ? 'Auto-Weg an: der Draht sucht den Weg mit 90°-Knicken selbst' : 'Auto-Weg aus: gerade Stücke, Knickpunkte selbst setzen'); } else setTool(b.dataset.t); });
 $('#pal').addEventListener('wheel', e => { const el = e.currentTarget; if (el.scrollWidth <= el.clientWidth) return; el.scrollLeft += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY; e.preventDefault(); }, { passive: false });
 (function () {
   const el = $('#pal'); let drag = null, sup = false;
@@ -1728,6 +1739,27 @@ function setSimModeNow(on) {
   buildPalette(); refreshUI(); draw();
 }
 function resetSim() { tlClear(); thermReset(); if (window.LochFX) LochFX.clear(); rebuild(); startProgram(); if (window.LochFX) LochFX.toneOff(); sim.t = 0; sim.reset(); simTime = 0; phase.clear(); lastSample = -1; refreshUI(); draw(); }
+/* Vorschau in der Seitenleiste: zeigt das Bauteil so, wie es gesetzt wird (wichtig am Tablet, dort gibt es keinen Mauszeiger mit Vorschau) */
+function drawPlacePreview() {
+  const el = document.getElementById('plPrev'); if (!el || !placeKind || !el.getContext) return;
+  try { if (matchMedia('(max-width:719px)').matches) { const sd = document.getElementById('side'), cd = el.closest('.card'); if (sd && cd) sd.scrollTop = Math.max(0, cd.offsetTop - sd.offsetTop - 6); } } catch (e) { }   // Handy: Karte mit Vorschau und Drehen nach oben holen
+  const p = { id: -1, noLab: true, k: placeKind, x: 0, y: 0, r: placeRot, m: placeMirOn() ? 1 : undefined, v: KINDS[placeKind].v, sw: 0, vr: KINDS[placeKind].vr, n: KINDS[placeKind].n }, K = KD(p);
+  const W = el.clientWidth || 220, H = el.clientHeight || 120, d = window.devicePixelRatio || 1;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].concat(K.pins).forEach(([a, b]) => { const [ra, rb] = tf(a, b, p); x0 = Math.min(x0, ra); x1 = Math.max(x1, ra); y0 = Math.min(y0, rb); y1 = Math.max(y1, rb); });
+  const s = Math.max(4, Math.min(26, (W - 120) / Math.max(1, x1 - x0), (H - 48) / Math.max(1, y1 - y0)));
+  el.width = Math.round(W * d); el.height = Math.round(H * d);
+  const sv = { cx, view, sel };
+  try {
+    cx = el.getContext('2d'); cx.setTransform(d, 0, 0, d, 0, 0); sel = null;
+    view = { s, ox: W / 2 - (x0 + x1) / 2 * s, oy: H / 2 - (y0 + y1) / 2 * s };
+    drawPart(p, false);
+    if (PINS && PINS.schLabels) {   // Anschlussnamen immer zeigen, damit man beim Drehen und Spiegeln sieht, was wohin wandert
+      cx.font = '700 12px -apple-system,system-ui,Segoe UI,sans-serif'; const meas = (t, fs) => cx.measureText(t).width * fs / 12;
+      PINS.paint(cx, PINS.schLabels({ parts: [p], wires: [], KD, pinsOf, rot, tf, tfd, X, Y, S: s, meas, texts: [] }), { fill: '#ffd166', halo: '#080b0e' });
+    }
+  } catch (e) { } finally { cx = sv.cx; view = sv.view; sel = sv.sel; partText.delete(-1); }
+}
 function refreshUI() {
   const side = $('#side'); if (!side) return;
   $('#bRun').textContent = running ? '⏸' : '▶';
@@ -1750,7 +1782,7 @@ function refreshUI() {
   if (LAB === 'haus' && window.HAUS_SIDE) { h = h.replace(/<button[^>]*data-a="water"[^>]*>[\s\S]*?<\/button>/, '').replace(/<label class="sl"><span>Strompunkte<\/span>[\s\S]*?<\/label>/, '').replace(/<div class="kv"><span>Graph-Zeitfenster<\/span>[\s\S]*?<\/span><\/div>/, ''); h += window.HAUS_SIDE(simMode); side.innerHTML = h; side.classList.toggle('quiet', false); return; }
   if (!simMode && tool === 'place' && placeKind) {
     const K = KINDS[placeKind];
-    h += `<div class="card"><h4 data-wk="${placeKind}">${esc(K.name)} setzen</h4><div class="row2"><button class="btn" data-a="rotl">↺</button><span class="sval">${placeRot * 90}°</span><button class="btn" data-a="rotr">↻</button></div><p class="hint2">${K.pins === T2 ? (leg1 ? 'Erstes Bein steht. Jetzt Richtung und Länge wählen (Maus bewegen oder ziehen) und das zweite Bein absetzen. Der Körper bleibt gleich, nur die Anschlussdrähte werden länger. Esc bricht ab.' : 'Erstes Bein antippen, dann Richtung und Länge wählen und das zweite Bein absetzen. Oder vom ersten Bein zum zweiten ziehen.') : 'Auf die Zeichenfläche tippen. Ausrichtung mit ↺ ↻ oder Taste R.'}</p>${K.pins === T2 ? `<label class="chk"><input type="checkbox" data-a="tleg" ${twoLegOn ? 'checked' : ''}> Beine ziehen und ausrichten</label>` : ''}<button class="btn" data-a="keyhelp">⌨ Tastenkürzel (?)</button></div>`;
+    h += `<div class="card"><h4 data-wk="${placeKind}">${esc(K.name)} setzen</h4><div class="row2"><button class="btn" data-a="rotl">↺</button><span class="sval">${placeRot * 90}°</span><button class="btn" data-a="rotr">↻</button></div>${MIRK[placeKind] ? `<div class="row2"><button class="btn ${placeMir ? 'pri' : ''}" data-a="mir" aria-pressed="${placeMir ? 'true' : 'false'}">⇅ Spiegeln</button></div>` : ''}<canvas id="plPrev" class="plprev" aria-label="Vorschau: so wird das Bauteil gesetzt" style="position:static;inset:auto;display:block;width:100%;height:120px;touch-action:auto;border-radius:8px;background:rgba(127,127,127,.12);margin-bottom:6px"></canvas><p class="hint2">${K.pins === T2 ? (leg1 ? 'Erstes Bein steht. Jetzt Richtung und Länge wählen (Maus bewegen oder ziehen) und das zweite Bein absetzen. Der Körper bleibt gleich, nur die Anschlussdrähte werden länger. Esc bricht ab.' : 'Erstes Bein antippen, dann Richtung und Länge wählen und das zweite Bein absetzen. Oder vom ersten Bein zum zweiten ziehen.') : 'Auf die Zeichenfläche tippen. Ausrichtung mit ↺ ↻ oder der Tab-Taste' + (MIRK[placeKind] ? ', Spiegeln mit Umschalt + Tab.' : '.')}</p>${K.pins === T2 ? `<label class="chk"><input type="checkbox" data-a="tleg" ${twoLegOn ? 'checked' : ''}> Beine ziehen und ausrichten</label>` : ''}<button class="btn" data-a="keyhelp">⌨ Tastenkürzel (?)</button></div>`;
   } else if (sel && sel.t === 'part') {
     const p = byPart(sel.id); if (p) {
       const K = KINDS[p.k];
@@ -1767,7 +1799,7 @@ function refreshUI() {
       if (LAB === 'sim' && !simMode && isGod()) h += `<label class="f"><span>Fehler (Lehrer)</span><select data-p="defect">${[['', 'keiner'], ['open', 'unterbrochen'], ['short', 'Kurzschluss']].map(([v, l]) => `<option value="${v}" ${(p.defect || '') === v ? 'selected' : ''}>${l}</option>`).join('')}</select></label>`;
       if (K.toggle) h += `<button class="btn" data-a="sw">Schalter umlegen (${p.sw ? 'an' : 'aus'})</button>`;
       if (bvFrei()) h += window.BAUVIZ.kartenHtml(p.k, p);
-      if (!simMode) h += `<label class="f" style="margin-top:8px"><span>Bezeichnung</span><input data-p="l" value="${esc(p.l || '')}"></label><div class="row2" style="margin-top:8px"><button class="btn" data-a="rotl">↺</button><button class="btn" data-a="rotr">↻</button><button class="btn" data-a="dup">⧉</button><button class="btn danger" data-a="del">Löschen</button></div>`;
+      if (!simMode) h += `<label class="f" style="margin-top:8px"><span>Bezeichnung</span><input data-p="l" value="${esc(p.l || '')}"></label><div class="row2" style="margin-top:8px"><button class="btn" data-a="rotl">↺</button><button class="btn" data-a="rotr">↻</button>${MIRK[p.k] ? `<button class="btn ${p.m ? 'pri' : ''}" data-a="mir" title="Spiegeln" aria-label="Spiegeln" aria-pressed="${p.m ? 'true' : 'false'}">⇅</button>` : ''}<button class="btn" data-a="dup">⧉</button><button class="btn danger" data-a="del">Löschen</button></div>`;
       if (K.props.some(q => q[2] === 'ictype')) { const dt = String(p.v || '').replace(/[^A-Za-z0-9._-]/g, ''); if (dt) h += `<p class="hint2" style="margin-top:8px"><a href="https://www.google.com/search?q=${encodeURIComponent(dt + ' datasheet')}" target="_blank" rel="noopener noreferrer">Datenblatt im Web suchen</a> (${esc(dt)}, öffnet neuen Tab, braucht Internet)</p>`; }
       if (window.Speak && window.Speak.info(p.k)) h += '<div class="row2" style="margin-top:8px"><button class="btn" data-a="speak">🔊 Erkläre dich</button></div>';
       if (simMode) h += '<div id="live"></div>' + (thermAn() ? '<div id="thmLive"></div>' : '');
@@ -1782,7 +1814,7 @@ function refreshUI() {
   }
   if (simMode && !sel) h += `<div class="card"><h4>Hinweise</h4><p class="hint2">Schalter antippen = umlegen, Taster gedrückt halten. „Graph“ zeigt Spannung und Strom eines Bauteils.</p><p class="hint2">Grün = positive Spannung, Rot = negative, Grau = Masse. Gelbe Punkte zeigen den Stromweg.</p></div>`;
   if (!simMode) h += `<div class="card"><h4>Drucken und Simulieren</h4><p class="hint2">Oben den Schalter auf „Sim“ stellen, um die Schaltung laufen zu lassen. Im Menü findest du „Drucken“ für den Plan und die Bauteilliste.</p></div>`;
-  side.innerHTML = h; side.classList.toggle('quiet', !sch.task && !simMode);
+  side.innerHTML = h; side.classList.toggle('quiet', !sch.task && !simMode); drawPlacePreview();
 }
 /* ============ Wärme und Ausfall (thermviz.js): Anzeige und Bedienung; Rechnung und Ausfall stehen in thermviz.js, den Kern ändern wir nicht ============ */
 const thermFrei = () => LAB === 'sch' && !sch.task && !sch.dice && !!window.THERM;
@@ -1884,7 +1916,7 @@ $('#side').addEventListener('click', e => {
   if (a === 'wcol') { const w = sel && sel.t === 'wire' && byWire(sel.id); wireColor = b.dataset.c; if (w) { w.c = wireColor; commit(true); } refreshUI(); draw(); return; }
   if (a === 'run') toggleRun(); else if (a === 'reset') resetSim();
   else if (a === 'keyhelp') { if (window.LochKeys) window.LochKeys.help(); } else if (a === 'tleg') { twoLegOn = !twoLegOn; try { localStorage.setItem('lm4.twoleg', twoLegOn ? '1' : '0'); } catch (e) {} leg1 = null; ghost = null; refreshUI(); }
-  else if (a === 'rotl') rotSel(3); else if (a === 'rotr') rotSel(1);
+  else if (a === 'rotl') rotSel(3); else if (a === 'rotr') rotSel(1); else if (a === 'mir') mirSel();
   else if (a === 'dup') dupSel(); else if (a === 'del') delSel();
   else if (a === 'sw') { const p = byPart(sel.id); p.sw = p.sw ? 0 : 1; const w = wrapMap.get(p.id); if (w) w.sw = p.sw; commit(true); }
 });
@@ -2175,7 +2207,7 @@ function drawMeterMarks() {
   if (!simMode || tool !== 'meter') return;
   const ring = (pt, col, lbl) => { if (!pt) return; cx.strokeStyle = col; cx.lineWidth = 3; cx.beginPath(); cx.arc(X(pt.x), Y(pt.y), Math.max(8, view.s * 0.45), 0, 7); cx.stroke(); cx.fillStyle = col; cx.font = '700 12px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'middle'; cx.fillText(lbl, X(pt.x) + 12, Y(pt.y) - 12); };
   ring(meter.a, '#ff4d4d', meter.b ? '+' : 'rot'); ring(meter.b, '#ffffff', '−');
-  if (meter.mode === 'A' && meter.part != null) { const p = byPart(meter.part); if (p) { const K = KD(p), cs = [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].map(([a, b]) => { const [ra, rb] = rot(a, b, p.r); return [X(p.x + ra), Y(p.y + rb)]; }); cx.strokeStyle = '#7dff7d'; cx.lineWidth = 2; cx.setLineDash([6, 4]); cx.strokeRect(Math.min(cs[0][0], cs[1][0]) - 4, Math.min(cs[0][1], cs[1][1]) - 4, Math.abs(cs[1][0] - cs[0][0]) + 8, Math.abs(cs[1][1] - cs[0][1]) + 8); cx.setLineDash([]); } }
+  if (meter.mode === 'A' && meter.part != null) { const p = byPart(meter.part); if (p) { const K = KD(p), cs = [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].map(([a, b]) => { const [ra, rb] = tf(a, b, p); return [X(p.x + ra), Y(p.y + rb)]; }); cx.strokeStyle = '#7dff7d'; cx.lineWidth = 2; cx.setLineDash([6, 4]); cx.strokeRect(Math.min(cs[0][0], cs[1][0]) - 4, Math.min(cs[0][1], cs[1][1]) - 4, Math.abs(cs[1][0] - cs[0][0]) + 8, Math.abs(cs[1][1] - cs[0][1]) + 8); cx.setLineDash([]); } }
 }
 function meterCardHtml() {
   if (!simMode || tool !== 'meter') return '';
@@ -4294,7 +4326,7 @@ function fit() {
   const r = rectOf();
   if (!sch.parts.length && !sch.wires.length) { view = { s: 24, ox: 80, oy: 80 }; draw(); return; }
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  sch.parts.forEach(p => { const K = KD(p); [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
+  sch.parts.forEach(p => { const K = KD(p); [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = tf(a, b, p); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
   sch.wires.forEach(w => { x0 = Math.min(x0, w.x1, w.x2); x1 = Math.max(x1, w.x1, w.x2); y0 = Math.min(y0, w.y1, w.y2); y1 = Math.max(y1, w.y1, w.y2); });
   const pad = 2, W = x1 - x0 + 2 * pad, H = y1 - y0 + 2 * pad, gh = sch.scopes.length ? Math.min(150, r.height * 0.34) : 0;
   const s = clamp(Math.min(r.width / W, (r.height - gh) / H), 10, 50);
@@ -4892,7 +4924,7 @@ if (LAB === 'sim') EXAMPLES.forEach(e => { if (e.noScopes) return; const mk = e.
 const userName = () => { try { return localStorage.getItem('lm4.name') || ''; } catch (e) { return ''; } };
 function planBounds() {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
-  sch.parts.forEach(p => { const K = KD(p); [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = rot(a, b, p.r); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
+  sch.parts.forEach(p => { const K = KD(p); [[K.box[0], K.box[1]], [K.box[2], K.box[1]], [K.box[2], K.box[3]], [K.box[0], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = tf(a, b, p); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
   sch.wires.forEach(w => { x0 = Math.min(x0, w.x1, w.x2); x1 = Math.max(x1, w.x1, w.x2); y0 = Math.min(y0, w.y1, w.y2); y1 = Math.max(y1, w.y1, w.y2); });
   return [x0, y0, x1, y1];
 }
@@ -5068,7 +5100,7 @@ window.LabVoiceAPI = {
 window.LabUI = { sheet, esc, toast, userName, LAB };
 window.LabKeysAdapter = {                                                           // Tastenkürzel (keys.js)
   lab: LAB, sheet, esc, toast, has: k => !!KINDS[k] && inLab(KINDS[k]),
-  part: k => { placeRot = 0; setTool('place', k); }, tool: t => setTool(t), rotate: () => rotSel(1), rotateKey: 'Tab', dup: () => dupSel(), fit: () => fit(),
+  part: k => { placeRot = 0; placeMir = 0; setTool('place', k); }, tool: t => setTool(t), rotate: () => rotSel(1), mirror: () => mirSel(), rotateKey: 'Tab', dup: () => dupSel(), fit: () => fit(),
   search: () => { const q = $('#pq'); if (q) q.focus(); }, sim: () => { const s = $('#bSim'); if (s) s.click(); }, busy: () => simMode,
 };                                    // kleine Schnittstelle für Zusatzmodule (Prüfplatz)
 window.SchaltPECheck = () => EXAMPLES.filter(exOk).map(e => {                      // Testhilfe: PE-Anschluss in allen Beispielen prüfen
@@ -5202,5 +5234,7 @@ window.LabVerbund = (() => {
   };
   return api;
 })();
+/* Aufgabe im laufenden Lab öffnen (für die Leiste „Nächste Aufgabe“, ohne Neuladen) */
+window.LabGoto = id => { try { if (TASKS.some(t => t.id === id && (t.lab || 'sim') === LAB)) { startTask(id); return true; } } catch (e) { } return false; };
 window.SchaltDebug = () => ({ prog: prog && { err: prog.err, t: prog.runner.t }, serLog, view, sl: sliderHits, running, t: sim && sim.t, N: circ && circ.nn, flows: [...flows.entries()], imax, vmax, elems: circ && circ.elems.map(e => ({ t: e.type, part: e.part && e.part.k, i: e.i })) , sch });
 })();

@@ -2,6 +2,12 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v55.172', items: [
+      ['Bauteile spiegeln', 'Im SchaltLab kannst du Transistoren, Operationsverstärker, Poti, Wechsler und weitere Bauteile jetzt spiegeln. So liegen die Anschlüsse auf der Seite, die zu deinem Plan passt.', 'SchaltLab'],
+      ['Vorschau beim Setzen', 'Wenn du ein Bauteil wählst, siehst du eine Vorschau in der aktuellen Drehung, auch am Tablet und am Handy. So weißt du schon vor dem Setzen, wie es liegt.', 'LochLab, SchaltLab'],
+      ['Schneller zur nächsten Aufgabe', '„Nächste Aufgabe“ wechselt jetzt direkt, ohne die Seite neu zu laden. Am Handy sind die Leisten unten kleiner und die Karte „Warum brauche ich das?“ ist eingeklappt.', 'alle Labs'],
+      ['Projekte im Lernpfad', 'Der Lernpfad zeigt jetzt für jeden Beruf einen Schritt „Projekte“ mit den passenden Verbundprojekten. Im Pneumatik-Lab zählen gelöste Aufgaben jetzt auch im Lernpfad und im Ausbildungsplan.', 'Startseite, Pneumatik-Lab'],
+    ] },
     { v: 'v55.171', items: [
       ['Dein Ausbildungsplan', 'Neu auf der Startseite: Dein Ausbildungsplan zeigt die Lernfelder deines Berufs mit den passenden Labs, Heften, Wiki-Einträgen und Projekt-Stationen. Du siehst deinen Fortschritt je Lernfeld und bekommst einen Vorschlag, was als Nächstes passt. Zuordnungen, die noch geprüft werden, sind als Entwurf markiert.', 'Startseite ▸ Dein Ausbildungsplan'],
       ['Nächste Aufgabe', 'Wenn du eine Aufgabe geschafft hast, erscheint unten ein Knopf „Nächste Aufgabe“. Er führt dich direkt zur nächsten Aufgabe im selben Lab, ohne Umweg über das Menü.', 'alle Labs'],
@@ -10,10 +16,6 @@
         { v: 'v55.170', items: [
       ['Projekte für alle Berufe', 'Sechs neue Projekte: Pneumatische Presse (Industriemechaniker), Kundenauftrag vom Wareneingang bis zur Rampe (Lagerlogistik), Auftrag kalkulieren und abrechnen (Industriekaufleute), Werkstatt-Netz mit Messdaten-Server (Fachinformatiker), Gehäuse für das Labornetzteil (Technische Produktdesigner) und der Tonfunk-Auftrag, bei dem ein Gerät durch alle Berufe läuft und jeder seine Stationen bearbeitet. Zu jeder Station gehören ein Formular und Aufgaben in den passenden Labs.', 'Startseite ▸ Projekte; Projekte-Bereich'],
       ['Projekte nach Beruf', 'Die Zeile Projekte steht jetzt weit oben auf der Startseite und zeigt die Projekte deines Berufs mit Fortschritt. Im Projekt-Bereich stehen deine Projekte zuerst, die anderen sind eingeklappt. In den Labs weist ein Hinweis auf das Projekt hin, in dem das Lab vorkommt.', 'Startseite ▸ Projekte; Projekte-Bereich; alle Labs'],
-    ] },
-{ v: 'v55.169', items: [
-      ['Heute für dich', 'Die Startseite zeigt jetzt, wie viele Aufgaben zum Wiederholen anstehen und wie lange das ungefähr dauert.', 'Startseite ▸ Wiederholen'],
-      ['Rückmeldung nach jeder Aufgabe', 'Nach einer gelösten Aufgabe kannst du mit einem Klick sagen: zu leicht, passt, zu schwer oder unklar. Die Rückmeldung bleibt nur auf deinem Gerät, ganz ohne Namen. Ausbilder sehen unter „Rückmeldungen zu Aufgaben“ die auffälligen Aufgaben und können die Auswertung exportieren.', 'Alle Labs ▸ Aufgaben; Ausbilder-Übersicht ▸ Rückmeldungen zu Aufgaben'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

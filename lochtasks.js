@@ -269,6 +269,9 @@ function openSolder() {
 window.LochTasks = { menu: m => { if (m === 'tasks') openTasks(); else if (m === 'check') openCheck(); else if (m === 'solder') openSolder(); }, list, check: checkTask, layoutCheck, start: startTask };
 const _load = window.load; window.load = function (d) { _load(d); showCard(); };
 ['#bTasks'].forEach(s => { const el = document.querySelector(s); if (el) el.onclick = openTasks; });
+/* Aufgabe im laufenden Lab öffnen (für die Leiste „Nächste Aufgabe“, ohne Neuladen). keepUrl: die Adresse bleibt ohne ?aufgabe=, damit Neuladen die Arbeit nicht zurücksetzt. */
+window.LabGoto = id => { try { if (byTask(id)) { startTask(id); return true; } } catch (e) {} return false; };
+window.LabGoto.keepUrl = true;
 setTimeout(() => {
   showCard();
   const m = location.search.match(/[?&]aufgabe=(\w+)/); if (m && byTask(m[1])) { history.replaceState(null, '', 'layout.html'); startTask(m[1]); }

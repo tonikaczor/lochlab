@@ -432,6 +432,7 @@
 
   buildTabs(); updatePal();
   /* Aufruf ?aufgabe=mat1 (Startseite, Lernhefte): Aufgabe gleich öffnen; ?bsp: Beispielauswahl zeigen */
+  root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   let start = S.tab, openId = null;
   try { const q = new URLSearchParams(location.search), qa = q.get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { start = 'tasks'; openId = qa; } else if (q.has('bsp')) start = 'bsp'; } catch (e) {}
   setTab(start); if (openId) startTask(openId);

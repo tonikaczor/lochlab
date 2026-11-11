@@ -599,6 +599,7 @@
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'cal' || S.tab === 'mic') updateInst(S.tab); else if (S.tab === 'tasks' && curTask()) renderTasks(false); else if (S.tab === 'rt') renderTrainer(); }, 150); });
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufruf ?aufgabe=tol1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
+  root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   try { const qa = new URLSearchParams(location.search).get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); } } catch (e) {}
   /* Aufruf ?bsp: gleich die Beispielauswahl zeigen */
   try { const qb = new URLSearchParams(location.search); if (qb.has('bsp') && !qb.get('aufgabe')) { setTab('bsp'); } } catch (e) {}

@@ -423,6 +423,7 @@
 
   buildTabs(); updatePal(); setTab(TABS.some(x => x[0] === S.tab) ? S.tab : 'kz');
   /* Aufruf ?aufgabe=lag1 (Startseite, Lernhefte) öffnet die Aufgabe, ?bsp die Beispiele (?bsp=meld springt zu einem Beispiel) */
+  root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   try {
     const qp = new URLSearchParams(location.search), qa = qp.get('aufgabe');
     if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); }

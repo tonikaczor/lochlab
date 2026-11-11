@@ -12,7 +12,7 @@
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   const lsRaw = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
   const lsPut = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
-  const K = { done: 'lm4.pne.done', score: 'lm4.pne.score', hints: 'lm4.pne.hints', tab: 'lm4.pne.tab', mode: 'lm4.pne.mode', bau: 'lm4.pne.bau', latch: 'lm4.pne.latch', tr: 'lm4.pne.trainer', cir: 'lm4.pne.cir', zoom: 'lm4.pne.zoom' };
+  const K = { done: 'lm4.pne.done', score: 'lm4.pne.score', prog: 'lm4.pne.prog', hints: 'lm4.pne.hints', tab: 'lm4.pne.tab', mode: 'lm4.pne.mode', bau: 'lm4.pne.bau', latch: 'lm4.pne.latch', tr: 'lm4.pne.trainer', cir: 'lm4.pne.cir', zoom: 'lm4.pne.zoom' };
   const fm = C.calc.fmt, parseNum = s => parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1)), pk = a => a[Math.floor(Math.random() * a.length)];
   const stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
@@ -341,6 +341,7 @@
     const d = doneMap(), first = !d[id]; d[id] = true; lsSet(K.done, d);
     const hs = lsGet(K.hints, {}), pct = mode() === 'pruef' ? 100 - HP[Math.min(3, hs[id] || 0)] : 100;
     const sc = lsGet(K.score, {}); if ((sc[id] || 0) < pct) { sc[id] = pct; lsSet(K.score, sc); }
+    lsSet(K.prog, sc);   // gemeinsamer Fortschritt (aufgaben.js spiegelt lm4.<lab>.prog nach lm4.tdone: Lernpfad, Ausbildungsplan, Rückmeldung, Nächste Aufgabe)
     buildTabs(); if (S.tab === 'aufg') renderTasks();
     return { first, pct };
   }
@@ -687,14 +688,16 @@
         const r = e.target.closest('.row'); if (!r) return; const m = r.dataset.m; close();
         if (m === 'tasks') setTab('aufg'); else if (m === 'help') setTab('help'); else if (m === 'start') location.href = 'index.html';
         else if (m === 'mode') { lsPut(K.mode, mode() === 'pruef' ? 'ueben' : 'pruef'); toast('Modus: ' + (mode() === 'pruef' ? 'Prüfen' : 'Üben')); if (S.tab === 'aufg') renderTasks(); }
-        else if (m === 'reset' && await confirmSheet('Fortschritt zurücksetzen?', 'Alle gelösten Aufgaben, Punkte, Tipps und gelegten Schläuche im Pneumatik-Lab werden gelöscht.', 'Zurücksetzen', true)) { [K.done, K.score, K.hints, K.bau].forEach(k => { try { localStorage.removeItem(k); } catch (e2) {} }); S.task = null; PL.cir = null; buildTabs(); setTab('aufg'); toast('Fortschritt gelöscht'); }
+        else if (m === 'reset' && await confirmSheet('Fortschritt zurücksetzen?', 'Alle gelösten Aufgaben, Punkte, Tipps und gelegten Schläuche im Pneumatik-Lab werden gelöscht.', 'Zurücksetzen', true)) { [K.done, K.score, K.prog, K.hints, K.bau].forEach(k => { try { localStorage.removeItem(k); } catch (e2) {} }); S.task = null; PL.cir = null; buildTabs(); setTab('aufg'); toast('Fortschritt gelöscht'); }
       });
     });
   }
 
   /* ============================================================ Start */
   function init() {
-    const bm = $('#bMenu'); if (bm) bm.onclick = openMenu;
+    try { const sc0 = lsGet(K.score, null); if (sc0 && Object.keys(sc0).length) lsSet(K.prog, sc0); } catch (e) { }   // früher gelöste Aufgaben in den gemeinsamen Fortschritt übernehmen
+    const bm = $('#bMenu');
+  root.LabGoto = id => { try { if (D.TASKS[id]) { openTask(id); return true; } } catch (e) {} return false; }; if (bm) bm.onclick = openMenu;
     const bt = $('#bTasks'); if (bt) bt.onclick = () => { S.task = null; setTab('aufg'); };
     const bh = $('#bHelp'); if (bh) bh.onclick = () => setTab('help');
     window.addEventListener('resize', () => { PL.sig = ''; });

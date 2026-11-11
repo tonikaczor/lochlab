@@ -373,6 +373,7 @@
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'werk') renderWerk(); else if (S.tab === 'bsp') renderBsp(); else if (S.tab === 'tasks' && curTask()) renderTasks(false); else if (S.tab === 'rt') renderTrainer(); }, 150); });
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufruf ?aufgabe=zei1 (Startseite, Lernhefte): Aufgabe gleich öffnen; ?bsp (oder ?bsp=winkel): Beispiele öffnen */
+  root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   try {
     const q = new URLSearchParams(location.search), qa = q.get('aufgabe');
     if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); }

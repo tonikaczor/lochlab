@@ -212,12 +212,12 @@ function schLabels(o) {
     const nm = sch(p.k, p); if (!nm) return;
     const wp = o.pinsOf(p), K = o.KD(p);
     if (nm.length !== wp.length) return;
-    const b = K.box, cs = [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].map(([a, c]) => { const r = o.rot(a, c, p.r); return [o.X(p.x + r[0]), o.Y(p.y + r[1])]; });
+    const b = K.box, cs = [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].map(([a, c]) => { const r = o.tf ? o.tf(a, c, p) : o.rot(a, c, p.r); return [o.X(p.x + r[0]), o.Y(p.y + r[1])]; });
     const xs = cs.map(q => q[0]), ys = cs.map(q => q[1]);
     parts.push({
       id: p.id, box: [Math.min.apply(null, xs), Math.min.apply(null, ys), Math.max.apply(null, xs), Math.max.apply(null, ys)], ownSolid: false,
       solid: (() => { const m = S * 0.35, x0 = Math.min.apply(null, xs) + m, y0 = Math.min.apply(null, ys) + m, x1 = Math.max.apply(null, xs) - m, y1 = Math.max.apply(null, ys) - m; return x1 > x0 && y1 > y0 ? [x0, y0, x1, y1] : null; })(),
-      pins: wp.map((q, i) => { const e = nm[i], d = e.d ? o.rot(e.d[0], e.d[1], p.r) : null; return { x: o.X(q[0]), y: o.Y(q[1]), n: e.n, x2: e.x, d }; })
+      pins: wp.map((q, i) => { const e = nm[i], d = e.d ? (o.tfd ? o.tfd(e.d[0], e.d[1], p) : o.rot(e.d[0], e.d[1], p.r)) : null; return { x: o.X(q[0]), y: o.Y(q[1]), n: e.n, x2: e.x, d }; })
     });
   });
   const segs = (o.wires || []).map(w => [o.X(w.x1), o.Y(w.y1), o.X(w.x2), o.Y(w.y2)]);

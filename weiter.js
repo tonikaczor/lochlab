@@ -79,28 +79,31 @@
     if (!n || n.lab !== lab || !c.reg[n.lab]) return null;
     if (n.art === 'aufgabe') {
       const href = link(c.reg, n.row, c.search); if (!href) return null;
-      return { art: 'aufgabe', kopf: 'Nächste Aufgabe', titel: String(n.row[3] || n.row[0]), href, aria: 'Nächste Aufgabe: ' + String(n.row[3] || n.row[0]) };
+      return { art: 'aufgabe', id: String(n.row[0]), kopf: 'Nächste Aufgabe', titel: String(n.row[3] || n.row[0]), href, aria: 'Nächste Aufgabe: ' + String(n.row[3] || n.row[0]) };
     }
     const links = [{ text: 'Zurück zur Übersicht', href: 'index.html' }];
     if (c.plan !== false) links.push({ text: 'Weiter im Ausbildungsplan', href: 'ausbildungsplan.html' });
     return { art: 'fertig', kopf: 'Alle Aufgaben in diesem Lab geschafft', titel: String(c.reg[n.lab].name || ''), links };
   }
 
-  const CSS = '#wtBar{position:fixed;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:240;width:min(420px,calc(100vw - 24px));display:flex;align-items:stretch;gap:6px;padding:6px;border-radius:14px;border:1px solid var(--line,#38424d);background:var(--panel,#222830);color:var(--fg,#e8ecf0);font:14px/1.3 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.35)}'
+  const CSS = 'html[data-lmwt] #verBadge{display:none!important}#wtBar .wtK{display:none}#wtBar{position:fixed;left:0;right:0;margin:0 auto;bottom:calc(12px + env(safe-area-inset-bottom));z-index:240;width:min(420px,calc(100vw - 24px));display:flex;align-items:stretch;gap:6px;padding:6px;border-radius:14px;border:1px solid var(--line,#38424d);background:var(--panel,#222830);color:var(--fg,#e8ecf0);font:14px/1.3 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.35)}'
     + '#wtBar .wtMain{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:1px;min-height:44px;padding:6px 14px;border-radius:10px;border:1px solid transparent;background:var(--accent-bg,#0f5fb8);color:#fff;text-decoration:none;font:700 15px/1.25 system-ui,sans-serif}'
     + '#wtBar .wtMain small{display:block;font:500 12.5px/1.25 system-ui,sans-serif;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
     + '#wtBar .wtDone{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;padding:4px 6px}#wtBar .wtDone b{font-size:14px}#wtBar .wtLinks{display:flex;flex-wrap:wrap;gap:6px}'
     + '#wtBar .wtLinks a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid var(--line,#38424d);background:var(--panel2,#2c343e);color:var(--fg,#e8ecf0);text-decoration:none;font:600 13.5px system-ui,sans-serif}'
     + '#wtBar .wtX{flex:none;min-width:44px;min-height:44px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--mute,#9aa6b2);font:18px system-ui,sans-serif;cursor:pointer}'
     + '#wtBar a:hover,#wtBar .wtX:hover{filter:brightness(1.1)}#wtBar a:focus-visible,#wtBar .wtX:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}'
+    + '@media(max-width:640px){#wtBar{left:12px;right:auto;width:calc(100vw - 24px);margin:0;padding:4px;border-radius:12px;gap:4px}#wtBar .wtMain{min-height:44px;padding:4px 14px;flex-direction:row;align-items:center}#wtBar .wtMain small{display:none}#wtBar .wtDone{flex-direction:row;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:0 4px}#wtBar .wtDone b{font-size:13px}#wtBar .wtLinks a{padding:0 10px;font-size:13px}}'
+    + '@media(max-width:640px){html[data-lmwt="a"][data-lmfb] #wtBar{left:auto;right:12px;width:108px;margin:0;gap:0}html[data-lmwt="a"][data-lmfb] #wtBar .wtMain{padding:4px 6px;justify-content:center;font-size:14px}html[data-lmwt="a"][data-lmfb] #wtBar .wtMain>span:not(.wtK){display:none}html[data-lmwt="a"][data-lmfb] #wtBar .wtK{display:inline}html[data-lmwt="a"][data-lmfb] #wtBar .wtX{display:none}}'
     + '@media print{#wtBar{display:none!important}}';
 
   /* Leiste bauen (document-ähnliches Objekt mit createElement); onZu wird beim Schließen aufgerufen */
-  function bauen(doc, p, onZu) {
+  function bauen(doc, p, onZu, onGo) {
     const el = doc.createElement('div'); el.id = 'wtBar'; el.setAttribute('role', 'region'); el.setAttribute('aria-label', 'Weiter zur nächsten Aufgabe'); el.setAttribute('aria-live', 'polite');
     if (p.art === 'aufgabe') {
-      const a = doc.createElement('a'); a.className = 'wtMain'; a.href = p.href; a.setAttribute('aria-label', p.aria);
+      const a = doc.createElement('a'); a.className = 'wtMain'; a.href = p.href; a.setAttribute('aria-label', p.aria); a.onclick = e => { if (onGo) onGo(e, p); };
       const b = doc.createElement('span'); b.textContent = p.kopf + ' →'; a.appendChild(b);
+      const k = doc.createElement('span'); k.className = 'wtK'; k.textContent = 'Weiter →'; a.appendChild(k);
       const s = doc.createElement('small'); s.textContent = p.titel; a.appendChild(s);
       el.appendChild(a);
     } else {
@@ -129,24 +132,67 @@
   let bar = null, timer = null, poll = null;
   const zu = () => { try { return !!root.sessionStorage.getItem(ZU); } catch (e) { return false; } };
   const merke = () => { try { root.sessionStorage.setItem(ZU, '1'); } catch (e) {} };
-  const weg = () => { clearTimeout(timer); if (poll) { try { clearInterval(poll); } catch (e) {} poll = null; } if (bar) { bar.remove(); bar = null; } };
+  const flag = a => { try { const d = document.documentElement; if (d) { if (a) d.setAttribute('data-lmwt', a); else d.removeAttribute('data-lmwt'); } } catch (e) {} };   // Merker am <html>: Plakette weg, gemeinsame Zeile am Handy (a = Aufgabe, f = Abschluss)
+  const schmal = () => { try { return !!(root.matchMedia && root.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } };
+  const weg = () => { flag(''); clearTimeout(timer); if (poll) { try { clearInterval(poll); } catch (e) {} poll = null; } if (bar) { bar.remove(); bar = null; } };
   const lese = k => { try { return ls.getItem(k); } catch (e) { return null; } };
+  /* Einführung (Trainer-Angebot "Neu hier?", Trainer-Blase, Tutorial-Overlay) sichtbar? Dann wartet die Leiste (Reihenfolge: erst Einführung, dann "Nächste Aufgabe") */
+  const EINF = ['trOffer', 'trBub', 'tfTut'];
+  const einfuehrung = () => { try { return EINF.some(i => { const e = document.getElementById(i); return !!e && !e.hidden; }); } catch (e) { return false; } };
+  /* Klick auf "Nächste Aufgabe": läuft das Lab mit LabGoto, wird die Aufgabe ohne Neuladen geöffnet (Adresse und lm4.last werden nachgezogen);
+     Sondertasten (Strg, Meta, Shift, Alt, Mittelklick) und jeder Fehlschlag lassen den normalen Link arbeiten */
+  function wechsel(e, p) {
+    try {
+      if (e && (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey || (e.button != null && e.button > 0))) return;
+      if (typeof root.LabGoto !== 'function' || !p || !p.id) return;
+      let ok = false; try { ok = root.LabGoto(p.id) === true; } catch (x) { ok = false; }
+      if (!ok) return;
+      if (e && e.preventDefault) e.preventDefault();
+      weg();
+      if (!root.LabGoto.keepUrl) { try { root.history.replaceState(null, '', p.href); } catch (x) {} }
+      try { orig.call(ls, 'lm4.last', JSON.stringify({ file, task: p.id, t: Date.now() })); } catch (x) {}
+    } catch (x) {}
+  }
+  /* Oberkante der unteren Werkzeugleisten des Labs als Abstand in px: breite Elemente (mind. 60 % Breite, 32 bis 130 px hoch) am unteren Fensterrand; liegen mehrere
+     unmittelbar übereinander (LochLab: Kontextleiste #ctx über der Werkzeug-Navigation), zählen bis zu drei Stufen. 0, wenn nichts gefunden wird.
+     Die Rückmelde- und die Weiter-Leiste docken darüber an, damit sie nichts Bedienbares verdecken. */
+  function dockHoehe() {
+    try {
+      if (!document.elementsFromPoint) return 0;
+      const vw = root.innerWidth, vh = root.innerHeight; let top = vh;
+      for (let n = 0; n < 3; n++) {
+        const els = document.elementsFromPoint(vw / 2, top - 3); let hit = null;
+        for (let i = 0; i < els.length && !hit; i++) {
+          let e = els[i]; if (e.closest && e.closest('#fbStrip,#wtBar')) continue;
+          while (e && e !== document.body && e !== document.documentElement) {
+            const r = e.getBoundingClientRect();
+            if (r.height > 130) break;
+            if (r.width >= vw * 0.6 && r.height >= 32 && r.bottom >= top - 4 && r.bottom <= top + 4 && r.top < top - 8) hit = r;
+            e = e.parentElement;
+          }
+        }
+        if (!hit) break; top = hit.top;
+      }
+      return Math.min(Math.max(0, Math.ceil(vh - top)), 220);
+    } catch (e) { return 0; }
+  }
   /* Platz machen: steht die Rückmeldezeile (#fbStrip, unten links) da, sitzt die Leiste darüber, damit sich beide nie verdecken */
   function lage() {
     if (!bar) return;
-    let h = 0; try { const fb = document.getElementById('fbStrip'); if (fb) h = Math.ceil(fb.getBoundingClientRect().height) + 8; } catch (e) { h = 0; }
-    bar.style.bottom = 'calc(' + (12 + h) + 'px + env(safe-area-inset-bottom))';
+    let h = 0; try { const fb = document.getElementById('fbStrip'); if (fb && !(schmal() && bar.getAttribute('data-art') === 'a')) h = Math.ceil(fb.getBoundingClientRect().height) + 8; } catch (e) { h = 0; }   // am Handy teilen sich Rückmeldezeile und Weiter-Knopf eine Zeile (CSS), sonst gestapelt
+    bar.style.bottom = 'calc(' + (12 + h + dockHoehe()) + 'px + env(safe-area-inset-bottom))';
   }
-  function zeige(id) {
+  function zeige(id, n) {
     try {
       if (zu() || !document.body || document.getElementById('gate')) return;
+      if (einfuehrung()) { if ((n || 0) < 240) { clearTimeout(timer); timer = setTimeout(() => zeige(id, (n || 0) + 1), 500); } return; }
       try { if (root.Duell && typeof root.Duell.active === 'function' && root.Duell.active()) return; } catch (e) {}
       const p = planen({ rows: root.AUFGABEN, reg: root.LAB_REG, res: ergebnisse(lese('sim.done'), lese('lm4.tdone')), id, file, search });
       if (!p) return;
       weg();
       if (!document.getElementById('wtCss')) { const st = document.createElement('style'); st.id = 'wtCss'; st.textContent = CSS; document.head.appendChild(st); }
-      bar = bauen(document, p, () => { merke(); weg(); });
-      document.body.appendChild(bar); lage();
+      bar = bauen(document, p, () => { merke(); weg(); }, wechsel);
+      bar.setAttribute('data-art', p.art === 'aufgabe' ? 'a' : 'f'); document.body.appendChild(bar); flag(p.art === 'aufgabe' ? 'a' : 'f'); lage();
       if (typeof root.setInterval === 'function') poll = root.setInterval(lage, 500);
     } catch (e) {}
   }

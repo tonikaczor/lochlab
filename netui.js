@@ -424,6 +424,7 @@
 
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufrufe ?aufgabe=net1 (Startseite, Lernhefte) und ?bsp / ?bsp=bsp3 (Beispielauswahl) */
+  root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   try {
     const q = new URLSearchParams(location.search), qa = q.get('aufgabe');
     if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); }

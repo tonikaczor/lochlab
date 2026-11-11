@@ -596,6 +596,7 @@
   if (S.src == null) S.src = (D.examples.find(x => x.machine === S.mach) || D.examples[0]).src;
   buildTabs(); updatePal(); renderProg(); setTab(S.tab);
   /* Aufruf ?aufgabe=cnc1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
+  root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   try { const qa = new URLSearchParams(location.search).get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); } } catch (e) {}
   /* Aufruf ?bsp: gleich die Beispielauswahl zeigen */
   try { const qb = new URLSearchParams(location.search); if (qb.has('bsp') && !qb.get('aufgabe')) { if (BSP.length) { setTab('prog'); loadExample(BSP[0].ex); } setTab('bsp'); } } catch (e) {}

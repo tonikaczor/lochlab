@@ -52,6 +52,13 @@
     if (rest.length) tr.push({ t: 'Weitere Labs', s: 'Noch mehr zum Üben und Vertiefen.', labs: rest, pre: '' });
     return tr;
   }
+  /* Schritt "Projekte" für alle Berufe außer Elektroniker (v55.172): wird aus den registrierten Verbundprojekten abgeleitet (BerufReg.vbSummary, Quelle window.VB_INDEX),
+     gleicher Beruf-Filter und gleicher Stand wie die Projekte-Zeile der Startseite; nichts wird doppelt gepflegt. Elektroniker (egs) behält die Hub-Karte "Projekte" in der Spur "Verbundprojekte". */
+  function projTrack() {
+    const b = beruf(), BR = root.BerufReg; if (b === 'egs' || !BR || !BR.vbSummary) return null;
+    const sm = BR.vbSummary(b); if (!sm.n) return null;
+    return { t: 'Projekte', s: 'Ein ganzer Auftrag aus deinem Beruf: Jede Station liefert ihr Ergebnis an die nächste, am Ende gibt es Gesamttest und Zertifikat.', pre: 'Am besten nach den Labs, die ein Projekt braucht', list: sm.list };
+  }
   const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', els: 'Fortgeschritten', nts: 'Fortgeschritten', wsl: 'Fortgeschritten', ana: 'Fortgeschritten', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', pr: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten', sps: 'Mittel', pcb: 'Mittel', ant: 'Mittel', sen: 'Mittel', reg: 'Fortgeschritten', thm: 'Mittel', emv: 'Fortgeschritten', enr: 'Mittel', ds: 'Mittel', vb: 'Fortgeschritten' };
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
   const results = () => { const m = {}; [get('sim.done', {}), get('lm4.tdone', {})].forEach(o => Object.keys(o || {}).forEach(k => { const v = +o[k] || 0; if (v > (m[k] || 0)) m[k] = v; })); return m; };
@@ -102,6 +109,15 @@
       });
       h += '</div></div>';
     });
+    const PT = projTrack();
+    if (PT) {
+      h += `<div class="trk" id="lpProj"><h3>${esc(PT.t)}<small>${esc(PT.pre)}</small></h3><p>${esc(PT.s)}</p><div class="st">`;
+      PT.list.forEach((p, i) => {
+        const pct = p.fin ? 100 : p.n ? Math.round(100 * Math.min(p.done, p.n) / p.n) : 0, href = 'verbund.html?projekt=' + encodeURIComponent(p.id);
+        h += `<div class="step"><div><span class="no">${i + 1}</span><b>${esc((p.icon || '🧩') + ' ' + p.name)}</b></div><div class="meta"><span class="lvl">${p.fin ? 'Fertig' : p.started ? 'Läuft' : 'Neu'}</span><span>${p.done} von ${p.n} Stationen</span></div><div class="bar"><i style="width:${pct}%"></i></div><div class="go"><a class="pri" href="${esc(href)}">${p.fin ? 'Wiederholen' : p.started ? 'Weiter' : 'Projekt starten'}</a></div></div>`;
+      });
+      h += '</div></div>';
+    }
     h += '<button type="button" id="lpClose" style="display:block;width:100%;margin-top:12px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:600 14px system-ui;cursor:pointer">▲ Lernpfad zuklappen</button></div>';
     const sec = document.createElement('section'); sec.id = 'lernpfad'; sec.className = 'lp' + (open ? ' open' : ''); sec.innerHTML = h;
     top.appendChild(sec);
@@ -119,5 +135,5 @@
   }
   const run = () => { try { build(); } catch (e) { console.error(e); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(run, 60)); else setTimeout(run, 60);
-  root.Lernpfad = { build, stat, recommend, TRACKS, TRACKS_B, tracksFor };
+  root.Lernpfad = { build, stat, recommend, TRACKS, TRACKS_B, tracksFor, projTrack };
 })(window);

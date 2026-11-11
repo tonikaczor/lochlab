@@ -1486,6 +1486,7 @@
     renderSweep(); setTab(S.tab); requestAnimationFrame(frame);
     root.addEventListener('load', () => { if (['calc', 'help', 'spec', 'lay'].includes(S.tab)) renderExt(S.tab); });
     /* Aufrufparameter von Startseite, Lernpfad, Kampagne und Lernheften: ?aufgabe=em1, ?ex=Name, ?bsp, ?neu */
+    root.LabGoto = id => { try { if ((TK() || []).some(x => x.id === id)) { Promise.resolve(startTask(id)).catch(e => console.error(e)); return true; } } catch (e) {} return false; };
     try {
       const q = new URLSearchParams(location.search), qa = q.get('aufgabe'), qe = q.get('ex');
       if (qa && (TK() || []).some(x => x.id === qa)) setTimeout(() => startTask(qa), 250);

@@ -112,14 +112,42 @@
   const ls = root.localStorage, ST = root.Storage.prototype, orig = ST.setItem;
   const lesen = () => { try { return norm(JSON.parse(ls.getItem(KEY))); } catch (e) { return {}; } };
   const speichern = s => { try { orig.call(ls, KEY, JSON.stringify(s)); return true; } catch (e) { return false; } };
-  let strip = null, timer = null;
-  const weg = () => { clearTimeout(timer); if (strip) { strip.remove(); strip = null; } };
+  let strip = null, timer = null, poll = null;
+  const flag = on => { try { const d = document.documentElement; if (d) { if (on) d.setAttribute('data-lmfb', '1'); else d.removeAttribute('data-lmfb'); } } catch (e) {} };   // Merker am <html>: Versionsplakette weg, gemeinsame Zeile am Handy
+  const weg = () => { flag(false); clearTimeout(timer); if (poll) { try { clearInterval(poll); } catch (e) {} poll = null; } if (strip) { strip.remove(); strip = null; } };
+  /* Oberkante der unteren Werkzeugleisten des Labs als Abstand in px: breite Elemente (mind. 60 % Breite, 32 bis 130 px hoch) am unteren Fensterrand; liegen mehrere
+     unmittelbar übereinander (LochLab: Kontextleiste #ctx über der Werkzeug-Navigation), zählen bis zu drei Stufen. 0, wenn nichts gefunden wird.
+     Die Rückmelde- und die Weiter-Leiste docken darüber an, damit sie nichts Bedienbares verdecken. */
+  function dockHoehe() {
+    try {
+      if (!document.elementsFromPoint) return 0;
+      const vw = root.innerWidth, vh = root.innerHeight; let top = vh;
+      for (let n = 0; n < 3; n++) {
+        const els = document.elementsFromPoint(vw / 2, top - 3); let hit = null;
+        for (let i = 0; i < els.length && !hit; i++) {
+          let e = els[i]; if (e.closest && e.closest('#fbStrip,#wtBar')) continue;
+          while (e && e !== document.body && e !== document.documentElement) {
+            const r = e.getBoundingClientRect();
+            if (r.height > 130) break;
+            if (r.width >= vw * 0.6 && r.height >= 32 && r.bottom >= top - 4 && r.bottom <= top + 4 && r.top < top - 8) hit = r;
+            e = e.parentElement;
+          }
+        }
+        if (!hit) break; top = hit.top;
+      }
+      return Math.min(Math.max(0, Math.ceil(vh - top)), 220);
+    } catch (e) { return 0; }
+  }
+  const lage = () => { if (strip) strip.style.bottom = 'calc(' + (12 + dockHoehe()) + 'px + env(safe-area-inset-bottom))'; };
   function css() {
     if (document.getElementById('fbCss')) return;
     const st = document.createElement('style'); st.id = 'fbCss';
-    st.textContent = '#fbStrip{position:fixed;left:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:250;max-width:calc(100vw - 24px);display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px 6px 12px;border-radius:12px;border:1px solid var(--line,#38424d);background:var(--panel,#222830);color:var(--fg,#e8ecf0);font:13px/1.3 system-ui,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.3)}'
+    st.textContent = '#fbStrip{position:fixed;left:0;right:0;margin:0 auto;width:max-content;bottom:calc(12px + env(safe-area-inset-bottom));z-index:250;max-width:calc(100vw - 24px);display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:6px 8px 6px 12px;border-radius:12px;border:1px solid var(--line,#38424d);background:var(--panel,#222830);color:var(--fg,#e8ecf0);font:13px/1.3 system-ui,sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.3)}'
       + '#fbStrip button{min-height:44px;min-width:44px;padding:0 10px;border-radius:10px;border:1px solid var(--line,#38424d);background:var(--panel2,#2c343e);color:var(--fg,#e8ecf0);font:600 13px system-ui,sans-serif;cursor:pointer}'
       + '#fbStrip button:hover{filter:brightness(1.12)}#fbStrip button:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}#fbStrip .fbX{border-color:transparent;background:transparent;color:var(--mute,#9aa6b2);font-size:18px}'
+      + 'html[data-lmfb] #verBadge{display:none!important}'
+      + '@media(max-width:640px){html[data-lmwt="a"] #fbStrip{right:auto;width:calc(100vw - 24px - 114px);margin:0;gap:2px;padding:4px}html[data-lmwt="a"] #fbStrip button{min-width:0;padding:0 2px;font-size:12px}html[data-lmwt="a"] #fbStrip .fbX{min-width:36px}}'
+      + '@media(max-width:640px){#fbStrip{left:12px;right:12px;margin:0;width:auto;max-width:none;flex-wrap:nowrap;justify-content:space-between;gap:4px;padding:4px}#fbStrip>span:not([role]){display:none}#fbStrip button{flex:1 1 auto;min-width:44px;padding:0 6px;font-size:12.5px}#fbStrip .fbX{flex:none}}'
       + '@media print{#fbStrip{display:none}}';
     document.head.appendChild(st);
   }
@@ -137,7 +165,8 @@
       el.appendChild(b);
     });
     const x = document.createElement('button'); x.type = 'button'; x.className = 'fbX'; x.textContent = '×'; x.setAttribute('aria-label', 'Rückmeldung schließen'); x.onclick = weg; el.appendChild(x);
-    document.body.appendChild(el); strip = el;
+    document.body.appendChild(el); strip = el; flag(true); lage();
+    if (typeof root.setInterval === 'function') poll = root.setInterval(lage, 500);
     timer = setTimeout(weg, 30000);
   }
   function nachBearbeiten(ids) {

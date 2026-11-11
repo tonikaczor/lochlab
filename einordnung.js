@@ -78,9 +78,9 @@
   function css(doc) {
     if (doc.getElementById(CSSID)) return;
     var st = doc.createElement('style'); st.id = CSSID;
-    st.textContent = '#wzHint{margin:8px 0;padding:8px 6px 8px 12px;border:1px solid var(--line,#444);border-radius:10px;background:var(--panel,transparent);color:var(--fg,inherit);font-size:13.5px;line-height:1.45;box-sizing:border-box;max-width:100%;overflow-wrap:anywhere}'
-      + '#wzHint .wzTop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}#wzHint .wzTt{font-weight:700;margin:4px 0 2px}'
-      + '#wzHint .wzX{flex:none;min-width:44px;min-height:44px;margin:-8px -2px 0 0;border:0;background:transparent;color:var(--mute,#9aa6b2);font:inherit;font-size:22px;line-height:1;cursor:pointer;border-radius:10px}'
+    st.textContent = '#wzHint{margin:6px 0;padding:2px 6px 2px 12px;border:1px solid var(--line,#444);border-radius:10px;background:var(--panel,transparent);color:var(--fg,inherit);font-size:13.5px;line-height:1.45;box-sizing:border-box;max-width:100%;overflow-wrap:anywhere}'
+      + '#wzHint .wzTop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}#wzHint .wzTt{font:inherit;font-weight:700;margin:0;padding:4px 0;min-height:28px;border:0;background:transparent;color:inherit;cursor:pointer;text-align:left;flex:1}#wzHint .wzTt::after{content:" \\25B8";color:var(--mute,#9aa6b2)}#wzHint .wzTt[aria-expanded=true]::after{content:" \\25BE"}#wzHint .wzTop{align-items:center}#wzHint .wzB[hidden]{display:none}'
+      + '#wzHint .wzX{flex:none;min-width:44px;min-height:44px;margin:0 -2px 0 0;border:0;background:transparent;color:var(--mute,#9aa6b2);font:inherit;font-size:22px;line-height:1;cursor:pointer;border-radius:10px}'
       + '#wzHint .wzX:hover{color:var(--fg,inherit)}#wzHint .wzX:focus-visible,#wzHint a:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}'
       + '#wzHint p{margin:4px 6px 4px 0}#wzHint .wzK{display:block;font-size:12px;font-weight:700;color:var(--mute,#9aa6b2);text-transform:none;letter-spacing:.02em}'
       + '#wzHint a{color:var(--accent,#5fb0ff);font-weight:600;display:inline-block;min-height:24px}#wzHint .wzGo{margin:2px 0 4px}#wzHint .wzL{display:block;padding:2px 0}'
@@ -93,13 +93,17 @@
   function baue(doc, m, onClose) {
     var box = el(doc, 'section'); box.id = ID; box.setAttribute('role', 'note'); box.setAttribute('aria-label', 'Warum brauche ich das?');
     var top = el(doc, 'div', 'wzTop');
-    top.appendChild(el(doc, 'div', 'wzTt', 'Warum brauche ich das?'));
+    /* Standard: eingeklappt (eine Zeile), damit die Karte am Tablet nicht die halbe Arbeitsfläche verdeckt. Antippen klappt sie auf. */
+    var tt = el(doc, 'button', 'wzTt', 'Warum brauche ich das?'); tt.type = 'button'; tt.setAttribute('aria-expanded', 'false');
+    var body = el(doc, 'div', 'wzB'); body.hidden = true;
+    tt.addEventListener('click', function () { body.hidden = !body.hidden; tt.setAttribute('aria-expanded', body.hidden ? 'false' : 'true'); });
+    top.appendChild(tt);
     var x = el(doc, 'button', 'wzX', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Hinweis schließen, für dieses Lab merken');
     x.addEventListener('click', onClose);
     top.appendChild(x); box.appendChild(top);
 
-    var p = zeile(doc, 'Im Betrieb'); p.appendChild(doc.createTextNode(m.betrieb)); box.appendChild(p);
-    if (m.pruefung) { p = zeile(doc, 'Typisch in der Prüfung'); p.appendChild(doc.createTextNode(m.pruefung)); box.appendChild(p); }
+    var p = zeile(doc, 'Im Betrieb'); p.appendChild(doc.createTextNode(m.betrieb)); body.appendChild(p);
+    if (m.pruefung) { p = zeile(doc, 'Typisch in der Prüfung'); p.appendChild(doc.createTextNode(m.pruefung)); body.appendChild(p); }
     if (m.lf.length) {
       p = zeile(doc, m.lf.length === 1 ? 'Lernfeld in deinem Beruf' : 'Lernfelder in deinem Beruf');
       m.lf.slice(0, MAX_LF).forEach(function (x2) {
@@ -107,7 +111,7 @@
         a.href = 'ausbildungsplan.html#lf=' + encodeURIComponent(x2.id); p.appendChild(a);
       });
       if (m.lf.length > MAX_LF) p.appendChild(el(doc, 'span', 'wzL', 'und ' + (m.lf.length - MAX_LF) + ' weitere'));
-      box.appendChild(p);
+      body.appendChild(p);
     }
     if (m.projekte.length) {
       p = zeile(doc, 'Im Projekt');
@@ -117,10 +121,11 @@
         var a = el(doc, 'a', null, q(x3.name)); a.href = 'verbund.html?projekt=' + encodeURIComponent(x3.id); p.appendChild(a);
       });
       p.appendChild(doc.createTextNode(' (dieses Lab ist dort Station)' + (m.projekte.length > 3 ? ', dazu ' + (m.projekte.length - 3) + ' weitere' : '')));
-      box.appendChild(p);
+      body.appendChild(p);
     }
     var go = el(doc, 'p', 'wzGo'); var l = el(doc, 'a', null, 'Im Ausbildungsplan ansehen');
-    l.href = 'ausbildungsplan.html' + (m.lf.length ? '#lf=' + encodeURIComponent(m.lf[0].id) : ''); go.appendChild(l); box.appendChild(go);
+    l.href = 'ausbildungsplan.html' + (m.lf.length ? '#lf=' + encodeURIComponent(m.lf[0].id) : ''); go.appendChild(l); body.appendChild(go);
+    box.appendChild(body);
     return box;
   }
 

@@ -679,6 +679,7 @@ ${tr('Schnittkraft (vereinfacht)', 'Fc = A · kc', 'N')}${tr('Schnittleistung', 
   /* ============================================================ Start */
   function init() {
     buildTabs(); bindFrame();
+  root.LabGoto = id => { try { if (DEFS[id]) { openTask(id); return true; } } catch (e) {} return false; };
     let go = S.tab, task = null;
     try { const q = new URLSearchParams(location.search), a = q.get('aufgabe'), tb = q.get('tab'); if (a && DEFS[a]) { task = a; } else if (tb && TABS.some(x => x[0] === tb)) go = tb; if (q.has('bsp') && !(a && DEFS[a])) go = 'bsp'; } catch (e) {}
     if (task) { go = 'tasks'; S.task = task; }

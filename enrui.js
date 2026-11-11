@@ -1541,6 +1541,7 @@
     const lazyEx = () => { try { exampleList(); buildScen(); } catch (e) { console.error(e); } }; if (root.requestIdleCallback) root.requestIdleCallback(lazyEx, { timeout: 6000 }); else setTimeout(lazyEx, 2500);
     root.addEventListener('load', () => { if (S.tab === 'design' || S.tab === 'calc' || S.tab === 'help') renderExt(S.tab); });
     /* Aufrufparameter von Startseite, Lernpfad, Kampagne und Lernheften: ?aufgabe=en1, ?ex=Name, ?bsp, ?neu */
+    root.LabGoto = id => { try { if ((TK() || []).some(x => x.id === id)) { Promise.resolve(startTask(id)).catch(e => console.error(e)); return true; } } catch (e) {} return false; };
     try {
       const q = new URLSearchParams(location.search), qa = q.get('aufgabe'), qe = q.get('ex');
       if (qa && (TK() || []).some(x => x.id === qa)) setTimeout(() => startTask(qa), 250);

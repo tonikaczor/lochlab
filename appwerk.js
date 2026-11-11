@@ -352,6 +352,7 @@
   }
   root.AppWerk = { go, W, TASKS, DATA, runApp, rubric, makeZip, encodeApp, decodeApp, md, state: () => ({ S, NOTES, LIB }) };
   root.LabTrainerAPI = { lab: 'app', go, tab: () => tab, notes: () => NOTES.length, lib: () => LIB.length, code: () => S.code };
+  root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { go('aufgaben', id); return true; } } catch (e) {} return false; };
 
   /* ----- Start ----- */
   const init = () => {
