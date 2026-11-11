@@ -2,7 +2,7 @@
 /* Tonfunk Projekte (Verbund): Oberfläche des Hubs verbund.html (Paket U).
    Ansichten: Projektwahl, Projektansicht mit Phasenleiste, Stationsdetail, Gesamttest, Zertifikat (A4 quer), Abschlussbericht (A4 hoch),
    Teilen und Import (TFV1), Ausbilder (hinter dem Lehrer-Tor). Kern: window.Verbund (verbund.js), reine Hilfen: window.VerbundBar.pure (verbundbar.js).
-   URL-Parameter: ?projekt=garage (&station=vg3 | &final=1), ?aufgabe=vg3 (Deep-Link von Kampagne/Auswertung), ?bericht=garage, ?zertifikat=garage, ?ausbilder, #v=<code> (Import).
+   URL-Parameter: ?projekt=garage (&station=vg3 | &final=1), ?aufgabe=vg3 (Deep-Link von Kampagne/Auswertung), ?verbund=presse:vp2 (Link der Leiste auf eine Hub-Station), ?bericht=garage, ?zertifikat=garage, ?ausbilder, #v=<code> (Import).
    Schnittstellen nach außen: window.LabTrainerAPI (lab:'vb'), window.TaskTest, window.VerbundUI (Test, Sprache).
    Speicher: nur Verbund selbst (Präfix verbund.), außerdem lm4.name (vorbelegter Name), lm4.kamp.free (Ausbilder-Schalter, gleicher Schalter wie die Kampagne). */
 (function (root) {
@@ -14,7 +14,8 @@
   const hintKey = BP.hintKey || ((p, s) => 'verbund.ht.' + p + '.' + s);
   const hintMerge = BP.hintMerge || ((o, seed, step, text) => { const r = { s: seed, t: Object.assign({}, o && o.s === seed ? o.t : {}) }; r.t[step] = text; return r; });
   const parseVoice = BP.parseVoice || (() => null);
-  const LABN = BP.LAB_NAME || {}, LABI = BP.LAB_ICON || {};
+  const LABN = BP.LAB_NAME || {}, LABI = Object.assign({}, BP.LAB_ICON2 || {}, BP.LAB_ICON || {});
+  const BNAME = BP.BERUF_NAME || {}, BKURZ = BP.BERUF_KURZ || {};
   const labName = l => (root.LAB_REG && root.LAB_REG[l] && root.LAB_REG[l].name) || LABN[l] || l;
   const lsRaw = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
   const lsPut = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
@@ -67,6 +68,18 @@
     return null;
   }
   const doneLabs = pid => { const d = defOf(pid); return d && Array.isArray(d.labs) ? d.labs : []; };
+  /* Hub-Stationen (on:'vb') nennen statt "Projekte" die Labs ihrer Aufgaben */
+  const stLabs = sd => (BP.stLabs ? BP.stLabs(sd) : (sd && sd.on ? [sd.on] : []));
+  const stLabTxt = sd => (BP.stLabText ? BP.stLabText(sd, labName) : labName(sd && sd.on));
+  const stLabIco = sd => { const l = stLabs(sd).filter(x => x !== 'vb'); return l.length ? l.slice(0, 2).map(x => LABI[x] || '🧩').join('') : (LABI[sd && sd.on] || '🧩'); };
+  /* ---- Stations-Beruf: gewählter Beruf wie auf der Startseite (lm4.beruf); leer = noch nichts gewählt */
+  const curBeruf = () => { let b = ''; try { b = new URLSearchParams(location.search).get('beruf') || ''; } catch (e) {} if (!BNAME[b]) b = lsRaw('lm4.beruf', ''); return BNAME[b] ? b : ''; };
+  const berufeOf = pid => safe(() => (typeof V().berufe === 'function' ? V().berufe(pid) : []), []) || [];
+  const bName = b => BNAME[b] || b || '', bKurz = b => BKURZ[b] || b || '';
+  const bList = (l, kurz) => (BP.berufText ? BP.berufText(l, kurz) : (l || []).join(', '));
+  const defBeruf = d => (d && Array.isArray(d.beruf) && d.beruf.length ? d.beruf : ['egs', 'ige']);
+  const isCross = d => defBeruf(d).indexOf('alle') >= 0;
+  const prefs = () => safe(() => JSON.parse(lsRaw('verbund.prefs', '{}')), {}) || {};
 
   /* ============================================================ URL und Ansichten */
   function urlOf() {
@@ -76,6 +89,8 @@
     const s = q.toString(); return location.pathname + (s ? '?' + s : '');
   }
   function go(view, pid, sid, opt) {
+    if (S.hubRes && (view !== 'station' || S.hubRes.pid !== pid || S.hubRes.sid !== sid)) S.hubRes = null;
+    if (S.selfEdit && (view !== 'station' || S.selfEdit !== pid + ':' + sid)) S.selfEdit = null;
     Object.assign(S, { view, pid: pid || null, sid: sid || null });
     if (!(opt && opt.noPush)) { try { history.pushState(null, '', urlOf()); } catch (e) {} }
     render(); const pg = $('#pgMain'); if (pg) pg.scrollTop = 0;
@@ -86,6 +101,10 @@
     if (has('ausbilder')) S.view = 'ausbilder';
     else if (has('zertifikat')) { S.view = 'zert'; S.pid = q.get('zertifikat'); }
     else if (has('bericht')) { S.view = 'bericht'; S.pid = q.get('bericht'); }
+    else if (has('verbund') && BP.parseTarget) {                 /* ?verbund=<pid>:<sid>: so verlinkt die Leiste im Lab auf eine Hub-Station */
+      const t = BP.parseTarget(location.search, null), d = t ? defOf(t.pid) : null;
+      if (d) { S.pid = t.pid; if (stDef(t.pid, t.sid)) { S.view = 'station'; S.sid = t.sid; } else S.view = d.final && d.final.id === t.sid ? 'final' : 'project'; } else S.view = 'list';
+    }
     else if (has('aufgabe')) {
       const id = q.get('aufgabe'), pid = findPid(id);
       if (pid) { S.pid = pid; const d = defOf(pid); if (d.final && d.final.id === id) S.view = 'final'; else { S.view = 'station'; S.sid = id; } } else S.view = 'list';
@@ -116,16 +135,24 @@
   /* ============================================================ 1. Projektwahl */
   function renderList() {
     setTitle('Projekte');
-    const ps = projects(); let h = '<h1 class="vh1">Verbundprojekte</h1><p class="vlead">' + (['Kein', 'Ein', 'Zwei', 'Drei', 'Vier', 'Fünf', 'Sechs', 'Sieben', 'Acht', 'Neun', 'Zehn'][ps.length] || ps.length) + (ps.length === 1 ? ' Projekt' : ' Projekte') + ', in denen alle Labs zusammen ein Gerät oder eine Anlage fertigstellen. Jede Station bekommt die Ergebnisse der vorigen: Datenblatt, Schaltung, Platine, Messung, Programm.</p>';
-    if (!ps.length) h += '<div class="errbox"><b>Projektdaten fehlen.</b> Es ist kein Projekt geladen. Seite neu laden oder einmal mit Netz öffnen.</div>';
-    h += '<div class="pgrid">' + ps.map(p => {
-      const def = defOf(p.id) || p, st = stateOf(p.id), sta = st ? statusOf(p.id) : null, md = medalOf(sta);
-      return '<div class="pj' + (st ? ' on' : '') + '"><div class="top"><div class="ic">' + esc(def.icon || '🧩') + '</div><div style="flex:1;min-width:0"><h3>' + esc(def.name) + (isDemo(p.id) ? '<span class="demo">Demo</span>' : '') + '</h3>' + labsRow(def) + '</div>' + (sta ? ring(sta.pct) : '') + '</div>' +
+    const all = projects(), cur = curBeruf();
+    /* Mit Berufswahl: eigene Projekte zuerst, das berufsübergreifende hervorgehoben, die der anderen Berufe eingeklappt (begonnene bleiben oben). Ohne Wahl: alle wie bisher. */
+    const mine = p => { const d = defOf(p.id) || p, b = defBeruf(d); return !cur || b.indexOf(cur) >= 0 || b.indexOf('alle') >= 0 || !!stateOf(p.id); };
+    const ps = all.filter(mine), rest = all.filter(p => !mine(p)), elek = cur === 'egs' || cur === 'ige';
+    ps.sort((a, b) => (isCross(defOf(a.id)) ? 1 : 0) - (isCross(defOf(b.id)) ? 1 : 0));
+    let h = '<h1 class="vh1">Verbundprojekte</h1><p class="vlead">' + (['Kein', 'Ein', 'Zwei', 'Drei', 'Vier', 'Fünf', 'Sechs', 'Sieben', 'Acht', 'Neun', 'Zehn', 'Elf', 'Zwölf', 'Dreizehn'][ps.length] || ps.length) + (ps.length === 1 ? ' Projekt' : ' Projekte') + (elek ? ', in denen alle Labs zusammen ein Gerät oder eine Anlage fertigstellen. Jede Station bekommt die Ergebnisse der vorigen: Datenblatt, Schaltung, Platine, Messung, Programm.' : (cur ? ' für ' + esc(bName(cur)) : ' für alle Berufe') + ': ein Auftrag, viele Stationen. Jede Station rechnet mit den Ergebnissen der vorigen weiter.') + '</p>';
+    if (!all.length) h += '<div class="errbox"><b>Projektdaten fehlen.</b> Es ist kein Projekt geladen. Seite neu laden oder einmal mit Netz öffnen.</div>';
+    const card = p => {
+      const def = defOf(p.id) || p, st = stateOf(p.id), sta = st ? statusOf(p.id) : null, md = medalOf(sta), cross = isCross(def), foreign = !!cur && !cross && defBeruf(def).indexOf(cur) < 0;
+      return '<div class="pj' + (st ? ' on' : '') + '"' + (cross ? ' data-cross="1" style="border-color:var(--warn);background:linear-gradient(135deg,var(--panel),var(--panel2))"' : '') + '><div class="top"><div class="ic">' + esc(def.icon || '🧩') + '</div><div style="flex:1;min-width:0"><h3>' + esc(def.name) + (isDemo(p.id) ? '<span class="demo">Demo</span>' : '') + '</h3>' + labsRow(def) + '</div>' + (sta ? ring(sta.pct) : '') + '</div>' +
+        (cross ? '<p><span class="tag wa">🤝 Alle Berufe gemeinsam</span>' + (sta && sta.beruf ? ' <span class="tag">' + esc(bKurz(sta.beruf)) + (sta.solo ? '' : ' · Team') + '</span>' : '') + '</p>' : foreign || (cur && rest.length && Array.isArray(def.beruf)) ? '<p><span class="tag">' + esc(bList(defBeruf(def), true)) + '</span></p>' : '') +
         '<p class="story">' + esc(def.story || '') + '</p>' +
         (st && sta ? '<p>' + sta.done + ' von ' + sta.total + ' Stationen · ' + esc(lvName(def, st.level)) + ' · ' + esc(st.name || '') + (md ? ' · <span class="medal">' + md[0] + '</span>' : '') + '</p>' : '<p>' + (p.stations || (def.stations || []).length) + ' Stationen · ' + doneLabs(p.id).length + ' Labs</p>') +
         '<div class="acts">' + (st ? '<button class="btn pri" data-a="go-proj" data-pid="' + esc(p.id) + '">Weiter</button><button class="btn" data-a="start" data-pid="' + esc(p.id) + '">Neu starten</button>' : '<button class="btn pri" data-a="start" data-pid="' + esc(p.id) + '">Projekt starten</button>') + '</div></div>';
-    }).join('') +
+    };
+    h += '<div class="pgrid">' + ps.map(card).join('') +
       '<div class="pj add"><div class="ic">📥</div><h3>Bestehendes laden</h3><p>Code, Link oder Datei von einem Partner oder aus einer Sicherung.</p><div class="acts"><button class="btn" data-a="import">Laden …</button></div></div></div>' +
+      (rest.length ? '<details id="dRest" style="margin-top:16px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700">Projekte anderer Berufe (' + rest.length + ')</summary><div class="pgrid" style="margin-top:8px">' + rest.map(card).join('') + '</div></details>' : '') +
       '<p class="hint2" style="margin-top:16px">Die früheren Einzelprojekte (<a href="projekte.html" style="color:var(--accent)">Projekte</a>, <a href="projekt-ampel.html" style="color:var(--accent)">Ampel</a>) gibt es weiterhin.</p>';
     $('#view').innerHTML = h;
   }
@@ -133,26 +160,32 @@
   /* Neues Projekt: Name/Teamname und Stufe */
   function startSheet(pid) {
     const def = defOf(pid); if (!def) return; const st = stateOf(pid); let level = (st && st.level) || 2;
+    const bl = berufeOf(pid); let beruf = (st && st.beruf) || curBeruf(), solo = st && st.beruf ? !!st.solo : true; if (bl.indexOf(beruf) < 0) beruf = '';
     sheet(def.name + ' starten', (b, close) => {
       const draw = () => {
         b.innerHTML = (st ? '<div class="warnbox">Dieses Projekt läuft schon (' + esc(st.name || '') + '). Beim Neustart wird der Stand zurückgesetzt, eine Sicherung bleibt erhalten.</div>' : '') +
           '<label class="f"><span>Dein Name oder Teamname</span><input id="sName" type="text" autocomplete="name" value="' + esc((st && st.name !== 'Demo' ? st.name : lsRaw('lm4.name', '')) || '') + '"></label>' +
           '<p class="hint2" style="margin-top:-4px">Teamarbeit: Gebt auf beiden Geräten denselben Teamnamen und dieselbe Stufe ein, dann habt ihr dieselben Zahlen und könnt Stationen per Code tauschen.</p>' +
+          (bl.length ? '<label class="f"><span>Dein Beruf (du bearbeitest die Stationen dieses Berufs)</span><select id="sBeruf"><option value="">– bitte wählen –</option>' + bl.map(b => '<option value="' + esc(b) + '"' + (b === beruf ? ' selected' : '') + '>' + esc(bName(b)) + '</option>').join('') + '</select></label>' +
+            '<div class="lvsel" role="radiogroup" aria-label="Arbeitsweise">' + [[1, '👤', 'Allein', 'Die Stationen der anderen Berufe liefern die Kollegen mit Musterwerten. Für dich zählen deine Stationen und der Gesamttest.'], [0, '👥', 'Im Team', 'Jeder Beruf bearbeitet seine Stationen auf dem eigenen Gerät. Ihr tauscht die Ergebnisse über „Teilen“ aus, alle Stationen zählen.']].map(m => '<button data-solo="' + m[0] + '" class="' + (solo === !!m[0] ? 'on' : '') + '" role="radio" aria-checked="' + (solo === !!m[0]) + '"><span style="font-size:22px">' + m[1] + '</span><div><b>' + m[2] + '</b><small>' + m[3] + '</small></div></button>').join('') + '</div>' : '') +
           '<div class="lvsel" role="radiogroup" aria-label="Stufe">' + [1, 2, 3].map(l => '<button data-l="' + l + '" class="' + (level === l ? 'on' : '') + '" role="radio" aria-checked="' + (level === l) + '"><span style="font-size:22px">' + ['🌱', '🔧', '🏆'][l - 1] + '</span><div><b>' + esc(lvName(def, l)) + ' (bestehen ab ' + passOf(def, l) + ' %)</b><small>' + [
             'Starthilfen, weitere Toleranzen, glatte Zahlen. Punkte × 1.', 'Normale Toleranzen, du baust vieles selbst. Punkte × 1,25.', 'Enge Toleranzen, Zusatzanforderungen, ein eingebauter Fehler in der Messstation. Punkte × 1,5.'][l - 1] + '</small></div></button>').join('') + '</div>' +
           '<div class="btns"><button class="btn pri" id="sGo">Starten</button><button class="btn" id="sNo">Abbrechen</button></div>';
-        $$('.lvsel button', b).forEach(x => { x.onclick = () => { level = +x.dataset.l; const nm = $('#sName', b).value; draw(); $('#sName', b).value = nm; }; });
+        $$('.lvsel button', b).forEach(x => { x.onclick = () => { if (x.dataset.solo != null) solo = x.dataset.solo === '1'; else level = +x.dataset.l; const nm = $('#sName', b).value; draw(); $('#sName', b).value = nm; }; });
+        const sb = $('#sBeruf', b); if (sb) sb.onchange = () => { beruf = sb.value; };
         $('#sNo', b).onclick = close;
         $('#sGo', b).onclick = () => {
           const name = $('#sName', b).value.trim().replace(/\s+/g, ' ');
           if (name.length < 2) { toast('Bitte einen Namen oder Teamnamen eintragen.'); return; }
+          if (bl.length && !beruf) { toast('Bitte wähle deinen Beruf.'); return; }
           const had = !!st; close();
           if (had) safe(() => V().reset(pid, {}), null);
-          const r = safe(() => V().start(pid, { name, level, again: true }), null);
+          const r = safe(() => V().start(pid, bl.length ? { name, level, again: true, beruf, solo } : { name, level, again: true }), null);
           if (r && r.pending) { toast(r.msg || 'Die Prüfkerne werden geladen.'); render(); return; }   /* Lazy-Laden (E4): kein Fehler, die Aktion läuft nach dem Laden von selbst */
           if (!r || !r.ok) { toast('Das Projekt konnte nicht gestartet werden' + (r && (r.msg || r.err) ? ': ' + (r.msg || r.err) : '.')); render(); return; }
           if (!lsRaw('lm4.name', '')) lsPut('lm4.name', name);
-          toast('Projekt gestartet. Lies das Lastenheft und beginne mit Station 1.'); go('project', pid);
+          if (bl.length && !lsRaw('lm4.beruf', '')) lsPut('lm4.beruf', beruf);
+          toast(bl.length ? 'Projekt gestartet. Lies das Lastenheft und beginne mit der ersten Station deines Berufs.' : 'Projekt gestartet. Lies das Lastenheft und beginne mit Station 1.'); go('project', pid);
         };
       };
       draw();
@@ -163,8 +196,8 @@
   function phaseChips(pid, sta, selSid) {
     const def = defOf(pid), st = stateOf(pid);
     const chips = sta.stations.map((s, i) => {
-      const sd = stDef(pid, s.id) || {}, m = STATE[s.state] || STATE.open;
-      return '<button class="ph1 ' + esc(s.state) + (s.id === selSid ? ' sel' : '') + '" data-a="go-st" data-pid="' + esc(pid) + '" data-sid="' + esc(s.id) + '" aria-label="Station ' + (i + 1) + ': ' + esc(s.title) + ', ' + m[1] + '"><span class="z">' + m[0] + '</span><span class="n">STATION ' + (i + 1) + '</span><span class="l">' + (LABI[s.on] || '🧩') + '</span><span class="t">' + esc(s.title) + '</span><span class="p">' + (s.state === 'locked' ? 'gesperrt' : s.state === 'open' ? labName(s.on) : Math.round(s.pct || 0) + ' %') + '</span></button>';
+      const sd = stDef(pid, s.id) || {}, m = STATE[s.state] || STATE.open, fremd = s.own === false, bk = s.beruf ? bKurz(s.beruf[0]) : '';
+      return '<button class="ph1 ' + esc(s.state) + (s.id === selSid ? ' sel' : '') + '" data-a="go-st" data-pid="' + esc(pid) + '" data-sid="' + esc(s.id) + '"' + (fremd ? ' data-fremd="1" style="opacity:' + (s.state === 'locked' ? '.5' : '.78') + ';border-style:dotted"' : '') + ' aria-label="Station ' + (i + 1) + ': ' + esc(s.title) + (bk ? ', ' + esc(bk) : '') + ', ' + (s.kollege ? 'von den Kollegen geliefert' : m[1]) + '"><span class="z">' + (s.kollege ? '🤝' : m[0]) + '</span><span class="n">STATION ' + (i + 1) + '</span><span class="l">' + stLabIco(sd) + '</span><span class="t">' + esc(s.title) + '</span><span class="p">' + (s.kollege ? 'geliefert' : s.state === 'locked' ? (fremd ? esc(bk) : 'gesperrt') : s.state === 'open' ? esc(fremd ? bk : stLabs(sd)[0] === 'vb' ? (bk || labName('vb')) : labName(stLabs(sd)[0])) : Math.round(s.pct || 0) + ' %') + '</span></button>';
     });
     const fs = sta.finalState, fm = STATE[fs] || STATE.locked;
     chips.push('<button class="ph1 fin ' + esc(fs) + '" data-a="go-final" data-pid="' + esc(pid) + '" aria-label="Gesamttest, ' + fm[1] + '"><span class="z">' + fm[0] + '</span><span class="n">ABSCHLUSS</span><span class="l">🏁</span><span class="t">' + esc((def.final && def.final.title) || 'Gesamttest') + '</span><span class="p">' + (fs === 'locked' ? 'gesperrt' : fs === 'open' ? 'bereit' : Math.round(sta.finalPct || 0) + ' %') + '</span></button>');
@@ -173,12 +206,49 @@
   function lastenheftHtml(pid, open) {
     const le = safe(() => V().get(pid + '.lastenheft'), null); if (!le) return '';
     const rows = humanRows(le.params || {});
-    return '<div class="sec"><h3>Lastenheft</h3><details id="dLast"' + (open ? ' open' : '') + '><summary>Die Vorgaben für dein Gerät</summary>' + (Array.isArray(le.text) ? '<ul>' + le.text.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') + (rows.length ? '<details><summary>Zahlen als Tabelle</summary><table class="kv2">' + rows.map(r => '<tr><td>' + esc(r.k) + '</td><td>' + esc(r.v) + '</td></tr>').join('') + '</table></details>' : '') + '</details></div>';
+    return '<div class="sec"><h3>Lastenheft</h3><details id="dLast"' + (open ? ' open' : '') + '><summary>Die Vorgaben für dein Gerät</summary>' + (Array.isArray(le.text) ? '<ul>' + le.text.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') + (Array.isArray(le.text) && le.text.some(x => /\(A\)/.test(String(x))) ? '<p class="hint2">(A) = Annahme für diese Übung.</p>' : '') + (rows.length ? '<details><summary>Zahlen als Tabelle</summary><table class="kv2">' + rows.map(r => '<tr><td>' + esc(r.k) + '</td><td>' + esc(r.v) + '</td></tr>').join('') + '</table></details>' : '') + '</details></div>';
+  }
+  /* Abzeichen ohne Eintrag in badges.js (vb_<projekt>_start/halb/fertig/gold und die übergreifenden vb_…): lesbarer Name statt roher Kennung */
+  const BG = { start: ['Gestartet', 'Du hast die erste Station dieses Projekts übergeben.'], halb: ['Halbzeit', 'Mindestens die Hälfte deiner Stationen in diesem Projekt ist bestanden.'], fertig: ['Abgeschlossen', 'Den Gesamttest dieses Projekts bestanden.'], gold: ['Gold', 'Dieses Projekt mit Gold abgeschlossen (mindestens 95 Prozent der Punkte).'] };
+  const BGL = { vb_zwei: ['Zwei Projekte fertig', 'Zwei Verbundprojekte abgeschlossen.'], vb_alle: ['Alle Projekte deines Berufs', 'Alle Projekte deines Berufs abgeschlossen.'], vb_profi: ['Projektprofi', 'Ein Projekt auf Stufe Profi abgeschlossen.'], vb_ohnehilfe: ['Ohne Hilfe', 'Ein Projekt ab Stufe 2 ohne Tipps und Hilfen abgeschlossen.'], vb_uebergabe: ['Übergabe-Routine', 'Zehn Ergebnisse an die nächste Station übergeben.'], vb_team: ['Teamarbeit', 'Ein Projekt im Team bearbeitet.'] };
+  function badgeText(id) {
+    if (BGL[id]) return BGL[id];
+    const m = /^vb_([a-z0-9]+)_(start|halb|fertig|gold)$/.exec(id);
+    if (m) { const p = (safe(() => V().projects(), []) || []).filter(x => x.id === m[1])[0], b = BG[m[2]]; return [b[0] + (p ? ': ' + p.name : ''), b[1]]; }
+    return [id, id];
   }
   function badgesHtml(pid) {
     const ids = safe(() => V().badges(pid), []) || []; if (!ids.length) return '';
     const defs = {}; safe(() => (root.Badges && root.Badges.DEFS || []).forEach(d => { defs[d[0]] = d; }), 0);
-    return '<div class="sec"><h3>Abzeichen in diesem Projekt</h3><div class="row2">' + ids.map(id => { const d = defs[id]; return '<span class="tag ok" title="' + esc(d ? d[3] : id) + '">' + (d ? esc(d[1]) + ' ' + esc(d[2]) : esc(id)) + '</span>'; }).join('') + '</div></div>';
+    return '<div class="sec"><h3>Abzeichen in diesem Projekt</h3><div class="row2">' + ids.map(id => { const d = defs[id]; const n = d ? null : badgeText(id); return '<span class="tag ok" title="' + esc(d ? d[3] : n[1]) + '">' + (d ? esc(d[1]) + ' ' + esc(d[2]) : esc(n[0])) + '</span>'; }).join('') + '</div></div>';
+  }
+  /* Stations-Beruf: Hinweis in der Projektansicht. Ohne Beruf einmal fragen; mit Beruf den Modus zeigen. */
+  function berufBox(pid, st, sta) {
+    const bl = berufeOf(pid); if (!bl.length || isDemo(pid)) return '';
+    if (!st.beruf) {
+      const pf = prefs(); if (pf.berufAsk && pf.berufAsk[pid] === st.seed) return '<p class="hint2">Du bearbeitest alle Stationen selbst. <button class="btn s" data-a="beruf-change" data-pid="' + esc(pid) + '">Beruf wählen</button></p>';
+      const cur = bl.indexOf(curBeruf()) >= 0 ? curBeruf() : '';
+      return '<div class="sec" id="berufAsk"><h3>Welchen Beruf lernst du?</h3><p>In diesem Projekt gehört jede Station zu einem Beruf. Wähle deinen, dann bearbeitest du deine Stationen und die Kollegen liefern den Rest.</p><label class="f"><span>Dein Beruf</span><select id="baBeruf"><option value="">– bitte wählen –</option>' + bl.map(b => '<option value="' + esc(b) + '"' + (b === cur ? ' selected' : '') + '>' + esc(bName(b)) + '</option>').join('') + '</select></label>' +
+        '<div class="btns"><button class="btn pri" data-a="beruf-set" data-solo="1" data-pid="' + esc(pid) + '">Allein: Kollegen liefern Musterwerte</button><button class="btn" data-a="beruf-set" data-solo="0" data-pid="' + esc(pid) + '">Im Team: Tausch per Code</button><button class="btn" data-a="beruf-none" data-pid="' + esc(pid) + '">Alle Stationen selbst</button></div></div>';
+    }
+    const own = sta.stations.filter(s => s.own !== false).length;
+    return '<div class="sec" id="berufInfo"><h3>Dein Beruf: ' + esc(bName(st.beruf)) + '</h3><p>' + (st.solo ? 'Du arbeitest allein an deinen ' + own + ' Stationen. Die Stationen der anderen Berufe liefern die Kollegen mit Musterwerten (🤝); du kannst sie ansehen und freiwillig selbst bearbeiten. Für Punkte, Fortschritt und Zertifikat zählen deine Stationen und der Gesamttest.' : 'Teamarbeit: Du bearbeitest deine ' + own + ' Stationen, die anderen Berufe ihre. Tauscht die Ergebnisse über „Teilen“ und „Laden“ aus; gleicher Teamname und gleiche Stufe sind nötig. Für das Team zählen alle Stationen.') + '</p><div class="btns" style="margin-top:6px"><button class="btn s" data-a="beruf-change" data-pid="' + esc(pid) + '">Beruf oder Arbeitsweise ändern</button></div></div>';
+  }
+  function berufSheet(pid) {
+    const st = stateOf(pid), bl = berufeOf(pid); if (!st || !bl.length) return;
+    sheet('Beruf und Arbeitsweise', (b, close) => {
+      b.innerHTML = '<label class="f"><span>Dein Beruf</span><select id="bsBeruf">' + bl.map(x => '<option value="' + esc(x) + '"' + (x === (st.beruf || curBeruf()) ? ' selected' : '') + '>' + esc(bName(x)) + '</option>').join('') + '</select></label><p class="hint2">Beim Wechsel bleiben deine Übergaben erhalten. Stationen, die du selbst übergeben hast, überschreiben die Kollegen nicht.</p>' +
+        '<div class="btns"><button class="btn pri" data-m="1">Allein (Kollegen liefern)</button><button class="btn" data-m="0">Im Team</button><button class="btn" data-m="x">Alle Stationen selbst</button></div>';
+      $$('button[data-m]', b).forEach(x => { x.onclick = () => { const m = x.dataset.m, v = $('#bsBeruf', b).value; close(); berufSet(pid, m === 'x' ? null : v, m === '1'); }; });
+    });
+  }
+  function berufSet(pid, beruf, solo) {
+    const st = stateOf(pid); if (!st) return;
+    const r = safe(() => V().setBeruf(pid, beruf, solo), null);
+    if (!r || !r.ok) { toast((r && r.msg) || 'Der Beruf konnte nicht gesetzt werden.'); return; }
+    const pf = prefs(); pf.berufAsk = Object.assign({}, pf.berufAsk); if (beruf) delete pf.berufAsk[pid]; else pf.berufAsk[pid] = st.seed; lsPut('verbund.prefs', JSON.stringify(pf));
+    if (beruf && !lsRaw('lm4.beruf', '')) lsPut('lm4.beruf', beruf);
+    S.selfEdit = null; toast(beruf ? (solo ? 'Die Kollegen haben geliefert, was schon möglich ist. Weiter mit deiner Station.' : 'Teamarbeit: Tauscht eure Stationen über „Teilen“.') : 'Du bearbeitest alle Stationen selbst.'); render();
   }
   function renderProject() {
     const pid = S.pid, def = defOf(pid); if (!def) { go('list', null, null, { noPush: true }); return; }
@@ -192,7 +262,8 @@
     }
     const sta = statusOf(pid); if (!sta) { $('#view').innerHTML = h + '<div class="errbox">Der Projektstand konnte nicht gelesen werden. Setze das Projekt zurück oder lade eine Sicherung.</div><div class="btns"><button class="btn danger" data-a="reset" data-pid="' + esc(pid) + '">Zurücksetzen</button></div>'; return; }
     const md = medalOf(sta), nxt = safe(() => V().next(pid), null), stale = sta.stations.filter(s => s.state === 'stale');
-    h += '<div class="sec"><h3>Fortschritt</h3><div class="bar"><i style="width:' + Math.round(sta.total ? 100 * sta.done / sta.total : 0) + '%"></i></div><div class="stats"><span><b>' + sta.done + '</b> von ' + sta.total + ' Stationen</span><span><b>' + sta.points + '</b> von ' + sta.maxPoints + ' Punkten</span><span>' + esc(lvName(def, st.level)) + ' · ' + esc(st.name || '') + '</span>' + (md ? '<span class="medal">' + md[0] + ' ' + md[1] + '</span>' : '') + '</div></div>';
+    h += berufBox(pid, st, sta);
+    h += '<div class="sec"><h3>Fortschritt</h3><div class="bar"><i style="width:' + Math.round(sta.total ? 100 * sta.done / sta.total : 0) + '%"></i></div><div class="stats"><span><b>' + sta.done + '</b> von ' + sta.total + (sta.beruf && sta.solo ? ' eigenen' : '') + ' Stationen</span><span><b>' + sta.points + '</b> von ' + sta.maxPoints + ' Punkten</span><span>' + esc(lvName(def, st.level)) + ' · ' + esc(st.name || '') + '</span>' + (md ? '<span class="medal">' + md[0] + ' ' + md[1] + '</span>' : '') + '</div></div>';
     if (stale.length) h += '<div class="warnbox"><b>Eingang geändert:</b> ' + stale.map(s => 'Station ' + (sta.stations.indexOf(s) + 1) + ' (' + esc(s.title) + ')').join(', ') + '. Dein Ergebnis bleibt erhalten, bitte neu prüfen und übergeben.</div>';
     h += phaseChips(pid, sta, null);
     const nSt = nxt && nxt !== 'final' ? sta.stations.find(s => s.id === nxt) : null;
@@ -215,31 +286,137 @@
     if (!st) { $('#view').innerHTML = h + '<div class="warnbox">Dieses Projekt wurde noch nicht gestartet.</div><div class="btns"><button class="btn pri" data-a="start" data-pid="' + esc(pid) + '">Projekt starten</button></div>'; return; }
     const sta = statusOf(pid), info = sta && sta.stations.find(x => x.id === sid), idx = sta ? sta.stations.findIndex(x => x.id === sid) : -1;
     const state = (info && info.state) || 'open', m = STATE[state] || STATE.open, locked = state === 'locked' && !isFree();
-    h += '<h1 class="vh1">' + (LABI[sd.on] || '') + ' Station ' + (idx + 1) + ': ' + esc(sd.title) + '</h1><p class="vlead">' + esc(labName(sd.on)) + ' · <span class="tag ' + (state === 'passed' ? 'ok' : state === 'failed' || state === 'stale' ? 'wa' : '') + '">' + m[0] + ' ' + m[1] + (info && info.pct != null && state !== 'open' && state !== 'locked' ? ' · ' + Math.round(info.pct) + ' %' : '') + '</span>' + (info && info.hints ? ' · Tipps: ' + info.hints : '') + '</p>';
+    const fremd = !!(info && info.own === false), kol = !!(info && info.kollege), self = fremd && !!S.selfEdit && S.selfEdit === pid + ':' + sid, kolView = fremd && st.solo && !self && (kol || !(info && info.delivered));
+    h += '<h1 class="vh1">' + stLabIco(sd) + ' Station ' + (idx + 1) + ': ' + esc(sd.title) + '</h1><p class="vlead">' + esc(stLabTxt(sd)) + (Array.isArray(sd.beruf) && sd.beruf.length ? ' · <span class="tag">' + esc(bList(sd.beruf, true)) + '</span>' : '') + ' · <span class="tag ' + (state === 'passed' ? 'ok' : state === 'failed' || state === 'stale' ? 'wa' : '') + '">' + m[0] + ' ' + m[1] + (info && info.pct != null && state !== 'open' && state !== 'locked' ? ' · ' + Math.round(info.pct) + ' %' : '') + '</span>' + (info && info.hints ? ' · Tipps: ' + info.hints : '') + '</p>';
     if (sta) h += phaseChips(pid, sta, sid);
+    if (fremd) h += kollegeHtml(pid, sid, sd, st, info, kol, self);
     h += '<div class="sec"><h3>Auftrag</h3><p>' + esc(sd.text || '') + '</p></div>';
     const ins = Array.isArray(sd.in) ? sd.in : [];
     h += '<div class="sec"><h3>Eingang</h3><ul class="inl">' + ['' + pid + '.lastenheft'].concat(ins).map(s => {
       const ok = safe(() => V().has(s), false), rows = ok ? slotRows(s) : [];
       return '<li><span class="tag ' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓' : 'fehlt') + '</span><b>' + esc(s) + '</b>' + (ok ? '' : '<span style="color:var(--mute);font-size:13px">noch nicht übergeben</span>') + (rows.length ? '<details style="width:100%"><summary>Daten ansehen</summary>' + tbl(rows) + '</details>' : '') + '</li>';
     }).join('') + '</ul></div>';
+    const hub = isHub(sd); if (hub) h += hubHtml(pid, sid, def, st, sd, info, locked, kolView);
     const outOk = !!(info && info.delivered) || safe(() => V().has(sd.out), false), res0 = outOk ? safe(() => V().check(pid, sid), null) : null, res = res0 && res0.ok !== false ? res0 : null;
     h += '<div class="sec"><h3>Ausgang</h3><p><b>' + esc(sd.out || '') + '</b> (' + esc(sd.type || '') + ') ' + (outOk ? '<span class="tag ok">übergeben</span>' : '<span class="tag">noch nicht übergeben</span>') + '</p>' + (outOk ? '<details><summary>Daten ansehen</summary>' + tbl(slotRows(sd.out)) + '</details>' : '') +
-      (res ? '<p><b>Prüfergebnis der letzten Übergabe: ' + Math.round(res.pct) + ' %</b> (bestehen ab ' + ((info && info.pass != null) ? info.pass : passOf(def, st.level, sd)) + ' %)</p>' + linesHtml(res) : '<p class="hint2">Noch keine Übergabe. Arbeite im Lab und gib dort mit „Übergeben“ ab.</p>') + '</div>';
+      (res ? '<p><b>Prüfergebnis der letzten Übergabe: ' + Math.round(res.pct) + ' %</b> (bestehen ab ' + ((info && info.pass != null) ? info.pass : passOf(def, st.level, sd)) + ' %)</p>' + linesHtml(res) : '<p class="hint2">' + (hub ? 'Noch keine Übergabe. Fülle oben das Formular aus und gib mit „Übergeben“ ab.' : 'Noch keine Übergabe. Arbeite im Lab und gib dort mit „Übergeben“ ab.') + '</p>') + '</div>';
     const hs = info && info.hints || 0, cached = safe(() => JSON.parse(lsRaw(hintKey(pid, sid), 'null')), null);
-    h += '<div class="btns">' + (locked ? '<button class="btn pri" disabled>Gesperrt: erst die Vorstation bestehen</button>' : '<a class="btn pri" data-a="lab" data-pid="' + esc(pid) + '" data-sid="' + esc(sid) + '" href="' + esc(labUrl(sd.on, pid, sid)) + '">Im ' + esc(labName(sd.on)) + ' öffnen</a>') +
+    if (kolView) { $('#view').innerHTML = h + (locked ? '<p class="hint2">Die Kollegen liefern diese Station, sobald die Stationen davor bestanden sind.</p>' : ''); return; }
+    h += '<div class="btns">' + (locked ? '<button class="btn pri" disabled>Gesperrt: erst die Vorstation bestehen</button>' : hub ? '' : '<a class="btn pri" data-a="lab" data-pid="' + esc(pid) + '" data-sid="' + esc(sid) + '" href="' + esc(labUrl(sd.on, pid, sid)) + '">Im ' + esc(labName(sd.on)) + ' öffnen</a>') +
       '<button class="btn" data-a="hint">💡 Tipp (' + hs + '/3)</button>' + (cached && cached.t && cached.s === st.seed && Object.keys(cached.t).length ? '<button class="btn" data-a="hint-old">Bisherige Tipps</button>' : '') +
+      (hub && !locked && typeof sd.solution === 'function' && (hs >= 3 || isFree()) ? '<button class="btn" data-a="hub-sol">Musterlösung eintragen</button>' : '') +
       (outOk && info && info.pct > 0 ? '<button class="btn" data-a="give">Abgeben</button>' : '') + (outOk ? '<button class="btn danger" data-a="rstation">Station zurücksetzen</button>' : '') + '</div>';
     if (locked) h += '<p class="hint2">Gesperrt, weil die Vorstation noch nicht bestanden ist. Der Ausbilder kann alle Stationen freischalten.</p>';
     $('#view').innerHTML = h;
+  }
+  /* ---- Station eines anderen Berufs: Kasten "von den Kollegen geliefert" (Einzelmodus) bzw. Hinweis auf den Tausch (Team) */
+  function kollegeHtml(pid, sid, sd, st, info, kol, self) {
+    const wer = bList(sd.beruf, false) || 'Kollegen';
+    if (!st.solo) return '<div class="sec" id="kolBox"><h3>Station der Kollegen (' + esc(wer) + ')</h3><p>' + (info && info.delivered ? 'Das Ergebnis liegt vor.' : 'Im Team bearbeiten die Kollegen diese Station auf ihrem Gerät. Lade ihr Ergebnis mit „Laden“, sobald sie es mit „Teilen“ geschickt haben.') + ' Du darfst sie auch selbst bearbeiten.</p><div class="btns" style="margin-top:6px"><button class="btn s" data-a="import">Ergebnis laden …</button></div></div>';
+    let h = '<div class="sec" id="kolBox" style="border-color:var(--warn)"><h3>🤝 Von den Kollegen geliefert (' + esc(wer) + ')</h3>';
+    if (kol) {
+      const d = safe(() => V().get(sd.out), null), rows = d && BP.kollegeRows ? BP.kollegeRows(sd, d, hubCtx(pid, sid)) : (d ? humanRows(d) : []);
+      h += '<p>' + esc(sd.kollege || 'Die Kollegen haben diese Station bearbeitet und ihr Ergebnis übergeben.') + '</p>' + (rows.length ? tbl(rows) : '') + '<p class="hint2">Musterwerte der Kollegen, passend zu deinem Lastenheft und zu deinen bisherigen Übergaben. Diese Station zählt nicht für deine Punkte.</p>';
+      if (!self) h += '<div class="btns" style="margin-top:6px"><button class="btn s" data-a="kol-self">Trotzdem selbst bearbeiten (freiwillig, ohne Punkte)</button></div>';
+    } else if (info && info.delivered) h += '<p>Du hast diese Station selbst übergeben (freiwillig, ohne Punkte). Die Folgestationen rechnen mit deinen Werten.</p><div class="btns" style="margin-top:6px"><button class="btn s" data-a="kol-give">Wieder von den Kollegen liefern lassen</button></div>';
+    else h += '<p>Diese Station gehört zu einem anderen Beruf. ' + (info && info.state === 'locked' ? 'Die Kollegen liefern, sobald die Stationen davor bestanden sind.' : 'Die Kollegen liefern gleich.') + '</p>' + (self ? '' : '<div class="btns" style="margin-top:6px"><button class="btn s" data-a="kol-self">Trotzdem selbst bearbeiten (freiwillig, ohne Punkte)</button></div>');
+    if (self && kol) h += '<p class="hint2">Du bearbeitest die Station jetzt selbst. Solange du nichts übergibst, gelten die Werte der Kollegen.</p>';
+    return h + '</div>';
+  }
+  /* ---- Hub-Station (on:'vb', Typ vb.form): Formular und Lab-Aufgaben direkt im Hub, ohne Lab und ohne Adapter.
+     Formularwerte: localStorage 'verbund.form.<pid>.<sid>' = { seed, v } (gleiches Schema wie die Leiste). Aufgabenstand: lm4.tdone (die Brücke in aufgaben.js spiegelt die Labs dorthin). */
+  const isHub = sd => !!sd && sd.on === 'vb';
+  const hubKey = (pid, sid) => 'verbund.form.' + pid + '.' + sid;
+  const tdoneNow = () => { safe(() => { if (root.BerufReg && root.BerufReg.sync) root.BerufReg.sync(); }, 0); return BP.tdoneOf ? BP.tdoneOf(lsRaw('lm4.tdone', '{}')) : {}; };
+  const hubCtx = (pid, sid, extra) => Object.assign(safe(() => V().ctx(pid, sid), null) || {}, extra || {});
+  const hubOn = () => S.view === 'station' && isHub(stDef(S.pid, S.sid)) && !!stateOf(S.pid);
+  function hubLoad(pid, sid, sd) {
+    const st = stateOf(pid), o = safe(() => JSON.parse(lsRaw(hubKey(pid, sid), 'null')), null);
+    if (o && st && o.seed === st.seed && o.v && typeof o.v === 'object') return o.v;
+    if (st && st.stations && st.stations[sid] && st.stations[sid].kollege) return {};                        /* Musterwerte der Kollegen nie ins eigene Formular */
+    const d = safe(() => (V().has(sd.out) ? V().get(sd.out) : null), null);              /* noch nichts getippt, aber schon übergeben (Import, anderes Gerät): Werte der Übergabe zeigen */
+    return d && BP.hubForm ? BP.hubForm(sd, d, hubCtx(pid, sid)) : {};
+  }
+  function hubSave(pid, sid, v) { const st = stateOf(pid); if (st) lsPut(hubKey(pid, sid), JSON.stringify({ seed: st.seed, v: v })); }
+  function hubRead() {                                               /* Werte aus den Feldern lesen und merken */
+    const els = $$('#hubForm [data-hk]'); if (!els.length) return hubLoad(S.pid, S.sid, stDef(S.pid, S.sid));
+    const v = {}; els.forEach(el => { v[el.dataset.hk] = el.value; }); hubSave(S.pid, S.sid, v); return v;
+  }
+  function hubTasksHtml(pid, sid, sd, info) {
+    const ts = BP.taskState ? BP.taskState(sd, tdoneNow(), root.LAB_REG) : []; if (!ts.length) return '';
+    const title = id => { const r = (root.AUFGABEN || []).find(x => x && x[0] === id); return r ? r[3] : ''; };
+    const old = info && info.delivered ? safe(() => V().get(sd.out), null) : null, got = old && old.tasks && typeof old.tasks === 'object' ? old.tasks : {};
+    const fresh = !!old && ts.some(t => t.done && !((+got[t.id] || 0) >= t.min));
+    return '<p style="margin-bottom:2px"><b>Dazu im Lab lösen</b> <small style="color:var(--mute)">(zählt, sobald die Aufgabe dort gelöst ist)</small></p><ul class="inl">' + ts.map(t =>
+      '<li data-task="' + esc(t.id) + '" data-done="' + (t.done ? 1 : 0) + '"><span class="tag ' + (t.done ? 'ok' : 'no') + '">' + (t.done ? '✓ erledigt' : 'offen') + '</span><span style="flex:1;min-width:150px;overflow-wrap:anywhere"><b>' + esc(labName(t.lab)) + '</b>' + (title(t.id) ? ': ' + esc(title(t.id)) : '') +
+      ' <small style="color:var(--mute)">(' + esc(t.id) + ', ' + (t.pct > 0 ? 'dein Stand ' + Math.round(t.pct) + ' %, ' : '') + 'verlangt ' + t.min + ' %)</small></span><a class="btn s" href="' + esc(t.url) + '">Im Lab öffnen</a></li>').join('') + '</ul>' +
+      (fresh ? '<div class="warnbox">Seit deiner letzten Übergabe hast du eine Lab-Aufgabe gelöst. Übergib noch einmal, damit sie für diese Station zählt.</div>' : '');
+  }
+  function hubResHtml(pid, sid, def, st, sd, info) {
+    const x = S.hubRes; if (!x || x.pid !== pid || x.sid !== sid) return '';
+    if (x.errs) return '<div class="errbox" role="alert"><b>Bitte zuerst im Formular korrigieren:</b><ul style="margin:.3em 0;padding-left:20px">' + x.errs.map(e => '<li>' + esc(e) + '</li>').join('') + '</ul></div>';
+    const r = x.r, pass = info && info.pass != null ? info.pass : passOf(def, st.level, sd), nxt = x.give && r.passed ? safe(() => V().next(pid), null) : null;
+    return '<p style="margin-top:12px"><b>' + (x.give ? 'Übergeben' : 'Prüfung (nichts gespeichert)') + ': ' + Math.round(r.pct || 0) + ' %</b> · ' + (r.passed ? '<span class="tag ok">bestanden</span>' : '<span class="tag wa" style="display:inline-block">noch nicht bestanden, Grenze ' + pass + ' %</span>') + '</p>' + linesHtml(r) +
+      (x.give ? (nxt === 'final' ? '<div class="btns"><button class="btn pri" data-a="go-final" data-pid="' + esc(pid) + '">Zum Gesamttest</button></div>' : nxt && nxt !== sid ? '<div class="btns"><button class="btn pri" data-a="go-st" data-pid="' + esc(pid) + '" data-sid="' + esc(nxt) + '">Weiter zur nächsten Station</button></div>' : '') : '<p class="hint2">Mit „Übergeben“ wird dein Stand gespeichert, gewertet und an die Folgestationen weitergegeben.</p>');
+  }
+  function hubHtml(pid, sid, def, st, sd, info, locked, hidden) {
+    if (hidden) return '';                                            /* Station der Kollegen, nur Ansicht */
+    const fields = BP.normFields ? BP.normFields(sd.form) : [], val = hubLoad(pid, sid, sd), dis = locked ? ' disabled' : '';
+    let h = '<div class="sec" id="hubSec"><h3>Bearbeiten</h3><div id="hubTasks">' + hubTasksHtml(pid, sid, sd, info) + '</div>';
+    if (fields.length) h += '<div id="hubForm" style="margin-top:10px">' + fields.map(f => {
+      const v = val[f.key] == null ? '' : String(val[f.key]), k = ' data-hk="' + esc(f.key) + '"' + dis; let inp;
+      if (f.type === 'select') inp = '<select' + k + '><option value="">– bitte wählen –</option>' + f.options.map(o => '<option value="' + esc(o.value) + '"' + (o.value === v ? ' selected' : '') + '>' + esc(o.label) + '</option>').join('') + '</select>';
+      else if (f.type === 'area') inp = '<textarea' + k + ' rows="4" spellcheck="false">' + esc(v) + '</textarea>';
+      else inp = '<input' + k + ' type="text" inputmode="' + (f.type === 'number' ? 'decimal' : 'text') + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" value="' + esc(v) + '">';
+      return '<label class="f"><span>' + esc(f.label) + (f.unit ? ' (' + esc(f.unit) + ')' : '') + '</span>' + inp + (f.hint ? '<div class="hint2" style="margin-top:3px">' + esc(f.hint) + '</div>' : '') + '</label>';
+    }).join('') + '</div>';
+    if (locked) return h + '<p class="hint2">Gesperrt: Bestehe zuerst die Vorstation, dann kannst du hier eintragen und übergeben.</p></div>';
+    return h + '<div class="btns"><button class="btn" data-a="hub-check">Prüfen</button><button class="btn pri" data-a="hub-give">Übergeben</button></div><div id="hubRes" role="status">' + hubResHtml(pid, sid, def, st, sd, info) + '</div></div>';
+  }
+  function hubCollect() {
+    const pid = S.pid, sid = S.sid, sd = stDef(pid, sid); if (!isHub(sd) || !stateOf(pid) || !BP.hubData) return null;
+    const form = hubRead(), r = safe(() => BP.hubData(sd, form, tdoneNow(), hubCtx(pid, sid, { form: Object.assign({}, form) })), null);
+    if (!r) { toast('Das Formular konnte nicht gelesen werden.'); return null; }
+    if (r.errs.length) { S.hubRes = { pid, sid, errs: r.errs }; render(); return null; }
+    return { pid, sid, sd, data: r.data };
+  }
+  function hubCheck() {
+    const c = hubCollect(); if (!c) return;
+    const r = safe(() => V().check(c.pid, c.sid, c.data), null);
+    if (!r || r.ok === false) { toast((r && r.msg) || 'Die Prüfung ist fehlgeschlagen.'); return; }
+    S.hubRes = { pid: c.pid, sid: c.sid, r, give: false }; render();
+  }
+  function hubGive() {
+    const c = hubCollect(); if (!c) return;
+    const r = safe(() => V().deliver(c.sd.out, { type: c.sd.type, data: c.data, station: c.sid, from: 'vb' }), null);
+    if (r && r.pending) { toast(r.msg || 'Die Prüfkerne werden geladen.'); return; }
+    if (!r || !r.ok) { toast('Übergabe nicht möglich' + (r && r.msg ? ': ' + r.msg : '.')); return; }
+    S.hubRes = { pid: c.pid, sid: c.sid, r: r.check, give: true }; render();
+    toast(r.check.passed ? 'Übergeben: ' + Math.round(r.check.pct) + ' %. Station bestanden.' : 'Übergeben: ' + Math.round(r.check.pct) + ' %. Noch nicht bestanden, schau dir die roten Zeilen an.');
+  }
+  function hubSol() {
+    const pid = S.pid, sid = S.sid, sd = stDef(pid, sid); if (!isHub(sd) || !BP.hubForm) return;
+    const r = safe(() => V().solution(pid, sid), null);
+    if (!r || r.ok === false) { toast((r && r.msg) || 'Für diese Station gibt es keine Musterlösung.'); return; }
+    hubSave(pid, sid, BP.hubForm(sd, r.data, hubCtx(pid, sid))); S.hubRes = null; render();
+    toast('Musterlösung eingetragen. Prüfe und übergib selbst. Die Lab-Aufgaben zählen erst, wenn du sie gelöst hast.');
+  }
+  /* Aufgabenliste auffrischen (Rückkehr aus dem Lab, anderer Tab, spät geladene Aufgabenliste), ohne das Formular neu zu bauen */
+  function hubRefresh() {
+    if (!hubOn()) return; const el = $('#hubTasks'); if (!el) return;
+    const sta = statusOf(S.pid), info = sta && sta.stations.find(x => x.id === S.sid);
+    const h = hubTasksHtml(S.pid, S.sid, stDef(S.pid, S.sid), info), t = document.createElement('div'); t.innerHTML = h;
+    if (el.innerHTML !== t.innerHTML) el.innerHTML = h;
   }
   function showHintSheet(pid, sid, step, sol) {
     const st = stateOf(pid), c = safe(() => JSON.parse(lsRaw(hintKey(pid, sid), 'null')), null), t = (c && c.s === st.seed && c.t) || {}, top = step || Math.max(0, ...Object.keys(t).map(Number));
     sheet('Tipp, Stufe ' + top + ' von 3', (b, close) => {
       let h = ''; for (let i = 1; i <= top; i++) if (t[i]) h += '<p><b>Stufe ' + i + ':</b> ' + esc(t[i]) + '</p>';
       if (top < 3) h += '<p class="hint2">Brauchst du mehr Hilfe? Tippe noch einmal auf „Tipp“. Dein Ausbilder sieht, wie viele Tipps du gebraucht hast.</p>';
+      else if (sol && isHub(stDef(pid, sid))) h += '<p>Stufe 3 bietet die Musterlösung. Sie wird in das Formular dieser Station eingetragen und überschreibt deine Eingaben dort. Die Station zählt dann „mit Hilfe“. Die Lab-Aufgaben löst du weiterhin selbst.</p><div class="btns"><button class="btn pri" id="hubSolBtn">Musterlösung eintragen</button></div>';
       else if (sol) h += '<p>Stufe 3 bietet die Musterlösung. Sie wird im Lab geladen, dein eigener Stand bleibt gesichert. Die Station zählt dann „mit Hilfe“.</p>' + (((stDef(pid, sid) || {}).solNote) ? '<p class="hint2"><b>Hinweis:</b> ' + esc((stDef(pid, sid) || {}).solNote) + '</p>' : '') + '<div class="btns"><a class="btn pri" href="' + esc(labUrl((stDef(pid, sid) || {}).on, pid, sid, '&loesung=1')) + '">Musterlösung im Lab laden</a></div>';
       b.innerHTML = h;
+      const hb = $('#hubSolBtn', b); if (hb) hb.onclick = () => { close(); hubSol(); };
     });
   }
   function doHint() {
@@ -261,7 +438,7 @@
   }
   function debrief(pid) {
     const st = stateOf(pid), sta = statusOf(pid); if (!st || !sta) return '';
-    const rows = sta.stations.map((s, i) => ({ n: i + 1, s, tries: (st.stations && st.stations[s.id] && st.stations[s.id].tries) || 0, hints: s.hints || 0 }));
+    const rows = sta.stations.map((s, i) => ({ n: i + 1, s, tries: (st.stations && st.stations[s.id] && st.stations[s.id].tries) || 0, hints: s.hints || 0 })).filter(r => r.s.counts !== false);
     const noHint = rows.filter(r => !r.hints).length, most = rows.slice().sort((a, b) => b.hints - a.hints)[0], weak = rows.slice().sort((a, b) => (a.s.best || 0) - (b.s.best || 0))[0], retry = rows.filter(r => r.tries > 1);
     let h = '<div class="sec"><h3>Rückschau</h3><ul>';
     h += '<li>Ohne Tipp geschafft: <b>' + noHint + '</b> von ' + rows.length + ' Stationen.</li>';
@@ -277,7 +454,7 @@
     h += '<h1 class="vh1">🏁 ' + esc((def.final && def.final.title) || 'Gesamttest') + '</h1>';
     if (!st) { $('#view').innerHTML = h + '<div class="warnbox">Dieses Projekt wurde noch nicht gestartet.</div><div class="btns"><button class="btn pri" data-a="start" data-pid="' + esc(pid) + '">Projekt starten</button></div>'; return; }
     const sta = statusOf(pid), fs = sta ? sta.finalState : 'locked', free = isFree();
-    h += '<p class="vlead">Alle Stationen zusammen: Das fertige Gerät wird gegen das Lastenheft geprüft. Die Ergebnisse kommen aus deinen übergebenen Stationen.</p>';
+    h += '<p class="vlead">Alle Stationen zusammen: Das fertige Gerät wird gegen das Lastenheft geprüft. Die Ergebnisse kommen aus ' + (sta && sta.beruf && sta.solo ? 'deinen Stationen und den Lieferungen der Kollegen' : sta && sta.beruf ? 'den übergebenen Stationen des Teams' : 'deinen übergebenen Stationen') + '.</p>';
     if (sta) h += phaseChips(pid, sta, null);
     const res = S.finalRes && S.finalRes.pid === pid ? S.finalRes.r : null, saved = st.final || null;
     if (fs === 'locked' && !free) {
@@ -312,9 +489,10 @@
     const def = defOf(pid), st = stateOf(pid), sta = statusOf(pid), rep = safe(() => V().report(pid), null); if (!def || !st || !sta) return '';
     const cert = (rep && rep.cert) || { code: safe(() => V().certCode(pid), ''), medal: sta.medal, points: sta.points }, md = MEDAL[cert.medal] || medalOf(sta), kp = (rep && rep.kpis) || (st.final && st.final.kpis) || [];
     return '<div class="paper land"><div class="cert"><div style="display:flex;justify-content:space-between;align-items:center"><img class="lg" src="logo-full.png" alt="Tonfunk" onerror="this.style.display=\'none\'"><span style="font-size:12px;color:#555">Tonfunk Lehrwerkstatt</span></div>' +
-      '<h1>ZERTIFIKAT</h1><div class="sub">Verbundprojekt abgeschlossen</div><div class="nm">' + esc(st.name || '') + '</div><div class="pj2"><b>' + esc(def.icon || '') + ' ' + esc(def.name) + '</b> · ' + esc(lvName(def, st.level)) + ' · ' + dDate(st.final && st.final.t) + '</div>' +
+      '<h1>ZERTIFIKAT</h1><div class="sub">Verbundprojekt abgeschlossen' + (sta.beruf ? ' · ' + esc(bName(sta.beruf)) + (sta.solo ? '' : ' · Teamarbeit') : '') + '</div><div class="nm">' + esc(st.name || '') + '</div><div class="pj2"><b>' + esc(def.icon || '') + ' ' + esc(def.name) + '</b> · ' + esc(lvName(def, st.level)) + ' · ' + dDate(st.final && st.final.t) + '</div>' +
       '<div class="md">' + (md ? md[0] : '') + '</div><div class="sub">' + (md ? 'Medaille ' + md[1] + ' · ' : '') + sta.points + ' von ' + sta.maxPoints + ' Punkten</div>' +
-      '<div class="cols"><div><table><tr><th>Nr.</th><th>Station</th><th>Lab</th><th>Ergebnis</th></tr>' + sta.stations.map((s, i) => '<tr><td>' + (i + 1) + '</td><td>' + esc(s.title) + '</td><td>' + esc(labName(s.on)) + '</td><td>' + Math.round(s.best != null ? s.best : s.pct || 0) + ' %</td></tr>').join('') + '<tr><td></td><td><b>Gesamttest</b></td><td>–</td><td><b>' + Math.round(sta.finalPct || 0) + ' %</b></td></tr></table></div>' +
+      '<div class="cols"><div><table' + (sta.stations.length > 9 && !(sta.beruf && sta.solo) ? ' style="font-size:9.5px;line-height:1.05"' : '') + '><tr><th>Nr.</th><th>Station</th><th>' + (sta.beruf ? (sta.solo ? 'Beruf · Lab' : 'Beruf') : 'Lab') + '</th><th>Ergebnis</th></tr>' + sta.stations.map((s, i) => (s.counts === false ? '' : '<tr><td>' + (i + 1) + '</td><td>' + esc(s.title) + '</td><td>' + (sta.beruf && s.beruf ? esc(bList(s.beruf, true)) + (sta.solo ? ' · ' : '') : '') + (sta.beruf && s.beruf && !sta.solo ? '' : esc(stLabTxt(stDef(pid, s.id) || s))) + '</td><td>' + Math.round(s.best != null ? s.best : s.pct || 0) + ' %</td></tr>')).join('') +
+      (sta.beruf && sta.solo ? '<tr><td></td><td>' + sta.stations.filter(s => s.counts === false).length + ' Stationen der anderen Berufe</td><td>' + esc(bList(sta.stations.filter(s => s.counts === false).reduce((a, s) => a.concat((s.beruf || []).filter(b => a.indexOf(b) < 0).slice(0, 1)), []), true)) + '</td><td>von den Kollegen geliefert</td></tr>' : '') + '<tr><td></td><td><b>Gesamttest</b></td><td>–</td><td><b>' + Math.round(sta.finalPct || 0) + ' %</b></td></tr></table></div>' +
       '<div>' + (kp.length ? '<table><tr><th>Kennzahl</th><th>Wert</th><th></th></tr>' + kp.map(k => '<tr><td>' + esc(k.label) + '</td><td>' + kfmt(k.value) + ' ' + esc(k.unit || '') + '</td><td>' + (k.ok ? '✓' : '✗') + '</td></tr>').join('') + '</table>' : '') + '</div></div>' +
       '<div class="code">Zertifikatscode ' + esc(cert.code || '') + '</div><div class="sig"><div>Ort, Datum</div><div>Unterschrift Ausbilder</div></div></div></div>';
   }
@@ -332,7 +510,7 @@
     const def = defOf(pid), st = stateOf(pid), sta = statusOf(pid), rep = safe(() => V().report(pid), null); if (!def || !st || !sta || !rep) return '';
     const secs = rep.sections || [], kp = rep.kpis || (st.final && st.final.kpis) || [], md = medalOf(sta);
     let h = '<div class="paper port"><div class="rep"><div style="display:flex;justify-content:space-between;align-items:center"><img src="logo-full.png" alt="Tonfunk" style="height:40px" onerror="this.remove()"><span style="font-size:12px;color:#555">' + dDate(Date.now()) + '</span></div>' +
-      '<h1>' + esc(rep.title || 'Abschlussbericht: ' + def.name) + '</h1><p>' + esc(st.name || '') + ' · ' + esc(rep.levelName || lvName(def, st.level)) + ' · ' + sta.done + ' von ' + sta.total + ' Stationen · ' + sta.points + ' von ' + sta.maxPoints + ' Punkten' + (md ? ' · ' + md[1] : '') + '</p>';
+      '<h1>' + esc(rep.title || 'Abschlussbericht: ' + def.name) + '</h1><p>' + esc(st.name || '') + (sta.beruf ? ' · ' + esc(bName(sta.beruf)) + (sta.solo ? ' (allein, übrige Stationen von den Kollegen geliefert)' : ' (Teamarbeit)') : '') + ' · ' + esc(rep.levelName || lvName(def, st.level)) + ' · ' + sta.done + ' von ' + sta.total + (sta.beruf && sta.solo ? ' eigenen' : '') + ' Stationen · ' + sta.points + ' von ' + sta.maxPoints + ' Punkten' + (md ? ' · ' + md[1] : '') + '</p>';
     secs.forEach(sec => { h += '<h2>' + esc(sec.h || '') + '</h2>' + (Array.isArray(sec.text) && sec.text.length ? '<ul>' + sec.text.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') + (sec.html != null ? String(sec.html) : rowsHtml(sec)); });
     if (kp.length) h += '<h2>Gesamttest: Kennzahlen</h2><p>' + kp.map(k => '<span class="kp ' + (k.ok ? 'ok' : 'no') + '">' + esc(k.label) + ': <b>' + kfmt(k.value) + ' ' + esc(k.unit || '') + '</b> ' + (k.ok ? '✓' : '✗') + '</span>').join('') + '</p>';
     return h + '<p style="margin-top:18px;font-size:12px;color:#555">Zertifikatscode: ' + esc((rep.cert && rep.cert.code) || safe(() => V().certCode(pid), '')) + '</p></div></div>';
@@ -453,7 +631,7 @@
       const def = defOf(p.id), st = stateOf(p.id), sta = st ? statusOf(p.id) : null; if (!def) return;
       h += '<div class="sec"><h3>' + esc(def.name) + (st ? ' · ' + esc(st.name || '') + ' · Stufe ' + st.level : ' · nicht gestartet') + '</h3>';
       if (!sta) { h += '<p class="hint2">Starte das Projekt, um Stationen zu sehen.</p></div>'; return; }
-      h += sta.stations.map((s, i) => { const sd = stDef(p.id, s.id) || {}; return '<div class="row2" style="padding:5px 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:150px"><b>' + (i + 1) + '. ' + esc(s.title) + '</b><br><small style="color:var(--mute)">' + esc(labName(s.on)) + ' · ' + (STATE[s.state] || STATE.open)[1] + (s.pct != null && s.state !== 'open' && s.state !== 'locked' ? ' ' + Math.round(s.pct) + ' %' : '') + (s.hints ? ' · Tipps ' + s.hints : '') + '</small></span><button class="btn s" data-a="a-data" data-pid="' + esc(p.id) + '" data-sid="' + esc(s.id) + '">Daten</button><button class="btn s" data-a="a-check" data-pid="' + esc(p.id) + '" data-sid="' + esc(s.id) + '">Prüfung neu</button><button class="btn s" data-a="a-sol" data-pid="' + esc(p.id) + '" data-sid="' + esc(s.id) + '">Musterlösung laden</button></div>'; }).join('') + '</div>';
+      h += sta.stations.map((s, i) => { const sd = stDef(p.id, s.id) || {}; return '<div class="row2" style="padding:5px 0;border-top:1px solid var(--line)"><span style="flex:1;min-width:150px"><b>' + (i + 1) + '. ' + esc(s.title) + '</b><br><small style="color:var(--mute)">' + esc(stLabTxt(sd)) + (s.beruf ? ' · ' + esc(bList(s.beruf, true)) : '') + ' · ' + (s.kollege ? 'von den Kollegen geliefert' : (STATE[s.state] || STATE.open)[1]) + (s.pct != null && s.state !== 'open' && s.state !== 'locked' ? ' ' + Math.round(s.pct) + ' %' : '') + (s.hints ? ' · Tipps ' + s.hints : '') + '</small></span><button class="btn s" data-a="a-data" data-pid="' + esc(p.id) + '" data-sid="' + esc(s.id) + '">Daten</button><button class="btn s" data-a="a-check" data-pid="' + esc(p.id) + '" data-sid="' + esc(s.id) + '">Prüfung neu</button><button class="btn s" data-a="a-sol" data-pid="' + esc(p.id) + '" data-sid="' + esc(s.id) + '">Musterlösung laden</button></div>'; }).join('') + '</div>';
     });
     h += '<div class="sec"><h3>Lösungen für Ausbilder</h3><p class="hint2">Lösungsblätter zu den Lernheften und zur Praxisprüfung W-2024, verschlüsselt, mit Ausbilder-Passwort.</p><a class="btn" href="loesungen.html">Lösungen öffnen</a></div>';
     h += '<div class="sec"><h3>Speicher</h3>' + ps.map(p => { const u = safe(() => V().usage(p.id), null); return '<p style="margin:2px 0">' + esc(p.name) + ': ' + (u ? Math.round(u.bytes / 1024) + ' KB, ' + u.slots + ' Datenpakete' : '–') + '</p>'; }).join('') + '</div>';
@@ -585,6 +763,7 @@
     if (c.cmd === 'hub') { go(pid ? 'project' : 'list', pid); return 'Übersicht'; }
     if (c.cmd === 'hint') { if (S.view === 'station') { doHint(); return 'Tipp'; } return 'Öffne zuerst eine Station.'; }
     if (c.cmd === 'panel') { go('project', pid); const d = $('#dLast'); if (d) d.open = true; return 'Lastenheft'; }
+    if ((c.cmd === 'check' || c.cmd === 'give') && hubOn()) { if (c.cmd === 'check') hubCheck(); else hubGive(); return c.cmd === 'check' ? 'Prüfen' : 'Übergeben'; }
     if (c.cmd === 'check' || c.cmd === 'give') return 'Prüfen und Übergeben gehen in der Leiste oben im Lab.';
     return null;
   }
@@ -594,7 +773,7 @@
     lastenheftOpened: () => S.flags.lastenheft > 0, stationViewed: () => S.flags.stationViews > 0, certViewed: () => S.flags.cert > 0, shared: () => S.flags.share > 0,
     anyStation: () => projects().some(p => { const s = statusOf(p.id); return s && s.stations.some(x => x.state === 'passed' || x.state === 'failed'); })
   };
-  root.VerbundUI = { S, go, render, voice, printNow, demoLoad, snapGuard, restoreGuard, certHtml, berichtHtml, importSheet, shareSheet, testProject };
+  root.VerbundUI = { S, go, render, voice, curBeruf, berufSet, berufSheet, hubCheck, hubGive, hubSol, hubRefresh, printNow, demoLoad, snapGuard, restoreGuard, certHtml, berichtHtml, importSheet, shareSheet, testProject };
 
   /* ============================================================ Ereignisse */
   const view = $('#view');
@@ -611,10 +790,21 @@
       case 'give': { const st = statusOf(S.pid), s = st && st.stations.find(x => x.id === S.sid), sd = stDef(S.pid, S.sid); if (root.Auswertung && s) root.Auswertung.handIn(S.sid, s.pct || 0, (defOf(S.pid).name || '') + ': ' + (sd ? sd.title : S.sid)); break; }
       case 'rstation': confirmBox('Station zurücksetzen?', 'Die Übergabe dieser Station wird gelöscht. Folgestationen zeigen dann „Eingang geändert“, nichts wird gelöscht.', 'Zurücksetzen', true).then(ok => { if (ok) { safe(() => V().resetStation(S.pid, S.sid), null); toast('Station zurückgesetzt.'); render(); } }); break;
       case 'runfinal': runFinal(); break;
+      case 'hub-check': hubCheck(); break; case 'hub-give': hubGive(); break; case 'hub-sol': hubSol(); break;
+      case 'kol-self': S.selfEdit = S.pid + ':' + S.sid; render(); break;
+      case 'kol-give': { const r = safe(() => V().kollege(S.pid, S.sid), null); S.selfEdit = null; S.hubRes = null; lsDel(hubKey(S.pid, S.sid)); toast(r && r.ok ? 'Die Kollegen haben die Station wieder geliefert.' : (r && r.msg) || 'Das geht gerade nicht.'); render(); break; }
+      case 'beruf-set': { const v = ($('#baBeruf') || {}).value || ''; if (!v) { toast('Bitte wähle deinen Beruf.'); break; } berufSet(pid, v, d.solo === '1'); break; }
+      case 'beruf-none': berufSet(pid, null, false); break; case 'beruf-change': berufSheet(pid); break;
       default: if (/^a-|^god$/.test(a)) aAction(a, d); break;
     }
   });
-  view.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.id === 'gPw') aAction('god', {}); });
+  view.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target && e.target.id === 'gPw') aAction('god', {}); else if (e.key === 'Enter' && e.target && e.target.tagName === 'INPUT' && e.target.dataset.hk) { e.preventDefault(); hubCheck(); } });
+  /* Hub-Station: Eingaben sofort merken; Aufgabenstand auffrischen, wenn man aus dem Lab zurückkommt */
+  const hubInput = e => { if (e.target && e.target.dataset && e.target.dataset.hk && hubOn()) hubRead(); };
+  view.addEventListener('input', hubInput); view.addEventListener('change', hubInput);
+  window.addEventListener('pageshow', hubRefresh); window.addEventListener('focus', hubRefresh); window.addEventListener('load', hubRefresh);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) hubRefresh(); });
+  window.addEventListener('storage', e => { if (e.key && /^lm4\.(tdone|[a-z0-9]+\.prog)$/.test(e.key)) hubRefresh(); });
   $('#bMenu').onclick = openMenu; $('#bProj').onclick = () => go('list'); $('#bPrint').onclick = printNow;
   $('#bShare').onclick = () => { const pid = S.pid && stateOf(S.pid) ? S.pid : null; if (pid) shareSheet(pid, S.view === 'station' ? S.sid : null); else importSheet(); };
   let rT = 0; window.addEventListener('storage', e => { if (!e.key || e.key.indexOf('verbund.') !== 0 || e.key.indexOf('verbund.form') === 0) return; clearTimeout(rT); rT = setTimeout(() => { if (!document.querySelector('.backdrop') && !(document.activeElement && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName))) render(); }, 300); });

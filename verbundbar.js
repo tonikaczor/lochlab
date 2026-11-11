@@ -13,6 +13,10 @@
   const LAB2FILE = {}; Object.keys(FILE2LAB).forEach(f => { LAB2FILE[FILE2LAB[f]] = f; });
   const LAB_NAME = { loch: 'LochLab', sch: 'SchaltLab', sim: 'SimLab', digi: 'DigiLab', mess: 'MessLab', haus: 'HausLab', app: 'App-Werkstatt', pr: 'Prüfungs-Lab', sps: 'SPS-Lab', pcb: 'Leiterplatten-Lab', ant: 'Antriebs-Lab', sen: 'Sensorik-Lab', ds: 'Datenblatt-Lab', code: 'Arduino-Lab', pi: 'Pi-Lab', nts: 'Netzteil-Lab', reg: 'Regelungstechnik-Lab', thm: 'Thermik-Lab', els: 'Sicherheits-Lab', enr: 'Energie-Lab', emv: 'EMV-Lab', wsl: 'Wechselstrom-Lab', ana: 'Analogtechnik-Lab', vb: 'Projekte' };
   const LAB_ICON = { loch: '🔳', sch: '📐', sim: '🧪', digi: '🔢', mess: '📟', haus: '🏠', app: '📝', pr: '🎓', sps: '🤖', pcb: '🟩', ant: '⚙️', sen: '📡', ds: '📑', code: '💻', pi: '🍓', nts: '🔌', reg: '🎛️', thm: '🌡️', els: '🛡️', enr: '☀️', emv: '📶', wsl: '〰️', ana: '📈', vb: '🧩' };
+  /* Symbole der eigenständigen Labs (ohne Leiste und Adapter): nur für die Symbolreihe und die Lab-Namen der Hub-Stationen. Eigene Tabelle, damit LAB_NAME/LAB_ICON/LAB2FILE deckungsgleich bleiben. */
+  const LAB_ICON2 = { tol: '📏', zer: '🪚', pne: '💨', hyd: '🛢️', cnc: '⌨️', wer: '🧱', ins: '🛠️', mas: '🔩', mch: '🏋️', fer: '🏭', mak: '🧰', zei: '✏️', kon: '🔧', fug: '🔗', lag: '🏬', wfl: '📦', lad: '🚛', kal: '💶', buc: '📒', rec: '📜', net: '🌐', its: '🔐', sql: '🗄️', lin: '🐧', alg: '🧠', hwl: '💾', sys: '🖥️', ssl: '🗃️', mat: '➗', eng: '🇬🇧', bhf: '📓', arb: '🦺' };
+  const BERUF_NAME = { egs: 'Elektroniker/in für Geräte und Systeme', ige: 'Industrieelektriker/in', im: 'Industriemechaniker/in', tpd: 'Technische/r Produktdesigner/in', fll: 'Fachkraft für Lagerlogistik', ik: 'Industriekaufleute', fi: 'Fachinformatiker/in' };
+  const BERUF_KURZ = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Produktdesigner', fll: 'Lagerlogistik', ik: 'Kaufleute', fi: 'Fachinformatiker' };
   const ADAPTER_FILE = { sch: 'verbundad-eng.js', sim: 'verbundad-eng.js', digi: 'verbundad-eng.js', mess: 'verbundad-eng.js', haus: 'verbundad-eng.js', code: 'verbundad-mcu.js', pi: 'verbundad-mcu.js', loch: 'verbundad-loch.js', pcb: 'verbundad-pcb.js', sps: 'verbundad-sps.js', ant: 'verbundad-ant.js', sen: 'verbundad-sen.js', ds: 'verbundad-ds.js', app: 'verbundad-app.js', pr: 'verbundad-pr.js', nts: 'verbundad-rig.js', reg: 'verbundad-rig.js', thm: 'verbundad-rig.js', els: 'verbundad-rig.js', enr: 'verbundad-rig.js', emv: 'verbundad-rig.js', wsl: 'verbundad-rig.js', ana: 'verbundad-rig.js' };
   const PID_RE = /^[a-z][a-z0-9]*$/, SID_RE = /^v[a-z]\w*$/;
   const NUMW = { null: 0, ein: 1, eins: 1, eine: 1, zwei: 2, drei: 3, vier: 4, fünf: 5, fuenf: 5, sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10, elf: 11, zwölf: 12, zwoelf: 12, dreizehn: 13, vierzehn: 14, fünfzehn: 15, fuenfzehn: 15 };
@@ -182,7 +186,67 @@
   }
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const hintKey = (pid, sid) => 'verbund.ht.' + pid + '.' + sid;
-  const pure = { DATA_NAME, PROJECT_CORES, LAZY_PIDS, LAZY_CORES, coreList, makeLazy, hintKey, FILE2LAB, LAB2FILE, LAB_NAME, LAB_ICON, ADAPTER_FILE, PID_RE, SID_RE, parseTarget, labFromPath, scriptList, parseNum, fmtNum, normFields, formToData, dataToForm, humanRows, parseVoice, labUrl, hintMerge, esc };
+  /* ---- Hub-Station (on:'vb', Typ vb.form): Formular im Projekt-Hub plus optional Lab-Aufgaben station.tasks = [{ lab, id, min }], Stand aus lm4.tdone ---- */
+  const isHub = st => !!st && typeof st === 'object' && st.on === 'vb';
+  const isObjP = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+  /* lm4.tdone (Text oder Objekt) → Objekt, nie ein Fehler */
+  function tdoneOf(raw) {
+    if (isObjP(raw)) return raw;
+    try { const o = JSON.parse(raw == null ? 'null' : String(raw)); return isObjP(o) ? o : {}; } catch (e) { return {}; }
+  }
+  const pctOf = v => { const n = typeof v === 'number' ? v : parseFloat(v); return isFinite(n) ? Math.max(0, Math.min(100, n)) : 0; };
+  function taskList(st) {
+    return (st && Array.isArray(st.tasks) ? st.tasks : []).filter(t => isObjP(t) && typeof t.id === 'string' && t.id && typeof t.lab === 'string' && t.lab)
+      .map(t => ({ lab: t.lab, id: t.id, min: isNum(t.min) && t.min > 0 && t.min <= 100 ? t.min : 70 }));
+  }
+  /* Deep-Link in ein Lab: <Datei>?aufgabe=<id>; Datei aus LAB_REG, sonst die Regel der eigenständigen Labs (<kürzel>lab.html) */
+  function taskUrl(t, reg) {
+    const r = isObjP(reg) ? reg : (isObjP(root.LAB_REG) ? root.LAB_REG : {}), lab = t && typeof t.lab === 'string' ? t.lab : '';
+    const f = (isObjP(r[lab]) && typeof r[lab].file === 'string' && r[lab].file) || LAB2FILE[lab] || (/^[a-z][a-z0-9]*$/.test(lab) ? lab + 'lab.html' : 'index.html');
+    return f + '?aufgabe=' + encodeURIComponent(t && t.id != null ? t.id : '');
+  }
+  /* Aufgaben der Station mit Stand: [{ lab, id, min, pct, done, url }] */
+  function taskState(st, tdone, reg) {
+    const td = tdoneOf(tdone);
+    return taskList(st).map(t => { const pct = pctOf(td[t.id]); return { lab: t.lab, id: t.id, min: t.min, pct, done: pct >= t.min, url: taskUrl(t, reg) }; });
+  }
+  /* Formularwerte (Texte) + lm4.tdone → Slot-Daten der Station. station.fromForm(v, ctx) oder { vals: v }; tasks kommt IMMER aus tdone (nicht aus dem Formular). */
+  function hubData(st, formVals, tdone, ctx) {
+    const fd = formToData(st && st.form, formVals), errs = fd.errs.slice(); let d = { vals: fd.data };
+    if (st && typeof st.fromForm === 'function') {
+      try { d = st.fromForm(fd.data, ctx); } catch (e) { errs.push('Das Formular konnte nicht ausgewertet werden: ' + (e && e.message ? e.message : e)); d = null; }
+      if (!isObjP(d)) { if (!errs.length) errs.push('Das Formular konnte nicht ausgewertet werden.'); d = { vals: fd.data }; }
+    }
+    const data = Object.assign({}, d); if (!isObjP(data.vals)) data.vals = fd.data;
+    const ts = taskList(st);
+    if (ts.length) { const td = tdoneOf(tdone); data.tasks = {}; ts.forEach(t => { data.tasks[t.id] = pctOf(td[t.id]); }); } else delete data.tasks;
+    return { data, errs };
+  }
+  /* Slot-Daten → Formularwerte (Texte): station.toForm(d, ctx) oder d.vals */
+  function hubForm(st, data, ctx) {
+    let v = null;
+    if (st && typeof st.toForm === 'function') { try { v = st.toForm(data, ctx); } catch (e) { v = null; } }
+    if (!isObjP(v)) v = isObjP(data) && isObjP(data.vals) ? data.vals : {};
+    return dataToForm(st && st.form, v);
+  }
+  /* Labs einer Station: bei einer Hub-Station die Labs ihrer Aufgaben (ohne Aufgaben: 'vb'), sonst das Arbeits-Lab */
+  function stLabs(st) {
+    if (!isHub(st)) return st && typeof st === 'object' && typeof st.on === 'string' && st.on ? [st.on] : [];
+    const o = []; taskList(st).forEach(t => { if (o.indexOf(t.lab) < 0) o.push(t.lab); }); return o.length ? o : ['vb'];
+  }
+  const labIcon = l => LAB_ICON[l] || LAB_ICON2[l] || '🧩';
+  /* Anzeigename der Labs einer Station, z. B. "Toleranz-Lab · Zeichnungs-Lab"; nameOf(lab) liefert den Namen (Hub: LAB_REG) */
+  function stLabText(st, nameOf) {
+    const nm = typeof nameOf === 'function' ? nameOf : (l => LAB_NAME[l] || l), ls = stLabs(st);
+    return ls.length === 1 && ls[0] === 'vb' ? 'Projekt-Formular' : ls.map(l => String(nm(l) || l)).join(' · ');
+  }
+  /* Stations-Beruf: Berufsnamen einer Station und lesbare Werte einer gelieferten Station (Feldname, Wert mit Einheit bzw. Text der Auswahl) */
+  const berufText = (list, kurz) => (Array.isArray(list) ? list : []).filter(b => b !== 'alle').map(b => (kurz ? BERUF_KURZ[b] : BERUF_NAME[b]) || b).join(', ');
+  function kollegeRows(st, data, ctx) {
+    const v = hubForm(st, data, ctx);
+    return normFields(st && st.form).map(f => { const x = v[f.key] == null ? '' : String(v[f.key]); let t = x; if (f.type === 'select') { const o = f.options.find(q => q.value === x); t = o ? o.label : x; } else if (x !== '' && f.unit) t = x + ' ' + f.unit; return { k: f.label, v: t === '' ? '–' : t }; });
+  }
+  const pure = { isHub, tdoneOf, taskList, taskUrl, taskState, hubData, hubForm, DATA_NAME, PROJECT_CORES, LAZY_PIDS, LAZY_CORES, coreList, makeLazy, hintKey, FILE2LAB, LAB2FILE, LAB_NAME, LAB_ICON, ADAPTER_FILE, PID_RE, SID_RE, parseTarget, labFromPath, scriptList, parseNum, fmtNum, normFields, formToData, dataToForm, humanRows, parseVoice, labUrl, hintMerge, esc, LAB_ICON2, BERUF_NAME, BERUF_KURZ, stLabs, labIcon, stLabText, berufText, kollegeRows };
   const BAR = { pure, version: '1.0', active: false };
   root.VerbundBar = BAR;
   if (typeof module !== 'undefined' && module.exports) module.exports = BAR;

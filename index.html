@@ -75,11 +75,18 @@ a.btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6f
 .pic{height:76px}.steps span{font-size:12px;padding:2px 8px}
 a.btn{height:44px;min-height:44px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2px}.mp{margin:0}
 @media(max-width:639px){.pic{height:64px}.card p{-webkit-line-clamp:3}}
-/* Zeile Projekte (Verbund): eigene Zeile unter den Lab-Karten, kein Lab */
+/* Zeile Projekte (Verbund): eigene Zeile weit oben, unter Beruf und Weitermachen, vor den Lab-Karten; kein Lab, für jeden Beruf, Inhalt von home-vb.js */
 .vbrow{grid-column:1/-1;margin-top:0;flex-direction:row;align-items:center;gap:16px;flex-wrap:wrap;border-color:var(--accent);background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 12%,transparent),var(--panel) 60%)}
 .vbrow .pic{flex:0 0 190px;height:76px}.vbrow .vbt{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}.vbrow .vbt p{-webkit-line-clamp:3}
 .vbrow .btns{flex:0 0 auto;margin:0;padding:0}.vbrow a.btn{min-width:150px;padding:0 18px}
 @media(max-width:639px){.vbrow .pic{flex:1 1 100%}.vbrow .btns{flex:1 1 100%}}
+#vbRow{margin:0 0 14px}#vbRow .vbn{font-size:14px;font-weight:600}#vbRow .vbn small{font-weight:400;color:var(--mute)}
+#vbRow .vbl{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+#vbRow .vbl a{display:flex;align-items:center;gap:6px;min-height:44px;padding:4px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none;font-size:14px;line-height:1.2}
+#vbRow .vbl a small{color:var(--mute);font-size:12px;white-space:nowrap}#vbRow .vbl a.fin{border-color:var(--ok)}#vbRow .vbl a.fin small{color:var(--ok)}
+#vbRow .vbl a:focus-visible,#vbRow summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#vbRow summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;color:var(--accent);font-weight:600}
+@media(max-width:639px){#vbRow .pic{display:none}#vbRow .vbl a{flex:1 1 100%}}
 .foot{margin-top:26px;color:var(--mute);font-size:13px;text-align:center;line-height:1.6}
 .foot.standrow button{min-height:44px;min-width:44px;padding:0 18px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}.foot.standrow button:focus-visible{outline:3px solid #ffd166;outline-offset:2px}.foot.standrow span{font-size:12px}
 .foot a{display:inline-block;min-height:28px;padding:4px 3px;line-height:20px}
@@ -199,6 +206,20 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     <button type="button" id="themeBtn" class="themeBtn" aria-label="Darstellung: automatisch nach System (antippen zum Wechseln)" title="Darstellung wechseln: Auto, Hell, Dunkel"><svg class="ti t-a" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/></svg><svg class="ti t-l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><svg class="ti t-d" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg><span class="tl">Auto</span></button>
   </header>
   <div class="top" id="top"><a class="cont" id="contGo" href="schaltplan.html?trainer"><b>Starten</b><small>SchaltLab (Einführung)</small></a></div>
+  <section class="card vbrow" id="vbRow" data-hub="vb" data-beruf="alle" aria-labelledby="vbH">
+    <div class="pic" aria-hidden="true">
+          <svg viewBox="0 0 240 120"><g fill="none" stroke="#3b9eff" stroke-width="3" stroke-linecap="round"><path d="M40 60H92M148 60H200M120 30V90M92 60L120 30L148 60L120 90Z"/></g><path class="dots" d="M40 60H92L120 30L148 60H200" fill="none"/><g fill="#14181c" stroke="#e8eaed" stroke-width="3"><circle cx="40" cy="60" r="13"/><circle cx="120" cy="30" r="13"/><circle cx="120" cy="90" r="13"/><circle cx="200" cy="60" r="13"/></g><g fill="#ffe14d"><circle class="on" cx="40" cy="60" r="5"/><circle class="on" cx="120" cy="30" r="5" style="animation-delay:.4s"/><circle class="on" cx="200" cy="60" r="5" style="animation-delay:.8s"/><circle class="on" cx="120" cy="90" r="5" style="animation-delay:1.2s"/></g></svg>
+        </div>
+    <div class="vbt">
+      <span class="tag">PROJEKTE · LABS ARBEITEN ZUSAMMEN</span>
+      <h3 id="vbH">Verbundprojekte: ein Auftrag, viele Stationen</h3>
+      <p id="vbTxt">Wie in der Firma: Du begleitest einen Auftrag vom Lastenheft bis zur Abnahme. Jede Station liefert ihr Ergebnis an die nächste, am Ende prüft ein Gesamttest alles und du bekommst ein Zertifikat.</p>
+      <div class="vbn" id="vbN" aria-live="polite"></div>
+      <div id="vbL"></div>
+      <div class="steps"><span>Lastenheft</span><span>Stationen</span><span>Gesamttest</span><span>Zertifikat</span></div>
+    </div>
+    <div class="btns"><a class="btn pri" href="verbund.html">Projekte öffnen</a><a class="btn" href="lernen-vb.html">Projektheft</a></div>
+  </section>
   <div class="cards" id="cardsFlat">
     <section class="card" data-lab="layout" data-group="grund" data-beruf="egs ige">
       <span class="tag">LochLab</span>
@@ -752,18 +773,6 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="btns"><a class="btn pri" href="pruefungslab.html">Öffnen</a><a class="btn" href="pruefungslab.html?aufgabe=pr1">Erstes Thema</a><a class="btn" href="pruefungslab.html?aufgabe=pr10">Probeprüfung</a></div>
     </section>
   </div>
-  <section class="card vbrow" id="vbRow" data-hub="vb" data-group="pruef">
-    <div class="pic" aria-hidden="true">
-      <svg viewBox="0 0 240 120"><g fill="none" stroke="#3b9eff" stroke-width="3" stroke-linecap="round"><path d="M40 60H92M148 60H200M120 30V90M92 60L120 30L148 60L120 90Z"/></g><path class="dots" d="M40 60H92L120 30L148 60H200" fill="none"/><g fill="#14181c" stroke="#e8eaed" stroke-width="3"><circle cx="40" cy="60" r="13"/><circle cx="120" cy="30" r="13"/><circle cx="120" cy="90" r="13"/><circle cx="200" cy="60" r="13"/></g><g fill="#ffe14d"><circle class="on" cx="40" cy="60" r="5"/><circle class="on" cx="120" cy="30" r="5" style="animation-delay:.4s"/><circle class="on" cx="200" cy="60" r="5" style="animation-delay:.8s"/><circle class="on" cx="120" cy="90" r="5" style="animation-delay:1.2s"/></g></svg>
-    </div>
-    <div class="vbt">
-      <span class="tag">PROJEKTE · LABS ARBEITEN ZUSAMMEN</span>
-      <h3>Verbundprojekte: ein Gerät, alle Labs</h3>
-      <p>Sieben Projekte wie in der Firma: Garagentor mit Funköffner, Ampelanlage, Digitale Uhr, Gartenbewässerung, Förderanlage, Labornetzteil und Heizungsregelung. Datenblatt, Schaltplan, Platine, Messung, Antrieb, Sensorik, Regelung, Steuerung und Programm: Jede Station liefert ihr Ergebnis an die nächste.</p>
-      <div class="steps"><span>Lastenheft</span><span>Stationen in den Labs</span><span>Gesamttest</span><span>Zertifikat</span></div>
-    </div>
-    <div class="btns"><a class="btn pri" href="verbund.html">Projekte öffnen</a><a class="btn" href="lernen-vb.html">Projektheft</a></div>
-  </section>
   <section class="card vbrow wikirow" id="wikiRow" data-hub="wiki" data-group="grund">
     <span class="tag">NACHSCHLAGEN</span>
     <h3>Tonfunk Wiki</h3>
@@ -808,6 +817,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <script src="stand.js"></script>
 <script src="home-groups.js"></script>
 <script src="berufe.js"></script>
+<script src="home-vb.js"></script>
 <script src="home-cont.js"></script>
 <script src="wiederholen.js"></script>
 <script src="home-search.js"></script>

@@ -155,7 +155,7 @@
     nav.appendChild(panel);
     anchor.parentNode.insertBefore(nav, anchor);
     const g = doc.getElementById('groups'); if (g && g.parentNode) g.parentNode.insertBefore(soon, g);
-    // Wiki und Verbundprojekte: Wiki für alle Berufe, Verbundprojekte nur Elektronik
+    // Wiki: für alle Berufe. Die Projekte-Zeile (#vbRow) trägt data-beruf="alle" und filtert ihren Inhalt selbst nach Beruf (home-vb.js)
     const wk = doc.getElementById('wikiRow'); if (wk && !wk.hasAttribute('data-beruf')) wk.setAttribute('data-beruf', 'alle');
     apply(false);
   }

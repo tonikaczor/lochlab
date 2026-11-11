@@ -73,7 +73,10 @@
   function bewerten(wdh, id, gut, now) { const w = norm(wdh); if (!ID.test(String(id))) return w; w[id] = bewerte(w[id], !!gut, num(now) || Date.now(), true); return w; }
   const naechste = (e, now) => e ? Math.max(0, Math.ceil((e.t + TAGE[e.b] * DAY - (num(now) || Date.now())) / DAY)) : 0;
   const text = n => n === 1 ? '1 Aufgabe zum Wiederholen' : n + ' Aufgaben zum Wiederholen';
-  const api = { KEY, DAY, TAGE, MAXBOX, LIMIT, norm, abgleich, heute, bewerten, labsVon, naechste, text, tagStart };
+  /* Zeitschätzung: ca. 2 Minuten je Aufgabe, aufgerundet */
+  const minuten = n => Math.max(0, Math.ceil(Math.max(0, num(n)) * 2));
+  const heuteText = n => 'Heute für dich: ' + (n === 1 ? '1 Aufgabe' : n + ' Aufgaben') + ', ca. ' + minuten(n) + (minuten(n) === 1 ? ' Minute' : ' Minuten');
+  const api = { KEY, DAY, TAGE, MAXBOX, LIMIT, norm, abgleich, heute, bewerten, labsVon, naechste, text, tagStart, minuten, heuteText };
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.Wiederholen = api;
 
@@ -105,8 +108,8 @@
       a.style.cssText = 'display:flex;align-items:center;gap:10px;min-height:44px;margin:-8px 0 16px;padding:8px 14px;border-radius:12px;border:1px solid var(--accent,#3b9eff);background:var(--panel,#222830);color:var(--fg,#e8ecf0);text-decoration:none;font:600 15px/1.3 system-ui,sans-serif';
       top.insertAdjacentElement('afterend', a);
     }
-    a.textContent = '🔁 ' + text(s.liste.length) + ' – jetzt wiederholen';
-    a.setAttribute('aria-label', text(s.liste.length) + ', Wiederholen öffnen');
+    a.textContent = '🔁 ' + heuteText(s.liste.length) + ' – jetzt wiederholen';
+    a.setAttribute('aria-label', heuteText(s.liste.length) + ', Wiederholen öffnen');
   }
   root.Wiederholen.laden = laden; root.Wiederholen.stand = stand; root.Wiederholen.beruf = beruf; root.Wiederholen.bewertenUndSpeichern = bewertenUndSpeichern; root.Wiederholen.hinweis = hinweis;
   if (document.getElementById('top') && document.getElementById('contGo')) {

@@ -147,7 +147,9 @@
     'pi.script'(d) { const e = []; if (!objOf(d, e)) return e; need(e, d.lang === 'python', 'lang muss "python" sein'); need(e, isS(d.src) && d.src.length > 0, 'src (Programmtext) fehlt'); need(e, isA(d.out) && d.out.every(isS), 'out muss eine Liste von Zeilen sein'); return e; },
     'haus.plan'(d) { const e = []; if (!objOf(d, e)) return e; if (!isA(d.circuits)) { e.push('circuits fehlt'); return e; } d.circuits.forEach((c, i) => { const w = 'Stromkreis ' + (i + 1); if (!isO(c) || !isS(c.name)) { e.push(w + ': name fehlt'); return; } need(e, isO(c.breaker) && isS(c.breaker.type) && isN(c.breaker.inA), w + ': Sicherung { type, inA } fehlt'); need(e, c.rcd === null || (isO(c.rcd) && isN(c.rcd.imaMa) && isS(c.rcd.type)), w + ': rcd muss null oder { imaMa, type } sein'); need(e, isO(c.cable) && isN(c.cable.mm2) && isN(c.cable.lenM), w + ': Leitung { mm2, lenM } fehlt'); need(e, isA(c.loads), w + ': loads fehlt'); }); need(e, d.notes === undefined || isS(d.notes), 'notes muss Text sein'); return e; },
     'app.note'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isS(d.title) && d.title.trim(), 'title fehlt'); need(e, isS(d.md), 'md (Notiztext) fehlt'); need(e, isA(d.tags) && d.tags.every(isS), 'tags muss eine Liste von Texten sein'); return e; },
-    'pr.quiz'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isO(d.answers), 'answers fehlt'); need(e, isI(d.n) && d.n >= 0, 'n muss eine ganze Zahl ab 0 sein'); return e; }
+    'pr.quiz'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isO(d.answers), 'answers fehlt'); need(e, isI(d.n) && d.n >= 0, 'n muss eine ganze Zahl ab 0 sein'); return e; },
+    /* Hub-Station (on:'vb'): Formular direkt im Projekt-Hub, dazu optional Lab-Aufgaben (Prozent aus lm4.tdone) */
+    'vb.form'(d) { const e = []; if (!objOf(d, e)) return e; need(e, isO(d.vals) && Object.keys(d.vals).length <= 80, 'vals fehlt (Formularwerte als Objekt, höchstens 80 Einträge)'); need(e, d.tasks === undefined || (isO(d.tasks) && Object.keys(d.tasks).length <= 40 && Object.keys(d.tasks).every(k => isN(d.tasks[k]))), 'tasks muss Zahlen enthalten'); return e; }
   };
   Object.keys(VAL).forEach(k => { TYPES[k] = { validate: VAL[k] }; BUILTIN[k] = 1; });
   V.registerType = function (typeId, spec) {
@@ -228,6 +230,8 @@
       });
       if (i > 0) { total++; if (!early) errs.push(w + ': braucht mindestens einen Eingang aus einer früheren Station'); }
       if (isA(s.needs)) s.needs.forEach(n => { const p = def.stations.findIndex(x => x.id === n); if (p < 0 || p >= i) errs.push(w + ': needs ' + n + ' nicht früher'); });
+      if (s.beruf !== undefined && !(isA(s.beruf) && s.beruf.length && s.beruf.every(b => isS(b) && /^[a-z]+$/.test(b)))) errs.push(w + ': beruf muss eine Liste von Berufskürzeln sein');
+      if (s.kollege !== undefined && !isS(s.kollege)) errs.push(w + ': kollege muss ein Text sein');
       if (!isA(s.hint) || s.hint.length !== 3 || !s.hint.every(h => isS(h) && h)) warns.push(w + ': hint soll drei nichtleere Stufen haben');
       if (typeof s.starter !== 'function') warns.push(w + ': starter fehlt');
       if (typeof s.solution !== 'function') warns.push(w + ': solution fehlt');
@@ -243,7 +247,14 @@
       return { ok: true, id: def.id, errs: [], warns: r.warns, graph: r.graph };
     } catch (e) { return bad('definition', msgOf(e), { errs: [msgOf(e)], warns: [] }); }
   };
-  V.projects = () => Object.keys(P).map(k => P[k]).sort((a, b) => (a.order || 99) - (b.order || 99) || (a.id < b.id ? -1 : 1)).map(d => ({ id: d.id, name: d.name, icon: d.icon || '', stations: d.stations.length, labs: isA(d.labs) ? d.labs.slice() : Array.from(new Set(d.stations.map(s => s.on))) }));
+  V.projects = () => Object.keys(P).map(k => P[k]).sort((a, b) => (a.order || 99) - (b.order || 99) || (a.id < b.id ? -1 : 1)).map(d => ({ id: d.id, name: d.name, icon: d.icon || '', stations: d.stations.length, labs: isA(d.labs) ? d.labs.slice() : Array.from(new Set(d.stations.map(s => s.on))), beruf: isA(d.beruf) ? d.beruf.slice() : null, berufe: berufeOf(d) }));
+  /* ---- Stations-Beruf (berufsübergreifende Projekte): station.beruf = ['egs','ige'] sagt, welcher Beruf die Station bearbeitet. Projekte ohne dieses Feld laufen unverändert.
+     Zustand: stt.beruf (Kürzel des Lernenden) und stt.solo (true = Einzelmodus: Stationen fremder Berufe liefern "die Kollegen" mit Musterwerten, sie zählen nicht für Punkte und Fortschritt;
+     false = Teamarbeit: alle Stationen zählen, die fremden kommen per Team-Code). Ohne stt.beruf verhält sich auch ein solches Projekt wie jedes andere (alle Stationen selbst, z. B. Demo und Selbsttest). */
+  function berufeOf(def) { const o = []; (def && isA(def.stations) ? def.stations : []).forEach(s => { if (isO(s) && isA(s.beruf)) s.beruf.forEach(b => { if (b !== 'alle' && o.indexOf(b) < 0) o.push(b); }); }); return o; }
+  const modeOf = (def, stt) => (stt && isS(stt.beruf) && stt.beruf && berufeOf(def).length ? { beruf: stt.beruf, solo: !!stt.solo } : null);
+  const ownSt = (def, stt, s) => { const m = modeOf(def, stt); return !m || !isA(s.beruf) || !s.beruf.length || s.beruf.indexOf(m.beruf) >= 0 || s.beruf.indexOf('alle') >= 0; };
+  V.berufe = pid => (P[pid] ? berufeOf(P[pid]) : []);
   V.project = pid => P[pid] || null;
   V.registerAdapter = function (labId, adapter) {
     if (!isS(labId) || !labId) return bad('adapter', 'Lab-ID fehlt');
@@ -333,7 +344,10 @@
     const seed = V.hash(name + '|' + pid + '|' + level);
     let lh; try { lh = def.lastenheft(seed, level); } catch (e) { return bad('lastenheft', 'Lastenheft nicht erzeugbar: ' + msgOf(e)); }
     if (!isO(lh) || !isO(lh.params) || !isA(lh.text)) return bad('lastenheft', 'Lastenheft hat kein params/text');
+    const bl = berufeOf(def);
+    if (o.beruf !== undefined && o.beruf !== null && bl.length && bl.indexOf(o.beruf) < 0) return bad('beruf', 'Dieser Beruf hat in diesem Projekt keine Station');
     const stt = { v: 1, id: pid, name, level, seed, t0: now(), t1: null, dev: Math.random().toString(36).slice(2, 8), stations: {}, final: null, points: 0, badges: [], log: [] };
+    if (bl.length && isS(o.beruf) && o.beruf) { stt.beruf = o.beruf; stt.solo = o.solo !== false; }
     const data = clone({ pid, level, seed, name, params: lh.params, text: lh.text, io: lh.io });
     if (data.io === undefined) delete data.io;
     const errs = runValidate('lastenheft', data);
@@ -345,12 +359,52 @@
     if (o.again) { keysOf(slotKey(pid, '')).forEach(k => { if (k !== key) sdel(k); }); }
     const prefs = jget('verbund.prefs', {}); if (isO(prefs)) { prefs.lastPid = pid; jset('verbund.prefs', prefs); }
     emit('change', { pid });
+    if (stt.solo) { autoDeliver(pid); return { ok: true, state: state(pid) || stt }; }
     return { ok: true, state: stt };
+  }, e => bad('intern', msgOf(e)));
+  /* Beruf und Modus nachträglich setzen (der Hub fragt einmal, wenn beim Start nichts gewählt war). solo=false: Teamarbeit, die Kollegen liefern per Team-Code. beruf=null: wie ein normales Projekt. */
+  V.setBeruf = guard(function (pid, beruf, solo) {
+    const def = P[pid]; if (!def) return bad('projekt', 'Projekt unbekannt');
+    const stt = state(pid); if (!stt) return bad('nostart', 'Projekt nicht gestartet');
+    const bl = berufeOf(def); if (!bl.length) return bad('beruf', 'Dieses Projekt hat keine Stationen nach Berufen');
+    if (beruf === null || beruf === undefined || beruf === '') { delete stt.beruf; delete stt.solo; }
+    else { if (bl.indexOf(beruf) < 0) return bad('beruf', 'Dieser Beruf hat in diesem Projekt keine Station'); stt.beruf = beruf; stt.solo = solo !== false; }
+    refresh(def, stt); if (!saveState(pid, stt)) return bad('speicher', 'Speicher voll');
+    emit('change', { pid }); autoDeliver(pid);
+    return { ok: true, beruf: stt.beruf || null, solo: !!stt.solo };
+  }, e => bad('intern', msgOf(e)));
+  /* Einzelmodus: offene Stationen fremder Berufe mit den Musterwerten übergeben = "von den Kollegen geliefert". Eine Kollegen-Lieferung, die durch neue Eingänge veraltet ist, wird erneuert.
+     Eigene (freiwillige) Arbeit an einer fremden Station wird nie überschrieben, außer auf Wunsch (V.kollege). Schreibt weder Aufgaben-Ergebnisse noch Versuche noch Abzeichen-Zähler. */
+  let AUTO = false;
+  function autoDeliver(pid, force) {
+    const def = P[pid], done = []; if (!def || AUTO) return done;
+    AUTO = true;
+    try {
+      for (let i = 0; i < def.stations.length; i++) {
+        const s = def.stations[i], stt = state(pid), m = modeOf(def, stt); if (!m || !m.solo) break;
+        if (ownSt(def, stt, s) || typeof s.solution !== 'function') continue;
+        const row = evalStations(def, stt).by[s.id], e = stt.stations[s.id];
+        if (row.state === 'locked') continue;
+        if (row.delivered && !(force === s.id || (e && e.kollege && row.state !== 'passed'))) continue;
+        let d; try { d = s.solution(ctxFor(pid, s.id)); } catch (x) { continue; }
+        const p = isO(d) && isS(d.type) && d.data !== undefined ? d : { type: s.type, data: d };
+        const r = V.deliver(s.out, { type: p.type, data: p.data, station: s.id, from: 'kollege' }, { kollege: true });
+        if (r && r.ok) done.push(s.id);
+      }
+    } finally { AUTO = false; }
+    return done;
+  }
+  V.liefern = guard(pid => autoDeliver(pid), () => []);
+  V.kollege = guard(function (pid, sid) {
+    const def = P[pid], stt = def && state(pid); if (!stt) return bad('nostart', 'Projekt nicht gestartet');
+    const s = def.stations.find(x => x.id === sid), m = modeOf(def, stt);
+    if (!s || !m || !m.solo || ownSt(def, stt, s)) return bad('beruf', 'Diese Station liefern die Kollegen nicht');
+    const done = autoDeliver(pid, sid); return done.indexOf(sid) >= 0 ? { ok: true, done } : bad('gesperrt', 'Die Kollegen können erst liefern, wenn die Stationen davor bestanden sind');
   }, e => bad('intern', msgOf(e)));
 
   /* alle Stationen auswerten: Zustand, Stale, Sperre */
   function evalStations(def, stt) {
-    const L = levelCfg(def, stt.level), fr = free(), list = [], by = {};
+    const L = levelCfg(def, stt.level), fr = free(), list = [], by = {}, multi = berufeOf(def).length > 0, md = modeOf(def, stt);
     def.stations.forEach((s, i) => {
       const e = stt.stations[s.id] || null, limit = isN(s.pass) ? s.pass : L.pass;
       const delivered = !!(e && e.out && e.sum && sget(slotKey(def.id, e.out.slice(def.id.length + 1))) !== null);
@@ -367,6 +421,7 @@
       if (delivered) { pct = e.pct; state = stale ? 'stale' : (pct >= limit ? 'passed' : 'failed'); }
       else { const nd = stNeeds(def, s); state = (!nd.length || fr || nd.every(n => by[n] && by[n].state === 'passed')) ? 'open' : 'locked'; }
       const row = { id: s.id, on: s.on, title: s.title, cat: s.cat, state, pct, best: e ? e.best : 0, stale, hints: e ? e.hints : 0, locked: state === 'locked', tries: e ? e.tries : 0, assisted: !!(e && e.assisted), out: s.out, w: isN(s.w) ? s.w : 100, pass: limit, delivered, index: i };
+      if (multi) { row.beruf = isA(s.beruf) ? s.beruf.slice() : null; row.own = ownSt(def, stt, s); row.kollege = !!(delivered && e.kollege); row.counts = !(md && md.solo) || row.own; }
       list.push(row); by[s.id] = row;
     });
     return { list, by, L };
@@ -385,7 +440,7 @@
   }
   function pointsOf(def, stt, ev, fin) {
     const f = ev.L.f; let got = 0, max = 0;
-    ev.list.forEach(r => { got += (r.delivered ? r.pct : 0) / 100 * r.w; max += r.w; });
+    ev.list.forEach(r => { if (r.counts === false) return; got += (r.delivered ? r.pct : 0) / 100 * r.w; max += r.w; });
     const fw = isN(def.final.w) ? def.final.w : 200; max += fw; if (stt.final && fin.state !== 'locked') got += (stt.final.pct || 0) / 100 * fw;
     return { points: Math.round(got * f), maxPoints: Math.round(max * f) };
   }
@@ -393,7 +448,8 @@
   V.status = guard(function (pid) {
     const def = P[pid], stt = def && state(pid); if (!def) return null; if (!stt) return null;
     const ev = evalStations(def, stt), fin = finalInfo(def, stt, ev), p = pointsOf(def, stt, ev, fin);
-    const done = ev.list.filter(r => r.state === 'passed').length, total = ev.list.length;
+    const mine = ev.list.filter(r => r.counts !== false), done = mine.filter(r => r.state === 'passed').length, total = mine.length, md = modeOf(def, stt);
+    if (md) return { id: pid, name: stt.name, level: stt.level, stations: ev.list, done, total, pct: Math.round(100 * (done + (fin.state === 'passed' ? 1 : 0)) / (total + 1)), finalState: fin.state, finalPct: fin.pct, finalId: def.final.id, points: p.points, maxPoints: p.maxPoints, medal: medalOf(p, fin), demo: !!stt.demo, team: !!stt.team, beruf: md.beruf, solo: md.solo };
     return { id: pid, name: stt.name, level: stt.level, stations: ev.list, done, total, pct: Math.round(100 * (done + (fin.state === 'passed' ? 1 : 0)) / (total + 1)), finalState: fin.state, finalPct: fin.pct, finalId: def.final.id, points: p.points, maxPoints: p.maxPoints, medal: medalOf(p, fin), demo: !!stt.demo, team: !!stt.team };
   }, null);
   V.next = guard(function (pid) {
@@ -421,9 +477,9 @@
     return { def, stt, ev, fin, p };
   }
   function badgeIds(def, stt, ev, fin, p) {
-    const ids = [], X = def.id, passed = ev.list.filter(r => r.state === 'passed').length;
-    if (ev.list.some(r => r.delivered)) ids.push('vb_' + X + '_start');
-    if (passed >= Math.ceil(ev.list.length / 2)) ids.push('vb_' + X + '_halb');
+    const ids = [], X = def.id, mine = ev.list.filter(r => r.counts !== false), passed = mine.filter(r => r.state === 'passed').length;
+    if (mine.some(r => r.delivered && !r.kollege)) ids.push('vb_' + X + '_start');
+    if (passed >= Math.ceil(mine.length / 2)) ids.push('vb_' + X + '_halb');
     if (fin.state === 'passed') ids.push('vb_' + X + '_fertig');
     if (medalOf(p, fin) === 'gold') ids.push('vb_' + X + '_gold');
     return ids;
@@ -432,7 +488,7 @@
     let fertig = 0, profi = false, ohne = false, uebergaben = 0, team = false, gestartet = 0, gold = 0; const fertigIds = [];
     Object.keys(P).forEach(k => {
       const f = projFlags(k); if (!f) return;
-      if (f.ev.list.some(r => r.delivered)) gestartet++;
+      if (f.ev.list.some(r => r.delivered && !r.kollege)) gestartet++;
       f.ev.list.forEach(r => { uebergaben += r.tries; });
       if (f.stt.team) team = true;
       if (f.fin.state === 'passed') {
@@ -446,10 +502,18 @@
   /* vb_alle: alle registrierten Projekte fertig (mindestens 5). Ein einmal erreichtes Abzeichen bleibt (Marker), auch wenn später Projekte dazukommen;
      Altstand: wer die fünf ersten Projekte fertig hat, behält es ohne Marker. */
   const ALLE_KEY = 'lm4.vb.alle', ALLE_ALT = ['garage', 'ampel', 'uhr', 'giess', 'foerder'];
-  V.alleZahl = () => Math.max(5, Object.keys(P).length);
+  /* Seit es Projekte anderer Berufe gibt, zählt vb_alle nur die Projekte des EIGENEN Berufs (lm4.beruf wie auf der Startseite; ohne Wahl egs). Projekte ohne def.beruf gehören zur
+     Elektronik (egs, ige); berufsübergreifende Projekte (def.beruf enthält 'alle') sind nie Pflicht. Elektronik: mindestens 5 wie bisher; andere Berufe: alle eigenen (mindestens 1), eigener Marker. */
+  const ELEK = ['egs', 'ige'];
+  const curBeruf = () => { const b = sget('lm4.beruf'); return isS(b) && /^[a-z]{2,4}$/.test(b) ? b : 'egs'; };
+  const defBeruf = d => (isA(d.beruf) && d.beruf.length ? d.beruf : ELEK);
+  function allePids(b) { b = isS(b) && b ? b : curBeruf(); return Object.keys(P).filter(k => { const l = defBeruf(P[k]); return l.indexOf('alle') < 0 && l.indexOf(b) >= 0; }); }
+  V.allePids = guard(b => allePids(b), () => []);
+  V.alleZahl = b => { b = isS(b) && b ? b : curBeruf(); const n = allePids(b).length; return ELEK.indexOf(b) >= 0 ? Math.max(5, n) : Math.max(1, n); };
   function alleErreicht(g) {
-    if (g.fertig >= V.alleZahl() || (ALLE_ALT.every(k => P[k]) && ALLE_ALT.every(k => g.fertigIds.indexOf(k) >= 0))) { if (sget(ALLE_KEY) !== '1') sset(ALLE_KEY, '1'); return true; }
-    return sget(ALLE_KEY) === '1';
+    const b = curBeruf(), el = ELEK.indexOf(b) >= 0, key = el ? ALLE_KEY : ALLE_KEY + '.' + b, set = allePids(b), n = set.filter(k => g.fertigIds.indexOf(k) >= 0).length;
+    if ((set.length && n >= V.alleZahl(b)) || (el && ALLE_ALT.every(k => P[k]) && ALLE_ALT.every(k => g.fertigIds.indexOf(k) >= 0))) { if (sget(key) !== '1') sset(key, '1'); return true; }
+    return sget(key) === '1';
   }
   V.badges = guard(function (pid) {
     const f = projFlags(pid); if (!f) return [];
@@ -562,18 +626,20 @@
     const old = stt.stations[station.id], backup = old ? clone(old) : null, oldFinal = stt.final, oldDemo = stt.demo, oldLog = stt.log.slice();
     const r = checkStation(def, stt, station, data);
     const e = stt.stations[station.id] || (stt.stations[station.id] = newEntry());
-    e.pct = r.pct; e.best = Math.max(e.best || 0, r.pct); e.passed = r.passed; e.tries = (e.tries || 0) + 1; e.t = t; e.out = s.full; e.sum = env.sum; e.inputs = inputs; e.stale = false;
+    e.pct = r.pct; e.best = Math.max(e.best || 0, r.pct); e.passed = r.passed; e.tries = (e.tries || 0) + (opts.kollege ? 0 : 1); e.t = t; e.out = s.full; e.sum = env.sum; e.inputs = inputs; e.stale = false;
+    if (opts.kollege) e.kollege = true; else if (e.kollege) delete e.kollege;
     if (opts.assisted) e.assisted = true;
     if (opts.demo) stt.demo = true;
-    stt.log.push({ t, sid: station.id, pct: r.pct, passed: r.passed }); if (stt.log.length > 50) stt.log = stt.log.slice(-50);
+    if (!opts.kollege) stt.log.push({ t, sid: station.id, pct: r.pct, passed: r.passed }); if (stt.log.length > 50) stt.log = stt.log.slice(-50);
     refresh(def, stt);
     if (!saveState(s.pid, stt)) {
       if (prev === null) sdel(key); else sset(key, prev);
       if (backup) stt.stations[station.id] = backup; else delete stt.stations[station.id]; stt.final = oldFinal; stt.demo = oldDemo; stt.log = oldLog;
       return bad('speicher', 'Speicher voll: Projekt als Datei sichern, alte Platinen/Programme löschen');
     }
-    if (!stt.demo) { mapMax('lm4.tdone', station.id, r.pct); pushStats(s.pid, true); }
+    if (!stt.demo && !opts.kollege) { mapMax('lm4.tdone', station.id, r.pct); pushStats(s.pid, true); }
     emit('change', { pid: s.pid });
+    if (!opts.kollege && stt.solo) autoDeliver(s.pid);
     return { ok: true, env, check: { pct: r.pct, passed: r.passed, lines: r.lines, inputs: r.inputs }, state: stt.stations[station.id].stale ? 'stale' : (r.passed ? 'passed' : 'failed') };
   }, e => bad('intern', msgOf(e)));
 
@@ -645,7 +711,8 @@
     const station = def.stations.find(s => s.id === sid); if (!station) return bad('station', 'Station unbekannt: ' + sid);
     sdel(slotKey(pid, station.out.slice(pid.length + 1)));
     const e = stt.stations[sid]; if (e) { e.pct = 0; e.passed = false; e.out = null; e.sum = null; e.inputs = {}; e.stale = false; }
-    refresh(def, stt); saveState(pid, stt); emit('change', { pid }); return { ok: true };
+    if (e && e.kollege) delete e.kollege;
+    refresh(def, stt); saveState(pid, stt); emit('change', { pid }); if (stt.solo) autoDeliver(pid); return { ok: true };
   }, e => bad('intern', msgOf(e)));
 
   /* ====================================================================== Teilen */
@@ -731,11 +798,12 @@
       if (!station) { rejected.push({ slot, why: 'Slot gehört zu keiner Station' }); return; }
       if (env.type !== station.type) { rejected.push({ slot, why: 'Typ passt nicht zur Station' }); return; }
       const cur = V.getEnvelope(slot);
-      if (mode === 'merge' && cur && !(isN(env.t) && env.t > cur.t)) { skipped.push(slot); return; }
+      if (mode === 'merge' && cur && (!(isN(env.t) && env.t > cur.t) || (env.from === 'kollege' && cur.from !== 'kollege'))) { skipped.push(slot); return; }
       if (!sset(slotKey(pid, slot.slice(pid.length + 1)), JSON.stringify(env))) { rejected.push({ slot, why: 'Speicher voll' }); return; }
       imported.push(slot); sids.push(station.id);
       const e = stt.stations[station.id] || (stt.stations[station.id] = newEntry());
       e.out = slot; e.sum = env.sum; e.inputs = isO(env.inputs) ? env.inputs : {}; e.t = env.t; e.tries = Math.max(e.tries || 0, 1);
+      if (env.from === 'kollege') e.kollege = true; else if (e.kollege) delete e.kollege;
     });
     def.stations.forEach(s => {
       if (sids.indexOf(s.id) < 0) return;
@@ -746,8 +814,9 @@
     });
     refresh(def, stt);
     if (!saveState(pid, stt)) return bad('speicher', 'Speicher voll', { imported, rejected, skipped });
-    if (!stt.demo) { sids.forEach(id => mapMax('lm4.tdone', id, stt.stations[id].pct)); pushStats(pid, false); }
+    if (!stt.demo) { sids.forEach(id => { if (!stt.stations[id].kollege) mapMax('lm4.tdone', id, stt.stations[id].pct); }); pushStats(pid, false); }
     emit('change', { pid });
+    if (stt.solo) autoDeliver(pid);
     return { ok: !(rejected.length && !imported.length), imported, rejected, skipped };
   }, e => bad('intern', msgOf(e), { imported: [], rejected: [] }));
   V.link = code => 'verbund.html#v=' + code;
@@ -757,7 +826,8 @@
   V.certCode = guard(function (pid) {
     const def = P[pid], stt = def && state(pid); if (!stt) return '';
     const pcts = def.stations.map(s => (stt.stations[s.id] ? stt.stations[s.id].pct : 0)).join(',');
-    return 'TFV-' + V.fnv([stt.name, pid, stt.level, pcts, stt.final ? stt.final.pct : 0].join('|'));
+    const md = modeOf(def, stt);
+    return 'TFV-' + V.fnv([stt.name, pid, stt.level, pcts, stt.final ? stt.final.pct : 0].concat(md ? [md.beruf, md.solo ? 'solo' : 'team'] : []).join('|'));
   }, '');
   const fmtV = v => (isN(v) ? String(Number(v.toPrecision(6))).replace('.', ',') : isA(v) ? v.map(fmtV).join(', ') : isO(v) ? Object.keys(v).map(k => k + ' ' + fmtV(v[k])).join('; ') : v === true ? 'ja' : v === false ? 'nein' : String(v));
   V.report = guard(function (pid) {
@@ -765,11 +835,12 @@
     const s = V.status(pid), spec = V.spec(pid) || {}, lh = V.get(pid + '.lastenheft') || { text: [] };
     const sections = [];
     sections.push({ h: 'Lastenheft', head: ['Größe', 'Wert'], rows: Object.keys(spec).filter(k => k !== 'hidden' && k !== 'fault' && !(isA(spec.hidden) && spec.hidden.indexOf(k) >= 0)).map(k => [k, fmtV(spec[k])]), text: isA(lh.text) ? lh.text.slice() : [] });
-    sections.push({ h: 'Stationen', head: ['Station', 'Titel', 'Lab', 'Ergebnis', 'Stand', 'Versuche', 'Tipps'], rows: s.stations.map((r, i) => [(i + 1) + ' (' + r.id + ')', r.title, r.on, r.delivered ? r.pct + ' %' : '-', r.state, r.tries, r.hints]) });
+    sections.push({ h: 'Stationen', head: ['Station', 'Titel', 'Lab', 'Ergebnis', 'Stand', 'Versuche', 'Tipps'], rows: s.stations.map((r, i) => [(i + 1) + ' (' + r.id + ')', r.title, r.on, r.delivered ? r.pct + ' %' : '-', r.kollege ? 'von den Kollegen geliefert' : r.state, r.tries, r.hints]) });
     try { const c = ctxFor(pid, def.final.id); if (typeof def.report === 'function') { const x = def.report(c.slots, spec); if (isA(x)) x.filter(isO).forEach(sec => sections.push(sec)); } } catch (e) { sections.push({ h: 'Zusatzabschnitte', rows: [['Fehler', msgOf(e)]] }); }
     const fin = stt.final;
     sections.push({ h: 'Gesamttest', head: ['Ergebnis'], rows: fin ? [['Gesamttest', fin.pct + ' % (' + (fin.ok ? 'bestanden' : 'nicht bestanden') + ')']] : [['Gesamttest', 'noch nicht abgelegt']] });
-    return { title: def.name + ' - Abschlussbericht', project: pid, name: stt.name, level: stt.level, levelName: levelCfg(def, stt.level).name, sections, kpis: fin && isA(fin.kpis) ? fin.kpis : [], cert: { code: V.certCode(pid), medal: s.medal, points: s.points, maxPoints: s.maxPoints, passed: s.finalState === 'passed' } };
+    const md = modeOf(def, stt);
+    return { title: def.name + ' - Abschlussbericht', beruf: md ? md.beruf : null, solo: md ? md.solo : false, project: pid, name: stt.name, level: stt.level, levelName: levelCfg(def, stt.level).name, sections, kpis: fin && isA(fin.kpis) ? fin.kpis : [], cert: { code: V.certCode(pid), medal: s.medal, points: s.points, maxPoints: s.maxPoints, passed: s.finalState === 'passed' } };
   }, null);
 
   /* ====================================================================== Start: Registrierungswarteschlange */

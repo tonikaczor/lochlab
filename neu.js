@@ -2,41 +2,20 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+        { v: 'v55.170', items: [
+      ['Projekte für alle Berufe', 'Sechs neue Projekte: Pneumatische Presse (Industriemechaniker), Kundenauftrag vom Wareneingang bis zur Rampe (Lagerlogistik), Auftrag kalkulieren und abrechnen (Industriekaufleute), Werkstatt-Netz mit Messdaten-Server (Fachinformatiker), Gehäuse für das Labornetzteil (Technische Produktdesigner) und der Tonfunk-Auftrag, bei dem ein Gerät durch alle Berufe läuft und jeder seine Stationen bearbeitet. Zu jeder Station gehören ein Formular und Aufgaben in den passenden Labs.', 'Startseite ▸ Projekte; Projekte-Bereich'],
+      ['Projekte nach Beruf', 'Die Zeile Projekte steht jetzt weit oben auf der Startseite und zeigt die Projekte deines Berufs mit Fortschritt. Im Projekt-Bereich stehen deine Projekte zuerst, die anderen sind eingeklappt. In den Labs weist ein Hinweis auf das Projekt hin, in dem das Lab vorkommt.', 'Startseite ▸ Projekte; Projekte-Bereich; alle Labs'],
+    ] },
+{ v: 'v55.169', items: [
+      ['Heute für dich', 'Die Startseite zeigt jetzt, wie viele Aufgaben zum Wiederholen anstehen und wie lange das ungefähr dauert.', 'Startseite ▸ Wiederholen'],
+      ['Rückmeldung nach jeder Aufgabe', 'Nach einer gelösten Aufgabe kannst du mit einem Klick sagen: zu leicht, passt, zu schwer oder unklar. Die Rückmeldung bleibt nur auf deinem Gerät, ganz ohne Namen. Ausbilder sehen unter „Rückmeldungen zu Aufgaben“ die auffälligen Aufgaben und können die Auswertung exportieren.', 'Alle Labs ▸ Aufgaben; Ausbilder-Übersicht ▸ Rückmeldungen zu Aufgaben'],
+    ] },
     { v: 'v55.168', items: [
       ['Fachliche Korrekturen nach Prüfung', 'Alle Aufgaben und Texte wurden noch einmal doppelt nachgeprüft. Berichtigt wurden unter anderem: FI-Schutzschalter 30 mA gilt für Steckdosenkreise bis 32 A (Haus-Check, Heft), Teilungseinheit 17,5 mm (Schaltschrank-Lab), Schrauben in DIN 8593 bei An- und Einpressen (Füge-Lab), Druckluftquelle als unausgefülltes Dreieck (Pneumatik-Lab), Drehzahlreihe R20/3 und ein Beispiel im Zerspan-Heft, Not-Halt als ergänzende Schutzmaßnahme und DIN 18012 (Wiki), Steuerbus (IT-Systeme-Lab), Reibwert Kunststoff auf Stahl 0,15 (Ladungssicherung), Körperstrom-Aufgabe mit einer Sekunde (Elektrosicherheit).', 'Labs und Hefte'],
       ['Antriebs-Lab: Aufgabe Dreieck am Netz', 'Die Prüfung meldet nicht mehr fälschlich Kippmoment und verlangt jetzt ausdrücklich Netzbetrieb.', 'Antriebs-Lab ▸ Aufgaben'],
       ['Klarere Hinweise', 'Sicherheits- und Vereinfachungshinweise in SPS-, Digi-, Thermik-, Hydraulik- und Instandhaltungs-Aufgaben und -Heften (zum Beispiel Not-Halt über eigenen Sicherheitskreis, Zweihandbedienung, absolute Drücke, fünf Sicherheitsregeln). Die GRAFCET-Kennbuchstaben sind erklärt.', 'SPS-Lab, Digi-Lab, Thermik-Lab, Hydraulik-Lab, Instandhaltungs-Lab ▸ Aufgaben und Hefte'],
     ] },
-    { v: 'v55.167', items: [
-      ['Neues Lab: Füge-Lab', 'Schweißen, Löten, Kleben, Nieten und Schrauben richtig wählen und rechnen: a-Maß und Nahtsymbol, Lötspalt, Klebfläche, Anzugsmoment und Vorspannkraft, Passfeder und Pressverband. Jeder Rechner hat eine Zeichnung, die mitgeht. 40 Aufgaben, drei Fehlersuchen, Beispiele. Für Industriemechaniker.', 'Startseite ▸ Füge-Lab'],
-      ['Neues Lab: Maschinenelemente-Lab', 'Zahnräder greifen sichtbar ineinander und drehen sich mit deiner Übersetzung. Dazu Riemen und Ketten, Wälzlager im Schnitt, Fest-Los-Lagerung, Kupplungen, Bremsen, Dichtungen und Federn. 40 Aufgaben, drei Fehlersuchen, 16 Beispiele. Für Industriemechaniker.', 'Startseite ▸ Maschinenelemente-Lab'],
-      ['Neues Lab: Mechanik-Lab', 'Kräfte zerlegen, Hebel und Drehmoment, Auflagerkräfte am Träger, Reibung, Spannung und Dehnung, Pressung, Abscheren und Biegung. Die Zeichnungen kannst du mit dem Finger ziehen. 40 Aufgaben, drei Fehlersuchen, Beispiele. Für Industriemechaniker.', 'Startseite ▸ Mechanik-Lab'],
-      ['Neues Lab: Fertigungs-Lab', 'Fertigungsverfahren nach DIN 8580 auf einer antippbaren Landkarte, Blech biegen mit gestreckter Länge, Gewinde und Kernloch, Zuschnitt und Kosten, Qualitätsregelkarte und Vorrichtungen nach der 3-2-1-Regel. 40 Aufgaben, drei Fehlersuchen, Beispiele. Für Industriemechaniker.', 'Startseite ▸ Fertigungs-Lab'],
-      ['Neues Lab: Maschinen-Lab', 'Die Maschinen der Werkstatt als bedienbare Zeichnung: Bauteile antippen, Hebel einstellen, Drehzahltafeln lesen und die Drehzahl berechnen. Dazu Sicherheit, Spannen, Maschinenwahl und das Bedienfeld einer CNC-Steuerung. 40 Aufgaben, Beispiele. Für Industriemechaniker.', 'Startseite ▸ Maschinen-Lab'],
-      ['12 neue Lernhefte für Mechaniker', 'Zu Toleranz, Zerspanen, Hydraulik, CNC, Werkstoff, Instandhaltung, Pneumatik, Füge-Lab, Maschinenelemente, Mechanik, Fertigung und Maschinen gibt es je ein Lernheft mit Arbeitsblatt zu allen Aufgaben und Prüfungsfragen.', 'Startseite ▸ Lernhefte'],
-      ['Tutorial in jedem Lab', 'Beim ersten Öffnen zeigt dir eine kurze Tour, wie das Lab aufgebaut ist. Du kannst sie jederzeit überspringen, mit „Nicht mehr zeigen“ ausschalten und über das ? oben wieder starten. Im Prüfmodus und bei Aufgaben startet sie nie.', 'Jedes Lab ▸ ?'],
-      ['SchaltLab: Bauteile werden warm und können ausfallen', 'Im freien SchaltLab erwärmen sich Widerstand, LED, Z-Diode, Transistor und Regler nach ihrer Verlustleistung. Ein Wärmebild zeigt die ganze Schaltung. Wird ein Bauteil über seine Nennleistung belastet, fällt es nach einiger Zeit richtig aus und du kannst es ersetzen. Der Schalter „Bauteile dürfen ausfallen“ steht standardmäßig an. In Aufgaben und im Prüfmodus bleibt alles wie bisher.', 'SchaltLab ▸ Simulation'],
-      ['Abzeichen', 'Für die fünf neuen Labs gibt es je ein Praktiker- und ein Meister-Abzeichen. Insgesamt gibt es jetzt 55 Labs.', 'Startseite ▸ Abzeichen'],
-      ['73 neue Aufgaben für Mechaniker', 'Sieben Labs haben mehr Aufgaben bekommen: Toleranz, Zerspanen, Pneumatik, Hydraulik, CNC, Werkstoff und Instandhaltung.', 'Labs ▸ jeweiliges Lab ▸ Aufgaben'],
-      ['Neue Grafiken in rund 47 Labs', 'Zeichnungen und Diagramme zeigen jetzt, was hinter den Zahlen steckt: Netzteil, Wechselstrom, Analogtechnik, Regelung, EMV, Energie, Sicherheit, Antriebe, Sensorik, Datenblatt, SPS, Platine, Messen, Haus, Digitaltechnik und Simulation. Sie sind nur zum Ansehen und Nachvollziehen. In den Aufgaben erscheinen sie nicht oder erst nach der Lösung, damit sie keine Antwort verraten.', 'Labs ▸ jeweiliger Reiter'],
-      ['LochLab: Bauteilgrößen nach Nennleistung', 'Widerstände haben jetzt eine Nennleistung und sind je nach Nennleistung unterschiedlich groß gezeichnet, so wie in echt.', 'LochLab ▸ Bauteile'],
-      ['Platine: Widerstände mit 0,5, 1 und 2 W', 'Neue Footprints für Widerstände mit 0,5 W, 1 W und 2 W.', 'Platine ▸ Bauteile'],
-      ['Pi-Lab und CodeLab: Pins und Signale', 'Neue Grafiken zeigen die Pins und den zeitlichen Verlauf der Signale.', 'Labs ▸ Pi-Lab, CodeLab'],
-      ['App-Werkstatt und Datenblatt-Lab', 'Neue Grafiken in der App-Werkstatt.', 'Labs ▸ App-Werkstatt'],
-      ['SchaltLab und Wiki: Bauformen', 'Neue Grafiken zu den Bauformen der Bauteile.', 'SchaltLab ▸ Bauteile, Wiki'],
-      ['Algorithmen-Lab: Sortieren und Suchen', 'Neuer Reiter: Bubble-, Selection- und Insertion-Sort sowie lineare und binäre Suche laufen Schritt für Schritt als Balken ab, mit Zählern für Vergleiche und Tausche. Dazu eine Ablaufgrafik zum eigenen Programm.', 'Labs ▸ Algorithmen-Lab ▸ Sortieren und Suchen'],
-      ['Toleranz-Lab: Passungs-Querschnitt', 'Welle und Bohrung mit ihren Toleranzfeldern im Schnitt: So sieht man, ob eine Passung Spiel oder Übermaß ergibt.', 'Labs ▸ Toleranz-Lab'],
-      ['PC-Hardware-Lab: RAID-Verteilung', 'Zeigt, wie die Daten bei den RAID-Stufen auf die Platten verteilt werden und was bei einem Plattenausfall passiert.', 'Labs ▸ PC-Hardware-Lab'],
-      ['Lager-Lab: Bestandsverlauf', 'Der Lagerbestand über die Zeit als Kurve, mit Bestellpunkt und Sicherheitsbestand.', 'Labs ▸ Lager-Lab'],
-      ['Schaltschrank-Lab: Wärmebild', 'Ein Wärmebild des Schranks zeigt, wo sich die Verlustwärme staut.', 'Labs ▸ Schaltschrank-Lab'],
-      ['IT-Sicherheits-Lab: Hash-Illustration', 'Eine kleine Änderung an der Eingabe verändert den Hashwert völlig. Das sieht man hier direkt.', 'Labs ▸ IT-Sicherheits-Lab'],
-    ] },
-    { v: 'v50.166', items: [
-      ['Startseite aufgeräumt', 'Die Bereiche starten auch am Computer nur mit dem ersten geöffnet. Neue Knöpfe „Alle aufklappen“ und „Alle zuklappen“ sowie „Ansicht: Karten“ oder „Kompakt“ (nur Titel). Das Duell-Band und der Fußbereich lassen sich einklappen, sind zunächst zu, und deine Wahl wird auf diesem Gerät gemerkt.', 'Startseite'],
-      ['Neue Vorschaubilder', 'Für 35 Labs gibt es neu gezeichnete Bilder auf der Startseite, zum Beispiel Schaltschrank, Mainboard mit Lüfter, Bus mit Chips, Sensor mit Messkurve, Flussdiagramm und Messschieber. Einige bewegen sich. Wer Bewegung abgeschaltet hat, sieht sie ruhig.', 'Startseite'],
-      ['Lernhefte Antrieb, Sensorik und SPS vollständig', 'Die drei Lernhefte haben jetzt Kapitel zu allen Aufgaben, auch zu den neuen (Antrieb an46 bis an54, Sensorik se44 bis se49, SPS sp38 bis sp43). Die Lösungs-PDFs der drei Labs sind neu gedruckt.', 'Startseite ▸ Lernhefte, Antriebs-Lab, Sensorik-Lab, SPS-Lab'],
-    ] },
-  ];
+      ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function open() {
     if (document.getElementById('neuBox')) return;

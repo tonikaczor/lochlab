@@ -123,7 +123,7 @@
   function build() {
     const flat = doc.getElementById('cardsFlat'); if (!flat || doc.getElementById('groups')) return;
     const list = Array.from(flat.children).filter(c => c.classList && c.classList.contains('card'));
-    const vb = doc.getElementById('vbRow'); if (vb) list.push(vb);
+    // Die Projekte-Zeile (#vbRow) steht seit v55.170 außerhalb der Karten, weit oben (home-vb.js); sie wird hier nicht mehr in einen Bereich verschoben
     const wk = doc.getElementById('wikiRow'); if (wk) list.push(wk);   // Wiki-Kachel (kein Lab, Klasse vbrow = zählt nirgends mit), landet am Ende ihres Bereichs (grund)
     list.forEach((c, i) => { c.dataset.pos = String(i); });          // Dateireihenfolge merken (Standard für "Zurücksetzen")
     const wrap = doc.createElement('div'); wrap.id = 'groups';

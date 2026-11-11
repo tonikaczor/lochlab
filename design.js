@@ -87,3 +87,38 @@
   } catch (e) {}
 })(window);
 /* lm4.last:end */
+/* feedback.js nachladen (Ein-Klick-Rückmeldung je Aufgabe, nur Lab-Seiten, prüft sich selbst; ohne die Datei passiert nichts) */
+(function () { try { if (!/lab\.html$|^(layout|schaltplan|verbund)\.html$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'feedback.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();
+/* vbhint:begin
+   Hinweis "Dieses Lab ist Station im Projekt X" (v55.170): unter der Kopfzeile eines Labs, wenn dieses Lab in einem Verbundprojekt deines Berufs vorkommt
+   (als Arbeits-Lab einer Station oder über eine Lab-Aufgabe). Quelle: window.VB_INDEX und BerufReg aus aufgaben.js (wird von jedem Lab geladen). Ohne diese Daten
+   oder im Projekt selbst (?verbund=) passiert nichts. */
+(function () {
+  function go() {
+    try {
+      var BR = window.BerufReg, REG = window.LAB_REG, file = String(location.pathname).split('/').pop() || '';
+      if (!BR || !REG || !BR.vbLab || !Array.isArray(window.VB_INDEX) || !/lab\.html$|^(layout|schaltplan)\.html$/.test(file) || /[?&]verbund=/.test(location.search)) return;
+      var key = Object.keys(REG).filter(function (k) { return REG[k].file === file && !REG[k].hub; })[0]; if (!key) return;
+      var list = BR.vbLab(key, BR.cur()); if (!list.length) return;
+      var hdr = document.querySelector('header'); if (!hdr || document.getElementById('vbHint')) return;
+      var q = function (n) { return '„' + n + '“'; }, t, href = 'verbund.html';
+      if (list.length === 1) {
+        var s = list[0].st, nr = s.length === 1 ? 'Station ' + s[0] : 'Stationen ' + s.slice(0, -1).join(', ') + ' und ' + s[s.length - 1];
+        t = 'Dieses Lab ist Station im Projekt ' + q(list[0].name) + ' (' + nr + ').'; href += '?projekt=' + encodeURIComponent(list[0].id);
+      } else if (list.length <= 3) {
+        t = 'Dieses Lab ist Station in den Projekten ' + list.slice(0, -1).map(function (p) { return q(p.name); }).join(', ') + ' und ' + q(list[list.length - 1].name) + '.';
+      } else {
+        t = 'Dieses Lab ist Station in ' + list.length + ' Projekten, zum Beispiel ' + q(list[0].name) + ' und ' + q(list[1].name) + '.';
+      }
+      var d = document.createElement('div'); d.id = 'vbHint'; d.setAttribute('role', 'note');
+      d.style.cssText = 'margin:8px 0;padding:8px 12px;border:1px solid var(--line,#444);border-radius:10px;background:var(--panel,transparent);color:var(--fg,inherit);font-size:13.5px;line-height:1.4;display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center';
+      var sp = document.createElement('span'); sp.textContent = '🧩 ' + t; d.appendChild(sp);
+      var a = document.createElement('a'); a.href = href; a.textContent = list.length === 1 ? 'Projekt öffnen' : 'Zu den Projekten'; a.style.cssText = 'color:var(--accent,#5fb0ff);font-weight:600;min-height:24px';
+      d.appendChild(a);
+      var st = document.createElement('style'); st.textContent = '@media print{#vbHint{display:none!important}}'; d.appendChild(st);
+      hdr.parentNode.insertBefore(d, hdr.nextSibling);
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+})();
+/* vbhint:end */
