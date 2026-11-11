@@ -308,3 +308,5 @@ html.cl-komp .grp .card{padding-bottom:10px}
 
 /* Der Knopf zum Ein- und Ausklappen sitzt im Raster über dem Duell-Band (sonst landet er in einer freien Zelle) */
 .top>#clDuell{grid-area:tg;margin:0;max-width:none;align-self:start}
+/* Projekte-Zeile zuklappbar (v55.170): Kopfzeile wie die Bereiche, Inhalt in .vbbody */
+#vbRow>.vbd{flex:1 1 100%;min-width:0}html.tiles #vbRow .vbbody{flex-wrap:nowrap}@media(max-width:639px){html.tiles #vbRow .vbbody{flex-wrap:wrap}}

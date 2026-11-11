@@ -80,6 +80,7 @@ a.btn{height:44px;min-height:44px;font-size:14px;border-radius:11px}.btns{gap:8p
 .vbrow .pic{flex:0 0 190px;height:76px}.vbrow .vbt{flex:1;min-width:240px;display:flex;flex-direction:column;gap:6px}.vbrow .vbt p{-webkit-line-clamp:3}
 .vbrow .btns{flex:0 0 auto;margin:0;padding:0}.vbrow a.btn{min-width:150px;padding:0 18px}
 @media(max-width:639px){.vbrow .pic{flex:1 1 100%}.vbrow .btns{flex:1 1 100%}}
+#vbRow .vbd>summary{display:flex;align-items:center;gap:10px;min-height:44px;list-style:none;cursor:pointer}#vbRow .vbd>summary::-webkit-details-marker{display:none}#vbRow .vbh{flex:1;min-width:0}#vbRow .vbh h2{margin:0;font-size:22px}#vbRow .vbd[open]>summary{margin-bottom:10px}#vbRow .vbh .vbn{margin-top:2px}#vbRow .chev{flex:none;display:grid;place-items:center;width:44px;height:44px;color:var(--mute)}#vbRow .chev::before{content:"";width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}#vbRow .vbd:not([open]) .chev::before{transform:rotate(-45deg)}#vbRow .vbd>summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}#vbRow .vbbody{display:flex;align-items:center;gap:16px;flex-wrap:wrap}@media(max-width:639px){#vbRow .vbh h2{font-size:18px}}@media(prefers-reduced-motion:reduce){#vbRow .chev::before{transition:none}}
 #vbRow{margin:0 0 14px}#vbRow .vbn{font-size:14px;font-weight:600}#vbRow .vbn small{font-weight:400;color:var(--mute)}
 #vbRow .vbl{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 #vbRow .vbl a{display:flex;align-items:center;gap:6px;min-height:44px;padding:4px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none;font-size:14px;line-height:1.2}
@@ -207,18 +208,19 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   </header>
   <div class="top" id="top"><a class="cont" id="contGo" href="schaltplan.html?trainer"><b>Starten</b><small>SchaltLab (Einführung)</small></a></div>
   <section class="card vbrow" id="vbRow" data-hub="vb" data-beruf="alle" aria-labelledby="vbH">
+    <details class="vbd" open><summary><span class="vbh"><h2 id="vbH">Verbundprojekte: ein Auftrag, viele Stationen</h2><div class="vbn" id="vbN" aria-live="polite"></div></span><span class="chev" aria-hidden="true"></span></summary>
+    <div class="vbbody">
     <div class="pic" aria-hidden="true">
           <svg viewBox="0 0 240 120"><g fill="none" stroke="#3b9eff" stroke-width="3" stroke-linecap="round"><path d="M40 60H92M148 60H200M120 30V90M92 60L120 30L148 60L120 90Z"/></g><path class="dots" d="M40 60H92L120 30L148 60H200" fill="none"/><g fill="#14181c" stroke="#e8eaed" stroke-width="3"><circle cx="40" cy="60" r="13"/><circle cx="120" cy="30" r="13"/><circle cx="120" cy="90" r="13"/><circle cx="200" cy="60" r="13"/></g><g fill="#ffe14d"><circle class="on" cx="40" cy="60" r="5"/><circle class="on" cx="120" cy="30" r="5" style="animation-delay:.4s"/><circle class="on" cx="200" cy="60" r="5" style="animation-delay:.8s"/><circle class="on" cx="120" cy="90" r="5" style="animation-delay:1.2s"/></g></svg>
         </div>
     <div class="vbt">
       <span class="tag">PROJEKTE · LABS ARBEITEN ZUSAMMEN</span>
-      <h3 id="vbH">Verbundprojekte: ein Auftrag, viele Stationen</h3>
       <p id="vbTxt">Wie in der Firma: Du begleitest einen Auftrag vom Lastenheft bis zur Abnahme. Jede Station liefert ihr Ergebnis an die nächste, am Ende prüft ein Gesamttest alles und du bekommst ein Zertifikat.</p>
-      <div class="vbn" id="vbN" aria-live="polite"></div>
       <div id="vbL"></div>
       <div class="steps"><span>Lastenheft</span><span>Stationen</span><span>Gesamttest</span><span>Zertifikat</span></div>
     </div>
     <div class="btns"><a class="btn pri" href="verbund.html">Projekte öffnen</a><a class="btn" href="lernen-vb.html">Projektheft</a></div>
+    </div></details>
   </section>
   <div class="cards" id="cardsFlat">
     <section class="card" data-lab="layout" data-group="grund" data-beruf="egs ige">

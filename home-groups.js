@@ -37,6 +37,24 @@
       if (d.open !== o) d.open = o;
       const sm = d.querySelector(':scope>summary'); if (sm) sm.setAttribute('aria-expanded', d.open ? 'true' : 'false');
     });
+    applyVb();
+  }
+  // Projekte-Zeile (#vbRow, home-vb.js): kein Bereich, aber dieselbe Mechanik (Schlüssel 'vb' in lm4.home.groups, Standard auf dem Desktop offen, auf dem Handy beim ersten Besuch zu, bei Anpassen/Suche offen)
+  const vbDet = () => doc.querySelector('#vbRow>details.vbd');
+  function applyVb() {
+    const d = vbDet(); if (!d) return;
+    const o = (forceEdit || forceSearch) ? true : ('vb' in map ? !!map.vb : !mobile());
+    if (d.open !== o) d.open = o;
+    const sm = d.querySelector(':scope>summary'); if (sm) sm.setAttribute('aria-expanded', d.open ? 'true' : 'false');
+  }
+  function wireVb() {
+    const d = vbDet(); if (!d || d.dataset.wired) return; d.dataset.wired = '1';
+    d.addEventListener('click', e => {
+      const sm = e.target.closest && e.target.closest('summary'); if (!sm || sm.parentNode !== d) return;
+      e.preventDefault(); d.open = !d.open; sm.setAttribute('aria-expanded', d.open ? 'true' : 'false');
+      if (!forceEdit && !forceSearch) { map.vb = d.open ? 1 : 0; save(); }
+    });
+    applyVb();
   }
   // Zähler (ohne ausgeblendete Karten) und leere Bereiche ausblenden (Suche, Startseite anpassen)
   function refresh() {
@@ -149,7 +167,7 @@
       if (!forceEdit && !forceSearch) { map[k] = d.open ? 1 : 0; save(); }
     });
     if (root.matchMedia) { try { const mq = root.matchMedia('(max-width:' + MOBILE_MAX + 'px)'); (mq.addEventListener || mq.addListener).call(mq, 'change', apply); } catch (e) {} }
-    apply(); refresh(); decorate(); watchRings(); mkChips(wrap);
+    wireVb(); apply(); refresh(); decorate(); watchRings(); mkChips(wrap);
   }
 
   root.HomeGroups = {
@@ -160,5 +178,6 @@
     groupOf(el) { const s = el && el.closest && el.closest('section.grp'); return s ? s.dataset.grp : ''; },
     state() { return Object.assign({}, map); }
   };
+  wireVb();
   build();
 })(typeof window !== 'undefined' ? window : this);
