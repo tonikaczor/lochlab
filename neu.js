@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v55.171', items: [
+      ['Dein Ausbildungsplan', 'Neu auf der Startseite: Dein Ausbildungsplan zeigt die Lernfelder deines Berufs mit den passenden Labs, Heften, Wiki-Einträgen und Projekt-Stationen. Du siehst deinen Fortschritt je Lernfeld und bekommst einen Vorschlag, was als Nächstes passt. Zuordnungen, die noch geprüft werden, sind als Entwurf markiert.', 'Startseite ▸ Dein Ausbildungsplan'],
+      ['Nächste Aufgabe', 'Wenn du eine Aufgabe geschafft hast, erscheint unten ein Knopf „Nächste Aufgabe“. Er führt dich direkt zur nächsten Aufgabe im selben Lab, ohne Umweg über das Menü.', 'alle Labs'],
+      ['Warum brauche ich das?', 'In jedem Lab steht jetzt oben eine kurze Karte: wo das Thema im Betrieb vorkommt, zu welchem Lernfeld es gehört und in welchem Projekt es gebraucht wird. Die Karte lässt sich schließen.', 'alle Labs'],
+    ] },
         { v: 'v55.170', items: [
       ['Projekte für alle Berufe', 'Sechs neue Projekte: Pneumatische Presse (Industriemechaniker), Kundenauftrag vom Wareneingang bis zur Rampe (Lagerlogistik), Auftrag kalkulieren und abrechnen (Industriekaufleute), Werkstatt-Netz mit Messdaten-Server (Fachinformatiker), Gehäuse für das Labornetzteil (Technische Produktdesigner) und der Tonfunk-Auftrag, bei dem ein Gerät durch alle Berufe läuft und jeder seine Stationen bearbeitet. Zu jeder Station gehören ein Formular und Aufgaben in den passenden Labs.', 'Startseite ▸ Projekte; Projekte-Bereich'],
       ['Projekte nach Beruf', 'Die Zeile Projekte steht jetzt weit oben auf der Startseite und zeigt die Projekte deines Berufs mit Fortschritt. Im Projekt-Bereich stehen deine Projekte zuerst, die anderen sind eingeklappt. In den Labs weist ein Hinweis auf das Projekt hin, in dem das Lab vorkommt.', 'Startseite ▸ Projekte; Projekte-Bereich; alle Labs'],
@@ -9,11 +14,6 @@
 { v: 'v55.169', items: [
       ['Heute für dich', 'Die Startseite zeigt jetzt, wie viele Aufgaben zum Wiederholen anstehen und wie lange das ungefähr dauert.', 'Startseite ▸ Wiederholen'],
       ['Rückmeldung nach jeder Aufgabe', 'Nach einer gelösten Aufgabe kannst du mit einem Klick sagen: zu leicht, passt, zu schwer oder unklar. Die Rückmeldung bleibt nur auf deinem Gerät, ganz ohne Namen. Ausbilder sehen unter „Rückmeldungen zu Aufgaben“ die auffälligen Aufgaben und können die Auswertung exportieren.', 'Alle Labs ▸ Aufgaben; Ausbilder-Übersicht ▸ Rückmeldungen zu Aufgaben'],
-    ] },
-    { v: 'v55.168', items: [
-      ['Fachliche Korrekturen nach Prüfung', 'Alle Aufgaben und Texte wurden noch einmal doppelt nachgeprüft. Berichtigt wurden unter anderem: FI-Schutzschalter 30 mA gilt für Steckdosenkreise bis 32 A (Haus-Check, Heft), Teilungseinheit 17,5 mm (Schaltschrank-Lab), Schrauben in DIN 8593 bei An- und Einpressen (Füge-Lab), Druckluftquelle als unausgefülltes Dreieck (Pneumatik-Lab), Drehzahlreihe R20/3 und ein Beispiel im Zerspan-Heft, Not-Halt als ergänzende Schutzmaßnahme und DIN 18012 (Wiki), Steuerbus (IT-Systeme-Lab), Reibwert Kunststoff auf Stahl 0,15 (Ladungssicherung), Körperstrom-Aufgabe mit einer Sekunde (Elektrosicherheit).', 'Labs und Hefte'],
-      ['Antriebs-Lab: Aufgabe Dreieck am Netz', 'Die Prüfung meldet nicht mehr fälschlich Kippmoment und verlangt jetzt ausdrücklich Netzbetrieb.', 'Antriebs-Lab ▸ Aufgaben'],
-      ['Klarere Hinweise', 'Sicherheits- und Vereinfachungshinweise in SPS-, Digi-, Thermik-, Hydraulik- und Instandhaltungs-Aufgaben und -Heften (zum Beispiel Not-Halt über eigenen Sicherheitskreis, Zweihandbedienung, absolute Drücke, fünf Sicherheitsregeln). Die GRAFCET-Kennbuchstaben sind erklärt.', 'SPS-Lab, Digi-Lab, Thermik-Lab, Hydraulik-Lab, Instandhaltungs-Lab ▸ Aufgaben und Hefte'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tonfunk Ausbildungsplan">
+<meta name="theme-color" content="#1b1f24">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Tonfunk Ausbildungsplan</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schluessel lm4.theme wie die Startseite (nur der Umschalter schreibt ihn) */
+(function(){var K='lm4.theme',de=document.documentElement;
+function get(){try{var v=localStorage.getItem(K);return v==='light'||v==='dark'?v:''}catch(e){return ''}}
+function set(m){if(m)de.setAttribute('data-theme',m);else de.removeAttribute('data-theme');var b=document.getElementById('themeBtn');if(b)b.setAttribute('aria-label','Darstellung: '+(m==='light'?'hell':m==='dark'?'dunkel':'automatisch nach System')+' (antippen zum Wechseln)');}
+set(get());document.addEventListener('DOMContentLoaded',function(){set(get());});
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('#themeBtn');if(!b)return;var c=get(),n=c===''?'light':c==='light'?'dark':'';try{if(n)localStorage.setItem(K,n);else localStorage.removeItem(K);}catch(x){}set(n);});
+})();</script>
+<style>
+:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--line:#38424d;--fg:#e8ecf0;--mute:#9aa6b2;--accent:#5fb0ff;--accent-bg:#1a6fd4;--accent-ink:#fff;--ok:#4fd58a;--warn:#ffd166;--danger:#ff7a7a;color-scheme:dark light}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e}}
+:root[data-theme=light]{--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;color-scheme:light}
+:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,system-ui,"Segoe UI",Roboto,sans-serif;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+a{color:var(--accent)}
+.wrap{max-width:980px;margin:0 auto;padding:14px 16px 40px}
+.top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
+.btn.pri{background:var(--accent-bg);border-color:var(--accent-bg);color:var(--accent-ink)}
+.btn[disabled]{opacity:.55;cursor:default}
+h1{margin:4px 0 2px;font-size:26px}h2{margin:0 0 6px;font-size:20px}h3{margin:14px 0 6px;font-size:16px}
+.lead{color:var(--mute);margin:0 0 14px;font-size:15px}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;-webkit-overflow-scrolling:touch}
+.tabs button{flex:none;min-height:44px;padding:0 16px;border-radius:22px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--accent-bg);border-color:var(--accent-bg);color:var(--accent-ink)}
+.tabs small{font-weight:400;opacity:.8;margin-left:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:10px;margin:6px 0 14px}
+.k{display:inline-block;min-width:44px;text-align:center;padding:1px 9px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:13px;font-weight:700}
+.bar{height:8px;border-radius:4px;background:var(--panel2);overflow:hidden;margin:6px 0 2px}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:4px}
+.meta{margin:2px 0 6px;font-size:13px;color:var(--mute)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:0 0 14px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{display:inline-block;padding:2px 10px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font-size:13px;color:var(--fg);text-decoration:none}
+.chip.ok{border-color:var(--ok);color:var(--ok)}.chip.warn{border-color:var(--warn);color:var(--warn)}.chip.neu{border-color:var(--accent);color:var(--accent)}
+a.chip{display:inline-flex;align-items:center;min-height:44px}
+.seg{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.seg button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--accent-bg);border-color:var(--accent-bg);color:var(--accent-ink)}
+.note{margin:10px 0;padding:9px 12px;border-radius:8px;background:rgba(255,179,64,.1);border:1px solid rgba(255,179,64,.45);font-size:14px}
+details>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
+.apbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.apwho{flex:1 1 140px;min-width:0;overflow-wrap:anywhere}
+.ap-sent{margin:6px 0;overflow-wrap:anywhere}.ap-why{display:block;color:var(--mute);font-size:14px;margin:2px 0 4px}
+.ap-hier h2,.card h2{font-size:19px}
+.ap-next{list-style:none;margin:0;padding:0;display:grid;gap:10px}.ap-next li{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--panel2)}
+.ap-fz{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.ap-fz input[type=search]{flex:1 1 220px;min-width:0;min-height:44px;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.ap-cb{display:inline-flex;align-items:center;gap:10px;min-height:44px;cursor:pointer}.ap-cb input{width:22px;height:22px;accent-color:var(--accent)}
+details.jahr{margin:0 0 12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);padding:0 14px 6px}
+details.jahr>summary{gap:12px;flex-wrap:wrap;justify-content:space-between;min-height:52px}
+details.jahr>summary h3{margin:0;font-size:18px}.ym{color:var(--mute);font-size:14px;font-weight:400}
+details.lfopt{margin:12px 0 4px;border:1px dashed var(--line);border-radius:12px;padding:0 12px 4px}details.lfopt>summary{gap:10px;flex-wrap:wrap;justify-content:space-between}
+.blk{margin:12px 0 0;font-size:13px;color:var(--mute);letter-spacing:.04em;text-transform:uppercase}
+.lfk{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:12px 14px;min-width:0}
+.lfk:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lfk h5{margin:0;font-size:16px;line-height:1.3;overflow-wrap:anywhere}.lfk .kurz{margin:2px 0 4px;font-size:14px;color:var(--mute)}
+.lablinks{list-style:none;margin:6px 0 2px;padding:0;display:flex;flex-wrap:wrap;gap:6px}.lablinks.sub{margin:4px 0 0 12px}
+.lablinks a.lab,.lablinks span.lab{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none;font-size:14px;line-height:1.2}
+.lablinks small{color:var(--mute);font-size:12px}.lablinks a.fremd{border-style:dashed}.lablinks .keinheft{opacity:.7}
+.lablinks a:focus-visible,summary:focus-visible,.btn:focus-visible,.seg button:focus-visible,.chip:focus-visible,.chip[tabindex]:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lablinks li.proj{display:block}
+.lfmore{margin-top:6px}.lfmore h6{margin:10px 0 2px;font-size:13px;color:var(--mute);letter-spacing:.04em;text-transform:uppercase}.plain{margin:4px 0;padding-left:20px;font-size:14px}
+.sr{position:absolute;left:-9999px}
+@media(max-width:480px){.wrap{padding-left:12px;padding-right:12px}.btns .btn{flex:1 1 100%}details.jahr{padding:0 10px 6px}}
+@media print{.noprint{display:none!important}body{background:#fff;color:#000}.card,.lfk{background:#fff;border-color:#999}details.jahr:not([open])>*:not(summary){display:block}}
+#gate{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+#gate form{width:100%;max-width:340px;text-align:center}
+#gate img{width:96px;height:auto;margin-bottom:10px}
+#gate h1{margin:0 0 4px;font-size:22px}
+#gate p{margin:0 0 18px;color:var(--mute)}
+#gate input{text-align:center;margin-bottom:12px;width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+#gate .btn{width:100%;height:46px;border-radius:12px;background:var(--accent-bg);border:0;color:#fff;font:inherit;font-weight:600}
+#gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
+</style>
+<link rel="stylesheet" href="design.css">
+</head>
+<body>
+<!--GATE-->
+<script src="gate.js" data-title="Tonfunk Ausbildungsplan"></script>
+<!--/GATE-->
+<div class="wrap">
+  <h1>Ausbildungsplan</h1>
+  <p class="lead">Deine Lernfelder, geordnet nach Ausbildungsjahr. Innerhalb eines Jahres gibt es keine feste Reihenfolge: Such dir aus, womit du weitermachen möchtest. Zu jedem Lernfeld findest du die passenden Aufgaben, das Heft, Wiki-Einträge und Projekt-Stationen mit deinem Stand.</p>
+  <div id="apApp"><p class="lead">Lade Ausbildungsplan …</p><noscript><p class="note">Für den Ausbildungsplan wird JavaScript gebraucht.</p></noscript></div>
+</div>
+<script src="ver.js"></script>
+<script src="aufgaben.js"></script>
+<script src="wiki-index.js"></script>
+<script src="lernfelder.js"></script>
+<script src="ausbildungsplan-core.js"></script>
+<script src="ausbildungsplan.js"></script>
+<script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+<script src="urheber.js"></script>
+<script src="design.js"></script>
+</body>
+</html>

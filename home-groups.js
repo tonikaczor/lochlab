@@ -39,20 +39,24 @@
     });
     applyVb();
   }
-  // Projekte-Zeile (#vbRow, home-vb.js): kein Bereich, aber dieselbe Mechanik (Schlüssel 'vb' in lm4.home.groups, Standard auf dem Desktop offen, auf dem Handy beim ersten Besuch zu, bei Anpassen/Suche offen)
-  const vbDet = () => doc.querySelector('#vbRow>details.vbd');
+  // Zeilen außerhalb der Bereiche: Projekte (#vbRow, home-vb.js) und Ausbildungsplan (#planRow, home-plan.js). Kein Bereich, aber dieselbe Mechanik (Schlüssel 'vb' und 'plan' in lm4.home.groups, Standard auf dem Desktop offen, auf dem Handy beim ersten Besuch zu, bei Anpassen/Suche offen)
+  const ROWS = [['vb', '#vbRow>details.vbd'], ['plan', '#planRow>details.vbd']];
   function applyVb() {
-    const d = vbDet(); if (!d) return;
-    const o = (forceEdit || forceSearch) ? true : ('vb' in map ? !!map.vb : !mobile());
-    if (d.open !== o) d.open = o;
-    const sm = d.querySelector(':scope>summary'); if (sm) sm.setAttribute('aria-expanded', d.open ? 'true' : 'false');
+    ROWS.forEach(r => {
+      const d = doc.querySelector(r[1]); if (!d) return;
+      const o = (forceEdit || forceSearch) ? true : (r[0] in map ? !!map[r[0]] : !mobile());
+      if (d.open !== o) d.open = o;
+      const sm = d.querySelector(':scope>summary'); if (sm) sm.setAttribute('aria-expanded', d.open ? 'true' : 'false');
+    });
   }
   function wireVb() {
-    const d = vbDet(); if (!d || d.dataset.wired) return; d.dataset.wired = '1';
-    d.addEventListener('click', e => {
-      const sm = e.target.closest && e.target.closest('summary'); if (!sm || sm.parentNode !== d) return;
-      e.preventDefault(); d.open = !d.open; sm.setAttribute('aria-expanded', d.open ? 'true' : 'false');
-      if (!forceEdit && !forceSearch) { map.vb = d.open ? 1 : 0; save(); }
+    ROWS.forEach(r => {
+      const d = doc.querySelector(r[1]); if (!d || d.dataset.wired) return; d.dataset.wired = '1';
+      d.addEventListener('click', e => {
+        const sm = e.target.closest && e.target.closest('summary'); if (!sm || sm.parentNode !== d) return;
+        e.preventDefault(); d.open = !d.open; sm.setAttribute('aria-expanded', d.open ? 'true' : 'false');
+        if (!forceEdit && !forceSearch) { map[r[0]] = d.open ? 1 : 0; save(); }
+      });
     });
     applyVb();
   }

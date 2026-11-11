@@ -122,3 +122,8 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
 })();
 /* vbhint:end */
+/* einordnung:begin  Karte "Warum brauche ich das?" (einordnung.js prüft sich selbst: nur Lab-Seiten, nie im Tor) */
+(function () { try { if (!/lab\.html$|^(layout|schaltplan|appwerkstatt)\.html$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'einordnung.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();
+/* einordnung:end */
+/* weiter.js nachladen (Schaltfläche "Nächste Aufgabe" nach gelöster Aufgabe, nur Lab-Seiten, prüft sich selbst) */
+(function () { try { if (!/lab\.html$|^(layout|schaltplan|appwerkstatt)\.html$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'weiter.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();

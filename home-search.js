@@ -47,6 +47,8 @@
     ["lernen-w24.html", "Praxisschaltung W-2024 verstehen", "Die Schaltung der Praxisprüfung W-2024 Schritt für Schritt: Aufbau, Bauteile, Wirkungsweise und Fehlersuche, mit sieben Arbeitsblättern und einer Probeprüfung zum Ausdrucken. Die Lösungen sind für Ausbilder gedacht und liegen verschlüsselt im Lab."],
     ["lernen-vb.html", "Projekte: Verbundprojekte", "Projekte für alle Berufe, in denen mehrere Labs an einem Auftrag zusammenarbeiten: von Garagentor, Ampelanlage und Heizungsregelung über die Pneumatische Presse und den Kundenauftrag im Lager bis zur Kalkulation, zum Werkstatt-Netz und zum Gehäuse für das Labornetzteil, dazu der Tonfunk-Auftrag, der alle Berufe verbindet. Ablauf, Stufen und Punkte, Datenübergabe, die Projekte mit Beispiel-Lastenheft, Formeln, Tipps, Abschlussbericht und Hinweise für die Gruppenarbeit. Mit…"]
   ];
+  // Seiten, die kein Heft und kein Lab sind: erscheinen in der Gruppe der Hefte mit eigener Marke [Datei, Titel, Stichwörter]
+  const SEITEN = [['ausbildungsplan.html', 'Ausbildungsplan: Lernfelder deines Berufs', 'Lernfeld Lernfelder Ausbildungsjahr Berufsschule Fortschritt Als Nächstes Prüfung AP1 AP2 Plan Heft Projekt']];
   const toStr = s => String(s == null ? '' : s);
   // Umlaute zu ae/oe/ue/ss (Eingabe "waerme" findet "Wärme"); fold: zusätzlich Akzente weg ("warme" findet auch "Wärme")
   const norm = s => toStr(s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
@@ -81,11 +83,12 @@
   function buildIndex(REG, ROWS, labEntries) {
     const idx = [];
     (labEntries || []).forEach(l => idx.push(prep(Object.assign({ typ: 'lab' }, l))));
+    SEITEN.forEach(h => idx.push(prep({ typ: 'heft', ty: 'Plan', key: h[0].replace(/\.html$/, ''), name: h[1], text: h[1] + ' ' + h[2], href: h[0] })));
     HEFTE.forEach(h => idx.push(prep({ typ: 'heft', key: h[0].replace(/\.html$/, ''), name: h[1], text: h[1] + ' ' + h[2] + ' Lernheft', href: h[0] })));
     (ROWS || []).forEach(r => { const R = REG[r[1]]; if (!R) return; idx.push(prep({ typ: 'aufg', key: r[0], name: r[3], text: r[2] + ' ' + r[3] + ' ' + R.name + ' ' + (R.short || ''), href: R.file + '?aufgabe=' + r[0], lab: R.short || R.name, thema: r[2] })); });
     return idx;
   }
-  if (typeof module === 'object' && module.exports) module.exports = { norm, fold, search, countText, buildIndex, wikiSplit, wikiHref, HEFTE, MIN, MAX_HEFT, MAX_AUFG, MAX_WIKI, MAX_WIKI_REGLER };
+  if (typeof module === 'object' && module.exports) module.exports = { norm, fold, search, countText, buildIndex, wikiSplit, wikiHref, HEFTE, SEITEN, MIN, MAX_HEFT, MAX_AUFG, MAX_WIKI, MAX_WIKI_REGLER };
   if (typeof document === 'undefined') return;
 
   const doc = document, esc = s => toStr(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -144,7 +147,7 @@
     if (!r.active) { res.innerHTML = ''; showRes(false); live.textContent = ''; return; }
     let h = '', n = 0;
     const row = (e, ty, meta) => '<a role="option" id="srchO' + (n++) + '" href="' + esc(e.href) + '" tabindex="-1" aria-selected="false"><span class="ty">' + ty + '</span><span class="nm">' + esc(e.name) + '</span>' + (meta ? '<span class="sb">' + esc(meta) + '</span>' : '') + '</a>';
-    if (r.hefte.length) h += '<div role="group" aria-label="Lernhefte"><div class="ghd" aria-hidden="true">Lernhefte</div>' + r.hefte.map(e => row(e, 'Heft', '')).join('') + '</div>';
+    if (r.hefte.length) h += '<div role="group" aria-label="Lernhefte"><div class="ghd" aria-hidden="true">Lernhefte</div>' + r.hefte.map(e => row(e, e.ty || 'Heft', '')).join('') + '</div>';
     // W9 (Design-Review P2-8): Wiki-Treffer zweizeilig wie im Wiki selbst (Icon, Titel mit Indizes, Pille Kategorie, Lab darunter) + Zeile "Alle Wiki-Treffer"
     const wrow = e => { const W = root.Wiki, reg = /^(regler|messwert)$/.test(e.kat), lab = reg && e.labs && e.labs[0] && W.LABS[e.labs[0]] ? W.LABS[e.labs[0]][0] : '';
       return '<a role="option" class="wkr" id="srchO' + (n++) + '" href="' + esc(wikiHref(e.id)) + '" tabindex="-1" aria-selected="false"><svg class="ri" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20"/><path d="M9 7h7M9 10.5h7"/></svg><span class="nm">' + (W.formel ? W.formel(e.titel) : esc(e.titel)) + '</span><span class="ty">' + esc(W.KAT && W.KAT[e.kat] ? W.KAT[e.kat][0] : e.kat) + '</span>' + (lab ? '<span class="sb">' + esc(lab) + '</span>' : '') + '</a>'; };

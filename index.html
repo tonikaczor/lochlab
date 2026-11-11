@@ -174,6 +174,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-appwerkstatt" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 9l-2 3 2 3M13 9l2 3-2 3M11 5h2"/></symbol>
   <symbol id="i-pruefungslab" viewBox="0 0 24 24"><path d="M3.5 6.5l1.3 1.3L7.5 5M3.5 12l1.3 1.3L7.5 10.5M10 6.5h10M10 12h5M4 17.5h6"/><circle cx="17" cy="17" r="4.5"/><path d="M17 14.5V17h2"/></symbol>
   <symbol id="i-vb" viewBox="0 0 24 24"><circle cx="5" cy="5" r="2.2"/><circle cx="19" cy="5" r="2.2"/><circle cx="5" cy="19" r="2.2"/><circle cx="19" cy="19" r="2.2"/><path d="M7.2 5h9.6M5 7.2v9.6M19 7.2v9.6M7.2 19h9.6M6.6 6.6l10.8 10.8M17.4 6.6L6.6 17.4"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24"><path d="M4 6h3M4 12h3M4 18h3M10 6h10M10 12h10M10 18h10"/></symbol>
   <symbol id="i-wiki" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/></symbol>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l5 5"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l12 8-12 8z"/></symbol>
@@ -207,6 +208,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     <button type="button" id="themeBtn" class="themeBtn" aria-label="Darstellung: automatisch nach System (antippen zum Wechseln)" title="Darstellung wechseln: Auto, Hell, Dunkel"><svg class="ti t-a" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/></svg><svg class="ti t-l" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg><svg class="ti t-d" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg><span class="tl">Auto</span></button>
   </header>
   <div class="top" id="top"><a class="cont" id="contGo" href="schaltplan.html?trainer"><b>Starten</b><small>SchaltLab (Einführung)</small></a></div>
+  <section class="card vbrow" id="planRow" data-hub="plan" data-beruf="alle" aria-labelledby="planH"></section>
   <section class="card vbrow" id="vbRow" data-hub="vb" data-beruf="alle" aria-labelledby="vbH">
     <details class="vbd" open><summary><span class="vbh"><h2 id="vbH">Verbundprojekte: ein Auftrag, viele Stationen</h2><div class="vbn" id="vbN" aria-live="polite"></div></span><span class="chev" aria-hidden="true"></span></summary>
     <div class="vbbody">
@@ -788,7 +790,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <div class="foot ft" id="foot">
     <div class="ftcol" id="ftAzubi"><p class="fth">Für Azubis</p>
       <div class="foot standrow" id="footBtns"><button type="button" id="standOpen" aria-haspopup="dialog">Stand exportieren</button><button type="button" id="lsOpen">Lernstand sichern oder laden</button><span>„Stand exportieren“ erzeugt eine kleine Datei mit deinem Lernstand für deinen Ausbilder (nur Kürzel, Ergebnisse und Abzeichen, keine Lösungen).</span></div>
-      <p class="foot"><a href="lernfelder.html">Lernfelder der Berufsschule: Aufgaben und Probetest</a> · <a href="projekte.html">Projekte für zuhause</a> ·<a href="lernen.html">Lernhefte: Löten, Elektronik, Sicherheit, Netzteile, Wechselstrom, Analogtechnik, Installation, SPS, Leiterplatten, Antriebe, Sensorik, Regelung, Thermik, EMV, Energie, Datenblätter, Arduino, Pi, Projekte</a> · <a href="anleitung.html">Anleitung für Azubis</a></p>
+      <p class="foot"><a href="ausbildungsplan.html">Ausbildungsplan: Lernfelder deines Berufs mit Labs, Heft und Projekt</a> · <a href="lernfelder.html">Lernfelder der Berufsschule: Aufgaben und Probetest</a> · <a href="projekte.html">Projekte für zuhause</a> ·<a href="lernen.html">Lernhefte: Löten, Elektronik, Sicherheit, Netzteile, Wechselstrom, Analogtechnik, Installation, SPS, Leiterplatten, Antriebe, Sensorik, Regelung, Thermik, EMV, Energie, Datenblätter, Arduino, Pi, Projekte</a> · <a href="anleitung.html">Anleitung für Azubis</a></p>
     </div>
     <div class="ftcol" id="ftAusb"><p class="fth">Für Ausbilder</p>
       <p class="foot"><a href="ausbilder.html">Hinweise für Ausbilder</a> · <a href="loesungen.html">Lösungen für Ausbilder (Passwort)</a> · <a href="ausbilder-uebersicht.html">Ausbilder-Übersicht (Passwort)</a></p>
@@ -817,6 +819,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <script src="lernpfad.js"></script>
 <script src="lernstand.js"></script>
 <script src="stand.js"></script>
+<script src="home-plan.js"></script>
 <script src="home-groups.js"></script>
 <script src="berufe.js"></script>
 <script src="home-vb.js"></script>
