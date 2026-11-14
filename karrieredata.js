@@ -59,7 +59,12 @@
     tpd: ['Neuling', 'Zeichen-Azubi', 'Linienkenner', 'Ansichten-Praktiker', 'Bemaßungsprofi', 'Toleranzkenner', 'Konstruktionspraktiker', 'Geselle in spe', 'Geselle', 'Fachprofi'],
     fll: ['Neuling', 'Lager-Azubi', 'Wareneingangspraktiker', 'Kommissionier-Praktiker', 'Bestandsprofi', 'Dispositionspraktiker', 'Ladungsprofi', 'Geselle in spe', 'Geselle', 'Fachprofi'],
     ik: ['Neuling', 'Büro-Azubi', 'Rechenpraktiker', 'Kalkulationspraktiker', 'Buchungspraktiker', 'Bilanzkenner', 'Controlling-Praktiker', 'Geselle in spe', 'Geselle', 'Fachprofi'],
-    fi: ['Neuling', 'IT-Azubi', 'Bitjongleur', 'Netzwerkpraktiker', 'Subnetz-Profi', 'Sicherheitspraktiker', 'Systempraktiker', 'Geselle in spe', 'Geselle', 'Fachprofi']
+    fi: ['Neuling', 'IT-Azubi', 'Bitjongleur', 'Netzwerkpraktiker', 'Subnetz-Profi', 'Sicherheitspraktiker', 'Systempraktiker', 'Geselle in spe', 'Geselle', 'Fachprofi'],
+    // Wege Studium und Technik (v55.174): Rangtitel ohne Gesellen-Bezug
+    tec: ['Neuling', 'Technikerschüler', 'Rechenpraktiker', 'Schaltungskenner', 'Mess- und Signalprofi', 'Automatisierer', 'Regelungspraktiker', 'Projektplaner', 'Techniker in spe', 'Fachprofi'],
+    stu: ['Neuling', 'Erstsemester', 'Mathe-Brücken-Kenner', 'Netzwerkrechner', 'Signalanalytiker', 'Regelungsentwerfer', 'Systementwickler', 'Projektstudent', 'Bachelor in spe', 'Fachprofi'],
+    wing: ['Neuling', 'Technik-Einsteiger', 'Rechenpraktiker', 'Fertigungskenner', 'Kostenrechner', 'Prozessplaner', 'Logistikpraktiker', 'Projektmanager in spe', 'Wirtschaftsingenieur in spe', 'Fachprofi'],
+    winf: ['Neuling', 'IT-Einsteiger', 'Algorithmenkenner', 'Datenbankpraktiker', 'Netzwerkpraktiker', 'Sicherheitspraktiker', 'Systemarchitekt in spe', 'Prozessmodellierer', 'Wirtschaftsinformatiker in spe', 'Fachprofi']
   };
   const STORY = ['Erster Tag. Aufgaben lösen, Wissen sammeln, los.', 'Du kennst die Werkstatt. Jetzt zeig, dass du die Grundlagen sicher beherrschst.', 'Die ersten Themen sitzen. Jede gelöste Aufgabe bringt dich weiter.',
     'Du rechnest und prüfst, bevor du rätst.', 'Du bist auf dem Weg: Die Basis steht, jetzt kommt die Vertiefung.', 'Du erkennst Muster und Fehler, bevor andere sie sehen.', 'Was du hier übst, kannst du bald in der Praxis.',

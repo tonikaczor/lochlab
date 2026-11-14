@@ -430,6 +430,26 @@
     version: '1.0', RESULTS, RESULT_ORDER, PROFILES, DEFAULT_PROFILE, DEFAULT_STENCIL, LIQUIDUS: LIQ, TIPS, HAND_KINDS, HAND_DEFECT_TEXT, HAND_IDEAL_ORDER,
     reflow, handSolder, heatModel, orderScore, idealOrder, profileCurve, profileCheck, tempAt, pasteInfo, thermalMass, defaultOffsets, handDefaults, fpInfo, hash, fm
   };
+  /* ---------- Farbsätze der Zeichenflächen (Canvas). dark = die bisherigen festen Werte (bis auf Kontrastkorrekturen), light = Hellmodus.
+     Nur Umfeld und Beschriftung: Zeichenhintergrund, Raster, Achsen, Kurven, Sprechblasen. Farben echter Dinge
+     (Platine, Kupfer, Lot, Bauteile, Lötkolben, Ofen) stehen weiter fest im Zeichencode. ---------- */
+  const THEME = {
+    dark: {
+      bg: '#0f1418', fpBg: '#10161b', fpCourt: 'rgba(255,255,255,.05)', fpCourtLine: 'rgba(255,255,255,.25)', fpSilk: '#f1f1e0', fpMark: '#fff', fpNum: '#fff', padEdge: '',
+      stencilLine: 'rgba(255,255,255,.3)', stencilText: 'rgba(0,0,0,.85)',
+      bandText: 'rgba(255,255,255,.55)', bands: ['rgba(80,140,255,.10)', 'rgba(255,200,60,.09)', 'rgba(255,90,60,.12)', 'rgba(120,200,255,.06)'], peakBand: 'rgba(76,217,100,.16)',
+      grid: '#38424d', axis: '#8d99a6', liq: '#ff6a63', liqText: '#ff9a94', soakLine: '#6b7885', curveBad: '#ff6a63', curveWarn: '#ffb340', curveOk: '#4cd964',
+      handle: '#3b9eff', handleDrag: '#fff', handleLine: '#fff', cursor: 'rgba(255,255,255,.6)', cursorDot: '#fff', tipBg: 'rgba(0,0,0,.7)', tipLine: '', tipFg: '#fff', ovenText: '#8d99a6'
+    },
+    light: {
+      bg: '#e9edf2', fpBg: '#e9edf2', fpCourt: 'rgba(20,26,33,.06)', fpCourtLine: 'rgba(20,26,33,.45)', fpSilk: '#46525e', fpMark: '#27313b', fpNum: '#141a21', padEdge: 'rgba(70,45,5,.7)',
+      stencilLine: 'rgba(20,26,33,.55)', stencilText: 'rgba(0,0,0,.85)',
+      bandText: '#3d4854', bands: ['rgba(40,100,230,.14)', 'rgba(200,140,0,.16)', 'rgba(220,60,30,.14)', 'rgba(0,130,190,.10)'], peakBand: 'rgba(16,122,63,.20)',
+      grid: '#c3ccd5', axis: '#4a5663', liq: '#c62828', liqText: '#a31515', soakLine: '#7b8794', curveBad: '#c62828', curveWarn: '#a86400', curveOk: '#0b6a35',
+      handle: '#0a4fb3', handleDrag: '#141a21', handleLine: '#fff', cursor: 'rgba(20,26,33,.6)', cursorDot: '#141a21', tipBg: 'rgba(255,255,255,.94)', tipLine: '#9aa6b2', tipFg: '#141a21', ovenText: '#4a5663'
+    }
+  };
+  PCB_ASM.THEME = THEME;
   root.PCB_ASM = PCB_ASM;
   if (typeof module !== 'undefined' && module.exports) module.exports = PCB_ASM;
   if (typeof document === 'undefined') return;      // Node: keine Oberfläche
@@ -474,55 +494,72 @@
   const load = (k, d) => { try { const v = localStorage.getItem('pcb.asm.' + k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
   const rng = seed => { let s = (seed >>> 0) || 1; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; };
 
+  /* Hellmodus: data-theme der Seite (light/dark) gewinnt, sonst die Systemeinstellung. Wird bei jedem Zeichnen neu gefragt. */
+  function isLight() {
+    try { const t = document.documentElement.getAttribute('data-theme'); return t === 'light' || (t !== 'dark' && !!(root.matchMedia && root.matchMedia('(prefers-color-scheme: light)').matches)); } catch (e) { return false; }
+  }
+  const th = () => THEME[isLight() ? 'light' : 'dark'];
+  /* Ergebnisfarben als Text oder Punkt auf Karten: im Hellmodus dunklere Töne (CSS-Variablen an .pa) */
+  const RESVAR = { '#4cd964': 'var(--pa-c-ok,#4cd964)', '#ffb340': 'var(--pa-c-warn,#ffb340)', '#ff5c5c': 'var(--pa-c-bad,#ff5c5c)' };
+  const cssCol = c => RESVAR[c] || c;
+  const LIVE = new Set();                         // alle lebenden Zeichenflächen: bei Wechsel des Systemschemas neu zeichnen
+  try {
+    const mq = root.matchMedia && root.matchMedia('(prefers-color-scheme: light)'), on = () => LIVE.forEach(o => o.redraw());
+    if (mq) { if (mq.addEventListener) mq.addEventListener('change', on); else if (mq.addListener) mq.addListener(on); }
+  } catch (e) { /* ok */ }
+
   function ensureCss() {
     if (document.getElementById('pcbasm-css')) return;
     const st = document.createElement('style'); st.id = 'pcbasm-css';
     st.textContent = `
-.pa{min-height:100%;color:var(--fg,#e8ecf0);font:14px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif;background:var(--bg,#14181c);-webkit-user-select:none;user-select:none}
+.pa{--pa-cv:#0f1418;--pa-ok-bg:#2a6b3a;--pa-ok-line:#3f9a55;--pa-hover:#ffffff0d;--pa-bad-bg:#4a1d20;--pa-bad-line:#a33;--pa-bad-fg:#ffd2d2;--pa-warn-bg:#4a3a14;--pa-warn-line:#a87b1c;--pa-warn-fg:#ffe3a6;--pa-good-bg:#17391f;--pa-good-line:#2f7a42;--pa-good-fg:#c9f3d3;--pa-c2bad-line:#a33;--pa-c2bad-bg:#3a1a1c;--pa-c2ok-line:#3f9a55;--pa-tag:#38424d;--pa-wrong:#7a2a2a;--pa-c-ok:#4cd964;--pa-c-warn:#ffb340;--pa-c-bad:#ff5c5c;--pa-mark-op:.45;min-height:100%;color:var(--fg,#e8ecf0);font:14px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif;background:var(--bg,#14181c);-webkit-user-select:none;user-select:none}
 .pa *{box-sizing:border-box}
 .pa-tabs{display:flex;gap:6px;padding:7px 10px;overflow-x:auto;border-bottom:1px solid var(--line,#38424d);scrollbar-width:none;position:sticky;top:0;z-index:3;background:var(--bg,#14181c)}
-.pa-b{min-height:40px;min-width:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line,#38424d);background:var(--panel2,#2c343e);color:inherit;font:inherit;cursor:pointer;touch-action:manipulation;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-.pa-b.on{background:var(--accent,#3b9eff);border-color:var(--accent,#3b9eff);color:#fff;font-weight:600}
-.pa-b.ok{background:#2a6b3a;border-color:#3f9a55;color:#fff}
-.pa-b.pri{background:var(--accent,#3b9eff);border-color:var(--accent,#3b9eff);color:#fff;font-weight:600}
+.pa-b{min-height:44px;min-width:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line,#38424d);background:var(--panel2,#2c343e);color:inherit;font:inherit;cursor:pointer;touch-action:manipulation;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.pa-b.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff;font-weight:600}
+.pa-b.ok{background:var(--pa-ok-bg,#2a6b3a);border-color:var(--pa-ok-line,#3f9a55);color:#fff}
+.pa-b.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff;font-weight:600}
 .pa-tabs .pa-b,.pa-step .pa-b{flex:none}
 .pa-b:disabled{opacity:.45;cursor:default}
-.pa-b.s{min-height:40px;padding:0 10px}
+.pa-b.ok:disabled,.pa-b.no:disabled{opacity:var(--pa-mark-op,.45)}
+.pa-b.s{min-height:44px;padding:0 10px}
 .pa-body{padding:10px}
 .pa-split{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:10px;align-items:start}
 @media(max-width:860px){.pa-split{grid-template-columns:minmax(0,1fr)}}
 .pa-card{background:var(--panel,#222830);border:1px solid var(--line,#38424d);border-radius:12px;padding:10px;margin-bottom:10px}
 .pa-card h3{margin:0 0 6px;font-size:15px}
 .pa-mute{color:var(--mute,#8d99a6);font-size:13px}
-.pa-cv{position:relative;width:100%;height:min(56vh,540px);min-height:250px;background:#0f1418;border:1px solid var(--line,#38424d);border-radius:12px;overflow:hidden;touch-action:none;margin-bottom:10px}
+.pa-cv{position:relative;width:100%;height:min(56vh,540px);min-height:250px;background:var(--pa-cv,#0f1418);border:1px solid var(--line,#38424d);border-radius:12px;overflow:hidden;touch-action:none;margin-bottom:10px}
 .pa-cv.sm{height:190px;min-height:190px}
 .pa-cv.chart{height:min(40vh,330px);min-height:230px}
 .pa-cv canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 .pa-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
 .pa-seg{display:inline-flex;border:1px solid var(--line,#38424d);border-radius:10px;overflow:hidden}
-.pa-seg button{min-height:40px;min-width:48px;padding:0 12px;background:var(--panel2,#2c343e);color:inherit;border:0;border-right:1px solid var(--line,#38424d);font:inherit;cursor:pointer;touch-action:manipulation}
+.pa-seg button{min-height:44px;min-width:48px;padding:0 12px;background:var(--panel2,#2c343e);color:inherit;border:0;border-right:1px solid var(--line,#38424d);font:inherit;cursor:pointer;touch-action:manipulation}
 .pa-seg button:last-child{border-right:0}
-.pa-seg button.on{background:var(--accent,#3b9eff);color:#fff;font-weight:600}
+.pa-seg button.on{background:var(--accent-bg,#1a6fd4);color:#fff;font-weight:600}
 .pa table{border-collapse:collapse;width:100%;font-size:13.5px}
-.pa th{position:sticky;top:55px;background:var(--panel2,#2c343e);text-align:left;padding:8px;border-bottom:1px solid var(--line,#38424d);white-space:nowrap}
+.pa th{position:sticky;top:0;background:var(--panel2,#2c343e);text-align:left;padding:8px;border-bottom:1px solid var(--line,#38424d);white-space:nowrap}
 .pa td{padding:8px;border-bottom:1px solid var(--line,#38424d);vertical-align:top}
-.pa tr.clk{cursor:pointer}.pa tr.clk:hover td{background:#ffffff0d}
+.pa tr.clk{cursor:pointer}.pa tr.clk td{height:44px}.pa tr.clk:hover td{background:var(--pa-hover,#ffffff0d)}
 .pa-sl{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-bottom:8px;align-items:center}
 .pa-sl label{font-size:13px}.pa-sl b{font-variant-numeric:tabular-nums;font-size:13px}
-.pa-sl input[type=range]{grid-column:1/3;width:100%;height:40px;margin:0;accent-color:var(--accent,#3b9eff);touch-action:pan-y}
+.pa-sl input[type=range]{grid-column:1/3;width:100%;height:44px;margin:0;accent-color:var(--accent,#3b9eff);touch-action:pan-y}
 .pa-warn{padding:6px 9px;border-radius:8px;margin-bottom:6px;font-size:13px;border:1px solid}
-.pa-warn.bad{background:#4a1d20;border-color:#a33;color:#ffd2d2}.pa-warn.warn{background:#4a3a14;border-color:#a87b1c;color:#ffe3a6}.pa-warn.good{background:#17391f;border-color:#2f7a42;color:#c9f3d3}
-.pa-chip{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 11px;border-radius:20px;border:1px solid var(--line,#38424d);background:var(--panel2,#2c343e);color:inherit;font:inherit;font-size:13px;cursor:pointer;touch-action:manipulation}
+.pa-warn.bad{background:var(--pa-bad-bg,#4a1d20);border-color:var(--pa-bad-line,#a33);color:var(--pa-bad-fg,#ffd2d2)}.pa-warn.warn{background:var(--pa-warn-bg,#4a3a14);border-color:var(--pa-warn-line,#a87b1c);color:var(--pa-warn-fg,#ffe3a6)}.pa-warn.good{background:var(--pa-good-bg,#17391f);border-color:var(--pa-good-line,#2f7a42);color:var(--pa-good-fg,#c9f3d3)}
+.pa-chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 11px;border-radius:20px;border:1px solid var(--line,#38424d);background:var(--panel2,#2c343e);color:inherit;font:inherit;font-size:13px;cursor:pointer;touch-action:manipulation}
 .pa-chip.on{outline:2px solid var(--accent,#3b9eff)}
 .pa-dot{width:11px;height:11px;border-radius:50%;display:inline-block}
 .pa-step{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px;scrollbar-width:none}
 .pa-step .pa-b{flex:1 0 auto}
 .pa-card2{display:flex;align-items:center;gap:8px;background:var(--panel,#222830);border:1px solid var(--line,#38424d);border-radius:10px;padding:6px 8px;margin-bottom:6px}
-.pa-card2.bad{border-color:#a33;background:#3a1a1c}.pa-card2.ok{border-color:#3f9a55}
+.pa-card2.bad{border-color:var(--pa-c2bad-line,#a33);background:var(--pa-c2bad-bg,#3a1a1c)}.pa-card2.ok{border-color:var(--pa-c2ok-line,#3f9a55)}
 .pa-n{width:28px;text-align:center;font-weight:700;color:var(--mute,#8d99a6)}
 .pa-grow{flex:1;min-width:0}
-.pa-tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:12px;background:#38424d;margin-right:4px}
+.pa-tag{display:inline-block;padding:1px 7px;border-radius:9px;font-size:12px;background:var(--pa-tag,#38424d);margin-right:4px}
 .pa big{font-size:26px;font-weight:700}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]) .pa{--pa-cv:#e9edf2;--pa-ok-bg:#107a3f;--pa-ok-line:#107a3f;--pa-hover:#0000000d;--pa-bad-bg:#fdecea;--pa-bad-line:#e0a19b;--pa-bad-fg:#8c1d18;--pa-warn-bg:#fff3d1;--pa-warn-line:#d6ae4f;--pa-warn-fg:#6b4700;--pa-good-bg:#e3f4e8;--pa-good-line:#86c29a;--pa-good-fg:#0d5c2f;--pa-c2bad-line:#c9423a;--pa-c2bad-bg:#fdecea;--pa-c2ok-line:#107a3f;--pa-tag:#dfe5ec;--pa-wrong:#f3c1bc;--pa-c-ok:#107a3f;--pa-c-warn:#8a5a00;--pa-c-bad:#b3261e;--pa-mark-op:1}}
+:root[data-theme=light] .pa{--pa-cv:#e9edf2;--pa-ok-bg:#107a3f;--pa-ok-line:#107a3f;--pa-hover:#0000000d;--pa-bad-bg:#fdecea;--pa-bad-line:#e0a19b;--pa-bad-fg:#8c1d18;--pa-warn-bg:#fff3d1;--pa-warn-line:#d6ae4f;--pa-warn-fg:#6b4700;--pa-good-bg:#e3f4e8;--pa-good-line:#86c29a;--pa-good-fg:#0d5c2f;--pa-c2bad-line:#c9423a;--pa-c2bad-bg:#fdecea;--pa-c2ok-line:#107a3f;--pa-tag:#dfe5ec;--pa-wrong:#f3c1bc;--pa-c-ok:#107a3f;--pa-c-warn:#8a5a00;--pa-c-bad:#b3261e;--pa-mark-op:1}
 `;
     document.head.appendChild(st);
   }
@@ -531,6 +568,7 @@
   function mkCv(box, draw, opts) {
     const cv = h('canvas'); box.appendChild(cv);
     const o = { cv, w: 0, h: 0, dpr: 1, dead: false };
+    LIVE.add(o);
     o.redraw = () => {
       if (o.dead || !o.w) return; const g = cv.getContext('2d'); g.setTransform(o.dpr, 0, 0, o.dpr, 0, 0); g.clearRect(0, 0, o.w, o.h);
       try { draw(g, o.w, o.h, o); } catch (e) { if (root.console) console.error('pcbasm draw', e); }
@@ -543,7 +581,7 @@
     if (root.ResizeObserver) { o.ro = new ResizeObserver(rs); o.ro.observe(box); }
     setTimeout(rs, 0);
     o.resize = rs;
-    o.destroy = () => { o.dead = true; if (o.ro) o.ro.disconnect(); };
+    o.destroy = () => { o.dead = true; LIVE.delete(o); if (o.ro) o.ro.disconnect(); };
     return o;
   }
   function fitView(v, board, w, hh) {
@@ -642,7 +680,7 @@
       const ty = g.pol.type;
       if (ty === 'ic' || ty === 'to') g.marks.push({ k: 'dot', x: p1.x + dx * (Math.max(p1.w, p1.h) / 2 + 0.35), y: p1.y + dy * (Math.max(p1.w, p1.h) / 2 + 0.35), r: 0.22 });
       else if (ty === 'elko') {
-        g.marks.push({ k: 'text', x: p1.x + dx * 0.9, y: p1.y + dy * 0.9 - 0.2, t: '+', col: '#ff8a65' });
+        g.marks.push({ k: 'text', x: p1.x + dx * 0.9, y: p1.y + dy * 0.9 - 0.2, t: '+', col: '#ffb199' });
         if (p2) { const mx = (p2.x + cx) / 2, my = (p2.y + cy) / 2; g.marks.push({ k: 'stripe', x: mx, y: my, nx: -dx, ny: -dy, len: (g.cw || 3) * 0.9 }); g.marks.push({ k: 'text', x: p2.x - dx * 0.9, y: p2.y - dy * 0.9 - 0.2, t: '−', col: '#8ec5ff' }); }
       } else if (ty === 'led' || ty === 'diode') {
         g.marks.push({ k: 'stripe', x: cx + dx * 0.45, y: cy + dy * 0.45, nx: dx, ny: dy, len: Math.min(1.4, g.cw || 1.2) * 0.9 });
@@ -666,7 +704,7 @@
   }
   function drawBoard(g, w, hh, S, view, o) {
     o = o || {}; const board = S.board, side = o.side || 'top', mir = side === 'bot', T = mkT(board, view, mir);
-    g.fillStyle = '#0f1418'; g.fillRect(0, 0, w, hh);
+    g.fillStyle = th().bg; g.fillRect(0, 0, w, hh);
     // Platine
     g.beginPath();
     if (board.outline && board.outline.length > 2) board.outline.forEach((q, i) => { i ? g.lineTo(T.X(q[0]), T.Y(q[1])) : g.moveTo(T.X(q[0]), T.Y(q[1])); });
@@ -737,7 +775,7 @@
   }
   /* Bauteil-Bild für das Quiz: Footprint in Normallage, Gehäusemarkierung wie bei echten Bauteilen */
   function drawFootprintPic(g, w, hh, fp, o) {
-    o = o || {}; g.fillStyle = '#10161b'; g.fillRect(0, 0, w, hh);
+    o = o || {}; const K = th(); g.fillStyle = K.fpBg; g.fillRect(0, 0, w, hh);
     if (!fp) return;
     const wp = (fp.pads || []).map(p => ({ n: p.n, x: p.x, y: p.y, w: p.w, h: p.h, shape: p.shape, drill: p.drill }));
     const gm = partGeom({ x: 0, y: 0, rot: 0, side: 'top', fp: fp.id, ref: o.ref || '' }, fp, wp);
@@ -747,22 +785,24 @@
     const s = Math.min((w - 40) / Math.max(1, x1 - x0), (hh - 40) / Math.max(1, y1 - y0)), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     const X = x => w / 2 + (x - cx) * s, Y = y => hh / 2 + (y - cy) * s;
     // Gehäuse (Körper), nur wenn Markierungen gezeigt werden sollen
-    if (gm.court) { g.beginPath(); gm.court.forEach((q, i) => i ? g.lineTo(X(q[0]), Y(q[1])) : g.moveTo(X(q[0]), Y(q[1]))); g.closePath(); g.fillStyle = o.body ? '#2b3036' : 'rgba(255,255,255,.05)'; g.fill(); g.strokeStyle = 'rgba(255,255,255,.25)'; g.stroke(); }
-    g.strokeStyle = COL.silk; g.lineWidth = Math.max(1.5, 0.15 * s);
+    if (gm.court) { g.beginPath(); gm.court.forEach((q, i) => i ? g.lineTo(X(q[0]), Y(q[1])) : g.moveTo(X(q[0]), Y(q[1]))); g.closePath(); g.fillStyle = o.body ? '#2b3036' : K.fpCourt; g.fill(); g.strokeStyle = K.fpCourtLine; g.stroke(); }
+    const onBody = !!(o.body && gm.court);          // Siebdruck und Marken liegen auf dem dunklen Gehäuse: dann die echten hellen Farben
+    g.strokeStyle = onBody ? COL.silk : K.fpSilk; g.lineWidth = Math.max(1.5, 0.15 * s);
     gm.silk.forEach(q => { if (q.circle) { g.beginPath(); g.arc(X(q.x), Y(q.y), q.r * s, 0, 7); g.stroke(); } else { g.beginPath(); q.pts.forEach((a, i) => i ? g.lineTo(X(a[0]), Y(a[1])) : g.moveTo(X(a[0]), Y(a[1]))); if (!q.open) g.closePath(); g.stroke(); } });
     const hits = [];
     wp.forEach(p => {
       g.fillStyle = o.hit && o.hit.n === p.n ? (o.hit.ok ? '#4cd964' : '#ff5c5c') : COL.cu;
       const px = X(p.x), py = Y(p.y), pw = p.w * s, ph = p.h * s;
-      if (p.shape === 'round' || p.shape === 'oval') { g.beginPath(); g.ellipse(px, py, pw / 2, ph / 2, 0, 0, 7); g.fill(); } else g.fillRect(px - pw / 2, py - ph / 2, pw, ph);
+      if (p.shape === 'round' || p.shape === 'oval') { g.beginPath(); g.ellipse(px, py, pw / 2, ph / 2, 0, 0, 7); g.fill(); if (K.padEdge) { g.strokeStyle = K.padEdge; g.lineWidth = 1; g.stroke(); } }
+      else { g.fillRect(px - pw / 2, py - ph / 2, pw, ph); if (K.padEdge) { g.strokeStyle = K.padEdge; g.lineWidth = 1; g.strokeRect(px - pw / 2, py - ph / 2, pw, ph); } }
       if (p.drill > 0) { g.fillStyle = '#0a0c0e'; g.beginPath(); g.arc(px, py, p.drill * s / 2, 0, 7); g.fill(); }
       hits.push({ n: p.n, x: px, y: py, r: Math.max(18, Math.max(pw, ph) / 2 + 6) });
-      if (o.numbers) { g.fillStyle = '#fff'; g.font = '600 ' + Math.max(10, Math.min(16, s * 0.6)) + 'px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(p.n, px, py - ph / 2 - 8); }
+      if (o.numbers) { g.fillStyle = K.fpNum; g.font = '600 ' + Math.max(10, Math.min(16, s * 0.6)) + 'px system-ui'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(p.n, px, py - ph / 2 - 8); }
     });
     if (o.marks) gm.marks.forEach(m => {
       const x = X(m.x), y = Y(m.y);
-      if (m.k === 'dot') { g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, Math.max(3, m.r * s), 0, 7); g.fill(); }
-      else if (m.k === 'stripe') { const tx = -m.ny, ty = m.nx, l = m.len * s / 2; g.strokeStyle = '#fff'; g.lineWidth = Math.max(4, 0.45 * s); g.beginPath(); g.moveTo(x - tx * l, y - ty * l); g.lineTo(x + tx * l, y + ty * l); g.stroke(); }
+      if (m.k === 'dot') { g.fillStyle = onBody ? '#fff' : K.fpMark; g.beginPath(); g.arc(x, y, Math.max(3, m.r * s), 0, 7); g.fill(); }
+      else if (m.k === 'stripe') { const tx = -m.ny, ty = m.nx, l = m.len * s / 2; g.strokeStyle = onBody ? '#fff' : K.fpMark; g.lineWidth = Math.max(4, 0.45 * s); g.beginPath(); g.moveTo(x - tx * l, y - ty * l); g.lineTo(x + tx * l, y + ty * l); g.stroke(); }
     });
     return hits;
   }
@@ -1051,7 +1091,7 @@
         });
       } else {
         const row = h('div', { class: 'pa-row', style: 'margin-top:8px' });
-        q.options.forEach(o => row.appendChild(h('button', { class: 'pa-b', text: o, onclick: ev => { if (Q.answered) return; const ok = o === q.answer; row.querySelectorAll('button').forEach(bn => { bn.disabled = true; if (bn.textContent === q.answer) bn.classList.add('ok'); }); if (!ok) ev.currentTarget.style.background = '#7a2a2a'; finish(ok); } })));
+        q.options.forEach(o => row.appendChild(h('button', { class: 'pa-b', text: o, onclick: ev => { if (Q.answered) return; const ok = o === q.answer; row.querySelectorAll('button').forEach(bn => { bn.disabled = true; if (bn.textContent === q.answer) bn.classList.add('ok'); }); if (!ok) { ev.currentTarget.classList.add('no'); ev.currentTarget.style.background = 'var(--pa-wrong,#7a2a2a)'; } finish(ok); } })));
         card.appendChild(row);
       }
       card.appendChild(fb); card.appendChild(nextRow);
@@ -1195,8 +1235,8 @@
             g.save(); g.beginPath(); const x0 = T.X(0), x1 = T.X(R.wb.w);
             g.rect(Math.min(x0, x1) - 8, T.Y(0) - 8, Math.abs(x1 - x0) + 16, T.L(R.wb.h) + 16);
             ps.forEach(p => g.rect(T.X(p.x) - T.L(p.w * k) / 2, T.Y(p.y) - T.L(p.h * k) / 2, T.L(p.w * k), T.L(p.h * k)));
-            g.fillStyle = 'rgba(140,152,164,.88)'; g.fill('evenodd'); g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = 1; g.stroke();
-            g.fillStyle = 'rgba(0,0,0,.55)'; g.font = '600 12px system-ui'; g.textAlign = 'left'; g.fillText('Schablone ' + Math.round(R.stencil.t * 1000) + ' µm, Öffnungen ' + Math.round(R.stencil.f * 100) + ' %', Math.min(x0, x1) + 6, T.Y(0) + 16); g.restore();
+            g.fillStyle = 'rgba(140,152,164,.88)'; g.fill('evenodd'); g.strokeStyle = th().stencilLine; g.lineWidth = 1; g.stroke();
+            g.fillStyle = th().stencilText; g.font = '600 12px system-ui'; g.textAlign = 'left'; g.fillText('Schablone ' + Math.round(R.stencil.t * 1000) + ' µm, Öffnungen ' + Math.round(R.stencil.f * 100) + ' %', Math.min(x0, x1) + 6, T.Y(0) + 16); g.restore();
           } else {
             ps.forEach(p => { if (p.x / R.wb.w > R.pp) return; const r = infoOf(p).ratio; if (r < 0.6 || r > 1.4) { g.strokeStyle = r < 0.6 ? '#7fa2e6' : '#ff6a63'; g.lineWidth = 2; g.strokeRect(T.X(p.x) - T.L(p.w * k) / 2 - 3, T.Y(p.y) - T.L(p.h * k) / 2 - 3, T.L(p.w * k) + 6, T.L(p.h * k) + 6); } });
             if (R.pp < 1) { const sx = T.X(R.pp * R.wb.w); g.fillStyle = '#9aa7b3'; g.fillRect(sx - 3, T.Y(0) - 6, 6, T.L(R.wb.h) + 12); }
@@ -1284,27 +1324,27 @@
       info.appendChild(h('div', { class: 'pa-row', style: 'margin-top:8px' }, [start, skip]));
       const lock = d => Object.keys(sliders).forEach(k => sliders[k].disable(d));
       // Diagramm
-      const clr = w => w.some(x => x.level === 'bad') ? '#ff6a63' : w.length ? '#ffb340' : '#4cd964';
+      const clr = w => { const K = th(); return w.some(x => x.level === 'bad') ? K.curveBad : w.length ? K.curveWarn : K.curveOk; };
       chartO = mkCv(chBox, (g, w, hh) => {
-        const Lm = 46, Rm = 12, Tp = 16, Bm = 34, pw = w - Lm - Rm, ph = hh - Tp - Bm, cur = PCB_ASM.profileCurve(R.profile), m = cur.metrics;
+        const K = th(), Lm = 46, Rm = 12, Tp = 16, Bm = 34, pw = w - Lm - Rm, ph = hh - Tp - Bm, cur = PCB_ASM.profileCurve(R.profile), m = cur.metrics;
         const xmax = geo.freeze || Math.max(330, Math.ceil((cur.total + 20) / 30) * 30); geo.xmax = xmax; geo.Lm = Lm; geo.Tp = Tp; geo.pw = pw; geo.ph = ph;
         const X = t => Lm + t / xmax * pw, Y = T => Tp + ph - T / 280 * ph; geo.X = X; geo.Y = Y;
-        g.fillStyle = '#0f1418'; g.fillRect(0, 0, w, hh);
-        const band = (t0, t1, col, txt) => { g.fillStyle = col; g.fillRect(X(t0), Tp, X(t1) - X(t0), ph); g.fillStyle = 'rgba(255,255,255,.55)'; g.font = '11px system-ui'; g.textAlign = 'center'; g.fillText(txt, (X(t0) + X(t1)) / 2, Tp + 12); };
+        g.fillStyle = K.bg; g.fillRect(0, 0, w, hh);
+        const band = (t0, t1, col, txt) => { g.fillStyle = col; g.fillRect(X(t0), Tp, X(t1) - X(t0), ph); g.fillStyle = K.bandText; g.font = '11px system-ui'; g.textAlign = 'center'; g.fillText(txt, (X(t0) + X(t1)) / 2, Tp + 12); };
         const pts = cur.pts;
-        band(0, pts[1].t, 'rgba(80,140,255,.10)', 'Vorwärmen'); band(pts[1].t, pts[2].t, 'rgba(255,200,60,.09)', 'Soak'); band(pts[3].t, pts[5].t + (m.peak - 217) / Math.max(.05, m.cool), 'rgba(255,90,60,.12)', 'Reflow'); band(pts[6].t - (m.peak - 100) / Math.max(.05, m.cool) + 0, pts[6].t, 'rgba(120,200,255,.06)', 'Kühlen');
-        g.fillStyle = 'rgba(76,217,100,.16)'; g.fillRect(Lm, Y(250), pw, Y(235) - Y(250));
-        g.strokeStyle = '#38424d'; g.lineWidth = 1; g.fillStyle = '#8d99a6'; g.font = '11px system-ui'; g.textAlign = 'right';
+        band(0, pts[1].t, K.bands[0], 'Vorwärmen'); band(pts[1].t, pts[2].t, K.bands[1], 'Soak'); band(pts[3].t, pts[5].t + (m.peak - 217) / Math.max(.05, m.cool), K.bands[2], 'Reflow'); band(pts[6].t - (m.peak - 100) / Math.max(.05, m.cool) + 0, pts[6].t, K.bands[3], 'Kühlen');
+        g.fillStyle = K.peakBand; g.fillRect(Lm, Y(250), pw, Y(235) - Y(250));
+        g.strokeStyle = K.grid; g.lineWidth = 1; g.fillStyle = K.axis; g.font = '11px system-ui'; g.textAlign = 'right';
         for (let T = 0; T <= 250; T += 50) { g.beginPath(); g.moveTo(Lm, Y(T)); g.lineTo(Lm + pw, Y(T)); g.stroke(); g.fillText(T + '', Lm - 5, Y(T) + 4); }
         g.textAlign = 'center'; for (let t = 0; t <= xmax; t += 60) { g.fillText(t + '', X(t), Tp + ph + 15); } g.fillText('Zeit in s', Lm + pw / 2, hh - 5);
         g.save(); g.translate(12, Tp + ph / 2); g.rotate(-Math.PI / 2); g.fillText('°C', 0, 0); g.restore();
-        g.setLineDash([6, 4]); g.strokeStyle = '#ff6a63'; g.beginPath(); g.moveTo(Lm, Y(217)); g.lineTo(Lm + pw, Y(217)); g.stroke(); g.strokeStyle = '#6b7885'; g.beginPath(); g.moveTo(Lm, Y(150)); g.lineTo(Lm + pw, Y(150)); g.stroke(); g.setLineDash([]);
-        g.fillStyle = '#ff9a94'; g.textAlign = 'left'; g.fillText('Liquidus 217 °C', Lm + pw - 92, Y(217) - 4);
+        g.setLineDash([6, 4]); g.strokeStyle = K.liq; g.beginPath(); g.moveTo(Lm, Y(217)); g.lineTo(Lm + pw, Y(217)); g.stroke(); g.strokeStyle = K.soakLine; g.beginPath(); g.moveTo(Lm, Y(150)); g.lineTo(Lm + pw, Y(150)); g.stroke(); g.setLineDash([]);
+        g.fillStyle = K.liqText; g.textAlign = 'left'; g.fillText('Liquidus 217 °C', Lm + pw - 92, Y(217) - 4);
         const chk = PCB_ASM.profileCheck(R.profile); g.strokeStyle = clr(chk.warnings); g.lineWidth = 3; g.lineJoin = 'round'; g.beginPath(); pts.forEach((q, i) => i ? g.lineTo(X(q.t), Y(q.T)) : g.moveTo(X(q.t), Y(q.T))); g.stroke();
         geo.h = [['preheat', 1], ['soak', 2], ['peak', 4], ['peakEnd', 5], ['end', 6]].map(a => ({ id: a[0], x: X(pts[a[1]].t), y: Y(pts[a[1]].T) }));
-        if (!R.oven.run) geo.h.forEach(q => { g.fillStyle = geo.drag === q.id ? '#fff' : '#3b9eff'; g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(q.x, q.y, 9, 0, 7); g.fill(); g.stroke(); });
-        if (R.oven.run || R.oven.p > 0) { const t = R.oven.p * cur.total, T = PCB_ASM.tempAt(cur, t); g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 1; g.beginPath(); g.moveTo(X(t), Tp); g.lineTo(X(t), Tp + ph); g.stroke(); g.fillStyle = '#fff'; g.beginPath(); g.arc(X(t), Y(T), 6, 0, 7); g.fill(); }
-        if (geo.drag) { g.fillStyle = 'rgba(0,0,0,.7)'; g.fillRect(Lm + 6, Tp + 20, 190, 20); g.fillStyle = '#fff'; g.textAlign = 'left'; g.fillText(dragLabel(), Lm + 12, Tp + 34); }
+        if (!R.oven.run) geo.h.forEach(q => { g.fillStyle = geo.drag === q.id ? K.handleDrag : K.handle; g.strokeStyle = K.handleLine; g.lineWidth = 2; g.beginPath(); g.arc(q.x, q.y, 9, 0, 7); g.fill(); g.stroke(); });
+        if (R.oven.run || R.oven.p > 0) { const t = R.oven.p * cur.total, T = PCB_ASM.tempAt(cur, t); g.strokeStyle = K.cursor; g.lineWidth = 1; g.beginPath(); g.moveTo(X(t), Tp); g.lineTo(X(t), Tp + ph); g.stroke(); g.fillStyle = K.cursorDot; g.beginPath(); g.arc(X(t), Y(T), 6, 0, 7); g.fill(); }
+        if (geo.drag) { g.fillStyle = K.tipBg; g.fillRect(Lm + 6, Tp + 20, 190, 20); if (K.tipLine) { g.strokeStyle = K.tipLine; g.lineWidth = 1; g.strokeRect(Lm + 6.5, Tp + 20.5, 189, 19); } g.fillStyle = K.tipFg; g.textAlign = 'left'; g.fillText(dragLabel(), Lm + 12, Tp + 34); }
       });
       const dragLabel = () => { const p = R.profile; return ({ preheat: 'Aufheizrate ' + f1(p.ramp) + ' °C/s', soak: 'Soak ' + p.soakTime + ' s bis ' + p.soakEnd + ' °C', peak: 'Peak ' + p.peak + ' °C', peakEnd: 'Zeit über Liquidus ' + p.tal + ' s', end: 'Abkühlrate ' + f1(p.cool) + ' °C/s' })[geo.drag] || ''; };
       const cv = chartO.cv;
@@ -1328,7 +1368,7 @@
       // Ofen
       ovo = mkCv(ovBox, (g, w, hh) => {
         const cur = PCB_ASM.profileCurve(R.profile), p = R.oven.p, T = PCB_ASM.tempAt(cur, p * cur.total), a = Math.min(1, Math.max(0, (T - 25) / 230));
-        g.fillStyle = '#0f1418'; g.fillRect(0, 0, w, hh);
+        g.fillStyle = th().bg; g.fillRect(0, 0, w, hh);
         const x0 = 14, x1 = w - 14, y0 = 14, y1 = hh - 22; g.fillStyle = '#2a3038'; g.beginPath(); g.roundRect ? g.roundRect(x0, y0, x1 - x0, y1 - y0, 14) : g.rect(x0, y0, x1 - x0, y1 - y0); g.fill();
         const zn = 5, zw = (x1 - x0 - 20) / zn;
         for (let i = 0; i < zn; i++) { const here = Math.abs((i + 0.5) / zn - p), k = Math.max(0, 1 - here * 2.2) * 0.65 + 0.15 * (i / zn < p ? 1 : 0); g.fillStyle = 'rgba(255,' + Math.round(150 - 90 * a) + ',30,' + (0.12 + 0.6 * a * Math.min(1, k + 0.2)).toFixed(2) + ')'; g.fillRect(x0 + 10 + i * zw + 3, y0 + 8, zw - 6, 16); }
@@ -1336,7 +1376,7 @@
         const bw = 56, bx = x0 + 10 + p * (x1 - x0 - 20 - bw); g.fillStyle = '#1d6a3a'; g.fillRect(bx, y1 - 34, bw, 10);
         const hot = T > 217; g.fillStyle = hot ? '#e8edf1' : '#b9bfc5'; for (let i = 0; i < 6; i++) g.fillRect(bx + 6 + i * 8, y1 - 37, 4, 3);
         g.fillStyle = '#fff'; g.font = '700 18px system-ui'; g.textAlign = 'left'; g.fillText(Math.round(T) + ' °C', x0 + 14, y1 - 44 > y0 + 44 ? y1 - 46 : y0 + 46);
-        g.font = '12px system-ui'; g.fillStyle = '#8d99a6'; g.textAlign = 'right'; g.fillText(R.oven.run ? 'Ofen läuft' : p >= 1 ? 'Fertig' : 'Reflow-Ofen, bereit', x1 - 6, hh - 6);
+        g.font = '12px system-ui'; g.fillStyle = th().ovenText; g.textAlign = 'right'; g.fillText(R.oven.run ? 'Ofen läuft' : p >= 1 ? 'Fertig' : 'Reflow-Ofen, bereit', x1 - 6, hh - 6);
       });
       function runOven() {
         if (R.oven.run) return; R.oven = { run: true, p: 0 }; lock(true); start.disabled = true; skip.style.display = ''; chartO.redraw();
@@ -1382,7 +1422,7 @@
       info.appendChild(h('div', { html: '<big>' + good + ' von ' + total + '</big> Lötstellen gut (' + pct + ' %)' }));
       info.appendChild(h('div', { class: 'pa-mute', text: 'Versuch ' + R.attempts + ', Bestwert ' + R.best + ' %.' + (res.metrics.tht ? ' ' + res.metrics.tht + ' THT-Pad(s) werden nicht im Ofen gelötet.' : '') }));
       const chips = h('div', { class: 'pa-row', style: 'margin-top:8px' });
-      PCB_ASM.RESULT_ORDER.forEach(k => { const n = res.counts[k]; if (!n) return; chips.appendChild(h('button', { class: 'pa-chip' + (R.filter === k ? ' on' : ''), onclick: () => { R.filter = R.filter === k ? null : k; paintList(); cvo && cvo.redraw(); } }, [h('span', { class: 'pa-dot', style: 'background:' + PCB_ASM.RESULTS[k].col }), PCB_ASM.RESULTS[k].t + ' ' + n])); });
+      PCB_ASM.RESULT_ORDER.forEach(k => { const n = res.counts[k]; if (!n) return; chips.appendChild(h('button', { class: 'pa-chip' + (R.filter === k ? ' on' : ''), onclick: () => { R.filter = R.filter === k ? null : k; paintList(); cvo && cvo.redraw(); } }, [h('span', { class: 'pa-dot', style: 'background:' + cssCol(PCB_ASM.RESULTS[k].col) }), PCB_ASM.RESULTS[k].t + ' ' + n])); });
       info.appendChild(chips); info.appendChild(sum);
       const tips = []; const c = res.counts;
       if (c.tombstone) tips.push('Grabstein: Aufheizrate senken und Soak verlängern. Im Layout beide Pads gleich groß machen und an Kupferflächen mit Thermals anbinden.');
@@ -1405,7 +1445,7 @@
         const bad = res.joints.filter(j => j.result !== 'gut' && (!R.filter || j.result === R.filter));
         if (!bad.length) return;
         const lst = h('div', { style: 'max-height:150px;overflow:auto;margin-top:8px' });
-        bad.slice(0, 60).forEach(j => lst.appendChild(h('button', { class: 'pa-chip' + (R.sel === key(j) ? ' on' : ''), style: 'margin:0 6px 6px 0', onclick: () => selectJ(j, true) }, [h('span', { class: 'pa-dot', style: 'background:' + PCB_ASM.RESULTS[j.result].col }), j.ref + '.' + j.pad])));
+        bad.slice(0, 60).forEach(j => lst.appendChild(h('button', { class: 'pa-chip' + (R.sel === key(j) ? ' on' : ''), style: 'margin:0 6px 6px 0', onclick: () => selectJ(j, true) }, [h('span', { class: 'pa-dot', style: 'background:' + cssCol(PCB_ASM.RESULTS[j.result].col) }), j.ref + '.' + j.pad])));
         sum.appendChild(lst);
       }
       function selectJ(j, zoom) {
@@ -1419,7 +1459,7 @@
         let gap = 0.7, bestd = 9; R.S.pads.forEach(p => { if (p.ref === j.ref && p.n === j.pad) return; if ((p.layers && p.layers[0] === 'B.Cu' ? 'bot' : 'top') !== j.side) return; const dx = Math.max(0, Math.abs(p.x - j.x) - (p.w + j.w) / 2), dy = Math.max(0, Math.abs(p.y - j.y) - (p.h + j.h) / 2), d = Math.hypot(dx, dy); if (d < bestd) { bestd = d; } });
         if (bestd < 9) gap = Math.max(0.15, bestd);
         microO = mkCv(mb, (g, w, hh) => microPic(g, w, hh, j.result, PCB_ASM.hash(3, key(j)) * 100000 | 0, { smd: true, pw: j.w, ph: j.h, gap }));
-        micro.appendChild(h('div', { style: 'font-weight:700;color:' + R2.col + ';margin-top:2px', text: j.ref + '.' + j.pad + ': ' + R2.t }));
+        micro.appendChild(h('div', { style: 'font-weight:700;color:' + cssCol(R2.col) + ';margin-top:2px', text: j.ref + '.' + j.pad + ': ' + R2.t }));
         micro.appendChild(h('div', { style: 'margin:4px 0', text: j.reason }));
         if (R2.fix) micro.appendChild(h('div', { class: 'pa-mute', text: 'So behebst du es: ' + R2.fix }));
         else micro.appendChild(h('div', { class: 'pa-mute', text: R2.x }));

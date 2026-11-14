@@ -69,7 +69,7 @@
           }
           const v = f.value == null ? '' : (f.type === 'number' ? String(f.value).replace('.', ',') : f.value);
           return `<label class="f"><span>${esc(f.label)}${f.unit ? ' (' + esc(f.unit) + ')' : ''}</span><input id="ak${i}" type="text" inputmode="${f.type === 'number' ? 'decimal' : 'text'}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(v)}"></label>`;
-        }).join('') + '<div id="akErr" class="hint2" style="color:#ff8a7a;min-height:18px"></div><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>OK</button></div>';
+        }).join('') + '<div id="akErr" class="hint2" style="color:var(--bad,#ff8a7a);min-height:18px"></div><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>OK</button></div>';
         const ok = () => {
           const out = {};
           for (let i = 0; i < fields.length; i++) {
@@ -151,10 +151,10 @@
     tab: lsRaw('pcb.tab', 'edit'), sub: Object.assign({ fab: 'gerber', asm: 'asm' }, lsGet('pcb.sub', {})), board: null, id: null, task: null, readonly: false, dirty: false,
     drc: [], conn: null, connStale: true, drcStale: true, userEdit: false, minErr: 0, prevErr: null, prevShorts: 0, cnt: { t: 0, v: 0 }, cur: null
   };
-  const TABS = [['edit', '🧩', 'Layout'], ['stack', '📚', 'Lagen'], ['fab', '🏭', 'Fertigung'], ['asm', '🔧', 'Bestückung'], ['repair', '🔍', 'Fehlersuche'], ['tasks', '📝', 'Aufgaben'], ['help', '📘', 'Lernen']];
-  const TAB_VIEWS = { edit: ['edit'], stack: ['stack'], fab: ['gerber', 'fab', 'test'], asm: ['asm', 'solder'], repair: ['repair'] };
-  const VIEW_IDS = ['edit', 'stack', 'gerber', 'fab', 'test', 'asm', 'solder', 'repair'];
-  const VNAME = { edit: 'Layout-Editor', stack: 'Lagenaufbau', gerber: 'Gerber-Viewer', fab: 'Fertigung und Kosten', test: 'Prüfverfahren und Fertigungslinie', asm: 'Bestückung', solder: 'Löten', repair: 'Fehlersuche und Reparatur' };
+  const TABS = [['edit', '🧩', 'Layout'], ['stack', '📚', 'Lagen'], ['fab', '🏭', 'Fertigung'], ['asm', '🔧', 'Bestückung'], ['repair', '🔍', 'Fehlersuche'], ['fehler', '🩺', 'Fehlerbild'], ['esd', '⚡', 'ESD'], ['tasks', '📝', 'Aufgaben'], ['help', '📘', 'Lernen']];
+  const TAB_VIEWS = { edit: ['edit'], stack: ['stack'], fab: ['gerber', 'fab', 'test'], asm: ['asm', 'solder'], repair: ['repair'], fehler: ['fehler'], esd: ['esd'] };
+  const VIEW_IDS = ['edit', 'stack', 'gerber', 'fab', 'test', 'asm', 'solder', 'repair', 'fehler', 'esd'];
+  const VNAME = { edit: 'Layout-Editor', stack: 'Lagenaufbau', gerber: 'Gerber-Viewer', fab: 'Fertigung und Kosten', test: 'Prüfverfahren und Fertigungslinie', asm: 'Bestückung', solder: 'Löten', repair: 'Fehlersuche und Reparatur', fehler: 'Fehlerbild und Linie A', esd: 'ESD-Schutz' };
   const SUBN = { gerber: '🗂 Gerber-Daten', fab: '⚙ Herstellung und Kosten', test: '🔬 Prüfen', asm: '📋 Bestückungsplan', solder: '🔥 Löten' };
   if (!TABS.some(t => t[0] === S.tab)) S.tab = 'edit';
   if (!TAB_VIEWS.fab.includes(S.sub.fab)) S.sub.fab = 'gerber'; if (!TAB_VIEWS.asm.includes(S.sub.asm)) S.sub.asm = 'asm';
@@ -283,7 +283,7 @@
         <div class="chips" style="display:flex;gap:6px;flex-wrap:wrap;margin:-4px 0 10px"><button class="chip s" data-sz="30,20">Klein 30 × 20</button><button class="chip s" data-sz="50,40">Mittel 50 × 40</button><button class="chip s" data-sz="80,60">Groß 80 × 60</button><button class="chip s" data-sz="100,80">100 × 80</button></div>
         <div class="f"><span>Lagenzahl</span><div class="seg" id="nbL">${[1, 2, 4, 6].map(n => `<button data-l="${n}" class="${n === L ? 'on' : ''}">${n}</button>`).join('')}</div></div>
         <div class="f"><span>Kupferdicke außen</span><div class="seg" id="nbC">${[[0.5, '0,5 oz'], [1, '1 oz'], [2, '2 oz']].map(c => `<button data-c="${c[0]}" class="${c[0] === Cu ? 'on' : ''}">${c[1]}</button>`).join('')}</div></div>
-        <p class="hint2" id="nbInfo">${LAYERINFO[L]}</p><div id="akErr" class="hint2" style="color:#ff8a7a;min-height:18px"></div>
+        <p class="hint2" id="nbInfo">${LAYERINFO[L]}</p><div id="akErr" class="hint2" style="color:var(--bad,#ff8a7a);min-height:18px"></div>
         <div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>Anlegen</button></div>`;
       b.addEventListener('click', e => {
         const s = e.target.closest('[data-sz]'), l = e.target.closest('[data-l]'), c = e.target.closest('#nbC [data-c]');
@@ -329,7 +329,7 @@
         <div class="f"><span>Kupferdicke außen</span><div class="seg" id="pC">${[[0.5, '0,5 oz'], [1, '1 oz'], [2, '2 oz']].map(c => `<button data-c="${c[0]}" class="${c[0] === Cu ? 'on' : ''}">${c[1]}</button>`).join('')}</div></div>
         <div class="f"><span>Raster (mm)</span><div class="seg" id="pG">${[0.25, 0.5, 1.27, 2.54].map(g => `<button data-g="${g}" class="${g === G ? 'on' : ''}">${String(g).replace('.', ',')}</button>`).join('')}</div></div>
         <details><summary class="chip s" style="display:inline-flex;list-style:none">Entwurfsregeln</summary><div style="margin-top:8px" class="two">${rf('minWidth', 'Mindest-Leiterbahnbreite')}${rf('clearance', 'Mindestabstand')}${rf('minDrill', 'Mindestbohrung')}${rf('annular', 'Mindest-Restring')}${rf('edge', 'Abstand zum Rand')}${rf('viaDia', 'Via-Durchmesser')}${rf('viaDrill', 'Via-Bohrung')}</div></details>
-        <div id="akErr" class="hint2" style="color:#ff8a7a;min-height:18px"></div><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok${ro ? ' disabled' : ''}>Übernehmen</button></div>`;
+        <div id="akErr" class="hint2" style="color:var(--bad,#ff8a7a);min-height:18px"></div><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok${ro ? ' disabled' : ''}>Übernehmen</button></div>`;
       b.addEventListener('click', e => {
         const l = e.target.closest('#pL [data-l]'), c = e.target.closest('#pC [data-c]'), g = e.target.closest('#pG [data-g]');
         if (l) { L = +l.dataset.l; $$('#pL button', b).forEach(x => x.classList.toggle('on', x === l)); }
@@ -536,7 +536,9 @@
   /* Bild der Editor-Ansicht: größte Zeichenfläche im Editor-Container */
   async function editorCanvas() {
     if (!VIEWS.edit || !VIEWS.edit.mounted) { setTab('edit'); await new Promise(r => setTimeout(r, 350)); }
-    const V = VIEWS.edit; if (V && V.api && typeof V.api.canvas === 'function') { try { const c = V.api.canvas(); if (c) return c; } catch (e) {} }
+    /* Bild und Druck immer in der dunklen Darstellung (exportCanvas), unabhängig vom Hellmodus: bestehende Ausdrucke und Bilder ändern sich nicht */
+    const V = VIEWS.edit; if (V && V.api && typeof V.api.exportCanvas === 'function') { try { const c = V.api.exportCanvas(); if (c) return c; } catch (e) { console.error(e); } }
+    if (V && V.api && typeof V.api.canvas === 'function') { try { const c = V.api.canvas(); if (c) return c; } catch (e) {} }
     let best = null; $$('canvas', $('#vh-edit')).forEach(c => { if (!best || c.width * c.height > best.width * best.height) best = c; });
     return best && best.width > 10 ? best : null;
   }
@@ -585,7 +587,7 @@
     fx, mode: () => (S.readonly ? 'view' : 'edit'),
     /* Zusätze */
     undo, redo, canUndo: () => hi > 0, canRedo: () => hi < hist.length - 1, drcNow: () => { computeDrc(); return S.drc; },
-    stat, jump: jumpTo, openDrc: drcSheet, openNets: netSheet, openProps: propsSheet, save: doSave, exportSheet, go: t => setTab(t), version: '1.0'
+    stat, quizChanged: () => { updateTaskBadge(); if (S.tab === 'tasks') renderTasks(); }, jump: jumpTo, openDrc: drcSheet, openNets: netSheet, openProps: propsSheet, save: doSave, exportSheet, go: t => setTab(t), version: '1.0'
   };
   function hostFor(id) { return $('#vh-' + id); }
   function placeholder(host, id, title, text, btn) {
@@ -632,9 +634,13 @@
     updateTaskBadge();
   }
   $('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.t); });
+  const introRunning = () => { try { return !!(root.Tutorial && typeof root.Tutorial.running === 'function' && root.Tutorial.running()); } catch (e) { return false; } };
   function setTab(t) {
-    if (!TABS.some(x => x[0] === t)) t = 'edit'; S.tab = t; lsPut('pcb.tab', t);
-    $('#mid').dataset.tab = t; $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+    if (!TABS.some(x => x[0] === t)) t = 'edit'; S.tab = t;
+    /* Die Einführung (tutorial.js) tippt selbst Reiter an und stellt am Ende den vorherigen wieder her. Solange sie läuft, wird der Reiter nicht gemerkt:
+       sonst stünde das Lab nach einem Neuladen mitten in der Einführung auf dem Reiter der Einführung statt auf dem selbst gewählten. */
+    if (!introRunning()) lsPut('pcb.tab', t);
+    $('#mid').dataset.tab = t; $('#app').dataset.tab = t; $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     const vs = TAB_VIEWS[t];
     if (vs) {
       const id = vs.length > 1 ? S.sub[t] : vs[0];
@@ -687,10 +693,28 @@
   }
   let taskRes = null;
   const curTask = () => { const a = TK(); return a && S.task ? a.find(t => t.id === S.task.id) || null : null; };
+  /* Quizfragen der Reiter Fehlerbild und ESD (fq1 … fq10, eq1 … eq12): eigener Stand lm4.pcbquiz (pcbfehler.js, pcbesd.js). Sie stehen im Reiter Aufgaben
+     als eigene Gruppen mit eigenem Zähler; der Zähler am Reiter zählt nur die Aufgaben (wie die Startseite, aufgaben.js). */
+  const QUIZ_TABS = [['fehler', 'PCB_FEHLER', 'Quiz Fehlerbild'], ['esd', 'PCB_ESD', 'Quiz ESD']];
+  function quizList() {
+    const out = []; let sp = null; try { sp = root.localStorage; } catch (e) { sp = null; }
+    QUIZ_TABS.forEach(([tab, glob, cat]) => {
+      const M = root[glob]; if (!M || !Array.isArray(M.QUIZ) || typeof M.quizStand !== 'function') return;
+      let st = {}; try { st = M.quizStand(sp) || {}; } catch (e) { st = {}; }
+      M.QUIZ.forEach(q => out.push({ id: q.id, tab, cat, title: q.title, level: q.level || 1, pct: st[q.id] || 0 }));
+    });
+    return out;
+  }
+  function openQuiz(id) {
+    const q = quizList().find(x => x.id === id); if (!q) return false;
+    setTab(q.tab); const V = VIEWS[q.tab];
+    try { return !!(V && V.api && V.api.zeigeFrage && V.api.zeigeFrage(id)); } catch (e) { console.error(e); return false; }
+  }
   function updateTaskBadge() {
     const a = TK(), b = $('#tkBd'); if (!b) return;
     if (!a) { b.style.display = 'none'; return; }
-    const d = taskDone(), n = a.filter(t => (d[t.id] || 0) >= 100).length; b.style.display = ''; b.textContent = n + '/' + a.length;
+    const d = taskDone(), n = a.filter(t => (d[t.id] || 0) >= 100).length;
+    b.style.display = ''; b.textContent = n + '/' + a.length; b.setAttribute('aria-label', n + ' von ' + a.length + ' Aufgaben gelöst');
   }
   function updateTaskBar() {
     const t = curTask(), el = $('#taskBar'); if (!el) return;
@@ -744,18 +768,25 @@
       if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
       h += '</div>';
     }
-    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${A.length} Aufgaben vollständig gelöst. Wähle eine Aufgabe: Du bekommst eine Startplatine, bearbeitest sie und lässt die Lösung automatisch prüfen.</p>`;
+    const QL = quizList(), q100 = QL.filter(x => x.pct >= 100).length;
+    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${A.length} Aufgaben vollständig gelöst${QL.length ? '. Quizfragen zählen getrennt: ' + q100 + ' von ' + QL.length + ' gelöst (unten in der Liste)' : ''}. Wähle eine Aufgabe: Du bekommst eine Startplatine, bearbeitest sie und lässt die Lösung automatisch prüfen.</p>`;
     let last = '';
     A.forEach(x => {
       if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; }
       const p = d[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${p >= 100 ? 'g' : p > 0 ? 'p' : ''}">${p >= 100 ? '✓' : p > 0 ? p : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${'●'.repeat(x.level || 1)}${'○'.repeat(Math.max(0, 3 - (x.level || 1)))}</span>${p != null ? ' · bisher ' + p + ' %' : ''}</small></div></button>`;
+    });
+    last = '';
+    QL.forEach(x => {
+      if (x.cat !== last) { last = x.cat; const g = QL.filter(y => y.cat === x.cat); h += `<div class="gh" data-quiz="${esc(x.tab)}">${esc(x.cat)} ${g.filter(y => y.pct >= 100).length}/${g.length}</div>`; }
+      const p = x.pct; h += `<button class="row" data-q="${esc(x.id)}"><span class="dot ${p >= 100 ? 'g' : p > 0 ? 'p' : ''}">${p >= 100 ? '✓' : p > 0 ? p : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${'●'.repeat(x.level)}${'○'.repeat(Math.max(0, 3 - x.level))}</span> · Quizfrage${p > 0 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`;
     });
     V.innerHTML = h;
     const host = $('#pcbAnsHost', V);
     if (t && host && root.PCB_TASKS && root.PCB_TASKS.answerSheet && S.board) { const el = root.PCB_TASKS.answerSheet(t, S.board, () => onChanged()); if (el) host.appendChild(el); }
   }
   $('#taskView').addEventListener('click', async e => {
-    const tb = e.target.closest('[data-ta]'), row = e.target.closest('.row[data-t]');
+    const tb = e.target.closest('[data-ta]'), row = e.target.closest('.row[data-t]'), qrow = e.target.closest('.row[data-q]');
+    if (qrow) { openQuiz(qrow.dataset.q); return; }
     if (tb) {
       const a = tb.dataset.ta;
       if (a === 'check') checkTask(); else if (a === 'hint') hintTask(); else if (a === 'prog') setTab('edit');
@@ -767,9 +798,12 @@
   /* ============================================================ Tab Lernen */
   function stackSvg(rows, w) {
     const H = rows.reduce((s, r) => s + r[1], 0) + 4; let y = 2, s = `<svg class="tm" viewBox="0 0 ${w} ${H}" width="${w}" role="img" aria-label="Lagenaufbau im Querschnitt">`;
-    rows.forEach(r => { s += `<rect x="2" y="${y}" width="${w - 4}" height="${r[1]}" fill="${r[2]}"/><text x="10" y="${y + r[1] / 2 + 4}" fill="${r[3] || '#fff'}" font-size="11" font-family="system-ui">${r[0]}</text>`; y += r[1]; });
+    /* Hellmodus: auf hellen Schichtfarben (Kupfer, Prepreg) dunkle Schrift, damit der Kontrast reicht. Dunkel bleibt wie bisher (weiß). */
+    const hell = isLight(), lum = c => { const v = [1, 3, 5].map(i => { const x = parseInt(c.slice(i, i + 2), 16) / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
+    rows.forEach(r => { const ink = r[3] || (hell && lum(r[2]) > 0.18 ? '#14181c' : '#fff'); s += `<rect x="2" y="${y}" width="${w - 4}" height="${r[1]}" fill="${r[2]}"/><text x="10" y="${y + r[1] / 2 + 4}" fill="${ink}" font-size="11" font-family="system-ui">${r[0]}</text>`; y += r[1]; });
     return s + '</svg>';
   }
+  const isLight = () => { try { const t = document.documentElement.getAttribute('data-theme'); return t === 'light' || (t !== 'dark' && root.matchMedia && root.matchMedia('(prefers-color-scheme: light)').matches); } catch (e) { return false; } };
   let helpDone = false;
   function renderHelp() {
     const V = $('#helpView'); if (helpDone) return; helpDone = true;
@@ -798,14 +832,15 @@
     <details><summary>6 · Bestückung und Löten</summary><div class="hb2"><p><b>THT</b>-Bauteile (bedrahtet) werden durch Bohrungen gesteckt und auf der Lötseite verlötet, von Hand oder in der Schwall-Lötanlage. <b>SMD</b>-Bauteile liegen auf Pads: Erst druckt man <b>Lotpaste</b> durch eine Schablone, dann bestückt der Automat, dann wandert die Platine durch den <b>Reflow-Ofen</b>.</p>
       <p>Das Reflow-Profil hat vier Phasen: <b>Vorwärmen</b>, <b>Soak</b> (Temperatur angleichen), <b>Peak</b> (Lot schmilzt, die Spitze liegt etwas über der Schmelztemperatur des Lots) und <b>Abkühlen</b>. Typische Fehler: <b>Tombstone</b> (Grabstein: ein Ende hebt ab, weil ein Pad früher schmilzt), <b>Lötbrücke</b> (zu viel Lot), <b>kalte Lötstelle</b> (matt, nicht richtig geflossen) und Zinnperlen.</p>
       <p>Beim Handlöten erwärmst du Pad und Anschlussdraht gleichzeitig, gibst dann Lot an die erwärmte Stelle, nicht an die Kolbenspitze. Eine gute Lötstelle glänzt und hat einen kleinen Meniskus.</p>
-      <div class="tryit">${ex('smd|led-treiber|treiber', 'SMD-Beispiel laden')}</div></div></details>
+      <p class="hint2">Wie sich solche Fehler in einer ganzen Fertigungslinie zeigen (Druck, Bestücken, Reflow, Prüfen, Lackieren, Verguss) und wo du sie findest, steht im Reiter <b>Fehlerbild</b> (Modell „Linie A“).</p>
+      <div class="tryit">${ex('smd|led-treiber|treiber', 'SMD-Beispiel laden')}<button class="chip s" data-go="fehler">Fehlerbilder der Linie A</button></div></div></details>
     <details><summary>7 · Gerber-Daten</summary><div class="hb2"><p>Der Hersteller bekommt kein Layout-Programm, sondern <b>Gerber-Dateien</b> (Format RS-274X): eine Datei je Lage, wie Plotterbefehle. Eine <b>Blende</b> (Apertur) legt fest, wie ein Punkt oder Strich aussieht; „Flash“ setzt eine Blende ab (Pad), „Draw“ zieht eine Linie (Leiterbahn), Regionen füllen Flächen. Dazu kommen die <b>Bohrdatei</b> im Excellon-Format und der Platinenumriss.</p>
       <table><tr><th>Datei</th><th>Inhalt</th></tr><tr><td><code>.gtl</code> / <code>.gbl</code></td><td>Kupfer oben / unten</td></tr><tr><td><code>.gts</code> / <code>.gbs</code></td><td>Lötstopplack oben / unten</td></tr><tr><td><code>.gtp</code> / <code>.gbp</code></td><td>Lotpastenschablone</td></tr><tr><td><code>.gto</code> / <code>.gbo</code></td><td>Bestückungsdruck</td></tr><tr><td><code>.gm1</code></td><td>Platinenumriss</td></tr><tr><td><code>.drl</code></td><td>Bohrungen (Excellon)</td></tr></table>
       <p>Im Tab <b>Fertigung</b> siehst du die Dateien und kannst sie über „Export“ als ZIP speichern.</p>
       <div class="tryit">${ex('usb|arduino|shield|netzteil', 'Beispiel für den Gerber-Viewer')}</div></div></details>
     <details><summary>8 · Fehlersuche</summary><div class="hb2"><p>Gehe von außen nach innen vor: <b>1. Sichtprüfung</b> mit Lupe (Lötbrücken, kalte Lötstellen, falsch herum eingebaute Bauteile, fehlende Teile). <b>2. Bei ausgeschalteter Platine</b> Durchgang und Kurzschluss messen, zum Beispiel zwischen VCC und GND. <b>3. Unter Spannung</b> die Versorgung Stufe für Stufe nachmessen: Wo kommt die Spannung noch an, wo nicht mehr?</p>
       <p>Typische Fehler: <b>Unterbrechung</b> (Haarriss in der Bahn, gebrochenes Via), <b>Kurzschluss</b> (Lötbrücke, Zinnperle, Kupferrest), <b>falscher Bauteilwert</b>, <b>verpoltes Bauteil</b> (Elko, LED, IC) und <b>kalte Lötstelle</b>. Der Schaltplan sagt dir, was zwischen zwei Punkten sein müsste.</p>
-      <div class="tryit">${ex('fehlersuche|defekt|fehler', 'Defekte Platine laden')}<button class="chip s" data-go="repair">Zur Fehlersuche</button></div></div></details>
+      <div class="tryit">${ex('fehlersuche|defekt|fehler', 'Defekte Platine laden')}<button class="chip s" data-go="repair">Zur Fehlersuche</button><button class="chip s" data-go="fehler">Fehlerbilder aus der Linie</button></div></div></details>
     <details><summary>9 · Tastenkürzel</summary><div class="hb2">${keysHtml()}</div></details>`;
     ipcCalc();
   }
@@ -835,9 +870,9 @@
 
   /* ============================================================ Menü */
   function openMenu() {
-    const nT = (TK() || []).length;
+    const nT = (TK() || []).length, nQ = quizList().length;
     const rows = [
-      ['tasks', 'Aufgaben', nT ? nT + ' Aufgaben mit automatischer Prüfung' : 'Aufgaben folgen'], ['new', 'Neue Platine', 'Name, Größe, Lagenzahl, Kupferdicke'], ['ex', 'Beispiel-Platinen', exampleList().length + ' Platinen zum Ausprobieren'],
+      ['tasks', 'Aufgaben', nT ? nT + ' Aufgaben mit automatischer Prüfung' + (nQ ? ' und ' + nQ + ' Quizfragen' : '') : 'Aufgaben folgen'], ['new', 'Neue Platine', 'Name, Größe, Lagenzahl, Kupferdicke'], ['ex', 'Beispiel-Platinen', exampleList().length + ' Platinen zum Ausprobieren'],
       ['open', 'Öffnen', 'Gespeicherte Platinen auf diesem Gerät'], ['save', 'Speichern unter …', S.board.name], ['props', 'Platine: Größe, Lagen, Regeln', 'Eigenschaften und Entwurfsregeln'], ['nets', 'Netzliste', 'Netzklassen und Strom je Netz'], ['drc', 'Entwurfsprüfung (DRC)', 'Fehler und Hinweise anzeigen'],
       ['share', 'Teilen', 'Link zum Weitergeben (Platine steckt im Link)'], ['import', 'Aus Code oder Link laden', 'Geteilte Platine einfügen'], ['export', 'Exportieren', 'Gerber-ZIP, Stückliste, Pick&Place, PNG'],
       ['fx', 'Effekte und Ton: ' + (fxOn() ? 'an' : 'aus'), 'Töne, Sprüche und Konfetti ein- oder ausschalten'], ['print', 'Drucken', 'Layout, Netze, Stückliste und Prüfergebnis'], ['calc', 'Rechner', 'Ohm, Farbcode, Leitung und mehr'],
@@ -885,7 +920,7 @@
     lab: 'pcb', sheet: (title, build) => (title === 'Tastenkürzel' ? sheet(title, b => { b.innerHTML = keysHtml(); }) : sheet(title, build)), esc, toast,
     busy: () => true, has: () => false
   };
-  root.PCB_UI = { S, ctx, setTab, setBoard, loadBoard, newBoardDialog, mkBoard, loadExampleByName, exampleList, startTask, checkTask, undo, redo, computeDrc, makeZip, crc32, showView, VIEWS, saveBoard, openList, propsSheet, netSheet, drcSheet, exportSheet, fx };
+  root.PCB_UI = { S, ctx, setTab, setBoard, loadBoard, newBoardDialog, mkBoard, loadExampleByName, exampleList, startTask, checkTask, openQuiz, quizList, undo, redo, computeDrc, makeZip, crc32, showView, VIEWS, saveBoard, openList, propsSheet, netSheet, drcSheet, exportSheet, fx };
 
   /* ============================================================ Start */
   function init() {
@@ -900,12 +935,20 @@
       loadBoard(b || mkBoard({ name: 'Neue Platine' }), ex ? ex.name : null);
       if (!lsRaw('pcb.seen', '')) { lsPut('pcb.seen', '1'); setTimeout(() => toast('Willkommen! Zeichne Leiterbahnen im Layout-Tab oder wähle oben ein Beispiel.'), 900); }
     }
-    setTab(S.tab); booted = true;
+    /* ?tab=<Reiter> (Suche der Startseite: pcblab.html?tab=esd, ?tab=fehler): hat Vorrang vor dem gemerkten Reiter. Gültig sind die Kennungen aus TABS;
+       für Fertigung und Bestückung zusätzlich ?sub=gerber|fab|test bzw. asm|solder. Unbekannte Werte werden übergangen. */
+    let startTab = S.tab;
+    try {
+      const q0 = new URLSearchParams(location.search), qt = String(q0.get('tab') || '').toLowerCase(), qs = String(q0.get('sub') || '').toLowerCase();
+      if (TABS.some(x => x[0] === qt)) { startTab = qt; if (TAB_VIEWS[qt] && TAB_VIEWS[qt].length > 1 && TAB_VIEWS[qt].includes(qs)) { S.sub[qt] = qs; lsSet('pcb.sub', S.sub); } }
+    } catch (e) { /* ohne Parameter weiter */ }
+    setTab(startTab); booted = true;
     /* Aufrufparameter von Startseite, Lernpfad, Kampagne und Lernheften: ?aufgabe=pb1, ?ex=id, ?bsp, ?neu */
-    root.LabGoto = id => { try { if ((TK() || []).some(x => x.id === id)) { Promise.resolve(startTask(id)).catch(e => console.error(e)); return true; } } catch (e) {} return false; };
+    root.LabGoto = id => { try { if ((TK() || []).some(x => x.id === id)) { Promise.resolve(startTask(id)).catch(e => console.error(e)); return true; } if (quizList().some(x => x.id === id)) return openQuiz(id); } catch (e) {} return false; };
     try {
       const q = new URLSearchParams(location.search), qa = q.get('aufgabe'), qe = q.get('ex');
       if (qa && (TK() || []).some(x => x.id === qa)) setTimeout(() => startTask(qa), 250);
+      else if (qa && quizList().some(x => x.id === qa)) setTimeout(() => openQuiz(qa), 250);
       else if (qe) setTimeout(() => { if (!loadExampleByName(qe)) toast('Beispiel nicht gefunden: ' + qe); }, 250);
       else if (q.has('bsp')) setTimeout(openExamples, 400);
       else if (q.has('neu')) setTimeout(newBoardDialog, 400);

@@ -105,7 +105,7 @@
 
   /* ---------- Browserteil ---------- */
   if (typeof document === 'undefined' || !root.localStorage || !root.Storage) return;
-  const FILES = ['layout.html', 'schaltplan.html', 'simlab.html', 'digilab.html', 'messlab.html', 'elslab.html', 'ntslab.html', 'wsllab.html', 'analab.html', 'hauslab.html', 'appwerkstatt.html', 'spslab.html', 'pcblab.html', 'antlab.html', 'senlab.html', 'reglab.html', 'thmlab.html', 'emvlab.html', 'enrlab.html', 'codelab.html', 'pilab.html', 'dslab.html', 'pruefungslab.html', 'verbund.html', 'tollab.html', 'zerlab.html', 'pnelab.html', 'hydlab.html', 'cnclab.html', 'werlab.html', 'inslab.html', 'netlab.html', 'kallab.html', 'laglab.html', 'zeilab.html', 'arblab.html', 'matlab.html', 'itslab.html', 'buclab.html', 'ladlab.html', 'englab.html', 'bhflab.html', 'konlab.html', 'wfllab.html', 'reclab.html', 'sqllab.html', 'linlab.html', 'alglab.html', 'hwllab.html', 'syslab.html', 'ssllab.html', 'fuglab.html', 'maslab.html', 'mchlab.html', 'ferlab.html', 'maklab.html'];
+  const FILES = ['layout.html', 'schaltplan.html', 'simlab.html', 'digilab.html', 'messlab.html', 'elslab.html', 'ntslab.html', 'wsllab.html', 'analab.html', 'hauslab.html', 'appwerkstatt.html', 'spslab.html', 'pcblab.html', 'antlab.html', 'senlab.html', 'reglab.html', 'thmlab.html', 'emvlab.html', 'enrlab.html', 'codelab.html', 'pilab.html', 'dslab.html', 'pruefungslab.html', 'verbund.html', 'tollab.html', 'zerlab.html', 'pnelab.html', 'hydlab.html', 'cnclab.html', 'werlab.html', 'inslab.html', 'netlab.html', 'kallab.html', 'laglab.html', 'zeilab.html', 'arblab.html', 'matlab.html', 'itslab.html', 'buclab.html', 'ladlab.html', 'englab.html', 'bhflab.html', 'konlab.html', 'wfllab.html', 'reclab.html', 'sqllab.html', 'linlab.html', 'alglab.html', 'hwllab.html', 'syslab.html', 'ssllab.html', 'fuglab.html', 'maslab.html', 'mchlab.html', 'ferlab.html', 'maklab.html', 'mat2lab.html', 'siglab.html', 'rg2lab.html', 'emblab.html', 'prjlab.html', 'nrmlab.html', 'flilab.html'];
   let file = ''; try { file = String(root.location.pathname || '').split('/').pop(); } catch (e) { file = ''; }
   if (FILES.indexOf(file) < 0 || root.__lm4FbWrapped) return;
   root.__lm4FbWrapped = true;
@@ -114,7 +114,7 @@
   const speichern = s => { try { orig.call(ls, KEY, JSON.stringify(s)); return true; } catch (e) { return false; } };
   let strip = null, timer = null, poll = null;
   const flag = on => { try { const d = document.documentElement; if (d) { if (on) d.setAttribute('data-lmfb', '1'); else d.removeAttribute('data-lmfb'); } } catch (e) {} };   // Merker am <html>: Versionsplakette weg, gemeinsame Zeile am Handy
-  const weg = () => { flag(false); clearTimeout(timer); if (poll) { try { clearInterval(poll); } catch (e) {} poll = null; } if (strip) { strip.remove(); strip = null; } };
+  const weg = () => { flag(false); clearTimeout(timer); if (poll) { try { clearInterval(poll); } catch (e) {} poll = null; } if (strip) { strip.remove(); strip = null; } luft(); };
   /* Oberkante der unteren Werkzeugleisten des Labs als Abstand in px: breite Elemente (mind. 60 % Breite, 32 bis 130 px hoch) am unteren Fensterrand; liegen mehrere
      unmittelbar übereinander (LochLab: Kontextleiste #ctx über der Werkzeug-Navigation), zählen bis zu drei Stufen. 0, wenn nichts gefunden wird.
      Die Rückmelde- und die Weiter-Leiste docken darüber an, damit sie nichts Bedienbares verdecken. */
@@ -122,10 +122,13 @@
     try {
       if (!document.elementsFromPoint) return 0;
       const vw = root.innerWidth, vh = root.innerHeight; let top = vh;
+      // Lab-Seiten sind bildschirmhoch; darunter haengt nur der Urheber-Hinweis. Ist die Seite um dieses kleine Stueck verschoben, sitzt die Werkzeugleiste entsprechend hoeher: Suche dort beginnen.
+      const de = document.documentElement || {}, sy = Math.round(root.scrollY || de.scrollTop || 0), ueber = (de.scrollHeight || 0) - vh;
+      if (sy > 0 && ueber > 0 && ueber <= 320) top = vh - Math.min(sy, ueber); const top0 = top;
       for (let n = 0; n < 3; n++) {
         const els = document.elementsFromPoint(vw / 2, top - 3); let hit = null;
         for (let i = 0; i < els.length && !hit; i++) {
-          let e = els[i]; if (e.closest && e.closest('#fbStrip,#wtBar')) continue;
+          let e = els[i]; if (e.closest && e.closest('#fbStrip,#wtBar,#side,#parts')) continue;   // Inhalt der Seitenleisten ist keine Werkzeugleiste (sonst springen die Leisten am Handy nach oben über das Seitenpanel)
           while (e && e !== document.body && e !== document.documentElement) {
             const r = e.getBoundingClientRect();
             if (r.height > 130) break;
@@ -135,10 +138,25 @@
         }
         if (!hit) break; top = hit.top;
       }
-      return Math.min(Math.max(0, Math.ceil(vh - top)), 220);
+      if (top === top0) return 0;   // keine Werkzeugleiste gefunden
+      return Math.min(Math.max(0, Math.ceil(vh - top)), 420);
     } catch (e) { return 0; }
   }
-  const lage = () => { if (strip) strip.style.bottom = 'calc(' + (12 + dockHoehe()) + 'px + env(safe-area-inset-bottom))'; };
+  /* Platz lassen: scrollende Seitenbereiche (#side, #parts, .pg.scroll), die von der Rückmelde- oder Weiter-Leiste überdeckt werden, bekommen unten Innenabstand in Höhe der Überdeckung,
+     damit der Inhalt am unteren Rand erreichbar bleibt (Handy: gemeinsame Zeile über dem Seitenpanel; Tablet hoch: Leisten über der Seitenleiste). Ohne Leisten wird der Abstand entfernt. */
+  function luft() {
+    try {
+      const bars = ['fbStrip', 'wtBar'].map(i => document.getElementById(i)).filter(Boolean).map(e => e.getBoundingClientRect()).filter(r => r.height > 0);
+      if (!document.getElementById('lmLuftCss')) { const st = document.createElement('style'); st.id = 'lmLuftCss'; st.textContent = '[data-lmpad]{padding-bottom:var(--lmpad)!important}'; document.head.appendChild(st); }
+      document.querySelectorAll('#side,#parts,.pg.scroll,aside').forEach(e => {
+        const r = e.getBoundingClientRect(); let pad = 0;
+        if (r.height > 0) bars.forEach(b => { if (b.right > r.left && b.left < r.right && b.top < r.bottom && b.bottom > r.top) pad = Math.max(pad, Math.ceil(r.bottom - b.top) + 12); });
+        if (pad > 0) { e.style.setProperty('--lmpad', Math.min(pad, 240) + 'px'); e.setAttribute('data-lmpad', '1'); }
+        else if (e.hasAttribute('data-lmpad')) { e.style.removeProperty('--lmpad'); e.removeAttribute('data-lmpad'); }
+      });
+    } catch (e) {}
+  }
+  const lage = () => { if (strip) strip.style.bottom = 'calc(' + (12 + dockHoehe()) + 'px + env(safe-area-inset-bottom))'; luft(); };
   function css() {
     if (document.getElementById('fbCss')) return;
     const st = document.createElement('style'); st.id = 'fbCss';

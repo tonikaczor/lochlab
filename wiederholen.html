@@ -49,7 +49,7 @@ h1{margin:6px 0 4px;font-size:26px}.lead{color:var(--mute);margin:0 0 14px}
 <script src="wiederholen.js"></script>
 <script>
 (function () {
-  var W = window.Wiederholen, R = window.LAB_REG || {}, BN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker' };
+  var W = window.Wiederholen, R = window.LAB_REG || {}, BN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker', tec: 'Techniker Elektrotechnik', stu: 'Studium Elektrotechnik', wing: 'Wirtschaftsingenieur', winf: 'Wirtschaftsinformatik' };
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function wann(t) { return t === 0 ? 'heute fällig' : t === 1 ? 'seit gestern fällig' : 'seit ' + t + ' Tagen fällig'; }

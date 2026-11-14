@@ -62,7 +62,7 @@
   const canSound = () => !root.navigator || !navigator.userActivation || navigator.userActivation.hasBeenActive;
   const clickSnd = (k, v) => { if (root.LochFX && canSound()) try { root.LochFX.sound(k || 'tick', v); } catch (e) {} };
   const pad2 = n => String(n).padStart(2, '0');
-  const AMP = { gruen: { sym: '✓', name: 'grün', cls: 'ok' }, gelb: { sym: '!', name: 'gelb', cls: 'warnc' }, rot: { sym: '✗', name: 'rot', cls: 'bad' }, grau: { sym: '–', name: 'grau', cls: '' } };
+  const AMP = { gruen: { sym: '✓', name: 'grün', lbl: 'im Bereich', cls: 'ok' }, gelb: { sym: '!', name: 'gelb', lbl: 'knapp', cls: 'warnc' }, rot: { sym: '✗', name: 'rot', lbl: 'außerhalb', cls: 'bad' }, grau: { sym: '–', name: 'grau', lbl: 'noch nicht bewertet', cls: '' } };
   const ampKey = a => { a = String(a || 'grau').toLowerCase().replace('ü', 'ue'); return AMP[a] ? a : 'grau'; };
 
   /* ============================================================ Fenster, Meldungen, Dialoge */
@@ -331,7 +331,8 @@
     updateChain();
   }
   function updateChain() { $$('#chainBar .cn').forEach(n => n.classList.toggle('hot', n.dataset.lv === S.lever)); }
-  let ampSig = '';
+  let ampSig = '', ampHelp = false;
+  const ampelHinweis = () => { const C = CORE(); return (C && C.TEXTS && typeof C.TEXTS.ampelHinweis === 'string' && C.TEXTS.ampelHinweis) || 'Grün heißt nicht: im Labor bestanden. Die Vorprüfung ersetzt keine Prüfung im akkreditierten Labor.'; };
   const sgn = v => (v > 0 ? '+' : '');
   function assessOf(rig) { let a = null; try { a = rig && typeof rig.assess === 'function' ? rig.assess() : null; } catch (e) { a = null; } return a && typeof a === 'object' ? a : null; }
   function ampHtml(a, tag) {
@@ -344,12 +345,15 @@
     const k = ampKey(a.ampel), ra = S.ref && S.refRig ? assessOf(S.refRig) : null;
     const sig = [k, a.margin, a.text, a.freq, a.kriterium, ra ? ra.ampel + ra.margin : '', S.refMode].join('|');
     if (!force && sig === ampSig) return; ampSig = sig;
-    const A = AMP[k];
-    el.className = 'amprow ' + A.cls; el.setAttribute('role', 'status');
-    el.innerHTML = `<span class="asym" aria-hidden="true">${A.sym}</span><div class="atx"><b>${esc(A.name.charAt(0).toUpperCase() + A.name.slice(1))}${fin(a.margin) ? ': Marge ' + fnum(a.margin, 1) + ' dB' : ''}${a.kriterium ? ' · Kriterium ' + esc(a.kriterium) : ''}${fin(a.freq) ? ' · bei ' + esc(fe(a.freq, 'Hz')) : ''}</b><small>${esc(a.text || '')}</small></div>${ra ? `<div class="avs"><span>Vorher: ${esc(AMP[ampKey(ra.ampel)].sym)} ${fin(ra.margin) ? fnum(ra.margin, 1) + ' dB' : esc(AMP[ampKey(ra.ampel)].name)}</span><span>Nachher: ${esc(A.sym)} ${fin(a.margin) ? fnum(a.margin, 1) + ' dB' : esc(A.name)}${fin(a.margin) && fin(ra.margin) ? ' (' + sgn(a.margin - ra.margin) + fnum(a.margin - ra.margin, 1) + ' dB)' : ''}</span></div>` : ''}`;
+    const A = AMP[k], mt = fin(a.margin) ? 'Marge ' + fnum(a.margin, 1) + ' dB' : '', kf = (a.kriterium ? 'Kriterium ' + a.kriterium : '') + (a.kriterium && fin(a.freq) ? ' · ' : '') + (fin(a.freq) ? 'bei ' + fe(a.freq, 'Hz') : '');
+    const lp = (c, on, y) => `<i class="apl ${c}${on ? ' on' : ''}">${on ? y : ''}</i>`;
+    el.className = 'amprow amp2 ' + A.cls; el.setAttribute('role', 'status');
+    el.innerHTML = `<span class="aplamps" aria-hidden="true">${lp('r', k === 'rot', '✗')}${lp('y', k === 'gelb', '!')}${lp('g', k === 'gruen', '✓')}</span><div class="atx"><div class="ap1"><span class="apt">Prüfampel</span><b class="aps">${esc(A.sym + ' ' + A.lbl)}</b>${mt ? `<span class="apm">${esc(mt)}</span>` : ''}<button type="button" class="apq" data-ampq aria-expanded="${ampHelp}" aria-controls="ampHelp" aria-label="Was bedeutet die Prüfampel?">?</button></div>${kf ? `<small class="apd">${esc(kf)}</small>` : ''}${a.text ? `<small class="apd">${esc(a.text)}</small>` : ''}${k === 'gruen' ? `<small class="apd nt">${esc(ampelHinweis())}</small>` : ''}<p class="aphelp" id="ampHelp"${ampHelp ? '' : ' hidden'}>Die Prüfampel vergleicht das Ergebnis der Simulation mit der Grenzlinie: <b>✓ im Bereich</b> = Grenze eingehalten, <b>! knapp</b> = fast an der Grenze, <b>✗ außerhalb</b> = Grenze verletzt, <b>– noch nicht bewertet</b> = noch nichts zum Vergleichen.${' ' + esc(ampelHinweis())}</p></div>${ra ? `<div class="avs"><span>Vorher: ${esc(AMP[ampKey(ra.ampel)].sym)} ${fin(ra.margin) ? fnum(ra.margin, 1) + ' dB' : esc(AMP[ampKey(ra.ampel)].name)}</span><span>Nachher: ${esc(A.sym)} ${fin(a.margin) ? fnum(a.margin, 1) + ' dB' : esc(A.name)}${fin(a.margin) && fin(ra.margin) ? ' (' + sgn(a.margin - ra.margin) + fnum(a.margin - ra.margin, 1) + ' dB)' : ''}</span></div>` : ''}`;
     const cv = $('#cv'); if (cv) cv.setAttribute('aria-label', 'Bild des Prüfstands ' + rigName(S.rigId) + '. Ampel ' + A.name + (fin(a.margin) ? ', Marge ' + fnum(a.margin, 1) + ' dB' : '') + '. ' + (a.text || ''));
   }
 
+  /* Prüfampel: Hilfetext ein-/ausblenden, ohne die Ampelzeile neu zu zeichnen */
+  document.addEventListener('click', e => { const q = e.target.closest && e.target.closest('[data-ampq]'); if (!q) return; ampHelp = !ampHelp; const h = $('#ampHelp'); if (h) h.hidden = !ampHelp; q.setAttribute('aria-expanded', ampHelp ? 'true' : 'false'); });
   /* ============================================================ Vorher/Nachher: Merken, Geisterbild, Wischer */
   function buildRefRig() {
     S.refRig = null; if (!S.ref || !S.rig) return; const d = defOf(S.rigId); if (!d) return;

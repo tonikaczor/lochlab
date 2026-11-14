@@ -40,6 +40,45 @@
     fi: [
       { t: 'Netze und Sicherheit', s: 'Binär, Subnetting, Ports und Protokolle; dazu die Grundlagen der IT-Sicherheit.', labs: ['net', 'its', 'mat'], pre: 'Netzwerk-Lab zuerst' },
       { t: 'Digitaltechnik und Programmieren', s: 'Logik und Zahlensysteme, eigene Apps, Arduino und Raspberry Pi, Datenblätter lesen.', labs: ['digi', 'app', 'code', 'pi', 'ds'], pre: 'Die App-Werkstatt braucht kein Vorwissen' }
+    ],
+    /* Wege Studium und Technik (v55.174): Module statt Spuren der Ausbildung. Dieselbe Lab-Auswahl steht in den Karten (data-beruf in index.html) und in ausbildungsplan-<weg>.js; quelle/beruf/test_wege.js prüft die Übereinstimmung. */
+    tec: [
+      { t: 'Mathematik für die Technik', s: 'Komplexe Zahlen, Matrizen und Differenzialgleichungen an Schaltungen, dazu das Rechnen aus der Ausbildung zum Auffrischen.', labs: ['mat', 'mat2'], pre: 'Das Rechen-Lab ist eine gute Auffrischung' },
+      { t: 'Wechselstrom, Signale und Messtechnik', s: 'Wechselstromnetze und Schwingkreise, Spektrum und Filter, sicheres und genaues Messen.', labs: ['wsl', 'sig', 'mess'], pre: '' },
+      { t: 'Elektronik und Digitaltechnik', s: 'Diode, Transistor und Operationsverstärker, Netzteile, Logikschaltungen und Datenblätter.', labs: ['ana', 'nts', 'digi', 'ds'], pre: '' },
+      { t: 'Automatisierung und Antriebe', s: 'Steuerungen und Schaltschrank, Motoren und Sensoren.', labs: ['sps', 'ssl', 'ant', 'sen'], pre: '' },
+      { t: 'Regelungstechnik', s: 'Erst den Regelkreis verstehen, dann Bode, Stabilität und Reglerentwurf.', labs: ['reg', 'rg2'], pre: 'Empfohlen vorher: Mathe-Brücke' },
+      { t: 'Mikrocontroller', s: 'Timer, Schnittstellen und Echtzeit, dazu Arduino.', labs: ['code', 'emb'], pre: '' },
+      { t: 'Energie, Sicherheit und Verträglichkeit', s: 'Energieanlagen, elektrische Sicherheit, EMV und Wärme.', labs: ['enr', 'els', 'emv', 'thm'], pre: '' },
+      { t: 'Normen, Projekt und Betrieb', s: 'Normen und Konformität, Projekte planen und bewerten, Kosten kalkulieren, Fachenglisch.', labs: ['nrm', 'prj', 'fli', 'kal', 'eng'], pre: '' }
+    ],
+    stu: [
+      { t: 'Mathematik', s: 'Die Mathematik des Studiums direkt an Schaltungen, dazu das Rechnen aus der Schule zum Auffrischen.', labs: ['mat', 'mat2'], pre: 'Das Rechen-Lab ist eine gute Auffrischung' },
+      { t: 'Netzwerke, Signale und Messtechnik', s: 'Wechselstromnetze, Spektrum, Abtastung und Filter, Messen mit Verstand.', labs: ['wsl', 'sig', 'mess'], pre: '' },
+      { t: 'Elektronik', s: 'Halbleiter und Verstärker, Netzteile, Digitaltechnik, Datenblätter und Leiterplatten.', labs: ['ana', 'nts', 'digi', 'ds', 'pcb'], pre: '' },
+      { t: 'Regelung und Systeme', s: 'Regelkreise und ihr Entwurf, Sensoren und Antriebe.', labs: ['reg', 'rg2', 'sen', 'ant'], pre: 'Empfohlen vorher: Mathe-Brücke' },
+      { t: 'Eingebettete Systeme und Programmieren', s: 'Mikrocontroller, Arduino, Algorithmen und Raspberry Pi.', labs: ['code', 'emb', 'alg', 'pi'], pre: '' },
+      { t: 'Energie, EMV und Wärme', s: 'Energiesysteme, elektromagnetische Verträglichkeit und Wärmeabfuhr.', labs: ['enr', 'emv', 'thm'], pre: '' },
+      { t: 'Projekt, Normen und Fachenglisch', s: 'Projekte planen und bewerten, Normen anwenden, Fachtexte verstehen.', labs: ['prj', 'nrm', 'eng'], pre: '' }
+    ],
+    wing: [
+      { t: 'Mathematik', s: 'Komplexe Zahlen, Matrizen und Differenzialgleichungen, dazu das Rechnen zum Auffrischen.', labs: ['mat', 'mat2'], pre: 'Das Rechen-Lab ist eine gute Auffrischung' },
+      { t: 'Technikgrundlagen', s: 'Wechselstrom, Signale und Messtechnik als gemeinsame Sprache mit den Technikern.', labs: ['wsl', 'sig', 'mess'], pre: '' },
+      { t: 'Werkstoffe und Fertigung', s: 'Werkstoffe, Mechanik, Toleranzen und Fertigungsverfahren.', labs: ['wer', 'mch', 'tol', 'fer', 'fli'], pre: '' },
+      { t: 'Automatisierung und Energie', s: 'Steuerung, Sensoren, Antriebe, Regelung und Energieversorgung.', labs: ['sps', 'sen', 'ant', 'reg', 'rg2', 'enr'], pre: '' },
+      { t: 'Rechnungswesen', s: 'Kosten kalkulieren, Geschäftsfälle buchen und auswerten.', labs: ['kal', 'buc'], pre: '' },
+      { t: 'Logistik und Recht', s: 'Warenfluss und Lager, Verträge und Auftragsabwicklung.', labs: ['wfl', 'lag', 'rec'], pre: '' },
+      { t: 'Projekt, Normen und Fachenglisch', s: 'Projekte planen und wirtschaftlich bewerten, Normen anwenden, Fachtexte verstehen.', labs: ['prj', 'nrm', 'eng'], pre: '' }
+    ],
+    winf: [
+      { t: 'Mathematik', s: 'Mathematische Grundlagen für Signale und Systeme, dazu das Rechnen zum Auffrischen.', labs: ['mat', 'mat2'], pre: 'Das Rechen-Lab ist eine gute Auffrischung' },
+      { t: 'Logik und Programmieren', s: 'Digitale Logik, Algorithmen, eigene Apps und Arduino.', labs: ['digi', 'alg', 'app', 'code'], pre: 'Die App-Werkstatt braucht kein Vorwissen' },
+      { t: 'Datenbanken', s: 'Daten abfragen und verknüpfen mit SQL.', labs: ['sql'], pre: '' },
+      { t: 'Systeme und Netze', s: 'PC-Hardware, IT-Systeme, Linux-Terminal, Netzwerke und Raspberry Pi.', labs: ['hwl', 'sys', 'lin', 'net', 'pi'], pre: 'Netzwerk-Lab zuerst' },
+      { t: 'IT-Sicherheit', s: 'Gefahren erkennen und Schutzmaßnahmen auswählen.', labs: ['its'], pre: '' },
+      { t: 'Signale und Embedded', s: 'Signale und Spektren, Mikrocontroller, Schnittstellen und Echtzeit.', labs: ['sig', 'emb'], pre: '' },
+      { t: 'Betriebswirtschaft und Prozesse', s: 'Kalkulation, Buchführung, Warenfluss und Auftragsrecht.', labs: ['kal', 'buc', 'wfl', 'rec'], pre: '' },
+      { t: 'Projekt, Normen und Fachenglisch', s: 'Projekte planen und bewerten, Normen anwenden, Fachtexte verstehen.', labs: ['prj', 'nrm', 'eng'], pre: '' }
     ]
   };
   const beruf = () => (root.BerufReg ? root.BerufReg.cur() : 'egs');
@@ -59,7 +98,7 @@
     const sm = BR.vbSummary(b); if (!sm.n) return null;
     return { t: 'Projekte', s: 'Ein ganzer Auftrag aus deinem Beruf: Jede Station liefert ihr Ergebnis an die nächste, am Ende gibt es Gesamttest und Zertifikat.', pre: 'Am besten nach den Labs, die ein Projekt braucht', list: sm.list };
   }
-  const LEVEL = { sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', els: 'Fortgeschritten', nts: 'Fortgeschritten', wsl: 'Fortgeschritten', ana: 'Fortgeschritten', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', pr: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten', sps: 'Mittel', pcb: 'Mittel', ant: 'Mittel', sen: 'Mittel', reg: 'Fortgeschritten', thm: 'Mittel', emv: 'Fortgeschritten', enr: 'Mittel', ds: 'Mittel', vb: 'Fortgeschritten' };
+  const LEVEL = { mat2: 'Studium', sig: 'Studium', rg2: 'Studium', emb: 'Studium', prj: 'Studium', nrm: 'Studium', fli: 'Studium', sch: 'Einstieg', loch: 'Einstieg', mess: 'Mittel', els: 'Fortgeschritten', nts: 'Fortgeschritten', wsl: 'Fortgeschritten', ana: 'Fortgeschritten', digi: 'Mittel', sim: 'Mittel', haus: 'Fortgeschritten', app: 'Einstieg', pr: 'Fortgeschritten', code: 'Mittel', pi: 'Fortgeschritten', sps: 'Mittel', pcb: 'Mittel', ant: 'Mittel', sen: 'Mittel', reg: 'Fortgeschritten', thm: 'Mittel', emv: 'Fortgeschritten', enr: 'Mittel', ds: 'Mittel', vb: 'Fortgeschritten' };
   const get = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || JSON.stringify(d)); } catch (e) { return d; } };
   const results = () => { const m = {}; [get('sim.done', {}), get('lm4.tdone', {})].forEach(o => Object.keys(o || {}).forEach(k => { const v = +o[k] || 0; if (v > (m[k] || 0)) m[k] = v; })); return m; };
   const trained = lab => !!get('lm4.trainer', {})[lab];

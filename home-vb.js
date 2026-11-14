@@ -4,7 +4,7 @@
    BerufReg (aufgaben.js, window.VB_INDEX): nur die Projekte des gewählten Berufs, Anzahl und "x von y abgeschlossen" aus dem gespeicherten Projektstand.
    Ist noch kein Beruf gewählt (kein lm4.beruf, kein ?beruf=), zeigt sie alle Projekte. Ohne dieses Skript bleibt der feste Text aus index.html stehen. */
 (function (root) {
-  const NAMEN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker' };
+  const NAMEN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker', tec: 'Techniker Elektrotechnik', stu: 'Studium Elektrotechnik', wing: 'Wirtschaftsingenieur', winf: 'Wirtschaftsinformatik' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const plural = (n, one, many) => n + ' ' + (n === 1 ? one : many);
   // reine Teile (auch in Node prüfbar): Auswahl der Projekte und die beiden Textzeilen
@@ -15,7 +15,7 @@
     return stored && ks.indexOf(stored) >= 0 ? stored : '';
   }
   function summary(index, b, stateOf) {
-    const fits = p => { const x = p.beruf || ['egs']; return !b || x.indexOf('alle') >= 0 || x.indexOf(b) >= 0; };
+    const fits = p => { const x = p.beruf || ['egs']; return !b || (x.indexOf('alle') >= 0 && ['tec', 'stu', 'wing', 'winf'].indexOf(b) < 0) || x.indexOf(b) >= 0; };
     const list = (index || []).filter(fits).sort((x, y) => (x.order || 99) - (y.order || 99)).map(p => {
       const s = stateOf(p.id) || {};
       return { id: p.id, name: p.name, icon: p.icon, n: s.total != null ? s.total : p.st.length, done: s.done || 0, fin: !!s.fin, started: !!(s.started || s.fin) };
@@ -24,7 +24,7 @@
   }
   function lines(sum, b) {
     const who = b ? (NAMEN[b] || b) : 'Alle Berufe';
-    if (!sum.n) return { head: who + ': Für diesen Beruf gibt es noch kein eigenes Projekt.', tail: sum.rest ? 'Die Projekte der anderen Berufe kannst du trotzdem ausprobieren.' : '' };
+    if (!sum.n) return { head: who + ': Für ' + (['tec', 'stu', 'wing', 'winf'].indexOf(b) >= 0 ? 'diesen Weg' : 'diesen Beruf') + ' gibt es noch kein eigenes Projekt.', tail: sum.rest ? 'Die Projekte der anderen Berufe kannst du trotzdem ausprobieren.' : '' };
     let h = who + ': ' + plural(sum.n, 'Projekt', 'Projekte') + ', ' + sum.fertig + ' von ' + sum.n + ' abgeschlossen';
     if (sum.begonnen) h += ', ' + sum.begonnen + (sum.begonnen === 1 ? ' läuft' : ' laufen');
     return { head: h, tail: b && sum.rest > 0 ? 'Dazu ' + plural(sum.rest, 'weiteres Projekt', 'weitere Projekte') + ' anderer Berufe im Projekt-Bereich.' : '' };

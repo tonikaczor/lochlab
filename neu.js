@@ -2,6 +2,30 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v62.173', items: [
+      ['Mega Update!', 'Das größte Update bisher: 62 Labs, Toni als Stimme, viele neue Funktionen und Verbesserungen.', 'ganze App'],
+      ['Vorlesen bei mehr Stellen', 'Den Vorlese-Knopf gibt es jetzt auch bei „Warum brauche ich das?“, in den Projekten, im Ausbildungsplan und bei allen Wiki-Einträgen. Du tippst auf den Knopf und der Text wird dir vorgelesen. Die Texte liest dir die Stimme von Toni vor.', 'alle Labs, Projekte, Ausbildungsplan, Wiki'],
+      ['Aufgaben vorlesen', 'Bei vielen Aufgaben gibt es jetzt einen Vorlese-Knopf. Aufgaben ohne passende Aufnahme bekommen keinen Knopf.', 'fast alle Labs'],
+      ['Zeichnungen in den Lernheften', 'Die Lernhefte zeigen jetzt kleine Zeichnungen, die Zusammenhänge sichtbar machen: Reihen- und Parallelschaltung, Spannungsteiler, LED-Vorwiderstand, Kondensator laden, Netzteil, Strom- und Spannungsmessung, Wechselschaltung, hydraulische Presse, Passungen und das 4…20-mA-Signal. Bei „Bewegung reduzieren“ stehen sie still.', 'Lernhefte'],
+      ['Buchen mit Animation', 'Im Buchführungs-Lab siehst du Buchungssätze jetzt animiert: Der Betrag wandert vom Soll-Konto zum Haben-Konto und der Saldo aktualisiert sich. Du findest sie im Editor und bei den Beispielen.', 'Buchführungs-Lab'],
+      ['Werkstück-Weg', 'Im Maschinen-Lab gibt es den neuen Reiter „Werkstück-Weg“: Ein Werkstück wandert Station für Station durch die Maschinen, die aktive Maschine leuchtet auf. Du gehst Schritt für Schritt oder spielst den Weg ab.', 'Maschinen-Lab'],
+      ['Neue Prüfampel im EMV-Lab', 'Die Prüfampel im EMV-Lab sieht jetzt aus wie in den anderen Labs: drei Lampen, Zustandswort und Marge.', 'EMV-Lab'],
+      ['Studium und Technik', 'Neben den Ausbildungsberufen gibt es jetzt vier eigene Wege: Techniker Elektrotechnik, Studium Elektrotechnik, Wirtschaftsingenieur und Wirtschaftsinformatik. Du wählst deinen Weg oben auf der Startseite und bekommst einen passenden Plan. Azubis müssen das nicht nutzen.', 'Startseite, Wege'],
+      ['Sechs neue Labs', 'Mathe-Brücke (komplexe Rechnung, Matrizen, Fourier-Reihe), Signale und Systeme, Regelungstechnik Aufbau, Embedded vertieft, Projekt und Wirtschaftlichkeit sowie Normen und Konformität. Sie sind mit „Fortgeschritten“ gekennzeichnet.', 'Studium und Technik'],
+      ['Mein Stand', 'Eine Seite zeigt dir auf einen Blick, wo du stehst: Ampel je Lernfeld, Prüfungsthemen, fällige Karten, Lerntage und den nächsten sinnvollen Schritt. Sie liest nur und ändert nichts.', 'Startseite, Mein Stand'],
+      ['Mein Weg', 'Oben auf der Startseite findest du eine ruhige Kurzansicht: Weitermachen, Mein Stand, Wiederholen, 10-Minuten-Einheit und Plan. Alle Labs liegen darunter und sind für neue Nutzer eingeklappt.', 'Startseite'],
+      ['Prüfungs-Countdown', 'Setze das Datum deiner Prüfung und sieh „noch X Tage“, einen Wochenplan aus deinen schwachen Themen und einen Vorschlag für heute. Das Datum bleibt auf deinem Gerät.', 'Mein Stand'],
+      ['Fehler werden Lernkarten', 'Falsch beantwortete Prüfungsfragen landen automatisch als Lernkarte und kommen später zum Wiederholen zurück.', 'Prüfungslab, Karten'],
+      ['10-Minuten-Einheit', 'Wenig Zeit? Die 10-Minuten-Einheit stellt dir ein Päckchen aus Wiederholen, einer Aufgabe und Karten zusammen.', 'Startseite'],
+      ['Ruhiger und größer', 'Spielelemente und Töne sind standardmäßig ruhiger. Die Schrift ist mindestens 14 Pixel groß, und du kannst am Tablet und am Handy jetzt zoomen.', 'ganze App'],
+      ['Sichern erinnert dich', 'Die App erinnert dich freundlich daran, deinen Lernstand zu sichern, und zeigt, ob sie offline bereit ist.', 'Startseite'],
+      ['Alles offline laden', 'Auf der Startseite lädst du mit einem Tipp alle Vorlese-Aufnahmen auf dein Gerät, damit sie auch ohne Netz laufen. Du siehst vorher, wie viel Platz es braucht, und kannst jederzeit abbrechen und später weitermachen.', 'Startseite, Offline-Karte'],
+      ['Gerätetest', 'Auf einer eigenen Seite testest du dein Tablet oder Handy: Anzeige, Touch, Ton, Offline-Betrieb und Vorlesen.', 'Gerätetest'],
+      ['Prüfungsfragen geprüft', 'Der Fragenpool wurde fachlich durchgesehen. Mehr als hundert Fragen sind genauer oder aktueller formuliert.', 'Prüfungslab'],
+      ['Fehlerbild im Leiterplatten-Lab', 'Neuer Reiter mit 20 typischen Fehlern aus einer Modell-Fertigungslinie, vom Symptom über die Ursache bis zur Gegenmaßnahme, dazu ein Quiz, ein Ausbeute-Rechner und die Rückverfolgung von Chargen. Alle Zahlen sind Übungswerte.', 'Leiterplatten-Lab'],
+      ['ESD im Leiterplatten-Lab', 'Neuer Reiter ESD: Du lernst, wie sich Bauteile durch elektrostatische Entladung schädigen, wie ein geschützter Arbeitsbereich mit Erdung, Verpackung und Ionisator aufgebaut ist und wie du dabei richtig misst. Mit Reglern spielst du Luftfeuchte, Systemwiderstand und Offset durch, dazu gibt es fünf Fehlerbilder und ein Quiz mit zwölf Aufgaben.', 'Leiterplatten-Lab'],
+      ['Linien-Lab', 'Du untersuchst die Modell-Fertigungslinie von Wareneingang bis Versand und stellst mit Reglern Takt, Engpass, Durchlaufzeit und Ausbeute ein. Dazu kommen die Rückverfolgung einer Charge und die Schritte Lackieren und Verguss mit Rechner. 28 Aufgaben mit Tipps und Rechenweg, alle Zahlen sind Übungswerte.', 'Linien-Lab'],
+    ] },
     { v: 'v55.172', items: [
       ['Bauteile spiegeln', 'Im SchaltLab kannst du Transistoren, Operationsverstärker, Poti, Wechsler und weitere Bauteile jetzt spiegeln. So liegen die Anschlüsse auf der Seite, die zu deinem Plan passt.', 'SchaltLab'],
       ['Vorschau beim Setzen', 'Wenn du ein Bauteil wählst, siehst du eine Vorschau in der aktuellen Drehung, auch am Tablet und am Handy. So weißt du schon vor dem Setzen, wie es liegt.', 'LochLab, SchaltLab'],
@@ -12,10 +36,6 @@
       ['Dein Ausbildungsplan', 'Neu auf der Startseite: Dein Ausbildungsplan zeigt die Lernfelder deines Berufs mit den passenden Labs, Heften, Wiki-Einträgen und Projekt-Stationen. Du siehst deinen Fortschritt je Lernfeld und bekommst einen Vorschlag, was als Nächstes passt. Zuordnungen, die noch geprüft werden, sind als Entwurf markiert.', 'Startseite ▸ Dein Ausbildungsplan'],
       ['Nächste Aufgabe', 'Wenn du eine Aufgabe geschafft hast, erscheint unten ein Knopf „Nächste Aufgabe“. Er führt dich direkt zur nächsten Aufgabe im selben Lab, ohne Umweg über das Menü.', 'alle Labs'],
       ['Warum brauche ich das?', 'In jedem Lab steht jetzt oben eine kurze Karte: wo das Thema im Betrieb vorkommt, zu welchem Lernfeld es gehört und in welchem Projekt es gebraucht wird. Die Karte lässt sich schließen.', 'alle Labs'],
-    ] },
-        { v: 'v55.170', items: [
-      ['Projekte für alle Berufe', 'Sechs neue Projekte: Pneumatische Presse (Industriemechaniker), Kundenauftrag vom Wareneingang bis zur Rampe (Lagerlogistik), Auftrag kalkulieren und abrechnen (Industriekaufleute), Werkstatt-Netz mit Messdaten-Server (Fachinformatiker), Gehäuse für das Labornetzteil (Technische Produktdesigner) und der Tonfunk-Auftrag, bei dem ein Gerät durch alle Berufe läuft und jeder seine Stationen bearbeitet. Zu jeder Station gehören ein Formular und Aufgaben in den passenden Labs.', 'Startseite ▸ Projekte; Projekte-Bereich'],
-      ['Projekte nach Beruf', 'Die Zeile Projekte steht jetzt weit oben auf der Startseite und zeigt die Projekte deines Berufs mit Fortschritt. Im Projekt-Bereich stehen deine Projekte zuerst, die anderen sind eingeklappt. In den Labs weist ein Hinweis auf das Projekt hin, in dem das Lab vorkommt.', 'Startseite ▸ Projekte; Projekte-Bereich; alle Labs'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

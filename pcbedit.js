@@ -37,8 +37,97 @@
   const EXTRA_LAYERS = ['F.Silk', 'B.Silk', 'F.Mask', 'B.Mask', 'Edge'];
   const GRIDS = [0.25, 0.5, 1.27, 2.54];
   const WIDTHS = [0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.8, 1, 1.5, 2];
-  const BG = '#0d1013';
   const MAXUNDO = 200;
+
+  // ------------------------------------------------------------ Darstellung: Dunkel (Bestand) und Hell
+  /* Hell gilt, wenn <html data-theme="light"> gesetzt ist oder (ohne data-theme="dark") das System Hell meldet.
+   * Dunkel-Werte sind exakt die bisherigen Farben; Hell-Werte sind nur Ueberschreibungen.
+   * Farben echter Dinge (Kupferlagen LCOL, Platinenmaterial, Loetstopplack, Bestueckungsdruck AUF der Platine, Bauteilkoerper) sind in beiden Modi gleich. */
+  const MQL = (typeof root.matchMedia === 'function') ? root.matchMedia('(prefers-color-scheme: light)') : null;
+  function isLight() {
+    if (typeof document === 'undefined') return false;
+    const t = document.documentElement.getAttribute('data-theme');
+    return t === 'light' || (t !== 'dark' && !!MQL && MQL.matches);
+  }
+  /* Farbsatz der Zeichenflaechen (Canvas). Wird zur Zeichenzeit gewaehlt (pal()), nie beim Laden eingefroren. */
+  const PAL_DARK = {
+    bg: '#0d1013',            // Arbeitsflaeche um die Platine
+    hole: '#0d1013',          // Bohrungen (auch im Hellmodus dunkel: weisse Padnummern stehen darauf)
+    bg3: '#0b0e11',           // Hintergrund 3D-Ansicht
+    tx3: '#8b98a6',           // Hinweistext 3D-Ansicht
+    lab3: 4.5,                // Lagen-Beschriftung 3D: Lagenfarbe so weit aufhellen, bis Kontrast >= 4,5 gegen bg3 (F.Cu-Rot laege sonst bei 3,7)
+    ac: '#3b9eff',            // Auswahl, Griffe
+    lockTx: '#3b9eff', lockHalo: null,   // Text "gesperrt" an der Auswahl
+    snap: '#4cd964',          // Fangring, Messlinie
+    measTx: '#fff', measOut: '#0b5a2a',  // Masszahl: Fuellung und Kontur (dunkelgruen: weisse Schrift darauf >= 4,5; vorher #4cd964 = 1,9)
+    court: 'rgba(190,200,215,.55)',      // Bauteilgrenzen
+    ghostA: 0.65, ghostCourt: 'rgba(200,210,225,.8)', ghostBadCourt: '#ff5050',   // Bauteil am Fadenkreuz: Deckkraft der Pads, Grenze
+    rat: '#f0e6a0', ratHi: '#ffffff', ratOff: null, ratHiOff: null,   // Luftlinien; ...Off = Farbe ausserhalb der Platine (null = keine zweite Zeichnung)
+    silkOff: null,            // Bestueckungsdruck ausserhalb der Platine (null = Lagenfarbe)
+    mErr: '#ff3b30', mWarn: '#ffb340', mInfo: '#5ab0ff',              // DRC-Marker
+    flash: '255,255,255',     // Sprungmarke (r,g,b)
+    cross: 'rgba(255,255,255,.35)', crossUnder: null,                 // Fadenkreuz (Unterlage nur hell)
+    xsBg: '#10151a', xsTx: '#c8d2dc', xsSilkEdge: null,               // Schnitt durch ein Via (Rand um die helle Druck-Schicht nur hell)
+    thSilk: '#ffe14d', thHole: '#0d1013'                              // Vorschau in der Bauteilform-Liste
+  };
+  const PAL_LIGHT = {
+    bg: '#e9edf2',
+    hole: '#0d1013',
+    bg3: '#e9edf2',
+    tx3: '#56616d',
+    lab3: 4.5,                // Lagenfarbe so weit abdunkeln, bis Kontrast >= 4,5 gegen bg3
+    ac: '#1f7ae0',            // mittleres Blau: >= 3:1 auf der dunklen Platine UND auf der hellen Arbeitsflaeche
+    lockTx: '#0a4fb3', lockHalo: 'rgba(255,255,255,.92)',
+    snap: '#1b9444',
+    measTx: '#fff', measOut: '#0b5a2a',
+    court: '#75818e',
+    ghostA: 1, ghostCourt: '#75818e', ghostBadCourt: '#d92d20',
+    rat: '#f0e6a0', ratHi: '#ffffff', ratOff: '#6b5d00', ratHiOff: '#141a21',
+    silkOff: { 'F.Silk': '#7a6400', 'B.Silk': '#56616d' },
+    mErr: '#d92d20', mWarn: '#b86e00', mInfo: '#1f7ae0',
+    flash: '31,122,224',
+    cross: 'rgba(255,255,255,.9)', crossUnder: 'rgba(20,26,33,.6)',
+    xsBg: '#eef1f5', xsTx: '#2b3540', xsSilkEdge: '#7d8793',
+    thSilk: '#7a6400', thHole: '#ffffff'
+  };
+  let K = PAL_DARK;
+  function pal() { K = isLight() ? PAL_LIGHT : PAL_DARK; return K; }
+  /* Zusaetzliche lokale CSS-Variablen von .pe-root: Dunkel = bisherige feste Farben, Hell = Ueberschreibung */
+  const DARK_VARS = '--ln:#0b0d10;--thumb:#44505e;--nbg:#14181c;--press:#394554;--onac:#04121f;--onac2:#0a2b4a;--onok:#06210d;--onok2:#0b3a17;--onbad:#2a0a08;--inbg:#1a2027;' +
+    '--ring:rgba(59,158,255,.35);--stage:#0d1013;--ov:rgba(20,24,28,.88);--warntx:#ffd9a0;--badtx:#ffb4ad;--robg:#3a2f1c;--sh:rgba(0,0,0,.5);--sh2:rgba(0,0,0,.6);--scrim:rgba(5,8,10,.7);' +
+    '--thbg:#0d1013;--xsbg:#10151a;--m-err:#ff3b30;--m-warn:#ffb340;--m-info:#5ab0ff;--m-ok:#4cd964;';
+  const LIGHT_VARS = '--bg:#f3f5f8;--pn:#ffffff;--pn2:#eaeef3;--bd:#b9c2cd;--ac:#0a4fb3;--ok:#107a3f;--tx:#141a21;--mut:#5a6672;--bad:#b3261e;--warn:#8a5a00;' +
+    '--ln:#d3d9e0;--thumb:#b4bec9;--nbg:#e4e9ef;--press:#d5dce5;--onac:#ffffff;--onac2:#dbe8fb;--onok:#ffffff;--onok2:#e3f5ea;--onbad:#ffffff;--inbg:#ffffff;' +
+    '--ring:rgba(10,79,179,.3);--stage:#e9edf2;--ov:rgba(255,255,255,.94);--warntx:#8a5a00;--badtx:#b3261e;--robg:#fff4d6;--sh:rgba(20,30,45,.22);--sh2:rgba(20,30,45,.28);--scrim:rgba(20,26,33,.45);' +
+    '--thbg:#ffffff;--xsbg:#eef1f5;--m-err:#d92d20;--m-warn:#b86e00;--m-info:#1f7ae0;--m-ok:#168a45;';
+  /* Regel, die es nur im Hellmodus gibt: Farbkaestchen mit Rand (helles B.Silk/F.Silk).
+   * In beiden Modi (Kontrast >= 4,5): Lagen-Auge in Textfarbe statt Lagenfarbe (die Farbe zeigt das Kaestchen daneben);
+   * ausgeblendete Lage nicht halb durchsichtig, sondern ohne Flaeche, gestrichelt umrandet, blasses Farbkaestchen, leerer Kreis im Auge. */
+  const LIGHT_RULES = [
+    ['.pe-chip .sw', 'box-shadow:0 0 0 1px rgba(20,26,33,.45)']
+  ];
+  function lightCss() {
+    const block = function (pre) { return pre + ' .pe-root{' + LIGHT_VARS + '}' + LIGHT_RULES.map(function (r) { return pre + ' .pe-root ' + r[0] + '{' + r[1] + '}'; }).join(''); };
+    return '@media(prefers-color-scheme:light){' + block(':root:not([data-theme=dark])') + '}\n' + block(':root[data-theme=light]');
+  }
+  /* Kontrast nach WCAG fuer #rrggbb */
+  function hexRgb(hex) { let s = hex.slice(1); if (s.length === 3) s = s[0] + s[0] + s[1] + s[1] + s[2] + s[2]; const n = parseInt(s, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+  function lum(c) { const f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); }
+  function contrast(a, b) { const x = lum(hexRgb(a)), y = lum(hexRgb(b)); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+  /* Farbe (Ton bleibt) so weit abdunkeln (heller Grund) bzw. aufhellen (dunkler Grund), bis sie als Schrift auf bg mindestens min:1 erreicht */
+  const inkCache = {};
+  function inkOn(hex, bg, min) {
+    const key = hex + bg + min;
+    if (inkCache[key]) return inkCache[key];
+    const c = hexRgb(hex), up = lum(hexRgb(bg)) < 0.18;
+    let out = hex;
+    for (let f = 1; f >= 0; f -= 0.04) {
+      out = '#' + c.map(function (v) { const s = Math.round(up ? 255 - (255 - v) * f : v * f).toString(16); return s.length < 2 ? '0' + s : s; }).join('');
+      if (contrast(out, bg) >= min) break;
+    }
+    return (inkCache[key] = out);
+  }
+  root.PCB_EDIT_THEME = { dark: PAL_DARK, light: PAL_LIGHT, darkVars: DARK_VARS, lightVars: LIGHT_VARS, cssText: function () { return cssText(); }, isLight: isLight, contrast: contrast, inkOn: inkOn, layerColors: LCOL };
 
   // ------------------------------------------------------------ Hilfsfunktionen
   function h(tag, a, kids) {
@@ -269,79 +358,85 @@
     cssDone = true;
     const st = document.createElement('style');
     st.id = 'pe-css';
-    st.textContent = [
-      '.pe-root{--bg:#14181c;--pn:#222830;--pn2:#2c343e;--bd:#3a4552;--ac:#3b9eff;--ok:#4cd964;--tx:#e6edf3;--mut:#8b98a6;--bad:#ff6b63;--warn:#ffb340;',
+    st.textContent = cssText();
+    document.head.appendChild(st);
+  }
+  function cssText() {
+    return [
+      '.pe-root{--bg:#14181c;--pn:#222830;--pn2:#2c343e;--bd:#3a4552;--ac:#3b9eff;--ok:#4cd964;--tx:#e6edf3;--mut:#939fad;--bad:#ff6b63;--warn:#ffb340;' + DARK_VARS,
       'color:var(--tx);font:14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);height:100%;min-height:360px;display:flex;flex-direction:column;box-sizing:border-box;position:relative;outline:0;-webkit-text-size-adjust:100%;overflow:hidden}',
       '.pe-root *{box-sizing:border-box}',
-      '.pe-row{display:flex;gap:4px;padding:4px 6px;background:var(--pn);border-bottom:1px solid #0b0d10;align-items:center;overflow-x:auto;flex:none;scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
-      '.pe-row::-webkit-scrollbar{height:5px}.pe-row::-webkit-scrollbar-thumb{background:#44505e;border-radius:3px}',
+      '.pe-row{display:flex;gap:4px;padding:4px 6px;background:var(--pn);border-bottom:1px solid var(--ln);align-items:center;overflow-x:auto;flex:none;scrollbar-width:thin;-webkit-overflow-scrolling:touch}',
+      '.pe-row::-webkit-scrollbar{height:5px}.pe-row::-webkit-scrollbar-thumb{background:var(--thumb);border-radius:3px}',
       '.pe-b{min-width:44px;height:46px;padding:2px 8px;border-radius:10px;border:1px solid var(--bd);background:var(--pn2);color:var(--tx);font:600 13px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;flex:none;white-space:nowrap;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}',
       '.pe-b i{font-style:normal;font-size:18px;line-height:20px}.pe-b span{font-size:10px;font-weight:600;color:var(--mut);line-height:12px}',
-      '.pe-b:active{background:#394554}.pe-b[disabled]{opacity:.35;cursor:default}',
-      '.pe-b.on{background:var(--ac);border-color:var(--ac);color:#04121f}.pe-b.on span{color:#0a2b4a}',
-      '.pe-b.ok{background:var(--ok);border-color:var(--ok);color:#06210d}.pe-b.ok span{color:#0b3a17}',
-      '.pe-b.flat{height:40px;flex-direction:row;gap:6px;font-size:13px}',
+      '.pe-b:active{background:var(--press)}.pe-b[disabled]{opacity:.35;cursor:default}',
+      '.pe-b.on{background:var(--ac);border-color:var(--ac);color:var(--onac)}.pe-b.on span{color:var(--onac2)}',
+      '.pe-b.ok{background:var(--ok);border-color:var(--ok);color:var(--onok)}.pe-b.ok span{color:var(--onok2)}',
+      '.pe-b.flat{height:44px;flex-direction:row;gap:6px;font-size:13px}',
       '.pe-sep{width:1px;height:30px;background:var(--bd);margin:0 3px;flex:none}',
-      '.pe-sel,.pe-in{height:40px;min-width:60px;border-radius:9px;border:1px solid var(--bd);background:#1a2027;color:var(--tx);font:600 13px system-ui,sans-serif;padding:0 8px;flex:none}',
+      '.pe-sel,.pe-in{height:44px;min-width:60px;border-radius:9px;border:1px solid var(--bd);background:var(--inbg);color:var(--tx);font:600 13px system-ui,sans-serif;padding:0 8px;flex:none}',
       '.pe-in{width:90px}.pe-in.w{width:130px}',
       '.pe-lab{font-size:12px;color:var(--mut);flex:none;display:flex;align-items:center;gap:4px;white-space:nowrap}',
-      '.pe-chip{display:inline-flex;align-items:center;height:40px;border-radius:20px;border:1px solid var(--bd);background:var(--pn2);flex:none;overflow:hidden;user-select:none;-webkit-user-select:none}',
+      '.pe-chip{display:inline-flex;align-items:center;height:46px;border-radius:23px;border:1px solid var(--bd);background:var(--pn2);flex:none;overflow:hidden;user-select:none;-webkit-user-select:none}',
       '.pe-chip button{height:100%;border:0;background:transparent;color:var(--tx);font:600 13px system-ui,sans-serif;cursor:pointer;touch-action:manipulation;padding:0 10px;-webkit-tap-highlight-color:transparent}',
-      '.pe-chip .eye{width:40px;padding:0;font-size:16px;border-right:1px solid var(--bd)}',
+      '.pe-chip .eye{width:44px;padding:0;font-size:16px;border-right:1px solid var(--bd)}',
       '.pe-chip .sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}',
-      '.pe-chip.act{border-color:var(--ac);box-shadow:0 0 0 2px rgba(59,158,255,.35)}',
-      '.pe-chip.off{opacity:.5}',
+      '.pe-chip.act{border-color:var(--ac);box-shadow:0 0 0 2px var(--ring)}',
+      '.pe-chip.off{background:transparent;border-style:dashed}.pe-chip.off .sw{opacity:.35}',
       '.pe-chip.na button.nm{color:var(--mut)}',
       '.pe-main{flex:1;display:flex;min-height:0;position:relative}',
-      '.pe-stage{flex:1;position:relative;min-width:0;min-height:200px;background:' + BG + ';overflow:hidden}',
+      '.pe-stage{flex:1;position:relative;min-width:0;min-height:200px;background:var(--stage);overflow:hidden}',
       '.pe-cv{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none;display:block;outline:0;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}',
       '.pe-stat{position:absolute;left:6px;bottom:6px;right:6px;display:flex;gap:8px;align-items:flex-end;pointer-events:none;flex-wrap:wrap}',
-      '.pe-stat .msg{background:rgba(20,24,28,.88);border:1px solid var(--bd);border-radius:8px;padding:4px 9px;font-size:12px;color:var(--tx);max-width:100%}',
-      '.pe-stat .msg.warn{border-color:var(--warn);color:#ffd9a0}.pe-stat .msg.bad{border-color:var(--bad);color:#ffb4ad}',
-      '.pe-stat .pos{background:rgba(20,24,28,.88);border:1px solid var(--bd);border-radius:8px;padding:4px 9px;font:12px ui-monospace,Consolas,monospace;color:var(--mut);margin-left:auto}',
+      '.pe-stat .msg{background:var(--ov);border:1px solid var(--bd);border-radius:8px;padding:4px 9px;font-size:12px;color:var(--tx);max-width:100%}',
+      '.pe-stat .msg.warn{border-color:var(--warn);color:var(--warntx)}.pe-stat .msg.bad{border-color:var(--bad);color:var(--badtx)}',
+      '.pe-stat .pos{background:var(--ov);border:1px solid var(--bd);border-radius:8px;padding:4px 9px;font:12px ui-monospace,Consolas,monospace;color:var(--mut);margin-left:auto}',
       '.pe-fab{position:absolute;right:8px;top:8px;display:flex;flex-direction:column;gap:6px;align-items:flex-end}',
-      '.pe-fab .pe-b{height:44px;flex-direction:row;gap:6px;box-shadow:0 2px 10px rgba(0,0,0,.5)}',
+      '.pe-fab .pe-b{height:44px;flex-direction:row;gap:6px;box-shadow:0 2px 10px var(--sh)}',
       '.pe-zoomb{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;gap:6px}',
-      '.pe-zoomb .pe-b{min-width:44px;height:44px;box-shadow:0 2px 10px rgba(0,0,0,.5);opacity:.92}',
-      '.pe-ro{position:absolute;left:50%;transform:translateX(-50%);top:8px;background:#3a2f1c;border:1px solid var(--warn);color:#ffd9a0;border-radius:8px;padding:4px 12px;font-size:12px;pointer-events:none;white-space:nowrap}',
-      '.pe-side{width:310px;flex:none;background:var(--pn);border-left:1px solid #0b0d10;display:flex;flex-direction:column;min-height:0}',
-      '.pe-tabs{display:flex;flex:none;border-bottom:1px solid #0b0d10}',
-      '.pe-tab{flex:1;height:42px;border:0;background:transparent;color:var(--mut);font:600 13px system-ui,sans-serif;cursor:pointer;border-bottom:3px solid transparent;touch-action:manipulation;-webkit-tap-highlight-color:transparent}',
+      '.pe-zoomb .pe-b{min-width:44px;height:44px;box-shadow:0 2px 10px var(--sh);opacity:.92}',
+      '.pe-ro{position:absolute;left:50%;transform:translateX(-50%);top:8px;background:var(--robg);border:1px solid var(--warn);color:var(--warntx);border-radius:8px;padding:4px 12px;font-size:12px;pointer-events:none;white-space:nowrap}',
+      '.pe-side{width:310px;flex:none;background:var(--pn);border-left:1px solid var(--ln);display:flex;flex-direction:column;min-height:0}',
+      '.pe-tabs{display:flex;flex:none;border-bottom:1px solid var(--ln)}',
+      '.pe-tab{flex:1;height:44px;border:0;background:transparent;color:var(--mut);font:600 13px system-ui,sans-serif;cursor:pointer;border-bottom:3px solid transparent;touch-action:manipulation;-webkit-tap-highlight-color:transparent}',
       '.pe-tab.on{color:var(--tx);border-bottom-color:var(--ac)}',
-      '.pe-tab .n{display:inline-block;min-width:20px;padding:0 5px;border-radius:10px;background:#44505e;font-size:12px;margin-left:4px}',
-      '.pe-tab .n.bad{background:var(--bad);color:#2a0a08}',
+      '.pe-tab .n{display:inline-block;min-width:20px;padding:0 5px;border-radius:10px;background:var(--nbg);font-size:12px;margin-left:4px}',
+      '.pe-tab .n.bad{background:var(--bad);color:var(--onbad)}',
       '.pe-pane{flex:1;overflow:auto;padding:8px 10px;min-height:0;-webkit-overflow-scrolling:touch}',
       '.pe-narrow .pe-main{flex-direction:column}',
       '.pe-narrow .pe-stat .msg{font-size:12px;padding:3px 7px}',
-      '.pe-narrow .pe-side{width:auto;height:230px;border-left:0;border-top:1px solid #0b0d10}',
-      '.pe-narrow.pe-sidehide .pe-side{height:42px}.pe-narrow.pe-sidehide .pe-pane{display:none}',
-      '.pe-fld{display:flex;align-items:center;gap:8px;margin:5px 0;min-height:40px}',
+      '.pe-narrow .pe-side{width:auto;height:230px;border-left:0;border-top:1px solid var(--ln)}',
+      '.pe-narrow.pe-sidehide .pe-side{height:46px}.pe-narrow.pe-sidehide .pe-pane{display:none}',
+      '.pe-fld{display:flex;align-items:center;gap:8px;margin:5px 0;min-height:44px}',
       '.pe-fld>label{width:92px;flex:none;font-size:12px;color:var(--mut)}',
       '.pe-fld .pe-in,.pe-fld .pe-sel{flex:1;width:auto;min-width:0}',
       '.pe-h4{margin:8px 0 4px;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}',
       '.pe-p{margin:4px 0;font-size:12.5px;color:var(--mut)}.pe-p b{color:var(--tx)}',
       '.pe-btns{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}',
       '.pe-li{display:flex;gap:8px;align-items:flex-start;padding:8px 8px;border-radius:9px;margin-bottom:4px;background:var(--pn2);border:1px solid transparent;cursor:pointer;min-height:44px;font-size:13px}',
-      '.pe-li.on{border-color:var(--ac)}.pe-li:active{background:#394554}',
+      '.pe-li.on{border-color:var(--ac)}.pe-li:active{background:var(--press)}',
       '.pe-dot{flex:none;width:12px;height:12px;border-radius:50%;margin-top:4px}',
       '.pe-li .s{color:var(--mut);font-size:12px}',
-      '.pe-modal{position:absolute;left:0;top:0;right:0;bottom:0;background:rgba(5,8,10,.7);display:flex;align-items:center;justify-content:center;z-index:20;padding:10px}',
-      '.pe-dlg{background:var(--pn);border:1px solid var(--bd);border-radius:14px;max-width:560px;width:100%;max-height:100%;display:flex;flex-direction:column;box-shadow:0 14px 50px rgba(0,0,0,.6)}',
+      '.pe-modal{position:absolute;left:0;top:0;right:0;bottom:0;background:var(--scrim);display:flex;align-items:center;justify-content:center;z-index:20;padding:10px}',
+      '.pe-dlg{background:var(--pn);border:1px solid var(--bd);border-radius:14px;max-width:560px;width:100%;max-height:100%;display:flex;flex-direction:column;box-shadow:0 14px 50px var(--sh2)}',
       '.pe-dlg>header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--bd);font-weight:700}',
       '.pe-dlg>header .x{margin-left:auto}',
       '.pe-dlg>.bd{padding:10px 12px;overflow:auto;min-height:0;-webkit-overflow-scrolling:touch}',
       '.pe-fpl{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:9px;margin-bottom:4px;background:var(--pn2);cursor:pointer;min-height:52px;border:1px solid transparent}',
       '.pe-fpl:active,.pe-fpl.on{border-color:var(--ac)}',
-      '.pe-fpl canvas{flex:none;background:#0d1013;border-radius:6px}',
+      '.pe-fpl canvas{flex:none;background:var(--thbg);border-radius:6px}',
       '.pe-fpl .t{font-weight:700;font-size:13px}.pe-fpl .d{font-size:12px;color:var(--mut)}',
-      '.pe-pop{position:absolute;z-index:15;background:var(--pn);border:1px solid var(--bd);border-radius:12px;padding:8px 10px;box-shadow:0 10px 40px rgba(0,0,0,.6);min-width:230px}',
-      '.pe-pop label.ck{display:flex;align-items:center;gap:10px;min-height:40px;font-size:13px;cursor:pointer}',
+      '.pe-pop{position:absolute;z-index:15;background:var(--pn);border:1px solid var(--bd);border-radius:12px;padding:8px 10px;box-shadow:0 10px 40px var(--sh2);min-width:230px}',
+      '.pe-pop label.ck{display:flex;align-items:center;gap:10px;min-height:44px;font-size:13px;cursor:pointer}',
       '.pe-pop input[type=checkbox]{width:20px;height:20px}',
-      '.pe-is3d .pe-zoomb{top:58px}',
+      '.pe-is3d .pe-zoomb{top:62px}',
       '.pe-3d{position:absolute;left:8px;top:8px;display:flex;gap:6px;flex-wrap:wrap;right:8px;pointer-events:none}',
-      '.pe-3d .pe-b{pointer-events:auto;height:40px;flex-direction:row;gap:6px;opacity:.95}'
+      '.pe-3d .pe-b{pointer-events:auto;height:44px;flex-direction:row;gap:6px;opacity:.95}',
+      '.pe-ckw{display:inline-flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;flex:none;cursor:pointer}.pe-li .pe-ckw{margin:-8px -8px -8px 0}',
+      '.pe-dot.err{background:var(--m-err)}.pe-dot.warn{background:var(--m-warn)}.pe-dot.info{background:var(--m-info)}.pe-dot.ok{background:var(--m-ok)}',
+      lightCss()
     ].join('\n');
-    document.head.appendChild(st);
   }
 
   // ------------------------------------------------------------ Editor
@@ -379,7 +474,7 @@
     const toolRow = h('div', { class: 'pe-row' });
     const actRow = h('div', { class: 'pe-row' });
     const layerRow = h('div', { class: 'pe-row' });
-    const optRow = h('div', { class: 'pe-row', style: 'min-height:50px' });
+    const optRow = h('div', { class: 'pe-row', style: 'min-height:54px' });
     const main = h('div', { class: 'pe-main' });
     const stage = h('div', { class: 'pe-stage' });
     const cv = h('canvas', { class: 'pe-cv' });
@@ -680,6 +775,14 @@
         c.closePath();
       } else c.rect(0, 0, b.w || 100, b.h || 80);
     }
+    /* Zeichnet fn nur AUSSERHALB der Platine. Im Hellmodus ist dort die Arbeitsflaeche hell: heller Bestueckungsdruck und
+     * helle Luftlinien bekommen dort eine dunklere Farbe; auf der (dunkelgruenen) Platine bleibt alles wie im Dunkelmodus. */
+    function offBoard(c, fn) {
+      c.save();
+      outlinePath(c); c.rect(-1e5, -1e5, 2e5, 2e5);
+      c.clip('evenodd');
+      try { fn(); } finally { c.restore(); }
+    }
     function boardBase(c) {
       outlinePath(c);
       c.fillStyle = '#16231b'; c.fill();
@@ -753,7 +856,7 @@
     }
     function drawHoles(c, o) {
       const b = B();
-      c.fillStyle = BG;
+      c.fillStyle = K.hole;
       c.beginPath();
       (b.vias || []).forEach(function (v) { if (!visibleVia(v)) return; const r = (v.drill || 0.4) / 2; c.moveTo(v.x + r, v.y); c.arc(v.x, v.y, r, 0, TAU); });
       getPads().forEach(function (p) {
@@ -803,7 +906,7 @@
       c.stroke();
     }
     function drawSilk(c, layer, o) {
-      const b = B(), col = LCOL[layer], side = layer === 'B.Silk' ? 'bot' : 'top', lw = R().silkWidth;
+      const b = B(), col = (o && o.col) || LCOL[layer], side = layer === 'B.Silk' ? 'bot' : 'top', lw = R().silkWidth;
       c.globalAlpha = (o && o.alpha) || 0.95;
       (b.parts || []).forEach(function (p) {
         if ((p.side === 'bot' ? 'bot' : 'top') !== side) return;
@@ -896,21 +999,21 @@
     }
     function drawCourts(c) {
       const b = B();
-      c.strokeStyle = 'rgba(190,200,215,.55)'; c.lineWidth = 1 / S.k; c.setLineDash([4 / S.k, 3 / S.k]);
+      c.strokeStyle = K.court; c.lineWidth = 1 / S.k; c.setLineDash([4 / S.k, 3 / S.k]);
       (b.parts || []).forEach(function (p) {
         const r = courtRect(p);
         c.strokeRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
       });
       c.setLineDash([]);
     }
-    function drawRats(c) {
+    function drawRats(c, off) {   // off: zweite Zeichnung nur ausserhalb der Platine (Hellmodus) mit dunkler Farbe
       const cn = getConn();
       if (!cn || !cn.unrouted) return;
       c.lineWidth = 1.3 / S.k; c.setLineDash([5 / S.k, 4 / S.k]); c.lineCap = 'butt';
       cn.unrouted.forEach(function (u) {
         const hl = S.hiNet && u.net === S.hiNet;
         if (S.hiNet && !hl) c.globalAlpha = 0.25; else c.globalAlpha = 1;
-        c.strokeStyle = hl ? '#ffffff' : '#f0e6a0';
+        c.strokeStyle = off ? (hl ? K.ratHiOff : K.ratOff) : (hl ? K.ratHi : K.rat);
         c.beginPath(); c.moveTo(u.a.x, u.a.y); c.lineTo(u.b.x, u.b.y); c.stroke();
       });
       c.setLineDash([]); c.globalAlpha = 1;
@@ -918,7 +1021,7 @@
     function drawSel(c) {
       const it = getItem(S.sel);
       if (!it) return;
-      const px = 1 / S.k, ac = '#3b9eff';
+      const px = 1 / S.k, ac = K.ac;
       c.strokeStyle = ac; c.fillStyle = ac; c.lineJoin = 'round'; c.lineCap = 'round';
       if (S.sel.t === 'part') {
         const r = courtRect(it), m = 0.25;
@@ -926,7 +1029,11 @@
         c.strokeRect(r[0] - m, r[1] - m, r[2] - r[0] + 2 * m, r[3] - r[1] + 2 * m);
         c.setLineDash([]);
         c.globalAlpha = 0.12; c.fillRect(r[0] - m, r[1] - m, r[2] - r[0] + 2 * m, r[3] - r[1] + 2 * m); c.globalAlpha = 1;
-        if (isLocked(it)) { c.font = '600 ' + (13 * px) + 'px system-ui,sans-serif'; c.textAlign = 'left'; c.textBaseline = 'bottom'; c.fillText('gesperrt', r[0], r[1] - m - 2 * px); }
+        if (isLocked(it)) {
+          c.font = '600 ' + (13 * px) + 'px system-ui,sans-serif'; c.textAlign = 'left'; c.textBaseline = 'bottom';
+          if (K.lockHalo) { c.save(); c.strokeStyle = K.lockHalo; c.lineWidth = 3 * px; c.strokeText('gesperrt', r[0], r[1] - m - 2 * px); c.restore(); }
+          c.fillStyle = K.lockTx; c.fillText('gesperrt', r[0], r[1] - m - 2 * px); c.fillStyle = ac;
+        }
       } else if (S.sel.t === 'track') {
         c.globalAlpha = 0.35; c.lineWidth = (it.w || 0.25) + 6 * px;
         c.beginPath(); it.pts.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.stroke(); c.globalAlpha = 1;
@@ -948,7 +1055,7 @@
       const b = B();
       if (S.tool !== 'select' || S.sel || readOnly() || (b.outline && b.outline.length > 2)) return;
       const px = 1 / S.k, x = b.w, y = b.h;
-      c.fillStyle = '#3b9eff'; c.strokeStyle = '#fff'; c.lineWidth = 2 * px;
+      c.fillStyle = K.ac; c.strokeStyle = '#fff'; c.lineWidth = 2 * px;
       c.beginPath(); c.rect(x - 7 * px, y - 7 * px, 14 * px, 14 * px); c.fill(); c.stroke();
     }
 
@@ -1012,16 +1119,18 @@
       const fp = fpOf(part.fp);
       if (!fp) return;
       const xf = xfPart(part), col = LCOL[part.side === 'bot' ? 'B.Cu' : 'F.Cu'];
-      c.globalAlpha = 0.65; c.fillStyle = bad ? '#ff3030' : col;
+      c.globalAlpha = K.ghostA; c.fillStyle = bad ? '#ff3030' : col;
       c.beginPath();
       (fp.pads || []).forEach(function (q) { const m = xf(q.x, q.y), d = padDims(q, part.rot); padPath(c, m[0], m[1], d[0], d[1], q.shape); });
       c.fill();
       c.globalAlpha = 1;
-      partSilk(c, part, part.side === 'bot' ? LCOL['B.Silk'] : LCOL['F.Silk'], R().silkWidth);
+      const sl = part.side === 'bot' ? 'B.Silk' : 'F.Silk';
+      partSilk(c, part, LCOL[sl], R().silkWidth);
+      if (K.silkOff) offBoard(c, function () { partSilk(c, part, K.silkOff[sl], R().silkWidth); });
       const r = courtRect(part);
-      c.strokeStyle = bad ? '#ff5050' : 'rgba(200,210,225,.8)'; c.lineWidth = 1.2 / S.k; c.setLineDash([4 / S.k, 3 / S.k]);
+      c.strokeStyle = bad ? K.ghostBadCourt : K.ghostCourt; c.lineWidth = 1.2 / S.k; c.setLineDash([4 / S.k, 3 / S.k]);
       c.strokeRect(r[0], r[1], r[2] - r[0], r[3] - r[1]); c.setLineDash([]);
-      c.fillStyle = '#3b9eff';
+      c.fillStyle = K.ac;
       c.beginPath(); c.arc(part.x, part.y, 3 / S.k, 0, TAU); c.fill();
     }
     function ghostBad(part) {
@@ -1037,7 +1146,7 @@
       const cur = S.cur;
       // Fangring
       if (cur && S.curLive && S.snapKind !== 'grid') {
-        c.strokeStyle = '#4cd964'; c.lineWidth = 2 * px; c.beginPath(); c.arc(cur.x, cur.y, 9 * px, 0, TAU); c.stroke();
+        c.strokeStyle = K.snap; c.lineWidth = 2 * px; c.beginPath(); c.arc(cur.x, cur.y, 9 * px, 0, TAU); c.stroke();
       }
       if (S.tool === 'track' && S.trk) {
         const t = S.trk, col = LCOL[t.layer] || '#fff';
@@ -1066,7 +1175,7 @@
         z.pts.forEach(function (p, i) { c.beginPath(); c.arc(p[0], p[1], (i === 0 && z.pts.length >= 3 ? 7 : 3.5) * px, 0, TAU); c.fill(); });
       } else if (S.tool === 'measure' && S.meas) {
         const m = S.meas, e = m.b || (cur ? [cur.x, cur.y] : null);
-        c.fillStyle = '#4cd964'; c.strokeStyle = '#4cd964'; c.lineWidth = 2 * px;
+        c.fillStyle = K.snap; c.strokeStyle = K.snap; c.lineWidth = 2 * px;
         c.beginPath(); c.arc(m.a[0], m.a[1], 4 * px, 0, TAU); c.fill();
         if (e) {
           c.beginPath(); c.moveTo(m.a[0], m.a[1]); c.lineTo(e[0], e[1]); c.stroke();
@@ -1076,9 +1185,9 @@
           c.beginPath(); c.moveTo(m.a[0], m.a[1]); c.lineTo(e[0], m.a[1]); c.lineTo(e[0], e[1]); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
           const d = hyp(e[0] - m.a[0], e[1] - m.a[1]);
           c.font = '700 ' + (13 * px) + 'px system-ui,sans-serif'; c.textAlign = 'center'; c.textBaseline = 'bottom';
-          c.fillStyle = '#04210c'; c.strokeStyle = '#4cd964'; c.lineWidth = 4 * px;
+          c.fillStyle = '#04210c'; c.strokeStyle = K.measOut; c.lineWidth = 4 * px;
           const tx = (m.a[0] + e[0]) / 2, ty = (m.a[1] + e[1]) / 2 - 6 * px, txt = fmt(d, 2) + ' mm';
-          c.strokeText(txt, tx, ty); c.fillStyle = '#fff'; c.fillText(txt, tx, ty);
+          c.strokeText(txt, tx, ty); c.fillStyle = K.measTx; c.fillText(txt, tx, ty);
         }
       } else if (S.tool === 'place' && S.place.fp && cur && S.curLive) {
         const part = { fp: S.place.fp, x: cur.x, y: cur.y, rot: S.place.rot, side: S.place.side };
@@ -1086,7 +1195,7 @@
       } else if (S.tool === 'via' && cur && S.curLive) {
         const r = R(), dia = S.viaDia || r.viaDia;
         c.globalAlpha = 0.7; c.fillStyle = '#d8c46a'; c.beginPath(); c.arc(cur.x, cur.y, dia / 2, 0, TAU); c.fill();
-        c.fillStyle = BG; c.beginPath(); c.arc(cur.x, cur.y, (S.viaDrill || r.viaDrill) / 2, 0, TAU); c.fill(); c.globalAlpha = 1;
+        c.fillStyle = K.hole; c.beginPath(); c.arc(cur.x, cur.y, (S.viaDrill || r.viaDrill) / 2, 0, TAU); c.fill(); c.globalAlpha = 1;
       }
     }
     function drawMarkers(c) {
@@ -1097,7 +1206,7 @@
         if (!m.at) return;
         const x = w2sx(m.at.x), y = w2sy(m.at.y);
         if (x < -20 || y < -20 || x > S.W + 20 || y > S.H + 20) return;
-        const col = m.severity === 'error' ? '#ff3b30' : m.severity === 'warn' ? '#ffb340' : '#5ab0ff';
+        const col = m.severity === 'error' ? K.mErr : m.severity === 'warn' ? K.mWarn : K.mInfo;
         const sel = S.drcSel === m.id;
         c.lineWidth = sel ? 3.5 : 2.2; c.strokeStyle = col; c.fillStyle = col;
         c.beginPath(); c.arc(x, y, sel ? 16 : 12, 0, TAU); c.globalAlpha = 0.18; c.fill(); c.globalAlpha = 1; c.stroke();
@@ -1109,7 +1218,7 @@
           const x = w2sx(f.x), y = w2sy(f.y);
           for (let i = 0; i < 2; i++) {
             const tt = (t * 2 + i * 0.5) % 1;
-            c.strokeStyle = 'rgba(255,255,255,' + (0.9 * (1 - tt)).toFixed(2) + ')'; c.lineWidth = 3;
+            c.strokeStyle = 'rgba(' + K.flash + ',' + (0.9 * (1 - tt)).toFixed(2) + ')'; c.lineWidth = 3;
             c.beginPath(); c.arc(x, y, 14 + tt * 50, 0, TAU); c.stroke();
           }
         }
@@ -1118,16 +1227,19 @@
     function drawCrosshair(c) {
       if (!S.cur || !S.curLive || S.tool === 'select' || S.tool === 'delete') return;
       const x = w2sx(S.cur.x), y = w2sy(S.cur.y);
-      c.strokeStyle = 'rgba(255,255,255,.35)'; c.lineWidth = 1;
+      if (K.crossUnder) { c.strokeStyle = K.crossUnder; c.lineWidth = 3; c.beginPath(); c.moveTo(x - 15, y); c.lineTo(x + 15, y); c.moveTo(x, y - 15); c.lineTo(x, y + 15); c.stroke(); }
+      c.strokeStyle = K.cross; c.lineWidth = 1;
       c.beginPath(); c.moveTo(x - 14, y); c.lineTo(x + 14, y); c.moveTo(x, y - 14); c.lineTo(x, y + 14); c.stroke();
     }
 
-    function draw() {
-      S.dirty = false;
-      const c = cv.getContext('2d');
+    /* target/forced nur fuer exportCanvas(): anderes Canvas, fester Farbsatz */
+    function draw(target, forced) {
+      if (!target) S.dirty = false;
+      const c = (target || cv).getContext('2d');
+      if (forced) K = forced; else pal();
       if (S.v3) { draw3D(c); return; }
       c.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
-      c.fillStyle = BG; c.fillRect(0, 0, S.W, S.H);
+      c.fillStyle = K.bg; c.fillRect(0, 0, S.W, S.H);
       if (!B()) return;
       c.save();
       c.translate(S.ox, S.oy); c.scale(S.k, S.k);
@@ -1136,6 +1248,10 @@
       scene(c);
       if (S.court) drawCourts(c);
       if (S.rats) drawRats(c);
+      if (K.silkOff || K.ratOff) offBoard(c, function () {
+        if (K.silkOff) ['B.Silk', 'F.Silk'].forEach(function (l) { if (visible(l)) drawSilk(c, l, { col: K.silkOff[l] }); });
+        if (K.ratOff && S.rats) drawRats(c, true);
+      });
       drawSel(c);
       drawOutlineHandle(c);
       drawToolPreview(c);
@@ -1143,6 +1259,15 @@
       drawMarkers(c);
       drawCrosshair(c);
       updatePos();
+    }
+    /* Bild fuer PNG-Export und Druck: immer mit dem dunklen Farbsatz (wie vor dem Hellmodus), gleiche Pixelgroesse und Ansicht.
+     * Das sichtbare Canvas wird nicht veraendert; im Dunkelmodus ist es selbst das Ergebnis. */
+    function exportCanvas() {
+      if (!isLight()) { if (S.dirty) { try { draw(); } catch (e) { /* sichtbares Bild bleibt */ } } return cv; }
+      const oc = document.createElement('canvas');
+      oc.width = cv.width; oc.height = cv.height;
+      try { draw(oc, PAL_DARK); } finally { pal(); }
+      return oc;
     }
     function updatePos() {
       posEl.textContent = (S.cur ? 'x ' + fmt(S.cur.x, 2) + '  y ' + fmt(S.cur.y, 2) + ' mm   ' : '') + Math.round(S.k * 100 / 3.78) + ' %  ' + S.layer;
@@ -1211,7 +1336,7 @@
     function draw3D(c) {
       const b = B(), cam = S.cam, W = S.W, H = S.H, dpr = S.dpr;
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
-      c.fillStyle = '#0b0e11'; c.fillRect(0, 0, W, H);
+      c.fillStyle = K.bg3; c.fillRect(0, 0, W, H);
       const yaw = cam.yaw * Math.PI / 180, pitch = cam.pitch * Math.PI / 180;
       const cs = Math.cos(yaw), sn = Math.sin(yaw), sp = Math.sin(pitch), cp = Math.cos(pitch), k = cam.k;
       const bb = boardBox(), cx = (bb[0] + bb[2]) / 2, cy = (bb[1] + bb[3]) / 2;
@@ -1305,15 +1430,15 @@
           lvl: bot ? zOf('B.Cu') - 0.01 - (real ? 0.01 : 0) : zOf('F.Cu') + 0.01, depth: depth(ccx, ccy, (base + z1) / 2),
           draw: function () {
             prism(poly, base, z1, partColor(p));
-            if (sel) { c.strokeStyle = '#3b9eff'; c.lineWidth = 2.2; c.beginPath(); polyPath(poly, z1); c.stroke(); }
+            if (sel) { c.strokeStyle = K.ac; c.lineWidth = 2.2; c.beginPath(); polyPath(poly, z1); c.stroke(); }
           }
         });
       });
       items.sort(function (a, b2) { return (sp > 0 ? a.lvl - b2.lvl : b2.lvl - a.lvl) || (a.depth - b2.depth); });
       items.forEach(function (it) { it.draw(); });
       c.font = '600 12px system-ui,sans-serif'; c.textAlign = 'left'; c.textBaseline = 'bottom';
-      labels.forEach(function (l) { c.fillStyle = l[3]; c.fillText(l[0], l[1], l[2]); });
-      c.font = '12px system-ui,sans-serif'; c.fillStyle = '#8b98a6'; c.textAlign = 'left'; c.textBaseline = 'bottom';
+      labels.forEach(function (l) { c.fillStyle = K.lab3 ? inkOn(l[3], K.bg3, K.lab3) : l[3]; c.fillText(l[0], l[1], l[2]); });
+      c.font = '12px system-ui,sans-serif'; c.fillStyle = K.tx3; c.textAlign = 'left'; c.textBaseline = 'bottom';
       c.fillText((sp > 0 ? 'Ansicht von oben' : 'Ansicht von unten') + (cam.explode ? ' · Lagen auseinandergezogen' : '') + ' · ziehen = drehen', 10, H - 40);
     }
 
@@ -1359,7 +1484,7 @@
       try { const s = C.stackup(B()); stk = Array.isArray(s) ? s : (s.layers || s.stack || []); } catch (e) { stk = []; }
       if (!stk.length) { toast('Der Lagenaufbau ist nicht verfügbar.'); return; }
       const info = viaLayersInfo(v), cu = cuList();
-      const cw = 430, ch = 330, can = h('canvas', { style: 'width:' + cw + 'px;max-width:100%;height:auto;background:#10151a;border-radius:10px;display:block;margin:0 auto' });
+      const cw = 430, ch = 330, can = h('canvas', { style: 'width:' + cw + 'px;max-width:100%;height:auto;background:var(--xsbg);border-radius:10px;display:block;margin:0 auto' });
       const dpr = Math.min(2, window.devicePixelRatio || 1);
       can.width = cw * dpr; can.height = ch * dpr;
       const g = can.getContext('2d'); g.scale(dpr, dpr);
@@ -1370,8 +1495,10 @@
       const sum = hs.reduce(function (a, b2) { return a + b2; }, 0), f = availH / sum;
       const KC = { copper: '#c88a3c', prepreg: '#7fae6a', core: '#9bbd7a', mask: '#1f7a46', silk: '#e8e8e8' };
       const cx = x0 + wLay / 2, barrel = Math.max(10, (v.dia || 0.8) * 40), hole = Math.max(4, (v.drill || 0.4) * 40);
+      function paint() {   // wird beim Wechsel Hell/Dunkel erneut aufgerufen
+      pal();
+      g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, cw, ch);
       let y = top;
-      const sp = viaSpan(v);
       let firstY = null, lastY = null;
       const ys = [];
       stk.forEach(function (l, i) {
@@ -1384,7 +1511,7 @@
           g.fillStyle = idx >= 0 ? LCOL[cu[idx]] : '#c88a3c'; g.fillRect(x0, y, wLay, hh);
           if (li && li.on) {
             if (!li.conn) { // Lagen ohne Anschluss: nur Restring, Rest der Flaeche mit Freistellung
-              g.fillStyle = '#10151a'; g.fillRect(x0 + 2, y, wLay - 4, hh);
+              g.fillStyle = K.xsBg; g.fillRect(x0 + 2, y, wLay - 4, hh);
               g.fillStyle = LCOL[cu[idx]];
               g.fillRect(cx - barrel / 2 - 6, y, 12 + barrel, hh);
               if (li.plane) { g.fillStyle = LCOL[cu[idx]]; g.fillRect(x0, y, cx - barrel / 2 - 14 - x0, hh); g.fillRect(cx + barrel / 2 + 14, y, x0 + wLay - (cx + barrel / 2 + 14), hh); }
@@ -1394,13 +1521,14 @@
           if (li && li.on) { if (firstY == null) firstY = y; lastY = y + hh; }
         }
         g.strokeStyle = 'rgba(0,0,0,.35)'; g.lineWidth = 0.6; g.strokeRect(x0, y, wLay, hh);
+        if (K.xsSilkEdge && l.kind === 'silk') { g.strokeStyle = K.xsSilkEdge; g.lineWidth = 1; g.strokeRect(x0 + 0.5, y + 0.5, wLay - 1, hh - 1); }
         y += hh;
       });
       // Huelse
       if (firstY != null) {
         g.fillStyle = '#e0c06a'; g.fillRect(cx - hole / 2 - 3, firstY, 3, lastY - firstY); g.fillRect(cx + hole / 2, firstY, 3, lastY - firstY);
-        g.fillStyle = '#10151a'; g.fillRect(cx - hole / 2, top, hole, availH);
-        // Bohrung ueberall dunkel (durchgehend), Huelse nochmals darueber
+        g.fillStyle = K.xsBg; g.fillRect(cx - hole / 2, top, hole, availH);
+        // Bohrung ueberall in Hintergrundfarbe (durchgehend), Huelse nochmals darueber
         g.fillStyle = '#e0c06a'; g.fillRect(cx - hole / 2 - 3, firstY, 3, lastY - firstY); g.fillRect(cx + hole / 2, firstY, 3, lastY - firstY);
       }
       // Beschriftungen
@@ -1408,10 +1536,12 @@
       stk.forEach(function (l, i) {
         if (l.kind === 'silk') return;
         const yy = ys[i][0] + ys[i][1] / 2;
-        g.fillStyle = '#c8d2dc';
+        g.fillStyle = K.xsTx;
         const tx = (l.name || l.id || l.kind) + ' · ' + Math.round((l.thickness || 0) * 1000) + ' µm';
         g.fillText(tx, x0 + wLay + 10, yy);
       });
+      }
+      paint();
       const list = h('div', { style: 'margin-top:8px' });
       const kon = cu.filter(function (l) { return info[l].on && info[l].conn; });
       list.appendChild(h('p', { class: 'pe-p', html: '<b>Via ' + (v.net ? 'Netz ' + v.net : 'ohne Netz') + '</b> · Pad ' + fmt(v.dia || 0.8, 2) + ' mm · Bohrung ' + fmt(v.drill || 0.4, 2) + ' mm · Restring ' + fmt(((v.dia || 0.8) - (v.drill || 0.4)) / 2, 3) + ' mm' }));
@@ -1419,20 +1549,22 @@
       const nf = cu.filter(function (l) { return info[l].on && !info[l].conn; });
       if (nf.length) list.appendChild(h('p', { class: 'pe-p', text: 'Ohne Anschluss durchlaufen: ' + nf.join(', ') + (nf.some(function (l) { return info[l].plane; }) ? ' (Freistellung um die Hülse in Flächen anderer Netze)' : '') + '.' }));
       list.appendChild(h('p', { class: 'pe-p', text: 'Aspektverhältnis (Platinendicke : Bohrung) ca. ' + fmt(total / (v.drill || 0.4), 1) + ' : 1. Die Hülse ist innen verkupfert; sie verbindet die Lagen elektrisch.' }));
-      openModal('Schnitt durch das Via', h('div', null, [can, list]));
+      const md = openModal('Schnitt durch das Via', h('div', null, [can, list]));
+      if (md) md.repaint = paint;
     }
 
     // ---- Footprint-Auswahl
     function fpThumb(fp, w, hh) {
       const can = h('canvas', { width: w * 2, height: hh * 2, style: 'width:' + w + 'px;height:' + hh + 'px' });
       const g = can.getContext('2d');
+      pal();
       let x1 = 1e9, y1 = 1e9, x2 = -1e9, y2 = -1e9;
       (fp.pads || []).forEach(function (p) { x1 = Math.min(x1, p.x - p.w / 2); y1 = Math.min(y1, p.y - p.h / 2); x2 = Math.max(x2, p.x + p.w / 2); y2 = Math.max(y2, p.y + p.h / 2); });
       if (fp.courtyard) { x1 = Math.min(x1, fp.courtyard.x); y1 = Math.min(y1, fp.courtyard.y); x2 = Math.max(x2, fp.courtyard.x + fp.courtyard.w); y2 = Math.max(y2, fp.courtyard.y + fp.courtyard.h); }
       if (!isFinite(x1)) return can;
       const k = Math.min((w * 2 - 8) / Math.max(0.5, x2 - x1), (hh * 2 - 8) / Math.max(0.5, y2 - y1));
       g.translate(w - (x1 + x2) / 2 * k, hh - (y1 + y2) / 2 * k); g.scale(k, k);
-      g.strokeStyle = '#ffe14d'; g.lineWidth = 0.12; g.lineCap = 'round';
+      g.strokeStyle = K.thSilk; g.lineWidth = 0.12; g.lineCap = 'round';
       g.beginPath();
       (fp.silk || []).forEach(function (s) {
         if (s.t === 'line') { g.moveTo(s.x1, s.y1); g.lineTo(s.x2, s.y2); }
@@ -1443,7 +1575,7 @@
       g.fillStyle = '#c83434'; g.beginPath();
       (fp.pads || []).forEach(function (p) { padPath(g, p.x, p.y, p.w, p.h, p.shape); });
       g.fill();
-      g.fillStyle = '#0d1013'; g.beginPath();
+      g.fillStyle = K.thHole; g.beginPath();
       (fp.pads || []).forEach(function (p) { if (p.drill) { g.moveTo(p.x + p.drill / 2, p.y); g.arc(p.x, p.y, p.drill / 2, 0, TAU); } });
       g.fill();
       return can;
@@ -1490,7 +1622,7 @@
         missEl.appendChild(document.createTextNode('Aus der Netzliste fehlen noch: '));
         miss.slice(0, 24).forEach(function (r) {
           missEl.appendChild(h('button', {
-            class: 'pe-b flat', style: 'height:34px;min-width:0;padding:0 10px;margin:2px', text: r,
+            class: 'pe-b flat', style: 'padding:0 10px;margin:2px', text: r,
             onclick: function () { S.place.ref = r; S.place.refAuto = false; toast('Referenz ' + r + ' gewählt – jetzt Bauteilform wählen.'); }
           }));
         });
@@ -1502,6 +1634,7 @@
       });
       body.appendChild(chips); body.appendChild(listEl);
       const modal = openModal('Bauteilform wählen', body);
+      modal.repaint = function () { fill(); };   // Hell/Dunkel-Wechsel: Vorschaubilder neu zeichnen
       function fill() {
         const t = q.value.trim().toLowerCase();
         listEl.innerHTML = '';
@@ -2250,7 +2383,7 @@
       cu.concat(EXTRA_LAYERS).forEach(function (l) {
         const cop = isCu(l), vis = visible(l), act = cop && l === S.layer;
         const chip = h('div', { class: 'pe-chip' + (act ? ' act' : '') + (vis ? '' : ' off') + (cop ? '' : ' na'), title: LNAME[l] || l }, [
-          h('button', { class: 'eye', type: 'button', text: vis ? '●' : '○', style: 'color:' + LCOL[l], 'aria-label': 'Sichtbarkeit ' + l, onclick: function (e) { e.stopPropagation(); S.vis[l] = !visible(l); buildLayers(); invalidate(); } }),
+          h('button', { class: 'eye', type: 'button', text: vis ? '●' : '○', 'aria-label': 'Sichtbarkeit ' + l, onclick: function (e) { e.stopPropagation(); S.vis[l] = !visible(l); buildLayers(); invalidate(); } }),
           h('button', { class: 'nm', type: 'button', onclick: function () { setLayer(l); } }, [h('span', { class: 'sw', style: 'background:' + LCOL[l] }), LSHORT[l] || l])
         ]);
         layerRow.appendChild(chip);
@@ -2375,6 +2508,8 @@
         tabs.appendChild(b);
       });
     }
+    /* Kontrollkaestchen mit Trefferflaeche 44 x 44 px (das Kaestchen selbst bleibt 22 px) */
+    function ckWrap(input) { const w = h('label', { class: 'pe-ckw' }, [input]); w.addEventListener('click', function (e) { e.stopPropagation(); }); return w; }
     function fld(label, el) { return h('div', { class: 'pe-fld' }, [h('label', { text: label }), el]); }
     function inp(value, onch, o) {
       o = o || {};
@@ -2424,7 +2559,7 @@
         pane.appendChild(fld('y (mm)', inp(it.y, function (v) { setProp(it, 'y', rnd(num(v, it.y))); }, { type: 'number', step: String(gridStep()), dis: dis || lk })));
         const lkc = h('input', { type: 'checkbox', style: 'width:22px;height:22px' }); lkc.checked = lk; lkc.disabled = dis;
         lkc.addEventListener('change', function () { setProp(it, 'locked', lkc.checked); });
-        pane.appendChild(fld('Gesperrt', lkc));
+        pane.appendChild(fld('Gesperrt', ckWrap(lkc)));
         const pads = getPads().filter(function (p) { return p.part === it.id || (p.ref === it.ref && !byId(b.parts, p.part)); });
         if (pads.length) {
           pane.appendChild(h('div', { class: 'pe-h4', text: 'Pads und Netze' }));
@@ -2442,7 +2577,7 @@
         try { if (C.ipcCurrent) info += '<br>Belastbar mit ca. <b>' + fmt(C.ipcCurrent(it.w, { oz: isOuter(it.layer) ? (b.copperOz || 1) : (b.inOz || 0.5), rise: 10, external: isOuter(it.layer) }), 2) + ' A</b> bei 10 K Erwärmung (IPC-2221)'; } catch (e) { /* egal */ }
         pane.appendChild(h('p', { class: 'pe-p', html: info }));
         const need = needWidth(it.net, it.layer);
-        if (need && it.w < need - 0.005) pane.appendChild(h('p', { class: 'pe-p', style: 'color:#ffb340', text: 'Für ' + fmt(netObj(it.net).current, 1) + ' A wären mindestens ' + fmt(need, 2) + ' mm nötig.' }));
+        if (need && it.w < need - 0.005) pane.appendChild(h('p', { class: 'pe-p', style: 'color:var(--warn)', text: 'Für ' + fmt(netObj(it.net).current, 1) + ' A wären mindestens ' + fmt(need, 2) + ' mm nötig.' }));
         pane.appendChild(btnRow([['Netz hervorheben', function () { S.hiNet = it.net || null; invalidate(); }], ['Bahn löschen', deleteSel, dis]]));
       } else if (S.sel.t === 'via') {
         pane.appendChild(h('div', { class: 'pe-h4', text: 'Via' }));
@@ -2458,7 +2593,7 @@
         pane.appendChild(fld('Abstand (mm)', inp(it.clearance != null ? it.clearance : R().clearance, function (v) { setProp(it, 'clearance', clamp(num(v, 0.3), 0.1, 3)); }, { type: 'number', step: '0.05', dis: dis })));
         const tc = h('input', { type: 'checkbox', style: 'width:22px;height:22px' }); tc.checked = it.thermals !== false; tc.disabled = dis;
         tc.addEventListener('change', function () { setProp(it, 'thermals', tc.checked); });
-        pane.appendChild(fld('Wärmefallen', tc));
+        pane.appendChild(fld('Wärmefallen', ckWrap(tc)));
         pane.appendChild(h('p', { class: 'pe-p', text: 'Die Füllung wird berechnet: Sie hält Abstand zu Kupfer anderer Netze und verbindet Pads des eigenen Netzes über Wärmefallen. Ecken lassen sich ziehen.' }));
         pane.appendChild(btnRow([['Neu füllen', function () { S.rev++; invalidate(); }], ['Fläche löschen', deleteSel, dis]]));
       } else if (S.sel.t === 'text') {
@@ -2479,9 +2614,9 @@
       ]));
       if (!L.length) pane.appendChild(h('p', { class: 'pe-p', text: 'Keine DRC-Meldungen. Der Entwurfsregel-Test läuft nach jeder Änderung automatisch.' }));
       L.slice(0, 200).forEach(function (m) {
-        const col = m.severity === 'error' ? '#ff3b30' : m.severity === 'warn' ? '#ffb340' : '#5ab0ff';
+        const col = m.severity === 'error' ? 'err' : m.severity === 'warn' ? 'warn' : 'info';
         pane.appendChild(h('div', { class: 'pe-li' + (S.drcSel === m.id ? ' on' : ''), onclick: function () { jumpTo(m); } }, [
-          h('span', { class: 'pe-dot', style: 'background:' + col }),
+          h('span', { class: 'pe-dot ' + col }),
           h('div', null, [h('div', { text: m.msg || m.type }), h('div', { class: 's', text: (m.type || '') + (m.layer ? ' · ' + m.layer : '') + (m.at ? ' · x ' + fmt(m.at.x, 1) + ' y ' + fmt(m.at.y, 1) : '') })])
         ]));
       });
@@ -2497,7 +2632,7 @@
       pane.appendChild(btnRow([['✦ Auto-Weg' + (nOpen ? ' (' + nOpen + ')' : ''), runAutoroute, readOnly()], ['Alle offenen', function () { S.arNets = {}; (cn.unrouted || []).forEach(function (u) { S.arNets[u.net] = true; }); renderSide(true); }, readOnly() || !open]]));
       (cn.shorts || []).forEach(function (s) {
         pane.appendChild(h('div', { class: 'pe-li', onclick: function () { if (s.at) { centerOn(s.at.x, s.at.y, Math.max(S.k, 24)); S.flash = { x: s.at.x, y: s.at.y, t0: performance.now() }; if (S.v3) setV3(false); } } }, [
-          h('span', { class: 'pe-dot', style: 'background:#ff3b30' }), h('div', null, [h('div', { text: 'Kurzschluss: ' + s.netA + ' – ' + s.netB }), h('div', { class: 's', text: s.layer || '' })])
+          h('span', { class: 'pe-dot err' }), h('div', null, [h('div', { text: 'Kurzschluss: ' + s.netA + ' – ' + s.netB }), h('div', { class: 's', text: s.layer || '' })])
         ]));
       });
       (cn.nets || []).forEach(function (n) {
@@ -2507,9 +2642,9 @@
         ck.addEventListener('click', function (e) { e.stopPropagation(); });
         ck.addEventListener('change', function () { S.arNets[n.name] = ck.checked; renderSide(true); });
         pane.appendChild(h('div', { class: 'pe-li' + (S.hiNet === n.name ? ' on' : ''), onclick: function () { focusNet(n.name); } }, [
-          h('span', { class: 'pe-dot', style: 'background:' + (ok ? '#4cd964' : '#ffb340') }),
+          h('span', { class: 'pe-dot ' + (ok ? 'ok' : 'warn') }),
           h('div', { style: 'flex:1;min-width:0' }, [h('div', { text: n.name + (netObj(n.name) && netObj(n.name).cls === 'power' ? ' (Versorgung)' : '') }), h('div', { class: 's', text: (n.pads ? n.pads.length : 0) + ' Pads · ' + (ok ? 'verbunden' : cnt + ' offen') + (n.length ? ' · ' + fmt(n.length, 1) + ' mm' : '') })]),
-          ck
+          ckWrap(ck)
         ]));
       });
     }
@@ -2566,11 +2701,18 @@
     const onWinKey = function (e) { onKey(e); };
     const onWinKeyUp = function (e) { onKeyUp(e); };
     const onWinResize = function () { resize(); };
+    /* System wechselt Hell/Dunkel: Zeichenflaeche und offene Dialog-Bilder mit dem anderen Farbsatz neu zeichnen (CSS folgt von selbst) */
+    const onScheme = function () {
+      if (S.destroyed) return;
+      if (S.modal && S.modal.repaint) { try { S.modal.repaint(); } catch (e) { /* Dialog bleibt, wie er ist */ } }
+      invalidate();
+    };
     let ro = null;
     function destroy() {
       S.destroyed = true;
       document.removeEventListener('keydown', onWinKey); document.removeEventListener('keyup', onWinKeyUp);
       window.removeEventListener('resize', onWinResize);
+      if (MQL) { if (MQL.removeEventListener) MQL.removeEventListener('change', onScheme); else if (MQL.removeListener) MQL.removeListener(onScheme); }
       if (ro) { try { ro.disconnect(); } catch (e) { /* egal */ } }
       if (S.raf) cancelAnimationFrame(S.raf);
       closePop();
@@ -2596,6 +2738,7 @@
     document.addEventListener('keydown', onWinKey);
     document.addEventListener('keyup', onWinKeyUp);
     window.addEventListener('resize', onWinResize);
+    if (MQL) { if (MQL.addEventListener) MQL.addEventListener('change', onScheme); else if (MQL.addListener) MQL.addListener(onScheme); }
     if (window.ResizeObserver) { ro = new ResizeObserver(function () { resize(); }); ro.observe(stage); ro.observe(rootEl); }
 
     S.board = null;
@@ -2603,7 +2746,7 @@
     setHint(HELP.select);
     resize();
     refresh();
-    return { refresh: refresh, destroy: destroy, onShow: onShow, onHide: onHide, onBoard: onBoard, onResize: resize, undo: undo, redo: redo, canUndo: function () { return S.undo.length > 0; }, canRedo: function () { return S.redo.length > 0; }, _s: S, _api: { setTool: setTool, setLayer: setLayer, undo: undo, redo: redo, fit: fit, runAutoroute: runAutoroute, jumpTo: jumpTo, showXsec: showXsec, setV3: setV3, deleteSel: deleteSel } };
+    return { exportCanvas: exportCanvas, refresh: refresh, destroy: destroy, onShow: onShow, onHide: onHide, onBoard: onBoard, onResize: resize, undo: undo, redo: redo, canUndo: function () { return S.undo.length > 0; }, canRedo: function () { return S.redo.length > 0; }, _s: S, _api: { setTool: setTool, setLayer: setLayer, undo: undo, redo: redo, fit: fit, runAutoroute: runAutoroute, jumpTo: jumpTo, showXsec: showXsec, setV3: setV3, deleteSel: deleteSel } };
   }
 
   VIEWS.register('edit', { title: 'Layout', mount: mount });

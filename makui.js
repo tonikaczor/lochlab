@@ -1,7 +1,7 @@
 'use strict';
 /* Tonfunk Maschinen-Lab: Oberfläche (Lab-Kennung 'mak').
    ALLE Richtwerte, Zeiten und Regeln sind ÜBUNGSWERTE für die Ausbildung; maßgebend sind Maschinentafel, Tabellenbuch, Werkzeughersteller und die Betriebsanweisung der Werkstatt.
-   Reiter: Maschinen (Zeichnung mit antippbaren Bauteilen, Hebel, Drehzahltafel live), Rechner (Drehzahl, Stufe, Schnittzeit), CNC-Bedienfeld (Tasten, Betriebsarten), Aufgaben, Trainer, Beispiele, Hilfe.
+   Reiter: Maschinen (Zeichnung mit antippbaren Bauteilen, Hebel, Drehzahltafel live), Werkstück-Weg (Ablauf durch die Maschinen, makweg.js), Rechner (Drehzahl, Stufe, Schnittzeit), CNC-Bedienfeld (Tasten, Betriebsarten), Aufgaben, Trainer, Beispiele, Hilfe.
    Module: makcore.js (MAK_CORE), makdata.js (MAK_DATA, MAK_TASKS), makviz.js (MAK_VIZ, Zeichnungen).
    Speicher (Präfix lm4.mak.): tab, mach, rech, done ({id:true} nur gelöste), prog ({id:Prozent}), hints, ctipps (nur Prüfmodus), exam ('1'), rt (Trainer).
    Tipp-Abzug (25 % je Stufe, höchstens 2 Stufen) gibt es nur im Prüfmodus; beim normalen Üben kosten Tipps nichts.
@@ -39,7 +39,7 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['mach', '⚙️', 'Maschinen'], ['rech', '🧮', 'Rechner'], ['cnc', '🎛️', 'CNC-Bedienfeld'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['bsp', '📖', 'Beispiele'], ['help', '📘', 'Hilfe']];
+  const TABS = [['mach', '⚙️', 'Maschinen'], ['weg', '➡️', 'Werkstück-Weg'], ['rech', '🧮', 'Rechner'], ['cnc', '🎛️', 'CNC-Bedienfeld'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['bsp', '📖', 'Beispiele'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'mach'),
     mach: Object.assign({ m: 'sbA', pk: {}, hs: null, d: '10', rg: 'L', n: '' }, lsGet('mach', {})),
@@ -104,6 +104,12 @@
       h += note('Der Drehzahlbereich dieser Maschine steht in der Werkstatt-Anleitung, nicht im Lab.', 'warn') + '</div>';
     } else h += `<div class="card pl"><h4>Drehzahlen</h4><p class="hint2">${esc(m.none || '')}</p></div>`;
     $('#machView').innerHTML = h + ueb();
+  }
+  /* Werkstück-Weg: Ablaufansicht in makweg.js (Wege aus den Maschinen-Arbeiten dieses Labs) */
+  function renderWeg() {
+    const W = root.MAK_WEG, el = $('#wegView'); if (!el) return;
+    if (!W) { el.innerHTML = '<div class="card pl"><p class="hint2">Die Ablaufansicht steht nicht zur Verfügung (makweg.js fehlt).</p></div>'; return; }
+    W.mount(el, { C, D, viz: V(), get: k => lsGet(k, null), set: lsSet, openMachine: id => { S.mach.m = id; S.mach.hs = null; lsSet('mach', S.mach); setTab('mach'); } });
   }
   const mv = $('#machView');
   mv.addEventListener('click', e => {
@@ -355,7 +361,7 @@
   function setTab(t) {
     if (!TABS.some(x => x[0] === t)) t = 'mach'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    ({ mach: renderMach, rech: renderRech, cnc: renderCnc, tasks: renderTasks, rt: renderTrainer, bsp: renderBsp, help: renderHelp })[t]();
+    ({ mach: renderMach, weg: renderWeg, rech: renderRech, cnc: renderCnc, tasks: renderTasks, rt: renderTrainer, bsp: renderBsp, help: renderHelp })[t]();
     const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'Maschinen-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'Maschinen-Lab: ' + T[2];
   }
   function setExam(on) { lsSet('exam', on ? '1' : '0'); palSig = ''; updatePal(); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks') renderTasks(false); }

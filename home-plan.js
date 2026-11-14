@@ -6,8 +6,9 @@
    Ohne gewählten Beruf zeigt sie einen kurzen Hinweis, bei leerem Plan (Skelett) den Satz "Plan für deinen Beruf wird gerade zusammengestellt".
    Voraussetzung: aufgaben.js ist geladen (AUFGABEN, LAB_REG, VB_INDEX). Ohne section#planRow passiert nichts. */
 (function (root) {
-  const KEYS = ['egs', 'ige', 'im', 'tpd', 'fll', 'ik', 'fi'];
-  const NAMEN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker' };
+  const WEGE = ['tec', 'stu', 'wing', 'winf'];   // Wege Studium/Technik (berufe.js): statt Ausbildungsplan ein Lernpfad aus Modulen, Daten in ausbildungsplan-<weg>.js
+  const KEYS = ['egs', 'ige', 'im', 'tpd', 'fll', 'ik', 'fi'].concat(WEGE);
+  const NAMEN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker', tec: 'Techniker Elektrotechnik', stu: 'Studium Elektrotechnik', wing: 'Wirtschaftsingenieur', winf: 'Wirtschaftsinformatik' };
   const GRP = 'lm4.home.groups', SKEY = 'plan';
   const TXT = { kein: 'Wähle oben deinen Beruf, dann zeigt dir der Ausbildungsplan, wo du stehst und womit du weitermachen kannst.', leer: 'Plan für deinen Beruf wird gerade zusammengestellt.', fehlt: 'Der Ausbildungsplan konnte gerade nicht geladen werden.' };
 
@@ -40,12 +41,13 @@
     if (sum.zustand === 'kein-beruf') return { head: TXT.kein, next: '', open: true };
     if (sum.zustand === 'leer') return { head: who + ': ' + TXT.leer, next: '', open: false };
     if (sum.zustand === 'fehlt') return { head: TXT.fehlt, next: '', open: true };
-    let h = who + ': ' + sum.begonnen + ' von ' + sum.mit + (sum.mit === 1 ? ' Lernfeld' : ' Lernfeldern') + ' begonnen, ' + sum.pct + ' %';
+    const weg = WEGE.indexOf(sum.beruf) >= 0;
+    let h = who + ': ' + sum.begonnen + ' von ' + sum.mit + (weg ? (sum.mit === 1 ? ' Modul' : ' Modulen') : (sum.mit === 1 ? ' Lernfeld' : ' Lernfeldern')) + ' begonnen, ' + sum.pct + ' %';
     if (sum.entwurf) h += ' (Plan im Entwurf)';
     const n = sum.next ? (sum.next.start ? 'Starte zum Beispiel mit: ' : 'Als Nächstes: ') + sum.next.titel : sum.hier ? 'Du bist bei: ' + sum.hier.titel : '';
     return { head: h, next: n, open: true };
   }
-  const exp = { KEYS, NAMEN, chosen, summary, lines, TXT };
+  const exp = { KEYS, NAMEN, WEGE, chosen, summary, lines, TXT };
   if (typeof module === 'object' && module.exports) module.exports = exp;
   if (typeof document === 'undefined') return;
   const doc = document, row = doc.getElementById('planRow');
@@ -57,7 +59,8 @@
     + '#planRow .vbh{flex:1;min-width:0}#planRow .vbh h2{margin:0;font-size:22px}#planRow .vbd[open]>summary{margin-bottom:10px}#planRow .vbn{margin-top:2px;font-size:14px;font-weight:600;overflow-wrap:anywhere}#planRow .vbn small{font-weight:400;color:var(--mute)}'
     + '#planRow .chev{flex:none;display:grid;place-items:center;width:44px;height:44px;color:var(--mute)}#planRow .chev::before{content:"";width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}#planRow .vbd:not([open]) .chev::before{transform:rotate(-45deg)}'
     + '#planRow .vbd>summary:focus-visible,#planRow a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}'
-    + '#planRow .plbody{display:flex;align-items:center;gap:16px;flex-wrap:wrap}#planRow .plnext{flex:1 1 260px;min-width:0;margin:0;font-size:15px;overflow-wrap:anywhere}#planRow .plnext a{color:var(--accent)}#planRow .plbtns{flex:0 0 auto;margin:0}#planRow .plbtns a.btn{min-width:150px;padding:0 18px}'
+    + '#planRow .plbody{display:flex;align-items:center;gap:16px;flex-wrap:wrap}#planRow .plnext{flex:1 1 260px;min-width:0;margin:0;font-size:15px;overflow-wrap:anywhere}#planRow .plnext a{color:var(--accent);display:inline-flex;align-items:center;min-height:44px}#planRow .plbtns{flex:0 0 auto;margin:0}#planRow .plbtns a.btn{min-width:150px;padding:0 18px}'
+    + '#planRow .plcd{display:block;margin-top:2px}#planRow .plcd a{display:inline-flex;align-items:center;min-height:44px}'
     + '@media(max-width:639px){#planRow .vbh h2{font-size:18px}#planRow .plbtns{flex:1 1 100%}}@media(prefers-reduced-motion:reduce){#planRow .chev::before{transition:none}}';
   const el = (tag, props, kids) => { const e = doc.createElement(tag); Object.keys(props || {}).forEach(k => { const v = props[k]; if (v == null) return; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else e.setAttribute(k, String(v)); }); (kids || []).forEach(c => e.appendChild(typeof c === 'string' ? doc.createTextNode(c) : c)); return e; };
   const clear = e => { while (e.firstChild) e.removeChild(e.firstChild); };
@@ -86,19 +89,23 @@
       try { const m = saved(); m[SKEY] = det.open ? 1 : 0; root.localStorage.setItem(GRP, JSON.stringify(m)); } catch (e) {}
     });
     clear(row); row.appendChild(det);
-    R = { det: det, n: n, next: next, btns: btns };
+    R = { det: det, n: n, next: next, btns: btns, head: head };
   }
   function url(b, ueb, lf) { return 'ausbildungsplan.html' + (ueb && b ? '?beruf=' + b : '') + (lf ? '#lf=' + encodeURIComponent(lf) : ''); }
   function fill(sum, ueb) {
     skeleton();
     const t = lines(sum);
+    const weg = WEGE.indexOf(sum.beruf) >= 0;
+    R.head.textContent = weg ? 'Dein Lernpfad' : 'Dein Ausbildungsplan';
     R.n.textContent = t.head; clear(R.next); clear(R.btns);
     if (t.next) {
       const pre = sum.next ? (sum.next.start ? 'Starte zum Beispiel mit: ' : 'Als Nächstes: ') : 'Du bist bei: ', ttl = sum.next ? sum.next.titel : sum.hier.titel, id = sum.next ? sum.next.id : sum.hier.id;
       R.next.appendChild(doc.createTextNode(pre)); R.next.appendChild(el('a', { href: url(sum.beruf, ueb, id), text: ttl }));
-    } else if (sum.zustand === 'ok') R.next.textContent = 'Such dir ein Lernfeld aus, eine feste Reihenfolge gibt es nicht.';
-    if (sum.zustand !== 'leer') R.btns.appendChild(el('a', { class: 'btn pri', href: url(sum.beruf, ueb, ''), text: 'Ausbildungsplan öffnen' }));
+    } else if (sum.zustand === 'ok') R.next.textContent = weg ? 'Such dir ein Modul aus, eine feste Reihenfolge gibt es nicht.' : 'Such dir ein Lernfeld aus, eine feste Reihenfolge gibt es nicht.';
+    if (sum.zustand !== 'leer') R.btns.appendChild(el('a', { class: 'btn pri', href: url(sum.beruf, ueb, ''), text: weg ? 'Lernpfad öffnen' : 'Ausbildungsplan öffnen' }));
+    try { const C = root.Countdown, k = C && C.kurz && C.kurz(); if (k && sum.zustand !== 'kein-beruf') R.next.appendChild(el('span', { class: 'plcd' }, [el('a', { href: k.href, text: '⏳ ' + k.text })])); } catch (e) {}   // Prüfungs-Countdown (countdown.js), nur mit gesetztem Datum
     row.hidden = false; row.removeAttribute('hidden');
+    try { root.dispatchEvent(new Event('plan:geladen')); } catch (e) {}   // Mein Weg (meinweg.js) zeichnet seine Plan-Kachel neu
   }
   function loadScript(src, cb) {
     try { const s = doc.createElement('script'); s.src = src; s.onload = () => cb(true); s.onerror = () => cb(false); (doc.head || doc.body).appendChild(s); } catch (e) { cb(false); }

@@ -2,7 +2,9 @@
 /* Tonfunk Lab: Berufe-Reiter auf der Startseite.
    Jede Karte in index.html kann data-beruf="egs im" tragen (Leerzeichen-getrennte Kürzel); ohne Attribut gehört sie zu "egs" (Elektroniker für Geräte und Systeme),
    data-beruf="alle" erscheint bei jedem Beruf. Der Reiter blendet fremde Karten mit .be-out aus; die Wahl steht in localStorage lm4.beruf.
-   Berufe ohne eigene Karten zeigen eine Vorschau der geplanten Labs (PLAN). Läuft nach home-groups.js (Gruppen müssen gebaut sein), ohne Skript bleibt die Startseite wie bisher. */
+   Berufe ohne eigene Karten zeigen eine Vorschau der geplanten Labs (PLAN).
+   Daneben (v55.174) ein zweiter Zweig "Studium und Technik" mit vier Wegen (WEGE: tec, stu, wing, winf), in der Reiterleiste oberhalb der Berufe. Sie nutzen denselben Mechanismus (data-beruf="tec stu ...", lm4.beruf, ?beruf=),
+   sind aber nicht anordnbar und nicht ausblendbar. Ihre Labs stehen im Bereich "Fortgeschritten – Studium und Technik" (data-group="stud"), der bei einem Weg an erster Stelle steht und bei Ausbildungsberufen leer (ausgeblendet) ist. Läuft nach home-groups.js (Gruppen müssen gebaut sein), ohne Skript bleibt die Startseite wie bisher. */
 (function (root) {
   const KEY = 'lm4.beruf';
   const BERUFE = [
@@ -14,6 +16,13 @@
     { k: 'ik', n: 'Industriekaufmann', s: 'Buchführung, Kalkulation, Einkauf' },
     { k: 'fi', n: 'Fachinformatiker', s: 'Netzwerk, Datenbank, Sicherheit' }
   ];
+  /* Zweig Studium und Technik: vier Wege (Lab-Auswahl je Weg steht in den Karten data-beruf, in lernpfad.js TRACKS_B und in ausbildungsplan-<weg>.js; quelle/beruf/test_wege.js prüft, dass alle drei übereinstimmen) */
+  const WEGE = [
+    { k: 'tec', n: 'Techniker Elektrotechnik', s: 'Weiterbildung: Technik, Automation, Projekt' },
+    { k: 'stu', n: 'Studium Elektrotechnik', s: 'Mathematik, Schaltungen, Systeme' },
+    { k: 'wing', n: 'Wirtschaftsingenieur', s: 'Technik, Fertigung, Betriebswirtschaft' },
+    { k: 'winf', n: 'Wirtschaftsinformatik', s: 'Software, Daten, IT-Prozesse' }
+  ];
   // Vorschau: geplante Labs je Beruf (Stand: Ideensammlung, Fachinhalt wird mit den Ausbildern abgestimmt)
   const PLAN = {
     tpd: ['Räumliches Vorstellen'],
@@ -22,7 +31,10 @@
     fi: ['Projekt: Lasten- und Pflichtenheft']
   };
   const DEFAULT = 'egs';
-  const keys = () => BERUFE.map(b => b.k);
+  const keys = () => BERUFE.map(b => b.k);   // nur die Ausbildungsberufe (Anordnung, Standard)
+  const wegKeys = () => WEGE.map(w => w.k);
+  const isWeg = k => wegKeys().indexOf(k) >= 0;
+  const allKeys = () => keys().concat(wegKeys());
   // gehört die Karte (Wert von data-beruf, evtl. leer) zum gewählten Beruf?
   function matches(attr, k) {
     const a = String(attr || DEFAULT).trim().split(/\s+/).filter(Boolean);
@@ -39,17 +51,17 @@
   const visible = c => { const n = normCfg(c); return n.order.filter(k => n.hidden.indexOf(k) < 0); };
   function move(c, k, d) { const n = normCfg(c), i = n.order.indexOf(k), j = i + d; if (i < 0 || j < 0 || j >= n.order.length) return n; n.order[i] = n.order[j]; n.order[j] = k; return n; }
   function toggle(c, k) { const n = normCfg(c), h = n.hidden.indexOf(k); if (h >= 0) n.hidden.splice(h, 1); else if (visible(n).length > 1 && n.order.indexOf(k) >= 0) n.hidden.push(k); return n; }
-  if (typeof module === 'object' && module.exports) module.exports = { BERUFE, PLAN, KEY, DEFAULT, matches, CFG_KEY, normCfg, visible, move, toggle };
+  if (typeof module === 'object' && module.exports) module.exports = { BERUFE, WEGE, isWeg, PLAN, KEY, DEFAULT, matches, CFG_KEY, normCfg, visible, move, toggle };
   if (typeof document === 'undefined') return;
   const doc = document;
   let cur = DEFAULT, cfg = normCfg(null);
   try { cfg = normCfg(JSON.parse(localStorage.getItem(CFG_KEY) || 'null')); } catch (e) {}
   const saveCfg = () => { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)); } catch (e) {} };
-  const bOf = k => BERUFE.find(b => b.k === k);
-  try { const v = localStorage.getItem(KEY); if (v && keys().indexOf(v) >= 0) cur = v; } catch (e) {}
+  const bOf = k => BERUFE.find(b => b.k === k) || WEGE.find(w => w.k === k);
+  try { const v = localStorage.getItem(KEY); if (v && allKeys().indexOf(v) >= 0) cur = v; } catch (e) {}
   // Aufruf ?beruf=im (z. B. aus Links) wählt den Reiter, ohne ihn zu speichern
-  try { const q = new URLSearchParams(location.search).get('beruf'); if (q && keys().indexOf(q) >= 0) cur = q; } catch (e) {}
-  if (visible(cfg).indexOf(cur) < 0) cur = visible(cfg)[0];
+  try { const q = new URLSearchParams(location.search).get('beruf'); if (q && allKeys().indexOf(q) >= 0) cur = q; } catch (e) {}
+  if (!isWeg(cur) && visible(cfg).indexOf(cur) < 0) cur = visible(cfg)[0];
 
   function css() {
     if (doc.getElementById('beCss')) return;
@@ -66,10 +78,30 @@
       + '.be-panel button{min-width:44px;min-height:40px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--fg);font:inherit;cursor:pointer}.be-panel button:disabled{opacity:.35;cursor:default}.be-panel .be-reset{margin-top:8px;font-size:13px;padding:4px 12px}'
       + '.be-soon{background:var(--panel);border:1px dashed var(--line);border-radius:18px;padding:20px;margin:0 0 14px}.be-soon h2{margin:0 0 6px;font-size:19px}.be-soon p{margin:0 0 10px;color:var(--mute)}'
       + '.be-soon ul{margin:0;padding:0 0 0 20px;columns:2;column-gap:28px}.be-soon li{margin:0 0 4px;break-inside:avoid}@media(max-width:639px){.be-soon ul{columns:1}}'
-      + '.be-soon .be-note{margin-top:12px;font-size:13px}';
+      + '.be-soon .be-note{margin-top:12px;font-size:13px}'
+      + '.be-wege{margin:0 0 10px}.be-wege ul{list-style:none;margin:0;padding:0;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.be-wege ul::-webkit-scrollbar{display:none}'
+      + '.be-lab{margin:0 0 6px;font-size:14px;font-weight:700;color:var(--mute);letter-spacing:.02em}.be-tabs .be-lab{margin-top:2px}'
+      + '.be-tab.weg{border-color:var(--g-stud,var(--line));border-width:2px;padding:5px 15px}.be-tab.weg[aria-pressed=true]{border-color:var(--accent-bg)}'
+      + '[data-weg="1"] #e10Go{display:none!important}'
+      + '.be-wege .be-lab+ul+.be-lab{margin:12px 0 6px}'
+      + '.be-tab small{font-size:14px}.be-edit{font-size:14px}';   // Untertitel mindestens 14 px (vorher 11,5 px)
     doc.head.appendChild(st);
   }
 
+  /* Weg gewählt: der Bereich "Fortgeschritten – Studium und Technik" steht ganz oben und ist offen; die Schnellleiste unten führt statt zu "Prüfen" (gibt es für die Wege nicht) zu diesem Bereich. Bei einem Ausbildungsberuf steht der Bereich wieder am Ende (er ist dann leer und ausgeblendet). */
+  function weg(on) {
+    try {
+      doc.documentElement.setAttribute('data-weg', on ? '1' : '0');   // CSS: die 10-Minuten-Einheit (Prüfungsfragen) gibt es für die Wege nicht
+      const gs = doc.getElementById('grp-stud'), gw = doc.getElementById('groups');
+      if (gs && gw && gs.parentNode === gw) { if (on) { if (gw.firstChild !== gs) gw.insertBefore(gs, gw.firstChild); } else if (gw.lastChild !== gs) gw.appendChild(gs); }
+      if (on && root.HomeGroups && root.HomeGroups.wantOpen) root.HomeGroups.wantOpen('stud');
+      doc.querySelectorAll('#bnav a').forEach(a => {
+        const t = a.getAttribute('data-t'); if (t !== 'grp-pruef' && t !== 'grp-stud') return;
+        a.setAttribute('data-t', on ? 'grp-stud' : 'grp-pruef'); a.setAttribute('href', on ? '#grp-stud' : '#grp-pruef');
+        const sp = a.querySelector('span'); if (sp) sp.textContent = on ? 'Studium' : 'Prüfen';
+      });
+    } catch (e) {}
+  }
   function apply(save) {
     const cards = Array.from(doc.querySelectorAll('.card')).filter(c => !c.classList.contains('hm-ghost'));
     let n = 0;
@@ -79,7 +111,9 @@
       if (ok && !c.classList.contains('vbrow')) n++;
     });
     doc.documentElement.setAttribute('data-beruf', cur);
+    weg(isWeg(cur));
     doc.querySelectorAll('.be-tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === cur ? 'true' : 'false'));
+    if (isWeg(cur)) setTimeout(() => { try { const w = doc.querySelector('.be-wege .be-tab[aria-pressed="true"]'); if (w && w.scrollIntoView) w.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) {} }, 0);   // gewählten Weg in der waagerechten Leiste ins Bild holen (schmale Schirme)
     // Vorschau: bei Berufen mit Karten nur die noch fehlenden Labs, ohne Karten die ganze Liste
     const box = doc.getElementById('beSoon'); if (box) {
       const b = BERUFE.find(x => x.k === cur), plan = PLAN[cur];
@@ -134,7 +168,7 @@
       const r = doc.createElement('button'); r.type = 'button'; r.className = 'be-reset'; r.textContent = 'Zurücksetzen'; panel.appendChild(r);
     }
     function changed() {
-      saveCfg(); const was = cur; if (visible(cfg).indexOf(cur) < 0) cur = visible(cfg)[0];
+      saveCfg(); const was = cur; if (!isWeg(cur) && visible(cfg).indexOf(cur) < 0) cur = visible(cfg)[0];
       tabs(); rows(); apply(cur !== was);
       if (cur !== was) { try { if (doc.getElementById('lernpfad') || doc.getElementById('top')) location.reload(); } catch (err) {} }
     }
@@ -148,17 +182,31 @@
     ul.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.be-edit'); if (!b) return; panel.hidden = !panel.hidden; b.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true'); if (!panel.hidden) rows(); });
     tabs();
     nav.appendChild(ul);
-    nav.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.be-tab'); if (!b || b.dataset.k === cur) return; cur = b.dataset.k; apply(true); try { if (doc.getElementById('lernpfad') || doc.getElementById('top')) location.reload(); } catch (err) {} });   // Lernpfad, Weitermachen und Karriere richten sich nach dem Beruf: Seite neu aufbauen
+    const pick = e => { const b = e.target.closest && e.target.closest('.be-tab'); if (!b || b.dataset.k === cur) return; cur = b.dataset.k; apply(true); try { if (doc.getElementById('lernpfad') || doc.getElementById('top')) location.reload(); } catch (err) {} };
+    nav.addEventListener('click', pick);   // Lernpfad, Weitermachen und Karriere richten sich nach dem Beruf: Seite neu aufbauen
+    // Zweig Studium und Technik: eigene Zeile oberhalb der Berufe (eigenes nav, damit die Berufe-Leiste unverändert bleibt)
+    const wnav = doc.createElement('nav'); wnav.className = 'be-wege'; wnav.id = 'beWege'; wnav.setAttribute('aria-label', 'Studium und Technik: Weg wählen');
+    const wl = doc.createElement('p'); wl.className = 'be-lab'; wl.textContent = 'Studium und Technik';
+    const wul = doc.createElement('ul');
+    WEGE.forEach(w => {
+      const li = doc.createElement('li'), bt = doc.createElement('button');
+      bt.type = 'button'; bt.className = 'be-tab weg'; bt.dataset.k = w.k; bt.setAttribute('aria-pressed', 'false');
+      bt.innerHTML = '<span></span><small></small>'; bt.firstChild.textContent = w.n; bt.lastChild.textContent = w.s;
+      li.appendChild(bt); wul.appendChild(li);
+    });
+    const al = doc.createElement('p'); al.className = 'be-lab'; al.textContent = 'Ausbildung';
+    wnav.appendChild(wl); wnav.appendChild(wul); wnav.appendChild(al); wnav.addEventListener('click', pick);
     const soon = doc.createElement('section'); soon.className = 'be-soon'; soon.id = 'beSoon'; soon.hidden = true;
     const anchor = doc.getElementById('top') || doc.getElementById('groups');
     if (!anchor || !anchor.parentNode) return;
     nav.appendChild(panel);
+    anchor.parentNode.insertBefore(wnav, anchor);
     anchor.parentNode.insertBefore(nav, anchor);
     const g = doc.getElementById('groups'); if (g && g.parentNode) g.parentNode.insertBefore(soon, g);
     // Wiki: für alle Berufe. Die Projekte-Zeile (#vbRow) trägt data-beruf="alle" und filtert ihren Inhalt selbst nach Beruf (home-vb.js)
     const wk = doc.getElementById('wikiRow'); if (wk && !wk.hasAttribute('data-beruf')) wk.setAttribute('data-beruf', 'alle');
     apply(false);
   }
-  root.Berufe = { BERUFE, PLAN, matches, visible: () => visible(cfg), get: () => cur, set(k) { if (keys().indexOf(k) >= 0) { cur = k; apply(true); } }, apply };
+  root.Berufe = { BERUFE, WEGE, isWeg, PLAN, matches, visible: () => visible(cfg), get: () => cur, set(k) { if (keys().indexOf(k) >= 0) { cur = k; apply(true); } }, apply };
   build();
 })(typeof window !== 'undefined' ? window : this);

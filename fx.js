@@ -3,7 +3,19 @@
    Alle Koordinaten sind Bildschirmpixel (CSS-Pixel) der Zeichenfläche. Töne werden synthetisch erzeugt (kein Download nötig). */
 (function (root) {
   let AC = null, master = null, noiseBuf = null, muted = false, btn = null, last = 0;
-  try { muted = localStorage.getItem('lm4.mute') === '1'; } catch (e) {}
+  /* Standard „ruhig“ (v. Sicherung/Barrierefreiheit): Ton und Effekte sind auf NEUEN Geräten aus. Neue Schlüssel lm4.snd und lm4.fxq ('1' an, '0' aus);
+     fehlen sie, gilt einmalig der alte Wert (lm4.mute, fx.fun); gibt es auch den nicht, bleibt ein Gerät mit vorhandenem Lernfortschritt beim bisherigen
+     Verhalten (an), ein neues Gerät wird ruhig. Die Entscheidung wird einmal gespeichert. Gleiche Logik steht in badges.js. */
+  function prefOn(key, legacy) {
+    try {
+      const v = localStorage.getItem(key); if (v === '1' || v === '0') return v === '1';
+      const old = localStorage.getItem(legacy); let on;
+      if (old != null) on = legacy === 'lm4.mute' ? old !== '1' : old !== '0';
+      else on = ['sim.done', 'lm4.stats', 'lm4.badges', 'lm4.seen'].some(k => localStorage.getItem(k) != null);
+      localStorage.setItem(key, on ? '1' : '0'); return on;
+    } catch (e) { return false; }
+  }
+  try { muted = !prefOn('lm4.snd', 'lm4.mute'); } catch (e) { muted = true; }
   const P = [], rings = [], texts = [], smokers = [];
   let flash = 0, flashCol = '255,255,255', shakeA = 0, shakeEl = null, shakeT = 0;
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -169,7 +181,7 @@
   };
   const lastV = {};
   let fun = true, touched = false;
-  try { fun = localStorage.getItem('fx.fun') !== '0'; } catch (e) {}
+  fun = prefOn('lm4.fxq', 'fx.fun');
   function playSeq(s, vol, delay) {
     String(s).split('>').forEach((n, i) => { const d = (delay || 0) + i * 380; if (d > 0) setTimeout(() => snd(n, vol), d); else snd(n, vol); });
   }
@@ -368,7 +380,7 @@
   function clear() { P.length = rings.length = texts.length = smokers.length = 0; flash = 0; shakeA = 0; if (shakeEl) shakeEl.style.transform = ''; }
 
   /* ---------- Ton-Schalter ---------- */
-  function setMuted(m) { muted = m; try { localStorage.setItem('lm4.mute', m ? '1' : '0'); } catch (e) {} if (btn) btn.textContent = m ? '🔇' : '🔊'; if (!m) unlock(); }
+  function setMuted(m) { muted = m; try { localStorage.setItem('lm4.mute', m ? '1' : '0'); localStorage.setItem('lm4.snd', m ? '0' : '1'); } catch (e) {} if (btn) btn.textContent = m ? '🔇' : '🔊'; if (!m) unlock(); }
   function showBtn(on) {
     if (!btn) {
       btn = document.createElement('button'); btn.type = 'button'; btn.setAttribute('aria-label', 'Ton an oder aus'); btn.title = 'Ton an/aus';
@@ -378,8 +390,8 @@
     }
     btn.style.display = on ? 'block' : 'none';
   }
-  /* Sprüche und Zusatzeffekte (localStorage 'fx.fun', Standard an); die Töne steuert nur die Stummschaltung */
-  function setFun(b) { fun = !!b; try { localStorage.setItem('fx.fun', fun ? '1' : '0'); } catch (e) {} }
+  /* Sprüche und Zusatzeffekte (localStorage 'lm4.fxq' bzw. 'fx.fun', Standard auf neuen Geräten aus); die Töne steuert nur die Stummschaltung */
+  function setFun(b) { fun = !!b; try { localStorage.setItem('fx.fun', fun ? '1' : '0'); localStorage.setItem('lm4.fxq', fun ? '1' : '0'); } catch (e) {} }
   const touch = () => { touched = true; unlock(); };
   if (typeof document !== 'undefined') { document.addEventListener('pointerdown', touch, true); document.addEventListener('keydown', touch, true); }
   root.LochFX = { tone, toneOff, trip, explode, stress, draw, active, clear, sound: snd, unlock, showBtn, setMuted, isMuted: () => muted, setShakeEl: el => { shakeEl = el; },

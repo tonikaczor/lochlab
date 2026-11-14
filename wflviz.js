@@ -26,12 +26,27 @@
 
   /* ============================================================ Fließbild: Warenfluss im Überblick */
   const STATIONS = [
-    { k: 'we', n: 'Wareneingang', sub: 'annehmen, prüfen', x: 8, y: 22, w: 112, h: 70, tab: 'we', info: 'Die Lieferung wird angenommen und mit Bestellung und Lieferschein abgeglichen: Menge zählen, Zustand prüfen, Abweichungen vermerken.' },
-    { k: 'ein', n: 'Einlagern', sub: 'Stapler', x: 140, y: 22, w: 124, h: 70, tab: 'trag', info: 'Der Stapler bringt die Ware zum Lagerplatz. Dabei zählen Traglast, Lastschwerpunkt und die Prüfung vor Fahrtantritt.' },
-    { k: 'lag', n: 'Lager', sub: 'Plätze, Inventur', x: 292, y: 22, w: 120, h: 178, tab: 'lag', info: 'Im Lager entscheidet die Strategie (FIFO, LIFO, FEFO) über die Entnahme, die Platzwahl über den Platzbedarf. Die Inventur prüft den Bestand.' },
-    { k: 'kom', n: 'Kommissionieren', sub: 'Ware zusammenstellen', x: 140, y: 130, w: 124, h: 70, tab: 'kom', info: 'Die Ware für einen Auftrag wird aus dem Lager entnommen. Kurze Wege und wenige Fehler sind das Ziel.' },
-    { k: 'ver', n: 'Versand', sub: 'packen, kennzeichnen', x: 8, y: 130, w: 112, h: 70, tab: 'ver', info: 'Die Packstücke werden gekennzeichnet, die Versandart wird gewählt und die Fracht bestimmt.' }
+    { k: 'we', n: 'Wareneingang', sub: 'annehmen, prüfen', v: 'Annehmen', x: 8, y: 22, w: 112, h: 70, tab: 'we', info: 'Die Lieferung wird angenommen und mit Bestellung und Lieferschein abgeglichen: Menge zählen, Zustand prüfen, Abweichungen vermerken.' },
+    { k: 'ein', n: 'Einlagern', sub: 'Stapler', v: 'Einlagern', x: 140, y: 22, w: 124, h: 70, tab: 'trag', info: 'Der Stapler bringt die Ware zum Lagerplatz. Dabei zählen Traglast, Lastschwerpunkt und die Prüfung vor Fahrtantritt.' },
+    { k: 'lag', n: 'Lager', sub: 'Plätze, Inventur', v: 'Lagern', x: 292, y: 22, w: 120, h: 178, tab: 'lag', info: 'Im Lager entscheidet die Strategie (FIFO, LIFO, FEFO) über die Entnahme, die Platzwahl über den Platzbedarf. Die Inventur prüft den Bestand.' },
+    { k: 'kom', n: 'Kommissionieren', sub: 'Ware zusammenstellen', v: 'Zusammenstellen', x: 140, y: 130, w: 124, h: 70, tab: 'kom', info: 'Die Ware für einen Auftrag wird aus dem Lager entnommen. Kurze Wege und wenige Fehler sind das Ziel.' },
+    { k: 'ver', n: 'Versand', sub: 'packen, kennzeichnen', v: 'Packen', x: 8, y: 130, w: 112, h: 70, tab: 'ver', info: 'Die Packstücke werden gekennzeichnet, die Versandart wird gewählt und die Fracht bestimmt.' }
   ];
+  /* Ruheplätze der Palette je Station (auf dem Weg) und der Weg selbst als Linienzug: Eingang, Einlagern, Ecke, Lager, Ecke, Kommissionieren, Versand; WIDX: Stationsnummer -> Punkt im Linienzug */
+  const REST = [[100, 57], [244, 57], [352, 157], [244, 165], [100, 165]], WAY = [REST[0], REST[1], [352, 57], REST[2], [352, 165], REST[3], REST[4]], WIDX = [0, 1, 3, 5, 6];
+  const LBL = [[64, 108], [202, 108], [352, 187], [202, 116], [64, 116]];
+  /* Punkte des Wegs von Station a nach Station b (rückwärts, wenn b vor a liegt); leer bei ungültigen Nummern */
+  function palWay(a, b) {
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a > 4 || b > 4) return [];
+    const i = WIDX[a], j = WIDX[b], pts = i <= j ? WAY.slice(i, j + 1) : WAY.slice(j, i + 1).reverse();
+    return pts.map(p => [p[0], p[1]]);
+  }
+  function palSvg(a) {
+    if (!(a >= 0 && a < 5)) return '';
+    const st = STATIONS[a], p = REST[a], l = LBL[a], w = Math.round(st.v.length * 6.6 + 18);
+    return `<g class="pt" data-vz="pt">${R(l[0] - w / 2, l[1] - 9, w, 18, 'ptb', 9)}${T(l[0], l[1] + 4, st.v, 's b mid')}</g>` +
+      `<g class="pal" data-vz="pal" transform="translate(${p[0]} ${p[1]})"><rect class="pk" x="-9" y="-10" width="18" height="12" rx="1.5"/><rect class="pd" x="-12" y="2" width="24" height="3"/><rect class="pd" x="-12" y="5" width="4" height="3"/><rect class="pd" x="-2" y="5" width="4" height="3"/><rect class="pd" x="8" y="5" width="4" height="3"/></g>`;
+  }
   const TAB2ST = { we: 0, trag: 1, lag: 2, inv: 2, kom: 3, ver: 4 };
   function ico(k, x, y) {
     if (k === 'we') return `<g class="ic"><rect x="${x}" y="${y + 6}" width="26" height="14" rx="1.5"/><rect x="${x + 26}" y="${y + 11}" width="10" height="9" rx="1.5"/><circle cx="${x + 8}" cy="${y + 22}" r="3"/><circle cx="${x + 30}" cy="${y + 22}" r="3"/></g>`;
@@ -56,6 +71,7 @@
       s += T(cx, st.y + (i === 2 ? 114 : st.h - 6), st.sub, 's2 m mid');
       s += '</g>';
     });
+    s += palSvg(a);
     s += T(14, 18, 'Weg der Ware: Eingang, Lager, Ausgang', 's m');
     s += T(206, 216, 'U-Form: links oben herein, links unten hinaus.', 's2 m mid');
     return svg(W, H, 'Fließbild des Warenflusses: Wareneingang, Einlagern, Lager, Kommissionieren und Versand', s);
@@ -191,7 +207,7 @@
     return svg(W, H, 'Paket als Quader mit Gurtmaß und den drei Paketgrenzen', s);
   }
 
-  const API = { STATIONS, TAB2ST, flowSvg, batchSvg, placeSvg, rackSvg, leverSvg, invSvg, parcelSvg };
+  const API = { STATIONS, TAB2ST, REST, palWay, flowSvg, batchSvg, placeSvg, rackSvg, leverSvg, invSvg, parcelSvg };
   root.WFL_VIZ = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 
@@ -222,6 +238,9 @@
 .vzbox .bxf{fill:var(--bx);fill-opacity:.35;stroke:var(--bx);stroke-width:1.8}.vzbox .bxt{fill:var(--bx);fill-opacity:.2;stroke:var(--bx);stroke-width:1.8}.vzbox .bxs{fill:var(--bx);fill-opacity:.5;stroke:var(--bx);stroke-width:1.8}.vzbox .loop{fill:none;stroke:var(--fg);stroke-width:2;stroke-dasharray:6 4}
 .vzbox .gtr{fill:var(--bg);stroke:var(--line);stroke-width:1}.vzbox .gok{fill:var(--ok);fill-opacity:.75}.vzbox .gbad{fill:var(--danger);fill-opacity:.8}.vzbox .lim{stroke:var(--fg);stroke-width:1.5}
 .vzcard h4{margin:0 0 8px}
+/* Palette: Ruhe auf der Station, beim Wechsel gleitet sie per Skript entlang des Wegs (bei reduzierter Bewegung springt sie) */
+.vzbox .pal{pointer-events:none}.vzbox .pal .pk{fill:var(--hi);stroke:var(--fg);stroke-width:1.2}.vzbox .pal .pd{fill:var(--mute)}.vzbox .pt{pointer-events:none}.vzbox .ptb{fill:var(--panel);stroke:var(--accent);stroke-width:1.5}.vzbox .pt text{fill:var(--fg)}
+@media(prefers-reduced-motion:no-preference){.vzbox .pt{transition:opacity .25s}}
 details.vzflow{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:0 0 10px;padding:0 12px}
 details.vzflow summary{min-height:48px;display:flex;align-items:center;font-weight:700;font-size:15px;cursor:pointer;gap:8px}
 details.vzflow .fl-in{padding:0 0 12px}
@@ -229,9 +248,27 @@ details.vzflow .fl-in{padding:0 0 12px}
 @media(prefers-reduced-motion:no-preference){.vzbox .way{animation:vzflow 1.6s linear infinite}@keyframes vzflow{to{stroke-dashoffset:-32}}}`;
   const st = document.createElement('style'); st.id = 'wflviz-css'; st.textContent = CSS; document.head.appendChild(st);
 
+  /* Palette beim Stationswechsel: von der alten zur neuen Station entlang des Wegs (Dauer je nach Länge, 0,45 bis 1,8 s); das Wort der Station erscheint nach der Ankunft.
+     Bei reduzierter Bewegung gibt es keinen Lauf, die Palette steht sofort auf der neuen Station. Nur bei Bedienung, kein Dauerlauf. */
+  const reduziert = () => { try { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
+  function palLauf(card, from, to) {
+    const g = $('.pal', card), t = $('.pt', card); if (!g) return;
+    if (card._palRaf) { cancelAnimationFrame(card._palRaf); card._palRaf = 0; }
+    const pts = palWay(from, to); if (pts.length < 2 || reduziert() || !card.open) { g.setAttribute('transform', 'translate(' + REST[to][0] + ' ' + REST[to][1] + ')'); if (t) t.style.opacity = ''; return; }
+    const seg = []; let len = 0; for (let i = 1; i < pts.length; i++) { const d = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(d); len += d; }
+    const dur = Math.min(1800, Math.max(450, len / 0.3)), set = d => { let i = 0, r = d; while (i < seg.length - 1 && r > seg[i]) { r -= seg[i]; i++; } const k = seg[i] ? Math.min(1, r / seg[i]) : 1, a = pts[i], b = pts[i + 1]; g.setAttribute('transform', 'translate(' + q(a[0] + (b[0] - a[0]) * k) + ' ' + q(a[1] + (b[1] - a[1]) * k) + ')'); };
+    if (t) t.style.opacity = '0'; set(0); const t0 = performance.now();
+    const step = now => { if (!card.isConnected) return; const p = Math.min(1, (now - t0) / dur), e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; set(e * len); if (p < 1) card._palRaf = requestAnimationFrame(step); else { card._palRaf = 0; if (t) t.style.opacity = ''; } };
+    card._palRaf = requestAnimationFrame(step);
+  }
+  document.addEventListener('click', e => {
+    const b = e.target && e.target.closest ? e.target.closest('.tab[data-t]') : null; if (!b) return;
+    const to = TAB2ST[b.dataset.t]; if (to == null) return; const from = V.cur; V.cur = to;
+    Promise.resolve().then(() => { const c = document.getElementById('vzFlow_' + b.dataset.t); if (c && from != null && from !== to) palLauf(c, from, to); });
+  });
   const goTab = tab => { const b = document.querySelector('.tab[data-t="' + tab + '"]'); if (b) b.click(); };
   const STEPS = [['we', '1 Wareneingang'], ['trag', '2 Einlagern (Stapler)'], ['lag', '3 Lager'], ['inv', '3 Inventur'], ['kom', '4 Kommissionieren'], ['ver', '5 Versand']];
-  const V = { flowOpen: null };
+  const V = { flowOpen: null, cur: null };   // cur: Station des zuletzt gezeigten Fließbilds
 
   function hook(viewId, id, place, init, upd, cls) {
     const view = $(viewId); if (!view) return;
@@ -250,11 +287,11 @@ details.vzflow .fl-in{padding:0 0 12px}
     const key = t[0], si = TAB2ST[key];
     hook(t[1], 'vzFlow_' + key, (v, c) => v.insertBefore(c, v.firstChild),
       c => {
-        c.open = V.flowOpen == null ? key === 'we' : V.flowOpen;
+        c.open = V.flowOpen == null ? key === 'we' : V.flowOpen; if (V.cur == null) V.cur = si;
         c.innerHTML = `<summary>🗺️ Warenfluss im Überblick · Station ${si + 1}: ${esc(STATIONS[si].n)}</summary><div class="fl-in"><div class="vzbox">${flowSvg(si)}</div><p class="hint2" style="margin:8px 0 0">${esc(STATIONS[si].info)}</p><div class="vzsteps">${STEPS.map(s => `<button data-vz="go" data-tab="${s[0]}" class="${s[0] === key ? 'on' : ''}" aria-pressed="${s[0] === key}">${esc(s[1])}</button>`).join('')}</div></div>`;
         $('summary', c).addEventListener('click', () => setTimeout(() => { V.flowOpen = c.open; }, 0));
-        c.addEventListener('click', e => { const b = e.target.closest('[data-vz=go],[data-vz=st]'); if (b && b.dataset.tab && b.dataset.tab !== key) goTab(b.dataset.tab); });
-        c.addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const b = e.target.closest('[data-vz=st]'); if (b && b.dataset.tab !== key) { e.preventDefault(); goTab(b.dataset.tab); } });
+        c.addEventListener('click', e => { const b = e.target.closest('[data-vz=go],[data-vz=st]'); if (b && b.dataset.tab && b.dataset.tab !== key) { V.flowOpen = true; goTab(b.dataset.tab); } });   // wer im Überblick umschaltet, sieht ihn auch beim Ziel offen (die Palette läuft dorthin)
+        c.addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const b = e.target.closest('[data-vz=st]'); if (b && b.dataset.tab !== key) { e.preventDefault(); V.flowOpen = true; goTab(b.dataset.tab); } });
       }, () => {}, 'details');
   });
 

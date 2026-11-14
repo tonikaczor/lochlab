@@ -225,19 +225,18 @@
     return svg(W, H, 'Lagenaufbau als 3D-Skizze: ' + n + ' Schichten von oben nach unten', s);
   }
 
-  const API = { RES_AXIAL, RES_SMD, CAP_ELKO, CAP_OTHER, PACKS, resAxialSvg, smdSvg, capSvg, packSvg, packBox, catalogHtml, stack3dSvg, layerLabel, tableRes, tableSmd, tablePack };
-  root.PCB_VIZ = API;
-  if (typeof module !== 'undefined' && module.exports) module.exports = API;
-
-  /* ============================================================ Einbau in die Seite (nur im Browser) */
-  if (typeof document === 'undefined') return;
-  const $ = (s, r) => (r || document).querySelector(s);
+  /* ============================================================ Farben (CSS) */
+  /* Seitenfarben (--fg, --mute, --line, --panel2, --accent ...) kommen aus pcblab.html und wechseln dort zwischen Dunkel und Hell.
+     Lokale Variablen --vz-*: Dunkel-Wert = bisherige Farbe. Hell wird nur ueberschrieben, was sonst auf dem hellen Kasten untergeht:
+     Metallteile (Beine, Kuehlfahne, Anschlusskappen) sind hellgrau und bekommen ein dunkleres Grau (mindestens 3:1 gegen --panel2 hell #eaeef3). */
+  const LIGHT_VARS = '--vz-cap:#7d858f;--vz-mute:#5a6672';
+  const LIGHT_CSS = '@media(prefers-color-scheme:light){:root:not([data-theme=dark]) .pcbviz,:root:not([data-theme=dark]) .pcbvz3{' + LIGHT_VARS + '}}\n:root[data-theme=light] .pcbviz,:root[data-theme=light] .pcbvz3{' + LIGHT_VARS + '}';
   const CSS = `.pcbviz h4{margin:16px 0 6px;font-size:15px}.pcbviz p{margin:6px 0}
-.pcbviz{--vz-cu:#c8873a;--vz-mask:#1f8a3f;--vz-fr:#3d7a4c;--vz-pp:#7c8f5a;--vz-silk:#ececec;--vz-res:#d6b676;--vz-chip:#2b2b30;--vz-cap:#b9bcc2;--vz-elko:#233a73;--vz-mlcc:#c99a3b;--vz-disc:#c9772f;--vz-mkt:#3a63b0;--vz-ic:#26262b}
+.pcbviz{--vz-cu:#c8873a;--vz-mask:#1f8a3f;--vz-fr:#3d7a4c;--vz-pp:#7c8f5a;--vz-silk:#ececec;--vz-res:#d6b676;--vz-chip:#2b2b30;--vz-cap:#b9bcc2;--vz-elko:#233a73;--vz-mlcc:#c99a3b;--vz-disc:#c9772f;--vz-mkt:#3a63b0;--vz-ic:#26262b;--vz-mute:#98a4b1}
 .pcbviz .vzbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:640px;margin:8px 0}
 .pcbviz .vzbox svg,.pcbvz3 .vzbox svg{display:block;width:100%;height:auto}
 .pcbviz svg text,.pcbvz3 svg text{font-family:system-ui,sans-serif;font-size:12.5px;fill:var(--fg);-webkit-user-select:none;user-select:none}
-.pcbviz svg text.b,.pcbvz3 svg text.b{font-weight:700}.pcbviz svg text.m,.pcbvz3 svg text.m{fill:var(--mute)}.pcbviz svg text.s{font-size:11.5px;fill:var(--mute)}.pcbvz3 svg text.l{font-size:12px}
+.pcbviz svg text.b,.pcbvz3 svg text.b{font-weight:700}.pcbviz svg text.m,.pcbvz3 svg text.m{fill:var(--vz-mute)}.pcbviz svg text.s{font-size:11.5px;fill:var(--vz-mute)}.pcbvz3 svg text.l{font-size:12px}
 .pcbviz svg .lead{stroke:var(--mute);stroke-width:2.2;stroke-linecap:round}.pcbviz svg .sb{stroke:var(--fg);stroke-width:1.6}
 .pcbviz svg .rbody{fill:var(--vz-res);stroke:var(--fg);stroke-opacity:.45;stroke-width:1}
 .pcbviz svg .band-y{fill:#e6c619}.pcbviz svg .band-v{fill:#7a3fa0}.pcbviz svg .band-r{fill:#d2362b}.pcbviz svg .band-g{fill:#c9a227}
@@ -248,14 +247,23 @@
 .pcbviz svg .cell{fill:none;stroke:var(--line);stroke-width:1}
 .pcbviz svg .pbody{fill:var(--vz-ic);stroke:var(--fg);stroke-opacity:.55;stroke-width:1.2}.pcbviz svg .ptab{fill:var(--vz-cap);opacity:.9}.pcbviz svg .pleg{stroke:var(--vz-cap);stroke-width:2.4}.pcbviz svg .pnotch{fill:none;stroke:var(--vz-cap);stroke-width:1.2}
 .pcbviz svg .pin1{fill:var(--danger)}
-.pcbviz table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0}.pcbviz th,.pcbviz td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}.pcbviz th{color:var(--mute);font-weight:600;font-size:12.5px}.pcbviz .mu{color:var(--mute);font-size:12.5px}
+.pcbviz table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0}.pcbviz th,.pcbviz td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}.pcbviz th{color:var(--vz-mute);font-weight:600;font-size:12.5px}.pcbviz .mu{color:var(--vz-mute);font-size:12.5px}
 .pcbvz3 .vzbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:520px;margin:8px 0}
-.pcbvz3{--vz-cu:#c8873a;--vz-mask:#1f8a3f;--vz-fr:#3d7a4c;--vz-pp:#7c8f5a;--vz-silk:#ececec}
-.pcbvz3 svg .lay{stroke:#0b0e11;stroke-opacity:.55;stroke-width:.8;stroke-linejoin:round}.pcbvz3 svg .lay.cu{fill:var(--vz-cu)}.pcbvz3 svg .lay.mask{fill:var(--vz-mask)}.pcbvz3 svg .lay.fr{fill:var(--vz-fr)}.pcbvz3 svg .lay.pp{fill:var(--vz-pp)}.pcbvz3 svg .lay.silk{fill:var(--vz-silk)}
+.pcbvz3{--vz-cu:#c8873a;--vz-mask:#1f8a3f;--vz-fr:#3d7a4c;--vz-pp:#7c8f5a;--vz-silk:#ececec;--vz-edge:#0b0e11;--vz-on:#fff;--vz-mute:#98a4b1}
+.pcbvz3 svg .lay{stroke:var(--vz-edge);stroke-opacity:.55;stroke-width:.8;stroke-linejoin:round}.pcbvz3 svg .lay.cu{fill:var(--vz-cu)}.pcbvz3 svg .lay.mask{fill:var(--vz-mask)}.pcbvz3 svg .lay.fr{fill:var(--vz-fr)}.pcbvz3 svg .lay.pp{fill:var(--vz-pp)}.pcbvz3 svg .lay.silk{fill:var(--vz-silk)}
 .pcbvz3 svg .lay.side{filter:brightness(.78)}.pcbvz3 svg .lay.side2{filter:brightness(.62)}
 .pcbvz3 svg .lead2{stroke:var(--mute);stroke-width:1;stroke-dasharray:2 3}
 .pcbvz3 .vzctl{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}.pcbvz3 .vzctl button{min-height:44px;padding:0 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600;color:var(--fg)}
-.pcbvz3 .vzctl button[aria-pressed=true]{background:var(--accent-bg);border-color:var(--accent);color:#fff}`;
+.pcbvz3 .vzctl button[aria-pressed=true]{background:var(--accent-bg);border-color:var(--accent);color:var(--vz-on)}
+${LIGHT_CSS}`;
+
+  const API = { CSS, RES_AXIAL, RES_SMD, CAP_ELKO, CAP_OTHER, PACKS, resAxialSvg, smdSvg, capSvg, packSvg, packBox, catalogHtml, stack3dSvg, layerLabel, tableRes, tableSmd, tablePack };
+  root.PCB_VIZ = API;
+  if (typeof module !== 'undefined' && module.exports) module.exports = API;
+
+  /* ============================================================ Einbau in die Seite (nur im Browser) */
+  if (typeof document === 'undefined') return;
+  const $ = (s, r) => (r || document).querySelector(s);
   const st = document.createElement('style'); st.id = 'pcbviz-css'; st.textContent = CSS; document.head.appendChild(st);
 
   /* Lernen: neuer Abschnitt vor den Tastenkürzeln */

@@ -3,13 +3,20 @@
 <meta name="robots" content="noindex,nofollow">
 <style>body{font:14px/1.4 system-ui,sans-serif;background:#14181c;color:#e8ecf0;margin:16px}h1{font-size:18px}table{border-collapse:collapse}td,th{border:1px solid #38424d;padding:4px 10px;text-align:left}.ok{color:#4cd964}.bad{color:#ff8a7a}iframe{position:absolute;left:-3000px;top:0;width:1200px;height:800px}</style></head>
 <body><h1>Tonfunk Lab: Selbsttest</h1>
-<p>Lädt jedes Lab und lässt alle Aufgaben mit Musterlösung prüfen (müssen 100 % ergeben, am Start unter 100 %). Vor jedem Release öffnen: <b>selftest.html</b>. Dauer etwa eine Minute.</p>
+<p>Lädt jedes Lab und lässt alle Aufgaben mit Musterlösung prüfen (müssen 100 % ergeben, am Start unter 100 %). Die Labs mit eigener Aufgabenverwaltung (ab Toleranz-Lab, zuletzt Linien-Lab) kommen aus dem Aufgabenverzeichnis <b>aufgaben.js</b> (LAB_REG) und werden auf Laden, Aufgabenliste, Aufbau der Aufgaben und den Aufruf einer Aufgabe geprüft; neue Labs erscheinen hier von selbst. Vor jedem Release öffnen: <b>selftest.html</b>. Dauer etwa zehn Minuten.</p>
 <table id="t"><tr><th>Lab</th><th>Aufgaben</th><th>Ergebnis</th><th>Probleme</th></tr></table>
 <pre id="out"></pre>
 <h2 style="font-size:15px">Hinweise zum Gegenlesen (kein Fehler)</h2><pre id="hints" style="white-space:pre-wrap"></pre>
+<script src="aufgaben.js"></script>
 <script>
 (function () {
   var LABS = [['loch', 'LochLab', 'layout.html', 0], ['sch', 'SchaltLab', 'schaltplan.html', 40], ['quarz', 'SchaltLab Quarzuhr', 'schaltplan.html', 0], ['sim', 'SimLab', 'simlab.html', 40], ['digi', 'DigiLab', 'digilab.html', 40], ['mess', 'MessLab', 'messlab.html', 40], ['els', 'Sicherheits-Lab', 'elslab.html', 6], ['nts', 'Netzteil-Lab', 'ntslab.html', 6], ['wsl', 'Wechselstrom-Lab', 'wsllab.html', 6], ['ana', 'Analogtechnik-Lab', 'analab.html', 6], ['haus', 'HausLab', 'hauslab.html', 40], ['app', 'App-Werkstatt', 'appwerkstatt.html', 40], ['sps', 'SPS-Lab', 'spslab.html', 40], ['pcb', 'Leiterplatten-Lab', 'pcblab.html', 8], ['ant', 'Antriebs-Lab', 'antlab.html', 10], ['sen', 'Sensorik-Lab', 'senlab.html', 10], ['reg', 'Regelungstechnik-Lab', 'reglab.html', 4], ['thm', 'Thermik-Lab', 'thmlab.html', 6], ['emv', 'EMV-Lab', 'emvlab.html', 6], ['enr', 'Energie-Lab', 'enrlab.html', 6], ['code', 'Arduino-Lab', 'codelab.html', 6], ['pi', 'Pi-Lab', 'pilab.html', 6], ['ds', 'Datenblatt-Lab', 'dslab.html', 10], ['pr', 'Prüfungs-Lab', 'pruefungslab.html', 40], ['vb', 'Projekte', 'verbund.html', 10]];
+  /* Labs mit eigener Aufgabenverwaltung (LAB_REG.eig: Toleranz-Lab bis Linien-Lab) stehen nicht von Hand in der Liste, sondern kommen aus aufgaben.js; Prüfung in labEig() */
+  var REG = window.LAB_REG || {};
+  Object.keys(REG).forEach(function (k) { if (REG[k].eig && !LABS.some(function (l) { return l[0] === k; })) LABS.push([k, REG[k].name, REG[k].file, 0, 'eig']); });
+  var ALLE = LABS.slice();
+  /* Soll-Zahlen der Kern-Prüfungen, Stand v62.173 (Aufgaben je Lab wie im Aufgabenverzeichnis; ex = Beispiele, proj = Projekte). Kommen Aufgaben dazu, hier anpassen. */
+  var SOLL = { sps: 43, pcb: 49, ant: 54, sen: 49, ds: 35, thm: 42, emv: 35, enr: 42, els: 46, nts: 47, wsl: 54, ana: 50, reg: 53, regEx: 30, proj: 13, gesamt: 2841, labs: 62 };
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };
@@ -241,7 +248,7 @@
     var ex = (w.SPS_DATA && w.SPS_DATA.examples) || [];
     if (ex.length !== 18) bad.push('Beispiele: ' + ex.length + ' statt 18');
     var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'sps'; });
-    if (tk.length !== 24) bad.push('Aufgaben: ' + tk.length + ' statt 24');
+    if (tk.length !== SOLL.sps) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.sps);
     if (w.SPS_CORE) ex.forEach(function (e) {
       try {
         var p = typeof e.prog === 'function' ? e.prog() : e.prog, plc = w.SPS_CORE.create(p);
@@ -258,8 +265,8 @@
     var ex = (w.PCB_DATA && w.PCB_DATA.examples) || [];
     if (ex.length !== 21) bad.push('Beispiele: ' + ex.length + ' statt 21');
     var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'pcb'; });
-    if (tk.length !== 43) bad.push('Aufgaben: ' + tk.length + ' statt 43');
-    ['edit', 'stack', 'gerber', 'fab', 'test', 'asm', 'solder', 'repair'].forEach(function (v) { if (!w.PCB_VIEWS || !w.PCB_VIEWS.views[v]) bad.push('Ansicht ' + v + ' fehlt'); });
+    if (tk.length !== SOLL.pcb) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.pcb);
+    ['edit', 'stack', 'gerber', 'fab', 'test', 'asm', 'solder', 'repair', 'fehler', 'esd'].forEach(function (v) { if (!w.PCB_VIEWS || !w.PCB_VIEWS.views[v]) bad.push('Ansicht ' + v + ' fehlt'); });
     if (w.PCB_CORE) ex.forEach(function (e) {
       try {
         var b = e.board(), v = w.PCB_CORE.validate(b);
@@ -281,7 +288,7 @@
     var ex = (w.ANT_DATA && w.ANT_DATA.examples) || [];
     if (ex.length !== 22) bad.push('Beispiele: ' + ex.length + ' statt 22');
     var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'ant'; });
-    if (tk.length !== 30) bad.push('Aufgaben: ' + tk.length + ' statt 30');
+    if (tk.length !== SOLL.ant) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.ant);
     if (w.ANT_RIGS) ids.forEach(function (id) {
       try {
         var r = w.ANT_RIGS.create(id, {});
@@ -312,7 +319,7 @@
     var ex = (w.SEN_DATA && w.SEN_DATA.examples) || [];
     if (ex.length !== 27) bad.push('Beispiele: ' + ex.length + ' statt 27');
     var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'sen'; });
-    if (tk.length !== 28) bad.push('Aufgaben: ' + tk.length + ' statt 28');
+    if (tk.length !== SOLL.sen) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.sen);
     if (w.SEN_RIGS) ids.forEach(function (id) {
       try {
         var r = w.SEN_RIGS.create(id, {});
@@ -345,7 +352,7 @@
     if (ex.length !== 14) bad.push('Beispiele: ' + ex.length + ' statt 14');
     ex.forEach(function (e) { try { if (!(e.steps && e.steps.length >= 3)) bad.push('Beispiel ' + e.id + ': zu wenige Schritte'); var r = e.rechne(); if (r && r.some(function (q) { return !isFinite(q.value); })) bad.push('Beispiel ' + e.id + ': Rechenwert keine Zahl'); } catch (x) { bad.push('Beispiel ' + e.id + ': ' + x); } });
     var tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'ds'; });
-    if (tk.length !== 34) bad.push('Aufgaben: ' + tk.length + ' statt 34');
+    if (tk.length !== SOLL.ds) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.ds);
     /* jedes Datenblatt in einem Betrachter rendern */
     if (w.DS_VIEW && libs.length) libs.forEach(function (d) {
       try {
@@ -390,7 +397,7 @@
     if (!w.THM_RIGS || !w.THM_UI) bad.push('THM_RIGS oder THM_UI fehlt');
     var ex = (w.THM_DATA && w.THM_DATA.examples) || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'thm'; });
     if (ex.length !== 24) bad.push('Beispiele: ' + ex.length + ' statt 24');
-    if (tk.length !== 30) bad.push('Aufgaben: ' + tk.length + ' statt 30');
+    if (tk.length !== SOLL.thm) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.thm);
     if (!C || !w.THM_RIGS || !w.THM_UI) return { n: ex.length, bad: bad };
     var near = function (a, b, tol) { return typeof a === 'number' && Math.abs(a - b) <= tol; };
     /* Kern-Marker: 7805 an 12 V, 0,5 A; freistehend und mit Profil m, Glimmer, Paste */
@@ -445,7 +452,7 @@
     });
     /* Aufgaben: Hinweiszahlen-Audit, Start ueber die echte Oberflaeche, Auswahlfragen eindeutig */
     var T = w.THM_TASKS.tasks, U = w.THM_UI;
-    if (T.length !== 30) bad.push('THM_TASKS: ' + T.length + ' Aufgaben');
+    if (T.length !== SOLL.thm) bad.push('THM_TASKS: ' + T.length + ' Aufgaben statt ' + SOLL.thm);
     for (var i = 0; i < T.length; i++) {
       var t = T[i];
       try {
@@ -473,7 +480,7 @@
     if (!C || !R || !U || !T || !w.EMV_DATA) { bad.push('EMV_CORE, EMV_RIGS, EMV_UI, EMV_TASKS oder EMV_DATA fehlt'); return { n: 0, bad: bad }; }
     var ex = w.EMV_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'emv'; });
     if (ex.length !== 26) bad.push('Beispiele: ' + ex.length + ' statt 26');
-    if (tk.length !== 32) bad.push('Aufgaben: ' + tk.length + ' statt 32');
+    if (tk.length !== SOLL.emv) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.emv);
     if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
     IDS.forEach(function (id) {
       try {
@@ -497,7 +504,7 @@
     }
     /* Aufgaben: Hinweiszahlen-Audit, drei Tipps, Start ueber die echte Oberflaeche */
     var TS = T.tasks;
-    if (TS.length !== 32) bad.push('EMV_TASKS: ' + TS.length + ' Aufgaben');
+    if (TS.length !== SOLL.emv) bad.push('EMV_TASKS: ' + TS.length + ' Aufgaben statt ' + SOLL.emv);
     for (var j = 0; j < TS.length; j++) {
       var t = TS[j];
       try {
@@ -519,7 +526,7 @@
     if (!C || !R || !U || !T || !w.ENR_DATA) { bad.push('ENR_CORE, ENR_RIGS, ENR_UI, ENR_TASKS oder ENR_DATA fehlt'); return { n: 0, bad: bad }; }
     var ex = w.ENR_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'enr'; });
     if (ex.length !== 32) bad.push('Beispiele: ' + ex.length + ' statt 32');
-    if (tk.length !== 30) bad.push('Aufgaben: ' + tk.length + ' statt 30');
+    if (tk.length !== SOLL.enr) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.enr);
     if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
     /* Kern: Tageslaenge am 21. Juni (Tag 172) bei 51 Grad Nord gegen die Formel mit Deklination und Stundenwinkel */
     try {
@@ -566,7 +573,7 @@
     }
     /* Aufgaben: Hinweiszahlen-Audit, drei Tipps, Start ueber die echte Oberflaeche */
     var TS = T.tasks;
-    if (TS.length !== 30) bad.push('ENR_TASKS: ' + TS.length + ' Aufgaben');
+    if (TS.length !== SOLL.enr) bad.push('ENR_TASKS: ' + TS.length + ' Aufgaben statt ' + SOLL.enr);
     for (var j = 0; j < TS.length; j++) {
       var t = TS[j];
       try {
@@ -589,7 +596,7 @@
     if (!C || !R || !U || !T || !w.ELS_DATA) { bad.push('ELS_CORE, ELS_RIGS, ELS_UI, ELS_TASKS oder ELS_DATA fehlt'); return { n: 0, bad: bad }; }
     var ex = w.ELS_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'els'; });
     if (ex.length !== 34) bad.push('Beispiele: ' + ex.length + ' statt 34');
-    if (tk.length !== 32) bad.push('Aufgaben: ' + tk.length + ' statt 32');
+    if (tk.length !== SOLL.els) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.els);
     if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
     if (Object.keys(R.defs).length !== 8) bad.push('Registry: ' + Object.keys(R.defs).length + ' Pruefstaende statt 8');
     /* Kern-Marker */
@@ -613,7 +620,7 @@
       } catch (x) { bad.push(id + ': ' + x); }
     });
     /* Beispiele ueber die Oberflaeche laden: richtiger Pruefstand */
-    var FORBID = [/überbrück/i, /Schutzleiter abklemm/i, /ohne Schutzleiter betreib/i, /RCD umgehen/i, /Prüftaste ersetzt/i, /an der Steckdose messen/i, /unter Spannung arbeiten/i], texts = [];
+    var FORBID = [/überbrück(?!t)/i, /Schutzleiter abklemm/i, /ohne Schutzleiter betreib/i, /RCD umgehen/i, /Prüftaste ersetzt/i, /an der Steckdose messen/i, /unter Spannung arbeiten/i], texts = [];   /* (?!t): „den der Mensch überbrückt“ erklärt die Berührungsspannung, wie in quelle/elslab/test_els_schule2.js */
     for (var i = 0; i < ex.length; i++) {
       var e2 = ex[i]; texts.push(e2.name + ' ' + (e2.desc || ''));
       try {
@@ -624,7 +631,7 @@
     }
     /* Aufgaben */
     var TS = T.tasks;
-    if (TS.length !== 32) bad.push('ELS_TASKS: ' + TS.length + ' Aufgaben');
+    if (TS.length !== SOLL.els) bad.push('ELS_TASKS: ' + TS.length + ' Aufgaben statt ' + SOLL.els);
     for (var j = 0; j < TS.length; j++) {
       var t = TS[j]; texts.push(t.title + ' ' + (t.hint || []).join(' '));
       try {
@@ -650,7 +657,7 @@
     if (!C || !R || !U || !T || !w.NTS_DATA) { bad.push('NTS_CORE, NTS_RIGS, NTS_UI, NTS_TASKS oder NTS_DATA fehlt'); return { n: 0, bad: bad }; }
     var ex = w.NTS_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'nts'; });
     if (ex.length !== 34) bad.push('Beispiele: ' + ex.length + ' statt 34');
-    if (tk.length !== 32) bad.push('Aufgaben: ' + tk.length + ' statt 32');
+    if (tk.length !== SOLL.nts) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.nts);
     if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
     if (Object.keys(R.defs).length !== 8) bad.push('Registry: ' + Object.keys(R.defs).length + ' Pruefstaende statt 8');
     /* Kern-Marker */
@@ -691,7 +698,7 @@
     }
     /* Aufgaben */
     var TS = T.tasks;
-    if (TS.length !== 32) bad.push('NTS_TASKS: ' + TS.length + ' Aufgaben');
+    if (TS.length !== SOLL.nts) bad.push('NTS_TASKS: ' + TS.length + ' Aufgaben statt ' + SOLL.nts);
     for (var j = 0; j < TS.length; j++) {
       var t = TS[j]; texts.push(t.title + ' ' + (t.hint || []).join(' '));
       try {
@@ -728,7 +735,7 @@
     if (!C || !R || !U || !T || !w.WSL_DATA) { bad.push('WSL_CORE, WSL_RIGS, WSL_UI, WSL_TASKS oder WSL_DATA fehlt'); return { n: 0, bad: bad }; }
     var ex = w.WSL_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'wsl'; });
     if (ex.length !== 34) bad.push('Beispiele: ' + ex.length + ' statt 34');
-    if (tk.length !== 32) bad.push('Aufgaben: ' + tk.length + ' statt 32');
+    if (tk.length !== SOLL.wsl) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.wsl);
     if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
     if (Object.keys(R.defs).length !== 8) bad.push('Registry: ' + Object.keys(R.defs).length + ' Pruefstaende statt 8');
     /* Kern-Marker */
@@ -778,7 +785,7 @@
     } catch (xi) { bad.push('Integrationspunkte: ' + xi); }
     /* Aufgaben */
     var TS = T.tasks;
-    if (TS.length !== 32) bad.push('WSL_TASKS: ' + TS.length + ' Aufgaben');
+    if (TS.length !== SOLL.wsl) bad.push('WSL_TASKS: ' + TS.length + ' Aufgaben statt ' + SOLL.wsl);
     for (var j = 0; j < TS.length; j++) {
       var t = TS[j]; texts.push(t.title + ' ' + (t.hint || []).join(' '));
       try {
@@ -817,7 +824,7 @@
     if (!C || !R || !U || !T || !w.ANA_DATA) { bad.push('ANA_CORE, ANA_RIGS, ANA_UI, ANA_TASKS oder ANA_DATA fehlt'); return { n: 0, bad: bad }; }
     var ex = w.ANA_DATA.examples || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'ana'; });
     if (ex.length !== 34) bad.push('Beispiele: ' + ex.length + ' statt 34');
-    if (tk.length !== 32) bad.push('Aufgaben: ' + tk.length + ' statt 32');
+    if (tk.length !== SOLL.ana) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.ana);
     if (U.ORDER.join() !== IDS.join()) bad.push('Reihenfolge der Pruefstaende: ' + U.ORDER.join());
     if (Object.keys(R.defs).length !== 8) bad.push('Registry: ' + Object.keys(R.defs).length + ' Pruefstaende statt 8');
     /* Kern-Marker */
@@ -867,7 +874,7 @@
     } catch (xi) { bad.push('Integrationspunkte: ' + xi); }
     /* Aufgaben */
     var TS = T.tasks;
-    if (TS.length !== 32) bad.push('ANA_TASKS: ' + TS.length + ' Aufgaben');
+    if (TS.length !== SOLL.ana) bad.push('ANA_TASKS: ' + TS.length + ' Aufgaben statt ' + SOLL.ana);
     for (var j = 0; j < TS.length; j++) {
       var t = TS[j]; texts.push(t.title + ' ' + (t.hint || []).join(' '));
       try {
@@ -926,8 +933,8 @@
     if (!C || typeof C.runSeq !== 'function') bad.push('REG_CORE fehlt');
     if (!w.REG_RIGS || !w.REG_UI) bad.push('REG_RIGS oder REG_UI fehlt');
     var ex = (w.REG_DATA && w.REG_DATA.examples) || [], tk = (w.AUFGABEN || []).filter(function (a) { return a[1] === 'reg'; });
-    if (ex.length !== 24) bad.push('Beispiele: ' + ex.length + ' statt 24');
-    if (tk.length !== 30) bad.push('Aufgaben: ' + tk.length + ' statt 30');
+    if (ex.length !== SOLL.regEx) bad.push('Beispiele: ' + ex.length + ' statt ' + SOLL.regEx);
+    if (tk.length !== SOLL.reg) bad.push('Aufgaben: ' + tk.length + ' statt ' + SOLL.reg);
     if (!C || !w.REG_RIGS || !w.REG_UI) return { n: ex.length, bad: bad };
     /* Kern-Marker: PT3 10/5/2 s, Ks 1 */
     try {
@@ -971,7 +978,7 @@
     });
     /* Aufgaben: Hinweiszahlen-Audit, Start ueber die echte Oberflaeche, Auswahlfragen eindeutig */
     var T = w.REG_TASKS.tasks, U = w.REG_UI;
-    if (T.length !== 30) bad.push('REG_TASKS: ' + T.length + ' Aufgaben');
+    if (T.length !== SOLL.reg) bad.push('REG_TASKS: ' + T.length + ' Aufgaben statt ' + SOLL.reg);
     for (var i = 0; i < T.length; i++) {
       var t = T[i];
       try {
@@ -1001,7 +1008,7 @@
     var bad = [], n = 0, V = w.Verbund;
     if (!V) return { n: 0, bad: ['Verbund fehlt'] };
     var ps = V.projects() || [];
-    if (ps.length !== 7) bad.push('Projekte: ' + ps.length + ' statt 7');   /* v23.153: + netzteil, heizung */
+    if (ps.length !== SOLL.proj) bad.push('Projekte: ' + ps.length + ' statt ' + SOLL.proj);   /* v23.153: + netzteil, heizung; v62.173: 13 Projekte */
     var labsSeen = {};
     ps.forEach(function (p) {
       var def = V.project(p.id); if (!def) { bad.push(p.id + ': Definition fehlt'); return; }
@@ -1059,7 +1066,162 @@
     }
     return { n: n, bad: bad };
   }
+  /* Leiterplatten-Lab, Reiter Fehlerbild und ESD (pcbfehler.js, pcbesd.js, v62.173): Daten vollständig und in sich stimmig, alle Quiz-Aufgaben mit Musterlösung 100 %,
+     leere Antwort fällt durch, Kern-Funktionen (Ausbeute, Hebel, Rückverfolgung, Ampeln, Bodenklassen, Verpackung, Erdung) liefern plausible Werte. */
+  function pcbNeu(w) {
+    var bad = [], F = w.PCB_FEHLER, E = w.PCB_ESD, n = 0;
+    if (!F) bad.push('PCB_FEHLER fehlt (pcbfehler.js)');
+    if (!E) bad.push('PCB_ESD fehlt (pcbesd.js)');
+    function quiz(X, name) {
+      X.QUIZ.forEach(function (q) {
+        n++;
+        try {
+          var good = q.art === 'multi' ? q.sol.slice() : q.sol, leer = q.art === 'multi' ? [] : q.art === 'calc' ? '' : {};
+          var r = X.pruefeQuiz(q, good); if (!r || !r.ok || r.pct !== 100) bad.push(name + ' ' + q.id + ' Musterlösung ' + (r ? r.pct : '?') + ' %');
+          var r0 = X.pruefeQuiz(q, leer); if (!r0 || r0.ok) bad.push(name + ' ' + q.id + ' leere Antwort gilt als richtig');
+          if (!(q.hint && q.hint.length === 3) || !(q.weg && q.weg.length)) bad.push(name + ' ' + q.id + ': drei Tipps oder Lösungsweg fehlen');
+          if (q.art === 'calc') { var rw = X.pruefeQuiz(q, q.sol + 10 * q.tol + 1); if (!rw || rw.ok) bad.push(name + ' ' + q.id + ' falsche Zahl gilt als richtig'); }
+        } catch (e) { bad.push(name + ' ' + q.id + ': ' + e); }
+      });
+    }
+    try {
+      if (F) {
+        var st = {}; F.STATIONEN.forEach(function (s) { st[s.id] = 1; });
+        if (F.STATIONEN.length !== 9) bad.push('Fehlerbild: ' + F.STATIONEN.length + ' Stationen statt 9');
+        if (F.FEHLER.length !== 20) bad.push('Fehlerbild: ' + F.FEHLER.length + ' Fehlerbilder statt 20');
+        if (F.QUIZ.length !== 10) bad.push('Fehlerbild: ' + F.QUIZ.length + ' Quiz-Aufgaben statt 10');
+        F.FEHLER.forEach(function (x) {
+          if (!st[x.st]) bad.push(x.id + ': Station ' + x.st + ' unbekannt');
+          (x.findet || []).forEach(function (s) { if (!st[s]) bad.push(x.id + ': Fundstation ' + s + ' unbekannt'); });
+          (x.ursache || []).forEach(function (u) { if (!F.URSACHEN[u]) bad.push(x.id + ': Ursache ' + u + ' fehlt im Katalog'); });
+          if (!x.titel || !x.symptom || !x.merk || !(x.ursache && x.ursache.length) || !(x.pruef && x.pruef.length) || !(x.gegen && x.gegen.length)) bad.push(x.id + ': Text fehlt');
+        });
+        Object.keys(F.URSACHEN).forEach(function (u) { if (!st[F.URSACHEN[u].st] || !F.URSACHEN[u].t) bad.push('Ursache ' + u + ': Station oder Text fehlt'); });
+        var a = F.ausbeute(F.UEBUNG_AUSBEUTE), prod = F.UEBUNG_AUSBEUTE.reduce(function (p, x) { return p * x.y; }, 1), h = F.hebel(F.UEBUNG_AUSBEUTE);
+        if (Math.abs(a.rty - prod) > 1e-12 || !(a.rty > 0.9 && a.rty < 0.95)) bad.push('Ausbeute: RTY ' + a.rty + ' ist nicht das Produkt der Stufen');
+        if (!h || h.id !== a.schwaechste || !(h.gain > 0)) bad.push('Hebel: größter Gewinn liegt nicht bei der schwächsten Stufe');
+        if (Math.abs(F.ausbeuteStufe(1182, 1200) - 0.985) > 1e-12) bad.push('ausbeuteStufe(1182, 1200) ist nicht 0,985');
+        var g = F.gemeinsam(F.RUECK, F.RUECK.uebung.auffaellig), an = F.RUECK.uebung.antwort;
+        if (g.length !== 1 || g[0].k !== an.k || g[0].wert !== an.wert) bad.push('Rückverfolgung: Übung liefert nicht ' + an.wert);
+        if (F.betroffen(F.RUECK, an.k, an.wert).join() !== F.RUECK.uebung.auffaellig.join()) bad.push('Rückverfolgung: betroffen() und Übung passen nicht zusammen');
+        quiz(F, 'Fehlerbild');
+      }
+      if (E) {
+        if (E.QUIZ.length !== 12) bad.push('ESD: ' + E.QUIZ.length + ' Quiz-Aufgaben statt 12');
+        if (E.FEHLER.length !== 5) bad.push('ESD: ' + E.FEHLER.length + ' Fehlerbilder statt 5');
+        if (E.systemAmpel(1e6) !== 'gruen' || E.systemAmpel(1e8) !== 'gelb' || E.systemAmpel(1e10) !== 'rot') bad.push('ESD: Ampel des Systemwiderstands');
+        if (E.bodenKlasse(1e5) !== 'leitend' || E.bodenKlasse(1e8) !== 'ableitfaehig' || E.bodenKlasse(1e11) !== 'isolierend') bad.push('ESD: Fußbodenklassen');
+        if (E.offsetAmpel(10) !== 'gruen' || E.offsetAmpel(-50) !== 'rot' || E.offsetAmpel(50) !== 'rot') bad.push('ESD: Ampel der Offset-Spannung');
+        var prev = Infinity; for (var rf = 10; rf <= 80; rf += 5) { var u = E.spannungMensch(rf); if (!(u > 0) || u > prev + 1e-9) bad.push('ESD: Spannung am Menschen steigt bei ' + rf + ' % Luftfeuchte'); prev = u; }
+        if (E.erdungAusfall('stern', 2, 4).join() !== 'true,false,true,true' || E.erdungAusfall('reihe', 2, 4).join() !== 'true,false,false,false') bad.push('ESD: Ausfall der Erdung (Stern, Reihe)');
+        var vk = E.VERPACKUNG.map(function (p) { return p.id + ':' + E.verpackungKlasse(p); }).join();
+        if (vk !== 'tuete:ungeeignet,rosa:nachweis,tray:innen,beutel:aussen') bad.push('ESD: Einordnung der Verpackungen ' + vk);
+        if (Math.abs(E.systemWiderstand([8e5, 1.2e7, 6.2e6]) - 1.9e7) > 1e-3) bad.push('ESD: Summe der Reihenschaltung');
+        quiz(E, 'ESD');
+      }
+    } catch (e) { bad.push('Ausnahme: ' + e); }
+    return { n: n, bad: bad };
+  }
+  /* Linien-Lab (flilab.html, v62.173): Modell der Linie A in der Voreinstellung, alle Aufgaben mit Musterlösung (100 %), ohne Antwort (kein Ergebnis) und mit falscher Antwort (nicht bestanden) */
+  function fliCore(w) {
+    var bad = [], C = w.FLI_CORE, D = w.FLI_DATA, n = 0;
+    if (!C || !D || typeof C.pruefe !== 'function' || typeof D.makeTask !== 'function') return { n: 0, bad: ['FLI_CORE oder FLI_DATA fehlt'] };
+    if (!w.PCB_FEHLER || C.PF !== w.PCB_FEHLER) bad.push('Linie A: pcbfehler.js fehlt oder ist nicht derselbe Datensatz');
+    try {
+      var m = C.modell();
+      if (m.zeilen.length !== 9) bad.push('Modell: ' + m.zeilen.length + ' Stationen statt 9');
+      if (!m.engpass || !(m.startRate > 0) || !(m.rty > 0 && m.rty < 1) || !(m.gutRate <= m.startRate)) bad.push('Modell: Voreinstellung unplausibel');
+      var z = m.zeilen.filter(function (x) { return x.id === m.engpass; })[0];
+      if (!z || Math.abs(z.auslastung - 1) > 1e-9) bad.push('Modell: Engpass nicht voll ausgelastet');
+      if (m.zeilen.some(function (x) { return x.auslastung > 1 + 1e-9; })) bad.push('Modell: Auslastung über 100 %');
+      if (Math.abs(m.bestand - m.startRate / 3600 * m.dlzSek) > 1e-9) bad.push('Modell: Little (Bestand = Durchsatz mal Durchlaufzeit) verletzt');
+      if (Math.abs(m.gutRate - m.startRate * m.rty) > 1e-9) bad.push('Modell: Gutstücke sind nicht Start-Rate mal Gesamtausbeute');
+      var o = C.modell({ verguss: false }); if (o.zeilen.length !== 8) bad.push('Modell ohne Verguss: ' + o.zeilen.length + ' Stationen statt 8');
+    } catch (e) { bad.push('Modell: ' + e); }
+    D.tasks.forEach(function (t) {
+      n++;
+      try {
+        var q = D.makeTask(t);
+        if (!q || !q.text || !(q.tips && q.tips.length === 3) || !(q.expl && q.expl.length)) { bad.push(t.id + ': Text, drei Tipps oder Lösungsweg fehlen'); return; }
+        var good, wrong;
+        if (q.ask.type === 'num') { if (!isFinite(q.value)) { bad.push(t.id + ': kein Zahlenwert'); return; } good = { v: q.value }; wrong = { v: q.value + Math.abs(q.value) * 0.5 + 10 * q.tol + 1 }; }
+        else if (q.ask.type === 'match') { good = { m: q.sol }; wrong = { m: {} }; q.ask.items.forEach(function (it, i) { var alt = q.ask.options.filter(function (x) { return x.k !== q.sol[it.k]; })[0]; wrong.m[it.k] = i === 0 && alt ? alt.k : q.sol[it.k]; }); }
+        else { good = { s: q.sol.slice() }; var extra = q.ask.options.filter(function (x) { return q.sol.indexOf(x.k) < 0; })[0]; wrong = { s: extra ? q.sol.concat([extra.k]) : q.sol.slice(1) }; }
+        var r = C.pruefe(q, good); if (!r || !r.ok || r.pct !== 100) bad.push(t.id + ' Musterlösung ' + (r ? r.pct : 'ohne Ergebnis') + ' %');
+        var r0 = C.pruefe(q, {}); if (r0 !== null) bad.push(t.id + ' leere Antwort wird gewertet');
+        var rw = C.pruefe(q, wrong); if (!rw || rw.ok) bad.push(t.id + ' falsche Antwort gilt als richtig');
+      } catch (e) { bad.push(t.id + ': ' + e); }
+    });
+    return { n: n, bad: bad };
+  }
+  /* Labs mit eigener Aufgabenverwaltung (LAB_REG.eig, Toleranz-Lab bis Linien-Lab): Das Lab wird mit dem Aufruf der Startseite geladen (?aufgabe=<erste Aufgabe>).
+     Geprüft wird: Oberfläche aufgebaut, Kern vorhanden, die Aufgabenliste des Labs stimmt mit dem Aufgabenverzeichnis überein (Kennungen, Titel, Stufe), jede Aufgabe lässt sich bauen
+     (Labs mit makeTask), die aufgerufene Aufgabe steht auf der Seite. Die Musterlösungen dieser Labs rechnen die Node-Tests unter quelle/<lab>/ nach; das Linien-Lab zusätzlich hier (fliCore). */
+  function eigTasks(w, k) {
+    var U = k.toUpperCase(), t = w[U + '_TASKS'], d = w[U + '_DATA'] || w[U + 'DATA'];
+    return Array.isArray(t) ? t : (t && Array.isArray(t.tasks)) ? t.tasks : (d && Array.isArray(d.TASKS)) ? d.TASKS : (d && Array.isArray(d.tasks)) ? d.tasks : null;
+  }
+  async function labEig(l) {
+    var k = l[0], rows = (window.AUFGABEN || []).filter(function (a) { return a[1] === k; }), first = rows[0];
+    var f = document.createElement('iframe'); f.src = l[2] + (first ? '?aufgabe=' + encodeURIComponent(first[0]) : ''); document.body.appendChild(f);
+    await new Promise(function (r) { f.onload = r; }); await sleep(1500);
+    var w = f.contentWindow, g = w.document.getElementById('gate'); if (g) g.remove();
+    var bad = [], T = eigTasks(w, k), built = 0, U = k.toUpperCase(), d = w[U + '_DATA'] || w[U + 'DATA'];
+    if (w.document.getElementById('vbBar') || (w.VerbundBar && w.VerbundBar.active)) bad.push('Verbund-Leiste ohne ?verbund= sichtbar (Regression)');
+    if (!rows.length) bad.push('keine Aufgaben im Aufgabenverzeichnis');
+    if (!(w[U + '_CORE'] || w[U])) bad.push('Kern (' + U + '_CORE) fehlt');
+    if (!T) bad.push('Aufgabenliste des Labs nicht gefunden');
+    else {
+      var ids = T.map(function (t) { return t.id; }), want = rows.map(function (a) { return a[0]; });
+      if (ids.length !== want.length) bad.push(ids.length + ' Aufgaben im Lab, ' + want.length + ' im Aufgabenverzeichnis');
+      var miss = want.filter(function (id) { return ids.indexOf(id) < 0; }), extra = ids.filter(function (id) { return want.indexOf(id) < 0; });
+      if (miss.length) bad.push('im Lab fehlen: ' + miss.slice(0, 5).join(', '));
+      if (extra.length) bad.push('nicht im Verzeichnis: ' + extra.slice(0, 5).join(', '));
+      if (ids.some(function (id, i) { return ids.indexOf(id) !== i; })) bad.push('Kennung doppelt');
+      rows.forEach(function (a) { var t = T.filter(function (x) { return x.id === a[0]; })[0]; if (!t) return; if (!t.title || t.title !== a[3]) bad.push(a[0] + ': Titel weicht vom Verzeichnis ab'); if (t.level !== a[4]) bad.push(a[0] + ': Stufe weicht vom Verzeichnis ab'); });
+    }
+    if (d && typeof d.makeTask === 'function' && Array.isArray(d.tasks)) d.tasks.forEach(function (t) { try { var q = d.makeTask(t); if (q && (q.text || q.q)) built++; else bad.push(t.id + ': Aufgabe lässt sich nicht bauen'); } catch (e) { bad.push(t.id + ': ' + e); } });
+    var txt = w.document.body ? w.document.body.innerText : '';
+    if (txt.length < 300 || w.document.querySelectorAll('button').length < 10) bad.push('Oberfläche nicht aufgebaut');
+    if (first && txt.indexOf(first[3]) < 0) bad.push('Aufruf ?aufgabe=' + first[0] + ' zeigt die Aufgabe nicht');
+    if (k === 'fli') {
+      var fc = fliCore(w); if (fc.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Linien-Lab Kern', tasks: fc.n, bad: fc.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Linien-Lab: Modell der Linie A, alle Aufgaben mit Musterlösung, leerer und falscher Antwort</td><td>' + fc.n + '</td><td class="' + (fc.bad.length ? 'bad' : 'ok') + '">' + (fc.bad.length ? 'FEHLER' : 'alle in Ordnung') + '</td><td>' + fc.bad.join('; ') + '</td></tr>');
+    }
+    var res = { lab: l[1], tasks: rows.length, built: built, bad: bad, eig: true };
+    if (bad.length) all.ok = false; all.labs.push(res);
+    document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + l[1] + '</td><td>' + rows.length + '</td><td class="' + (bad.length ? 'bad' : 'ok') + '">' + (bad.length ? 'FEHLER' : 'Liste, Aufruf' + (built ? ' und Aufbau aller Aufgaben' : '') + ' in Ordnung') + '</td><td>' + bad.join('; ') + '</td></tr>');
+    f.remove();
+  }
+  /* Lab-Liste und Dateien: jedes Lab des Verzeichnisses wird geprüft, die Zahl der Labs passt zur Version (ver.js) und zu den Karten der Startseite,
+     jedes Lab und die neuen Dateien stehen im Offline-Speicher (sw.js), das Aufgabenverzeichnis ist in sich stimmig. */
+  async function listCheck() {
+    var bad = [], keys = Object.keys(REG), labs = keys.filter(function (k) { return !REG[k].hub; }), A = window.AUFGABEN || [];
+    var txt = async function (u) { return await (await fetch(u, { cache: 'no-store' })).text(); };
+    keys.forEach(function (k) { if (!ALLE.some(function (l) { return l[0] === k; })) bad.push(REG[k].name + ' (' + k + ') steht im Verzeichnis, wird aber nicht geprüft'); });
+    if (labs.length !== SOLL.labs) bad.push(labs.length + ' Labs im Verzeichnis statt ' + SOLL.labs);
+    try { var v = /var V = 'v(\d+)\.(\d+)'/.exec(await txt('ver.js')); if (!v || +v[1] !== labs.length) bad.push('ver.js nennt ' + (v ? v[1] : '?') + ' Labs, das Verzeichnis ' + labs.length); } catch (e) { bad.push('ver.js nicht lesbar'); }
+    try {
+      var ix = await txt('index.html'), cards = [], re = /<section class="card" data-lab="([a-z0-9]+)"[^>]*>[\s\S]*?<div class="btns"><a class="btn pri" href="([a-z0-9-]+\.html)/g, m;
+      while ((m = re.exec(ix))) cards.push(m[2]);
+      if (cards.length !== labs.length) bad.push(cards.length + ' Lab-Karten auf der Startseite, ' + labs.length + ' Labs im Verzeichnis');
+      labs.forEach(function (k) { if (cards.indexOf(REG[k].file) < 0) bad.push(REG[k].name + ': keine Karte auf der Startseite'); });
+      cards.forEach(function (c) { if (!keys.some(function (k) { return REG[k].file === c; })) bad.push('Karte ' + c + ' ohne Eintrag im Verzeichnis'); });
+    } catch (e) { bad.push('index.html nicht lesbar'); }
+    try {
+      var sw = await txt('sw.js'), need = keys.map(function (k) { return REG[k].file; }).concat(['pcbfehler.js', 'pcbesd.js', 'flicore.js', 'flidata.js', 'fliui.js', 'fliviz.js', 'aufgaben.js', 'index.html', 'home.css', 'home-search.js']);
+      need.forEach(function (n) { if (sw.indexOf("'./" + n + "'") < 0) bad.push(n + ' fehlt im Offline-Speicher (sw.js)'); });
+    } catch (e) { bad.push('sw.js nicht lesbar'); }
+    try { var pl = await txt('pcblab.html'); ['pcbfehler.js', 'pcbesd.js'].forEach(function (n) { if (pl.indexOf('<script src="' + n + '"') < 0) bad.push('pcblab.html bindet ' + n + ' nicht ein'); }); } catch (e) { bad.push('pcblab.html nicht lesbar'); }
+    var seen = {}; A.forEach(function (a) { if (!REG[a[1]]) bad.push(a[0] + ': Lab ' + a[1] + ' unbekannt'); if (seen[a[0]]) bad.push(a[0] + ': Kennung doppelt'); seen[a[0]] = 1; });
+    if (A.length !== SOLL.gesamt) bad.push(A.length + ' Aufgaben im Verzeichnis statt ' + SOLL.gesamt);
+    labs.forEach(function (k) { if (!A.some(function (a) { return a[1] === k; })) bad.push(REG[k].name + ': keine Aufgaben im Verzeichnis'); });
+    if (bad.length) all.ok = false; all.labs.push({ lab: 'Lab-Liste und Dateien', tasks: A.length, bad: bad });
+    document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Lab-Liste: ' + labs.length + ' Labs und Projekte, alle geprüft, Karten der Startseite, Offline-Speicher</td><td>' + A.length + '</td><td class="' + (bad.length ? 'bad' : 'ok') + '">' + (bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + bad.join('; ') + '</td></tr>');
+  }
   async function lab(l) {
+    if (l[4] === 'eig') return labEig(l);
     if (l[0] === 'loch') return labLoch(l);
     if (l[0] === 'quarz') return labQuarz(l);
     var f = document.createElement('iframe'); f.src = l[2]; document.body.appendChild(f);
@@ -1101,6 +1263,9 @@
       var pc = pcbCore(w); if (pc.bad.length) all.ok = false;
       all.labs.push({ lab: 'Leiterplatten-Lab Kern', tasks: pc.n, bad: pc.bad });
       document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Leiterplatten-Lab: Kern, Ansichten, Beispiele</td><td>' + pc.n + ' Beispiele</td><td class="' + (pc.bad.length ? 'bad' : 'ok') + '">' + (pc.bad.length ? 'FEHLER' : 'in Ordnung') + '</td><td>' + pc.bad.join('; ') + '</td></tr>');
+      var pn = pcbNeu(w); if (pn.bad.length) all.ok = false;
+      all.labs.push({ lab: 'Leiterplatten-Lab Fehlerbild und ESD', tasks: pn.n, bad: pn.bad });
+      document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Leiterplatten-Lab: Reiter Fehlerbild und ESD (Daten, Kern, Quiz mit Musterlösung)</td><td>' + pn.n + ' Quiz-Aufgaben</td><td class="' + (pn.bad.length ? 'bad' : 'ok') + '">' + (pn.bad.length ? 'FEHLER' : 'alle in Ordnung') + '</td><td>' + pn.bad.join('; ') + '</td></tr>');
     }
     if (l[0] === 'ant') {
       var ac = antCore(w); if (ac.bad.length) all.ok = false;
@@ -1231,6 +1396,7 @@
   }
   (async function () {
     for (var i = 0; i < LABS.length; i++) { try { await lab(LABS[i]); } catch (e) { all.ok = false; all.labs.push({ lab: LABS[i][1], error: String(e) }); document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>' + LABS[i][1] + '</td><td></td><td class="bad">FEHLER</td><td>' + String(e) + '</td></tr>'); } }
+    try { await listCheck(); } catch (e) { all.ok = false; all.labs.push({ lab: 'Lab-Liste und Dateien', error: String(e) }); document.getElementById('t').insertAdjacentHTML('beforeend', '<tr><td>Lab-Liste und Dateien</td><td></td><td class="bad">FEHLER</td><td>' + String(e) + '</td></tr>'); }
     if (!nur || nur[1].split(',').indexOf('duell') >= 0) { try { await modulCheck(); } catch (e) { all.ok = false; all.labs.push({ lab: 'Duell/Karriere/QR', error: String(e) }); } }
     document.title = all.ok ? 'SELFTEST OK' : 'SELFTEST FEHLER';
     document.getElementById('out').textContent = (all.ok ? 'ALLES IN ORDNUNG' : 'FEHLER GEFUNDEN') + '\n' + JSON.stringify(all);

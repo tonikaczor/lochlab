@@ -91,12 +91,12 @@
     pcb: { name: 'Leiterplatten-Lab', steps: [
       { t: 'Willkommen im Leiterplatten-Lab', x: 'Hier entwirfst du echte Leiterplatten mit mehreren Lagen, siehst, wie sie gefertigt, bestückt und geprüft werden, und suchst Fehler auf defekten Platinen. Ich zeige dir in wenigen Minuten, wo was ist.' },
       { prep: a => { a.load('exnetz'); a.go('edit'); }, at: '#viewHost', t: 'Das Layout', x: 'Ich habe dir ein Netzteil geladen. Rot ist die Oberseite, blau die Unterseite, gestrichelte Linien zeigen noch offene Verbindungen. Mit zwei Fingern oder dem Mausrad zoomst du. Deine bisherige Platine ist gesichert.' },
-      { at: '#tabs', t: 'Sieben Bereiche', x: 'Layout, Lagen, Fertigung, Bestückung, Fehlersuche, Aufgaben und Lernen. Der Weg einer Platine: entwerfen, Lagenaufbau wählen, fertigen lassen, bestücken, prüfen und bei Bedarf reparieren.' },
+      { at: '#tabs', t: 'Neun Bereiche', x: 'Layout, Lagen, Fertigung, Bestückung, Fehlersuche, Fehlerbild, ESD, Aufgaben und Lernen. Der Weg einer Platine: entwerfen, Lagenaufbau wählen, fertigen lassen, bestücken, prüfen und bei Bedarf reparieren.' },
       { at: '#tabs', gate: a => a.tab() === 'stack', t: 'Zu den Lagen', x: 'Tippe oben auf „Lagen“. Du siehst den Querschnitt: Kupfer, Prepreg, Kern, Lötstopplack. Schalte zwischen 1, 2, 4 und 6 Lagen um. Innenlagen nehmen Masse und Versorgung auf, das macht Signale ruhiger.' },
       { at: '#tabs', gate: a => a.tab() === 'fab', t: 'Zur Fertigung', x: 'Tippe auf „Fertigung“. Hier gibt es die Gerber-Dateien (eine pro Lage), die Herstellungsschritte als Animation, die Kosten und den Bereich „Prüfen“ mit Flying Probe, ICT, AOI, SPI, AXI und Boundary Scan.' },
       { at: '#tabs', gate: a => a.tab() === 'asm', t: 'Zur Bestückung', x: 'Tippe auf „Bestückung“. Dort stehen der Bestückungsplan, die Stückliste und das Löten: Reflow-Ofen für SMD und Handlöten für THT. Auch Tombstone und Lötbrücken kannst du hier erzeugen und verstehen.' },
       { at: '#tabs', gate: a => a.tab() === 'repair', t: 'Zur Fehlersuche', x: 'Tippe auf „Fehlersuche“. Mit Multimeter und Lupe findest du Fehler auf einer defekten Platine: Haarriss, Brücke, verpoltes Bauteil. Messen statt raten.' },
-      { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 43 Aufgaben mit automatischer Prüfung: von Pads und Raster über Leiterbahnbreite, Mehrlagen und Layout bis zu Fertigung, Löten, Fehlersuche und Prüfungsaufgaben. Dazu 21 Beispiele. Tipps gibt es in drei Stufen.' },
+      { at: '#bMenu', t: 'Aufgaben und Beispiele', x: 'Im Menü warten 49 Aufgaben mit automatischer Prüfung: von Pads und Raster über Leiterbahnbreite, Mehrlagen und Layout bis zu Fertigung, Löten, Fehlersuche und Prüfungsaufgaben. Dazu kommen 22 Quizfragen in den Reitern Fehlerbild und ESD und 21 Beispiele. Tipps gibt es in drei Stufen.' },
       NEXTSTEPS[0], END('Leiterplatten-Lab')] },
     ant: { name: 'Antriebs-Lab', steps: [
       { t: 'Willkommen im Antriebs-Lab', x: 'Hier untersuchst du Motoren und Antriebe an fünf animierten Prüfständen: Gleichstrommotor mit H-Brücke, Servo, Schrittmotor, Drehstrommotor und Getriebe. Ich zeige dir in wenigen Minuten, wo was ist.' },
@@ -378,12 +378,26 @@
     const lab = A().lab; if (!lab || !SCRIPTS[lab] || /[?&](aufgabe|ex|neu|bsp|tag|duell|escape)/.test(location.search)) return;
     let seen = {}; try { seen = JSON.parse(localStorage.getItem('lm4.trainerseen') || '{}'); } catch (e) {} if (seen[lab]) return;
     const g = document.getElementById('gate'); if (g && vis(g)) { setTimeout(offer, 1500); return; }
-    if (document.getElementById('trBub') || document.querySelector('.backdrop')) { setTimeout(offer, 3000); return; }
+    if (document.getElementById('trBub') || document.getElementById('tfTut') || document.querySelector('.backdrop')) { setTimeout(offer, 3000); return; }   // läuft die Tutorial-Tour (#tfTut), erst danach anbieten
     const mark = () => { seen[lab] = 1; try { localStorage.setItem('lm4.trainerseen', JSON.stringify(seen)); } catch (e) {} c.remove(); };
     const c = document.createElement('div'); c.id = 'trOffer';
     if (!document.getElementById('trOfferCss')) { const st = document.createElement('style'); st.id = 'trOfferCss'; st.textContent = '#trOffer{position:fixed;right:12px;left:auto;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:60;background:#1f262e;color:#e8eaed;border:2px solid #ffb020;border-radius:14px;padding:12px 14px;max-width:min(88vw,330px);font:14px/1.4 system-ui;box-shadow:0 8px 24px rgba(0,0,0,.5)}@media(max-width:600px){#trOffer{left:8px;right:8px;bottom:auto;top:calc(env(safe-area-inset-top,0px) + 58px);max-width:none;padding:8px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}#trOffer .trTx{display:none}#trOffer .trRow{margin:0 0 0 auto!important}}'; document.head.appendChild(st); }
     c.innerHTML = '<b>Neu hier?</b><span class="trTx"><br>Der Trainer zeigt dir in wenigen Minuten, wie das ' + esc(SCRIPTS[lab].name) + ' funktioniert.</span><div class="trRow" style="display:flex;gap:8px;margin-top:10px"><button id="tfGo" style="background:#ff9d00;border:0;border-radius:9px;padding:8px 14px;min-height:40px;font-weight:700;cursor:pointer">Los geht’s</button><button id="tfNo" style="background:#2c343e;color:#e8eaed;border:1px solid #38424d;border-radius:9px;padding:8px 14px;min-height:40px;cursor:pointer">Später</button></div>';
     document.body.appendChild(c);
+    /* Ab 720 px: nicht über die Seitenleiste legen, sondern in die Lücke zwischen Bauteilleiste (#parts) und Seitenleiste (#side); passt keine Lücke (>= 260 px), gilt die Handy-Zeile oben.
+       Die Tutorial-Tour (tutorial.js) wartet, solange dieses Angebot oder die Trainer-Blase offen ist, damit nicht beide Einführungen übereinanderliegen. */
+    const lage = () => {
+      try {
+        if (!c.isConnected) return; ['left', 'right', 'bottom', 'width', 'maxWidth'].forEach(k => { c.style[k] = ''; });
+        const vw = window.innerWidth; if (vw < 720) return;
+        const rc = id => { const e = document.getElementById(id); if (!e) return null; const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 ? r : null; };
+        const sd = rc('side'), pt = rc('parts');
+        const L = (pt && pt.right < vw / 2 ? pt.right : 0) + 12, R = (sd && sd.left > vw * 0.4 ? sd.left : vw) - 12;
+        if (R - L < 260) return;
+        const w = Math.min(330, R - L); c.style.width = w + 'px'; c.style.maxWidth = 'none'; c.style.right = 'auto'; c.style.left = Math.round(L + (R - L - w) / 2) + 'px'; const md = rc('mid'); if (md && md.bottom < window.innerHeight) c.style.bottom = Math.max(12, Math.round(window.innerHeight - md.bottom + 12)) + 'px';   // unten im Arbeitsbereich, über Werkzeug- und Kontextleiste
+      } catch (e) {}
+    };
+    lage(); window.addEventListener('resize', lage); setTimeout(lage, 600);
     c.querySelector('#tfGo').onclick = () => { mark(); start(); }; c.querySelector('#tfNo').onclick = mark;
   }
   root.Trainer = { start, stop, offer, SCRIPTS };

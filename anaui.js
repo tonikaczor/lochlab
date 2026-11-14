@@ -12,7 +12,7 @@
    ana.fx, ana.q, ana.deep ({ bode, slew, offset, sat, n }), sim.done (gemeinsam mit den anderen Labs).
    Erweiterungen schreiben selbst: ana.report (Verlauf der Messreihen), ana.design, S.bericht (laufende Messreihe, wird mit Speichern/Teilen/Abgabe mitgeführt). */
 (function (root) {
-  if (!root.RIGUI || !root.RIGUI.ok('ana', '6e3904d3')) { const a = document.getElementById('app') || document.body, d = document.createElement('div'); d.className = 'rigui-miss'; d.setAttribute('role', 'alert'); d.style.cssText = 'margin:12px;padding:12px 14px;border:2px solid #c0392b;border-radius:10px;background:#fff4f2;color:#5a1a12;font:15px/1.45 system-ui,sans-serif'; d.innerHTML = 'Der Oberfl\u00e4chen-Rahmen fehlt oder passt nicht zur Seite (rigui-base.js, rigui-pf.js). Bitte die Seite neu laden.' + (typeof navigator !== 'undefined' && navigator.onLine === false ? ' Du bist offline: Verbinde dich einmal mit dem Internet und lade die Seite danach neu, damit die fehlenden Dateien nachgeladen werden.' : '') + ' <button type="button" class="btn pri" onclick="location.reload()">Neu laden</button>'; if (a) a.insertBefore(d, a.firstChild); return; }
+  if (!root.RIGUI || !root.RIGUI.ok('ana', '8fe0d6e2')) { const a = document.getElementById('app') || document.body, d = document.createElement('div'); d.className = 'rigui-miss'; d.setAttribute('role', 'alert'); d.style.cssText = 'margin:12px;padding:12px 14px;border:2px solid #c0392b;border-radius:10px;background:#fff4f2;color:#5a1a12;font:15px/1.45 system-ui,sans-serif'; d.innerHTML = 'Der Oberfl\u00e4chen-Rahmen fehlt oder passt nicht zur Seite (rigui-base.js, rigui-pf.js). Bitte die Seite neu laden.' + (typeof navigator !== 'undefined' && navigator.onLine === false ? ' Du bist offline: Verbinde dich einmal mit dem Internet und lade die Seite danach neu, damit die fehlenden Dateien nachgeladen werden.' : '') + ' <button type="button" class="btn pri" onclick="location.reload()">Neu laden</button>'; if (a) a.insertBefore(d, a.firstChild); return; }
   const { $, $$, AMP, B, CMPSYM, NARROW_AR, QLEVELS, RANK, adig, ampKey, applyHit, assessOf, bgOf, canSound, choiceOpts, clamp, clickSnd, clone, confirmSheet, csvNum, decs, defVal, esc, fauto, fin, fnum, fxOn, isWarn, limBadge, limSrc, loadExampleByName, lsGet, lsPut, lsRaw, lsSet, margTxt, markDone, optLabel, optNorm, packShare, parseCsv, pick, rowEnd, rowNorm, saveCsv, seqToRows, sgn, sheet, siUnit, slPos, slVal, stat, taskDone, theme, toast, tstamp, typing, unpackShare, MVIEWS, MVNAME, frontOk } = root.RIGUI.pure('ana', { root, loadExample, setCtl });
   const CORE = () => root.ANA_CORE;
   const DRAW = () => root.ANA_DRAW;
@@ -211,7 +211,7 @@
     const sig = [c.kennlinie, c.signal, c.formel, zl, S.sichtHot].join('|'); if (!force && sig === sichtSig) return; sichtSig = sig; el.hidden = false;
     el.innerHTML = '<div class="cnrow" role="group" aria-label="Kennlinie, Signal, Formel: drei Sichten auf dieselbe Schaltung">' + SICHTEN.map(v => `<div class="cn${S.sichtHot === v.id ? ' hot' : ''}" data-sv="${v.id}" style="--lc:${v.color}"><b><i class="lsym">${v.n}</i> ${esc(v.name)}</b><span>${esc(c[v.id] || '–')}</span><small>${esc(v.sub)}${v.id === 'signal' && zl ? ' · Zeitlupe ×' + String(+zl.toFixed(1)).replace('.', ',') : ''}</small></div>`).join('') + '</div>';
   }
-  let ampSig = '';
+  let ampSig = '', ampHelp = false;
   const ampelHinweis = () => { const C = CORE(); return (C && C.TEXTS && typeof C.TEXTS.ampelHinweis === 'string' && C.TEXTS.ampelHinweis) || 'Grün heißt: Vorgabe der Simulation erfüllt, nicht: Schaltung ist für jeden Einsatz geeignet.'; };
   const simText = () => { const C = CORE(); return (C && C.TEXTS && typeof C.TEXTS.simOnly === 'string' && C.TEXTS.simOnly) || 'Simulation – Übungswerte. Aufbau und Messung am Labortisch nur nach Anweisung der Ausbilder.'; };
   function updateAmp(force) {
@@ -221,10 +221,17 @@
     const sig = [k, a.margin, a.text, zu, ra ? ra.ampel + ra.margin : '', S.refMode].join('|');
     if (!force && sig === ampSig) return; ampSig = sig;
     const A = AMP[k], mt = k === 'grau' ? '' : margTxt(a);
-    el.className = 'amprow ' + A.cls; el.setAttribute('role', 'status');
-    el.innerHTML = `<span class="asym" aria-hidden="true">${A.sym}</span><div class="atx"><b>${esc(A.name.charAt(0).toUpperCase() + A.name.slice(1))}${mt ? ': ' + esc(mt) : ''}</b><small>${esc(a.text || '')}</small>${zu ? `<small class="nt">${esc(zu)}</small>` : ''}<small class="nt">${esc(ampelHinweis())}</small></div>${ra ? `<div class="avs"><span>Vorher: ${esc(AMP[ampKey(ra.ampel)].sym)} ${fin(ra.margin) ? fnum(ra.margin, 2) : esc(AMP[ampKey(ra.ampel)].name)}</span><span>Nachher: ${esc(A.sym)} ${fin(a.margin) ? fnum(a.margin, 2) : esc(A.name)}${fin(a.margin) && fin(ra.margin) ? ' (' + sgn(a.margin - ra.margin) + fnum(a.margin - ra.margin, 2) + ')' : ''}</span></div>` : ''}`;
+    const lp = (c, on, y) => `<i class="apl ${c}${on ? ' on' : ''}">${on ? y : ''}</i>`, txD = a.text && !/^Keine Vorgabe gesetzt: Die Ampel bleibt grau\.$/.test(a.text) ? a.text : '';
+    el.className = 'amprow amp2 ' + A.cls; el.setAttribute('role', 'status');
+    el.innerHTML = `<span class="aplamps" aria-hidden="true">${lp('r', k === 'rot', '✗')}${lp('y', k === 'gelb', '!')}${lp('g', k === 'gruen', '✓')}</span><div class="atx"><div class="ap1"><span class="apt">Prüfampel</span><b class="aps">${k === 'grau' && S.rig && ctlsOf().length ? `<button type="button" class="apz" data-ampziel title="Vorgabe setzen: springt zur Gruppe Vorgabe im Bedienpult" aria-label="Noch keine Vorgabe. Vorgabe setzen">${esc(A.sym + ' ' + A.lbl)}</button>` : esc(A.sym + ' ' + A.lbl)}</b>${mt ? `<span class="apm">${esc(mt)}</span>` : ''}<button type="button" class="apq" data-ampq aria-expanded="${ampHelp}" aria-controls="ampHelp" aria-label="Was bedeutet die Prüfampel?">?</button></div>${txD ? `<small class="apd">${esc(txD)}</small>` : ''}${zu ? `<small class="apd">${esc(zu)}</small>` : ''}${k === 'gruen' ? `<small class="apd nt">${esc(ampelHinweis())}</small>` : ''}<p class="aphelp" id="ampHelp"${ampHelp ? '' : ' hidden'}>Die Prüfampel vergleicht das Ergebnis der Simulation mit der Vorgabe: <b>✓ im Bereich</b> = Vorgabe erfüllt, <b>! knapp</b> = fast an der Grenze, <b>✗ außerhalb</b> = Vorgabe nicht erfüllt, <b>– Noch keine Vorgabe</b> = es ist nichts zum Vergleichen gesetzt.${' ' + esc(ampelHinweis())}</p></div>${ra ? `<div class="avs"><span>Vorher: ${esc(AMP[ampKey(ra.ampel)].sym)} ${fin(ra.margin) ? fnum(ra.margin, 2) : esc(AMP[ampKey(ra.ampel)].name)}</span><span>Nachher: ${esc(A.sym)} ${fin(a.margin) ? fnum(a.margin, 2) : esc(A.name)}${fin(a.margin) && fin(ra.margin) ? ' (' + sgn(a.margin - ra.margin) + fnum(a.margin - ra.margin, 2) + ')' : ''}</span></div>` : ''}`;
     const cv = $('#cv'); if (cv) { let al = ''; try { al = typeof S.rig.ariaLabel === 'function' ? String(S.rig.ariaLabel() || '') : ''; } catch (e) { al = ''; } cv.setAttribute('aria-label', al || ('Bild des Prüfstands ' + rigName(S.rigId) + '. Ampel ' + A.name + (mt ? ', ' + mt : '') + '. ' + (a.text || '') + ' ' + ampelHinweis())); }
   }
+  /* Prüfampel: Hilfetext ein-/ausblenden (ohne neu zu zeichnen) und "Vorgabe setzen" springt zur Gruppe der Vorgaben im Bedienpult */
+  document.addEventListener('click', e => {
+    const q = e.target.closest && e.target.closest('[data-ampq]'), z = e.target.closest && e.target.closest('[data-ampziel]');
+    if (q) { ampHelp = !ampHelp; const h = $('#ampHelp'); if (h) h.hidden = !ampHelp; q.setAttribute('aria-expanded', ampHelp ? 'true' : 'false'); return; }
+    if (z) { const d = $('#ctlHost details.ctg[data-lv="ziel"], #ctlHost details.ctg[data-lv="none"]'); if (!d) return; d.open = true; try { d.scrollIntoView({ block: 'nearest' }); const i = $('input:not([disabled]),select:not([disabled]),button:not([disabled])', d.querySelector('.cb') || d); if (i) i.focus({ preventScroll: true }); } catch (err) {} }
+  });
   /* Hinweisband (simOnly): einmal je Anlage, schließbar (nur für diese Sitzung) */
   $('#simX').onclick = () => { S.simClosed[S.rigId] = 1; updateSimBand(); };
   /* Grenzwerte mit Status (Quelle ANA_CORE.limits): belegt oder Übungswert (A) */
@@ -996,7 +1003,8 @@
   function buildFaultPanel() {
     const H = $('#faultHost'); if (!H) return; const d = S.dice, hid = isHid('fehler');
     const tz = !hid && !d && !S.task && tauschAnaOk(), tk = !!(d && d.tausch && !d.revealed);   /* Fehler-Tausch (T3b): Knopf zum Weitergeben, laufende Karte ohne Auflösung */
-    if (!S.rig || (!hid && !d && !tz)) { H.innerHTML = ''; return; }
+    if (!S.rig || (!hid && !d && !tz)) { H.innerHTML = ''; H.removeAttribute('data-nur'); return; }
+    if (tz && !hid && !d) H.setAttribute('data-nur', 'tausch'); else H.removeAttribute('data-nur');   /* nur das Tausch-Angebot: steht im Querformat hinter den Messgeraeten (design.css) */
     const b = [];
     if (hid) { b.push('<button class="btn pri" data-fa="diag">🩺 Diagnose abgeben</button>'); if (!tk) b.push('<button class="btn" data-fa="reveal">Auflösung zeigen</button>'); }
     if (d && d.kind === 'fehler' && d.revealed && !d.done) b.push('<button class="btn pri" data-fa="repair">🔧 Fehler beheben und prüfen</button>');

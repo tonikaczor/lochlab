@@ -1742,7 +1742,13 @@ function resetSim() { tlClear(); thermReset(); if (window.LochFX) LochFX.clear()
 /* Vorschau in der Seitenleiste: zeigt das Bauteil so, wie es gesetzt wird (wichtig am Tablet, dort gibt es keinen Mauszeiger mit Vorschau) */
 function drawPlacePreview() {
   const el = document.getElementById('plPrev'); if (!el || !placeKind || !el.getContext) return;
-  try { if (matchMedia('(max-width:719px)').matches) { const sd = document.getElementById('side'), cd = el.closest('.card'); if (sd && cd) sd.scrollTop = Math.max(0, cd.offsetTop - sd.offsetTop - 6); } } catch (e) { }   // Handy: Karte mit Vorschau und Drehen nach oben holen
+  try {
+    const sd = document.getElementById('side'), cd = el.closest('.card');
+    if (sd && cd) {
+      if (matchMedia('(max-width:719px)').matches) sd.scrollTop = Math.max(0, cd.offsetTop - sd.offsetTop - 6);   // Handy: Karte mit Vorschau und Drehen nach oben holen
+      else { const sr = sd.getBoundingClientRect(), er = el.getBoundingClientRect(); if (er.bottom > sr.bottom - 4 || er.top < sr.top) sd.scrollTop = Math.max(0, cd.offsetTop - sd.offsetTop - 6); }   // Tablet: liegt die Vorschau unter der Aufgabenkarte außerhalb, Leiste dorthin scrollen
+    }
+  } catch (e) { }
   const p = { id: -1, noLab: true, k: placeKind, x: 0, y: 0, r: placeRot, m: placeMirOn() ? 1 : undefined, v: KINDS[placeKind].v, sw: 0, vr: KINDS[placeKind].vr, n: KINDS[placeKind].n }, K = KD(p);
   const W = el.clientWidth || 220, H = el.clientHeight || 120, d = window.devicePixelRatio || 1;
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -4328,9 +4334,27 @@ function fit() {
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   sch.parts.forEach(p => { const K = KD(p); [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].forEach(([a, b]) => { const [ra, rb] = tf(a, b, p); x0 = Math.min(x0, p.x + ra); x1 = Math.max(x1, p.x + ra); y0 = Math.min(y0, p.y + rb); y1 = Math.max(y1, p.y + rb); }); });
   sch.wires.forEach(w => { x0 = Math.min(x0, w.x1, w.x2); x1 = Math.max(x1, w.x1, w.x2); y0 = Math.min(y0, w.y1, w.y2); y1 = Math.max(y1, w.y1, w.y2); });
-  const pad = 2, W = x1 - x0 + 2 * pad, H = y1 - y0 + 2 * pad, gh = sch.scopes.length ? Math.min(150, r.height * 0.34) : 0;
-  const s = clamp(Math.min(r.width / W, (r.height - gh) / H), 10, 50);
-  view.s = s; view.ox = (r.width - (x1 - x0) * s) / 2 - x0 * s; view.oy = ((r.height - gh) - (y1 - y0) * s) / 2 - y0 * s; draw();
+  /* Name und Wert stehen neben dem Bauteil (siehe Beschriftung in drawPart) und ragen über den Rahmen hinaus (z. B. "LED1" rechts der LED): ihre Ausdehnung zählt mit,
+     sonst schneidet sie der Rand ab oder die Einklapp-Griffe an den Seiten decken sie zu. Die Schriftgröße hängt vom Maßstab ab, daher einige Durchgänge. */
+  const gw = r.width - 2 * 30, gh = sch.scopes.length ? Math.min(150, r.height * 0.34) : 0, pad = 2, ext = (sc) => {
+    let a0 = x0, a1 = x1, b0 = y0, b1 = y1; const f = cx.font; cx.font = Math.max(10, sc * 0.62) + 'px -apple-system,Segoe UI,sans-serif';
+    sch.parts.forEach(p => {
+      if (p.noLab || p.k === 'GND') return; const K = KD(p);
+      let txt = valueText(p) || ''; if (p.l) txt = p.l + (txt ? '  ' + txt : ''); if (!txt) return;
+      const [mx, my] = (p.k === 'ICX' || p.k === 'CPU') ? rot(3, 0, p.r) : tf(K.pins.length > 1 ? 2 : 0, 0, p), vert = (p.r & 1) === 1, w = (cx.measureText(txt).width + 4) / sc, h = Math.max(10, sc * 0.62) * 1.2 / sc;
+      let ax, ay; const al = vert ? 'l' : 'c';
+      if (p.k === 'NPN' || p.k === 'PNP') { const q = rot(2.9, 0, p.r); ax = p.x + q[0]; ay = p.y + q[1]; }
+      else if (vert) { ax = p.x + mx + (p.k === 'LED' || p.k === 'LAMP' ? 2.1 : 1.3); ay = p.y + my; }
+      else { ax = p.x + mx; ay = p.y + my - 1.55; }
+      const lo = al === 'l' ? ax : ax - w / 2, hi = al === 'l' ? ax + w : ax + w / 2;
+      a0 = Math.min(a0, lo); a1 = Math.max(a1, hi); b0 = Math.min(b0, ay - h / 2); b1 = Math.max(b1, ay + h / 2);
+    });
+    cx.font = f; return [a0, a1, b0, b1];
+  };
+  let s = clamp(Math.min(gw / (x1 - x0 + 2 * pad), (r.height - gh) / (y1 - y0 + 2 * pad)), 10, 50), bx = [x0, x1, y0, y1];
+  for (let i = 0; i < 4; i++) { bx = ext(s); s = clamp(Math.min(gw / (bx[1] - bx[0] + 2 * pad), (r.height - gh) / (bx[3] - bx[2] + 2 * pad)), 10, 50); }
+  bx = ext(s);
+  view.s = s; view.ox = (r.width - (bx[1] - bx[0]) * s) / 2 - bx[0] * s; view.oy = ((r.height - gh) - (bx[3] - bx[2]) * s) / 2 - bx[2] * s; draw();
 }
 function loadCircuit(d) {
   incident = null; running = false; sel = null; wireStart = null; simMode = false;

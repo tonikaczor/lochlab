@@ -12,7 +12,8 @@
     { k: 'anadig', n: 'Analog & Digital' },
     { k: 'auto', n: 'Automatisierung & Steuern' },
     { k: 'bau', n: 'Bauen & Programmieren' },
-    { k: 'pruef', n: 'Prüfung & Projekte' }
+    { k: 'pruef', n: 'Prüfung & Projekte' },
+    { k: 'stud', n: 'Fortgeschritten – Studium und Technik' }   // v55.174: Labs der Wege Techniker/Studium (Karten mit data-group="stud"); bei Ausbildungsberufen leer und damit ausgeblendet, bei den Wegen steht der Bereich oben (berufe.js)
   ];
   const OTHER = { k: 'weitere', n: 'Weitere' };
   const MOBILE_MAX = 639;

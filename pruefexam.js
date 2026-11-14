@@ -7,11 +7,11 @@
 (function (root) {
   const QUOTA = { mix: [0.3, 0.5, 0.2], leicht: [0.7, 0.3, 0], schwer: [0, 0.5, 0.5] };   // Anteil Niveau 1 / 2 / 3
   const NIVEAU_T = { mix: 'wie Prüfung (leicht, mittel, schwer gemischt)', leicht: 'leicht (Niveau 1 vor 2)', schwer: 'schwer (Niveau 2 und 3)' };
-  /* Themenpakete: vorläufige Zuordnung der 12 Pool-Gruppen zu Lernfeld-Bereichen (Abstimmung mit den Ausbildern offen, siehe NACHTRAG-PRUEFUNG.md).
+  /* Themenpakete: vorläufige Zuordnung der 13 Pool-Gruppen zu Lernfeld-Bereichen (Abstimmung mit den Ausbildern offen, siehe NACHTRAG-PRUEFUNG.md).
      Nur ein Auswahl-Hilfsmittel in der Maske; gespeichert wird immer die Liste der Gruppen. */
   const PAKETE = [
     { k: 'ana', t: 'Analoge Schaltungen', groups: ['grund', 'halb', 'opv', 'netz'] },
-    { k: 'dig', t: 'Digitaltechnik, Programmieren, Bus', groups: ['digi', 'mcu', 'bus'] },
+    { k: 'dig', t: 'Digitaltechnik, Programmieren, Bus, IT', groups: ['digi', 'mcu', 'bus', 'itpc'] },
     { k: 'mes', t: 'Messen und Steuern', groups: ['mess', 'steu'] },
     { k: 'sic', t: 'Sicherheit und Qualität', groups: ['sich', 'qm'] },
     { k: 'wiso', t: 'Wirtschafts- und Sozialkunde', groups: ['wiso'] }
@@ -73,16 +73,29 @@
     }
     return out;
   }
-  /* cfg = { teil:['Teil1'], groups:['grund',…], n:20, calcShare:0.4, niveau:'mix'|'leicht'|'schwer', only:'mc'|'num', weak:{ g: Prozent } }
-     Rückgabe { items: [Pool-Aufgaben, Rechenaufgaben zuletzt, Gruppe nach cfg.groups geordnet], meta: { n, byGroup, byNiveau, mc, calc, few: [Gruppen mit weniger als 10 Aufgaben im Pool-Ausschnitt] } } */
+  /* Ausschlussgruppen (optionales Feld ex der Pool-Aufgaben: Kennung einer Gruppe praktisch gleicher Aufgaben, z. B. 'tns').
+     Aus jeder Gruppe bleibt in list nur EINE zufällige Aufgabe (keep); die übrigen kommen nach rest, damit man auffüllen kann, wenn sonst Aufgaben fehlen.
+     avoid: Kennungen, die schon belegt sind (dann bleibt keine). Ohne ex-Felder: keep = list, rest = [] und der Zufallsstrom r wird nicht berührt (alte Pools ziehen wie vorher). */
+  function exPick(list, r, avoid) {
+    const by = {}; list.forEach(p => { if (p && p.ex) (by[p.ex] = by[p.ex] || []).push(p); });
+    const ks = Object.keys(by).sort(); if (!ks.length) return { keep: list, rest: [] };
+    const av = new Set(avoid || []), drop = new Set();
+    ks.forEach(k => { const m = by[k], one = av.has(k) ? null : r.shuffle(m)[0]; m.forEach(p => { if (p !== one) drop.add(p); }); });
+    return { keep: list.filter(p => !drop.has(p)), rest: list.filter(p => drop.has(p)) };
+  }
+  const exIds = items => [...new Set((items || []).map(p => p && p.ex).filter(Boolean))].sort();
+  /* cfg = { teil:['Teil1'], groups:['grund',…], n:20, calcShare:0.4, niveau:'mix'|'leicht'|'schwer', only:'mc'|'num', weak:{ g: Prozent }, avoid:[ex-Kennungen schon belegt] }
+     Rückgabe { items: [Pool-Aufgaben, Rechenaufgaben zuletzt, Gruppe nach cfg.groups geordnet], meta: { n, byGroup, byNiveau, mc, calc, few: [Gruppen mit weniger als 10 Aufgaben im Pool-Ausschnitt], ex: [gezogene ex-Kennungen], exDup: Anzahl Aufgaben, die nur zum Auffüllen eine schon belegte Ausschlussgruppe wiederholen] }
+     Je Ausschlussgruppe (Feld ex) kommt höchstens eine Aufgabe in die Ziehung; nur wenn sonst weniger als n Aufgaben zusammenkommen, wird mit Wiederholungen aufgefüllt. */
   function draw(pool, cfg, seed) {
     const all = Array.isArray(pool) ? pool : (pool && pool.q) || [], c = cfg || {}, r = seeded(seed == null ? 1 : seed);
     const teil = c.teil && c.teil.length ? c.teil : null, groups = c.groups && c.groups.length ? c.groups : null;
-    const src = all.filter(p => (!teil || teil.includes(p.teil)) && (!groups || groups.includes(p.g)) && (c.only === 'mc' ? !!p.o : c.only === 'num' ? !p.o : true));
-    const meta = { n: 0, byGroup: {}, byNiveau: { 1: 0, 2: 0, 3: 0 }, mc: 0, calc: 0, few: [] };
-    if (!src.length) return { items: [], meta };
-    const order = groups || [...new Set(src.map(p => p.g))], gs = order.filter(g => src.some(p => p.g === g));
-    const n = Math.max(0, Math.min(Math.floor(num(c.n)) || 0, src.length));
+    const src0 = all.filter(p => (!teil || teil.includes(p.teil)) && (!groups || groups.includes(p.g)) && (c.only === 'mc' ? !!p.o : c.only === 'num' ? !p.o : true));
+    const meta = { n: 0, byGroup: {}, byNiveau: { 1: 0, 2: 0, 3: 0 }, mc: 0, calc: 0, few: [], ex: [], exDup: 0 };
+    if (!src0.length) return { items: [], meta };
+    const src = exPick(src0, r, c.avoid).keep;   // höchstens eine Aufgabe je Ausschlussgruppe; src0 bleibt für die Anzahl und das Auffüllen
+    const order = groups || [...new Set(src0.map(p => p.g))], gs = order.filter(g => src.some(p => p.g === g));
+    const n = Math.max(0, Math.min(Math.floor(num(c.n)) || 0, src0.length));
     const avail = {}; gs.forEach(g => { avail[g] = src.filter(p => p.g === g).length; if (avail[g] < 10) meta.few.push(g); });
     const w = {}; gs.forEach(g => { const base = avail[g] / src.length, p = c.weak && c.weak[g]; w[g] = base * (p != null && isFinite(+p) && +p < 60 ? 1 + 0.5 * (60 - Math.max(0, +p)) / 60 : 1); });
     let cnt = distribute(n, w, r);
@@ -96,8 +109,9 @@
     }
     const quota = QUOTA[c.niveau] || QUOTA.mix; let out = [];
     gs.forEach(g => { out.push(...pickGroup(src.filter(p => p.g === g), cnt[g] || 0, quota, r, c.niveau === 'schwer')); });
-    if (out.length < n) {   // Sicherheitsnetz: auffüllen
-      const ids = new Set(out.map(p => p.id)); out.push(...r.shuffle(src.filter(p => !ids.has(p.id))).slice(0, n - out.length));
+    if (out.length < n) {   // Sicherheitsnetz: auffüllen, zuerst mit Aufgaben aus noch nicht belegten Ausschlussgruppen, erst zuletzt mit Wiederholungen
+      const ids = new Set(out.map(p => p.id)), exu = new Set((c.avoid || []).concat(exIds(out))), left = r.shuffle(src0.filter(p => !ids.has(p.id)));
+      while (out.length < n && left.length) { let k = left.findIndex(p => !p.ex || !exu.has(p.ex)); if (k < 0) k = 0; const p = left.splice(k, 1)[0]; out.push(p); if (p.ex) exu.add(p.ex); }
     }
     if (c.calcShare != null && !c.only) {
       const target = Math.min(Math.round(n * Math.max(0, Math.min(1, num(c.calcShare)))), src.filter(p => !p.o && gs.includes(p.g)).length, n);
@@ -107,6 +121,7 @@
     const A = out.filter(p => p.o), Bq = out.filter(p => !p.o);   // gebundene zuerst (Teil A), Rechnen danach (Teil B), je nach Gruppenreihenfolge
     const sortG = l => r.shuffle(l).sort((a, b) => gi(a.g) - gi(b.g));
     const items = sortG(A).concat(sortG(Bq));
+    meta.ex = exIds(items); meta.exDup = items.filter(p => p.ex).length - meta.ex.length;
     items.forEach(p => { meta.byGroup[p.g] = (meta.byGroup[p.g] || 0) + 1; meta.byNiveau[p.n || 2] = (meta.byNiveau[p.n || 2] || 0) + 1; if (p.o) meta.mc++; else meta.calc++; });
     meta.n = items.length;
     return { items, meta };
@@ -136,9 +151,15 @@
     const marked = Object.keys(e.flags || {}).filter(id => e.flags[id]);
     return { pct: c.pct, note: nt[0], noteT: nt[1], a: c.a || null, b: c.b || null, byTopic: c.topics, byNiveau, byTeil, slow, unanswered, marked };
   }
+  /* Falsch beantwortete Aufgaben einer abgegebenen Prüfung (Grundlage für die Lernkarten aus Prüfungsfehlern, pkarten.js): nur beantwortete und nicht abgewählte Aufgaben, in Prüfungsreihenfolge.
+     e: { qs, ans }, isRight(q, a), dropped: Ids der abgewählten Aufgaben */
+  function falsch(e, isRight, dropped) {
+    const d = new Set(dropped || []), ans = (e && e.ans) || {};
+    return ((e && e.qs) || []).filter(q => !d.has(q.id) && ans[q.id] != null && ans[q.id] !== '' && !isRight(q, ans[q.id]));
+  }
   /* Kurzform der Auswahl für den Verlauf (kein Export in hist-Einträgen von stand.js, nur lokal) */
   const cfgShort = c => ({ g: (c.groups || []).slice(0, 14), nv: c.niveau || 'mix', n: c.n || 0 });
 
-  const api = { QUOTA, NIVEAU_T, PAKETE, MIN_JE_A, MIN_JE_B, seeded, distribute, split, pickGroup, draw, weakMap, suggestLimit, report, cfgShort, median };
+  const api = { QUOTA, NIVEAU_T, PAKETE, MIN_JE_A, MIN_JE_B, seeded, distribute, split, pickGroup, exPick, exIds, draw, weakMap, suggestLimit, report, falsch, cfgShort, median };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.PR_EXAM = api;
 })(typeof window !== 'undefined' ? window : globalThis);

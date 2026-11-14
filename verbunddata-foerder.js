@@ -1373,6 +1373,7 @@
     { id: 'vf9', lab: 'vb', cat: 'Förderanlage', title: 'Produktionsstatistik auswerten', level: 2,
       on: 'pi',
       text: 'Die Anlage hat 120 Sekunden gelaufen, mit einem Stillstand mittendrin. Das Protokoll liegt als Liste daten im Kopf deines Python-Programms: eine Zeile je Sekunde mit t, band, stoerung, hell, metall_aus, hell_aus, metall_durch und verloren (aufsummiert). Gib TEILE_GESAMT, DURCHSATZ (Teile je Minute), AUSSCHUSS_PROZENT und VERFUEGBARKEIT_PROZENT als Zeilen SCHLÜSSEL=Wert aus.',
+      sprich: 'Die Anlage ist 120 Sekunden gelaufen, mit einem Stillstand mittendrin. Das Protokoll liegt als Liste im Kopf deines Python-Programms, eine Zeile je Sekunde. Gib vier Werte aus: die Teile gesamt, den Durchsatz in Teilen je Minute, den Ausschuss in Prozent und die Verfügbarkeit in Prozent. Spaltennamen und Schlüsselwörter stehen im Auftragstext.',   /* Sprechfassung fürs Vorlesen: ohne Tabellen, Zahlenlisten und Zeilenformate (vorlesen.js) */
       in: ['foerder.sps'], out: 'foerder.pi', type: 'pi.script', w: 100, pass: null,
       dataFor: ctx => { const sps = need(ctx, 'foerder.sps'); return { daten: sps && isObj(sps.prog) ? makeLog(sps.prog, ctx).rows : [] }; },
       open: { ex: 'Produktionsstatistik' },

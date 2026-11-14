@@ -21,7 +21,8 @@
   var BERUFE = [
     { k: 'egs', n: 'Elektroniker für Geräte und Systeme' }, { k: 'ige', n: 'Industrieelektriker Geräte und Systeme' },
     { k: 'im', n: 'Industriemechaniker' }, { k: 'tpd', n: 'Technischer Produktdesigner' }, { k: 'fll', n: 'Fachkraft für Lagerlogistik' },
-    { k: 'ik', n: 'Industriekaufmann' }, { k: 'fi', n: 'Fachinformatiker' }
+    { k: 'ik', n: 'Industriekaufmann' }, { k: 'fi', n: 'Fachinformatiker' },
+    { k: 'tec', n: 'Techniker Elektrotechnik' }, { k: 'stu', n: 'Studium Elektrotechnik' }, { k: 'wing', n: 'Wirtschaftsingenieur' }, { k: 'winf', n: 'Wirtschaftsinformatik' }   // Wege Studium/Technik (v55.174): Pläne aus Modulen, ausbildungsplan-<weg>.js
   ];
   var STATUS = ['skelett', 'entwurf', 'bestaetigt'];       // Stand des ganzen Plans
   var PRUEFUNG = ['AP1', 'AP2', 'beide'];

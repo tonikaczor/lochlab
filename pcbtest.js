@@ -647,7 +647,36 @@
     return { fp: { timeS: fp.timeS, coverage: fp.coverage, steps: fp.steps.length }, ict: { timeS: ictTime, coverage: ict.coverage, steps: ict.steps.length, fixture: fix, nodes: ict.stats.nodes }, breakEven: be };
   }
 
-  const api = { version: '1.0', planFlyingProbe, dft, inspect, breakEven, inject, compare, analyze: (b, o) => { const a = analyze(b, o); return { nodes: a.nodes, nets: a.nets.map(n => ({ name: n.name, nodes: n.nodes.length, acc: n.acc.length })), parts: a.partInfo.map(p => ({ ref: p.ref, kind: p.kind, covered: p.covered })) }; }, suggestTP: (b, o, net, side) => suggestTP(b, analyze(b, o), net, side), parseVal, fmtOhm, fmtCap, kindOf, ictFixtureCost, ictTimeS, SAY, FAULT_NAME, MODES, defaults: BASE };
+  /* Farben der Oberfläche: lokale CSS-Variablen an .pt. Dunkel = die bisherigen festen Werte (Dunkelmodus unverändert),
+     Hell nur als Überschreibung (System hell ohne data-theme=dark, oder data-theme=light). */
+  const PT_DARK = {
+    bg: '#14181c', fg: '#e8edf2', fg2: '#c9d2dc', fg3: '#9fb0c2', mute: '#8b97a3', panel: '#222830', line: '#2c343e', ctl: '#2c343e', 'ctl-line': '#3a4452',
+    acc: '#3b9eff', 'acc-fg': '#06121f', 'ok-bg': '#4cd964', 'ok-fg': '#06200d', ok: '#4cd964', warn: '#ffb340', err: '#ff6b6b', 'on-bg': '#1d3550', 'on-fg': '#bfe0ff', val: '#7fc0ff',
+    'in-bg': '#14181c', 'cv-bg': '#0e1115', 'fig-bg': '#0e1115', 'soft-bg': '#1b2128', 'bar-bg': '#2c343e', 'note-bg': '#1b2530', 'note-ok-bg': '#1a2a20', 'note-warn-bg': '#2c2618', 'note-err-bg': '#2d1d20',
+    'm2-bg': '#1a3a24', 'm2-fg': '#6be787', 'm1-bg': '#3a3218', 'm1-fg': '#ffcb5c', 'm0-bg': '#2b2f35', 'm0-fg': '#a3aebb', 'good-bg': '#1a3a24', 'bad-bg': '#3a1d22',
+    'pr-bad-line': '#7a2f35', 'pr-bad-bg': '#2a1a1d', 'pr-bad-fg': '#ff8a8a', ov: 'rgba(6,9,12,.72)', shadow: 'rgba(0,0,0,.5)', press: '1.25', 'dot-bg': 'transparent', 'dot-pad': '0px',
+    'fig-fg': '#c9d2dc', 'fig-p1': '#3b9eff', 'fig-p2': '#ff9f43', 'fig-p1t': '#9ccaff', 'fig-p2t': '#ffc78a', 'fig-dash': '#8b97a3', 'fig-meter': '#14181c', 'fig-cu': '#d9a441', 'fig-g': '#4cd964', 'fig-gt': '#7fe597', 'fig-n1': '#3b9eff', 'fig-n1l': 'none', 'fig-n2': '#ff9f43', 'fig-n2l': 'none', 'fig-halo': 'none'
+  };
+  const PT_LIGHT = {
+    bg: '#f3f5f8', fg: '#141a21', fg2: '#2c3743', fg3: '#465260', mute: '#56626e', panel: '#ffffff', line: '#d3d9e0', ctl: '#eaeef3', 'ctl-line': '#b4bdc8',
+    acc: '#0a4fb3', 'acc-fg': '#ffffff', 'ok-bg': '#0e6e38', 'ok-fg': '#ffffff', ok: '#0e6e38', warn: '#7d5200', err: '#b3261e', 'on-bg': '#d9e6fb', 'on-fg': '#0a3d8f', val: '#0a4fb3',
+    'in-bg': '#ffffff', 'cv-bg': '#eef1f5', 'fig-bg': '#f3f5f8', 'soft-bg': '#f6f8fa', 'bar-bg': '#dfe5ec', 'note-bg': '#e8f0fc', 'note-ok-bg': '#e4f3ea', 'note-warn-bg': '#fbf1dc', 'note-err-bg': '#fbe9e7',
+    'm2-bg': '#d7f0df', 'm2-fg': '#0b5c2e', 'm1-bg': '#fbe8c0', 'm1-fg': '#6e4700', 'm0-bg': '#e3e8ee', 'm0-fg': '#56626e', 'good-bg': '#d7f0df', 'bad-bg': '#fbdcd9',
+    'pr-bad-line': '#e0a19c', 'pr-bad-bg': '#fbe9e7', 'pr-bad-fg': '#9c1f18', ov: 'rgba(20,26,33,.45)', shadow: 'rgba(20,26,33,.25)', press: '.93', 'dot-bg': '#12301f', 'dot-pad': '3px',
+    'fig-fg': '#2c3743', 'fig-p1': '#2a7de1', 'fig-p2': '#d2690a', 'fig-p1t': '#0a4fb3', 'fig-p2t': '#8a4500', 'fig-dash': '#56626e', 'fig-meter': '#ffffff', 'fig-cu': '#a8741a', 'fig-g': '#0e6e38', 'fig-gt': '#0e6e38', 'fig-n1': '#3b9eff', 'fig-n1l': '#0a4fb3', 'fig-n2': '#ff9f43', 'fig-n2l': '#8a4500', 'fig-halo': '#ffffff'
+  };
+  const ptVars = o => Object.keys(o).map(k => '--pt-' + k + ':' + o[k]).join(';');
+  const PT_VARCSS = '\n.pt{' + ptVars(PT_DARK) + '}\n@media (prefers-color-scheme:light){:root:not([data-theme=dark]) .pt{' + ptVars(PT_LIGHT) + '}}\n:root[data-theme=light] .pt{' + ptVars(PT_LIGHT) + '}';
+  /* Farbsätze für Canvas (zur Zeichenzeit gewählt). dark = bisherige Werte. Platine, Kupfer, Pads und Markierungen AUF der Platine bleiben in beiden Modi gleich. */
+  const PT_CANVAS = {
+    dark: { band: '#2c343e', bandDash: '#3a4452', card: '#222830', cardOff: '#1a1f25', cardLine: '#3a4452', hit: '#3b9eff', fail: '#ff6b6b', pass: '#2f7a4b', icon: '#7fc0ff', iconOff: '#8b97a3', name: '#e8edf2', sub: '#8b97a3', num: '#8b97a3',
+      markFail: '#ff6b6b', markOk: '#4cd964', markFg: '#06121f', scan: 'rgba(59,158,255,.85)', p1: '#3b9eff', p2: '#ff9f43',
+      chartTxt: '#8b97a3', chartGrid: '#2c343e', chartIct: '#ff9f43', chartFp: '#3b9eff', chartBe: '#4cd964', chartQty: '#ffffff' },
+    light: { band: '#d3d9e0', bandDash: '#93a0ad', card: '#ffffff', cardOff: '#e6eaef', cardLine: '#b4bdc8', hit: '#0a4fb3', fail: '#b3261e', pass: '#0e6e38', icon: '#0a4fb3', iconOff: '#2c3743', name: '#141a21', sub: '#56626e', num: '#56626e',
+      markFail: '#b3261e', markOk: '#0e6e38', markFg: '#ffffff', scan: 'rgba(10,79,179,.85)', p1: '#2a7de1', p2: '#d2690a',
+      chartTxt: '#56626e', chartGrid: '#c3cbd5', chartIct: '#9a4a00', chartFp: '#0a4fb3', chartBe: '#0e6e38', chartQty: '#141a21' }
+  };
+  const api = { theme: { dark: PT_DARK, light: PT_LIGHT, canvas: PT_CANVAS, varCss: PT_VARCSS }, version: '1.0', planFlyingProbe, dft, inspect, breakEven, inject, compare, analyze: (b, o) => { const a = analyze(b, o); return { nodes: a.nodes, nets: a.nets.map(n => ({ name: n.name, nodes: n.nodes.length, acc: n.acc.length })), parts: a.partInfo.map(p => ({ ref: p.ref, kind: p.kind, covered: p.covered })) }; }, suggestTP: (b, o, net, side) => suggestTP(b, analyze(b, o), net, side), parseVal, fmtOhm, fmtCap, kindOf, ictFixtureCost, ictTimeS, SAY, FAULT_NAME, MODES, defaults: BASE };
   root.PCB_TEST = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 
@@ -671,100 +700,108 @@
       return e;
     }
     const MONO = 'ui-monospace,SFMono-Regular,Consolas,Menlo,monospace';
-    const CSS = `
-.pt{position:relative;display:flex;flex-direction:column;height:100%;min-height:380px;background:#14181c;color:#e8edf2;font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+    /* Hellmodus zur Zeichenzeit erkennen (Canvas kann keine CSS-Variablen) */
+    function isHell() { try { const t = doc.documentElement.getAttribute('data-theme'); return t === 'light' || (t !== 'dark' && !!(root.matchMedia && root.matchMedia('(prefers-color-scheme: light)').matches)); } catch (e) { return false; } }
+    const pal = () => PT_CANVAS[isHell() ? 'light' : 'dark'];
+    /* Canvas bei Wechsel des Systemschemas neu zeichnen */
+    const themed = new Set();
+    function onTheme(cv, fn) { themed.forEach(o => { if (!o.cv.isConnected) themed.delete(o); }); themed.add({ cv, fn }); }
+    try { const mq = root.matchMedia && root.matchMedia('(prefers-color-scheme: light)'); const f = () => themed.forEach(o => { if (!o.cv.isConnected) { themed.delete(o); return; } try { o.fn(); } catch (e) { /* egal */ } }); if (mq) { if (mq.addEventListener) mq.addEventListener('change', f); else if (mq.addListener) mq.addListener(f); } } catch (e) { /* egal */ }
+    const CSS = PT_VARCSS + `
+.pt{position:relative;display:flex;flex-direction:column;height:100%;min-height:380px;background:var(--pt-bg);color:var(--pt-fg);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
 .pt *{box-sizing:border-box}
-.pt-tabs{display:flex;gap:6px;padding:8px;background:#222830;border-bottom:1px solid #2c343e;flex:0 0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.pt-tab{flex:0 0 auto;min-height:40px;padding:0 14px;border:1px solid #3a4452;background:#2c343e;color:#c9d2dc;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation}
-.pt-tab.on{background:#3b9eff;border-color:#3b9eff;color:#06121f}
+.pt-tabs{display:flex;gap:6px;padding:8px;background:var(--pt-panel);border-bottom:1px solid var(--pt-line);flex:0 0 auto;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pt-tab{flex:0 0 auto;min-height:44px;padding:0 14px;border:1px solid var(--pt-ctl-line);background:var(--pt-ctl);color:var(--pt-fg2);border-radius:10px;font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation}
+.pt-tab.on{background:var(--pt-acc);border-color:var(--pt-acc);color:var(--pt-acc-fg)}
 .pt-body{flex:1 1 auto;overflow:auto;padding:10px;-webkit-overflow-scrolling:touch}
-.pt-card{background:#222830;border:1px solid #2c343e;border-radius:12px;padding:12px;margin-bottom:12px;min-width:0}
-.pt-card h3{margin:0 0 8px;font-size:15px;color:#e8edf2}
-.pt-card h4{margin:12px 0 4px;font-size:13px;color:#9fb0c2;font-weight:700}
-.pt-card p{margin:0 0 8px;color:#c9d2dc}
-.pt-card ul,.pt-card ol{margin:0 0 8px;padding-left:20px;color:#c9d2dc}
+.pt-card{background:var(--pt-panel);border:1px solid var(--pt-line);border-radius:12px;padding:12px;margin-bottom:12px;min-width:0}
+.pt-card h3{margin:0 0 8px;font-size:15px;color:var(--pt-fg)}
+.pt-card h4{margin:12px 0 4px;font-size:13px;color:var(--pt-fg3);font-weight:700}
+.pt-card p{margin:0 0 8px;color:var(--pt-fg2)}
+.pt-card ul,.pt-card ol{margin:0 0 8px;padding-left:20px;color:var(--pt-fg2)}
 .pt-card li{margin:2px 0}
-.pt-mute{color:#8b97a3;font-size:12.5px}
+.pt-mute{color:var(--pt-mute);font-size:12.5px}
 .pt-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px}
 .pt-sp{flex:1 1 4px}
-.pt-btn{min-height:40px;min-width:40px;padding:0 12px;border:1px solid #3a4452;background:#2c343e;color:#e8edf2;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation}
-.pt-btn:active{filter:brightness(1.25)}
+.pt-btn{min-height:44px;min-width:44px;padding:0 12px;border:1px solid var(--pt-ctl-line);background:var(--pt-ctl);color:var(--pt-fg);border-radius:10px;font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation}
+.pt-btn:active{filter:brightness(var(--pt-press))}
 .pt-btn:disabled{opacity:.38;cursor:default}
-.pt-btn.pri{background:#3b9eff;border-color:#3b9eff;color:#06121f}
-.pt-btn.ok{background:#4cd964;border-color:#4cd964;color:#06200d}
-.pt-btn.on{background:#1d3550;border-color:#3b9eff;color:#bfe0ff}
-.pt-seg{display:inline-flex;border:1px solid #3a4452;border-radius:10px;overflow:hidden;flex:0 0 auto}
-.pt-seg button{min-height:40px;min-width:44px;padding:0 12px;border:0;border-right:1px solid #3a4452;background:#2c343e;color:#c9d2dc;font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation}
+.pt-btn.pri{background:var(--pt-acc);border-color:var(--pt-acc);color:var(--pt-acc-fg)}
+.pt-btn.ok{background:var(--pt-ok-bg);border-color:var(--pt-ok-bg);color:var(--pt-ok-fg)}
+.pt-btn.on{background:var(--pt-on-bg);border-color:var(--pt-acc);color:var(--pt-on-fg)}
+.pt-seg{display:inline-flex;border:1px solid var(--pt-ctl-line);border-radius:10px;overflow:hidden;flex:0 0 auto}
+.pt-seg button{min-height:44px;min-width:44px;padding:0 12px;border:0;border-right:1px solid var(--pt-ctl-line);background:var(--pt-ctl);color:var(--pt-fg2);font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation}
 .pt-seg button:last-child{border-right:0}
-.pt-seg button.on{background:#3b9eff;color:#06121f}
-.pt-lbl{font-size:13px;color:#9fb0c2}
-.pt-sel{width:auto;flex:0 1 auto;min-height:40px;background:#2c343e;color:#e8edf2;border:1px solid #3a4452;border-radius:10px;padding:0 8px;font:inherit;max-width:100%}
-.pt-in{min-height:40px;background:#14181c;color:#e8edf2;border:1px solid #3a4452;border-radius:10px;padding:0 10px;font:inherit;width:100%}
+.pt-seg button.on{background:var(--pt-acc);color:var(--pt-acc-fg)}
+.pt-lbl{font-size:13px;color:var(--pt-fg3)}
+.pt-sel{width:auto;flex:0 1 auto;min-height:44px;background:var(--pt-ctl);color:var(--pt-fg);border:1px solid var(--pt-ctl-line);border-radius:10px;padding:0 8px;font:inherit;max-width:100%}
+.pt-in{min-height:44px;background:var(--pt-in-bg);color:var(--pt-fg);border:1px solid var(--pt-ctl-line);border-radius:10px;padding:0 10px;font:inherit;width:100%}
 .pt-sl{display:grid;grid-template-columns:minmax(90px,140px) 1fr minmax(70px,auto);gap:8px;align-items:center;margin:2px 0}
-.pt-sl input[type=range]{width:100%;height:40px;margin:0;accent-color:#3b9eff;touch-action:pan-y}
-.pt-sl output{font:600 13px ${MONO};color:#7fc0ff;text-align:right}
+.pt-sl input[type=range]{width:100%;height:44px;margin:0;accent-color:var(--pt-acc);touch-action:pan-y}
+.pt-sl output{font:600 13px ${MONO};color:var(--pt-val);text-align:right}
 .pt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:12px;align-items:start}
 .pt-grid>.pt-card{margin-bottom:0}
 .pt-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,330px);gap:12px;align-items:start;margin-bottom:12px}
 .pt-split>.pt-card{margin-bottom:0}
 @media (max-width:860px){.pt-split{grid-template-columns:minmax(0,1fr)}.pt-split>.pt-card{margin-bottom:12px}}
-.pt-cv{display:block;width:100%;background:#0e1115;border-radius:10px;touch-action:none;cursor:pointer}
+.pt-cv{display:block;width:100%;background:var(--pt-cv-bg);border-radius:10px;touch-action:none;cursor:pointer}
 .pt-kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-bottom:8px}
-.pt-k{background:#1b2128;border:1px solid #2c343e;border-radius:10px;padding:8px 10px}
-.pt-k b{display:block;font:700 20px ${MONO};color:#7fc0ff}
-.pt-k span{font-size:12px;color:#9fb0c2}
-.pt-ok{color:#4cd964}.pt-warn{color:#ffb340}.pt-err{color:#ff6b6b}
-.pt-note{border-left:3px solid #3b9eff;background:#1b2530;padding:8px 10px;border-radius:0 8px 8px 0;margin:8px 0;color:#c9d2dc}
-.pt-note.ok{border-color:#4cd964;background:#1a2a20}.pt-note.warn{border-color:#ffb340;background:#2c2618}.pt-note.err{border-color:#ff6b6b;background:#2d1d20}
-.pt-acc{border:1px solid #2c343e;border-radius:12px;background:#222830;margin-bottom:10px}
+.pt-k{background:var(--pt-soft-bg);border:1px solid var(--pt-line);border-radius:10px;padding:8px 10px}
+.pt-k b{display:block;font:700 20px ${MONO};color:var(--pt-val)}
+.pt-k span{font-size:12px;color:var(--pt-fg3)}
+.pt-ok{color:var(--pt-ok)}.pt-warn{color:var(--pt-warn)}.pt-err{color:var(--pt-err)}
+.pt-note{border-left:3px solid var(--pt-acc);background:var(--pt-note-bg);padding:8px 10px;border-radius:0 8px 8px 0;margin:8px 0;color:var(--pt-fg2)}
+.pt-note.ok{border-color:var(--pt-ok-bg);background:var(--pt-note-ok-bg)}.pt-note.warn{border-color:var(--pt-warn);background:var(--pt-note-warn-bg)}.pt-note.err{border-color:var(--pt-err);background:var(--pt-note-err-bg)}
+.pt-acc{border:1px solid var(--pt-line);border-radius:12px;background:var(--pt-panel);margin-bottom:10px}
 .pt-acc>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700;list-style:none;padding:4px 12px}
 .pt-acc>summary::-webkit-details-marker{display:none}
-.pt-acc>summary::before{content:"\\203A";font-weight:700;font-size:20px;width:14px;text-align:center;margin-right:8px;color:#3b9eff;transition:transform .15s}
+.pt-acc>summary::before{content:"\\203A";font-weight:700;font-size:20px;width:14px;text-align:center;margin-right:8px;color:var(--pt-acc);transition:transform .15s}
 .pt-acc[open]>summary::before{transform:rotate(90deg)}
 .pt-acc>div{padding:0 12px 10px}
-.pt-acc p,.pt-acc li{color:#c9d2dc}
+.pt-acc p,.pt-acc li{color:var(--pt-fg2)}
 .pt-acc ul,.pt-acc ol{padding-left:20px;margin:0 0 8px}
-.pt-acc h4{margin:12px 0 4px;font-size:13px;color:#9fb0c2}
+.pt-acc h4{margin:12px 0 4px;font-size:13px;color:var(--pt-fg3)}
 .pt-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px}
-.pt-pro,.pt-con{border-radius:10px;padding:8px 10px;background:#1b2128;border:1px solid #2c343e}
+.pt-pro,.pt-con{border-radius:10px;padding:8px 10px;background:var(--pt-soft-bg);border:1px solid var(--pt-line)}
 .pt-pro h5,.pt-con h5{margin:0 0 4px;font-size:13px}
-.pt-pro h5{color:#4cd964}.pt-con h5{color:#ffb340}
-.pt-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #2c343e;border-radius:10px}
+.pt-pro h5{color:var(--pt-ok)}.pt-con h5{color:var(--pt-warn)}
+.pt-tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--pt-line);border-radius:10px}
 .pt-tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
-.pt-tbl th,.pt-tbl td{text-align:left;padding:7px 8px;border-bottom:1px solid #2c343e;vertical-align:top}
-.pt-tbl th{color:#9fb0c2;font-weight:700;background:#1b2128;position:sticky;top:0}
+.pt-tbl th,.pt-tbl td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--pt-line);vertical-align:top}
+.pt-tbl th{color:var(--pt-fg3);font-weight:700;background:var(--pt-soft-bg);position:sticky;top:0}
 .pt-tbl td.c,.pt-tbl th.c{text-align:center}
 .pt-m{display:inline-block;min-width:26px;border-radius:12px;padding:1px 6px;font-weight:700;font-size:12px;text-align:center}
-.pt-m2{background:#1a3a24;color:#6be787}.pt-m1{background:#3a3218;color:#ffcb5c}.pt-m0{background:#2b2f35;color:#7a8592}
-.pt-fig{display:block;width:100%;max-width:520px;height:auto;margin:6px auto;background:#0e1115;border-radius:10px}
-.pt-ov{position:absolute;inset:0;background:rgba(6,9,12,.72);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow:auto}
-.pt-win{background:#222830;border:1px solid #3a4452;border-radius:14px;max-width:760px;width:100%;margin:auto;box-shadow:0 12px 40px rgba(0,0,0,.5)}
-.pt-win header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #2c343e;position:sticky;top:0;background:#222830;border-radius:14px 14px 0 0;z-index:1}
+.pt-m2{background:var(--pt-m2-bg);color:var(--pt-m2-fg)}.pt-m1{background:var(--pt-m1-bg);color:var(--pt-m1-fg)}.pt-m0{background:var(--pt-m0-bg);color:var(--pt-m0-fg)}
+.pt-fig{display:block;width:100%;max-width:520px;height:auto;margin:6px auto;background:var(--pt-fig-bg);border-radius:10px}
+.pt-ov{position:absolute;inset:0;background:var(--pt-ov);z-index:20;display:flex;align-items:flex-start;justify-content:center;padding:10px;overflow:auto}
+.pt-win{background:var(--pt-panel);border:1px solid var(--pt-ctl-line);border-radius:14px;max-width:760px;width:100%;margin:auto;box-shadow:0 12px 40px var(--pt-shadow)}
+.pt-win header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--pt-line);position:sticky;top:0;background:var(--pt-panel);border-radius:14px 14px 0 0;z-index:1}
 .pt-win header h3{margin:0;font-size:16px;flex:1}
 .pt-win .pt-wb{padding:10px 12px 14px}
-.pt-win .pt-wb h4{margin:12px 0 4px;font-size:13px;color:#9fb0c2}
-.pt-win .pt-wb p,.pt-win .pt-wb li{color:#c9d2dc}
+.pt-win .pt-wb h4{margin:12px 0 4px;font-size:13px;color:var(--pt-fg3)}
+.pt-win .pt-wb p,.pt-win .pt-wb li{color:var(--pt-fg2)}
 .pt-win .pt-wb ul{margin:0 0 8px;padding-left:20px}
-.pt-pill{display:inline-block;border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;background:#2c343e;color:#c9d2dc;margin:0 4px 4px 0}
+.pt-pill{display:inline-block;border-radius:12px;padding:2px 9px;font-size:12px;font-weight:700;background:var(--pt-ctl);color:var(--pt-fg2);margin:0 4px 4px 0}
 .pt-list{display:flex;flex-direction:column;gap:6px}
-.pt-pr{display:grid;grid-template-columns:34px 1fr auto;gap:6px 8px;align-items:center;background:#1b2128;border:1px solid #2c343e;border-radius:8px;padding:6px 8px;min-height:40px;cursor:pointer;font-size:13px}
-.pt-pr.bad{border-color:#7a2f35;background:#2a1a1d}
-.pt-pr .n{font:12px ${MONO};color:#8b97a3}
-.pt-pr .v{font:600 12.5px ${MONO};color:#7fc0ff;text-align:right}
-.pt-pr.bad .v{color:#ff8a8a}
-.pt-pr small{grid-column:2/4;color:#8b97a3;font-size:12px}
-.pt-bar{height:8px;border-radius:4px;background:#2c343e;overflow:hidden}
-.pt-bar i{display:block;height:100%;background:#3b9eff;width:0}
-.pt-q{border:1px solid #2c343e;border-radius:10px;padding:10px;margin-bottom:10px;background:#1b2128}
-.pt-q button.opt{display:block;width:100%;text-align:left;min-height:44px;margin:6px 0 0;padding:8px 12px;border:1px solid #3a4452;background:#2c343e;color:#e8edf2;border-radius:10px;font:inherit;cursor:pointer;touch-action:manipulation}
-.pt-q button.opt.good{background:#1a3a24;border-color:#4cd964}
-.pt-q button.opt.bad{background:#3a1d22;border-color:#ff6b6b}
-.pt-chk{display:flex;gap:10px;align-items:flex-start;min-height:44px;padding:6px 4px;border-bottom:1px solid #2c343e;cursor:pointer}
-.pt-chk input{width:22px;height:22px;margin-top:2px;accent-color:#4cd964;flex:0 0 auto}
+.pt-pr{display:grid;grid-template-columns:34px 1fr auto;gap:6px 8px;align-items:center;background:var(--pt-soft-bg);border:1px solid var(--pt-line);border-radius:8px;padding:6px 8px;min-height:44px;cursor:pointer;font-size:13px}
+.pt-pr.bad{border-color:var(--pt-pr-bad-line);background:var(--pt-pr-bad-bg)}
+.pt-pr .n{font:12px ${MONO};color:var(--pt-mute)}
+.pt-pr .v{font:600 12.5px ${MONO};color:var(--pt-val);text-align:right}
+.pt-pr.bad .v{color:var(--pt-pr-bad-fg)}
+.pt-pr small{grid-column:2/4;color:var(--pt-mute);font-size:12px}
+.pt-bar{height:8px;border-radius:4px;background:var(--pt-bar-bg);overflow:hidden}
+.pt-bar i{display:block;height:100%;background:var(--pt-acc);width:0}
+.pt-q{border:1px solid var(--pt-line);border-radius:10px;padding:10px;margin-bottom:10px;background:var(--pt-soft-bg)}
+.pt-q button.opt{display:block;width:100%;text-align:left;min-height:44px;margin:6px 0 0;padding:8px 12px;border:1px solid var(--pt-ctl-line);background:var(--pt-ctl);color:var(--pt-fg);border-radius:10px;font:inherit;cursor:pointer;touch-action:manipulation}
+.pt-q button.opt.good{background:var(--pt-good-bg);border-color:var(--pt-ok-bg)}
+.pt-q button.opt.bad{background:var(--pt-bad-bg);border-color:var(--pt-err)}
+.pt-chk{display:flex;gap:10px;align-items:flex-start;min-height:44px;padding:6px 4px;border-bottom:1px solid var(--pt-line);cursor:pointer}
+.pt-chk input{width:22px;height:22px;margin-top:2px;accent-color:var(--pt-ok-bg);flex:0 0 auto}
 .pt-gl{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:8px}
-.pt-gl div{background:#1b2128;border:1px solid #2c343e;border-radius:10px;padding:8px 10px}
-.pt-gl b{display:block;color:#7fc0ff;margin-bottom:2px}
-.pt-gl span{color:#c9d2dc;font-size:13px}
+.pt-gl div{background:var(--pt-soft-bg);border:1px solid var(--pt-line);border-radius:10px;padding:8px 10px}
+.pt-gl b{display:block;color:var(--pt-val);margin-bottom:2px}
+.pt-gl span{color:var(--pt-fg2);font-size:13px}
+.pt-dot{background:var(--pt-dot-bg);border-radius:7px;padding:0 var(--pt-dot-pad)}
 `;
     function ensureCss() { if (doc.getElementById('pcbtest-css')) return; const st = doc.createElement('style'); st.id = 'pcbtest-css'; st.textContent = CSS; doc.head.appendChild(st); }
     const C = () => root.PCB_CORE || null;
@@ -959,35 +996,35 @@
        ==================================================================================== */
     const FIG_PRINCIPLE = `<svg class="pt-fig" viewBox="0 0 520 240" role="img" aria-label="Flying Probe: zwei bewegliche Nadeln auf Linearachsen über der Platine">
 <rect x="20" y="8" width="480" height="12" rx="3" fill="#3a4452"/><text x="28" y="18" fill="#c9d2dc" font-size="10">X-Achse (Schiene)</text>
-<rect x="128" y="4" width="26" height="20" rx="3" fill="#3b9eff"/><rect x="138" y="24" width="6" height="86" fill="#3b9eff"/><path d="M137 110 L145 110 L141 130 Z" fill="#e8edf2"/>
-<rect x="322" y="4" width="26" height="20" rx="3" fill="#ff9f43"/><rect x="332" y="24" width="6" height="116" fill="#ff9f43"/><path d="M331 140 L339 140 L335 160 Z" fill="#e8edf2"/>
+<rect x="128" y="4" width="26" height="20" rx="3" fill="var(--pt-fig-n1)" stroke="var(--pt-fig-n1l)"/><rect x="138" y="24" width="6" height="86" fill="var(--pt-fig-n1)" stroke="var(--pt-fig-n1l)"/><path d="M137 110 L145 110 L141 130 Z" fill="#e8edf2"/>
+<rect x="322" y="4" width="26" height="20" rx="3" fill="var(--pt-fig-n2)" stroke="var(--pt-fig-n2l)"/><rect x="332" y="24" width="6" height="116" fill="var(--pt-fig-n2)" stroke="var(--pt-fig-n2l)"/><path d="M331 140 L339 140 L335 160 Z" fill="#e8edf2"/>
 <rect x="34" y="110" width="452" height="120" rx="6" fill="#14532d" stroke="#2f7a4b"/>
 <g stroke="#d9a441" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M141 132 L141 185 L260 185 L335 185 L335 162"/><path d="M70 150 L70 205 L190 205"/><path d="M400 140 L400 205 L450 205"/></g>
 <g fill="#d9a441"><rect x="133" y="128" width="16" height="10" rx="2"/><rect x="327" y="158" width="16" height="10" rx="2"/><rect x="62" y="146" width="16" height="10" rx="2"/><rect x="392" y="136" width="16" height="10" rx="2"/><rect x="182" y="200" width="16" height="10" rx="2"/><rect x="442" y="200" width="16" height="10" rx="2"/></g>
 <rect x="215" y="160" width="46" height="22" rx="3" fill="#222" stroke="#555"/><text x="224" y="175" fill="#aaa" font-size="10">R1</text>
-<text x="150" y="104" fill="#9ccaff" font-size="11">Nadel 1</text><text x="352" y="150" fill="#ffc78a" font-size="11">Nadel 2</text>
+<text x="150" y="104" fill="var(--pt-fig-p1t)" font-size="11">Nadel 1</text><text x="352" y="150" fill="#ffc78a" font-size="11">Nadel 2</text>
 <text x="170" y="226" fill="#bfe8cd" font-size="11">Netz A: Durchgang zwischen den Spitzen?</text>
-<path d="M150 60 C 230 40, 300 40, 322 60" stroke="#8b97a3" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/><text x="188" y="48" fill="#c9d2dc" font-size="10">Messung zwischen Nadel 1 und 2</text>
+<path d="M150 60 C 230 40, 300 40, 322 60" stroke="var(--pt-fig-dash)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/><text x="188" y="48" fill="var(--pt-fig-fg)" font-size="10">Messung zwischen Nadel 1 und 2</text>
 </svg>`;
     const FIG_KELVIN = `<svg class="pt-fig" viewBox="0 0 520 220" role="img" aria-label="Kelvin-Messung mit vier Nadeln an einem kleinen Widerstand">
 <rect x="20" y="130" width="480" height="80" rx="6" fill="#14532d" stroke="#2f7a4b"/>
 <rect x="150" y="150" width="30" height="24" rx="2" fill="#d9a441"/><rect x="340" y="150" width="30" height="24" rx="2" fill="#d9a441"/><rect x="176" y="154" width="168" height="16" rx="3" fill="#222" stroke="#666"/><text x="236" y="166" fill="#aaa" font-size="11">Rx klein</text>
-<g stroke-width="3"><path d="M158 150 L136 100" stroke="#3b9eff"/><path d="M172 150 L182 100" stroke="#ff9f43"/><path d="M348 150 L370 100" stroke="#3b9eff"/><path d="M362 150 L340 100" stroke="#ff9f43"/></g>
-<text x="104" y="96" fill="#9ccaff" font-size="11">Strom F+</text><text x="176" y="92" fill="#ffc78a" font-size="11">Sense S+</text><text x="346" y="92" fill="#ffc78a" font-size="11">Sense S−</text><text x="368" y="104" fill="#9ccaff" font-size="11">Strom F−</text>
-<path d="M136 100 L136 40 L370 40 L370 100" fill="none" stroke="#3b9eff" stroke-width="2"/><circle cx="253" cy="40" r="16" fill="#14181c" stroke="#3b9eff" stroke-width="2"/><text x="248" y="45" fill="#9ccaff" font-size="14">I</text>
-<path d="M182 100 L182 66 L340 66 L340 100" fill="none" stroke="#ff9f43" stroke-width="2"/><circle cx="260" cy="66" r="13" fill="#14181c" stroke="#ff9f43" stroke-width="2"/><text x="255" y="71" fill="#ffc78a" font-size="13">V</text>
+<g stroke-width="7" stroke="var(--pt-fig-halo)" stroke-linecap="round"><path d="M156 150 L136 100"/><path d="M174 150 L182 100"/><path d="M364 150 L384 100"/><path d="M346 150 L338 100"/></g><g stroke-width="3"><path d="M156 150 L136 100" stroke="var(--pt-fig-p1)"/><path d="M174 150 L182 100" stroke="var(--pt-fig-p2)"/><path d="M364 150 L384 100" stroke="var(--pt-fig-p1)"/><path d="M346 150 L338 100" stroke="var(--pt-fig-p2)"/></g>
+<text x="128" y="112" text-anchor="end" fill="var(--pt-fig-p1t)" font-size="11">Strom F+</text><text x="190" y="92" fill="var(--pt-fig-p2t)" font-size="11">Sense S+</text><text x="330" y="92" text-anchor="end" fill="var(--pt-fig-p2t)" font-size="11">Sense S−</text><text x="392" y="112" fill="var(--pt-fig-p1t)" font-size="11">Strom F−</text>
+<path d="M136 100 L136 40 L384 40 L384 100" fill="none" stroke="var(--pt-fig-p1)" stroke-width="2"/><circle cx="215" cy="40" r="16" fill="var(--pt-fig-meter)" stroke="var(--pt-fig-p1)" stroke-width="2"/><text x="215" y="45" text-anchor="middle" fill="var(--pt-fig-p1t)" font-size="14">I</text>
+<path d="M182 100 L182 66 L338 66 L338 100" fill="none" stroke="var(--pt-fig-p2)" stroke-width="2"/><circle cx="260" cy="66" r="13" fill="var(--pt-fig-meter)" stroke="var(--pt-fig-p2)" stroke-width="2"/><text x="255" y="71" fill="var(--pt-fig-p2t)" font-size="13">V</text>
 <text x="40" y="205" fill="#bfe8cd" font-size="11">Die Spannung wird direkt an Rx gemessen: Der Widerstand der Strom-Nadeln fällt heraus.</text>
 </svg>`;
     const FIG_GUARD = `<svg class="pt-fig" viewBox="0 0 520 230" role="img" aria-label="Guard-Technik: Messung von Rx mit parallelem Pfad über R2 und R3">
-<g stroke="#d9a441" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M90 70 L190 70"/><path d="M290 70 L430 70"/><path d="M90 70 L90 160 L170 160"/><path d="M250 160 L260 160 L260 160"/><path d="M430 70 L430 160 L350 160"/></g>
+<g stroke="var(--pt-fig-cu)" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M90 70 L190 70"/><path d="M290 70 L430 70"/><path d="M90 70 L90 160 L170 160"/><path d="M250 160 L260 160 L260 160"/><path d="M430 70 L430 160 L350 160"/></g>
 <rect x="190" y="56" width="100" height="28" rx="3" fill="#222" stroke="#777"/><text x="224" y="75" fill="#bbb" font-size="12">Rx (gesucht)</text>
 <rect x="170" y="146" width="80" height="28" rx="3" fill="#222" stroke="#777"/><text x="200" y="165" fill="#bbb" font-size="12">R2</text>
 <rect x="270" y="146" width="80" height="28" rx="3" fill="#222" stroke="#777"/><text x="300" y="165" fill="#bbb" font-size="12">R3</text>
-<path d="M250 160 L270 160" stroke="#d9a441" stroke-width="3"/>
-<circle cx="90" cy="70" r="7" fill="#3b9eff"/><text x="76" y="52" fill="#9ccaff" font-size="12">A (Strom ein)</text>
-<circle cx="430" cy="70" r="7" fill="#3b9eff"/><text x="392" y="52" fill="#9ccaff" font-size="12">B (Strom aus)</text>
-<circle cx="260" cy="160" r="7" fill="#4cd964"/><path d="M260 167 L260 205" stroke="#4cd964" stroke-width="2"/><text x="270" y="202" fill="#7fe597" font-size="12">G: Guard, auf Potenzial von B</text>
-<text x="20" y="224" fill="#c9d2dc" font-size="11">Über R3 liegt keine Spannung, der Strom durch R2 fließt in den Guard: Gemessen wird nur Rx.</text>
+<path d="M250 160 L270 160" stroke="var(--pt-fig-cu)" stroke-width="3"/>
+<circle cx="90" cy="70" r="7" fill="var(--pt-fig-p1)"/><text x="76" y="52" fill="var(--pt-fig-p1t)" font-size="12">A (Strom ein)</text>
+<circle cx="430" cy="70" r="7" fill="var(--pt-fig-p1)"/><text x="392" y="52" fill="var(--pt-fig-p1t)" font-size="12">B (Strom aus)</text>
+<circle cx="260" cy="160" r="7" fill="var(--pt-fig-g)"/><path d="M260 167 L260 205" stroke="var(--pt-fig-g)" stroke-width="2"/><text x="270" y="202" fill="var(--pt-fig-gt)" font-size="12">G: Guard, auf Potenzial von B</text>
+<text x="20" y="224" fill="var(--pt-fig-fg)" font-size="11">Über R3 liegt keine Spannung, der Strom durch R2 fließt in den Guard: Gemessen wird nur Rx.</text>
 </svg>`;
 
     const FP_SECTIONS = [
@@ -998,8 +1035,8 @@
 <h4>Kelvin-Messung (Vierleiter)</h4><p>Bei <b>kleinen Widerständen</b> spielt der Übergangswiderstand der Nadelspitzen eine Rolle, denn er ist nicht vernachlässigbar klein und streut. Deshalb leiten zwei Nadeln den Strom ein und zwei andere messen die Spannung direkt am Bauteil. Dafür braucht der Tester mindestens vier Nadeln.</p>${FIG_KELVIN}
 <h4>Guard-Technik</h4><p>Misst du ein Bauteil <b>in der Schaltung</b>, fließt ein Teil des Stroms über parallele Pfade durch andere Bauteile. Das verfälscht das Ergebnis. Mit einem <b>Guard</b> wird ein weiterer Punkt auf das passende Potenzial gelegt. Dann liegt über einem Teil des Nebenpfads keine Spannung, und der restliche Nebenstrom fließt in den Guard statt in die Messung.</p>${FIG_GUARD}
 <h4>Weitere Messungen</h4><ul><li><b>Kondensatoren:</b> Mit Wechsel- oder Ladestrom (LCR-Messung). Große Kapazitäten brauchen mehr Zeit.</li><li><b>Dioden und LEDs:</b> Mit kleinem Strom wird die Flussspannung gemessen. Die Sperrrichtung zeigt die Polung.</li><li><b>ICs:</b> Über die Schutzdioden an den Pins gegen einen Bezugspin (meist Masse). Das Muster verrät, ob das Bauteil da ist und richtig herum sitzt.</li><li><b>Mit Strom (Powered Test):</b> Je nach Maschine legt der Tester die Betriebsspannung an und misst Spannungen an Testpunkten. Das ist ein Übergang zum Funktionstest.</li></ul>` },
-      { t: 'Flying Probe gegen Nadelbett (ICT)', html: `<div class="pt-cols"><div class="pt-pro"><h5>Flying Probe</h5><ul><li>Kein Adapter nötig: ideal für <b>Prototypen, Kleinserien und häufig wechselnde Varianten</b></li><li>Flexibel: Platinenänderung heißt neues Programm, nicht neuer Adapter</li><li>Testprogramm entsteht schnell aus den CAD-Daten</li><li>Kann deutlich kleinere Pads als ein Nadelbett kontaktieren (je nach Maschine)</li></ul><h5 style="color:#ffb340;margin-top:8px">Nachteile</h5><ul><li><b>Langsam:</b> Sekunden pro Netz, Minuten pro Platine</li><li>Keine echte Parallelität, auch mit mehreren Nadeln fahren die Messungen größtenteils nacheinander</li><li>Geringere Abdeckung bei sehr dichten Platinen (Nadeln müssen einzeln herankommen)</li><li>Mechanische Belastung der Pads durch die Nadelspitzen</li></ul></div>
-<div class="pt-pro"><h5>Nadelbett (ICT)</h5><ul><li><b>Sehr schnell:</b> eine Platine in Sekunden, weil viele Punkte gleichzeitig kontaktiert sind</li><li>Hohe Abdeckung, auch mit Guard-Messung, Powered Test und Programmieren</li><li>Ideal für <b>Großserien</b></li></ul><h5 style="color:#ffb340;margin-top:8px">Nachteile</h5><ul><li><b>Der Adapter ist teuer:</b> hunderte Federkontaktstifte, Fräsen oder Bohren, Verdrahtung, Vakuum</li><li>Der Adapter gilt für eine Platinenversion; bei einer Änderung ist er neu oder umzubauen</li><li>Lieferzeit für den Adapter</li><li>Testpunkte mit etwa 0,8 bis 1,0 mm Durchmesser nötig, das verbraucht Platz</li></ul></div></div>
+      { t: 'Flying Probe gegen Nadelbett (ICT)', html: `<div class="pt-cols"><div class="pt-pro"><h5>Flying Probe</h5><ul><li>Kein Adapter nötig: ideal für <b>Prototypen, Kleinserien und häufig wechselnde Varianten</b></li><li>Flexibel: Platinenänderung heißt neues Programm, nicht neuer Adapter</li><li>Testprogramm entsteht schnell aus den CAD-Daten</li><li>Kann deutlich kleinere Pads als ein Nadelbett kontaktieren (je nach Maschine)</li></ul><h5 style="color:var(--pt-warn);margin-top:8px">Nachteile</h5><ul><li><b>Langsam:</b> Sekunden pro Netz, Minuten pro Platine</li><li>Keine echte Parallelität, auch mit mehreren Nadeln fahren die Messungen größtenteils nacheinander</li><li>Geringere Abdeckung bei sehr dichten Platinen (Nadeln müssen einzeln herankommen)</li><li>Mechanische Belastung der Pads durch die Nadelspitzen</li></ul></div>
+<div class="pt-pro"><h5>Nadelbett (ICT)</h5><ul><li><b>Sehr schnell:</b> eine Platine in Sekunden, weil viele Punkte gleichzeitig kontaktiert sind</li><li>Hohe Abdeckung, auch mit Guard-Messung, Powered Test und Programmieren</li><li>Ideal für <b>Großserien</b></li></ul><h5 style="color:var(--pt-warn);margin-top:8px">Nachteile</h5><ul><li><b>Der Adapter ist teuer:</b> hunderte Federkontaktstifte, Fräsen oder Bohren, Verdrahtung, Vakuum</li><li>Der Adapter gilt für eine Platinenversion; bei einer Änderung ist er neu oder umzubauen</li><li>Lieferzeit für den Adapter</li><li>Testpunkte mit etwa 0,8 bis 1,0 mm Durchmesser nötig, das verbraucht Platz</li></ul></div></div>
 <div class="pt-note">Die Rechnung dazu findest du im Simulator unter "ICT-Vergleich": Rüstkosten gegen Prüfzeit ergeben die <b>Break-even-Stückzahl</b>.</div>` },
       { t: 'DFT: Regeln für prüfbare Platinen', html: `<p>Design for Test heißt: Schon im Layout so planen, dass die Platine später geprüft werden kann. Hake ab, was bei deinem Layout stimmt.</p><div id="pt-dft-checklist"></div>` },
       { t: 'Abdeckung und Fehlerspektrum', html: `<h4>Abdeckungsbegriffe</h4><ul><li><b>Netzabdeckung:</b> Anteil der Netze, an die mindestens eine Nadel herankommt. Für die Durchgangsprüfung braucht ein Netz mindestens zwei erreichbare Punkte.</li><li><b>Bauteilabdeckung:</b> Anteil der Bauteile, die der Tester messen kann (beide Anschlüsse erreichbar).</li><li><b>Pinabdeckung:</b> Anteil der Anschlüsse, die erreichbar sind.</li><li><b>Fehlerspektrum:</b> Welche Fehlerarten ein Verfahren überhaupt sehen kann: Open, Short, falscher Wert, falsche Polung, fehlendes Bauteil, verdrehter IC.</li></ul><div class="pt-note warn">Hohe Abdeckung heißt nicht fehlerfrei: Ein Fehler an einer Stelle, die keine Nadel erreicht, bleibt unbemerkt. Das nennt man Schlupf.</div><h4>Was sieht die Flying Probe im Vergleich zur AOI?</h4><div id="pt-mini-matrix"></div>` },
@@ -1105,7 +1142,7 @@
       wb.appendChild(h('h4', { text: 'Was passiert hier?' })); st.what.forEach(t => wb.appendChild(h('p', { text: t })));
       wb.appendChild(h('h4', { text: 'Welche Fehler werden gefunden?' })); st.finds.forEach(t => wb.appendChild(h('p', { text: t })));
       wb.appendChild(h('h4', { text: 'Typische Parameter' }));
-      wb.appendChild(h('div', { class: 'pt-tbl-wrap' }, h('table', { class: 'pt-tbl', style: 'min-width:0' }, h('tbody', null, st.params.map(p => h('tr', null, [h('td', { style: 'width:38%;color:#9fb0c2', text: p[0] }), h('td', { text: p[1] })]))))));
+      wb.appendChild(h('div', { class: 'pt-tbl-wrap' }, h('table', { class: 'pt-tbl', style: 'min-width:0' }, h('tbody', null, st.params.map(p => h('tr', null, [h('td', { style: 'width:38%;color:var(--pt-fg3)', text: p[0] }), h('td', { text: p[1] })]))))));
       wb.appendChild(h('div', { class: 'pt-cols', style: 'margin-top:10px' }, [
         h('div', { class: 'pt-pro' }, [h('h5', { text: 'Vorteile' }), h('ul', null, st.pros.map(t => h('li', { text: t })))]),
         h('div', { class: 'pt-con' }, [h('h5', { text: 'Nachteile' }), h('ul', null, st.cons.map(t => h('li', { text: t })))])]));
@@ -1140,7 +1177,7 @@
       const btnStart = h('button', { class: 'pt-btn ok', text: '▶ Start' }), btnReset = h('button', { class: 'pt-btn', text: '⏮ Zurück' });
       const segSpeed = h('div', { class: 'pt-seg' }, [[1, '1x'], [2, '2x'], [4, '4x']].map(a => h('button', { 'data-v': a[0], text: a[1], class: st.speed === a[0] ? 'on' : '', onclick: () => { st.speed = a[0]; save(); [...segSpeed.children].forEach(c => c.classList.toggle('on', +c.dataset.v === st.speed)); } })));
       const segVar = h('div', { class: 'pt-seg' }, [['fp', 'Flying Probe'], ['ict', 'ICT']].map(a => h('button', { 'data-v': a[0], text: a[1], class: st.variant === a[0] ? 'on' : '', onclick: () => { st.variant = a[0]; save(); [...segVar.children].forEach(c => c.classList.toggle('on', c.dataset.v === st.variant)); reset(); } })));
-      const chk = (key, label) => { const i = h('input', { type: 'checkbox', style: 'width:22px;height:22px;accent-color:#3b9eff' }); i.checked = !!st[key]; i.addEventListener('change', () => { st[key] = i.checked; save(); reset(); }); return h('label', { class: 'pt-lbl', style: 'display:inline-flex;align-items:center;gap:6px;min-height:40px' }, [i, label]); };
+      const chk = (key, label) => { const i = h('input', { type: 'checkbox', style: 'width:22px;height:22px;accent-color:var(--pt-acc)' }); i.checked = !!st[key]; i.addEventListener('change', () => { st[key] = i.checked; save(); reset(); }); return h('label', { class: 'pt-lbl', style: 'display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px' }, [i, label]); };
       const selDef = h('select', { class: 'pt-sel', 'aria-label': 'Fehler auf der Platine' }, DEFECTS.map(d => h('option', { value: d.id, text: d.id === 'none' ? 'Fehler: keiner' : 'Fehler: ' + d.name })));
       selDef.value = st.defect; selDef.addEventListener('change', () => { st.defect = selDef.value; save(); reset(); });
       ctl.appendChild(btnStart); ctl.appendChild(btnReset); ctl.appendChild(segSpeed); ctl.appendChild(h('span', { class: 'pt-lbl', text: 'Test:' })); ctl.appendChild(segVar); ctl.appendChild(chk('tht', 'THT')); ctl.appendChild(chk('axi', 'Röntgen')); ctl.appendChild(selDef);
@@ -1168,23 +1205,23 @@
       function pathPts() { return act().map(s => { const c = cells.find(q => q.s === s); return { x: c.cx, y: c.cy, s }; }); }
       function draw() {
         if (!cv.isConnected) return; const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-        const on = new Set(act().map(s => s.id));
+        const on = new Set(act().map(s => s.id)), K = pal();
         /* Förderband */
-        g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#2c343e'; g.lineWidth = 8; g.beginPath();
+        g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = K.band; g.lineWidth = 8; g.beginPath();
         cells.forEach((c, i) => { if (i === 0) g.moveTo(c.cx, c.cy); else g.lineTo(c.cx, c.cy); }); g.stroke();
-        g.strokeStyle = '#3a4452'; g.lineWidth = 2; g.setLineDash([6, 8]); g.lineDashOffset = -((performance.now() / 60) | 0) % 14; g.stroke(); g.setLineDash([]);
+        g.strokeStyle = K.bandDash; g.lineWidth = 2; g.setLineDash([6, 8]); g.lineDashOffset = -((performance.now() / 60) | 0) % 14; g.stroke(); g.setLineDash([]);
         cells.forEach((c, i) => {
           const s = c.s, enabled = on.has(s.id), x = c.x + 6, y = c.y + 4, w = c.w - 12, hh = c.h - 8;
           const res = result && result.marks[s.id];
-          g.save(); g.fillStyle = enabled ? '#222830' : '#1a1f25'; g.strokeStyle = hit === i ? '#3b9eff' : res === 'fail' ? '#ff6b6b' : res === 'ok' ? '#2f7a4b' : '#3a4452'; g.lineWidth = hit === i || res ? 2 : 1;
+          g.save(); g.fillStyle = enabled ? K.card : K.cardOff; g.strokeStyle = hit === i ? K.hit : res === 'fail' ? K.fail : res === 'ok' ? K.pass : K.cardLine; g.lineWidth = hit === i || res ? 2 : 1;
           if (!enabled) g.setLineDash([5, 4]); g.beginPath(); g.roundRect ? g.roundRect(x, y, w, hh, 10) : g.rect(x, y, w, hh); g.fill(); g.stroke(); g.restore();
-          g.globalAlpha = enabled ? 1 : 0.45; g.textAlign = 'center'; g.fillStyle = enabled ? '#7fc0ff' : '#8b97a3'; g.font = '26px system-ui,sans-serif'; g.fillText(STATION_ICON[s.icon] || '■', c.cx, y + 34);
-          g.fillStyle = '#e8edf2'; g.font = '700 12px system-ui,sans-serif'; const nm = wrap(g, stName(s), w - 8); nm.slice(0, 2).forEach((t, k) => g.fillText(t, c.cx, y + 54 + k * 14));
-          g.fillStyle = '#8b97a3'; g.font = '10.5px system-ui,sans-serif'; if (nm.length < 2) { const sb = wrap(g, s.sub, w - 8); g.fillText(sb[0], c.cx, y + 70); if (sb[1] && hh > 82) g.fillText(sb[1], c.cx, y + 82); }
-          g.fillStyle = '#6b7684'; g.font = '700 10px system-ui,sans-serif'; g.textAlign = 'left'; g.fillText(String(i + 1), x + 6, y + 14); g.textAlign = 'center'; g.globalAlpha = 1;
-          if (res) { g.beginPath(); g.arc(x + w - 12, y + 14, 10, 0, 7); g.fillStyle = res === 'fail' ? '#ff6b6b' : '#4cd964'; g.fill(); g.fillStyle = '#06121f'; g.font = '700 13px system-ui'; g.fillText(res === 'fail' ? '✗' : '✓', x + w - 12, y + 19); }
+          g.globalAlpha = enabled ? 1 : 0.45; g.textAlign = 'center'; g.fillStyle = enabled ? K.icon : K.iconOff; g.font = '26px system-ui,sans-serif'; g.fillText(STATION_ICON[s.icon] || '■', c.cx, y + 34);
+          g.fillStyle = K.name; g.font = '700 12px system-ui,sans-serif'; const nm = wrap(g, stName(s), w - 8); nm.slice(0, 2).forEach((t, k) => g.fillText(t, c.cx, y + 54 + k * 14));
+          g.fillStyle = K.sub; g.font = '10.5px system-ui,sans-serif'; if (nm.length < 2) { const sb = wrap(g, s.sub, w - 8); g.fillText(sb[0], c.cx, y + 70); if (sb[1] && hh > 82) g.fillText(sb[1], c.cx, y + 82); }
+          g.fillStyle = K.num; g.font = '700 10px system-ui,sans-serif'; g.textAlign = 'left'; g.fillText(String(i + 1), x + 6, y + 14); g.textAlign = 'center'; g.globalAlpha = 1;
+          if (res) { g.beginPath(); g.arc(x + w - 12, y + 14, 10, 0, 7); g.fillStyle = res === 'fail' ? K.markFail : K.markOk; g.fill(); g.fillStyle = K.markFg; g.font = '700 13px system-ui'; g.fillText(res === 'fail' ? '✗' : '✓', x + w - 12, y + 19); }
           if (run && run.k === i && run.ph < 0.6 && enabled) { /* Scan-Effekt */
-            const f = (run.ph / 0.6); g.strokeStyle = 'rgba(59,158,255,.85)'; g.lineWidth = 2; const sy = y + 6 + (hh - 12) * (0.5 + 0.5 * Math.sin(f * 12)); g.beginPath(); g.moveTo(x + 6, sy); g.lineTo(x + w - 6, sy); g.stroke();
+            const f = (run.ph / 0.6); g.strokeStyle = K.scan; g.lineWidth = 2; const sy = y + 6 + (hh - 12) * (0.5 + 0.5 * Math.sin(f * 12)); g.beginPath(); g.moveTo(x + 6, sy); g.lineTo(x + w - 6, sy); g.stroke();
           }
         });
         /* Platine */
@@ -1237,7 +1274,7 @@
       }
       btnStart.addEventListener('click', start); btnReset.addEventListener('click', reset);
       cv.addEventListener('click', e => { const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, i = cells.findIndex(c => px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.h); if (i >= 0) { hit = i; draw(); stationWindow(env, cells[i].s.id); setTimeout(() => { hit = -1; draw(); }, 400); } });
-      layout(); draw();
+      layout(); draw(); onTheme(cv, draw);
       return {
         refresh() { /* Platine kann sich geändert haben: nichts nötig, Fenster rechnen beim Öffnen */ },
         onResize() { layout(); draw(); },
@@ -1306,7 +1343,7 @@
       zoomRow.appendChild(h('button', { class: 'pt-btn', text: '+', 'aria-label': 'Vergrößern', onclick: () => zoomAt(W / 2, H / 2, 1.4) }));
       zoomRow.appendChild(h('button', { class: 'pt-btn', text: '−', 'aria-label': 'Verkleinern', onclick: () => zoomAt(W / 2, H / 2, 1 / 1.4) }));
       zoomRow.appendChild(h('button', { class: 'pt-btn', text: 'Einpassen', onclick: () => { view.auto = true; fitView(); draw(); } }));
-      const legend = h('span', { class: 'pt-mute', html: '<span style="color:#4cd964">●</span> erreichbar &nbsp;<span style="color:#ffb340">●</span> verbaut &nbsp;<span style="color:#b48cff">●</span> zu klein &nbsp;<span style="color:#6b7684">●</span> andere Seite &nbsp;<span style="color:#3b9eff">●</span> neuer Testpunkt' });
+      const legend = h('span', { class: 'pt-mute', html: '<span class="pt-dot" style="color:#4cd964">●</span> erreichbar &nbsp;<span class="pt-dot" style="color:#ffb340">●</span> verbaut &nbsp;<span class="pt-dot" style="color:#b48cff">●</span> zu klein &nbsp;<span class="pt-dot" style="color:#6b7684">●</span> andere Seite &nbsp;<span class="pt-dot" style="color:#3b9eff">●</span> neuer Testpunkt' });
       zoomRow.appendChild(legend);
 
       const cv = h('canvas', { class: 'pt-cv', 'aria-label': 'Platine mit Pads und Prüfnadeln' }); cvCard.appendChild(cv); cvCard.appendChild(zoomRow);
@@ -1390,7 +1427,7 @@
         g.lineWidth = 1; scene.courts.forEach(c => {
           g.fillStyle = c.tall ? 'rgba(255,179,64,.10)' : 'rgba(255,255,255,.04)'; g.strokeStyle = c.tall ? 'rgba(255,179,64,.55)' : 'rgba(200,210,220,.30)'; if (c.side === 'bot') g.setLineDash([4, 3]);
           g.fillRect(X(c.c.x0), Y(c.c.y0), (c.c.x1 - c.c.x0) * s, (c.c.y1 - c.c.y0) * s); g.strokeRect(X(c.c.x0), Y(c.c.y0), (c.c.x1 - c.c.x0) * s, (c.c.y1 - c.c.y0) * s); g.setLineDash([]);
-          if (s > 3.2) { g.fillStyle = 'rgba(220,230,240,.55)'; g.font = '10px system-ui'; g.textAlign = 'left'; g.fillText(c.ref, X(c.c.x0) + 2, Y(c.c.y0) + 10); }
+          if (s > 3.2) { g.fillStyle = 'rgba(225,233,242,.8)'; g.font = '10px system-ui'; g.textAlign = 'left'; g.fillText(c.ref, X(c.c.x0) + 2, Y(c.c.y0) + 10); }
         });
         /* Knoten */
         if (plan) {
@@ -1410,7 +1447,7 @@
         flash = flash.filter(f => performance.now() - f.t0 < 700);
         flash.forEach(f => { const u = (performance.now() - f.t0) / 700; g.strokeStyle = f.ok ? 'rgba(76,217,100,' + (1 - u) + ')' : 'rgba(255,107,107,' + (1 - u) + ')'; g.lineWidth = 3; g.beginPath(); g.arc(X(f.x), Y(f.y), 6 + u * 16, 0, 7); g.stroke(); });
         if (focus) { [focus.a, focus.b].forEach(p => { g.strokeStyle = '#fff'; g.lineWidth = 2; g.beginPath(); g.arc(X(p.x), Y(p.y), 11, 0, 7); g.stroke(); }); g.strokeStyle = 'rgba(255,255,255,.5)'; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(X(focus.a.x), Y(focus.a.y)); g.lineTo(X(focus.b.x), Y(focus.b.y)); g.stroke(); g.setLineDash([]); }
-        const pp = pos || parkPos(); [[pp[0], '#3b9eff'], [pp[1], '#ff9f43']].forEach((a, i) => {
+        const pp = pos || parkPos(), K = pal(); [[pp[0], K.p1], [pp[1], K.p2]].forEach((a, i) => {
           const p = a[0], x = X(p.x), y = Y(p.y), touching = run && run.touch;
           g.strokeStyle = a[1]; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 20, y - 24); g.stroke(); g.fillStyle = a[1]; g.fillRect(x - 28, y - 32, 16, 10);
           g.fillStyle = '#fff'; g.beginPath(); g.arc(x, y, touching ? 4.5 : 3, 0, 7); g.fill(); g.strokeStyle = a[1]; g.lineWidth = 2; g.beginPath(); g.arc(x, y, touching ? 8 : 6, 0, 7); g.stroke();
@@ -1541,7 +1578,7 @@
         if (extraTP.length) tabBody.appendChild(h('div', { class: 'pt-mute', style: 'margin-bottom:8px', text: 'Die Testpunkte gelten nur im Simulator ("Was-wäre-wenn"). Zeichne sie anschließend im Layout-Editor als Pad oder Via mit Lötstopp-Öffnung ein.' }));
         const list = h('div', { class: 'pt-list' });
         iss.forEach(i => {
-          const col = i.severity === 'error' ? '#ff6b6b' : i.severity === 'warn' ? '#ffb340' : '#7fc0ff', sym = i.severity === 'error' ? '✗' : i.severity === 'warn' ? '!' : 'i';
+          const col = i.severity === 'error' ? 'var(--pt-err)' : i.severity === 'warn' ? 'var(--pt-warn)' : 'var(--pt-val)', sym = i.severity === 'error' ? '✗' : i.severity === 'warn' ? '!' : 'i';
           const el = h('div', { class: 'pt-pr', style: 'grid-template-columns:30px 1fr;cursor:default;align-items:start' }, [h('b', { style: 'color:' + col + ';font-size:18px;text-align:center', text: sym }), h('div', null, [h('div', { text: i.msg }), h('div', { class: 'pt-row', style: 'margin:6px 0 0' }, [
             i.at ? h('button', { class: 'pt-btn', text: 'Zeigen', onclick: () => { focus = { a: i.at, b: i.at }; draw(); cv.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } }) : null,
             i.suggest ? h('button', { class: 'pt-btn pri', text: '+ Testpunkt hinzufügen', onclick: () => addTP(i.suggest) }) : null])])]);
@@ -1561,7 +1598,7 @@
         const fxIn = h('input', { class: 'pt-in', type: 'number', min: 0, step: 100, 'aria-label': 'Adapterkosten' }); const fxRow = h('div', { class: 'pt-sl' }, [h('span', { class: 'pt-lbl', text: 'Adapterkosten' }), fxIn, h('button', { class: 'pt-btn', text: 'Auto', onclick: () => { SIM.fixture = null; saveSim(); upd2(); } })]);
         fxIn.addEventListener('input', () => { SIM.fixture = fxIn.value === '' ? null : Math.max(0, +fxIn.value); saveSim(); upd2(true); });
         wrap.appendChild(fxRow);
-        const out = h('div'); const cvs = h('canvas', { class: 'pt-cv', style: 'height:240px;cursor:default;margin-top:8px', 'aria-label': 'Diagramm Gesamtkosten über Stückzahl' }); wrap.appendChild(out); wrap.appendChild(cvs);
+        const out = h('div'); const cvs = h('canvas', { class: 'pt-cv', style: 'height:240px;cursor:default;margin-top:8px', 'aria-label': 'Diagramm Gesamtkosten über Stückzahl' }); wrap.appendChild(out); wrap.appendChild(cvs); onTheme(cvs, () => upd2(true));
         let pend = 0;
         function upd2(keepFx) { cancelAnimationFrame(pend); pend = requestAnimationFrame(() => paint(keepFx)); }
         function paint(keepFx) {
@@ -1582,18 +1619,18 @@
         const w = Math.max(280, Math.floor(c.parentNode.clientWidth)), hh = 250; c.width = Math.round(w * dpr); c.height = Math.round(hh * dpr); c.style.height = hh + 'px'; const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, hh);
         const L = 62, R = 16, T = 24, B = 36, maxQ = be.maxQ, lx = q => L + (q / maxQ) * (w - L - R);
         const ymax = Math.max(be.fpCost(maxQ), be.ictCost(maxQ)) * 1.05, ly = v => hh - B - (v / ymax) * (hh - B - T);
-        g.font = '11px system-ui'; g.fillStyle = '#8b97a3'; g.strokeStyle = '#2c343e'; g.lineWidth = 1; g.textAlign = 'right';
+        const K = pal(); g.font = '11px system-ui'; g.fillStyle = K.chartTxt; g.strokeStyle = K.chartGrid; g.lineWidth = 1; g.textAlign = 'right';
         const ys = niceStep(ymax, 4); for (let v = 0; v <= ymax; v += ys) { const y = ly(v); g.beginPath(); g.moveTo(L, y); g.lineTo(w - R, y); g.stroke(); g.fillText(fmtEur(v).replace(/,\d+ €/, ' €'), L - 6, y + 4); }
         g.textAlign = 'center'; const xs = niceStep(maxQ, Math.max(2, Math.floor((w - L - R) / 90))); for (let q = 0; q <= maxQ; q += xs) { const x = lx(q); g.beginPath(); g.moveTo(x, T); g.lineTo(x, hh - B); g.stroke(); g.fillText(String(Math.round(q)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'), x, hh - B + 14); }
         g.fillText('Stückzahl', (L + w - R) / 2, hh - 6); g.save(); g.translate(12, (T + hh - B) / 2); g.rotate(-Math.PI / 2); g.fillText('Gesamtkosten der Prüfung', 0, 0); g.restore();
         const line = (fn, col) => { g.strokeStyle = col; g.lineWidth = 2.5; g.beginPath(); g.moveTo(lx(0), ly(fn(0))); g.lineTo(lx(maxQ), ly(fn(maxQ))); g.stroke(); };
-        line(be.ictCost, '#ff9f43'); line(be.fpCost, '#3b9eff');
-        if (be.qty && be.qty <= maxQ) { const x = lx(be.qty), y = ly(be.fpCost(be.qty)); g.strokeStyle = '#4cd964'; g.setLineDash([5, 4]); g.lineWidth = 2; g.beginPath(); g.moveTo(x, T); g.lineTo(x, hh - B); g.stroke(); g.setLineDash([]); g.fillStyle = '#4cd964'; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); g.textAlign = x > w - 140 ? 'right' : 'left'; g.fillText('Break-even ca. ' + String(be.qty).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' Stück', x + (x > w - 140 ? -8 : 8), T + 12); }
-        const q0 = Math.min(qty, maxQ), xq = lx(q0); g.strokeStyle = '#ffffff'; g.lineWidth = 1.5; g.beginPath(); g.moveTo(xq, T); g.lineTo(xq, hh - B); g.stroke(); [[be.fpCost, '#3b9eff'], [be.ictCost, '#ff9f43']].forEach(a => { g.fillStyle = a[1]; g.beginPath(); g.arc(xq, ly(a[0](q0)), 4.5, 0, 7); g.fill(); });
-        g.textAlign = 'left'; g.fillStyle = '#3b9eff'; g.fillText('■ Flying Probe (flach, kein Adapter)', L + 4, T - 8); g.fillStyle = '#ff9f43'; g.fillText('■ Nadelbett (hoher Sockel)', L + 210, T - 8);
+        line(be.ictCost, K.chartIct); line(be.fpCost, K.chartFp);
+        if (be.qty && be.qty <= maxQ) { const x = lx(be.qty), y = ly(be.fpCost(be.qty)); g.strokeStyle = K.chartBe; g.setLineDash([5, 4]); g.lineWidth = 2; g.beginPath(); g.moveTo(x, T); g.lineTo(x, hh - B); g.stroke(); g.setLineDash([]); g.fillStyle = K.chartBe; g.beginPath(); g.arc(x, y, 5, 0, 7); g.fill(); g.textAlign = x > w - 140 ? 'right' : 'left'; g.fillText('Break-even ca. ' + String(be.qty).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' Stück', x + (x > w - 140 ? -8 : 8), T + 12); }
+        const q0 = Math.min(qty, maxQ), xq = lx(q0); g.strokeStyle = K.chartQty; g.lineWidth = 1.5; g.beginPath(); g.moveTo(xq, T); g.lineTo(xq, hh - B); g.stroke(); [[be.fpCost, K.chartFp], [be.ictCost, K.chartIct]].forEach(a => { g.fillStyle = a[1]; g.beginPath(); g.arc(xq, ly(a[0](q0)), 4.5, 0, 7); g.fill(); });
+        g.textAlign = 'left'; g.fillStyle = K.chartFp; g.fillText('■ Flying Probe (flach, kein Adapter)', L + 4, T - 8); g.fillStyle = K.chartIct; g.fillText('■ Nadelbett (hoher Sockel)', L + 210, T - 8);
       }
 
-      sizeCanvas(); recompute();
+      sizeCanvas(); recompute(); onTheme(cv, draw);
       return {
         _sig: planKey(env.board() || {}, {}),
         refresh(why) { { const b = env.board(); const sig = planKey(b || {}, {}); if (sig !== this._sig) { this._sig = sig; extraTP = []; stopRun(); view.auto = true; selNet = null; recompute(); } } },
@@ -1642,7 +1679,7 @@
       const upd = () => { const q = qOut(+r1.value); o1.textContent = String(q).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' Stück'; A.v = +r1.value; lsSet('adv', A); out.innerHTML = ''; advise(q, A.many, A.bga, A.jtag, A.dense).forEach(a => out.appendChild(h('div', { class: 'pt-note' }, [h('b', { text: a.m + ': ' }), a.why]))); };
       r1.addEventListener('input', upd);
       adv.appendChild(h('div', { class: 'pt-sl' }, [h('span', { class: 'pt-lbl', text: 'Stückzahl' }), r1, o1]));
-      const cb = (k, t) => { const i = h('input', { type: 'checkbox', style: 'width:22px;height:22px;accent-color:#3b9eff' }); i.checked = !!A[k]; i.addEventListener('change', () => { A[k] = i.checked; upd(); }); return h('label', { class: 'pt-lbl', style: 'display:inline-flex;align-items:center;gap:6px;min-height:40px;margin-right:12px' }, [i, t]); };
+      const cb = (k, t) => { const i = h('input', { type: 'checkbox', style: 'width:22px;height:22px;accent-color:var(--pt-acc)' }); i.checked = !!A[k]; i.addEventListener('change', () => { A[k] = i.checked; upd(); }); return h('label', { class: 'pt-lbl', style: 'display:inline-flex;align-items:center;gap:6px;min-height:44px;min-width:44px;margin-right:12px' }, [i, t]); };
       adv.appendChild(h('div', { class: 'pt-row' }, [cb('many', 'viele Varianten'), cb('bga', 'BGA oder QFN'), cb('jtag', 'ICs mit JTAG'), cb('dense', 'dichte Platine, wenig Testpunkte')]));
       adv.appendChild(out); host.appendChild(adv); upd();
       /* Quiz */

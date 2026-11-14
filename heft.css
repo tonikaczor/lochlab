@@ -24,3 +24,40 @@ table.t{border-collapse:collapse;margin:8px 0;font-size:14px}table.t th,table.t 
 .sol .lo{color:#1b7a34;font-weight:600;margin-top:4px}
 .k{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:0 5px}
 @media print{.try{background:none;color:#000!important;border:1px solid #000}.noprint{display:none!important}}
+.fig{--wm:#e0a020;--rd:#e05050;margin:14px 0;padding:10px 8px 6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--fg);break-inside:avoid}
+@media(prefers-color-scheme:light){.fig{--wm:#b36b00;--rd:#c62828}}
+.fig svg{display:block;width:100%;max-width:480px;height:auto;margin:0 auto;font:13px/1.3 -apple-system,Segoe UI,Roboto,Arial,sans-serif;overflow:visible}
+.fig figcaption{font-size:13px;color:var(--mute);margin:6px 4px 2px;text-align:center}
+.fig .ln{fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.fig .dsh{stroke-dasharray:4 4;opacity:.55}
+.fig .bx{fill:var(--bg);stroke:currentColor;stroke-width:1.6}.fig .nd{fill:currentColor}
+.fig .tx{fill:currentColor}.fig .mu{fill:var(--mute)}.fig .tt{fill:currentColor;font-weight:700}.fig .ac{fill:var(--accent);font-weight:700}.fig .wm{fill:var(--wm);font-weight:700}.fig .wrn2{fill:var(--rd);font-weight:700}.fig .hl{font-size:11px;fill:currentColor;paint-order:stroke;stroke:var(--panel);stroke-width:3px}
+.fig .fl{fill:none;stroke:var(--accent);stroke-width:3.4;stroke-linecap:round;stroke-dasharray:.1 10.9;animation:fz-flow 1.5s linear infinite}
+@keyframes fz-flow{to{stroke-dashoffset:-11}}
+.fig .cv{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linejoin:round}.fig .cv2{fill:none;stroke:var(--wm);stroke-width:2.4;stroke-linejoin:round}
+.fig .mk{fill:var(--accent)}.fig .mk2{fill:var(--wm)}
+.fig .draw{stroke-dasharray:1 1;animation:fz-draw 7s ease-in-out infinite}
+@keyframes fz-draw{0%{stroke-dashoffset:1;opacity:1}45%,90%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+.fig .bar0{fill:var(--line)}.fig .bar1{fill:var(--accent);opacity:.75}.fig .bar2{fill:var(--wm);opacity:.75}
+.fig .oil{fill:var(--accent);opacity:.28}.fig .cov{fill:var(--panel)}.fig .pl{fill:currentColor}.fig .ar{fill:none;stroke:var(--accent);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fig .kol{animation:fz-kol 8s ease-in-out infinite}.fig .k2{animation-name:fz-kol2}
+@keyframes fz-kol{0%,15%{transform:translateY(0)}50%,65%{transform:translateY(var(--dy))}100%{transform:translateY(0)}}
+@keyframes fz-kol2{0%,15%{transform:translateY(0)}50%,65%{transform:translateY(var(--dy))}100%{transform:translateY(0)}}
+.fig .hb{fill:var(--mute);opacity:.55}.fig .bsp{fill:var(--accent);opacity:.7}.fig .bub{fill:var(--wm);opacity:.8}.fig .bue{fill:var(--rd);opacity:.75}.fig .gsp{fill:var(--accent);font-weight:700}.fig .gub{fill:var(--wm);font-weight:700}.fig .gue{fill:var(--rd);font-weight:700}
+.fig .bf{fill:var(--rd);opacity:.45}.fig .bm{fill:var(--accent);opacity:.4}.fig .wrn{stroke:var(--rd)}.fig .pulse{animation:fz-puls 2.4s ease-in-out infinite}
+@keyframes fz-puls{0%,100%{opacity:.45}50%{opacity:.8}}
+.fig .glow{animation:fz-glow 2.4s ease-in-out infinite}.fig .glow .ln{stroke:var(--wm)}
+@keyframes fz-glow{0%,100%{opacity:.55}50%{opacity:1}}
+.fig .lg{fill:var(--wm);opacity:.5}
+.fig .hot{fill:none;stroke:var(--accent);stroke-width:1.6;opacity:.35}
+.fz-wechsel .bl{transform-origin:0 0;animation:fz-bl 14s ease-in-out infinite}.fz-wechsel .blb{animation-name:fz-blb}
+@keyframes fz-bl{0%,22%{transform:rotate(0)}28%,72%{transform:rotate(var(--ang))}78%,100%{transform:rotate(0)}}
+@keyframes fz-blb{0%,47%{transform:rotate(0)}53%,97%{transform:rotate(var(--ang))}100%{transform:rotate(0)}}
+.fz-wechsel .fa{animation:fz-flow 1.1s linear infinite,fz-ona 14s steps(1,end) infinite}.fz-wechsel .fb{animation:fz-flow 1.1s linear infinite,fz-onb 14s steps(1,end) infinite}
+@keyframes fz-ona{0%{opacity:1}25%{opacity:0}97%{opacity:1}}
+@keyframes fz-onb{0%{opacity:0}53%{opacity:1}75%{opacity:0}}
+.fz-wechsel .lamp{animation:fz-lamp 14s steps(1,end) infinite}
+@keyframes fz-lamp{0%{opacity:1}25%{opacity:.08}53%{opacity:1}75%{opacity:.08}97%{opacity:1}}
+.fz-wechsel .st-an{animation:fz-lamp 14s steps(1,end) infinite}.fz-wechsel .st-aus{animation:fz-aus 14s steps(1,end) infinite}
+@keyframes fz-aus{0%{opacity:0}25%{opacity:1}53%{opacity:0}75%{opacity:1}97%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.fig *,.fig *::before,.fig *::after{animation:none!important}}
+@media print{.fig *{animation:none!important}.fig{border-color:#999;background:#fff}}

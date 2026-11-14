@@ -27,6 +27,13 @@
 
   /* ---------------- reine Teile ---------------- */
   const asList = x => (x == null ? null : Array.isArray(x) ? x : [x]);
+  /* Ausschlussgruppen des Pools (Feld ex): je Gruppe bleibt eine zufällige Frage in keep, die übrigen stehen in rest; ohne ex-Felder wird kein Zufall verbraucht */
+  function exPick(list, r) {
+    const by = {}; list.forEach(p => { if (p.ex) (by[p.ex] = by[p.ex] || []).push(p); });
+    const ks = Object.keys(by).sort(); if (!ks.length) return { keep: list, rest: [] };
+    const drop = new Set(); ks.forEach(k => { const m = by[k], one = shuffle(m, r)[0]; m.forEach(p => { if (p !== one) drop.add(p); }); });
+    return { keep: list.filter(p => !drop.has(p)), rest: list.filter(p => drop.has(p)) };
+  }
   /* Auswahl der Pool-IDs: { ids, missing } (spec = Liste oder { teil, g, n, num }); seed = Projekt-Seed, key = Station */
   function pickIds(spec, pool, seed, key) {
     const q = arr(pool && pool.q);
@@ -34,7 +41,7 @@
     if (!isO(spec)) return { ids: [], missing: [] };
     const teil = asList(spec.teil), g = asList(spec.g), n = Math.max(0, spec.n | 0), num = spec.num == null ? null : Math.max(0, spec.num | 0);
     const cand = q.filter(p => (!teil || teil.indexOf(p.teil) >= 0) && (!g || g.indexOf(p.g) >= 0)).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-    const r = rng(hash(String(seed) + '|' + String(key) + '|pool')), mc = shuffle(cand.filter(p => Array.isArray(p.o)), r), nu = shuffle(cand.filter(p => !Array.isArray(p.o)), r);
+    const r = rng(hash(String(seed) + '|' + String(key) + '|pool')), ep = exPick(cand, r), mc = shuffle(ep.keep.filter(p => Array.isArray(p.o)), r).concat(shuffle(ep.rest.filter(p => Array.isArray(p.o)), r)), nu = shuffle(ep.keep.filter(p => !Array.isArray(p.o)), r).concat(shuffle(ep.rest.filter(p => !Array.isArray(p.o)), r));   // Ausschlussgruppen (Pool-Feld ex): je Gruppe zuerst nur eine Frage, der Rest steht hinten zum Auffüllen
     let out;
     if (num == null) out = shuffle(mc.concat(nu), r).slice(0, n);
     else { const a = nu.slice(0, Math.min(num, n)); out = a.concat(mc.slice(0, n - a.length)); if (out.length < n) out = out.concat(nu.slice(a.length).slice(0, n - out.length)); }

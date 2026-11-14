@@ -47,7 +47,7 @@
    Dazu lm4.when = {"aufgabeId": ms}: Zeitpunkt der letzten Änderung je Aufgabe (v23.145, Lernempfehlung coach.js, SPEC-PRUEFUNG-COACH-FABLE.md 4.1). Nur lokal, nicht im Export. */
 (function (root) {
   'use strict';
-  var FILES = ['layout.html', 'schaltplan.html', 'simlab.html', 'digilab.html', 'messlab.html', 'elslab.html', 'ntslab.html', 'wsllab.html', 'analab.html', 'hauslab.html', 'appwerkstatt.html', 'spslab.html', 'pcblab.html', 'antlab.html', 'senlab.html', 'reglab.html', 'thmlab.html', 'emvlab.html', 'enrlab.html', 'codelab.html', 'pilab.html', 'dslab.html', 'pruefungslab.html', 'verbund.html', 'tollab.html', 'zerlab.html', 'pnelab.html', 'hydlab.html', 'cnclab.html', 'werlab.html', 'inslab.html', 'netlab.html', 'kallab.html', 'laglab.html', 'zeilab.html', 'arblab.html', 'matlab.html', 'itslab.html', 'buclab.html', 'ladlab.html', 'englab.html', 'bhflab.html', 'konlab.html', 'wfllab.html', 'reclab.html', 'sqllab.html', 'linlab.html', 'alglab.html', 'hwllab.html', 'syslab.html', 'ssllab.html', 'fuglab.html', 'maslab.html', 'mchlab.html', 'ferlab.html', 'maklab.html'];
+  var FILES = ['layout.html', 'schaltplan.html', 'simlab.html', 'digilab.html', 'messlab.html', 'elslab.html', 'ntslab.html', 'wsllab.html', 'analab.html', 'hauslab.html', 'appwerkstatt.html', 'spslab.html', 'pcblab.html', 'antlab.html', 'senlab.html', 'reglab.html', 'thmlab.html', 'emvlab.html', 'enrlab.html', 'codelab.html', 'pilab.html', 'dslab.html', 'pruefungslab.html', 'verbund.html', 'tollab.html', 'zerlab.html', 'pnelab.html', 'hydlab.html', 'cnclab.html', 'werlab.html', 'inslab.html', 'netlab.html', 'kallab.html', 'laglab.html', 'zeilab.html', 'arblab.html', 'matlab.html', 'itslab.html', 'buclab.html', 'ladlab.html', 'englab.html', 'bhflab.html', 'konlab.html', 'wfllab.html', 'reclab.html', 'sqllab.html', 'linlab.html', 'alglab.html', 'hwllab.html', 'syslab.html', 'ssllab.html', 'fuglab.html', 'maslab.html', 'mchlab.html', 'ferlab.html', 'maklab.html', 'mat2lab.html', 'siglab.html', 'rg2lab.html', 'emblab.html', 'prjlab.html', 'nrmlab.html', 'flilab.html'];
   var KEY = 'lm4.last', TASK = /^[A-Za-z0-9_.-]{1,40}$/;
   try {
     var file = String(root.location.pathname || '').split('/').pop();
@@ -127,3 +127,58 @@
 /* einordnung:end */
 /* weiter.js nachladen (Schaltfläche "Nächste Aufgabe" nach gelöster Aufgabe, nur Lab-Seiten, prüft sich selbst) */
 (function () { try { if (!/lab\.html$|^(layout|schaltplan|appwerkstatt)\.html$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'weiter.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();
+/* aufgabe-vorlesen:begin  Knopf "Vorlesen" an der Aufgabenkarte (nur mit passender Aufnahme AU_<lab>_<id>; aufgabe-vorlesen.js prueft sich selbst: nur Lab-Seiten mit Aufgabenkarte) */
+(function () { try { if (!/(lab\.html|^layout\.html|^schaltplan\.html|^appwerkstatt\.html)$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'aufgabe-vorlesen.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();
+/* aufgabe-vorlesen:end */
+/* toast-lage:begin  Meldung (#toast) und Versionsplakette (#verBadge) verdecken nichts mehr.
+   1) Steht die Rückfrage-Zeile (#fbStrip) oder die Leiste "Nächste Aufgabe" (#wtBar) da, rückt die Meldung darüber (die Leisten erscheinen erst 0,7 bis 0,9 s nach "Geschafft!", daher läuft die Lage-Prüfung, solange die Meldung zu sehen ist).
+   2) Das Willkommens-Banner der Labs wird auf den Satz vor dem Doppelpunkt bzw. den ersten Satz gekürzt (nur wenn es länger als 60 Zeichen ist), nach 4 s ausgeblendet und lässt sich antippen (schließt es); jede andere Eingabe in der Seite schließt es ebenfalls. Bei reduzierter Bewegung gibt es keinen Übergang.
+   3) Die Versionsplakette zeigt nur noch die Nummer, klein und blass, und fängt keine Eingaben ab; am Handy (bis 640 px) ist sie weg; "Was ist neu?" bleibt im Menü der Labs und auf der Startseite. */
+(function () {
+  try {
+    var t = null, iv = 0, busy = false, wel = false, welTimer = 0;
+    function stapel() {
+      var top = 0, vh = window.innerHeight;
+      ['fbStrip', 'wtBar'].forEach(function (id) {
+        var e = document.getElementById(id); if (!e) return; var r = e.getBoundingClientRect();
+        if (r.height > 0 && r.bottom > vh / 2 && (!top || r.top < top)) top = r.top;
+      });
+      return top;
+    }
+    function lage() {
+      if (!t) return;
+      if (wel && document.getElementById('tfGo')) { weg(); return; }   // das Angebot des Trainers ("Neu hier?") hat Vorrang: das Willkommens-Banner würde seine Knöpfe verdecken
+      if (!t.classList.contains('show')) { t.style.bottom = ''; if (iv) { clearInterval(iv); iv = 0; } return; }
+      t.style.bottom = '';
+      var top = stapel(); if (!top) return;
+      var vh = window.innerHeight, frei = vh - t.getBoundingClientRect().bottom, need = Math.ceil(vh - top + 8);
+      if (need > frei) t.style.bottom = need + 'px';
+    }
+    function weg() { if (!t) return; wel = false; clearTimeout(welTimer); t.classList.remove('show'); t.style.pointerEvents = ''; lage(); }
+    function pruefen() {
+      if (busy || !t) return;
+      var show = t.classList.contains('show'), txt = t.textContent || '';
+      if (show && /^Willkommen/.test(txt) && !wel) {
+        wel = true; busy = true;
+        if (txt.length > 60) { var i = txt.indexOf(':'), m = /^[^!.]{20,}[!.](?=\s)/.exec(txt); if (i > 20) t.textContent = txt.slice(0, i) + '.'; else if (m) t.textContent = m[0]; }
+        busy = false; t.style.pointerEvents = 'auto'; clearTimeout(welTimer); welTimer = setTimeout(weg, 4000);
+      } else if (!show && wel) { wel = false; clearTimeout(welTimer); t.style.pointerEvents = ''; }
+      if (show && !iv) iv = setInterval(lage, 100);
+      lage();
+    }
+    function start() {
+      t = document.getElementById('toast'); if (!t) return;
+      new MutationObserver(pruefen).observe(t, { attributes: true, attributeFilter: ['class'], childList: true, characterData: true, subtree: true });
+      t.addEventListener('click', function () { if (wel) weg(); });
+      document.addEventListener('pointerdown', function (e) { if (wel && e.target !== t) weg(); }, true);
+      var st = document.createElement('style');
+      st.textContent = '#toast[style*="pointer-events: auto"]{cursor:pointer}@media (prefers-reduced-motion:reduce){#toast{transition:none!important}}'
+        + '#verBadge{pointer-events:none!important;opacity:.6}#verBadge[data-v]{font-size:0!important;padding:3px 6px!important}#verBadge[data-v]::after{content:attr(data-v);font:700 10px/1 system-ui,sans-serif;letter-spacing:.03em}@media(max-width:640px){#verBadge{display:none!important}}';
+      document.head.appendChild(st);
+      var vb = function () { var b = document.getElementById('verBadge'); if (b && window.LAB_VERSION) b.setAttribute('data-v', window.LAB_VERSION); };
+      vb(); setTimeout(vb, 700);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  } catch (e) {}
+})();
+/* toast-lage:end */

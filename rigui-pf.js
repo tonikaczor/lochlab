@@ -4,9 +4,9 @@
 (function (__rgRoot) {
   const __rgR = __rgRoot.RIGUI; if (!__rgR) return;
   const __rgB = __rgR.B;
-  __rgB['p~ana+els+wsl~434882e1'] = { d: ["loadExample","root","setCtl"], l: [], f: function (__rk) { const { loadExample, root, setCtl } = __rk;
+  __rgB['p~ana+els+wsl~48c0d426'] = { d: ["loadExample","root","setCtl"], l: [], f: function (__rk) { const { loadExample, root, setCtl } = __rk;
   const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
-  const AMP = { gruen: { sym: '✓', name: 'grün', cls: 'ok' }, gelb: { sym: '!', name: 'gelb', cls: 'warnc' }, rot: { sym: '✗', name: 'rot', cls: 'bad' }, grau: { sym: '–', name: 'grau', cls: '' } };
+  const AMP = { gruen: { sym: '✓', name: 'grün', lbl: 'im Bereich', cls: 'ok' }, gelb: { sym: '!', name: 'gelb', lbl: 'knapp', cls: 'warnc' }, rot: { sym: '✗', name: 'rot', lbl: 'außerhalb', cls: 'bad' }, grau: { sym: '–', name: 'grau', lbl: 'Noch keine Vorgabe', cls: '' } };
   const B = (id, name, cat, rig, desc, controls, extra) => Object.assign({ id, name, cat, rig, desc, controls }, extra || {});
   const CMPSYM = { '<=': '≤', '>=': '≥', '=': '=' };
   const NARROW_AR = '5/6';
@@ -562,7 +562,7 @@
     if (sEl.dataset.h !== html) { sEl.dataset.h = html; sEl.innerHTML = html; }
   }
   return [{ buildLimits, buildPresets, buildRefRig, checkDice, cmax, ctlParse, ctlShow, diceKeys, doSave, drawOpts, liveApply, marg, pickOpt, renderExt, renderSeqRes, resetRig, rigPng, seqKeys, showDice, simAdvance, slowFx, stash, undoDice, updateDice, updateEvents, updateStat }]; } };
-  __rgR.map.wsl = {"h":"59ae85a9","p":["p~ana+els+wsl~434882e1","p~ana+wsl~5f164d9f","p~els+wsl~7b5d9385"],"k":["k~ana+els+wsl~b2abfc64","k~ana+wsl~b587eda6","k~els+wsl~4b1a03aa"]};
-  __rgR.map.ana = {"h":"6e3904d3","p":["p~ana+els+wsl~434882e1","p~ana+wsl~5f164d9f"],"k":["k~ana+els+wsl~b2abfc64","k~ana+wsl~b587eda6"]};
-  __rgR.map.els = {"h":"4f1dcca7","p":["p~ana+els+wsl~434882e1","p~els+wsl~7b5d9385"],"k":["k~ana+els+wsl~b2abfc64","k~els+wsl~4b1a03aa"]};
+  __rgR.map.wsl = {"h":"b0980165","p":["p~ana+els+wsl~48c0d426","p~ana+wsl~5f164d9f","p~els+wsl~7b5d9385"],"k":["k~ana+els+wsl~b2abfc64","k~ana+wsl~b587eda6","k~els+wsl~4b1a03aa"]};
+  __rgR.map.ana = {"h":"8fe0d6e2","p":["p~ana+els+wsl~48c0d426","p~ana+wsl~5f164d9f"],"k":["k~ana+els+wsl~b2abfc64","k~ana+wsl~b587eda6"]};
+  __rgR.map.els = {"h":"ba9adb00","p":["p~ana+els+wsl~48c0d426","p~els+wsl~7b5d9385"],"k":["k~ana+els+wsl~b2abfc64","k~els+wsl~4b1a03aa"]};
 })(typeof window !== 'undefined' ? window : globalThis);

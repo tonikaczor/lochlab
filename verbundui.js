@@ -119,13 +119,25 @@
   window.addEventListener('popstate', () => { readUrl(); render(); });
 
   function setTitle(t) { const el = $('#title'); if (el) el.textContent = t; document.title = t === 'Projekte' ? 'Tonfunk Projekte' : 'Projekte: ' + t; }
+  /* Vorlesen (vorlesen.js): Platzhalter .vl-wrap bekommen den Knopf. Text = Projektgeschichte bzw. fester Auftragstext der Station (nicht das Lastenheft: Zahlen je Stufe und Zufallswert). Schlüssel VB_<projekt>[_<station>]. */
+  function vlMount() {
+    const Vl = root.Vorlesen; if (!Vl || !Vl.knopf || !Vl.Texte) return;
+    const T = Vl.Texte;
+    Array.prototype.forEach.call(document.querySelectorAll('#view .vl-wrap[data-vl-pid]'), w => {
+      if (w.firstChild) return;
+      const pid = w.getAttribute('data-vl-pid'), sid = w.getAttribute('data-vl-sid');
+      w.appendChild(Vl.knopf(document, sid ? T.vbStationKey(pid, sid) : T.vbProjektKey(pid), () => sid ? T.vbStation(stDef(pid, sid)) : T.vbProjekt(defOf(pid))));
+    });
+  }
   function render() {
     const v = $('#view'); if (!v) return;
     if (!V()) { noKernel(); return; }
+    try { if (root.Vorlesen && root.Vorlesen.stop) root.Vorlesen.stop(); } catch (e) {}   /* beim Wechsel der Ansicht nicht weitersprechen */
     try {
       if (S.view === 'project') renderProject(); else if (S.view === 'station') renderStation(); else if (S.view === 'final') renderFinal();
       else if (S.view === 'bericht') renderBericht(); else if (S.view === 'zert') renderZert(); else if (S.view === 'ausbilder') renderAusbilder(); else renderList();
     } catch (e) { console.error(e); v.innerHTML = '<div class="errbox"><b>Die Ansicht konnte nicht gebaut werden.</b> ' + esc(e && e.message) + '<br>Gehe zurück zu den Projekten oder lade die Seite neu.</div><div class="btns"><button class="btn" data-a="go-list">Zu den Projekten</button></div>'; }
+    try { vlMount(); } catch (e) { console.error(e); }
   }
   const crumb = (parts) => '<div class="crumb">' + parts.map((p, i) => (p.a ? '<button data-a="' + p.a + '"' + (p.pid ? ' data-pid="' + esc(p.pid) + '"' : '') + '>' + esc(p.t) + '</button>' : '<span>' + esc(p.t) + '</span>') + (i < parts.length - 1 ? '<span>›</span>' : '')).join('') + '</div>';
   const ring = (pct, size) => { const r = 24, c = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct || 0)); return '<div class="ring"><svg viewBox="0 0 58 58"><circle cx="29" cy="29" r="' + r + '" fill="none" stroke="#0007" stroke-width="6"/><circle cx="29" cy="29" r="' + r + '" fill="none" stroke="' + (p >= 100 ? '#4cd964' : '#3b9eff') + '" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + (c * p / 100).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg><b>' + Math.round(p) + '%</b></div>'; };
@@ -255,7 +267,7 @@
     setTitle(def.name); const st = stateOf(pid);
     let h = crumb([{ t: 'Projekte', a: 'go-list' }, { t: def.name }]);
     h += '<h1 class="vh1">' + esc(def.icon || '') + ' ' + esc(def.name) + (isDemo(pid) ? '<span class="demo">Demo</span>' : '') + '</h1>';
-    h += '<p class="vlead">' + esc(def.story || '') + (def.company ? '<br><b>Auftraggeber:</b> ' + esc(def.company) : '') + '</p><div class="labs" style="margin-bottom:10px">' + doneLabs(pid).map(l => '<span title="' + esc(labName(l)) + '">' + (LABI[l] || '🧩') + '</span>').join('') + '</div>';
+    h += '<p class="vlead">' + esc(def.story || '') + (def.company ? '<br><b>Auftraggeber:</b> ' + esc(def.company) : '') + '</p>' + (def.story ? '<div class="vl-wrap" data-vl-pid="' + esc(pid) + '"></div>' : '') + '<div class="labs" style="margin-bottom:10px">' + doneLabs(pid).map(l => '<span title="' + esc(labName(l)) + '">' + (LABI[l] || '🧩') + '</span>').join('') + '</div>';
     if (!st) {
       h += '<div class="sec"><h3>Noch nicht gestartet</h3><p>Du bekommst ein persönliches Lastenheft. Wähle Namen oder Teamnamen und eine Stufe.</p><div class="btns"><button class="btn pri" data-a="start" data-pid="' + esc(pid) + '">Projekt starten</button></div></div>';
       $('#view').innerHTML = h; return;
@@ -290,7 +302,7 @@
     h += '<h1 class="vh1">' + stLabIco(sd) + ' Station ' + (idx + 1) + ': ' + esc(sd.title) + '</h1><p class="vlead">' + esc(stLabTxt(sd)) + (Array.isArray(sd.beruf) && sd.beruf.length ? ' · <span class="tag">' + esc(bList(sd.beruf, true)) + '</span>' : '') + ' · <span class="tag ' + (state === 'passed' ? 'ok' : state === 'failed' || state === 'stale' ? 'wa' : '') + '">' + m[0] + ' ' + m[1] + (info && info.pct != null && state !== 'open' && state !== 'locked' ? ' · ' + Math.round(info.pct) + ' %' : '') + '</span>' + (info && info.hints ? ' · Tipps: ' + info.hints : '') + '</p>';
     if (sta) h += phaseChips(pid, sta, sid);
     if (fremd) h += kollegeHtml(pid, sid, sd, st, info, kol, self);
-    h += '<div class="sec"><h3>Auftrag</h3><p>' + esc(sd.text || '') + '</p></div>';
+    h += '<div class="sec"><h3>Auftrag</h3><p>' + esc(sd.text || '') + '</p>' + (sd.text ? '<div class="vl-wrap" data-vl-pid="' + esc(pid) + '" data-vl-sid="' + esc(sid) + '"></div>' : '') + '</div>';
     const ins = Array.isArray(sd.in) ? sd.in : [];
     h += '<div class="sec"><h3>Eingang</h3><ul class="inl">' + ['' + pid + '.lastenheft'].concat(ins).map(s => {
       const ok = safe(() => V().has(s), false), rows = ok ? slotRows(s) : [];

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Embedded vertieft">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b1f24">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Tonfunk Embedded vertieft</title>
+<link rel="stylesheet" href="emb.css">
+<link rel="stylesheet" href="design.css">
+</head>
+<body>
+<div id="app">
+  <header>
+    <a class="ib" id="bHome" href="index.html" aria-label="Startseite" title="Startseite"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5M6.5 10v9h4v-5h3v5h4v-9"/></svg></a>
+    <div class="title">Embedded vertieft<small>Stufe Studium</small></div>
+    <span id="prog" aria-live="polite"></span>
+    <button class="ib" id="bTheme" type="button" aria-label="Darstellung wechseln">◐</button>
+  </header>
+  <nav id="tabs" role="tablist" aria-label="Themenblöcke"></nav>
+  <main id="view" tabindex="-1"></main>
+  <p class="foot"><button class="btn" id="bReset" type="button">Fortschritt zurücksetzen</button></p>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="ver.js"></script>
+<script src="embcore.js"></script>
+<script src="embdata.js"></script>
+<script src="embviz.js"></script>
+<script src="embui.js"></script>
+<script src="aufgabe-vorlesen.js" async></script>
+<script src="tutorial-data.js"></script>
+<script src="tutorial.js"></script>
+</body>
+</html>

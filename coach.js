@@ -23,11 +23,11 @@
     minuten: { thema: 8, aufgabe: 10, pfad: 10, pruefung: 60, start: 10 }
   };
   /* Relevanz der Pool-Gruppen (Anteil der Fragen in den ausgewerteten Prüfungen, grob aus quelle/pruefpool/neu/_themen.md); Fragenbank-Themen 0,8 */
-  const REL = { grund: 1.0, digi: 1.0, opv: 0.9, bus: 0.6, mess: 0.6, halb: 0.6, netz: 0.6, steu: 0.5, sich: 0.5, mcu: 0.5, wiso: 0.4, qm: 0.3 };
+  const REL = { grund: 1.0, digi: 1.0, opv: 0.9, bus: 0.6, mess: 0.6, halb: 0.6, netz: 0.6, steu: 0.5, sich: 0.5, mcu: 0.5, itpc: 0.4, wiso: 0.4, qm: 0.3 };
   const PRUEF_GRUPPEN = ['digi', 'grund', 'opv', 'bus', 'mess'];      // die ersten fünf Zeilen von _themen.md
   const PRUEF_AUFGABE = /^(pr\d+|mp\d+|cp\d+|lf\d+)$/;               // Prüfungs-Lab, MessLab-Prüfungsschaltungen, Arduino-Prüfungspraxis, LochLab-Fehlersuche
   const BANK_TITEL = { grund: 'Grundlagen Gleichstrom', bauteile: 'Bauelemente', wechsel: 'Wechselstrom und Filter', digital: 'Digitaltechnik', messen: 'Messtechnik', strom: 'Stromversorgung', mcu: 'Mikrocontroller', sicher: 'Sicherheit und Normen' };
-  const GRUPPEN_TITEL = { sich: 'Sicherheit, Schutzmaßnahmen, Installation', steu: 'SPS, Steuerung und Regelung', opv: 'Operationsverstärker', netz: 'Netzteil und Spannungsversorgung', bus: 'Bussysteme und Schnittstellen', digi: 'Digitaltechnik und Zahlensysteme', halb: 'Halbleiter, Transistor, LED, Relais', mcu: 'Mikrocontroller, Speicher, Wandler', mess: 'Messtechnik und Sensorik', qm: 'Qualität, Instandhaltung, Fachenglisch', grund: 'Grundlagen, Wechselstrom, Filter', wiso: 'Wirtschafts- und Sozialkunde' };
+  const GRUPPEN_TITEL = { sich: 'Sicherheit, Schutzmaßnahmen, Installation', steu: 'SPS, Steuerung und Regelung', opv: 'Operationsverstärker', netz: 'Netzteil und Spannungsversorgung', bus: 'Bussysteme und Schnittstellen', digi: 'Digitaltechnik und Zahlensysteme', halb: 'Halbleiter, Transistor, LED, Relais', mcu: 'Mikrocontroller, Speicher, Wandler', mess: 'Messtechnik und Sensorik', qm: 'Qualität, Instandhaltung, Fachenglisch', grund: 'Grundlagen, Wechselstrom, Filter', itpc: 'IT, PC und Betriebssysteme', wiso: 'Wirtschafts- und Sozialkunde' };
   const PR_AUFGABE_THEMA = { pr1: 'grund', pr2: 'bauteile', pr3: 'wechsel', pr4: 'digital', pr5: 'messen', pr6: 'strom', pr7: 'mcu', pr8: 'sicher' };   // Aufgabe „Thema üben“ gilt ab 80 %
   const ART = ['thema', 'aufgabe', 'pruefung', 'pfad'];   // Reihenfolge bei gleichem Gewicht
   const LAB_PR = 'pruefungslab.html';
@@ -112,7 +112,9 @@
     K.sort((a, b) => b.w - a.w || ART.indexOf(a.art) - ART.indexOf(b.art)).forEach(c => { if (!seen[c.art] && top.length < 3) { seen[c.art] = 1; top.push(c); } });
     const lsHint = !!D.kuerzel && Object.keys(D.done).length === 0 && Object.keys(D.tr).length === 0;
     let res = hasData ? top.map(c => decorate(c, C)) : [];   // ohne jede Spur von Lernstand: immer die beiden Startvorschläge (auch wenn der Lernpfad „SchaltLab“ empfiehlt)
-    if (!res.length) {
+    if (!res.length && C.weg) {   // Wege Studium/Technik (v55.174): kein SchaltLab-Einstieg, kein Prüfungs-Lab (dafür gibt es keine Pool-Fragen): nur der nächste Schritt im Lernpfad, sonst nichts
+      if (rc && rc.rec && (C.LAB_REG || {})[rc.rec]) res = [decorate({ art: 'pfad', lab: rc.rec, href: rc.href || '', nextTitle: rc.next ? rc.next[3] : '', started: !!rc.started, w: 1 }, C)];
+    } else if (!res.length) {
       if (!hasData) res = [
         { art: 'start', title: 'Starte mit dem SchaltLab', text: 'Starte mit dem SchaltLab (Einführung, etwa ' + W.minuten.start + ' Minuten).', href: (labFile('sch', C) || 'schaltplan.html') + '?trainer', minuten: W.minuten.start, w: 1 },
         { art: 'start', title: 'Oder: Prüfungs-Lab, Grundlagen', text: 'Oder übe im Prüfungs-Lab das Thema Grundlagen: 10 Fragen mit Erklärung, etwa ' + W.minuten.thema + ' Minuten.', href: trainHref('grund'), minuten: W.minuten.thema, w: 0.9 }
@@ -168,7 +170,12 @@
     + 'section.coach h2{margin:0 0 8px;font-size:18px}.coach ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}.coach li{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 10px;border-radius:12px;background:var(--panel2,#2c343e);border:1px solid var(--line,#38424d)}'
     + '.coach .ci{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.25);font-size:17px}.coach .ct{flex:1;min-width:200px}.coach .ct b{display:block;font-size:15px}.coach .ct span{display:block;font-size:14px;color:var(--fg,#e8ecf0);overflow-wrap:anywhere}.coach .ct small{color:#aab4bf;font-size:13px}'
     + '.coach .cb{flex:none;margin-left:auto;display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 16px;border-radius:11px;background:var(--accent-bg,#1a6fd4);border:1px solid var(--accent-bg,#1a6fd4);color:#fff;font:600 14px system-ui,sans-serif;text-decoration:none;cursor:pointer}'
-    + '.coach .cb:focus-visible{outline:3px solid #ffd166;outline-offset:2px}section.coach.inlab{margin:0 0 12px}';
+    + '.coach .cb:focus-visible{outline:3px solid #ffd166;outline-offset:2px}section.coach.inlab{margin:0 0 12px}'
+    + '.coach .cdl{margin:8px 0 0;font-size:14px;color:var(--mute,#aab4bf)}.coach .cdl a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;color:var(--accent,#5fb0ff);font-weight:600}';
+  /* Prüfungs-Countdown (countdown.js): eine Zeile unter der Liste, nur wenn ein Datum gesetzt ist und countdown.js geladen wurde (Startseite, Mein Stand) */
+  function countdownHtml() {
+    try { const C = root.Countdown, k = C && C.kurz && C.kurz(); if (!k) return ''; return '<p class="cdl"><a href="' + esc(k.href) + '">⏳ ' + esc(k.text) + '</a>' + (k.heute ? ' Heute dran: ' + esc(k.heute.titel) + '.' : '') + '</p>'; } catch (e) { return ''; }
+  }
   function cardHtml(list, id) {
     id = id || 'coachH';
     return '<h2 id="' + id + '">Was übe ich als Nächstes?</h2><ol>' + list.map((c, i) => '<li><span class="ci" aria-hidden="true">' + (ICON[c.art] || '•') + '</span><div class="ct"><b>' + esc(c.title) + '</b><span>' + esc(c.text) + '</span>' + (c.minuten ? '<small>etwa ' + c.minuten + ' Minuten</small>' : '') + '</div>'
@@ -176,7 +183,8 @@
   }
   function css() { if (typeof document === 'undefined' || document.getElementById('coachCss')) return; const s = document.createElement('style'); s.id = 'coachCss'; s.textContent = CSS; document.head.appendChild(s); }
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); if (v == null) return d; return k === 'lm4.kuerzel' ? v : JSON.parse(v); } catch (e) { return d; } };   // das Kürzel steht als einfacher Text im Speicher (stand.js)
-  function context() { return { AUFGABEN: root.BerufReg ? root.BerufReg.rows() : root.AUFGABEN, LAB_REG: root.LAB_REG, groups: (root.PR_POOL && root.PR_POOL.groups) || [], topics: (root.PR_BANK && root.PR_BANK.TOPICS) || [], recommend: root.Lernpfad && root.Lernpfad.recommend ? () => root.Lernpfad.recommend() : null }; }
+  function context() { return { AUFGABEN: root.BerufReg ? root.BerufReg.rows() : root.AUFGABEN, LAB_REG: root.LAB_REG, groups: (root.PR_POOL && root.PR_POOL.groups) || [], topics: (root.PR_BANK && root.PR_BANK.TOPICS) || [], recommend: root.Lernpfad && root.Lernpfad.recommend ? () => root.Lernpfad.recommend() : null, weg: wegNow() }; }
+  function wegNow() { try { const b = root.BerufReg && root.BerufReg.cur && root.BerufReg.cur(); return ['tec', 'stu', 'wing', 'winf'].indexOf(b) >= 0 ? b : ''; } catch (e) { return ''; } }   // gewählter Weg Studium/Technik, sonst ''
   function current(extra) { return suggest(read(lsGet), Date.now(), Object.assign(context(), extra || {})); }
   /* Karte in host einhängen (ersetzt eine vorhandene). Fehler dürfen die Seite nie stören. */
   function mount(host, o) {
@@ -185,7 +193,7 @@
       if (!host) return null; css();
       const list = o.list || current(o.ctx);
       let sec = host.querySelector(':scope > section.coach'); if (!sec) { sec = document.createElement('section'); sec.className = 'coach' + (o.inlab ? ' inlab' : ''); sec.setAttribute('aria-labelledby', o.hid || 'coachH'); if (o.before) host.insertBefore(sec, o.before); else host.appendChild(sec); }
-      sec.innerHTML = cardHtml(list, o.hid);
+      sec.innerHTML = cardHtml(list, o.hid) + countdownHtml();
       sec.querySelectorAll('[data-act]').forEach(b => { b.onclick = () => { if (b.dataset.act === 'lsOpen') { const x = document.getElementById('lsOpen'); if (x) x.click(); else if (root.Lernstand && root.Lernstand.open) root.Lernstand.open(); } else if (o.onAct) o.onAct(b.dataset.act); }; });
       return sec;
     } catch (e) { return null; }

@@ -134,8 +134,8 @@
   const isDark = () => { const a = document.documentElement.getAttribute('data-theme'); if (a === 'dark') return true; if (a === 'light') return false; try { return !(root.matchMedia && root.matchMedia('(prefers-color-scheme: light)').matches); } catch (e) { return true; } };
   const theme = () => (isDark() ? 'dark' : 'light');
   const stufeColor = s => { const D = DRAW(), st = STUF()[s]; if (!st) return 'var(--mute)'; try { const p = D && D.palette ? D.palette(theme()) : null; return (p && p[st.key]) || 'var(--mute)'; } catch (e) { return 'var(--mute)'; } };
-  const AMP = { gruen: { sym: '✓', text: 'grün: Auslegung trägt', cls: 'ok' }, gelb: { sym: '!', text: 'gelb: knapp', cls: 'warnc' }, rot: { sym: '✗', text: 'rot: Grenze verletzt', cls: 'bad' }, grau: { sym: '–', text: 'grau: noch nicht bewertet', cls: '' } };
-  const ampInfo = st => { const D = DRAW(); let i = null; try { i = D && D.ampelInfo ? D.ampelInfo(st) : null; } catch (e) { i = null; } const k = i && AMP[i.state] ? i.state : AMP[st] ? st : 'grau'; return { state: k, sym: (i && i.sym) || AMP[k].sym, text: (i && i.text) || AMP[k].text, cls: AMP[k].cls }; };
+  const AMP = { gruen: { sym: '✓', text: 'grün: Auslegung trägt', lbl: 'im Bereich', cls: 'ok' }, gelb: { sym: '!', text: 'gelb: knapp', lbl: 'knapp', cls: 'warnc' }, rot: { sym: '✗', text: 'rot: Grenze verletzt', lbl: 'außerhalb', cls: 'bad' }, grau: { sym: '–', text: 'grau: noch nicht bewertet', lbl: 'noch nicht bewertet', cls: '' } };
+  const ampInfo = st => { const D = DRAW(); let i = null; try { i = D && D.ampelInfo ? D.ampelInfo(st) : null; } catch (e) { i = null; } const k = i && AMP[i.state] ? i.state : AMP[st] ? st : 'grau'; return { state: k, sym: (i && i.sym) || AMP[k].sym, text: (i && i.text) || AMP[k].text, lbl: AMP[k].lbl, cls: AMP[k].cls }; };
 
   /* ============================================================ Zustand */
   const seenObj = () => { const o = lsGet('nts.seen', {}); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; };
@@ -522,7 +522,7 @@
     el.hidden = closed || !S.rig;
   }
   $('#simX').onclick = () => { const sn = seenObj(); sn.sim = sn.sim && typeof sn.sim === 'object' ? sn.sim : {}; sn.sim[S.rigId] = 1; lsSet('nts.seen', sn); $('#simBand').hidden = true; };
-  let ampSig = '';
+  let ampSig = '', ampHelp = false;
   function updateAmpel(force) {
     const el = $('#ampRow'); if (!el) return;
     let a = null; if (S.rig && typeof S.rig.assess === 'function') { try { a = S.rig.assess(); } catch (e) { a = null; } }
@@ -530,11 +530,14 @@
     const mg = a && fin(a.margin) ? a.margin : null;
     const sig = i.state + '|' + tx + '|' + mg; if (!force && sig === ampSig) return; ampSig = sig;
     const prev = S.amp; S.amp = i.state;
-    el.className = 'amprow ' + i.cls;
-    el.innerHTML = `<span class="asym" aria-hidden="true">${esc(i.sym)}</span><span class="atx"><b>${esc(i.text)}</b><small class="nt">${esc(tx)}</small><small>${esc(ampelNote())}</small></span>${mg != null ? `<span class="avs"><span>Marge</span><b style="color:var(--fg)">${fnum(mg, 2)}</b></span>` : ''}`;
+    const lp = (c, on, y) => `<i class="apl ${c}${on ? ' on' : ''}">${on ? y : ''}</i>`;
+    el.className = 'amprow amp2 ' + i.cls;
+    el.innerHTML = `<span class="aplamps" aria-hidden="true">${lp('r', i.state === 'rot', '✗')}${lp('y', i.state === 'gelb', '!')}${lp('g', i.state === 'gruen', '✓')}</span><div class="atx"><div class="ap1"><span class="apt">Prüfampel</span><b class="aps">${esc(i.sym + ' ' + i.lbl)}</b>${mg != null ? `<span class="apm">Marge ${fnum(mg, 2)}</span>` : ''}<button type="button" class="apq" data-ampq aria-expanded="${ampHelp}" aria-controls="ampHelp" aria-label="Was bedeutet die Prüfampel?">?</button></div>${tx ? `<small class="apd">${esc(tx)}</small>` : ''}${i.state === 'gruen' ? `<small class="apd nt">${esc(ampelNote())}</small>` : ''}<p class="aphelp" id="ampHelp"${ampHelp ? '' : ' hidden'}>Die Prüfampel vergleicht den Aufbau mit den Lehrgrenzen: <b>✓ im Bereich</b> = Grenzen eingehalten, <b>! knapp</b> = fast an der Grenze, <b>✗ außerhalb</b> = Grenze verletzt, <b>– noch nicht bewertet</b> = noch nichts zum Vergleichen.${' ' + esc(ampelNote())}</p></div>`;
     const cvEl = $('#cv'); if (cvEl) { let t = ''; try { t = DRAW() && DRAW().ariaText ? DRAW().ariaText(i.state, tx) : i.text + '. ' + tx; } catch (e) { t = i.text; } cvEl.setAttribute('aria-label', t); }
     if (!force && S.ampSeen) ampelFx(prev, i.state, tx); S.ampSeen = true;
   }
+  /* Prüfampel: Hilfetext ein-/ausblenden, ohne die Ampelzeile neu zu zeichnen */
+  document.addEventListener('click', e => { const q = e.target.closest && e.target.closest('[data-ampq]'); if (!q) return; ampHelp = !ampHelp; const h = $('#ampHelp'); if (h) h.hidden = !ampHelp; q.setAttribute('aria-expanded', ampHelp ? 'true' : 'false'); });
   function pfadHtml() {
     const p = S.rig && S.rig.pfad; if (!p) return '';
     return `<b>Pfad:</b> ${esc(p.quelle || '')} → ${esc(p.wandlung || '')} → ${esc(p.senke || '')} <span class="bdg">${esc(ART[p.art] || p.art || '')}</span>`;

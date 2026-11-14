@@ -128,7 +128,7 @@
     const b = probeStore().probe[l.k];
     if (b) w.appendChild(h('p', { class: 'lead', style: 'margin-top:10px', text: 'Dein bester Versuch: Note ' + b.note + ' (' + b.pct + ' %), ' + b.versuche + ' Versuch' + (b.versuche === 1 ? '' : 'e') + '.' }));
     w.appendChild(h('details', {}, [h('summary', { text: 'Notenschlüssel nach IHK' }), keyTable()]));
-    w.appendChild(h('p', { class: 'lead', style: 'font-size:13px', text: 'Die Fragen stammen aus dem Prüfungs-Pool des Prüfungs-Labs (eigene Formulierungen, noch nicht vom Ausbilder fachlich freigegeben). Die Zuordnung der Fragen zum Lernfeld erfolgt automatisch nach Thema und kann ungenau sein.' }));
+    w.appendChild(h('p', { class: 'lead', style: 'font-size:13px', text: 'Die Fragen stammen aus dem Prüfungs-Pool des Prüfungs-Labs (eigene Formulierungen, durch eine zweite KI-Prüfung fachlich durchgesehen; Freigabe durch den Ausbilder steht aus). Die Zuordnung der Fragen zum Lernfeld erfolgt automatisch nach Thema und kann ungenau sein.' }));
     return w;
   }
   function keyTable() {

@@ -824,6 +824,14 @@
   PCB_REPAIR.padCaps = padCaps;
 
   /* ================================================================ Ende Teil 1 */
+  /* ---------- Farbsätze der Zeichenfläche (Canvas). dark = die bisherigen festen Werte (bis auf Kontrastkorrekturen), light = Hellmodus.
+     Nur das Umfeld: Tischfläche, Beschriftungen, Sprechblase der Lupe. Platine, Bauteile, Lot, Messspitzen, Lupe bleiben gleich;
+     helle Beschriftung, die auch neben der Platine liegen kann, bekommt im Hellmodus eine dunkle Kontur (halo, refHalo, probeRing). */
+  const THEME = {
+    dark: { stage: '#0e1114', sideLabel: 'rgba(255,255,255,.55)', sideLabelBg: 'rgba(14,17,20,.85)', probeText: '#fff', probeRing: '', halo: '#141a21', lensBg: '#0b0d0f', lensZoom: '#ffd24a', capBg: 'rgba(20,24,28,.92)', capLine: '#3a4452', capFg: '#e8edf2', refHalo: 'rgba(8,32,18,.85)' },
+    light: { stage: '#dde3ea', sideLabel: '#141a21', sideLabelBg: 'rgba(243,245,248,.92)', probeText: '#fff', probeRing: 'rgba(20,26,33,.85)', halo: '#141a21', lensBg: '#dde3ea', lensZoom: '#ffd24a', capBg: 'rgba(255,255,255,.96)', capLine: '#9aa6b2', capFg: '#141a21', refHalo: 'rgba(8,32,18,.85)' }
+  };
+  PCB_REPAIR.THEME = THEME;
   if (typeof module !== 'undefined' && module.exports) module.exports = PCB_REPAIR;
   root.PCB_REPAIR = PCB_REPAIR;
   
@@ -834,50 +842,57 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || ''); return v == null ? d : v; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  /* Hellmodus: data-theme der Seite (light/dark) gewinnt, sonst die Systemeinstellung. Wird bei jedem Zeichnen neu gefragt. */
+  function isLight() {
+    try { const t = document.documentElement.getAttribute('data-theme'); return t === 'light' || (t !== 'dark' && !!(root.matchMedia && root.matchMedia('(prefers-color-scheme: light)').matches)); } catch (e) { return false; }
+  }
+  const th = () => THEME[isLight() ? 'light' : 'dark'];
 
   /* ---------- Stil */
   const CSS = [
-    '.pr-root{position:relative;display:flex;flex-direction:column;height:100%;min-height:340px;background:#14181c;color:#e8edf2;font:14px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;box-sizing:border-box}',
+    '.pr-root{--pr-bg:#14181c;--pr-fg:#e8edf2;--pr-panel:#222830;--pr-sub:#1b2128;--pr-line:#2c343e;--pr-line2:#3a4452;--pr-line3:#38424d;--pr-btn:#2c343e;--pr-btn-act:#3a4452;--pr-mute:#8d99a6;--pr-mute2:#aab6c3;--pr-strong:#fff;--pr-stage:#0e1114;--pr-sel:#3b9eff;--pr-ok:#4cd964;--pr-bad:#ff8a7a;--pr-warn:#ffb340;--pr-warn-line:#c97a1a;--pr-banner:rgba(34,40,48,.96);--pr-zoom:rgba(44,52,62,.92);--pr-shade:rgba(0,0,0,.5);--pr-shade2:rgba(0,0,0,.45);--pr-sch-net:#8fd1ff;--pr-sch-num:#8d99a6;--pr-sch-ink:#e8edf2;--pr-sch-led:#ffd24a;position:relative;display:flex;flex-direction:column;height:100%;min-height:340px;background:var(--pr-bg);color:var(--pr-fg);font:14px/1.35 system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden;box-sizing:border-box}',
     '.pr-root *{box-sizing:border-box}',
-    '.pr-bar{display:flex;gap:6px;padding:6px 8px;background:#222830;border-bottom:1px solid #2c343e;align-items:center;flex:0 0 auto;overflow-x:auto;scrollbar-width:none}',
+    '.pr-bar{display:flex;gap:6px;padding:6px 8px;background:var(--pr-panel);border-bottom:1px solid var(--pr-line);align-items:center;flex:0 0 auto;overflow-x:auto;scrollbar-width:none}',
     '.pr-bar::-webkit-scrollbar{display:none}',
-    '.pr-btn{flex:0 0 auto;min-height:40px;min-width:40px;padding:0 11px;border:1px solid #3a4452;background:#2c343e;color:#e8edf2;border-radius:10px;font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}',
-    '.pr-btn:active{background:#3a4452}.pr-btn.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}.pr-btn.go{background:#1a7f37;border-color:#1a7f37;color:#fff}.pr-btn.warn{border-color:#c97a1a;color:#ffb340}.pr-btn[disabled]{opacity:.4}',
-    '.pr-sep{flex:0 0 1px;align-self:stretch;background:#3a4452;margin:2px 2px}',
-    '.pr-hint{flex:0 0 auto;padding:5px 10px;background:#1b2128;border-bottom:1px solid #2c343e;color:#aab6c3;font-size:13px;min-height:30px;display:flex;align-items:center;gap:8px}',
-    '.pr-hint b{color:#e8edf2}',
+    '.pr-btn{flex:0 0 auto;min-height:44px;min-width:44px;padding:0 11px;border:1px solid var(--pr-line2);background:var(--pr-btn);color:var(--pr-fg);border-radius:10px;font:inherit;font-weight:600;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}',
+    '.pr-btn:active{background:var(--pr-btn-act)}.pr-btn.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}.pr-btn.go{background:#1a7f37;border-color:#1a7f37;color:#fff}.pr-btn.warn{border-color:var(--pr-warn-line);color:var(--pr-warn)}.pr-btn[disabled]{opacity:.4}',
+    '.pr-sep{flex:0 0 1px;align-self:stretch;background:var(--pr-line2);margin:2px 2px}',
+    '.pr-hint{flex:0 0 auto;padding:5px 10px;background:var(--pr-sub);border-bottom:1px solid var(--pr-line);color:var(--pr-mute2);font-size:13px;min-height:30px;display:flex;align-items:center;gap:8px}',
+    '.pr-hint b{color:var(--pr-fg)}',
     '.pr-main{position:relative;flex:1 1 auto;min-height:0;display:flex}',
-    '.pr-stage{position:relative;flex:1 1 auto;min-width:0;background:#0e1114;overflow:hidden}',
+    '.pr-stage{position:relative;flex:1 1 auto;min-width:0;background:var(--pr-stage);overflow:hidden}',
     '.pr-stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block;cursor:crosshair}',
     '.pr-meter{position:absolute;left:8px;bottom:8px;width:min(372px,calc(100% - 16px));background:linear-gradient(#e8b92a,#c99a14);border-radius:14px;padding:8px;box-shadow:0 6px 18px rgba(0,0,0,.55);color:#222;z-index:3;border:2px solid #8a6a0c}',
     '.pr-lcd{background:#a8c0a0;border-radius:8px;border:2px solid #3b4a38;padding:4px 10px 3px;color:#16231a;font-family:ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;min-height:54px;position:relative;box-shadow:inset 0 2px 6px rgba(0,0,0,.35)}',
     '.pr-lcd .v{font-size:27px;font-weight:700;letter-spacing:1px;line-height:1.15;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.pr-lcd .n{font-size:12px;line-height:1.2;opacity:.8;min-height:13px;overflow:hidden;max-height:26px}',
-    '.pr-lcd .m{position:absolute;left:6px;top:3px;font-size:10px;font-weight:700;opacity:.65}',
+    '.pr-lcd .m{position:absolute;left:6px;top:3px;font-size:10px;font-weight:700;opacity:.8}',
     '.pr-modes{display:flex;gap:5px;margin-top:6px}',
-    '.pr-modes button{flex:1 1 0;min-height:40px;border-radius:9px;border:1px solid #6b5208;background:#f3d36a;color:#2a2000;font:700 13px system-ui;cursor:pointer;touch-action:manipulation;padding:0 2px}',
+    '.pr-modes button{flex:1 1 0;min-height:44px;border-radius:9px;border:1px solid #6b5208;background:#f3d36a;color:#2a2000;font:700 13px system-ui;cursor:pointer;touch-action:manipulation;padding:0 2px}',
     '.pr-modes button.on{background:#222;color:#ffe27a;border-color:#000}',
     '.pr-probes{display:flex;gap:6px;margin-top:5px;font-size:12px;font-weight:600}',
     '.pr-probes span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:2px 6px;border-radius:6px}',
     '.pr-pa{background:#b3261e;color:#fff}.pr-pb{background:#111;color:#fff}',
-    '.pr-side{flex:0 0 340px;background:#1b2128;border-left:1px solid #2c343e;display:none;flex-direction:column;min-width:0;min-height:0;z-index:4}',
+    '.pr-side{flex:0 0 340px;background:var(--pr-sub);border-left:1px solid var(--pr-line);display:none;flex-direction:column;min-width:0;min-height:0;z-index:4}',
     '.pr-side.on{display:flex}',
-    '.pr-root.narrow .pr-side{position:absolute;left:0;right:0;bottom:0;top:34%;flex:none;border-left:0;border-top:2px solid #3a4452;box-shadow:0 -8px 20px rgba(0,0,0,.5)}',
-    '.pr-tabs{display:flex;gap:4px;padding:6px;border-bottom:1px solid #2c343e;flex:0 0 auto;align-items:center}',
+    '.pr-root.narrow .pr-side{position:absolute;left:0;right:0;bottom:0;top:34%;flex:none;border-left:0;border-top:2px solid var(--pr-line2);box-shadow:0 -8px 20px var(--pr-shade)}',
+    '.pr-tabs{display:flex;gap:4px;padding:6px;border-bottom:1px solid var(--pr-line);flex:0 0 auto;align-items:center}',
     '.pr-tabs .pr-btn{flex:1 1 0}',
     '.pr-body{flex:1 1 auto;overflow:auto;padding:8px;-webkit-overflow-scrolling:touch}',
-    '.pr-card{display:inline-block;vertical-align:top;margin:0 6px 8px 0;background:#222830;border:1px solid #38424d;border-radius:10px;padding:5px 7px;width:158px}',
-    '.pr-card.sel{border-color:#3b9eff}',
-    '.pr-card .h{font-size:12px;color:#aab6c3;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pr-card .h b{color:#fff;font-size:13px}',
+    '.pr-card{display:inline-block;vertical-align:top;margin:0 6px 8px 0;background:var(--pr-panel);border:1px solid var(--pr-line3);border-radius:10px;padding:5px 7px;width:158px}',
+    '.pr-card.sel{border-color:var(--pr-sel)}',
+    '.pr-card .h{font-size:12px;color:var(--pr-mute2);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pr-card .h b{color:var(--pr-strong);font-size:13px}',
     '.pr-card svg{display:block;width:100%;height:auto}',
-    '.pr-body h4{margin:10px 0 4px;font-size:13px;color:#8d99a6;text-transform:uppercase;letter-spacing:.5px}',
-    '.pr-body table{width:100%;border-collapse:collapse;font-size:13px}.pr-body td,.pr-body th{padding:3px 5px;border-bottom:1px solid #2c343e;text-align:left;vertical-align:top}',
-    '.pr-log{font-size:13px;line-height:1.35}.pr-log div{padding:5px 2px;border-bottom:1px solid #2c343e}.pr-log time{color:#8d99a6;font-size:12px;margin-right:6px}',
-    '.pr-log .ok{color:#4cd964}.pr-log .bad{color:#ff8a7a}.pr-log .warn{color:#ffb340}',
-    '.pr-banner{position:absolute;left:50%;top:10px;transform:translateX(-50%);max-width:min(560px,calc(100% - 20px));background:rgba(34,40,48,.96);border:1px solid #3a4452;border-radius:12px;padding:8px 12px;z-index:3;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.45);pointer-events:none}',
+    '.pr-body h4{margin:10px 0 4px;font-size:13px;color:var(--pr-mute);text-transform:uppercase;letter-spacing:.5px}',
+    '.pr-body table{width:100%;border-collapse:collapse;font-size:13px}.pr-body td,.pr-body th{padding:3px 5px;border-bottom:1px solid var(--pr-line);text-align:left;vertical-align:top}',
+    '.pr-log{font-size:13px;line-height:1.35}.pr-log div{padding:5px 2px;border-bottom:1px solid var(--pr-line)}.pr-log time{color:var(--pr-mute);font-size:12px;margin-right:6px}',
+    '.pr-log .ok{color:var(--pr-ok)}.pr-log .bad{color:var(--pr-bad)}.pr-log .warn{color:var(--pr-warn)}',
+    '.pr-banner{position:absolute;left:50%;top:10px;transform:translateX(-50%);max-width:min(560px,calc(100% - 20px));background:var(--pr-banner);border:1px solid var(--pr-line2);border-radius:12px;padding:8px 12px;z-index:3;font-size:13px;box-shadow:0 4px 14px var(--pr-shade2);pointer-events:none}',
     '.pr-tip{position:absolute;right:8px;bottom:8px;z-index:3;display:flex;flex-direction:column;gap:6px;align-items:flex-end}',
     '.pr-zoom{position:absolute;right:8px;top:8px;z-index:3;display:flex;flex-direction:column;gap:6px}',
-    '.pr-zoom .pr-btn{width:44px;padding:0;font-size:20px;background:rgba(44,52,62,.92)}'
+    '.pr-zoom .pr-btn{width:44px;padding:0;font-size:20px;background:var(--pr-zoom)}',
+    '@media(prefers-color-scheme:light){:root:not([data-theme=dark]) .pr-root{--pr-bg:#f3f5f8;--pr-fg:#141a21;--pr-panel:#ffffff;--pr-sub:#eef1f5;--pr-line:#d3d9e0;--pr-line2:#b9c2cc;--pr-line3:#d3d9e0;--pr-btn:#eaeef3;--pr-btn-act:#d3d9e0;--pr-mute:#5a6672;--pr-mute2:#4a5663;--pr-strong:#141a21;--pr-stage:#dde3ea;--pr-sel:#0a4fb3;--pr-ok:#107a3f;--pr-bad:#b3261e;--pr-warn:#8a5a00;--pr-warn-line:#a06a00;--pr-banner:rgba(255,255,255,.97);--pr-zoom:rgba(255,255,255,.92);--pr-shade:rgba(0,0,0,.2);--pr-shade2:rgba(0,0,0,.2);--pr-sch-net:#0a5a9c;--pr-sch-num:#5a6672;--pr-sch-ink:#141a21;--pr-sch-led:#a06a00}}',
+    ':root[data-theme=light] .pr-root{--pr-bg:#f3f5f8;--pr-fg:#141a21;--pr-panel:#ffffff;--pr-sub:#eef1f5;--pr-line:#d3d9e0;--pr-line2:#b9c2cc;--pr-line3:#d3d9e0;--pr-btn:#eaeef3;--pr-btn-act:#d3d9e0;--pr-mute:#5a6672;--pr-mute2:#4a5663;--pr-strong:#141a21;--pr-stage:#dde3ea;--pr-sel:#0a4fb3;--pr-ok:#107a3f;--pr-bad:#b3261e;--pr-warn:#8a5a00;--pr-warn-line:#a06a00;--pr-banner:rgba(255,255,255,.97);--pr-zoom:rgba(255,255,255,.92);--pr-shade:rgba(0,0,0,.2);--pr-shade2:rgba(0,0,0,.2);--pr-sch-net:#0a5a9c;--pr-sch-num:#5a6672;--pr-sch-ink:#141a21;--pr-sch-led:#a06a00}'
   ].join('');
   function injectCss() { if (document.getElementById('pr-css')) return; const s = document.createElement('style'); s.id = 'pr-css'; s.textContent = CSS; document.head.appendChild(s); }
 
@@ -987,8 +1002,8 @@
     c.lineWidth = 0.01; c.strokeStyle = 'rgba(180,255,205,.55)'; c.stroke();
     c.restore();
   }
-  function drawText(c, txt, x, y, size, color, mir, align, weight) {
-    c.save(); c.translate(x, y); if (mir) c.scale(-1, 1); c.font = (weight || '600') + ' ' + size + 'px system-ui,sans-serif'; c.fillStyle = color; c.textAlign = align || 'center'; c.textBaseline = 'middle'; c.fillText(txt, 0, 0); c.restore();
+  function drawText(c, txt, x, y, size, color, mir, align, weight, halo) {
+    c.save(); c.translate(x, y); if (mir) c.scale(-1, 1); c.font = (weight || '600') + ' ' + size + 'px system-ui,sans-serif'; c.textAlign = align || 'center'; c.textBaseline = 'middle'; if (halo) { c.lineWidth = size * 0.24; c.lineJoin = 'round'; c.strokeStyle = halo; c.strokeText(txt, 0, 0); } c.fillStyle = color; c.fillText(txt, 0, 0); c.restore();
   }
 
   function ledShape(c, R) { c.beginPath(); c.moveTo(-0.8 * R, -0.6 * R); c.arc(0, 0, R, Math.atan2(-0.6, -0.8), Math.atan2(0.6, -0.8), false); c.closePath(); }
@@ -1073,7 +1088,7 @@
       const pw = pads.length ? Math.max(0.5, bb.x1 - bb.x0 - 0.2) : 4, ph = Math.max(2.54, bb.y1 - bb.y0 - 0.3);
       c.save(); rrect(c, bb.x0 + 0.05, bb.y0 + 0.15, bb.x1 - bb.x0 - 0.1, bb.y1 - bb.y0 - 0.3, 0.2); const g = c.createLinearGradient(0, bb.y0, 0, bb.y1); g.addColorStop(0, '#3a3d42'); g.addColorStop(1, '#1b1d20'); c.fillStyle = g; c.fill();
       pads.forEach(pp => { c.fillStyle = '#d9b44a'; c.fillRect(pp.x - 0.32, pp.y - 0.32, 0.64, 0.64); });
-      if (scale >= 14 || detail >= 2) drawText(c, p.ref, cx, cy, 0.9, '#9aa3ad', false); c.restore(); return;
+      if (scale >= 14 || detail >= 2) drawText(c, p.ref, cx, cy, 0.9, '#aab3bd', false); c.restore(); return;
     }
     // IC und alles andere: dunkler Körper zwischen den Pads
     let x0 = bb.x0, x1 = bb.x1, y0 = bb.y0, y1 = bb.y1;
@@ -1219,9 +1234,9 @@
     // Bezeichnungen
     if (detail < 2 && s >= 7) (b.parts || []).forEach(p => {
       if ((p.side === 'bot') !== mir) return; const fp = fpOf(p.fp), cy = fp.courtyard || { x: -1, y: -1, w: 2, h: 2 }, r = Math.max(cy.w, cy.h) / 2 + 0.9;
-      drawText(c, p.ref, p.x, p.y - r, 1.15, COL.silk, mir, 'center', '700');
+      drawText(c, p.ref, p.x, p.y - r, 1.15, COL.silk, mir, 'center', '700', th().refHalo);
     });
-    Object.keys(sc.sol).forEach(ref => { if (sc.part[ref] || detail >= 2 && false) return; const sp = sc.sol[ref]; if ((sp.side === 'bot') !== mir) return; const fp = fpOf(sp.fp), cy = fp.courtyard || { w: 2, h: 2 }; drawText(c, ref, sp.x, sp.y - Math.max(cy.w, cy.h) / 2 - 0.9, 1.15, COL.silk, mir, 'center', '700'); });
+    Object.keys(sc.sol).forEach(ref => { if (sc.part[ref] || detail >= 2 && false) return; const sp = sc.sol[ref]; if ((sp.side === 'bot') !== mir) return; const fp = fpOf(sp.fp), cy = fp.courtyard || { w: 2, h: 2 }; drawText(c, ref, sp.x, sp.y - Math.max(cy.w, cy.h) / 2 - 0.9, 1.15, COL.silk, mir, 'center', '700', th().refHalo); });
     // Rauch
     (S.smoke || []).forEach(q => { c.beginPath(); c.arc(q.x + Math.sin(q.age * 4 + q.ph) * 0.6, q.y - q.age * 3, 0.5 + q.age * 1.6, 0, 2 * PI); c.fillStyle = 'rgba(150,150,150,' + Math.max(0, 0.45 - q.age * 0.3) + ')'; c.fill(); });
     // Tipp-Markierung
@@ -1232,18 +1247,18 @@
   function netLabel(n) { return n ? esc(n) : '–'; }
   function symbolSvg(p, cl, fp, pinNet) {
     const pn = k => pinNet[k] || '';
-    const lab = (x, y, t, a) => `<text x="${x}" y="${y}" text-anchor="${a || 'middle'}" font-size="9.5" fill="#8fd1ff">${netLabel(t)}</text>`;
-    const num = (x, y, t, a) => `<text x="${x}" y="${y}" text-anchor="${a || 'middle'}" font-size="8" fill="#707c88">${t}</text>`;
+    const lab = (x, y, t, a) => `<text x="${x}" y="${y}" text-anchor="${a || 'middle'}" font-size="9.5" style="fill:var(--pr-sch-net,#8fd1ff)">${netLabel(t)}</text>`;
+    const num = (x, y, t, a) => `<text x="${x}" y="${y}" text-anchor="${a || 'middle'}" font-size="8" style="fill:var(--pr-sch-num,#8d99a6)">${t}</text>`;
     let body = '';
-    const stroke = 'stroke="#e8edf2" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"';
+    const stroke = 'style="stroke:var(--pr-sch-ink,#e8edf2)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"';
     if (cl.k === 'res' || cl.k === 'fuse') body = `<path d="M8 36H42M108 36H142" ${stroke}/><rect x="42" y="28" width="66" height="16" ${stroke}/>${lab(22, 28, pn('1'))}${lab(128, 28, pn('2'))}${num(22, 52, '1')}${num(128, 52, '2')}`;
-    else if (cl.k === 'cap') body = `<path d="M8 36H66M84 36H142M66 20V52M84 20V52" ${stroke}/>${cl.pol ? '<text x="58" y="20" font-size="12" fill="#e8edf2" text-anchor="end">+</text>' : ''}${lab(28, 28, pn(cl.pol ? cl.plus : '1'))}${lab(122, 28, pn(cl.pol ? cl.minus : '2'))}${num(28, 52, cl.pol ? '+' : '1')}${num(122, 52, cl.pol ? '−' : '2')}`;
-    else if (cl.k === 'led' || cl.k === 'diode') body = `<path d="M8 36H52M98 36H142M52 20L52 52L98 36Z M98 20V52" ${stroke}/>${cl.k === 'led' ? '<path d="M70 14L82 4M80 20L92 10" stroke="#ffd24a" stroke-width="1.6" fill="none"/>' : ''}${lab(24, 28, pn(cl.A))}${lab(124, 28, pn(cl.K))}${num(24, 52, 'A')}${num(124, 52, 'K')}`;
+    else if (cl.k === 'cap') body = `<path d="M8 36H66M84 36H142M66 20V52M84 20V52" ${stroke}/>${cl.pol ? '<text x="58" y="20" font-size="12" style="fill:var(--pr-sch-ink,#e8edf2)" text-anchor="end">+</text>' : ''}${lab(28, 28, pn(cl.pol ? cl.plus : '1'))}${lab(122, 28, pn(cl.pol ? cl.minus : '2'))}${num(28, 52, cl.pol ? '+' : '1')}${num(122, 52, cl.pol ? '−' : '2')}`;
+    else if (cl.k === 'led' || cl.k === 'diode') body = `<path d="M8 36H52M98 36H142M52 20L52 52L98 36Z M98 20V52" ${stroke}/>${cl.k === 'led' ? '<path d="M70 14L82 4M80 20L92 10" style="stroke:var(--pr-sch-led,#ffd24a)" stroke-width="1.6" fill="none"/>' : ''}${lab(24, 28, pn(cl.A))}${lab(124, 28, pn(cl.K))}${num(24, 52, 'A')}${num(124, 52, 'K')}`;
     else if (cl.k === 'conn') {
       const ps = fp.pads || [], n = ps.length, h = Math.min(60, 12 + n * 12); body = `<rect x="52" y="${34 - h / 2 + 4}" width="46" height="${h}" ${stroke}/>` + ps.map((q, i) => { const y = 34 - h / 2 + 4 + 8 + i * ((h - 12) / Math.max(1, n - 1 || 1)); return `<path d="M8 ${y}H52" ${stroke}/>${lab(30, y - 3, pn(q.n))}${num(88, y + 3, q.n)}`; }).join('');
     } else {
       const ps = (fp.pads || []).slice().sort((a, b) => +a.n - +b.n), n = ps.length, half = Math.ceil(n / 2), rows = Math.max(3, half), h = Math.min(70, rows * 11 + 6); const two = n > 3;
-      body = `<rect x="56" y="${36 - h / 2}" width="38" height="${h}" ${stroke}/><text x="75" y="${36 - h / 2 + 11}" text-anchor="middle" font-size="8" fill="#aab6c3">${esc(fmtShort(p.value))}</text>`;
+      body = `<rect x="56" y="${36 - h / 2}" width="38" height="${h}" ${stroke}/><text x="75" y="${36 - h / 2 + 11}" text-anchor="middle" font-size="8" style="fill:var(--pr-mute2,#aab6c3)">${esc(fmtShort(p.value))}</text>`;
       ps.forEach((q, i) => { const left = two ? i < half : true, idx = two ? (left ? i : n - 1 - i) : i, y = 36 - h / 2 + 16 + idx * ((h - 22) / Math.max(1, (two ? half : n) - 1)); body += `<path d="M${left ? 40 : 94} ${y}H${left ? 56 : 110}" ${stroke}/>${lab(left ? 26 : 125, y + 3, pn(q.n))}${num(left ? 62 : 88, y + 3, q.n)}`; });
     }
     const hh = (cl.k === 'ic' || cl.k === 'reg' || cl.k === 'conn') ? 78 : 58;
@@ -1258,7 +1273,7 @@
       return `<div class="pr-card${S.sel === p.ref ? ' sel' : ''}" data-ref="${esc(p.ref)}"><div class="h"><b>${esc(p.ref)}</b> · ${esc(val)} · ${esc(p.fp)}</div>${symbolSvg(p, cl, fp, pinNet)}</div>`;
     }).join('');
     const rows = (ref.nets || []).map(n => `<tr><td><b>${esc(n.name)}</b></td><td>${(n.pins || []).map(esc).join(', ')}</td></tr>`).join('');
-    return `<p style="margin:0 0 8px;color:#aab6c3;font-size:13px">So sollte die Baugruppe verschaltet sein. Jeder Anschluss zeigt sein Netz. Die Werte in der Überschrift sind die <b style="color:#fff">Soll-Werte</b>.</p>${cards}<h4>Netzliste</h4><table>${rows}</table>`;
+    return `<p style="margin:0 0 8px;color:var(--pr-mute2,#aab6c3);font-size:13px">So sollte die Baugruppe verschaltet sein. Jeder Anschluss zeigt sein Netz. Die Werte in der Überschrift sind die <b style="color:var(--pr-strong,#fff)">Soll-Werte</b>.</p>${cards}<h4>Netzliste</h4><table>${rows}</table>`;
   }
 
   /* ---------- Wertelisten fürs Bauteiltauschen */
@@ -1500,14 +1515,16 @@
       }
       function distSeg(px, py, ax, ay, bx, by) { const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy; let t = l2 ? ((px - ax) * dx + (py - ay) * dy) / l2 : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(px - (ax + t * dx), py - (ay + t * dy)); }
       function drawProbes(g) {
+        const K = th();
         ['A', 'B'].forEach(k => {
           const p = S.probes[k]; if (!p) return; const m = p.side === 'bot', same = m === mir(); const sp = same ? w2s(p.x, p.y) : null; if (!sp) return;
           const col = k === 'A' ? '#e0372d' : '#1a1a1a';
           g.save(); g.translate(sp.x, sp.y);
           g.beginPath(); g.moveTo(0, 0); g.lineTo(5, -14); g.lineTo(34, -64); g.lineTo(26, -68); g.lineTo(-4, -14); g.closePath(); g.fillStyle = col; g.fill(); g.lineWidth = 1.5; g.strokeStyle = k === 'A' ? '#ff9a92' : '#777'; g.stroke();
           g.beginPath(); g.moveTo(30, -66); g.quadraticCurveTo(80, -110, 140, -70); g.lineWidth = 3; g.strokeStyle = col; g.stroke();
+          if (K.probeRing) { g.beginPath(); g.arc(0, 0, 6, 0, 2 * PI); g.strokeStyle = K.probeRing; g.lineWidth = 3.5; g.stroke(); }
           g.beginPath(); g.arc(0, 0, 6, 0, 2 * PI); g.strokeStyle = '#fff'; g.lineWidth = 1.5; g.stroke(); g.beginPath(); g.arc(0, 0, 2, 0, 2 * PI); g.fillStyle = '#ffd24a'; g.fill();
-          g.font = '700 12px system-ui'; g.fillStyle = '#fff'; g.textAlign = 'center'; g.fillText(k, 20, -36);
+          g.font = '700 12px system-ui'; g.textAlign = 'center'; if (K.halo) { g.lineWidth = 3; g.lineJoin = 'round'; g.strokeStyle = K.halo; g.strokeText(k, 20, -36); } g.fillStyle = K.probeText; g.fillText(k, 20, -36);
           g.restore();
         });
       }
@@ -1515,8 +1532,8 @@
       /* ---- Lupe */
       const lensR = () => Math.max(70, Math.min(120, Math.min(S.W, S.H) * 0.23));
       function drawLens(g) {
-        if (S.tool !== 'lupe' || !S.lens.on) return; const R = lensR(), lx = S.lens.x, ly = S.lens.y, Z = S.lens.Z, w = s2w(lx, ly);
-        g.save(); g.beginPath(); g.arc(lx, ly, R, 0, 2 * PI); g.clip(); g.fillStyle = '#0b0d0f'; g.fillRect(lx - R, ly - R, 2 * R, 2 * R);
+        if (S.tool !== 'lupe' || !S.lens.on) return; const K = th(), R = lensR(), lx = S.lens.x, ly = S.lens.y, Z = S.lens.Z, w = s2w(lx, ly);
+        g.save(); g.beginPath(); g.arc(lx, ly, R, 0, 2 * PI); g.clip(); g.fillStyle = K.lensBg; g.fillRect(lx - R, ly - R, 2 * R, 2 * R);
         const s2 = S.v.s * Z, v2 = { s: s2, ox: mir() ? lx - (S.board.w - w.x) * s2 : lx - w.x * s2, oy: ly - w.y * s2 };
         setTransform(g, v2, mir(), S.board.w); const half = R / s2 * 1.05;
         renderScene(g, S, { detail: 2, scale: s2, cull: { x0: w.x - half, x1: w.x + half, y0: w.y - half, y1: w.y + half } });
@@ -1524,8 +1541,8 @@
         g.save(); g.beginPath(); g.arc(lx, ly, R, 0, 2 * PI); g.lineWidth = 9; g.strokeStyle = '#2a3038'; g.stroke(); g.lineWidth = 3; g.strokeStyle = '#8f9aa6'; g.stroke();
         g.beginPath(); g.moveTo(lx + R * 0.7, ly + R * 0.7); g.lineTo(lx + R * 0.7 + 38, ly + R * 0.7 + 38); g.lineWidth = 14; g.lineCap = 'round'; g.strokeStyle = '#2a3038'; g.stroke(); g.lineWidth = 8; g.strokeStyle = '#5a4630'; g.stroke();
         g.beginPath(); g.arc(lx - R * 0.45, ly - R * 0.5, R * 0.12, 0, 2 * PI); g.fillStyle = 'rgba(255,255,255,.12)'; g.fill();
-        g.font = '700 12px system-ui'; g.fillStyle = '#ffd24a'; g.textAlign = 'center'; g.fillText(Z + '×', lx, ly - R + 18); g.restore();
-        if (S.lensCap) { g.save(); g.font = '600 13px system-ui'; const t = S.lensCap, tw = Math.min(S.W - 20, g.measureText(t).width + 18); let x = Math.max(10, Math.min(S.W - tw - 10, lx - tw / 2)), y = ly + R + 12 > S.H - 40 ? ly - R - 40 : ly + R + 12; g.fillStyle = 'rgba(20,24,28,.92)'; g.fillRect(x, y, tw, 26); g.strokeStyle = '#3a4452'; g.strokeRect(x, y, tw, 26); g.fillStyle = '#e8edf2'; g.textAlign = 'left'; g.fillText(t.length > 90 ? t.slice(0, 88) + '…' : t, x + 9, y + 18, tw - 14); g.restore(); }
+        g.font = '700 12px system-ui'; g.textAlign = 'center'; if (K.halo) { g.lineWidth = 3; g.lineJoin = 'round'; g.strokeStyle = K.halo; g.strokeText(Z + '×', lx, ly - R + 18); } g.fillStyle = K.lensZoom; g.fillText(Z + '×', lx, ly - R + 18); g.restore();
+        if (S.lensCap) { g.save(); g.font = '600 13px system-ui'; const t = S.lensCap, tw = Math.min(S.W - 20, g.measureText(t).width + 18); let x = Math.max(10, Math.min(S.W - tw - 10, lx - tw / 2)), y = ly + R + 12 > S.H - 40 ? ly - R - 40 : ly + R + 12; g.fillStyle = K.capBg; g.fillRect(x, y, tw, 26); g.strokeStyle = K.capLine; g.strokeRect(x, y, tw, 26); g.fillStyle = K.capFg; g.textAlign = 'left'; g.fillText(t.length > 90 ? t.slice(0, 88) + '…' : t, x + 9, y + 18, tw - 14); g.restore(); }
       }
       function inspect(final) {
         const w = s2w(S.lens.x, S.lens.y), b = S.board, sc = sceneCache(S), layer = mir() ? 'B.Cu' : 'F.Cu', tol = 1.3 / 1; let t = '';
@@ -1557,12 +1574,14 @@
         if (S.power || S.smoke.length) { raf = requestAnimationFrame(frame); }
       }
       function paint() {
-        const g = c; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = '#0e1114'; g.fillRect(0, 0, S.W, S.H);
+        const g = c, K = th(); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = K.stage; g.fillRect(0, 0, S.W, S.H);
         if (!S.board) return;
         setTransform(g, S.v, mir(), S.board.w); const a = s2w(0, 0), bz = s2w(S.W, S.H);
         renderScene(g, S, { detail: 0, scale: S.v.s, cull: { x0: Math.min(a.x, bz.x) - 2, x1: Math.max(a.x, bz.x) + 2, y0: a.y - 2, y1: bz.y + 2 } });
         g.setTransform(dpr, 0, 0, dpr, 0, 0);
-        g.font = '700 12px system-ui'; g.fillStyle = 'rgba(255,255,255,.55)'; g.textAlign = 'left'; g.fillText(mir() ? 'RÜCKSEITE (von unten gesehen)' : 'VORDERSEITE (Bestückungsseite)', 10, S.H - 10 - (S.tool === 'meter' ? 0 : 0));
+        const lbl = mir() ? 'RÜCKSEITE (von unten gesehen)' : 'VORDERSEITE (Bestückungsseite)'; g.font = '700 12px system-ui'; g.textAlign = 'left';
+        if (K.sideLabelBg) { g.fillStyle = K.sideLabelBg; g.fillRect(4, S.H - 26, g.measureText(lbl).width + 12, 22); }   // Plakette, falls die Platine darunter liegt
+        g.fillStyle = K.sideLabel; g.fillText(lbl, 10, S.H - 10 - (S.tool === 'meter' ? 0 : 0));
         drawProbes(g); drawLens(g);
       }
 
@@ -1660,12 +1679,14 @@
       function lensZoomHook() { cv.addEventListener('dblclick', () => { if (S.tool === 'lupe') { S.lens.Z = S.lens.Z === 6 ? 12 : 6; dirty(); } }); }
       const ro = root.ResizeObserver ? new ResizeObserver(() => resize()) : null; if (ro) ro.observe(stage);
       const onWin = () => resize(); root.addEventListener('resize', onWin);
+      const mqL = root.matchMedia ? root.matchMedia('(prefers-color-scheme: light)') : null, onScheme = () => dirty();   // Canvas-Farben folgen dem Schema
+      if (mqL) { if (mqL.addEventListener) mqL.addEventListener('change', onScheme); else if (mqL.addListener) mqL.addListener(onScheme); }
 
       adopt(); buildBar(); buildMeter(); resize(); if (S.board && !S.fitS) fit(); updateAll();
       return {
         refresh() { const before = S.board; adopt(); if (S.board && (S.board !== before)) { S.probes = { A: null, B: null }; S.power = false; S.op = null; S.hot = null; S.smoke = []; S.meter = null; stopBeep(); S.lens.on = false; } updateAll(); resize(); measureNow(false); },
         onBoard() { S.mode === 'ctx' && adopt(); },
-        destroy() { alive = false; stopBeep(); if (ro) ro.disconnect(); root.removeEventListener('resize', onWin); cancelAnimationFrame(raf); clearTimeout(banT); el.innerHTML = ''; },
+        destroy() { alive = false; stopBeep(); if (ro) ro.disconnect(); root.removeEventListener('resize', onWin); if (mqL) { if (mqL.removeEventListener) mqL.removeEventListener('change', onScheme); else if (mqL.removeListener) mqL.removeListener(onScheme); } cancelAnimationFrame(raf); clearTimeout(banT); el.innerHTML = ''; },
         onShow() { shown = true; resize(); if (S.board && !S.fitS) fit(); updateAll(); },
         onHide() { stopBeep(); },
         onResize() { resize(); },

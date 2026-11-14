@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tonfunk Lab">
@@ -14,10 +14,10 @@
 <link rel="icon" href="icon-192.png">
 <title>Tonfunk Lab</title>
 <style>
-:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--line:#38424d;--fg:#e8ecf0;--mute:#9aa6b2;--accent:#5fb0ff;--accent-bg:#1a6fd4;--accent-ink:#fff;--ok:#4fd58a;--warn:#ffd166;--danger:#ff7a7a;--g-grund:#f2b544;--g-mess:#4fd58a;--g-sich:#ff8a5c;--g-anadig:#5fb0ff;--g-auto:#b79cff;--g-bau:#45d4c8;--g-pruef:#ffd166;color-scheme:dark light}
+:root{--bg:#14181c;--panel:#222830;--panel2:#2c343e;--line:#38424d;--fg:#e8ecf0;--mute:#9aa6b2;--accent:#5fb0ff;--accent-bg:#1a6fd4;--accent-ink:#fff;--ok:#4fd58a;--warn:#ffd166;--danger:#ff7a7a;--g-grund:#f2b544;--g-mess:#4fd58a;--g-sich:#ff8a5c;--g-anadig:#5fb0ff;--g-auto:#b79cff;--g-bau:#45d4c8;--g-pruef:#ffd166;--g-stud:#ff86c0;color-scheme:dark light}
 /* Hell-Modus: automatisch nach System, Umschalter setzt data-theme (lm4.theme); Werte aus FABLE-STARTSEITE-DESIGN.md 3.2 */
-@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;--g-grund:#9a6300;--g-mess:#107a3f;--g-sich:#b8431a;--g-anadig:#0a5fc4;--g-auto:#5e3fb8;--g-bau:#0b7f78;--g-pruef:#8a5a00}}
-:root[data-theme=light]{--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;--g-grund:#9a6300;--g-mess:#107a3f;--g-sich:#b8431a;--g-anadig:#0a5fc4;--g-auto:#5e3fb8;--g-bau:#0b7f78;--g-pruef:#8a5a00;color-scheme:light}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]){--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;--g-grund:#9a6300;--g-mess:#107a3f;--g-sich:#b8431a;--g-anadig:#0a5fc4;--g-auto:#5e3fb8;--g-bau:#0b7f78;--g-pruef:#8a5a00;--g-stud:#a8246f}}
+:root[data-theme=light]{--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;--g-grund:#9a6300;--g-mess:#107a3f;--g-sich:#b8431a;--g-anadig:#0a5fc4;--g-auto:#5e3fb8;--g-bau:#0b7f78;--g-pruef:#8a5a00;--g-stud:#a8246f;color-scheme:light}
 :root[data-theme=dark]{color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{min-height:100%;margin:0;background:var(--bg);color:var(--fg);font:16px/1.35 -apple-system,system-ui,"Segoe UI",sans-serif}
@@ -45,34 +45,45 @@ header p{margin:2px 0 0;color:var(--mute)}
 @keyframes onglow{0%{opacity:.25}50%{opacity:0}}
 @keyframes cur{0%{opacity:1}50%{opacity:0}}
 @keyframes pinrun{0%,11%{fill:#fff59d}12%,100%{fill:#d8b24a}}
+/* Neue Vorschaubilder (v55.174): Zahnraeder, Bohrer, Hebel, Schweissnaht, Werkstueck; ruhig und langsam, Ruhelage = Grundzustand (bei reduzierter Bewegung gilt .pic svg *{animation:none}) */
+.pic svg .zr1,.pic svg .zr2{transform-origin:0 0;animation:zrot 6s linear infinite}.pic svg .zr2{animation-duration:10s;animation-direction:reverse}@keyframes zrot{to{transform:rotate(360deg)}}
+.pic svg .bit{animation:bit .7s linear infinite}@keyframes bit{to{transform:translateY(7px)}}
+.pic svg .chip{animation:chip 1.4s ease-out infinite}@keyframes chip{0%{opacity:.15;transform:translateY(2px)}60%{opacity:1}100%{opacity:.15;transform:translateY(-4px)}}
+.pic svg .wipp{transform-origin:120px 76px;animation:wipp 5s ease-in-out infinite}@keyframes wipp{0%,100%{transform:rotate(-3.5deg)}50%{transform:rotate(3.5deg)}}
+.pic svg .fwm{animation:fwm 5s linear infinite}@keyframes fwm{from{transform:translate(152px,64px)}to{transform:translate(218px,64px)}}
+.pic svg .fwb{stroke-dasharray:66;animation:fwb 5s linear infinite}@keyframes fwb{from{stroke-dashoffset:66}to{stroke-dashoffset:0}}
+.pic svg .fws{animation:onoff .6s steps(1) infinite}.pic svg .fwg{filter:drop-shadow(0 0 3px #ffe14d)}
+.pic svg .fek{animation:fek 10s linear infinite}@keyframes fek{0%{opacity:0;transform:translate(26px,32px)}5%{opacity:1;transform:translate(26px,34px)}22%{transform:translate(26px,70px)}27%{transform:translate(36px,80px)}38%{transform:translate(76px,80px)}50%,60%{transform:translate(120px,86px)}76%{transform:translate(170px,61px)}84%,94%{opacity:1;transform:translate(193px,61px)}100%{opacity:0;transform:translate(193px,61px)}}
+.pic svg .fe2,.pic svg .fe3{opacity:0}.pic svg .fe2{animation:fe2 10s linear infinite}.pic svg .fe3{animation:fe3 10s linear infinite}@keyframes fe2{0%,46%{opacity:0}52%,62%{opacity:1}68%,100%{opacity:0}}@keyframes fe3{0%,80%{opacity:0}85%,95%{opacity:1}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.pic svg *{animation:none!important}}
 /* Dauer-Animationen nur fuer Karten im sichtbaren Bereich oder unter Zeiger/Fokus (spart Akku, ruhigere Blickfuehrung); ohne Skript oder IntersectionObserver laufen alle wie bisher */
 html.anim-gate .pic svg *{animation-play-state:paused}
 html.anim-gate .card.inview .pic svg *,html.anim-gate .card:hover .pic svg *,html.anim-gate .card:focus-within .pic svg *{animation-play-state:running}
-.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
-@media(min-width:1600px){.wrap{max-width:1600px}.cards{grid-template-columns:repeat(5,1fr)}}
-@media(min-width:1280px) and (max-width:1599px){.cards{grid-template-columns:repeat(4,1fr)}}
-@media(min-width:900px) and (max-width:1279px){.cards{grid-template-columns:repeat(3,1fr)}}
-@media(min-width:640px) and (max-width:899px){.cards{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:639px){.cards{grid-template-columns:1fr}}
+/* Kartenraster: Spalten als minmax(0,1fr), damit lange Wörter (Marken, Überschriften) keine Spalte über den Container hinaus aufweiten (v62.173; vorher 269+385+334 px im 969-px-Container bei 1024 px) */
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(270px,100%),1fr))}.cards>*{min-width:0}
+@media(min-width:1600px){.wrap{max-width:1600px}.cards{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media(min-width:1280px) and (max-width:1599px){.cards{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(min-width:900px) and (max-width:1279px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:640px) and (max-width:899px){.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:639px){.cards{grid-template-columns:minmax(0,1fr)}}
 .card.soon{opacity:.8;border-style:dashed}
 a.btn.off{pointer-events:none;color:var(--mute);background:transparent}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px}
-.card .tag{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
+.card .tag{font-size:14px;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);font-weight:600}
 .card h3{margin:0;font-size:22px}
 .card p{margin:0;color:var(--mute)}
 .pic{height:120px;border-radius:12px;background:#080b0e;display:grid;place-items:center;overflow:hidden}
 .pic svg{width:100%;height:100%}
 .steps{display:flex;gap:8px;flex-wrap:wrap}
-.steps span{font-size:13px;padding:4px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--line)}
+.steps span{font-size:14px;padding:4px 10px;border-radius:99px;background:var(--panel2);border:1px solid var(--line)}
 .btns{display:flex;gap:10px;margin-top:auto;padding-top:6px}
 a.btn{flex:1;display:flex;align-items:center;justify-content:center;height:48px;border-radius:13px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);text-decoration:none;font-weight:600}
 a.btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff;flex:2}
 /* kompakte Karten: kleineres Vorschaubild, kürzere Texte (Spalten: siehe .cards oben, Bereiche: home.css) */
-.card{padding:14px;gap:8px;border-radius:14px}.card h3{font-size:18px}.card p{font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.card{padding:14px;gap:8px;border-radius:14px}.card h3{font-size:18px}.card p{font-size:14px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 /* Beschreibungen: 4 Zeilen (Handy 3), Volltext per Antippen/Enter und als Tooltip; Skript setzt .cl nur bei tatsaechlich abgeschnittenem Text */
 .card p.cl{cursor:pointer}.card p.cl:hover{color:var(--fg)}.card p.open{-webkit-line-clamp:unset;overflow:visible;color:var(--fg)}
-.pic{height:76px}.steps span{font-size:12px;padding:2px 8px}
+.pic{height:76px}.steps span{font-size:14px;padding:2px 8px}
 a.btn{height:44px;min-height:44px;font-size:14px;border-radius:11px}.btns{gap:8px;padding-top:2px}.mp{margin:0}
 @media(max-width:639px){.pic{height:64px}.card p{-webkit-line-clamp:3}}
 /* Zeile Projekte (Verbund): eigene Zeile weit oben, unter Beruf und Weitermachen, vor den Lab-Karten; kein Lab, für jeden Beruf, Inhalt von home-vb.js */
@@ -84,12 +95,12 @@ a.btn{height:44px;min-height:44px;font-size:14px;border-radius:11px}.btns{gap:8p
 #vbRow{margin:0 0 14px}#vbRow .vbn{font-size:14px;font-weight:600}#vbRow .vbn small{font-weight:400;color:var(--mute)}
 #vbRow .vbl{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 #vbRow .vbl a{display:flex;align-items:center;gap:6px;min-height:44px;padding:4px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none;font-size:14px;line-height:1.2}
-#vbRow .vbl a small{color:var(--mute);font-size:12px;white-space:nowrap}#vbRow .vbl a.fin{border-color:var(--ok)}#vbRow .vbl a.fin small{color:var(--ok)}
+#vbRow .vbl a small{color:var(--mute);font-size:14px;white-space:nowrap}#vbRow .vbl a.fin{border-color:var(--ok)}#vbRow .vbl a.fin small{color:var(--ok)}
 #vbRow .vbl a:focus-visible,#vbRow summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 #vbRow summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:14px;color:var(--accent);font-weight:600}
 @media(max-width:639px){#vbRow .pic{display:none}#vbRow .vbl a{flex:1 1 100%}}
-.foot{margin-top:26px;color:var(--mute);font-size:13px;text-align:center;line-height:1.6}
-.foot.standrow button{min-height:44px;min-width:44px;padding:0 18px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}.foot.standrow button:focus-visible{outline:3px solid #ffd166;outline-offset:2px}.foot.standrow span{font-size:12px}
+.foot{margin-top:26px;color:var(--mute);font-size:14px;text-align:center;line-height:1.6}
+.foot.standrow button{min-height:44px;min-width:44px;padding:0 18px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}.foot.standrow button:focus-visible{outline:3px solid #ffd166;outline-offset:2px}.foot.standrow span{font-size:14px}
 .foot a{display:inline-block;min-height:28px;padding:4px 3px;line-height:20px}
 html:root{--focus:#ffd166}
 #gate{position:fixed;inset:0;z-index:400;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
@@ -173,6 +184,13 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   <symbol id="i-pilab" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="7" cy="8.5" r=".9"/><circle cx="10" cy="8.5" r=".9"/><circle cx="13" cy="8.5" r=".9"/><circle cx="16" cy="8.5" r=".9"/><circle cx="7" cy="11.5" r=".9"/><circle cx="10" cy="11.5" r=".9"/><circle cx="13" cy="11.5" r=".9"/><circle cx="16" cy="11.5" r=".9"/><rect x="7" y="14" width="5" height="3" rx=".5"/><path d="M15 15.5h3"/></symbol>
   <symbol id="i-appwerkstatt" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 9l-2 3 2 3M13 9l2 3-2 3M11 5h2"/></symbol>
   <symbol id="i-pruefungslab" viewBox="0 0 24 24"><path d="M3.5 6.5l1.3 1.3L7.5 5M3.5 12l1.3 1.3L7.5 10.5M10 6.5h10M10 12h5M4 17.5h6"/><circle cx="17" cy="17" r="4.5"/><path d="M17 14.5V17h2"/></symbol>
+  <symbol id="i-mat2lab" viewBox="0 0 24 24"><path d="M3 19h18M4 19c0-6 3.5-10 8-10s8 4 8 10"/><path d="M8 13c1.3-2.2 2.7-2.2 4 0s2.7 2.2 4 0"/></symbol>
+  <symbol id="i-siglab" viewBox="0 0 24 24"><path d="M3 12c2-6 4-6 6 0s4 6 6 0"/><path d="M17 18v-6M19.5 18V8M22 18v-9"/></symbol>
+  <symbol id="i-rg2lab" viewBox="0 0 24 24"><path d="M3 12h18M12 3v18"/><path d="M5.5 7.5l3 3M8.5 7.5l-3 3M5.5 13.5l3 3M8.5 13.5l-3 3"/><circle cx="16.5" cy="12" r="1.8"/></symbol>
+  <symbol id="i-emblab" viewBox="0 0 24 24"><rect x="7" y="10" width="10" height="10" rx="1"/><path d="M10 10V7.5M14 10V7.5M10 20v2M14 20v2M7 13H4M7 17H4M17 13h3M17 17h3"/><path d="M5 4.5h4V2.5h4v2h4V2.5h2"/></symbol>
+  <symbol id="i-prjlab" viewBox="0 0 24 24"><rect x="2" y="3" width="6" height="5" rx="1"/><rect x="16" y="3" width="6" height="5" rx="1"/><rect x="9" y="15" width="6" height="5" rx="1"/><path d="M8 5.5h8M5 8v4h14V8M12 12v3"/></symbol>
+  <symbol id="i-nrmlab" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-flilab" viewBox="0 0 24 24"><path d="M3 15h18M5 15v2.5M19 15v2.5M6 15v-4h4v4M12 15v-6h4v6"/><path d="M8 6h8M14 4l2 2-2 2"/></symbol>
   <symbol id="i-vb" viewBox="0 0 24 24"><circle cx="5" cy="5" r="2.2"/><circle cx="19" cy="5" r="2.2"/><circle cx="5" cy="19" r="2.2"/><circle cx="19" cy="19" r="2.2"/><path d="M7.2 5h9.6M5 7.2v9.6M19 7.2v9.6M7.2 19h9.6M6.6 6.6l10.8 10.8M17.4 6.6L6.6 17.4"/></symbol>
   <symbol id="i-plan" viewBox="0 0 24 24"><path d="M4 6h3M4 12h3M4 18h3M10 6h10M10 12h10M10 18h10"/></symbol>
   <symbol id="i-wiki" viewBox="0 0 24 24"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/></symbol>
@@ -255,7 +273,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Aufbauen</span><span>Schalten</span><span>Beobachten</span></div>
       <div class="btns"><a class="btn pri" href="simlab.html">Öffnen</a><a class="btn" href="simlab.html?neu">Neu</a><a class="btn" href="simlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="digilab" data-group="anadig" data-beruf="egs ige fi">
+    <section class="card" data-lab="digilab" data-group="anadig" data-beruf="egs ige fi tec stu winf">
       <span class="tag">DigiLab</span>
       <h3>Digitaltechnik</h3>
       <div class="pic" aria-hidden="true">
@@ -265,7 +283,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verdrahten</span><span>Schalten</span><span>Programmieren</span></div>
       <div class="btns"><a class="btn pri" href="digilab.html">Öffnen</a><a class="btn" href="digilab.html?neu">Neu</a><a class="btn" href="digilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="messlab" data-group="mess" data-beruf="egs ige im">
+    <section class="card" data-lab="messlab" data-group="mess" data-beruf="egs ige im tec stu wing">
       <span class="tag">MessLab</span>
       <h3>Messtechnik</h3>
       <div class="pic" aria-hidden="true">
@@ -275,7 +293,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Messen</span><span>Ablesen</span><span>Fehler finden</span></div>
       <div class="btns"><a class="btn pri" href="messlab.html">Öffnen</a><a class="btn" href="messlab.html?neu">Neu</a><a class="btn" href="messlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="elslab" data-group="sich" data-beruf="egs ige im">
+    <section class="card" data-lab="elslab" data-group="sich" data-beruf="egs ige im tec">
       <span class="tag">SICHERHEITS-LAB</span>
       <h3>Elektrische Sicherheit: Schutz, Prüfung, Rettung</h3>
       <div class="pic" aria-hidden="true">
@@ -285,7 +303,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Gefahr erkennen</span><span>Schutz wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="elslab.html">Öffnen</a><a class="btn" href="elslab.html?neu">Neu</a><a class="btn" href="elslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="ntslab" data-group="anadig" data-beruf="egs ige">
+    <section class="card" data-lab="ntslab" data-group="anadig" data-beruf="egs ige tec stu">
       <span class="tag">NETZTEIL-LAB</span>
       <h3>Netzteile und Schaltregler</h3>
       <div class="pic" aria-hidden="true">
@@ -295,7 +313,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Wandeln</span><span>Regeln</span><span>Verluste bilanzieren</span></div>
       <div class="btns"><a class="btn pri" href="ntslab.html">Öffnen</a><a class="btn" href="ntslab.html?neu">Neu</a><a class="btn" href="ntslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="wsllab" data-group="grund" data-beruf="egs ige">
+    <section class="card" data-lab="wsllab" data-group="grund" data-beruf="egs ige tec stu wing">
       <span class="tag">WECHSELSTROM-LAB</span>
       <h3>Wechselstrom und Schwingkreise</h3>
       <div class="pic" aria-hidden="true">
@@ -305,7 +323,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Zeiger lesen</span><span>Resonanz abstimmen</span><span>Filter auslegen</span></div>
       <div class="btns"><a class="btn pri" href="wsllab.html">Öffnen</a><a class="btn" href="wsllab.html?neu">Neu</a><a class="btn" href="wsllab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="analab" data-group="anadig" data-beruf="egs ige">
+    <section class="card" data-lab="analab" data-group="anadig" data-beruf="egs ige tec stu">
       <span class="tag">ANALOGTECHNIK-LAB</span>
       <h3>Halbleiter und Verstärker</h3>
       <div class="pic" aria-hidden="true">
@@ -325,7 +343,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Planen</span><span>Verlegen</span><span>Verteilen</span></div>
       <div class="btns"><a class="btn pri" href="hauslab.html">Öffnen</a><a class="btn" href="hauslab.html?neu">Neu</a><a class="btn" href="hauslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="appwerkstatt" data-group="bau" data-beruf="egs fi">
+    <section class="card" data-lab="appwerkstatt" data-group="bau" data-beruf="egs fi winf">
       <span class="tag">APP-WERKSTATT</span>
       <h3>Eigene Apps mit KI bauen</h3>
       <div class="pic" aria-hidden="true">
@@ -335,7 +353,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Auftrag</span><span>Prüfen</span><span>Teilen</span></div>
       <div class="btns"><a class="btn pri" href="appwerkstatt.html">Öffnen</a><a class="btn" href="appwerkstatt.html?aufgabe=ap1">Erste App</a><a class="btn" href="appwerkstatt.html?aufgabe=ap11">Notizen</a></div>
     </section>
-    <section class="card" data-lab="spslab" data-group="auto" data-beruf="egs ige im">
+    <section class="card" data-lab="spslab" data-group="auto" data-beruf="egs ige im tec wing">
       <span class="tag">SPS-LAB</span>
       <h3>Steuerungen programmieren</h3>
       <div class="pic" aria-hidden="true">
@@ -345,7 +363,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Programmieren</span><span>Starten</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="spslab.html">Öffnen</a><a class="btn" href="spslab.html?neu">Neu</a><a class="btn" href="spslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="pcblab" data-group="bau">
+    <section class="card" data-lab="pcblab" data-group="bau" data-beruf="egs stu" data-such="ESD EPA Erdung elektrostatische Entladung Handgelenkband Ionisator Fehlerbild Fehlerbilder Lötfehler Lötbrücke Tombstone Ausbeute Rückverfolgung Schutzlack Lackierung Verguss">
       <span class="tag">LEITERPLATTEN-LAB</span>
       <h3>Leiterplatten entwerfen und prüfen</h3>
       <div class="pic" aria-hidden="true">
@@ -355,7 +373,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Layout</span><span>Bestücken</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="pcblab.html">Öffnen</a><a class="btn" href="pcblab.html?neu">Neu</a><a class="btn" href="pcblab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="antlab" data-group="auto" data-beruf="egs ige im">
+    <section class="card" data-lab="antlab" data-group="auto" data-beruf="egs ige im tec stu wing">
       <span class="tag">ANTRIEBS-LAB</span>
       <h3>Motoren und Antriebe untersuchen</h3>
       <div class="pic" aria-hidden="true">
@@ -365,7 +383,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Prüfstand</span><span>Messen</span><span>Auslegen</span></div>
       <div class="btns"><a class="btn pri" href="antlab.html">Öffnen</a><a class="btn" href="antlab.html?neu">Neu</a><a class="btn" href="antlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="senlab" data-group="mess" data-beruf="egs ige im">
+    <section class="card" data-lab="senlab" data-group="mess" data-beruf="egs ige im tec stu wing">
       <span class="tag">SENSORIK-LAB</span>
       <h3>Sensoren und Messketten untersuchen</h3>
       <div class="pic" aria-hidden="true">
@@ -375,7 +393,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Messkette</span><span>Messen</span><span>Auslegen</span></div>
       <div class="btns"><a class="btn pri" href="senlab.html">Öffnen</a><a class="btn" href="senlab.html?neu">Neu</a><a class="btn" href="senlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="reglab" data-group="auto" data-beruf="egs im">
+    <section class="card" data-lab="reglab" data-group="auto" data-beruf="egs im tec stu wing">
       <span class="tag">REGELUNGSTECHNIK-LAB</span>
       <h3>Regelkreise einstellen und verstehen</h3>
       <div class="pic" aria-hidden="true">
@@ -385,7 +403,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Strecke messen</span><span>Regler einstellen</span><span>Beurteilen</span></div>
       <div class="btns"><a class="btn pri" href="reglab.html">Öffnen</a><a class="btn" href="reglab.html?neu">Neu</a><a class="btn" href="reglab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="thmlab" data-group="anadig" data-beruf="egs im">
+    <section class="card" data-lab="thmlab" data-group="anadig" data-beruf="egs im tec stu">
       <span class="tag">THERMIK-LAB</span>
       <h3>Wärme, Kühlkörper und Wärmewiderstand</h3>
       <div class="pic" aria-hidden="true">
@@ -395,7 +413,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verlustleistung</span><span>Kühlkörper wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="thmlab.html">Öffnen</a><a class="btn" href="thmlab.html?neu">Neu</a><a class="btn" href="thmlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="emvlab" data-group="mess">
+    <section class="card" data-lab="emvlab" data-group="mess" data-beruf="egs tec stu">
       <span class="tag">EMV-LAB</span>
       <h3>Störungen vermeiden: Kopplung, Filter, Schirmung</h3>
       <div class="pic" aria-hidden="true">
@@ -405,7 +423,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Störung messen</span><span>Maßnahme wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="emvlab.html">Öffnen</a><a class="btn" href="emvlab.html?neu">Neu</a><a class="btn" href="emvlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="enrlab" data-group="sich" data-beruf="egs ige">
+    <section class="card" data-lab="enrlab" data-group="sich" data-beruf="egs ige tec stu wing">
       <span class="tag">ENERGIE-LAB</span>
       <h3>Solarstrom: vom Modul zur Anlage</h3>
       <div class="pic" aria-hidden="true">
@@ -415,7 +433,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Sonne und Modul</span><span>Anlage auslegen</span><span>Ertrag prüfen</span></div>
       <div class="btns"><a class="btn pri" href="enrlab.html">Öffnen</a><a class="btn" href="enrlab.html?neu">Neu</a><a class="btn" href="enrlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="codelab" data-group="bau" data-beruf="egs fi">
+    <section class="card" data-lab="codelab" data-group="bau" data-beruf="egs fi tec stu winf">
       <span class="tag">ARDUINO-LAB</span>
       <h3>Arduino programmieren</h3>
       <div class="pic" aria-hidden="true">
@@ -425,7 +443,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verdrahten</span><span>Programmieren</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="codelab.html">Öffnen</a><a class="btn" href="codelab.html?neu">Neu</a><a class="btn" href="codelab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="pilab" data-group="bau" data-beruf="egs fi">
+    <section class="card" data-lab="pilab" data-group="bau" data-beruf="egs fi stu winf">
       <span class="tag">PI-LAB</span>
       <h3>Raspberry Pi programmieren</h3>
       <div class="pic" aria-hidden="true">
@@ -435,7 +453,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Verdrahten</span><span>Programmieren</span><span>Simulieren</span></div>
       <div class="btns"><a class="btn pri" href="pilab.html">Öffnen</a><a class="btn" href="pilab.html?neu">Neu</a><a class="btn" href="pilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="dslab" data-group="grund" data-beruf="egs ige fi">
+    <section class="card" data-lab="dslab" data-group="grund" data-beruf="egs ige fi tec stu">
       <span class="tag">DATENBLATT-LAB</span>
       <h3>Datenblätter lesen und verstehen</h3>
       <div class="pic" aria-hidden="true">
@@ -445,7 +463,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Lesen</span><span>Rechnen</span><span>Auswählen</span></div>
       <div class="btns"><a class="btn pri" href="dslab.html">Öffnen</a><a class="btn" href="dslab.html?neu">Neu</a><a class="btn" href="dslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="tollab" data-group="mess" data-beruf="im tpd">
+    <section class="card" data-lab="tollab" data-group="mess" data-beruf="im tpd wing">
       <span class="tag">TOLERANZ-LAB</span>
       <h3>Messen, Toleranzen und Passungen</h3>
       <div class="pic" aria-hidden="true">
@@ -465,11 +483,11 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Einstellen</span><span>Rechnen</span><span>Fehler finden</span></div>
       <div class="btns"><a class="btn pri" href="zerlab.html">Öffnen</a><a class="btn" href="zerlab.html?aufgabe=zer1">Erste Aufgabe</a><a class="btn" href="zerlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="ferlab" data-group="grund" data-beruf="im">
+    <section class="card" data-lab="ferlab" data-group="grund" data-beruf="im wing">
       <span class="tag">FERTIGUNGS-LAB</span>
       <h3>Fertigen, planen und prüfen</h3>
       <div class="pic" aria-hidden="true">
-        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><path d="M26 30v40q0 10 10 10h40" fill="none" stroke="#5fb0ff" stroke-width="8" stroke-linecap="round" stroke-opacity=".75"/><path d="M26 30v40q0 10 10 10h40" fill="none" stroke="#e8ecf0" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M92 92c12 0 14-52 28-52s16 52 28 52" fill="none" stroke="#6bd48a" stroke-width="3.5" stroke-linecap="round"/><path d="M104 30v64M136 30v64" stroke="#ffd1a0" stroke-width="3"/><path d="M88 94h64" stroke="#9aa6b2" stroke-width="2"/><rect x="170" y="28" width="46" height="66" rx="4" fill="#2c343e" stroke="#9aa6b2" stroke-width="3"/><path d="M183 32l7 7-7 7 7 7-7 7 7 7-7 7 7 7M203 32l-7 7 7 7-7 7 7 7-7 7 7 7-7 7" fill="none" stroke="#ff9f1c" stroke-width="2.5" stroke-linejoin="round"/></svg>
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><path d="M26 30v40q0 10 10 10h40" fill="none" stroke="#5fb0ff" stroke-width="8" stroke-linecap="round" stroke-opacity=".75"/><path d="M26 30v40q0 10 10 10h40" fill="none" stroke="#e8ecf0" stroke-width="1.5" stroke-dasharray="4 3"/><path d="M92 92c12 0 14-52 28-52s16 52 28 52" fill="none" stroke="#6bd48a" stroke-width="3.5" stroke-linecap="round"/><path d="M104 30v64M136 30v64" stroke="#ffd1a0" stroke-width="3"/><path d="M88 94h64" stroke="#9aa6b2" stroke-width="2"/><rect x="170" y="28" width="46" height="66" rx="4" fill="#2c343e" stroke="#9aa6b2" stroke-width="3"/><path d="M183 32l7 7-7 7 7 7-7 7 7 7-7 7 7 7M203 32l-7 7 7 7-7 7 7 7-7 7 7 7-7 7" fill="none" stroke="#ff9f1c" stroke-width="2.5" stroke-linejoin="round"/><path class="fe2" d="M104 30v64M136 30v64" stroke="#ffffff" stroke-width="3.5" fill="none"/><rect class="fe3" x="170" y="28" width="46" height="66" rx="4" fill="none" stroke="#ffe14d" stroke-width="3.5"/><rect class="fek" x="-5" y="-5" width="10" height="10" rx="2" fill="#ffd1a0" stroke="#ffffff" stroke-width="1.5" transform="translate(120 86)"/></svg>
       </div>
       <p>Die Fertigung der Grundausbildung: Verfahren nach DIN 8580 auf der Landkarte, Blech biegen mit gestreckter Länge, Gewinde von Hand mit Kernloch, Zuschnitt und Schachtelung, Zeit und Kosten, Qualitätsregelkarte und Prozessfähigkeit, Vorrichtungen nach der 3-2-1-Regel. Mit Beispielen.</p>
       <div class="steps"><span>Verfahren</span><span>Biegen</span><span>Planung</span><span>Qualität</span></div>
@@ -499,7 +517,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <span class="tag">MASCHINENELEMENTE-LAB</span>
       <h3>Getriebe und Antriebselemente</h3>
       <div class="pic" aria-hidden="true">
-        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><g transform="translate(76 60) rotate(0)"><path d="M18.77 -2.97L27.94 -1.9L27.94 1.9L18.77 2.97A19 19 0 0 1 17.74 6.81L25.14 12.32L23.24 15.62L14.77 11.96A19 19 0 0 1 11.96 14.77L15.62 23.24L12.32 25.14L6.81 17.74A19 19 0 0 1 2.97 18.77L1.9 27.94L-1.9 27.94L-2.97 18.77A19 19 0 0 1 -6.81 17.74L-12.32 25.14L-15.62 23.24L-11.96 14.77A19 19 0 0 1 -14.77 11.96L-23.24 15.62L-25.14 12.32L-17.74 6.81A19 19 0 0 1 -18.77 2.97L-27.94 1.9L-27.94 -1.9L-18.77 -2.97A19 19 0 0 1 -17.74 -6.81L-25.14 -12.32L-23.24 -15.62L-14.77 -11.96A19 19 0 0 1 -11.96 -14.77L-15.62 -23.24L-12.32 -25.14L-6.81 -17.74A19 19 0 0 1 -2.97 -18.77L-1.9 -27.94L1.9 -27.94L2.97 -18.77A19 19 0 0 1 6.81 -17.74L12.32 -25.14L15.62 -23.24L11.96 -14.77A19 19 0 0 1 14.77 -11.96L23.24 -15.62L25.14 -12.32L17.74 -6.81A19 19 0 0 1 18.77 -2.97Z" fill="#5fb0ff" fill-opacity=".35" stroke="#5fb0ff" stroke-width="2" stroke-linejoin="round"/><circle r="11" fill="none" stroke="#5fb0ff" stroke-width="1.5"/><circle r="4" fill="#17202e" stroke="#5fb0ff" stroke-width="2"/></g><g transform="translate(140 60) rotate(189)"><path d="M34.84 -3.29L43.96 -1.8L43.96 1.8L34.84 3.29A35 35 0 0 1 34.16 7.64L42.37 11.88L41.26 15.29L32.12 13.9A35 35 0 0 1 30.13 17.82L36.62 24.39L34.51 27.29L26.25 23.15A35 35 0 0 1 23.15 26.25L27.29 34.51L24.39 36.62L17.82 30.13A35 35 0 0 1 13.9 32.12L15.29 41.26L11.88 42.37L7.64 34.16A35 35 0 0 1 3.29 34.84L1.8 43.96L-1.8 43.96L-3.29 34.84A35 35 0 0 1 -7.64 34.16L-11.88 42.37L-15.29 41.26L-13.9 32.12A35 35 0 0 1 -17.82 30.13L-24.39 36.62L-27.29 34.51L-23.15 26.25A35 35 0 0 1 -26.25 23.15L-34.51 27.29L-36.62 24.39L-30.13 17.82A35 35 0 0 1 -32.12 13.9L-41.26 15.29L-42.37 11.88L-34.16 7.64A35 35 0 0 1 -34.84 3.29L-43.96 1.8L-43.96 -1.8L-34.84 -3.29A35 35 0 0 1 -34.16 -7.64L-42.37 -11.88L-41.26 -15.29L-32.12 -13.9A35 35 0 0 1 -30.13 -17.82L-36.62 -24.39L-34.51 -27.29L-26.25 -23.15A35 35 0 0 1 -23.15 -26.25L-27.29 -34.51L-24.39 -36.62L-17.82 -30.13A35 35 0 0 1 -13.9 -32.12L-15.29 -41.26L-11.88 -42.37L-7.64 -34.16A35 35 0 0 1 -3.29 -34.84L-1.8 -43.96L1.8 -43.96L3.29 -34.84A35 35 0 0 1 7.64 -34.16L11.88 -42.37L15.29 -41.26L13.9 -32.12A35 35 0 0 1 17.82 -30.13L24.39 -36.62L27.29 -34.51L23.15 -26.25A35 35 0 0 1 26.25 -23.15L34.51 -27.29L36.62 -24.39L30.13 -17.82A35 35 0 0 1 32.12 -13.9L41.26 -15.29L42.37 -11.88L34.16 -7.64A35 35 0 0 1 34.84 -3.29Z" fill="#ffd1a0" fill-opacity=".35" stroke="#ffd1a0" stroke-width="2" stroke-linejoin="round"/><circle r="21" fill="none" stroke="#ffd1a0" stroke-width="1.5"/><circle r="4" fill="#17202e" stroke="#ffd1a0" stroke-width="2"/></g><path d="M186 50q8 -6 16 0t16 0M186 70q8 -6 16 0t16 0" stroke="#6bd48a" stroke-width="3" fill="none" stroke-linecap="round" transform="translate(0 -10)"/></svg>
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><g transform="translate(76 60) rotate(0)"><g class="zr1"><path d="M18.77 -2.97L27.94 -1.9L27.94 1.9L18.77 2.97A19 19 0 0 1 17.74 6.81L25.14 12.32L23.24 15.62L14.77 11.96A19 19 0 0 1 11.96 14.77L15.62 23.24L12.32 25.14L6.81 17.74A19 19 0 0 1 2.97 18.77L1.9 27.94L-1.9 27.94L-2.97 18.77A19 19 0 0 1 -6.81 17.74L-12.32 25.14L-15.62 23.24L-11.96 14.77A19 19 0 0 1 -14.77 11.96L-23.24 15.62L-25.14 12.32L-17.74 6.81A19 19 0 0 1 -18.77 2.97L-27.94 1.9L-27.94 -1.9L-18.77 -2.97A19 19 0 0 1 -17.74 -6.81L-25.14 -12.32L-23.24 -15.62L-14.77 -11.96A19 19 0 0 1 -11.96 -14.77L-15.62 -23.24L-12.32 -25.14L-6.81 -17.74A19 19 0 0 1 -2.97 -18.77L-1.9 -27.94L1.9 -27.94L2.97 -18.77A19 19 0 0 1 6.81 -17.74L12.32 -25.14L15.62 -23.24L11.96 -14.77A19 19 0 0 1 14.77 -11.96L23.24 -15.62L25.14 -12.32L17.74 -6.81A19 19 0 0 1 18.77 -2.97Z" fill="#5fb0ff" fill-opacity=".35" stroke="#5fb0ff" stroke-width="2" stroke-linejoin="round"/><circle r="11" fill="none" stroke="#5fb0ff" stroke-width="1.5"/><circle r="4" fill="#17202e" stroke="#5fb0ff" stroke-width="2"/></g></g><g transform="translate(140 60) rotate(189)"><g class="zr2"><path d="M34.84 -3.29L43.96 -1.8L43.96 1.8L34.84 3.29A35 35 0 0 1 34.16 7.64L42.37 11.88L41.26 15.29L32.12 13.9A35 35 0 0 1 30.13 17.82L36.62 24.39L34.51 27.29L26.25 23.15A35 35 0 0 1 23.15 26.25L27.29 34.51L24.39 36.62L17.82 30.13A35 35 0 0 1 13.9 32.12L15.29 41.26L11.88 42.37L7.64 34.16A35 35 0 0 1 3.29 34.84L1.8 43.96L-1.8 43.96L-3.29 34.84A35 35 0 0 1 -7.64 34.16L-11.88 42.37L-15.29 41.26L-13.9 32.12A35 35 0 0 1 -17.82 30.13L-24.39 36.62L-27.29 34.51L-23.15 26.25A35 35 0 0 1 -26.25 23.15L-34.51 27.29L-36.62 24.39L-30.13 17.82A35 35 0 0 1 -32.12 13.9L-41.26 15.29L-42.37 11.88L-34.16 7.64A35 35 0 0 1 -34.84 3.29L-43.96 1.8L-43.96 -1.8L-34.84 -3.29A35 35 0 0 1 -34.16 -7.64L-42.37 -11.88L-41.26 -15.29L-32.12 -13.9A35 35 0 0 1 -30.13 -17.82L-36.62 -24.39L-34.51 -27.29L-26.25 -23.15A35 35 0 0 1 -23.15 -26.25L-27.29 -34.51L-24.39 -36.62L-17.82 -30.13A35 35 0 0 1 -13.9 -32.12L-15.29 -41.26L-11.88 -42.37L-7.64 -34.16A35 35 0 0 1 -3.29 -34.84L-1.8 -43.96L1.8 -43.96L3.29 -34.84A35 35 0 0 1 7.64 -34.16L11.88 -42.37L15.29 -41.26L13.9 -32.12A35 35 0 0 1 17.82 -30.13L24.39 -36.62L27.29 -34.51L23.15 -26.25A35 35 0 0 1 26.25 -23.15L34.51 -27.29L36.62 -24.39L30.13 -17.82A35 35 0 0 1 32.12 -13.9L41.26 -15.29L42.37 -11.88L34.16 -7.64A35 35 0 0 1 34.84 -3.29Z" fill="#ffd1a0" fill-opacity=".35" stroke="#ffd1a0" stroke-width="2" stroke-linejoin="round"/><circle r="21" fill="none" stroke="#ffd1a0" stroke-width="1.5"/><circle r="4" fill="#17202e" stroke="#ffd1a0" stroke-width="2"/></g></g><path d="M186 50q8 -6 16 0t16 0M186 70q8 -6 16 0t16 0" stroke="#6bd48a" stroke-width="3" fill="none" stroke-linecap="round" transform="translate(0 -10)"/></svg>
       </div>
       <p>Getriebe und Antriebselemente verstehen: Zahnräder greifen sichtbar ineinander und drehen sich mit der gewählten Übersetzung, dazu Zahnradmaße, Riemen- und Kettentriebe, Wälzlager im Schnitt aus dem Kurzzeichen, Fest-Los-Lagerung, Kupplungen, Bremsen, Dichtungen und Federn. Mit Rechnern, Beispielen und Fehlersuchen.</p>
       <div class="steps"><span>Zahnräder</span><span>Riemen und Ketten</span><span>Lager</span><span>Federn</span></div>
@@ -519,7 +537,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <span class="tag">FÜGE-LAB</span>
       <h3>Schweißen, Löten, Kleben, Schrauben: richtig fügen</h3>
       <div class="pic" aria-hidden="true">
-        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="24" y="80" width="104" height="14" fill="#9aa6b2"/><rect x="66" y="34" width="14" height="46" fill="#9aa6b2"/><path d="M80 80V62L98 80Z" fill="#ffb340"/><path d="M66 80V64L52 80Z" fill="#ffb340"/><path d="M104 40l-14 18" stroke="#ffd1a0" stroke-width="3" stroke-linecap="round"/><path d="M96 52l-7-6M100 56l8-2M92 60l-9 2" stroke="#ffb340" stroke-width="2.5" stroke-linecap="round"/><rect x="150" y="50" width="70" height="14" fill="#9aa6b2"/><rect x="150" y="64" width="70" height="18" fill="#7f8b97"/><rect x="180" y="38" width="10" height="62" fill="#5fb0ff"/><rect x="171" y="30" width="28" height="9" rx="2" fill="#5fb0ff"/><path d="M165 28a24 24 0 0 1 40 0" fill="none" stroke="#6bd48a" stroke-width="3" stroke-linecap="round"/><path d="M180 100h10" stroke="#5fb0ff" stroke-width="3" stroke-linecap="round"/></svg>
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="24" y="80" width="104" height="14" fill="#9aa6b2"/><rect x="66" y="34" width="14" height="46" fill="#9aa6b2"/><path d="M80 80V62L98 80Z" fill="#ffb340"/><path d="M66 80V64L52 80Z" fill="#ffb340"/><path d="M104 40l-14 18" stroke="#ffd1a0" stroke-width="3" stroke-linecap="round"/><path d="M96 52l-7-6M100 56l8-2M92 60l-9 2" stroke="#ffb340" stroke-width="2.5" stroke-linecap="round"/><rect x="150" y="50" width="70" height="14" fill="#9aa6b2"/><rect x="150" y="64" width="70" height="18" fill="#7f8b97"/><path class="fwb" d="M152 64H218" fill="none" stroke="#ffb340" stroke-width="3" stroke-linecap="round"/><g class="fwm" transform="translate(218 64)"><path class="fws" d="M0 -3l-3 -8M1 -3l2 -9M2 -2l7 -6" stroke="#ffd166" stroke-width="1.6" stroke-linecap="round" fill="none"/><circle class="fwg" r="3.2" fill="#fff59d"/></g><rect x="180" y="38" width="10" height="62" fill="#5fb0ff"/><rect x="171" y="30" width="28" height="9" rx="2" fill="#5fb0ff"/><path d="M165 28a24 24 0 0 1 40 0" fill="none" stroke="#6bd48a" stroke-width="3" stroke-linecap="round"/><path d="M180 100h10" stroke="#5fb0ff" stroke-width="3" stroke-linecap="round"/></svg>
       </div>
       <p>Fügeverfahren nach DIN 8593 im Berufsalltag: Schweißnähte mit a-Maß und Nahtsymbol, Lötspalt, Klebfläche und Zugscherfestigkeit, Nieten, Schrauben mit Anzugsmoment und Vorspannkraft, Passfeder und Pressverband. Jeder Rechner hat eine lebendige Grafik, dazu Aufgaben, Fehlersuche und Beispiele.</p>
       <div class="steps"><span>Schweißen</span><span>Löten und Kleben</span><span>Schrauben</span><span>Welle-Nabe</span></div>
@@ -529,13 +547,13 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <span class="tag">MASCHINEN-LAB</span>
       <h3>Maschinen der Werkstatt bedienen und rechnen</h3>
       <div class="pic" aria-hidden="true">
-        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="40" y="96" width="100" height="8" rx="2" fill="#4a5666"/><rect x="82" y="26" width="14" height="70" fill="#8a97a8"/><rect x="58" y="22" width="62" height="26" rx="5" fill="#2c4a6e" stroke="#5fb0ff" stroke-width="2"/><rect x="72" y="14" width="34" height="10" rx="2" fill="#4a5666"/><circle cx="76" cy="35" r="5" fill="#ff5c5c"/><rect x="56" y="78" width="66" height="8" fill="#6a7686"/><path d="M89 48v26" stroke="#e8ecf0" stroke-width="3"/><path d="M120 34l34-14" stroke="#e8ecf0" stroke-width="3" stroke-linecap="round"/><circle cx="154" cy="20" r="5" fill="#ffb340"/><rect x="156" y="40" width="64" height="58" rx="4" fill="#0d1117" stroke="#38424d" stroke-width="2"/><g fill="#6bd48a" font-family="monospace" font-size="9"><text x="162" y="55">AUTO</text><text x="162" y="68">X 20.000</text><text x="162" y="81">F-OVR 80%</text></g><circle cx="170" cy="91" r="3.5" fill="#ff5c5c"/><circle cx="182" cy="91" r="3.5" fill="#6bd48a"/></svg>
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><rect x="40" y="96" width="100" height="8" rx="2" fill="#4a5666"/><rect x="82" y="26" width="14" height="70" fill="#8a97a8"/><rect x="58" y="22" width="62" height="26" rx="5" fill="#2c4a6e" stroke="#5fb0ff" stroke-width="2"/><rect x="72" y="14" width="34" height="10" rx="2" fill="#4a5666"/><circle cx="76" cy="35" r="5" fill="#ff5c5c"/><rect x="56" y="78" width="66" height="8" fill="#6a7686"/><defs><clipPath id="mkb"><rect x="86.5" y="48" width="5" height="26"/></clipPath></defs><rect x="86.5" y="48" width="5" height="26" fill="#e8ecf0"/><path d="M86.5 74h5l-2.5 3.5z" fill="#e8ecf0"/><g clip-path="url(#mkb)"><g class="bit"><path d="M84 41l10 4M84 48l10 4M84 55l10 4M84 62l10 4M84 69l10 4M84 76l10 4" stroke="#4a5666" stroke-width="1.8" fill="none"/></g></g><g class="chip"><circle cx="84.5" cy="76" r="1.4" fill="#ffb340"/><circle cx="94" cy="75.5" r="1.2" fill="#ffd1a0"/><circle cx="97.5" cy="77" r="1" fill="#ffb340"/></g><path d="M120 34l34-14" stroke="#e8ecf0" stroke-width="3" stroke-linecap="round"/><circle cx="154" cy="20" r="5" fill="#ffb340"/><rect x="156" y="40" width="64" height="58" rx="4" fill="#0d1117" stroke="#38424d" stroke-width="2"/><g fill="#6bd48a" font-family="monospace" font-size="9"><text x="162" y="55">AUTO</text><text x="162" y="68">X 20.000</text><text x="162" y="81">F-OVR 80%</text></g><circle cx="170" cy="91" r="3.5" fill="#ff5c5c"/><circle cx="182" cy="91" r="3.5" fill="#6bd48a"/></svg>
       </div>
       <p>Die Maschinen der mechanischen Werkstatt als bedienbare Zeichnung: Bauteile antippen, Hebel und Drehzahltafeln lesen, Drehzahl und Stufe der gewählten Maschine berechnen, Spannen, Sicherheit, Maschinenwahl und das Bedienfeld einer CNC-Steuerung üben. Mit Beispielen.</p>
       <div class="steps"><span>Maschinen</span><span>Tafeln lesen</span><span>Sicherheit</span><span>CNC-Bedienfeld</span></div>
       <div class="btns"><a class="btn pri" href="maklab.html">Öffnen</a><a class="btn" href="maklab.html?aufgabe=mak1">Erste Aufgabe</a><a class="btn" href="maklab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="werlab" data-group="grund" data-beruf="im">
+    <section class="card" data-lab="werlab" data-group="grund" data-beruf="im wing">
       <span class="tag">WERKSTOFF-LAB</span>
       <h3>Werkstoffe prüfen, kennen und auswählen</h3>
       <div class="pic" aria-hidden="true">
@@ -545,11 +563,11 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Prüfen</span><span>Ablesen</span><span>Auswählen</span></div>
       <div class="btns"><a class="btn pri" href="werlab.html">Öffnen</a><a class="btn" href="werlab.html?aufgabe=wer1">Erste Aufgabe</a><a class="btn" href="werlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="mchlab" data-group="grund" data-beruf="im">
+    <section class="card" data-lab="mchlab" data-group="grund" data-beruf="im wing">
       <span class="tag">MECHANIK-LAB</span>
       <h3>Kräfte, Hebel und Festigkeit im Berufsalltag</h3>
       <div class="pic" aria-hidden="true">
-        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><path d="M36 74H204" stroke="#9aa6b2" stroke-width="6" stroke-linecap="round"/><polygon points="120,78 106,100 134,100" fill="#2c343e" stroke="#9aa6b2" stroke-width="3" stroke-linejoin="round"/><rect x="46" y="50" width="28" height="20" rx="3" fill="#ffd1a0"/><rect x="176" y="58" width="16" height="12" rx="2" fill="#5fb0ff"/><path d="M184 22V50" stroke="#ff9f1c" stroke-width="3" stroke-linecap="round"/><polygon points="184,56 178,46 190,46" fill="#ff9f1c"/><path d="M96 56A26 26 0 0 1 144 56" fill="none" stroke="#6bd48a" stroke-width="3" stroke-linecap="round"/><polygon points="148,58 138,60 144,50" fill="#6bd48a"/></svg>
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" rx="8" fill="#17202e"/><polygon points="120,78 106,100 134,100" fill="#2c343e" stroke="#9aa6b2" stroke-width="3" stroke-linejoin="round"/><g class="wipp"><path d="M36 74H204" stroke="#9aa6b2" stroke-width="6" stroke-linecap="round"/><rect x="46" y="50" width="28" height="20" rx="3" fill="#ffd1a0"/><rect x="176" y="58" width="16" height="12" rx="2" fill="#5fb0ff"/><path d="M184 22V50" stroke="#ff9f1c" stroke-width="3" stroke-linecap="round"/><polygon points="184,56 178,46 190,46" fill="#ff9f1c"/></g><path d="M96 56A26 26 0 0 1 144 56" fill="none" stroke="#6bd48a" stroke-width="3" stroke-linecap="round"/><polygon points="148,58 138,60 144,50" fill="#6bd48a"/></svg>
       </div>
       <p>Kräfte zerlegen und zusammensetzen, Hebel und Drehmoment, Auflagerkräfte am Träger mit Querkraft- und Momentenverlauf, Schwerpunkt, Reibung an der schiefen Ebene, Spannung und Dehnung, Flächenpressung, Abscheren, Biegung und Sicherheit, Arbeit und Wirkungsgrad. Mit ziehbaren Zeichnungen und Beispielen.</p>
       <div class="steps"><span>Kräfte</span><span>Träger</span><span>Festigkeit</span><span>Prüfen</span></div>
@@ -565,7 +583,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Eingrenzen</span><span>Beheben</span><span>Vorbeugen</span></div>
       <div class="btns"><a class="btn pri" href="inslab.html">Öffnen</a><a class="btn" href="inslab.html?aufgabe=ins1">Erste Aufgabe</a><a class="btn" href="inslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="netlab" data-group="bau" data-beruf="fi">
+    <section class="card" data-lab="netlab" data-group="bau" data-beruf="fi winf">
       <span class="tag">NETZWERK-LAB</span>
       <h3>Subnetting, Adressen und Schichten</h3>
       <div class="pic" aria-hidden="true">
@@ -575,7 +593,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Umrechnen</span><span>Subnetting</span><span>VLSM</span></div>
       <div class="btns"><a class="btn pri" href="netlab.html">Öffnen</a><a class="btn" href="netlab.html?aufgabe=net1">Erste Aufgabe</a><a class="btn" href="netlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="kallab" data-group="grund" data-beruf="ik">
+    <section class="card" data-lab="kallab" data-group="grund" data-beruf="ik tec wing winf">
       <span class="tag">KALKULATIONS-LAB</span>
       <h3>Von den Kosten zum Verkaufspreis</h3>
       <div class="pic" aria-hidden="true">
@@ -585,7 +603,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Schema füllen</span><span>Rückwärts rechnen</span><span>Break-even</span></div>
       <div class="btns"><a class="btn pri" href="kallab.html">Öffnen</a><a class="btn" href="kallab.html?aufgabe=kal1">Erste Aufgabe</a><a class="btn" href="kallab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="laglab" data-group="grund" data-beruf="fll">
+    <section class="card" data-lab="laglab" data-group="grund" data-beruf="fll wing">
       <span class="tag">LAGER-LAB</span>
       <h3>Lagerkennzahlen und Disposition</h3>
       <div class="pic" aria-hidden="true">
@@ -626,7 +644,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Ansichten</span><span>Ergänzen</span><span>Bemaßen</span></div>
       <div class="btns"><a class="btn pri" href="zeilab.html">Öffnen</a><a class="btn" href="zeilab.html?aufgabe=zei1">Erste Aufgabe</a><a class="btn" href="zeilab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="itslab" data-group="sich" data-beruf="fi">
+    <section class="card" data-lab="itslab" data-group="sich" data-beruf="fi winf">
       <span class="tag">IT-SICHERHEITS-LAB</span>
       <h3>Passwörter, Verschlüsselung und Schutz</h3>
       <div class="pic" aria-hidden="true">
@@ -636,7 +654,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Passwörter</span><span>Firewall</span><span>Backup</span></div>
       <div class="btns"><a class="btn pri" href="itslab.html">Öffnen</a><a class="btn" href="itslab.html?aufgabe=its1">Erste Aufgabe</a><a class="btn" href="itslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="buclab" data-group="grund" data-beruf="ik">
+    <section class="card" data-lab="buclab" data-group="grund" data-beruf="ik wing winf">
       <span class="tag">BUCHFÜHRUNGS-LAB</span>
       <h3>Buchungssätze, T-Konten und Abschluss</h3>
       <div class="pic" aria-hidden="true">
@@ -666,7 +684,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Vokabeln</span><span>Datenblatt</span><span>E-Mail</span></div>
       <div class="btns"><a class="btn pri" href="englab.html">Öffnen</a><a class="btn" href="englab.html?aufgabe=eng1">Erste Aufgabe</a><a class="btn" href="englab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="bhflab" data-group="grund" data-beruf="alle">
+    <section class="card" data-lab="bhflab" data-group="grund" data-beruf="egs ige im tpd fll ik fi">
       <span class="tag">BERICHTSHEFT-HELFER</span>
       <h3>Tagesberichte sachlich schreiben</h3>
       <div class="pic" aria-hidden="true">
@@ -686,7 +704,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Normteile</span><span>Toleranzrahmen</span><span>Fertigung</span></div>
       <div class="btns"><a class="btn pri" href="konlab.html">Öffnen</a><a class="btn" href="konlab.html?aufgabe=kon1">Erste Aufgabe</a><a class="btn" href="konlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="wfllab" data-group="grund" data-beruf="fll">
+    <section class="card" data-lab="wfllab" data-group="grund" data-beruf="fll wing winf">
       <span class="tag">WARENFLUSS-LAB</span>
       <h3>Wareneingang, Kommissionieren und Stapler</h3>
       <div class="pic" aria-hidden="true">
@@ -696,7 +714,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Wareneingang</span><span>Kommissionieren</span><span>Stapler</span></div>
       <div class="btns"><a class="btn pri" href="wfllab.html">Öffnen</a><a class="btn" href="wfllab.html?aufgabe=wfl1">Erste Aufgabe</a><a class="btn" href="wfllab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="reclab" data-group="grund" data-beruf="ik">
+    <section class="card" data-lab="reclab" data-group="grund" data-beruf="ik wing winf">
       <span class="tag">AUFTRAG-UND-RECHT-LAB</span>
       <h3>Kaufvertrag, Fristen und Belegkette</h3>
       <div class="pic" aria-hidden="true">
@@ -706,7 +724,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Kaufvertrag</span><span>Fristen</span><span>Belege</span></div>
       <div class="btns"><a class="btn pri" href="reclab.html">Öffnen</a><a class="btn" href="reclab.html?aufgabe=rec1">Erste Aufgabe</a><a class="btn" href="reclab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="sqllab" data-group="bau" data-beruf="fi">
+    <section class="card" data-lab="sqllab" data-group="bau" data-beruf="fi winf">
       <span class="tag">DATENBANK-LAB (SQL)</span>
       <h3>Abfragen schreiben und Tabellen verstehen</h3>
       <div class="pic" aria-hidden="true">
@@ -716,7 +734,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>SELECT</span><span>JOIN</span><span>Normalform</span></div>
       <div class="btns"><a class="btn pri" href="sqllab.html">Öffnen</a><a class="btn" href="sqllab.html?aufgabe=sql1">Erste Aufgabe</a><a class="btn" href="sqllab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="linlab" data-group="bau" data-beruf="fi">
+    <section class="card" data-lab="linlab" data-group="bau" data-beruf="fi winf">
       <span class="tag">LINUX-TERMINAL-LAB</span>
       <h3>Befehle, Rechte und Pipes im Terminal</h3>
       <div class="pic" aria-hidden="true">
@@ -726,7 +744,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Befehle</span><span>Rechte</span><span>Pipes</span></div>
       <div class="btns"><a class="btn pri" href="linlab.html">Öffnen</a><a class="btn" href="linlab.html?aufgabe=lin1">Erste Aufgabe</a><a class="btn" href="linlab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="alglab" data-group="grund" data-beruf="fi egs">
+    <section class="card" data-lab="alglab" data-group="grund" data-beruf="fi egs stu winf">
       <span class="tag">ALGORITHMEN-LAB</span>
       <h3>Ablaufplan, Struktogramm und Schreibtischtest</h3>
       <div class="pic" aria-hidden="true">
@@ -736,7 +754,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>PAP</span><span>Struktogramm</span><span>Sortieren</span></div>
       <div class="btns"><a class="btn pri" href="alglab.html">Öffnen</a><a class="btn" href="alglab.html?aufgabe=alg1">Erste Aufgabe</a><a class="btn" href="alglab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="hwllab" data-group="bau" data-beruf="fi">
+    <section class="card" data-lab="hwllab" data-group="bau" data-beruf="fi winf">
       <span class="tag">PC-HARDWARE-LAB</span>
       <h3>Aufbau, RAID und Fehlersuche am PC</h3>
       <div class="pic" aria-hidden="true">
@@ -746,7 +764,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>PC-Aufbau</span><span>RAID</span><span>Fehlersuche</span></div>
       <div class="btns"><a class="btn pri" href="hwllab.html">Öffnen</a><a class="btn" href="hwllab.html?aufgabe=hwl1">Erste Aufgabe</a><a class="btn" href="hwllab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="syslab" data-group="anadig" data-beruf="egs ige">
+    <section class="card" data-lab="syslab" data-group="anadig" data-beruf="egs ige winf">
       <span class="tag">SYSTEME-LAB</span>
       <h3>Rechner, Busse und Speicher</h3>
       <div class="pic" aria-hidden="true">
@@ -756,7 +774,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div class="steps"><span>Geräteklassen</span><span>Busse und Speicher</span><span>Mikroprozessor</span></div>
       <div class="btns"><a class="btn pri" href="syslab.html">Öffnen</a><a class="btn" href="syslab.html?aufgabe=sys1">Erste Aufgabe</a><a class="btn" href="syslab.html?bsp">Beispiel</a></div>
     </section>
-    <section class="card" data-lab="ssllab" data-group="auto" data-beruf="egs ige">
+    <section class="card" data-lab="ssllab" data-group="auto" data-beruf="egs ige tec">
       <span class="tag">SCHALTSCHRANK-LAB</span>
       <h3>Schaltschrank planen und prüfen</h3>
       <div class="pic" aria-hidden="true">
@@ -775,6 +793,76 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <p>Prüfungsaufgaben mit Rechnen und Mehrfachwahl, Training je Thema, Probeprüfung mit Zeitlimit, Note nach IHK-Schlüssel und Lernplan für die schwachen Themen.</p>
       <div class="steps"><span>Üben</span><span>Probe</span><span>Auswerten</span></div>
       <div class="btns"><a class="btn pri" href="pruefungslab.html">Öffnen</a><a class="btn" href="pruefungslab.html?aufgabe=pr1">Erstes Thema</a><a class="btn" href="pruefungslab.html?aufgabe=pr10">Probeprüfung</a></div>
+    </section>
+    <section class="card" data-lab="mat2lab" data-group="stud" data-beruf="tec stu wing winf">
+      <span class="tag">MATHE-BRÜCKE · STUDIUM</span>
+      <h3>Die Mathematik des Studiums an Schaltungen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><path d="M20 60H100M60 20V100" fill="none" stroke="#6b7684" stroke-width="1.5"/><circle cx="60" cy="60" r="30" fill="none" stroke="#9aa6b2" stroke-width="1.2" stroke-dasharray="3 3"/><path d="M60 60L82 38" fill="none" stroke="#ffb020" stroke-width="3" stroke-linecap="round"/><circle cx="82" cy="38" r="4" fill="#ffb020"/><path d="M82 38H116" fill="none" stroke="#9aa6b2" stroke-width="1.2" stroke-dasharray="2 3"/><path d="M116 60H224" fill="none" stroke="#6b7684" stroke-width="1.5"/><path d="M116 60q14-44 28 0t28 0t28 0" fill="none" stroke="#5fb0ff" stroke-width="2.5"/><circle cx="130" cy="38" r="3.5" fill="#ffb020"/><text x="170" y="98" fill="#e8eaed" font-family="monospace" font-size="12">∠ ∫ ℒ ∿</text></svg>
+      </div>
+      <p>Komplexe Wechselstromrechnung, Matrizen und Knotenpotenzial, Differenzialgleichungen, Laplace und Fourier: die Mathematik des Studiums direkt an Schaltungen geübt, mit Diagrammen und 55 Aufgaben.</p>
+      <div class="steps"><span>Komplex</span><span>Matrizen</span><span>DGL</span><span>Laplace</span><span>Fourier</span></div>
+      <div class="btns"><a class="btn pri" href="mat2lab.html">Öffnen</a><a class="btn" href="mat2lab.html?aufgabe=mat2cx1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="siglab" data-group="stud" data-beruf="tec stu wing winf">
+      <span class="tag">SIGNALE UND SYSTEME · STUDIUM</span>
+      <h3>Signale, Spektrum und Filter</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><path d="M20 60H228" fill="none" stroke="#6b7684" stroke-width="1.2"/><path d="M24 60q13-40 26 0t26 0t26 0" fill="none" stroke="#5fb0ff" stroke-width="2.5"/><circle cx="37" cy="38" r="3.5" fill="#ffb020"/><circle cx="63" cy="82" r="3.5" fill="#ffb020"/><circle cx="89" cy="38" r="3.5" fill="#ffb020"/><circle cx="115" cy="82" r="3.5" fill="#ffb020"/><path d="M134 60h8m-3-4l4 4-4 4" fill="none" stroke="#9aa6b2" stroke-width="1.5"/><path d="M152 100H224" fill="none" stroke="#6b7684" stroke-width="1.5"/><rect x="162" y="38" width="8" height="62" fill="#6dff7a" rx="1"/><rect x="184" y="64" width="8" height="36" fill="#6dff7a" rx="1"/><rect x="206" y="82" width="8" height="18" fill="#6dff7a" rx="1"/></svg>
+      </div>
+      <p>Signale, Spektrum und FFT, Abtastung, Filter, Faltung und Modulation selbst ausprobieren: Regler ziehen, Diagramme live ansehen und 57 Aufgaben mit Tipps und Musterlösung rechnen.</p>
+      <div class="steps"><span>Spektrum</span><span>Abtastung</span><span>Filter</span><span>Faltung</span><span>Modulation</span></div>
+      <div class="btns"><a class="btn pri" href="siglab.html">Öffnen</a><a class="btn" href="siglab.html?aufgabe=sig1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="rg2lab" data-group="stud" data-beruf="tec stu wing">
+      <span class="tag">REGELUNGSTECHNIK AUFBAU · STUDIUM</span>
+      <h3>Regelkreise entwerfen und beurteilen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><path d="M22 60H118M70 20V100" fill="none" stroke="#6b7684" stroke-width="1.5"/><path d="M50 40l10 10M60 40l-10 10M50 70l10 10M60 70l-10 10" fill="none" stroke="#ff7a7a" stroke-width="2.5" stroke-linecap="round"/><circle cx="96" cy="60" r="5" fill="none" stroke="#6dff7a" stroke-width="2.5"/><path d="M134 24V98H226" fill="none" stroke="#6b7684" stroke-width="1.5"/><path d="M134 50H226" fill="none" stroke="#9aa6b2" stroke-width="1.2" stroke-dasharray="3 3"/><path d="M134 98C146 98 148 30 164 30S182 56 196 56S212 48 224 50" fill="none" stroke="#5fb0ff" stroke-width="2.5"/></svg>
+      </div>
+      <p>Übertragungsfunktion, Bode, Stabilität, Wurzelortskurve, Reglerentwurf und digitale Regelung mit sechs interaktiven Visualisierungen und 60 gerechneten Aufgaben für Studium und Technikerschule.</p>
+      <div class="steps"><span>Bode</span><span>Stabilität</span><span>Wurzelort</span><span>Entwurf</span><span>Digital</span></div>
+      <div class="btns"><a class="btn pri" href="rg2lab.html">Öffnen</a><a class="btn" href="rg2lab.html?aufgabe=1-01">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="emblab" data-group="stud" data-beruf="tec stu winf">
+      <span class="tag">EMBEDDED VERTIEFT · STUDIUM</span>
+      <h3>Mikrocontroller genauer verstehen</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><path d="M40 34h22v-14h22v14h22v-14h22v14h22v-14h22v14h20" fill="none" stroke="#6dff7a" stroke-width="2.5"/><rect x="78" y="50" width="84" height="50" fill="#2a3340" stroke="#8a97a8" stroke-width="2.5" rx="5"/><path d="M92 50v-7M108 50v-7M124 50v-7M140 50v-7M92 100v7M108 100v7M124 100v7M140 100v7M78 64h-9M78 76h-9M78 88h-9M162 64h9M162 76h9M162 88h9" fill="none" stroke="#9aa6b2" stroke-width="2.5"/><circle cx="90" cy="62" r="3" fill="#ffb020"/><text x="120" y="82" fill="#e8eaed" font-family="monospace" font-size="16" text-anchor="middle">µC</text></svg>
+      </div>
+      <p>Timer, ADC, UART/SPI/I²C, Zustandsautomaten und Echtzeit: erst messen und simulieren, dann rechnen.</p>
+      <div class="steps"><span>Timer</span><span>ADC</span><span>Busse</span><span>Zustände</span><span>Echtzeit</span></div>
+      <div class="btns"><a class="btn pri" href="emblab.html">Öffnen</a><a class="btn" href="emblab.html#bus">Serielle Busse</a></div>
+    </section>
+    <section class="card" data-lab="prjlab" data-group="stud" data-beruf="tec stu wing winf">
+      <span class="tag">PROJEKT UND WIRTSCHAFTLICHKEIT · STUDIUM</span>
+      <h3>Projekte planen und wirtschaftlich bewerten</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><path d="M52 36H70M110 36H128M168 36H184M52 36V76H70M110 76H168V36" fill="none" stroke="#6b7684" stroke-width="1.5"/><path d="M52 36H70M110 36H128M168 36H184" fill="none" stroke="#ff9d00" stroke-width="3"/><rect x="22" y="24" width="30" height="24" fill="#2a3340" stroke="#ff9d00" stroke-width="2.5" rx="4"/><rect x="70" y="24" width="40" height="24" fill="#2a3340" stroke="#ff9d00" stroke-width="2.5" rx="4"/><rect x="128" y="24" width="40" height="24" fill="#2a3340" stroke="#ff9d00" stroke-width="2.5" rx="4"/><rect x="184" y="24" width="34" height="24" fill="#2a3340" stroke="#ff9d00" stroke-width="2.5" rx="4"/><rect x="70" y="64" width="40" height="24" fill="#2a3340" stroke="#8a97a8" stroke-width="2" rx="4"/><circle cx="196" cy="86" r="14" fill="#ffb020"/><circle cx="196" cy="86" r="10" fill="none" stroke="#17202e" stroke-width="1.5"/><text x="196" y="91" fill="#17202e" font-family="monospace" font-size="14" font-weight="700" text-anchor="middle">€</text></svg>
+      </div>
+      <p>Lastenheft, Netzplan, Kosten, Investitionsrechnung, Risiko und Praxisbericht: rechnen, zeichnen und prüfen mit 64 Aufgaben samt Rechenweg.</p>
+      <div class="steps"><span>Lastenheft</span><span>Netzplan</span><span>Kosten</span><span>Investition</span><span>Risiko</span></div>
+      <div class="btns"><a class="btn pri" href="prjlab.html">Öffnen</a><a class="btn" href="prjlab.html?aufgabe=prj1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="nrmlab" data-group="stud" data-beruf="tec stu wing winf">
+      <span class="tag">NORMEN UND KONFORMITÄT · STUDIUM</span>
+      <h3>Normen und Konformität sicher anwenden</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><text x="22" y="68" fill="#e8eaed" font-family="monospace" font-size="24" font-weight="700">CE</text><path d="M120 18L156 30V58C156 78 140 92 120 102C100 92 84 78 84 58V30Z" fill="#2a3340" stroke="#5fb0ff" stroke-width="3" stroke-linejoin="round"/><path d="M104 58l12 12 22-26" fill="none" stroke="#6dff7a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><rect x="176" y="30" width="40" height="56" fill="#f2f4f8" rx="3"/><path d="M183 42H209M183 52H209M183 62H201M183 72H205" fill="none" stroke="#6b7684" stroke-width="2.5"/></svg>
+      </div>
+      <p>CE-Kennzeichnung, Schutzarten, Maschinensicherheit, Geräteprüfung und Qualitätsmanagement als Lernmodelle mit Entscheidungsbaum, Diagrammen und 51 Aufgaben.</p>
+      <div class="steps"><span>CE</span><span>Schutzarten</span><span>Maschinen</span><span>Prüfen</span><span>Qualität</span></div>
+      <div class="btns"><a class="btn pri" href="nrmlab.html">Öffnen</a><a class="btn" href="nrmlab.html?aufgabe=nrmce1">Erste Aufgabe</a></div>
+    </section>
+    <section class="card" data-lab="flilab" data-group="stud" data-beruf="tec wing" data-such="Linien Linie Taktzeit Kundentakt Bestand Little RTY Störung Charge Seriennummer Rückruf Lackierung Schutzlack Vergussmasse Topfzeit Mischungsverhältnis">
+      <span class="tag">LINIEN-LAB · STUDIUM</span>
+      <h3>Eine Fertigungslinie verstehen und verbessern</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><g fill="#2a3340" stroke="#5fb0ff" stroke-width="3"><rect x="24" y="44" width="34" height="30" rx="4"/><rect x="68" y="44" width="34" height="30" rx="4"/><rect x="112" y="44" width="34" height="30" rx="4"/><rect x="156" y="44" width="34" height="30" rx="4"/></g><path d="M20 88H206" stroke="#9aa0a6" stroke-width="4" stroke-linecap="round"/><path d="M196 36L212 59L196 82" fill="none" stroke="#e8eaed" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="112" y="44" width="34" height="30" rx="4" fill="rgba(255,180,60,.35)" stroke="#ffb43c" stroke-width="3"/></svg>
+      </div>
+      <p>Takt, Engpass, Durchlaufzeit, Ausbeute, Puffer, Rückverfolgung, Lackieren und Verguss an einer frei erfundenen Modell-Linie mit Reglern und 28 Aufgaben.</p>
+      <div class="steps"><span>Takt</span><span>Engpass</span><span>Ausbeute</span><span>Rückverfolgung</span><span>Lack</span></div>
+      <div class="btns"><a class="btn pri" href="flilab.html">Öffnen</a><a class="btn" href="flilab.html?aufgabe=fli1">Erste Aufgabe</a></div>
     </section>
   </div>
   <section class="card vbrow wikirow" id="wikiRow" data-hub="wiki" data-group="grund">
@@ -819,12 +907,17 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <script src="lernpfad.js"></script>
 <script src="lernstand.js"></script>
 <script src="stand.js"></script>
+<script src="meinstand-core.js"></script>
+<script src="countdown.js"></script>
+<script src="sicherung-hinweis.js"></script>
 <script src="home-plan.js"></script>
 <script src="home-groups.js"></script>
 <script src="berufe.js"></script>
 <script src="home-vb.js"></script>
 <script src="home-cont.js"></script>
 <script src="wiederholen.js"></script>
+<script src="einheit10.js"></script>
+<script src="meinweg.js"></script>
 <script src="home-search.js"></script>
 <script src="home.js"></script>
 <script src="home-clean.js"></script>
@@ -838,6 +931,7 @@ if(document.readyState==='complete')setTimeout(go,300);else window.addEventListe
 <script src="ver.js"></script>
 <script>(function(){var b=document.getElementById('verBadge'),h=document.querySelector('header');if(!b||!h)return;b.setAttribute('data-v',window.LAB_VERSION||'');h.appendChild(b);})();</script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+<script src="offline-status.js" defer></script>
 <script src="urheber.js"></script>
 </body>
 </html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Regelungstechnik Aufbau">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b1f24">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Tonfunk Regelungstechnik Aufbau</title>
+<link rel="stylesheet" href="rg2.css">
+</head>
+<body>
+<!--GATE-->
+<script src="gate.js" data-title="Tonfunk Regelungstechnik Aufbau"></script>
+<!--/GATE-->
+<div id="app">
+  <header>
+    <a class="ib" id="bHome" href="index.html" aria-label="Startseite" title="Startseite"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5M6.5 10v9h4v-5h3v5h4v-9"/></svg></a>
+    <img id="logo" onclick="location.href='index.html'" title="Startseite" src="logo.png" alt="Tonfunk" onerror="this.remove()">
+    <div class="title">Regelungstechnik Aufbau<small>Studium: Übertragungsfunktion, Bode, Stabilität, Wurzelort, Entwurf, digital</small></div>
+    <button class="ib" id="bTheme" aria-label="Darstellung wechseln: automatisch, hell, dunkel" title="Darstellung wechseln"><span id="bThemeIc" aria-hidden="true">◐</span></button>
+  </header>
+  <nav id="tabs" role="tablist" aria-label="Blöcke"></nav>
+  <main id="view" tabindex="-1"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript><p style="padding:16px">Dieses Lab braucht JavaScript.</p></noscript>
+<script src="ver.js"></script>
+<script src="rg2core.js"></script>
+<script src="rg2data.js"></script>
+<script src="rg2viz.js"></script>
+<script src="rg2ui.js"></script>
+<script src="rg2blk.js"></script>
+<script src="aufgabe-vorlesen.js" async></script>
+<script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+<script src="tutorial-data.js"></script>
+<script src="tutorial.js"></script>
+</body>
+</html>

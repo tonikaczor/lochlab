@@ -147,7 +147,8 @@ body[data-wiki=seite] *{box-sizing:border-box}
 .we .meta{margin-top:18px;padding-top:10px;border-top:1px solid var(--line);font-size:13px;color:var(--mute)}
 .we .stt.geprueft{color:var(--ok)}.we .stt.frage{color:var(--warn)}
 :where(body[data-wiki=seite],.wkd) .back{margin-bottom:12px}
-@media(max-width:639px){body[data-wiki=seite] #verBadge{display:none}}
+/* Versionsplakette (fest unten rechts) verdeckt in der Wiki Inhalt; die Version steht schon in der Fusszeile (Stand ...) */
+#verBadge{display:none!important}
 body>svg[hidden]{position:absolute;width:0;height:0;overflow:hidden}   /* Symbol-Sprite: hidden gilt bei SVG nicht, sonst 150 px Leerraum oben */
 /* Pruefansicht (#pruef) */
 :where(body[data-wiki=seite],.wkd) .pt{border:1px solid var(--line);border-radius:12px;overflow:visible;overflow:clip;background:var(--panel)}:where(body[data-wiki=seite],.wkd) .pt table{width:100%;border-collapse:collapse;font-size:14px}:where(body[data-wiki=seite],.wkd) .pt th,:where(body[data-wiki=seite],.wkd) .pt td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}:where(body[data-wiki=seite],.wkd) .pt th{color:var(--mute);font-weight:600}:where(body[data-wiki=seite],.wkd) .pt tr:last-child td{border:0}:where(body[data-wiki=seite],.wkd) .pt .stt{font-weight:600}:where(body[data-wiki=seite],.wkd) .pt .stt.geprueft{color:var(--ok)}:where(body[data-wiki=seite],.wkd) .pt .stt.frage{color:var(--warn)}:where(body[data-wiki=seite],.wkd) .pt td a{color:var(--accent)}

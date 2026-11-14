@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Projekt-Lab">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#1b1f24">
+<meta name="robots" content="noindex,nofollow">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Tonfunk Projekt-Lab</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schlüssel lm4.theme wie die Startseite (nur der Umschalter dort schreibt ihn) */
+(function(){try{var v=localStorage.getItem('lm4.theme');if(v==='light'||v==='dark')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
+<link rel="stylesheet" href="prjlab.css">
+<link rel="stylesheet" href="design.css">
+</head>
+<body class="gs">
+<!--GATE-->
+<script src="gate.js" data-title="Tonfunk Projekt-Lab"></script>
+<!--/GATE-->
+<script src="aufgaben.js"></script>
+<div id="app">
+  <header>
+    <button class="ib" id="bMenu" aria-label="Menü"><svg class="i" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><a class="ib" id="bHome" href="index.html" aria-label="Startseite" title="Startseite" style="display:inline-flex;align-items:center;justify-content:center;text-decoration:none"><svg class="i" viewBox="0 0 24 24"><path d="M4 11.5 12 5l8 6.5M6.5 10v9h4v-5h3v5h4v-9"/></svg></a>
+    <img id="logo" onclick="location.href='index.html'" title="Startseite" style="cursor:pointer" src="logo.png" alt="Tonfunk" onerror="this.remove()">
+    <div class="title" id="title">Projekt-Lab</div>
+    <button class="hb" id="bTasks" aria-label="Aufgaben">📝 <span>Aufgaben</span></button>
+    <button class="hb" id="bExam" aria-label="Prüfmodus" aria-pressed="false">🎓 <span>Prüfmodus</span></button>
+    <button class="hb" id="bHelp" aria-label="Hilfe">📘 <span>Hilfe</span></button>
+  </header>
+  <nav id="tabs" role="tablist" aria-label="Bereiche"></nav>
+  <div id="mid" data-tab="blk">
+    <section class="pg scroll" id="pgBlk"><div class="wrap" id="blkView"></div></section>
+    <section class="pg scroll" id="pgTasks"><div class="wrap" id="taskView"></div></section>
+    <section class="pg scroll" id="pgHelp"><div class="wrap" id="helpView"></div></section>
+  </div>
+  <div id="pal"></div>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="ver.js"></script>
+<script src="fx.js"></script>
+<script src="prjcore.js"></script>
+<script src="prjdata.js"></script>
+<script src="prjviz.js"></script>
+<script>window.LAB='prj';</script>
+<script src="prjui.js"></script>
+<script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+<script src="urheber.js"></script>
+<script src="design.js"></script>
+<script src="iliasbar.js"></script>
+<script src="tutorial-data.js"></script>
+<script src="tutorial.js"></script>
+</body>
+</html>

@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Maschinen-Lab">
@@ -87,7 +87,7 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 @media print{#app,.backdrop,#toast,#gate,#verBadge{display:none!important}body{background:#fff;height:auto}html{height:auto}}
 /* ===== Maschinen-Lab ===== */
-#mid[data-tab=mach] #pgMach,#mid[data-tab=rech] #pgRech,#mid[data-tab=cnc] #pgCnc,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=help] #pgHelp{display:flex}
+#mid[data-tab=mach] #pgMach,#mid[data-tab=rech] #pgRech,#mid[data-tab=cnc] #pgCnc,#mid[data-tab=weg] #pgWeg,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=help] #pgHelp{display:flex}
 .inst,.mkv{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}
 .inst svg,.mkv svg{display:block;width:100%;height:auto}
 .inst svg text,.mkv svg text{font-family:system-ui,sans-serif;-webkit-user-select:none;user-select:none}
@@ -129,6 +129,39 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .hl ul,.hl ol{margin:.3em 0 .3em 1.1em;padding:0}
 .sw{display:inline-block;width:22px;height:14px;border-radius:4px;border:1px solid var(--mute);vertical-align:-2px}
 .ctag{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+/* Werkstück-Weg (makweg.js) */
+.wg-box{position:relative;margin:8px 0}
+.wg-chain{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px 26px}
+.wg-li{position:relative;flex:1 1 112px;max-width:190px;display:flex}
+.wg-li:not(:last-of-type)::after{content:"→";position:absolute;right:-22px;top:50%;transform:translateY(-50%);color:var(--mute);font-size:18px;font-weight:700;pointer-events:none}
+.wg-st{flex:1;min-height:88px;padding:8px;border-radius:12px;background:var(--panel2);border:2px solid var(--line);display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;color:var(--fg)}
+.wg-st b{display:block;font-size:15px}.wg-st small{display:block;color:var(--mute);font-size:12px;line-height:1.2}
+.wg-slot{position:relative;width:50px;height:34px;border-radius:8px;border:1.5px dashed var(--mute);display:grid;place-items:center;flex:none}
+.wg-mk{position:absolute;right:-8px;top:-8px;min-width:18px;height:18px;border-radius:9px;background:var(--bg);border:1px solid var(--line);font-size:11px;line-height:16px;font-weight:700;color:var(--ok);display:grid;place-items:center}
+.wg-mk:empty{display:none}
+.wg-st.done{border-color:var(--ok)}
+.wg-st.on{border-color:var(--accent);background:var(--panel);box-shadow:0 0 0 3px var(--work)}
+.wg-st.on .wg-slot{border-style:solid;border-color:var(--accent)}.wg-st.on .wg-mk{color:var(--accent)}
+.wg-st.on b{color:var(--accent)}
+.wg-wk{position:absolute;left:0;top:0;width:44px;height:30px;pointer-events:none;transition:transform .6s ease-in-out;z-index:2;will-change:transform}
+.wg-wk svg{display:block;width:44px;height:30px}
+.wg-wk-b{fill:var(--accent);fill-opacity:.55;stroke:var(--accent);stroke-width:2;stroke-linejoin:round}
+.wg-wk-l{fill:none;stroke:var(--fg);stroke-opacity:.6;stroke-width:1.5}
+.wg-wk-h{fill:var(--bg);stroke:var(--fg);stroke-opacity:.6;stroke-width:1.5}
+.wg-ctl{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 6px}.wg-ctl .btn{flex:1 1 120px}
+.wg-row{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:4px 0 10px}
+.wg-cnt{font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.wg-ab{display:inline-block;padding:1px 9px;border-radius:12px;border:1px solid var(--line);font-size:12px;font-weight:700;color:var(--mute);vertical-align:2px}
+.wg-tx{margin:4px 0;font-size:14.5px;line-height:1.45}
+.wg-draw{max-width:520px}
+@media(max-width:560px){
+.wg-chain{flex-direction:column;gap:20px}
+.wg-li{flex:none;max-width:none}
+.wg-li:not(:last-of-type)::after{content:"↓";right:auto;left:30px;top:auto;bottom:-20px;transform:none}
+.wg-st{flex-direction:row;min-height:52px;text-align:left;gap:12px;padding:6px 12px}
+.wg-nm{flex:1;min-width:0}
+}
+@media(prefers-reduced-motion:reduce){.wg-wk{transition:none!important}}
 /* Zeichnungen */
 .mkv svg{max-height:74vh}
 .mk-t{font-size:11px;fill:var(--fg)}.mk-b{font-weight:700}.mk-tm{font-size:10.5px;fill:var(--mute)}.mk-v{font-size:13px;font-variant-numeric:tabular-nums}.mk-k{font-size:10px;font-weight:700}.mk-w{fill:#fff}
@@ -189,6 +222,7 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
   <div id="mid" data-tab="mach">
     <section class="pg scroll" id="pgMach"><div class="wrap" id="machView"></div></section>
     <section class="pg scroll" id="pgRech"><div class="wrap" id="rechView"></div></section>
+    <section class="pg scroll" id="pgWeg"><div class="wrap" id="wegView"></div></section>
     <section class="pg scroll" id="pgCnc"><div class="wrap" id="cncView"></div></section>
     <section class="pg scroll" id="pgTasks"><div class="wrap" id="taskView"></div></section>
     <section class="pg scroll" id="pgRt"><div class="wrap" id="rtView"></div></section>
@@ -205,6 +239,7 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script>window.LAB='mak';</script>
 <script src="makui.js"></script>
 <script src="makviz.js"></script>
+<script src="makweg.js"></script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 <script src="urheber.js"></script>
 <script src="design.js"></script>

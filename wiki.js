@@ -19,14 +19,17 @@
     sps: ['SPS-Lab', 'spslab.html'], pcb: ['Leiterplatten-Lab', 'pcblab.html'], ant: ['Antriebs-Lab', 'antlab.html'], sen: ['Sensorik-Lab', 'senlab.html'],
     reg: ['Regelungstechnik-Lab', 'reglab.html'], thm: ['Thermik-Lab', 'thmlab.html'], emv: ['EMV-Lab', 'emvlab.html'], enr: ['Energie-Lab', 'enrlab.html'],
     code: ['Arduino-Lab', 'codelab.html'], pi: ['Pi-Lab', 'pilab.html'], ds: ['Datenblatt-Lab', 'dslab.html'], pr: ['Prüfungs-Lab', 'pruefungslab.html'], vb: ['Projekte', 'verbund.html'],
-    pne: ['Pneumatik-Lab', 'pnelab.html'], arb: ['Arbeitsschutz-Lab', 'arblab.html']
+    pne: ['Pneumatik-Lab', 'pnelab.html'], arb: ['Arbeitsschutz-Lab', 'arblab.html'],
+    mat2: ['Mathe-Brücke', 'mat2lab.html'], sig: ['Signale und Systeme', 'siglab.html'], rg2: ['Regelungstechnik Aufbau', 'rg2lab.html'],
+    emb: ['Embedded vertieft', 'emblab.html'], prj: ['Projekt und Wirtschaftlichkeit', 'prjlab.html'], nrm: ['Normen und Konformität', 'nrmlab.html'], fli: ['Linien-Lab', 'flilab.html']
   };
   // Datendateien (Abschnitt 3.3): Name -> Datei; "da" = in diesem Stand vorhanden (sonst laedt need() nicht, kein 404)
   var DATEIEN = {
     bauteile: { src: 'wiki-bauteile.js', kat: ['bauteil'], da: true },
     geraete: { src: 'wiki-geraete.js', kat: ['geraet', 'bedien'], da: true },
     begriffe: { src: 'wiki-begriffe.js', kat: ['begriff'], da: true },
-    formeln: { src: 'wiki-formeln.js', kat: ['formel', 'norm', 'lab'], da: true }
+    formeln: { src: 'wiki-formeln.js', kat: ['formel', 'norm'], da: true },
+    labkarten: { src: 'wiki-labkarten.js', kat: ['lab'], da: true }
   };
   // W7: Regler + Messwerte je Rig-Lab (erzeugt von quelle/gen/mkwikireg.js); "lazy" = nur bei Bedarf (needFor, needAll(true)), nicht bei needAll()
   var REGLER_LABS = ['ana', 'ant', 'els', 'emv', 'enr', 'nts', 'reg', 'sen', 'thm', 'wsl'];
@@ -34,7 +37,7 @@
   // Datei-Name zu einer Eintrags-ID (ohne Index): rg-/mw-<lab>-... -> regler-<lab>, bt- -> bauteile, ger-/bd- -> geraete
   function dateiFuer(id) {
     var m = /^(rg|mw)-([a-z]+)-/.exec(id || ''); if (m && DATEIEN['regler-' + m[2]]) return 'regler-' + m[2];
-    if (/^bt-/.test(id)) return 'bauteile'; if (/^(ger|bd)-/.test(id)) return 'geraete'; if (/^bg-/.test(id)) return 'begriffe'; if (/^(fo|nw|lab)-/.test(id)) return 'formeln';
+    if (/^bt-/.test(id)) return 'bauteile'; if (/^(ger|bd)-/.test(id)) return 'geraete'; if (/^bg-/.test(id)) return 'begriffe'; if (/^(fo|nw)-/.test(id)) return 'formeln'; if (/^lab-/.test(id)) return 'labkarten';
     return '';
   }
   var STATUS = ['entwurf', 'frage', 'geprueft'];
@@ -397,6 +400,7 @@
     opt = opt || {};
     var has = W.has, h = [], KL = /^(regler|messwert)$/.test(e.kat), L0 = (e.labs || [])[0], SB = KL ? steckAus(e) : null;
     var kat = KAT[e.kat] ? KAT[e.kat][0] : e.kat;
+    if (!opt.extern) W.needVorlesen();
     h.push('<article class="we" data-id="' + esc(e.id) + '" data-kat="' + esc(e.kat) + '"' + (L0 ? ' data-lab="' + esc(L0) + '"' : '') + '>');
     // Kategoriezeile: Kategorie fett, Lab(s), bei Reglern/Messwerten der Pruefstand
     var lz = (e.labs || []).map(function (l) { return LABS[l] ? LABS[l][0] : l; }), rn = e.rignamen || [];
@@ -448,6 +452,12 @@
 
   // Vorlesen: Piper-Aufnahme (ueber Speak, wenn W2b die Bruecke liefert) sonst Geraetestimme
   var speaking = null, spkTok = 0;
+  /* vorlesen.js (Textbau und Basis-Hash fuer Begriffe, Formeln, Normwerte, Regler, Messwerte): im Leerlauf nachladen, wenn die Seite es nicht selbst einbindet (wiki.html, Drawer im Lab) */
+  var vlTried = false;
+  W.needVorlesen = function () {
+    if (vlTried || root.Vorlesen) return; vlTried = true;
+    try { var s = document.createElement('script'); s.src = 'vorlesen.js'; s.async = true; document.head.appendChild(s); } catch (x) {}
+  };
   W.speak = function (e, btn) {
     var S = root.Speak;
     if (speaking === e.id) { W.stopSpeak(); return; }
@@ -455,8 +465,9 @@
     var my = ++spkTok, done = function () { if (my === spkTok) W.stopSpeak(); };   // Ende der Wiedergabe setzt den Knopf zurueck (veraltete Rueckrufe nach stop/cancel zaehlen nicht)
     speaking = e.id; if (btn) btn.setAttribute('aria-pressed', 'true');
     var txt = /^(regler|messwert)$/.test(e.kat) && e.kopf ? e.kopf + ' ' + e.kurz : e.kurz;   // Regler/Messwerte: Kopfsatz (Titel, Typ, Lab, Pruefstand) mitsprechen, damit die Stimme den Kontext behaelt
-    var rec = false;
+    var rec = false, VT = root.Vorlesen && root.Vorlesen.Texte;
     if (S && typeof S.speak === 'function' && e.speak) rec = S.speak(e.speak, e.kurz, '', done) === true;   // true = Aufnahme laeuft (Hash passt), sonst Geraetestimme
+    else if (S && typeof S.speak === 'function' && VT) rec = S.speak(VT.wikiKey(e.id), VT.wiki(e), '', done) === true;   // Begriffe/Formeln/Normwerte: Aufnahme WK_<id>, wenn vorhanden (gleicher Basistext wie im Export), sonst Geraetestimme
     else if (S && typeof S.say === 'function') S.say(txt, done);
     else if ('speechSynthesis' in root) { try { var u = new SpeechSynthesisUtterance(txt); u.lang = 'de-DE'; u.onend = u.onerror = done; root.speechSynthesis.speak(u); } catch (x) {} }
     if (btn) btn.title = rec ? 'Aufnahme' : 'Gerätestimme';
@@ -484,7 +495,7 @@
   W.open = function (id, ctx) {
     ctx = ctx || {};
     if (document.body.dataset.wiki === 'seite') { location.hash = '#e=' + id; return; }   // wiki.html: Hash-Navigation
-    W.recentPush(id);
+    W.recentPush(id); W.needVorlesen();
     var e = W.get(id);
     var d = W.drawer(ctx);
     var body = d.querySelector('.wkd-body'), t = d.querySelector('#wkdT'), sb = d.querySelector('#wkdS'), ext = d.querySelector('.wkd-ext');

@@ -14,7 +14,7 @@
     const w = Math.floor(d / 7); if (w < 9) return 'vor ' + w + ' Wochen';
     const mo = Math.floor(d / 30); return mo <= 1 ? 'vor 1 Monat' : 'vor ' + mo + ' Monaten';
   }
-  // env: { get(key, default), REG, ROWS, stat(labKey), recommend(), now }
+  // env: { get(key, default), REG, ROWS, stat(labKey), recommend(), now, beruf (optional) }
   function resolve(env) {
     const get = env.get, REG = env.REG || {}, ROWS = env.ROWS || [], now = env.now || 0;
     const res = {}; [get('sim.done', {}), get('lm4.tdone', {})].forEach(o => { if (o && typeof o === 'object') Object.keys(o).forEach(k => { const v = +o[k] || 0; if (v > (res[k] || 0)) res[k] = v; }); });
@@ -46,9 +46,13 @@
       if (rc.started) { const title = rc.next ? rc.next[3] : ''; return { src: 'rec', key: rc.rec, href: rc.href, label: 'Weitermachen', sub: [R.name, short(title, 40)].filter(Boolean).join(' · '), name: R.name, title, when: '' }; }
       return { src: 'rec', key: rc.rec, href: rc.href, label: 'Starten', sub: R.name + ' (Einführung)', name: R.name, title: '', when: '' };
     }
-    if (!any && REG.sch) return { src: 'leer', key: 'sch', href: REG.sch.file + '?trainer', label: 'Starten', sub: REG.sch.name + ' (Einführung)', name: REG.sch.name, title: '', when: '' };
-    const P = REG.pr || REG.sch || { name: 'Prüfungs-Lab', file: 'pruefungslab.html' };
-    return { src: 'fertig', key: REG.pr ? 'pr' : 'sch', href: P.file, label: 'Wiederholen', sub: P.name + ' (alle Aufgaben erledigt)', name: P.name, title: '', when: '' };
+    /* Beruf ohne SchaltLab (die Wege tec/stu/wing/winf und Berufe ohne dieses Lab): bei leerem Speicher der erste Schritt des eigenen Lernpfads statt SchaltLab (env.beruf; ohne Angabe gilt das alte Verhalten) */
+    const inB = r => !env.beruf || !r || !Array.isArray(r.beruf) || r.beruf.indexOf(env.beruf) >= 0;
+    if (!any && !inB(REG.sch) && rc && rc.rec && REG[rc.rec]) { const R0 = REG[rc.rec]; return { src: 'start', key: rc.rec, href: rc.href || (R0.file + '?trainer'), label: 'Starten', sub: R0.name + ' (Einführung)', name: R0.name, title: '', when: '' }; }
+    if (!any && REG.sch && inB(REG.sch)) return { src: 'leer', key: 'sch', href: REG.sch.file + '?trainer', label: 'Starten', sub: REG.sch.name + ' (Einführung)', name: REG.sch.name, title: '', when: '' };
+    const pk = REG.pr && inB(REG.pr) ? 'pr' : REG.sch && inB(REG.sch) ? 'sch' : (Object.keys(REG).find(k => !REG[k].hub && inB(REG[k])) || (REG.pr ? 'pr' : 'sch'));
+    const P = REG[pk] || { name: 'Prüfungs-Lab', file: 'pruefungslab.html' };
+    return { src: 'fertig', key: pk, href: P.file, label: 'Wiederholen', sub: P.name + ' (alle Aufgaben erledigt)', name: P.name, title: '', when: '' };
   }
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   if (typeof module === 'object' && module.exports) module.exports = { resolve, relTime, short };
@@ -58,7 +62,7 @@
   function render() {
     const a = doc.getElementById('contGo'); if (!a) return;
     const LP = root.Lernpfad;
-    let r; try { r = resolve({ get, REG: root.LAB_REG, ROWS: root.AUFGABEN, stat: LP && LP.stat, recommend: LP && LP.recommend, now: Date.now() }); } catch (e) { return; }
+    let r; try { r = resolve({ get, REG: root.LAB_REG, ROWS: root.AUFGABEN, stat: LP && LP.stat, recommend: LP && LP.recommend, now: Date.now(), beruf: (root.BerufReg && root.BerufReg.cur && root.BerufReg.cur()) || undefined }); } catch (e) { return; }
     a.href = r.href;
     // Hero (Werkbank): Fortschrittsring (Anteil erledigter Aufgaben über alle Labs), Rang aus Karriere.summary(); alles nur Anzeige, resolve() bleibt unberührt
     let pct = 0, rk = '', rn = 0;

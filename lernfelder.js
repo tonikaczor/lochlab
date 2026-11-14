@@ -213,7 +213,7 @@
     [/Messtechnik|Messfehler|Messunsicherheit|Genauigkeit|Fehlergrenze|Leistungsanpassung/, 'E1'],
     [/Transistor|LED|Leuchtdiode|Optokoppler|Bauelement|Schaltungstechnik|Grundschaltungen|Halbleiter|Relais/, '6.1']
   ];
-  const POOL_G = { sich: '5.1', steu: '10.1', opv: '6.2', netz: '5.3', bus: 'E12', digi: '7.2', halb: '6.1', mcu: 'E12', mess: '8.2', qm: '10.2', grund: 'E1', wiso: null };
+  const POOL_G = { sich: '5.1', steu: '10.1', opv: '6.2', netz: '5.3', bus: 'E12', digi: '7.2', halb: '6.1', mcu: 'E12', mess: '8.2', qm: '10.2', grund: 'E1', itpc: '7.1', wiso: null };
   function poolLF(q) {
     if (!q || q.g === 'wiso') return null;   // Wirtschafts- und Sozialkunde gehört zu keinem Lernfeld
     const th = String(q.th || '');
@@ -248,8 +248,8 @@
     const out = [], P = Array.isArray(pool) ? pool : (pool && pool.q) || [], B = Array.isArray(bank) ? bank : [];
     P.forEach(q => {
       if (poolLF(q) !== lfKey) return;
-      if (q.o) out.push({ id: q.id, k: q.g, src: 'pool', type: 'mc', q: q.q, opts: q.o.slice(), r: q.r, w: q.w || '', pts: PTS_A, n: q.n || 2 });
-      else if (isFinite(+q.ans)) out.push({ id: q.id, k: q.g, src: 'pool', type: 'num', q: q.q, ans: +q.ans, unit: q.u || '', tol: q.tol == null ? 0.02 : q.tol, w: q.w || '', pts: PTS_B, n: q.n || 2 });
+      if (q.o) out.push({ id: q.id, k: q.g, src: 'pool', ex: q.ex || '', type: 'mc', q: q.q, opts: q.o.slice(), r: q.r, w: q.w || '', pts: PTS_A, n: q.n || 2 });
+      else if (isFinite(+q.ans)) out.push({ id: q.id, k: q.g, src: 'pool', ex: q.ex || '', type: 'num', q: q.q, ans: +q.ans, unit: q.u || '', tol: q.tol == null ? 0.02 : q.tol, w: q.w || '', pts: PTS_B, n: q.n || 2 });
     });
     B.forEach((m, i) => {
       if (bankLF(m) !== lfKey) return;
@@ -266,6 +266,13 @@
     return o;
   }
   const seeded = seed => { let a = seed >>> 0; const f = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; return { f, shuffle: arr => { const x = arr.slice(); for (let i = x.length - 1; i > 0; i--) { const j = Math.floor(f() * (i + 1)); const t2 = x[i]; x[i] = x[j]; x[j] = t2; } return x; } }; };
+  /* Ausschlussgruppen des Pools (Feld ex, wie PR_EXAM.exPick): je Gruppe bleibt eine zufällige Frage in keep, die übrigen stehen in rest. Ohne ex-Felder ändert sich nichts (kein Zufall verbraucht). */
+  function exPick(list, r) {
+    const by = {}; list.forEach(q => { if (q.ex) (by[q.ex] = by[q.ex] || []).push(q); });
+    const ks = Object.keys(by).sort(); if (!ks.length) return { keep: list, rest: [] };
+    const drop = new Set(); ks.forEach(k => { const m = by[k], one = r.shuffle(m)[0]; m.forEach(q => { if (q !== one) drop.add(q); }); });
+    return { keep: list.filter(q => !drop.has(q)), rest: list.filter(q => drop.has(q)) };
+  }
   const minuten = items => Math.ceil(items.reduce((s, q) => s + (q.type === 'num' ? MIN_JE_B : MIN_JE_A), 0));
   /* Probetest ziehen. cfg = { n: Wunschzahl (Standard 12), seed }. Rückgabe { ok, grund, verfuegbar, items, minuten, n }.
      Rechenaufgaben höchstens ein Viertel; fehlen sie, kommen keine dazu, fehlen Mehrfachwahl-Fragen, werden nur die vorhandenen genommen. */
@@ -273,7 +280,7 @@
     cfg = cfg || {}; const all = fragen(lfKey, pool, bank), n0 = Math.max(1, Math.floor(+cfg.n || STD_FRAGEN)), seed = cfg.seed == null ? 1 : cfg.seed;
     if (!LFK[lfKey]) return { ok: false, grund: 'Unbekanntes Lernfeld.', verfuegbar: 0, items: [], minuten: 0, n: 0 };
     if (all.length < MIN_FRAGEN) return { ok: false, grund: 'Für dieses Lernfeld gibt es noch zu wenige passende Fragen (' + all.length + ' vorhanden, mindestens ' + MIN_FRAGEN + ' nötig). Es wird nichts aufgefüllt. Übe stattdessen die Aufgaben des Lernfelds.', verfuegbar: all.length, items: [], minuten: 0, n: 0 };
-    const r = seeded(seed), mc = r.shuffle(all.filter(q => q.type === 'mc')), nu = r.shuffle(all.filter(q => q.type === 'num'));
+    const r = seeded(seed), ep = exPick(all, r), mc = r.shuffle(ep.keep.filter(q => q.type === 'mc')).concat(r.shuffle(ep.rest.filter(q => q.type === 'mc'))), nu = r.shuffle(ep.keep.filter(q => q.type === 'num')).concat(r.shuffle(ep.rest.filter(q => q.type === 'num')));   // je Ausschlussgruppe (ex) zuerst nur eine Frage, der Rest steht hinten zum Auffüllen
     const n = Math.min(n0, all.length), nNum0 = Math.min(nu.length, Math.floor(n / 4)), nMc = Math.min(mc.length, n - nNum0), nNum = Math.min(nu.length, n - nMc);
     const pick = mc.slice(0, nMc).concat(nu.slice(0, nNum));
     const items = r.shuffle(pick).map(q => {

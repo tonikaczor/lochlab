@@ -63,16 +63,19 @@
   if (!doc) return;
   const app = doc.getElementById('apApp'); if (!app) return;
 
+  /* Wege Studium/Technik (v55.174): derselbe Plan-Mechanismus, aber Module statt Lernfelder, Stufen statt Ausbildungsjahre, Lernpfad statt Ausbildungsplan. tx() setzt die Wörter beim Aufbau der Seite um (nur bei einem Weg). */
+  const WEGE = ['tec', 'stu', 'wing', 'winf'];
+  const tx = s => (typeof s !== 'string' || WEGE.indexOf(S.beruf) < 0) ? s : s.replace(/Lernfeldern/g, 'Modulen').replace(/Lernfelder/g, 'Module').replace(/Lernfeld/g, 'Modul').replace(/Ausbildungsjahr/g, 'Stufe').replace(/Alle Jahre/g, 'Alle Stufen').replace(/(\d)\. Jahr/g, 'Stufe $1').replace(/deines Jahres/g, 'deiner Stufe').replace(/Ausbildungsplan/g, 'Lernpfad').replace(/Beruf wechseln/g, 'Weg wechseln').replace(/Für welchen Beruf möchtest du den Plan sehen\?/, 'Für welchen Weg möchtest du den Lernpfad sehen?');
   /* ---------- Hilfen ---------- */
   function h(tag, props, kids) {
     const e = doc.createElement(tag);
     Object.keys(props || {}).forEach(k => {
       const v = props[k];
       if (v == null || v === false) return;
-      if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v;
-      else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : String(v));
+      if (k === 'class') e.className = v; else if (k === 'text') e.textContent = tx(v);
+      else if (k.slice(0, 2) === 'on') e.addEventListener(k.slice(2), v); else e.setAttribute(k, v === true ? '' : tx(String(v)));
     });
-    (kids || []).forEach(c => { if (c == null || c === false) return; e.appendChild(typeof c === 'string' ? doc.createTextNode(c) : c); });
+    (kids || []).forEach(c => { if (c == null || c === false) return; e.appendChild(typeof c === 'string' ? doc.createTextNode(tx(c)) : c); });
     return e;
   }
   const clear = e => { while (e.firstChild) e.removeChild(e.firstChild); };
@@ -254,10 +257,13 @@
     if (f.probe === null && (S.beruf === 'egs' || S.beruf === 'ige') && l.nr && probeMoeglich(l.id)) mehr.push(h('div', {}, [h('a', { class: 'btn', href: 'lernfelder.html?lf=' + encodeURIComponent(l.id) + '&probe' }, ['Probetest zu diesem Lernfeld'])]));
     if (l.entwurf) mehr.push(h('p', { class: 'note', text: 'Entwurf: ' + ENTWURF_TIP + '. Die Zuordnung der Aufgaben zu diesem Lernfeld kann sich noch ändern.' }));
     if (l.quelle) mehr.push(h('p', { class: 'meta', text: 'Quelle: ' + l.quelle }));
+    /* Vorlesen (vorlesen.js): Titel und Kurztext, Schlüssel LF_<beruf>_<id>; speak.js und die Aufnahmen werden erst beim Aufklappen nachgeladen */
+    const VL = root.Vorlesen;
+    if (VL && VL.knopf && VL.Texte && l.kurz) mehr.unshift(h('div', { class: 'vl-wrap' }, [VL.knopf(document, VL.Texte.lfKey(S.beruf, l.id), () => VL.Texte.lf(l), { vorladen: false })]));
     if (mehr.length) {
       const d = h('details', { class: 'lfmore', 'data-lf': l.id }, [h('summary', { text: 'Mehr zu diesem Lernfeld' })].concat(mehr));
       if (S.openCards[l.id]) d.open = true;
-      d.addEventListener('toggle', () => { if (d.open) S.openCards[l.id] = 1; else delete S.openCards[l.id]; });
+      d.addEventListener('toggle', () => { if (d.open) { S.openCards[l.id] = 1; if (VL && VL.vorladen) VL.vorladen(document); } else delete S.openCards[l.id]; });
       art.appendChild(d);
     }
     return art;
@@ -321,18 +327,27 @@
     [el.hier, el.gesamt, el.filter, el.list].forEach(clear); el.count.textContent = '';
     el.hier.hidden = el.gesamt.hidden = el.filter.hidden = true;
   }
+  function seitenkopf() {   // Überschrift, Einleitung und Titel der Seite (stehen in ausbildungsplan.html) für die Wege Studium/Technik
+    try {
+      const w = WEGE.indexOf(S.beruf) >= 0, h1 = doc.querySelector('.wrap > h1'), lead = doc.querySelector('.wrap > p.lead');
+      if (h1) h1.textContent = w ? 'Lernpfad' : 'Ausbildungsplan';
+      if (lead && !lead.dataset.alt) lead.dataset.alt = lead.textContent;
+      if (lead) lead.textContent = w ? 'Deine Module, geordnet nach Stufen. Innerhalb einer Stufe gibt es keine feste Reihenfolge: Such dir aus, womit du weitermachen möchtest. Zu jedem Modul findest du die passenden Labs und Aufgaben mit deinem Stand.' : lead.dataset.alt;
+      doc.title = w ? 'Tonfunk Lernpfad' : 'Tonfunk Ausbildungsplan';
+    } catch (e) {}
+  }
   function zeige() {
     clear(el.status); cache = null;
     try {
       const a = AP();
       if (!a) { leerhinweis('Der Ausbildungsplan konnte nicht geladen werden.', 'Lade die Seite neu. Dein Lernstand ist davon nicht betroffen.'); return; }
-      zeichneKopf(null); zeichneWahl();
+      seitenkopf(); zeichneKopf(null); zeichneWahl();
       if (!S.beruf) { leerhinweis('Wähle zuerst deinen Beruf.', ''); return; }
       const p = a.plan(S.beruf);
       if (!p || p.status === 'skelett' || !(p.lernfelder || []).length) { leerhinweis(NEUTRAL.head, NEUTRAL.sub); return; }
       el.hier.hidden = el.gesamt.hidden = el.filter.hidden = false;
       const D = daten(); cache = D;
-      if (p.status === 'entwurf') el.status.appendChild(h('p', { class: 'note', text: 'Dieser Plan ist noch ein Entwurf. Einige Zuordnungen werden noch von deinem Ausbilder geprüft und können sich ändern.' }));
+      if (p.status === 'entwurf') el.status.appendChild(h('p', { class: 'note', text: WEGE.indexOf(S.beruf) >= 0 ? 'Dieser Lernpfad ist ein Entwurf: eine eigene Zusammenstellung der Labs, die sich noch ändern kann. Er ersetzt keinen Lehrplan.' : 'Dieser Plan ist noch ein Entwurf. Einige Zuordnungen werden noch von deinem Ausbilder geprüft und können sich ändern.' }));
       zeichneKopf(p); zeichneHier(D); zeichneGesamt(D); zeichneFilter(D); zeichneListe(D);
       if (S.hash) { const id = S.hash; S.hash = ''; fokus(id); }
     } catch (e) {

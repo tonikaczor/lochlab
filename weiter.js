@@ -134,7 +134,7 @@
   const merke = () => { try { root.sessionStorage.setItem(ZU, '1'); } catch (e) {} };
   const flag = a => { try { const d = document.documentElement; if (d) { if (a) d.setAttribute('data-lmwt', a); else d.removeAttribute('data-lmwt'); } } catch (e) {} };   // Merker am <html>: Plakette weg, gemeinsame Zeile am Handy (a = Aufgabe, f = Abschluss)
   const schmal = () => { try { return !!(root.matchMedia && root.matchMedia('(max-width:640px)').matches); } catch (e) { return false; } };
-  const weg = () => { flag(''); clearTimeout(timer); if (poll) { try { clearInterval(poll); } catch (e) {} poll = null; } if (bar) { bar.remove(); bar = null; } };
+  const weg = () => { flag(''); clearTimeout(timer); if (poll) { try { clearInterval(poll); } catch (e) {} poll = null; } if (bar) { bar.remove(); bar = null; } try { luft(); } catch (e) {} };
   const lese = k => { try { return ls.getItem(k); } catch (e) { return null; } };
   /* Einführung (Trainer-Angebot "Neu hier?", Trainer-Blase, Tutorial-Overlay) sichtbar? Dann wartet die Leiste (Reihenfolge: erst Einführung, dann "Nächste Aufgabe") */
   const EINF = ['trOffer', 'trBub', 'tfTut'];
@@ -160,10 +160,13 @@
     try {
       if (!document.elementsFromPoint) return 0;
       const vw = root.innerWidth, vh = root.innerHeight; let top = vh;
+      // Lab-Seiten sind bildschirmhoch; darunter haengt nur der Urheber-Hinweis. Ist die Seite um dieses kleine Stueck verschoben, sitzt die Werkzeugleiste entsprechend hoeher: Suche dort beginnen.
+      const de = document.documentElement || {}, sy = Math.round(root.scrollY || de.scrollTop || 0), ueber = (de.scrollHeight || 0) - vh;
+      if (sy > 0 && ueber > 0 && ueber <= 320) top = vh - Math.min(sy, ueber); const top0 = top;
       for (let n = 0; n < 3; n++) {
         const els = document.elementsFromPoint(vw / 2, top - 3); let hit = null;
         for (let i = 0; i < els.length && !hit; i++) {
-          let e = els[i]; if (e.closest && e.closest('#fbStrip,#wtBar')) continue;
+          let e = els[i]; if (e.closest && e.closest('#fbStrip,#wtBar,#side,#parts')) continue;   // Inhalt der Seitenleisten ist keine Werkzeugleiste (sonst springen die Leisten am Handy nach oben über das Seitenpanel)
           while (e && e !== document.body && e !== document.documentElement) {
             const r = e.getBoundingClientRect();
             if (r.height > 130) break;
@@ -173,14 +176,29 @@
         }
         if (!hit) break; top = hit.top;
       }
-      return Math.min(Math.max(0, Math.ceil(vh - top)), 220);
+      if (top === top0) return 0;   // keine Werkzeugleiste gefunden
+      return Math.min(Math.max(0, Math.ceil(vh - top)), 420);
     } catch (e) { return 0; }
+  }
+  /* Platz lassen: scrollende Seitenbereiche (#side, #parts, .pg.scroll), die von der Rückmelde- oder Weiter-Leiste überdeckt werden, bekommen unten Innenabstand in Höhe der Überdeckung,
+     damit der Inhalt am unteren Rand erreichbar bleibt (Handy: gemeinsame Zeile über dem Seitenpanel; Tablet hoch: Leisten über der Seitenleiste). Ohne Leisten wird der Abstand entfernt. */
+  function luft() {
+    try {
+      const bars = ['fbStrip', 'wtBar'].map(i => document.getElementById(i)).filter(Boolean).map(e => e.getBoundingClientRect()).filter(r => r.height > 0);
+      if (!document.getElementById('lmLuftCss')) { const st = document.createElement('style'); st.id = 'lmLuftCss'; st.textContent = '[data-lmpad]{padding-bottom:var(--lmpad)!important}'; document.head.appendChild(st); }
+      document.querySelectorAll('#side,#parts,.pg.scroll,aside').forEach(e => {
+        const r = e.getBoundingClientRect(); let pad = 0;
+        if (r.height > 0) bars.forEach(b => { if (b.right > r.left && b.left < r.right && b.top < r.bottom && b.bottom > r.top) pad = Math.max(pad, Math.ceil(r.bottom - b.top) + 12); });
+        if (pad > 0) { e.style.setProperty('--lmpad', Math.min(pad, 240) + 'px'); e.setAttribute('data-lmpad', '1'); }
+        else if (e.hasAttribute('data-lmpad')) { e.style.removeProperty('--lmpad'); e.removeAttribute('data-lmpad'); }
+      });
+    } catch (e) {}
   }
   /* Platz machen: steht die Rückmeldezeile (#fbStrip, unten links) da, sitzt die Leiste darüber, damit sich beide nie verdecken */
   function lage() {
     if (!bar) return;
     let h = 0; try { const fb = document.getElementById('fbStrip'); if (fb && !(schmal() && bar.getAttribute('data-art') === 'a')) h = Math.ceil(fb.getBoundingClientRect().height) + 8; } catch (e) { h = 0; }   // am Handy teilen sich Rückmeldezeile und Weiter-Knopf eine Zeile (CSS), sonst gestapelt
-    bar.style.bottom = 'calc(' + (12 + h + dockHoehe()) + 'px + env(safe-area-inset-bottom))';
+    bar.style.bottom = 'calc(' + (12 + h + dockHoehe()) + 'px + env(safe-area-inset-bottom))'; luft();
   }
   function zeige(id, n) {
     try {

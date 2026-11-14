@@ -1237,6 +1237,7 @@
     { id: 'va8', lab: 'vb', cat: 'Ampelanlage', title: 'Betriebsstatistik mit Python', level: 2,
       on: 'pi',
       text: 'Die Ampel schreibt ein Betriebsprotokoll: eine Zeile je Sekunde mit Zeit, Anforderung, Fußgänger-Grün und Nacht. Schreibe ein Python-Programm, das die Daten in der Liste daten auswertet und ausgibt: ANFORDERUNGEN, WARTE_MITTEL, WARTE_MAX und NACHT_PROZENT, jeweils als SCHLÜSSEL=Zahl. Wartezeit ist die Zeit von der Anforderung bis zum nächsten Fußgänger-Grün.',
+      sprich: 'Die Ampel schreibt ein Betriebsprotokoll: eine Zeile je Sekunde mit Zeit, Anforderung, Fußgänger-Grün und Nacht. Schreibe ein Python-Programm, das die Daten auswertet. Es gibt aus: die Zahl der Anforderungen, die mittlere und die längste Wartezeit und den Nachtanteil in Prozent. Die genauen Schlüsselwörter stehen im Auftragstext. Wartezeit ist die Zeit von der Anforderung bis zum nächsten Fußgänger-Grün.',   /* Sprechfassung fürs Vorlesen: ohne Tabellen, Zahlenlisten und Zeilenformate (vorlesen.js) */
       in: ['ampel.sps'], out: 'ampel.pi', type: 'pi.script', w: 100, pass: null,
       open: { ex: 'Betriebsstatistik' },
       assist: { 1: { kind: 'rahmen' } },

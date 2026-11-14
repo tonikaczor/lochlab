@@ -104,6 +104,18 @@
 
     var p = zeile(doc, 'Im Betrieb'); p.appendChild(doc.createTextNode(m.betrieb)); body.appendChild(p);
     if (m.pruefung) { p = zeile(doc, 'Typisch in der Prüfung'); p.appendChild(doc.createTextNode(m.pruefung)); body.appendChild(p); }
+    /* Vorlesen (Modul vorlesen.js, erst beim Aufklappen nachgeladen): gesprochen wird "Im Betrieb: ... Typisch in der Prüfung: ...", nicht die Links. Schlüssel WZ_<lab>. */
+    var vl = el(doc, 'div', 'wzV');
+    function vlMount() {
+      if (vl.firstChild || !m.betrieb) return;
+      var V = root.Vorlesen;
+      if (V && V.knopf && V.Texte) { vl.appendChild(V.knopf(doc, V.Texte.wzKey(m.lab), function () { return V.Texte.wz({ betrieb: m.betrieb, pruefung: m.pruefung }); })); return; }
+      if (vl.getAttribute('data-ld')) return;
+      vl.setAttribute('data-ld', '1');
+      try { var s = doc.createElement('script'); s.src = 'vorlesen.js'; s.async = true; s.onload = vlMount; doc.head.appendChild(s); } catch (e) {}
+    }
+    body.appendChild(vl);
+    tt.addEventListener('click', function () { if (!body.hidden) vlMount(); });
     if (m.lf.length) {
       p = zeile(doc, m.lf.length === 1 ? 'Lernfeld in deinem Beruf' : 'Lernfelder in deinem Beruf');
       m.lf.slice(0, MAX_LF).forEach(function (x2) {

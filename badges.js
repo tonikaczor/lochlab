@@ -338,7 +338,7 @@
   ];
   /* Eigenständige Labs der Berufe (v39.158): je Lab ein Einsteiger- und ein Meister-Abzeichen, aus LAB_REG erzeugt (Labs ohne Beruf, z. B. noch gesperrt, fehlen) */
   (function () {
-    var REG = window.LAB_REG || {}, IC = { tol: '📐', zer: '⚙️', pne: '💨', hyd: '🛢️', cnc: '🕹️', wer: '🔩', ins: '🧰', net: '🌐', kal: '🧾', lag: '📦', zei: '✏️', arb: '🦺', mat: '🧮', its: '🔐', buc: '📒', lad: '🚚', sys: '💻', ssl: '🗄️', fug: '🔗', mas: '⛓️', mch: '⚖️', fer: '🔧', mak: '🏭' };
+    var REG = window.LAB_REG || {}, IC = { tol: '📐', zer: '⚙️', pne: '💨', hyd: '🛢️', cnc: '🕹️', wer: '🔩', ins: '🧰', net: '🌐', kal: '🧾', lag: '📦', zei: '✏️', arb: '🦺', mat: '🧮', its: '🔐', buc: '📒', lad: '🚚', sys: '💻', ssl: '🗄️', fug: '🔗', mas: '⛓️', mch: '⚖️', fer: '🔧', mak: '🏭', mat2: '∿', sig: '📶', rg2: '🎛️', emb: '🔌', prj: '🗓️', nrm: '✅', fli: '🏭' };
     Object.keys(REG).filter(function (k) { return REG[k].eig && (REG[k].beruf || []).length; }).forEach(function (k) {
       var R = REG[k];
       DEFS.push([k + '5', IC[k] || '🏅', R.short + '-Praktiker', 'Fünf Aufgaben im ' + R.name + ' geschafft.', function (c) { return [c.n(c.ids(k)), 5]; }]);
@@ -355,11 +355,25 @@
       var d = queue.shift(); if (!d) { showing = false; return; }
       var el = document.createElement('div');
       el.style.cssText = 'position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top));transform:translateX(-50%);z-index:210;background:linear-gradient(135deg,#ffb300,#ff7a00);color:#1b1200;font:600 15px system-ui,sans-serif;padding:12px 18px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.45);text-align:center;max-width:86vw;pointer-events:none';
-      el.innerHTML = '<div style="font-size:30px;line-height:1.1">' + d.icon + '</div>Neues Abzeichen: <b>' + esc(d.name) + '</b><br><span style="font-weight:500;font-size:13px">' + esc(d.desc) + '</span>';
+      el.innerHTML = '<div style="font-size:30px;line-height:1.1">' + d.icon + '</div>Neues Abzeichen: <b>' + esc(d.name) + '</b><br><span style="font-weight:500;font-size:14px">' + esc(d.desc) + '</span>';
       document.body.appendChild(el); setTimeout(function () { el.remove(); next(); }, 3600);
     })();
   }
+  /* Standard „ruhig“: Ton (lm4.snd) und Effekte (lm4.fxq) sind auf neuen Geräten aus; Logik wie in fx.js (alte Werte lm4.mute und fx.fun gelten als Rückfall) */
+  function prefOn(key, legacy) {
+    try {
+      var v = localStorage.getItem(key); if (v === '1' || v === '0') return v === '1';
+      var old = localStorage.getItem(legacy), on;
+      if (old != null) on = legacy === 'lm4.mute' ? old !== '1' : old !== '0';
+      else on = ['sim.done', 'lm4.stats', 'lm4.badges', 'lm4.seen'].some(function (k) { return localStorage.getItem(k) != null; });
+      localStorage.setItem(key, on ? '1' : '0'); return on;
+    } catch (e) { return false; }
+  }
+  var soundOn = function () { return prefOn('lm4.snd', 'lm4.mute'); }, fxOn = function () { return prefOn('lm4.fxq', 'fx.fun'); };
+  function setSound(on) { try { localStorage.setItem('lm4.snd', on ? '1' : '0'); localStorage.setItem('lm4.mute', on ? '0' : '1'); } catch (e) {} if (window.LochFX && window.LochFX.setMuted) window.LochFX.setMuted(!on); }
+  function setEffects(on) { try { localStorage.setItem('lm4.fxq', on ? '1' : '0'); localStorage.setItem('fx.fun', on ? '1' : '0'); } catch (e) {} if (window.LochFX && window.LochFX.setFun) window.LochFX.setFun(on); }
   function confetti(big) {
+    if (!fxOn()) return;
     if (window.LochFX && window.LochFX.confetti) return window.LochFX.confetti(big);
     try {
       var c = document.createElement('canvas'); c.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;z-index:200;pointer-events:none';
@@ -377,6 +391,7 @@
     } catch (e) {}
   }
   function chime(big) {
+    if (!soundOn()) return;
     if (window.LochFX && window.LochFX.chime) return window.LochFX.chime(big);
     try {
       var A = window.AudioContext || window.webkitAudioContext; if (!A) return; var a = new A(), t = a.currentTime, notes = big ? [523, 659, 784, 1047] : [659, 880];
@@ -409,13 +424,19 @@
   function open() {
     var u = ui(), c = ctx(), e = earned(), n = DEFS.filter(function (d) { return e[d.id]; }).length;
     u.sheet('Abzeichen', function (b) {
-      var h = '<p style="margin-top:0">Du hast <b>' + n + ' von ' + DEFS.length + '</b> Abzeichen. Sie entstehen von allein, wenn du Aufgaben löst und Funktionen ausprobierst.</p><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">';
+      var h = '<p style="margin-top:0">Du hast <b>' + n + ' von ' + DEFS.length + '</b> Abzeichen. Sie entstehen von allein, wenn du Aufgaben löst und Funktionen ausprobierst.</p>'
+        + '<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 12px"><label style="display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px"><input type="checkbox" id="bdSnd" style="width:22px;height:22px"' + (soundOn() ? ' checked' : '') + '> Töne</label>'
+        + '<label style="display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px"><input type="checkbox" id="bdFx" style="width:22px;height:22px"' + (fxOn() ? ' checked' : '') + '> Effekte (Konfetti, Sprüche)</label>'
+        + '<span style="flex:1 1 100%;font-size:14px;color:var(--mute,#8d99a6)">Standard ist ruhig: ohne Ton und ohne Konfetti. Die Wahl gilt nur auf diesem Gerät.</span></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px">';
       DEFS.forEach(function (d) {
         var p = d.prog(c), got = !!e[d.id], pr = Math.min(p[0], p[1]);
-        h += '<div style="border:1px solid var(--line,#38424d);border-radius:14px;padding:10px;text-align:center;' + (got ? 'background:linear-gradient(135deg,rgba(255,179,0,.22),rgba(255,122,0,.12));' : 'opacity:.62;') + '"><div style="font-size:34px;line-height:1.1;' + (got ? '' : 'filter:grayscale(1);') + '">' + d.icon + '</div><b style="font-size:14px">' + esc(d.name) + '</b><div style="font-size:12px;color:var(--mute,#8d99a6);margin-top:3px">' + esc(d.desc) + '</div><div style="font-size:12px;margin-top:5px;font-weight:600">' + (got ? '✓ erreicht' : pr + ' / ' + p[1]) + '</div></div>';
+        h += '<div style="border:1px solid var(--line,#38424d);border-radius:14px;padding:10px;text-align:center;' + (got ? 'background:linear-gradient(135deg,rgba(255,179,0,.22),rgba(255,122,0,.12));' : 'opacity:.62;') + '"><div style="font-size:34px;line-height:1.1;' + (got ? '' : 'filter:grayscale(1);') + '">' + d.icon + '</div><b style="font-size:14px">' + esc(d.name) + '</b><div style="font-size:14px;color:var(--mute,#8d99a6);margin-top:3px">' + esc(d.desc) + '</div><div style="font-size:14px;margin-top:5px;font-weight:600">' + (got ? '✓ erreicht' : pr + ' / ' + p[1]) + '</div></div>';
       });
       b.innerHTML = h + '</div>';
+      var cs = b.querySelector('#bdSnd'), cf = b.querySelector('#bdFx');
+      if (cs) cs.onchange = function () { setSound(cs.checked); if (cs.checked) chime(false); };
+      if (cf) cf.onchange = function () { setEffects(cf.checked); };
     });
   }
-  window.Badges = { result: result, stat: stat, open: open, check: check, confetti: confetti, chime: chime, earnedIds: function () { return Object.keys(earned()); }, DEFS: DEFS };
+  window.Badges = { result: result, stat: stat, open: open, check: check, confetti: confetti, chime: chime, soundOn: soundOn, fxOn: fxOn, setSound: setSound, setEffects: setEffects, earnedIds: function () { return Object.keys(earned()); }, DEFS: DEFS };
 })();

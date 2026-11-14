@@ -1021,6 +1021,7 @@
     { id: 'vh7', lab: 'vb', cat: 'Heizungsregelung', title: 'Raumregler im Arduino programmieren', level: 3,
       on: 'code',
       text: 'Programmiere den Raumregler: Alle 10 Sekunden (mit millis(), nicht mit delay()) liest du den Fühler an A0 und den Sollwert an A1, rechnest den Fühler mit deiner Skalierung in °C um, regelst mit PI und Anti-Windup und gibst das Stellsignal an Pin 9 aus. Hast du in Station 5 eine Sollwertrampe gewählt, gehört sie in den Sketch. Bei Fühlerbruch oder Kurzschluss geht die Heizung aus. Die serielle Zeile heißt T=<°C>;W=<°C>;Y=<%>;ERR=<n>, ERR ist 1 bei Bruch und 2 bei Kurzschluss. Der Regler aus Station 5 rechnet in Prozent des Messbereichs 10 bis 30 °C.',
+      sprich: 'Programmiere den Raumregler: Alle 10 Sekunden liest du den Fühler und den Sollwert ein. Nimm dafür die Zeitmessung ohne Warten. Rechne den Fühler mit deiner Skalierung in Grad Celsius um, regle mit einem PI-Regler mit Anti-Windup und gib das Stellsignal an Pin 9 aus. Hast du in Station 5 eine Sollwertrampe gewählt, gehört sie in den Sketch. Bei Fühlerbruch oder Kurzschluss geht die Heizung aus. Das Format der seriellen Zeile und die Fehlernummern stehen im Auftragstext. Der Regler aus Station 5 rechnet in Prozent des Messbereichs von 10 bis 30 Grad Celsius.',   /* Sprechfassung fürs Vorlesen: ohne Tabellen, Zahlenlisten und Zeilenformate (vorlesen.js) */
       in: ['heizung.sen', 'heizung.regler'], out: 'heizung.code', type: 'code.sketch', w: 100, pass: null,
       open: { ex: 'Serielle Meldung' },
       assist: { 1: { kind: 'rahmenprogramm' } },
@@ -1045,6 +1046,7 @@
     { id: 'vh8', lab: 'vb', cat: 'Heizungsregelung', title: 'Wochenprotokoll in Python auswerten', level: 2,
       on: 'pi',
       text: 'Dein Python-Programm wertet das Wochenprotokoll aus. Im Kopf stehen daten (Woche mit Absenkung) und daten_ref (Woche ohne Absenkung), je Zeile [t_h, T, W, Y, P_W] für zehn Minuten, dazu DT_S, T_SOLL, BAND_K, NUTZ_VON_H, NUTZ_BIS_H und NUTZ_TAGE. Gib ENERGIE_KWH, KOMFORT_PROZENT, EINSPARUNG_PROZENT und MIN_T aus. Komfort und MIN_T zählen nur in der Nutzzeit von Montag bis Freitag.',
+      sprich: 'Dein Python-Programm wertet das Wochenprotokoll aus. Im Kopf stehen zwei Wochen: eine mit Absenkung und eine ohne, je Zeile ein Abschnitt von zehn Minuten. Dazu kommen feste Werte für Sollwert, Toleranzband und Nutzzeit. Gib die Energie in Kilowattstunden, den Komfort in Prozent, die Einsparung in Prozent und die tiefste Temperatur aus. Die genauen Namen stehen im Auftragstext. Komfort und tiefste Temperatur zählen nur in der Nutzzeit von Montag bis Freitag.',   /* Sprechfassung fürs Vorlesen: ohne Tabellen, Zahlenlisten und Zeilenformate (vorlesen.js) */
       in: ['heizung.code', 'heizung.regler'], out: 'heizung.pi', type: 'pi.script', w: 100, pass: null,
       open: { ex: 'Daten auswerten' },
       hint: ['Jede Zeile steht für 10 Minuten; Energie ist Leistung mal Zeit. Der Zeilenanfang gilt für das ganze Intervall, 3,6 Millionen Wattsekunden sind eine Kilowattstunde.',

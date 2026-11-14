@@ -384,7 +384,13 @@
     return false;
   }
   function trainerOn() {
-    try { return !!(root.Trainer && typeof root.Trainer.active === 'function' && root.Trainer.active()); } catch (e) { return false; }
+    try {
+      if (root.Trainer && typeof root.Trainer.active === 'function' && root.Trainer.active()) return true;
+      /* Trainer.active gibt es nicht: Angebot "Neu hier?" (#trOffer) oder Trainer-Blase (#trBub) sichtbar -> erst der Trainer, danach die Tour */
+      var ids = ['trOffer', 'trBub'];
+      for (var i = 0; i < ids.length; i++) { var e = document.getElementById(ids[i]); if (e && isVisible(e)) return true; }
+      return false;
+    } catch (e) { return false; }
   }
   function context() {
     var key = labKey(), L = dataFor(key), tab = activeTab(), only = L && L.only;
@@ -393,8 +399,8 @@
     var g = document.getElementById('gate');
     return {
       hasData: !!L, off: lsGet(OFFKEY) === '1', seen: lsGet(PFX + key) === '1',
-      search: String((root.location && root.location.search) || '').replace(/^\?/, ''),
-      hash: String((root.location && root.location.hash) || '').replace(/^#/, ''),
+      search: (function (q) { return q === 'trainer' && !root.Trainer ? '' : q; })(String((root.location && root.location.search) || '').replace(/^\?/, '')), /* ?trainer (Lernpfad-Knopf) ohne Trainer auf der Seite ist kein Parameter */
+      hash: L && L.hashOk ? '' : String((root.location && root.location.hash) || '').replace(/^#/, ''), /* hashOk: Seite führt den Block im #-Teil (emblab), das ist kein Sprung */
       exam: examOn(document, key), tabOk: tabOk, gate: !!g, overlay: overlayOpen(), trainer: trainerOn()
     };
   }

@@ -29,6 +29,7 @@ input[type=range]:focus-visible{outline-offset:0}
   #pgRig.rigc #sichtBar,#pgRig.rigc #ampRow{order:1;flex:1 1 0}
   #pgRig.rigc #sichtBar[hidden]{display:none}
   #pgRig.rigc #faultHost{order:2}
+  #pgRig.rigc #faultHost[data-nur]{order:5}   /* reines Tausch-Angebot (keine laufende Fehlersuche): hinter Diagramm und Messgeraeten, damit beide ohne Scrollen sichtbar bleiben */
   /* Diagramm, dann Messgeräte; Merken-Zeile, Qualitätszeile und eingeklappte Karten folgen darunter */
   #pgRig.rigc #cvw{order:3}
   #pgRig.rigc #meters{order:4}
@@ -48,7 +49,7 @@ input[type=range]:focus-visible{outline-offset:0}
   #pgRig.rigc #ampRow .atx small{font-size:12px;line-height:1.25}
   #pgRig.rigc .avs{display:none}
   /* Diagramm: an die Viewport-Höhe gebunden (dvh), nie unter 380 px, sonst legen die Szenen ihre Beschriftungen nicht mehr aus */
-  #pgRig.rigc #cvw{max-height:clamp(380px,calc(100vh - 440px),560px);max-height:clamp(380px,calc(100dvh - 440px),560px)}
+  #pgRig.rigc #cvw{max-height:clamp(300px,calc(100vh - 518px),560px);max-height:clamp(300px,calc(100dvh - 518px),560px)}
   /* Seitenleiste bei iPad-Breite 316 statt 370 px: das Diagramm bekommt Platz für den zweispaltigen Aufbau (Kennlinie | Schaltbild) */
 }
 @media (orientation:landscape) and (max-height:900px) and (min-width:900px) and (max-width:1100px){
@@ -59,3 +60,55 @@ input[type=range]:focus-visible{outline-offset:0}
 @media (orientation:landscape) and (max-height:900px) and (min-width:900px){
   #pgRig.rigc #meters.ger{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin-top:6px}
 }
+
+/* ---- Grafik neben die Eingaben (Lab-Familie mit <body class="gs">: lag, kal, net, rec, ssl, kon, lad, its, hwl, mch) ----
+   Die Grafik der Reiter (aus <prefix>viz.js eingehängt) ist direktes Kind von .wrap (rec: erstes Kind der Rechenweg-Box, ssl Schutz: .inst in #schOut).
+   Ab 900 px: zwei Spalten, links Eingaben und Rechenweg (DOM-Reihenfolge), rechts die erste Grafik, sticky und nie höher als der sichtbare Bereich.
+   Unter 900 px: eine Spalte; steht die Grafik im DOM hinter dem Rechenweg (#...Out), rückt sie per order davor. Nur CSS, kein DOM-Umbau.
+   Weitere Grafiken desselben Reiters bleiben in der linken Spalte an ihrem Platz. Der Aufgaben-Reiter hat keine solche Grafik und bleibt unverändert. */
+@media(min-width:900px){
+  .gs .wrap:is(:has(> :is(.vzcard,.nv,.vz-box,.card.vz,[id^="vz-"]):not(:empty)),:has(> [id$="Out"] > .rv),:has(> #schOut > .inst)){display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);column-gap:14px;align-items:start;max-width:1280px}
+  :where(.gs .wrap:is(:has(> :is(.vzcard,.nv,.vz-box,.card.vz,[id^="vz-"]):not(:empty)),:has(> [id$="Out"] > .rv),:has(> #schOut > .inst))) > *{grid-column:1}
+  .gs .wrap:is(:has(> [id$="Out"] > .rv),:has(> #schOut > .inst)) > :is(#vertOut,#fallOut,#fristOut,#lohnOut,#schOut){display:contents}
+  :where(.gs .wrap) > :is(#vertOut,#fallOut,#fristOut,#lohnOut,#schOut) > *{grid-column:1}
+  .gs .wrap > :is(.vzcard,.nv,.vz-box,.card.vz,[id^="vz-"]):not(:empty):not(:is(.vzcard,.nv,.vz-box,.card.vz,[id^="vz-"]) ~ *),
+  .gs .wrap > :is(#vertOut,#fallOut,#fristOut,#lohnOut) > .rv:not(.rv ~ .rv),
+  .gs .wrap > #schOut > .inst:not(.inst ~ .inst){grid-column:2;grid-row:1 / span 99;position:sticky;top:8px;align-self:start;max-height:calc(100vh - 260px);max-height:calc(100dvh - 260px);overflow:auto;overscroll-behavior:contain;margin-top:0}
+}
+@media(max-width:899.98px){
+  .gs .wrap:has(> [id$="Out"] ~ :is(.vzcard,.nv,.vz-box,.card.vz,[id^="vz-"]):not(:empty)){display:flex;flex-direction:column}
+  .gs .wrap > [id$="Out"]:has(~ :is(.vzcard,.nv,.vz-box,.card.vz,[id^="vz-"]):not(:empty)){order:2}
+  .gs .wrap > [id$="Out"] ~ :is(.vzcard,.nv,.vz-box,.card.vz,[id^="vz-"]):not(:empty){order:1}
+  .gs .wrap:has(> #schOut > .inst){display:flex;flex-direction:column}
+  .gs .wrap > #schOut:has(> .inst){display:contents}
+  .gs .wrap > #schOut > *{order:2}
+  .gs .wrap > #schOut > .inst{order:1}
+}
+
+/* ---- Prüfampel (analab, elslab, wsllab, ntslab; Markup aus updateAmp bzw. updateAmpel, Klasse amp2) ----
+   Drei kleine Lampen (rot, gelb, grün; die aktive leuchtet und trägt ihr Symbol), davor der Name "Prüfampel", dahinter Zustandswort und Marge in einer Zeile,
+   statt eines eigenen Kastens. Farbe ist nie das einzige Merkmal: Position, Symbol (✗ ! ✓ –) und Wort. "?" blendet die Erklärung ein. Nur Farbtokens der Lab-Seite. */
+#pgRig #ampRow.amp2{--apl-ink:#101418;--apl-r:#ff5c5c;--apl-y:#ffb340;--apl-g:#4cd964;display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px 10px;border:0;border-radius:0;background:none;padding:2px 2px;margin:0 0 6px;min-height:0}
+@media(prefers-color-scheme:light){:root:not([data-theme=dark]) #pgRig #ampRow.amp2{--apl-ink:#ffffff;--apl-r:#c42b2b;--apl-y:#a85d00;--apl-g:#17792f}}
+:root[data-theme=light] #pgRig #ampRow.amp2{--apl-ink:#ffffff;--apl-r:#c42b2b;--apl-y:#a85d00;--apl-g:#17792f}
+#ampRow.amp2 .aplamps{flex:none;display:inline-flex;gap:5px;padding:4px 7px;border-radius:999px;background:var(--panel2);border:1px solid var(--line)}
+#ampRow.amp2 .apl{box-sizing:border-box;width:22px;height:22px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font:800 13px/1 system-ui,sans-serif;color:var(--apl-ink)}
+#ampRow.amp2 .apl.r.on{background:var(--apl-r);border-color:var(--apl-r)}
+#ampRow.amp2 .apl.y.on{background:var(--apl-y);border-color:var(--apl-y)}
+#ampRow.amp2 .apl.g.on{background:var(--apl-g);border-color:var(--apl-g)}
+#ampRow.amp2 .atx{position:relative;flex:1 1 180px;min-width:0;min-height:40px;padding-right:44px;display:flex;flex-direction:column;gap:2px}
+#ampRow.amp2 .ap1{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:24px}
+#ampRow.amp2 .apt{font-size:14px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
+#ampRow.amp2 .aps{font-size:15px;color:var(--fg)}
+#ampRow.amp2 .apm{font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
+#ampRow.amp2 .apd{font-size:14px;line-height:1.35;color:var(--mute)}
+#ampRow.amp2 .apd.nt{color:var(--fg)}
+#ampRow.amp2 .apz{min-height:40px;padding:0;font:inherit;font-weight:700;color:var(--accent);text-decoration:underline;text-underline-offset:3px;text-align:left}
+#ampRow.amp2 .apq{position:absolute;top:0;right:0;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-size:14px;font-weight:700}
+#ampRow.amp2 .aphelp{margin:4px 0 0;padding:6px 10px;font-size:14px;line-height:1.4;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:8px}
+#ampRow.amp2 .aphelp[hidden]{display:none}
+@media print{#ampRow.amp2 .apq,#ampRow.amp2 .apz{display:none}}
+
+/* ---- Zoom erlaubt (WCAG 1.4.4): Pinch-Zoom ist frei, der Doppeltipp-Zoom wird auf Bedienelementen unterdrueckt.
+   Element-Selektoren, daher schlagen Klassenregeln wie touch-action:none (Zeichenflaechen, Griffe) und pan-y diese Regel weiterhin. ---- */
+a,button,summary,select,label,[role=button],[role=tab],[role=switch]{touch-action:manipulation}

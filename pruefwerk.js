@@ -11,9 +11,9 @@
   const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(k) || ''); return v == null ? d : v; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
   const B = root.PR_BANK, TOPICS = B.TOPICS, TOP = Object.fromEntries(TOPICS.map(t => [t.k, t]));
-  const LABPAGE = { sch: 'schaltplan.html', sim: 'simlab.html', digi: 'digilab.html', mess: 'messlab.html', code: 'codelab.html', haus: 'hauslab.html', loch: 'layout.html' };
+  const LABPAGE = { sch: 'schaltplan.html', sim: 'simlab.html', digi: 'digilab.html', mess: 'messlab.html', code: 'codelab.html', haus: 'hauslab.html', loch: 'layout.html', hwl: 'hwllab.html' };
   const newS = () => ({ hist: [], best: {}, tr: {}, rep: {}, streak: { cur: 0, best: 0 }, exam: null, train: null, answers: {}, flags: {} });
-  const X = root.PR_EXAM, Co = root.Coach;   // Ziehlogik (pruefexam.js) und Lernempfehlung (coach.js); ohne sie läuft das Lab wie bisher
+  const X = root.PR_EXAM, Co = root.Coach, PK = root.PKarten;   // Ziehlogik (pruefexam.js) und Lernempfehlung (coach.js); ohne sie läuft das Lab wie bisher
 
 
   /* ---------------- Prüfungs-Pool im Stil der Kammer (Teil 1, Teil 2 Systementwurf und Funktions- und Systemanalyse) ---------------- */
@@ -41,7 +41,7 @@
     return { id: p.id, k: 'p:' + p.g + '@' + AREAS[areaOfTeil(p.teil)].n, type: 'num', q: p.q, ans: p.ans, unit: p.u, tol: p.tol, w: p.w, pts: 4, teil: p.teil, pool: true, niv: p.n };
   }
   function drawPool(g, n, seed, ar) { // g = Gruppe oder 'alle', ar = Bereich; etwa 60 % Mehrfachwahl, 40 % Rechnen
-    const r = B.seeded(seed), src = POOL.q.filter(p => (g === 'alle' ? p.teil !== 'WiSo' : p.g === g) && (!ar || AREAS[ar].pool.includes(p.teil))), mc = r.shuffle(src.filter(p => p.o)), nu = r.shuffle(src.filter(p => !p.o));
+    const r = B.seeded(seed), src = POOL.q.filter(p => (g === 'alle' ? p.teil !== 'WiSo' : p.g === g) && (!ar || AREAS[ar].pool.includes(p.teil))), ep = X && X.exPick ? X.exPick(src, r) : { keep: src, rest: [] }, mc = r.shuffle(ep.keep.filter(p => p.o)).concat(r.shuffle(ep.rest.filter(p => p.o))), nu = r.shuffle(ep.keep.filter(p => !p.o)).concat(r.shuffle(ep.rest.filter(p => !p.o)));
     const wantN = Math.min(nu.length, Math.round(n * 0.4)), out = nu.slice(0, wantN).concat(mc.slice(0, n - wantN));
     if (out.length < n) out.push(...mc.slice(n - wantN).concat(nu.slice(wantN)).slice(0, n - out.length));
     return r.shuffle(out).map(p => poolQ(p, r));
@@ -72,6 +72,8 @@
     qs.forEach(q => { max += q.pts; const ok = isRight(q, ans[q.id]); if (ok) pts += q.pts; const t = tp[q.k] = tp[q.k] || [0, 0]; t[1]++; if (ok) t[0]++; });
     return { pts, max, topics: tp, pct: max ? Math.round(100 * pts / max) : 0 };
   }
+  /* Falsch beantwortete Fragen werden zu Lernkarten (pkarten.js, Karten-Filter „Aus Prüfung“): Fach 1, ohne Duplikate, höchstens 200 */
+  function merkeFalsch(qs) { if (!PK || testing || !qs || !qs.length) return; try { const r = PK.speichern(qs); if (r.neu) toast(r.neu === 1 ? '1 Lernkarte aus deinem Fehler angelegt (Lernkarten, „Aus Prüfung“)' : r.neu + ' Lernkarten aus deinen Fehlern angelegt (Lernkarten, „Aus Prüfung“)'); } catch (e) {} }
   function addTr(tp) { const now = Date.now(); Object.keys(tp).forEach(k => { const t = S.tr[k] = S.tr[k] || { r: 0, n: 0 }; t.r += tp[k][0]; t.n += tp[k][1]; t.t = now; }); }   // t = letzte Übung (nur lokal, für die Lernempfehlung; der Export liest nur r und n)
 
   /* ---------------- Fenster und Meldungen ---------------- */
@@ -202,8 +204,8 @@
   const allGroups = teile => [...new Set(POOL.q.filter(p => teile.includes(p.teil)).map(p => p.g))];
   function startOrig(v, limit, gpo) { // Prüfungsaufbau wie in der Kammerprüfung: Teil A gebunden mit Abwahl, Teil B Rechenaufgaben; Ziehen mit Niveau-Quote über pruefexam.js
     const c = gpo ? Object.assign({}, VARIANTS[v], { pool: ['SysE', 'FuSa'] }) : VARIANTS[v], seed = gpo ? gpo.seed : Date.now() % 1000000000, r = B.seeded(seed), gs = allGroups(c.pool), cfg = { teil: c.pool, groups: gs, niveau: 'mix' };
-    const A = X.draw(POOL, Object.assign({ n: c.nA, only: 'mc' }, cfg), seed).items.map(p => poolQ(p, r));
-    const Bq = c.nB ? X.draw(POOL, Object.assign({ n: c.nB, only: 'num' }, cfg), seed + 7).items.map(p => poolQ(p, r)) : [];
+    const dA = X.draw(POOL, Object.assign({ n: c.nA, only: 'mc' }, cfg), seed), A = dA.items.map(p => poolQ(p, r));
+    const Bq = c.nB ? X.draw(POOL, Object.assign({ n: c.nB, only: 'num', avoid: dA.meta.ex }, cfg), seed + 7).items.map(p => poolQ(p, r)) : [];
     A.forEach(q => { q.pts = 1; q.part = 'A'; }); Bq.forEach(q => { q.pts = 10; q.part = 'B'; });
     const fix = r.shuffle(A.map((q, i) => i)).slice(0, c.fix);
     S.exam = Object.assign(examBase({ v, seed, qs: A.concat(Bq), limit: limit == null ? c.limit : limit, orig: { keep: c.keep, fix, skip: {} }, cfg: Object.assign(X.cfgShort({ groups: gs, niveau: 'mix', n: A.length + Bq.length }), gpo ? { gp: 1, seed } : {}), area: gpo ? 'teil2' : area }), gpo ? { gp: 1 } : {}); persist(); render();
@@ -237,7 +239,7 @@
     if (rp) { e.res.byNiveau = rp.byNiveau; e.res.byTeil = rp.byTeil; e.res.slow = rp.slow; e.res.unanswered = rp.unanswered; e.res.marked = rp.marked; }
     const h = { kind: 'exam', v: e.v || 'kurz', area: (e.v === 'teil1' ? 'teil1' : e.v === 'syse' || e.v === 'fusa' ? 'teil2' : e.v === 'mix' ? (e.area || 'beide') : 'beide'), t: now, pct: c.pct, pts: c.pts, max: c.max, note: n[0], secs: e.res.secs, topics: c.topics };
     if (rp) h.byNiveau = rp.byNiveau; if (e.cfg) h.cfg = e.cfg;
-    S.hist.push(h); addTr(c.topics);
+    S.hist.push(h); addTr(c.topics); merkeFalsch(X && X.falsch ? X.falsch(e, isRight, c.dropped) : e.qs.filter(q => !(c.dropped || []).includes(q.id) && answered(e, q) && !isRight(q, e.ans[q.id])));
     stat('prExam', 1); persist(); render(); if (c.pct >= 50 && !testing) toast('Bestanden: ' + c.pct + ' % (Note ' + n[0] + ')');
   }
   const VNAME = v => (v === 'kurz' || !v ? 'Kurz-Probe' : v === 'mix' ? 'Eigener Mix' : VARIANTS[v] ? VARIANTS[v].t : String(v));
@@ -283,7 +285,7 @@
       + '<p class="mute small">Nach dem Korrigieren kannst du dir hier eintragen, wie viel du je Aufgabe geschafft hast. Das ist nur eine Orientierung für dich: Es zählt <b>nicht</b> in Note, Verlauf und Statistik.</p>'
       + W24.map((t, i) => '<label>' + (i + 1) + '. ' + esc(t[0]) + ' (' + t[1] + ' Punkte): <b><span data-w24o="' + i + '">' + ((w && w.per && w.per[i]) || 0) + '</span> %</b><input type="range" min="0" max="100" step="5" value="' + ((w && w.per && +w.per[i]) || 0) + '" data-w24="' + i + '" aria-label="Aufgabe ' + (i + 1) + ' ' + esc(t[0]) + ', ' + t[1] + ' Punkte, geschafft in Prozent"></label>').join('')
       + '<p id="w24Sum" role="status"></p><div class="row"><button class="btn" id="w24Save">Selbsteinschätzung merken</button></div>' + (w && w.t ? '<p class="mute small">Zuletzt gemerkt am ' + new Date(w.t).toLocaleDateString('de-DE') + ': ' + w.pts + ' von 100 Punkten (etwa Note ' + w.note + '). Nur ein Hinweis, nicht gewertet.</p>' : '') + '</div>'
-      + '<div class="card warn"><b>Hinweis zum Prüfungs-Pool:</b> Die Aufgaben von Teil 1 und Teil 2 sind eigene Übungsaufgaben im Stil der Kammerprüfungen. Sie wurden mit KI erstellt und sind vom Ausbilder noch nicht fachlich freigegeben. Bei Zweifeln zählt das Tabellenbuch.</div>'
+      + '<div class="card warn"><b>Hinweis zum Prüfungs-Pool:</b> Die Aufgaben von Teil 1 und Teil 2 sind eigene Übungsaufgaben im Stil der Kammerprüfungen. Sie wurden mit KI erstellt, durch eine zweite KI-Prüfung (Stand 11/2026) fachlich durchgesehen; die Freigabe durch den Ausbilder steht aus. Bei Zweifeln zählt das Tabellenbuch.</div>'
       + '<div class="card"><div class="row small mute">' + (isGod ? '<span>Ausbildermodus an: Pause und „ohne Zeitlimit“ sind möglich.</span><button class="btn s" id="godOff">Beenden</button>' : '<button class="btn s" id="godOn">Ausbildermodus (Passwort)</button><span>Nur für Ausbilder: Pause und Prüfung ohne Zeit.</span>') + '</div></div>'
       + (S.hist.filter(inArea).length ? '<div class="card"><h3>Bisherige Prüfungen</h3>' + histHtml() + '</div>' : '');
     const val = n => { const x = $('input[name="' + n + '"]:checked', v); return x ? x.value : ''; }, picked = () => $$('input[data-g]:checked', v).map(x => x.dataset.g);
@@ -398,7 +400,7 @@
       const ts = topicStats();
       v.innerHTML = '<div class="card"><h2>Training</h2><p>Wähle ein Thema: Du bekommst zehn Fragen (Rechnen und Mehrfachwahl) und nach jeder Antwort sofort die Erklärung. Für die Aufgaben im Lab brauchst du pro Thema 80 % in einem Durchgang.</p><div class="tgrid">'
         + ts.map(x => '<button class="tbtn" data-k="' + x.t.k + '"><span class="ti1">' + x.t.icon + '</span><b>' + esc(x.t.t) + '</b><span class="mute small">' + (x.n ? x.p + ' % richtig (' + x.n + ' Fragen)' : 'noch nicht geübt') + (x.best >= 80 ? ' · ✓ 80 % geschafft' : '') + '</span></button>').join('') + '</div>'
-        + '<h3>Prüfungs-Pool ' + AREAS[area].t + ' im Stil der Kammer</h3><p class="mute small">Aufgaben im Stil von ' + AREAS[area].t + ' (KI-Entwurf, noch nicht fachlich freigegeben). Nach Prüfungsthemen:</p><div class="tgrid">' + POOL.groups.filter(g => hasQ(g.k, area)).map(g => { const kk = 'p:' + g.k + '@' + AREAS[area].n, s = S.tr[kk] || { r: 0, n: 0 }; return '<button class="tbtn" data-k="' + kk + '"><span class="ti1">' + g.icon + '</span><b>' + esc(g.t) + '</b><span class="mute small">' + (s.n ? Math.round(100 * s.r / s.n) + ' % richtig (' + s.n + ' Fragen)' : 'noch nicht geübt') + '</span></button>'; }).join('') + '</div>'
+        + '<h3>Prüfungs-Pool ' + AREAS[area].t + ' im Stil der Kammer</h3><p class="mute small">Aufgaben im Stil von ' + AREAS[area].t + ' (KI-Entwurf, durch eine zweite KI-Prüfung fachlich durchgesehen; Freigabe durch den Ausbilder steht aus). Nach Prüfungsthemen:</p><div class="tgrid">' + POOL.groups.filter(g => hasQ(g.k, area)).map(g => { const kk = 'p:' + g.k + '@' + AREAS[area].n, s = S.tr[kk] || { r: 0, n: 0 }; return '<button class="tbtn" data-k="' + kk + '"><span class="ti1">' + g.icon + '</span><b>' + esc(g.t) + '</b><span class="mute small">' + (s.n ? Math.round(100 * s.r / s.n) + ' % richtig (' + s.n + ' Fragen)' : 'noch nicht geübt') + '</span></button>'; }).join('') + '</div>'
         + '<div class="row"><button class="btn" data-k="p:alle@' + AREAS[area].n + '">🎓 Pool ' + AREAS[area].t + ' gemischt</button><button class="btn" data-k="alle">🎲 Alle Themen gemischt</button><button class="btn" id="serie">🔥 Rechenserie (endlos)</button></div><p class="mute small">Rechenserie: Immer neue Rechenaufgaben aus allen Themen. Eine falsche Antwort setzt die Serie zurück. Rekord: ' + (S.streak.best || 0) + '.</p></div>';
       $$('[data-k]', v).forEach(b => { b.onclick = () => startTrain(b.dataset.k); }); $('#serie').onclick = () => startTrain(null, 'serie'); return;
     }
@@ -416,7 +418,7 @@
     const inp = $('input.numin', v); if (inp) { inp.focus(); inp.onkeydown = e => { if (e.key === 'Enter' && $('#tOk')) $('#tOk').click(); }; }
     if ($('#tOk')) $('#tOk').onclick = () => {
       if (t.ans[q.id] == null || t.ans[q.id] === '') { toast('Gib zuerst eine Antwort ein'); return; }
-      const ok = isRight(q, t.ans[q.id]); t.shown = true; addTr({ [q.k]: [ok ? 1 : 0, 1] });
+      const ok = isRight(q, t.ans[q.id]); t.shown = true; addTr({ [q.k]: [ok ? 1 : 0, 1] }); if (!ok) merkeFalsch([q]);
       if (t.mode === 'serie') { if (ok) { S.streak.cur++; S.streak.best = Math.max(S.streak.best, S.streak.cur); stat('prSerie', S.streak.best, 'max'); } else S.streak.cur = 0; }
       persist(); render();
     };
@@ -486,7 +488,7 @@
 
   function poolBankHtml() {
     const gt = Object.fromEntries(POOL.groups.map(g => [g.k, g.t])), TT = { Teil1: 'Teil 1', WiSo: 'Teil 2: Wirtschafts- und Sozialkunde', SysE: 'Teil 2: Systementwurf', FuSa: 'Teil 2: Funktions- und Systemanalyse' };
-    return '<h2>Prüfungs-Pool (KI-Entwurf, ' + POOL.q.length + ' Aufgaben)</h2><p class="mute small">Eigene Aufgaben im Stil der Kammerprüfungen (Teil 1, Teil 2). Noch nicht fachlich freigegeben: bitte gegenlesen und Fehler melden.</p>'
+    return '<h2>Prüfungs-Pool (KI-Entwurf, ' + POOL.q.length + ' Aufgaben)</h2><p class="mute small">Eigene Aufgaben im Stil der Kammerprüfungen (Teil 1, Teil 2). Durch eine zweite KI-Prüfung fachlich durchgesehen, Freigabe durch den Ausbilder steht aus: bitte gegenlesen und Fehler melden.</p>'
       + ['Teil1', 'SysE', 'FuSa', 'WiSo'].map(tl => '<h3>' + TT[tl] + '</h3>' + POOL.q.filter(p => p.teil === tl).map(p => '<div class="bk"><b>' + esc(p.id + ' · ' + gt[p.g] + ': ' + p.q) + '</b>' + (p.o ? p.o.map((o, k) => '<div class="small ' + (k === p.r ? 'good' : 'mute') + '">' + (k === p.r ? '✓ ' : '· ') + esc(o) + '</div>').join('') : '<div class="good small">✓ ' + esc(B.de(B.sig(p.ans, 4)) + (p.u ? ' ' + p.u : '')) + '</div>') + '<div class="small">' + esc(p.w) + '</div></div>').join('')).join('');
   }
   function bankView2() { bankView(); const sb = [...document.querySelectorAll('.backdrop .sb')].pop(); if (sb) sb.insertAdjacentHTML('beforeend', poolBankHtml()); }

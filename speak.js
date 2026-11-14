@@ -93,11 +93,12 @@
   }
   function say(txt, onend) { stop(); sayRaw(txt, onend); }
   /* base = Text der Aufnahme, extra = dynamischer Zusatz (immer Geräte-Stimme, nach dem Ende der Aufnahme) */
-  /* onend (optional): wird gerufen, wenn alles gesprochen ist (nicht nach stop()). Rueckgabe: true = Aufnahme laeuft, false = Geraetestimme */
-  function speak(k, base, extra, onend) {
+  /* onend (optional): wird gerufen, wenn alles gesprochen ist (nicht nach stop()). Rueckgabe: true = Aufnahme laeuft, false = Geraetestimme.
+     opts.nurAufnahme (optional, Aufgaben-Vorlesen): nie die Geraetestimme; ohne passende Aufnahme oder bei Abspielfehler endet es still (onend wird gerufen, Rueckgabe false). */
+  function speak(k, base, extra, onend, opts) {
     stop();
-    var my = tok, A = window.SpeakAudio, e = A && A[key(k)], all = base + (extra ? ' ' + extra : '');
-    var fb = function () { cur = null; if (my === tok) sayRaw(all, onend); };
+    var my = tok, A = window.SpeakAudio, e = A && A[key(k)], all = base + (extra ? ' ' + extra : ''), nur = !!(opts && opts.nurAufnahme);
+    var fb = function () { cur = null; if (my === tok) { if (nur) { if (onend) onend(); } else sayRaw(all, onend); } };
     if (!e || e.h !== hash(base) || !window.Audio) { fb(); return false; }
     try {
       var a = new Audio('sprache/' + e.f + '.mp3'); cur = a;

@@ -498,7 +498,7 @@
           }
         ],
         heft: "lernen-pcb.html",
-        wiki: ["bg-englisch-werkzeug", "bg-gefahrstoffe", "bg-psa", "bg-ip-schutzart", "nw-ip-kennziffern", "bt-ce"],
+        wiki: ["lab-pcb-fehlerbild", "bg-englisch-werkzeug", "bg-gefahrstoffe", "bg-psa", "lab-fli", "bg-ip-schutzart"],
         projekt: [
           { pid: "garage", station: ["vg4"] },
           { pid: "uhr", station: ["vu5"] },
@@ -872,12 +872,12 @@
         labs: [{ lab: "reg", bereich: "*" }],
         heft: "lernen-reg.html",
         wiki: [
+          "lab-rg2",
           "bg-steuern-regeln",
           "fo-gleichstrommotor",
           "bg-blockschaltbild",
           "bg-gegenkopplung",
-          "fo-pwm-tastgrad",
-          "bt-ntc"
+          "fo-pwm-tastgrad"
         ],
         projekt: [{ pid: "heizung", station: ["vh4", "vh5"] }],
         pruefung: null

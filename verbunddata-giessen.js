@@ -1193,6 +1193,7 @@
     { id: 'vw8', lab: 'vb', cat: 'Gartenbewässerung', title: 'Sensorknoten im Arduino programmieren', level: 3,
       on: 'code',
       text: 'Der Arduino liest den ADU-Wert an A0, mittelt über mehrere Messungen, rechnet mit deiner Skalierung in Millimeter um und meldet alle 100 Millisekunden seriell eine Zeile im Format FILL=<mm>;PUMP=<0/1>;ERR=<n>. PUMP ist 1, wenn der Füllstand mindestens die Schwelle min erreicht. Bei Drahtbruch ist ERR gleich 1. Dein Probelauf mit 120 Zeilen kommt in den Slot.',
+      sprich: 'Der Arduino liest den Wert am Analogeingang, mittelt über mehrere Messungen und rechnet mit deiner Skalierung in Millimeter um. Alle 100 Millisekunden meldet er seriell eine Zeile mit Füllstand, Pumpe und Fehler. Das genaue Zeilenformat steht im Auftragstext. Die Pumpe ist an, wenn der Füllstand mindestens die Schwelle erreicht. Bei Drahtbruch meldet er einen Fehler. Dein Probelauf mit 120 Zeilen kommt in den Slot.',   /* Sprechfassung fürs Vorlesen: ohne Tabellen, Zahlenlisten und Zeilenformate (vorlesen.js) */
       in: ['giess.sen'], out: 'giess.code', type: 'code.sketch', w: 100, pass: null,
       open: { ex: 'Serielle Meldung' },
       hint: ['Lies in einer Schleife mehrmals analogRead(A0), addiere die Werte und teile durch die Anzahl. Das dämpft das Rauschen. Mit acht Werten sinkt die Streuung auf gut ein Drittel.',
@@ -1213,6 +1214,7 @@
     { id: 'vw9', lab: 'vb', cat: 'Gartenbewässerung', title: 'Gießplan in Python rechnen', level: 2,
       on: 'pi',
       text: 'Dein Python-Programm wertet das serielle Protokoll aus der Sensorknoten-Station aus. Im Kopf stehen daten (die Zeilen), Q_LPM, V_BEET_L, DT_S und MIN_MM. Gib die Zeilen LAUFZEIT_S, LITER, GIESSZEIT_S, FREIGABE (ja oder nein) und MIN_FUELL aus. Die Liter folgen aus Förderstrom mal Laufzeit.',
+      sprich: 'Dein Python-Programm wertet das serielle Protokoll aus der Sensorknoten-Station aus. Im Kopf stehen die Zeilen und vier feste Werte. Gib die Laufzeit, die Liter, die Gießzeit, die Freigabe und den kleinsten Füllstand aus. Die genauen Namen stehen im Auftragstext. Die Liter folgen aus Förderstrom mal Laufzeit.',   /* Sprechfassung fürs Vorlesen: ohne Tabellen, Zahlenlisten und Zeilenformate (vorlesen.js) */
       in: ['giess.code'], out: 'giess.pi', type: 'pi.script', w: 100, pass: null,
       open: { ex: 'Daten auswerten' },
       hint: ['Gehe mit einer for-Schleife durch die Zeilen. Zerlege jede Zeile mit split(";") und danach split("=") und wandle die Werte mit float() und int() um.',
