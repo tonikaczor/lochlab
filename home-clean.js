@@ -10,7 +10,7 @@
   const doc = document, html = doc.documentElement;
   const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const set = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} };
-  const K = { duell: 'lm4.home.duell', foot: 'lm4.home.foot', kompakt: 'lm4.home.kompakt' };
+  const K = { duell: 'lm4.home.duell', foot: 'lm4.home.foot', kompakt: 'lm4.home.kompakt', stu: 'lm4.home.studium', aus: 'lm4.home.ausbildung', mw: 'lm4.home.meinweg' };
 
   function toggle(id, cls, label, key, target, openDefault) {
     if (doc.getElementById(id) || !target || !target.parentNode) return null;
@@ -37,15 +37,20 @@
     rub.parentNode.insertBefore(d, rub.nextSibling);
   }
 
-  let foot = null;
+  let foot = null, mwt = null;
   function build() {
     bar();
+    // Studium und Technik, Ausbildung, Mein Weg (bis zum Lernpfad): Standard offen, Wahl wird gemerkt
+    const bw = doc.getElementById('beWege'), wul = bw && bw.querySelector ? bw.querySelector('ul') : null;
+    if (wul && !doc.getElementById('clStu')) toggle('clStu', 'cl-stu-zu', 'Studium und Technik', K.stu, wul, true);
+    if (doc.getElementById('beTabs') && !doc.getElementById('clAus')) toggle('clAus', 'cl-aus-zu', 'Ausbildung', K.aus, doc.getElementById('beTabs'), true);
+    if (!mwt && doc.getElementById('meinWeg')) mwt = toggle('clMw', 'cl-mw-zu', 'Mein Weg, Coach und Lernpfad', K.mw, doc.getElementById('meinWeg'), true);
     if (!doc.getElementById('clDuell')) toggle('clDuell', 'cl-duell-zu', 'Duell, Fehler-Tausch, Wettbewerb', K.duell, doc.getElementById('duellBand'), false);
     if (!foot) foot = toggle('clFoot', 'cl-foot-zu', 'Mehr: Lernstand, Lernhefte, Ausbilder', K.foot, doc.getElementById('foot'), false);
   }
   // Die Schnellleiste unten springt zu #footBtns: dann den Fußbereich öffnen
-  doc.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href="#footBtns"]'); if (a && foot) foot.open(); });
+  doc.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href="#footBtns"]'); if (a && foot) foot.open(); const l = e.target.closest && e.target.closest('a[href="#lpHd"],a[href="#lernpfad"]'); if (l && mwt) mwt.open(); });
   build();
   // Das Duell-Band und die Chips legen andere Skripte erst nach dem Laden an
-  let n = 0; const t = setInterval(() => { build(); if (++n > 20 || (doc.getElementById('clDuell') && doc.getElementById('clBar') && foot)) clearInterval(t); }, 250);
+  let n = 0; const t = setInterval(() => { build(); if (++n > 20 || (doc.getElementById('clDuell') && doc.getElementById('clBar') && foot && mwt && doc.getElementById('clStu') && doc.getElementById('clAus'))) clearInterval(t); }, 250);
 })(typeof window !== 'undefined' ? window : this);

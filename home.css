@@ -366,3 +366,7 @@ html.mw #wdhHint{display:none}
 html.mw-zu:not(.rub-free) #planRow,html.mw-zu:not(.rub-free) #vbRow,html.mw-zu:not(.rub-free) #rub,html.mw-zu:not(.rub-free) #clBar,html.mw-zu:not(.rub-free) #groups,html.mw-zu:not(.rub-free) #cardsFlat{display:none}
 @media(max-width:899px){.mw-g{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:639px){.mw h2{font-size:18px}.mw-g,.mw-row{gap:10px}}
+
+/* Studium und Technik, Ausbildung, Mein Weg einklappbar (v62.173): die Schalter tragen die Überschrift, die alten Beschriftungen bleiben für Leser im Text */
+#beWege>.be-lab{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html.cl-stu-zu #beWege>ul,html.cl-aus-zu #beTabs,html.cl-aus-zu #beSoon,html.cl-mw-zu #meinWeg,html.cl-mw-zu #top>.coach,html.cl-mw-zu #lernpfad{display:none}
