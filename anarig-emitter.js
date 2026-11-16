@@ -10,7 +10,7 @@
  * Steuerwerte (SI): ub (V), ue (V, Amplitude), f (Hz), rg, r1, r2, rc, re1, re2 (Ohm), ce (Schalter), c1, c2 (F), b, rl (Ohm, oberer Anschlag = Leerlauf), fehler, zielUce (V, 0 = keine),
  *   zielVu (Betrag, 0 = keine), ansicht, Taste fire (Aussteuerungsdurchlauf: die Eingangsamplitude steigt von 1 mV auf die Einstellung).
  * Messgeraete: ic (mA), ib (uA), uce, ues, ube (V), vu, vus (mit Vorzeichen), rin, ra (kOhm), fu (Hz), uaus (V, Spitze), klirr (%), uaMax (V), gm (mS), rbe (kOhm).
- * Ampel (nur mit Vorgabe): gruen = Arbeitspunkt im Fenster ap_fenster*U_B (falls gesetzt), |V_u| auf 5 % (falls gesetzt), kein Begrenzen; gelb = Arbeitspunkt bis 2 Fenster bzw. V_u 5-10 %;
+ * Ampel (nur mit Vorgabe): gruen = Arbeitspunkt im Fenster ap_fenster = 1 V (falls gesetzt), |V_u| auf 5 % (falls gesetzt), kein Begrenzen; gelb = Arbeitspunkt bis 2 Fenster bzw. V_u 5-10 %;
  *   rot = Sperren, Saettigung, defekt, Begrenzen oder Vorgabe verfehlt. Fenster sind Lehrfaustwerte (Uebungswerte, F6, F16).
  */
 (function (root) {
@@ -67,7 +67,7 @@
     { key: 'fehler', label: 'Fehlerfall', type: 'select', value: 'keiner', options: opt(FEHLER), gruppe: 'fehler', sicht: 'formel',
       help: 'Fehlerfall der Simulation (nur Übung, kein Hinweis zum Reparieren): R_1, R_2, R_C oder R_E offen, C_E oder C_1 offen, Transistor defekt oder Versorgung fehlt. Der Kern rechnet das Ergebnis physikalisch richtig; bei der Fehlersuche ist das Feld gesperrt und verdeckt.' },
     { key: 'zielUce', label: 'Vorgabe U_CE im Arbeitspunkt (0 = keine)', type: 'slider', scale: 'lin', min: 0, max: 30, step: 0.1, unit: 'V', unitKind: 'V', value: 0, gruppe: 'ziel', sicht: 'kennlinie',
-      help: 'Vorgabe für U_CE im Arbeitspunkt. Bei 0 ist keine Vorgabe gesetzt und die Ampel bleibt grau. Grün gilt im Fenster um die Vorgabe (Übungswert, F6): Der Arbeitspunkt soll in der Mitte der Aussteuerung liegen.' },
+      help: 'Vorgabe für U_CE im Arbeitspunkt. Bei 0 ist keine Vorgabe gesetzt und die Ampel bleibt grau. Grün gilt im Fenster von ±1 V um die Vorgabe, bei 6 V also von 5,0 V bis 7,0 V (Übungswert, F6): Der Arbeitspunkt soll in der Mitte der Aussteuerung liegen.' },
     { key: 'zielVu', label: 'Vorgabe Betrag von V_u (0 = keine)', type: 'slider', scale: 'lin', min: 0, max: 500, step: 0.5, unit: '', unitKind: '', value: 0, gruppe: 'ziel', sicht: 'formel',
       help: 'Vorgabe für den Betrag der Spannungsverstärkung |V_u| (belastet, von der Basis zum Ausgang). Bei 0 ist keine Vorgabe gesetzt. Grün bei Treffer innerhalb des Fensters (Lehrfaustwert, Übungswert F16).' },
     { key: 'ansicht', label: 'Ansicht', type: 'select', value: 'signal', options: opt([['signal', 'Signal im Vordergrund'], ['ausgangskennlinie', 'Ausgangskennlinienfeld im Vordergrund'], ['uebertragung', 'Übertragungskennlinie im Vordergrund']]), gruppe: 'ziel', sicht: 'kennlinie',
@@ -100,7 +100,7 @@
   const PRESETS = [
     { id: 'standard', name: 'Standard (Referenz)', info: 'Übungsschaltung: ' + K(c => { const a = c.emit.ac(Object.assign({}, BASE_CTL, { c1: 10e-6, c2: 10e-6 })); return 'U_CE = ' + val(a.uce, 'V', 2) + ', I_C = ' + val(a.ic * 1000, 'mA', 2) + ', V_u = ' + val(a.vu, '', 2).replace('-', MINUS) + ' (Ausgang um ' + fm(a.phase, 0) + '° gedreht), V_u,Quelle = ' + val(a.vus, '', 2).replace('-', MINUS) + '.'; }),
       controls: {} },
-    { id: 'ziel-uce', name: 'Aufgabe: U_CE auf 6 V einstellen', info: 'Aufgabe: Stelle U_CE im Arbeitspunkt auf 6 V ein, also etwa in die Mitte der Aussteuerung bei U_B = 12 V. Ziehe dazu den Arbeitspunkt auf der Arbeitsgeraden im Kennlinienfeld (mit Maus, Finger oder den Pfeiltasten) oder verändere R_1. Die Ampel zeigt, wann die Vorgabe erreicht ist. Start ist R_1 = 27 kΩ.',
+    { id: 'ziel-uce', name: 'Aufgabe: U_CE auf 6 V einstellen', info: 'Aufgabe: Stelle U_CE im Arbeitspunkt auf 6 V ein, also etwa in die Mitte der Aussteuerung bei U_B = 12 V. Ziehe dazu den Arbeitspunkt auf der Arbeitsgeraden im Kennlinienfeld (mit Maus, Finger oder den Pfeiltasten) oder verändere R_1. Die Ampel zeigt, wann die Vorgabe erreicht ist: Grün gilt für U_CE von 5,0 V bis 7,0 V. Start ist R_1 = 27 kΩ.',
       controls: { r1: 27000, zielUce: 6, ansicht: 'ausgangskennlinie' } },
     { id: 'gegenkopplung', name: 'Gegenkopplung (ohne C_E)', info: 'Übungsschaltung ohne Emitterkondensator: ' + K(c => { const a = c.emit.ac(Object.assign({}, BASE_CTL, { ce: false })), b = c.emit.ac(BASE_CTL); return 'Der Emitterwiderstand wirkt auch für das Signal als Gegenkopplung, |V_u| sinkt von ' + val(Math.abs(b.vu), '', 2) + ' auf ' + val(Math.abs(a.vu), '', 2) + ', der Eingangswiderstand steigt von ' + eng(b.rin, 'Ω') + ' auf ' + eng(a.rin, 'Ω') + '.'; }),
       controls: { ce: false } },
@@ -121,7 +121,7 @@
     const lay = {}; let frz = null, frzT = 0;   /* Lage des Kennlinienfelds (fuer das Ziehen) und eingefrorene Achse */
     const frzOn = () => !!(frz && Date.now() - frzT < 1500);
     const okAc = a => a && a.ok !== false && a.valid !== false;
-    const fw = CORE.limit && CORE.limit('ap_fenster') ? CORE.limit('ap_fenster').value : 0.15;
+    const fw = CORE.limit && CORE.limit('ap_fenster') ? CORE.limit('ap_fenster').value : 1; /* Volt: U_CE-Vorgabe 6 V gilt von 5,0 bis 7,0 V */
     const kg = CORE.limit && CORE.limit('klirr_grenze') ? CORE.limit('klirr_grenze').value : 0.05;
     const hp = (f, fc) => (fc > 0 && f > 0 ? CX.abs(CX.div(CX.make(1, 0), CX.make(1, -fc / f))) : 1);
     const ueRunOf = ctl => (sw.active && ctl.ue > 1e-3 ? 1e-3 * Math.pow(ctl.ue / 1e-3, sw.p) : ctl.ue);
@@ -170,9 +170,9 @@
     }
 
     function apRow(r, soll) {
-      const d = Math.abs(r.ac.uce - soll), win = fw * r.cfg.ub;
+      const d = Math.abs(r.ac.uce - soll), win = fw;
       const ampel = d <= win + 1e-9 ? 'gruen' : d <= 2 * win + 1e-9 ? 'gelb' : 'rot';
-      return { id: 'ap', ampel, margin: d / (r.cfg.ub || 1) * 100, text: 'Arbeitspunkt: U_CE = ' + val(r.ac.uce, 'V') + ', Vorgabe ' + val(soll, 'V') + ', Abweichung ' + val(d, 'V') + ' (grün bis ±' + fm(fw * 100, 0) + ' % von U_B = ±' + val(win, 'V') + ', gelb bis ±' + fm(2 * fw * 100, 0) + ' %; Lehrfaustwert, Übungswert F6).' };
+      return { id: 'ap', ampel, margin: d / (r.cfg.ub || 1) * 100, text: 'Arbeitspunkt: U_CE = ' + val(r.ac.uce, 'V') + ', Vorgabe ' + val(soll, 'V') + ', Abweichung ' + val(d, 'V') + ' (grün bis ±' + val(win, 'V') + ', gelb bis ±' + val(2 * win, 'V') + '; Lehrfaustwert, Übungswert F6).' };
     }
     function assess(r, ctl, o) {
       if (!r.ok) return { ok: false, ampel: 'rot', text: 'Die Prüfung ist nicht möglich: ' + (o && o.verdeckt ? 'die Eingabe ist ungültig.' : r.why) };
@@ -206,9 +206,9 @@
       if (z === 'saettigung') push('saettigung', 'warn', 'Der Transistor ist in der Sättigung: U_CE = ' + val(a.uce, 'V', 2) + ' (U_CE,sat), I_C = ' + val(a.ic * 1000, 'mA', 2) + '. Die Stufe verstärkt nicht mehr.');
       if (z === 'aktiv') {
         const l = r.largeSet;
-        const oben = a.uce > ub * (0.5 + fw), unten = a.uce < ub * (0.5 - fw);
-        if (unten) push('ap-unten', 'warn', 'Der Arbeitspunkt liegt zu tief: U_CE = ' + val(a.uce, 'V', 2) + ' bei U_B/2 = ' + val(ub / 2, 'V', 2) + ' (Fenster ±' + fm(fw * 100, 0) + ' % von U_B, Übungswert F6). Die Grenze nach unten liegt bei U_a = ' + val(a.uaMaxUnten, 'V', 2) + '.');
-        if (oben) push('ap-oben', 'warn', 'Der Arbeitspunkt liegt zu hoch: U_CE = ' + val(a.uce, 'V', 2) + ' bei U_B/2 = ' + val(ub / 2, 'V', 2) + ' (Fenster ±' + fm(fw * 100, 0) + ' % von U_B, Übungswert F6). Die Grenze nach oben liegt bei U_a = ' + val(a.uaMaxOben, 'V', 2) + '.');
+        const oben = a.uce > ub / 2 + fw, unten = a.uce < ub / 2 - fw;
+        if (unten) push('ap-unten', 'warn', 'Der Arbeitspunkt liegt zu tief: U_CE = ' + val(a.uce, 'V', 2) + ' bei U_B/2 = ' + val(ub / 2, 'V', 2) + ' (Fenster ±' + val(fw, 'V', 1) + ' um U_B/2, Übungswert F6). Die Grenze nach unten liegt bei U_a = ' + val(a.uaMaxUnten, 'V', 2) + '.');
+        if (oben) push('ap-oben', 'warn', 'Der Arbeitspunkt liegt zu hoch: U_CE = ' + val(a.uce, 'V', 2) + ' bei U_B/2 = ' + val(ub / 2, 'V', 2) + ' (Fenster ±' + val(fw, 'V', 1) + ' um U_B/2, Übungswert F6). Die Grenze nach oben liegt bei U_a = ' + val(a.uaMaxOben, 'V', 2) + '.');
         if (l && (l.clip === 'unten' || l.clip === 'beide')) push('clip-unten', 'warn', 'Die negative Halbwelle am Ausgang ist flach: Der Transistor geht in die Sättigung (Begrenzen unten). Ausgangsspitze ' + val(l.uaPeak, 'V', 2) + ', Grenze nach unten ' + val(a.uaMaxUnten, 'V', 2) + '.');
         if (l && (l.clip === 'oben' || l.clip === 'beide')) push('clip-oben', 'warn', 'Die positive Halbwelle am Ausgang ist flach: Der Transistor sperrt (Begrenzen oben). Ausgangsspitze ' + val(l.uaPeak, 'V', 2) + ', Grenze nach oben ' + val(a.uaMaxOben, 'V', 2) + '.');
         if (l && l.thdProzent > kg * 100 && !l.clip) push('klirr-hoch', 'warn', 'Der Klirrfaktor ' + val(l.thdProzent, '%', 1) + ' liegt über der Meldegrenze ' + val(kg * 100, '%', 0) + ' (Übungswert, F6): Verringere die Eingangsamplitude.');

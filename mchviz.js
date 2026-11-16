@@ -15,6 +15,8 @@
   const C = root.MCH_CORE || (typeof require !== 'undefined' ? require('./mchcore.js') : null);
   const fin = Number.isFinite;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const dgG = a => (C && fin(a) ? C.fmtN(a, 2, true) + ' °' : '–');
+  const dg = a => (C && fin(a) ? C.fmtDe(C.rd(a, 2), 2, true) + ' °' : '–');
   const f = (v, d) => (C && fin(v) ? C.fmtN(v, d == null ? 0 : d, true) : '–');
   const n = v => (fin(v) ? Math.round(v * 10) / 10 : 0);
   const cl = (v, a, b) => Math.max(a, Math.min(b, fin(v) ? v : a));
@@ -54,7 +56,7 @@
     const lab = (P, t, col, dx, dy) => L.push({ x: cl(P.x + dx, 6, 470), y: cl(P.y + dy, 16, 395), t, col });
     if (eck) { lab({ x: (KO.x + P1.x) / 2, y: (KO.y + P1.y) / 2 }, 'F1 ' + f(F1) + ' N', 'var(--accent)', -4, 24); lab({ x: (P1.x + PR.x) / 2, y: (P1.y + PR.y) / 2 }, 'F2 ' + f(F2) + ' N', 'var(--hi)', 14, 0); }
     else { lab(P1, 'F1 ' + f(F1) + ' N', 'var(--accent)', 12, -10); lab(P2, 'F2 ' + f(F2) + ' N', 'var(--hi)', 12, -10); }
-    lab({ x: (KO.x + PR.x) / 2, y: (KO.y + PR.y) / 2 }, 'R ' + f(r.R, 1) + ' N · ' + f(r.ang, 0) + '°', 'var(--ok)', -6, 26);
+    lab({ x: (KO.x + PR.x) / 2, y: (KO.y + PR.y) / 2 }, 'R ' + f(r.R, 1) + ' N · ' + dg(r.ang), 'var(--ok)', -6, 26);
     const wd = l => l.t.length * 10.5, hit = (p, q) => p.x < q.x + wd(q) && q.x < p.x + wd(p) && Math.abs(p.y - q.y) < 22;
     L.forEach((l, i) => { for (let k = 0; k < 8 && L.slice(0, i).some(o => hit(l, o)); k++) { l.y += 22; if (l.y > 395) l.y = 395 - (k + 1) * 22 - 22; l.x = cl(l.x, 6, 600 - wd(l) - 6); } });
     b += L.map(l => T(l.x, l.y, l.t, '', ` style="fill:${l.col};font-weight:700"`)).join('');
@@ -68,7 +70,7 @@
     let b = axes() + line(P.x, P.y, px.x, px.y, 'var(--mute)', 1.6, '5 4') + line(P.x, P.y, py.x, py.y, 'var(--mute)', 1.6, '5 4');
     b += arrow(KO.x, KO.y + 4, px.x, KO.y + 4, 'var(--accent)', 3.5) + arrow(KO.x - 4, KO.y, KO.x - 4, py.y, 'var(--hi)', 3.5) + arrow(KO.x, KO.y, P.x, P.y, 'var(--ok)', 4.5);
     const r = 46, ax = KO.x + r * Math.cos(a * C.RAD), ay = KO.y - r * Math.sin(a * C.RAD);
-    b += `<path d="M${KO.x + r} ${KO.y} A ${r} ${r} 0 0 0 ${n(ax)} ${n(ay)}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>` + T(KO.x + r + 8, KO.y - 8, 'α ' + f(a) + '°', '');
+    b += `<path d="M${KO.x + r} ${KO.y} A ${r} ${r} 0 0 0 ${n(ax)} ${n(ay)}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>` + T(KO.x + r + 8, KO.y - 8, 'α ' + dgG(a), '');
     const c = C.comp(F, a);
     b += T(cl((KO.x + px.x) / 2 - 24, 6, 500), KO.y + 36, 'Fx ' + f(c.x, 1) + ' N', '', ' style="fill:var(--accent);font-weight:700"') + T(cl(KO.x - 110, 4, 300), (KO.y + py.y) / 2, 'Fy ' + f(c.y, 1) + ' N', '', ' style="fill:var(--hi);font-weight:700"') + T(cl(P.x + 12, 6, 470), cl(P.y - 10, 16, 395), 'F ' + f(F) + ' N', '', ' style="fill:var(--ok);font-weight:700"');
     b += handle('F', P.x, P.y, 'var(--ok)') + T(12, 412, 'Zerlegen: F wird in Fx und Fy aufgeteilt. Ziehe die Spitze.', 'm');
@@ -174,7 +176,7 @@
     if (full) {
       const ci = { x: sa, y: ca }, ang = (d) => { const r = (d) * C.RAD, c = Math.cos(r), sn = Math.sin(r); return { x: ci.x * c - ci.y * sn, y: ci.x * sn + ci.y * c }; }, e1 = ang(rho), e2 = ang(-rho), CL = Math.max(40, Math.min(130, 366 - Pc.y));
       b += `<polygon points="${n(Pc.x)},${n(Pc.y)} ${n(Pc.x + e1.x * CL)},${n(Pc.y + e1.y * CL)} ${n(Pc.x + e2.x * CL)},${n(Pc.y + e2.y * CL)}" fill="var(--accent)" fill-opacity=".16" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="5 4"/>`;
-      const inside = a <= rho + 1e-9; b += line(Pc.x, Pc.y, Pc.x, Pc.y + CL, inside ? 'var(--ok)' : 'var(--danger)', 2.5, '2 4') + T(cl(Pc.x + 10, 6, 400), Math.min(Pc.y + CL + 2, 372), 'Reibkegel ρ0 = ' + f(rho, 1) + '°', '', ' style="fill:var(--accent)"');
+      const inside = a <= rho + 1e-9; b += line(Pc.x, Pc.y, Pc.x, Pc.y + CL, inside ? 'var(--ok)' : 'var(--danger)', 2.5, '2 4') + T(cl(Pc.x + 10, 6, 400), Math.min(Pc.y + CL + 2, 372), 'Reibkegel ρ0 = ' + dg(rho), '', ' style="fill:var(--accent)"');
     }
     b += `<g transform="translate(${n(C0.x)} ${n(C0.y)}) rotate(${n(-a)})"><rect x="-30" y="-30" width="60" height="60" rx="4" fill="var(--hi)" fill-opacity=".3" stroke="var(--hi)" stroke-width="2.5"/></g>`;
     const LG = 100; b += arrow(C0.x, C0.y, C0.x, C0.y + LG, 'var(--fg)', 3.5) + T(C0.x + 8, C0.y + LG + 4, 'G', '', ' style="font-weight:700"');
@@ -183,7 +185,7 @@
       const fr = Math.min(1.4, mu0) * LG * ca; b += arrow(C0.x - 5, C0.y - 6, C0.x - 5 + fr * ca, C0.y - 6 - fr * sa, 'var(--ok)', 3);
       b += T(cl(C0.x - LG * sa * ca - 56, 4, 520), C0.y + LG * sa * sa + 18, 'FH', '', ' style="fill:var(--hi);font-weight:700"') + T(C0.x + LG * ca * sa + 8, C0.y + LG * ca * ca + 14, 'FN', '', ' style="fill:var(--accent);font-weight:700"') + T(C0.x + fr * ca + 4, C0.y - 12 - fr * sa, 'FR0', '', ' style="fill:var(--ok);font-weight:700"');
     }
-    const r2 = 56; b += `<path d="M${RP0.x + r2} ${RP0.y} A ${r2} ${r2} 0 0 0 ${n(RP0.x + r2 * ca)} ${n(RP0.y - r2 * sa)}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>` + T(RP0.x + r2 + 8, RP0.y - 8, 'α ' + f(a) + '°', '');
+    const r2 = 56; b += `<path d="M${RP0.x + r2} ${RP0.y} A ${r2} ${r2} 0 0 0 ${n(RP0.x + r2 * ca)} ${n(RP0.y - r2 * sa)}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>` + T(RP0.x + r2 + 8, RP0.y - 8, 'α ' + dgG(a), '');
     if (full) { b += handle('alpha', P1.x, P1.y, 'var(--accent)'); b += Tm(300, 20, (a <= rho + 1e-9 ? 'Haftreibung reicht: bleibt liegen' : 'Hangabtrieb größer als Haftreibung: rutscht'), '', ' style="font-weight:700"') + Tm(300, 40, 'Ziehe die obere Ecke der Ebene, um die Neigung zu ändern', 'm'); }
     if (full) b += Tm(300, 372, 'FH Hangabtrieb · FN Normalkraft · FR0 größte Haftreibung · G Gewichtskraft', 'm');
     if (!full) { const sh = Math.round(cl(P1.y - 30, 0, 110)); return svg(600, 320 - sh, 'Schiefe Ebene mit Körper und Neigungswinkel', '<g transform="translate(0 ' + (-sh) + ')">' + b + '</g>'); }

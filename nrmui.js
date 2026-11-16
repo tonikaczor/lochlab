@@ -239,7 +239,7 @@
     /* Sicherheitsabstand */
     const T_ = (s.t1 + s.t2) / 1000, sd = C.safetyDistance(+s.d, T_);
     setSvg('msDist', V.distSvg(+s.d, T_, wOf($('#msDist'))));
-    setHtml('msDistOut', Number.isFinite(sd) ? box('Gesamtzeit', 'T = t₁ + t₂', f(T_ * 1000, 0) + ' ms') + box('Sicherheitsabstand', 'S = K·T + C', f(sd, 0) + ' mm', 'ok') : note('Für diese Werte gibt es keinen Abstand im Lernmodell.'));
+    setHtml('msDistOut', Number.isFinite(sd) ? box('Gesamtzeit', 'T = t₁ + t₂', f(T_ * 1000, 0) + ' ms') + box('Sicherheitsabstand', 'S = K·T + C', f(sd, 0) + ' mm', 'ok') + '<p class="hint2">S = K·T + C ist die Schreibweise der ISO 13855 von 2010. Die Ausgabe 2024 gliedert die Formel anders (S = K·T + DDS + Z). Maßgeblich ist die aktuelle Ausgabe.</p>' : note('Für diese Werte gibt es keinen Abstand im Lernmodell.'));
   }
   function renderMs() {
     const s = S.ms, stxt = { 1: 'S1 leicht', 2: 'S2 schwer' }, ftxt = { 1: 'F1 selten/kurz', 2: 'F2 häufig/lang' }, ptxt = { 1: 'P1 möglich', 2: 'P2 kaum möglich' };

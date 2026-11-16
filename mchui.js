@@ -14,6 +14,8 @@
   const LS = 'lm4.mch.';
   const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(LS + k) || ''); return v == null ? d : v; } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch (e) {} };
+  const dgG = a => (C.fin(a) ? C.fmtN(a, 2, true) + ' °' : '–');
+  const dg = a => (C.fin(a) ? C.fmtDe(C.rd(a, 2), 2, true) + ' °' : '–');
   const f = (v, d) => C.fmtN(v, d == null ? 2 : d, true), P = s => C.parseDe(s);
   const dots = l => '●'.repeat(l || 1) + '○'.repeat(3 - (l || 1));
   const fin = Number.isFinite;
@@ -77,19 +79,19 @@
   const CALC = {
     kr: {
       form: st => `<div class="card pl" data-tour="calc"><h4>Kräfte</h4><div class="fbar">${lbl('AUFGABE')}${segB('kr', 'mode', [['comp', 'Zusammensetzen'], ['zerl', 'Zerlegen']], st.mode)}</div>` + (st.mode === 'comp'
-        ? `<div class="fbar">${lbl('DARSTELLUNG')}${segB('kr', 'show', [['para', 'Parallelogramm'], ['eck', 'Kräfteeck']], st.show)}</div><div class="dsrow">${inp('kr', 'F1', 'Kraft F1', st.F1, 'N')}${inp('kr', 'a1', 'Winkel von F1', st.a1, '°')}${inp('kr', 'F2', 'Kraft F2', st.F2, 'N')}${inp('kr', 'a2', 'Winkel von F2', st.a2, '°')}</div><p class="hint2">Winkel gegen die Waagerechte (nach rechts = 0°, nach oben = 90°). Du kannst auch die Pfeilspitzen in der Zeichnung ziehen.</p>`
+        ? `<div class="fbar">${lbl('DARSTELLUNG')}${segB('kr', 'show', [['para', 'Parallelogramm'], ['eck', 'Kräfteeck']], st.show)}</div><div class="dsrow">${inp('kr', 'F1', 'Kraft F1', st.F1, 'N')}${inp('kr', 'a1', 'Winkel von F1', st.a1, '°')}${inp('kr', 'F2', 'Kraft F2', st.F2, 'N')}${inp('kr', 'a2', 'Winkel von F2', st.a2, '°')}</div><p class="hint2">Winkel gegen die Waagerechte (nach rechts = 0 °, nach oben = 90 °). Du kannst auch die Pfeilspitzen in der Zeichnung ziehen.</p>`
         : `<div class="dsrow">${inp('kr', 'F', 'Kraft F', st.F, 'N')}${inp('kr', 'a', 'Winkel α gegen die Waagerechte', st.a, '°')}</div><p class="hint2">Ziehe die Pfeilspitze in der Zeichnung oder gib Zahlen ein.</p>`) + '</div>',
       build(st) {
         if (st.mode === 'zerl') {
           const F = num(st, 'F'), a = num(st, 'a');
           if (!(F >= 0) || !fin(a)) return { viz: V.zerlSvg({ F: 0, a: 0 }), out: note('Bitte Kraft und Winkel als Zahlen eingeben (Kraft nicht negativ).') };
           const c = C.comp(F, a);
-          return { viz: V.zerlSvg({ F, a }), out: box('1. Waagerechter Anteil', 'Fx = F · cos α = ' + f(F, 1) + ' · cos ' + f(a, 0) + '°', f(c.x, 2) + ' N') + box('2. Senkrechter Anteil', 'Fy = F · sin α = ' + f(F, 1) + ' · sin ' + f(a, 0) + '°', f(c.y, 2) + ' N') + box('3. Probe', '√(Fx² + Fy²)', f(Math.hypot(c.x, c.y), 2) + ' N (gleich F)', 'ok') };
+          return { viz: V.zerlSvg({ F, a }), out: box('1. Waagerechter Anteil', 'Fx = F · cos α = ' + f(F, 1) + ' · cos ' + dgG(a) + '', f(c.x, 2) + ' N') + box('2. Senkrechter Anteil', 'Fy = F · sin α = ' + f(F, 1) + ' · sin ' + dgG(a) + '', f(c.y, 2) + ' N') + box('3. Probe', '√(Fx² + Fy²)', f(Math.hypot(c.x, c.y), 2) + ' N (gleich F)', 'ok') };
         }
         const F1 = num(st, 'F1'), a1 = num(st, 'a1'), F2 = num(st, 'F2'), a2 = num(st, 'a2');
         if (!(F1 >= 0) || !(F2 >= 0) || !fin(a1) || !fin(a2)) return { viz: V.forceSvg({ F1: 0, a1: 0, F2: 0, a2: 90, show: st.show }), out: note('Bitte beide Kräfte (nicht negativ) und Winkel als Zahlen eingeben.') };
         const u = C.comp(F1, a1), v = C.comp(F2, a2), r = C.resultant(F1, a1, F2, a2); let g = ((a2 - a1) % 360 + 360) % 360; if (g > 180) g = 360 - g;
-        return { viz: V.forceSvg({ F1, a1, F2, a2, show: st.show }), out: box('1. Komponenten von F1', 'Fx = ' + f(u.x, 1) + ' N, Fy = ' + f(u.y, 1) + ' N', '') + box('2. Komponenten von F2', 'Fx = ' + f(v.x, 1) + ' N, Fy = ' + f(v.y, 1) + ' N', '') + box('3. Summe der Komponenten', 'ΣFx = ' + f(r.x, 1) + ' N, ΣFy = ' + f(r.y, 1) + ' N', '') + box('4. Resultierende', 'R = √(ΣFx² + ΣFy²)', f(r.R, 2) + ' N unter ' + f(r.ang, 1) + '°') + box('5. Kontrolle mit dem Kosinussatz (Winkel zwischen den Kräften ' + f(g, 0) + '°)', 'R = √(F1² + F2² + 2 · F1 · F2 · cos γ)', f(C.resMag(F1, F2, g), 2) + ' N', 'ok') };
+        return { viz: V.forceSvg({ F1, a1, F2, a2, show: st.show }), out: box('1. Komponenten von F1', 'Fx = ' + f(u.x, 1) + ' N, Fy = ' + f(u.y, 1) + ' N', '') + box('2. Komponenten von F2', 'Fx = ' + f(v.x, 1) + ' N, Fy = ' + f(v.y, 1) + ' N', '') + box('3. Summe der Komponenten', 'ΣFx = ' + f(r.x, 1) + ' N, ΣFy = ' + f(r.y, 1) + ' N', '') + box('4. Resultierende', 'R = √(ΣFx² + ΣFy²)', f(r.R, 2) + ' N unter ' + dg(r.ang) + '') + box('5. Kontrolle mit dem Kosinussatz (Winkel zwischen den Kräften ' + dgG(g) + ')', 'R = √(F1² + F2² + 2 · F1 · F2 · cos γ)', f(C.resMag(F1, F2, g), 2) + ' N', 'ok') };
       }
     },
     he: {
@@ -131,10 +133,10 @@
       form: st => `<div class="card pl" data-tour="calc"><h4>Schiefe Ebene und Reibung</h4><div class="dsrow"><label class="f"><span>Werkstoffpaar</span>${sel('rb', 'mat', C.MU.map(m => [m.id, m.n]), st.mat)}</label>${inp('rb', 'm', 'Masse', st.m, 'kg')}${inp('rb', 'alpha', 'Neigung α (0 bis 60)', st.alpha, '°')}</div><p class="hint2">Ziehe die obere Ecke der Ebene, um den Winkel zu ändern. Der blaue Kegel ist der Reibkegel: Liegt die Wirkungslinie von G darin, bleibt der Körper liegen.</p></div>`,
       build(st) {
         const mt = C.muOf(st.mat) || C.MU[0], m = num(st, 'm'), a = num(st, 'alpha');
-        if (!(m >= 0) || !(a >= 0 && a <= 60)) return { viz: V.rampSvg({ alpha: 0, mu0: mt.mu0 }), out: note('Bitte Masse (nicht negativ) und einen Winkel zwischen 0° und 60° eingeben.') };
+        if (!(m >= 0) || !(a >= 0 && a <= 60)) return { viz: V.rampSvg({ alpha: 0, mu0: mt.mu0 }), out: note('Bitte Masse (nicht negativ) und einen Winkel zwischen 0 ° und 60 ° eingeben.') };
         const Gk = C.weight(m), FH = C.incFH(Gk, a), FN = C.incFN(Gk, a), FR0 = mt.mu0 * FN, hold = C.holds(a, mt.mu0), rho = C.critAngle(mt.mu0);
         let out = box('1. Gewichtskraft', 'G = m · g = ' + f(m, 1) + ' kg · 9,81 m/s²', f(Gk, 1) + ' N') + box('2. Hangabtrieb (entlang der Ebene)', 'FH = G · sin α', f(FH, 1) + ' N') + box('3. Normalkraft (senkrecht zur Ebene)', 'FN = G · cos α', f(FN, 1) + ' N') + box('4. Größte Haftreibung', 'FR0 = μ0 · FN = ' + f(mt.mu0, 2) + ' · ' + f(FN, 1), f(FR0, 1) + ' N');
-        out += `<div class="rdout ${hold ? 'ok' : 'bad'}"><span class="st">5. Ergebnis</span><b>${hold ? '✓ Bleibt liegen (FH ≤ FR0, tan α ≤ μ0)' : '✗ Rutscht (FH größer als FR0, tan α > μ0)'}</b></div>` + box('6. Grenzwinkel (Reibwinkel)', 'ρ0 = arctan μ0 = arctan ' + f(mt.mu0, 2), f(rho, 1) + '°');
+        out += `<div class="rdout ${hold ? 'ok' : 'bad'}"><span class="st">5. Ergebnis</span><b>${hold ? '✓ Bleibt liegen (FH ≤ FR0, tan α ≤ μ0)' : '✗ Rutscht (FH größer als FR0, tan α > μ0)'}</b></div>` + box('6. Grenzwinkel (Reibwinkel)', 'ρ0 = arctan μ0 = arctan ' + f(mt.mu0, 2), dg(rho) + '');
         out += box('7. Haltekraft parallel zur Ebene (damit nichts rutscht)', 'FH − FR0', f(C.rampHold(Gk, a, mt.mu0), 1) + ' N') + box('8. Zugkraft hinauf bei gleichbleibender Geschwindigkeit (Gleitreibung μ = ' + f(mt.mu, 2) + ')', 'G · (sin α + μ · cos α)', f(C.rampUp(Gk, a, mt.mu), 1) + ' N');
         return { viz: V.rampSvg({ alpha: a, mu0: mt.mu0 }), out };
       }

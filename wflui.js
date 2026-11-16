@@ -312,7 +312,7 @@
     const ins = C.makeInspection(S.insSeed), nb = C.inspectionBad(ins); let ok = 0;
     const li = ins.items.map((it, i) => { const right = S.insSel[i] === (it.bad ? 'bad' : 'ok'); if (right) ok++; return `<li class="${right ? 'ok' : 'bad'}">${right ? '✓' : '✗'} ${esc(it.n)}: ${it.bad ? '<b>Mangel</b>' : 'in Ordnung'}.</li>`; });
     const allRight = S.insAll === (nb ? 'stop' : 'go');
-    $('#insRes').innerHTML = `<div class="rdout ${ok === ins.items.length && allRight ? 'ok' : 'warn'}"><b>${ok} von ${ins.items.length} Prüfpunkten richtig.</b> Entscheidung: ${allRight ? '✓ richtig' : '✗ falsch'}.</div><ul class="tl">${li.join('')}</ul><div class="rdout ${nb ? 'bad' : 'ok'}">${nb ? 'Bei ' + nb + ' Mangel/Mängeln darf der Stapler nicht benutzt werden. Sperren, kennzeichnen und nach dem betrieblichen Ablauf melden. Nicht selbst reparieren.' : 'Kein Mangel erkennbar: Der Stapler ist nach diesem Übungsstand fahrbereit.'}</div>`;
+    $('#insRes').innerHTML = `<div class="rdout ${ok === ins.items.length && allRight ? 'ok' : 'warn'}"><b>${ok} von ${ins.items.length} Prüfpunkten richtig.</b> Entscheidung: ${allRight ? '✓ richtig' : '✗ falsch'}.</div><ul class="tl">${li.join('')}</ul><div class="rdout ${nb ? 'bad' : 'ok'}">${nb ? 'Bei ' + nb + ' Mangel/Mängeln darf der Stapler nicht benutzt werden. Sperren, kennzeichnen und nach dem betrieblichen Ablauf melden. Repariert wird nur durch befugte, fachkundige Personen.' : 'Kein Mangel erkennbar: Der Stapler ist nach diesem Übungsstand fahrbereit.'}</div>`;
     return ok === ins.items.length && allRight;
   }
   function renderTrag() {
@@ -322,7 +322,7 @@
       <div class="dsrow">${inp('mS', 'Eigengewicht Stapler', s.mS, 'kg')}${inp('b', 'Schwerpunkt Stapler hinter der Vorderachse', s.b, 'mm')}${inp('e', 'Gabelrücken vor der Vorderachse', s.e, 'mm')}</div>
       <p class="hint2">Übungs-Typenschild (Lastschwerpunkt 500 mm): ${esc(C.HUB.map(x => 'bis ' + f(x.bis, 0) + ' mm Hub: ' + f(x.q, 0) + ' kg').join(' · '))}. Echte Werte stehen nur auf dem Typenschild deines Staplers.</p></div><div id="tragOut"></div>
       <div class="card pl"><h4>Prüfung vor Fahrtantritt</h4><p class="hint2" style="margin:0 0 6px">Dieser Stapler steht vor dir. Beurteile jeden Prüfpunkt und entscheide, ob er benutzt werden darf. Nichts verrät vorher, ob ein Mangel vorliegt.</p><div id="insBox">${inspRows()}</div>
-      <p class="hint2">Fahrerlaubnis: Fahren dürfen nur unterwiesene, befähigte und vom Unternehmer beauftragte Personen. Die Einzelheiten regelt dein Betrieb, hier wird nur die Pflicht genannt.</p></div>`;
+      <p class="hint2">Fahrerlaubnis: Fahren darf nur, wer mindestens 18 Jahre alt ist, ausgebildet wurde (der Staplerschein ist der Nachweis) und vom Betrieb schriftlich beauftragt ist. Die Einzelheiten regelt dein Betrieb, hier wird nur die Pflicht genannt.</p></div>`;
     updateTrag(); if (S.insDone) insResult();
   }
   function updateTrag() { $('#tragOut').innerHTML = tragOut(tragParams(S.trag)); }

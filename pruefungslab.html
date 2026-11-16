@@ -65,8 +65,9 @@ table.ft{width:100%;border-collapse:collapse;margin-top:8px}table.ft td{padding:
 #tabs{padding:4px 10px}
 .card.tmr{padding:8px 12px}
 @media(max-width:600px){#exCancel{display:none}}
-/* Einordnung "Warum brauche ich das?" und Projekt-Hinweis nur auf dem Start-Reiter, nie in der laufenden Prüfung */
-body:not([data-pr-tab=start]) #wzHint,body:not([data-pr-tab=start]) #vbHint{display:none!important}
+/* Einordnung "Warum brauche ich das?" und Projekt-Hinweis: im Seitenfluss nur auf dem Start-Reiter (dort nimmt der Rahmen sie ins Info-Blatt), im Info-Blatt immer, nie in der laufenden Prüfung */
+body:not([data-pr-tab=start]) #app>#wzHint,body:not([data-pr-tab=start]) #app>#vbHint{display:none!important}
+html.pr-lauf #wzHint,html.pr-lauf #vbHint{display:none!important}
 /* laufende Prüfung am Handy: Tutorial-Angebot ausblenden, mehr Platz für die Fragen */
 @media(max-width:700px){html.pr-lauf #trOffer,html.pr-lauf #vbHint,html.pr-lauf #wzHint,html.pr-lauf #berufsLink{display:none!important}}
 /* Helles Design (C2c): folgt lm4.theme, sonst dem System */

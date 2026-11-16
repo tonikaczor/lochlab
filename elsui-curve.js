@@ -258,7 +258,7 @@
       '<p class="zd-say" id="zdRead" role="status" aria-live="polite"></p>' +
       '<ul class="zd-leg"><li><i style="background:var(--ok);opacity:.55"></i>Zone 1</li><li><i style="background:var(--accent);opacity:.55"></i>Zone 2</li><li><i style="background:var(--warn);opacity:.6"></i>Zone 3</li><li><i style="background:var(--danger);opacity:.6"></i>Zone 4</li><li>gestrichelt: Auslösung 30-mA-RCD</li></ul>' +
       '<div class="btns"><button class="btn" data-act="zdrig">Punkt vom Prüfstand holen</button></div>' +
-      '<p class="hint2">Vereinfachtes Lehrmodell mit Übungswerten, nicht das Originaldiagramm der IEC 60479-1.</p></div>';
+      '<p class="hint2">Vereinfachtes Lernmodell mit Übungswerten, keine Normkurve und nicht das Originaldiagramm der IEC 60479-1. Nicht zur Beurteilung echter Anlagen verwenden.</p></div>';
   }
   function zdSet(i, t) { zd.pt = { i: Math.min(ZD.i1, Math.max(ZD.i0, i)), t: Math.min(ZD.t1, Math.max(ZD.t0, t)) }; zdPoint(); }
   function zdPtr(e) { const sv = document.getElementById('zdSvg'); if (!sv || !zd.g) return; const r = sv.getBoundingClientRect(); if (!(r.width > 0)) return; const k = zd.g.w / r.width; zdSet(zd.g.iAt((e.clientX - r.left) * k), zd.g.tAt((e.clientY - r.top) * k)); }

@@ -345,9 +345,9 @@
   /* ====================================================================== ae12: Arbeitspunkt einstellen (Verhalten, Pool-Stil) */
   const M12 = (() => {
     const ZIEL = 6, BASE = { ub: 12, ue: 0.1, f: 1000, rg: 600, rc: 2200, re1: 100, re2: 470, ce: true, c1: 1e-5, c2: 1e-5, b: 100, rl: 10000, fehler: 'keiner', zielUce: ZIEL, zielVu: 0, ansicht: 'signal' }, OWN = ['r1', 'r2'];
-    const win = () => lim('ap_fenster') * BASE.ub;
+    const win = () => lim('ap_fenster');
     const vals = () => once('v12', () => { const ok = snap('emitter', fullCtl('emitter', Object.assign({}, BASE, { r1: 47000, r2: 10000 }))), lo = snap('emitter', fullCtl('emitter', Object.assign({}, BASE, { r1: 10000, r2: 10000 }))), hi = snap('emitter', fullCtl('emitter', Object.assign({}, BASE, { r1: 150000, r2: 10000 })));
-      return { ziel: ZIEL, fenster: win(), lo: ZIEL - win(), hi: ZIEL + win(), uce: ok.m.uce, r1k: 47, r2k: 10, uceLo: lo.m.uce, uceHi: hi.m.uce, r1lo: 10, r1hi: 150, ub: BASE.ub, ueMV: BASE.ue * 1000, pct: lim('ap_fenster') * 100 }; });
+      return { ziel: ZIEL, fenster: win(), lo: ZIEL - win(), hi: ZIEL + win(), uce: ok.m.uce, r1k: 47, r2k: 10, uceLo: lo.m.uce, uceHi: hi.m.uce, r1lo: 10, r1hi: 150, ub: BASE.ub, ueMV: BASE.ue * 1000}; });
     const check = mk('emitter', OWN, (c, r, a) => {
       const eff = effOf(c, 'emitter', OWN, BASE), sim = snap('emitter', eff), v = vals(), u = sim.m && sim.m.uce;
       inputRow(c, r, sim, a, 'emitter');
@@ -361,7 +361,7 @@
       r(sim.a && sim.a.ampel === 'gruen', 'Die Ampel am Prüfstand ist grün (Vorgabe U_CE ' + f(ZIEL, 0) + ' V erfüllt)', 'Die Ampel steht auf „' + (sim.a ? sim.a.ampel : '–') + '“. ' + (sim.a ? sim.a.text : ''));
     });
     return { vals, check, consts: [],
-      text: () => { const v = vals(); return 'Die Emitterschaltung (U_B = ' + f(BASE.ub, 0) + ' V, R_C = ' + f(BASE.rc / 1000, 1) + ' kΩ, Eingangsamplitude ' + f(v.ueMV, 0) + ' mV) soll mit dem Arbeitspunkt U_CE = ' + f(ZIEL, 0) + ' V arbeiten, also etwa in der Mitte der Betriebsspannung; die Vorgabe U_CE = ' + f(ZIEL, 0) + ' V ist am Prüfstand gesetzt. Stelle den Basisspannungsteiler (R_1 und R_2) so ein, dass der Arbeitspunkt im Fenster von ± ' + f(v.pct, 0) + ' % der Betriebsspannung (Übungswert) liegt und der Ausgang nicht begrenzt (Ampel grün).'; },
+      text: () => { const v = vals(); return 'Die Emitterschaltung (U_B = ' + f(BASE.ub, 0) + ' V, R_C = ' + f(BASE.rc / 1000, 1) + ' kΩ, Eingangsamplitude ' + f(v.ueMV, 0) + ' mV) soll mit dem Arbeitspunkt U_CE = ' + f(ZIEL, 0) + ' V arbeiten, also etwa in der Mitte der Betriebsspannung; die Vorgabe U_CE = ' + f(ZIEL, 0) + ' V ist am Prüfstand gesetzt. Stelle den Basisspannungsteiler (R_1 und R_2) so ein, dass der Arbeitspunkt im Fenster von ' + f(v.lo, 1) + ' V bis ' + f(v.hi, 1) + ' V (Übungswert) liegt und der Ausgang nicht begrenzt (Ampel grün).'; },
       hint: () => { const v = vals(); return [
         'Ein größeres R_2 hebt die Basisspannung an, I_C steigt und U_CE sinkt; ein größeres R_1 senkt die Basisspannung und U_CE steigt. Beobachte U_CE am Messgerät und die Ampel.',
         'Das Fenster reicht von ' + f(v.lo, 1) + ' V bis ' + f(v.hi, 1) + ' V (± ' + f(v.fenster, 1) + ' V um ' + f(v.ziel, 0) + ' V). Mit R_1 = ' + f(v.r1lo, 0) + ' kΩ liegt U_CE bei ' + f(v.uceLo, 2) + ' V (Sättigung, der Ausgang wird unten flach), mit R_1 = ' + f(v.r1hi, 0) + ' kΩ bei ' + f(v.uceHi, 2) + ' V (der Transistor ist kaum aufgesteuert).',

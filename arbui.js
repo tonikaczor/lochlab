@@ -44,7 +44,7 @@
   /* ============================================================ Zustand */
   const TABS = [['zei', '🪧', 'Zeichen'], ['bra', '🔥', 'Brandschutz'], ['ghs', '☣️', 'Gefahrstoffe'], ['gb', '📋', 'Gefährdungsbeurteilung'], ['psa', '🦺', 'PSA'], ['eh', '🩹', 'Erste Hilfe'], ['ver', '🚪', 'Verhalten'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['fin', '🏁', 'Abschluss'], ['help', '📘', 'Hilfe']];
   const S = {
-    tab: lsGet('tab', 'zei'), braKey: 'F', gbWp: 'bohr', gb: {}, gbRes: {}, psaAct: 'schleifen', psaSel: [], psaRes: null,
+    tab: lsGet('tab', 'zei'), gbStep: 0, braKey: 'F', gbWp: 'bohr', gb: {}, gbRes: {}, psaAct: 'schleifen', psaSel: [], psaRes: null,
     task: null, tAns: {}, tRes: null, tTries: {}, rtTries: 0, pq: {}, bsp: null,
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {})), rtCat: '', rtQ: null, rtAns: null, rtRes: null, rtI: 0,
     fin: { state: 'intro', qs: [], ans: [], i: 0, res: null, name: who(), cert: null, seed: 0, chk: '' }
@@ -248,9 +248,73 @@
     if (ex) { const c = lsGet('ctipps', {}); c[t.id] = Math.max(c[t.id] || 0, n); lsSet('ctipps', c); }
     sheet('Tipp, Stufe ' + n + ' von 2', b => { b.innerHTML = `<p style="margin-top:0">${esc(C.gbTip(wp, S.gb[wp], n))}</p>` + (n < 2 ? '<p class="hint2">Noch mehr Hilfe? Tippe noch einmal auf „Tipp“.</p>' : '') + (ex ? '<p class="hint2" style="color:var(--warn)">Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>' : '<p class="hint2">Beim normalen Üben kosten Tipps nichts. Im Prüfmodus (🎓) zählen sie.</p>'); });
   }
+
+  /* ---------- Kreislauf der Gefährdungsbeurteilung (K-arb-07): Daten aus D.gbKreis ---------- */
+  function svgGbKreis(sel) {
+    const K = D.gbKreis, n = K.length, cx = 160, cy = 160, R = 108, r0 = 25, pt = (a, rr) => [cx + rr * Math.sin(a), cy - rr * Math.cos(a)];
+    const f = v => Math.round(v * 10) / 10, trim = Math.asin(r0 / (2 * R)) * 2 + 0.07;
+    let g = '', ring = '', nodes = '';
+    for (let i = 0; i < n; i++) {
+      const a1 = i * 2 * Math.PI / n + trim, a2 = (i + 1) * 2 * Math.PI / n - trim - 0.05, p1 = pt(a1, R), p2 = pt(a2, R), back = i === n - 1, col = back ? 'var(--hi)' : 'var(--mute)';
+      ring += `<path d="M${f(p1[0])} ${f(p1[1])} A${R} ${R} 0 0 1 ${f(p2[0])} ${f(p2[1])}" fill="none" stroke="${col}" stroke-width="${back ? 3.5 : 2.5}"${back ? ' stroke-dasharray="7 5"' : ''}/>`;
+      const ta = a2 + 0.02, tp = pt(ta, R), dir = [Math.cos(ta), Math.sin(ta)], nx = [-dir[1], dir[0]];
+      ring += `<path d="M${f(tp[0] + dir[0] * 9)} ${f(tp[1] + dir[1] * 9)} L${f(tp[0] - dir[0] * 3 + nx[0] * 7)} ${f(tp[1] - dir[1] * 3 + nx[1] * 7)} L${f(tp[0] - dir[0] * 3 - nx[0] * 7)} ${f(tp[1] - dir[1] * 3 - nx[1] * 7)} Z" fill="${col}"/>`;
+    }
+    K.forEach((k, i) => {
+      const p = pt(i * 2 * Math.PI / n, R), on = i === sel;
+      nodes += `<g class="gkn${on ? ' on' : ''}" data-gk="${i}" role="button" tabindex="0" aria-label="Schritt ${k.n}: ${esc(k.name)}" aria-pressed="${on}"><circle cx="${f(p[0])}" cy="${f(p[1])}" r="${on ? r0 + 3 : r0}" fill="var(--accent-bg)" stroke="${on ? 'var(--hi)' : 'var(--bg)'}" stroke-width="${on ? 4 : 2}"/><text x="${f(p[0])}" y="${f(p[1] + 6)}" text-anchor="middle" font-size="18" font-weight="700" fill="#fff">${k.n}</text></g>`;
+    });
+    const c = K[sel];
+    g = `<text x="${cx}" y="${cy - 20}" text-anchor="middle" font-size="13" class="sv-note" style="font-size:13px;font-weight:700">Schritt ${c.n}</text><text x="${cx}" y="${cy + 2}" text-anchor="middle" font-size="14" font-weight="700" class="sv-note" style="font-size:15px">${esc(c.kurz[0])}</text><text x="${cx}" y="${cy + 20}" text-anchor="middle" font-size="14" font-weight="700" class="sv-note" style="font-size:15px">${esc(c.kurz[1])}</text>`
+      + `<text x="${cx}" y="${cy + 44}" text-anchor="middle" font-size="13" class="sv-note" style="font-size:13px;fill:var(--mute)">${c.n === n ? 'danach wieder Schritt 1' : 'weiter mit Schritt ' + (c.n + 1)}</text>`;
+    return `<div class="inst fit gkv"><svg viewBox="0 0 320 320" role="group" aria-label="Kreislauf der Gefährdungsbeurteilung mit sieben Schritten. Schritt 7 führt zurück zu Schritt 1.">${ring}${g}${nodes}</svg></div>`;
+  }
+  function gkHTML() {
+    const K = D.gbKreis, i = S.gbStep || 0, c = K[i];
+    return svgGbKreis(i) + '<ol class="gkl" aria-label="Die sieben Schritte">' + K.map((k, j) => `<li><button class="gkb${j === i ? ' on' : ''}" data-gk="${j}" aria-pressed="${j === i}"><span class="rn">${k.n}</span><span>${esc(k.name)}</span></button></li>`).join('') + '</ol>'
+      + `<div class="rdout" role="status" aria-live="polite"><b>Schritt ${c.n}: ${esc(c.name)}</b><br>${esc(c.was)}<br><span class="hint2">${esc(c.bsp)}</span></div>`;
+  }
+  function gkAct(x) {
+    S.gbStep = +x.dataset.gk; const el = $('#gbKreisHost'); if (!el) return; el.innerHTML = gkHTML();
+    const b = el.querySelector((x.closest('.gkl') ? '.gkb' : 'g.gkn') + '[data-gk="' + S.gbStep + '"]'); if (b) b.focus({ preventScroll: true });
+  }
+  /* Übung: Schritte in die richtige Reihenfolge bringen (wie bei der Erste-Hilfe-Reihenfolge) */
+  function grNeu(seed) {
+    const n = D.gbKreis.length, R = C.rng((seed || 1) * 6151 + 11); let o;
+    for (let t = 0; t < 20; t++) { o = C.shuffle(Array.from({ length: n }, (_, i) => i), R); if (o.some((v, i) => v !== i)) break; }
+    S.gr = { seed: seed || 1, order: o, tries: 0, res: null };
+  }
+  function grHTML() {
+    if (!S.gr) grNeu(1);
+    const r = S.gr, st = D.gbKreis.map(k => k.name), done = r.res && (r.res.ok || r.res.stage === 'loes');
+    let h = '<p class="lr-hinweis">Bringe die Schritte in die richtige Reihenfolge. Mit den Pfeilen schiebst du einen Schritt nach oben oder unten.</p><ol class="ru" aria-label="Schritte in deiner Reihenfolge">';
+    h += r.order.map((v, i) => '<li><span class="rn">' + (i + 1) + '</span><span class="rt">' + esc(st[v]) + '</span><span class="rbs"><button class="rb" data-gu="' + i + '|-1" aria-label="Schritt ' + (i + 1) + ' nach oben"' + (i === 0 || done ? ' disabled' : '') + '>▲</button><button class="rb" data-gu="' + i + '|1" aria-label="Schritt ' + (i + 1) + ' nach unten"' + (i === r.order.length - 1 || done ? ' disabled' : '') + '>▼</button></span></li>').join('') + '</ol>';
+    h += '<div class="btns"><button class="btn pri" data-gx="chk"' + (done ? ' disabled' : '') + '>✓ Prüfen</button><button class="btn" data-gx="neu">🔀 Neu mischen</button></div>';
+    if (r.res) {
+      const n = r.res.richtig;
+      h += r.res.ok ? '<div class="lr-fb ok" role="status"><p><strong>✓ Richtig.</strong> Die Reihenfolge stimmt. Nach Schritt 7 beginnt der Kreislauf wieder bei Schritt 1.</p></div>'
+        : r.res.stage === 'loes' ? '<div class="lr-fb loes" role="status"><p><strong>Auch nicht.</strong> So ist die Reihenfolge richtig:</p><ol class="steps">' + st.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol></div>'
+        : '<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> ' + n + ' von ' + st.length + ' Schritten stehen schon an der richtigen Stelle. Tipp: Erst wird festgelegt, was beurteilt wird, dann kommen die Gefährdungen, dann die Maßnahmen. Du hast einen zweiten Versuch.</p></div>';
+    }
+    return h;
+  }
+  function grRender(focus) { const el = $('#gbReihHost'); if (!el) return; el.innerHTML = grHTML(); if (focus) { const b = el.querySelector('[data-gu="' + focus + '"]:not([disabled])') || el.querySelector('[data-gu$="|' + (focus.split('|')[1] === '1' ? '-1' : '1') + '"]:not([disabled])'); if (b) b.focus(); } }
+  function grAct(x) {
+    if (!S.gr) grNeu(1);
+    const r = S.gr;
+    if (x.dataset.gu != null) {
+      const p = x.dataset.gu.split('|'), i = +p[0], d = +p[1], j = i + d; if (j < 0 || j >= r.order.length) return;
+      const t = r.order[i]; r.order[i] = r.order[j]; r.order[j] = t; r.res = null; return grRender(j + '|' + d);
+    }
+    if (x.dataset.gx === 'neu') { grNeu(r.seed + 1); return grRender(); }
+    if (x.dataset.gx === 'chk') {
+      const n = r.order.filter((v, i) => v === i).length, ok = n === r.order.length; r.tries++;
+      r.res = { ok, richtig: n, stage: ok ? 'ok' : r.tries >= 2 ? 'loes' : 'tipp' }; grRender(); zeigFb($('#gbReihHost'));
+    }
+  }
   function renderGb() {
-    const steps = ['Arbeitsbereiche und Tätigkeiten festlegen', 'Gefährdungen ermitteln', 'Gefährdungen beurteilen (Wie schwer? Wie wahrscheinlich?)', 'Maßnahmen festlegen', 'Maßnahmen umsetzen', 'Wirksamkeit überprüfen', 'Ergebnis dokumentieren und fortschreiben'];
-    let h = card('Ablauf der Gefährdungsbeurteilung', `<ol class="steps">${steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol><p class="hint2">Der Arbeitgeber ist verantwortlich. Du lernst hier, wie man vorgeht, und wo du selbst Gefährdungen erkennst und meldest.</p>`);
+    let h = card('Ablauf der Gefährdungsbeurteilung', `<p class="hint2" style="margin:0 0 6px">Die Gefährdungsbeurteilung ist ein Kreislauf aus sieben Schritten. Tippe einen Schritt an, dann siehst du ein Beispiel aus der Lehrwerkstatt.</p><div id="gbKreisHost">${gkHTML()}</div><p class="hint2">Der Arbeitgeber ist verantwortlich. Du lernst hier, wie man vorgeht, und wo du selbst Gefährdungen erkennst und meldest.</p>`);
+    h += `<div class="card pl"><h4>Reihenfolge üben</h4><div id="gbReihHost">${grHTML()}</div></div>`;
     h += card('STOP-Prinzip der Maßnahmen', svgStop() + `<table class="tt">${Object.keys(D.stop).map(k => `<tr><td><span class="stp s${k}">${k}</span></td><td><b>${esc(D.stop[k].name)}</b><br><span class="hint2">${esc(D.stop[k].text)}</span></td></tr>`).join('')}</table>`);
     h += `<div class="card pl"><h4>Mini-Gefährdungsbeurteilung</h4><div class="ctl">${D.gbOrder.map(w => `<button class="chip${w === S.gbWp ? ' on' : ''}" data-gbw="${w}">${esc(D.gb[w].name)}</button>`).join('')}</div>${gbEditor(S.gbWp, 'tab')}</div>`;
     $('#gbView').innerHTML = h;
@@ -435,10 +499,13 @@
     const v = C.verifyCode(S.fin.chk), o = $('#finChkOut'); if (!o) return;
     o.innerHTML = v.ok ? `<div class="rdout ok"><b>Prüfsumme stimmt.</b> Name (Kennung): ${esc(v.name)}, Datum: ${esc(v.date)}, Ergebnis: ${v.pct} % (${v.passed ? 'bestanden' : 'nicht bestanden'}).</div>` : `<div class="rdout bad"><b>Prüfsumme stimmt nicht</b> (${esc(v.reason)}). Tippfehler? Bitte den Code genau abschreiben.</div>`;
   }
+  $('#mid').addEventListener('keydown', e => { const t = e.target; if ((e.key === 'Enter' || e.key === ' ') && t.matches && t.matches('g.gkn')) { e.preventDefault(); gkAct(t); } });
   $('#mid').addEventListener('click', e => {
     const g = s => e.target.closest(s);
     let x;
     if ((x = g('[data-rk],[data-ru],[data-rc]'))) return reihAct(x);
+    if ((x = g('[data-gu],[data-gx]'))) return grAct(x);
+    if ((x = g('[data-gk]'))) return gkAct(x);
     if ((x = g('[data-gz],[data-gzn]'))) return gzAct(x);
     if ((x = g('[data-sg]'))) return signSheet(x.dataset.sg);
     if ((x = g('[data-gh]'))) return ghsSheet(x.dataset.gh);

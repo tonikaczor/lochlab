@@ -21,7 +21,16 @@
     code: ['Arduino-Lab', 'codelab.html'], pi: ['Pi-Lab', 'pilab.html'], ds: ['Datenblatt-Lab', 'dslab.html'], pr: ['Prüfungs-Lab', 'pruefungslab.html'], vb: ['Projekte', 'verbund.html'],
     pne: ['Pneumatik-Lab', 'pnelab.html'], arb: ['Arbeitsschutz-Lab', 'arblab.html'],
     mat2: ['Mathe-Brücke', 'mat2lab.html'], sig: ['Signale und Systeme', 'siglab.html'], rg2: ['Regelungstechnik Aufbau', 'rg2lab.html'],
-    emb: ['Embedded vertieft', 'emblab.html'], prj: ['Projekt und Wirtschaftlichkeit', 'prjlab.html'], nrm: ['Normen und Konformität', 'nrmlab.html'], fli: ['Linien-Lab', 'flilab.html']
+    emb: ['Embedded vertieft', 'emblab.html'], prj: ['Projekt und Wirtschaftlichkeit', 'prjlab.html'], nrm: ['Normen und Konformität', 'nrmlab.html'], fli: ['Linien-Lab', 'flilab.html'],
+    // Paket W1 (Welle 3): 30 weitere Labs (Metall, Technik, IT, Betrieb); Kuerzel = Dateiname ohne "lab.html"
+    tol: ['Toleranz-Lab', 'tollab.html'], zer: ['Zerspan-Lab', 'zerlab.html'], fer: ['Fertigungs-Lab', 'ferlab.html'], hyd: ['Hydraulik-Lab', 'hydlab.html'],
+    mas: ['Maschinenelemente-Lab', 'maslab.html'], cnc: ['CNC-Lab', 'cnclab.html'], fug: ['Füge-Lab', 'fuglab.html'], mak: ['Maschinen-Lab', 'maklab.html'],
+    wer: ['Werkstoff-Lab', 'werlab.html'], mch: ['Mechanik-Lab', 'mchlab.html'], ins: ['Instandhaltungs-Lab', 'inslab.html'], net: ['Netzwerk-Lab', 'netlab.html'],
+    kal: ['Kalkulations-Lab', 'kallab.html'], lag: ['Lager-Lab', 'laglab.html'], mat: ['Rechen-Lab', 'matlab.html'], zei: ['Zeichnungs-Lab', 'zeilab.html'],
+    its: ['IT-Sicherheits-Lab', 'itslab.html'], buc: ['Buchführungs-Lab', 'buclab.html'], lad: ['Ladungssicherungs-Lab', 'ladlab.html'], eng: ['Technisches-Englisch-Lab', 'englab.html'],
+    bhf: ['Berichtsheft-Helfer', 'bhflab.html'], kon: ['Konstruktions-Lab', 'konlab.html'], wfl: ['Warenfluss-Lab', 'wfllab.html'], rec: ['Auftrag-und-Recht-Lab', 'reclab.html'],
+    sql: ['Datenbank-Lab (SQL)', 'sqllab.html'], lin: ['Linux-Terminal-Lab', 'linlab.html'], alg: ['Algorithmen-Lab', 'alglab.html'], hwl: ['PC-Hardware-Lab', 'hwllab.html'],
+    sys: ['IT-Systeme-Lab', 'syslab.html'], ssl: ['Schaltschrank-Lab', 'ssllab.html']
   };
   // Datendateien (Abschnitt 3.3): Name -> Datei; "da" = in diesem Stand vorhanden (sonst laedt need() nicht, kein 404)
   var DATEIEN = {

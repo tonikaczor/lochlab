@@ -433,8 +433,21 @@
     ['Wichtig zur Einordnung', '<p>Dieses Lab ist eine Übung und Ergänzung. Es <b>ersetzt keine gesetzlich vorgeschriebene Unterweisung</b> durch den Arbeitgeber und keinen Erste-Hilfe-Kurs. Maßgeblich sind deine Betriebsanweisungen, die Hinweise deiner Ausbilder und der Fachkraft für Arbeitssicherheit.</p>']
   ];
 
+  /* ===== Kreislauf der Gefährdungsbeurteilung (sieben Schritte) =====
+     Reihenfolge und Namen nach den Unfallversicherungsträgern (DGUV Grundsatz 311-003, BG ETEM) und der gängigen Darstellung in sieben Schritten;
+     die Beispiele sind Übungsbeispiele aus der Elektro-Lehrwerkstatt, keine Betriebsanweisung. n = Nummer, kurz = Beschriftung im Kreis (zwei Zeilen). */
+  const gbKreis = [
+    { n: 1, kurz: ['Bereiche', 'festlegen'], name: 'Arbeitsbereiche und Tätigkeiten festlegen', was: 'Zuerst legt man fest, was beurteilt wird: welche Arbeitsbereiche und welche Tätigkeiten.', bsp: 'Beispiel Lehrwerkstatt: Der Lötarbeitsplatz und das Arbeiten an Geräten, die am 230-V-Netz hängen.' },
+    { n: 2, kurz: ['Gefährdungen', 'ermitteln'], name: 'Gefährdungen ermitteln', was: 'Dann sucht man, was bei dieser Tätigkeit gefährlich werden kann.', bsp: 'Beispiel Lehrwerkstatt: Beim Löten ein heißer Lötkolben (Verbrennung) und Lötdämpfe. An Geräten am Netz ein Stromschlag durch 230 V.' },
+    { n: 3, kurz: ['Gefährdungen', 'beurteilen'], name: 'Gefährdungen beurteilen', was: 'Jede Gefährdung wird bewertet: Wie schwer kann der Schaden sein, und wie wahrscheinlich ist er? Daraus ergibt sich, was zuerst angepackt wird.', bsp: 'Beispiel Lehrwerkstatt: Ein Stromschlag an 230 V kann lebensgefährlich sein. Deshalb gehört er zu den Gefährdungen, die zuerst bearbeitet werden.' },
+    { n: 4, kurz: ['Maßnahmen', 'festlegen'], name: 'Maßnahmen festlegen', was: 'Für jede Gefährdung werden Schutzmaßnahmen festgelegt, nach dem STOP-Prinzip: erst Substitution, dann technische, dann organisatorische, zuletzt persönliche Maßnahmen.', bsp: 'Beispiel Lehrwerkstatt: Arbeiten an Geräten mit 230 V nur spannungsfrei. Den Lötkolben nur in der Halterung ablegen. Lötdämpfe absaugen.' },
+    { n: 5, kurz: ['Maßnahmen', 'durchführen'], name: 'Maßnahmen durchführen', was: 'Die festgelegten Maßnahmen werden wirklich umgesetzt, und die Beteiligten werden unterwiesen.', bsp: 'Beispiel Lehrwerkstatt: Die Absaugung wird am Lötplatz aufgebaut, die Halterungen stehen bereit, und die Azubis werden in die Regeln eingewiesen.' },
+    { n: 6, kurz: ['Wirksamkeit', 'überprüfen'], name: 'Wirksamkeit überprüfen', was: 'Man prüft, ob die Maßnahmen umgesetzt wurden und ob sie die Gefährdung wirklich verringern. Das Ergebnis wird festgehalten.', bsp: 'Beispiel Lehrwerkstatt: Wird am Lötplatz tatsächlich abgesaugt? Wird nur noch spannungsfrei gearbeitet? Gab es Beinahe-Unfälle?' },
+    { n: 7, kurz: ['Fortschreiben', ''], name: 'Gefährdungsbeurteilung fortschreiben', was: 'Die Gefährdungsbeurteilung bleibt nie fertig. Ändert sich etwas, wird sie angepasst. Danach beginnt der Kreislauf wieder bei Schritt 1.', bsp: 'Beispiel Lehrwerkstatt: Ein neues Lötgerät oder ein neues Lot kommt in die Werkstatt, oder es passiert ein Unfall. Dann wird die Gefährdungsbeurteilung für den Lötplatz überarbeitet.' }
+  ];
+
   /* ===== Export ===== */
-  root.ARB_DATA = { cats, kat, signs, ghs, signal, brand, mittel, matrix, grund, brandMaterial, stop, gb, gbOrder, psaItems, psa, tasks, eh, seiten, beispiele, beispielDaten, help };
+  root.ARB_DATA = { cats, kat, signs, ghs, signal, brand, mittel, matrix, grund, brandMaterial, stop, gb, gbOrder, gbKreis, psaItems, psa, tasks, eh, seiten, beispiele, beispielDaten, help };
   root.ARB_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { DATA: root.ARB_DATA, TASKS: root.ARB_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

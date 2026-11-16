@@ -308,7 +308,7 @@
     ['icmax', 0.5, 'A', '<=', 'A', '—', 'F4', 'Zulässiger Kollektorstrom'],
     ['ue_min', 1.5, '', '>=', 'A', '—', 'F5', 'Mindest-Übersteuerungsfaktor (grün)'],
     ['ue_typ', 3, '', '=', 'A', '—', 'F5', 'Übliche Übersteuerung beim Dimensionieren'],
-    ['ap_fenster', 0.15, '', '<=', 'A', '—', 'F6', 'Arbeitspunkt-Fenster: Abweichung von der Vorgabe in Anteilen der Betriebsspannung'],
+    ['ap_fenster', 1, 'V', '<=', 'A', '—', 'F6', 'Arbeitspunkt-Fenster: Abweichung der Spannung U_CE von der Vorgabe (6 V gelten von 5,0 V bis 7,0 V)'],
     ['klirr_grenze', 0.05, '', '<=', 'A', '—', 'F6', 'Klirrfaktor, ab dem die Verzerrung gemeldet wird'],
     ['uv_std', 12, 'V', '=', 'A', '—', 'F10', 'Betriebsspannung des Operationsverstärkers (± Spannung)'],
     ['u_klein', 30, 'V', '<=', 'A', '—', 'F15', 'Obergrenze der Kleinspannung in diesem Lab (Simulation)'],

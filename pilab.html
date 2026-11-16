@@ -11,6 +11,8 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Tonfunk Pi-Lab</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schlüssel lm4.theme wie die Startseite */
+(function(){try{var v=localStorage.getItem('lm4.theme');if(v==='light'||v==='dark')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 <link rel="stylesheet" href="lab.css">
 <style>
 @media(max-width:1100px){.hb span{display:none}.hb{padding:0 10px}}
@@ -21,6 +23,9 @@ main{display:flex;flex-direction:column}
 #dockBar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--line)}
 .btn2{height:36px;padding:0 12px;border-radius:18px;background:var(--panel2);border:1px solid var(--line);font-size:14px;white-space:nowrap}
 .btn2:active{background:var(--panel)}.btn2.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
+.btn2[disabled]{opacity:.4}
+/* D2: eine Startstelle: Start, Pause und Weiter liegen im Code-Feld; der grüne Knopf in der Kopfzeile entfällt */
+html #bRun{display:none!important}
 #codeStatus{margin-left:auto;font-size:14px;color:var(--mute);max-width:46%;text-align:right}
 #dockBody{display:flex;flex:1;min-height:0}
 #edWrap{flex:3;display:flex;min-width:0}
@@ -29,6 +34,7 @@ main{display:flex;flex-direction:column}
 #serWrap{flex:2;min-width:190px;display:flex;flex-direction:column;border-left:1px solid var(--line)}
 #serBar{display:flex;gap:6px;padding:5px 6px;align-items:center;font-size:14px}
 #serOut{flex:1;margin:0;padding:6px 8px;overflow:auto;font:14px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;background:#0b0f13;color:#cfe8cf;min-height:50px}
+:root[data-theme=light] #serOut{background:#f4f6f9;color:#1b2430;border-top:1px solid var(--line)}
 #serPlot{position:static;flex:1;width:100%;height:auto;min-height:60px}
 #serRow{display:flex;gap:6px;padding:5px 6px;border-top:1px solid var(--line)}
 #serRow input{padding:5px 9px;font-size:14px;min-height:36px;border-radius:14px}
@@ -130,5 +136,7 @@ main{display:flex;flex-direction:column}
 <script src="iliasbar.js"></script>
 <script>window.LR_TAB = { 'pilab.html': { name: 'Pi-Lab', flaeche: 'Schaltung', leiste: false } };</script>
 <script src="labrahmen.js"></script>
+<script src="tutorial-data.js"></script>
+<script src="tutorial.js"></script>
 </body>
 </html>

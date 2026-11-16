@@ -11,6 +11,8 @@
 (function (root) {
   const C = () => root.MCH_CORE;
   const f = (v, d) => C().fmtN(v, d == null ? 2 : d, true);
+  const dgG = a => f(a, 2) + ' °'; /* vorgegebener Winkel: so genau wie gegeben (30 °, 12,5 °) */
+  const dg = a => { const c = C(); return c.fin(a) ? c.fmtDe(c.rd(a, 2), 2, true) + ' °' : '–'; }; /* Winkel einheitlich: zwei Nachkommastellen, Leerzeichen vor dem Gradzeichen */
   const CATS = ['Kräfte als Vektor', 'Hebel und Drehmoment', 'Träger und Auflager', 'Schwerpunkt', 'Reibung', 'Spannung und Dehnung', 'Pressung und Abscheren', 'Biegung und Sicherheit', 'Arbeit und Leistung', 'Fehlersuche'];
   const REL = 0.01;
 
@@ -40,8 +42,8 @@
     },
     zerl: R => {
       const c = C(), F = c.pick(R, [120, 150, 200, 250, 300, 400, 500, 600]), a = c.pick(R, [20, 25, 30, 35, 40, 50, 55, 60, 65]), hor = R() < 0.5, v = hor ? F * Math.cos(a * c.RAD) : F * Math.sin(a * c.RAD);
-      return numQ('Eine Kraft von ' + f(F, 0) + ' N wirkt unter einem Winkel von ' + a + '° gegen die Waagerechte (nach rechts oben). Wie groß ist ihre ' + (hor ? 'waagerechte' : 'senkrechte') + ' Komponente?', v, 'N', hor ? 'Komponente Fx (waagerecht)' : 'Komponente Fy (senkrecht)', 0,
-        (hor ? 'Fx = F · cos α = ' : 'Fy = F · sin α = ') + f(F, 0) + ' N · ' + (hor ? 'cos ' : 'sin ') + a + '° = ' + f(v, 1) + ' N.', ['Zeichne ein rechtwinkliges Kräftedreieck: F ist die Hypotenuse.', hor ? 'Die Komponente neben dem Winkel ist die Ankathete (Kosinus).' : 'Die Komponente gegenüber dem Winkel ist die Gegenkathete (Sinus).']);
+      return numQ('Eine Kraft von ' + f(F, 0) + ' N wirkt unter einem Winkel von ' + dgG(a) + ' gegen die Waagerechte (nach rechts oben). Wie groß ist ihre ' + (hor ? 'waagerechte' : 'senkrechte') + ' Komponente?', v, 'N', hor ? 'Komponente Fx (waagerecht)' : 'Komponente Fy (senkrecht)', 0,
+        (hor ? 'Fx = F · cos α = ' : 'Fy = F · sin α = ') + f(F, 0) + ' N · ' + (hor ? 'cos ' : 'sin ') + dgG(a) + ' = ' + f(v, 1) + ' N.', ['Zeichne ein rechtwinkliges Kräftedreieck: F ist die Hypotenuse.', hor ? 'Die Komponente neben dem Winkel ist die Ankathete (Kosinus).' : 'Die Komponente gegenüber dem Winkel ist die Gegenkathete (Sinus).']);
     },
     resr: R => {
       const c = C();
@@ -56,20 +58,20 @@
     },
     resg: R => {
       const c = C(), F1 = c.ri(R, 3, 12) * 10, F2 = c.ri(R, 3, 12) * 10, g = c.pick(R, [45, 60, 120, 135]), v = c.resMag(F1, F2, g);
-      return numQ('Zwei Kräfte F1 = ' + f(F1, 0) + ' N und F2 = ' + f(F2, 0) + ' N greifen im selben Punkt an. Ihre Richtungen schließen einen Winkel von ' + g + '° ein. Wie groß ist die Resultierende?', v, 'N', 'Resultierende R', 0,
-        'R = √(F1² + F2² + 2 · F1 · F2 · cos γ) = √(' + f(F1, 0) + '² + ' + f(F2, 0) + '² + 2 · ' + f(F1, 0) + ' · ' + f(F2, 0) + ' · cos ' + g + '°) N = ' + f(v, 1) + ' N. Je kleiner der Winkel zwischen den Kräften, desto größer die Resultierende.', ['Zeichne das Kräfteparallelogramm und nutze den Kosinussatz.', 'Der Winkel γ liegt zwischen den beiden Kraftrichtungen (nicht zwischen den Pfeilspitzen).']);
+      return numQ('Zwei Kräfte F1 = ' + f(F1, 0) + ' N und F2 = ' + f(F2, 0) + ' N greifen im selben Punkt an. Ihre Richtungen schließen einen Winkel von ' + dgG(g) + ' ein. Wie groß ist die Resultierende?', v, 'N', 'Resultierende R', 0,
+        'R = √(F1² + F2² + 2 · F1 · F2 · cos γ) = √(' + f(F1, 0) + '² + ' + f(F2, 0) + '² + 2 · ' + f(F1, 0) + ' · ' + f(F2, 0) + ' · cos ' + dgG(g) + ') N = ' + f(v, 1) + ' N. Je kleiner der Winkel zwischen den Kräften, desto größer die Resultierende.', ['Zeichne das Kräfteparallelogramm und nutze den Kosinussatz.', 'Der Winkel γ liegt zwischen den beiden Kraftrichtungen (nicht zwischen den Pfeilspitzen).']);
     },
     seil: R => {
       const c = C(), m = c.pick(R, [20, 40, 50, 80, 100, 150]), Gk = c.weight(m);
       if (R() < 0.5) {
         const a = c.pick(R, [30, 45, 60]), v = c.ropes(Gk, a, a).S1;
-        return numQ('Eine Last von ' + KG(m) + ' hängt an zwei gleich langen Seilen, die symmetrisch jeweils ' + a + '° gegen die Waagerechte geneigt sind. Welche Kraft wirkt in einem Seil?', v, 'N', 'Seilkraft S', 0,
-          'Die senkrechten Komponenten beider Seile tragen die Last: 2 · S · sin ' + a + '° = G = ' + f(Gk, 1) + ' N, also S = G / (2 · sin ' + a + '°) = ' + f(v, 1) + ' N. Je flacher die Seile hängen, desto größer wird die Seilkraft.', ['Die Last ist im Gleichgewicht mit den senkrechten Anteilen der Seilkräfte.', 'Beide Seile liefern denselben senkrechten Anteil S · sin α.']);
+        return numQ('Eine Last von ' + KG(m) + ' hängt an zwei gleich langen Seilen, die symmetrisch jeweils ' + dgG(a) + ' gegen die Waagerechte geneigt sind. Welche Kraft wirkt in einem Seil?', v, 'N', 'Seilkraft S', 0,
+          'Die senkrechten Komponenten beider Seile tragen die Last: 2 · S · sin ' + dgG(a) + ' = G = ' + f(Gk, 1) + ' N, also S = G / (2 · sin ' + dgG(a) + ') = ' + f(v, 1) + ' N. Je flacher die Seile hängen, desto größer wird die Seilkraft.', ['Die Last ist im Gleichgewicht mit den senkrechten Anteilen der Seilkräfte.', 'Beide Seile liefern denselben senkrechten Anteil S · sin α.']);
       }
       const a1 = c.pick(R, [30, 40, 50, 60]); let a2 = c.pick(R, [30, 40, 50, 60]); if (a2 === a1) a2 = a1 === 60 ? 30 : a1 + 10;
       const v = c.ropes(Gk, a1, a2).S1;
-      return numQ('Eine Last von ' + KG(m) + ' hängt an zwei Seilen. Das linke Seil ist ' + a1 + ', das rechte ' + a2 + '° gegen die Waagerechte geneigt. Welche Kraft wirkt im linken Seil?', v, 'N', 'Seilkraft S1 (links)', 0,
-        'Gleichgewicht waagerecht: S1 · cos ' + a1 + '° = S2 · cos ' + a2 + '°; senkrecht: S1 · sin ' + a1 + '° + S2 · sin ' + a2 + '° = G = ' + f(Gk, 1) + ' N. Daraus S1 = G · cos ' + a2 + '° / sin(' + a1 + '° + ' + a2 + '°) = ' + f(v, 1) + ' N.', ['Stelle zwei Gleichungen auf: Summe der waagerechten und Summe der senkrechten Kräfte gleich 0.', 'Die waagerechten Anteile beider Seile heben sich auf.']);
+      return numQ('Eine Last von ' + KG(m) + ' hängt an zwei Seilen. Das linke Seil ist ' + dgG(a1) + ', das rechte ' + dgG(a2) + ' gegen die Waagerechte geneigt. Welche Kraft wirkt im linken Seil?', v, 'N', 'Seilkraft S1 (links)', 0,
+        'Gleichgewicht waagerecht: S1 · cos ' + dgG(a1) + ' = S2 · cos ' + dgG(a2) + '; senkrecht: S1 · sin ' + dgG(a1) + ' + S2 · sin ' + dgG(a2) + ' = G = ' + f(Gk, 1) + ' N. Daraus S1 = G · cos ' + dgG(a2) + ' / sin(' + dgG(a1) + ' + ' + dgG(a2) + ') = ' + f(v, 1) + ' N.', ['Stelle zwei Gleichungen auf: Summe der waagerechten und Summe der senkrechten Kräfte gleich 0.', 'Die waagerechten Anteile beider Seile heben sich auf.']);
     },
     /* Hebel und Drehmoment */
     mom: R => {
@@ -182,8 +184,8 @@
     },
     rb3: R => {
       const c = C(), m = c.pick(R, [20, 40, 60, 100, 150]), a = c.pick(R, [10, 15, 20, 25, 30, 35]), Gk = c.weight(m), hang = R() < 0.55, v = hang ? c.incFH(Gk, a) : c.incFN(Gk, a);
-      const q = numQ('Ein Körper von ' + KG(m) + ' liegt auf einer schiefen Ebene mit ' + a + '° Neigung. Wie groß ist die ' + (hang ? 'Hangabtriebskraft (Kraftanteil parallel zur Ebene)' : 'Normalkraft (Kraftanteil senkrecht zur Ebene)') + '?', v, 'N', hang ? 'Hangabtrieb FH' : 'Normalkraft FN', 0,
-        'G = ' + f(m, 0) + ' kg · 9,81 m/s² = ' + f(Gk, 1) + ' N. ' + (hang ? 'FH = G · sin α = ' + f(Gk, 1) + ' N · sin ' + a + '° = ' + f(v, 1) + ' N.' : 'FN = G · cos α = ' + f(Gk, 1) + ' N · cos ' + a + '° = ' + f(v, 1) + ' N.'), ['Zerlege die Gewichtskraft in einen Anteil entlang der Ebene und einen senkrecht dazu.', hang ? 'Der Anteil entlang der Ebene wächst mit dem Winkel (Sinus).' : 'Der Anteil senkrecht zur Ebene wird mit steilerem Winkel kleiner (Kosinus).']);
+      const q = numQ('Ein Körper von ' + KG(m) + ' liegt auf einer schiefen Ebene mit ' + dgG(a) + ' Neigung. Wie groß ist die ' + (hang ? 'Hangabtriebskraft (Kraftanteil parallel zur Ebene)' : 'Normalkraft (Kraftanteil senkrecht zur Ebene)') + '?', v, 'N', hang ? 'Hangabtrieb FH' : 'Normalkraft FN', 0,
+        'G = ' + f(m, 0) + ' kg · 9,81 m/s² = ' + f(Gk, 1) + ' N. ' + (hang ? 'FH = G · sin α = ' + f(Gk, 1) + ' N · sin ' + dgG(a) + ' = ' + f(v, 1) + ' N.' : 'FN = G · cos α = ' + f(Gk, 1) + ' N · cos ' + dgG(a) + ' = ' + f(v, 1) + ' N.'), ['Zerlege die Gewichtskraft in einen Anteil entlang der Ebene und einen senkrecht dazu.', hang ? 'Der Anteil entlang der Ebene wächst mit dem Winkel (Sinus).' : 'Der Anteil senkrecht zur Ebene wird mit steilerem Winkel kleiner (Kosinus).']);
       q.fig = { type: 'ramp', alpha: a }; return q;
     },
     rb4: R => {
@@ -193,22 +195,22 @@
         const o = (fh, fr) => (fh > fr ? 'Er rutscht' : 'Er bleibt liegen') + ': Hangabtrieb ' + f(fh, 0) + ' N, größte Haftreibung ' + f(fr, 0) + ' N';
         const right = o(c.incFH(Gk, a), mt.mu0 * c.incFN(Gk, a)), wrong = [o(c.incFN(Gk, a), mt.mu0 * c.incFH(Gk, a)), o(c.incFH(Gk, a), mt.mu0 * Gk), o(m * Math.sin(a * c.RAD), mt.mu0 * m * Math.cos(a * c.RAD))];
         if (new Set([right].concat(wrong)).size !== 4) continue;
-        const q = choiceQ(R, 'Ein Werkstück von ' + KG(m) + ' liegt auf einer schiefen Ebene mit ' + a + '° Neigung (' + mt.n + ', Haftreibungszahl μ0 = ' + f(mt.mu0, 2) + '). Welche Aussage mit der richtigen Rechnung trifft zu?', right, wrong,
-          'Hangabtrieb FH = G · sin α = ' + f(c.incFH(Gk, a), 1) + ' N. Größte Haftreibung FR0 = μ0 · G · cos α = ' + f(mt.mu0 * c.incFN(Gk, a), 1) + ' N. ' + (c.incFH(Gk, a) > mt.mu0 * c.incFN(Gk, a) ? 'Der Hangabtrieb ist größer, das Werkstück rutscht (tan ' + a + '° = ' + f(Math.tan(a * c.RAD), 2) + ' > μ0).' : 'Die Haftreibung reicht, das Werkstück bleibt liegen (tan ' + a + '° = ' + f(Math.tan(a * c.RAD), 2) + ' ≤ μ0).'),
+        const q = choiceQ(R, 'Ein Werkstück von ' + KG(m) + ' liegt auf einer schiefen Ebene mit ' + dgG(a) + ' Neigung (' + mt.n + ', Haftreibungszahl μ0 = ' + f(mt.mu0, 2) + '). Welche Aussage mit der richtigen Rechnung trifft zu?', right, wrong,
+          'Hangabtrieb FH = G · sin α = ' + f(c.incFH(Gk, a), 1) + ' N. Größte Haftreibung FR0 = μ0 · G · cos α = ' + f(mt.mu0 * c.incFN(Gk, a), 1) + ' N. ' + (c.incFH(Gk, a) > mt.mu0 * c.incFN(Gk, a) ? 'Der Hangabtrieb ist größer, das Werkstück rutscht (tan ' + dgG(a) + ' = ' + f(Math.tan(a * c.RAD), 2) + ' > μ0).' : 'Die Haftreibung reicht, das Werkstück bleibt liegen (tan ' + dgG(a) + ' = ' + f(Math.tan(a * c.RAD), 2) + ' ≤ μ0).'),
           ['Vergleiche Hangabtrieb (G · sin α) mit der größten Haftreibung (μ0 · G · cos α).', 'Für die Normalkraft auf der Ebene gilt der Kosinus, nicht die ganze Gewichtskraft.']);
         q.fig = { type: 'ramp', alpha: a }; return q;
       }
-      const q = choiceQ(R, 'Ein Werkstück liegt auf einer Ebene mit 30° Neigung (μ0 = 0,15).', 'Er rutscht: Hangabtrieb 49 N, größte Haftreibung 13 N', ['Er bleibt liegen: Hangabtrieb 49 N, größte Haftreibung 130 N', 'Er rutscht: Hangabtrieb 13 N, größte Haftreibung 49 N', 'Er bleibt liegen: Hangabtrieb 13 N, größte Haftreibung 49 N'], 'Hangabtrieb G · sin α, größte Haftreibung μ0 · G · cos α.', ['Vergleiche beide Kräfte.', 'Sinus und Kosinus nicht verwechseln.']); return q;
+      const q = choiceQ(R, 'Ein Werkstück liegt auf einer Ebene mit 30 ° Neigung (μ0 = 0,15).', 'Er rutscht: Hangabtrieb 49 N, größte Haftreibung 13 N', ['Er bleibt liegen: Hangabtrieb 49 N, größte Haftreibung 130 N', 'Er rutscht: Hangabtrieb 13 N, größte Haftreibung 49 N', 'Er bleibt liegen: Hangabtrieb 13 N, größte Haftreibung 49 N'], 'Hangabtrieb G · sin α, größte Haftreibung μ0 · G · cos α.', ['Vergleiche beide Kräfte.', 'Sinus und Kosinus nicht verwechseln.']); return q;
     },
     rb5: R => {
       const c = C(), mt = c.pick(R, c.MU), v = c.critAngle(mt.mu0);
       return numQ('Ein Körper liegt auf einer schiefen Ebene (' + mt.n + ', Haftreibungszahl μ0 = ' + f(mt.mu0, 2) + '). Die Ebene wird langsam steiler gestellt. Bei welchem Neigungswinkel beginnt der Körper zu rutschen?', v, '°', 'Grenzwinkel', 0,
-        'Im Grenzfall ist der Hangabtrieb gleich der größten Haftreibung: G · sin α = μ0 · G · cos α, also tan α = μ0 und α = arctan ' + f(mt.mu0, 2) + ' = ' + f(v, 1) + '°. Die Masse spielt keine Rolle.', ['Im Grenzfall sind Hangabtrieb und größte Haftreibung gleich groß.', 'G kürzt sich heraus; es bleibt ein Zusammenhang zwischen dem Winkel und μ0.'], 0.5);
+        'Im Grenzfall ist der Hangabtrieb gleich der größten Haftreibung: G · sin α = μ0 · G · cos α, also tan α = μ0 und α = arctan ' + f(mt.mu0, 2) + ' = ' + dg(v) + '. Die Masse spielt keine Rolle.', ['Im Grenzfall sind Hangabtrieb und größte Haftreibung gleich groß.', 'G kürzt sich heraus; es bleibt ein Zusammenhang zwischen dem Winkel und μ0.'], 0.5);
     },
     rb6: R => {
       const c = C(), m = c.pick(R, [50, 80, 100, 150, 200]), a = c.pick(R, [10, 15, 20, 25, 30]), mt = c.pick(R, c.MU.filter(x => x.id !== 'gb' && x.id !== 'bs')), Gk = c.weight(m), v = c.rampUp(Gk, a, mt.mu);
-      const q = numQ('Ein Wagen von ' + KG(m) + ' soll mit gleichbleibender Geschwindigkeit eine Rampe mit ' + a + '° Neigung hinaufgezogen werden (' + mt.n + ', Gleitreibungszahl μ = ' + f(mt.mu, 2) + '). Die Zugkraft wirkt parallel zur Rampe. Wie groß ist sie?', v, 'N', 'Zugkraft F', 0,
-        'Die Zugkraft muss den Hangabtrieb und die Gleitreibung überwinden: F = G · sin α + μ · G · cos α = ' + f(Gk, 1) + ' N · (sin ' + a + '° + ' + f(mt.mu, 2) + ' · cos ' + a + '°) = ' + f(c.incFH(Gk, a), 1) + ' N + ' + f(mt.mu * c.incFN(Gk, a), 1) + ' N = ' + f(v, 1) + ' N.', ['Nach oben wirken Hangabtrieb und Reibung beide gegen die Bewegung.', 'Die Reibkraft nutzt die Normalkraft G · cos α.']);
+      const q = numQ('Ein Wagen von ' + KG(m) + ' soll mit gleichbleibender Geschwindigkeit eine Rampe mit ' + dgG(a) + ' Neigung hinaufgezogen werden (' + mt.n + ', Gleitreibungszahl μ = ' + f(mt.mu, 2) + '). Die Zugkraft wirkt parallel zur Rampe. Wie groß ist sie?', v, 'N', 'Zugkraft F', 0,
+        'Die Zugkraft muss den Hangabtrieb und die Gleitreibung überwinden: F = G · sin α + μ · G · cos α = ' + f(Gk, 1) + ' N · (sin ' + dgG(a) + ' + ' + f(mt.mu, 2) + ' · cos ' + dgG(a) + ') = ' + f(c.incFH(Gk, a), 1) + ' N + ' + f(mt.mu * c.incFN(Gk, a), 1) + ' N = ' + f(v, 1) + ' N.', ['Nach oben wirken Hangabtrieb und Reibung beide gegen die Bewegung.', 'Die Reibkraft nutzt die Normalkraft G · cos α.']);
       q.fig = { type: 'ramp', alpha: a }; return q;
     },
     /* Spannung und Dehnung */
@@ -404,7 +406,7 @@
   function evaluate(q, a) {
     const c = C(), as = q.ask; a = a || {};
     if (as.type === 'choice') { if (a.c == null) return { err: 'Wähle zuerst eine Antwort.' }; return { ok: a.c === as.correct, given: as.choices[a.c] }; }
-    if (as.type === 'num') { const v = c.parseDe(a.v); if (!Number.isFinite(v)) return { err: 'Bitte gib eine Zahl ein (mit Komma oder Punkt).' }; return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 3) + (as.unit ? ' ' + as.unit : '') }; }
+    if (as.type === 'num') { const v = c.parseDe(a.v); if (!Number.isFinite(v)) return { err: 'Bitte gib eine Zahl ein (mit Komma oder Punkt).' }; return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: (as.unit === '°' ? String(a.v == null ? '' : a.v).trim().replace(/\s*°$/, '').replace('.', ',') + ' °' : f(v, 3) + (as.unit ? ' ' + as.unit : '')) }; }
     return { err: 'Unbekannte Frageform.' };
   }
   function solAns(q) {
@@ -420,19 +422,20 @@
   function solText(q) {
     const as = q.ask;
     if (as.type === 'choice') return as.choices[as.correct];
+    if (as.unit === '°') return dg(q.value);
     return f(q.value, q.value >= 100 ? 1 : 2) + (as.unit ? ' ' + as.unit : '');
   }
 
   /* ---------- Beispiele (fertig durchgerechnet; Ausgabe entsteht im UI aus MCH_CORE; p = Zustand des Reiters) ---------- */
   const examples = [
     { id: 'kr1', tab: 'kr', title: 'Zwei Kräfte zusammensetzen', text: 'Zwei Kräfte (80 N und 60 N) stehen senkrecht aufeinander. Das Kräfteparallelogramm zeigt die Resultierende; ziehe die Pfeilspitzen, um zu sehen, wie sich R verändert.', p: { mode: 'comp', F1: '80', a1: '0', F2: '60', a2: '90', show: 'para' } },
-    { id: 'kr2', tab: 'kr', title: 'Eine Kraft zerlegen', text: 'Eine Zugkraft von 100 N wirkt unter 30° gegen die Waagerechte. Welcher Anteil zieht waagerecht, welcher hebt?', p: { mode: 'zerl', F: '100', a: '30' } },
+    { id: 'kr2', tab: 'kr', title: 'Eine Kraft zerlegen', text: 'Eine Zugkraft von 100 N wirkt unter 30 ° gegen die Waagerechte. Welcher Anteil zieht waagerecht, welcher hebt?', p: { mode: 'zerl', F: '100', a: '30' } },
     { id: 'he1', tab: 'he', title: 'Hebel im Gleichgewicht', text: 'Links 200 N im Abstand 30 cm, rechts 100 N: Wo muss die rechte Last sitzen, damit der Balken waagerecht bleibt? Verschiebe die Gewichte und beobachte die Momente.', p: { F1: '200', x1: '30', F2: '100', x2: '60' } },
     { id: 'he2', tab: 'he', title: 'Aus dem Gleichgewicht', text: 'Die rechte Last sitzt zu weit außen: Das rechtsdrehende Moment überwiegt, der Balken neigt sich nach rechts.', p: { F1: '200', x1: '30', F2: '100', x2: '85' } },
     { id: 'tr1', tab: 'tr', title: 'Träger mit mittiger Einzellast', text: 'Träger über 4 m, in der Mitte 2000 N. Beide Stützen tragen gleich viel; das Biegemoment ist in der Mitte am größten.', p: { L: '4', a: '0', b: '4', F1: '2000', x1: '2', F2: '0', x2: '3', q: '0', q1: '0', q2: '4' } },
     { id: 'tr2', tab: 'tr', title: 'Streckenlast und Einzellast', text: 'Träger über 6 m: Streckenlast 500 N/m auf den rechten 3 m und eine Einzellast von 1500 N bei 1 m. Auflagerkräfte, Querkraft und Moment im Überblick.', p: { L: '6', a: '0', b: '6', F1: '1500', x1: '1', F2: '0', x2: '3', q: '500', q1: '3', q2: '6' } },
-    { id: 'rb1', tab: 'rb', title: 'Stahl auf Holz bleibt liegen', text: 'Eine schiefe Ebene mit 20° Neigung und Stahl auf Holz (μ0 = 0,5): Der Reibwinkel ist etwa 27°, der Klotz bleibt liegen.', p: { mat: 'sh', m: '50', alpha: '20' } },
-    { id: 'rb2', tab: 'rb', title: 'Stahl auf Stahl rutscht früh', text: 'Bei trockenem Stahl auf Stahl (μ0 = 0,15) reichen schon gut 8° Neigung, damit der Körper zu rutschen beginnt. Bei 20° rutscht er.', p: { mat: 'ss', m: '50', alpha: '20' } },
+    { id: 'rb1', tab: 'rb', title: 'Stahl auf Holz bleibt liegen', text: 'Eine schiefe Ebene mit 20 ° Neigung und Stahl auf Holz (μ0 = 0,5): Der Reibwinkel ist etwa 26,57 °, der Klotz bleibt liegen.', p: { mat: 'sh', m: '50', alpha: '20' } },
+    { id: 'rb2', tab: 'rb', title: 'Stahl auf Stahl rutscht früh', text: 'Bei trockenem Stahl auf Stahl (μ0 = 0,15) reichen schon etwa 8,53 ° Neigung, damit der Körper zu rutschen beginnt. Bei 20 ° rutscht er.', p: { mat: 'ss', m: '50', alpha: '20' } },
     { id: 'sp1', tab: 'sp', title: 'Zugstab aus S235JR', text: 'Rundstab 16 mm Durchmesser, 1 m lang, 30 kN Zugkraft: Spannung, Dehnung, Verlängerung und Sicherheit. Die Verlängerung wird in der Zeichnung stark übertrieben gezeigt.', p: { sub: 'zug', prof: 'kreis', d: '16', b: '20', h: '10', F: '30000', L: '1000', mat: 's235', lf: 'ruhig' } },
     { id: 'sp2', tab: 'sp', title: 'Biegung: hochkant oder flach', text: 'Ein Rechteckprofil 20 × 40 mm auf zwei Stützen mit 600 mm Abstand und 3000 N in der Mitte. Dreh das Profil im Rechner: Hochkant ist die Spannung viel kleiner.', p: { sub: 'bieg', bprof: 'rechteck', bb: '20', bh: '40', bd: '30', bF: '3000', bL: '600', mat: 's235', lf: 'ruhig' } },
     { id: 'fp1', tab: 'fp', title: 'Bolzen: Pressung und Abscheren', text: 'Ein 12-mm-Bolzen überträgt 10 kN in ein 6 mm dickes Blech. Die Pressung im Loch und die Scherspannung im Bolzen im Vergleich.', p: { sub: 'press', F: '10000', d: '12', t: '6', n: '1', Rm: '360', s: '3' } },

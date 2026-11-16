@@ -199,6 +199,9 @@ html.tiles .cards .card a.btn:not(.pri){display:none}   /* ein Knopf je Karte (S
 html.tiles .cards .card a.btn.pri{flex:1 1 100%;min-width:64px}
 /* ganze Karte anklickbar: der Hauptknopf spannt seine Fläche über die Karte */
 html.tiles .cards .card a.btn.pri::after{content:"";position:absolute;inset:0;border-radius:14px}
+/* Fortschrittsstreifen am unteren Kartenrand (nur Anzeige, ohne Text; Wert --p setzt rings() in home-groups.js). 0 % = unsichtbar. */
+html.tiles .cards .card::after{content:"";position:absolute;left:0;bottom:0;height:4px;width:var(--p,0%);max-width:100%;background:var(--c,var(--accent));opacity:.55;pointer-events:none;border-radius:0 2px 0 0}
+html.tiles .cards .card[style*="--p:100%"]::after{opacity:.9;border-radius:0}
 html.tiles .cards .card:hover{border-color:var(--c,var(--accent))}
 html.tiles .cards .card:focus-within{outline:3px solid var(--focus,var(--accent));outline-offset:2px}
 html.tiles .cards .card a.btn.pri:focus-visible{outline:none}

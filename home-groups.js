@@ -71,6 +71,7 @@
     doc.querySelectorAll('.card').forEach(c => {
       const th = c.querySelector('.th'), bar = c.querySelector('.mp .bar i'); if (!th || !bar) return;
       const p = Math.max(0, Math.min(100, Math.round(parseFloat(bar.style.width) || 0)));
+      c.style.setProperty('--p', p + '%');   // dieselbe Zahl treibt den Fortschrittsstreifen am Kartenrand (home.css, nur Anzeige)
       let m = th.querySelector('.mini');
       if (m && m.dataset.p === String(p)) return;
       if (!m) { m = doc.createElement('span'); m.className = 'mini'; m.setAttribute('aria-hidden', 'true'); th.appendChild(m); }

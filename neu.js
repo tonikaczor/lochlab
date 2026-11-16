@@ -2,6 +2,15 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v62.175', items: [
+      ['Helle Zeichenfläche', 'Im hellen Modus ist jetzt auch die Zeichenfläche hell: im SchaltLab, im DigiLab, im Arduino-Lab und im Pi-Lab. Leitungen, Bauteile und das Oszilloskop sind dafür neu eingefärbt.', 'SchaltLab, DigiLab, Arduino-Lab, Pi-Lab'],
+      ['Fortschritt auf den Lab-Karten', 'Jede Lab-Karte auf der Startseite zeigt unten einen schmalen Streifen. Je weiter du im Lab bist, desto länger ist er.', 'Startseite'],
+      ['Wiki für alle Labs', 'Jetzt hat jedes Lab einen Eintrag im Wiki. Dazu kommen 127 neue Begriffe, zum Beispiel Passung, Zugversuch, Subnetz und Break-even.', 'Wiki'],
+      ['Gefährdungsbeurteilung', 'Im Arbeitsschutz-Lab siehst du die sieben Schritte der Gefährdungsbeurteilung als Kreis. Du tippst jeden Schritt an und übst die Reihenfolge.', 'Arbeitsschutz-Lab'],
+      ['Eine Startstelle im Arduino-Lab', 'Du startest dein Programm jetzt an einer Stelle: Start, Pause, Weiter. Das Beispiel „Sirene“ hat ein fertiges Programm.', 'Arduino-Lab, Pi-Lab'],
+      ['Einführung für Pi-Lab und App-Werkstatt', 'Beim ersten Besuch zeigt dir eine kurze Tour, wo du was findest.', 'Pi-Lab, App-Werkstatt'],
+      ['Korrekturen', 'Gefahrzettel der Klasse 4 und der Zettel 9A für Lithiumbatterien im Ladungssicherungs-Lab, die Regeln für das Fahren von Staplern, Winkel im Mechanik-Lab und drei neue Prüfungsfragen.', 'mehrere Labs'],
+    ] },
     { v: 'v62.174', items: [
       ['Alle Labs im gleichen Aufbau', 'Jedes Lab hat jetzt oben dieselbe schmale Kopfzeile und darunter ein Band mit wenigen Reitern. „Üben“ und „Hilfe“ findest du überall an derselben Stelle. Über den Info-Knopf oben rechts öffnest du „Warum brauche ich das?“ und die Einführung.', 'alle Labs'],
       ['Mehr Platz am Handy und Tablet', 'Die Labs nutzen den Bildschirm besser aus: Grafiken sind größer, Schrift ist besser lesbar und Knöpfe sind groß genug für den Finger. Nichts läuft mehr seitlich aus dem Bild.', 'alle Labs'],
@@ -33,12 +42,6 @@
       ['Fehlerbild im Leiterplatten-Lab', 'Neuer Reiter mit 20 typischen Fehlern aus einer Modell-Fertigungslinie, vom Symptom über die Ursache bis zur Gegenmaßnahme, dazu ein Quiz, ein Ausbeute-Rechner und die Rückverfolgung von Chargen. Alle Zahlen sind Übungswerte.', 'Leiterplatten-Lab'],
       ['ESD im Leiterplatten-Lab', 'Neuer Reiter ESD: Du lernst, wie sich Bauteile durch elektrostatische Entladung schädigen, wie ein geschützter Arbeitsbereich mit Erdung, Verpackung und Ionisator aufgebaut ist und wie du dabei richtig misst. Mit Reglern spielst du Luftfeuchte, Systemwiderstand und Offset durch, dazu gibt es fünf Fehlerbilder und ein Quiz mit zwölf Aufgaben.', 'Leiterplatten-Lab'],
       ['Linien-Lab', 'Du untersuchst die Modell-Fertigungslinie von Wareneingang bis Versand und stellst mit Reglern Takt, Engpass, Durchlaufzeit und Ausbeute ein. Dazu kommen die Rückverfolgung einer Charge und die Schritte Lackieren und Verguss mit Rechner. 28 Aufgaben mit Tipps und Rechenweg, alle Zahlen sind Übungswerte.', 'Linien-Lab'],
-    ] },
-    { v: 'v55.172', items: [
-      ['Bauteile spiegeln', 'Im SchaltLab kannst du Transistoren, Operationsverstärker, Poti, Wechsler und weitere Bauteile jetzt spiegeln. So liegen die Anschlüsse auf der Seite, die zu deinem Plan passt.', 'SchaltLab'],
-      ['Vorschau beim Setzen', 'Wenn du ein Bauteil wählst, siehst du eine Vorschau in der aktuellen Drehung, auch am Tablet und am Handy. So weißt du schon vor dem Setzen, wie es liegt.', 'LochLab, SchaltLab'],
-      ['Schneller zur nächsten Aufgabe', '„Nächste Aufgabe“ wechselt jetzt direkt, ohne die Seite neu zu laden. Am Handy sind die Leisten unten kleiner und die Karte „Warum brauche ich das?“ ist eingeklappt.', 'alle Labs'],
-      ['Projekte im Lernpfad', 'Der Lernpfad zeigt jetzt für jeden Beruf einen Schritt „Projekte“ mit den passenden Verbundprojekten. Im Pneumatik-Lab zählen gelöste Aufgaben jetzt auch im Lernpfad und im Ausbildungsplan.', 'Startseite, Pneumatik-Lab'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

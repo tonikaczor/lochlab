@@ -271,7 +271,7 @@
     chaos: 'Sehr gute Raumausnutzung und flexibel; ohne EDV nicht beherrschbar, bei Systemausfall unübersichtlich.',
     fest: 'Der Ort ist leicht zu merken und auch ohne EDV führbar; leere Plätze bleiben aber reserviert.',
     hub: 'Günstig, wendig und einfach zu bedienen. Er hebt nur wenige Zentimeter und lagert nicht in Regale ein.',
-    front: 'Das Gegengewicht hinten gleicht die Last vorn aus. Vielseitig, braucht aber breite Gänge; Staplerschein nötig.',
+    front: 'Das Gegengewicht hinten gleicht die Last vorn aus. Vielseitig, braucht aber breite Gänge. Fahren darf nur, wer mindestens 18 Jahre alt ist, ausgebildet wurde (der Staplerschein ist der Nachweis) und vom Betrieb schriftlich beauftragt ist.',
     schub: 'Schmalere Gänge als beim Frontstapler und gute Hubhöhe; nur für ebenen Hallenboden.'
   };
   const lane0 = () => ({ fifo: { q: [1, 2, 3, 4], next: 5, msg: '' }, lifo: { q: [4, 3, 2, 1], next: 5, msg: '' } });

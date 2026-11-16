@@ -477,6 +477,27 @@ function sampleScopes(every) {
 const cv = $('#cv');
 let cx = cv.getContext('2d');
 let PRINT = false;
+/* Farbtabelle der Zeichenfläche (D2): dunkel (Standard) und hell (html[data-theme=light], wie lab.css). render() wählt sie je Bild; der Export (PRINT) nimmt immer die helle. */
+const PAL = {
+  dark: { bg: '#080b0e', grid: 'rgba(255,255,255,.13)', body: '#e8eaed', ring: 'rgba(232,234,237,.45)', idle: '#bfc5cc', label: '#cfd5db', halo: '#080b0e',
+    off1: 'rgba(232,234,237,.18)', off2: 'rgba(232,234,237,.15)', yel: '#ffe14d', yelA: a => 'rgba(255,225,77,' + a + ')', dot: '#ffe14d', red: '#ff5544', red2: '#ff4d3a', redA: 'rgba(255,90,80,.95)', orange: '#ff8a5c',
+    sel: '#3b9eff', selA6: 'rgba(59,158,255,.6)', selA9: 'rgba(59,158,255,.9)', wireHalo: 'rgba(255,255,255,.3)', pe: '#35c24a', peY: '#f2d21b',
+    gray: [150, 156, 164], green: [20, 224, 80], redV: [255, 59, 48], glow: 'lighter', ok: '#4cd964', ring1: '#ff4d4d', ring2: '#ffffff', ringA: '#7dff7d',
+    pinFill: '#ffd166', pinHalo: '#080b0e', scopeBg: 'rgba(0,0,0,.84)', scopeBg2: 'rgba(0,0,0,.78)', scopeTag: 'rgba(0,0,0,.62)', scopeGrid: 'rgba(120,200,130,.25)', scopeAx: '#9aa6b2', laneSep: 'rgba(255,255,255,.08)', scopeTx: '#e8eaed',
+    lanes: ['#6dff7a', '#ffe14d', '#4cc3ff', '#ff8a5c', '#d58cff', '#ff6b9a', '#a6ff6b', '#ffd23f'], ser: ['#ffe14d', '#4cd964', '#35d0ff'], plotBg: '#0b0f13', plotGrid: 'rgba(255,255,255,.12)', plotTx: '#8d99a6',
+    led: { rot: '#ff3b2f', 'grün': '#2fe05a', gelb: '#ffe033', blau: '#3d8bff', 'weiß': '#ffffff', orange: '#ff9a2f' }, lamp: '#ffd27a', heat: '#ff6a2a' },
+  hell: { bg: '#ffffff', grid: 'rgba(20,26,33,.28)', body: '#1b2430', ring: 'rgba(27,36,48,.4)', idle: '#5a6672', label: '#141a21', halo: '#ffffff',
+    off1: 'rgba(27,36,48,.12)', off2: 'rgba(27,36,48,.10)', yel: '#9a5a00', yelA: a => 'rgba(180,105,0,' + a + ')', dot: '#c05a00', red: '#c8281a', red2: '#c8281a', redA: 'rgba(200,40,26,.95)', orange: '#b8400c',
+    sel: '#0a5bd0', selA6: 'rgba(10,91,208,.4)', selA9: 'rgba(10,91,208,.9)', wireHalo: 'rgba(0,0,0,.45)', pe: '#1f9d3a', peY: '#a88600',
+    gray: [90, 100, 112], green: [0, 140, 55], redV: [205, 35, 25], glow: 'source-over', ok: '#0b7a2b', ring1: '#c8281a', ring2: '#1b2430', ringA: '#0b7a2b',
+    pinFill: '#6b3f00', pinHalo: '#ffffff', scopeBg: 'rgba(236,240,245,.96)', scopeBg2: 'rgba(236,240,245,.95)', scopeTag: 'rgba(255,255,255,.88)', scopeGrid: 'rgba(20,100,50,.32)', scopeAx: '#4a5560', laneSep: 'rgba(0,0,0,.12)', scopeTx: '#141a21',
+    lanes: ['#0b7a2b', '#9a5a00', '#0a6fb0', '#b8400c', '#7a2fc2', '#c2185b', '#456e0d', '#7a5c00'], ser: ['#9a5a00', '#0b7a2b', '#0a6fb0'], plotBg: '#f4f6f9', plotGrid: 'rgba(0,0,0,.14)', plotTx: '#4a5560',
+    led: { rot: '#e0261a', 'grün': '#14a83c', gelb: '#e0a800', blau: '#1f6fe0', 'weiß': '#f59e0b', orange: '#e06a00' }, lamp: '#f59e0b', heat: '#e0501a' }
+};
+let TC = PAL.dark;
+const themeHell = () => document.documentElement.getAttribute('data-theme') === 'light';
+const pickPal = () => { TC = (PRINT || themeHell()) ? PAL.hell : PAL.dark; };
+try { new MutationObserver(() => { pickPal(); dirtyDraw = true; try { if (document.getElementById('serPlot')) drawPlot(); } catch (e) {} }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (e) {}
 let dpr = 1;
 /* Zeichenfläche nur bei echter Größenänderung neu setzen (das Setzen von width löscht die Fläche) und sofort neu zeichnen, sonst blitzt ein leeres Bild auf */
 function resize() {
@@ -490,19 +511,18 @@ const X = x => view.ox + x * view.s, Y = y => view.oy + y * view.s;
 const toGrid = (sx, sy) => [(sx - view.ox) / view.s, (sy - view.oy) / view.s];
 const snapG = (gx, gy) => [Math.round(gx), Math.round(gy)];
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
-const GRAY = [150, 156, 164], GREEN = [20, 224, 80], RED = [255, 59, 48];
 function vcol(v) {
-  if (!running && !sim.t || !isFinite(v)) return '#bfc5cc';
+  if (!running && !sim.t || !isFinite(v)) return TC.idle;
   const t = clamp(Math.abs(v) / vmax, 0, 1);
-  if (Math.abs(v) < 1e-6 * vmax || t < 0.01) return 'rgb(150,156,164)';
-  const c = mix(GRAY, v > 0 ? GREEN : RED, Math.pow(t, 0.6));
+  if (Math.abs(v) < 1e-6 * vmax || t < 0.01) return 'rgb(' + TC.gray.join(',') + ')';
+  const c = mix(TC.gray, v > 0 ? TC.green : TC.redV, Math.pow(t, 0.6));
   return `rgb(${c[0]},${c[1]},${c[2]})`;
 }
 const showSim = () => !PRINT && simMode && sim && (sim.t > 0 || running);
-const keyV = key => (showSim() ? vcol(sv(key)) : (PRINT ? '#111' : '#bfc5cc'));
+const keyV = key => (showSim() ? vcol(sv(key)) : (PRINT ? '#111' : TC.idle));
 function fuseHot(p) {
   const o = showSim() && bodyI.get(String(p.id)), h = o && o.e ? o.e.hot || 0 : 0;
-  return h > 0.05 ? `rgb(255,${Math.round(220 - 160 * h)},${Math.round(80 - 60 * h)})` : (PRINT ? '#111' : '#e8eaed');
+  return h > 0.05 ? `rgb(255,${Math.round(220 - 160 * h)},${Math.round(80 - 60 * h)})` : (PRINT ? '#111' : TC.body);
 }
 function dotsOnPath(c, pts, I, ph) {
   if (!showSim() || !isFinite(I) || Math.abs(I) < 1e-6 || Math.abs(I) / imax < 0.003) return;
@@ -510,7 +530,7 @@ function dotsOnPath(c, pts, I, ph) {
   let L = 0; const seg = [];
   for (let i = 1; i < pts.length; i++) { const l = Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); seg.push(l); L += l; }
   const sp = 1.0; let off = ((ph.v % sp) + sp) % sp;
-  c.fillStyle = waterOn() ? '#d9f1ff' : '#ffe14d'; const dr = waterOn() ? 0.2 : 0.13;
+  c.fillStyle = waterOn() ? '#d9f1ff' : TC.dot; const dr = waterOn() ? 0.2 : 0.13;
   for (let d = off; d <= L; d += sp) {
     let acc = 0, i = 0; while (i < seg.length - 1 && acc + seg[i] < d) { acc += seg[i]; i++; }
     const u = seg[i] ? (d - acc) / seg[i] : 0;
@@ -551,15 +571,15 @@ function drawPart(p, selected) {
   c.save(); c.translate(X(p.x), Y(p.y)); c.rotate(p.r * Math.PI / 2); c.scale(S, S); if (p.m) { c.translate(0, mirY2(p)); c.scale(1, -1); }
   c.lineCap = 'round'; c.lineJoin = 'round';
   const pc = pins.map(q => keyV(gk(q[0], q[1])));
-  const body = PRINT ? '#111' : '#e8eaed';
+  const body = PRINT ? '#111' : TC.body;
   const lead = (x0, y0, x1, y1, col) => { c.strokeStyle = col; c.lineWidth = 0.13; c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
   c.strokeStyle = body; c.fillStyle = body; c.lineWidth = 0.11;
   const line = (x0, y0, x1, y1) => { c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.stroke(); };
   const circle = (x, y, r) => { c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke(); };
   const peStub = (x0, y0, x1, y1, col, fault) => {        // Schutzleiter-Anschluss am Gehäuse (grün-gelb)
-    lead(x0, y0, x1, y1, col); c.fillStyle = '#35c24a'; c.beginPath(); c.arc(x1, y1, 0.26, 0, 7); c.fill(); c.strokeStyle = '#f2d21b'; c.lineWidth = 0.1; c.setLineDash([0.18, 0.18]); c.beginPath(); c.arc(x1, y1, 0.26, 0, 7); c.stroke(); c.setLineDash([]);
+    lead(x0, y0, x1, y1, col); c.fillStyle = TC.pe; c.beginPath(); c.arc(x1, y1, 0.26, 0, 7); c.fill(); c.strokeStyle = TC.peY; c.lineWidth = 0.1; c.setLineDash([0.18, 0.18]); c.beginPath(); c.arc(x1, y1, 0.26, 0, 7); c.stroke(); c.setLineDash([]);
     c.save(); c.translate(x1 === x0 ? x1 + 0.7 : x1 + 0.2, x1 === x0 ? y1 : y1 - 0.7); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('PE', 0, 0); c.restore();
-    if (fault) { c.strokeStyle = '#ff4d3a'; c.lineWidth = 0.14; c.beginPath(); c.moveTo(x0 - 0.5, y0 - 0.2); c.lineTo(x0 - 0.1, y0 + 0.3); c.lineTo(x0 - 0.4, y0 + 0.3); c.lineTo(x0, y0 + 0.9); c.stroke(); }
+    if (fault) { c.strokeStyle = TC.red2; c.lineWidth = 0.14; c.beginPath(); c.moveTo(x0 - 0.5, y0 - 0.2); c.lineTo(x0 - 0.1, y0 + 0.3); c.lineTo(x0 - 0.4, y0 + 0.3); c.lineTo(x0, y0 + 0.9); c.stroke(); }
   };
   if (p.len > 4 && KINDS[p.k].pins === T2) { const s = (p.len - 4) / 2; lead(0, 0, s, 0, pc[0]); lead(s + 4, 0, p.len, 0, pc[1]); c.translate(s, 0); }   // gezogene Beine: Körper mittig, Zuleitungen verlängert
   switch (p.k) {
@@ -594,7 +614,7 @@ function drawPart(p, selected) {
       lead(0, 0, 1, 0, pc[0]); lead(2, -2, 2, -1.2, pc[1]); lead(2, 2, 2, 1.2, pc[2]);
       c.lineWidth = 0.2; line(1, -0.9, 1, 0.9); c.lineWidth = 0.11;
       line(1, -0.4, 2, -1.2); line(1, 0.4, 2, 1.2);
-      c.lineWidth = 0.05; c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : 'rgba(232,234,237,.45)'; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.11;
+      c.lineWidth = 0.05; c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : TC.ring; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.11;
       c.beginPath();
       if (p.k === 'NPN') { c.moveTo(2, 1.2); c.lineTo(1.45, 1.1); c.lineTo(1.8, 0.7); } else { c.moveTo(1, 0.4); c.lineTo(1.55, 0.5); c.lineTo(1.2, 0.9); }
       c.closePath(); c.fill(); break; }
@@ -676,7 +696,7 @@ function drawPart(p, selected) {
       [[0, 2, 3, true], [2, 4, 5, false], [4, 6, 7, true], [6, 8, 9, true]].forEach(([y, a, b2, no]) => {
         lead(5, y, 6, y, pc[a]); lead(8, y, 9, y, pc[b2]);
         const closed = no ? on : !on;
-        c.strokeStyle = closed ? '#ffe14d' : body; c.lineWidth = 0.12; line(6, y, 8, closed ? y : y - 0.9);
+        c.strokeStyle = closed ? TC.yel : body; c.lineWidth = 0.12; line(6, y, 8, closed ? y : y - 0.9);
         c.strokeStyle = body; c.lineWidth = 0.1; c.beginPath(); c.arc(6, y, 0.12, 0, 7); c.fill(); c.beginPath(); c.arc(8, y, 0.12, 0, 7); c.fill();
       });
       c.setLineDash([0.25, 0.2]); c.lineWidth = 0.07; line(1.4, 3, 5.6, 3); c.setLineDash([]);
@@ -709,8 +729,8 @@ function drawPart(p, selected) {
       const eng = klein && S * 6 < 70, xl = eng ? 0.45 : 1.2, xr = eng ? 7.55 : 6.8;   /* A2b: Platine am Handy nur ~46 px breit: Namen beider Spalten bis an die Pinpunkte, sonst berühren sich GP17 und GP18 */
       PI_NAMES.forEach((nm, i) => { const [px, py] = K.pins[i]; const t = klein ? nm.replace(/^GPIO(\d+).*/, eng ? '$1' : 'GP$1') : nm; if (px === 0) T(t, xl, py, psz, 'left'); else T(t, xr, py, psz, 'right'); });
       if (!klein) T('RASPBERRY PI', 4, 19, 0.95, 'center', -Math.PI / 2);
-      if (mm) for (let g = 0; g < 28; g++) if (mm.mode[g] === 1 && mm.level[g]) { const [px, py] = K.pins[PI_PIN_OF[g]]; c.fillStyle = '#ffe14d'; c.beginPath(); c.arc(px === 0 ? 0.7 : 7.3, py, 0.2, 0, 7); c.fill(); }
-      if (o && o.e.part && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; c.lineWidth = 0.3; line(1, -1.5, 7, 39.5); line(7, -1.5, 1, 39.5); }
+      if (mm) for (let g = 0; g < 28; g++) if (mm.mode[g] === 1 && mm.level[g]) { const [px, py] = K.pins[PI_PIN_OF[g]]; c.fillStyle = TC.yel; c.beginPath(); c.arc(px === 0 ? 0.7 : 7.3, py, 0.2, 0, 7); c.fill(); }
+      if (o && o.e.part && sim.burnt.has(p.id)) { c.strokeStyle = TC.red; c.lineWidth = 0.3; line(1, -1.5, 7, 39.5); line(7, -1.5, 1, 39.5); }
       break; }
     case 'UNO': {
       const o = showSim() && bodyI.get(String(p.id)), mm = o && o.e.mcu;
@@ -722,8 +742,8 @@ function drawPart(p, selected) {
       for (let dn = 0; dn < 14; dn++) T('D' + dn + ([3, 5, 6, 9, 10, 11].includes(dn) ? '~' : ''), 6.75, dn * 2, Math.max(0.62, 11 / S), 'right');
       T('GND', 6.75, 28, Math.max(0.62, 11 / S), 'right'); T('5V', 6.75, -2, Math.max(0.62, 11 / S), 'right');
       { const usz = Math.max(0.95, 11 / S); T('ARDUINO UNO', usz > 0.95 ? 3.5 : 4, 13, usz, 'center', -Math.PI / 2); }   /* A2b: Aufschrift mindestens 11 px, bei kleinem Maßstab etwas links, damit sie die Pinnamen rechts nicht berührt */
-      if (mm) for (let q = 0; q < 14; q++) if (mm.mode[q] === 1 && mm.level[q]) { c.fillStyle = '#ffe14d'; c.beginPath(); c.arc(5.9, q * 2, 0.2, 0, 7); c.fill(); }
-      if (o && o.e.part && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; c.lineWidth = 0.3; line(1, -2.9, 7, 29.9); line(7, -2.9, 1, 29.9); }
+      if (mm) for (let q = 0; q < 14; q++) if (mm.mode[q] === 1 && mm.level[q]) { c.fillStyle = TC.yel; c.beginPath(); c.arc(5.9, q * 2, 0.2, 0, 7); c.fill(); }
+      if (o && o.e.part && sim.burnt.has(p.id)) { c.strokeStyle = TC.red; c.lineWidth = 0.3; line(1, -2.9, 7, 29.9); line(7, -2.9, 1, 29.9); }
       break; }
     case 'DUOLED': {
       lead(0, 0, 1.2, 0, pc[0]); lead(0, 2, 1.2, 2, pc[1]); lead(0, 4, 1.2, 4, pc[2]);
@@ -733,7 +753,7 @@ function drawPart(p, selected) {
       c.fillStyle = body; c.font = '600 .55px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.save(); c.translate(1.2, 3.3); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillText(/^A/i.test(String(p.v || '')) ? 'gem. A' : 'gem. K', 0.2, 0); c.restore();
       if (r2 + g2 > 0.03) {
         const mx = Math.min(1, Math.max(r2, g2));
-        c.save(); c.globalCompositeOperation = 'lighter'; const gr = c.createRadialGradient(2.3, 2, 0, 2.3, 2, 3.4); gr.addColorStop(0, `rgba(${R},${G},${B},${0.9 * mx})`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`); c.fillStyle = gr; c.beginPath(); c.arc(2.3, 2, 3.4, 0, 7); c.fill(); c.restore();
+        c.save(); c.globalCompositeOperation = TC.glow; const gr = c.createRadialGradient(2.3, 2, 0, 2.3, 2, 3.4); gr.addColorStop(0, `rgba(${R},${G},${B},${0.9 * mx})`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`); c.fillStyle = gr; c.beginPath(); c.arc(2.3, 2, 3.4, 0, 7); c.fill(); c.restore();
         c.fillStyle = `rgb(${R},${G},${B})`; c.beginPath(); c.arc(2.3, 2, 0.95, 0, 7); c.fill();
         c.strokeStyle = body; line(2.3, 0.9, 2.3, 3.1);
       }
@@ -745,7 +765,7 @@ function drawPart(p, selected) {
       c.strokeStyle = body; circle(2.3, 2, 1.1);
       if (r2 + g2 + b2 > 0.03) {
         const R = Math.round(255 * Math.min(1, r2)), G = Math.round(255 * Math.min(1, g2)), B = Math.round(255 * Math.min(1, b2)), mx = Math.min(1, Math.max(r2, g2, b2));
-        c.save(); c.globalCompositeOperation = 'lighter'; const gr = c.createRadialGradient(2.3, 2, 0, 2.3, 2, 3.4); gr.addColorStop(0, `rgba(${R},${G},${B},${0.9 * mx})`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`); c.fillStyle = gr; c.beginPath(); c.arc(2.3, 2, 3.4, 0, 7); c.fill(); c.restore();
+        c.save(); c.globalCompositeOperation = TC.glow; const gr = c.createRadialGradient(2.3, 2, 0, 2.3, 2, 3.4); gr.addColorStop(0, `rgba(${R},${G},${B},${0.9 * mx})`); gr.addColorStop(1, `rgba(${R},${G},${B},0)`); c.fillStyle = gr; c.beginPath(); c.arc(2.3, 2, 3.4, 0, 7); c.fill(); c.restore();
         c.fillStyle = `rgb(${R},${G},${B})`; c.beginPath(); c.arc(2.3, 2, 0.95, 0, 7); c.fill();
       }
       c.save(); c.translate(2.3, 2); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('RGB', 0, 0); c.restore();
@@ -761,17 +781,17 @@ function drawPart(p, selected) {
       lead(4, 0, 3, 0, pc[0]); lead(4, 2, 3, 2, pc[1]);
       c.strokeStyle = body; c.fillStyle = 'rgba(214,170,90,.55)'; c.beginPath(); c.arc(1.6, 1, 1.35, 0, 7); c.fill(); c.stroke();
       c.fillStyle = body; c.font = '600 .45px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('+', 3.5, -0.35); c.fillText('Piezo', 1.6, 1);
-      if ((p.pos || 0) > 0.05) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.1; c.beginPath(); c.arc(1.6, 1, 1.9, -0.9, 0.9); c.stroke(); c.beginPath(); c.arc(1.6, 1, 2.3, -0.9, 0.9); c.stroke(); }
+      if ((p.pos || 0) > 0.05) { c.strokeStyle = TC.yelA(.9); c.lineWidth = 0.1; c.beginPath(); c.arc(1.6, 1, 1.9, -0.9, 0.9); c.stroke(); c.beginPath(); c.arc(1.6, 1, 2.3, -0.9, 0.9); c.stroke(); }
       break; }
     case 'TOUCH': {
       lead(0, 0, 1, 0, pc[0]);
-      const on = (p.pos || 0) > 0.5; c.fillStyle = on ? 'rgba(255,225,77,.8)' : 'rgba(232,234,237,.18)'; c.strokeStyle = body; c.lineWidth = 0.12; c.fillRect(1, -1.3, 3.6, 2.6); c.strokeRect(1, -1.3, 3.6, 2.6);
+      const on = (p.pos || 0) > 0.5; c.fillStyle = on ? TC.yelA(.8) : TC.off1; c.strokeStyle = body; c.lineWidth = 0.12; c.fillRect(1, -1.3, 3.6, 2.6); c.strokeRect(1, -1.3, 3.6, 2.6);
       c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(on ? 'berührt' : 'Fläche', 2.8, 0);
       break; }
     case 'PIR': {
       lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]);
       c.strokeStyle = body; c.strokeRect(1, -0.8, 4, 5.6); const act = (p.pos || 0) > 0.5;
-      c.fillStyle = act ? 'rgba(255,225,77,.85)' : 'rgba(232,234,237,.15)'; c.beginPath(); c.arc(3.2, 2, 1.3, 0, 7); c.fill(); c.strokeStyle = body; circle(3.2, 2, 1.3);
+      c.fillStyle = act ? TC.yelA(.85) : TC.off2; c.beginPath(); c.arc(3.2, 2, 1.3, 0, 7); c.fill(); c.strokeStyle = body; circle(3.2, 2, 1.3);
       c.save(); c.translate(3.2, 4.2); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText('PIR', 0, 0); c.restore();
       break; }
     case 'HCSR04': {
@@ -784,7 +804,7 @@ function drawPart(p, selected) {
       lead(0, 0, 1, 0, pc[0]); lead(0, 2, 1, 2, pc[1]); lead(0, 4, 1, 4, pc[2]);
       c.strokeStyle = body; c.strokeRect(1, -0.8, 5, 5.6);
       const o = showSim() && bodyI.get(String(p.id)), mm = circ && circ.mcu && circ.mcu.mcu, pin = o && o.e.pin, ang = (mm && pin != null && pin >= 0 && mm.servo[pin] != null) ? mm.servo[pin] : 90;
-      const a = (180 - ang) * Math.PI / 180; c.fillStyle = body; c.beginPath(); c.arc(4.4, 2, 0.35, 0, 7); c.fill(); c.strokeStyle = '#ffe14d'; c.lineWidth = 0.22; c.beginPath(); c.moveTo(4.4, 2); c.lineTo(4.4 + 1.9 * Math.cos(a), 2 - 1.9 * Math.sin(a)); c.stroke();
+      const a = (180 - ang) * Math.PI / 180; c.fillStyle = body; c.beginPath(); c.arc(4.4, 2, 0.35, 0, 7); c.fill(); c.strokeStyle = TC.yel; c.lineWidth = 0.22; c.beginPath(); c.moveTo(4.4, 2); c.lineTo(4.4 + 1.9 * Math.cos(a), 2 - 1.9 * Math.sin(a)); c.stroke();
       c.save(); c.translate(2.4, 3.9); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .5px sans-serif'; c.textAlign = 'center'; c.fillText(Math.round(ang) + '°', 0, 0); c.restore();
       c.save(); c.fillStyle = body; c.font = '600 .38px sans-serif'; c.textBaseline = 'middle'; [['SIG', 0], ['V+', 2], ['GND', 4]].forEach(([t, y]) => { c.save(); c.translate(1.2, y); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.textAlign = 'left'; c.fillText(t, 0, 0); c.restore(); }); c.restore();
       break; }
@@ -807,7 +827,7 @@ function drawPart(p, selected) {
       c.strokeStyle = body; circle(2, 3, 1.5); if (K.pins.length > 3) peStub(3.5, 3, 6, 3, pc[3], p.sw);
       c.save(); c.translate(2, 3); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .9px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, -0.2); c.font = '600 .6px sans-serif'; c.fillText('3~', 0, 0.55); c.restore();
       { const o = showSim() && bodyI.get(p.id + 'w0'), ph0 = o && o.e && o.e.phase ? o.e.phase : 0;
-        if (o && (o.e.w || 0) > 5) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.9 * Math.cos(a), 3 + 0.9 * Math.sin(a)); c.lineTo(2 + 1.3 * Math.cos(a), 3 + 1.3 * Math.sin(a)); c.stroke(); } }
+        if (o && (o.e.w || 0) > 5) { c.strokeStyle = TC.yelA(.9); c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.9 * Math.cos(a), 3 + 0.9 * Math.sin(a)); c.lineTo(2 + 1.3 * Math.cos(a), 3 + 1.3 * Math.sin(a)); c.stroke(); } }
       break; }
     case 'BRUECKE': {
       lead(0, 2, 0.8, 2, pc[0]); lead(3.2, 2, 4, 2, pc[1]); lead(2, 0, 2, 0.8, pc[2]); lead(2, 3.2, 2, 4, pc[3]);
@@ -841,8 +861,8 @@ function drawPart(p, selected) {
     case 'FAULT': {
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]);
       c.beginPath(); c.arc(1, 0, 0.1, 0, 7); c.fill(); c.beginPath(); c.arc(3, 0, 0.1, 0, 7); c.fill();
-      c.strokeStyle = p.sw ? '#ff5544' : body; c.lineWidth = 0.13; line(1, 0, p.sw ? 3 : 2.9, p.sw ? 0 : -1.1);
-      c.strokeStyle = '#ff5544'; c.lineWidth = 0.14; c.beginPath(); c.moveTo(2.2, -1.2); c.lineTo(1.7, -0.5); c.lineTo(2.3, -0.5); c.lineTo(1.8, 0.4); c.stroke();
+      c.strokeStyle = p.sw ? TC.red : body; c.lineWidth = 0.13; line(1, 0, p.sw ? 3 : 2.9, p.sw ? 0 : -1.1);
+      c.strokeStyle = TC.red; c.lineWidth = 0.14; c.beginPath(); c.moveTo(2.2, -1.2); c.lineTo(1.7, -0.5); c.lineTo(2.3, -0.5); c.lineTo(1.8, 0.4); c.stroke();
       break; }
     case 'NETZ': {
       [0, 1, 2].forEach(i => lead(i * 2, 0, i * 2, -0.9, pc[i])); c.strokeStyle = body; c.strokeRect(-1, -3, 6, 2.1);
@@ -853,19 +873,19 @@ function drawPart(p, selected) {
     case 'LSS': {
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]);
       line(1, 0, 1.1, 0); c.beginPath(); c.arc(1, 0, 0.1, 0, 7); c.fill(); c.beginPath(); c.arc(3, 0, 0.1, 0, 7); c.fill();
-      c.strokeStyle = p.sw ? body : '#ff8a5c'; c.lineWidth = 0.13; line(1, 0, p.sw ? 2.9 : 2.7, p.sw ? 0 : -1.1); c.strokeStyle = body; c.lineWidth = 0.07;
+      c.strokeStyle = p.sw ? body : TC.orange; c.lineWidth = 0.13; line(1, 0, p.sw ? 2.9 : 2.7, p.sw ? 0 : -1.1); c.strokeStyle = body; c.lineWidth = 0.07;
       c.strokeRect(1.55, -0.95, 0.9, 0.5); line(1.8, -0.7, 2.2, -0.7);
       c.save(); c.translate(2, 0.75); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .6px sans-serif'; c.textAlign = 'center'; c.fillText(p.v || '', 0, 0); c.restore();
       break; }
     case 'RCD': {
       lead(0, 0, 0, 1, pc[0]); lead(2, 0, 2, 1, pc[1]); lead(0, 3, 0, 4, pc[2]); lead(2, 3, 2, 4, pc[3]);
       c.strokeRect(-0.6, 1, 3.2, 2);
-      c.strokeStyle = p.sw ? body : '#ff8a5c'; c.lineWidth = 0.1; if (p.sw) { line(0, 1, 0, 3); line(2, 1, 2, 3); } else { line(0, 1, 0.5, 2.2); line(2, 1, 2.5, 2.2); }
+      c.strokeStyle = p.sw ? body : TC.orange; c.lineWidth = 0.1; if (p.sw) { line(0, 1, 0, 3); line(2, 1, 2, 3); } else { line(0, 1, 0.5, 2.2); line(2, 1, 2.5, 2.2); }
       c.save(); c.translate(1, 2); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 .65px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('FI ' + (p.v || ''), 0, 0); c.restore();
       break; }
     case 'KREUZ': {
       lead(0, 0, 0, 1, pc[0]); lead(2, 0, 2, 1, pc[1]); lead(0, 3, 0, 4, pc[2]); lead(2, 3, 2, 4, pc[3]);
-      c.strokeRect(-0.6, 1, 3.2, 2); c.strokeStyle = p.sw ? '#ffe14d' : body; c.lineWidth = 0.12;
+      c.strokeRect(-0.6, 1, 3.2, 2); c.strokeStyle = p.sw ? TC.yel : body; c.lineWidth = 0.12;
       if (p.sw) { line(0, 1, 2, 3); line(2, 1, 0, 3); } else { line(0, 1, 0, 3); line(2, 1, 2, 3); }
       break; }
     case 'IMP': {
@@ -873,7 +893,7 @@ function drawPart(p, selected) {
       c.strokeRect(0.6, 0.8, 0.8, 2.4); line(0.6, 3.2, 1.4, 0.8);
       const o = showSim() && bodyI.get(String(p.id)), la = !!(o && o.e.latch);
       lead(6, 0, 6, 1, pc[2]); lead(6, 3, 6, 4, pc[3]);
-      c.strokeStyle = la ? '#ffe14d' : body; c.lineWidth = 0.13; line(6, 1, la ? 6 : 5.2, la ? 3 : 2.6);
+      c.strokeStyle = la ? TC.yel : body; c.lineWidth = 0.13; line(6, 1, la ? 6 : 5.2, la ? 3 : 2.6);
       c.strokeStyle = body; c.lineWidth = 0.07; c.setLineDash([0.25, 0.2]); line(1.4, 2, 4.9, 2); c.setLineDash([]);
       c.save(); c.translate(3.4, 3.4); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '600 .6px sans-serif'; c.textAlign = 'center'; c.fillText('Stromstoß', 0, 0); c.restore();
       break; }
@@ -885,11 +905,11 @@ function drawPart(p, selected) {
       lead(3, 0, 4, 0, pc[0]); lead(3, 2, 4, 2, pc[1]); lead(3, 4, 4, 4, pc[2]);
       c.strokeRect(0, -0.9, 3, 5.8); c.beginPath(); c.arc(1.5, 2, 1.05, 0, 7); c.stroke();
       c.beginPath(); c.arc(1.1, 1.5, 0.12, 0, 7); c.fill(); c.beginPath(); c.arc(1.9, 1.5, 0.12, 0, 7); c.fill(); line(1.1, 2.6, 1.9, 2.6);
-      if (p.sw) { c.strokeStyle = '#ff5544'; c.lineWidth = 0.16; c.beginPath(); c.moveTo(1.8, 0.9); c.lineTo(1.2, 2.1); c.lineTo(1.9, 2.1); c.lineTo(1.3, 3.2); c.stroke(); }
+      if (p.sw) { c.strokeStyle = TC.red; c.lineWidth = 0.16; c.beginPath(); c.moveTo(1.8, 0.9); c.lineTo(1.2, 2.1); c.lineTo(1.9, 2.1); c.lineTo(1.3, 3.2); c.stroke(); }
       break; }
     case 'FUSE': {
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.4, 2, 0.8);
-      if (showSim() && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; line(1.2, 0, 1.8, 0); line(2.2, 0, 2.8, 0); line(1.85, -0.3, 2.15, 0.3); line(1.85, 0.3, 2.15, -0.3); }
+      if (showSim() && sim.burnt.has(p.id)) { c.strokeStyle = TC.red; line(1.2, 0, 1.8, 0); line(2.2, 0, 2.8, 0); line(1.85, -0.3, 2.15, 0.3); line(1.85, 0.3, 2.15, -0.3); }
       else { c.strokeStyle = fuseHot(p); line(1, 0, 3, 0); }
       break; }
     case 'NTC': case 'PTC':
@@ -901,9 +921,9 @@ function drawPart(p, selected) {
       lead(0, 0, 0.9, 0, pc[0]); lead(3.1, 0, 4, 0, pc[1]); circle(2, 0, 1.1);
       c.save(); c.translate(2, 0); if (p.m) c.scale(1, -1); c.rotate(-p.r * Math.PI / 2); c.fillStyle = body; c.font = '700 1.1px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('M', 0, 0.06); c.restore();
       { const o = showSim() && bodyI.get(String(p.id)), ph0 = o && o.e && o.e.phase ? o.e.phase : 0, dead = showSim() && sim.burnt.has(p.id);
-        if (o && !dead) { c.strokeStyle = 'rgba(255,225,77,.9)'; c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.62 * Math.cos(a), 0.62 * Math.sin(a)); c.lineTo(2 + 0.98 * Math.cos(a), 0.98 * Math.sin(a)); c.stroke();
-          if (Math.abs(o.e.w || 0) > 20) { c.strokeStyle = 'rgba(255,225,77,.35)'; c.lineWidth = 0.08; c.beginPath(); c.arc(2, 0, 1.25, a, a + 1.6); c.stroke(); } }
-        if (dead) { c.strokeStyle = '#ff5544'; line(1.2, -0.7, 2.8, 0.7); line(2.8, -0.7, 1.2, 0.7); } }
+        if (o && !dead) { c.strokeStyle = TC.yelA(.9); c.lineWidth = 0.14; const a = ph0 % 6.2832; c.beginPath(); c.moveTo(2 + 0.62 * Math.cos(a), 0.62 * Math.sin(a)); c.lineTo(2 + 0.98 * Math.cos(a), 0.98 * Math.sin(a)); c.stroke();
+          if (Math.abs(o.e.w || 0) > 20) { c.strokeStyle = TC.yelA(.35); c.lineWidth = 0.08; c.beginPath(); c.arc(2, 0, 1.25, a, a + 1.6); c.stroke(); } }
+        if (dead) { c.strokeStyle = TC.red; line(1.2, -0.7, 2.8, 0.7); line(2.8, -0.7, 1.2, 0.7); } }
       break; }
     case 'SPK': {
       lead(0, 0, 1.1, 0, pc[0]); lead(3.0, 0, 4, 0, pc[1]);
@@ -922,7 +942,7 @@ function drawPart(p, selected) {
       const o = showSim() && bodyI.get(String(p.id)), on = !!(o && o.e.on);
       lead(5, 2, 5.7, 2, pc[2]); lead(8, 0, 7.2, 0, pc[3]); lead(7.2, 0, 7.2, 0.5, pc[3]); lead(8, 4, 7.2, 4, pc[4]); lead(7.2, 4, 7.2, 3.5, pc[4]);
       c.beginPath(); c.arc(7.2, 0.7, 0.15, 0, 7); c.stroke(); c.beginPath(); c.arc(7.2, 3.3, 0.15, 0, 7); c.stroke();
-      c.strokeStyle = on ? '#ffe14d' : body; c.lineWidth = 0.13; line(5.7, 2, 7.1, on ? 0.8 : 3.2);
+      c.strokeStyle = on ? TC.yel : body; c.lineWidth = 0.13; line(5.7, 2, 7.1, on ? 0.8 : 3.2);
       c.strokeStyle = body; c.lineWidth = 0.07; c.setLineDash([0.25, 0.2]); line(1.4, 2, 5.4, 2); c.setLineDash([]);
       break; }
     case 'SCHOTTKY': {
@@ -936,7 +956,7 @@ function drawPart(p, selected) {
       lead(1.25, -0.7, 2, -0.7, pc[1]); lead(2, -0.7, 2, -2, pc[1]); lead(1.25, 0.7, 2, 0.7, pc[2]); lead(2, 0.7, 2, 2, pc[2]);
       line(1.25, 0, 1.75, 0); line(1.75, 0, 1.75, 0.7);
       c.beginPath(); if (p.k === 'NMOS') { c.moveTo(1.25, 0); c.lineTo(1.6, -0.17); c.lineTo(1.6, 0.17); } else { c.moveTo(1.75, 0); c.lineTo(1.4, -0.17); c.lineTo(1.4, 0.17); } c.closePath(); c.fill();
-      c.lineWidth = 0.05; c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : 'rgba(232,234,237,.45)'; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.11;
+      c.lineWidth = 0.05; c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : TC.ring; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.11;
       break; }
     case 'DIAC': {
       lead(0, 0, 1.2, 0, pc[0]); lead(2.8, 0, 4, 0, pc[1]);
@@ -948,7 +968,7 @@ function drawPart(p, selected) {
       c.beginPath(); c.moveTo(1.2, -0.8); c.lineTo(1.2, 0.8); c.lineTo(2, 0); c.closePath(); c.stroke();
       c.beginPath(); c.moveTo(2.8, -0.8); c.lineTo(2.8, 0.8); c.lineTo(2, 0); c.closePath(); c.stroke();
       line(2.95, 1.2, 2.8, 0.8);
-      { const o = showSim() && bodyI.get(p.id + 'MT'); if (o && o.e.on) { c.fillStyle = 'rgba(255,225,77,.35)'; c.fillRect(1.2, -0.8, 1.6, 1.6); } }
+      { const o = showSim() && bodyI.get(p.id + 'MT'); if (o && o.e.on) { c.fillStyle = TC.yelA(.35); c.fillRect(1.2, -0.8, 1.6, 1.6); } }
       break; }
     case 'VDR': {
       lead(0, 0, 1, 0, pc[0]); lead(3, 0, 4, 0, pc[1]); c.strokeRect(1, -0.45, 2, 0.9);
@@ -969,13 +989,13 @@ function drawPart(p, selected) {
       lead(0, 0, 1.4, 0, pc[0]); lead(2.6, 0, 4, 0, pc[1]); lead(3, 2, 2.95, 1.2, pc[2]);
       c.beginPath(); c.moveTo(1.4, -0.7); c.lineTo(1.4, 0.7); c.lineTo(2.6, 0); c.closePath(); c.stroke();
       line(2.6, -0.7, 2.6, 0.7); line(2.95, 1.2, 2.6, 0.5);
-      { const o = showSim() && bodyI.get(p.id + 'AK'); if (o && o.e.on) { c.fillStyle = 'rgba(255,225,77,.35)'; c.beginPath(); c.moveTo(1.4, -0.7); c.lineTo(1.4, 0.7); c.lineTo(2.6, 0); c.closePath(); c.fill(); } }
+      { const o = showSim() && bodyI.get(p.id + 'AK'); if (o && o.e.on) { c.fillStyle = TC.yelA(.35); c.beginPath(); c.moveTo(1.4, -0.7); c.lineTo(1.4, 0.7); c.lineTo(2.6, 0); c.closePath(); c.fill(); } }
       break; }
     case 'PHT': {
       lead(2, -2, 2, -1.2, pc[0]); lead(2, 2, 2, 1.2, pc[1]);
       c.lineWidth = 0.2; line(1, -0.9, 1, 0.9); c.lineWidth = 0.11; line(1, -0.4, 2, -1.2); line(1, 0.4, 2, 1.2);
       c.beginPath(); c.moveTo(2, 1.2); c.lineTo(1.45, 1.1); c.lineTo(1.8, 0.7); c.closePath(); c.fill();
-      c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : 'rgba(232,234,237,.45)'; c.lineWidth = 0.05; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.09;
+      c.strokeStyle = PRINT ? 'rgba(0,0,0,.35)' : TC.ring; c.lineWidth = 0.05; circle(1.4, 0, 1.55); c.strokeStyle = body; c.lineWidth = 0.09;
       [[-0.9, -0.9], [-0.9, 0.2]].forEach(([ax, ay]) => { line(ax, ay, ax + 0.65, ay + 0.65); c.beginPath(); c.moveTo(ax + 0.65, ay + 0.65); c.lineTo(ax + 0.28, ay + 0.6); c.lineTo(ax + 0.58, ay + 0.3); c.closePath(); c.fill(); });
       break; }
     case 'OPTO': {
@@ -991,7 +1011,7 @@ function drawPart(p, selected) {
       lead(0, 0, 1.1, 0, pc[0]); lead(2.9, 0, 4, 0, pc[1]); circle(2, 0, 0.9); line(1.36, -0.64, 2.64, 0.64); line(2.64, -0.64, 1.36, 0.64); if (K.pins.length > 2) peStub(2, 0.9, 2, 2, pc[2], p.sw); break; }
     case 'CABLE': {
       lead(0, 0, 0.8, 0, pc[0]); lead(3.2, 0, 4, 0, pc[1]); c.strokeRect(0.8, -0.4, 2.4, 0.8);
-      if (showSim() && sim.burnt.has(p.id)) { c.strokeStyle = '#ff5544'; line(1, 0, 1.6, 0); line(2.4, 0, 3, 0); line(1.75, -0.3, 2.25, 0.3); line(1.75, 0.3, 2.25, -0.3); }
+      if (showSim() && sim.burnt.has(p.id)) { c.strokeStyle = TC.red; line(1, 0, 1.6, 0); line(2.4, 0, 3, 0); line(1.75, -0.3, 2.25, 0.3); line(1.75, 0.3, 2.25, -0.3); }
       else { c.strokeStyle = fuseHot(p); line(0.8, 0, 3.2, 0); c.strokeStyle = body; line(1.5, -0.4, 1.2, 0.4); line(2.0, -0.4, 1.7, 0.4); line(2.5, -0.4, 2.2, 0.4); }
       break; }
     case 'OHM': case 'ISO': case 'ZS':
@@ -1011,16 +1031,16 @@ function drawPart(p, selected) {
   if (showSim() && (p.k === 'LED' || p.k === 'LAMP' || p.k === 'HEAT')) {
     const o = bodyI.get(String(p.id));
     if (o) {
-      let b = 0, hex = '#ffd27a';
-      if (p.k === 'LED') { b = Math.pow(clamp((o.e.iav != null ? o.e.iav : o.e.i) / 0.02, 0, 1), 0.6); hex = { rot: '#ff3b2f', 'grün': '#2fe05a', gelb: '#ffe033', blau: '#3d8bff', 'weiß': '#ffffff', orange: '#ff9a2f' }[p.v] || '#ff3b2f'; if (sim.burnt.has(p.id)) b = 0; }
-      else { const pw = o.e.pav != null ? o.e.pav : Math.abs(o.e.i * o.e.i / o.e.g); b = clamp(pw / (o.e.lamp || 0.6), 0, 1.2); if (p.k === 'HEAT') hex = '#ff6a2a'; }
+      let b = 0, hex = TC.lamp;
+      if (p.k === 'LED') { b = Math.pow(clamp((o.e.iav != null ? o.e.iav : o.e.i) / 0.02, 0, 1), 0.6); hex = TC.led[p.v] || TC.led.rot; if (sim.burnt.has(p.id)) b = 0; }
+      else { const pw = o.e.pav != null ? o.e.pav : Math.abs(o.e.i * o.e.i / o.e.g); b = clamp(pw / (o.e.lamp || 0.6), 0, 1.2); if (p.k === 'HEAT') hex = TC.heat; }
       if (p.k === 'LED' && o.e.imax && !sim.burnt.has(p.id) && window.LochFX) { const ratio = o.e.i / o.e.imax; if (ratio > 0.85) { b = Math.min(b * (1 + (ratio - 0.85) * 4), 1.6); const [sx, sy] = partCenter(p); LochFX.stress(sx, sy, ratio, view.s); } }
       if (b > 0.02) {
         const n = parseInt(hex.slice(1), 16), R = (n >> 16) & 255, G = (n >> 8) & 255, B = n & 255;
         const cxx = p.k === 'LED' ? 2 : 2, cyy = p.k === 'LED' ? -0.2 : 0, rr = (p.k === 'LED' ? 2.3 : 2.1);
         const g = c.createRadialGradient(cxx, cyy, 0, cxx, cyy, rr);
         g.addColorStop(0, `rgba(${R},${G},${B},${0.9 * Math.min(b, 1)})`); g.addColorStop(0.45, `rgba(${R},${G},${B},${0.35 * Math.min(b, 1)})`); g.addColorStop(1, `rgba(${R},${G},${B},0)`);
-        c.save(); c.globalCompositeOperation = 'lighter'; c.fillStyle = g; c.beginPath(); c.arc(cxx, cyy, rr, 0, 7); c.fill(); c.restore();
+        c.save(); c.globalCompositeOperation = TC.glow; c.fillStyle = g; c.beginPath(); c.arc(cxx, cyy, rr, 0, 7); c.fill(); c.restore();
       }
     }
   }
@@ -1028,7 +1048,7 @@ function drawPart(p, selected) {
   if (showSim() && thermAn()) { const ti = tracker.info(p.id); if (ti) window.THERM.zeichneKoerper(c, K.box, ti.T, ti.status === 'defekt'); }
   // Strompunkte im Körper
   if (showSim()) {
-    c.fillStyle = '#ffe14d';
+    c.fillStyle = TC.dot;
     const bd = id => bodyI.get(id);
     const path = (pts, I, key) => dotsOnPath(c, pts, I, ph('b' + key));
     if (p.k === 'NPN' || p.k === 'PNP') {
@@ -1051,7 +1071,7 @@ function drawPart(p, selected) {
   // Beschriftung und Werte
   const [mx, my] = (p.k === 'ICX' || p.k === 'CPU') ? rot(3, 0, p.r) : tf(K.pins.length > 1 ? 2 : 0, 0, p);
   const lx = X(p.x + mx), ly = Y(p.y + my);
-  c.fillStyle = PRINT ? '#111' : '#cfd5db'; c.font = `${Math.max(11, S * 0.62)}px -apple-system,Segoe UI,sans-serif`; c.textBaseline = 'middle';
+  c.fillStyle = PRINT ? '#111' : TC.label; c.font = `${Math.max(11, S * 0.62)}px -apple-system,Segoe UI,sans-serif`; c.textBaseline = 'middle';
   let txt = valueText(p);
   if (p.k === 'VM' && showSim()) txt = fmt(sv(gk(...pins[0])) - sv(gk(...pins[1])), 'V');
   if (INSTR[p.k] && showSim()) txt = instrText(p);
@@ -1061,7 +1081,7 @@ function drawPart(p, selected) {
   if (txt) {
     const vert = (p.r & 1) === 1;
     c.textAlign = vert ? 'left' : 'center';
-    c.lineJoin = 'round'; c.lineWidth = 4; c.strokeStyle = PRINT ? '#fff' : '#080b0e';
+    c.lineJoin = 'round'; c.lineWidth = 4; c.strokeStyle = PRINT ? '#fff' : TC.halo;
     const _ft = c.fillText.bind(c); const fillText = (t, x, y) => { if (deferText) { const st = { f: c.font, fs: c.fillStyle, a: c.textAlign, b: c.textBaseline, ss: c.strokeStyle, lw: c.lineWidth, lj: c.lineJoin }, cc = c; const fn = () => { cc.save(); cc.font = st.f; cc.fillStyle = st.fs; cc.textAlign = st.a; cc.textBaseline = st.b; cc.strokeStyle = st.ss; cc.lineWidth = st.lw; cc.lineJoin = st.lj; const tt = fn.short ? p.l : t; cc.strokeText(tt, x, y + fn.dy); cc.fillText(tt, x, y + fn.dy); cc.restore(); }; fn.dy = 0; fn.id = p.id; fn.vert = vert; if (p.l && p.l !== t) { fn.alt = p.l; fn.altW = () => { cc.save(); cc.font = st.f; const w = cc.measureText(p.l).width; cc.restore(); return w; }; } deferText.push(fn); } else { c.strokeText(t, x, y); _ft(t, x, y); } const tw = c.measureText(t).width, th = Math.max(10, S * 0.62) * 1.2; partText.set(p.id, vert ? [x, y - th / 2, x + tw, y + th / 2] : [x - tw / 2, y - th / 2, x + tw / 2, y + th / 2]); if (deferText && deferText.length) deferText[deferText.length - 1].rect = partText.get(p.id).slice(); };
     const off = p.k === 'GND' ? 0 : (p.k === 'NPN' || p.k === 'PNP' ? 0 : 1.55);
     if (p.k === 'NPN' || p.k === 'PNP') fillText(txt, lx + (rot(2.9, 0, p.r)[0] - mx) * S + (vert ? 0 : 0), ly + (rot(2.9, 0, p.r)[1] - my) * S);
@@ -1070,7 +1090,7 @@ function drawPart(p, selected) {
   if (selected) {
     const [bx0, by0, bx1, by1] = K.box, cs = [[bx0, by0], [bx1, by0], [bx1, by1], [bx0, by1]].map(([a, b]) => { const [ra, rb] = tf(a, b, p); return [X(p.x + ra), Y(p.y + rb)]; });
     const xs = cs.map(q => q[0]), ys = cs.map(q => q[1]);
-    c.strokeStyle = '#3b9eff'; c.lineWidth = 2; c.setLineDash([6, 4]);
+    c.strokeStyle = TC.sel; c.lineWidth = 2; c.setLineDash([6, 4]);
     c.strokeRect(Math.min(...xs) - 3, Math.min(...ys) - 3, Math.max(...xs) - Math.min(...xs) + 6, Math.max(...ys) - Math.min(...ys) + 6); c.setLineDash([]);
   }
 }
@@ -1158,7 +1178,16 @@ function drawPinLabels() {
     pinCache = { key, labs: PINS.schLabels({ parts: sch.parts.filter(vis), wires: sch.wires, KD, pinsOf, rot, tf, tfd, X, Y, S, meas, texts }) };
   }
   cx.restore();
-  PINS.paint(cx, pinCache.labs, { fill: '#ffd166', halo: '#080b0e' });
+  PINS.paint(cx, pinCache.labs, { fill: TC.pinFill, halo: TC.pinHalo });
+}
+
+/* D2: Am Handy stehen am Pi nur die GPIO-Nummern (ohne "GP"). Eine kleine Legende oben links in der Zeichenfläche sagt, was die Zahlen bedeuten. */
+function drawPiLegend(W) {
+  if (LAB !== 'pi' || PRINT || view.s * 6 >= 70 || !sch.parts.some(p => p.k === 'PI')) return;
+  const t = 'Zahlen am Pi = GPIO-Nummer';
+  cx.save(); cx.font = '600 12px -apple-system,Segoe UI,sans-serif'; const w = Math.min(W - 12, cx.measureText(t).width + 16);
+  cx.fillStyle = TC.scopeBg; cx.strokeStyle = TC.scopeGrid; cx.lineWidth = 1; cx.beginPath(); cx.rect(6, 6, w, 24); cx.fill(); cx.stroke();
+  cx.fillStyle = TC.scopeTx; cx.textAlign = 'left'; cx.textBaseline = 'middle'; cx.fillText(t, 14, 18, w - 12); cx.restore();
 }
 
 /* Schalter in der rechten Leiste */
@@ -1211,10 +1240,10 @@ function drawCircuit() {
   sch.wires.forEach(w => {
     const col = keyV(gk(w.x1, w.y1)), isSel = sel && sel.t === 'wire' && sel.id === w.id;
     cx.lineCap = 'round';
-    if (isSel) { cx.strokeStyle = 'rgba(59,158,255,.6)'; cx.lineWidth = 9; cx.beginPath(); cx.moveTo(X(w.x1), Y(w.y1)); cx.lineTo(X(w.x2), Y(w.y2)); cx.stroke(); }
+    if (isSel) { cx.strokeStyle = TC.selA6; cx.lineWidth = 9; cx.beginPath(); cx.moveTo(X(w.x1), Y(w.y1)); cx.lineTo(X(w.x2), Y(w.y2)); cx.stroke(); }
     if (waterOn()) waterPipe(w.x1, w.y1, w.x2, w.y2, sv(gk(w.x1, w.y1)));
     else if (LAB === 'sim' && w.c && WIRECOL[w.c]) {
-      const lw = Math.max(3, view.s * 0.2); cx.lineWidth = lw + 2; cx.strokeStyle = PRINT ? 'rgba(0,0,0,.5)' : 'rgba(255,255,255,.3)'; cx.beginPath(); cx.moveTo(X(w.x1), Y(w.y1)); cx.lineTo(X(w.x2), Y(w.y2)); cx.stroke();
+      const lw = Math.max(3, view.s * 0.2); cx.lineWidth = lw + 2; cx.strokeStyle = PRINT ? 'rgba(0,0,0,.5)' : TC.wireHalo; cx.beginPath(); cx.moveTo(X(w.x1), Y(w.y1)); cx.lineTo(X(w.x2), Y(w.y2)); cx.stroke();
       cx.lineWidth = lw; cx.strokeStyle = WIRECOL[w.c]; cx.stroke();
       if (w.c === 'gruen') { cx.strokeStyle = '#f2d21b'; cx.setLineDash([lw * 1.4, lw * 1.4]); cx.stroke(); cx.setLineDash([]); }
     } else {
@@ -1229,7 +1258,7 @@ function drawCircuit() {
       }
     }
   });
-  ends.forEach((n, k) => { if (n >= 3) { const [x, y] = k.split(',').map(Number); const rr = Math.max(4.5, view.s * 0.25); cx.beginPath(); cx.arc(X(x), Y(y), rr + 1.5, 0, 7); cx.fillStyle = PRINT ? '#fff' : '#080b0e'; cx.fill(); cx.beginPath(); cx.arc(X(x), Y(y), rr, 0, 7); cx.fillStyle = PRINT ? '#000' : keyV(k); cx.fill(); if (!PRINT) { cx.lineWidth = 1.5; cx.strokeStyle = 'rgba(255,255,255,.85)'; cx.stroke(); } } });
+  ends.forEach((n, k) => { if (n >= 3) { const [x, y] = k.split(',').map(Number); const rr = Math.max(4.5, view.s * 0.25); cx.beginPath(); cx.arc(X(x), Y(y), rr + 1.5, 0, 7); cx.fillStyle = PRINT ? '#fff' : TC.halo; cx.fill(); cx.beginPath(); cx.arc(X(x), Y(y), rr, 0, 7); cx.fillStyle = PRINT ? '#000' : keyV(k); cx.fill(); if (!PRINT) { cx.lineWidth = 1.5; cx.strokeStyle = 'rgba(255,255,255,.85)'; cx.stroke(); } } });
   deferText = []; try { sch.parts.forEach(p => drawPart(p, sel && sel.t === 'part' && sel.id === p.id)); } finally { const dt = deferText; deferText = null; avoidText(dt); dt.forEach(f => f()); }
   drawPinLabels();
   if (waterOn() && !PRINT) waterBadges();
@@ -1246,15 +1275,16 @@ function drawCircuit() {
 function render() {
   cx.setTransform(dpr, 0, 0, dpr, 0, 0);
   const W = cv.width / dpr, H = cv.height / dpr;
-  cx.fillStyle = '#080b0e'; cx.fillRect(0, 0, W, H);
+  pickPal(); cx.fillStyle = TC.bg; cx.fillRect(0, 0, W, H);
   if (LAB === 'haus' && window.HAUS_RENDER) { window.HAUS_RENDER(cx, W, H); return; }
   // Raster
   if (view.s >= 10) {
-    cx.fillStyle = 'rgba(255,255,255,.13)';
+    cx.fillStyle = TC.grid;
     const x0 = Math.floor(-view.ox / view.s), x1 = Math.ceil((W - view.ox) / view.s), y0 = Math.floor(-view.oy / view.s), y1 = Math.ceil((H - view.oy) / view.s);
     for (let x = x0; x <= x1; x++) for (let y = y0; y <= y1; y++) cx.fillRect(X(x) - 1, Y(y) - 1, 2, 2);
   }
   drawCircuit();
+  drawPiLegend(W);
   if (thermView && thermAn()) thermHeat(W, H);
   // Vorschau
   if (ghost && tool === 'place' && placeKind) {
@@ -1266,30 +1296,29 @@ function render() {
     let pts = null, bad = false;
     if (autoRoute && (cursor[0] !== wireStart[0] || cursor[1] !== wireStart[1])) { const path = routePreview(wireStart, cursor); if (path) pts = path; else bad = true; }
     if (!pts) pts = [wireStart, autoRoute ? cursor : ortho(wireStart, cursor)];
-    cx.strokeStyle = bad ? 'rgba(255,90,80,.95)' : 'rgba(255,225,77,.9)'; cx.lineWidth = 3; cx.setLineDash([8, 5]);
+    cx.strokeStyle = bad ? TC.redA : TC.yelA(.9); cx.lineWidth = 3; cx.setLineDash([8, 5]);
     cx.beginPath(); cx.moveTo(X(pts[0][0]), Y(pts[0][1])); for (let i = 1; i < pts.length; i++) cx.lineTo(X(pts[i][0]), Y(pts[i][1])); cx.stroke(); cx.setLineDash([]);
-    cx.strokeStyle = '#3b9eff'; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(wireStart[0]), Y(wireStart[1]), 6, 0, 7); cx.stroke();
+    cx.strokeStyle = TC.sel; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(wireStart[0]), Y(wireStart[1]), 6, 0, 7); cx.stroke();
   }
-  if (cursor && tool !== 'select') { cx.strokeStyle = 'rgba(59,158,255,.9)'; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(cursor[0]), Y(cursor[1]), 7, 0, 7); cx.stroke(); }
+  if (cursor && tool !== 'select') { cx.strokeStyle = TC.selA9; cx.lineWidth = 2; cx.beginPath(); cx.arc(X(cursor[0]), Y(cursor[1]), 7, 0, 7); cx.stroke(); }
   drawGraphs(W, H);
   if (window.LochFX) LochFX.draw(cx);
 }
 /* DigiLab: Logikanalysator, jede Messstelle als Spur mit Rechteckverlauf (0 oder 1) und gemeinsamer Zeitachse */
-const LANECOL = ['#6dff7a', '#ffe14d', '#4cc3ff', '#ff8a5c', '#d58cff', '#ff6b9a', '#a6ff6b', '#ffd23f'];
 function drawLanes(W, H) {
   const n = sch.scopes.length; if (!n) return;
   const lane = 26, hd = 20, x0 = 96, gw = W - x0 - 10, gh = Math.min(H * 0.55, n * lane + hd + 6), y0 = H - gh;
-  cx.fillStyle = 'rgba(0,0,0,.84)'; cx.fillRect(0, y0, W, gh);
-  cx.strokeStyle = 'rgba(120,200,130,.25)'; cx.lineWidth = 1; cx.fillStyle = '#9aa6b2'; cx.font = '11px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'top';
+  cx.fillStyle = TC.scopeBg; cx.fillRect(0, y0, W, gh);
+  cx.strokeStyle = TC.scopeGrid; cx.lineWidth = 1; cx.fillStyle = TC.scopeAx; cx.font = '11px sans-serif'; cx.textAlign = 'center'; cx.textBaseline = 'top';
   /* A1c: letzte Marke rechtsbündig und als "jetzt", damit "−0.0 µs" nicht am Rand abgeschnitten wird */
   for (let i = 0; i <= 4; i++) { const x = x0 + gw * i / 4; cx.beginPath(); cx.moveTo(x, y0 + hd - 2); cx.lineTo(x, y0 + gh); cx.stroke(); cx.textAlign = i === 4 ? 'right' : 'center'; cx.fillText(i === 4 ? 'jetzt' : '−' + fmtT(graphWin * (4 - i) / 4).replace('−', ''), i === 4 ? x + 4 : x, y0 + 4); }
   cx.textAlign = 'center';
   sch.scopes.forEach((sc, k) => {
-    const b = scopeBuf[k], yb = y0 + hd + k * lane, col = LANECOL[k % LANECOL.length], p = sc.t === 'part' ? byPart(sc.id) : null;
+    const b = scopeBuf[k], yb = y0 + hd + k * lane, col = TC.lanes[k % TC.lanes.length], p = sc.t === 'part' ? byPart(sc.id) : null;
     if (yb + lane > H) return;
     cx.fillStyle = col; cx.font = '600 12px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'middle';
     cx.fillText(String(p ? (p.l || KINDS[p.k].name) : (sc.t === 'node' ? 'Knoten' : '?')).slice(0, 11), 8, yb + lane / 2);
-    cx.strokeStyle = 'rgba(255,255,255,.08)'; cx.beginPath(); cx.moveTo(x0, yb + lane - 2); cx.lineTo(x0 + gw, yb + lane - 2); cx.stroke();
+    cx.strokeStyle = TC.laneSep; cx.beginPath(); cx.moveTo(x0, yb + lane - 2); cx.lineTo(x0 + gw, yb + lane - 2); cx.stroke();
     if (!b || b.t.length < 2) return;
     let hi = 1; b.v.forEach(v => { if (isFinite(v) && v > hi) hi = v; }); const thr = hi / 2, t1 = b.t[b.t.length - 1], t0 = t1 - graphWin;
     cx.strokeStyle = col; cx.lineWidth = 2; cx.beginPath(); let prevY = null;
@@ -1308,10 +1337,10 @@ function drawGraphs(W, H) {
   const gh = Math.min(190, H * (H < 420 ? 0.46 : 0.34)), gw = Math.min(W / n, 330), eng = gw < 260;   // A-mess-06: auf kleiner Fläche höher, Beschriftung 14 px
   sch.scopes.forEach((sc, k) => {
     const b = scopeBuf[k], x0 = k * gw, y0 = H - gh;
-    cx.fillStyle = 'rgba(0,0,0,.78)'; cx.fillRect(x0, y0, gw - 2, gh);
-    cx.strokeStyle = 'rgba(120,200,130,.25)'; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x0, y0 + gh / 2); cx.lineTo(x0 + gw - 2, y0 + gh / 2); cx.stroke();
+    cx.fillStyle = TC.scopeBg2; cx.fillRect(x0, y0, gw - 2, gh);
+    cx.strokeStyle = TC.scopeGrid; cx.lineWidth = 1; cx.beginPath(); cx.moveTo(x0, y0 + gh / 2); cx.lineTo(x0 + gw - 2, y0 + gh / 2); cx.stroke();
     const label = sc.t === 'node' ? 'Knoten ' + sc.key : (byPart(sc.id) ? (KINDS[byPart(sc.id).k].name + ' ' + valueText(byPart(sc.id))) : '?');
-    cx.fillStyle = '#e8eaed'; cx.font = '12px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'top'; cx.fillText(label, x0 + 6, y0 + 5);
+    cx.fillStyle = TC.scopeTx; cx.font = '12px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'top'; cx.fillText(label, x0 + 6, y0 + 5);
     if (!b || b.t.length < 2) return;
     const draw1 = (arr, col) => {
       let mn = Infinity, mxv = -Infinity; arr.forEach(v => { if (isFinite(v)) { mn = Math.min(mn, v); mxv = Math.max(mxv, v); } });
@@ -1321,18 +1350,18 @@ function drawGraphs(W, H) {
       for (let i = 0; i < arr.length; i++) { const x = x0 + (b.t[i] - t0) / graphWin * (gw - 2), y = y0 + gh / 2 - arr[i] / m * (gh / 2 - 18); if (x < x0) continue; if (first) { cx.moveTo(x, y); first = false; } else cx.lineTo(x, y); }
       cx.stroke(); return m;
     };
-    const mv = draw1(b.v, '#ffe14d'), mi = sc.t === 'node' ? null : draw1(b.i, '#4cd964');
+    const mv = draw1(b.v, TC.yel), mi = sc.t === 'node' ? null : draw1(b.i, TC.ok);
     cx.font = '600 14px sans-serif'; cx.textBaseline = eng ? 'top' : 'bottom';
     const tu = mv != null ? 'U max ' + fmt(mv, 'V') : '', ti = mi != null ? 'I max ' + fmt(mi, 'A') : '';
     if (eng) {   // schmale Fläche (Handy): beide Werte untereinander oben links, mit dunkler Unterlage (der Knopf unten Mitte verdeckt sonst)
-      cx.fillStyle = 'rgba(0,0,0,.62)'; cx.fillRect(x0 + 3, y0 + 22, Math.max(cx.measureText(tu).width, cx.measureText(ti).width) + 8, (tu ? 18 : 0) + (ti ? 18 : 0) + 2);
-      let yy = y0 + 24; if (tu) { cx.fillStyle = '#ffe14d'; cx.fillText(tu, x0 + 7, yy); yy += 18; } if (ti) { cx.fillStyle = '#4cd964'; cx.fillText(ti, x0 + 7, yy); }
+      cx.fillStyle = TC.scopeTag; cx.fillRect(x0 + 3, y0 + 22, Math.max(cx.measureText(tu).width, cx.measureText(ti).width) + 8, (tu ? 18 : 0) + (ti ? 18 : 0) + 2);
+      let yy = y0 + 24; if (tu) { cx.fillStyle = TC.yel; cx.fillText(tu, x0 + 7, yy); yy += 18; } if (ti) { cx.fillStyle = TC.ok; cx.fillText(ti, x0 + 7, yy); }
     } else {
-      if (mv != null) { cx.fillStyle = '#ffe14d'; cx.fillText(tu, x0 + 6, y0 + gh - 4); }
-      if (mi != null) { cx.fillStyle = '#4cd964'; cx.textAlign = 'right'; cx.fillText(ti, x0 + gw - 8, y0 + gh - 4); }
+      if (mv != null) { cx.fillStyle = TC.yel; cx.fillText(tu, x0 + 6, y0 + gh - 4); }
+      if (mi != null) { cx.fillStyle = TC.ok; cx.textAlign = 'right'; cx.fillText(ti, x0 + gw - 8, y0 + gh - 4); }
     }
   });
-  cx.fillStyle = '#c8d0d8'; cx.font = '11px sans-serif'; cx.textAlign = 'right'; cx.textBaseline = 'bottom';
+  cx.fillStyle = TC.scopeAx; cx.font = '11px sans-serif'; cx.textAlign = 'right'; cx.textBaseline = 'bottom';
 }
 
 /* ============ Treffertest ============ */
@@ -1788,12 +1817,12 @@ function drawPlacePreview() {
   el.width = Math.round(W * d); el.height = Math.round(H * d);
   const sv = { cx, view, sel };
   try {
-    cx = el.getContext('2d'); cx.setTransform(d, 0, 0, d, 0, 0); sel = null;
+    pickPal(); cx = el.getContext('2d'); cx.setTransform(d, 0, 0, d, 0, 0); sel = null;
     view = { s, ox: W / 2 - (x0 + x1) / 2 * s, oy: H / 2 - (y0 + y1) / 2 * s };
     drawPart(p, false);
     if (PINS && PINS.schLabels) {   // Anschlussnamen immer zeigen, damit man beim Drehen und Spiegeln sieht, was wohin wandert
       cx.font = '700 12px -apple-system,system-ui,Segoe UI,sans-serif'; const meas = (t, fs) => cx.measureText(t).width * fs / 12;
-      PINS.paint(cx, PINS.schLabels({ parts: [p], wires: [], KD, pinsOf, rot, tf, tfd, X, Y, S: s, meas, texts: [] }), { fill: '#ffd166', halo: '#080b0e' });
+      PINS.paint(cx, PINS.schLabels({ parts: [p], wires: [], KD, pinsOf, rot, tf, tfd, X, Y, S: s, meas, texts: [] }), { fill: TC.pinFill, halo: TC.pinHalo });
     }
   } catch (e) { } finally { cx = sv.cx; view = sv.view; sel = sv.sel; partText.delete(-1); }
 }
@@ -1804,13 +1833,14 @@ function refreshUI() {
   $('#bRun').classList.toggle('on', running);
   $('#bRun').setAttribute('aria-label', running ? 'Simulation pausieren' : 'Simulation fortsetzen');
   { const sw = $('#bSim'); if (sw) sw.setAttribute('aria-label', simMode ? 'Simulation beenden und zurück zum Zeichnen' : 'Simulation starten'); }
+  if (PROGLAB) { const b = $('#cdRun'), s = $('#cdStop'); if (b) { b.textContent = !simMode ? '▶ Start' : running ? '⏸ Pause' : '▶ Weiter'; b.classList.toggle('on', simMode && running); } if (s) s.disabled = !simMode; }
   $('#bUndo').disabled = simMode || hi <= 0; $('#bRedo').disabled = simMode || hi >= hist.length - 1;
   $('#title').textContent = sch.name;
   let h = taskPinHtml() + incidentCardHtml() + (window.LAB_EXTRA_CARD ? window.LAB_EXTRA_CARD() : '') + taskCardHtml() + diceCardHtml() + meterCardHtml();
   if (!(LAB === 'haus' && window.HAUS_SIDE)) h += pinsCardHtml();
   if (simMode) {
     h += `<div class="card"><h4>Simulation</h4>
-    <div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Pause' : '▶ Weiter'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>
+    ${PROGLAB ? '' : `<div class="row2"><button class="btn pri" data-a="run">${running ? '⏸ Pause' : '▶ Weiter'}</button><button class="btn" data-a="reset">↺ Zurück</button></div>`}
     <div class="kv"><span>Zeit</span><b id="tLbl">${fmtT(sim ? sim.t : 0)}</b></div>
     <label class="sl"><span>Tempo<em id="tempoLbl">${tempoText()}</em></span><input type="range" id="slTempo" min="0" max="1" step="0.005" value="${tempo}"></label>
     <div id="tempoHint">${tempoHintHtml()}</div>
@@ -2075,7 +2105,7 @@ function openMenu() {
 /* ============ CodeLab: Arduino-Programm ausführen ============ */
 let prog = null, serLog = '', serLine = '', serSeries = [[], [], []], serMode = 'text', serRx = [], lcdState = null, serDirty = true, lastCodeStatus = '';
 const AR = window.Arduino;
-function codeStatus(msg, bad) { if (bad && /^Fehler/.test(msg) && window.LochFX) LochFX.sound('sad', 0.55); const s = $('#codeStatus'); if (!s) return; s.textContent = msg; s.style.color = bad ? '#ff8a7a' : 'var(--mute)'; lastCodeStatus = msg; }
+function codeStatus(msg, bad) { if (bad && /^Fehler/.test(msg) && window.LochFX) LochFX.sound('sad', 0.55); const s = $('#codeStatus'); if (!s) return; s.textContent = msg; s.style.color = bad ? 'var(--danger)' : 'var(--mute)'; lastCodeStatus = msg; }
 function serAppend(s) {
   serLog += s; if (serLog.length > 6000) serLog = serLog.slice(-4500); serDirty = true; serLine += s;
   let i; while ((i = serLine.indexOf('\n')) >= 0) { const ln = serLine.slice(0, i); serLine = serLine.slice(i + 1); const nums = ln.match(/-?\d+(?:\.\d+)?/g); if (nums) nums.slice(0, 3).forEach((x, k) => { serSeries[k].push(parseFloat(x)); if (serSeries[k].length > 300) serSeries[k].shift(); }); }
@@ -2129,12 +2159,12 @@ function codeTick() {                                              // regelmäß
 }
 function drawPlot() {
   const cv2 = $('#serPlot'); if (!cv2) return; const g = cv2.getContext('2d'), W = cv2.width = cv2.clientWidth || 300, H = cv2.height = cv2.clientHeight || 120;
-  g.clearRect(0, 0, W, H); g.fillStyle = '#0b0f13'; g.fillRect(0, 0, W, H);
+  pickPal(); g.clearRect(0, 0, W, H); g.fillStyle = TC.plotBg; g.fillRect(0, 0, W, H);
   let mn = Infinity, mx = -Infinity; serSeries.forEach(s => s.forEach(v => { mn = Math.min(mn, v); mx = Math.max(mx, v); }));
-  if (!isFinite(mn)) { g.fillStyle = '#8d99a6'; g.font = '12px sans-serif'; g.fillText('Keine Zahlen in der Ausgabe. Mit Serial.println(Wert) einen Messwert ausgeben.', 10, 20); return; }
+  if (!isFinite(mn)) { g.fillStyle = TC.plotTx; g.font = '12px sans-serif'; g.fillText('Keine Zahlen in der Ausgabe. Mit Serial.println(Wert) einen Messwert ausgeben.', 10, 20); return; }
   if (mx - mn < 1e-9) { mx += 1; mn -= 1; }
-  g.strokeStyle = 'rgba(255,255,255,.12)'; g.lineWidth = 1; for (let i = 0; i <= 4; i++) { const y = 8 + (H - 16) * i / 4; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); g.fillStyle = '#8d99a6'; g.font = '11px sans-serif'; g.fillText((mx - (mx - mn) * i / 4).toFixed(mx - mn > 50 ? 0 : 1), 3, y - 2); }
-  ['#ffe14d', '#4cd964', '#35d0ff'].forEach((col, k) => { const s = serSeries[k]; if (s.length < 2) return; g.strokeStyle = col; g.lineWidth = 1.8; g.beginPath(); s.forEach((v, i) => { const x = 34 + (W - 40) * i / Math.max(299, s.length - 1), y = 8 + (H - 16) * (1 - (v - mn) / (mx - mn)); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); });
+  g.strokeStyle = TC.plotGrid; g.lineWidth = 1; for (let i = 0; i <= 4; i++) { const y = 8 + (H - 16) * i / 4; g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); g.fillStyle = TC.plotTx; g.font = '11px sans-serif'; g.fillText((mx - (mx - mn) * i / 4).toFixed(mx - mn > 50 ? 0 : 1), 3, y - 2); }
+  TC.ser.forEach((col, k) => { const s = serSeries[k]; if (s.length < 2) return; g.strokeStyle = col; g.lineWidth = 1.8; g.beginPath(); s.forEach((v, i) => { const x = 34 + (W - 40) * i / Math.max(299, s.length - 1), y = 8 + (H - 16) * (1 - (v - mn) / (mx - mn)); if (i) g.lineTo(x, y); else g.moveTo(x, y); }); g.stroke(); });
 }
 function syncCode() { const ta = $('#codeTa'); if (!ta) return; ta.value = sch.code || ''; gutter(); }
 function gutter() { const ta = $('#codeTa'), gu = $('#codeGut'); if (!ta || !gu) return; const n = ta.value.split('\n').length; let s = ''; for (let i = 1; i <= n; i++) s += i + '\n'; gu.textContent = s; gu.scrollTop = ta.scrollTop; }
@@ -2144,8 +2174,10 @@ function initDock() {
   ta.addEventListener('scroll', () => { const gu = $('#codeGut'); if (gu) gu.scrollTop = ta.scrollTop; });
   ta.addEventListener('keydown', e => { if (e.key === 'Tab') { e.preventDefault(); const s = ta.selectionStart, en = ta.selectionEnd; ta.value = ta.value.slice(0, s) + '  ' + ta.value.slice(en); ta.selectionStart = ta.selectionEnd = s + 2; ta.dispatchEvent(new Event('input')); } });
   const startAll = () => { if (!simMode) setSimMode(true); else { resetSim(); running = true; lastFrame = performance.now(); refreshUI(); } };
-  $('#cdRun').onclick = startAll; $('#cdNew').onclick = startAll;
-  $('#cdStop').onclick = () => { running = false; refreshUI(); codeStatus('Angehalten'); };
+  /* D2: eine Startstelle. "Start" startet, pausiert und setzt fort; "Stopp" beendet die Simulation (zurück zum Zeichnen); "Neu starten" beginnt von vorn. */
+  $('#cdRun').onclick = () => { if (!simMode) setSimMode(true); else { toggleRun(); codeStatus(running ? 'Programm läuft.' : 'Pausiert. Mit „Weiter“ geht es dort weiter, wo es stand.'); } };
+  $('#cdNew').onclick = startAll;
+  $('#cdStop').onclick = () => { if (simMode) { setSimMode(false); codeStatus('Gestoppt. Jetzt kannst du die Schaltung ändern.'); } };
   $('#cdEx').onclick = () => menuAct('ex');
   $('#cdSave').onclick = () => { const b = new Blob([sch.code || ''], { type: 'text/plain' }), a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = (sch.name.replace(/[^\w\-]+/g, '_') || 'programm') + (LAB === 'pi' ? '.py' : '.ino'); document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); };
   $('#cdCopy').onclick = async () => { try { await navigator.clipboard.writeText(sch.code || ''); toast('Code kopiert'); } catch (e) { ta.select(); toast('Bitte markieren und kopieren'); } };
@@ -2270,8 +2302,8 @@ function meterText() {
 function drawMeterMarks() {
   if (!simMode || tool !== 'meter') return;
   const ring = (pt, col, lbl) => { if (!pt) return; cx.strokeStyle = col; cx.lineWidth = 3; cx.beginPath(); cx.arc(X(pt.x), Y(pt.y), Math.max(8, view.s * 0.45), 0, 7); cx.stroke(); cx.fillStyle = col; cx.font = '700 12px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'middle'; cx.fillText(lbl, X(pt.x) + 12, Y(pt.y) - 12); };
-  ring(meter.a, '#ff4d4d', meter.b ? '+' : 'rot'); ring(meter.b, '#ffffff', '−');
-  if (meter.mode === 'A' && meter.part != null) { const p = byPart(meter.part); if (p) { const K = KD(p), cs = [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].map(([a, b]) => { const [ra, rb] = tf(a, b, p); return [X(p.x + ra), Y(p.y + rb)]; }); cx.strokeStyle = '#7dff7d'; cx.lineWidth = 2; cx.setLineDash([6, 4]); cx.strokeRect(Math.min(cs[0][0], cs[1][0]) - 4, Math.min(cs[0][1], cs[1][1]) - 4, Math.abs(cs[1][0] - cs[0][0]) + 8, Math.abs(cs[1][1] - cs[0][1]) + 8); cx.setLineDash([]); } }
+  ring(meter.a, TC.ring1, meter.b ? '+' : 'rot'); ring(meter.b, TC.ring2, '−');
+  if (meter.mode === 'A' && meter.part != null) { const p = byPart(meter.part); if (p) { const K = KD(p), cs = [[K.box[0], K.box[1]], [K.box[2], K.box[3]]].map(([a, b]) => { const [ra, rb] = tf(a, b, p); return [X(p.x + ra), Y(p.y + rb)]; }); cx.strokeStyle = TC.ringA; cx.lineWidth = 2; cx.setLineDash([6, 4]); cx.strokeRect(Math.min(cs[0][0], cs[1][0]) - 4, Math.min(cs[0][1], cs[1][1]) - 4, Math.abs(cs[1][0] - cs[0][0]) + 8, Math.abs(cs[1][1] - cs[0][1]) + 8); cx.setLineDash([]); } }
 }
 function meterCardHtml() {
   if (!simMode || tool !== 'meter') return '';
@@ -3924,7 +3956,7 @@ function thinkHtml(t) {
   const a = thinkAns[t.id];
   let h = `<div style="margin:8px 0;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--panel)"><div style="font-size:14px;color:var(--accent);font-weight:700;margin-bottom:3px">🤔 Denkfrage: Was erwartest du?</div><div style="font-size:14px;margin-bottom:6px">${esc(q.q)}</div>`;
   q.opts.forEach((o, i) => {
-    const on = a === i, col = a == null ? '' : (i === q.right ? 'border-color:#4cd964;' : (on ? 'border-color:#ff8a7a;' : 'opacity:.6;'));
+    const on = a === i, col = a == null ? '' : (i === q.right ? 'border-color:var(--ok,#4cd964);' : (on ? 'border-color:var(--danger,#ff8a7a);' : 'opacity:.6;'));
     h += `<button class="btn" style="display:block;width:100%;height:auto;min-height:34px;margin:3px 0;padding:6px 10px;text-align:left;font-weight:500;${col}" data-a="think" data-i="${i}" ${a != null ? 'disabled' : ''}>${a != null && i === q.right ? '✓ ' : (on ? '✗ ' : '')}${esc(o)}</button>`;
   });
   if (a != null) h += `<div style="font-size:14px;margin-top:6px;color:${a === q.right ? 'var(--ok,#4cd964)' : 'var(--warn,#ffb340)'}"><b>${a === q.right ? 'Richtig gedacht.' : 'Nicht ganz.'}</b> ${esc(q.why)}</div>`;
@@ -4135,7 +4167,7 @@ function openProtocol() {
         const v = protoEval(r, p.tol);
         h += `<div class="card" data-k="${k}" style="padding:8px 10px;margin:8px 0"><div style="display:flex;gap:6px;align-items:center"><b style="min-width:20px">${k + 1}.</b><input data-f="w" value="${esc(r.w)}" placeholder="Messpunkt, z. B. U über R2" style="flex:1;min-width:0"><button class="btn" data-a="del" aria-label="Zeile löschen">✕</button></div>
           <div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap"><input data-f="s" value="${esc(r.s)}" placeholder="Soll" inputmode="decimal" style="width:72px"><input data-f="i" value="${esc(r.i)}" placeholder="Ist" inputmode="decimal" style="width:72px"><select data-f="u">${unitOpts(r.u || 'V')}</select><button class="btn" data-a="take" title="Messwert aus dem Multimeter übernehmen">⤓ Messwert</button></div>
-          <div style="margin-top:4px;font-size:14px;color:${v ? (v.ok ? '#2fae45' : '#e05050') : 'var(--mute)'}">${v ? (v.ok ? '✓ in Ordnung' : '✗ außerhalb der Toleranz') + ' · Abweichung ' + (v.dev >= 0 ? '+' : '') + protoFmtN(v.dev) + ' %' : 'Soll und Ist eintragen'}</div></div>`;
+          <div style="margin-top:4px;font-size:14px;color:${v ? (v.ok ? 'var(--ok,#2fae45)' : 'var(--danger,#e05050)') : 'var(--mute)'}">${v ? (v.ok ? '✓ in Ordnung' : '✗ außerhalb der Toleranz') + ' · Abweichung ' + (v.dev >= 0 ? '+' : '') + protoFmtN(v.dev) + ' %' : 'Soll und Ist eintragen'}</div></div>`;
       });
       h += `<div class="row2"><button class="btn" data-a="add">+ Zeile</button><button class="btn pri" data-a="print">Drucken</button><button class="btn danger" data-a="clr">Alles leeren</button></div>`;
       b.innerHTML = h;
@@ -4651,6 +4683,19 @@ void loop() {
   // die Melodie nur einmal spielen
 }
 ` }) },
+  { lab: 'code', cat: 'Töne und Sensoren', name: 'Sirene', info: 'Zwei Töne wechseln sich ab: 440 Hz und 660 Hz, je 300 Millisekunden. So klingt eine einfache Sirene. Der 100-Ω-Widerstand schützt den Pin.',
+    make: () => ({ parts: [['UNO', 12, 0], ['R', 22, 16, 0, '100'], ['SPK', 26, 16, 0, '8'], ['GND', 30, 16]], wires: [[20, 16, 22, 16]], scopes: [], tempo: 0.75,
+      code: String.raw`// Sirene: zwei Töne wechseln sich ab
+void setup() {
+}
+
+void loop() {
+  tone(8, 440);   // tiefer Ton
+  delay(300);
+  tone(8, 660);   // hoher Ton
+  delay(300);
+}
+` }) },
   { lab: 'code', cat: 'Töne und Sensoren', name: 'Ultraschall-Abstandsmesser', info: 'Regler „Abstand“ am Sensor verändern: unter 100 cm leuchtet die rote LED, sonst die grüne. Messwerte im Serial-Monitor.',
     make: () => ({ parts: [['UNO', 12, 0], ['HCSR04', 24, 10, 0, '', { pos: 0.246 }], ['GND', 24, 16], ['R', 22, 22, 0, '220'], ['LED', 26, 22, 0, 'grün'], ['GND', 30, 22], ['R', 22, 26, 0, '220'], ['LED', 26, 26, 0, 'rot'], ['GND', 30, 26]],
       wires: [[24, 10, 22, 10, 22, -2, 20, -2], [20, 12, 24, 12], [20, 14, 24, 14], [20, 22, 22, 22], [20, 26, 22, 26]], scopes: [], tempo: 0.75,
@@ -5046,7 +5091,7 @@ function renderPlan(S) {
   const c = document.createElement('canvas'); c.width = W; c.height = H;
   const sv = { cx, view, sel, ghost, wireStart, cursor };
   try {
-    cx = c.getContext('2d'); PRINT = true; sel = null; ghost = null; wireStart = null; cursor = null;
+    cx = c.getContext('2d'); PRINT = true; pickPal(); sel = null; ghost = null; wireStart = null; cursor = null;
     view = { s: S, ox: (W - (x1 - x0) * S) / 2 - x0 * S, oy: pad * S - y0 * S };
     cx.fillStyle = '#fff'; cx.fillRect(0, 0, W, H);
     drawCircuit();
@@ -5054,7 +5099,7 @@ function renderPlan(S) {
     cx.textAlign = 'left'; cx.textBaseline = 'alphabetic';
     cx.fillStyle = '#111'; cx.font = '700 ' + fp + 'px ' + F; cx.fillText('Stromlaufplan · ' + sch.name + (who ? ' · ' + who : ''), left, H - foot + fp * 1.2);
     cx.fillStyle = '#444'; cx.font = '500 ' + Math.round(fp * 0.85) + 'px ' + F; cx.fillText('Tonfunk ' + LABNAME + ' · ' + new Date().toLocaleDateString('de-DE'), left, H - foot + fp * 2.4);
-  } finally { cx = sv.cx; view = sv.view; sel = sv.sel; ghost = sv.ghost; wireStart = sv.wireStart; cursor = sv.cursor; PRINT = false; }
+  } finally { cx = sv.cx; view = sv.view; sel = sv.sel; ghost = sv.ghost; wireStart = sv.wireStart; cursor = sv.cursor; PRINT = false; pickPal(); }
   return c;
 }
 function bomData() {

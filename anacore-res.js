@@ -66,6 +66,8 @@
   function snap(o) { try { return o === undefined ? null : JSON.parse(JSON.stringify(o)); } catch (e) { return null; } }
   function obj(o) { return isObj(o) ? o : {}; }
   function lg(x) { return Math.log(x) / Math.LN10; }
+  /* Reserve an den Rändern (SPEC 4.12): unter 15 % bzw. ab 85 % von U_B; hat nichts mit dem Vorgabefenster ap_fenster zu tun */
+  const AP_RAND = 0.15;
   function pc(x, d) { return fmt(x * 100, d === undefined ? 1 : d) + ' %'; }
   function par(a, b) { return a * b / (a + b); }
   function fu(x, unit) { return fe(x, unit); }
@@ -556,8 +558,8 @@
       const zt = r.zustand || (M.dc && M.dc.zustand);
       crit(list, 'Arbeitspunkt', r.uce, zU, 'rot', 'Der Transistor ' + (zustandTxt[zt] || 'arbeitet nicht im aktiven Bereich') + ' (U_CE = ' + fe(r.uce, 'V') + ', I_C = ' + fe(r.ic, 'A') + '): keine Verstärkung, Arbeitspunkt nicht in Ordnung (rot).');
     } else if (isFinite(zU)) {
-      const dev = Math.abs(r.uce - zU) / ub, ampel = rate(dev, fen, 2 * fen);
-      crit(list, 'Arbeitspunkt', r.uce, zU, ampel, 'U_CE = ' + fe(r.uce, 'V') + ', Vorgabe ' + fe(zU, 'V') + ': Abweichung ' + fmt(dev * 100, 1) + ' % der Betriebsspannung U_B (' + AMPEL_TXT[ampel] + '; grün bis ' + pc(fen, 0) + ', gelb bis ' + pc(2 * fen, 0) + UEBUNG + ').', dev * 100);
+      const dev = Math.abs(r.uce - zU), ampel = rate(dev, fen, 2 * fen);
+      crit(list, 'Arbeitspunkt', r.uce, zU, ampel, 'U_CE = ' + fe(r.uce, 'V') + ', Vorgabe ' + fe(zU, 'V') + ': Abweichung ' + fe(dev, 'V') + ' (' + AMPEL_TXT[ampel] + '; grün bis ' + fe(fen, 'V') + ', gelb bis ' + fe(2 * fen, 'V') + UEBUNG + ').', dev / ub * 100);
     }
     if (isFinite(zV)) critRel(list, '|V_u| =', r.valid === false ? NaN : Math.abs(r.vu), zV, '', G, Y);
     if (M.large && M.large.clip) {
@@ -1465,10 +1467,10 @@
     return out;
   }
   function dgEmitter(M) {
-    const c = M.ctl, a = M.r, dc = M.dc && M.dc.ok ? M.dc : null, lg2 = M.large, out = [], f = M.fehler, ub = M.cfg.ub, fen = limN('ap_fenster');
+    const c = M.ctl, a = M.r, dc = M.dc && M.dc.ok ? M.dc : null, lg2 = M.large, out = [], f = M.fehler, ub = M.cfg.ub;
     const okAp = dc && f !== 'versorgung fehlt' && f !== 'transistor defekt';
-    if (okAp && (dc.zustand === 'saettigung' || (dc.zustand === 'aktiv' && dc.uce < fen * ub))) out.push(DM('ap-unten', 'warn', 'Der Arbeitspunkt liegt zu weit unten: U_CE = ' + fe(dc.uce, 'V') + (dc.zustand === 'saettigung' ? ' ist auf U_CE,sat gedrückt (Sättigung)' : ' ist nur ' + pc(dc.uce / ub, 0) + ' der Betriebsspannung') + ', I_C = ' + fe(dc.ic, 'A') + '. Dem Ausgang fehlt die Reserve nach unten: Die negative Halbwelle wird begrenzt.'));
-    if (okAp && (dc.zustand === 'sperrt' || (dc.zustand === 'aktiv' && dc.uce >= (1 - fen) * ub))) out.push(DM('ap-oben', 'warn', 'Der Arbeitspunkt liegt zu weit oben: U_CE = ' + fe(dc.uce, 'V') + ' liegt nahe U_B = ' + fe(ub, 'V') + ', I_C = ' + fe(dc.ic, 'A') + ' ist klein. Dem Ausgang fehlt die Reserve nach oben: Die positive Halbwelle wird begrenzt.'));
+    if (okAp && (dc.zustand === 'saettigung' || (dc.zustand === 'aktiv' && dc.uce < AP_RAND * ub))) out.push(DM('ap-unten', 'warn', 'Der Arbeitspunkt liegt zu weit unten: U_CE = ' + fe(dc.uce, 'V') + (dc.zustand === 'saettigung' ? ' ist auf U_CE,sat gedrückt (Sättigung)' : ' ist nur ' + pc(dc.uce / ub, 0) + ' der Betriebsspannung') + ', I_C = ' + fe(dc.ic, 'A') + '. Dem Ausgang fehlt die Reserve nach unten: Die negative Halbwelle wird begrenzt.'));
+    if (okAp && (dc.zustand === 'sperrt' || (dc.zustand === 'aktiv' && dc.uce >= (1 - AP_RAND) * ub))) out.push(DM('ap-oben', 'warn', 'Der Arbeitspunkt liegt zu weit oben: U_CE = ' + fe(dc.uce, 'V') + ' liegt nahe U_B = ' + fe(ub, 'V') + ', I_C = ' + fe(dc.ic, 'A') + ' ist klein. Dem Ausgang fehlt die Reserve nach oben: Die positive Halbwelle wird begrenzt.'));
     if (lg2 && (lg2.clip === 'unten' || lg2.clip === 'beide')) out.push(DM('clip-unten', 'warn', 'Die negative Halbwelle des Ausgangs ist abgeflacht (Sättigung): Die Spitze beträgt ' + fe(lg2.uaPeak, 'V') + ' bei der unteren Aussteuergrenze ' + fe(a.uaMaxUnten, 'V') + '; am Eingang wären höchstens U_e,max = ' + fe(a.ueMax, 'V') + ' möglich.'));
     if (lg2 && (lg2.clip === 'oben' || lg2.clip === 'beide')) out.push(DM('clip-oben', 'warn', 'Die positive Halbwelle des Ausgangs ist abgeflacht (Sperren): Die Spitze beträgt ' + fe(lg2.uaPeak, 'V') + ' bei der oberen Aussteuergrenze ' + fe(a.uaMaxOben, 'V') + '; am Eingang wären höchstens U_e,max = ' + fe(a.ueMax, 'V') + ' möglich.'));
     if (M.cfg.ce === false) {

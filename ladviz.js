@@ -185,7 +185,7 @@
     '1': '<circle class="zk" cx="50" cy="44" r="11"/><path class="zs" d="M50 33V26M44 36L38 30M56 36L62 30M40 44H33M60 44H67"/>',
     '2': '<rect class="zk" x="43" y="30" width="14" height="30" rx="5"/><rect class="zk" x="47" y="24" width="6" height="7"/>',
     '3': '<path class="zk" d="M50 26Q60 40 57 52Q55 60 50 60Q43 60 43 52Q43 44 50 36Q46 34 50 26Z"/>',
-    '4': '',
+    '4': '<path class="zk" d="M50 14Q58 26 55 34Q54 39 50 39Q45 39 45 34Q45 29 50 24Q47 20 50 14Z"/>',
     '5': '<path class="zk" d="M50 20Q58 30 55 38Q54 43 50 43Q45 43 45 38Q45 33 50 28Q47 24 50 20Z"/><circle class="zs" cx="50" cy="52" r="8"/>',
     '6': '<circle class="zk" cx="50" cy="38" r="9"/><rect class="zk" x="45" y="44" width="10" height="8"/><path class="zs" d="M38 56L62 66M62 56L38 66"/>',
     '7': '<circle class="zk" cx="50" cy="44" r="3.5"/><path class="zk" d="M50 44L50 28A16 16 0 0 1 63.9 36ZM50 44L36.1 36A16 16 0 0 1 50 28ZM50 44L50 60A16 16 0 0 1 36.1 52Z" fill-opacity="0"/><path class="zs" d="M50 44L50 28M50 44L63.9 52M50 44L36.1 52"/><circle class="zs" cx="50" cy="44" r="16"/>',
@@ -202,7 +202,7 @@
     else s += '<path class="' + ZBG[k] + '" d="' + ZD + '"/>';
     s += (ZSYM[k] || '') + '<path class="zr" d="' + ZD + '"/>';
     s += '<text class="zn' + (k === '8' ? ' zl' : '') + '" x="50" y="86" text-anchor="middle">' + esc(k) + '</text>';
-    return svg(100, 100, 'Gefahrzettel ' + nm + ' (schematische Zeichnung)', s);
+    return svg(100, 100, 'Gefahrzettel ' + nm + (k === '4' ? ', Unterklasse 4.2: oben weiß, unten rot, mit Flamme' : '') + ' (schematische Zeichnung)', s);
   }
   /* Warntafel: orange, oben Gefahrnummer, unten UN-Nummer (Daten aus UN). */
   function warntafelSvg(gefahr, un) {
@@ -348,8 +348,8 @@
     const short = k => D.cls[k].replace(/^Klasse \d: /, '');
     function fill(c) {
       const wt = D.un[W.i], opts = [Z.k].concat(ks.filter(k => k !== Z.k).sort(() => Math.random() - 0.5).slice(0, 3)).sort();
-      c.innerHTML = '<h4>Gefahrzettel und Warntafel</h4><p class="hint2">Schematische Zeichnungen nach den Beschreibungen in diesem Lab, keine Abbildungen nach Vorschrift. Die Klassen 2, 4 und 6 haben mehrere Zettel. Gezeigt ist je einer.</p>'
-        + '<div class="vzgrid">' + ks.map(k => '<div class="vzbox">' + zettelSvg(k) + '<p>Klasse ' + k + '<br>' + esc(short(k)) + '</p></div>').join('') + '</div>'
+      c.innerHTML = '<h4>Gefahrzettel und Warntafel</h4><p class="hint2">Schematische Zeichnungen nach den Beschreibungen in diesem Lab, keine Abbildungen nach Vorschrift. Die Klassen 2, 4 und 6 haben mehrere Zettel. Gezeigt ist je einer. Bei Klasse 4 ist es der Zettel 4.2 (oben weiß, unten rot, mit Flamme).</p>'
+        + '<div class="vzgrid">' + ks.map(k => '<div class="vzbox">' + zettelSvg(k) + '<p>Klasse ' + k + (k === '4' ? ' (Zettel 4.2)' : '') + '<br>' + esc(short(k)) + '</p></div>').join('') + '</div>'
         + '<h4 style="margin-top:14px">Welche Klasse zeigt der Zettel?</h4><div class="vzpic"><div class="vzbox">' + zettelSvg(Z.k) + '</div></div><div class="vzctl vzopts">'
         + opts.map(k => '<button data-vz="zk" data-k="' + k + '"' + (Z.sel ? ' disabled' : '') + (Z.sel && k === Z.k ? ' style="border-color:var(--ok)"' : Z.sel === k ? ' style="border-color:var(--danger)"' : '') + '>Klasse ' + k + ': ' + esc(short(k)) + '</button>').join('') + '</div>'
         + '<div role="status" aria-live="polite">' + (Z.sel ? (Z.sel === Z.k ? '<p class="rdout ok">✓ Richtig: Klasse ' + Z.k + ', ' + esc(short(Z.k)) + '.</p>' : '<p class="rdout bad">Nicht ganz. Der Zettel gehört zu Klasse ' + Z.k + ': ' + esc(short(Z.k)) + '.</p>') + '<div class="btns"><button class="btn pri" data-vz="zn">Nächster Zettel</button></div>' : '') + '</div>'
