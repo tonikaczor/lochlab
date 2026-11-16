@@ -3345,7 +3345,7 @@ const withDaily = f => { dailyMode = true; try { return f(); } finally { dailyMo
 function localDate(off) { const t = new Date(); t.setDate(t.getDate() + (off || 0)); return t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0'); }
 const dayNum = () => Math.floor(new Date(localDate() + 'T12:00:00').getTime() / 86400000);
 const dateDE = () => new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
-const dbase = () => TASKS.find(t => t.id === ['r1', 'r2', 'r3', 'r4'][dayNum() % 4]);
+const dbase = () => { const ids = ['r1', 'r2', 'r3', 'r4']; let i = dayNum() % 4; for (let k = 0; k < 4 && window.LehrjahrListe && !window.LehrjahrListe.erlaubt(ids[i], 'sch'); k++) i = (i + 3) % 4; return TASKS.find(t => t.id === ids[i]); };   /* Lehrjahr (L3): ist die Tagesaufgabe eine Aufgabe eines späteren Lehrjahres (r4: RC-Glied), kommt die davor; ohne eigenes Lehrjahr wie bisher */
 const dget = () => { try { return JSON.parse(localStorage.getItem('lm4.daily') || '{}'); } catch (e) { return {}; } };
 function dailyInfo() { const s = dget(), today = localDate(), live = s.last === today || s.last === localDate(-1); return { streak: live ? (s.streak || 0) : 0, best: s.best || 0, doneToday: s.last === today, days: s.days || {} }; }
 function dailySolved() {

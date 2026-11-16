@@ -903,6 +903,7 @@ document.addEventListener('click',function(e){var s=e.target.closest&&e.target.c
   <!-- Ansicht Ich: Beruf, Stand, Rang, Lernstand, Darstellung, Gerät, Nachschlagen, Seiten und Ausbilder -->
   <section class="view" id="v-ich" data-view="ich" aria-labelledby="vIchH" hidden>
     <h2 class="vh" id="vIchH">Ich</h2>
+    <section class="ib" id="ichLj" aria-labelledby="ichLjH" hidden><h3 class="vh3" id="ichLjH">Mein Lehrjahr</h3><div class="seg" id="ichLjSeg" role="group" aria-label="Mein Lehrjahr"></div><p class="lj-note" id="ichLjNote"></p><p class="lj-aus" id="ichLjAus" hidden><button type="button" class="btn" data-a="aus">Keine Angabe</button></p></section>
     <section class="ib" id="ich-beruf" aria-labelledby="ichBerufH"><h3 class="vh3" id="ichBerufH">Beruf oder Weg</h3><p class="vsub">Danach richten sich Labs, Lernpfad und Empfehlung.</p><div id="ichBeruf" class="zu"></div><button type="button" class="lb-b" id="ichBerufWechsel" aria-controls="ichBeruf" aria-expanded="false">Beruf oder Weg wechseln</button></section>
     <section class="ib" aria-labelledby="ichStandH"><h3 class="vh3" id="ichStandH">Mein Stand</h3><div class="vl" id="ichStand"></div><div id="ichRang"></div></section>
     <section class="ib" id="ftAzubi" aria-labelledby="ichLsH"><h3 class="vh3" id="ichLsH">Lernstand</h3>
@@ -949,6 +950,8 @@ if(!window.HomeViews)(function(){function z(){var v=(location.hash||'#start').sl
 <script src="karrieredata.js"></script>
 <script src="karriere.js"></script>
 <script src="karriereui.js"></script>
+<script src="lernfelder.js"></script>
+<script src="lehrjahr.js"></script>
 <script src="lernpfad.js"></script>
 <script src="lernstand.js"></script>
 <script src="stand.js"></script>
@@ -960,6 +963,7 @@ if(!window.HomeViews)(function(){function z(){var v=(location.hash||'#start').sl
 <script src="berufe.js"></script>
 <script src="home-vb.js"></script>
 <script src="home-cont.js"></script>
+<script src="lehrjahr-ui.js"></script>
 <script src="wiederholen.js"></script>
 <script src="einheit10.js"></script>
 <script src="meinweg.js"></script>

@@ -2,6 +2,14 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v62.177', items: [
+      ['Lernpfad nach Lehrjahr', 'Für Elektroniker-Berufe richtet sich der Weg jetzt nach deinem Lehrjahr. Unter „Ich“ stellst du „Mein Lehrjahr“ ein. Der Weg zeigt dir dann in jedem Lab zuerst den Teil, der zu deinem Lehrjahr passt. Das Rechen-Lab kommt im 1. Lehrjahr direkt nach dem SchaltLab.', 'Startseite'],
+      ['Lehrjahr in den Labs', 'Die Aufgabenliste zeigt zuerst die Aufgaben bis zu deinem Lehrjahr. Spätere Aufgaben stehen darunter unter „Kommt im 2. Lehrjahr“ und bleiben frei wählbar. „Nächste Aufgabe“ schlägt dir keine spätere Aufgabe mehr von sich aus vor.', 'Alle Labs'],
+    ] },
+    { v: 'v62.176', items: [
+      ['Widerstandsnetzwerke im Rechen-Lab', 'Unter „Üben“ findest du jetzt „Netzwerke“: Schaltungen mit zwei bis zehn Widerständen in acht Stufen. Du berechnest Gesamtwiderstand, Teilströme, Teilspannungen und Leistungen. Jede Stufe hat beliebig viele neue Aufgaben.', 'Rechen-Lab'],
+      ['Lösungsweg mit Ersatzschaltung', 'Der Lösungsweg fasst die Schaltung Schritt für Schritt zusammen und zeigt dir jedes Mal das neue Schaltbild. Am Handy kannst du das Bild seitlich schieben oder das Handy quer halten.', 'Rechen-Lab'],
+    ] },
     { v: 'v62.175', items: [
       ['Helle Zeichenfläche', 'Im hellen Modus ist jetzt auch die Zeichenfläche hell: im SchaltLab, im DigiLab, im Arduino-Lab und im Pi-Lab. Leitungen, Bauteile und das Oszilloskop sind dafür neu eingefärbt.', 'SchaltLab, DigiLab, Arduino-Lab, Pi-Lab'],
       ['Fortschritt auf den Lab-Karten', 'Jede Lab-Karte auf der Startseite zeigt unten einen schmalen Streifen. Je weiter du im Lab bist, desto länger ist er.', 'Startseite'],
@@ -10,38 +18,6 @@
       ['Eine Startstelle im Arduino-Lab', 'Du startest dein Programm jetzt an einer Stelle: Start, Pause, Weiter. Das Beispiel „Sirene“ hat ein fertiges Programm.', 'Arduino-Lab, Pi-Lab'],
       ['Einführung für Pi-Lab und App-Werkstatt', 'Beim ersten Besuch zeigt dir eine kurze Tour, wo du was findest.', 'Pi-Lab, App-Werkstatt'],
       ['Korrekturen', 'Gefahrzettel der Klasse 4 und der Zettel 9A für Lithiumbatterien im Ladungssicherungs-Lab, die Regeln für das Fahren von Staplern, Winkel im Mechanik-Lab und drei neue Prüfungsfragen.', 'mehrere Labs'],
-    ] },
-    { v: 'v62.174', items: [
-      ['Alle Labs im gleichen Aufbau', 'Jedes Lab hat jetzt oben dieselbe schmale Kopfzeile und darunter ein Band mit wenigen Reitern. „Üben“ und „Hilfe“ findest du überall an derselben Stelle. Über den Info-Knopf oben rechts öffnest du „Warum brauche ich das?“ und die Einführung.', 'alle Labs'],
-      ['Mehr Platz am Handy und Tablet', 'Die Labs nutzen den Bildschirm besser aus: Grafiken sind größer, Schrift ist besser lesbar und Knöpfe sind groß genug für den Finger. Nichts läuft mehr seitlich aus dem Bild.', 'alle Labs'],
-      ['Der Lernpfad führt dich', 'Die blaue Karte auf der Startseite zeigt jetzt immer die nächste Station deines Ausbildungspfads, auch wenn du vorher in einem anderen Lab warst. Ab 80 % bekommst du den Hinweis, dass du schon ins nächste Lab wechseln kannst. Für alle Orden brauchst du 100 %.', 'Startseite'],
-      ['Heller Modus im SchaltLab', 'Das SchaltLab folgt jetzt dem hellen Modus. Die Zeichenfläche selbst bleibt dunkel, damit Leitungen und Bauteile gut zu erkennen sind.', 'SchaltLab'],
-      ['Klarere Rückmeldungen', 'Nach einer Aufgabe siehst du in allen Labs auf einen Blick, ob sie richtig war, was noch fehlt und wie es weitergeht.', 'alle Labs'],
-      ['Viele Korrekturen', 'Über 400 Stellen aus einer großen Durchsicht sind überarbeitet: Texte, Zeichnungen, Bedienung und Fehler in einzelnen Aufgaben.', 'ganze App'],
-    ] },
-    { v: 'v62.173', items: [
-      ['Mega Update!', 'Das größte Update bisher: 62 Labs, Toni als Stimme, viele neue Funktionen und Verbesserungen.', 'ganze App'],
-      ['Vorlesen bei mehr Stellen', 'Den Vorlese-Knopf gibt es jetzt auch bei „Warum brauche ich das?“, in den Projekten, im Ausbildungsplan und bei allen Wiki-Einträgen. Du tippst auf den Knopf und der Text wird dir vorgelesen. Die Texte liest dir die Stimme von Toni vor.', 'alle Labs, Projekte, Ausbildungsplan, Wiki'],
-      ['Aufgaben vorlesen', 'Bei vielen Aufgaben gibt es jetzt einen Vorlese-Knopf. Aufgaben ohne passende Aufnahme bekommen keinen Knopf.', 'fast alle Labs'],
-      ['Zeichnungen in den Lernheften', 'Die Lernhefte zeigen jetzt kleine Zeichnungen, die Zusammenhänge sichtbar machen: Reihen- und Parallelschaltung, Spannungsteiler, LED-Vorwiderstand, Kondensator laden, Netzteil, Strom- und Spannungsmessung, Wechselschaltung, hydraulische Presse, Passungen und das 4…20-mA-Signal. Bei „Bewegung reduzieren“ stehen sie still.', 'Lernhefte'],
-      ['Buchen mit Animation', 'Im Buchführungs-Lab siehst du Buchungssätze jetzt animiert: Der Betrag wandert vom Soll-Konto zum Haben-Konto und der Saldo aktualisiert sich. Du findest sie im Editor und bei den Beispielen.', 'Buchführungs-Lab'],
-      ['Werkstück-Weg', 'Im Maschinen-Lab gibt es den neuen Reiter „Werkstück-Weg“: Ein Werkstück wandert Station für Station durch die Maschinen, die aktive Maschine leuchtet auf. Du gehst Schritt für Schritt oder spielst den Weg ab.', 'Maschinen-Lab'],
-      ['Neue Prüfampel im EMV-Lab', 'Die Prüfampel im EMV-Lab sieht jetzt aus wie in den anderen Labs: drei Lampen, Zustandswort und Marge.', 'EMV-Lab'],
-      ['Studium und Technik', 'Neben den Ausbildungsberufen gibt es jetzt vier eigene Wege: Techniker Elektrotechnik, Studium Elektrotechnik, Wirtschaftsingenieur und Wirtschaftsinformatik. Du wählst deinen Weg oben auf der Startseite und bekommst einen passenden Plan. Azubis müssen das nicht nutzen.', 'Startseite, Wege'],
-      ['Sechs neue Labs', 'Mathe-Brücke (komplexe Rechnung, Matrizen, Fourier-Reihe), Signale und Systeme, Regelungstechnik Aufbau, Embedded vertieft, Projekt und Wirtschaftlichkeit sowie Normen und Konformität. Sie sind mit „Fortgeschritten“ gekennzeichnet.', 'Studium und Technik'],
-      ['Mein Stand', 'Eine Seite zeigt dir auf einen Blick, wo du stehst: Ampel je Lernfeld, Prüfungsthemen, fällige Karten, Lerntage und den nächsten sinnvollen Schritt. Sie liest nur und ändert nichts.', 'Startseite, Mein Stand'],
-      ['Mein Weg', 'Oben auf der Startseite findest du eine ruhige Kurzansicht: Weitermachen, Mein Stand, Wiederholen, 10-Minuten-Einheit und Plan. Alle Labs liegen darunter und sind für neue Nutzer eingeklappt.', 'Startseite'],
-      ['Prüfungs-Countdown', 'Setze das Datum deiner Prüfung und sieh „noch X Tage“, einen Wochenplan aus deinen schwachen Themen und einen Vorschlag für heute. Das Datum bleibt auf deinem Gerät.', 'Mein Stand'],
-      ['Fehler werden Lernkarten', 'Falsch beantwortete Prüfungsfragen landen automatisch als Lernkarte und kommen später zum Wiederholen zurück.', 'Prüfungslab, Karten'],
-      ['10-Minuten-Einheit', 'Wenig Zeit? Die 10-Minuten-Einheit stellt dir ein Päckchen aus Wiederholen, einer Aufgabe und Karten zusammen.', 'Startseite'],
-      ['Ruhiger und größer', 'Spielelemente und Töne sind standardmäßig ruhiger. Die Schrift ist mindestens 14 Pixel groß, und du kannst am Tablet und am Handy jetzt zoomen.', 'ganze App'],
-      ['Sichern erinnert dich', 'Die App erinnert dich freundlich daran, deinen Lernstand zu sichern, und zeigt, ob sie offline bereit ist.', 'Startseite'],
-      ['Alles offline laden', 'Auf der Startseite lädst du mit einem Tipp alle Vorlese-Aufnahmen auf dein Gerät, damit sie auch ohne Netz laufen. Du siehst vorher, wie viel Platz es braucht, und kannst jederzeit abbrechen und später weitermachen.', 'Startseite, Offline-Karte'],
-      ['Gerätetest', 'Auf einer eigenen Seite testest du dein Tablet oder Handy: Anzeige, Touch, Ton, Offline-Betrieb und Vorlesen.', 'Gerätetest'],
-      ['Prüfungsfragen geprüft', 'Der Fragenpool wurde fachlich durchgesehen. Mehr als hundert Fragen sind genauer oder aktueller formuliert.', 'Prüfungslab'],
-      ['Fehlerbild im Leiterplatten-Lab', 'Neuer Reiter mit 20 typischen Fehlern aus einer Modell-Fertigungslinie, vom Symptom über die Ursache bis zur Gegenmaßnahme, dazu ein Quiz, ein Ausbeute-Rechner und die Rückverfolgung von Chargen. Alle Zahlen sind Übungswerte.', 'Leiterplatten-Lab'],
-      ['ESD im Leiterplatten-Lab', 'Neuer Reiter ESD: Du lernst, wie sich Bauteile durch elektrostatische Entladung schädigen, wie ein geschützter Arbeitsbereich mit Erdung, Verpackung und Ionisator aufgebaut ist und wie du dabei richtig misst. Mit Reglern spielst du Luftfeuchte, Systemwiderstand und Offset durch, dazu gibt es fünf Fehlerbilder und ein Quiz mit zwölf Aufgaben.', 'Leiterplatten-Lab'],
-      ['Linien-Lab', 'Du untersuchst die Modell-Fertigungslinie von Wareneingang bis Versand und stellst mit Reglern Takt, Engpass, Durchlaufzeit und Ausbeute ein. Dazu kommen die Rückverfolgung einer Charge und die Schritte Lackieren und Verguss mit Rechner. 28 Aufgaben mit Tipps und Rechenweg, alle Zahlen sind Übungswerte.', 'Linien-Lab'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -161,7 +161,11 @@
     mitEimern(eimer('pfad', { labs: Object.keys(byKey), tracks, hubs, proj }), cards, byKey);
     /* Nummer je Karte im Pfad und die Marke an der Empfehlung (dieselbe Quelle wie die blaue Karte: Lernpfad.recommend) */
     let rec = '', began = false; try { const r = L.recommend(); rec = r && r.rec || ''; began = !!(r && r.started); } catch (e) { rec = ''; }
-    secs().forEach(s => { if (!/^lp\d/.test(s.id)) return; let i = 0; s.querySelectorAll('.cards>.card[data-lab]').forEach(c => { i++; const th = c.querySelector('.th'); if (!th) return; const no = doc.createElement('span'); no.className = 'lp-no'; no.setAttribute('aria-hidden', 'true'); no.textContent = String(i); th.insertBefore(no, th.firstChild); }); });
+    /* Mit Lehrjahr (nur Berufe mit Datenlage, lehrjahr.js): Labs ohne Aufgaben bis zum eigenen Lehrjahr werden im Pfad übersprungen (Strich statt Nummer, Hinweis "Ab 2. Lehrjahr"); sie bleiben im Raster */
+    const lj = L.ljAktiv ? L.ljAktiv() : null;
+    const uebersprungen = c => { if (!lj) return 0; try { const s = L.stat(REGkey(c)); return s && s.t && s.t.n === 0 ? s.t.erst : 0; } catch (e) { return 0; } };
+    secs().forEach(s => { if (!/^lp\d/.test(s.id)) return; let i = 0; s.querySelectorAll('.cards>.card[data-lab]').forEach(c => { const th = c.querySelector('.th'); const ab = uebersprungen(c); if (!ab) i++; if (!th) return; const no = doc.createElement('span'); no.className = 'lp-no'; no.setAttribute('aria-hidden', 'true'); no.textContent = ab ? '–' : String(i); th.insertBefore(no, th.firstChild); if (ab) { const mk = doc.createElement('span'); mk.className = 'lp-mk lp-ab'; mk.textContent = 'Ab ' + ab + '. Lehrjahr'; th.insertAdjacentElement('afterend', mk); } }); });
+    if (lj) { const p = doc.createElement('p'); p.className = 'lp-ljn'; p.textContent = 'Dein Pfad führt durch den Teil für das ' + lj + '. Lehrjahr. Alles andere bleibt in den Labs frei wählbar. Dein Lehrjahr stellst du unter „Ich“ ein.'; wrap.insertBefore(p, wrap.firstChild); }
     const rc = rec && byKey[rec]; if (rc) { rc.classList.add('lp-rec'); const mk = doc.createElement('span'); mk.className = 'lp-mk'; mk.textContent = began ? 'Weiter hier' : 'Start hier'; const th = rc.querySelector('.th'); if (th) th.insertAdjacentElement('afterend', mk); else rc.insertBefore(mk, rc.firstChild); }
     return true;
   }
@@ -184,7 +188,7 @@
     if (MODI.indexOf(m) < 0) m = 'thema';
     const cards = labCards(); aufraeumen(cards);
     const byKey = {}; cards.forEach(c => { const k = REGkey(c); if (k && !byKey[k]) byKey[k] = c; });
-    wrap.querySelectorAll('.lp-pj,.lp-hub').forEach(x => x.remove());
+    wrap.querySelectorAll('.lp-pj,.lp-hub,.lp-ljn').forEach(x => x.remove());
     cards.forEach(c => wrap.appendChild(c)); secs().forEach(s => s.remove());
     modus = m; let ok = true;
     if (m === 'pfad') ok = pfad(cards, byKey); else if (m === 'lf') ok = lf(cards, byKey, nachher); else thema(cards);

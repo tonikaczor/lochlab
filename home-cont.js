@@ -1,7 +1,9 @@
 'use strict';
 /* Tonfunk Lab: blaue Karte "Weitermachen" der Ansicht Start (SPEC-STARTSEITE-FABLE.md, Abschnitt 6.2; Umbau S1: ein Schritt, Ring, Rang als kleine Zeile, dazu "Zuletzt geöffnet").
    Reihenfolge der Quellen: 1) lm4.last (von design.js geschrieben: Datei, Aufgabe, Zeit), 2) letzter Eintrag in sim.results (nur Labs mit Schaltplan-Kern),
-   3) Empfehlung des Lernpfads (Lernpfad.recommend), bei völlig leerem Speicher: SchaltLab mit Einführung. resolve() ist reine Logik und wird in Node getestet. */
+   3) Empfehlung des Lernpfads (Lernpfad.recommend), bei völlig leerem Speicher: SchaltLab mit Einführung. resolve() ist reine Logik und wird in Node getestet.
+   Mit bekanntem Lehrjahr (Paket L2, nur Berufe mit Datenlage) führt die Empfehlung nur durch den Teil jedes Labs bis zum eigenen Lehrjahr; ist er geschafft, zeigt die Karte "Dein N. Lehrjahr ist geschafft"
+   mit dem Angebot, schon ins nächste Lehrjahr zu schauen (recommend().fertigLj). Der Ring bleibt der Gesamtfortschritt. */
 (function (root) {
   const short = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
   function relTime(t, now) {
@@ -22,7 +24,7 @@
     const rowOf = id => id ? ROWS.find(r => r[0] === id) : null;
     let key = null, task = '', t = 0, src = '';
     /* Der Lernpfad führt: gibt es eine offene Station im Pfad, zeigt die blaue Karte dorthin. Das zuletzt geöffnete Lab steht weiter in "Zuletzt geöffnet". */
-    const rcP = env.recommend ? env.recommend() : null, pfad = !!(rcP && rcP.rec && REG[rcP.rec]);
+    const rcP = env.recommend ? env.recommend() : null, pfad = !!(rcP && ((rcP.rec && REG[rcP.rec]) || (rcP.fertigLj && REG[rcP.fertigLj.key])));
     const L = get('lm4.last', null);
     if (!pfad && L && typeof L === 'object' && typeof L.file === 'string' && keyOfFile(L.file)) { key = keyOfFile(L.file); task = typeof L.task === 'string' ? L.task : ''; t = +L.t || 0; src = 'last'; }
     if (!key && !pfad) {
@@ -42,16 +44,20 @@
       return { src, key, href, label: 'Weitermachen', sub, name: R.name, title, when };
     }
     const rc = rcP;
+    if (rc && rc.fertigLj && REG[rc.fertigLj.key]) {   // Lehrjahr geschafft: Angebot fürs nächste Lehrjahr (nichts ist gesperrt)
+      const f = rc.fertigLj;
+      return { src: 'lehrjahr', key: f.key, href: f.href, label: 'Dein ' + rc.lj + '. Lehrjahr ist geschafft', sub: 'Schau schon ins ' + f.lj + '. Lehrjahr: ' + [f.name, short(f.title, 40)].filter(Boolean).join(' · '), name: f.name, title: f.title || '', when: '' };
+    }
     const any = Object.keys(res).length > 0 || Object.keys(get('lm4.trainer', {}) || {}).length > 0;
     if (rc && rc.rec && (any || rc.started)) {
       const R = REG[rc.rec];
-      if (rc.started) { const title = rc.next ? rc.next[3] : ''; return { src: 'rec', key: rc.rec, href: rc.href, label: 'Weitermachen', sub: [R.name, short(title, 40)].filter(Boolean).join(' · '), name: R.name, title, when: '' }; }
-      return { src: 'rec', key: rc.rec, href: rc.href, label: 'Starten', sub: R.name + ' (Einführung)', name: R.name, title: '', when: '' };
+      if (rc.started) { const title = rc.next ? rc.next[3] : ''; return { src: 'rec', key: rc.rec, href: rc.href, label: 'Weitermachen', sub: [R.name, rc.teilKurz, short(title, 40)].filter(Boolean).join(' · '), name: R.name, title, when: '' }; }
+      return { src: 'rec', key: rc.rec, href: rc.href, label: 'Starten', sub: rc.teilText ? R.name + ' · ' + rc.teilText : R.name + ' (Einführung)', name: R.name, title: '', when: '' };
     }
     /* Beruf ohne SchaltLab (die Wege tec/stu/wing/winf und Berufe ohne dieses Lab): bei leerem Speicher der erste Schritt des eigenen Lernpfads statt SchaltLab (env.beruf; ohne Angabe gilt das alte Verhalten) */
     const inB = r => !env.beruf || !r || !Array.isArray(r.beruf) || r.beruf.indexOf(env.beruf) >= 0;
-    if (!any && !inB(REG.sch) && rc && rc.rec && REG[rc.rec]) { const R0 = REG[rc.rec]; return { src: 'start', key: rc.rec, href: rc.href || (R0.file + '?trainer'), label: 'Starten', sub: R0.name + ' (Einführung)', name: R0.name, title: '', when: '' }; }
-    if (!any && REG.sch && inB(REG.sch)) return { src: 'leer', key: 'sch', href: REG.sch.file + '?trainer', label: 'Starten', sub: REG.sch.name + ' (Einführung)', name: REG.sch.name, title: '', when: '' };
+    if (!any && !inB(REG.sch) && rc && rc.rec && REG[rc.rec]) { const R0 = REG[rc.rec]; return { src: 'start', key: rc.rec, href: rc.href || (R0.file + '?trainer'), label: 'Starten', sub: rc.teilText ? R0.name + ' · ' + rc.teilText : R0.name + ' (Einführung)', name: R0.name, title: '', when: '' }; }
+    if (!any && REG.sch && inB(REG.sch)) return { src: 'leer', key: 'sch', href: REG.sch.file + '?trainer', label: 'Starten', sub: rc && rc.teilText && rc.rec === 'sch' ? REG.sch.name + ' · ' + rc.teilText : REG.sch.name + ' (Einführung)', name: REG.sch.name, title: '', when: '' };
     const pk = REG.pr && inB(REG.pr) ? 'pr' : REG.sch && inB(REG.sch) ? 'sch' : (Object.keys(REG).find(k => !REG[k].hub && inB(REG[k])) || (REG.pr ? 'pr' : 'sch'));
     const P = REG[pk] || { name: 'Prüfungs-Lab', file: 'pruefungslab.html' };
     return { src: 'fertig', key: pk, href: P.file, label: 'Wiederholen', sub: P.name + ' (alle Aufgaben erledigt)', name: P.name, title: '', when: '' };
@@ -104,7 +110,7 @@
     let h = doc.getElementById('pfWeiter');
     if (!w) { if (h) h.remove(); return; }
     if (!h) { h = doc.createElement('p'); h.id = 'pfWeiter'; h.className = 'lsfehlt pfweiter'; top.insertAdjacentElement('afterend', h); }
-    h.innerHTML = '<span class="lsf-t">' + esc(w.vonName) + ' ist zu ' + w.pct + '&nbsp;% geschafft. Du kannst schon ins ' + esc(w.name) + ' wechseln. Für alle Orden brauchst du aber 100&nbsp;%.</span><a class="pfw-a" href="' + esc(w.href) + '">' + esc(w.name) + ' öffnen</a>';
+    h.innerHTML = '<span class="lsf-t">' + esc(w.vonName) + (w.lj ? ': Dein Teil für das ' + w.lj + '. Lehrjahr ist zu ' : ' ist zu ') + w.pct + '&nbsp;% geschafft. Du kannst schon ins ' + esc(w.name) + ' wechseln. Für alle Orden brauchst du aber 100&nbsp;%.</span><a class="pfw-a" href="' + esc(w.href) + '">' + esc(w.name) + ' öffnen</a>';
   }
   function hinweis() {
     const top = doc.getElementById('top'); if (!top || !top.parentNode) return;
@@ -121,5 +127,5 @@
   render(); hinweis(); pfadWeiter();
   root.addEventListener('pageshow', e => { if (e.persisted) { render(); hinweis(); pfadWeiter(); } });
   doc.addEventListener('visibilitychange', () => { if (!doc.hidden) { render(); hinweis(); pfadWeiter(); } });
-  root.addEventListener('lernpfad:fertig', render);
+  root.addEventListener('lernpfad:fertig', () => { render(); pfadWeiter(); });
 })(typeof window !== 'undefined' ? window : this);

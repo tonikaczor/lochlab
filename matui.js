@@ -1,9 +1,9 @@
 'use strict';
 /* Tonfunk Rechen-Lab: Oberfläche (Lab-Kennung 'mat').
-   Reiter: Einheiten, Dreisatz, Prozent, Umstellen, Geometrie, Messwerte, Beispiele, Aufgaben, Trainer, Hilfe.
+   Reiter: Einheiten, Dreisatz, Prozent, Umstellen, Geometrie, Messwerte, Beispiele, Aufgaben, Trainer, Netzwerke, Hilfe.
    Module: matcore.js (MAT_CORE, Logik), matdata.js (MAT_DATA, MAT_TASKS).
    Speicher (Präfix lm4.mat.): tab, done ({id:true} nur gelöste), prog ({id:Prozent}), hints ({id:höchste Stufe}), ctipps ({id:Stufe} nur im Prüfmodus),
-   exam ('1' = Prüfmodus), rt (Trainer: n, ok, streak, best).
+   exam ('1' = Prüfmodus), rt (Trainer: n, ok, streak, best), netz ({Stufe:Anzahl richtig gelöst}, Reiter Netzwerke, nicht im Lab-Fortschritt).
    Tipp-Abzug (25 % je Stufe) gibt es nur im Prüfmodus; beim normalen Üben kosten Tipps nichts. */
 (function (root) {
   const C = root.MAT_CORE, D = root.MAT_DATA;
@@ -36,7 +36,7 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['einh', '📏', 'Einheiten'], ['drei', '⚖️', 'Dreisatz'], ['proz', '％', 'Prozent'], ['umst', '🔁', 'Umstellen'], ['geo', '📐', 'Geometrie'], ['mess', '📊', 'Messwerte'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
+  const TABS = [['einh', '📏', 'Einheiten'], ['drei', '⚖️', 'Dreisatz'], ['proz', '％', 'Prozent'], ['umst', '🔁', 'Umstellen'], ['geo', '📐', 'Geometrie'], ['mess', '📊', 'Messwerte'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['netz', '🔌', 'Netzwerke'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'einh'),
     einh: { fam: 'laenge', v: '4,7', from: 'mm', to: 'm', sv: '0,000047' },
@@ -346,6 +346,7 @@
   /* ============================================================ Zufalls-Trainer */
   function newTrainer() {
     const T = S.tr; let pool = TASKS.filter(t => (T.cat === 'alle' || t.cat === T.cat) && (!T.level || t.level === T.level)); if (!pool.length) pool = TASKS;
+    { const LL = window.LehrjahrListe; if (LL && LL.erlaubt) { const p2 = pool.filter(t => LL.erlaubt(t.id, 'mat')); if (p2.length) pool = p2; } }   /* Lehrjahr (L3): keine Aufgabe eines späteren Lehrjahres vorschlagen */
     const t = pool[Math.floor(Math.random() * pool.length)]; T.p = D.build(t, Math.floor(Math.random() * 1e9)); T.ans = ''; T.res = null; T.tries = 0; renderTrainer();
   }
   function renderTrainer() {
@@ -366,6 +367,91 @@
     if (ok && !shown && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
   }
   function checkTrainer() { const T = S.tr, v = C.parseDe(T.ans); if (!isFinite(v)) { toast('Bitte gib eine Zahl ein.'); return; } trainerResult(Math.abs(v - T.p.value) <= T.p.tol + 1e-9, false); }
+
+  /* ============================================================ Netzwerke (Widerstandsschaltungen, matnetz.js und matnetzviz.js)
+     Speicher lm4.mat.netz = { "<Stufe>": Anzahl richtig gelöster Aufgaben }. Eine Stufe gilt nach NZ_ZIEL richtig gelösten Aufgaben als geschafft.
+     Die Netzwerk-Stufen zählen NICHT in MAT_LAB (Startseite, Lernpfad): total und done bleiben die der festen Aufgaben. */
+  const NZ = root.MAT_NETZ, NV = root.MAT_NETZVIZ, NZ_ZIEL = 3;
+  S.netz = { stufe: 0, task: null, ans: {}, res: null, tries: 0, shown: false, solved: false, open: false };
+  const nzProg = () => lsGet('netz', {});
+  const nzCount = st => Math.min(99, +nzProg()[st] || 0);
+  const nzGeschafft = () => NZ ? NZ.STUFEN.filter(s => nzCount(s.n) >= NZ_ZIEL).length : 0;
+  const nzFig = (baum, hl, U) => '<div class="inst nzfig">' + NV.schaltbild(baum, { U: 'U = ' + NZ.fw(U, 'U'), hl }) + '</div>';
+  function nzStart(st) {
+    const Z = S.netz; Z.stufe = st; Z.task = NZ.gen(st, Math.floor(Math.random() * 1e9)); Z.ans = {}; Z.res = null; Z.tries = 0; Z.shown = false; Z.solved = false; Z.open = false;
+    renderNetz(); $('#pg_netz').scrollTop = 0;
+  }
+  function nzLoesHTML(t) {
+    const L = NZ.loesung(t); let h = '<div class="rdout nzlw"><b>Lösungsweg</b><p class="nzgeg">Zwischenwerte sind auf drei Stellen gerundet. Du darfst mit gerundeten Werten weiterrechnen, ±1 % gilt als richtig.</p>';
+    L.punkte.forEach(p => { h += p.kopf ? `<h5 class="nzkopf">${esc(p.kopf)}</h5>` : `<div class="nzstep"><div class="nztx">${esc(p.text)}</div>${p.bild ? nzFig(p.bild, p.hl, t.U) : ''}</div>`; });
+    h += '<h5 class="nzkopf">Alle Werte im Überblick</h5><div class="nztab"><table class="tt"><tr><th>Widerstand</th><th class="n">R</th><th class="n">U</th><th class="n">I</th>' + (t.stufe === 8 ? '<th class="n">P</th>' : '') + '</tr>'
+      + NZ.tabelle(t).map(r => `<tr><td>${esc(r.name)}</td><td class="n">${esc(r.r)}</td><td class="n">${esc(r.u)}</td><td class="n">${esc(r.i)}</td>${t.stufe === 8 ? `<td class="n">${esc(r.p)}</td>` : ''}</tr>`).join('') + '</table></div>';
+    return h + '</div>';
+  }
+  function nzFrage(q) {
+    const Z = S.netz, a = Z.ans[q.id], it = Z.res && Z.res.items.find(x => x.id === q.id), lock = Z.solved || (Z.res && Z.res.stage === 'loes');
+    if (q.typ === 'wahl') {
+      return `<div class="nzq"><b>${esc(q.label)}</b><div class="opts nzw" role="group" aria-label="${esc(q.label)}">${q.optionen.map(o => `<button data-nzw="${q.id}|${esc(o)}" class="${a === o ? (it ? (it.ok ? 'ok' : 'bad') : 'on') : ''}" aria-pressed="${a === o}"${lock ? ' disabled' : ''}>${esc(o)}</button>`).join('')}</div></div>`;
+    }
+    const v = a || {}, eu = NZ.EINH[q.q], sel = v.u && eu.indexOf(v.u) >= 0 ? v.u : eu[0], cls = it && !it.leer ? (it.ok ? 'nzok' : 'nzbad') : '';
+    return `<label class="f nzq"><span>${esc(q.label)}</span><div class="qin"><input class="${cls}" data-nzi="${q.id}" inputmode="decimal" autocomplete="off" value="${esc(v.v || '')}"${lock ? ' disabled' : ''}><select data-nzu="${q.id}" aria-label="Einheit: ${esc(q.label)}"${lock ? ' disabled' : ''}>${eu.map(u => `<option${u === sel ? ' selected' : ''}>${esc(u)}</option>`).join('')}</select></div></label>`;
+  }
+  function nzFbHTML(Z) {
+    const r = Z.res; if (!r) return '';
+    const lis = r.items.map(i => `<li class="${i.ok ? 'ok' : 'bad'}">${i.ok ? '✓' : '✗'} ${esc(i.label)}: ${i.ok ? 'richtig (' + esc(i.eingabe) + ')' : i.fehler ? esc(i.fehler) : 'Deine Antwort „' + esc(i.eingabe) + '“ stimmt nicht.' + (i.hinweis ? ' ' + esc(i.hinweis) : '')}</li>`).join('');
+    let h = `<div class="lr-fb ${r.stage === 'ok' ? 'ok' : r.stage === 'loes' ? 'loes' : 'tipp'}" role="status"><ul class="tl">${lis}</ul>`;
+    if (r.stage === 'ok') h += '<p><strong>Alles richtig!</strong>' + (Z.shown ? ' Der Lösungsweg war schon offen, darum zählt diese Aufgabe nicht für die Stufe.' : '') + '</p>';
+    else if (r.stage === 'form') h += '<p><strong>Prüfe deine Eingabe.</strong> Das zählt noch nicht als Versuch.</p>';
+    else if (r.stage === 'tipp') h += '<p><strong>Noch nicht ganz.</strong> Lies die Hinweise und versuche es noch einmal. Du hast einen zweiten Versuch.</p>';
+    else h += '<p><strong>Auch nicht.</strong> Hier ist die Lösung.</p><div class="rdout bad"><b>Richtig wäre:</b><br>' + NZ.antworten(Z.task).map(a => esc(a.label) + ': ' + esc(a.text)).join('<br>') + '</div>';
+    return h + '</div>';
+  }
+  function renderNetz() {
+    const V = $('#v_netz'), Z = S.netz;
+    if (!NZ || !NV) { V.innerHTML = '<div class="card pl"><h4>Netzwerke</h4><p class="big">Dateien fehlen</p><p class="nzgeg">matnetz.js oder matnetzviz.js konnten nicht geladen werden. Bitte die Seite neu laden.</p></div>'; return; }
+    const t = Z.task; let h = '';
+    if (t) {
+      const sc = NZ.STUFEN[t.stufe - 1], cnt = nzCount(sc.n), lock = Z.solved || (Z.res && Z.res.stage === 'loes');
+      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Netzwerke · Stufe ${sc.n}</h4><div class="big">${esc(sc.titel)}</div>`
+        + `<p class="nzgeg">Stufe ${sc.n}: ${cnt} von ${NZ_ZIEL} richtig gelöst${cnt >= NZ_ZIEL ? ' · geschafft ✓' : ''}</p>`
+        + `<details class="nzd"${cnt === 0 ? ' open' : ''}><summary>So geht’s (Formeln)</summary>${sc.info.map(x => x.f ? `<div class="mono">${esc(x.f)}</div>` : `<p>${esc(x.t)}</p>`).join('')}</details>`
+        + `<p style="margin:8px 0">${esc(t.text)}</p>${nzFig(t.baum, '', t.U)}${t.n >= 6 ? '<p class="nzgeg">Das Bild lässt sich seitlich verschieben.</p>' : ''}`
+        + `<p class="nzgeg"><b>Gegeben:</b> ${esc(t.gegeben.join(' · '))}</p>${t.fragen.map(nzFrage).join('')}`
+        + '<p class="lr-hinweis">Schreibe die Zahl mit Komma oder Punkt und wähle rechts die Einheit. ±1 % gilt als richtig.</p>'
+        + `<div class="btns"><button class="btn pri" data-nz="chk"${lock ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-nz="loes"${Z.open ? ' disabled' : ''}>Lösungsweg zeigen</button><button class="btn${lock ? ' pri' : ''}" data-nz="new">🔀 Neue Aufgabe</button></div>`
+        + nzFbHTML(Z) + (Z.open ? nzLoesHTML(t) : '') + '</div>';
+    } else h += '<div class="card pl"><h4>Widerstandsnetzwerke</h4><p class="big">Rges, Teilströme und Teilspannungen</p><p class="nzgeg">Wähle unten eine Stufe. Du beginnst mit zwei Widerständen in Reihe und kommst Schritt für Schritt zu gemischten Schaltungen mit bis zu zehn Widerständen und zur Leistung. Jede Stufe hat beliebig viele neue Aufgaben. Nach 3 richtig gelösten Aufgaben ist eine Stufe geschafft.</p></div>';
+    h += `<p class="nzgeg" style="margin:4px 0 0">${nzGeschafft()} von ${NZ.STUFEN.length} Stufen geschafft.</p><div class="gh">Stufen</div>`
+      + NZ.STUFEN.map(s => { const c = nzCount(s.n); return `<button class="row" data-nzs="${s.n}"${t && t.stufe === s.n ? ' aria-current="true"' : ''}><span class="dot ${c >= NZ_ZIEL ? 'g' : c > 0 ? 'p' : ''}">${c >= NZ_ZIEL ? '✓' : ''}</span><div class="grow"><b>Stufe ${s.n}: ${esc(s.titel)}</b><small>Gesucht: ${esc(s.gesucht)} · ${c} von ${NZ_ZIEL} gelöst</small></div></button>`; }).join('');
+    V.innerHTML = h;
+  }
+  function nzCheck() {
+    const Z = S.netz, t = Z.task; if (!t || Z.solved || (Z.res && Z.res.stage === 'loes')) return;
+    const r = NZ.pruefe(t, Z.ans);
+    if (r.offen) { toast('Bitte beantworte erst alle Fragen (' + r.offen + ' noch offen).'); return; }
+    let stage;
+    if (r.alle) {
+      stage = 'ok'; Z.solved = true;
+      if (!Z.shown) { const p = nzProg(), vorher = Math.min(99, +p[t.stufe] || 0); p[t.stufe] = Math.min(99, vorher + 1); lsSet('netz', p); toast(vorher + 1 === NZ_ZIEL ? '🎉 Stufe ' + t.stufe + ' geschafft!' : '🎉 Richtig! ' + Math.min(vorher + 1, NZ_ZIEL) + ' von ' + NZ_ZIEL + ' in dieser Stufe.'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} else ding(); }
+      else ding();
+    } else if (r.formal) stage = 'form';
+    else { Z.tries++; stage = Z.tries >= 2 ? 'loes' : 'tipp'; if (stage === 'loes') { Z.open = true; Z.shown = true; } sad(); }
+    Z.res = { stage, items: r.items }; renderNetz(); zeigFb($('#v_netz'));
+  }
+  (function () {
+    const V = document.getElementById('v_netz'); if (!V) return;
+    V.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return; const d = b.dataset, Z = S.netz;
+      if (d.nzs) nzStart(+d.nzs);
+      else if (d.nz === 'new') nzStart(Z.stufe || 1);
+      else if (d.nz === 'chk') nzCheck();
+      else if (d.nz === 'loes') { if (!Z.solved && !Z.shown) toast('Mit angezeigtem Lösungsweg zählt die Aufgabe nicht für die Stufe.'); Z.shown = true; Z.open = true; renderNetz(); }
+      else if (d.nzw) { const p = d.nzw.split('|'); Z.ans[p[0]] = p[1]; $$('[data-nzw^="' + p[0] + '|"]', V).forEach(x => { const on = x.dataset.nzw === d.nzw; x.classList.remove('ok', 'bad'); x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); }
+    });
+    V.addEventListener('input', e => { const el = e.target, id = el.dataset && el.dataset.nzi; if (!id) return; (S.netz.ans[id] = S.netz.ans[id] || {}).v = el.value; el.classList.remove('nzok', 'nzbad'); });
+    V.addEventListener('change', e => { const el = e.target, id = el.dataset && el.dataset.nzu; if (id) (S.netz.ans[id] = S.netz.ans[id] || {}).u = el.value; });
+    V.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.nzi) { e.preventDefault(); nzCheck(); } });
+  })();
 
   /* ============================================================ Hilfe */
   function renderHelp() {
@@ -390,7 +476,7 @@
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
-  const RENDER = { einh: renderEinh, drei: renderDrei, proz: renderProz, umst: renderUmst, geo: renderGeo, mess: renderMess, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, help: renderHelp };
+  const RENDER = { einh: renderEinh, drei: renderDrei, proz: renderProz, umst: renderUmst, geo: renderGeo, mess: renderMess, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, netz: renderNetz, help: renderHelp };
   const UPD = { einh: updEinh, drei: updDrei, proz: updProz, umst: updUmst, geo: updGeo, mess: updMess };
   function buildTabs() {
     $('#tabs').innerHTML = TABS.map(([k, i, n]) => `<button class="tab${S.tab === k ? ' on' : ''}" data-t="${k}" role="tab" aria-selected="${S.tab === k}">${i} ${n}${k === 'tasks' ? '<span class="bd" id="tkBd"></span>' : ''}</button>`).join('');
@@ -420,7 +506,7 @@
   $('#bTasks').onclick = () => setTab('tasks'); $('#bHelp').onclick = () => setTab('help'); $('#bExam').onclick = () => setExam(!exam());
   $('#title').onclick = () => setTab('einh');
   $('#bMenu').onclick = () => {
-    const rows = [['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung, Lösungsweg und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Aufgaben mit Serien-Zähler'], ['bsp', 'Beispiele', 'Durchgerechnete Beispiele zum Nachvollziehen'], ['help', 'Hilfe und Spickzettel', 'Vorsätze, Formeln, Dreisatz, Winkelfunktionen'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Trainer-Serie auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
+    const rows = [['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung, Lösungsweg und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Aufgaben mit Serien-Zähler'], ['netz', 'Netzwerke', 'Widerstandsschaltungen in 8 Stufen: Rges, Teilströme, Leistung'], ['bsp', 'Beispiele', 'Durchgerechnete Beispiele zum Nachvollziehen'], ['help', 'Hilfe und Spickzettel', 'Vorsätze, Formeln, Dreisatz, Winkelfunktionen'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Trainer-Serie auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
     sheet('Menü', (b, close) => {
       b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${esc(r[1])}</b><small>${esc(r[2])}</small></div></button>`).join('');
       b.addEventListener('click', e => {
@@ -431,8 +517,8 @@
   };
   function resetAll() {
     sheet('Fortschritt zurücksetzen?', (b, close) => {
-      b.innerHTML = '<p style="margin-top:0">Alle gelösten Aufgaben, Tipps und die Trainer-Serie dieses Labs werden auf diesem Gerät gelöscht. Das kann nicht rückgängig gemacht werden.</p><div class="btns"><button class="btn" data-x="no">Abbrechen</button><button class="btn danger" data-x="yes">Löschen</button></div>';
-      b.addEventListener('click', e => { const x = e.target.closest('[data-x]'); if (!x) return; if (x.dataset.x === 'yes') { ['done', 'prog', 'hints', 'ctipps', 'rt'].forEach(k => { try { localStorage.removeItem(LS + k); } catch (er) {} }); S.rt = { n: 0, ok: 0, streak: 0, best: 0 }; S.task = null; S.tRes = null; palSig = ''; updatePal(); updateBadge(); if (S.tab === 'tasks') renderTasks(); toast('Fortschritt gelöscht'); } close(); });
+      b.innerHTML = '<p style="margin-top:0">Alle gelösten Aufgaben, Tipps, die Trainer-Serie und die geschafften Netzwerk-Stufen dieses Labs werden auf diesem Gerät gelöscht. Das kann nicht rückgängig gemacht werden.</p><div class="btns"><button class="btn" data-x="no">Abbrechen</button><button class="btn danger" data-x="yes">Löschen</button></div>';
+      b.addEventListener('click', e => { const x = e.target.closest('[data-x]'); if (!x) return; if (x.dataset.x === 'yes') { ['done', 'prog', 'hints', 'ctipps', 'rt', 'netz'].forEach(k => { try { localStorage.removeItem(LS + k); } catch (er) {} }); S.rt = { n: 0, ok: 0, streak: 0, best: 0 }; S.task = null; S.tRes = null; S.netz.task = null; S.netz.res = null; palSig = ''; updatePal(); updateBadge(); if (S.tab === 'tasks') renderTasks(); if (S.tab === 'netz') renderNetz(); toast('Fortschritt gelöscht'); } close(); });
     });
   }
 
@@ -461,7 +547,8 @@
     if (ds.bsp != null && BSP[+ds.bsp]) { loadBsp(BSP[+ds.bsp]); return; }
     if (ds.r) { if (ds.r === 'chk') checkTrainer(); else if (ds.r === 'show') trainerResult(false, true); else if (ds.r === 'next') newTrainer(); return; }
     const t = curTask();
-    if (ds.ta && t) { const a = ds.ta; if (a === 'chk') checkTask(t); else if (a === 'hint') hintTask(t); else if (a === 'new') startTask(t.id, true); else if (a === 'close') { S.task = null; S.tRes = null; renderTasks(); } else if (a === 'next') { const i = TASKS.findIndex(x => x.id === t.id), nx = TASKS.slice(i + 1).find(x => !done()[x.id]) || TASKS[(i + 1) % TASKS.length]; startTask(nx.id); } return; }
+    if (ds.ta && t) { const a = ds.ta; if (a === 'chk') checkTask(t); else if (a === 'hint') hintTask(t); else if (a === 'new') startTask(t.id, true); else if (a === 'close') { S.task = null; S.tRes = null; renderTasks(); } else if (a === 'next') { const LL = window.LehrjahrListe, w = LL && LL.weiter ? LL.weiter('mat', TASKS.map(x => x.id), t.id, id => !!done()[id]) : undefined;   /* Lehrjahr (L3): w = { id } nur mit eigenem Lehrjahr, id null = Teil geschafft (Hinweis erscheint), undefined = wie bisher */
+      if (w) { if (w.id) startTask(w.id); } else { const i = TASKS.findIndex(x => x.id === t.id), nx = TASKS.slice(i + 1).find(x => !done()[x.id]) || TASKS[(i + 1) % TASKS.length]; startTask(nx.id); } } return; }
     const row = b.closest('.row[data-t]'); if (row && S.tab === 'tasks') startTask(row.dataset.t);
   });
 

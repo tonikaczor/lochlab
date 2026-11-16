@@ -55,10 +55,15 @@
 
   /* nächste noch ungelöste Aufgabe im Lab der Aufgabe id (Reihenfolge wie im Verzeichnis, danach wieder von vorn); null bei unbekannter Aufgabe.
      { art: 'aufgabe', row, lab } oder { art: 'fertig', lab } */
-  function naechste(rows, res, id) {
+  function naechste(rows, res, id, lj) {   // lj (Paket L3, optional): { max, ab(id, lab) } = nur Aufgaben bis zum eigenen Lehrjahr, geordnet nach Lehrjahr, dann Verzeichnis; ohne lj wie bisher
     if (!Array.isArray(rows)) return null;
     const row = rows.filter(r => Array.isArray(r) && r[0] === id)[0]; if (!row) return null;
     const lab = row[1], list = rows.filter(r => Array.isArray(r) && r[1] === lab), i = list.indexOf(row);
+    if (lj) {   // Paket L3: nie eine Aufgabe eines späteren Lehrjahres von sich aus anbieten
+      const teil = list.map((r, x) => ({ r, x, j: lj.ab(r[0], lab) })).filter(o => o.j <= lj.max).sort((a, b) => a.j - b.j || a.x - b.x).map(o => o.r), n = teil.length, p = teil.indexOf(row);
+      for (let k = 1; k <= n; k++) { const r = teil[(p + k + n) % n]; if (r[0] !== id && !geloest(res, r[0])) return { art: 'aufgabe', row: r, lab }; }
+      return list.some(r => !geloest(res, r[0])) ? { art: 'teil', lab, lj: lj.max } : { art: 'fertig', lab };
+    }
     for (let k = 1; k < list.length; k++) { const r = list[(i + k) % list.length]; if (r[0] !== id && !geloest(res, r[0])) return { art: 'aufgabe', row: r, lab }; }
     return { art: 'fertig', lab };
   }
@@ -75,12 +80,13 @@
   function planen(c) {
     c = c || {};
     if (ausnahme(c.file, c.search, c.reg)) return null;
-    const lab = labVonDatei(c.reg, c.file), n = naechste(c.rows, c.res, c.id);
+    const lab = labVonDatei(c.reg, c.file), n = naechste(c.rows, c.res, c.id, c.lj);
     if (!n || n.lab !== lab || !c.reg[n.lab]) return null;
     if (n.art === 'aufgabe') {
       const href = link(c.reg, n.row, c.search); if (!href) return null;
       return { art: 'aufgabe', id: String(n.row[0]), kopf: 'Nächste Aufgabe', titel: String(n.row[3] || n.row[0]), href, aria: 'Nächste Aufgabe: ' + String(n.row[3] || n.row[0]) };
     }
+    if (n.art === 'teil') return { art: 'fertig', kopf: 'Den Teil für das ' + n.lj + '. Lehrjahr hast du geschafft.', text: 'Weiter geht es im nächsten Lab.', titel: String(c.reg[n.lab].name || ''), links: [{ text: 'Zur Startseite', href: 'index.html' }] };   // Paket L3
     const links = [{ text: 'Zurück zur Übersicht', href: 'index.html' }];
     if (c.plan !== false) links.push({ text: 'Weiter im Ausbildungsplan', href: 'ausbildungsplan.html' });
     return { art: 'fertig', kopf: 'Alle Aufgaben in diesem Lab geschafft', titel: String(c.reg[n.lab].name || ''), links };
@@ -95,6 +101,7 @@
     + '#wtBar a:hover,#wtBar .wtX:hover{filter:brightness(1.1)}#wtBar a:focus-visible,#wtBar .wtX:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}'
     + '@media(max-width:640px){#wtBar{left:12px;right:auto;width:calc(100vw - 24px);margin:0;padding:4px;border-radius:12px;gap:4px}#wtBar .wtMain{min-height:44px;padding:4px 14px;flex-direction:row;align-items:center}#wtBar .wtMain small{display:none}#wtBar .wtDone{flex-direction:row;flex-wrap:wrap;align-items:center;gap:2px 8px;padding:0 4px}#wtBar .wtDone b{font-size:13px}#wtBar .wtLinks a{padding:0 10px;font-size:13px}}'
     + '@media(max-width:640px){html[data-lmwt="a"][data-lmfb] #wtBar{left:auto;right:12px;width:108px;margin:0;gap:0}html[data-lmwt="a"][data-lmfb] #wtBar .wtMain{padding:4px 6px;justify-content:center;font-size:14px}html[data-lmwt="a"][data-lmfb] #wtBar .wtMain>span:not(.wtK){display:none}html[data-lmwt="a"][data-lmfb] #wtBar .wtK{display:inline}html[data-lmwt="a"][data-lmfb] #wtBar .wtX{display:none}}'
+    + '#wtBar .wtT{font:500 14px/1.3 system-ui,sans-serif}'
     + '@media print{#wtBar{display:none!important}}';
 
   /* Leiste bauen (document-ähnliches Objekt mit createElement); onZu wird beim Schließen aufgerufen */
@@ -109,6 +116,7 @@
     } else {
       const d = doc.createElement('div'); d.className = 'wtDone';
       const b = doc.createElement('b'); b.textContent = '✓ ' + p.kopf; d.appendChild(b);
+      if (p.text) { const tx = doc.createElement('span'); tx.className = 'wtT'; tx.textContent = p.text; d.appendChild(tx); }
       const l = doc.createElement('div'); l.className = 'wtLinks';
       p.links.forEach(x => { const a = doc.createElement('a'); a.href = x.href; a.textContent = x.text; l.appendChild(a); });
       d.appendChild(l); el.appendChild(d);
@@ -200,12 +208,14 @@
     let h = 0; try { const fb = document.getElementById('fbStrip'); if (fb && !(schmal() && bar.getAttribute('data-art') === 'a')) h = Math.ceil(fb.getBoundingClientRect().height) + 8; } catch (e) { h = 0; }   // am Handy teilen sich Rückmeldezeile und Weiter-Knopf eine Zeile (CSS), sonst gestapelt
     bar.style.bottom = 'calc(' + (12 + h + dockHoehe()) + 'px + env(safe-area-inset-bottom))'; luft();
   }
+  /* Paket L3: Lehrjahr-Teil für die Folge (lehrjahr-liste.js); null = kein eigenes Lehrjahr oder anderer Beruf, dann alles wie bisher */
+  function ljFilter() { try { const X = root.LehrjahrListe, k = X && X.kontext && X.kontext(); return k && root.Lehrjahr ? { max: k.lj, ab: (i, l) => root.Lehrjahr.ab(i, l) } : null; } catch (e) { return null; } }
   function zeige(id, n) {
     try {
       if (zu() || !document.body || document.getElementById('gate')) return;
       if (einfuehrung()) { if ((n || 0) < 240) { clearTimeout(timer); timer = setTimeout(() => zeige(id, (n || 0) + 1), 500); } return; }
       try { if (root.Duell && typeof root.Duell.active === 'function' && root.Duell.active()) return; } catch (e) {}
-      const p = planen({ rows: root.AUFGABEN, reg: root.LAB_REG, res: ergebnisse(lese('sim.done'), lese('lm4.tdone')), id, file, search });
+      const p = planen({ rows: root.AUFGABEN, reg: root.LAB_REG, res: ergebnisse(lese('sim.done'), lese('lm4.tdone')), id, file, search, lj: ljFilter() });
       if (!p) return;
       weg();
       if (!document.getElementById('wtCss')) { const st = document.createElement('style'); st.id = 'wtCss'; st.textContent = CSS; document.head.appendChild(st); }

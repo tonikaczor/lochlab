@@ -176,6 +176,33 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .opts button{min-height:46px}
 .pl h4{font-size:14px}
 .nv .nvk,.pl small{font-size:14px}
+/* Netzwerke (Widerstandsschaltungen) */
+.nzfig{margin:8px 0}
+.nz-svg{max-width:none}
+.nz-w{fill:none;stroke:var(--fg);stroke-width:1.8;stroke-linecap:square;stroke-linejoin:miter}
+.nz-r{fill:var(--bg);stroke:var(--fg);stroke-width:1.8}
+.nz-r.nz-hot{stroke:var(--accent);stroke-width:2.8}
+.nz-p{fill:var(--fg)}
+.nz-q1{stroke:var(--fg);stroke-width:2.2}
+.nz-q2{stroke:var(--fg);stroke-width:5}
+.nz-hl{fill:var(--work);stroke:var(--accent);stroke-width:1.4;stroke-dasharray:5 3}
+.nz-n{fill:var(--fg);font:700 12px system-ui,sans-serif}
+.nz-v{fill:var(--fg);font:12px system-ui,sans-serif}
+.nzq{margin:0 0 6px}
+.nzq .f span,label.nzq span{font-size:14px;color:var(--fg)}
+.qin select{width:auto;flex:none;min-width:84px;max-width:42%}
+.qin input.nzok{border-color:var(--ok)}.qin input.nzbad{border-color:var(--danger)}
+.nzgeg{font-size:14px;color:var(--mute);margin:6px 0;line-height:1.45}
+.nzw{flex-direction:row;flex-wrap:wrap}.nzw button{min-width:64px;text-align:center}
+.nzd{background:var(--bg);border:1px solid var(--line);border-radius:12px;margin:8px 0;padding:0 12px}
+.nzd summary{min-height:44px;display:flex;align-items:center;font-weight:700;font-size:14px;cursor:pointer}
+.nzd p{margin:.4em 0;font-size:14px;line-height:1.5}
+.nzd .mono{font-size:14px}
+.nzkopf{margin:14px 0 4px;font-size:14px;color:var(--accent);font-weight:700}
+.nzstep{margin:6px 0}.nztx{font-size:14px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.nztab{overflow-x:auto}
+html.lr-on .lr-teile .lr-seg>button{padding:0 3px;font-size:14px}
+.nz-plus{fill:var(--fg);font:700 16px system-ui,sans-serif}
 </style>
 <link rel="stylesheet" href="design.css">
 <link rel="stylesheet" href="labrahmen.css">
@@ -205,6 +232,7 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
     <section class="pg scroll" id="pg_bsp" data-tab="bsp"><div class="wrap" id="v_bsp"></div></section>
     <section class="pg scroll" id="pg_tasks" data-tab="tasks"><div class="wrap" id="v_tasks"></div></section>
     <section class="pg scroll" id="pg_rt" data-tab="rt"><div class="wrap" id="v_rt"></div></section>
+    <section class="pg scroll" id="pg_netz" data-tab="netz"><div class="wrap" id="v_netz"></div></section>
     <section class="pg scroll hl" id="pg_help" data-tab="help"><div class="wrap" id="v_help"></div></section>
   </div>
   <div id="pal"></div>
@@ -214,6 +242,8 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script src="fx.js"></script>
 <script src="matcore.js"></script>
 <script src="matdata.js"></script>
+<script src="matnetz.js"></script>
+<script src="matnetzviz.js"></script>
 <script>window.LAB='mat';</script>
 <script src="matui.js"></script>
 <script src="matviz.js"></script>
@@ -221,7 +251,7 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
-<script>window.LR_TAB = { 'matlab.html': { buehne: { umst: '#umWaage' }, name: 'Rechen-Lab Basis', gruppen: [{ name: 'Einheiten und Messen', teile: ['einh', 'mess'] }, { name: 'Dreisatz und Prozent', teile: ['drei', 'proz'] }], saetze: { 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
+<script>window.LR_TAB = { 'matlab.html': { buehne: { umst: '#umWaage' }, name: 'Rechen-Lab Basis', gruppe: { netz: 'ueben' }, gruppen: [{ name: 'Einheiten und Messen', teile: ['einh', 'mess'] }, { name: 'Dreisatz und Prozent', teile: ['drei', 'proz'] }], saetze: { 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Netzwerke': 'Widerstandsschaltungen in 8 Stufen, von zwei Widerständen bis zehn und zur Leistung. Nach einem Fehlversuch gibt es Hinweise, nach dem zweiten die Lösung mit Lösungsweg. Eine Stufe ist nach 3 richtig gelösten Aufgaben geschafft.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
 <script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>

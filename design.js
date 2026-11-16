@@ -128,6 +128,9 @@
 /* einordnung:end */
 /* weiter.js nachladen (Schaltfläche "Nächste Aufgabe" nach gelöster Aufgabe, nur Lab-Seiten, prüft sich selbst) */
 (function () { try { if (!/lab\.html$|^(layout|schaltplan|appwerkstatt)\.html$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'weiter.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();
+/* lehrjahr-liste:begin  Aufgabenlisten und Folge nach Lehrjahr (Paket L3): lernfelder.js, lehrjahr.js, lehrjahr-liste.js nacheinander nachladen (nur Lab-Seiten; das Modul prüft selbst Beruf und Lehrjahr und tut sonst nichts) */
+(function () { try { if (!/lab\.html$|^(layout|schaltplan|appwerkstatt)\.html$/.test(String(location.pathname).split('/').pop())) return; var q = ['lernfelder.js', 'lehrjahr.js', 'lehrjahr-liste.js'], i = 0; (function nx() { if (i >= q.length) return; var s = document.createElement('script'); s.src = q[i++]; s.async = true; s.onload = nx; s.onerror = function () {}; document.head.appendChild(s); })(); } catch (e) {} })();
+/* lehrjahr-liste:end */
 /* aufgabe-vorlesen:begin  Knopf "Vorlesen" an der Aufgabenkarte (nur mit passender Aufnahme AU_<lab>_<id>; aufgabe-vorlesen.js prueft sich selbst: nur Lab-Seiten mit Aufgabenkarte) */
 (function () { try { if (!/(lab\.html|^layout\.html|^schaltplan\.html|^appwerkstatt\.html)$/.test(String(location.pathname).split('/').pop())) return; var s = document.createElement('script'); s.src = 'aufgabe-vorlesen.js'; s.async = true; s.onerror = function () {}; document.head.appendChild(s); } catch (e) {} })();
 /* aufgabe-vorlesen:end */
