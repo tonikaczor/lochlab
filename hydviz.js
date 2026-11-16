@@ -18,9 +18,9 @@
   const pcol = (p, ref) => (!(p >= 1.5) ? 'var(--hy-t,#3b9eff)' : (t => `hsl(${Math.round(48 * (1 - t))},92%,${Math.round(52 - 6 * t)}%)`)(clamp(p / (ref || 200), 0, 1)));
 
   const CSS = '.hv{display:block;width:100%;height:auto;max-width:560px;margin:4px auto 0;text-anchor:start}'
-    + '.hv text{font:600 11.5px system-ui,sans-serif;fill:var(--fg,#222);-webkit-user-select:none;user-select:none}'
-    + '.hv .m{fill:var(--mute,#667);font-weight:500;font-size:10.5px}'
-    + '.hv .t{fill:var(--mute,#667);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}'
+    + '.hv text{font:600 12px system-ui,sans-serif;fill:var(--fg,#222);-webkit-user-select:none;user-select:none}'
+    + '.hv .m{fill:var(--mute,#667);font-weight:500;font-size:12px}'
+    + '.hv .t{fill:var(--mute,#667);font-size:12px;letter-spacing:.05em;text-transform:uppercase}'
     + '.hv .gd{stroke:var(--line,#bbb);stroke-width:1;fill:none}'
     + '.hv .body{fill:none;stroke:var(--fg,#222);stroke-width:1.5}'
     + '.hv .tank{fill:none;stroke:var(--hy-t,#3b9eff);stroke-width:1.2;stroke-dasharray:4 3}'
@@ -35,7 +35,7 @@
     + '.hv .track{fill:var(--panel2,#eee);stroke:var(--line,#bbb);stroke-width:1}'
     + '.hv .lim{stroke:var(--danger,#c33);stroke-width:1.6;stroke-dasharray:4 3}'
     + '.hvbox{margin:10px 0 2px;padding-top:6px;border-top:1px solid var(--line,#ccc)}'
-    + '.hvbox h5{margin:0 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute,#667);font-weight:600}';
+    + '.hvbox h5{margin:0 0 2px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute,#667);font-weight:600}';
   if (typeof document !== 'undefined' && document.head && !document.getElementById('hydviz-css')) {
     const st = document.createElement('style'); st.id = 'hydviz-css'; st.textContent = CSS; document.head.appendChild(st);
   }

@@ -115,7 +115,7 @@
     return function (a) {
       try {
         const c = clean(a, rig), rows = [];
-        const r = (cond, text, why) => { rows.push({ ok: !!cond, text, why: cond ? '' : (why || '') }); };
+        const r = (cond, text, why) => { const o = { ok: !!cond, text, why: cond ? '' : (why || '') }; rows.push(o); return o; };
         fn(c, r, a);
         return rows;
       } catch (e) { return [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden', why: String(e && e.message || e) }]; }
@@ -124,14 +124,15 @@
   /* erste Zeile jeder Simulationsaufgabe: Eingabefehler getrennt melden */
   function inputRow(c, r, sim) {
     const errs = c.problems.concat(sim && sim.errors ? sim.errors : []);
-    r(errs.length === 0, 'Die Eingaben sind gültig und der Prüfstand läuft ohne Fehlermeldung', errs.join(' '));
+    const o = r(errs.length === 0, 'Die Eingaben sind gültig und der Prüfstand läuft ohne Fehlermeldung', errs.join(' '));
+    o.triv = true;   /* selbstverständlich: zählt nicht in die Prozentzahl (Vorgabe 4.5) */
   }
 
   /* Zahlenaufgaben: Ergebnis mit 2 % Toleranz; typische Fehler werden im Warum-Text erkannt */
   function askCheck(want, mistakes) {
-    return mk('gleichstrom', (c, r, a) => {
+    const fn = mk('gleichstrom', (c, r, a) => {
       const v = numAns(a);
-      r(v !== null, 'Du hast eine Zahl in das Antwortfeld eingetragen', 'Tippe das Ergebnis deiner Rechnung als Zahl in das Feld (Komma oder Punkt).');
+      r(v !== null, 'Du hast eine Zahl in das Antwortfeld eingetragen', 'Tippe das Ergebnis deiner Rechnung als Zahl in das Feld (Komma oder Punkt).').triv = true;
       if (v === null) { r(false, 'Das Ergebnis stimmt (Toleranz 2 %)', 'Ohne Zahl kann nichts geprüft werden.'); return; }
       const ok = Math.abs(v - want) <= 0.02 * Math.abs(want);
       let why = '';
@@ -141,19 +142,23 @@
       }
       r(ok, 'Das Ergebnis stimmt (Toleranz 2 %)', why);
     });
+    fn.want = want;   /* Sollwert, nur für die Prüfskripte */
+    return fn;
   }
 
   /* Kennziffern (IP-Code, Wärmeklasse, Ziffernfolgen): nur der genaue Wert zählt, typische Verwechslungen haben einen eigenen Fachgrund */
   function exactCheck(want, mistakes) {
-    return mk('gleichstrom', (c, r, a) => {
+    const fn = mk('gleichstrom', (c, r, a) => {
       const v = numAns(a);
-      r(v !== null, 'Du hast eine Zahl in das Antwortfeld eingetragen', 'Tippe die Kennzahl als Zahl in das Feld.');
+      r(v !== null, 'Du hast eine Zahl in das Antwortfeld eingetragen', 'Tippe die Kennzahl als Zahl in das Feld.').triv = true;
       if (v === null) { r(false, 'Die Angabe stimmt genau', 'Ohne Zahl kann nichts geprüft werden.'); return; }
       const ok = Math.abs(v - want) < 1e-9;
       let why = '';
       if (!ok) { const hit = (mistakes || []).find(m => Math.abs(v - m[0]) < 1e-9); why = hit ? hit[1] : 'Deine Angabe ' + fm(v, 0) + ' passt nicht. Hier zählt nur der genaue Wert, lies die Bedeutung der Kennziffern im Tipp nach.'; }
       r(ok, 'Die Angabe stimmt genau', why);
     });
+    fn.exact = true;   /* für die Oberfläche: Hinweis „nur der genaue Wert“ statt „±2 %“ */
+    return fn;
   }
 
   /* Eigenschaften des Drehstrommotors (Typenschild des Prüfstands, ersatzweise feste Werte) */

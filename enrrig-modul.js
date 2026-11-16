@@ -410,6 +410,9 @@
       ctx.lineWidth = 3; ctx.strokeStyle = COL.danger; ctx.beginPath(); const yb = c.y0 + ctl.np * c.mh + (ctl.np - 1) * c.gap;
       for (let i = 0; i < ctl.ns - 1; i++) { const xa = c.x0 + i * (c.mw + c.gap) + c.mw, xb = xa + c.gap; ctx.moveTo(xa, c.y0 - 4); ctx.lineTo(xa, c.y0 - 9); ctx.lineTo(xb, c.y0 - 9); ctx.lineTo(xb, c.y0 - 4); } ctx.stroke();
       if (ctl.np > 1) { ctx.strokeStyle = COL.cyan; ctx.beginPath(); ctx.moveTo(c.x0 - 10, c.y0); ctx.lineTo(c.x0 - 10, yb); ctx.stroke(); ctx.strokeStyle = COL.danger; ctx.beginPath(); ctx.moveTo(c.x0 + ctl.ns * c.mw + (ctl.ns - 1) * c.gap + 10, c.y0); ctx.lineTo(c.x0 + ctl.ns * c.mw + (ctl.ns - 1) * c.gap + 10, yb); ctx.stroke(); }
+      /* B2c (B-enr-01): beide Zeilen auf einem Schild, damit sie nicht im Modulbild verschwimmen */
+      { const t1 = (ctl.ns > 1 ? ctl.ns + ' in Reihe' : '1 in Reihe') + (ctl.np > 1 ? ', ' + ctl.np + ' Stränge parallel' : ''), t2 = 'Zelltemperatur ' + fm(m.Tc, 1) + ' °C' + (ctl.tcMode === 'auto' ? ' (NOCT-Formel)' : '');
+        ctx.font = 'bold ' + 13 * fs + 'px system-ui, sans-serif'; const bw = Math.min(s.w - 8, Math.max(ctx.measureText(t1).width, ctx.measureText(t2).width) + 16), bh = 32 * fs + 22; G.box(ctx, s.x + s.w / 2 - bw / 2, s.y + s.h - bh - 2, bw, bh, 'rgba(20,24,28,0.82)', COL.line, 6); }
       G.text(ctx, (ctl.ns > 1 ? ctl.ns + ' in Reihe' : '1 in Reihe') + (ctl.np > 1 ? ', ' + ctl.np + ' Stränge parallel' : ''), s.x + s.w / 2, s.y + s.h - 12, { size: 13 * fs, bold: true });
       G.text(ctx, 'Zelltemperatur ' + fm(m.Tc, 1) + ' °C' + (ctl.tcMode === 'auto' ? ' (NOCT-Formel)' : ''), s.x + s.w / 2, s.y + s.h - 32 * fs, { size: 13 * fs, color: m.Tc > 50 ? COL.warn : COL.mute });
       // Ansichtsknopf

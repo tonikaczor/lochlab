@@ -13,19 +13,19 @@
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
 header{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
 header h1{font-size:18px;margin:0;flex:1}
-a.home{color:var(--acc);text-decoration:none}
+a.home{color:var(--acc);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 6px;font-weight:700}
 main{padding:16px;max-width:1400px;margin:0 auto}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:16px}
 .card h2{font-size:16px;margin:0 0 8px}
-textarea,input,select{font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
-textarea{min-height:90px;font:12px monospace}
+textarea,input,select{min-height:44px;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%}
+textarea{min-height:90px;font:14px monospace}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
-button{font:inherit;border:1px solid var(--line);background:var(--panel);color:inherit;border-radius:8px;padding:8px 14px;cursor:pointer}
+button{min-height:44px;font:inherit;border:1px solid var(--line);background:var(--panel);color:inherit;border-radius:8px;padding:8px 14px;cursor:pointer}
 button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
 button.danger{color:#d33}
-.mute{color:var(--mute);font-size:13px}
+.mute{color:var(--mute);font-size:14px}
 .tw{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:8px}
-table{border-collapse:separate;border-spacing:0;font-size:13px}
+table{border-collapse:separate;border-spacing:0;font-size:14px}
 th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:4px 6px;text-align:center;white-space:nowrap}
 thead th{position:sticky;top:0;background:var(--panel);z-index:2;vertical-align:bottom}
 th.name,td.name{position:sticky;left:0;background:var(--panel);text-align:left;z-index:1;min-width:150px}
@@ -36,30 +36,32 @@ td.c{min-width:34px;font-weight:600}
 td.p100{background:var(--ok);color:#fff}td.pp{background:var(--part);color:#fff}td.p0{background:var(--none);color:var(--mute)}
 tfoot td{font-weight:600;background:var(--panel);position:sticky;bottom:0}
 .sum{font-weight:600}
-.chart{margin:6px 0 14px}.brow{display:grid;grid-template-columns:minmax(120px,38%) 1fr 58px;gap:8px;align-items:center;font-size:13px;margin:3px 0}
+.chart{margin:6px 0 14px}.brow{display:grid;grid-template-columns:minmax(120px,38%) 1fr 58px;gap:8px;align-items:center;font-size:14px;margin:3px 0}
 .brow .lb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bar{height:16px;background:var(--none);border-radius:8px;overflow:hidden;display:flex}
 .bar i{display:block;height:100%}.bar i.g{background:var(--ok)}.bar i.y{background:var(--part)}.brow .nm{text-align:right;color:var(--mute)}
-.stone{margin:4px 0;padding:6px 10px;border-left:4px solid var(--part);background:var(--bg);border-radius:0 8px 8px 0;font-size:13px}
-.legend{font-size:12px;color:var(--mute);margin:2px 0 8px}.legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 4px 0 10px;vertical-align:-1px}
+.stone{margin:4px 0;padding:6px 10px;border-left:4px solid var(--part);background:var(--bg);border-radius:0 8px 8px 0;font-size:14px}
+.legend{font-size:14px;color:var(--mute);margin:2px 0 8px}.legend b{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 4px 0 10px;vertical-align:-1px}
 #gate{max-width:360px;margin:15vh auto;text-align:center}
 .hide{display:none}
 #qrSheet{display:none}
 .qrgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .qrcell{border:1px solid #999;border-radius:8px;padding:8px;text-align:center;break-inside:avoid;background:#fff;color:#000}
 .qrcell svg{width:100%;max-width:190px;height:auto}
-.qrcell b{display:block;font-size:13px;line-height:1.25;margin-top:4px}.qrcell small{color:#555}
+.qrcell b{display:block;font-size:14px;line-height:1.25;margin-top:4px}.qrcell small{color:#555}
 details.cat{margin:6px 0}details.cat summary{cursor:pointer;font-weight:600}
 .tl2{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:2px 12px;margin:6px 0 6px 6px}
-.tl2 label{font-size:13px;display:flex;gap:6px;align-items:flex-start}.tl2 input{width:auto;margin-top:3px}
+.tl2 label{font-size:14px;display:flex;gap:6px;align-items:flex-start}.tl2 input{width:24px;min-height:24px;margin-top:3px}
 #vid{width:100%;max-width:420px;border-radius:10px;background:#000;display:none}
 .scanok{color:var(--ok);font-weight:600}
 body.printqr #app>header,body.printqr #app>main{display:none!important}
 body.printqr #qrSheet{display:block!important}
 @media print{#qrSheet{display:none}body.printqr #qrSheet{display:block}header,#eingabe,.noprint{display:none!important}.tw{max-height:none;overflow:visible;border:0}body{background:#fff;color:#000}th.name,td.name,thead th,tfoot td{position:static}}
+#urheber-hinweis{font-size:14px!important}
 </style>
 </head>
 <body>
 <div id="gate" class="card">
+  <a class="gateHome" href="index.html" style="display:inline-flex;align-items:center;min-height:44px;padding:0 6px;color:var(--accent);font-size:16px;text-decoration:none">‹ Start</a>
   <h2>Auswertung (Ausbilder)</h2>
   <p class="mute">Diese Seite ist für Ausbilder. Bitte Passwort eingeben.</p>
   <input id="pw" type="password" placeholder="Passwort" autocomplete="off">
@@ -67,7 +69,7 @@ body.printqr #qrSheet{display:block!important}
   <p id="pwErr" class="mute"></p>
 </div>
 <div id="app" class="hide">
-<header><a class="home" href="index.html">← Start</a><h1>Auswertung</h1><span class="mute" id="stand"></span></header>
+<header><a class="home" href="index.html">‹ Start</a><h1>Auswertung</h1><span class="mute" id="stand"></span></header>
 <main>
   <div id="dash"></div>
   <div class="card noprint" id="loesCard"><h2>Lösungen für Ausbilder</h2><p class="mute" style="margin-top:0">Die Lösungsblätter zu den Lernheften und zur Praxisprüfung W-2024 liegen verschlüsselt im Lab und lassen sich nur mit dem Ausbilder-Passwort öffnen.</p><b><a href="loesungen.html" style="color:var(--accent)">Lösungen für Ausbilder öffnen</a></b></div>

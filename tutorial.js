@@ -1,8 +1,13 @@
 /* tutorial.js - zentrale Tutorial-Engine aller Lab-Seiten (Tonfunk Lab).
- * Zeigt beim ERSTEN Öffnen eines Labs eine kurze Tour: Spotlight auf ein Element plus Textkarte
- * (Schritt x von y, Zurück, Weiter, Überspringen, Häkchen "Nicht mehr zeigen"). Jederzeit überspringbar (Esc).
+ * Zeigt beim ERSTEN Öffnen eines Labs eine kurze Tour mit höchstens drei Schritten (Daten: labs[<lab>].kurz, siehe unten):
+ * Karte am unteren Rand (Handy: volle Breite, höchstens 30 % der Höhe; Desktop: unten rechts, schmal), das erklärte Element
+ * bekommt einen Ring mit Schein, wird nicht verdeckt und ins Bild gescrollt. Die Seite bleibt bedienbar (nicht modal).
+ * Antippen außerhalb der Karte, Esc oder "Überspringen" beenden die automatische Tour; danach bleibt nichts zurück.
+ * Die ganze Tour (alle Schritte, labs[<lab>].steps) startet mit Tutorial.restart() ("Tour zeigen" im Info-Blatt) oder dem "?"-Knopf.
+ * Kurze Tour: kurz: [ { v: [ { s: Selektorliste, h, t }, ... ] }, ... ]. Je Schritt gilt die erste Variante mit sichtbarem Ziel,
+ * gibt es keine, entfällt der Schritt. Selektoren: Rahmen zuerst (.lr-band, #lrInfo), dann das alte Ziel.
  * Die Schritte stehen in tutorial-data.js (window.TUTORIAL_DATA.labs[<Dateiname ohne .html>]):
- *   { name, steps: [ { h: Überschrift, t: Text, s: Selektor oder Liste von Selektoren (erster sichtbarer gilt),
+ *   { name, kurz: [...], steps: [ { h: Überschrift, t: Text, s: Selektor oder Liste von Selektoren (erster sichtbarer gilt),
  *                      c: Selektor, der vorher angetippt wird (Reiter) } ] }
  * Spezial-Selektor "@page" = die gerade sichtbare Seite in #mid. Fehlt das Ziel (oder ist es versteckt), zeigt die Karte nur den Text.
  * Speicher: lm4.tut.<lab> = '1' (gesehen), lm4.tut.off = '1' (nirgends mehr automatisch). Jeder Zugriff steckt in try/catch.
@@ -43,6 +48,7 @@
   }
   function examOn(doc, key) {
     try {
+      if (doc && doc.documentElement && /(^|\s)pr-lauf(\s|$)/.test(doc.documentElement.className || '')) return true;
       var b = doc && doc.getElementById && doc.getElementById('bExam');
       if (b && (b.getAttribute('aria-pressed') === 'true' || /(^|\s)on(\s|$)/.test(b.className || ''))) return true;
     } catch (e) {}
@@ -130,23 +136,23 @@
 
   /* ---------- Stil ---------- */
   var CSS = [
-    '.tfT{--t-bg:var(--panel,#fff);--t-fg:var(--fg,#141a21);--t-mute:var(--mute,#4f5b67);--t-line:var(--line,#c8d0d9);--t-b2:var(--panel2,#eaeef3);--t-acc:var(--accent-bg,#0a4fb3);--t-on:#fff;--t-dim:rgba(6,10,16,.66);--t-ring:#ffd166;position:fixed;left:0;top:0;right:0;bottom:0;z-index:5000;font:15px/1.4 -apple-system,system-ui,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none}',
+    '.tfT{--t-bg:var(--panel,#fff);--t-fg:var(--fg,#141a21);--t-mute:var(--mute,#4f5b67);--t-line:var(--line,#c8d0d9);--t-b2:var(--panel2,#eaeef3);--t-acc:var(--accent-bg,#0a4fb3);--t-on:#fff;--t-ring:#ffd166;position:fixed;left:0;top:0;right:0;bottom:0;z-index:5000;pointer-events:none;font:15px/1.4 -apple-system,system-ui,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none}',
     '@media(prefers-color-scheme:dark){:root:not([data-theme=light]) .tfT{--t-bg:var(--panel,#222830);--t-fg:var(--fg,#e8ecf0);--t-mute:var(--mute,#9aa6b2);--t-line:var(--line,#38424d);--t-b2:var(--panel2,#2c343e);--t-acc:var(--accent-bg,#1a6fd4)}}',
     '.tfT *{box-sizing:border-box}',
-    '.tfT.tfT-nospot{background:var(--t-dim)}',
-    '.tfT .tfT-spot{position:fixed;border-radius:12px;box-shadow:0 0 0 100vmax var(--t-dim);outline:3px solid var(--t-ring);outline-offset:0;pointer-events:none;display:none}',
-    '.tfT .tfT-card{position:fixed;display:flex;flex-direction:column;background:var(--t-bg);color:var(--t-fg);border:1px solid var(--t-line);border-radius:16px;box-shadow:0 10px 36px rgba(0,0,0,.45);padding:14px 14px 10px;outline:none;max-width:calc(100vw - 16px)}',
-    '.tfT .tfT-meta{font-size:12.5px;font-weight:600;color:var(--t-mute);letter-spacing:.03em;margin:0 0 4px}',
-    '.tfT .tfT-h{margin:0 0 6px;font-size:18px;line-height:1.25;font-weight:700;color:var(--t-fg)}',
-    '.tfT .tfT-body{overflow-y:auto;overflow-x:hidden;min-height:0;-webkit-overflow-scrolling:touch;-webkit-user-select:text;user-select:text}',
-    '.tfT .tfT-t{margin:0 0 8px;font-size:15.5px;line-height:1.5;color:var(--t-fg)}',
-    '.tfT .tfT-chk{display:flex;align-items:center;gap:10px;min-height:44px;margin:2px 0 4px;color:var(--t-mute);font-size:14px;cursor:pointer}',
+    '.tfT .tfT-spot{position:fixed;border-radius:12px;box-shadow:0 0 0 2px #141a21,0 0 0 5px var(--t-ring),0 0 22px 7px rgba(255,209,102,.6);pointer-events:none;display:none}',
+    '.tfT .tfT-card{position:fixed;display:flex;flex-direction:column;pointer-events:auto;background:var(--t-bg);color:var(--t-fg);border:1px solid var(--t-line);border-radius:16px;box-shadow:0 8px 28px rgba(0,0,0,.4);padding:10px 12px 8px;outline:none;max-width:calc(100vw - 16px)}',
+    '.tfT .tfT-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 4px}',
+    '.tfT .tfT-meta{flex:none;font-size:14px;font-weight:600;color:var(--t-mute);white-space:nowrap}',
+    '.tfT .tfT-h{margin:0;font-size:17px;line-height:1.25;font-weight:700;color:var(--t-fg)}',
+    '.tfT .tfT-body{overflow-y:auto;overflow-x:hidden;min-height:0;flex:0 1 auto;-webkit-overflow-scrolling:touch;-webkit-user-select:text;user-select:text}',
+    '.tfT .tfT-t{margin:0 0 6px;font-size:15px;line-height:1.45;color:var(--t-fg)}',
+    '.tfT .tfT-chk{display:flex;align-items:center;gap:10px;min-height:44px;margin:0;color:var(--t-mute);font-size:14px;cursor:pointer}',
     '.tfT .tfT-chk input{width:24px;height:24px;min-height:0;margin:0;padding:0;flex:none;accent-color:var(--t-acc)}',
-    '.tfT .tfT-btns{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:6px;border-top:1px solid var(--t-line)}',
-    '.tfT .tfT-sp{flex:1 1 8px}',
-    '.tfT .tfT-b{min-height:44px;min-width:44px;padding:0 16px;border-radius:12px;border:1px solid var(--t-line);background:var(--t-b2);color:var(--t-fg);font-weight:600;font-size:15px;line-height:1;font-family:inherit;cursor:pointer;touch-action:manipulation}',
+    '.tfT .tfT-btns{display:flex;flex-wrap:nowrap;align-items:center;gap:8px;padding-top:6px;border-top:1px solid var(--t-line);flex:none}',
+    '.tfT .tfT-sp{flex:1 1 4px}',
+    '.tfT .tfT-b{min-height:44px;min-width:44px;padding:0 14px;border-radius:12px;border:1px solid var(--t-line);background:var(--t-b2);color:var(--t-fg);font-weight:600;font-size:15px;line-height:1;font-family:inherit;cursor:pointer;touch-action:manipulation;white-space:nowrap}',
     '.tfT .tfT-b.pri{background:var(--t-acc);border-color:var(--t-acc);color:var(--t-on)}',
-    '.tfT .tfT-b.gh{background:transparent;color:var(--t-fg)}',
+    '.tfT .tfT-b.gh{background:transparent;color:var(--t-fg);padding:0 10px}',
     '.tfT .tfT-b[disabled]{opacity:.4;cursor:default}',
     '.tfT .tfT-b:focus-visible,.tfT .tfT-chk input:focus-visible{outline:3px solid var(--t-ring);outline-offset:2px}',
     '.tfT-hb{width:44px;height:44px;min-width:44px;flex:none;margin:0 2px;border-radius:22px;border:1px solid var(--line,#c8d0d9);background:var(--panel2,#eaeef3);color:var(--fg,#141a21);font:700 19px/1 -apple-system,system-ui,"Segoe UI",sans-serif;cursor:pointer;display:inline-grid;place-items:center;padding:0;touch-action:manipulation}',
@@ -169,54 +175,63 @@
     var de = document.documentElement;
     return { w: Math.min(root.innerWidth || de.clientWidth, de.clientWidth || root.innerWidth), h: root.innerHeight || de.clientHeight };
   }
+  function overlaps(a, r, m) { return !!r && !(a.l + a.w < r.left - m || a.l > r.right + m || a.t + a.h < r.top - m || a.t > r.bottom + m); }
+  /* Karte an den unteren Rand (Handy: volle Breite, höchstens 30 % der Höhe; Desktop: unten rechts, schmal).
+     Würde sie das Ziel verdecken, weicht sie aus: Handy erst nach oben, dann direkt über das Ziel; Desktop nach unten links, oben rechts, oben links. */
   function place() {
     if (!S) return;
     var V = vp(), card = S.card, spot = S.spot, el = S.target;
-    var narrow = V.w <= 600;
+    var narrow = V.w <= 600, m = 8;
     var r = el && isVisible(el) ? el.getBoundingClientRect() : null;
-    S.root.className = 'tfT' + (r ? '' : ' tfT-nospot');
-    if (r) {
-      var pad = 6, x = Math.max(0, r.left - pad), y = Math.max(0, r.top - pad);
-      var x2 = Math.min(V.w, r.right + pad), y2 = Math.min(V.h, r.bottom + pad);
-      spot.style.display = 'block'; spot.style.left = x + 'px'; spot.style.top = y + 'px';
-      spot.style.width = Math.max(0, x2 - x) + 'px'; spot.style.height = Math.max(0, y2 - y) + 'px';
-    } else spot.style.display = 'none';
-    var w = narrow ? V.w - 16 : Math.min(400, V.w - 24);
+    var w = narrow ? V.w - 2 * m : Math.min(360, V.w - 2 * m);
     card.style.width = w + 'px';
-    card.style.maxHeight = (narrow ? Math.floor(V.h * 0.52) : V.h - 24) + 'px';
+    card.style.maxHeight = Math.floor(V.h * (narrow ? 0.3 : 0.55)) + 'px';
     card.style.left = card.style.right = card.style.top = card.style.bottom = 'auto';
-    var h = card.offsetHeight, left, top;
-    function hit(t, l) { return r && !(l + w < r.left - 4 || l > r.right + 4 || t + h < r.top - 4 || t > r.bottom + 4); }
+    var h = card.offsetHeight, cand, i, pick = null;
     if (narrow) {
-      var bottomTop = V.h - h - 8, topTop = 8;
-      left = 8; top = bottomTop;
-      if (r) {
-        var inLower = (r.top + r.bottom) / 2 > V.h * 0.5;
-        if (inLower) top = topTop;
-        if (hit(top, left)) top = (top === topTop) ? bottomTop : topTop;
-      }
-    } else if (!r) {
-      left = Math.round((V.w - w) / 2); top = Math.round((V.h - h) / 2);
+      cand = [{ l: m, t: V.h - h - m }, { l: m, t: m }];
+      if (r) cand.push({ l: m, t: r.top - h - m });
     } else {
-      var gap = 14, c = [
-        [r.bottom + gap, r.left], [r.top - gap - h, r.left], [r.top, r.right + gap], [r.top, r.left - gap - w]
-      ];
-      left = null;
-      for (var i = 0; i < c.length; i++) {
-        var t = c[i][0], l = Math.min(Math.max(8, c[i][1]), V.w - w - 8);
-        if (t >= 8 && t + h <= V.h - 8 && l >= 8 && l + w <= V.w - 8 && !hit(t, l)) { top = t; left = l; break; }
-      }
-      if (left === null) { left = Math.round((V.w - w) / 2); top = V.h - h - 12; if (hit(top, left)) top = 12; }
+      cand = [{ l: V.w - w - 16, t: V.h - h - 16 }, { l: 16, t: V.h - h - 16 }, { l: V.w - w - 16, t: 16 }, { l: 16, t: 16 }];
     }
-    top = Math.max(4, Math.min(top, V.h - h - 4));
-    left = Math.max(4, Math.min(left, V.w - w - 4));
-    card.style.left = left + 'px'; card.style.top = top + 'px';
+    for (i = 0; i < cand.length; i++) {
+      var c = cand[i]; c.w = w; c.h = h;
+      if (c.t < 4 || c.t + h > V.h - 4) continue;
+      if (!overlaps(c, r, 6)) { pick = c; break; }
+    }
+    var hit = false;
+    if (!pick) { pick = cand[0]; hit = overlaps(pick, r, 0); }
+    card.style.left = Math.max(4, Math.min(pick.l, V.w - w - 4)) + 'px';
+    card.style.top = Math.max(4, Math.min(pick.t, V.h - h - 4)) + 'px';
+    card.setAttribute('data-ueberdeckt', hit ? '1' : '0');
+    S.root.className = 'tfT' + (r ? '' : ' tfT-nospot');
+    if (!r) { spot.style.display = 'none'; return; }
+    var pad = 4, x = Math.max(0, r.left - pad), y = Math.max(0, r.top - pad), x2 = Math.min(V.w, r.right + pad), y2 = Math.min(V.h, r.bottom + pad);
+    if (hit) {
+      /* ein hohes Ziel bleibt teils unter der Karte: den Ring nur um den freien Teil legen */
+      if (pick.t > y + 40) y2 = Math.min(y2, pick.t - 4);
+      else if (pick.t + h < y2 - 40) y = Math.max(y, pick.t + h + 4);
+      else y2 = y;
+    }
+    if (y2 - y < 8 || x2 - x < 8) { spot.style.display = 'none'; return; }
+    spot.style.display = 'block'; spot.style.left = x + 'px'; spot.style.top = y + 'px';
+    spot.style.width = (x2 - x) + 'px'; spot.style.height = (y2 - y) + 'px';
   }
   var raf = null;
   function schedulePlace() {
     if (raf || !S) return;
     var f = root.requestAnimationFrame || function (fn) { return setTimeout(fn, 16); };
     raf = f(function () { raf = null; place(); });
+  }
+  /* Ziel ins Bild holen, aber nicht unter die Karte: Handy bleibt der Streifen unten (30 %) frei */
+  function bringIntoView(el) {
+    try {
+      var V = vp(), r = el.getBoundingClientRect(), narrow = V.w <= 600;
+      var low = narrow ? V.h * 0.68 : V.h - 8;
+      if (r.top < 0 || r.bottom > low) {
+        if (r.height <= low - 8) el.scrollIntoView({ block: 'center', inline: 'nearest' }); else el.scrollIntoView({ block: 'start', inline: 'nearest' });
+      } else if (r.left < 0 || r.right > V.w) el.scrollIntoView({ block: 'nearest', inline: 'center' });
+    } catch (e) {}
   }
 
   function render(i, el) {
@@ -228,11 +243,14 @@
     S.txt.textContent = st.t;
     S.back.disabled = i === 0;
     S.next.textContent = i === n - 1 ? 'Fertig' : 'Weiter';
+    /* Häkchen nur im letzten Schritt der kurzen Tour (spart Platz auf dem Handy) */
+    S.lab.style.display = S.kurz && i < n - 1 ? 'none' : 'flex';
     S.body.scrollTop = 0;
-    if (el) { try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {} }
+    if (el) bringIntoView(el);
     place();
-    setTimeout(place, 60);
-    try { S.next.focus(); } catch (e) {}
+    setTimeout(function () { if (S && el && S.target === el) { bringIntoView(el); place(); } }, 60);
+    setTimeout(function () { if (S && el && S.target === el) { bringIntoView(el); place(); } }, 260);
+    try { S.next.focus({ preventScroll: true }); } catch (e) { try { S.next.focus(); } catch (e2) {} }
     if (!S.marked) { S.marked = true; if (S.auto) lsSet(PFX + S.key, '1'); }
   }
   function go(i) {
@@ -255,25 +273,32 @@
     })();
   }
 
+  /* Kurze Tour: je Schritt die erste Variante mit sichtbarem Ziel; ohne Ziel entfällt der Schritt (höchstens drei) */
+  function kurzSteps(L) {
+    var out = [], k = L && L.kurz, i, j;
+    if (!k) return out;
+    for (i = 0; i < k.length && out.length < 3; i++) {
+      var v = k[i].v || [];
+      for (j = 0; j < v.length; j++) {
+        if (findTarget(v[j].s)) { out.push({ h: v[j].h, t: v[j].t, s: v[j].s }); break; }
+      }
+    }
+    return out;
+  }
+
   function onKey(e) {
-    if (!S) return;
-    var k = e.key || e.keyCode;
-    if (e.type === 'keyup') { e.stopPropagation(); return; }
+    if (!S || e.type === 'keyup') return;
+    var k = e.key || e.keyCode, a = document.activeElement;
     if (k === 'Escape' || k === 'Esc' || k === 27) { e.preventDefault(); e.stopPropagation(); finish(); return; }
+    /* Pfeiltasten nur, wenn der Fokus auf der Karte oder nirgends liegt (die Seite bleibt bedienbar, nichts wird gefangen) */
+    if (a && a !== document.body && !S.card.contains(a)) return;
     if (k === 'ArrowRight' || k === 39) { e.preventDefault(); e.stopPropagation(); go(S.idx + 1); return; }
     if (k === 'ArrowLeft' || k === 37) { e.preventDefault(); e.stopPropagation(); go(S.idx - 1); return; }
-    if (k === 'Tab' || k === 9) {
-      var f = focusables(S.card); if (!f.length) { e.preventDefault(); return; }
-      var a = document.activeElement, ix = f.indexOf(a);
-      e.preventDefault(); e.stopPropagation();
-      if (e.shiftKey) ix = ix <= 0 ? f.length - 1 : ix - 1; else ix = ix < 0 || ix === f.length - 1 ? 0 : ix + 1;
-      f[ix].focus(); return;
-    }
-    e.stopPropagation();
   }
-  function onFocusIn(e) {
-    if (!S || S.card.contains(e.target)) return;
-    var f = focusables(S.card); if (f.length) f[0].focus(); else S.card.focus();
+  /* Automatische Tour: ein Antippen außerhalb der Karte beendet sie (der Nutzer macht selbst weiter), das Tippen selbst geht an die Seite */
+  function onPointer(e) {
+    if (!S || !S.auto || S.card.contains(e.target)) return;
+    S.noRestore = true; S.byUser = true; finish();
   }
 
   /* Ende der Tour: "Nicht mehr zeigen" (gilt für alle Labs) und "gesehen" (dieses Lab) merken */
@@ -286,18 +311,22 @@
     if (!S) return;
     var s = S; S = null;
     try {
-      document.removeEventListener('keydown', onKey, true); document.removeEventListener('keyup', onKey, true);
-      document.removeEventListener('focusin', onFocusIn, true);
+      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener('pointerdown', onPointer, true);
       root.removeEventListener('resize', schedulePlace); root.removeEventListener('orientationchange', schedulePlace);
       document.removeEventListener('scroll', schedulePlace, true);
       clearInterval(s.timer);
     } catch (e) {}
     if (s.root.parentNode) s.root.parentNode.removeChild(s.root);
     commit(s.key, s.chk.checked, s.auto || s.marked);
+    if (!s.noRestore) { try { restoreTab(s.tab0); } catch (e) {} }
+    try { if (!s.byUser && s.prevFocus && s.prevFocus.focus && document.body.contains(s.prevFocus)) s.prevFocus.focus(); } catch (e) {}
     try {
-      restoreTab(s.tab0);
-    } catch (e) {}
-    try { if (s.prevFocus && s.prevFocus.focus && document.body.contains(s.prevFocus)) s.prevFocus.focus(); } catch (e) {}
+      var ev;
+      if (typeof root.CustomEvent === 'function') ev = new root.CustomEvent('tf-tour-ende', { detail: { key: s.key, auto: s.auto, kurz: s.kurz } });
+      else { ev = document.createEvent('Event'); ev.initEvent('tf-tour-ende', true, false); }
+      document.dispatchEvent(ev);
+    } catch (e3) {}
   }
 
   function start(opts) {
@@ -305,14 +334,17 @@
     if (!hasDoc || S) return false;
     var key = opts.key || labKey(), L = dataFor(key);
     if (!L) return false;
+    var kurz = !!opts.auto, steps = kurz ? kurzSteps(L) : L.steps;
+    if (!steps.length) return false;
     injectCss();
     var el = mk('div', 'tfT'); el.id = 'tfTut';
     var spot = mk('div', 'tfT-spot');
     var card = mk('section', 'tfT-card');
-    card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'true');
+    card.setAttribute('role', 'dialog'); card.setAttribute('aria-modal', 'false');
     card.setAttribute('aria-labelledby', 'tfTutH'); card.setAttribute('aria-describedby', 'tfTutT'); card.tabIndex = -1;
+    var hd = mk('div', 'tfT-hd'), h = mk('h2', 'tfT-h'); h.id = 'tfTutH';
     var meta = mk('div', 'tfT-meta'); meta.setAttribute('aria-live', 'polite');
-    var h = mk('h2', 'tfT-h'); h.id = 'tfTutH';
+    hd.appendChild(h); hd.appendChild(meta);
     var body = mk('div', 'tfT-body'), txt = mk('p', 'tfT-t'); txt.id = 'tfTutT'; body.appendChild(txt);
     var lab = mk('label', 'tfT-chk'), chk = mk('input'); chk.type = 'checkbox'; chk.checked = lsGet(OFFKEY) === '1';
     lab.appendChild(chk); lab.appendChild(mk('span', '', 'Nicht mehr zeigen'));
@@ -321,20 +353,24 @@
     skip.type = back.type = next.type = 'button';
     skip.setAttribute('aria-label', 'Tutorial überspringen');
     btns.appendChild(skip); btns.appendChild(mk('span', 'tfT-sp')); btns.appendChild(back); btns.appendChild(next);
-    card.appendChild(meta); card.appendChild(h); card.appendChild(body); card.appendChild(lab); card.appendChild(btns);
+    card.appendChild(hd); card.appendChild(body); card.appendChild(lab); card.appendChild(btns);
     el.appendChild(spot); el.appendChild(card);
-    S = { key: key, name: L.name || 'Tutorial', steps: L.steps, idx: 0, gen: 0, root: el, spot: spot, card: card, meta: meta, h: h, txt: txt, body: body,
-      chk: chk, back: back, next: next, auto: !!opts.auto, marked: false, target: null, tab0: tabId(activeTab()), prevFocus: document.activeElement, timer: 0 };
+    S = { key: key, name: L.name || 'Tutorial', steps: steps, idx: 0, gen: 0, root: el, spot: spot, card: card, meta: meta, h: h, txt: txt, body: body, lab: lab,
+      chk: chk, back: back, next: next, auto: !!opts.auto, kurz: kurz, marked: false, target: null, tab0: tabId(activeTab()), prevFocus: document.activeElement, timer: 0 };
     skip.addEventListener('click', function () { finish(); });
     back.addEventListener('click', function () { go(S ? S.idx - 1 : 0); });
     next.addEventListener('click', function () { go(S ? S.idx + 1 : 0); });
-    el.addEventListener('click', function (e) { e.stopPropagation(); });
     document.body.appendChild(el);
-    document.addEventListener('keydown', onKey, true); document.addEventListener('keyup', onKey, true);
-    document.addEventListener('focusin', onFocusIn, true);
+    document.addEventListener('keydown', onKey, true);
+    document.addEventListener('pointerdown', onPointer, true);
     root.addEventListener('resize', schedulePlace); root.addEventListener('orientationchange', schedulePlace);
     document.addEventListener('scroll', schedulePlace, true);
-    S.timer = setInterval(function () { if (S) place(); }, 700);
+    S.timer = setInterval(function () {
+      if (!S) return;
+      /* startet der Nutzer während einer automatischen Tour die Prüfung, räumt die Tour sofort ab */
+      if (S.auto && (examOn(document, S.key) || overlayOpen())) { S.noRestore = true; finish(); return; }
+      place();
+    }, 700);
     go(0);
     return true;
   }
@@ -399,7 +435,7 @@
     var g = document.getElementById('gate');
     return {
       hasData: !!L, off: lsGet(OFFKEY) === '1', seen: lsGet(PFX + key) === '1',
-      search: (function (q) { return q === 'trainer' && !root.Trainer ? '' : q; })(String((root.location && root.location.search) || '').replace(/^\?/, '')), /* ?trainer (Lernpfad-Knopf) ohne Trainer auf der Seite ist kein Parameter */
+      search: (function (q) { return q === 'trainer' && !root.Trainer ? '' : q; })(String((root.location && root.location.search) || '').replace(/^\?/, '').replace(/(^|&)lr=[^&]*/g, '').replace(/^&/, '')), /* ?trainer (Lernpfad-Knopf) ohne Trainer auf der Seite ist kein Parameter; ?lr=aus/an (Rahmen) auch nicht */
       hash: L && L.hashOk ? '' : String((root.location && root.location.hash) || '').replace(/^#/, ''), /* hashOk: Seite führt den Block im #-Teil (emblab), das ist kein Sprung */
       exam: examOn(document, key), tabOk: tabOk, gate: !!g, overlay: overlayOpen(), trainer: trainerOn()
     };
@@ -415,18 +451,36 @@
       setTimeout(tick, 600);
     })();
   }
+  /* Erster Besuch: ein Hinweis nach dem anderen. Solange die Tour ansteht, bleiben "Neu hier?" (#trOffer, nur ohne Rahmen; mit Rahmen liegt es im Info-Blatt)
+     und das Willkommens-Banner (design.js) aus dem Weg. Die Klasse tf-erst bleibt bis zum Neuladen, damit nach dem Schließen nichts Zweites auftaucht. */
+  function erstBesuch() {
+    if (!hasDoc) return false;
+    try { var c = context(); c.gate = c.overlay = c.trainer = false; c.tabOk = true; return !skipReason(c); } catch (e) { return false; }
+  }
+  function markErst() {
+    try {
+      if (!erstBesuch()) return;
+      var de = document.documentElement; if (!/(^|\s)tf-erst(\s|$)/.test(de.className)) de.className += (de.className ? ' ' : '') + 'tf-erst';
+      if (!document.getElementById('tfErstCss')) {
+        var st = document.createElement('style'); st.id = 'tfErstCss'; st.appendChild(document.createTextNode('html.tf-erst:not(.lr-on) #trOffer{display:none!important}'));
+        (document.head || de).appendChild(st);
+      }
+    } catch (e) {}
+  }
   function boot() { try { mountButtons(); } catch (e) {} try { auto(); } catch (e2) {} }
 
   var API = {
     start: start, stop: stop, restart: function () { return start({ manual: true }); }, running: running,
     labKey: labKey, steps: function (k) { var L = dataFor(k || labKey()); return L ? L.steps : null; },
     skipReason: skipReason, commit: commit, isTransient: isTransient, examOn: examOn, setStore: setStore,
-    mountButtons: mountButtons, boot: boot, context: context, _find: findTarget, KEY_PREFIX: PFX, KEY_OFF: OFFKEY
+    mountButtons: mountButtons, boot: boot, context: context, _find: findTarget, kurzSteps: function (k) { return kurzSteps(dataFor(k || labKey())); },
+    erstBesuch: erstBesuch, state: function () { return S ? { running: true, auto: S.auto, kurz: S.kurz, idx: S.idx, n: S.steps.length, key: S.key, tgt: S.target } : { running: false }; }, KEY_PREFIX: PFX, KEY_OFF: OFFKEY
   };
   root.Tutorial = API;
   if (typeof module === 'object' && module && module.exports) module.exports = API;
 
   if (hasDoc && root.addEventListener && !root.__TUTORIAL_NOBOOT) {
+    markErst();
     if (document.readyState === 'complete') setTimeout(boot, 300);
     else root.addEventListener('load', function () { setTimeout(boot, 400); });
   }

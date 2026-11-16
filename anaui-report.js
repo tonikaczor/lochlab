@@ -168,11 +168,11 @@
   /* ============================================================ Oberfläche */
   let A = null, H = null;
   const st = { entry: null, res: null, armed: 0, open: false, col: null, w: 0 };
-  const CSS = '.ana-rp-err{color:var(--bad-fg);font-size:13px;margin:3px 0 0}.ana-rp-bad input{border-color:var(--danger)}.ana-rp-sec{margin:14px 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}' +
-    '.ana-rp-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 10px}.ana-rp-tb{margin:0;display:grid;gap:6px}.ana-rp-tb .ana-rp-r{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:6px}.ana-rp-tb .ana-rp-h{font-size:12px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em}' +
-    '.ana-rp-tb input{padding:10px 8px;min-width:0}.ana-rp-tags{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--mute);margin:2px 0 6px}.ana-rp-hist small{color:var(--mute)}' +
+  const CSS = '.ana-rp-err{color:var(--bad-fg);font-size:14px;margin:3px 0 0}.ana-rp-bad input{border-color:var(--danger)}.ana-rp-sec{margin:14px 0 4px;font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}' +
+    '.ana-rp-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 10px}.ana-rp-tb{margin:0;display:grid;gap:6px}.ana-rp-tb .ana-rp-r{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:6px}.ana-rp-tb .ana-rp-h{font-size:14px;color:var(--mute);font-weight:600;text-transform:uppercase;letter-spacing:.04em}' +
+    '.ana-rp-tb input{padding:10px 8px;min-width:0}.ana-rp-tags{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--mute);margin:2px 0 6px}.ana-rp-hist small{color:var(--mute)}' +
     '.ana-rp-svg{display:block;width:100%;height:auto;border-radius:8px}.ana-rp-bg{fill:var(--well)}.ana-rp-fr{fill:none;stroke:var(--chart-axis);stroke-width:1}.ana-rp-gr{stroke:var(--chart-grid);stroke-width:1}.ana-rp-tx{fill:var(--mute);font-size:12px;font-variant-numeric:tabular-nums}.ana-rp-ti{fill:var(--fg);font-size:12px}' +
-    '.ana-rp-pt{fill:var(--accent);stroke:var(--bg);stroke-width:1.5}.ana-rp-gh{fill:none;stroke:var(--mute);stroke-width:2.2;stroke-dasharray:3 3}.ana-rp-leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;margin:6px 0 0}';
+    '.ana-rp-pt{fill:var(--accent);stroke:var(--bg);stroke-width:1.5}.ana-rp-gh{fill:none;stroke:var(--mute);stroke-width:2.2;stroke-dasharray:3 3}.ana-rp-leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;margin:6px 0 0}';
   function css() { try { if (typeof document !== 'undefined' && document.head && !document.getElementById('anaReportCss')) { const s = document.createElement('style'); s.id = 'anaReportCss'; s.textContent = CSS; document.head.appendChild(s); } } catch (e) {} }
   const hist = () => { const a = A && A.lsGet ? A.lsGet(KEY, []) : []; return Array.isArray(a) ? a : []; };
   const prefer = () => { try { const v = typeof localStorage !== 'undefined' ? localStorage.getItem('lm4.name') : ''; return v ? String(v).replace(/^"|"$/g, '') : ''; } catch (e) { return ''; } };

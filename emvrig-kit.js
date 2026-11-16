@@ -110,19 +110,26 @@
     function header(ctx, w, view, sc) {
       const pal = sc.pal, m = 10;
       if (sc.header === false) return 10;   // die Seite zeigt Wirkungskette und Ampel selbst (Option header:false der Basis)
+      if (compactOf(ctx, w)) { gfx.ampelRow(ctx, m, 4, view.ampel, { pal, size: sc.fs + 1, max: w - 2 * m }); return 30; }   // feste Grafik am Handy: nur die Ampel, die Felder brauchen die Höhe
       gfx.chainBar(ctx, m, 8, w - 2 * m, 46, view.rig.chain, sc.active, { pal, size: sc.fs + 1 });
       gfx.ampelRow(ctx, m, 70, view.ampel, { pal, size: sc.fs + 1, max: w - 2 * m });
       return 90;
     }
+    /** Handy mit fester Grafik (Rahmen, höchstens rund die halbe Bildschirmhöhe): Canvas schmal und niedrig, die Szene legt sich kompakt aus. */
+    function compactOf(ctx, w) {
+      try { const c = ctx.canvas, k = ctx.getTransform ? ctx.getTransform().a || 1 : 1; return w < 600 && c.height / k < 560; } catch (e) { return false; }
+    }
     /** Fusszeile: Hinweis Uebungsanlage und Animationshinweis. */
     function footer(ctx, w, h, sc, note) {
       const pal = sc.pal;
-      gfx.text(ctx, 'Übungsanlage: Zahlen sind Übungswerte' + (note ? ' · ' + note : ''), 12, h - 7, { size: sc.fs, color: pal.mute, max: w - 24 });
+      const kurz = w < 420 && note;   // Handy: kürzerer Text, rechts bleibt Platz für den Pause-Knopf
+      gfx.text(ctx, (kurz ? 'Übungsanlage' : 'Übungsanlage: Zahlen sind Übungswerte') + (note ? ' · ' + note : ''), 12, h - 7, { size: sc.fs, color: pal.mute, max: kurz ? w - 120 : w - 24 });
     }
     /** Aufteilung des Bildbereichs: liefert benannte Rechtecke je nach Seitenverhaeltnis (breit: zwei Spalten, hoch: gestapelt). */
     function split(w, h, y0, spec) {
       const m = 10, W = w - 2 * m, H = h - y0 - 24;
       if (!(W > 120 && H > 100)) return null;
+      if (w < 600 && h < 560 && spec.compact) spec = Object.assign({}, spec, { stack: spec.compact });
       const out = {};
       if (w >= 940) {
         const lw = Math.round(W * spec.left), gap = 10;

@@ -33,6 +33,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .hb{height:44px;min-width:44px;justify-content:center;padding:0 12px;border-radius:22px;background:var(--panel2);border:1px solid var(--hdr-line);font-size:14px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;margin:0 2px;flex:none}
 .hb:active{background:var(--panel)}
 @media(max-width:1100px){.hb span{display:none}.hb{padding:0 10px}}
+@media(max-width:700px){html.lr-on #bUndo,html.lr-on #bRedo{display:none}}
 @media(max-width:600px){header img,#bPrint,#bShare,#bOpen,#bEx,#bHome,#bNew,#bExp{display:none}}
 #tabs{display:flex;gap:6px;overflow-x:auto;padding:5px 10px;background:var(--bg);border-bottom:1px solid var(--line);scrollbar-width:none;flex:none}
 #tabs::-webkit-scrollbar{display:none}
@@ -125,14 +126,24 @@ label.f,div.f{display:block;margin:0 0 10px}label.f span,div.f>span{display:bloc
 body #trOffer button{min-height:44px!important}
 /* Handy: Kopfbereich knapper (Projekt-Hinweis höchstens zwei Zeilen neben dem Link), Trainer-Angebot unten statt über dem Projekt-Hinweis */
 @media(max-width:600px){
-#app #vbHint{margin:4px 0!important;padding:0 10px!important;flex-wrap:nowrap!important;font-size:12.5px!important;line-height:1.3!important}
+#app #vbHint{margin:4px 0!important;padding:0 10px!important;flex-wrap:nowrap!important;font-size:14px!important;line-height:1.3!important}
 #app #vbHint>span{flex:1;min-width:0;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 #app #vbHint>a{flex:none;white-space:nowrap}
 #app #wzHint{margin:4px 0}
 body #trOffer{top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 }
+/* B3b: Schrift im DOM mindestens 14 px (Werkzeugleisten, Karten, Tabellen aller Reiter; die Stile dieser Teile stehen in pcbedit.js, pcbfab.js, pcbasm.js, pcbrepair.js, pcbtest.js, pcbviz.js und kommen später im Dokument, darum #app davor) */
+#app .badge,#app .tab .bd,#app .gh,#app .lv,#app .hint2,#app .tl,#app .tl details,#app label.f span,#app div.f>span,#app .calc label span,#app .card>h4,#app .hl table,#app .help table,#app .chip.s,#app .btn.s{font-size:14px}
+#app .pe-b,#app .pe-b.flat,#app .pe-sel,#app .pe-in,#app .pe-chip button,#app .pe-stat .msg,#app .pe-stat .pos,#app .pe-ro,#app .pe-tab,#app .pe-tab .n,#app .pe-narrow .pe-stat .msg,#app .pe-fld>label,#app .pe-h4,#app .pe-p,#app .pe-li,#app .pe-li .s,#app .pe-fpl .t,#app .pe-fpl .d,#app .pe-pop label.ck,#app .pe-lab{font-size:14px}
+#app .pe-b span{font-size:14px;line-height:16px}
+#app .pe-b:not(.flat){height:auto;min-height:54px}
+#app .pf-card h4,#app .pf-muted,#app .pf-lbl,#app .pf-sl output,#app .pf-scroll-hint,#app .pf-tbl,#app .pf-file b,#app .pf-file pre,#app .pf-badge,#app .pa-mute,#app .pa table,#app .pa-sl label,#app .pa-sl b,#app .pa-warn,#app .pa-chip,#app .pa-tag{font-size:14px}
+#app .pr-hint,#app .pr-lcd .n,#app .pr-lcd .m,#app .pr-modes button,#app .pr-probes,#app .pr-card .h,#app .pr-card .h b,#app .pr-body h4,#app .pr-body table,#app .pr-log,#app .pr-log time,#app .pr-banner,#prBan{font-size:14px}
+#app .pt-card h4,#app .pt-mute,#app .pt-lbl,#app .pt-k span,#app .pt-acc h4,#app .pt-pro h5,#app .pt-con h5,#app .pt-tbl,#app .pt-m,#app .pt-win .pt-wb h4,#app .pt-pill,#app .pt-pr,#app .pt-pr small,#app .pt-gl span,#app .pcbviz table,#app .pcbviz th,#app .pcbviz .mu{font-size:14px}
+#app .row small,#app .row small *,#app #vbHint{font-size:14px}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -199,6 +210,8 @@ body #trOffer{top:auto;bottom:calc(8px + env(safe-area-inset-bottom,0px))}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'pcblab.html': { name: 'Leiterplatten-Lab', gruppen: [{ name: 'Herstellung', teile: ['fab', 'asm'] }, { name: 'Fehler', teile: ['repair', 'fehler'] }] } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

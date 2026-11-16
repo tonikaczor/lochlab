@@ -182,13 +182,18 @@
     const q = ctx.q, r = ctx.res, locked = !!(r && (r.ok || r.shown));
     let h = `<p class="qtext">${esc(q.text)}</p>`;
     h += `<label class="f"><span>${esc(q.label)}${q.unit ? ' in ' + esc(q.unit) : ''}</span><div class="qin"><input data-v id="tkIn" inputmode="decimal" autocomplete="off" value="${esc(ctx.ans || '')}"${locked ? ' disabled' : ''} aria-describedby="tkRule"><span class="u">${esc(q.unit)}</span></div></label>`;
-    h += `<p class="hint2" id="tkRule">Komma oder Punkt als Dezimalzeichen. Erlaubte Abweichung: ±${esc(C.fmt(q.tol, 2))}${q.unit ? ' ' + esc(q.unit) : ''}. Tausenderpunkte sind bei der Eingabe nicht nötig.</p>`;
+    h += `<p class="hint2 lr-hinweis" id="tkRule">Komma oder Punkt als Dezimalzeichen. Erlaubte Abweichung: ±${esc(C.fmt(q.tol, 2))}${q.unit ? ' ' + esc(q.unit) : ''}. Tausenderpunkte sind bei der Eingabe nicht nötig.</p>`;
     h += `<div class="btns"><button type="button" class="btn pri" data-a="chk"${locked ? ' disabled' : ''}>✓ Prüfen</button><button type="button" class="btn" data-a="hint"${locked ? ' disabled' : ''}>💡 Tipp</button></div>`;
     if (r && !r.empty) {
       const msg = r.shown ? 'Lösung angezeigt (zählt nicht als gelöst).' : r.ok ? 'Richtig: ' + C.fmt(r.x, 5) + (q.unit ? ' ' + q.unit : '') : 'Deine Antwort „' + C.fmt(r.x, 5) + (q.unit ? ' ' + q.unit : '') + '“ stimmt nicht.';
-      h += `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : '✗'} ${esc(msg)}</li></ul>`;
-      if (r.ok || r.shown) h += solutionHTML(q);
-      else if (exam()) h += '<div class="rdout bad">🎓 Prüfmodus: Die Musterlösung gibt es erst nach richtiger Lösung. Nutze einen Tipp oder versuche es noch einmal.</div>';
+      /* Welle 2 (Muster 4.5): erster Fehlversuch = Tipp und zweiter Versuch, zweiter = Lösung mit Rechenweg; im Prüfmodus bleibt es beim Prüfmodus */
+      const nt = ctx.tries || 0, fbc = r.ok ? 'ok' : (r.shown || (!exam() && nt >= 2)) ? 'loes' : 'tipp';
+      let ex = '';
+      if (r.ok || r.shown) ex = solutionHTML(q);
+      else if (exam()) ex = '<div class="rdout bad">🎓 Prüfmodus: Die Musterlösung gibt es erst nach richtiger Lösung. Nutze einen Tipp oder versuche es noch einmal.</div>';
+      else if (nt >= 2) ex = '<p><b>Lösung mit Rechenweg:</b> Sie zählt nicht als gelöst. Rechne sie nach und probiere „Neue Zahlen“.</p>' + solutionHTML(q);
+      else ex = `<p><b>Tipp:</b> ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p>`;
+      h += `<div class="lr-fb ${fbc}" id="tkFb" role="status"><ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : '✗'} ${esc(msg)}</li></ul>${ex}</div>`;
     }
     if (!locked && !exam()) h += `<div class="btns"><button type="button" class="btn" data-a="show">👁 Musterlösung ansehen</button></div>`;
     return h;
@@ -351,10 +356,11 @@
     const ctx = S.t; if (!ctx) return; const q = ctx.q, c = C.checkNum(ctx.ans, q.value, q.tol, q.unit);
     if (c.empty) { toast('Trage zuerst ein Ergebnis ein.'); return; }
     if (c.nan) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return; }
-    ctx.res = { ok: c.ok, x: c.x }; const pct = c.ok ? pctFor(ctx.id) : 0;
+    ctx.res = { ok: c.ok, x: c.x }; if (!c.ok) ctx.tries = (ctx.tries || 0) + 1; const pct = c.ok ? pctFor(ctx.id) : 0;
     if (c.ok) { markSolved(ctx.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) { ding(); } else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); }
     else { sad(); toast('Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
+    const fbEl = $('#tkFb'); if (fbEl && window.LabRahmen && LabRahmen.zeig) LabRahmen.zeig(fbEl);
   }
   function hintTask() {
     const ctx = S.t; if (!ctx) return; const id = ctx.id, h = lsGet('hints', {}), n = Math.min(3, (h[id] || 0) + 1);

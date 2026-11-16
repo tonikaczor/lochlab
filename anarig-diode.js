@@ -39,9 +39,9 @@
       help: 'Spannung der Quelle in Zählrichtung der Schaltung. Negative Werte heißen verpolt: Die Spannung liegt dann gegen die Betriebsrichtung. Im Lab gilt als Obergrenze ' + LT('u_klein') + '. Kleinspannung bedeutet allgemein bis 50 V Wechselspannung oder 120 V Gleichspannung; wo Kinder, Kleintiere oder Nutztiere berühren können, gelten nur 25 V Wechselspannung oder 60 V Gleichspannung, in Feuchträumen und bei nasser Haut noch weniger.' },
     { key: 'rv', label: 'Vorwiderstand R_V', type: 'slider', scale: 'log', min: 1, max: 1e6, step: 1, unit: 'Ω', unitKind: 'Ω', value: 330, gruppe: 'bauteile', sicht: 'formel',
       help: 'Der Vorwiderstand begrenzt den Strom: R_V = (U_q − U_F) / I_F. Ein größerer Vorwiderstand ergibt einen kleineren Strom. Ohne ausreichenden Vorwiderstand ist die LED überlastet (nur Simulation, Übungswert).' },
-    { key: 'uz', label: 'Z-Spannung U_Z', type: 'slider', scale: 'lin', min: 2.4, max: 30, step: 0.1, unit: 'V', unitKind: 'V', value: 5.1, gruppe: 'bauteile', sicht: 'kennlinie', visible: s => s.typ === 'z',
+    { key: 'uz', label: 'Z-Spannung U_Z', type: 'slider', scale: 'lin', min: 2.4, max: 30, step: 0.1, unit: 'V', unitKind: 'V', value: 5.1, gruppe: 'bauteile', sicht: 'kennlinie', visible: s => s.typ === 'z', grau: 'Ohne Wirkung: gilt nur für die Z-Diode.',
       help: 'Durchbruchspannung der Z-Diode in Sperrrichtung. Die Voreinstellung ist ' + LT('uz_std') + ' (F20). Erst über dieser Spannung fließt ein Strom in Sperrrichtung.' },
-    { key: 'rlast', label: 'Lastwiderstand R_L (oberer Anschlag = Leerlauf)', type: 'slider', scale: 'log', min: 10, max: 1e6, step: 1, unit: 'Ω', unitKind: 'Ω', value: 1e6, gruppe: 'last', sicht: 'formel', visible: s => s.typ === 'z',
+    { key: 'rlast', label: 'Lastwiderstand R_L (oberer Anschlag = Leerlauf)', type: 'slider', scale: 'log', min: 10, max: 1e6, step: 1, unit: 'Ω', unitKind: 'Ω', value: 1e6, gruppe: 'last', sicht: 'formel', visible: s => s.typ === 'z', grau: 'Ohne Wirkung: gilt nur für die Z-Diode.',
       help: 'Last parallel zur Z-Diode. Am oberen Anschlag (1 MΩ) gilt die Anlage als unbelastet. Mit Last teilt sich der Strom: I_q = I_Z + I_L.' },
     { key: 'temp', label: 'Temperatur', type: 'slider', scale: 'lin', min: -20, max: 120, step: 1, unit: '°C', unitKind: '°C', value: 27, gruppe: 'quelle', sicht: 'kennlinie',
       help: 'Temperatur des Bauteils. Die Flussspannung sinkt mit steigender Temperatur (' + LT('tk_uf') + ', F3); bezogen auf ' + LT('temp_ref') + '. Die Z-Diode im Durchbruch bleibt in diesem Modell unverändert.' },
@@ -64,6 +64,9 @@
     { id: 'led-24v', name: 'LED an 24 V',
       info: K(c => { const r = c.diode.operating({ typ: 'led_rot', modell: 'konstant', uq: 24, rv: 3300 }); return 'Übungsschaltung: LED mit U_F = ' + val(r.uf, 'V') + ' an 24 V mit 3,3 kΩ ergibt I = ' + val(r.id * 1000, 'mA') + '.'; }),
       controls: { typ: 'led_rot', modell: 'konstant', uq: 24, rv: 3300 } },
+    { id: 'ziel-20ma', name: 'Aufgabe: 20 mA einstellen (Silizium-Diode)',
+      info: 'Aufgabe: Stelle den Diodenstrom auf 20 mA ein. Ziehe dazu den Arbeitspunkt auf der Kennlinie oder verändere U_q oder R_V. Die Ampel zeigt, wann die Vorgabe erreicht ist.',
+      controls: { typ: 'si', modell: 'kennlinie', uq: 5, rv: 1000, ziel: 0.02 } },
     { id: 'si-1k', name: 'Silizium-Diode 5 V mit 1 kΩ',
       info: K(c => { const r = c.diode.operating({ typ: 'si', modell: 'kennlinie', uq: 5, rv: 1000 }); return 'Kennlinienmodell: U_D = ' + val(r.ud, 'V') + ', I = ' + val(r.id * 1000, 'mA') + ', r_d = ' + val(r.rd, 'Ω') + '.'; }),
       controls: { typ: 'si', modell: 'kennlinie', uq: 5, rv: 1000 } },
@@ -200,15 +203,22 @@
 
     // ---- Kennlinie ----
     function lin(a, b, n) { const o = []; for (let k = 0; k < n; k++) o.push(a + (b - a) * k / (n - 1)); return o; }
+    /* Achsenbereich; beim Ziehen des Arbeitspunkts eingefroren, sonst wandern die Achsen mit dem Punkt mit */
+    let frz = null, frzT = 0;
     function ranges(r, ctl) {
+      if (frz && Date.now() - frzT < 1500) return frz;
+      frz = null; return rangesRaw(r, ctl);
+    }
+    function rangesRaw(r, ctl) {
       const z = ctl.typ === 'z';
       const ymaxA = Math.abs(r.istI) > 1e-6 ? Math.abs(r.istI) * 1.7 : clamp(Math.abs(r.uqEff) / Math.max(r.cfg.rv, 1), 1e-3, 0.02);
       let x0 = 0, x1;
       if (r.ud < 0) { x0 = r.ud * 1.2; x1 = z ? 1 : 1; } else x1 = Math.max(r.ud * 1.35, z ? ctl.uz * 1.3 : 0.5);
       if (r.fl.offen) { x0 = Math.min(0, r.ud * 1.1); x1 = Math.max(Math.abs(r.ud) * 1.1, 1); if (ctl.typ === 'z') x1 = Math.max(x1, ctl.uz * 1.3); }
       if (!(x1 > x0)) x1 = x0 + 1;
-      return { x0, x1, y1: ymaxA * 1000 };
+      return { x0, x1, y1: Math.max(ymaxA * 1000, ctl.ziel > 0 ? ctl.ziel * 1150 : 0) };
     }
+    const lay = {};
     function curves(r, ctl) {
       if (!r.ok) return [];
       const rg = ranges(r, ctl), cfgC = Object.assign({}, r.cfg);
@@ -251,6 +261,8 @@
       }
       const cvo = { id: 'kennlinie', title: 'Kennlinie mit Arbeitspunkt', xLabel: 'Spannung U_D', xUnit: 'V', xScale: 'lin', yLabel: 'Strom I_D', yUnit: 'mA', series,
         marker: { x: r.ud, y: r.id * 1000, label: 'Arbeitspunkt: ' + val(r.ud, 'V') + ' | ' + val(r.id * 1000, 'mA') }, xRange: [rg.x0, rg.x1], yRange: [-rg.y1 * 0.04, rg.y1] };
+      if (ctl.ziel > 0) cvo.target = { y: ctl.ziel * 1000, name: 'Ziel', ok: !!(r.istI > 0 && !r.ueberlast && B.devAmpel(Math.abs(r.istI - ctl.ziel) / ctl.ziel * 100, CORE) === 'gruen') };
+      cvo.layoutOut = lay; lay.pts = main;
       if (isLed(ctl.typ)) cvo.limit = { y: lim('led_imax') * 1000, name: 'I_max', sym: false };
       return [cvo];
     }
@@ -271,10 +283,21 @@
         const lw = Math.round(R0.w * 0.52) - gap / 2, rw = R0.w - lw - gap, sh = Math.round(R0.h * 0.56);
         kR = { x: R0.x, y: R0.y, w: lw, h: R0.h }; sR = { x: R0.x + lw + gap, y: R0.y, w: rw, h: sh - gap / 2 }; fR = { x: R0.x + lw + gap, y: R0.y + sh + gap / 2, w: rw, h: R0.h - sh - gap / 2 };
       } else {
-        const h1 = Math.round(R0.h * 0.4), h2 = Math.round(R0.h * 0.32);
+        /* schmal: das Schaltbild braucht mindestens 110 px Höhe (ANA_DRAW.schematic), sonst nur Platzhalter; Kennlinie bekommt den meisten Platz */
+        const h1 = Math.max(Math.round(R0.h * 0.44), 138), h2 = Math.max(Math.round(R0.h * 0.34), 120);
         kR = { x: R0.x, y: R0.y, w: R0.w, h: h1 - gap }; sR = { x: R0.x, y: R0.y + h1, w: R0.w, h: h2 - gap }; fR = { x: R0.x, y: R0.y + h1 + h2, w: R0.w, h: R0.h - h1 - h2 };
       }
+      lay.cw = w; lay.ch = h; lay.pl = null;
+      /* Handy-Ansicht: Felder melden (Umschalter der Oberfläche) */ if (sc.pan && !wide) sc.pan([['Schaltung', sR], ['Kennlinie', kR], ['Formel', fR]]);
       const cs = curves(r, ctl);
+      /* schmal: ohne Titel, ohne Vergleichsdioden und Tangente, kurze Namen: die Legende passt in eine Zeile und die Achsen mit Zahlen bleiben sichtbar */
+      if (!wide && cs[0]) {
+        const c0 = Object.assign({}, cs[0]);
+        c0.title = '';
+        c0.series = c0.series.filter(s0 => !s0.ghost && s0.kind !== 'tangent').map(s0 => Object.assign({}, s0, { name: s0.kind === 'line' ? 'R_V-Gerade' : 'Kennlinie' }));
+        if (c0.marker) c0.marker = Object.assign({}, c0.marker, { label: val(r.ud, 'V') + ' | ' + val(r.id * 1000, 'mA') });
+        cs[0] = c0;
+      }
       if (cs[0] && !sc.view('curve', kR, cs[0], {})) { sc.gfx.panel(ctx, kR.x, kR.y, kR.w, kR.h, pal.panel, pal.line, 6); sc.gfx.text(ctx, 'Kennlinie nicht darstellbar', kR.x + 8, kR.y + 22, { size: 12, color: pal.mute, max: kR.w - 16 }); }
       const verd = view.verdeckt, f = ctl.fehler;
       const data = { kind: 'diode', typ: ctl.typ, values: { uq: val(ctl.uq, 'V'), rv: engF(ctl.rv, 'Ω') }, labels: labelsFor(r, ctl) };
@@ -309,8 +332,33 @@
       return { valid: true, zustand: r.zustand, typ: r.typ, ud: r.ud, id: r.id, iz: r.iz, ur: r.ur, pr: r.pr, pd: r.pd, rd: isNum(r.rd) ? r.rd : 0, us: isNum(r.us) ? r.us : 0, ilast: r.ilast, iq: r.iq, ueberlast: !!r.ueberlast,
         istI: r.istI, rvSoll: isNum(r.rvSoll) ? r.rvSoll : 0, sweep: sweeping, sweepP, uqEff: r.uqEff, uf: isNum(r.uf) ? r.uf : 0 };
     }
+    /* Arbeitspunkt ziehen: der Zeiger waehlt einen Punkt auf der Kennlinie; U_q (bei Bedarf R_V) wird so gesetzt, dass die Widerstandsgerade durch ihn geht */
+    function hit(px, py, w, h, view) {
+      const r = view && view.res, ctl = view && view.ctl;
+      if (!r || !r.ok || sweeping || !ctl || ctl.fehler !== 'keiner' || !lay.pl || !lay.cw || !lay.pts || lay.pts.length < 2) return null;
+      const qx = px * lay.cw / w, qy = py * lay.ch / h, pl = lay.pl, dx = lay.x1 - lay.x0, dy = lay.y1 - lay.y0;
+      if (!(dx > 0) || !(dy > 0)) return null;
+      const active = !!(frz && Date.now() - frzT < 1500);
+      if (qx < pl.x - 14 || qx > pl.x + pl.w + 14 || qy < pl.y - 14 || qy > pl.y + pl.h + 14) return null;
+      let best = null, bd = Infinity;
+      lay.pts.forEach(p => {
+        if (!(p[0] > 0.05) || !(p[1] > 0.0005)) return;
+        const X = pl.x + (p[0] - lay.x0) / dx * pl.w, Y = pl.y + pl.h - (p[1] - lay.y0) / dy * pl.h, d = Math.hypot(X - qx, Y - qy);
+        if (d < bd) { bd = d; best = p; }
+      });
+      if (!best || (!active && bd > 36)) return null;
+      const U = best[0], I = best[1] / 1000, il = ctl.typ === 'z' && ctl.rlast < 1e6 ? U / ctl.rlast : 0, itot = I + il;
+      let uq = U + ctl.rv * itot, rv = ctl.rv;
+      if (uq > 30) { uq = 30; rv = clamp((30 - U) / itot, 1, 1e6); }
+      if (!(uq >= 0.1)) return null;
+      if (!active) { frz = rangesRaw(r, ctl); }
+      frzT = Date.now();
+      const set = { uq: Math.round(uq * 100) / 100 };
+      if (rv !== ctl.rv) set.rv = Math.round(rv * 10) / 10;
+      return { key: 'uq', set };
+    }
     return {
-      compute, meters, assess, diag, befund, curves, state, draw,
+      compute, meters, assess, diag, befund, curves, state, draw, hit,
       phaseHz: () => 0,
       fire() {
         if (sweeping) { sweeping = false; sweepP = 1; P0.say('Spannungsdurchlauf abgebrochen.', 'info'); P0.bump(); return true; }

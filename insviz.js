@@ -111,18 +111,19 @@
 .iz-hi{fill:var(--hi);font:700 12.5px system-ui,sans-serif}.iz-ok{fill:var(--fg);font:700 12.5px system-ui,sans-serif}.iz-bad{fill:var(--danger);font:700 12.5px system-ui,sans-serif}.iz-wt{fill:var(--panel);font:700 12.5px system-ui,sans-serif}
 .iz-fig{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}.iz-fig svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}
 .iz-fig svg text{-webkit-user-select:none;user-select:none}
+.iz-tub{overflow:visible}
 .iz-c input[type=range]{width:100%;min-height:44px;margin:0;accent-color:var(--accent-bg)}
-.iz-c label.iz-l{display:block;font-size:12.5px;color:var(--mute);margin:2px 0}
+.iz-c label.iz-l{display:block;font-size:14px;color:var(--mute);margin:2px 0}
 .iz-ph{border-left:4px solid var(--accent);background:var(--bg);border-radius:0 10px 10px 0;padding:8px 12px;font-size:14px;line-height:1.45;margin:6px 0}
 .iz-ph b{display:block;margin-bottom:2px}
-.iz-note{font-size:13px;color:var(--mute);line-height:1.45;margin:6px 0 0}
+.iz-note{font-size:14px;color:var(--mute);line-height:1.45;margin:6px 0 0}
 `;
   const ST = { t: 8 };
   function injectCss() { if (document.getElementById('insviz-css')) return; const st = document.createElement('style'); st.id = 'insviz-css'; st.textContent = CSS; document.head.appendChild(st); }
   function tubCard(view) {
     if (view.querySelector('.iz-tub') || !view.querySelector('.card')) return;
     const card = document.createElement('div'); card.className = 'card pl iz-c iz-tub';
-    card.innerHTML = '<h4>Badewannenkurve: Wann fallen Teile aus?</h4><p class="hint2" style="margin:0 0 6px">Die Ausfallrate eines Bauteils verändert sich über seine Lebensdauer. Verschiebe den Regler und beobachte die Phase. Die Kurve ist qualitativ gezeichnet, es gibt keine Zahlenwerte.</p><label class="iz-l" for="izT">Betriebszeit: von der Inbetriebnahme bis zum Ende der Nutzungsdauer</label><input type="range" id="izT" min="0" max="100" step="1" value="' + ST.t + '" aria-label="Betriebszeit"><div class="iz-fig" data-izf></div><div class="iz-ph" data-izp></div><p class="iz-note">Gestrichelt: die drei Anteile (Früh-, Zufalls- und Verschleißausfälle). Die dicke Linie ist ihre Summe und sieht aus wie eine Badewanne. Das Bild ist ein Modell, echte Bauteile weichen ab.</p>';
+    card.innerHTML = '<h4>Badewannenkurve: Wann fallen Teile aus?</h4><p class="hint2" style="margin:0 0 6px">Die Ausfallrate eines Bauteils verändert sich über seine Lebensdauer. Verschiebe den Regler und beobachte die Phase. Die Kurve ist qualitativ gezeichnet, es gibt keine Zahlenwerte.</p><div class="iz-fig" data-izf data-lr-buehne="verh"></div><label class="iz-l" for="izT">Betriebszeit: von der Inbetriebnahme bis zum Ende der Nutzungsdauer</label><input type="range" id="izT" min="0" max="100" step="1" value="' + ST.t + '" aria-label="Betriebszeit"><div class="iz-ph" data-izp></div><p class="iz-note">Gestrichelt: die drei Anteile (Früh-, Zufalls- und Verschleißausfälle). Die dicke Linie ist ihre Summe und sieht aus wie eine Badewanne. Das Bild ist ein Modell, echte Bauteile weichen ab.</p>';
     const paint = () => { const r = tubSvg({ t: ST.t }); card.querySelector('[data-izf]').innerHTML = r.svg; const p = card.querySelector('[data-izp]'); p.style.borderLeftColor = r.phase.col; p.innerHTML = '<b>' + esc(r.phase.name) + '</b>' + esc(r.phase.text) + '<br>' + esc(r.phase.mass); };
     card.querySelector('#izT').addEventListener('input', e => { ST.t = +e.target.value; paint(); }); paint();
     view.insertBefore(card, view.children[2] || null);

@@ -21,7 +21,7 @@
   /* side: 'S' | 'H' | '' (nichts hervorheben); amt: Zahl oder NaN */
   function tGlyph(x, y, nr, side, amt) {
     const k = nr ? C.konto(nr) : null, w = 140;
-    let s = k ? `<text x="${x + w / 2}" y="${y + 11}" text-anchor="middle" class="s11 b">${esc(k.nr)}</text><text x="${x + w / 2}" y="${y + 23}" text-anchor="middle" class="s10 m">${esc(cut(k.name, 24))}</text>`
+    let s = k ? `<text x="${x + w / 2}" y="${y + 11}" text-anchor="middle" class="s11 b">${esc(k.nr)}</text><text x="${x + w / 2}" y="${y + 23}" text-anchor="middle" class="s10 m">${esc(cut(k.name, 19))}</text>`
       : `<text x="${x + w / 2}" y="${y + 17}" text-anchor="middle" class="s11 m">Konto wählen</text>`;
     if (side === 'S') s += `<rect x="${x}" y="${y + 28}" width="${w / 2}" height="38" class="cS"/>`;
     if (side === 'H') s += `<rect x="${x + w / 2}" y="${y + 28}" width="${w / 2}" height="38" class="cH"/>`;
@@ -69,7 +69,7 @@
     const pan = (cx, ey, items, cls, lab, sum) => {
       const py2 = ey + 96, scale = 70 / mx; let st = `<path d="M${f1(cx)} ${f1(ey)}L${f1(cx - 55)} ${f1(py2)}M${f1(cx)} ${f1(ey)}L${f1(cx + 55)} ${f1(py2)}" class="sg"/><line x1="${f1(cx - 60)}" y1="${f1(py2)}" x2="${f1(cx + 60)}" y2="${f1(py2)}" class="pn"/>`;
       let yy = py2;
-      items.forEach(it => { const h = Math.max(13, it.v * scale); yy -= h; st += `<rect x="${f1(cx - 48)}" y="${f1(yy)}" width="96" height="${f1(h)}" class="c ${it.open ? 'cD' : cls}"/>`; if (h >= 13) st += `<text x="${f1(cx)}" y="${f1(yy + h / 2 + 3.5)}" text-anchor="middle" class="s9">${esc(cut(it.nr ? it.nr + ' ' + it.name : it.name, 17))}</text>`; });
+      items.forEach(it => { const h = Math.max(16, it.v * scale); yy -= h; st += `<rect x="${f1(cx - 48)}" y="${f1(yy)}" width="96" height="${f1(h)}" class="c ${it.open ? 'cD' : cls}"/>`; if (h >= 16) st += `<text x="${f1(cx)}" y="${f1(yy + h / 2 + 3.5)}" text-anchor="middle" class="s9">${esc(cut(it.nr ? it.nr + ' ' + it.name : it.name, 17))}</text>`; });
       return st + `<text x="${f1(cx)}" y="${f1(py2 + 18)}" text-anchor="middle" class="s11 b">${lab}</text><text x="${f1(cx)}" y="${f1(py2 + 31)}" text-anchor="middle" class="s11">${esc(C.eur(sum))}</text>`;
     };
     s += pan(lx, ly, L, 'cS', 'Aktiva' + (b.erg < 0 ? ' + Verlust' : ''), sl) + pan(rx, ry, R, 'cH', 'Passiva' + (b.erg > 0 ? ' + Gewinn' : ''), sr);
@@ -96,8 +96,8 @@
   /* ---------------------------------------------------------- Stil */
   const CSS = `
 .nv svg{display:block;width:100%;height:auto;max-width:560px;margin:4px auto 0;overflow:visible}
-.nv svg text{fill:var(--fg);font:11px system-ui,-apple-system,"Segoe UI",sans-serif}
-.nv svg .b{font-weight:700}.nv svg .m{fill:var(--mute)}.nv svg .s9{font-size:9.5px}.nv svg .s10{font-size:10px}.nv svg .s11{font-size:11px}.nv svg .s12{font-size:12px}
+.nv svg text{fill:var(--fg);font:12px system-ui,-apple-system,"Segoe UI",sans-serif}
+.nv svg .b{font-weight:700}.nv svg .m{fill:var(--mute)}.nv svg .s9{font-size:13px}.nv svg .s10{font-size:13.6px}.nv svg .s11{font-size:13.6px}.nv svg .s12{font-size:13.5px}
 .nv svg .tS{fill:var(--accent)}.nv svg .tH{fill:var(--hi)}.nv svg .tOk{fill:var(--ok);font-weight:700}.nv svg .tBad{fill:var(--danger);font-weight:700}
 .nv svg .c{stroke-width:1}
 .nv svg .cS{fill:var(--accent);fill-opacity:.22;stroke:none}.nv svg .cH{fill:var(--hi);fill-opacity:.22;stroke:none}
@@ -112,6 +112,7 @@
 .nv .nvc .chip.on{background:var(--accent-bg);border-color:var(--accent-bg);color:#fff}
 .nv .nvx{margin:8px 0 0;font-size:14px;line-height:1.45}
 .nv.nvbs{margin:4px 0 8px;padding:6px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+@media(max-width:699px){.nv.nvbs{margin:4px -14px 8px;padding:2px}.nvbs svg{max-width:none}#nvBook{overflow:auto}#nvBook>h4{display:none}}
 @media print{.nv{display:none!important}}`;
 
   /* Bilanz-Waage aus Journal und Anfangsbeständen (wie im Editor: nur gültige Anfangsbestände zählen) */
@@ -134,7 +135,7 @@
   const readEd = () => { try { return JSON.parse(localStorage.getItem('lm4.buc.ed') || '{}') || {}; } catch (e) { return {}; } };
   function card(view, id, title, idx) {
     let c = $(id);
-    if (!c || c.parentNode !== view) { c = document.createElement('div'); c.id = id; c.className = 'card pl nv'; c.innerHTML = '<h4></h4><div class="nvb"></div>'; const ref = idx != null ? view.children[idx] : null; ref ? view.insertBefore(c, ref) : view.appendChild(c); }
+    if (!c || c.parentNode !== view) { c = document.createElement('div'); c.id = id; c.className = 'card pl nv'; if (id === 'nvBook') c.setAttribute('data-lr-buehne', 'box'); c.innerHTML = '<h4></h4><div class="nvb"></div>'; const ref = idx != null ? view.children[idx] : null; ref ? view.insertBefore(c, ref) : view.appendChild(c); }
     c.firstChild.textContent = title; return c;
   }
   function watch(viewId, build) {
@@ -158,7 +159,7 @@
   watch('edView', v => {
     const ed = readEd(), J = Array.isArray(ed.j) ? ed.j.filter(b => b && Array.isArray(b.lines)) : [], D = draftLines(v), dHas = D.some(l => l.k);
     let pick = SEL.i; if (pick === 'auto' || (pick !== 'd' && !J[pick])) pick = dHas ? 'd' : J.length ? J.length - 1 : 'd';
-    const c = card(v, 'nvBook', 'Grafik: Buchungssatz mit T-Konten und Pfeilen', 2);
+    const c = card(v, 'nvBook', 'Grafik: Buchungssatz mit T-Konten und Pfeilen', 1);
     const lines = pick === 'd' ? D.filter(l => l.k || fin(l.b)) : J[pick].lines;
     const chips = `<div class="nvc" role="group" aria-label="Buchungssatz wählen"><button class="chip${pick === 'd' ? ' on' : ''}" data-nvb="d" aria-pressed="${pick === 'd'}">Entwurf</button>${J.map((_, i) => `<button class="chip${pick === i ? ' on' : ''}" data-nvb="${i}" aria-pressed="${pick === i}">${i + 1}</button>`).join('')}</div>`;
     show(c, (J.length ? chips : '') + (lines.length ? bookingSvg(lines) + '<p class="hint2">Der Betrag steht auf der Soll- (blau) bzw. Haben-Seite (orange) des Kontos. „Soll an Haben“: Die Soll-Konten werden belastet, die Haben-Konten ' + 'gutgeschrieben; beide Seiten sind gleich groß.</p>' : '<p class="hint2" style="margin:0">Wähle unten ein Konto, dann erscheint hier der Buchungssatz als Bild.</p>'));

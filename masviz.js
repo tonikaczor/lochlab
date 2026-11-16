@@ -130,7 +130,7 @@
     if (R1 > 22) body += arcArrow(cx1, cy, R1 * 0.4, true);
     if (R2 > 22) body += arcArrow(cx2, cy, R2 * 0.4, true);
     const n1 = o.n1;
-    body += T(cx1, Math.min(H - 8, cy + R1 + 16 + (kind === 'kette' ? 6 : 8)), 'n₁ = ' + f(n1, 0) + ' 1/min ↻', { s: 13, c: 'accent', w: 1, halo: 1 }) + T(cx2, Math.min(H - 8, cy + R2 + 16 + 8), 'n₂ = ' + f(n1 / i, n1 / i < 100 ? 1 : 0) + ' 1/min ↻', { s: 13, c: 'hi', w: 1, halo: 1 });
+    const clx = (x, t) => Math.max(t.length * 3.9 + 4, Math.min(W - t.length * 3.9 - 4, x)); body += T(clx(cx1, 'n₁ = ' + f(n1, 0) + ' 1/min ↻'), Math.min(H - 8, cy + R1 + 16 + (kind === 'kette' ? 6 : 8)), 'n₁ = ' + f(n1, 0) + ' 1/min ↻', { s: 13, c: 'accent', w: 1, halo: 1 }) + T(clx(cx2, 'n₂ = ' + f(n1 / i, n1 / i < 100 ? 1 : 0) + ' 1/min ↻'), Math.min(H - 8, cy + R2 + 16 + 8), 'n₂ = ' + f(n1 / i, n1 / i < 100 ? 1 : 0) + ' 1/min ↻', { s: 13, c: 'hi', w: 1, halo: 1 });
     body += T(cx1, cy + 4, ch ? 'z = ' + o.z1 : 'd₁ ' + f(o.d1, 0), { s: 12, halo: 1 }) + T(cx2, cy + 4, ch ? 'z = ' + o.z2 : 'd₂ ' + f(o.d2, 0), { s: 12, halo: 1 });
     return svg(W, H, (ch ? 'Kettentrieb' : kind === 'zahn' ? 'Zahnriementrieb' : 'Keilriementrieb') + ' mit zwei Rädern, Übersetzung ' + f(i, 2), body, ` data-spd="${spd}"`);
   }

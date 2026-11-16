@@ -2,7 +2,8 @@
 /* Tonfunk Lab: Suche auf der Startseite (SPEC-STARTSEITE-FABLE.md, Abschnitt 6.3). Offline, ohne Bibliothek.
    Indexiert Lab-Karten (aus dem DOM, dazu die Stichwörter in data-such), Reiter in Labs (statische Liste REITER), alle Lernhefte (statische Liste HEFTE, aus lernen.html abgeleitet)
    und alle Aufgaben (AUFGABEN aus aufgaben.js).
-   Labs werden in den Bereichen gefiltert (.card.srch-out), darunter steht eine Trefferliste mit Heften und Aufgaben.
+   Seit dem Umbau in fünf Ansichten (S1) steht die Suche oben in der Ansicht "Labs". Die Trefferliste nennt zuerst die Labs (S-21), dann Lab-Reiter, Hefte, Wiki und Aufgaben;
+   das Raster dahinter wird nicht mehr gefiltert. Die Liste steht im Seitenfluss (kein eigener Rollbereich, S-22).
    Tastatur: / oder Strg+K fokussiert, Esc leert, Pfeil auf/ab wählt, Enter öffnet. Die reine Suchlogik (norm, fold, search) wird in Node getestet.
    W12a Wiki: Treffer aus dem Wiki (Bauteile, Geräte, Begriffe, höchstens 2 Regler/Messwerte) als Gruppe "Im Wiki", Link wiki.html#e=<id>. Die Wiki-Skripte
    (wiki.js, wiki-suche.js, wiki-index.js) werden erst beim Fokus ins Suchfeld nachgeladen, der Regler-Index (wiki-index-regler.js) erst nach dem ersten Tastendruck;
@@ -64,7 +65,7 @@
   const norm = s => toStr(s).toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss');
   const fold = s => toStr(s).toLowerCase().replace(/ß/g, 'ss').normalize('NFD').replace(/[̀-ͯ]/g, '');
   const toks = s => toStr(s).trim().split(/\s+/).filter(Boolean);
-  const MIN = 2, MAX_HEFT = 6, MAX_AUFG = 10, MAX_ORT = 4, MAX_WIKI = 4, MAX_WIKI_REGLER = 2;
+  const MIN = 2, MAX_LAB = 8, MAX_HEFT = 6, MAX_AUFG = 10, MAX_ORT = 4, MAX_WIKI = 4, MAX_WIKI_REGLER = 2;
   // Wiki-Treffer ({id, kat, titel, labs}) in Eintraege (Bauteile, Geraete, Begriffe ...) und Regler/Messwerte trennen; Regler hoechstens 2, nie vor den Eintraegen
   const isReg = e => e && (e.kat === 'regler' || e.kat === 'messwert');
   function wikiSplit(hits) {
@@ -149,15 +150,15 @@
   function update() {
     init();
     const q = input.value; lastQ = q; clr.hidden = !q;
-    const r = search(idx, q), set = new Set(r.labs.map(e => e.el));
+    const r = search(idx, q);
     const wh = r.active ? wikiHits(q) : { wiki: [], reg: [] }, wl = wh.wiki.concat(wh.reg); r.n.wiki = wl.length;
-    cards.forEach(c => c.classList.toggle('srch-out', r.active && !set.has(c)));
-    const keys = new Set(); r.labs.forEach(e => { const g = root.HomeGroups && root.HomeGroups.groupOf(e.el); if (g) keys.add(g); });
-    if (root.HomeGroups) root.HomeGroups.setSearch(r.active ? keys : null);
     doc.documentElement.classList.toggle('srch-on', r.active);
     if (!r.active) { res.innerHTML = ''; showRes(false); live.textContent = ''; return; }
     let h = '', n = 0;
     const row = (e, ty, meta) => '<a role="option" id="srchO' + (n++) + '" href="' + esc(e.href) + '" tabindex="-1" aria-selected="false"><span class="ty">' + ty + '</span><span class="nm">' + esc(e.name) + '</span>' + (meta ? '<span class="sb">' + esc(meta) + '</span>' : '') + '</a>';
+    /* Labs zuerst (S-21): Ziel ist der Hauptknopf der Karte; Labs, die nicht zum gewählten Beruf gehören, tragen einen Hinweis */
+    const labRows = r.labs.filter(e => e.el && !e.el.classList.contains('lb-nie')).slice(0, MAX_LAB).map(e => { const a = e.el.querySelector('.btns a.btn.pri') || e.el.querySelector('.btns a'); return row({ href: a ? a.getAttribute('href') : '#', name: e.name.trim() }, 'Lab', e.el.classList.contains('be-out') ? 'gehört zu einem anderen Beruf' : ''); });
+    if (labRows.length) h += '<div role="group" aria-label="Labs"><div class="ghd" aria-hidden="true">Labs</div>' + labRows.join('') + '</div>';
     if (r.orte.length) h += '<div role="group" aria-label="In den Labs"><div class="ghd" aria-hidden="true">In den Labs</div>' + r.orte.map(e => row(e, 'Reiter', 'Reiter „' + e.reiter + '“ in der Reiterleiste oben im ' + e.lab)).join('') + '</div>';
     if (r.hefte.length) h += '<div role="group" aria-label="Lernhefte"><div class="ghd" aria-hidden="true">Lernhefte</div>' + r.hefte.map(e => row(e, e.ty || 'Heft', '')).join('') + '</div>';
     // W9 (Design-Review P2-8): Wiki-Treffer zweizeilig wie im Wiki selbst (Icon, Titel mit Indizes, Pille Kategorie, Lab darunter) + Zeile "Alle Wiki-Treffer"
@@ -166,8 +167,8 @@
     if (wl.length) h += '<div role="group" aria-label="Im Wiki"><div class="ghd" aria-hidden="true">Im Wiki</div>' + wl.map(wrow).join('') + '<a role="option" class="wkr more" id="srchO' + (n++) + '" href="wiki.html#q=' + encodeURIComponent(q.trim()) + '" tabindex="-1" aria-selected="false"><span class="nm">Alle Wiki-Treffer für „' + esc(q.trim()) + '“ →</span></a></div>';
     if (r.aufg.length) h += '<div role="group" aria-label="Aufgaben"><div class="ghd" aria-hidden="true">Aufgaben</div>' + r.aufg.map(e => row(e, 'Aufgabe', e.lab + ' · ' + e.thema)).join('') + '</div>';
     const ct = countText(r.n);
-    if (!r.n.ort && !r.n.heft && !r.n.aufg && !wl.length) h = '<p class="none">' + (r.n.lab ? esc(ct) + '. Die passenden Labs stehen unten in den Bereichen.' : 'Nichts gefunden – Begriff kürzer fassen.') + '</p>';
-    else h = '<p class="cnt" aria-hidden="true">' + esc(ct) + (r.n.heft > r.hefte.length || r.n.aufg > r.aufg.length ? ' (die besten stehen hier)' : '') + '</p>' + h;
+    if (!labRows.length && !r.n.ort && !r.n.heft && !r.n.aufg && !wl.length) h = '<p class="none">Nichts gefunden. Versuch einen kürzeren Begriff.</p>';
+    else h = '<p class="cnt" aria-hidden="true">' + esc(ct) + (r.n.lab > labRows.length || r.n.heft > r.hefte.length || r.n.aufg > r.aufg.length ? ' (die besten stehen hier)' : '') + '</p>' + h;
     res.innerHTML = h; showRes(true); active = -1; say(ct);
   }
   function clear() { input.value = ''; update(); }
@@ -181,7 +182,7 @@
     else if (e.key === 'Enter') {
       e.preventDefault(); const o = opts();
       if (active >= 0 && o[active]) go(o[active]); else if (o.length) go(o[0]);
-      else { const c = cards.find(x => !x.classList.contains('srch-out') && !x.classList.contains('hm-hid') && x.offsetParent !== null), b = c && c.querySelector('.btns a'); if (b) b.focus(); }
+      else { const c = cards.find(x => !x.classList.contains('hm-hid') && x.offsetParent !== null), b = c && c.querySelector('.btns a'); if (b) b.focus(); }
     } else if (e.key === 'Escape') { if (input.value || !res.hidden) { e.preventDefault(); clear(); } }
   });
   clr.addEventListener('click', () => { clear(); input.focus(); });

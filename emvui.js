@@ -190,7 +190,8 @@
   }
   root.EMV_KEYS = KEYS;
 
-  let drawErr = false, curT = 0, taskRes = null; const taskAns = {};
+  let drawErr = false, curT = 0, taskRes = null; const taskAns = {}, taskTry = {};
+  const isInRow = l => /^Die Eingaben sind gültig/.test((l && l.text) || '');   /* Pflichtzeile ohne Lerninhalt: zählt nicht in die Prozentzahl */
   const ctlsOf = () => (S.rig ? (S.rig.controls || (defOf(S.rigId) || {}).controls || []) : []);
   const metersOf = () => (S.rig ? (S.rig.meters || (defOf(S.rigId) || {}).meters || []) : []);
   const ctlDef = (key, list) => (list || ctlsOf()).find(c => c.key === key);
@@ -555,7 +556,11 @@
         if (x.disp == null || force) x.disp = t; else x.disp += (t - x.disp) * k;
         const rg = (x.m.max - x.m.min) || 1;
         if (force || x.drawn == null || Math.abs(x.disp - x.drawn) > rg * 0.0015 || Math.abs(t - x.disp) > rg * 0.0015) { x.drawn = x.disp; drawGauge(x, x.disp); }
-      } else { const txt = fnum(t, x.m.digits == null ? 1 : x.m.digits); if (txt !== x.txt) { x.txt = txt; x.v.textContent = txt; } }
+      } else {
+        const gross = x.m.unit === 'mV' && Math.abs(t) >= 1000;   // ab 1000 mV als Volt mit 2 Stellen (B-emv-02: sonst "1681,591 mV" zu breit)
+        const txt = gross ? fnum(t / 1000, 2) : fnum(t, x.m.digits == null ? 1 : x.m.digits);
+        if (txt !== x.txt) { x.txt = txt; x.v.textContent = txt; const sm = x.v.nextElementSibling; if (sm) sm.textContent = gross ? 'V' : (x.m.unit || ''); }
+      }
       const wn = isWarn(x.m, t); if (wn !== x.warn) { x.warn = wn; x.el.classList.toggle('warn', wn); }
     });
   }
@@ -573,7 +578,11 @@
     const ws = worldSz(), narrow = (cvw.parentElement ? cvw.parentElement.clientWidth : 1000) < 600; let ar = narrow ? NARROW_AR : ws.w + '/' + ws.h, mh = '';
     /* Gestapelte Szenen (Bildbreite unter 940 px, siehe split in emvrig-kit.js): drei Felder übereinander brauchen Höhe, sonst bleiben
        Querschnitt, Oszilloskop und Bilanz leer, weil ein Feld unter seiner Mindestgröße nichts zeichnet. Die 56-vh-Grenze gilt dann nicht. */
-    const cwid = cvw.clientWidth; if (STACK_TALL[S.rigId] && cwid > 0 && cwid < 940) { ar = cwid + '/' + STACK_TALL[S.rigId]; mh = 'none'; }
+    const cwid = cvw.clientWidth;
+    /* Mit dem Rahmen ist die Grafik am Handy fest (sticky) und auf einen Teil der Bildschirmhöhe begrenzt: dann zeichnen sich die Szenen kompakt in genau diese Höhe */
+    let cap = 0; if (narrow && document.documentElement.classList.contains('lr-on') && cvw.hasAttribute('data-lr-buehne')) { try { cap = parseFloat(getComputedStyle(cvw).maxHeight) || 0; } catch (e) { cap = 0; } }
+    if (cap > 0 && cwid > 0 && STACK_TALL[S.rigId]) { ar = cwid + '/' + Math.round(cap); }
+    else if (STACK_TALL[S.rigId] && cwid > 0 && cwid < 940) { ar = cwid + '/' + STACK_TALL[S.rigId]; mh = 'none'; }
     if (cvw.style.aspectRatio !== ar) cvw.style.aspectRatio = ar; if (cvw.style.maxHeight !== mh) cvw.style.maxHeight = mh;
     const w = cvw.clientWidth, h = cvw.clientHeight; if (!w || !h) return;
     dpr = Math.min(2, root.devicePixelRatio || 1); const W = Math.round(w * dpr), H = Math.round(h * dpr);
@@ -1180,7 +1189,7 @@
   const choicesOf = t => { let f = t.choices; if (typeof f === 'function') { try { f = f(S.taskStart); } catch (e) { f = []; } } return Array.isArray(f) ? f : []; };
   async function startTask(id) {
     const t = (TK() || []).find(x => x.id === id); if (!t) return;
-    const had = stash(); taskRes = null;
+    const had = stash(); taskRes = null; taskTry[id] = 0;
     if (root.Auswertung) root.Auswertung.hintReset(id);
     let o; try { o = typeof t.start === 'function' ? t.start() : {}; } catch (e) { console.error(e); toast('Die Startvorlage der Aufgabe fehlt'); return; }
     S.task = null; applyTaskState(t, o); S.task = { id }; S.name = t.title; S.id = null; S.dirty = false; delete taskAns[id];
@@ -1202,11 +1211,14 @@
     const ans = collectAnswer(t); let lines;
     try { lines = await (R.run ? R.run(t, ans) : t.check(ans)); } catch (e) { console.error(e); lines = [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden: ' + (e && e.message || e), why: '' }]; }
     S.readonly = false; lines = Array.isArray(lines) ? lines : [];
-    const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    const iRow = lines.find(isInRow), rest = lines.filter(l => !isInRow(l));
+    const pct = iRow && !iRow.ok ? 0 : rest.length ? Math.round(100 * rest.filter(l => l.ok).length / rest.length) : (iRow ? 100 : 0);
+    taskTry[t.id] = pct === 100 ? 0 : (taskTry[t.id] || 0) + 1;
+    taskRes = { id: t.id, lines, pct, n: taskTry[t.id] }; markDone(t.id, pct); updateTaskBadge();
     const F = root.LochFX; if (F) try { if (pct === 100) { F.pass(100); if (F.isFun && F.isFun()) F.confetti(false); } else F.pass(pct); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
-    toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    if (!document.documentElement.classList.contains('lr-on')) toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    setTimeout(() => { const e = document.querySelector('#taskView .lr-fb'); if (e && root.LabRahmen) root.LabRahmen.zeig(e); }, 60);
   }
   /* Auto-Weg: Musterlösung laden und abspielen (zählt als Hilfe Stufe 3) */
   function autoWay(t) {
@@ -1242,13 +1254,21 @@
       const r = taskRes && taskRes.id === t.id ? taskRes : null, ask2 = t.ask ? (typeof t.ask === 'string' ? { label: t.ask } : t.ask) : null, ans = taskAns[t.id] || {}, fl = fieldsOf(t), cl = choicesOf(t);
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat || '')}</h4><div class="big">${esc(t.title)}</div><div class="lv">${'●'.repeat(t.level || 1)}${'○'.repeat(3 - (t.level || 1))}</div>
         <p style="margin:8px 0;white-space:pre-line">${esc(t.text)}</p>${tableHtml(t.table)}<p class="hint2" style="margin-top:0">Prüfstand: ${ic(t)} ${esc(rn(t))}</p>
-        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}"></label>` : ''}
+        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}"></label>${ask2.unit ? `<p class="lr-hinweis">Antwort in ${esc(ask2.unit)}. Die Toleranz nennt die Prüfzeile nach dem Klick.</p>` : ''}` : ''}
         ${fl.length ? `<div class="sheetbox"><div class="gh" style="padding-top:0">Antwortblatt</div>${fl.map(f => `<label class="f"><span>${esc(f.question || f.label || f.key)}${f.unit ? ' in ' + esc(f.unit) : ''}</span><input data-fk="${esc(f.key)}" inputmode="decimal" autocomplete="off" value="${esc((ans.f || {})[f.key] || '')}"></label>`).join('')}</div>` : ''}
         ${cl.map(c => `<fieldset class="choice"><legend>${esc(c.q || c.label || c.key)}</legend>${choiceOpts(c).map((o, i) => `<label class="opt"><input type="radio" name="ch-${esc(c.key)}" data-ck="${esc(c.key)}" data-ci="${i}"${(ans.c || {})[c.key] !== undefined && String((ans.c || {})[c.key]) === String(o.value) ? ' checked' : ''}> ${esc(o.label)}</label>`).join('')}</fieldset>`).join('')}
         ${t.clicks ? `<p class="hint2">Diese Aufgabe verlangt, dass du Stellen im Bild antippst (bisher ${(S.clicks || []).length} Antipper). Das geht im Tab „Layout-Fälle“.</p>` : ''}
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="rig">${t.clicks || t.rig === 'layout' ? 'Zu den Layout-Fällen' : 'Zum Prüfstand'}</button>${typeof t.sol === 'function' ? '<button class="btn" data-ta="auto">▶ Auto-Weg</button>' : ''}<button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
-      if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      if (r) {
+        const shown = r.lines.filter(l => !(l.ok && isInRow(l))), fcls = r.pct === 100 ? 'ok' : r.n >= 2 ? 'loes' : 'tipp';
+        const head = r.pct === 100 ? '<strong>Richtig.</strong> 🎉 Geschafft.' : r.n >= 2 ? '<strong>Lösung.</strong> ' + r.pct + ' % richtig, das war noch offen. Der Grund steht bei jedem Punkt.' : '<strong>Noch nicht.</strong> ' + r.pct + ' % richtig. Schau auf die roten Punkte oder hole mit 💡 einen Tipp. Du hast einen zweiten Versuch.';
+        let sv = ''; if (r.n >= 2 && r.pct < 100 && typeof t.sol === 'function') { try { const so = t.sol(); if (so && fin(so.value)) sv = '<p>Richtiges Ergebnis: <strong>' + esc(fauto(so.value)) + (ask2 && ask2.unit ? ' ' + esc(ask2.unit) : '') + '</strong></p>'; } catch (e) {} }
+        const rigBtn = r.pct < 100 && shown.some(l => !l.ok) ? '<p class="lr-hinweis">Manche Punkte prüfen den Prüfstand: Stelle dort ein, was die roten Zeilen verlangen, und prüfe noch einmal.</p><p><button class="btn" data-ta="rig">' + (t && (t.clicks || t.rig === 'layout') ? 'Zu den Layout-Fällen' : 'Zum Prüfstand') + '</button>' + (r.n >= 2 && typeof t.sol === 'function' ? ' <button class="btn" data-ta="auto">▶ Musterlösung abspielen</button>' : '') + '</p>' : '';
+        const fb = `<div class="lr-fb ${fcls}" role="status"><p>${head}</p>${sv}<ul class="tl">${shown.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? (r.n >= 2 ? `<br><small>${esc(l.why)}</small>` : `<details><summary>Warum?</summary>${esc(l.why)}</details>`) : ''}</li>`).join('')}</ul>${rigBtn}</div>`;
+        const k = h.lastIndexOf('<div class="btns"><button class="btn pri" data-ta="check">');
+        h = k >= 0 ? h.slice(0, k) + fb + h.slice(k) : h + fb;
+      }
       h += '</div>';
     }
     const cats = []; A.forEach(x => { if (!cats.includes(x.cat)) cats.push(x.cat); });
@@ -1365,7 +1385,7 @@
   function updateTitle() {
     const nm = rigName(S.rigId || ORDER[0]);
     $('#title').innerHTML = esc(S.name) + (S.dirty ? ' •' : '') + '\n<small>' + esc(nm) + (S.attrappe ? ' (Notfall-Attrappe)' : '') + (S.running ? ' · läuft' : '') + '</small>';
-    document.title = 'EMV-Lab: ' + S.name;
+    document.title = 'EMV-Lab: ' + (S.name === 'Neuer Versuch' ? nm : S.name + ' (' + nm + ')');
     const tag = $('#cvTag'); if (tag) { tag.textContent = S.running ? '' : '⏸ Pause'; tag.style.display = S.running ? 'none' : ''; }
   }
   $('#title').onclick = async () => { const r = await ask('Name des Versuchs', [{ key: 'n', label: 'Name', type: 'text', value: S.name }]); if (r && r.n.trim()) { S.name = r.n.trim(); S.dirty = true; updateChrome(); saveCurSoon(); } };

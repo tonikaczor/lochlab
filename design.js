@@ -100,6 +100,7 @@
       if (!BR || !REG || !BR.vbLab || !Array.isArray(window.VB_INDEX) || !/lab\.html$|^(layout|schaltplan)\.html$/.test(file) || /[?&]verbund=/.test(location.search)) return;
       var key = Object.keys(REG).filter(function (k) { return REG[k].file === file && !REG[k].hub; })[0]; if (!key) return;
       var list = BR.vbLab(key, BR.cur()); if (!list.length) return;
+      if (document.documentElement.classList.contains('pr-lauf')) return;   // laufende Probeprüfung (pruefwerk.js): Projekthinweis gar nicht erst einblenden
       var hdr = document.querySelector('header'); if (!hdr || document.getElementById('vbHint')) return;
       var q = function (n) { return '„' + n + '“'; }, t, href = 'verbund.html';
       if (list.length === 1) {
@@ -158,6 +159,11 @@
     function pruefen() {
       if (busy || !t) return;
       var show = t.classList.contains('show'), txt = t.textContent || '';
+      if (show && /^Willkommen/.test(txt) && !wel && /(^|\s)tf-erst(\s|$)/.test(document.documentElement.className)) {
+        /* erster Besuch mit Tour (tutorial.js setzt tf-erst): nur ein Hinweis, die Tour. Das Banner wird gar nicht erst gezeigt. */
+        busy = true; t.classList.remove('show'); t.style.pointerEvents = ''; busy = false;
+        return;
+      }
       if (show && /^Willkommen/.test(txt) && !wel) {
         wel = true; busy = true;
         if (txt.length > 60) { var i = txt.indexOf(':'), m = /^[^!.]{20,}[!.](?=\s)/.exec(txt); if (i > 20) t.textContent = txt.slice(0, i) + '.'; else if (m) t.textContent = m[0]; }
@@ -182,3 +188,15 @@
   } catch (e) {}
 })();
 /* toast-lage:end */
+
+/* offer-unten:begin  Erster Besuch (Audit U-vb-06, Q3): Das Angebot "Neu hier?" (#trOffer, trainer.js) deckt am Handy in Seiten ohne Lab-Rahmen die Überschrift ab, weil es oben unter der Kopfzeile sitzt.
+   Hier rückt es am Handy an den unteren Rand (volle Breite), nur in Seiten, die kein Lab sind (verbund.html u. a.). In Labs liegt es im Info-Blatt (labrahmen.js) bzw. bleibt im ersten Besuch aus (tutorial.js). Nur Stil, keine Logik, kein Speicher. */
+(function () {
+  try {
+    if (/lab\.html$/.test(String(location.pathname).split('/').pop())) return;   // Labs: Rahmen bzw. Tour regeln das
+    var st = document.createElement('style'); st.id = 'tfOfferUnten';
+    st.textContent = '@media(max-width:600px){html:not(.lr-on) body #trOffer{top:auto!important;bottom:calc(env(safe-area-inset-bottom,0px) + 8px)!important;left:8px!important;right:8px!important;max-width:none!important}}';
+    (document.head || document.documentElement).appendChild(st);
+  } catch (e) {}
+})();
+/* offer-unten:end */

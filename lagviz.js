@@ -305,10 +305,11 @@
   const LS = 'lm4.lag.';
   const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(LS + k) || ''); return v == null ? d : v; } catch (e) { return d; } };
   const P = C.parseDe;
-  const CSS = `.vzbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:640px;margin:8px auto}
-.vzbox svg{display:block;width:100%;height:auto}
+  const CSS = `.vzbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow-x:auto;overflow-y:hidden;max-width:640px;margin:8px auto}
+.vzbox svg{display:block;width:100%;min-width:390px;height:auto}
+.vzbox::after{content:'Grafik seitlich wischen';display:none;position:sticky;left:0;padding:4px 10px 6px;font-size:14px;color:var(--mute)}@media(max-width:430px){.vzbox::after{display:block}}
 .vzc svg text,.vzbox svg text{font-family:system-ui,sans-serif;font-size:12.5px;fill:var(--fg);-webkit-user-select:none;user-select:none}
-.vzbox svg text.s{font-size:12px}.vzbox svg text.s2{font-size:9px}.vzbox svg text.m{fill:var(--mute)}.vzbox svg text.b{font-weight:700}.vzbox svg text.mid{text-anchor:middle}.vzbox svg text.end{text-anchor:end}.vzbox svg text.dk{fill:#10151a}
+.vzbox svg text.s{font-size:12px}.vzbox svg text.s2{font-size:12px}.vzbox svg text.m{fill:var(--mute)}.vzbox svg text.b{font-weight:700}.vzbox svg text.mid{text-anchor:middle}.vzbox svg text.end{text-anchor:end}.vzbox svg text.dk{fill:#10151a}
 .vzbox svg text.hi{fill:var(--hi)}.vzbox svg text.h{paint-order:stroke;stroke:var(--panel2);stroke-width:3px;stroke-linejoin:round}
 .vzbox .gr{stroke:var(--line);stroke-width:.7}.vzbox .ax{stroke:var(--mute);stroke-width:1.2}
 .vzbox .area{fill:var(--accent);fill-opacity:.2}.vzbox .ln{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linejoin:round}.vzbox .pt{fill:var(--accent);stroke:var(--panel2);stroke-width:1.5}
@@ -325,7 +326,7 @@
 .vzbox .tyre{fill:var(--panel);stroke:var(--fg);stroke-width:2.5}.vzbox .hub{fill:var(--mute)}
 .vzbox .ar{color:var(--fg)}.vzbox .ar line{stroke:currentColor;stroke-width:2.6;stroke-linecap:round}.vzbox .ar polygon{fill:currentColor}.vzbox .ar.acc{color:var(--accent)}.vzbox .ar.ok{color:var(--ok)}
 .vzcard h4{margin:0 0 8px}
-.vzchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}.vzchips .gl{flex:0 0 100%;font-size:12px;color:var(--mute);margin:6px 0 0}
+.vzchips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 4px}.vzchips .gl{flex:0 0 100%;font-size:14px;color:var(--mute);margin:6px 0 0}
 .vzchips button{min-height:44px;padding:0 14px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);font:600 14px system-ui;color:var(--fg)}
 .vzchips button.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .vzctl{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.vzctl button{min-height:44px;padding:0 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600;color:var(--fg)}
@@ -356,6 +357,30 @@
   hook('#kzView', 'vzKz', (v, c) => v.appendChild(c), c => { c.innerHTML = '<h4>Das Lagerjahr als Bild</h4><div class="vzout"></div>'; },
     c => { const h = kzViz(kzParams(kzState())); $('.vzout', c).innerHTML = h || '<p class="hint2">Gib Anfangs- und Endbestand sowie den Jahresverbrauch ein, dann erscheinen hier der Bestandsverlauf und die Lagerdauer-Zeitleiste.</p>'; });
 
+  /* K-lag-06: Ziel-Aufgabe zu den Reglern. Grundlage ist der Hinweis der Disposition: Ist die Lieferzeit länger als der Bestellrhythmus
+     (Bestellmenge / Tagesverbrauch), liegt der Meldebestand über dem Höchstbestand. Ziel: Regler so einstellen, dass das nicht der Fall ist. */
+  const goalCheck = p => { const rh = C.rhythm(p.qty, p.daily); return { rh, ok: fin(rh) && p.lead <= rh, need: p.daily * p.lead }; };
+  hook('#disView', 'vzGoal', (v, c) => { const o = $('#disOut', v); if (o) v.insertBefore(c, o); else v.appendChild(c); },
+    c => {
+      c.dataset.tries = '0';
+      c.innerHTML = '<h4>Ziel-Aufgabe</h4><p style="margin-top:0">Stelle die Regler so ein, dass die Lieferzeit nicht länger ist als der Bestellrhythmus. Dann liegt der Meldebestand unter dem Höchstbestand.</p><div class="vzchips"><button data-vz="hard">Schwierigen Fall laden</button><button data-vz="chk" class="on">Prüfen</button></div><div data-vz="fb" aria-live="polite"></div>';
+      c.addEventListener('click', e => {
+        const b = e.target.closest('[data-vz]'); if (!b) return;
+        const view = $('#disView'), fb = $('[data-vz=fb]', c);
+        if (b.dataset.vz === 'hard') {
+          [['daily', 50], ['lead', 14], ['qty', 300]].forEach(a => { const i = view.querySelector('input[data-d=' + a[0] + ']'); if (i) { i.value = a[1]; i.dispatchEvent(new Event('input', { bubbles: true })); } });
+          c.dataset.tries = '0'; fb.innerHTML = '<p class="hint2">Geladen: 50 Stück am Tag, 14 Tage Lieferzeit, 300 Stück Bestellmenge. Passt das schon?</p>'; return;
+        }
+        const p = disState(), g = goalCheck(p), n = +c.dataset.tries;
+        let cls, h;
+        if (g.ok) { cls = 'ok'; c.dataset.tries = '0'; h = '<p><b>Richtig.</b> Der Bestellrhythmus beträgt ' + esc(f(g.rh, 1)) + ' Tage, die Lieferzeit ' + esc(f(p.lead, 0)) + ' Tage. Der Meldebestand liegt unter dem Höchstbestand.</p>'; }
+        else if (n < 1) { cls = 'tipp'; c.dataset.tries = '1'; h = '<p><b>Noch nicht.</b> Der Bestellrhythmus ist Bestellmenge / Tagesverbrauch = ' + esc(f(p.qty, 0)) + ' / ' + esc(f(p.daily, 1)) + ' = ' + esc(fin(g.rh) ? f(g.rh, 1) : '–') + ' Tage, die Lieferzeit ist länger (' + esc(f(p.lead, 0)) + ' Tage). Was verändert den Rhythmus?</p>'; }
+        else { cls = 'loes'; h = '<p><b>Lösung.</b> Die Bestellmenge muss mindestens Lieferzeit mal Tagesverbrauch sein: ' + esc(f(p.lead, 0)) + ' mal ' + esc(f(p.daily, 1)) + ' = ' + esc(f(g.need, 0)) + ' Stück. Oder verkürze die Lieferzeit, oder senke den Tagesverbrauch.</p>'; }
+        fb.innerHTML = '<div class="lr-fb ' + cls + '">' + h + '</div>';
+        const el = fb.firstChild; try { if (root.LabRahmen && root.LabRahmen.zeig) root.LabRahmen.zeig(el); else el.scrollIntoView({ block: 'nearest' }); } catch (x) {}
+      });
+    }, () => {});
+
   /* Disposition: Regal-Füllstand */
   hook('#disView', 'vzDis', (v, c) => { const o = $('#disOut', v); if (o && o.nextSibling) v.insertBefore(c, o.nextSibling); else v.appendChild(c); },
     c => { c.innerHTML = '<h4>Regal-Füllstand: Wo steht der Bestand heute?</h4><div class="vzbox" data-vz="svg"></div><label class="f" style="margin-top:8px"><span>Bestand heute: <b data-vz="val"></b> Stück</span><input type="range" data-vz="cur" min="0" max="100" step="1" value="0"></label><div data-vz="zone"></div>'; $('[data-vz=cur]', c).addEventListener('input', e => { V.dis.cur = +e.target.value; updDis(c); }); },
@@ -379,9 +404,7 @@
       const res = C.abc(items, lim); $('[data-vz=svg]', c).innerHTML = abcBarsSvg(res); $('[data-vz=par]', c).innerHTML = paretoSvg(res);
     });
   /* Disposition: Sägezahn nach den Reglern */
-  hook('#disView', 'vzSaw', (v, c) => { const d = document.getElementById('vzDis'); if (d && d.nextSibling) v.insertBefore(c, d.nextSibling); else v.appendChild(c); },
-    c => { c.innerHTML = '<h4>Bestandsverlauf als Sägezahn</h4><div class="vzbox" data-vz="svg"></div><p class="hint2">Bei Erreichen des Meldebestands wird bestellt (Punkt), während der Lieferzeit (Streifen) sinkt der Bestand weiter bis zum Sicherheitsbestand, dann kommt die Lieferung. Werte aus den Reglern oben.</p>'; },
-    c => { $('[data-vz=svg]', c).innerHTML = sawSvg2(disState()); });
+  /* K-lag-02: die zweite Sägezahn-Grafik (vzSaw) entfällt, der Reiter zeigt nur noch die Kurve oben bei den Reglern. sawSvg2 bleibt in der API. */
 
   /* Lager: Schaubilder */
   hook('#orgView', 'vzOrg', (v, c) => { const first = v.firstElementChild; if (first && first.nextSibling) v.insertBefore(c, first.nextSibling); else v.appendChild(c); },
@@ -402,6 +425,21 @@
     const meta = KINDS.find(k => k[0] === kind), o = D && D.org ? D.org.find(x => x.n.indexOf(meta[3]) === 0) : null;
     $('[data-vz=cap]', c).textContent = (o ? o.d + ' ' : '') + (NOTES[kind] || '');
   }
+
+  /* K-lag-05: Nach der Antwort in der Zuordnungsübung zeigt ein Bild den richtigen Begriff (vorher nicht, sonst wäre die Antwort verraten) */
+  (function () {
+    const view = document.getElementById('orgView'); if (!view) return;
+    const run = () => {
+      const q = document.getElementById('orgQ'); if (!q || q.querySelector('.vzq')) return;
+      const ok = q.querySelector('.opts button.ok'); if (!ok) return;
+      const k = KINDS.find(x => ok.textContent.indexOf(x[3]) === 0); if (!k) return;
+      const d = document.createElement('div'); d.className = 'vzq';
+      d.innerHTML = '<div class="vzbox">' + artSvg(k[0]) + '</div><p class="hint2">' + esc(NOTES[k[0]] || '') + '</p>';
+      const nx = q.querySelector('.btns'); q.insertBefore(d, nx || null);
+    };
+    new MutationObserver(run).observe(view, { childList: true, subtree: true });
+    run();
+  })();
 
   /* Beispiele: Bestandsverlauf bei den Kennzahlen-Beispielen */
   (function () {

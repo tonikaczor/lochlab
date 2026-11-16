@@ -132,7 +132,7 @@
       <div class="dsrow"><label class="f"><span>Gewinde (Regelgewinde)</span><select data-k="d">${C.TH.map(t => `<option value="${t.d}"${String(t.d) === String(s.d) ? ' selected' : ''}>M${t.d}</option>`).join('')}</select></label>
       <label class="f"><span>Festigkeitsklasse</span><select data-k="fk">${C.FKS.map(k => `<option${k === s.fk ? ' selected' : ''}>${k}</option>`).join('')}</select></label></div>
       <div class="dsrow">${inp('t1', 'Dicke Teil 1', s.t1, 'mm')}${inp('t2', 'Dicke Teil 2', s.t2, 'mm')}</div>
-      <div class="fbar"><span style="font-size:12px;color:var(--mute)">SCHEIBEN UNTER DER MUTTER</span>${seg('data-w', [['0', 'keine'], ['1', 'eine'], ['2', 'zwei']], s.w)}</div>
+      <div class="fbar"><span style="font-size:14px;color:var(--mute)">SCHEIBEN UNTER DER MUTTER</span>${seg('data-w', [['0', 'keine'], ['1', 'eine'], ['2', 'zwei']], s.w)}</div>
       <p class="hint2">Zahlen mit Komma oder Punkt eingeben. Das Gewinde bestimmt Kernloch und Durchgangsloch, die Klasse die Festigkeit.</p></div><div id="schrOut"></div>
       <div class="card pl"><h4>Nachschlagetabelle Regelgewinde</h4>${thTable()}<p class="hint2">P = Steigung, Kernloch = Bohrerdurchmesser, Durchgang = Durchgangsloch "mittel", SW = Schlüsselweite, m = Mutterhöhe, s = Scheibendicke, As = Spannungsquerschnitt.</p></div>`;
     updateSchr();
@@ -158,7 +158,7 @@
     $('#tolView').innerHTML = ueb() + `<div class="card pl"><h4>Toleranzrahmen zusammenstellen und lesen</h4>
       <div class="dsrow"><label class="f"><span>Toleranzart</span><select data-k="sym">${C.SYMS.map(x => `<option value="${x.id}"${x.id === s.sym ? ' selected' : ''}>${esc(x.n)} (${esc(x.cls)})</option>`).join('')}</select></label>
       ${inp('tol', 'Toleranzwert', s.tol, 'mm')}</div>
-      <div class="fbar"><span style="font-size:12px;color:var(--mute)">VOR DEM WERT</span>${seg('data-dia', [['0', 'ohne ⌀'], ['1', 'mit ⌀']], s.dia ? '1' : '0')}</div>
+      <div class="fbar"><span style="font-size:14px;color:var(--mute)">VOR DEM WERT</span>${seg('data-dia', [['0', 'ohne ⌀'], ['1', 'mit ⌀']], s.dia ? '1' : '0')}</div>
       <div class="dsrow"><label class="f"><span>Bezug 1 (Buchstabe)</span><input data-k="d1" maxlength="1" autocomplete="off" value="${esc(s.d1)}"></label><label class="f"><span>Bezug 2 (optional)</span><input data-k="d2" maxlength="1" autocomplete="off" value="${esc(s.d2)}"></label></div></div><div id="tolOut"></div>
       <div class="card pl"><h4>Symbole im Überblick</h4><div class="tw"><table class="tt"><tr><th>Symbol</th><th>Toleranzart</th><th>Einteilung</th><th>Bezug</th></tr>${C.SYMS.map(x => `<tr><td>${symSvg(x.id, 30)}</td><td>${esc(x.n)}</td><td>${esc(x.cls)}</td><td>${x.dat ? 'ja' : 'nein'}</td></tr>`).join('')}</table></div></div>`;
     updateTol();
@@ -236,9 +236,21 @@
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : f(q.value, 2) + ' ' + q.ask.unit);
   const extras = q => drawHtml(q.draw) + tableHtml(q.table);
+  const zeigFb = el => { if (el && typeof window !== 'undefined' && window.LabRahmen && LabRahmen.zeig) try { LabRahmen.zeig(el); } catch (e) {} };
+  const lockQ = (r, pre) => !!(r && (r.ok || r.stage === 'loes' || pre === 'rt'));
   function qBody(q, a, r, pre) {
-    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''} class="${r && i === q.ask.correct && (r.ok || pre === 'rt') ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+    const lk = lockQ(r, pre);
+    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${lk ? 'disabled' : ''} class="${lk && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok && lk ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lk ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>` +
+      (q.tol > 0 ? `<p class="lr-hinweis">Zahl in ${esc(q.ask.unit)}. ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} gelten als richtig.</p>` : '');
+  }
+  /* Rückmeldung nach dem Prüfen: erster Fehler = Tipp (ohne Lösung), zweiter Fehler = Lösung mit Lösungsweg */
+  function fbBlock(q, r, id, next) {
+    const nx = next ? `<div class="btns"><button class="btn pri" data-${next}="next">${next === 'ta' ? 'Nächste Aufgabe' : 'Nächste Frage'}</button></div>` : '';
+    if (r.ok) return `<div id="${id}" class="lr-fb ok" role="status" tabindex="-1"><p><strong>✓ Richtig!</strong></p>${resBlock(q, r, true)}${nx}</div>`;
+    if (r.stage === 'pruef') return `<div id="${id}" class="lr-fb tipp" role="status" tabindex="-1"><p><strong>Noch nicht.</strong> Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p></div>`;
+    if (r.stage === 'tipp') return `<div id="${id}" class="lr-fb tipp" role="status" tabindex="-1"><p><strong>Noch nicht.</strong> Tipp: ${esc((q.tips && q.tips[0]) || 'Lies die Aufgabe noch einmal und prüfe die Einheit.')} Du hast einen zweiten Versuch.</p></div>`;
+    return `<div id="${id}" class="lr-fb loes" role="status" tabindex="-1"><p><strong>Leider nicht.</strong> Hier ist die Lösung.</p>${resBlock(q, r, true)}${nx}</div>`;
   }
   function evalQ(q, a) {
     if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c] }; }
@@ -253,9 +265,9 @@
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {};
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${extras(q)}${qBody(q, a, r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.stage === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) h += fbBlock(q, r, 'tkFb', r.ok || r.stage === 'loes' ? 'ta' : '');
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
@@ -265,9 +277,10 @@
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
-    renderTasks(false);
+    const tf = S.tFail = S.tFail || {}; if (!e.ok) tf[t.id] = (tf[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, stage: e.ok ? 'ok' : exam() ? 'pruef' : tf[t.id] >= 2 ? 'loes' : 'tipp' };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig.'); }
+    renderTasks(false); zeigFb($('#tkFb'));
   }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
@@ -281,7 +294,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; (S.tFail = S.tFail || {})[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -296,15 +309,16 @@
   });
 
   /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.fail = 0; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="fbar"><span class="lbl" style="font-size:14px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
       <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${extras(q)}${qBody(q, T.ans, T.res, 'rt')}
       <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      ${T.res ? fbBlock(q, T.res, 'trFb', '') : T.fail ? fbBlock(q, { ok: false, stage: 'tipp' }, 'trFb', '') : ''}</div>`;
+    zeigFb($('#trFb'));
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -317,7 +331,8 @@
   });
   function trainerCheck() {
     const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    if (!e.ok && !T.fail) { T.fail = 1; T.gv = e.given; S.rt.streak = 0; lsSet('rt', S.rt); sad(); renderTrainer(); updatePal(); return; }
+    T.res = { ok: e.ok, given: e.given, stage: e.ok ? 'ok' : 'loes' }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -355,7 +370,7 @@
       sec('Form- und Lagetoleranzen (ISO 1101)', `<p>Der Toleranzrahmen wird von links nach rechts gelesen: Symbol, Toleranzwert (mit ⌀ bei zylindrischer Zone), Bezugsbuchstaben.</p><table><tr><th>Symbol</th><th>Toleranzart</th><th>Einteilung</th><th>Bezug</th></tr>${C.SYMS.map(x => `<tr><td>${symSvg(x.id, 26)}</td><td>${esc(x.n)}</td><td>${esc(x.cls)}</td><td>${x.dat ? 'ja' : 'nein'}</td></tr>`).join('')}</table><p>Position mit ⌀ t: Die Achse darf höchstens t/2 vom Sollort entfernt liegen (Abstand mit Pythagoras bestimmen, nicht x und y einzeln prüfen).</p>`) +
       sec('Oberflächenangaben', `<p><b>Ra</b> = arithmetischer Mittenrauwert in µm, <b>Rz</b> = gemittelte Rautiefe. Kleiner Wert = glatter und meist teurer.</p><table><tr><th>Verfahren (Übungswert)</th><th>Ra in µm</th></tr>${C.RA_PROC.map(p => `<tr><td>${esc(p.n)}</td><td>${esc(f(p.ra, 1))}</td></tr>`).join('')}</table><p>Bearbeitungszeichen: offenes V = Verfahren beliebig; V mit Strich = spanend bearbeiten; V mit Kreis = Anlieferzustand, kein Abtrag.</p>`) +
       sec('Fertigungsgerecht konstruieren', `<ul><li>Gussteile: Gussschrägen (etwa 1° bis 3°), gleichmäßige Wanddicken, Radien statt scharfer Kanten, keine Hinterschneidungen.</li><li>Gussschräge: Δ = h · tan α.</li><li>Gewinde: Freistich vor Schultern, Kernloch im Sackloch tiefer als das Gewinde.</li><li>Fräsen: Innenecken mit Radius (mindestens Fräserradius).</li><li>Bohrungen: Abstand zum Rand, ebene Ansatzfläche.</li><li>Spannflächen vorsehen; bearbeitete Flächen klein halten.</li></ul><p>Werkstoffe als Anwendung: EN-GJL-200 für Gehäuse (gießbar, dämpfend, spröde), C45 für vergütete Wellen, S235JR für geschweißte Rahmen. Was die Kurzzeichen bedeuten, steht im Werkstoff-Lab.</p>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert. Passungen und Messmittel findest du im Toleranzen-Lab, Ansichten und Bemaßung im Zeichnungs-Lab.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Weicht dein Unterricht ab, gilt, was dein Ausbilder sagt. Passungen und Messmittel findest du im Toleranzen-Lab, Ansichten und Bemaßung im Zeichnungs-Lab.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
@@ -403,6 +418,15 @@
   /* Schnittstelle für Karriere/Lernpfad */
   root.KON_LAB = { id: 'kon', title: 'Konstruktions-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.KON_TASKS };
 
+  /* Grafikschrift am Handy mindestens 11 px (M-all-12): Schrift in Nutzereinheiten so anheben, dass sie auf dem Bildschirm 11 px erreicht */
+  (function () {
+    if (typeof MutationObserver === 'undefined' || typeof innerWidth === 'undefined' || typeof addEventListener === 'undefined') return;
+    let t = 0;
+    const fix = () => { t = 0; if (innerWidth >= 700) return; document.querySelectorAll('#app svg').forEach(sv => { const m = sv.getScreenCTM && sv.getScreenCTM(); if (!m || !m.a) return; sv.querySelectorAll('text').forEach(x => { const fs = parseFloat(getComputedStyle(x).fontSize) || 12; if (fs * m.a < 11) x.style.fontSize = (11.2 / m.a).toFixed(1) + 'px'; }); }); };
+    const q = () => { if (!t) t = setTimeout(fix, 120); };
+    new MutationObserver(q).observe(document.getElementById('app') || document.body, { childList: true, subtree: true });
+    addEventListener('resize', q); addEventListener('click', q, true); q();
+  })();
   buildTabs(); updatePal(); setTab(TABS.some(x => x[0] === S.tab) ? S.tab : 'schr');
   /* Aufruf ?aufgabe=kon1 (Startseite, Lernhefte) öffnet die Aufgabe, ?bsp die Beispiele (?bsp=kern1 springt zu einem Beispiel) */
   root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };

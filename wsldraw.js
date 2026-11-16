@@ -389,6 +389,8 @@
       const F = frame(ctx, E, rect, { x0: t[0], x1: t[n - 1], y0: lo, y1: hi, xl: 't', xu: tUnit, yl: 'Augenblickswert', yu: unit0, top: 22 + legH });
       if (!F) return false;
       const pl = F.pl, zy = F.Y(0);
+      /* Auskunft über die Geometrie für Ebenen über dem Bild (Cursor im Sinus-Prüfstand); ändert nichts am Bild */
+      scope.last = { pl: { x: pl.x, y: pl.y, w: pl.w, h: pl.h }, x0: t[0], x1: t[n - 1], y0: lo, y1: hi, tUnit, rect: { x: rect.x, y: rect.y, w: rect.w, h: rect.h } };
       line(ctx, pl.x, zy, pl.x + pl.w, zy, P.line, 1.5);
       /* Legende: Strichprobe in Farbe und Strichart plus Text */
       let lx = rect.x + 6, ly = rect.y + 30;
@@ -469,7 +471,7 @@
         if (z.len * k < 1) { dot(ctx, cx, cy, 3, col); } else arrow(ctx, cx, cy, tip[0], tip[1], col, 3, kd.dash, 11);
         const ux = Math.cos(rad(z.angle + rot)), uy = -Math.sin(rad(z.angle + rot));
         const al = ux > 0.2 ? 'left' : ux < -0.2 ? 'right' : 'center', zu = typeof z.unit === 'string' ? z.unit : unit, txt = z.name + (zu ? ' = ' + fe(z.len < maxLen * 1e-9 ? 0 : z.len, zu) : ''), lw = Math.min(areaW * 0.7, tw(ctx, txt, 11, true)), lx = tip[0] + ux * 12;
-        let ly = tip[1] + uy * 12;
+        let ly = tip[1] + uy * 12 - (project && ux > 0.2 && Math.abs(uy) < 0.4 ? 10 : 0);   /* waagerechter Zeiger: Name neben die Pfeilspitze, nicht auf die gestrichelte Projektionslinie */
         const x0 = al === 'left' ? lx : al === 'right' ? lx - lw : lx - lw / 2;
         for (let tries = 0; tries < 6 && placed.some(q => Math.abs(q.y - ly) < 13 && x0 < q.x1 + 2 && x0 + lw > q.x0 - 2); tries++) ly += (uy > 0.2 || tries % 2 ? 13 : -13) * (tries < 2 ? 1 : tries < 4 ? 2 : 3);
         placed.push({ x0, x1: x0 + lw, y: ly });
@@ -985,6 +987,8 @@
     palette, contrast, cssColors, reducedMotion, pulse, fz, fe, fd, niceTicks, ampelInfo, ariaText, kindOf
   };
   FNS.forEach(k => { API[k] = safe(DRAWERS[k]); });
+  /* Geometrie des zuletzt gezeichneten Zeitbildes (CSS-px des Zeichenbereichs) für Ebenen darüber; scopeGeom(true) setzt sie zurück */
+  API.scopeGeom = reset => { const g = scope.last || null; if (reset) scope.last = null; return g; };
   root.WSL_DRAW = API;
   if (typeof module !== 'undefined') module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

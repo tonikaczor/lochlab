@@ -49,6 +49,26 @@
   }
 
   /* ============================================================ Zeichnungen (SVG, Text höchstens bis zum Rand: Prüfung im Test) */
+  /* Handy: SVG-Text nie unter 11 px Bildschirmgröße (B-nts-05/B-emv-03). Die Zeichnungen skalieren mit der Breite; zu kleine Texte werden hochgesetzt. */
+  function fitSvgText(root) {
+    try {
+      const MIN = 11; if (!root || !root.querySelectorAll) return;
+      root.querySelectorAll('svg.dr').forEach(sv => {
+        const vb = sv.viewBox && sv.viewBox.baseVal, w = sv.getBoundingClientRect().width; if (!vb || !vb.width || !w) return;
+        const k = w / vb.width;
+        sv.querySelectorAll('text').forEach(t => {
+          if (!t.dataset.fs0) { t.style.fontSize = ''; t.dataset.fs0 = parseFloat(getComputedStyle(t).fontSize) || 12; }
+          const b = +t.dataset.fs0; t.style.fontSize = b * k < MIN ? (MIN / k).toFixed(2) + 'px' : '';
+        });
+      });
+    } catch (e) { /* nur Darstellung */ }
+  }
+  function watchSvgText(host) {
+    if (host.__svgFit) { host.__svgFit(); return; }
+    const f = host.__svgFit = () => fitSvgText(host);
+    try { if (typeof ResizeObserver === 'function') new ResizeObserver(f).observe(host); } catch (e) {}
+    f();
+  }
   const svg = (label, body, h) => `<svg class="dr" viewBox="0 0 460 ${h || 170}" role="img" aria-label="${esc(label)}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="13" fill="currentColor">${body}</svg>`;
   const BOX = (x, y, w, h, t, c) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="none" stroke="${c || 'currentColor'}" stroke-width="2"/><text x="${x + w / 2}" y="${y + h / 2 + 5}" text-anchor="middle">${esc(t)}</text>`;
   const ARR = (x1, y1, x2, y2, c) => { const dx = x2 - x1, dy = y2 - y1, l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, col = c || 'currentColor'; return `<line x1="${x1}" y1="${y1}" x2="${x2 - ux * 6}" y2="${y2 - uy * 6}" stroke="${col}" stroke-width="2"/><polygon points="${x2},${y2} ${x2 - ux * 9 - uy * 4.5},${y2 - uy * 9 + ux * 4.5} ${x2 - ux * 9 + uy * 4.5},${y2 - uy * 9 - ux * 4.5}" fill="${col}"/>`; };
@@ -59,7 +79,7 @@
     kopplung: () => svg('Vier Kopplungsarten: galvanisch, kapazitiv, induktiv und Strahlung', 
       '<text x="57" y="16" text-anchor="middle">galvanisch</text><line x1="12" y1="40" x2="102" y2="40" stroke="currentColor" stroke-width="2"/><rect x="42" y="66" width="30" height="14" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="73" x2="42" y2="73" stroke="currentColor" stroke-width="2"/><line x1="72" y1="73" x2="102" y2="73" stroke="currentColor" stroke-width="2"/><text x="57" y="108" text-anchor="middle">Rückleiter</text>' +
       '<text x="172" y="16" text-anchor="middle">kapazitiv</text><line x1="127" y1="40" x2="217" y2="40" stroke="currentColor" stroke-width="2"/><line x1="127" y1="80" x2="217" y2="80" stroke="currentColor" stroke-width="2"/><line x1="172" y1="40" x2="172" y2="52" stroke="currentColor" stroke-width="2"/><line x1="160" y1="52" x2="184" y2="52" stroke="currentColor" stroke-width="2"/><line x1="160" y1="60" x2="184" y2="60" stroke="currentColor" stroke-width="2"/><line x1="172" y1="60" x2="172" y2="80" stroke="currentColor" stroke-width="2"/><text x="172" y="108" text-anchor="middle">Koppelkapazität</text>' +
-      '<text x="287" y="16" text-anchor="middle">induktiv</text><circle cx="287" cy="58" r="22" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="287" cy="58" r="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><text x="287" y="108" text-anchor="middle">Magnetfeld, Schleife</text>' +
+      '<text x="287" y="16" text-anchor="middle">induktiv</text><circle cx="287" cy="58" r="22" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="287" cy="58" r="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3"/><text x="287" y="108" text-anchor="middle">Magnetfeld</text>' +
       '<text x="402" y="16" text-anchor="middle">Strahlung</text><circle cx="378" cy="62" r="5" fill="currentColor"/><path d="M390 46 A22 22 0 0 1 390 78" fill="none" stroke="currentColor" stroke-width="2"/><path d="M400 38 A34 34 0 0 1 400 86" fill="none" stroke="currentColor" stroke-width="2"/><path d="M410 30 A46 46 0 0 1 410 94" fill="none" stroke="currentColor" stroke-width="2"/><text x="402" y="116" text-anchor="middle">Fernfeld</text>', 130),
     gtgg: () => svg('Gegentakt und Gleichtakt auf einer Leitung', 
       '<text x="115" y="16" text-anchor="middle">Gegentakt</text><line x1="20" y1="40" x2="210" y2="40" stroke="currentColor" stroke-width="2"/><line x1="20" y1="80" x2="210" y2="80" stroke="currentColor" stroke-width="2"/>' + ARR(80, 32, 150, 32, '#ff8a5c') + ARR(150, 88, 80, 88, '#52c4f5') + '<text x="115" y="118" text-anchor="middle">Strom hin und zurück</text>' +
@@ -162,6 +182,7 @@
     if (!CORE()) { host.innerHTML = `<div class="card pl"><p class="big">Lernen wird geladen</p><p class="hint2">Der Rechenkern ist nicht geladen (emvcore.js fehlt). Ohne ihn gibt es hier keine Zahlen und Tabellen.</p><div class="btns"><button class="btn" data-retry>Erneut prüfen</button></div></div>`; return; }
     const secs = sections(api);
     host.innerHTML = `<div class="card pl"><h4>Lernen</h4><p class="hint2" style="margin:0">Grundlagen der elektromagnetischen Verträglichkeit, kurz erklärt. Jeder Abschnitt hat einen Knopf „Probier es aus“, der den passenden Versuch lädt. Alle Zahlen sind Übungswerte (A) und stammen aus derselben Rechnung wie im Rechner. ${esc(NORM)}.</p></div><div class="hl">` + secs.map((s, i) => `<details${i === 0 ? ' open' : ''} data-sec="${esc(s.id)}"><summary>${esc(s.title)}</summary><div class="hb2">${s.html}</div></details>`).join('') + '</div>';
+    watchSvgText(host);
     if (!host.addEventListener) return;
     once(host, 'help', 'click', e => {
       const b = e.target.closest && e.target.closest('[data-try]'); if (!b) return; const t = TRY[+b.dataset.try]; if (!t) return;

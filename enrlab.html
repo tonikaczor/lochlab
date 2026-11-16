@@ -12,6 +12,8 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <title>Tonfunk Energie-Lab</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schlüssel lm4.theme wie die Startseite */
+(function(){try{var v=localStorage.getItem('lm4.theme');if(v==='light'||v==='dark')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 <link rel="stylesheet" href="rig.css">
 <style>
 #mid[data-tab=rig] #pgRig,#mid[data-tab=curve] #pgCurve,#mid[data-tab=design] #pgDesign,#mid[data-tab=calc] #pgCalc,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=help] #pgHelp{display:flex}
@@ -46,6 +48,8 @@
 .fmb{padding:0 12px 12px}
 .hl a{display:inline-block;padding:10px 2px}</style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
+<style>/* Welle 2 B2b (B-all-01): Kleintext mindestens 14 px */html:root .enr-card b,html:root .kvs,html:root .kvs span,html:root .kvs b,html:root .scinfo,html:root .mt .qi,html:root .qi{font-size:14px}/* B-all-02: Trefferflaechen mindestens 44 px */html:root .chip.s,html:root .btn,html:root .seg button{min-height:44px}html:root #presetBar .chip,html:root .chips .chip{min-height:44px}html:root button[style*="min-height:40px"]{min-height:44px!important}html:root label.chk{min-height:44px;display:flex;align-items:center;gap:8px}</style>
 </head>
 <body>
 <!--GATE-->
@@ -72,7 +76,7 @@
         <div class="enr-cards" id="rigPick"></div>
         <div class="rbar" id="rigBar"></div>
         <div class="rbar" id="scenBar"></div>
-        <div id="cvw"><canvas id="cv" role="img" aria-label="Animation des Prüfstands"></canvas><span id="cvTag"></span><div id="cvFault" role="alert"></div></div>
+        <div id="cvw" data-lr-buehne="verh"><canvas id="cv" role="img" aria-label="Animation des Prüfstands"></canvas><span id="cvTag"></span><div id="cvFault" role="alert"></div></div>
         <details class="card" id="cLeg"><summary>Legende der Energieflüsse</summary><div class="cb" id="legHost"></div></details>
         <div id="diagHost"></div>
         <div id="scopeHost"></div>
@@ -137,6 +141,8 @@
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { "enrlab.html": { name: "Energie-Lab" } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

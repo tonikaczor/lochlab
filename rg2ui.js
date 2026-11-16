@@ -81,14 +81,15 @@
     const ic = $('#bThemeIc'); if (ic) ic.textContent = mode === 'light' ? '☀' : mode === 'dark' ? '☾' : '◐';
     const b = $('#bTheme'); if (b) b.setAttribute('aria-label', 'Darstellung: ' + (mode === 'light' ? 'hell' : mode === 'dark' ? 'dunkel' : 'automatisch') + ' (zum Wechseln antippen)');
   }
-  UI.themeMode = () => { const m = LS.get(KEY.theme, 'auto'); return m === 'light' || m === 'dark' ? m : 'auto'; };
-  function cycleTheme() { const m = UI.themeMode(), nx = m === 'auto' ? 'light' : m === 'light' ? 'dark' : 'auto'; LS.set(KEY.theme, nx); applyTheme(nx); UI.toast('Darstellung: ' + (nx === 'light' ? 'hell' : nx === 'dark' ? 'dunkel' : 'automatisch (wie das Gerät)')); UI.refresh(); }
+  /* Welle 2: Darstellung gilt für die ganze App: Schlüssel lm4.theme (roher Text light/dark, wie die Startseite), auto = Eintrag fehlt. Der alte Schlüssel lm4.rg2.theme wird nicht mehr gelesen. */
+  UI.themeMode = () => { let m = 'auto'; try { m = localStorage.getItem('lm4.theme') || 'auto'; } catch (e) { /* ohne Speicher */ } return m === 'light' || m === 'dark' ? m : 'auto'; };
+  function cycleTheme() { const m = UI.themeMode(), nx = m === 'auto' ? 'light' : m === 'light' ? 'dark' : 'auto'; try { if (nx === 'auto') localStorage.removeItem('lm4.theme'); else localStorage.setItem('lm4.theme', nx); } catch (e) { /* ohne Speicher */ } applyTheme(nx); UI.toast('Darstellung: ' + (nx === 'light' ? 'hell' : nx === 'dark' ? 'dunkel' : 'automatisch (wie das Gerät)')); UI.refresh(); }
 
   /* ------------------------------------------------------------ Reiter und Seiten */
-  const TABS = () => D.BLOCKS.map(b => ({ id: 'b' + b.id, label: b.id + ' ' + b.tab })).concat([{ id: 'tasks', label: 'Aufgaben' }]);
+  const TABS = () => D.BLOCKS.map(b => ({ id: 'b' + b.id, label: b.tab })).concat([{ id: 'tasks', label: 'Aufgaben' }]);
   const solvedCount = () => D.TASKS.filter(t => S.prog[t.id] && S.prog[t.id].ok).length;
   function renderTabs() {
-    $('#tabs').innerHTML = TABS().map(t => '<button type="button" role="tab" class="tab' + (S.tab === t.id ? ' on' : '') + '" data-act="tab" data-v="' + t.id + '" aria-selected="' + (S.tab === t.id) + '" id="tab-' + t.id + '">' + esc(t.label) + (t.id === 'tasks' ? '<span class="bd" aria-label="gelöst">' + solvedCount() + '/' + D.TASKS.length + '</span>' : '') + '</button>').join('');
+    $('#tabs').innerHTML = TABS().map(t => '<button type="button" role="tab" class="tab' + (S.tab === t.id ? ' on' : '') + '" data-act="tab" data-v="' + t.id + '" data-t="' + t.id + '" aria-selected="' + (S.tab === t.id) + '" id="tab-' + t.id + '">' + esc(t.label) + (t.id === 'tasks' ? '<span class="bd" aria-label="gelöst">' + solvedCount() + '/' + D.TASKS.length + '</span>' : '') + '</button>').join('');
   }
   UI.setTab = function (id) {
     if (!TABS().some(t => t.id === id)) id = 'b1';
@@ -101,12 +102,20 @@
     if (S.tab === 'tasks') { v.innerHTML = '<div class="wrap" id="pgTasks"></div>'; renderTasks(); return; }
     const b = Number(S.tab.slice(1)), blk = D.BLOCKS[b - 1], B = UI.BLK[S.tab]; if (!blk || !B) { v.innerHTML = '<div class="wrap"><p>Block nicht gefunden.</p></div>'; return; }
     const LP = [].concat(B.left()), n = D.byBlock(b).length, done = D.byBlock(b).filter(t => S.prog[t.id] && S.prog[t.id].ok).length;
-    v.innerHTML = '<div class="wrap" id="pg-' + S.tab + '"><h2>' + b + ' ' + esc(blk.title) + '</h2><p class="lead">' + esc(blk.lead) + '</p>' +
+    v.innerHTML = '<div class="wrap" id="pg-' + S.tab + '"><h2>' + b + ' ' + esc(blk.title) + '</h2><p class="lead">' + esc(blk.lead) + '</p>' + (b === 1 ? '<p class="note" style="margin:-6px 0 10px">Hier geht es um Theorie und Rechnen. Einen Regler an einer Anlage einstellen übst du im Lab „Regelungstechnik“ (Prüfstand).</p>' : '') +
       '<div class="lab ' + (B.wide ? 'wide' : '') + '"><div class="left" id="left-' + S.tab + '"><div class="prim">' + LP[0] + '</div><div class="sec">' + (LP[1] || '') + '</div></div><div class="right"><div class="card pl" id="ctl-' + S.tab + '"><h4>Regler</h4>' + B.controls() + '</div><div class="card pl"><h4>Messwerte</h4><div id="out-' + S.tab + '" aria-live="polite"></div></div></div></div>' +
       '<details class="card explain" open><summary>Erklärung</summary><div class="cb">' + blk.parts.map(p => '<p>' + esc(p) + '</p>').join('') + '<div class="merke"><b>Merke</b><ul>' + blk.merke.map(m => '<li>' + esc(m) + '</li>').join('') + '</ul></div></div></details>' +
       '<div class="btns"><button type="button" class="btn pri" data-act="goTasks" data-v="' + b + '">Aufgaben zu diesem Block (' + done + ' von ' + n + ' gelöst)</button></div></div>';
-    UI.refresh();
+    UI.refresh(); UI.watch();
   }
+  /* F1: Zeichenflächen beobachten. Ändert sich ihre Größe (Drehen, Fensterbreite, Reiterwechsel, Layoutwechsel), wird neu gezeichnet. Ohne ResizeObserver (Test, alter Browser) bleibt es bei window.resize. */
+  UI.watch = function () {
+    if (typeof ResizeObserver === "undefined" || typeof document === "undefined") return;
+    try {
+      if (!UI._ro) UI._ro = new ResizeObserver(() => { clearTimeout(UI._rt); UI._rt = setTimeout(UI.refresh, 60); });
+      UI._ro.disconnect(); const cs = document.querySelectorAll("#view canvas"); for (let i = 0; i < cs.length; i++) UI._ro.observe(cs[i]);
+    } catch (e) { /* ohne Beobachter weiter */ }
+  };
   UI.renderCtl = function () { const B = UI.BLK[S.tab], c = $('#ctl-' + S.tab); if (B && c) { c.innerHTML = '<h4>Regler</h4>' + B.controls(); } UI.refresh(); };
   UI.refresh = function () { if (S.tab === 'tasks') return; const B = UI.BLK[S.tab]; if (B && B.update) { try { B.update(); } catch (e) { if (window.console) console.error('rg2: Fehler im Block ' + S.tab, e); const o = $('#out-' + S.tab); if (o) o.innerHTML = '<p class="note">Beim Rechnen ist ein Fehler aufgetreten. Bitte einen anderen Wert wählen.</p>'; } } };
 
@@ -129,6 +138,9 @@
     });
     return html + '</div>';
   }
+  /* Toleranz als Text: relativ in Prozent, absolut in der Einheit der Aufgabe */
+  const nz = x => String(Math.round(x * 1000) / 1000).replace('.', ',');
+  UI.tolText = t => { const tl = t.tol || {}, u = t.unit ? ' ' + t.unit : '', a = []; if (tl.rel) a.push('±' + nz(tl.rel * 100) + ' %'); if (tl.abs) a.push('±' + nz(tl.abs) + u); return a.join(' oder '); };
   function detailHTML() {
     const id = S.tk.id; if (!id) return '<div class="card pl"><p>Bitte links eine Aufgabe wählen.</p></div>';
     const t = task(id), p = S.prog[id] || { ok: false, n: 0, tip: 0, sol: false }, val = S.tk.val[id] != null ? S.tk.val[id] : '';
@@ -136,7 +148,7 @@
     if (t.kind === 'choice') {
       h += '<fieldset style="border:0;padding:0;margin:0"><legend class="sr">Antwort wählen</legend>' + t.options.map((o, i) => '<label class="opt"><input type="radio" name="ans" value="' + i + '"' + (String(val) === String(i) ? ' checked' : '') + '><span>' + esc(o) + '</span></label>').join('') + '</fieldset><div class="btns"><button type="button" class="btn pri" data-act="tkc">Prüfen</button></div>';
     } else {
-      h += '<div class="ans"><label><span class="sr">Antwort</span><input type="text" id="ansIn" inputmode="decimal" autocomplete="off" placeholder="Ergebnis (Komma erlaubt)" value="' + esc(val) + '" aria-label="Antwort"></label>' + (t.unit ? '<span class="un">' + esc(t.unit) + '</span>' : '') + '<button type="button" class="btn pri" data-act="tkc">Prüfen</button></div>';
+      h += '<div class="ans"><label><span class="sr">Antwort</span><input type="text" id="ansIn" inputmode="decimal" autocomplete="off" placeholder="Ergebnis (Komma erlaubt)" value="' + esc(val) + '" aria-label="Antwort"></label>' + (t.unit ? '<span class="un">' + esc(t.unit) + '</span>' : '') + '<button type="button" class="btn pri" data-act="tkc">Prüfen</button></div><p class="note">Erlaubte Abweichung: ' + esc(UI.tolText(t)) + (t.unit ? '. Einheit: ' + esc(t.unit) : '') + '. Komma oder Punkt geht.</p>';
     }
     const fb = S.tk.fb[id];
     h += '<div id="fb" role="status" aria-live="polite">' + (fb ? '<div class="fb ' + fb.cls + '">' + esc(fb.msg) + '</div>' : '') + '</div>';
@@ -163,8 +175,8 @@
     if (res.bad) { S.tk.fb[id] = { cls: 'no', msg: 'Das ist keine Zahl. Beispiel: 12,5 oder −3.' }; renderTasks(); return; }
     p.n++;
     if (res.ok) { p.ok = true; S.tk.fb[id] = { cls: 'ok', msg: 'Richtig. Gut gerechnet. Die Musterlösung zeigt den Rechenweg zum Vergleich.' }; }
-    else S.tk.fb[id] = { cls: 'no', msg: 'Das passt noch nicht. Prüfe Einheit und Rechenweg, oder nimm einen Tipp.' };
-    saveProg(); renderTabs(); renderTasks();
+    else S.tk.fb[id] = { cls: 'no', msg: 'Das passt noch nicht. Gefragt ist das Ergebnis' + (t.unit ? ' in ' + t.unit : '') + ', erlaubt ist ' + UI.tolText(t) + ' Abweichung. Prüfe den Rechenweg, oder nimm einen Tipp.' };
+    saveProg(); renderTabs(); renderTasks(); const fbe = $('#fb'); if (fbe && fbe.scrollIntoView) { try { fbe.scrollIntoView({ block: 'nearest' }); } catch (e) { /* ältere Browser */ } }
   }
 
   /* ------------------------------------------------------------ Ereignisse */

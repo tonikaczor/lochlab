@@ -108,6 +108,11 @@ g.g-c1,g.g-c2,g.g-c3,g.g-c4{color:var(--c)}
 .g-node{fill:var(--ok);stroke:var(--bg);stroke-width:1.5}
 .g-bar{fill:var(--accent)}
 .g-arc{fill:none;stroke:var(--mute);stroke-width:1.8}
+.tip{cursor:grab;outline:none;touch-action:none}.tip.drag{cursor:grabbing}
+.tip-hit{fill:transparent;stroke:none}
+.tip-k{fill:var(--bg);stroke:var(--ok);stroke-width:3.4}
+.tip:hover .tip-k,.tip.drag .tip-k{fill:var(--ok)}
+.tip:focus-visible .tip-hit{stroke:var(--fg);stroke-width:2.4;stroke-dasharray:5 4}
 .g-fill-ok{fill:var(--ok);opacity:.10}.g-fill-bad{fill:var(--danger);opacity:.10}
 .lgd{display:flex;gap:6px 16px;flex-wrap:wrap;font-size:14px;margin:4px 0}
 .lg{display:inline-flex;align-items:center}
@@ -171,6 +176,7 @@ sub,sup{font-size:14px;line-height:0}
 #urheber-hinweis{font-size:14px!important}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}</style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body class="gs">
 <!--GATE-->
@@ -211,6 +217,8 @@ sub,sup{font-size:14px;line-height:0}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'mat2lab.html': { buehne: { cx: '#cxPh', de: '#deSvg', lp: '#lpPz', fo: '#foSvg' }, name: 'Mathe-Brücke Technik', gruppen: [{ name: 'Transformationen', teile: ['lp', 'fo'] }], saetze: { 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

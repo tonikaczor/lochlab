@@ -46,9 +46,10 @@
   const istP = k => k[1] === 'p';
   const sicht = () => { const s = Object.assign({}, stand); Object.keys(pk).forEach(id => { s[id] = PK.stateOf(pk[id]); }); return s; };
   function kopf() {
-    const z = core.zaehl(K(), sicht(), art, Date.now());
+    const z = core.zaehl(K(), sicht(), art, Date.now()), summe = Math.max(1, z.faecher.reduce((a, b) => a + b, 0)), np = K().filter(istP).length, PAUSE = ['sofort wieder', 'nach 1 Tag', 'nach 3 Tagen', 'nach 7 Tagen', 'nach 14 Tagen'];
     return '<div class="kpis"><div class="kpi"><b>' + z.gesamt + '</b><span>Karten</span></div><div class="kpi"><b>' + z.faellig + '</b><span>jetzt fällig</span></div><div class="kpi"><b>' + z.neu + '</b><span>neu</span></div><div class="kpi"><b>' + z.gelernt + '</b><span>im letzten Fach</span></div></div>' +
-      '<p class="boxen" aria-label="Verteilung auf die fünf Fächer">' + z.faecher.map((n, i) => '<span title="Fach ' + (i + 1) + '">F' + (i + 1) + ': <b>' + n + '</b></span>').join(' · ') + '</p>';
+      '<div class="fb" role="group" aria-label="Verteilung auf die fünf Fächer">' + z.faecher.map((n, i) => '<div class="z"><span>Fach ' + (i + 1) + ' <span class="mute">(' + PAUSE[i] + ')</span></span><span class="bar"><i style="width:' + Math.round(100 * n / summe) + '%"></i></span><span class="n">' + n + '</span></div>').join('') + '</div>' +
+      (np > 0 && !/^p/.test(art) ? '<p class="hint">Du hast ' + np + (np === 1 ? ' Karte' : ' Karten') + ' aus falsch beantworteten Prüfungsfragen. <button type="button" class="btn" id="zuP">Nur diese Karten üben</button></p>' : (np === 0 && !/^p/.test(art) ? '<p class="mute">Falsche Antworten im Prüfungs-Lab legen hier automatisch Karten an (Auswahl „Aus Prüfung“).</p>' : ''));
   }
   function start() {
     const a0 = $('#art'); art = a0 ? a0.value : art;
@@ -73,12 +74,22 @@
   }
   function init() {
     const sel = $('#art'); if (sel) { sel.innerHTML = Object.keys(ARTEN).map(k => '<option value="' + k + '">' + ARTEN[k] + '</option>').join(''); sel.onchange = start; }
-    const rs = $('#reset'); if (rs) rs.onclick = () => { if (confirm('Den Lernstand aller Karten löschen?')) { stand = {}; save(stand); if (PK) { Object.keys(pk).forEach(id => { pk[id].f = 1; pk[id].d = Date.now(); }); PK.sichern(pk); } start(); } };
+    document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('#zuP'); if (!b) return; const s = $('#art'); if (s) { s.value = 'p'; start(); } });
+    const rs = $('#reset'); if (rs) rs.onclick = () => {   // eigene Rückfrage in der Seite statt confirm()
+      if ($('#resetBox')) return; const d = document.createElement('div'); d.id = 'resetBox'; d.className = 'card'; d.setAttribute('role', 'alertdialog'); d.setAttribute('aria-labelledby', 'resetT');
+      d.innerHTML = '<b id="resetT">Lernstand aller Karten löschen?</b><p class="mute">Alle Karten kommen zurück in Fach 1. Das lässt sich nicht rückgängig machen.</p><p class="btns"><button type="button" class="btn grau" id="resetNo">Behalten</button><button type="button" class="btn nein" id="resetYes">Ja, löschen</button></p>';
+      rs.parentNode.insertAdjacentElement('afterend', d);
+      const zu = () => { d.parentNode.removeChild(d); rs.focus(); };
+      $('#resetNo').onclick = zu; d.onkeydown = ev => { if (ev.key === 'Escape') zu(); };
+      $('#resetYes').onclick = () => { stand = {}; save(stand); if (PK) { Object.keys(pk).forEach(id => { pk[id].f = 1; pk[id].d = Date.now(); }); PK.sichern(pk); } zu(); start(); };
+      $('#resetNo').focus();
+    };
     document.addEventListener('keydown', e => {
       if (e.target && /select|input|textarea/i.test(e.target.tagName)) return;
-      if (e.key === ' ' && !offen && q[pos]) { e.preventDefault(); offen = true; zeige(); }
+      if (e.key === ' ' && !offen && q[pos] && !/^(BUTTON|A|SUMMARY)$/.test(e.target.tagName)) { e.preventDefault(); offen = true; zeige(); }
       else if (offen && e.key === 'ArrowRight') ant(true); else if (offen && e.key === 'ArrowLeft') ant(false);
     });
+    try { const m = /[?&]art=([a-z0-9]+)/.exec(String(root.location && root.location.search || '')); if (m && sel && ARTEN[m[1]]) sel.value = m[1]; } catch (e) {}   // karten.html?art=p: gleich die Fehlerkarten (aus Prüfung) üben
     start();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

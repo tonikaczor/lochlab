@@ -56,21 +56,51 @@ label{display:block;font-size:12px;color:var(--mute)}label input,label select{ma
 table.ft{width:100%;border-collapse:collapse;margin-top:8px}table.ft td{padding:6px 8px;border-top:1px solid var(--line);vertical-align:top;font-size:14px}table.ft td:first-child{width:34%}
 .bk{border-top:1px solid var(--line);padding:8px 0}
 @media print{header,#tabs,#toast,#gate{display:none!important}body{background:#fff;color:#000}}
+/* U1 (Audit): Zielgrößen mindestens 44 px, Text mindestens 14 px */
+.small,label,.why,.chip,.msgs .m,.msgs .kv,.bl{font-size:14px}
+.tab{height:44px;border-radius:22px}.btn{min-height:44px}.btn.s{min-height:44px;font-size:14px}
+#bHome{width:auto;min-width:44px;padding:0 12px;font-size:15px;font-weight:600;white-space:nowrap}
+#tabs{top:calc(56px + env(safe-area-inset-top))}
+.tmr{top:calc(110px + env(safe-area-inset-top))}
+#tabs{padding:4px 10px}
+.card.tmr{padding:8px 12px}
+@media(max-width:600px){#exCancel{display:none}}
+/* Einordnung "Warum brauche ich das?" und Projekt-Hinweis nur auf dem Start-Reiter, nie in der laufenden Prüfung */
+body:not([data-pr-tab=start]) #wzHint,body:not([data-pr-tab=start]) #vbHint{display:none!important}
+/* laufende Prüfung am Handy: Tutorial-Angebot ausblenden, mehr Platz für die Fragen */
+@media(max-width:700px){html.pr-lauf #trOffer,html.pr-lauf #vbHint,html.pr-lauf #wzHint,html.pr-lauf #berufsLink{display:none!important}}
+/* Helles Design (C2c): folgt lm4.theme, sonst dem System */
+:root[data-theme=light]{--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;color-scheme:light}
+:root[data-theme=light] input,:root[data-theme=light] select,:root[data-theme=light] textarea,:root[data-theme=light] .prev,:root[data-theme=light] #toast{background:#fff}
+:root[data-theme=light] .prev code{background:#eaeef3}
+:root[data-theme=light] .bad,:root[data-theme=light] .rl.no{color:#b3261e}
+:root[data-theme=light] .btn.danger{color:#b3261e}
+:root[data-theme=light] header{box-shadow:0 2px 6px rgba(20,26,33,.12)}
 </style>
+<script>try{var _t=localStorage.getItem('lm4.theme');if(_t!=='light'&&_t!=='dark')_t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';document.documentElement.dataset.theme=_t;}catch(e){}</script>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
 <script src="gate.js" data-title="Tonfunk Prüfungs-Lab"></script>
 <!--/GATE-->
+<div id="app">
 <header>
-  <button class="ib" id="bMenu" aria-label="Menü">☰</button><a class="ib" id="bHome" href="index.html" aria-label="Startseite" title="Startseite">⌂</a>
-  <img src="logo.png" alt="Tonfunk" onclick="location.href='index.html'" style="cursor:pointer" onerror="this.remove()">
-  <div class="title">Prüfungs-Lab</div>
+  <button class="ib" id="bMenu" aria-label="Menü">☰</button><a class="ib" id="bHome" href="index.html#pruefen" aria-label="Zurück zum Start" title="Zurück zum Start">‹ Start</a>
+  <img id="logo" src="logo.png" alt="Tonfunk" onclick="location.href='index.html'" style="cursor:pointer" onerror="this.remove()">
+  <div class="title" id="title">Prüfungs-Lab</div>
 </header>
 <nav id="tabs"></nav>
-<p style="margin:6px 14px;font-size:14px"><a href="berufsfragen.html">Fragen für deinen Beruf</a> (Industrieelektriker, Industriemechaniker, Produktdesigner, Lagerlogistik, Industriekaufmann, Fachinformatiker)</p>
+<p id="berufsLink" style="margin:6px 14px;font-size:14px" hidden></p>
+<script>/* Fragen für deinen Beruf: nur der eigene Beruf (lm4.beruf); für Elektroniker gibt es die Fragen hier im Prüfungs-Lab, dann bleibt die Zeile weg */
+(function(){var N={ige:'Industrieelektriker',im:'Industriemechaniker',tpd:'Produktdesigner',fll:'Lagerlogistik',ik:'Industriekaufmann',fi:'Fachinformatiker'},b='';
+try{b=String(localStorage.getItem('lm4.beruf')||'').replace(/"/g,'');}catch(e){}
+var p=document.getElementById('berufsLink');if(!p||!N[b])return;
+var a=document.createElement('a');a.href='berufsfragen.html';a.textContent='Fragen für deinen Beruf';a.style.cssText='display:inline-flex;align-items:center;min-height:44px';
+p.appendChild(a);p.appendChild(document.createTextNode(' (' + N[b] + ')'));p.hidden=false;})();</script>
 <main id="view"></main>
+</div>
 <div id="toast"></div>
 <script src="ver.js"></script>
 <script src="qr.js"></script>
@@ -98,6 +128,11 @@ table.ft{width:100%;border-collapse:collapse;margin-top:8px}table.ft td{padding:
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 <script src="urheber.js"></script>
 <script src="design.js"></script>
+<script>window.LR_TAB = { 'pruefungslab.html': { name: 'Prüfungs-Lab', pruefung: false,
+  gruppe: { start: 'thema', auswertung: 'thema', pruefung: 'ueben', training: 'ueben', aufgaben: 'ueben', formeln: 'hilfe' },
+  teil: { pruefung: 'Probeprüfung', training: 'Training', aufgaben: 'Aufgaben', formeln: 'Formeln' },
+  saetze: { 'Probeprüfung': 'Wie in der Prüfung: Die Zeit läuft, die Lösungen siehst du erst am Ende.', 'Training': 'Zehn Fragen zu einem Thema, nach jeder Antwort steht sofort die Erklärung.', 'Aufgaben': 'Aufgaben mit automatischer Prüfung, dazu Tipp und Abgabe.' }, leiste: false } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

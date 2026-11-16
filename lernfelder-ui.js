@@ -10,7 +10,10 @@
   const REG = root.LAB_REG || {}, ROWS = root.AUFGABEN || [];
   const POOL_JS = ['pruefbank.js', 'pruefbank-schule.js', 'pruefbank-beruf.js', 'pruefpool.js'];
   const S = { lj: 2, lf: null, tab: 'auf', filter: 'alle', pt: null, timer: 0, poolState: 'none' };
-  const ZU = L.zuordnung(ROWS), NEU = {}; L.NEU_V48_163.forEach(i => { NEU[i] = 'v48.163'; }); (L.NEU_V50_165 || []).forEach(i => { NEU[i] = 'v50.165'; });
+  /* Beruf wie Mein Stand und Ausbildungsplan (lm4.beruf, sonst egs): gezählt wird nur, was zum Beruf gehört (L.zaehlZeilen) */
+  const BERUF = (() => { try { const v = root.localStorage.getItem('lm4.beruf'); if (!v) return 'egs'; let s = v; try { const j = JSON.parse(v); if (typeof j === 'string') s = j; } catch (e) {} return /^[a-z0-9_-]{2,12}$/i.test(s) ? s : 'egs'; } catch (e) { return 'egs'; } })();
+  const ZROWS = (() => { const z = L.zaehlZeilen(ROWS, REG, BERUF); return z.length ? z : ROWS; })();
+  const ZU = L.zuordnung(ZROWS), NEU = {}; L.NEU_V48_163.forEach(i => { NEU[i] = 'v48.163'; }); (L.NEU_V50_165 || []).forEach(i => { NEU[i] = 'v50.165'; });
   const LABORDER = Object.keys(REG);
 
   /* ---------- Hilfen ---------- */
@@ -49,13 +52,13 @@
   }
   /* ---------- Karten ---------- */
   function cards() {
-    const res = results(), best = probeStore().probe, g = h('div', { class: 'grid' });
+    const res = results(), best = probeStore().probe, g = h('div', { class: 'grid' }), zn = poolReady() ? L.fragenZahl(root.PR_POOL, root.PR_BANK.MC) : null;
     lfOfLj(S.lj).forEach(l => {
       const st = L.stand(rowsOf(l.k), res), b = best[l.k];
       g.appendChild(h('button', { type: 'button', class: 'lfc', 'data-lf': l.k, 'aria-pressed': String(S.lf === l.k), onclick: () => { stopTimer(); S.lf = l.k; S.tab = 'auf'; S.filter = 'alle'; S.pt = null; render(true); } }, [
         h('span', {}, [h('span', { class: 'k', text: l.k }), h('b', { text: l.t.replace(/^LF [0-9.]+: |^LF [0-9.]+ Labor: |^LF[0-9]*: |^E[0-9]+: |^Grundlagen E[0-9]: /, '') })]),
         bar(st.pct),
-        h('span', { class: 'meta' }, [h('span', { text: st.done + ' von ' + st.n + ' Aufgaben gelöst' }), h('span', { text: b ? 'Probetest: Note ' + b.note : 'Probetest offen' })])
+        h('span', { class: 'meta' }, [h('span', { text: st.done + ' von ' + st.n + ' Aufgaben gelöst' }), h('span', { class: 'ptlbl', text: b ? 'Probetest: Note ' + b.note : (zn && zn[l.k] && zn[l.k].n < L.MIN_FRAGEN) ? 'Probetest in Vorbereitung' : 'Probetest offen' })])
       ]));
     });
     return g;
@@ -199,7 +202,8 @@
         h('div', { text: q.q, style: 'white-space:pre-wrap;margin:4px 0' }),
         h('div', { text: 'Deine Antwort: ' + yourText(q, t.ans[q.id]) }),
         ok ? null : h('div', { text: 'Richtig: ' + ansText(q) }),
-        q.w ? h('details', {}, [h('summary', { text: 'Erklärung' }), h('p', { text: q.w })]) : null
+        q.w ? h('details', {}, [h('summary', { text: 'Erklärung' }), h('p', { text: q.w })]) : null,
+        ok ? null : h('button', { type: 'button', class: 'btn dazu', onclick: () => { S.pt = null; S.tab = 'auf'; S.filter = 'alle'; render(true); } }, ['Dazu üben'])
       ]));
     });
     w.appendChild(h('div', { class: 'seg' }, [
@@ -225,5 +229,6 @@
   if (lf0 && L.lf(lf0)) { S.lf = lf0; S.lj = L.lf(lf0).lj; if (query('probe') != null) S.tab = 'probe'; }
   render();
   if (S.lf && S.tab === 'probe') ensurePool();
+  else { const bg = () => { if (S.pt) return; if (!poolReady()) ensurePool(); else render(); }; try { root.setTimeout(bg, 1200); } catch (e) {} }   // Pool im Hintergrund: nur so weiß die Liste, welches Lernfeld noch zu wenige Fragen hat
   root.LernfelderUI = { state: S, render, startProbe, finish };
 })(typeof window !== 'undefined' ? window : globalThis);

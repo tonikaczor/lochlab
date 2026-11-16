@@ -16,9 +16,9 @@
   const fm = (v, d) => (fin(v) ? C.calc.fmt(v, d) : '–');
 
   const CSS = '.pv{display:block;width:100%;height:auto;max-width:560px;margin:4px auto 0;text-anchor:start}'
-    + '.pv text{font:600 11.5px system-ui,sans-serif;fill:var(--fg,#222);-webkit-user-select:none;user-select:none}'
-    + '.pv .m{fill:var(--mute,#667);font-weight:500;font-size:10.5px}'
-    + '.pv .t{fill:var(--mute,#667);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}'
+    + '.pv text{font:600 12px system-ui,sans-serif;fill:var(--fg,#222);-webkit-user-select:none;user-select:none}'
+    + '.pv .m{fill:var(--mute,#667);font-weight:500;font-size:12px}'
+    + '.pv .t{fill:var(--mute,#667);font-size:12px;letter-spacing:.05em;text-transform:uppercase}'
     + '.pv .ln{stroke:var(--fg,#222);stroke-width:1.3;fill:none}'
     + '.pv .gd{stroke:var(--line,#bbb);stroke-width:1;fill:none}'
     + '.pv .body{fill:var(--boxf,var(--panel2,#eee));stroke:var(--fg,#222);stroke-width:1.5}'
@@ -31,7 +31,7 @@
     + '.pv .tr-p{stroke:var(--air,#3aa0ff);stroke-width:2;fill:none;stroke-linejoin:round}'
     + '.pv .tr-t{stroke:var(--warn,#c80);stroke-width:2;fill:none;stroke-linejoin:round}'
     + '.pvbox{margin:10px 0 2px;padding-top:6px;border-top:1px solid var(--line,#ccc)}'
-    + '.pvbox h5{margin:0 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute,#667);font-weight:600}';
+    + '.pvbox h5{margin:0 0 2px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute,#667);font-weight:600}';
   if (typeof document !== 'undefined' && document.head && !document.getElementById('pneviz-css')) {
     const st = document.createElement('style'); st.id = 'pneviz-css'; st.textContent = CSS; document.head.appendChild(st);
   }
@@ -96,7 +96,7 @@
     for (let tt = Math.ceil(tS / 2) * 2; tt <= tEnd + 1e-6; tt += 2) { s += `<line x1="${x(tt)}" y1="${top}" x2="${x(tt)}" y2="${top + L.length * lh}" class="gd"/><text x="${x(tt)}" y="${top + L.length * lh + 14}" text-anchor="middle" class="m">${fm(tt, 0)}</text>`; }
     L.forEach((ln, i) => {
       const y0 = top + i * lh + 4, yh = lh - 10, yv = v => q(y0 + yh - clamp(v, 0, 1) * yh);
-      s += `<text x="${X0 - 6}" y="${q(y0 + yh / 2 + 4)}" text-anchor="end" class="m" style="font-size:10.5px">${esc(ln.label)}</text>`;
+      s += `<text x="${X0 - 6}" y="${q(y0 + yh / 2 + 4)}" text-anchor="end" class="m" style="font-size:12px">${esc(ln.label)}</text>`;
       s += `<line x1="${X0}" y1="${q(y0 + yh)}" x2="${X0 + W}" y2="${q(y0 + yh)}" class="gd"/>`;
       let d = '', last = null, i0 = 0;
       ln.pts.forEach((p, i) => { if (p[0] < tS) i0 = i; });
@@ -163,7 +163,7 @@
     const now = Date.now(); if (now - R.drawn < 120 && el.firstChild) return;
     const sig = R.t.toFixed(2) + '|' + R.lanes.map(l => l.pts.length).join(','); if (sig === R.sig && el.firstChild) return;
     R.sig = sig; R.drawn = now;
-    el.innerHTML = `<h4>Zeitdiagramm: Weg, Druck und Taster</h4>${verlauf({ lanes: R.lanes, t: R.t })}<p class="hint2" style="margin:4px 0 0">Die letzten ${WIN} Sekunden der Simulation. Weg: 0 % eingefahren bis 100 % ausgefahren. Druck: oben = belüftet, unten = entlüftet. Bei Pause steht auch das Diagramm.</p>`;
+    el.innerHTML = `<h4>Zeitdiagramm: Weg, Druck und Taster</h4>${verlauf({ lanes: R.lanes, t: R.t })}<p class="hint2" style="margin:4px 0 0">Die letzten ${WIN} Sekunden der Simulation. Weg: 0 % eingefahren bis 100 % ausgefahren. Druck: oben = belüftet, unten = entlüftet. Bei Pause steht auch das Diagramm.</p>`; try { if (window.PNE_UI && window.PNE_UI.fixSvg) window.PNE_UI.fixSvg(el); } catch (e) {}
   }
 
   const api = { kraft, luft, verlauf, tick, track };

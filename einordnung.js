@@ -78,12 +78,12 @@
   function css(doc) {
     if (doc.getElementById(CSSID)) return;
     var st = doc.createElement('style'); st.id = CSSID;
-    st.textContent = '#wzHint{margin:6px 0;padding:2px 6px 2px 12px;border:1px solid var(--line,#444);border-radius:10px;background:var(--panel,transparent);color:var(--fg,inherit);font-size:13.5px;line-height:1.45;box-sizing:border-box;max-width:100%;overflow-wrap:anywhere}'
-      + '#wzHint .wzTop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}#wzHint .wzTt{font:inherit;font-weight:700;margin:0;padding:4px 0;min-height:28px;border:0;background:transparent;color:inherit;cursor:pointer;text-align:left;flex:1}#wzHint .wzTt::after{content:" \\25B8";color:var(--mute,#9aa6b2)}#wzHint .wzTt[aria-expanded=true]::after{content:" \\25BE"}#wzHint .wzTop{align-items:center}#wzHint .wzB[hidden]{display:none}'
+    st.textContent = '#wzHint{margin:6px 0;padding:2px 6px 2px 12px;border:1px solid var(--line,#444);border-radius:10px;background:var(--panel,transparent);color:var(--fg,inherit);font-size:14px;line-height:1.45;box-sizing:border-box;max-width:100%;overflow-wrap:anywhere}'
+      + '#wzHint .wzTop{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}#wzHint .wzTt{font:inherit;font-weight:700;margin:0;padding:4px 0;min-height:44px;border:0;background:transparent;color:inherit;cursor:pointer;text-align:left;flex:1}#wzHint .wzTt::after{content:" \\25B8";color:var(--mute,#9aa6b2)}#wzHint .wzTt[aria-expanded=true]::after{content:" \\25BE"}#wzHint .wzTop{align-items:center}#wzHint .wzB[hidden]{display:none}'
       + '#wzHint .wzX{flex:none;min-width:44px;min-height:44px;margin:0 -2px 0 0;border:0;background:transparent;color:var(--mute,#9aa6b2);font:inherit;font-size:22px;line-height:1;cursor:pointer;border-radius:10px}'
       + '#wzHint .wzX:hover{color:var(--fg,inherit)}#wzHint .wzX:focus-visible,#wzHint a:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}'
-      + '#wzHint p{margin:4px 6px 4px 0}#wzHint .wzK{display:block;font-size:12px;font-weight:700;color:var(--mute,#9aa6b2);text-transform:none;letter-spacing:.02em}'
-      + '#wzHint a{color:var(--accent,#5fb0ff);font-weight:600;display:inline-block;min-height:24px}#wzHint .wzGo{margin:2px 0 4px}#wzHint .wzL{display:block;padding:2px 0}'
+      + '#wzHint p{margin:4px 6px 4px 0}#wzHint .wzK{display:block;font-size:14px;font-weight:700;color:var(--mute,#9aa6b2);text-transform:none;letter-spacing:.02em}'
+      + '#wzHint a{color:var(--accent,#5fb0ff);font-weight:600;display:inline-flex;align-items:center;min-height:44px}#wzHint .wzGo{margin:2px 0 4px}#wzHint .wzL{display:flex;padding:2px 0}'
       + '@media print{#wzHint{display:none!important}}';
     (doc.head || doc.body).appendChild(st);
   }
@@ -159,6 +159,7 @@
       var doc = W.document, REG = W.LAB_REG; if (!doc || !REG) return null;
       var loc = W.location || {}, file = dateiName(loc.pathname);
       if (/[?&]verbund=/.test(String(loc.search || ''))) return null;
+      if (/(^|\s)pr-lauf(\s|$)/.test(String((doc.documentElement || {}).className || ''))) return null;   // laufende Probeprüfung (pruefwerk.js setzt html.pr-lauf): Hinweis gar nicht erst einblenden
       var lab = labVonDatei(REG, file); if (!lab) return null;
       if (doc.getElementById(ID) || doc.getElementById('gate')) return null;
       if (geschlossen(W, lab)) return null;

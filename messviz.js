@@ -130,7 +130,7 @@
 .mvbox svg .body{fill:var(--panel);stroke:var(--fg);stroke-opacity:.6;stroke-width:1.5}.mvbox svg .grip{fill:var(--panel2);stroke:var(--line)}
 .mvbox svg .slot{fill:var(--bg);stroke:var(--line)}.mvbox svg .sw{fill:var(--accent)}.mvbox svg .tipm{fill:var(--mute)}.mvbox svg .hook{fill:none;stroke:var(--mute);stroke-width:3;stroke-linecap:round}
 .mvbox svg .clip{fill:var(--mute)}.mvbox svg .jaw{stroke:var(--bg);stroke-width:1.5}
-.mvcap{margin:2px 2px 8px;font-size:12.5px;color:var(--mute)}
+.mvcap{margin:2px 2px 8px;font-size:14px;color:var(--mute)}
 canvas[data-cv].mvscope{border:2px solid var(--line);box-shadow:inset 0 0 18px rgba(0,0,0,.55)}`;
   const st = document.createElement('style'); st.id = 'messviz-css'; st.textContent = CSS; document.head.appendChild(st);
 

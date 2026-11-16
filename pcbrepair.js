@@ -1357,7 +1357,7 @@
         if (!r || !r.info) { toast((r && r.error) || 'Auf dieser Platine ging das nicht. Nimm eine andere.'); return; }
         S.board = r.board; S.mode = 'local'; S.log = []; lsSet('pcb.repair.log', S.log); lsSet('pcb.repair.case', r.board);
         S.probes = { A: null, B: null }; S.next = 'A'; S.power = false; S.hintN = 0; S.solvedFx = false; S.side = 'top'; S.lens.on = false; S.fitS = 0; boardChanged(); fit();
-        addLog('Neuer Fehlerfall auf "' + base.name + '". Finde den Fehler!', ''); showBanner('Neuer Fehlerfall: Die Baugruppe geht nicht. Finde den Fehler und repariere sie.', 4500);
+        addLog('Neuer Fehlerfall auf "' + base.name + '". Finde den Fehler!', ''); showBanner('Neuer Fehlerfall: Finde den Fehler.', 3000);
       }
 
       /* ---- Werkzeugleiste */

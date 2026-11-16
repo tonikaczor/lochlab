@@ -100,6 +100,8 @@
   const PRESETS = [
     { id: 'standard', name: 'Standard (Referenz)', info: 'Übungsschaltung: ' + K(c => { const a = c.emit.ac(Object.assign({}, BASE_CTL, { c1: 10e-6, c2: 10e-6 })); return 'U_CE = ' + val(a.uce, 'V', 2) + ', I_C = ' + val(a.ic * 1000, 'mA', 2) + ', V_u = ' + val(a.vu, '', 2).replace('-', MINUS) + ' (Ausgang um ' + fm(a.phase, 0) + '° gedreht), V_u,Quelle = ' + val(a.vus, '', 2).replace('-', MINUS) + '.'; }),
       controls: {} },
+    { id: 'ziel-uce', name: 'Aufgabe: U_CE auf 6 V einstellen', info: 'Aufgabe: Stelle U_CE im Arbeitspunkt auf 6 V ein, also etwa in die Mitte der Aussteuerung bei U_B = 12 V. Ziehe dazu den Arbeitspunkt auf der Arbeitsgeraden im Kennlinienfeld (mit Maus, Finger oder den Pfeiltasten) oder verändere R_1. Die Ampel zeigt, wann die Vorgabe erreicht ist. Start ist R_1 = 27 kΩ.',
+      controls: { r1: 27000, zielUce: 6, ansicht: 'ausgangskennlinie' } },
     { id: 'gegenkopplung', name: 'Gegenkopplung (ohne C_E)', info: 'Übungsschaltung ohne Emitterkondensator: ' + K(c => { const a = c.emit.ac(Object.assign({}, BASE_CTL, { ce: false })), b = c.emit.ac(BASE_CTL); return 'Der Emitterwiderstand wirkt auch für das Signal als Gegenkopplung, |V_u| sinkt von ' + val(Math.abs(b.vu), '', 2) + ' auf ' + val(Math.abs(a.vu), '', 2) + ', der Eingangswiderstand steigt von ' + eng(b.rin, 'Ω') + ' auf ' + eng(a.rin, 'Ω') + '.'; }),
       controls: { ce: false } },
     { id: 'ap-unten', name: 'Arbeitspunkt zu tief (Pool S2025-21)', info: 'Fehlbild (Pool S2025-21: R_1 zu klein): ' + K(c => { const g = Object.assign({}, BASE_CTL, { r1: 27000, ue: 0.1, f: 1000 }), a = c.emit.ac(g), l = c.emit.large(g, 128); return 'Mit R_1 = 27 kΩ sinkt U_CE auf ' + val(a.uce, 'V', 2) + '; die Grenze nach unten liegt bei U_a = ' + val(a.uaMaxUnten, 'V', 2) + '. Bei ' + val(g.ue * 1000, 'mV', 0) + ' Amplitude wird die negative Halbwelle am Ausgang flach (Begrenzen ' + CL(l.clip) + ').'; }),
@@ -116,6 +118,8 @@
   function plant(P0) {
     const CORE = P0.CORE, CX = CORE.cx;
     const sw = { active: false, p: 0, prevClip: null };
+    const lay = {}; let frz = null, frzT = 0;   /* Lage des Kennlinienfelds (fuer das Ziehen) und eingefrorene Achse */
+    const frzOn = () => !!(frz && Date.now() - frzT < 1500);
     const okAc = a => a && a.ok !== false && a.valid !== false;
     const fw = CORE.limit && CORE.limit('ap_fenster') ? CORE.limit('ap_fenster').value : 0.15;
     const kg = CORE.limit && CORE.limit('klirr_grenze') ? CORE.limit('klirr_grenze').value : 0.05;
@@ -357,6 +361,7 @@
         P = stackFit(R0.x, R0.y, R0.w, bodyH, [{ key: 'sch', min: 110, w: 0.27, p: 1 }, { key: 'kenn', min: 140, w: 0.27, p: pk }, { key: 'sig', min: 140, w: 0.27, p: ps }, { key: 'strip', min: 56, w: 0.15, p: 4 }, { key: 'spec', min: 110, w: 0.12, p: 5 }], gap);
       }
       const sch = P.sch, kenn = P.kenn, sig = P.sig, spec = P.spec, strip = P.strip;
+      /* Handy-Ansicht: Felder melden (Umschalter der Oberfläche) */ if (sc.pan && R0.w < 680) sc.pan([['Schaltung', sch], ['Kennlinie', kenn], ['Signal', sig], ['Spektrum', spec], ['Formel', strip]]);
       // Schaltbild
       const L = {};
       L.ub = 'U_B = ' + val(r.cfg.ub, 'V', 1); L.ue = 'U_e = ' + eng(r.ueRun, 'V'); L.ib = 'I_B = ' + eng(isNum(a.ib) ? a.ib : 0, 'A'); L.ic = 'I_C = ' + eng(a.ic, 'A'); L.uce = 'U_CE = ' + val(a.uce, 'V', 2);
@@ -365,6 +370,7 @@
       if (sch && !sc.view('schematic', sch, Object.assign({ kind: 'emitter', values: vals, labels: L, ce: !!ctl.ce }, faultSpec(ctl, hid)), {})) g.panel(ctx, sch.x, sch.y, sch.w, sch.h, pal.panel, pal.line, 6);
       // Kennlinie (Ausgangskennlinienfeld oder Uebertragung)
       const cv = view.rig.curves();
+      lay.cw = w; lay.ch = h; lay.pl = null;
       if (!kenn) { /* kein Platz */ } else if (emph === 'uebertragung') {
         const c = cv.find(x => x.id === 'uebertragung');
         if (c) sc.view('curve', kenn, c, {}); else noData(ctx, g, kenn, pal, 'Keine Übertragungskennlinie: Der Transistor ist nicht aktiv.');
@@ -373,7 +379,7 @@
         let done = false;
         if (fam && fam.ok !== false && r.line && r.line.ok !== false) {
           const lines = [{ name: 'Arbeitsgerade', kind: 'dc', points: r.line.dc }].concat(r.valid ? [{ name: 'Wechselstrom-Arbeitsgerade', kind: 'ac', points: r.line.ac }] : []);
-          done = sc.view('family', kenn, { uce: fam.uce, series: fam.series, ucesat: CORE.limit('ucesat').value, lines, marker: { x: a.uce, y: a.ic, label: 'Arbeitspunkt' } }, {});
+          done = sc.view('family', kenn, { uce: fam.uce, series: fam.series, ucesat: CORE.limit('ucesat').value, lines, marker: { x: a.uce, y: a.ic, label: 'Arbeitspunkt' }, layoutOut: lay, yMax: frzOn() ? frz.y1 : undefined }, {});
         }
         if (!done && c) sc.view('curve', kenn, c, {});
       }
@@ -412,8 +418,48 @@
       wrapText(ctx, g, msg, rc.w - 16, 12, 3).forEach((ln, k) => g.text(ctx, ln, rc.x + 8, rc.y + 18 + k * 16, { size: 12, color: pal.mute, max: rc.w - 16 }));
     }
 
+    /* Arbeitspunkt ziehen: Der Zeiger waehlt U_CE auf der Gleichstrom-Arbeitsgeraden; R_1 wird (Bisektion ueber den Kern) so gesetzt, dass der Arbeitspunkt dort liegt */
+    function r1For(ctl, uceSoll) {
+      const g = r1 => { const d = CORE.tr.dc({ ub: ctl.ub, rc: ctl.rc, re: ctl.re1 + ctl.re2, b: ctl.b, basis: 'teiler', r1, r2: ctl.r2 }); return d && d.ok !== false && isNum(d.uce) ? d.uce : NaN; };
+      let lo = 1e3, hi = 1e6;
+      if (!(g(lo) < uceSoll)) return lo;
+      if (!(g(hi) > uceSoll)) return hi;
+      for (let i = 0; i < 48; i++) { const mid = Math.sqrt(lo * hi); if (g(mid) < uceSoll) lo = mid; else hi = mid; }
+      return hi;
+    }
+    function setUce(ctl, uce) {
+      const us = CORE.limit && CORE.limit('ucesat') ? CORE.limit('ucesat').value : 0.2;
+      const r1 = Math.round(r1For(ctl, clamp(uce, us + 0.05, ctl.ub - 0.05)) / 10) * 10;
+      if (!frzOn()) frz = { y1: lay.y1 };
+      frzT = Date.now();
+      return { key: 'r1', set: { r1: clamp(r1, 1e3, 1e6) } };
+    }
+    function ziehbar(view) {
+      const r = view && view.res, ctl = view && view.ctl;
+      if (!r || !r.ok || sw.active || !ctl || ctl.fehler !== 'keiner' || !lay.pl || !lay.cw || !(lay.y1 > 0) || !r.line || !r.line.dc || r.line.dc.length < 2) return null;
+      return { r, ctl };
+    }
+    function hit(px, py, w, h, view, drag) {   /* drag = true: Zeiger ist schon gezogen worden, dann folgt der Punkt auch abseits der Linie */
+      const z = ziehbar(view); if (!z) return null;
+      const pl = lay.pl, dx = lay.x1 - lay.x0, dy = lay.y1 - lay.y0, qx = px * lay.cw / w, qy = py * lay.ch / h, on = !!drag && frzOn();
+      if (!(dx > 0) || !(dy > 0)) return null;
+      if (!on && (qx < pl.x - 14 || qx > pl.x + pl.w + 14 || qy < pl.y - 14 || qy > pl.y + pl.h + 14)) return null;
+      const p0 = z.r.line.dc[0], p1 = z.r.line.dc[z.r.line.dc.length - 1];
+      const X = p => pl.x + (p[0] - lay.x0) / dx * pl.w, Y = p => pl.y + pl.h - (p[1] - lay.y0) / dy * pl.h;
+      const ax = X(p0), ay = Y(p0), vx = X(p1) - ax, vy = Y(p1) - ay, vv = vx * vx + vy * vy;
+      if (!(vv > 0)) return null;
+      const t = clamp(((qx - ax) * vx + (qy - ay) * vy) / vv, 0, 1);
+      if (!on && Math.hypot(ax + t * vx - qx, ay + t * vy - qy) > 36) return null;
+      return setUce(z.ctl, p0[0] + t * (p1[0] - p0[0]));
+    }
+    /* Pfeiltasten: rechts/oben = Arbeitspunkt wandert auf der Arbeitsgeraden (rechts = groesseres U_CE, oben = groesserer I_C = kleineres U_CE), Schritt 0,1 V */
+    function nudge(dx, dy, view) {
+      const z = ziehbar(view); if (!z) return null;
+      return setUce(z.ctl, z.r.ac.uce + (dx - dy) * 0.1);
+    }
+
     return {
-      compute, meters, assess, diag, befund, curves, waveform, state, draw,
+      compute, meters, assess, diag, befund, curves, waveform, state, draw, hit, nudge,
       phaseHz: () => 0.15,
       step(dtMs, r, ctl) {
         if (!sw.active) return;

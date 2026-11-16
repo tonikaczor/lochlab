@@ -136,7 +136,7 @@
     $('#busView').innerHTML = ueb() + `<div class="card pl"><h4>Adressraum und Speichergröße</h4><div class="dsrow">${inp('n', 'Adressleitungen', s.n, 'Anzahl')}${inp('d', 'Datenleitungen', s.d, 'Anzahl')}</div><div id="adrOut"></div></div>
       <div class="card pl"><h4>Umgekehrt: Speichergröße → Adressleitungen</h4><div class="dsrow">${inp('rev', 'Speichergröße', s.rev, '')}<label class="f"><span>Einheit</span>${seg('data-ru', [['Byte', 'Byte'], ['KiB', 'KiB'], ['MiB', 'MiB']], s.rU)}</label></div><div id="revOut"></div></div>
       <div class="card pl"><h4>Datenrate des Busses</h4><div class="dsrow">${inp('w', 'Busbreite', s.w, 'Bit')}${inp('mhz', 'Bustakt', s.mhz, 'MHz')}</div><div id="rateOut"></div></div>
-      <div class="card pl"><h4>Ein Buszugriff, Schritt für Schritt</h4><div class="fbar"><span style="font-size:12px;color:var(--mute)">STEUERSIGNAL</span>${seg('data-bs', [['IOW', 'IOW'], ['IOR', 'IOR'], ['MEMW', 'MEMW'], ['MEMR', 'MEMR']], s.sig)}<span style="font-size:12px;color:var(--mute)">ADRESSLEITUNGEN</span>${seg('data-bb', [['8', '8'], ['16', '16']], s.bits)}</div><div class="dsrow">${inp('addr', 'Adresse', s.addr, 'hex', 'data-k', 'text')}${inp('data', 'Datenwort', s.data, 'hex', 'data-k', 'text')}</div><div id="cycOut"></div></div>`;
+      <div class="card pl"><h4>Ein Buszugriff, Schritt für Schritt</h4><div class="fbar"><span style="font-size:14px;color:var(--mute)">STEUERSIGNAL</span>${seg('data-bs', [['IOW', 'IOW'], ['IOR', 'IOR'], ['MEMW', 'MEMW'], ['MEMR', 'MEMR']], s.sig)}<span style="font-size:14px;color:var(--mute)">ADRESSLEITUNGEN</span>${seg('data-bb', [['8', '8'], ['16', '16']], s.bits)}</div><div class="dsrow">${inp('addr', 'Adresse', s.addr, 'hex', 'data-k', 'text')}${inp('data', 'Datenwort', s.data, 'hex', 'data-k', 'text')}</div><div id="cycOut"></div></div>`;
     updateBus();
   }
   function updateBus() {
@@ -231,15 +231,37 @@
   function renderMps() {
     const m = S.mps;
     $('#mpsView').innerHTML = ueb() + `<div class="card pl"><h4>Adressdecoder und Speicherplan</h4><p class="hint2" style="margin:0 0 8px">Der Adressbus hat 16 Leitungen (64 KiB). Die obersten Adressleitungen gehen an den Decoder und wählen einen Block aus. Weise jedem Block einen Baustein zu und gib eine Adresse ein.</p>
-      <div class="fbar"><span style="font-size:12px;color:var(--mute)">LEITUNGEN AM DECODER</span>${seg('data-mk', [['1', '1 (2 Blöcke)'], ['2', '2 (4 Blöcke)'], ['3', '3 (8 Blöcke)']], m.k)}</div>
+      <div class="fbar"><span style="font-size:14px;color:var(--mute)">LEITUNGEN AM DECODER</span>${seg('data-mk', [['1', '1 (2 Blöcke)'], ['2', '2 (4 Blöcke)'], ['3', '3 (8 Blöcke)']], m.k)}</div>
       <div class="dsrow">${m.map.map((t, i) => `<label class="f"><span>Z${i}: ${C.hex(C.blockStart(i, 16, m.k), 4)} bis ${C.hex(C.blockStart(i, 16, m.k) + C.blockSize(16, m.k) - 1, 4)}</span><select data-mpm="${i}">${MAPTYPES.map(o => `<option value="${o[0]}"${t === o[0] ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`).join('')}</div>
-      ${inp('addr', 'Adresse der CPU', m.addr, 'hex', 'data-k', 'text')}</div><div id="mpsOut"></div>`;
+      ${inp('addr', 'Adresse der CPU', m.addr, 'hex', 'data-k', 'text')}</div><div class="card pl"><h4>Ein Zugriff, Schritt für Schritt</h4><div id="mpsStep"></div></div><div id="mpsOut"></div>`;
     updateMps();
   }
-  function updateMps() { const o = $('#mpsOut'); if (o) o.innerHTML = mpsOut(S.mps); }
+  /* Einzelschritt (I-sys-02): derselbe Weg wie in der Auswertung darunter, nur nacheinander. Keine neuen Aussagen, nur die vorhandenen Rechenschritte. */
+  let mpsStep = 1;
+  function mpsSteps(m) {
+    const a = hexIn(m.addr, 65535); if (!C.isInt(a)) return null;
+    const k = m.k, z = C.blockOf(a, 16, k), bn = C.binRaw(a, 16), t = m.map[z], off = a - C.blockStart(z, 16, k);
+    return { z, steps: [
+      'Die CPU legt die Adresse ' + C.hex(a, 4) + ' hex auf den Adressbus. Dual sind das ' + bn.slice(0, 4) + ' ' + bn.slice(4, 8) + ' ' + bn.slice(8, 12) + ' ' + bn.slice(12) + '.',
+      'Die obersten ' + k + ' Adressleitungen (A15 bis A' + (16 - k) + ') gehen an den Adressdecoder. Sie tragen den Wert ' + bn.slice(0, k) + ', das ist die Blocknummer ' + z + '.',
+      'Der Decoder macht den Ausgang Z' + z + ' aktiv. Alle anderen Ausgänge bleiben inaktiv.',
+      t === 'frei' ? 'An Z' + z + ' hängt kein Baustein. Auf diese Adresse antwortet nichts, der Datenbus bleibt hochohmig.' : 'An Z' + z + ' hängt: ' + TLAB[t] + '. Dieser Baustein antwortet auf die Adresse.',
+      t === 'frei' ? 'Es gibt keine Adresse im Baustein, weil kein Baustein ausgewählt ist.' : 'Die unteren ' + (16 - k) + ' Adressleitungen wählen die Zelle im Baustein: ' + C.hex(a, 4) + ' − ' + C.hex(C.blockStart(z, 16, k), 4) + ' = ' + C.hex(off, Math.ceil((16 - k) / 4)) + ' hex.'
+    ] };
+  }
+  function updateMpsStep() {
+    const o = $('#mpsStep'); if (!o) return; const r = mpsSteps(S.mps);
+    if (!r) { o.innerHTML = note('Gib oben eine gültige Adresse ein (0000 bis FFFF), dann kannst du den Zugriff Schritt für Schritt ansehen.'); return; }
+    const n = r.steps.length; mpsStep = Math.max(1, Math.min(n, mpsStep));
+    o.innerHTML = '<p class="hint2" style="margin:0 0 6px">Schritt <b id="mpsStepNr">' + mpsStep + '</b> von ' + n + '</p><div class="rdout ok" id="mpsStepTxt" aria-live="polite">' + esc(r.steps[mpsStep - 1]) + '</div>' +
+      '<div class="btns"><button class="btn" data-ms="-1"' + (mpsStep <= 1 ? ' disabled' : '') + '>◀ Zurück</button><button class="btn pri" data-ms="1"' + (mpsStep >= n ? ' disabled' : '') + '>Weiter ▶</button><button class="btn" data-ms="0">↺ Von vorn</button></div>' +
+      '<div class="inst">' + mpsSvg(S.mps, mpsStep >= 3 ? r.z : null) + '</div>';
+  }
+  function updateMps() { const o = $('#mpsOut'); if (o) o.innerHTML = mpsOut(S.mps); updateMpsStep(); }
   $('#mpsView').addEventListener('input', e => { if (e.target.dataset.k === 'addr') { S.mps.addr = e.target.value; lsSet('mps', S.mps); updateMps(); } });
   $('#mpsView').addEventListener('change', e => { const i = e.target.dataset && e.target.dataset.mpm; if (i != null && MAPTYPES.some(x => x[0] === e.target.value)) { S.mps.map[+i] = e.target.value; lsSet('mps', S.mps); updateMps(); } });
   $('#mpsView').addEventListener('click', e => {
+    const sb_ = e.target.closest('[data-ms]'); if (sb_) { const v = +sb_.dataset.ms; mpsStep = v === 0 ? 1 : mpsStep + v; updateMpsStep(); return; }
     const b = e.target.closest('[data-mk]'); if (!b) return; const k = +b.dataset.mk, n = C.pow2(k);
     S.mps.k = k; S.mps.map = Array.from({ length: n }, (_, i) => S.mps.map[i] || ['ROM', 'RAM', 'E/A', 'frei'][i] || 'frei'); lsSet('mps', S.mps); renderMps();
   });
@@ -259,7 +281,7 @@
   const qText = t => `<p style="margin:8px 0;white-space:pre-line">${esc(t)}</p>`;
   function qBody(q, a, r, pre) {
     const A = q.ask, locked = r && (r.ok || pre === 'rt');
-    if (A.type === 'choice') return `<div class="opts">${A.choices.map((c, i) => `<button data-tc="${i}" ${locked ? 'disabled' : ''} class="${r && i === A.correct && locked ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    if (A.type === 'choice') return `<div class="opts">${shufOrd(A.choices).map(i => [A.choices[i], i]).map(([c, i]) => `<button data-tc="${i}" ${locked ? 'disabled' : ''} class="${r && i === A.correct && locked ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
     if (A.type === 'match') return `<div class="mlist">${A.items.map((t, i) => { const cur = locked ? A.correct[i] : (a.m && a.m[i] != null ? a.m[i] : ''); return `<div class="mrow"><div class="mt">${esc(t)}</div><select data-tm="${i}" aria-label="Zuordnung für Zeile ${i + 1}" ${locked ? 'disabled' : ''}><option value="">– wählen –</option>${A.cats.map((c, j) => `<option value="${j}"${String(cur) === String(j) ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></div>`; }).join('')}</div>`;
     if (A.type === 'order') { const o = locked ? A.correct : (a.o || []); return `<div class="opts">${A.items.map((t, i) => { const p = o.indexOf(i); return `<button data-to="${i}" ${locked ? 'disabled' : ''} class="${p >= 0 ? (locked ? 'ok' : 'on') : ''}">${p >= 0 ? '<b>' + (p + 1) + '.</b> ' : '○ '}${esc(t)}</button>`; }).join('')}</div>${locked ? '' : '<div class="btns"><button class="btn" data-tor="1">Reihenfolge zurücksetzen</button></div>'}`; }
     const inm = A.type === 'base' ? (A.base === 16 ? 'text' : 'numeric') : 'decimal';
@@ -274,8 +296,17 @@
     const v = P(a.v); if (!Number.isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return null; }
     return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 2) + (A.unit ? ' ' + A.unit : '') };
   }
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): 1. Fehlversuch = Hinweis und zweiter Versuch, 2. Fehlversuch = Lösung mit Weg; im Prüfmodus bleibt die Lösung verborgen */
+  const TRY = {};
+  const solShown = (r, id) => !!r && (r.ok || (!exam() && (TRY[id] || 0) >= 2));
+  const fbBox = (r, id, inner) => '<div class="lr-fb ' + (r.ok ? 'ok' : solShown(r, id) ? 'loes' : 'tipp') + '" id="lrFb">' + inner + '</div>';
+  const tipText = q => (q.ask.unit ? 'Antworte in ' + q.ask.unit + '. ' : '') + (q.ask.type === 'num' && q.tol > 0.011 ? 'Eine Abweichung bis ±' + q.tol + ' ' + (q.ask.unit || '') + ' gilt wegen Rundung als richtig. ' : '') + 'Lies die Aufgabe noch einmal oder tippe auf „Tipp“.';
+  const fbZeig = () => { const e = document.getElementById('lrFb'); if (e && window.LabRahmen) LabRahmen.zeig(e); };
+  const tipHtml = q => '<p><strong>Tipp:</strong> ' + esc(tipText(q)) + ' Du hast einen zweiten Versuch.</p>';
+  /* Antwortreihenfolge: stabil gemischt (je Auswahl gleich bei jedem Zeichnen), damit die richtige Antwort nicht immer an gleicher Stelle steht */
+  const shufOrd = ch => { let h = 7; String(ch.join('|')).split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); const o = ch.map((_, i) => i); for (let i = o.length - 1; i > 0; i--) { h = (h * 1103515245 + 12345) >>> 0; const j = (h >>> 8) % (i + 1); [o[i], o[j]] = [o[j], o[i]]; } return o; };
   const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : r.msg ? '✗ ' + esc(r.msg) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : (exam() ? '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>' : tipHtml(q)));
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
@@ -284,7 +315,7 @@
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qText(q.text)}${qBody(q, a, r, 'tk')}`;
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { const h0 = h.length; h += resBlock(q, r, solShown(r, t.id)); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; h = h.slice(0, h0) + fbBox(r, t.id, h.slice(h0)); }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
@@ -294,9 +325,10 @@
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
+    if (!e.ok) TRY[t.id] = (TRY[t.id] || 0) + 1;
     S.tRes = { id: t.id, ok: e.ok, given: e.given, msg: e.msg, pct };
     if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
-    renderTasks(false);
+    renderTasks(false); fbZeig();
   }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
@@ -310,7 +342,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; TRY[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -341,7 +373,7 @@
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="fbar"><span class="lbl" style="font-size:14px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
       <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div>${qText(q.text)}${qBody(q, T.ans, T.res, 'rt')}
       <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
       ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
@@ -403,7 +435,7 @@
       sec('Adressraum und Speichergröße', `<span class="eq">Adressen = 2^n bei n Adressleitungen</span><span class="eq">Kapazität in Bit = 2^n · Zahl der Datenleitungen</span><span class="eq">letzte Adresse = Anfang + Größe − 1</span><table><tr><th>Leitungen</th><th>Adressen</th></tr><tr><td>8</td><td>256</td></tr><tr><td>10</td><td>1.024 = 1 KiB</td></tr><tr><td>12</td><td>4.096 = 4 KiB</td></tr><tr><td>16</td><td>65.536 = 64 KiB</td></tr><tr><td>20</td><td>1.048.576 = 1 MiB</td></tr></table><p>1 KiB = 1.024 Byte (binär), 1 kB = 1.000 Byte (dezimal). Jede zusätzliche Adressleitung verdoppelt den Adressraum.</p>`) +
       sec('Zahlensysteme im Rechner', `<table><tr><th>Dezimal</th><th>Dual</th><th>Hex</th></tr><tr><td>10</td><td>1010</td><td>A</td></tr><tr><td>11</td><td>1011</td><td>B</td></tr><tr><td>14</td><td>1110</td><td>E</td></tr><tr><td>15</td><td>1111</td><td>F</td></tr></table><p>Dual-Stellenwerte: 128, 64, 32, 16, 8, 4, 2, 1. Eine Hex-Ziffer entspricht vier Bit (0 bis 9, A = 10 bis F = 15). Beispiel: 5B hex = 0101 1011 = 91. <b>Zweierkomplement:</b> Das negative Ergebnis einer Subtraktion steht als Zweierkomplement im Akkumulator (8 Bit: 256 − Betrag). A − B = A + Zweierkomplement von B.</p>`) +
       sec('Prozessor und 8085-Begriffe', `<p>Der klassische Prozessor besteht aus: <b>ALU</b> (arithmetische, logische und Schiebeoperationen, Akkumulator als Arbeitsregister), <b>Steuerwerk</b>, <b>Registersatz</b>, <b>Adresswerk</b> und <b>Systembusschnittstelle</b>. Dazu der <b>Stapelzeiger</b> (Stack Pointer), der auf die oberste Stelle des Stapels im RAM zeigt.</p><table><tr><th>Flag</th><th>Bedeutung</th></tr><tr><td>CY</td><td>Übertrag über Bit 7 hinaus (Carry)</td></tr><tr><td>AC</td><td>Übertrag von Bit 3 nach Bit 4 (Hilfscarry)</td></tr><tr><td>Z</td><td>Ergebnis ist 0 (Zero)</td></tr><tr><td>S</td><td>Vorzeichen: 1 = negativ (Signum)</td></tr><tr><td>P</td><td>gerade Zahl von Einsen im Ergebnis (Parity)</td></tr></table><table><tr><th>Befehlsgruppe</th><th>Beispiele</th></tr><tr><td>Datentransport</td><td>MOV r1, r2; MVI A, 00</td></tr><tr><td>Arithmetik</td><td>ADD r; INR r; DCR r</td></tr><tr><td>Logik</td><td>ANA r; ORA r; CMA</td></tr><tr><td>Schieben</td><td>RAL; RLC</td></tr><tr><td>Sprung</td><td>JMP adresse; JZ adresse</td></tr><tr><td>Ein-/Ausgabe</td><td>IN adresse; OUT adresse</td></tr><tr><td>Sonstiges</td><td>NOP; HLT</td></tr></table><p><b>Adressierungsarten:</b> unmittelbar (die Daten folgen dem Befehl, z. B. MVI A, 00), direkt (die Adresse steht im Befehl, z. B. LDA 1312), indirekt (die Adresse steht in einem Registerpaar, nach LXI H), implizit (ein Byte, die Register stecken im Befehl, z. B. MOV A, B). <b>Zeiten:</b> Befehlszyklus (ganzer Befehl) besteht aus Maschinenzyklen (ein Schreib- oder Lesevorgang), diese aus Taktzyklen (eine Periode des Takts). CISC hat einen umfangreichen, RISC einen einfachen Befehlssatz.</p>`) +
-      `<p class="hint2">Zahlen und Begriffe stammen aus der Mitschrift Lernfeld 7.1 und aus Übungswerten; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe stammen aus der Mitschrift Lernfeld 7.1 und aus Übungswerten.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

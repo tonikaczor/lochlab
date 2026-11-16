@@ -9,6 +9,8 @@
   var E=function(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
   var tpl='<div id="gate"><form id="gateForm" autocomplete="on">\n  <img src="logo.png" alt="Tonfunk" onerror="this.remove()">\n  <h1>@TITLE@</h1>\n  <p id="gateHint">Bitte anmelden</p>\n  <input id="gateName" type="text" placeholder="Vor- und Nachname" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false" aria-label="Name">\n  <input id="gatePw" type="password" placeholder="Passwort" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Passwort">\n  <button class="@BTN@" type="submit">Öffnen</button>\n  <div id="gateErr" role="alert"></div>\n</form></div>\n';
   var mk=tpl.replace('@TITLE@',E(T)).replace('@BTN@',E(B));
+  /* Darstellung: Weg zurueck zur Startseite (nicht auf index.html selbst); keine Wirkung auf Pruefung oder Speicher */
+  if(!/(^|\/)(index\.html?)?$/.test(location.pathname))mk=mk.replace('<img ','<div style="text-align:left"><a class="gateHome" href="index.html" style="display:inline-flex;align-items:center;min-height:44px;padding:0 6px;margin:0 0 4px;color:var(--accent,#3b9eff);font-size:16px;text-decoration:none">\u2039 Start</a></div><img ');
   if(cs&&cs.parentNode)cs.insertAdjacentHTML('beforebegin',mk);else document.body.insertAdjacentHTML('afterbegin',mk);
   var g=document.getElementById('gate');
   var pwOk=false,name='';

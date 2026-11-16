@@ -24,7 +24,7 @@
 .hv{--hv-ok:#5ee27d;--hv-warn:#ffb340}
 @media(prefers-color-scheme:light){:root:not([data-theme=dark]) .hv{--hv-ok:#1f8a3b;--hv-warn:#b86a00}}
 :root[data-theme=light] .hv{--hv-ok:#1f8a3b;--hv-warn:#b86a00}
-.hv .hn{margin:6px 0 0;font-size:12.5px;color:var(--mute,#8d99a6);line-height:1.4}.hv .hn b{color:var(--fg,#e8ecf0)}`;
+.hv .hn{margin:6px 0 0;font-size:14px;color:var(--mute,#8d99a6);line-height:1.4}.hv .hn b{color:var(--fg,#e8ecf0)}`;
   const T = (x, y, t, c, a) => `<text class="${c || ''}" x="${f1(x)}" y="${f1(y)}"${a ? ` text-anchor="${a}"` : ''}>${esc(t)}</text>`;
   const term = (x, y, n) => `<circle class="pl" cx="${f1(x)}" cy="${f1(y)}" r="4"/>` + (n ? T(x, y - 8, n, 'm', 'middle') : '');
 

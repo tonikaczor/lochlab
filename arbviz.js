@@ -11,7 +11,8 @@
   const V = {};
   const STOPC = { S: '#1a7f4b', T: '#1a6fd4', O: '#9a5b00', P: '#a33a3a' };   /* wie das STOP-Bild im Reiter */
 
-  const STYLE = '.vz svg{display:block;width:100%;height:auto;max-width:440px;margin:0 auto}.vz svg text{font-family:system-ui,sans-serif;fill:var(--fg)}.vz .m{fill:var(--mute)!important}'
+  const STYLE = '.vz .psabox{display:flex;gap:10px;align-items:center}.vz .psabox .inst{flex:0 0 104px}.vz .psabox>div:last-child{flex:1;min-width:0}.vz svg.psafig{max-width:none}.psalist{list-style:none;margin:0;padding:0}.psalist li{display:flex;flex-wrap:wrap;column-gap:8px;align-items:baseline;font-size:14px;line-height:1.5;padding:1px 0 1px 10px;border-left:4px dashed var(--mute);margin:0 0 3px}.psalist li b{min-width:60px}.psalist li span{color:var(--mute)}.psalist li.gef{border-left-style:solid;border-left-color:var(--accent)}.psalist li.gef span{color:var(--fg);font-weight:700}.psalist li.fehlt{border-left-color:var(--danger)}.psalist li.fehlt span{color:var(--danger);font-weight:700}@media(min-width:700px){.vz .psabox .inst{flex-basis:180px}.psalist li{font-size:15px}}'
+    + '.vz svg{display:block;width:100%;height:auto;max-width:440px;margin:0 auto}.vz svg text{font-family:system-ui,sans-serif;fill:var(--fg)}.vz .m{fill:var(--mute)!important}'
     + '.vz .cap{margin:6px 0 0;font-size:13px;color:var(--mute);line-height:1.4}'
     + '.vz .kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px}.vz .kg button{display:flex;flex-direction:column;align-items:center;gap:4px;min-height:96px;padding:8px 4px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:13px;font-weight:600;text-align:center}.vz .kg small{font-weight:400;color:var(--mute);font-size:12px}'
     + '.vz .rm{display:grid;grid-template-columns:34px repeat(3,1fr);gap:6px;align-items:stretch}.vz .rm .ax{font-size:12px;color:var(--mute);display:flex;align-items:center;justify-content:center;text-align:center}.vz .rm .ax.v{writing-mode:vertical-rl;transform:rotate(180deg)}'
@@ -111,23 +112,38 @@
 
   /* ---------- PSA-Figur ---------- */
   V.PSAZ = ['kopf', 'augen', 'gehoer', 'atem', 'hand', 'chem', 'fuss', 'warn'];
-  V.psa = function (sel) {
-    sel = sel || [];
-    const on = k => sel.indexOf(k) >= 0;
-    const z = (k, shape, col) => shape.replace('/>', ` style="${on(k) ? `fill:${col};fill-opacity:.85;stroke:var(--fg);stroke-width:1.6` : 'fill:none;stroke:var(--mute);stroke-width:1.4;stroke-dasharray:3 3'}"/>`);
+  /* Zonen der Figur (Schlüssel der Schutzmittel aus psaItems je Körperzone) und Kurznamen für die Liste neben der Figur */
+  V.PSAZONEN = [['kopf', 'Kopf', ['kopf']], ['augen', 'Augen', ['augen']], ['ohren', 'Ohren', ['gehoer']], ['atem', 'Atmung', ['atem']], ['koerper', 'Körper', ['warn']], ['haende', 'Hände', ['hand', 'chem']], ['fuesse', 'Füße', ['fuss']]];
+  V.PSAKURZ = { kopf: 'Schutzhelm', augen: 'Augenschutz', gehoer: 'Gehörschutz', atem: 'Atemschutz', warn: 'Warnweste', hand: 'Handschuhe', chem: 'Chemie-Handschuhe', fuss: 'Sicherheitsschuhe' };
+  /* opts.miss = Schlüssel, die nach dem zweiten Fehlversuch als leere Pflichtplätze rot markiert werden; sonst zeigt die Figur nur die eigene Auswahl */
+  V.psa = function (sel, opts) {
+    sel = sel || []; const miss = (opts && opts.miss) || [];
+    const on = k => sel.indexOf(k) >= 0, fe = k => !on(k) && miss.indexOf(k) >= 0;
+    const zg = (id, inner) => `<g data-zone="${id}" class="pz">${inner}</g>`;
+    const z = (k, shape, col) => shape.replace('/>', ` style="${on(k) ? `fill:${col};fill-opacity:.85;stroke:var(--fg);stroke-width:1.8` : fe(k) ? 'fill:none;stroke:var(--danger);stroke-width:2.6;stroke-dasharray:5 3' : 'fill:none;stroke:var(--mute);stroke-width:2;stroke-dasharray:3 3'}"/>`);
     let g = '<g style="fill:var(--panel2);stroke:var(--mute);stroke-width:1.5">'
       + '<circle cx="100" cy="40" r="22"/><rect x="92" y="60" width="16" height="8"/><rect x="62" y="66" width="76" height="94" rx="10"/><rect x="40" y="70" width="22" height="80" rx="9"/><rect x="138" y="70" width="22" height="80" rx="9"/>'
       + '<rect x="70" y="160" width="28" height="74" rx="6"/><rect x="102" y="160" width="28" height="74" rx="6"/></g>';
-    g += z('warn', '<path d="M62 66H84L100 84L116 66H138V160H62Z"/>', 'var(--hi)');
-    g += z('chem', '<rect x="40" y="134" width="22" height="28" rx="8"/>', 'var(--ok)') + z('chem', '<rect x="138" y="134" width="22" height="28" rx="8"/>', 'var(--ok)');
-    g += z('hand', '<circle cx="51" cy="160" r="11"/>', 'var(--accent)') + z('hand', '<circle cx="149" cy="160" r="11"/>', 'var(--accent)');
-    g += z('fuss', '<rect x="62" y="234" width="38" height="20" rx="6"/>', 'var(--accent)') + z('fuss', '<rect x="100" y="234" width="38" height="20" rx="6"/>', 'var(--accent)');
-    g += z('kopf', '<path d="M74 40a26 26 0 0 1 52 0L130 44H70Z"/>', 'var(--hi)');
-    g += z('augen', '<rect x="82" y="46" width="36" height="9" rx="4"/>', 'var(--accent)');
-    g += z('gehoer', '<circle cx="74" cy="50" r="8"/>', 'var(--accent)') + z('gehoer', '<circle cx="126" cy="50" r="8"/>', 'var(--accent)');
-    g += z('atem', '<ellipse cx="100" cy="60" rx="11" ry="6"/>', 'var(--ok)');
+    g += zg('koerper', z('warn', '<path d="M62 66H84L100 84L116 66H138V160H62Z"/>', 'var(--hi)'));
+    g += zg('haende', z('chem', '<rect x="40" y="134" width="22" height="28" rx="8"/>', 'var(--ok)') + z('chem', '<rect x="138" y="134" width="22" height="28" rx="8"/>', 'var(--ok)')
+      + z('hand', '<circle cx="51" cy="160" r="11"/>', 'var(--accent)') + z('hand', '<circle cx="149" cy="160" r="11"/>', 'var(--accent)'));
+    g += zg('fuesse', z('fuss', '<rect x="62" y="234" width="38" height="20" rx="6"/>', 'var(--accent)') + z('fuss', '<rect x="100" y="234" width="38" height="20" rx="6"/>', 'var(--accent)'));
+    g += zg('kopf', z('kopf', '<path d="M74 40a26 26 0 0 1 52 0L130 44H70Z"/>', 'var(--hi)'));
+    g += zg('augen', z('augen', '<rect x="82" y="46" width="36" height="9" rx="4"/>', 'var(--accent)'));
+    g += zg('ohren', z('gehoer', '<circle cx="74" cy="50" r="8"/>', 'var(--accent)') + z('gehoer', '<circle cx="126" cy="50" r="8"/>', 'var(--accent)'));
+    g += zg('atem', z('atem', '<ellipse cx="100" cy="60" rx="11" ry="6"/>', 'var(--ok)'));
     if (on('warn')) g += '<g style="stroke:var(--fg);stroke-width:2;opacity:.6"><line x1="64" y1="112" x2="136" y2="112"/><line x1="64" y1="124" x2="136" y2="124"/></g>';
-    return `<svg viewBox="0 0 200 262" style="max-width:260px" role="img" aria-label="Figur mit der gewählten Schutzausrüstung: ${sel.length} von 8 Teilen">${g}</svg>`;
+    return `<svg viewBox="0 0 200 262" class="psafig" role="img" aria-label="Figur mit der gewählten Schutzausrüstung: ${sel.length} von 8 Teilen">${g}</svg>`;
+  };
+  /* Liste neben der Figur: je Zone das gewählte Schutzmittel oder "leer" (Text im DOM, 14 px) */
+  V.psaListe = function (sel, opts) {
+    sel = sel || []; const miss = (opts && opts.miss) || [];
+    return '<ul class="psalist" aria-label="Zonen und gewählte Schutzmittel">' + V.PSAZONEN.map(zo => {
+      const have = zo[2].filter(k => sel.indexOf(k) >= 0), fehlt = zo[2].filter(k => sel.indexOf(k) < 0 && miss.indexOf(k) >= 0);
+      const cls = have.length ? 'gef' : (fehlt.length ? 'fehlt' : 'leer');
+      const txt = have.length ? have.map(k => V.PSAKURZ[k]).join(' + ') : (fehlt.length ? 'fehlt: ' + fehlt.map(k => V.PSAKURZ[k]).join(', ') : 'leer');
+      return `<li data-zone="${zo[0]}" class="${cls}"><b>${esc(zo[1])}</b><span>${esc(txt)}</span></li>`;
+    }).join('') + '</ul>';
   };
 
   root.ARB_VIZ = V;
@@ -200,12 +216,13 @@
       }
     },
     psa: {
-      view: 'psaView', place: cs => [cs[0], 'after'], ok: () => true,
-      make() { return card('psa', 'Deine Schutzausrüstung', '<div class="inst" data-b="1" style="padding:8px"></div><p class="cap" data-c="1"></p>'); },
+      view: 'psaView', place: cs => [cs[0], 'before'], ok: () => true,
+      make() { return card('psa', 'Deine Schutzausrüstung', '<div class="psabox"><div class="inst" data-b="1" style="padding:6px"></div><div data-l="1"></div></div><p class="cap" data-c="1"></p>'); },
       upd(n) {
-        const sel = $$('[data-pi][aria-pressed="true"]').map(b => b.dataset.pi);
-        $('[data-b]', n).innerHTML = V.psa(sel);
-        $('[data-c]', n).textContent = sel.length ? 'Gewählt: ' + sel.map(k => D.psaItems[k]).join(', ') + '.' : 'Wähle oben Schutzmittel. Hier siehst du, wo sie getragen werden. Gestrichelt ist noch frei.';
+        const sel = $$('[data-pi][aria-pressed="true"]').map(b => b.dataset.pi), fb = $('#psaView [data-fehlt]');
+        const o = { miss: fb ? fb.dataset.fehlt.split(',').filter(Boolean) : [] };
+        $('[data-b]', n).innerHTML = V.psa(sel, o); $('[data-l]', n).innerHTML = V.psaListe(sel, o);
+        const cap = $('[data-c]', n); cap.textContent = sel.length ? '' : 'Wähle unten Schutzmittel. Sie erscheinen in der Zone, wo man sie trägt. Gestrichelt ist noch frei.'; cap.hidden = !!sel.length;
       }
     }
   };

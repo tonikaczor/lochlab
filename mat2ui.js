@@ -68,7 +68,7 @@
   const matHtml = (A, b, hl) => `<table class="mat"><tbody>${A.map((r, i) => `<tr>${r.map((v, j) => `<td class="${hl && hl[0] === i && hl[1] === j ? 'hl' : ''}">${esc(f(v, 4))}</td>`).join('')}${b ? `<td class="sep">|</td><td>${esc(f(b[i], 4))}</td>` : ''}</tr>`).join('')}</tbody></table>`;
   const chartDiv = (id, label) => `<div class="inst" id="${id}" aria-label="${esc(label)}"></div>`;
   const setSvg = (id, html, emptyText) => { const e = $('#' + id); if (!e) return; e.innerHTML = html || `<p class="hint2" style="padding:10px">${esc(emptyText || 'Für diese Werte gibt es kein Diagramm.')}</p>`; };
-  const explain = k => `<details class="ex" ${lsGet('ex_' + k, true) ? 'open' : ''} data-ex="${k}"><summary>Erklärung</summary><div class="hb2">${D.explain[k]}</div></details>`;
+  const explain = k => `<details class="ex" ${lsGet('ex_' + k, false) ? 'open' : ''} data-ex="${k}"><summary>Erklärung</summary><div class="hb2">${D.explain[k]}</div></details>`;
   document.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.ex) lsSet('ex_' + d.dataset.ex, d.open); }, true);
 
   /* gemeinsamer Regler-Handler für alle Reiter */
@@ -107,27 +107,70 @@
     else { if (C.cabs(a) === 0) return note('Der Kehrwert von 0 existiert nicht.', 'bad'); r = C.cinv(a); name = '1 / a'; steps = ['Kehrwert: Betrag 1/|a|, Winkel −φa. Das ist die Admittanz zu einer Impedanz.', `1/|a| = ${f(1 / C.cabs(a), 5)}, −φa = ${f(-C.carg(a), 3)}°`]; }
     return `<div class="tw"><table class="tt"><tr><th>Größe</th><th>kartesisch</th><th>polar</th></tr>${show('a', a)}${unary ? '' : show('b', b)}${show('<b>' + name + '</b>', r)}</table></div><div class="rdout ok"><span class="st">Rechenweg</span>${steps.map(s => esc(s)).join('<br>')}</div>`;
   }
+  const pinTop = (V, id) => { const e = V.querySelector('#' + id); if (e && e.parentNode !== V) V.insertBefore(e, V.firstChild); };
   function renderCx() {
     const s = S.cx;
-    $('#cxView').innerHTML = explain('cx') + `<div class="card pl"><h4>Zeigerdiagramm und Resonanz (Reihenschaltung R, L, C)</h4>
+    $('#cxView').innerHTML = '<p class="lr-hinweis">Für Azubis bis Klasse 10 ist das <a href="matlab.html">Rechen-Lab</a> das richtige Lab. Die Mathe-Brücke ist für Techniker und Studium.</p>' + explain('cx') + `<div class="card pl"><h4>Zeigerdiagramm und Resonanz (Reihenschaltung R, L, C)</h4>
       <div class="cols"><div>${slider('cx', 'R', 'Widerstand R', s.R, 1, 1000, true, SLF['cx.R'])}${slider('cx', 'L', 'Induktivität L', s.L, 1e-4, 1, true, SLF['cx.L'])}${slider('cx', 'C', 'Kapazität C', s.C, 1e-8, 1e-5, true, SLF['cx.C'])}${slider('cx', 'f', 'Frequenz f', s.f, 10, 20000, true, SLF['cx.f'])}${slider('cx', 'U', 'Spannung U (Effektivwert)', s.U, 1, 230, true, SLF['cx.U'])}
       <div class="btns"><button class="btn" data-cx="f0">Auf Resonanz stellen (f = f₀)</button></div></div>
       <div id="cxOut"></div></div></div>
-      <div class="card pl"><h4>Zeigerdiagramm</h4>${chartDiv('cxPh', 'Zeigerdiagramm')}<p class="hint2">Der Strom ist die waagerechte Bezugsrichtung. Die Spannung an der Spule eilt ihm um 90° vor (nach oben), die am Kondensator um 90° nach (nach unten); beide wirken gegeneinander.</p></div>
+      <div class="card pl"><h4>Zeigerdiagramm</h4>${chartDiv('cxPh', 'Zeigerdiagramm')}<p class="hint2">Der Strom ist die waagerechte Bezugsrichtung. Die Spannung an der Spule eilt ihm um 90° vor (nach oben), die am Kondensator um 90° nach (nach unten); beide wirken gegeneinander.</p><p class="hint2">Zieh die Spitze von U mit Finger oder Maus. Der Betrag stellt die Spannung ein, der Winkel die Frequenz. Mit den Pfeiltasten geht es auch: Tab auf die Spitze, dann rauf oder runter für den Winkel, links oder rechts für den Betrag (mit Umschalt in größeren Schritten). Die Regler laufen mit.</p></div>
       <div class="card pl"><h4>Resonanzkurve</h4>${chartDiv('cxRes', 'Resonanzkurve')}<p class="hint2">Der Strom ist bei f₀ am größten. Die waagerechte Linie bei I_max/√2 begrenzt die Bandbreite.</p></div>
       <div class="card pl"><h4>Rechner: kartesisch und polar</h4><div class="dsrow">${inp('data-cc="a"', 'a (z. B. 3 + j4 oder 5∠53,13)', s.a, '')}${inp('data-cc="b"', 'b', s.b, '')}</div>
       <div class="fbar"><div class="seg" role="group" aria-label="Rechenart">${[['add', 'a + b'], ['sub', 'a − b'], ['mul', 'a · b'], ['div', 'a / b'], ['conj', 'a*'], ['inv', '1/a']].map(o => `<button data-op="${o[0]}" class="${s.op === o[0] ? 'on' : ''}" aria-pressed="${s.op === o[0]}">${o[1]}</button>`).join('')}</div></div><div id="cxCalc"></div>
       <p class="hint2">Eingabe kartesisch (3 + j4, 3−4j, j2) oder polar (5∠53,13 oder 5&lt;53,13); Dezimalkomma oder Punkt. Winkel in Grad.</p></div>`;
-    updateCx(); $('#cxCalc').innerHTML = cxCalc();
+    updateCx(); $('#cxCalc').innerHTML = cxCalc(); pinTop($('#cxView'), 'cxPh');
   }
+  let cxDrag = null;
   function updateCx() {
     const s = S.cx, z = C.zSeries(s.R, s.L, s.C, s.f), I = s.U / C.cabs(z), f0 = C.f0(s.L, s.C), Q = C.qSeries(s.R, s.L, s.C), xl = C.XL(s.f, s.L), xc = C.XC(s.f, s.C);
     const kind = Math.abs(z.im) < 1e-6 * Math.max(1, z.re) ? 'Resonanz: rein ohmsch' : z.im > 0 ? 'induktiv (Strom eilt nach)' : 'kapazitiv (Strom eilt vor)';
     if ($('#cxOut')) $('#cxOut').innerHTML = box('Blindwiderstände', 'X_L = 2π·f·L,  X_C = 1/(2π·f·C)', f(xl, 2) + ' Ω  und  ' + f(xc, 2) + ' Ω') + box('Gesamtimpedanz', 'Z = R + j(X_L − X_C)', C.fmtCart(z, 2) + ' Ω  =  ' + C.fmtPolar(z, 2).replace('∠', '∠') + ' Ω', 'ok') + box('Strom (Effektivwert)', 'I = U / |Z|', f(I * 1000, 2) + ' mA  (' + kind + ')') + box('Resonanz', 'f₀ = 1/(2π√(LC)),  Q = (1/R)·√(L/C),  B = f₀/Q', f(f0, 1) + ' Hz,  Q = ' + f(Q, 2) + ',  B = ' + f(C.bandwidth(f0, Q), 1) + ' Hz');
-    setSvg('cxPh', V.phasorSvg({ R: s.R, L: s.L, C: s.C, f: s.f, U: s.U }, wOf($('#cxPh'))));
+    setSvg('cxPh', V.phasorSvg({ R: s.R, L: s.L, C: s.C, f: s.f, U: s.U }, wOf($('#cxPh')), { drag: true, fix: cxDrag ? cxDrag.fix : null }));
+    if (cxDrag) { const t = $('#cxPh .tip'); if (t) t.classList.add('drag'); }
     setSvg('cxRes', V.resonanceSvg({ R: s.R, L: s.L, C: s.C, f: s.f, U: s.U }, wOf($('#cxRes'))));
   }
   UPD.cx = updateCx;
+  /* Zeigerspitze ziehen: Betrag |U| stellt die Spannung ein, der Winkel φ die Frequenz (R, L, C bleiben). Regler und Zustand laufen mit. */
+  const cxSlide = (k, v) => {
+    const el = document.querySelector(`input[data-sl="cx.${k}"]`); if (!el) return;
+    const mn = +el.dataset.min, mx = +el.dataset.max; v = roundSig(Math.min(mx, Math.max(mn, v)), 4); S.cx[k] = v; lsSet('cx', S.cx);
+    el.value = Math.min(1000, Math.max(0, posOf(v, mn, mx, el.dataset.log === '1')));
+    const lab = document.querySelector(`[data-sv="cx.${k}"]`); if (lab) lab.textContent = SLF['cx.' + k](v);
+  };
+  const cxFofPhi = deg => {
+    const t = Math.tan(deg * Math.PI / 180), R = S.cx.R, L = S.cx.L, Cc = S.cx.C; if (!(R > 0) || !(L > 0) || !(Cc > 0)) return null;
+    const b = R * Cc * t, w = (b + Math.sqrt(b * b + 4 * L * Cc)) / (2 * L * Cc); return w / (2 * Math.PI);
+  };
+  const cxApply = (mag, deg) => {
+    deg = Math.max(-89.5, Math.min(89.5, deg)); const fq = cxFofPhi(deg);
+    if (mag > 0) cxSlide('U', mag); if (fq && isFinite(fq)) cxSlide('f', fq);
+    updateCx();
+  };
+  const cxPhiNow = () => C.carg(C.zSeries(S.cx.R, S.cx.L, S.cx.C, S.cx.f));
+  const cxPt = e => { const svg = $('#cxPh svg'); if (!svg || !svg.getScreenCTM) return null; const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY; return pt.matrixTransform(svg.getScreenCTM().inverse()); };
+  $('#cxView').addEventListener('pointerdown', e => {
+    const tip = e.target.closest && e.target.closest('.tip'); if (!tip || (e.button != null && e.button > 0)) return;
+    const p = cxPt(e), k = tip.querySelector('.tip-k'); if (!p || !k) return;
+    cxDrag = { id: e.pointerId, fix: { sc: +tip.dataset.sc, ox: +tip.dataset.ox, oy: +tip.dataset.oy }, dx: +k.getAttribute('cx') - p.x, dy: +k.getAttribute('cy') - p.y };
+    try { $('#cxPh').setPointerCapture(e.pointerId); } catch (x) { /* ohne Capture weiter */ }
+    tip.classList.add('drag'); e.preventDefault();
+  });
+  $('#cxView').addEventListener('pointermove', e => {
+    if (!cxDrag || e.pointerId !== cxDrag.id) return; const p = cxPt(e); if (!p) return; const F = cxDrag.fix;
+    const ur = (p.x + cxDrag.dx - F.ox) / F.sc, ut = (F.oy - (p.y + cxDrag.dy)) / F.sc;
+    cxApply(Math.hypot(ur, ut), Math.atan2(ut, Math.max(ur, 1e-9)) * 180 / Math.PI); e.preventDefault();
+  });
+  const cxEnd = e => { if (!cxDrag || (e && e.pointerId !== cxDrag.id)) return; cxDrag = null; updateCx(); };
+  $('#cxView').addEventListener('pointerup', cxEnd); $('#cxView').addEventListener('pointercancel', cxEnd); $('#cxView').addEventListener('lostpointercapture', cxEnd);
+  $('#cxView').addEventListener('touchmove', e => { if (cxDrag) e.preventDefault(); }, { passive: false });
+  $('#cxView').addEventListener('keydown', e => {
+    const tip = e.target.closest && e.target.closest('.tip'); if (!tip) return;
+    const big = e.shiftKey, ph = cxPhiNow(); let mag = S.cx.U, deg = ph;
+    if (e.key === 'ArrowRight') mag *= big ? 1.25 : 1.05; else if (e.key === 'ArrowLeft') mag /= big ? 1.25 : 1.05;
+    else if (e.key === 'ArrowUp') deg += big ? 5 : 1; else if (e.key === 'ArrowDown') deg -= big ? 5 : 1; else return;
+    e.preventDefault(); cxApply(mag, deg); const t = $('#cxPh .tip'); if (t) t.focus({ preventScroll: true });
+  });
   $('#cxView').addEventListener('input', e => { const k = e.target.dataset.cc; if (!k) return; S.cx[k] = e.target.value; lsSet('cx', S.cx); $('#cxCalc').innerHTML = cxCalc(); });
   $('#cxView').addEventListener('click', e => {
     const o = e.target.closest('[data-op]'), b = e.target.closest('[data-cx]');
@@ -218,7 +261,7 @@
       <div class="cols"><div>${s.mode === 'rc' ? slider('de', 'Rr', 'Widerstand R', s.Rr, 100, 100000, true, SLF['de.Rr']) + slider('de', 'Cr', 'Kapazität C', s.Cr, 1e-7, 1e-4, true, SLF['de.Cr']) : s.mode === 'rl' ? slider('de', 'Rl', 'Widerstand R', s.Rl, 10, 10000, true, SLF['de.Rl']) + slider('de', 'Lr', 'Induktivität L', s.Lr, 1e-3, 1, true, SLF['de.Lr']) : slider('de', 'R', 'Widerstand R', s.R, 1, 2000, true, SLF['de.R']) + slider('de', 'L', 'Induktivität L', s.L, 1e-3, 0.1, true, SLF['de.L']) + slider('de', 'C', 'Kapazität C', s.C, 1e-7, 1e-5, true, SLF['de.C'])}
       ${slider('de', 'U', 'Sprunghöhe U', s.U, 1, 24, false, SLF['de.U'])}</div><div id="deOut"></div></div></div>
       <div class="card pl"><h4>${s.mode === 'rlc' ? 'Kondensatorspannung u_C(t)' : s.mode === 'rc' ? 'Kondensatorspannung u_C(t) beim Aufladen' : 'Strom i(t) nach dem Einschalten'}</h4>${chartDiv('deSvg', 'Kurvenplot')}${s.mode === 'rlc' ? '<p class="hint2">Gestrichelt: Hüllkurve des Abklingens. Beim Schwingfall steigt die Spannung über den Endwert; beim Kriechfall und im Grenzfall bleibt sie darunter.</p>' : '<p class="hint2">Waagerechte Linie: 63,2 % des Endwerts, senkrecht: τ. Nach 5·τ ist der Endwert praktisch erreicht.</p>'}</div>`;
-    updateDe();
+    updateDe(); pinTop($('#deView'), 'deSvg');
   }
   function updateDe() { $('#deOut').innerHTML = deOut(); setSvg('deSvg', V.deSvg(S.de.mode, deParams(), wOf($('#deSvg')))); }
   UPD.de = updateDe;
@@ -271,7 +314,7 @@
       <div class="card pl"><h4>Pole und Nullstellen in der s-Ebene</h4>${chartDiv('lpPz', 'Pol-Nullstellen-Plan')}<p class="hint2">Kreuz = Pol, Kreis = Nullstelle. Links der imaginären Achse ist der stabile Bereich.</p></div>
       <div class="card pl"><h4>Sprungantwort</h4>${chartDiv('lpStep', 'Sprungantwort')}</div>
       <div class="card pl"><h4>Betragsgang |H(jω)|</h4>${chartDiv('lpBode', 'Betragsgang')}<p class="hint2">Eingesetzt wird s = jω. Der Knick liegt bei ω = Betrag des Pols.</p></div>`;
-    updateLp(); $('#lpProbe').innerHTML = lpProbe();
+    updateLp(); $('#lpProbe').innerHTML = lpProbe(); pinTop($('#lpView'), 'lpPz');
   }
   function updateLp() { $('#lpOut').innerHTML = lpOut(); }
   UPD.lp = updateLp;
@@ -308,7 +351,7 @@
       <div class="cols"><div>${slider('fo', 'A', 'Spitzenwert A', s.A, 1, 20, false, SLF['fo.A'])}${slider('fo', 'N', 'Anzahl der Glieder (bis Ordnung n =)', s.N, 1, 99, false, SLF['fo.N'])}</div><div></div></div>
       ${V.legend([['c1', 'Teilsumme'], ['c2 dash', 'ideales Signal']])}${chartDiv('foSvg', 'Zeitverlauf')}<p class="hint2">Zwei Perioden. Je mehr Glieder, desto steiler die Flanken; an Sprungstellen bleibt der Überschwinger (Gibbs).</p></div>
       <div class="card pl"><h4>Amplitudenspektrum</h4>${chartDiv('foSp', 'Amplitudenspektrum')}</div><div id="foOut"></div>`;
-    updateFo();
+    updateFo(); pinTop($('#foView'), 'foSvg');
   }
   function updateFo() {
     const s = S.fo, W = wOf($('#foSvg')); s.N = Math.round(s.N);
@@ -329,7 +372,7 @@
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : C.fmtSig(q.value, 4) + (q.ask.unit ? ' ' + q.ask.unit : ''));
   function qBody(q, a, r, pre) {
-    const locked = r && (r.ok || pre === 'rt');
+    const locked = r && (r.ok || r.stage === 'loes');
     if (q.ask.type === 'choice') return `<div class="opts" role="group" aria-label="Antwortmöglichkeiten">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${locked ? 'disabled' : ''} class="${locked && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}" aria-pressed="${a.c === i}">${esc(c)}</button>`).join('')}</div>`;
     return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(a.v || '')}" ${locked ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
   }
@@ -340,27 +383,37 @@
     return { ok, given: C.fmtSig(v, 4) + (q.ask.unit ? ' ' + q.ask.unit : '') };
   }
   const stepsHtml = q => '<ol class="steps">' + q.expl.map(l => '<li>' + esc(l) + '</li>').join('') + '</ol>';
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 3))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Musterlösung mit Rechenweg:</b>${stepsHtml(q)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung nach Vorgabe 4.5: erster Fehlversuch Tipp und zweiter Versuch, zweiter Fehlversuch Lösung mit Rechenweg, richtig bestätigt.
+     Im Prüfmodus bleibt es dabei: Lösungsweg erst nach richtiger Antwort, Tipps kosten Punkte. */
+  const hintIn = q => q.ask.type === 'num' ? `<p class="lr-hinweis">Zahl${q.ask.unit ? ' in ' + esc(q.ask.unit) : ''}. ${q.tol > 0.011 ? '±' + esc(f(q.tol, 3)) + ' ' + esc(q.ask.unit) : 'Rundung'} gilt als richtig.</p>` : '';
+  const resBlock = (q, r, showExpl) => {
+    const tol = q.ask.type === 'num' && q.tol > 0.011 ? `<p class="hint2">ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 3))} ${esc(q.ask.unit)} (wegen Rundung).</p>` : '';
+    if (r.ok) return `<div class="lr-fb ok" role="status"><p><strong>✓ Richtig:</strong> ${esc(r.given)}</p></div>` + (showExpl ? `<div class="rdout ok"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Musterlösung mit Rechenweg:</b>${stepsHtml(q)}</div>` : '');
+    if (r.stage === 'tipp') return `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. Tipp: ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p></div>` + tol;
+    if (r.stage === 'loes') return `<div class="lr-fb loes" role="status"><p><strong>Auch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. Hier ist die Lösung.</p><p><b>Lösung:</b> ${esc(solText(q))}</p><b>Rechenweg:</b>${stepsHtml(q)}</div>` + tol;
+    return `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. Im Prüfmodus gibt es den Lösungsweg erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p></div>` + tol;
+  };
+  const zeigFb = host => { if (window.LabRahmen) { const el = host.querySelector('.lr-fb'); if (el) LabRahmen.zeig(el); } };
   function renderTasks(top) {
     const V_ = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {};
-      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv" aria-label="Schwierigkeit ${t.level} von 3">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv" aria-label="Schwierigkeit ${t.level} von 3">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r, 'tk')}${hintIn(q)}`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.stage === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { h += resBlock(q, r, r.ok); if (r.ok || r.stage === 'loes') h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'} Die Zahlen jeder Aufgabe sind fest; im Trainer entstehen immer neue.</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V_.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V_.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; else if (curTask() && S.tRes) zeigFb(V_);
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Tipp oder versuche es noch einmal.'); }
+    const tr = S.tTries = S.tTries || {}; if (!e.ok) tr[t.id] = (tr[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, stage: e.ok ? 'ok' : (exam() ? 'pruef' : (tr[t.id] >= 2 ? 'loes' : 'tipp')) };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.stage === 'loes' ? 'Noch nicht richtig. Die Lösung steht unter der Aufgabe.' : 'Noch nicht richtig. Lies den Tipp oder versuche es noch einmal.'); }
     renderTasks(false);
   }
   /* Tipps in 3 Stufen: 1 Denkanstoß, 2 Formel, 3 erster Rechenschritt */
@@ -377,7 +430,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; (S.tTries = S.tTries || {})[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -392,16 +445,17 @@
   });
 
   /* Zufalls-Trainer */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level, T.topic); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level, T.topic); T.ans = {}; T.res = null; T.tries = 0; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
       <div class="fbar"><span class="lbl">THEMA</span><div class="seg" role="group" aria-label="Thema">${[['', 'Alle']].concat(D.topics.map(t => [t.k, t.short])).map(l => `<button data-tp="${l[0]}" class="${T.topic === l[0] ? 'on' : ''}" aria-pressed="${T.topic === l[0]}">${esc(l[1])}</button>`).join('')}</div></div>
       <div class="fbar"><span class="lbl">STUFE</span><div class="seg" role="group" aria-label="Stufe">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}" aria-pressed="${T.level === l[0]}">${l[1]}</button>`).join('')}</div></div>
-      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
+      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}${hintIn(q)}
+      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res && (T.res.ok || T.res.stage === 'loes') ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res && (T.res.ok || T.res.stage === 'loes') ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res && (T.res.ok || T.res.stage === 'loes') ? 'Nächste Frage' : 'Überspringen'}</button></div>
       ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+    if (T.res) zeigFb($('#rtView'));
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -409,12 +463,16 @@
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]'), tp = e.target.closest('[data-tp]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; } if (tp) { T.topic = tp.dataset.tp; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (tc && (!T.res || T.res.stage === 'tipp')) { T.ans.c = +tc.dataset.tc; if (T.res) T.res = null; renderTrainer(); return; }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if ((!T.res || T.res.stage === 'tipp') && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    const T = S.tr; if (T.res && (T.res.ok || T.res.stage === 'loes')) return; const e = evalQ(T.q, T.ans); if (!e) return;
+    if (!e.ok) T.tries = (T.tries || 0) + 1;
+    const stage = e.ok ? 'ok' : (T.tries >= 2 ? 'loes' : 'tipp');
+    T.res = { ok: e.ok, given: e.given, stage };
+    if (stage === 'tipp') { sad(); renderTrainer(); return; }
+    S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -422,7 +480,7 @@
   function renderHelp() {
     const sec = (t, b, open) => `<details${open ? ' open' : ''}><summary>${t}</summary><div class="hb2">${b}</div></details>`;
     $('#helpView').innerHTML =
-      sec('Für wen ist dieses Lab?', `<p>Die Mathe-Brücke verbindet die Elektrotechnik mit der Mathematik, die in der Weiterbildung zum Techniker, im dualen Studium und im Wirtschaftsingenieurwesen gebraucht wird. Sie liegt über dem Niveau der Ausbildung. Vorausgesetzt werden Ohmsches Gesetz, Wechselstromgrundlagen (Effektivwert, Frequenz) und Bruchrechnen mit Potenzen.</p>`, true) +
+      sec('Für wen ist dieses Lab?', `<p>Für Azubis bis Klasse 10 gibt es das <a href="matlab.html">Rechen-Lab</a>. Diese Mathe-Brücke ist für Techniker und Studium.</p><p>Die Mathe-Brücke verbindet die Elektrotechnik mit der Mathematik, die in der Weiterbildung zum Techniker, im dualen Studium und im Wirtschaftsingenieurwesen gebraucht wird. Sie liegt über dem Niveau der Ausbildung. Vorausgesetzt werden Ohmsches Gesetz, Wechselstromgrundlagen (Effektivwert, Frequenz) und Bruchrechnen mit Potenzen.</p>`, true) +
       sec('So arbeitest du', `<p>Jeder Themenreiter (Komplex, Matrizen, DGL, Laplace, Fourier) hat oben eine kurze <b>Erklärung</b>, darunter Regler und Rechner mit Diagrammen. Drehe an den Reglern und beobachte, wie sich Kurven und Kennzahlen ändern. Unter <b>Aufgaben</b> findest du je Thema 10 bis 12 Aufgaben mit Musterlösung und Rechenweg. Der <b>Trainer</b> würfelt neue Zahlen.</p><p><b>Tipps</b> gibt es in drei Stufen: Denkanstoß, Formel, erster Rechenschritt. Im Prüfmodus kostet jede Stufe 25 % der Punkte.</p>`) +
       sec('Zahlen eingeben', `<p>Dezimalkomma oder Punkt. Eine Zahl wie 1.539 wird als 1,539 und als 1539 geprüft. Einheiten werden getrennt angezeigt, du tippst nur die Zahl. Komplexe Zahlen im Rechner: <b>3 + j4</b>, <b>3−4j</b>, <b>j2</b> oder polar <b>5∠53,13</b> (Winkel in Grad).</p>`) +
       sec('Wichtige Regeln auf einen Blick', `<table><tr><th>Thema</th><th>Merksatz</th></tr><tr><td>Komplex</td><td>Reihe: Impedanzen addieren. Parallel: Admittanzen addieren. Multiplizieren und Dividieren polar.</td></tr><tr><td>Matrizen</td><td>Knotenpotenzial: G·V = I; Diagonale Summe der Leitwerte, Nebendiagonale negativer Leitwert.</td></tr><tr><td>DGL</td><td>τ = RC bzw. L/R; D = (R/2)·√(C/L) entscheidet zwischen Schwingen und Kriechen.</td></tr><tr><td>Laplace</td><td>Pole links der imaginären Achse: stabil. Endwertsatz: y(∞) = lim s·Y(s).</td></tr><tr><td>Fourier</td><td>Ungerade Signale haben nur Sinusglieder; Halbwellensymmetrie nur ungerade Ordnungen; THD und Klirrfaktor unterscheiden sich im Bezug.</td></tr></table>`) +

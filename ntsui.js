@@ -472,7 +472,7 @@
   root.addEventListener('resize', () => { fitCanvas(); blkSig = ''; redrawTab(); updateMeters(); });
   const bgOf = () => (getComputedStyle(document.documentElement).getPropertyValue('--cv') || '#14181c').trim();
   function drawOpts() {
-    const o = { quality: S.qEff, reduced: reducedMotion() };
+    const o = { quality: S.qEff, reduced: reducedMotion(), theme: theme() };
     if (S.ref && S.ref.rig === S.rigId && (S.cmp || S.wipe)) { o.ghost = ghostOf(); if (S.wipe) o.wipe = S.wipeAt; }
     return o;
   }
@@ -1045,7 +1045,7 @@
   /* ---- PNG, Druck ---- */
   function rigPng(w, h) {
     const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d');
-    x.fillStyle = bgOf(); x.fillRect(0, 0, w, h); try { if (S.rig) S.rig.draw(x, w, h, S.animT, { quality: 'hoch', reduced: true }); } catch (e) {} return c;
+    x.fillStyle = bgOf(); x.fillRect(0, 0, w, h); try { if (S.rig) S.rig.draw(x, w, h, S.animT, { quality: 'hoch', reduced: true, theme: theme() }); } catch (e) {} return c;
   }
   function exportPng() {
     if (!S.rig) { toast('Der Prüfstand fehlt.'); return; }
@@ -1075,7 +1075,8 @@
     try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {}
     if (root.Badges) try { root.Badges.result(id, pct); } catch (e) {}
   }
-  let taskRes = null; const taskAns = {};
+  let taskRes = null; const taskAns = {}, taskTry = {};
+  const isInRow = l => /^Die Eingaben sind gültig/.test((l && l.text) || '');   /* Pflichtzeile ohne Lerninhalt: zählt nicht in die Prozentzahl */
   const curTask = () => { const a = TK(); return a && S.task ? a.find(t => t.id === S.task.id) : null; };
   function updateTaskBadge() {
     const a = TK(), b = $('#tkBd'); if (!b) return;
@@ -1106,7 +1107,7 @@
   async function startTask(id) {
     const t = (TK() || []).find(x => x.id === id); if (!t) return;
     if (THon()) { toast(TH().lockText('aufgabe')); return; }
-    const had = stash(); taskRes = null;
+    const had = stash(); taskRes = null; taskTry[id] = 0;
     if (root.Auswertung) root.Auswertung.hintReset(id);
     let o; try { o = typeof t.start === 'function' ? t.start() : {}; } catch (e) { console.error(e); toast('Die Startvorlage der Aufgabe fehlt'); return; }
     S.task = null; applyTaskState(t, o); S.task = { id }; S.name = t.title; S.id = null; S.dirty = false; delete taskAns[id];
@@ -1127,11 +1128,14 @@
     const ans = collectAnswer(t); let lines;
     try { lines = await (R.run ? R.run(t, ans) : t.check(ans)); } catch (e) { console.error(e); lines = [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden: ' + (e && e.message || e), why: '' }]; }
     S.readonly = false; lines = Array.isArray(lines) ? lines : [];
-    const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    const iRow = lines.find(isInRow), rest = lines.filter(l => !isInRow(l));
+    const pct = iRow && !iRow.ok ? 0 : rest.length ? Math.round(100 * rest.filter(l => l.ok).length / rest.length) : (iRow ? 100 : 0);
+    taskTry[t.id] = pct === 100 ? 0 : (taskTry[t.id] || 0) + 1;
+    taskRes = { id: t.id, lines, pct, n: taskTry[t.id] }; markDone(t.id, pct); updateTaskBadge();
     const F = root.LochFX; if (F) try { if (pct === 100) { F.pass(100); if (F.isFun && F.isFun()) F.confetti(false); } else F.pass(pct); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
-    toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    if (!document.documentElement.classList.contains('lr-on')) toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    setTimeout(() => { const e = document.querySelector('#taskView .lr-fb'); if (e && root.LabRahmen) root.LabRahmen.zeig(e); }, 60);
   }
   /* Auto-Weg: Musterlösung laden (zählt als Hilfe Stufe 3) */
   function autoWay(t) {
@@ -1166,12 +1170,20 @@
       const r = taskRes && taskRes.id === t.id ? taskRes : null, ask2 = t.ask ? (typeof t.ask === 'string' ? { label: t.ask } : t.ask) : null, ans = taskAns[t.id] || {}, fl = fieldsOf(t), cl = choicesOf(t);
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat || '')}</h4><div class="big">${esc(t.title)}</div><div class="lv">${'●'.repeat(t.level || 1)}${'○'.repeat(3 - (t.level || 1))}</div>
         <p style="margin:8px 0;white-space:pre-line">${esc(t.text)}</p>${tableHtml(t.table)}<p class="hint2" style="margin-top:0">Prüfstand: ${ic(t)} ${esc(rn(t))}</p>
-        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}"></label>` : ''}
+        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}"></label>${ask2.unit ? `<p class="lr-hinweis">Antwort in ${esc(ask2.unit)}. Die Toleranz nennt die Prüfzeile nach dem Klick.</p>` : ''}` : ''}
         ${fl.length ? `<div class="sheetbox"><div class="gh" style="padding-top:0">Antwortblatt</div>${fl.map(f => `<label class="f"><span>${esc(f.question || f.label || f.key)}${f.unit ? ' in ' + esc(f.unit) : ''}</span><input data-fk="${esc(f.key)}" inputmode="decimal" autocomplete="off" value="${esc((ans.f || {})[f.key] || '')}"></label>`).join('')}</div>` : ''}
         ${cl.map(c => `<fieldset class="choice"><legend>${esc(c.q || c.label || c.key)}</legend>${choiceOpts(c).map((o, i) => `<label class="opt"><input type="radio" name="ch-${esc(c.key)}" data-ck="${esc(c.key)}" data-ci="${i}"${(ans.c || {})[c.key] !== undefined && String((ans.c || {})[c.key]) === String(o.value) ? ' checked' : ''}> ${esc(o.label)}</label>`).join('')}</fieldset>`).join('')}
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="rig">Zum Prüfstand</button>${typeof t.sol === 'function' ? '<button class="btn" data-ta="auto">▶ Auto-Weg</button>' : ''}<button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
-      if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      if (r) {
+        const shown = r.lines.filter(l => !(l.ok && isInRow(l))), fcls = r.pct === 100 ? 'ok' : r.n >= 2 ? 'loes' : 'tipp';
+        const head = r.pct === 100 ? '<strong>Richtig.</strong> 🎉 Geschafft.' : r.n >= 2 ? '<strong>Lösung.</strong> ' + r.pct + ' % richtig, das war noch offen. Der Grund steht bei jedem Punkt.' : '<strong>Noch nicht.</strong> ' + r.pct + ' % richtig. Schau auf die roten Punkte oder hole mit 💡 einen Tipp. Du hast einen zweiten Versuch.';
+        let sv = ''; if (r.n >= 2 && r.pct < 100 && typeof t.sol === 'function') { try { const so = t.sol(); if (so && fin(so.value)) sv = '<p>Richtiges Ergebnis: <strong>' + esc(fauto(so.value)) + (ask2 && ask2.unit ? ' ' + esc(ask2.unit) : '') + '</strong></p>'; } catch (e) {} }
+        const rigBtn = r.pct < 100 && shown.some(l => !l.ok) ? '<p class="lr-hinweis">Manche Punkte prüfen den Prüfstand: Stelle dort ein, was die roten Zeilen verlangen, und prüfe noch einmal.</p><p><button class="btn" data-ta="rig">' + ('Zum Prüfstand') + '</button>' + (r.n >= 2 && typeof t.sol === 'function' ? ' <button class="btn" data-ta="auto">▶ Musterlösung abspielen</button>' : '') + '</p>' : '';
+        const fb = `<div class="lr-fb ${fcls}" role="status"><p>${head}</p>${sv}<ul class="tl">${shown.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? (r.n >= 2 ? `<br><small>${esc(l.why)}</small>` : `<details><summary>Warum?</summary>${esc(l.why)}</details>`) : ''}</li>`).join('')}</ul>${rigBtn}</div>`;
+        const k = h.lastIndexOf('<div class="btns"><button class="btn pri" data-ta="check">');
+        h = k >= 0 ? h.slice(0, k) + fb + h.slice(k) : h + fb;
+      }
       h += '</div>';
     }
     const cats = []; A.forEach(x => { if (!cats.includes(x.cat)) cats.push(x.cat); });
@@ -1314,7 +1326,7 @@
   }
   function updateTitle() {
     $('#title').innerHTML = esc(S.name) + (S.dirty ? ' •' : '') + '\n<small>' + esc(rigName(S.rigId || 'trafo')) + (S.running ? ' · läuft' : '') + (S.live ? ' · Ablauf' : '') + '</small>';
-    document.title = 'Netzteil-Lab: ' + S.name;
+    document.title = 'Netzteil-Lab: ' + (S.name === 'Neuer Versuch' ? rigName(S.rigId || 'trafo') : S.name + ' (' + rigName(S.rigId || 'trafo') + ')');
     const tag = $('#cvTag'); if (tag) { tag.textContent = S.running ? '' : '⏸ Pause'; tag.style.display = S.running ? 'none' : ''; }
   }
   $('#title').onclick = async () => { const r = await ask('Name des Versuchs', [{ key: 'n', label: 'Name', type: 'text', value: S.name }]); if (r && r.n.trim()) { S.name = r.n.trim(); S.dirty = true; updateChrome(); saveCurSoon(); } };
@@ -1448,7 +1460,7 @@
     setTab(S.tab); requestAnimationFrame(frame);
     const lazyEx = () => { try { exampleList(); } catch (e) { console.error(e); } }; if (root.requestIdleCallback) root.requestIdleCallback(lazyEx, { timeout: 6000 }); else setTimeout(lazyEx, 2500);
     root.addEventListener('load', () => { if (EXTTAB[S.tab]) renderExt(S.tab); });
-    try { if (root.matchMedia) { const mq = root.matchMedia('(prefers-color-scheme: light)'); const f = () => { buildControls(); blkSig = ''; S.needDraw = true; }; if (mq.addEventListener) mq.addEventListener('change', f); } } catch (e) {}
+    try { if (root.matchMedia) { const mq = root.matchMedia('(prefers-color-scheme: light)'); const f = () => { buildControls(); blkSig = ''; S.needDraw = true; }; if (mq.addEventListener) mq.addEventListener('change', f); if (root.MutationObserver) new MutationObserver(f).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } } catch (e) {}
     /* Aufrufparameter von Startseite, Lernpfad, Kampagne und Lernheften: ?aufgabe=nt1, ?ex=Name, ?bsp, ?neu */
     root.LabGoto = id => { try { if ((TK() || []).some(x => x.id === id)) { Promise.resolve(startTask(id)).catch(e => console.error(e)); return true; } } catch (e) {} return false; };
     try {

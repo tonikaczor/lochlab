@@ -1,8 +1,8 @@
 'use strict';
-/* Tonfunk Lab: Projekte-Zeile der Startseite (#vbRow, v55.170).
-   Die Zeile steht weit oben (unter Beruf und Weitermachen, vor den Lab-Karten) und gilt für jeden Beruf. Text und Projektliste kommen aus
-   BerufReg (aufgaben.js, window.VB_INDEX): nur die Projekte des gewählten Berufs, Anzahl und "x von y abgeschlossen" aus dem gespeicherten Projektstand.
-   Ist noch kein Beruf gewählt (kein lm4.beruf, kein ?beruf=), zeigt sie alle Projekte. Ohne dieses Skript bleibt der feste Text aus index.html stehen. */
+/* Tonfunk Lab: Projekte-Zeile der Startseite (#vbRow, v55.170), seit dem Umbau in fünf Ansichten (S1) eine Zeile der Ansicht "Üben".
+   Sie gilt für jeden Beruf. Der Stand kommt aus BerufReg (aufgaben.js, window.VB_INDEX): nur die Projekte des gewählten Berufs, Anzahl und "x von y abgeschlossen"
+   aus dem gespeicherten Projektstand. Die Liste der Projekte steht auf verbund.html (die Startseite zeigt sie nicht mehr, S-19); gibt es ein Element #vbL, wird sie dort gezeigt.
+   Ohne gespeicherten Beruf gilt die Voreinstellung von berufe.js. Ohne dieses Skript bleibt der feste Text aus index.html stehen. */
 (function (root) {
   const NAMEN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker', tec: 'Techniker Elektrotechnik', stu: 'Studium Elektrotechnik', wing: 'Wirtschaftsingenieur', winf: 'Wirtschaftsinformatik' };
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -39,7 +39,7 @@
   }
   function render() {
     const row = doc.getElementById('vbRow'), BR = root.BerufReg; if (!row || !BR || !Array.isArray(root.VB_INDEX)) return;
-    let stored = ''; try { stored = localStorage.getItem('lm4.beruf') || ''; } catch (e) {}
+    let stored = ''; try { stored = localStorage.getItem('lm4.beruf') || (root.Berufe && root.Berufe.get ? root.Berufe.get() : ''); } catch (e) {}
     const b = chosen(root.location && root.location.search, stored);
     const sum = summary(root.VB_INDEX, b, id => BR.projState(id, b || undefined)), t = lines(sum, b);
     const n = doc.getElementById('vbN'), L = doc.getElementById('vbL');

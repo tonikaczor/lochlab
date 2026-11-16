@@ -54,7 +54,7 @@
   const box = (t, res, cls) => `<div class="rdout ${cls || ''}"><span class="st">${esc(t)}</span><b>${esc(res)}</b></div>`;
   const note = (t, cls) => `<div class="rdout ${cls || 'warn'}">${esc(t)}</div>`;
   const SIM = 'Alles in diesem Lab ist simuliert: ein virtuelles Dateisystem und ein kleiner Befehlsinterpreter in JavaScript. Es wird nichts auf deinem echten Rechner ausgeführt oder verändert. Auf einem echten Linux-System können dieselben Befehle viel anrichten (besonders rm und sudo).';
-  const sim = () => `<div class="rdout warn">⚠ ${esc(SIM)}</div>`;
+  const sim = () => `<details class="simd"><summary>⚠ Alles simuliert: nichts läuft auf deinem Rechner</summary><p>${esc(SIM)}</p></details>`;
 
   /* ============================================================ Terminal-Baustein */
   function lineHtml(l) { return `<div class="tl ${l.k}">${esc(l.s)}</div>`; }
@@ -124,16 +124,19 @@
     const bit = (sh, b) => `<button class="tg ${(m >> sh) & b ? 'on' : ''}" data-bit="${sh}:${b}" aria-pressed="${!!((m >> sh) & b)}">${b === 4 ? 'r' : b === 2 ? 'w' : 'x'}</button>`;
     const row = (nm, sh) => `<tr><th>${nm}</th><td>${bit(sh, 4)}</td><td>${bit(sh, 2)}</td><td>${bit(sh, 1)}</td><td class="n"><b>${(m >> sh) & 7}</b></td></tr>`;
     const sym = C.modeSym(m), um = /^[0-7]{3,4}$/.test(s.um) ? parseInt(s.um, 8) & 0o777 : null;
-    let h = sim() + `<div class="card pl"><h4>Rechte-Rechner</h4>
+    /* feste Grafik am Handy: die Bit-Grafik steht über den Schaltern und bleibt beim Rollen oben (Rahmen, data-lr-buehne) */
+    let h = sim() + (ok ? `<div data-lr-buehne="rechte">${VZ('rechte', m)}</div>` : '') + `<div class="card pl"><h4>Rechte-Rechner</h4>
       <div class="tw"><table class="tt"><tr><th></th><th>lesen (4)</th><th>schreiben (2)</th><th>ausführen (1)</th><th class="n">Ziffer</th></tr>${row('Besitzer (u)', 6)}${row('Gruppe (g)', 3)}${row('Andere (o)', 0)}</table></div>
       <label class="f"><span>Oktalzahl (drei Ziffern 0 bis 7)</span><input data-k="mode" inputmode="numeric" maxlength="3" autocomplete="off" value="${esc(s.mode)}"></label></div>`;
-    h += ok ? VZ('rechte', m) + box('Als Buchstaben (ls -l)', '-' + sym + '  (Datei)   d' + sym + '  (Ordner)') + box('chmod, oktal', 'chmod ' + C.modeOct(m) + ' datei') + box('chmod, symbolisch', 'chmod u=' + permSym((m >> 6) & 7) + ',g=' + permSym((m >> 3) & 7) + ',o=' + permSym(m & 7) + ' datei') + `<div class="rdout"><span class="st">Bedeutung</span>Besitzer: ${esc(permWords((m >> 6) & 7))}<br>Gruppe: ${esc(permWords((m >> 3) & 7))}<br>Andere: ${esc(permWords(m & 7))}</div>` + (m & 0o111 ? '' : note('Ohne x darf niemand die Datei als Programm oder Skript starten. Bei Ordnern fehlt dann auch das Betreten (cd).', 'warn')) : note('Gib genau drei Ziffern von 0 bis 7 ein, z. B. 754.');
+    h += ok ? box('Als Buchstaben (ls -l)', '-' + sym + '  (Datei)   d' + sym + '  (Ordner)') + box('chmod, oktal', 'chmod ' + C.modeOct(m) + ' datei') + box('chmod, symbolisch', 'chmod u=' + permSym((m >> 6) & 7) + ',g=' + permSym((m >> 3) & 7) + ',o=' + permSym(m & 7) + ' datei') + `<div class="rdout"><span class="st">Bedeutung</span>Besitzer: ${esc(permWords((m >> 6) & 7))}<br>Gruppe: ${esc(permWords((m >> 3) & 7))}<br>Andere: ${esc(permWords(m & 7))}</div>` + (m & 0o111 ? '' : note('Ohne x darf niemand die Datei als Programm oder Skript starten. Bei Ordnern fehlt dann auch das Betreten (cd).', 'warn')) + `<div class="btns"><button class="btn pri" data-rt="try">Im Terminal ausprobieren</button></div><p class="hint2">Legt im Terminal die Datei <code>rechtetest.txt</code> an und führt <code>chmod ${esc(C.modeOct(m))} rechtetest.txt</code> und <code>ls -l rechtetest.txt</code> aus.</p>` : note('Gib genau drei Ziffern von 0 bis 7 ein, z. B. 754.');
     h += `<div class="card pl"><h4>umask (nur zum Kennenlernen)</h4><p class="hint2" style="margin:0 0 8px">Die umask nimmt Rechte von neuen Dateien weg. Dateien starten mit 666, Ordner mit 777, davon wird die umask abgezogen (Ziffer für Ziffer).</p>
       <label class="f"><span>umask (Standard auf vielen Systemen: 022)</span><input data-k="um" inputmode="numeric" maxlength="4" autocomplete="off" value="${esc(s.um)}"></label>` + (um == null ? note('Gib die umask als Oktalzahl ein, z. B. 022 oder 077.') : VZ('umask', um) + box('Neue Datei', C.modeOct(0o666 & ~um) + '  (-' + C.modeSym(0o666 & ~um) + ')') + box('Neuer Ordner', C.modeOct(0o777 & ~um) + '  (d' + C.modeSym(0o777 & ~um) + ')')) + '</div>';
     $('#rechteView').innerHTML = h;
   }
   const permSym = b => (b & 4 ? 'r' : '') + (b & 2 ? 'w' : '') + (b & 1 ? 'x' : '');
   $('#rechteView').addEventListener('click', e => {
+    const rt = e.target.closest('[data-rt]');
+    if (rt) { const mm = /^[0-7]{3}$/.test(S.rechte.mode) ? S.rechte.mode : '754'; S.term = newTS(D.image(), 'Aus dem Rechte-Rechner: Die Datei rechtetest.txt bekommt die Rechte ' + mm + '. Probiere danach eigene Befehle.'); ['touch rechtetest.txt', 'chmod ' + mm + ' rechtetest.txt', 'ls -l rechtetest.txt'].forEach(c => { const r = C.run(S.term.sys, c); S.term.lines.push({ k: 'p', s: r.prompt + c }); r.items.forEach(i => S.term.lines.push({ k: i.k === 'e' ? 'e' : 'o', s: i.s.replace(/\n$/, '') })); S.term.hist.push(c); }); S.term.hi = S.term.hist.length; setTab('term'); toast('Im Terminal ausgeführt: chmod ' + mm + ' rechtetest.txt'); return; }
     const b = e.target.closest('[data-bit]'); if (!b) return; const [sh, bt] = b.dataset.bit.split(':').map(Number), s = S.rechte, m = /^[0-7]{3}$/.test(s.mode) ? parseInt(s.mode, 8) : 0o754;
     s.mode = ((m ^ (bt << sh)) & 0o777).toString(8).padStart(3, '0'); lsSet('rechte', s); renderRechte();
   });
@@ -173,17 +176,35 @@
   function updateBadge() { const b = $('#tkBd'); if (b) b.textContent = Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length + '/' + TASKS.length; }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : q.ask.type === 'term' ? q.solution.join('   ·   ') : f(q.value, 0) + (q.ask.unit ? ' ' + q.ask.unit : ''));
+  const locked = r => !!(r && (r.ok || r.sol));
   function qBody(q, a, r, pre) {
-    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''} class="${r && i === q.ask.correct && (r.ok || pre === 'rt') ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''}><span class="u">${esc(q.ask.unit || '')}</span></div></label>`;
+    const lk = locked(r);
+    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${lk ? 'disabled' : ''} class="${lk && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lk ? 'disabled' : ''}><span class="u">${esc(q.ask.unit || '')}</span></div></label><p class="lr-hinweis">Zahl${q.ask.unit ? ' in ' + esc(q.ask.unit) : ''}. ${q.tol > 0 ? '±' + f(q.tol, 0) + (q.ask.unit ? ' ' + esc(q.ask.unit) : '') + ' gilt als richtig.' : 'Es muss genau stimmen.'}</p>`;
   }
   function evalQ(q, a) {
     if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c] }; }
     const v = P(a.v); if (!Number.isFinite(v)) { toast('Bitte gib eine Zahl ein.'); return null; }
     return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 0) + (q.ask.unit ? ' ' + q.ask.unit : '') };
   }
-  const resBlock = (q, r, showExpl) => `<ul class="tl2"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li></ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): 1. Fehlversuch = Tipp und zweiter Versuch, 2. Fehlversuch = Lösung mit Rechenweg; im Prüfmodus kommt der Lösungsweg erst nach der richtigen Antwort */
+  const VERS = {};
+  const solHtml = q => `<div class="rdout ok" style="margin:0"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>`;
+  const resBlock = (q, r, mode) => {
+    const cls = r.ok ? 'ok' : mode === 'sol' ? 'loes' : 'tipp'; let h;
+    if (r.ok) h = `<p><strong>Richtig:</strong> ${esc(r.given)}</p>${solHtml(q)}`;
+    else if (mode === 'sol') h = `<p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. So geht es:</p>${solHtml(q)}`;
+    else if (mode === 'exam') h = `<p><strong>Noch nicht richtig.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p><p>Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Ein Tipp kostet 25 % der Punkte. Du kannst es noch einmal versuchen.</p>`;
+    else h = `<p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p><p><strong>Tipp:</strong> ${esc((q.tips && q.tips[0]) || 'Rechne noch einmal in Ruhe nach.')} Du hast einen zweiten Versuch.</p>`;
+    return `<div class="lr-fb ${cls}" id="lrFb">${h}</div>`;
+  };
+  const fbZeig = () => { const e = document.querySelector('#lrFb'); if (e && window.LabRahmen) LabRahmen.zeig(e); };
+  /* Terminal-Aufgaben: Rückmeldung als lr-fb (Tipp bei „noch nicht“, Lösung auf Wunsch) */
+  const termFb = (t, q, r) => {
+    if (r.ok) return `<div class="lr-fb ok" id="lrFb"><p><strong>Geschafft:</strong> ${esc(r.reason)}</p><div class="rdout ok" style="margin:0"><b>Musterlösung:</b> ${esc(q.solution.join('  ·  '))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div></div><div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
+    const ex = exam(), sol = S.showSol && !ex;
+    return `<div class="lr-fb ${sol ? 'loes' : 'tipp'}" id="lrFb"><p><strong>Noch nicht:</strong> ${esc(r.reason)}</p>` + (sol ? `<div class="rdout ok" style="margin:0"><b>Musterlösung:</b> ${esc(q.solution.join('  ·  '))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : ex ? '<p>Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe gelöst ist.</p>' : `<p><strong>Tipp:</strong> ${esc((q.tips && q.tips[0]) || '')} Probiere es noch einmal im Terminal oben. Die Lösung kannst du dir anzeigen lassen.</p>`) + '</div>' + (ex ? '' : `<div class="btns"><button class="btn" data-ta="sol">${S.showSol ? 'Lösung verbergen' : 'Lösung anzeigen'}</button></div>`);
+  };
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '', mount = false;
@@ -191,20 +212,19 @@
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {}, isT = q.ask.type === 'term', solved = !!d[t.id] && r && r.ok;
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>`;
       if (isT) { h += '<div id="tkTerm"></div>'; mount = true; } else h += qBody(q, a, r, 'tk');
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button>${isT ? '<button class="btn" data-ta="reset">↺ Neu starten</button>' : ''}<button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${locked(r) ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button>${isT ? '<button class="btn" data-ta="reset">↺ Neu starten</button>' : ''}<button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
       if (isT) {
         h += '<p class="hint2">Die Aufgabe wird automatisch geprüft, sobald das System den Soll-Zustand erreicht. „Prüfen“ sagt dir, was noch fehlt.</p>';
-        if (r && r.ok) h += `<ul class="tl2"><li class="ok">✓ Geschafft: ${esc(r.reason)}</li></ul><div class="rdout ok"><b>Musterlösung:</b> ${esc(q.solution.join('  ·  '))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div><div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
-        else if (r) { h += `<ul class="tl2"><li class="bad">✗ Noch nicht: ${esc(r.reason)}</li></ul>`; if (!exam()) h += `<div class="btns"><button class="btn" data-ta="sol">${S.showSol ? 'Lösung verbergen' : 'Lösung anzeigen'}</button></div>`; if (S.showSol && !exam()) h += `<div class="rdout bad"><b>Musterlösung:</b> ${esc(q.solution.join('  ·  '))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>`; else if (exam()) h += '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe gelöst ist.</div>'; }
-      } else if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+        if (r) h += termFb(t, q, r);
+      } else if (r) { h += resBlock(q, r, r.ok ? 'ok' : r.sol ? 'sol' : exam() ? 'exam' : 'tipp'); if (r.ok || r.sol) h += `<div class="btns">${r.ok ? '' : '<button class="btn" data-ta="again">Neu versuchen</button>'}<button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(SIM)}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${x.kind === 'term' ? ' · Terminal' : ''}${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
     V.innerHTML = h; if (mount) { const ctl = mountTerm($('#tkTerm'), S.tterm, { onCmd: autoCheck }); if (top === false && !S.tRes) ctl.focus(); }
-    if (top !== false) $('#pgTasks').scrollTop = 0;
+    if (top !== false) $('#pgTasks').scrollTop = 0; else fbZeig();
   }
   function autoCheck() {
     const t = curTask(); if (!t || t.kind !== 'term' || (S.tRes && S.tRes.ok)) return;
@@ -220,8 +240,9 @@
       S.tRes = { id: t.id, ok: false, reason: String(r) }; sad(); toast('Noch nicht erfüllt.'); renderTasks(false); return;
     }
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
+    if (!e.ok) VERS[t.id] = (VERS[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, sol: !e.ok && !exam() && VERS[t.id] >= 2 };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.sol ? 'Noch nicht richtig. Die Lösung steht unten.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
   function hintFor(q, id) {
@@ -236,7 +257,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.showSol = false; S.tterm = t.kind === 'term' ? newTS(D.image({ cwd: t.cwd }), 'Aufgabe gestartet. Dein Terminal ist ein eigenes, frisches System.') : null;
+    S.task = id; VERS[id] = 0; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.showSol = false; S.tterm = t.kind === 'term' ? newTS(D.image({ cwd: t.cwd }), 'Aufgabe gestartet. Dein Terminal ist ein eigenes, frisches System.') : null;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -250,6 +271,7 @@
       const a = ta.dataset.ta;
       if (a === 'chk') checkTask(t); else if (a === 'hint') hintFor(S.tq, t.id); else if (a === 'close') { S.task = null; S.tRes = null; S.tterm = null; renderTasks(); }
       else if (a === 'reset') { S.tterm = newTS(D.image({ cwd: t.cwd }), 'Neu gestartet: das System ist wieder im Ausgangszustand.'); S.tRes = null; S.showSol = false; renderTasks(false); }
+      else if (a === 'again') { startTask(t.id); }
       else if (a === 'sol') { S.showSol = !S.showSol; renderTasks(false); }
       else if (a === 'next') { const i = TASKS.findIndex(x => x.id === t.id), nx = TASKS.slice(i + 1).find(x => !done()[x.id]) || TASKS[(i + 1) % TASKS.length]; startTask(nx.id); }
       return;
@@ -258,15 +280,16 @@
   });
 
   /* Zufalls-Trainer (Auswahl- und Zahlenfragen; Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
-  function renderTrainer() {
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.try = 0; renderTrainer(); }
+  function renderTrainer(zeig) {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="fbar"><span class="fbl">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
       <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div><p class="hint2">Der Trainer stellt Auswahl- und Zahlenfragen mit immer neuen Werten. Die Terminal-Aufgaben findest du unter „Aufgaben“.</p>`;
+      <div class="btns"><button class="btn pri" data-ra="chk" ${locked(T.res) ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${locked(T.res) ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${locked(T.res) ? 'Nächste Frage' : 'Überspringen'}</button></div>
+      ${T.res ? resBlock(q, T.res, T.res.ok ? 'ok' : T.res.sol ? 'sol' : 'tipp') : ''}</div><p class="hint2">Der Trainer stellt Auswahl- und Zahlenfragen mit immer neuen Werten. Die Terminal-Aufgaben findest du unter „Aufgaben“.</p>`;
+    if (zeig) fbZeig();
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -274,13 +297,16 @@
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (tc && !locked(T.res)) { T.ans.c = +tc.dataset.tc; if (T.res && !T.res.ok) T.res = null; renderTrainer(); return; }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!locked(T.res) && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
-    lsSet('rt', S.rt); renderTrainer(); updatePal();
+    const T = S.tr; if (locked(T.res)) return; const e = evalQ(T.q, T.ans); if (!e) return;
+    /* gezählt wird erst bei richtiger Antwort oder nach dem zweiten Fehlversuch (Lösung) */
+    if (!e.ok) T.try = (T.try || 0) + 1;
+    T.res = { ok: e.ok, given: e.given, sol: !e.ok && T.try >= 2 };
+    if (e.ok) { S.rt.n++; S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { sad(); if (T.res.sol) { S.rt.n++; S.rt.streak = 0; } }
+    lsSet('rt', S.rt); renderTrainer(true); updatePal();
   }
 
   /* ============================================================ Beispiele */
@@ -311,7 +337,7 @@
   function renderHelp() {
     const sec = (t, b, open) => `<details${open ? ' open' : ''}><summary>${t}</summary><div class="hb2">${b}</div></details>`, cm = (a, b) => `<tr><td><code>${esc(a)}</code></td><td>${b}</td></tr>`, tbl = rows => `<table><tr><th>Befehl</th><th>Wirkung</th></tr>${rows.map(r => cm(r[0], r[1])).join('')}</table>`;
     $('#helpView').innerHTML =
-      `<div class="rdout warn">⚠ ${esc(SIM)}</div>` +
+      sim() +
       sec('So arbeitest du im Terminal', `<p>Der <b>Prompt</b> <code>azubi@tonfunk-pc:~$</code> zeigt Benutzer, Rechnername und Ordner (<code>~</code> ist dein Home-Verzeichnis). Du tippst einen Befehl, drückst Enter und liest die Ausgabe. Mit <b>Tab</b> vervollständigst du Namen, mit den <b>Pfeiltasten</b> holst du alte Befehle zurück.</p><p>Ein Befehl besteht aus <b>Befehlsname</b>, <b>Optionen</b> (mit - davor, z. B. <code>-l</code>) und <b>Argumenten</b> (z. B. Dateinamen). Fast jeder Befehl nennt mit <code>--help</code> seinen Aufbau.</p><p>Fehlermeldungen kommen auf Englisch, wie auf echten Servern. Das Lab ergänzt in Gelb einen deutschen Hinweis. Wichtige Meldungen: <code>No such file or directory</code> (Pfad falsch), <code>Permission denied</code> (Recht fehlt), <code>command not found</code> (Befehl unbekannt oder Tippfehler).</p>`, true) +
       sec('Dateisystem und Pfade', `<p>Alles hängt an der Wurzel <code>/</code>. Ein <b>absoluter Pfad</b> beginnt mit <code>/</code> (z. B. <code>/etc/hosts</code>), ein <b>relativer</b> nicht (z. B. <code>Projekt/src</code>) und gilt ab dem aktuellen Ordner. <code>.</code> ist der aktuelle Ordner, <code>..</code> der darüberliegende, <code>~</code> dein Home.</p>${tbl([['pwd', 'aktuellen Ordner zeigen'], ['ls, ls -l, ls -a', 'Inhalt zeigen (lang, mit versteckten Dateien)'], ['cd ORDNER, cd .., cd ~, cd -', 'Ordner wechseln'], ['mkdir -p a/b/c', 'Ordner anlegen (mit Zwischenordnern)'], ['touch datei', 'leere Datei anlegen'], ['cp quelle ziel, cp -r ordner ziel', 'kopieren'], ['mv quelle ziel', 'verschieben oder umbenennen'], ['rm datei, rm -r ordner', 'löschen (endgültig, kein Papierkorb)'], ['find /pfad -name "*.log"', 'Dateien suchen']])}<p>Sterne helfen: <code>*.txt</code> trifft alle Dateien, die auf .txt enden, <code>?</code> genau ein Zeichen.</p>`) +
       sec('Dateirechte', `<p><code>ls -l</code> zeigt z. B. <code>-rwxr-x--- 1 anna dev 2048 Nov 3 skript.sh</code>. Das erste Zeichen ist der Typ (<code>-</code> Datei, <code>d</code> Ordner), dann dreimal drei Zeichen für <b>Besitzer, Gruppe, andere</b>: <code>r</code> lesen (4), <code>w</code> schreiben (2), <code>x</code> ausführen (1).</p><table><tr><th>Zahl</th><th>Rechte</th><th>Zahl</th><th>Rechte</th></tr><tr><td>7</td><td>rwx</td><td>3</td><td>-wx</td></tr><tr><td>6</td><td>rw-</td><td>2</td><td>-w-</td></tr><tr><td>5</td><td>r-x</td><td>1</td><td>--x</td></tr><tr><td>4</td><td>r--</td><td>0</td><td>---</td></tr></table>${tbl([['chmod 754 datei', 'oktal: Besitzer rwx, Gruppe r-x, andere r--'], ['chmod u+x datei', 'symbolisch: Besitzer bekommt x (u, g, o, a mit + - =)'], ['chown anna:dev datei', 'Besitzer und Gruppe ändern (nur root, daher sudo)'], ['umask', 'zeigt, welche Rechte neue Dateien nicht bekommen (z. B. 0022)']])}<p>Bei <b>Ordnern</b> heißt x „betreten dürfen“ (cd), r „Inhalt auflisten“, w „Dateien anlegen und löschen“.</p>`) +
@@ -334,7 +360,7 @@ for datei in *.csv; do
   echo "$datei"
 done</pre><p>Die erste Zeile (<code>#!/bin/bash</code>) nennt den Interpreter. Zum Starten braucht die Datei das x-Recht (<code>chmod +x skript.sh</code>, dann <code>./skript.sh</code>). In <code>"..."</code> werden Variablen ersetzt, in <code>'...'</code> nicht. In <code>[ ... ]</code> stehen Leerzeichen innen. Vergleiche: <code>-eq</code> gleich, <code>-ne</code> ungleich, <code>-gt</code> größer, <code>-lt</code> kleiner. Im Lab liest du Skripte mit cat; gestartete Skripte zeigen eine vorbereitete Ausgabe.</p>`) +
       sec('Cron-Zeitangaben', `<span class="eq">Minute  Stunde  Tag  Monat  Wochentag  Befehl</span><table><tr><th>Zeichen</th><th>Bedeutung</th></tr>${[['*', 'jeder Wert'], ['*/15', 'alle 15 (in diesem Feld)'], ['1-5', 'Bereich (Wochentag: 1 = Montag, 0 oder 7 = Sonntag)'], ['1,15', 'Liste']].map(r => cm(r[0], r[1])).join('')}</table><p>Beispiele: <code>30 2 * * *</code> täglich 02:30, <code>0 8 * * 1-5</code> werktags 08:00, <code>*/15 * * * *</code> alle 15 Minuten. Im Reiter Cron kannst du jede Angabe ausprobieren.</p>`) +
-      `<p class="hint2">Zahlen, Befehle und Ausgaben sind Lehrbuch- und Übungswerte (Ubuntu-Stil). Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen, Befehle und Ausgaben sind Lehrbuch- und Übungswerte (Ubuntu-Stil).</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

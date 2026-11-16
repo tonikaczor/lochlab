@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tonfunk Lab – Lernen</title><link rel="icon" href="icon-192.png"><style>
+<title>Tonfunk Lab – Lernhefte: Übersicht</title><link rel="icon" href="icon-192.png"><style>
 :root{--bg:#10151a;--fg:#e8eaed;--mute:#9aa6b2;--panel:#1a2128;--line:#2c3640;--accent:#3b9eff;--ok:#4cd964}
 @media(prefers-color-scheme:light){:root{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -16,20 +16,32 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}@media screen and (m
 .tip{border-left:4px solid var(--ok);padding-left:12px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 
-pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
 @media(prefers-color-scheme:light){pre{background:#f1f4f7;color:#1d2329}}
 @media print{pre{background:#f4f4f4;color:#000;border:1px solid #999;white-space:pre-wrap}}
 .try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent-bg,#1a6fd4);color:#fff!important;text-decoration:none;font-size:14px}
 .merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
 .warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
-.toc a{display:block;padding:2px 0}svg{max-width:100%;height:auto}
+svg{max-width:100%;height:auto}
 @media print{.try{background:none;color:#000!important;border:1px solid #000}}
+.nav{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px}.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px}.nav a.lm-start{min-width:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;font-size:16px;font-weight:700;text-decoration:none}summary{min-height:44px;padding:10px 0;cursor:pointer}
+/* U2c: Ziele 44 px, Schrift mindestens 14 px, Handy kompakt */
+small{font-size:14px}sub,sup{font-size:max(14px,.8em);line-height:0}
+.try{min-height:44px;line-height:32px;padding:5px 14px;border-radius:22px}
+.toc a{display:flex;align-items:center;min-height:44px;padding:2px 0}
+.weiter a{display:inline-flex;align-items:center;min-height:44px}
+.lm-start{display:inline-flex;align-items:center;min-height:44px}
+#urheber-hinweis,#urheber-sprache{font-size:14px!important}
+h2[id],h3[id]{scroll-margin-top:12px}
+@media(max-width:700px){.wrap{padding:8px 18px 48px}header{gap:10px;margin-bottom:4px}header img{height:32px}h1{font-size:21px;line-height:1.25}.nav{margin:0 0 8px}}
+@media print{.try{min-height:0;line-height:inherit;padding:2px 8px}.weiter{display:none}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Tonfunk Lab – Lernen</h1><small>Stand: Oktober 2026 · Version 23.151</small></div></header>
-<p class="nav"><a href="index.html">← Startseite</a> · <a href="anleitung.html">Anleitung für Azubis</a> · <a href="formelheft.html">Formelheft zum Ausdrucken</a> · <a href="karten.html">Lernkarten</a></p>
+<p class="nav"><a class="lm-start" href="index.html">‹ Start</a><a href="anleitung.html">Anleitung für Azubis</a><a href="formelheft.html">Formelheft zum Ausdrucken</a><a href="karten.html">Lernkarten</a></p>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Lernhefte: Übersicht</h1><small>Stand: Oktober 2026</small></div></header>
 
-<p>Hier lernst du Schritt für Schritt, wie Mikrocontroller und Einplatinen-Computer funktionieren. Alle Kapitel haben Erklärungen, Rechenbeispiele und Fehlertabellen.</p>
+<p>Hier findest du alle Lernhefte von Tonfunk Lab: von Löten und Elektronikgrundlagen über Digitaltechnik, Messen und Steuern bis zu Arduino, Raspberry Pi und der Prüfungsvorbereitung. Jedes Heft hat Erklärungen, Rechenbeispiele und Fehlertabellen. Die Knöpfe unter den Überschriften öffnen das passende Lab.</p>
+<p class="weiter"><a class="try" href="index.html#labs">Zu den Labs</a> <a class="try" href="index.html#ueben">Zum Üben</a> <a class="try" href="index.html#pruefen">Zur Prüfungsvorbereitung</a></p>
 <div class="box"><h3 style="margin-top:0">Projekt: Ampel vom Plan zur Platine</h3><p>Astabile Kippstufe als Taktgeber, Zähler, LEDs: erst im SchaltLab planen, dann im LochLab aufbauen. Mit Arbeitsblatt.</p><p><a class="try" href="projekt-ampel.html">Projekt Ampel öffnen</a></p></div>
 <div class="box"><h3 style="margin-top:0">Projekt: Dämmerungsschalter mit Relais</h3><p>Fotowiderstand, Transistor und Relais schalten eine Lampe bei Dunkelheit ein: erst planen, dann aufbauen. Mit Arbeitsblatt.</p><p><a class="try" href="projekt-daemmerung.html">Projekt Dämmerungsschalter öffnen</a></p></div>
 <div class="box"><h3 style="margin-top:0">Projekt: Netzteil 5 V</h3><p>Brücke, Elko und Spannungsregler 7805: aus 12 V Wechselspannung wird eine stabile 5-V-Gleichspannung. Erst planen, dann aufbauen. Mit Arbeitsblatt.</p><p><a class="try" href="projekt-netzteil.html">Projekt Netzteil öffnen</a></p></div>
@@ -53,7 +65,7 @@ pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:
 <div class="box"><h3 style="margin-top:0">EMV-Lab: Störungen erkennen und beseitigen</h3><p>Störquelle, Kopplungspfad und Störsenke mit den drei Hebeln der Entstörung, Pegel und dB, Kopplungsarten, Spektrum und Oberwellen, Filter, Schirmung, Leitungen und Layout, ESD, Burst und Surge, Messen mit Tastkopf, Vorprüfung und ein Überblick über CE und Normen. Alle Grenzlinien und Prüfpegel sind Übungswerte. Mit Arbeitsblatt zu allen 40 Fragen.</p><p><a class="try" href="lernen-emv.html">EMV-Lab-Lernheft öffnen</a> <a class="try" href="emvlab.html">EMV-Lab öffnen</a></p></div>
 <div class="box"><h3 style="margin-top:0">Arduino verstehen</h3><p>Vom ersten Blinken zu Sensoren und Servo: 11 Kapitel mit <b>Probier es aus</b>-Knöpfen und Aufgaben mit automatischer Prüfung im Arduino-Lab.</p><p><a class="try" href="lernen-arduino.html">Arduino-Lernheft öffnen</a></p></div>
 <div class="box"><h3 style="margin-top:0">Raspberry Pi verstehen</h3><p>Was ist ein Pi, Inbetriebnahme (auch ohne Monitor), die GPIO-Leiste, Python, LED, Taster, Sensoren und sicheres Arbeiten.</p><p><a class="try" href="lernen-pi.html">Raspberry-Pi-Lernheft öffnen</a> <a class="try" href="pilab.html">Pi-Lab öffnen</a> <a class="try" href="pi-sd-karte.html">SD-Karte vorbereiten</a></p></div>
-<div class="box"><h3 style="margin-top:0">Empfohlene Reihenfolge</h3><ol><li>Arduino Kapitel 1 bis 4 (LED, Taster)</li><li>Arduino Kapitel 5 bis 7 (analog, PWM, Serial)</li><li>Aufgaben im Arduino-Lab bearbeiten</li><li>Raspberry Pi Kapitel 1 bis 5</li><li>Projekt nach Wahl</li><li>Verbundprojekt: alle Labs zusammen</li></ol></div>
+<div class="box"><h3 style="margin-top:0">Empfohlene Reihenfolge für Arduino und Raspberry Pi</h3><ol><li>Arduino Kapitel 1 bis 4 (LED, Taster)</li><li>Arduino Kapitel 5 bis 7 (analog, PWM, Serial)</li><li>Aufgaben im Arduino-Lab bearbeiten</li><li>Raspberry Pi Kapitel 1 bis 5</li><li>Projekt nach Wahl</li><li>Verbundprojekt: alle Labs zusammen</li></ol></div>
 <div class="box"><h3 style="margin-top:0">Datenblatt-Lab: Datenblätter lesen und verstehen</h3><p>Aufbau eines Datenblatts, Grenzwerte und Betriebswerte, Min, Typ und Max, Kennlinien mit logarithmischer Achse, Thermik und Derating, Auslegung mit LED, Transistor und Regler, Bauteilwahl, Zeitdiagramme und Register sowie Fachenglisch. Die Datenblätter im Lab sind fiktive Übungsdatenblätter. Mit Arbeitsblatt zu allen 34 Aufgaben.</p><p><a class="try" href="lernen-ds.html">Datenblatt-Lab-Lernheft öffnen</a></p></div>
 <div class="box"><h3 style="margin-top:0">Prüfungs-Lab: Für die Abschlussprüfung üben</h3><p>Aufbau der Prüfung, sicher rechnen, die acht Themen, Lernplan und Strategie. Mit Arbeitsblatt.</p><p><a class="try" href="lernen-pr.html">Prüfungs-Lab-Lernheft öffnen</a></p></div>
 <div class="box"><h3 style="margin-top:0">Praxisschaltung W-2024 verstehen</h3><p>Die Schaltung der Praxisprüfung W-2024 Schritt für Schritt: Aufbau, Bauteile, Wirkungsweise und Fehlersuche, mit sieben Arbeitsblättern und einer Probeprüfung zum Ausdrucken. Die Lösungen sind für Ausbilder gedacht und liegen verschlüsselt im Lab.</p><p><a class="try" href="lernen-w24.html">Erklärheft öffnen</a> <a class="try" href="./tonfunk-lab-lernen-w24.pdf">Erklärheft als PDF</a> <a class="try" href="./Probepruefung-W24.pdf">Probeprüfung (PDF)</a> <a class="try" href="loesungen.html">Lösungen für Ausbilder</a></p><p class="mute">Arbeitsblätter (PDF): <a href="./Arbeitsblatt-W24-Bus-Sensoren.pdf">Bus und Sensoren</a> · <a href="./Arbeitsblatt-W24-Energie.pdf">Energie</a> · <a href="./Arbeitsblatt-W24-Fehlersuche.pdf">Fehlersuche</a> · <a href="./Arbeitsblatt-W24-Meldeleuchten.pdf">Meldeleuchten</a> · <a href="./Arbeitsblatt-W24-Portexpander-K6.pdf">Portexpander K6</a> · <a href="./Arbeitsblatt-W24-Saegezahn-Heizung.pdf">Sägezahn und Heizung</a> · <a href="./Arbeitsblatt-W24-Takt-Lauflicht.pdf">Takt und Lauflicht</a></p></div>

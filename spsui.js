@@ -795,7 +795,7 @@
     S.readonly = false; refreshEditor(true);
     lines = Array.isArray(lines) ? lines : [];
     const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    taskRes = { id: t.id, lines, pct, fresh: true }; markDone(t.id, pct); updateTaskBadge();
     if (FX && FX.isEnabled()) { ensureScreen(); FX.trigger(pct === 100 ? 'pass' : 'fail', null, null, null, { plant: S.plantId }); }
     else if (pct === 100 && root.LochFX) try { root.LochFX.sound('pop'); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
@@ -822,7 +822,7 @@
         <p style="margin:8px 0">${esc(t.text)}</p><p class="hint2" style="margin-top:0">Anlage: ${pd ? pd.icon + ' ' + esc(pd.name) : ''}</p>
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="prog">Zum Programm</button><button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
-      if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      if (r) h += `<div class="lr-fb ${r.pct === 100 ? 'ok' : 'tipp'}" id="tkFb" tabindex="-1"><ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>${r.pct === 100 ? '' : '<p class="hint2">Noch nicht. Schau bei jedem ✗ auf „Warum?“, ändere dein Programm und prüfe noch einmal. Mit „Tipp“ gibt es drei Stufen, Stufe 3 öffnet die Musterlösung.</p>'}</div>`;
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${A.length} Aufgaben vollständig gelöst. Wähle eine Aufgabe: Du bekommst eine Startvorlage, programmierst und lässt die Lösung in der Simulation prüfen.</p>`;
@@ -832,6 +832,7 @@
       const p = d[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${p >= 100 ? 'g' : p > 0 ? 'p' : ''}">${p >= 100 ? '✓' : p > 0 ? p : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${'●'.repeat(x.level || 1)}${'○'.repeat(3 - (x.level || 1))}</span> ${(pdef(x.plant) || {}).icon || ''} ${esc((pdef(x.plant) || {}).name || '')}${p != null ? ' · bisher ' + p + ' %' : ''}</small></div></button>`;
     });
     V.innerHTML = h;
+    if (taskRes && t && taskRes.fresh) { taskRes.fresh = false; const fb = $('#tkFb', V); if (fb && root.LabRahmen && root.LabRahmen.zeig) root.LabRahmen.zeig(fb); }
   }
   $('#taskView').addEventListener('click', async e => {
     const tb = e.target.closest('[data-ta]'), row = e.target.closest('.row[data-t]');
@@ -845,15 +846,15 @@
 
   /* ============================================================ Tab Lernen */
   function timing(rows, T) {
-    const L = 58, W = 330, R = 8, rh = 36, H = rows.length * rh + 22, X = t => (L + (W - L - R) * t / T).toFixed(1);
+    const L = 76, W = 330, R = 8, rh = 36, H = rows.length * rh + 22, X = t => (L + (W - L - R) * t / T).toFixed(1);
     let s = `<svg class="tm" viewBox="0 0 ${W} ${H}" width="${W}" role="img" aria-label="Zeitdiagramm">`;
     rows.forEach((r, i) => {
       const y0 = 10 + i * rh + 24, y1 = y0 - 20; let d = '', pv = null;
       r.p.forEach(([t, v]) => { const y = v ? y1 : y0; d += pv === null ? `M${X(t)},${y}` : `L${X(t)},${pv}L${X(t)},${y}`; pv = y; });
       d += `L${X(T)},${pv}`;
-      s += `<text x="4" y="${y0 - 6}" fill="#8d99a6" font-size="12" font-family="system-ui">${r.n}</text><path d="${d}" fill="none" stroke="${r.c || '#4cd964'}" stroke-width="2.2" stroke-linejoin="round"/>`;
+      s += `<text x="4" y="${y0 - 6}" fill="#8d99a6" font-size="15" font-family="system-ui">${r.n}</text><path d="${d}" fill="none" stroke="${r.c || '#4cd964'}" stroke-width="2.2" stroke-linejoin="round"/>`;
     });
-    for (let t = 0; t <= T; t++) s += `<line x1="${X(t)}" x2="${X(t)}" y1="6" y2="${H - 18}" stroke="#38424d" stroke-dasharray="2 3"/><text x="${X(t)}" y="${H - 5}" fill="#8d99a6" font-size="10" text-anchor="middle" font-family="system-ui">${t} s</text>`;
+    for (let t = 0; t <= T; t++) s += `<line x1="${X(t)}" x2="${X(t)}" y1="6" y2="${H - 18}" stroke="#38424d" stroke-dasharray="2 3"/><text x="${X(t)}" y="${H - 5}" fill="#8d99a6" font-size="15" text-anchor="middle" font-family="system-ui">${t} s</text>`;
     return s + '</svg>';
   }
   let helpDone = false;

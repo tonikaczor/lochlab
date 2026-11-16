@@ -19,8 +19,8 @@
   const kurz = id => (C.ST[id] ? C.ST[id].kurz : id);
 
   /* Taktzeit je Station als Balken, Engpass beschriftet, Puffer vor dem Engpass als Kästchen, Auslastung rechts */
-  function taktSvg(m, Wi) {
-    const W = okW(Wi), zs = m.zeilen, tmax = Math.max(60, ...C.STATIONEN.map(s => (m.p ? m.p.takt[s.id] : 0)));
+  function taktSvg(m, Wi, Hmax) {
+    const ROW = Hmax > 0 ? Math.max(28, Math.min(36, Math.floor((Hmax - 36) / 9))) : 36, W = okW(Wi), zs = m.zeilen, tmax = Math.max(60, ...C.STATIONEN.map(s => (m.p ? m.p.takt[s.id] : 0)));
     const x0 = NAMEW + 6, aw = 58, bw = Math.max(60, W - x0 - aw - 8); let y = Y0, b = T(4, 16, fit(['Taktzeit in s, Auslastung rechts', 'Taktzeit in s'], W - 8), 'm');
     const byId = {}; zs.forEach(z => { byId[z.id] = z; });
     C.STATIONEN.forEach(s => {

@@ -153,6 +153,7 @@
     + '#e10Box input.e10n{min-height:48px;width:min(220px,60%);padding:6px 10px;border-radius:10px;border:1px solid var(--line,#46525f);background:var(--bg,#14181c);color:var(--fg,#e8ecf0);font:17px system-ui}'
     + '#e10Box .e10r{margin:10px 0;padding:8px 12px;border-radius:10px;border:1px solid var(--line,#38424d);overflow-wrap:anywhere}#e10Box .e10r.ok{border-color:var(--ok,#4cd964)}#e10Box .e10r.no{border-color:var(--danger,#ff8a7a)}#e10Box .e10r b.ok{color:var(--ok,#4cd964)}#e10Box .e10r b.no{color:var(--danger,#ff8a7a)}'
     + '#e10Box ul.e10l{list-style:none;margin:8px 0;padding:0}#e10Box ul.e10l li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line,#38424d)}#e10Box a{color:var(--accent,#5fb0ff)}'
+    + '#e10Box a.e10k{display:inline-flex;align-items:center;min-height:44px;padding:8px 16px;border-radius:12px;border:1px solid var(--accent,#5fb0ff);font-weight:600;text-decoration:none}'
     + '@media(max-width:420px){#e10Box .e10p{padding:12px}#e10Box .e10b button{flex:1 1 100%}}';
   function css() { if (doc.getElementById('e10Css')) return; const st = doc.createElement('style'); st.id = 'e10Css'; st.textContent = CSS; doc.head.appendChild(st); }
 
@@ -231,19 +232,21 @@
     const zeile = (t, typ) => { const l = R.res.filter(x => x.typ === typ); return l.length ? '<li><span>' + t + '</span><b>' + l.filter(x => x.ok).length + ' von ' + l.length + '</b></li>' : ''; };
     let wd = 0; try { if (root.Wiederholen && root.Wiederholen.stand) { const s = root.Wiederholen.stand(now); wd = s.liste.length; } } catch (e) {}
     const mins = Math.max(1, Math.round((now - R.start) / 60000));
-    el.innerHTML = bar(n, n, 'Fertig in etwa ' + mins + (mins === 1 ? ' Minute' : ' Minuten')) + '<h2>' + (ok === n ? 'Alles richtig, stark!' : ok >= n / 2 ? 'Gut gemacht' : 'Weiter üben lohnt sich') + '</h2><p class="e10q"><b>' + ok + ' von ' + n + '</b> richtig.</p><ul class="e10l">' + zeile('Lernkarten gewusst', 'karte') + zeile('Rechenaufgaben', 'rechnen') + zeile('Prüfungsfrage', 'pruef') + '</ul>'
-      + (R.neu ? '<p>' + (R.neu === 1 ? '1 Fehler wurde' : R.neu + ' Fehler wurden') + ' als Lernkarte gespeichert (Lernkarten, Filter „Aus Prüfung“).</p>' : '')
+    const fq = R.res.filter(x => !x.ok && x.typ !== 'karte').length, kf = R.res.filter(x => !x.ok && x.typ === 'karte').length;   // falsche Fragen (jetzt Fehlerkarten) und nicht gewusste Lernkarten
+    el.innerHTML = bar(n, n, 'Fertig in ' + (mins === 1 ? 'etwa 1 Minute' : 'etwa ' + mins + ' Minuten') + ' (eingeplant: bis zu 10)') + '<h2>' + (ok === n ? 'Alles richtig, stark!' : ok >= n / 2 ? 'Gut gemacht' : 'Weiter üben lohnt sich') + '</h2><p class="e10q"><b>' + ok + ' von ' + n + '</b> richtig.</p><ul class="e10l">' + zeile('Lernkarten gewusst', 'karte') + zeile('Rechenaufgaben', 'rechnen') + zeile('Prüfungsfrage', 'pruef') + '</ul>'
+      + (fq ? '<p>' + (fq === 1 ? 'Dein Fehler liegt' : 'Deine ' + fq + ' Fehler liegen') + ' jetzt als Lernkarte in Fach 1 (Lernkarten, Filter „Aus Prüfung“).</p><p><a class="e10k" href="karten.html?art=p">Fehlerkarten jetzt üben</a></p>' : '')
+      + (kf ? '<p>' + (kf === 1 ? '1 Lernkarte, die du nicht wusstest, kommt' : kf + ' Lernkarten, die du nicht wusstest, kommen') + ' in Fach 1 zurück und sind sofort wieder fällig (<a href="karten.html">Lernkarten</a>).</p>' : '')
       + (wd ? '<p>' + (wd === 1 ? 'Außerdem wartet 1 Aufgabe' : 'Außerdem warten ' + wd + ' Aufgaben') + ' zum <a href="wiederholen.html">Wiederholen</a>.</p>' : '')
       + '<div class="e10b"><button type="button" class="pri" id="e10Nochmal">Noch eine Einheit</button><button type="button" id="e10Zu">Fertig</button></div>';
     box.querySelector('#e10Nochmal').onclick = start; box.querySelector('#e10Zu').onclick = schliessen; fokus('#e10Zu');
     try { root.dispatchEvent(new CustomEvent('einheit10:fertig', { detail: { ok, n } })); } catch (e) {}
   }
 
-  /* Knopf direkt hinter „Weitermachen“ im Primärband */
+  /* Knopf direkt hinter „Weitermachen“; meinweg.js setzt ihn in der Ansicht Start unter "Heute dran" (wie die übrigen Zeilen mit Symbol aus dem Sprite, Klasse mw-t) */
   function mount() {
     const go = doc.getElementById('contGo'); if (!go || doc.getElementById('e10Go')) return; css();
-    const b = doc.createElement('button'); b.type = 'button'; b.id = 'e10Go';
-    b.innerHTML = '<span class="e10i" aria-hidden="true">⏱</span><span class="e10t"><b>10-Minuten-Einheit</b><small>' + sub + '</small></span><span class="e10p" aria-hidden="true">▶</span>';
+    const b = doc.createElement('button'); b.type = 'button'; b.id = 'e10Go'; b.className = 'mw-t';
+    b.innerHTML = '<span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-clock"/></svg></span><span class="mw-x"><b>10-Minuten-Einheit</b><small>' + sub + '</small></span><span class="mw-p" aria-hidden="true">▶</span>';
     b.setAttribute('aria-label', '10-Minuten-Einheit starten: 3 Lernkarten, 2 Rechenaufgaben, 1 Prüfungsfrage');
     b.onclick = start; go.insertAdjacentElement('afterend', b);
   }

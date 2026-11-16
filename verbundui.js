@@ -140,9 +140,18 @@
     try { vlMount(); } catch (e) { console.error(e); }
   }
   const crumb = (parts) => '<div class="crumb">' + parts.map((p, i) => (p.a ? '<button data-a="' + p.a + '"' + (p.pid ? ' data-pid="' + esc(p.pid) + '"' : '') + '>' + esc(p.t) + '</button>' : '<span>' + esc(p.t) + '</span>') + (i < parts.length - 1 ? '<span>›</span>' : '')).join('') + '</div>';
-  const ring = (pct, size) => { const r = 24, c = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct || 0)); return '<div class="ring"><svg viewBox="0 0 58 58"><circle cx="29" cy="29" r="' + r + '" fill="none" stroke="#0007" stroke-width="6"/><circle cx="29" cy="29" r="' + r + '" fill="none" stroke="' + (p >= 100 ? '#4cd964' : '#3b9eff') + '" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + (c * p / 100).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg><b>' + Math.round(p) + '%</b></div>'; };
+  const ring = (pct, size) => { const r = 24, c = 2 * Math.PI * r, p = Math.max(0, Math.min(100, pct || 0)); return '<div class="ring"><svg viewBox="0 0 58 58"><circle cx="29" cy="29" r="' + r + '" fill="none" style="stroke:var(--panel2)" stroke-width="6"/><circle cx="29" cy="29" r="' + r + '" fill="none" style="stroke:' + (p >= 100 ? 'var(--ok)' : 'var(--accent)') + '" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + (c * p / 100).toFixed(1) + ' ' + c.toFixed(1) + '"/></svg><b>' + Math.round(p) + '%</b></div>'; };
   const medalOf = s => (s && s.medal && MEDAL[s.medal] ? MEDAL[s.medal] : null);
   const labsRow = def => '<div class="labs">' + doneLabs(def.id).map(l => '<span title="' + esc(labName(l)) + '">' + (LABI[l] || '🧩') + '</span>').join('') + '</div>';
+
+  /* Stationsnamen statt Emoji-Zeile: eingeklappte Liste je Karte (U-vb-05) */
+  const stationNames = def => { const ss = (def && def.stations) || []; return ss.length ? '<details class="stn"><summary>' + ss.length + ' Stationen ansehen</summary><ol>' + ss.map(x => '<li>' + esc(x.title) + '</li>').join('') + '</ol></details>' : ''; };
+  /* Eingang/Ausgang im Klartext statt roher Schlüssel (U-vb-02) */
+  function slotLabel(pid, slot) {
+    if (/\.lastenheft$/.test(slot)) return 'Lastenheft';
+    const d = defOf(pid), ss = (d && d.stations) || [], i = ss.findIndex(x => x.out === slot);
+    return i >= 0 ? 'Ergebnis von Station ' + (i + 1) + ': ' + ss[i].title : 'Ergebnis einer früheren Station';
+  }
 
   /* ============================================================ 1. Projektwahl */
   function renderList() {
@@ -156,16 +165,16 @@
     if (!all.length) h += '<div class="errbox"><b>Projektdaten fehlen.</b> Es ist kein Projekt geladen. Seite neu laden oder einmal mit Netz öffnen.</div>';
     const card = p => {
       const def = defOf(p.id) || p, st = stateOf(p.id), sta = st ? statusOf(p.id) : null, md = medalOf(sta), cross = isCross(def), foreign = !!cur && !cross && defBeruf(def).indexOf(cur) < 0;
-      return '<div class="pj' + (st ? ' on' : '') + '"' + (cross ? ' data-cross="1" style="border-color:var(--warn);background:linear-gradient(135deg,var(--panel),var(--panel2))"' : '') + '><div class="top"><div class="ic">' + esc(def.icon || '🧩') + '</div><div style="flex:1;min-width:0"><h3>' + esc(def.name) + (isDemo(p.id) ? '<span class="demo">Demo</span>' : '') + '</h3>' + labsRow(def) + '</div>' + (sta ? ring(sta.pct) : '') + '</div>' +
+      return '<div class="pj' + (st ? ' on' : '') + '"' + (cross ? ' data-cross="1" style="border-color:var(--warn);background:linear-gradient(135deg,var(--panel),var(--panel2))"' : '') + '><div class="top"><div class="ic">' + esc(def.icon || '🧩') + '</div><div style="flex:1;min-width:0"><h3>' + esc(def.name) + (isDemo(p.id) ? '<span class="demo">Demo</span>' : '') + '</h3></div>' + (sta ? ring(sta.pct) : '') + '</div>' +
         (cross ? '<p><span class="tag wa">🤝 Alle Berufe gemeinsam</span>' + (sta && sta.beruf ? ' <span class="tag">' + esc(bKurz(sta.beruf)) + (sta.solo ? '' : ' · Team') + '</span>' : '') + '</p>' : foreign || (cur && rest.length && Array.isArray(def.beruf)) ? '<p><span class="tag">' + esc(bList(defBeruf(def), true)) + '</span></p>' : '') +
-        '<p class="story">' + esc(def.story || '') + '</p>' +
+        '<p class="story">' + esc(def.story || '') + '</p>' + stationNames(def) +
         (st && sta ? '<p>' + sta.done + ' von ' + sta.total + ' Stationen · ' + esc(lvName(def, st.level)) + ' · ' + esc(st.name || '') + (md ? ' · <span class="medal">' + md[0] + '</span>' : '') + '</p>' : '<p>' + (p.stations || (def.stations || []).length) + ' Stationen · ' + doneLabs(p.id).length + ' Labs</p>') +
         '<div class="acts">' + (st ? '<button class="btn pri" data-a="go-proj" data-pid="' + esc(p.id) + '">Weiter</button><button class="btn" data-a="start" data-pid="' + esc(p.id) + '">Neu starten</button>' : '<button class="btn pri" data-a="start" data-pid="' + esc(p.id) + '">Projekt starten</button>') + '</div></div>';
     };
-    h += '<div class="pgrid">' + ps.map(card).join('') +
-      '<div class="pj add"><div class="ic">📥</div><h3>Bestehendes laden</h3><p>Code, Link oder Datei von einem Partner oder aus einer Sicherung.</p><div class="acts"><button class="btn" data-a="import">Laden …</button></div></div></div>' +
+    h += '<div class="pgrid">' + ps.map(card).join('') + '</div>' +
+      '<div class="sec" style="margin-top:16px"><h3>Stand von einem Partner oder aus einer Sicherung</h3><p>Hast Du einen Code, Link oder eine Datei? Dann lade sie hier.</p><div class="btns" style="margin-top:6px"><button class="btn" data-a="import" style="flex:none">Code oder Datei laden</button></div></div>' +
       (rest.length ? '<details id="dRest" style="margin-top:16px"><summary style="cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:700">Projekte anderer Berufe (' + rest.length + ')</summary><div class="pgrid" style="margin-top:8px">' + rest.map(card).join('') + '</div></details>' : '') +
-      '<p class="hint2" style="margin-top:16px">Die früheren Einzelprojekte (<a href="projekte.html" style="color:var(--accent)">Projekte</a>, <a href="projekt-ampel.html" style="color:var(--accent)">Ampel</a>) gibt es weiterhin.</p>';
+      '<p class="hint2" style="margin-top:16px">Du suchst etwas für zuhause oder ein Lernheft? <a href="projekte.html" style="color:var(--accent)">Heimprojekte</a> sind kleine Bastelprojekte mit Anleitung. Das <a href="projekt-ampel.html" style="color:var(--accent)">Lernheft Projekt Ampel</a> erklärt eine Schaltung Schritt für Schritt. Hier arbeitest Du dagegen in vielen Labs an einem Gerät.</p>';
     $('#view').innerHTML = h;
   }
 
@@ -205,15 +214,15 @@
   }
 
   /* ============================================================ 2. Projektansicht */
-  function phaseChips(pid, sta, selSid) {
+  function phaseChips(pid, sta, selSid, mini) {
     const def = defOf(pid), st = stateOf(pid);
     const chips = sta.stations.map((s, i) => {
       const sd = stDef(pid, s.id) || {}, m = STATE[s.state] || STATE.open, fremd = s.own === false, bk = s.beruf ? bKurz(s.beruf[0]) : '';
-      return '<button class="ph1 ' + esc(s.state) + (s.id === selSid ? ' sel' : '') + '" data-a="go-st" data-pid="' + esc(pid) + '" data-sid="' + esc(s.id) + '"' + (fremd ? ' data-fremd="1" style="opacity:' + (s.state === 'locked' ? '.5' : '.78') + ';border-style:dotted"' : '') + ' aria-label="Station ' + (i + 1) + ': ' + esc(s.title) + (bk ? ', ' + esc(bk) : '') + ', ' + (s.kollege ? 'von den Kollegen geliefert' : m[1]) + '"><span class="z">' + (s.kollege ? '🤝' : m[0]) + '</span><span class="n">STATION ' + (i + 1) + '</span><span class="l">' + stLabIco(sd) + '</span><span class="t">' + esc(s.title) + '</span><span class="p">' + (s.kollege ? 'geliefert' : s.state === 'locked' ? (fremd ? esc(bk) : 'gesperrt') : s.state === 'open' ? esc(fremd ? bk : stLabs(sd)[0] === 'vb' ? (bk || labName('vb')) : labName(stLabs(sd)[0])) : Math.round(s.pct || 0) + ' %') + '</span></button>';
+      return '<button class="ph1 ' + esc(s.state) + (s.id === selSid ? ' sel' : '') + '" data-a="go-st" data-pid="' + esc(pid) + '" data-sid="' + esc(s.id) + '"' + (fremd ? ' data-fremd="1" style="opacity:' + (s.state === 'locked' ? '.5' : '.78') + ';border-style:dotted"' : '') + ' aria-label="Station ' + (i + 1) + ': ' + esc(s.title) + (bk ? ', ' + esc(bk) : '') + ', ' + (s.kollege ? 'von den Kollegen geliefert' : m[1]) + '"><span class="z">' + (s.kollege ? '🤝' : m[0]) + '</span><span class="n">' + (mini ? (i + 1) : 'STATION ' + (i + 1)) + '</span><span class="l">' + stLabIco(sd) + '</span><span class="t">' + esc(s.title) + '</span><span class="p">' + (s.kollege ? 'geliefert' : s.state === 'locked' ? (fremd ? esc(bk) : 'gesperrt') : s.state === 'open' ? esc(fremd ? bk : stLabs(sd)[0] === 'vb' ? (bk || labName('vb')) : labName(stLabs(sd)[0])) : Math.round(s.pct || 0) + ' %') + '</span></button>';
     });
     const fs = sta.finalState, fm = STATE[fs] || STATE.locked;
-    chips.push('<button class="ph1 fin ' + esc(fs) + '" data-a="go-final" data-pid="' + esc(pid) + '" aria-label="Gesamttest, ' + fm[1] + '"><span class="z">' + fm[0] + '</span><span class="n">ABSCHLUSS</span><span class="l">🏁</span><span class="t">' + esc((def.final && def.final.title) || 'Gesamttest') + '</span><span class="p">' + (fs === 'locked' ? 'gesperrt' : fs === 'open' ? 'bereit' : Math.round(sta.finalPct || 0) + ' %') + '</span></button>');
-    return '<div class="phases" role="list">' + chips.join('') + '</div>';
+    chips.push('<button class="ph1 fin ' + esc(fs) + '" data-a="go-final" data-pid="' + esc(pid) + '" aria-label="Gesamttest, ' + fm[1] + '"><span class="z">' + fm[0] + '</span><span class="n">' + (mini ? 'Ziel' : 'ABSCHLUSS') + '</span><span class="l">🏁</span><span class="t">' + esc((def.final && def.final.title) || 'Gesamttest') + '</span><span class="p">' + (fs === 'locked' ? 'gesperrt' : fs === 'open' ? 'bereit' : Math.round(sta.finalPct || 0) + ' %') + '</span></button>');
+    return '<div class="phases' + (mini ? ' mini' : '') + '" role="list">' + chips.join('') + '</div>';
   }
   function lastenheftHtml(pid, open) {
     const le = safe(() => V().get(pid + '.lastenheft'), null); if (!le) return '';
@@ -267,7 +276,7 @@
     setTitle(def.name); const st = stateOf(pid);
     let h = crumb([{ t: 'Projekte', a: 'go-list' }, { t: def.name }]);
     h += '<h1 class="vh1">' + esc(def.icon || '') + ' ' + esc(def.name) + (isDemo(pid) ? '<span class="demo">Demo</span>' : '') + '</h1>';
-    h += '<p class="vlead">' + esc(def.story || '') + (def.company ? '<br><b>Auftraggeber:</b> ' + esc(def.company) : '') + '</p>' + (def.story ? '<div class="vl-wrap" data-vl-pid="' + esc(pid) + '"></div>' : '') + '<div class="labs" style="margin-bottom:10px">' + doneLabs(pid).map(l => '<span title="' + esc(labName(l)) + '">' + (LABI[l] || '🧩') + '</span>').join('') + '</div>';
+    h += '<p class="vlead">' + esc(def.story || '') + (def.company ? '<br><b>Auftraggeber:</b> ' + esc(def.company) : '') + '</p>' + (def.story ? '<div class="vl-wrap" data-vl-pid="' + esc(pid) + '"></div>' : '') + '';
     if (!st) {
       h += '<div class="sec"><h3>Noch nicht gestartet</h3><p>Du bekommst ein persönliches Lastenheft. Wähle Namen oder Teamnamen und eine Stufe.</p><div class="btns"><button class="btn pri" data-a="start" data-pid="' + esc(pid) + '">Projekt starten</button></div></div>';
       $('#view').innerHTML = h; return;
@@ -280,8 +289,8 @@
     h += phaseChips(pid, sta, null);
     const nSt = nxt && nxt !== 'final' ? sta.stations.find(s => s.id === nxt) : null;
     h += '<div class="btns" style="margin-top:0">' + (nSt ? '<button class="btn pri" data-a="go-st" data-pid="' + esc(pid) + '" data-sid="' + esc(nSt.id) + '">Weiter mit Station ' + (sta.stations.indexOf(nSt) + 1) + '</button>' : nxt === 'final' ? '<button class="btn pri" data-a="go-final" data-pid="' + esc(pid) + '">Zum Gesamttest</button>' : '<button class="btn pri" data-a="go-final" data-pid="' + esc(pid) + '">Gesamttest ansehen</button>') +
-      '<button class="btn" data-a="go-final" data-pid="' + esc(pid) + '">Gesamttest</button><button class="btn" data-a="bericht" data-pid="' + esc(pid) + '">Bericht</button><button class="btn" data-a="zert" data-pid="' + esc(pid) + '">Zertifikat</button><button class="btn" data-a="share" data-pid="' + esc(pid) + '">Teilen</button><button class="btn danger" data-a="reset" data-pid="' + esc(pid) + '">Zurücksetzen</button></div>';
-    h += lastenheftHtml(pid, false) + badgesHtml(pid);
+      '<button class="btn" data-a="go-final" data-pid="' + esc(pid) + '">Gesamttest</button><button class="btn" data-a="bericht" data-pid="' + esc(pid) + '">Bericht</button><button class="btn" data-a="zert" data-pid="' + esc(pid) + '">Zertifikat</button><button class="btn" data-a="share" data-pid="' + esc(pid) + '">Teilen</button></div><p class="hint2">Zurücksetzen findest Du im Menü (☰).</p>';
+    h += lastenheftHtml(pid, !sta.done && !stale.length) + badgesHtml(pid);
     $('#view').innerHTML = h;
     const dl = $('#dLast'); if (dl) dl.addEventListener('toggle', () => { if (dl.open) S.flags.lastenheft++; });
   }
@@ -300,21 +309,22 @@
     const state = (info && info.state) || 'open', m = STATE[state] || STATE.open, locked = state === 'locked' && !isFree();
     const fremd = !!(info && info.own === false), kol = !!(info && info.kollege), self = fremd && !!S.selfEdit && S.selfEdit === pid + ':' + sid, kolView = fremd && st.solo && !self && (kol || !(info && info.delivered));
     h += '<h1 class="vh1">' + stLabIco(sd) + ' Station ' + (idx + 1) + ': ' + esc(sd.title) + '</h1><p class="vlead">' + esc(stLabTxt(sd)) + (Array.isArray(sd.beruf) && sd.beruf.length ? ' · <span class="tag">' + esc(bList(sd.beruf, true)) + '</span>' : '') + ' · <span class="tag ' + (state === 'passed' ? 'ok' : state === 'failed' || state === 'stale' ? 'wa' : '') + '">' + m[0] + ' ' + m[1] + (info && info.pct != null && state !== 'open' && state !== 'locked' ? ' · ' + Math.round(info.pct) + ' %' : '') + '</span>' + (info && info.hints ? ' · Tipps: ' + info.hints : '') + '</p>';
-    if (sta) h += phaseChips(pid, sta, sid);
+    if (sta) h += phaseChips(pid, sta, sid, true);
+    if (!locked && !hub0(sd) && !kolView) h += '<div class="btns labtop"><a class="btn pri" data-a="lab" data-pid="' + esc(pid) + '" data-sid="' + esc(sid) + '" href="' + esc(labUrl(sd.on, pid, sid)) + '">Im ' + esc(labName(sd.on)) + ' öffnen</a></div>';
     if (fremd) h += kollegeHtml(pid, sid, sd, st, info, kol, self);
     h += '<div class="sec"><h3>Auftrag</h3><p>' + esc(sd.text || '') + '</p>' + (sd.text ? '<div class="vl-wrap" data-vl-pid="' + esc(pid) + '" data-vl-sid="' + esc(sid) + '"></div>' : '') + '</div>';
     const ins = Array.isArray(sd.in) ? sd.in : [];
-    h += '<div class="sec"><h3>Eingang</h3><ul class="inl">' + ['' + pid + '.lastenheft'].concat(ins).map(s => {
+    h += '<div class="sec"><h3>Das brauchst Du</h3><ul class="inl">' + ['' + pid + '.lastenheft'].concat(ins).map(s => {
       const ok = safe(() => V().has(s), false), rows = ok ? slotRows(s) : [];
-      return '<li><span class="tag ' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓' : 'fehlt') + '</span><b>' + esc(s) + '</b>' + (ok ? '' : '<span style="color:var(--mute);font-size:13px">noch nicht übergeben</span>') + (rows.length ? '<details style="width:100%"><summary>Daten ansehen</summary>' + tbl(rows) + '</details>' : '') + '</li>';
+      return '<li><span class="tag ' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓' : 'fehlt') + '</span><b>' + esc(slotLabel(pid, s)) + '</b>' + (ok ? '' : '<span style="color:var(--mute);font-size:13px">noch nicht übergeben</span>') + (rows.length ? '<details style="width:100%"><summary>Daten ansehen</summary>' + tbl(rows) + '</details>' : '') + '</li>';
     }).join('') + '</ul></div>';
     const hub = isHub(sd); if (hub) h += hubHtml(pid, sid, def, st, sd, info, locked, kolView);
     const outOk = !!(info && info.delivered) || safe(() => V().has(sd.out), false), res0 = outOk ? safe(() => V().check(pid, sid), null) : null, res = res0 && res0.ok !== false ? res0 : null;
-    h += '<div class="sec"><h3>Ausgang</h3><p><b>' + esc(sd.out || '') + '</b> (' + esc(sd.type || '') + ') ' + (outOk ? '<span class="tag ok">übergeben</span>' : '<span class="tag">noch nicht übergeben</span>') + '</p>' + (outOk ? '<details><summary>Daten ansehen</summary>' + tbl(slotRows(sd.out)) + '</details>' : '') +
+    h += '<div class="sec"><h3>Das lieferst Du</h3><p><b>' + esc('Ergebnis von Station ' + (idx + 1) + ': ' + sd.title) + '</b> ' + (outOk ? '<span class="tag ok">übergeben</span>' : '<span class="tag">noch nicht übergeben</span>') + '</p>' + (outOk ? '<details><summary>Daten ansehen</summary>' + tbl(slotRows(sd.out)) + '</details>' : '') +
       (res ? '<p><b>Prüfergebnis der letzten Übergabe: ' + Math.round(res.pct) + ' %</b> (bestehen ab ' + ((info && info.pass != null) ? info.pass : passOf(def, st.level, sd)) + ' %)</p>' + linesHtml(res) : '<p class="hint2">' + (hub ? 'Noch keine Übergabe. Fülle oben das Formular aus und gib mit „Übergeben“ ab.' : 'Noch keine Übergabe. Arbeite im Lab und gib dort mit „Übergeben“ ab.') + '</p>') + '</div>';
     const hs = info && info.hints || 0, cached = safe(() => JSON.parse(lsRaw(hintKey(pid, sid), 'null')), null);
     if (kolView) { $('#view').innerHTML = h + (locked ? '<p class="hint2">Die Kollegen liefern diese Station, sobald die Stationen davor bestanden sind.</p>' : ''); return; }
-    h += '<div class="btns">' + (locked ? '<button class="btn pri" disabled>Gesperrt: erst die Vorstation bestehen</button>' : hub ? '' : '<a class="btn pri" data-a="lab" data-pid="' + esc(pid) + '" data-sid="' + esc(sid) + '" href="' + esc(labUrl(sd.on, pid, sid)) + '">Im ' + esc(labName(sd.on)) + ' öffnen</a>') +
+    h += '<div class="btns">' + (locked ? '<button class="btn pri" disabled>Gesperrt: erst die Vorstation bestehen</button>' : '') +
       '<button class="btn" data-a="hint">💡 Tipp (' + hs + '/3)</button>' + (cached && cached.t && cached.s === st.seed && Object.keys(cached.t).length ? '<button class="btn" data-a="hint-old">Bisherige Tipps</button>' : '') +
       (hub && !locked && typeof sd.solution === 'function' && (hs >= 3 || isFree()) ? '<button class="btn" data-a="hub-sol">Musterlösung eintragen</button>' : '') +
       (outOk && info && info.pct > 0 ? '<button class="btn" data-a="give">Abgeben</button>' : '') + (outOk ? '<button class="btn danger" data-a="rstation">Station zurücksetzen</button>' : '') + '</div>';
@@ -338,6 +348,7 @@
   /* ---- Hub-Station (on:'vb', Typ vb.form): Formular und Lab-Aufgaben direkt im Hub, ohne Lab und ohne Adapter.
      Formularwerte: localStorage 'verbund.form.<pid>.<sid>' = { seed, v } (gleiches Schema wie die Leiste). Aufgabenstand: lm4.tdone (die Brücke in aufgaben.js spiegelt die Labs dorthin). */
   const isHub = sd => !!sd && sd.on === 'vb';
+  const hub0 = isHub;
   const hubKey = (pid, sid) => 'verbund.form.' + pid + '.' + sid;
   const tdoneNow = () => { safe(() => { if (root.BerufReg && root.BerufReg.sync) root.BerufReg.sync(); }, 0); return BP.tdoneOf ? BP.tdoneOf(lsRaw('lm4.tdone', '{}')) : {}; };
   const hubCtx = (pid, sid, extra) => Object.assign(safe(() => V().ctx(pid, sid), null) || {}, extra || {});

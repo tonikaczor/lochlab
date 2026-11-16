@@ -96,7 +96,7 @@
         else t += ' ' + r.person.trip.text;
       }
       if (r.touch.hinweis) t += ' ' + r.touch.hinweis;
-      return { ok: a !== 'rot', ampel: a, text: t, margin: z.margin * 1000, zusatz: zusatz };
+      return { ok: a !== 'rot', ampel: a, text: t, margin: z.margin * 1000, marginUnit: 'mA', zusatz: zusatz };
     }
     function diag(r, ctl) {
       const out = [];
@@ -119,7 +119,7 @@
         ts.push(t); z1.push([t, zc.z1 * 1000]); z2.push([t, zc.z2 * 1000]); fl.push([t, zc.flimmer * 1000]);
       }
       const c1 = { id: 'zonen', title: 'Stromwirkung über der Einwirkdauer (Lehrdarstellung, Übungswerte)', xLabel: 'Einwirkdauer', xUnit: 'ms', xScale: 'log', yLabel: 'Körperstrom', yUnit: 'mA', yScale: 'log',
-        series: [{ name: 'Zone 1 bis', points: z1 }, { name: 'Zone 2 bis', points: z2 }, { name: 'Flimmerkurve (Zone 3 bis)', points: fl }] };
+        series: [{ name: 'Obergrenze Zone 1', points: z1 }, { name: 'Obergrenze Zone 2', points: z2 }, { name: 'Flimmerkurve (Obergrenze Zone 3)', points: fl }] };
       if (r && r.valid) c1.marker = { x: r.tEff, y: Math.max(r.iKmA, 1e-3), label: 'Betriebspunkt ' + eng(r.touch.iK, 'A') + ', ' + fm(r.tEff, 0) + ' ms' };
       const us = [], is = [];
       if (r && r.rges > 0) for (let k = 0; k <= 40; k++) { const u = 12 + (400 - 12) * k / 40; us.push([u, u / r.rges * 1000]); }
@@ -206,7 +206,7 @@
       sc.hit('fire', R0.x, by, cw, chipH);
       g.chip(ctx, 'RCD ', view.ctl.rcd > 0 ? view.ctl.rcd + ' mA' : 'aus', R0.x + cw + 8, by, cw, chipH, pal, { color: B.ebeneColor('zusatz', pal), on: view.ctl.rcd > 0, size: fs });
       sc.hit('rcd', R0.x + cw + 8, by, cw, chipH);
-      const bx = narrow ? R0.x : R0.x + 2 * cw + 20, bw = narrow ? R0.w : R0.w - 2 * cw - 20, bby = narrow ? by + chipH + 8 : by + 16, bh = 14;
+      const bx = narrow ? R0.x : R0.x + 2 * cw + 20, bw = narrow ? R0.w : R0.w - 2 * cw - 20, bby = narrow ? by + chipH + 24 : by + 16, bh = 14;
       if (bw > 60) {
         const lab = valid ? 'Einwirkdauer ' + fm(r.tMs, 0) + ' ms' + (r.verkuerzt ? ' · RCD löst nach höchstens ' + fm(r.tripMs, 0) + ' ms aus' : '') : 'Einwirkdauer: bei Gleichstrom nicht gerechnet';
         g.text(ctx, lab, bx, bby - 5, { size: fs, color: pal.mute, max: bw });

@@ -482,7 +482,10 @@
       if (m.global) { ctx.strokeStyle = th.ok; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(mx, my, rad + 3.5, 0, TAU); ctx.stroke(); }
       if (!m.label) return;
       const w = Math.min(pw - 8, tw(ctx, m.label, fs, m.global)), hgt = fs + 3, cands = [[mx + 8, my - 8], [mx - 8 - w, my - 8], [mx + 8, my + hgt + 2], [mx - 8 - w, my + hgt + 2], [mx - w / 2, my - 12], [mx - w / 2, my + hgt + 8]];
-      let pick = null; for (const c of cands) { if (fitBox(c[0], c[1] - hgt, w, hgt + 2)) { pick = c; break; } }
+      /* B2c (B-enr-01): Textschild bevorzugt dort, wo keine Kurve darunterliegt */
+      const onCurve = (bx, by, bw, bh) => M.series.some(se => { const q = se.pts; for (let i = 1; i < q.length; i++) { const x0 = X(q[i - 1][0]), y0 = Y(q[i - 1][1]), x1 = X(q[i][0]), y1 = Y(q[i][1]); if (!(isFinite(x0 + y0 + x1 + y1))) continue; const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / 3)); for (let k = 0; k <= n; k++) { const px = x0 + (x1 - x0) * k / n, py = y0 + (y1 - y0) * k / n; if (px > bx - 2 && px < bx + bw + 2 && py > by - 2 && py < by + bh + 2) return true; } } return false; });
+      let pick = null; for (const c of cands) { if (fitBox(c[0], c[1] - hgt, w, hgt + 2) && !onCurve(c[0], c[1] - hgt, w, hgt + 2)) { pick = c; break; } }
+      if (!pick) for (const c of cands) { if (fitBox(c[0], c[1] - hgt, w, hgt + 2)) { pick = c; break; } }
       if (!pick) pick = [cl(mx + 8, pxl + 2, pxl + pw - w - 2), cl(my - 8, py0 + hgt + 2, py0 + ph - 4)];
       placed.push({ x: pick[0], y: pick[1] - hgt, w, h: hgt + 2 });
       txt(ctx, m.label, pick[0], pick[1], { size: fs, bold: m.global, color: th.fg, halo: th.halo, maxW: pw - 8 });

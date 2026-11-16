@@ -520,7 +520,26 @@
     cw = w; ch = h;
   }
   if (root.ResizeObserver) new ResizeObserver(() => fitCanvas()).observe(cvw);
-  root.addEventListener('resize', () => { fitCanvas(); redrawTab(); updateMeters(0, true); });
+  root.addEventListener('resize', () => { fitCanvas(); redrawTab(); updateMeters(0, true); if (typeof buildPal === 'function') buildPal(); });
+
+  /* Welle 2 B2b (B-all-01, B-enr-03, B-thm-04): SVG-Text am Handy mindestens 11 px. Die Grafik behaelt ihr Seitenverhaeltnis, nur die Schrift wird (hoechstens 1,6-fach) so vergroessert, dass sie nach dem Skalieren 11 px erreicht. */
+  let svgFitT = 0;
+  function fitSvgText() {
+    svgFitT = 0;
+    document.querySelectorAll('svg[viewBox]').forEach(sv => {
+      const vb = sv.viewBox && sv.viewBox.baseVal, w = sv.getBoundingClientRect().width; if (!vb || !vb.width || !w) return;
+      const k = w / vb.width;
+      sv.querySelectorAll('text').forEach(tx => {
+        if (tx.dataset.fs0 == null) { const f = parseFloat(getComputedStyle(tx).fontSize); if (!(f > 0)) return; tx.dataset.fs0 = String(f); }
+        const f0 = +tx.dataset.fs0, want = f0 * k < 11 ? Math.min(11 / k, f0 * 1.6) : f0;
+        const cur = tx.style.fontSize ? parseFloat(tx.style.fontSize) : f0;
+        if (Math.abs(cur - want) > 0.05) tx.style.fontSize = want === f0 ? '' : (Math.round(want * 100) / 100) + 'px';
+      });
+    });
+  }
+  const fitSvgSoon = () => { if (!svgFitT) svgFitT = setTimeout(fitSvgText, 120); };
+  try { new MutationObserver(fitSvgSoon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  root.addEventListener('resize', fitSvgSoon); setInterval(fitSvgSoon, 1500);
   const bgOf = () => (getComputedStyle(document.documentElement).getPropertyValue('--cv') || '#14181c').trim();
   function drawRig(ts) {
     if (!cw || cvw.offsetParent === null) return;
@@ -1362,7 +1381,8 @@
     if (root.Badges) root.Badges.result(id, pct);
     if (pct >= 100 && (id === 'th11' || id === 'th12')) stat('thmzeit', 1, 'max');
   }
-  let taskRes = null; const taskAns = {};
+  let taskRes = null; const taskAns = {}, taskTry = {};
+  const isInRow = l => /^Die Eingaben sind gültig/.test((l && l.text) || '');
   const curTask = () => { const a = TK(); return a && S.task ? a.find(t => t.id === S.task.id) : null; };
   function updateTaskBadge() {
     const a = TK(), b = $('#tkBd'); if (!b) return;
@@ -1408,11 +1428,14 @@
     const ans = collectAnswer(t); let lines;
     try { lines = await (R.run ? R.run(t, ans) : t.check(ans)); } catch (e) { console.error(e); lines = [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden: ' + (e && e.message || e), why: '' }]; }
     S.readonly = false; lines = Array.isArray(lines) ? lines : [];
-    const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    const iRow = lines.find(isInRow), rest = lines.filter(l => !isInRow(l));
+    const pct = iRow && !iRow.ok ? 0 : rest.length ? Math.round(100 * rest.filter(l => l.ok).length / rest.length) : (iRow ? 100 : 0);
+    taskTry[t.id] = pct === 100 ? 0 : (taskTry[t.id] || 0) + 1;
+    taskRes = { id: t.id, lines, pct, n: taskTry[t.id] }; markDone(t.id, pct); updateTaskBadge();
     const F = root.LochFX; if (F) try { if (pct === 100) { F.pass(100); if (F.isFun && F.isFun()) F.confetti(false); } else F.pass(pct); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
-    toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    if (!document.documentElement.classList.contains('lr-on')) toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    setTimeout(() => { const e = document.querySelector('#taskView .lr-fb'); if (e && root.LabRahmen) root.LabRahmen.zeig(e); }, 60);
   }
   /* Auto-Weg: Musterlösung laden und animiert abspielen (zählt als Hilfe Stufe 3) */
   function autoWay(t) {
@@ -1449,12 +1472,19 @@
       const r = taskRes && taskRes.id === t.id ? taskRes : null, ask2 = t.ask ? (typeof t.ask === 'string' ? { label: t.ask } : t.ask) : null, ans = taskAns[t.id] || {}, fl = fieldsOf(t), cl = choicesOf(t);
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat || '')}</h4><div class="big">${esc(sx(t.title))}</div><div class="lv">${'●'.repeat(t.level || 1)}${'○'.repeat(3 - (t.level || 1))}</div>
         <p style="margin:8px 0;white-space:pre-line">${esc(sx(t.text))}</p>${tableHtml(t.table)}<p class="hint2" style="margin-top:0">Prüfstand: ${ic(t)} ${esc(rn(t))}</p>
-        ${ask2 ? `<label class="f"><span>${esc(sx(ask2.label || 'Dein Ergebnis'))}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}"></label>` : ''}
-        ${fl.length ? `<div class="sheetbox"><div class="gh" style="padding-top:0">Antwortblatt</div>${fl.map(f => `<label class="f"><span>${esc(sx(f.question || f.label || f.key))}${f.unit ? ' in ' + esc(f.unit) : ''}</span><input data-fk="${esc(f.key)}" inputmode="decimal" autocomplete="off" value="${esc((ans.f || {})[f.key] || '')}"></label>`).join('')}</div>` : ''}
+        ${ask2 ? `<label class="f"><span>${esc(sx(ask2.label || 'Dein Ergebnis'))}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}" aria-describedby="tkTol"></label><p class="lr-hinweis" id="tkTol" data-tol="1">${esc(ask2.unit ? 'Einheit: ' + ask2.unit + '. ' : '')}</p>` : ''}
+        ${fl.length ? `<div class="sheetbox"><div class="gh" style="padding-top:0">Antwortblatt</div>${fl.map(f => `<label class="f"><span>${esc(sx(f.question || f.label || f.key))}${f.unit ? ' in ' + esc(f.unit) : ''}</span><input data-fk="${esc(f.key)}" inputmode="decimal" autocomplete="off" value="${esc((ans.f || {})[f.key] || '')}"></label>`).join('')}<p class="lr-hinweis" id="tkTolF" data-tol="1">Einheit steht am Feld. </p></div>` : ''}
         ${cl.map(c => `<fieldset class="choice"><legend>${esc(sx(c.q || c.label || c.key))}</legend>${choiceOpts(c).map((o, i) => `<label class="opt"><input type="radio" name="ch-${esc(c.key)}" data-ck="${esc(c.key)}" data-ci="${i}"${(ans.c || {})[c.key] !== undefined && String((ans.c || {})[c.key]) === String(o.value) ? ' checked' : ''}> ${esc(sx(o.label))}</label>`).join('')}</fieldset>`).join('')}
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="rig">${S.rigId === 'vergleich' ? 'Zum Vergleich' : 'Zum Prüfstand'}</button>${typeof t.sol === 'function' ? '<button class="btn" data-ta="auto">▶ Auto-Weg</button>' : ''}<button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
-      if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(sx(l.text))}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(sx(l.why))}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      if (r) {
+        const shown = r.lines.filter(l => !(l.ok && isInRow(l))), fcls = r.pct === 100 ? 'ok' : r.n >= 2 ? 'loes' : 'tipp';
+        const head = r.pct === 100 ? '<strong>Richtig.</strong> 🎉 Geschafft.' : r.n >= 2 ? '<strong>Lösung.</strong> ' + r.pct + ' % richtig, das war noch offen. Der Grund steht bei jedem Punkt.' : '<strong>Noch nicht.</strong> ' + r.pct + ' % richtig. Schau auf die roten Punkte oder hole mit 💡 einen Tipp. Du hast einen zweiten Versuch.';
+        let sv = ''; if (r.n >= 2 && r.pct < 100) { try { const so = t.sol(); if (so && fin(so.value)) sv = '<p>Richtiges Ergebnis: <strong>' + esc(fauto(so.value)) + (ask2 && ask2.unit ? ' ' + esc(ask2.unit) : '') + '</strong></p>'; const hh = Array.isArray(t.hint) && t.hint[2] ? String(t.hint[2]) : ''; if (hh) sv += '<p><strong>' + (/→|=/.test(hh) ? 'Rechenweg' : 'Lösung') + ':</strong> ' + esc(sx(hh.replace(/^Musterlösung:\s*/, ''))) + '</p>'; } catch (e) {} }
+        const fb = `<div class="lr-fb ${fcls}" role="status"><p>${head}</p>${sv}<ul class="tl">${shown.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(sx(l.text))}${!l.ok && l.why ? (r.n >= 2 ? `<br><small>${esc(sx(l.why))}</small>` : `<details><summary>Warum?</summary>${esc(sx(l.why))}</details>`) : ''}</li>`).join('')}</ul>${r.n >= 2 && r.pct < 100 ? '<p><button class="btn" data-ta="auto">▶ Musterlösung abspielen</button></p>' : ''}</div>`;
+        const k = h.lastIndexOf('<div class="btns"><button class="btn pri" data-ta="check">');
+        h = k >= 0 ? h.slice(0, k) + fb + h.slice(k) : h + fb;
+      }
       h += '</div>';
     }
     const cats = []; A.forEach(x => { if (!cats.includes(x.cat)) cats.push(x.cat); });
@@ -1466,7 +1496,15 @@
       if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; }
       const p = d[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${p >= 100 ? 'g' : p > 0 ? 'p' : ''}">${p >= 100 ? '✓' : p > 0 ? p : ''}</span><div class="grow"><b>${esc(sx(x.title))}</b><small><span class="lv">${'●'.repeat(x.level || 1)}${'○'.repeat(3 - (x.level || 1))}</span> ${ic(x)} ${esc(rn(x))}${p != null ? ' · bisher ' + p + ' %' : ''}</small></div></button>`;
     });
-    V.innerHTML = h;
+    V.innerHTML = h; tolHint(t);
+  }
+  async function tolHint(t) {
+    if (!t || !(t.ask || fieldsOf(t).length) || typeof t.check !== 'function') return;
+    const els = document.querySelectorAll('#taskView [data-tol]'); if (!els.length) return;
+    let lines; try { lines = await t.check({ rig: S.rigId, controls: {}, rows: [], seq: [], state: null, value: null, text: '', fields: {}, choices: {}, clicks: [], protokoll: null }); } catch (e) { return; }
+    const tx = (Array.isArray(lines) ? lines : []).map(l => (String(l.text).match(/Toleranz[^)]*/) || [''])[0]).filter(Boolean);
+    if (!tx.length || curTask() !== t) return; const u = [...new Set(tx)];
+    els.forEach(e => { e.textContent = (e.id === 'tkTol' ? e.textContent : '') + (u.length === 1 ? 'Die Prüfung rechnet mit: ' + u[0] + '.' : 'Die Prüfung rechnet mit: ' + u.join('; ') + '.'); });
   }
   $('#taskView').addEventListener('input', e => {
     if (!S.task) return; const id = S.task.id; taskAns[id] = taskAns[id] || {};
@@ -1571,10 +1609,12 @@
   $('#title').onclick = async () => { const r = await ask('Name des Versuchs', [{ key: 'n', label: 'Name', type: 'text', value: S.name }]); if (r && r.n.trim()) { S.name = r.n.trim(); S.dirty = true; updateChrome(); saveCurSoon(); } };
   let palSig = '';
   function buildPal() {
-    const fxOn2 = fxOn(), sig = [S.running, S.speed, fxOn2, !!S.rig, !!S.live].join('|');
+    const fxOn2 = fxOn(), narrow = !!(root.matchMedia && root.matchMedia('(max-width:699px)').matches), sig = [S.running, S.speed, fxOn2, !!S.rig, !!S.live, narrow].join('|');
     if (sig === palSig) return; palSig = sig; const F = !!root.LochFX;
+    const spTxt = v => '×' + String(v).replace('.', ',');
+    const spHtml = narrow ? `<button class="chip" data-a="speed" aria-label="Zeitraffer ${spTxt(S.speed)}, tippen zum Wechseln">⏱ ${spTxt(S.speed)}</button>` : `<span class="seg" aria-label="Zeitraffer">${SPEEDS.map(v => `<button data-sp="${v}" class="${S.speed === v ? 'on' : ''}">${spTxt(v)}</button>`).join('')}</span>`;
     $('#pal').innerHTML = `<button class="chip ${S.running ? 'on' : 'go'}" data-a="run" aria-label="${S.running ? 'Pause' : 'Start'}">${S.running ? '⏸ Pause' : '▶ Start'}</button><button class="chip" data-a="reset" aria-label="Zurücksetzen">⟲ Reset</button><button class="chip" data-a="settle" aria-label="Beharrungszustand: gleich eingeschwungen" title="Beharrungszustand (B)">⚡</button><span class="sep"></span>
-      <span class="seg" aria-label="Zeitraffer">${SPEEDS.map(v => `<button data-sp="${v}" class="${S.speed === v ? 'on' : ''}">×${String(v).replace('.', ',')}</button>`).join('')}</span><span class="sep"></span>
+      ${spHtml}<span class="sep"></span>
       <button class="chip" data-a="view" aria-label="Ansicht wechseln" title="Ansicht wechseln (V)">👁 Ansicht</button>${F ? `<button class="chip ${fxOn2 ? 'on' : ''}" data-a="fx" aria-pressed="${fxOn2}" aria-label="Effekte und Ton" title="Effekte und Ton">${fxOn2 ? '🎉' : '🔇'} Effekte</button>` : ''}
       <span id="stat"></span>`;
     const r = $('#bRun'); r.textContent = S.running ? '⏸' : '▶'; r.classList.toggle('on', S.running); r.setAttribute('aria-label', S.running ? 'Pause' : 'Start');
@@ -1584,6 +1624,7 @@
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.sp) setSpeed(+b.dataset.sp);
     else if (b.dataset.a === 'run') setRun(!S.running); else if (b.dataset.a === 'reset') resetRig(); else if (b.dataset.a === 'settle') settleNow(); else if (b.dataset.a === 'view') nextView();
+    else if (b.dataset.a === 'speed') setSpeed(SPEEDS[(SPEEDS.indexOf(S.speed) + 1) % SPEEDS.length]);
     else if (b.dataset.a === 'fx') toggleFx();
   });
   function updateChrome() { updateTitle(); buildPal(); updateTaskBar(); }

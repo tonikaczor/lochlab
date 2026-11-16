@@ -255,7 +255,7 @@
     const S = () => api.sch, H = () => api.sch.haus;
     /* ---------------- Ansicht ---------------- */
     const cam = { yaw: 0.62, pitch: 0.62, s: 30, ox: 0, oy: 0, cx: 4, cy: 4 };
-    const stt = { view: 0, meas: null, tool: 'sel', place: null, cabA: null, sel: null, hover: null, drag: null, pan: null, rubber: null, ptrs: new Map(), pinch: null, top: false, dev: DEVS[0], dev3: DEV3[0] };
+    const stt = { circ: null, view: 0, meas: null, tool: 'sel', place: null, cabA: null, sel: null, hover: null, drag: null, pan: null, rubber: null, ptrs: new Map(), pinch: null, top: false, dev: DEVS[0], dev3: DEV3[0] };
     const proj = (x, y, z) => { const dx = x - cam.cx, dy = y - cam.cy, c = Math.cos(cam.yaw), s = Math.sin(cam.yaw), xr = dx * c - dy * s, yr = dx * s + dy * c; return [cam.ox + xr * cam.s, cam.oy - (z * Math.cos(cam.pitch) + yr * Math.sin(cam.pitch)) * cam.s, yr]; };
     const nyr = (nx, ny) => nx * Math.sin(cam.yaw) + ny * Math.cos(cam.yaw);
     const topView = () => cam.pitch > 1.4;
@@ -322,6 +322,9 @@
       cx.fillStyle = b > 0.2 ? '#fff3b0' : '#e7e2c6'; cx.strokeStyle = '#4a4a3a'; cx.lineWidth = 1.5; cx.beginPath(); cx.arc(x, y, k * .8, 0, 7); cx.fill(); cx.stroke();
       cx.beginPath(); cx.moveTo(x - k * .55, y - k * .55); cx.lineTo(x + k * .55, y + k * .55); cx.moveTo(x + k * .55, y - k * .55); cx.lineTo(x - k * .55, y + k * .55); cx.stroke();
     }
+    /* Sicherung <-> Stromkreis (A-haus-05): Abgang (0-basiert) eines Objekts bzw. einer Leitung aus der Verdrahtung; null = keinem Abgang zugeordnet */
+    const circOfObj = id => { const s = lastInfo.slotOf && lastInfo.slotOf[id]; return s != null && s >= 0 ? s : null; };
+    const circOfCab = c => { if (c.slot != null) return c.slot; const a = circOfObj(c.a); return a != null ? a : circOfObj(c.b); };
     function drawObj(cx, o, h, k, sim) {
       const p = pos(h, o), q = proj(p[0], p[1], p[2]), x = q[0], y = q[1];
       const sel = stt.sel && stt.sel.t === 'obj' && stt.sel.id === o.id, cabA = stt.cabA === o.id, hov = stt.hover === o.id;
@@ -332,6 +335,8 @@
       else if (live && dp) b = I(dp.id) > 0.05 ? 1 : 0;
       else if (live && mp) b = I(mp.id) > 0.05 ? 1 : 0;
       const connected = poweredSet.has(o.id) || o.t === 'panel';
+      const circOn = stt.circ != null, circIn = circOn && (circOfObj(o.id) === stt.circ), circDim = circOn && !circIn && o.t !== 'panel';
+      if (circDim) cx.globalAlpha = 0.22;
       cx.save();
       if (o.t === 'lamp') { drawLamp(cx, x, y, k, b); if (!connected && !sim) { cx.strokeStyle = '#ff8a5c'; cx.setLineDash([3, 3]); cx.beginPath(); cx.arc(x, y, k * 1.1, 0, 7); cx.stroke(); } }
       else if (o.t === 'panel') {
@@ -356,6 +361,7 @@
         if (!connected && !sim && o.t !== 'junc') { cx.strokeStyle = '#ff8a5c'; cx.lineWidth = 1.5; cx.setLineDash([3, 3]); cx.strokeRect(x - w * .75, y - w * .75, w * 1.5, w * 1.5); }
       }
       cx.restore();
+      if (circIn) { cx.strokeStyle = '#ffb340'; cx.lineWidth = 3; cx.beginPath(); cx.arc(x, y, k * 1.6, 0, 7); cx.stroke(); }
       if (sel || cabA || hov) { cx.strokeStyle = cabA ? '#ffb340' : sel ? '#3b9eff' : 'rgba(255,255,255,.7)'; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(x, y, k * 1.35, 0, 7); cx.stroke(); }
       {
         const lab = objName(h, o) + (o.t === 'sock' || o.t === 'dev' || o.t === 'sock3' || o.t === 'dev3' ? (o.w ? ' ' + o.w + ' W' : '') : o.t === 'lamp' ? ' ' + (o.w || 60) + ' W' : '');
@@ -364,6 +370,7 @@
         const t = (sel || hov) ? (u ? lab + ' · ' + u : lab) : (live ? u : '');
         if (t && !(live && !sel && !hov && o.t === 'lamp' && b > 0.2)) { cx.font = '600 ' + Math.max(10, Math.round(k * .62)) + 'px sans-serif'; cx.textAlign = 'center'; const tw = cx.measureText(t).width + 8; cx.fillStyle = 'rgba(14,17,21,.82)'; cx.fillRect(x - tw / 2, y + k * 1.2, tw, k * .9); cx.fillStyle = u === 'ohne Spannung' ? '#ffb340' : '#e8ecf0'; cx.fillText(t, x, y + k * 1.2 + k * .66); }
       }
+      cx.globalAlpha = 1;
       hits.push({ id: o.id, x, y, r: Math.max(k * 1.3, 11) });
     }
     const PHCOL = { 1: '#a0662b', 2: '#5a6068', 3: '#8f98a3' };
@@ -376,9 +383,11 @@
     root.HAUS_RENDER = function (cx, W, Ht) {
       const h = H(); hits = []; cabHits = []; roomHits = [];
       if (!h) return; syncModel(S());
+      if (stt.circ != null && !h.objs.some(o => circOfObj(o.id) === stt.circ)) stt.circ = null; /* Haus gewechselt oder Abgang leer */
       const sim = isSim() && !!api.circ, k = clamp(cam.s * 0.42, 7, 24), top = topView();
       // Raster am Boden
       cx.fillStyle = '#0d1217'; cx.fillRect(0, 0, W, Ht);
+      const rlabels = [];
       const rs = h.rooms.filter(vr).map(r => ({ r, d: proj(r.x + r.w / 2, r.y + r.d / 2, 0)[2] })).sort((a, b) => b.d - a.d);
       // Böden
       rs.forEach(({ r }) => {
@@ -402,7 +411,7 @@
           } else front.push([a, b]);
         });
         // Raumname auf dem Boden
-        const c = proj(r.x + r.w / 2, r.y + r.d / 2, 0.02); cx.fillStyle = 'rgba(255,255,255,.55)'; cx.font = '600 ' + clamp(Math.round(cam.s * .45), 10, 18) + 'px sans-serif'; cx.textAlign = 'center'; cx.fillText(r.n, c[0], c[1]); if (top && cam.s > 22) { cx.font = '500 ' + clamp(Math.round(cam.s * .34), 9, 13) + 'px sans-serif'; cx.fillText(num(r.w, 1) + ' × ' + num(r.d, 1) + ' m · ' + num(r.w * r.d, 1) + ' m²', c[0], c[1] + clamp(Math.round(cam.s * .45), 10, 18)); }
+        const c = proj(r.x + r.w / 2, r.y + r.d / 2, 0.02); rlabels.push({ r, c, top });
         h.objs.filter(o => o.room === r.id && o.t === 'wet' && vo(h, o)).forEach(o => { const p0 = pos(h, o), z0 = []; for (let a = 0; a <= 24; a++) { const t0 = a / 24 * Math.PI * 2; z0.push(proj(p0[0] + Math.cos(t0) * 0.6, p0[1] + Math.sin(t0) * 0.6, 0.03)); } cx.beginPath(); z0.forEach((q, i) => (i ? cx.lineTo(q[0], q[1]) : cx.moveTo(q[0], q[1]))); cx.closePath(); cx.fillStyle = 'rgba(80,170,255,.18)'; cx.fill(); cx.setLineDash([4, 3]); cx.strokeStyle = 'rgba(120,200,255,.8)'; cx.stroke(); cx.setLineDash([]); });
         h.objs.filter(o => o.room === r.id && o.t !== 'lamp' && vo(h, o)).forEach(o => drawObj(cx, o, h, k, sim));
         // vordere Wände: nur Kante und niedriger Sockel (Durchsicht)
@@ -414,15 +423,23 @@
         const r = route(h, c); if (!r.ok) return; const A0 = obj(h, c.a), B0 = obj(h, c.b), va = A0 && vo(h, A0), vb = B0 && vo(h, B0); if (!va && !vb) return; const pp = r.pts.map(p => proj(p[0], p[1], p[2]));
         if (!(va && vb)) cx.setLineDash([6, 5]);
         const col = cabColor(c, sim), sel = stt.sel && stt.sel.t === 'cab' && stt.sel.id === c.id;
+        const cIn = stt.circ != null && circOfCab(c) === stt.circ; if (stt.circ != null && !cIn) cx.globalAlpha = 0.18;
         cx.lineJoin = 'round'; cx.lineCap = 'round'; cx.strokeStyle = 'rgba(0,0,0,.55)'; cx.lineWidth = 2 + c.s * .55 + 2; cx.beginPath(); pp.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.stroke();
+        if (cIn) { cx.strokeStyle = '#ffb340'; cx.lineWidth = 6 + c.s * .55; cx.beginPath(); pp.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.stroke(); }
         cx.strokeStyle = sel ? '#3b9eff' : col; cx.lineWidth = 1.5 + c.s * .55; cx.beginPath(); pp.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.stroke();
-        cx.setLineDash([]); cabHits.push({ id: c.id, pp });
+        cx.globalAlpha = 1; cx.setLineDash([]); cabHits.push({ id: c.id, pp });
       });
+      // Raumnamen über den Leitungen, mit Rand (A-haus-02)
+      rlabels.forEach(({ r, c, top }) => { const fs = clamp(Math.round(cam.s * .45), 11, 18); cx.textAlign = 'center'; cx.lineJoin = 'round'; cx.lineWidth = 3; cx.strokeStyle = 'rgba(8,11,14,.85)'; cx.font = '600 ' + fs + 'px sans-serif'; cx.strokeText(r.n, c[0], c[1]); cx.fillStyle = 'rgba(255,255,255,.9)'; cx.fillText(r.n, c[0], c[1]);
+        if (top && cam.s > 22) { const f2 = clamp(Math.round(cam.s * .34), 11, 13), t2 = num(r.w, 1) + ' × ' + num(r.d, 1) + ' m · ' + num(r.w * r.d, 1) + ' m²'; cx.font = '500 ' + f2 + 'px sans-serif'; cx.strokeText(t2, c[0], c[1] + fs); cx.fillStyle = 'rgba(255,255,255,.75)'; cx.fillText(t2, c[0], c[1] + fs); } });
+      // Legende der Leitungsfarben (A-haus-02)
+      if (h.cables.length) { const lg = sim ? [['#5ee27d', 'belastet'], ['#ffb340', 'über 60 % der Belastbarkeit'], ['#ff4d4d', 'überlastet'], ['#7d8793', 'ohne Strom']] : [['#a0662b', 'Phase L1'], ['#5a6068', 'Phase L2'], ['#d96a5b', 'Phase L3 oder Drehstrom'], ['#d9a441', '2,5 mm² und mehr'], ['#8fb4d9', 'dünner']]; cx.font = '11px sans-serif'; cx.textAlign = 'left'; cx.textBaseline = 'alphabetic'; let ly = Ht - 10; lg.slice().reverse().forEach(([col, t]) => { cx.fillStyle = col; cx.fillRect(12, ly - 8, 14, 5); cx.fillStyle = 'rgba(255,255,255,.75)'; cx.fillText(t, 32, ly); ly -= 15; }); }
       // Deckenlampen zuletzt (hängen über allem)
       h.objs.filter(o => o.t === 'lamp' && vo(h, o)).forEach(o => drawObj(cx, o, h, k, sim));
       // Vorschau
       if (stt.rubber) { const a = stt.rubber, pts = [[a.x0, a.y0], [a.x1, a.y0], [a.x1, a.y1], [a.x0, a.y1]].map(p => proj(p[0], p[1], 0)); cx.beginPath(); pts.forEach((p, i) => (i ? cx.lineTo(p[0], p[1]) : cx.moveTo(p[0], p[1]))); cx.closePath(); cx.fillStyle = 'rgba(59,158,255,.25)'; cx.fill(); cx.strokeStyle = '#3b9eff'; cx.lineWidth = 2; cx.stroke(); cx.fillStyle = '#fff'; cx.font = '700 13px sans-serif'; cx.textAlign = 'center'; const c = proj((a.x0 + a.x1) / 2, (a.y0 + a.y1) / 2, 0); cx.fillText(num(Math.abs(a.x1 - a.x0), 1) + ' × ' + num(Math.abs(a.y1 - a.y0), 1) + ' m', c[0], c[1]); }
       if (stt.ghost) { const g = stt.ghost; const o = g.o, p = pos(h, Object.assign({ room: g.room }, o)); const q = proj(p[0], p[1], p[2]); cx.globalAlpha = .6; cx.fillStyle = '#3b9eff'; cx.beginPath(); cx.arc(q[0], q[1], k, 0, 7); cx.fill(); cx.globalAlpha = 1; }
+      if (stt.circ != null) { const sl = h.panel.slots[stt.circ], n = h.objs.filter(o => circOfObj(o.id) === stt.circ).length, t = 'Stromkreis ' + (stt.circ + 1) + (sl && sl.ls ? ' (' + sl.ls + ')' : '') + ': ' + n + ' Objekte' + (W < 500 ? ' · Tippen hebt auf' : ' · auf freie Fläche tippen zum Aufheben'); cx.font = '600 13px sans-serif'; cx.textAlign = 'left'; const tw = Math.min(W - 16, cx.measureText(t).width + 16); cx.fillStyle = 'rgba(14,17,21,.88)'; cx.fillRect(8, 8, tw, 26); cx.fillStyle = '#ffb340'; cx.textBaseline = 'alphabetic'; cx.fillText(t, 16, 26, tw - 16); }
       if (stt.cabA) { const a = obj(h, stt.cabA); if (a) { const p = pos(h, a), q = proj(p[0], p[1], p[2]); cx.fillStyle = '#ffb340'; cx.font = '600 13px sans-serif'; cx.textAlign = 'left'; cx.fillText('Leitung von ' + objName(h, a) + ' … Ziel antippen', 12, Ht - 16); } }
       // Hinweise
       cx.fillStyle = 'rgba(255,255,255,.55)'; cx.font = '12px sans-serif'; cx.textAlign = 'left';
@@ -530,11 +547,11 @@
       const h = H(), sim = isSim(); stt.moved = false; stt.start = p;
       const oid = hitObj(p.x, p.y);
       if (sim && stt.tool === 'meas') { const cid0 = oid == null ? hitCab(p.x, p.y) : null; stt.meas = oid != null ? { t: 'obj', id: oid } : cid0 ? { t: 'cab', id: cid0 } : null; stt.sel = stt.meas; api.refreshUI(); api.draw(); return; }
-      if (sim) { if (oid != null) { const o = obj(h, oid); stt.sel = { t: 'obj', id: oid }; operate(o); api.refreshUI(); api.draw(); } else { const cid = hitCab(p.x, p.y); stt.sel = cid ? { t: 'cab', id: cid } : null; stt.pan = { x: p.x, y: p.y, ox: cam.ox, oy: cam.oy }; api.refreshUI(); api.draw(); } return; }
+      if (sim) { if (oid != null) { const o = obj(h, oid); stt.sel = { t: 'obj', id: oid }; operate(o); api.refreshUI(); api.draw(); } else { const cid = hitCab(p.x, p.y); stt.sel = cid ? { t: 'cab', id: cid } : null; if (!cid) stt.circ = null; stt.pan = { x: p.x, y: p.y, ox: cam.ox, oy: cam.oy }; api.refreshUI(); api.draw(); } return; }
       const tool = stt.tool;
       if (tool === 'sel') {
         if (oid != null) { stt.sel = { t: 'obj', id: oid }; stt.drag = { id: oid, moved: false, snapshot: JSON.stringify(h) }; }
-        else { const cid = hitCab(p.x, p.y); if (cid) { stt.sel = { t: 'cab', id: cid }; } else { const rid = hitRoom(p.x, p.y); stt.sel = rid ? { t: 'room', id: rid } : null; stt.pan = { x: p.x, y: p.y, ox: cam.ox, oy: cam.oy }; } }
+        else { const cid = hitCab(p.x, p.y); if (cid) { stt.sel = { t: 'cab', id: cid }; } else { const rid = hitRoom(p.x, p.y); stt.sel = rid ? { t: 'room', id: rid } : null; if (!rid) stt.circ = null; stt.pan = { x: p.x, y: p.y, ox: cam.ox, oy: cam.oy }; } }
         api.refreshUI(); api.draw(); return;
       }
       if (tool === 'room') { const w = unplane(p.x, p.y, { z: 0 }); if (!w) return; stt.rubber = { x0: snap(w.x, 0.5), y0: snap(w.y, 0.5), x1: snap(w.x, 0.5), y1: snap(w.y, 0.5) }; api.draw(); return; }
@@ -572,13 +589,23 @@
     const HAUS_FITSOFT = () => { if (H().rooms.length === 1) root.HAUS_FIT(); };
 
     /* ---------------- Palette ---------------- */
+    const DEVGROUPS = [['Schalter', ['swi', 'swc', 'swk', 'tast', 'imp']], ['Steckdosen und Anschlüsse', ['sock', 'sock3', 'wet']], ['Verbraucher', ['lamp', 'dev', 'dev3']], ['Verteilung', ['junc', 'panel']]];
+    const DEVNAME = { sock: 'Steckdose', swi: 'Schalter', swc: 'Wechselschalter', swk: 'Kreuzschalter', tast: 'Taster', imp: 'Stromstoßschalter', wet: 'Dusche', lamp: 'Lampe', dev: 'Gerät', dev3: 'Drehstromgerät', sock3: 'CEE 400 V', junc: 'Abzweigdose', panel: 'Verteiler' };
+    function openDevSheet() {
+      root.LabUI.sheet('Gerät wählen', (b, close) => {
+        b.innerHTML = DEVGROUPS.map(g => '<div class="gh">' + g[0] + '</div><div class="wc">' + g[1].map(t => '<button class="chip' + (stt.tool === 'place' && stt.place === t ? ' on' : '') + '" data-dv="' + t + '">' + TYPES[t].icon + ' ' + DEVNAME[t] + '</button>').join('') + '</div>').join('');
+        b.addEventListener('click', e => { const c = e.target.closest('[data-dv]'); if (!c) return; stt.tool = 'place'; stt.place = c.dataset.dv; stt.cabA = null; stt.ghost = null; close(); api.refreshUI(); api.draw(); const pal = document.getElementById('pal'); if (pal) pal.innerHTML = root.HAUS_PALETTE(isSim()); });
+      });
+    }
     root.HAUS_PALETTE = function (sim) {
       const chip = (id, label, on, data) => `<button class="chip ${on ? 'on' : ''}" data-hx="${id}" ${data || ''}>${label}</button>`;
       let h = '';
       if (sim) h += chip('sel', '☝ Bedienen', true) + chip('reset', '↺ Zurück', false) + '<span class="sep"></span>';
       else {
         h += chip('sel', '☝ Auswahl', stt.tool === 'sel') + chip('room', '▭ Raum', stt.tool === 'room') + '<span class="sep"></span>';
-        [['sock', 'Steckdose'], ['swi', 'Schalter'], ['swc', 'Wechselschalter'], ['swk', 'Kreuzschalter'], ['tast', 'Taster'], ['imp', 'Stromstoßschalter'], ['wet', 'Dusche'], ['lamp', 'Lampe'], ['dev', 'Gerät'], ['dev3', 'Drehstromgerät'], ['sock3', 'CEE 400 V'], ['junc', 'Abzweigdose'], ['panel', 'Verteiler']].forEach(([t, n]) => { h += chip('place', TYPES[t].icon + ' ' + n, stt.tool === 'place' && stt.place === t, `data-t="${t}"`); });
+        /* A-haus-03: Geräte gruppiert in einem Blatt statt 13 Knöpfen in einer Reihe */
+        if (stt.tool === 'place' && stt.place && TYPES[stt.place]) h += chip('devsheet', TYPES[stt.place].icon + ' ' + (DEVNAME[stt.place] || stt.place), true);
+        h += chip('devsheet', '＋ Gerät setzen', false);
         h += '<span class="sep"></span>' + chip('cable', '〰 Leitung', stt.tool === 'cable') + chip('del', '⌫ Löschen', stt.tool === 'del') + '<span class="sep"></span>';
       }
       if (hasOG(H()) || !sim) h += chip('lv0', 'EG', stt.view === 0) + chip('lv1', 'OG', stt.view === 1) + '<span class="sep"></span>';
@@ -594,6 +621,7 @@
       else if (x === 'place') { stt.tool = 'place'; stt.place = b.dataset.t; stt.ghost = null; }
       else if (x === 'lv0' || x === 'lv1') { stt.view = x === 'lv1' ? 1 : 0; stt.sel = null; stt.cabA = null; stt.ghost = null; }
       else if (x === 'turnl') turn(-1); else if (x === 'turnr') turn(1); else if (x === 'top') toggleTop(); else if (x === 'zin') zoom(1.25); else if (x === 'zout') zoom(0.8); else if (x === 'fit') { root.HAUS_FIT(); api.draw(); }
+      else if (x === 'devsheet') { openDevSheet(); return; }
       else if (x === 'verteiler') { openPanel(); return; }
       else if (x === 'calc') { openCalc(); return; }
       else if (x === 'hcheck') { openHausCheck(); return; }
@@ -681,6 +709,7 @@
         if (sim && lp && poweredSet.has(o.id)) { const cp = cabParts(o.id && cabIdUp(o.id)).filter(p => ['L', 'L1', 'T1'].includes(p.hx.w))[0]; out += `<div class="kv"><span>Spannung</span><b>${Math.round(U(lp.id))} V</b></div>` + (cp ? `<div class="kv"><span>Strom in der Zuleitung</span><b>${api.fmt(I(cp.id), 'A')}</b></div>` : ''); }
         else if (!poweredSet.has(o.id) && o.t !== 'panel' && o.t !== 'wet') out += `<p class="hint2">Nicht angeschlossen: Es führt noch keine Leitung vom Verteiler hierher.</p>`;
         if (o.t === 'panel') out += `<div class="row2"><button class="btn pri" data-a="hx" data-op="panel">▤ Verteiler öffnen</button></div>`;
+        else if (circOfObj(o.id) != null) { const ci = circOfObj(o.id), cs = h.panel.slots[ci]; out += `<div class="kv"><span>Abgang im Verteiler</span><b>${ci + 1}${cs && cs.ls ? ' (' + esc(cs.ls) + ')' : ''}</b></div><div class="row2"><button class="btn" data-a="hx" data-op="circ" data-v="${ci}">Stromkreis zeigen</button><button class="btn" data-a="hx" data-op="panel" data-v="${ci}">Im Verteiler zeigen</button></div>`; }
         if (!sim) out += `<label class="f"><span>Bezeichnung</span><input data-hx="name" value="${esc(o.n || '')}" placeholder="${esc(T.n)}"></label><div class="row2"><button class="btn danger" data-a="hx" data-op="delobj">Löschen</button></div>`;
         out += '</div>';
       } else if (c) {
@@ -726,7 +755,8 @@
       else if (op === 'oph' && o) { o.ph = +v; apply(); }
       else if (op === 'stair' && r) { if (r.st) { r.st = 0; const lvl = r.lv || 0; h.objs.forEach(x => { if (x.room === r.id) { if (x.lv != null && x.lv !== lvl) { removeObj(x.id); } delete x.lv; } }); } else { const other = h.rooms.some(q => q !== r && rlv(q) !== rlv(r) && !q.st && r.x < q.x + q.w - EPS && r.x + r.w > q.x + EPS && r.y < q.y + q.d - EPS && r.y + r.d > q.y + EPS) || h.rooms.some(q => q !== r && q.st && r.x < q.x + q.w - EPS && r.x + r.w > q.x + EPS && r.y < q.y + q.d - EPS && r.y + r.d > q.y + EPS); if (other) { api.toast('Das Treppenhaus darf auf keiner Ebene einen anderen Raum überdecken'); return true; } r.st = 1; h.objs.forEach(x => { if (x.room === r.id) x.lv = rlv(r); }); } apply(); }
       else if (op === 'rlv' && r) { if (r.st) { api.toast('Das Treppenhaus gehört zu beiden Geschossen'); return true; } const nl = rlv(r) ? 0 : 1, snap0 = JSON.stringify(h); if (h.rooms.some(q => q !== r && (q.st || rlv(q) === nl) && r.x < q.x + q.w - EPS && r.x + r.w > q.x + EPS && r.y < q.y + q.d - EPS && r.y + r.d > q.y + EPS)) { api.toast('Dort liegt schon ein Raum'); return true; } if (nl) r.lv = 1; else delete r.lv; if (h.cables.some(cc => !route(h, cc).ok)) { Object.assign(h, JSON.parse(snap0)); api.toast('Dann erreicht eine Leitung den Raum nicht mehr (nur durchs Treppenhaus)'); return true; } stt.view = nl; stt.sel = { t: 'room', id: r.id }; apply(); }
-      else if (op === 'panel') openPanel();
+      else if (op === 'circ') { stt.circ = stt.circ === +v ? null : +v; api.refreshUI(); api.draw(); }
+      else if (op === 'panel') openPanel(v != null && v !== '' ? +v : null);
       return true;
     };
     document.addEventListener('change', e => {
@@ -776,12 +806,12 @@
       });
     }
     /* ---------------- Verteilerkasten ---------------- */
-    function openPanel() {
+    function openPanel(hl) {
       const h = H(); if (!h) return;
       root.LabUI.sheet('Verteilerkasten', (b, close) => {
         const draw = () => {
           const P = h.panel, sim = isSim(); syncModel(S());
-          const modLs = i => `<div class="hmod"><div class="hlab">${i + 1}</div>${P.slots[i].ls ? `<button class="hmb ${P.slots[i].on ? 'on' : 'off'}" data-m="lss" data-i="${i}"><b>${P.slots[i].p3 ? '3×' : ''}${P.slots[i].ls}</b><small>${P.slots[i].on ? 'I' : '0'}</small></button>` : `<button class="hmb empty" data-m="lss" data-i="${i}">${sim ? '–' : '＋'}</button>`}${P.slots[i].ls ? `<select class="hsel" data-m="fi" data-i="${i}" ${sim ? 'disabled' : ''}><option value="0" ${!P.slots[i].fi ? 'selected' : ''}>ohne FI</option><option value="1" ${P.slots[i].fi === 1 ? 'selected' : ''}>hinter FI 1</option><option value="2" ${P.slots[i].fi === 2 ? 'selected' : ''}>hinter FI 2</option></select>` : ''}${P.slots[i].ls && !P.slots[i].p3 ? `<select class="hsel" data-m="ph" data-i="${i}" ${sim ? 'disabled' : ''}>${[[0, 'Phase auto'], [1, 'Phase L1'], [2, 'Phase L2'], [3, 'Phase L3']].map(x => `<option value="${x[0]}" ${(P.slots[i].ph || 0) === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}</select>` : (P.slots[i].p3 ? '<div class="hwire" style="color:#d9a441">Drehstrom L1 L2 L3</div>' : '')}<div class="hwire">${(() => { const cs = h.cables.filter(c => c.slot === i); return cs.length ? cs.map(c => { const o2 = obj(h, c.a === (h.objs.find(x => x.t === 'panel') || {}).id ? c.b : c.a); return '→ ' + esc(o2 ? objName(h, o2) : '?') + ' (' + c.s + ' mm²)'; }).join('<br>') : (P.slots[i].ls ? 'nicht verdrahtet' : ''); })()}</div></div>`;
+          const modLs = i => `<div class="hmod" ${hl === i ? 'style="outline:3px solid #ffb340;outline-offset:2px;border-radius:8px"' : ''}><div class="hlab">${i + 1}</div>${P.slots[i].ls ? `<button class="hmb ${P.slots[i].on ? 'on' : 'off'}" data-m="lss" data-i="${i}"><b>${P.slots[i].p3 ? '3×' : ''}${P.slots[i].ls}</b><small>${P.slots[i].on ? 'I' : '0'}</small></button>` : `<button class="hmb empty" data-m="lss" data-i="${i}">${sim ? '–' : '＋'}</button>`}${P.slots[i].ls ? `<select class="hsel" data-m="fi" data-i="${i}" ${sim ? 'disabled' : ''}><option value="0" ${!P.slots[i].fi ? 'selected' : ''}>ohne FI</option><option value="1" ${P.slots[i].fi === 1 ? 'selected' : ''}>hinter FI 1</option><option value="2" ${P.slots[i].fi === 2 ? 'selected' : ''}>hinter FI 2</option></select>` : ''}${P.slots[i].ls && !P.slots[i].p3 ? `<select class="hsel" data-m="ph" data-i="${i}" ${sim ? 'disabled' : ''}>${[[0, 'Phase auto'], [1, 'Phase L1'], [2, 'Phase L2'], [3, 'Phase L3']].map(x => `<option value="${x[0]}" ${(P.slots[i].ph || 0) === x[0] ? 'selected' : ''}>${x[1]}</option>`).join('')}</select>` : (P.slots[i].p3 ? '<div class="hwire" style="color:#d9a441">Drehstrom L1 L2 L3</div>' : '')}<div class="hwire">${(() => { const cs = h.cables.filter(c => c.slot === i); return cs.length ? cs.map(c => { const o2 = obj(h, c.a === (h.objs.find(x => x.t === 'panel') || {}).id ? c.b : c.a); return '→ ' + esc(o2 ? objName(h, o2) : '?') + ' (' + c.s + ' mm²)'; }).join('<br>') : (P.slots[i].ls ? 'nicht verdrahtet' : ''); })()}</div>${P.slots[i].ls && h.cables.some(c => c.slot === i) ? `<button class="mini" data-m="circ" data-i="${i}">Stromkreis zeigen</button>` : ''}</div>`;
           b.innerHTML = '<style>.hrail{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px;padding:10px;background:#1b2127;border-radius:10px;border-bottom:6px solid #6f7882}.hmod{width:84px;display:flex;flex-direction:column;gap:4px;align-items:stretch}.hlab{font-size:12px;color:var(--mute);text-align:center}.hmb{height:78px;border-radius:6px;background:#e4e7ea;color:#222;border:2px solid #8b939c;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px}.hmb small{margin-top:6px;padding:2px 12px;border-radius:4px;background:#c04a3a;color:#fff;font-weight:700}.hmb.on small{background:#3aa655}.hmb.empty{background:#2a323b;color:#8d99a6;border-style:dashed;font-size:22px}.hsel{height:30px;font-size:12px;padding:0 2px}.hwire{font-size:12px;color:var(--mute);min-height:30px}.hfi{width:120px}.hfi .hmb{height:96px}.hfi small{background:#3aa655}.hfi .off small{background:#c04a3a}</style>'
             + '<p class="hint2" style="margin-top:0">' + (sim ? 'Hebel antippen: ein und aus. Ausgelöste Automaten zeigen „0“.' : '<b>Bestücken:</b> Leere Plätze antippen und einen Automaten oder FI einsetzen. <b>Verdrahten:</b> Im Haus mit „Leitung“ den Verteilerkasten antippen und den Abgang wählen. Tippe auf einen Automaten, um ihn zu tauschen.') + '</p>'
             + '<div class="gh">Hausanschluss: Hauptsicherung</div><div class="hrail">' + (sim ? (h.hak && h.hak.fuse ? `<div class="hmod hfi"><div class="hlab">Haupt</div><button class="hmb ${h.hak.on === 0 ? 'off' : 'on'}" data-m="hak"><b>3× ${h.hak.fuse}</b><small>${h.hak.on === 0 ? '0' : 'I'}</small></button></div><div class="hwire" style="flex:1;min-width:140px">Die Hauptsicherung schützt die Zuleitung vor dem Zähler. Sie muss mindestens so groß sein wie alle Abgänge gleichzeitig brauchen, aber die Automaten müssen zuerst auslösen (Selektivität).</div>` : '<div class="hwire">Keine Hauptsicherung eingebaut (im Bearbeiten-Modus einsetzen).</div>') : `<div class="hmod" style="width:auto"><label class="hlab">Hauptsicherung</label><select class="hsel" data-m="hakf" style="height:34px;font-size:13px"><option value="">keine (nur Üben)</option>${HAK_FUSES.map(f => `<option value="${f}" ${h.hak && h.hak.fuse === f ? 'selected' : ''}>3× ${f}</option>`).join('')}</select></div><div class="hwire" style="flex:1;min-width:140px">Sitzt im Hausanschlusskasten vor dem Zähler. Wähle sie so, dass sie die Summe der Abgänge trägt und trotzdem die Automaten zuerst auslösen.</div>`) + '</div>'
@@ -792,6 +822,7 @@
         const menu = (title, opts, cur, done) => { const old = b.innerHTML; b.innerHTML = `<p style="margin-top:0"><b>${title}</b></p>` + opts.map(o => `<button class="row" data-o="${esc(o[0])}"><div class="grow"><b>${esc(o[1])}</b><small>${esc(o[2] || '')}</small></div></button>`).join('') + '<button class="row" data-o="__x"><div class="grow"><b>Zurück</b></div></button>'; b.onclick = e => { const r = e.target.closest('.row'); if (!r) return; b.onclick = main; if (r.dataset.o === '__x') { draw(); return; } done(r.dataset.o); }; };
         const main = e => {
           const t = e.target.closest('[data-m]'); if (!t || t.tagName === 'SELECT') return; const P = h.panel, i = +t.dataset.i, sim = isSim();
+          if (t.dataset.m === 'circ') { stt.circ = i; close(); api.refreshUI(); api.draw(); return; }
           if (t.dataset.m === 'lss') {
             if (sim) { const ps = S().parts.filter(q => q.hx && q.hx.role === 'lss' && q.hx.slot === i); if (ps.length) { const nv = ps[0].sw ? 0 : 1; ps.forEach(p => api.setSw(p.id, nv)); api.commit(true, true); syncModel(S()); draw(); } return; }
             menu('Sicherungsautomat für Abgang ' + (i + 1), [...LS_TYPES.map(x => [x, x + ' (' + x.replace(/\D/g, '') + ' A, einpolig, ' + (x[0] === 'B' ? 'für Licht und Steckdosen' : 'für Geräte mit Anlaufstrom') + ')']), ...['B16', 'B20', 'B25', 'B32', 'C16'].map(x => [x + '|3', x + ' dreipolig (Drehstrom)', 'für Herd, Wallbox, Motoren, Klimagerät']), ['', 'entfernen']], P.slots[i].ls, v0 => { const pr = v0.split('|'), v = pr[0]; P.slots[i].p3 = pr[1] ? 1 : 0; P.slots[i].ls = v; if (!v) { P.slots[i].fi = 0; P.slots[i].p3 = 0; } apply(); stat('hausVerteiler', P.slots.filter(s => s.ls).length, 'max'); draw(); });

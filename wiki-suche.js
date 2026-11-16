@@ -220,12 +220,13 @@
   var KATTXT = { bauteil: 'bauteil bauteile', geraet: 'geraet geraete messgeraet', bedien: 'bedienelement bedienelemente regler', regler: 'regler', messwert: 'messwert messwerte', begriff: 'begriff begriffe', formel: 'formel formeln', norm: 'normwert normwerte', lab: 'lab labs' };
 
   function build(rows) {
-    var map = {}, disp = {}, n = rows.length, titles = new Array(n);
+    var map = {}, disp = {}, n = rows.length, titles = new Array(n), ttok = new Array(n);
     function put(tok, i, w) { var a = map[tok] || (map[tok] = {}); if (!(a[i] >= w)) a[i] = w; }
     function dispIt(word) { wordForms(word).forEach(function (f) { if (f.indexOf(' ') < 0 && !disp[f] && /[A-Za-zÄÖÜäöüß]/.test(word)) disp[f] = word.replace(/[(),;:]+/g, ''); }); }
     rows.forEach(function (r, i) {
       var tw = String(r[2]).split(/\s+/);
       titles[i] = wordForms(r[2])[0] || '';
+      ttok[i] = toks(String(r[2]), true);   // U-wiki-02: Titelwoerter fuer den Titelanfang-Bonus
       tw.forEach(function (w, wi) { dispIt(w); toks(w).forEach(function (t) { put(t, i, wi === 0 ? 100 : 60); }); });
       String(r[3]).split('|').forEach(function (s) { s.split(/\s+/).forEach(dispIt); toks(s).forEach(function (t) { put(t, i, 50); }); });
       String(r[7] || '').split(' ').forEach(function (t) { if (t) toks(t).forEach(function (x) { put(x, i, 20); }); });
@@ -235,7 +236,7 @@
     });
     var keys = Object.keys(map).sort();
     var post = {}; keys.forEach(function (t) { var o = map[t], l = []; for (var i in o) l.push([+i, o[i]]); post[t] = l; });
-    return { rows: rows, keys: keys, post: post, titles: titles, disp: disp };
+    return { rows: rows, keys: keys, post: post, titles: titles, ttok: ttok, disp: disp };
   }
 
   /* ---------- Abfrage ---------- */
@@ -282,6 +283,11 @@
     return cl;
   }
   var REG_FAKTOR = 0.5;
+  // jede Klausel ist Anfang (ab 3 Zeichen) oder ganzes Wort eines Titelworts
+  function titelStart(ix, id, clauses) {
+    var tt = ix.ttok && ix.ttok[id]; if (!tt) return false;
+    return clauses.every(function (c) { var w = c.orig; if (!w) return false; return tt.some(function (t) { return t === w || (w.length >= 3 && t.indexOf(w) === 0); }); });
+  }
   function score(ix, clauses, ctx, mode) {
     var tot = {}, cnt = {}, dir = {}, lab = ctx && ctx.lab, id;
     clauses.forEach(function (c) {
@@ -296,17 +302,19 @@
       var r = ix.rows[id], s = tot[id], ti = ix.titles[id];
       if (dir[id]) s += 30;
       if (ti === q) s += 60; else if (q && ti.indexOf(q) === 0) s += 30;
+      var ts = titelStart(ix, id, clauses);   // U-wiki-02: Suchwort ist Anfang eines Titelworts -> vor Alias- und Kurztext-Treffern
       if (r[1] === 'regler' || r[1] === 'messwert') s *= REG_FAKTOR;   // W7: Bauteile/Geraete/Begriffe mit Titel- oder Alias-Treffer vor den ca. 1300 Reglern
       if (lab && r[4] && (',' + r[4] + ',').indexOf(',' + lab + ',') >= 0) s += 15;
       if (r[1] === 'bauteil' || r[1] === 'geraet') s += 25;   // v39.158: Schulwissen-Begriffe und -Formeln sollen Bauteile und Geräte nicht verdrängen
       s += (r[6] || 0) * 2;
-      out.push({ i: +id, s: s });
+      if (ts && !(r[1] === 'regler' || r[1] === 'messwert')) s += 45;   // Regler/Messwerte: nur das Merkmal ts, die Reihenfolge ordnet die Seite (wiki.html ordne())
+      out.push({ i: +id, s: s, ts: ts });
     }
     return out;
   }
   function finish(ix, list, lim, fuzzy) {
     list.sort(function (a, b) { return b.s - a.s || String(ix.rows[a.i][2]).length - String(ix.rows[b.i][2]).length || (ix.rows[a.i][0] < ix.rows[b.i][0] ? -1 : 1); });
-    return list.slice(0, lim).map(function (x) { var r = ix.rows[x.i]; return { id: r[0], kat: r[1], titel: r[2], labs: r[4] ? r[4].split(',') : [], datei: r[5], score: Math.round(x.s * 10) / 10, fuzzy: !!fuzzy }; });
+    return list.slice(0, lim).map(function (x) { var r = ix.rows[x.i]; return { id: r[0], kat: r[1], titel: r[2], labs: r[4] ? r[4].split(',') : [], datei: r[5], score: Math.round(x.s * 10) / 10, ts: !!x.ts, fuzzy: !!fuzzy }; });
   }
 
   function search(ix, q, ctx) {

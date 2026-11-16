@@ -49,7 +49,7 @@
       const rows = [['Übertragungsfunktion', '<span style="font-weight:500">' + esc(txt) + '</span>'], ['Pole', UI.rootsText(poles).map(esc).join('<br>')], ['Nullstellen', UI.rootsText(zeros).map(esc).join('<br>')], ['Verhalten', UI.badge(cls.cls)]];
       if (stable && finite(yFinal)) {
         rows.push(['Endwert', f(yFinal, 3)]);
-        if (Math.abs(yFinal) > 1e-9) rows.push(['Überschwingen', f(info.overshootPct, 1) + ' %'], ['Anregelzeit T_an', info.tRise == null ? 'nicht erreicht' : UI.fmtT(info.tRise)], ['Ausregelzeit ±5 %', UI.fmtT(info.tSettle5)], ['Ausregelzeit ±2 %', UI.fmtT(info.tSettle2)]);
+        if (Math.abs(yFinal) > 1e-9) rows.push(['Überschwingen', f(info.overshootPct, 1) + ' %'], ['Anregelzeit T_an', info.tRise == null ? 'nicht erreicht: Die Kurve nähert sich dem Endwert nur an' : UI.fmtT(info.tRise)], ['Anstiegszeit 10 bis 90 %', info.tRise1090 == null ? '–' : UI.fmtT(info.tRise1090)], ['Ausregelzeit ±5 %', UI.fmtT(info.tSettle5)], ['Ausregelzeit ±2 %', UI.fmtT(info.tSettle2)]);
         else rows.push(['Anfangssprung y(0+)', f(r0.y[0], 2)]);
       } else rows.push(['Endwert', cls.cls === 'instabil' ? 'läuft weg (instabil)' : 'kein fester Endwert']);
       let html = UI.kv(rows);
@@ -96,8 +96,12 @@
       UI.hover('c2-bode', (px, py, P) => { const A1 = P.P1, B1 = P.P2; if (!(A1.inside(px, py) || B1.inside(px, py))) return ''; const w = A1.invX(px), r = R.respAt(F, w); return 'ω = ' + f(w, 2) + ' 1/s: |G| = ' + f(r.db, 1) + ' dB, φ = ' + f(r.ph, 1) + '°'; });
       $('#c2-leg').innerHTML = UI.legend([{ color: 'var(--c0)', label: 'echter Verlauf', dash: 0 }].concat(st.asym ? [{ color: 'var(--c1)', label: 'Asymptoten (Betrag)', dash: 1 }] : []));
       const rows = [];
-      const bounds = [W2.lo].concat(A.corners.map(c => c.w), [W2.hi]);
-      const segs = []; for (let i = 0; i < bounds.length - 1; i++) { const mid = Math.sqrt(bounds[i] * bounds[i + 1]); segs.push([f(bounds[i], 2) + ' bis ' + f(bounds[i + 1], 2) + ' 1/s', (A.slopeAt(mid) > 0 ? '+' : A.slopeAt(mid) < 0 ? '−' : '') + f(Math.abs(A.slopeAt(mid)), 0) + ' dB/Dek.']); }
+      /* C-rg2-08: Grenzen sortieren, gleiche und außerhalb liegende Eckfrequenzen weglassen, Abschnitte mit gleicher Steigung zusammenfassen */
+      const bounds = [W2.lo]; A.corners.map(c => c.w).sort((a, b) => a - b).forEach(w => { if (w > bounds[bounds.length - 1] * 1.0005 && w < W2.hi / 1.0005) bounds.push(w); }); bounds.push(W2.hi);
+      const slTxt = sl => (sl > 0 ? "+" : sl < 0 ? "−" : "") + f(Math.abs(sl), 0) + " dB/Dek.";
+      const segs = []; let sA = bounds[0], slA = null;
+      for (let i = 0; i < bounds.length - 1; i++) { const sl = A.slopeAt(Math.sqrt(bounds[i] * bounds[i + 1])); if (slA === null) slA = sl; else if (Math.abs(sl - slA) > 1e-9) { segs.push([f(sA, 2) + " bis " + f(bounds[i], 2) + " 1/s", slTxt(slA)]); sA = bounds[i]; slA = sl; } }
+      segs.push([f(sA, 2) + " bis " + f(bounds[bounds.length - 1], 2) + " 1/s", slTxt(slA === null ? 0 : slA)]);
       rows.push(['Steigung bei tiefen Frequenzen', (A.slopeAt(W2.lo * 1.01) > 0 ? '+' : A.slopeAt(W2.lo * 1.01) < 0 ? '−' : '') + f(Math.abs(A.slopeAt(W2.lo * 1.01)), 0) + ' dB/Dek.']);
       A.corners.forEach(c => rows.push(['Eckfrequenz ' + (c.kind === 'p' ? '(Pol' : '(Nullstelle') + (c.pair ? ', Paar)' : ')'), f(c.w, 2) + ' 1/s']));
       rows.push(['Durchtrittsfrequenz ω_D', finite(m.wc) ? f(m.wc, 2) + ' 1/s' : 'kein Durchtritt im Bereich']);
@@ -136,21 +140,25 @@
       const pt = w => { if (!finite(w)) return null; const r = R.respAt(M.F, w); return { re: r.re, im: r.im }; };
       UI.draw('c3-bode', (ctx, W, H, pal) => V.drawBode(ctx, W, H, pal, { w: bd.w, db: bd.db, ph: bd.ph, wc: m.wc, wpc: m.wpc, pm: m.pm, gmDb: m.gmDb, corners: [], phStep: 90 }));
       UI.draw('c3-ny', (ctx, W, H, pal) => V.drawNyquist(ctx, W, H, pal, { re: ny.re, im: ny.im, R: st.R, wcPoint: pt(m.wc), wpcPoint: pt(m.wpc) }));
-      UI.hover('c3-bode', (px, py, P) => { if (!(P.P1.inside(px, py) || P.P2.inside(px, py))) return ''; const w = P.P1.invX(px), r = R.respAt(M.F, w); return 'ω = ' + f(w, 2) + ' 1/s: |L| = ' + f(r.db, 1) + ' dB, φ = ' + f(r.ph, 1) + '°'; });
+      UI.hover('c3-bode', (px, py, P) => { if (!(P.P1.inside(px, py) || P.P2.inside(px, py))) return ''; const w = P.P1.invX(px), r = R.respAt(M.F, w); return 'ω = ' + f(w, 2) + ' 1/s: |L| = ' + f(r.db, 1) + ' dB, φ ' + (r.ph < -720 ? 'unter −720°' : '= ' + f(r.ph, 1) + '°'); });
       const rc = R.stepResponse(M.Tcl, { n: 1500, tEnd: M.cls.cls === 'instabil' ? Math.min(R.autoHorizon(M.Tcl), 30) : undefined }), cl = UI.cleanBlow(rc, 5);
       const yF = M.cls.cls === 'stabil' ? R.dcGain(M.Tcl) : null;
       UI.draw('c3-step', (ctx, W, H, pal) => V.drawStep(ctx, W, H, pal, { series: [{ t: cl.t, y: cl.y, ci: 0 }], yFinal: finite(yF) ? yF : null, band: 0.05, yClip: [-5, 5], xLabel: 't in s', yLabel: 'Führungssprung', tMax: cl.cut ? cl.t[cl.t.length - 1] : undefined }));
       UI.hover('c3-step', (px, py, P) => P.inside(px, py) ? 't = ' + f(P.invX(px), 2) + ' s, y = ' + f(P.invY(py), 3) : '');
       $('#c3-leg').innerHTML = UI.legend([{ color: 'var(--c0)', label: 'Sprungantwort geschlossener Kreis', dash: 0 }]);
       const ok = M.cls.cls === 'stabil', agree = M.ns.applicable ? (M.ns.stable === ok) : null;
-      const rows = [['Durchtrittsfrequenz ω_D', finite(m.wc) ? f(m.wc, 2) + ' 1/s' : 'kein Durchtritt (|L| < 1)'], ['Phasenreserve φ_R', finite(m.pm) ? f(m.pm, 1) + '°' : '–'], ['Phasendurchtritt ω_180', finite(m.wpc) ? f(m.wpc, 2) + ' 1/s' : 'nicht vorhanden'], ['Amplitudenreserve A_R', finite(m.gmDb) ? f(m.gmDb, 1) + ' dB (Faktor ' + f(m.gmLin, 2) + ')' : '∞ (nie bei −180°)']];
+      /* F10 (Welle 2): Rohwert der Phasenreserve φ_R = 180° + Phase bei ω_D. Ist er ≤ 0, steht "instabil" und die Phase bei ω_D als Rohwert; keine normierte Zahl, die bei viel Totzeit positiv aussehen könnte. */
+      const unst = M.cls.cls === 'instabil', pmRaw = finite(m.pm) ? m.pm : null, pmNeg = pmRaw !== null && pmRaw <= 0;
+      const pmText = pmRaw === null ? '–' : (pmNeg ? '<span class="bad err">instabil</span>' : f(pmRaw, 1) + '°' + (unst ? ' · Kreis trotzdem instabil (weiterer Durchtritt, siehe Pole)' : ''));
+      const rows = [['Durchtrittsfrequenz ω_D', finite(m.wc) ? f(m.wc, 2) + ' 1/s' : 'kein Durchtritt (|L| < 1)'], ['Phasenreserve φ_R', pmText]].concat(pmNeg ? [['Phase bei ω_D (Rohwert)', f(pmRaw - 180, 1) + '°']] : [], [['Phasendurchtritt ω_180', finite(m.wpc) ? f(m.wpc, 2) + ' 1/s' : 'nicht vorhanden'], ['Amplitudenreserve A_R', finite(m.gmDb) ? f(m.gmDb, 1) + ' dB (Faktor ' + f(m.gmLin, 2) + ')' : '∞ (nie bei −180°)']]);
       if (finite(m.gmLin)) rows.push(['Kritische Verstärkung K_krit', f(st.K * m.gmLin, 2)]);
       rows.push(['Vereinfachtes Nyquist', M.ns.applicable ? UI.badge(M.ns.stable ? 'stabil' : 'instabil') : '<span class="bad warn">nicht anwendbar</span>'], ['Pole des geschlossenen Kreises (Probe)', UI.badge(M.cls.cls)]);
       let html = UI.kv(rows);
       if (!M.ns.applicable) html += '<p class="note">Das einfache Kriterium gilt hier nicht: ' + esc(M.ns.why.join('; ')) + '. Maßgeblich ist die Pol-Probe des geschlossenen Kreises.</p>';
       else html += '<p class="note">' + (agree ? 'Beide Wege stimmen überein: Aussage aus der Phasenreserve und Probe über die Pole des geschlossenen Kreises (Totzeit als Padé-Glied 6. Ordnung).' : 'Achtung: knapper Grenzfall, beide Wege weichen minimal ab (Padé-Näherung der Totzeit).') + '</p>';
       html += '<p class="note">Geschlossene Pole: ' + esc(UI.rootsText(M.poles).slice(0, 6).join(' ; ')) + (M.poles.length > 6 ? ' …' : '') + '</p>';
-      if (st.Tt > 0 && finite(m.wc) && finite(m.pm)) html += '<p class="note">Totzeit-Grenze für ω_D: ' + f(st.Tt + R.tdMax(m.pm, m.wc), 3) + ' s insgesamt. Die Totzeit kostet ω_D·Tt = ' + f(m.wc * st.Tt * DEG, 1) + '° Phase.</p>';
+      if (pmNeg && st.Tt > 0) html += '<p class="note">Die Phase bei ω_D liegt bei ' + f(pmRaw - 180, 1) + '°. Das ist der Rohwert ohne Umbruch: ' + f(m.wc * st.Tt * DEG, 0) + '° davon kommen von der Totzeit. Die Phasenreserve ist ≤ 0, der geschlossene Kreis ist instabil.</p>';
+      if (st.Tt > 0 && finite(m.wc) && finite(pmRaw) && pmRaw > 0) html += '<p class="note">Totzeit-Grenze für ω_D: ' + f(st.Tt + R.tdMax(pmRaw, m.wc), 3) + ' s insgesamt. Die Totzeit kostet ω_D·Tt = ' + f(m.wc * st.Tt * DEG, 1) + '° Phase.</p>';
       set('b3', html);
     }
   });
@@ -256,8 +264,8 @@
       let h = UI.select('b5', 'plant', [['tt', 'PT1 mit Totzeit (ZN, CHR)'], ['pt3', 'drei gleiche PT1 (ZN, CHR)'], ['bo', 'PT1 mit kleiner Zeitkonstante (Betragsoptimum)'], ['so', 'Integrator mit kleiner Zeitkonstante (symmetrisches Optimum)']], 'Strecke');
       if (st.plant === 'bo') h += UI.slider('b5', 'Ks', 'Streckenverstärkung Ks', { min: 0.5, max: 5, log: true, dec: 2 }) + UI.slider('b5', 'T1', 'große Zeitkonstante T1', { min: 0.1, max: 2, log: true, dec: 2, unit: 's' }) + UI.slider('b5', 'T2', 'zweite Zeitkonstante T2 (0 = keine)', { min: 0, max: 0.3, dec: 3, unit: 's', snap: 0.005 }) + UI.slider('b5', 'Ts', 'kleine Zeitkonstante Tσ', { min: 0.005, max: 0.1, log: true, dec: 3, unit: 's' });
       if (st.plant === 'so') h += UI.slider('b5', 'Kis', 'Integrierbeiwert Kis', { min: 2, max: 100, log: true, dec: 1, unit: '1/s' }) + UI.slider('b5', 'Ts', 'kleine Zeitkonstante Tσ', { min: 0.002, max: 0.05, log: true, dec: 3, unit: 's' });
-      if (st.plant === 'tt') h += UI.slider('b5', 'K', 'Verstärkung K', { min: 0.5, max: 4, log: true, dec: 2 }) + UI.slider('b5', 'T', 'Zeitkonstante T', { min: 0.3, max: 3, log: true, dec: 2, unit: 's' }) + UI.slider('b5', 'Tt', 'Totzeit Tt', { min: 0.05, max: 1, log: true, dec: 2, unit: 's' });
-      if (st.plant === 'pt3') h += UI.slider('b5', 'K', 'Verstärkung K', { min: 0.5, max: 4, log: true, dec: 2 }) + UI.slider('b5', 'T', 'Zeitkonstante T (je Stufe)', { min: 0.1, max: 2, log: true, dec: 2, unit: 's' });
+      if (st.plant === 'tt') h += UI.slider('b5', 'K', 'Streckenverstärkung K', { min: 0.5, max: 4, log: true, dec: 2 }) + UI.slider('b5', 'T', 'Zeitkonstante T', { min: 0.3, max: 3, log: true, dec: 2, unit: 's' }) + UI.slider('b5', 'Tt', 'Totzeit Tt', { min: 0.05, max: 1, log: true, dec: 2, unit: 's' });
+      if (st.plant === 'pt3') h += UI.slider('b5', 'K', 'Streckenverstärkung K', { min: 0.5, max: 4, log: true, dec: 2 }) + UI.slider('b5', 'T', 'Zeitkonstante T (je Stufe)', { min: 0.1, max: 2, log: true, dec: 2, unit: 's' });
       h += UI.seg('b5', 'ctype', [['PI', 'PI-Regler'], ['PID', 'PID-Regler']], 'Reglertyp') + UI.seg('b5', 'mode', [['w', 'Sollwertsprung'], ['z', 'Störung am Streckeneingang']], 'Betrachtung');
       if (st.plant === 'so') h += UI.chk('b5', 'filt', 'Sollwertfilter mit Tn (nur Sollwertsprung)');
       return h + UI.slider('b5', 'zoom', 'Zeitausschnitt', { min: 5, max: 100, log: true, dec: 0, unit: '%', snap: 1 });
@@ -293,6 +301,7 @@
       const head = mode === 'w' ? '<th>Überschw.</th><th>T_an</th><th>T_aus 5 %</th><th>IAE</th>' : '<th>Spitze</th><th>IAE</th>';
       if (tbl) tbl.innerHTML = '<table class="tb"><thead><tr><th>Verfahren</th><th>Kp</th><th>Tn</th><th>Tv</th>' + head + '</tr></thead><tbody>' + (rows.join('') || '<tr><td colspan="8">Für diese Strecke gibt es hier kein Verfahren (siehe Hinweis).</td></tr>') + '</tbody></table>';
       const notes = [];
+      if (st.plant === 'tt' || st.plant === 'pt3') notes.push('Die Regler werden aus den Streckendaten berechnet. Ändert sich die Streckenverstärkung K, ändert sich Kp im Gegenzug, das Produkt Kp·K bleibt gleich. Darum bleiben die Kurven gleich, nur die Kp-Werte in der Tabelle wandern.');
       if (M.id) notes.push('Wendetangente: Ks = ' + f(M.id.Ks, 2) + ', Tu = ' + UI.fmtT(M.id.Tu) + ', Tg = ' + UI.fmtT(M.id.Tg) + ' (Tg/Tu = ' + f(M.id.Tg / M.id.Tu, 1) + '; die Regeln gelten für etwa 3 bis 10).');
       if (M.u) notes.push('Schwingversuch: K_krit = ' + f(M.u.Kcrit, 2) + ', T_krit = ' + UI.fmtT(M.u.Tcrit) + '.');
       if (!M.u && st.plant !== 'so') notes.push('Schwingversuch nicht möglich: Der Kreis erreicht mit P-Regler nie −180° Phase.');

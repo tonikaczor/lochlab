@@ -161,7 +161,57 @@
     return svg(W, H, 'Bildzeichen: ' + name, s);
   }
 
-  const API = { krOk, krForceSvg, krBalanceSvg, krDownSvg, krViz, stapGeom, tiltSvg, ladeStats, ladeCgSvg, ladeNote, artPic, NUTZ };
+  /* ============================================================ Handhabungszeichen, Gefahrzettel, Warntafel (K-lad-01, K-lad-02)
+     NUR schematisch und NUR nach den Beschreibungen in laddata.js (SYM, ZETTEL, SETS.gg, UN). Keine Normzeichen (siehe K2d.md, Für Toni). */
+  const SYMP = [
+    /* 0 Weinglas mit Bruchlinie */ '<path class="sy" d="M20 8H44L42 26Q32 38 22 26Z"/><path class="sy" d="M32 36V52M22 54H42"/><polyline class="sy bad" points="27,10 33,19 28,24 35,31"/>',
+    /* 1 Regenschirm mit Regentropfen */ '<path class="sy" d="M8 34Q32 2 56 34Z"/><path class="sy" d="M32 34V50Q32 56 26 56"/><path class="sy bad" d="M14 44l-3 7M44 42l-3 7M52 50l-3 7"/>',
+    /* 2 zwei Pfeile nach oben */ '<path class="sy" d="M20 56V12M10 22L20 10L30 22M44 56V12M34 22L44 10L54 22"/>',
+    /* 3 Sonne mit Strahlen */ '<circle class="sy" cx="32" cy="32" r="10"/><path class="sy" d="M32 6V14M32 50V58M6 32H14M50 32H58M14 14L20 20M44 44L50 50M50 14L44 20M14 50L20 44"/>',
+    /* 4 Handhaken durchgestrichen */ '<path class="sy" d="M24 10V40Q24 54 36 54Q48 54 48 42"/><line class="sy bad" x1="8" y1="56" x2="56" y2="8"/>',
+    /* 5 Kreis mit Fadenkreuz */ '<circle class="sy" cx="32" cy="32" r="18"/><path class="sy" d="M6 32H58M32 6V58"/>',
+    /* 6 Kette oder Seil an einem Haken */ '<path class="sy" d="M20 16Q20 4 32 4Q44 4 44 16L32 22"/><ellipse class="sy" cx="32" cy="30" rx="5" ry="8"/><ellipse class="sy" cx="32" cy="44" rx="5" ry="8"/>',
+    /* 7 gestapelte Kisten mit Gewichtsangabe */ '<rect class="sy" x="6" y="38" width="24" height="20"/><rect class="sy" x="30" y="38" width="24" height="20"/><rect class="sy" x="18" y="14" width="24" height="24"/><text class="sy2" x="30" y="31" text-anchor="middle">kg</text>',
+    /* 8 Thermometer mit oberer und unterer Marke */ '<rect class="sy" x="26" y="6" width="10" height="38" rx="5"/><circle class="sy" cx="31" cy="50" r="8"/><path class="sy bad" d="M40 14H52"/><path class="sy" d="M40 34H52"/>'
+  ];
+  function symSvg(i) {
+    if (!(i >= 0 && i < SYMP.length) || !Number.isInteger(i)) return '';
+    const D = root.LAD_DATA, nm = D && D.sym && D.sym[i] ? D.sym[i][0] : 'Handhabungszeichen';
+    return svg(64, 64, 'Handhabungszeichen: ' + nm + ' (schematische Zeichnung)', SYMP[i]);
+  }
+  /* Gefahrzettel: Raute mit Farbe und Zeichen nur aus ZETTEL/SETS.gg. Klasse 2 zeigt den grünen Zettel mit Gasflasche (ZETTEL). */
+  const ZD = 'M50 3L97 50L50 97L3 50Z';
+  const ZSYM = {
+    '1': '<circle class="zk" cx="50" cy="44" r="11"/><path class="zs" d="M50 33V26M44 36L38 30M56 36L62 30M40 44H33M60 44H67"/>',
+    '2': '<rect class="zk" x="43" y="30" width="14" height="30" rx="5"/><rect class="zk" x="47" y="24" width="6" height="7"/>',
+    '3': '<path class="zk" d="M50 26Q60 40 57 52Q55 60 50 60Q43 60 43 52Q43 44 50 36Q46 34 50 26Z"/>',
+    '4': '',
+    '5': '<path class="zk" d="M50 20Q58 30 55 38Q54 43 50 43Q45 43 45 38Q45 33 50 28Q47 24 50 20Z"/><circle class="zs" cx="50" cy="52" r="8"/>',
+    '6': '<circle class="zk" cx="50" cy="38" r="9"/><rect class="zk" x="45" y="44" width="10" height="8"/><path class="zs" d="M38 56L62 66M62 56L38 66"/>',
+    '7': '<circle class="zk" cx="50" cy="44" r="3.5"/><path class="zk" d="M50 44L50 28A16 16 0 0 1 63.9 36ZM50 44L36.1 36A16 16 0 0 1 50 28ZM50 44L50 60A16 16 0 0 1 36.1 52Z" fill-opacity="0"/><path class="zs" d="M50 44L50 28M50 44L63.9 52M50 44L36.1 52"/><circle class="zs" cx="50" cy="44" r="16"/>',
+    '8': '<path class="zw" d="M38 36L48 38L46 48L40 46Z"/><path class="zw" d="M56 34L64 36L62 44L56 42Z"/><path class="zw" d="M40 60H62L60 66H42Z"/><path class="zs zwl" d="M44 50L46 56M58 48L56 56"/>',
+    '9': [32, 38, 44, 50, 56, 62, 68].map(x => '<line class="zs" x1="' + x + '" y1="' + (8 + Math.abs(x - 50)) + '" x2="' + x + '" y2="46"/>').join('')
+  };
+  const ZBG = { '1': 'za-or', '2': 'za-gn', '3': 'za-rd', '4': 'za-w', '5': 'za-ye', '6': 'za-w', '7': 'za-yw', '8': 'za-w', '9': 'za-w' };
+  function zettelSvg(k) {
+    k = String(k); if (!ZBG[k]) return '';
+    const D = root.LAD_DATA, nm = D && D.cls && D.cls[k] ? D.cls[k] : 'Klasse ' + k;
+    const TOP = 'M3 50L50 3L97 50Z', BOT = 'M3 50L97 50L50 97Z'; let s = '';
+    const half = (c1, c2) => '<path class="' + c1 + '" d="' + TOP + '"/><path class="' + c2 + '" d="' + BOT + '"/>';
+    if (k === '8') s += half('za-w', 'za-bk'); else if (k === '4') s += half('za-w', 'za-rd'); else if (k === '7') s += half('za-yw', 'za-w');
+    else s += '<path class="' + ZBG[k] + '" d="' + ZD + '"/>';
+    s += (ZSYM[k] || '') + '<path class="zr" d="' + ZD + '"/>';
+    s += '<text class="zn' + (k === '8' ? ' zl' : '') + '" x="50" y="86" text-anchor="middle">' + esc(k) + '</text>';
+    return svg(100, 100, 'Gefahrzettel ' + nm + ' (schematische Zeichnung)', s);
+  }
+  /* Warntafel: orange, oben Gefahrnummer, unten UN-Nummer (Daten aus UN). */
+  function warntafelSvg(gefahr, un) {
+    if (!/^[0-9X]{2,3}$/.test(String(gefahr)) || !/^\d{4}$/.test(String(un))) return '';
+    let s = R(2, 2, 196, 116, 'wt', 4) + L(2, 60, 198, 60, 'wtl') + T(100, 50, gefahr, 'wtt mid') + T(100, 108, un, 'wtt mid');
+    return svg(200, 120, 'Warntafel mit Gefahrnummer ' + gefahr + ' oben und UN-Nummer ' + un + ' unten', s);
+  }
+
+  const API = { symSvg, zettelSvg, warntafelSvg, krOk, krForceSvg, krBalanceSvg, krDownSvg, krViz, stapGeom, tiltSvg, ladeStats, ladeCgSvg, ladeNote, artPic, NUTZ };
   root.LAD_VIZ = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 
@@ -188,6 +238,14 @@
 .vzbox .ref{stroke:var(--mute);stroke-width:1;stroke-dasharray:4 4}.vzbox .floor{stroke:var(--mute);stroke-width:4}.vzbox .palb{fill:var(--hi);fill-opacity:.45}.vzbox .lot{stroke:var(--fg);stroke-width:1.6;stroke-dasharray:5 4}.vzbox .pivot{fill:var(--fg)}
 .vzbox .palp{fill:var(--accent);fill-opacity:.45;stroke:var(--panel);stroke-width:1}.vzbox .midl{stroke:var(--mute);stroke-width:1.2;stroke-dasharray:5 4}.vzbox .sp line{stroke:var(--danger);stroke-width:2.5}.vzbox .sp circle{fill:none;stroke:var(--danger);stroke-width:2.5}
 .vzbox .gtr{fill:var(--bg);stroke:var(--line);stroke-width:1}.vzbox .gok{fill:var(--ok);fill-opacity:.75}.vzbox .gbad{fill:var(--danger);fill-opacity:.8}
+.vzbox{--zor:#f28c1e;--zgn:#1f9d55;--zrd:#d6372f;--zye:#f5c400;--zwh:#ffffff;--zbk:#1c1c1c}
+.vzbox .sy{fill:none;stroke:var(--fg);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.vzbox .sy.bad{stroke:var(--danger)}.vzbox svg text.sy2{fill:var(--fg);stroke:none;font-size:12px;font-weight:700}
+.vzbox .za-or{fill:var(--zor)}.vzbox .za-gn{fill:var(--zgn)}.vzbox .za-rd{fill:var(--zrd)}.vzbox .za-ye{fill:var(--zye)}.vzbox .za-yw{fill:var(--zye)}.vzbox .za-w{fill:var(--zwh)}.vzbox .za-bk{fill:var(--zbk)}
+.vzbox .zr{fill:none;stroke:var(--zbk);stroke-width:2}.vzbox .zk{fill:var(--zbk);stroke:none}.vzbox .zs{fill:none;stroke:var(--zbk);stroke-width:3;stroke-linecap:round}.vzbox .zw{fill:var(--zwh);stroke:none}.vzbox .zs.zwl{stroke:var(--zwh)}
+.vzbox svg text.zn{fill:var(--zbk);font-size:15px;font-weight:700}.vzbox svg text.zn.zl{fill:var(--zwh)}
+.vzbox .wt{fill:var(--zor);stroke:var(--zbk);stroke-width:3}.vzbox .wtl{stroke:var(--zbk);stroke-width:3}.vzbox svg text.wtt{fill:var(--zbk);font-size:40px;font-weight:700}
+.vzpic.vzsym{max-width:200px}.vzonly{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px}.vzonly input{width:22px;height:22px}.vzhide{display:none}
+.vzgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin:8px 0}.vzgrid .vzbox{margin:0;padding:6px;text-align:center}.vzgrid .vzbox svg{max-width:96px;margin:auto}.vzgrid p{margin:0 0 4px;font-size:14px;color:var(--mute)}
 .vzcard h4{margin:0 0 8px}.vzctl{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}.vzctl button{min-height:44px;padding:0 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600;color:var(--fg)}
 .vzpic{max-width:260px;margin:4px 0 10px}.vzpic .vzbox{margin:0}
 @media(prefers-reduced-motion:no-preference){.vzbox svg .ar.m,.vzbox svg .ar.z{animation:vzpulse 2.4s ease-in-out infinite}@keyframes vzpulse{0%,100%{opacity:1}50%{opacity:.6}}}`;
@@ -255,6 +313,61 @@
       const h = krViz(e.p); if (!h) return; const w = document.createElement('div'); w.className = 'vzout'; w.innerHTML = h; card.insertBefore(w, card.querySelector('.btns') || null);
     });
     new MutationObserver(() => { if (!view.querySelector('.vzout')) run(); }).observe(view, { childList: true });
+    if (view.firstChild) run();
+  })();
+  /* Symbole (K-lad-01): Bild in der Zuordnungsfrage (mit Umschalter "Nur Bild"), Bild in den Detailkarten */
+  (function () {
+    const view = $('#symView'), D = root.LAD_DATA; if (!view || !D || !D.sym) return;
+    const idxOf = txt => D.sym.findIndex(s => 'Zeichen: ' + s[0] + '.' === String(txt).trim());
+    const wrap = i => { const w = document.createElement('div'); w.className = 'vzpic'; w.innerHTML = '<div class="vzbox">' + symSvg(i) + '</div>'; return w; };
+    const run = () => {
+      const mq = $('#mq_sym');
+      if (mq && !mq.querySelector('.vzsym')) {
+        const b = mq.querySelector('p b'), i = b ? idxOf(b.textContent) : -1;
+        if (i >= 0) {
+          const only = lsGet('symonly', false), w = wrap(i); w.className += ' vzsym';
+          w.insertAdjacentHTML('beforeend', '<label class="vzonly"><input type="checkbox" data-vz="only"' + (only ? ' checked' : '') + '> Nur Bild zeigen, ohne Beschreibung</label>');
+          mq.insertBefore(w, mq.firstChild); b.classList.toggle('vzhide', !!only);
+          w.querySelector('input').addEventListener('change', e => { try { localStorage.setItem(LS + 'symonly', JSON.stringify(e.target.checked)); } catch (er) {} b.classList.toggle('vzhide', e.target.checked); });
+        }
+      }
+      view.querySelectorAll('details').forEach(dt => {
+        if (dt.querySelector('.vzpic')) return; const p = dt.querySelector('.hb2 p'); if (!p) return; const i = idxOf(p.textContent); if (i < 0) return;
+        dt.querySelector('.hb2').insertBefore(wrap(i), p);
+      });
+    };
+    new MutationObserver(run).observe(view, { childList: true, subtree: true });
+    if (view.firstChild) run();
+  })();
+
+  /* Gefahrgut (K-lad-02): Gefahrzettel-Übersicht, Bildfrage, Warntafel */
+  (function () {
+    const view = $('#ggView'), D = root.LAD_DATA; if (!view || !D || !D.cls || !D.un) return;
+    const ks = Object.keys(D.cls).sort(), Z = { k: '', sel: '' }, W = { i: 0 };
+    const newQ = () => { Z.k = ks[Math.floor(Math.random() * ks.length)]; Z.sel = ''; };
+    const short = k => D.cls[k].replace(/^Klasse \d: /, '');
+    function fill(c) {
+      const wt = D.un[W.i], opts = [Z.k].concat(ks.filter(k => k !== Z.k).sort(() => Math.random() - 0.5).slice(0, 3)).sort();
+      c.innerHTML = '<h4>Gefahrzettel und Warntafel</h4><p class="hint2">Schematische Zeichnungen nach den Beschreibungen in diesem Lab, keine Abbildungen nach Vorschrift. Die Klassen 2, 4 und 6 haben mehrere Zettel. Gezeigt ist je einer.</p>'
+        + '<div class="vzgrid">' + ks.map(k => '<div class="vzbox">' + zettelSvg(k) + '<p>Klasse ' + k + '<br>' + esc(short(k)) + '</p></div>').join('') + '</div>'
+        + '<h4 style="margin-top:14px">Welche Klasse zeigt der Zettel?</h4><div class="vzpic"><div class="vzbox">' + zettelSvg(Z.k) + '</div></div><div class="vzctl vzopts">'
+        + opts.map(k => '<button data-vz="zk" data-k="' + k + '"' + (Z.sel ? ' disabled' : '') + (Z.sel && k === Z.k ? ' style="border-color:var(--ok)"' : Z.sel === k ? ' style="border-color:var(--danger)"' : '') + '>Klasse ' + k + ': ' + esc(short(k)) + '</button>').join('') + '</div>'
+        + '<div role="status" aria-live="polite">' + (Z.sel ? (Z.sel === Z.k ? '<p class="rdout ok">✓ Richtig: Klasse ' + Z.k + ', ' + esc(short(Z.k)) + '.</p>' : '<p class="rdout bad">Nicht ganz. Der Zettel gehört zu Klasse ' + Z.k + ': ' + esc(short(Z.k)) + '.</p>') + '<div class="btns"><button class="btn pri" data-vz="zn">Nächster Zettel</button></div>' : '') + '</div>'
+        + '<h4 style="margin-top:14px">Warntafel am Fahrzeug</h4><div class="vzctl">' + D.un.map((u, i) => '<button data-vz="wt" data-i="' + i + '"' + (i === W.i ? ' style="border-color:var(--accent)" aria-pressed="true"' : ' aria-pressed="false"') + '>' + esc(u[0]) + '</button>').join('') + '</div>'
+        + '<div class="vzpic"><div class="vzbox">' + warntafelSvg(wt[2], wt[1]) + '</div></div><p class="hint2">' + esc(wt[0]) + ': Oben steht die Gefahrnummer ' + esc(wt[2]) + ', unten die UN-Nummer ' + esc(wt[1]) + '.</p>';
+    }
+    newQ();
+    const run = () => {
+      let c = document.getElementById('vzGz'); if (c && view.contains(c)) return;
+      const dt = view.querySelector('.dt'); if (!dt) return;
+      c = document.createElement('div'); c.id = 'vzGz'; c.className = 'card pl vzcard'; fill(c); dt.parentNode.insertBefore(c, dt);
+      c.addEventListener('click', e => {
+        const b = e.target.closest('[data-vz]'); if (!b) return; const a = b.dataset.vz;
+        if (a === 'zk' && !Z.sel) Z.sel = b.dataset.k; else if (a === 'zn') newQ(); else if (a === 'wt') W.i = +b.dataset.i; else return;
+        fill(c);
+      });
+    };
+    new MutationObserver(run).observe(view, { childList: true });
     if (view.firstChild) run();
   })();
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -98,3 +98,10 @@ details.task>summary .t{flex:1;min-width:0}
 @media(max-width:480px){#app{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}h2{font-size:20px}.tbl table{min-width:0}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{#tabs,header .ib,.acts,#verBadge{display:none!important}body{background:#fff;color:#000}}
+/* Welle 2 (Lab-Rahmen): Kopf kommt vom Rahmen; Grafik bleibt am Handy oben, Regler laufen darunter */
+html.lr-on header .title{display:none}
+html.lr-on #tabs .bd{font-size:14px;color:var(--mute);margin-left:4px}
+.grp{font-size:18px;margin:18px 0 8px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+@media(max-width:899px){.grid2{display:block}.grid2>*+*{margin-top:12px}.grid2>[data-lr-buehne]{background:var(--panel)}}
+@media(max-width:699px){html.lr-on .grid2>[data-lr-buehne]{position:sticky;top:0;z-index:3;max-height:45vh;max-height:45dvh;overflow-x:hidden;overflow-y:auto;scrollbar-width:none;box-shadow:0 0 0 100vmax var(--bg);clip-path:inset(0 -100vmax -8px -100vmax)}}

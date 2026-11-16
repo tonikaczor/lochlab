@@ -73,6 +73,107 @@
   const SICHT = { zeit: 'Zeitbild: u über t mit û, U_ss, T und Δt', zeiger: 'Zeigerbild: der Zeiger dreht, seine Projektion auf die Zeitachse ist u', formel: 'Sinus: U = û / √2 und T = 1 / f' };
   const INFO = 'Sinus, Effektivwert, Scheitelwert, Mittelwert und Phase. Zeitbild und Zeigerbild zeigen dieselbe Spannung. ' + MODELL;
 
+
+  /* ------------------------------------------------------------------ Oszilloskop-Cursor (B-wsl-04)
+   * Eigene Ebene (DOM) über dem Zeitbild: zwei Zeit- und zwei Spannungscursor, ziehbar mit Finger, Maus und Pfeiltasten, Griffe 44 px.
+   * Gerechnet wird nur: Δt = Abstand der Zeitcursor, f = 1 / Δt, ΔU = Abstand der Spannungscursor, bei zwei Spannungen φ = 360° · Δt / T.
+   * Zustand als Anteile der Achse (0 bis 1), damit die Cursor bei Frequenzwechsel im Bild bleiben. Nur im Browser; in Node geschieht nichts. */
+  const CUR = { on: false, x: [0.25, 0.6], y: [0.2, 0.8], host: null, el: null, info: null, tx: null, tog: null, geom: null, ctx: null, lastDraw: 0, sig: '', timer: 0 };
+  const CUR_DEFS = [{ k: 'x0', ax: 'x', i: 0, name: 'Zeitcursor 1', lab: 't₁' }, { k: 'x1', ax: 'x', i: 1, name: 'Zeitcursor 2', lab: 't₂' },
+    { k: 'y0', ax: 'y', i: 0, name: 'Spannungscursor 1', lab: 'u₁' }, { k: 'y1', ax: 'y', i: 1, name: 'Spannungscursor 2', lab: 'u₂' }];
+  const CUR_CSS = '.wcur{position:absolute;z-index:2;pointer-events:auto;touch-action:none;cursor:crosshair}.wcur svg{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;pointer-events:none}'
+    + '.wcur line{stroke-width:2;stroke-dasharray:6 4}.wcur .lx{stroke:var(--accent)}.wcur .ly{stroke:var(--warn)}'
+    + '.wcur-h{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;padding:0;background:none;border:0;border-radius:8px;pointer-events:auto;touch-action:none;cursor:grab;display:flex;align-items:center;justify-content:center;font:inherit}'
+    + '.wcur-h span{display:block;min-width:30px;height:26px;padding:0 4px;border-radius:13px;background:var(--panel);color:var(--fg);border:2px solid var(--accent);font:700 14px/22px system-ui,sans-serif;text-align:center}'
+    + '.wcur-h.ly span{border-color:var(--warn)}.wcur-h:focus-visible{outline:3px solid var(--fg);outline-offset:-3px}'
+    + '.wcur-info{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:0 0 8px;font-size:14px;line-height:1.35;color:var(--fg)}'
+    + '.wcur-info button{min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--panel2,var(--panel));color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer}'
+    + '.wcur-info button[aria-pressed=true]{border-color:var(--accent);background:var(--accent-bg,var(--panel2))}.wcur-info[hidden],.wcur[hidden]{display:none}'
+    + 'html.lr-on.lr-rig #pgRig.rigc #wslCurInfo{order:2}';
+  const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
+  function curSet(def, v) { CUR[def.ax][def.i] = clamp01(v); curRender(true); }
+  function curBuild(host) {
+    const d = document;
+    if (!d.getElementById('wslCurCss')) { const st = d.createElement('style'); st.id = 'wslCurCss'; st.textContent = CUR_CSS; d.head.appendChild(st); }
+    const el = d.createElement('div'); el.className = 'wcur'; el.id = 'wslCur'; el.hidden = true;
+    el.innerHTML = '<svg aria-hidden="true">' + CUR_DEFS.map(df => '<line class="l' + df.ax + '" data-k="' + df.k + '"/>').join('') + '</svg>'
+      + CUR_DEFS.map(df => '<button type="button" class="wcur-h l' + df.ax + '" data-k="' + df.k + '" role="slider" aria-valuemin="0" aria-valuemax="100" aria-orientation="' + (df.ax === 'x' ? 'horizontal' : 'vertical') + '" aria-label="' + df.name + ', mit Pfeiltasten verschieben"><span>' + df.lab + '</span></button>').join('');
+    host.appendChild(el);
+    const info = d.createElement('div'); info.className = 'wcur-info'; info.id = 'wslCurInfo'; info.hidden = true;
+    info.innerHTML = '<button type="button" id="wslCurTog" aria-pressed="false">Cursor einblenden</button><span id="wslCurTx"></span>';
+    host.parentNode.insertBefore(info, host.nextSibling);
+    CUR.host = host; CUR.el = el; CUR.info = info; CUR.tx = info.querySelector('#wslCurTx'); CUR.tog = info.querySelector('#wslCurTog'); CUR.sig = '';
+    CUR.tog.addEventListener('click', () => { CUR.on = !CUR.on; CUR.sig = ''; curRender(true); });
+    /* Ziehen: am Griff oder irgendwo im Bildbereich (nächster Cursor, höchstens 30 px entfernt) */
+    let drag = null;
+    const frac = (df, e) => { const r = el.getBoundingClientRect(); return df.ax === 'x' ? (e.clientX - r.left) / Math.max(1, r.width) : (e.clientY - r.top) / Math.max(1, r.height); };
+    const find = k => CUR_DEFS.find(x => x.k === k);
+    el.addEventListener('pointerdown', e => {
+      let df = null; const hb = e.target.closest && e.target.closest('.wcur-h');
+      if (hb) df = find(hb.dataset.k);
+      else { const r = el.getBoundingClientRect(); let best = 31; CUR_DEFS.forEach(x => { const dist = x.ax === 'x' ? Math.abs(e.clientX - r.left - CUR.x[x.i] * r.width) : Math.abs(e.clientY - r.top - CUR.y[x.i] * r.height); if (dist < best) { best = dist; df = x; } }); }
+      if (!df) return;
+      e.preventDefault(); e.stopPropagation(); drag = { id: e.pointerId, df };
+      try { el.setPointerCapture(e.pointerId); } catch (x) { /* ohne Capture weiter */ }
+      curSet(df, frac(df, e));
+      const b = el.querySelector('.wcur-h[data-k="' + df.k + '"]'); if (b) try { b.focus({ preventScroll: true }); } catch (x) { /* Fokus optional */ }
+    });
+    el.addEventListener('pointermove', e => { if (drag && drag.id === e.pointerId) { e.preventDefault(); curSet(drag.df, frac(drag.df, e)); } });
+    const up = e => { if (drag && drag.id === e.pointerId) { drag = null; try { el.releasePointerCapture(e.pointerId); } catch (x) { /* schon frei */ } } };
+    el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+    el.addEventListener('keydown', e => {
+      const hb = e.target.closest && e.target.closest('.wcur-h'); if (!hb) return;
+      const df = find(hb.dataset.k), v = CUR[df.ax][df.i], st = e.shiftKey ? 0.05 : 0.01; let n = null;
+      /* Zeitcursor: links/rechts; Spannungscursor: auf/ab (auf = im Bild nach oben) */
+      const dec = df.ax === 'x' ? 'ArrowLeft' : 'ArrowUp', inc = df.ax === 'x' ? 'ArrowRight' : 'ArrowDown';
+      if (e.key === dec) n = v - st; else if (e.key === inc) n = v + st; else if (e.key === 'Home') n = 0; else if (e.key === 'End') n = 1;
+      if (n === null) return; e.preventDefault(); curSet(df, n);
+    });
+    CUR.timer = setInterval(() => { if (CUR.el && Date.now() - CUR.lastDraw > 800) { CUR.el.hidden = true; CUR.info.hidden = true; } }, 400);
+  }
+  /** Richtet die Ebene am Zeitbild aus; aus draw() (jedes Bild) und beim Ziehen. */
+  function curRender(force) {
+    if (!CUR.el || !CUR.geom || !CUR.ctx) return;
+    const g = CUR.geom, c = CUR.ctx, pl = g.pl, el = CUR.el;
+    CUR.info.hidden = false; CUR.tog.setAttribute('aria-pressed', CUR.on ? 'true' : 'false'); CUR.tog.textContent = CUR.on ? 'Cursor ausblenden' : 'Cursor einblenden';
+    el.hidden = !CUR.on;
+    if (!CUR.on) { const t0 = 'Zwei Zeit- und zwei Spannungscursor über dem Bild. Δt, f = 1 / Δt und ΔU liest du dann hier ab.'; if (CUR.tx.textContent !== t0) CUR.tx.textContent = t0; return; }
+    const sig = [pl.x, pl.y, pl.w, pl.h, g.x0, g.x1, g.y0, g.y1, g.tUnit, CUR.x.join(), CUR.y.join(), c.two, c.T].join('|');
+    if (!force && sig === CUR.sig) return; CUR.sig = sig;
+    el.style.left = pl.x + 'px'; el.style.top = pl.y + 'px'; el.style.width = pl.w + 'px'; el.style.height = pl.h + 'px';
+    const kS = g.tUnit === 's' ? 1 : g.tUnit === 'ms' ? 1e-3 : g.tUnit === 'µs' ? 1e-6 : 1;
+    const tAt = f => (g.x0 + f * (g.x1 - g.x0)) * kS, uAt = f => g.y1 - f * (g.y1 - g.y0);
+    CUR_DEFS.forEach(df => {
+      const v = CUR[df.ax][df.i], ln = el.querySelector('line[data-k="' + df.k + '"]'), hb = el.querySelector('.wcur-h[data-k="' + df.k + '"]');
+      if (df.ax === 'x') {
+        const x = Math.round(v * pl.w * 10) / 10; ln.setAttribute('x1', x); ln.setAttribute('x2', x); ln.setAttribute('y1', 0); ln.setAttribute('y2', pl.h);
+        hb.style.left = x + 'px'; hb.style.top = (df.i === 0 ? Math.min(22, pl.h / 2) : Math.max(pl.h - 22, pl.h / 2)) + 'px';
+        hb.setAttribute('aria-valuetext', df.lab + ' bei t = ' + c.engF(tAt(v), 's'));
+      } else {
+        const y = Math.round(v * pl.h * 10) / 10; ln.setAttribute('y1', y); ln.setAttribute('y2', y); ln.setAttribute('x1', 0); ln.setAttribute('x2', pl.w);
+        hb.style.top = y + 'px'; hb.style.left = (df.i === 0 ? Math.max(pl.w - 22, pl.w / 2) : Math.min(22, pl.w / 2)) + 'px';
+        hb.setAttribute('aria-valuetext', df.lab + ' bei u = ' + c.engF(uAt(v), 'V'));
+      }
+      hb.setAttribute('aria-valuenow', String(Math.round(v * 100)));
+    });
+    const dt = Math.abs(tAt(CUR.x[1]) - tAt(CUR.x[0])), du = Math.abs(uAt(CUR.y[1]) - uAt(CUR.y[0]));
+    let txt = 'Δt = ' + c.engF(dt, 's') + (dt > 1e-12 ? '  ·  f = 1 / Δt = ' + c.engF(1 / dt, 'Hz') : '') + '  ·  ΔU = ' + c.engF(du, 'V');
+    if (c.two && c.T > 0) txt += '  ·  φ = 360° · Δt / T = ' + c.fmt(360 * dt / c.T, 1) + '°';
+    if (CUR.tx.textContent !== txt) CUR.tx.textContent = txt;
+  }
+  /** Aus plant.draw: Geometrie des Zeitbildes übernehmen (nur die echte Szene, nicht den Vorher-Geist). */
+  function curFrame(sc, r, fm2) {
+    if (typeof document === 'undefined' || !document.getElementById || sc.ghost) return;
+    try {
+      const D = sc.D, g = D && D.scopeGeom ? D.scopeGeom(false) : null, host = document.getElementById('cvw');
+      if (!host) return;
+      if (!CUR.el || CUR.host !== host || !host.contains(CUR.el)) { if (CUR.timer) { clearInterval(CUR.timer); CUR.timer = 0; } curBuild(host); }
+      CUR.lastDraw = Date.now(); CUR.geom = g; CUR.ctx = { two: r.two, T: r.T, engF: fm2.engF, fmt: fm2.fmt };
+      if (!g) { CUR.el.hidden = true; CUR.info.hidden = true; return; }
+      curRender(false);
+    } catch (e) { /* Die Ebene ist eine Zugabe, das Bild darf nie daran scheitern */ }
+  }
+
   function plant(P0) {
     const CORE = P0.CORE;
     let frozen = false;
@@ -185,12 +286,14 @@
     function draw(ctx, w, h, t, view, sc) {
       const r = view.res, pal = sc.pal, R0 = sc.rect, gap = 8;
       if (!r || !r.ok) { sc.gfx.text(ctx, (r && r.why) || '', R0.x + 8, R0.y + 20, { size: 13, color: pal.fg, max: R0.w - 16 }); return; }
-      const chipsH = R0.h >= 300 ? 30 : 0, hintH = R0.h >= 260 ? 18 : 0, bodyH = R0.h - chipsH - hintH - 2 * gap;
+      const chipsH = R0.h >= 300 ? (R0.w < 480 ? 58 : 30) : 0, hintH = R0.h >= 260 && R0.w >= 480 ? 18 : 0, bodyH = R0.h - chipsH - hintH - 2 * gap;
       const wide = R0.w >= 640;
       const sR = wide ? { x: R0.x, y: R0.y, w: Math.round(R0.w * 0.6) - gap / 2, h: bodyH } : { x: R0.x, y: R0.y, w: R0.w, h: Math.round(bodyH * 0.55) };
       const pR = wide ? { x: R0.x + sR.w + gap, y: R0.y, w: R0.w - sR.w - gap, h: bodyH } : { x: R0.x, y: R0.y + sR.h + gap, w: R0.w, h: bodyH - sR.h - gap };
       const wf = waveform(r, view.ctl, { n: sc.quality === 'niedrig' ? 160 : 360 });
+      if (sc.D && sc.D.scopeGeom && !sc.ghost) sc.D.scopeGeom(true);
       if (wf) sc.view('scope', sR, wf, {});
+      if (wf) curFrame(sc, r, { engF, fmt });
       const ph = phasors(r, view.ctl);
       if (ph.ok) {
         const arc = r.two && Math.abs(r.dphi) > 1e-9 ? { a: 'U_2', b: 'U_1', label: 'φ = ' + fmt(r.dphi, 1) + '°' } : null;
@@ -202,11 +305,12 @@
         sc.gfx.text(ctx, ph.why || '', pR.x + 10, pR.y + 24, { size: 12, color: pal.mute, max: pR.w - 20 });
       }
       let y = R0.y + bodyH + gap;
-      if (hintH) { sc.gfx.text(ctx, CORE.TEXTS.effHinweis, R0.x + 2, y + 12, { size: 11, color: pal.mute, max: R0.w - 4 }); y += hintH; }
+      const narrow = R0.w < 480;
+      if (hintH) { sc.gfx.text(ctx, narrow ? 'Effektivwert: gleiche Wärme wie Gleichspannung gleicher Höhe.' : CORE.TEXTS.effHinweis, R0.x + 2, y + 12, { size: 11, color: pal.mute, max: R0.w - 4 }); y += hintH; }
       if (chipsH) {
-        const items = [['U', val(r.v.rms, 'V')], ['U_ss', val(r.v.pp, 'V')], ['Gleichrichtwert', val(r.v.rect, 'V')], ['T', engF(r.T, 's')], ['Δt', engF(Math.abs(r.dtSigned) / 1000, 's')]];
-        const cw = (R0.w - gap * (items.length - 1)) / items.length;
-        items.forEach((it, k) => sc.gfx.chip(ctx, it[0], it[1], R0.x + k * (cw + gap), y, cw, chipsH - 2, pal, { size: 12 }));
+        const items = narrow ? [['U', val(r.v.rms, 'V')], ['U_ss', val(r.v.pp, 'V')], ['T', engF(r.T, 's')], ['Δt', engF(Math.abs(r.dtSigned) / 1000, 's')]] : [['U', val(r.v.rms, 'V')], ['U_ss', val(r.v.pp, 'V')], ['Gleichrichtwert', val(r.v.rect, 'V')], ['T', engF(r.T, 's')], ['Δt', engF(Math.abs(r.dtSigned) / 1000, 's')]];
+        const cols = narrow ? 2 : items.length, cw = (R0.w - gap * (cols - 1)) / cols, rowH = narrow ? 28 : chipsH;   /* B-wsl-01: am Handy zwei mal zwei, damit kein Wert abgeschnitten wird */
+        items.forEach((it, k) => sc.gfx.chip(ctx, it[0], it[1], R0.x + (k % cols) * (cw + gap), y + Math.floor(k / cols) * rowH, cw, rowH - 2, pal, { size: 12 }));
       }
     }
     return {

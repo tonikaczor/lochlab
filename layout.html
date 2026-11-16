@@ -23,7 +23,7 @@ header{--panel:#1b1f24;--panel2:#2c343e;--fg:#e8ecf0;--mute:#8d99a6;--line:#3842
 header .title{flex:1;min-width:0;padding:0 8px;font-weight:700;font-size:16px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 header .title small{display:block;font-weight:500;color:#c3ceda;font-size:12.5px}
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
-.ib{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none}
+.ib{width:44px;min-width:44px;height:44px;border-radius:10px;display:grid;place-items:center;flex:none}
 .ib:active,.tb:active,.chip:active{background:var(--panel2)}
 .ib[disabled]{opacity:.3}
 .ib.txt{width:auto;padding:0 10px;font-size:13px;color:var(--accent);font-weight:600}
@@ -35,12 +35,12 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 main{position:relative;flex:1;min-height:0;min-width:0}
 #side{display:none;width:184px;flex:none;background:var(--panel);border-left:1px solid var(--line);padding:14px 12px;overflow-y:auto}
 #side.on{display:block}
-@media(max-width:600px){header{gap:0;padding-left:2px;padding-right:2px}#logo{display:none!important}header .title{display:none}header .ib{width:38px}header .ib.txt{padding:0 6px}header .simsw{margin:0 2px;flex:none}}
+@media(max-width:600px){header{gap:0;padding-left:2px;padding-right:2px}#logo{display:none!important}header .title{display:none}header .ib{width:44px}header .ib.txt{padding:0 6px}header .simsw{margin:0 2px;flex:none}}
 
 #parts{display:none;width:190px;flex:none;background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:4px 6px 12px;scrollbar-width:thin}
 @media(min-width:640px){#parts{display:block}}
 #parts .pcat{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600;padding:12px 8px 4px}
-#parts .pit{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px 9px;border-radius:9px;font-size:14px;line-height:1.2}
+#parts .pit{display:flex;align-items:center;gap:8px;width:100%;text-align:left;padding:6px 9px;min-height:40px;border-radius:9px;font-size:14px;line-height:1.2}
 #parts .pit:hover{background:var(--panel2)}#parts .pit.on{background:var(--accent-bg,#1a6fd4);color:#fff}
 .psearch{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:6px;background:var(--panel);padding:6px 4px 4px;margin:0 -2px}.psearch input{flex:1;min-width:0;padding:6px 9px;font-size:14px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}#parts [hidden]{display:none!important}.pnone{padding:10px 8px;font-size:13px;color:var(--mute)}
 #parts .pit img.th{width:26px;height:26px;border-radius:6px;object-fit:cover;flex:none}
@@ -56,7 +56,7 @@ main{position:relative;flex:1;min-height:0;min-width:0}
 .sbtn.danger{color:var(--danger)}
 .swg{display:flex;flex-wrap:wrap;gap:8px}
 canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
-#readout{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:99px;font-size:12px;pointer-events:none;font-variant-numeric:tabular-nums}
+#readout{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.55);padding:3px 9px;border-radius:99px;font-size:14px;pointer-events:none;font-variant-numeric:tabular-nums}
 #ctx{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:6px 8px;background:var(--panel);border-top:1px solid var(--line);min-height:50px;scrollbar-width:none}
 #ctx::-webkit-scrollbar{display:none}
 @media (hover:hover) and (pointer:fine){
@@ -65,7 +65,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displa
   #ctx::-webkit-scrollbar-thumb{background:var(--mute);border-radius:4px}
   #ctx::-webkit-scrollbar-track{background:transparent}
 }
-#ctx .hint{color:var(--mute);font-size:13px;padding:0 4px;white-space:nowrap}
+#ctx .hint{color:var(--mute);font-size:14px;padding:0 4px;white-space:nowrap}
 .chip{flex:none;height:38px;padding:0 13px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .chip.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .chip.danger{color:var(--danger)}
@@ -78,8 +78,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displa
 .step{display:inline-flex;align-items:center;flex:none;background:var(--panel2);border:1px solid var(--line);border-radius:19px;height:38px}
 .step button{width:38px;height:36px;font-size:20px}
 .step span{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
-nav{display:flex;background:var(--panel);border-top:1px solid var(--line);padding:2px 4px calc(2px + env(safe-area-inset-bottom));justify-content:space-around}
-.tb{flex:1;max-width:96px;display:flex;flex-direction:column;align-items:center;gap:1px;padding:5px 0 3px;border-radius:10px;font-size:10.5px;color:var(--mute)}
+nav{display:flex;background:var(--panel);border-top:1px solid var(--line);padding:2px 4px calc(2px + env(safe-area-inset-bottom));justify-content:space-around;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}
+.tb{flex:1 0 auto;min-width:64px;min-height:48px;max-width:110px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 4px 3px;border-radius:10px;font-size:14px;line-height:1.1;color:var(--mute)}
 .tb.on{color:var(--accent)}
 .tb.on svg{stroke-width:2.3}
 .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:flex;align-items:flex-end;justify-content:center}
@@ -102,7 +102,7 @@ input,select{width:100%;font:inherit;font-size:16px;color:var(--fg);background:v
 table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line)}
 th{color:var(--mute);font-weight:500;font-size:12px}
-#toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;padding:9px 16px;border-radius:99px;z-index:60;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000c;color:#fff;padding:9px 16px;border-radius:99px;z-index:60;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
 .help p{margin:.4em 0}
 .help b{color:var(--accent)}
@@ -124,8 +124,14 @@ th{color:var(--mute);font-weight:500;font-size:12px}
 .hint3{margin-top:12px;font-size:12px;line-height:1.4;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .hint3 b{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
 .pre{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 12px}.pre button{padding:5px 11px;border-radius:14px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
+@media(max-width:700px){html.lr-on #bView,html.lr-on #bTheme,html.lr-on #bFit{display:none}}
+.backdrop .sh{font-size:13px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:14px 4px 4px;font-weight:600}
+#leer{position:absolute;z-index:4;left:50%;top:14px;transform:translateX(-50%);width:min(420px,calc(100% - 24px));padding:10px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.3);font-size:14px;line-height:1.4;pointer-events:none}
+#leer[hidden]{display:none}#leer b{display:block;margin-bottom:2px}#leer span{color:var(--mute)}#leer .lb{display:flex;gap:8px;margin-top:8px;pointer-events:auto}
+#leer button{min-height:44px;padding:0 14px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font:600 14px system-ui;color:var(--fg)}#leer .pri{background:var(--accent);border-color:var(--accent);color:#fff}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -562,7 +568,16 @@ function restore(i){
 }
 function afterChange(){
   clearTimeout(saveT);saveT=setTimeout(save,350);
-  renderCtx();updateHeader();invalidate();
+  renderCtx();updateHeader();invalidate();updLeer();
+}
+/* A-layout-05: leere Platine zeigt den nächsten Schritt */
+function updLeer(){
+  const st=document.getElementById('stage');if(!st||!doc)return;let el=document.getElementById('leer');
+  const leer=!(doc.items||[]).length&&!doc.task;
+  if(!leer){if(el)el.hidden=true;return;}
+  if(!el){el=document.createElement('div');el.id='leer';el.innerHTML='<b>Die Platine ist leer.</b><span>Wähle links ein Bauteil und tippe aufs Raster, oder starte mit einer Aufgabe.</span><div class="lb"><button class="pri" id="leerT">Aufgabe starten</button><button id="leerB">Beispiel laden</button></div>';st.appendChild(el);
+    el.querySelector('#leerT').onclick=()=>menuAct('tasks');el.querySelector('#leerB').onclick=()=>menuAct('ex');}
+  el.hidden=false;
 }
 function save(){
   doc.updated=Date.now();
@@ -639,10 +654,19 @@ function resize(){
   dpr=nd;cv.width=w;cv.height=h;invalidate();
   try{render();dirty=false;}catch(e){}
 }
-function fit(){
+function fit(whole){
   const r=cv.getBoundingClientRect();if(!r.width||!doc)return;
   const s=Math.min(r.width/(doc.cols-1+MARGIN*2),r.height/(doc.rows-1+MARGIN*2));
-  view.s=clamp(s,6,120);view.ox=(r.width-(doc.cols-1)*view.s)/2;view.oy=(r.height-(doc.rows-1)*view.s)/2;invalidate();
+  view.s=clamp(s,6,120);view.ox=(r.width-(doc.cols-1)*view.s)/2;view.oy=(r.height-(doc.rows-1)*view.s)/2;
+  /* A-layout-02: Am Handy wäre die ganze Platine nur ~6 px je Raster. Anfangsansicht: mindestens 15 px, auf die Bauteile (sonst die linke obere Ecke) gerichtet. "Einpassen" (whole===true) zeigt weiter alles. */
+  if(whole!==true&&r.width<700&&view.s<15){
+    const m=15,pts=(doc.items||[]).filter(i=>typeof i.x==='number'&&typeof i.y==='number');let cx,cy;
+    if(pts.length){const xs=pts.map(i=>i.x),ys=pts.map(i=>i.y);cx=(Math.min(...xs)+Math.max(...xs))/2;cy=(Math.min(...ys)+Math.max(...ys))/2;}
+    else{cx=r.width/m/2-MARGIN;cy=r.height/m/2-MARGIN;}
+    view.s=m;view.ox=r.width/2-cx*m;view.oy=r.height/2-cy*m;
+    const lo=(len,n)=>Math.min(m*MARGIN,len-(n-1)*m-m*MARGIN);view.ox=clamp(view.ox,Math.min(lo(r.width,doc.cols),m*MARGIN),m*MARGIN);view.oy=clamp(view.oy,Math.min(lo(r.height,doc.rows),m*MARGIN),m*MARGIN);
+  }
+  invalidate();
 }
 new ResizeObserver(()=>{const first=!cv.width;resize();if(first)fit();}).observe(cv);
 
@@ -1562,7 +1586,7 @@ function updateHeader(){
   $('#bUndo').disabled=hi<=0;$('#bRedo').disabled=hi>=hist.length-1;
   $('#bView').textContent=MODES.find(m=>m[0]===mode)[1];
 }
-$('#bUndo').onclick=undo;$('#bRedo').onclick=redo;$('#bFit').onclick=fit;
+$('#bUndo').onclick=undo;$('#bRedo').onclick=redo;$('#bFit').onclick=()=>{fit(true);};
 $('#bEx').onclick=()=>menuAct('ex');$('#bOpen').onclick=()=>menuAct('open');$('#bShare').onclick=()=>menuAct('share');$('#bPrint').onclick=()=>menuAct('print');
 $('#bView').onclick=()=>{mode=MODES[(MODES.findIndex(m=>m[0]===mode)+1)%3][0];sel=null;msel.clear();updateHeader();renderCtx();invalidate();toast(mode==='bottom'?'Lötseite (gespiegelt)':mode==='top'?'Bestückungsseite':'Beide Seiten');};
 $('#title').onclick=renameDoc;
@@ -1651,7 +1675,16 @@ function openMenu(){
       ['keys','Tastenkürzel','Alle Tasten, zum Beispiel R für Widerstand (Taste ? drücken)'],
       ['help','Hilfe','Bedienung & Installation'],
     ];
-    b.innerHTML=rows.map(r=>`<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`).join('');
+    rows.unshift(['hview','Ansicht wechseln','Beide Seiten, Bestückung oder Lötseite'],['hfit','Einpassen','Platine ins Bild holen'],['htheme','Design wechseln','Hell oder dunkel']);
+    /* A-layout-04: Gruppen mit Überschrift */
+    const GR=[['Projekt',['new','open','rename','user','board','addboard','import','json','share']],['Ansicht',['hview','hfit','htheme','png','gif']],
+      ['Prüfen und Ausgeben',['check','solder','bom','exp','print','erg']],['Lernen und Üben',['tasks','ex','kamp','abz','trainer','loet','oszi','ton','neu']],
+      ['Werkzeuge',['calc','schalt']],['Einstellungen',['speak','voice','feel','fun','predict']],['Hilfe',['keys','help','start']]];
+    const byK={};rows.forEach(r=>{byK[r[0]]=r;});const used=new Set();
+    const rowH=r=>`<button class="row" data-m="${r[0]}"><div class="grow"><b>${r[1]}</b><small>${esc(r[2])}</small></div></button>`;
+    let html='';GR.forEach(g=>{const rs=g[1].filter(k=>byK[k]).map(k=>{used.add(k);return rowH(byK[k]);});if(rs.length)html+=`<div class="sh">${g[0]}</div>`+rs.join('');});
+    const rest=rows.filter(r=>!used.has(r[0]));if(rest.length)html+='<div class="sh">Weiteres</div>'+rest.map(rowH).join('');
+    b.innerHTML=html;
     b.addEventListener('click',e=>{const r=e.target.closest('.row');if(!r)return;close();menuAct(r.dataset.m);});
   });
 }
@@ -1691,6 +1724,9 @@ async function loadShared(){
   d.id=uid();d.name=(d.name||'Projekt')+' (geteilt)';load(d);toast('Geteiltes Projekt geladen');return true;
 }
 function menuAct(m){
+  if(m==='hview'){$('#bView').click();return;}
+  if(m==='hfit'){$('#bFit').click();return;}
+  if(m==='htheme'){$('#bTheme').click();return;}
   if(m==='ex'){openExamples();return;}
   if(m==='tasks'||m==='check'||m==='solder'){if(window.LochTasks)LochTasks.menu(m);return;}
   if(m==='keys'){if(window.LochKeys)LochKeys.help();return;}
@@ -2213,6 +2249,8 @@ window.LochVerbund = (function () {
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'layout.html': { name: 'LochLab', flaeche: 'Platine', leiste: false } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

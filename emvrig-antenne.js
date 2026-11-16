@@ -79,7 +79,7 @@
     }
 
     const TOPY = { v: 90 };   // Oberkante des Bildinhalts (nach dem Kopf; 10 ohne Kopf)
-    function layoutA(w, h) { return K.split(w, h, TOPY.v, { a: 'scene', b: 'spec', c: 'fac', left: 0.52, rightTop: 0.55, stack: [0.38, 0.32] }); }
+    function layoutA(w, h) { return K.split(w, h, TOPY.v, { a: 'scene', b: 'spec', c: 'fac', left: 0.52, rightTop: 0.55, stack: [0.38, 0.32], compact: [0.34, 0.32] }); }
     function sceneGeom(r, ctl) {
       const ix = r.x + 10, iy = r.y + 26, iw = r.w - 20, ih = r.h - 26 - 24;
       const g = { ix, iy, iw, ih };
@@ -95,7 +95,7 @@
       return g;
     }
     function areasA(w, h, ctl) {
-      const L = layoutA(w, h); if (!L || !K.big(L.scene, 220, 150)) return [];
+      const L = layoutA(w, h); if (!L || !K.big(L.scene, 220, 122)) return [];
       const g = sceneGeom(L.scene, ctl);
       return [{ key: 'ferrit', kind: 'select', to: K.optNext(controls.find(c => c.key === 'ferrit'), ctl.ferrit), x: g.ferr.x - 4, y: g.ferr.y - 6, w: g.ferr.w + 24, h: g.ferr.h + 12 },
         { key: 'kabel', kind: 'select', to: K.optNext(controls.find(c => c.key === 'kabel'), ctl.kabel), x: g.cab.x + 40, y: g.cab.y, w: Math.max(10, g.cab.w - 40), h: g.cab.h }];
@@ -162,7 +162,7 @@
       function sceneDraw(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view, fs = sc.fs;
         K.plate(ctx, r.x, r.y, r.w, r.h, pal, 'Gerät, Kabel und Strahlung (Skizze, Wellenringe sind Symbolik)', { size: fs });
-        if (!K.big(r, 220, 150)) return;
+        if (!K.big(r, 220, 122)) return;
         const g = sceneGeom(r, ctl), ph = view.phase, crit = res.crit;
         const lam = res.lam, over = res.margin < 0, col = over ? pal.rot : pal.gruen, alpha = ringAlpha(res.margin), sp = ringSpacing(lam);
         // Wellenringe (hoechstens 8, Abstand ~ lambda logarithmisch, Helligkeit ~ Pegel zur Grenzlinie; Linienart: rot durchgezogen, gruen gestrichelt)
@@ -227,7 +227,7 @@
 
       function specDraw(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view;
-        if (!K.big(r, 200, 120)) return;
+        if (!K.big(r, 200, 104)) return;
         if (sc.D && sc.D.spectrumBars) {
           const anim = sc.tw.dspec || (sc.tw.dspec = sc.D.spectrumState());
           let ok = false; try { ok = !!sc.D.spectrumBars(ctx, r, spectrumOf(res, ctl), { t: sc.t, anim, marker: res.crit.f, quality: sc.quality, reduced: sc.reduced, theme: sc.theme }); } catch (e) { ok = false; }
@@ -245,7 +245,7 @@
       let cvRes = null, cvList = null;
       function facDraw(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view;
-        if (!K.big(r, 200, 120)) return;
+        if (!K.big(r, 200, 104)) return;
         if (cvRes !== res) { cvRes = res; cvList = curves(res, ctl); }
         if (sc.D && sc.D.curveChart) {
           const c1 = cvList[0]; let ok = false;

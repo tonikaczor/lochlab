@@ -89,10 +89,10 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 /* ===== Lager-Lab ===== */
 #mid[data-tab=kz] #pgKz,#mid[data-tab=dis] #pgDis,#mid[data-tab=best] #pgBest,#mid[data-tab=abc] #pgAbc,#mid[data-tab=org] #pgOrg,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=help] #pgHelp{display:flex}
 .inst{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}
-.inst svg{display:block;width:100%;height:auto}
+.inst svg{display:block;width:100%;max-width:480px;margin:0 auto;height:auto}
 .inst svg text{font-family:system-ui,sans-serif;-webkit-user-select:none;user-select:none}
 .g-ax{stroke:var(--mute);stroke-width:1}.g-grid{stroke:var(--line);stroke-width:.6}
-.g-lab{fill:var(--fg);font-size:11px}.g-lab.m{fill:var(--mute)}
+.g-lab{fill:var(--fg);font-size:12.5px}.g-lab.m{fill:var(--mute)}
 .g-saw{fill:none;stroke:var(--accent);stroke-width:2.4;stroke-linejoin:round}
 .g-meld{stroke:var(--hi);stroke-width:1.6;stroke-dasharray:6 4}.g-sich{stroke:var(--danger);stroke-width:1.6;stroke-dasharray:6 4}.g-max{stroke:var(--ok);stroke-width:1.4;stroke-dasharray:2 4}
 .g-lead{fill:var(--hi);opacity:.16}
@@ -138,8 +138,16 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .hl .eq{font:600 13.5px ui-monospace,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:4px 8px;display:block;margin:6px 0;white-space:normal}
 .hl table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0}.hl td,.hl th{padding:6px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:top}.hl th{color:var(--mute);font-size:12px}
 .pc{color:var(--ok)}.pc.m{color:var(--danger)}
+/* Audit K1: Schrift mindestens 14 px, Tippziele mindestens 44 px */
+.stats .bx,.fbar .lbl,.row small,.grow small{font-size:14px}
+.chip.s{height:44px;font-size:14px}
+.seg button{height:44px}
+.sch tr.hd td{font-size:14px}
+.opts button{min-height:46px}
+.gl{font-size:14px}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body class="gs">
 <!--GATE-->
@@ -181,6 +189,8 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'laglab.html': { buehne: { dis: '#disCard', best: '#bestCard' }, gruppen: [{ name: 'Disposition', teile: ['dis', 'best'] }], teil: { dis: 'Bestandsverlauf', best: 'Bestellmenge' }, saetze: { 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

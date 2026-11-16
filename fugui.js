@@ -47,7 +47,7 @@
     kl: Object.assign({ b: '25', l: '12,5', F: '1200', tauB: '15', S: '3' }, lsGet('kl', {})),
     sr: Object.assign({ M: 'M10', c: '8.8', Mset: '', mat: 'stahl' }, lsGet('sr', {})),
     wn: Object.assign({ view: 'pass', d: '30', l: '45', M: '100', U: '0,04', play: '0,04', mat: 'stahl' }, lsGet('wn', {})),
-    task: null, tq: null, tAns: {}, tRes: null,
+    task: null, tq: null, tAns: {}, tRes: null, tTry: 0, tFb: null,
     tr: { q: null, ans: {}, res: null, level: 0 },
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {}))
   };
@@ -270,35 +270,40 @@
     const dn = r && (r.ok || pre === 'rt'), as = q.ask; let h = '';
     if (q.viz) h += inst(viz(q.viz));
     if (as.type === 'choice') h += `<div class="opts">${as.choices.map((c, i) => `<button data-tc="${i}" ${dn ? 'disabled' : ''} class="${r && i === as.correct && dn ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    else if (as.type === 'num') h += `<label class="f"><span>${esc(as.label)}${as.unit ? ' (' + esc(as.unit) + ')' : ''}</span><div class="qin"><input id="fug-ans-${pre}" data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${dn ? 'disabled' : ''}><span class="u">${esc(as.unit)}</span></div></label>`;
+    else if (as.type === 'num') h += `<label class="f"><span>${esc(as.label)}${as.unit ? ' (' + esc(as.unit) + ')' : ''}</span><div class="qin"><input id="fug-ans-${pre}" data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${dn ? 'disabled' : ''}><span class="u">${esc(as.unit)}</span></div></label>${numHint(q)}`;
     else if (as.type === 'order') { const o = a.o || []; h += `<p class="hint2" style="margin:4px 0">Tippe die Einträge in der richtigen Reihenfolge an. Nochmal tippen nimmt einen Eintrag zurück.</p><div class="opts">${as.items.map((t, i) => { const k = o.indexOf(i); return `<button data-to="${i}" ${dn ? 'disabled' : ''} class="${k >= 0 ? 'on' : ''}"><span class="no">${k >= 0 ? k + 1 : '·'}</span> ${esc(t)}</button>`; }).join('')}</div><div class="btns"><button class="btn" data-oc="1" ${dn ? 'disabled' : ''}>↺ Reihenfolge zurücksetzen</button></div>`; }
     else if (as.type === 'match') { const m = a.m || []; h += `<div class="mrows">${as.rows.map((t, i) => `<label class="mrow"><span>${esc(t)}</span><select data-mr="${i}" ${dn ? 'disabled' : ''}><option value="">– wählen –</option>${as.options.map((op, j) => `<option value="${j}"${m[i] === j ? ' selected' : ''}>${esc(op)}</option>`).join('')}</select></label>`).join('')}</div>`; }
     return h;
   }
   function evalQ(q, a) { const e = D.evaluate(q, a); if (e.err) { toast(e.err); return null; } return e; }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(D.solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung (Rahmen 4.5): erster Fehlversuch = Tipp und zweiter Versuch, zweiter = Lösung mit Rechenweg, richtig = grün */
+  const fbOk = (q, r, fid) => `<div class="lr-fb ok" id="${fid}" tabindex="-1"><p><strong>Richtig.</strong> ${esc(r.given)}</p><p><b>Lösungsweg:</b> ${esc(q.expl)}</p></div>`;
+  const fbLoes = (q, r, showExpl, fid) => `<div class="lr-fb loes" id="${fid}" tabindex="-1"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p>` + (showExpl ? `<p><b>Lösung:</b> ${esc(D.solText(q))}</p><p><b>Lösungsweg:</b> ${esc(q.expl)}</p>` : '<p>Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Versuche es noch einmal.</p>') + '</div>';
+  const fbTipp = (q, given, ex, fid) => `<div class="lr-fb tipp" id="${fid}" tabindex="-1"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(given)}“ stimmt nicht. ${ex ? 'Im Prüfmodus kostet ein Tipp 25 % je Stufe. Tippe auf „Tipp“, wenn du ihn willst. Du hast einen zweiten Versuch.' : 'Tipp: ' + esc(q.tips[0]) + ' Du hast einen zweiten Versuch.'}</p></div>`;
+  const numHint = q => q.ask.type === 'num' ? `<p class="lr-hinweis">Zahl${q.ask.unit ? ' in ' + esc(q.ask.unit) : ''}.${q.tol > 0.011 ? ' Erlaubte Abweichung: ±' + esc(f(q.tol, 2)) + (q.ask.unit ? ' ' + esc(q.ask.unit) : '') + ' (wegen Rundung).' : ''}</p>` : '';
+  const showFb = el => { const e = $(el); if (e && window.LabRahmen) LabRahmen.zeig(e); };
 
   function renderTasks(top) {
     const Vw = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || (S.tAns[t.id] = {});
-      h += `<div class="card pl" id="taskCard" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qText(q.text)}${qBody(q, a, r, 'tk')}`;
+      h += `<div class="card pl" id="taskCard" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qText(q.text)}${qBody(q, a, r, 'tk')}${r ? (r.ok ? fbOk(q, r, 'fb-task') : fbLoes(q, r, !exam(), 'fb-task')) : (S.tFb && S.tFb.id === t.id ? fbTipp(q, S.tFb.given, exam(), 'fb-task') : '')}`;
       h += `<div class="btns"><button class="btn pri" id="fug-task-check" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" id="fug-task-hint" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r && r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    Vw.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    Vw.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; if (S.fbShow) { S.fbShow = false; showFb('#fb-task'); }
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies die Hinweise und versuche es noch einmal.'); }
-    renderTasks(false);
+    if (!e.ok && !S.tTry) { S.tTry = 1; S.tFb = { id: t.id, given: e.given }; S.tRes = null; sad(); S.fbShow = true; renderTasks(false); return; }
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, detail: e.detail, pct }; S.tTry = 0; S.tFb = null;
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); }
+    S.fbShow = true; renderTasks(false);
   }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
@@ -312,7 +317,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tTry = 0; S.tFb = null;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -330,15 +335,15 @@
   });
 
   /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.tries = 0; T.fb = null; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
       <div class="fbar">${lbl('STUFE')}<div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
-      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div>${qText(q.text)}${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" id="fug-rt-check" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div>${qText(q.text)}${qBody(q, T.ans, T.res, 'rt')}${T.res ? (T.res.ok ? fbOk(q, T.res, 'fb-rt') : fbLoes(q, T.res, true, 'fb-rt')) : (T.fb ? fbTipp(q, T.fb.given, false, 'fb-rt') : '')}
+      <div class="btns"><button class="btn pri" id="fug-rt-check" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div></div>`;
+    if (S.fbShowT) { S.fbShowT = false; showFb('#fb-rt'); }
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -354,8 +359,9 @@
   });
   function trainerCheck() {
     const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
-    lsSet('rt', S.rt); renderTrainer(); updatePal();
+    if (!e.ok && !T.tries) { T.tries = 1; T.fb = { given: e.given }; sad(); S.fbShowT = true; renderTrainer(); return; }
+    T.res = { ok: e.ok, given: e.given }; T.fb = null; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    lsSet('rt', S.rt); S.fbShowT = true; renderTrainer(); updatePal();
   }
 
   /* ============================================================ Beispiele */
@@ -398,7 +404,7 @@
         tb(['Anzugsmoment (Nm)', '8.8', '10.9', '12.9'], C.TORQ_ORDER.map(k => [k, f(C.TORQ[k]['8.8'], 1), f(C.TORQ[k]['10.9'], 1), f(C.TORQ[k]['12.9'], 1)])) +
         `<p>Einschraubtiefe: Stahl 1,0 · d, Gusseisen 1,25 · d, Aluminium 2,0 · d. Montage: reinigen, ansetzen, kreuzweise in Stufen anziehen, Moment kontrollieren, sichern.</p>`) +
       sec('wn', 'Welle-Nabe', tb(['Welle d über … bis', 'b × h', 't1', 't2'], C.KEYS.map(k => [k.lo + ' bis ' + k.hi + ' mm', k.b + ' × ' + k.h, f(k.t1, 1), f(k.t2, 1)])) + `<span class="eq">l_tr = l − b (Form A) · p = 2 · M / (d · (h − t1) · l_tr)</span><span class="eq">Pressverband: ΔT = (U + Spiel) / (α · d), α Stahl 12 · 10⁻⁶ pro K</span>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte. Im Zweifel gilt dein Tabellenbuch.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

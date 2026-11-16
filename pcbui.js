@@ -691,7 +691,7 @@
     try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {}
     if (root.Badges) try { root.Badges.result(id, pct); } catch (e) {}
   }
-  let taskRes = null;
+  let taskRes = null; const taskTry = {};
   const curTask = () => { const a = TK(); return a && S.task ? a.find(t => t.id === S.task.id) || null : null; };
   /* Quizfragen der Reiter Fehlerbild und ESD (fq1 … fq10, eq1 … eq12): eigener Stand lm4.pcbquiz (pcbfehler.js, pcbesd.js). Sie stehen im Reiter Aufgaben
      als eigene Gruppen mit eigenem Zähler; der Zähler am Reiter zählt nur die Aufgaben (wie die Startseite, aufgaben.js). */
@@ -740,9 +740,11 @@
     S.readonly = false; refreshView('mode');
     lines = Array.isArray(lines) ? lines : [];
     const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    taskTry[t.id] = pct === 100 ? 0 : (taskTry[t.id] || 0) + 1;
+    taskRes = { id: t.id, lines, pct, tries: pct === 100 ? 0 : taskTry[t.id] }; markDone(t.id, pct); updateTaskBadge();
     if (pct === 100) fx('pass');
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
+    const fbEl = $('#taskView .lr-fb'); if (fbEl && root.LabRahmen) root.LabRahmen.zeig(fbEl);
     toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
   }
   function hintTask() {
@@ -765,6 +767,13 @@
         <p style="margin:8px 0">${esc(t.text)}</p><div id="pcbAnsHost"></div>
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="prog">Zur Platine</button><button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
+      /* Rückmeldung nach dem Prüfen (Vorgabe 4.5): richtig, erster Fehlversuch mit Tipp, zweiter mit Lösung */
+      if (r) {
+        const bad = r.lines.filter(l => !l.ok);
+        if (r.pct === 100) h += '<div class="lr-fb ok" role="status"><p><strong>Richtig.</strong> Alle Prüfpunkte sind erfüllt.</p></div>';
+        else if (r.tries < 2) h += `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht ganz.</strong> Tipp: ${esc(bad[0] ? bad[0].text : 'Lies die Aufgabe noch einmal.')} Du hast einen zweiten Versuch.</p></div>`;
+        else h += `<div class="lr-fb loes" role="status"><p><strong>Lösung.</strong> ${bad.map(l => esc(l.text) + (l.why ? ' ' + esc(l.why) : '')).join(' ')}</p><p>Mit „💡 Tipp“ kannst Du die Musterlösung öffnen.</p></div>`;
+      }
       if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
       h += '</div>';
     }
@@ -800,7 +809,7 @@
     const H = rows.reduce((s, r) => s + r[1], 0) + 4; let y = 2, s = `<svg class="tm" viewBox="0 0 ${w} ${H}" width="${w}" role="img" aria-label="Lagenaufbau im Querschnitt">`;
     /* Hellmodus: auf hellen Schichtfarben (Kupfer, Prepreg) dunkle Schrift, damit der Kontrast reicht. Dunkel bleibt wie bisher (weiß). */
     const hell = isLight(), lum = c => { const v = [1, 3, 5].map(i => { const x = parseInt(c.slice(i, i + 2), 16) / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); }); return 0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]; };
-    rows.forEach(r => { const ink = r[3] || (hell && lum(r[2]) > 0.18 ? '#14181c' : '#fff'); s += `<rect x="2" y="${y}" width="${w - 4}" height="${r[1]}" fill="${r[2]}"/><text x="10" y="${y + r[1] / 2 + 4}" fill="${ink}" font-size="11" font-family="system-ui">${r[0]}</text>`; y += r[1]; });
+    rows.forEach(r => { const ink = r[3] || (hell && lum(r[2]) > 0.18 ? '#14181c' : '#fff'); s += `<rect x="2" y="${y}" width="${w - 4}" height="${r[1]}" fill="${r[2]}"/><text x="10" y="${y + r[1] / 2 + 4}" fill="${ink}" font-size="13" font-family="system-ui">${r[0]}</text>`; y += r[1]; });
     return s + '</svg>';
   }
   const isLight = () => { try { const t = document.documentElement.getAttribute('data-theme'); return t === 'light' || (t !== 'dark' && root.matchMedia && root.matchMedia('(prefers-color-scheme: light)').matches); } catch (e) { return false; } };
@@ -811,11 +820,11 @@
     const cu = '#c8873a', fr = '#3d7a4c', mk = '#1f8a3f', pp = '#7c8f5a';
     V.innerHTML = `<p class="big">Lernen und Hilfe</p><p class="hint2" style="margin:0 0 12px">Kurz erklärt, was du für Entwurf, Fertigung und Bestückung von Leiterplatten brauchst. Zum Ausprobieren gibt es Knöpfe, die ein passendes Beispiel laden.</p>
     <details open><summary>1 · Aufbau einer Leiterplatte</summary><div class="hb2"><p>Eine Leiterplatte besteht aus einem <b>Basismaterial</b> (meist FR-4: Glasfasergewebe mit Epoxidharz) und <b>Kupferschichten</b>. Aus dem Kupfer entstehen durch Ätzen die Leiterbahnen und Pads.</p>
-      ${stackSvg([['Lötstopplack (grün)', 10, mk], ['Kupfer oben (Leiterbahnen, Pads)', 12, cu], ['Basismaterial FR-4 (etwa 1,5 mm)', 46, fr], ['Kupfer unten', 12, cu], ['Lötstopplack', 10, mk]], 330)}
+      ${stackSvg([['Lötstopplack (grün)', 18, mk], ['Kupfer oben (Leiterbahnen, Pads)', 18, cu], ['Basismaterial FR-4 (etwa 1,5 mm)', 46, fr], ['Kupfer unten', 18, cu], ['Lötstopplack', 18, mk]], 330)}
       <p>Das Kupfer wird in <b>Unzen (oz)</b> angegeben: 1 oz bedeutet 35 µm Schichtdicke. Der <b>Lötstopplack</b> schützt das Kupfer und verhindert, dass Lot zwischen eng liegende Bahnen läuft; nur die Pads bleiben offen. Der <b>Bestückungsdruck</b> (Silk) beschriftet Bauteile. Die <b>Oberfläche</b> der Pads (zum Beispiel HASL oder ENIG) hält sie lötbar. Typische Gesamtdicke: 1,6 mm.</p>
       <div class="tryit">${ex('led|555|blinker|ui-led', 'Einfache Platine ansehen')}</div></div></details>
     <details><summary>2 · Lagen und Vias</summary><div class="hb2"><p><b>Einseitig:</b> Leiterbahnen nur unten, Bauteile oben als THT. <b>Zweilagig:</b> Bahnen oben und unten, verbunden durch <b>Vias</b> (durchkontaktierte Löcher). <b>Vier- und sechslagig:</b> zusätzliche Innenlagen, meist als Flächen für Masse (GND) und Versorgung (VCC).</p>
-      ${stackSvg([['Signal (F.Cu)', 12, cu], ['Prepreg', 16, pp], ['GND-Fläche (In1)', 12, cu], ['Kern', 28, fr], ['VCC-Fläche (In2)', 12, cu], ['Prepreg', 16, pp], ['Signal (B.Cu)', 12, cu]], 330)}
+      ${stackSvg([['Signal (F.Cu)', 18, cu], ['Prepreg', 16, pp], ['GND-Fläche (In1)', 18, cu], ['Kern', 28, fr], ['VCC-Fläche (In2)', 18, cu], ['Prepreg', 16, pp], ['Signal (B.Cu)', 18, cu]], 330)}
       <p>Ein <b>Via</b> verbindet Lagen elektrisch. Ein <b>Durchgangs-Via</b> läuft durch die ganze Platine, <b>Blind-Vias</b> enden in einer Innenlage, <b>Buried-Vias</b> liegen ganz innen. Blind und Buried sind aufwendiger und kosten mehr. Auch THT-Pads sind durchkontaktiert und zählen auf allen Lagen.</p>
       <div class="tryit">${ex('4 lagen|vierlagig|sensor|4-lagen', 'Mehrlagen-Beispiel laden')}</div></div></details>
     <details><summary>3 · Leiterbahnbreite nach IPC</summary><div class="hb2"><p>Eine Leiterbahn hat einen Widerstand und erwärmt sich, wenn Strom fließt. Die Norm <b>IPC-2221</b> gibt dafür die Näherung <code>I = k · ΔT^0,44 · A^0,725</code> mit der Querschnittsfläche A in mil². Der Faktor <code>k</code> ist 0,048 für Außenlagen und 0,024 für Innenlagen: Innenlagen kühlen schlechter und müssen deshalb deutlich breiter sein.</p>

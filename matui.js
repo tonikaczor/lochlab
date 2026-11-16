@@ -70,8 +70,21 @@
       <path d="M${cx - 14},${ay} v-14 h14" class="sv-k"/><path d="M${ax + 38},${ay} A38 38 0 0 0 ${ax + 38 * Math.cos(al * Math.PI / 180)},${ay - 38 * Math.sin(al * Math.PI / 180)}" class="sv-k"/>
       ${T(cx + 8, (ay + by) / 2 + 5, L('a', lab.a), 'start')}${T((ax + cx) / 2, ay + 22, L('b', lab.b))}${T((ax + cx) / 2 - 22, (ay + by) / 2 - 10, L('c', lab.c), 'end')}
       ${T(ax + 50, ay - 8, lab.al, 'start')}${lab.be ? T(cx - 6, by - 8, lab.be, 'end') : ''}
-      <text x="${cx - 24}" y="${ay - 6}" font-size="12" text-anchor="end" class="sv-m">90°</text>
-      <text x="${ax - 4}" y="${ay + 16}" font-size="13" text-anchor="end" class="sv-m">A</text><text x="${cx + 6}" y="${ay + 16}" font-size="13" class="sv-m">C</text><text x="${cx + 6}" y="${by - 4}" font-size="13" class="sv-m">B</text></svg>`;
+      <text x="${cx - 24}" y="${ay - 6}" font-size="14" text-anchor="end" class="sv-m">90°</text>
+      <text x="${ax - 4}" y="${ay + 16}" font-size="14" text-anchor="end" class="sv-m">A</text><text x="${cx + 6}" y="${ay + 16}" font-size="14" class="sv-m">C</text><text x="${cx + 6}" y="${by - 4}" font-size="14" class="sv-m">B</text></svg>`;
+  }
+  /* Skizze aus den Aufgabenwerten (Kreis, Kreisring, Zylinder). Zeigt nur Angaben und Gesuchtes, nie das Ergebnis. */
+  function svgSkizze(z) {
+    const T = (x, y, t, a) => t ? `<text x="${x}" y="${y}" text-anchor="${a || 'middle'}" font-size="14"${String(t).indexOf('?') >= 0 ? ' class="sv-q"' : ''}>${esc(t)}</text>` : '';
+    let b = '', nm = '';
+    if (z.k === 'kreis') {
+      nm = 'Kreis'; b = `<circle cx="150" cy="82" r="56" class="sv-f"/><circle cx="150" cy="82" r="56" class="sv-a"/><line x1="94" x2="206" y1="82" y2="82" class="sv-k" stroke-dasharray="5 3"/>${T(150, 74, z.d)}${T(150, 160, z.f)}`;
+    } else if (z.k === 'ring') {
+      nm = 'Kreisring'; b = `<circle cx="150" cy="68" r="58" class="sv-f"/><circle cx="150" cy="68" r="58" class="sv-a"/><circle cx="150" cy="68" r="20" class="sv-k" style="fill:var(--panel2)"/><line x1="92" x2="208" y1="68" y2="68" class="sv-k" stroke-dasharray="5 3"/>${T(150, 146, z.D)}${T(150, 163, z.d)}${T(150, 180, z.f)}`;
+    } else {
+      nm = 'Zylinder'; b = `<path d="M80,40 v80 a45,14 0 0 0 90,0 v-80" class="sv-f"/><path d="M80,40 v80 a45,14 0 0 0 90,0 v-80" class="sv-a"/><ellipse cx="125" cy="40" rx="45" ry="14" class="sv-f"/><ellipse cx="125" cy="40" rx="45" ry="14" class="sv-a"/><line x1="80" x2="170" y1="40" y2="40" class="sv-k" stroke-dasharray="5 3"/>${T(125, 22, z.d)}${T(182, 84, z.h, 'start')}${T(150, 168, z.f)}`;
+    }
+    return `<svg viewBox="0 0 300 186" width="300" role="img" aria-label="Skizze: ${nm}">${b}</svg>`;
   }
   /* Zahlenstrahl der Zehnerpotenzen (Vorsätze p ... G); Markierung bei 10^e */
   function svgLine(e, label) {
@@ -86,7 +99,7 @@
   function renderEinh() {
     const E = S.einh, F = C.FAM[E.fam], us = Object.keys(F.u); if (!F.u.hasOwnProperty(E.from)) E.from = us[0]; if (!F.u.hasOwnProperty(E.to)) E.to = us[us.length > 1 ? 1 : 0];
     const o = u => us.map(x => [x, x]);
-    $('#v_einh').innerHTML = `<div class="card pl"><h4>Einheiten umrechnen</h4><div class="cf">${Object.keys(C.FAM).map(k => `<button class="chip${k === E.fam ? ' on' : ''}" data-fam="${k}">${esc(C.FAM[k].name)}</button>`).join('')}</div>
+    $('#v_einh').innerHTML = `<p class="lr-hinweis">Für Azubis bis Klasse 10. Für Techniker und Studium gibt es die <a href="mat2lab.html">Mathe-Brücke</a>.</p><div class="card pl"><h4>Einheiten umrechnen</h4><div class="cf">${Object.keys(C.FAM).map(k => `<button class="chip${k === E.fam ? ' on' : ''}" data-fam="${k}">${esc(C.FAM[k].name)}</button>`).join('')}</div>
       <div class="three">${inp('einh.v', 'Wert', E.v)}<label class="f"><span>von</span>${sel('einh.from', o(), E.from)}</label><label class="f"><span>nach</span>${sel('einh.to', o(), E.to)}</label></div>
       <div class="btns" style="margin-top:0"><button class="btn" data-act="swap">⇄ Einheiten tauschen</button></div><div id="eOut"></div></div>
       <div class="card pl"><h4>Zehnerpotenzen und Vorsätze</h4>${inp('einh.sv', 'Zahl (z. B. 0,000047 oder 12500000)', E.sv)}<div id="sOut"></div></div>`;
@@ -149,15 +162,29 @@
 
   /* ============================================================ Reiter: Formeln umstellen */
   const targetsOf = f => Object.keys(f.vars).filter(v => f.sol[v]);
+  /* Waage zum Umstellen: je Schritt dieselbe Rechenoperation auf beiden Seiten; die Waage bleibt im Gleichgewicht. Nur Anzeige, keine Antworten. */
+  let wzKey = '', wz = 0;
+  function waageSvg(eq, op) {
+    const parts = C.pretty(eq).split('='), L = (parts[0] || '').trim(), Rr = (parts[1] || '').trim(), W = 300, H = 205, cl = 72, cr = 228;
+    const fit = t => Math.max(12, Math.min(17, Math.floor(120 / Math.max(1, t.length * 0.62))));
+    const pan = (cx, t) => `<line class="sv-k" x1="${cx}" y1="62" x2="${cx - 52}" y2="124"/><line class="sv-k" x1="${cx}" y1="62" x2="${cx + 52}" y2="124"/><path class="sv-a wg-dish" d="M${cx - 62} 124 H${cx + 62} Q${cx + 56} 152 ${cx} 152 Q${cx - 56} 152 ${cx - 62} 124 Z"/><text class="wg-t" x="${cx}" y="${Math.round(140 - 0.3 * fit(t))}" text-anchor="middle" style="font-size:${fit(t)}px">${esc(t)}</text>`;
+    const a = (cx) => `<path class="sv-k wg-op" d="M${cx} 36 V50 M${cx - 5} 45 L${cx} 51 L${cx + 5} 45"/>`;
+    const both = /^beide Seiten/.test(op || '');
+    const head = op ? (both ? 'Auf beiden Seiten: ' + op.replace(/^beide Seiten\s*/, '').replace(/^:\s*/, 'geteilt durch ').replace(/^·\s*/, 'mal ').replace(/^\+\s*/, 'plus ').replace(/^−\s*/, 'minus ').trim() : op) : 'Ausgangslage im Gleichgewicht';
+    const hs = Math.max(12, Math.min(15, Math.floor(290 / Math.max(1, head.length * 0.6))));
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Waage: links ${esc(L)}, rechts ${esc(Rr)}. ${esc(head)}"><text class="wg-h" x="${W / 2}" y="18" text-anchor="middle" style="font-size:${hs}px">${esc(head)}</text>${op && both ? a(cl) + a(cr) : ''}<rect class="sv-f" x="16" y="56" width="268" height="8" rx="4" stroke="var(--accent)"/><path class="sv-k" d="M${W / 2 - 26} 190 L${W / 2} 64 L${W / 2 + 26} 190 Z"/><line class="sv-k" x1="${W / 2 - 50}" y1="190" x2="${W / 2 + 50}" y2="190"/>${pan(cl, L)}${pan(cr, Rr)}<circle cx="${W / 2}" cy="60" r="6" class="sv-f" stroke="var(--accent)"/></svg>`;
+  }
   function renderUmst() {
     const E = S.umst; let f = C.formel(E.f) || C.FORMELN[0]; if (!f.sol[E.t]) { E.t = targetsOf(f)[0]; E.step = 0; E.err = 0; }
     const u = C.umformung(f.id, E.t);
-    let h = `<div class="card pl"><h4>Formel umstellen</h4><label class="f"><span>Formel</span>${sel('umst.f', C.FORMELN.map(x => [x.id, x.name + ':  ' + C.pretty(x.eq)]), f.id, true)}</label>
+    const wk = f.id + E.t + E.mode; if (wk !== wzKey) { wzKey = wk; wz = 0; } const wi = E.mode === 'zeig' ? Math.min(wz, u.steps.length) : Math.min(E.step, u.steps.length);
+    const wa = `<div id="umWaage" class="svbox wg">${waageSvg(wi ? u.steps[wi - 1].eq : u.start, wi ? u.steps[wi - 1].op : '')}</div>`;
+    let h = `<div class="card pl">${wa}<h4>Formel umstellen</h4><label class="f"><span>Formel</span>${sel('umst.f', C.FORMELN.map(x => [x.id, x.name + ':  ' + C.pretty(x.eq)]), f.id, true)}</label>
       <div class="cf"><span style="align-self:center;font-size:13px;color:var(--mute)">Gesucht:</span>${targetsOf(f).map(v => `<button class="chip${v === E.t ? ' on' : ''}" data-ut="${v}">${esc(C.pretty(v))} (${esc(f.vars[v][0])})</button>`).join('')}</div>
       ${seg('umst.mode', [['zeig', 'Lösungsweg zeigen'], ['ueb', 'Selbst üben']], E.mode)}`;
     if (E.mode === 'zeig') {
       h += `<div class="mono">${esc(C.pretty(u.start))}</div><ol class="stp">${u.steps.map(s => `<li><b>${esc(s.op)}</b>${'\n'}${esc(C.pretty(s.eq))}</li>`).join('')}</ol>
-        <p class="hint2">Regel: Was du auf einer Seite der Gleichung tust, tust du auch auf der anderen (Äquivalenzumformung). Immer die Umkehrung nehmen: Mal ↔ Geteilt, Plus ↔ Minus, Quadrat ↔ Wurzel.</p>
+        ${u.steps.length ? `<div class="btns wgb"><button class="btn" data-wz="-1" ${wi <= 0 ? 'disabled' : ''}>Schritt zurück</button><button class="btn pri" data-wz="1" ${wi >= u.steps.length ? 'disabled' : ''}>Nächster Schritt (${wi} von ${u.steps.length})</button></div>` : ''}<p class="hint2">Regel: Was du auf einer Seite der Gleichung tust, tust du auch auf der anderen (Äquivalenzumformung). Immer die Umkehrung nehmen: Mal ↔ Geteilt, Plus ↔ Minus, Quadrat ↔ Wurzel.</p>
         <div class="rdout ok"><b>Ergebnis:</b> ${esc(C.pretty(u.result))}</div><h4 style="margin:12px 0 4px;font-size:12px;color:var(--mute);text-transform:uppercase">Zahlen einsetzen</h4><div class="three">${C.idsOf(u.expr).map(v => inp('umst.vals.' + v, `${C.pretty(v)} in ${f.vars[v] ? f.vars[v][1] : ''}`, E.vals[v] == null ? '' : E.vals[v])).join('')}</div><div id="uOut"></div>`;
     } else {
       const done = E.step >= u.steps.length;
@@ -260,16 +287,18 @@
 
   /* Aufgabe + Eingabe (für Aufgaben und Trainer) */
   function probHTML(p, ans, res, ns) {
-    const solved = !!(res && res.ok);
-    return `<div class="lv">${dots(p.level)}</div><p style="margin:8px 0">${esc(p.text)}</p>${p.svg ? `<div class="svbox">${svgTri(p.svg)}</div>` : ''}
-      <label class="f"><span>${esc(p.label)}${p.unit ? ' (' + esc(p.unit) + ')' : ''}</span><div class="qin"><input id="${ns}In" data-ans="${ns}" inputmode="decimal" autocomplete="off" value="${esc(ans || '')}" ${solved ? 'disabled' : ''}><span class="u">${esc(p.unit)}</span></div></label>`;
+    const solved = !!(res && (res.ok || res.stage === 'loes'));
+    return `<div class="lv">${dots(p.level)}</div><p style="margin:8px 0">${esc(p.text)}</p>${p.svg ? `<div class="svbox">${svgTri(p.svg)}</div>` : ''}${p.skizze ? `<div class="svbox">${svgSkizze(p.skizze)}</div>` : ''}
+      <label class="f"><span>${esc(p.label)}${p.unit ? ' (' + esc(p.unit) + ')' : ''}</span><div class="qin"><input id="${ns}In" data-ans="${ns}" inputmode="decimal" autocomplete="off" value="${esc(ans || '')}" ${solved ? 'disabled' : ''}><span class="u">${esc(p.unit)}</span></div></label><p class="lr-hinweis">${p.unit ? 'Zahl in ' + esc(p.unit) + '. ' : 'Zahl. '}${p.exact ? 'Das Ergebnis muss genau stimmen.' : '±' + esc(fmt(p.tol, 6)) + ' gilt als richtig.'}</p>`;
   }
+  const zeigFb = host => { if (window.LabRahmen) { const el = host.querySelector('.lr-fb'); if (el) LabRahmen.zeig(el); } };
   function givenText(p, v) { return fmt(v, 6) + (p.unit ? ' ' + p.unit : ''); }
   function checkTask(t) {
     const p = instOf(t), a = (S.tAns[t.id] || ''), v = C.parseDe(a); if (!isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return; }
     const ok = Math.abs(v - p.value) <= p.tol + 1e-9, pct = ok ? pctFor(t.id) : 0, ex = exam();
-    S.tRes = { id: t.id, ok, pct, text: ok ? 'Richtig: ' + givenText(p, v) : 'Deine Antwort „' + givenText(p, v) + '“ stimmt nicht.' };
-    if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
+    const tr = S.tTries = S.tTries || {}; if (!ok) tr[t.id] = (tr[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok, pct, stage: ok ? 'ok' : (ex ? 'pruef' : (tr[t.id] >= 2 ? 'loes' : 'tipp')), text: ok ? 'Richtig: ' + givenText(p, v) : 'Deine Antwort „' + givenText(p, v) + '“ stimmt nicht.' };
+    if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast(S.tRes.stage === 'loes' ? 'Noch nicht richtig. Die Lösung steht unter der Aufgabe.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
   function hintTask(t) {
@@ -289,30 +318,35 @@
     if (t) {
       const p = instOf(t), r = S.tRes && S.tRes.id === t.id ? S.tRes : null;
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div>${probHTML(p, S.tAns[t.id], r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="new">🔀 Neue Zahlen</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.stage === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="new">🔀 Neue Zahlen</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
       if (r) {
-        h += `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : '✗'} ${esc(r.text)}</li>${p.exact ? '' : `<li>ℹ Erlaubte Abweichung: ±${esc(fmt(p.tol, 6))} (Rundung).</li>`}</ul>`;
-        if (r.ok || !exam()) h += (r.ok ? '' : `<div class="rdout bad"><b>Richtig wäre:</b> ${esc(solText(p))}</div>`) + rdOf(p, r.ok);
-        else h += '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
-        if (r.ok) h += '<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>';
+        /* Rückmeldung nach Vorgabe 4.5: erster Fehlversuch Tipp und zweiter Versuch, zweiter Fehlversuch Lösung mit Rechenweg, richtig bestätigt. */
+        const st = r.stage || 'loes';
+        h += `<div class="lr-fb ${st === 'ok' ? 'ok' : st === 'loes' ? 'loes' : 'tipp'}" role="status"><ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : '✗'} ${esc(r.text)}</li>${p.exact ? '' : `<li>ℹ Erlaubte Abweichung: ±${esc(fmt(p.tol, 6))} (Rundung).</li>`}</ul>`;
+        if (st === 'tipp') h += `<p><strong>Noch nicht.</strong> Tipp: ${esc(p.tips[0])} Du hast einen zweiten Versuch.</p>`;
+        else if (st === 'pruef') h += '<p><strong>Noch nicht.</strong> Im Prüfmodus gibt es den Lösungsweg erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p>';
+        else if (st === 'loes') h += `<p><strong>Auch nicht.</strong> Hier ist die Lösung.</p><div class="rdout bad"><b>Richtig wäre:</b> ${esc(solText(p))}</div>`;
+        if (st === 'ok' || st === 'loes') h += rdOf(p, r.ok);
+        h += '</div>';
+        if (r.ok || st === 'loes') h += '<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>';
       }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
     let last = '';
     D.cats.reduce((a, c) => a.concat(TASKS.filter(y => y.cat === c)), []).forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : p > 0 ? 'p' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && !d[x.id] ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pg_tasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pg_tasks').scrollTop = 0; else if (curTask() && S.tRes) zeigFb(V);
   }
   function resetTipps(id) { const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); } }
   function startTask(id, fresh) {
-    S.task = id; S.tRes = null; S.tAns[id] = ''; if (fresh) S.seeds[id] = Math.floor(Math.random() * 1e9); resetTipps(id); renderTasks();
+    S.task = id; S.tRes = null; (S.tTries = S.tTries || {})[id] = 0; S.tAns[id] = ''; if (fresh) S.seeds[id] = Math.floor(Math.random() * 1e9); resetTipps(id); renderTasks();
   }
 
   /* ============================================================ Zufalls-Trainer */
   function newTrainer() {
     const T = S.tr; let pool = TASKS.filter(t => (T.cat === 'alle' || t.cat === T.cat) && (!T.level || t.level === T.level)); if (!pool.length) pool = TASKS;
-    const t = pool[Math.floor(Math.random() * pool.length)]; T.p = D.build(t, Math.floor(Math.random() * 1e9)); T.ans = ''; T.res = null; renderTrainer();
+    const t = pool[Math.floor(Math.random() * pool.length)]; T.p = D.build(t, Math.floor(Math.random() * 1e9)); T.ans = ''; T.res = null; T.tries = 0; renderTrainer();
   }
   function renderTrainer() {
     const T = S.tr, V = $('#v_rt'); if (!T.p) { newTrainer(); return; }
@@ -320,9 +354,11 @@
     let h = `<div class="card pl"><h4>Zufalls-Trainer: unendlich viele Aufgaben</h4><div class="fbar">${seg('tr.cat', [['alle', 'Alle']].concat(D.cats.map(c => [c, c])), T.cat)}</div><div class="fbar">${seg('tr.level', [[0, 'alle Stufen'], [1, 'leicht'], [2, 'mittel'], [3, 'schwer']], T.level)}</div>
       <div class="stats"><div class="bx"><b>${st.streak}</b>Serie</div><div class="bx"><b>${st.best}</b>Beste Serie</div><div class="bx"><b>${st.ok}/${st.n}</b>Richtig</div></div>
       <div class="hint2" style="margin:0">${esc(p.cat)} · ${esc(p.title)}</div>${probHTML(p, T.ans, r, 'rt')}`;
-    h += r ? '<div class="btns"><button class="btn pri" data-r="next">Nächste Aufgabe</button></div>' : '<div class="btns"><button class="btn pri" data-r="chk">✓ Prüfen</button><button class="btn" data-r="show">Lösung zeigen</button></div>';
-    if (r) h += `<div class="fb ${r.ok ? 'ok' : 'bad'}"><span class="v">${r.shown ? 'Lösung: ' + esc(solText(p)) + ' (zählt als Fehler, Serie beginnt neu)' : r.ok ? '✓ Richtig! Serie: ' + st.streak : '✗ Nicht ganz. Richtig ist: ' + esc(solText(p))}</span></div>${rdOf(p, r.ok)}`;
-    V.innerHTML = h + '</div>';
+    const fertig = r && r.stage !== 'tipp';
+    h += fertig ? '<div class="btns"><button class="btn pri" data-r="next">Nächste Aufgabe</button></div>' : '<div class="btns"><button class="btn pri" data-r="chk">✓ Prüfen</button><button class="btn" data-r="show">Lösung zeigen</button></div>';
+    if (r && r.stage === 'tipp') h += `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Tipp: ${esc(p.tips[0])} Du hast einen zweiten Versuch.</p></div>`;
+    else if (r) h += `<div class="lr-fb ${r.ok ? 'ok' : 'loes'}" role="status"><p><strong>${r.shown ? 'Lösung: ' + esc(solText(p)) + ' (zählt als Fehler, Serie beginnt neu)' : r.ok ? '✓ Richtig! Serie: ' + st.streak : 'Auch nicht. Richtig ist: ' + esc(solText(p))}</strong></p>${rdOf(p, r.ok)}</div>`;
+    V.innerHTML = h + '</div>'; if (r) zeigFb(V);
   }
   function trainerResult(ok, shown) {
     const T = S.tr, st = S.rt; st.n++; if (ok && !shown) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; lsSet('rt', st);
@@ -336,6 +372,7 @@
     const mk = (o) => '<table><tr><th>Vorsatz</th><th>Zeichen</th><th>Faktor</th></tr>' + o.map(p => `<tr><td>${esc(p.n)}</td><td><b>${esc(p.s)}</b></td><td>10${C.sup(p.e)} = ${esc(fmt(Math.pow(10, p.e), 12))}</td></tr>`).join('') + '</table>';
     const sh = Object.keys(C.SHAPES).map(k => { const s = C.SHAPES[k]; return `<tr><td>${esc(s.name)}</td><td>${s.o.map(o => `${esc(o[0])} = ${esc(C.pretty(o[2]))}`).join('<br>')}</td></tr>`; }).join('');
     $('#v_help').innerHTML = `
+    <details open><summary>Für wen ist dieses Lab?</summary><div class="hb2"><p>Das Rechen-Lab ist für Azubis bis Klasse 10: Einheiten, Dreisatz, Prozent, Umstellen. Für Techniker und Studium (komplexe Zahlen, Matrizen, Laplace, Fourier) gibt es die <a href="mat2lab.html">Mathe-Brücke</a>.</p></div></details>
     <details open><summary>🔢 Vorsätze und Zehnerpotenzen</summary><div class="hb2">${mk(C.PREFIX)}
       <p>Größere Einheit → kleinere Einheit: Zahl wird <b>größer</b> (mal Umrechnungszahl). Kleinere → größere Einheit: Zahl wird <b>kleiner</b> (geteilt).</p>
       <table><tr><th>Größe</th><th>Umrechnungszahlen</th></tr><tr><td>Länge</td><td>1 km = 1000 m, 1 m = 100 cm = 1000 mm, 1 mm = 1000 µm</td></tr><tr><td>Fläche</td><td>1 m² = 100 dm² = 10 000 cm² = 1 000 000 mm² (je Stufe 100)</td></tr><tr><td>Volumen</td><td>1 m³ = 1000 dm³, 1 dm³ = 1 l = 1000 cm³, 1 cm³ = 1 ml (je Stufe 1000)</td></tr><tr><td>Masse</td><td>1 t = 1000 kg, 1 kg = 1000 g, 1 g = 1000 mg</td></tr><tr><td>Zeit</td><td>1 h = 60 min = 3600 s</td></tr><tr><td>Geschwindigkeit</td><td>1 m/s = 3,6 km/h</td></tr><tr><td>Druck</td><td>1 bar = 100 000 Pa = 10 N/cm², 1 N/mm² = 1 MPa = 10 bar</td></tr><tr><td>Leistung</td><td>1 kW = 1000 W, 1 MW = 1000 kW</td></tr></table>
@@ -417,6 +454,7 @@
     if (ds.seg) { const [g, f] = ds.seg.split('.'); S[g][f] = f === 'level' ? +ds.v : ds.v; if (g === 'umst') { S.umst.step = 0; S.umst.err = 0; } if (g === 'tr') { newTrainer(); return; } RENDER[g](); return; }
     if (ds.fam) { S.einh.fam = ds.fam; [S.einh.from, S.einh.to] = DEF[ds.fam]; renderEinh(); return; }
     if (ds.act === 'swap') { const E = S.einh; [E.from, E.to] = [E.to, E.from]; renderEinh(); return; }
+    if (ds.wz != null) { const u = C.umformung(S.umst.f, S.umst.t); wz = Math.max(0, Math.min(u.steps.length, wz + (+ds.wz))); renderUmst(); const nb = document.querySelector('[data-wz="' + ds.wz + '"]:not([disabled])') || document.querySelector('[data-wz]:not([disabled])'); if (nb) nb.focus({ preventScroll: true }); return; }
     if (ds.ut) { S.umst.t = ds.ut; S.umst.step = 0; S.umst.err = 0; S.umst.vals = {}; renderUmst(); return; }
     if (ds.uop != null) { const u = C.umformung(S.umst.f, S.umst.t), st = u.steps[S.umst.step]; if (ds.uop === st.op) { S.umst.step++; ding(); } else { S.umst.err++; sad(); toast('Das ist nicht die passende Umkehrung. Was hebt die Rechenart auf?'); } renderUmst(); return; }
     if (ds.act === 'uagain') { S.umst.step = 0; S.umst.err = 0; renderUmst(); return; }

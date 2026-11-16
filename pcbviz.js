@@ -206,9 +206,9 @@
   }
   function stack3dSvg(rows, exploded) {
     if (!Array.isArray(rows) || rows.length < 3) return '';
-    const n = rows.length, gap = exploded ? (n > 11 ? 12 : 17) : 0, A = 104, B = 62, ux = 0.866, uy = 0.5, W = 360, ox = 8, LH = 15, lx = 168;
+    const n = rows.length, gap = exploded ? (n > 11 ? 12 : 17) : 0, A = 84, B = 50, ux = 0.866, uy = 0.5, W = 340, ox = 8, LH = 17, lx = 134;
     const th = rows.map(r => VIS[r.kind] || 5), body = th.reduce((a, b) => a + b, 0) + gap * (n - 1), top = 12;
-    const H = Math.max(top + body + (A + B) * uy + 36, top + n * LH + 36);
+    const H = Math.max(top + body + (A + B) * uy + 52, top + n * LH + 52);
     let s = '', labs = '', y = top + B * uy, lyPrev = -1e9;
     for (let i = 0; i < n; i++) {
       const r = rows[i], t = th[i], cls = KCLS[r.kind] || 'fr';
@@ -221,7 +221,7 @@
       labs += `<line class="lead2" x1="${q(p1[0] + 2)}" y1="${q(p1[1] + t / 2)}" x2="${lx - 4}" y2="${q(ly)}"/>` + T(lx, ly + 4, layerLabel(r), 'l');
       y += t + gap;
     }
-    s += labs + T(6, H - 10, exploded ? 'Auseinandergezogen: beim Pressen werden die Lagen verklebt.' : 'Zusammengesetzt: Hitze und Druck verpressen die Lagen.', 'm');
+    s += labs + (exploded ? T(6, H - 26, 'Auseinandergezogen:', 'm') + T(6, H - 8, 'beim Pressen werden die Lagen verklebt.', 'm') : T(6, H - 26, 'Zusammengesetzt:', 'm') + T(6, H - 8, 'Hitze und Druck verpressen die Lagen.', 'm'));
     return svg(W, H, 'Lagenaufbau als 3D-Skizze: ' + n + ' Schichten von oben nach unten', s);
   }
 
@@ -236,7 +236,7 @@
 .pcbviz .vzbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:640px;margin:8px 0}
 .pcbviz .vzbox svg,.pcbvz3 .vzbox svg{display:block;width:100%;height:auto}
 .pcbviz svg text,.pcbvz3 svg text{font-family:system-ui,sans-serif;font-size:12.5px;fill:var(--fg);-webkit-user-select:none;user-select:none}
-.pcbviz svg text.b,.pcbvz3 svg text.b{font-weight:700}.pcbviz svg text.m,.pcbvz3 svg text.m{fill:var(--vz-mute)}.pcbviz svg text.s{font-size:11.5px;fill:var(--vz-mute)}.pcbvz3 svg text.l{font-size:12px}
+.pcbviz svg text.b,.pcbvz3 svg text.b{font-weight:700}.pcbviz svg text.m,.pcbvz3 svg text.m{fill:var(--vz-mute)}.pcbviz svg text.s{font-size:11.5px;fill:var(--vz-mute)}.pcbvz3 svg text.l{font-size:13.5px}.pcbvz3 svg text.m{font-size:13px}
 .pcbviz svg .lead{stroke:var(--mute);stroke-width:2.2;stroke-linecap:round}.pcbviz svg .sb{stroke:var(--fg);stroke-width:1.6}
 .pcbviz svg .rbody{fill:var(--vz-res);stroke:var(--fg);stroke-opacity:.45;stroke-width:1}
 .pcbviz svg .band-y{fill:#e6c619}.pcbviz svg .band-v{fill:#7a3fa0}.pcbviz svg .band-r{fill:#d2362b}.pcbviz svg .band-g{fill:#c9a227}

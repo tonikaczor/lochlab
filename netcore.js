@@ -3,7 +3,7 @@
    Export: window.NET_CORE bzw. module.exports (Node).
    Adressen sind intern vorzeichenlose 32-Bit-Zahlen (Number), nach außen Texte wie '192.168.10.0'.
    Aufgaben-Bausteine: mk(kind, params) liefert eine Frage {text, ask, ans, sol, expl, tips};
-   gen(R, cat, level) erzeugt eine zufällige Frage (R = rng(seed)); check(q, eingabe) prüft die Antwort. */
+   gen(R, cat, level, only) erzeugt eine zufällige Frage (R = rng(seed)); only = Liste von Fragearten (nur Kategorie 'sub', z. B. ['netaddr','bcast']); check(q, eingabe) prüft die Antwort. */
 (function (root) {
   const P2 = n => Math.pow(2, n);
   const U = n => n >>> 0;
@@ -293,7 +293,7 @@
     }
     return [{ n: 'Vertrieb', h: 60 }, { n: 'Technik', h: 30 }, { n: 'Verwaltung', h: 12 }, { n: 'Server', h: 2 }].slice(0, cnt);
   }
-  function gen(R, cat, level) {
+  function gen(R, cat, level, only) {
     level = level >= 1 && level <= 3 ? level : 2;
     const keys = Object.keys(CATS); if (!CATS[cat]) cat = pick(R, keys);
     const pre = level === 1 ? ri(R, 24, 30) : level === 2 ? ri(R, 16, 30) : ri(R, 9, 30);
@@ -303,7 +303,7 @@
       if (kind === 'bin2dec') p = { bits: toBin(ri(R, 1, 255)) }; else if (kind === 'dec2bin') p = { n: ri(R, 1, 255) };
       else if (kind === 'mask2prefix') p = { mask: fmtIP(maskOf(ri(R, level === 1 ? 24 : 9, 30))) }; else p = { p: ri(R, level === 1 ? 24 : 9, 30) };
     } else if (cat === 'sub') {
-      kind = pick(R, level === 1 ? ['netaddr', 'bcast', 'hosts'] : level === 2 ? ['netaddr', 'bcast', 'hosts', 'firsthost', 'lasthost', 'wildcard', 'prefixForHosts'] : ['netaddr', 'bcast', 'firsthost', 'lasthost', 'prefixForHosts', 'wildcard']);
+      kind = only && only.length ? pick(R, only) : pick(R, level === 1 ? ['netaddr', 'bcast', 'hosts'] : level === 2 ? ['netaddr', 'bcast', 'hosts', 'firsthost', 'lasthost', 'wildcard', 'prefixForHosts'] : ['netaddr', 'bcast', 'firsthost', 'lasthost', 'prefixForHosts', 'wildcard']);
       if (kind === 'hosts' || kind === 'wildcard') p = { p: pre }; else if (kind === 'prefixForHosts') p = { h: level === 1 ? ri(R, 5, 120) : ri(R, 5, 3000) };
       else p = { ip: rndIP(R, true), p: pre, dotted: level === 3 && (kind === 'netaddr' || kind === 'bcast') && R() < 0.5 };
     } else if (cat === 'vlsm') {

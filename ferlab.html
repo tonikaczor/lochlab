@@ -90,6 +90,7 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 #mid[data-tab=ver] #pgVer,#mid[data-tab=bie] #pgBie,#mid[data-tab=gew] #pgGew,#mid[data-tab=pla] #pgPla,#mid[data-tab=qua] #pgQua,#mid[data-tab=vor] #pgVor,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=help] #pgHelp{display:flex}
 .inst{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}
 .inst svg{display:block;width:100%;height:auto;max-width:520px;margin:0 auto}
+@media(min-width:900px){.inst svg{max-width:600px}}
 .inst svg text{font-family:system-ui,sans-serif;-webkit-user-select:none;user-select:none}
 .vz-t{fill:var(--fg);font-size:12px}.vz-m{fill:var(--mute)}.vz-b{font-weight:700}.vz-s{font-size:11.5px}
 .vz-num{fill:var(--bg);font-weight:800;font-size:15px}.vz-pin{fill:var(--bg);font-weight:800;font-size:11px}
@@ -111,7 +112,7 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 .opts button.on{border-color:var(--accent);background:rgba(59,158,255,.2)}
 .opts button.ok{border-color:var(--ok);background:rgba(76,217,100,.2)}
 .opts button.bad{border-color:var(--danger);background:rgba(255,92,92,.18)}
-.opts .no{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-size:12px;font-weight:700;margin-right:6px}
+.opts .no{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:13px;background:var(--bg);border:1px solid var(--line);font-size:14px;font-weight:700;margin-right:6px}
 .opts button.on .no{background:var(--accent-bg);border-color:var(--accent-bg);color:#fff}
 .mrows{display:flex;flex-direction:column;gap:8px;margin:8px 0}
 .mrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0}
@@ -139,8 +140,11 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .stp{display:flex;align-items:center;gap:6px}.stp button{width:44px;height:44px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:22px;font-weight:700}.stp b{min-width:30px;text-align:center;font-size:20px}
 textarea.vals{min-height:96px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace}
 .tray{display:flex;flex-wrap:wrap;gap:6px}
+/* Welle 2 M1: Schrift am Handy mindestens 14 px (Audit M-all-03) */
+.badge,h5,.bx,.lbl,.gtag,.tag,.hint2{font-size:14px!important}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -183,6 +187,8 @@ textarea.vals{min-height:96px;resize:vertical;font-family:ui-monospace,Menlo,Con
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'ferlab.html': { name: 'Fertigungs-Lab', gruppen: [{ name: 'Biegen und Gewinde', teile: ['bie', 'gew'] }, { name: 'Planung und Qualität', teile: ['pla', 'qua'] }], leiste: { haupt: ['[data-a=rand]', '[data-a=fx]'] } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

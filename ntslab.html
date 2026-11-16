@@ -12,10 +12,10 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <title>Tonfunk Netzteil-Lab</title>
-<title>Tonfunk Netzteil-Lab</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schlüssel lm4.theme wie die Startseite */(function(){try{var v=localStorage.getItem('lm4.theme');if(v==='light'||v==='dark')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 <link rel="stylesheet" href="rig.css">
 <style>
-#presetBar .chip{white-space:normal;height:auto;min-height:40px;padding-top:6px;padding-bottom:6px;text-align:left;line-height:1.2}
+#presetBar .chip{white-space:normal;height:auto;min-height:44px;padding-top:6px;padding-bottom:6px;text-align:left;line-height:1.2}
 .kvs{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px;padding:4px 0;min-height:30px}.kvs>span:first-child{color:var(--mute)}
 .rbar{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none;align-items:center}
 .rbar::-webkit-scrollbar{display:none}
@@ -38,6 +38,7 @@
 .hl a{display:inline-block;padding:10px 2px}#mid[data-tab=rig] #pgRig,#mid[data-tab=wave] #pgWave,#mid[data-tab=curve] #pgCurve,#mid[data-tab=design] #pgDesign,#mid[data-tab=calc] #pgCalc,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=help] #pgHelp{display:flex}
 /* ---- Netzteil-Lab: Ampel, Hinweisband, Blockschaltbild, Vorher/Nachher, Bedienpult nach Stufen (Farben je Thema aus NTS_DRAW.PAL, hier nur Rueckfall) ---- */
 :root{--amp-ok:#4cd964;--amp-warn:#ffb340;--amp-bad:#ff5c5c;--lc:#8d99a6}
+/* Theme-Schlüssel lm4.theme: auch Bedienelemente und Bildlaufleisten folgen der gewählten Darstellung */:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
 @media(prefers-color-scheme:light){:root:not([data-theme=dark]){--amp-ok:#15803d;--amp-warn:#854d0e;--amp-bad:#b91c1c}}
 :root[data-theme=light]{--amp-ok:#15803d;--amp-warn:#854d0e;--amp-bad:#b91c1c}
 #rigPick{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
@@ -71,7 +72,7 @@
 .barow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 0}
 #qLine{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12.5px;color:var(--mute);padding:2px 2px 6px}
 #qLine b{color:var(--fg)}
-#qLine .seg button{min-height:40px}
+#qLine .seg button{min-height:44px}
 #linkBar{display:flex;flex-wrap:wrap;gap:6px;padding:0 0 6px}#linkBar:empty{display:none}
 #linkBar .btn{min-height:44px;font-size:13.5px}
 .ctg{border-left:4px solid var(--lc)}
@@ -88,15 +89,17 @@ button.bt:active{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-b
 .cmpt{overflow-x:auto}
 .sqr{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 4px;border-top:1px solid var(--line)}
 .sqr .n{width:22px;color:var(--mute);text-align:center;font-size:13px}
-.sqr input,.sqr select{width:auto;min-height:40px;padding:7px 8px}
+.sqr input,.sqr select{width:auto;min-height:44px;padding:7px 8px}
 .sqr .tIn{width:78px}.sqr .vIn{width:96px}.sqr select{min-width:110px;flex:1 1 120px}
-.sqr .ib2{width:40px;height:40px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:15px;display:inline-grid;place-items:center}
+.sqr .ib2{width:44px;height:44px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:15px;display:inline-grid;place-items:center}
 .fl{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:4px 0}
-.fl select,.fl input{width:auto;min-height:40px;padding:7px 8px;flex:1 1 90px}
+.fl select,.fl input{width:auto;min-height:44px;padding:7px 8px;flex:1 1 90px}
 .nts-tbl{margin:8px 0;overflow-x:auto;max-width:100%}.nts-tbl table{border-collapse:collapse;font-size:13.5px;min-width:60%}.nts-tbl caption{caption-side:top;text-align:left;color:var(--mute);font-size:12px;padding:0 0 3px}.nts-tbl th,.nts-tbl td{border:1px solid var(--line);padding:5px 9px;text-align:left}.nts-tbl th{background:var(--panel2);font-size:12px}
 @media(max-width:600px){#blk{height:210px}}
 </style>
+<style>/* Welle 2 B2a (B-all-01, P2): Kleintext mindestens 14 px, Ziele mindestens 44 px; html:root schlägt die Regeln oben */html:root .kvs,html:root .scinfo,html:root .ct .un,html:root #rigPick .chip small,html:root .simband,html:root .atx small,html:root .avs,html:root #blkTx,html:root #pfadBar,html:root #qLine,html:root .bdg,html:root .lim,html:root .nts-tbl caption,html:root .nts-tbl table,html:root #diceBar,html:root #linkBar .btn{font-size:14px}html:root .kvs{min-height:44px}html:root .sb{width:24px;height:24px;font-size:14px}</style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -205,6 +208,8 @@ button.bt:active{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-b
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'ntslab.html': { name: 'Netzteil-Lab', gruppen: [{ name: 'Diagramme', teile: ['wave', 'curve'] }] } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

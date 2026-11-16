@@ -16,20 +16,31 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}@media screen and (m
 .tip{border-left:4px solid var(--ok);padding-left:12px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 
-pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
 @media(prefers-color-scheme:light){pre{background:#f1f4f7;color:#1d2329}}
 @media print{pre{background:#f4f4f4;color:#000;border:1px solid #999;white-space:pre-wrap}}
 .try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent-bg,#1a6fd4);color:#fff!important;text-decoration:none;font-size:14px}
 .merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
 .warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
-.toc a{display:block;padding:2px 0}svg{max-width:100%;height:auto}
+svg{max-width:100%;height:auto}
 @media print{.try{background:none;color:#000!important;border:1px solid #000}}
+.nav{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px}.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px}.nav a.lm-start{min-width:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;font-size:16px;font-weight:700;text-decoration:none}summary{min-height:44px;padding:10px 0;cursor:pointer}
+/* U2c: Ziele 44 px, Schrift mindestens 14 px, Handy kompakt */
+small{font-size:14px}sub,sup{font-size:max(14px,.8em);line-height:0}
+.try{min-height:44px;line-height:32px;padding:5px 14px;border-radius:22px}
+.toc a{display:flex;align-items:center;min-height:44px;padding:2px 0}
+.weiter a{display:inline-flex;align-items:center;min-height:44px}
+.lm-start{display:inline-flex;align-items:center;min-height:44px}
+#urheber-hinweis,#urheber-sprache{font-size:14px!important}
+h2[id],h3[id]{scroll-margin-top:12px}
+@media(max-width:700px){.wrap{padding:8px 18px 48px}header{gap:10px;margin-bottom:4px}header img{height:32px}h1{font-size:21px;line-height:1.25}.nav{margin:0 0 8px}}
+@media print{.try{min-height:0;line-height:inherit;padding:2px 8px}.weiter{display:none}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026 · Version 23.151</small></div></header>
-<p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen-arduino.html">Arduino verstehen</a> · <a href="anleitung.html">Anleitung Tonfunk Lab</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<p class="nav"><a class="lm-start" href="index.html">‹ Start</a><a href="lernen-arduino.html">Arduino verstehen</a><a href="anleitung.html">Anleitung Tonfunk Lab</a><a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>Raspberry Pi verstehen: Schritt für Schritt</h1><small>Stand: Oktober 2026</small></div></header>
 <p>Dieses Lernheft zeigt dir, was ein Raspberry Pi ist, wie du ihn in Betrieb nimmst und wie du mit Python LEDs, Taster und Sensoren steuerst. Alle Beispiele kannst du direkt im <b>Pi-Lab</b> ausprobieren (Knöpfe „Probier es aus“ und „Aufgabe“). Am echten Pi funktionieren dieselben Programme. Das letzte Kapitel vergleicht Arduino und Pi.</p>
-<div class="box toc"><b>Inhalt</b><a href="#k1">1. Was ist ein Raspberry Pi?</a><a href="#k2">2. Inbetriebnahme</a><a href="#k3">3. Die GPIO-Leiste</a><a href="#k4">4. Python in fünf Minuten</a><a href="#k5">5. Erstes Projekt: LED und Taster</a><a href="#k6">6. Mehr Bauteile</a><a href="#k7">7. Projektideen für den Pi</a><a href="#k8">8. Fehler finden und sicher arbeiten</a><a href="#k9">9. Arduino oder Pi? Und wie geht es hier weiter</a></div>
+<details class="box toc" id="inhalt"><summary><b>Inhalt</b></summary><a href="#k1">1. Was ist ein Raspberry Pi?</a><a href="#k2">2. Inbetriebnahme</a><a href="#k3">3. Die GPIO-Leiste</a><a href="#k4">4. Python in fünf Minuten</a><a href="#k5">5. Erstes Projekt: LED und Taster</a><a href="#k6">6. Mehr Bauteile</a><a href="#k7">7. Projektideen für den Pi</a><a href="#k8">8. Fehler finden und sicher arbeiten</a><a href="#k9">9. Arduino oder Pi? Und wie geht es hier weiter</a></details><script>if(innerWidth>700)document.getElementById("inhalt").open=true</script>
 <h2 id="k1">1. Was ist ein Raspberry Pi?</h2><p>Ein <b>Raspberry Pi</b> ist ein vollständiger kleiner <b>Computer</b> in der Größe einer Kreditkarte. Er hat Prozessor, Arbeitsspeicher, USB, HDMI, WLAN und läuft mit einem <b>Betriebssystem</b> (Raspberry Pi OS, ein Linux). Das Programm liegt nicht fest im Chip, sondern auf einer <b>SD-Karte</b>, und du startest es wie auf einem PC.</p>
 <table><tr><th></th><th>Arduino Uno</th><th>Raspberry Pi</th></tr>
 <tr><td>Art</td><td>Mikrocontroller</td><td>Einplatinen-Computer</td></tr>

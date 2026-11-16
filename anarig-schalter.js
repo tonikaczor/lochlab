@@ -309,6 +309,7 @@
         sR = { x: R0.x, y, w: R0.w, h: hs[2] - gap }; y += hs[2];
         fR = { x: R0.x, y, w: R0.w, h: Math.max(0, R0.y + R0.h - y) };
       }
+            /* Handy-Ansicht: Felder melden (Umschalter der Oberfläche) */ if (sc.pan && !wide) sc.pan([['Schaltung', sR], ['Kennlinie', kR], ['Signal', wR], ['Formel', fR]]);
       const empty = (rect, txt) => { sc.gfx.panel(ctx, rect.x, rect.y, rect.w, rect.h, pal.panel, pal.line, 6); sc.gfx.text(ctx, txt, rect.x + 8, rect.y + 22, { size: 12, color: pal.mute, max: rect.w - 16 }); };
       // Kennlinie: Ausgangskennlinienfeld
       const d = fieldData(r, ctl);

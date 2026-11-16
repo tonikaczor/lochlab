@@ -1,10 +1,8 @@
 'use strict';
-/* Tonfunk Lab: „Mein Weg“, ruhige Kurzansicht oben auf der Startseite (für neue und unsichere Nutzer).
-   Oben: Weitermachen (der vorhandene Knopf #contGo wird hierher gesetzt) und Mein Stand. Darunter vier Kacheln: Wiederholen (fällige Karten und Aufgaben), 10-Minuten-Einheit
-   (der vorhandene Knopf #e10Go), Ausbildungsplan bzw. Lernpfad mit dem nächsten Schritt, Prüfung bzw. bei den Wegen Studium (mit Prüfungs-Countdown).
-   Darunter „Alle Labs“: die bestehenden Karten (Rubriken, Projekte, Plan-Zeile) einklappbar. Standard: für Nutzer ohne Fortschritt zu, mit Fortschritt offen wie bisher; die eigene Wahl
-   merkt sich lm4.home.alle ('1' offen, '0' zu). Suche und „Startseite anpassen“ öffnen den Bereich vorübergehend (Klasse rub-free auf <html>).
-   tiles(m, cd) ist reine Logik (Node-getestet); der Rest ist Oberfläche. Es wird nichts am Lernstand verändert. Fehlt ein Skript oder gibt es einen Fehler, bleibt die Startseite wie sie war. */
+/* Tonfunk Lab: „Mein Weg“, der Kern der Ansicht Start (für neue und unsichere Nutzer).
+   tiles(m, cd) ist reine Logik (Node-getestet): Mein Stand, Wiederholen, Plan, Prüfung aus dem Modell von meinstand-core.js und dem Countdown.
+   alleOffen() und der Schlüssel lm4.home.alle stammen aus der Zeit vor dem Umbau in fünf Ansichten ("Alle Labs" einklappbar); der Schlüssel bleibt im Speicher, wird aber nicht mehr gelesen.
+   Es wird nichts am Lernstand verändert. Fehlt ein Skript oder gibt es einen Fehler, bleibt die Startseite wie sie war. */
 (function (root) {
   const WEGE = ['tec', 'stu', 'wing', 'winf'];
   const pl = (n, e, m) => n + ' ' + (n === 1 ? e : m);
@@ -20,7 +18,7 @@
     };
     const parts = []; if (nK > 0) parts.push(pl(nK, 'Lernkarte', 'Lernkarten') + ' fällig'); if (nW > 0) parts.push(pl(nW, 'Aufgabe', 'Aufgaben') + ' zum Wiederholen');
     const wd = { titel: 'Wiederholen', text: parts.length ? parts.join(' · ') : (m.karten.neu > 0 ? 'Heute ist nichts fällig. Lernkarten zum Üben warten.' : 'Heute ist nichts fällig.'), href: nW > 0 ? 'wiederholen.html' : 'karten.html', n: nK + nW };
-    const first = m.bereiche.find(b => !b.optional && b.n > 0 && b.ampel === 'gelb') || m.bereiche.find(b => !b.optional && b.n > 0 && b.ampel === 'grau');
+    const first = m.bereiche.find(b => !b.optional && b.n > 0 && (b.ampel === 'gelb' || b.ampel === 'grau'));   // erster offener Bereich in Planreihenfolge
     const pn = { titel: weg ? 'Mein Lernpfad' : 'Ausbildungsplan', text: first ? (first.ampel === 'gelb' ? 'Weiter: ' : 'Starte mit: ') + first.titel : (m.bereiche.length ? 'Alles Wichtige ist geschafft. Schau dir die Übersicht an.' : (weg ? 'Module ansehen' : 'Lernfelder ansehen')), href: 'ausbildungsplan.html' };
     let pr;
     if (cd) pr = { titel: weg ? 'Studium' : 'Prüfung', text: cd.text + (cd.heute ? ' Heute dran: ' + cd.heute.titel + '.' : ''), href: cd.href, gesetzt: true };
@@ -36,77 +34,81 @@
   if (typeof document === 'undefined') return;
 
   /* ---------- Oberfläche ---------- */
-  const doc = document, html = doc.documentElement, KEY = exp.KEY;
+  /* Ansicht Start (Umbau S1): #meinWeg mit der blauen Karte (#contGo wird aus #top hierher gesetzt) und darunter nur Fälligem: Wiederholen (nur wenn etwas fällig ist),
+     10-Minuten-Einheit (#e10Go aus einheit10.js, nur wenn heute noch keine gemacht wurde, nicht bei den Wegen), Prüfungstermin (nur mit Datum).
+     Beim ersten Besuch (kein Beruf gespeichert, kein Fortschritt) steht darüber die Frage "Was lernst du?" (#mwErst) und sonst nur die blaue Karte.
+     "Mein Stand" (#mwStand) steht in der Ansicht "Ich" (#ichStand), den Zustand der Zeile Wiederholen in "Üben" (#ubWd) füllt dieses Skript mit.
+     Die alte Sprungmarke #meinWeg führt über home-views.js in die Ansicht Start. Es wird nichts in den Speicher geschrieben. */
+  const doc = document, html = doc.documentElement;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const lsGet = k => { try { return root.localStorage.getItem(k); } catch (e) { return null; } };
-  const lsSet = (k, v) => { try { root.localStorage.setItem(k, v); } catch (e) {} };
   const MS = root.MeinStandCore;
   if (!MS || !doc.getElementById('top') || !doc.getElementById('contGo')) return;
-  let sec = null, tg = null;
-  const ICON = { stand: '📊', wd: '🔁', plan: '🗺', pr: '🎓' };
-  /* Kachel in place aktualisieren (das Element bleibt, damit ein Tastaturfokus beim Neuzeichnen nicht verloren geht) */
-  function setTile(id, ic, t) {
-    const a = sec.querySelector('#' + id); if (!a) return;
+  let sec = null;
+  const SYM = { stand: 'i-chart', wd: 'i-repeat', pr: 'i-cal' };
+  const ic = s => '<span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#' + s + '"/></svg></span>';
+  /* Zeile in place aktualisieren (das Element bleibt, damit ein Tastaturfokus beim Neuzeichnen nicht verloren geht) */
+  function setTile(a, sym, t) {
+    if (!a) return;
     a.setAttribute('href', t.href);
-    a.innerHTML = '<span class="mw-i" aria-hidden="true">' + ic + '</span><span class="mw-x"><b>' + esc(t.titel) + '</b><small>' + esc(t.text) + '</small>' + (t.sub ? '<small class="mw-s">' + esc(t.sub) + '</small>' : '') + '</span><span class="mw-p" aria-hidden="true">›</span>';
+    a.innerHTML = ic(sym) + '<span class="mw-x"><b>' + esc(t.titel) + '</b><small>' + esc(t.text) + '</small></span><span class="mw-p" aria-hidden="true">›</span>';
   }
   function model() { return MS.build(MS.fromGlobals(root)); }
+  const erstBesuch = () => { let neu = false; try { neu = !MS.hatFortschritt(k => lsGet(k)); } catch (e) { neu = false; } return neu && !lsGet('lm4.beruf'); };
+  function e10heute() { try { const E = root.Einheit10, e = E && E.normE ? E.normE(JSON.parse(lsGet(E.KEY) || '{}')) : null; return !!(e && e.tage[E.tagKey(Date.now())]); } catch (e) { return false; } }
   function fill() {
     if (!sec) return;
     let m; try { m = model(); } catch (e) { return; }
     let cd = null; try { cd = root.Countdown && root.Countdown.kurz ? root.Countdown.kurz(m) : null; } catch (e) { cd = null; }
-    const t = tiles(m, cd);
-    setTile('mwStand', ICON.stand, t.stand); setTile('mwWd', ICON.wd, t.wiederholen); setTile('mwPlan', ICON.plan, t.plan); setTile('mwPr', ICON.pr, t.pruefung);
-    html.classList.toggle('mw-neu', t.neu);
-    toggleLabel();
+    const t = tiles(m, cd), erst = erstBesuch();
+    html.classList.toggle('mw-neu', t.neu); html.classList.toggle('mw-erst', erst);
+    const erstEl = sec.querySelector('#mwErst'); if (erstEl) erstEl.hidden = !erst;
+    /* Fälliges */
+    const wd = sec.querySelector('#mwWd'), pr = sec.querySelector('#mwPr'), e10 = doc.getElementById('e10Go');
+    setTile(wd, SYM.wd, t.wiederholen); wd.hidden = erst || !(t.wiederholen.n > 0);
+    setTile(pr, SYM.pr, t.pruefung); pr.hidden = erst || !t.pruefung.gesetzt;
+    if (e10) e10.classList.toggle('mw-aus', erst || !!m.weg || e10heute());
+    const due = sec.querySelector('#mwDue'); if (due) due.hidden = [wd, pr, e10].every(x => !x || x.hidden || x.classList.contains('mw-aus'));
+    /* Ich: Mein Stand (ohne "Nächster Schritt": die Empfehlung steht nur in der blauen Karte) */
+    const host = doc.getElementById('ichStand');
+    if (host) { let a = doc.getElementById('mwStand'); if (!a) { host.insertAdjacentHTML('afterbegin', '<a class="mw-t mw-stand" id="mwStand" href="meinstand.html"></a>'); a = doc.getElementById('mwStand'); } setTile(a, SYM.stand, t.stand); }
+    /* Üben: Zustand der Zeile Wiederholen */
+    const uw = doc.getElementById('ubWd'), uz = doc.getElementById('ubWdZ');
+    if (uw) uw.setAttribute('href', t.wiederholen.href);
+    if (uz) uz.textContent = t.wiederholen.n > 0 ? t.wiederholen.n + ' fällig' : 'nichts fällig';
   }
-  /* „Alle Labs“: Zustand und Knopf */
-  const wantOpen = () => { let neu = false; try { neu = !MS.hatFortschritt(k => lsGet(k)); } catch (e) { neu = false; } return alleOffen(lsGet(KEY), neu); };
-  function nLabs() { try { return doc.querySelectorAll('#groups .card:not(.vbrow):not(.be-out):not(.hm-hid)').length; } catch (e) { return 0; } }
-  function toggleLabel() {
-    if (!tg) return; const open = !html.classList.contains('mw-zu'), n = nLabs();
-    tg.querySelector('.lb').textContent = 'Alle Labs' + (n ? ' (' + n + ')' : '') + (open ? '' : ': einblenden');
-    tg.setAttribute('aria-expanded', open ? 'true' : 'false');
+  /* Erster Besuch: elf Einträge (sieben Berufe, vier Wege); die Wahl speichert berufe.js und lädt die Startseite neu */
+  function erstHtml() {
+    const B = root.Berufe; if (!B || !B.BERUFE) return '';
+    const k = l => l.map(b => '<button type="button" class="mw-k" data-k="' + esc(b.k) + '"><b>' + esc(b.n) + '</b><small>' + esc(b.s) + '</small></button>').join('');
+    return '<h2 class="vh" id="mwErstH">Willkommen! Was lernst du?</h2><p class="vsub">Dann zeigt dir Tonfunk Lab die passenden Labs. Du kannst es später unter „Ich“ ändern.</p>'
+      + '<p class="mw-gl">Ausbildung</p><div class="mw-wahl">' + k(B.BERUFE) + '</div><p class="mw-gl">Studium und Technik</p><div class="mw-wahl">' + k(B.WEGE) + '</div>'
+      + '<p class="mw-gl">Oder gleich loslegen</p>';
   }
-  function setOpen(o, save) { html.classList.toggle('mw-zu', !o); if (save) lsSet(KEY, o ? '1' : '0'); toggleLabel(); }
   function build() {
     const top = doc.getElementById('top'), go = doc.getElementById('contGo'); if (!top || !go || doc.getElementById('meinWeg')) return;
-    sec = doc.createElement('section'); sec.id = 'meinWeg'; sec.className = 'mw'; sec.setAttribute('aria-labelledby', 'mwH');
-    sec.innerHTML = '<h2 id="mwH">Mein Weg</h2><div class="mw-g"><div class="mw-hero" id="mwHero"></div><a class="mw-t mw-stand" id="mwStand" href="meinstand.html"><span class="mw-x"><b>Mein Stand</b></span></a></div>'
-      + '<div class="mw-row" id="mwRow"><a class="mw-t" id="mwWd" href="wiederholen.html"><span class="mw-x"><b>Wiederholen</b></span></a><a class="mw-t" id="mwPlan" href="ausbildungsplan.html"><span class="mw-x"><b>Ausbildungsplan</b></span></a><a class="mw-t" id="mwPr" href="meinstand.html#countdown"><span class="mw-x"><b>Prüfung</b></span></a></div>';
+    sec = doc.createElement('section'); sec.id = 'meinWeg'; sec.className = 'mw'; sec.setAttribute('aria-label', 'Dein nächster Schritt');
+    sec.innerHTML = '<div class="mw-erst" id="mwErst" aria-labelledby="mwErstH" hidden>' + erstHtml() + '</div><div class="mw-hero" id="mwHero"></div>'
+      + '<section class="mw-due" id="mwDue" aria-labelledby="mwDueH" hidden><h3 class="vh3" id="mwDueH">Heute dran</h3><div class="vl" id="mwRow"><a class="mw-t" id="mwWd" href="wiederholen.html" hidden></a><a class="mw-t" id="mwPr" href="meinstand.html#countdown" hidden></a></div></section>';
     top.parentNode.insertBefore(sec, top);
     sec.querySelector('#mwHero').appendChild(go);
+    sec.querySelector('#mwErst').addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-k]'); if (b && root.Berufe && root.Berufe.waehle) root.Berufe.waehle(b.dataset.k); });
     place();
     html.classList.add('mw');
-    const sn = doc.querySelector('#bnav a[href="#top"]'); if (sn) { sn.setAttribute('href', '#meinWeg'); sn.setAttribute('data-t', 'meinWeg'); }   // "Start" in der unteren Leiste springt zu Mein Weg
-    /* Alle Labs: Knopf über der Plan-Zeile */
-    const anchor = doc.getElementById('planRow') || doc.getElementById('vbRow') || doc.getElementById('rub') || doc.getElementById('groups');
-    if (anchor && anchor.parentNode) {
-      tg = doc.createElement('button'); tg.type = 'button'; tg.id = 'mwAlle'; tg.className = 'cl-tg mw-tg'; tg.innerHTML = '<span class="ch" aria-hidden="true"></span><span class="lb"></span>';
-      tg.setAttribute('aria-controls', 'groups');
-      anchor.parentNode.insertBefore(tg, anchor);
-      tg.addEventListener('click', () => setOpen(html.classList.contains('mw-zu'), true));
-      setOpen(wantOpen(), false);
-    }
-    /* Sprungmarken der unteren Leiste und Adressen mit #grp-… öffnen den Bereich */
-    doc.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href^="#grp-"]'); if (a && html.classList.contains('mw-zu')) setOpen(true, false); });
-    if (/^#grp-/.test(root.location.hash || '') && html.classList.contains('mw-zu')) setOpen(true, false);
-    /* während Suche und „Startseite anpassen“ (rub-free) bleibt der Bereich sichtbar; Knopf-Text nachführen */
-    try { new MutationObserver(() => toggleLabel()).observe(html, { attributes: true, attributeFilter: ['class'] }); } catch (e) {}
     fill();
   }
-  /* 10-Minuten-Knopf (einheit10.js) in die Kachelreihe setzen, auch wenn er erst später entsteht */
+  /* 10-Minuten-Knopf (einheit10.js) in die Liste des Fälligen setzen, auch wenn er erst später entsteht */
   function place() {
     if (!sec) return; const row = sec.querySelector('#mwRow'), e10 = doc.getElementById('e10Go'); if (!row) return;
-    if (e10 && e10.parentNode !== row) row.insertBefore(e10, row.querySelector('#mwPlan'));
+    if (e10 && e10.parentNode !== row) row.insertBefore(e10, row.querySelector('#mwPr'));
     const go = doc.getElementById('contGo'), hero = sec.querySelector('#mwHero'); if (go && hero && go.parentNode !== hero) hero.insertBefore(go, hero.firstChild);
   }
   function again() { try { place(); fill(); } catch (e) {} }
-  try { build(); } catch (e) { try { if (sec && sec.parentNode) { const go = doc.getElementById('contGo'), top = doc.getElementById('top'); if (go && top && go.parentNode !== top) top.insertBefore(go, top.firstChild); sec.remove(); } html.classList.remove('mw', 'mw-zu'); } catch (x) {} return; }
-  [400, 1200, 2800].forEach(ms => setTimeout(again, ms));   // Plan, Coach und 10-Minuten-Knopf laden teils später
+  try { build(); } catch (e) { try { if (sec && sec.parentNode) { const go = doc.getElementById('contGo'), top = doc.getElementById('top'); if (go && top && go.parentNode !== top) top.insertBefore(go, top.firstChild); sec.remove(); } html.classList.remove('mw', 'mw-erst'); } catch (x) {} return; }
+  [400, 1200, 2800].forEach(ms => setTimeout(again, ms));   // Plan, Countdown und 10-Minuten-Knopf laden teils später
   root.addEventListener('load', again);
   root.addEventListener('pageshow', e => { if (e.persisted) again(); });
   doc.addEventListener('visibilitychange', () => { if (!doc.hidden) again(); });
-  root.addEventListener('storage', again); root.addEventListener('countdown:geaendert', again); root.addEventListener('plan:geladen', again);
-  root.MeinWeg.render = again; root.MeinWeg.setOpen = setOpen;
+  root.addEventListener('storage', again); root.addEventListener('countdown:geaendert', again); root.addEventListener('einheit10:fertig', again);
+  root.MeinWeg.render = again;
 })(typeof window !== 'undefined' ? window : globalThis);

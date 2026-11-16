@@ -14,6 +14,7 @@
 <title>Tonfunk Embedded vertieft</title>
 <link rel="stylesheet" href="emb.css">
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <div id="app">
@@ -29,11 +30,16 @@
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <script src="ver.js"></script>
+<script src="aufgaben.js"></script>
 <script src="embcore.js"></script>
 <script src="embdata.js"></script>
 <script src="embviz.js"></script>
 <script src="embui.js"></script>
 <script src="aufgabe-vorlesen.js" async></script>
+<script>window.LR_TAB = { 'emblab.html': { name: 'Embedded vertieft', teil: { tasks: 'Aufgaben' }, extra: [{ gruppe: 'hilfe', name: 'Hilfe', tu: function () { try { if (window.EMB_UI) EMB_UI.showBlock('timer'); var d = document.querySelector('details.exp'); if (d) { d.open = true; d.scrollIntoView({ block: 'start' }); } } catch (e) { } } }] } };
+(window.__einQueue = window.__einQueue || []).push({ lab: 'emb', betrieb: 'Mikrocontroller programmieren und in Betrieb nehmen: Timer und PWM einstellen, Signale abtasten, Busse und Zustandsautomaten verstehen. Das Lab erklärt, warum eine Schaltung zeitlich richtig reagiert (Entprellen, Abtastrate, Interrupt-Last).' });</script>
+<script src="labrahmen.js"></script>
+<script src="einordnung.js" async></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

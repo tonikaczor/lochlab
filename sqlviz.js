@@ -33,7 +33,13 @@
 .vq-ctl{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}.vq-ctl label{flex:1 1 140px;display:block}.vq-ctl label span{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
 .vq-sc{max-height:340px;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
 .vq-sc svg{max-width:none;width:100%;min-width:300px}
-.vq-note{margin:6px 0 0;font-size:12.5px;color:var(--mute);line-height:1.4}`;
+.vq-note{margin:6px 0 0;font-size:12.5px;color:var(--mute);line-height:1.4}
+.vq-key{margin:0 0 6px;font-size:13px}.vq-key code{font-family:ui-monospace,Menlo,Consolas,monospace;color:var(--accent);overflow-wrap:anywhere}
+.vq-jx{margin:6px 0 0;font-size:14px;line-height:1.45;min-height:3em}
+.vq .jh{fill:transparent}.vq .jr{cursor:pointer;outline:none}.vq .jr:focus-visible .jh{stroke:var(--accent);stroke-width:1.6}.vq .jr.sel .jh{fill:var(--work);stroke:var(--accent);stroke-width:1.4}
+.vq .jr.none{opacity:.7}.vq .nb{fill:none;stroke:var(--warn);stroke-width:1.2;stroke-dasharray:3 2}
+.vq-join.has-sel .ln{opacity:.18}.vq-join.has-sel .ln.on{opacity:1;stroke-width:3}
+@media(max-width:700px){.vq .sm{font-size:11.5px}.vq-sc svg{min-width:340px}.vq-sc svg text{font-size:14px}.vq svg.vq-rel text{font-size:13.6px}.vq-note{font-size:14px}}`;
   function css() { try { if (typeof document === 'undefined' || document.getElementById('vqCss')) return; const s = document.createElement('style'); s.id = 'vqCss'; s.textContent = CSS; document.head.appendChild(s); } catch (e) {} }
   css();
 
@@ -186,32 +192,41 @@
       const nl = lt.cols.length, key = a => JSON.stringify(a), lk = new Map(), rk = new Map();
       lt.rows.forEach((row, i) => { const k = key(row); if (!lk.has(k)) lk.set(k, i); }); rt.rows.forEach((row, i) => { const k = key(row); if (!rk.has(k)) rk.set(k, i); });
       const pairs = []; r.rows.forEach(x => { const a = lk.get(key(x.slice(0, nl))), b = rk.get(key(x.slice(nl))); if (a !== undefined && b !== undefined) pairs.push([a, b]); });
-      const maxR = 14, RH = 20, top = 34, nL = Math.min(lt.rows.length, maxR), nR = Math.min(rt.rows.length, maxR), hh = top + Math.max(nL, nR) * RH + 28;
+      const narrow = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width:700px)').matches;
+      const maxR = 14, RH = narrow ? 44 : 28, top = 34, nL = Math.min(lt.rows.length, maxR), nR = Math.min(rt.rows.length, maxR), hh = top + Math.max(nL, nR) * RH + 28;
       const hasL = new Set(pairs.map(p => p[0])), hasR = new Set(pairs.map(p => p[1])), lx = 116, rx = 224; let s = '';
-      s += `<text class="b" x="${lx - 8}" y="16" text-anchor="end">${esc(clip((left.alias ? left.alias + ' = ' : '') + left.table, 16))}</text><text class="b" x="${rx + 8}" y="16">${esc(clip((cur.alias ? cur.alias + ' = ' : '') + cur.table, 16))}</text><text class="m sm" x="${W / 2}" y="16" text-anchor="middle">${esc(j.kind === 'left' ? 'LEFT JOIN' : 'JOIN')}</text>`;
-      pairs.forEach(p => { if (p[0] < maxR && p[1] < maxR) { const y1 = top + p[0] * RH + RH / 2, y2 = top + p[1] * RH + RH / 2; s += `<path class="ln" d="M${lx} ${f(y1)} C${lx + 40} ${f(y1)} ${rx - 40} ${f(y2)} ${rx} ${f(y2)}"/>`; } });
+      const lab = (t, i) => rowLabel(t, t.rows[i]), q1 = x => '„' + x + '“', onTxt = (j.on || '').replace(/\s+/g, ' '), nm = (t, al) => (al ? al + ' = ' : '') + t;
+      const partnersOf = (side, i) => pairs.filter(p => p[side] === i).map(p => p[1 - side]);
+      const list = (t, ids) => ids.slice(0, 4).map(k => q1(lab(t, k))).join(', ') + (ids.length > 4 ? ' und ' + (ids.length - 4) + ' weitere' : '');
+      const msgL = i => { const ps = partnersOf(0, i); return ps.length ? q1(lab(lt, i)) + ' aus ' + left.table + ' findet über ' + onTxt + ' in ' + cur.table + ' ' + (ps.length === 1 ? 'einen Partner: ' : ps.length + ' Partner: ') + list(rt, ps) + '.' + (ps.length > 1 ? ' Die Zeile steht deshalb im Ergebnis mehrfach.' : '') : q1(lab(lt, i)) + ' aus ' + left.table + ' hat in ' + cur.table + ' keinen Partner. ' + (j.kind === 'left' ? 'Beim LEFT JOIN bleibt die Zeile erhalten, die Spalten von ' + cur.table + ' sind NULL.' : 'Beim INNER JOIN fällt die Zeile weg.'); };
+      const msgR = i => { const ps = partnersOf(1, i); return ps.length ? q1(lab(rt, i)) + ' aus ' + cur.table + ' wird über ' + onTxt + ' von ' + (ps.length === 1 ? 'einer Zeile' : ps.length + ' Zeilen') + ' in ' + left.table + ' gefunden: ' + list(lt, ps) + '.' : q1(lab(rt, i)) + ' aus ' + cur.table + ' passt zu keiner Zeile in ' + left.table + ' und kommt im Ergebnis nicht vor.'; };
+      s += `<text class="b" x="${lx - 8}" y="16" text-anchor="end">${esc(clip(nm(left.table, left.alias), 16))}</text><text class="b" x="${rx + 8}" y="16">${esc(clip(nm(cur.table, cur.alias), 16))}</text><text class="m sm" x="${W / 2}" y="16" text-anchor="middle">${esc(j.kind === 'left' ? 'LEFT JOIN' : 'JOIN')}</text>`;
+      pairs.forEach(p => { if (p[0] < maxR && p[1] < maxR) { const y1 = top + p[0] * RH + RH / 2, y2 = top + p[1] * RH + RH / 2; s += `<path class="ln" data-a="${p[0]}" data-b="${p[1]}" d="M${lx} ${f(y1)} C${lx + 40} ${f(y1)} ${rx - 40} ${f(y2)} ${rx} ${f(y2)}"/>`; } });
       for (let i = 0; i < nL; i++) {
         const y = top + i * RH + RH / 2, ok = hasL.has(i);
+        s += `<g class="jr${ok ? '' : ' none'}" data-jr="l${i}" tabindex="0" role="button" aria-pressed="false" aria-label="${esc(msgL(i))}" data-msg="${esc(msgL(i))}"><rect class="jh" x="0" y="${f(y - RH / 2)}" width="${lx + 14}" height="${RH}" rx="6"/>`;
         s += ok ? `<circle class="ck" cx="${lx}" cy="${f(y)}" r="4.5"/>` : `<circle class="cd" cx="${lx}" cy="${f(y)}" r="4"/>`;
-        s += `<text class="${ok ? '' : 'm'} sm" x="${lx - 9}" y="${f(y + 3.5)}" text-anchor="end">${esc(clip(rowLabel(lt, lt.rows[i]), 19))}</text>`;
-        if (!ok) s += j.kind === 'left' ? `<text class="warn sm" x="${lx + 10}" y="${f(y + 3.5)}">NULL</text>` : `<text class="m sm" x="${lx + 10}" y="${f(y + 3.5)}">✗</text>`;
+        s += `<text class="${ok ? '' : 'm'} sm" x="${lx - 9}" y="${f(y + 4)}" text-anchor="end">${esc(clip(lab(lt, i), 17))}</text>`;
+        if (!ok) s += j.kind === 'left' ? `<rect class="nb" x="${lx + 8}" y="${f(y - 9)}" width="40" height="18" rx="5"/><text class="warn sm" x="${lx + 28}" y="${f(y + 4)}" text-anchor="middle">NULL</text>` : `<text class="m sm" x="${lx + 10}" y="${f(y + 4)}">✗</text>`;
+        s += '</g>';
       }
       for (let i = 0; i < nR; i++) {
         const y = top + i * RH + RH / 2, ok = hasR.has(i);
+        s += `<g class="jr${ok ? '' : ' none'}" data-jr="r${i}" tabindex="0" role="button" aria-pressed="false" aria-label="${esc(msgR(i))}" data-msg="${esc(msgR(i))}"><rect class="jh" x="${rx - 14}" y="${f(y - RH / 2)}" width="${W - rx + 14}" height="${RH}" rx="6"/>`;
         s += ok ? `<circle class="ck" cx="${rx}" cy="${f(y)}" r="4.5"/>` : `<circle class="cd" cx="${rx}" cy="${f(y)}" r="4"/>`;
-        s += `<text class="${ok ? '' : 'm'} sm" x="${rx + 9}" y="${f(y + 3.5)}">${esc(clip(rowLabel(rt, rt.rows[i]), 19))}</text>`;
+        s += `<text class="${ok ? '' : 'm'} sm" x="${rx + 9}" y="${f(y + 4)}">${esc(clip(lab(rt, i), 16))}</text></g>`;
       }
       const more = (lt.rows.length > maxR || rt.rows.length > maxR) ? 'Es werden die ersten ' + maxR + ' Zeilen je Seite gezeigt. ' : '';
       s += `<text class="m sm" x="8" y="${f(hh - 8)}">${esc(more)}${esc(pairs.length + ' Paar' + (pairs.length === 1 ? '' : 'e'))}</text>`;
       const lone = lt.rows.length - hasL.size;
-      h += `<div class="vq"><h5>JOIN ${shown + 1}: Zeilen finden ihre Partner</h5><svg viewBox="0 0 ${W} ${f(hh)}" role="img" aria-label="Zuordnung der Zeilen von ${esc(left.table)} zu ${esc(cur.table)} über die ON-Bedingung">${s}</svg><p class="vq-note">Jede Linie ist ein Paar, das die ON-Bedingung erfüllt. ${lone > 0 ? (j.kind === 'left' ? lone + ' Zeile' + (lone === 1 ? '' : 'n') + ' links ohne Partner bleiben beim LEFT JOIN erhalten (rechte Spalten NULL).' : lone + ' Zeile' + (lone === 1 ? '' : 'n') + ' links ohne Partner fallen beim INNER JOIN weg.') : 'Alle Zeilen links haben mindestens einen Partner.'}${pairs.length > hasL.size && hasL.size ? ' Mehrere Linien von einer Zeile bedeuten: Diese Zeile kommt im Ergebnis mehrfach vor.' : ''}</p></div>`;
+      h += `<div class="vq vq-join"><h5>JOIN ${shown + 1}: Zeilen finden ihre Partner</h5><p class="vq-key">Verbunden über: <code>${esc(onTxt)}</code></p><svg viewBox="0 0 ${W} ${f(hh)}" role="group" aria-label="Zuordnung der Zeilen von ${esc(left.table)} zu ${esc(cur.table)} über die ON-Bedingung. Zeilen antippen zeigt ihre Partner.">${s}</svg><p class="vq-jx" aria-live="polite">Tippe eine Zeile an. Dann siehst du, welche Partner sie über den Schlüssel findet. Graue Zeilen mit gestricheltem Punkt haben keinen Partner.</p><p class="vq-note">Jede Linie ist ein Paar, das die ON-Bedingung erfüllt. ${lone > 0 ? (j.kind === 'left' ? lone + ' Zeile' + (lone === 1 ? '' : 'n') + ' links ohne Partner bleiben beim LEFT JOIN erhalten (rechte Spalten NULL).' : lone + ' Zeile' + (lone === 1 ? '' : 'n') + ' links ohne Partner fallen beim INNER JOIN weg.') : 'Alle Zeilen links haben mindestens einen Partner.'}${pairs.length > hasL.size && hasL.size ? ' Mehrere Linien von einer Zeile bedeuten: Diese Zeile kommt im Ergebnis mehrfach vor.' : ''}</p></div>`;
       shown++;
     });
     return h;
   }
 
   /* ---------- UPDATE / DELETE / INSERT: betroffene Zeilen ---------- */
-  function dmlViz(st, db) {
+  function dmlViz(st, db, blocked) {
     const C = core(), ts = st.toks; let table = null, label = '', where = null, kind = st.kw;
     if (kind === 'UPDATE' && ts[1] && ts[1].t === 'id') table = ts[1].v; else if (kind === 'DELETE' && ts[1] && String(ts[1].v).toUpperCase() === 'FROM' && ts[2]) table = ts[2].v; else return '';
     let d = 0, wi = -1; ts.forEach((t, i) => { if (t.t === 'p' && t.v === '(') d++; else if (t.t === 'p' && t.v === ')') d--; else if (d === 0 && wi < 0 && t.t === 'id' && String(t.v).toUpperCase() === 'WHERE') wi = i; });
@@ -219,10 +234,11 @@
     const tb = C.findTable(db, table); if (!tb) return '';
     const n = tb.rows.length; let flags = tb.rows.map(() => 1);
     if (where) { const r = run(db, 'SELECT CASE WHEN ' + where + ' THEN 1 ELSE 0 END FROM ' + tb.name); if (!r.ok || r.rows.length !== n) return ''; flags = r.rows.map(x => (x[0] === 1 ? 1 : 0)); }
-    const k = flags.reduce((a, b) => a + b, 0); label = (kind === 'UPDATE' ? 'ändert sich' : 'wird gelöscht');
+    if (blocked) flags = flags.map(() => 0); /* abgelehnte Anweisung: nichts wird geändert oder gelöscht */
+    const k = flags.reduce((a, b) => a + b, 0); label = blocked ? (kind === 'UPDATE' ? 'geändert: abgelehnt' : 'gelöscht: abgelehnt') : (kind === 'UPDATE' ? 'ändert sich' : 'wird gelöscht');
     const r = chipRows(n, flags, 40, 'ch'), hh = 40 + r[1] + 26;
     const s = `<text class="b" x="8" y="16">${esc(tb.name)}: ${n} Zeile${n === 1 ? '' : 'n'}</text><text class="b" x="${W - 8}" y="16" text-anchor="end">${k} ${esc(label)}</text><text class="m sm" x="8" y="32">${esc(where ? 'WHERE ' + clip(where.replace(/\s+/g, ' '), 46) : 'keine WHERE-Bedingung')}</text>${r[0]}`;
-    const warn = !where && n > 1 ? `<p class="vq-note" style="color:var(--warn)">⚠ Ohne WHERE trifft ${kind === 'UPDATE' ? 'UPDATE' : 'DELETE'} alle ${n} Zeilen der Tabelle.</p>` : `<p class="vq-note">Orange Kästchen sind die Zeilen, die ${kind === 'UPDATE' ? 'geändert' : 'gelöscht'} werden, gestrichelte bleiben unberührt.</p>`;
+    const warn = blocked ? `<p class="vq-note" style="color:var(--warn)">Blockiert: ${esc(blocked)} Es ändert sich nichts, alle Zeilen bleiben.</p>` : !where && n > 1 ? `<p class="vq-note" style="color:var(--warn)">⚠ Ohne WHERE trifft ${kind === 'UPDATE' ? 'UPDATE' : 'DELETE'} alle ${n} Zeilen der Tabelle.</p>` : `<p class="vq-note">Orange Kästchen sind die Zeilen, die ${kind === 'UPDATE' ? 'geändert' : 'gelöscht'} werden, gestrichelte bleiben unberührt.</p>`;
     return `<div class="vq"><h5>${kind === 'UPDATE' ? 'UPDATE' : 'DELETE'}: betroffene Zeilen</h5><svg viewBox="0 0 ${W} ${f(hh)}" role="img" aria-label="${k} von ${n} Zeilen der Tabelle ${esc(tb.name)} sind betroffen">${s}</svg>${warn}</div>`;
   }
 
@@ -235,7 +251,7 @@
       const sts = statements(sql); if (!sts.length || sts.length > 6) return '';
       const cur = core().cloneDb(db); let out = '', n = 0;
       for (const st of sts) {
-        if (n < 3) { let v = ''; if (st.kw === 'SELECT') v = selectViz(st, cur); else if ((st.kw === 'UPDATE' || st.kw === 'DELETE') && !opt.task) v = dmlViz(st, cur); /* in Aufgaben keine Warnung vor fehlendem WHERE (Verdeckte-Fehler-Prinzip) */ if (v) { out += (sts.length > 1 ? `<p class="vq-note" style="margin:8px 0 0">Anweisung ${sts.indexOf(st) + 1}</p>` : '') + v; n++; } }
+        if (n < 3) { let v = ''; if (st.kw === 'SELECT') v = selectViz(st, cur); else if ((st.kw === 'UPDATE' || st.kw === 'DELETE') && !opt.task) { const pr = core().exec(core().cloneDb(cur), st.text); v = dmlViz(st, cur, pr.ok ? '' : String(pr.error || 'Die Anweisung wird abgelehnt.')); } /* in Aufgaben keine Warnung vor fehlendem WHERE (Verdeckte-Fehler-Prinzip) */ if (v) { out += (sts.length > 1 ? `<p class="vq-note" style="margin:8px 0 0">Anweisung ${sts.indexOf(st) + 1}</p>` : '') + v; n++; } }
         const r = core().exec(cur, st.text); if (!r.ok) break;
       }
       return out;
@@ -245,15 +261,15 @@
   /* ---------- Tabellen als Raster und Beziehungs-Explorer ---------- */
   function gridSvg(db, name, sel) {
     const t = core().findTable(db, name); if (!t) return '';
-    const nc = t.cols.length, cw = (W - 6) / nc, RH = 26, hh = 24, hgt = hh + t.rows.length * RH + 6; let s = '';
+    const nr = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width:700px)').matches, kf = nr ? 1.3 : 1, nc = t.cols.length, cw = (W - 6) / nc, RH = 26, hh = 24, hgt = hh + t.rows.length * RH + 6; let s = '';
     const pkI = t.pk.map(n => t.cols.findIndex(c => c.n === n)), fkI = t.fks.map(x => t.cols.findIndex(c => c.n === x.c));
-    t.cols.forEach((c, i) => { s += `<rect class="hd" x="${f(3 + i * cw)}" y="2" width="${f(cw)}" height="${hh - 2}"/><text class="hdt sm" x="${f(3 + i * cw + 4)}" y="17">${esc(clip(c.n, Math.max(3, Math.floor(cw / 6))))}</text>`; });
+    t.cols.forEach((c, i) => { s += `<rect class="hd" x="${f(3 + i * cw)}" y="2" width="${f(cw)}" height="${hh - 2}"/><text class="hdt sm" x="${f(3 + i * cw + 4)}" y="17">${esc(clip(c.n, Math.max(3, Math.floor(cw / (6 * kf)))))}</text>`; });
     t.rows.forEach((r, ri) => {
       const y = hh + ri * RH, on = ri === sel;
       s += `<g class="${on ? 'sel' : ''}" data-vqr="${ri}">`;
       r.forEach((v, i) => {
         const cls = v === null ? 'nl' : pkI.indexOf(i) >= 0 ? 'pk' : fkI.indexOf(i) >= 0 ? 'fk' : '';
-        s += `<rect class="cell" x="${f(3 + i * cw)}" y="${f(y)}" width="${f(cw)}" height="${RH}"/>` + (v === null ? `<path d="M${f(3 + i * cw + 3)} ${f(y + RH - 4)} L${f(3 + i * cw + 11)} ${f(y + 4)} M${f(3 + i * cw + 9)} ${f(y + RH - 4)} L${f(3 + i * cw + 17)} ${f(y + 4)}" stroke="var(--line)" stroke-width="1.2"/>` : '') + `<text class="sm ${cls}" x="${f(3 + i * cw + 4)}" y="${f(y + 17)}">${esc(clip(show(v), Math.max(3, Math.floor((cw - 6) / 5.8))))}</text>`;
+        s += `<rect class="cell" x="${f(3 + i * cw)}" y="${f(y)}" width="${f(cw)}" height="${RH}"/>` + (v === null ? `<path d="M${f(3 + i * cw + 3)} ${f(y + RH - 4)} L${f(3 + i * cw + 11)} ${f(y + 4)} M${f(3 + i * cw + 9)} ${f(y + RH - 4)} L${f(3 + i * cw + 17)} ${f(y + 4)}" stroke="var(--line)" stroke-width="1.2"/>` : '') + `<text class="sm ${cls}" x="${f(3 + i * cw + 4)}" y="${f(y + 17)}">${esc(clip(show(v), Math.max(3, Math.floor((cw - 6) / (5.8 * kf)))))}</text>`;
       });
       s += `<rect class="hit" x="3" y="${f(y)}" width="${W - 6}" height="${RH}"/></g>`;
     });
@@ -261,19 +277,19 @@
   }
   function relSvg(db, name, ri) {
     const C = core(), t = C.findTable(db, name); if (!t || !t.rows[ri]) return '';
-    const row = t.rows[ri], ci = n => t.cols.findIndex(c => c.n === n); let y = 6, s = '';
+    const row = t.rows[ri], ci = n => t.cols.findIndex(c => c.n === n); const RN = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width:700px)').matches, RC = RN ? 34 : 52, RV = RN ? 22 : 34; let y = 6, s = '';
     const sum = (tb, r) => tb.cols.slice(0, 3).map((c, i) => c.n + ' ' + show(r[i])).join(' · ');
     /* Eltern (Fremdschlüssel dieser Zeile) */
     const parents = t.fks.map(fk => { const pt = C.findTable(db, fk.t), v = row[ci(fk.c)]; const pr = pt && v !== null ? pt.rows.find(x => x[pt.cols.findIndex(c => c.n === fk.rc)] === v) : null; return { fk, pt, v, pr }; });
     parents.forEach(p => {
-      s += `<rect class="${p.pr ? 'bx' : 'cd'}" x="8" y="${f(y)}" width="${W - 16}" height="34" rx="6"/><text class="b sm" x="16" y="${f(y + 14)}">${esc(p.pt ? p.pt.name : p.fk.t)} (1)</text><text class="${p.pr ? '' : 'm'} sm" x="16" y="${f(y + 28)}">${esc(p.pr ? clip(sum(p.pt, p.pr), 52) : p.v === null ? p.fk.c + ' ist NULL: kein Verweis' : 'Zeile fehlt')}</text>`;
+      s += `<rect class="${p.pr ? 'bx' : 'cd'}" x="8" y="${f(y)}" width="${W - 16}" height="34" rx="6"/><text class="b sm" x="16" y="${f(y + 14)}">${esc(p.pt ? p.pt.name : p.fk.t)} (1)</text><text class="${p.pr ? '' : 'm'} sm" x="16" y="${f(y + 28)}">${esc(p.pr ? clip(sum(p.pt, p.pr), RC) : p.v === null ? p.fk.c + ' ist NULL: kein Verweis' : 'Zeile fehlt')}</text>`;
       s += `<path class="ar" d="M${W / 2} ${f(y + 52)} V${f(y + 37)} m-4 5 l4 -5 l4 5"/><text class="fk sm" x="${W / 2 + 12}" y="${f(y + 49)}">FK ${esc(p.fk.c)} = ${esc(show(p.v))}</text>`;
       y += 58;
     });
     /* gewählte Zeile */
     const bh = 22 + t.cols.length * 17 + 6;
     s += `<rect class="bxa" x="8" y="${f(y)}" width="${W - 16}" height="${f(bh)}" rx="8"/><text class="b" x="16" y="${f(y + 16)}">${esc(t.name)}</text>`;
-    t.cols.forEach((c, i) => { const v = row[i], cls = v === null ? 'nl' : t.pk.indexOf(c.n) >= 0 ? 'pk' : t.fks.some(x => x.c === c.n) ? 'fk' : ''; s += `<text class="m sm" x="16" y="${f(y + 33 + i * 17)}">${esc(c.n)}</text><text class="sm ${cls}" x="120" y="${f(y + 33 + i * 17)}">${esc(clip(show(v), 34))}</text>`; });
+    t.cols.forEach((c, i) => { const v = row[i], cls = v === null ? 'nl' : t.pk.indexOf(c.n) >= 0 ? 'pk' : t.fks.some(x => x.c === c.n) ? 'fk' : ''; s += `<text class="m sm" x="16" y="${f(y + 33 + i * 17)}">${esc(c.n)}</text><text class="sm ${cls}" x="120" y="${f(y + 33 + i * 17)}">${esc(clip(show(v), RV))}</text>`; });
     y += bh;
     /* Kinder (Zeilen anderer Tabellen, die auf diese Zeile zeigen) */
     const kids = [];
@@ -287,7 +303,7 @@
       if (!kd.rows.length) s += `<text class="m sm" x="16" y="${f(y + 38)}">keine Zeile verweist auf diese Zeile</text>`;
       y += 60;
     });
-    return `<svg viewBox="0 0 ${W} ${f(y + 4)}" role="img" aria-label="Beziehungen der gewählten Zeile in ${esc(t.name)}: Elternzeilen oben, Kindzeilen unten">${s}</svg>`;
+    return `<svg class="vq-rel" viewBox="0 0 ${W} ${f(y + 4)}" role="img" aria-label="Beziehungen der gewählten Zeile in ${esc(t.name)}: Elternzeilen oben, Kindzeilen unten">${s}</svg>`;
   }
   function mount(el, db) {
     try {
@@ -308,6 +324,24 @@
     } catch (e) {}
   }
 
+  /* Zeilen im JOIN-Bild antippen: Partnerlinien hervorheben und erklären (für alle Orte, an denen das Bild erscheint) */
+  if (typeof document !== 'undefined' && !root.__vqJoinWired) {
+    root.__vqJoinWired = true;
+    const hint = 'Tippe eine Zeile an. Dann siehst du, welche Partner sie über den Schlüssel findet.';
+    const pick = g => {
+      const box = g.closest('.vq-join'); if (!box) return; const was = g.classList.contains('sel');
+      box.querySelectorAll('.jr.sel').forEach(x => { x.classList.remove('sel'); x.setAttribute('aria-pressed', 'false'); });
+      box.querySelectorAll('.ln.on').forEach(x => x.classList.remove('on')); box.classList.remove('has-sel');
+      const jx = box.querySelector('.vq-jx');
+      if (was) { if (jx) jx.textContent = hint; return; }
+      g.classList.add('sel'); g.setAttribute('aria-pressed', 'true'); box.classList.add('has-sel');
+      const id = g.getAttribute('data-jr'), side = id[0], i = id.slice(1);
+      box.querySelectorAll('.ln[data-' + (side === 'l' ? 'a' : 'b') + '="' + i + '"]').forEach(x => x.classList.add('on'));
+      if (jx) jx.textContent = g.getAttribute('data-msg') || '';
+    };
+    document.addEventListener('click', e => { const g = e.target.closest && e.target.closest('.vq-join .jr'); if (g) pick(g); });
+    document.addEventListener('keydown', e => { if (e.key !== 'Enter' && e.key !== ' ') return; const g = e.target.closest && e.target.closest('.vq-join .jr'); if (g) { e.preventDefault(); pick(g); } });
+  }
   const API = { html, mount, statements, clauses, parseFrom, gridSvg, relSvg, stageSvg, chipRows };
   root.SQL_VIZ = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

@@ -142,7 +142,7 @@
       const grid = inst.choices.some(c => c.f && c.f.k !== 'line');
       h += `<div class="${grid ? 'zopts' : 'opts'}" id="qOpts">${inst.choices.map((c, i) => optHtml(c, i, r && r.ok && i === inst.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : '', r && r.ok)).join('')}</div>`;
     } else if (inst.type === 'num') {
-      h += `<label class="f"><span>${esc(inst.label)} (mm)</span><div class="qin"><input id="qIn" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && r.ok ? 'disabled' : ''}><span class="u">mm</span></div></label>`;
+      h += `<label class="f"><span>${esc(inst.label)} (mm)</span><div class="qin"><input id="qIn" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && r.ok ? 'disabled' : ''}><span class="u">mm</span></div></label>` + (inst.tol > 0 ? `<p class="lr-hinweis">Zahl in mm. ±${String(inst.tol).replace('.', ',')} mm gilt als richtig.</p>` : '');
     } else {
       const g = a.g || emptyG(inst);
       h += `<p class="hint2" style="margin:6px 0 2px"><b>Gesucht: ${esc(C.VN[inst.target])}.</b> Tippe auf eine Kante: leer, Volllinie, Strichlinie.</p><div class="inst zc1" id="qRas">${C.svg.raster(inst.W, inst.H, g, { w: Math.min(availW(), 340) })}</div>${LEGEND}<div class="btns" style="margin-top:4px"><button class="btn" data-ta="clr"${r && r.ok ? ' disabled' : ''}>Raster leeren</button></div>`;
@@ -176,13 +176,26 @@
   }
   const nDone = () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length;
   function updateBadge() { const b = $('#tkBd'); if (b) b.textContent = nDone() + '/' + TASKS.length; }
+  const zeigFb = el => { if (el && typeof window !== 'undefined' && window.LabRahmen && LabRahmen.zeig) try { LabRahmen.zeig(el); } catch (e) {} };
+  const tippZ = (inst, tip) => (tip ? tip + ' ' : (inst.type === 'edges' ? 'Vergleiche deine Linien mit dem gezeigten Körper. ' : 'Lies die Aufgabe noch einmal. ')) + 'Du hast einen zweiten Versuch.';
+  /* Rückmeldung nach dem Prüfen: erster Fehler = Tipp (ohne Lösung), zweiter Fehler = Lösung */
+  function fbZ(id, r, inst, expl, tip, next) {
+    const cls = r.ok ? 'ok' : r.stage === 'loes' ? 'loes' : 'tipp';
+    let h = `<div id="${id}" class="lr-fb ${cls}" role="status" tabindex="-1"><ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
+    if (r.ok || r.shown || r.stage === 'loes') h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${solHtml(inst)}<br>${esc(expl)}</div>`;
+    else if (r.stage === 'pruef') h += '<p><strong>Noch nicht.</strong> Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p>';
+    else if (r.stage === 'tipp') h += `<p><strong>Noch nicht.</strong> Tipp: ${esc(tippZ(inst, tip))}</p>`;
+    if (next && (r.ok || r.stage === 'loes')) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
+    return h + '</div>';
+  }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, ev = evalInst(S.tInst, a); if (ev.err) { toast(ev.err); return; }
     const pct = ev.ok ? pctFor(t.id) : 0, ex = exam();
-    S.tRes = { id: t.id, ok: ev.ok, pct, lines: ev.lines };
-    if (ev.ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const f = fx(); if (f && f.pass) try { f.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Lies die Hinweise und versuche es noch einmal.'); }
-    renderTasks(false);
+    const tf = S.tFail = S.tFail || {}; if (!ev.ok) tf[t.id] = (tf[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: ev.ok, pct, lines: ev.lines, stage: ev.ok ? 'ok' : ex ? 'pruef' : tf[t.id] >= 2 ? 'loes' : 'tipp' };
+    if (ev.ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const f = fx(); if (f && f.pass) try { f.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig.'); }
+    renderTasks(false); zeigFb($('#tkFb'));
   }
   function hintTask(t) {
     const h = lsGet('hints', {}), n = Math.min(3, (h[t.id] || 0) + 1), ex = exam();
@@ -204,12 +217,7 @@
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qHtml(S.tInst, a, r)}`;
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="vari">🔀 Neue Variante</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) {
-        h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-        if (r.ok) h += `<div class="rdout ok"><b>Lösung:</b> ${solHtml(S.tInst)}<br>${esc(S.tInst.expl || t.expl)}</div><div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
-        else if (!exam()) h += `<div class="rdout bad">Tipp: ${esc(S.tInst.type === 'edges' ? 'Vergleiche deine Linien mit dem gezeigten Körper. Nutze die Tipps, wenn du nicht weiterkommst.' : 'Lies die Aufgabe noch einmal und nutze die Tipps.')}</div>`;
-        else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
-      }
+      if (r) h += fbZ('tkFb', r, S.tInst, S.tInst.expl || t.expl, t.tips && t.tips[0], true);
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${nDone()} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
@@ -236,7 +244,7 @@
   });
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tAns = {}; S.tRes = null; S.tInst = C.build(t, lsGet('vari', {})[id] || 1);
+    S.task = id; S.tAns = {}; S.tRes = null; (S.tFail = S.tFail || {})[id] = 0; S.tInst = C.build(t, lsGet('vari', {})[id] || 1);
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -245,7 +253,7 @@
   function newTrainer() {
     const T = S.tr, pool = TASKS.filter(t => T.cat === 'Alle' || t.cat === T.cat), spec0 = pool[Math.floor(R0() * pool.length)], spec = Object.assign({}, spec0);
     if (spec0.trainPool) spec.pool = spec0.trainPool;
-    T.spec = spec0; T.inst = C.build(spec, 1 + Math.floor(R0() * 1e6)); T.ans = {}; T.res = null; T.counted = false; renderTrainer();
+    T.spec = spec0; T.inst = C.build(spec, 1 + Math.floor(R0() * 1e6)); T.ans = {}; T.res = null; T.counted = false; T.fail = 0; renderTrainer();
   }
   function renderTrainer() {
     const T = S.tr; if (!T.inst) { newTrainer(); return; }
@@ -254,15 +262,16 @@
       <div class="stats"><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div><div class="bx"><b>${S.rt.ok}/${S.rt.n}</b>richtig</div></div>
       <div class="card pl"><h4>Trainer · ${esc(T.spec.cat)}</h4><div class="big">${esc(T.spec.title)}</div><div class="lv">${dots(T.spec.level)}</div>${qHtml(T.inst, T.ans, r)}
       <div class="btns"><button class="btn pri" data-ra="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="sol">Lösung zeigen</button><button class="btn" data-ra="next">➜ Weiter</button></div>`;
-    if (r) { h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`; if (r.ok || r.shown) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${solHtml(T.inst)}<br>${esc(T.inst.expl || T.spec.expl)}</div>`; }
-    $('#rtView').innerHTML = h + '</div>';
+    if (r) h += fbZ('trFb', r, T.inst, T.inst.expl || T.spec.expl, T.spec.tips && T.spec.tips[0], false);
+    $('#rtView').innerHTML = h + '</div>'; zeigFb($('#trFb'));
   }
   $('#rtView').addEventListener('input', e => { if (e.target.id === 'qIn') S.tr.ans.v = e.target.value; });
   $('#rtView').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'qIn') { e.preventDefault(); trainerCheck(); } });
   function trainerCheck() {
     const T = S.tr, ev = evalInst(T.inst, T.ans); if (ev.err) { toast(ev.err); return; }
-    T.res = { ok: ev.ok, lines: ev.lines };
-    if (!T.counted) { T.counted = true; S.rt.n++; if (ev.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); } else S.rt.streak = 0; lsSet('rt', S.rt); updatePal(); }
+    if (!ev.ok && !T.fail) { T.fail = 1; T.res = { ok: false, lines: ev.lines, stage: 'tipp' }; S.rt.streak = 0; lsSet('rt', S.rt); updatePal(); sad(); renderTrainer(); return; }
+    T.res = { ok: ev.ok, lines: ev.lines, stage: ev.ok ? 'ok' : 'loes', shown: !ev.ok };
+    if (!T.counted) { T.counted = true; S.rt.n++; if (ev.ok) { S.rt.ok++; if (!T.fail) { S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); } } else S.rt.streak = 0; lsSet('rt', S.rt); updatePal(); }
     if (ev.ok) { const f = fx(); if (f && f.pass) try { f.pass(100); } catch (e) {} else ding(); } else sad();
     renderTrainer();
   }
@@ -274,7 +283,7 @@
     if (!ra) return; const a = ra.dataset.ra;
     if (a === 'chk') trainerCheck();
     else if (a === 'next') newTrainer();
-    else if (a === 'sol') { if (!T.counted) { T.counted = true; S.rt.n++; S.rt.streak = 0; lsSet('rt', S.rt); updatePal(); } T.res = { ok: false, shown: true, lines: [{ ok: false, text: 'Lösung angezeigt: zählt nicht als richtig.' }] }; renderTrainer(); }
+    else if (a === 'sol') { if (!T.counted) { T.counted = true; S.rt.n++; S.rt.streak = 0; lsSet('rt', S.rt); updatePal(); } T.res = { ok: false, shown: true, stage: 'loes', lines: [{ ok: false, text: 'Lösung angezeigt: zählt nicht als richtig.' }] }; renderTrainer(); }
   });
   $('#rtView').addEventListener('click', e => { const c = e.target.closest('[data-ta="clr"]'); if (c) { S.tr.ans = {}; S.tr.res = null; renderTrainer(); } });
 
@@ -371,6 +380,15 @@
   root.ZEI_LAB = { id: 'zei', title: 'Zeichnungs-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.ZEI_TASKS };
 
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'werk') renderWerk(); else if (S.tab === 'bsp') renderBsp(); else if (S.tab === 'tasks' && curTask()) renderTasks(false); else if (S.tab === 'rt') renderTrainer(); }, 150); });
+  /* Grafikschrift am Handy mindestens 11 px (M-all-12): Schrift in Nutzereinheiten so anheben, dass sie auf dem Bildschirm 11 px erreicht */
+  (function () {
+    if (typeof MutationObserver === 'undefined' || typeof innerWidth === 'undefined' || typeof addEventListener === 'undefined') return;
+    let t = 0;
+    const fix = () => { t = 0; if (innerWidth >= 700) return; document.querySelectorAll('#app svg').forEach(sv => { const m = sv.getScreenCTM && sv.getScreenCTM(); if (!m || !m.a) return; sv.querySelectorAll('text').forEach(x => { const fs = parseFloat(getComputedStyle(x).fontSize) || 12; if (fs * m.a < 11) x.style.fontSize = (11.2 / m.a).toFixed(1) + 'px'; }); }); };
+    const q = () => { if (!t) t = setTimeout(fix, 120); };
+    new MutationObserver(q).observe(document.getElementById('app') || document.body, { childList: true, subtree: true });
+    addEventListener('resize', q); addEventListener('click', q, true); q();
+  })();
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufruf ?aufgabe=zei1 (Startseite, Lernhefte): Aufgabe gleich öffnen; ?bsp (oder ?bsp=winkel): Beispiele öffnen */
   root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };

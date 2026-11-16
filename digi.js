@@ -407,11 +407,12 @@
     function ttCheck(n, m, fn, extra) {
       return () => {
         const an = analyse(api); if (an.error) return [RES(false, an.error)];
-        const L = [RES(an.n === n, an.n === n ? 'Eingänge: ' + n + ' Schalter' : 'Es sollen genau ' + n + ' Schalter als Eingänge da sein (jetzt ' + an.n + ')'), RES(an.outs.length === m, an.outs.length === m ? 'Ausgänge: ' + m + ' LED' + (m > 1 ? 's' : '') : 'Es sollen genau ' + m + ' LED' + (m > 1 ? 's' : '') + ' als Ausgang da sein (jetzt ' + an.outs.length + ')')];
+        /* A-digi-01 / F12: selbstverständlich erfüllte Aufbau-Kriterien (Anzahl Schalter und LEDs) erscheinen nur, wenn sie fehlen; sonst zählt allein die Wahrheitstabelle */
+        const L = []; if (an.n !== n) L.push(RES(false, 'Es sollen genau ' + n + ' Schalter als Eingänge da sein (jetzt ' + an.n + ')')); if (an.outs.length !== m) L.push(RES(false, 'Es sollen genau ' + m + ' LED' + (m > 1 ? 's' : '') + ' als Ausgang da sein (jetzt ' + an.outs.length + ')'));
         if (an.n !== n || an.outs.length !== m) return L;
         const bad = []; for (let c = 0; c < an.N; c++) { const b = bitsOf(c, n), ex = fn(b); if (ex.join() !== an.rows[c].join()) bad.push({ c, b, ex, got: an.rows[c] }); }
         const f = bad[0];
-        L.push(RES(!bad.length, bad.length ? 'Falsch bei ' + an.inNames.map((x, i) => x + '=' + f.b[i]).join(', ') + ': ' + an.outNames.map((x, j) => x + ' soll ' + f.ex[j] + ' sein, ist ' + f.got[j]).join('; ') + (bad.length > 1 ? ' (und ' + (bad.length - 1) + ' weitere Zeilen)' : '') : 'Wahrheitstabelle stimmt in allen ' + an.N + ' Zeilen'));
+        L.push(RES(!bad.length, bad.length ? 'Falsch bei ' + an.inNames.map((x, i) => x + '=' + f.b[i]).join(', ') + ': ' + an.outNames.map((x, j) => x + ' soll ' + f.ex[j] + ' sein, ist ' + f.got[j]).join('; ') + (bad.length > 1 ? ' (und ' + (bad.length - 1) + ' weitere Zeilen; ' + (an.N - bad.length) + ' von ' + an.N + ' stimmen)' : '') : 'Wahrheitstabelle stimmt in allen ' + an.N + ' Zeilen'));
         if (extra) extra.forEach(f2 => L.push(f2(an)));
         return L;
       };

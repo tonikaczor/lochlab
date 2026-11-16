@@ -11,11 +11,14 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Tonfunk SimLab</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schlüssel lm4.theme wie die Startseite */
+(function(){try{var v=localStorage.getItem('lm4.theme');if(v==='light'||v==='dark')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 <link rel="stylesheet" href="lab.css">
 <style>
-@media(max-width:1240px){.hb span{display:none}.hb{padding:0 10px}}
+@media(max-width:1100px){.hb span{display:none}.hb{padding:0 10px}}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -87,6 +90,7 @@
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

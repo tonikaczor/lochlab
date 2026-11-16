@@ -67,7 +67,7 @@
   let liW = 0;   // Breite, mit der die Diagramme zuletzt gezeichnet wurden
   function updateLi() {
     const m = liModel(), w = wOf($('#liTakt')); liW = w;
-    setHtml('liTakt', V.taktSvg(m, w)); setHtml('liAus', V.ausbeuteSvg(m, wOf($('#liAus')))); setHtml('liOut', liOut(m));
+    setHtml('liTakt', V.taktSvg(m, w, window.innerWidth < 700 ? Math.floor(window.innerHeight * 0.45) : 0)); setHtml('liAus', V.ausbeuteSvg(m, wOf($('#liAus')))); setHtml('liOut', liOut(m));
     C.STATIONEN.forEach(s => { const a = $('#vT_' + s.id); if (a) a.textContent = f(S.li.takt[s.id], 0) + ' s'; });
     C.INNEN.forEach(id => { const a = $('#vA_' + id); if (a) a.textContent = f(S.li.ausschuss[id], 1) + ' %'; });
     const p = $('#vP'), s2 = $('#vS'); if (p) p.textContent = S.li.puffer + ' Stück'; if (s2) s2.textContent = f(S.li.stoer, 0) + ' min';
@@ -83,15 +83,16 @@
         ${s.id === 'verguss' ? `<div class="ctl"><button class="chip ${S.li.verguss ? 'on' : ''}" data-lit="vg" aria-pressed="${S.li.verguss}">${S.li.verguss ? '✓ Verguss wird durchlaufen' : 'Verguss wird übersprungen'}</button></div>` : ''}</div>`;
     }).join('');
     $('#liView').innerHTML = `<div class="card pl"><h4>Modell-Linie A</h4><p class="big">Wo bremst die Linie?</p>
-      <p class="hint2" style="margin-top:0">Neun Stationen, alle Zahlen sind Übungswerte. Verändere Takt, Ausschuss, Puffer und eine Störung und beobachte, wie Engpass, Durchsatz und Ausbeute reagieren. Fehlerbilder der Stationen findest du im Leiterplatten-Lab, Reiter Fehlerbild (<a href="pcblab.html">pcblab.html</a>).</p>
-      <div class="inst" id="liTakt"></div><div class="inst" id="liAus"></div><div id="liOut"></div>
+      <p class="hint2" style="margin-top:0"><b>Ziel:</b> Finde die Station, die den Durchsatz begrenzt (den Engpass), und bring die Gesamtausbeute nach oben. Die Grafik bleibt beim Scrollen oben stehen, damit du jeden Regler und seine Wirkung zugleich siehst.</p></div>
+      <div class="inst" id="liTakt" data-lr-buehne="1"></div>
+      <div class="card pl"><div class="inst" id="liAus"></div><div id="liOut"></div>
       <div class="ctl"><button class="chip" data-lit="reset">↺ Ausgangslage</button><button class="chip" data-lit="eng">⚡ Engpass 10 % schneller</button><button class="chip" data-lit="pufmax">▤ Puffer auf 12</button></div>
-      <p class="hint2">Modell: Stücke, die eine Station im ersten Durchlauf nicht bestehen, verlassen den Fluss. Der Engpass ist die Station mit der kleinsten Grenze (Kapazität geteilt durch den Anteil, der bis dorthin ankommt).</p></div>
+      <p class="hint2">Neun Stationen, alle Zahlen sind Übungswerte. Fehlerbilder der Stationen findest du im Leiterplatten-Lab, Reiter Fehlerbild (<a href="pcblab.html">pcblab.html</a>). Modell: Stücke, die eine Station im ersten Durchlauf nicht bestehen, verlassen den Fluss. Der Engpass ist die Station mit der kleinsten Grenze (Kapazität geteilt durch den Anteil, der bis dorthin ankommt).</p></div>
       <div class="card pl"><h4>Puffer und Störung</h4>
         <label class="f"><span>Puffer vor dem Engpass: <b id="vP">${S.li.puffer} Stück</b></span><input type="range" data-sl="puffer" min="${L.puffer[0]}" max="${L.puffer[1]}" step="1" value="${S.li.puffer}" aria-label="Puffer in Stück"></label>
         <label class="f"><span>Störung an einer Station: <b id="vS">${f(S.li.stoer, 0)} min</b></span><input type="range" data-sl="stoer" min="${L.stoer[0]}" max="${L.stoer[1]}" step="1" value="${S.li.stoer}" aria-label="Störung in Minuten"></label>
         <label class="f" style="margin-bottom:0"><span>Welche Station steht still?</span><select data-sel="stoerSt" aria-label="Station mit Störung">${C.STATIONEN.map(s => `<option value="${s.id}"${S.li.stoerSt === s.id ? ' selected' : ''}>${s.nr} · ${esc(s.name)}</option>`).join('')}</select></label></div>
-      <details class="ex" open><summary>Regler je Station</summary>${rows}</details>`;
+      <details class="ex" open><summary>Regler je Station (Takt und Ausschuss)</summary>${rows}</details>`;
     updateLi();
   }
   const liv = $('#liView');
@@ -220,7 +221,7 @@
     const locked = r && r.ok;
     if (q.ask.type === 'multi') return `<div class="opts" role="group" aria-label="Aussagen, mehrere möglich">${q.ask.options.map(o => { const on = (a.s || []).indexOf(o.k) >= 0, st = r ? (locked ? (q.sol.indexOf(o.k) >= 0 ? 'ok' : '') : (on ? 'bad' : '')) : (on ? 'on' : ''); return `<button data-tm="${o.k}" ${locked ? 'disabled' : ''} class="${st}" aria-pressed="${on}">${on ? '☑' : '☐'} ${esc(o.t)}</button>`; }).join('')}</div>`;
     if (q.ask.type === 'match') return q.ask.items.map(i => { const v = (a.m || {})[i.k] || '', bad = r && !r.ok && v && v !== q.sol[i.k]; return `<label class="f"><span>${esc(i.t)}${bad ? ' ✗' : (r && v === q.sol[i.k] ? ' ✓' : '')}</span><select data-ts="${i.k}" ${locked ? 'disabled' : ''} aria-label="${esc(i.t)}"><option value="">Bitte wählen</option>${q.ask.options.map(o => `<option value="${o.k}"${v === o.k ? ' selected' : ''}>${esc(o.t)}</option>`).join('')}</select></label>`; }).join('');
-    return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(a.v || '')}" ${locked ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+    return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(a.v || '')}" ${locked ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label><p class="hint2 lr-hinweis">Zahl${q.ask.unit ? ' in ' + esc(q.ask.unit) : ''}, Komma oder Punkt.${q.tol > 0.011 ? ' Erlaubte Abweichung: ±' + esc(f(q.tol, 3)) + (q.ask.unit ? ' ' + esc(q.ask.unit) : '') + '.' : ''}</p>`;
   }
   function evalQ(q, a) {
     const r = C.pruefe(q, a);
@@ -231,10 +232,16 @@
   const solHtml = q => `<b>Lösung:</b> ${esc(solText(q))}<br><br><b>Musterlösung mit Rechenweg:</b>${stepsHtml(q)}`;
   /* Rückmeldung nach dem Prüfen. Richtig: Lösung mit Rechenweg. Falsch: nur die Rückmeldung und der Hinweis auf den Tipp;
      beim Üben dazu der Knopf „Lösung zeigen“ (shown = Lösung ist schon aufgedeckt, sie steht dann in einem eigenen Block darunter), im Prüfmodus gibt es die Lösung erst nach dem Lösen. */
-  const resBlock = (q, r, shown) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Noch nicht richtig (' + esc(r.given) + ').'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 3))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (r.ok ? `<div class="rdout ok">${solHtml(q)}${r.auf ? `<span class="st" style="margin-top:8px">Gezählt: ${r.pct} %, weil die Lösung aufgedeckt war. Öffne die Aufgabe später noch einmal und löse sie ohne Lösung, dann zählt sie voll.</span>` : ''}</div>`
+  /* Muster 4.5: erster Fehlversuch Tipp und zweiter Versuch, zweiter Fehlversuch Lösung mit Rechenweg (im Prüfmodus bleibt es beim Prüfmodus) */
+  const resBlock = (q, r, shown) => {
+    const fbc = r.ok ? 'ok' : exam() ? 'tipp' : shown ? 'loes' : 'tipp';
+    const kopf = `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Noch nicht richtig (' + esc(r.given) + ').'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 3))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>`;
+    const rest = r.ok ? `<div class="rdout ok">${solHtml(q)}${r.auf ? `<span class="st" style="margin-top:8px">Gezählt: ${r.pct} %, weil die Lösung aufgedeckt war. Öffne die Aufgabe später noch einmal und löse sie ohne Lösung, dann zählt sie voll.</span>` : ''}</div>`
       : exam() ? '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>'
-        : shown ? '' : `<div class="rdout bad">Lies den Tipp (💡) oder versuche es noch einmal. Kommst du gar nicht weiter, kannst du dir die Lösung zeigen lassen. Dann zählt die Aufgabe in dieser Runde nur ${AUF_PCT} %.</div><div class="btns"><button class="btn" data-ta="sol">Lösung zeigen</button></div>`);
+        : shown ? '<p>Die Lösung mit Rechenweg steht darunter. Sie nachzuvollziehen ist wichtiger als die Zahl: Probiere danach eine andere Aufgabe.</p>'
+          : `<p><b>Tipp:</b> ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p><div class="rdout bad">Lies den Tipp (💡) oder versuche es noch einmal. Kommst du gar nicht weiter, kannst du dir die Lösung zeigen lassen. Dann zählt die Aufgabe in dieser Runde nur ${AUF_PCT} %.</div><div class="btns"><button class="btn" data-ta="sol">Lösung zeigen</button></div>`;
+    return `<div class="lr-fb ${fbc}" id="tkFb" role="status">${kopf}${rest}</div>`;
+  };
   /* Aufgedeckte Lösung (nur beim Üben, bis die Aufgabe richtig gelöst ist) */
   const aufBlock = (q, id) => `<div class="rdout warn" id="tkSol">${solHtml(q)}<span class="st" style="margin-top:8px">${aufg(id) ? `Lösung aufgedeckt: Löst du die Aufgabe jetzt, zählt sie ${AUF_PCT} %. Öffne sie später noch einmal und löse sie ohne Lösung, dann zählt sie voll.` : 'Lösung aufgedeckt. Diese Aufgabe hast du schon einmal voll gelöst, dein bester Wert bleibt.'}</span></div>`;
   /* Platz für den Vorlesen-Knopf (aufgabe-vorlesen.js setzt ihn erst nach dem Zeichnen direkt hinter den Auftrag): Die Karte hält die Höhe frei (.au-slot),
@@ -274,14 +281,18 @@
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, r0 = evalQ(S.tq, a); if (!r0) return; const auf = r0.ok && aufg(t.id), pct = r0.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: r0.ok, given: r0.given, pct, auf };
+    const prev = S.tRes && S.tRes.id === t.id ? S.tRes : null, tries = (prev ? prev.tries || 0 : 0) + (r0.ok ? 0 : 1);
+    S.tRes = { id: t.id, ok: r0.ok, given: r0.given, pct, auf, tries };
     if (r0.ok) {
       markSolved(t.id, pct);
       if (auf) { const m = lsGet('auf', {}); delete m[t.id]; lsSet('auf', m); }   // abgegolten: das nächste Lösen ohne aufgedeckte Lösung zählt wieder voll
       const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding();
       toast(pct < 100 ? pct + (auf && pct === AUF_PCT ? ' % (Lösung war aufgedeckt)' : ' % (Tipps abgezogen)') : '🎉 Geschafft!');
-    } else { sad(); toast('Noch nicht richtig. Lies den Tipp oder versuche es noch einmal.'); }
-    renderTasks(false);
+    } else {
+      sad(); toast('Noch nicht richtig. Lies den Tipp oder versuche es noch einmal.');
+      if (tries >= 2 && !exam()) { if ((lsGet('prog', {})[t.id] || 0) < 100) { const m = lsGet('auf', {}); m[t.id] = true; lsSet('auf', m); } S.tShow = t.id; }   // zweiter Fehlversuch: Lösung zeigen (zählt dann wie aufgedeckt)
+    }
+    renderTasks(false); const fb = $('#tkFb'); if (fb && window.LabRahmen && LabRahmen.zeig) LabRahmen.zeig(fb);
   }
   /* Lösung zeigen: nur beim Üben und erst nach einer falschen Antwort. Der Merker auf[id] wird nur gesetzt, solange die Aufgabe noch nicht voll (100 %) gelöst ist. */
   function showSol(t) {

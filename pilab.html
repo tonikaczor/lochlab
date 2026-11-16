@@ -19,26 +19,29 @@ main{display:flex;flex-direction:column}
 #cvWrap{position:relative;flex:1;min-height:110px}
 #dock{height:42%;min-height:230px;max-height:72%;display:flex;flex-direction:column;border-top:1px solid var(--line);background:var(--panel)}
 #dockBar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:6px 8px;border-bottom:1px solid var(--line)}
-.btn2{height:32px;padding:0 11px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);font-size:13px;white-space:nowrap}
+.btn2{height:36px;padding:0 12px;border-radius:18px;background:var(--panel2);border:1px solid var(--line);font-size:14px;white-space:nowrap}
 .btn2:active{background:var(--panel)}.btn2.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
-#codeStatus{margin-left:auto;font-size:12px;color:var(--mute);max-width:46%;text-align:right}
+#codeStatus{margin-left:auto;font-size:14px;color:var(--mute);max-width:46%;text-align:right}
 #dockBody{display:flex;flex:1;min-height:0}
 #edWrap{flex:3;display:flex;min-width:0}
-#codeGut{margin:0;width:36px;padding:8px 5px 8px 0;text-align:right;color:#6b7683;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;overflow:hidden;white-space:pre;background:var(--bg);border-right:1px solid var(--line)}
-#codeTa{flex:1;min-width:0;resize:none;border:0;border-radius:0;background:var(--bg);color:var(--fg);padding:8px;font:12px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow:auto;tab-size:2}
+#codeGut{margin:0;width:36px;padding:8px 5px 8px 0;text-align:right;color:#6b7683;font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;overflow:hidden;white-space:pre;background:var(--bg);border-right:1px solid var(--line)}
+#codeTa{flex:1;min-width:0;resize:none;border:0;border-radius:0;background:var(--bg);color:var(--fg);padding:8px;font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;white-space:pre;overflow:auto;tab-size:2}
 #serWrap{flex:2;min-width:190px;display:flex;flex-direction:column;border-left:1px solid var(--line)}
-#serBar{display:flex;gap:6px;padding:5px 6px;align-items:center;font-size:12px}
-#serOut{flex:1;margin:0;padding:6px 8px;overflow:auto;font:12px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;background:#0b0f13;color:#cfe8cf;min-height:50px}
+#serBar{display:flex;gap:6px;padding:5px 6px;align-items:center;font-size:14px}
+#serOut{flex:1;margin:0;padding:6px 8px;overflow:auto;font:14px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;background:#0b0f13;color:#cfe8cf;min-height:50px}
 #serPlot{position:static;flex:1;width:100%;height:auto;min-height:60px}
 #serRow{display:flex;gap:6px;padding:5px 6px;border-top:1px solid var(--line)}
-#serRow input{padding:5px 9px;font-size:13px;border-radius:14px}
+#serRow input{padding:5px 9px;font-size:14px;min-height:36px;border-radius:14px}
 @media(max-width:900px){#dockBody{flex-direction:column}#serWrap{border-left:0;border-top:1px solid var(--line);flex:1}#dock{height:58%}}
-@media(pointer:coarse){#codeTa{font-size:15px}}
-@media(max-width:600px){#dock{height:52%;min-height:200px}#dockBar{gap:4px;padding:4px 6px}.btn2{height:30px;padding:0 9px;font-size:12px}#codeStatus{flex-basis:100%;max-width:100%;margin:0;text-align:left}#codeTa,#codeGut{font-size:13px!important}}
+@media(pointer:coarse){#codeTa,#codeGut{font-size:16px}.btn2,#serRow input{height:44px;min-height:44px}}
+@media(max-width:600px){#dock{height:52%;min-height:200px}#dockBar{gap:4px;padding:4px 6px}.btn2{height:44px;padding:0 10px;font-size:14px}#codeStatus{flex-basis:100%;max-width:100%;margin:0;text-align:left}}
 @media(max-width:719px){#side{order:-1;flex:none;max-height:34%;border-top:0;border-bottom:1px solid var(--line)}#side.quiet{display:none}#mid>main{min-height:0;overflow:hidden}}
 
+/* A-code-01, A-code-06, A-pi-03: mit Rahmen bleibt die Schaltung oben fest, Code und Konsole laufen darunter */
+@media(max-width:719px){html.lr-on #mid{display:block;flex:none;height:auto;overflow:visible}html.lr-on #mid>main{display:contents}html.lr-on #cvWrap{position:sticky;top:0;z-index:3;flex:none;height:40dvh;min-height:200px;background:var(--bg)}html.lr-on #dock,html.lr-on #dock.mvbig{height:auto;max-height:none;min-height:0}html.lr-on #side{order:0;max-height:none}html.lr-on #side .score{scroll-margin-top:calc(40dvh + 16px)!important;scroll-margin-bottom:96px!important}html.lr-on #dockBody{min-height:300px}}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -66,7 +69,7 @@ main{display:flex;flex-direction:column}
         <div id="dockBar">
           <button class="btn2" id="cdRun">▶ Start</button><button class="btn2" id="cdStop">■ Stopp</button><button class="btn2" id="cdNew">↻ Neu starten</button>
           <button class="btn2" id="cdEx">📖 Beispiele</button><button class="btn2" id="cdCopy">⧉ Kopieren</button><button class="btn2" id="cdSave">⤓ .py</button>
-          <span class="sep"></span><span style="font-size:12px;color:var(--mute)">Tempo</span><button class="btn2" id="cdT1">×1</button><button class="btn2" id="cdT10">×10</button><button class="btn2" id="cdT100">×100</button>
+          <span class="sep"></span><span style="font-size:14px;color:var(--mute)">Tempo</span><button class="btn2" id="cdT1">×1</button><button class="btn2" id="cdT10">×10</button><button class="btn2" id="cdT100">×100</button>
           <span id="codeStatus">Beispiel wählen oder Code schreiben, dann ▶ Start.</span>
         </div>
         <div id="dockBody">
@@ -125,5 +128,7 @@ main{display:flex;flex-direction:column}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'pilab.html': { name: 'Pi-Lab', flaeche: 'Schaltung', leiste: false } };</script>
+<script src="labrahmen.js"></script>
 </body>
 </html>

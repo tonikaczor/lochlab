@@ -16,18 +16,29 @@ a{color:var(--accent)}.nav{margin:6px 0 18px;font-size:14px}@media screen and (m
 .tip{border-left:4px solid var(--ok);padding-left:12px}
 @media print{body{background:#fff;color:#000;font-size:11pt}:root{--panel:#fff;--line:#bbb;--mute:#444;--accent:#000}.nav,.noprint{display:none}h2{break-after:avoid}.box,tr{break-inside:avoid}.wrap{padding:0}}
 
-pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
+pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:10px;padding:10px 12px;overflow:auto;font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;margin:8px 0}
 @media(prefers-color-scheme:light){pre{background:#f1f4f7;color:#1d2329}}
 @media print{pre{background:#f4f4f4;color:#000;border:1px solid #999;white-space:pre-wrap}}
 .try{display:inline-block;margin:4px 6px 4px 0;padding:5px 12px;border-radius:16px;background:var(--accent-bg,#1a6fd4);color:#fff!important;text-decoration:none;font-size:14px}
 .merke{border-left:4px solid #e0a020;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
 .warn{border-left:4px solid #e05050;padding:6px 12px;background:var(--panel);border-radius:0 10px 10px 0;margin:12px 0}
-.toc a{display:block;padding:2px 0}svg{max-width:100%;height:auto}
+svg{max-width:100%;height:auto}
 @media print{.try{background:none;color:#000!important;border:1px solid #000}}
+.nav{display:flex;flex-wrap:wrap;align-items:center;gap:0 14px}.nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px}.nav a.lm-start{min-width:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;font-size:16px;font-weight:700;text-decoration:none}summary{min-height:44px;padding:10px 0;cursor:pointer}
+/* U2c: Ziele 44 px, Schrift mindestens 14 px, Handy kompakt */
+small{font-size:14px}sub,sup{font-size:max(14px,.8em);line-height:0}
+.try{min-height:44px;line-height:32px;padding:5px 14px;border-radius:22px}
+.toc a{display:flex;align-items:center;min-height:44px;padding:2px 0}
+.weiter a{display:inline-flex;align-items:center;min-height:44px}
+.lm-start{display:inline-flex;align-items:center;min-height:44px}
+#urheber-hinweis,#urheber-sprache{font-size:14px!important}
+h2[id],h3[id]{scroll-margin-top:12px}
+@media(max-width:700px){.wrap{padding:8px 18px 48px}header{gap:10px;margin-bottom:4px}header img{height:32px}h1{font-size:21px;line-height:1.25}.nav{margin:0 0 8px}}
+@media print{.try{min-height:0;line-height:inherit;padding:2px 8px}.weiter{display:none}}
 </style></head>
 <body><div class="wrap">
-<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>SD-Karte für den Raspberry Pi vorbereiten</h1><small>Stand: Oktober 2026 · Version 23.151</small></div></header>
-<p class="nav"><a href="index.html">← Startseite</a> · <a href="lernen-pi.html">Raspberry Pi verstehen</a> · <a href="lernen.html">Lernen</a> · <a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<p class="nav"><a class="lm-start" href="index.html">‹ Start</a><a href="lernen-pi.html">Raspberry Pi verstehen</a><a href="lernen.html">Lernen</a><a href="javascript:window.print()">Drucken / als PDF sichern</a></p>
+<header><img src="logo.png" alt="Tonfunk" onerror="this.remove()"><div><h1>SD-Karte für den Raspberry Pi vorbereiten</h1><small>Stand: Oktober 2026</small></div></header>
 <p>Bevor der Pi etwas tun kann, braucht er ein Betriebssystem auf einer SD-Karte. Hier steht, welches Programm du dafür nimmst und wie es geht.</p>
 <div class="box toc"><b>Inhalt</b><a href="#k1">1. Das richtige Programm</a><a href="#k2">2. Schritt für Schritt mit dem Imager</a></div>
 <h2 id="k1">1. Das richtige Programm</h2><div class="box"><b>Empfehlung: Raspberry Pi Imager</b> (offiziell von Raspberry Pi, kostenlos, für Windows, macOS und Linux).<br>
@@ -47,4 +58,6 @@ pre{background:#0b0f13;color:#d6e4d6;border:1px solid var(--line);border-radius:
 <li>Karte in den Pi stecken, Netzteil anschließen, 1 bis 2 Minuten warten. Dann verbinden (Bildschirm, oder <code>ssh benutzer@pi-lab1.local</code>).</li></ol>
 <div class="merke"><b>Karte komplett löschen:</b> Im Imager gibt es unter „Betriebssystem“ den Punkt „Erase“ (Löschen). Er formatiert die Karte neu. Für hartnäckige Fälle nimmst du den SD Memory Card Formatter.</div>
 <div class="warn"><b>Wenn es nicht klappt:</b><ul><li>Karte wird nicht angezeigt: anderen Kartenleser oder USB-Anschluss probieren.</li><li>Fehler beim Schreiben: Schreibschutz-Schalter am Adapter prüfen, Karte mit dem Formatter neu formatieren.</li><li>Pi startet nicht: Netzteil zu schwach oder Karte nicht richtig beschrieben, Vorgang wiederholen.</li><li>Kein WLAN: Land und WLAN-Name/Passwort in den Einstellungen prüfen oder per Netzwerkkabel anschließen.</li></ul></div>
+<h2 id="weiter">Weiter geht es hier</h2>
+<p class="weiter"><a class="try" href="pilab.html">Pi-Lab öffnen</a> <a class="try" href="lernen-pi.html">Raspberry-Pi-Lernheft</a> <a class="try" href="lernen.html">Alle Lernhefte</a> <a class="try" href="index.html#labs">Zu den Labs</a></p>
 </div><script src="urheber.js"></script></body></html>

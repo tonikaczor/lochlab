@@ -227,7 +227,7 @@
   }
   function renderAll() {
     const C = CORE(), ev = evaluate(ST.st);
-    const top = `<div class="card pl"><h4>Auslegen</h4><p class="big">Netzteil auslegen in vier Schritten</p><p class="hint2" style="margin:0">Jeder Schritt rechnet mit demselben Kern wie die Prüfstände. Die Vorgaben sind Übungswerte, die Auslegungsregeln Übungsregeln (F42). Übungsschaltung, keine Anleitung für Arbeiten an Netzspannung. ${esc(C ? textOf('simOnly') : '')}</p></div>`;
+    const top = `<div class="card pl"><h4>Auslegen</h4><p class="big">Netzteil auslegen in vier Schritten</p><p class="hint2" style="margin:0">Jeder Schritt rechnet mit demselben Kern wie die Prüfstände. Die Vorgaben sind Übungswerte, die Auslegungsregeln sind Übungsregeln (F42). Übungsschaltung, keine Anleitung für Arbeiten an Netzspannung. ${esc(C ? textOf('simOnly') : '')}</p></div>`;
     if (!C) return CSS + top + `<div class="card pl"><p class="nd-why">${esc(NOCORE)}</p></div>`;
     if (ev.ok === false) return CSS + top + `<div class="card pl"><p class="nd-why">${esc(ev.why)}</p></div>`;
     return CSS + top + `<div class="nd-bar" data-dbar role="group" aria-label="Schritte">${barHtml(ev)}</div><div data-dpanel>${panelHtml(ev)}</div>`;

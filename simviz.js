@@ -51,7 +51,7 @@
 .vzc svg .hi{stroke:var(--accent,#3b9eff);stroke-width:2;fill:none}.vzc svg .hif{fill:var(--accent,#3b9eff)}
 .vzc svg .bg{fill:var(--bg,#14181c)}.vzc svg .pn{fill:var(--panel,#222830);stroke:var(--line,#38424d);stroke-width:1}
 .vzg .vzs{max-width:200px;margin-top:6px}
-.vzc .vzn{margin:6px 0 0;font-size:12.5px;color:var(--mute,#8d99a6);line-height:1.4}
+.vzc .vzn{margin:6px 0 0;font-size:14px;color:var(--mute,#8d99a6);line-height:1.4}
 .vzc .vzn b{color:var(--fg,#e8ecf0)}
 .vzc{--vz-ok:#5ee27d;--vz-lead:#b9bec6}
 @media(prefers-color-scheme:light){:root:not([data-theme=dark]) .vzc{--vz-ok:#1f8a3b;--vz-lead:#6b7480}}

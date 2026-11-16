@@ -100,7 +100,7 @@
         [c.bez.stift('2338', c.pick(R, [4, 5, 6, 8]), c.pick(R, ['m6', 'h8']), l), c.NORMS['2338'].n], [c.bez.passfeder('A', 8, 7, c.pick(R, [25, 32, 40])), c.NORMS['6885'].n]];
       const it = c.pick(R, items);
       return choiceQ(R, 'In einer Stückliste steht die Bezeichnung "' + it[0] + '". Was für ein Normteil ist das?', it[1], NAMES6().filter(x => x !== it[1]),
-        '"' + it[0] + '" ist ' + (/^[AEIOU]/.test(it[1]) ? 'eine ' : 'ein ') + it[1] + '. Die Normnummer legt die Bauform fest, danach folgen Größe und Länge.', ['Die Normnummer (zum Beispiel ISO 4017) steht für eine bestimmte Bauform.', 'Achte auf die Buchstaben und Maße hinter der Normnummer: M steht für metrisches Gewinde.']);
+        '"' + it[0] + '" ist ' + (/(schraube|mutter|scheibe|feder)/i.test(it[1].split(' ')[0]) ? 'eine ' : 'ein ') + it[1] + '. Die Normnummer legt die Bauform fest, danach folgen Größe und Länge.', ['Die Normnummer (zum Beispiel ISO 4017) steht für eine bestimmte Bauform.', 'Achte auf die Buchstaben und Maße hinter der Normnummer: M steht für metrisches Gewinde.']);
     },
     bezlen: R => {
       const c = C(), no = c.pick(R, ['4017', '4014', '4762']), d = c.pick(R, [5, 6, 8, 10, 12, 16]), l = c.pick(R, [16, 20, 25, 30, 35, 40, 45, 50, 60, 70]), fk = c.pick(R, c.FKS), b = c.bez.schraube(no, d, l, fk), askL = R() < 0.6;

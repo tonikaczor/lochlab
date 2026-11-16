@@ -338,16 +338,21 @@
     const q = QZ[key], host = $(q.host); if (!host) return;
     const items = q.items(), st = S.q[key] || (S.q[key] = { i: 0, sel: -1, res: null }), stat = lsGet('quiz', {})[key] || { n: 0, ok: 0 }, idx = st.i % items.length, it = items[idx], ord = qOrder(key, idx, it.options.length);
     let h = `<div class="card pl"><h4>${esc(q.title)} (${idx + 1}/${items.length}) · richtig: ${stat.ok} von ${stat.n}</h4><div class="big">${esc(it.title)}</div><p style="margin:4px 0 8px">${esc(it.text)}</p>
-      <div class="opts">${ord.map((o, i) => `<button data-qk="${key}" data-qo="${i}" ${st.res ? 'disabled' : ''} class="${st.res ? (o === it.correct ? 'ok' : i === st.sel ? 'bad' : '') : i === st.sel ? 'on' : ''}">${esc(it.options[o])}</button>`).join('')}</div>`;
-    if (st.res) h += `<div class="fb ${st.res.ok ? 'ok' : 'bad'}"><span class="v">${st.res.ok ? '✓ Richtig!' : '✗ Leider nicht.'}</span> Richtig ist: ${esc(it.options[it.correct])}. ${esc(it.why)}</div><div class="btns"><button class="btn pri" data-qk="${key}" data-qn="next">Nächster Fall</button></div>`;
+      <div class="opts">${ord.map((o, i) => { const bad = (st.bad || []).includes(i); return `<button data-qk="${key}" data-qo="${i}" ${st.res || bad ? 'disabled' : ''} class="${st.res ? (o === it.correct ? 'ok' : i === st.sel ? 'bad' : '') : bad ? 'bad' : i === st.sel ? 'on' : ''}">${esc(it.options[o])}</button>`; }).join('')}</div>`;
+    if (!st.res && st.bad && st.bad.length) h += `<div id="qzFb_${key}" class="lr-fb tipp" role="status" tabindex="-1"><p><strong>Noch nicht.</strong> Lies den Fall noch einmal und achte auf die Angaben im Text. Du hast einen zweiten Versuch.</p></div>`;
+    if (st.res) h += `<div id="qzFb_${key}" class="lr-fb ${st.res.ok ? 'ok' : 'loes'}" role="status" tabindex="-1"><p><strong>${st.res.ok ? 'Richtig.' : 'Leider nicht.'}</strong> Richtig ist: ${esc(it.options[it.correct])}.</p><p>${esc(it.why)}</p></div><div class="btns"><button class="btn pri" data-qk="${key}" data-qn="next">Nächster Fall</button></div>`;
     else h += `<div class="btns"><button class="btn pri" data-qk="${key}" data-qn="chk"${st.sel >= 0 ? '' : ' disabled'}>✓ Prüfen</button></div>`;
     host.innerHTML = h + '</div>';
   }
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-qk]'); if (!b) return; const key = b.dataset.qk, q = QZ[key]; if (!q) return; const st = S.q[key] || (S.q[key] = { i: 0, sel: -1, res: null }), items = q.items(), idx = st.i % items.length;
     if (b.dataset.qo != null) { if (st.res) return; st.sel = +b.dataset.qo; renderQuiz(key); }
-    else if (b.dataset.qn === 'chk') { const ord = qOrder(key, idx, items[idx].options.length), ok = ord[st.sel] === items[idx].correct, all = lsGet('quiz', {}), s = all[key] || { n: 0, ok: 0 }; s.n++; if (ok) s.ok++; all[key] = s; lsSet('quiz', all); st.res = { ok }; renderQuiz(key); if (ok) ding(); else sad(); }
-    else if (b.dataset.qn === 'next') { st.i++; st.sel = -1; st.res = null; renderQuiz(key); }
+    else if (b.dataset.qn === 'chk') {
+      const ord = qOrder(key, idx, items[idx].options.length), ok = ord[st.sel] === items[idx].correct;
+      if (!ok && !(st.bad && st.bad.length)) { st.bad = [st.sel]; st.sel = -1; sad(); renderQuiz(key); zeigFb($('#qzFb_' + key)); return; }
+      const all = lsGet('quiz', {}), s = all[key] || { n: 0, ok: 0 }; s.n++; if (ok) s.ok++; all[key] = s; lsSet('quiz', all); st.res = { ok }; renderQuiz(key); zeigFb($('#qzFb_' + key)); if (ok) ding(); else sad();
+    }
+    else if (b.dataset.qn === 'next') { st.i++; st.sel = -1; st.res = null; st.bad = []; renderQuiz(key); }
   });
 
   /* ============================================================ Reiter Bezeichnungen */
@@ -372,7 +377,7 @@
     if (!r.ok) { host.innerHTML = `<div class="rdout bad">${esc(r.error)}</div>`; return; }
     const info = D.nameInfo[r.name.replace(/\s+/g, ' ')];
     host.innerHTML = `<div style="margin:6px 0">${r.parts.map((p, i) => `<span class="np" style="background:${PAL[i % PAL.length]}">${esc(p.t)}</span>`).join('')}</div>
-      <table class="tt">${r.parts.map((p, i) => `<tr><td style="width:1%"><span class="np" style="background:${PAL[i % PAL.length]};font-size:13px">${esc(p.t)}</span></td><td>${esc(p.txt)}</td></tr>`).join('')}</table>
+      <table class="tt">${r.parts.map((p, i) => `<tr><td style="width:1%"><span class="np" style="background:${PAL[i % PAL.length]};font-size:14px">${esc(p.t)}</span></td><td>${esc(p.txt)}</td></tr>`).join('')}</table>
       <div class="rdout ok"><b>Gruppe:</b> ${esc(r.groupLabel)}${info ? '<br><b>Typisch:</b> ' + esc(info) : ''}</div>`;
   }
   $('#nameView').addEventListener('input', e => { if (e.target.id === 'nmIn') { S.name.v = e.target.value; updateName(); } });
@@ -396,9 +401,9 @@
     s += `<line x1="${fcx(E.CS)}" x2="${fcx(E.CS)}" y1="${fcy(0)}" y2="${fcy(E.A1)}" class="c-guide2"/><circle cx="${fcx(E.CS)}" cy="${fcy(E.A1)}" r="3.6" class="c-dot"/>`;
     const L = (c, t, txt, a) => `<text x="${fcx(c)}" y="${fcy(t)}" class="fe-t" text-anchor="${a || 'middle'}">${txt}</text>`;
     s += L(0.4, 400, 'Ferrit + Perlit') + L(1.43, 400, 'Perlit + Zementit') + L(0.95, 880, 'Austenit γ') + L(0.25, 790, 'γ+α') + L(1.7, 840, 'γ + Zementit') + L(0.82, 0, '') ;
-    s += `<text x="${fcx(0.01) + 4}" y="${fcy(E.A3_0) - 5}" class="c-kt" style="font-size:9.5px">A₃ 911 °C</text><text x="${fcx(1.0)}" y="${fcy(E.A1) + 11}" class="c-kt" style="font-size:9.5px">A₁ 723 °C</text><text x="${fcx(E.CS) + 6}" y="${fcy(E.A1) - 6}" class="c-kt" style="font-size:9.5px">S 0,8 % C</text><text x="${fcx(1.45)}" y="${fcy(900)}" class="c-kt" style="font-size:9.5px" transform="rotate(-38 ${fcx(1.45)} ${fcy(900)})">A_cm</text>`;
-    s += `<text x="${fcx(E.CMAX) + 4}" y="${fcy(520)}" class="c-txt" style="font-size:9px" transform="rotate(-90 ${fcx(E.CMAX) + 12} ${fcy(520)})">Gusseisen: nicht betrachtet</text>`;
-    s += `<text x="${fcx(0.44)}" y="${fcy(1000) + 11}" class="c-kt" style="font-size:9.5px;fill:var(--hi)">Härtebereich (30 bis 50 °C über A₃ bzw. A₁)</text>`;
+    s += `<text x="${fcx(0.01) + 4}" y="${fcy(E.A3_0) - 5}" class="c-kt" style="font-size:9.5px">A₃ 911 °C</text><text x="${fcx(0.03)}" y="${fcy(E.A1) + 13}" class="c-kt" style="font-size:9.5px">A₁ 723 °C</text><text x="${fcx(E.CS) + 6}" y="${fcy(E.A1) - 6}" class="c-kt" style="font-size:9.5px">S 0,8 % C</text><text x="${fcx(1.45)}" y="${fcy(900)}" class="c-kt" style="font-size:9.5px" transform="rotate(-38 ${fcx(1.45)} ${fcy(900)})">A_cm</text>`;
+    s += `<text x="${fcx(E.CMAX) + 4}" y="${fcy(520)}" class="c-txt" style="font-size:9px" transform="rotate(-90 ${fcx(E.CMAX) + 12} ${fcy(520)})"><tspan class="fe-w">Gusseisen: nicht betrachtet</tspan><tspan class="fe-n2">Gusseisen</tspan></text>`;
+    s += `<text x="${fcx(0.44)}" y="${fcy(1000) + 11}" class="c-kt fe-n" style="font-size:9.5px;fill:var(--hi)">Härtebereich (30 bis 50 °C über A₃ bzw. A₁)</text>`;
     s += `<line x1="${FG.L}" x2="${FG.R}" y1="${FG.B}" y2="${FG.B}" class="c-ax"/><line x1="${FG.L}" x2="${FG.L}" y1="${FG.T}" y2="${FG.B}" class="c-ax"/>`;
     s += `<text x="${(FG.L + FG.R) / 2}" y="${FG.B + 30}" class="c-txt" text-anchor="middle" style="font-size:11px">Kohlenstoffgehalt in % (Massenanteil)</text><text transform="translate(12 ${(FG.T + FG.B) / 2}) rotate(-90)" class="c-txt" text-anchor="middle" style="font-size:11px">Temperatur in °C</text>`;
     const px = fcx(Cc), py = fcy(T); s += `<line x1="${px}" x2="${px}" y1="${py}" y2="${FG.B}" class="c-cur"/><line x1="${FG.L}" x2="${px}" y1="${py}" y2="${py}" class="c-cur"/><circle cx="${px}" cy="${py}" r="6" class="c-mark"/>`;
@@ -433,7 +438,7 @@
   }
   function updateFec() {
     const f = S.fec, svg = $('#fSvg'); if (!svg) return; lsSet('fec', f); const st = C.structure(f.C, f.T), ht = C.hardenTemp(f.C);
-    svg.innerHTML = svgFec(f.C, f.T); $('#fCv').textContent = nd(f.C, 2); $('#fTv').textContent = nd(f.T, 0);
+    svg.innerHTML = svgFec(f.C, f.T) + '<p class="hint2 fe-nl" style="margin:2px 0 0">Oranges Band: Härtebereich, 30 bis 50 °C über A₃ bzw. A₁. Rechts davon: Gusseisen, nicht betrachtet.</p>'; $('#fCv').textContent = nd(f.C, 2); $('#fTv').textContent = nd(f.T, 0);
     const sl = $('#fC'); if (sl && document.activeElement !== sl) sl.value = Math.round(f.C * 100); const sl2 = $('#fT'); if (sl2 && document.activeElement !== sl2) sl2.value = f.T;
     $$('[data-fc]').forEach(b => b.classList.toggle('on', Math.abs(f.C - +b.dataset.fc) < 0.005));
     let h = `<div class="big" style="margin-bottom:2px">${esc(st.name)}</div><div class="hint2" style="margin:0 0 6px">${nd(f.C, 2)} % C bei ${nd(f.T, 0)} °C</div>${svgGrain(st, f.C)}<div class="hint2" style="margin:2px 0 8px">Schliffbild schematisch (nicht maßstäblich).</div>`;
@@ -510,7 +515,7 @@
   function renderWahl() {
     const w = S.wahl.w;
     let h = `<div class="card pl"><h4>Anforderungsprofil</h4><p class="hint2" style="margin:0 0 6px">Stelle ein, was dein Bauteil können muss. Der Rechner bewertet acht Werkstoffgruppen mit Übungspunkten (1 bis 5).</p>
-      ${C.PROPS.map(p => `<div class="fbar"><span class="lbl" style="min-width:150px;font-size:13px;text-transform:none;color:var(--fg)">${esc(D.propLabels[p])}</span>${segHTML('wp-' + p, [[0, 'egal'], [1, 'wichtig'], [2, 'sehr wichtig']], w[p] || 0)}</div>`).join('')}</div><div id="wRes"></div>
+      ${C.PROPS.map(p => `<div class="fbar"><span class="lbl" style="min-width:150px;font-size:14px;text-transform:none;color:var(--fg)">${esc(D.propLabels[p])}</span>${segHTML('wp-' + p, [[0, 'egal'], [1, 'wichtig'], [2, 'sehr wichtig']], w[p] || 0)}</div>`).join('')}</div><div id="wRes"></div>
       <div class="card pl"><h4>Bewertungstabelle (Übungswerte, 5 = sehr gut)</h4><div style="overflow-x:auto"><table class="tt"><tr><th>Gruppe</th>${C.PROPS.map(p => `<th class="n">${esc(D.propLabels[p].replace(' (schlagfest)', '').replace('korrosionsbeständig', 'korrosions-bestdg.'))}</th>`).join('')}</tr>${D.groups.map(g => `<tr><td>${esc(g.name)}</td>${C.PROPS.map(p => `<td class="n">${g.r[p]}</td>`).join('')}</tr>`).join('')}</table></div><p class="hint2">Grobe Einordnung zum Üben, keine Werkstoffdaten. Für echte Auswahl gelten Datenblätter, Kosten, Verfügbarkeit und Normen.</p></div><div id="qzK"></div>`;
     $('#wahlView').innerHTML = h; updateWahl(); renderQuiz('wahl');
   }
@@ -538,20 +543,23 @@
   function updateBadge() { const b = $('#tkBd'); if (!b) return; const n = Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length; b.textContent = n + '/' + TASKS.length; }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   function solutionText(t) { const s = t.solve(C); if (t.ask.type === 'choice') return t.ask.choices[t.ask.correct]; if (t.ask.type === 'match') return t.ask.rows.map(r => r[0] + ' → ' + t.ask.options[r[1]]).join('; '); return fAny(s.value) + ' ' + (t.ask.unit || ''); }
+  function zeigFb(el) { if (el && window.LabRahmen && LabRahmen.zeig) try { LabRahmen.zeig(el); } catch (e) {} }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, s = t.solve(C); let ok = false, given = '', lines = [];
     if (t.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return; } ok = a.c === s.correct; given = t.ask.choices[a.c]; }
     else if (t.ask.type === 'match') {
       const m = a.m || {}; if (t.ask.rows.some((r, i) => m[i] == null)) { toast('Ordne zuerst alle Zeilen zu.'); return; }
       ok = t.ask.rows.every((r, i) => m[i] === r[1]); given = t.ask.rows.map((r, i) => r[0] + ' → ' + t.ask.options[m[i]]).join('; ');
-      t.ask.rows.forEach((r, i) => lines.push({ ok: m[i] === r[1], text: r[0] + ' → ' + t.ask.options[m[i]] + (m[i] === r[1] ? '' : ' (richtig: ' + t.ask.options[r[1]] + ')') }));
+      t.ask.rows.forEach((r, i) => lines.push({ ok: m[i] === r[1], text: r[0] + ' → ' + t.ask.options[m[i]], ans: m[i] === r[1] ? '' : ' (richtig: ' + t.ask.options[r[1]] + ')' }));
     } else { const v = C.parseDe(a.v); if (!isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return; } ok = Math.abs(v - s.value) <= s.tol + 1e-9; given = fAny(v) + ' ' + t.ask.unit; }
     const pct = ok ? pctFor(t.id) : 0, ex = exam();
     if (t.ask.type !== 'match') lines.push({ ok, text: ok ? 'Richtig: ' + given : 'Deine Antwort „' + given + '“ stimmt nicht.' });
     if (t.ask.type === 'num' && ok && s.tol >= 0.5) lines.push({ ok: true, info: true, text: 'Erlaubte Abweichung: ±' + fAny(s.tol) + ' ' + t.ask.unit + (t.chart ? ' (Lesetoleranz im Diagramm)' : '') + '.' });
-    S.tRes = { id: t.id, ok, pct, lines, sol: solutionText(t) };
-    if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Lies die Erklärung und versuche es noch einmal.'); }
-    renderTasks(false);
+    S.tFail = S.tFail || {}; if (!ok) S.tFail[t.id] = (S.tFail[t.id] || 0) + 1;
+    const stage = ok ? 'ok' : ex ? 'pruef' : S.tFail[t.id] >= 2 ? 'loes' : 'tipp';
+    S.tRes = { id: t.id, ok, pct, lines, sol: solutionText(t), stage };
+    if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig.'); }
+    renderTasks(false); zeigFb($('#tkFb'));
   }
   function hintTask(t) {
     const h = lsGet('hints', {}), n = Math.min(3, (h[t.id] || 0) + 1), ex = exam();
@@ -578,14 +586,18 @@
       if (t.chart) h += chartBlock(mat(t.chart), S.tc, S.toff, 'tkChart');
       if (t.ask.type === 'choice') h += `<div class="opts" id="tkOpts">${t.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && r.ok ? 'disabled' : ''} class="${r && r.ok && i === t.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
       else if (t.ask.type === 'match') h += `<div id="tkMatch">${t.ask.rows.map((row, i) => `<label class="f"><span>${esc(row[0])}</span><select data-tm="${i}" ${r && r.ok ? 'disabled' : ''}><option value="">– wählen –</option>${t.ask.options.map((o, j) => `<option value="${j}"${a.m && a.m[i] === j ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`).join('')}</div>`;
-      else h += `<label class="f"><span>${esc(t.ask.label || 'Dein Ergebnis')} (${esc(t.ask.unit)})</span><div class="qin"><input id="tkIn" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && r.ok ? 'disabled' : ''}><span class="u">${esc(t.ask.unit)}</span></div></label>`;
+      else h += `<label class="f"><span>${esc(t.ask.label || 'Dein Ergebnis')} (${esc(t.ask.unit)})</span><div class="qin"><input id="tkIn" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && r.ok ? 'disabled' : ''}><span class="u">${esc(t.ask.unit)}</span></div></label><p class="lr-hinweis">Zahl in ${esc(t.ask.unit)}. ±${fAny(t.solve(C).tol)} gilt als richtig.</p>`;
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
       if (r) {
-        h += `<ul class="tl">${r.lines.map(l => `<li class="${l.info ? '' : l.ok ? 'ok' : 'bad'}">${l.info ? 'ℹ' : l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-        if (r.ok || !exam()) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(r.sol)}<br>${esc(t.expl)}</div>`;
-        else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
-        if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
+        const stg = r.stage, kind = stg === 'ok' ? 'ok' : stg === 'tipp' ? 'tipp' : 'loes', zeigAns = stg !== 'tipp';
+        const ul = `<ul class="tl">${r.lines.map(l => `<li class="${l.info ? '' : l.ok ? 'ok' : 'bad'}">${l.info ? 'ℹ' : l.ok ? '✓' : '✗'} ${esc(l.text + (zeigAns && l.ans ? l.ans : ''))}</li>`).join('')}</ul>`;
+        h += `<div id="tkFb" class="lr-fb ${kind}" role="status" tabindex="-1">`;
+        if (stg === 'tipp') h += `<p><strong>Noch nicht.</strong> Tipp: ${esc(t.tips[0])} Du hast einen zweiten Versuch.</p>${t.ask.type === 'match' ? ul : ''}`;
+        else if (stg === 'pruef') h += ul + '<p>🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p>';
+        else h += ul + `<p><strong>Lösung:</strong> ${esc(r.sol)}</p><p>${esc(t.expl)}</p>`;
+        h += '</div>';
+        if (stg === 'ok' || stg === 'loes') h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
       }
       h += '</div>';
     }
@@ -610,13 +622,13 @@
     if (row) startTask(row.dataset.t);
   });
   function startTask(id) {
-    S.task = id; S.tAns = {}; S.tRes = null; S.tc = null; S.toff = false;
+    S.task = id; S.tAns = {}; S.tRes = null; (S.tFail = S.tFail || {})[id] = 0; S.tc = null; S.toff = false;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
 
   /* ============================================================ Zufalls-Trainer */
-  function newTrainer() { const T = S.tr; T.task = C.genTask(R0, { kind: T.kind }, D); T.res = null; T.ans = ''; T.tc = null; T.off = false; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.task = C.genTask(R0, { kind: T.kind }, D); T.res = null; T.fail = 0; T.ans = ''; T.tc = null; T.off = false; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr, V = $('#rtView'); if (!T.task) { newTrainer(); return; }
     const st = S.rt, x = T.task; let h = `<div class="card pl"><h4>Zufalls-Trainer: unendlich viele Rechenaufgaben</h4>
@@ -624,14 +636,22 @@
       <div class="stats"><div class="bx"><b>${st.streak}</b>Serie</div><div class="bx"><b>${st.best}</b>Beste Serie</div><div class="bx"><b>${st.ok}/${st.n}</b>Richtig</div></div>
       <p style="margin:6px 0">${esc(x.text)}</p>`;
     if (x.chart) h += chartBlock(mat(x.chart), T.tc, T.off, 'rtChart');
-    h += `<label class="f"><span>Dein Ergebnis in ${esc(x.unit)}</span><div class="qin"><input id="rtIn" inputmode="decimal" autocomplete="off" value="${esc(T.ans)}" ${T.res ? 'disabled' : ''}><span class="u">${esc(x.unit)}</span></div></label>`;
+    h += `<label class="f"><span>Dein Ergebnis in ${esc(x.unit)}</span><div class="qin"><input id="rtIn" inputmode="decimal" autocomplete="off" value="${esc(T.ans)}" ${T.res ? 'disabled' : ''}><span class="u">${esc(x.unit)}</span></div></label><p class="lr-hinweis">Zahl in ${esc(x.unit)}. ±${fAny(x.tol)} gilt als richtig.</p>`;
     h += T.res ? `<div class="btns"><button class="btn pri" data-r="next">Nächste Aufgabe</button></div>` : `<div class="btns"><button class="btn pri" data-r="chk">✓ Prüfen</button><button class="btn" data-r="show">Lösung zeigen</button></div>`;
-    if (T.res) { const r = T.res; h += `<div class="fb ${r.ok ? 'ok' : 'bad'}"><span class="v">${r.shown ? 'Lösung: ' + fAny(Math.round(x.value * 1000) / 1000) + ' ' + x.unit + ' (zählt als Fehler, Serie beginnt neu)' : r.ok ? '✓ Richtig! Serie: ' + st.streak : '✗ Nicht ganz: richtig sind ' + fAny(Math.round(x.value * 1000) / 1000) + ' ' + x.unit + '. Serie beginnt neu.'}</span></div><div class="rdout ${r.ok ? 'ok' : 'bad'}">${esc(x.expl)}</div>`; }
+    if (!T.res && T.fail === 1) h += `<div id="rtFb" class="lr-fb tipp" role="status" tabindex="-1"><p><strong>Noch nicht.</strong> Tipp: ${esc(x.tips[0])} Du hast einen zweiten Versuch.</p></div>`;
+    if (T.res) {
+      const r = T.res, val = fAny(Math.round(x.value * 1000) / 1000) + ' ' + x.unit;
+      const kopf = r.shown ? `<p><strong>Lösung:</strong> ${val}. Das zählt als Fehler, die Serie beginnt neu.</p>` : r.ok ? `<p><strong>Richtig.</strong> ${r.second ? 'Im zweiten Versuch. Die Serie beginnt neu.' : 'Serie: ' + st.streak + '.'}</p>` : `<p><strong>Nicht ganz.</strong> Lösung: ${val}. Die Serie beginnt neu.</p>`;
+      h += `<div id="rtFb" class="lr-fb ${r.ok ? 'ok' : 'loes'}" role="status" tabindex="-1">${kopf}<p>${esc(x.expl)}</p></div>`;
+    }
     V.innerHTML = h + '</div>';
   }
   function trainerResult(res, shown) {
-    const T = S.tr, st = S.rt; st.n++; if (res.ok && !shown) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; lsSet('rt', st);
-    T.res = Object.assign({}, res, { shown }); if (res.ok && !shown) ding(); else sad(); renderTrainer(); updatePal();
+    const T = S.tr, st = S.rt;
+    if (!res.ok && !shown && !T.fail) { T.fail = 1; st.streak = 0; lsSet('rt', st); sad(); toast('Noch nicht richtig.'); renderTrainer(); updatePal(); zeigFb($('#rtFb')); return; }
+    const second = !!T.fail; st.n++;
+    if (res.ok && !shown) { st.ok++; if (!second) { st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; } else st.streak = 0; lsSet('rt', st);
+    T.res = Object.assign({}, res, { shown, second }); if (res.ok && !shown) ding(); else sad(); renderTrainer(); updatePal(); zeigFb($('#rtFb'));
     if (res.ok && !shown && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
   }
   const trCheck = () => { const r = C.checkNumber(S.tr.ans, S.tr.task); if (r.empty) toast('Bitte gib eine Zahl ein.'); else trainerResult(r, false); };
@@ -746,6 +766,24 @@
   }
 
   let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { if (S.tab === 'tasks' && curTask() && !$('#tkIn:focus')) { /* Diagramme skalieren per CSS */ } }, 150); });
+  /* Grafiktext am Handy: SVG-Schrift wird mit der Grafik verkleinert; hier auf mindestens 11 px Bildschirmgröße angehoben (P11). */
+  const SVG_MIN = 11.2;
+  function fixSvgText() {
+    try {
+      document.querySelectorAll('svg text').forEach(t => {
+        const m = t.getScreenCTM && t.getScreenCTM(); if (!m) return;
+        const sc = Math.hypot(m.a, m.b); if (!sc || !isFinite(sc)) return;
+        if (t.dataset.fb == null) { t.dataset.fb = parseFloat(getComputedStyle(t).fontSize) || 0; }
+        const base = +t.dataset.fb; if (!base) return;
+        if (base * sc < SVG_MIN) t.style.fontSize = (SVG_MIN / sc) + 'px'; else if (t.style.fontSize) t.style.fontSize = '';
+      });
+    } catch (e) {}
+  }
+  let fz; const fixSoon = () => { clearTimeout(fz); fz = setTimeout(fixSvgText, 60); };
+  window.addEventListener('resize', fixSoon);
+  try { new MutationObserver(fixSoon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  root.WerFixSvgText = fixSvgText;
+  fixSoon();
   buildTabs(); updatePal(); setTab(S.tab);
   /* Aufruf ?aufgabe=wer1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
   root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };

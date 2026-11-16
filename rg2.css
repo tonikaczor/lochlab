@@ -4,7 +4,7 @@
 :root[data-theme=light]{--bg:#eef1f4;--panel:#ffffff;--panel2:#e6eaef;--fg:#1c2329;--mute:#4f5b66;--accent:#0b5fa5;--accent-bg:#1a6fd4;--danger:#b3261e;--line:#c5ced7;--ok:#0a7d52;--warn:#a85d00;--well:#f4f6f8;--cv:#f7f9fb;--grid:#dbe2e8;--axis:#8795a1;--shadow:rgba(0,0,0,.15);--focus:#0a4fb3;--scheme:light;--c0:#0b5fa5;--c1:#b35a00;--c2:#0a7d52;--c3:#a3317a;--c4:#6b6b00;--c5:#5b4bb7;color-scheme:light}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 -apple-system,system-ui,"Segoe UI",sans-serif;overscroll-behavior:none}
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left);max-width:100vw;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right) 52px env(safe-area-inset-left);max-width:100vw;overflow:hidden}
 button,input,select{font:inherit;color:inherit}
 button{background:none;border:0;cursor:pointer;touch-action:manipulation}
 button[disabled]{opacity:.4;cursor:default}
@@ -22,7 +22,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .tab.on{background:var(--accent-bg);border-color:var(--accent-bg);color:#fff}
 .tab .bd{min-width:22px;height:22px;border-radius:11px;background:rgba(0,0,0,.22);font-size:14px;display:inline-grid;place-items:center;padding:0 6px}
 #view{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
-.wrap{width:100%;max-width:1180px;margin:0 auto;padding:12px 12px 56px}
+.wrap{width:100%;max-width:1180px;margin:0 auto;padding:12px 12px 20px}
 h2{font-size:21px;margin:4px 0 4px;line-height:1.25}
 h3{font-size:17px;margin:14px 0 6px}
 p{margin:0 0 10px}
@@ -30,7 +30,8 @@ p{margin:0 0 10px}
 .lab{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-items:start}
 @media(min-width:760px){.lab{grid-template-columns:minmax(0,1.45fr) minmax(300px,1fr)}.lab.wide{grid-template-columns:minmax(0,1.2fr) minmax(300px,1fr)}}
 /* schmale Anzeige: erst die Hauptzeichnung, dann Regler und Messwerte, dann die weiteren Zeichnungen */
-@media(max-width:759px){.lab{display:flex;flex-direction:column;gap:12px}.left{display:contents}.prim{order:1}.right{order:2}.sec{order:3}.cv-step{aspect-ratio:16/10}}
+/* F1/C-rg2-01: align-items:stretch und width:100% sind Pflicht. Mit align-items:start hat ein Container mit container-type:inline-size keine Breite (0 px), die Zeichenflächen wurden 2 x 2 px groß. */
+@media(max-width:759px){.lab{display:flex;flex-direction:column;align-items:stretch;gap:12px}.lab>*,.left>*{width:100%;min-width:0}.left{display:contents}.prim{order:1}.right{order:2}.sec{order:3}.cv-step{aspect-ratio:16/10}}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:0 0 12px;overflow:hidden;min-width:0}
 .card>summary,.card>h4{list-style:none;margin:0;padding:0 14px;min-height:44px;display:flex;align-items:center;gap:8px;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);font-weight:700;cursor:pointer}
 .card>summary::-webkit-details-marker{display:none}
@@ -45,7 +46,8 @@ p{margin:0 0 10px}
 canvas{display:block;width:100%;height:auto;background:var(--cv);border:1px solid var(--line);border-radius:10px;touch-action:pan-y}
 .cv-step{aspect-ratio:16/9}.cv-pz{aspect-ratio:1/1}.cv-bode{aspect-ratio:4/3.1}.cv-sq{aspect-ratio:1/1}.cv-wide{aspect-ratio:16/8}
 .cvrow{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
-.prim,.sec{container-type:inline-size;min-width:0}
+.prim,.sec{container-type:inline-size;min-width:0;width:100%}
+canvas{min-height:120px}
 @container (min-width:540px){.cvrow.two{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}.cvrow.eq{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
 .cap{font-size:14px;color:var(--mute);margin:4px 2px 0}
 .legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;padding:4px 2px}
@@ -127,6 +129,10 @@ table.tb th{color:var(--mute);font-weight:600;border-top:0}
 #toast.on{display:block}
 @media print{#verBadge,header,#tabs{display:none}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
-@media(max-width:420px){.wrap{padding:10px 10px 56px}h2{font-size:19px}header .title{font-size:16px}.hide-s{display:none}}
+@media(max-width:560px){header .title small{display:none}}
+@media(max-width:420px){.wrap{padding:10px 10px 20px}h2{font-size:19px}header .title{font-size:16px}.hide-s{display:none}}
 /* Versionsstempel aus ver.js: lesbar (14 px) und gut antippbar, ohne den Inhalt zu verdecken */
 #verBadge{font-size:14px!important;min-height:44px!important;display:inline-flex!important;align-items:center!important;padding:0 12px!important;line-height:1.2!important;bottom:8px!important}
+
+/* Welle 2: mit Lab-Rahmen (html.lr-on) zeigt die Kopfzeile den Lab-Namen aus dem Rahmen; der Lab-Titel samt Untertitel entfällt. */
+html.lr-on header .title{display:none}

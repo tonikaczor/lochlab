@@ -472,7 +472,7 @@
       ctx.strokeStyle = '#1f2830'; ctx.lineWidth = 1;
       for (let k = 0; k <= 5; k++) { const gx = px + pw * k / 5; ctx.beginPath(); ctx.moveTo(gx, py); ctx.lineTo(gx, py + ph); ctx.stroke(); }
       const stepV = span > 150 ? 50 : span > 60 ? 20 : 10;
-      ctx.font = '10px ' + FONT;
+      ctx.font = '11px ' + FONT;
       for (let v = Math.ceil(lo / stepV) * stepV; v <= hi; v += stepV) { const gy = Y(v); ctx.beginPath(); ctx.moveTo(px, gy); ctx.lineTo(px + pw, gy); ctx.stroke(); txt(ctx, String(v), px - 6, gy, 10, C.dim, 'right'); }
       // Toleranzband
       if (S.step) {

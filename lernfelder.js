@@ -175,6 +175,12 @@
     Object.keys(o).forEach(k => { o[k].pct = o[k].n ? Math.round(100 * o[k].z / o[k].n) : 0; });
     return o;
   }
+  /* Zählquelle (gemeinsam mit Mein Stand und Ausbildungsplan): eine Aufgabe zählt nur im Beruf, zu dem ihr Lab gehört (kein Hub, nicht gesperrt, Beruf in der
+     Berufsliste des Labs). Dieselbe Regel wie labGehoert() in ausbildungsplan-core.js; test_lernfelder.js vergleicht beide Zählungen für jedes Lernfeld.
+     Ohne Lab-Verzeichnis (reg) werden alle Zeilen gezählt. */
+  const AUSGEBLENDET = ['arb'];
+  function labZaehlt(reg, lab, beruf) { const r = reg && reg[lab]; return !!r && !r.hub && AUSGEBLENDET.indexOf(lab) < 0 && Array.isArray(r.beruf) && r.beruf.indexOf(beruf) >= 0; }
+  function zaehlZeilen(rows, reg, beruf) { return reg && beruf ? (rows || []).filter(r => labZaehlt(reg, r[1], beruf)) : (rows || []); }
   /* Lernstand: res = { id: Prozent } (sim.done und lm4.tdone gemischt, höchster Wert); gelöst = 100 */
   function stand(rows, res) {
     res = res || {}; const n = rows.length, done = rows.filter(r => (+res[r[0]] || 0) >= 100).length, begun = rows.filter(r => (+res[r[0]] || 0) > 0 && (+res[r[0]] || 0) < 100).length;
@@ -304,7 +310,7 @@
     return { pts, max, pct, note: nt, richtig, n: items.length, bestanden: pct >= BESTEHT };
   }
 
-  const API = { LJ, LF, lf, REGELN, AUSNAHMEN, NEU_V48_163, NEU_V50_165, lfOf, zuordnung, abdeckung, stand,
+  const API = { LJ, LF, lf, REGELN, AUSNAHMEN, NEU_V48_163, NEU_V50_165, lfOf, zuordnung, abdeckung, stand, labZaehlt, zaehlZeilen,
     MIN_FRAGEN, STD_FRAGEN, MIN_JE_A, MIN_JE_B, PTS_A, PTS_B, BESTEHT, note, poolLF, bankLF, fragen, fragenZahl, probe, isRight, bewerte, minuten, seeded };
   root.LERNFELDER = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;

@@ -18,8 +18,8 @@
 .lxv h5{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
 .lxv svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}
 .lxv svg text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--fg);font-size:12px}
-.lxv .mo{font-family:ui-monospace,Menlo,Consolas,monospace!important;font-size:11px}
-.lxv .m{fill:var(--mute)!important}.lxv .b{font-weight:700}.lxv .sm{font-size:10.5px}
+.lxv .mo{font-family:ui-monospace,Menlo,Consolas,monospace!important;font-size:12px}
+.lxv .m{fill:var(--mute)!important}.lxv .b{font-weight:700}.lxv .sm{font-size:11.5px}
 .lxv .cr{fill:var(--accent)}.lxv .cw{fill:var(--hi)}.lxv .cx{fill:var(--ok)}.lxv .co{fill:none;stroke:var(--mute);stroke-width:1.2;stroke-dasharray:2 2}
 .lxv .pr{fill:var(--accent)!important}.lxv .pw{fill:var(--hi)!important}.lxv .px{fill:var(--ok)!important}.lxv .pn{fill:var(--mute)!important}
 .lxv .on{fill:var(--bg)!important;font-weight:700}.lxv .cell{fill:var(--panel);stroke:var(--line);stroke-width:1}.lxv .cellon{fill:var(--accent);stroke:var(--accent)}
@@ -28,7 +28,8 @@
 .lxv .dir{fill:var(--warn)}.lxv .fil{fill:none;stroke:var(--mute);stroke-width:1.3}.lxv .bar{fill:var(--accent)}.lxv .ln{stroke:var(--line);stroke-width:1}
 .lxv-sc{max-height:340px;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
 .lxv-sc svg{max-width:none;min-width:300px}
-.lxv-note{margin:6px 0 0;font-size:12.5px;color:var(--mute);line-height:1.4}`;
+.lxv-note{margin:6px 0 0;font-size:12.5px;color:var(--mute);line-height:1.4}
+@media(max-width:600px){.lxv h5,.lxv-note{font-size:14px}.lxv svg text{font-size:14px}.lxv .sm,.lxv .mo{font-size:14px}}`;
   function css() { try { if (typeof document === 'undefined' || document.getElementById('lvCss')) return; const s = document.createElement('style'); s.id = 'lvCss'; s.textContent = CSS; document.head.appendChild(s); } catch (e) {} }
   css();
   const wrap = (title, svg, note, scroll) => `<div class="lxv"><h5>${esc(title)}</h5>${scroll ? `<div class="lxv-sc">${svg}</div>` : svg}${note ? `<p class="lxv-note">${note}</p>` : ''}</div>`;

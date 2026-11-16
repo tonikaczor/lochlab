@@ -70,13 +70,13 @@
   /* ============================================================ Schutz und Leitung */
   const schParams = s => ({ ph: +s.ph === 3 ? 3 : 1, P: P(s.P), U: P(s.U), cos: P(s.cos), eta: P(s.eta), In: s.In ? P(s.In) : NaN, S: s.S ? P(s.S) : NaN, ch: C.LS_CHAR[s.ch] ? s.ch : 'B' });
   function schSvg(ib, In, iz, ok) {
-    const W = 600, bx = 24, bw = 552, mx = Math.max(ib, In, iz) * 1.12, X = v => bx + Math.min(bw, Math.max(0, v / mx * bw));
+    const ph = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width:700px)').matches, W = ph ? 320 : 600, bx = ph ? 14 : 24, bw = W - 2 * bx, mx = Math.max(ib, In, iz) * 1.12, X = v => bx + Math.min(bw, Math.max(0, v / mx * bw));
     let s = `<rect x="${bx}" y="50" width="${bw}" height="26" rx="6" fill="var(--panel)" stroke="var(--mute)" stroke-width="1.5"/>`;
     s += `<rect x="${X(ib)}" y="50" width="${Math.max(0, X(iz) - X(ib))}" height="26" fill="var(--ok)" fill-opacity=".28"/>`;
-    const mark = (v, lab, col, y, anchor) => `<path d="M${X(v)} 44 V82" stroke="${col}" stroke-width="3"/><text class="g-lab" x="${X(v)}" y="${y}" text-anchor="${anchor}" style="fill:${col}">${esc(lab)}</text>`;
+    const mark = (v, lab, col, y, anchor) => { if (ph) anchor = X(v) < bx + 34 ? 'start' : X(v) > bx + bw - 34 ? 'end' : 'middle'; return `<path d="M${X(v)} 44 V82" stroke="${col}" stroke-width="3"/><text class="g-lab" x="${X(v)}" y="${y}" text-anchor="${anchor}" style="fill:${col}">${esc(lab)}</text>`; };
     s += mark(ib, 'Ib ' + f(ib, 1) + ' A', 'var(--accent)', 38, 'middle') + mark(In, 'In ' + f(In, 0) + ' A', ok ? 'var(--ok)' : 'var(--danger)', 100, 'middle') + mark(iz, 'Iz ' + f(iz, 0) + ' A', 'var(--hi)', 38, 'middle');
-    s += `<text class="g-lab m" x="${bx}" y="120">Der Bemessungsstrom In muss zwischen Betriebsstrom Ib und Strombelastbarkeit Iz liegen (grün).</text>`;
-    return `<svg viewBox="0 0 ${W} 130" role="img" aria-label="Skala: Betriebsstrom, Bemessungsstrom des Leitungsschutzschalters und Strombelastbarkeit der Leitung">${s}</svg>`;
+    s += ph ? ['Der Bemessungsstrom In muss zwischen', 'Betriebsstrom Ib und Strombelastbarkeit Iz', 'liegen (grün).'].map((t, i) => `<text class="g-lab m" x="${bx}" y="${122 + i * 16}">${t}</text>`).join('') : `<text class="g-lab m" x="${bx}" y="120">Der Bemessungsstrom In muss zwischen Betriebsstrom Ib und Strombelastbarkeit Iz liegen (grün).</text>`;
+    return `<svg viewBox="0 0 ${W} ${ph ? 158 : 130}" role="img" aria-label="Skala: Betriebsstrom, Bemessungsstrom des Leitungsschutzschalters und Strombelastbarkeit der Leitung">${s}</svg>`;
   }
   function schOut(p) {
     if (!(p.P >= 0) || !(p.U > 0) || !(p.cos > 0 && p.cos <= 1)) return note('Bitte Leistung, Spannung und cos φ als Zahlen eingeben (cos φ zwischen 0 und 1).');
@@ -231,6 +231,7 @@
     el.addEventListener('pointermove', e => {
       if (drag && e.pointerId === drag.id) {
         if (!drag.moved && Math.abs(e.clientX - drag.sx) + Math.abs(e.clientY - drag.sy) < 5) return; drag.moved = true;
+        const bx = svgEl().parentElement; if (bx && bx.classList.contains('vz-wisch')) { const br = bx.getBoundingClientRect(); if (e.clientX < br.left + 36) bx.scrollLeft -= 14; else if (e.clientX > br.right - 36) bx.scrollLeft += 14; }
         const it = L().items[drag.i], w = C.part(it.p).w, p = pt(e); it.x = clamp(Math.round(p.x - drag.ox), 0, C.RAIL_TE - w); it.r = railAt(p.y); refreshBoard(); if (e.preventDefault) e.preventDefault();
       } else if (pal) {
         if (!pal.moved && Math.abs(e.clientX - pal.sx) + Math.abs(e.clientY - pal.sy) < 8) return; pal.moved = true;
@@ -312,8 +313,8 @@
   /* ============================================================ Verdrahtung */
   const TERM_TXT = { L1: 'Außenleiter L1', L2: 'Außenleiter L2', L3: 'Außenleiter L3', N: 'Neutralleiter N', PE: 'Schutzleiter PE' };
   function x1Svg() {
-    let s = '', W = 560; const w = 80, g = 8, x0 = (W - (5 * w + 4 * g)) / 2;
-    C.TERM_ORDER.forEach((k, i) => { const x = x0 + i * (w + g), col = C.INST_COL[k]; s += `<rect x="${x}" y="40" width="${w}" height="64" rx="6" fill="var(--panel)" stroke="var(--mute)" stroke-width="2"/><rect x="${x}" y="${col === 'grün-gelb' ? 40 : 40}" width="${w}" height="12" rx="3" style="fill:${col === 'grün-gelb' ? '#d9c514' : COLCSS[col]}"/><text class="g-lab" x="${x + w / 2}" y="80" text-anchor="middle" style="font-size:15px;font-weight:700">${k}</text><text class="g-lab m" x="${x + w / 2}" y="97" text-anchor="middle" style="font-size:11px">X1:${i + 1}</text><text class="g-lab" x="${x + w / 2}" y="26" text-anchor="middle" style="font-size:12px">${esc(col)}</text>`; });
+    const ph = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width:700px)').matches; let s = '', W = ph ? 300 : 560; const w = ph ? 54 : 80, g = ph ? 6 : 8, x0 = (W - (5 * w + 4 * g)) / 2;
+    C.TERM_ORDER.forEach((k, i) => { const x = x0 + i * (w + g), col = C.INST_COL[k]; s += `<rect x="${x}" y="40" width="${w}" height="64" rx="6" fill="var(--panel)" stroke="var(--mute)" stroke-width="2"/><rect x="${x}" y="${col === 'grün-gelb' ? 40 : 40}" width="${w}" height="12" rx="3" style="fill:${col === 'grün-gelb' ? '#d9c514' : COLCSS[col]}"/><text class="g-lab" x="${x + w / 2}" y="80" text-anchor="middle" style="font-size:15px;font-weight:700">${k}</text><text class="g-lab m" x="${x + w / 2}" y="97" text-anchor="middle" style="font-size:${ph ? 12 : 11}px">X1:${i + 1}</text><text class="g-lab" x="${x + w / 2}" y="26" text-anchor="middle" style="font-size:12px">${esc(col)}</text>`; });
     return `<svg viewBox="0 0 ${W} 124" role="img" aria-label="Klemmenblock X1 mit fünf Klemmen in der Reihenfolge L1, L2, L3, N, PE und den Aderfarben">${s}</svg>`;
   }
   function verHtml(view) {
@@ -361,7 +362,7 @@
   function qBody(q, a, r, pre) {
     const dn = r && (r.ok || pre === 'rt'), as = q.ask; let h = '';
     if (q.layout) h += `<div class="inst">${boardStatic(q.layout)}</div>${LEG}`;
-    if (as.type === 'choice') h += `<div class="opts">${as.choices.map((c, i) => `<button data-tc="${i}" ${dn ? 'disabled' : ''} class="${r && i === as.correct && dn ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    if (as.type === 'choice') h += `<div class="opts">${shufOrd(as.choices).map(i => [as.choices[i], i]).map(([c, i]) => `<button data-tc="${i}" ${dn ? 'disabled' : ''} class="${r && i === as.correct && dn ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
     else if (as.type === 'num') h += `<label class="f"><span>${esc(as.label)}${as.unit ? ' (' + esc(as.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${dn ? 'disabled' : ''}><span class="u">${esc(as.unit)}</span></div></label>`;
     else if (as.type === 'order') { const o = a.o || []; h += `<p class="hint2" style="margin:4px 0">Tippe die Einträge in der richtigen Reihenfolge an. Nochmal tippen nimmt einen Eintrag zurück.</p><div class="opts">${as.items.map((t, i) => { const k = o.indexOf(i); return `<button data-to="${i}" ${dn ? 'disabled' : ''} class="${k >= 0 ? 'on' : ''}"><span class="no">${k >= 0 ? k + 1 : '·'}</span> ${esc(t)}</button>`; }).join('')}</div><div class="btns"><button class="btn" data-oc="1" ${dn ? 'disabled' : ''}>↺ Reihenfolge zurücksetzen</button></div>`; }
     else if (as.type === 'match') { const m = a.m || []; h += `<div class="mrows">${as.rows.map((t, i) => `<label class="mrow"><span>${esc(t)}</span><select data-mr="${i}" ${dn ? 'disabled' : ''}><option value="">– wählen –</option>${as.options.map((op, j) => `<option value="${j}"${m[i] === j ? ' selected' : ''}>${esc(op)}</option>`).join('')}</select></label>`).join('')}</div>`; }
@@ -374,8 +375,17 @@
     makeEditor(el, { get: () => a.lay, set: Lx => { a.lay = Lx; }, need: q.ask.need, rules: q.ask.rules, live: false });
   }
   function evalQ(q, a) { const e = D.evaluate(q, a); if (e.err) { toast(e.err); return null; } return e; }
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): 1. Fehlversuch = Hinweis und zweiter Versuch, 2. Fehlversuch = Lösung mit Weg; im Prüfmodus bleibt die Lösung verborgen */
+  const TRY = {};
+  const solShown = (r, id) => !!r && (r.ok || (!exam() && (TRY[id] || 0) >= 2));
+  const fbBox = (r, id, inner) => '<div class="lr-fb ' + (r.ok ? 'ok' : solShown(r, id) ? 'loes' : 'tipp') + '" id="lrFb">' + inner + '</div>';
+  const tipText = q => (q.ask.unit ? 'Antworte in ' + q.ask.unit + '. ' : '') + (q.ask.type === 'num' && q.tol > 0.011 ? 'Eine Abweichung bis ±' + q.tol + ' ' + (q.ask.unit || '') + ' gilt wegen Rundung als richtig. ' : '') + 'Lies die Aufgabe noch einmal oder tippe auf „Tipp“.';
+  const fbZeig = () => { const e = document.getElementById('lrFb'); if (e && window.LabRahmen) LabRahmen.zeig(e); };
+  const tipHtml = q => '<p><strong>Tipp:</strong> ' + esc(tipText(q)) + ' Du hast einen zweiten Versuch.</p>';
+  /* Antwortreihenfolge: stabil gemischt (je Auswahl gleich bei jedem Zeichnen), damit die richtige Antwort nicht immer an gleicher Stelle steht */
+  const shufOrd = ch => { let h = 7; String(ch.join('|')).split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); const o = ch.map((_, i) => i); for (let i = o.length - 1; i > 0; i--) { h = (h * 1103515245 + 12345) >>> 0; const j = (h >>> 8) % (i + 1); [o[i], o[j]] = [o[j], o[i]]; } return o; };
   const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ ' + (q.ask.type === 'layout' ? 'Noch nicht alles erfüllt: ' + esc(r.given) : 'Deine Antwort „' + esc(r.given) + '“ stimmt nicht.')}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}${q.ask.type === 'layout' && !r.ok && !exam() ? (r.detail || []).map(d => `<li class="bad"><small>${esc(d)}</small></li>`).join('') : ''}${q.ask.type === 'layout' && !r.ok && exam() ? '<li><small>Prüfmodus: Es wird nur die Zahl der erfüllten Regeln genannt.</small></li>' : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(D.solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(D.solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : (exam() ? '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>' : tipHtml(q)));
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
@@ -384,7 +394,7 @@
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qText(q.text)}${qBody(q, a, r, 'tk')}`;
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { const h0 = h.length; h += resBlock(q, r, solShown(r, t.id)); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; h = h.slice(0, h0) + fbBox(r, t.id, h.slice(h0)); }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
@@ -394,9 +404,10 @@
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
+    if (!e.ok) TRY[t.id] = (TRY[t.id] || 0) + 1;
     S.tRes = { id: t.id, ok: e.ok, given: e.given, detail: e.detail, pct };
     if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies die Hinweise und versuche es noch einmal.'); }
-    renderTasks(false);
+    renderTasks(false); fbZeig();
   }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
@@ -410,7 +421,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; TRY[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -498,7 +509,7 @@
       sec('Bauteile (Übungswerte)', `<table><tr><th>Bauteil</th><th>TE</th><th>Verlust</th><th>Bereich</th><th>BMK</th></tr>${Object.keys(C.PARTS).map(k => { const p = C.PARTS[k]; return `<tr><td>${esc(p.n)}${p.heat ? ' ♨' : ''}</td><td>${p.w}</td><td>${p.pv} W</td><td>${p.z === 'L' ? 'Leistung' : 'Steuerung'}</td><td>-${p.k}</td></tr>`; }).join('')}</table><p>${Object.keys(C.BMK_LETTER).map(k => '<b>' + k + '</b> ' + esc(C.BMK_LETTER[k])).join(', ')}. ♨ = Wärmequelle (ab ${C.HEAT_MIN} W). SPS und Relais gelten als wärmeempfindlich.</p>`) +
       sec('Verdrahtung', `<table><tr><th>Feste Installation</th><th>Farbe</th></tr>${C.TERM_ORDER.map(k => `<tr><td>${esc(TERM_TXT[k])}</td><td>${colTag(C.INST_COL[k])}</td></tr>`).join('')}</table><table><tr><th>Maschinenschrank (EN 60204-1)</th><th>Farbe</th></tr>${Object.keys(C.SCHR_COL).map(k => `<tr><td>${esc(k)}</td><td>${colTag(C.SCHR_COL[k])}</td></tr>`).join('')}</table><p>Klemmenfolge der Einspeisung: L1, L2, L3, N, PE. Feindrähtige Leiter bekommen Aderendhülsen. Dreileiter-Sensor: braun +24 V, blau 0 V, schwarz Signal.</p>`) +
       sec('Prüfen vor der Inbetriebnahme', `<ol>${C.PRUEF_STEPS.map(s => `<li>${esc(s.t)} ${s.live ? '(unter Spannung)' : '(spannungsfrei)'}</li>`).join('')}</ol><p>Erst alles Spannungsfreie, dann stufenweise zuschalten. Die Isolationsmessung läuft nur spannungsfrei, empfindliche Baugruppen (Netzteil, SPS) werden vorher getrennt oder wie vom Hersteller vorgesehen behandelt. Bei auffälligen Werten wird nicht eingeschaltet, sondern die Stelle eingegrenzt und nachgearbeitet.</p>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

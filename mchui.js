@@ -65,7 +65,7 @@
   const inp = (tab, k, label, val, unit) => `<label class="f"><span>${esc(label)}${unit ? ' (' + esc(unit) + ')' : ''}</span><input id="in-${tab}-${k}" data-k="${k}" inputmode="decimal" autocomplete="off" value="${esc(val)}"></label>`;
   const segB = (tab, k, opts, cur) => `<div class="seg" role="group">${opts.map(o => `<button id="seg-${tab}-${k}-${esc(o[0])}" data-seg="${k}" data-v="${esc(o[0])}" class="${String(cur) === String(o[0]) ? 'on' : ''}" aria-pressed="${String(cur) === String(o[0])}">${esc(o[1])}</button>`).join('')}</div>`;
   const sel = (tab, k, opts, cur) => `<select id="in-${tab}-${k}" data-k="${k}">${opts.map(o => `<option value="${esc(o[0])}"${String(cur) === String(o[0]) ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select>`;
-  const lbl = t => `<span class="lbl" style="font-size:12px;color:var(--mute)">${esc(t)}</span>`;
+  const lbl = t => `<span class="lbl" style="font-size:14px;color:var(--mute)">${esc(t)}</span>`;
   const UEB = 'Alle Werkstoffkennwerte, Reibungszahlen, E-Module und Sicherheiten in diesem Lab sind Übungswerte für die Ausbildung, nicht für die Auslegung echter Bauteile. Maßgebend sind Tabellenbuch, Datenblatt, Normen und die Vorgaben deines Betriebs.';
   const ueb = () => `<div class="rdout warn">⚠ ${esc(UEB)}</div>`;
   const stripH = s => s.replace(/<g data-h="[^"]*" class="vz-hd">[\s\S]*?<\/g>/g, '');
@@ -209,7 +209,7 @@
   /* Beschreibung der Reiter-Seite (Formular, Zeichnung, Ergebnis) */
   function calcPage(tab, st) {
     const b = CALC[tab].build(st), extra = tab === 'sp' && b.hk ? `<div class="inst">${b.hk}</div>` : '';
-    return { b, html: ueb() + CALC[tab].form(st) + `<div class="inst" id="vz-${tab}" data-tour="viz">${b.viz}</div><div id="hk-${tab}">${extra}</div><div id="out-${tab}">${b.out}</div>` };
+    return { b, html: ueb() + `<div class="inst" id="vz-${tab}" data-tour="viz" data-lr-buehne="verh">${b.viz}</div>` + CALC[tab].form(st) + `<div id="hk-${tab}">${extra}</div><div id="out-${tab}">${b.out}</div>` };
   }
   function renderCalc(tab) { const p = calcPage(tab, S[tab]); $('#' + tab + 'View').innerHTML = p.html; tilt(tab, p.b); }
   function tilt(tab, b) { if (tab === 'he' && b && fin(b.angle)) { const a = b.angle; requestAnimationFrame(() => { const el = $('#lvTilt'); if (el && el.style) el.style.transform = 'rotate(' + a + 'deg)'; S.prev = a; }); } }
@@ -259,24 +259,32 @@
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const qText = t => `<p style="margin:8px 0;white-space:pre-line">${esc(t)}</p>`;
   function qBody(q, a, r, pre) {
-    const dn = r && (r.ok || pre === 'rt'), as = q.ask; let h = '';
+    const dn = r && (r.ok || r.stage === 'loes' || pre === 'rt'), as = q.ask; let h = '';
     if (q.fig) h += `<div class="inst" data-tour="fig">${V.taskFig(q.fig)}</div><p class="hint2" style="margin:0 0 6px">Skizze mit den gegebenen Größen. Gesuchte Größen sind nicht eingezeichnet.</p>`;
     if (as.type === 'choice') h += `<div class="opts">${as.choices.map((c, i) => `<button data-tc="${i}" ${dn ? 'disabled' : ''} class="${r && i === as.correct && dn ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    else h += `<label class="f"><span>${esc(as.label)}${as.unit ? ' (' + esc(as.unit) + ')' : ''}</span><div class="qin"><input id="in-task-${pre}" data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${dn ? 'disabled' : ''}><span class="u">${esc(as.unit)}</span></div></label>`;
+    else h += `<label class="f"><span>${esc(as.label)}${as.unit ? ' (' + esc(as.unit) + ')' : ''}</span><div class="qin"><input id="in-task-${pre}" data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${dn ? 'disabled' : ''}><span class="u">${esc(as.unit)}</span></div></label><p class="lr-hinweis">Zahl${as.unit ? ' in ' + esc(as.unit) : ''}. ±${esc(f(q.tol, q.tol < 0.1 ? 3 : 2))}${as.unit ? ' ' + esc(as.unit) : ''} gilt als richtig.</p>`;
     return h;
   }
   function evalQ(q, a) { const e = D.evaluate(q, a); if (e.err) { toast(e.err); return null; } return e; }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(D.solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung nach Prüfen (4.5): ok = richtig, tipp = Hinweis und zweiter Versuch, loes = Lösung mit Rechenweg, pruef = Prüfmodus (Lösungsweg erst nach richtiger Antwort) */
+  function fbBlock(q, r, id) {
+    const st = r.stage || (r.ok ? 'ok' : 'loes'), kind = st === 'ok' ? 'ok' : st === 'tipp' ? 'tipp' : 'loes', bad = 'Deine Antwort „' + esc(r.given) + '“ stimmt nicht.', sol = `<p><strong>Lösung:</strong> ${esc(D.solText(q))}</p><p><strong>Lösungsweg:</strong> ${esc(q.expl)}</p>`; let h;
+    if (st === 'ok') h = `<p><strong>Richtig.</strong> ${esc(r.given)}</p>` + sol;
+    else if (st === 'tipp') h = `<p><strong>Noch nicht.</strong> ${bad} Tipp: ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p>`;
+    else if (st === 'pruef') h = `<p><strong>Noch nicht.</strong> ${bad}</p><p>🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p>`;
+    else h = `<p><strong>Leider nicht.</strong> ${r.shown ? 'Die Lösung wird angezeigt.' : bad}</p>` + sol;
+    return `<div id="${id}" class="lr-fb ${kind}" role="status" tabindex="-1">${h}</div>`;
+  }
+  const zeigFb = el => { if (el && root.LabRahmen && root.LabRahmen.zeig) try { root.LabRahmen.zeig(el); } catch (e) {} };
 
   function renderTasks(top) {
     const Vw = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || (S.tAns[t.id] = {});
       h += `<div class="card pl" style="border-color:var(--accent)" id="taskCard"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qText(q.text)}${qBody(q, a, r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" id="task-check" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" id="task-hint" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="btns"><button class="btn pri" id="task-check" data-ta="chk"${r && (r.ok || r.stage === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" id="task-hint" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { h += fbBlock(q, r, 'tkFb'); if (r.ok || r.stage === 'loes') h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
@@ -285,10 +293,11 @@
     Vw.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
   }
   function checkTask(t) {
-    const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies die Hinweise und versuche es noch einmal.'); }
-    renderTasks(false);
+    const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0, ex = exam();
+    S.tFail = S.tFail || {}; if (!e.ok) S.tFail[t.id] = (S.tFail[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, stage: e.ok ? 'ok' : ex ? 'pruef' : S.tFail[t.id] >= 2 ? 'loes' : 'tipp' };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig.'); }
+    renderTasks(false); zeigFb($('#tkFb'));
   }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
@@ -302,7 +311,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; (S.tFail = S.tFail || {})[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -317,15 +326,21 @@
   });
 
   /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr_; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr_; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.fail = 0; T.last = ''; renderTrainer(); }
+  /* Trainer: 1. Fehler Tipp (Serie 0, kein Zähler), 2. Fehler oder "Lösung zeigen" Lösung mit Rechenweg */
+  function trFb(q, r) {
+    const sol = `<p><strong>Lösung:</strong> ${esc(D.solText(q))}</p><p><strong>Lösungsweg:</strong> ${esc(q.expl)}</p>`, k = r.shown ? 'Die Lösung wird angezeigt. Das zählt als Fehler, die Serie beginnt neu.' : r.ok ? (r.second ? 'Im zweiten Versuch. Die Serie beginnt neu.' : 'Serie: ' + S.rt.streak + '.') : 'Deine Antwort „' + esc(r.given) + '“ stimmt nicht. Die Serie beginnt neu.';
+    return `<div id="rtFb" class="lr-fb ${r.ok ? 'ok' : 'loes'}" role="status" tabindex="-1"><p><strong>${r.ok ? 'Richtig.' : 'Leider nicht.'}</strong> ${k}</p>${sol}</div>`;
+  }
   function renderTrainer() {
     const T = S.tr_; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="fbar"><span class="lbl" style="font-size:14px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
       <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div>${qText(q.text)}${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      <div class="btns">${T.res ? '<button class="btn pri" data-ra="next">Nächste Frage</button>' : '<button class="btn pri" data-ra="chk">✓ Prüfen</button><button class="btn" data-ra="hint">💡 Tipp</button><button class="btn" data-ra="show">Lösung zeigen</button><button class="btn" data-ra="next">Überspringen</button>'}</div>
+      ${T.res ? trFb(q, T.res) : T.fail === 1 ? fbBlock(q, { given: T.last, stage: 'tipp' }, 'rtFb') : ''}</div>`;
+    if (T.res || T.fail === 1) zeigFb($('#rtFb'));
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr_.ans.v = e.target.value; });
@@ -334,11 +349,14 @@
     const T = S.tr_, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; }
     if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'show') trainerCheck(true); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
-  function trainerCheck() {
-    const T = S.tr_; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+  function trainerCheck(shown) {
+    const T = S.tr_; if (T.res) return; let e = { ok: false, given: '' }; if (!shown) { e = evalQ(T.q, T.ans); if (!e) return; }
+    if (!e.ok && !shown && !T.fail) { T.fail = 1; T.last = e.given; S.rt.streak = 0; lsSet('rt', S.rt); sad(); renderTrainer(); updatePal(); return; }
+    const second = !!T.fail, okk = e.ok && !shown; S.rt.n++;
+    if (okk) { S.rt.ok++; if (!second) { S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); } else S.rt.streak = 0; } else S.rt.streak = 0;
+    T.res = { ok: okk, given: e.given, shown: !!shown, second }; if (okk) ding(); else sad();
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -348,7 +366,7 @@
     return `<div class="inst">${stripH(b.viz)}</div>` + (b.hk ? `<div class="inst">${b.hk}</div>` : '') + b.out;
   }
   function renderBsp() {
-    $('#bspView').innerHTML = `<p class="hint2" style="margin:0 0 8px">Fertig durchgerechnete Beispiele (Übungswerte). Mit „In den Rechner laden“ öffnest du die Zahlen im passenden Reiter und kannst sie verändern.</p>` + D.examples.map(e => `<div class="card pl" id="ex_${e.id}"><h4>Beispiel</h4><div class="big">${esc(e.title)}</div><p style="margin:4px 0 8px">${esc(e.text)}</p>${exBody(e)}<div class="btns"><button class="btn pri" data-ex="${e.id}">In den Rechner laden</button></div></div>`).join('');
+    $('#bspView').innerHTML = `<p class="hint2" style="margin:0 0 8px">Fertig durchgerechnete Beispiele (Übungswerte). Mit „In den Rechner laden“ öffnest du die Zahlen im passenden Reiter und kannst sie verändern.</p>` + D.examples.map(e => `<div class="card pl" id="ex_${e.id}"><h4>Beispiel</h4><div class="big">${esc(e.title)}</div><p style="margin:4px 0 8px">${esc(e.text)}</p><div class="btns" style="margin:0 0 8px"><button class="btn pri" data-ex="${e.id}">In den Rechner laden und verändern</button></div>${exBody(e)}</div>`).join('');
   }
   function loadExample(x) { S[x.tab] = sane(x.tab, x.p); lsSet(x.tab, S[x.tab]); setTab(x.tab); }
   $('#bspView').addEventListener('click', e => {
@@ -371,7 +389,7 @@
       sec('Flächenpressung und Abscheren', `<span class="eq">Pressung: p = F / (d · t) (projizierte Fläche)</span><span class="eq">Abscheren: τ = F / (n · A), A = π · d² / 4</span><span class="eq">Lochen: F = τaB · π · d · s, τaB ≈ 0,8 · Rm</span><p>Bei der Pressung drückt der Bolzen auf die Lochwand. Beim Abscheren wird der Bolzen in einer (einschnittig) oder zwei (zweischnittig) Ebenen durchtrennt.</p>`) +
       sec('Biegung, Sicherheit', `<span class="eq">Biegespannung: σb = Mb / W</span><span class="eq">Rechteck: W = b · h² / 6 (h in Lastrichtung)</span><span class="eq">Vollkreis: W = π · d³ / 32</span><span class="eq">Einzellast mittig: Mb = F · L / 4</span><span class="eq">Sicherheit: S = Grenzspannung / σ (zäh: Re, spröde: Rm)</span><p>Das Widerstandsmoment beschreibt, wie gut ein Querschnitt Biegung aufnimmt. Die Höhe geht quadratisch ein: Hochkant ist stärker als flach. Mb in Nmm und W in mm³ ergibt σ in N/mm².</p>`) +
       sec('Arbeit, Leistung, Wirkungsgrad', `<span class="eq">Arbeit: W = F · s (J = Nm), Hubarbeit W = m · g · h</span><span class="eq">Leistung: P = W / t = F · v</span><span class="eq">Drehbewegung: P = M · 2π · n (n in 1/s)</span><span class="eq">Wirkungsgrad: η = P_ab / P_zu, Stufen multiplizieren sich</span><p>Der Wirkungsgrad ist nie größer als 100 %; Verluste werden zu Wärme.</p>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
@@ -448,6 +466,24 @@
     }
   };
 
+  /* Grafiktext am Handy: SVG-Schrift wird mit der Grafik verkleinert; hier auf mindestens 11 px Bildschirmgröße angehoben (P11). */
+  const SVG_MIN = 11.2;
+  function fixSvgText() {
+    try {
+      $$('svg text').forEach(t => {
+        const m = t.getScreenCTM && t.getScreenCTM(); if (!m) return;
+        const sc = Math.hypot(m.a, m.b); if (!sc || !isFinite(sc)) return;
+        if (t.dataset.fb == null) t.dataset.fb = parseFloat(getComputedStyle(t).fontSize) || 0;
+        const base = +t.dataset.fb; if (!base) return;
+        if (base * sc < SVG_MIN) t.style.fontSize = (SVG_MIN / sc) + 'px'; else if (t.style.fontSize) t.style.fontSize = '';
+      });
+    } catch (e) {}
+  }
+  let fz; const fixSoon = () => { clearTimeout(fz); fz = setTimeout(fixSvgText, 60); };
+  window.addEventListener('resize', fixSoon);
+  try { new MutationObserver(fixSoon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  root.MchFixSvgText = fixSvgText;
+  fixSoon();
   buildTabs(); updatePal(); setTab(TABS.some(x => x[0] === S.tab) ? S.tab : 'kr');
   /* Aufruf ?aufgabe=mch1 (Startseite, Lernhefte) öffnet die Aufgabe, ?bsp die Beispiele (?bsp=kr1 springt zu einem Beispiel) */
   root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };

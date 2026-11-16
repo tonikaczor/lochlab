@@ -47,7 +47,7 @@
     calc: Object.assign({ part: 'welle', N: '30', hi: '-0,010', lo: '-0,030', unit: 'mm', m: '29,992' }, lsGet('calc', {})),
     fit: Object.assign({ hole: 'H7', shaft: 'f7', N: '25' }, lsGet('fit', {})),
     pick: { i: 0, sel: -1, res: null }, pickStat: Object.assign({ n: 0, ok: 0 }, lsGet('pick', {})),
-    task: null, tAns: {}, tRes: null, tz: 1,
+    task: null, tAns: {}, tRes: null, tTry: 0, tFb: null, tz: 1,
     tr: { kind: 'mixed', level: 2, inst: null, res: null, ans: '', zoom: 1, shown: false },
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {}))
   };
@@ -185,7 +185,7 @@
     let h = `<div class="card pl"><h4>${cal ? 'Messschieber (Nonius)' : 'Bügelmessschraube (0,01 mm)'}</h4>`;
     h += `<div class="fbar">${cal ? segHTML('den', [[10, '1/10'], [20, '1/20'], [50, '1/50']], s.den) : segHTML('base', C.MICRO_BASES.map(b => [b, b + '–' + (b + 25)]), s.base)}${segHTML('mode', [['erkl', 'Erklärt'], ['selbst', 'Selbst einstellen'], ['zufall', 'Zufallswert']], mode)}</div>`;
     h += `<div id="${key}Svg"></div>`;
-    if (cal) h += `<div class="ctl"><span class="lbl" style="align-self:center;font-size:12px;color:var(--mute)">Lupe</span>${[1, 2, 3].map(z => `<button class="chip s${s.zoom === z ? ' on' : ''}" data-zoom="${z}">×${String(z).replace('.', ',')}</button>`).join('')}<button class="chip s${s.guide ? ' on' : ''}" data-guide="1" aria-pressed="${!!s.guide}">Hilfslinien</button></div>`;
+    if (cal) h += `<div class="ctl"><span class="lbl" style="align-self:center;font-size:14px;color:var(--mute)">Lupe</span>${[1, 2, 3].map(z => `<button class="chip s${s.zoom === z ? ' on' : ''}" data-zoom="${z}">×${String(z).replace('.', ',')}</button>`).join('')}<button class="chip s${s.guide ? ' on' : ''}" data-guide="1" aria-pressed="${!!s.guide}">Hilfslinien</button></div>`;
     if (mode !== 'zufall') {
       h += `<input type="range" id="${key}Sl" min="0" max="${maxK(key)}" step="1" value="${curK(key)}" aria-label="Messwert einstellen">`;
       h += cal
@@ -265,7 +265,7 @@
       <label class="f"><span>Oberes Abmaß (${c.part === 'welle' ? 'es' : 'ES'}) in ${c.unit === 'mm' ? 'mm' : 'µm'}</span><input id="cHi" inputmode="decimal" autocomplete="off" value="${esc(c.hi)}"></label>
       <label class="f"><span>Unteres Abmaß (${c.part === 'welle' ? 'ei' : 'EI'}) in ${c.unit === 'mm' ? 'mm' : 'µm'}</span><input id="cLo" inputmode="decimal" autocomplete="off" value="${esc(c.lo)}"></label>
       <label class="f"><span>Gemessenes Maß in mm (optional)</span><input id="cM" inputmode="decimal" autocomplete="off" value="${esc(c.m)}"></label></div>
-      <div class="ctl"><span style="align-self:center;font-size:12px;color:var(--mute)">Beispiele</span><button class="chip s" data-cex="1">Welle Ø30 −0,010/−0,030</button><button class="chip s" data-cex="2">Bohrung Ø20 +0,021/0</button><button class="chip s" data-cex="3">Welle Ø25 f7 (µm)</button></div>
+      <div class="ctl"><span style="align-self:center;font-size:14px;color:var(--mute)">Beispiele</span><button class="chip s" data-cex="1">Welle Ø30 −0,010/−0,030</button><button class="chip s" data-cex="2">Bohrung Ø20 +0,021/0</button><button class="chip s" data-cex="3">Welle Ø25 f7 (µm)</button></div>
       <div id="cRes"></div></div>`;
     updateCalc();
   }
@@ -375,9 +375,11 @@
     const pct = ok ? pctFor(t.id) : 0, ex = exam();
     lines.push({ ok, text: ok ? 'Richtig: ' + given : 'Deine Antwort „' + given + '“ stimmt nicht.' });
     if (t.inst) lines.push({ ok: true, info: true, text: 'Erlaubt ist eine Abweichung von ±1 Teilstrich (±' + fAny(s.tol) + ' mm).' });
-    S.tRes = { id: t.id, ok, pct, lines, sol: solutionText(t) };
-    if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Lies die Erklärung und versuche es noch einmal.'); }
-    renderTasks(false);
+    if (!ok && !S.tTry) { S.tTry = 1; S.tFb = { id: t.id, given }; S.tRes = null; sad(); S.fbShow = true; renderTasks(false); return; }
+    S.tTry = 0; S.tFb = null;
+    S.tRes = { id: t.id, ok, pct, lines, sol: solutionText(t), given };
+    if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); }
+    S.fbShow = true; renderTasks(false);
   }
   function hintTask(t) {
     const h = lsGet('hints', {}), n = Math.min(3, (h[t.id] || 0) + 1), ex = exam();
@@ -395,6 +397,19 @@
       b.innerHTML = x;
     });
   }
+  /* Rückmeldung (Rahmen 4.5): erster Fehlversuch = Tipp und zweiter Versuch, zweiter = Lösung mit Rechenweg */
+  const showFb = sel => { const e = $(sel); if (e && window.LabRahmen) LabRahmen.zeig(e); };
+  function taskFb(t, r) {
+    const ex = exam();
+    if (!r) { const f = S.tFb && S.tFb.id === t.id ? S.tFb : null; return f ? `<div class="lr-fb tipp" id="fb-task" tabindex="-1"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(f.given)}“ stimmt nicht. ${ex ? 'Im Prüfmodus kostet ein Tipp 25 % je Stufe. Tippe auf „Tipp“, wenn du ihn willst. Du hast einen zweiten Versuch.' : 'Tipp: ' + esc(t.tips[0]) + ' Du hast einen zweiten Versuch.'}</p></div>` : ''; }
+    const full = r.ok || !ex, ab = t.inst ? '<p><b>Ablesung:</b> ' + esc(C.describe(t.inst)) + '</p>' : '';
+    return `<div class="lr-fb ${r.ok ? 'ok' : 'loes'}" id="fb-task" tabindex="-1"><p><strong>${r.ok ? 'Richtig.' : 'Noch nicht.'}</strong> ${r.ok ? esc(r.given) : 'Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</p>` + (full ? `<p><b>Lösung:</b> ${esc(r.sol)}</p><p>${esc(t.expl)}</p>${ab}` : '<p>Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Versuche es noch einmal.</p>') + '</div>' + (full && root.TOLVIZ ? root.TOLVIZ.task(t.id) : '');
+  }
+  function taskHinweis(t) {
+    if (t.ask.type === 'choice') return '';
+    const s = t.solve(C);
+    return `<p class="lr-hinweis">Zahl in ${esc(t.ask.unit)}.${t.inst ? ' Erlaubt ist eine Abweichung von ±1 Teilstrich (±' + esc(fAny(s.tol)) + ' mm).' : s.tol > 0.011 ? ' Erlaubte Abweichung: ±' + esc(fAny(s.tol)) + ' ' + esc(t.ask.unit) + ' (wegen Rundung).' : ''}</p>`;
+  }
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
@@ -402,24 +417,20 @@
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(t.text)}</p>`;
       if (t.inst) {
         h += `<div id="tkInst">${instWrap(t.inst, { zoom: S.tz, hi: !!(r && r.ok) })}</div>`;
-        if (t.inst.t === 'caliper') h += `<div class="ctl"><span style="align-self:center;font-size:12px;color:var(--mute)">Lupe</span>${[1, 2, 3].map(z => `<button class="chip s${S.tz === z ? ' on' : ''}" data-tz="${z}">×${String(z).replace('.', ',')}</button>`).join('')}</div>`;
+        if (t.inst.t === 'caliper') h += `<div class="ctl"><span style="align-self:center;font-size:14px;color:var(--mute)">Lupe</span>${[1, 2, 3].map(z => `<button class="chip s${S.tz === z ? ' on' : ''}" data-tz="${z}">×${String(z).replace('.', ',')}</button>`).join('')}</div>`;
       }
       if (t.ask.type === 'choice') h += `<div class="opts" id="tkOpts">${t.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && r.ok ? 'disabled' : ''} class="${r && r.ok && i === t.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-      else h += `<label class="f"><span>${esc(t.ask.label || 'Dein Ergebnis')} (${esc(t.ask.unit)})</span><div class="qin"><input id="tkIn" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && r.ok ? 'disabled' : ''}><span class="u">${esc(t.ask.unit)}</span></div></label>`;
+      else h += `<label class="f"><span>${esc(t.ask.label || 'Dein Ergebnis')} (${esc(t.ask.unit)})</span><div class="qin"><input id="tkIn" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && r.ok ? 'disabled' : ''}><span class="u">${esc(t.ask.unit)}</span></div></label>${taskHinweis(t)}`;
+      h += taskFb(t, r);
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) {
-        h += `<ul class="tl">${r.lines.map(l => `<li class="${l.info ? '' : l.ok ? 'ok' : 'bad'}">${l.info ? 'ℹ' : l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-        if (r.ok || !exam()) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(r.sol)}<br>${esc(t.expl)}${t.inst ? '<br><br><b>Ablesung:</b> ' + esc(C.describe(t.inst)) : ''}</div>${root.TOLVIZ ? root.TOLVIZ.task(t.id) : ''}`;
-        else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
-        if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
-      }
+      if (r && r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : p > 0 ? 'p' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && !d[x.id] ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; if (S.fbShow) { S.fbShow = false; showFb('#fb-task'); }
   }
   $('#taskView').addEventListener('input', e => { const t = curTask(); if (t && e.target.id === 'tkIn') (S.tAns[t.id] = S.tAns[t.id] || {}).v = e.target.value; });
   $('#taskView').addEventListener('keydown', e => { const t = curTask(); if (t && e.key === 'Enter' && e.target.id === 'tkIn') { e.preventDefault(); checkTask(t); } });
@@ -431,30 +442,44 @@
     if (row) startTask(row.dataset.t);
   });
   function startTask(id) {
-    S.task = id; S.tAns = {}; S.tRes = null; S.tz = 1;
+    S.task = id; S.tAns = {}; S.tRes = null; S.tTry = 0; S.tFb = null; S.tz = 1;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
 
   /* ============================================================ Zufalls-Trainer */
-  function newTrainer() { const T = S.tr; T.inst = C.genReading(R0, { kind: T.kind, level: T.level }); T.res = null; T.ans = ''; T.shown = false; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.inst = C.genReading(R0, { kind: T.kind, level: T.level }); T.res = null; T.ans = ''; T.shown = false; T.tries = 0; T.fb = null; renderTrainer(); }
+  const rtTipp = inst => inst.t === 'caliper' ? 'Lies zuerst die ganzen Millimeter links vom Nullstrich der Nonius-Skala auf der Hauptskala ab. Dann suche den Nonius-Strich, der mit einem Strich der Hauptskala fluchtet.' : 'Lies zuerst an der Hülse die ganzen und halben Millimeter ab. Dann kommen die Hundertstel von der Trommel dazu.';
+  function rtTippSheet(T) {
+    sheet('Tipp zur Ablesung', b => {
+      const r = C.reading(T.inst); let extra = '';
+      if (r) extra = r.t === 'caliper' ? ' Auf der Hauptskala steht ' + r.main + ' mm.' : ' Die Hülse zeigt ' + f2(r.sleeveTotal - r.base) + ' mm' + (r.base ? ' (dazu kommen ' + r.base + ' mm Messbereichsanfang)' : '') + '.';
+      b.innerHTML = `<p style="margin-top:0">${esc(rtTipp(T.inst))}</p><p>${esc(extra.trim())}</p><p class="hint2">Im Zufalls-Trainer kosten Tipps nichts.</p>`;
+    });
+  }
   function renderTrainer() {
     const T = S.tr, V = $('#rtView'); if (!T.inst) { newTrainer(); return; }
     const st = S.rt; let h = `<div class="card pl"><h4>Zufalls-Trainer: unendlich viele Ablesungen</h4>
       <div class="fbar">${segHTML('rkind', [['caliper', 'Messschieber'], ['micro', 'Bügelmessschraube'], ['mixed', 'Gemischt']], T.kind)}${segHTML('rlevel', [[1, 'leicht'], [2, 'mittel'], [3, 'schwer']], T.level)}</div>
       <div class="stats"><div class="bx"><b>${st.streak}</b>Serie</div><div class="bx"><b>${st.best}</b>Beste Serie</div><div class="bx"><b>${st.ok}/${st.n}</b>Richtig</div></div>`;
     h += `<div id="rtInst">${instWrap(T.inst, { zoom: T.zoom, hi: T.shown })}</div>`;
-    if (T.inst.t === 'caliper') h += `<div class="ctl"><span style="align-self:center;font-size:12px;color:var(--mute)">Lupe</span>${[1, 2, 3].map(z => `<button class="chip s${T.zoom === z ? ' on' : ''}" data-rz="${z}">×${String(z).replace('.', ',')}</button>`).join('')}</div>`;
+    if (T.inst.t === 'caliper') h += `<div class="ctl"><span style="align-self:center;font-size:14px;color:var(--mute)">Lupe</span>${[1, 2, 3].map(z => `<button class="chip s${T.zoom === z ? ' on' : ''}" data-rz="${z}">×${String(z).replace('.', ',')}</button>`).join('')}</div>`;
     h += `<p class="hint2" style="margin:2px 0 6px">${T.inst.t === 'caliper' ? 'Messschieber mit Nonius ' + C.NONIUS[T.inst.den].name + ' (Ablesung ' + C.NONIUS[T.inst.den].rtext + ')' : 'Bügelmessschraube, Messbereich ' + T.inst.base + '–' + (T.inst.base + 25) + ' mm (Ablesung 0,01 mm)'}. Erlaubt ist ±1 Teilstrich.</p>`;
-    h += `<label class="f"><span>Dein Messwert in mm</span><div class="qin"><input id="rtIn" inputmode="decimal" autocomplete="off" value="${esc(T.ans)}" ${T.res ? 'disabled' : ''}><span class="u">mm</span></div></label>`;
-    h += T.res ? `<div class="btns"><button class="btn pri" data-r="next">Nächste Aufgabe</button></div>` : `<div class="btns"><button class="btn pri" data-r="chk">✓ Prüfen</button><button class="btn" data-r="show">Lösung zeigen</button></div>`;
+    h += `<label class="f"><span>Dein Messwert in mm</span><div class="qin"><input id="rtIn" inputmode="decimal" autocomplete="off" value="${esc(T.ans)}" ${T.res ? 'disabled' : ''}><span class="u">mm</span></div></label><p class="lr-hinweis">Zahl in mm. Erlaubt ist eine Abweichung von ±1 Teilstrich (±${esc(fAny(C.tolOf(T.inst)))} mm).</p>`;
     if (T.res) {
-      const r = T.res; h += `<div class="fb ${r.ok ? 'ok' : 'bad'}"><span class="v">${r.shown ? 'Lösung: ' + fAny(r.truth) + ' mm (zählt als Fehler, Serie beginnt neu)' : r.ok ? '✓ Richtig! Serie: ' + st.streak : '✗ Nicht ganz: richtig sind ' + fAny(r.truth) + ' mm. Serie beginnt neu.'}</span></div><div class="rdout ${r.ok ? 'ok' : 'bad'}">${esc(C.describe(T.inst))}</div>`;
+      const r = T.res;
+      h += `<div class="lr-fb ${r.ok && !r.shown ? 'ok' : 'loes'}" id="fb-rt" tabindex="-1"><p><strong>${r.shown ? 'Lösung: ' + esc(fAny(r.truth)) + ' mm.' : r.ok ? 'Richtig.' : 'Noch nicht.'}</strong> ${r.shown ? 'Das zählt als Fehler, die Serie beginnt neu.' : r.ok ? 'Serie: ' + st.streak + '.' : 'Richtig sind ' + esc(fAny(r.truth)) + ' mm. Die Serie beginnt neu.'}</p><p><b>Ablesung:</b> ${esc(C.describe(T.inst))}</p></div>`;
+    } else if (T.fb) {
+      h += `<div class="lr-fb tipp" id="fb-rt" tabindex="-1"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(T.fb.given)} mm“ stimmt nicht. Tipp: ${esc(rtTipp(T.inst))} Du hast einen zweiten Versuch. Die Serie bleibt, bis auch der zweite Versuch falsch ist.</p></div>`;
     }
+    h += T.res ? `<div class="btns"><button class="btn pri" data-r="next">Nächste Aufgabe</button></div>` : `<div class="btns"><button class="btn pri" data-r="chk">✓ Prüfen</button><button class="btn" data-r="tip">💡 Tipp</button><button class="btn" data-r="show">Lösung zeigen</button></div>`;
     V.innerHTML = h + '</div>';
+    if (S.fbShowT) { S.fbShowT = false; const fe = $('#fb-rt'); if (fe && window.LabRahmen) LabRahmen.zeig(fe); }
   }
   function trainerResult(res, shown) {
-    const T = S.tr, st = S.rt; st.n++; if (res.ok && !shown) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; lsSet('rt', st);
+    const T = S.tr, st = S.rt;
+    if (!res.ok && !shown && !T.tries) { T.tries = 1; T.fb = { given: T.ans }; sad(); S.fbShowT = true; renderTrainer(); return; }
+    T.fb = null; st.n++; if (res.ok && !shown) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; lsSet('rt', st);
     T.res = Object.assign({}, res, { shown }); T.shown = true; if (res.ok && !shown) ding(); else sad(); renderTrainer(); updatePal();
     if (res.ok && !shown && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
   }
@@ -466,6 +491,7 @@
     else if (b.dataset.rlevel) { T.level = +b.dataset.rlevel; newTrainer(); }
     else if (b.dataset.rz) { T.zoom = +b.dataset.rz; renderTrainer(); }
     else if (b.dataset.r === 'chk') { const r = C.checkReading(T.inst, T.ans); if (r.empty) toast('Bitte gib eine Zahl ein.'); else trainerResult(r, false); }
+    else if (b.dataset.r === 'tip') rtTippSheet(T);
     else if (b.dataset.r === 'show') trainerResult(C.checkReading(T.inst, ''), true);
     else if (b.dataset.r === 'next') newTrainer();
   });

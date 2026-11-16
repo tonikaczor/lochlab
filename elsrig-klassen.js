@@ -172,7 +172,7 @@
         z1.push([t, zc.z1 * 1000]); z2.push([t, zc.z2 * 1000]); fl.push([t, zc.flimmer * 1000]);
       }
       const c = { id: 'zonen', title: 'Körperstrom beim Körperschluss über der Einwirkdauer (Lehrdarstellung, Übungswerte)', xLabel: 'Einwirkdauer', xUnit: 'ms', xScale: 'log', yLabel: 'Körperstrom', yUnit: 'mA', yScale: 'log',
-        series: [{ name: 'Zone 1 bis', points: z1 }, { name: 'Zone 2 bis', points: z2 }, { name: 'Flimmerkurve (Zone 3 bis)', points: fl }] };
+        series: [{ name: 'Obergrenze Zone 1', points: z1 }, { name: 'Obergrenze Zone 2', points: z2 }, { name: 'Flimmerkurve (Obergrenze Zone 3)', points: fl }] };
       if (r && r.ok !== false && r.ik > 0) c.marker = { x: r.tabMs > 0 ? r.tabMs : 1000, y: Math.max(r.ik, 1e-3), label: 'Betriebspunkt ' + eng(r.ik / 1000, 'A') + ', ' + fm(r.tabMs > 0 ? r.tabMs : 1000, 0) + ' ms' };
       return [c];
     }

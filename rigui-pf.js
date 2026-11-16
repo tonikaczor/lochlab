@@ -4,7 +4,7 @@
 (function (__rgRoot) {
   const __rgR = __rgRoot.RIGUI; if (!__rgR) return;
   const __rgB = __rgR.B;
-  __rgB['p~ana+els+wsl~48c0d426'] = { d: ["loadExample","root","setCtl"], l: [], f: function (__rk) { const { loadExample, root, setCtl } = __rk;
+  __rgB['p~ana+els+wsl~34a6115c'] = { d: ["loadExample","root","setCtl"], l: [], f: function (__rk) { const { loadExample, root, setCtl } = __rk;
   const $ = (s, r) => (r || document).querySelector(s), $$ = (s, r) => [...(r || document).querySelectorAll(s)];
   const AMP = { gruen: { sym: '✓', name: 'grün', lbl: 'im Bereich', cls: 'ok' }, gelb: { sym: '!', name: 'gelb', lbl: 'knapp', cls: 'warnc' }, rot: { sym: '✗', name: 'rot', lbl: 'außerhalb', cls: 'bad' }, grau: { sym: '–', name: 'grau', lbl: 'Noch keine Vorgabe', cls: '' } };
   const B = (id, name, cat, rig, desc, controls, extra) => Object.assign({ id, name, cat, rig, desc, controls }, extra || {});
@@ -48,6 +48,7 @@
   const fnum = (v, d) => (fin(v) ? (+v).toFixed(d == null ? 1 : d).replace('.', ',') : '–');
   const fxOn = () => !!(root.LochFX && !root.LochFX.isMuted());
   const isDark = () => { const a = document.documentElement.getAttribute('data-theme'); if (a === 'dark') return true; if (a === 'light') return false; try { return !(root.matchMedia && root.matchMedia('(prefers-color-scheme: light)').matches); } catch (e) { return true; } };
+  const isInRow = l => /^Die Eingaben sind gültig/.test((l && l.text) || '');
   const isWarn = (m, v) => (fin(+m.warnAbove) && v > +m.warnAbove) || (fin(+m.warnBelow) && v < +m.warnBelow);
   const limBadge = l => (l.status === 'belegt' ? '<span class="bdg ok" title="belegt: Prüfungspool oder Ausbilder">✓ belegt</span>' : '<span class="bdg uw" title="Übungswert: Der Ausbilder gleicht ab">Übungswert (A)</span>');
   const limSrc = l => (l.status !== 'belegt' ? 'Der Ausbilder gleicht ab' + (l.frage ? ' (' + l.frage + ')' : '') : /^pool:/.test(l.quelle || '') ? 'Quelle: Prüfungs-Pool ' + l.quelle.slice(5) : l.quelle === 'toni' ? 'Quelle: Ausbilder' : 'Quelle: ' + (l.quelle || '–'));
@@ -141,7 +142,7 @@
     else txt = new TextDecoder().decode(bytes);
     return JSON.parse(txt);
   }
-  return [{ $, $$, AMP, B, CMPSYM, NARROW_AR, PRE, QLEVELS, RANK, SELFIRST, adig, ampKey, applyHit, assessOf, bgOf, canSound, choiceOpts, clamp, clickSnd, clone, confirmSheet, csvNum, ctlOfRig, decs, defVal, esc, fauto, fin, fnum, fxOn, isWarn, limBadge, limSrc, loadExampleByName, lsGet, lsPut, lsRaw, lsSet, margTxt, markDone, optLabel, optNorm, packShare, parseCsv, pick, rowEnd, rowNorm, saveCsv, seqToRows, sgn, sheet, siUnit, slPos, slVal, stat, taskDone, theme, toast, tstamp, typing, uid, unpackShare }]; } };
+  return [{ $, $$, AMP, B, CMPSYM, NARROW_AR, PRE, QLEVELS, RANK, SELFIRST, adig, ampKey, applyHit, assessOf, bgOf, canSound, choiceOpts, clamp, clickSnd, clone, confirmSheet, csvNum, ctlOfRig, decs, defVal, esc, fauto, fin, fnum, fxOn, isInRow, isWarn, limBadge, limSrc, loadExampleByName, lsGet, lsPut, lsRaw, lsSet, margTxt, markDone, optLabel, optNorm, packShare, parseCsv, pick, rowEnd, rowNorm, saveCsv, seqToRows, sgn, sheet, siUnit, slPos, slVal, stat, taskDone, theme, toast, tstamp, typing, uid, unpackShare }]; } };
   __rgB['k~ana+wsl~b587eda6'] = { d: ["GRUPPEN","ORDER","PK","S","allCtl","applyCtl","buildControls","buildMeters","buildSicht","clone","curRows","deepGet","defOf","lsSet","rigName","saveCur","saveCurSoon","saves","seqDur","setRig","setTab","toast","uid","updateChrome"], l: ["buildPresets","stash"], f: function (__rk) { const { GRUPPEN, ORDER, PK, S, allCtl, applyCtl, buildControls, buildMeters, buildSicht, clone, curRows, deepGet, defOf, lsSet, rigName, saveCur, saveCurSoon, saves, seqDur, setRig, setTab, toast, uid, updateChrome } = __rk; let buildPresets, stash;
   const deepOpened = () => +deepGet().n || 0;
   const gruppeOf = c => (c && c.gruppe && GRUPPEN[c.gruppe] ? c.gruppe : 'ziel');
@@ -161,7 +162,7 @@
     lsSet(PK, a.slice(-100)); S.dirty = false; updateChrome(); saveCur();
   }
   return [{ deepOpened, gruppeOf, loadRig, saveItem }, function (__rk) { ({ buildPresets, stash } = __rk); }]; } };
-  __rgB['k~ana+els+wsl~b2abfc64'] = { d: ["$","CORE","FIREHINT","FIRELBL","KEYS","ORDER","PK","PRE","QLEVELS","RIGLIMITS","RIGMETA","S","SELFIRST","TABS","TK","adig","ampKey","applyItem","assessOf","buildPal","clamp","clickSnd","clone","confirmSheet","ctlDef","ctlOfRig","ctlsOf","cvs","defOf","doFire","esc","extRefresh","fin","fnum","lsGet","lsSet","mqReduce","optLabel","pick","renderSweepLive","renderTasks","root","rowEnd","saveCurSoon","setCtl","setRig","setRun","setTab","sheet","simText","slVal","stat","syncCtl","taskDone","toast","unpackShare","updateAmp","updateQLine","updateTitle","updateWipeDom"], l: ["buildRefRig","ctlParse","ctlShow","renderSeqRes","resetRig","rigPng","seqKeys","stash"], f: function (__rk) { const { $, CORE, FIREHINT, FIRELBL, KEYS, ORDER, PK, PRE, QLEVELS, RIGLIMITS, RIGMETA, S, SELFIRST, TABS, TK, adig, ampKey, applyItem, assessOf, buildPal, clamp, clickSnd, clone, confirmSheet, ctlDef, ctlOfRig, ctlsOf, cvs, defOf, doFire, esc, extRefresh, fin, fnum, lsGet, lsSet, mqReduce, optLabel, pick, renderSweepLive, renderTasks, root, rowEnd, saveCurSoon, setCtl, setRig, setRun, setTab, sheet, simText, slVal, stat, syncCtl, taskDone, toast, unpackShare, updateAmp, updateQLine, updateTitle, updateWipeDom } = __rk; let buildRefRig, ctlParse, ctlShow, renderSeqRes, resetRig, rigPng, seqKeys, stash;
+  __rgB['k~ana+els+wsl~c4c4abdd'] = { d: ["$","CORE","FIREHINT","FIRELBL","KEYS","ORDER","PK","PRE","QLEVELS","RIGLIMITS","RIGMETA","S","SELFIRST","TABS","TK","adig","ampKey","applyItem","assessOf","buildPal","clamp","clickSnd","clone","confirmSheet","ctlDef","ctlOfRig","ctlsOf","cvs","defOf","doFire","esc","extRefresh","fin","fnum","lsGet","lsSet","optLabel","pick","reduced","renderSweepLive","renderTasks","root","rowEnd","saveCurSoon","setCtl","setRig","setRun","setTab","sheet","simText","slVal","stat","syncCtl","taskDone","toast","unpackShare","updateAmp","updateQLine","updateTitle","updateWipeDom"], l: ["buildRefRig","ctlParse","ctlShow","renderSeqRes","resetRig","rigPng","seqKeys","stash"], f: function (__rk) { const { $, CORE, FIREHINT, FIRELBL, KEYS, ORDER, PK, PRE, QLEVELS, RIGLIMITS, RIGMETA, S, SELFIRST, TABS, TK, adig, ampKey, applyItem, assessOf, buildPal, clamp, clickSnd, clone, confirmSheet, ctlDef, ctlOfRig, ctlsOf, cvs, defOf, doFire, esc, extRefresh, fin, fnum, lsGet, lsSet, optLabel, pick, reduced, renderSweepLive, renderTasks, root, rowEnd, saveCurSoon, setCtl, setRig, setRun, setTab, sheet, simText, slVal, stat, syncCtl, taskDone, toast, unpackShare, updateAmp, updateQLine, updateTitle, updateWipeDom } = __rk; let buildRefRig, ctlParse, ctlShow, renderSeqRes, resetRig, rigPng, seqKeys, stash;
   const allCtl = () => {
     if (!S.rig) return {};
     if (typeof S.rig.getControls === 'function') { try { const o = S.rig.getControls(); if (o && typeof o === 'object') return clone(o); } catch (e) {} }
@@ -233,7 +234,6 @@
     }
     return v;
   }
-  const curQ = () => (reduced() ? 'niedrig' : S.q.mode === 'auto' ? S.q.level : S.q.mode);
   const curRows = () => S.rows[S.rigId] || (S.rows[S.rigId] = []);
   const curTask = () => { const a = TK(); return a && S.task ? a.find(t => t.id === S.task.id) : null; };
   const cvPos = e => { const r = cvs.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
@@ -312,7 +312,6 @@
     else q.fastSince = 0;
   }
   function readState() { if (!S.rig) { S.st = null; return null; } try { S.st = S.rig.state(); } catch (e) { S.st = S.st || null; } return S.st; }
-  const reduced = () => !!mqReduce.matches;
   function refFromExample(e) {
     const rf = e.ref; if (!rf || typeof rf !== 'object') return null; if (rf.ctl && typeof rf.ctl === 'object') return clone(rf);
     const d = defOf(e.rig); if (!d) return null;
@@ -432,7 +431,7 @@
     H.addEventListener('pointerup', up); H.addEventListener('pointercancel', up); H.addEventListener('lostpointercapture', up);
     H.addEventListener('contextmenu', e => { if (e.target.closest('.bt,.sw')) e.preventDefault(); });
   }
-  return [{ allCtl, ampelNow, applyCtl, ask, backToRef, buildBA, buildPick, buildTabs, canFire, choicesOf, coerce, curQ, curRows, curTask, cvPos, cval, exportPng, fe, fieldsOf, fireHtml, hasCtl, importSheet, keysHtml, keysSheet, limGet, limIds, loadShared, metersOf, newExperiment, openList, parseNum, placeholderHtml, presetsOf, qualityFeed, readState, reduced, refFromExample, renderSweep, renderTasksIfOpen, resetRun, rigIcon, rigName, rowText, saves, seqDur, seqLive, seqSteps, seqStop, setRef, snapshot, toggleCtl, updateChrome, updateSimBand, updateTaskBadge, updateTaskBar, usePick, wirePanel }, function (__rk) { ({ buildRefRig, ctlParse, ctlShow, renderSeqRes, resetRig, rigPng, seqKeys, stash } = __rk); }]; } };
+  return [{ allCtl, ampelNow, applyCtl, ask, backToRef, buildBA, buildPick, buildTabs, canFire, choicesOf, coerce, curRows, curTask, cvPos, cval, exportPng, fe, fieldsOf, fireHtml, hasCtl, importSheet, keysHtml, keysSheet, limGet, limIds, loadShared, metersOf, newExperiment, openList, parseNum, placeholderHtml, presetsOf, qualityFeed, readState, refFromExample, renderSweep, renderTasksIfOpen, resetRun, rigIcon, rigName, rowText, saves, seqDur, seqLive, seqSteps, seqStop, setRef, snapshot, toggleCtl, updateChrome, updateSimBand, updateTaskBadge, updateTaskBar, usePick, wirePanel }, function (__rk) { ({ buildRefRig, ctlParse, ctlShow, renderSeqRes, resetRig, rigPng, seqKeys, stash } = __rk); }]; } };
   __rgB['p~els+wsl~7b5d9385'] = { d: ["fnum"], l: [], f: function (__rk) { const { fnum } = __rk;
   const FXKINDS = { zap: 1, spark: 1, click: 1, trip: 1, defekt: 1, smoke: 1, buzz: 1, alarm: 1, ding: 1, tick: 1 };
   const SPEEDS = [0.1, 0.5, 1, 2, 5];
@@ -442,7 +441,7 @@
   const MVIEWS = ['gauge', 'digital', 'front'], MVNAME = { gauge: 'Zeiger', digital: 'Zahlen', front: 'Frontplatte' };
   const frontOk = () => !!(root.GERAETE && typeof root.GERAETE.renderMultimeter === 'function');
   return [{ MVIEWS, MVNAME, frontOk }]; } };
-  __rgB['k~els+wsl~4b1a03aa'] = { d: ["$","AMP","CMPSYM","CORE","EXTFILE","EXTHOST","EXTNAME","RANK","S","adig","allCtl","ampKey","applyCtl","ask","assessOf","bandOf","bgOf","clamp","clone","ctlDef","ctlsOf","curQ","cval","decs","defOf","doFire","esc","extApi","extOf","extRefresh","fauto","fe","fin","fnum","fxReset","limBadge","limGet","limIds","limSrc","margTxt","metersOf","parseNum","presetsOf","readState","reduced","renderSweepLive","resetRun","saveItem","seqLiveDone","setCtl","sheet","siUnit","syncCtl","theme","toast","tstamp","updateAmp","updateChrome","updateDiag","updateMeters"], l: [], f: function (__rk) { const { $, AMP, CMPSYM, CORE, EXTFILE, EXTHOST, EXTNAME, RANK, S, adig, allCtl, ampKey, applyCtl, ask, assessOf, bandOf, bgOf, clamp, clone, ctlDef, ctlsOf, curQ, cval, decs, defOf, doFire, esc, extApi, extOf, extRefresh, fauto, fe, fin, fnum, fxReset, limBadge, limGet, limIds, limSrc, margTxt, metersOf, parseNum, presetsOf, readState, reduced, renderSweepLive, resetRun, saveItem, seqLiveDone, setCtl, sheet, siUnit, syncCtl, theme, toast, tstamp, updateAmp, updateChrome, updateDiag, updateMeters } = __rk;
+  __rgB['k~els+wsl~ba5e5c99'] = { d: ["$","AMP","CMPSYM","CORE","EXTFILE","EXTHOST","EXTNAME","RANK","S","adig","allCtl","ampKey","applyCtl","ask","assessOf","bandOf","bgOf","clamp","clone","ctlDef","ctlsOf","curQ","curTask","cval","decs","defOf","doFire","esc","extApi","extOf","extRefresh","fauto","fe","fieldsOf","fin","fnum","fxReset","limBadge","limGet","limIds","limSrc","margTxt","metersOf","parseNum","presetsOf","readState","reduced","renderSweepLive","resetRun","saveItem","seqLiveDone","setCtl","sheet","siUnit","syncCtl","theme","toast","tstamp","updateAmp","updateChrome","updateDiag","updateMeters"], l: [], f: function (__rk) { const { $, AMP, CMPSYM, CORE, EXTFILE, EXTHOST, EXTNAME, RANK, S, adig, allCtl, ampKey, applyCtl, ask, assessOf, bandOf, bgOf, clamp, clone, ctlDef, ctlsOf, curQ, curTask, cval, decs, defOf, doFire, esc, extApi, extOf, extRefresh, fauto, fe, fieldsOf, fin, fnum, fxReset, limBadge, limGet, limIds, limSrc, margTxt, metersOf, parseNum, presetsOf, readState, reduced, renderSweepLive, resetRun, saveItem, seqLiveDone, setCtl, sheet, siUnit, syncCtl, theme, toast, tstamp, updateAmp, updateChrome, updateDiag, updateMeters } = __rk;
   function buildLimits() {
     const card = $('#cLim'), host = $('#limList'); if (!card || !host) return;
     const L = limIds().map(limGet).filter(Boolean);
@@ -544,6 +543,14 @@
   }
   const slowFx = () => S.speed > 2 || S.speed < 1;
   function stash() { if (!S.dirty || !S.rig || S.readonly) return false; if (S.task) return false; saveItem(S.name || 'Versuch'); S.id = null; return true; }
+  async function tolHint(t) {
+    if (!t || !(t.ask || fieldsOf(t).length) || typeof t.check !== 'function') return;
+    const els = document.querySelectorAll('#taskView [data-tol]'); if (!els.length) return;
+    let lines; try { lines = await t.check({ rig: S.rigId, controls: {}, rows: [], seq: [], state: null, value: null, text: '', fields: {}, choices: {}, clicks: [], protokoll: null }); } catch (e) { return; }
+    const tx = (Array.isArray(lines) ? lines : []).map(l => (String(l.text).match(/Toleranz[^)]*/) || [''])[0]).filter(Boolean);
+    if (!tx.length || curTask() !== t) return; const u = [...new Set(tx)];
+    els.forEach(e => { e.textContent = (e.id === 'tkTol' ? e.textContent : '') + (u.length === 1 ? 'Die Prüfung rechnet mit: ' + u[0] + '.' : 'Die Prüfung rechnet mit: ' + u.join('; ') + '.'); });
+  }
   function undoDice() { const d = S.dice; if (!d || !S.rig) return; applyCtl(d.before); S.dice = null; updateDice(); readState(); updateAmp(true); toast('Fehler behoben'); }
   function updateDice() {
     const el = $('#diceBar'); if (!el) return; const d = S.dice;
@@ -561,8 +568,8 @@
     const html = (S.running ? '<b class="run" style="color:var(--ok)">LÄUFT</b> ' : '<b>PAUSE</b> ') + 'Zeit ' + fnum(S.simT, 1) + ' s' + (S.speed !== 1 ? ' · ×' + String(S.speed).replace('.', ',') : '');
     if (sEl.dataset.h !== html) { sEl.dataset.h = html; sEl.innerHTML = html; }
   }
-  return [{ buildLimits, buildPresets, buildRefRig, checkDice, cmax, ctlParse, ctlShow, diceKeys, doSave, drawOpts, liveApply, marg, pickOpt, renderExt, renderSeqRes, resetRig, rigPng, seqKeys, showDice, simAdvance, slowFx, stash, undoDice, updateDice, updateEvents, updateStat }]; } };
-  __rgR.map.wsl = {"h":"b0980165","p":["p~ana+els+wsl~48c0d426","p~ana+wsl~5f164d9f","p~els+wsl~7b5d9385"],"k":["k~ana+els+wsl~b2abfc64","k~ana+wsl~b587eda6","k~els+wsl~4b1a03aa"]};
-  __rgR.map.ana = {"h":"8fe0d6e2","p":["p~ana+els+wsl~48c0d426","p~ana+wsl~5f164d9f"],"k":["k~ana+els+wsl~b2abfc64","k~ana+wsl~b587eda6"]};
-  __rgR.map.els = {"h":"ba9adb00","p":["p~ana+els+wsl~48c0d426","p~els+wsl~7b5d9385"],"k":["k~ana+els+wsl~b2abfc64","k~els+wsl~4b1a03aa"]};
+  return [{ buildLimits, buildPresets, buildRefRig, checkDice, cmax, ctlParse, ctlShow, diceKeys, doSave, drawOpts, liveApply, marg, pickOpt, renderExt, renderSeqRes, resetRig, rigPng, seqKeys, showDice, simAdvance, slowFx, stash, tolHint, undoDice, updateDice, updateEvents, updateStat }]; } };
+  __rgR.map.wsl = {"h":"b93fcbcc","p":["p~ana+els+wsl~34a6115c","p~ana+wsl~5f164d9f","p~els+wsl~7b5d9385"],"k":["k~ana+els+wsl~c4c4abdd","k~ana+wsl~b587eda6","k~els+wsl~ba5e5c99"]};
+  __rgR.map.ana = {"h":"9a815c22","p":["p~ana+els+wsl~34a6115c","p~ana+wsl~5f164d9f"],"k":["k~ana+els+wsl~c4c4abdd","k~ana+wsl~b587eda6"]};
+  __rgR.map.els = {"h":"2d4c86d2","p":["p~ana+els+wsl~34a6115c","p~els+wsl~7b5d9385"],"k":["k~ana+els+wsl~c4c4abdd","k~els+wsl~ba5e5c99"]};
 })(typeof window !== 'undefined' ? window : globalThis);

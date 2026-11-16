@@ -301,7 +301,7 @@
       ctx.strokeStyle = '#8b98a5'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(500, 180); ctx.lineTo(540, 180); ctx.lineTo(560, 180); ctx.moveTo(500, 260); ctx.lineTo(540, 260); ctx.lineTo(560, 260); ctx.stroke();
       [[500, 180], [500, 260]].forEach(q => { ctx.fillStyle = '#c4ccd4'; ctx.beginPath(); ctx.arc(q[0], q[1], 4, 0, TWO_PI); ctx.fill(); });
       // Leitungswiderstaende (je halb)
-      const rl = (x, y) => { ctx.fillStyle = '#4a4034'; rr(ctx, x, y - 9, 56, 18, 3); ctx.fill(); ctx.strokeStyle = '#9a7b4f'; ctx.lineWidth = 2; ctx.stroke(); txt(ctx, 'R', x + 28, y, 11, '#e8c98a', 'center', true); txt(ctx, 'L', x + 36, y + 3, 8, '#e8c98a', 'left'); };
+      const rl = (x, y) => { ctx.fillStyle = '#4a4034'; rr(ctx, x, y - 9, 56, 18, 3); ctx.fill(); ctx.strokeStyle = '#9a7b4f'; ctx.lineWidth = 2; ctx.stroke(); txt(ctx, 'R', x + 28, y, 11, '#e8c98a', 'center', true); txt(ctx, 'L', x + 36, y + 3, 10, '#e8c98a', 'left'); };
       rl(414, 110); rl(414, 330);
       txt(ctx, 'Leitung ' + f1(Cv.rLine, 0) + ' Ω', 442, 134, 11, C.dim, 'center');
       // Stroemungspfeile

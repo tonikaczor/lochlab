@@ -163,8 +163,18 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .slotg button{min-height:44px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);font-size:13px}
 .slotg button.on{background:rgba(229,72,77,.25);border-color:#e5484d}
 .slotg button.nx{border-color:var(--ok);box-shadow:0 0 0 2px var(--ok) inset}
+/* Audit K2b: Schrift im Text mindestens 14 px, Grafiktext am Handy mindestens 11 px, Pickplätze mit großer Tippfläche */
+header .title small,.tab .bd,.chip.s,#stat,.card.pl h4,.gh,.lv,.hint2,label.f span,.rdout .st,.stats .bx,.tt th,.mgrid span,.hl table,.hl th,.doc h5,.slotg button,.lbl2,.u{font-size:14px}
+.tab .bd{min-width:20px;height:20px}
+.inst svg text.g-lab,.svg-kom text.g-lab{font-size:17.5px}
+.svg-kom text.pn,.wf .svg-kom .pn{font-size:16px}
+.svg-trag text.g-lab{font-size:20px}
+.wf .slot.hit{fill:transparent;stroke:none;cursor:pointer}.wf .slot.vis{pointer-events:none}
+.seg{flex-wrap:wrap;border-radius:14px}.seg button{flex:1 1 auto}
+.vzstage{margin:0 0 10px}.vzstage .vzbox{margin:0 auto}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -208,6 +218,18 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'wfllab.html': {
+  name: 'Warenfluss-Lab',
+  gruppe: { wiss: 'hilfe', bsp: 'ueben' },
+  gruppen: [{ name: 'Lager', teile: ['lag', 'inv'] }, { name: 'Transport', teile: ['kom', 'trag'] }],
+  buehne: { lag: '#vzStageLag', kom: '#komSvg', trag: '#vzLever', inv: '#vzInv', ver: '#vzPaket', we: false, wiss: false, tasks: false, rt: false, bsp: false, help: false },
+  saetze: {
+    'Aufgaben': 'Fester Aufgabenpool: Der erste Fehlversuch zeigt einen Tipp (kostet nichts), nach dem zweiten kommt die Lösung mit Lösungsweg.',
+    'Trainer': 'Endlos neue Zufallsfragen: Erster Fehlversuch mit Tipp, danach die Lösung.',
+    'Prüfung': 'Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte, der Lösungsweg kommt erst nach der richtigen Antwort.'
+  }
+} };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

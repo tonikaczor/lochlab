@@ -68,7 +68,7 @@
       if (m === 'ovf') out.appendChild(note('Im Überlaufmodus zählt der Zähler immer bis zum Höchstwert; OCR spielt keine Rolle.'));
       if (m === 'fast' && ocr === 0) out.appendChild(note('Bei Fast-PWM bleibt auch mit OCR = 0 ein schmaler Impuls (1 Schritt): Völlig 0 % gibt es nicht.'));
     }
-    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Timer, CTC und PWM' }), h('div', { class: 'grid2' }, h('div', null, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--c1)' }), 'Zähler'), h('span', null, h('i', { style: 'background:var(--warn)' }), 'OCR'), h('span', null, h('i', { style: 'background:var(--c3)' }), 'Ausgang'), h('span', null, h('i', { style: 'background:var(--c2)' }), 'Interrupt')), out), h('div', null, mSeg.el, fSel.el, pSel.el, bSeg.el, oc.el)));
+    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Timer, CTC und PWM' }), h('div', { class: 'grid2' }, h('div', { 'data-lr-buehne': '1' }, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--c1)' }), 'Zähler'), h('span', null, h('i', { style: 'background:var(--warn)' }), 'OCR'), h('span', null, h('i', { style: 'background:var(--c3)' }), 'Ausgang'), h('span', null, h('i', { style: 'background:var(--c2)' }), 'Interrupt')), out), h('div', null, mSeg.el, fSel.el, pSel.el, bSeg.el, oc.el)));
     upd(); return el;
   }
 
@@ -92,7 +92,7 @@
       else if (sim.lost.length) out.appendChild(note('Ein Ereignis kam, solange das Merkerbit noch gesetzt war (ISR hatte noch nicht begonnen): Es ist verloren.', 'bad'));
       else out.appendChild(note('Alle Ereignisse werden bedient. Verkürze den Abstand oder verlängere die ISR, bis etwas verloren geht.', 'ok'));
     }
-    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Zeitachse mit ISR-Aufrufen, Latenz und Verlust' }), h('div', { class: 'grid2' }, h('div', null, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--accent)' }), 'Ereignis'), h('span', null, h('i', { style: 'background:var(--warn)' }), 'wartet (Merkerbit)'), h('span', null, h('i', { style: 'background:var(--c2)' }), 'ISR läuft'), h('span', null, h('i', { style: 'background:var(--danger)' }), 'verloren')), out), h('div', null, per.el, ex.el, la.el, mk.el, jt.el, rn)));
+    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Zeitachse mit ISR-Aufrufen, Latenz und Verlust' }), h('div', { class: 'grid2' }, h('div', { 'data-lr-buehne': '1' }, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--accent)' }), 'Ereignis'), h('span', null, h('i', { style: 'background:var(--warn)' }), 'wartet (Merkerbit)'), h('span', null, h('i', { style: 'background:var(--c2)' }), 'ISR läuft'), h('span', null, h('i', { style: 'background:var(--danger)' }), 'verloren')), out), h('div', null, per.el, ex.el, la.el, mk.el, jt.el, rn)));
     upd(); return el;
   }
 
@@ -113,7 +113,7 @@
       else if (cnt > 1 && st.lock > 0 && st.lock <= last) out.appendChild(note('Die Sperrzeit (' + st.lock + ' µs) ist nicht länger als das Prellen (' + last + ' µs): Prellflanken rutschen nach Ablauf der Sperre durch.', 'bad'));
       else if (cnt > 1) out.appendChild(note('Ein Tastendruck löst ' + cnt + ' Interrupts aus.', 'bad'));
     }
-    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Taster prellt' }), h('div', { class: 'grid2' }, h('div', null, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--ok)' }), 'ISR-Aufruf'), h('span', null, h('i', { style: 'background:var(--warn)' }), 'Sperrzeit läuft'), h('span', null, '✕ Flanke ignoriert')), out), h('div', null, md.el, nn.el, sp.el, lk.el, rn)));
+    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Taster prellt' }), h('div', { class: 'grid2' }, h('div', { 'data-lr-buehne': '1' }, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--ok)' }), 'ISR-Aufruf'), h('span', null, h('i', { style: 'background:var(--warn)' }), 'Sperrzeit läuft'), h('span', null, '✕ Flanke ignoriert')), out), h('div', null, md.el, nn.el, sp.el, lk.el, rn)));
     upd(); return el;
   }
 
@@ -130,7 +130,7 @@
       out.replaceChildren(kv('Stufen', String(Math.pow(2, st.bits))), kv('LSB', sg(lsb * 1e3, 4) + ' mV'), kv('größter Fehler beim Runden', '± ' + sg(lsb * 500, 4) + ' mV'), kv('SQNR (Faustformel)', sg(Cc.sqnrDb(st.bits), 4) + ' dB'), kv('höchste saubere Frequenz (fs/2)', fmtF(st.fs / 2)), kv('Messfrequenz im Ergebnis', fmtF(fa)));
       out.appendChild(st.fin > st.fs / 2 ? note('Signal oberhalb fs/2: Es erscheint als Alias mit ' + fmtF(fa) + ' (gestrichelt). Aus den Messwerten allein ist das nicht von einem echten ' + fmtF(fa) + '-Signal zu unterscheiden.', 'bad') : note('Unterhalb von fs/2: Die Frequenz wird richtig erfasst. Die Treppenstufen zeigen den Quantisierungsfehler.', 'ok'));
     }
-    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Abtasten und Quantisieren' }), h('div', { class: 'grid2' }, h('div', null, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--c1)' }), 'Signal'), h('span', null, h('i', { style: 'background:var(--c3)' }), 'quantisierter Wert'), h('span', null, h('i', { style: 'background:var(--fg)' }), 'Abtastzeitpunkt'), h('span', null, h('i', { style: 'background:var(--warn)' }), 'Alias')), out), h('div', null, vr.el, bi.el, fi.el, fs.el)));
+    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Abtasten und Quantisieren' }), h('div', { class: 'grid2' }, h('div', { 'data-lr-buehne': '1' }, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--c1)' }), 'Signal'), h('span', null, h('i', { style: 'background:var(--c3)' }), 'quantisierter Wert'), h('span', null, h('i', { style: 'background:var(--fg)' }), 'Abtastzeitpunkt'), h('span', null, h('i', { style: 'background:var(--warn)' }), 'Alias')), out), h('div', null, vr.el, bi.el, fi.el, fs.el)));
     upd(); return el;
   }
 
@@ -223,7 +223,7 @@
       if (st.m === 'deb') ctl.append(range('Schwelle N (gleiche Proben in Folge)', 1, 4, 1, st.n, v => String(v), v => { st.n = v; reset(); }).el);
       reset();
     }
-    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Zustandsautomaten – Tabelle und Diagramm' }), h('div', { class: 'grid2' }, h('div', null, cb.wrap, h('div', { class: 'small', text: 'Der aktuelle Zustand ist gefüllt, die zuletzt benutzte Kante gelb. Moore: Ausgang unter dem Zustand (/x). Mealy: Kante Eingang/Ausgang.' }), h('div', { style: 'margin-top:8px' }, inBtns), h('div', { style: 'margin-top:8px' }, hist)), h('div', null, ctl, info, tbl)));
+    const el = h('div', { class: 'card' }, h('h3', { text: 'Labor: Zustandsautomaten – Tabelle und Diagramm' }), h('div', { class: 'grid2' }, h('div', { 'data-lr-buehne': '1' }, cb.wrap, h('div', { class: 'small', text: 'Der aktuelle Zustand ist gefüllt, die zuletzt benutzte Kante gelb. Moore: Ausgang unter dem Zustand (/x). Mealy: Kante Eingang/Ausgang.' }), h('div', { style: 'margin-top:8px' }, inBtns), h('div', { style: 'margin-top:8px' }, hist)), h('div', null, ctl, info, tbl)));
     rebuild(); return el;
   }
 
@@ -241,7 +241,7 @@
       ro.replaceChildren(kv('frei für den Stack', free + ' Byte'), kv('Stack bei dieser Tiefe', stack + ' Byte'), kv('größte Tiefe, die noch passt', String(Math.max(0, C().maxDepth(Math.max(0, free), sr.frame)))));
       if (free < stack) ro.appendChild(note('Der Stack wächst in den Heap: Daten werden zerstört, meist ohne Fehlermeldung.', 'bad'));
     }
-    const ramCard = h('div', { class: 'card' }, h('h3', { text: 'Labor: RAM, Heap und Stack' }), h('div', { class: 'grid2' }, h('div', null, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--c1)' }), '.data'), h('span', null, h('i', { style: 'background:var(--c4)' }), '.bss'), h('span', null, h('i', { style: 'background:var(--c2)' }), 'Heap (wächst nach oben)'), h('span', null, h('i', { style: 'background:var(--c3)' }), 'Stack (wächst nach unten)')), ro), h('div', null, rsel.el, dr.el, br.el, hr.el, fr.el, dp.el)));
+    const ramCard = h('div', { class: 'card' }, h('h3', { text: 'Labor: RAM, Heap und Stack' }), h('div', { class: 'grid2' }, h('div', { 'data-lr-buehne': '1' }, cb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--c1)' }), '.data'), h('span', null, h('i', { style: 'background:var(--c4)' }), '.bss'), h('span', null, h('i', { style: 'background:var(--c2)' }), 'Heap (wächst nach oben)'), h('span', null, h('i', { style: 'background:var(--c3)' }), 'Stack (wächst nach unten)')), ro), h('div', null, rsel.el, dr.el, br.el, hr.el, fr.el, dp.el)));
     /* zerrissener Zugriff */
     const tr = { v: 0x00FF, inc: 1, step: 0, cs: false }, tOut = h('div'), tBytes = h('div', { class: 'bytes' });
     const vSel = sel('Zählerstand', [{ v: 0x00FF, t: '0x00FF' }, { v: 0x01FF, t: '0x01FF' }, { v: 0x0FFF, t: '0x0FFF' }, { v: 0x1234, t: '0x1234' }], tr.v, v => { tr.v = +v; tr.step = 0; tupd(); });
@@ -274,7 +274,7 @@
       go.replaceChildren(kv('H fertig ohne Vererbung', 't = ' + a.done.H), kv('H fertig mit Vererbung', 't = ' + b.done.H), kv('Verzögerung durch die Inversion', (a.done.H - b.done.H) + ' Einheiten'), kv('H wartet auf die Sperre (gewählt)', cur.blocked.H + ' Einheiten'));
       go.appendChild(a.done.H > b.done.H ? note('Inversion: M verdrängt L, während H auf die Sperre von L wartet. H verliert genau die Rechenzeit von M. Mit Vererbung läuft L bis zum Ende seines Abschnitts.', 'bad') : note('Keine Inversion bei diesen Werten: Entweder ist L schon fertig, wenn M kommt, oder H wartet gar nicht.', 'ok'));
     }
-    const ganttCard = h('div', { class: 'card' }, h('h3', { text: 'Labor: Prioritätsinversion' }), h('div', { class: 'grid2' }, h('div', null, gcb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--danger)' }), 'H (hoch)'), h('span', null, h('i', { style: 'background:var(--c2)' }), 'M (mittel)'), h('span', null, h('i', { style: 'background:var(--c1)' }), 'L (niedrig)'), h('span', null, '▭ gestrichelt: wartet auf die Sperre')), go), h('div', null, gp.el, gL.el, gtH.el, gH.el, gtM.el, gM.el)));
+    const ganttCard = h('div', { class: 'card' }, h('h3', { text: 'Labor: Prioritätsinversion' }), h('div', { class: 'grid2' }, h('div', { 'data-lr-buehne': '1' }, gcb.wrap, h('div', { class: 'legend' }, h('span', null, h('i', { style: 'background:var(--danger)' }), 'H (hoch)'), h('span', null, h('i', { style: 'background:var(--c2)' }), 'M (mittel)'), h('span', null, h('i', { style: 'background:var(--c1)' }), 'L (niedrig)'), h('span', null, '▭ gestrichelt: wartet auf die Sperre')), go), h('div', null, gp.el, gL.el, gtH.el, gH.el, gtM.el, gM.el)));
     wrapAll.append(ramCard, tornCard, volCard, ganttCard); rupd(); tupd(); gupd(); return wrapAll;
   }
 
@@ -308,7 +308,7 @@
     let built = false;
     d.addEventListener('toggle', () => { if (d.open && !built) { built = true; d.appendChild(body()); V().redrawAll(); } });
     function body() {
-      const tb = h('div', { class: 'tb' }), inputs = {}, fb = h('div', { class: 'fb', role: 'status' }), tips = h('div'), sol = h('div'); let nTip = LS.get(KEY.tipps, {})[t.id] || 0, sc = null;
+      const tb = h('div', { class: 'tb' }), inputs = {}, fb = h('div', { class: 'fb', role: 'status' }), tips = h('div'), sol = h('div'); let nTip = LS.get(KEY.tipps, {})[t.id] || 0, sc = null, tries = 0;
       tb.append(h('p', { text: t.text, style: 'white-space:pre-line' }));
       if (t.table) tb.append(h('div', { class: 'tbl' }, h('table', null, h('caption', { text: t.table.cap || '' }), h('thead', null, h('tr', null, t.table.head.map(x => h('th', { text: x })))), h('tbody', null, t.table.rows.map(r => h('tr', null, r.map(c => h('td', { text: String(c) }))))))));
       sc = sceneEl(t); if (sc) tb.append(sc.el);
@@ -320,17 +320,29 @@
         inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); chk(); } }); inputs[f.key] = inp;
         fl.append(h('div', { class: 'f' }, h('label', { for: id, text: f.label }), h('div', { class: 'row' }, inp, f.unit ? h('span', { class: 'un', text: f.unit }) : null)));
       });
+      const hinw = t.fields.map(f => f.kind === 'num' ? f.label + ': Zahl' + (f.unit ? ' in ' + f.unit : '') + (f.exact ? ', muss genau stimmen' : ', ±' + String(Math.round((f.tol != null ? f.tol : 0.01) * 1000) / 10).replace('.', ',') + ' % gelten als richtig') : f.kind === 'hex' ? f.label + ': Hexwert, z. B. 0x4A' : null).filter(Boolean);
+      if (hinw.length) fl.append(h('p', { class: 'lr-hinweis small', text: hinw.join(' · ') + '.' }));
       const bChk = h('button', { type: 'button', class: 'btn pri', onclick: chk }, 'Prüfen'), bTip = h('button', { type: 'button', class: 'btn', onclick: tip }), bSol = h('button', { type: 'button', class: 'btn', 'aria-expanded': 'false', onclick: showSol }, 'Musterlösung');
       const tipLbl = () => { bTip.textContent = nTip >= 3 ? 'Alle Tipps gezeigt' : 'Tipp ' + (nTip + 1) + ' von 3'; bTip.disabled = nTip >= 3; };
       function paintTips() { tips.replaceChildren(...t.hint.slice(0, nTip).map((x, i) => h('div', { class: 'tip', text: 'Tipp ' + (i + 1) + ': ' + x }))); tipLbl(); }
       function tip() { if (nTip < 3) nTip++; const o = LS.get(KEY.tipps, {}); o[t.id] = nTip; LS.set(KEY.tipps, o); paintTips(); }
       function chk() {
         const ans = {}; t.fields.forEach(f => { ans[f.key] = inputs[f.key].value; });
-        if (t.fields.every(f => !String(ans[f.key]).trim())) { fb.className = 'fb bad'; fb.textContent = 'Bitte erst etwas eintragen.'; return; }
+        if (t.fields.every(f => !String(ans[f.key]).trim())) { fb.className = 'lr-fb tipp fb bad'; fb.textContent = 'Bitte erst etwas eintragen.'; zeigFb(); return; }
         const r = TK().check(t, ans); r.rows.forEach(x => { inputs[x.key].className = x.ok ? 'ok' : 'no'; });
-        if (r.all) { fb.className = 'fb ok'; fb.textContent = '✓ Alles richtig.'; const dn = LS.get(KEY.done, {}); dn[t.id] = true; LS.set(KEY.done, dn); mark.textContent = '✓'; progress(); }
-        else { fb.className = 'fb bad'; fb.textContent = r.rows.filter(x => x.ok).length + ' von ' + r.rows.length + ' Feldern stimmen. Rot markierte noch einmal prüfen, Tipp holen oder Rechenweg ansehen.'; }
+        if (r.all) { fb.className = 'lr-fb ok fb ok'; fb.textContent = '✓ Alles richtig.'; const dn = LS.get(KEY.done, {}); dn[t.id] = true; LS.set(KEY.done, dn); mark.textContent = '✓'; progress(); zeigFb(); return; }
+        tries++;
+        const falsch = r.rows.filter(x => !x.ok).map(x => t.fields.find(f => f.key === x.key).label), nenn = 'Stimmt noch nicht: ' + falsch.join(', ') + '. ';
+        if (tries === 1) {
+          if (nTip < 1) tip();
+          fb.className = 'lr-fb tipp fb bad'; fb.textContent = nenn + 'Prüfe Einheit und Rechenschritt, Tipp 1 steht darunter. Du hast einen zweiten Versuch.';
+        } else {
+          fb.className = 'lr-fb loes fb bad'; fb.textContent = nenn + 'Die Lösung mit Rechenweg steht darunter. Versuche sie nachzuvollziehen und probiere dann eine ähnliche Aufgabe.';
+          if (bSol.getAttribute('aria-expanded') !== 'true') showSol();
+        }
+        zeigFb();
       }
+      function zeigFb() { if (window.LabRahmen && LabRahmen.zeig) LabRahmen.zeig(fb); else if (fb.scrollIntoView) { try { fb.scrollIntoView({ block: 'nearest' }); } catch (e) { } } }
       function showSol() {
         const open = bSol.getAttribute('aria-expanded') === 'true';
         if (open) { sol.replaceChildren(); bSol.setAttribute('aria-expanded', 'false'); bSol.textContent = 'Musterlösung'; if (sc) sc.reveal(false); return; }
@@ -338,7 +350,8 @@
         sol.replaceChildren(h('div', { class: 'sol' }, h('div', { class: 'res', text: 'Ergebnis: ' + t.fields.map(f => f.label + ' = ' + TK().show(t, f.key)).join('; ') }), h('div', { class: 'small', text: 'Rechenweg' }), h('ol', null, t.steps.map(x => h('li', { text: x })))));
         if (sc) sc.reveal(true);
       }
-      paintTips(); tb.append(fl, h('div', { class: 'acts' }, bChk, bTip, bSol), fb, tips, sol); return tb;
+      const bLab = (LABS[t.block] ? h('button', { type: 'button', class: 'btn', onclick: () => { showBlock(t.block); } }, 'Im Labor probieren') : null);
+      paintTips(); tb.append(fl, h('div', { class: 'acts' }, bChk, bTip, bSol, bLab), fb, tips, sol); return tb;
     }
     return d;
   }
@@ -348,35 +361,46 @@
    * ===================================================================== */
   const LABS = { timer: [timerLab, isrLab, bounceLab], adc: [adcLab], bus: [busLab], fsm: [fsmLab], mem: [memLab] };
   function progress() {
-    const done = LS.get(KEY.done, {}), n = Object.keys(done).filter(k => TK().byId(k)).length, tot = TK().tasks.length, el = document.getElementById('prog'); if (el) { el.textContent = n + '/' + tot; el.setAttribute('aria-label', n + ' von ' + tot + ' Aufgaben erledigt'); el.title = n + ' von ' + tot + ' Aufgaben erledigt'; }
+    const done = LS.get(KEY.done, {}), n = Object.keys(done).filter(k => TK().byId(k)).length, tot = TK().tasks.length, el = document.getElementById('prog'); const tbd = document.querySelector('#tabs [data-id=tasks] .bd'); if (tbd) tbd.textContent = n + '/' + tot; if (el) { el.textContent = n + '/' + tot; el.setAttribute('aria-label', n + ' von ' + tot + ' Aufgaben erledigt'); el.title = n + ' von ' + tot + ' Aufgaben erledigt'; }
+  }
+  function showTasks(openId) {
+    V().clear(); LS.set(KEY.tab, 'tasks');
+    document.querySelectorAll('#tabs button').forEach(x => { const on = x.dataset.id === 'tasks'; x.setAttribute('aria-selected', String(on)); if (on && x.scrollIntoView) { try { x.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) { } } });
+    const view = document.getElementById('view'), parts = [h('h2', { id: 'blockTitle', text: 'Aufgaben (' + TK().tasks.length + ')' }), h('p', { class: 'lead', text: 'Rechne selbst, trage das Ergebnis ein und prüfe. Dezimalkomma oder Punkt sind beide recht, Einheit und Toleranz stehen am Feld. Beim ersten Fehlversuch kommt ein Tipp und du darfst es noch einmal versuchen, beim zweiten die Lösung mit Rechenweg. Weitere Tipps holst du dir selbst. Mit "Im Labor probieren" springst du zum passenden Versuch.' })];
+    DATA().blocks.forEach(b => { const ts = TK().byBlock(b.id); parts.push(h('h3', { class: 'grp', id: 'grp-' + b.id, text: b.title + ' (' + ts.length + ')' }), h('div', null, ts.map(taskCard))); });
+    parts.push(h('div', { class: 'foot' }, 'Embedded vertieft · ' + META().ver + ' · Stufe: Studium.'));
+    view.replaceChildren(...parts); window.scrollTo(0, 0);
+    if (openId) { const el = document.getElementById('task-' + openId); if (el) { el.open = true; try { el.scrollIntoView({ block: 'start' }); } catch (e) { } } }
+    requestAnimationFrame(() => V().redrawAll());
+    try { history.replaceState(null, '', '#tasks'); } catch (e) { }
   }
   function showBlock(id) {
+    if (id === 'tasks') return showTasks();
     const b = DATA().blocks.find(x => x.id === id) || DATA().blocks[0]; V().clear(); LS.set(KEY.tab, b.id);
     document.querySelectorAll('#tabs button').forEach(x => { const on = x.dataset.id === b.id; x.setAttribute('aria-selected', String(on)); if (on && x.scrollIntoView) { try { x.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) { } } });
     const view = document.getElementById('view'), tasks = TK().byBlock(b.id), done = LS.get(KEY.done, {});
     view.replaceChildren(h('h2', { id: 'blockTitle', text: b.title }), h('p', { class: 'lead', text: b.lead }),
       h('div', null, b.explain.map((e, i) => h('details', { class: 'exp', open: i === 0 }, h('summary', { text: e.h }), h('div', { class: 'pb' }, e.p.map(p => h('p', { text: p })))))),
       h('div', { style: 'margin-top:12px' }, (LABS[b.id] || []).map(f => f())),
-      h('h2', { text: 'Aufgaben (' + tasks.length + ')' }), h('p', { class: 'lead', text: 'Rechne selbst, trage das Ergebnis ein und prüfe. Dezimalkomma oder Punkt sind beide recht, die Einheit steht neben dem Feld. Tipps kommen in drei Stufen; die Musterlösung zeigt den Rechenweg.' }),
-      h('div', null, tasks.map(taskCard)), h('div', { class: 'foot' }, 'Embedded vertieft · ' + META().ver + ' · Stufe: Studium. Die Zeitachsen und Wellenformen sind Modelle (siehe jeweilige Beschriftung), keine Messungen an echter Hardware.'));
+      h('div', { class: 'acts' }, h('button', { type: 'button', class: 'btn pri', onclick: () => { showTasks(); const g = document.getElementById('grp-' + b.id); if (g && g.scrollIntoView) g.scrollIntoView({ block: 'start' }); } }, 'Aufgaben zu diesem Block (' + tasks.length + ')')), h('div', { class: 'foot' }, 'Embedded vertieft · ' + META().ver + ' · Stufe: Studium. Die Zeitachsen und Wellenformen sind Modelle (siehe jeweilige Beschriftung), keine Messungen an echter Hardware.'));
     void done; window.scrollTo(0, 0);
     requestAnimationFrame(() => V().redrawAll());
     try { history.replaceState(null, '', '#' + b.id); } catch (e) { }
   }
   function applyTheme(t) { const r = document.documentElement; if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme'); }
   function init() {
-    const tabs = document.getElementById('tabs'); let theme = LS.get(KEY.theme, null); applyTheme(theme);
-    DATA().blocks.forEach(b => tabs.appendChild(h('button', { type: 'button', role: 'tab', 'data-id': b.id, 'aria-selected': 'false', onclick: () => showBlock(b.id) }, b.icon + ' ' + b.short)));
+    const tabs = document.getElementById('tabs'); let theme = null; try { const tv = localStorage.getItem('lm4.theme'); theme = tv === 'light' || tv === 'dark' ? tv : null; } catch (e) { theme = null; } /* Welle 2: Schlüssel lm4.theme der Startseite (roher Text, auto = fehlt) */ applyTheme(theme);
+    DATA().blocks.forEach(b => tabs.appendChild(h('button', { type: 'button', role: 'tab', 'data-id': b.id, 'data-t': b.id, 'aria-selected': 'false', onclick: () => showBlock(b.id) }, b.icon + ' ' + b.short)));
+    tabs.appendChild(h('button', { type: 'button', role: 'tab', 'data-id': 'tasks', 'data-t': 'tasks', 'aria-selected': 'false', onclick: () => showBlock('tasks') }, 'Aufgaben ', h('span', { class: 'bd', text: '' })));
     const tb = document.getElementById('bTheme'); const lbl = () => { tb.setAttribute('aria-label', 'Darstellung: ' + (theme === 'light' ? 'hell' : theme === 'dark' ? 'dunkel' : 'automatisch') + ' (antippen zum Wechseln)'); tb.textContent = theme === 'light' ? '☀' : theme === 'dark' ? '☾' : '◐'; };
-    tb.addEventListener('click', () => { theme = theme === null ? 'light' : theme === 'light' ? 'dark' : null; LS.set(KEY.theme, theme); applyTheme(theme); lbl(); V().redrawAll(); }); lbl();
-    const hs = (location.hash || '').slice(1), start = DATA().blocks.find(b => b.id === hs) ? hs : LS.get(KEY.tab, 'timer');
+    tb.addEventListener('click', () => { theme = theme === null ? 'light' : theme === 'light' ? 'dark' : null; try { if (theme === null) localStorage.removeItem('lm4.theme'); else localStorage.setItem('lm4.theme', theme); } catch (e) { /* ohne Speicher */ } applyTheme(theme); lbl(); V().redrawAll(); }); lbl();
+    const hs = (location.hash || '').slice(1), start = (hs === 'tasks' || DATA().blocks.find(b => b.id === hs)) ? hs : LS.get(KEY.tab, 'timer');
     ['done', 'tipps'].forEach(k => { try { const m = TK().migrateIds(LS.get(KEY[k], {})); if (m.changed) LS.set(KEY[k], m.data); } catch (e) { } });   /* alte Ids f1..m10 -> embf1..embm10 */
     let ta = null; try { ta = TK().byId(TK().legacyId(new URLSearchParams(location.search).get('aufgabe'))) || null; } catch (e) { }
-    showBlock(ta ? ta.block : start); progress();
-    if (ta) { const el = document.getElementById('task-' + ta.id); if (el) { el.open = true; try { el.scrollIntoView({ block: 'start' }); } catch (e) { } } }
+    if (ta) showTasks(ta.id); else showBlock(start); progress();
     let rt = null; window.addEventListener('resize', () => { cancelAnimationFrame(rt); rt = requestAnimationFrame(() => V().redrawAll()); });
     try { window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => V().redrawAll()); } catch (e) { }
-    window.addEventListener('hashchange', () => { const x = (location.hash || '').slice(1); if (DATA().blocks.find(b => b.id === x)) showBlock(x); });
+    window.addEventListener('hashchange', () => { const x = (location.hash || '').slice(1); if (x === 'tasks' || DATA().blocks.find(b => b.id === x)) showBlock(x); });
     const rb = document.getElementById('bReset'); let rtmo = null; rb.addEventListener('click', () => { if (rb.dataset.arm === '1') { LS.set(KEY.done, {}); LS.set(KEY.tipps, {}); rb.dataset.arm = ''; rb.textContent = 'Fortschritt zurücksetzen'; progress(); showBlock(LS.get(KEY.tab, 'timer')); toast('Fortschritt gelöscht.'); } else { rb.dataset.arm = '1'; rb.textContent = 'Wirklich löschen? Noch einmal tippen'; clearTimeout(rtmo); rtmo = setTimeout(() => { rb.dataset.arm = ''; rb.textContent = 'Fortschritt zurücksetzen'; }, 4000); } });
   }
   root.EMB_UI = { init, showBlock };

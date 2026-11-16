@@ -12,6 +12,8 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <title>Tonfunk Wechselstrom-Lab</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schlüssel lm4.theme wie die Startseite */
+(function(){try{var v=localStorage.getItem('lm4.theme');if(v==='light'||v==='dark')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 <link rel="stylesheet" href="rig.css">
 <style>
 #mid[data-tab=rig] #pgRig,#mid[data-tab=curve] #pgCurve,#mid[data-tab=report] #pgReport,#mid[data-tab=design] #pgDesign,#mid[data-tab=calc] #pgCalc,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=help] #pgHelp{display:flex}
@@ -94,6 +96,9 @@ button.bt.on,button.bt:active{background:var(--accent-bg,#1a6fd4);border-color:v
 </style>
 <link rel="stylesheet" href="design.css">
 <link rel="stylesheet" href="geraete.css">
+<link rel="stylesheet" href="labrahmen.css">
+<style>/* Welle 2 B1c (B-wsl-02): Pause-Marke oben statt über der Kennwertzeile */#cvTag{top:6px;bottom:auto;right:auto;left:50%;transform:translateX(-50%)}</style>
+<style>/* Welle 2 B1 (B-all-01): Kleintext mindestens 14 px */html:root .lim small,html:root .cmeta,html:root .eb,html:root .atx small,html:root .avs,html:root #qLine,html:root .legend,html:root .wsl-tbl caption,html:root .wsl-tbl th,html:root .cu-read,html:root .cu-read li,html:root [class$="-sec"],html:root [class*="-rp-sec"],html:root #simTx,html:root label,html:root .cu-leg,html:root .cu-leg li,html:root .cu-rz,html:root .cu-sub{font-size:14px}</style>
 </head>
 <body>
 <!--GATE-->
@@ -198,6 +203,8 @@ button.bt.on,button.bt:active{background:var(--accent-bg,#1a6fd4);border-color:v
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { "wsllab.html": { name: "Wechselstrom-Lab", leiste: { haupt: ["[data-a=dice]", "[data-a=fire]", "[data-a=chk]", "[data-a=reset]"] } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

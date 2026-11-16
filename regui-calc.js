@@ -200,16 +200,16 @@
 
   /* ============================================================ SVG-Zeichnung (Gitter, Kurven) */
   function svgPlot(o) {
-    const W = 360, H = o.h || 190, L = 40, R = 10, T = 10, B = 28, pw = W - L - R, ph = H - T - B;
+    const W = 360, H = o.h || 190, L = 50, R = 10, T = 10, B = 42, pw = W - L - R, ph = H - T - B;
     let xmin = o.xMin, xmax = o.xMax, ymin = o.yMin, ymax = o.yMax;
     const X = v => L + pw * (v - xmin) / (xmax - xmin), Y = v => T + ph * (1 - (v - ymin) / (ymax - ymin)), xs = o.xStep || niceTick(xmax - xmin, 8), ys = o.yStep || niceTick(ymax - ymin, 6);
     let g = '';
-    for (let v = Math.ceil(xmin / xs - 1e-9) * xs; v <= xmax + xs * 1e-6; v += xs) { const x = X(v); g += `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${T + ph}" stroke="#2c343e" stroke-width="1"/><text x="${x.toFixed(1)}" y="${H - 14}" fill="#8d99a6" font-size="9.5" text-anchor="middle" font-family="system-ui">${esc(fauto(+v.toPrecision(8)))}</text>`; }
-    for (let v = Math.ceil(ymin / ys - 1e-9) * ys; v <= ymax + ys * 1e-6; v += ys) { const y = Y(v); g += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${L + pw}" y2="${y.toFixed(1)}" stroke="#2c343e" stroke-width="1"/><text x="${L - 4}" y="${(y + 3).toFixed(1)}" fill="#8d99a6" font-size="9.5" text-anchor="end" font-family="system-ui">${esc(fauto(+v.toPrecision(8)))}</text>`; }
+    for (let v = Math.ceil(xmin / xs - 1e-9) * xs; v <= xmax + xs * 1e-6; v += xs) { const x = X(v); g += `<line x1="${x.toFixed(1)}" y1="${T}" x2="${x.toFixed(1)}" y2="${T + ph}" stroke="#2c343e" stroke-width="1"/><text x="${x.toFixed(1)}" y="${H - 22}" fill="#8d99a6" font-size="14" text-anchor="middle" font-family="system-ui">${esc(fauto(+v.toPrecision(8)))}</text>`; }
+    for (let v = Math.ceil(ymin / ys - 1e-9) * ys; v <= ymax + ys * 1e-6; v += ys) { const y = Y(v); g += `<line x1="${L}" y1="${y.toFixed(1)}" x2="${L + pw}" y2="${y.toFixed(1)}" stroke="#2c343e" stroke-width="1"/><text x="${L - 4}" y="${(y + 5).toFixed(1)}" fill="#8d99a6" font-size="14" text-anchor="end" font-family="system-ui">${esc(fauto(+v.toPrecision(8)))}</text>`; }
     g += `<rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="#4a5663"/>`;
     (o.hlines || []).forEach(l => { g += `<line x1="${L}" y1="${Y(l.y).toFixed(1)}" x2="${L + pw}" y2="${Y(l.y).toFixed(1)}" stroke="${l.color || '#ffb340'}" stroke-width="1.4" stroke-dasharray="5 4"/>`; });
     (o.series || []).forEach(s => { const pts = s.pts.filter(p => fin(p[0]) && fin(p[1])).map(p => X(p[0]).toFixed(1) + ',' + clamp(Y(p[1]), T - 4, T + ph + 4).toFixed(1)); g += `<polyline points="${pts.join(' ')}" fill="none" stroke="${s.color || '#3b9eff'}" stroke-width="${s.w || 2.2}" stroke-linejoin="round"${s.dash ? ` stroke-dasharray="${s.dash}"` : ''}/>`; });
-    g += `<text x="${L + pw / 2}" y="${H - 2}" fill="#8d99a6" font-size="10" text-anchor="middle" font-family="system-ui">${esc(o.xLabel || '')}</text><text x="10" y="${T + ph / 2}" fill="#8d99a6" font-size="10" text-anchor="middle" font-family="system-ui" transform="rotate(-90 10 ${T + ph / 2})">${esc(o.yLabel || '')}</text>`;
+    g += `<text x="${L + pw / 2}" y="${H - 4}" fill="#8d99a6" font-size="14" text-anchor="middle" font-family="system-ui">${esc(o.xLabel || '')}</text><text x="12" y="${T + ph / 2}" fill="#8d99a6" font-size="14" text-anchor="middle" font-family="system-ui" transform="rotate(-90 12 ${T + ph / 2})">${esc(o.yLabel || '')}</text>`;
     return `<svg class="dr" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.label || 'Diagramm')}">${g}</svg>`;
   }
 

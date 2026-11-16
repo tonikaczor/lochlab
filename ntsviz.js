@@ -126,9 +126,9 @@
 .nv-t{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:6px 8px 9px;min-width:0}
 .nv-t.wide{grid-column:1/-1}.nv-t.wide svg{max-width:460px;margin:0 auto}
 .nv-t svg{display:block;width:100%;height:auto}
-.nv-t b{display:block;font-size:13.5px;margin:4px 0 2px}.nv-t small{display:block;font-size:12.5px;color:var(--mute);line-height:1.38}
+.nv-t b{display:block;font-size:14px;margin:4px 0 2px}.nv-t small{display:block;font-size:14px;color:var(--mute);line-height:1.38}
 #nvCard>summary{min-height:44px}
-.nv-note{font-size:12.5px;color:var(--mute);padding:0 12px 8px;line-height:1.4;margin:0}
+.nv-note{font-size:14px;color:var(--mute);padding:0 12px 8px;line-height:1.4;margin:0}
 #cvw.nv-tall{aspect-ratio:var(--nv-ar)!important;max-height:none!important}
 `;
   let last = '', tall = null;

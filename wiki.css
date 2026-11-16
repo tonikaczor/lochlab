@@ -34,17 +34,17 @@ body[data-wiki=seite] *{box-sizing:border-box}
 :where(body[data-wiki=seite],.wkd) .res a[role=option]:hover,:where(body[data-wiki=seite],.wkd) .res a[aria-selected=true]{background:var(--panel2)}:where(body[data-wiki=seite],.wkd) .res a[aria-selected=true]{outline:2px solid var(--focus);outline-offset:-2px}
 :where(body[data-wiki=seite],.wkd) .res a .ri{grid-column:1;grid-row:1/3;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
 :where(body[data-wiki=seite],.wkd) .res a .nm{grid-column:2;grid-row:1;font-weight:600;line-height:1.3;min-width:0}
-:where(body[data-wiki=seite],.wkd) .res a .sb{grid-column:2;grid-row:2;font-size:13px;color:var(--mute);line-height:1.3}
-:where(body[data-wiki=seite],.wkd) .res a .lb{grid-column:3;grid-row:1/3;align-self:center;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
+:where(body[data-wiki=seite],.wkd) .res a .sb{grid-column:2;grid-row:2;font-size:14px;color:var(--mute);line-height:1.3}
+:where(body[data-wiki=seite],.wkd) .res a .lb{grid-column:3;grid-row:1/3;align-self:center;font-size:14px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--mute);white-space:nowrap}
 :where(body[data-wiki=seite],.wkd) .res sub,.we sub,:where(body[data-wiki=seite],.wkd) .liste sub,.wkd sub,:where(body[data-wiki=seite],.wkd) .box sub{font-size:.65em;line-height:0;vertical-align:-.2em}
-:where(body[data-wiki=seite],.wkd) .res .gh{padding:10px 12px 2px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:700}
+:where(body[data-wiki=seite],.wkd) .res .gh{padding:10px 12px 2px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:700}
 :where(body[data-wiki=seite],.wkd) .res .more{display:flex;align-items:center;justify-content:center;min-height:44px;color:var(--accent);font-weight:600;border-top:1px solid var(--line);text-decoration:none}
-:where(body[data-wiki=seite],.wkd) .res .none{margin:0;padding:10px 12px;color:var(--mute);font-size:13px}
-:where(body[data-wiki=seite],.wkd) .res div.none{padding:12px 14px;font-size:14px}:where(body[data-wiki=seite],.wkd) .res .none b{display:block;color:var(--fg);margin-bottom:4px}:where(body[data-wiki=seite],.wkd) .res .none p{margin:4px 0}:where(body[data-wiki=seite],.wkd) .res .none .chips{margin:8px 0 0}:where(body[data-wiki=seite],.wkd) .res .none .chip{min-height:44px;font-size:13px}
+:where(body[data-wiki=seite],.wkd) .res .none{margin:0;padding:10px 12px;color:var(--mute);font-size:14px}
+:where(body[data-wiki=seite],.wkd) .res div.none{padding:12px 14px;font-size:14px}:where(body[data-wiki=seite],.wkd) .res .none b{display:block;color:var(--fg);margin-bottom:4px}:where(body[data-wiki=seite],.wkd) .res .none p{margin:4px 0}:where(body[data-wiki=seite],.wkd) .res .none .chips{margin:8px 0 0}:where(body[data-wiki=seite],.wkd) .res .none .chip{min-height:44px;font-size:14px}
 :where(body[data-wiki=seite],.wkd) .ib{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-width:44px;height:44px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer;text-decoration:none}
-:where(body[data-wiki=seite],.wkd) .ib:hover{background:var(--panel2)}:where(body[data-wiki=seite],.wkd) .ib svg{width:20px;height:20px}
+:where(body[data-wiki=seite],.wkd) .ib.lm-start{font-weight:700;font-size:16px;text-decoration:none}:where(body[data-wiki=seite],.wkd) .ib:hover{background:var(--panel2)}:where(body[data-wiki=seite],.wkd) .ib svg{width:20px;height:20px}
 :where(body[data-wiki=seite],.wkd) #themeBtn .t-l,:where(body[data-wiki=seite],.wkd) #themeBtn .t-d{display:none}:root[data-theme=light] #themeBtn .t-a,:root[data-theme=dark] #themeBtn .t-a{display:none}:root[data-theme=light] #themeBtn .t-l{display:block}:root[data-theme=dark] #themeBtn .t-d{display:block}
-@media(max-width:639px){:where(body[data-wiki=seite],.wkd) header.wh .wrap{min-height:56px;gap:8px}:where(body[data-wiki=seite],.wkd) .res{position:fixed;left:16px;right:16px;top:calc(54px + env(safe-area-inset-top))}:where(body[data-wiki=seite],.wkd) header.wh h1 .tx{display:none}:where(body[data-wiki=seite],.wkd) header.wh .ib[href="index.html"]{display:none}:where(body[data-wiki=seite],.wkd) .srch input{padding-left:12px}}
+@media(max-width:639px){:where(body[data-wiki=seite],.wkd) header.wh .wrap{min-height:56px;gap:8px}:where(body[data-wiki=seite],.wkd) .res{position:fixed;left:16px;right:16px;top:calc(54px + env(safe-area-inset-top))}:where(body[data-wiki=seite],.wkd) header.wh h1 .tx{display:none}:where(body[data-wiki=seite],.wkd) header.wh h1 svg{display:none}:where(body[data-wiki=seite],.wkd) .srch input{padding-left:12px}}
 
 :where(body[data-wiki=seite],.wkd) main{padding:16px 0 40px}
 :where(body[data-wiki=seite],.wkd) .view[hidden]{display:none}
@@ -63,8 +63,8 @@ body[data-wiki=seite] *{box-sizing:border-box}
 :where(body[data-wiki=seite],.wkd) .kats a:hover{border-color:var(--accent)}
 :where(body[data-wiki=seite],.wkd) .kats svg{flex:none;width:28px;height:28px;color:var(--accent)}
 :where(body[data-wiki=seite],.wkd) .kats .n{margin-left:auto;color:var(--mute);font-weight:500;font-variant-numeric:tabular-nums}
-:where(body[data-wiki=seite],.wkd) .kats .kt{display:flex;flex-direction:column;min-width:0}:where(body[data-wiki=seite],.wkd) .kats .kt small{font-weight:400;font-size:13px;color:var(--mute)}
-:where(body[data-wiki=seite],.wkd) .bald{margin:10px 0 0;font-size:13px;color:var(--mute)}
+:where(body[data-wiki=seite],.wkd) .kats .kt{display:flex;flex-direction:column;min-width:0}:where(body[data-wiki=seite],.wkd) .kats .kt small{font-weight:400;font-size:14px;color:var(--mute)}
+:where(body[data-wiki=seite],.wkd) .bald{margin:10px 0 0;font-size:14px;color:var(--mute)}
 :where(body[data-wiki=seite],.wkd) .einstieg{display:flex;gap:14px;align-items:center;margin:16px 0 6px;padding:12px 12px 12px 16px;border-radius:14px;background:var(--panel);border:1px solid var(--line)}:where(body[data-wiki=seite],.wkd) .einstieg[hidden]{display:none}
 :where(body[data-wiki=seite],.wkd) .einstieg>svg{flex:none;width:36px;height:36px;fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}:where(body[data-wiki=seite],.wkd) .einstieg p{flex:1;margin:0}:where(body[data-wiki=seite],.wkd) .einstieg b{display:block;font-size:17px}:where(body[data-wiki=seite],.wkd) .einstieg small{color:var(--mute)}:where(body[data-wiki=seite],.wkd) .einstieg .ib{font-size:22px;line-height:1}
 @media(max-width:639px){:where(body[data-wiki=seite],.wkd) .einstieg{display:none}:where(body[data-wiki=seite],.wkd) .kats{grid-template-columns:repeat(2,minmax(0,1fr))}:where(body[data-wiki=seite],.wkd) .kats a{min-width:0;min-height:56px;padding:8px;gap:6px;font-size:14px}:where(body[data-wiki=seite],.wkd) .kats svg{width:24px;height:24px}:where(body[data-wiki=seite],.wkd) .kats .kt{flex:1;overflow:hidden}:where(body[data-wiki=seite],.wkd) .kats .kt b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}:where(body[data-wiki=seite],.wkd) .kats .kt small{display:none}}
@@ -77,11 +77,12 @@ body[data-wiki=seite] *{box-sizing:border-box}
 :where(body[data-wiki=seite],.wkd) .box{padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--panel)}
 :where(body[data-wiki=seite],.wkd) .box h2{font-size:15px;margin:0 0 8px;color:var(--mute);font-weight:600;letter-spacing:.02em}
 :where(body[data-wiki=seite],.wkd) .box .kurz{margin:0 0 10px}:where(body[data-wiki=seite],.wkd) .box .tools{display:flex;flex-wrap:wrap;gap:8px}
-:where(body[data-wiki=seite],.wkd) .box ul{margin:0;padding:0;list-style:none}:where(body[data-wiki=seite],.wkd) .box li a{display:flex;align-items:center;min-height:40px;color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line)}
+:where(body[data-wiki=seite],.wkd) .box ul{margin:0;padding:0;list-style:none}:where(body[data-wiki=seite],.wkd) .box li a{display:flex;align-items:center;min-height:44px;color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line)}
 :where(body[data-wiki=seite],.wkd) .box li a small{margin-left:auto;color:var(--mute)}:where(body[data-wiki=seite],.wkd) .box li:last-child a{border:0}
 :where(body[data-wiki=seite],.wkd) .chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
 :where(body[data-wiki=seite],.wkd) .chip,:where(body[data-wiki=seite],.wkd) .lc{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:550 14px system-ui,sans-serif;white-space:nowrap;cursor:pointer;text-decoration:none}
 :where(body[data-wiki=seite],.wkd) .chip[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}:where(body[data-wiki=seite],.wkd) .chip small,:where(body[data-wiki=seite],.wkd) .lc small{color:var(--mute);font-weight:500}:where(body[data-wiki=seite],.wkd) .chip[aria-pressed=true] small{color:inherit;opacity:.75}
+:where(body[data-wiki=seite],.wkd) .lg{display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;margin:0 0 10px}:where(body[data-wiki=seite],.wkd) .lgt{flex:0 0 100%;font-size:14px;color:var(--mute);font-weight:600}
 :where(body[data-wiki=seite],.wkd) .chip.lc[aria-pressed=true]::before{box-shadow:0 0 0 2px var(--bg)}
 :where(body[data-wiki=seite],.wkd) .lc::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--c,var(--accent))}
 :where(body[data-wiki=seite],.wkd) :is(.lc,.grp,.we)[data-lab=loch],:where(body[data-wiki=seite],.wkd) :is(.lc,.grp,.we)[data-lab=sch],:where(body[data-wiki=seite],.wkd) :is(.lc,.grp,.we)[data-lab=sim],:where(body[data-wiki=seite],.wkd) :is(.lc,.grp,.we)[data-lab=ds]{--c:var(--g-grund)}:where(body[data-wiki=seite],.wkd) :is(.lc,.grp,.we)[data-lab=mess],:where(body[data-wiki=seite],.wkd) :is(.lc,.grp,.we)[data-lab=wsl]{--c:var(--g-mess)}
@@ -101,7 +102,7 @@ body[data-wiki=seite] *{box-sizing:border-box}
 :where(body[data-wiki=seite],.wkd) .liste{margin:0;padding:0;list-style:none;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:clip}   /* clip statt hidden: sonst wird die Liste zum Scroll-Container und die klebenden Gruppenkoepfe haengen falsch */
 :where(body[data-wiki=seite],.wkd) .liste li a{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px;color:var(--fg);text-decoration:none;border-bottom:1px solid var(--line)}
 :where(body[data-wiki=seite],.wkd) .liste li:last-child a{border:0}:where(body[data-wiki=seite],.wkd) .liste li a:hover{background:var(--panel2)}
-:where(body[data-wiki=seite],.wkd) .liste li a .t{flex:1;min-width:0}:where(body[data-wiki=seite],.wkd) .liste li a .t small{display:block;margin:0;text-align:left;font-size:13px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:where(body[data-wiki=seite],.wkd) .liste li a .t{flex:1;min-width:0}:where(body[data-wiki=seite],.wkd) .liste li a .t small{display:block;margin:0;text-align:left;font-size:14px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :where(body[data-wiki=seite],.wkd) .liste li a .chev{flex:none;width:18px;height:18px;fill:none;stroke:var(--mute);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 /* Regler/Messwerte nach Lab gruppiert (details/summary, offen) */
 :where(body[data-wiki=seite],.wkd) .liste .grp>details>summary{position:sticky;top:calc(var(--hdr) + var(--lbh));z-index:2;display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 14px;font-weight:650;cursor:pointer;background:var(--panel2);border-bottom:1px solid var(--line);list-style:none}
@@ -133,18 +134,18 @@ body[data-wiki=seite] *{box-sizing:border-box}
 .we .tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
 .we table{width:100%;border-collapse:collapse;font-size:14px;min-width:360px}.we th,.we td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}.we th{color:var(--mute);font-weight:600}
 .we tr:last-child td{border:0}
-@media(max-width:479px){.we table{min-width:0}.we thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.we tr{display:grid;grid-template-columns:1fr auto;column-gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)}.we tr:last-child{border:0}.we td{padding:0;border:0}.we td:first-child{grid-column:1/-1;color:var(--mute);font-size:13px}.we td:nth-child(2){font-size:16px;font-variant-numeric:tabular-nums}.we .st{font-size:11px;padding:1px 7px;align-self:center}}
-.we .st{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}.we .st.ueb{color:var(--warn)}.we .st.ok{color:var(--ok)}
-.we .quelle{font-size:13px;color:var(--mute)}
+@media(max-width:479px){.we table{min-width:0}.we thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.we tr{display:grid;grid-template-columns:1fr auto;column-gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)}.we tr:last-child{border:0}.we td{padding:0;border:0}.we td:first-child{grid-column:1/-1;color:var(--mute);font-size:14px}.we td:nth-child(2){font-size:16px;font-variant-numeric:tabular-nums}.we .st{font-size:14px;padding:1px 7px;align-self:center}}
+.we .st{font-size:14px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}.we .st.ueb{color:var(--warn)}.we .st.ok{color:var(--ok)}
+.we .quelle{font-size:14px;color:var(--mute)}
 .we svg.ico,.wkd svg.ico{flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.we svg.chev,.wkd svg.chev{width:18px;height:18px;margin-left:auto;color:var(--mute)}
 .we .wo{display:flex;flex-direction:column;gap:8px}
 .we .wo a{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border:1px solid var(--line);border-left:4px solid var(--c,var(--accent));border-radius:12px;background:var(--panel);color:var(--fg);text-decoration:none}
-.we .wo a:hover{background:var(--panel2)}.we .wo a>svg.ico:first-child{color:var(--c,var(--accent))}.we .wo b{display:block}.we .wo small{display:block;color:var(--mute);font-size:13px}
+.we .wo a:hover{background:var(--panel2)}.we .wo a>svg.ico:first-child{color:var(--c,var(--accent))}.we .wo b{display:block}.we .wo small{display:block;color:var(--mute);font-size:14px}
 .we .lk{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .we .lk a.wl{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--fg);text-decoration:none;font-size:14px;font-weight:550}
-.we .lk a.wl:hover{background:var(--panel2)}.we .lk a.wl small{margin-left:6px;color:var(--mute);font-weight:400;font-size:12px}.we .lk .more-n{font-size:13px}
+.we .lk a.wl:hover{background:var(--panel2)}.we .lk a.wl small{margin-left:6px;color:var(--mute);font-weight:400;font-size:14px}.we .lk .more-n{font-size:14px}
 .we .crumbless{margin:0}
-.we .meta{margin-top:18px;padding-top:10px;border-top:1px solid var(--line);font-size:13px;color:var(--mute)}
+.we .meta{margin-top:18px;padding-top:10px;border-top:1px solid var(--line);font-size:14px;color:var(--mute)}
 .we .stt.geprueft{color:var(--ok)}.we .stt.frage{color:var(--warn)}
 :where(body[data-wiki=seite],.wkd) .back{margin-bottom:12px}
 /* Versionsplakette (fest unten rechts) verdeckt in der Wiki Inhalt; die Version steht schon in der Fusszeile (Stand ...) */
@@ -179,15 +180,19 @@ body>svg[hidden]{position:absolute;width:0;height:0;overflow:hidden}   /* Symbol
 @media(max-width:639px){.we .wk-top{flex-direction:column}.we .bild{width:100px}}
 
 /* "?"-Knopf im Lab */
-button.wk{position:relative;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;margin-left:4px;padding:0;border:1px solid var(--line,#38424d);border-radius:50%;background:transparent;color:var(--mute,#9aa6b2);font:700 13px/1 system-ui,sans-serif;cursor:pointer;vertical-align:middle}
-button.wk::before{content:"";position:absolute;inset:-11px}
-button.wk:hover{color:var(--accent,#5fb0ff);border-color:var(--accent,#5fb0ff)}
+/* Trefferfläche 44 x 44 px (S1 Schlussrunde, B-all-02): der Knopf selbst ist 44 px groß, der sichtbare Ring (22 px) steht als ::after in der Mitte; negative Ränder halten das Zeilenmaß bei 22 px */
+button.wk{position:relative;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;width:44px;height:44px;margin:-11px -11px -11px -7px;padding:0;border:0;border-radius:50%;background:transparent;color:var(--mute,#9aa6b2);font:700 13px/1 system-ui,sans-serif;cursor:pointer;vertical-align:middle}
+button.wk::before{content:"";position:absolute;inset:0}
+button.wk::after{content:"";position:absolute;z-index:-1;left:11px;top:11px;box-sizing:border-box;width:22px;height:22px;border:1px solid var(--line,#38424d);border-radius:50%;pointer-events:none}
+button.wk:hover{color:var(--accent,#5fb0ff)}
+button.wk:hover::after{border-color:var(--accent,#5fb0ff)}
 html.wk-off button.wk{display:none}
-button.wk:focus-visible{outline:2px solid var(--focus,#ffd166);outline-offset:2px}
+button.wk:focus-visible{outline:0}
+button.wk:focus-visible::after{outline:2px solid var(--focus,#ffd166);outline-offset:2px}
 /* Palette: "?" hinter dem Eintrag, ohne die Zeile zu verbreitern (Hoehe 0, Glyphe per ::after); gefilterte Eintraege nehmen ihr "?" mit */
 button.wk.wk-pit{display:block;width:22px;height:0;margin:0 8px 0 auto;padding:0;border:0;border-radius:0;background:none;overflow:visible}
 button.wk.wk-pit::before{inset:auto;right:-6px;bottom:0;width:44px;height:44px}
-button.wk.wk-pit::after{content:"?";position:absolute;right:0;bottom:9px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line,#38424d);border-radius:50%;font:700 13px/1 system-ui,sans-serif;color:var(--mute,#9aa6b2);pointer-events:none}
+button.wk.wk-pit::after{content:"?";position:absolute;left:auto;top:auto;right:0;bottom:9px;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line,#38424d);border-radius:50%;font:700 13px/1 system-ui,sans-serif;color:var(--mute,#9aa6b2);pointer-events:none}
 button.wk.wk-pit:hover::after{color:var(--accent,#5fb0ff);border-color:var(--accent,#5fb0ff)}
 button.wk.wk-pit:focus-visible{outline:0}
 button.wk.wk-pit:focus-visible::after{outline:2px solid var(--focus,#ffd166);outline-offset:2px}
@@ -195,21 +200,22 @@ button.wk.wk-pit{font-size:0;color:transparent}
 .pit[hidden]+button.wk.wk-pit{display:none}
 #parts .pit:has(+button.wk.wk-pit){padding-right:40px}
 /* Werkbank: kleine "?" in Kopf und Bedienreihen, Beschriftung im Label */
-.wk-lab .wbh button.wk{margin-left:auto;margin-right:2px}
-.wk-lab label.wbf button.wk{margin:0 4px}
-.wk-lab h4 button.wk{margin-left:6px}
+.wk-lab .wbh button.wk{margin-left:auto;margin-right:-9px}
+.wk-lab label.wbf button.wk{margin:-11px -7px}
+.wk-lab h4 button.wk{margin-left:-5px}
 /* W8 Rig-Labs: "?" in der Reglerbeschriftung (.wk-r), an Schalter-/Tastenzeilen (.wk-ct, rechts vor dem Schalter), an Messfeldern (.wk-mt) */
 .wk-toast{position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:310;max-width:min(92vw,420px);padding:12px 18px;border-radius:16px;background:linear-gradient(135deg,#ffb300,#ff7a00);color:#1b1200;font:600 15px/1.35 system-ui,sans-serif;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
-.wk-lab .ct button.wk.wk-r{margin-left:6px;flex:none}
+.wk-lab .ct button.wk.wk-r{margin-left:-5px;flex:none}
 .wk-lab .ct.wk-has{position:relative}
-.wk-lab .ct>button.wk.wk-ct{position:absolute;right:64px;top:50%;margin:-11px 0 0}
-.wk-lab .ct[data-t="button"]>button.wk.wk-ct{top:11px;right:12px;margin:0}
+.wk-lab .ct>button.wk.wk-ct{position:absolute;right:53px;top:50%;margin:-22px 0 0}
+.wk-lab .ct[data-t="button"]>button.wk.wk-ct{top:0;right:1px;margin:0}
 .wk-lab #meters .mt{position:relative}
-.wk-lab #meters .mt>button.wk.wk-mt{position:absolute;right:5px;top:5px;margin:0;z-index:2;background:var(--panel,#222830)}
+.wk-lab #meters .mt>button.wk.wk-mt{position:absolute;right:-6px;top:-6px;margin:0;z-index:2}
 .wk-lab #meters .mt.dg.wk-h .lbl{padding-right:28px}
 .wk-lab #meters .wk-cell{position:relative;display:flex;min-width:0}
 .wk-lab #meters .wk-cell>.mt{flex:1;min-width:0}
-.wk-lab #meters .wk-cell>button.wk.wk-mt{position:absolute;right:29px;top:3px;margin:0;z-index:2;background:var(--panel,#222830)}
+.wk-lab #meters .wk-cell>button.wk.wk-mt{position:absolute;right:18px;top:-8px;margin:0;z-index:2}
+.wk-lab #meters button.wk.wk-mt::after{background:var(--panel,#222830)}
 .wk-lab #meters .wk-cell .mt .lbl{padding-right:46px}
 
 /* Drawer (Lab): rechts ab 900 px, sonst Bottom-Sheet mit zwei Hoehen (62 % / 92 %), Kopf = Titel, feste Fussleiste (W9) */
@@ -253,24 +259,24 @@ html.wkd-open{overflow:hidden}
 @keyframes wkd-up{from{transform:translateY(40px);opacity:0}}
 @media(prefers-reduced-motion:reduce){.wkd{animation:none;transition:none}}
 
-:where(body[data-wiki=seite],.wkd) footer.wf{margin-top:36px;padding:16px 0 24px;border-top:1px solid var(--line);color:var(--mute);font-size:13px}
-:where(body[data-wiki=seite],.wkd) footer.wf a{color:var(--accent);text-decoration:underline;text-underline-offset:3px;padding:0 2px}
+:where(body[data-wiki=seite],.wkd) footer.wf{margin-top:36px;padding:16px 0 24px;border-top:1px solid var(--line);color:var(--mute);font-size:14px}
+:where(body[data-wiki=seite],.wkd) footer.wf a{display:inline-flex;align-items:center;min-height:44px;color:var(--accent);text-decoration:underline;text-underline-offset:3px;padding:0 6px}
 :where(body[data-wiki=seite],.wkd) footer.wf .wrap{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
 
 /* ---------- P3 (Design-Review): Treffer-Hervorhebung, Steckbrief (dl), A-Z-Leiste, zweispaltig ab 1024 px, Sheet ziehbar ---------- */
 :where(body[data-wiki=seite],.wkd) mark{background:none;color:inherit;font-weight:inherit;text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:2px;text-underline-offset:3px}
 .we .steck{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 18px;margin:0;padding:12px 16px;font-size:15px}
 .we .steck dt{margin:0;color:var(--mute)}.we .steck dd{margin:0;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.we .steck .st{margin-left:8px;font-size:11px;padding:1px 7px;vertical-align:middle;white-space:nowrap}
+.we .steck .st{margin-left:8px;font-size:14px;padding:1px 7px;vertical-align:middle;white-space:nowrap}
 .we .tw+.quelle{margin:6px 2px 0}
-@media(max-width:479px){.we .steck{grid-template-columns:minmax(0,1fr);gap:2px;padding:10px 14px}.we .steck dt{font-size:13px;margin-top:8px}.we .steck dt:first-child{margin-top:0}.we .steck dd{font-size:16px}}
+@media(max-width:479px){.we .steck{grid-template-columns:minmax(0,1fr);gap:2px;padding:10px 14px}.we .steck dt{font-size:14px;margin-top:8px}.we .steck dt:first-child{margin-top:0}.we .steck dd{font-size:16px}}
 .wkd .we .steck{padding:10px 12px;font-size:14px}
 :where(body[data-wiki=seite],.wkd) .az{display:none}
 @media(min-width:900px){
 :where(body[data-wiki=seite],.wkd) .lwrap.hasaz{display:grid;grid-template-columns:minmax(0,1fr) 44px;column-gap:8px;align-items:start}
 :where(body[data-wiki=seite],.wkd) .lwrap.hasaz>.liste{grid-column:1;grid-row:1}
 :where(body[data-wiki=seite],.wkd) .lwrap.hasaz>.az{grid-column:2;grid-row:1;position:sticky;top:calc(var(--hdr) + var(--lbh) + 8px);height:min(640px,calc(100vh - var(--hdr) - var(--lbh) - 40px));height:min(640px,calc(100dvh - var(--hdr) - var(--lbh) - 40px));display:flex;flex-direction:column;align-items:stretch;padding:4px 0;border:1px solid var(--line);border-radius:12px;background:var(--panel);touch-action:none;-webkit-user-select:none;user-select:none}
-:where(body[data-wiki=seite],.wkd) .az>*{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:6px;background:none;color:var(--accent);font:700 12px/1 system-ui,sans-serif;cursor:pointer}
+:where(body[data-wiki=seite],.wkd) .az>*{flex:1 1 0;min-height:0;display:flex;align-items:center;justify-content:center;padding:0;border:0;border-radius:6px;background:none;color:var(--accent);font:700 14px/1 system-ui,sans-serif;cursor:pointer}
 :where(body[data-wiki=seite],.wkd) .az>span,:where(body[data-wiki=seite],.wkd) .az>button:disabled{color:var(--mute);opacity:.55;cursor:default}
 :where(body[data-wiki=seite],.wkd) .az>button:hover:not(:disabled){background:var(--panel2)}
 }
@@ -291,9 +297,24 @@ html.wkd-open{overflow:hidden}
 .we .bv-f{margin:10px 0 8px;padding:8px 10px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
 .we .bv-t{font-size:14px;font-weight:700}
 .we .bv-f figcaption{margin:6px 0 2px;font-size:14px;color:var(--mute);line-height:1.45}
-.we .bv-tab{width:100%;border-collapse:collapse;font-size:13px}
+.we .bv-tab{width:100%;border-collapse:collapse;font-size:14px}
 .we .bv-tab th,.we .bv-tab td{padding:8px 10px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);overflow-wrap:anywhere}
 .we .bv-tab thead th{color:var(--mute);font-weight:600}
 .we .bv-tab tbody th{font-weight:600}
-.we .bv-n{margin:8px 0 0;font-size:13px;color:var(--mute)}
+.we .bv-n{margin:8px 0 0;font-size:14px;color:var(--mute)}
 @media(max-width:639px){.we .bv-tab thead{display:none}.we .bv-tab,.we .bv-tab tbody,.we .bv-tab tr,.we .bv-tab th,.we .bv-tab td{display:block}.we .bv-tab tr{padding:6px 0;border-bottom:1px solid var(--line)}.we .bv-tab th,.we .bv-tab td{border:0;padding:2px 10px}.we .bv-tab td:last-child{color:var(--mute)}}
+
+/* U2a: Prüfstände-Block, Recent-Kopf, Fußzeile (U-wiki-01, U-wiki-04) */
+:where(body[data-wiki=seite],.wkd) .psh{margin-top:22px}
+:where(body[data-wiki=seite],.wkd) .psn{margin:0 0 8px;font-size:14px}
+:where(body[data-wiki=seite],.wkd) .kats.ps a{min-height:52px;background:transparent;border-style:dashed}
+:where(body[data-wiki=seite],.wkd) .kats.ps svg{width:24px;height:24px;color:var(--mute)}
+:where(body[data-wiki=seite],.wkd) .box h2{display:flex;align-items:center;justify-content:space-between;gap:8px}
+:where(body[data-wiki=seite],.wkd) .rclr{min-height:44px;min-width:44px;padding:0 6px;font-size:14px;font-weight:500}
+:where(body[data-wiki=seite],.wkd) .liste .grp>details>summary small{font-weight:400;color:var(--mute);font-size:14px}
+:where(body[data-wiki=seite],.wkd) .liste .grp[data-kat]>details>summary::before{background:var(--accent)}
+:where(body[data-wiki=seite],.wkd) #urheber-hinweis,:where(body[data-wiki=seite],.wkd) #urheber-hinweis *{font-size:14px!important;line-height:1.5}
+:where(body[data-wiki=seite],.wkd) #urheber-sprache a,:where(body[data-wiki=seite],.wkd) #urheber-hinweis a{display:inline-flex;align-items:center;min-height:44px;padding:0 8px}
+:where(body[data-wiki=seite],.wkd) small{font-size:14px}
+:where(body[data-wiki=seite],.wkd) .we .heft a,:where(body[data-wiki=seite],.wkd) .we .wk-all{display:inline-flex;align-items:center;min-height:44px}
+:where(body[data-wiki=seite],.wkd) a.skip{min-height:44px;display:inline-flex;align-items:center}

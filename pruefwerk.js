@@ -21,7 +21,7 @@
   POOL.groups.forEach(g => { TOP['p:' + g.k] = { k: 'p:' + g.k, t: g.t, icon: g.icon, lab: g.lab, labN: g.labN, pool: true }; });
   TOP['p:alle'] = { k: 'p:alle', t: 'Prüfungs-Pool gemischt', icon: '🎓', lab: 'sch', labN: 'SchaltLab', pool: true };   // alte Schlüssel bleiben, damit gespeicherte Stände weiterlaufen
   /* Zwei getrennte Bereiche: Teil 1 und Teil 2 (Systementwurf und Funktions- und Systemanalyse). Pool-Themen gibt es je Bereich. */
-  const AREAS = { teil1: { t: 'Teil 1', n: '1', pool: ['Teil1'], vars: ['teil1'], info: 'Teil 1 der Abschlussprüfung nach 18 Monaten (90 Minuten).' }, teil2: { t: 'Teil 2', n: '2', pool: ['SysE', 'FuSa', 'WiSo'], vars: ['syse', 'fusa', 'wiso'], info: 'Teil 2 der Abschlussprüfung: Systementwurf, Funktions- und Systemanalyse (je 105 Minuten) und Wirtschafts- und Sozialkunde (60 Minuten).' } };
+  const AREAS = { teil1: { t: 'Teil 1', n: '1', pool: ['Teil1'], vars: ['teil1'], info: 'Teil 1 der Abschlussprüfung nach 18 Monaten (Prüfung nach Aufbau: 90 Minuten, Kurz-Probe: 60 Minuten).' }, teil2: { t: 'Teil 2', n: '2', pool: ['SysE', 'FuSa', 'WiSo'], vars: ['syse', 'fusa', 'wiso'], info: 'Teil 2 der Abschlussprüfung: Systementwurf, Funktions- und Systemanalyse (je 105 Minuten) und Wirtschafts- und Sozialkunde (60 Minuten).' } };
   const areaOfTeil = tl => (tl === 'Teil1' ? 'teil1' : 'teil2');
   const hasQ = (g, a) => POOL.q.some(p => (g === 'alle' ? p.teil !== 'WiSo' : p.g === g) && AREAS[a].pool.includes(p.teil));
   Object.keys(AREAS).forEach(a => {
@@ -120,11 +120,13 @@
 
   /* ---------------- Ansicht ---------------- */
   const TABS = [['start', 'Start'], ['pruefung', 'Probeprüfung'], ['training', 'Training'], ['auswertung', 'Auswertung'], ['formeln', 'Formeln'], ['aufgaben', 'Aufgaben']];
+  const TRIES = {};
   let tab = 'start', openTaskId = null, timer = null, cleanup = null;
   function go(t, id) { if (t === 'formeln' && examLock()) { toast(LOCK_MSG); return; } tab = t; if (t === 'aufgaben') openTaskId = id || null; render(); window.scrollTo(0, 0); }
   function render() {
     if (timer) { clearInterval(timer); timer = null; } if (cleanup) { cleanup(); cleanup = null; }
     if (tab === 'formeln' && examLock()) tab = 'pruefung';
+    document.documentElement.classList.toggle('pr-lauf', !!(tab === 'pruefung' && S.exam && !S.exam.done)); document.body.setAttribute('data-pr-tab', tab);   // CSS in pruefungslab.html: Tutorial-Leiste am Handy und Hinweisbalken nur wo sinnvoll
     $('#tabs').innerHTML = TABS.map(([k, n]) => '<button class="tab' + (tab === k ? ' on' : '') + '" data-t="' + k + '"' + (k === 'formeln' && examLock() ? ' aria-disabled="true" aria-label="Formeln, in der Prüfung gesperrt" title="In der Prüfung gesperrt"' : '') + '>' + (k === 'formeln' && examLock() ? '🔒 ' : '') + n + '</button>').join('');
     $$('#tabs .tab').forEach(b => { b.onclick = () => go(b.dataset.t); });
     areaBar();
@@ -135,7 +137,7 @@
   function areaBar() {   // Umschalter Teil 1 / Teil 2 über den Reitern; während einer laufenden Prüfung gesperrt
     let ab = $('#areabar'); if (!ab) { ab = document.createElement('div'); ab.id = 'areabar'; ab.style.cssText = 'display:flex;gap:8px;margin:8px 12px 0;flex-wrap:wrap;align-items:center'; $('#tabs').parentNode.insertBefore(ab, $('#tabs')); }
     const lock = !!(S.exam && !S.exam.done);
-    ab.innerHTML = '<span class="mute small">Bereich:</span>' + Object.keys(AREAS).map(a => '<button class="btn' + (a === area ? ' pri' : '') + '" data-area="' + a + '"' + (lock && a !== area ? ' disabled' : '') + '>' + AREAS[a].t + '</button>').join('') + '<span class="mute small">' + esc(AREAS[area].info) + '</span>';
+    ab.innerHTML = '<span class="mute small">Bereich:</span>' + Object.keys(AREAS).map(a => '<button class="btn' + (a === area ? ' pri' : '') + '" data-area="' + a + '"' + (lock && a !== area ? ' disabled' : '') + '>' + AREAS[a].t + '</button>').join('') + '<span class="mute small">' + esc(S.exam && !S.exam.done ? 'Laufende Prüfung: ' + VNAME(S.exam.v) + (S.exam.limit ? ', ' + S.exam.limit + ' Minuten' : ', ohne Zeitlimit') + '.' : AREAS[area].info) + '</span>';
     $$('[data-area]', ab).forEach(b => { b.onclick = () => setArea(b.dataset.area); });
   }
   const bar = p => '<div class="bar"><i style="width:' + Math.max(0, Math.min(100, p)) + '%"></i></div>';
@@ -235,7 +237,7 @@
   function finishExam(auto) {
     const e = S.exam; if (!e || e.done) return; if (e.paused && e.paused.at) setPause(e, false);
     const c = scoreOf(e), n = NOTE(c.pct), now = Date.now(), rp = X ? X.report(e, NOTE, { isRight, score: scoreOf }) : null;
-    e.done = true; e.res = { pts: c.pts, max: c.max, pct: c.pct, note: n[0], noteT: n[1], topics: c.topics, secs: Math.round(elapsedMs(e, now) / 1000), auto: !!auto, a: c.a || (e.mix && rp ? rp.byTeil.A : undefined), b: c.b || (e.mix && rp ? rp.byTeil.B : undefined), dropped: c.dropped };
+    e.done = true; e.res = { pts: c.pts, max: c.max, pct: c.pct, note: n[0], noteT: n[1], topics: c.topics, secs: e.limit > 0 ? Math.min(e.limit * 60, Math.round(elapsedMs(e, now) / 1000)) : Math.round(elapsedMs(e, now) / 1000), auto: !!auto, a: c.a || (e.mix && rp ? rp.byTeil.A : undefined), b: c.b || (e.mix && rp ? rp.byTeil.B : undefined), dropped: c.dropped };
     if (rp) { e.res.byNiveau = rp.byNiveau; e.res.byTeil = rp.byTeil; e.res.slow = rp.slow; e.res.unanswered = rp.unanswered; e.res.marked = rp.marked; }
     const h = { kind: 'exam', v: e.v || 'kurz', area: (e.v === 'teil1' ? 'teil1' : e.v === 'syse' || e.v === 'fusa' ? 'teil2' : e.v === 'mix' ? (e.area || 'beide') : 'beide'), t: now, pct: c.pct, pts: c.pts, max: c.max, note: n[0], secs: e.res.secs, topics: c.topics };
     if (rp) h.byNiveau = rp.byNiveau; if (e.cfg) h.cfg = e.cfg;
@@ -300,7 +302,10 @@
       else if (mix) { const [a, b] = mixCnt(), sug = X.suggestLimit(a, b); fixSel('#exT', [[sug, 'Vorschlag: ' + sug + ' Minuten'], [15, '15 Minuten'], [30, '30 Minuten'], [45, '45 Minuten'], [60, '60 Minuten'], [90, '90 Minuten'], [105, '105 Minuten']].filter((o, i, l) => i === 0 || o[0] !== sug), sug); tn.textContent = 'Vorschlag: 2,5 Minuten je Mehrfachwahl-Aufgabe, 6 Minuten je Rechenaufgabe.'; }
       else if (VARIANTS[vv]) { fixSel('#exT', [[VARIANTS[vv].limit, VARIANTS[vv].limit + ' Minuten (wie in der Prüfung)']], VARIANTS[vv].limit); tn.textContent = ''; }
       $('#exT', v).disabled = !!(noT && noT.checked) || !!VARIANTS[vv];
+      kurzNote();
     };
+    const kurzNote = () => { if (val('exV') === 'kurz') $('#exNote', v).textContent = 'Kurz-Probe: ' + ($('#exNoT', v) && $('#exNoT', v).checked ? 'ohne Zeitlimit' : $('#exT', v).value + ' Minuten') + ', 20 Aufgaben aus allen acht Themen. Rechenaufgaben (4 Punkte) und Mehrfachwahl (2 Punkte).'; };
+    $('#exT', v).onchange = kurzNote;
     $$('input[name="exV"], input[name="exN"], input[name="exC"]', v).forEach(x => { x.onchange = upd; }); if ($('#exNoT', v)) $('#exNoT', v).onchange = upd; upd();
     $$('[data-pk]', v).forEach(b => { b.onclick = () => { const pk = X.PAKETE.find(p => p.k === b.dataset.pk); $$('input[data-g]', v).forEach(x => { x.checked = pk.groups.includes(x.dataset.g); }); }; });
     $('#exGo', v).onclick = () => {
@@ -320,12 +325,13 @@
   }
   function vExamDone(v, e) {
     const r = e.res, c = r.pct >= 50, nv = r.byNiveau, steps = Co ? Co.afterExam(r.topics, Co.read(lsGet), { AUFGABEN: root.AUFGABEN, LAB_REG: root.LAB_REG, groups: POOL.groups, topics: TOPICS }) : [];
-    v.innerHTML = '<div class="card"><h2>Ergebnis: ' + esc(VNAME(e.v)) + '</h2><div class="pct ' + (c ? 'g' : '') + '">' + r.pct + ' %</div><p><b>Note ' + r.note + ' (' + r.noteT + ')</b> · ' + (r.a ? 'Teil A: ' + r.a[0] + ' von ' + r.a[1] + ' gewerteten Aufgaben richtig · Teil B: ' + r.b[0] + ' von ' + r.b[1] + ' Aufgaben richtig' + (e.orig ? ' (je 10 Punkte)' : '') : r.pts + ' von ' + r.max + ' Punkten') + ' · Zeit: ' + mmss(r.secs * 1000) + (e.limit ? ' von ' + e.limit + ' Minuten' : ' (ohne Zeitlimit)') + (r.auto ? ' (Zeit abgelaufen)' : '') + '</p><p class="' + (c ? 'good' : 'bad') + '">' + (c ? 'Bestanden (ab 50 %).' : 'Noch nicht bestanden (ab 50 %). Übe die schwachen Themen und versuche es erneut.') + '</p>'
+    v.innerHTML = '<div class="card"><h2>Ergebnis: ' + esc(VNAME(e.v)) + '</h2><div class="pct ' + (c ? 'g' : '') + '">' + r.pct + ' %</div><p><b>Note ' + r.note + ' (' + r.noteT + ')</b> · ' + (r.a ? 'Teil A: ' + r.a[0] + ' von ' + r.a[1] + ' gewerteten Aufgaben richtig · Teil B: ' + r.b[0] + ' von ' + r.b[1] + ' Aufgaben richtig' + (e.orig ? ' (je 10 Punkte)' : '') : r.pts + ' von ' + r.max + ' Punkten') + ' · Zeit: ' + mmss((e.limit > 0 ? Math.min(r.secs, e.limit * 60) : r.secs) * 1000) + (e.limit ? ' von ' + e.limit + ' Minuten' : ' (ohne Zeitlimit)') + (r.auto ? ' (Zeit abgelaufen)' : '') + '</p><p class="' + (c ? 'good' : 'bad') + '">' + (c ? 'Bestanden (ab 50 %).' : 'Noch nicht bestanden (ab 50 %). Übe die schwachen Themen und versuche es erneut.') + '</p>'
       + (r.unanswered && r.unanswered.length ? '<p class="warnt small">' + r.unanswered.length + ' gewertete Aufgabe(n) hast du nicht beantwortet.</p>' : '') + (r.slow && r.slow.length ? '<p class="mute small">Viel Zeit gebraucht hast du bei: ' + r.slow.map(id => { const q = e.qs.find(x => x.id === id); return q ? 'Aufgabe ' + qLabel(e, q, e.qs.indexOf(q)) : ''; }).filter(Boolean).join(', ') + '. Die Zeiten bleiben auf deinem Gerät.</p>' : '') + '</div>'
       + '<div class="card"><h3>Ergebnis nach Themen</h3>' + ALLT.filter(t => r.topics[t.k]).map(t => { const x = r.topics[t.k], p = Math.round(100 * x[0] / x[1]); return '<div class="tp"><div>' + esc(t.icon + ' ' + t.t) + ' <span class="mute small">(' + x[0] + ' von ' + x[1] + ')</span></div>' + bar(p) + '<div class="row"><span class="small ' + (p >= 70 ? 'good' : p >= 50 ? 'warnt' : 'bad') + '">' + p + ' %</span>' + (p < 70 ? '<button class="btn s" data-tr="' + t.k + '">Thema üben</button>' : '') + '</div></div>'; }).join('') + '</div>'
       + (nv && [1, 2, 3].some(k => nv[k] && nv[k][1]) ? '<div class="card"><h3>Ergebnis nach Schwierigkeit</h3>' + [1, 2, 3].filter(k => nv[k][1]).map(k => { const p = Math.round(100 * nv[k][0] / nv[k][1]); return '<div class="tp"><div>' + NIV_T[k] + ' <span class="mute small">(' + nv[k][0] + ' von ' + nv[k][1] + ')</span></div>' + bar(p) + '<div class="small ' + (p >= 70 ? 'good' : p >= 50 ? 'warnt' : 'bad') + '">' + p + ' %</div></div>'; }).join('') + '</div>' : '')
       + (steps.length ? nextStepsHtml(steps) : '')
       + '<div class="card"><h3>Alle Aufgaben mit Lösung</h3>' + e.qs.map((q, i) => qRun(e, q, i, true, true)).join('') + '<div class="row"><button class="btn pri" id="exNew">Neue Probeprüfung</button><button class="btn" id="exSend">Ergebnis abgeben</button></div></div>';
+    $$('.pq.noq', v).forEach(el => { const q = e.qs.find(x => x.id === el.dataset.qid); if (q && TOP[q.k]) { const b = document.createElement('button'); b.type = 'button'; b.className = 'btn s'; b.textContent = 'Dazu üben: ' + TOP[q.k].t; b.onclick = () => startTrain(q.k); el.appendChild(b); } });
     $('#exNew').onclick = () => { S.exam = null; persist(); render(); };
     $('#exSend').onclick = () => { if (!c) { toast('Erst eine bestandene Probeprüfung (ab 50 %) kann abgegeben werden'); return; } const id = TASKFOR[e.v] || 'pr10', t = TASKS.find(x => x.id === id); markDone('pr10', 100); if (id !== 'pr10') markDone(id, 100); if (root.Auswertung) root.Auswertung.handIn(id, 100, t ? t.title : 'Probeprüfung'); };
     $$('[data-tr]', v).forEach(b => { b.onclick = () => startTrain(b.dataset.tr); }); $$('[data-go]', v).forEach(b => { b.onclick = () => go(b.dataset.go); });
@@ -335,11 +341,20 @@
   function vExamRun(v, e) {
     const isGod = godOk() && !e.gp; if (e.paused && e.paused.at && !isGod) setPause(e, false);   // ohne Ausbildermodus gibt es keine Pause, in der Generalprobe nie
     const paused = !!(e.paused && e.paused.at), act = e.qs.filter(q => !(e.orig && e.orig.skip[q.id]));
-    v.innerHTML = '<div class="card tmr" id="exHead"><div class="row hrow"><b id="exTimer" role="timer">' + (paused ? 'Pausiert' : 'Restzeit: <span id="exLeft">' + (e.limit ? mmss(leftMs(e, Date.now())) : 'ohne Limit') + '</span>') + '</b>' + (e.gp ? '<span class="small"><b>Generalprobe</b> (ohne Pause)</span>' : '') + '<span class="mute small" id="exCnt"></span><span class="grow"></span>' + (isGod ? '<button class="btn s" id="exPause">' + (paused ? 'Weiter' : 'Pause') + '</button>' : '') + '<button class="btn pri" id="exFin">Abgeben</button></div>'
+    v.innerHTML = '<div class="card tmr" id="exHead"><div class="row hrow"><b id="exTimer" role="timer">' + (paused ? 'Pausiert' : 'Restzeit: <span id="exLeft">' + (e.limit ? mmss(leftMs(e, Date.now())) : 'ohne Limit') + '</span>') + '</b>' + (e.gp ? '<span class="small"><b>Generalprobe</b> (ohne Pause)</span>' : '') + '<span class="mute small" id="exCnt"></span><span class="grow"></span>' + (isGod ? '<button class="btn s" id="exPause">' + (paused ? 'Weiter' : 'Pause') + '</button>' : '') + '<button class="btn" id="exCancel">Abbrechen</button><button class="btn pri" id="exFin">Abgeben</button></div>'
       + (paused ? '' : '<div class="row jrow"><div id="exJump" role="toolbar" aria-label="Aufgabe wählen">' + e.qs.map((q, i) => '<button type="button" class="jc" data-j="' + esc(q.id) + '">' + esc(qLabel(e, q, i)) + '</button>').join('') + '</div><label class="inl"><input type="checkbox" id="exOnly"> nur offene</label></div>') + '<div class="sr" id="exAnn" role="status" aria-live="polite"></div></div>'
-      + (paused ? '<div class="card"><h3>Die Prüfung ist pausiert</h3><p>Die Zeit steht. Die Aufgaben sind ausgeblendet, bis du auf „Weiter“ drückst.</p><div class="row"><button class="btn pri" id="exResume">Weiter</button></div></div>' : e.qs.map((q, i) => qRun(e, q, i, false, false, { flag: true })).join('') + '<div class="card"><button class="btn pri" id="exFin2">Prüfung abgeben</button></div>');
+      + (paused ? '<div class="card"><h3>Die Prüfung ist pausiert</h3><p>Die Zeit steht. Die Aufgaben sind ausgeblendet, bis du auf „Weiter“ drückst.</p><div class="row"><button class="btn pri" id="exResume">Weiter</button></div></div>' : e.qs.map((q, i) => qRun(e, q, i, false, false, { flag: true })).join('') + '<div class="card"><div class="row" style="margin:0"><button class="btn pri" id="exFin2">Prüfung abgeben</button><button class="btn" id="exCancel2">Abbrechen ohne Wertung</button></div></div>');
     const doPause = on => { const y = window.scrollY; setPause(e, on); render(); window.scrollTo(0, on ? 0 : y); };
     const fin = () => { const open = act.filter(q => !answered(e, q)).length, mk = act.filter(q => e.flags && e.flags[q.id]).length; const msg = open > 0 ? open + ' Aufgabe(n) sind noch offen' + (mk ? ' und ' + mk + ' markiert' : '') + '. Trotzdem abgeben?' : mk > 0 ? mk + ' Aufgabe(n) sind noch für später markiert. Trotzdem abgeben?' : ''; if (msg && !confirm(msg)) return; finishExam(false); };
+    const askCancel = () => {   // Abbrechen ohne Wertung: eigene Rückfrage in der Seite, kein Eintrag in Verlauf und Note
+      if ($('#exCancelBox')) return; const d = document.createElement('div'); d.className = 'card warn'; d.id = 'exCancelBox'; d.setAttribute('role', 'alertdialog'); d.setAttribute('aria-labelledby', 'exCancelT');
+      d.innerHTML = '<b id="exCancelT">Prüfung ohne Wertung abbrechen?</b><p class="small">Es gibt dann keine Note und keinen Eintrag im Verlauf. Deine Antworten in dieser Prüfung gehen verloren.</p><div class="row"><button class="btn pri" id="exCancelNo">Weiter prüfen</button><button class="btn danger" id="exCancelYes">Ja, abbrechen</button></div>';
+      $('#exHead').insertAdjacentElement('afterend', d);
+      $('#exCancelNo').onclick = () => { d.parentNode.removeChild(d); $('#exCancel').focus(); };
+      $('#exCancelYes').onclick = () => { S.exam = null; persist(); render(); window.scrollTo(0, 0); toast('Prüfung abgebrochen, nichts gewertet'); };
+      d.onkeydown = ev => { if (ev.key === 'Escape') $('#exCancelNo').click(); }; d.style.scrollMarginTop = '170px'; $('#exCancelNo').focus(); d.scrollIntoView({ block: 'center' });
+    };
+    $('#exCancel').onclick = askCancel; if ($('#exCancel2')) $('#exCancel2').onclick = askCancel;
     $('#exFin').onclick = fin; if ($('#exFin2')) $('#exFin2').onclick = fin; if ($('#exPause')) $('#exPause').onclick = () => doPause(!paused); if ($('#exResume')) $('#exResume').onclick = () => doPause(false);
     if (paused) return;
     const cnt = () => { const a = act.filter(q => answered(e, q)).length, m = act.filter(q => e.flags && e.flags[q.id]).length; $('#exCnt').textContent = a + ' von ' + act.length + ' beantwortet' + (m ? ' · ' + m + ' markiert' : ''); };
@@ -472,7 +487,10 @@
     $('#tHint').onclick = () => { $('#tHintBox').hidden = !$('#tHintBox').hidden; try { const h = lsGet('sim.hints', {}); h[t.id] = Math.max(h[t.id] || 0, 1); localStorage.setItem('sim.hints', JSON.stringify(h)); } catch (e) {} };
     $('#tCheck').onclick = async () => {
       $('#tRes').innerHTML = '<p class="mute">Prüfe …</p>'; const L = await runCheck(t), p = pctOf(L); markDone(t.id, p); persist();
-      $('#tRes').innerHTML = '<div class="pct ' + (p >= 100 ? 'g' : '') + '">' + p + ' %</div>' + L.map(l => '<div class="rl ' + (l.ok ? 'ok' : 'no') + '">' + (l.ok ? '✓ ' : '✗ ') + esc(l.text) + (!l.ok && l.why ? '<div class="why">' + esc(l.why) + '</div>' : '') + '</div>').join('');
+      const tn = TRIES[t.id] = p >= 100 ? 0 : (TRIES[t.id] || 0) + 1, fbk = p >= 100 ? 'ok' : tn >= 2 ? 'loes' : 'tipp';   // 4.5: erst Tipp und zweiter Versuch, dann die offenen Punkte
+      const fbT = p >= 100 ? '<p><strong>Richtig.</strong> Alle Punkte erfüllt.</p>' : tn >= 2 ? '<p><strong>Noch nicht.</strong> Das fehlt noch (siehe die roten Zeilen unten).</p>' : '<p><strong>Noch nicht.</strong> ' + (t.hint ? 'Tipp: ' + esc(t.hint) + ' ' : '') + 'Du hast einen zweiten Versuch.</p>';
+      $('#tRes').innerHTML = '<div class="lr-fb ' + fbk + '" id="tFb">' + fbT + '</div><div class="pct ' + (p >= 100 ? 'g' : '') + '">' + p + ' %</div>' + L.map(l => '<div class="rl ' + (l.ok ? 'ok' : 'no') + '">' + (l.ok ? '✓ ' : '✗ ') + esc(l.text) + (!l.ok && l.why ? '<div class="why">' + esc(l.why) + '</div>' : '') + '</div>').join('');
+      if (root.LabRahmen) root.LabRahmen.zeig($('#tFb'));
       $('#tHand').disabled = !(p > 0); if (p >= 100) toast('Geschafft!');
     };
     $('#tHand').onclick = () => { const p = done()[t.id] || 0; if (root.Auswertung && p > 0) root.Auswertung.handIn(t.id, p, t.title); };

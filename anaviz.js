@@ -312,7 +312,7 @@
 .anaviz .av-svg{display:block;width:100%;max-width:440px;height:auto;margin:0 auto}
 @media(min-width:760px){.anaviz [data-av-body]{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:4px 18px;align-items:start}.anaviz .av-blk,.anaviz .av-blk:first-of-type{border-top:0;padding:6px 0}}
 .anaviz .av-cv{display:block;margin:0 auto;max-width:100%;border-radius:8px}
-.anaviz .av-note{font-size:12.5px;color:var(--mute);line-height:1.4;margin:4px 0 2px}
+.anaviz .av-note{font-size:14px;color:var(--mute);line-height:1.4;margin:4px 0 2px}
 .anaviz .av-strong{color:var(--fg);font-weight:600}
 .anaviz>summary{min-height:44px}
 .anaviz[hidden]{display:none}

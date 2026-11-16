@@ -251,6 +251,43 @@
       }));
       mine.forEach(paint);
     });
+    wischInit(document.querySelector('#mid') || document.body);
+  }
+  /* Handy (bis 700 px): Zeichnungen, die auf Handybreite zu klein würden, werden so breit gezeichnet, dass der kleinste Text 11,2 px misst.
+     Sie liegen in ihrem eigenen Kasten, der waagerecht wischbar ist (nur der Kasten scrollt, nie die Seite); ein Hinweis steht darüber. */
+  const WISCH_MIN = 11.2;
+  function wisch(mid) {
+    const mq = window.matchMedia('(max-width:700px)').matches;
+    mid.querySelectorAll('.inst > svg, .vz-svg > svg').forEach(s => {
+      const box = s.parentElement, vb = s.viewBox && s.viewBox.baseVal, av = box.clientWidth;
+      if (!vb || !vb.width || !av) return;
+      let mn = 1e9;
+      s.querySelectorAll('text').forEach(t => { if ((t.textContent || '').trim() && t.getClientRects().length) { const fs = parseFloat(getComputedStyle(t).fontSize); if (fs > 0 && fs < mn) mn = fs; } });
+      const target = mq && mn < 1e9 ? Math.ceil(vb.width * WISCH_MIN / mn) : 0, first = box.firstElementChild, hint = first && first.classList.contains('vz-hint') ? first : null;
+      if (target > av + 2) {
+        const w = target + 'px';
+        if (s.style.width !== w) { s.style.width = w; s.style.maxWidth = 'none'; }
+        if (!box.classList.contains('vz-wisch')) { box.classList.add('vz-wisch'); box.tabIndex = 0; box.setAttribute('role', 'region'); box.setAttribute('aria-label', 'Zeichnung, waagerecht wischbar'); }
+        if (!hint) box.insertAdjacentHTML('afterbegin', '<div class="vz-hint" aria-hidden="true">‹ Zeichnung seitlich wischen ›</div>');
+        const hh = box.firstElementChild; if (hh.style.width !== av + 'px') hh.style.width = av + 'px';
+      } else {
+        if (s.style.width) { s.style.width = ''; s.style.maxWidth = ''; }
+        if (box.classList.contains('vz-wisch')) { box.classList.remove('vz-wisch'); box.removeAttribute('tabindex'); box.removeAttribute('role'); box.removeAttribute('aria-label'); }
+        if (hint) hint.remove();
+      }
+    });
+  }
+  function wischInit(mid) {
+    const st = document.createElement('style');
+    st.textContent = '.vz-wisch{overflow-x:auto!important;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}.vz-wisch svg{max-width:none}' +
+      '.vz-hint{position:sticky;left:0;box-sizing:border-box;font-size:14px;line-height:1.3;color:var(--mute);text-align:center;padding:6px 8px 2px}';
+    document.head.appendChild(st);
+    let q = 0; const go = () => { clearTimeout(q); q = setTimeout(() => { try { wisch(mid); } catch (e) { /* Optik darf nie die Seite stören */ } }); };
+    new MutationObserver(go).observe(mid, { childList: true, subtree: true });
+    new MutationObserver(go).observe(mid, { attributes: true, attributeFilter: ['data-tab'] });
+    window.addEventListener('resize', go); window.addEventListener('orientationchange', go);
+    ['click', 'input', 'change'].forEach(ev => mid.addEventListener(ev, () => setTimeout(go, 0)));
+    go();
   }
   const API = { addrLadder, busLines, bitGrid, chainData, carryChain, memMap, cpuBlock, PHASES };
   root.SYS_VIZ = API;

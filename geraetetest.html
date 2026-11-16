@@ -25,12 +25,13 @@ h1{font-size:24px;line-height:1.2;margin:8px 0 4px}
 h2{font-size:18px;margin:0 0 8px}
 p{margin:6px 0}
 a{color:var(--accent)}
-.zur{display:inline-flex;align-items:center;min-height:44px;font-size:15px}
+.zur{display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 12px;font-size:16px;font-weight:700}
 .mute{color:var(--mute);font-size:14px}
 button{font:inherit;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);cursor:pointer}
 button.pri{background:var(--accent-bg);border-color:var(--accent-bg);color:#fff;font-weight:700}
 button:disabled{opacity:.55;cursor:default}
 button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.fazit h2{margin:0 0 6px}.fazit .nav{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;margin:10px 0 0}.fazit .nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-weight:600;text-decoration:none}
 .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
 .zeile{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 #fort{min-height:24px;font-size:15px;color:var(--mute)}
@@ -66,7 +67,7 @@ textarea{width:100%;min-height:150px;font:14px/1.4 ui-monospace,Consolas,monospa
 </head>
 <body>
 <main>
-<a class="zur" href="index.html">← Startseite</a>
+<a class="zur" href="index.html">‹ Start</a>
 <h1>Gerätetest</h1>
 <p class="mute">Prüft, ob Tonfunk Lab auf diesem Gerät richtig läuft: Offline-Speicher, Ton, Touch, Anzeige und Tempo. Es werden keine Daten gesendet. Nichts wird gespeichert außer kurzen Testwerten, die gleich wieder gelöscht werden.</p>
 
@@ -105,6 +106,7 @@ textarea{width:100%;min-height:150px;font:14px/1.4 ui-monospace,Consolas,monospa
   <h2>Ergebnis</h2>
   <div id="summe" class="box" role="status"></div>
   <div id="liste"></div>
+  <div id="fazit" class="box fazit" role="status"></div>
   <h2>Ergebnisbild (zum Fotografieren)</h2>
   <div id="bild" aria-live="off"></div>
   <div class="zeile"><button type="button" class="pri" id="kopie">Ergebnis kopieren</button><span class="tl" id="kopieSt" role="status" aria-live="polite"></span></div>

@@ -60,8 +60,10 @@
   const UEB = 'Dieses Lab ist keine Rechtsberatung. Prozentsätze, Fristen und Beträge sind Übungswerte für die Ausbildung, Gesetze ändern sich. Maßgebend sind immer die aktuellen Vorschriften, deine Verträge und die Angaben deines Betriebs.';
   const ueb = () => `<div class="rdout warn">⚠ ${esc(UEB)}</div>`;
   /* Auswahlleiste: Wert in S[tab][key] setzen (data-sk, data-sv) */
-  const segk = (label, key, opts, cur) => `<div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">${esc(label)}</span><div class="seg">${opts.map(o => `<button data-sk="${esc(key)}" data-sv="${esc(o[0])}" class="${String(cur) === String(o[0]) ? 'on' : ''}">${esc(o[1])}</button>`).join('')}</div></div>`;
+  const segk = (label, key, opts, cur) => `<div class="fbar"><span class="lbl">${esc(label)}</span><div class="seg">${opts.map(o => `<button data-sk="${esc(key)}" data-sv="${esc(o[0])}" class="${String(cur) === String(o[0]) ? 'on' : ''}">${esc(o[1])}</button>`).join('')}</div></div>`;
   const YN = [['ja', 'Ja'], ['nein', 'Nein']];
+  /* Regler (Bruttogehalt, Steuersatz): gleicher Schlüssel data-k wie das Zahlfeld */
+  const sld = (k, label, val, min, max, step) => { const n = P(val); return `<label class="f"><span>${esc(label)}: Regler</span><input type="range" data-k="${k}" min="${min}" max="${max}" step="${step}" value="${Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : min}" aria-label="${esc(label)}"></label>`; };
   const dateMsg = (what) => note('Gib ' + what + ' als Datum TT.MM.JJJJ ein, zum Beispiel 10.03.2025.');
   function bindTool(view, key, render, update) {
     view.addEventListener('input', e => { const k = e.target.dataset.k; if (!k) return; S[key][k] = e.target.value; lsSet(key, S[key]); update(); });
@@ -72,6 +74,9 @@
   /* ============================================================ Vertrag (Zustandekommen) */
   /* Visualisierung (recviz.js) vor dem Text; ohne die Datei bleibt alles wie vorher */
   const VZ = (k, a, b, c) => { try { return root.REC_VIZ ? root.REC_VIZ[k](a, b, c) : ''; } catch (e) { return ''; } };
+  /* Bühne: die Grafik steht über den Eingaben (am Handy fest, Rahmen data-lr-buehne), der Text darunter */
+  const stage = html => `<div class="vzs" id="vzStage" data-lr-buehne>${html}</div>`;
+  const setStage = html => { const e = $('#vzStage'); if (e) e.innerHTML = html; };
   function vertOut(p) { return VZ('vert', p) + vertOut0(p); }
   function vertOut0(p) {
     const bis = PD(p.bis), best = PD(p.best), hasB = String(p.best || '').trim() !== '';
@@ -85,7 +90,7 @@
   }
   function renderVert() {
     const s = S.vert;
-    $('#vertView').innerHTML = ueb() + `<div class="card pl"><h4>Angebot, Bestellung, Auftragsbestätigung</h4>
+    $('#vertView').innerHTML = ueb() + stage(VZ('vert', s)) + `<div class="card pl"><h4>Angebot, Bestellung, Auftragsbestätigung</h4>
       ${segk('ANGEBOT', 'angebot', [['bindend', 'bindend, befristet'], ['frei', 'freibleibend'], ['kein', 'kein Angebot (nur Anfrage)']], s.angebot)}
       <div class="dsrow">${s.angebot === 'bindend' ? inp('bis', 'Angebot gültig bis', s.bis, '', 'TT.MM.JJJJ') : ''}${inp('best', 'Bestellung des Kunden am (leer = keine Bestellung)', s.best, '', 'TT.MM.JJJJ')}</div>
       ${segk('BESTELLUNG WEICHT VOM ANGEBOT AB', 'abw', YN, s.abw)}
@@ -93,7 +98,7 @@
       <p class="hint2">Ein Kaufvertrag braucht Antrag und Annahme. Ein bindendes Angebot ist ein Antrag, ein freibleibendes nur eine Aufforderung zur Bestellung.</p></div><div id="vertOut"></div>`;
     updateVert();
   }
-  function updateVert() { const e = $('#vertOut'); if (e) e.innerHTML = vertOut(S.vert); }
+  function updateVert() { const e = $('#vertOut'); if (e) e.innerHTML = vertOut0(S.vert); setStage(VZ('vert', S.vert)); }
   bindTool($('#vertView'), 'vert', renderVert, updateVert);
 
   /* ============================================================ Fall-Prüfer (Rechte des Käufers) */
@@ -110,13 +115,13 @@
     return h;
   }
   function renderFall() {
-    const s = S.fall; let h = ueb() + `<div class="card pl"><h4>Was ist passiert?</h4>${segk('STÖRUNG', 'stoerung', [['mangel', 'mangelhafte Lieferung'], ['verzug', 'Lieferverzug']], s.stoerung)}`;
+    const s = S.fall; let h = ueb() + stage(VZ('fall', s)) + `<div class="card pl"><h4>Was ist passiert?</h4>${segk('STÖRUNG', 'stoerung', [['mangel', 'mangelhafte Lieferung'], ['verzug', 'Lieferverzug']], s.stoerung)}`;
     if (s.stoerung === 'mangel') {
       h += segk('HANDELSKAUF (beide Seiten Kaufleute)', 'handel', YN, s.handel);
       if (s.handel === 'ja') h += segk('MANGEL', 'mangelart', [['offen', 'offen erkennbar'], ['versteckt', 'versteckt'], ['arglist', 'arglistig verschwiegen']], s.mangelart) + segk('RÜGE RECHTZEITIG', 'ruege', YN, s.ruege);
       h += segk('NACHERFÜLLUNG', 'nacherf', [['offen', 'noch offen'], ['gescheitert', 'gescheitert oder Nachfrist erfolglos']], s.nacherf) + segk('MANGEL ERHEBLICH', 'erheblich', YN, s.erheblich) + segk('VERKÄUFER HAT VERSCHULDET', 'verschulden', YN, s.verschulden);
     } else h += segk('LIEFERTERMIN NACH DEM KALENDER BESTIMMT', 'kalender', YN, s.kalender) + segk('FIXGESCHÄFT (Termin ist wesentlich)', 'fix', YN, s.fix) + segk('GEMAHNT', 'mahnung', YN, s.mahnung) + segk('ANGEMESSENE NACHFRIST ERFOLGLOS ABGELAUFEN', 'nachfrist', YN, s.nachfrist) + segk('LIEFERANT HAT VERSCHULDET', 'verschulden', YN, s.verschulden);
-    $('#fallView').innerHTML = h + `<p class="hint2">Der Prüfer arbeitet mit einem vereinfachten Schema für Geschäfte zwischen Unternehmen.</p></div><div id="fallOut">${fallOut(s)}</div>`;
+    $('#fallView').innerHTML = h + `<p class="hint2">Der Prüfer arbeitet mit einem vereinfachten Schema für Geschäfte zwischen Unternehmen.</p></div><div id="fallOut">${fallOut0(s)}</div>`;
   }
   $('#fallView').addEventListener('click', e => { const b = e.target.closest('[data-sk]'); if (b) { S.fall[b.dataset.sk] = b.dataset.sv; lsSet('fall', S.fall); renderFall(); } });
 
@@ -193,7 +198,7 @@
   function renderFrist() {
     const s = S.frist, m = s.mode;
     const lbl = { verj: 'Anspruch entstanden am', gew: 'Ablieferung am', ruege: 'Ablieferung bzw. Entdeckung am', verzug: 'Rechnung zugegangen am', skonto: 'Rechnungsdatum', kuend: 'Kündigung zugegangen am', add: 'Startdatum' }[m];
-    let h = ueb() + `<div class="card pl"><h4>Fristenrechner</h4><div class="fbar"><div class="seg" style="flex-wrap:wrap">${MODES.map(o => `<button data-sk="mode" data-sv="${o[0]}" class="${m === o[0] ? 'on' : ''}">${esc(o[1])}</button>`).join('')}</div></div><div class="dsrow">${inp('d1', lbl, s.d1, '', 'TT.MM.JJJJ')}`;
+    let h = ueb() + stage(VZ('frist', s)) + `<div class="card pl"><h4>Fristenrechner</h4><div class="fbar"><div class="seg" style="flex-wrap:wrap">${MODES.map(o => `<button data-sk="mode" data-sv="${o[0]}" class="${m === o[0] ? 'on' : ''}">${esc(o[1])}</button>`).join('')}</div></div><div class="dsrow">${inp('d1', lbl, s.d1, '', 'TT.MM.JJJJ')}`;
     if (m === 'ruege') h += inp('tage', 'Frist für "unverzüglich"', s.tage, 'Tage') + inp('d2', 'Rüge abgesendet am (optional)', s.d2, '', 'TT.MM.JJJJ');
     if (m === 'verzug') h += inp('d2', 'Zahlung am (optional)', s.d2, '', 'TT.MM.JJJJ') + inp('betrag', 'Rechnungsbetrag', s.betrag, '€') + inp('satz', 'Verzugszinssatz', s.satz, '% p. a.');
     if (m === 'skonto') h += inp('sk', 'Skontofrist', s.sk, 'Tage') + inp('ziel', 'Zahlungsziel', s.ziel, 'Tage') + inp('d2', 'Zahlung am (optional)', s.d2, '', 'TT.MM.JJJJ');
@@ -205,7 +210,7 @@
     $('#fristView').innerHTML = h + `<p class="hint2">Datum als TT.MM.JJJJ eingeben. Der Tag des auslösenden Ereignisses zählt nicht mit. Feiertage sind nicht eingebaut.</p></div><div id="fristOut"></div>`;
     updateFrist();
   }
-  function updateFrist() { const e = $('#fristOut'); if (e) e.innerHTML = fristOut(S.frist); }
+  function updateFrist() { const e = $('#fristOut'); if (e) e.innerHTML = fristOut0(S.frist); setStage(VZ('frist', S.frist)); }
   bindTool($('#fristView'), 'frist', renderFrist, updateFrist);
 
   /* ============================================================ Belegketten-Ordner */
@@ -218,9 +223,8 @@
     const set = C.ORDER[S.beleg.set];
     if (!Array.isArray(S.bl.order) || S.bl.order.length !== set.items.length) belegMix();
     const o = S.bl.order, res = S.bl.res;
-    let h = ueb() + `<div class="card pl"><h4>${esc(set.title)}</h4><div class="fbar"><div class="seg">${Object.keys(C.ORDER).map(k => `<button data-bs="${k}" class="${S.beleg.set === k ? 'on' : ''}">${esc(C.ORDER[k].title)}</button>`).join('')}</div></div><p class="hint2" style="margin:0 0 6px">${esc(set.hint)} Mit den Pfeilen verschiebst du einen Schritt.</p>`;
+    let h = ueb() + stage(VZ('beleg', S.beleg.set, o, res)) + `<div class="card pl"><h4>${esc(set.title)}</h4><div class="fbar"><div class="seg">${Object.keys(C.ORDER).map(k => `<button data-bs="${k}" class="${S.beleg.set === k ? 'on' : ''}">${esc(C.ORDER[k].title)}</button>`).join('')}</div></div><p class="hint2" style="margin:0 0 6px">${esc(set.hint)} Mit den Pfeilen verschiebst du einen Schritt.</p>`;
     h += o.map((idx, i) => `<div class="row" style="cursor:default"><span class="dot ${res ? (res[i] ? 'g' : 'p') : ''}">${res ? (res[i] ? '✓' : '✗') : i + 1}</span><div class="grow"><b>${esc(set.items[idx].n)}</b>${res && res[i] ? `<small>${esc(set.items[idx].wer)}: ${esc(set.items[idx].d)}</small>` : ''}</div><button class="ib" data-bm="${i}:-1" aria-label="nach oben"${i === 0 ? ' disabled' : ''}>▲</button><button class="ib" data-bm="${i}:1" aria-label="nach unten"${i === o.length - 1 ? ' disabled' : ''}>▼</button></div>`).join('');
-    h += VZ('beleg', S.beleg.set, o, res);
     h += `<div class="btns"><button class="btn pri" data-ba="chk">✓ Prüfen</button><button class="btn" data-ba="mix">Neu mischen</button><button class="btn" data-ba="sol">Lösung zeigen</button></div>`;
     if (res) { const n = res.filter(Boolean).length; h += note(n === res.length ? '🎉 Alles richtig! Reihenfolge: ' + C.orderRight(S.beleg.set).join(' → ') : n + ' von ' + res.length + ' Schritten stehen richtig. Verschiebe die anderen und prüfe noch einmal.', n === res.length ? 'ok' : 'warn'); }
     $('#belegView').innerHTML = h + '</div>';
@@ -259,14 +263,17 @@
   }
   function renderLohn() {
     const s = S.lohn;
-    $('#lohnView').innerHTML = ueb() + `<div class="card pl"><h4>Vom Brutto zum Netto (Übungssätze)</h4><div class="dsrow">${inp('brutto', 'Bruttogehalt', s.brutto, '€')}${inp('lst', 'Lohnsteuer pauschal', s.lst, '%')}</div>
+    $('#lohnView').innerHTML = ueb() + stage(VZ('lohn', s)) + `<div class="card pl"><h4>Vom Brutto zum Netto (Übungssätze)</h4><div class="dsrow">${inp('brutto', 'Bruttogehalt', s.brutto, '€')}${inp('lst', 'Lohnsteuer pauschal', s.lst, '%')}</div>
+      <div class="dsrow">${sld('brutto', 'Bruttogehalt', s.brutto, 500, 8000, 50)}${sld('lst', 'Lohnsteuer', s.lst, 0, 42, 0.5)}</div>
       <div class="dsrow">${inp('rv', 'Rentenversicherung', s.rv, '%')}${inp('kv', 'Krankenversicherung', s.kv, '%')}${inp('pv', 'Pflegeversicherung', s.pv, '%')}${inp('av', 'Arbeitslosenversicherung', s.av, '%')}</div>
       <div class="btns"><button class="btn" data-lr="1">Übungssätze zurücksetzen</button></div>
       <p class="hint2">Die echte Lohnsteuer hängt von Steuerklasse und Einkommen ab und wird nach Tabelle berechnet. Hier rechnest du vereinfacht mit einem festen Prozentsatz.</p></div><div id="lohnOut"></div>`;
     updateLohn();
   }
-  function updateLohn() { const e = $('#lohnOut'); if (e) e.innerHTML = lohnOut(S.lohn); }
+  function updateLohn() { const e = $('#lohnOut'); if (e) e.innerHTML = lohnOut0(S.lohn); setStage(VZ('lohn', S.lohn)); }
   bindTool($('#lohnView'), 'lohn', renderLohn, updateLohn);
+  /* Regler und Zahlfeld bleiben gleich (I-rec-03) */
+  $('#lohnView').addEventListener('input', e => { const k = e.target.dataset.k; if (!k) return; const v = e.target.value, rng = e.target.type === 'range'; $$('#lohnView [data-k="' + k + '"]').forEach(o => { if (o === e.target) return; if (o.type === 'range') { const n = P(v); if (Number.isFinite(n)) o.value = n; } else { o.value = String(v).replace('.', ','); } }); if (rng) { S.lohn[k] = String(v).replace('.', ','); lsSet('lohn', S.lohn); updateLohn(); } });
   $('#lohnView').addEventListener('click', e => { if (e.target.closest('[data-lr]')) { Object.assign(S.lohn, { lst: '15', rv: '9,3', kv: '7,3', pv: '1,8', av: '1,3' }); lsSet('lohn', S.lohn); renderLohn(); } });
 
   /* ============================================================ Begriffe (Zuordnungsübung) */
@@ -306,37 +313,54 @@
   function updateBadge() { const b = $('#tkBd'); if (b) b.textContent = Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length + '/' + TASKS.length; }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : f(q.value, 2) + ' ' + q.ask.unit);
+  /* gesperrt = richtig gelöst oder Lösung gezeigt; nach dem ersten Fehlversuch (Tipp) bleibt der zweite Versuch offen */
+  const locked = r => !!(r && (r.ok || r.sol));
   function qBody(q, a, r, pre) {
-    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''} class="${r && i === q.ask.correct && (r.ok || pre === 'rt') ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+    const lk = locked(r);
+    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${lk ? 'disabled' : ''} class="${lk && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    const tolTxt = q.tol > 0.011 ? '±' + f(q.tol, 2) + ' ' + q.ask.unit + ' gelten als richtig (Rundung).' : 'Sie muss genau stimmen.';
+    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lk ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div><p class="lr-hinweis" style="margin:4px 0 0">Zahl in ${esc(q.ask.unit)}, Komma oder Punkt. ${esc(tolTxt)}</p></label>`;
   }
   function evalQ(q, a) {
     if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c] }; }
     const v = P(a.v); if (!Number.isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return null; }
     return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 2) + ' ' + q.ask.unit };
   }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): 1. Fehlversuch = Tipp und zweiter Versuch, 2. Fehlversuch = Lösung mit Lösungsweg;
+     im Prüfmodus (nur Aufgaben) gibt es den Lösungsweg erst nach der richtigen Antwort, Versuche sind unbegrenzt */
+  const TRY = {};
+  const tolNote = q => (q.ask.type === 'num' && q.tol > 0.011 ? `<p>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</p>` : '');
+  const solHtml = q => `<div class="rdout ok" style="margin:0"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>`;
+  const resBlock = (q, r, mode) => {
+    const cls = r.ok ? 'ok' : mode === 'sol' ? 'loes' : 'tipp'; let h;
+    if (r.ok) h = `<p><strong>Richtig:</strong> ${esc(r.given)}</p>${tolNote(q)}${solHtml(q)}`;
+    else if (mode === 'sol') h = `<p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. So geht es:</p>${tolNote(q)}${solHtml(q)}`;
+    else if (mode === 'exam') h = `<p><strong>Noch nicht richtig.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p>${tolNote(q)}<p>Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Ein Tipp kostet 25 % der Punkte. Du kannst es noch einmal versuchen.</p>`;
+    else h = `<p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p>${tolNote(q)}<p><strong>Tipp:</strong> ${esc((q.tips && q.tips[0]) || 'Rechne die Schritte noch einmal in Ruhe durch.')} Du hast einen zweiten Versuch.</p>`;
+    return `<div class="lr-fb ${cls}" id="lrFb">${h}</div>`;
+  };
+  const fbZeig = () => { const e = $('#lrFb'); if (e && window.LabRahmen) LabRahmen.zeig(e); };
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {};
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${locked(r) ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { h += resBlock(q, r, r.ok ? 'ok' : r.sol ? 'sol' : exam() ? 'exam' : 'tipp'); if (locked(r)) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
-    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
+    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Mit „Prüfung“ im Umschalter oben zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; else fbZeig();
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
+    if (!e.ok) TRY[t.id] = (TRY[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, sol: !e.ok && !exam() && TRY[t.id] >= 2 };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.sol ? 'Noch nicht richtig. Die Lösung steht unten.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
   function hintFor(q, id) {
@@ -351,7 +375,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; TRY[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -365,16 +389,17 @@
     if (row) startTask(row.dataset.t);
   });
 
-  /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  /* Zufalls-Trainer (Tipps kosten hier nie etwas): 1. Fehlversuch Tipp, 2. Fehlversuch Lösung; die Serie zählt nur ohne Fehlversuch */
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.try = 0; T.counted = false; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="fbar"><span class="lbl">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
       <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      <div class="btns"><button class="btn pri" data-ra="chk" ${locked(T.res) ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${locked(T.res) ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${locked(T.res) ? 'Nächste Frage' : 'Überspringen'}</button></div>
+      ${T.res ? resBlock(q, T.res, T.res.ok ? 'ok' : T.res.sol ? 'sol' : 'tipp') : ''}</div>`;
+    fbZeig();
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -382,12 +407,14 @@
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (tc && !locked(T.res)) { T.ans.c = +tc.dataset.tc; if (T.res && !T.res.ok) T.res = null; renderTrainer(); return; }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!locked(T.res) && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    const T = S.tr; if (locked(T.res)) return; const e = evalQ(T.q, T.ans); if (!e) return;
+    if (!T.counted) { T.counted = true; S.rt.n++; }
+    if (e.ok) { if (!T.try) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); } T.res = { ok: true, given: e.given }; ding(); }
+    else { T.try = (T.try || 0) + 1; S.rt.streak = 0; T.res = { ok: false, given: e.given, sol: T.try >= 2 }; sad(); }
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -427,7 +454,7 @@
       sec('Belegkette und Rechnung', belegStatic('beleg') + `<p><b>Pflichtangaben der Rechnung (Übung):</b></p><ul>${C.PFLICHT.map(x => '<li>' + esc(x) + '</li>').join('')}</ul><p class="hint2">Buchung der Rechnungen: Buchführungs-Lab.</p>`) +
       sec('Lohn und Gehalt (vereinfacht)', `<span class="eq">Netto = Brutto − Lohnsteuer − Sozialversicherung (Arbeitnehmeranteil)</span><p>Übungssätze: Lohnsteuer ${C.LOHN.lst} %, Rentenversicherung ${esc(f(C.LOHN.rv, 1))} %, Krankenversicherung ${esc(f(C.LOHN.kv, 1))} %, Pflegeversicherung ${esc(f(C.LOHN.pv, 1))} %, Arbeitslosenversicherung ${esc(f(C.LOHN.av, 1))} % (zusammen ${esc(f(C.svSatz(), 1))} %). Der <b>Arbeitgeberanteil</b> zur Sozialversicherung kommt zusätzlich und wird nicht vom Brutto abgezogen. Überstundenzuschlag: Übungswert ${C.LOHN.zuschlag} %.</p>`) +
       sec('Arbeitsvertrag: Probezeit und Kündigung', `<p>Probezeit im Arbeitsvertrag höchstens 6 Monate, in der Ausbildung 1 bis 4 Monate. Kündigung in der Ausbildungs-Probezeit ohne Frist. Arbeitgeber-Kündigungsfristen (Übungswerte): Grundfrist 4 Wochen zum 15. oder Monatsende, ab 2 Jahren 1 Monat, 5 Jahren 2 Monate, 8 Jahren 3 Monate, 10 Jahren 4 Monate, 12 Jahren 5 Monate, 15 Jahren 6 Monate, 20 Jahren 7 Monate, jeweils zum Monatsende.</p>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

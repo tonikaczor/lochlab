@@ -639,7 +639,7 @@
 ["rg-enr-regler-ta","regler","Umgebungstemperatur","ta","enr","regler-enr",0,"lufttemperatur daraus folgt zelltemperatur moduls erwaermung einstrahlung"],
 ["rg-enr-regler-uhr","regler","Uhrzeit (Sonnenzeit)","uhr","enr","regler-enr",0,"wand mittag sonne hoechsten steht setzen springt gewaehlten zeit"],
 ["rg-enr-regler-wetter","regler","Wetter","wetter","enr","regler-enr",0,"bewoelkung bedecktem himmel liefert modul kleinen teil klaren tages"],
-["rg-enr-schatten","regler","Schatten","schatten","enr","regler-enr",0,"schattens hecke bestimmen sonnenhoehe hoehe abstand einstrahlung folgt klaren himmel tippe bild zelle blatt setzen"],
+["rg-enr-schatten","regler","Schatten","schatten","enr","regler-enr",0,"schattens hecke bestimmen sonnenhoehe hoehe abstand einstrahlung folgt klaren himmel tippe bild zelle blatt setzen kante"],
 ["rg-enr-schatten-datum","regler","Datum","datum","enr","regler-enr",0,"bestimmt hoch sonne steht winter tief schatten hecke lang"],
 ["rg-enr-schatten-np","regler","Stränge parallel (np)","np","enr","regler-enr",0,"zahl nebeneinander alle dieselbe spannung verschatteter strang strom anderen zurueckbekommen"],
 ["rg-enr-schatten-ns","regler","Module je Strang (ns)","ns","enr","regler-enr",0,"zahl reihe fliesst ueberall derselbe strom schwaechste modul bestimmt viel geht"],

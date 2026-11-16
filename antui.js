@@ -401,7 +401,7 @@
       const a = a0 + sw * i / 10, len = i % 5 === 0 ? 9 : 5; g.strokeStyle = '#8d99a6'; g.lineWidth = i % 5 === 0 ? 1.6 : 1;
       g.beginPath(); g.moveTo(cx + Math.cos(a) * (r - 6), cy + Math.sin(a) * (r - 6)); g.lineTo(cx + Math.cos(a) * (r - 6 - len), cy + Math.sin(a) * (r - 6 - len)); g.stroke();
     }
-    g.fillStyle = '#8d99a6'; g.font = '10px system-ui'; g.textAlign = 'center';
+    g.fillStyle = '#8d99a6'; g.font = '11px system-ui'; g.textAlign = 'center';
     const lab = v => fnum(v, Math.abs(v) >= 100 || Number.isInteger(v) ? 0 : 1);
     if (w >= 110) { g.fillText(lab(mn), cx - r * 0.72, cy + r * 0.72 + 13); g.fillText(lab(mx), cx + r * 0.72, cy + r * 0.72 + 13); }
     const a = ang(val); g.strokeStyle = isWarn ? '#ff5c5c' : '#e8ecf0'; g.lineWidth = 2.4; g.lineCap = 'round'; g.beginPath(); g.moveTo(cx - Math.cos(a) * 6, cy - Math.sin(a) * 6); g.lineTo(cx + Math.cos(a) * (r - 11), cy + Math.sin(a) * (r - 11)); g.stroke();
@@ -583,7 +583,7 @@
   /* o: { series:[{name,color,pts,dash}], xMin,xMax,yMin,yMax (sonst automatisch), xLabel,yLabel, yHide, marker:{x,y}, cursorX, vlines:[x], zeroLine } */
   function drawChart(cv, o) {
     const c = prepCv(cv); if (!c) return; const { g, w, h } = c;
-    const L = o.yHide ? 14 : 54, R = 14, T = 14, B = 40, pw = w - L - R, ph = h - T - B; if (pw < 20 || ph < 20) return;
+    const L = o.yHide ? 14 : 64, R = 14, T = 14, B = 40, pw = w - L - R, ph = h - T - B; if (pw < 20 || ph < 20) return;
     let xmin = Infinity, xmax = -Infinity, ymin = Infinity, ymax = -Infinity;
     (o.series || []).forEach(s => (s.pts || []).forEach(p => { if (fin(p[0]) && fin(p[1])) { xmin = Math.min(xmin, p[0]); xmax = Math.max(xmax, p[0]); ymin = Math.min(ymin, p[1]); ymax = Math.max(ymax, p[1]); } }));
     if (o.marker && fin(o.marker.x) && fin(o.marker.y)) { xmin = Math.min(xmin, o.marker.x); xmax = Math.max(xmax, o.marker.x); ymin = Math.min(ymin, o.marker.y); ymax = Math.max(ymax, o.marker.y); }
@@ -1095,12 +1095,14 @@
     setTab(o && o.rows && o.rows.length || o && o.seq && o.seq.length ? 'seq' : 'rig'); updateChrome();
     toast(had ? 'Aufgabe gestartet, dein Versuch ist gesichert' : 'Aufgabe gestartet'); renderTasksIfOpen();
   }
+  const fbZeig = sel => { const e = $(sel); if (e && root.LabRahmen && root.LabRahmen.zeig) try { root.LabRahmen.zeig(e); } catch (x) {} };
   const renderTasksIfOpen = () => { if (S.tab === 'tasks') renderTasks(); };
   function collectAnswer(t) {
     let st = null; try { st = S.rig ? clone(S.rig.state()) : null; } catch (e) {}
     const a = taskAns[t.id] || {}, v = a.v != null && a.v !== '' ? parseNum(a.v) : NaN;
     return { rig: S.rigId, controls: allCtl(), seq: seqSteps(curRows()), rows: clone(curRows()), dur: Math.round(seqDur() * 1000), state: st, simTime: S.simT, value: isFinite(v) ? v : null, text: a.v == null ? '' : String(a.v) };
   }
+  const taskFail = {};   /* Fehlversuche je Aufgabe in dieser Sitzung: 1 = Tipp und zweiter Versuch, ab 2 = Lösung */
   async function checkTask() {
     const t = curTask(); if (!t) return; const R = root.ANT_TASKS;
     S.readonly = true; updateChrome(); updateTaskBar();
@@ -1108,11 +1110,14 @@
     try { lines = await (R.run ? R.run(t, ans) : t.check(ans)); } catch (e) { console.error(e); lines = [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden: ' + (e && e.message || e), why: '' }]; }
     S.readonly = false;
     lines = Array.isArray(lines) ? lines : [];
-    const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    const cnt = lines.filter(l => !l.triv), basis = cnt.length ? cnt : lines;   /* selbstverständliche Zeilen (Eingaben gültig) zählen nicht in die Prozentzahl */
+    const pct = Math.round(100 * basis.filter(l => l.ok).length / Math.max(basis.length, 1));
+    taskFail[t.id] = pct === 100 ? 0 : (taskFail[t.id] || 0) + 1;
+    taskRes = { id: t.id, lines, pct, basis: basis.length, okN: basis.filter(l => l.ok).length }; markDone(t.id, pct); updateTaskBadge();
     const F = root.LochFX;
     if (F) try { if (pct === 100) { F.pass(100); if (F.isFun && F.isFun()) F.confetti(false); } else F.pass(pct); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
+    fbZeig('#tkFb');
     toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
   }
   function hintTask() {
@@ -1134,10 +1139,18 @@
       const r = taskRes && taskRes.id === t.id ? taskRes : null, ask2 = t.ask ? (typeof t.ask === 'string' ? { label: t.ask } : t.ask) : null;
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat || '')}</h4><div class="big">${esc(t.title)}</div><div class="lv">${'●'.repeat(t.level || 1)}${'○'.repeat(3 - (t.level || 1))}</div>
         <p style="margin:8px 0">${esc(t.text)}</p><p class="hint2" style="margin-top:0">Prüfstand: ${ic(t)} ${esc(rigName(t.rig))}</p>
-        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc((taskAns[t.id] || {}).v || '')}"></label>` : ''}
+        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc((taskAns[t.id] || {}).v || '')}"></label><p class="lr-hinweis">${ask2.unit ? 'Zahl in ' + esc(ask2.unit) + '. ' : ''}Komma oder Punkt, ${t.check && t.check.exact ? 'es zählt nur der genaue Wert' : '±2 % gilt als richtig'}.</p>` : ''}
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="rig">Zum Prüfstand</button><button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
-      if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      if (r) {
+        const bad = r.lines.filter(l => !l.ok), nF = taskFail[t.id] || 0, cls = r.pct === 100 ? 'ok' : nF <= 1 ? 'tipp' : 'loes';
+        const einh = ask2 && ask2.unit ? ' Hast du die Einheit ' + esc(ask2.unit) + ' beachtet und mit Komma oder Punkt geschrieben?' : '';
+        const kopf = cls === 'ok' ? '<p><strong>Richtig, geschafft.</strong> Alle ' + r.basis + ' Prüfpunkte sind erfüllt.</p>'
+          : cls === 'tipp' ? '<p><strong>Noch nicht.</strong> ' + r.okN + ' von ' + r.basis + ' Prüfpunkten erfüllt. Zuerst offen: ' + esc((bad.find(l => !l.triv) || bad[0] || {}).text || '') + '.' + einh + ' Tippe auf „Tipp“ oder ändere deinen Versuch und prüfe noch einmal: du hast einen zweiten Versuch.</p>'
+          : '<p><strong>So geht es.</strong> ' + r.okN + ' von ' + r.basis + ' Prüfpunkten erfüllt. Das war noch nicht richtig, hier steht, woran es liegt:</p><ul>' + bad.map(l => '<li>' + esc(l.text) + (l.why ? ': ' + esc(l.why) : '') + '</li>').join('') + '</ul><p>Die Musterlösung bekommst du über „Tipp“, Stufe 3.</p>';
+        h += `<div class="lr-fb ${cls}" id="tkFb" role="status" tabindex="-1">${kopf}</div>`;
+        h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${A.length} Aufgaben vollständig gelöst. Wähle eine Aufgabe: Du bekommst eine Startvorlage, stellst den Prüfstand ein (oder rechnest) und lässt die Lösung prüfen.</p>`;
@@ -1268,17 +1281,22 @@
   }
   function renderEx() {
     const el = $('#exBox'); if (!el) return; if (!exCur) exCur = genEx();
-    el.innerHTML = `<p style="margin:0 0 8px">${esc(exCur.text)}</p><div class="frm"><label class="f"><span>${esc(exCur.label)}${exCur.unit ? ' in ' + esc(exCur.unit) : ''}</span><input id="exIn" inputmode="decimal" autocomplete="off" placeholder="Dein Ergebnis"></label></div><div id="exFb"></div>
+    el.innerHTML = `<p style="margin:0 0 8px">${esc(exCur.text)}</p><div class="frm"><label class="f"><span>${esc(exCur.label)}${exCur.unit ? ' in ' + esc(exCur.unit) : ''}</span><input id="exIn" inputmode="decimal" autocomplete="off" placeholder="Dein Ergebnis"></label></div><p class="lr-hinweis">${exCur.unit ? 'Zahl in ' + esc(exCur.unit) + '. ' : ''}Komma oder Punkt, ±2 % gilt als richtig.</p><div id="exFb"></div>
       <div class="btns"><button class="btn pri" data-e="chk">✓ Prüfen</button><button class="btn" data-e="new">Neue Aufgabe</button></div><div class="hint2" id="exSc">${exScore.n ? exScore.ok + ' von ' + exScore.n + ' richtig' + (exScore.streak > 1 ? ' · ' + exScore.streak + ' in Folge' : '') : 'Rechne mit dem Taschenrechner oder dem Formelrechner oben. Toleranz: 2 %.'}</div>`;
   }
   function checkEx() {
     const inp = $('#exIn'), fb = $('#exFb'); if (!inp || !exCur) return; const x = parseNum(inp.value);
-    if (!isFinite(x)) { fb.innerHTML = '<div class="ex bad">Bitte eine Zahl eintragen.</div>'; return; }
+    if (!isFinite(x)) { fb.className = 'lr-fb tipp'; fb.innerHTML = '<p><strong>Das ist noch keine Zahl.</strong> Bitte eine Zahl eintragen (Komma oder Punkt), das zählt nicht als Versuch.</p>'; fbZeig('#exFb'); return; }
     const tol = Math.max(Math.abs(exCur.ans) * 0.02, 0.5 * Math.pow(10, -(exCur.dec || 0))), ok = Math.abs(x - exCur.ans) <= tol;
     if (!exCur.done) { exCur.done = true; exScore.n++; if (ok) { exScore.ok++; exScore.streak++; } else exScore.streak = 0; }
     stat('antcalc', 1, 'max');
     const F = root.LochFX; if (F) try { if (ok) { F.sound('ding'); if (exScore.streak % 5 === 0) { F.say(exScore.streak + ' in Folge!'); F.confetti(false); } } else F.sound('buzz', 0.4); } catch (e) {}
-    fb.innerHTML = `<div class="ex ${ok ? 'ok' : 'bad'}"><b>${ok ? '✓ Richtig!' : '✗ Nicht ganz.'}</b> ${ok ? '' : 'Richtig wäre ' + gz(exCur.ans, exCur.dec) + (exCur.unit ? ' ' + esc(exCur.unit) : '') + '.'}<ol style="margin:6px 0 0;padding-left:20px;color:var(--mute);font-size:13.5px">${exCur.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>`;
+    exCur.tries = ok ? exCur.tries || 0 : (exCur.tries || 0) + 1;
+    const einh = exCur.unit ? ' Prüfe auch die Einheit (' + esc(exCur.unit) + ').' : '', stp = '<ol>' + exCur.steps.map(s => `<li>${esc(s)}</li>`).join('') + '</ol>';
+    if (ok) { fb.className = 'lr-fb ok'; fb.innerHTML = '<p><strong>Richtig.</strong>' + (exCur.tries ? ' Im zweiten Versuch geschafft; gewertet wird der erste Versuch.' : '') + '</p>' + stp; }
+    else if (exCur.tries <= 1) { fb.className = 'lr-fb tipp'; fb.innerHTML = '<p><strong>Noch nicht.</strong> Tipp: ' + esc(exCur.steps[0]) + einh + ' Du hast einen zweiten Versuch.</p>'; }
+    else { fb.className = 'lr-fb loes'; fb.innerHTML = '<p><strong>So geht es.</strong> Richtig wäre ' + gz(exCur.ans, exCur.dec) + (exCur.unit ? ' ' + esc(exCur.unit) : '') + '.</p>' + stp; }
+    fbZeig('#exFb');
     $('#exSc').textContent = exScore.ok + ' von ' + exScore.n + ' richtig' + (exScore.streak > 1 ? ' · ' + exScore.streak + ' in Folge' : '');
   }
   (function () {
@@ -1293,7 +1311,7 @@
   })();
 
   /* ============================================================ Lernen */
-  const SV = (inner, label) => `<svg class="dr" viewBox="0 0 360 200" role="img" aria-label="${esc(label)}">${inner}</svg>`;
+  const SV = (inner, label) => `<div class="svgsc" tabindex="0" role="group" aria-label="${esc(label)} (seitlich wischbar)"><svg class="dr" viewBox="0 0 360 200" role="img" aria-label="${esc(label)}">${inner}</svg></div><p class="svghint">Die Grafik ist breiter als der Bildschirm. Wische seitlich.</p>`;
   const TX = (x, y, t, o) => `<text x="${x}" y="${y}" fill="${(o && o.c) || '#e8ecf0'}" font-size="${(o && o.s) || 12}" text-anchor="${(o && o.a) || 'middle'}" font-family="system-ui"${o && o.w ? ' font-weight="700"' : ''}>${esc(t)}</text>`;
   function svgBridge() {
     const sw = (x, y, n, on) => `<rect x="${x - 14}" y="${y}" width="28" height="34" rx="4" fill="${on ? '#1f5f2c' : '#2c343e'}" stroke="${on ? '#4cd964' : '#8d99a6'}" stroke-width="1.6"/>${TX(x, y + 22, n, { s: 12, w: 1 })}`;

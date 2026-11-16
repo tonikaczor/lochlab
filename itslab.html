@@ -178,6 +178,7 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .pbits .gl{font-size:13px;color:var(--mute);padding-right:6px}.seg{flex-wrap:wrap;border-radius:14px}.cf{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.cf .chip{height:44px}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body class="gs">
 <!--GATE-->
@@ -218,6 +219,22 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { "itslab.html": { name: "IT-Sicherheits-Lab" } };</script>
+<script src="labrahmen.js"></script>
+<style id="i1-phone">@media (max-width:600px){summary{min-height:48px;display:flex;align-items:center}}</style>
+<script id="i1-phone-js">/* Handy: Mindestgrößen 14 px (HTML-Text) und 11 px (SVG-Text, Bildschirmgröße) */
+(function(){var mq=window.matchMedia('(max-width:600px)'),t=0,ro=window.ResizeObserver?new ResizeObserver(function(){sched()}):null;
+function run(){t=0;if(!mq.matches)return;
+var els=document.querySelectorAll('body *:not(script):not(style)');
+for(var i=0;i<els.length;i++){var e=els[i];if(e.closest('svg'))continue;var has=false;for(var n=e.firstChild;n;n=n.nextSibling)if(n.nodeType===3&&n.nodeValue.trim()){has=true;break}
+if(!has)continue;if(parseFloat(getComputedStyle(e).fontSize)<13.9)e.style.fontSize='14px'}
+var tx=document.querySelectorAll('svg text');
+for(var j=0;j<tx.length;j++){var x=tx[j],m=x.getScreenCTM&&x.getScreenCTM();if(!m||!m.a)continue;var s=Math.abs(m.a),f=parseFloat(getComputedStyle(x).fontSize);if(f*s<11&&x.getBoundingClientRect().width>0)x.style.fontSize=(11.2/s)+'px';if(ro&&x.ownerSVGElement&&!x.ownerSVGElement.__ro){x.ownerSVGElement.__ro=1;ro.observe(x.ownerSVGElement)}}}
+function sched(){if(!t)t=setTimeout(run,120)}
+new MutationObserver(sched).observe(document.documentElement,{childList:true,subtree:true});
+window.addEventListener('resize',sched);window.addEventListener('load',sched)})();
+</script>
+
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

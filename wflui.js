@@ -51,7 +51,7 @@
     wiss: Object.assign({ key: 'we' }, lsGet('wiss', {})),
     mt: lsGet('mt', {}), mq: {},
     weSel: {}, weDone: false, insSeed: String(lsGet('ins', 'i1')), insSel: {}, insAll: '', insDone: false,
-    task: null, tq: null, tAns: {}, tRes: null,
+    task: null, tq: null, tAns: {}, tRes: null, tFehl: {},
     tr: { q: null, ans: {}, res: null, level: 0 },
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {}))
   };
@@ -122,10 +122,15 @@
   });
 
   /* ============================================================ Lagerstrategien */
-  const lagParams = s => ({ rows: s.rows.map((r, i) => ({ id: 'Charge ' + 'ABCD'[i], ein: P(r.ein), mhd: P(r.mhd), qty: P(r.qty) })), q: P(s.q), strat: s.strat });
+  /* Datum als TT.MM. (Übungsjahr ohne Schaltjahr) oder als Tag 1 bis 365 */
+  const MONL = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  const PD = t => { const m = /^\s*(\d{1,2})\.\s*(\d{1,2})\.?\s*$/.exec(String(t == null ? '' : t)); if (!m) return P(t); const d = +m[1], mo = +m[2]; if (mo < 1 || mo > 12 || d < 1 || d > MONL[mo - 1]) return NaN; let n = d; for (let i = 0; i < mo - 1; i++) n += MONL[i]; return n; };
+  root.WFL_PD = PD;
+  const ddTxt = t => { const n = PD(t); return /\./.test(String(t)) && Number.isInteger(n) ? 'Tag ' + n : C.dayStr(n); };
+  const lagParams = s => ({ rows: s.rows.map((r, i) => ({ id: 'Charge ' + 'ABCD'[i], ein: PD(r.ein), mhd: PD(r.mhd), qty: P(r.qty) })), q: P(s.q), strat: s.strat });
   function lagOut(p) {
     const okD = v => Number.isInteger(v) && v >= 1 && v <= 365;
-    if (!p.rows.every(r => okD(r.ein) && okD(r.mhd) && r.qty >= 0)) return note('Gib den Einlagertag und den Ablauftag als ganze Zahl von 1 bis 365 (Tag im Jahr) und die Menge als Zahl ein.');
+    if (!p.rows.every(r => okD(r.ein) && okD(r.mhd) && r.qty >= 0)) return note('Gib Einlager- und Ablaufdatum als Datum (zum Beispiel 15.03.) oder als ganze Zahl von 1 bis 365 ein und die Menge als Zahl.');
     if (!(p.q >= 0)) return note('Gib die Entnahmemenge als Zahl ein.');
     let h = '';
     C.STRATS.forEach(st => {
@@ -156,7 +161,7 @@
   function renderLag() {
     const s = S.lag;
     $('#lagView').innerHTML = ueb() + `<div class="card pl"><h4>Entnahme nach Strategie</h4>
-      <div class="tw"><table class="tt"><tr><th>Charge</th><th>Einlagertag (1 bis 365)</th><th>Ablauftag (1 bis 365)</th><th>Menge</th></tr>${s.rows.map((r, i) => `<tr><td><b>Charge ${'ABCD'[i]}</b></td><td>${cell('data-r="' + i + '" data-f="ein"', r.ein)}<small class="hint2" data-dd="${i}:ein">${esc(C.dayStr(P(r.ein)))}</small></td><td>${cell('data-r="' + i + '" data-f="mhd"', r.mhd)}<small class="hint2" data-dd="${i}:mhd">${esc(C.dayStr(P(r.mhd)))}</small></td><td>${cell('data-r="' + i + '" data-f="qty"', r.qty)}</td></tr>`).join('')}</table></div>
+      <div class="tw"><table class="tt"><tr><th>Charge</th><th>Einlagerdatum (TT.MM.)</th><th>Ablaufdatum (TT.MM.)</th><th>Menge</th></tr>${s.rows.map((r, i) => `<tr><td><b>Charge ${'ABCD'[i]}</b></td><td>${cell('data-r="' + i + '" data-f="ein"', r.ein)}<small class="hint2" data-dd="${i}:ein">${esc(ddTxt(r.ein))}</small></td><td>${cell('data-r="' + i + '" data-f="mhd"', r.mhd)}<small class="hint2" data-dd="${i}:mhd">${esc(ddTxt(r.mhd))}</small></td><td>${cell('data-r="' + i + '" data-f="qty"', r.qty)}</td></tr>`).join('')}</table></div>
       <div class="dsrow">${inp('q', 'Gewünschte Entnahmemenge', s.q, 'Stück')}</div>
       <div class="fbar">${lbl('STRATEGIE')}${seg('data-st', C.STRATS.map(x => [x.k, x.k.toUpperCase()]), s.strat)}</div>
       <div id="lagOut"></div>${XREF('Lager-Lab', 'FIFO, LIFO und chaotische Lagerhaltung als Begriffe stehen dort unter Lagerorganisation. Hier rechnest du mit Chargen und Plätzen.')}</div>
@@ -168,7 +173,7 @@
   function updateLag() { $('#lagOut').innerHTML = lagOut(lagParams(S.lag)); $('#platzOut').innerHTML = platzOut(S.lag.m.map(r => r.map(P))); $('#slotOut').innerHTML = slotsOut(S.lag.occ); }
   $('#lagView').addEventListener('input', e => {
     const t = e.target, d = t.dataset;
-    if (d.r != null) { S.lag.rows[+d.r][d.f] = t.value; const el = $('[data-dd="' + d.r + ':' + d.f + '"]', $('#lagView')); if (el) el.textContent = C.dayStr(P(t.value)); }
+    if (d.r != null) { S.lag.rows[+d.r][d.f] = t.value; const el = $('[data-dd="' + d.r + ':' + d.f + '"]', $('#lagView')); if (el) el.textContent = ddTxt(t.value); }
     else if (d.mr != null) S.lag.m[+d.mr][+d.mc] = t.value;
     else if (d.k === 'q') S.lag.q = t.value; else return;
     lsSet('lag', S.lag); updateLag();
@@ -195,9 +200,9 @@
       if ((show === 'best' || show === 'all') && picks.length <= 8) s += route(C.bestOrder(picks).order || [], 'rt3');
     }
     const idx = {}; picks.forEach((q, i) => { idx[q.a + '/' + q.p] = i + 1; });
-    for (let a = 1; a <= Lg.aisles; a++) Lg.slots.forEach(p => { const n = idx[a + '/' + p]; s += `<circle class="slot${n ? ' on' : ''}" ${interactive ? `data-a="${a}" data-p="${p}"` : ''} cx="${KX(a)}" cy="${KY(p)}" r="${n ? 10 : 8}"><title>Gang ${a}, ${p} m</title></circle>`; if (n) s += `<text class="pn" x="${KX(a)}" y="${KY(p) + 4}">${n}</text>`; });
+    for (let a = 1; a <= Lg.aisles; a++) Lg.slots.forEach(p => { const n = idx[a + '/' + p]; if (interactive) s += `<circle class="slot hit" data-a="${a}" data-p="${p}" cx="${KX(a)}" cy="${KY(p)}" r="26"><title>Gang ${a}, ${p} m</title></circle>`; s += `<circle class="slot vis${n ? ' on' : ''}" cx="${KX(a)}" cy="${KY(p)}" r="${n ? 12 : 9}"></circle>`; if (n) s += `<text class="pn" x="${KX(a)}" y="${KY(p) + 6}">${n}</text>`; });
     s += `<rect class="basis" x="${KX(0) - 9}" y="${KY(0) - 9}" width="18" height="18" rx="3"/><text class="g-lab" x="${KX(0)}" y="${KY(0) + 26}" text-anchor="middle">Basis</text>`;
-    return `<svg viewBox="0 0 540 380" role="img" aria-label="Lagergrundriss mit sechs Gängen, Basis und Pickplätzen">${s}</svg>`;
+    return `<svg class="svg-kom" viewBox="0 0 540 380" role="img" aria-label="Lagergrundriss mit sechs Gängen, Basis und Pickplätzen">${s}</svg>`;
   }
   function komOut(picks) {
     if (!picks.length) return note('Tippe im Plan auf Plätze (Kreise), um die Pickliste zu füllen. Die Nummer zeigt die Reihenfolge. Höchstens 8 Plätze.', 'warn');
@@ -229,10 +234,9 @@
   }
   function renderKom() {
     const s = S.kom;
-    $('#komView').innerHTML = ueb() + `<div class="card pl wf"><h4>Kommissionier-Simulator</h4>
+    $('#komView').innerHTML = `<div id="komSvg" class="inst wf"></div>` + ueb() + `<div class="card pl wf"><h4>Kommissionier-Simulator</h4>
       <p class="hint2" style="margin:0 0 6px">${esc('Gänge 1 bis 6, je 20 m lang, 3 m Abstand, Quergänge vorn und hinten, Start und Ziel an der Basis (Ausgang). Plätze liegen alle 4 m. Tippe auf Kreise, um sie in die Pickliste zu legen (erneut tippen entfernt).')}</p>
       <div class="fbar">${lbl('AUFTRAG')}${seg('data-cur', [['A', 'A'], ['B', 'B']], s.cur)}${lbl('WEG ZEIGEN')}${seg('data-show', [['mine', 'meine'], ['s', 'nach Gängen'], ['best', 'kürzeste'], ['all', 'alle'], ['none', 'keiner']], s.show)}</div>
-      <div id="komSvg" class="inst"></div>
       <p class="hint2"><span style="color:var(--hi)">━</span> meine Reihenfolge · <span style="color:var(--ok)">╌</span> nach Gängen sortiert (S-Form-Reihenfolge) · <span style="color:var(--accent)">┄</span> kürzeste Reihenfolge</p>
       <div class="btns"><button class="btn" data-ko="demo">Beispielauftrag</button><button class="btn" data-ko="undo">↶ Letzten entfernen</button><button class="btn" data-ko="clear">Leeren</button><button class="btn" data-ko="sform">Nach Gängen sortieren</button><button class="btn" data-ko="best">Kürzeste Reihenfolge übernehmen</button></div>
       <div id="komOut"></div></div>
@@ -278,7 +282,7 @@
     C.HUB.forEach(x => { const pts = []; for (let c = 300; c <= 1000; c += 10) pts.push(cx(c) + ',' + cy(C.restCap(x.q, c))); s += `<polyline class="curve${hub === x ? ' sel' : ''}" points="${pts.join(' ')}"/><text class="g-lab${hub === x ? '' : ' m'}" x="${cx(300) + 4}" y="${cy(x.q) - 5}">bis ${x.bis} mm Hub</text>`; });
     if (p.m > 0 && p.c > 0) { const rest = hub ? C.restCap(hub.q, p.c) : NaN, ok = Number.isFinite(rest) && p.m <= rest, col = ok ? 'var(--ok)' : 'var(--danger)'; s += `<circle cx="${cx(p.c)}" cy="${cy(p.m)}" r="7" fill="${col}" stroke="var(--fg)" stroke-width="1.5"/><text class="g-lab" x="${Math.min(cx(p.c) + 10, x1 - 70)}" y="${cy(p.m) - 10}" style="fill:${col}">${ok ? 'Last passt' : 'Last zu schwer'}</text>`; }
     s += `<text class="g-lab m" x="${(x0 + x1) / 2}" y="${H - 6}" text-anchor="middle">Lastschwerpunkt c (mm) vom Gabelrücken</text><text class="g-lab m" x="14" y="${(y0 + y1) / 2}" transform="rotate(-90 14 ${(y0 + y1) / 2})" text-anchor="middle">zulässige Last (kg)</text>`;
-    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Traglastdiagramm: zulässige Last über dem Lastschwerpunkt für drei Hubhöhen">${s}</svg>`;
+    return `<svg class="svg-trag" viewBox="0 0 ${W} ${H}" role="img" aria-label="Traglastdiagramm: zulässige Last über dem Lastschwerpunkt für drei Hubhöhen">${s}</svg>`;
   }
   function tragOut(p) {
     if (!(p.m > 0) || !(p.c > 0) || !(p.h > 0)) return note('Gib Last, Lastschwerpunkt und Hubhöhe größer als 0 ein.');
@@ -447,26 +451,37 @@
   function updateBadge() { const b = $('#tkBd'); if (b) b.textContent = Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length + '/' + TASKS.length; }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : f(q.value, 2) + ' ' + q.ask.unit);
+  /* Rückmeldung nach "Prüfen" (4.5): r.stufe = 'ok' | 'tipp' | 'loes' | 'pruef' */
+  const eingabeHinweis = q => q.ask.type === 'num' ? `<p class="lr-hinweis hint2">Zahl in ${esc(q.ask.unit)}.${q.tol > 0.011 ? ' ±' + esc(f(q.tol, 2)) + ' ' + esc(q.ask.unit) + ' gelten als richtig (wegen Rundung).' : ''}</p>` : '';
+  const stufeFuer = (ok, fehl, ex) => ok ? 'ok' : ex ? 'pruef' : fehl >= 2 ? 'loes' : 'tipp';
+  const zeigFb = el => { try { const x = el && el.querySelector('.lr-fb'); if (x && root.LabRahmen) root.LabRahmen.zeig(x); } catch (e) {} };
   function qBody(q, a, r, pre) {
-    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''} class="${r && i === q.ask.correct && (r.ok || pre === 'rt') ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+    const lock = r && (r.ok || r.stufe === 'loes');
+    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${lock ? 'disabled' : ''} class="${lock && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok && r.given === c ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lock ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div>${eingabeHinweis(q)}</label>`;
   }
   function evalQ(q, a) {
     if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c] }; }
     const v = P(a.v); if (!Number.isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return null; }
     return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 2) + ' ' + q.ask.unit };
   }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  function fbHTML(q, r) {
+    if (r.stufe === 'ok') return `<div class="lr-fb ok fb"><p><strong>✓ Richtig:</strong> ${esc(r.given)}</p><p><strong>Lösungsweg:</strong> ${esc(q.expl)}</p></div>`;
+    const ist = '<strong>Noch nicht:</strong> Deine Antwort „' + esc(r.given) + '“ stimmt nicht.';
+    if (r.stufe === 'tipp') return `<div class="lr-fb tipp fb"><p>${ist}</p><p><strong>Tipp:</strong> ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p></div>`;
+    if (r.stufe === 'loes') return `<div class="lr-fb loes fb"><p>${ist}</p><p><strong>Lösung:</strong> ${esc(solText(q))}</p><p><strong>Lösungsweg:</strong> ${esc(q.expl)}</p></div>`;
+    return `<div class="lr-fb tipp fb"><p>${ist}</p><p>🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp (kostet 25 %) oder versuche es noch einmal.</p></div>`;
+  }
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {};
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      if (r) h += fbHTML(q, r);
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.stufe === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r && (r.ok || r.stufe === 'loes')) { h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
@@ -476,9 +491,9 @@
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
-    renderTasks(false);
+    const fehl = e.ok ? 0 : (S.tFehl[t.id] = (S.tFehl[t.id] || 0) + 1); S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, stufe: stufeFuer(e.ok, fehl, exam()) };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.stufe === 'loes' ? 'Lösung und Lösungsweg stehen unter der Aufgabe.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
+    renderTasks(false); zeigFb($('#taskView'));
   }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
@@ -492,7 +507,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tFehl[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -501,21 +516,21 @@
   tv.addEventListener('keydown', e => { const t = curTask(); if (t && e.key === 'Enter' && e.target.dataset.in) { e.preventDefault(); checkTask(t); } });
   tv.addEventListener('click', e => {
     const t = curTask(), tc = e.target.closest('[data-tc]'), ta = e.target.closest('[data-ta]'), row = e.target.closest('.row[data-t]');
-    if (tc && t) { (S.tAns[t.id] = S.tAns[t.id] || {}).c = +tc.dataset.tc; if (S.tRes && !S.tRes.ok) S.tRes = null; renderTasks(false); return; }
+    if (tc && t) { (S.tAns[t.id] = S.tAns[t.id] || {}).c = +tc.dataset.tc; renderTasks(false); return; }
     if (ta && t) { const a = ta.dataset.ta; if (a === 'chk') checkTask(t); else if (a === 'hint') hintFor(S.tq, t.id); else if (a === 'close') { S.task = null; S.tRes = null; renderTasks(); } else if (a === 'next') { const i = TASKS.findIndex(x => x.id === t.id), nx = TASKS.slice(i + 1).find(x => !done()[x.id]) || TASKS[(i + 1) % TASKS.length]; startTask(nx.id); } return; }
     if (row) startTask(row.dataset.t);
   });
 
   /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.fehl = 0; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl2" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
-      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      <div class="fbar"><span class="lbl2" style="font-size:14px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}${T.res ? fbHTML(q, T.res) : ''}
+      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res && T.res.stufe !== 'tipp' ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res && T.res.stufe !== 'tipp' ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res && T.res.stufe !== 'tipp' ? 'Nächste Frage' : 'Überspringen'}</button></div></div>`;
+    if (T.res) zeigFb($('#rtView'));
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -523,12 +538,13 @@
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (tc && (!T.res || T.res.stufe === 'tipp')) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if ((!T.res || T.res.stufe === 'tipp') && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    const T = S.tr; if (T.res && T.res.stufe !== 'tipp') return; const e = evalQ(T.q, T.ans); if (!e) return;
+    if (!e.ok && !T.fehl) { T.fehl = 1; T.res = { ok: false, given: e.given, stufe: 'tipp' }; sad(); renderTrainer(); return; }
+    T.res = { ok: e.ok, given: e.given, stufe: e.ok ? 'ok' : 'loes' }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -567,7 +583,7 @@
       sec('Flurförderzeuge (Gabelstapler)', `<span class="eq">Lastschwerpunkt c = Tiefe in Gabelrichtung / 2</span><span class="eq">Resttragfähigkeit = Nenntragfähigkeit · 500 / c (bei c ≤ 500 mm volle Tragfähigkeit)</span><span class="eq">Kippmoment = Last · (c + Abstand Gabelrücken zur Vorderachse)</span><span class="eq">Standmoment = Eigengewicht · Abstand Schwerpunkt zur Vorderachse</span><table><tr><th>Hubhöhe</th><th>Nenntragfähigkeit (Übung)</th></tr>${C.HUB.map(x => `<tr><td>bis ${esc(f(x.bis, 0))} mm</td><td>${esc(f(x.q, 0))} kg</td></tr>`).join('')}</table><p>Vor Fahrtantritt: Sicht- und Funktionsprüfung nach Betriebsanweisung. Bei sicherheitsrelevanten Mängeln nicht benutzen, sperren und melden. <b>Fahrerlaubnis:</b> Fahren dürfen nur unterwiesene, befähigte und beauftragte Personen (nur als Pflicht genannt).</p><p class="hint2">Echte Tragfähigkeiten stehen nur auf dem Typenschild bzw. im Traglastdiagramm des jeweiligen Staplers.</p>`) +
       sec('Inventur', `<span class="eq">Differenz = Ist − Soll (Fehlbestand negativ)</span><span class="eq">Wert der Differenz = Differenz · Preis</span><span class="eq">Bestand am Stichtag (Zählung danach) = gezählt − Zugänge + Abgänge</span><span class="eq">Hochrechnung = Summe der Stichprobe / Stichprobenumfang · Gesamtzahl</span><p>Stichtagsinventur, permanente Inventur und Stichprobeninventur sind Verfahren. Die Blindzählung verdeckt den Sollbestand. „Bestandsdifferenz buchen“ heißt, den Buchbestand nach Klärung und Freigabe an den Istbestand anzupassen (nur Begriff).</p>`) +
       sec('Versand und Frachtpapiere', `<span class="eq">Gurtmaß = längste Seite + 2 · (die beiden anderen Seiten)</span><span class="eq">Raumgewicht = Länge · Breite · Höhe (m³) · 200 kg/m³</span><span class="eq">Abrechnungsgewicht = größeres von Gewicht und Raumgewicht</span><table><tr><th>Papier</th><th>Aufgabe</th></tr><tr><td>Lieferschein</td><td>Art und Menge der Lieferung</td></tr><tr><td>Frachtbrief</td><td>Nachweis des Beförderungsvertrags</td></tr><tr><td>Packliste</td><td>Inhalt je Packstück</td></tr></table><p>Paket-Übungsgrenzen: Gewicht höchstens ${esc(f(C.PAKET.kgMax, 1))} kg, längste Seite höchstens ${esc(f(C.PAKET.longMax, 0))} cm, Gurtmaß höchstens ${esc(f(C.PAKET.girthMax, 0))} cm. Alles andere: Stückgut. Tarifstufen: ${esc(C.TARIF.map(t => 'bis ' + f(t.bis, 0) + ' kg ' + f(t.p, 0) + ' €').join(', '))}.</p><p class="hint2">Zurrmittel, Ladeeinheiten, Verpackungssymbole und Gefahrgut stehen im Ladungssicherungs-Lab.</p>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

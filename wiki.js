@@ -333,6 +333,7 @@
     var r = M.search(X, q, ctx || {});
     out = r.hits.map(function (h) { return E[h.id] || { id: h.id, kat: h.kat, titel: h.titel, labs: h.labs, stub: true }; });
     out.meint = r.meint;
+    out.ts = {}; r.hits.forEach(function (h) { if (h.ts) out.ts[h.id] = 1; });   // U-wiki-02: Treffer, bei denen die Suche ein Titelwort beginnt
     return out;
   };
 

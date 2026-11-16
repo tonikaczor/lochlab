@@ -13,11 +13,13 @@
 <link rel="icon" href="icon-192.png">
 <title>Tonfunk Regelungstechnik Aufbau</title>
 <link rel="stylesheet" href="rg2.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
 <script src="gate.js" data-title="Tonfunk Regelungstechnik Aufbau"></script>
 <!--/GATE-->
+<script src="aufgaben.js"></script>
 <div id="app">
   <header>
     <a class="ib" id="bHome" href="index.html" aria-label="Startseite" title="Startseite"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5M6.5 10v9h4v-5h3v5h4v-9"/></svg></a>
@@ -38,6 +40,11 @@
 <script src="rg2blk.js"></script>
 <script src="aufgabe-vorlesen.js" async></script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
+<script>window.LR_TAB = { 'rg2lab.html': { name: 'Regelungstechnik 2', gruppen: [{ name: 'Frequenzgang', teile: ['b2', 'b3'] }, { name: 'Entwurf', teile: ['b4', 'b5'] }], teil: { b2: 'Bode', b3: 'Stabilität', b4: 'Wurzelort', b5: 'Einstellregeln' }, buehne: { b1: '.prim', b2: '.prim', b3: '.prim', b4: '.prim', b5: '.prim', b6: '.prim', tasks: false },
+  extra: [{ gruppe: 'hilfe', name: 'Hilfe', tu: function () { var U = window.RG2UI; if (U && /^tasks$/.test(U.S.tab)) U.setTab('b1'); var e = document.querySelector('#view .explain'); if (e) { e.open = true; if (e.scrollIntoView) e.scrollIntoView({ block: 'start' }); } } }] } };
+(window.__einQueue = window.__einQueue || []).push({ lab: 'rg2', betrieb: 'Wer Regelkreise auslegt oder prüft, rechnet mit Übertragungsfunktion, Bode-Diagramm und Wurzelortskurve. Hier übst du diese Rechnung für das Studium und die Technikerweiterbildung. Einen Regler an einer Anlage einstellen übst du im Lab "Regelungstechnik" (Prüfstand).' });</script>
+<script src="labrahmen.js"></script>
+<script src="einordnung.js" async></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

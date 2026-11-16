@@ -14,6 +14,16 @@
   const lsPut = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
   const K = { done: 'lm4.pne.done', score: 'lm4.pne.score', prog: 'lm4.pne.prog', hints: 'lm4.pne.hints', tab: 'lm4.pne.tab', mode: 'lm4.pne.mode', bau: 'lm4.pne.bau', latch: 'lm4.pne.latch', tr: 'lm4.pne.trainer', cir: 'lm4.pne.cir', zoom: 'lm4.pne.zoom' };
   const fm = C.calc.fmt, parseNum = s => parseFloat(String(s).replace(/\s/g, '').replace(',', '.'));
+  /* Antwort mit Einheit lesen: "0,754 kN" bei Feld "N" gibt 754. Bekannte Einheiten werden umgerechnet, fremde zurückgewiesen (msg), nie falsch gewertet. */
+  const UNITF = { 'N': { n: 1, kn: 1000, dan: 10 }, 'bar': { bar: 1, mbar: 0.001, mpa: 10, 'n/mm2': 10, pa: 1e-5, kpa: 0.01, hpa: 0.001 }, 'mm': { mm: 1, cm: 10, m: 1000 }, 'mm/s': { 'mm/s': 1, 'cm/s': 10, 'm/s': 1000 }, 'l': { l: 1, ml: 0.001, dm3: 1, m3: 1000 }, 'l/min': { 'l/min': 1, 'l/s': 60, 'ml/min': 0.001, 'm3/min': 1000, 'm3/h': 1000 / 60 } };
+  const readAnswer = (raw, unit) => {
+    const m = String(raw == null ? '' : raw).trim().match(/^([-+]?\d[\d.,\s]*?)\s*([^\d\s,.].*)?$/);
+    if (!m) return { v: NaN };
+    const v = parseNum(m[1]); if (!m[2] || !isFinite(v)) return { v };
+    const u = m[2].toLowerCase().replace(/\s+/g, '').replace(/²/g, '2').replace(/³/g, '3').replace(/ℓ|liter/g, 'l').replace(/\.$/, ''), f = (UNITF[unit] || {})[u];
+    if (f == null) return { v: NaN, msg: 'Bitte in ' + unit + ' angeben. „' + m[2].trim() + '“ kann hier nicht gewertet werden.' };
+    return { v: v * f };
+  };
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1)), pk = a => a[Math.floor(Math.random() * a.length)];
   const stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
 
@@ -251,16 +261,31 @@
   function zoomEff() {
     if (PL.zoom) return PL.zoom;
     const host = PL.host, w = host ? host.clientWidth : 360;
-    return Math.max(0.75, Math.min(1.5, (w - 16) / PL.cir.W));
+    return Math.max(1, Math.min(1.5, (w - 16) / PL.cir.W));
   }
   function plSig() {
     const s = PL.st, m = PL.model; if (!s) return '';
     return m.cyls.map(id => s.pos[id].toFixed(3)).join(',') + '|' + Object.values(s.vpos).join('') + '|' + s.net.join('') + '|' + JSON.stringify(s.inp) + '|' + PL.sel + PL.del + PL.mode + PL.user.length + '|' + (PL.zoom || '') + (PL.host ? PL.host.clientWidth : 0) + '|' + Object.values(s.sh).map(l => l.length + (l[0] ? l[0][0] : '')).join('');
   }
+  /* SVG-Text am Handy mindestens 11 px auf dem Bildschirm (V1, M-all-12): Schrift in Zeichenmass anheben, bei breiterer Darstellung zurueck */
+  function fixSvg(r) {
+    try {
+      $$('svg', r || document).forEach(sv => {
+        const m0 = sv.getScreenCTM && sv.getScreenCTM(); if (!m0) return; const sc = Math.hypot(m0.a, m0.b); if (!sc || !isFinite(sc)) return;
+        sv.querySelectorAll('text').forEach(t => {
+          if (t.dataset.fb == null) t.dataset.fb = parseFloat(getComputedStyle(t).fontSize) || 0;
+          const base = +t.dataset.fb; if (!base) return;
+          if (base * sc < 11.2) t.style.fontSize = (11.2 / sc).toFixed(2) + 'px'; else if (t.style.fontSize) t.style.fontSize = '';
+        });
+      });
+    } catch (e) {}
+  }
+  let fixT = 0; const fixSoon = () => { if (!fixT) fixT = setTimeout(() => { fixT = 0; fixSvg(); }, 80); };
+  try { window.addEventListener('resize', fixSoon); new MutationObserver(ms => { if (ms.some(m => !(m.target.closest && m.target.closest('svg')))) fixSoon(); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   function plDraw(force) {
     if (!PL.host || !PL.cir) return;
     const sig = plSig(); if (!force && sig === PL.sig) return; PL.sig = sig;
-    PL.host.innerHTML = plSvg();
+    PL.host.innerHTML = plSvg(); fixSvg(PL.host);
     plStatus();
   }
   function plStatus() {
@@ -284,7 +309,9 @@
     return { x: (e.clientX - r.left) / z, y: (e.clientY - r.top) / z, z };
   }
   function partAt(pt) {
-    for (const p of PL.cir.parts) { if (!isManual(p)) continue; const g = D.geom(p); if (pt.x >= p.x - 4 && pt.x <= p.x + g.w + 4 && pt.y >= p.y - 4 && pt.y <= p.y + g.h + 4) return p; }
+    for (const p of PL.cir.parts) { if (!isManual(p)) continue; const g = D.geom(p); if (pt.x >= p.x - 4 && pt.x <= p.x + g.w + 4 && pt.y >= p.y - 4 && pt.y <= p.y + g.h + 4) return p;
+      /* M-pne-01: auch die Beschriftung (z. B. 1S1) bedient das Bauteil */
+      if (p.label && g.lab && pt.x >= p.x + g.lab.x - 6 && pt.x <= p.x + g.lab.x + 8 + 9 * String(p.label).length && pt.y >= p.y + g.lab.y - 18 && pt.y <= p.y + g.lab.y + 8) return p; }
     return null;
   }
   function onDown(e) {
@@ -384,8 +411,8 @@
     if (t.type === 'mc') { out.ok = S.sel === t.ans; out.msg = S.sel == null ? 'Wähle zuerst eine Antwort.' : ''; }
     else if (t.type === 'tap') { const ans = [].concat(t.ans); out.ok = ans.includes(S.sel); out.msg = S.sel == null ? 'Tippe zuerst auf einen Anschluss im Symbol.' : ''; }
     else if (t.type === 'num') {
-      const inp = $('#tpIn', host), v = parseNum(inp ? inp.value : ''); out.val = v;
-      if (!isFinite(v)) out.msg = 'Gib zuerst eine Zahl ein.'; else out.ok = Math.abs(v - t.ans) <= Math.abs(t.ans) * t.tol;
+      const inp = $('#tpIn', host), ra = readAnswer(inp ? inp.value : '', t.unit), v = ra.v; out.val = v;
+      if (!isFinite(v)) out.msg = ra.msg || 'Gib zuerst eine Zahl ein.'; else out.ok = Math.abs(v - t.ans) <= Math.abs(t.ans) * t.tol;
     } else if (t.type === 'lesen') {
       if (t.goal) {
         const g = t.goal, s = PL.st; if (PL.cir.id !== t.cir || !s) { out.msg = 'Öffne zuerst die Schaltung und probiere sie aus.'; return out; }
@@ -414,7 +441,7 @@
     } else if (t.type === 'tap') {
       h += `<div class="symbox" id="tapBox">${symSVG(t.sym, { scale: 1.6, tap: true, sel: S.sel, reveal: !!(S.res && S.res.ok) })}</div><p class="hint2">${S.sel ? 'Gewählt: Anschluss ' + esc(S.sel) : 'Noch nichts gewählt.'}</p>`;
     } else if (t.type === 'num') {
-      h += `<div class="qin"><input id="tpIn" inputmode="decimal" autocomplete="off" placeholder="Deine Antwort" aria-label="Antwort"><span class="u">${esc(t.unit)}</span></div><p class="hint2">Richtwerte: 1 bar = 0,1 N/mm². Rechne mit π = 3,14159.</p>`;
+      h += `<div class="qin"><input id="tpIn" inputmode="decimal" autocomplete="off" placeholder="Deine Antwort" aria-label="Antwort"><span class="u">${esc(t.unit)}</span></div><p class="hint2 lr-hinweis">Zahl in ${esc(t.unit)}; bekannte andere Einheiten (z. B. kN) rechnet das Lab um. ±${Math.round((t.tol != null ? t.tol : 0.02) * 100)} % gelten als richtig. Richtwerte: 1 bar = 0,1 N/mm², π = 3,14159.</p>`;
     } else if (t.type === 'lesen') {
       if (t.mcq) h += `<p><b>${esc(t.mcq.q)}</b></p><div class="opts">${t.mcq.opts.map((o, i) => `<button data-o="${i}" class="${S.sel === i ? 'on' : ''}">${esc(o)}</button>`).join('')}</div>`;
       else h += '<p class="hint2">Probiere die Schaltung aus und tippe dann auf „Prüfen“.</p>';
@@ -423,19 +450,30 @@
     }
     return h;
   }
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): Üben = Tipp, dann Lösung; Prüfmodus = wie bisher, ohne Gratis-Tipp */
+  const TRY = {};
   function resultHtml(t, r) {
     if (!r) return '';
-    let h = '';
-    if (r.msg && !r.lines.length) h = `<div class="res bad">${esc(r.msg)}</div>`;
+    let h = '', fbc = 'tipp', fb = '';
+    const pr = mode() === 'pruef';
+    if (r.msg && !r.lines.length) fb = '<p><strong>' + esc(r.msg) + '</strong></p>';
     else {
       if (r.lines.length) h += `<ul class="vt">${r.lines.map(l => `<li class="${l[0] ? 'ok' : 'bad'}"><span class="m">${l[0] ? '✓' : '✗'}</span><span>${esc(l[1])}</span></li>`).join('')}</ul>`;
       if (r.ok) {
         const sc = lsGet(K.score, {})[t.id];
-        h += `<div class="res ok"><b>✓ Richtig gelöst!</b>${mode() === 'pruef' && sc != null ? ' Punkte: ' + sc + ' %' : ''}<br>${esc(t.expl)}</div>`;
-        if (t.steps) h += `<ul class="steps">${t.steps.map(x => '<li>' + esc(x) + '</li>').join('')}</ul>`;
-      } else h += `<div class="res bad">${t.type === 'num' && r.val != null ? 'Dein Wert ' + esc(fm(r.val, 2)) + ' ' + esc(t.unit) + ' stimmt noch nicht. Prüfe Einheiten und Rechenweg.' : 'Noch nicht richtig. Probiere es noch einmal oder nimm einen Tipp.'}</div>`;
+        fbc = 'ok'; fb = `<p><strong>✓ Richtig gelöst!</strong>${pr && sc != null ? ' Punkte: ' + sc + ' %' : ''}</p><p>${esc(t.expl)}</p>`;
+        if (t.steps) fb += `<ul class="steps">${t.steps.map(x => '<li>' + esc(x) + '</li>').join('')}</ul>`;
+      } else {
+        const wert = t.type === 'num' && r.val != null ? 'Dein Wert ' + esc(fm(r.val, 2)) + ' ' + esc(t.unit) + ' stimmt noch nicht. ' : 'Noch nicht richtig. ';
+        if (pr) fb = '<p><strong>' + wert + '</strong>Im Prüfmodus kostet jeder Tipp Punkte. Prüfe Einheiten und Rechenweg.</p>';
+        else if ((r.att || 1) < 2) { const st = tipStages(t); fb = '<p><strong>' + wert + '</strong>Tipp: ' + esc(st[0]) + ' Du hast einen zweiten Versuch.</p>'; }
+        else {
+          fbc = 'loes';
+          fb = '<p><strong>Noch nicht, so geht es:</strong>' + (t.steps ? '' : ' ' + esc(solutionText(t))) + '</p>' + (t.steps ? `<ul class="steps">${t.steps.map(x => '<li>' + esc(x) + '</li>').join('')}</ul>` : '');
+        }
+      }
     }
-    return h;
+    return h + '<div class="lr-fb ' + fbc + '">' + fb + '</div>';
   }
   function taskPanel(host, t) {
     const d = doneMap()[t.id];
@@ -446,12 +484,12 @@
     };
     bind();
     $('[data-a=check]', host).onclick = () => {
-      const r = checkTask(t, host); S.res = { id: t.id, r };
+      const r = checkTask(t, host); if (!r.ok && !r.msg) r.att = TRY[t.id] = (TRY[t.id] || 0) + 1; else if (r.ok) TRY[t.id] = 0; S.res = { id: t.id, r };
       if (r.ok) { markDone(t.id); if (root.LochFX && root.LochFX.say) try { root.LochFX.say('Richtig!'); } catch (e) {} }
       const keep = $('#tpIn', host) ? $('#tpIn', host).value : null;
       const el = $('#tpRes', host); el.innerHTML = resultHtml(t, r);
       if (t.type === 'tap') { const tb = $('#tapBox', host); if (tb && r.ok) tb.innerHTML = symSVG(t.sym, { scale: 1.6, tap: true, sel: S.sel, reveal: true }); }
-      void keep; el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      void keep; const fbEl = $('.lr-fb', el); if (window.LabRahmen && fbEl) LabRahmen.zeig(fbEl); else el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
       if (t.type === 'verschl') taskReqRefresh(t);
     };
     $('[data-a=tip]', host).onclick = () => tipSheet(t);
@@ -505,10 +543,13 @@
   }
 
   /* ---- Anlage */
+  function simTask() { const t = S.task && D.TASKS[S.task]; return t && (t.type === 'lesen' || t.type === 'verschl') && D.CIRCUITS[t.cir] ? t : null; }
   function renderAnl() {
-    const v = $('#anlView'); const t = S.task && D.TASKS[S.task];
+    const v = $('#anlView'); const t = simTask();   /* nur Aufgaben mit Schaltung (lesen, verschl); eine geöffnete Rechen- oder Auswahlaufgabe hat keine */
     const cirs = Object.keys(D.CIRCUITS);
+    if (!t && PL.task) PL.cir = null;   /* vorher eine Schaltungsaufgabe offen, jetzt keine: wieder die freie Schaltung */
     if (!PL.cir) plLoad(t ? t.cir : (D.CIRCUITS[lsRaw(K.cir, '')] ? lsRaw(K.cir, '') : cirs[0]), t ? t.id : null);
+    if (!PL.cir) plLoad(cirs[0]);
     const c = PL.cir;
     let top = '';
     if (t) top = `<div class="taskhead"><b>${esc(t.title)}</b><button class="chip s" id="bTaskEnd">Aufgabe beenden</button></div>`;
@@ -612,15 +653,21 @@
     newCalcTask($('#cuHost'));
   }
   function newCalcTask(host, after) {
-    const q = genCalc(); let solved = false;
-    host.innerHTML = `<p style="margin-top:0">${esc(q.text)}</p><div class="qin"><input id="cuIn" inputmode="decimal" autocomplete="off" placeholder="Deine Antwort" aria-label="Antwort"><span class="u">${esc(q.unit)}</span></div><div class="btns"><button class="btn pri" data-a="ck">✓ Prüfen</button><button class="btn" data-a="nw">Neue Aufgabe</button></div><div id="cuRes" aria-live="polite"></div>`;
+    const q = genCalc(); let solved = false, att = 0;
+    host.innerHTML = `<p style="margin-top:0">${esc(q.text)}</p><div class="qin"><input id="cuIn" inputmode="decimal" autocomplete="off" placeholder="Deine Antwort" aria-label="Antwort"><span class="u">${esc(q.unit)}</span></div><p class="hint2 lr-hinweis">Zahl in ${esc(q.unit)}; andere Einheiten rechnet das Lab um. ±2 % gelten als richtig.</p><div class="btns"><button class="btn pri" data-a="ck">✓ Prüfen</button><button class="btn" data-a="nw">Neue Aufgabe</button></div><div id="cuRes" aria-live="polite"></div>`;
     $('[data-a=nw]', host).onclick = () => newCalcTask(host, after);
     const ck = () => {
-      const val = parseNum($('#cuIn', host).value), el = $('#cuRes', host);
-      if (!isFinite(val)) { el.innerHTML = '<div class="res bad">Gib zuerst eine Zahl ein.</div>'; return; }
-      const ok = Math.abs(val - q.ans) <= Math.abs(q.ans) * 0.02;
-      el.innerHTML = ok ? `<div class="res ok"><b>✓ Richtig!</b></div><ul class="steps">${q.steps.map(x => '<li>' + esc(x) + '</li>').join('')}</ul>` : `<div class="res bad">Noch nicht richtig. Prüfe Einheiten und Rechenweg.</div><details class="card" style="margin-top:8px"><summary>Rechenweg anzeigen</summary><div class="cb"><ul class="steps">${q.steps.map(x => '<li>' + esc(x) + '</li>').join('')}</ul></div></details>`;
-      if (after && !solved) { solved = true; after(ok); }
+      const ra = readAnswer($('#cuIn', host).value, q.unit), val = ra.v, el = $('#cuRes', host);
+      const steps = '<ul class="steps">' + q.steps.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
+      if (!isFinite(val)) el.innerHTML = '<div class="lr-fb tipp"><p><strong>' + esc(ra.msg || 'Gib zuerst eine Zahl ein.') + '</strong></p></div>';
+      else {
+        const ok = Math.abs(val - q.ans) <= Math.abs(q.ans) * 0.02;
+        if (ok) el.innerHTML = '<div class="lr-fb ok"><p><strong>✓ Richtig!</strong></p></div>' + steps;
+        else if (++att < 2) el.innerHTML = '<div class="lr-fb tipp"><p><strong>Noch nicht richtig.</strong> Tipp: Prüfe Einheiten und Rechenweg (Fläche in mm², Druck in N/mm²). Du hast einen zweiten Versuch.</p></div>';
+        else el.innerHTML = '<div class="lr-fb loes"><p><strong>Noch nicht, so geht es:</strong></p>' + steps + '</div>';
+        if (after && !solved) { solved = true; after(ok); }
+      }
+      const fbEl = $('.lr-fb', el); if (window.LabRahmen && fbEl) LabRahmen.zeig(fbEl);
     };
     $('[data-a=ck]', host).onclick = ck; $('#cuIn', host).addEventListener('keydown', e => { if (e.key === 'Enter') ck(); });
   }
@@ -639,8 +686,9 @@
     const pool = D.SYMS.filter(s => s.id !== 'v32s');
     if (!T.q) { const c = pk(pool), opts = [c]; while (opts.length < 4) { const o = pk(pool); if (!opts.includes(o)) opts.push(o); } T.q = { c, opts: opts.sort(() => Math.random() - 0.5), done: null }; }
     const q = T.q;
-    host.innerHTML = `<p style="margin-top:0"><b>Welches Bauteil zeigt das Symbol?</b></p><div class="symbox">${symSVG(q.c.part, { scale: 1.4 })}</div><div class="opts">${q.opts.map((o, i) => `<button data-o="${i}" class="${q.done == null ? '' : (o === q.c ? 'ok' : q.done === i ? 'bad' : '')}"${q.done != null ? ' disabled' : ''}>${esc(o.name)}</button>`).join('')}</div>${q.done != null ? `<div class="res ${q.opts[q.done] === q.c ? 'ok' : 'bad'}"><b>${q.opts[q.done] === q.c ? '✓ Richtig!' : 'Leider falsch.'}</b><br>${esc(q.c.desc)}</div><div class="btns"><button class="btn pri" data-a="nx">Nächstes Symbol</button></div>` : ''}`;
+    host.innerHTML = `<p style="margin-top:0"><b>Welches Bauteil zeigt das Symbol?</b></p><div class="symbox">${symSVG(q.c.part, { scale: 1.4 })}</div><div class="opts">${q.opts.map((o, i) => `<button data-o="${i}" class="${q.done == null ? '' : (o === q.c ? 'ok' : q.done === i ? 'bad' : '')}"${q.done != null ? ' disabled' : ''}>${esc(o.name)}</button>`).join('')}</div>${q.done != null ? `<div class="lr-fb ${q.opts[q.done] === q.c ? 'ok' : 'loes'}"><p><strong>${q.opts[q.done] === q.c ? '✓ Richtig!' : 'Noch nicht. Richtig ist: ' + esc(q.c.name) + '.'}</strong></p><p>${esc(q.c.desc)}</p></div><div class="btns"><button class="btn pri" data-a="nx">Nächstes Symbol</button></div>` : ''}`;
     $$('[data-o]', host).forEach(b => b.onclick = () => { q.done = +b.dataset.o; upd(q.opts[q.done] === q.c); renderTrn(); });
+    const fbT = $('.lr-fb', host); if (fbT && window.LabRahmen) LabRahmen.zeig(fbT);
     const nx = $('[data-a=nx]', host); if (nx) nx.onclick = () => { T.q = null; renderTrn(); };
   }
 
@@ -660,7 +708,7 @@
   function buildPal() {
     const pal = $('#pal'); pal.style.display = S.tab === 'anl' ? '' : 'none';
     if (S.tab !== 'anl') return;
-    const t = S.task && D.TASKS[S.task], bau = PL.mode === 'bau';
+    const t = simTask(), bau = PL.mode === 'bau';
     pal.innerHTML = `<button class="chip${PL.running ? '' : ' on'}" data-p="run" aria-label="Simulation anhalten oder fortsetzen">${PL.running ? '⏸ Pause' : '▶ Weiter'}</button><button class="chip" data-p="reset" aria-label="Zurücksetzen">⟲ Zurücksetzen</button><div class="seg" aria-label="Tempo"><button data-p="sp" data-v="0.5" class="${PL.speed === 0.5 ? 'on' : ''}">½×</button><button data-p="sp" data-v="1" class="${PL.speed === 1 ? 'on' : ''}">1×</button><button data-p="sp" data-v="2" class="${PL.speed === 2 ? 'on' : ''}">2×</button></div><button class="chip${PL.latch ? ' on' : ''}" data-p="latch">Taster rasten</button><button class="chip s" data-p="zm" data-v="-1" aria-label="Verkleinern">－</button><button class="chip s" data-p="zm" data-v="1" aria-label="Vergrößern">＋</button>${bau ? `<span class="sep"></span><button class="chip${PL.del ? ' warnc on' : ''}" data-p="del">Schlauch löschen</button><button class="chip" data-p="undo">↶ Rückgängig</button><button class="chip danger" data-p="clear">Alle entfernen</button>` : ''}${t ? `<span class="sep"></span><button class="chip go" data-p="chk">✓ Prüfen</button><button class="chip" data-p="tip">💡 Tipp</button>` : ''}<span id="stat"></span>`;
     $$('[data-p]', pal).forEach(b => b.onclick = () => palAct(b));
   }
@@ -720,6 +768,6 @@
     V.onclick = e => { const x = e.target.closest('[data-bsp]'); if (x && BSP[+x.dataset.bsp]) loadBsp(BSP[+x.dataset.bsp]); };
   }
   function loadBsp(b) { S.task = null; S.res = null; S.sel = null; plLoad(b.cir); setTab('anl'); toast('Schaltung geladen: ' + b.titel); }
-  root.PNE_UI = { S, PL, setTab, openTask, plLoad, plDraw, checkTask, symSVG, drawPart, genCalc, route, markDone };
+  root.PNE_UI = { fixSvg, S, PL, setTab, openTask, plLoad, plDraw, checkTask, symSVG, drawPart, genCalc, route, markDone };
   init();
 })(window);

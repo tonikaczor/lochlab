@@ -14,12 +14,12 @@
     5: 'LF05 – Elektroenergieversorgung',
     6: 'LF06 – Elektronische Baugruppen',
     7: 'LF07 – Baugruppen konfigurieren',
-    8: 'LF08 – Geraete herstellen und pruefen',
-    9: 'LF09 – Geraete und Systeme instand halten',
+    8: 'LF08 – Geräte herstellen und prüfen',
+    9: 'LF09 – Geräte und Systeme instand halten',
     10: 'LF10 – Fertigungsanlagen einrichten',
-    11: 'LF11 – Pruefsysteme einrichten und anwenden',
-    12: 'LF12 – Geraete und Systeme planen und realisieren',
-    13: 'LF13 – Fertigungs- und Pruefsysteme instand halten'
+    11: 'LF11 – Prüfsysteme einrichten und anwenden',
+    12: 'LF12 – Geräte und Systeme planen und realisieren',
+    13: 'LF13 – Fertigungs- und Prüfsysteme instand halten'
   };
   var LF_REF = { 1: 240, 2: 301, 3: 250, 4: 253, 5: 256, 6: 259, 7: 262, 8: 265, 9: 268, 10: 271, 11: 274, 12: 277, 13: 281 };
 
@@ -69,10 +69,10 @@
 
   var css = document.createElement('style');
   css.textContent =
-    '#iliasBar{position:relative;margin:18px 10px 10px;padding:8px 12px;border-top:1px solid rgba(255,255,255,.12);' +
-    'font:12.5px/1.4 system-ui,sans-serif;color:#8d99a6;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}' +
-    '#iliasBar b{color:#8d99a6;font-weight:600;white-space:nowrap}' +
-    '#iliasBar a{color:#3b9eff;text-decoration:none;white-space:nowrap}' +
+    '#iliasBar{position:relative;margin:18px 10px 10px;padding:8px 12px;border-top:1px solid var(--line,rgba(255,255,255,.12));' +
+    'font:14px/1.4 system-ui,sans-serif;color:var(--mute,#8d99a6);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}' +
+    '#iliasBar b{color:var(--mute,#8d99a6);font-weight:600;white-space:nowrap}' +
+    '#iliasBar a{color:var(--accent,#3b9eff);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;min-height:44px}' +
     '#iliasBar a:hover{text-decoration:underline}';
   document.head.appendChild(css);
 

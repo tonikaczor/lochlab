@@ -84,7 +84,7 @@
     const step = tickStep(T) * 1000, first = Math.ceil(win.t0 / step) * step;
     for (let t = first; t <= win.t1 + 1; t += step) {
       const x = X(t); if (x < x0 - 0.5 || x > x0 + w + 0.5) continue;
-      s += `<line class="gr" x1="${q(x)}" y1="${g.top}" x2="${q(x)}" y2="${H - g.axisH + 2}"/><text class="tk" x="${q(x)}" y="${H - 6}" text-anchor="middle">${esc(fmtT(t))}</text>`;
+      s += `<line class="gr" x1="${q(x)}" y1="${g.top}" x2="${q(x)}" y2="${H - g.axisH + 2}"/><text class="tk" x="${q(x)}" y="${H - 6}" text-anchor="${x > x0 + w - 16 ? 'end' : 'middle'}">${esc(fmtT(t))}</text>`;
     }
     rows.forEach((r, k) => {
       const yb = g.top + k * g.rowH, yH = yb + 4, yL = yb + g.rowH - 5, d = pathD(r, win.t0, win.t1, x0, w, yH, yL, rec.t);
@@ -118,16 +118,16 @@
   const lsSet = v => { try { localStorage.setItem(LS, JSON.stringify(v)); } catch (e) {} };
   const CSS = `.vzsig .vzbox{background:var(--panel2);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:6px 0;touch-action:manipulation;-webkit-user-select:none;user-select:none}
 .vzsig .vzbox svg{display:block;width:100%;height:auto}
-.vzsig svg text{font-family:system-ui,sans-serif;font-size:12px;fill:var(--fg)}
-.vzsig svg .tk{font-size:10.5px;fill:var(--mute)}.vzsig svg .cl{font-size:12px;font-weight:700;fill:var(--warn,var(--accent))}
+.vzsig svg text{font-family:system-ui,sans-serif;font-size:13.5px;fill:var(--fg)}
+.vzsig svg .tk{font-size:13px;fill:var(--mute)}.vzsig svg .cl{font-size:13.5px;font-weight:700;fill:var(--warn,var(--accent))}
 .vzsig svg .lb.i{fill:var(--accent)}.vzsig svg .lb.o{fill:var(--ok)}
 .vzsig svg .bg{fill:var(--panel);opacity:.7}.vzsig svg .gr{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4}.vzsig svg .lo{stroke:var(--line);stroke-width:1;opacity:.6}
 .vzsig svg .tr{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:butt}.vzsig svg .tr.i{stroke:var(--accent)}.vzsig svg .tr.o{stroke:var(--ok)}
 .vzsig svg .cu{stroke:var(--warn,var(--accent));stroke-width:1.5;stroke-dasharray:4 3}
 .vzsig .vzctl{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
-.vzsig .vzctl button{min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600;color:var(--fg);font-size:13px}
+.vzsig .vzctl button{min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600;color:var(--fg);font-size:14px}
 .vzsig .vzctl button[aria-pressed=true]{background:var(--accent-bg);border-color:var(--accent);color:#fff}
-.vzsig .vzcap{margin:2px 2px 6px;font-size:12.5px;color:var(--mute)}`;
+.vzsig .vzcap{margin:2px 2px 6px;font-size:14px;color:var(--mute)}`;
 
   let S = null, rec = null, sig = '', hooked = null, T = 10, flt = 'alle', cursors = [], cardOpen = true, lastDraw = 0, tabNow = '';
   const cfg = lsGet(); if (WINDOWS.indexOf(cfg.T) >= 0) T = cfg.T; if (['alle', 'i', 'o'].indexOf(cfg.flt) >= 0) flt = cfg.flt;

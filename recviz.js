@@ -18,14 +18,15 @@
 .rv h5{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
 .rv svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}
 .rv svg text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--fg);font-size:12px}
-.rv .m{fill:var(--mute)!important}.rv .b{font-weight:700}.rv .sm{font-size:10.5px}.rv .ok{fill:var(--ok)!important}.rv .bad{fill:var(--danger)!important}.rv .wn{fill:var(--warn)!important}
+.rv .m{fill:var(--mute)!important}.rv .b{font-weight:700}.rv .sm{font-size:11.5px}.rv .ok{fill:var(--ok)!important}.rv .bad{fill:var(--danger)!important}.rv .wn{fill:var(--warn)!important}
 .rv .nd{fill:var(--panel);stroke:var(--line);stroke-width:1.3}.rv .nok{fill:var(--panel);stroke:var(--ok);stroke-width:2}.rv .nno{fill:var(--panel);stroke:var(--danger);stroke-width:2}
 .rv .noff{fill:none;stroke:var(--mute);stroke-width:1.2;stroke-dasharray:3 3}.rv .ngo{fill:var(--panel);stroke:var(--accent);stroke-width:2}.rv .nwt{fill:var(--panel);stroke:var(--warn);stroke-width:2}
 .rv .ax{stroke:var(--mute);stroke-width:1.6}.rv .tk{stroke:var(--line);stroke-width:1}.rv .ar{stroke:var(--mute);stroke-width:1.5;fill:none}
 .rv .sa{fill:var(--accent);opacity:.35}.rv .so{fill:var(--ok);opacity:.4}.rv .sw{fill:var(--warn);opacity:.4}.rv .sb{fill:var(--danger);opacity:.38}
 .rv .da{fill:var(--accent)}.rv .do{fill:var(--ok)}.rv .dw{fill:var(--warn)}.rv .db{fill:var(--danger)}.rv .dm{fill:var(--mute)}
 .rv .l1{fill:var(--accent)}.rv .l2{fill:var(--accent);opacity:.7}.rv .l3{fill:var(--accent);opacity:.5}.rv .l4{fill:var(--accent);opacity:.32}.rv .lh{fill:var(--hi)}.rv .ln{fill:var(--ok)}
-.rv-note{margin:6px 0 0;font-size:12.5px;color:var(--mute);line-height:1.4}`;
+.rv-note{margin:6px 0 0;font-size:12.5px;color:var(--mute);line-height:1.4}
+@media(max-width:600px){.rv svg text{font-size:14px}.rv .sm{font-size:14px}.rv h5,.rv-note{font-size:14px}[data-lr-buehne] .rv svg{max-height:calc(var(--lr-buehne-max,45dvh) - 70px)}[data-lr-buehne] .rv{margin:0;padding:6px 8px 4px}.vzs{margin-top:0}}`;
   function css() { try { if (typeof document === 'undefined' || document.getElementById('rvCss')) return; const s = document.createElement('style'); s.id = 'rvCss'; s.textContent = CSS; document.head.appendChild(s); } catch (e) {} }
   css();
   const wrap = (title, svg, note) => `<div class="rv"><h5>${esc(title)}</h5>${svg}${note ? `<p class="rv-note">${esc(note)}</p>` : ''}</div>`;

@@ -408,7 +408,7 @@
         const x = x0 + 14 + cc * (sz + 4), y = y0 + 30 + r2 * (sz + 6);
         ctx.fillStyle = bit ? '#1d6b33' : '#1a2026'; rr(ctx, x, y, sz, sz, 5); ctx.fill(); ctx.strokeStyle = bit ? C.ok : '#3a444f'; ctx.lineWidth = 1.5; ctx.stroke();
         txt(ctx, String(bit), x + sz / 2, y + sz / 2, Math.max(10, sz * 0.5), bit ? '#fff' : C.dim, 'center', true, MONO);
-        if (i === 0) txt(ctx, 'MSB', x + sz / 2, y - 6 + 0, 8, C.dim, 'center'); if (i === n - 1) txt(ctx, 'LSB', x + sz / 2, y + sz + 8 + (rows - 1 - r2) * 0, 8, C.dim, 'center');
+        if (i === 0) txt(ctx, 'MSB', x + sz / 2, y - 6 + 0, 10, C.dim, 'center'); if (i === n - 1) txt(ctx, 'LSB', x + sz / 2, y + sz + 8 + (rows - 1 - r2) * 0, 10, C.dim, 'center');
       }
       const ty = y0 + 30 + rows * (sz + 6) + 14;
       txt(ctx, 'Zählwert ' + s.code + '   (0x' + s.code.toString(16).toUpperCase() + ')', x0 + 14, ty, 15, C.text, 'left', true, MONO);

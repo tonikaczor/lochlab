@@ -166,8 +166,19 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .svbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:6px;margin:8px 0;overflow-x:auto}.svbox svg{display:block;margin:0 auto;max-width:100%;height:auto}.svbox text{font-family:system-ui,sans-serif;fill:var(--fg)}
 .sv-a{stroke:var(--accent);fill:none;stroke-width:2.5}.sv-k{stroke:var(--fg);fill:none;stroke-width:1.5}.sv-f{fill:var(--work)}.sv-m{fill:var(--mute)!important}.sv-q{fill:var(--hi)!important;font-weight:700}
 .opts.ops button{font-size:15px}.seg{flex-wrap:wrap;border-radius:14px}.cf{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0}.cf .chip{height:44px}
+/* K1c: Waage beim Umstellen */
+.svbox .wg-t{font-weight:700;font-family:ui-monospace,Menlo,Consolas,monospace}.svbox .wg-h{font-weight:600;fill:var(--mute)}.svbox .wg-dish{fill:var(--work)}.wg svg{max-width:420px}.wgb .btn{min-height:44px}
+/* Audit K1: Schrift mindestens 14 px, Tippziele mindestens 44 px */
+.stats .bx,.fbar .lbl,.row small,.grow small{font-size:14px}
+.chip.s{height:44px;font-size:14px}
+.seg button{height:44px}
+.sch tr.hd td{font-size:14px}
+.opts button{min-height:46px}
+.pl h4{font-size:14px}
+.nv .nvk,.pl small{font-size:14px}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -210,6 +221,8 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'matlab.html': { buehne: { umst: '#umWaage' }, name: 'Rechen-Lab Basis', gruppen: [{ name: 'Einheiten und Messen', teile: ['einh', 'mess'] }, { name: 'Dreisatz und Prozent', teile: ['drei', 'proz'] }], saetze: { 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

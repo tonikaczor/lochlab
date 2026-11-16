@@ -90,7 +90,7 @@
       sheet(title, (b, close) => {
         b.innerHTML = (opt.intro ? `<p class="hint2" style="margin-top:0">${esc(opt.intro)}</p>` : '') + fields.map((f, i) =>
           `<label class="f"><span>${esc(f.label)}</span><input id="ak${i}" type="text" inputmode="${f.type === 'number' ? 'decimal' : 'text'}" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(f.value == null ? '' : f.value)}"></label>`).join('') +
-          '<div id="akErr" class="hint2" style="color:#ff8a7a;min-height:18px"></div><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>OK</button></div>';
+          '<div id="akErr" class="hint2" style="color:var(--bad);min-height:18px"></div><div class="btns"><button class="btn" data-c>Abbrechen</button><button class="btn pri" data-ok>OK</button></div>';
         const ok = () => {
           const out = {};
           for (let i = 0; i < fields.length; i++) {
@@ -956,7 +956,7 @@ supply|Versorgung`;
       <div class="btns"><button class="btn pri" data-pa="chk"${pkSel && !(pkRes && pkRes.done) ? '' : ' disabled'}>✓ Prüfen: ${pkSel ? esc((dsById(pkSel) || {}).part || '') : 'erst auswählen'}</button><button class="btn" data-pa="new">Neues Szenario</button></div>`;
     if (pkRes && pkRes.done) {
       const r = pkRes, ds = dsById(pkSel);
-      h += `<div class="res"><div class="big2" style="color:${r.ok ? 'var(--ok)' : '#ff8a7a'}">${r.ok ? '✓ Passt!' : '✗ Passt nicht.'} ${esc(ds.part)}</div><ul class="vt">${r.lines.map((l, i) => `<li class="${l.st}"><span class="m">${l.st === 'ok' ? '✓' : l.st === 'bad' ? '✗' : '–'}</span><div style="flex:1">${esc(l.text)}${l.focus ? ` <button class="chip s" data-pw="${i}" style="height:28px;font-size:12px;padding:0 8px">Wo steht das?</button>` : ''}</div></li>`).join('')}</ul>
+      h += `<div class="res"><div class="big2" style="color:${r.ok ? 'var(--ok)' : 'var(--bad)'}">${r.ok ? '✓ Passt!' : '✗ Passt nicht.'} ${esc(ds.part)}</div><ul class="vt">${r.lines.map((l, i) => `<li class="${l.st}"><span class="m">${l.st === 'ok' ? '✓' : l.st === 'bad' ? '✗' : '–'}</span><div style="flex:1">${esc(l.text)}${l.focus ? ` <button class="chip s" data-pw="${i}" style="height:28px;font-size:12px;padding:0 8px">Wo steht das?</button>` : ''}</div></li>`).join('')}</ul>
         ${r.over ? '<div class="wh trap"><b>Achtung:</b> Der Betriebspunkt überschreitet einen Grenzwert. Absolute Maximum Rating ist kein Zielwert!</div>' : ''}
         <div class="wh"><b>Geeignet wären:</b> ${sc.sols.map(id => esc((dsById(id) || {}).part || id)).join(', ')}.${r.ok ? '' : ' Prüfe immer erst den Typ (Funktion), dann Spannung, Strom und Thermik mit Reserve.'}</div></div>`;
     }
@@ -1347,7 +1347,7 @@ supply|Versorgung`;
     try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {}
     if (root.Badges) root.Badges.result(id, pct);
   }
-  let taskRes = null; const taskAns = {};
+  let taskRes = null; const taskAns = {}, taskTry = {};
   const curTask = () => { const a = TK(); return a && S.task ? a.find(t => t.id === S.task.id) : null; };
   function updateTaskBadge() {
     const a = TK(), b = $('#tkBd'); if (!b) return;
@@ -1383,9 +1383,11 @@ supply|Versorgung`;
     try { lines = await (R.run ? R.run(t, ans) : t.check(ans)); } catch (e) { console.error(e); lines = [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden: ' + (e && e.message || e), why: '' }]; }
     S.readonly = false; lines = Array.isArray(lines) ? lines : [];
     const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    taskTry[t.id] = pct === 100 ? 0 : (taskTry[t.id] || 0) + 1;
+    taskRes = { id: t.id, lines, pct, tries: pct === 100 ? 0 : taskTry[t.id] }; markDone(t.id, pct); updateTaskBadge();
     const F = root.LochFX; if (F) try { if (pct === 100) { F.pass(100); if (F.isFun && F.isFun()) F.confetti(false); } else F.pass(pct); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
+    const fbEl = $('#taskView .lr-fb'); if (fbEl && root.LabRahmen) root.LabRahmen.zeig(fbEl);
     toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
   }
   function hintTask() {
@@ -1408,9 +1410,16 @@ supply|Versorgung`;
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat || '')}</h4><div class="big">${esc(t.title)}</div><div class="lv">${'●'.repeat(t.level || 1)}${'○'.repeat(3 - (t.level || 1))}</div>
         <p style="margin:8px 0">${esc(t.text)}</p>${S.dsId && LIBX() ? `<p class="hint2" style="margin-top:0">Datenblatt: ${esc(dsName(S.dsId))} · Tab „${esc((TABS.find(x => x[0] === S.tab) || [0, 0, ''])[2])}“</p>` : ''}
         ${ask2 && ask2.choices ? `<div class="opts" id="tkOpts" style="margin:8px 0">${ask2.choices.map((c, i) => `<button data-tc="${i}" class="${cur.c === i ? 'on' : ''}">${esc(c)}</button>`).join('')}</div>` : ''}
-        ${ask2 && !ask2.choices ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(cur.v || '')}"></label>` : ''}
+        ${ask2 && !ask2.choices ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(cur.v || '')}"></label>${ask2.unit ? `<p class="lr-hinweis">Antwort in ${esc(ask2.unit)}. Die Toleranz nennt die Prüfzeile nach dem Klick.</p>` : ''}` : ''}
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="go">Zum Datenblatt</button><button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
+      /* Rückmeldung nach dem Prüfen (Vorgabe 4.5): richtig, erster Fehlversuch mit Tipp, zweiter mit Lösung */
+      if (r) {
+        const bad = r.lines.filter(l => !l.ok);
+        if (r.pct === 100) h += '<div class="lr-fb ok" role="status"><p><strong>Richtig.</strong> Alle Prüfpunkte sind erfüllt.</p></div>';
+        else if (r.tries < 2) h += `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht ganz.</strong> Tipp: ${esc(bad[0] ? bad[0].text : 'Lies die Aufgabe noch einmal.')} Du hast einen zweiten Versuch.</p></div>`;
+        else h += `<div class="lr-fb loes" role="status"><p><strong>Lösung.</strong> ${bad.map(l => esc(l.text) + (l.why ? ' ' + esc(l.why) : '')).join(' ')}</p><p>Mit „💡 Tipp“ kannst Du die Musterlösung öffnen.</p></div>`;
+      }
       if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
       h += '</div>';
     }

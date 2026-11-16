@@ -228,6 +228,53 @@
     return svg(360, 116, mode === 'serial' ? 'Zwei Komponenten in Reihe' : 'Zwei Komponenten parallel (redundant)', s);
   }
 
+  /* ---------------------------------------------------------- Regler-Übungen (Passwortlänge, Backup-Abstand) */
+  /* PRUEFEN: Übungswerte, Größenordnung: 1 Milliarde Versuche pro Sekunde; Sicherungen laufen zu festen Zeiten ab 0 Uhr im Abstand X; ein Ausfall zur vollen Stunde b verliert alles seit der letzten Sicherung */
+  const SL_RATE = 1e9, SL_INT = [1, 2, 3, 4, 6, 8, 12, 24], YEAR = 31536000;
+  function pwSlide(N, L) {
+    if (!fin(N) || N < 2 || !fin(L) || L < 1 || L !== Math.floor(L)) return null;
+    const b = C.brute(N, L, SL_RATE), e = C.entropy(N, L); return { bits: e.bits, max: b.seconds, avg: b.avgSeconds };
+  }
+  const pwAvg = (N, L) => { const p = pwSlide(N, L); return p ? p.avg : NaN; }, pwBits = (N, L) => { const p = pwSlide(N, L); return p ? p.bits : NaN; };
+  const PW_TASKS = [
+    { text: 'Stell Ziffern (N = 10) ein und wähle die Länge so, dass die Suche im Mittel länger als 1 Stunde, aber höchstens 1 Tag dauert.', test: s => s.N === 10 && pwAvg(10, s.L) > 3600 && pwAvg(10, s.L) <= 86400, set: { N: 10, L: 13 }, ok: 'Stimmt. Bei Ziffern wird die Zeit mit jeder Stelle zehnmal so lang: 13 Stellen sind etwa 1,4 Stunden, 14 Stellen etwa 14 Stunden.' },
+    { text: 'Stell alle vier Zeichengruppen (N = 94) ein. Finde die kleinste Länge, bei der die Suche im Mittel länger als 100 Jahre dauert.', test: s => s.N === 94 && s.L >= 2 && pwAvg(94, s.L) > 100 * YEAR && pwAvg(94, s.L - 1) <= 100 * YEAR, set: { N: 94, L: 10 }, ok: 'Stimmt. 10 Zeichen aus allen vier Gruppen halten im Mittel mehr als 100 Jahre, bei 9 Zeichen sind es nur etwa 9 Jahre.' },
+    { text: 'Stell Buchstaben und Ziffern (N = 62) ein. Finde die kleinste Länge mit mindestens 60 Bit Entropie.', test: s => s.N === 62 && s.L >= 2 && pwBits(62, s.L) >= 60 && pwBits(62, s.L - 1) < 60, set: { N: 62, L: 11 }, ok: 'Stimmt. 11 Zeichen ergeben etwa 65,5 Bit, 10 Zeichen nur etwa 59,5 Bit.' },
+    { text: 'Stell nur Ziffern (N = 10) ein. Finde die kleinste Länge, bei der die Suche im Mittel mindestens 1 Jahr dauert.', test: s => s.N === 10 && s.L >= 2 && pwAvg(10, s.L) >= YEAR && pwAvg(10, s.L - 1) < YEAR, set: { N: 10, L: 17 }, ok: 'Stimmt. 17 Ziffern sind im Mittel etwa 1,6 Jahre, 16 Ziffern nur etwa 58 Tage.' },
+    { text: 'Stell Kleinbuchstaben (N = 26) ein. Finde die größte Länge, bei der ein Angreifer im Mittel noch unter 1 Sekunde braucht.', test: s => s.N === 26 && pwAvg(26, s.L) < 1 && pwAvg(26, s.L + 1) >= 1, set: { N: 26, L: 6 }, ok: 'Stimmt. 6 Kleinbuchstaben fallen im Mittel in unter einer Sekunde, mit 7 sind es etwa 4 Sekunden.' }
+  ];
+  function pwSlideSvg(N, L) {
+    const p = pwSlide(N, L); if (!p) return '';
+    const X0 = 12, X1 = 318, D = 14, x = v => X0 + Math.max(0, Math.min(D, Math.log10(Math.max(v, 1)))) / D * (X1 - X0), m = x(p.avg);
+    let s = `<rect x="${X0}" y="34" width="${X1 - X0}" height="14" rx="4" class="trk"/><rect x="${X0}" y="34" width="${f1(Math.max(2, m - X0))}" height="14" rx="4" class="fill"/>`;
+    LADDER.forEach(([v, n], i) => { const px = x(v); s += `<line x1="${f1(px)}" y1="48" x2="${f1(px)}" y2="54" class="tk"/><text x="${f1(Math.min(X1 - 14, Math.max(X0 + 14, px)))}" y="${i % 2 ? 82 : 68}" text-anchor="middle" class="m">${n}</text>`; });
+    const lbl = p.avg < 1 ? 'im Mittel unter 1 Sekunde' : p.avg > 1e14 ? 'im Mittel länger als 10 Billionen Jahre' : 'im Mittel: ' + C.humanTime(p.avg), w = tw(lbl, 12);
+    s += `<path d="M${f1(m - 6)} 24L${f1(m + 6)} 24L${f1(m)} 33Z" class="ptr"/><text x="${f1(Math.min(X1 - w / 2, Math.max(X0 + w / 2, m)))}" y="16" text-anchor="middle" class="b">${esc(lbl)}</text>`;
+    s += `<text x="${X0}" y="100" class="m">N = ${N}, L = ${L}: ${esc(String(C.rd(p.bits, 1)).replace('.', ','))} Bit, 1 Mrd. Versuche je Sekunde</text>`;
+    return `<svg class="nvs" data-lr-buehne="verh" viewBox="0 0 330 108" role="img" aria-label="${esc('Zeitleiter von einer Sekunde bis zu einer Million Jahren (logarithmisch); ' + lbl + '; Zeichenvorrat ' + N + ', Länge ' + L)}">${s}</svg>`;
+  }
+  function bakSlide(X, b) {
+    if (SL_INT.indexOf(X) < 0 || !fin(b) || b < 0 || b > 23 || b !== Math.floor(b)) return null;
+    const last = b - b % X; return { last, loss: b - last, worst: X, perDay: 24 / X };
+  }
+  const BAK_TASKS = [
+    { text: 'Stell den Abstand so ein, dass im schlimmsten Fall höchstens 4 Stunden Daten verloren gehen, mit möglichst wenigen Sicherungen am Tag.', test: s => s.X === 4, set: { X: 4, b: 9 }, ok: 'Stimmt. Alle 4 Stunden sind 6 Sicherungen am Tag. Kleinerer Abstand schützt besser, kostet aber mehr Sicherungen.' },
+    { text: 'Die Sicherung läuft alle 6 Stunden. Stell den Ausfall so ein, dass der Datenverlust möglichst groß ist.', test: s => s.X === 6 && bakSlide(6, s.b).loss === 5, set: { X: 6, b: 5 }, ok: 'Stimmt. Kurz vor der nächsten Sicherung ist der Verlust am größten, hier 5 volle Stunden.' },
+    { text: 'Stell einen Ausfall um 15 Uhr ein und wähle den Abstand so, dass genau 3 Stunden Daten verloren gehen. Mehrere Abstände passen.', test: s => s.b === 15 && bakSlide(s.X, 15).loss === 3, set: { X: 4, b: 15 }, ok: 'Stimmt. Bei 4, 6 oder 12 Stunden Abstand liegt die letzte Sicherung um 12 Uhr, nach 15 Uhr fehlen dann 3 Stunden.' },
+    { text: 'Es darf höchstens 1 Stunde Daten verloren gehen. Stell den passenden Abstand ein.', test: s => s.X === 1, set: { X: 1, b: 9 }, ok: 'Stimmt. Stündlich sind 24 Sicherungen am Tag nötig. Wer noch weniger Verlust will, braucht andere Verfahren (zum Beispiel laufende Spiegelung).' }
+  ];
+  function bakSlideSvg(X, b) {
+    const p = bakSlide(X, b); if (!p) return '';
+    const X0 = 15, u = 12.5, bx = h => X0 + h * u; let s = `<rect x="${X0}" y="34" width="300" height="24" rx="4" class="trk"/>`;
+    if (p.loss > 0) s += `<rect x="${f1(bx(p.last))}" y="34" width="${f1(p.loss * u)}" height="24" class="loss"/>`;
+    for (let h = 0; h <= 24; h += X) s += `<line x1="${f1(bx(h))}" y1="30" x2="${f1(bx(h))}" y2="62" class="bk"/>`;
+    [0, 6, 12, 18, 24].forEach(h => { s += `<text x="${f1(bx(h))}" y="78" text-anchor="middle" class="m">${h}</text>`; });
+    const lbl = 'Ausfall um ' + b + ' Uhr: ' + (p.loss === 0 ? 'kein Datenverlust' : p.loss + (p.loss === 1 ? ' Stunde' : ' Stunden') + ' Daten verloren'), w = tw(lbl, 12);
+    s += `<path d="M${f1(bx(b) - 6)} 18L${f1(bx(b) + 6)} 18L${f1(bx(b))} 30Z" class="fail"/><text x="${f1(Math.min(315 - w / 2, Math.max(X0 + w / 2, bx(b))))}" y="12" text-anchor="middle" class="b">${esc(lbl)}</text>`;
+    s += `<text x="${X0}" y="98" class="m">Striche = Sicherungen (${p.perDay} am Tag), rot = verloren</text>`;
+    return `<svg class="nvs" data-lr-buehne="verh" viewBox="0 0 330 106" role="img" aria-label="${esc('Tag von 0 bis 24 Uhr mit Sicherungen alle ' + X + ' Stunden; ' + lbl)}">${s}</svg>`;
+  }
+
   /* ---------------------------------------------------------- Stil */
   const CSS = `
 .nv svg{display:block;width:100%;height:auto;max-width:560px;margin:4px auto 0;overflow:visible}
@@ -266,12 +313,24 @@
 .nv .nvk{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--mute);margin:6px 0 0}
 .nv .nvk i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-2px;border:3px solid}
 .nv .nvk .kN{border-color:var(--accent)}.nv .nvk .kH{border-color:var(--hi)}.nv .nvk .kB{border-color:var(--ok)}.nv .nvk .kD{border-color:var(--danger)}
+svg.nvs{display:block;width:100%;height:auto;max-width:560px;margin:0 auto 8px;overflow:visible}
+svg.nvs text{fill:var(--fg);font:12px system-ui,-apple-system,"Segoe UI",sans-serif}
+svg.nvs .b{font-weight:700}svg.nvs .m{fill:var(--mute)}
+svg.nvs .trk{fill:var(--panel2);stroke:var(--line)}svg.nvs .fill{fill:var(--accent);fill-opacity:.55}
+svg.nvs .ptr{fill:var(--hi)}svg.nvs .tk{stroke:var(--mute);stroke-width:1.5}
+svg.nvs .loss{fill:var(--danger);fill-opacity:.5}svg.nvs .bk{stroke:var(--accent);stroke-width:2.5}svg.nvs .fail{fill:var(--danger)}
+.nv .seg.wr{display:flex;flex-wrap:wrap;border-radius:12px}.nv .seg.wr button{flex:1 1 45%;height:auto;min-height:44px;white-space:normal;padding:6px 10px}
+.nv .nvl{margin:10px 0 4px;font-size:14px;color:var(--mute)}
+.nv .slr{width:100%;min-height:44px}.nv .slv{font-weight:700}
+.nv .sltask{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.nv .wgs{margin:0 0 4px;font-weight:700;font-size:15px}.nv .slq{margin:0 0 6px;font-size:15px;line-height:1.45}
+@media (max-width:600px){.nv .nvk{font-size:14px}}
 @media print{.nv{display:none!important}}`;
 
   const KEY = { N: ['kN', 'blau'], H: ['kH', 'orange'], B: ['kB', 'grün'], D: ['kD', 'rot'] };
   const key = a => `<div class="nvk">${a.map(([k, t]) => `<span><i class="${KEY[k][0]}"></i>${esc(t)}</span>`).join('')}</div>`;
 
-  const API = { sha256, hashGrid, pwChart, timeLadder, caesarSvg, vigGrid, xorGrid, permGrid, fwPath, shellsSvg, SHELLS, backupBars, seriesParallel, CSS, hexBits };
+  const API = { sha256, hashGrid, pwChart, timeLadder, caesarSvg, vigGrid, xorGrid, permGrid, fwPath, shellsSvg, SHELLS, backupBars, seriesParallel, pwSlide, pwSlideSvg, PW_TASKS, bakSlide, bakSlideSvg, BAK_TASKS, SL_INT, CSS, hexBits };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.ITS_VIZ = API;
   if (typeof document === 'undefined' || !C) return;
 
@@ -285,11 +344,13 @@
     if (!c || c.parentNode !== view) { c = document.createElement('div'); c.id = id; c.className = 'card pl nv'; c.innerHTML = '<h4></h4><div class="nvb"></div>'; view.appendChild(c); fresh = true; }
     c.firstChild.textContent = title; return { c, fresh, b: c.lastChild };
   }
+  const WATCHERS = [];
   function watch(viewId, build) {
     const v = $(viewId); if (!v) return null; let t = 0;
-    const run = () => { t = 0; mo.disconnect(); try { build(v); } catch (e) { if (root.console) console.warn('itsviz', e); } mo.observe(v, { childList: true, subtree: true }); };
+    /* Alle Beobachter ruhen, solange irgendein Aufbau läuft: mehrere watch() auf derselben Ansicht lösen sich sonst endlos gegenseitig aus */
+    const run = () => { t = 0; WATCHERS.forEach(w => w.mo.disconnect()); try { build(v); } catch (e) { if (root.console) console.warn('itsviz', e); } WATCHERS.forEach(w => { w.mo.takeRecords(); w.mo.observe(w.v, { childList: true, subtree: true }); }); };
     const mo = new MutationObserver(() => { if (!t) t = setTimeout(run, 30); });
-    run(); return run;
+    WATCHERS.push({ mo, v }); run(); return run;
   }
   const show = (k, html) => { k.c.style.display = html ? '' : 'none'; k.b.innerHTML = html || ''; };
   const num = s => C.parseDe(s);
@@ -383,4 +444,46 @@
     if (fin(a) && fin(b) && (comb === 'serial' || comb === 'parallel')) h += '<div style="height:8px"></div>' + seriesParallel(comb, fld('bak.a').trim(), fld('bak.b').trim());
     show(k, h);
   });
+  /* Regler-Übungen: ein Block (feste Grafik und Karte) steht oben im Reiter; Zustand bleibt beim Reiterwechsel, wird nicht gespeichert */
+  const SLP = { N: 26, L: 8, task: 0, shown: false }, SLB = { xi: 4, b: 9, task: 0, shown: false };
+  function slSet(sv, html) { const t = document.createElement('div'); t.innerHTML = html; const n = t.firstChild; if (!n) return; sv.innerHTML = n.innerHTML; sv.setAttribute('aria-label', n.getAttribute('aria-label')); }
+  function slPanel(view, o) {
+    let sv = $(o.id + 'Sv'), c = $(o.id);
+    if (!sv || !c || c.parentNode !== view || sv.parentNode !== view) {
+      [sv, c].forEach(e => { if (e && e.parentNode) e.parentNode.removeChild(e); });
+      const t = document.createElement('div'); t.innerHTML = o.svg(); sv = t.firstChild; sv.id = o.id + 'Sv';
+      c = document.createElement('div'); c.id = o.id; c.className = 'card pl nv';
+      c.innerHTML = `<h4>${esc(o.title)}</h4>${o.ctl}<div class="sltask"><p class="wgs" id="${o.id}H"></p><p class="slq" id="${o.id}Q"></p><div id="${o.id}F"></div><div class="nvc"><button class="btn" data-sl="tsol">Lösung zeigen</button><button class="btn" data-sl="tnext">Nächste Aufgabe ▶</button></div></div>`;
+      view.insertBefore(c, view.firstChild); view.insertBefore(sv, view.firstChild);
+      c.addEventListener('input', e => { const r = e.target.closest('[data-sl]'); if (!r) return; o.S.shown = false; o.input(r); slPanel(view, o); });
+      c.addEventListener('click', e => {
+        const b = e.target.closest('button[data-sl]'); if (!b) return; const w = b.dataset.sl;
+        if (w === 'tnext') { o.S.task = (o.S.task + 1) % o.tasks.length; o.S.shown = false; }
+        else if (w === 'tsol') { o.sol(o.tasks[o.S.task].set); o.S.shown = true; }
+        else { o.S.shown = false; o.click(b); }
+        slPanel(view, o);
+      });
+    }
+    slSet(sv, o.svg()); o.upd(c);
+    const T = o.tasks[o.S.task], ok = T.test(o.state());
+    $(o.id + 'H').textContent = 'Aufgabe ' + (o.S.task + 1) + ' von ' + o.tasks.length; $(o.id + 'Q').textContent = T.text;
+    $(o.id + 'F').innerHTML = ok ? `<div class="lr-fb ${o.S.shown ? 'loes' : 'ok'}" role="status"><p>${o.S.shown ? 'Lösung: ' : '✓ '}${esc(T.ok)}</p></div>` : '';
+  }
+  const slOn = (c, sel, fn) => c.querySelectorAll(sel).forEach(e => { const on = fn(e); e.classList.toggle('on', on); e.setAttribute('aria-pressed', on); });
+  watch('v_pw', v => slPanel(v, {
+    id: 'slPw', title: 'Regler-Übung: Passwortlänge und Suchzeit', S: SLP, tasks: PW_TASKS, state: () => SLP,
+    ctl: `<p class="nvl" id="slPwL1">Zeichenvorrat</p><div class="seg wr" role="group" aria-labelledby="slPwL1">${POOLS.map(([n, l]) => `<button data-sl="pool" data-v="${n}">${esc(l)}</button>`).join('')}</div>
+      <label class="f" style="margin-top:10px"><span>Länge L: <b class="slv" id="slPwV"></b> Zeichen</span><input class="slr" type="range" min="1" max="20" step="1" data-sl="L"></label>
+      <p class="hint2">Übungswerte, Größenordnung: 1 Milliarde Versuche pro Sekunde, Passwort zufällig gewählt. Die Grafik oben zeigt die mittlere Suchzeit.</p>`,
+    svg: () => pwSlideSvg(SLP.N, SLP.L), input: r => { SLP.L = +r.value; }, click: b => { SLP.N = +b.dataset.v; }, sol: s => { SLP.N = s.N; SLP.L = s.L; },
+    upd: c => { slOn(c, '[data-sl=pool]', e => +e.dataset.v === SLP.N); const r = c.querySelector('[data-sl=L]'); if (+r.value !== SLP.L) r.value = SLP.L; $('slPwV').textContent = SLP.L; }
+  }));
+  watch('v_bak', v => slPanel(v, {
+    id: 'slBak', title: 'Regler-Übung: Backup-Abstand und Datenverlust', S: SLB, tasks: BAK_TASKS, state: () => ({ X: SL_INT[SLB.xi], b: SLB.b }),
+    ctl: `<label class="f"><span>Abstand der Sicherungen: alle <b class="slv" id="slBakX"></b> Stunden</span><input class="slr" type="range" min="0" max="${SL_INT.length - 1}" step="1" data-sl="X"></label>
+      <label class="f"><span>Ausfall um <b class="slv" id="slBakB"></b> Uhr</span><input class="slr" type="range" min="0" max="23" step="1" data-sl="B"></label>
+      <p class="hint2">Vereinfacht: Die Sicherungen laufen ab 0 Uhr im festen Abstand. Ein Ausfall verliert alles, was seit der letzten Sicherung neu dazukam. Der Abstand wählt nur Teiler von 24 Stunden.</p>`,
+    svg: () => bakSlideSvg(SL_INT[SLB.xi], SLB.b), input: r => { if (r.dataset.sl === 'X') SLB.xi = +r.value; else SLB.b = +r.value; }, click: () => { }, sol: s => { SLB.xi = SL_INT.indexOf(s.X); SLB.b = s.b; },
+    upd: c => { const x = c.querySelector('[data-sl=X]'), b = c.querySelector('[data-sl=B]'); if (+x.value !== SLB.xi) x.value = SLB.xi; if (+b.value !== SLB.b) b.value = SLB.b; $('slBakX').textContent = SL_INT[SLB.xi]; $('slBakB').textContent = SLB.b; }
+  }));
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -177,7 +177,7 @@
     '.cu-ln{fill:none;stroke-width:2.6;stroke-linejoin:round}.cu-gh{fill:none;stroke:var(--mute);stroke-width:2.2;stroke-dasharray:3 3;opacity:.85}.cu-band{fill:var(--accent);opacity:.16}.cu-lim{stroke:var(--danger);stroke-width:2;stroke-dasharray:6 3}' +
     '.cu-mr{fill:none;stroke:var(--fg);stroke-width:1.6}.cu-md{fill:var(--fg);stroke:var(--bg);stroke-width:1.5}.cu-xh{stroke:var(--fg);stroke-width:1;opacity:.7}' +
     '.cu-leg{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px}.cu-leg li{display:flex;align-items:center;gap:6px;min-height:24px}.cu-sw{width:30px;height:12px;flex:none}.cu-read{min-height:44px;margin-top:8px;font-size:13.5px;font-variant-numeric:tabular-nums}';
-  function css() { try { if (typeof document !== 'undefined' && document.head && !document.getElementById('elsCurveCss')) { const s = document.createElement('style'); s.id = 'elsCurveCss'; s.textContent = CSS; document.head.appendChild(s); } } catch (e) {} }
+  function css() { try { if (typeof document !== 'undefined' && document.head && !document.getElementById('elsCurveCss')) { const s = document.createElement('style'); s.id = 'elsCurveCss'; s.textContent = CSS + ZCSS; document.head.appendChild(s); } } catch (e) {} }
   const rigCurves = () => { let l = []; try { l = A && A.rig && typeof A.rig.curves === 'function' ? A.rig.curves() : []; } catch (e) { l = []; } return cleanAll(l); };
   const swatch = (i, kind) => '<svg class="cu-sw" viewBox="0 0 30 12" aria-hidden="true"><line x1="1" x2="29" y1="6" y2="6" stroke="' + (kind === 'gh' ? 'var(--mute)' : kind === 'lim' ? 'var(--danger)' : SER[i % SER.length]) + '" stroke-width="3"' + (kind === 'gh' ? ' stroke-dasharray="3 3"' : kind === 'lim' ? ' stroke-dasharray="6 3"' : DASH[i % DASH.length] ? ' stroke-dasharray="' + DASH[i % DASH.length] + '"' : '') + '/></svg>';
   function legend(c, ghost, show) {
@@ -193,6 +193,75 @@
     return '<details class="card" id="cuTab"' + (st.table ? ' open' : '') + '><summary>Wertetabelle (Alternative zum Bild)</summary><div class="cb"><table class="kt"><tr><th class="n">' + esc(c.xLabel + (c.xUnit ? ' [' + c.xUnit + ']' : '')) + '</th>' + c.series.map(s => '<th class="n">' + esc(s.name + (c.yUnit ? ' [' + c.yUnit + ']' : '')) + '</th>').join('') + '</tr>' +
       rows.map(r => '<tr><td class="n">' + fv(r.x) + '</td>' + r.ys.map(y => '<td class="n">' + (y == null ? '–' : fv(y)) + '</td>').join('') + '</tr>').join('') + '</table></div></details>';
   }
+  /* ============================================================ Zeit-Strom-Diagramm (B-els-06): Zonenflächen, ziehbarer Punkt, 30-mA-RCD-Linie.
+     Alle Werte stammen aus ELS_CORE (body.zoneCurve, body.zone, rcd.trip); hier stehen nur Abbildung (log-log) und Beschriftung. */
+  const ZD = { i0: 0.1, i1: 1000, t0: 10, t1: 10000 }, zd = { pt: null, rigId: null, drag: false, g: null };
+  const ZCSS = '.zd-wrap{position:relative}.zd-svg{display:block;width:100%;height:auto;border-radius:8px;outline:none;touch-action:none;cursor:crosshair}.zd-svg:focus-visible{outline:2px solid var(--accent)}.zd-say{margin:8px 0 0;font-size:14px;line-height:1.45}.zd-leg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:8px 0 0;padding:0;list-style:none;font-size:14px}.zd-leg li{display:flex;align-items:center;gap:6px}.zd-leg i{display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid var(--line)}';
+  const zdCore = () => (root.ELS_CORE && root.ELS_CORE.body && root.ELS_CORE.rcd ? root.ELS_CORE : null);
+  const ZD_RCD = { idn: 30, type: 'A', on: true };
+  function zdGeom(w) {
+    const h = Math.max(300, Math.round(w * 0.72)), m = { l: 52, r: 14, t: 12, b: 44 }, lx = Math.log10(ZD.i1 / ZD.i0), ly = Math.log10(ZD.t1 / ZD.t0), pw = w - m.l - m.r, ph = h - m.t - m.b;
+    return { w, h, m, pw, ph, X: i => m.l + Math.log10(i / ZD.i0) / lx * pw, Y: t => m.t + ph - Math.log10(t / ZD.t0) / ly * ph, iAt: x => ZD.i0 * Math.pow(10, Math.min(1, Math.max(0, (x - m.l) / pw)) * lx), tAt: y => ZD.t0 * Math.pow(10, Math.min(1, Math.max(0, (m.t + ph - y) / ph)) * ly) };
+  }
+  function zdFromRig() {
+    const C = zdCore(); if (!C || !A || !A.rig || typeof A.rig.getControl !== 'function') return null;
+    try { const g = k => A.rig.getControl(k), tMs = g('t'), tc = C.body.touch({ U: g('u'), haut: g('haut'), pfad: g('weg'), rv: g('rv'), tMs }); if (tc && tc.ok && tc.iK > 0 && tMs > 0) return { i: tc.iK * 1000, t: tMs }; } catch (e) {}
+    return null;
+  }
+  function zdTrip(i) { const C = zdCore(); try { return C.rcd.trip(ZD_RCD, 'sinus', i); } catch (e) { return null; } }
+  function zdSay(p) {
+    const C = zdCore(); if (!C) return 'Das Zonenmodell ist nicht geladen.';
+    let z; try { z = C.body.zone(p.i / 1000, p.t); } catch (e) { z = null; } if (!z || !z.ok) return 'Für diesen Punkt gibt es keine Zone.';
+    const tr = zdTrip(p.i); let s = 'Bei ' + fv(p.i) + ' mA und ' + fv(p.t) + ' ms: ' + z.text;
+    if (tr && tr.tripped) { let z2 = null; try { z2 = C.body.zone(p.i / 1000, tr.tTrip * 1000); } catch (e) {} s += ' Ein 30-mA-RCD löst bei diesem Strom nach höchstens ' + fv(tr.tTrip * 1000) + ' ms aus' + (z2 && z2.ok ? '. Mit der kürzeren Zeit liegt der Punkt in Zone ' + z2.zone + '.' : '.'); }
+    else if (tr && tr.possible) s += ' Ein 30-mA-RCD kann hier auslösen, sicher ist es nicht.';
+    else s += ' Ein 30-mA-RCD löst bei diesem Strom nicht aus.';
+    return s;
+  }
+  function zdSvg(w) {
+    const C = zdCore(); if (!C) return '';
+    const g = zd.g = zdGeom(w), m = g.m, N = 48, ts = [];
+    for (let k = 0; k <= N; k++) ts.push(ZD.t0 * Math.pow(ZD.t1 / ZD.t0, k / N));
+    let zc; try { zc = C.body.zoneCurve(ts); } catch (e) { zc = null; } if (!Array.isArray(zc) || !zc.length || !zc[0].ok) return '';
+    const cl = v => Math.min(ZD.i1, Math.max(ZD.i0, v)), yBot = g.Y(ZD.t0), yTop = g.Y(ZD.t1), xL = g.X(ZD.i0), xR = g.X(ZD.i1);
+    const z1 = zc[0].z1 * 1000, z2 = zc[0].z2 * 1000, curve = zc.map(q => [g.X(cl(q.flimmer * 1000)), g.Y(q.t)]);
+    const P = a => a.map((q, k) => (k ? 'L' : 'M') + q[0].toFixed(1) + ' ' + q[1].toFixed(1)).join('');
+    let s = '<rect x="' + m.l + '" y="' + m.t + '" width="' + g.pw + '" height="' + g.ph + '" fill="var(--bg)"/>';
+    s += '<rect x="' + xL + '" y="' + yTop + '" width="' + (g.X(z1) - xL) + '" height="' + (yBot - yTop) + '" fill="var(--ok)" opacity=".28"/>';
+    s += '<rect x="' + g.X(z1) + '" y="' + yTop + '" width="' + (g.X(z2) - g.X(z1)) + '" height="' + (yBot - yTop) + '" fill="var(--accent)" opacity=".26"/>';
+    s += '<path d="' + P([[g.X(z2), yBot]].concat(curve, [[g.X(z2), yTop]])) + 'Z" fill="var(--warn)" opacity=".30"/>';
+    s += '<path d="' + P(curve.concat([[xR, yTop], [xR, yBot]])) + 'Z" fill="var(--danger)" opacity=".30"/>';
+    [0.1, 1, 10, 100, 1000].forEach(v => { const x = g.X(v); s += '<line x1="' + x + '" x2="' + x + '" y1="' + yTop + '" y2="' + yBot + '" stroke="var(--line)" stroke-width="1"/><text x="' + x + '" y="' + (yBot + 18) + '" text-anchor="middle" font-size="12" fill="var(--mute)">' + fv(v) + '</text>'; });
+    [10, 100, 1000, 10000].forEach(v => { const y = g.Y(v); s += '<line x1="' + xL + '" x2="' + xR + '" y1="' + y + '" y2="' + y + '" stroke="var(--line)" stroke-width="1"/><text x="' + (xL - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="12" fill="var(--mute)">' + fv(v) + '</text>'; });
+    s += '<text x="' + (m.l + g.pw / 2) + '" y="' + (g.h - 6) + '" text-anchor="middle" font-size="12" fill="var(--fg)">Körperstrom in mA</text><text transform="translate(13 ' + (m.t + g.ph / 2) + ') rotate(-90)" text-anchor="middle" font-size="12" fill="var(--fg)">Einwirkdauer in ms</text>';
+    s += '<path d="' + P(curve) + '" fill="none" stroke="var(--danger)" stroke-width="2"/>';
+    /* RCD-Linie: nur dort, wo rcd.trip sicher auslöst; die Zeit kommt aus rcd.trip */
+    const fi = []; for (let k = 0; k <= 60; k++) { const i = 10 * Math.pow(ZD.i1 / 10, k / 60), tr = zdTrip(i); if (tr && tr.tripped && tr.tTrip > 0) fi.push([g.X(i), g.Y(Math.min(ZD.t1, Math.max(ZD.t0, tr.tTrip * 1000)))]); }
+    if (fi.length > 1) s += '<path d="' + P(fi) + '" fill="none" stroke="var(--fg)" stroke-width="3" stroke-dasharray="7 4"/><text x="' + (xR - 4) + '" y="' + (fi[fi.length - 1][1] - 6) + '" text-anchor="end" font-size="12" fill="var(--fg)">30-mA-RCD löst aus</text>';
+    [[Math.sqrt(0.1 * z1), 'Z1', 2500], [Math.sqrt(z1 * z2), 'Z2', 2500], [Math.sqrt(z2 * 40), 'Z3', 4000], [547, 'Z4', 3000]].forEach(q => { s += '<text x="' + g.X(q[0]) + '" y="' + g.Y(q[2]) + '" text-anchor="middle" font-size="13" font-weight="700" fill="var(--fg)">' + q[1] + '</text>'; });
+    return s + '<g id="zdPt"></g>';
+  }
+  function zdPoint() {
+    if (typeof document === 'undefined') return;
+    const g = zd.g, p = zd.pt, el = document.getElementById('zdPt'); if (!g || !p || !el) return;
+    const x = g.X(Math.min(ZD.i1, Math.max(ZD.i0, p.i))), y = g.Y(Math.min(ZD.t1, Math.max(ZD.t0, p.t)));
+    el.innerHTML = '<line x1="' + x + '" x2="' + x + '" y1="' + y + '" y2="' + (g.h - g.m.b) + '" stroke="var(--fg)" stroke-width="1" stroke-dasharray="3 3"/><line x1="' + g.m.l + '" x2="' + x + '" y1="' + y + '" y2="' + y + '" stroke="var(--fg)" stroke-width="1" stroke-dasharray="3 3"/><circle cx="' + x + '" cy="' + y + '" r="22" fill="transparent"/><circle cx="' + x + '" cy="' + y + '" r="9" fill="var(--bg)" stroke="var(--fg)" stroke-width="3"/>';
+    const txt = zdSay(p), rd = document.getElementById('zdRead'); if (rd) rd.textContent = txt;
+    const sv = document.getElementById('zdSvg'); if (sv) sv.setAttribute('aria-valuetext', txt);
+  }
+  function zdCard(w) {
+    if (!zdCore()) return '';
+    const svg = zdSvg(w); if (!svg) return '';
+    const rid = A && A.rig && A.rig.id; if (!zd.pt || zd.rigId !== rid) { zd.rigId = rid; zd.pt = zdFromRig() || { i: 30, t: 300 }; }
+    return '<div class="card pl" id="zdCard"><h4>Zeit-Strom-Diagramm: Zonen und 30-mA-RCD</h4><p class="hint2" style="margin:0 0 6px">Ziehe den Punkt: Er zeigt, in welcher Zone Strom und Einwirkdauer liegen. Mit den Pfeiltasten geht es auch.</p>' +
+      '<div class="zd-wrap"><svg class="zd-svg" id="zdSvg" viewBox="0 0 ' + w + ' ' + zd.g.h + '" role="slider" tabindex="0" aria-label="Punkt im Zeit-Strom-Diagramm. Pfeil links und rechts ändern den Strom, hoch und runter die Einwirkdauer.">' + svg + '</svg></div>' +
+      '<p class="zd-say" id="zdRead" role="status" aria-live="polite"></p>' +
+      '<ul class="zd-leg"><li><i style="background:var(--ok);opacity:.55"></i>Zone 1</li><li><i style="background:var(--accent);opacity:.55"></i>Zone 2</li><li><i style="background:var(--warn);opacity:.6"></i>Zone 3</li><li><i style="background:var(--danger);opacity:.6"></i>Zone 4</li><li>gestrichelt: Auslösung 30-mA-RCD</li></ul>' +
+      '<div class="btns"><button class="btn" data-act="zdrig">Punkt vom Prüfstand holen</button></div>' +
+      '<p class="hint2">Vereinfachtes Lehrmodell mit Übungswerten, nicht das Originaldiagramm der IEC 60479-1.</p></div>';
+  }
+  function zdSet(i, t) { zd.pt = { i: Math.min(ZD.i1, Math.max(ZD.i0, i)), t: Math.min(ZD.t1, Math.max(ZD.t0, t)) }; zdPoint(); }
+  function zdPtr(e) { const sv = document.getElementById('zdSvg'); if (!sv || !zd.g) return; const r = sv.getBoundingClientRect(); if (!(r.width > 0)) return; const k = zd.g.w / r.width; zdSet(zd.g.iAt((e.clientX - r.left) * k), zd.g.tAt((e.clientY - r.top) * k)); }
   function html() {
     const rig = A && A.rig;
     if (!rig) return '<div class="card pl"><p class="big">Kein Prüfstand</p><p class="hint2">Wähle im Tab Prüfstand eine Anlage, dann zeigt dieser Tab ihre Kennlinien.</p><div class="btns"><button class="btn" data-act="rig">Zum Prüfstand</button></div></div>';
@@ -213,14 +282,14 @@
       legend(c, ghost, show) + (note ? '<div class="ex" style="margin-top:8px">' + esc(note) + '</div>' : '') +
       '<div class="btns"><button class="btn" data-act="csv">Alle Kennlinien als CSV</button>' + (hasRef ? '<button class="btn" data-act="ghost" aria-pressed="' + st.ghost + '">' + (st.ghost ? 'Geisterlinie ausblenden' : 'Geisterlinie einblenden') + '</button>' : '') + '<button class="btn" data-act="table" aria-pressed="' + st.table + '">' + (st.table ? 'Tabelle schließen' : 'Wertetabelle zeigen') + '</button></div>' +
       (hasRef ? '' : '<p class="hint2">Mit „Merken“ (Taste M) im Prüfstand legst du eine Referenz fest; sie erscheint hier als Geisterlinie.</p>') +
-      '<p class="hint2">' + esc(NOTE) + '</p></div>' + tableHtml(c, ghost);
+      '<p class="hint2">' + esc(NOTE) + '</p></div>' + (rig.id === 'koerper' ? zdCard(wEl) : '') + tableHtml(c, ghost);
   }
   function paint(again) {
     if (!H) return; css(); H.innerHTML = html(); H.dataset.cu = '1';
     /* tatsächliche Bildbreite messen: gleicht die Ränder der Karte aus, damit die Schrift in echter Größe steht */
     const sv = H.querySelector('#cuSvg'), bw = sv && typeof sv.getBoundingClientRect === 'function' ? sv.getBoundingClientRect().width : 0;
     if (!again && st.g && bw > 120 && Math.abs(bw - st.g.w) > 3) { st.wFix = Math.round(bw); paint(true); return; }
-    if (fin(st.x) && st.c) drawCross();
+    if (fin(st.x) && st.c) drawCross(); zdPoint();
   }
   function drawCross() {
     const xh = H.querySelector('#cuXh'), rd = H.querySelector('#cuRead'); if (!st.c || !st.g) return;
@@ -250,7 +319,7 @@
     const t = e.target && e.target.closest ? e.target : null; if (!t) return;
     const cv = t.closest('[data-cv]'); if (cv) { st.id = cv.dataset.cv; st.x = null; paint(); return; }
     const b = t.closest('[data-act]'); if (!b) return; const a = b.dataset.act;
-    if (a === 'csv') exportCsv(); else if (a === 'ghost') { st.ghost = !st.ghost; paint(); } else if (a === 'table') { st.table = !st.table; paint(); } else if (a === 'rig' && A) A.setTab('rig');
+    if (a === 'csv') exportCsv(); else if (a === 'ghost') { st.ghost = !st.ghost; paint(); } else if (a === 'table') { st.table = !st.table; paint(); } else if (a === 'rig' && A) A.setTab('rig'); else if (a === 'zdrig') { const p = zdFromRig(); if (p) zdSet(p.i, p.t); }
   }
   function onKey(e) {
     if (!st.g || !st.c || !e.target || !e.target.closest || !e.target.closest('#cuSvg')) return;
@@ -265,6 +334,10 @@
     once(host, 'c', 'click', onClick); once(host, 'm', 'pointermove', e => { if (e.target && e.target.closest && e.target.closest('#cuSvg') && (e.pointerType !== 'touch')) { const x = pointerX(e); if (x != null) setX(x); } });
     once(host, 'd', 'pointerdown', e => { if (e.target && e.target.closest && e.target.closest('#cuSvg')) { const x = pointerX(e); if (x != null) setX(x); } });
     once(host, 'k', 'keydown', onKey);
+    once(host, 'zdd', 'pointerdown', e => { if (e.target && e.target.closest && e.target.closest('#zdSvg')) { zd.drag = true; try { e.target.closest('#zdSvg').setPointerCapture(e.pointerId); } catch (x) {} zdPtr(e); e.preventDefault(); } });
+    once(host, 'zdm', 'pointermove', e => { if (zd.drag) zdPtr(e); });
+    once(host, 'zdu', 'pointerup', () => { zd.drag = false; }); once(host, 'zdc', 'pointercancel', () => { zd.drag = false; });
+    once(host, 'zdk', 'keydown', e => { if (!e.target || !e.target.closest || !e.target.closest('#zdSvg') || !zd.pt) return; const f = 1.12, d = { ArrowLeft: [1 / f, 1], ArrowRight: [f, 1], ArrowUp: [1, f], ArrowDown: [1, 1 / f] }[e.key]; if (d) { e.preventDefault(); zdSet(zd.pt.i * d[0], zd.pt.t * d[1]); } });
     if (typeof ResizeObserver === 'function' && !host.__elscuRo) { host.__elscuRo = new ResizeObserver(() => redraw()); try { host.__elscuRo.observe(host); } catch (e) {} }
     paint();
   }

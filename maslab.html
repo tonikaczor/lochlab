@@ -45,6 +45,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 .scroll{overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;-webkit-user-select:text;user-select:text}
 .wrap{width:100%;max-width:1100px;margin:0 auto;padding:12px 12px 30px}
 #pal{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);min-height:54px;scrollbar-width:thin;flex:none}
+@media(max-width:700px){html.lr-on #pal.lr-pal{gap:4px;padding-left:6px;padding-right:6px}html.lr-on #pal.lr-pal>.chip{padding:0 9px;font-size:14px}html.lr-on #pal.lr-pal>#stat{display:none}}
 .chip{flex:none;height:40px;padding:0 13px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .chip.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .chip.s{height:34px;padding:0 11px;font-size:13px;min-width:44px;justify-content:center}
@@ -105,7 +106,7 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 .opts button.on{border-color:var(--accent);background:rgba(59,158,255,.2)}
 .opts button.ok{border-color:var(--ok);background:rgba(76,217,100,.2)}
 .opts button.bad{border-color:var(--danger);background:rgba(255,92,92,.18)}
-.opts .no{display:inline-grid;place-items:center;min-width:24px;height:24px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-size:12px;font-weight:700;margin-right:6px}
+.opts .no{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:13px;background:var(--bg);border:1px solid var(--line);font-size:14px;font-weight:700;margin-right:6px}
 .opts button.on .no{background:var(--accent-bg);border-color:var(--accent-bg);color:#fff}
 .mrows{display:flex;flex-direction:column;gap:8px;margin:8px 0}
 .mrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0}
@@ -138,8 +139,11 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 input[type=range]{width:100%}
 .dsrow{flex-wrap:wrap}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+/* Welle 2 M1: Schrift am Handy mindestens 14 px (Audit M-all-03) */
+.badge,h5,.bx,.lbl,.gtag,.tag,.hint2{font-size:14px!important}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -181,6 +185,8 @@ input[type=range]{width:100%}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'maslab.html': { name: 'Maschinenelemente-Lab', leiste: { haupt: ['[data-a=rand]', '[data-a=mot]'] } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

@@ -101,10 +101,10 @@
     const dbs = p.p - p.kv, bep = dbs > 0 ? p.kfix / dbs : null;
     let xmax = Math.max(p.x, bep ? bep * 1.6 : 0, 10) * 1.1; const sx0 = niceStep(xmax, 5); xmax = Math.ceil(xmax / sx0) * sx0;
     const K = x => p.kfix + p.kv * x, E = x => p.p * x; let ymax = Math.max(E(xmax), K(xmax), 1); const sy0 = niceStep(ymax, 4); ymax = Math.ceil(ymax / sy0) * sy0;
-    const W = 420, H = 260, L = 58, Rr = 14, T = 16, B = 38, sx = x => L + (W - L - Rr) * x / xmax, sy = y => H - B - (H - B - T) * y / ymax, f0 = v => C.fmtDe(v, 0);
+    const W = 300, H = 270, L = 50, Rr = 10, T = 14, B = 40, sx = x => L + (W - L - Rr) * x / xmax, sy = y => H - B - (H - B - T) * y / ymax, f0 = v => C.fmtDe(v, 0);
     let s = '';
     for (let y = 0; y <= ymax + 1e-9; y += sy0) s += `<line class="gr" x1="${L}" x2="${W - Rr}" y1="${sy(y)}" y2="${sy(y)}"/><text x="${L - 5}" y="${sy(y) + 4}" text-anchor="end">${f0(y)}</text>`;
-    for (let x = 0; x <= xmax + 1e-9; x += sx0) s += `<line class="gr" x1="${sx(x)}" x2="${sx(x)}" y1="${T}" y2="${H - B}"/><text x="${sx(x)}" y="${H - B + 14}" text-anchor="middle">${f0(x)}</text>`;
+    for (let x = 0; x <= xmax + 1e-9; x += sx0) s += `<line class="gr" x1="${sx(x)}" x2="${sx(x)}" y1="${T}" y2="${H - B}"/><text x="${sx(x)}" y="${H - B + 15}" text-anchor="middle">${f0(x)}</text>`;
     if (bep) {
       s += `<polygon class="zl" points="${sx(0)},${sy(0)} ${sx(bep)},${sy(E(bep))} ${sx(0)},${sy(p.kfix)}"/>`;
       s += `<polygon class="zg" points="${sx(bep)},${sy(E(bep))} ${sx(xmax)},${sy(E(xmax))} ${sx(xmax)},${sy(K(xmax))}"/>`;
@@ -112,8 +112,8 @@
     s += `<path class="ax" d="M${L} ${T}V${H - B}H${W - Rr}"/>`;
     s += `<line class="fx" x1="${sx(0)}" y1="${sy(p.kfix)}" x2="${sx(xmax)}" y2="${sy(p.kfix)}"/>`;
     s += `<line class="k" x1="${sx(0)}" y1="${sy(K(0))}" x2="${sx(xmax)}" y2="${sy(K(xmax))}"/><line class="e" x1="${sx(0)}" y1="${sy(0)}" x2="${sx(xmax)}" y2="${sy(E(xmax))}"/>`;
-    if (bep) { const bx = sx(bep), by = sy(E(bep)); s += `<circle class="bp" cx="${bx}" cy="${by}" r="5.5"/><text x="${Math.min(bx + 8, W - 112)}" y="${Math.min(by + 18, H - B - 6)}" style="font-weight:700">BEP ${f0(Math.ceil(bep - 1e-9))} Stück</text>`; }
-    s += `<text x="${(L + W - Rr) / 2}" y="${H - 6}" text-anchor="middle" style="fill:var(--mute)">Menge (Stück)</text><text x="12" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(T + H - B) / 2})" style="fill:var(--mute)">Euro</text>`;
+    if (bep) { const bx = sx(bep), by = sy(E(bep)); s += `<circle class="bp" cx="${bx}" cy="${by}" r="5.5"/><text x="${Math.min(bx + 8, W - 108)}" y="${Math.min(by + 20, H - B - 6)}" style="font-weight:700">BEP ${f0(Math.ceil(bep - 1e-9))} Stück</text>`; }
+    s += `<text x="${(L + W - Rr) / 2}" y="${H - 5}" text-anchor="middle" style="fill:var(--mute)">Menge (Stück)</text><text x="11" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 11 ${(T + H - B) / 2})" style="fill:var(--mute)">Euro</text>`;
     const alt = 'Kosten- und Erlösgerade' + (bep ? ', Break-even bei ' + f0(Math.ceil(bep - 1e-9)) + ' Stück' : ', kein Break-even (Stückdeckungsbeitrag nicht positiv)');
     return `<div class="chart"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(alt)}">${s}</svg><div class="legend"><span><i style="background:var(--accent)"></i>Erlös E = p · x</span><span><i style="background:var(--warn)"></i>Gesamtkosten K = Kfix + kv · x</span><span><i style="background:var(--mute)"></i>Fixkosten</span></div></div>`;
   }
@@ -134,11 +134,13 @@
   }
   function renderCalc() {
     const m = S.calc.mode, v = S.calc.v[m], F = FIELDS[m];
-    let h = `<div class="msel" role="tablist">${MODES.map(x => `<button class="chip${x[0] === m ? ' on' : ''}" data-mode="${x[0]}" role="tab" aria-selected="${x[0] === m}">${esc(x[1])}</button>`).join('')}</div>`;
+    const GRP = [['Einkauf', ['bezug', 'sk']], ['Verkauf', ['ang', 'rueck', 'diff']], ['Weiteres', ['sp', 'db']]];
+    const chip = x => `<button class="chip${x[0] === m ? ' on' : ''}" data-mode="${x[0]}" role="tab" aria-selected="${x[0] === m}">${esc(x[1])}</button>`;
+    let h = `<p class="hint2 msq">Was weißt Du schon? Wähle nach dem Ablauf: erst der Einkauf, dann der Verkauf.</p><div class="msel" role="tablist">${GRP.map(g => `<span class="mgr" role="group" aria-label="${g[0]}"><b class="mgl">${g[0]}</b>${g[1].map(k => chip(MODES.find(x => x[0] === k))).join('')}</span>`).join('')}</div>`;
     h += `<div class="card pl"><h4>${esc(MTITLE[m])}</h4><div class="fld">`;
     F.f.forEach(f => {
       if (f.show && !f.show(v)) return;
-      if (f.o) h += `<div class="f w2"><span style="display:block;font-size:12px;color:var(--mute);margin-bottom:3px">${esc(lab(f, v))}</span><div class="seg">${f.o.map(o => `<button data-seg="${f.k}" data-val="${o[0]}" class="${v[f.k] === o[0] ? 'on' : ''}" aria-pressed="${v[f.k] === o[0]}">${esc(o[1])}</button>`).join('')}</div></div>`;
+      if (f.o) h += `<div class="f w2"><span style="display:block;font-size:14px;color:var(--mute);margin-bottom:3px">${esc(lab(f, v))}</span><div class="seg">${f.o.map(o => `<button data-seg="${f.k}" data-val="${o[0]}" class="${v[f.k] === o[0] ? 'on' : ''}" aria-pressed="${v[f.k] === o[0]}">${esc(o[1])}</button>`).join('')}</div></div>`;
       else h += `<label class="f"><span>${esc(lab(f, v))}</span><div class="qin"><input data-f="${f.k}" inputmode="decimal" autocomplete="off" value="${esc(v[f.k])}"><span class="u">${esc(unitOf(f, v))}</span></div></label>`;
     });
     h += `</div><div class="ctl"><button class="chip s${S.calc.weg ? ' on' : ''}" data-weg="1" aria-pressed="${S.calc.weg}">Rechenweg anzeigen</button><button class="chip s" data-reset="1">Standardwerte</button></div></div><div class="card pl" id="calcOut">${calcOut()}</div>`;
@@ -194,19 +196,31 @@
     const q = ctx.q, r = ctx.res, locked = !!(r && r.ok); let h = `<p style="margin:8px 0">${esc(q.text)}</p>`;
     if (q.fill) h += schemaTable(q.rows, { fill: q.fill, ans: ctx.ans, res: r && r.rows, disabled: locked });
     else h += `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit || 'Zahl')})</span><div class="qin"><input data-v id="${pre}In" inputmode="decimal" autocomplete="off" value="${esc(ctx.ans.v || '')}"${locked ? ' disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
-    h += `<p class="hint2">${esc(ruleText(q))}</p>`;
+    h += `<p class="hint2 lr-hinweis">${esc(ruleText(q))}</p>`;
     h += `<div class="btns"><button class="btn pri" data-a="chk"${locked ? ' disabled' : ''}>✓ Prüfen</button>${tipBtn}</div>`;
     if (r && !r.empty) {
       const lines = [];
       if (r.shown) lines.push({ ok: false, text: 'Lösung angezeigt (zählt als Fehler).' });
       else if (q.ask) lines.push({ ok: r.ok, text: r.ok ? 'Richtig: ' + C.fmtDe(r.x, 2) + ' ' + q.ask.unit : 'Deine Antwort „' + C.fmtDe(r.x, 2) + ' ' + q.ask.unit + '“ stimmt nicht.' });
       else lines.push({ ok: r.ok, text: r.ok ? 'Alle ' + r.total + ' Zeilen stimmen.' : r.right + ' von ' + r.total + ' Zeilen richtig' + (r.filled < r.total ? ', ' + (r.total - r.filled) + ' noch leer.' : '.') });
-      h += `<ul class="tl">${lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-      if (r.ok || r.shown || !exam() || pre === 'rt') h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösungsweg mit Schema</b>${schemaTable(q.rows, { calc: true, hi: q.ask && q.ask.key })}<p style="margin:6px 0 0">${esc(q.expl)}</p></div>`;
-      else h += '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
+      /* Rückmeldung nach Vorgabe 4.5: erster Fehlversuch Tipp und zweiter Versuch, zweiter Fehlversuch Lösungsweg, richtig bestätigt.
+         Im Prüfmodus (nur Aufgaben) bleibt der Lösungsweg bis zur richtigen Antwort gesperrt. */
+      const st = r.ok ? 'ok' : r.shown ? 'loes' : (r.stage || 'loes'), zeigLoes = r.ok || r.shown || st === 'loes';
+      h += `<div class="lr-fb ${st === 'ok' ? 'ok' : st === 'loes' ? 'loes' : 'tipp'}" role="status"><ul class="tl">${lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
+      if (st === 'tipp') h += `<p><strong>Noch nicht.</strong> Tipp: ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p>`;
+      else if (st === 'pruef') h += '<p><strong>Noch nicht.</strong> Im Prüfmodus gibt es den Lösungsweg erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p>';
+      else if (st === 'loes' && !r.shown) h += '<p><strong>Auch nicht.</strong> Hier ist der Lösungsweg.</p>';
+      if (zeigLoes) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösungsweg mit Schema</b>${schemaTable(q.rows, { calc: true, hi: q.ask && q.ask.key })}<p style="margin:6px 0 0">${esc(q.expl)}</p></div>`;
+      h += '</div>';
+    }
+    /* Treppe zur Aufgabe: jede richtige Zeile baut ihre Stufe (von oben nach unten); gesuchte Zeilen bleiben gestrichelt, bis sie stimmen oder die Lösung da ist */
+    if (q.fill && window.KAL_VIZ && KAL_VIZ.taskStair) {
+      const alle = !!(r && (r.ok || r.shown || r.stage === 'loes')), ts = KAL_VIZ.taskStair(q.rows, q.fill, r && r.rows, alle);
+      if (ts) h += '<div class="nv nvx"><p class="hint2" style="margin:0 0 4px"><b>Deine Treppe</b>: Jede richtige Zeile baut eine Stufe. Gestrichelt heißt: noch offen.</p>' + ts + '</div>';
     }
     return h;
   }
+  function zeigFb(host) { if (!window.LabRahmen) return; const el = host.querySelector('.lr-fb'); if (el) LabRahmen.zeig(el); }
   function tipSheet(q, n) {
     const fr = (q.fill ? q.rows.filter(x => q.fill.includes(x.k)) : q.rows).find(x => x.calc);
     sheet('Tipp, Stufe ' + n + ' von 2', b => {
@@ -234,6 +248,8 @@
     const ctx = S.t; if (!ctx) return; const r = evalQ(ctx.q, ctx.ans);
     if (r.empty) { toast('Trage zuerst ein Ergebnis ein.'); return; }
     if (r.nan && ctx.q.ask) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return; }
+    if (!r.ok) ctx.tries = (ctx.tries || 0) + 1;
+    r.stage = r.ok ? 'ok' : (exam() ? 'pruef' : (ctx.tries >= 2 ? 'loes' : 'tipp'));
     ctx.res = r; const pct = r.ok ? pctFor(ctx.id) : 0;
     if (r.ok) { markSolved(ctx.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) { ding(); } else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); }
     else { sad(); toast(r.filled != null && r.right > 0 ? 'Fast: ' + r.right + ' von ' + r.total + ' Zeilen stimmen.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
@@ -251,12 +267,12 @@
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>`;
       h += exHTML(ctx, 'tk', '<button class="btn" data-a="hint">💡 Tipp</button>');
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      h += `<div class="btns"><button class="btn" data-a="neu">🎲 Neue Zahlen</button>${ctx.res && ctx.res.ok ? '<button class="btn pri" data-a="next">Nächste Aufgabe</button>' : ''}<button class="btn" data-a="close">Schließen</button></div></div>`;
+      h += `<div class="btns"><button class="btn" data-a="neu">🎲 Neue Zahlen</button>${ctx.res && (ctx.res.ok || ctx.res.stage === 'loes') ? '<button class="btn pri" data-a="next">Nächste Aufgabe</button>' : ''}<button class="btn" data-a="close">Schließen</button></div></div>`;
     }
     h += `<p class="hint2" style="margin:4px 0 0">${nDone()} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : p > 0 ? 'p' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && !d[x.id] ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; else zeigFb(V);
   }
   wire($('#taskView'), () => S.t, {
     chk: checkTask, hint: hintTask,
@@ -272,7 +288,11 @@
     S.r = { id: t.id, t, q: t.make(C.rng(t.id + '~' + Math.random() + Date.now()), C), ans: {}, res: null }; renderTrainer();
   }
   function trainerResult(r, shown) {
-    const ctx = S.r, st = S.rt; ctx.res = Object.assign({}, r, { shown }); st.n++;
+    const ctx = S.r, st = S.rt; if (!shown && !r.ok) ctx.tries = (ctx.tries || 0) + 1;
+    const stage = r.ok && !shown ? 'ok' : (!shown && ctx.tries < 2 ? 'tipp' : 'loes');
+    ctx.res = Object.assign({}, r, { shown, stage });
+    if (stage === 'tipp') { sad(); renderTrainer(); return; }
+    st.n++;
     if (r.ok && !shown) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); ding(); } else { st.streak = 0; sad(); }
     lsSet('rt', st); renderTrainer(); updatePal();
     if (r.ok && !shown && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
@@ -284,9 +304,9 @@
     h += `<div class="stats"><div class="bx"><b>${st.streak}</b>Serie</div><div class="bx"><b>${st.best}</b>Beste Serie</div><div class="bx"><b>${st.ok}/${st.n}</b>Richtig</div></div>`;
     h += `<div class="big" style="font-size:17px">${esc(ctx.t.title)} <span class="lv">${dots(ctx.t.level)}</span></div>`;
     h += exHTML(ctx, 'rt', '<button class="btn" data-a="hint">💡 Tipp</button>');
-    h += ctx.res ? `<div class="btns"><button class="btn pri" data-a="next">Nächste Aufgabe</button></div>` : '<div class="btns"><button class="btn" data-a="show">Lösung zeigen (Serie beginnt neu)</button></div>';
-    if (ctx.res && !ctx.res.ok && !ctx.res.shown) h += '<p class="hint2">Falsch beantwortet: Die Serie beginnt neu.</p>';
-    $('#rtView').innerHTML = h + '</div>';
+    h += ctx.res && ctx.res.stage !== 'tipp' ? `<div class="btns"><button class="btn pri" data-a="next">Nächste Aufgabe</button></div>` : '<div class="btns"><button class="btn" data-a="show">Lösung zeigen (Serie beginnt neu)</button></div>';
+    if (ctx.res && ctx.res.stage === 'loes' && !ctx.res.ok && !ctx.res.shown) h += '<p class="hint2">Zweimal falsch: Die Serie beginnt neu.</p>';
+    $('#rtView').innerHTML = h + '</div>'; if (ctx.res) zeigFb($('#rtView'));
   }
   wire($('#rtView'), () => S.r, {
     chk: () => { const ctx = S.r, r = evalQ(ctx.q, ctx.ans); if (r.empty) { toast('Trage zuerst ein Ergebnis ein.'); return; } if (r.nan && ctx.q.ask) { toast('Bitte gib eine Zahl ein.'); return; } trainerResult(r, false); },

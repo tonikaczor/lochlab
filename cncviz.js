@@ -20,11 +20,11 @@
   const CSS = `
 .vz-c{--vz-a:var(--accent);margin-bottom:10px}
 .vz-c .vz-seg{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
-.vz-c .vz-b{flex:1 1 auto;min-height:44px;padding:0 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font:600 13.5px system-ui,sans-serif;color:var(--fg);cursor:pointer;touch-action:manipulation}
+.vz-c .vz-b{flex:1 1 auto;min-height:44px;padding:0 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font:600 14px system-ui,sans-serif;color:var(--fg);cursor:pointer;touch-action:manipulation}
 .vz-c .vz-b.on{background:var(--accent-bg);border-color:var(--accent-bg);color:#fff}
 .vz-c .vz-sl{display:grid;grid-template-columns:minmax(0,1fr);gap:0 12px}
 @media(min-width:560px){.vz-c .vz-sl{grid-template-columns:1fr 1fr}}
-.vz-c .vz-sl label{display:block;font-size:12.5px;color:var(--mute);margin:2px 0}
+.vz-c .vz-sl label{display:block;font-size:14px;color:var(--mute);margin:2px 0;pointer-events:none}
 .vz-c .vz-sl label b{color:var(--fg);font-variant-numeric:tabular-nums}
 .vz-c input[type=range]{width:100%;min-height:44px;margin:0;accent-color:var(--accent-bg)}
 .vz-fig{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:6px 0}
@@ -44,9 +44,9 @@
 .vz-arc{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round}
 .vz-cir{fill:none;stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 4}
 .vz-bad{fill:var(--danger);font-size:12px;font-weight:700}
-.vz-code{font:600 13.5px/1.5 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin:6px 0;white-space:pre-wrap;word-break:break-word;color:var(--fg)}
+.vz-code{font:600 14px/1.5 ui-monospace,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin:6px 0;white-space:pre-wrap;word-break:break-word;color:var(--fg)}
 .vz-code i{font-style:normal;color:var(--mute)}
-.vz-note{font-size:13px;color:var(--mute);line-height:1.45;margin:6px 0 0}
+.vz-note{font-size:14px;color:var(--mute);line-height:1.45;margin:6px 0 0}
 .vz-th{display:block;background:var(--panel2);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:0 0 8px}
 .vz-th svg{display:block;width:100%;height:auto;max-height:190px}
 `;

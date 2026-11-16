@@ -1,16 +1,16 @@
 'use strict';
-/* Tonfunk Lab: Ausbildungsplan-Zeile der Startseite (#planRow, Paket P1).
-   Kompakte Karte "Dein Ausbildungsplan": eine Fortschrittszeile, ein Vorschlag "Als Nächstes" und der Knopf zur Seite ausbildungsplan.html.
+/* Tonfunk Lab: Ausbildungsplan-Zeile der Startseite (#planRow, Paket P1), seit dem Umbau in fünf Ansichten (S1) in der Ansicht "Prüfen".
+   Kompakte Zeile "Dein Ausbildungsplan": eine Fortschrittszeile, ein Vorschlag "Als Nächstes" (ein Lernfeld) und der Knopf zur Seite ausbildungsplan.html.
    Sie baut ihren Inhalt selbst in section#planRow (Muster wie home-vb.js: reine summary()/lines() plus DOM), lädt den Kern und den Plan des gewählten Berufs bei Bedarf nach
-   und liest den Lernstand nur. Zuklappbar wie die Projekte-Zeile: Zustand im Schlüssel "plan" von lm4.home.groups (Standard: Desktop offen, Handy beim ersten Besuch zu).
-   Ohne gewählten Beruf zeigt sie einen kurzen Hinweis, bei leerem Plan (Skelett) den Satz "Plan für deinen Beruf wird gerade zusammengestellt".
+   und liest den Lernstand nur. Keine Klappe mehr (der alte Schlüssel "plan" in lm4.home.groups bleibt im Speicher). Ohne gespeicherten Beruf gilt die Voreinstellung von berufe.js.
+   Dazu füllt sie in derselben Ansicht die Zeile Countdown mit Wochenplan (#prCd, Prüfungs-Countdown aus countdown.js).
+   Ohne Beruf zeigt sie einen kurzen Hinweis, bei leerem Plan (Skelett) den Satz "Plan für deinen Beruf wird gerade zusammengestellt".
    Voraussetzung: aufgaben.js ist geladen (AUFGABEN, LAB_REG, VB_INDEX). Ohne section#planRow passiert nichts. */
 (function (root) {
   const WEGE = ['tec', 'stu', 'wing', 'winf'];   // Wege Studium/Technik (berufe.js): statt Ausbildungsplan ein Lernpfad aus Modulen, Daten in ausbildungsplan-<weg>.js
   const KEYS = ['egs', 'ige', 'im', 'tpd', 'fll', 'ik', 'fi'].concat(WEGE);
   const NAMEN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker', tec: 'Techniker Elektrotechnik', stu: 'Studium Elektrotechnik', wing: 'Wirtschaftsingenieur', winf: 'Wirtschaftsinformatik' };
-  const GRP = 'lm4.home.groups', SKEY = 'plan';
-  const TXT = { kein: 'Wähle oben deinen Beruf, dann zeigt dir der Ausbildungsplan, wo du stehst und womit du weitermachen kannst.', leer: 'Plan für deinen Beruf wird gerade zusammengestellt.', fehlt: 'Der Ausbildungsplan konnte gerade nicht geladen werden.' };
+  const TXT = { kein: 'Wähle unter „Ich“ deinen Beruf, dann zeigt dir der Ausbildungsplan, wo du stehst und womit du weitermachen kannst.', leer: 'Plan für deinen Beruf wird gerade zusammengestellt.', fehlt: 'Der Ausbildungsplan konnte gerade nicht geladen werden.' };
 
   /* ---------- reine Teile (auch in Node prüfbar) ---------- */
   function chosen(search, stored) {
@@ -55,41 +55,32 @@
   if (!row) return;
 
   /* ---------- DOM ---------- */
-  const CSS = '#planRow{margin:0 0 14px}#planRow .vbd>summary{display:flex;align-items:center;gap:10px;min-height:44px;list-style:none;cursor:pointer}#planRow .vbd>summary::-webkit-details-marker{display:none}'
-    + '#planRow .vbh{flex:1;min-width:0}#planRow .vbh h2{margin:0;font-size:22px}#planRow .vbd[open]>summary{margin-bottom:10px}#planRow .vbn{margin-top:2px;font-size:14px;font-weight:600;overflow-wrap:anywhere}#planRow .vbn small{font-weight:400;color:var(--mute)}'
-    + '#planRow .chev{flex:none;display:grid;place-items:center;width:44px;height:44px;color:var(--mute)}#planRow .chev::before{content:"";width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}#planRow .vbd:not([open]) .chev::before{transform:rotate(-45deg)}'
-    + '#planRow .vbd>summary:focus-visible,#planRow a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}'
-    + '#planRow .plbody{display:flex;align-items:center;gap:16px;flex-wrap:wrap}#planRow .plnext{flex:1 1 260px;min-width:0;margin:0;font-size:15px;overflow-wrap:anywhere}#planRow .plnext a{color:var(--accent);display:inline-flex;align-items:center;min-height:44px}#planRow .plbtns{flex:0 0 auto;margin:0}#planRow .plbtns a.btn{min-width:150px;padding:0 18px}'
-    + '#planRow .plcd{display:block;margin-top:2px}#planRow .plcd a{display:inline-flex;align-items:center;min-height:44px}'
-    + '@media(max-width:639px){#planRow .vbh h2{font-size:18px}#planRow .plbtns{flex:1 1 100%}}@media(prefers-reduced-motion:reduce){#planRow .chev::before{transition:none}}';
+  const CSS = '#planRow .plnext{margin:2px 0 0;font-size:14px;color:var(--mute);overflow-wrap:anywhere}#planRow .plnext a{color:var(--accent);display:inline-flex;align-items:center;min-height:44px}'
+    + '#planRow a:focus-visible{outline:3px solid var(--accent);outline-offset:2px}';
   const el = (tag, props, kids) => { const e = doc.createElement(tag); Object.keys(props || {}).forEach(k => { const v = props[k]; if (v == null) return; if (k === 'class') e.className = v; else if (k === 'text') e.textContent = v; else e.setAttribute(k, String(v)); }); (kids || []).forEach(c => e.appendChild(typeof c === 'string' ? doc.createTextNode(c) : c)); return e; };
   const clear = e => { while (e.firstChild) e.removeChild(e.firstChild); };
   const store = k => { try { return root.localStorage.getItem(k); } catch (e) { return null; } };
-  const mobile = () => { try { return !!root.matchMedia('(max-width:639px)').matches; } catch (e) { return false; } };
-  const saved = () => { try { const o = JSON.parse(store(GRP)); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } };
   let R = null;   // Verweise auf die Teile der Zeile
 
   function skeleton() {
     if (R) return;
     try { const st = doc.createElement('style'); st.id = 'planRowCss'; st.textContent = CSS; (doc.head || doc.body).appendChild(st); } catch (e) {}
     const head = el('h2', { id: 'planH', text: 'Dein Ausbildungsplan' }), n = el('div', { class: 'vbn', id: 'planN', 'aria-live': 'polite' });
-    const sum = el('summary', {}, [el('span', { class: 'vbh' }, [head, n]), el('span', { class: 'chev', 'aria-hidden': 'true' })]);
     const next = el('p', { class: 'plnext', id: 'planNext' }), btns = el('div', { class: 'plbtns' });
-    const det = el('details', { class: 'vbd' }, [sum, el('div', { class: 'plbody' }, [next, btns])]);
-    const g = saved(), open = (SKEY in g) ? !!g[SKEY] : !mobile();
-    if (open) det.setAttribute('open', ''); try { det.open = open; } catch (e) {}
-    sum.setAttribute('aria-expanded', open ? 'true' : 'false');
-    // Eigene Wahl merken: nur nach Klick auf die Überschrift, und immer frisch lesen und zurückschreiben (home-groups.js führt denselben Schlüssel mit)
-    sum.addEventListener('click', () => { det.setAttribute('data-user', '1'); });
-    sum.addEventListener('keydown', ev => { if (ev && (ev.key === 'Enter' || ev.key === ' ')) det.setAttribute('data-user', '1'); });
-    det.addEventListener('toggle', () => {
-      sum.setAttribute('aria-expanded', det.open ? 'true' : 'false');
-      if (det.getAttribute('data-user') !== '1') return;
-      det.removeAttribute('data-user');
-      try { const m = saved(); m[SKEY] = det.open ? 1 : 0; root.localStorage.setItem(GRP, JSON.stringify(m)); } catch (e) {}
-    });
-    clear(row); row.appendChild(det);
-    R = { det: det, n: n, next: next, btns: btns, head: head };
+    let ic = null; try { ic = typeof row.querySelector === 'function' ? row.querySelector('.mw-i') : null; } catch (e) { ic = null; }   // das Symbol steht in index.html und bleibt
+    clear(row); if (ic) row.appendChild(ic);
+    row.appendChild(el('div', { class: 'vbt' }, [head, n, next])); row.appendChild(btns);
+    R = { n: n, next: next, btns: btns, head: head };
+  }
+  /* Zeile Countdown mit Wochenplan (#prCd) in der Ansicht Prüfen: mit Datum "noch X Tage" und heute dran, sonst Einladung zum Eintragen */
+  function countdown(weg) {
+    const a = doc.getElementById('prCd'); if (!a) return;
+    let k = null; try { const C = root.Countdown; k = C && C.kurz ? C.kurz() : null; } catch (e) { k = null; }
+    const t = doc.getElementById('prCdT'), s = doc.getElementById('prCdS'), z = doc.getElementById('prCdZ');
+    if (t) t.textContent = weg ? 'Klausur oder Abschluss: Countdown' : 'Countdown mit Wochenplan';
+    if (s) s.textContent = k ? (k.heute ? 'Heute dran: ' + k.heute.titel + '.' : 'Dein Wochenplan bis zum Termin.') : (weg ? 'Datum von Klausur oder Abschluss setzen, dazu ein Wochenplan.' : 'Trag deinen Prüfungstermin ein, dann bekommst du einen Wochenplan.');
+    if (z) z.textContent = k ? k.text.replace(/\.$/, '') : '';
+    a.setAttribute('href', k ? k.href : 'meinstand.html#countdown');
   }
   function url(b, ueb, lf) { return 'ausbildungsplan.html' + (ueb && b ? '?beruf=' + b : '') + (lf ? '#lf=' + encodeURIComponent(lf) : ''); }
   function fill(sum, ueb) {
@@ -103,7 +94,7 @@
       R.next.appendChild(doc.createTextNode(pre)); R.next.appendChild(el('a', { href: url(sum.beruf, ueb, id), text: ttl }));
     } else if (sum.zustand === 'ok') R.next.textContent = weg ? 'Such dir ein Modul aus, eine feste Reihenfolge gibt es nicht.' : 'Such dir ein Lernfeld aus, eine feste Reihenfolge gibt es nicht.';
     if (sum.zustand !== 'leer') R.btns.appendChild(el('a', { class: 'btn pri', href: url(sum.beruf, ueb, ''), text: weg ? 'Lernpfad öffnen' : 'Ausbildungsplan öffnen' }));
-    try { const C = root.Countdown, k = C && C.kurz && C.kurz(); if (k && sum.zustand !== 'kein-beruf') R.next.appendChild(el('span', { class: 'plcd' }, [el('a', { href: k.href, text: '⏳ ' + k.text })])); } catch (e) {}   // Prüfungs-Countdown (countdown.js), nur mit gesetztem Datum
+    try { countdown(weg); } catch (e) {}   // Prüfungs-Countdown (countdown.js) in der eigenen Zeile #prCd
     row.hidden = false; row.removeAttribute('hidden');
     try { root.dispatchEvent(new Event('plan:geladen')); } catch (e) {}   // Mein Weg (meinweg.js) zeichnet seine Plan-Kachel neu
   }
@@ -117,7 +108,7 @@
   function render() {
     try {
       skeleton();
-      const c = chosen(root.location && root.location.search, store('lm4.beruf')), b = c.beruf;
+      const c = chosen(root.location && root.location.search, store('lm4.beruf') || (root.Berufe && root.Berufe.get ? root.Berufe.get() : '')), b = c.beruf;   // ohne gespeicherte Wahl gilt die Voreinstellung (S-03)
       if (!b) { fill(summary(null, '', null), false); return; }
       if (!Array.isArray(root.AUFGABEN)) { fill(summary(null, b, null), c.ueberschrieben); return; }
       ensure(b, ok => {
@@ -138,4 +129,5 @@
     root.addEventListener('storage', e => { if (!e.key || e.key === 'lm4.beruf' || /^(sim\.done|lm4\.)/.test(e.key) || e.key.indexOf('verbund.') === 0) render(); });
   }
   doc.addEventListener('click', e => { if (e && e.target && e.target.closest && e.target.closest('.be-tab')) setTimeout(render, 50); });   // Beruf gewechselt
+  if (root.addEventListener) root.addEventListener('countdown:geaendert', () => { try { countdown(WEGE.indexOf(chosen(root.location && root.location.search, store('lm4.beruf')).beruf) >= 0); } catch (e) {} });
 })(typeof window !== 'undefined' ? window : globalThis);

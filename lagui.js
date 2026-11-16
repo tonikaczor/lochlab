@@ -116,7 +116,7 @@
   }
   function sawSvg(p) {
     const w = C.sawtooth(p, 3); if (!w.pts.length) return '';
-    const W = 640, H = 300, g = { l: 52, t: 18, r: 14, b: 38, W, H, x0: 0, y0: 0, x1: w.T * 3, y1: w.max * 1.15 }, A = axes(g, 'Zeit in Tagen', 'Bestand in Stück'), X = A.X, Y = A.Y;
+    const W = 330, H = 300, g = { l: 44, t: 18, r: 10, b: 40, W, H, x0: 0, y0: 0, x1: w.T * 3, y1: w.max * 1.15 }, A = axes(g, 'Zeit in Tagen', 'Bestand in Stück'), X = A.X, Y = A.Y;
     let s = A.s;
     w.orders.forEach(o => { s += `<rect class="g-lead" x="${X(o[0])}" y="${g.t}" width="${Math.max(1, X(o[0] + p.lead) - X(o[0]))}" height="${H - g.b - g.t}"/>`; });
     s += `<line class="g-max" x1="${g.l}" x2="${W - g.r}" y1="${Y(w.max)}" y2="${Y(w.max)}"/><line class="g-meld" x1="${g.l}" x2="${W - g.r}" y1="${Y(w.meld)}" y2="${Y(w.meld)}"/><line class="g-sich" x1="${g.l}" x2="${W - g.r}" y1="${Y(p.safety)}" y2="${Y(p.safety)}"/>`;
@@ -129,7 +129,7 @@
   }
   const SL = [['daily', 'Tagesverbrauch', 'Stück/Tag', 1, 100, 1], ['lead', 'Lieferzeit', 'Tage', 1, 30, 1], ['safety', 'Sicherheitsbestand', 'Stück', 0, 400, 10], ['qty', 'Bestellmenge', 'Stück', 50, 2000, 50]];
   function renderDis() {
-    $('#disView').innerHTML = `<div class="card pl"><h4>Lagerbestandskurve</h4><div id="disSvg" class="inst"></div>
+    $('#disView').innerHTML = `<div class="card pl" id="disCard"><h4>Lagerbestandskurve</h4><div id="disSvg" class="inst"></div>
       <p class="hint2"><span style="color:var(--hi)">●</span> Bestellung bei Meldebestand, der getönte Streifen ist die Lieferzeit. Die Lieferung kommt an, wenn der Bestand beim Sicherheitsbestand angekommen ist.</p></div>
       <div class="card pl"><h4>Regler</h4>${SL.map(r => `<label class="f"><span>${r[1]}: <b id="dv_${r[0]}"></b> ${r[2]}</span><input type="range" data-d="${r[0]}" min="${r[3]}" max="${r[4]}" step="${r[5]}" value="${S.dis[r[0]]}"></label>`).join('')}</div><div id="disOut"></div>`;
     updateDis();
@@ -154,8 +154,8 @@
   }
   function costSvg(p) {
     const mo = C.andler(p.D, p.K, p.P, p.q); if (!(mo > 0)) return '';
-    const own = p.m > 0 ? p.m : 0, x0 = Math.min(mo * 0.35, own ? own * 0.9 : Infinity), x1 = Math.max(mo * 2.5, own * 1.1), cu = C.costCurve(p.D, p.K, p.P, p.q, x0, x1, 80), W = 640, H = 300;
-    const ym = Math.max.apply(null, cu.map(q => q.g)) * 1.05, g = { l: 56, t: 14, r: 14, b: 38, W, H, x0, x1, y0: 0, y1: ym }, A = axes(g, 'Bestellmenge in Stück', 'Kosten je Jahr in €'), X = A.X, Y = A.Y;
+    const own = p.m > 0 ? p.m : 0, x0 = Math.min(mo * 0.35, own ? own * 0.9 : Infinity), x1 = Math.max(mo * 2.5, own * 1.1), cu = C.costCurve(p.D, p.K, p.P, p.q, x0, x1, 80), W = 330, H = 300;
+    const ym = Math.max.apply(null, cu.map(q => q.g)) * 1.05, g = { l: 52, t: 14, r: 10, b: 40, W, H, x0, x1, y0: 0, y1: ym }, A = axes(g, 'Bestellmenge in Stück', 'Kosten je Jahr in €'), X = A.X, Y = A.Y;
     const line = (k, c) => `<polyline class="${c}" points="${cu.map(q => X(q.m).toFixed(1) + ',' + Y(q[k]).toFixed(1)).join(' ')}"/>`;
     let s = A.s + line('b', 'g-cb') + line('l', 'g-cl') + line('g', 'g-cg');
     s += `<line class="g-opt" x1="${X(mo)}" x2="${X(mo)}" y1="${g.t}" y2="${H - g.b}"/><text class="g-lab" x="${X(mo) + 5}" y="${g.t + 12}">m_opt ≈ ${esc(f(mo, 0))}</text>`;
@@ -165,8 +165,8 @@
   }
   function renderBest() {
     const s = S.best;
-    $('#bestView').innerHTML = `<div class="card pl"><h4>Optimale Bestellmenge nach Andler</h4><div class="dsrow">${inp('D', 'Jahresbedarf', s.D, 'Stück')}${inp('K', 'Bestellkosten je Bestellung', s.K, '€')}${inp('P', 'Einstandspreis je Stück', s.P, '€')}${inp('q', 'Lagerhaltungskostensatz', s.q, '%')}${inp('m', 'Eigene Bestellmenge zum Vergleich (optional)', s.m, 'Stück')}</div></div>
-      <div class="card pl"><h4>Kostenkurven</h4><div id="bestSvg" class="inst"></div></div><div id="bestOut"></div>`;
+    $('#bestView').innerHTML = `<div class="card pl" id="bestCard"><h4>Kostenkurven</h4><div id="bestSvg" class="inst"></div></div><div class="card pl"><h4>Optimale Bestellmenge nach Andler</h4><div class="dsrow">${inp('D', 'Jahresbedarf', s.D, 'Stück')}${inp('K', 'Bestellkosten je Bestellung', s.K, '€')}${inp('P', 'Einstandspreis je Stück', s.P, '€')}${inp('q', 'Lagerhaltungskostensatz', s.q, '%')}${inp('m', 'Eigene Bestellmenge zum Vergleich (optional)', s.m, 'Stück')}</div></div>
+      <div id="bestOut"></div>`;
     updateBest();
   }
   function updateBest() { const p = bestParams(S.best); $('#bestSvg').innerHTML = costSvg(p); $('#bestOut').innerHTML = bestOut(p); }
@@ -185,7 +185,7 @@
   }
   function abcSvg(r) {
     const n = r.rows.length; if (!n || !(r.total > 0)) return '';
-    const W = 640, H = 300, l = 44, rr = 40, t = 16, b = 64, pw = W - l - rr, ph = H - t - b, bw = pw / n, mx = Math.max.apply(null, r.rows.map(x => x.share)) * 1.1;
+    const W = 330, H = 330, l = 40, rr = 38, t = 16, b = 96, pw = W - l - rr, ph = H - t - b, bw = pw / n, mx = Math.max.apply(null, r.rows.map(x => x.share)) * 1.1;
     const Yb = v => t + ph - v / mx * ph, Yc = v => t + ph - v / 100 * ph;
     let s = `<line class="g-ax" x1="${l}" x2="${W - rr}" y1="${t + ph}" y2="${t + ph}"/><line class="g-ax" x1="${l}" x2="${l}" y1="${t}" y2="${t + ph}"/><line class="g-ax" x1="${W - rr}" x2="${W - rr}" y1="${t}" y2="${t + ph}"/>`;
     [0, 25, 50, 75, 100].forEach(v => { s += `<line class="g-grid" x1="${l}" x2="${W - rr}" y1="${Yc(v)}" y2="${Yc(v)}"/><text class="g-lab m" x="${W - rr + 5}" y="${Yc(v) + 4}">${v} %</text>`; });
@@ -194,7 +194,7 @@
     r.rows.forEach((x, i) => { const bh = Math.max(1, t + ph - Yb(x.share)); s += `<rect class="c${x.cls}" x="${l + i * bw + bw * 0.12}" y="${Yb(x.share)}" width="${bw * 0.76}" height="${bh}" rx="2"/>`; });
     s += `<polyline fill="none" stroke="var(--fg)" stroke-width="2" points="${r.rows.map((x, i) => (l + i * bw + bw / 2).toFixed(1) + ',' + Yc(x.cum).toFixed(1)).join(' ')}"/>`;
     r.rows.forEach((x, i) => { const cx = l + i * bw + bw / 2; s += `<text class="g-lab m" font-size="10" text-anchor="end" transform="translate(${cx + 3} ${t + ph + 8}) rotate(-40)">${esc((x.name || '–').slice(0, 14))}</text>`; });
-    s += `<text class="g-lab m" x="${l - 4}" y="${t + 4}" text-anchor="end">${esc(f(mx, 0))} %</text><text class="g-lab m" x="${l}" y="${H - 4}">Balken: Wertanteil je Artikel (Skala links), Linie: kumuliert (Skala rechts), gestrichelt: Klassengrenzen</text>`;
+    s += `<text class="g-lab m" x="${l - 4}" y="${t + 4}" text-anchor="end">${esc(f(mx, 0))} %</text><text class="g-lab m" x="${l}" y="${H - 18}">Balken: Wertanteil (links)</text><text class="g-lab m" x="${l}" y="${H - 3}">Linie: kumuliert (rechts)</text>`;
     return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="ABC-Analyse: Balken für den Wertanteil je Artikel und Linie für den kumulierten Anteil">${s}</svg>`;
   }
   function renderAbc() {
@@ -234,9 +234,9 @@
     });
     $('#orgView').innerHTML = h + '</div></div>'; if (S.oq.i < 0) newOrgQ(); else renderOrgQ();
   }
-  function newOrgQ() { S.oq = { i: Math.floor(R0() * D.org.length), sel: -1 }; renderOrgQ(); }
+  function newOrgQ() { S.oq = { i: Math.floor(R0() * D.org.length), sel: -1, seed: S.org.n }; renderOrgQ(); }
   function renderOrgQ() {
-    const o = D.org[S.oq.i], pool = D.org.filter(x => x.g === o.g), opts = C.shuffle(C.rng('oq' + S.oq.i + ':' + S.org.n), pool), done = S.oq.sel >= 0;
+    const o = D.org[S.oq.i], pool = D.org.filter(x => x.g === o.g), opts = C.shuffle(C.rng('oq' + S.oq.i + ':' + S.oq.seed), pool), done = S.oq.sel >= 0;
     $('#orgQ').innerHTML = `<p style="margin-top:0">Welcher Begriff passt? <b>${esc(o.d)}</b></p><div class="opts">${opts.map(x => `<button data-on="${esc(x.n)}" class="${done ? (x === o ? 'ok' : D.org[S.oq.sel] === x ? 'bad' : '') : ''}" ${done ? 'disabled' : ''}>${esc(x.n)}</button>`).join('')}</div>
       <p class="hint2">Richtig: <b>${S.org.ok}</b> von <b>${S.org.n}</b></p>${done ? `<div class="btns"><button class="btn pri" data-on="__next">Nächste Frage</button></div>` : ''}`;
   }
@@ -258,36 +258,47 @@
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : f(q.value, 2) + ' ' + q.ask.unit);
   function qBody(q, a, r, pre) {
-    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''} class="${r && i === q.ask.correct && (r.ok || pre === 'rt') ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && (r.ok || r.stage === 'loes') ? 'disabled' : ''} class="${r && i === q.ask.correct && (r.ok || r.stage === 'loes') ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || r.stage === 'loes') ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
   }
   function evalQ(q, a) {
     if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c] }; }
     const v = P(a.v); if (!Number.isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return null; }
     return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 2) + ' ' + q.ask.unit };
   }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung nach Vorgabe 4.5: erster Fehlversuch Tipp und zweiter Versuch, zweiter Fehlversuch Lösung mit Lösungsweg, richtig bestätigt.
+     Im Prüfmodus bleibt der Lösungsweg bis zur richtigen Antwort gesperrt, Tipps kosten Punkte. */
+  const hintIn = q => q.ask.type === 'num' ? `<p class="lr-hinweis">Zahl in ${esc(q.ask.unit)}. ${q.tol > 0.011 ? '±' + esc(f(q.tol, 2)) + ' ' + esc(q.ask.unit) : 'Rundung'} gilt als richtig.</p>` : '';
+  const resBlock = (q, r, showExpl) => {
+    const tol = q.ask.type === 'num' && q.tol > 0.011 ? `<p class="hint2">ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</p>` : '';
+    const sol = `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>`;
+    if (r.ok) return `<div class="lr-fb ok" role="status"><p><strong>✓ Richtig:</strong> ${esc(r.given)}</p></div>` + (showExpl ? sol : '');
+    if (r.stage === 'tipp') return `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. Tipp: ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p></div>` + tol;
+    if (r.stage === 'loes') return `<div class="lr-fb loes" role="status"><p><strong>Auch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. Hier ist die Lösung.</p>${sol}</div>` + tol;
+    return `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. Im Prüfmodus gibt es den Lösungsweg erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p></div>` + tol;
+  };
+  const zeigFb = host => { if (window.LabRahmen) { const el = host.querySelector('.lr-fb'); if (el) LabRahmen.zeig(el); } };
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {};
-      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r, 'tk')}${hintIn(q)}`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.stage === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { h += resBlock(q, r, r.ok); if (r.ok || r.stage === 'loes') h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; else if (curTask() && S.tRes) zeigFb(V);
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
+    const tr = S.tTries = S.tTries || {}; if (!e.ok) tr[t.id] = (tr[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, stage: e.ok ? 'ok' : (exam() ? 'pruef' : (tr[t.id] >= 2 ? 'loes' : 'tipp')) };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.stage === 'loes' ? 'Noch nicht richtig. Die Lösung steht unter der Aufgabe.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
   function hintFor(q, id, cnt, close) {
@@ -302,7 +313,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; (S.tTries = S.tTries || {})[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -317,15 +328,16 @@
   });
 
   /* Zufalls-Trainer */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.tries = 0; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
-      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
+      <div class="fbar"><span class="lbl" style="font-size:14px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}${hintIn(q)}
+      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res && (T.res.ok || T.res.stage === 'loes') ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res && (T.res.ok || T.res.stage === 'loes') ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res && (T.res.ok || T.res.stage === 'loes') ? 'Nächste Frage' : 'Überspringen'}</button></div>
       ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+    if (T.res) zeigFb($('#rtView'));
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -333,12 +345,16 @@
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (tc && (!T.res || T.res.stage === 'tipp')) { T.ans.c = +tc.dataset.tc; if (T.res) T.res = null; renderTrainer(); return; }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if ((!T.res || T.res.stage === 'tipp') && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    const T = S.tr; if (T.res && (T.res.ok || T.res.stage === 'loes')) return; const e = evalQ(T.q, T.ans); if (!e) return;
+    if (!e.ok) T.tries = (T.tries || 0) + 1;
+    const stage = e.ok ? 'ok' : (T.tries >= 2 ? 'loes' : 'tipp');
+    T.res = { ok: e.ok, given: e.given, stage };
+    if (stage === 'tipp') { sad(); renderTrainer(); return; }
+    S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -373,7 +389,7 @@
       sec('ABC-Analyse', `<p>Die Artikel werden nach ihrem <b>Jahreswert</b> (Menge · Preis) absteigend sortiert, der Wertanteil wird aufsummiert (kumuliert).</p><table><tr><th>Klasse</th><th>Üblicher Wertanteil</th><th>Üblicher Mengenanteil</th><th>Strategie</th></tr><tr><td>A</td><td>ca. 80 %</td><td>ca. 10–20 % der Artikel</td><td>genau planen, bedarfsgenau beschaffen, kleine Bestände, scharf überwachen</td></tr><tr><td>B</td><td>ca. 15 %</td><td>ca. 30 %</td><td>mittlerer Aufwand, Bestellpunkt-Verfahren</td></tr><tr><td>C</td><td>ca. 5 %</td><td>ca. 50–60 %</td><td>einfach, größere Mengen auf Vorrat, wenig Kontrolle</td></tr></table><p>Die Grenzen 80/95 % sind üblich, aber nicht genormt und im Rechner einstellbar. Die Grenze selbst gehört hier zur besseren Klasse (kumuliert genau 80 % ist noch A).</p>`) +
       sec('Lagerprinzipien, Lagerarten, Flurförderzeuge', `<p><b>FIFO</b>: zuerst eingelagert, zuerst entnommen (verderbliche Ware). <b>LIFO</b>: zuletzt eingelagert, zuerst entnommen (Schüttgut, Blocklager). <b>Chaotische Lagerhaltung</b>: freier Platz, EDV merkt sich den Ort. <b>Festplatz</b>: jeder Artikel hat seinen Platz.</p><p><b>Blocklager</b> (ohne Regal), <b>Regallager</b> (Zugriff auf jeden Platz), <b>Hochregallager</b> (sehr hoch, Regalbediengeräte). Vor- und Nachteile findest du im Reiter „Lager“.</p>`) +
       sec('Begriffe', `<table><tr><th>Begriff</th><th>Bedeutung</th></tr><tr><td>Wareneinsatz</td><td>Wert der im Jahr verbrauchten oder verkauften Ware (zu Einstandspreisen)</td></tr><tr><td>Einstandspreis</td><td>Preis, zu dem die Ware im Lager ankommt (Einkaufspreis plus Bezugskosten abzüglich Nachlässe)</td></tr><tr><td>Lagerkosten</td><td>Raum, Personal, Energie, Versicherung, Schwund, Technik</td></tr><tr><td>Lagerzinsen</td><td>Zinsen für das im Lager gebundene Kapital</td></tr><tr><td>Lieferzeit</td><td>Tage von der Bestellung bis zum Eintreffen</td></tr><tr><td>Bestellpunkt</td><td>anderes Wort für Meldebestand</td></tr></table>`) +
-      `<p class="hint2">Nicht enthalten: Ladungssicherung und Gefahrgut (folgen in einem eigenen Lab). Zahlen und Begriffe sind Lehrbuchwerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Nicht enthalten: Ladungssicherung und Gefahrgut (folgen in einem eigenen Lab). Zahlen und Begriffe sind Lehrbuchwerte; Weicht dein Unterricht ab, gilt, was dein Ausbilder sagt.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

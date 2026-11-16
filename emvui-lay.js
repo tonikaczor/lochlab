@@ -72,7 +72,7 @@
   const CSS = `.lyg{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:8px}
 .lyc{display:flex;flex-direction:column;gap:4px;text-align:left;padding:8px;border-radius:12px;background:var(--panel);border:1px solid var(--line);min-width:0;position:relative}
 .lyc canvas{width:100%;height:auto;aspect-ratio:10/7;border-radius:8px;background:var(--well);display:block}
-.lyc b{font-size:13.5px;line-height:1.2}.lyc small{color:var(--mute);font-size:12px;line-height:1.25}
+.lyc b{font-size:14px;line-height:1.2}.lyc small{color:var(--mute);font-size:14px;line-height:1.3}
 .lyc .ok{position:absolute;right:10px;top:10px;width:26px;height:26px;border-radius:50%;background:var(--ok);color:#06210d;display:grid;place-items:center;font-weight:800}
 .lyc.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
 .lybd{position:relative;width:100%;touch-action:none}.lybd canvas{display:block;width:100%;height:auto;max-height:64vh;aspect-ratio:10/7;border-radius:10px;background:var(--well);border:1px solid var(--line);touch-action:none}

@@ -37,7 +37,7 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['pw', '🔑', 'Passwörter'], ['kry', '🔐', 'Verschlüsseln'], ['net', '🛡️', 'Rechte & Firewall'], ['bak', '💾', 'Backup & Verfügbarkeit'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
+  const TABS = [['pw', '🔑', 'Passwörter'], ['kry', '🔐', 'Verschlüsseln'], ['net', '🛡️', 'Rechte & Firewall'], ['bak', '💾', 'Backup & Verfügbarkeit'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['bsp', '💡', 'Beispiele'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'pw'),
     pw: { sets: ['klein', 'ziff'], L: '8', rate: '1000000000', W: '7776', k: '5' },
@@ -215,12 +215,20 @@
   }
   const givenText = (p, v) => fmt(v, 6) + (p.unit ? ' ' + p.unit : '');
   const emptyMsg = p => p.kind === 'num' ? 'Bitte gib eine Zahl ein (mit Komma oder Punkt).' : p.kind === 'text' ? 'Bitte gib eine Antwort ein.' : p.kind === 'rows' ? 'Bitte beantworte alle Zeilen.' : 'Bitte wähle eine Antwort.';
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): 1. Fehlversuch = Hinweis und zweiter Versuch, 2. Fehlversuch = Lösung mit Weg; im Prüfmodus bleibt die Lösung verborgen */
+  const TRY = {};
+  const solShown = (r, id) => !!r && (r.ok || (!exam() && (TRY[id] || 0) >= 2));
+  const fbBox = (r, id, inner) => '<div class="lr-fb ' + (r.ok ? 'ok' : solShown(r, id) ? 'loes' : 'tipp') + '" id="lrFb">' + inner + '</div>';
+  const tipText = p => (p.unit ? 'Antworte in ' + p.unit + '. ' : '') + (p.kind === 'num' && !p.exact ? 'Eine Abweichung bis ±' + fmt(p.tol, 6) + ' gilt wegen Rundung als richtig. ' : '') + 'Lies die Aufgabe noch einmal oder tippe auf „Tipp“.';
+  const fbZeig = () => { const e = document.getElementById('lrFb'); if (e && window.LabRahmen) LabRahmen.zeig(e); };
+  const tipHtml = q => '<p><strong>Tipp:</strong> ' + esc(tipText(q)) + ' Du hast einen zweiten Versuch.</p>';
   function checkTask(t) {
     const p = instOf(t), r0 = C.checkAnswer(p, S.tAns[t.id]); if (r0.empty) { toast(emptyMsg(p)); return; }
     const ok = r0.ok, pct = ok ? pctFor(t.id) : 0, ex = exam();
+    if (!ok) TRY[t.id] = (TRY[t.id] || 0) + 1;
     S.tRes = { id: t.id, ok, pct, text: ok ? (p.kind === 'num' ? 'Richtig: ' + givenText(p, r0.v) : 'Richtig!') : p.kind === 'num' ? 'Deine Antwort „' + givenText(p, r0.v) + '“ stimmt nicht.' : p.kind === 'text' ? 'Deine Antwort „' + String(S.tAns[t.id]).trim() + '“ stimmt nicht.' : 'Das stimmt noch nicht.' + (r0.detail && !ex ? ' (' + r0.detail + ')' : '') };
     if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
-    renderTasks(false);
+    renderTasks(false); fbZeig();
   }
   function hintTask(t) {
     const p = instOf(t), h = lsGet('hints', {}), n = Math.min(3, (h[t.id] || 0) + 1), ex = exam();
@@ -242,10 +250,13 @@
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="new">🔀 Neue Variante</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
       if (r) {
+        const h0 = h.length;
         h += `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : '✗'} ${esc(r.text)}</li>${p.kind === 'num' && !p.exact ? `<li>ℹ Erlaubte Abweichung: ±${esc(fmt(p.tol, 6))} (Rundung).</li>` : ''}</ul>`;
-        if (r.ok || !exam()) h += (r.ok ? '' : `<div class="rdout bad"><b>Richtig wäre:</b> ${esc(solText(p))}</div>`) + rdOf(p, r.ok);
+        if (solShown(r, t.id)) h += (r.ok ? '' : `<div class="rdout bad"><b>Richtig wäre:</b> ${esc(solText(p))}</div>`) + rdOf(p, r.ok);
+        else if (!exam()) h += tipHtml(p);
         else h += '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
         if (r.ok) h += '<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>';
+        h = h.slice(0, h0) + fbBox(r, t.id, h.slice(h0));
       }
       h += '</div>';
     }
@@ -256,7 +267,7 @@
   }
   function resetTipps(id) { const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); } }
   function startTask(id, fresh) {
-    const t = TASKS.find(x => x.id === id); S.task = id; S.tRes = null; if (fresh) S.seeds[id] = Math.floor(Math.random() * 1e9); S.tAns[id] = C.emptyAns(instOf(t)); resetTipps(id); renderTasks();
+    const t = TASKS.find(x => x.id === id); S.task = id; S.tRes = null; TRY[id] = 0; if (fresh) S.seeds[id] = Math.floor(Math.random() * 1e9); S.tAns[id] = C.emptyAns(instOf(t)); resetTipps(id); renderTasks();
   }
   /* Antwort-Taste (Auswahl, Markierung, Zeile) in Aufgabe oder Trainer */
   function optClick(ns, row, i) {

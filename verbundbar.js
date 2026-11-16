@@ -276,42 +276,54 @@
   const css = document.createElement('style');
   css.textContent = `
 html.vbb-on #app{height:calc(100vh - var(--vbh,48px))!important;height:calc(100dvh - var(--vbh,48px))!important}
-.vbb{position:sticky;top:0;z-index:390;background:#1b2530;color:#e8ecf0;border-bottom:2px solid #3b9eff;font:14px/1.3 -apple-system,system-ui,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none;box-sizing:border-box;padding-top:env(safe-area-inset-top)}
+.vbb{position:sticky;top:0;z-index:390;background:var(--panel,#1b2530);color:var(--fg,#e8ecf0);border-bottom:2px solid var(--accent,#3b9eff);font:14px/1.3 -apple-system,system-ui,"Segoe UI",sans-serif;-webkit-user-select:none;user-select:none;box-sizing:border-box;padding-top:env(safe-area-inset-top)}
 .vbb *{box-sizing:border-box}
-.vbb-row{display:flex;align-items:center;gap:6px;padding:4px 8px;flex-wrap:wrap;min-height:46px}
+.vbb-row{display:flex;align-items:center;gap:6px;padding:4px 8px;flex-wrap:wrap;min-height:52px}
 .vbb-ico{font-size:22px;flex:none;width:30px;text-align:center}
-.vbb-t{flex:1 1 170px;min-width:120px}.vbb-t b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.vbb-t small{display:block;color:#aab6c2;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.vbb-in{flex:0 1 auto;font-size:12px;color:#aab6c2;display:flex;gap:6px;flex-wrap:wrap}.vbb-in span{padding:2px 7px;border-radius:10px;background:#0006;border:1px solid #38424d;white-space:nowrap}.vbb-in span.ok{color:#4cd964;border-color:#2c7a3c}.vbb-in span.no{color:#ff8a7a;border-color:#a8433a}
-.vbb button,.vbb a.vbb-b{font:inherit;color:inherit;background:#2c343e;border:1px solid #4a5662;border-radius:20px;min-height:40px;padding:0 14px;cursor:pointer;touch-action:manipulation;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;text-decoration:none;font-weight:600;flex:none}
-.vbb button:active,.vbb a.vbb-b:active{background:#3b4652}
-.vbb button.pri{background:#1a7f37;border-color:#1a7f37;color:#fff}.vbb button.acc{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
+.vbb-t{flex:1 1 170px;min-width:120px}.vbb-t b{display:block;font-size:14px;white-space:normal;overflow-wrap:anywhere}.vbb-t small{display:block;color:var(--mute,var(--mute,#8d99a6));font-size:14px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
+.vbb-in{flex:0 1 auto;font-size:14px;color:var(--mute,var(--mute,#8d99a6));display:flex;gap:6px;flex-wrap:wrap}.vbb-in span{padding:2px 7px;border-radius:10px;background:var(--panel2,#0006);border:1px solid var(--line,#38424d);white-space:nowrap}.vbb-in span.ok{color:var(--ok,#4cd964);border-color:var(--ok,#2c7a3c)}.vbb-in span.no{color:var(--danger,#ff8a7a);border-color:var(--danger,#a8433a)}
+.vbb button,.vbb a.vbb-b{font:inherit;color:inherit;background:var(--panel2,#2c343e);border:1px solid var(--line,#4a5662);border-radius:22px;min-height:44px;padding:0 14px;cursor:pointer;touch-action:manipulation;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;text-decoration:none;font-weight:600;flex:none}
+.vbb button:active,.vbb a.vbb-b:active{background:var(--line,#3b4652)}
+.vbb a.vbb-b.pri,.vbb a.vbb-b.acc{color:#fff}.vbb button.pri{background:#1a7f37;border-color:#1a7f37;color:#fff}.vbb button.acc{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .vbb button[disabled]{opacity:.4;cursor:default}
-.vbb button.ic{padding:0;width:40px;justify-content:center}
-.vbb-panel{position:absolute;left:0;right:0;top:100%;max-height:min(64vh,560px);overflow:auto;background:#222a33;border-bottom:2px solid #3b9eff;box-shadow:0 10px 24px #0009;padding:10px 14px 16px;-webkit-user-select:text;user-select:text}
-.vbb-panel h4{margin:14px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:#8d99a6}.vbb-panel h4:first-child{margin-top:0}
+.vbb button.ic{padding:0;width:44px;justify-content:center}
+.vbb-panel{position:absolute;left:0;right:0;top:100%;max-height:min(64vh,560px);overflow:auto;background:var(--panel,#222a33);border-bottom:2px solid var(--accent,#3b9eff);box-shadow:0 10px 24px #0009;padding:10px 14px 16px;-webkit-user-select:text;user-select:text}
+.vbb-panel h4{margin:14px 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute,#8d99a6)}.vbb-panel h4:first-child{margin-top:0}
 .vbb-panel p{margin:.4em 0;line-height:1.45}.vbb-panel ul{margin:.3em 0;padding-left:20px}.vbb-panel li{margin:.15em 0}
-.vbb-panel table{border-collapse:collapse;width:100%;font-size:12.5px}.vbb-panel td{padding:3px 6px;border-top:1px solid #38424d;vertical-align:top}.vbb-panel td:first-child{color:#8d99a6;white-space:nowrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
-.vbb-panel details{margin:4px 0}.vbb-panel summary{min-height:36px;display:flex;align-items:center;cursor:pointer;color:#3b9eff;font-weight:600}
-.vbb-panel .f{display:block;margin:0 0 10px}.vbb-panel .f span{display:block;font-size:12px;color:#8d99a6;margin-bottom:3px}
-.vbb-panel input,.vbb-panel select,.vbb-panel textarea{width:100%;font:inherit;font-size:16px;color:#e8ecf0;background:#14181c;border:1px solid #38424d;border-radius:10px;padding:9px 11px;min-height:42px;-webkit-user-select:text;user-select:text}
-.vbb-panel textarea{font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;min-height:110px}
-.vbb-panel .hintx{color:#8d99a6;font-size:12px;margin-top:2px}
+.vbb-panel table{border-collapse:collapse;width:100%;font-size:14px}.vbb-panel td{padding:3px 6px;border-top:1px solid var(--line,#38424d);vertical-align:top}.vbb-panel td:first-child{color:var(--mute,#8d99a6);white-space:nowrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+.vbb-panel details{margin:4px 0}.vbb-panel summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--accent,#3b9eff);font-weight:600}
+.vbb-panel .f{display:block;margin:0 0 10px}.vbb-panel .f span{display:block;font-size:14px;color:var(--mute,#8d99a6);margin-bottom:3px}
+.vbb-panel input,.vbb-panel select,.vbb-panel textarea{width:100%;font:inherit;font-size:16px;color:var(--fg,#e8ecf0);background:var(--bg,#14181c);border:1px solid var(--line,#38424d);border-radius:10px;padding:9px 11px;min-height:42px;-webkit-user-select:text;user-select:text}
+.vbb-panel textarea{font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;min-height:110px}
+.vbb-panel .hintx{color:var(--mute,#8d99a6);font-size:14px;margin-top:2px}
 .vbb-panel .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-.vbb-note{background:rgba(255,179,64,.14);border:1px solid #c97a1a;border-radius:10px;padding:8px 12px;font-size:13px;margin:6px 0}
-.vbb-err{background:rgba(255,92,92,.14);border:1px solid #a8433a;border-radius:10px;padding:8px 12px;font-size:13px;margin:6px 0}
+.vbb-note{background:rgba(255,179,64,.14);border:1px solid var(--warn,#c97a1a);border-radius:10px;padding:8px 12px;font-size:14px;margin:6px 0}
+.vbb-err{background:rgba(255,92,92,.14);border:1px solid var(--danger,#a8433a);border-radius:10px;padding:8px 12px;font-size:14px;margin:6px 0}
 .vbb-bd{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
-.vbb-sh{background:#222a33;color:#e8ecf0;width:100%;max-width:580px;max-height:88dvh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);font:14px/1.4 -apple-system,system-ui,"Segoe UI",sans-serif}
+.vbb-sh{background:var(--panel,#222a33);color:var(--fg,#e8ecf0);width:100%;max-width:580px;max-height:88dvh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);font:14px/1.4 -apple-system,system-ui,"Segoe UI",sans-serif}
 @media(min-width:700px){.vbb-bd{align-items:center}.vbb-sh{border-radius:16px}}
-.vbb-sh .h{display:flex;align-items:center;justify-content:space-between;padding:10px 8px 6px 16px;border-bottom:1px solid #38424d;font-size:16px;font-weight:700}
-.vbb-sh .h button{width:40px;height:40px;font-size:18px;color:#8d99a6;background:none;border:0;cursor:pointer}
+.vbb-sh .h{display:flex;align-items:center;justify-content:space-between;padding:10px 8px 6px 16px;border-bottom:1px solid var(--line,#38424d);font-size:16px;font-weight:700}
+.vbb-sh .h button{width:44px;height:44px;font-size:18px;color:var(--mute,#8d99a6);background:none;border:0;cursor:pointer}
 .vbb-sh .b{overflow:auto;padding:10px 14px 16px;-webkit-user-select:text;user-select:text}
-.vbb-sh .big{font-size:30px;font-weight:800;margin:0}.vbb-sh .big.ok{color:#4cd964}.vbb-sh .big.no{color:#ffb340}
-.vbb-sh ul.l{list-style:none;margin:8px 0;padding:0}.vbb-sh ul.l li{padding:6px 0 6px 26px;position:relative;border-top:1px solid #38424d;font-size:13.5px}.vbb-sh ul.l li:before{content:'✗';position:absolute;left:4px;color:#ff8a7a;font-weight:700}.vbb-sh ul.l li.ok:before{content:'✓';color:#4cd964}.vbb-sh ul.l li.ok{color:#c9d2da}
-.vbb-sh .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:#2c343e;border:1px solid #4a5662;color:#e8ecf0;font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
+.vbb-sh .big{font-size:30px;font-weight:800;margin:0}.vbb-sh .big.ok{color:var(--ok,#4cd964)}.vbb-sh .big.no{color:var(--warn,#ffb340)}
+.vbb-sh ul.l{list-style:none;margin:8px 0;padding:0}.vbb-sh ul.l li{padding:6px 0 6px 26px;position:relative;border-top:1px solid var(--line,#38424d);font-size:14px}.vbb-sh ul.l li:before{content:'✗';position:absolute;left:4px;color:var(--danger,#ff8a7a);font-weight:700}.vbb-sh ul.l li.ok:before{content:'✓';color:var(--ok,#4cd964)}.vbb-sh ul.l li.ok{color:var(--fg,#c9d2da)}
+.vbb-sh .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:var(--panel2,#2c343e);border:1px solid var(--line,#4a5662);color:var(--fg,#e8ecf0);font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
 .vbb-sh .btn.pri{background:#1a7f37;border-color:#1a7f37;color:#fff}
 .vbb-sh .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .vbb-toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#000d;color:#fff;padding:9px 16px;border-radius:99px;z-index:520;font:14px system-ui,sans-serif;max-width:92vw;text-align:center;pointer-events:none}
 @media(max-width:700px){.vbb-in{display:none}}
+.vbb .vbb-n,.vbb-panel .vbb-n{display:none!important}
+@media(max-width:699px){
+.vbb-row.vbb-main{flex-wrap:nowrap;min-height:48px;padding:2px 6px;gap:6px}
+.vbb-row.vbb-main .vbb-ico,.vbb-row.vbb-main .vbb-w{display:none!important}
+.vbb-row.vbb-main .vbb-t{flex:1 1 0;min-width:0}
+.vbb-row.vbb-main .vbb-t b,.vbb-row.vbb-main .vbb-t small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.vbb-row.vbb-main .vbb-t b{font-size:14px;line-height:1.2}
+.vbb-row.vbb-main .vbb-t small{font-size:14px;line-height:1.2}
+.vbb-row.vbb-main a.vbb-b{padding:0 10px}
+.vbb .vbb-n,.vbb-panel .vbb-n{display:inline-flex!important}
+.vbb-panel .btns.vbb-n{display:flex!important;margin:0 0 8px}
+}
 @media print{.vbb,.vbb-bd,.vbb-toast{display:none!important}html.vbb-on #app{height:auto!important}}`;
   document.head.appendChild(css);
   const bar = document.createElement('div'); bar.className = 'vbb'; bar.id = 'vbBar'; bar.setAttribute('role', 'region'); bar.setAttribute('aria-label', 'Verbundprojekt');
@@ -365,6 +377,8 @@ html.vbb-on #app{height:calc(100vh - var(--vbh,48px))!important;height:calc(100d
     /* Kerne der Projektprüfungen nachladen, wenn die Seite sie nicht selbst mitbringt: nach Kern, Netzlisten-Kern und Läufer, vor den Projektdaten */
     const cores = coreList(T.pid).filter(f => !document.querySelector('script[src="' + f + '"],script[src^="' + f + '?"]')).map(f => ({ src: f }));
     list.splice(Math.min(3, list.length), 0, ...cores);
+    /* E-Reihen (enorm.js): die Projektdaten von garage, ampel und foerder lesen die E12 beim Laden. Die Lab-Seiten bringen die Datei nicht mit (F2). */
+    if (!root.ENORM && !document.querySelector('script[src="enorm.js"],script[src^="enorm.js?"]')) list.unshift({ src: 'enorm.js', must: true });
     for (const it of list) {
       const ok = await loadScript(it.src);
       if (!ok && it.must) { T.err = it.src === 'verbund.js' ? 'Projektkern (verbund.js) nicht geladen. Seite neu laden oder Verbindung prüfen.' : 'Projektdaten (' + it.src + ') fehlen. Seite neu laden.'; return false; }
@@ -500,6 +514,7 @@ html.vbb-on #app{height:calc(100vh - var(--vbh,48px))!important;height:calc(100d
   /* ---- Anzeige ---- */
   function panelHtml() {
     const st = stationDef(), v = V(), info = stInfo(); let h = '';
+    h += '<div class="btns vbb-n"><button data-a="check"' + (info && info.s.state === 'locked' ? ' disabled' : '') + '>Prüfen</button><button class="pri" data-a="give"' + (info && info.s.state === 'locked' ? ' disabled' : '') + '>Übergeben</button><a class="vbb-b" href="' + esc(hubUrl()) + '">Übersicht</a><button data-a="min">Leiste einklappen</button></div>';
     h += '<h4>Auftrag</h4><p>' + esc(st.text || '') + '</p>';
     if (T.err) h += '<div class="vbb-err">' + esc(T.err) + '</div>';
     if (T.note) h += '<div class="vbb-note">' + esc(T.note) + '</div>';
@@ -551,14 +566,14 @@ html.vbb-on #app{height:calc(100vh - var(--vbh,48px))!important;height:calc(100d
     } else if (T.min) {
       h = '<div class="vbb-row" style="min-height:42px"><span class="vbb-ico">' + esc(def.icon || '🧩') + '</span><div class="vbb-t"><b>' + esc(def.name) + '</b></div><button data-a="min">▾ Leiste</button></div>';
     } else {
-      const ins = (st.in || []).map(s => { let ok = false; try { ok = V().has(s); } catch (e) {} return '<span class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓ ' : '✗ ') + esc(String(s).split('.').pop()) + '</span>'; }).join('');
-      const num = info ? 'Station ' + (info.i + 1) + '/' + info.n : 'Station';
+      const ins = (st.in || []).map(s => { let ok = false; try { ok = V().has(s); } catch (e) {} return '<span class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓ ' : '✗ ') + esc(/\.lastenheft$/.test(String(s)) ? 'Lastenheft' : (j => j >= 0 ? 'Station ' + (j + 1) : String(s).split('.').pop())(((T.def && T.def.stations) || []).findIndex(x => x.out === s))) + '</span>'; }).join('');
+      const num = info ? 'Station ' + (info.i + 1) + ' von ' + info.n : 'Station';
       const locked = info && info.s.state === 'locked', sub = num + ' · ' + esc(labName(st.on)) + (info && info.s.pct != null && info.s.state !== 'open' && info.s.state !== 'locked' ? ' · ' + Math.round(info.s.pct) + ' %' : '');
       if (mism) {
-        h = '<div class="vbb-row"><span class="vbb-ico">' + esc(def.icon || '🧩') + '</span><div class="vbb-t"><b>' + esc(def.name) + ': ' + esc(st.title) + '</b><small>' + num + ' gehört ins ' + esc(labName(st.on)) + ', nicht hierher.</small></div><a class="vbb-b pri" href="' + esc(labUrl(st.on, T.pid, T.sid)) + '" style="background:#2fae45;border-color:#2fae45">Im ' + esc(labName(st.on)) + ' öffnen</a><a class="vbb-b" href="' + esc(hubUrl()) + '">Übersicht</a><button class="ic" data-a="end" aria-label="Verbundprojekt beenden">✕</button></div>';
+        h = '<div class="vbb-row vbb-main"><a class="vbb-b vbb-n" href="' + esc(hubUrl()) + '" aria-label="Zurück zum Projekt">‹ Projekt</a><span class="vbb-ico">' + esc(def.icon || '🧩') + '</span><div class="vbb-t"><b>' + esc(def.name) + ': ' + esc(st.title) + '</b><small>' + num + ' gehört ins ' + esc(labName(st.on)) + ', nicht hierher.</small></div><a class="vbb-b pri" href="' + esc(labUrl(st.on, T.pid, T.sid)) + '" aria-label="Im ' + esc(labName(st.on)) + ' öffnen" style="background:#1a7f37;border-color:#1a7f37"><span class="vbb-w">Im ' + esc(labName(st.on)) + ' öffnen</span><span class="vbb-n">Zum Lab</span></a><a class="vbb-b vbb-w" href="' + esc(hubUrl()) + '">Übersicht</a><button class="ic" data-a="end" aria-label="Verbundprojekt beenden">✕</button></div>';
       } else {
-        h = '<div class="vbb-row"><span class="vbb-ico">' + esc(def.icon || '🧩') + '</span><div class="vbb-t"><b>' + esc(def.name) + ': ' + esc(st.title) + '</b><small>' + sub + (locked ? ' · gesperrt' : '') + '</small></div>' + (ins ? '<div class="vbb-in" aria-label="Eingänge">Eingang ' + ins + '</div>' : '') +
-          '<button data-a="panel" aria-expanded="' + T.panel + '">Auftrag ' + (T.panel ? '▴' : '▾') + '</button><button data-a="check"' + (locked ? ' disabled' : '') + '>Prüfen</button><button class="pri" data-a="give"' + (locked ? ' disabled' : '') + '>Übergeben</button><a class="vbb-b" href="' + esc(hubUrl()) + '">Übersicht</a><button class="ic" data-a="min" aria-label="Leiste einklappen">▴</button></div>';
+        h = '<div class="vbb-row vbb-main"><a class="vbb-b vbb-n" href="' + esc(hubUrl()) + '" aria-label="Zurück zum Projekt">‹ Projekt</a><span class="vbb-ico">' + esc(def.icon || '🧩') + '</span><div class="vbb-t"><b>' + esc(def.name) + ': ' + esc(st.title) + '</b><small>' + sub + (locked ? ' · gesperrt' : '') + '</small></div>' + (ins ? '<div class="vbb-in" aria-label="Eingänge">Eingang ' + ins + '</div>' : '') +
+          '<button data-a="panel" aria-expanded="' + T.panel + '"><span class="vbb-w" style="display:inline">Auftrag</span><span class="vbb-n">Details</span> ' + (T.panel ? '▴' : '▾') + '</button><button class="vbb-w" data-a="check"' + (locked ? ' disabled' : '') + '>Prüfen</button><button class="pri vbb-w" data-a="give"' + (locked ? ' disabled' : '') + '>Übergeben</button><a class="vbb-b vbb-w" href="' + esc(hubUrl()) + '">Übersicht</a><button class="ic vbb-w" data-a="min" aria-label="Leiste einklappen">▴</button></div>';
       }
     }
     if (T.panel && st && !T.min && !T.mism) h += '<div class="vbb-panel" id="vbPanel">' + panelHtml() + '</div>';

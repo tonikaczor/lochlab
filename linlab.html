@@ -47,9 +47,9 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 #pal{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);min-height:54px;scrollbar-width:thin;flex:none}
 .chip{flex:none;height:40px;padding:0 13px;border-radius:20px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .chip.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
-.chip.s{height:34px;padding:0 11px;font-size:13px;min-width:44px;justify-content:center}
+.chip.s{height:44px;padding:0 11px;font-size:13px;min-width:44px;justify-content:center}
 .seg{display:inline-flex;flex:none;border-radius:20px;overflow:hidden;border:1px solid var(--line);max-width:100%}
-.seg button{height:40px;min-width:44px;padding:0 12px;background:var(--panel2);font-size:14px;border-right:1px solid var(--line);white-space:nowrap}
+.seg button{height:44px;min-width:44px;padding:0 12px;background:var(--panel2);font-size:14px;border-right:1px solid var(--line);white-space:nowrap}
 .seg button:last-child{border-right:0}.seg button.on{background:var(--accent-bg,#1a6fd4);color:#fff;font-weight:600}
 #stat{flex:none;font-size:12.5px;color:var(--mute);padding:0 4px;white-space:nowrap;font-variant-numeric:tabular-nums}
 #stat b{color:var(--fg)}
@@ -96,8 +96,10 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 .tl.p{color:var(--tprompt);margin-top:3px}.tl.e{color:var(--terr)}.tl.h{color:var(--thint);font-style:italic;font-family:system-ui,sans-serif;font-size:12.5px;margin:2px 0 4px}
 .tline{display:flex;align-items:center;gap:6px;padding:4px 10px 8px;cursor:text}
 .tprompt{color:var(--tprompt);white-space:pre;flex:none;max-width:60%;overflow:hidden;text-overflow:ellipsis}
-.tin{flex:1;min-width:0;background:none;border:0;color:var(--tfg);font:inherit;font-size:16px;min-height:32px;padding:2px 0;outline:none;-webkit-user-select:text;user-select:text}
+.tin{flex:1;min-width:0;background:none;border:0;color:var(--tfg);font:inherit;font-size:16px;min-height:44px;padding:2px 0;outline:none;-webkit-user-select:text;user-select:text}
 .tkeys{display:flex;gap:5px;flex-wrap:wrap;margin:8px 0 0}
+.simd{background:var(--panel);border:1px solid var(--warn);border-radius:10px;margin:0 0 10px;padding:0 12px}.simd summary{min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:600;color:var(--warn);cursor:pointer}.simd p{margin:0 0 10px;font-size:14px;line-height:1.45}
+.fbl{font-size:12px;color:var(--mute)}
 .tkeys .chip.s{min-width:40px;font-family:ui-monospace,Menlo,Consolas,monospace}
 .ctl{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
 .ctl .chip.s{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px}
@@ -124,7 +126,7 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .tg{min-width:48px;height:44px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);font:700 17px ui-monospace,Menlo,Consolas,monospace;color:var(--mute)}
 .tg.on{background:var(--accent-bg);border-color:var(--accent-bg);color:#fff}
 .seg{display:inline-flex;flex:none;border-radius:20px;overflow:hidden;border:1px solid var(--line);max-width:100%}
-.seg button{height:40px;min-width:44px;padding:0 12px;background:var(--panel2);font-size:14px;border-right:1px solid var(--line);white-space:nowrap}
+.seg button{height:44px;min-width:44px;padding:0 12px;background:var(--panel2);font-size:14px;border-right:1px solid var(--line);white-space:nowrap}
 .seg button:last-child{border-right:0}.seg button.on{background:var(--accent-bg,#1a6fd4);color:#fff;font-weight:600}
 .hl details{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:10px;padding:0 14px}
 .hl summary{min-height:48px;display:flex;align-items:center;font-weight:700;font-size:15.5px;cursor:pointer}
@@ -134,8 +136,21 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .hl code,.rdout code,.card code,.tt code{font:600 12.5px ui-monospace,Menlo,Consolas,monospace;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 5px;overflow-wrap:anywhere}
 .hl pre.code{background:var(--tbg);color:var(--tfg);border-radius:8px;padding:10px 12px;font:12.5px/1.4 ui-monospace,Menlo,Consolas,monospace;overflow-x:auto;white-space:pre}
 .hl a,.card a{color:var(--accent)}
+/* Handy: Mindestgrößen, Terminal-Eingabe (Audit I2c) */
+@media(max-width:600px){
+.stats .bx,.lv,.gh,label.f span,.hl th,.tt th,.dot.p,.rdout .st,.tab .bd,.card.pl h4,.fbl{font-size:14px}
+.row small,.row .grow small,.hint2,.hl table,#stat,header .title small,.tl.h,.hl .hb2,.tt{font-size:14px}
+.term,.tl,.hl code,.rdout code,.card code,.tt code,.hl pre.code,.hl .eq{font-size:14px}
+.dot{font-size:14px}
+.ctl .chip.s,.chip.s{font-size:14px;min-height:44px;height:44px}
+.tline{flex-wrap:wrap;gap:0}.tprompt{flex:0 0 100%;max-width:100%}.tin{flex:1 1 100%;min-width:100%;border-top:1px solid #2a323c}
+.tkeys{gap:4px}.tkeys .chip.s{min-width:44px;padding:0 6px}
+.hl a,.card a,a.lnk{display:inline-block;min-height:44px;min-width:44px;line-height:44px}
+.hb{min-height:44px;min-width:44px}
+}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -175,6 +190,8 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { "linlab.html": { name: "Linux-Terminal-Lab", saetze: { "Aufgaben": "Feste Aufgaben. Nach dem ersten Fehler gibt es einen Tipp und einen zweiten Versuch, dann die Lösung mit Rechenweg.", "Trainer": "Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann die Lösung. Tipps kosten nichts.", "Prüfung": "Wie in der Prüfung: Jede Tipp-Stufe kostet 25 % der Punkte, den Lösungsweg gibt es erst nach der richtigen Antwort." } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

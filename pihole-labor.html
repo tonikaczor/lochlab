@@ -11,8 +11,8 @@
 body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,"Segoe UI",sans-serif}
 a{color:var(--accent)}
 header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
-header h1{font-size:18px;margin:0;flex:1}header small{color:var(--mute);display:block;font-weight:400;font-size:12px}
-.btn{height:34px;padding:0 12px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:600 13px system-ui;cursor:pointer}
+header h1{font-size:18px;margin:0;flex:1}header small{color:var(--mute);display:block;font-weight:400;font-size:14px}
+.btn{min-height:44px;min-width:44px;padding:0 14px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:600 14px system-ui;cursor:pointer}
 .btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}.btn[disabled]{opacity:.45;cursor:default}
 main{display:grid;grid-template-columns:minmax(300px,430px) 1fr;gap:14px;padding:14px;align-items:start}
 @media(max-width:900px){main{grid-template-columns:1fr}}
@@ -20,46 +20,47 @@ main{display:grid;grid-template-columns:minmax(300px,430px) 1fr;gap:14px;padding
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px}
 .step{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--panel)}
 .step>.sh{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer}
-.step .no{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);font-weight:700;font-size:13px;flex:none}
+.step .no{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:var(--panel2);font-weight:700;font-size:14px;flex:none}
 .step.done .no{background:var(--ok);color:#0b1a0f}.step.cur{border-color:var(--accent)}
 .step .sb{display:none;padding:2px 14px 12px}.step.open .sb{display:block}
 .step h3{margin:0;font-size:15px;flex:1}
-.k{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0f1418;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:13px}
-pre.cmd{margin:6px 0;padding:8px 10px;background:#0f1418;border:1px solid var(--line);border-radius:8px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;position:relative}
-.lbl{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:10px 0 3px;font-weight:700}
-.pp{margin:10px 0 0;padding:7px 10px;border-radius:8px;background:rgba(76,217,100,.1);border:1px solid rgba(76,217,100,.4);font-size:13px}
-.wn{margin:10px 0 0;padding:7px 10px;border-radius:8px;background:rgba(255,179,64,.1);border:1px solid rgba(255,179,64,.45);font-size:13px}
+.k{font-family:ui-monospace,Menlo,Consolas,monospace;background:#0f1418;border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:14px}
+pre.cmd{margin:6px 0;padding:8px 10px;background:#0f1418;border:1px solid var(--line);border-radius:8px;font:14px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;position:relative}
+.lbl{font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);margin:10px 0 3px;font-weight:700}
+.pp{margin:10px 0 0;padding:7px 10px;border-radius:8px;background:rgba(76,217,100,.1);border:1px solid rgba(76,217,100,.4);font-size:14px}
+.wn{margin:10px 0 0;padding:7px 10px;border-radius:8px;background:rgba(255,179,64,.1);border:1px solid rgba(255,179,64,.45);font-size:14px}
 .hintbtn{margin-top:8px}
 /* Umgebung */
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.tab{padding:7px 12px;border-radius:9px 9px 0 0;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-weight:600;font-size:13px}
+.tab{min-height:44px;display:inline-flex;align-items:center;padding:0 14px;border-radius:9px 9px 0 0;background:var(--panel2);border:1px solid var(--line);cursor:pointer;font-weight:600;font-size:14px}
 .tab.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .env{border:1px solid var(--line);border-radius:12px;background:#0f1418;min-height:420px;overflow:hidden}
-.term{font:13px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:10px;height:430px;overflow:auto;background:#0b0e11;color:#d6e2ea;white-space:pre-wrap;word-break:break-word}
+.term{font:14px/1.45 ui-monospace,Menlo,Consolas,monospace;padding:10px;height:430px;overflow:auto;background:#0b0e11;color:#d6e2ea;white-space:pre-wrap;word-break:break-word}
 .term .p{color:#7dff9a}.term .e{color:#ff8a7a}.term .i{color:#8d99a6}.term .y{color:#ffe14d}
-.tin{display:flex;border-top:1px solid var(--line);background:#0b0e11}.tin span{padding:8px 0 8px 10px;font:13px ui-monospace,monospace;color:#7dff9a;white-space:nowrap}.tin input{flex:1;background:none;border:0;color:#fff;font:13px ui-monospace,monospace;padding:8px;outline:none;min-width:0}
+.tin{display:flex;border-top:1px solid var(--line);background:#0b0e11}.tin span{padding:8px 0 8px 10px;font:14px ui-monospace,monospace;color:#7dff9a;white-space:nowrap}.tin input{flex:1;background:none;border:0;color:#fff;font:14px ui-monospace,monospace;padding:8px;outline:none;min-width:0}
 .web{background:#fff;color:#1b2230;padding:12px;min-height:420px;font-family:system-ui,sans-serif}.web h2{margin:6px 0}
-.bar{display:flex;gap:6px;background:#e6e9ee;padding:8px;border-bottom:1px solid #c9cfd8}.bar input{flex:1;padding:6px 8px;border:1px solid #b9c0cb;border-radius:6px;font:13px system-ui;min-width:0}.bar button{padding:6px 10px;border-radius:6px;border:1px solid #b9c0cb;background:#fff;cursor:pointer}
-.ad{border:2px dashed #e0a020;background:#fff6dd;padding:10px;margin:8px 0;border-radius:8px;text-align:center;font-weight:700;color:#7a5200}.blk{border:2px dashed #b9c0cb;background:#f2f4f7;color:#7b8592;padding:10px;margin:8px 0;border-radius:8px;text-align:center;font-size:13px}
-.img{display:inline-block;width:110px;height:80px;border-radius:8px;background:linear-gradient(135deg,#8ec5ff,#4a90e2);margin:4px;color:#fff;font:600 12px system-ui;text-align:center;line-height:80px}.imgx{background:#e5e8ec;color:#98a1ad}
-.rt{background:#f4f6f9;color:#1b2230;display:grid;grid-template-columns:170px 1fr;min-height:420px;font-family:system-ui,sans-serif}.rt nav{background:#0d3b66;color:#fff;padding:10px 0}.rt nav div{padding:9px 14px;cursor:pointer;font-size:13px}.rt nav div.on{background:#1565a8}.rt section{padding:14px}
-.rt table{border-collapse:collapse;width:100%;font-size:13px}.rt td,.rt th{border-bottom:1px solid #d6dbe3;padding:6px 8px;text-align:left}
-.rt input[type=text]{padding:6px 8px;border:1px solid #b9c0cb;border-radius:6px;font:13px system-ui;width:210px}
+.bar{display:flex;gap:6px;background:#e6e9ee;padding:8px;border-bottom:1px solid #c9cfd8}.bar input{flex:1;padding:6px 8px;border:1px solid #b9c0cb;border-radius:6px;font:14px system-ui;min-width:0}.bar button{padding:6px 10px;border-radius:6px;border:1px solid #b9c0cb;background:#fff;cursor:pointer}
+.ad{border:2px dashed #e0a020;background:#fff6dd;padding:10px;margin:8px 0;border-radius:8px;text-align:center;font-weight:700;color:#7a5200}.blk{border:2px dashed #b9c0cb;background:#f2f4f7;color:#7b8592;padding:10px;margin:8px 0;border-radius:8px;text-align:center;font-size:14px}
+.img{display:inline-block;width:110px;height:80px;border-radius:8px;background:linear-gradient(135deg,#8ec5ff,#4a90e2);margin:4px;color:#fff;font:600 14px system-ui;text-align:center;line-height:80px}.imgx{background:#e5e8ec;color:#98a1ad}
+.rt{background:#f4f6f9;color:#1b2230;display:grid;grid-template-columns:170px 1fr;min-height:420px;font-family:system-ui,sans-serif}.rt nav{background:#0d3b66;color:#fff;padding:10px 0}.rt nav div{padding:9px 14px;cursor:pointer;font-size:14px}.rt nav div.on{background:#1565a8}.rt section{padding:14px}
+.rt table{border-collapse:collapse;width:100%;font-size:14px}.rt td,.rt th{border-bottom:1px solid #d6dbe3;padding:6px 8px;text-align:left}
+.rt input[type=text]{padding:6px 8px;border:1px solid #b9c0cb;border-radius:6px;font:14px system-ui;width:210px}
 .rt .b{padding:7px 14px;border-radius:6px;border:0;background:#1565a8;color:#fff;cursor:pointer;font-weight:600}
-.dlg{background:#16417a;color:#fff;border:2px solid #9fb4d6;margin:30px auto;max-width:560px;padding:0;font:13px/1.45 ui-monospace,Menlo,Consolas,monospace}.dlg h4{margin:0;background:#cfd9ea;color:#16417a;padding:4px 10px;font-size:13px}.dlg .bd{padding:12px;white-space:pre-wrap}.dlg .ac{display:flex;gap:10px;justify-content:center;padding:0 12px 12px}.dlg button{background:#cfd9ea;color:#16417a;border:0;padding:4px 14px;font:600 13px ui-monospace,monospace;cursor:pointer}.dlg .opt{display:block;padding:2px 8px;cursor:pointer}.dlg .opt.on{background:#e8c24a;color:#000}
+.dlg{background:#16417a;color:#fff;border:2px solid #9fb4d6;margin:30px auto;max-width:560px;padding:0;font:14px/1.45 ui-monospace,Menlo,Consolas,monospace}.dlg h4{margin:0;background:#cfd9ea;color:#16417a;padding:4px 10px;font-size:14px}.dlg .bd{padding:12px;white-space:pre-wrap}.dlg .ac{display:flex;gap:10px;justify-content:center;padding:0 12px 12px}.dlg button{background:#cfd9ea;color:#16417a;border:0;padding:4px 14px;font:600 14px ui-monospace,monospace;cursor:pointer}.dlg .opt{display:block;padding:2px 8px;cursor:pointer}.dlg .opt.on{background:#e8c24a;color:#000}
 .dash{background:#1b1f27;color:#e3e7ee;padding:12px;font-family:system-ui,sans-serif;min-height:420px}.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}.tile{border-radius:8px;padding:10px;color:#fff}.tile b{display:block;font-size:22px}
-.dash table{width:100%;border-collapse:collapse;font-size:12px}.dash td,.dash th{border-bottom:1px solid #2e3440;padding:5px 6px;text-align:left}.dash .bk{color:#ff8a7a}.dash .al{color:#7dd87d}.dash button{font-size:12px;padding:2px 8px;border-radius:5px;border:1px solid #556;background:#2a3040;color:#fff;cursor:pointer}
-.imgr{background:#f0f0f0;color:#222;font-family:system-ui,sans-serif;padding:14px;min-height:420px}.imgr h4{margin:0 0 8px}.imgr .row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.imgr .opt{padding:7px 10px;border:2px solid #c3c8d1;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}.imgr .opt.on{border-color:#c51a4a;background:#fde8ee}.imgr label{display:block;margin:6px 0;font-size:13px}.imgr input[type=text],.imgr input[type=password]{padding:5px 8px;border:1px solid #b0b6c0;border-radius:6px;margin-left:6px}.imgr .go{padding:8px 16px;border:0;border-radius:8px;background:#c51a4a;color:#fff;font-weight:700;cursor:pointer}
+.dash table{width:100%;border-collapse:collapse;font-size:14px}.dash td,.dash th{border-bottom:1px solid #2e3440;padding:5px 6px;text-align:left}.dash .bk{color:#ff8a7a}.dash .al{color:#7dd87d}.dash button{font-size:14px;padding:2px 8px;border-radius:5px;border:1px solid #556;background:#2a3040;color:#fff;cursor:pointer}
+.imgr{background:#f0f0f0;color:#222;font-family:system-ui,sans-serif;padding:14px;min-height:420px}.imgr h4{margin:0 0 8px}.imgr .row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}.imgr .opt{padding:7px 10px;border:2px solid #c3c8d1;border-radius:8px;background:#fff;cursor:pointer;font-size:14px}.imgr .opt.on{border-color:#c51a4a;background:#fde8ee}.imgr label{display:block;margin:6px 0;font-size:14px}.imgr input[type=text],.imgr input[type=password]{padding:5px 8px;border:1px solid #b0b6c0;border-radius:6px;margin-left:6px}.imgr .go{padding:8px 16px;border:0;border-radius:8px;background:#c51a4a;color:#fff;font-weight:700;cursor:pointer}
 .pi{padding:14px;color:#e8ecf0}.pi .it{display:inline-block;margin:6px 8px 6px 0;padding:10px 12px;border-radius:10px;border:2px solid var(--line);background:var(--panel2);cursor:pointer}.pi .it.on{border-color:var(--ok);background:rgba(76,217,100,.12)}
-.msg{margin:8px 0;min-height:18px;font-size:13px}
+.msg{margin:8px 0;min-height:18px;font-size:14px}
 .hide{display:none}
 @media print{header .btn,.tabs,.env,.hintbtn,.noprint{display:none!important}main{display:block;padding:0}.col.envcol{display:none}body{background:#fff;color:#000}.card,.step{background:#fff;border:1px solid #999}.step .sb{display:block!important}.k,pre.cmd{background:#f4f4f4;color:#000;border-color:#bbb}.pp{background:#eef9ee}.wn{background:#fff6dd}.lbl{color:#444}.step .no{background:#ddd;color:#000}}
+input[type=checkbox]{width:24px;height:24px;vertical-align:middle}label{display:inline-flex;align-items:center;gap:6px;min-height:44px}input[type=text],input[type=password],input:not([type]){min-height:44px}button{min-height:44px;font-size:14px}#urheber-hinweis{font-size:14px!important}
 </style>
 </head>
 <body>
 <header>
+  <a class="btn" href="index.html" style="text-decoration:none;display:inline-flex;align-items:center">‹ Start</a>
   <h1>Projekt Pi-hole: Werbung im ganzen Heimnetz blocken<small>Anleitung zum Selbermachen und eine Übungsumgebung, in der du alles zuerst gefahrlos ausprobierst</small></h1>
-  <a class="btn" href="index.html" style="text-decoration:none;display:inline-flex;align-items:center">Startseite</a>
   <button class="btn" id="bPrint">Anleitung drucken</button>
   <button class="btn" id="bReset">Übung zurücksetzen</button>
 </header>
@@ -69,7 +70,7 @@ pre.cmd{margin:6px 0;padding:8px 10px;background:#0f1418;border:1px solid var(--
     <div class="card" style="margin-bottom:8px"><b id="curT"></b><div class="msg" id="curM" style="margin:4px 0 0"></div></div>
     <div class="tabs" id="tabs"></div>
     <div class="env" id="env"></div>
-    <p style="color:var(--mute);font-size:12px;margin:8px 2px">Die Übungsumgebung ist vereinfacht: Ausgaben und Menünamen sehen bei dir etwas anders aus (je nach Router und Pi-hole-Version). Nichts davon verlässt diese Seite.</p>
+    <p style="color:var(--mute);font-size:14px;margin:8px 2px">Die Übungsumgebung ist vereinfacht: Ausgaben und Menünamen sehen bei dir etwas anders aus (je nach Router und Pi-hole-Version). Nichts davon verlässt diese Seite.</p>
   </div>
 </main>
 <script>
@@ -229,7 +230,7 @@ function rRouter() {
     var rows = '<tr><td>laptop (dieser Computer)</td><td>' + LAPTOP_IP + '</td><td></td></tr><tr><td>handy-anna</td><td>192.168.178.31</td><td></td></tr>' + (v.piOn ? '<tr><td><b>' + esc(v.img.host) + '</b></td><td><b>' + PI_IP + '</b>' + (v.ipRes ? ' (feste Adresse)' : '') + '</td><td><a href="#" id="rEd">✎ Bearbeiten</a></td></tr>' : '');
     body = '<h3>Netzwerkgeräte</h3><table><tr><th>Name</th><th>IP-Adresse</th><th></th></tr>' + rows + '</table>' + (v.piOn ? '' : '<p style="color:#666">Der Pi ist noch nicht im Netz.</p>') + '<div style="margin-top:14px;padding-top:10px;border-top:1px solid #d6dbe3">IP-Adresse des Pi (zum Merken): <input type="text" id="rIp" value="' + esc(v.ipSeen) + '" placeholder="z. B. 192.168.178.20"> <button class="b" id="rMk">Merken</button> <span id="rM" style="margin-left:8px"></span></div>';
   } else if (rp === 'edit') body = '<h3>Gerät bearbeiten: ' + esc(v.img.host) + '</h3><p>IP-Adresse: ' + PI_IP + '</p><label><input type="checkbox" id="rRes" ' + (v.ipRes ? 'checked' : '') + '> Diesem Netzwerkgerät immer die gleiche IPv4-Adresse zuweisen</label><p><button class="b" id="rOk">OK</button> <button class="b" style="background:#6b7787" id="rBack">Zurück</button></p>';
-  else body = '<h3>Netzwerkeinstellungen</h3><p><b>IPv4-Adressen</b><br>Router-Adresse: ' + ROUTER_IP + '<br>Lokaler DNS-Server: <input type="text" id="rDns" value="' + esc(v.router.dnsField) + '" placeholder="leer = Router (Provider-DNS)"></p><p><button class="b" id="rDnsOk">Übernehmen</button> <span id="rM2"></span></p><p style="color:#666;font-size:12px">Die Bezeichnungen heißen bei jedem Router etwas anders.</p>';
+  else body = '<h3>Netzwerkeinstellungen</h3><p><b>IPv4-Adressen</b><br>Router-Adresse: ' + ROUTER_IP + '<br>Lokaler DNS-Server: <input type="text" id="rDns" value="' + esc(v.router.dnsField) + '" placeholder="leer = Router (Provider-DNS)"></p><p><button class="b" id="rDnsOk">Übernehmen</button> <span id="rM2"></span></p><p style="color:#666;font-size:14px">Die Bezeichnungen heißen bei jedem Router etwas anders.</p>';
   env.innerHTML = '<div class="rt"><nav>' + nav.map(function (n) { return '<div class="' + (rp === n[0] || (rp === 'edit' && n[0] === 'devices') ? 'on' : '') + '" data-p="' + n[0] + '">' + n[1] + '</div>'; }).join('') + '</nav><section>' + body + '</section></div>';
   env.querySelectorAll('nav div').forEach(function (d) { d.onclick = function () { rp = d.dataset.p; rRouter(); }; });
   if ($('#rEd')) $('#rEd').onclick = function (e) { e.preventDefault(); rp = 'edit'; rRouter(); };
@@ -428,12 +429,12 @@ function rBrowser() {
   var s = SITES[url]; if (!s) { w.innerHTML = '<h2>Seite nicht gefunden</h2><p>Diese Übungs-Browser kennt: <a href="#" data-g="schule.beispiel">schule.beispiel</a>, <a href="#" data-g="shop.beispiel">shop.beispiel</a>, <a href="#" data-g="nachrichten.beispiel">nachrichten.beispiel</a></p>'; }
   else {
     var dnsMain = resolveName(url);
-    if (!dnsMain.ok) { w.innerHTML = '<h2>Diese Seite ist nicht erreichbar</h2><p>DNS_PROBE_FINISHED_NO_INTERNET: Der Computer findet keinen DNS-Server, der antwortet.</p><p style="color:#666;font-size:13px">Tipp: Läuft Pi-hole noch? Siehe Schritt 13.</p>'; v.crashSeen = true; save(); }
+    if (!dnsMain.ok) { w.innerHTML = '<h2>Diese Seite ist nicht erreichbar</h2><p>DNS_PROBE_FINISHED_NO_INTERNET: Der Computer findet keinen DNS-Server, der antwortet.</p><p style="color:#666;font-size:14px">Tipp: Läuft Pi-hole noch? Siehe Schritt 13.</p>'; v.crashSeen = true; save(); }
     else {
       var html = '<h2>' + esc(s.title) + '</h2><p>' + esc(s.text) + '</p>', blocked = 0;
       s.res.forEach(function (r) { var d = resolveName(r.d); if (d.ok && d.blocked) { blocked++; html += (r.k === 'px' ? '' : '<div class="' + (r.k === 'img' ? 'img imgx' : 'blk') + '" title="' + esc(r.d) + '">' + (r.k === 'img' ? 'Bild fehlt' : 'Werbung blockiert: ' + esc(r.d)) + '</div>'); } else html += (r.k === 'img' ? '<div class="img">' + esc(r.t) + '</div>' : (r.k === 'px' ? '' : '<div class="ad">' + esc(r.t) + ' (von ' + esc(r.d) + ')</div>')); });
-      if (s.res.length) html += '<p style="color:#666;font-size:12px">Geladene Teile: ' + (s.res.length - blocked) + ' · blockiert: ' + blocked + '</p>';
-      if (url === 'shop.beispiel' && v.allow.indexOf('cdn.shopbilder.beispiel') < 0 && v.installed && v.router.dnsSet) html += '<p style="color:#b00020;font-size:13px">Die Produktbilder fehlen: Hier hat Pi-hole zu viel blockiert (Fehlalarm). Schritt 12.</p>';
+      if (s.res.length) html += '<p style="color:#666;font-size:14px">Geladene Teile: ' + (s.res.length - blocked) + ' · blockiert: ' + blocked + '</p>';
+      if (url === 'shop.beispiel' && v.allow.indexOf('cdn.shopbilder.beispiel') < 0 && v.installed && v.router.dnsSet) html += '<p style="color:#b00020;font-size:14px">Die Produktbilder fehlen: Hier hat Pi-hole zu viel blockiert (Fehlalarm). Schritt 12.</p>';
       w.innerHTML = html; v.visited[url] = true; save(); renderGuide();
     }
   }

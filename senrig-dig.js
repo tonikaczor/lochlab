@@ -414,7 +414,7 @@
         ctx.fillStyle = '#16181b'; rr(ctx, x + w / 2 - 17, 130, 34, 34, 3); ctx.fill();
         txt(ctx, name, x + w / 2, 118, 11, '#e8f4ee', 'center', true);
         ctx.fillStyle = '#e9eef3'; rr(ctx, x + 6, 190, w - 12, 36, 4); ctx.fill();
-        txt(ctx, 'Adresse', x + w / 2, 200, 9, '#33404c', 'center'); txt(ctx, addr, x + w / 2, 215, 15, '#16202a', 'center', true, MONO);
+        txt(ctx, 'Adresse', x + w / 2, 200, 10, '#33404c', 'center'); txt(ctx, addr, x + w / 2, 215, 15, '#16202a', 'center', true, MONO);
         ctx.restore();
         ctx.fillStyle = '#c4ccd4'; [SCL_Y, SDA_Y].forEach(yy => { ctx.beginPath(); ctx.arc(x, yy, 4, 0, TWO_PI); ctx.fill(); });
       };
@@ -542,7 +542,7 @@
         ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1; if (ctx.setLineDash) ctx.setLineDash([3, 4]);
         [0.3, 0.7].forEach(v => { const yy = ln[0] + laneH - v * laneH; ctx.beginPath(); ctx.moveTo(px, yy); ctx.lineTo(px + pw, yy); ctx.stroke(); });
         if (ctx.setLineDash) ctx.setLineDash([]);
-        if (li === 0 && !kv) { txt(ctx, 'VIH', px + pw - 2, ln[0] + laneH - 0.7 * laneH - 5, 9, C.dim, 'right'); }
+        if (li === 0 && !kv) { txt(ctx, 'VIH', px + pw - 2, ln[0] + laneH - 0.7 * laneH - 5, 10, C.dim, 'right'); }
       });
       if (!kv) {
         const hasTx = tx && !tx.pulse;

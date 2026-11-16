@@ -26,11 +26,11 @@
 
   /* ============================================================ Fließbild: Warenfluss im Überblick */
   const STATIONS = [
-    { k: 'we', n: 'Wareneingang', sub: 'annehmen, prüfen', v: 'Annehmen', x: 8, y: 22, w: 112, h: 70, tab: 'we', info: 'Die Lieferung wird angenommen und mit Bestellung und Lieferschein abgeglichen: Menge zählen, Zustand prüfen, Abweichungen vermerken.' },
+    { k: 'we', n: 'Wareneingang', sub: 'annehmen', v: 'Annehmen', x: 8, y: 22, w: 112, h: 70, tab: 'we', info: 'Die Lieferung wird angenommen und mit Bestellung und Lieferschein abgeglichen: Menge zählen, Zustand prüfen, Abweichungen vermerken.' },
     { k: 'ein', n: 'Einlagern', sub: 'Stapler', v: 'Einlagern', x: 140, y: 22, w: 124, h: 70, tab: 'trag', info: 'Der Stapler bringt die Ware zum Lagerplatz. Dabei zählen Traglast, Lastschwerpunkt und die Prüfung vor Fahrtantritt.' },
     { k: 'lag', n: 'Lager', sub: 'Plätze, Inventur', v: 'Lagern', x: 292, y: 22, w: 120, h: 178, tab: 'lag', info: 'Im Lager entscheidet die Strategie (FIFO, LIFO, FEFO) über die Entnahme, die Platzwahl über den Platzbedarf. Die Inventur prüft den Bestand.' },
-    { k: 'kom', n: 'Kommissionieren', sub: 'Ware zusammenstellen', v: 'Zusammenstellen', x: 140, y: 130, w: 124, h: 70, tab: 'kom', info: 'Die Ware für einen Auftrag wird aus dem Lager entnommen. Kurze Wege und wenige Fehler sind das Ziel.' },
-    { k: 'ver', n: 'Versand', sub: 'packen, kennzeichnen', v: 'Packen', x: 8, y: 130, w: 112, h: 70, tab: 'ver', info: 'Die Packstücke werden gekennzeichnet, die Versandart wird gewählt und die Fracht bestimmt.' }
+    { k: 'kom', n: 'Kommissionieren', sub: 'Ware sammeln', v: 'Zusammenstellen', x: 140, y: 130, w: 124, h: 70, tab: 'kom', info: 'Die Ware für einen Auftrag wird aus dem Lager entnommen. Kurze Wege und wenige Fehler sind das Ziel.' },
+    { k: 'ver', n: 'Versand', sub: 'packen, senden', v: 'Packen', x: 8, y: 130, w: 112, h: 70, tab: 'ver', info: 'Die Packstücke werden gekennzeichnet, die Versandart wird gewählt und die Fracht bestimmt.' }
   ];
   /* Ruheplätze der Palette je Station (auf dem Weg) und der Weg selbst als Linienzug: Eingang, Einlagern, Ecke, Lager, Ecke, Kommissionieren, Versand; WIDX: Stationsnummer -> Punkt im Linienzug */
   const REST = [[100, 57], [244, 57], [352, 157], [244, 165], [100, 165]], WAY = [REST[0], REST[1], [352, 57], REST[2], [352, 165], REST[3], REST[4]], WIDX = [0, 1, 3, 5, 6];
@@ -98,15 +98,36 @@
       if (used) s += T((X(r.ein) + X(r.mhd)) / 2, y + 17, '− ' + f(take[r.id]), 's b mid nt');
       s += '</g>';
     });
-    s += T(8, H - 6, 'Nummer: Reihenfolge der Entnahme · blau: hier wird entnommen', 's2 m');
+    s += T(8, H - 6, 'Nummer = Entnahmereihenfolge · blau = Entnahme', 's2 m');
     return svg(W, H, 'Zeitleiste der Chargen mit Einlagertag, Ablauftag und Entnahmereihenfolge', s);
+  }
+
+  /* ============================================================ Regalbild mit vier Chargen und Entnahmereihenfolge (Bühne in Lagerstrategien) */
+  /* p: {rows:[{id,ein,mhd,qty}], q, strat}; Boxhöhe = Menge, Nummer = Reihenfolge der Entnahme, blau = es wird entnommen */
+  function shelfSvg(p) {
+    if (!p || !Array.isArray(p.rows) || !p.rows.length) return '';
+    const okD = v => Number.isInteger(v) && v >= 1 && v <= 365;
+    if (!p.rows.every(r => okD(r.ein) && okD(r.mhd) && r.mhd >= r.ein && r.qty >= 0) || !(p.q >= 0)) return '';
+    const n = p.rows.length, W = 420, H = 206, order = C.orderBatches(p.rows, p.strat), w = C.withdraw(p.rows, p.strat, p.q), take = {}; w.picks.forEach(a => { take[a.id] = a.qty; });
+    const mx = Math.max(1, Math.max.apply(null, p.rows.map(r => r.qty))), cw = 100, bw = 88, by = 140, bh = 76; let s = '';
+    s += T(14, 16, 'Regal: Entnahme nach ' + String(p.strat).toUpperCase() + ' (Nummer = Reihenfolge)', 's b');
+    p.rows.forEach((r, i) => {
+      const x = 14 + i * cw, rank = order.findIndex(o => o.id === r.id) + 1, used = take[r.id] > 0, h = r.qty > 0 ? Math.max(14, r.qty / mx * bh) : 0;
+      s += R(x - 3, 52, bw + 6, bh + 12, 'cell', 3);
+      if (h) s += R(x, by - h, bw, h, used ? 'bar on' : 'bar', 4);
+      s += '<circle class="' + (used ? 'bdg on' : 'bdg') + '" cx="' + q(x + bw / 2) + '" cy="40" r="11"/>' + T(x + bw / 2, 45, rank > 0 ? rank : '–', 's b mid' + (used ? ' nt' : ''));
+      if (used) s += T(x + bw / 2, by - Math.max(h / 2, 6) + 5, '− ' + f(take[r.id]), 's b mid');
+      s += T(x + bw / 2, by + 20, r.id, 's b mid') + T(x + bw / 2, by + 36, f(r.qty) + ' Stück', 's2 m mid') + T(x + bw / 2, by + 52, 'bis ' + C.dayStr(r.mhd), 's2 m mid');
+    });
+    s += R(8, by + 2, W - 16, 4, 'rk', 0);
+    return svg(W, H + 18, 'Regal mit vier Chargen: Höhe zeigt die Menge, Nummer die Entnahmereihenfolge', s);
   }
 
   /* ============================================================ Plätze fest gegen frei */
   /* m: 3 Artikel x 4 Monate (Zahlen) */
   function placeSvg(m) {
     const pn = C.placeNeed(m); if (!pn) return '';
-    const W = 420, H = 262, l = 40, r = 10, t = 22, b = 44, cols = m[0].length, ymax = Math.max(pn.fixed, pn.free, 1) * 1.1, Y = v => H - b - v / ymax * (H - t - b), bw = (W - l - r) / cols;
+    const W = 420, H = 286, l = 40, r = 10, t = 22, b = 62, cols = m[0].length, ymax = Math.max(pn.fixed, pn.free, 1) * 1.1, Y = v => H - b - v / ymax * (H - t - b), bw = (W - l - r) / cols;
     const cl = ['bA', 'bB', 'bC', 'bD'], nm = 'ABCD';
     let s = '';
     const step = ymax > 40 ? 10 : ymax > 16 ? 5 : 2;
@@ -119,13 +140,13 @@
     }
     s += `<line class="lf" x1="${l}" x2="${W - r}" y1="${q(Y(pn.fixed))}" y2="${q(Y(pn.fixed))}"/>` + T(W - r - 2, Y(pn.fixed) - 5, 'fest: ' + f(pn.fixed) + ' Plätze', 's b end h hi');
     s += `<line class="lr" x1="${l}" x2="${W - r}" y1="${q(Y(pn.free))}" y2="${q(Y(pn.free))}"/>` + T(l + 6, Y(pn.free) - 5, 'frei: ' + f(pn.free) + ' Plätze', 's b h ac');
-    s += T(l, H - 8, 'Säule = Bestand je Monat (Paletten). Frei braucht nur die höchste Säule.', 's2 m');
+    s += T(l, H - 24, 'Säule = Bestand je Monat (Paletten).', 's2 m') + T(l, H - 6, 'Frei braucht nur die höchste Säule.', 's2 m');
     return svg(W, H, 'Säulen: Bestand je Monat und die benötigten Plätze bei fester und freier Platzwahl', s);
   }
 
   /* ============================================================ Regal mit Gang, Fach und Ebene */
   function rackSvg(occ) {
-    const G = 2, Fa = 3, E = 3, W = 420, H = 214, cw = 52, ch = 40, x0 = [24, 232], y0 = 34, set = new Set(occ || []), nx = C.nextFreeSlot(occ || [], G, Fa, E);
+    const G = 2, Fa = 3, E = 3, W = 420, H = 238, cw = 52, ch = 40, x0 = [24, 232], y0 = 34, set = new Set(occ || []), nx = C.nextFreeSlot(occ || [], G, Fa, E);
     let s = '';
     for (let g = 1; g <= G; g++) {
       const xb = x0[g - 1];
@@ -139,7 +160,7 @@
       for (let e = 1; e <= E; e++) s += T(xb - 4, y0 + (E - e) * ch + ch / 2 + 4, 'E' + e, 's2 m end');
       s += R(xb - 1, y0 + E * ch, Fa * cw + 2, 3, 'rk', 0);
     }
-    s += T(210, H - 6, 'Platz = Gang-Fach-Ebene, zum Beispiel ' + (nx || '01-01-1') + '. Grün: nächster freier Platz.', 's2 m mid');
+    s += T(210, H - 24, 'Platz = Gang-Fach-Ebene, zum Beispiel ' + (nx || '01-01-1') + '.', 's2 m mid') + T(210, H - 6, 'Grün: nächster freier Platz.', 's2 m mid');
     return svg(W, H, 'Zwei Regalgänge mit je drei Fächern und drei Ebenen, belegte Plätze sind gefüllt', s);
   }
 
@@ -172,7 +193,7 @@
     if (!Array.isArray(rows) || !rows.length) return '';
     if (blind) return svg(420, 70, 'Blindzählung: Der Sollbestand ist verdeckt', T(210, 30, 'Blindzählung: Der Sollbestand ist verdeckt.', 'b mid') + T(210, 52, 'Nach dem Aufdecken siehst du hier die Abweichungen.', 's m mid'));
     if (!rows.every(r => fin(r.soll) && fin(r.ist) && r.soll >= 0 && r.ist >= 0)) return '';
-    const n = rows.length, W = 420, rh = 36, H = 54 + n * rh, cx = 262, half = 118, pct = r => (r.soll > 0 ? (r.ist - r.soll) / r.soll * 100 : (r.ist > 0 ? 100 : 0)), mx = Math.max(10, Math.max.apply(null, rows.map(r => Math.abs(pct(r))))), sc = half / mx;
+    const n = rows.length, W = 420, rh = 36, H = 70 + n * rh, cx = 262, half = 118, pct = r => (r.soll > 0 ? (r.ist - r.soll) / r.soll * 100 : (r.ist > 0 ? 100 : 0)), mx = Math.max(10, Math.max.apply(null, rows.map(r => Math.abs(pct(r))))), sc = half / mx;
     let s = L(cx, 26, cx, H - 20, 'ax') + T(cx, 20, '0 %', 's2 m mid') + T(cx - half, 20, 'Fehlbestand', 's2 b', ' style="fill:var(--danger)"') + T(cx + half, 20, 'Mehrbestand', 's2 b end', ' style="fill:var(--ok)"');
     rows.forEach((r, i) => {
       const y = 32 + i * rh, v = pct(r), d = r.ist - r.soll, w = Math.abs(v) * sc;
@@ -180,7 +201,7 @@
       if (d === 0) s += T(cx + 6, y + 19, 'stimmt', 's2 m');
       else s += R(v < 0 ? cx - w : cx, y + 6, Math.max(2, w), 18, v < 0 ? 'neg' : 'pos', 2) + T(v < 0 ? cx + 6 : cx - 6, y + 20, (d > 0 ? '+' : '−') + f(Math.abs(d)) + ' Stk (' + (v > 0 ? '+' : '−') + f(Math.abs(v), 1) + ' %)', 's2 b' + (v < 0 ? '' : ' end'));
     });
-    s += T(8, H - 6, 'Ein kleiner Saldo kann täuschen: Mehr und Fehlbestand heben sich auf.', 's2 m');
+    s += T(8, H - 22, 'Ein kleiner Saldo kann täuschen:', 's2 m') + T(8, H - 6, 'Mehr- und Fehlbestand heben sich auf.', 's2 m');
     return svg(W, H, 'Abweichung zwischen Soll- und Istbestand je Artikel in Prozent', s);
   }
 
@@ -189,7 +210,7 @@
   function parcelSvg(p) {
     if (!p) return '';
     const chk = C.parcelCheck(p.l, p.b, p.h, p.kg); if (!chk) return '';
-    const W = 420, H = 258, d = [p.l, p.b, p.h].slice().sort((x, y) => y - x), a = d[0], bb = d[1], cc = d[2], s0 = Math.min(250 / (a + bb * 0.45), 96 / (cc + bb * 0.3)), ox = 56, oy = 146;
+    const W = 420, H = 290, d = [p.l, p.b, p.h].slice().sort((x, y) => y - x), a = d[0], bb = d[1], cc = d[2], s0 = Math.min(250 / (a + bb * 0.45), 96 / (cc + bb * 0.3)), ox = 56, oy = 146;
     const P = (x, y, z) => [ox + x * s0 + y * s0 * 0.45, oy - z * s0 - y * s0 * 0.3], pts = a => a.map(v => q(v[0]) + ',' + q(v[1])).join(' ');
     const col = chk.ok ? 'var(--ok)' : 'var(--danger)';
     const fr = [P(0, 0, 0), P(a, 0, 0), P(a, 0, cc), P(0, 0, cc)], tp = [P(0, 0, cc), P(a, 0, cc), P(a, bb, cc), P(0, bb, cc)], sd = [P(a, 0, 0), P(a, bb, 0), P(a, bb, cc), P(a, 0, cc)];
@@ -202,12 +223,12 @@
     s += T(210, 18, 'Gurtmaß = längste Seite + Umfang (gestrichelt)', 's2 m mid');
     const gauge = (y, lab, v, mx, txt, ok) => T(14, y, lab, 's b') + R(14, y + 6, 392, 12, 'gtr', 3) + R(14, y + 6, 392 * Math.max(0.01, Math.min(1, v / mx)), 12, ok ? 'gok' : 'gbad', 3) + L(14 + 392, y + 2, 14 + 392, y + 22, 'lim') + T(406, y, txt, 's2 m end');
     s += gauge(186, 'längste Seite', chk.longest, C.PAKET.longMax, f(chk.longest) + ' von ' + f(C.PAKET.longMax) + ' cm', chk.okLong);
-    s += gauge(212, 'Gurtmaß', chk.girth, C.PAKET.girthMax, f(chk.girth) + ' von ' + f(C.PAKET.girthMax) + ' cm', chk.okGirth);
-    s += gauge(238, 'Gewicht', p.kg, C.PAKET.kgMax, f(p.kg, 1) + ' von ' + f(C.PAKET.kgMax, 1) + ' kg', chk.okKg);
+    s += gauge(222, 'Gurtmaß', chk.girth, C.PAKET.girthMax, f(chk.girth) + ' von ' + f(C.PAKET.girthMax) + ' cm', chk.okGirth);
+    s += gauge(258, 'Gewicht', p.kg, C.PAKET.kgMax, f(p.kg, 1) + ' von ' + f(C.PAKET.kgMax, 1) + ' kg', chk.okKg);
     return svg(W, H, 'Paket als Quader mit Gurtmaß und den drei Paketgrenzen', s);
   }
 
-  const API = { STATIONS, TAB2ST, REST, palWay, flowSvg, batchSvg, placeSvg, rackSvg, leverSvg, invSvg, parcelSvg };
+  const API = { STATIONS, TAB2ST, REST, palWay, flowSvg, batchSvg, shelfSvg, placeSvg, rackSvg, leverSvg, invSvg, parcelSvg };
   root.WFL_VIZ = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 
@@ -216,11 +237,11 @@
   const $ = (s, r) => (r || document).querySelector(s);
   const LS = 'lm4.wfl.';
   const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(LS + k) || ''); return v == null ? d : v; } catch (e) { return d; } };
-  const P = C.parseDe;
+  const P = C.parseDe, PD = root.WFL_PD || P;
   const CSS = `.vzbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:640px;margin:8px auto}
 .vzbox svg{display:block;width:100%;height:auto}
-.vzbox svg text{font-family:system-ui,sans-serif;font-size:12.5px;fill:var(--fg);-webkit-user-select:none;user-select:none}
-.vzbox svg text.s{font-size:12px}.vzbox svg text.s2{font-size:11px}.vzbox svg text.m{fill:var(--mute)}.vzbox svg text.b{font-weight:700}.vzbox svg text.mid{text-anchor:middle}.vzbox svg text.end{text-anchor:end}.vzbox svg text.dk{fill:#10151a}.vzbox svg text.nt{fill:#fff}.vzbox svg text.ok{fill:var(--ok)}
+.vzbox svg text{font-family:system-ui,sans-serif;font-size:13.5px;fill:var(--fg);-webkit-user-select:none;user-select:none}
+.vzbox svg text.s{font-size:13.5px}.vzbox svg text.s2{font-size:13.5px}.vzbox svg text.m{fill:var(--mute)}.vzbox svg text.b{font-weight:700}.vzbox svg text.mid{text-anchor:middle}.vzbox svg text.end{text-anchor:end}.vzbox svg text.dk{fill:#10151a}.vzbox svg text.nt{fill:#fff}.vzbox svg text.ok{fill:var(--ok)}
 .vzbox svg text.hi{fill:var(--hi)}.vzbox svg text.ac{fill:var(--accent)}.vzbox svg text.h{paint-order:stroke;stroke:var(--panel2);stroke-width:3px;stroke-linejoin:round}.vzbox svg text.mk2{fill:var(--danger)}
 .vzbox .gr{stroke:var(--line);stroke-width:.7}.vzbox .ax{stroke:var(--mute);stroke-width:1.2}
 .vzbox .way{fill:none;stroke:var(--accent);stroke-width:4;stroke-dasharray:9 7;opacity:.8}.vzbox .head{fill:var(--accent)}
@@ -238,13 +259,14 @@
 .vzbox .bxf{fill:var(--bx);fill-opacity:.35;stroke:var(--bx);stroke-width:1.8}.vzbox .bxt{fill:var(--bx);fill-opacity:.2;stroke:var(--bx);stroke-width:1.8}.vzbox .bxs{fill:var(--bx);fill-opacity:.5;stroke:var(--bx);stroke-width:1.8}.vzbox .loop{fill:none;stroke:var(--fg);stroke-width:2;stroke-dasharray:6 4}
 .vzbox .gtr{fill:var(--bg);stroke:var(--line);stroke-width:1}.vzbox .gok{fill:var(--ok);fill-opacity:.75}.vzbox .gbad{fill:var(--danger);fill-opacity:.8}.vzbox .lim{stroke:var(--fg);stroke-width:1.5}
 .vzcard h4{margin:0 0 8px}
+.vzstage{margin:0 0 10px}.vzstage .vzbox{margin:0 auto}
 /* Palette: Ruhe auf der Station, beim Wechsel gleitet sie per Skript entlang des Wegs (bei reduzierter Bewegung springt sie) */
 .vzbox .pal{pointer-events:none}.vzbox .pal .pk{fill:var(--hi);stroke:var(--fg);stroke-width:1.2}.vzbox .pal .pd{fill:var(--mute)}.vzbox .pt{pointer-events:none}.vzbox .ptb{fill:var(--panel);stroke:var(--accent);stroke-width:1.5}.vzbox .pt text{fill:var(--fg)}
 @media(prefers-reduced-motion:no-preference){.vzbox .pt{transition:opacity .25s}}
 details.vzflow{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:0 0 10px;padding:0 12px}
 details.vzflow summary{min-height:48px;display:flex;align-items:center;font-weight:700;font-size:15px;cursor:pointer;gap:8px}
 details.vzflow .fl-in{padding:0 0 12px}
-.vzsteps{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}.vzsteps button{min-height:44px;padding:0 14px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);font:600 13.5px system-ui;color:var(--fg)}.vzsteps button.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
+.vzsteps{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}.vzsteps button{min-height:44px;padding:0 14px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);font:600 14px system-ui;color:var(--fg)}.vzsteps button.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 @media(prefers-reduced-motion:no-preference){.vzbox .way{animation:vzflow 1.6s linear infinite}@keyframes vzflow{to{stroke-dashoffset:-32}}}`;
   const st = document.createElement('style'); st.id = 'wflviz-css'; st.textContent = CSS; document.head.appendChild(st);
 
@@ -267,14 +289,14 @@ details.vzflow .fl-in{padding:0 0 12px}
     Promise.resolve().then(() => { const c = document.getElementById('vzFlow_' + b.dataset.t); if (c && from != null && from !== to) palLauf(c, from, to); });
   });
   const goTab = tab => { const b = document.querySelector('.tab[data-t="' + tab + '"]'); if (b) b.click(); };
-  const STEPS = [['we', '1 Wareneingang'], ['trag', '2 Einlagern (Stapler)'], ['lag', '3 Lager'], ['inv', '3 Inventur'], ['kom', '4 Kommissionieren'], ['ver', '5 Versand']];
+  const STEPS = [['we', '1 Wareneingang'], ['trag', '2 Einlagern (Stapler)'], ['lag', '3 Lager'], ['inv', 'Inventur (zu 3)'], ['kom', '4 Kommissionieren'], ['ver', '5 Versand']];
   const V = { flowOpen: null, cur: null };   // cur: Station des zuletzt gezeigten Fließbilds
 
   function hook(viewId, id, place, init, upd, cls) {
     const view = $(viewId); if (!view) return;
     const ensure = () => {
       let card = document.getElementById(id);
-      if (!card || !view.contains(card)) { card = document.createElement(cls === 'details' ? 'details' : 'div'); card.id = id; card.className = cls === 'details' ? 'vzflow' : 'card pl vzcard'; init(card); place(view, card); }
+      if (!card || !view.contains(card)) { card = document.createElement(cls === 'details' ? 'details' : 'div'); card.id = id; card.className = cls === 'details' ? 'vzflow' : cls === 'stage' ? 'vzstage' : 'card pl vzcard'; init(card); place(view, card); }
       try { upd(card); } catch (e) {}
     };
     new MutationObserver(() => { const c = document.getElementById(id); if (!c || !view.contains(c)) ensure(); }).observe(view, { childList: true });
@@ -297,8 +319,12 @@ details.vzflow .fl-in{padding:0 0 12px}
 
   /* Lagerstrategien */
   const lagState = () => Object.assign({ rows: [], q: '55', strat: 'fefo', m: [], occ: [] }, lsGet('lag', {}));
-  const lagRows = () => { const v = $('#lagView'), s = lagState(), rows = []; for (let i = 0; i < 4; i++) { const g = k => { const e = v.querySelector('input[data-r="' + i + '"][data-f="' + k + '"]'); return e ? P(e.value) : P((s.rows[i] || {})[k]); }; rows.push({ id: 'Charge ' + 'ABCD'[i], ein: g('ein'), mhd: g('mhd'), qty: g('qty') }); } return rows; };
+  const lagRows = () => { const v = $('#lagView'), s = lagState(), rows = []; for (let i = 0; i < 4; i++) { const g = k => { const e = v.querySelector('input[data-r="' + i + '"][data-f="' + k + '"]'), pf = k === 'qty' ? P : PD; return e ? pf(e.value) : pf((s.rows[i] || {})[k]); }; rows.push({ id: 'Charge ' + 'ABCD'[i], ein: g('ein'), mhd: g('mhd'), qty: g('qty') }); } return rows; };
   const lagMatrix = () => { const v = $('#lagView'), m = []; for (let i = 0; i < 3; i++) { m.push([]); for (let j = 0; j < 4; j++) { const e = v.querySelector('input[data-mr="' + i + '"][data-mc="' + j + '"]'); m[i].push(e ? P(e.value) : NaN); } } return m; };
+  const lagQ = () => { const s = lagState(); return P($('#lagView input[data-k=q]') ? $('#lagView input[data-k=q]').value : s.q); };
+  const lagStrat = () => ($('#lagView [data-st].on') || { dataset: { st: lagState().strat } }).dataset.st;
+  hook('#lagView', 'vzStageLag', (v, c) => v.insertBefore(c, v.firstChild), c => { c.innerHTML = '<div class="vzbox" data-vz="svg"></div>'; },
+    c => { const h = shelfSvg({ rows: lagRows(), q: lagQ(), strat: lagStrat() }); $('[data-vz=svg]', c).innerHTML = h || '<p class="hint2" style="padding:12px">Gib Einlagerdatum, Ablaufdatum (TT.MM. oder Tag 1 bis 365) und Menge ein, dann steht das Regal hier.</p>'; }, 'stage');
   hook('#lagView', 'vzBatch', (v, c) => { const o = $('#lagOut', v); const card = o && o.closest('.card'); if (card && card.nextSibling) v.insertBefore(c, card.nextSibling); else v.appendChild(c); },
     c => { c.innerHTML = '<h4>Chargen auf der Zeitleiste</h4><div class="vzbox" data-vz="svg"></div>'; },
     c => { const s = lagState(), h = batchSvg({ rows: lagRows(), q: P($('#lagView input[data-k=q]') ? $('#lagView input[data-k=q]').value : s.q), strat: ($('#lagView [data-st].on') || { dataset: { st: s.strat } }).dataset.st }); $('[data-vz=svg]', c).innerHTML = h || '<p class="hint2" style="padding:12px">Gib Einlagertag, Ablauftag (1 bis 365, Ablauf nicht vor Einlagerung) und Menge ein.</p>'; });
@@ -309,26 +335,27 @@ details.vzflow .fl-in{padding:0 0 12px}
     c => { const occ = [...document.querySelectorAll('#slotOut .slotg button.on')].map(b => b.dataset.sl); $('[data-vz=svg]', c).innerHTML = rackSvg(occ); });
 
   /* Stapler: Hebelbild (nach dem Traglast-Ergebnis, vor der Prüfung vor Fahrtantritt) */
-  hook('#tragView', 'vzLever', (v, c) => { const o = $('#tragOut', v); if (o && o.nextSibling) v.insertBefore(c, o.nextSibling); else v.appendChild(c); },
-    c => { c.innerHTML = '<h4>Kippmoment gegen Standmoment</h4><div class="vzbox" data-vz="svg"></div><p class="hint2" data-vz="cap"></p>'; },
+  hook('#tragView', 'vzLever', (v, c) => v.insertBefore(c, v.firstChild),
+    c => { c.innerHTML = '<div class="vzbox" data-vz="svg"></div>'; },
     c => {
       const s = Object.assign({ m: '1600', l: '1600', c: '800', h: '3500', mS: '3600', b: '900', e: '450' }, lsGet('trag', {})), p = { m: P(s.m), c: P(s.c), e: P(s.e), mS: P(s.mS), b: P(s.b) }, h = leverSvg(p);
       $('[data-vz=svg]', c).innerHTML = h || '<p class="hint2" style="padding:12px">Gib Last, Lastschwerpunkt, Eigengewicht und Abstände (größer als 0) ein.</p>';
-      $('[data-vz=cap]', c).textContent = h ? 'Wie eine Wippe: Die Last vor der Vorderachse will den Stapler nach vorn kippen, sein Eigengewicht hinter der Achse hält dagegen. Je weiter die Last vorn liegt, desto größer ihr Hebelarm. Vereinfachtes statisches Übungsmodell.' : '';
-    });
+    }, 'stage');
+  hook('#tragView', 'vzLeverTxt', (v, c) => { const o = $('#tragOut', v); if (o && o.nextSibling) v.insertBefore(c, o.nextSibling); else v.appendChild(c); },
+    c => { c.innerHTML = '<h4>Kippmoment gegen Standmoment</h4><p class="hint2" style="margin:0">Wie eine Wippe: Die Last vor der Vorderachse will den Stapler nach vorn kippen, sein Eigengewicht hinter der Achse hält dagegen. Je weiter die Last vorn liegt, desto größer ihr Hebelarm. Vereinfachtes statisches Übungsmodell.</p>'; }, () => {});
 
   /* Inventur: Abweichung in Prozent (Blindzählung bleibt verdeckt) */
-  hook('#invView', 'vzInv', (v, c) => { const first = v.querySelector('.card'); if (first && first.nextSibling) v.insertBefore(c, first.nextSibling); else v.appendChild(c); },
-    c => { c.innerHTML = '<h4>Abweichungen im Bild</h4><div class="vzbox" data-vz="svg"></div>'; },
+  hook('#invView', 'vzInv', (v, c) => v.insertBefore(c, v.firstChild),
+    c => { c.innerHTML = '<div class="vzbox" data-vz="svg"></div>'; },
     c => {
       const view = $('#invView'), rows = {}; let blind = false;
       view.querySelectorAll('input[data-r][data-f]').forEach(i => { const r = (rows[i.dataset.r] = rows[i.dataset.r] || { n: i.closest('tr') ? i.closest('tr').firstElementChild.textContent.trim() : '' }); r[i.dataset.f] = P(i.value); });
       const list = Object.keys(rows).sort((a, b) => a - b).map(k => rows[k]); if (list.length && list.some(r => r.soll === undefined)) blind = true;
       $('[data-vz=svg]', c).innerHTML = invSvg(list, blind) || '<p class="hint2" style="padding:12px">Bitte Soll und Ist aller Zeilen als Zahlen eingeben.</p>';
-    });
+    }, 'stage');
 
   /* Versand: Paket mit Gurtmaß */
-  hook('#verView', 'vzPaket', (v, c) => { const o = $('#verOut', v); const card = o && o.closest('.card'); if (card && card.nextSibling) v.insertBefore(c, card.nextSibling); else v.appendChild(c); },
-    c => { c.innerHTML = '<h4>Das Paket im Bild</h4><div class="vzbox" data-vz="svg"></div>'; },
-    c => { const s = Object.assign({ l: '90', b: '60', h: '40', kg: '18' }, lsGet('ver', {})), h = parcelSvg({ l: P(s.l), b: P(s.b), h: P(s.h), kg: P(s.kg) }); $('[data-vz=svg]', c).innerHTML = h || '<p class="hint2" style="padding:12px">Gib Länge, Breite, Höhe und Gewicht größer als 0 ein.</p>'; });
+  hook('#verView', 'vzPaket', (v, c) => v.insertBefore(c, v.firstChild),
+    c => { c.innerHTML = '<div class="vzbox" data-vz="svg"></div>'; },
+    c => { const s = Object.assign({ l: '90', b: '60', h: '40', kg: '18' }, lsGet('ver', {})), h = parcelSvg({ l: P(s.l), b: P(s.b), h: P(s.h), kg: P(s.kg) }); $('[data-vz=svg]', c).innerHTML = h || '<p class="hint2" style="padding:12px">Gib Länge, Breite, Höhe und Gewicht größer als 0 ein.</p>'; }, 'stage');
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -54,4 +54,12 @@
   R({ lab: 'eng', betrieb: 'Datenblätter, Warnhinweise und Servicemails sind oft englisch. Wer die Fachwörter kennt, erkennt Gefahrhinweise sofort und versteht Anleitungen für Geräte und Ersatzteile.' });
   R({ lab: 'bhf', betrieb: 'Im Berichtsheft hältst du fest, was du im Betrieb gemacht hast. Klare, sachliche Tagesberichte zeigen, was du gelernt hast, und helfen dir später bei Gesprächen mit der Ausbilderin oder dem Ausbilder.',
       pruefung: 'Kein Prüfungsteil, aber ein ordentlich geführtes Berichtsheft ist Voraussetzung für die Zulassung zur Abschlussprüfung.' });
+  /* Labs für Technikerschule und Studium */
+  R({ lab: 'mat2', betrieb: 'Wechselstrom, Regelkreise und Signale rechnest du in Technikerschule und Studium mit komplexen Zahlen, Matrizen und Differentialgleichungen. Für Dreisatz, Prozent und Formeln umstellen gibt es das Rechen-Lab.' });
+  R({ lab: 'sig', betrieb: 'Jeder Messwert und jedes Audiosignal wird abgetastet, gefiltert und übertragen. Wer Spektrum, Abtastung und Filter versteht, erkennt, warum ein Signal verfälscht ankommt, und legt die Kette richtig aus.' });
+  R({ lab: 'rg2', betrieb: 'Schwingt eine Regelung oder ist sie zu träge, hilft Probieren nur begrenzt. Mit Übertragungsfunktion und Bode-Diagramm siehst du vorher, ob ein Kreis stabil bleibt. Den Einstieg findest du im Regelungstechnik-Lab.' });
+  R({ lab: 'emb', betrieb: 'In fast jedem Gerät arbeitet ein Mikrocontroller. Wer Geräte entwickelt oder Fehler in der Firmware sucht, muss wissen, wie Timer, Wandler, serielle Busse und Zustandsautomaten zusammenspielen.' });
+  R({ lab: 'nrm', betrieb: 'Bevor ein Gerät verkauft werden darf, muss feststehen, welche Vorschriften gelten und wie ihre Einhaltung nachgewiesen wird. Das planst du von Anfang an ein, damit es am Ende keine teuren Änderungen gibt.' });
+  R({ lab: 'prj', betrieb: 'Technische Projekte scheitern oft an Terminen, Kosten und unklaren Anforderungen. Mit Lastenheft, Netzplan und Investitionsrechnung planst du ein Vorhaben so, dass es sich rechnet und fertig wird.' });
+  R({ lab: 'fli', betrieb: 'In der Fertigung bestimmt die langsamste Station, wie viele Baugruppen die Linie schafft. Wer Takt, Engpass und Ausschuss lesen kann, findet die Stelle, an der sich eine Verbesserung lohnt.' });
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -438,7 +438,7 @@
       g.beginPath(); g.moveTo(cx + Math.cos(a) * (r - 6), cy + Math.sin(a) * (r - 6)); g.lineTo(cx + Math.cos(a) * (r - 6 - len), cy + Math.sin(a) * (r - 6 - len)); g.stroke();
     }
     if (fin(setv)) { const a = ang(setv); g.strokeStyle = '#ffb340'; g.lineWidth = 3; g.beginPath(); g.moveTo(cx + Math.cos(a) * (r + 5), cy + Math.sin(a) * (r + 5)); g.lineTo(cx + Math.cos(a) * (r - 11), cy + Math.sin(a) * (r - 11)); g.stroke(); }
-    g.fillStyle = '#8d99a6'; g.font = '10px system-ui'; g.textAlign = 'center';
+    g.fillStyle = '#8d99a6'; g.font = '11px system-ui'; g.textAlign = 'center';
     const lab = v => fnum(v, Math.abs(v) >= 100 || Number.isInteger(v) ? 0 : 1);
     if (w >= 110) { g.fillText(lab(mn), cx - r * 0.72, cy + r * 0.72 + 13); g.fillText(lab(mx), cx + r * 0.72, cy + r * 0.72 + 13); }
     const a = ang(val); g.strokeStyle = isWarn ? '#ff5c5c' : '#e8ecf0'; g.lineWidth = 2.4; g.lineCap = 'round'; g.beginPath(); g.moveTo(cx - Math.cos(a) * 6, cy - Math.sin(a) * 6); g.lineTo(cx + Math.cos(a) * (r - 11), cy + Math.sin(a) * (r - 11)); g.stroke();
@@ -734,14 +734,14 @@
     if (!fin(o.yMax)) ymax += (ymax - ymin) * 0.06;
     const tx = o.xTicks ? { t: o.xTicks.filter(v => v >= xmin && v <= xmax), s: 1 } : ticksOf(xmin, xmax, Math.max(3, Math.floor(pw / 80))), ty = ticksOf(ymin, ymax, Math.max(2, Math.floor(ph / 40)));
     const X = v => L + pw * (v - xmin) / (xmax - xmin), Y = v => T + ph * (1 - (v - ymin) / (ymax - ymin));
-    g.font = '11px system-ui'; g.lineWidth = 1; g.strokeStyle = '#26303a'; g.fillStyle = '#8d99a6'; g.textAlign = 'center';
+    g.font = '12px system-ui'; g.lineWidth = 1; g.strokeStyle = '#26303a'; g.fillStyle = '#8d99a6'; g.textAlign = 'center';
     tx.t.forEach(v => { const x = Math.round(X(v)) + 0.5; g.beginPath(); g.moveTo(x, T); g.lineTo(x, T + ph); g.stroke(); if (!o.noX) g.fillText(o.xFmt ? o.xFmt(v) : tickFmt(v, tx.s), x, T + ph + 14); });
     g.textAlign = 'right';
     if (o.yHide) { for (let i = 0; i <= 4; i++) { const y = Math.round(T + ph * i / 4) + 0.5; g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); } }
     else ty.t.forEach(v => { const y = Math.round(Y(v)) + 0.5; g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); g.fillText(tickFmt(v, ty.s), L - 6, y + 4); });
     if (o.zeroLine && ymin < 0 && ymax > 0) { g.strokeStyle = '#4a5663'; const y = Math.round(Y(0)) + 0.5; g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); }
     g.strokeStyle = '#4a5663'; g.strokeRect(L + 0.5, T + 0.5, pw, ph);
-    g.fillStyle = '#8d99a6'; g.font = '12px system-ui'; g.textAlign = 'center'; if (!o.noX) g.fillText(o.xLabel || '', L + pw / 2, h - 6);
+    g.fillStyle = '#8d99a6'; g.font = '13px system-ui'; g.textAlign = 'center'; if (!o.noX) g.fillText(o.xLabel || '', L + pw / 2, h - 6);
     if (o.yLabel && !o.yHide) { g.save(); g.translate(12, T + ph / 2); g.rotate(-Math.PI / 2); g.fillText(o.yLabel, 0, 0); g.restore(); }
     g.save(); g.beginPath(); g.rect(L, T, pw, ph); g.clip();
     (o.strips || []).forEach(s => { g.fillStyle = s.color; g.fillRect(X(s.x0), T + ph - (s.h || 6), Math.max(1, X(s.x1) - X(s.x0)), s.h || 6); });
@@ -1016,6 +1016,7 @@
     const r = rng(), cm = canMeasure(), M = MS(), y0 = M.y0 != null ? M.y0 : (MEAS_Y0[S.rigId] || 40);
     V.innerHTML = `<div class="card pl"><h4>Die Regelstrecke ohne Regler vermessen</h4>
       <p class="hint2" style="margin:0 0 6px">Prüfstand: ${rigIcon(S.rigId)} <b>${esc(rigName(S.rigId))}</b>. Messbereich der Regelgröße: ${esc(physStr(r.lo))} bis ${esc(physStr(r.hi))} = 100 %. Zeiten stehen in <b>Prozesszeit</b> (${esc(TU())}).</p>
+      ${cm ? `<p class="hint2" style="margin:0 0 8px"><b>Was passiert hier?</b> Du gibst der Strecke ohne Regler einen Sprung an der Stellgröße und nimmst auf, wie die Regelgröße darauf antwortet. Aus dieser Kurve liest du später die Kennwerte der Strecke ab.</p>` : ''}
       ${cm ? `<ol class="steps" id="mSteps">
         <li data-s="1"><b>Arbeitspunkt anfahren</b><span class="sdesc">Handbetrieb mit der Stellgröße y0, die Anlage steht im Beharrungszustand.</span><div class="srow"><label class="f"><span>y0 in %</span><input id="mY0" inputmode="decimal" autocomplete="off" value="${fnum(y0, 0)}"></label><button class="btn pri" data-m="prep">Arbeitspunkt anfahren</button></div></li>
         <li data-s="2"><b>Sprung auslösen</b><span class="sdesc">Die Stellgröße springt um Δy, die Aufzeichnung beginnt.</span><div class="srow"><label class="f"><span>Δy in % (2 bis 30)</span><input id="mDy" inputmode="decimal" autocomplete="off" value="10"></label><button class="btn pri" data-m="step">Sprung auslösen</button></div></li>
@@ -1580,7 +1581,7 @@
     try { const d = taskDone(); if ((d[id] || 0) < pct) d[id] = pct; localStorage.setItem('sim.done', JSON.stringify(d)); } catch (e) {}
     if (root.Badges) root.Badges.result(id, pct);
   }
-  let taskRes = null; const taskAns = {};
+  let taskRes = null; const taskAns = {}, taskFails = {};
   const curTask = () => { const a = TK(); return a && S.task ? a.find(t => t.id === S.task.id) : null; };
   function updateTaskBadge() {
     const a = TK(), b = $('#tkBd'); if (!b) return;
@@ -1604,7 +1605,7 @@
   const choicesOf = t => { let f = t.choices; if (typeof f === 'function') { try { f = f(S.taskStart); } catch (e) { f = []; } } return Array.isArray(f) ? f : []; };
   async function startTask(id) {
     const t = (TK() || []).find(x => x.id === id); if (!t) return;
-    const had = stash(); taskRes = null;
+    const had = stash(); taskRes = null; taskFails[id] = 0;
     if (root.Auswertung) root.Auswertung.hintReset(id);
     let o; try { o = typeof t.start === 'function' ? t.start() : {}; } catch (e) { console.error(e); toast('Die Startvorlage der Aufgabe fehlt'); return; }
     applyTaskState(t, o); S.task = { id }; S.name = t.title; S.id = null; S.dirty = false; delete taskAns[id];
@@ -1628,7 +1629,7 @@
     try { lines = await (R.run ? R.run(t, ans) : t.check(ans)); } catch (e) { console.error(e); lines = [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden: ' + (e && e.message || e), why: '' }]; }
     S.readonly = false; lines = Array.isArray(lines) ? lines : [];
     const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    taskFails[t.id] = pct === 100 ? 0 : (taskFails[t.id] || 0) + 1; taskRes = { id: t.id, lines, pct, nf: taskFails[t.id], fresh: true }; markDone(t.id, pct); updateTaskBadge();
     const F = root.LochFX; if (F) try { if (pct === 100) { F.pass(100); if (F.isFun && F.isFun()) F.confetti(false); } else F.pass(pct); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
     toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
@@ -1663,7 +1664,7 @@
         ${cl.map(c => `<fieldset class="choice"><legend>${esc(c.q || c.label || c.key)}</legend>${choiceOpts(c).map((o, i) => `<label class="opt"><input type="radio" name="ch-${esc(c.key)}" data-ck="${esc(c.key)}" data-ci="${i}"${(ans.c || {})[c.key] !== undefined && String((ans.c || {})[c.key]) === String(o.value) ? ' checked' : ''}> ${esc(o.label)}</label>`).join('')}</fieldset>`).join('')}
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="rig">Zum Prüfstand</button>${typeof t.sol === 'function' ? '<button class="btn" data-ta="auto">▶ Auto-Weg</button>' : ''}<button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
-      if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      if (r) h += `<div class="lr-fb ${r.pct === 100 ? 'ok' : r.nf >= 2 ? 'loes' : 'tipp'}" id="tkFb" tabindex="-1"><ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>${r.pct === 100 ? '' : '<p>' + (r.nf >= 2 ? '<strong>Auch der zweite Versuch passt noch nicht ganz.</strong> Die Musterlösung gibt es mit „Auto-Weg“ (zählt als Hilfe, dein Ausbilder sieht es). Oder lies bei jedem ✗ das „Warum?“ und prüfe noch einmal.' : '<strong>Noch nicht.</strong> Lies bei jedem ✗ das „Warum?“, ändere deine Einstellung und prüfe noch einmal. Du hast einen zweiten Versuch. „Tipp“ gibt einen Hinweis.') + '</p>'}</div>`;
       h += '</div>';
     }
     const cats = []; A.forEach(x => { if (!cats.includes(x.cat)) cats.push(x.cat); });
@@ -1676,6 +1677,7 @@
       const p = d[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${p >= 100 ? 'g' : p > 0 ? 'p' : ''}">${p >= 100 ? '✓' : p > 0 ? p : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${'●'.repeat(x.level || 1)}${'○'.repeat(3 - (x.level || 1))}</span> ${ic(x)} ${esc(rn(x))}${p != null ? ' · bisher ' + p + ' %' : ''}</small></div></button>`;
     });
     V.innerHTML = h;
+    if (taskRes && t && taskRes.fresh) { taskRes.fresh = false; const fb = $('#tkFb', V); if (fb && root.LabRahmen && root.LabRahmen.zeig) root.LabRahmen.zeig(fb); }
   }
   $('#taskView').addEventListener('input', e => {
     if (!S.task) return; const id = S.task.id; taskAns[id] = taskAns[id] || {};
@@ -1873,7 +1875,7 @@
       setRig(cur.rig); applyCtl(cur.ctl); S.dirty = !!cur.dirty;
     } else {
       setRig(ORDER[0]);
-      if (!lsRaw('reg.seen', '')) { lsPut('reg.seen', '1'); setTimeout(() => toast('Willkommen! Starte mit ▶ unten oder bewege einen Regler: Der Prüfstand läuft dann los.'), 900); }
+      if (!lsRaw('reg.seen', '')) { lsPut('reg.seen', '1'); let tries = 0; const willk = () => { if (document.getElementById('tfTut') && tries++ < 60) { setTimeout(willk, 1000); return; } toast('Willkommen! Starte mit ▶ unten oder bewege einen Regler: Der Prüfstand läuft dann los.'); }; setTimeout(willk, 900); }
     }
     setTab(S.tab); requestAnimationFrame(frame);
     root.addEventListener('load', () => { if (S.tab === 'calc' || S.tab === 'help') renderExt(S.tab); });

@@ -354,7 +354,7 @@
     (function next() {
       var d = queue.shift(); if (!d) { showing = false; return; }
       var el = document.createElement('div');
-      el.style.cssText = 'position:fixed;left:50%;top:calc(70px + env(safe-area-inset-top));transform:translateX(-50%);z-index:210;background:linear-gradient(135deg,#ffb300,#ff7a00);color:#1b1200;font:600 15px system-ui,sans-serif;padding:12px 18px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.45);text-align:center;max-width:86vw;pointer-events:none';
+      el.style.cssText = 'position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:210;background:linear-gradient(135deg,#ffb300,#ff7a00);color:#1b1200;font:600 15px system-ui,sans-serif;padding:12px 18px;border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.45);text-align:center;max-width:86vw;pointer-events:none';
       el.innerHTML = '<div style="font-size:30px;line-height:1.1">' + d.icon + '</div>Neues Abzeichen: <b>' + esc(d.name) + '</b><br><span style="font-weight:500;font-size:14px">' + esc(d.desc) + '</span>';
       document.body.appendChild(el); setTimeout(function () { el.remove(); next(); }, 3600);
     })();

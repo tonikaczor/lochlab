@@ -147,8 +147,18 @@ svg.algsvg{display:block;max-width:none;margin:0 auto}
 .algsvg .blank text{font-weight:700;fill:var(--warn)}
 .algsvg .hi .pp-shape,.algsvg .hi .ns-box{fill:var(--work)}
 .algsvg .b{font-weight:700}
+/* Handy: Mindestgrößen (Audit I2a) */
+@media(max-width:600px){
+.stats .bx,.lv,.gh,label.f span,.hl th,.tt th,.dot.p,.rdout .st,.tab .bd,.card.pl h4{font-size:14px}
+.hint2,.hl table,.cv,.cv .ln,.cv .tx,header .title small,#stat{font-size:14px}
+.chip.s{font-size:14px;min-height:44px;height:44px}
+.algsvg text,.algsvg .pp-lab,.algsvg .pp-cap,.algsvg .pp-txt{font-size:14px!important}
+.hl a,.help a,a.lnk{display:inline-block;min-height:44px;min-width:44px;line-height:44px}
+.hb{min-height:44px;min-width:44px}
+}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -188,6 +198,8 @@ svg.algsvg{display:block;max-width:none;margin:0 auto}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { "alglab.html": { name: "Algorithmen-Lab", saetze: { "Aufgaben": "Feste Aufgaben. Nach dem ersten Fehler gibt es einen Tipp und einen zweiten Versuch, dann die Lösung mit Rechenweg.", "Trainer": "Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann die Lösung. Tipps kosten nichts.", "Prüfung": "Wie in der Prüfung: Jede Tipp-Stufe kostet 25 % der Punkte, den Lösungsweg gibt es erst nach der richtigen Antwort." } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

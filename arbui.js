@@ -45,7 +45,7 @@
   const TABS = [['zei', '🪧', 'Zeichen'], ['bra', '🔥', 'Brandschutz'], ['ghs', '☣️', 'Gefahrstoffe'], ['gb', '📋', 'Gefährdungsbeurteilung'], ['psa', '🦺', 'PSA'], ['eh', '🩹', 'Erste Hilfe'], ['ver', '🚪', 'Verhalten'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['fin', '🏁', 'Abschluss'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'zei'), braKey: 'F', gbWp: 'bohr', gb: {}, gbRes: {}, psaAct: 'schleifen', psaSel: [], psaRes: null,
-    task: null, tAns: {}, tRes: null, pq: {}, bsp: null,
+    task: null, tAns: {}, tRes: null, tTries: {}, rtTries: 0, pq: {}, bsp: null,
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {})), rtCat: '', rtQ: null, rtAns: null, rtRes: null, rtI: 0,
     fin: { state: 'intro', qs: [], ans: [], i: 0, res: null, name: who(), cert: null, seed: 0, chk: '' }
   };
@@ -63,11 +63,25 @@
       const sel = q.multi ? (ans || []).indexOf(i) >= 0 : ans === i;
       let cls = '';
       if (res && res.show) { const corr = q.multi ? q.correct.indexOf(i) >= 0 : q.correct === i; cls = corr ? 'ok' : sel ? 'bad' : ''; } else if (res && !res.ok && sel) cls = 'bad'; else if (sel) cls = 'on';
-      const lock = res && res.ok;
+      const lock = res && (res.ok || res.stage === 'loes');
       return `<button data-c="${i}" class="${cls}" aria-pressed="${sel}" ${lock ? 'disabled' : ''}${c.s ? ` aria-label="${esc(nameOfSign(c.s) || 'Schild ' + (i + 1))}"` : ''}>${c.s ? sgn(c.s, 's') : ''}${c.t ? esc(c.t) : ''}${q.multi ? '<span class="mk">' + (sel ? '☑' : '☐') + '</span>' : ''}</button>`;
     }).join('') + '</div>';
   }
   const solText = q => (Array.isArray(q.correct) ? q.correct : [q.correct]).map(i => q.choices[i].t || nameOfSign(q.choices[i].s)).join('; ');
+  /* Rückmeldung nach Vorgabe 4.5: erster Fehlversuch Tipp und zweiter Versuch, zweiter Fehlversuch Lösung mit Erklärung, richtig bestätigt. */
+  const hintIn = q => `<p class="lr-hinweis">${q.multi ? 'Mehrfachwahl: Tippe alle passenden Antworten an, dann Prüfen.' : 'Tippe eine Antwort an, dann Prüfen.'}</p>`;
+  function tipText(q, a) {
+    if (q.multi) return `Es sind ${q.correct.length} Antworten richtig. Du hast ${(a || []).length} gewählt.`;
+    const k = q.choices.findIndex((c, i) => i !== q.correct && i !== a);
+    return k < 0 ? 'Lies die Frage noch einmal in Ruhe.' : `Eine Antwort scheidet aus: „${q.choices[k].t || nameOfSign(q.choices[k].s) || 'Schild ' + (k + 1)}“ ist es nicht.`;
+  }
+  const zeigFb = host => { if (window.LabRahmen) { const el = host.querySelector('.lr-fb'); if (el) { LabRahmen.zeig(el); setTimeout(() => { if (el.isConnected) LabRahmen.zeig(el); }, 160); } } };
+  function fbBlock(q, r, tip, expl, exam) {
+    if (r.ok) return `<div class="lr-fb ok" role="status"><p><strong>✓ Richtig.</strong></p></div>` + (r.show ? `<div class="rdout ok"><b>Lösung:</b> ${esc(solText(q))}<br>${esc(expl)}</div>` : '');
+    if (r.stage === 'tipp') return `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Tipp: ${esc(tip)} Du hast einen zweiten Versuch.</p></div>`;
+    if (r.stage === 'loes') return `<div class="lr-fb loes" role="status"><p><strong>Auch nicht.</strong> Hier ist die Lösung.</p><div class="rdout bad"><b>Lösung:</b> ${esc(solText(q))}<br>${esc(expl)}</div></div>`;
+    return `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Im Prüfmodus gibt es die Erklärung erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p></div>`;
+  }
   function qBody(q, ans, res) {
     return (q.sign ? `<div class="sgbig">${sgn(q.sign)}</div>` : '') + `<p style="margin:8px 0;line-height:1.45">${esc(q.text)}</p>` + (q.multi ? '<p class="hint2" style="margin:0">Mehrere Antworten sind richtig. Wähle alle passenden.</p>' : '') + optsHTML(q, ans, res);
   }
@@ -114,10 +128,78 @@
   }
 
   /* ============================================================ Gefahrstoffe */
+
+  /* ============================================================ Übungen K-arb-05 bis 07 (nur aus arbdata.js, ohne Speicher) */
+  /* Erste Hilfe: Reihenfolge herstellen. Die Schritte kommen aus D.seiten.eh (Rettungskette, Notruf, Seitenlage). */
+  const REIH = ['Rettungskette', 'Notruf: die fünf W', 'Stabile Seitenlage (Kurzablauf)'];
+  const reihSteps = k => { const p = D.seiten.eh.find(x => x[0] === REIH[k]); return p ? (p[1].match(/<li>[\s\S]*?<\/li>/g) || []).map(li => li.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()) : []; };
+  function reihNeu(k, seed) {
+    const n = reihSteps(k).length, R = C.rng((seed || 1) * 7919 + k * 31 + 5); let o;
+    for (let t = 0; t < 20; t++) { o = C.shuffle(Array.from({ length: n }, (_, i) => i), R); if (o.some((v, i) => v !== i)) break; }
+    S.reih = { k, seed: seed || 1, order: o, tries: 0, res: null };
+  }
+  function reihHTML() {
+    if (!S.reih) reihNeu(0, 1);
+    const r = S.reih, st = reihSteps(r.k), done = r.res && (r.res.ok || r.res.stage === 'loes');
+    let h = '<div class="ctl">' + REIH.map((t, i) => '<button class="chip' + (i === r.k ? ' on' : '') + '" data-rk="' + i + '">' + esc(t) + '</button>').join('') + '</div>';
+    h += '<p class="lr-hinweis">Bringe die Schritte in die richtige Reihenfolge. Mit den Pfeilen schiebst du einen Schritt nach oben oder unten.</p><ol class="ru" aria-label="Schritte in deiner Reihenfolge">';
+    h += r.order.map((v, i) => '<li><span class="rn">' + (i + 1) + '</span><span class="rt">' + esc(st[v]) + '</span><span class="rbs"><button class="rb" data-ru="' + i + '|-1" aria-label="Schritt ' + (i + 1) + ' nach oben"' + (i === 0 || done ? ' disabled' : '') + '>▲</button><button class="rb" data-ru="' + i + '|1" aria-label="Schritt ' + (i + 1) + ' nach unten"' + (i === r.order.length - 1 || done ? ' disabled' : '') + '>▼</button></span></li>').join('') + '</ol>';
+    h += '<div class="btns"><button class="btn pri" data-rc="chk"' + (done ? ' disabled' : '') + '>✓ Prüfen</button><button class="btn" data-rc="neu">🔀 Neu mischen</button></div>';
+    if (r.res) {
+      const ok = r.res.ok, n = r.res.richtig;
+      h += ok ? '<div class="lr-fb ok" role="status"><p><strong>✓ Richtig.</strong> Die Reihenfolge stimmt.</p></div>'
+        : r.res.stage === 'loes' ? '<div class="lr-fb loes" role="status"><p><strong>Auch nicht.</strong> So ist die Reihenfolge richtig:</p><ol class="steps">' + st.map(x => '<li>' + esc(x) + '</li>').join('') + '</ol></div>'
+        : '<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> ' + n + ' von ' + st.length + ' Schritten stehen schon an der richtigen Stelle. Du hast einen zweiten Versuch.</p></div>';
+    }
+    return h;
+  }
+  function reihRender(focus) { const el = $('#reihHost'); if (!el) return; el.innerHTML = reihHTML(); if (focus) { const b = el.querySelector('[data-ru="' + focus + '"]:not([disabled])') || el.querySelector('[data-ru$="|' + (focus.split('|')[1] === '1' ? '-1' : '1') + '"]:not([disabled])'); if (b) b.focus(); } }
+  function reihAct(x) {
+    if (!S.reih) reihNeu(0, 1);
+    const r = S.reih;
+    if (x.dataset.rk != null) { reihNeu(+x.dataset.rk, r.seed); return reihRender(); }
+    if (x.dataset.ru != null) {
+      const p = x.dataset.ru.split('|'), i = +p[0], d = +p[1], j = i + d; if (j < 0 || j >= r.order.length) return;
+      const t = r.order[i]; r.order[i] = r.order[j]; r.order[j] = t; r.res = null; return reihRender(j + '|' + d);
+    }
+    if (x.dataset.rc === 'neu') { reihNeu(r.k, r.seed + 1); return reihRender(); }
+    if (x.dataset.rc === 'chk') {
+      const n = r.order.filter((v, i) => v === i).length, ok = n === r.order.length; r.tries++;
+      r.res = { ok, richtig: n, stage: ok ? 'ok' : r.tries >= 2 ? 'loes' : 'tipp' }; reihRender(); zeigFb($('#reihHost'));
+    }
+  }
+  /* GHS: Bedeutung zum Piktogramm wählen. Antworten sind die Bedeutungstexte aus D.ghs. */
+  function gzNeu(seed) {
+    const R = C.rng((seed || 1) * 104729 + 17), i = Math.floor(R() * D.ghs.length), g = D.ghs[i];
+    const opts = C.shuffle([g].concat(C.shuffle(D.ghs.filter(x => x.id !== g.id), R).slice(0, 3)), R).map(x => x.id);
+    S.gz = { seed: seed || 1, id: g.id, opts, tries: 0, res: null, bad: [] };
+  }
+  function gzHTML() {
+    if (!S.gz) gzNeu(1);
+    const z = S.gz, g = C.ghsById(z.id), done = z.res && (z.res.ok || z.res.stage === 'loes');
+    let h = '<div class="sgbig" style="text-align:center">' + sgn(z.id) + '</div><p class="lr-hinweis">Welche Bedeutung gehört zu diesem Piktogramm? Tippe eine Antwort an.</p><div class="gzo">';
+    h += z.opts.map(id => { const o = C.ghsById(id); return '<button class="gzb' + (z.bad.indexOf(id) >= 0 ? ' bad' : '') + (done && id === z.id ? ' good' : '') + '" data-gz="' + id + '"' + (done || z.bad.indexOf(id) >= 0 ? ' disabled' : '') + '>' + esc(o.bed) + '</button>'; }).join('') + '</div>';
+    if (z.res) h += z.res.ok ? '<div class="lr-fb ok" role="status"><p><strong>✓ Richtig.</strong> ' + esc(g.id) + ': ' + esc(g.name) + '.</p></div>'
+      : z.res.stage === 'loes' ? '<div class="lr-fb loes" role="status"><p><strong>Auch nicht.</strong> Das Piktogramm ist ' + esc(g.id) + ': ' + esc(g.name) + '. Es bedeutet: ' + esc(g.bed) + '</p></div>'
+      : '<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Tipp: Das Piktogramm heißt „' + esc(g.name) + '“. Du hast einen zweiten Versuch.</p></div>';
+    h += '<div class="btns"><button class="btn" data-gzn="1">➜ Nächstes Piktogramm</button></div>';
+    return h;
+  }
+  function gzRender(focus) { const el = $('#gzHost'); if (!el) return; el.innerHTML = gzHTML(); if (focus) { const b = el.querySelector(focus); if (b) b.focus(); } }
+  function gzAct(x) {
+    if (!S.gz) gzNeu(1);
+    const z = S.gz;
+    if (x.dataset.gzn) { gzNeu(z.seed + 1); return gzRender('[data-gz]:not([disabled])'); }
+    if (z.res && (z.res.ok || z.res.stage === 'loes')) return;
+    const id = x.dataset.gz; z.tries++;
+    if (id === z.id) z.res = { ok: true, stage: 'ok' }; else { z.bad.push(id); z.res = { ok: false, stage: z.tries >= 2 ? 'loes' : 'tipp' }; }
+    gzRender(z.res.ok || z.res.stage === 'loes' ? '[data-gzn]' : '[data-gz]:not([disabled])'); zeigFb($('#gzHost'));
+  }
   function renderGhs() {
     let h = card('GHS-Piktogramme', hint('Auf Etiketten von Chemikalien stehen weiße Rauten mit rotem Rand. Tippe ein Piktogramm an.') + `<div class="sgrid" style="margin-top:10px">${D.ghs.map(g => `<button class="sgcell" data-gh="${g.id}" aria-label="${esc(g.id + ' ' + g.name)}">${sgn(g.id)}<small><b>${g.id}</b> ${esc(g.bed.split(':')[0].split(',')[0])}</small></button>`).join('')}</div>`);
     h += card('Signalwörter', `<table class="tt">${D.signal.map(s => `<tr><td><b>${s.w}</b></td><td>${esc(s.t)}</td></tr>`).join('')}</table>`);
     h += card('Das Etikett und das Sicherheitsdatenblatt', `<ul class="tl" style="list-style:disc;padding-left:20px"><li><b>Etikett:</b> Produktname, Piktogramme, Signalwort, H-Sätze, P-Sätze, Hersteller</li><li><b>H-Sätze</b> (Hazard) sind Gefahrenhinweise: H2.. physikalische Gefahren, H3.. Gesundheitsgefahren, H4.. Umweltgefahren</li><li><b>P-Sätze</b> (Precautionary) sind Sicherheitshinweise: P1.. allgemein, P2.. Vorsorge, P3.. Reaktion, P4.. Lagerung, P5.. Entsorgung</li><li><b>Sicherheitsdatenblatt (SDB):</b> 16 Abschnitte, z. B. mögliche Gefahren, Erste-Hilfe-Maßnahmen, Brandbekämpfung, Handhabung und Lagerung, Schutzausrüstung, Entsorgung</li><li><b>Betriebsanweisung:</b> sagt dir im Betrieb, wie du mit dem Stoff umgehst. Lies sie vor dem ersten Einsatz.</li></ul><p class="hint2">Du musst keine Nummern auswendig lernen. Wichtig ist das Prinzip: Etikett lesen, bei Unklarheit ins SDB schauen, im Zweifel den Ausbilder fragen.</p>`);
+    h += '<div class="card pl"><h4>Piktogramm zuordnen</h4><div id="gzHost">' + gzHTML() + '</div></div>';
     $('#ghsView').innerHTML = h;
   }
   function ghsSheet(id) {
@@ -178,13 +260,13 @@
   function renderPsa() {
     const a = D.psa.find(x => x.id === S.psaAct), res = S.psaRes;
     let h = card('PSA zuordnen', `<p class="hint2" style="margin:0 0 6px">Wähle eine Tätigkeit und tippe alle nötigen Schutzmittel an.</p><div class="ctl">${D.psa.map(x => `<button class="chip${x.id === S.psaAct ? ' on' : ''}" data-pa="${x.id}">${esc(x.t)}</button>`).join('')}</div><div class="opts">${Object.keys(D.psaItems).map(k => { const on = S.psaSel.indexOf(k) >= 0; return `<button data-pi="${k}" class="${on ? 'on' : ''}" aria-pressed="${on}">${on ? '☑' : '☐'} ${esc(D.psaItems[k])}</button>`; }).join('')}</div><div class="btns"><button class="btn pri" data-pc="chk">✓ Prüfen</button></div>` +
-      (res ? `<ul class="tl">${res.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>${res.ok ? `<div class="rdout ok">${esc(a.note)}</div>` : ''}` : ''));
+      `<p class="lr-hinweis">Tippe die nötigen Schutzmittel an, dann prüfe.</p>` + (res ? `<div class="lr-fb ${res.ok ? 'ok' : (S.psaTries >= 2 ? 'loes' : 'tipp')}" role="status"${res.miss && S.psaTries >= 2 ? ' data-fehlt="' + a.req.filter(k => S.psaSel.indexOf(k) < 0).join(',') + '"' : ''}><ul class="tl">${res.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>${res.miss ? `<div class="psaslots" aria-label="${res.miss} Plätze noch leer">${Array.from({ length: res.miss }, () => '<span class="psaslot">leer</span>').join('')}</div>` : ''}${res.miss && S.psaTries >= 2 ? `<p><strong>Es fehlt:</strong> ${esc(a.req.filter(k => S.psaSel.indexOf(k) < 0).map(k => D.psaItems[k]).join(', '))}.</p>` : (res.miss ? '<p><strong>Tipp:</strong> Denke an Kopf, Augen, Ohren, Hände und Füße. Du hast einen zweiten Versuch.</p>' : '')}${res.ok ? `<div class="rdout ok">${esc(a.note)}</div>` : ''}</div>` : ''));
     h += `<div class="hl">${details(D.seiten.psa, true)}</div>`;
     $('#psaView').innerHTML = h;
   }
 
   /* ============================================================ Erste Hilfe, Verhalten */
-  function renderEh() { $('#ehView').innerHTML = `<div class="hl">${details(D.seiten.eh.slice(0, 2), true)}${svgKette()}${details(D.seiten.eh.slice(2), false)}</div>`; }
+  function renderEh() { $('#ehView').innerHTML = `<div class="hl">${details(D.seiten.eh.slice(0, 2), true)}${svgKette()}${details(D.seiten.eh.slice(2), false)}</div><div class="card pl"><h4>Reihenfolge üben</h4><div id="reihHost">${reihHTML()}</div></div>`; }
   function renderVer() { $('#verView').innerHTML = `<div class="hl">${details(D.seiten.ver, true)}</div>`; }
 
   /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
@@ -233,8 +315,9 @@
     const q = tq(t), a = S.tAns[t.id];
     if (q.multi ? !(a && a.length) : a == null) { toast('Wähle zuerst eine Antwort.'); return; }
     const ok = C.isRight(q, a), pct = ok ? pctFor(t.id) : 0, ex = exam();
-    S.tRes = { id: t.id, ok, pct, show: ok || !ex };
-    if (ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies die Erklärung und versuche es noch einmal.'); }
+    const tr = S.tTries; if (!ok) tr[t.id] = (tr[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok, pct, show: ok || (!ex && tr[t.id] >= 2), stage: ok ? 'ok' : (ex ? 'pruef' : (tr[t.id] >= 2 ? 'loes' : 'tipp')) };
+    if (ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.stage === 'loes' ? 'Noch nicht richtig. Die Lösung steht unter der Aufgabe.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
   function hintTask(t) {
@@ -261,14 +344,12 @@
         h += '<div class="btns"><button class="btn" data-ta="close">Schließen</button></div>';
       } else {
         const q = tq(t), a = S.tAns[t.id];
-        h += `<div data-ctx="task">${qBody(q, a, r)}</div>`;
-        h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+        h += `<div data-ctx="task">${qBody(q, a, r)}${hintIn(q)}</div>`;
+        h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.stage === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
         if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
         if (r) {
-          h += `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig' : '✗ Das stimmt noch nicht.'}</li></ul>`;
-          if (r.show) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br>${esc(t.expl)}</div>`;
-          else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
-          if (r.ok) h += '<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>';
+          h += fbBlock(q, r, t.tips[0], t.expl);
+          if (r.ok || r.stage === 'loes') h += '<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>';
         }
       }
       h += '</div>';
@@ -276,31 +357,36 @@
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : p > 0 ? 'p' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && !d[x.id] ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; else if (curTask() && S.tRes) zeigFb(V);
   }
   function startTask(id) {
-    S.task = id; S.tAns = {}; S.tRes = null; const t = TASKS.find(x => x.id === id);
+    S.task = id; S.tAns = {}; S.tRes = null; S.tTries[id] = 0; const t = TASKS.find(x => x.id === id);
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     if (t && t.gb) { S.gb[t.gb] = {}; S.gbRes[t.gb] = null; }
     renderTasks();
   }
 
   /* ============================================================ Zufalls-Trainer */
-  function newTrainer() { S.rtI++; S.rtQ = C.randomQuestion((S.rtSeed + S.rtI * 7919) >>> 0, S.rtCat || undefined); S.rtAns = null; S.rtRes = null; renderTrainer(); }
+  function newTrainer() { S.rtI++; S.rtQ = C.randomQuestion((S.rtSeed + S.rtI * 7919) >>> 0, S.rtCat || undefined); S.rtAns = null; S.rtRes = null; S.rtTries = 0; renderTrainer(); }
   S.rtSeed = (Date.now() % 2147483000) + 1;
   function renderTrainer() {
     if (!S.rtQ) { S.rtI++; S.rtQ = C.randomQuestion((S.rtSeed + S.rtI * 7919) >>> 0, S.rtCat || undefined); }
     const q = S.rtQ, r = S.rtRes, R = S.rt;
     let h = `<div class="stats"><div class="bx"><b>${R.n}</b>beantwortet</div><div class="bx"><b>${R.n ? Math.round(100 * R.ok / R.n) : 0} %</b>richtig</div><div class="bx"><b>${R.streak}</b>Serie</div><div class="bx"><b>${R.best}</b>Beste Serie</div></div>`;
     h += `<div class="ctl"><button class="chip s${S.rtCat ? '' : ' on'}" data-rc="">Alle</button>${D.cats.map(c => `<button class="chip s${S.rtCat === c ? ' on' : ''}" data-rc="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;
-    h += `<div class="card pl" data-ctx="rt"><h4>${esc(q.cat)}</h4>${qBody(q, S.rtAns, r)}<div class="btns"><button class="btn pri" data-ra="chk"${r ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="next">Nächste Frage</button></div>`;
-    if (r) h += `<div class="fb ${r.ok ? 'ok' : 'bad'}"><div class="v">${r.ok ? '✓ Richtig' : '✗ Leider falsch'}</div></div><div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br>${esc(q.expl)}</div>`;
-    $('#rtView').innerHTML = h + '</div>';
+    h += `<div class="card pl" data-ctx="rt"><h4>${esc(q.cat)}</h4>${qBody(q, S.rtAns, r)}${hintIn(q)}<div class="btns"><button class="btn pri" data-ra="chk"${r && r.stage !== 'tipp' ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="next">Nächste Frage</button></div>`;
+    if (r) h += fbBlock(q, r, tipText(q, S.rtAns), q.expl);
+    $('#rtView').innerHTML = h + '</div>'; if (r) zeigFb($('#rtView'));
   }
   function checkTrainer() {
     const q = S.rtQ, a = S.rtAns;
     if (q.multi ? !(a && a.length) : a == null) { toast('Wähle zuerst eine Antwort.'); return; }
-    const ok = C.isRight(q, a), R = S.rt; S.rtRes = { ok, show: true }; R.n++;
+    const ok = C.isRight(q, a), R = S.rt;
+    if (!ok) S.rtTries = (S.rtTries || 0) + 1;
+    const stage = ok ? 'ok' : (S.rtTries >= 2 ? 'loes' : 'tipp');
+    S.rtRes = { ok, stage, show: stage !== 'tipp' };
+    if (stage === 'tipp') { sad(); renderTrainer(); return; }
+    R.n++;
     if (ok) { R.ok++; R.streak++; if (R.streak > R.best) R.best = R.streak; ding(); } else { R.streak = 0; sad(); }
     lsSet('rt', R); updatePal(); renderTrainer();
   }
@@ -352,20 +438,22 @@
   $('#mid').addEventListener('click', e => {
     const g = s => e.target.closest(s);
     let x;
+    if ((x = g('[data-rk],[data-ru],[data-rc]'))) return reihAct(x);
+    if ((x = g('[data-gz],[data-gzn]'))) return gzAct(x);
     if ((x = g('[data-sg]'))) return signSheet(x.dataset.sg);
     if ((x = g('[data-gh]'))) return ghsSheet(x.dataset.gh);
     if ((x = g('[data-bk]'))) { S.braKey = x.dataset.bk; return renderBra(); }
     if ((x = g('[data-gbw]'))) { S.gbWp = x.dataset.gbw; return renderGb(); }
     if ((x = g('[data-go]'))) { const w = g('[data-wp]'), p = x.dataset.go.split('|'); return gbToggle(w.dataset.wp, p[0], p[1]); }
     if ((x = g('[data-gb]'))) { const w = g('[data-wp]').dataset.wp, a = x.dataset.gb; if (a === 'chk') gbCheck(w); else if (a === 'hint') gbHint(w); else { S.gb[w] = {}; S.gbRes[w] = null; rerenderGb(); } return; }
-    if ((x = g('[data-pa]'))) { S.psaAct = x.dataset.pa; S.psaSel = []; S.psaRes = null; return renderPsa(); }
+    if ((x = g('[data-pa]'))) { S.psaAct = x.dataset.pa; S.psaSel = []; S.psaRes = null; S.psaTries = 0; return renderPsa(); }
     if ((x = g('[data-pi]'))) { const k = x.dataset.pi, i = S.psaSel.indexOf(k); if (i >= 0) S.psaSel.splice(i, 1); else S.psaSel.push(k); S.psaRes = null; return renderPsa(); }
-    if ((x = g('[data-pc]'))) { S.psaRes = C.assessPsa(S.psaAct, S.psaSel); S.psaRes.ok ? ding() : sad(); return renderPsa(); }
+    if ((x = g('[data-pc]'))) { S.psaRes = C.assessPsa(S.psaAct, S.psaSel); if (S.psaRes.ok) ding(); else { S.psaTries = (S.psaTries || 0) + 1; sad(); } renderPsa(); if (window.LabRahmen) { const el = $('#psaView .lr-fb'); if (el) LabRahmen.zeig(el); } return; }
     if ((x = g('[data-bsp]'))) { const v = x.dataset.bsp; if (v === 'back') S.bsp = null; else if (v === 'open') return openBsp(D.beispiele[S.bsp]); else S.bsp = +v; renderBsp(); $('#pgBsp').scrollTop = 0; return; }
     if ((x = g('[data-c]'))) {
       const ctx = g('[data-ctx]'); if (!ctx) return; const i = +x.dataset.c, c = ctx.dataset.ctx;
       if (c === 'task') { const t = curTask(), q = tq(t); S.tAns[t.id] = pickAnswer(q, S.tAns[t.id], i); if (S.tRes && !S.tRes.ok) S.tRes = null; return renderTasks(false); }
-      if (c === 'rt') { if (S.rtRes) return; S.rtAns = pickAnswer(S.rtQ, S.rtAns, i); return renderTrainer(); }
+      if (c === 'rt') { if (S.rtRes && S.rtRes.stage !== 'tipp') return; S.rtRes = null; S.rtAns = pickAnswer(S.rtQ, S.rtAns, i); return renderTrainer(); }
       if (c === 'fin') { const F = S.fin; F.ans[F.i] = pickAnswer(F.qs[F.i], F.ans[F.i], i); return renderFin(); }
     }
     if ((x = g('[data-ta]'))) {
@@ -391,7 +479,7 @@
 
   /* ============================================================ Rahmen: Tabs, Prüfmodus, Menü */
   function buildTabs() {
-    $('#tabs').innerHTML = TABS.map(([k, i, n]) => `<button class="tab${S.tab === k ? ' on' : ''}" data-t="${k}" role="tab" aria-selected="${S.tab === k}">${i} ${n}${k === 'tasks' ? '<span class="bd" id="tkBd"></span>' : ''}</button>`).join('');
+    $('#tabs').innerHTML = TABS.map(([k, i, n]) => `<button class="tab${S.tab === k ? ' on' : ''}" data-t="${k}" role="tab" aria-selected="${S.tab === k}">${n}${k === 'tasks' ? '<span class="bd" id="tkBd"></span>' : ''}</button>`).join('');
     updateBadge();
   }
   const RENDER = { zei: renderZei, bra: renderBra, ghs: renderGhs, gb: renderGb, psa: renderPsa, eh: renderEh, ver: renderVer, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, fin: renderFin, help: renderHelp };

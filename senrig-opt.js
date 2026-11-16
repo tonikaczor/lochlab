@@ -100,7 +100,7 @@
       const a = lerp(a0, a1, k / 10), maj = k % 5 === 0, r1 = r - (maj ? 14 : 10), r2 = r - 7;
       ctx.strokeStyle = maj ? '#c4ccd4' : '#6a7480'; ctx.lineWidth = maj ? 2 : 1.2;
       ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2); ctx.stroke();
-      if (maj) txt(ctx, fmt(vmin + (vmax - vmin) * k / 10, o.digits || 0), cx + Math.cos(a) * (r * 0.5), cy + Math.sin(a) * (r * 0.5), 9, C.dim, 'center');
+      if (maj) txt(ctx, fmt(vmin + (vmax - vmin) * k / 10, o.digits || 0), cx + Math.cos(a) * (r * 0.5), cy + Math.sin(a) * (r * 0.5), 10, C.dim, 'center');
     }
     if (o.label) txt(ctx, o.label, cx, cy + r * 0.62, 10.5, C.dim, 'center', true);
     ctx.strokeStyle = o.col || '#ffb340'; ctx.lineWidth = 3; ctx.lineCap = 'round';
@@ -475,7 +475,7 @@
       // Luxmeter
       ctx.fillStyle = '#2d343b'; rr(ctx, 380, 360, 120, 100, 10); ctx.fill(); ctx.strokeStyle = '#0f1317'; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#08120c'; rr(ctx, 390, 372, 100, 38, 5); ctx.fill();
-      txt(ctx, eng(S.E, '', 3).trim(), 480, 391, 17, '#8dffa0', 'right', true, MONO); txt(ctx, 'LUX-METER', 440, 428, 10.5, C.dim, 'center', true); txt(ctx, 'lx', 482, 404, 9, '#5fbf78', 'right', true);
+      txt(ctx, eng(S.E, '', 3).trim(), 480, 391, 17, '#8dffa0', 'right', true, MONO); txt(ctx, 'LUX-METER', 440, 428, 10.5, C.dim, 'center', true); txt(ctx, 'lx', 482, 404, 10, '#5fbf78', 'right', true);
       ctx.fillStyle = '#4a5560'; ctx.beginPath(); ctx.arc(440, 446, 5, 0, TWO_PI); ctx.fill();
       txt(ctx, Cv.lux < 1 ? 'dunkel' : Cv.lux < 100 ? 'Dämmerung' : Cv.lux < 2000 ? 'Zimmer' : Cv.lux < 20000 ? 'Tageslicht' : 'Sonne', 150, 330, 14, C.dim, 'center', true);
       sensorTag(ctx, sx, sy + 46);

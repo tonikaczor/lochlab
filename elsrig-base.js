@@ -500,6 +500,7 @@
       if (!a || typeof a !== 'object') return { ok: false, ampel: 'grau', text: 'Die Prüfung ist nicht möglich.' };
       const o = { ok: !!a.ok, ampel: ampelNorm(a.ampel), text: String(a.text || '') };
       if (isNum(a.margin)) o.margin = a.margin;
+      if (a.marginUnit) o.marginUnit = String(a.marginUnit);
       if (a.zusatz !== undefined && a.zusatz !== null) o.zusatz = typeof a.zusatz === 'number' && !isFinite(a.zusatz) ? 0 : a.zusatz;
       if (Array.isArray(a.rows)) o.rows = a.rows.map(r => ({ id: String(r.id), ampel: ampelNorm(r.ampel), text: String(r.text || '') }));
       return o;

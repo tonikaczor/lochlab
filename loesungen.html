@@ -30,7 +30,7 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
 #pwRow input{flex:1;min-width:200px}
 #msg{min-height:22px;margin-top:10px;color:var(--danger);font-size:14px}
 #msg.info{color:var(--mute)}
-.gh{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);padding:16px 4px 4px;font-weight:700}
+.gh{font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);padding:16px 4px 4px;font-weight:700}
 .row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);min-height:56px}
 .row .t{flex:1;min-width:0}
 .row .t b{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}
@@ -50,9 +50,10 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
 #gate img{width:96px;height:auto;margin-bottom:10px}
 #gate h1{margin:0 0 4px;font-size:22px}
 #gate p{margin:0 0 18px;color:var(--mute)}
-#gate input{text-align:center;margin-bottom:12px}
+#gate input,#gateName{text-align:center;margin-bottom:12px;width:100%;min-height:44px;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:0 12px}
 #gate .btn{width:100%}
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
+#urheber-hinweis{font-size:14px!important}
 </style>
 </head>
 <body>
@@ -60,7 +61,7 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
 <script src="gate.js" data-title="Lösungen für Ausbilder"></script>
 <!--/GATE-->
 <header>
-  <a href="index.html" class="btn s" aria-label="Startseite" title="Startseite">⌂</a>
+  <a href="index.html" class="btn" title="Zur Startseite">‹ Start</a>
   <img src="logo.png" alt="Tonfunk" onerror="this.remove()">
   <h1>Lösungen für Ausbilder</h1>
   <button class="btn s" id="bLock" hidden aria-label="Alle sperren">🔒 <span>Alle sperren</span></button>

@@ -35,18 +35,18 @@ input[type=range]:focus-visible{outline-offset:0}
   #pgRig.rigc #meters{order:4}
   #pgRig.rigc #deepHost,#pgRig.rigc #cSweep{order:6}
   #pgRig.rigc #rigPick{padding:0 0 6px}
-  #pgRig.rigc #simBand{padding:2px 4px 2px 12px;margin:0 0 6px;font-size:12px;line-height:1.3;align-items:center}
+  #pgRig.rigc #simBand{padding:2px 4px 2px 12px;margin:0 0 6px;font-size:14px;line-height:1.3;align-items:center}
   #pgRig.rigc #sichtBar{margin:0 0 6px;display:flex}
   #pgRig.rigc #sichtBar .cnrow{flex:1;gap:4px}
-  #pgRig.rigc #sichtBar .cn{position:relative;padding:4px 8px;justify-content:center;min-width:0}
-  #pgRig.rigc #sichtBar .cn b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #pgRig.rigc #sichtBar .cn{position:relative;min-height:44px;padding:4px 8px;justify-content:center;min-width:0}
+  #pgRig.rigc #sichtBar .cn b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* Langtexte bleiben im DOM und für Screenreader erhalten, werden aber nur im Hochformat angezeigt */
   #pgRig.rigc #sichtBar .cn span,#pgRig.rigc #sichtBar .cn small,#pgRig.rigc #ampRow .atx small.nt{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
   #pgRig.rigc #ampRow{margin:0 0 6px;padding:4px 10px;gap:8px;min-height:50px}
   #pgRig.rigc #ampRow .asym{width:32px;height:32px;font-size:18px}
   #pgRig.rigc #ampRow .atx{gap:0}
   #pgRig.rigc #ampRow .atx b{font-size:14px;line-height:1.25}
-  #pgRig.rigc #ampRow .atx small{font-size:12px;line-height:1.25}
+  #pgRig.rigc #ampRow .atx small{font-size:14px;line-height:1.25}
   #pgRig.rigc .avs{display:none}
   /* Diagramm: an die Viewport-Höhe gebunden (dvh), nie unter 380 px, sonst legen die Szenen ihre Beschriftungen nicht mehr aus */
   #pgRig.rigc #cvw{max-height:clamp(300px,calc(100vh - 518px),560px);max-height:clamp(300px,calc(100dvh - 518px),560px)}
@@ -103,8 +103,8 @@ input[type=range]:focus-visible{outline-offset:0}
 #ampRow.amp2 .apm{font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
 #ampRow.amp2 .apd{font-size:14px;line-height:1.35;color:var(--mute)}
 #ampRow.amp2 .apd.nt{color:var(--fg)}
-#ampRow.amp2 .apz{min-height:40px;padding:0;font:inherit;font-weight:700;color:var(--accent);text-decoration:underline;text-underline-offset:3px;text-align:left}
-#ampRow.amp2 .apq{position:absolute;top:0;right:0;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-size:14px;font-weight:700}
+#ampRow.amp2 .apz{min-height:44px;padding:0;font:inherit;font-weight:700;color:var(--accent);text-decoration:underline;text-underline-offset:3px;text-align:left}
+#ampRow.amp2 .apq{position:absolute;top:0;right:0;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-size:14px;font-weight:700}
 #ampRow.amp2 .aphelp{margin:4px 0 0;padding:6px 10px;font-size:14px;line-height:1.4;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:8px}
 #ampRow.amp2 .aphelp[hidden]{display:none}
 @media print{#ampRow.amp2 .apq,#ampRow.amp2 .apz{display:none}}
@@ -112,3 +112,37 @@ input[type=range]:focus-visible{outline-offset:0}
 /* ---- Zoom erlaubt (WCAG 1.4.4): Pinch-Zoom ist frei, der Doppeltipp-Zoom wird auf Bedienelementen unterdrueckt.
    Element-Selektoren, daher schlagen Klassenregeln wie touch-action:none (Zeichenflaechen, Griffe) und pan-y diese Regel weiterhin. ---- */
 a,button,summary,select,label,[role=button],[role=tab],[role=switch]{touch-action:manipulation}
+
+/* ---- P2: Trefferflaechen mindestens 44x44 px, Schrift im DOM mindestens 14 px (WCAG 2.5.8 / Lesbarkeit).
+   Steht am Dateiende: design.css wird nach den in die Labs kopierten Stilen geladen, gleiche Spezifitaet gewinnt hier. SVG-Text skaliert ueber viewBox und ist nicht erfasst. ---- */
+html:root .hb,html:root .run,html:root .tab,html:root .chip,html:root .chip.s,html:root .btn,html:root button.mini,html:root a.mini,html:root .simsw,html:root .pre button,html:root .seg button{min-height:44px;min-width:44px}
+html:root .hb,html:root .run,html:root .tab,html:root .chip,html:root .chip.s,html:root .simsw{height:44px;border-radius:22px}
+html:root .btn{height:auto;min-height:44px}
+html:root button.mini,html:root a.mini{height:44px}
+html:root .pre button{padding:3px 12px}
+html:root header #bUndo,html:root header #bRedo,html:root header button#bTasks.hb{height:44px;min-width:44px}
+html:root .chip.s,html:root .simsw,html:root .mini,html:root .pre button,html:root .tab .bd{font-size:14px}
+html:root .tab .bd{min-width:20px;height:20px}
+html:root .card>summary,html:root .card>h4{min-height:44px;font-size:14px}
+html:root input[type=range]{min-height:44px;height:44px}
+html:root input:not([type=checkbox]):not([type=radio]):not([type=range]),html:root select:not([multiple]):not([size]):not([hidden]){min-height:44px}
+html:root .chk,html:root .opt{min-height:44px}
+html:root .ct .num{min-height:44px}
+html:root header .title small,html:root .lv,html:root .hint2,html:root label.f span,html:root .gh,html:root .card.pl h4,html:root #stat,html:root .ev,html:root #cvTag,html:root .mt .lbl,html:root .mt .num small,html:root .ct small.hp,html:root .chk,html:root .hl code,html:root .hl th,html:root .hl table,html:root .kt,html:root .kt th,html:root .tt th,html:root .tt td,html:root .readout{font-size:14px}
+html:root .tfT .tfT-meta,html:root .tfT-meta{font-size:14px}
+html:root #urheber-hinweis,html:root #urheber-hinweis a{font-size:14px}
+html:root #urheber-hinweis a{display:inline-block;min-height:44px;line-height:44px}
+html:root #urheber-hinweis a[href]{padding:0 2px}
+/* P2: Bausteine, die als Kopie in vielen Labs stehen (Ampel, Einblendungen, Projektverweise, Fussleisten, Karten) */
+html:root #iliasBar{font-size:14px}
+html:root #iliasBar a{display:inline-flex;align-items:center;min-height:44px}
+html:root #vbHint{font-size:14px!important}
+html:root #vbHint a{display:inline-flex;align-items:center;min-height:44px!important;font-size:14px}
+html:root summary[style*="min-height"],html:root .tl summary,html:root details>summary.rw{min-height:44px!important}
+html:root .hl a{min-height:44px;display:inline-flex;align-items:center}
+html:root button.ptab.r,html:root .mvtab,html:root .btn2{min-height:44px}
+html:root .btn.s,html:root .pr-modes button{font-size:14px}
+html:root .hl .eq,html:root #qLine,html:root #qLine b,html:root #qLine .qv,html:root #qLine .qh,html:root .rdout .st,html:root .cn span,html:root .cn small,html:root .cn b,html:root .lim,html:root .bdg,html:root .ana-dg label,html:root .sgcell small,html:root .hl table.h,html:root .hl table.h th,html:root .hl table.h td,html:root .hl table.h b,html:root .ct .un,html:root .vz .cap,html:root .res ol,html:root table.iot td{font-size:14px}
+html:root .av-st .bx,html:root .av-ctl label span,html:root .av h5{font-size:14px}
+html:root .mvtab,html:root .btn2{min-width:44px}
+html:root .iot th,html:root .iot td,html:root .ana-cg label,html:root .hl .glo{font-size:14px}

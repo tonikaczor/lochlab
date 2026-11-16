@@ -44,7 +44,7 @@
     lade: Object.assign({ orient: 'laengs', kg: '700', placed: [] }, lsGet('lade', {})),
     gg: Object.assign({ a: '5', b: '100', c: '200' }, lsGet('gg', {})),
     mt: Object.assign({ art: { n: 0, ok: 0 }, gg: { n: 0, ok: 0 }, sym: { n: 0, ok: 0 }, ver: { n: 0, ok: 0 } }, lsGet('mt', {})), mq: { art: { i: -1, sel: -1 }, gg: { i: -1, sel: -1 }, sym: { i: -1, sel: -1 }, ver: { i: -1, sel: -1 } },
-    task: null, tq: null, tAns: {}, tRes: null,
+    task: null, tq: null, tAns: {}, tRes: null, tTry: {},
     tr: { q: null, ans: {}, res: null, level: 0 },
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {}))
   };
@@ -95,7 +95,7 @@
       <div class="dsrow">${inp('m', 'Masse der Ladung', s.m, 'kg')}
       <label class="f"><span>Reibpaarung (Übungswert µ)</span><select data-k="mid">${C.MU.map(e => `<option value="${e.id}"${s.mid === e.id ? ' selected' : ''}>${esc(e.n)} (µ = ${esc(f(e.mu, 2))})</option>`).join('')}<option value="frei"${s.mid === 'frei' ? ' selected' : ''}>Eigener Wert</option></select></label>
       ${inp('mu', 'Reibbeiwert µ', s.mu, '')}</div>
-      <div class="fbar"><span style="font-size:12px;color:var(--mute)">RICHTUNG</span>${seg('data-dir', C.DIRS.map(d => [d.k, d.short + ' (c = ' + f(d.c, 1) + ')']), s.dir)}</div>
+      <div class="fbar"><span style="font-size:14px;color:var(--mute)">RICHTUNG</span>${seg('data-dir', C.DIRS.map(d => [d.k, d.short + ' (c = ' + f(d.c, 1) + ')']), s.dir)}</div>
       <div class="dsrow">${inp('LC', 'Zurrkraft LC je Gurt (Direktzurren)', s.LC, 'daN')}${inp('STF', 'Vorspannkraft STF je Gurt (Niederzurren)', s.STF, 'daN')}${inp('alpha', 'Zurrwinkel α (Niederzurren)', s.alpha, '°')}</div>
       <p class="hint2">Zahlen mit Komma oder Punkt eingeben. 1 daN = 10 N. Es wird immer auf ganze Gurte aufgerundet.</p></div><div id="krOut"></div>`;
     updateKr();
@@ -117,7 +117,6 @@
     s += `<rect class="bed" x="0" y="0" width="${A.L}" height="${A.W}"/>`;
     [200, 400, 600, 800, 1000, 1200].forEach(x => { s += `<line class="g-grid" x1="${x}" x2="${x}" y1="0" y2="${A.W}"/><text class="dim" x="${x}" y="${A.W + 24}" text-anchor="middle" style="font-size:20px">${x / 100} m</text>`; });
     placed.forEach((p, i) => { s += `<g class="pal" data-pi="${i}"><rect x="${p.x}" y="${p.y}" width="${p.w}" height="${p.h}" rx="3"/><text x="${p.x + p.w / 2}" y="${p.y + p.h / 2 + 8}">${i + 1}</text></g>`; });
-    s += `<text class="dim" x="${A.L / 2}" y="${A.W + 50}" text-anchor="middle">Ladefläche 13,60 m × 2,45 m · Fahrtrichtung nach links</text>`;
     return `<svg class="ldsvg" viewBox="${VB.join(' ')}" role="img" aria-label="Draufsicht auf die Ladefläche mit ${placed.length} Europaletten">${s}</svg>`;
   }
   /* PRUEFEN P16: Übungs-Nutzlast 24.000 kg (siehe laddata.js, Aufgabe 'Platz und Gewicht'). */
@@ -134,9 +133,9 @@
   }
   function renderLade() {
     const s = S.lade;
-    $('#ladeView').innerHTML = ueb() + `<div class="card pl ld"><h4>Europaletten (1200 × 800 mm) platzieren</h4>
-      <div class="fbar"><span style="font-size:12px;color:var(--mute)">AUSRICHTUNG</span>${seg('data-or', [['laengs', 'längs (lange Seite in Fahrtrichtung)'], ['quer', 'quer (kurze Seite in Fahrtrichtung)']], s.orient)}</div>
-      <div id="ldSvg" class="inst"></div>
+    $('#ladeView').innerHTML = `<div id="ldWrap" class="ldwrap"><div id="ldSvg" class="inst"></div></div><p class="hint2 ldscr">Am Handy: Wische die Grafik waagerecht, um die ganze Ladefläche zu sehen.</p><p class="hint2 ldcap">Ladefläche 13,60 m × 2,45 m. Das Fahrerhaus ist links, die Fahrtrichtung zeigt nach links.</p>` + ueb() + `<div class="card pl ld"><h4>Europaletten (1200 × 800 mm) platzieren</h4>
+      <div class="fbar"><span class="lbl" style="font-size:14px;color:var(--mute)">AUSRICHTUNG</span>${seg('data-or', [['laengs', 'längs'], ['quer', 'quer']], s.orient)}</div>
+      <p class="hint2" style="margin-top:0">Längs: Die lange Seite der Palette liegt in Fahrtrichtung. Quer: Die kurze Seite liegt in Fahrtrichtung.</p>
       <p class="hint2">Tippe auf die Ladefläche: Die Palette wird dort abgesetzt und rastet an Wand und Nachbarn ein. Tippe auf eine Palette, um sie wieder zu entfernen.</p>
       <div class="btns"><button class="btn" data-ld="undo">↶ Letzte zurück</button><button class="btn" data-ld="clear">Leeren</button><button class="btn" data-ld="fl">Reihen füllen: längs</button><button class="btn" data-ld="fq">Reihen füllen: quer</button></div>
       <div class="dsrow" style="margin-top:10px">${inp('kg', 'Gewicht je Palette', s.kg, 'kg')}</div></div><div id="ldOut"></div>`;
@@ -200,8 +199,8 @@
     const s = S.stap;
     $('#stapView').innerHTML = ueb() + `<div class="card pl"><h4>Ladeeinheit auf Europalette</h4>
       <div class="dsrow">${inp('lagen', 'Lagen Kartons', s.lagen, 'Stück')}${inp('hl', 'Höhe je Lage', s.hl, 'mm')}${inp('room', 'Lagerhöhe zum Stapeln (optional)', s.room, 'mm')}</div>
-      <div class="fbar"><span style="font-size:12px;color:var(--mute)">LÄNGE IN KRAFTRICHTUNG</span>${seg('data-d', [['800', '800 mm'], ['1200', '1200 mm']], s.d)}</div>
-      <div class="fbar"><span style="font-size:12px;color:var(--mute)">RICHTUNG</span>${seg('data-sd', C.DIRS.slice(0, 2).map(d => [d.k, d.short + ' (c = ' + f(d.c, 1) + ')']), s.dir)}</div>
+      <div class="fbar"><span style="font-size:14px;color:var(--mute)">LÄNGE IN KRAFTRICHTUNG</span>${seg('data-d', [['800', '800 mm'], ['1200', '1200 mm']], s.d)}</div>
+      <div class="fbar"><span style="font-size:14px;color:var(--mute)">RICHTUNG</span>${seg('data-sd', C.DIRS.slice(0, 2).map(d => [d.k, d.short + ' (c = ' + f(d.c, 1) + ')']), s.dir)}</div>
       <p class="hint2">Die Palette selbst ist 144 mm hoch. Der Schwerpunkt liegt vereinfacht in halber Gesamthöhe.</p></div><div id="stapOut"></div>`;
     updateStap();
   }
@@ -264,37 +263,50 @@
   function updateBadge() { const b = $('#tkBd'); if (b) b.textContent = Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length + '/' + TASKS.length; }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : f(q.value, 2) + ' ' + q.ask.unit);
-  function qBody(q, a, r, pre) {
-    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''} class="${r && i === q.ask.correct && (r.ok || pre === 'rt') ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+  /* Rückmeldung nach Vorgabe 4.5: erster Fehlversuch Tipp und zweiter Versuch, zweiter Fehlversuch Lösung mit Rechenweg, richtig bestätigt. Im Prüfmodus bleibt es streng. */
+  const fin = r => !!r && (r.ok || r.stage === 'loes');
+  const unitHint = q => q.ask.type === 'choice' ? '<p class="lr-hinweis">Tippe eine Antwort an, dann Prüfen.</p>' : `<p class="lr-hinweis">Zahl in ${esc(q.ask.unit)}. ${q.tol > 0 ? '±' + esc(f(q.tol, 2)) + ' ' + esc(q.ask.unit) + ' gilt als richtig.' : 'Gib das Ergebnis genau an.'}</p>`;
+  function qBody(q, a, r) {
+    const lock = fin(r);
+    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" aria-pressed="${a.c === i}" ${lock ? 'disabled' : ''} class="${lock && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok && r.c === i ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>` + unitHint(q);
+    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lock ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>` + unitHint(q);
   }
   function evalQ(q, a) {
-    if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c] }; }
+    if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c], c: a.c }; }
     const v = P(a.v); if (!Number.isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return null; }
     return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 2) + ' ' + q.ask.unit };
   }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  const loesBlock = (q, cls) => `<div class="rdout ${cls}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>`;
+  const tipTxt = q => (q.tips && q.tips[0]) || 'Lies die Aufgabe noch einmal in Ruhe und rechne Schritt für Schritt.';
+  function fbBlock(q, r) {
+    if (r.ok) return `<div class="lr-fb ok" role="status"><p><strong>✓ Richtig:</strong> ${esc(r.given)}</p></div>` + loesBlock(q, 'ok');
+    if (r.stage === 'tipp') return `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. Tipp: ${esc(tipTxt(q))} Du hast einen zweiten Versuch.</p></div>`;
+    if (r.stage === 'loes') return `<div class="lr-fb loes" role="status"><p><strong>Auch nicht.</strong> Hier ist die Lösung.</p></div>` + loesBlock(q, 'bad');
+    return `<div class="lr-fb tipp" role="status"><p><strong>Noch nicht.</strong> Im Prüfmodus gibt es den Lösungsweg erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p></div>`;
+  }
+  const zeigFb = host => { if (root.LabRahmen) { const el = host.querySelector('.lr-fb'); if (el) { root.LabRahmen.zeig(el); setTimeout(() => { if (el.isConnected) root.LabRahmen.zeig(el); }, 160); } } };
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {};
-      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r)}`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${fin(r) ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { h += fbBlock(q, r); if (fin(r)) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; if (t && S.tRes && S.tRes.id === t.id) zeigFb(V);
   }
   function checkTask(t) {
-    const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
+    if (fin(S.tRes && S.tRes.id === t.id ? S.tRes : null)) return;
+    const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return;
+    const n = (S.tTry[t.id] = (S.tTry[t.id] || 0) + 1), stage = e.ok ? 'ok' : (!exam() && n >= 2 ? 'loes' : 'tipp'), pct = e.ok ? pctFor(t.id) : 0;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, c: e.c, stage, pct };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(stage === 'loes' ? 'Auch nicht. Lies den Lösungsweg.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
   function hintFor(q, id) {
@@ -309,7 +321,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tTry = {};
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -318,21 +330,21 @@
   tv.addEventListener('keydown', e => { const t = curTask(); if (t && e.key === 'Enter' && e.target.dataset.in) { e.preventDefault(); checkTask(t); } });
   tv.addEventListener('click', e => {
     const t = curTask(), tc = e.target.closest('[data-tc]'), ta = e.target.closest('[data-ta]'), row = e.target.closest('.row[data-t]');
-    if (tc && t) { (S.tAns[t.id] = S.tAns[t.id] || {}).c = +tc.dataset.tc; if (S.tRes && !S.tRes.ok) S.tRes = null; renderTasks(false); return; }
-    if (ta && t) { const a = ta.dataset.ta; if (a === 'chk') checkTask(t); else if (a === 'hint') hintFor(S.tq, t.id); else if (a === 'close') { S.task = null; S.tRes = null; renderTasks(); } else if (a === 'next') { const i = TASKS.findIndex(x => x.id === t.id), nx = TASKS.slice(i + 1).find(x => !done()[x.id]) || TASKS[(i + 1) % TASKS.length]; startTask(nx.id); } return; }
+    if (tc && t) { if (!fin(S.tRes && S.tRes.id === t.id ? S.tRes : null)) { (S.tAns[t.id] = S.tAns[t.id] || {}).c = +tc.dataset.tc; renderTasks(false); } return; }
+    if (ta && t) { const a = ta.dataset.ta; if (a === 'chk') checkTask(t); else if (a === 'hint') hintFor(S.tq, t.id); else if (a === 'close') { S.task = null; S.tRes = null; S.tTry = {}; renderTasks(); } else if (a === 'next') { const i = TASKS.findIndex(x => x.id === t.id), nx = TASKS.slice(i + 1).find(x => !done()[x.id]) || TASKS[(i + 1) % TASKS.length]; startTask(nx.id); } return; }
     if (row) startTask(row.dataset.t);
   });
 
   /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.tries = 0; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
-      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      <div class="fbar"><span class="lbl" style="font-size:14px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res)}
+      <div class="btns"><button class="btn pri" data-ra="chk" ${fin(T.res) ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${fin(T.res) ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${fin(T.res) ? 'Nächste Frage' : 'Überspringen'}</button></div>
+      ${T.res ? fbBlock(q, T.res) : ''}</div>`; if (T.res) zeigFb($('#rtView'));
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -340,12 +352,15 @@
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (tc) { if (!fin(T.res)) { T.ans.c = +tc.dataset.tc; renderTrainer(); } return; }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!fin(T.res) && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    const T = S.tr; if (fin(T.res)) return; const e = evalQ(T.q, T.ans); if (!e) return;
+    T.tries = (T.tries || 0) + 1; const stage = e.ok ? 'ok' : (T.tries >= 2 ? 'loes' : 'tipp');
+    T.res = { ok: e.ok, given: e.given, c: e.c, stage };
+    if (e.ok) { S.rt.n++; S.rt.ok++; if (T.tries === 1) { S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); } ding(); }
+    else { S.rt.streak = 0; if (stage === 'loes') S.rt.n++; sad(); }
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -382,7 +397,7 @@
       sec('Ladeeinheiten und Stauraum', `<p>Ladefläche im Übungsmodell: 13,60 m × 2,45 m. Europalette: 1,20 m × 0,80 m = 0,96 m².</p><table><tr><th>Ausrichtung</th><th>nebeneinander</th><th>Reihen</th><th>Paletten</th></tr><tr><td>längs (1,20 m in Fahrtrichtung)</td><td>3</td><td>11</td><td>33</td></tr><tr><td>quer (0,80 m in Fahrtrichtung)</td><td>2</td><td>17</td><td>34</td></tr></table><span class="eq">Ausnutzung = Anzahl · 0,96 m² / 33,32 m² · 100</span><p>Zusätzlich begrenzt die Nutzlast die Zahl der Paletten: Es gilt der kleinere Wert aus Platz und Gewicht.</p>`) +
       sec('Handhabungszeichen', `<table><tr><th>Zeichen</th><th>Bedeutung</th></tr>${D.sym.map(s => `<tr><td>${esc(s[0])}</td><td>${esc(s[1])}</td></tr>`).join('')}</table>`) +
       sec('Verantwortung', `<p><b>Absender:</b> transportfähige Verpackung, Kennzeichnung, Papiere; nach § 412 HGB zuständig für das beförderungssichere Verladen. <b>Verlader:</b> staut und sichert die Ladung. <b>Fahrer:</b> prüft Verkehrssicherheit von Fahrzeug und Ladung und darf mit unsicherer Ladung nicht losfahren. <b>Halter:</b> stellt geeignetes Fahrzeug und geprüfte Zurrmittel bereit.</p><p class="hint2">Stark vereinfacht; die genauen Pflichten stehen in HGB, StVO und ADR.</p>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte. Frage im Zweifel deine Ausbilderin oder deinen Ausbilder.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
@@ -426,6 +441,25 @@
       b.addEventListener('click', e => { const x = e.target.closest('[data-x]'); if (!x) return; if (x.dataset.x === 'yes') { ['done', 'prog', 'hints', 'ctipps', 'rt', 'mt'].forEach(k => { try { localStorage.removeItem(LS + k); } catch (er) {} }); S.rt = { n: 0, ok: 0, streak: 0, best: 0 }; MATCH.forEach(k => { S.mt[k] = { n: 0, ok: 0 }; }); S.task = null; S.tRes = null; palSig = ''; updatePal(); updateBadge(); if (S.tab === 'tasks') renderTasks(); toast('Fortschritt gelöscht'); } close(); });
     });
   }
+
+  /* Grafiktext am Handy: SVG-Schrift wird mit der Grafik verkleinert; hier auf mindestens 11 px Bildschirmgröße angehoben (wie mchui.js). */
+  const SVG_MIN = 11.2;
+  function fixSvgText() {
+    try {
+      $$('svg text').forEach(t => {
+        const m = t.getScreenCTM && t.getScreenCTM(); if (!m) return;
+        const sc = Math.hypot(m.a, m.b); if (!sc || !isFinite(sc)) return;
+        if (t.dataset.fb == null) { t.dataset.fs0 = t.style.fontSize || ''; t.dataset.fb = parseFloat(getComputedStyle(t).fontSize) || 0; }
+        const base = +t.dataset.fb; if (!base) return;
+        if (base * sc < SVG_MIN) t.style.fontSize = (SVG_MIN / sc) + 'px'; else t.style.fontSize = t.dataset.fs0 || '';
+      });
+    } catch (e) {}
+  }
+  let fz; const fixSoon = () => { clearTimeout(fz); fz = setTimeout(fixSvgText, 60); };
+  window.addEventListener('resize', fixSoon); document.addEventListener('click', fixSoon, true); /* Reiterwechsel macht Grafiken erst sichtbar */
+  try { new MutationObserver(fixSoon).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  root.LadFixSvgText = fixSvgText;
+  fixSoon();
 
   /* Schnittstelle für Karriere/Lernpfad */
   root.LAD_LAB = { id: 'lad', title: 'Ladungssicherungs-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.LAD_TASKS };

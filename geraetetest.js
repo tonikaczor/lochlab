@@ -203,6 +203,11 @@
       if (r.tipp && r.status !== 'ok') body.appendChild(el('div', 'tipp', 'Was tun: ' + r.tipp));
       row.appendChild(body); box.appendChild(row);
     });
+    var fz = C.fazit(res), fb = $('fazit'); fb.textContent = '';
+    fb.appendChild(el('h2', null, 'Fazit')); fb.appendChild(el('b', null, fz.titel)); fb.appendChild(el('p', null, fz.text));
+    var nv = el('p', 'nav'); nv.appendChild(el('b', null, 'Weiter:'));
+    [['index.html#labs', 'Zu den Labs'], ['index.html#ich', 'Mein Stand'], ['pruefungslab.html', 'Prüfungs-Lab']].forEach(function (l) { var a = el('a', null, l[1]); a.setAttribute('href', l[0]); nv.appendChild(a); });
+    fb.appendChild(nv);
     zeigeBild(res, z);
     $('bericht').value = C.bericht(info(), res);
   }

@@ -106,7 +106,7 @@
 
     // ---- Geometrie der Szene (eine Funktion fuer Zeichnen und Antippen) ----
     const TOPY = { v: 90 };   // Oberkante des Bildinhalts (nach dem Kopf; 10 ohne Kopf)
-    function layoutK(w, h) { return K.split(w, h, TOPY.v, { a: 'cross', b: 'long', c: 'scope', left: 0.46, rightTop: 0.64, stack: [0.36, 0.4] }); }
+    function layoutK(w, h) { return K.split(w, h, TOPY.v, { a: 'cross', b: 'long', c: 'scope', left: 0.46, rightTop: 0.64, stack: [0.36, 0.4], compact: [0.38, 0.37] }); }
     function longGeom(r, ctl) {
       const lx = r.x + 12, lw = r.w - 24, ly = r.y + 26, lh = r.h - 32;
       const x0 = lx + 36, x1 = lx + lw - 58, xv0 = x0 + 46, xv1 = x1 - 46;
@@ -119,7 +119,7 @@
       return g;
     }
     function areasK(w, h, ctl) {
-      const L = layoutK(w, h); if (!L || !K.big(L.long, 200, 120)) return [];
+      const L = layoutK(w, h); if (!L || !K.big(L.long, 200, 112)) return [];
       const g = longGeom(L.long, ctl), a = [];
       const R0 = (k, kind, rc, to) => a.push({ key: k, kind, x: rc.x, y: rc.y, w: rc.w, h: rc.h, to });
       R0('schirm', 'select', g.shield, K.optNext(controls.find(c => c.key === 'schirm'), ctl.schirm));
@@ -132,7 +132,7 @@
     // ---- Feldlinien: EMV_DRAW.fieldE und fieldH (Linienanteil folgt dem Kern: E = Cm/(Cm+Cg), H = M/Ls); die Anlage liefert nur die Verhaeltnisse ----
     const aspectOf = ctl => clamp(ctl.s / ctl.h, 0.7, 6);
     function drawFields(D, ctx, rE, rH, view, sc, phaseCycles, caption) {
-      const { ctl, res } = view, aspect = aspectOf(ctl), common = { quality: sc.quality, reduced: sc.reduced, theme: sc.theme, caption };
+      const { ctl, res } = view, aspect = aspectOf(ctl), common = { quality: sc.quality, reduced: sc.reduced, theme: sc.theme, caption, slow: rE.w >= 200 };
       const ampE = 0.35 + 0.65 * K.rateLog(ctl.us, 0.1, 400), ampH = 0.35 + 0.65 * K.rateLog(res.is, 1e-3, 10);
       const out = sc.reduced || (view.phase % 1) < 0.5;
       let e = false, h = false;
@@ -199,9 +199,9 @@
       // ---------------- Szene ----------------
       function cross(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view, fs = sc.fs, D = sc.D;
-        K.plate(ctx, r.x, r.y, r.w, r.h, pal, 'Querschnitt (Skizze): E-Feld und H-Feld', { size: fs, max: r.w - 20 });
-        if (!K.big(r, 200, 150)) return;
-        const inner = { x: r.x + 6, y: r.y + 24, w: r.w - 12, h: r.h - 30 }, stacked = inner.h >= 300 || inner.w < 300, gap = 6;
+        K.plate(ctx, r.x, r.y, r.w, r.h, pal, (r.w < 340 ? 'Querschnitt: E-Feld, H-Feld' : 'Querschnitt (Skizze): E-Feld und H-Feld'), { size: fs, max: r.w < 340 ? r.w * 0.58 : r.w - 20 });
+        if (!K.big(r, 200, 138)) return;
+        const inner = { x: r.x + 6, y: r.y + 24, w: r.w - 12, h: r.h - 30 }, stacked = inner.h >= 300 || (inner.w < 300 && inner.h >= 200), gap = 6;
         const rE = stacked ? { x: inner.x, y: inner.y, w: inner.w, h: (inner.h - gap) / 2 } : { x: inner.x, y: inner.y, w: (inner.w - gap) / 2, h: inner.h };
         const rH = stacked ? { x: inner.x, y: inner.y + (inner.h - gap) / 2 + gap, w: inner.w, h: (inner.h - gap) / 2 } : { x: inner.x + (inner.w - gap) / 2 + gap, y: inner.y, w: (inner.w - gap) / 2, h: inner.h };
         if (!D || !D.fieldE || !D.fieldH) { gfx.text(ctx, 'Feldlinienbild: emvdraw.js fehlt', r.x + r.w / 2, r.y + r.h / 2, { size: fs, color: pal.mute, align: 'center', max: r.w - 20 }); return; }
@@ -216,7 +216,7 @@
       function longi(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view, fs = sc.fs;
         K.plate(ctx, r.x, r.y, r.w, r.h, pal, 'Längsansicht: Strom und Störspannung', { size: fs });
-        if (!K.big(r, 220, 130)) return;
+        if (!K.big(r, 220, 112)) return;
         const g = longGeom(r, ctl), { x0, x1, xv0, xv1, yA, yV, yG } = g;
         const gl = pal.masse, rows = Math.max(0, Math.round(g.lh));
         // Masseschiene
@@ -254,7 +254,7 @@
           gfx.line(ctx, [[p[0], yV], [p[0], (yV + yG) / 2 - 6]], pal.senke, 2); ctx.beginPath(); ctx.rect(p[0] - 4, (yV + yG) / 2 - 6, 8, 12); ctx.strokeStyle = pal.senke; ctx.lineWidth = 2; ctx.stroke();
           gfx.line(ctx, [[p[0], (yV + yG) / 2 + 6], [p[0], yG]], pal.senke, 2);
         });
-        gfx.text(ctx, 'Ro ' + eng(ctl.ro, 'Ω'), xv0 + 8, (yV + yG) / 2 + 4, { size: fs, color: pal.senke, base: 'middle', max: Math.max(24, (xv1 - xv0) * 0.4) });
+        gfx.text(ctx, 'Ro ' + eng(ctl.ro, 'Ω'), xv0 + 8, (yV + yG) / 2 + 4, { size: fs, color: pal.senke, base: 'middle', max: Math.max(48, (xv1 - xv0) * 0.5) });
         // Schirm
         if (ctl.schirm !== 'kein') {
           const s = g.shield;
@@ -299,14 +299,14 @@
       function scope(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view, fs = sc.fs;
         K.plate(ctx, r.x, r.y, r.w, r.h, pal, 'Mini-Oszilloskop (Spuren je auf volle Höhe skaliert)', { size: fs });
-        if (!K.big(r, 200, 100)) return;
-        const x = r.x + 12, w = r.w - 24, y1 = r.y + 24 + (r.h - 30) * 0.25, y2 = r.y + 24 + (r.h - 30) * 0.75, amp = (r.h - 30) * 0.19, ph = view.phase;
+        if (!K.big(r, 200, 80)) return;
+        const x = r.x + 12, w = r.w - 24, ah = r.h - 30 - fs - 4, y1 = r.y + 24 + ah * 0.25, y2 = r.y + 24 + ah * 0.75, amp = ah * 0.19, ph = view.phase, ytop = r.y + 26 + fs;
         ctx.strokeStyle = pal.line; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, y1); ctx.lineTo(x + w, y1); ctx.moveTo(x, y2); ctx.lineTo(x + w, y2); ctx.stroke();
         K.sineTrace(ctx, x, y1, w, amp, 3, ph, pal.quelle, 2.2);
         K.sineTrace(ctx, x, y2, w, amp, 3, ph, pal.senke, 2.2);
-        gfx.text(ctx, 'Störer û = ' + eng(ctl.us, 'V') + ', f = ' + eng(ctl.f, 'Hz'), x + 4, y1 - amp - 4, { size: fs, bold: true, color: pal.quelle, bg: pal.panel, pad: 2, max: w - 8 });
-        gfx.text(ctx, 'Opfer û = ' + eng(res.uSum, 'V') + (ctl.loop ? ', Brummen ' + eng(res.uBrumm, 'V') + ' (50 Hz)' : ''), x + 4, y2 - amp - 4, { size: fs, bold: true, color: pal.senke, bg: pal.panel, pad: 2, max: w - 8 });
-        gfx.text(ctx, 'Animation verlangsamt (angezeigte Phasenfrequenz ' + fm(K.phaseHzOf(ctl.f), 1) + ' Hz)', x + w, r.y + r.h - 7, { size: fs, color: pal.mute, align: 'right', max: w });
+        gfx.text(ctx, 'Störer û = ' + eng(ctl.us, 'V') + ', f = ' + eng(ctl.f, 'Hz'), x + 4, Math.max(y1 - amp - 4, ytop), { size: fs, bold: true, color: pal.quelle, bg: pal.panel, pad: 2, max: w - 8 });
+        gfx.text(ctx, 'Opfer û = ' + eng(res.uSum, 'V') + (ctl.loop ? ', Brummen ' + eng(res.uBrumm, 'V') + ' (50 Hz)' : ''), x + 4, Math.max(y2 - amp - 4, ytop + ah * 0.5), { size: fs, bold: true, color: pal.senke, bg: pal.panel, pad: 2, max: w - 8 });
+        gfx.text(ctx, (w < 330 ? 'Animation verlangsamt' : 'Animation verlangsamt (angezeigte Phasenfrequenz ' + fm(K.phaseHzOf(ctl.f), 1) + ' Hz)'), w < 330 ? x + 4 : x + w, r.y + r.h - 6, { size: fs, color: pal.mute, align: w < 330 ? 'left' : 'right', max: w });
       }
 
       function draw(ctx, w, h, t, view, sc) {

@@ -138,8 +138,16 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 select{appearance:auto}
 .seg{flex-wrap:wrap}
 .opts button:disabled{opacity:1}
+/* Audit K2b: Schrift mindestens 14 px (Handy), Sprechknopf, Fortschrittsbalken */
+.card.pl h4,.gh,.lv,.hint2,label.f span,.stats .bx,.tt th,.rdout .st,.doc .dt1,.mgrid span,.tab .bd,#stat,.hl th,.hl table,.hl .eq,.dot,.vz .cap,.hb2 table,.fbar .lbl{font-size:14px}
+.say{flex:none;width:44px;height:44px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);font-size:20px;display:inline-grid;place-items:center;padding:0}
+.fwrow{display:flex;align-items:center;justify-content:center;gap:10px}.fwrow .fw{padding:24px 0}.fwrow.back .fw{padding-top:0}
+.gbar{display:grid;grid-template-columns:minmax(0,9em) 1fr auto;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.gbar .bt{height:12px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}.gbar .bt i{display:block;height:100%;background:var(--ok)}
+.gbar .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.gbar b{font-variant-numeric:tabular-nums}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -181,6 +189,17 @@ select{appearance:auto}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'englab.html': {
+  name: 'Technisches-Englisch-Lab',
+  gruppen: [{ name: 'Wörter', teile: ['wort', 'ref'] }],
+  buehne: { warn: '#warnView > [data-vz=warn]', zahl: '#zahlView > [data-vz=lineal]', wort: false, ref: false, vok: false },
+  saetze: {
+    'Aufgaben': 'Fester Aufgabenpool: Der erste Fehlversuch zeigt einen Tipp (kostet nichts), nach dem zweiten kommt die Lösung mit Erklärung.',
+    'Trainer': 'Endlos neue Zufallsfragen: Erster Fehlversuch mit Tipp, danach die Lösung.',
+    'Prüfung': 'Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte, die Erklärung kommt erst nach der richtigen Antwort.'
+  }
+} };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

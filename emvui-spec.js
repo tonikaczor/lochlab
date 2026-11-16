@@ -161,7 +161,7 @@
   E.spec.fn = { markerHtml, BANDS, RBW, rbwFor, traceOf, hasModes, interp, limitAt, marginAt, rate, topLines, zoomRange, panRange, nearestIdx, boundsOf, autoRef, floorCount, holdStep, aria, fe, fnum };
 
   /* ============================================================ Oberfläche */
-  const CSS = `.spbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}.spbar .sp{color:var(--mute);font-size:12.5px;margin-left:4px}.spbar input.spn{width:92px;min-height:40px;padding:5px 8px;text-align:right}
+  const CSS = `.spbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 8px}.spbar .sp{color:var(--mute);font-size:14px;margin-left:4px}.spbar input.spn{width:92px;min-height:44px;padding:5px 8px;text-align:right}
 .spwrap{position:relative;width:100%;touch-action:none}.spwrap canvas{display:block;width:100%;height:auto;max-height:62vh;aspect-ratio:16/9;background:var(--well);border:1px solid var(--line);border-radius:10px;touch-action:none;cursor:crosshair}
 @media(max-width:600px){.spwrap canvas{aspect-ratio:4/3}}
 .spwrap.wv canvas{aspect-ratio:16/5;cursor:default}

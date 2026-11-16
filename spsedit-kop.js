@@ -164,7 +164,7 @@
       '.spk-b.acc{background:var(--acc);border-color:var(--acc);color:#04121f}',
       '.spk-b.bad{color:var(--bad)}',
       '.spk-sep{width:1px;height:28px;background:#3a4552;margin:0 4px}',
-      '.spk-info{color:var(--mut);font-size:12px;margin-left:auto;padding-right:4px}',
+      '.spk-info{color:var(--mut);font-size:14px;margin-left:auto;padding-right:4px}',
       '.spk-err{flex:none;margin:0;padding:8px 12px;background:#3a2326;color:#ffb4ad;font-size:13px;border-bottom:1px solid #0b0d10;cursor:pointer}',
       '.spk-err.warn{background:#352f1d;color:#f5d98a}',
       '.spk-body{flex:1;overflow:auto;padding:10px;min-height:0;-webkit-overflow-scrolling:touch}',

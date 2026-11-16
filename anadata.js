@@ -219,15 +219,17 @@
   }
   /* Steuerwerte-Zeile: specs = [{ key, want, tol? (relativ, nur Zahlen) }]; ok, wenn alle stimmen; why nennt nur die abweichenden */
   function setRow(r, rigId, eff, specs, label) {
-    const bad = [];
+    const bad = [], fixSet = {};
     specs.forEach(s => {
       const x = eff[s.key];
       if (typeof s.want === 'number') {
         const tol = s.tol != null ? s.tol : 0.02;
-        if (!(fin(+x) && Math.abs(x - s.want) <= tol * Math.abs(s.want) + 1e-12)) bad.push('„' + dlabel(rigId, s.key) + '“ steht auf ' + olabel(rigId, s.key, x) + ', verlangt ist ' + olabel(rigId, s.key, s.want));
-      } else if (x !== s.want) bad.push('„' + dlabel(rigId, s.key) + '“ steht auf „' + olabel(rigId, s.key, x) + '“, verlangt ist „' + olabel(rigId, s.key, s.want) + '“');
+        if (!(fin(+x) && Math.abs(x - s.want) <= tol * Math.abs(s.want) + 1e-12)) fixSet[s.key] = s.want, bad.push('„' + dlabel(rigId, s.key) + '“ steht auf ' + olabel(rigId, s.key, x) + ', verlangt ist ' + olabel(rigId, s.key, s.want));
+      } else if (x !== s.want) fixSet[s.key] = s.want, bad.push('„' + dlabel(rigId, s.key) + '“ steht auf „' + olabel(rigId, s.key, x) + '“, verlangt ist „' + olabel(rigId, s.key, s.want) + '“');
     });
-    r(bad.length === 0, label, 'Im Prüfstand ' + bad.join('; ') + '.');
+    /* fix: Knopf "Am Prüfstand einstellen" in der Rückmeldung (nur bei abweichenden Steuerwerten; die Oberfläche setzt sie mit setCtl) */
+    const fk = Object.keys(fixSet), fix = bad.length && rigId ? { rig: rigId, set: fixSet, btn: fk.length === 1 ? 'Auf ' + olabel(rigId, fk[0], fixSet[fk[0]]) + ' stellen' : 'Am Prüfstand einstellen' } : null;
+    r(bad.length === 0, label, 'Im Prüfstand ' + bad.join('; ') + '.', fix);
     return bad.length === 0;
   }
 
@@ -237,7 +239,7 @@
     return function (a) {
       try {
         const c = clean(a, rigId, own), rows = [];
-        const r = (cond, text, why) => { rows.push({ ok: !!cond, text, why: cond ? '' : (why || 'Die Bedingung ist nicht erfüllt.') }); };
+        const r = (cond, text, why, fix) => { const row = { ok: !!cond, text, why: cond ? '' : (why || 'Die Bedingung ist nicht erfüllt.') }; if (!cond && fix && fix.rig && fix.set) row.fix = fix; rows.push(row); };
         fn(c, r, a);
         if (!rows.length) rows.push({ ok: false, text: 'Die Prüfung hat nichts geprüft', why: 'Bitte melde das deinem Ausbilder.' });
         return rows;
@@ -258,9 +260,10 @@
   /* Zahlenzeile (Ablese- und Rechenaufgaben): val = Eingabe (Zahl oder null); opt = { label, refs:[{v}] (richtige Werte, der erste ist der Hauptwert),
    *   tol (relativ, Standard 0,03) oder absTol (absolut, in der Einheit der Zahl), unit, digits, wrong:[{v, msg}] (typische Fehlerbilder, jedes gerechnet) }.
    * Die Warum-Texte sagen nur, was verglichen wurde: Richtung (zu klein/zu gross) und passendes Fehlerbild, nie mehr (Regel 2 und 3). */
+  const TOL_STD = 0.03; /* Standardtoleranz der Zahleneingaben (relativ); die Eingabehilfe der Oberflaeche liest sie von hier */
   function numRow(r, val, opt) {
     const pctTxt = q => fm(100 * q, Math.abs(100 * q - Math.round(100 * q)) < 1e-9 ? 0 : 1);
-    const absMode = fin(opt.absTol), tol = fin(opt.tol) ? opt.tol : 0.03, dg = opt.digits == null ? 2 : opt.digits, u = opt.unit ? ' ' + opt.unit : '';
+    const absMode = fin(opt.absTol), tol = fin(opt.tol) ? opt.tol : TOL_STD, dg = opt.digits == null ? 2 : opt.digits, u = opt.unit ? ' ' + opt.unit : '';
     const refs = opt.refs.filter(x => fin(x.v)), main = refs[0];
     const near = (a, b) => (absMode ? Math.abs(a - b) <= opt.absTol + 1e-9 : Math.abs(a - b) <= tol * Math.abs(b) + 1e-12);
     const tolTxt = absMode ? 'Toleranz ±' + fm(opt.absTol, 1) + u : 'Toleranz ' + pctTxt(tol) + ' %';
@@ -305,7 +308,7 @@
   /* spec = { kind, given } (Kernwerte ueber exercise.solve, Poolzahlen frei waehlbar) oder { value, unit, what, alt?, wrong? } (eigener Wert aus dem Kern);
    * tol (relativ, Standard aus der Kernuebung bzw. 0,03), extras:[{ v (SI), msg }] zusaetzliche typische Fehler, altExtra:[SI] weitere richtige Werte (Tabellenbuch-Rundungen) */
   function calcEx(spec) {
-    const C = CORE(); let value, unit, alt = [], wrong = [], disp, tol = 0.03, what = spec.what || '';
+    const C = CORE(); let value, unit, alt = [], wrong = [], disp, tol = TOL_STD, what = spec.what || '';
     try {
       if (spec.kind) {
         const s = C.exercise.solve(spec.kind, spec.given);
@@ -405,7 +408,7 @@
     return added;
   }
   const ANA_TASKS = {
-    tasks, register,
+    tasks, register, TOL_STD,
     byId: id => tasks.find(t => t.id === id) || null,
     run(task, answer) {
       return new Promise(res => {

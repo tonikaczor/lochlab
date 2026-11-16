@@ -1,56 +1,31 @@
 'use strict';
-/* Tonfunk Lab: Startseite aufgeräumt (v50.166). Alles Zusätzliche ist einklappbar und merkt sich die eigene Wahl (localStorage, nur Komfort):
-   - Duell-Band (Duell, Fehler-Tausch, Wettbewerb): Standard zu     lm4.home.duell  = 1 offen
-   - Fußbereich (Stand, Lernhefte, Ausbilder):     Standard zu     lm4.home.foot   = 1 offen
-   - Ansicht der Karten: Karten oder Kompakt (nur Titel)           lm4.home.kompakt = 1 kompakt
-   - Knöpfe "Alle aufklappen / Alle zuklappen" für die Bereiche.
-   Ohne dieses Skript bleibt die Startseite wie vorher. */
+/* Tonfunk Lab: Startseite aufgeräumt (v50.166, seit dem Umbau in fünf Ansichten S1 ohne Klappbalken).
+   Früher: einklappbare Bänder (lm4.home.duell, lm4.home.foot, lm4.home.studium, lm4.home.ausbildung, lm4.home.meinweg) und Knöpfe zum Auf- und Zuklappen aller Bereiche. Diese Schlüssel
+   bleiben im Speicher, werden aber nicht mehr gebraucht; die Ansicht der Karten (lm4.home.kompakt) schaltet jetzt home.js.
+   Heute: Bausteine fremder Skripte, die sich selbst irgendwo auf der Seite einhängen, an ihren Platz in den Ansichten setzen:
+   - Offline-Block (#offlineStatus, offline-status.js) und Urheberhinweis (#urheber-hinweis, urheber.js) in die Ansicht "Ich" unter "Dieses Gerät" bzw. ans Ende,
+   - das Duell-Band (#duellBand, duellui.js) bleibt verdeckt in "Üben": seine Knöpfe lösen die Zeilen Duell, Fehler-Tausch und Wettbewerb aus (home-views.js).
+   ziel() ist reine Logik (Node-Test quelle/home/test_home_clean.js). Ohne dieses Skript bleiben die Bausteine am Seitenende stehen. */
 (function (root) {
+  /* wohin gehört welcher Baustein: [ID, Ziel-ID, Art] (Art 'in' = als letztes Kind ins Ziel, 'vor' = vor das Ziel) */
+  const ZIELE = [['offlineStatus', 'ichOffline', 'in'], ['urheber-hinweis', 'v-ich', 'in'], ['duellBand', 'vbRow', 'vor']];
+  function ziel(id) { const z = ZIELE.find(x => x[0] === id); return z ? { nach: z[1], art: z[2] } : null; }
+  if (typeof module === 'object' && module.exports) module.exports = { ZIELE, ziel };
   if (typeof document === 'undefined') return;
-  const doc = document, html = doc.documentElement;
-  const get = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
-  const set = (k, v) => { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} };
-  const K = { duell: 'lm4.home.duell', foot: 'lm4.home.foot', kompakt: 'lm4.home.kompakt', stu: 'lm4.home.studium', aus: 'lm4.home.ausbildung', mw: 'lm4.home.meinweg' };
-
-  function toggle(id, cls, label, key, target, openDefault) {
-    if (doc.getElementById(id) || !target || !target.parentNode) return null;
-    const b = doc.createElement('button'); b.type = 'button'; b.id = id; b.className = 'cl-tg';
-    b.innerHTML = '<span class="ch" aria-hidden="true"></span><span class="lb"></span>'; b.querySelector('.lb').textContent = label;
-    const stored = get(key), open = stored === null ? openDefault : stored === '1';
-    const apply = o => { html.classList.toggle(cls, !o); b.setAttribute('aria-expanded', o ? 'true' : 'false'); };
-    apply(open);
-    b.addEventListener('click', () => { const o = b.getAttribute('aria-expanded') !== 'true'; apply(o); set(key, o ? '1' : '0'); });
-    target.parentNode.insertBefore(b, target);
-    return { b, open: () => { apply(true); } };
+  const doc = document;
+  function setzen() {
+    let fertig = 0;
+    ZIELE.forEach(z => {
+      const el = doc.getElementById(z[0]), to = doc.getElementById(z[1]); if (!el || !to) return;
+      if (z[2] === 'in') { if (el.parentNode !== to) to.appendChild(el); }
+      else if (el.nextElementSibling !== to) to.parentNode.insertBefore(el, to);
+      if (z[0] === 'duellBand') el.hidden = true;
+      fertig++;
+    });
+    return fertig === ZIELE.length;
   }
-
-  function bar() {
-    const rub = doc.getElementById('rub'); if (!rub || doc.getElementById('clBar')) return;
-    const d = doc.createElement('div'); d.className = 'cl-bar'; d.id = 'clBar';
-    const mkb = (id, t) => { const b = doc.createElement('button'); b.type = 'button'; b.id = id; b.className = 'cl-b'; b.textContent = t; d.appendChild(b); return b; };
-    const bo = mkb('clAuf', 'Alle aufklappen'), bz = mkb('clZu', 'Alle zuklappen'), bk = mkb('clKomp', '');
-    const all = want => Array.from(doc.querySelectorAll('section.grp>details>summary')).forEach(sm => { if (sm.parentNode.open !== want) sm.click(); });
-    bo.addEventListener('click', () => all(true)); bz.addEventListener('click', () => all(false));
-    const kk = () => { const k = html.classList.contains('cl-komp'); bk.textContent = k ? 'Ansicht: Kompakt' : 'Ansicht: Karten'; bk.setAttribute('aria-pressed', k ? 'true' : 'false'); };
-    html.classList.toggle('cl-komp', get(K.kompakt) === '1'); kk();
-    bk.addEventListener('click', () => { const k = !html.classList.contains('cl-komp'); html.classList.toggle('cl-komp', k); set(K.kompakt, k ? '1' : '0'); kk(); });
-    rub.parentNode.insertBefore(d, rub.nextSibling);
-  }
-
-  let foot = null, mwt = null;
-  function build() {
-    bar();
-    // Studium und Technik, Ausbildung, Mein Weg (bis zum Lernpfad): Standard offen, Wahl wird gemerkt
-    const bw = doc.getElementById('beWege'), wul = bw && bw.querySelector ? bw.querySelector('ul') : null;
-    if (wul && !doc.getElementById('clStu')) toggle('clStu', 'cl-stu-zu', 'Studium und Technik', K.stu, wul, true);
-    if (doc.getElementById('beTabs') && !doc.getElementById('clAus')) toggle('clAus', 'cl-aus-zu', 'Ausbildung', K.aus, doc.getElementById('beTabs'), true);
-    if (!mwt && doc.getElementById('meinWeg')) mwt = toggle('clMw', 'cl-mw-zu', 'Mein Weg, Coach und Lernpfad', K.mw, doc.getElementById('meinWeg'), true);
-    if (!doc.getElementById('clDuell')) toggle('clDuell', 'cl-duell-zu', 'Duell, Fehler-Tausch, Wettbewerb', K.duell, doc.getElementById('duellBand'), false);
-    if (!foot) foot = toggle('clFoot', 'cl-foot-zu', 'Mehr: Lernstand, Lernhefte, Ausbilder', K.foot, doc.getElementById('foot'), false);
-  }
-  // Die Schnellleiste unten springt zu #footBtns: dann den Fußbereich öffnen
-  doc.addEventListener('click', e => { const a = e.target.closest && e.target.closest('a[href="#footBtns"]'); if (a && foot) foot.open(); const l = e.target.closest && e.target.closest('a[href="#lpHd"],a[href="#lernpfad"]'); if (l && mwt) mwt.open(); });
-  build();
-  // Das Duell-Band und die Chips legen andere Skripte erst nach dem Laden an
-  let n = 0; const t = setInterval(() => { build(); if (++n > 20 || (doc.getElementById('clDuell') && doc.getElementById('clBar') && foot && mwt && doc.getElementById('clStu') && doc.getElementById('clAus'))) clearInterval(t); }, 250);
+  setzen();
+  /* die Bausteine entstehen erst nach dem Laden (offline-status.js mit defer, duellui.js wird nachgeladen) */
+  let n = 0; const t = setInterval(() => { if (setzen() || ++n > 40) clearInterval(t); }, 250);
+  root.addEventListener('load', setzen);
 })(typeof window !== 'undefined' ? window : this);

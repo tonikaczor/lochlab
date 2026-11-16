@@ -135,6 +135,26 @@
   }
 
   /* ============================================================ Zeichnungen (SVG, Breite 400, Schrift 14; Text bis zum Rand: Prüfung im Test) */
+  /* Handy: SVG-Text nie unter 11 px Bildschirmgröße (B-nts-05/B-emv-03). Die Zeichnungen skalieren mit der Breite; zu kleine Texte werden hochgesetzt. */
+  function fitSvgText(root) {
+    try {
+      const MIN = 11; if (!root || !root.querySelectorAll) return;
+      root.querySelectorAll('svg.dr').forEach(sv => {
+        const vb = sv.viewBox && sv.viewBox.baseVal, w = sv.getBoundingClientRect().width; if (!vb || !vb.width || !w) return;
+        const k = w / vb.width;
+        sv.querySelectorAll('text').forEach(t => {
+          if (!t.dataset.fs0) { t.style.fontSize = ''; t.dataset.fs0 = parseFloat(getComputedStyle(t).fontSize) || 12; }
+          const b = +t.dataset.fs0; t.style.fontSize = b * k < MIN ? (MIN / k).toFixed(2) + 'px' : '';
+        });
+      });
+    } catch (e) { /* nur Darstellung */ }
+  }
+  function watchSvgText(host) {
+    if (host.__svgFit) { host.__svgFit(); return; }
+    const f = host.__svgFit = () => fitSvgText(host);
+    try { if (typeof ResizeObserver === 'function') new ResizeObserver(f).observe(host); } catch (e) {}
+    f();
+  }
   const svg = (label, body, h) => `<svg class="dr" viewBox="0 0 400 ${h || 170}" role="img" aria-label="${esc(label)}" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="14" fill="currentColor">${body}</svg>`;
   const T = (x, y, t, anchor, extra) => `<text x="${+(+x).toFixed(1)}" y="${+(+y).toFixed(1)}"${anchor ? ` text-anchor="${anchor}"` : ''}${extra ? ' ' + extra : ''}>${esc(t)}</text>`;
   const LN = (x1, y1, x2, y2, c, w, dash) => `<line x1="${+(+x1).toFixed(1)}" y1="${+(+y1).toFixed(1)}" x2="${+(+x2).toFixed(1)}" y2="${+(+y2).toFixed(1)}" stroke="${c || 'currentColor'}" stroke-width="${w || 2}"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`;
@@ -486,6 +506,7 @@
       secs.map((s, i) => `<details${i === 0 ? ' open' : ''} data-sec="${esc(s.id)}"><summary>${esc(s.title)}</summary><div class="hb2">${s.html}</div></details>`).join('') + '</div>';
     /* Zähler ntslern1 (Abzeichen "ntsblock": Abschnitt 1 steht beim Aufruf des Tabs offen und wird damit angezeigt) */
     try { if (api.stat && secs[0] && /^1/.test(secs[0].title)) api.stat('ntslern1', 1, 'max'); } catch (e) { /* Zähler ist freiwillig */ }
+    watchSvgText(host);
     if (!host.addEventListener) return;
     once(host, 'help', 'click', e => {
       const b = e.target && e.target.closest && e.target.closest('[data-try]'); if (!b) return; const t = TRY[+b.dataset.try]; if (!t) return; const a = host.__ntsApi || {};

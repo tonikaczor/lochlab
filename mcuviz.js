@@ -49,28 +49,28 @@
   /* Zeile einer Pinliste: Punktfarbe nach Art und Zustand; hoch = gefüllt, tief = hohl (nicht nur Farbe) */
   function dot(x, y, kind, s, first) {
     const cls = KIND_CLS[kind] || 'kp', hi = s && s.lvl, pw = s && s.duty != null && s.duty > 0 && s.duty < 1;
-    let c = `<circle class="mvd ${cls}${hi ? ' hi' : ''}${pw ? ' pw' : ''}" cx="${num(x)}" cy="${num(y)}" r="6"/>`;
-    if (first) c = `<rect class="mvd ${cls} sq" x="${num(x - 6)}" y="${num(y - 6)}" width="12" height="12" rx="2"/>`;
-    if (hi) c += `<circle class="mvh" cx="${num(x)}" cy="${num(y)}" r="2.4"/>`;
-    else if (pw) c += `<path class="mvh" d="M${num(x - 3)} ${num(y)}a3 3 0 0 1 6 0z"/>`;
+    let c = `<circle class="mvd ${cls}${hi ? ' hi' : ''}${pw ? ' pw' : ''}" cx="${num(x)}" cy="${num(y)}" r="8"/>`;
+    if (first) c = `<rect class="mvd ${cls} sq" x="${num(x - 8)}" y="${num(y - 8)}" width="16" height="16" rx="3"/>`;
+    if (hi) c += `<circle class="mvh" cx="${num(x)}" cy="${num(y)}" r="3"/>`;
+    else if (pw) c += `<path class="mvh" d="M${num(x - 4)} ${num(y)}a4 4 0 0 1 8 0z"/>`;
     return c;
   }
 
   /* o: { pins: { [Pin-Nr]: Zustand }, live: bool } */
   function piPins(o) {
-    o = o || {}; const S = o.pins || {}, W = 340, RH = 19, top = 26, H = top + 20 * RH + 12, cx = W / 2, xl = cx - 13, xr = cx + 13;
+    o = o || {}; const S = o.pins || {}, W = 340, RH = 22, top = 26, H = top + 20 * RH + 12, cx = W / 2, xl = cx - 13, xr = cx + 13;
     let b = `<rect class="mvpcb" x="${num(cx - 33)}" y="${top - 14}" width="66" height="${20 * RH + 8}" rx="8"/>`;
     b += `<rect class="mvhdr" x="${num(cx - 21)}" y="${top - 10}" width="42" height="${20 * RH}" rx="3"/>`;
     b += T(cx, 13, 'Pinleiste von oben, Pin 1 = Quadrat', 'mvcap', ' text-anchor="middle"');
     for (let r = 0; r < 20; r++) {
       const y = top + r * RH + RH / 2 - 2, a = PI_PINS[r * 2], c = PI_PINS[r * 2 + 1];
-      [[a, xl, 'end', -12], [c, xr, 'start', 12]].forEach(([q, x, anchor, dx]) => {
+      [[a, xl, 'end', -14], [c, xr, 'start', 14]].forEach(([q, x, anchor, dx]) => {
         const s = S[q.p];
         b += dot(x, y, q.kind, s, q.p === 1);
         const st = stateText(s);
         b += T(x, y + 3, String(q.p), 'mvn', ' text-anchor="middle"');
         b += T(x + dx, y + 4, q.name, 'mvl ' + (KIND_CLS[q.kind] || ''), ` text-anchor="${anchor}"`);
-        const sub = st || q.alt, off = q.name.length * 6.1 + 6;
+        const sub = st || q.alt, off = q.name.length * 6.4 + 6;
         if (sub) b += T(x + dx + (anchor === 'end' ? -off : off), y + 4, sub, st ? 'mvs live' : 'mvs', ` text-anchor="${anchor}"`);
       });
     }
@@ -79,7 +79,7 @@
 
   /* o: { pins: { [Name D0..D13, A0..A5]: Zustand }, running: bool } */
   function unoBoard(o) {
-    o = o || {}; const S = o.pins || {}, W = 340, RH = 20, top = 34, n = 16, H = top + n * RH + 20, bx = 118, bw = 104, cx = bx + bw / 2;
+    o = o || {}; const S = o.pins || {}, W = 340, RH = 22, top = 34, n = 16, H = top + n * RH + 20, bx = 118, bw = 104, cx = bx + bw / 2;
     let b = `<rect class="mvpcb" x="${bx}" y="${top - 18}" width="${bw}" height="${n * RH + 18}" rx="9"/>`;
     b += `<rect class="mvusb" x="${cx - 22}" y="${top - 24}" width="44" height="26" rx="3"/>` + T(cx, top - 8, 'USB', 'mvtiny', ' text-anchor="middle"');
     b += `<rect class="mvchip" x="${cx - 18}" y="${top + 86}" width="36" height="66" rx="2"/>` + T(cx, top + 123, 'MCU', 'mvtiny', ` text-anchor="middle" transform="rotate(-90 ${cx} ${top + 120})"`);
@@ -92,9 +92,9 @@
       b += dot(x, y, kind, s, false);
       const st = stateText(s), alt = UNO_ALT[name] || (kind === 'd' && UNO_PWM.includes(q[2]) ? 'PWM' : '');
       const nm = name + (kind === 'd' && UNO_PWM.includes(q[2]) ? '~' : '');
-      b += T(side === 'L' ? x - 11 : x + 11, y + 4, nm, 'mvl ' + (KIND_CLS[kind] || ''), ` text-anchor="${side === 'L' ? 'end' : 'start'}"`);
+      b += T(side === 'L' ? x - 13 : x + 13, y + 4, nm, 'mvl ' + (KIND_CLS[kind] || ''), ` text-anchor="${side === 'L' ? 'end' : 'start'}"`);
       const sub = st || alt;
-      if (sub) b += T(side === 'L' ? x - 11 - (nm.length * 6.1 + 6) : x + 11 + (nm.length * 6.1 + 6), y + 4, sub, st ? 'mvs live' : 'mvs', ` text-anchor="${side === 'L' ? 'end' : 'start'}"`);
+      if (sub) b += T(side === 'L' ? x - 13 - (nm.length * 6.4 + 6) : x + 13 + (nm.length * 6.4 + 6), y + 4, sub, st ? 'mvs live' : 'mvs', ` text-anchor="${side === 'L' ? 'end' : 'start'}"`);
     });
     row(UNO_L, 'L'); row(UNO_R, 'R');
     b += T(cx, H - 6, 'Digital rechts · Versorgung und analog links', 'mvcap', ' text-anchor="middle"');
@@ -162,7 +162,7 @@
 
   /* ============================================================ Zustand aus der Simulation holen (nur Browser) */
   const CSS = '.mvbar{display:flex;gap:6px;padding:4px 6px;border-bottom:1px solid var(--line);flex:none}'
-    + '.mvtab{min-height:34px;padding:0 12px;border-radius:17px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:600 13px system-ui,sans-serif;cursor:pointer}'
+    + '.mvtab{min-height:34px;padding:0 12px;border-radius:17px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer}'
     + '.mvtab.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}'
     + '@media(pointer:coarse){.mvtab{min-height:44px;padding:0 14px}}'
     + '.mvpanel{display:none;flex:none;max-height:min(72vh,560px);overflow:auto;padding:8px;background:var(--bg)}'
@@ -176,16 +176,16 @@
     + '.mvpcb{fill:var(--mv-pcb);stroke:var(--line);stroke-width:1}.mvhdr{fill:var(--mv-hdr)}.mvusb{fill:var(--mv-usb);stroke:var(--line)}.mvchip{fill:var(--mv-chip)}'
     + '.mvd{fill:var(--panel);stroke-width:1.6}.mvd.kp{stroke:var(--accent)}.mvd.k3{stroke:var(--mv-3v3);fill:var(--mv-3v3)}.mvd.k5{stroke:var(--mv-5v);fill:var(--mv-5v)}.mvd.kg{stroke:var(--mute);fill:var(--mute)}.mvd.ki{stroke:var(--mute);stroke-dasharray:2 2}'
     + '.mvd.kp.hi{fill:var(--accent)}.mvd.kp.pw{fill:var(--panel)}.mvh{fill:var(--bg)}'
-    + '.mvn{font:600 8px system-ui,sans-serif;fill:var(--mute)}.mvd.k3~.mvn,.mvd.k5~.mvn{fill:var(--bg)}'
+    + '.mvn{font:600 11px system-ui,sans-serif;fill:var(--mute)}.mvd.k3~.mvn,.mvd.k5~.mvn{fill:var(--bg)}'
     + '.mvl{font:600 11px system-ui,sans-serif;fill:var(--fg)}.mvl.k3{fill:var(--mv-3v3)}.mvl.k5{fill:var(--mv-5v)}.mvl.kg{fill:var(--mute)}'
-    + '.mvs{font:10px system-ui,sans-serif;fill:var(--mute)}.mvs.live{fill:var(--fg);font-weight:600}'
-    + '.mvcap,.mvtick{font:10px system-ui,sans-serif;fill:var(--mute)}.mvtiny{font:600 8px system-ui,sans-serif;fill:var(--bg)}.mvpcb~.mvtiny{fill:#fff}'
+    + '.mvs{font:11px system-ui,sans-serif;fill:var(--mute)}.mvs.live{fill:var(--fg);font-weight:600}'
+    + '.mvcap,.mvtick{font:11px system-ui,sans-serif;fill:var(--mute)}.mvtiny{font:600 11px system-ui,sans-serif;fill:var(--bg)}.mvpcb~.mvtiny{fill:#fff}'
     + '.mvled{fill:var(--panel2);stroke:var(--mute);stroke-width:1}.mvled.on{fill:var(--mv-led);stroke:var(--mv-led)}'
-    + '.mvparts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 2px}.mvpart{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:2px 10px 2px 6px;border-radius:16px;border:1px solid var(--line);background:var(--panel);font-size:12px;color:var(--fg)}'
+    + '.mvparts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 2px}.mvpart{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:2px 10px 2px 6px;border-radius:18px;border:1px solid var(--line);background:var(--panel);font-size:14px;color:var(--fg)}'
     + '.mvpart svg{width:20px;height:20px;flex:none}.mvsw{stroke:var(--fg);stroke-width:1.8;stroke-linecap:round;fill:none}'
     + '.mvgrid{stroke:var(--line);stroke-width:1}.mvbase{stroke:var(--line);stroke-width:1;stroke-dasharray:2 3}.mvtr{fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linejoin:round}.mvnow{stroke:var(--mute);stroke-width:1;stroke-dasharray:3 3}'
-    + '.mvpwm{fill:var(--accent);fill-opacity:.28}.mvnote{margin:8px 2px 0;font-size:12px;color:var(--mute)}'
-    + '@media(max-width:600px){.mvl{font-size:11.5px}}';
+    + '.mvpwm{fill:var(--accent);fill-opacity:.28}.mvnote{margin:8px 2px 0;font-size:14px;color:var(--mute)}'
+    + '@media(max-width:600px){.mvl{font-size:12px}}';
 
   /* ============================================================ Anbindung an die laufende Simulation (nur im Browser) */
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));

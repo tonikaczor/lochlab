@@ -353,7 +353,7 @@
       if (coilOn) glow(ctx, x + 48, coilY + 22, 42, '255,170,60', 0.35);
       ctx.strokeStyle = coilOn ? '#3a2208' : '#566270'; ctx.lineWidth = 2;
       for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.arc(x + 31 + i * 11, coilY + 22, 5.5, Math.PI, 0); ctx.stroke(); }
-      txt(ctx, 'A1', x + 28, coilY + 9, 9, coilOn ? '#5a3508' : C.dim, 'center', '700'); txt(ctx, 'A2', x + 68, coilY + 36, 9, coilOn ? '#5a3508' : C.dim, 'center', '700');
+      txt(ctx, 'A1', x + 28, coilY + 9, 10, coilOn ? '#5a3508' : C.dim, 'center', '700'); txt(ctx, 'A2', x + 68, coilY + 36, 10, coilOn ? '#5a3508' : C.dim, 'center', '700');
       txt(ctx, label.slice(0, 2), x + 48, coilY + 56, 12, coilOn ? C.warn : C.dim, 'center', '800');
       ctx.restore();
     }
@@ -558,7 +558,7 @@
       txt(ctx, 'I ' + fmt(S.live ? S.Iline : 0, 1) + ' A', 780, 327, 12, lcd, 'left', '800');
       txt(ctx, active ? (S.fuTrip ? 'STÖRUNG' : (S.supply ? (Math.abs(S.fe) < clamp(ctl.freq, 0, 87) - 0.3 ? 'RAMPE' : 'LÄUFT') : 'BEREIT')) : 'AUS (Netz)', 700, 342, 10, lcd, 'left', '700');
       // LEDs
-      const led = (x, y, on, col, lab) => { if (on) glow(ctx, x, y, 16, col, 0.5); ctx.fillStyle = on ? 'rgb(' + col + ')' : '#1a2026'; ctx.beginPath(); ctx.arc(x, y, 6, 0, TAU); ctx.fill(); txt(ctx, lab, x, y + 15, 9, C.dim, 'center', '700'); };
+      const led = (x, y, on, col, lab) => { if (on) glow(ctx, x, y, 16, col, 0.5); ctx.fillStyle = on ? 'rgb(' + col + ')' : '#1a2026'; ctx.beginPath(); ctx.arc(x, y, 6, 0, TAU); ctx.fill(); txt(ctx, lab, x, y + 15, 10, C.dim, 'center', '700'); };
       led(868, 302, active && S.supply && !S.fuTrip, '76,217,100', 'RUN');
       led(900, 302, active && S.fuTrip, '255,92,92', 'FEHLER');
       led(934, 302, active && S.supply && Math.abs(S.fe) < clamp(ctl.freq, 0, 87) - 0.3, '255,179,64', 'RAMPE');
@@ -569,11 +569,11 @@
       for (let i = 0; i <= 29; i++) { const f = i * 3; const u2 = ufRel(ctl.vf, f / 50, mini.boost); const px = dx0 + f / 87 * dw, py = dy0 - 14 - u2 * dh; if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
       ctx.stroke();
       if (active) { const px = dx0 + clamp(Math.abs(S.fe) / 87, 0, 1) * dw, py = dy0 - 14 - clamp(S.uLine / 400, 0, 1) * dh; ctx.fillStyle = C.warn; ctx.beginPath(); ctx.arc(px, py, 4, 0, TAU); ctx.fill(); }
-      txt(ctx, 'U/f', dx0 + 4, dy0 - dh - 6, 9, C.dim, 'left', '700');
+      txt(ctx, 'U/f', dx0 + 4, dy0 - dh - 6, 10, C.dim, 'left', '700');
       // Klemmen
       ['L1', 'L2', 'L3'].forEach((s, i) => { ctx.fillStyle = '#a7b2bd'; ctx.beginPath(); ctx.arc(700 + i * 30, 270, 4, 0, TAU); ctx.fill(); });
       ['U', 'V', 'W'].forEach((s, i) => { ctx.fillStyle = '#a7b2bd'; ctx.beginPath(); ctx.arc(700 + i * 30, 404, 4, 0, TAU); ctx.fill(); });
-      txt(ctx, 'Netz', 745, 267, 9, C.dim, 'left', '700'); txt(ctx, 'Motor', 745, 407, 9, C.dim, 'left', '700');
+      txt(ctx, 'Netz', 745, 267, 10, C.dim, 'left', '700'); txt(ctx, 'Motor', 745, 407, 10, C.dim, 'left', '700');
       // Zeiger
       const gI = Math.max(10, Math.ceil(m.IN * 7 / 5) * 5);
       gauge(ctx, 740, 478, 54, S.live ? S.Iline : 0, gI, m.IN * 1.5, 'Strom', fmt(S.live ? S.Iline : 0, 1) + ' A', S.Iline > 1.15 * m.IN ? C.warn : C.ok);

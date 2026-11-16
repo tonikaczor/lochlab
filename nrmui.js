@@ -52,7 +52,7 @@
     pf: Object.assign({ dev: 0, sk: 1, len: 3, pw: 750, heater: false, vis: true, func: true, pe: 0.14, iso: 25, leak: 1.2 }, lsGet('pf', {})),
     qm: Object.assign({ day: 60, items: ITEMS0, docs: DOCS0, phase: 'P', n: '20000', d: '7', y1: '98', y2: '95', y3: '99' }, lsGet('qm', {})),
     nh: C.nhInit(), nhLog: [],
-    task: null, tq: null, tAns: {}, tRes: null,
+    task: null, tq: null, tAns: {}, tRes: null, tTries: {},
     tr: { q: null, ans: {}, res: null, level: 0, topic: '' },
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {}))
   };
@@ -71,7 +71,7 @@
   const chartDiv = (id, label) => `<div class="inst" id="${id}" aria-label="${esc(label)}"></div>`;
   const setSvg = (id, html, emptyText) => { const e = $('#' + id); if (!e) return; e.innerHTML = html || `<p class="hint2" style="padding:10px">${esc(emptyText || 'Für diese Werte gibt es kein Diagramm.')}</p>`; };
   const setHtml = (id, html) => { const e = $('#' + id); if (e) e.innerHTML = html; };
-  const explain = k => `<details class="ex" ${lsGet('ex_' + k, true) ? 'open' : ''} data-ex="${k}"><summary>Erklärung</summary><div class="hb2">${D.explain[k]}</div></details>`;
+  const explain = k => `<details class="ex" ${lsGet('ex_' + k, false) ? 'open' : ''} data-ex="${k}"><summary>Erklärung</summary><div class="hb2">${D.explain[k]}</div></details>`;
   document.addEventListener('toggle', e => { const d = e.target; if (d && d.dataset && d.dataset.ex) lsSet('ex_' + d.dataset.ex, d.open); }, true);
   const sel = (label, attr, opts, cur) => `<label class="f"><span>${esc(label)}</span><select ${attr}>${opts.map(o => `<option value="${esc(o[0])}"${String(o[0]) === String(cur) ? ' selected' : ''}>${esc(o[1])}</option>`).join('')}</select></label>`;
   const chips = (field, opts, cur, label) => `<div class="ctl" role="group" aria-label="${esc(label)}">${opts.map(o => `<button class="chip ${String(o[0]) === String(cur) ? 'on' : ''}" data-f="${esc(field)}" data-v="${esc(o[0])}" aria-pressed="${String(o[0]) === String(cur)}">${esc(o[1])}</button>`).join('')}</div>`;
@@ -330,9 +330,9 @@
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : f(q.value, 3) + (q.ask.unit ? ' ' + q.ask.unit : ''));
   function qBody(q, a, r, pre) {
-    const locked = r && (r.ok || pre === 'rt');
+    const locked = r && (r.ok || r.phase === 'loes' || (pre === 'rt' && r.final));
     if (q.ask.type === 'choice') return `<div class="opts" role="group" aria-label="Antwortmöglichkeiten">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${locked ? 'disabled' : ''} class="${locked && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}" aria-pressed="${a.c === i}">${esc(c)}</button>`).join('')}</div>`;
-    return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(a.v || '')}" ${locked ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+    return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" autocapitalize="off" spellcheck="false" value="${esc(a.v || '')}" ${locked ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label><p class="lr-hinweis">Zahl${q.ask.unit ? ' in ' + esc(q.ask.unit) : ''}. ${q.tol > 0 ? 'Abweichung bis ±' + esc(f(q.tol, 3)) + (q.ask.unit ? ' ' + esc(q.ask.unit) : '') + ' gilt als richtig.' : 'Gerundet wie im Rechenweg.'}</p>`;
   }
   function evalQ(q, a) {
     if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c] }; }
@@ -340,8 +340,15 @@
     return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 3) + (q.ask.unit ? ' ' + q.ask.unit : '') };
   }
   const stepsHtml = q => '<ol class="steps">' + q.expl.map(l => '<li>' + esc(l) + '</li>').join('') + '</ol>';
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 3))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Musterlösung mit Rechenweg:</b>${stepsHtml(q)}<span class="st" style="margin-top:8px">${esc(D.NOTE)}</span></div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  const LOES = q => `<p><b>Lösung:</b> ${esc(solText(q))}</p><p><b>Musterlösung mit Rechenweg:</b></p>${stepsHtml(q)}<p class="hint2">${esc(D.NOTE)}</p>`;
+  /* Rückmeldung nach "Prüfen": ok = richtig, tipp = Hinweis und zweiter Versuch, loes = Lösung mit Rechenweg (Prüfmodus: Lösung erst nach richtiger Antwort) */
+  const resBlock = (q, r, showExpl) => {
+    if (r.ok) return `<div class="lr-fb ok rdout ok" role="status"><p><strong>✓ Richtig:</strong> ${esc(r.given)}</p>${q.ask.type === 'num' && q.tol > 0.011 ? `<p class="hint2">Erlaubte Abweichung: ±${esc(f(q.tol, 3))} ${esc(q.ask.unit)} (wegen Rundung).</p>` : ''}${LOES(q)}</div>`;
+    if (r.phase === 'tipp') return `<div class="lr-fb tipp rdout warn" role="status"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p><p><b>Tipp:</b> ${esc(q.tips[0])}</p><p>Du hast einen zweiten Versuch. Ändere die Antwort und tippe noch einmal auf „Prüfen“.</p></div>`;
+    if (r.phase === 'loes') return `<div class="lr-fb loes rdout bad" role="status"><p><strong>Auch der zweite Versuch passt nicht.</strong> Deine Antwort: „${esc(r.given)}“.</p>${LOES(q)}</div>`;
+    return `<div class="lr-fb tipp rdout bad" role="status"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p><p>🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p></div>`;
+  };
+  const zeigFb = sel => { try { const el = $(sel + ' .lr-fb'); if (el && window.LabRahmen && LabRahmen.zeig) LabRahmen.zeig(el); } catch (e) {} };
   function renderTasks(top) {
     const V_ = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
@@ -349,7 +356,7 @@
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv" aria-label="Schwierigkeit ${t.level} von 3">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, a, r, 'tk')}`;
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok || r.phase === 'loes') h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += `<p class="hint2">${esc(D.NOTE)}</p></div>`;
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'} Die Zahlen jeder Aufgabe sind fest; im Trainer entstehen immer neue.</p>`;
@@ -359,9 +366,10 @@
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Tipp oder versuche es noch einmal.'); }
-    renderTasks(false);
+    const tr = S.tTries[t.id] = (S.tTries[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, phase: e.ok || exam() ? null : (tr < 2 ? 'tipp' : 'loes') };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.phase === 'loes' ? 'Noch nicht richtig. Die Lösung steht unten.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
+    renderTasks(false); zeigFb('#taskView');
   }
   /* Tipps in 3 Stufen: 1 Denkanstoß, 2 Formel, 3 erster Rechenschritt */
   function hintFor(q, id) {
@@ -377,7 +385,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tTries[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -392,7 +400,7 @@
   });
 
   /* Zufalls-Trainer */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level, T.topic); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level, T.topic); T.ans = {}; T.res = null; T.tries = 0; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
@@ -400,7 +408,7 @@
       <div class="fbar"><span class="lbl">THEMA</span><div class="seg" role="group" aria-label="Thema">${[['', 'Alle']].concat(D.topics.map(t => [t.k, t.short])).map(l => `<button data-tp="${l[0]}" class="${T.topic === l[0] ? 'on' : ''}" aria-pressed="${T.topic === l[0]}">${esc(l[1])}</button>`).join('')}</div></div>
       <div class="fbar"><span class="lbl">STUFE</span><div class="seg" role="group" aria-label="Stufe">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}" aria-pressed="${T.level === l[0]}">${l[1]}</button>`).join('')}</div></div>
       <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
+      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res && T.res.final ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res && T.res.final ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res && T.res.final ? 'Nächste Frage' : 'Überspringen'}</button></div>
       ${T.res ? resBlock(q, T.res, true) : ''}<p class="hint2">${esc(D.NOTE)}</p></div>`;
   }
   const rv = $('#rtView');
@@ -409,13 +417,15 @@
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]'), tp = e.target.closest('[data-tp]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; } if (tp) { T.topic = tp.dataset.tp; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (tc && !(T.res && T.res.final)) { T.ans.c = +tc.dataset.tc; if (T.res) T.res = null; renderTrainer(); return; }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!(T.res && T.res.final) && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
-    lsSet('rt', S.rt); renderTrainer(); updatePal();
+    const T = S.tr; if (T.res && T.res.final) return; const e = evalQ(T.q, T.ans); if (!e) return;
+    T.tries = (T.tries || 0) + 1;
+    if (!e.ok && T.tries < 2) { T.res = { ok: false, given: e.given, phase: 'tipp' }; sad(); renderTrainer(); zeigFb('#rtView'); return; }
+    T.res = { ok: e.ok, given: e.given, final: true, phase: e.ok ? null : 'loes' }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    lsSet('rt', S.rt); renderTrainer(); updatePal(); zeigFb('#rtView');
   }
 
   /* ============================================================ Hilfe */
@@ -423,7 +433,7 @@
     const sec = (t, b, open) => `<details${open ? ' open' : ''}><summary>${t}</summary><div class="hb2">${b}</div></details>`;
     $('#helpView').innerHTML =
       sec('Für wen ist dieses Lab?', `<p>Das Lab richtet sich an Techniker in der Weiterbildung, Studierende der Elektrotechnik und Wirtschaftsingenieure. Es erklärt in eigenen Worten, wie Produkte zu ihrer CE-Kennzeichnung kommen, wie Schutzarten und Isolationsabstände zusammenhängen, wie Maschinensicherheit bewertet wird, wie elektrische Geräte geprüft werden und wie ein Qualitätsmanagement Prüfmittel und Dokumente lenkt.</p><p class="rdout warn"><b>Wichtig:</b> Alles hier ist ein vereinfachtes Lernmodell mit eigenen Zusammenfassungen, kein Normtext. Maßgeblich ist immer die aktuelle Normfassung. Wo Tabellen vorkommen (Luft- und Kriechstrecken, Kategorien), sind es Lernbeispiele, die du vor jeder echten Anwendung mit der Norm abgleichen musst.</p>`, true) +
-      sec('So arbeitest du', `<p>Jeder Themenreiter hat oben eine kurze <b>Erklärung</b>, darunter Regler, Schalter und Diagramme zum Ausprobieren. Unter <b>Aufgaben</b> findest du je Thema 10 bis 11 Aufgaben mit Musterlösung und Rechenweg. Der <b>Trainer</b> würfelt neue Zahlen und Fälle.</p><p><b>Tipps</b> gibt es in drei Stufen: Denkanstoß, Formel, erster Rechenschritt. Im Prüfmodus kostet jede Stufe 25 % der Punkte.</p>`) +
+      sec('So arbeitest du', `<p>Jeder Themenreiter hat oben eine kurze <b>Erklärung</b>, darunter Regler, Schalter und Diagramme zum Ausprobieren. Unter <b>Aufgaben</b> findest du je Thema 10 bis 11 Aufgaben mit Musterlösung und Rechenweg. Der <b>Trainer</b> würfelt neue Zahlen und Fälle. Einen eigenen Beispiele-Reiter gibt es nicht: In jedem Themenreiter wählst du Beispielprodukte, Voreinstellungen und Werte selbst und siehst sofort die Folgen.</p><p><b>Tipps</b> gibt es in drei Stufen: Denkanstoß, Formel, erster Rechenschritt. Im Prüfmodus kostet jede Stufe 25 % der Punkte.</p>`) +
       sec('Zahlen eingeben', `<p>Dezimalkomma oder Punkt. Einheiten werden getrennt angezeigt, du tippst nur die Zahl. Bei Aufgaben mit Auswahl tippst du die Antwort an und dann auf „Prüfen“.</p>`) +
       sec('Wichtige Regeln auf einen Blick', `<table><tr><th>Thema</th><th>Merksatz</th></tr><tr><td>CE</td><td>Funk: RED statt LVD und EMV. Maschine: Maschinenrichtlinie plus EMV. REACH gilt immer. Das CE-Zeichen steht am Ende der Kette, nach der Konformitätserklärung.</td></tr><tr><td>Schutzarten</td><td>IP: erste Ziffer fest und Staub, zweite Wasser. 7, 8 und 9 sind eigene Zweige. Die Kriechstrecke ist nie kleiner als die Luftstrecke. Verstärkte Isolierung: eine Stufe höher bzw. doppelte Kriechstrecke.</td></tr><tr><td>Maschinen</td><td>Risikograph S, F, P gibt PLr. PFHd in Reihe addieren, 1/MTTFd in Reihe addieren. Not-Halt: Entriegeln startet nie von selbst.</td></tr><tr><td>Prüfen</td><td>Erst sehen, dann messen. Der Grenzwert selbst gilt noch als bestanden. Der erste verfehlte Schritt beendet die Prüfung.</td></tr><tr><td>Qualität</td><td>PDCA: 6 Plan, 7 und 8 Do, 9 Check, 10 Act. Überfälliges Prüfmittel sperren. Nur die höchste freigegebene, erreichte Revision gilt.</td></tr></table>`) +
       sec('Was nicht enthalten ist', `<p>Das Lab ersetzt keine Normen, Kommentare oder Schulungen. Nicht enthalten sind zum Beispiel die vollständigen Tabellen der Isolationskoordination, die Berechnung von Software-Anforderungen der Funktionalen Sicherheit, die Vorschriften für Medizinprodukte, Fahrzeuge und explosionsgefährdete Bereiche und rechtliche Besonderheiten einzelner Länder.</p>`) +

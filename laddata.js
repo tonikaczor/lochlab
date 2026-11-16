@@ -295,7 +295,7 @@
     { id: 'frei1', tab: 'gg', title: 'Mengen-Freigrenze als Beispiel', text: 'Ein Fahrzeug nimmt 5 kg der Kategorie 1, 100 kg der Kategorie 2 und 200 kg der Kategorie 3 mit. Bleibt die Summe unter der Beispiel-Grenze von 1.000 Punkten?', p: { a: 5, b: 100, c: 200 } }
   ];
 
-  root.LAD_DATA = { cats: CATS, tasks, gens: G, make, makeTask, randomQ, examples, sets: SETS, cls: CLS, un: UN, stoff: STOFF, sym: SYM };
+  root.LAD_DATA = { zettel: ZETTEL, cats: CATS, tasks, gens: G, make, makeTask, randomQ, examples, sets: SETS, cls: CLS, un: UN, stoff: STOFF, sym: SYM };
   root.LAD_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { DATA: root.LAD_DATA, TASKS: root.LAD_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -9,8 +9,8 @@
    Speicher: wsl.cur, wsl.saves, wsl.tab, wsl.speed, wsl.seen, wsl.fx, wsl.faults, wsl.q, wsl.deep ({ bode: Wahrheitswert, n: Anzahl Aufklappungen }), wsl.hint, wsl.rigsused, wsl.digital, wsl.mview (Messgeräte-Ansicht: gauge, digital, front), wsl.autohint, sim.done (gemeinsam mit den anderen Labs).
    Erweiterungen schreiben selbst: wsl.report (Verlauf der Messreihen), wsl.design, S.bericht (laufende Messreihe, wird mit Speichern/Teilen/Abgabe mitgeführt). */
 (function (root) {
-  if (!root.RIGUI || !root.RIGUI.ok('wsl', 'b0980165')) { const a = document.getElementById('app') || document.body, d = document.createElement('div'); d.className = 'rigui-miss'; d.setAttribute('role', 'alert'); d.style.cssText = 'margin:12px;padding:12px 14px;border:2px solid #c0392b;border-radius:10px;background:#fff4f2;color:#5a1a12;font:15px/1.45 system-ui,sans-serif'; d.innerHTML = 'Der Oberfl\u00e4chen-Rahmen fehlt oder passt nicht zur Seite (rigui-base.js, rigui-pf.js). Bitte die Seite neu laden.' + (typeof navigator !== 'undefined' && navigator.onLine === false ? ' Du bist offline: Verbinde dich einmal mit dem Internet und lade die Seite danach neu, damit die fehlenden Dateien nachgeladen werden.' : '') + ' <button type="button" class="btn pri" onclick="location.reload()">Neu laden</button>'; if (a) a.insertBefore(d, a.firstChild); return; }
-  const { $, $$, AMP, B, NARROW_AR, QLEVELS, adig, ampKey, applyHit, assessOf, bgOf, canSound, choiceOpts, clamp, clickSnd, clone, confirmSheet, csvNum, defVal, esc, fauto, fin, fnum, fxOn, isWarn, limBadge, loadExampleByName, lsGet, lsPut, lsRaw, lsSet, margTxt, markDone, optNorm, packShare, parseCsv, pick, rowEnd, rowNorm, saveCsv, seqToRows, sgn, sheet, slPos, slVal, stat, taskDone, theme, toast, tstamp, typing, unpackShare, MVIEWS, MVNAME, frontOk, FXKINDS, SPEEDS, dm } = root.RIGUI.pure('wsl', { root, loadExample, setCtl });
+  if (!root.RIGUI || !root.RIGUI.ok('wsl', 'b93fcbcc')) { const a = document.getElementById('app') || document.body, d = document.createElement('div'); d.className = 'rigui-miss'; d.setAttribute('role', 'alert'); d.style.cssText = 'margin:12px;padding:12px 14px;border:2px solid #c0392b;border-radius:10px;background:#fff4f2;color:#5a1a12;font:15px/1.45 system-ui,sans-serif'; d.innerHTML = 'Der Oberfl\u00e4chen-Rahmen fehlt oder passt nicht zur Seite (rigui-base.js, rigui-pf.js). Bitte die Seite neu laden.' + (typeof navigator !== 'undefined' && navigator.onLine === false ? ' Du bist offline: Verbinde dich einmal mit dem Internet und lade die Seite danach neu, damit die fehlenden Dateien nachgeladen werden.' : '') + ' <button type="button" class="btn pri" onclick="location.reload()">Neu laden</button>'; if (a) a.insertBefore(d, a.firstChild); return; }
+  const { $, $$, AMP, B, NARROW_AR, QLEVELS, adig, ampKey, applyHit, assessOf, bgOf, canSound, choiceOpts, clamp, clickSnd, clone, confirmSheet, csvNum, defVal, esc, fauto, fin, fnum, fxOn, isInRow, isWarn, limBadge, loadExampleByName, lsGet, lsPut, lsRaw, lsSet, margTxt, markDone, optNorm, packShare, parseCsv, pick, rowEnd, rowNorm, saveCsv, seqToRows, sgn, sheet, slPos, slVal, stat, taskDone, theme, toast, tstamp, typing, unpackShare, MVIEWS, MVNAME, frontOk, FXKINDS, SPEEDS, dm } = root.RIGUI.pure('wsl', { root, loadExample, setCtl });
   const CORE = () => root.WSL_CORE;
   const DRAW = () => root.WSL_DRAW;
 const ORDER = ['sinus', 'rlc', 'leistung', 'kompens', 'schwing', 'filter', 'trafo', 'drehstrom'];
@@ -84,7 +84,8 @@ const RIGLIMITS = {
   ];
   root.WSL_KEYS = KEYS;
 
-  let drawErr = false, curT = 0, taskRes = null; const taskAns = {};
+  let drawErr = false, curT = 0, taskRes = null; const taskAns = {}, taskTry = {};
+  /* B-all-04: Die selbstverständliche Zeile "Eingaben gültig" zählt nicht in die Prozentzahl (sonst 33 % ohne Leistung) */
   /* Auswahlfelder: Einträge als Text oder { value, label } erlaubt; die Oberfläche arbeitet mit Kopien, die Definition des Prüfstands bleibt unberührt */
   let ctlCache = { rig: null, list: [] };
   const ctlsOf = () => {
@@ -375,6 +376,8 @@ function sichtOf() { const c = S.rig && S.rig.sicht; return c && typeof c === 'o
   root.addEventListener('resize', () => { fitCanvas(); redrawTab(); updateMeters(0, true); updateBode(true); });
 
   /* ---- Qualitätsstufen (SPEC 6.4): Bildzeit (gleitender Mittelwert über 30 Bilder) steuert eine Stufe zurück oder hoch ---- */
+  const reduced = () => !!mqReduce.matches;
+  const curQ = () => (reduced() ? 'niedrig' : S.q.mode === 'auto' ? S.q.level : S.q.mode);
   function setQMode(m) { if (!['auto', ...QLEVELS].includes(m)) return; S.q.mode = m; lsPut('wsl.q', m); S.q.ms = []; S.q.fastSince = 0; updateQLine(true); }
   let qSig = '';
   function updateQLine(force) {
@@ -716,11 +719,14 @@ const BUILTIN = [
     const ans = collectAnswer(t); let lines;
     try { lines = await (R.run ? R.run(t, ans) : t.check(ans)); } catch (e) { console.error(e); lines = [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden: ' + (e && e.message || e), why: '' }]; }
     S.readonly = false; lines = Array.isArray(lines) ? lines : [];
-    const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge();
+    const iRow = lines.find(isInRow), rest = lines.filter(l => !isInRow(l));
+    const pct = iRow && !iRow.ok ? 0 : rest.length ? Math.round(100 * rest.filter(l => l.ok).length / rest.length) : (iRow ? 100 : 0);
+    taskTry[t.id] = pct === 100 ? 0 : (taskTry[t.id] || 0) + 1;
+    taskRes = { id: t.id, lines, pct, n: taskTry[t.id] }; markDone(t.id, pct); updateTaskBadge();
     const F = root.LochFX; if (F) try { if (pct === 100) { F.pass(100); if (F.isFun && F.isFun()) F.confetti(false); } else F.pass(pct); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
-    toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    if (!document.documentElement.classList.contains('lr-on')) toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    setTimeout(() => { const e = document.querySelector('#taskView .lr-fb'); if (e && root.LabRahmen) root.LabRahmen.zeig(e); }, 60);
   }
   /* Auto-Weg: Musterlösung laden und abspielen (zählt als Hilfe Stufe 3) */
   function autoWay(t) {
@@ -755,12 +761,19 @@ const BUILTIN = [
       const r = taskRes && taskRes.id === t.id ? taskRes : null, ask2 = t.ask ? (typeof t.ask === 'string' ? { label: t.ask } : t.ask) : null, ans = taskAns[t.id] || {}, fl = fieldsOf(t), cl = choicesOf(t);
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat || '')}</h4><div class="big">${esc(t.title)}</div><div class="lv">${'●'.repeat(t.level || 1)}${'○'.repeat(3 - (t.level || 1))}</div>
         <p style="margin:8px 0;white-space:pre-line">${esc(t.text)}</p>${tableHtml(t.table)}<p class="hint2" style="margin-top:0">Prüfstand: ${ic(t)} ${esc(rn(t))}</p>
-        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}"></label>` : ''}
-        ${fl.length ? `<div class="sheetbox"><div class="gh" style="padding-top:0">Antwortblatt</div>${fl.map(f => `<label class="f"><span>${esc(f.question || f.label || f.key)}${f.unit ? ' in ' + esc(f.unit) : ''}</span><input data-fk="${esc(f.key)}" inputmode="decimal" autocomplete="off" value="${esc((ans.f || {})[f.key] || '')}"></label>`).join('')}</div>` : ''}
+        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}" aria-describedby="tkTol"></label><p class="lr-hinweis" id="tkTol" data-tol="1">${esc(ask2.unit ? 'Einheit: ' + ask2.unit + '. ' : '')}</p>` : ''}
+        ${fl.length ? `<div class="sheetbox"><div class="gh" style="padding-top:0">Antwortblatt</div>${fl.map(f => `<label class="f"><span>${esc(f.question || f.label || f.key)}${f.unit ? ' in ' + esc(f.unit) : ''}</span><input data-fk="${esc(f.key)}" inputmode="decimal" autocomplete="off" value="${esc((ans.f || {})[f.key] || '')}"></label>`).join('')}<p class="lr-hinweis" id="tkTolF" data-tol="1">Einheit steht am Feld. </p></div>` : ''}
         ${cl.map(c => `<fieldset class="choice"><legend>${esc(c.q || c.label || c.key)}</legend>${choiceOpts(c).map((o, i) => `<label class="opt"><input type="radio" name="ch-${esc(c.key)}" data-ck="${esc(c.key)}" data-ci="${i}"${(ans.c || {})[c.key] !== undefined && String((ans.c || {})[c.key]) === String(o.value) ? ' checked' : ''}> ${esc(o.label)}</label>`).join('')}</fieldset>`).join('')}
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="rig">Zum Prüfstand</button>${t.report || /Messreihe/i.test(t.cat || '') ? '<button class="btn" data-ta="report">Zur Messreihe</button>' : ''}${ask2 || fl.length ? '<button class="btn" data-ta="calc">Zum Rechner</button>' : ''}${typeof t.sol === 'function' ? '<button class="btn" data-ta="auto">▶ Auto-Weg</button>' : ''}<button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
-      if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      if (r) {
+        const shown = r.lines.filter(l => !(l.ok && isInRow(l))), fcls = r.pct === 100 ? 'ok' : r.n >= 2 ? 'loes' : 'tipp';
+        const head = r.pct === 100 ? '<strong>Richtig.</strong> 🎉 Geschafft.' : r.n >= 2 ? '<strong>Lösung.</strong> ' + r.pct + ' % richtig, das war noch offen. Der Grund steht bei jedem Punkt.' : '<strong>Noch nicht.</strong> ' + r.pct + ' % richtig. Schau auf die roten Punkte oder hole mit 💡 einen Tipp. Du hast einen zweiten Versuch.';
+        let sv = ''; if (r.n >= 2 && r.pct < 100) { try { const so = t.sol(); if (so && fin(so.value)) sv = '<p>Richtiges Ergebnis: <strong>' + esc(fauto(so.value)) + (ask2 && ask2.unit ? ' ' + esc(ask2.unit) : '') + '</strong></p>'; const hh = Array.isArray(t.hint) && t.hint[2] ? String(t.hint[2]) : ''; if (hh) sv += '<p><strong>' + (/→|=/.test(hh) ? 'Rechenweg' : 'Lösung') + ':</strong> ' + esc(hh.replace(/^Musterlösung:s*/, '')) + '</p>'; } catch (e) {} }
+        const fb = `<div class="lr-fb ${fcls}" role="status"><p>${head}</p>${sv}<ul class="tl">${shown.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? (r.n >= 2 ? `<br><small>${esc(l.why)}</small>` : `<details><summary>Warum?</summary>${esc(l.why)}</details>`) : ''}</li>`).join('')}</ul>${r.n >= 2 && r.pct < 100 ? '<p><button class="btn" data-ta="auto">▶ Musterlösung abspielen</button></p>' : ''}</div>`;
+        const k = h.lastIndexOf('<div class="btns"><button class="btn pri" data-ta="check">');
+        h = k >= 0 ? h.slice(0, k) + fb + h.slice(k) : h + fb;
+      }
       h += '</div>';
     }
     const cats = []; A.forEach(x => { if (!cats.includes(x.cat)) cats.push(x.cat); });
@@ -772,8 +785,9 @@ const BUILTIN = [
       if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; }
       const p = d[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${p >= 100 ? 'g' : p > 0 ? 'p' : ''}">${p >= 100 ? '✓' : p > 0 ? p : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${'●'.repeat(x.level || 1)}${'○'.repeat(3 - (x.level || 1))}</span> ${ic(x)} ${esc(rn(x))}${p != null ? ' · bisher ' + p + ' %' : ''}</small></div></button>`;
     });
-    V.innerHTML = h;
+    V.innerHTML = h; tolHint(t);
   }
+  /* Toleranz am Feld: aus den Prüfzeilen der Aufgabe lesen (numRow schreibt sie in den Zeilentext), mit leerer Antwort, ohne Nebenwirkung */
   $('#taskView').addEventListener('input', e => {
     if (!S.task) return; const id = S.task.id; taskAns[id] = taskAns[id] || {};
     if (e.target.id === 'tkAns') taskAns[id].v = e.target.value;
@@ -906,7 +920,7 @@ const fNetz = () => { const l = limGet('f_netz'); return l && fin(+l.value) ? +l
   }
   const EXTHOST = { curve: '#curveView', report: '#reportView', design: '#designView', calc: '#calcView', help: '#helpView' }, EXTFILE = { curve: 'wslui-curve.js', report: 'wslui-report.js', design: 'wslui-design.js', calc: 'wslui-calc.js', help: 'wslui-help.js' }, EXTNAME = { curve: 'Kennlinien', report: 'Messreihe', design: 'Auslegen', calc: 'Rechnen', help: 'Lernen' };
   const extOf = kind => root.WSL_UI_EXT && root.WSL_UI_EXT[kind];
-  const { allCtl, ampelNow, applyCtl, ask, backToRef, buildBA, buildPick, buildTabs, canFire, choicesOf, coerce, curQ, curRows, curTask, cvPos, cval, exportPng, fe, fieldsOf, fireHtml, importSheet, keysHtml, keysSheet, limGet, limIds, loadShared, metersOf, newExperiment, openList, parseNum, placeholderHtml, presetsOf, qualityFeed, readState, reduced, refFromExample, renderSweep, renderTasksIfOpen, resetRun, rigIcon, rigName, rowText, saves, seqDur, seqLive, seqSteps, seqStop, setRef, snapshot, toggleCtl, updateChrome, updateSimBand, updateTaskBadge, updateTaskBar, usePick, wirePanel, deepOpened, gruppeOf, loadRig, saveItem, buildLimits, buildPresets, buildRefRig, checkDice, ctlParse, ctlShow, diceKeys, doSave, drawOpts, marg, pickOpt, renderExt, renderSeqRes, resetRig, rigPng, seqKeys, showDice, simAdvance, slowFx, stash, undoDice, updateDice, updateEvents, updateStat } = root.RIGUI.kit('wsl', { CORE, EXTFILE, EXTHOST, EXTNAME, FIREHINT, FIRELBL, GRUPPEN, KEYS, ORDER, PK, RIGLIMITS, RIGMETA, S, TABS, TK, applyItem, bandOf, buildControls, buildMeters, buildPal, buildSicht, ctlDef, ctlsOf, cvs, deepGet, defOf, doFire, extApi, extOf, extRefresh, fxReset, mqReduce, renderSweepLive, renderTasks, saveCur, saveCurSoon, seqLiveDone, setRig, setRun, setTab, simText, syncCtl, updateAmp, updateDiag, updateMeters, updateQLine, updateTitle, updateWipeDom });
+  const { allCtl, ampelNow, applyCtl, ask, backToRef, buildBA, buildPick, buildTabs, canFire, choicesOf, coerce, curRows, curTask, cvPos, cval, exportPng, fe, fieldsOf, fireHtml, importSheet, keysHtml, keysSheet, limGet, limIds, loadShared, metersOf, newExperiment, openList, parseNum, placeholderHtml, presetsOf, qualityFeed, readState, refFromExample, renderSweep, renderTasksIfOpen, resetRun, rigIcon, rigName, rowText, saves, seqDur, seqLive, seqSteps, seqStop, setRef, snapshot, toggleCtl, updateChrome, updateSimBand, updateTaskBadge, updateTaskBar, usePick, wirePanel, deepOpened, gruppeOf, loadRig, saveItem, buildLimits, buildPresets, buildRefRig, checkDice, ctlParse, ctlShow, diceKeys, doSave, drawOpts, marg, pickOpt, renderExt, renderSeqRes, resetRig, rigPng, seqKeys, showDice, simAdvance, slowFx, stash, tolHint, undoDice, updateDice, updateEvents, updateStat } = root.RIGUI.kit('wsl', { CORE, EXTFILE, EXTHOST, EXTNAME, FIREHINT, FIRELBL, GRUPPEN, KEYS, ORDER, PK, RIGLIMITS, RIGMETA, S, TABS, TK, applyItem, bandOf, buildControls, buildMeters, buildPal, buildSicht, ctlDef, ctlsOf, curQ, cvs, deepGet, defOf, doFire, extApi, extOf, extRefresh, fxReset, reduced, renderSweepLive, renderTasks, saveCur, saveCurSoon, seqLiveDone, setRig, setRun, setTab, simText, syncCtl, updateAmp, updateDiag, updateMeters, updateQLine, updateTitle, updateWipeDom });
   function extRefresh() { if (S.tab === 'curve' || S.tab === 'report') { const E = extOf(S.tab); if (E && typeof E.refresh === 'function') { try { E.refresh(); return; } catch (e) {} } renderExt(S.tab); } }
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-retry]') && EXTHOST[S.tab]) renderExt(S.tab); });
 
@@ -924,7 +938,7 @@ const fNetz = () => { const l = limGet('f_netz'); return l && fin(+l.value) ? +l
   function updateTitle() {
     const nm = rigName(S.rigId || ORDER[0]);
     $('#title').innerHTML = esc(S.name) + (S.dirty ? ' •' : '') + '\n<small>' + esc(nm) + (S.running ? ' · läuft' : '') + '</small>';
-    document.title = 'Wechselstrom-Lab: ' + S.name;
+    document.title = 'Wechselstrom-Lab: ' + (S.name && S.name !== 'Neuer Versuch' ? S.name : (S.rigId ? rigName(S.rigId) : 'Versuch'));
     const tag = $('#cvTag'); if (tag) { tag.textContent = S.running ? '' : '⏸ Pause'; tag.style.display = S.running ? 'none' : ''; }
   }
   $('#title').onclick = async () => { const r = await ask('Name des Versuchs', [{ key: 'n', label: 'Name', type: 'text', value: S.name }]); if (r && r.n.trim()) { S.name = r.n.trim(); S.dirty = true; updateChrome(); saveCurSoon(); } };

@@ -79,7 +79,7 @@
   const CSS = `.dv-svg{display:block;width:100%;max-width:520px;height:auto;margin:6px auto}
 .dv-b{fill:var(--panel2);stroke:var(--mute);stroke-width:1.2}.dv-t{fill:var(--line);stroke:var(--mute);stroke-width:1.2}.dv-h{fill:var(--bg);stroke:var(--mute);stroke-width:1}
 .dv-l{fill:var(--mute);stroke:none}.dv-d{fill:var(--fg)}.dv-r{fill:var(--warn);fill-opacity:.55;stroke:var(--warn);stroke-width:1.2}
-.dv-ax{fill:none;stroke:var(--accent);stroke-width:1.6}.dv-tx{fill:var(--fg);font:11px system-ui,-apple-system,"Segoe UI",sans-serif}.dv-b2{font-weight:700}.dv-m{fill:var(--mute)}`;
+.dv-ax{fill:none;stroke:var(--accent);stroke-width:1.6}.dv-tx{fill:var(--fg);font:13.5px system-ui,-apple-system,"Segoe UI",sans-serif}.dv-b2{font-weight:700}.dv-m{fill:var(--mute)}`;
   function inject() { if (typeof document === 'undefined' || document.getElementById('dvCss')) return; const s = document.createElement('style'); s.id = 'dvCss'; s.textContent = CSS; document.head.appendChild(s); }
   function mount() {
     const V = document.getElementById('helpView'); if (!V || !V.children.length || V.querySelector('#dvScale')) return;

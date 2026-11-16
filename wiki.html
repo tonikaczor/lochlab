@@ -44,6 +44,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 <a class="skip" href="#main">Zum Inhalt</a>
 <header class="wh">
   <div class="wrap">
+    <a class="ib lm-start" href="index.html" title="Zur Startseite">‹ Start</a>
     <h1 aria-label="Tonfunk Wiki"><svg aria-hidden="true"><use href="#i-wiki"/></svg><span class="tx" aria-hidden="true">Tonfunk <span>Wiki</span></span></h1>
     <div class="srch">
       <input id="q" type="search" role="combobox" aria-expanded="false" aria-controls="res" aria-autocomplete="list" autocomplete="off" placeholder="Bauteil, Regler, Messwert…" aria-label="Im Wiki suchen">
@@ -51,7 +52,6 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       <div id="res" class="res" role="listbox" aria-label="Treffer" hidden></div>
     </div>
     <button type="button" id="themeBtn" class="ib" aria-label="Darstellung: automatisch nach System (antippen zum Wechseln)" title="Darstellung wechseln: Auto, Hell, Dunkel"><svg class="t-a" aria-hidden="true"><use href="#i-theme-a"/></svg><svg class="t-l" aria-hidden="true"><use href="#i-theme-l"/></svg><svg class="t-d" aria-hidden="true"><use href="#i-theme-d"/></svg></button>
-    <a class="ib" href="index.html" aria-label="Zur Startseite" title="Startseite"><svg aria-hidden="true"><use href="#i-home"/></svg></a>
   </div>
 </header>
 <main id="main" class="wrap">
@@ -59,9 +59,13 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     <div class="einstieg" id="tip" hidden><svg aria-hidden="true"><use href="#i-wiki"/></svg><p><b id="tipN"></b><small>Tipp: Im Lab das kleine „?“ neben einem Regler antippen, dann landest du direkt beim passenden Eintrag.</small></p><button type="button" class="ib" id="tipX" aria-label="Hinweis schließen">×</button></div>
     <h2>Kategorien</h2>
     <ul class="kats" id="kats"></ul>
+    <h2 class="psh" id="psH">Prüfstände</h2>
+    <p class="mute psn" id="psN">Stellwerte und Anzeigen der Labs. Zum Nachschlagen eines Reglers: im Lab das „?“ antippen.</p>
+    <ul class="kats ps" id="katsPs"></ul>
     <p class="bald" id="bald"></p>
     <h2 class="labsh">Nach Lab</h2>
-    <p class="chips" id="labs"></p>
+    <div class="chips" id="labs"></div>
+    <p class="bald" id="labsLeer" hidden></p>
     <div class="two">
       <div class="box" id="wusst">
         <h2>Wusstest du?</h2>
@@ -69,7 +73,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
         <div class="tools"><a class="btn" id="wMehr" href="#">Mehr</a><button type="button" class="btn wk-speak" id="wSpeak" aria-pressed="false"><svg class="ico" aria-hidden="true"><use href="#i-spk"/></svg>Vorlesen</button><button type="button" class="btn" id="wNext">Nächster</button></div>
       </div>
       <div class="box">
-        <h2>Zuletzt gesehen <button type="button" class="lnk" id="rClr" style="float:right;font-size:13px">Leeren</button></h2>
+        <h2>Zuletzt gesehen <button type="button" class="lnk rclr" id="rClr">Leeren</button></h2>
         <ul id="recent"></ul>
       </div>
     </div>
@@ -113,7 +117,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 (function () {
   'use strict';
   var W = window.Wiki, $ = function (s) { return document.querySelector(s); }, esc = W.esc, KAT = W.KAT, LABS = W.LABS;
-  var KATS = ['bauteil', 'geraet', 'regler', 'messwert', 'begriff', 'formel', 'norm', 'lab'];
+  var KATS = ['begriff', 'formel', 'bauteil', 'geraet', 'norm', 'lab'], KATS_PS = ['regler', 'messwert'];   // U-wiki-01: Begriffe und Formeln vorn, Regler und Messwerte als eigener Block "Prüfstände"
   var ICON = { bauteil: 'bauteil', geraet: 'geraet', bedien: 'geraet', regler: 'regler', messwert: 'messwert', begriff: 'begriff', formel: 'formel', norm: 'norm', lab: 'lab' };
   var prevHash = '', lastPruef = '#pruef', pr = false, lastList = '', backList = '', curList = '', SY = {}, FV = {};
   var MQ = window.matchMedia ? window.matchMedia('(min-width:1024px)') : { matches: false };   // P3: ab 1024 px Liste links, Eintrag rechts
@@ -122,6 +126,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   function parseH(h) { var p = {}; String(h || '').split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = dec(kv.slice(i + 1)); }); return p; }
   function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
   try { history.scrollRestoration = 'manual'; } catch (e) {}   // Scrollposition der Listen verwalten wir selbst (Zurueck aus dem Eintrag)
+  var LABX = { sch: 'schaltplan schaltbild schaltung', loch: 'lochraster lochplatine layout', sim: 'simulation', mess: 'messen messgeraete', ds: 'datenblatt', pr: 'pruefung', vb: 'verbund projekt', pne: 'pneumatik', arb: 'arbeitsschutz' };   // zusaetzliche Suchwoerter fuer Lab-Namen
   var KAT_SUB = { bauteil: 'LED, Widerstand, Elko …', geraet: 'Oszi, Multimeter, Bedienelemente', regler: 'Steuerwerte der Prüfstände', messwert: 'Anzeigen der Prüfstände' };
   try { $('#stand').textContent = 'Stand ' + (window.LAB_VERSION || ''); } catch (e) {}
 
@@ -134,17 +139,31 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   }
   function kats() {
     var R = rows(), cnt = {}; R.forEach(function (e) { var k = e.kat === 'bedien' ? 'geraet' : e.kat; cnt[k] = (cnt[k] || 0) + 1; });   // Bedienelemente gehoeren zu den Messgeraeten
-    $('#kats').innerHTML = KATS.filter(function (k) { return cnt[k]; }).map(function (k) {
+    function katLi(k) {
       return '<li><a href="#k=' + k + '"><svg aria-hidden="true"><use href="#i-' + ICON[k] + '"/></svg><span class="kt"><b>' + esc(KAT[k][1]) + '</b>' + (KAT_SUB[k] ? '<small>' + esc(KAT_SUB[k]) + '</small>' : '') + '</span><span class="n">' + cnt[k] + '</span></a></li>';
-    }).join('');
-    var bald = KATS.filter(function (k) { return !cnt[k]; }).map(function (k) { return KAT[k][1]; });
+    }
+    $('#kats').innerHTML = KATS.filter(function (k) { return cnt[k]; }).map(katLi).join('');
+    var ps = KATS_PS.filter(function (k) { return cnt[k]; });
+    $('#katsPs').innerHTML = ps.map(katLi).join(''); $('#psH').hidden = $('#psN').hidden = $('#katsPs').hidden = !ps.length;
+    var bald = KATS.concat(KATS_PS).filter(function (k) { return !cnt[k]; }).map(function (k) { return KAT[k][1]; });
     $('#bald').textContent = bald.length ? 'Bald: ' + bald.join(' · ') : ''; $('#bald').hidden = !bald.length;
     $('#tipN').textContent = R.length + ' Einträge – offline nachschlagen.';
     var tipOff = false; try { tipOff = localStorage.getItem('lm4.wiki.tip') === '1'; } catch (e) {}
     $('#tip').hidden = tipOff;
     var labs = {};
     R.forEach(function (e) { (e.labs || []).forEach(function (l) { labs[l] = (labs[l] || 0) + 1; }); });
-    $('#labs').innerHTML = Object.keys(LABS).filter(function (l) { return labs[l]; }).map(function (l) { return '<a class="lc" data-lab="' + l + '" href="#k=alle&lab=' + l + '">' + esc(LABS[l][0]) + ' <small>' + labs[l] + '</small></a>'; }).join('') || '<span class="mute">noch keine Lab-Zuordnung</span>';
+    if (window.matchMedia && matchMedia('(max-width:639px)').matches) $('#q').placeholder = 'Suchen…';   // U-wiki-03: am Handy kurzer Platzhalter
+    (function () {
+      var G = [['Grundlagen', ['loch', 'sch', 'quarz', 'sim', 'ds']], ['Messen und Wechselstrom', ['mess', 'wsl']], ['Sicherheit und Energie', ['els', 'haus', 'emv', 'enr', 'arb']], ['Analog und Digital', ['ana', 'digi', 'nts', 'thm']], ['Steuern und Programmieren', ['sps', 'reg', 'ant', 'sen', 'code', 'pi', 'app']], ['Bau und Prüfung', ['pcb', 'vb', 'pr']]];
+      var seen = {}, out = '';
+      function chip(l) { return '<a class="lc" data-lab="' + l + '" href="#k=alle&lab=' + l + '">' + esc(LABS[l][0]) + ' <small>' + labs[l] + '</small></a>'; }
+      G.forEach(function (g) { var c = g[1].filter(function (l) { return LABS[l] && labs[l]; }); c.forEach(function (l) { seen[l] = 1; }); if (c.length) out += '<div class="lg"><b class="lgt">' + g[0] + '</b>' + c.map(chip).join('') + '</div>'; });
+      var rest = Object.keys(LABS).filter(function (l) { return labs[l] && !seen[l]; });
+      if (rest.length) out += '<div class="lg"><b class="lgt">Weitere Labs</b>' + rest.map(chip).join('') + '</div>';
+      $('#labs').innerHTML = out || '<span class="mute">noch keine Lab-Zuordnung</span>';
+      var leer = Object.keys(LABS).filter(function (l) { return !labs[l]; }).map(function (l) { return LABS[l][0]; });   // U-wiki-07: Labs ohne Eintrag offen benennen
+      $('#labsLeer').textContent = leer.length ? 'Noch keine Wiki-Einträge: ' + leer.join(', ') : ''; $('#labsLeer').hidden = !leer.length;
+    })();
   }
   // Wusstest du: Seed = Tag, "Naechster" zieht neu
   var wSeed = Math.floor(Date.now() / 864e5), wCur = null;
@@ -201,11 +220,21 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     if (r.top < top) box.scrollTop -= top - r.top; else if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 8;
     return true;
   }
+  // U-wiki-02: Trefferreihenfolge. Titelanfang-Treffer vor Alias-Treffern, Begriffe/Bauteile vor Reglern; gibt es keinen Titeltreffer
+  // ausser bei Reglern/Messwerten, rutschen die besten drei davon nach vorn
+  function istReg(e) { return /^(regler|messwert)$/.test(e.kat); }
+  function ordne(all) {
+    var ts = all.ts || {}, a1 = [], a2 = [], b1 = [], b2 = [];
+    all.forEach(function (e) { (istReg(e) ? (ts[e.id] ? b1 : b2) : (ts[e.id] ? a1 : a2)).push(e); });
+    var out = a1.length ? a1.concat(a2, b1, b2) : b1.slice(0, 3).concat(a2, b1.slice(3), b2);
+    out.meint = all.meint; return out;
+  }
+  var KATREIHE = ['begriff', 'formel', 'bauteil', 'geraet', 'bedien', 'norm', 'lab', 'regler', 'messwert'];
   function list(kat, lab, qtext, hold) {
     if (lab && !LABS[lab]) lab = '';
     var base = kat === 'suche' ? 'q=' + encodeURIComponent(qtext) : 'k=' + kat;
-    var arrKat = kat === 'suche' ? W.search(qtext, { limit: 400 }) : rows().filter(function (e) { return kat === 'alle' || e.kat === kat || (kat === 'geraet' && e.kat === 'bedien'); });
-    if (kat !== 'suche') arrKat = arrKat.sort(function (a, b) { return a.titel.localeCompare(b.titel, 'de'); });
+    var arrKat = kat === 'suche' ? ordne(W.search(qtext, { limit: 400 })) : rows().filter(function (e) { return kat === 'alle' || e.kat === kat || (kat === 'geraet' && e.kat === 'bedien'); });
+    if (kat !== 'suche') arrKat = arrKat.sort(function (a, b) { return (kat === 'alle' ? KATREIHE.indexOf(a.kat) - KATREIHE.indexOf(b.kat) : 0) || a.titel.localeCompare(b.titel, 'de'); });
     var arr = lab ? arrKat.filter(function (e) { return (e.labs || []).indexOf(lab) >= 0; }) : arrKat;
     var name = kat === 'suche' ? 'Suche: „' + qtext + '“' : kat === 'alle' ? (lab ? LABS[lab][0] : 'Alle Einträge') : (KAT[kat] ? KAT[kat][1] : kat);
     curList = base + (lab ? '&lab=' + lab : '');
@@ -221,7 +250,13 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       return '<li data-az="' + azL(e) + '"><a href="#e=' + e.id + '"><span class="t">' + (kat === 'suche' ? W.hl(W.formel(e.titel), qtext) : W.formel(e.titel)) + (sub ? '<small>' + sub + '</small>' : '') + '</span><svg class="chev" aria-hidden="true"><use href="#i-chev"/></svg></a></li>';
     };
     var azOK = false;
-    if (kat === 'regler' || kat === 'messwert' || (kat === 'alle' && arr.length > 200)) {
+    if (kat === 'alle') {
+      // U-wiki-01: "Alle Einträge" nach Kategorie gruppiert; Regler und Messwerte stehen zuletzt und sind zugeklappt (mit Lab-Filter offen)
+      var gk = {}; arr.forEach(function (e) { var k = e.kat === 'bedien' ? 'geraet' : e.kat; (gk[k] = gk[k] || []).push(e); });
+      var ks = KATREIHE.filter(function (k) { return gk[k]; });
+      $('#liste').innerHTML = ks.map(function (k) { var zu = istReg({ kat: k }) && !lab; return '<li class="grp" data-kat="' + k + '"><details' + (zu ? '' : ' open') + ' data-o="' + (zu ? 0 : 1) + '"><summary>' + esc(KAT[k][1]) + (zu ? ' <small>(zugeklappt)</small>' : '') + '<span class="n">' + gk[k].length + '</span></summary><ul>' + gk[k].map(li).join('') + '</ul></details></li>'; }).join('');
+      azOK = false;
+    } else if (kat === 'regler' || kat === 'messwert') {
       // nach Lab gruppiert; Gruppen offen (Kopf bleibt beim Scrollen kleben), Zuklappen bleibt moeglich
       var g = {}; arr.forEach(function (e) { var l = (e.labs || [])[0] || ''; (g[l] = g[l] || []).push(e); });
       var ls = Object.keys(LABS).filter(function (l) { return g[l]; }).concat(g[''] ? [''] : []);
@@ -240,7 +275,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
       if (li._f == null) li._f = W.fold(li.textContent);
       var h = !!q && li._f.indexOf(q) < 0; li.hidden = h; if (!h) n++;
     });
-    Array.prototype.forEach.call($('#liste').querySelectorAll('li.grp'), function (g) { var m = g.querySelectorAll('li:not([hidden])').length; g.hidden = !m; var c = g.querySelector('summary .n'); if (c) c.textContent = m; });
+    Array.prototype.forEach.call($('#liste').querySelectorAll('li.grp'), function (g) { var m = g.querySelectorAll('li:not([hidden])').length; g.hidden = !m; var c = g.querySelector('summary .n'); if (c) c.textContent = m; var d = g.querySelector('details[data-o]'); if (d) d.open = q ? !!m : d.dataset.o === '1'; });
     $('#lNone').hidden = !(q && !n && items.length);
     azRefresh();
   }
@@ -344,15 +379,16 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   function search() {
     var q = $('#q').value.trim(); $('#qClr').hidden = !q;
     if (!q) { hideRes(); return; }
-    var all = W.search(q), meintTxt = all.meint; sel = -1; $('#q').removeAttribute('aria-activedescendant');
-    // Gruppen: erst Bauteile/Geraete/Begriffe ..., dann Regler und Messwerte nach Lab (innerhalb eines Labs bleibt die Trefferreihenfolge); hoechstens 8 Zeilen
-    var A = all.filter(function (e) { return !/^(regler|messwert)$/.test(e.kat); }), B = all.filter(function (e) { return /^(regler|messwert)$/.test(e.kat); });
-    var lo = Object.keys(LABS); B = B.map(function (e, i) { return [e, i]; }).sort(function (a, b) { return (lo.indexOf((a[0].labs || [])[0]) - lo.indexOf((b[0].labs || [])[0])) || a[1] - b[1]; }).map(function (x) { return x[0]; });
-    var ord = A.concat(B), more = Math.max(0, ord.length - 8); hits = ord.slice(0, 8); hits.meint = meintTxt;
+    var all = ordne(W.search(q)), meintTxt = all.meint; sel = -1; $('#q').removeAttribute('aria-activedescendant');
+    // Reihenfolge siehe ordne(); Regler/Messwerte erscheinen mit Lab-Kopf; Labs, deren Name zur Eingabe passt, stehen als eigene Zeilen davor (U-wiki-02); hoechstens 8 Zeilen
+    var lq = W.fold(q), labHits = lq.length >= 3 ? Object.keys(LABS).filter(function (l) { return W.fold(LABS[l][0] + ' ' + (LABX[l] || '')).split(/[^a-z0-9]+/).some(function (w) { return w.indexOf(lq) === 0; }) || W.fold(LABS[l][0]).indexOf(lq) === 0; }).slice(0, 3) : [];
+    var ord = all.slice(), more = Math.max(0, ord.length - 8);
+    hits = labHits.map(function (l) { return { lab: l, titel: LABS[l][0], href: '#k=alle&lab=' + l }; }).concat(ord.slice(0, 8)); hits.meint = meintTxt;
     var meint = meintTxt ? '<p class="none" role="presentation">Meintest du <button type="button" class="lnk" id="resMeint">' + esc(meintTxt) + '</button>?</p>' : '';
-    var gk = '', rows = hits.map(function (e, i) {
-      var reg = /^(regler|messwert)$/.test(e.kat), k = reg ? 'lab:' + (e.labs || [])[0] : e.kat, gh = '';
-      if (k !== gk) { gk = k; gh = '<div class="gh" role="presentation">' + esc(reg ? (i === A.length ? 'Regler und Messwerte · ' : '') + (LABS[(e.labs || [])[0]] ? LABS[e.labs[0]][0] : 'ohne Lab') : (KAT[e.kat] ? KAT[e.kat][1] : e.kat)) + '</div>'; }
+    var gk = '', regSeen = false, rows = hits.map(function (e, i) {
+      if (e.lab) return (i === 0 ? '<div class="gh" role="presentation">Labs</div>' : '') + '<a role="option" id="r' + i + '" href="' + e.href + '" aria-label="Lab ' + esc(e.titel) + ', alle Einträge, ' + (i + 1) + ' von ' + hits.length + '"><svg class="ri" aria-hidden="true"><use href="#i-lab"/></svg><span class="nm">' + W.hl(esc(e.titel), q, meintTxt) + '</span><span class="lb">Lab</span></a>';
+      var reg = istReg(e), k = reg ? 'lab:' + (e.labs || [])[0] : e.kat, gh = '';
+      if (k !== gk) { gk = k; gh = '<div class="gh" role="presentation">' + esc(reg ? (!regSeen ? 'Regler und Messwerte · ' : '') + (LABS[(e.labs || [])[0]] ? LABS[e.labs[0]][0] : 'ohne Lab') : (KAT[e.kat] ? KAT[e.kat][1] : e.kat)) + '</div>'; if (reg) regSeen = true; }
       return gh + '<a role="option" id="r' + i + '" href="#e=' + e.id + '" aria-label="' + esc(e.titel) + ', ' + esc(W.katText(e)) + ', ' + (i + 1) + ' von ' + hits.length + '"><svg class="ri" aria-hidden="true"><use href="#i-' + (ICON[e.kat] || 'begriff') + '"/></svg><span class="nm">' + W.hl(W.formel(e.titel), q, meintTxt) + '</span><span class="lb">' + esc(KAT[e.kat] ? KAT[e.kat][0] : e.kat) + '</span>' + (reg && e.labs && e.labs[0] ? '<span class="sb">' + esc(LABS[e.labs[0]] ? LABS[e.labs[0]][0] : e.labs[0]) + '</span>' : '') + '</a>';
     });
     $('#res').innerHTML = meint + rows.join('') + (more ? '<a class="more" href="#q=' + encodeURIComponent(q) + '">' + more + ' weitere Treffer anzeigen</a>' : '') || noHit(q);
@@ -362,7 +398,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   $('#q').addEventListener('keydown', function (ev) {
     if ($('#res').hidden) return;
     if ((ev.key === 'ArrowDown' || ev.key === 'ArrowUp') && hits.length) { ev.preventDefault(); sel = (sel + (ev.key === 'ArrowDown' ? 1 : -1) + hits.length) % hits.length; Array.prototype.forEach.call($('#res').querySelectorAll('[role=option]'), function (a, i) { a.setAttribute('aria-selected', i === sel); }); $('#q').setAttribute('aria-activedescendant', 'r' + sel); }
-    else if (ev.key === 'Enter' && hits.length) { ev.preventDefault(); location.hash = '#e=' + hits[sel >= 0 ? sel : 0].id; $('#q').value = ''; $('#qClr').hidden = true; }
+    else if (ev.key === 'Enter' && hits.length) { ev.preventDefault(); var ht = hits[sel >= 0 ? sel : 0]; location.hash = ht.href || '#e=' + ht.id; $('#q').value = ''; $('#qClr').hidden = true; }
     else if (ev.key === 'Escape') hideRes();
   });
   $('#lFilt').addEventListener('input', function () { FV[curList] = this.value; filt(); });

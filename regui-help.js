@@ -17,15 +17,15 @@
 
   /* ============================================================ SVG-Helfer */
   const SV = (inner, label, vb) => `<svg class="dr" viewBox="${vb || '0 0 360 200'}" role="img" aria-label="${esc(label)}">${inner}</svg>`;
-  const TX = (x, y, t, o) => `<text x="${x}" y="${y}" fill="${(o && o.c) || '#e8ecf0'}" font-size="${(o && o.s) || 12}" text-anchor="${(o && o.a) || 'middle'}" font-family="system-ui"${o && o.w ? ' font-weight="700"' : ''}>${esc(t)}</text>`;
+  const TX = (x, y, t, o) => `<text x="${x}" y="${y}" fill="${(o && o.c) || '#e8ecf0'}" font-size="${Math.max((o && o.s) || 12, 14)}" text-anchor="${(o && o.a) || 'middle'}" font-family="system-ui"${o && o.w ? ' font-weight="700"' : ''}>${esc(t)}</text>`;
   function niceTick(range, n) { n = n || 8; const raw = range / n, mag = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / mag; return (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) * mag; }
   function plot(o) {
     const E = root.REG_UI_EXT; if (E && typeof E.svgPlot === 'function') return E.svgPlot(o);
-    const W = 360, H = o.h || 170, L = 38, R = 10, T = 10, B = 26, pw = W - L - R, ph = H - T - B, X = v => L + pw * (v - o.xMin) / (o.xMax - o.xMin), Y = v => T + ph * (1 - (v - o.yMin) / (o.yMax - o.yMin));
+    const W = 360, H = o.h || 170, L = 38, R = 10, T = 10, B = 34, pw = W - L - R, ph = H - T - B, X = v => L + pw * (v - o.xMin) / (o.xMax - o.xMin), Y = v => T + ph * (1 - (v - o.yMin) / (o.yMax - o.yMin));
     let g = `<rect x="${L}" y="${T}" width="${pw}" height="${ph}" fill="none" stroke="#4a5663"/>`;
     (o.hlines || []).forEach(l => { g += `<line x1="${L}" y1="${Y(l.y).toFixed(1)}" x2="${L + pw}" y2="${Y(l.y).toFixed(1)}" stroke="${l.color || '#ffb340'}" stroke-dasharray="5 4"/>`; });
     (o.series || []).forEach(s => { g += `<polyline points="${s.pts.filter(p => fin(p[0]) && fin(p[1])).map(p => X(p[0]).toFixed(1) + ',' + clamp(Y(p[1]), T - 4, T + ph + 4).toFixed(1)).join(' ')}" fill="none" stroke="${s.color || '#3b9eff'}" stroke-width="2.2"${s.dash ? ` stroke-dasharray="${s.dash}"` : ''}/>`; });
-    g += TX(L + pw / 2, H - 4, o.xLabel || '', { s: 10, c: '#8d99a6' });
+    g += TX(L + pw / 2, H - 4, o.xLabel || '', { s: 14, c: '#8d99a6' });
     return SV(g, o.label || 'Diagramm', `0 0 ${W} ${H}`);
   }
   const dn = (pts, k) => pts.filter((_, i) => i % k === 0);
@@ -264,7 +264,7 @@
     let body; try { body = s.keys ? secKeys(api) : s.h(); } catch (e) { console.error('Lernabschnitt ' + (i + 1) + ':', e); body = '<p class="hint2">Dieser Abschnitt konnte nicht aufgebaut werden.</p>'; }
     return `<details${s.open ? ' open' : ''}><summary>${i + 1} · ${esc(s.t)}</summary><div class="hb2">${body}<div class="tryit"><button class="chip s on" data-lx="${i}">▶ ${esc(s.exT)}</button></div></div></details>`;
   }
-  function html(api) { return `<p class="big">Lernen und Hilfe</p><p class="hint2" style="margin:0 0 12px">Kurz erklärt, was du zur Regelungstechnik wissen musst. Mit „Probier es aus“ landest du direkt am passenden Prüfstand.</p>` + SEC.map((s, i) => sectionHtml(s, i, api)).join(''); }
+  function html(api) { return `<p class="big">Lernen und Hilfe</p><p class="hint2" style="margin:0 0 12px">Kurz erklärt, was du zur Regelungstechnik wissen musst. Mit „Probier es aus“ landest du direkt am passenden Prüfstand. Wer die Regelungstechnik rechnerisch vertiefen möchte (Übertragungsfunktion, Bode, Wurzelortskurve), findet das im Lab „Regelungstechnik Aufbau“ (für Technikerschule und Studium).</p>` + SEC.map((s, i) => sectionHtml(s, i, api)).join(''); }
   function onClick(e, api) {
     const b = e.target && e.target.closest && e.target.closest('[data-lx]'); if (!b) return; const s = SEC[+b.dataset.lx]; if (!s) return; const x = s.ex || {};
     if (x.tab) { api.setTab(x.tab); return; }

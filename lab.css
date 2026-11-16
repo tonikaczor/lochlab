@@ -12,9 +12,9 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-
 .ib:active,.chip:active{background:var(--panel2)}
 .ib[disabled]{opacity:.3}
 svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.hb{height:38px;padding:0 12px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;margin:0 2px;flex:none}
+.hb{height:44px;min-width:44px;justify-content:center;padding:0 12px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;margin:0 2px;flex:none}
 .hb:active{background:var(--panel)}
-.run{height:38px;padding:0 16px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-weight:600;flex:none}
+.run{height:44px;min-width:44px;padding:0 16px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);font-weight:600;flex:none}
 .run.on{background:#1a7f37;border-color:#1a7f37;color:#fff}
 #mid{display:flex;flex:1;min-height:0}
 main{position:relative;flex:1;min-width:0;min-height:0}
@@ -28,7 +28,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displa
 .ctl-sl span{display:flex;justify-content:space-between;color:var(--mute);margin-bottom:2px}
 .ctl-sl em{font-style:normal;color:var(--fg);font-weight:600}
 .pre{display:flex;flex-wrap:wrap;gap:5px;margin:-4px 0 12px}
-.pre button{padding:3px 9px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:12px}
+.pre button{min-height:44px;padding:3px 12px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:14px}
 .tl{list-style:none;margin:10px 0 0;padding:0;font-size:14px}
 .tl li{padding:4px 0 4px 2px}
 .tl li.ok{color:#4cd964}
@@ -43,7 +43,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displa
 .pit:hover{background:var(--panel2)}
 .pit.on{background:var(--accent-bg,#1a6fd4);color:#fff}
 #pal{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:6px 8px calc(6px + env(safe-area-inset-bottom));background:var(--panel);border-top:1px solid var(--line);min-height:54px;scrollbar-width:thin}
-.chip{flex:none;height:38px;padding:0 13px;border-radius:19px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;white-space:nowrap}
+.chip{flex:none;height:44px;min-width:44px;justify-content:center;padding:0 13px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);font-size:14px;display:inline-flex;align-items:center;white-space:nowrap}
 .chip.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .chip.danger{color:var(--danger)}
 .sep{flex:none;width:1px;height:26px;background:var(--line);margin:0 2px}
@@ -56,16 +56,16 @@ canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;displa
 .row2{display:flex;gap:8px;align-items:center;margin-bottom:6px}
 .row2 .btn{flex:1}
 .sval{min-width:44px;text-align:center;font-weight:600}
-.btn{display:inline-flex;align-items:center;justify-content:center;height:42px;padding:0 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 14px;border-radius:12px;background:var(--panel);border:1px solid var(--line);font-weight:600}
 .btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .btn.danger{color:var(--danger)}
-.mini{height:28px;padding:0 8px;border-radius:8px;background:var(--panel);border:1px solid var(--line);font-size:12px;margin-left:3px}
+.mini{height:44px;min-width:44px;padding:0 10px;border-radius:8px;background:var(--panel);border:1px solid var(--line);font-size:14px;margin-left:3px}
 .mini.on{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}
 .sl{display:block;margin:8px 0;font-size:14px}
 .sl span{color:var(--mute);display:flex;justify-content:space-between;margin-bottom:2px}
 .sl em{font-style:normal;font-weight:600;color:var(--fg)}
-input,select,textarea{width:100%;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;-webkit-user-select:text;user-select:text}
-input[type=range]{padding:0;height:34px;border:0;background:none}
+input,select,textarea{width:100%;min-height:44px;font:inherit;font-size:16px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 11px;-webkit-user-select:text;user-select:text}
+input[type=range]{padding:0;height:44px;border:0;background:none}
 label.f{display:block;margin:0 0 10px}
 label.f span{display:block;font-size:14px;color:var(--mute);margin-bottom:3px}
 .hint2{color:var(--mute);font-size:14px;margin:6px 0 0}
@@ -75,7 +75,7 @@ label.f span{display:block;font-size:14px;color:var(--mute);margin-bottom:3px}
 .sheet{background:var(--panel);width:100%;max-width:560px;max-height:88dvh;border-radius:16px 16px 0 0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
 @media(min-width:700px){.backdrop{align-items:center}.sheet{border-radius:16px}}
 .sh-h{display:flex;align-items:center;justify-content:space-between;padding:10px 8px 6px 16px;border-bottom:1px solid var(--line);font-size:16px}
-.sh-h button{width:40px;height:40px;font-size:18px;color:var(--mute)}
+.sh-h button{width:44px;height:44px;font-size:18px;color:var(--mute)}
 .sh-b{overflow:auto;padding:10px 14px 16px;-webkit-user-select:text;user-select:text}
 .row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:13px 6px;border-bottom:1px solid var(--line)}
 .row:last-child{border:0}
@@ -93,7 +93,7 @@ label.f span{display:block;font-size:14px;color:var(--mute);margin-bottom:3px}
 #gate input{text-align:center;margin-bottom:12px}
 #gate .btn{width:100%}
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
-.simsw{display:flex;align-items:center;gap:6px;height:36px;padding:0 8px;margin:0 4px;border-radius:18px;background:#2c343e;border:1px solid #38424d;color:#8d99a6;font-size:12px;flex:none}
+.simsw{display:flex;align-items:center;gap:6px;height:44px;padding:0 8px;margin:0 4px;border-radius:22px;background:#2c343e;border:1px solid #38424d;color:#8d99a6;font-size:14px;flex:none}
 .simsw .trk{position:relative;width:38px;height:22px;border-radius:11px;background:#4a5561;transition:background .15s}
 .simsw .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
 .simsw[aria-checked=true] .trk{background:#2fae45}
@@ -117,3 +117,25 @@ header .title{font-size:16px;font-weight:700}
 header .title small{color:var(--fg);opacity:.78;font-weight:500;font-size:14px}
 .hb{font-weight:700;border-color:var(--mute)}
 a,summary,select,label,[role=button],[role=tab],[role=switch]{touch-action:manipulation}
+/* Helles Design (A1b): folgt lm4.theme; greift nur, wenn die Seite data-theme=light am html-Element setzt. Die Zeichenfläche (canvas) bleibt bewusst dunkel. */
+:root[data-theme=light]{--bg:#f3f5f8;--panel:#ffffff;--panel2:#eaeef3;--line:#d3d9e0;--fg:#141a21;--mute:#5a6672;--accent:#0a4fb3;--accent-bg:#0a4fb3;--ok:#107a3f;--warn:#8a5a00;--danger:#b3261e;color-scheme:light}
+:root[data-theme=light] header{box-shadow:0 2px 6px rgba(20,26,33,.12);border-bottom-color:var(--line)}
+:root[data-theme=light] .hb{border-color:var(--line)}
+:root[data-theme=light] header .title small{color:var(--mute);opacity:1}
+:root[data-theme=light] .run.on{background:#107a3f;border-color:#107a3f}
+:root[data-theme=light] .tl li.ok,:root[data-theme=light] .score.ok{color:var(--ok)}
+:root[data-theme=light] .tl li.bad{color:var(--danger)}
+:root[data-theme=light] .score{color:var(--warn)}
+:root[data-theme=light] .card.warn{border-color:#b86a00}
+:root[data-theme=light] .simsw{background:var(--panel2);border-color:var(--line);color:var(--mute)}
+:root[data-theme=light] .simsw .trk{background:#9aa6b2}
+:root[data-theme=light] .simsw[aria-checked=true] .trk{background:#107a3f}
+:root[data-theme=light] .simsw .lL,:root[data-theme=light] .simsw .lS{color:var(--mute)}
+:root[data-theme=light] .simsw[aria-checked=false] .lL,:root[data-theme=light] .simsw[aria-checked=true] .lS{color:var(--fg)}
+:root[data-theme=light] #toast{background:#141a21ee;color:#fff}
+:root[data-theme=light] .backdrop{background:rgba(20,26,33,.45)}
+:root[data-theme=light] .pit.on,:root[data-theme=light] .chip.on,:root[data-theme=light] .btn.pri,:root[data-theme=light] .mini.on{color:#fff}
+/* A-schalt-02: Aufgabentitel bleibt beim Scrollen des Seitenfelds oben stehen */
+.taskpin{position:sticky;top:-12px;z-index:3;display:block;width:calc(100% + 24px);margin:-12px -12px 8px;padding:0 12px;min-height:44px;text-align:left;font-size:14px;font-weight:600;background:var(--accent-bg);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:719px){.taskpin{display:none}}
+@media(max-width:430px){#bRedo{display:none!important}}   /* A-schalt-09: mehr Platz für den Lab-Namen; Wiederholen steht dort im Menü */

@@ -100,7 +100,7 @@
     }
 
     const TOPY = { v: 90 };   // Oberkante des Bildinhalts (nach dem Kopf; 10 ohne Kopf)
-    function layoutS(w, h) { return K.split(w, h, TOPY.v, { a: 'box', b: 'bars', c: 'cab', left: 0.52, rightTop: 0.56, stack: [0.46, 0.24] }); }
+    function layoutS(w, h) { return K.split(w, h, TOPY.v, { a: 'box', b: 'bars', c: 'cab', left: 0.52, rightTop: 0.56, stack: [0.46, 0.24], compact: [0.37, 0.26] }); }
     function boxGeom(r, ctl) {
       const ix = r.x + 10, iy = r.y + 26, iw = r.w - 20, ih = r.h - 26 - 26;
       const g = { ix, iy, iw, ih, cy: iy + ih * 0.56 };
@@ -114,7 +114,7 @@
       return g;
     }
     function areasS(w, h, ctl) {
-      const L = layoutS(w, h); if (!L || !K.big(L.box, 220, 150)) return [];
+      const L = layoutS(w, h); if (!L || !K.big(L.box, 220, 136)) return [];
       const g = boxGeom(L.box, ctl);
       return [{ key: 'kabel', kind: 'select', to: ctl.kabel === '360' ? 'pigtail' : '360', x: g.cabRect.x, y: g.cabRect.y, w: g.cabRect.w, h: g.cabRect.h }, { key: 'mat', kind: 'select', to: K.optNext(controls[0], ctl.mat), x: g.wallRect.x, y: g.wallRect.y, w: g.wallRect.w, h: g.wallRect.h }];
     }
@@ -187,7 +187,7 @@
       function boxScene(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view, fs = sc.fs;
         K.plate(ctx, r.x, r.y, r.w, r.h, pal, 'Gehäuse im Schnitt (Skizze)', { size: fs });
-        if (!K.big(r, 220, 150)) return;
+        if (!K.big(r, 220, 136)) return;
         const g = boxGeom(r, ctl), ph = view.phase, mat = MATS[ctl.mat] || MATS.alu;
         const spacing0 = waveSpacing(res.lam), spacing = Math.max(spacing0, g.dist / 8);
         ctx.save(); ctx.beginPath(); ctx.rect(r.x + 2, r.y + 22, r.w - 4, r.h - 24); ctx.clip();
@@ -281,7 +281,7 @@
       function barsScene(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view, fs = sc.fs;
         K.plate(ctx, r.x, r.y, r.w, r.h, pal, 'Dämpfungsbilanz in dB (A + R + B und Lecks)', { size: fs });
-        if (!K.big(r, 200, 120)) return;
+        if (!K.big(r, 200, 88)) return;
         const lx = r.x + 12, lw = r.w - 24, top = r.y + 30, bottom = r.y + r.h - 12;
         const rows = [['Wand A + R + B', res.seMat, 'mat']];
         if (res.hasSlot) rows.push(['Schlitz', res.seSlot, 'slot']);
@@ -319,7 +319,7 @@
       function cabScene(ctx, r, view, sc) {
         const pal = sc.pal, { ctl, res } = view, fs = sc.fs;
         K.plate(ctx, r.x, r.y, r.w, r.h, pal, 'Kabeldurchführung: Störspannung innen', { size: fs });
-        if (!K.big(r, 200, 100)) return;
+        if (!K.big(r, 200, 84)) return;
         const lx = r.x + 14, lw = r.w - 28, y1 = r.y + 50, lo = 0, hi = 120, px = v => lx + lw * clamp((v - lo) / (hi - lo), 0, 1);
         // Skala in dBµV
         gfx.line(ctx, [[lx, y1 + 18], [lx + lw, y1 + 18]], pal.line, 2);

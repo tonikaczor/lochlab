@@ -134,6 +134,7 @@ ol.steps{margin:.4em 0;padding-left:1.4em}ol.steps li{margin:.3em 0;overflow-wra
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body class="gs">
 <!--GATE-->
@@ -157,6 +158,7 @@ ol.steps{margin:.4em 0;padding-left:1.4em}ol.steps li{margin:.3em 0;overflow-wra
   <div id="pal"></div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
+<script src="aufgaben.js"></script>
 <script src="ver.js"></script>
 <script src="fx.js"></script>
 <script src="sigcore.js"></script>
@@ -167,6 +169,10 @@ ol.steps{margin:.4em 0;padding-left:1.4em}ol.steps li{margin:.3em 0;overflow-wra
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 <script src="urheber.js"></script>
 <script src="design.js"></script>
+<script>window.LR_TAB = { 'siglab.html': { name: 'Signale und Systeme', gruppen: [{ name: 'Signal und Spektrum', teile: ['kenn', 'spek'] }, { name: 'Filter und Faltung', teile: ['fil', 'fal'] }] } };</script>
+<script>(window.__einQueue = window.__einQueue || []).push({ lab: 'sig', betrieb: 'Signale und Filter beurteilen: Welches Spektrum hat ein Signal, was macht ein Filter damit, wie wirkt eine Faltung. Wer Messsignale auswertet oder Filter dimensioniert, braucht dieses Bild im Kopf.' });</script>
+<script src="labrahmen.js"></script>
+<script src="einordnung.js" async></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

@@ -147,6 +147,7 @@
     '.pf-chip i{display:inline-block;width:14px;height:14px;border-radius:4px;border:1px solid var(--pf-sw-line)}',
     '.pf-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;box-shadow:0 0 0 1px var(--pf-dot-line)}',
     '.pf-svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}',
+    '.pf-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}','.pf-scroll-hint{display:none;margin:2px 0 6px;font-size:12px;color:var(--pf-mute)}','@media(max-width:700px){.pf-scroll .pf-svg-wide{min-width:620px}.pf-scroll-hint{display:block}}',
     '.pf-big{font:700 32px ' + MONO + ';color:var(--pf-val)}',
     '.pf-ok{color:var(--pf-ok)}.pf-warn{color:var(--pf-warn)}.pf-err{color:var(--pf-err)}',
     '.pf-tbl{width:100%;border-collapse:collapse;font-size:13px}',
@@ -516,7 +517,7 @@
         return r.kind === 'copper' ? (outer ? 17 : 15) : r.kind === 'prepreg' ? 30 : r.kind === 'core' ? ((b.layers || 2) <= 2 ? 80 : 54) : r.kind === 'mask' ? 15 : 13;
       };
       const hs = rows.map(hp), sumH = hs.reduce((a, c) => a + c, 0), top = 30, H = top + sumH + 96;
-      const svg = sv('svg', { class: 'pf-svg', viewBox: '0 0 640 ' + H, role: 'img', 'aria-label': 'Querschnitt des Lagenaufbaus' });
+      const svg = sv('svg', { class: 'pf-svg pf-svg-wide', viewBox: '0 0 640 ' + H, role: 'img', 'aria-label': 'Querschnitt des Lagenaufbaus' });
       svg.appendChild(sv('defs', null,
         sv('pattern', { id: 'pfh', width: 8, height: 8, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)' }, sv('line', { x1: 0, y1: 0, x2: 0, y2: 8, stroke: 'rgba(0,0,0,.18)', 'stroke-width': 2 }))));
       let y = top; const ypos = [];
@@ -628,7 +629,8 @@
           segCtl([[1, '1'], [2, '2'], [4, '4'], [6, '6']], n, v => setLayers(v), () => ro),
           h('span', { class: 'pf-sp' }),
           segCtl([[false, 'lesbar'], [true, 'maßstäblich']], S.scaled, v => { S.scaled = v; render(); })),
-        r.svg,
+        h('div', { class: 'pf-scroll' }, r.svg),
+        h('div', { class: 'pf-scroll-hint' }, 'Das Bild lässt sich seitlich wischen.'),
         /* Schicht wählen ohne Zielen: die Schichten im Bild sind nur 13 bis 30 px hoch (unter 44 px), die Liste ist es nicht */
         (() => {
           const s = h('select', { class: 'pf-sel', 'aria-label': 'Schicht wählen', style: 'max-width:100%' }, [h('option', { value: '' }, 'Schicht wählen …')].concat(r.st.rows.map((q, i) => h('option', { value: String(i), selected: S.sel === i ? true : null }, q.name + ' (' + fmt(q.thickness, q.thickness % 1 ? 1 : 0) + ' µm)'))));
@@ -661,7 +663,7 @@
 
     // ---------- Impedanz
     function impGeom(p) {
-      const W = 300, Hh = 150;
+      const W = 300, Hh = 172;
       const svg = sv('svg', { class: 'pf-svg', viewBox: '0 0 ' + W + ' ' + Hh, role: 'img', style: 'max-width:360px;margin:6px auto', 'aria-label': 'Querschnitt der Leiterbahn' });
       const strip = p.mode === 'strip';
       const hs = clamp(p.h * 60, 14, 52), ws = clamp(p.w * 60, 6, 130), ts = clamp(p.t / 35 * 6, 3, 12);
@@ -670,22 +672,22 @@
         const yb = mid + 8;
         svg.appendChild(sv('rect', { x: 20, y: yb, width: W - 40, height: hs, fill: COL.core }));
         svg.appendChild(sv('rect', { x: 20, y: yb + hs, width: W - 40, height: 8, fill: COL.cu }));
-        svg.appendChild(sv('text', { x: 24, y: yb + hs + 7, fill: '#10161c', 'font-size': 8, 'font-weight': 700 }, 'Massefläche'));
+        svg.appendChild(sv('text', { x: 24, y: yb + hs + 22, fill: 'var(--pf-mute)', 'font-size': 11.5, 'font-weight': 700 }, 'Massefläche'));
         svg.appendChild(sv('rect', { x: cx - ws / 2, y: yb - ts, width: ws, height: ts, fill: COL.cu }));
-        svg.appendChild(sv('text', { x: cx, y: yb - ts - 6, 'text-anchor': 'middle', fill: 'var(--pf-fg)', 'font-size': 11 }, 'Leiterbahn w'));
+        svg.appendChild(sv('text', { x: cx, y: yb - ts - 6, 'text-anchor': 'middle', fill: 'var(--pf-fg)', 'font-size': 11.5 }, 'Leiterbahn w'));
         svg.appendChild(sv('line', { x1: cx + ws / 2 + 14, y1: yb, x2: cx + ws / 2 + 14, y2: yb + hs, stroke: C_ACC, 'stroke-width': 1.5 }));
-        svg.appendChild(sv('text', { x: cx + ws / 2 + 20, y: yb + hs / 2 + 4, fill: 'var(--pf-val)', 'font-size': 11 }, 'h'));
-        svg.appendChild(sv('text', { x: cx, y: Hh - 6, 'text-anchor': 'middle', fill: 'var(--pf-mute)', 'font-size': 10 }, 'Mikrostreifen: außen, Luft darüber'));
+        svg.appendChild(sv('text', { x: cx + ws / 2 + 20, y: yb + hs / 2 + 4, fill: 'var(--pf-val)', 'font-size': 11.5 }, 'h'));
+        svg.appendChild(sv('text', { x: cx, y: Hh - 6, 'text-anchor': 'middle', fill: 'var(--pf-mute)', 'font-size': 11.5 }, 'Mikrostreifen: außen, Luft darüber'));
       } else {
         const y0 = mid - hs - ts / 2;
         svg.appendChild(sv('rect', { x: 20, y: y0 - 8, width: W - 40, height: 8, fill: COL.cu }));
         svg.appendChild(sv('rect', { x: 20, y: y0, width: W - 40, height: 2 * hs + ts, fill: COL.core }));
         svg.appendChild(sv('rect', { x: 20, y: y0 + 2 * hs + ts, width: W - 40, height: 8, fill: COL.cu }));
         svg.appendChild(sv('rect', { x: cx - ws / 2, y: mid - ts / 2, width: ws, height: ts, fill: COL.cu }));
-        svg.appendChild(sv('text', { x: cx, y: mid - ts / 2 - 4, 'text-anchor': 'middle', fill: '#10161c', 'font-size': 10, 'font-weight': 700 }, 'w'));
+        svg.appendChild(sv('text', { x: cx, y: mid - ts / 2 - 4, 'text-anchor': 'middle', fill: '#10161c', 'font-size': 11.5, 'font-weight': 700 }, 'w'));
         svg.appendChild(sv('line', { x1: cx + ws / 2 + 14, y1: mid + ts / 2, x2: cx + ws / 2 + 14, y2: mid + ts / 2 + hs, stroke: C_ACC, 'stroke-width': 1.5 }));
-        svg.appendChild(sv('text', { x: cx + ws / 2 + 20, y: mid + ts / 2 + hs / 2 + 4, fill: '#10161c', 'font-size': 11, 'font-weight': 700 }, 'h'));
-        svg.appendChild(sv('text', { x: cx, y: Hh - 6, 'text-anchor': 'middle', fill: 'var(--pf-mute)', 'font-size': 10 }, 'Stripline: innen zwischen zwei Flächen'));
+        svg.appendChild(sv('text', { x: cx + ws / 2 + 20, y: mid + ts / 2 + hs / 2 + 4, fill: '#10161c', 'font-size': 11.5, 'font-weight': 700 }, 'h'));
+        svg.appendChild(sv('text', { x: cx, y: Hh - 6, 'text-anchor': 'middle', fill: 'var(--pf-mute)', 'font-size': 11.5 }, 'Stripline: innen zwischen zwei Flächen'));
       }
       return svg;
     }
@@ -696,9 +698,9 @@
       const X = w => L + (Math.log(w / wmin) / Math.log(wmax / wmin)) * (W - L - R), Y = z => Hh - B - clamp(z, 0, zmax) / zmax * (Hh - B - T);
       [25, 50, 75, 100, 125].forEach(z => {
         svg.appendChild(sv('line', { x1: L, y1: Y(z), x2: W - R, y2: Y(z), stroke: z === 50 ? 'var(--pf-ok-line)' : 'var(--pf-line)', 'stroke-width': 1 }));
-        svg.appendChild(sv('text', { x: L - 4, y: Y(z) + 4, 'text-anchor': 'end', fill: 'var(--pf-mute)', 'font-size': 9 }, String(z)));
+        svg.appendChild(sv('text', { x: L - 4, y: Y(z) + 4, 'text-anchor': 'end', fill: 'var(--pf-mute)', 'font-size': 11.5 }, String(z)));
       });
-      [0.1, 0.3, 1, 3].forEach(w => svg.appendChild(sv('text', { x: X(w), y: Hh - 8, 'text-anchor': 'middle', fill: 'var(--pf-mute)', 'font-size': 9 }, fmt(w, w < 1 ? 1 : 0) + ' mm')));
+      [0.1, 0.3, 1, 3].forEach(w => svg.appendChild(sv('text', { x: X(w), y: Hh - 8, 'text-anchor': 'middle', fill: 'var(--pf-mute)', 'font-size': 11.5 }, fmt(w, w < 1 ? 1 : 0) + ' mm')));
       let d = '';
       for (let i = 0; i <= 60; i++) {
         const w = wmin * Math.pow(wmax / wmin, i / 60), z = zOf(p.mode, Object.assign({}, p, { w }));
@@ -706,7 +708,7 @@
       }
       svg.appendChild(sv('path', { d, fill: 'none', stroke: C_ACC, 'stroke-width': 2 }));
       if (isFinite(z0)) svg.appendChild(sv('circle', { cx: X(clamp(p.w, wmin, wmax)), cy: Y(z0), r: 5, fill: C_WARN, stroke: '#10161c' }));
-      svg.appendChild(sv('text', { x: W - R, y: T + 8, 'text-anchor': 'end', fill: 'var(--pf-mute)', 'font-size': 9 }, 'Z0 in Ω über Bahnbreite w'));
+      svg.appendChild(sv('text', { x: W - R, y: T + 8, 'text-anchor': 'end', fill: 'var(--pf-mute)', 'font-size': 11.5 }, 'Z0 in Ω über Bahnbreite w'));
       return svg;
     }
     function tabImpedanz() {

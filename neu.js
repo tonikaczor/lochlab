@@ -2,6 +2,14 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v62.174', items: [
+      ['Alle Labs im gleichen Aufbau', 'Jedes Lab hat jetzt oben dieselbe schmale Kopfzeile und darunter ein Band mit wenigen Reitern. „Üben“ und „Hilfe“ findest du überall an derselben Stelle. Über den Info-Knopf oben rechts öffnest du „Warum brauche ich das?“ und die Einführung.', 'alle Labs'],
+      ['Mehr Platz am Handy und Tablet', 'Die Labs nutzen den Bildschirm besser aus: Grafiken sind größer, Schrift ist besser lesbar und Knöpfe sind groß genug für den Finger. Nichts läuft mehr seitlich aus dem Bild.', 'alle Labs'],
+      ['Der Lernpfad führt dich', 'Die blaue Karte auf der Startseite zeigt jetzt immer die nächste Station deines Ausbildungspfads, auch wenn du vorher in einem anderen Lab warst. Ab 80 % bekommst du den Hinweis, dass du schon ins nächste Lab wechseln kannst. Für alle Orden brauchst du 100 %.', 'Startseite'],
+      ['Heller Modus im SchaltLab', 'Das SchaltLab folgt jetzt dem hellen Modus. Die Zeichenfläche selbst bleibt dunkel, damit Leitungen und Bauteile gut zu erkennen sind.', 'SchaltLab'],
+      ['Klarere Rückmeldungen', 'Nach einer Aufgabe siehst du in allen Labs auf einen Blick, ob sie richtig war, was noch fehlt und wie es weitergeht.', 'alle Labs'],
+      ['Viele Korrekturen', 'Über 400 Stellen aus einer großen Durchsicht sind überarbeitet: Texte, Zeichnungen, Bedienung und Fehler in einzelnen Aufgaben.', 'ganze App'],
+    ] },
     { v: 'v62.173', items: [
       ['Mega Update!', 'Das größte Update bisher: 62 Labs, Toni als Stimme, viele neue Funktionen und Verbesserungen.', 'ganze App'],
       ['Vorlesen bei mehr Stellen', 'Den Vorlese-Knopf gibt es jetzt auch bei „Warum brauche ich das?“, in den Projekten, im Ausbildungsplan und bei allen Wiki-Einträgen. Du tippst auf den Knopf und der Text wird dir vorgelesen. Die Texte liest dir die Stimme von Toni vor.', 'alle Labs, Projekte, Ausbildungsplan, Wiki'],
@@ -31,11 +39,6 @@
       ['Vorschau beim Setzen', 'Wenn du ein Bauteil wählst, siehst du eine Vorschau in der aktuellen Drehung, auch am Tablet und am Handy. So weißt du schon vor dem Setzen, wie es liegt.', 'LochLab, SchaltLab'],
       ['Schneller zur nächsten Aufgabe', '„Nächste Aufgabe“ wechselt jetzt direkt, ohne die Seite neu zu laden. Am Handy sind die Leisten unten kleiner und die Karte „Warum brauche ich das?“ ist eingeklappt.', 'alle Labs'],
       ['Projekte im Lernpfad', 'Der Lernpfad zeigt jetzt für jeden Beruf einen Schritt „Projekte“ mit den passenden Verbundprojekten. Im Pneumatik-Lab zählen gelöste Aufgaben jetzt auch im Lernpfad und im Ausbildungsplan.', 'Startseite, Pneumatik-Lab'],
-    ] },
-    { v: 'v55.171', items: [
-      ['Dein Ausbildungsplan', 'Neu auf der Startseite: Dein Ausbildungsplan zeigt die Lernfelder deines Berufs mit den passenden Labs, Heften, Wiki-Einträgen und Projekt-Stationen. Du siehst deinen Fortschritt je Lernfeld und bekommst einen Vorschlag, was als Nächstes passt. Zuordnungen, die noch geprüft werden, sind als Entwurf markiert.', 'Startseite ▸ Dein Ausbildungsplan'],
-      ['Nächste Aufgabe', 'Wenn du eine Aufgabe geschafft hast, erscheint unten ein Knopf „Nächste Aufgabe“. Er führt dich direkt zur nächsten Aufgabe im selben Lab, ohne Umweg über das Menü.', 'alle Labs'],
-      ['Warum brauche ich das?', 'In jedem Lab steht jetzt oben eine kurze Karte: wo das Thema im Betrieb vorkommt, zu welchem Lernfeld es gehört und in welchem Projekt es gebraucht wird. Die Karte lässt sich schließen.', 'alle Labs'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

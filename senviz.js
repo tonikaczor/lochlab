@@ -6,8 +6,8 @@
    Aufgaben-, Trainer- und Pruefbereiche werden nicht beruehrt. Farben nur ueber CSS-Variablen der Seite; Bewegung entfaellt bei prefers-reduced-motion.
    Haengt sich per MutationObserver an die vorhandene Seite; Reiter-/Eingabe-IDs der Seite bleiben unveraendert. */
 (function (root) {
-  const CSS = `.vz-bar{display:none;margin:6px 0 0}
-@media (max-width:699px){.vz-bar{display:flex;justify-content:flex-end}}
+  const CSS = `.vz-bar{display:none;margin:0}
+@media (max-width:699px){.vz-bar{display:flex;position:absolute;left:8px;bottom:8px;z-index:6}#cvw{position:relative}#vzOv .vz-bar{display:none}}
 .vz-btn{min-height:44px;min-width:44px;padding:0 16px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:8px;touch-action:manipulation}
 .vz-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #vzOv{position:fixed;inset:0;z-index:160;background:var(--bg);display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -18,8 +18,8 @@
 #vzOv #cvw canvas{touch-action:pan-x pan-y}
 @media (prefers-reduced-motion:no-preference){#vzOv{animation:vzIn .18s ease-out}@keyframes vzIn{from{opacity:0}to{opacity:1}}}`;
   const ZOOM_W = 900;
-  /* Breite des vergroesserten Zeichenfelds: ca. 2,6-fach gegenueber dem Handy-Feld, aber nie unter 700 und nie ueber 1200 px */
-  function zoomWidth(viewW) { const v = Number(viewW); if (!isFinite(v) || v <= 0) return ZOOM_W; return Math.max(700, Math.min(1200, Math.round(v * 2.4))); }
+  /* Breite des vergroesserten Zeichenfelds: ca. 3,2-fach gegenueber dem Handy-Feld, aber nie unter 700 und nie ueber 1200 px */
+  function zoomWidth(viewW) { const v = Number(viewW); if (!isFinite(v) || v <= 0) return ZOOM_W; return Math.max(700, Math.min(1200, Math.round(v * 3.2))); }
   /* Blendet die Lupe nur auf schmalen Bildschirmen ein */
   const zoomUseful = w => Number(w) < 700;
 
@@ -45,8 +45,8 @@
   function mountBar() {
     const cvw = document.getElementById('cvw'); if (!cvw || document.getElementById('vzBar') || ov) return;
     const bar = document.createElement('div'); bar.className = 'vz-bar'; bar.id = 'vzBar';
-    bar.innerHTML = '<button class="vz-btn" id="vzOpen" type="button" aria-label="Prüfstand vergrößert anzeigen">🔍 Vergrößern</button>';
-    cvw.parentNode.insertBefore(bar, cvw.nextSibling); bar.querySelector('#vzOpen').addEventListener('click', openZoom);
+    bar.innerHTML = '<button class="vz-btn" id="vzOpen" type="button" aria-label="Prüfstand vergrößert anzeigen">🔍 Lupe</button>';
+    cvw.appendChild(bar); bar.querySelector('#vzOpen').addEventListener('click', openZoom);
   }
   function init() {
     if (typeof document === 'undefined') return; inject(); mountBar();

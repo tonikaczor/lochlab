@@ -33,7 +33,7 @@
  *  STEUERWERTE: Werte stehen in der SI-Einheit des Schluessels (V, A, Ohm, H, F, Hz, s), Ausnahmen stehen am Schluessel (Grad C fuer temp).
  *
  *  Rig-Objekt: id, name, icon, info, sicht, controls, meters, presets, params, events, simOnly,
- *  setControl, getControl, getControls, step, readMeters, state, draw, hitTest, curves, reset, assess, diagnose(opts?), snapshot, restore, applyPreset, worldSize,
+ *  setControl, getControl, getControls, step, readMeters, state, draw, hitTest, nudge (nur mit Anlagen-nudge; canNudge), curves, reset, assess, diagnose(opts?), snapshot, restore, applyPreset, worldSize,
  *  fire (wenn die Anlage es hat), waveform (nur wenn die Anlage ein Zeitbild hat), setSpeed/getSpeed (Zeitlupe 0,05 ... 2), ariaLabel(), sichtOf(key), stats(), drawError(),
  *  VERDECKTER FEHLER (Fehlersuche): setLock(keys) sperrt Steuerwerte (setControl, applyPreset und restore lassen sie in Ruhe), setHidden(keys) verdeckt Steuerwerte;
  *  ist `fehler` verdeckt, nennt KEINE Ausgabe der Anlage (Meldungen, Ampeltext, aria-label, Bild) den Fehlerfall; diagnose({verdeckt:true}) liefert nur Messbefunde.
@@ -481,7 +481,7 @@
     const ev = [];
     let version = 0, phase = 0, simT = 0, animT = 0, speed = 1, cache = null, cacheVer = -1, computes = 0, drawCount = 0, drawError = null;
     let lastKey = null, lastSicht = null, actRaw = [], befundRaw = [], prevAct = {}, fired = false;
-    let hits = [], hitsW = 0, hitsH = 0;
+    let hits = [], hitsW = 0, hitsH = 0, pans = [];
     const keyList = a => (Array.isArray(a) ? a.filter(k => typeof k === 'string' && Object.prototype.hasOwnProperty.call(dmap, k)) : []);
     let lockKeys = keyList(opts.lock), hiddenKeys = keyList(opts.hidden);
     const anim = { quality: 'hoch', reduced: false, ghost: null };
@@ -718,10 +718,13 @@
       const D = opts.noDraw ? null : getDraw();
       const sc = { hit: (key, x, y, w2, h2, to) => { if (!asGhost && key && dmap[key] && okv(x, y, w2, h2)) hits.push({ key, x, y, w: w2, h: h2, to }); },
         quality: o.quality, reduced: !!o.reduced, header: o.header !== false, band: o.band === true, pal, theme: o.theme || 'dark', D, t: animT, gfx, B: base, peer: peer || null,
-        fs: gfx.fz(w), ghost: !!asGhost, active: rigView && rigView.sicht,
+        fs: gfx.fz(w), ghost: !!asGhost, active: rigView && rigView.sicht, win: o.win || null,
+        /** Handy-Ansicht: meldet die Felder der schmalen Aufteilung (Liste [Beschriftung, Rechteck]); die Oberflaeche zeigt dann je ein Feld (rig.panels()). */
+        pan(list) { if (asGhost || !Array.isArray(list)) return; pans = []; list.forEach(it => { const rc = it && it[1]; if (rc && okv(rc.x, rc.y, rc.w, rc.h) && rc.w > 0 && rc.h > 0) pans.push({ key: String(it[0]).toLowerCase().replace(/[^a-z]/g, ''), label: String(it[0]), x: rc.x, y: rc.y, w: rc.w, h: rc.h }); }); },
         /** ANA_DRAW-Funktion mit Rueckfall; Rueckgabe true = gezeichnet. */
         view(name, rect, data, o2) {
           if (!rect || !okv(rect.x, rect.y, rect.w, rect.h) || rect.w <= 0 || rect.h <= 0) return false;
+          if (o.win && (rect.y + rect.h < o.win.y0 || rect.y > o.win.y1)) return true; /* ausserhalb des sichtbaren Ausschnitts (Handy-Ansicht): nicht zeichnen */
           let done = false;
           if (D && typeof D[name] === 'function') {
             try { done = !!D[name](ctx, rect, data, Object.assign({ theme: o.theme || 'dark', q: o.quality, reduced: !!o.reduced, t: animT }, o2 || {})); } catch (e) { done = false; }
@@ -736,11 +739,11 @@
       if (!ctx || !isNum(w) || !isNum(h) || !(w > 0) || !(h > 0) || w >= 1e7 || h >= 1e7) return;
       t = num(t, 0);
       o = o && typeof o === 'object' ? o : {};
-      o = { quality: QUAL[o.quality] ? o.quality : 'hoch', reduced: !!o.reduced, header: o.header !== false, band: o.band === true, ghost: o.ghost || null, wipe: isNum(o.wipe) ? clamp(o.wipe, 0, 1) : null, theme: o.theme === 'light' ? 'light' : 'dark' };
+      o = { quality: QUAL[o.quality] ? o.quality : 'hoch', reduced: !!o.reduced, header: o.header !== false, band: o.band === true, ghost: o.ghost || null, wipe: isNum(o.wipe) ? clamp(o.wipe, 0, 1) : null, win: o.win && isNum(o.win.y0) && isNum(o.win.y1) ? { y0: o.win.y0, y1: o.win.y1 } : null, theme: o.theme === 'light' ? 'light' : 'dark' };
       if (o.reduced) o.quality = 'niedrig';
       anim.quality = o.quality; anim.reduced = o.reduced;
       drawCount++;
-      hits = []; hitsW = w; hitsH = h;
+      hits = []; hitsW = w; hitsH = h; pans = [];
       try {
         const pal = palette(o.theme);
         ctx.save();
@@ -764,11 +767,11 @@
         ctx.restore();
       } catch (e) { drawError = e && e.message ? String(e.message) : 'Fehler'; try { ctx.restore(); } catch (e2) { /* ignorieren */ } }
     }
-    function hitTest(px, py, w, h) {
+    function hitTest(px, py, w, h, drag) {
       px = num(px, NaN); py = num(py, NaN); w = num(w, NaN); h = num(h, NaN);
       if (!isFinite(px) || !isFinite(py) || !(w > 0) || !(h > 0)) return null;
       let r = null;
-      if (P.hit) { try { r = P.hit(px, py, w, h, viewOf()); } catch (e) { r = null; } }
+      if (P.hit) { try { r = P.hit(px, py, w, h, viewOf(), !!drag); } catch (e) { r = null; } }
       else if (hits.length && hitsW > 0 && hitsH > 0) {
         const qx = px * hitsW / w, qy = py * hitsH / h, tol = 6;
         for (let i = hits.length - 1; i >= 0; i--) {
@@ -786,6 +789,14 @@
       if (!r || !dmap[r.key] || isLocked(r.key)) return null;
       return Object.assign({ kind: dmap[r.key].type }, r);
     }
+    /* Pfeiltasten am Bild (nur Anlagen mit nudge): dx, dy in -1..1 (rechts/oben positiv); liefert wie hitTest { key, kind, set|to } oder null */
+    function nudge(dx, dy) {
+      dx = num(dx, NaN); dy = num(dy, NaN);
+      if (!P.nudge || !isFinite(dx) || !isFinite(dy)) return null;
+      let r = null; try { r = P.nudge(dx, dy, viewOf()); } catch (e) { r = null; }
+      if (!r || !dmap[r.key] || isLocked(r.key)) return null;
+      return Object.assign({ kind: dmap[r.key].type }, r);
+    }
 
     if (opts.controls && typeof opts.controls === 'object') Object.keys(opts.controls).forEach(k => { if (!dmap[k]) return; const r = validate(k, opts.controls[k]); if (r.ok && dmap[k].type !== 'button') ctl[k] = r.v; });
     bump();
@@ -793,7 +804,7 @@
     const api = {
       id: spec.id, name: spec.name, icon: spec.icon, info: spec.info, sicht: Object.assign({}, spec.sicht), controls: defs, meters: spec.meters, presets: spec.presets, params, events: ev,
       simOnly: (CORE.TEXTS && CORE.TEXTS.simOnly) || '',
-      setControl, getControl, getControls, step, readMeters, state, draw, hitTest, curves, reset, assess, diagnose, snapshot, restore, applyPreset, ariaLabel, setSpeed,
+      setControl, getControl, getControls, step, readMeters, state, draw, panels() { return { w: hitsW, h: hitsH, list: pans.map(p => Object.assign({}, p)) }; }, hitTest, nudge, canNudge: !!P.nudge, curves, reset, assess, diagnose, snapshot, restore, applyPreset, ariaLabel, setSpeed,
       setLock, setHidden,
       getLock() { return lockKeys.slice(); },
       getHidden() { return hiddenKeys.slice(); },

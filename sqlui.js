@@ -35,10 +35,10 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['db', '🗄️', 'Datenbank'], ['ed', '⌨️', 'Editor'], ['tasks', '📝', 'Aufgaben'], ['bsp', '📖', 'Beispiele'], ['help', '📘', 'Hilfe']];
+  const TABS = [['db', '🗄️', 'Datenbank'], ['ed', '⌨️', 'Editor'], ['tasks', '📝', 'Aufgaben'], ['trn', '🎲', 'Trainer'], ['bsp', '📖', 'Beispiele'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'db'), db: C.cloneDb(D.makeDb()), dirty: false, edOut: '',
-    task: null, tq: null, tAns: {}, tRes: null, tOut: '', twdb: null
+    trCat: '', task: null, tq: null, tAns: {}, tRes: null, tOut: '', twdb: null
   };
   const DEF_SQL = 'SELECT name, ort\nFROM kunde\nWHERE ort = \'Halle\'\nORDER BY name';
   let edSql = lsGet('ed', DEF_SQL); if (typeof edSql !== 'string') edSql = DEF_SQL;
@@ -89,24 +89,68 @@
     const mp = pos('mitarbeiter'); s += `<text class="er-c" x="${mp[0]}" y="${mp[1] + hgt('mitarbeiter') + 16}" style="fill:var(--mute)">chef_id verweist auf ma_id (Vorgesetzter)</text>`;
     return `<svg viewBox="0 0 960 400" role="img" aria-label="ER-Modell der Firmen-Datenbank mit sechs Tabellen und den Beziehungen zwischen ihnen">${s}</svg>`;
   }
+  /* Handy-Ansicht des ER-Modells (I-sql-01): je Tabelle eine Karte, Beziehungen als antippbare Zeilen */
+  function erRels(info) {
+    const out = [], seen = {};
+    D.er.rels.forEach(([ct, cc, pt, pc]) => { out.push({ ct, cc, pt, pc }); seen[ct + '.' + cc] = 1; });
+    info.forEach(t => t.cols.forEach(c => { if (c.fk && !seen[t.name + '.' + c.n]) { const z = info.find(x => x.name === c.fk), k = z && z.cols.find(y => y.pk); if (k) out.push({ ct: t.name, cc: c.n, pt: c.fk, pc: k.n, self: c.fk === t.name }); } }));
+    return out;
+  }
+  function erCards(db) {
+    const info = D.schemaInfo(db), rels = erRels(info);
+    const cards = info.map(t => `<div class="er-card" id="erc-${esc(t.name)}"><div class="er-ch">${esc(t.name)}</div><ul>${t.cols.map(c => `<li data-c="${esc(t.name)}.${esc(c.n)}"><span class="cn">${esc(c.n)}</span><span class="ct">${esc(c.type)}</span>${c.pk ? '<span class="tg pk">PK</span>' : ''}${c.fk ? '<span class="tg fk">FK</span>' : ''}</li>`).join('')}</ul></div>`).join('');
+    const rl = rels.map((r, i) => `<button class="er-rel" data-rel="${i}" aria-pressed="false"><span>${esc(r.ct)}.${esc(r.cc)} → ${esc(r.pt)}.${esc(r.pc)}</span><span class="rn">n : 1</span></button>`).join('');
+    return `<div class="er-cards">${cards}<h5 class="er-h5">Beziehungen (antippen)</h5><div class="er-rels">${rl}</div><p class="hint2" id="erExp" aria-live="polite">Tippe eine Beziehung an. Dann siehst du, welche Spalten zusammengehören.</p></div>`;
+  }
+  function erPick(i) {
+    const info = D.schemaInfo(S.db), r = erRels(info)[i], root_ = $('#dbView'); if (!r) return;
+    root_.querySelectorAll('.er-card li.hl2').forEach(x => x.classList.remove('hl2'));
+    root_.querySelectorAll('.er-rel').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.rel === i)));
+    const a = root_.querySelector('.er-card li[data-c="' + r.ct + '.' + r.cc + '"]'), b = root_.querySelector('.er-card li[data-c="' + r.pt + '.' + r.pc + '"]');
+    if (a) a.classList.add('hl2'); if (b) b.classList.add('hl2');
+    const ex = $('#erExp'); if (ex) ex.innerHTML = r.self ? `Jede Zeile in <b>${esc(r.ct)}</b> kann über <b>${esc(r.cc)}</b> auf eine andere Zeile derselben Tabelle zeigen (<b>${esc(r.pc)}</b>), zum Beispiel auf den Vorgesetzten.` : `Viele Zeilen in <b>${esc(r.ct)}</b> (n) zeigen über den Fremdschlüssel <b>${esc(r.cc)}</b> auf genau eine Zeile in <b>${esc(r.pt)}</b> (1), nämlich auf den Primärschlüssel <b>${esc(r.pc)}</b>.`;
+    const tgt = root_.querySelector('#erc-' + r.pt); if (tgt && tgt.scrollIntoView) { try { tgt.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} }
+  }
   function renderDb() {
     const info = D.schemaInfo(S.db);
     let h = `<div class="rdout">Die Beispieldatenbank „Firma“ (alle Daten erfunden). Jede Linie im Modell ist eine Beziehung: Auf der <b>n</b>-Seite steht der Fremdschlüssel (FK), auf der <b>1</b>-Seite der Primärschlüssel (PK).</div>
-      <div class="card pl"><h4>ER-Modell</h4><div class="inst">${erSvg(S.db)}</div><p class="hint2">Lesebeispiel: Ein Kunde (1) hat viele Bestellungen (n). Eine Bestellung hat viele Positionen (n), und jede Position zeigt auf genau einen Artikel (1). Zwischen bestellung und artikel gibt es daher eine n:m-Beziehung über die Tabelle bestellposition.</p></div>
+      <div class="card pl"><h4>ER-Modell</h4><div class="inst er-svg">${erSvg(S.db)}</div>${erCards(S.db)}<p class="hint2">Lesebeispiel: Ein Kunde (1) hat viele Bestellungen (n). Eine Bestellung hat viele Positionen (n), und jede Position zeigt auf genau einen Artikel (1). Zwischen bestellung und artikel gibt es daher eine n:m-Beziehung über die Tabelle bestellposition.</p></div>
       <div class="card pl"><h4>Tabellen und Inhalt</h4>${S.dirty ? '<p class="hint2" style="margin:0 0 6px">Stand nach deinen Änderungen im Editor. <button class="chip s" data-a="reset">↺ Zurücksetzen</button></p>' : ''}`;
     h += '<div class="dt">' + info.map(t => { const tb = S.db.tables[t.name]; return `<details><summary>${esc(t.name)} <span class="hint2" style="margin-left:8px">${t.n} Zeilen</span></summary><div class="hb2"><p>${esc(D.desc[t.name] || '')}</p><p class="hint2">${t.cols.map(c => esc(c.n) + ' ' + esc(c.type) + (c.pk ? '<span class="tg pk">PK</span>' : '') + (c.fk ? '<span class="tg fk">FK → ' + esc(c.fk) + '</span>' : '')).join(' · ')}</p>${tableHtml(tb.cols.map(c => c.n), tb.rows, 60)}</div></details>`; }).join('') + '</div></div>';
     $('#dbView').innerHTML = h; if (root.SQL_VIZ) root.SQL_VIZ.mount($('#dbView'), S.db);
   }
-  $('#dbView').addEventListener('click', e => { if (e.target.closest('[data-a=reset]')) resetDb(); });
+  $('#dbView').addEventListener('click', e => { if (e.target.closest('[data-a=reset]')) resetDb(); const rb = e.target.closest('[data-rel]'); if (rb) erPick(+rb.dataset.rel); });
   function resetDb() { S.db = C.cloneDb(D.makeDb()); S.dirty = false; S.edOut = ''; toast('Datenbank zurückgesetzt'); if (S.tab === 'db') renderDb(); else if (S.tab === 'ed') renderEd(); }
 
   /* ============================================================ Reiter Editor */
   const SNIP = [['SELECT … FROM', 'SELECT * FROM '], ['WHERE', '\nWHERE '], ['ORDER BY', '\nORDER BY '], ['GROUP BY', '\nGROUP BY '], ['HAVING', '\nHAVING '], ['JOIN … ON', '\nJOIN  ON '], ['LIMIT', '\nLIMIT ']];
+  const edHint = () => '<span class="hk">Strg+Enter führt aus. </span><span class="ht">Tippe auf „Ausführen“. </span>Mehrere Anweisungen trennst du mit einem Semikolon. ' + (S.dirty ? '<b>Die Datenbank ist verändert</b> (INSERT, UPDATE oder DELETE wurde ausgeführt).' : 'Die Datenbank ist im Originalzustand.');
+  /* Fehlerstelle (I-sql-08): Position aus der Meldung („Position N“) oder das Wort in „…“ im Text suchen */
+  function errSpot(sql, msg) {
+    msg = String(msg || ''); let a = -1, m = /Position (\d+)/.exec(msg);
+    if (m) { a = +m[1] - 1; if (a < 0 || a >= sql.length) a = -1; }
+    if (a < 0) { m = /„([^“]+)“/.exec(msg); if (m) { const i = sql.toLowerCase().indexOf(m[1].toLowerCase()); if (i >= 0) { return { a: i, b: i + m[1].length }; } } return null; }
+    const w = /^[A-Za-z0-9_ÄÖÜäöüß.]+/.exec(sql.slice(a)); let b = a + (w ? w[0].length : 1);
+    if (sql[a] === "'") { const e = sql.indexOf('\n', a); b = e < 0 ? sql.length : e; }
+    return { a, b };
+  }
+  function spotHtml(sql, msg) {
+    const sp = errSpot(sql, msg); S.edSpot = sp; if (!sp) return '';
+    const before = sql.slice(0, sp.a), line = before.split('\n').length, ls = before.lastIndexOf('\n') + 1, e0 = sql.indexOf('\n', sp.a), le = e0 < 0 ? sql.length : e0, col = sp.a - ls + 1;
+    const txt = sql.slice(ls, le), a = sp.a - ls, b = Math.min(sp.b, le) - ls;
+    return '<div class="rdout bad errspot"><span class="st">Fehlerstelle: Zeile ' + line + ', Spalte ' + col + '</span><pre class="code errln">' + esc(txt.slice(0, a)) + '<mark>' + esc(txt.slice(a, b) || ' ') + '</mark>' + esc(txt.slice(b)) + '</pre><button class="btn" data-e="spot">Zur Fehlerstelle springen</button></div>';
+  }
+  function jumpSpot() {
+    const ta = $('#edSql'), sp = S.edSpot; if (!ta || !sp) return; const n = ta.value.length, a = Math.min(sp.a, n), b = Math.min(sp.b, n);
+    ta.focus(); try { ta.setSelectionRange(a, b); } catch (e) {}
+    const line = ta.value.slice(0, a).split('\n').length, lh = parseFloat(getComputedStyle(ta).lineHeight) || 20; ta.scrollTop = Math.max(0, (line - 2) * lh);
+    try { ta.scrollIntoView({ block: 'center' }); } catch (e) {}
+  }
   function renderEd() {
     $('#edView').innerHTML = `<div class="card pl"><h4>Abfrage-Editor</h4>
       <textarea id="edSql" class="sqlin" rows="7" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="SQL-Anweisung">${esc(edSql)}</textarea>
       <div class="btns"><button class="btn pri" data-e="run">▶ Ausführen</button><button class="btn" data-e="reset">↺ Datenbank zurücksetzen</button></div>
-      <p class="hint2">Strg+Enter führt aus. Mehrere Anweisungen trennst du mit einem Semikolon. ${S.dirty ? '<b>Die Datenbank ist verändert</b> (INSERT, UPDATE oder DELETE wurde ausgeführt).' : 'Die Datenbank ist im Originalzustand.'}</p>
+      <p class="hint2" id="edHint">${edHint()}</p>
       <div class="snip">${D.schemaInfo(S.db).map(t => `<button class="chip s" data-ins="${esc(t.name)}">${esc(t.name)}</button>`).join('')}${SNIP.map((x, i) => `<button class="chip s" data-sn="${i}">${esc(x[0])}</button>`).join('')}</div></div><div id="edOut">${S.edOut}</div>`;
   }
   function insertAt(txt) { const ta = $('#edSql'); if (!ta) return; const a = ta.selectionStart || 0, b = ta.selectionEnd || 0; ta.value = ta.value.slice(0, a) + txt + ta.value.slice(b); const p = a + txt.length; ta.focus(); try { ta.setSelectionRange(p, p); } catch (e) {} edSql = ta.value; lsSet('ed', edSql); }
@@ -114,14 +158,17 @@
     const ta = $('#edSql'); edSql = ta ? ta.value : edSql; lsSet('ed', edSql);
     const vz = root.SQL_VIZ ? root.SQL_VIZ.html(edSql, S.db) : ''; /* Visualisierung (sqlviz.js), vor der Ausführung berechnet */
     const r = C.exec(S.db, edSql); if (r.ok && r.results.some(x => x.kind !== 'select')) S.dirty = true; else if (!r.ok && r.results.some(x => x.kind !== 'select')) S.dirty = true;
-    S.edOut = resultHtml(r, S.db, true) + vz; const o = $('#edOut'); if (o) o.innerHTML = S.edOut; if (S.dirty) { const p = $('#edView .hint2'); if (p) p.innerHTML = 'Strg+Enter führt aus. Mehrere Anweisungen trennst du mit einem Semikolon. <b>Die Datenbank ist verändert</b> (INSERT, UPDATE oder DELETE wurde ausgeführt).'; }
+    S.edSpot = null; S.edOut = resultHtml(r, S.db, true) + (r.ok ? '' : spotHtml(edSql, r.error)) + vz; const o = $('#edOut'); if (o) o.innerHTML = S.edOut; if (S.dirty) { const p = $('#edHint'); if (p) p.innerHTML = edHint(); }
     if (!r.ok) sad();
   }
+  const inFeld = el => !!(el && el.matches && el.matches('textarea,input,select'));
+  document.addEventListener('focusin', e => { if (window.innerWidth <= 700 && inFeld(e.target)) document.body.classList.add('kb'); });
+  document.addEventListener('focusout', () => { setTimeout(() => { if (!inFeld(document.activeElement)) document.body.classList.remove('kb'); }, 80); });
   $('#edView').addEventListener('input', e => { if (e.target.id === 'edSql') { edSql = e.target.value; lsSet('ed', edSql); } });
   $('#edView').addEventListener('keydown', e => { if (e.target.id === 'edSql' && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runEd(); } });
   $('#edView').addEventListener('click', e => {
     const b = e.target.closest('button'); if (!b) return;
-    if (b.dataset.e === 'run') runEd(); else if (b.dataset.e === 'reset') resetDb();
+    if (b.dataset.e === 'run') runEd(); else if (b.dataset.e === 'reset') resetDb(); else if (b.dataset.e === 'spot') jumpSpot();
     else if (b.dataset.ins) insertAt(b.dataset.ins + ' '); else if (b.dataset.sn) insertAt(SNIP[+b.dataset.sn][1]);
   });
 
@@ -142,7 +189,7 @@
   }
   function qBody(q, a, r) {
     const lock = r && r.ok;
-    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${lock ? 'disabled' : ''} class="${lock && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    if (q.ask.type === 'choice') return `<div class="opts">${shufOrd(q.ask.choices).map(i => [q.ask.choices[i], i]).map(([c, i]) => `<button data-tc="${i}" ${lock ? 'disabled' : ''} class="${lock && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
     if (q.ask.type === 'num') return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lock ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
     return schemaRef() + `<textarea id="tkSql" class="sqlin" rows="${q.kind === 'dml' ? 6 : 5}" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" aria-label="Deine SQL-Anweisung" placeholder="${q.kind === 'dml' ? 'INSERT, UPDATE oder DELETE schreiben …' : 'SELECT … FROM …'}" ${lock ? 'disabled' : ''}>${esc(a.s || '')}</textarea>
       <div class="btns" style="margin-top:6px"><button class="btn" data-ta="run">▶ Ausführen</button><button class="btn" data-ta="reset">↺ Datenbank zurücksetzen</button></div><div id="tkOut">${S.tOut}</div>`;
@@ -153,29 +200,52 @@
     const s = (a.s || '').trim(); if (!s) { toast('Schreibe zuerst deine SQL-Anweisung.'); return null; }
     const c = D.checkTask(q, s); return { ok: c.ok, given: 'deine Anweisung', msg: c.msg };
   }
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): 1. Fehlversuch = Hinweis und zweiter Versuch, 2. Fehlversuch = Lösung mit Weg; im Prüfmodus bleibt die Lösung verborgen */
+  const TRY = {};
+  const solShown = (r, id) => !!r && (r.ok || (!exam() && (TRY[id] || 0) >= 2));
+  const fbBox = (r, id, inner) => '<div class="lr-fb ' + (r.ok ? 'ok' : solShown(r, id) ? 'loes' : 'tipp') + '" id="lrFb">' + inner + '</div>';
+  const tipText = q => (q.ask.unit ? 'Antworte in ' + q.ask.unit + '. ' : '') + (isSql(q) ? 'Probiere die Anweisung mit „Ausführen“ aus und vergleiche mit dem Soll. ' : '') + 'Lies die Aufgabe noch einmal oder tippe auf „Tipp“.';
+  const fbZeig = () => { const e = document.getElementById('lrFb'); if (e && window.LabRahmen) LabRahmen.zeig(e); };
+  const tipHtml = q => '<p><strong>Tipp:</strong> ' + esc(tipText(q)) + ' Du hast einen zweiten Versuch.</p>';
+  /* Antwortreihenfolge: stabil gemischt (je Auswahl gleich bei jedem Zeichnen), damit die richtige Antwort nicht immer an gleicher Stelle steht */
+  const shufOrd = ch => { let h = 7; String(ch.join('|')).split('').forEach(c => { h = (h * 31 + c.charCodeAt(0)) >>> 0; }); const o = ch.map((_, i) => i); for (let i = o.length - 1; i > 0; i--) { h = (h * 1103515245 + 12345) >>> 0; const j = (h >>> 8) % (i + 1); [o[i], o[j]] = [o[j], o[i]]; } return o; };
   const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig. ' + esc(r.msg || r.given) : (isSql(q) ? '✗ ' + esc(r.msg) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.')}</li></ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b>${isSql(q) ? codeBlock(q.sol) : ' ' + esc(solText(q))}<br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b>${isSql(q) ? codeBlock(q.sol) : ' ' + esc(solText(q))}<br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : (exam() ? '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>' : tipHtml(q)));
 
+  /* Trainer (I-sql-07): Zufallsaufgabe aus den festen Aufgaben, wahlweise nach Thema, am liebsten noch ungelöst */
+  function trnPool() { const d = done(); let pool = TASKS.filter(x => S.trCat === '' || x.cat === S.trCat); const open = pool.filter(x => !d[x.id]); return { pool, open }; }
+  function trnPick(not) {
+    const { pool, open } = trnPool(), base = (open.length ? open : pool).filter(x => x.id !== not); const use = base.length ? base : pool; if (!use.length) return;
+    startTask(use[Math.floor(Math.random() * use.length)].id);
+  }
+  function trnHead() {
+    const { pool, open } = trnPool(), cats = Array.from(new Set(TASKS.map(x => x.cat)));
+    return '<div class="card pl"><h4>Trainer</h4><p class="hint2" style="margin:0 0 8px">Eine Zufallsaufgabe aus den ' + TASKS.length + ' festen Aufgaben, am liebsten eine, die du noch nicht gelöst hast. Die Aufgaben sind immer dieselben, nur die Auswahl ist zufällig.</p>' +
+      '<label class="f"><span>Thema</span><select data-trc="1" aria-label="Thema der Zufallsaufgabe"><option value="">Alle Themen</option>' + cats.map(c => '<option value="' + esc(c) + '"' + (c === S.trCat ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select></label>' +
+      '<div class="btns"><button class="btn pri" data-ta="rnd">🎲 ' + (S.task ? 'Nächste Zufallsaufgabe' : 'Zufallsaufgabe starten') + '</button></div>' +
+      '<p class="hint2" style="margin:6px 0 0">' + (open.length ? open.length + ' von ' + pool.length + ' Aufgaben in diesem Thema sind noch ungelöst.' : 'Alle ' + pool.length + ' Aufgaben in diesem Thema sind gelöst. Der Trainer wiederholt sie jetzt zufällig.') + '</p></div>';
+  }
   function renderTasks(top) {
-    const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
+    const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length, trn = S.tab === 'trn'; let h = trn ? trnHead() : '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {};
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${q.code ? codeBlock(q.code) : ''}${q.table ? tableHtml(q.table.cols, q.table.rows) : ''}${qBody(q, a, r)}`;
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { const h0 = h.length; h += resBlock(q, r, solShown(r, t.id)); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; h = h.slice(0, h0) + fbBox(r, t.id, h.slice(h0)); }
       h += '</div>';
     }
-    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">Abfragen werden automatisch geprüft: Dein Ergebnis wird mit dem Soll-Ergebnis verglichen (Spaltennamen sind egal, die Reihenfolge der Zeilen nur, wenn die Aufgabe sortiert verlangt).</p>`;
+    if (trn) h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. Das Prüfen läuft wie bei den Aufgaben: erst ein Tipp, beim zweiten Fehlversuch die Lösung.</p>`; else h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">Abfragen werden automatisch geprüft: Dein Ergebnis wird mit dem Soll-Ergebnis verglichen (Spaltennamen sind egal, die Reihenfolge der Zeilen nur, wenn die Aufgabe sortiert verlangt).</p>`;
     let last = '';
-    TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
+    if (!trn) TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
     V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
   }
   function checkTask(t) {
     const q = S.tq, a = S.tAns[t.id] || {}, e = evalQ(q, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
+    if (!e.ok) TRY[t.id] = (TRY[t.id] || 0) + 1;
     S.tRes = { id: t.id, ok: e.ok, given: e.given, msg: e.msg, pct };
     if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies die Meldung und versuche es noch einmal.'); }
-    renderTasks(false);
+    renderTasks(false); fbZeig();
   }
   function runTask() {
     const t = curTask(); if (!t) return; const ta = $('#tkSql'); const a = (S.tAns[t.id] = S.tAns[t.id] || {}); if (ta) a.s = ta.value;
@@ -196,15 +266,17 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tOut = ''; S.twdb = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; TRY[id] = 0; S.tOut = ''; S.twdb = null;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
   const tv = $('#taskView');
   tv.addEventListener('input', e => { const t = curTask(); if (!t) return; const a = (S.tAns[t.id] = S.tAns[t.id] || {}); if (e.target.dataset.in) a.v = e.target.value; else if (e.target.id === 'tkSql') a.s = e.target.value; });
   tv.addEventListener('keydown', e => { const t = curTask(); if (!t) return; if (e.key === 'Enter' && e.target.dataset.in) { e.preventDefault(); checkTask(t); } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && e.target.id === 'tkSql') { e.preventDefault(); runTask(); } });
+  tv.addEventListener('change', e => { if (e.target.dataset && e.target.dataset.trc) { S.trCat = e.target.value; renderTasks(false); } });
   tv.addEventListener('click', e => {
     const t = curTask(), tc = e.target.closest('[data-tc]'), ta = e.target.closest('[data-ta]'), row = e.target.closest('.row[data-t]');
+    if (ta && !t && ta.dataset.ta === 'rnd') { trnPick(null); return; }
     if (tc && t) { (S.tAns[t.id] = S.tAns[t.id] || {}).c = +tc.dataset.tc; if (S.tRes && !S.tRes.ok) S.tRes = null; renderTasks(false); return; }
     if (ta && t) {
       const a = ta.dataset.ta;
@@ -213,6 +285,8 @@
       else if (a === 'reset') { S.twdb = null; S.tOut = ''; const o = $('#tkOut'); if (o) o.innerHTML = ''; toast('Datenbank zurückgesetzt'); }
       else if (a === 'hint') hintFor(S.tq, t.id);
       else if (a === 'close') { S.task = null; S.tRes = null; renderTasks(); }
+      else if (a === 'rnd') trnPick(t.id);
+      else if (a === 'next' && S.tab === 'trn') trnPick(t.id);
       else if (a === 'next') { const i = TASKS.findIndex(x => x.id === t.id), nx = TASKS.slice(i + 1).find(x => !done()[x.id]) || TASKS[(i + 1) % TASKS.length]; startTask(nx.id); }
       return;
     }
@@ -246,7 +320,7 @@
       sec('Unterabfragen', `<p>Ein SELECT in Klammern. Liefert es <b>einen Wert</b>, steht es wie eine Zahl: <span class="eq">WHERE preis &gt; (SELECT AVG(preis) FROM artikel)</span>Liefert es <b>eine Liste</b>, nimmst du IN: <span class="eq">WHERE kunde_id IN (SELECT kunde_id FROM bestellung)</span>Auch EXISTS und NOT EXISTS sind möglich.</p>`) +
       sec('Schlüssel, ER-Modell und Normalformen', `<p><b>Primärschlüssel (PK):</b> identifiziert jede Zeile eindeutig, nie NULL. <b>Fremdschlüssel (FK):</b> verweist auf den Primärschlüssel einer anderen Tabelle. Beziehungen: <b>1:n</b> (Fremdschlüssel auf der n-Seite) und <b>n:m</b> (braucht eine Zwischentabelle mit zwei Fremdschlüsseln).</p><table><tr><th>Normalform</th><th>Regel (vereinfacht)</th></tr><tr><td>1. NF</td><td>Jede Zelle enthält genau einen Wert (atomar)</td></tr><tr><td>2. NF</td><td>1. NF und jede Nichtschlüsselspalte hängt vom ganzen Schlüssel ab, nicht nur von einem Teil</td></tr><tr><td>3. NF</td><td>2. NF und keine Nichtschlüsselspalte hängt von einer anderen Nichtschlüsselspalte ab</td></tr></table><p class="hint2">Ziel: Jede Information steht genau einmal (keine Redundanz, keine Änderungsanomalie).</p>`) +
       sec('Typische Fehler', `<ul><li><b>UPDATE oder DELETE ohne WHERE</b> ändert oder löscht alles.</li><li><b>JOIN ohne ON</b> (oder zwei Tabellen mit Komma ohne Bedingung) ergibt das Kreuzprodukt: Zeilenzahl = Zeilen a mal Zeilen b.</li><li><b>= NULL</b> findet nie etwas, nimm IS NULL.</li><li>AND und OR ohne Klammern: AND bindet stärker.</li><li>Text ohne Hochkommas wird als Spaltenname gelesen.</li><li>WHERE mit Aggregatfunktion: dafür gibt es HAVING.</li><li>COUNT(*) bei LEFT JOIN zählt auch die leere „Ersatzzeile“.</li><li><b>SQL-Injection:</b> Eingaben von Benutzern nie in den SQL-Text kleben, sondern als Parameter übergeben (Prepared Statements).</li></ul>`) +
-      sec('Was das Lab (noch) nicht kann', `<p>Nicht enthalten sind: CREATE/ALTER/DROP, UNION, RIGHT und FULL JOIN, Fensterfunktionen, Datums- und Textfunktionen jenseits der Grundfunktionen (UPPER, LOWER, LENGTH, TRIM, SUBSTR, CONCAT, ROUND, ABS, COALESCE), Transaktionen. Die Daten werden nur im Arbeitsspeicher gehalten; mit „Datenbank zurücksetzen“ ist alles wieder im Ausgangszustand.</p><p class="hint2">Hinweis für Ausbilder: Wo das Lab sich bewusst für eine Variante entschieden hat (LIKE ohne Groß-/Kleinschreibung, NULL zuerst, Division mit Nachkommastellen, strenges GROUP BY), steht im Quelltext PRUEFEN.</p>`);
+      sec('Was das Lab (noch) nicht kann', `<p>Nicht enthalten sind: CREATE/ALTER/DROP, UNION, RIGHT und FULL JOIN, Fensterfunktionen, Datums- und Textfunktionen jenseits der Grundfunktionen (UPPER, LOWER, LENGTH, TRIM, SUBSTR, CONCAT, ROUND, ABS, COALESCE), Transaktionen. Die Daten werden nur im Arbeitsspeicher gehalten; mit „Datenbank zurücksetzen“ ist alles wieder im Ausgangszustand.</p><p class="hint2">Hinweis für Ausbilder: Das Lab hat sich bewusst für eine Variante entschieden (LIKE ohne Groß-/Kleinschreibung, NULL zuerst, Division mit Nachkommastellen, strenges GROUP BY). Weicht euer Unterricht ab, bitte melden.</p>`);
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
@@ -258,10 +332,10 @@
   function setTab(t) {
     if (!TABS.some(x => x[0] === t)) t = 'db'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    ({ db: renderDb, ed: renderEd, tasks: renderTasks, bsp: renderBsp, help: renderHelp })[t]();
+    ({ db: renderDb, ed: renderEd, tasks: renderTasks, trn: renderTasks, bsp: renderBsp, help: renderHelp })[t]();
     const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'Datenbank-Lab (SQL)\n<small>' + esc(T[2]) + '</small>'; document.title = 'Datenbank-Lab (SQL): ' + T[2];
   }
-  function setExam(on) { lsSet('exam', on ? '1' : '0'); palSig = ''; updatePal(); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks') renderTasks(false); }
+  function setExam(on) { lsSet('exam', on ? '1' : '0'); palSig = ''; updatePal(); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks' || S.tab === 'trn') renderTasks(false); }
   let palSig = '';
   function updatePal() {
     const F = !!fx(), fxOn = F && !fx().isMuted(), n = Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length, sig = [F, fxOn, exam(), n].join('|'); if (sig === palSig) return; palSig = sig;
@@ -273,12 +347,12 @@
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.a === 'fx') { const F = fx(); if (F) { F.setMuted(!F.isMuted()); palSig = ''; updatePal(); if (!F.isMuted()) ding(); } }
     else if (b.dataset.a === 'exam') setExam(!exam());
-    else if (b.dataset.a === 'rand') { const open = TASKS.filter(t => !done()[t.id]), pool = open.length ? open : TASKS; setTab('tasks'); startTask(pool[Math.floor(Math.random() * pool.length)].id); }
+    else if (b.dataset.a === 'rand') { const open = TASKS.filter(t => !done()[t.id]), pool = open.length ? open : TASKS; setTab('trn'); startTask(pool[Math.floor(Math.random() * pool.length)].id); }
   });
   $('#bTasks').onclick = () => setTab('tasks'); $('#bHelp').onclick = () => setTab('help'); $('#bExam').onclick = () => setExam(!exam());
   $('#title').onclick = () => setTab('db');
   $('#bMenu').onclick = () => {
-    const rows = [['db', 'Datenbank', 'ER-Modell und Tabellen der Firma'], ['ed', 'Editor', 'Eigene Abfragen ausprobieren'], ['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit automatischer Prüfung und Tipps'], ['bsp', 'Beispiele', 'Fertig durchgerechnete Abfragen zum Laden'], ['help', 'Hilfe', 'SQL-Spickzettel'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
+    const rows = [['db', 'Datenbank', 'ER-Modell und Tabellen der Firma'], ['ed', 'Editor', 'Eigene Abfragen ausprobieren'], ['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit automatischer Prüfung und Tipps'], ['trn', 'Trainer', 'Zufallsaufgabe, wahlweise nach Thema'], ['bsp', 'Beispiele', 'Fertig durchgerechnete Abfragen zum Laden'], ['help', 'Hilfe', 'SQL-Spickzettel'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
     sheet('Menü', (b, close) => {
       b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${esc(r[1])}</b><small>${esc(r[2])}</small></div></button>`).join('');
       b.addEventListener('click', e => { const r = e.target.closest('.row'); if (!r) return; close(); const m = r.dataset.m; if (m === 'home') location.href = 'index.html'; else if (m === 'exam') setExam(!exam()); else if (m === 'reset') resetAll(); else setTab(m); });
@@ -287,7 +361,7 @@
   function resetAll() {
     sheet('Fortschritt zurücksetzen?', (b, close) => {
       b.innerHTML = '<p style="margin-top:0">Alle gelösten Aufgaben und Tipps dieses Labs werden auf diesem Gerät gelöscht. Das kann nicht rückgängig gemacht werden.</p><div class="btns"><button class="btn" data-x="no">Abbrechen</button><button class="btn danger" data-x="yes">Löschen</button></div>';
-      b.addEventListener('click', e => { const x = e.target.closest('[data-x]'); if (!x) return; if (x.dataset.x === 'yes') { ['done', 'prog', 'hints', 'ctipps'].forEach(k => { try { localStorage.removeItem(LS + k); } catch (er) {} }); S.task = null; S.tRes = null; palSig = ''; updatePal(); updateBadge(); if (S.tab === 'tasks') renderTasks(); toast('Fortschritt gelöscht'); } close(); });
+      b.addEventListener('click', e => { const x = e.target.closest('[data-x]'); if (!x) return; if (x.dataset.x === 'yes') { ['done', 'prog', 'hints', 'ctipps'].forEach(k => { try { localStorage.removeItem(LS + k); } catch (er) {} }); S.task = null; S.tRes = null; palSig = ''; updatePal(); updateBadge(); if (S.tab === 'tasks' || S.tab === 'trn') renderTasks(); toast('Fortschritt gelöscht'); } close(); });
     });
   }
 

@@ -171,7 +171,9 @@
     dbLo = Math.floor((Math.max(dbLo, -120) - 2) / 20) * 20; dbHi = Math.ceil((Math.min(dbHi, 160) + 2) / 20) * 20; if (dbHi - dbLo < 40) dbHi = dbLo + 40;
     const phs = fin(d.ph).concat(d.phBack ? fin(d.phBack).map(v => Math.max(v, -360)) : []);
     let phLo = Math.min(...phs, -90), phHi = Math.max(...phs, 0);
-    const st = d.phStep || 90; phLo = Math.floor((phLo - 1) / st) * st; phHi = Math.ceil((phHi + 1) / st) * st;
+    /* F10: Mit Totzeit läuft die Phase ins Unendliche. Die Achse endet bei −720° (zwei Umläufe); der Rest wird abgeschnitten und beschriftet. */
+    const PH_FLOOR = ok(d.phFloor) ? d.phFloor : -720, cut = phLo < PH_FLOOR;
+    const st = d.phStep || 90; phLo = Math.floor((phLo - 1) / st) * st; phHi = Math.ceil((phHi + 1) / st) * st; if (cut) phLo = PH_FLOOR;
     const gap = 26, ph1 = Math.round((H - 10 - 34 - gap) * 0.56), ph2 = H - 10 - 34 - gap - ph1;
     const P1 = plotArea(ctx, W, H, pal, { xmin: wMin, xmax: wMax, ymin: dbLo, ymax: dbHi, xlog: true, padL: 52, y0: 10, h: ph1, w: W - 52 - 12 });
     const P2 = plotArea(ctx, W, H, pal, { xmin: wMin, xmax: wMax, ymin: phLo, ymax: phHi, xlog: true, padL: 52, y0: 10 + ph1 + gap, h: ph2, w: W - 52 - 12 });
@@ -193,13 +195,13 @@
     polyline(ctx, P2, d.w, d.ph, pal.s[0], 2.6);
     if (ok(d.wc)) vline(ctx, P2, d.wc, pal.ok, [4, 3], 1.5);
     if (ok(d.wpc)) vline(ctx, P2, d.wpc, pal.danger, [4, 3], 1.5);
-    // Phasenreserve als senkrechte Klammer bei ω_D
-    if (ok(d.wc) && ok(d.pm)) { const px = P2.X(d.wc), a = P2.Y(-180), b = P2.Y(-180 + d.pm); if (ok(px) && ok(a) && ok(b)) { ctx.strokeStyle = pal.ok; ctx.lineWidth = 3; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(px, a); ctx.lineTo(px, b); ctx.stroke(); } }
+    // Phasenreserve als senkrechte Klammer bei ω_D (Rohwert, vom Ausschnitt begrenzt)
+    if (ok(d.wc) && ok(d.pm)) { const pmN = d.pm; const px = P2.X(d.wc), a = P2.Y(-180), b = P2.Y(-180 + pmN); if (ok(px) && ok(a) && ok(b)) { ctx.strokeStyle = pal.ok; ctx.lineWidth = 3; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(px, a); ctx.lineTo(px, b); ctx.stroke(); } }
     P2.unclip();
     // Amplitudenreserve bei ω_180
     if (ok(d.wpc) && ok(d.gmDb) && Math.abs(d.gmDb) < 200) { P1.clip(); const px = P1.X(d.wpc), a = P1.Y(0), b = P1.Y(-d.gmDb); if (ok(px) && ok(a) && ok(b)) { ctx.strokeStyle = pal.danger; ctx.lineWidth = 3; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(px, a); ctx.lineTo(px, b); ctx.stroke(); } P1.unclip(); }
     text(ctx, pal, '|L| in dB', P1.x0 + 6, P1.y0 + 16);
-    text(ctx, pal, 'φ in °', P2.x0 + 6, P2.y0 + 16);
+    text(ctx, pal, 'φ in °' + (cut ? ' (unter ' + fmt(PH_FLOOR, 0) + '° abgeschnitten)' : ''), P2.x0 + 6, P2.y0 + 16);
     text(ctx, pal, 'ω in 1/s', P2.x0 + P2.w, H - 3, { align: 'right' });
     return { P1: P1, P2: P2 };
   }

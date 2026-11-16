@@ -15,21 +15,21 @@
   const W = 340;
   const num = v => { if (typeof v !== 'number' || !fin(v)) return ''; let s = (Math.round(v * 1e4) / 1e4).toString(); if (/e/i.test(s)) s = v.toFixed(2); return s.replace('.', ','); };
   const CSS = `.av{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 10px 8px;margin:8px 0}
-.av h5{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
+.av h5{margin:0 0 6px;font-size:14px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
 .av svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}
-.av svg text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--fg);font-size:12px}
-.av .m{fill:var(--mute)!important}.av .b{font-weight:700}.av .sm{font-size:10.5px}
+.av svg text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;fill:var(--fg);font-size:12px}@media(max-width:600px){.av svg text{font-size:15.5px}}
+.av .m{fill:var(--mute)!important}.av .b{font-weight:700}.av .sm{font-size:11.5px}@media(max-width:600px){.av .sm{font-size:15.5px}}
 .av .axl{stroke:var(--line);stroke-width:1}.av .pth{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linejoin:round}.av .pthf{fill:none;stroke:var(--accent);stroke-width:1.6;opacity:.3}
 .av .cur{stroke:var(--hi);stroke-width:1.6}.av .curd{fill:var(--hi)}
 .av .bar{fill:var(--accent);opacity:.5}.av .barc{fill:var(--hi)}.av .bars{fill:var(--accent)}.av .barf{fill:var(--ok);opacity:.85}.av .bard{fill:var(--accent);opacity:.14}
 .av .barg{fill:none;stroke:var(--mute);stroke-width:1.3;stroke-dasharray:3 3}.av .barx{fill:var(--work);stroke:var(--hi);stroke-width:2}
 .av .rng{fill:var(--accent);opacity:.12}
-.av-note{margin:6px 0 0;font-size:12.5px;color:var(--mute);line-height:1.4}
-.av-ctl{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}.av-ctl label{flex:1 1 140px;display:block}.av-ctl label span{display:block;font-size:12px;color:var(--mute);margin-bottom:3px}
+.av-note{margin:6px 0 0;font-size:14px;color:var(--mute);line-height:1.4}
+.av-ctl{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 8px}.av-ctl label{flex:1 1 140px;display:block}.av-ctl label span{display:block;font-size:14px;color:var(--mute);margin-bottom:3px}
 .av-btns{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.av-btns .btn{flex:1 1 70px;min-width:60px;padding:0 8px}
-.av-st{display:flex;gap:8px;margin:8px 0}.av-st .bx{flex:1;text-align:center;font-size:12px;color:var(--mute);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 2px}.av-st .bx b{display:block;font-size:20px;color:var(--fg)}
+.av-st{display:flex;gap:8px;margin:8px 0}.av-st .bx{flex:1;text-align:center;font-size:14px;color:var(--mute);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:6px 2px}.av-st .bx b{display:block;font-size:20px;color:var(--fg)}
 .av-msg{background:var(--bg);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;margin:8px 0;font-size:14px;line-height:1.45;min-height:44px}
-.av-leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--mute);margin:4px 0 0}.av-leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.av-lbl{font-size:14px;color:var(--mute)}.av-pred{height:44px}.av [data-av=spd]{height:44px}.av-leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;color:var(--mute);margin:4px 0 0}.av-leg i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 @media (prefers-reduced-motion:reduce){.av [data-av=auto]{display:none}}`;
   function css() { try { if (typeof document === 'undefined' || document.getElementById('avCss')) return; const s = document.createElement('style'); s.id = 'avCss'; s.textContent = CSS; document.head.appendChild(s); } catch (e) {} }
   css();
@@ -126,7 +126,7 @@
       for (let i = 0; i < n - 1; i++) {
         for (let j = 0; j < n - 1 - i; j++) {
           cmp++; const sw = a[j] > a[j + 1];
-          push('Vergleiche a[' + j + '] = ' + num(a[j]) + ' mit a[' + (j + 1) + '] = ' + num(a[j + 1]) + ': ' + (sw ? 'Falsche Reihenfolge, die beiden werden getauscht.' : 'Die Reihenfolge stimmt, nichts passiert.'), { c: [j, j + 1], fin: n - i < n ? [n - i, n - 1] : null });
+          push('Vergleiche a[' + j + '] = ' + num(a[j]) + ' mit a[' + (j + 1) + '] = ' + num(a[j + 1]) + ': ' + (sw ? 'Falsche Reihenfolge, die beiden werden getauscht.' : 'Die Reihenfolge stimmt, nichts passiert.'), { c: [j, j + 1], q: { t: 'Wird getauscht?', y: sw }, fin: n - i < n ? [n - i, n - 1] : null });
           if (sw) { const t = a[j]; a[j] = a[j + 1]; a[j + 1] = t; mov++; push('Getauscht: ' + num(a[j]) + ' steht jetzt links von ' + num(a[j + 1]) + '.', { sw: [j, j + 1], fin: n - i < n ? [n - i, n - 1] : null }); }
         }
         push('Durchlauf ' + (i + 1) + ' fertig: ' + num(a[n - 1 - i]) + ' steht an seinem endgültigen Platz (rechts).', { fin: [n - 1 - i, n - 1] });
@@ -135,7 +135,7 @@
     } else if (n >= 2 && kind === 'selection') {
       for (let i = 0; i < n - 1; i++) {
         let m = i; push('Durchlauf ' + (i + 1) + ': Das kleinste Element ab Index ' + i + ' wird gesucht. Vorerst ist es a[' + i + '] = ' + num(a[i]) + '.', { c: [m], fin: i ? [0, i - 1] : null });
-        for (let j = i + 1; j < n; j++) { cmp++; const less = a[j] < a[m]; push('Vergleiche a[' + j + '] = ' + num(a[j]) + ' mit dem bisher Kleinsten a[' + m + '] = ' + num(a[m]) + ': ' + (less ? 'Neues Kleinstes gefunden.' : 'Das Kleinste bleibt.'), { c: [j, m], fin: i ? [0, i - 1] : null }); if (less) m = j; }
+        for (let j = i + 1; j < n; j++) { cmp++; const less = a[j] < a[m]; push('Vergleiche a[' + j + '] = ' + num(a[j]) + ' mit dem bisher Kleinsten a[' + m + '] = ' + num(a[m]) + ': ' + (less ? 'Neues Kleinstes gefunden.' : 'Das Kleinste bleibt.'), { c: [j, m], q: { t: 'Gibt es ein neues Kleinstes?', y: less }, fin: i ? [0, i - 1] : null }); if (less) m = j; }
         if (m !== i) { const t = a[i]; a[i] = a[m]; a[m] = t; mov++; push('Das Kleinste (' + num(a[i]) + ') wird mit a[' + m + '] getauscht und steht nun an Index ' + i + '.', { sw: [i, m], fin: [0, i] }); } else push(num(a[i]) + ' steht schon richtig, es wird nicht getauscht.', { fin: [0, i] });
       }
       push('Fertig: Das Feld ist sortiert.', { fin: [0, n - 1] });
@@ -145,7 +145,7 @@
         push('Das nächste Element ' + num(key) + ' (Index ' + i + ') wird herausgenommen und in den sortierten Teil links eingefügt.', { key: { v: key }, hole: i, fin: [0, i - 1] });
         while (j >= 0) {
           cmp++; const gt = a[j] > key;
-          push('Vergleiche a[' + j + '] = ' + num(a[j]) + ' mit ' + num(key) + ': ' + (gt ? 'größer, also eine Stelle nach rechts schieben.' : 'nicht größer, hier ist der Platz.'), { c: [j], key: { v: key }, hole: j + 1, fin: [0, i - 1] });
+          push('Vergleiche a[' + j + '] = ' + num(a[j]) + ' mit ' + num(key) + ': ' + (gt ? 'größer, also eine Stelle nach rechts schieben.' : 'nicht größer, hier ist der Platz.'), { c: [j], q: { t: 'Muss a[' + j + '] nach rechts rutschen?', y: gt }, key: { v: key }, hole: j + 1, fin: [0, i - 1] });
           if (!gt) break; a[j + 1] = a[j]; mov++;
           push(num(a[j + 1]) + ' ist nach rechts gerutscht, die Lücke wandert nach links.', { key: { v: key }, hole: j, fin: [0, i - 1] }); j--;
         }
@@ -165,7 +165,7 @@
     if (kind === 'linear') {
       for (let i = 0; i < n; i++) {
         cmp++; const eq = a[i] === t;
-        push('Vergleiche a[' + i + '] = ' + num(a[i]) + ' mit ' + num(t) + ': ' + (eq ? 'gleich, gefunden!' : 'nicht gleich, weiter zum nächsten.'), eq ? { c: [i], found: i } : { c: [i], dim: i ? [0, i - 1] : null });
+        push('Vergleiche a[' + i + '] = ' + num(a[i]) + ' mit ' + num(t) + ': ' + (eq ? 'gleich, gefunden!' : 'nicht gleich, weiter zum nächsten.'), Object.assign({ q: { t: 'Ist das der gesuchte Wert?', y: eq } }, eq ? { c: [i], found: i } : { c: [i], dim: i ? [0, i - 1] : null }));
         if (eq) return st;
       }
       push(num(t) + ' kommt im Feld nicht vor (alle ' + n + ' Elemente verglichen).', { dim: [0, n - 1] });
@@ -211,10 +211,16 @@
     if (R.badTarget) return h + `<div class="rdout warn">Bitte gib den gesuchten Wert als Zahl ein.</div>`;
     const st = R.st, i = Math.max(0, Math.min(S.i, st.length - 1)), c = st[i], last = i === st.length - 1;
     S.i = i;
-    h += `<div class="av"><h5>${esc(R.algo[1])}</h5>${bars(c.a, c)}<div class="av-leg"><span><i style="background:var(--accent);opacity:.5"></i>unbearbeitet</span><span><i style="background:var(--hi)"></i>wird verglichen</span>${R.algo[2] === 'sort' ? '<span><i style="background:var(--accent)"></i>gerade getauscht</span><span><i style="background:var(--ok)"></i>endgültig sortiert</span>' : '<span><i style="background:var(--ok)"></i>gefunden</span><span><i style="background:var(--accent);opacity:.14"></i>ausgeschlossen</span>'}</div>
-      <div class="av-st"><div class="bx"><b>${i + 1}/${st.length}</b>Schritt</div><div class="bx"><b>${c.cmp}</b>Vergleiche</div>${R.algo[2] === 'sort' ? `<div class="bx"><b>${c.mov}</b>${R.algo[0] === 'insertion' ? 'Verschiebungen' : 'Tausche'}</div>` : ''}</div>
-      <div class="av-msg" role="status" aria-live="polite">${esc(c.msg)}</div>
-      <div class="av-btns"><button class="btn" data-av="first" ${i === 0 ? 'disabled' : ''} aria-label="Zum Anfang">⏮</button><button class="btn" data-av="prev" ${i === 0 ? 'disabled' : ''}>◀ Zurück</button><button class="btn pri" data-av="next" ${last ? 'disabled' : ''}>Weiter ▶</button><button class="btn" data-av="end" ${last ? 'disabled' : ''} aria-label="Zum Ende">⏭</button><button class="btn" data-av="auto" ${last ? 'disabled' : ''}>${S.playing ? '⏸ Pause' : '▶ Auto'}</button></div></div>`;
+    const pq = S.pred && c.q ? c.q : null, ak = S.algo + '|' + S.list + '|' + S.target + '|' + i, ga = pq ? S.ans[ak] : null, wait = !!pq && !ga;
+    let msg = esc(c.msg), fb = '';
+    if (wait) { msg = '<b>Vorhersage:</b> ' + esc(c.q.t) + ' <span class="hint2" style="display:block;margin:2px 0 0">Die Balken zeigen, was gerade verglichen wird. Entscheide, bevor du weitergehst.</span>'; fb = '<div class="av-btns" data-lr-pq><button class="btn" data-av="ans" data-v="ja">Ja</button><button class="btn" data-av="ans" data-v="nein">Nein</button></div>'; }
+    else if (pq) { const rich = (ga === 'ja') === !!pq.y; msg = '<b>' + (rich ? 'Richtig geraten.' : 'Nicht ganz.') + '</b> ' + esc(c.msg); }
+    h += `<div class="av" data-lr-buehne><h5>${esc(R.algo[1])}</h5>${bars(c.a, c)}<div class="av-msg" role="status" aria-live="polite">${msg}</div>${fb}
+      <div class="av-btns"><button class="btn" data-av="first" ${i === 0 ? 'disabled' : ''} aria-label="Zum Anfang">⏮</button><button class="btn" data-av="prev" ${i === 0 ? 'disabled' : ''}>◀ Zurück</button><button class="btn pri" data-av="next" ${last || wait ? 'disabled' : ''}>Weiter ▶</button><button class="btn" data-av="end" ${last || S.pred ? 'disabled' : ''} aria-label="Zum Ende">⏭</button><button class="btn" data-av="auto" ${last || S.pred ? 'disabled' : ''}>${S.playing ? '⏸ Pause' : '▶ Auto'}</button></div></div>
+    <div class="av"><div class="av-leg" style="margin:0 0 8px"><span><i style="background:var(--accent);opacity:.5"></i>unbearbeitet</span><span><i style="background:var(--hi)"></i>wird verglichen</span>${R.algo[2] === 'sort' ? '<span><i style="background:var(--accent)"></i>gerade getauscht</span><span><i style="background:var(--ok)"></i>endgültig sortiert</span>' : '<span><i style="background:var(--ok)"></i>gefunden</span><span><i style="background:var(--accent);opacity:.14"></i>ausgeschlossen</span>'}</div>
+      <div class="av-st"><div class="bx"><b>${i + 1}/${st.length}</b>Schritt</div><div class="bx"><b>${c.cmp}</b>Vergleiche</div>${R.algo[2] === 'sort' ? `<div class="bx"><b>${c.mov}</b>${R.algo[0] === 'insertion' ? 'Verschiebungen' : 'Tausche'}</div>` : ''}${S.pred && S.sc.n ? `<div class="bx"><b>${S.sc.ok}/${S.sc.n}</b>Treffer</div>` : ''}</div>
+      <div class="av-ctl" style="margin:0;align-items:center"><span class="av-lbl">Auto-Tempo</span><div class="seg">${SPEEDS.map(x => `<button data-av="spd" data-v="${x[0]}" class="${S.speed === x[0] ? 'on' : ''}" aria-pressed="${S.speed === x[0]}">${x[1]}</button>`).join('')}</div><button class="chip av-pred ${S.pred ? 'on' : ''}" data-av="pred" aria-pressed="${S.pred}">🎯 Vorhersage-Modus</button></div>
+      <p class="av-note">${S.pred ? 'Vor jedem Vergleich sagst du voraus, was passiert. Treffer werden gezählt.' : 'Vorhersage-Modus: Du rätst vor jedem Vergleich, was passiert, und siehst dann, ob du richtig lagst. Gilt nicht für die binäre Suche.'}</p></div>`;
     if (R.algo[2] === 'sort') {
       const cmpd = compare(R.a), mx = Math.max.apply(null, cmpd.map(x => x.cmp).concat([1])), mm = Math.max.apply(null, cmpd.map(x => x.mov).concat([1]));
       let s = ''; cmpd.forEach((x, k) => { const y = 6 + k * 50; s += `<text class="b sm" x="8" y="${y + 9}">${esc(x.name)}</text><rect class="bar" x="8" y="${y + 14}" width="${f(Math.max(2, (W - 120) * x.cmp / mx))}" height="10" rx="3"/><text class="sm" x="${f(14 + (W - 120) * x.cmp / mx)}" y="${y + 23}">${x.cmp} Vergleiche</text><rect class="bars" x="8" y="${y + 28}" width="${f(Math.max(2, (W - 120) * x.mov / mm))}" height="10" rx="3"/><text class="sm" x="${f(14 + (W - 120) * x.mov / mm)}" y="${y + 37}">${x.mov} ${x.k === 'insertion' ? 'Verschiebungen' : 'Tausche'}</text>`; });
@@ -222,20 +228,24 @@
     }
     return h;
   }
-  const STATE = { algo: 'bubble', list: '5 2 4 1 3', target: '4', i: 0, playing: false, timer: null };
+  const STATE = { algo: 'bubble', list: '5 2 4 1 3', target: '4', i: 0, playing: false, timer: null, speed: 900, pred: false, ans: {}, sc: { n: 0, ok: 0 } };
+  const SPEEDS = [[1500, 'Langsam'], [900, 'Mittel'], [400, 'Schnell']];
   const reduced = () => { try { return !!(root.matchMedia && root.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { return false; } };
   function mount(el) {
     try {
       if (!el) return; css(); const S = STATE; S.playing = false; if (S.timer) { clearTimeout(S.timer); S.timer = null; }
       const draw = (keepFocus) => { const act = keepFocus && typeof document !== 'undefined' ? document.activeElement : null, key = act && act.dataset ? act.dataset.av : null, pos = act && act.selectionStart; el.innerHTML = viewHtml(S); if (key && el.querySelector) { const n = el.querySelector('[data-av=' + key + ']'); if (n && n.focus && (key === 'list' || key === 'target')) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } } };
-      const tick = () => { if (!S.playing) return; const R = stepsFor(S); if (!R || !R.st || S.i >= R.st.length - 1) { S.playing = false; draw(); return; } S.i++; draw(); S.timer = setTimeout(tick, 900); };
+      const tick = () => { if (!S.playing) return; const R = stepsFor(S); if (!R || !R.st || S.i >= R.st.length - 1) { S.playing = false; draw(); return; } S.i++; draw(); S.timer = setTimeout(tick, S.speed); };
       if (el._avBound !== true) {
         el._avBound = true;
         el.addEventListener('input', e => { const k = e.target && e.target.dataset && e.target.dataset.av; if (!k) return; if (k === 'list') { S.list = e.target.value; S.i = 0; } else if (k === 'target') { S.target = e.target.value; S.i = 0; } else if (k === 'algo') { S.algo = e.target.value; S.i = 0; } else return; S.playing = false; draw(k !== 'algo'); });
         el.addEventListener('click', e => {
           const b = e.target.closest && e.target.closest('[data-av]'); if (!b) return; const k = b.dataset.av, R = stepsFor(S), len = R && R.st ? R.st.length : 1;
           if (k === 'next') S.i = Math.min(len - 1, S.i + 1); else if (k === 'prev') S.i = Math.max(0, S.i - 1); else if (k === 'first') S.i = 0; else if (k === 'end') S.i = len - 1;
-          else if (k === 'auto') { S.playing = !S.playing; if (S.playing && !reduced()) { if (S.i >= len - 1) S.i = 0; draw(); S.timer = setTimeout(tick, 900); return; } if (S.timer) { clearTimeout(S.timer); S.timer = null; } S.playing = false; }
+          else if (k === 'auto') { S.playing = !S.playing; if (S.playing && !reduced()) { if (S.i >= len - 1) S.i = 0; draw(); S.timer = setTimeout(tick, S.speed); return; } if (S.timer) { clearTimeout(S.timer); S.timer = null; } S.playing = false; }
+          else if (k === 'spd') { S.speed = +b.dataset.v || 900; }
+          else if (k === 'pred') { S.pred = !S.pred; S.playing = false; }
+          else if (k === 'ans') { const R2 = stepsFor(S), c2 = R2 && R2.st && R2.st[S.i]; if (c2 && c2.q) { const ak = S.algo + '|' + S.list + '|' + S.target + '|' + S.i; if (!S.ans[ak]) { S.ans[ak] = b.dataset.v; S.sc.n++; if ((b.dataset.v === 'ja') === !!c2.q.y) S.sc.ok++; } } }
           else if (k === 'pre') { const v = b.dataset.v; S.list = v === 'std' ? '5 2 4 1 3' : v === 'rand' ? Array.from({ length: 8 }, () => 1 + Math.floor(Math.random() * 30)).join(' ') : v === 'asc' ? '1 2 3 4 5 6 7' : v === 'desc' ? '7 6 5 4 3 2 1' : '3 1 3 2 1'; S.i = 0; S.playing = false; }
           else return; if (k !== 'auto') { S.playing = false; if (S.timer) { clearTimeout(S.timer); S.timer = null; } } draw();
         });

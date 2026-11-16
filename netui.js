@@ -1,6 +1,6 @@
 'use strict';
 /* Tonfunk Netzwerk-Lab: Oberfläche (Lab-Kennung 'net').
-   Reiter: Binär, Subnetz-Rechner, Werkstatt (Teilen und VLSM), Gleiches Netz?, Schichten und Ports, Beispiele, Aufgaben, Trainer, Hilfe.
+   Reiter: Binär, Subnetz-Rechner, Werkstatt (Teilen und VLSM), Gleiches Netz?, Schichten und Ports, Paketweg, Beispiele, Aufgaben, Trainer, Hilfe.
    Module: netcore.js (NET_CORE, Logik), netdata.js (NET_DATA, NET_TASKS).
    Speicher (Präfix lm4.net.): tab, bin, calc, werk, same, done ({id:true} nur gelöste), prog ({id:Prozent}), hints ({id:höchste Stufe}),
    ctipps ({id:Stufe} nur im Prüfmodus), exam ('1' = Prüfmodus), rt (Trainer: n, ok, streak, best).
@@ -38,7 +38,7 @@
   const qCache = {}, qOf = t => qCache[t.id] || (qCache[t.id] = C.mk(t.kind, t.p));
 
   /* ============================================================ Zustand */
-  const TABS = [['bin', '🔢', 'Binär'], ['calc', '🧮', 'Subnetz-Rechner'], ['werk', '🛠️', 'Werkstatt'], ['same', '🔗', 'Gleiches Netz?'], ['osi', '🧱', 'Schichten und Ports'], ['bsp', '📖', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
+  const TABS = [['bin', '🔢', 'Binär'], ['calc', '🧮', 'Subnetz-Rechner'], ['werk', '🛠️', 'Werkstatt'], ['same', '🔗', 'Gleiches Netz?'], ['osi', '🧱', 'Schichten und Ports'], ['weg', '🛤️', 'Paketweg'], ['bsp', '📖', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['help', '📘', 'Hilfe']];
   const DEF_DEPS = [{ n: 'Vertrieb', h: '100' }, { n: 'Technik', h: '50' }, { n: 'Verwaltung', h: '25' }, { n: 'Server', h: '10' }];
   const S = {
     tab: lsGet('tab', 'calc'),
@@ -73,13 +73,15 @@
   /* ============================================================ Reiter Binär */
   function renderBin() {
     $('#binView').innerHTML = `<div class="card pl"><h4>8-Bit-Umrechner</h4><p class="hint2" style="margin-top:0">Tippe auf ein Bit, um es umzuschalten. Unter jedem Bit steht sein Stellenwert.</p>
-      <div class="bitrow" id="bits"></div><div class="rdout" id="bitOut"></div>
+      <div class="bitrow" id="bits"></div><div class="rdout" id="bitOut"></div><div class="rdout bad" id="bitOvf" role="status" hidden></div>
       <div class="ctl"><button class="chip" data-b="0">Alle 0</button><button class="chip" data-b="255">Alle 1</button><button class="chip" data-b="inc">+ 1</button><button class="chip" data-b="dec">− 1</button><button class="chip" data-b="shl">× 2</button><button class="chip" data-b="rnd">🎲 Zufall</button></div>
       <label class="f"><span>Dezimalwert (0 bis 255)</span><input id="bDec" inputmode="numeric" autocomplete="off" value="${S.bin.v}"></label></div>
       <div class="card pl"><h4>IP-Adresse und Subnetzmaske binär</h4><div class="dsrow"><label class="f"><span>IP-Adresse</span><input id="bIp" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(S.bin.ip)}"></label>
       <label class="f"><span>Maske (/n oder 255.255.…)</span><input id="bM" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(S.bin.m)}"></label></div><div id="ipBin"></div></div>`;
     updateBits(); updateIpBin();
   }
+  /* Überlaufhinweis (I-net-05): 8 Bit reichen nur bis 255. Der Hinweis steht, bis die nächste Eingabe gültig ist. */
+  function binOvf(txt) { const o = $('#bitOvf'); if (!o) return; o.hidden = !txt; o.textContent = txt || ''; }
   function updateBits() {
     const v = S.bin.v, b = C.toBin(v, 8), ws = [];
     const btn = i => `<button class="bitb${b[7 - i] === '1' ? ' on' : ''}" data-i="${i}" aria-pressed="${b[7 - i] === '1'}" aria-label="Bit ${i}, Wert ${1 << i}">${b[7 - i]}<small>${1 << i}</small></button>`;
@@ -96,13 +98,18 @@
   }
   $('#binView').addEventListener('click', e => {
     const bt = e.target.closest('.bitb'), ch = e.target.closest('[data-b]'); if (!bt && !ch) return;
+    binOvf('');
     if (bt) S.bin.v ^= 1 << +bt.dataset.i;
-    else { const a = ch.dataset.b; S.bin.v = a === 'inc' ? (S.bin.v + 1) & 255 : a === 'dec' ? (S.bin.v + 255) & 255 : a === 'shl' ? (S.bin.v * 2) & 255 : a === 'rnd' ? Math.floor(Math.random() * 256) : +a; }
+    else { const a = ch.dataset.b;
+      if (a === 'inc' && S.bin.v === 255) binOvf('Überlauf: 255 + 1 = 256 braucht 9 Bit. Mit 8 Bit geht es wieder bei 0 los (Übertrag fällt weg).');
+      if (a === 'shl' && S.bin.v > 127) binOvf('Überlauf: × 2 schiebt das oberste Bit aus den 8 Stellen heraus. Der Wert ' + S.bin.v * 2 + ' passt nicht in 8 Bit, übrig bleibt ' + ((S.bin.v * 2) & 255) + '.');
+      if (a === 'dec' && S.bin.v === 0) binOvf('Unterlauf: 0 − 1 geht mit 8 Bit nicht ins Negative, es springt auf 255.');
+      S.bin.v = a === 'inc' ? (S.bin.v + 1) & 255 : a === 'dec' ? (S.bin.v + 255) & 255 : a === 'shl' ? (S.bin.v * 2) & 255 : a === 'rnd' ? Math.floor(Math.random() * 256) : +a; }
     save('bin'); $('#bDec').value = S.bin.v; updateBits();
   });
   $('#binView').addEventListener('input', e => {
     const id = e.target.id;
-    if (id === 'bDec') { const s = e.target.value.trim(); if (/^\d{1,3}$/.test(s) && +s <= 255) { S.bin.v = +s; save('bin'); updateBits(); } }
+    if (id === 'bDec') { const s = e.target.value.trim(); if (/^\d{1,3}$/.test(s) && +s <= 255) { S.bin.v = +s; save('bin'); binOvf(''); updateBits(); } else if (/^\d+$/.test(s)) binOvf(s + ' ist größer als 255: Mit 8 Bit reichen die Werte nur von 0 bis 255 (2⁸ − 1). Für ' + s + ' brauchst du mehr Stellen.'); else binOvf(s ? 'Hier zählen nur Ziffern von 0 bis 9.' : ''); }
     else if (id === 'bIp' || id === 'bM') { S.bin[id === 'bIp' ? 'ip' : 'm'] = e.target.value; save('bin'); updateIpBin(); }
   });
 
@@ -110,7 +117,8 @@
   function renderCalc() {
     $('#calcView').innerHTML = `<div class="card pl"><h4>Subnetz-Rechner (IPv4)</h4><div class="dsrow"><label class="f"><span>IP-Adresse</span><input id="cIp" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(S.calc.ip)}"></label>
       <label class="f"><span>Präfix oder Maske (/26 oder 255.255.255.192)</span><input id="cM" inputmode="decimal" autocomplete="off" spellcheck="false" value="${esc(S.calc.m)}"></label></div>
-      <div class="ctl">${[8, 16, 24, 25, 26, 27, 28, 29, 30, 31, 32].map(p => `<button class="chip s" data-p="${p}">/${p}</button>`).join('')}</div></div><div id="cOut"></div>`;
+      <div class="ctl">${[8, 16, 24, 25, 26, 27, 28, 29, 30, 31, 32].map(p => `<button class="chip s" data-p="${p}">/${p}</button>`).join('')}</div>
+      <div class="btns"><button class="btn" data-ue="sub">🎲 Übe das: Aufgabe zu Netzadresse oder Broadcast</button></div></div><div id="cOut"></div>`;
     updateCalc();
   }
   function updateCalc() {
@@ -119,7 +127,7 @@
     const c = C.calc(S.calc.ip, S.calc.m), h = 32 - c.p;
     const row = (k, v, x) => `<tr><td>${k}</td><td class="mono">${v}</td><td class="hint2" style="margin:0">${x || ''}</td></tr>`;
     let note = '';
-    if (c.kind === 'p2p') note = 'Sonderfall /31 (RFC 3021): Punkt-zu-Punkt-Verbindung. Beide Adressen sind nutzbar, es gibt keine Netz- und Broadcast-Adresse im üblichen Sinn. /* PRUEFEN */ Manche Lehrbücher nennen hier 0 Hosts.';
+    if (c.kind === 'p2p') note = 'Sonderfall /31 (RFC 3021): Punkt-zu-Punkt-Verbindung. Beide Adressen sind nutzbar, es gibt keine Netz- und Broadcast-Adresse im üblichen Sinn. Manche Lehrbücher nennen hier 0 Hosts.';
     else if (c.kind === 'host') note = 'Sonderfall /32: genau eine Adresse (Host-Route), z. B. für Loopback-Adressen oder Firewall-Regeln für einen einzelnen Host.';
     o.innerHTML = `<div class="card pl"><h4>Ergebnis</h4><div class="scrx"><table class="tt" style="min-width:0"><tbody>
       ${row('IP-Adresse', c.ip)}${row('Subnetzmaske', c.mask, '/' + c.p)}${row('Wildcard-Maske', c.wildcard, 'Maske invertiert')}
@@ -129,7 +137,7 @@
       <div class="card pl"><h4>Binär</h4>${binRow('IP-Adresse', c.n.ip, c.p)}${binRow('Subnetzmaske', c.n.mask, c.p)}${binRow('Netzadresse', c.n.net, c.p)}</div>`;
   }
   $('#calcView').addEventListener('input', e => { if (e.target.id === 'cIp') S.calc.ip = e.target.value; else if (e.target.id === 'cM') S.calc.m = e.target.value; else return; save('calc'); updateCalc(); });
-  $('#calcView').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (!b) return; S.calc.m = '/' + b.dataset.p; save('calc'); $('#cM').value = S.calc.m; updateCalc(); });
+  $('#calcView').addEventListener('click', e => { if (e.target.closest('[data-ue]')) { S.tr.cat = 'sub'; S.tr.only = ['netaddr', 'bcast']; setTab('rt'); newTrainer(); return; } const b = e.target.closest('[data-p]'); if (!b) return; S.calc.m = '/' + b.dataset.p; save('calc'); $('#cM').value = S.calc.m; updateCalc(); });
 
   /* ============================================================ Reiter Werkstatt */
   const PAL = ['#3b9eff', '#ff9f1c', '#4cd964', '#c77dff', '#ff5c5c', '#2ec4b6', '#f4d35e', '#90a4ae'];
@@ -211,11 +219,12 @@
   /* ============================================================ Reiter Schichten und Ports */
   function renderOsi() {
     $('#osiView').innerHTML = `<div class="card pl"><h4>OSI-Modell und TCP/IP-Modell</h4><div class="scrx"><table class="tt"><thead><tr><th class="n">Nr.</th><th>OSI-Schicht</th><th>Einheit</th><th>Beispiele</th><th>TCP/IP</th></tr></thead><tbody>${C.OSI.map(o => `<tr><td class="n"><b>${o.n}</b></td><td><b>${o.name}</b></td><td>${esc(o.pdu)}</td><td>${esc(o.bsp)}</td><td>${C.TCPIP[o.tcpip]}</td></tr>`).join('')}</tbody></table></div>
-      <p class="hint2">Merkhilfe für die Geräte: Hub = Schicht 1, Switch = Schicht 2 (arbeitet mit MAC-Adressen), Router = Schicht 3 (arbeitet mit IP-Adressen). /* PRUEFEN */ Das TCP/IP-Modell wird mit 4 oder 5 Schichten gelehrt; hier gilt das 4-Schichten-Modell.</p></div>
+      <p class="hint2">Merkhilfe für die Geräte: Hub = Schicht 1, Switch = Schicht 2 (arbeitet mit MAC-Adressen), Router = Schicht 3 (arbeitet mit IP-Adressen). Das TCP/IP-Modell wird mit 4 oder 5 Schichten gelehrt; hier gilt das 4-Schichten-Modell.</p></div>
       <div class="card pl"><h4>Typische Ports</h4><div class="scrx"><table class="tt"><thead><tr><th class="n">Port</th><th>Dienst</th><th>Transport</th></tr></thead><tbody>${C.PORTS.map(p => `<tr><td class="n"><b>${p[1]}</b></td><td>${esc(p[0])}</td><td>${esc(p[2])}</td></tr>`).join('')}</tbody></table></div></div>
       <div class="btns"><button class="btn pri" data-go="schicht">🎲 Zuordnung üben</button></div>`;
   }
-  $('#osiView').addEventListener('click', e => { if (e.target.closest('[data-go]')) { S.tr.cat = 'schicht'; setTab('rt'); newTrainer(); } });
+  function renderWeg() { const v = $('#wegView'); if (root.NET_VIZ && root.NET_VIZ.wegRender) root.NET_VIZ.wegRender(v); else v.innerHTML = ''; }
+  $('#osiView').addEventListener('click', e => { if (e.target.closest('[data-go]')) { S.tr.cat = 'schicht'; S.tr.only = null; setTab('rt'); newTrainer(); } });
 
   /* ============================================================ Reiter Beispiele */
   function renderBsp() {
@@ -277,12 +286,20 @@
   const nDone = () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length;
   function updateBadge() { const b = $('#tkBd'); if (b) b.textContent = nDone() + '/' + TASKS.length; }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): 1. Fehlversuch = Hinweis und zweiter Versuch, 2. Fehlversuch = Lösung mit Weg; im Prüfmodus bleibt die Lösung verborgen */
+  const TRY = {};
+  const solShown = (r, id) => !!r && (r.ok || (!exam() && (TRY[id] || 0) >= 2));
+  const fbBox = (r, id, inner) => '<div class="lr-fb ' + (r.ok ? 'ok' : solShown(r, id) ? 'loes' : 'tipp') + '" id="lrFb">' + inner + '</div>';
+  const tipText = q => (q.ask.unit ? 'Antworte in ' + q.ask.unit + '. ' : q.ask.type === 'bin' ? 'Gib nur Nullen und Einsen an, mit der geforderten Stellenzahl. ' : q.ask.type === 'ip' ? 'Schreibe vier Zahlen von 0 bis 255, durch Punkte getrennt. ' : '') + 'Rechne Schritt für Schritt nach oder tippe auf „Tipp“.';
+  const fbZeig = () => { const e = document.getElementById('lrFb'); if (e && window.LabRahmen) LabRahmen.zeig(e); };
+  const tipHtml = q => '<p><strong>Tipp:</strong> ' + esc(tipText(q)) + ' Du hast einen zweiten Versuch.</p>';
   function checkTask(t) {
     const q = qOf(t), a = S.tAns[t.id] || {}, v = qVerify(q, a); if (v.err) { toast(v.err); return; }
     const ok = v.ok, pct = ok ? pctFor(t.id) : 0, ex = exam();
+    if (!ok) TRY[t.id] = (TRY[t.id] || 0) + 1;
     S.tRes = { id: t.id, ok, pct, text: ok ? 'Richtig: ' + v.given : 'Deine Antwort „' + v.given + '“ stimmt nicht.' };
     if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) { ding(); } else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Nutze einen Tipp oder lies die Erklärung.'); }
-    renderTasks(false);
+    renderTasks(false); fbZeig();
   }
   function hintTask(t) {
     const q = qOf(t), h = lsGet('hints', {}), n = Math.min(3, (h[t.id] || 0) + 1), ex = exam();
@@ -299,10 +316,13 @@
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
       if (r) {
+        const h0 = h.length;
         h += `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓' : '✗'} ${esc(r.text)}</li></ul>`;
-        if (r.ok || !exam()) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(q.sol)}<br>${esc(q.expl)}</div>`;
+        if (solShown(r, t.id)) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(q.sol)}<br>${esc(q.expl)}</div>`;
+        else if (!exam()) h += tipHtml(q);
         else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
         if (r.ok) h += '<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>';
+        h = h.slice(0, h0) + fbBox(r, t.id, h.slice(h0));
       }
       h += '</div>';
     }
@@ -320,18 +340,19 @@
     if (row) startTask(row.dataset.t);
   });
   function startTask(id) {
-    S.task = id; S.tAns = {}; S.tRes = null;
+    S.task = id; S.tAns = {}; S.tRes = null; TRY[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
 
   /* ============================================================ Zufalls-Trainer */
   const TCATS = [['all', 'Alle'], ['bin', 'Binär'], ['sub', 'Subnetting'], ['vlsm', 'VLSM'], ['adr', 'Adressierung'], ['schicht', 'Schichten/Ports']];
-  function newTrainer() { const T = S.tr; T.q = C.gen(R0, T.cat, T.level); T.ans = {}; T.res = null; T.tip = 0; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = C.gen(R0, T.cat, T.level, T.cat === 'sub' ? T.only : null); T.ans = {}; T.res = null; T.tip = 0; renderTrainer(); }
   function renderTrainer() {
-    const T = S.tr, V = $('#rtView'); if (!T.q) { T.q = C.gen(R0, T.cat, T.level); T.tip = 0; }
+    const T = S.tr, V = $('#rtView'); if (!T.q) { T.q = C.gen(R0, T.cat, T.level, T.cat === 'sub' ? T.only : null); T.tip = 0; }
     const q = T.q, r = T.res;
     let h = `<div class="card pl"><h4>Zufalls-Trainer</h4><div class="seg" role="group" style="flex-wrap:wrap">${TCATS.map(c => `<button data-rc="${c[0]}" class="${T.cat === c[0] ? 'on' : ''}">${c[1]}</button>`).join('')}</div>
+      ${T.only && T.cat === 'sub' ? '<p class="hint2" style="margin:0 0 8px">Übung: nur Netzadresse und Broadcast. Tippe oben auf eine Kategorie, um wieder alle Fragearten zu mischen.</p>' : ''}
       <div class="seg" role="group">${[1, 2, 3].map(l => `<button data-rl="${l}" class="${T.level === l ? 'on' : ''}" aria-label="Stufe ${l}">Stufe ${l} ${dots(l)}</button>`).join('')}</div>
       <div class="stats"><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div><div class="bx"><b>${S.rt.ok}/${S.rt.n}</b>richtig</div></div>
       <div class="lv">${dots(q.level)} · ${esc(C.CATS[q.cat])}</div><p style="margin:8px 0">${esc(q.text)}</p>${qHTML(q, T.ans, !!r, r ? (r.shown ? null : r.ok) : null)}
@@ -348,7 +369,7 @@
   }
   $('#rtView').addEventListener('click', e => {
     const T = S.tr, c = e.target.closest('[data-rc]'), l = e.target.closest('[data-rl]'), a = e.target.closest('[data-ra]'), qc = e.target.closest('[data-qc]');
-    if (c) { T.cat = c.dataset.rc; newTrainer(); } else if (l) { T.level = +l.dataset.rl; newTrainer(); }
+    if (c) { T.cat = c.dataset.rc; T.only = null; newTrainer(); } else if (l) { T.level = +l.dataset.rl; newTrainer(); }
     else if (qc) { if (!T.res) { T.ans.c = +qc.dataset.qc; renderTrainer(); } }
     else if (a) {
       const k = a.dataset.ra;
@@ -366,7 +387,7 @@
     $('#helpView').innerHTML =
       sec('Binär und Stellenwerte', `<p>Ein Oktett hat 8 Bit mit den Stellenwerten:</p><table><tr><th>128</th><th>64</th><th>32</th><th>16</th><th>8</th><th>4</th><th>2</th><th>1</th></tr></table><p>Dezimal nach Binär: von links jeden Stellenwert abziehen, wenn er noch passt (1), sonst 0. Binär nach Dezimal: die Stellenwerte der Einsen addieren. Beispiel: 10110101 = 128 + 32 + 16 + 4 + 1 = 181.</p>`, true)
       + sec('Formeln', `<span class="eq">Hostbits h = 32 − Präfix</span><span class="eq">Adressen im Netz = 2^h</span><span class="eq">Nutzbare Hosts = 2^h − 2</span><span class="eq">Blockgröße = 256 − Maskenwert (im interessanten Oktett)</span><span class="eq">Netzadresse = IP UND Maske</span><span class="eq">Broadcast = alle Hostbits 1 = Netzadresse + Blockgröße − 1</span><span class="eq">Wildcard = 255 − Maske (je Oktett)</span><p>Subnetze teilen: n Subnetze brauchen b Bit mit 2^b ≥ n, neuer Präfix = alter Präfix + b.</p><p>VLSM: Abteilungen absteigend nach Hosts sortieren, je Abteilung die kleinste Zweierpotenz mit 2^h − 2 ≥ Hosts wählen, lückenlos ab der Netzadresse vergeben.</p>`)
-      + sec('Präfix, Maske und Hosts', `<table><tr><th>Präfix</th><th>Maske</th><th>Adressen</th><th>Hosts</th></tr>${rows}</table><p>Maskenwerte im interessanten Oktett: 128, 192, 224, 240, 248, 252, 254, 255 (1 bis 8 Einsen). Die Blockgröße ist 128, 64, 32, 16, 8, 4, 2, 1.</p><p><b>/31</b> (RFC 3021): 2 nutzbare Adressen für Punkt-zu-Punkt-Verbindungen. <b>/32</b>: eine einzelne Host-Adresse. /* PRUEFEN */ Manche Lehrbücher nennen dafür 0 Hosts.</p>`)
+      + sec('Präfix, Maske und Hosts', `<table><tr><th>Präfix</th><th>Maske</th><th>Adressen</th><th>Hosts</th></tr>${rows}</table><p>Maskenwerte im interessanten Oktett: 128, 192, 224, 240, 248, 252, 254, 255 (1 bis 8 Einsen). Die Blockgröße ist 128, 64, 32, 16, 8, 4, 2, 1.</p><p><b>/31</b> (RFC 3021): 2 nutzbare Adressen für Punkt-zu-Punkt-Verbindungen. <b>/32</b>: eine einzelne Host-Adresse. Manche Lehrbücher nennen dafür 0 Hosts.</p>`)
       + sec('Merkregeln', `<p><b>Zweierpotenzen:</b> 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096.</p><p><b>Privat (RFC 1918):</b> 10.0.0.0/8, 172.16.0.0/12 (172.16 bis 172.31), 192.168.0.0/16.</p><p><b>Sonderbereiche:</b> 127.0.0.0/8 Loopback, 169.254.0.0/16 APIPA (kein DHCP erreichbar), 224.0.0.0/4 Multicast.</p><p><b>Klassen:</b> A 1–126 (/8), B 128–191 (/16), C 192–223 (/24), D 224–239, E ab 240.</p><p><b>Gateway:</b> liegt im selben Subnetz wie der Host, ist weder Netz- noch Broadcast-Adresse.</p><p><b>Vorgehen:</b> Maske in Punktschreibweise, interessantes Oktett suchen, Blockgröße bilden, Vielfaches unterhalb der IP-Zahl = Netzadresse.</p>`)
       + sec('Schichten und Ports', `<p>OSI: 7 Anwendung, 6 Darstellung, 5 Sitzung, 4 Transport, 3 Vermittlung, 2 Sicherung, 1 Bitübertragung. Hub = 1, Switch = 2, Router = 3; Ethernet = 2, IP = 3, TCP/UDP = 4, HTTP/DNS/SSH = 7.</p><p>Ports: SSH 22, Telnet 23, SMTP 25, DNS 53, DHCP 67/68, HTTP 80, POP3 110, IMAP 143, HTTPS 443, RDP 3389. Alle Details im Reiter „Schichten und Ports“.</p>`)
       + sec('Prüfmodus und Tipps', '<p>Beim normalen Üben kosten Tipps nichts. Im Prüfmodus (🎓) kostet jede Tipp-Stufe 25 % der Punkte; Stufe 3 verrät die Lösung, dann zählt die Aufgabe nicht. Die Erklärung gibt es im Prüfmodus erst nach der richtigen Antwort.</p>')
@@ -382,7 +403,7 @@
   function setTab(t) {
     if (!TABS.some(x => x[0] === t)) t = 'calc'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
-    ({ bin: renderBin, calc: renderCalc, werk: renderWerk, same: renderSame, osi: renderOsi, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, help: renderHelp })[t]();
+    ({ bin: renderBin, calc: renderCalc, werk: renderWerk, same: renderSame, osi: renderOsi, weg: renderWeg, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, help: renderHelp })[t]();
     const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'Netzwerk-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'Netzwerk-Lab: ' + T[2];
     const ab = $('.tab.on'); if (ab && ab.scrollIntoView) try { ab.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch (e) {}
   }
@@ -398,7 +419,7 @@
     const b = e.target.closest('button'); if (!b) return;
     if (b.dataset.a === 'fx') { const F = fx(); if (F) { F.setMuted(!F.isMuted()); palSig = ''; updatePal(); if (!F.isMuted()) ding(); } }
     else if (b.dataset.a === 'exam') setExam(!exam());
-    else if (b.dataset.a === 'rand') { setTab('rt'); newTrainer(); }
+    else if (b.dataset.a === 'rand') { S.tr.only = null; setTab('rt'); newTrainer(); }
   });
   $('#bTasks').onclick = () => setTab('tasks'); $('#bHelp').onclick = () => setTab('help'); $('#bExam').onclick = () => setExam(!exam());
   $('#title').onclick = () => setTab('calc');

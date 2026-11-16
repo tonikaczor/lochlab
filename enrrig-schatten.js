@@ -27,7 +27,7 @@
     { key: 'bypass', label: 'Bypassdioden', type: 'select', value: 'ok', group: GRP.mod, options: [{ value: 'ok', label: 'in Ordnung' }, { value: 'fehlt', label: 'fehlen' }, { value: 'kurz', label: 'eine durchlegiert (Kurzschluss)' }, { value: 'geliefert', label: 'wie geliefert (nicht geprüft)' }],
       help: 'In Ordnung: Die Diode übernimmt den Strom, wenn ihr Teilstrang verschattet ist. Fehlt sie, wird die verschattete Zelle zum Verbraucher. Durchlegiert: Ein Teilstrang des ersten Moduls liefert gar nichts mehr.' },
     { key: 'schatten', label: 'Schatten', type: 'select', value: 'keiner', group: GRP.sch, options: [{ value: 'keiner', label: 'kein Schatten' }, { value: 'kante', label: 'Kante von unten (Hecke, Schnee)' }, { value: 'seite', label: 'Kante von der Seite' }, { value: 'blatt', label: 'ein Blatt (eine Zelle)' }, { value: 'laub', label: 'Laub (verstreute Zellen)' }, { value: 'mast', label: 'Mast (eine Zellspalte)' }, { value: 'diagonal', label: 'Diagonal (Ecke)' }, { value: 'hecke', label: 'Hecke vor dem Modul (Sonnenstand)' }],
-      help: 'Die Art des Schattens. Bei der Hecke bestimmen Sonnenhöhe, Höhe und Abstand der Hecke den Schatten, die Einstrahlung folgt dem klaren Himmel. Tippe im Bild auf eine Zelle, um ein Blatt zu setzen.' },
+      help: 'Die Art des Schattens. Bei der Hecke bestimmen Sonnenhöhe, Höhe und Abstand der Hecke den Schatten, die Einstrahlung folgt dem klaren Himmel. Tippe im Bild auf eine Zelle, um ein Blatt zu setzen. Bei „Kante“ ziehst du die Schattenkante mit dem Finger über das Modul.' },
     { key: 'tiefe', label: 'Ausdehnung', type: 'slider', scale: 'lin', min: 0, max: 100, step: 1, unit: '%', value: 10, group: GRP.sch, visible: s => !!s && ['kante', 'seite', 'diagonal', 'laub'].indexOf(s.schatten) >= 0,
       help: 'Wie weit der Schatten ins Modul reicht (Kante, Seite, Diagonal). Beim Laub ist es der Anteil an einem Viertel der Zellen.' },
     { key: 'dunkel', label: 'Schattentiefe', type: 'slider', scale: 'lin', min: 0, max: 100, step: 5, unit: '%', value: 100, group: GRP.sch, visible: s => !!s && s.schatten !== 'keiner',
@@ -229,6 +229,7 @@
     }
     const inR = (x, y, r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
     const NXT = { keiner: 'blatt', blatt: 'blatt' };
+    let dragMod = { i: 0, j: 0 };
     function modPos(g, i, j) { const c = g.cells; return { x: c.x0 + i * (c.mw + c.gap), y: c.y0 + j * c.rowH, w: c.mw, h: c.mh }; }
     function hit(x, y, L) {
       const m = A; if (!m || !m.ok) return null; const g = geom(L);
@@ -240,6 +241,7 @@
         const q = modPos(g, i, j);
         // Bypassdioden-Symbole unter dem Modul
         for (let k = 0; k < m.spec.subs; k++) { const dx = diodeX(q, k, m.spec.subs); if (Math.abs(x - dx) <= 22 && y >= q.y + q.h + 2 && y <= q.y + q.h + 28) return { key: 'bypass', kind: 'switch', to: ctl.bypass === 'ok' ? 'fehlt' : ctl.bypass === 'fehlt' ? 'kurz' : 'ok' }; }
+        if (inR(x, y, q) && (ctl.schatten === 'kante' || ctl.schatten === 'seite' || ctl.schatten === 'diagonal')) { dragMod = { i, j }; return { key: 'tiefe', kind: 'drag', min: 0, max: 100, value: ctl.tiefe }; } // B2c (B-enr-04): Schatten im Bild ziehen
         if (inR(x, y, q)) {
           const xf = (x - q.x) / q.w, yf = 1 - (y - q.y) / q.h, cells = layoutOf(m.spec); let best = null, bd = 9;
           cells.forEach(c => { const d = Math.hypot(c.xf - xf, c.yf - yf); if (d < bd) { bd = d; best = c; } });
@@ -284,6 +286,14 @@
           ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(hx, hy, rr, 0, 6.2832); ctx.fill();
           if (dt.hot.P >= (api.core().pv.hotspotLimits || { warn: 25 }).warn) G.text(ctx, 'Hotspot ' + fm(dt.hot.P, 1) + ' W', hx, hy - rr - 8, { size: 12 * fs, bold: true, color: COL.warn });
         }
+      }
+      // B2c (B-enr-04): Griff zum Ziehen der Schattenkante (nur Kante von unten und von der Seite)
+      if (!dark && (ctl.schatten === 'kante' || ctl.schatten === 'seite')) {
+        const q0 = modPos(g, 0, 0), fr = clamp(ctl.tiefe / 100, 0, 1), ex = ctl.schatten === 'seite' ? q0.x + q0.w * fr : q0.x + q0.w / 2, ey = ctl.schatten === 'kante' ? q0.y + q0.h * (1 - fr) : q0.y + q0.h / 2;
+        ctx.save(); ctx.strokeStyle = COL.gold; ctx.lineWidth = 2; ctx.setLineDash([6, 4]); ctx.beginPath();
+        if (ctl.schatten === 'kante') { ctx.moveTo(q0.x, ey); ctx.lineTo(q0.x + q0.w, ey); } else { ctx.moveTo(ex, q0.y); ctx.lineTo(ex, q0.y + q0.h); } ctx.stroke(); ctx.setLineDash([]);
+        G.circle(ctx, ex, ey, 9 * fs, COL.gold, '#10161c', 2); ctx.restore();
+        G.text(ctx, 'Schatten ziehen', clamp(ex, q0.x + 60, q0.x + q0.w - 60), ctl.schatten === 'kante' ? Math.max(q0.y + 12, ey - 14 * fs) : q0.y - 12 * fs, { size: 12 * fs, bold: true, color: COL.gold });
       }
       // Hecke und Schatten
       if (ctl.schatten === 'hecke') {
@@ -338,7 +348,13 @@
       onSet(key) { if (key === 'zeitlauf') T.clock = undefined; },
       onPreset() { T.started = false; T.path = []; },
       reset() { T.started = false; T.n = 0; T.path = []; T.stuck = false; T.scanT = -1; T.clock = undefined; T.P = 0; T.U = 0; memoP = new Map(); vis.t = -1; },
-      drag(key, wx, wy, L) { if (key !== 'hH') return false; const g = geom(L), s = g.scene, hpx = clamp((s.y + s.h - 8) - wy, 6.5, 130); ctl.hH = clamp(Math.round(hpx / 130 * 6 * 10) / 10, 0.5, 6); api.dirty(); return true; }
+      drag(key, wx, wy, L) {
+        if (key === 'tiefe') { // B2c (B-enr-04): Schattenkante mit dem Finger ziehen; gleiche Abbildung wie shade.make (kante: von unten, seite: von links, diagonal: Mittel)
+          const g = geom(L), q = modPos(g, dragMod.i, dragMod.j), xf = clamp((wx - q.x) / q.w, 0, 1), yf = clamp(1 - (wy - q.y) / q.h, 0, 1);
+          const fr = ctl.schatten === 'kante' ? yf : ctl.schatten === 'seite' ? xf : (xf + yf) / 2; const v = clamp(Math.round(fr * 20) * 5, 0, 100);
+          if (v === ctl.tiefe) return false; ctl.tiefe = v; api.dirty(); return true;
+        }
+        if (key !== 'hH') return false; const g = geom(L), s = g.scene, hpx = clamp((s.y + s.h - 8) - wy, 6.5, 130); ctl.hH = clamp(Math.round(hpx / 130 * 6 * 10) / 10, 0.5, 6); api.dirty(); return true; }
     };
   }
 

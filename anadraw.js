@@ -490,6 +490,8 @@
       const F = frame(ctx, E, rect, { x0: xmin * px.k, x1: xmax * px.k, y0: ymin * py.k, y1: ymax * py.k, xlog, xl: xl, xu: px.u, yl: yl, yu: py.u, top });
       if (!F) return false;
       const pl = F.pl, X = x => F.X(x * px.k), Y = y => F.Y(y * py.k);
+      /* optional: Lage der Zeichenflaeche und Achsenbereich nach aussen geben (fuer das Ziehen des Arbeitspunkts) */
+      if (d.layoutOut && typeof d.layoutOut === 'object') { d.layoutOut.pl = { x: pl.x, y: pl.y, w: pl.w, h: pl.h }; d.layoutOut.x0 = xmin; d.layoutOut.x1 = xmax; d.layoutOut.y0 = ymin; d.layoutOut.y1 = ymax; d.layoutOut.xlog = xlog; }
       if (title) T(ctx, E.box, P, title, rect.x + 4, rect.y + 9, { size: 12, bold: true, align: 'left', bg: false, maxw: rect.w - 8 });
       legendDraw(ctx, E, rect, legend, rect.y + 4 + (title ? 16 : 0));
       /* getoente Bereiche */
@@ -512,6 +514,15 @@
       if (finS(limX)) {
         const x = X(limX);
         if (x >= pl.x && x <= pl.x + pl.w) { line(ctx, x, pl.y, x, pl.y + pl.h, P.err, 2, KINDS.err.dash); T(ctx, E.box, P, (str(lim.name) || 'Grenze') + ' = ' + fv(limX, xu0), x + 4, pl.y + pl.h - 9, { size: 11, align: x > pl.x + pl.w * 0.6 ? 'right' : 'left', color: P.err, bold: true, maxw: pl.w * 0.7 }); }
+      }
+      /* Zielwert (waagerechte Linie, gruen wenn erreicht) */
+      if (d.target && finS(obj(d.target).y)) {
+        const tg = obj(d.target), y = Y(tg.y);
+        if (y >= pl.y && y <= pl.y + pl.h) {
+          const col = tg.ok ? P.ok : P.warn;
+          line(ctx, pl.x, y, pl.x + pl.w, y, col, 2, [8, 4]);
+          T(ctx, E.box, P, (str(tg.name) || 'Ziel') + ' = ' + fv(tg.y, yu0) + (tg.ok ? ' erreicht' : ''), pl.x + 4, y + (y < pl.y + 16 ? 10 : -9), { size: 11, align: 'left', color: col, bold: true, maxw: pl.w - 8 });
+        }
       }
       /* Kurven: erst Geisterlinien und Geraden, dann die Hauptkurven */
       const order = S.filter(s => s._st && s._gh).concat(S.filter(s => s._st && !s._gh && s.kind === 'line')).concat(S.filter(s => s._st && !s._gh && s.kind !== 'line'));
@@ -557,13 +568,19 @@
     L.forEach(l => l.points.forEach(p => { if (p[1] > ymax) ymax = p[1]; }));
     if (mk && mk.y > ymax) ymax = mk.y;
     if (!(ymax > 0)) ymax = 1;
-    ymax *= 1.08;
+    if (finS(d.yMax) && d.yMax > 0) ymax = d.yMax; else ymax *= 1.08;   /* yMax: festgehaltener Achsenbereich beim Ziehen */
     const xmax = Math.max(u[n - 1], mk ? mk.x : 0, L.reduce((m, l) => Math.max(m, l.points.reduce((a, p) => Math.max(a, p[0]), 0)), 0));
     const xmin = Math.min(u[0], 0), py = prefixFor(ymax, 'A'), px = prefixFor(xmax, 'V');
     const legend = [{ text: 'I_C(U_CE) je I_B', key: 'i', dash: KINDS.i.dash }];
     L.forEach(l => { const ac = l.kind === 'ac'; legend.push({ text: str(l.name) || (ac ? 'Wechselstrom-Arbeitsgerade' : 'Arbeitsgerade'), key: ac ? 'u' : 'fg', dash: ac ? [5, 3] : KINDS.line.dash }); });
     if (mk) legend.push({ text: 'Arbeitspunkt', key: 'fg', dash: [] });
-    const legH = legendH(ctx, rect, legend);
+    let legH = legendH(ctx, rect, legend);
+    /* schmales Feld (Handy): kurze Namen in einer Zeile, der Arbeitspunkt traegt seine Beschriftung selbst; so bleibt die Zeichenflaeche hoch genug zum Ziehen */
+    if (legH > 16) {
+      const short = [legend[0]].concat(L.map((l, i) => ({ text: l.kind === 'ac' ? 'AC-Gerade' : 'Arbeitsgerade', key: legend[1 + i].key, dash: legend[1 + i].dash })));
+      const sh = legendH(ctx, rect, short);
+      if (sh < legH) { legend.length = 0; short.forEach(x => legend.push(x)); legH = sh; }
+    }
     if (!plFits(rect, 52, 24 + legH, 12, 30)) return false;
     return draw(ctx, () => {
       bgFill(ctx, E);
@@ -571,6 +588,8 @@
       const F = frame(ctx, E, rect, { x0: xmin * px.k, x1: xmax * px.k, y0: 0, y1: ymax * py.k, xl: 'U_CE', xu: px.u, yl: 'I_C', yu: py.u, top: 24 + legH });
       if (!F) return false;
       const pl = F.pl, X = x => F.X(x * px.k), Y = y => F.Y(y * py.k);
+      /* optional: Lage der Zeichenflaeche und Achsenbereich nach aussen geben (fuer das Ziehen des Arbeitspunkts, wie bei curve) */
+      if (d.layoutOut && typeof d.layoutOut === 'object') { d.layoutOut.pl = { x: pl.x, y: pl.y, w: pl.w, h: pl.h }; d.layoutOut.x0 = xmin; d.layoutOut.x1 = xmax; d.layoutOut.y0 = 0; d.layoutOut.y1 = ymax; }
       legendDraw(ctx, E, rect, legend, rect.y + 4);
       if (finS(d.ucesat) && d.ucesat > 0) {
         const x1 = cl(X(d.ucesat), pl.x, pl.x + pl.w);
@@ -584,6 +603,7 @@
       }
       const st = thin(n, E, 300);
       let lastY = Infinity;
+      ctx.save(); ctx.beginPath(); ctx.rect(pl.x, pl.y - 1, pl.w, pl.h + 2); ctx.clip();   /* Kurven nie ueber den Rahmen hinaus (festgehaltene Achsen) */
       S.slice().sort((a, b) => b.ib - a.ib).forEach(s => {
         const m = Math.max(2, Math.ceil(n * E.wipe)), pts = [];
         for (let i = 0; i < m; i += st) pts.push([X(u[i]), Y(s.ic[i])]);
@@ -593,6 +613,7 @@
         if (E.wipe >= 1 && s.ib > 0 && Math.abs(ye - lastY) >= 14 && ye > pl.y + 4) { T(ctx, E.box, P, 'I_B = ' + fe(s.ib, 'A'), pl.x + pl.w - 4, ye, { size: 11, align: 'right', color: P.i, maxw: pl.w * 0.6 }); lastY = ye; }
       });
       L.forEach(l => polyline(ctx, l.points.map(p => [X(p[0]), Y(p[1])]), l.kind === 'ac' ? P.u : P.fg, 2.5, l.kind === 'ac' ? [5, 3] : KINDS.line.dash));
+      ctx.restore();
       if (mk) {
         const mx = X(mk.x), my = Y(mk.y);
         if (mx >= pl.x - 1 && mx <= pl.x + pl.w + 1 && my >= pl.y - 1 && my <= pl.y + pl.h + 1) {
@@ -1063,7 +1084,7 @@
     G.wire([50, 169], [50, BY], [230, BY]);
     G.gnd(140, BY); G.node(140, BY);
     G.t(G.L('uq') || (G.has('uq') ? G.lab('uq') : ''), 60, 205, { align: 'left', color: G.P.u, bold: true });
-    G.ia(G.L('id'), 185, TY, 'r', 192, 42, 'left');
+    G.ia(G.L('id'), 185, TY, 'r', 236, 44, 'left');
     if (G.L('ur')) { G.ua(G.L('ur'), 100, 78, 140, 78, 120, 94, 'center'); }
     G.ua(G.L('ud'), 200, 133, 200, 177, 194, 155, 'right');
     if (load && G.L('il')) G.ia(G.L('il'), 330, 100, 'd', 344, 100, 'left');

@@ -72,6 +72,17 @@
       + '<p class="hint" style="margin:6px 0 0">' + s.aktiv14 + ' von 14 Tagen aktiv' + (s.serie ? ', Serie ' + s.serie + (s.serie === 1 ? ' Tag' : ' Tage') : '') + '.</p>'
       + '<p class="fn">Je Aufgabe wird nur der letzte Bearbeitungstag gespeichert. Ältere Tage können deshalb fehlen, die Serie ist mindestens so lang wie angezeigt.</p>';
   }
+  /* Oben steht die Zusammenfassung, der lange Rest ist einklappbar: Überschrift und Kurzzeile werden zur Klappzeile (offene Blöcke bleiben beim Neuzeichnen offen) */
+  function fold(el, open) {
+    const h = el.querySelector('h2'); if (!h) return;
+    const lead = el.querySelector('p.lead'), d = doc.createElement('details'), s = doc.createElement('summary');
+    d.className = 'blk'; d.open = !!open;
+    s.appendChild(h);
+    if (lead) { const l = doc.createElement('span'); l.className = 'sl'; l.textContent = lead.textContent; s.appendChild(l); lead.parentNode.removeChild(lead); }
+    d.appendChild(s);
+    while (el.firstChild) d.appendChild(el.firstChild);
+    el.appendChild(d);
+  }
   let model = null;
   function render() {
     let m; try { m = MS.build(MS.fromGlobals(root)); } catch (e) { $('msKopf').innerHTML = '<p class="leer">Die Übersicht konnte nicht berechnet werden.</p>'; return; }
@@ -79,9 +90,11 @@
     $('msLead').textContent = (NAMEN[m.beruf] || m.beruf) + ': Eine Übersicht über alles, was du schon gemacht hast. Die Seite liest nur und verändert nichts an deinem Lernstand. Den Beruf wählst du auf der Startseite.';
     $('msKopf').innerHTML = kopf(m);
     const nx = $('msNext'); nx.innerHTML = naechster(m); nx.hidden = !m.naechster;
+    const offen = {}; ['msBereiche', 'msPruef', 'msSerie'].forEach(id => { const d = $(id).querySelector('details.blk'); if (d) offen[id] = d.open; });
     $('msBereiche').innerHTML = bereiche(m);
     const pr = $('msPruef'); pr.innerHTML = pruefung(m); pr.hidden = !m.pruefung.sichtbar;
     $('msSerie').innerHTML = serie(m);
+    fold($('msBereiche'), offen.msBereiche === true); fold(pr, offen.msPruef === true); fold($('msSerie'), offen.msSerie !== false);
     $('msQL').innerHTML = Object.keys(m.quellen).map(k => '<li>' + esc(m.quellen[k]) + '</li>').join('');
     try { if (root.Countdown && root.Countdown.mount) root.Countdown.mount($('countdown'), m); } catch (e) {}
   }

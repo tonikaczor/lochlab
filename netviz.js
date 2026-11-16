@@ -190,6 +190,113 @@
     return `<svg viewBox="0 0 ${W} ${16 + 5 * RH - 8}" role="img" aria-label="Datenkapselung: Schicht für Schicht kommen Header dazu (Senden) bzw. fallen weg (Empfangen)">${s}</svg>`;
   }
 
+  /* ---------------------------------------------------------- Paketweg: PC1 -> Switch -> Router -> Switch -> Server
+     Vereinfachtes Lehrmodell: ein Beispielnetz, MAC-Adressen als Kurzform (echt: 6 Byte), ARP gilt als erledigt,
+     TTL-Startwert 64 als Beispiel. Der Switch lernt die Quell-MAC jedes Frames und flutet bei unbekanntem Ziel. */
+  const DEV = {
+    pc1: { l: 'PC1', ip: '192.168.1.10', mac: 'AA:01' }, pc2: { l: 'PC2', ip: '192.168.1.20', mac: 'AA:02' },
+    rA: { l: 'Router, Port A', ip: '192.168.1.1', mac: 'BB:01' }, rB: { l: 'Router, Port B', ip: '192.168.2.1', mac: 'BB:02' },
+    sv: { l: 'Server', ip: '192.168.2.10', mac: 'CC:01' } };
+  const WEG_FN = { dMac: 'Ziel-MAC', sMac: 'Quell-MAC', sIp: 'Quell-IP', dIp: 'Ziel-IP', ttl: 'TTL' };
+  const netOf24 = ip => C.fmtIP(C.parseIP(ip) & C.maskOf(24));
+
+  /* Schritte eines Szenarios. scn: 'diff' (PC1 an Server) | 'same' (PC1 an PC2); learned: kennt der Switch die Ziel-MAC schon? */
+  function wegSteps(scn, learned) {
+    const a = DEV.pc1, same = scn === 'same', dst = same ? DEV.pc2 : DEV.sv, gw = DEV.rA;
+    const myNet = netOf24(a.ip) + '/24', dstNet = netOf24(dst.ip) + '/24';
+    const base = { dMac: same ? dst.mac : gw.mac, sMac: a.mac, sIp: a.ip, dIp: dst.ip, ttl: 64 };
+    const fl = ' Das Ziel steht nicht in der Tabelle, deshalb flutet der Switch: Er schickt den Frame an alle anderen Ports.';
+    const S = [];
+    S.push({ at: 'pc1', edges: [], flood: [], frame: base, changed: [], title: 'PC1 entscheidet',
+      text: same ? `PC1 will an ${dst.ip} senden. Netz des Ziels: ${dstNet}, eigenes Netz: ${myNet}. Beide sind gleich, also liegt das Ziel im selben Netz und der Frame geht direkt an PC2, ohne Router. Die MAC von PC2 (${dst.mac}) kennt PC1 aus ARP.`
+        : `PC1 will an ${dst.ip} senden. Netz des Ziels: ${dstNet}, eigenes Netz: ${myNet}. Das ist ein anderes Netz, also schickt PC1 den Frame an sein Standardgateway ${gw.ip}. Als Ziel-MAC trägt er die MAC des Gateways (${gw.mac}) ein, nicht die des Servers. Die Ziel-IP bleibt die des Servers.` });
+    if (same) {
+      S.push({ at: 'sw1', edges: ['e1'], flood: learned ? [] : ['e3'], frame: base, changed: [], title: 'Switch SW1 lernt und leitet weiter', sw: 'sw1',
+        text: `SW1 empfängt den Frame an Port 1 und lernt: ${a.mac} sitzt an Port 1. Dann sucht er die Ziel-MAC ${dst.mac}.` + (learned ? ' Sie steht in der Tabelle (Port 2), also geht der Frame nur an Port 2.' : fl + ' Der Router (Port 3) verwirft den Frame, weil die Ziel-MAC nicht seine ist.') });
+      S.push({ at: 'pc2', edges: ['e1', 'e2'], flood: [], frame: base, changed: [], title: 'PC2 nimmt an',
+        text: `Die Ziel-MAC ${dst.mac} ist die von PC2, und die Ziel-IP ${dst.ip} ist seine Adresse. PC2 packt den Frame aus und gibt das Paket an die höheren Schichten weiter. Der Router wurde nicht gebraucht.` });
+      return S;
+    }
+    S.push({ at: 'sw1', edges: ['e1'], flood: learned ? [] : ['e2'], frame: base, changed: [], title: 'Switch SW1 lernt und leitet weiter', sw: 'sw1',
+      text: `SW1 empfängt den Frame an Port 1 und lernt: ${a.mac} sitzt an Port 1. Dann sucht er die Ziel-MAC ${gw.mac}.` + (learned ? ' Sie steht in der Tabelle (Port 3), also geht der Frame nur an Port 3, zum Router.' : fl + ' PC2 verwirft den Frame, weil die Ziel-MAC nicht seine ist.') });
+    S.push({ at: 'rt', edges: ['e1', 'e3'], flood: [], frame: base, changed: [], title: 'Router schlägt in der Routing-Tabelle nach', rt: true,
+      text: `Die Ziel-MAC ${gw.mac} gehört dem Router: Er packt den Frame aus und liest die Ziel-IP ${dst.ip}. Treffer in der Routing-Tabelle: ${dstNet} ist direkt an Port B angeschlossen. Der Router leitet das Paket dort hinaus und senkt die TTL um 1.` });
+    const nf = { dMac: dst.mac, sMac: DEV.rB.mac, sIp: a.ip, dIp: dst.ip, ttl: 63 };
+    S.push({ at: 'rt', edges: ['e1', 'e3'], flood: [], frame: nf, changed: ['dMac', 'sMac', 'ttl'], title: 'Router packt neu ein',
+      text: `Der Router baut einen neuen Frame: Quell-MAC ist jetzt Port B (${DEV.rB.mac}), Ziel-MAC ist der Server (${dst.mac}, per ARP). Die IP-Adressen bleiben auf dem ganzen Weg gleich, die MAC-Adressen wechseln an jedem Router. Die TTL ist auf 63 gesunken.` });
+    S.push({ at: 'sw2', edges: ['e1', 'e3', 'e4'], flood: [], frame: nf, changed: [], title: 'Switch SW2 lernt und leitet weiter', sw: 'sw2',
+      text: `SW2 empfängt den Frame an Port 1 und lernt: ${DEV.rB.mac} sitzt an Port 1. Dann sucht er die Ziel-MAC ${dst.mac}.` + (learned ? ' Sie steht in der Tabelle (Port 2), also geht der Frame an Port 2.' : ' Sie steht nicht in der Tabelle, also flutet er an alle anderen Ports. Hier gibt es nur Port 2, der Frame landet trotzdem beim Server.') });
+    S.push({ at: 'sv', edges: ['e1', 'e3', 'e4', 'e5'], flood: [], frame: nf, changed: [], title: 'Server nimmt an',
+      text: `Ziel-MAC ${dst.mac} und Ziel-IP ${dst.ip} passen zum Server. Er packt den Frame aus und gibt das Paket an die höheren Schichten weiter.` });
+    return S;
+  }
+
+  /* Tabellen zum Schritt k: MAC-Tabellen der Switches, Routing-Tabelle (nur bei anderem Netz).
+     Zeile: neu = in diesem Schritt gelernt, hit = in diesem Schritt nachgeschlagen */
+  function wegTables(scn, learned, k) {
+    const same = scn === 'same', steps = wegSteps(scn, learned);
+    k = Math.max(0, Math.min(steps.length - 1, k | 0));
+    const out = [];
+    const sw = (id, name, init, learnStep, srcDev, srcPort, lookupMac) => {
+      const rows = init.map(r => ({ mac: r[0], port: r[1], dev: r[2], neu: false, hit: false }));
+      if (k >= learnStep) rows.push({ mac: srcDev.mac, port: srcPort, dev: srcDev.l, neu: k === learnStep, hit: false });
+      if (k === learnStep && learned) rows.forEach(r => { if (r.mac === lookupMac) r.hit = true; });
+      out.push({ id, name, rows, note: k === learnStep ? (learned ? 'Quelle gelernt, Ziel gefunden: gezielt weiterleiten' : 'Quelle gelernt, Ziel unbekannt: fluten') : '' });
+    };
+    sw('sw1', 'MAC-Tabelle von SW1', learned ? (same ? [[DEV.pc2.mac, 'Port 2', DEV.pc2.l]] : [[DEV.rA.mac, 'Port 3', DEV.rA.l]]) : [], 1, DEV.pc1, 'Port 1', same ? DEV.pc2.mac : DEV.rA.mac);
+    if (!same) sw('sw2', 'MAC-Tabelle von SW2', learned ? [[DEV.sv.mac, 'Port 2', DEV.sv.l]] : [], 4, DEV.rB, 'Port 1', DEV.sv.mac);
+    if (!same) out.push({ id: 'rt', name: 'Routing-Tabelle des Routers', routing: true, rows: [
+      { net: '192.168.1.0/24', via: 'direkt angeschlossen', port: 'Port A', hit: false }, { net: '192.168.2.0/24', via: 'direkt angeschlossen', port: 'Port B', hit: k === 2 }] });
+    return out;
+  }
+
+  /* Ziel-Aufgaben: test(state) prüft die Einstellung der Grafik (state = {scn, learned, k}) */
+  const WEG_TASKS = [
+    { text: 'Stell ein: „Anderes Netz“ und zeige den Schritt, in dem der Router neue MAC-Adressen in den Frame schreibt.', test: s => s.scn === 'diff' && s.k === 3,
+      set: { scn: 'diff', learned: true, k: 3 },
+      ok: 'Richtig: Beim Router wechseln Ziel-MAC und Quell-MAC (und die TTL sinkt um 1). Die IP-Adressen bleiben gleich.' },
+    { text: 'Stell ein: „Gleiches Netz“, Switch-Tabelle „leer“, und zeige den Schritt, in dem der Switch den Frame flutet.', test: s => s.scn === 'same' && !s.learned && s.k === 1,
+      set: { scn: 'same', learned: false, k: 1 },
+      ok: 'Richtig: Ist die Ziel-MAC unbekannt, schickt der Switch den Frame an alle anderen Ports. Die Quell-MAC lernt er trotzdem.' },
+    { text: 'Zeige bei „Anderes Netz“ den Schritt, in dem PC1 entscheidet, den Frame an das Standardgateway zu schicken.', test: s => s.scn === 'diff' && s.k === 0,
+      set: { scn: 'diff', learned: true, k: 0 },
+      ok: 'Richtig: Liegt das Ziel in einem anderen Netz, geht der Frame an das Gateway. Die Ziel-IP bleibt die des Servers, die Ziel-MAC ist die des Routers.' },
+    { text: 'Zeige bei „Anderes Netz“ den Schritt, in dem der Router die Routing-Tabelle befragt.', test: s => s.scn === 'diff' && s.k === 2,
+      set: { scn: 'diff', learned: true, k: 2 },
+      ok: 'Richtig: Der Router liest die Ziel-IP, findet 192.168.2.0/24 an Port B und leitet dorthin weiter.' },
+    { text: 'Stell ein: „Gleiches Netz“, Switch-Tabelle „gelernt“, und zeige den Schritt, in dem der Switch den Frame nur an Port 2 weiterleitet.', test: s => s.scn === 'same' && s.learned && s.k === 1,
+      set: { scn: 'same', learned: true, k: 1 },
+      ok: 'Richtig: Kennt der Switch die Ziel-MAC, geht der Frame nur an den passenden Port. Das spart Verkehr gegenüber dem Fluten.' }];
+
+  /* Grafik: Topologie oben, darunter die Felder des Frames im aktuellen Schritt. SVG ist direktes Kind von .wrap (feste Bühne am Handy). */
+  const WN = { pc1: [6, 14], pc2: [6, 88], sw1: [94, 51], rt: [180, 51], sw2: [266, 51], sv: [338, 51] };
+  const WL = { pc1: 'PC1', pc2: 'PC2', sw1: 'SW1', rt: 'Router', sw2: 'SW2', sv: 'Server' };
+  const WE = { e1: [56, 32, 94, 60], e2: [56, 106, 94, 78], e3: [144, 69, 180, 69], e4: [230, 69, 266, 69], e5: [316, 69, 338, 69] };
+  function wegSvg(scn, k, learned) {
+    const steps = wegSteps(scn, learned !== false); k = Math.max(0, Math.min(steps.length - 1, k | 0));
+    const st = steps[k], same = scn === 'same';
+    const used = same ? ['pc1', 'sw1', 'pc2'] : ['pc1', 'sw1', 'rt', 'sw2', 'sv'];
+    const reach = new Set(used);
+    const floodNodes = { e2: 'pc2', e3: 'rt' }; st.flood.forEach(e => reach.add(floodNodes[e]));
+    const usedEdges = same ? ['e1', 'e2'] : ['e1', 'e3', 'e4', 'e5'];
+    let s = '<rect x="2" y="4" width="152" height="126" rx="8" class="band"/><rect x="262" y="4" width="126" height="126" rx="8" class="band"/>';
+    s += '<text x="6" y="147" class="m">Netz A 192.168.1.0/24</text><text x="386" y="147" text-anchor="end" class="m">Netz B 192.168.2.0/24</text>';
+    Object.keys(WE).forEach(e => {
+      const g = WE[e], lit = st.edges.includes(e), fl = st.flood.includes(e), on = usedEdges.includes(e) || fl;
+      s += `<line x1="${g[0]}" y1="${g[1]}" x2="${g[2]}" y2="${g[3]}" class="ln${lit ? ' lit' : ''}${fl ? ' fl' : ''}${on ? '' : ' off'}"/>`;
+    });
+    s += '<text x="88" y="44" text-anchor="middle" class="m">P1</text><text x="88" y="100" text-anchor="middle" class="m">P2</text><text x="154" y="63" text-anchor="middle" class="m">P3</text>'
+      + '<text x="173" y="63" text-anchor="middle" class="m">A</text><text x="237" y="63" text-anchor="middle" class="m">B</text><text x="257" y="63" text-anchor="middle" class="m">P1</text><text x="327" y="63" text-anchor="middle" class="m">P2</text>';
+    Object.keys(WN).forEach(n => {
+      const p = WN[n], act = st.at === n, kind = /^sw/.test(n) ? 'sw' : n === 'rt' ? 'rt' : 'nd';
+      s += `<g class="${kind}${act ? ' act' : ''}${reach.has(n) ? '' : ' off'}"><rect x="${p[0]}" y="${p[1]}" width="50" height="36" rx="6" class="nb"/><text x="${p[0] + 25}" y="${p[1] + 23}" text-anchor="middle" class="b">${WL[n]}</text>${act ? `<circle cx="${p[0] + 48}" cy="${p[1] + 2}" r="7" class="pk"/>` : ''}</g>`;
+    });
+    const cell = (f, x, w) => `<rect x="${x}" y="176" width="${w}" height="42" class="fc${st.changed.includes(f) ? ' chg' : ''}"/><text x="${x + w / 2}" y="191" text-anchor="middle" class="m">${WEG_FN[f]}</text><text x="${x + w / 2}" y="210" text-anchor="middle" class="b">${esc(st.frame[f])}</text>`;
+    s += '<text x="6" y="168" class="b">Schicht 2: Frame</text><text x="146" y="168" class="b">Schicht 3: Paket</text>'
+      + cell('dMac', 6, 68) + cell('sMac', 74, 68) + cell('sIp', 146, 92) + cell('dIp', 238, 92) + cell('ttl', 330, 54);
+    return `<svg data-lr-buehne="verh" class="nvw" viewBox="0 0 390 226" role="img" aria-label="Paketweg, Schritt ${k + 1} von ${steps.length}: ${esc(st.title)}. Frame: Ziel-MAC ${esc(st.frame.dMac)}, Quell-MAC ${esc(st.frame.sMac)}, Quell-IP ${esc(st.frame.sIp)}, Ziel-IP ${esc(st.frame.dIp)}, TTL ${st.frame.ttl}">${s}</svg>`;
+  }
+
   /* ---------------------------------------------------------- Stil */
   const CSS = `
 .nv svg{display:block;width:100%;height:auto;max-width:600px;margin:4px auto 0;overflow:visible}
@@ -225,6 +332,33 @@
 
 
 
+svg.nvw{display:block;width:100%;height:auto;max-width:640px;margin:0 auto 8px;overflow:visible}
+svg.nvw text{fill:var(--fg);font:12.5px system-ui,-apple-system,"Segoe UI",sans-serif}
+svg.nvw .b{font-weight:700}svg.nvw .m{fill:var(--mute)}
+svg.nvw .band{fill:var(--panel2);fill-opacity:.55;stroke:var(--line)}
+svg.nvw .nb{fill:var(--panel);stroke:var(--mute);stroke-width:1.5}
+svg.nvw .sw .nb{stroke:var(--accent)}svg.nvw .rt .nb{stroke:var(--hi)}
+svg.nvw .act .nb{stroke-width:3.5;fill:var(--panel2)}
+svg.nvw .off{opacity:.4}
+svg.nvw .pk{fill:var(--hi);stroke:var(--bg);stroke-width:1.5}
+svg.nvw .ln{stroke:var(--mute);stroke-width:2}
+svg.nvw .ln.lit{stroke:var(--accent);stroke-width:4}
+svg.nvw .ln.fl{stroke:var(--hi);stroke-width:3;stroke-dasharray:5 4}
+svg.nvw .fc{fill:var(--panel);stroke:var(--mute)}
+svg.nvw .fc.chg{fill:var(--hi);fill-opacity:.3;stroke:var(--hi);stroke-width:2}
+.nv .wgs{margin:0 0 4px;font-weight:700;font-size:15px}
+.nv .wgq{margin:0 0 6px;font-size:15px;line-height:1.45}
+.nv .wgtask{margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.nv .nvl{margin:10px 0 4px;font-size:14px;color:var(--mute)}
+.nv .seg{flex-wrap:wrap;border-radius:12px}
+.nv .nvt{display:grid;gap:12px;margin-top:12px}
+.nv .nvt h5{margin:0 0 4px;font-size:14px}
+.nv .nvt table{width:100%;border-collapse:collapse;font-size:14px}
+.nv .nvt th,.nv .nvt td{padding:6px 8px;text-align:left;border-bottom:1px solid var(--line)}
+.nv .nvt tr.hit td{background:var(--panel2);background:color-mix(in srgb,var(--hi) 22%,var(--panel))}
+.nv .nvt tr.neu td{background:var(--panel2);background:color-mix(in srgb,var(--ok) 18%,var(--panel))}
+.nv .nvt .note{margin:4px 0 0;font-size:14px;color:var(--mute)}
+
 @media (prefers-reduced-motion:no-preference){.nv svg .row{transition:opacity .25s}.nv svg .rowbg{transition:stroke .25s}}
 @media print{.nv{display:none!important}}`;
 
@@ -232,7 +366,7 @@
   const key = (...a) => `<div class="nvk">${a.map(k => KEY[k]).join('')}</div>`;
 
   /* ---------------------------------------------------------- Einbau in die Seite (nur im Browser) */
-  const API = { splitBar, rayAddr, borrowBar, vlsmBars, sameBars, topo, osiSvg, osiState, LAYERS, CSS, bitsSvg, edge, bx };
+  const API = { splitBar, rayAddr, borrowBar, vlsmBars, sameBars, topo, osiSvg, osiState, LAYERS, wegSteps, wegTables, wegSvg, WEG_TASKS, DEV, CSS, bitsSvg, edge, bx };
   if (typeof module !== 'undefined' && module.exports) module.exports = API; else root.NET_VIZ = API;
   if (typeof document === 'undefined' || !C) return;
 
@@ -311,4 +445,51 @@
     if (d) { OS.dir = d.dataset.d; OS.k = 4; } else if (s) OS.k = Math.max(0, Math.min(4, OS.k + +s.dataset.s)); else if (r) { const n = +r.dataset.r; OS.k = OS.dir === 'send' ? n : 4 - n; } else return;
     osiRun();
   });
+  /* Paketweg (Reiter 'weg'): der Zustand bleibt beim Reiterwechsel erhalten, wird aber nicht gespeichert */
+  const WG = { scn: 'diff', learned: true, k: 0, task: 0, shown: false };
+  const wegTabHtml = t => {
+    if (t.routing) return `<div><h5>${esc(t.name)}</h5><div class="scrx"><table><thead><tr><th>Zielnetz</th><th>Weg</th><th>Port</th><th>Schritt</th></tr></thead><tbody>${t.rows.map(r => `<tr class="${r.hit ? 'hit' : ''}"><td>${r.net}</td><td>${r.via}</td><td>${r.port}</td><td>${r.hit ? 'Treffer' : ''}</td></tr>`).join('')}</tbody></table></div></div>`;
+    return `<div><h5>${esc(t.name)}</h5><div class="scrx"><table><thead><tr><th>MAC</th><th>Port</th><th>Gerät</th><th>Schritt</th></tr></thead><tbody>${t.rows.length ? t.rows.map(r => `<tr class="${r.hit ? 'hit' : ''}${r.neu ? ' neu' : ''}"><td>${r.mac}</td><td>${r.port}</td><td>${esc(r.dev)}</td><td>${r.neu ? 'neu gelernt' : r.hit ? 'nachgeschlagen' : ''}</td></tr>`).join('') : '<tr><td colspan="4">noch leer</td></tr>'}</tbody></table></div>${t.note ? `<p class="note">${esc(t.note)}</p>` : ''}</div>`;
+  };
+  const wegAddr = () => `<div><h5>Adressen im Beispiel</h5><div class="scrx"><table><thead><tr><th>Gerät</th><th>IP-Adresse (/24)</th><th>MAC (Kurzform)</th></tr></thead><tbody>${['pc1', 'pc2', 'rA', 'rB', 'sv'].map(k => `<tr><td>${esc(DEV[k].l)}</td><td>${DEV[k].ip}</td><td>${DEV[k].mac}</td></tr>`).join('')}</tbody></table></div><p class="note">PC1 hat das Standardgateway 192.168.1.1. Echte MAC-Adressen haben 6 Byte, hier stehen Kurzformen.</p></div>`;
+  function wegRender(view) {
+    if (!view) return;
+    view.innerHTML = wegSvg(WG.scn, WG.k, WG.learned) + `<div class="card pl nv" id="nvWeg"><h4>Paketweg: ein Frame von PC1 bis zum Ziel</h4>
+      <p class="wgs" id="wgHead" aria-live="polite"></p><p class="nvx" id="wgText"></p>
+      <div class="nvc"><button class="btn" data-w="back">◀ Zurück</button><button class="btn pri" data-w="next">Weiter ▶</button></div>
+      <div id="wgTask" class="wgtask"></div>
+      <p class="nvl" id="wgl1">Ziel von PC1</p><div class="seg" role="group" aria-labelledby="wgl1"><button data-w="scn" data-v="diff">Anderes Netz (Server)</button><button data-w="scn" data-v="same">Gleiches Netz (PC2)</button></div>
+      <p class="nvl" id="wgl2">Switch-Tabellen am Anfang</p><div class="seg" role="group" aria-labelledby="wgl2"><button data-w="lrn" data-v="0">leer</button><button data-w="lrn" data-v="1">gelernt</button></div>
+      <div class="nvt" id="wgTabs"></div>
+      <p class="hint2">Orange hinterlegte Felder haben sich im aktuellen Schritt geändert. Eine gestrichelte Linie zeigt, wohin ein Switch mit unbekanntem Ziel flutet. Beispielwerte, vereinfacht: ein Netz je Seite, ARP schon erledigt, TTL 64 als Startwert.</p></div>`;
+    wegUpdate();
+  }
+  function wegUpdate() {
+    const view = $('wegView'), svg = view && view.querySelector('svg.nvw'); if (!svg) return;
+    const steps = wegSteps(WG.scn, WG.learned), n = steps.length; WG.k = Math.max(0, Math.min(n - 1, WG.k));
+    const st = steps[WG.k], tmp = document.createElement('div'); tmp.innerHTML = wegSvg(WG.scn, WG.k, WG.learned);
+    svg.innerHTML = tmp.firstChild.innerHTML; svg.setAttribute('aria-label', tmp.firstChild.getAttribute('aria-label'));
+    $('wgHead').textContent = 'Schritt ' + (WG.k + 1) + ' von ' + n + ': ' + st.title; $('wgText').textContent = st.text;
+    const b = view.querySelector('[data-w=back]'), x = view.querySelector('[data-w=next]'); b.disabled = WG.k <= 0; x.disabled = WG.k >= n - 1;
+    view.querySelectorAll('[data-w=scn]').forEach(e => { const on = e.dataset.v === WG.scn; e.classList.toggle('on', on); e.setAttribute('aria-pressed', on); });
+    view.querySelectorAll('[data-w=lrn]').forEach(e => { const on = (e.dataset.v === '1') === WG.learned; e.classList.toggle('on', on); e.setAttribute('aria-pressed', on); });
+    $('wgTabs').innerHTML = wegTables(WG.scn, WG.learned, WG.k).map(wegTabHtml).join('') + wegAddr();
+    const T = WEG_TASKS[WG.task], solved = T.test(WG);
+    $('wgTask').innerHTML = `<p class="wgs">Aufgabe ${WG.task + 1} von ${WEG_TASKS.length}</p><p class="wgq">${esc(T.text)}</p>`
+      + (solved ? `<div class="lr-fb ${WG.shown ? 'loes' : 'ok'}" role="status"><p>${WG.shown ? 'Lösung: ' : '✓ '}${esc(T.ok)}</p></div>` : '')
+      + `<div class="nvc"><button class="btn" data-w="tsol">Lösung zeigen</button><button class="btn${solved ? ' pri' : ''}" data-w="tnext">Nächste Aufgabe ▶</button></div>`;
+  }
+  const wv = $('wegView');
+  if (wv) wv.addEventListener('click', e => {
+    const b = e.target.closest('[data-w]'); if (!b || b.disabled) return; const w = b.dataset.w;
+    if (w === 'back') { WG.k--; WG.shown = false; } else if (w === 'next') { WG.k++; WG.shown = false; }
+    else if (w === 'scn') { if (WG.scn !== b.dataset.v) { WG.scn = b.dataset.v; WG.k = 0; WG.shown = false; } }
+    else if (w === 'lrn') { WG.learned = b.dataset.v === '1'; WG.shown = false; }
+    else if (w === 'tnext') { WG.task = (WG.task + 1) % WEG_TASKS.length; WG.shown = false; }
+    else if (w === 'tsol') { const s = WEG_TASKS[WG.task].set; WG.scn = s.scn; WG.learned = s.learned; WG.k = s.k; WG.shown = true; }
+    else return;
+    wegUpdate();
+  });
+  API.wegRender = wegRender;
+  { const mid = $('mid'); if (mid && mid.dataset.tab === 'weg') wegRender(wv); }
 })(typeof window !== 'undefined' ? window : globalThis);

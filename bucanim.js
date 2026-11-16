@@ -104,7 +104,7 @@
     p.accs.forEach(a => {
       const P = g.pos[a.nr], k = C.konto(a.nr), st = S.acc[a.nr], x = P.x, y = P.y, isHot = hot && hot.nr === a.nr;
       s += `<rect x="${x}" y="${y}" width="${COLW}" height="${BOXH}" rx="8" class="bx${isHot ? ' hot' + hot.side : ''}"/>`;
-      s += `<text x="${x + COLW / 2}" y="${y + 14}" text-anchor="middle" class="s11 b">${esc(a.nr)}</text><text x="${x + COLW / 2}" y="${y + 26}" text-anchor="middle" class="s10 m">${esc(cut(k.name, 22))}</text>`;
+      s += `<text x="${x + COLW / 2}" y="${y + 14}" text-anchor="middle" class="s11 b">${esc(a.nr)}</text><text x="${x + COLW / 2}" y="${y + 26}" text-anchor="middle" class="s10 m">${esc(cut(k.name, 19))}</text>`;
       s += `<rect x="${x + 1}" y="${y + 32}" width="${COLW / 2 - 1}" height="66" class="cS"/><rect x="${x + COLW / 2}" y="${y + 32}" width="${COLW / 2 - 1}" height="66" class="cH"/>`;
       s += `<line x1="${x}" y1="${y + 32}" x2="${x + COLW}" y2="${y + 32}" class="tl"/><line x1="${x + COLW / 2}" y1="${y + 32}" x2="${x + COLW / 2}" y2="${y + 98}" class="tl"/>`;
       s += `<text x="${x + COLW / 4}" y="${y + 43}" text-anchor="middle" class="s9 m">Soll</text><text x="${x + 3 * COLW / 4}" y="${y + 43}" text-anchor="middle" class="s9 m">Haben</text>`;

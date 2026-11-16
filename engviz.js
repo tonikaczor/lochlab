@@ -10,7 +10,7 @@
   const V = {};
   const STYLE = '.vz svg{display:block;width:100%;height:auto;max-width:460px;margin:0 auto}.vz svg text{font-family:system-ui,sans-serif;fill:var(--fg)}.vz .m{fill:var(--mute)!important}'
     + '.vz .p{fill:var(--panel2);stroke:var(--fg);stroke-width:1.6}.vz .q{fill:var(--panel);stroke:var(--fg);stroke-width:1.6}.vz .a{fill:var(--accent);fill-opacity:.4;stroke:var(--fg);stroke-width:1.2}.vz .w{fill:none;stroke:var(--fg);stroke-width:2.2;stroke-linejoin:round}.vz .b{stroke:var(--fg);stroke-width:3}.vz .b2{stroke:var(--fg);stroke-width:2}.vz .t{stroke:var(--mute);stroke-width:1.2;fill:none}'
-    + '.vz .cap{margin:6px 0 0;font-size:13px;color:var(--mute);line-height:1.4}.vz [data-wi]{cursor:pointer;touch-action:manipulation}.vz .ctl{margin-top:8px}';
+    + '.vz .cap{margin:6px 0 0;font-size:14px;color:var(--mute);line-height:1.4}.vz [data-wi]{cursor:pointer;touch-action:manipulation}.vz .ctl{margin-top:8px}';
   const wrap = (t, n) => { const out = []; let line = ''; String(t).split(/\s+/).forEach(w => { if ((line + ' ' + w).trim().length > n) { out.push(line); line = w; } else line = (line + ' ' + w).trim(); }); if (line) out.push(line); return out; };
 
   /* ---------- Wortfeld ---------- */
@@ -27,7 +27,7 @@
       const en = wrap(w.en, 17).slice(0, 2);
       g += `<g data-wi="${i}" role="button" tabindex="0" aria-label="${esc(w.en)}, tippen für Deutsch"><rect x="${x - 56}" y="${y - 24}" width="112" height="48" rx="10" style="fill:var(--panel);stroke:${show ? 'var(--accent)' : 'var(--line)'};stroke-width:${show ? 2 : 1.4}"/>`;
       en.forEach((l, j) => g += `<text x="${x}" y="${N(y - (show ? 5 : 0) - (en.length - 1) * 6 + j * 13 + 4)}" font-size="11.5" font-weight="700" text-anchor="middle">${esc(l)}</text>`);
-      g += show ? `<text x="${x}" y="${y + 16}" font-size="11" text-anchor="middle" style="fill:var(--accent)">${esc(wrap(w.de, 20)[0])}</text>` : `<text x="${x}" y="${y + 18}" font-size="10" class="m" text-anchor="middle">antippen</text>`;
+      g += show ? `<text x="${x}" y="${y + 16}" font-size="11.5" text-anchor="middle" style="fill:var(--accent)">${esc(wrap(w.de, 20)[0])}</text>` : `<text x="${x}" y="${y + 18}" font-size="11.5" class="m" text-anchor="middle">antippen</text>`;
       g += '</g>';
     });
     return `<svg viewBox="0 0 340 300" role="group" aria-label="Wortfeld ${esc(hub || '')}: bis zu sechs englische Wörter, Deutsch nach Antippen">${g}</svg>`;
@@ -46,9 +46,9 @@
     const y = (de ? 156 : 132) + 20, idx = V.SIGLEVEL.indexOf(sig.w);
     V.SIGLEVEL.forEach((w, i) => {
       const x = 8 + i * 72, on = i === idx;
-      g += `<rect x="${x}" y="${y}" width="68" height="22" rx="11" style="fill:${on ? sig.color : 'var(--panel2)'};stroke:${on ? 'var(--fg)' : 'var(--line)'};stroke-width:${on ? 2 : 1}"/><text x="${x + 34}" y="${y + 15}" font-size="10" font-weight="700" text-anchor="middle" style="fill:${on ? tc : 'var(--mute)'}">${w}</text>`;
+      g += `<rect x="${x}" y="${y}" width="68" height="22" rx="11" style="fill:${on ? sig.color : 'var(--panel2)'};stroke:${on ? 'var(--fg)' : 'var(--line)'};stroke-width:${on ? 2 : 1}"/><text x="${x + 34}" y="${y + 15}" font-size="11.5" font-weight="700" text-anchor="middle" style="fill:${on ? tc : 'var(--mute)'}">${w}</text>`;
     });
-    g += `<text x="8" y="${y + 38}" font-size="10.5" class="m">schwerere Folgen →</text>`;
+    g += `<text x="8" y="${y + 38}" font-size="11.5" class="m">schwerere Folgen →</text>`;
     return `<svg viewBox="0 0 300 ${y + 46}" role="img" aria-label="Warnschild mit Signalwort ${esc(sig.w)}">${g}</svg>`;
   };
 
@@ -60,7 +60,7 @@
     if (!V.NUMRE.test(s) || s.length > 16) return '';
     const row = (txt, md, y, lab) => {
       const w = Math.min(24, 300 / txt.length), x0 = (340 - w * txt.length) / 2;
-      let g = `<text x="6" y="${y - 6}" font-size="11" font-weight="700" class="m">${lab}</text>`;
+      let g = `<text x="6" y="${y - 6}" font-size="11.5" font-weight="700" class="m">${lab}</text>`;
       txt.split('').forEach((ch, i) => {
         const x = x0 + i * w, sep = ch === ',' || ch === '.', th = sep && ((md === 'en' && ch === ',') || (md === 'de' && ch === '.'));
         g += sep ? `<circle cx="${N(x + w / 2)}" cy="${y + 18}" r="${N(Math.min(11, w / 2))}" style="fill:${th ? 'var(--accent-bg)' : 'var(--hi)'}"/><text x="${N(x + w / 2)}" y="${y + (ch === ',' ? 22 : 26)}" font-size="${ch === ',' ? 24 : 22}" font-weight="900" text-anchor="middle" style="fill:#fff">${ch}</text>`
@@ -91,7 +91,7 @@
       const st = nice(to0 - from0, 6);
       for (let t = Math.ceil(from0 / st - 1e-9) * st; t <= to0 + 1e-9 && g.length < 9000; t += st) {
         const x = N(mapx(t)); if (x < X0 - 1 || x > X0 + WW + 1) continue;
-        g += `<line x1="${x}" y1="${y}" x2="${x}" y2="${y + (up ? -9 : 9)}" style="stroke:var(--fg);stroke-width:1.4"/><text x="${x}" y="${y + (up ? -13 : 22)}" font-size="10.5" text-anchor="middle">${lab(t)}</text>`;
+        g += `<line x1="${x}" y1="${y}" x2="${x}" y2="${y + (up ? -9 : 9)}" style="stroke:var(--fg);stroke-width:1.4"/><text x="${x}" y="${y + (up ? -13 : 22)}" font-size="11.5" text-anchor="middle">${lab(t)}</text>`;
       }
       return g + `<text x="${X0 + WW}" y="${y + (up ? -26 : 38)}" font-size="12" font-weight="700" text-anchor="end">${esc(unit)}</text>`;
     };
@@ -124,7 +124,7 @@
       g += `<g data-wi="${i}" role="button" tabindex="0" aria-label="${esc(L[0])}"><line x1="${L[1]}" y1="${L[2]}" x2="${L[3]}" y2="${L[4] + (L[4] < L[2] ? 6 : -4)}" style="stroke:var(--accent);stroke-width:1.6"/><circle cx="${L[1]}" cy="${L[2]}" r="3.5" style="fill:var(--accent)"/>`
         + `<rect x="${L[5] === 'middle' ? L[3] - 52 : L[3] - 4}" y="${L[4] - 15}" width="${L[5] === 'middle' ? 104 : 96}" height="${show ? 34 : 22}" rx="6" style="fill:var(--panel);stroke:var(--line)"/>`
         + `<text x="${L[5] === 'middle' ? L[3] : L[3] + 4}" y="${L[4] + 1}" font-size="12" font-weight="700" text-anchor="${L[5] === 'middle' ? 'middle' : 'start'}">${esc(L[0])}</text>`
-        + (show ? `<text x="${L[5] === 'middle' ? L[3] : L[3] + 4}" y="${L[4] + 14}" font-size="11" text-anchor="${L[5] === 'middle' ? 'middle' : 'start'}" style="fill:var(--accent)">${esc(de.split(',')[0])}</text>` : '') + '</g>';
+        + (show ? `<text x="${L[5] === 'middle' ? L[3] : L[3] + 4}" y="${L[4] + 14}" font-size="11.5" text-anchor="${L[5] === 'middle' ? 'middle' : 'start'}" style="fill:var(--accent)">${esc(de.split(',')[0])}</text>` : '') + '</g>';
     });
     return `<svg viewBox="0 0 320 200" role="img" aria-label="${esc(T.name)}, Bauteile englisch beschriftet">${g}</svg>`;
   };
@@ -170,7 +170,7 @@
       }
     },
     warn: {
-      view: 'warnView', place: cs => [cs[0], 'after'], idx: 0, de: false, lastSig: null,
+      view: 'warnView', place: cs => [cs[0], 'before'], idx: 0, de: false, lastSig: null,
       make() {
         const self = this, n = card('warn', 'So sieht ein Warnhinweis aus', '<div class="inst fit" data-b="1" style="padding:8px"></div><div class="ctl"><button class="chip s" data-m="next">Anderes Beispiel</button><button class="chip s" data-m="de" aria-pressed="false">Deutsch zeigen</button></div><p class="cap">Das Signalwort steht im farbigen Kopf, darunter der Hinweistext. Unten siehst du, wo das Wort auf der Leiter der Folgen steht.</p>');
         n.addEventListener('click', e => { const m = e.target.closest('[data-m]'); if (!m) return; if (m.dataset.m === 'next') { self.idx++; self.de = false; } else self.de = !self.de; self.upd(n); });
@@ -196,7 +196,7 @@
       }
     },
     lineal: {
-      view: 'zahlView', place: cs => [cs[1], 'after'],
+      view: 'zahlView', place: cs => [cs[1], 'before'],
       make() { return card('lineal', 'Dasselbe Maß, zwei Skalen', '<div class="inst fit" data-b="1" style="padding:8px"></div><p class="cap">Oben die Skala der Ausgangseinheit, unten die der Zieleinheit. Die orange Linie markiert deinen Wert auf beiden Skalen.</p>'); },
       upd(n) {
         const z = Object.assign({ q: 'len', v: '2,5', from: 'in', to: 'mm' }, lsGet('zahl', {})), v = C.parseNum(z.v);

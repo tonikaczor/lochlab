@@ -198,7 +198,7 @@
 <g id="dr-dim"><line id="dr-l1" class="wl"/><line id="dr-l2" class="wl"/><line id="dr-l3" class="wl"/><text id="dr-lt" text-anchor="middle"></text></g>
 <g id="dr-tool"><polygon id="dr-bit" fill="var(--sv-tool)" stroke="var(--sv-ln)" stroke-width="1"/><rect id="dr-hold" fill="var(--sv-chuck)" stroke="var(--sv-ln)" stroke-width="1"/><text id="dr-fl" text-anchor="start"></text></g>
 <g id="dr-chips">${ch}</g>
-<text id="dr-ap" style="fill:var(--sv-tool)"></text>
+<text id="dr-ap" style="fill:var(--sv-ap,var(--sv-tool))"></text>
 <g id="dr-rot"><path d="M34 40a14 14 0 1 1-12 7" fill="none" stroke="var(--sv-cut)" stroke-width="2.4"/><polygon points="16,42 27,44 20,53" fill="var(--sv-cut)"/></g>
 <text x="56" y="44" id="dr-nt"></text></svg>`;
   };
@@ -325,7 +325,7 @@
 
   /* ============================================================ Seiten Drehen, Fräsen, Bohren */
   function simPage(sim, svg, ctrls, extra, title) {
-    return `<div class="sim-grid"><div class="card simL">${svg}<div class="live" id="${sim}-live" aria-live="polite"></div><div class="simbar"><span id="${sim}-note"></span></div></div>
+    return `<div class="sim-grid"><div class="card simL"><div class="svgscroll" tabindex="0" role="group" aria-label="Zeichnung, auf dem Handy seitlich wischbar">${svg}</div><p class="svghint">Zeichnung nach links und rechts wischen.</p><div class="live" id="${sim}-live" aria-live="polite"></div><div class="simbar"><span id="${sim}-note"></span></div></div>
 <div><div class="card"><h4>Einstellungen</h4><div class="cb">${ctrls}</div></div>
 <div class="card"><h4>Rechenweg und Ergebnis</h4><div class="cb"><div id="${sim}-res"></div><div id="${sim}-win"></div></div></div>
 <div class="card"><h4>Schnittgrößen im Bild</h4><div class="cb" id="${sim}-viz"></div></div>
@@ -421,17 +421,21 @@ ${TF.mode === 'frei' ? `<div style="margin-top:10px"><div class="two"><label cla
   const ABZUG = [0, 10, 25, 50];
   const stars = n => '★'.repeat(n) + '☆'.repeat(3 - n);
   function makeQuiz(host, cfg) {
-    const q = { o: null, sel: null, val: '', hint: 0, checked: false, ok: false, res: null, pct: 0 };
-    function load(id, seed) { q.o = BUILD(id, seed); q.sel = null; q.val = ''; q.hint = 0; q.checked = false; q.ok = false; q.res = null; q.pct = 0; render(); if (cfg.onLoad) cfg.onLoad(q); }
+    const q = { o: null, sel: null, val: '', hint: 0, checked: false, ok: false, res: null, pct: 0, tries: 0, wrong: '', zeig: false };
+    function load(id, seed) { q.o = BUILD(id, seed); q.sel = null; q.val = ''; q.hint = 0; q.checked = false; q.ok = false; q.res = null; q.pct = 0; q.tries = 0; q.wrong = ''; q.zeig = false; render(); if (cfg.onLoad) cfg.onLoad(q); }
     function answerHtml() {
       const o = q.o;
-      if (o.type === 'num') return `<div class="qin"><input id="${cfg.id}In" inputmode="decimal" autocomplete="off" placeholder="Deine Antwort" aria-label="Antwort" value="${esc(q.val)}"${q.checked ? ' disabled' : ''}><span class="u">${esc(o.unit || '')}</span></div>`;
+      if (o.type === 'num') return `<div class="qin"><input id="${cfg.id}In" inputmode="decimal" autocomplete="off" placeholder="Deine Antwort" aria-label="Antwort" value="${esc(q.val)}"${q.checked ? ' disabled' : ''}><span class="u">${esc(o.unit || '')}</span></div><p class="lr-hinweis">Zahl${o.unit ? ' in ' + esc(o.unit) : ''}. ${o.tol ? 'Eine Abweichung von ±' + o.tol + ' % gilt als richtig.' : 'Das Ergebnis muss genau stimmen.'}</p>`;
       if (o.type === 'choice') return `<div class="opts">${o.optsShown.map((t, i) => `<button data-a="opt" data-i="${i}" class="${q.checked ? (i === o.ans ? 'ok' : i === q.sel ? 'bad' : '') : (q.sel === i ? 'on' : '')}"${q.checked ? ' disabled' : ''}>${esc(t)}</button>`).join('')}</div>`;
       const best = o.accept;
       return `<div class="rw">${o.series.map(n => `<button data-a="ser" data-n="${n}" class="${q.checked ? (best.includes(n) ? 'ok' : n === q.sel ? 'bad' : '') : (q.sel === n ? 'on' : '')}"${q.checked ? ' disabled' : ''}>${n}<small>min⁻¹</small></button>`).join('')}</div><p class="hint2">Tippe eine Stufe der Drehzahlreihe an, dann „Prüfen“.</p>`;
     }
+    function fbTipp() {
+      const ex = cfg.exam && cfg.exam();
+      return `<div class="lr-fb tipp" id="zerFb" tabindex="-1"><p><strong>Noch nicht.</strong> ${q.wrong ? 'Deine Antwort: ' + esc(q.wrong) + '. ' : ''}${ex || !q.o.tips.length ? (ex ? 'Im Prüfmodus kostet ein Tipp Punkte. Tippe auf „Tipp“, wenn du ihn willst. ' : '') : 'Tipp: ' + esc(q.o.tips[0]) + ' '}Du hast einen zweiten Versuch.</p></div>`;
+    }
     function fbHtml() {
-      if (!q.checked) return '';
+      if (!q.checked) return q.tries && !q.ok ? fbTipp() : '';
       const o = q.o, u = esc(o.unit || ''); let h;
       if (o.type === 'num') h = q.ok ? `<b>✓ Richtig.</b> Ergebnis: <span class="res">${F(o.sol)} ${u}</span>${q.res && q.res.rel > 0.5 ? ' (dein Wert weicht ' + F(q.res.rel, 1) + ' % ab, das ist in der Toleranz)' : ''}.` : `<b>✗ Nicht richtig.</b> Dein Wert: ${isNum(q.res && q.res.value) ? F(q.res.value) : '–'} ${u}. Richtig ist <span class="res">${F(o.sol)} ${u}</span> (Toleranz ${o.tol ? '±' + o.tol + ' %' : 'exakt'}).`;
       else if (o.type === 'choice') h = q.ok ? `<b>✓ Richtig:</b> ${esc(o.sol)}.` : `<b>✗ Nicht richtig.</b> Richtig ist: <span class="res">${esc(o.sol)}</span>.`;
@@ -440,7 +444,7 @@ ${TF.mode === 'frei' ? `<div style="margin-top:10px"><div class="two"><label cla
         h = `${q.ok ? '<b>✓ Richtig.</b>' : '<b>✗ Nicht richtig.</b>'} Mit ${q.sel} min⁻¹ ist vc = <span class="res">${F(v)} m/min</span>${st ? ': ' + (st === 'ok' ? 'im Fenster' : st === 'niedrig' ? 'unter dem Fenster' : 'über dem Fenster') : ''}.${q.ok ? '' : ' Richtig wäre ' + o.accept.join(' oder ') + ' min⁻¹.'}`;
       }
       if (cfg.exam && cfg.exam() && q.ok) h += `<br>Punkte im Prüfmodus: <b>${q.pct} %</b>${q.hint ? ' (Tipp-Abzug ' + ABZUG[q.hint] + ' %)' : ''}.`;
-      return `<div class="fb ${q.ok ? 'ok' : 'bad'}">${h}<div style="margin-top:8px"><b>Lösungsweg</b></div><ol>${o.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>`;
+      return `<div class="lr-fb ${q.ok ? 'ok' : 'loes'}" id="zerFb" tabindex="-1">${h}<div style="margin-top:8px"><b>Lösungsweg</b></div><ol>${o.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol></div>`;
     }
     function hintHtml() {
       if (!cfg.tips || !q.hint) return '';
@@ -451,7 +455,8 @@ ${TF.mode === 'frei' ? `<div style="margin-top:10px"><div class="two"><label cla
       const exam = cfg.exam && cfg.exam(), maxT = o.tips.length;
       const meta = `<div class="qm"><span class="tag">${esc(o.catName)}</span><span class="tag lv" aria-label="Stufe ${o.level}">${stars(o.level)}</span>${exam ? '<span class="badge-exam">Prüfmodus</span>' : ''}</div>`;
       const btns = q.checked ? (cfg.afterHtml ? cfg.afterHtml(q) : '') : `<div class="btns"><button class="btn pri" data-a="check">✓ Prüfen</button>${cfg.tips ? `<button class="btn" data-a="hint"${q.hint >= maxT ? ' disabled' : ''}>💡 Tipp (${q.hint}/${maxT})</button>` : ''}${cfg.skip ? `<button class="btn" data-a="skip">Überspringen</button>` : ''}</div>${exam && cfg.tips ? `<p class="hint2">Prüfmodus: Tipp 1 kostet ${ABZUG[1]} %, Tipp 2 ${ABZUG[2]} %, Tipp 3 ${ABZUG[3]} % der Punkte.</p>` : ''}`;
-      host.innerHTML = `${cfg.head ? cfg.head(q) : ''}<div class="qcard">${meta}<div class="qt">${esc(o.text)}</div><div data-zv="${esc(o.id)}" data-exam="${exam ? 1 : 0}">${root.ZERVIZ ? root.ZERVIZ.task(o.id, exam) : ''}</div>${answerHtml()}${hintHtml()}${btns}${fbHtml()}</div>`;
+      host.innerHTML = `${cfg.head ? cfg.head(q) : ''}<div class="qcard">${meta}<div class="qt">${esc(o.text)}</div><div data-zv="${esc(o.id)}" data-exam="${exam ? 1 : 0}">${root.ZERVIZ ? root.ZERVIZ.task(o.id, exam) : ''}</div>${answerHtml()}${fbHtml()}${hintHtml()}${btns}</div>`;
+      if (q.zeig) { q.zeig = false; const fe = host.querySelector('#zerFb'); if (fe && window.LabRahmen) LabRahmen.zeig(fe); }
     }
     function sync() { const i = $('#' + cfg.id + 'In', host); if (i) q.val = i.value; }
     function check() {
@@ -459,7 +464,8 @@ ${TF.mode === 'frei' ? `<div style="margin-top:10px"><div class="two"><label cla
       if (o.type === 'num') { const v = C.parseDE(q.val); if (!isNum(v)) { toast('Bitte eine Zahl eingeben.'); return; } q.res = C.checkNum(q.val, o.sol, { tol: o.tol }); q.ok = q.res.ok; }
       else if (o.type === 'choice') { if (q.sel == null) { toast('Bitte eine Antwort wählen.'); return; } q.ok = q.sel === o.ans; }
       else { if (q.sel == null) { toast('Bitte eine Stufe wählen.'); return; } q.ok = o.accept.includes(q.sel); }
-      q.checked = true; const ex = cfg.exam && cfg.exam(); q.pct = q.ok ? (ex ? Math.max(0, 100 - ABZUG[q.hint]) : 100) : 0;
+      if (!q.ok && !q.tries) { q.tries = 1; q.wrong = o.type === 'num' ? F(q.res.value) + ' ' + (o.unit || '') : o.type === 'choice' ? o.optsShown[q.sel] : q.sel + ' min⁻¹'; q.zeig = true; sound('buzz'); render(); return; }
+      q.zeig = true; q.checked = true; const ex = cfg.exam && cfg.exam(); q.pct = q.ok ? (ex ? Math.max(0, 100 - ABZUG[q.hint]) : 100) : 0;
       sound(q.ok ? 'ding' : 'buzz'); render(); if (cfg.onCheck) cfg.onCheck(q);
     }
     function hint() { if (q.checked || q.hint >= q.o.tips.length) return; sync(); q.hint++; if (cfg.onHint) cfg.onHint(q); render(); }

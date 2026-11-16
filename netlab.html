@@ -87,8 +87,9 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 @media print{#app,.backdrop,#toast,#gate,#verBadge{display:none!important}body{background:#fff;height:auto}html{height:auto}}
 /* ===== Netzwerk-Lab ===== */
-#mid[data-tab=bin] #pgBin,#mid[data-tab=calc] #pgCalc,#mid[data-tab=werk] #pgWerk,#mid[data-tab=same] #pgSame,#mid[data-tab=osi] #pgOsi,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=help] #pgHelp{display:flex}
+#mid[data-tab=bin] #pgBin,#mid[data-tab=calc] #pgCalc,#mid[data-tab=werk] #pgWerk,#mid[data-tab=same] #pgSame,#mid[data-tab=osi] #pgOsi,#mid[data-tab=weg] #pgWeg,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=help] #pgHelp{display:flex}
 .seg{margin-bottom:8px}
+[hidden]{display:none!important}
 .bitrow{display:flex;flex-wrap:wrap;gap:10px 18px;margin:6px 0 10px}
 .nib{display:flex;gap:6px}
 .bitb{width:46px;min-height:62px;border-radius:10px;background:var(--panel2);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 22px ui-monospace,Menlo,Consolas,monospace}
@@ -112,6 +113,7 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 ol.st{margin:6px 0 0;padding-left:22px;line-height:1.5;font-size:14.5px}ol.st li{padding:2px 0}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body class="gs">
 <!--GATE-->
@@ -134,6 +136,7 @@ ol.st{margin:6px 0 0;padding-left:22px;line-height:1.5;font-size:14.5px}ol.st li
     <section class="pg scroll" id="pgWerk"><div class="wrap" id="werkView"></div></section>
     <section class="pg scroll" id="pgSame"><div class="wrap" id="sameView"></div></section>
     <section class="pg scroll" id="pgOsi"><div class="wrap" id="osiView"></div></section>
+    <section class="pg scroll" id="pgWeg"><div class="wrap" id="wegView"></div></section>
     <section class="pg scroll" id="pgBsp"><div class="wrap" id="bspView"></div></section>
     <section class="pg scroll" id="pgTasks"><div class="wrap" id="taskView"></div></section>
     <section class="pg scroll" id="pgRt"><div class="wrap" id="rtView"></div></section>
@@ -153,6 +156,22 @@ ol.st{margin:6px 0 0;padding-left:22px;line-height:1.5;font-size:14.5px}ol.st li
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { "netlab.html": { name: "Netzwerk-Lab", gruppen: [{ name: "Subnetze", teile: ["calc", "same"] }, { name: "Schichten", teile: ["osi", "weg"] }] } };</script>
+<script src="labrahmen.js"></script>
+<style id="i1-phone">@media (max-width:600px){summary{min-height:48px;display:flex;align-items:center}}</style>
+<script id="i1-phone-js">/* Handy: Mindestgrößen 14 px (HTML-Text) und 11 px (SVG-Text, Bildschirmgröße) */
+(function(){var mq=window.matchMedia('(max-width:600px)'),t=0,ro=window.ResizeObserver?new ResizeObserver(function(){sched()}):null;
+function run(){t=0;if(!mq.matches)return;
+var els=document.querySelectorAll('body *:not(script):not(style)');
+for(var i=0;i<els.length;i++){var e=els[i];if(e.closest('svg'))continue;var has=false;for(var n=e.firstChild;n;n=n.nextSibling)if(n.nodeType===3&&n.nodeValue.trim()){has=true;break}
+if(!has)continue;if(parseFloat(getComputedStyle(e).fontSize)<13.9)e.style.fontSize='14px'}
+var tx=document.querySelectorAll('svg text');
+for(var j=0;j<tx.length;j++){var x=tx[j],m=x.getScreenCTM&&x.getScreenCTM();if(!m||!m.a)continue;var s=Math.abs(m.a),f=parseFloat(getComputedStyle(x).fontSize);if(f*s<11&&x.getBoundingClientRect().width>0)x.style.fontSize=(11.2/s)+'px';if(ro&&x.ownerSVGElement&&!x.ownerSVGElement.__ro){x.ownerSVGElement.__ro=1;ro.observe(x.ownerSVGElement)}}}
+function sched(){if(!t)t=setTimeout(run,120)}
+new MutationObserver(sched).observe(document.documentElement,{childList:true,subtree:true});
+window.addEventListener('resize',sched);window.addEventListener('load',sched)})();
+</script>
+
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

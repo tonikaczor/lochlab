@@ -116,6 +116,8 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 .sgn.s{width:84px;flex:none}.sgn.m{width:72px}
 .sgbig{width:min(52vw,170px);margin:8px auto}
 .sgbig.s{width:84px}
+.psaslots{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.psaslot{min-width:64px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;border:2px dashed var(--danger);border-radius:10px;color:var(--mute);font-size:14px}
 .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
 .sgcell{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 4px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);min-height:44px;text-align:center}
 .sgcell:active{background:var(--bg)}
@@ -144,8 +146,27 @@ pre.cert{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:
 .hl ul,.hl ol{margin:.4em 0;padding-left:22px}.hl li{padding:2px 0}
 .hl table{width:100%;border-collapse:collapse;font-size:13.5px;margin:6px 0}.hl td,.hl th{padding:6px 8px;border-top:1px solid var(--line);text-align:left;vertical-align:top}.hl th{color:var(--mute);font-size:12px}
 @media(max-width:380px){.opts.sgs button{min-height:92px}.sgn.s{width:72px}}
+/* Audit K1: Schrift mindestens 14 px, Tippziele mindestens 44 px */
+.stats .bx,.fbar .lbl,.row small,.grow small{font-size:14px}
+.chip.s{height:44px;font-size:14px}
+.seg button{height:44px}
+.sch tr.hd td{font-size:14px}
+.opts button{min-height:46px}
+.hd,.r1,.r2,.r3{font-size:14px}
+/* K1c: Reihenfolge üben und Piktogramm zuordnen */
+.ru{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ru li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-size:14.5px;line-height:1.4}
+.ru .rn{flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent-bg);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.ru .rt{flex:1;min-width:0;overflow-wrap:anywhere}
+.ru .rbs{flex:none;display:flex;gap:6px}
+.rb{width:44px;height:44px;border-radius:10px;background:var(--panel);border:1px solid var(--line);color:var(--fg);font-size:16px;cursor:pointer}
+.rb:disabled{opacity:.35;cursor:default}.rb:focus-visible,.gzb:focus-visible{outline:3px solid var(--hi);outline-offset:2px}
+.gzo{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.gzb{min-height:44px;padding:10px 14px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);color:var(--fg);font-size:14.5px;line-height:1.4;text-align:left;cursor:pointer}
+.gzb.bad{border-color:var(--danger);opacity:.6}.gzb.good{border-color:var(--ok);border-width:2px}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -190,6 +211,8 @@ pre.cert{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'arblab.html': { buehne: { psa: '#psaView > .vz' }, gruppen: [{ name: 'Kennzeichnung', teile: ['zei', 'ghs'] }, { name: 'Notfall', teile: ['bra', 'eh', 'ver'] }, { name: 'Beurteilung und Schutz', teile: ['gb', 'psa'] }], gruppe: { fin: 'ueben' }, saetze: { 'Abschluss': 'Abschlussrunde mit Wertung und Zertifikat, ohne Tipps.', 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

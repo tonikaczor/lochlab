@@ -99,7 +99,8 @@
     if (!n) r += '<tr><td colspan="4" style="color:var(--mute)">noch keine Buchung</td></tr>';
     if (!o.nosaldo && n) r += `<tr class="su"><td></td><td class="b">${f(t.sum)}</td><td class="l"></td><td class="b">${f(t.sum)}</td></tr>`;
     const foot = !o.nosaldo && t.bal ? `<div class="tkf">Saldo: <b>${C.eur(Math.abs(t.bal))}</b> ${t.bal > 0 ? 'im Soll' : 'im Haben'}</div>` : '';
-    return `<div class="tk"><div class="tkh">${esc(C.kontoLabel(t.nr))}</div><table>${r}</table>${foot}</div>`;
+    const ky = C.konto && C.konto(t.nr), ty = ky ? ky.typ : '', tn = { A: 'Aktivkonto', P: 'Passivkonto', Aw: 'Aufwand', Er: 'Ertrag', Ab: 'Abschluss' }[ty];
+    return `<div class="tk${ty ? ' ty-' + ty : ''}"><div class="tkh">${esc(C.kontoLabel(t.nr))}${tn ? '<small class="tyn">' + tn + '</small>' : ''}</div><table>${r}</table>${foot}</div>`;
   }
   const tksHTML = (list, o) => list.length ? `<div class="tks">${list.map(t => tkHTML(t, o)).join('')}</div>` : '';
   const tksOf = (buchungen, ab) => { const r = C.tkonten(buchungen, ab); return r.order.sort().map(nr => r.m[nr]); };
@@ -139,7 +140,7 @@
     h += `<div class="card pl"><details${ed.ab.length ? ' open' : ''}><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600">Anfangsbestände und Vorsalden (optional)</summary><p class="hint2">Ein Anfangsbestand steht auf der normalen Seite des Kontos (Aktivkonto im Soll, Passivkonto im Haben). Bei Aufwands- und Ertragskonten ist es der bisherige Saldo des Jahres, etwa vor einem Abschluss.</p>`;
     ed.ab.forEach((a, i) => { h += `<div class="bl" style="grid-template-columns:1fr auto;margin-bottom:6px"><select data-abk="${i}" aria-label="Konto">${kOpts(null, a.k, k => k.typ !== 'Ab')}</select><button class="x" data-ea="abdel" data-i="${i}" aria-label="Anfangsbestand entfernen" style="width:44px;height:44px;border:1px solid var(--line);border-radius:10px;color:var(--mute)">✕</button><input data-abb="${i}" inputmode="decimal" autocomplete="off" placeholder="Betrag in €" aria-label="Anfangsbestand" value="${esc(a.b)}" style="grid-column:1/-1;text-align:right"></div>`; });
     h += '<div class="btns"><button class="btn" data-ea="abadd">+ Anfangsbestand</button></div></details></div>';
-    h += `<div class="card pl"><h4>T-Konten mit Saldo</h4><div id="edTk">${edTk()}</div></div>`;
+    h += `<div class="card pl"><h4>T-Konten mit Saldo</h4><div class="legend"><span><i class="ty-A"></i>Aktiv</span><span><i class="ty-P"></i>Passiv</span><span><i class="ty-Aw"></i>Aufwand</span><span><i class="ty-Er"></i>Ertrag</span></div><div id="edTk">${edTk()}</div></div>`;
     h += `<div class="card pl"><h4>Umsatzsteuer-Helfer</h4><div class="fld"><label class="f"><span>Betrag</span><div class="qin"><input data-us="w" inputmode="decimal" autocomplete="off" value="${esc(ed.us.w)}"><span class="u">€</span></div></label></div>`
       + `<div class="ctl"><div class="seg">${[['netto', 'ist netto'], ['brutto', 'ist brutto']].map(o => `<button data-usb="art" data-val="${o[0]}" class="${ed.us.art === o[0] ? 'on' : ''}">${o[1]}</button>`).join('')}</div><div class="seg">${[['19', '19 %'], ['7', '7 %']].map(o => `<button data-usb="satz" data-val="${o[0]}" class="${ed.us.satz === o[0] ? 'on' : ''}">${o[1]}</button>`).join('')}</div></div><div id="usOut">${usOut()}</div></div>`;
     $('#edView').innerHTML = h;
@@ -184,7 +185,7 @@
     D.examples.forEach((e, i) => {
       h += `<div class="card pl"><h4>Beispiel ${i + 1}</h4><div class="big">${esc(e.title)}</div><p style="margin:6px 0">${esc(e.text)}</p>`;
       h += `<details${i === 0 ? ' open' : ''}><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600">Buchungssätze und T-Konten anzeigen</summary>`;
-      e.buchungen.forEach((b, j) => { h += `<div style="font-size:12.5px;color:var(--mute);margin-top:8px">${j + 1}. ${esc(b.t)}</div><div class="bsatz">${bsHTML(b.lines)}</div>`; });
+      e.buchungen.forEach((b, j) => { h += `<div style="font-size:14px;color:var(--mute);margin-top:8px">${j + 1}. ${esc(b.t)}</div><div class="bsatz">${bsHTML(b.lines)}</div>`; });
       h += tksHTML(exTk(e)) + '</details>';
       h += `<p class="hint2">${esc(e.note)}</p><div class="btns"><button class="btn pri" data-ex="${esc(e.id)}">In den Editor laden</button></div></div>`;
     });
@@ -231,6 +232,7 @@
     if (q.zu) return `<b>Lösung</b>${q.zu.items.map(it => `<div style="padding:3px 0">${esc(it.t)}: <b>${esc(q.zu.opts.find(o => o[0] === it.a)[1])}</b></div>`).join('')}<p style="margin:6px 0 0">${esc(q.expl)}</p>`;
     return `<b>Lösungsweg mit Schema</b>${schemaTable(q.rows, { calc: true, hi: q.ask && q.ask.key })}${q.tkd ? tksHTML(q.tkd) : ''}<p style="margin:6px 0 0">${esc(q.expl)}</p>`;
   }
+  function zeigFb(v) { const f = v && v.querySelector('.lr-fb'); if (f && root.LabRahmen && root.LabRahmen.zeig) try { root.LabRahmen.zeig(f); } catch (e) {} }
   function exHTML(ctx, pre, tipBtn) {
     const q = ctx.q, r = ctx.res, locked = !!(r && r.ok); let h = `<p style="margin:8px 0">${esc(q.text)}</p>`;
     if (q.tkd) h += tksHTML(q.tkd, { nosaldo: true });
@@ -238,7 +240,7 @@
     else if (q.ask) h += `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit || 'Zahl')})</span><div class="qin"><input data-v id="${pre}In" inputmode="decimal" autocomplete="off" value="${esc(ctx.ans.v || '')}"${locked ? ' disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
     else if (q.buch) h += linesHTML(ctx.ans.lines, { konten: q.buch.konten, st: r && r.buch && r.buch.st, disabled: locked });
     else if (q.zu) h += zuHTML(q, ctx.ans, r, locked);
-    h += `<p class="hint2">${esc(ruleText(q))}</p>`;
+    h += `<p class="hint2 lr-hinweis">${esc(ruleText(q))}</p>`;
     h += `<div class="btns"><button class="btn pri" data-a="chk"${locked ? ' disabled' : ''}>✓ Prüfen</button>${tipBtn}</div>`;
     if (r && !r.empty) {
       const lines = [];
@@ -251,8 +253,11 @@
       else if (q.zu) lines.push({ ok: r.ok, text: r.ok ? 'Alle ' + r.total + ' Posten stimmen.' : r.right + ' von ' + r.total + ' Posten richtig' + (r.filled < r.total ? ', ' + (r.total - r.filled) + ' noch ohne Auswahl.' : '.') });
       else lines.push({ ok: r.ok, text: r.ok ? 'Alle ' + r.total + ' Zeilen stimmen.' : r.right + ' von ' + r.total + ' Zeilen richtig' + (r.filled < r.total ? ', ' + (r.total - r.filled) + ' noch leer.' : '.') });
       h += `<ul class="tl">${lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-      if (r.ok || r.shown || !exam() || pre === 'rt') h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}">${solHTML(q)}</div>`;
-      else h += '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
+      if (r.ok) h += `<div class="rdout ok lr-fb ok"><p><b>Richtig.</b></p>${solHTML(q)}</div>`;
+      else if (r.shown) h += `<div class="rdout bad lr-fb loes"><p><b>So geht der Lösungsweg:</b></p>${solHTML(q)}</div>`;
+      else if (exam()) h += '<div class="rdout bad lr-fb tipp"><p>🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p></div>';
+      else if ((ctx.fails || 0) < 2) h += `<div class="rdout bad lr-fb tipp"><p><b>Noch nicht richtig.</b> ${q.tips && q.tips[0] ? 'Tipp: ' + esc(q.tips[0]) : 'Prüfe Deine Eingabe noch einmal.'}</p><p>Du hast einen zweiten Versuch.</p></div>`;
+      else h += `<div class="rdout bad lr-fb loes"><p><b>Auch der zweite Versuch passt nicht. So geht der Lösungsweg:</b></p>${solHTML(q)}</div>`;
     }
     return h;
   }
@@ -289,10 +294,10 @@
     const ctx = S.t; if (!ctx) return; const r = evalQ(ctx.q, ctx.ans);
     if (r.empty) { toast(ctx.q.buch ? 'Wähle zuerst Konten und trage Beträge ein.' : ctx.q.zu ? 'Wähle zuerst für mindestens einen Posten eine Seite.' : 'Trage zuerst ein Ergebnis ein.'); return; }
     if (r.nan && ctx.q.ask) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return; }
-    ctx.res = r; const pct = r.ok ? pctFor(ctx.id) : 0;
+    ctx.res = r; if (!r.ok) ctx.fails = (ctx.fails || 0) + 1; const pct = r.ok ? pctFor(ctx.id) : 0;
     if (r.ok) { markSolved(ctx.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) { ding(); } else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); }
     else { sad(); toast(r.filled != null && r.right > 0 ? 'Fast: ' + r.right + ' von ' + r.total + ' stimmen.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
-    renderTasks(false);
+    renderTasks(false); zeigFb($('#taskView'));
   }
   function hintTask() {
     const ctx = S.t; if (!ctx) return; const id = ctx.id, h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1);
@@ -328,9 +333,9 @@
     S.r = { id: t.id, t, q, ans: initAns(q), res: null }; renderTrainer();
   }
   function trainerResult(r, shown) {
-    const ctx = S.r, st = S.rt; ctx.res = Object.assign({}, r, { shown }); st.n++;
+    const ctx = S.r, st = S.rt; ctx.res = Object.assign({}, r, { shown }); if (!r.ok && !shown) ctx.fails = (ctx.fails || 0) + 1; st.n++;
     if (r.ok && !shown) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); ding(); } else { st.streak = 0; sad(); }
-    lsSet('rt', st); renderTrainer(); updatePal();
+    lsSet('rt', st); renderTrainer(); zeigFb($('#rtView')); updatePal();
     if (r.ok && !shown && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
   }
   function renderTrainer() {
@@ -354,7 +359,7 @@
 
   /* ============================================================ Hilfe */
   function renderHelp() {
-    const ex = id => D.examples.find(e => e.id === id), bsb = id => ex(id).buchungen.map(b => `<div style="font-size:12.5px;color:var(--mute);margin-top:6px">${esc(b.t)}</div><div class="bsatz">${bsHTML(b.lines)}</div>`).join('');
+    const ex = id => D.examples.find(e => e.id === id), bsb = id => ex(id).buchungen.map(b => `<div style="font-size:14px;color:var(--mute);margin-top:6px">${esc(b.t)}</div><div class="bsatz">${bsHTML(b.lines)}</div>`).join('');
     const kt = C.GRUPPEN.map(g => `<tr><th colspan="2">${esc(g)}</th></tr>` + C.KONTEN.filter(k => k.grp === g).map(k => `<tr><td><b>${k.nr}</b></td><td>${esc(k.name)}</td></tr>`).join('')).join('');
     $('#helpView').innerHTML = `
     <details open><summary>🧾 Inventur, Bilanz, Eigenkapital</summary><div class="hb2">

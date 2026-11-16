@@ -12,8 +12,8 @@
    ana.fx, ana.q, ana.deep ({ bode, slew, offset, sat, n }), sim.done (gemeinsam mit den anderen Labs).
    Erweiterungen schreiben selbst: ana.report (Verlauf der Messreihen), ana.design, S.bericht (laufende Messreihe, wird mit Speichern/Teilen/Abgabe mitgeführt). */
 (function (root) {
-  if (!root.RIGUI || !root.RIGUI.ok('ana', '8fe0d6e2')) { const a = document.getElementById('app') || document.body, d = document.createElement('div'); d.className = 'rigui-miss'; d.setAttribute('role', 'alert'); d.style.cssText = 'margin:12px;padding:12px 14px;border:2px solid #c0392b;border-radius:10px;background:#fff4f2;color:#5a1a12;font:15px/1.45 system-ui,sans-serif'; d.innerHTML = 'Der Oberfl\u00e4chen-Rahmen fehlt oder passt nicht zur Seite (rigui-base.js, rigui-pf.js). Bitte die Seite neu laden.' + (typeof navigator !== 'undefined' && navigator.onLine === false ? ' Du bist offline: Verbinde dich einmal mit dem Internet und lade die Seite danach neu, damit die fehlenden Dateien nachgeladen werden.' : '') + ' <button type="button" class="btn pri" onclick="location.reload()">Neu laden</button>'; if (a) a.insertBefore(d, a.firstChild); return; }
-  const { $, $$, AMP, B, CMPSYM, NARROW_AR, QLEVELS, RANK, adig, ampKey, applyHit, assessOf, bgOf, canSound, choiceOpts, clamp, clickSnd, clone, confirmSheet, csvNum, decs, defVal, esc, fauto, fin, fnum, fxOn, isWarn, limBadge, limSrc, loadExampleByName, lsGet, lsPut, lsRaw, lsSet, margTxt, markDone, optLabel, optNorm, packShare, parseCsv, pick, rowEnd, rowNorm, saveCsv, seqToRows, sgn, sheet, siUnit, slPos, slVal, stat, taskDone, theme, toast, tstamp, typing, unpackShare, MVIEWS, MVNAME, frontOk } = root.RIGUI.pure('ana', { root, loadExample, setCtl });
+  if (!root.RIGUI || !root.RIGUI.ok('ana', '9a815c22')) { const a = document.getElementById('app') || document.body, d = document.createElement('div'); d.className = 'rigui-miss'; d.setAttribute('role', 'alert'); d.style.cssText = 'margin:12px;padding:12px 14px;border:2px solid #c0392b;border-radius:10px;background:#fff4f2;color:#5a1a12;font:15px/1.45 system-ui,sans-serif'; d.innerHTML = 'Der Oberfl\u00e4chen-Rahmen fehlt oder passt nicht zur Seite (rigui-base.js, rigui-pf.js). Bitte die Seite neu laden.' + (typeof navigator !== 'undefined' && navigator.onLine === false ? ' Du bist offline: Verbinde dich einmal mit dem Internet und lade die Seite danach neu, damit die fehlenden Dateien nachgeladen werden.' : '') + ' <button type="button" class="btn pri" onclick="location.reload()">Neu laden</button>'; if (a) a.insertBefore(d, a.firstChild); return; }
+  const { $, $$, AMP, B, CMPSYM, NARROW_AR, QLEVELS, RANK, adig, ampKey, applyHit, assessOf, bgOf, canSound, choiceOpts, clamp, clickSnd, clone, confirmSheet, csvNum, decs, defVal, esc, fauto, fin, fnum, fxOn, isInRow, isWarn, limBadge, limSrc, loadExampleByName, lsGet, lsPut, lsRaw, lsSet, margTxt, markDone, optLabel, optNorm, packShare, parseCsv, pick, rowEnd, rowNorm, saveCsv, seqToRows, sgn, sheet, siUnit, slPos, slVal, stat, taskDone, theme, toast, tstamp, typing, unpackShare, MVIEWS, MVNAME, frontOk } = root.RIGUI.pure('ana', { root, loadExample, setCtl });
   const CORE = () => root.ANA_CORE;
   const DRAW = () => root.ANA_DRAW;
   const ORDER = ['diode', 'schalter', 'emitter', 'folger', 'opv_inv', 'opv_nin', 'opv_komp', 'opv_aktiv'];
@@ -100,7 +100,8 @@
   ];
   root.ANA_KEYS = KEYS;
 
-  let drawErr = false, curT = 0, taskRes = null; const taskAns = {};
+  let drawErr = false, curT = 0, taskRes = null; const taskAns = {}, taskTry = {};
+  /* B-all-04: Die selbstverständliche Zeile "Eingaben gültig" zählt nicht in die Prozentzahl (sonst 33 % ohne Leistung) */
   /* Auswahlfelder: Einträge als Text oder { value, label } erlaubt; die Oberfläche arbeitet mit Kopien, die Definition des Prüfstands bleibt unberührt */
   let ctlCache = { rig: null, list: [] };
   const ctlsOf = () => {
@@ -224,7 +225,10 @@
     const lp = (c, on, y) => `<i class="apl ${c}${on ? ' on' : ''}">${on ? y : ''}</i>`, txD = a.text && !/^Keine Vorgabe gesetzt: Die Ampel bleibt grau\.$/.test(a.text) ? a.text : '';
     el.className = 'amprow amp2 ' + A.cls; el.setAttribute('role', 'status');
     el.innerHTML = `<span class="aplamps" aria-hidden="true">${lp('r', k === 'rot', '✗')}${lp('y', k === 'gelb', '!')}${lp('g', k === 'gruen', '✓')}</span><div class="atx"><div class="ap1"><span class="apt">Prüfampel</span><b class="aps">${k === 'grau' && S.rig && ctlsOf().length ? `<button type="button" class="apz" data-ampziel title="Vorgabe setzen: springt zur Gruppe Vorgabe im Bedienpult" aria-label="Noch keine Vorgabe. Vorgabe setzen">${esc(A.sym + ' ' + A.lbl)}</button>` : esc(A.sym + ' ' + A.lbl)}</b>${mt ? `<span class="apm">${esc(mt)}</span>` : ''}<button type="button" class="apq" data-ampq aria-expanded="${ampHelp}" aria-controls="ampHelp" aria-label="Was bedeutet die Prüfampel?">?</button></div>${txD ? `<small class="apd">${esc(txD)}</small>` : ''}${zu ? `<small class="apd">${esc(zu)}</small>` : ''}${k === 'gruen' ? `<small class="apd nt">${esc(ampelHinweis())}</small>` : ''}<p class="aphelp" id="ampHelp"${ampHelp ? '' : ' hidden'}>Die Prüfampel vergleicht das Ergebnis der Simulation mit der Vorgabe: <b>✓ im Bereich</b> = Vorgabe erfüllt, <b>! knapp</b> = fast an der Grenze, <b>✗ außerhalb</b> = Vorgabe nicht erfüllt, <b>– Noch keine Vorgabe</b> = es ist nichts zum Vergleichen gesetzt.${' ' + esc(ampelHinweis())}</p></div>${ra ? `<div class="avs"><span>Vorher: ${esc(AMP[ampKey(ra.ampel)].sym)} ${fin(ra.margin) ? fnum(ra.margin, 2) : esc(AMP[ampKey(ra.ampel)].name)}</span><span>Nachher: ${esc(A.sym)} ${fin(a.margin) ? fnum(a.margin, 2) : esc(A.name)}${fin(a.margin) && fin(ra.margin) ? ' (' + sgn(a.margin - ra.margin) + fnum(a.margin - ra.margin, 2) + ')' : ''}</span></div>` : ''}`;
-    const cv = $('#cv'); if (cv) { let al = ''; try { al = typeof S.rig.ariaLabel === 'function' ? String(S.rig.ariaLabel() || '') : ''; } catch (e) { al = ''; } cv.setAttribute('aria-label', al || ('Bild des Prüfstands ' + rigName(S.rigId) + '. Ampel ' + A.name + (mt ? ', ' + mt : '') + '. ' + (a.text || '') + ' ' + ampelHinweis())); }
+    const cv = $('#cv'); if (cv) { let al = ''; try { al = typeof S.rig.ariaLabel === 'function' ? String(S.rig.ariaLabel() || '') : ''; } catch (e) { al = ''; } cv.setAttribute('aria-label', (al || ('Bild des Prüfstands ' + rigName(S.rigId) + '. Ampel ' + A.name + (mt ? ', ' + mt : '') + '. ' + (a.text || '') + ' ' + ampelHinweis())) + (S.rig.canNudge && !S.readonly ? ' Mit den Pfeiltasten verschiebst du den Arbeitspunkt.' : ''));
+      /* Bild bedienbar per Tastatur, wenn die Anlage nudge hat (Arbeitspunkt ziehen) */
+      if (S.rig.canNudge && !S.readonly) { cv.setAttribute('tabindex', '0'); cv.setAttribute('role', 'application'); cv.setAttribute('aria-roledescription', 'Kennlinienfeld mit ziehbarem Arbeitspunkt'); }
+      else { cv.removeAttribute('tabindex'); cv.setAttribute('role', 'img'); cv.removeAttribute('aria-roledescription'); } }
   }
   /* Prüfampel: Hilfetext ein-/ausblenden (ohne neu zu zeichnen) und "Vorgabe setzen" springt zur Gruppe der Vorgaben im Bedienpult */
   document.addEventListener('click', e => {
@@ -326,13 +330,21 @@
     panels.push({ host, els }); if (!host.__anaWired) { host.__anaWired = true; wirePanel(host); } syncCtl(true);
   }
   function buildControls() { ctlCache = { rig: null, list: [] }; buildPanel($('#ctlHost'), null); }
+  /* B-ana-03: unwirksame Regler bleiben sichtbar, werden ausgegraut und tragen einen Kurztext (Eigenschaft grau am Regler) */
+  function ctlGrau(x, c, an) {
+    const el = x.el; el.hidden = false; el.classList.toggle('inakt', an);
+    $$('input,button,select', el).forEach(i => { i.disabled = an; });
+    if (an) el.setAttribute('aria-disabled', 'true'); else el.removeAttribute('aria-disabled');
+    let h = $('small.hp.ia', el);
+    if (an && !h) { el.insertAdjacentHTML('beforeend', '<small class="hp ia"></small>'); h = $('small.hp.ia', el); h.textContent = c.grau; } else if (!an && h) h.parentNode.removeChild(h);
+  }
   function syncCtl(force) {
     if (!S.rig) return;
     const st = S.st || readState();
     panels = panels.filter(p => p.host.isConnected);
     panels.forEach(p => ctlsOf().forEach(c => {
       const x = p.els[c.key]; if (!x || x.t === 'hidden') return;
-      if (typeof c.visible === 'function') { let vis = true; try { vis = !!c.visible(st || {}); } catch (e) {} if (vis !== x.vis) { x.vis = vis; x.el.hidden = !vis; } }
+      if (typeof c.visible === 'function') { let vis = true; try { vis = !!c.visible(st || {}); } catch (e) {} if (vis !== x.vis) { x.vis = vis; if (c.grau) ctlGrau(x, c, !vis); else x.el.hidden = !vis; } }
       let v; try { v = S.rig.getControl(c.key); } catch (e) { return; }
       if (!force && x.last === v) return; x.last = v; const el = x.el;
       if (c.type === 'slider') {
@@ -437,7 +449,71 @@
   const fxg = cvfx.getContext('2d'); let fxDrew = false;
   /* Handybreite: Die Szenen legen sich nach der echten Pixelgröße aus, ein hohes Bild gibt ihnen Platz für die Beschriftungen */
   function worldSz() { try { let w = S.rig && S.rig.worldSize; if (typeof w === 'function') w = w.call(S.rig); if (w && w.w > 0 && w.h > 0) return w; } catch (e) {} return { w: 960, h: 600 }; }
+  /* Handy-Ansicht (B-ana-02): Die Zeichnung legt alle Felder in einer hohen virtuellen Fläche aus, sichtbar ist immer nur ein Feld.
+     Ein Umschalter (Schaltung | Kennlinie | Signal ...) wählt das Feld, der Ausschnitt hat die Höhe dieses Felds. */
+  const PV = { on: false, sel: {}, cache: {}, bar: null, L: null, sig: '', win: null };
+  const PVBAR = 52, calG = document.createElement('canvas').getContext('2d');
+  function pvLayout(w, bh) {
+    const r = S.rig; if (!r || typeof r.panels !== 'function') return null;
+    const hs = Math.round(root.innerHeight / 20), k0 = S.rigId + '|' + Math.round(w) + '|' + hs + '|' + bh;
+    const sel = PV.sel[S.rigId], kk = k0 + '|' + (sel || ''); if (PV.cache[kk]) return PV.cache[kk];
+    const base = Object.assign(drawOpts(), { ghost: null, wipe: null, win: null });
+    const Tp = Math.max(200, Math.min(420, Math.round(root.innerHeight * 0.48) - bh - 6));
+    let vh = Math.round(w * 1.7), f = null, labels = [];
+    try {
+      for (let i = 0; i < 5; i++) {
+        r.draw(calG, w, vh, 0, base); const p = r.panels(); if (!p || !p.list.length) return null;
+        labels = p.list.map(q => q.label); f = p.list.find(q => q.label === sel) || p.list[0];
+        if (Math.abs(f.h - Tp) <= 6) break;
+        const nv = Math.max(260, Math.min(2600, Math.round(vh * Tp / Math.max(40, f.h)))); if (nv === vh) break; vh = nv;
+      }
+    } catch (e) { return null; }
+    if (!f) return null;
+    return (PV.cache[kk] = { vh, f, labels, cur: f.label });
+  }
+  function pvBarSync() {
+    let b = PV.bar;
+    if (!b) {
+      b = PV.bar = document.createElement('div'); b.id = 'pvBar'; b.setAttribute('role', 'tablist'); b.setAttribute('aria-label', 'Ansicht des Prüfstands');
+      b.addEventListener('click', e => {
+        const t = e.target.closest('[data-pv]'); if (!t) return;
+        PV.sel[S.rigId] = t.getAttribute('data-pv'); fitCanvas(); drawRig(performance.now());
+        const a = b.querySelector('[aria-selected="true"]'); if (a) a.focus();
+      });
+      cvw.appendChild(b);
+    }
+    const L = PV.L, sig = L.labels.join('|') + '#' + L.cur; b.hidden = false;
+    if (PV.sig !== sig) {
+      PV.sig = sig;
+      b.innerHTML = L.labels.map(n => '<button type="button" role="tab" data-pv="' + esc(n) + '" aria-selected="' + (n === L.cur) + '">' + esc(n) + '</button>').join('');
+    }
+    const a = b.querySelector('[aria-selected="true"]'); if (a && b.scrollWidth > b.clientWidth) b.scrollLeft = Math.max(0, a.offsetLeft - 12);
+  }
+  function pvOff() {
+    if (!PV.on) return; PV.on = false; PV.win = null; PV.L = null;
+    cvw.classList.remove('pv'); cvw.style.height = ''; cvs.style.top = cvfx.style.top = ''; cvs.style.bottom = cvfx.style.bottom = ''; cvs.style.height = cvfx.style.height = '';
+    if (PV.bar) PV.bar.hidden = true;
+  }
+  function pvFit() {
+    const w = cvw.clientWidth; if (!w) return false;
+    let bh = PV.bh || PVBAR, L = pvLayout(w, bh); if (!L) return false;
+    PV.on = true; PV.L = L; pvBarSync(); const nb = PV.bar.offsetHeight;
+    if (nb && nb !== bh) { bh = PV.bh = nb; L = pvLayout(w, bh); if (!L) return false; PV.L = L; pvBarSync(); }
+    PV.on = true; PV.L = L; const f = L.f, y0 = Math.max(0, Math.round(f.y) - 8), y1 = Math.min(L.vh, Math.round(f.y + f.h) + 8);
+    PV.win = { y0, y1 };
+    const winH = Math.max(120, y1 - y0), total = bh + winH + 2;
+    cvw.classList.add('pv'); if (cvw.style.aspectRatio !== 'auto') cvw.style.aspectRatio = 'auto';
+    if (cvw.style.height !== total + 'px') cvw.style.height = total + 'px';
+    const top = (bh - y0) + 'px';
+    [cvs, cvfx].forEach(c => { c.style.top = top; c.style.bottom = 'auto'; c.style.height = L.vh + 'px'; });
+    dpr = Math.min(2, root.devicePixelRatio || 1); const W = Math.round(w * dpr), H = Math.round(L.vh * dpr);
+    if (cvs.width !== W || cvs.height !== H) { cvs.width = W; cvs.height = H; }
+    if (cvfx.width !== W || cvfx.height !== H) { cvfx.width = W; cvfx.height = H; }
+    cw = w; ch = L.vh; return true;
+  }
   function fitCanvas() {
+    if ((cvw.parentElement ? cvw.parentElement.clientWidth : 1000) < 600 && S.rig && typeof S.rig.panels === 'function' && pvFit()) return;
+    pvOff();
     const ws = worldSz(), narrow = (cvw.parentElement ? cvw.parentElement.clientWidth : 1000) < 600, ar = narrow ? NARROW_AR : ws.w + '/' + ws.h; if (cvw.style.aspectRatio !== ar) cvw.style.aspectRatio = ar;
     const w = cvw.clientWidth, h = cvw.clientHeight; if (!w || !h) return;
     dpr = Math.min(2, root.devicePixelRatio || 1); const W = Math.round(w * dpr), H = Math.round(h * dpr);
@@ -449,6 +525,8 @@
   root.addEventListener('resize', () => { fitCanvas(); redrawTab(); updateMeters(0, true); updateDeep(true); });
 
   /* ---- Qualitätsstufen (SPEC 6.4): Bildzeit (gleitender Mittelwert über 30 Bilder) steuert eine Stufe zurück oder hoch ---- */
+  const reduced = () => !!mqReduce.matches;
+  const curQ = () => (reduced() ? 'niedrig' : S.q.mode === 'auto' ? S.q.level : S.q.mode);
   function setQMode(m) { if (!['auto', ...QLEVELS].includes(m)) return; S.q.mode = m; lsPut('ana.q', m); S.q.ms = []; S.q.fastSince = 0; updateQLine(true); }
   let qSig = '';
   function updateQLine(force) {
@@ -466,6 +544,7 @@
   /* ---- Zeichnen: Vorher | Nachher | Wischer (SPEC 6.1, 8.2) ---- */
   function drawOpts() {
     const o = { quality: curQ(), reduced: reduced(), theme: theme(), header: false, ghost: null, wipe: null };
+    if (PV.on && PV.win) o.win = PV.win;
     if (S.ref && S.rig) { if (S.refMode === 'wischer') { o.ghost = S.ref; o.wipe = S.wipe; } else if (S.refMode === 'nachher' && S.ghost) o.ghost = S.ref; }
     return o;
   }
@@ -476,6 +555,12 @@
     const r = S.ref && S.refRig && S.refMode === 'vorher' ? S.refRig : S.rig;
     try { r.draw(g2, cw, ch, ts, r === S.rig ? drawOpts() : { quality: curQ(), reduced: reduced(), theme: theme(), header: false }); }
     catch (e) { if (!drawErr) { drawErr = true; console.error('Zeichnung des Prüfstands:', e); } }
+    if (PV.on && PV.L && r === S.rig && typeof r.panels === 'function') {
+      const p = r.panels(), lb = p.list.map(q => q.label);
+      if (lb.length && lb.join('|') !== PV.L.labels.join('|')) {
+        PV.cache = {}; if (!lb.includes(PV.sel[S.rigId])) delete PV.sel[S.rigId]; fitCanvas(); if (PV.L) PV.L.labels = lb; if (PV.on) pvBarSync();
+      }
+    }
   }
   const holdsC = new Map(); let drag = null;
   /* hitTest liefert { key, kind:'switch'|'select'|'button'|'slider'|'knob', to?, set? }: to = Zielwert (Antippen/Ziehen), set = mehrere Steuerwerte (Sonde) */
@@ -498,7 +583,7 @@
   cvs.addEventListener('pointermove', e => {
     const r = S.rig; if (!r) return; const [x, y] = cvPos(e);
     if (drag && drag.id === e.pointerId) {
-      if (drag.abs && r.hitTest) { let h = null; try { h = r.hitTest(x, y, cw, ch); } catch (er) {} if (h && h.key === drag.key) applyHit(h); return; }
+      if (drag.abs && r.hitTest) { let h = null; try { h = r.hitTest(x, y, cw, ch, true); } catch (er) {} if (h && h.key === drag.key) applyHit(h); return; }
       const c = drag.c, d = (x - drag.x0) - (y - drag.y0);
       if (c.type === 'slider') setCtl(drag.key, slVal(c, clamp(drag.pos0 + d * 1000 / (0.55 * Math.min(cw, ch)), 0, 1000)));
       else { const o = c.options || [], i = clamp(drag.i0 + Math.round(d / 40), 0, o.length - 1); if (o[i]) setCtl(drag.key, o[i].value); }
@@ -507,6 +592,13 @@
     if (e.pointerType !== 'mouse' || !r.hitTest) return; let h = null; try { h = r.hitTest(x, y, cw, ch); } catch (er) {} cvs.style.cursor = h ? 'pointer' : 'default';
   });
   cvs.addEventListener('contextmenu', e => e.preventDefault());
+  /* Pfeiltasten verschieben den Arbeitspunkt (Anlagen mit nudge, z. B. Transistor); Umschalt = fünf Schritte */
+  cvs.addEventListener('keydown', e => {
+    const r = S.rig; if (!r || !r.nudge || !r.canNudge || S.readonly || e.altKey || e.ctrlKey || e.metaKey) return;
+    const d = { ArrowRight: [1, 0], ArrowLeft: [-1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key]; if (!d) return;
+    e.preventDefault();
+    for (let i = 0; i < (e.shiftKey ? 5 : 1); i++) { let h = null; try { h = r.nudge(d[0], d[1]); } catch (er) {} if (!h || !applyHit(h)) break; }
+  });
 
   /* ---- Effekte (alles über LochFX, geschützt); die Zuordnung Name → Effekt steht NUR hier ---- */
   const FXKINDS = { buzz: 1, click: 1, ding: 1, tick: 1, alarm: 1 };
@@ -871,11 +963,14 @@
     const ans = collectAnswer(t); let lines;
     try { lines = await (R.run ? R.run(t, ans) : t.check(ans)); } catch (e) { console.error(e); lines = [{ ok: false, text: 'Die Prüfung konnte nicht ausgeführt werden: ' + (e && e.message || e), why: '' }]; }
     S.readonly = false; lines = Array.isArray(lines) ? lines : [];
-    const pct = Math.round(100 * lines.filter(l => l.ok).length / Math.max(lines.length, 1));
-    taskRes = { id: t.id, lines, pct }; markDone(t.id, pct); updateTaskBadge(); if (pct === 100 && S.hidden.length) applyLockHidden(S.lock, []);
+    const iRow = lines.find(isInRow), rest = lines.filter(l => !isInRow(l));
+    const pct = iRow && !iRow.ok ? 0 : rest.length ? Math.round(100 * rest.filter(l => l.ok).length / rest.length) : (iRow ? 100 : 0);
+    taskTry[t.id] = pct === 100 ? 0 : (taskTry[t.id] || 0) + 1;
+    taskRes = { id: t.id, lines, pct, n: taskTry[t.id] }; markDone(t.id, pct); updateTaskBadge(); if (pct === 100 && S.hidden.length) applyLockHidden(S.lock, []);
     const F = root.LochFX; if (F) try { if (pct === 100) { F.pass(100); if (F.isFun && F.isFun()) F.confetti(false); } else F.pass(pct); } catch (e) {}
     updateChrome(); updateTaskBar(); if (S.tab !== 'tasks') setTab('tasks'); else renderTasks();
-    toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    if (!document.documentElement.classList.contains('lr-on')) toast(pct === 100 ? '🎉 Geschafft!' : pct + ' % richtig');
+    setTimeout(() => { const e = document.querySelector('#taskView .lr-fb'); if (e && root.LabRahmen) root.LabRahmen.zeig(e); }, 60);
   }
   /* Auto-Weg: Musterlösung laden und abspielen (zählt als Hilfe Stufe 3) */
   function autoWay(t) {
@@ -910,12 +1005,19 @@
       const r = taskRes && taskRes.id === t.id ? taskRes : null, ask2 = t.ask ? (typeof t.ask === 'string' ? { label: t.ask } : t.ask) : null, ans = taskAns[t.id] || {}, fl = fieldsOf(t), cl = choicesOf(t);
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat || '')}</h4><div class="big">${esc(t.title)}</div><div class="lv">${'●'.repeat(t.level || 1)}${'○'.repeat(3 - (t.level || 1))}</div>
         <p style="margin:8px 0;white-space:pre-line">${esc(t.text)}</p>${tableHtml(t.table)}<p class="hint2" style="margin-top:0">Prüfstand: ${ic(t)} ${esc(rn(t))}</p>${S.hidden.includes('fehler') ? `<p class="hint2">🩺 Der Fehlerfall ist verdeckt („Fehler: ?“). Miss am Prüfstand, dann gib deine Diagnose ab.${S.diagnose ? ' Abgegebene Diagnose: <b>' + esc(S.diagnose.label) + '</b>.' : ''}</p>` : ''}
-        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}"></label>` : ''}
+        ${ask2 ? `<label class="f"><span>${esc(ask2.label || 'Dein Ergebnis')}${ask2.unit ? ' (' + esc(ask2.unit) + ')' : ''}</span><input id="tkAns" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}"></label>` + `<p class="lr-hinweis" id="tkAnsHint">Zahl${ask2.unit ? ' in ' + esc(ask2.unit) : ''}.${typeof (root.ANA_TASKS || {}).TOL_STD === 'number' ? ' ±' + String(Math.round(root.ANA_TASKS.TOL_STD * 1000) / 10).replace('.', ',') + ' % gilt als richtig.' : ''}</p>` : ''}
         ${fl.length ? `<div class="sheetbox"><div class="gh" style="padding-top:0">Antwortblatt</div>${fl.map(f => `<label class="f"><span>${esc(f.question || f.label || f.key)}${f.unit ? ' in ' + esc(f.unit) : ''}</span><input data-fk="${esc(f.key)}" inputmode="decimal" autocomplete="off" value="${esc((ans.f || {})[f.key] || '')}"></label>`).join('')}</div>` : ''}
         ${cl.map(c => `<fieldset class="choice"><legend>${esc(c.q || c.label || c.key)}</legend>${choiceOpts(c).map((o, i) => `<label class="opt"><input type="radio" name="ch-${esc(c.key)}" data-ck="${esc(c.key)}" data-ci="${i}"${(ans.c || {})[c.key] !== undefined && String((ans.c || {})[c.key]) === String(o.value) ? ' checked' : ''}> ${esc(o.label)}</label>`).join('')}</fieldset>`).join('')}
         <div class="btns"><button class="btn pri" data-ta="check">✓ Lösung prüfen</button>${S.hidden.includes('fehler') ? '<button class="btn" data-ta="diag">🩺 Diagnose abgeben</button>' : ''}<button class="btn" data-ta="hint">💡 Tipp</button></div>
         <div class="btns"><button class="btn" data-ta="rig">Zum Prüfstand</button>${t.report || /Messreihe/i.test(t.cat || '') ? '<button class="btn" data-ta="report">Zur Messreihe</button>' : ''}${ask2 || fl.length ? '<button class="btn" data-ta="calc">Zum Rechner</button>' : ''}${typeof t.sol === 'function' ? '<button class="btn" data-ta="auto">▶ Auto-Weg</button>' : ''}<button class="btn" data-ta="hand">Abgeben (QR)</button><button class="btn danger" data-ta="end">Aufgabe beenden</button></div>`;
-      if (r) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? `<details><summary>Warum?</summary>${esc(l.why)}</details>` : ''}</li>`).join('')}</ul><div class="score ${r.pct === 100 ? 'ok' : ''}">${r.pct === 100 ? '🎉 Geschafft!' : r.pct + ' % richtig'}</div>`;
+      if (r) {
+        const shown = r.lines.filter(l => !(l.ok && isInRow(l))), fcls = r.pct === 100 ? 'ok' : r.n >= 2 ? 'loes' : 'tipp';
+        const head = r.pct === 100 ? '<strong>Richtig.</strong> 🎉 Geschafft.' : r.n >= 2 ? '<strong>Lösung.</strong> ' + r.pct + ' % richtig, das war noch offen. Der Grund steht bei jedem Punkt.' : '<strong>Noch nicht.</strong> ' + r.pct + ' % richtig. Schau auf die roten Punkte oder hole mit 💡 einen Tipp. Du hast einen zweiten Versuch.';
+        let sv = ''; if (r.n >= 2 && r.pct < 100) { try { const so = t.sol(); if (so && fin(so.value)) sv = '<p>Richtiges Ergebnis: <strong>' + esc(fauto(so.value)) + (ask2 && ask2.unit ? ' ' + esc(ask2.unit) : '') + '</strong></p>'; try { const hs = typeof t.hint === 'function' ? t.hint() : t.hint, ms = Array.isArray(hs) ? hs.filter(x => /^Musterlösung/.test(String(x))).pop() : ''; if (ms) sv += '<p>' + esc(String(ms)) + '</p>'; } catch (e2) {} } catch (e) {} }
+        const fb = `<div class="lr-fb ${fcls}" role="status"><p>${head}</p>${sv}<ul class="tl">${shown.map((l, i) => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}${!l.ok && l.why ? (r.n >= 2 ? `<br><small>${esc(l.why)}</small>` : `<details><summary>Warum?</summary>${esc(l.why)}</details>`) : ''}${!l.ok && l.fix && l.fix.rig === S.rigId ? `<br><button class="btn" data-ta="fix" data-fi="${i}">${esc(l.fix.btn || 'Am Prüfstand einstellen')}</button>` : ''}</li>`).join('')}</ul>${r.n >= 2 && r.pct < 100 ? '<p><button class="btn" data-ta="auto">▶ Musterlösung abspielen</button></p>' : ''}</div>`;
+        const k = h.lastIndexOf('<div class="btns"><button class="btn pri" data-ta="check">');
+        h = k >= 0 ? h.slice(0, k) + fb + h.slice(k) : h + fb;
+      }
       h += '</div>';
     }
     const cats = []; A.forEach(x => { if (!cats.includes(x.cat)) cats.push(x.cat); });
@@ -944,6 +1046,7 @@
     if (tb) {
       const a = tb.dataset.ta, t = curTask();
       if (a === 'check') checkTask(); else if (a === 'hint') hintTask(); else if (a === 'rig') setTab('rig'); else if (a === 'report') setTab('report'); else if (a === 'calc') setTab('calc'); else if (a === 'diag') diagnosePick(); else if (a === 'reveal') revealFault();
+      else if (a === 'fix') { const rs = taskRes && t && taskRes.id === t.id ? taskRes : null, l = rs ? rs.lines.filter(x => !(x.ok && isInRow(x)))[+tb.dataset.fi] : null; if (l && l.fix && l.fix.rig === S.rigId) { const done = [], skip = []; Object.keys(l.fix.set).forEach(k => { if (isLocked(k)) skip.push(k); else { setCtl(k, l.fix.set[k]); done.push(k); } }); toast(done.length ? 'Am Prüfstand eingestellt' + (skip.length ? ', gesperrt: ' + skip.join(', ') : '') : 'Gesperrt, nicht verstellbar'); } }
       else if (a === 'auto') { if (t && await confirmSheet('Auto-Weg?', 'Der Prüfstand spielt die Musterlösung ab. Das <b>zählt als Hilfe</b> (Stufe 3): Dein Ausbilder sieht es.', 'Abspielen')) autoWay(t); }
       else if (a === 'hand') { if (t && root.Auswertung) root.Auswertung.handIn(t.id, taskDone()[t.id] || 0, t.title); }
       else if (a === 'end') { S.task = null; taskRes = null; helpRefresh(); updateChrome(); renderTasks(); toast('Aufgabe beendet'); }
@@ -1109,7 +1212,7 @@
     { k: 'sat', t: 'Sättigung (Aussteuergrenze)', alt: 'Übertragungskennlinie mit Aussteuergrenze und größter Eingangsspannung' }
   ];
   const deepGet = () => { const d = lsGet('ana.deep', {}); return d && typeof d === 'object' && !Array.isArray(d) ? d : {}; };
-  const { allCtl, ampelNow, applyCtl, ask, backToRef, buildBA, buildPick, buildTabs, canFire, choicesOf, coerce, curQ, curRows, curTask, cvPos, cval, exportPng, fe, fieldsOf, fireHtml, hasCtl, importSheet, keysHtml, keysSheet, limGet, limIds, loadShared, metersOf, newExperiment, openList, parseNum, placeholderHtml, presetsOf, qualityFeed, readState, reduced, refFromExample, renderSweep, renderTasksIfOpen, resetRun, rigIcon, rigName, rowText, saves, seqDur, seqLive, seqSteps, seqStop, setRef, snapshot, toggleCtl, updateChrome, updateSimBand, updateTaskBadge, updateTaskBar, usePick, wirePanel, deepOpened, gruppeOf, loadRig, saveItem } = root.RIGUI.kit('ana', { CORE, FIREHINT, FIRELBL, GRUPPEN, KEYS, ORDER, PK, RIGLIMITS, RIGMETA, S, TABS, TK, applyItem, buildControls, buildMeters, buildPal, buildPresets, buildRefRig, buildSicht, ctlDef, ctlParse, ctlShow, ctlsOf, cvs, deepGet, defOf, doFire, extRefresh, mqReduce, renderSeqRes, renderSweepLive, renderTasks, resetRig, rigPng, saveCur, saveCurSoon, seqKeys, setRig, setRun, setTab, simText, stash, syncCtl, updateAmp, updateQLine, updateTitle, updateWipeDom });
+  const { allCtl, ampelNow, applyCtl, ask, backToRef, buildBA, buildPick, buildTabs, canFire, choicesOf, coerce, curRows, curTask, cvPos, cval, exportPng, fe, fieldsOf, fireHtml, hasCtl, importSheet, keysHtml, keysSheet, limGet, limIds, loadShared, metersOf, newExperiment, openList, parseNum, placeholderHtml, presetsOf, qualityFeed, readState, refFromExample, renderSweep, renderTasksIfOpen, resetRun, rigIcon, rigName, rowText, saves, seqDur, seqLive, seqSteps, seqStop, setRef, snapshot, toggleCtl, updateChrome, updateSimBand, updateTaskBadge, updateTaskBar, usePick, wirePanel, deepOpened, gruppeOf, loadRig, saveItem } = root.RIGUI.kit('ana', { CORE, FIREHINT, FIRELBL, GRUPPEN, KEYS, ORDER, PK, RIGLIMITS, RIGMETA, S, TABS, TK, applyItem, buildControls, buildMeters, buildPal, buildPresets, buildRefRig, buildSicht, ctlDef, ctlParse, ctlShow, ctlsOf, cvs, deepGet, defOf, doFire, extRefresh, reduced, renderSeqRes, renderSweepLive, renderTasks, resetRig, rigPng, saveCur, saveCurSoon, seqKeys, setRig, setRun, setTab, simText, stash, syncCtl, updateAmp, updateQLine, updateTitle, updateWipeDom });
   const deepNow = () => { const d = deepGet(); return DEEP.filter(x => d[x.k]).length; };
   /* Lernen, Kennlinien und der Prüfstand zeigen dieselben Klappen: alle details[data-deep] nach dem Zustand in ana.deep nachziehen */
   function syncDeepDom() { try { const d = deepGet(); $$('details[data-deep]').forEach(el => { const want = !!d[el.dataset.deep]; if (el.open !== want) el.open = want; }); } catch (e) { /* kein Absturz */ } }
@@ -1270,7 +1373,7 @@
   function updateTitle() {
     const nm = rigName(S.rigId || ORDER[0]);
     $('#title').innerHTML = esc(S.name) + (S.dirty ? ' •' : '') + '\n<small>' + esc(nm) + (S.running ? ' · läuft' : '') + '</small>';
-    document.title = 'Analogtechnik-Lab: ' + S.name;
+    document.title = 'Analogtechnik-Lab: ' + (S.name === 'Neuer Versuch' ? nm : S.name + ' (' + nm + ')');
     const tag = $('#cvTag'); if (tag) { tag.textContent = S.running ? '' : '⏸ Pause'; tag.style.display = S.running ? 'none' : ''; }
   }
   $('#title').onclick = async () => { const r = await ask('Name des Versuchs', [{ key: 'n', label: 'Name', type: 'text', value: S.name }]); if (r && r.n.trim()) { S.name = r.n.trim(); S.dirty = true; updateChrome(); saveCurSoon(); } };

@@ -53,7 +53,7 @@
         const lab = ZNAME[zn.id], need = lab.length * 5.4 + 8;
         if (w >= need) front += `<text class="wz-zt${act ? ' act' : ''}" x="${p1((x0 + x1) / 2)}" y="${G.T + 12}" text-anchor="middle">${esc(lab)}</text>`;
         else {
-          const ym = G.B - 30 - 15 * call++, xm = x0 + Math.min(w, 6) / 2;
+          const ym = G.B - 30 - 24 * call++, xm = x0 + Math.min(w, 6) / 2;
           front += `<line class="wz-lead" x1="${p1(xm)}" y1="${G.B}" x2="${p1(xm)}" y2="${p1(ym)}" stroke="${ZCOL[zn.id]}"/><text class="wz-zt${act ? ' act' : ''}" x="${p1(xm + 4)}" y="${p1(ym + 3.5)}">${esc(ZLONG[zn.id])}</text>`;
         }
       });
@@ -112,11 +112,11 @@
 .wz-cv{fill:none;stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}.wz-nm{font:700 10.5px system-ui,sans-serif}
 .wz-fig{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:6px 0}.wz-fig svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}
 .wz-leg{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
-.wz-leg button{min-height:44px;padding:0 14px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);font:600 13.5px system-ui,sans-serif;color:var(--fg);cursor:pointer;touch-action:manipulation;display:inline-flex;align-items:center;gap:7px}
+.wz-leg button{min-height:44px;padding:0 14px;border-radius:22px;background:var(--panel2);border:1px solid var(--line);font:600 14px system-ui,sans-serif;color:var(--fg);cursor:pointer;touch-action:manipulation;display:inline-flex;align-items:center;gap:7px}
 .wz-leg button[aria-pressed=false]{opacity:.55}.wz-leg button.on{background:var(--accent-bg);border-color:var(--accent-bg);color:#fff}
 .wz-leg i{width:18px;height:0;border-top:3px solid;display:inline-block}
-.wz-note{font-size:13px;color:var(--mute);line-height:1.45;margin:6px 0 0}
-.wz-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--mute);margin:4px 0}.wz-key b{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px;opacity:.8}
+.wz-note{font-size:14px;color:var(--mute);line-height:1.45;margin:6px 0 0}
+.wz-key{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;color:var(--mute);margin:4px 0}.wz-key b{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px;opacity:.8}
 `;
   const ST = { zones: true, cmp: ['s235', 'c45', 'al', 'cu', 'gjl'], view: 'ganz' };
   if (typeof document !== 'undefined') { try { const v = localStorage.getItem('lm4.wer.vzZones'); if (v === '0') ST.zones = false; } catch (e) {} }

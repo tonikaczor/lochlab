@@ -109,7 +109,7 @@
     ['Umstellen', 2, 'Kraft: Masse bestimmen', R => { const F = pick(R, [120, 300, 450, 900, 1500]), a = pick(R, [2, 3, 5, 6, 7.5]); return umst('kraft', 'm', { F, a }, 2, `Eine Kraft von ${F} N beschleunigt eine Last mit ${fmt(a)} m/s². Wie groß ist die Masse der Last?`); }],
     ['Umstellen', 3, 'Kreisfläche: Durchmesser', R => {
       const d0 = pick(R, [10, 12, 16, 20, 25, 30]), A = rd(Math.PI * d0 * d0 / 4, 2);
-      return umst('kreis', 'd', { A }, 1, `Eine Kreisscheibe hat eine Fläche von ${fmt(A)} mm². Wie groß ist ihr Durchmesser?`);
+      const o = umst('kreis', 'd', { A }, 1, `Eine Kreisscheibe hat eine Fläche von ${fmt(A)} mm². Wie groß ist ihr Durchmesser?`); o.skizze = { k: 'kreis', d: 'd = ?', f: 'A = ' + fmt(A) + ' mm²' }; return o;
     }],
     ['Umstellen', 2, 'Dichte: Masse bestimmen', R => {
       const [mat, rho] = pick(R, [['Aluminium', 2.7], ['Stahl', 7.85], ['Kupfer', 8.9], ['Blei', 11.34]]), V = pick(R, [20, 50, 120, 250]);
@@ -118,19 +118,19 @@
     /* ===== Geometrie ===== */
     ['Geometrie', 1, 'Kreisfläche', R => {
       const d = pick(R, [10, 12, 20, 25, 40, 50]), g = C.geo('kreis', { d }, 'mm', 1), A = g.results[1];
-      return { text: `Wie groß ist die Fläche einer Kreisscheibe mit dem Durchmesser ${d} mm? (π vom Taschenrechner)`, unit: 'mm²', raw: A.value, dec: 1, steps: [A.line], meta: { d }, tips: ['Kreisfläche: A = π · d² / 4 (mit dem Durchmesser) oder A = π · r².', `Rechne d² = ${d} · ${d}, mal π, durch 4.`] };
+      return { text: `Wie groß ist die Fläche einer Kreisscheibe mit dem Durchmesser ${d} mm? (π vom Taschenrechner)`, unit: 'mm²', raw: A.value, dec: 1, steps: [A.line], skizze: { k: 'kreis', d: 'd = ' + d + ' mm', f: 'A = ?' }, meta: { d }, tips: ['Kreisfläche: A = π · d² / 4 (mit dem Durchmesser) oder A = π · r².', `Rechne d² = ${d} · ${d}, mal π, durch 4.`] };
     }],
     ['Geometrie', 2, 'Unterlegscheibe (Kreisring)', R => {
       const D = pick(R, [20, 24, 30, 40]), d = pick(R, [6, 8, 10, 12]), g = C.geo('ring', { D, d }, 'mm', 1), A = g.results[0];
-      return { text: `Eine Unterlegscheibe hat außen ${D} mm und innen ${d} mm Durchmesser. Wie groß ist ihre Fläche?`, unit: 'mm²', raw: A.value, dec: 1, steps: ['Ring = große Kreisfläche − kleine Kreisfläche', A.line], meta: { D, d }, tips: ['Berechne die Fläche des Außenkreises und ziehe die Fläche des Lochs ab.', 'A = π · (D² − d²) / 4. Rechne erst die Klammer.'] };
+      return { text: `Eine Unterlegscheibe hat außen ${D} mm und innen ${d} mm Durchmesser. Wie groß ist ihre Fläche?`, unit: 'mm²', raw: A.value, dec: 1, steps: ['Ring = große Kreisfläche − kleine Kreisfläche', A.line], skizze: { k: 'ring', D: 'D = ' + D + ' mm', d: 'd = ' + d + ' mm', f: 'A = ?' }, meta: { D, d }, tips: ['Berechne die Fläche des Außenkreises und ziehe die Fläche des Lochs ab.', 'A = π · (D² − d²) / 4. Rechne erst die Klammer.'] };
     }],
     ['Geometrie', 2, 'Zylindervolumen', R => {
       const d = pick(R, [2, 4, 5, 8]), h = pick(R, [10, 12, 15, 20]), g = C.geo('zylinder', { d, h }, 'cm', 1), V = g.results[0];
-      return { text: `Ein Zylinder hat den Durchmesser ${d} cm und die Höhe ${h} cm. Wie groß ist sein Volumen?`, unit: 'cm³', raw: V.value, dec: 1, steps: ['Volumen = Grundfläche · Höhe', V.line], meta: { d, h }, tips: ['Volumen = Grundfläche (Kreis) mal Höhe.', 'V = π · d² / 4 · h. Alle Längen in cm einsetzen, dann kommt cm³ heraus.'] };
+      return { text: `Ein Zylinder hat den Durchmesser ${d} cm und die Höhe ${h} cm. Wie groß ist sein Volumen?`, unit: 'cm³', raw: V.value, dec: 1, steps: ['Volumen = Grundfläche · Höhe', V.line], skizze: { k: 'zyl', d: 'd = ' + d + ' cm', h: 'h = ' + h + ' cm', f: 'V = ?' }, meta: { d, h }, tips: ['Volumen = Grundfläche (Kreis) mal Höhe.', 'V = π · d² / 4 · h. Alle Längen in cm einsetzen, dann kommt cm³ heraus.'] };
     }],
     ['Geometrie', 3, 'Masse einer Welle', R => {
       const d = pick(R, [8, 10, 12, 20]), h = pick(R, [40, 50, 80, 100]), [mat, rho] = pick(R, [['Stahl', 7.85], ['Aluminium', 2.7], ['Messing', 8.4], ['Kupfer', 8.9]]), V = Math.PI * d * d / 4 * h, m = rho * V / 1000;
-      return { text: `Eine Welle aus ${mat} (Dichte ${fmt(rho)} g/cm³) hat ${d} cm Durchmesser und ${h} cm Länge. Welche Masse hat sie in kg?`, unit: 'kg', raw: m, dec: 2, meta: { d, h, rho },
+      return { text: `Eine Welle aus ${mat} (Dichte ${fmt(rho)} g/cm³) hat ${d} cm Durchmesser und ${h} cm Länge. Welche Masse hat sie in kg?`, unit: 'kg', raw: m, dec: 2, skizze: { k: 'zyl', d: 'd = ' + d + ' cm', h: 'l = ' + h + ' cm', f: 'm = ?' }, meta: { d, h, rho },
         steps: [C.calcLine('V', 'pi*d^2/4*h', { d, h }, 1, 'cm³'), `Masse = Dichte · Volumen: m = ${fmt(rho)} g/cm³ · ${fmt(rd(V, 1))} cm³ = ${fmt(rd(rho * V, 0))} g`, `Umrechnen: g in kg: ${fmt(rd(rho * V, 0))} g : 1000 = ${fmt(rd(m, 2))} kg`],
         tips: ['Erst das Volumen (Zylinder), dann mit der Dichte die Masse in Gramm, zuletzt in kg umrechnen.', 'V = π · d² / 4 · h in cm³. m = ρ · V in g. Dann durch 1000.'] };
     }],
@@ -301,7 +301,7 @@
     const R = C.rng(t.id + ':' + (seed == null ? 0 : seed)), g = t.gen(R), value = rd(g.raw, g.dec), exact = value === rs(g.raw), dec = g.dec;
     const tol = exact ? Math.max(1e-6, Math.abs(value) * 1e-6) : Math.pow(10, -dec);
     return { id: t.id, seed, cat: t.cat, level: t.level, title: t.title, text: g.text + (exact ? '' : ' Runde auf ' + dig(dec) + '.'), unit: g.unit, label: g.label || 'Dein Ergebnis', value, tol, dec, exact,
-      steps: g.steps.concat(['Ergebnis: ' + fmt(value, Math.max(dec, 0)) + (g.unit ? ' ' + g.unit : '')]), tips: g.tips, svg: g.svg || null, meta: g.meta, raw: g.raw };
+      steps: g.steps.concat(['Ergebnis: ' + fmt(value, Math.max(dec, 0)) + (g.unit ? ' ' + g.unit : '')]), tips: g.tips, svg: g.svg || null, skizze: g.skizze || null, meta: g.meta, raw: g.raw };
   }
 
   /* ---------- Beispiele (Reiter "Beispiele", Aufruf ?bsp): Schritt für Schritt durchgerechnet ---------- */

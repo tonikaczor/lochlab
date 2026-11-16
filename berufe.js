@@ -4,7 +4,9 @@
    data-beruf="alle" erscheint bei jedem Beruf. Der Reiter blendet fremde Karten mit .be-out aus; die Wahl steht in localStorage lm4.beruf.
    Berufe ohne eigene Karten zeigen eine Vorschau der geplanten Labs (PLAN).
    Daneben (v55.174) ein zweiter Zweig "Studium und Technik" mit vier Wegen (WEGE: tec, stu, wing, winf), in der Reiterleiste oberhalb der Berufe. Sie nutzen denselben Mechanismus (data-beruf="tec stu ...", lm4.beruf, ?beruf=),
-   sind aber nicht anordnbar und nicht ausblendbar. Ihre Labs stehen im Bereich "Fortgeschritten – Studium und Technik" (data-group="stud"), der bei einem Weg an erster Stelle steht und bei Ausbildungsberufen leer (ausgeblendet) ist. Läuft nach home-groups.js (Gruppen müssen gebaut sein), ohne Skript bleibt die Startseite wie bisher. */
+   sind aber nicht anordnbar und nicht ausblendbar. Ihre Labs stehen im Bereich "Fortgeschritten – Studium und Technik" (data-group="stud"), der bei einem Weg an erster Stelle steht und bei Ausbildungsberufen leer (ausgeblendet) ist. Läuft nach home-groups.js (Gruppen müssen gebaut sein), ohne Skript bleibt die Startseite wie bisher.
+   Seit dem Umbau in fünf Ansichten (S1) stehen beide Listen untereinander in der Ansicht "Ich" (#ichBeruf), im Kopf steht der gewählte Beruf als Marke (#berufBadge, führt zur Wahl).
+   Eine Wahl speichert den Beruf und lädt die Startseite neu (Ansicht Start), weil Lernpfad, Empfehlung und Karriere sich nach dem Beruf richten. */
 (function (root) {
   const KEY = 'lm4.beruf';
   const BERUFE = [
@@ -88,18 +90,12 @@
     doc.head.appendChild(st);
   }
 
-  /* Weg gewählt: der Bereich "Fortgeschritten – Studium und Technik" steht ganz oben und ist offen; die Schnellleiste unten führt statt zu "Prüfen" (gibt es für die Wege nicht) zu diesem Bereich. Bei einem Ausbildungsberuf steht der Bereich wieder am Ende (er ist dann leer und ausgeblendet). */
+  /* Weg gewählt: der Bereich "Fortgeschritten – Studium und Technik" steht ganz oben (Sortierung Thema). Die Ansicht "Prüfen" zeigt bei den Wegen Klausur und Lernpfad (data-weg). Bei einem Ausbildungsberuf steht der Bereich wieder am Ende (er ist dann leer und ausgeblendet). */
   function weg(on) {
     try {
       doc.documentElement.setAttribute('data-weg', on ? '1' : '0');   // CSS: die 10-Minuten-Einheit (Prüfungsfragen) gibt es für die Wege nicht
       const gs = doc.getElementById('grp-stud'), gw = doc.getElementById('groups');
       if (gs && gw && gs.parentNode === gw) { if (on) { if (gw.firstChild !== gs) gw.insertBefore(gs, gw.firstChild); } else if (gw.lastChild !== gs) gw.appendChild(gs); }
-      if (on && root.HomeGroups && root.HomeGroups.wantOpen) root.HomeGroups.wantOpen('stud');
-      doc.querySelectorAll('#bnav a').forEach(a => {
-        const t = a.getAttribute('data-t'); if (t !== 'grp-pruef' && t !== 'grp-stud') return;
-        a.setAttribute('data-t', on ? 'grp-stud' : 'grp-pruef'); a.setAttribute('href', on ? '#grp-stud' : '#grp-pruef');
-        const sp = a.querySelector('span'); if (sp) sp.textContent = on ? 'Studium' : 'Prüfen';
-      });
     } catch (e) {}
   }
   function apply(save) {
@@ -113,6 +109,8 @@
     doc.documentElement.setAttribute('data-beruf', cur);
     weg(isWeg(cur));
     doc.querySelectorAll('.be-tab').forEach(b => b.setAttribute('aria-pressed', b.dataset.k === cur ? 'true' : 'false'));
+    const bb = doc.getElementById('berufBadge'), bo = bOf(cur);
+    if (bb && bo) { const t = bb.querySelector('.bb'); if (t) t.textContent = bo.n; bb.hidden = false; bb.setAttribute('aria-label', (isWeg(cur) ? 'Weg: ' : 'Beruf: ') + bo.n + '. Antippen zum Wechseln'); bb.title = bo.n + ' (' + bo.s + '). Antippen zum Wechseln'; }
     if (isWeg(cur)) setTimeout(() => { try { const w = doc.querySelector('.be-wege .be-tab[aria-pressed="true"]'); if (w && w.scrollIntoView) w.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) {} }, 0);   // gewählten Weg in der waagerechten Leiste ins Bild holen (schmale Schirme)
     // Vorschau: bei Berufen mit Karten nur die noch fehlenden Labs, ohne Karten die ganze Liste
     const box = doc.getElementById('beSoon'); if (box) {
@@ -132,6 +130,10 @@
     if (save) { try { localStorage.setItem(KEY, cur); } catch (e) {} }
   }
 
+  /* nach einer Wahl: Startseite neu aufbauen und in der Ansicht Start öffnen */
+  function neuLaden() {
+    try { if (!doc.getElementById('top')) return; if (root.history && root.history.replaceState && location.hash !== '#start') root.history.replaceState(null, '', location.pathname + location.search + '#start'); location.reload(); } catch (err) {}
+  }
   function build() {
     if (doc.getElementById('beTabs')) return;
     css();
@@ -170,7 +172,7 @@
     function changed() {
       saveCfg(); const was = cur; if (!isWeg(cur) && visible(cfg).indexOf(cur) < 0) cur = visible(cfg)[0];
       tabs(); rows(); apply(cur !== was);
-      if (cur !== was) { try { if (doc.getElementById('lernpfad') || doc.getElementById('top')) location.reload(); } catch (err) {} }
+      if (cur !== was) neuLaden();
     }
     panel.addEventListener('click', e => {
       const t = e.target; if (!t || !t.closest) return;
@@ -182,7 +184,7 @@
     ul.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.be-edit'); if (!b) return; panel.hidden = !panel.hidden; b.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true'); if (!panel.hidden) rows(); });
     tabs();
     nav.appendChild(ul);
-    const pick = e => { const b = e.target.closest && e.target.closest('.be-tab'); if (!b || b.dataset.k === cur) return; cur = b.dataset.k; apply(true); try { if (doc.getElementById('lernpfad') || doc.getElementById('top')) location.reload(); } catch (err) {} };
+    const pick = e => { const b = e.target.closest && e.target.closest('.be-tab'); if (!b || b.dataset.k === cur) return; cur = b.dataset.k; apply(true); neuLaden(); };
     nav.addEventListener('click', pick);   // Lernpfad, Weitermachen und Karriere richten sich nach dem Beruf: Seite neu aufbauen
     // Zweig Studium und Technik: eigene Zeile oberhalb der Berufe (eigenes nav, damit die Berufe-Leiste unverändert bleibt)
     const wnav = doc.createElement('nav'); wnav.className = 'be-wege'; wnav.id = 'beWege'; wnav.setAttribute('aria-label', 'Studium und Technik: Weg wählen');
@@ -195,18 +197,20 @@
       li.appendChild(bt); wul.appendChild(li);
     });
     const al = doc.createElement('p'); al.className = 'be-lab'; al.textContent = 'Ausbildung';
-    wnav.appendChild(wl); wnav.appendChild(wul); wnav.appendChild(al); wnav.addEventListener('click', pick);
+    const ich = doc.getElementById('ichBeruf');
+    wnav.appendChild(wl); wnav.appendChild(wul); if (!ich) wnav.appendChild(al); wnav.addEventListener('click', pick);
     const soon = doc.createElement('section'); soon.className = 'be-soon'; soon.id = 'beSoon'; soon.hidden = true;
     const anchor = doc.getElementById('top') || doc.getElementById('groups');
-    if (!anchor || !anchor.parentNode) return;
+    if (!ich && (!anchor || !anchor.parentNode)) return;
     nav.appendChild(panel);
-    anchor.parentNode.insertBefore(wnav, anchor);
-    anchor.parentNode.insertBefore(nav, anchor);
+    if (ich) { nav.insertBefore(al, nav.firstChild); ich.appendChild(nav); ich.appendChild(wnav); }
+    else { anchor.parentNode.insertBefore(wnav, anchor); anchor.parentNode.insertBefore(nav, anchor); }
     const g = doc.getElementById('groups'); if (g && g.parentNode) g.parentNode.insertBefore(soon, g);
     // Wiki: für alle Berufe. Die Projekte-Zeile (#vbRow) trägt data-beruf="alle" und filtert ihren Inhalt selbst nach Beruf (home-vb.js)
     const wk = doc.getElementById('wikiRow'); if (wk && !wk.hasAttribute('data-beruf')) wk.setAttribute('data-beruf', 'alle');
     apply(false);
   }
-  root.Berufe = { BERUFE, WEGE, isWeg, PLAN, matches, visible: () => visible(cfg), get: () => cur, set(k) { if (keys().indexOf(k) >= 0) { cur = k; apply(true); } }, apply };
+  root.Berufe = { BERUFE, WEGE, isWeg, PLAN, matches, visible: () => visible(cfg), get: () => cur, set(k) { if (keys().indexOf(k) >= 0) { cur = k; apply(true); } },
+    waehle(k) { if (allKeys().indexOf(k) < 0) return; cur = k; apply(true); neuLaden(); }, apply };
   build();
 })(typeof window !== 'undefined' ? window : this);

@@ -22,7 +22,7 @@
   function panelSvg(p, opt) {
     opt = opt || {};
     if (!p || !Array.isArray(p.series) || !fin(p.tMax) || !(p.tMax > 0)) return '';
-    const W = 640, H = opt.h || 250, L = 46, Rr = 14, Tp = 14, B = 36, pw = W - L - Rr, ph = H - Tp - B, tMax = p.tMax;
+    const W = 420, H = opt.h || 240, L = 52, Rr = 14, Tp = 20, B = 52, pw = W - L - Rr, ph = H - Tp - B, tMax = p.tMax;
     let lo = 0, hi = 0;
     p.series.forEach(s => (s.pts || []).forEach(q => { if (fin(q[1])) { if (q[1] < lo) lo = q[1]; if (q[1] > hi) hi = q[1]; } }));
     if (p.band) { lo = Math.min(lo, p.band[0]); hi = Math.max(hi, p.band[1]); }
@@ -32,15 +32,15 @@
     const st = niceStep(hi - lo, 5), yMax = Math.ceil(hi / st - 1e-9) * st, yMin = Math.floor(lo / st + 1e-9) * st, span = yMax - yMin;
     const sx = t => L + t / tMax * pw, sy = v => Tp + ph - (v - yMin) / span * ph, f1 = v => v.toFixed(1), id = 'rl' + (++uid);
     let g = '';
-    for (let v = yMin; v <= yMax + st / 2; v += st) g += `<line x1="${L}" x2="${W - Rr}" y1="${f1(sy(v))}" y2="${f1(sy(v))}" style="stroke:var(--line,#38424d);stroke-width:1"/><text x="${L - 5}" y="${f1(sy(v) + 4)}" text-anchor="end" style="fill:var(--mute,#8d99a6);font-size:11px">${esc(fnum(v, 2))}</text>`;
+    for (let v = yMin; v <= yMax + st / 2; v += st) g += `<line x1="${L}" x2="${W - Rr}" y1="${f1(sy(v))}" y2="${f1(sy(v))}" style="stroke:var(--line,#38424d);stroke-width:1"/><text x="${L - 5}" y="${f1(sy(v) + 5)}" text-anchor="end" style="fill:var(--mute,#8d99a6);font-size:16px">${esc(fnum(v, 2))}</text>`;
     const xs = niceStep(tMax, 6);
-    for (let t = 0; t <= tMax + 1e-9; t += xs) g += `<line x1="${f1(sx(t))}" x2="${f1(sx(t))}" y1="${Tp}" y2="${Tp + ph}" style="stroke:var(--line,#38424d);stroke-width:1"/><text x="${f1(sx(t))}" y="${Tp + ph + 15}" text-anchor="middle" style="fill:var(--mute,#8d99a6);font-size:11px">${esc(fnum(t, 1))}</text>`;
+    for (let t = 0; t <= tMax + 1e-9; t += xs) g += `<line x1="${f1(sx(t))}" x2="${f1(sx(t))}" y1="${Tp}" y2="${Tp + ph}" style="stroke:var(--line,#38424d);stroke-width:1"/><text x="${f1(sx(t))}" y="${Tp + ph + 19}" text-anchor="middle" style="fill:var(--mute,#8d99a6);font-size:16px">${esc(fnum(t, 1))}</text>`;
     g += `<line x1="${L}" x2="${L}" y1="${Tp}" y2="${Tp + ph}" style="stroke:var(--mute,#8d99a6);stroke-width:1.4"/>`;
     if (yMin <= 0 && yMax >= 0) g += `<line x1="${L}" x2="${W - Rr}" y1="${f1(sy(0))}" y2="${f1(sy(0))}" style="stroke:var(--mute,#8d99a6);stroke-width:1.4"/>`;
-    g += `<text x="${W - Rr}" y="${Tp + ph + 29}" text-anchor="end" style="fill:var(--mute,#8d99a6);font-size:11px">t in s</text><text x="${L + 4}" y="${Tp + 10}" style="fill:var(--mute,#8d99a6);font-size:11px">${esc(p.yLabel || '')}</text>`;
+    g += `<text x="${W - Rr}" y="${Tp + ph + 38}" text-anchor="end" style="fill:var(--mute,#8d99a6);font-size:16px">t in s</text><text x="${L + 4}" y="${Tp - 5}" style="fill:var(--mute,#8d99a6);font-size:16px">${esc(p.yLabel || '')}</text>`;
     let body = '';
     if (p.band) body += `<rect x="${L}" width="${pw}" y="${f1(sy(p.band[1]))}" height="${f1(Math.max(1, sy(p.band[0]) - sy(p.band[1])))}" style="fill:var(--mute,#8d99a6);opacity:.28"/>`;
-    if (p.vline && fin(p.vline.t)) body += `<line x1="${f1(sx(p.vline.t))}" x2="${f1(sx(p.vline.t))}" y1="${Tp}" y2="${Tp + ph}" style="stroke:var(--danger,#ff5c5c);stroke-width:1.4;stroke-dasharray:3 3"/><text x="${f1(sx(p.vline.t) + 4)}" y="${Tp + 22}" style="fill:var(--danger,#ff5c5c);font-size:11px">${esc(p.vline.label || '')}</text>`;
+    if (p.vline && fin(p.vline.t)) body += `<line x1="${f1(sx(p.vline.t))}" x2="${f1(sx(p.vline.t))}" y1="${Tp}" y2="${Tp + ph}" style="stroke:var(--danger,#ff5c5c);stroke-width:1.4;stroke-dasharray:3 3"/><text x="${f1(sx(p.vline.t) + 4)}" y="${Tp + 22}" style="fill:var(--danger,#ff5c5c);font-size:16px">${esc(p.vline.label || '')}</text>`;
     const lim = v => Math.max(yMin - 2 * span, Math.min(yMax + 2 * span, v));
     p.series.forEach(s => {
       const pts = (s.pts || []).filter(q => fin(q[0]) && fin(q[1]));
@@ -48,7 +48,7 @@
       let d = ''; pts.forEach((q, i) => { d += (i ? 'L' : 'M') + f1(sx(q[0])) + ' ' + f1(sy(lim(q[1]))); });
       body += `<path d="${d}" style="${STYLE[s.kind] || STYLE.x};stroke-linejoin:round"/>`;
     });
-    const leg = p.series.filter(s => s.name).map((s, i) => `<text x="${L + 8 + i * 170}" y="${H - 5}" style="fill:${LEG[s.kind] || LEG.x};font-size:11px">${esc(s.name)}</text>`).join('');
+    const leg = p.series.filter(s => s.name).map((s, i) => `<text x="${L + 8 + i * 130}" y="${H - 4}" style="fill:${LEG[s.kind] || LEG.x};font-size:16px">${esc(s.name)}</text>`).join('');
     const label = (p.title ? p.title + ': ' : '') + 'Diagramm ' + (p.yLabel || '') + ' über der Zeit';
     return `<div class="plot" style="margin:6px 0">${p.title ? `<div style="font-weight:700;font-size:13px;margin:0 0 2px">${esc(p.title)}</div>` : ''}<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block;background:var(--panel2,#2c343e);border-radius:8px" role="img" aria-label="${esc(label)}"><clipPath id="${id}"><rect x="${L}" y="${Tp}" width="${pw}" height="${ph}"/></clipPath>${g}<g clip-path="url(#${id})">${body}</g>${leg}</svg></div>`;
   }

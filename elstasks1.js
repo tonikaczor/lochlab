@@ -35,6 +35,8 @@
   const exOf = (kind, pred, tag) => once('ex:' + kind + ':' + tag, () => { const s = U.seedFor(kind, pred, tag); return CORE().exercise(kind, s === null ? 1 : s); });
   /* Pruefzeile fuer eine Kernuebung; extras = [{ si, msg }]: zusaetzliche typische Fehler dieser Aufgabe (erst genannt, wenn der Wert zu ihnen passt) */
   function exRow(r, ex, raw, label, extras) {
+    /* Toleranz der Kernuebung steht in der Pruefzeile (die Ansicht liest sie fuer den Hinweis am Eingabefeld) */
+    if (ex && ex.answer && isFinite(ex.answer.tol)) { const pt = 100 * ex.answer.tol; label += ' (Toleranz ' + String(Math.round(pt * 10) / 10).replace('.', ',') + ' %)'; }
     if (!ex || ex.ok === false || typeof ex.check !== 'function') { r(false, label, 'Die Übung konnte nicht erzeugt werden: ' + (ex && ex.why ? ex.why : 'Rechenkern fehlt.')); return false; }
     if (raw === null || raw === undefined) { r(false, label, 'Du hast keine Zahl eingetragen.'); return false; }
     let q; try { q = ex.check(raw); } catch (e) { q = { ok: false, text: 'Die Prüfung der Zahl ist fehlgeschlagen.' }; }

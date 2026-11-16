@@ -44,7 +44,7 @@
     if (total < DAY) s += R(x, by, x1 - x, bh, 'rest', 2);
     s += R(x0, by, x1 - x0, bh, 'frame', 2);
     const lx = x0 + DAY * sc; s += L(lx, by - 6, lx, by + bh + 6, 'lim');
-    s += T(14, 18, 'Dein Arbeitstag nach erfasster Dauer', 's b') + T(406, 18, 'gestrichelt: 8 h (Beispiel)', 's2 m end');
+    s += T(14, 18, 'Dein Arbeitstag', 's b') + T(406, 18, 'gestrichelt: 8 h (Beispiel)', 's2 m end');
     s += T(14, by + bh + 20, '0 h', 's2 m') + T(406, by + bh + 20, hh(mx), 's2 m end');
     s += T(210, by + bh + 20, total ? 'erfasst: ' + hh(total) + (total < DAY ? ' · offen: ' + hh(DAY - total) : '') : 'noch keine Dauer erfasst', 's2 b mid');
     const rows = list.slice(0, 8), ly = by + bh + 44;
@@ -65,7 +65,7 @@
     const rows = Object.keys(by).map(k => by[k]).sort((x, y) => y.min - x.min).slice(0, 6); if (!rows.length) return '';
     const W = 420, x0 = 118, x1 = 360, mx = rows[0].min, H = 16 + rows.length * 30;
     let s = '';
-    rows.forEach((r, i) => { const y = 8 + i * 30, w = Math.max(3, r.min / mx * (x1 - x0)); s += T(x0 - 8, y + 18, cut(r.n, 16), 's end') + R(x0, y + 4, w, 20, 'sg c' + (i % 5), 3) + T(x0 + w + 6, y + 19, hh(r.min), 's2 b'); });
+    rows.forEach((r, i) => { const y = 8 + i * 30, w = Math.max(3, r.min / mx * (x1 - x0)); s += T(x0 - 8, y + 18, cut(r.n, 14), 's end') + R(x0, y + 4, w, 20, 'sg c' + (i % 5), 3) + T(x0 + w + 6, y + 19, hh(r.min), 's2 b'); });
     return svg(W, H, 'Schwerpunkte nach Fachbegriff in Stunden', s);
   }
 
@@ -111,12 +111,51 @@
     s += L(l, Y(DAY), W - r, Y(DAY), 'lim') + T(W - r - 2, Y(DAY) - 4, '8 h (Beispiel)', 's2 m end h');
     let ly = H0 + 6; const leg = top.map((k, i) => ({ c: 'c' + i, n: names[k] || k, min: tot[k] })), rest = Object.keys(tot).filter(k => !cls[k]).reduce((sum, k) => sum + tot[k], 0);
     if (rest > 0) leg.push({ c: 'c4', n: top.length ? 'weitere / ohne Fachbegriff' : 'ohne Fachbegriff', min: rest });
-    leg.forEach((e, i) => { const x = i % 2 ? 214 : 14, y = ly + Math.floor(i / 2) * 20; s += R(x, y, 12, 12, 'sg ' + e.c, 2) + T(x + 18, y + 11, cut(e.n, 18) + ' ' + hh(e.min), 's2'); });
+    leg.forEach((e, i) => { const x = i % 2 ? 214 : 14, y = ly + Math.floor(i / 2) * 20; s += R(x, y, 12, 12, 'sg ' + e.c, 2) + T(x + 18, y + 11, cut(e.n, 16) + ' ' + hh(e.min), 's2'); });
     const H = H0 + 8 + Math.ceil(leg.length / 2) * 20 + 4;
     return svg(W, Math.max(H, H0 + 10), 'Säulen: erfasste Stunden je Wochentag nach Fachbegriff', s);
   }
 
-  const API = { daySvg, fachSvg, checks, checksHtml, dayViz, weekSvg, DAY };
+  /* ============================================================ Bühne: kompakte Bänder (K-bhf-01, K-bhf-05) */
+  /* Tagesband, immer sichtbar: ohne Dauer zeigt es einen leeren 8-Stunden-Rahmen mit blassem Beispieltag */
+  const EXTAG = [150, 90, 120, 60];
+  function bandSvg(a) {
+    const list = []; if (a && a.items) a.items.forEach((it, i) => { if (!it.lern) list.push({ i, it, min: it.dauer && fin(it.dauer.min) ? it.dauer.min : NaN }); });
+    const W = 420, x0 = 14, x1 = 406, by = 28, bh = 34, got = list.filter(r => fin(r.min)), total = got.reduce((s0, r) => s0 + r.min, 0), nMiss = list.length - got.length, leer = !got.length;
+    const mx = Math.max(DAY, total), sc = (x1 - x0) / mx; let s = '', x = x0;
+    s += T(14, 16, 'Dein Arbeitstag', 's b') + T(406, 16, leer ? 'noch leer, Beispiel in blass' : 'gestrichelt: 8 h (Beispiel)', 's2 m end');
+    if (leer) EXTAG.forEach((m, k) => { const w = m * sc; s += R(x, by, w, bh, 'sg ex c' + k, 2); x += w; });
+    else got.forEach((r, k) => {
+      const w = Math.max(2, r.min * sc); s += R(x, by, w, bh, 'sg c' + (k % 5), 2);
+      if (w >= 22) s += T(x + w / 2, by + bh / 2 + 5, list.indexOf(r) + 1, 's b mid dk');
+      if (hasWarn(a, r.i)) s += `<circle class="wd" cx="${q(x + Math.min(w, 14) / 2)}" cy="${by - 6}" r="4"/>`;
+      x += w;
+    });
+    if (!leer && total < DAY) s += R(x, by, x1 - x, bh, 'rest', 2);
+    s += R(x0, by, x1 - x0, bh, 'frame', 2);
+    const lx = x0 + DAY * sc; s += L(lx, by - 6, lx, by + bh + 6, 'lim');
+    for (let h = 0; h * 60 <= mx + 1; h += 2) s += T(x0 + h * 60 * sc, by + bh + 17, h + ' h', 's2 m' + (h === 0 ? '' : ' mid'));
+    s += T(210, by + bh + 38, leer ? 'So füllt sich dein Tag, sobald Stichpunkte eine Dauer haben' : 'erfasst: ' + hh(total) + (total < DAY ? ' · offen: ' + hh(DAY - total) : '') + (nMiss ? ' · ' + nMiss + ' ohne Dauer' : ''), 's2 b mid' + (nMiss ? ' wn' : ''));
+    return svg(W, by + bh + 46, leer ? 'Leeres 8-Stunden-Band mit blassem Beispieltag' : 'Tagesband: erfasste Dauer von höchstens acht Stunden', s);
+  }
+  /* Wochenband, immer sichtbar: fünf Tage, Balken nach Stunden, 8 h als Beispielrahmen */
+  function weekBandSvg(days, beruf) {
+    const TG = ['Mo', 'Di', 'Mi', 'Do', 'Fr'], an = []; for (let j = 0; j < 5; j++) an.push(C.analyze(Array.isArray(days) && days[j] ? days[j] : '', beruf));
+    const sums = an.map(a => taet(a).reduce((s0, it) => s0 + (it.dauer && fin(it.dauer.min) ? it.dauer.min : 0), 0)), miss = an.map(a => taet(a).filter(i => !(i.dauer && fin(i.dauer.min))).length);
+    const W = 420, x0 = 40, x1 = 318, top = 26, rh = 22, mx = Math.max(DAY, Math.max.apply(null, sums)), sc = (x1 - x0) / mx; let s = '';
+    s += T(14, 16, 'Deine Woche', 's b') + T(406, 16, 'gestrichelt: 8 h (Beispiel)', 's2 m end');
+    an.forEach((a, j) => {
+      const y = top + j * rh, n = taet(a).length;
+      s += T(14, y + 15, TG[j], 's m');
+      if (!n) s += R(x0, y + 2, x1 - x0, 17, 'rest', 2) + T(x0 + 8, y + 15, 'leer', 's2 m');
+      else { if (sums[j] > 0) s += R(x0, y + 2, Math.max(2, sums[j] * sc), 17, 'sg c' + (j % 5 === 4 ? 0 : j % 5), 2); s += R(x0, y + 2, x1 - x0, 17, 'frame', 2); }
+      if (n) s += T(406, y + 15, (sums[j] ? hh(sums[j]) : 'keine Dauer') + (miss[j] ? ' · ?×' + miss[j] : ''), 's2 end ' + (miss[j] ? 'wn' : 'b'));
+    });
+    const lx = x0 + DAY * sc; s += L(lx, top - 2, lx, top + 5 * rh, 'lim');
+    return svg(W, top + 5 * rh + 4, 'Wochenband: erfasste Stunden je Wochentag, acht Stunden als Beispielrahmen', s);
+  }
+
+  const API = { daySvg, fachSvg, checks, checksHtml, dayViz, weekSvg, bandSvg, weekBandSvg, DAY };
   root.BHF_VIZ = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 
@@ -127,24 +166,25 @@
   const lsGet = (k, d) => { try { const v = JSON.parse(localStorage.getItem(LS + k) || ''); return v == null ? d : v; } catch (e) { return d; } };
   const CSS = `.vzbox{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;max-width:640px;margin:8px auto}
 .vzbox svg{display:block;width:100%;height:auto}
-.vzbox svg text{font-family:system-ui,sans-serif;font-size:12.5px;fill:var(--fg);-webkit-user-select:none;user-select:none}
-.vzbox svg text.s{font-size:12.5px}.vzbox svg text.s2{font-size:11.5px}.vzbox svg text.m{fill:var(--mute)}.vzbox svg text.b{font-weight:700}.vzbox svg text.mid{text-anchor:middle}.vzbox svg text.end{text-anchor:end}.vzbox svg text.dk{fill:#10151a}.vzbox svg text.wn{fill:var(--warn)}
+.vzbox svg text{font-family:system-ui,sans-serif;font-size:14px;fill:var(--fg);-webkit-user-select:none;user-select:none}
+.vzbox svg text.s{font-size:14px}.vzbox svg text.s2{font-size:12.5px}.vzbox svg text.m{fill:var(--mute)}.vzbox svg text.b{font-weight:700}.vzbox svg text.mid{text-anchor:middle}.vzbox svg text.end{text-anchor:end}.vzbox svg text.dk{fill:#10151a}.vzbox svg text.wn{fill:var(--warn)}
 .vzbox svg text.h{paint-order:stroke;stroke:var(--panel2);stroke-width:3px;stroke-linejoin:round}
 .vzbox .gr{stroke:var(--line);stroke-width:.7}.vzbox .ax{stroke:var(--mute);stroke-width:1.2}
 .vzbox .sg.c0{fill:#3b9eff}.vzbox .sg.c1{fill:#4cd964}.vzbox .sg.c2{fill:#f5a524}.vzbox .sg.c3{fill:#c084fc}.vzbox .sg.c4{fill:#8d99a6}
+.vzbox .sg.ex{opacity:.3}
 .vzbox .sg.nod{fill:none;stroke:var(--warn);stroke-width:1.6;stroke-dasharray:3 3}
 .vzbox .rest{fill:var(--mute);fill-opacity:.15;stroke:var(--mute);stroke-width:1;stroke-dasharray:4 3}.vzbox .frame{fill:none;stroke:var(--fg);stroke-opacity:.6;stroke-width:1.2}.vzbox .lim{stroke:var(--fg);stroke-width:1.5;stroke-dasharray:5 4}.vzbox .wd{fill:var(--warn);stroke:var(--panel2);stroke-width:1.5}
 .vzcard h4{margin:0 0 8px}
-.vzchk{list-style:none;margin:8px 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}.vzchk li{min-height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:18px;border:1px solid var(--line);background:var(--bg);font-size:13.5px}
+.vzchk{list-style:none;margin:8px 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}.vzchk li{min-height:36px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:18px;border:1px solid var(--line);background:var(--bg);font-size:14px}
 .vzchk li.ok{border-color:var(--ok)}.vzchk li.ok span:first-child{color:var(--ok);font-weight:700}.vzchk li.wn{border-color:var(--warn)}.vzchk li.wn span:first-child{color:var(--warn);font-weight:700}
 .vzsr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}`;
   const st = document.createElement('style'); st.id = 'bhfviz-css'; st.textContent = CSS; document.head.appendChild(st);
 
-  function hook(viewId, id, place, init, upd) {
+  function hook(viewId, id, place, init, upd, cls) {
     const view = $(viewId); if (!view) return;
     const ensure = () => {
       let card = document.getElementById(id);
-      if (!card || !view.contains(card)) { card = document.createElement('div'); card.id = id; card.className = 'card pl vzcard'; init(card); place(view, card); }
+      if (!card || !view.contains(card)) { card = document.createElement('div'); card.id = id; card.className = cls || 'card pl vzcard'; init(card); place(view, card); }
       try { upd(card); } catch (e) {}
     };
     new MutationObserver(() => { const c = document.getElementById(id); if (!c || !view.contains(c)) ensure(); }).observe(view, { childList: true });
@@ -153,14 +193,19 @@
   }
   const defBeruf = () => { try { const v = localStorage.getItem('lm4.beruf'); if (v && C.BERUFE.some(b => b.k === v)) return v; } catch (e) {} return 'egs'; };
 
-  hook('#helferView', 'vzDay', (v, c) => v.appendChild(c), c => { c.innerHTML = '<h4>Dein Tag im Bild</h4><div class="vzout"></div>'; },
+  hook('#helferView', 'vzDay', (v, c) => v.appendChild(c), c => { c.innerHTML = '<h4>Dein Tag im Detail</h4><div class="vzout"></div>'; },
     c => {
       const s = Object.assign({ beruf: defBeruf(), text: '', gel: '' }, lsGet('hf', {})), a = C.analyze(s.text, s.beruf, { gelernt: s.gel }), h = dayViz(a);
-      $('.vzout', c).innerHTML = h || '<p class="hint2">Sobald du oben Stichpunkte mit Dauer schreibst, wird dein Arbeitstag hier als Band mit Abschnitten sichtbar. Die 8 h sind nur ein Beispielrahmen: Wie lang dein Arbeitstag ist, legt dein Betrieb fest.</p>';
+      $('.vzout', c).innerHTML = h || '<p class="hint2">Sobald du Stichpunkte mit Dauer schreibst, erscheinen hier Abschnitte, Schwerpunkte und die Prüfpunkte. Die 8 h sind nur ein Beispielrahmen: Wie lang dein Arbeitstag ist, legt dein Betrieb fest.</p><button class="btn vzbtn" data-h="bsp">📖 Beispieltag einsetzen</button>';
     });
-  hook('#wocheView', 'vzWeek', (v, c) => v.appendChild(c), c => { c.innerHTML = '<h4>Deine Woche im Bild</h4><div class="vzout"></div>'; },
+  hook('#wocheView', 'vzWeek', (v, c) => v.appendChild(c), c => { c.innerHTML = '<h4>Deine Woche im Detail</h4><div class="vzout"></div>'; },
     c => {
       const w = Object.assign({ beruf: defBeruf(), d: ['', '', '', '', ''] }, lsGet('wo', {})), h = weekSvg(Array.isArray(w.d) ? w.d : [], w.beruf);
       $('.vzout', c).innerHTML = h ? `<div class="vzbox">${h}</div><p class="hint2">Jede Säule ist ein Tag, die Farben zeigen die Fachbegriffe. „?“ markiert Tätigkeiten ohne Dauer: Dort stimmt die Stundenzahl noch nicht. Die 8 h sind nur ein Beispielrahmen; Berufsschule, Urlaub und Krankheit trägst du so ein, wie es dein Betrieb vorgibt.</p>` : '<p class="hint2">Schreibe zu mindestens einem Tag Stichpunkte mit Dauer, dann erscheinen hier die Säulen der Woche.</p>';
     });
+  /* Bühne: kompakte Bänder ganz oben im Reiter (am Handy fest, vgl. LR_TAB.buehne) */
+  hook('#helferView', 'vzStageDay', (v, c) => v.insertBefore(c, v.firstChild), c => { c.innerHTML = '<div class="vzout"></div>'; },
+    c => { const s0 = Object.assign({ beruf: defBeruf(), text: '', gel: '' }, lsGet('hf', {})); $('.vzout', c).innerHTML = '<div class="vzbox">' + bandSvg(C.analyze(s0.text, s0.beruf, { gelernt: s0.gel })) + '</div>'; }, 'vzstage');
+  hook('#wocheView', 'vzStageWeek', (v, c) => v.insertBefore(c, v.firstChild), c => { c.innerHTML = '<div class="vzout"></div>'; },
+    c => { const w0 = Object.assign({ beruf: defBeruf(), d: ['', '', '', '', ''] }, lsGet('wo', {})); $('.vzout', c).innerHTML = '<div class="vzbox">' + weekBandSvg(Array.isArray(w0.d) ? w0.d : [], w0.beruf) + '</div>'; }, 'vzstage');
 })(typeof window !== 'undefined' ? window : globalThis);

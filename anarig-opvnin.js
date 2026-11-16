@@ -332,6 +332,7 @@
         bod = { x: R0.x, y, w: R0.w, h: q[3] }; y += q[3] + gap;
         strip = { x: R0.x, y, w: R0.w, h: R0.y + bodyH - y };
       }
+            /* Handy-Ansicht: Felder melden (Umschalter der Oberfläche) */ if (sc.pan && R0.w < 680) sc.pan([['Schaltung', sch], ['Kennlinie', kenn], ['Signal', sig], ['Frequenzgang', bod], ['Formel', strip]]);
       const fs = faultSpec(ctl, hid), vals = {}, L = {};
       vals.rl = ctl.rl >= 1e6 ? 'offen' : eng(ctl.rl, 'Ω');
       L.ua = 'U_a = ' + eng(r.ua, 'V'); L.uv = '+U_v = ' + val(ctl.uv, 'V', 1); L.uvn = '−U_v = −' + val(ctl.uv, 'V', 1);

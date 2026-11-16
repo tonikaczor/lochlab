@@ -205,6 +205,8 @@
   function later() { if (!timer) timer = setTimeout(scan, 200); }
 
   function css() {
+    /* P2: Trefferfläche des "?"-Knopfs 44 x 44 px (wiki.css liefert 42 x 42 px: 22 px Knopf, ::before mit inset -11 px, Rand 1 px) */
+    if (!doc.getElementById('wkP2')) { var st = doc.createElement('style'); st.id = 'wkP2'; st.textContent = 'html button.wk:not(.wk-pit)::before{inset:-12px}'; doc.head.appendChild(st); }
     if (doc.querySelector('link[href$="wiki.css"]')) return;
     var l = doc.createElement('link'); l.rel = 'stylesheet'; l.href = 'wiki.css'; doc.head.appendChild(l);
   }

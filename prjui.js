@@ -218,7 +218,7 @@
   const nDone = () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length;
   const blkDone = b => TASKS.filter(t => t.blk === b && done()[t.id]).length, blkAll = b => TASKS.filter(t => t.blk === b).length;
   const tolTxt = a => a.tol === 0 ? 'genau' : '±' + N(a.tol, a.tol < 1 ? 2 : 1);
-  const ruleText = q => q.kind === 'num' ? 'Erlaubte Abweichung: ' + q.asks.map(a => (q.asks.length > 1 ? a.label + ' ' : '') + tolTxt(a) + (a.unit ? ' ' + a.unit : '')).join('; ') + '.' : 'Wähle je Zeile eine Antwort. Geprüft wird jede Zeile einzeln.';
+  const ruleText = q => q.kind === 'num' ? 'Erlaubte Abweichung: ' + q.asks.map(a => (q.asks.length > 1 ? a.label + ' ' : '') + tolTxt(a) + (a.unit && a.tol !== 0 ? ' ' + a.unit : '')).join('; ') + '.' : 'Wähle je Zeile eine Antwort. Geprüft wird jede Zeile einzeln.';
   function evalQ(q, ans) {
     if (q.kind === 'num') {
       let ok = true, filled = 0, right = 0, nan = false; const rows = {};
@@ -237,13 +237,15 @@
       const long = q.opts.some(o => o.length > 28);
       h += q.items.map((it, k) => `<fieldset class="pk"><legend>${esc(it.t)}</legend><div class="seg2${long ? ' stack' : ''}">${q.opts.map((o, j) => `<button data-a="pick" data-k="${k}" data-j="${j}" aria-pressed="${ctx.ans['i' + k] === j}" class="${r && r.rows && ctx.ans['i' + k] === j ? 'rs-' + r.rows[k] : ''}"${locked ? ' disabled' : ''}>${esc(o)}</button>`).join('')}</div></fieldset>`).join('');
     }
-    h += `<p class="hint2">${esc(ruleText(q))}</p><div class="btns"><button class="btn pri" data-a="chk"${locked ? ' disabled' : ''}>✓ Prüfen</button>${tipBtn}</div>`;
+    h += `<p class="hint2 lr-hinweis">${esc(ruleText(q))}</p><div class="btns"><button class="btn pri" data-a="chk"${locked ? ' disabled' : ''}>✓ Prüfen</button>${tipBtn}</div>`;
     if (r && !r.empty || (r && r.shown)) {
       const lines = [];
       if (r.shown) lines.push({ ok: false, text: 'Lösung angezeigt (zählt als Fehler).' });
       else lines.push({ ok: r.ok, text: r.ok ? 'Richtig: ' + (r.total === 1 ? 'Die Antwort stimmt.' : q.kind === 'num' ? 'alle ' + r.total + ' Antworten stimmen.' : 'alle ' + r.total + ' Zeilen stimmen.') : r.right + ' von ' + r.total + ' richtig' + (r.filled < r.total ? ', ' + (r.total - r.filled) + ' noch leer.' : '.') });
       h += `<ul class="tl">${lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-      if (r.ok || r.shown || !exam()) h += solution(q);
+      if (r.ok || r.shown) h += solution(q).replace('class="rdout"', 'class="rdout lr-fb ' + (r.ok ? 'ok' : 'loes') + '"');
+      else if (!exam() && (ctx.tries || 0) < 2) h += `<div class="rdout lr-fb tipp"><b>Tipp</b><p>${esc(q.tips && q.tips[0] || 'Rechne noch einmal Schritt für Schritt.')}</p><p>Versuche es ein zweites Mal. Beim zweiten Fehler zeige ich dir die Lösung mit Rechenweg.</p></div>`;
+      else if (!exam()) h += solution(q).replace('class="rdout"', 'class="rdout lr-fb loes"');
       else h += rd('bad', '🎓 Prüfmodus: Musterlösung und Rechenweg gibt es erst nach richtiger Lösung. Nutze einen Tipp oder versuche es noch einmal.');
     }
     return h;
@@ -264,7 +266,7 @@
   }
   function tasksHTML(ctx) {
     const d = done(), prog = lsGet('prog', {}); let h = '';
-    if (ctx) { const t = TASKS.find(x => x.id === ctx.id), b = D.BLOCKS.find(x => x.id === t.blk); h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(b.name)}</h4><div class="big">${esc(t.title)}</div><div class="lv" aria-label="Schwierigkeit ${t.level} von 3">${dots(t.level)}</div>` + taskHTML(ctx, 'tk', '<button class="btn" data-a="hint">💡 Tipp</button>') + (exam() ? '<p class="hint2" style="color:var(--hi)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 20 % der Punkte.</p>' : '') + `<div class="btns"><button class="btn" data-a="neu">🎲 Neue Zahlen</button>${ctx.res && (ctx.res.ok || ctx.res.shown) ? '<button class="btn pri" data-a="next">Nächste Aufgabe</button>' : '<button class="btn" data-a="show">Lösung zeigen</button>'}<button class="btn" data-a="close">Schließen</button></div></div>`; }
+    if (ctx) { const t = TASKS.find(x => x.id === ctx.id), b = D.BLOCKS.find(x => x.id === t.blk); h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(b.name)}</h4><div class="big">${esc(t.title)}</div><div class="lv" aria-label="Schwierigkeit ${t.level} von 3">${dots(t.level)}</div>` + taskHTML(ctx, 'tk', '<button class="btn" data-a="hint">💡 Tipp</button>') + (exam() ? '<p class="hint2" style="color:var(--hi)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 20 % der Punkte.</p>' : '') + `<div class="btns"><button class="btn" data-a="neu">🎲 Neue Zahlen</button>${ctx.res && (ctx.res.ok || ctx.res.shown || (!exam() && (ctx.tries || 0) >= 2)) ? '<button class="btn pri" data-a="next">Nächste Aufgabe</button>' : '<button class="btn" data-a="show">Lösung zeigen</button>'}<button class="btn" data-a="close">Schließen</button></div></div>`; }
     h += `<p class="hint2" style="margin:4px 0 0">${nDone()} von ${nTasks} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.blk !== last) { last = x.blk; const b = D.BLOCKS.find(y => y.id === x.blk); h += `<div class="gh">${b.icon} ${esc(b.name)} · ${blkDone(x.blk)}/${blkAll(x.blk)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : p > 0 ? 'p' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && !d[x.id] ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
@@ -365,8 +367,8 @@
     if (r.nan) return toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).');
     ctx.res = r; const pct = r.ok ? pctFor(ctx.id) : 0;
     if (r.ok) { markSolved(ctx.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) { ding(); } else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); }
-    else { sad(); toast(r.right > 0 ? 'Fast: ' + r.right + ' von ' + r.total + ' stimmen.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
-    renderTasks(false);
+    else { ctx.tries = (ctx.tries || 0) + 1; sad(); toast(r.right > 0 ? 'Fast: ' + r.right + ' von ' + r.total + ' stimmen.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
+    renderTasks(false); { const f = $('#taskView .lr-fb'); if (f && window.LabRahmen && LabRahmen.zeig) LabRahmen.zeig(f); }
   }
   function hintTask() {
     const ctx = S.t; if (!ctx) return; const id = ctx.id, h = lsGet('hints', {}), n = Math.min(3, (h[id] || 0) + 1);

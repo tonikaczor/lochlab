@@ -297,14 +297,14 @@
       const gc = ctx.createLinearGradient(-26, -26, 26, 26); gc.addColorStop(0, '#3a3f46'); gc.addColorStop(1, '#14171b');
       ctx.fillStyle = gc; rr(ctx, -26, -26, 52, 52, 4); ctx.fill(); ctx.strokeStyle = '#080a0c'; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#9aa4ae'; ctx.beginPath(); ctx.arc(-18, -18, 3, 0, TWO_PI); ctx.fill();
-      ctx.font = 'bold 11px ' + MONO; ctx.fillStyle = '#c4ccd4'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('MEMS', 0, -4); ctx.fillText('±g', 0, 10);
+      ctx.font = 'bold 16px ' + MONO; ctx.fillStyle = '#c4ccd4'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('MEMS', 0, -6); ctx.fillText('±g', 0, 12);
       // Achsen-Beschriftung
       ctx.lineWidth = 3; ctx.lineCap = 'round';
       ctx.strokeStyle = rgba(RED, 0.95); ctx.beginPath(); ctx.moveTo(-70, 80); ctx.lineTo(-34, 80); ctx.stroke(); ctx.fillStyle = rgba(RED, 1); ctx.beginPath(); ctx.moveTo(-26, 80); ctx.lineTo(-38, 74); ctx.lineTo(-38, 86); ctx.fill();
       ctx.font = 'bold 15px ' + FONT; ctx.fillText('X', -16, 80);
       ctx.strokeStyle = rgba(GREEN, 0.95); ctx.beginPath(); ctx.moveTo(-82, 68); ctx.lineTo(-82, 32); ctx.stroke(); ctx.fillStyle = rgba(GREEN, 1); ctx.beginPath(); ctx.moveTo(-82, 24); ctx.lineTo(-88, 36); ctx.lineTo(-76, 36); ctx.fill();
       ctx.fillStyle = rgba(GREEN, 1); ctx.fillText('Y', -82, 12);
-      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = 'bold 9px ' + FONT; ctx.fillText('ADXL-ähnlich · I²C 0x53', 40, -86);
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.font = 'bold 14px ' + FONT; ctx.fillText('ADXL-ähnlich', 40, -94); ctx.fillText('I²C 0x53', 40, -78);
       ctx.restore();
     }
     function arrow3(ctx, ox, oy, M, axis, val, col, label) {

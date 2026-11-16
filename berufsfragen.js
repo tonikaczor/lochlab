@@ -28,11 +28,13 @@
   const B = () => root.PR_BANK;
   let beruf = 'im', qs = [], ant = [], pos = 0, fertig = false;
   function stdBeruf() { try { const v = String(localStorage.getItem('lm4.beruf') || '').replace(/"/g, ''); return NAMEN[v] ? v : 'im'; } catch (e) { return 'im'; } }
+  /* Weiterführende Links (keine Sackgasse): Labs, Prüfungs-Lab, Lernkarten */
+  const WEITER = '<p class="nav weiter"><b>Weiter:</b><a href="index.html#labs">Zu den Labs</a><a href="pruefungslab.html">Prüfungs-Lab</a><a href="karten.html">Lernkarten</a></p>';
   function wahl() {
     const out = $('#out');
     out.innerHTML = '<p><label for="ber">Beruf: </label><select id="ber">' + Object.keys(NAMEN).map(k => '<option value="' + k + '"' + (k === beruf ? ' selected' : '') + '>' + NAMEN[k] + '</option>').join('') + '</select></p>' +
       '<p><label for="thm">Thema: </label><select id="thm"><option value="">alle Themen gemischt</option>' + core.themen(B(), beruf).map(t => '<option value="' + t.k + '">' + esc(t.t.replace(/^[^:]*: /, '')) + ' (' + t.n + ')</option>').join('') + '</select></p>' +
-      '<p><button type="button" class="btn" id="go">Fragen starten</button></p><p class="mute">Für Elektroniker gibt es die Fragen im <a href="pruefungslab.html">Prüfungs-Lab</a>.</p>';
+      '<p><button type="button" class="btn" id="go">Fragen starten</button></p><p class="mute">Für Elektroniker gibt es die Fragen im <a href="pruefungslab.html">Prüfungs-Lab</a>.</p>' + WEITER;
     $('#ber').onchange = () => { beruf = $('#ber').value; wahl(); };
     $('#go').onclick = () => { qs = core.ziehen(B(), beruf, $('#thm').value, 10, Date.now() % 100000); ant = qs.map(() => -1); pos = 0; fertig = false; frage(); };
   }
@@ -40,7 +42,7 @@
     const out = $('#out');
     if (pos >= qs.length) {
       const r = core.auswerten(qs, ant);
-      out.innerHTML = '<div class="card"><h2>' + r.richtig + ' von ' + r.gesamt + ' richtig (' + r.pct + ' %)</h2>' + qs.map((q, i) => '<div class="rl ' + (ant[i] === q.r ? 'ok' : 'no') + '"><b>' + (ant[i] === q.r ? '✓ ' : '✗ ') + esc(q.q) + '</b><br>Richtig: ' + esc(q.opts[q.r]) + (ant[i] !== q.r && ant[i] >= 0 ? '<br>Deine Antwort: ' + esc(q.opts[ant[i]]) : '') + '<div class="mute">' + esc(q.w) + '</div></div>').join('') + '</div><p><button type="button" class="btn" id="neu">Noch einmal</button></p>';
+      out.innerHTML = '<div class="card"><h2>' + r.richtig + ' von ' + r.gesamt + ' richtig (' + r.pct + ' %)</h2>' + qs.map((q, i) => '<div class="rl ' + (ant[i] === q.r ? 'ok' : 'no') + '"><b>' + (ant[i] === q.r ? '✓ ' : '✗ ') + esc(q.q) + '</b><br>Richtig: ' + esc(q.opts[q.r]) + (ant[i] !== q.r && ant[i] >= 0 ? '<br>Deine Antwort: ' + esc(q.opts[ant[i]]) : '') + '<div class="mute">' + esc(q.w) + '</div></div>').join('') + '</div><p><button type="button" class="btn" id="neu">Noch einmal</button></p>' + WEITER;
       $('#neu').onclick = wahl; return;
     }
     const q = qs[pos];

@@ -48,7 +48,7 @@
     pla: Object.assign({ view: 'stange', L: '3000', l: '85', k: '3', W: '1000', H: '2000', w: '180', h: '250', e: '10', rr: '10', s: '3', mat: 'Stahl', th: '6', tn: '2', zE: '5', zV: '10', tr: '45', m: '25', satz: '60', matk: '2,40', kr1: '30', kv1: '4', kr2: '180', kv2: '2,5' }, lsGet('pla', {})),
     qua: Object.assign({ txt: DEF_QUA(), ugw: '19,9', ogw: '20,1' }, lsGet('qua', {})),
     vor: Object.assign({ a: 3, b: 2, c: 1 }, lsGet('vor', {})),
-    task: null, tq: null, tAns: {}, tRes: null,
+    task: null, tq: null, tAns: {}, tRes: null, tTry: 0, tFb: null,
     tr: { q: null, ans: {}, res: null, level: 0 },
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {}))
   };
@@ -209,7 +209,7 @@
     const p = S.pla;
     $('#plaView').innerHTML = ueb() + `<div class="card pl"><h4>Planung</h4><div class="fbar">${seg('data-pv', [['stange', 'Stange'], ['tafel', 'Blechtafel'], ['kosten', 'Zeit & Kosten'], ['vergleich', 'Zwei Verfahren']], p.view, 'pv')}</div>
       <div class="dsrow">${PLA_FIELDS[p.view].map(x => inp('pla', x[0], x[1], p[x[0]], x[2])).join('')}</div>
-      ${p.view === 'tafel' ? `<div class="fbar"><span style="font-size:12px;color:var(--mute)">WERKSTOFF</span>${seg('data-pm', [['Stahl', 'Stahl 7,85'], ['Aluminium', 'Aluminium 2,7']], p.mat, 'pm')}</div>` : ''}</div><div id="out-pla"></div>`;
+      ${p.view === 'tafel' ? `<div class="fbar"><span style="font-size:14px;color:var(--mute)">WERKSTOFF</span>${seg('data-pm', [['Stahl', 'Stahl 7,85'], ['Aluminium', 'Aluminium 2,7']], p.mat, 'pm')}</div>` : ''}</div><div id="out-pla"></div>`;
     updatePla();
   }
   function updatePla() { keep('#out-pla', () => plaOut(S.pla)); }
@@ -247,7 +247,7 @@
     const q = S.qua;
     $('#quaView').innerHTML = ueb() + `<div class="card pl"><h4>Messreihe</h4><label class="f"><span>Messwerte in der Reihenfolge der Fertigung (mm)</span><textarea class="vals" id="in-qua-txt" data-k="txt" autocomplete="off" spellcheck="false">${esc(q.txt)}</textarea></label>
       <div class="dsrow">${inp('qua', 'ugw', 'Untere Toleranzgrenze UGW', q.ugw, 'mm')}${inp('qua', 'ogw', 'Obere Toleranzgrenze OGW', q.ogw, 'mm')}</div>
-      <div class="fbar"><span style="font-size:12px;color:var(--mute)">BEISPIELDATEN</span>${seg('data-qs', [['gut', 'mittig'], ['lage', 'außermittig'], ['streu', 'streut stark'], ['trend', 'Trend']], '', 'qs')}</div></div><div id="out-qua"></div>`;
+      <div class="fbar"><span style="font-size:14px;color:var(--mute)">BEISPIELDATEN</span>${seg('data-qs', [['gut', 'mittig'], ['lage', 'außermittig'], ['streu', 'streut stark'], ['trend', 'Trend']], '', 'qs')}</div></div><div id="out-qua"></div>`;
     updateQua();
   }
   function updateQua() { keep('#out-qua', () => quaOut(S.qua)); }
@@ -291,35 +291,40 @@
     const dn = r && (r.ok || pre === 'rt'), as = q.ask; let h = '';
     if (q.viz) { const sv = V.taskSvg(q.viz); if (sv) h += inst(sv); }
     if (as.type === 'choice') h += `<div class="opts">${as.choices.map((c, i) => `<button data-tc="${i}" ${dn ? 'disabled' : ''} class="${r && i === as.correct && dn ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    else if (as.type === 'num') h += `<label class="f"><span>${esc(as.label)}${as.unit ? ' (' + esc(as.unit) + ')' : ''}</span><div class="qin"><input id="in-task-${pre}" data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${dn ? 'disabled' : ''}><span class="u">${esc(as.unit)}</span></div></label>`;
+    else if (as.type === 'num') h += `<label class="f"><span>${esc(as.label)}${as.unit ? ' (' + esc(as.unit) + ')' : ''}</span><div class="qin"><input id="in-task-${pre}" data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${dn ? 'disabled' : ''}><span class="u">${esc(as.unit)}</span></div></label>${numHint(q)}`;
     else if (as.type === 'order') { const o = a.o || []; h += `<p class="hint2" style="margin:4px 0">Tippe die Einträge in der richtigen Reihenfolge an. Nochmal tippen nimmt einen Eintrag zurück.</p><div class="opts">${as.items.map((t, i) => { const k = o.indexOf(i); return `<button data-to="${i}" ${dn ? 'disabled' : ''} class="${k >= 0 ? 'on' : ''}"><span class="no">${k >= 0 ? k + 1 : '·'}</span> ${esc(t)}</button>`; }).join('')}</div><div class="btns"><button class="btn" data-oc="1" ${dn ? 'disabled' : ''}>↺ Reihenfolge zurücksetzen</button></div>`; }
     else if (as.type === 'match') { const m = a.m || []; h += `<div class="mrows">${as.rows.map((t, i) => `<label class="mrow"><span>${esc(t)}</span><select data-mr="${i}" ${dn ? 'disabled' : ''}><option value="">– wählen –</option>${as.options.map((op, j) => `<option value="${j}"${m[i] === j ? ' selected' : ''}>${esc(op)}</option>`).join('')}</select></label>`).join('')}</div>`; }
     return h;
   }
   function evalQ(q, a) { const e = D.evaluate(q, a); if (e.err) { toast(e.err); return null; } return e; }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(D.solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung (Rahmen 4.5): erster Fehlversuch = Tipp und zweiter Versuch, zweiter = Lösung mit Rechenweg, richtig = grün */
+  const fbOk = (q, r, fid) => `<div class="lr-fb ok" id="${fid}" tabindex="-1"><p><strong>Richtig.</strong> ${esc(r.given)}</p><p><b>Lösungsweg:</b> ${esc(q.expl)}</p></div>`;
+  const fbLoes = (q, r, showExpl, fid) => `<div class="lr-fb loes" id="${fid}" tabindex="-1"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p>` + (showExpl ? `<p><b>Lösung:</b> ${esc(D.solText(q))}</p><p><b>Lösungsweg:</b> ${esc(q.expl)}</p>` : '<p>Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Versuche es noch einmal.</p>') + '</div>';
+  const fbTipp = (q, given, ex, fid) => `<div class="lr-fb tipp" id="${fid}" tabindex="-1"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(given)}“ stimmt nicht. ${ex ? 'Im Prüfmodus kostet ein Tipp 25 % je Stufe. Tippe auf „Tipp“, wenn du ihn willst. Du hast einen zweiten Versuch.' : 'Tipp: ' + esc(q.tips[0]) + ' Du hast einen zweiten Versuch.'}</p></div>`;
+  const numHint = q => q.ask.type === 'num' ? `<p class="lr-hinweis">Zahl${q.ask.unit ? ' in ' + esc(q.ask.unit) : ''}.${q.tol > 0.011 ? ' Erlaubte Abweichung: ±' + esc(f(q.tol, 2)) + (q.ask.unit ? ' ' + esc(q.ask.unit) : '') + ' (wegen Rundung).' : ''}</p>` : '';
+  const showFb = el => { const e = $(el); if (e && window.LabRahmen) LabRahmen.zeig(e); };
 
   function renderTasks(top) {
     const Vw = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || (S.tAns[t.id] = {});
-      h += `<div class="card pl" id="taskCard" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qText(q.text)}${qBody(q, a, r, 'tk')}`;
+      h += `<div class="card pl" id="taskCard" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qText(q.text)}${qBody(q, a, r, 'tk')}${r ? (r.ok ? fbOk(q, r, 'fb-task') : fbLoes(q, r, !exam(), 'fb-task')) : (S.tFb && S.tFb.id === t.id ? fbTipp(q, S.tFb.given, exam(), 'fb-task') : '')}`;
       h += `<div class="btns"><button class="btn pri" id="btn-pruefen" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" id="btn-tipp" data-ta="hint">💡 Tipp</button><button class="btn" id="btn-schliessen" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r && r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" id="task-${esc(x.id)}" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    Vw.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    Vw.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; if (S.fbShow) { S.fbShow = false; showFb('#fb-task'); }
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, detail: e.detail, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies die Hinweise und versuche es noch einmal.'); }
-    renderTasks(false);
+    if (!e.ok && !S.tTry) { S.tTry = 1; S.tFb = { id: t.id, given: e.given }; S.tRes = null; sad(); S.fbShow = true; renderTasks(false); return; }
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, detail: e.detail, pct }; S.tTry = 0; S.tFb = null;
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); }
+    S.fbShow = true; renderTasks(false);
   }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
@@ -333,7 +338,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tTry = 0; S.tFb = null;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -351,15 +356,15 @@
   });
 
   /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.tries = 0; T.fb = null; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
       <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button id="btn-rt-lv${l[0]}" data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
-      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div>${qText(q.text)}${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" id="btn-rt-pruefen" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" id="btn-rt-tipp" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" id="btn-rt-next" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div>${qText(q.text)}${qBody(q, T.ans, T.res, 'rt')}${T.res ? (T.res.ok ? fbOk(q, T.res, 'fb-rt') : fbLoes(q, T.res, true, 'fb-rt')) : (T.fb ? fbTipp(q, T.fb.given, false, 'fb-rt') : '')}
+      <div class="btns"><button class="btn pri" id="btn-rt-pruefen" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" id="btn-rt-tipp" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" id="btn-rt-next" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div></div>`;
+    if (S.fbShowT) { S.fbShowT = false; showFb('#fb-rt'); }
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -375,8 +380,9 @@
   });
   function trainerCheck() {
     const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given, detail: e.detail }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
-    lsSet('rt', S.rt); renderTrainer(); updatePal();
+    if (!e.ok && !T.tries) { T.tries = 1; T.fb = { given: e.given }; sad(); S.fbShowT = true; renderTrainer(); return; }
+    T.res = { ok: e.ok, given: e.given, detail: e.detail }; T.fb = null; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    lsSet('rt', S.rt); S.fbShowT = true; renderTrainer(); updatePal();
   }
 
   /* ============================================================ Beispiele */
@@ -421,7 +427,7 @@
       sec('Vorrichtungen: 3-2-1', `<p>Ein frei beweglicher Körper hat <b>6 Freiheitsgrade</b> (3 Verschiebungen, 3 Drehungen). Hauptauflage 3 Punkte sperren 3, Führungsfläche 2 Punkte sperren 2, Anschlag 1 Punkt sperrt 1. Mehr Punkte als nötig sind <b>überbestimmt</b>: Das Teil kippelt. Die Spannkraft wirkt in Richtung der Auflagepunkte.</p>`) +
       /* PRUEFEN P25: Kurze Sicherheitshinweise zur Handfertigung (Werkstück spannen statt halten, an der Bohrmaschine keine Handschuhe, Späne nicht mit der Hand entfernen, Grat entfernen). Reicht das als Hinweis, oder fehlt etwas, das ihr in der Grundausbildung betont (Schutzbrille, Haare, Ärmel)? */
       sec('Sicherheit in der Werkstatt', `<ul><li>Werkstücke werden gespannt und nicht mit der Hand gehalten.</li><li>An drehenden Maschinen wie der Bohrmaschine trägt man keine Handschuhe und keinen losen Schmuck, lange Haare werden gebunden.</li><li>Späne entfernt man mit Besen oder Haken, nicht mit der Hand.</li><li>Kanten werden entgratet, bevor man das Teil weitergibt.</li><li>Schutzbrille tragen. Maßgebend ist die Unterweisung deines Betriebs.</li></ul>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte. Im Zweifel gilt dein Tabellenbuch.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

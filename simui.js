@@ -230,7 +230,7 @@ function tick(now) {
 /* ---------- Umschalter Layout <-> Simulation ---------- */
 const css = document.createElement('style');
 css.textContent = `
-.simsw{display:flex;align-items:center;gap:6px;height:36px;padding:0 8px;margin:0 4px;border-radius:18px;background:#2c343e;border:1px solid #38424d;color:#8d99a6;font-size:12px;flex:none}
+.simsw{display:flex;align-items:center;gap:6px;height:44px;padding:0 8px;margin:0 4px;border-radius:22px;background:#2c343e;border:1px solid #38424d;color:#8d99a6;font-size:12px;flex:none}
 .simsw .trk{position:relative;width:38px;height:22px;border-radius:11px;background:#4a5561;transition:background .15s}
 .simsw .knob{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
 .simsw[aria-checked=true] .trk{background:#2fae45}.simsw[aria-checked=true] .knob{left:18px}

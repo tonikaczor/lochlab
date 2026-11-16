@@ -547,12 +547,19 @@
     '.dsv-bar button:disabled{opacity:.4;cursor:default}',
     '.dsv-bar input{min-width:120px;flex:1 1 150px;max-width:300px}',
     '.dsv-bar select{max-width:190px}',
-    '.dsv-narrow .dsv-bar{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}',
-    '.dsv-narrow .dsv-bar>*{flex:none}.dsv-narrow .dsv-bar input{width:150px;flex:none}',
+    '.dsv-narrow .dsv-bar{flex-wrap:wrap}',
+    '.dsv-narrow .dsv-bar .dsv-q{order:-1;flex:1 1 45%;max-width:none;min-width:0}.dsv-narrow .dsv-bar .dsv-nav{order:-2;flex:1 1 45%;max-width:none;min-width:0}','.dsv-xs .dsv-print{display:none}',
+    '.dsv-narrow .dsv-bar button,.dsv-narrow .dsv-bar select,.dsv-narrow .dsv-bar input{min-height:44px}.dsv-narrow .dsv-bar button{min-width:44px}',
+    '.dsv-narrow .dsv-sep{display:none}',
+    '.dsv-kcard{position:absolute;left:8px;right:8px;bottom:8px;z-index:30;background:#222830;border:1px solid #3b9eff;border-radius:12px;padding:12px 52px 12px 14px;box-shadow:0 8px 28px rgba(0,0,0,.6);color:#e6edf3}',
+    '.dsv-kn{font-size:17px;font-weight:700}.dsv-kn span{color:#8d99a6;font-weight:600;margin-left:6px}',
+    '.dsv-kv{display:flex;flex-wrap:wrap;gap:8px 18px;margin:8px 0}.dsv-kv span{display:flex;flex-direction:column}.dsv-kv small{font-size:14px;color:#8d99a6}.dsv-kv b{font-size:20px}',
+    '.dsv-kc,.dsv-kw{font-size:14px;line-height:1.4;color:#cdd6df;margin-top:4px}',
+    '.dsv-kx{position:absolute;top:2px;right:2px;width:44px;height:44px;border:0;background:none;color:#e6edf3;font-size:26px;cursor:pointer}',
     '.dsv-sep{width:1px;height:26px;background:#38424d;margin:0 2px}',
-    '.dsv-cnt{font-size:12px;color:#8d99a6;min-width:46px;text-align:center}',
-    '.dsv-zp{font-size:13px;color:#cdd6df;min-width:48px;text-align:center}',
-    '.dsv-mode{margin-left:auto;font-size:12px;font-weight:700;padding:6px 10px;border-radius:999px;border:1px solid #38424d;letter-spacing:.03em;white-space:nowrap}',
+    '.dsv-cnt{font-size:14px;color:#8d99a6;min-width:46px;text-align:center}',
+    '.dsv-zp{font-size:14px;color:#cdd6df;min-width:48px;text-align:center}',
+    '.dsv-mode{margin-left:auto;font-size:14px;font-weight:700;padding:6px 10px;border-radius:999px;border:1px solid #38424d;letter-spacing:.03em;white-space:nowrap}',
     '.dsv-m-lesen .dsv-mode{color:#3b9eff;border-color:#3b9eff}.dsv-m-ablesen .dsv-mode{color:#4cd964;border-color:#4cd964}.dsv-m-quiz .dsv-mode{color:#ffb340;border-color:#ffb340}',
     '.dsv-main{flex:1;display:flex;min-height:0;position:relative}',
     '.dsv-stage{flex:1;overflow:auto;position:relative;padding:18px;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;background:#14181c;min-width:0}',
@@ -629,10 +636,10 @@
     '.dsv-lg small{color:#5b6672;font-size:10.5px;display:block;line-height:1.2}',
     '.dsv-lg.act{border-color:#0b4f9c;background:#eaf2fc;box-shadow:inset 0 0 0 1px #0b4f9c}',
     '.dsv-readout{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin-top:8px;padding:6px 10px;border:1px solid #d3d8de;border-radius:8px;background:#f4f7fb;min-height:46px}',
-    '.dsv-readout .k{color:#5b6672;font-size:11px;text-transform:uppercase;letter-spacing:.04em;margin-right:4px}',
+    '.dsv-readout .k{color:#5b6672;font-size:14px;text-transform:uppercase;letter-spacing:.04em;margin-right:4px}',
     '.dsv-readout b{font-size:15px;font-variant-numeric:tabular-nums}',
-    '.dsv-readout .oth{font-size:11.5px;color:#3a4350}',
-    '.dsv-readout .hint{color:#6a7480;font-size:11.5px}',
+    '.dsv-readout .oth{font-size:14px;color:#3a4350}',
+    '.dsv-readout .hint{color:#6a7480;font-size:14px}',
     '.dsv-readout button{min-height:40px;min-width:40px;border:1px solid #9aa5b1;background:#fff;color:#1b1f24;border-radius:8px;font:inherit;cursor:pointer;padding:0 10px}',
     '.dsv-readout button.take{background:#1f8f4d;color:#fff;border-color:#1f8f4d;font-weight:700}',
     '.dsv-readout .sp{flex:1}',
@@ -664,15 +671,15 @@
     '.dsv-gi>button{display:block;width:100%;text-align:left;min-height:42px;padding:8px 12px;background:none;border:0;color:#e6edf3;font:inherit;font-weight:600;cursor:pointer}',
     '.dsv-gi .d{display:none;padding:0 12px 10px;color:#cdd6df}',
     '.dsv-gi.open .d{display:block}.dsv-gi.open>button{color:#3b9eff}',
-    '.dsv-gi .d i{display:block;color:#8d99a6;font-size:12px;margin-top:4px}',
+    '.dsv-gi .d i{display:block;color:#8d99a6;font-size:14px;margin-top:4px}',
     '.dsv-gi .d button{margin-top:8px;min-height:40px;border:1px solid #38424d;background:#2c343e;color:#e6edf3;border-radius:8px;font:inherit;padding:0 12px;cursor:pointer}',
     '.dsv-mi{display:block;width:100%;text-align:left;min-height:44px;margin-bottom:6px;padding:8px 12px;border:1px solid #38424d;border-radius:10px;background:#222830;color:#e6edf3;font:inherit;cursor:pointer}',
     '.dsv-mi small{display:block;color:#8d99a6}',
-    '.dsv-sempty{color:#8d99a6;padding:12px;font-size:13px}',
+    '.dsv-sempty{color:#8d99a6;padding:12px;font-size:14px}',
     '.dsv-m-quiz .dsv-sidebtn{display:none}',
     '.dsv-narrow .dsv-side{position:absolute;right:0;top:0;bottom:0;z-index:20;width:min(320px,88%);box-shadow:-10px 0 28px rgba(0,0,0,.55)}',
-    '.dsv-pop{position:absolute;z-index:40;max-width:290px;background:#222830;border:1px solid #3b9eff;border-radius:10px;padding:10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.6);color:#e6edf3;font-size:13.5px}',
-    '.dsv-pop b{color:#3b9eff;display:block;margin-bottom:2px}.dsv-pop i{display:block;color:#8d99a6;font-size:12px;margin-top:4px}',
+    '.dsv-pop{position:absolute;z-index:40;max-width:290px;background:#222830;border:1px solid #3b9eff;border-radius:10px;padding:10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.6);color:#e6edf3;font-size:14px}',
+    '.dsv-pop b{color:#3b9eff;display:block;margin-bottom:2px}.dsv-pop i{display:block;color:#8d99a6;font-size:14px;margin-top:4px}',
     /* Druck */
     '@media print{body.dsv-printing>*:not(.dsv-printroot){display:none!important}',
     'body.dsv-printing{background:#fff!important}',
@@ -694,7 +701,7 @@
   function mount(el, ctx) {
     ctx = ctx || {};
     injectCss();
-    var S = { mode: ctx.mode || 'lesen', z: 1, autoFit: true, marks: {}, hits: [], cur: -1, q: '', side: false, tab: 'gl', dead: false, lastMs: 0 };
+    var S = { mode: ctx.mode || 'lesen', z: 1, autoFit: true, wholeFit: false, marks: {}, hits: [], cur: -1, q: '', side: false, tab: 'gl', dead: false, lastMs: 0 };
     (ctx.marks || (ctx.getMarks && ctx.getMarks()) || []).forEach(function (m) { if (m && m.section) S.marks[m.section + '|' + m.key] = { section: m.section, key: String(m.key) }; });
     var ds = null, F = mkFmt(','), T = TXT.en, Gs = {}, glList = [], glRe = null, pageInfo = [], timers = [];
     var PW = 794;
@@ -916,7 +923,12 @@
     }
 
     /* ----- Zoom ----- */
-    function fitZoom() { var w = stage.clientWidth - 36; return w > 100 ? Math.max(0.3, Math.min(1.35, w / PW)) : 1; }
+    function fitZoom() {
+      var w = stage.clientWidth - 36;
+      /* Handy: Startgröße ist Lesegröße (Tabellentext etwa 12 px), die ganze Seite nur auf Wunsch (Audit B-ds-01) */
+      if (w > 100 && w < 560 && !S.wholeFit) return 1;
+      return w > 100 ? Math.max(0.3, Math.min(1.35, w / PW)) : 1;
+    }
     function applyZoom(z, keep, cx, cy) {
       z = Math.max(0.3, Math.min(3, z));
       var z0 = S.z;
@@ -927,6 +939,7 @@
       wrap.style.width = (ds ? PW * z : 300) + 'px';
       wrap.style.height = (pagesEl.offsetHeight * z) + 'px';
       $('.dsv-zp').textContent = Math.round(z * 100) + ' %';
+      var fb = $('.dsv-fit'); if (fb) { var nr = root.classList.contains('dsv-narrow'); fb.textContent = nr ? (S.wholeFit ? 'Lesegröße' : 'Ganze Seite') : 'Einpassen'; }
       if (!keep) { stage.scrollLeft = wrap.offsetLeft + px * z - ccx; stage.scrollTop = wrap.offsetTop + py * z - ccy; }
     }
     function zoomBy(f, cx, cy) { S.autoFit = false; applyZoom(S.z * f, false, cx, cy); }
@@ -1084,8 +1097,33 @@
         if (act === 'mgo') { api.focus({ section: b.getAttribute('data-sec'), key: b.getAttribute('data-key') }); if (S.mode === 'quiz' || root.classList.contains('dsv-narrow')) setSide(false); return; }
       }
       var m = t.closest('[data-mk]');
+      if (m && pagesEl.contains(m) && S.mode !== 'quiz') showKCard(m);
       if (m && pagesEl.contains(m)) toggleMark(m.getAttribute('data-sec'), m.getAttribute('data-key'));
     });
+    /* ----- Kennwert-Karte: Tipp auf eine Tabellenzeile (Grenzwerte, empfohlene Bedingungen, Kennwerte) zeigt die Zeile gross (Audit B-ds-07) ----- */
+    var kcard = null;
+    function closeKCard() { if (kcard) { kcard.remove(); kcard = null; } }
+    function showKCard(tr) {
+      closeKCard();
+      var sec = tr.getAttribute('data-sec');
+      if (tr.tagName !== 'TR' || !/^(abs|rec|elec)$/.test(sec || '')) return;
+      var tb = tr.closest('table'), ths = tb ? tb.querySelectorAll('thead th') : [], cells = tr.cells, o = {}, vals = [];
+      for (var i = 0; i < cells.length && i < ths.length; i++) {
+        var txt = cells[i].textContent.replace(/\s+/g, ' ').trim(), hc = ths[i].textContent.trim();
+        if (ths[i].classList.contains('num')) { if (txt && txt !== '–' && txt !== '-') vals.push('<span><small>' + esc(hc) + '</small><b>' + esc(txt) + '</b></span>'); }
+        else o[i] = { h: hc, t: txt };
+      }
+      var name = (cells[0].childNodes[0] ? cells[0].childNodes[0].textContent : cells[0].textContent).trim(), sym = cells[1] ? cells[1].textContent.trim() : '';
+      var unit = cells[cells.length - 1].textContent.trim(), cond = '';
+      for (i = 2; i < cells.length - 1; i++) if (cells[i].classList.contains('cd')) cond = cells[i].textContent.replace(/\s+/g, ' ').trim();
+      var why = sec === 'abs' ? 'Ein Grenzwert: Er darf nie überschritten werden, sonst kann das Bauteil Schaden nehmen.'
+        : sec === 'rec' ? 'Ein Bereich für den normalen Betrieb: Nur hier gelten die garantierten Werte des Datenblatts.'
+        : 'Ein garantierter Kennwert: Er gilt nur unter der genannten Bedingung. Min und Max sind Garantien, Typ ist ein üblicher Wert.';
+      kcard = document.createElement('div'); kcard.className = 'dsv-kcard'; kcard.setAttribute('role', 'dialog'); kcard.setAttribute('aria-label', 'Kennwert');
+      kcard.innerHTML = '<button class="dsv-kx" aria-label="Karte schließen">×</button><div class="dsv-kn">' + esc(name) + (sym ? ' <span>' + esc(sym) + '</span>' : '') + '</div><div class="dsv-kv">' + (vals.join('') || '<span><b>–</b></span>') + '<span><small>Einheit</small><b>' + esc(unit || '–') + '</b></span></div>' + (cond ? '<div class="dsv-kc">Bedingung: ' + esc(cond) + '</div>' : '') + '<div class="dsv-kw">' + why + '</div>';
+      root.appendChild(kcard);
+      kcard.querySelector('.dsv-kx').addEventListener('click', function (ev) { ev.stopPropagation(); closeKCard(); });
+    }
     function onDocClick(e) { if (pop && !pop.contains(e.target) && !(e.target.closest && e.target.closest('.dsv-gl'))) closePop(); }
     document.addEventListener('click', onDocClick, true);
     function onKeyEsc(e) { if (e.key === 'Escape') closePop(); }
@@ -1101,7 +1139,7 @@
     /* ----- Toolbar ----- */
     $('.dsv-zm').addEventListener('click', function () { zoomBy(1 / 1.2); });
     $('.dsv-zpl').addEventListener('click', function () { zoomBy(1.2); });
-    $('.dsv-fit').addEventListener('click', function () { S.autoFit = true; applyZoom(fitZoom()); });
+    $('.dsv-fit').addEventListener('click', function () { if (root.classList.contains('dsv-narrow') && stage.clientWidth < 596) { S.wholeFit = S.autoFit ? !S.wholeFit : true; } S.autoFit = true; applyZoom(fitZoom()); stage.scrollLeft = 0; });
     $('.dsv-sidebtn').addEventListener('click', function () { setSide(!S.side); });
     side.querySelector('.dsv-tabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (!b) return; S.tab = b.getAttribute('data-tab'); side.querySelectorAll('.dsv-tabs button').forEach(function (x) { x.classList.toggle('on', x === b); }); buildSide(); });
     navSel.addEventListener('change', function () { var pg = pagesEl.querySelector('[data-page="' + navSel.value + '"]'); if (pg) scrollToEl(pg, true); });
@@ -1204,7 +1242,7 @@
     var ro = null;
     function onResize() {
       if (S.dead) return;
-      root.classList.toggle('dsv-narrow', root.clientWidth < 820);
+      root.classList.toggle('dsv-narrow', root.clientWidth < 820); root.classList.toggle('dsv-xs', root.clientWidth < 560);
       if (S.autoFit && ds && stage.clientWidth && Math.abs(fitZoom() - S.z) > 0.002) applyZoom(fitZoom(), false);
     }
     if (window.ResizeObserver) { ro = new ResizeObserver(onResize); ro.observe(root); } else window.addEventListener('resize', onResize);

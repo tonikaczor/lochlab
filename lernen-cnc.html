@@ -10,7 +10,7 @@
 <p>Eine <b>CNC-Maschine</b> (Computerized Numerical Control) fährt ein Programm ab, das aus nummerierten <b>Sätzen</b> besteht. Jeder Satz ist eine Zeile und enthält <b>Wörter</b>: einen Buchstaben, die <b>Adresse</b>, mit einer Zahl. Das Lab arbeitet mit einer herstellerneutralen Teilmenge der Norm DIN 66025 für zwei Maschinenarten: Drehen (Achsen X und Z) und Fräsen (X, Y und Z).</p>
 <table class="t"><tr><th>Adresse</th><th>Bedeutung</th><th>Beispiel</th></tr><tr><td>N</td><td>Satznummer</td><td>N50</td></tr><tr><td>G</td><td>Wegbedingung (wie wird gefahren?)</td><td>G1 (Gerade mit Arbeitsvorschub)</td></tr><tr><td>M</td><td>Zusatzfunktion (Spindel, Kühlung, Programmende)</td><td>M3, M30</td></tr><tr><td>X Y Z</td><td>Zielkoordinaten</td><td>X50 Y30 Z-2</td></tr><tr><td>I J K</td><td>Kreismittelpunkt (Abstand vom Startpunkt)</td><td>I0 J10</td></tr><tr><td>R</td><td>Kreisradius oder Rückzugsebene im Bohrzyklus</td><td>R2</td></tr><tr><td>F</td><td>Vorschub</td><td>F300</td></tr><tr><td>S</td><td>Drehzahl</td><td>S2500</td></tr><tr><td>T</td><td>Werkzeugnummer</td><td>T1</td></tr></table>
 <p>Ein Programm hat fast immer denselben Aufbau: Kopf (Nullpunkt, Maßsystem, Vorschubart, Ebene), Werkzeug holen, Spindel starten, zur Startposition fahren, bearbeiten, wegfahren, Spindel aus, Programmende. Im folgenden Fräsprogramm kannst du diese Teile erkennen:</p>
-<pre style="background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;overflow:auto;font-size:13px;line-height:1.35">(KONTUR 1)
+<pre style="background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;overflow:auto;font-size:14px;line-height:1.35">(KONTUR 1)
 N10 G54 G90 G94 G17
 N20 T1 M6
 N30 M3 S2000
@@ -78,7 +78,7 @@ N100 M30</pre>
 <li><b>Fasen und Radien:</b> Die Fase wird als Gerade mit G1 gefahren, der Radius als Kreis mit G2/G3.</li>
 </ul>
 <p>Das Beispiel eines Bohrbilds mit vier Bohrungen im Bohrzyklus:</p>
-<pre style="background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;overflow:auto;font-size:13px;line-height:1.35">(BOHRBILD 4 BOHRUNGEN)
+<pre style="background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;overflow:auto;font-size:14px;line-height:1.35">(BOHRBILD 4 BOHRUNGEN)
 N10 G54 G90 G94 G17 G40 G80
 N20 T3 M6
 N30 M3 S1500 M8
@@ -105,7 +105,7 @@ N130 M30</pre>
 <p>Zuerst die Drehzahl: n = v<sub>c</sub> · 1000 / (π · d). <b>Beispiel 6:</b> Ein Bolzen Ø40 mit v<sub>c</sub> = 120 m/min: n = 955 1/min. Mit dem Radius statt des Durchmessers käme die doppelte Drehzahl heraus.</p>
 <p>Beim Fräsen ergibt sich der Vorschub aus Zahnvorschub und Schneidenzahl: v<sub>f</sub> = n · z · f<sub>z</sub>. <b>Beispiel 7:</b> n = 2400 1/min, z = 4, f<sub>z</sub> = 0,05 mm: v<sub>f</sub> = 480 mm/min. Im Programm steht F480.</p>
 <p><b>Beispiel 8 (Längsdrehen):</b></p>
-<pre style="background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;overflow:auto;font-size:13px;line-height:1.35">(LAENGSDREHEN)
+<pre style="background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:8px 12px;overflow:auto;font-size:14px;line-height:1.35">(LAENGSDREHEN)
 N10 G54 G90 G95 G18
 N20 T1
 N30 M3 S800

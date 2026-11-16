@@ -357,6 +357,7 @@
           : [{ key: 'sch', min: 110, w: 0.32, p: 1 }, { key: 'kenn', min: 140, w: 0.36, p: 2 }, { key: 'strip', min: 56, w: 0.32, p: 3 }], gap);
       }
       const sch = P.sch, kenn = P.kenn, sig = P.sig, cmpR = P.cmpR, strip = P.strip;
+      /* Handy-Ansicht: Felder melden (Umschalter der Oberfläche) */ if (sc.pan && R0.w < 680) sc.pan([['Schaltung', sch], ['Kennlinie', kenn], ['Signal', sig], ['Vergleich', cmpR], ['Formel', strip]]);
       const fs = faultSpec(ctl, hid);
       const L = {}, vals = {};
       let kind = 'kollektor';

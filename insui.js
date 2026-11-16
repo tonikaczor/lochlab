@@ -116,7 +116,7 @@
       const a = ans.a || [];
       h += `<div class="mt">${q.items.map((it, i) => `<div class="mrow ${res && res.per ? (res.per[i] ? 'ok' : 'bad') : ''}"><span>${esc(it)}</span><select data-qs="${i}" ${locked ? 'disabled' : ''} aria-label="Zuordnung ${i + 1}"><option value="-1">– wählen –</option>${q.options.map((o, j) => `<option value="${j}" ${a[i] === j ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`).join('')}</div>`;
     } else if (q.type === 'num') {
-      h += `<label class="f"><span>${esc(q.label || 'Dein Ergebnis')} (${esc(q.unit)})</span><div class="qin"><input data-qn="1" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}" ${locked ? 'disabled' : ''}><span class="u">${esc(q.unit)}</span></div></label>`;
+      h += `<label class="f"><span>${esc(q.label || 'Dein Ergebnis')} (${esc(q.unit)})</span><div class="qin"><input data-qn="1" inputmode="decimal" autocomplete="off" value="${esc(ans.v || '')}" ${locked ? 'disabled' : ''}><span class="u">${esc(q.unit)}</span></div></label><p class="lr-hinweis">Zahl in ${esc(q.unit)}. ±${C.fAny(q.tol, 2)} ${esc(q.unit)} gelten als richtig.</p>`;
     }
     return h;
   }
@@ -147,29 +147,36 @@
     const cat = key === 'rt' ? S.rtc.cat : QCAT[key], lv = key === 'kenn' ? S.kenLv : key === 'rt' ? S.rtc.level : undefined;
     S.qz[key] = { q: C.genQuick(R0, cat, lv), ans: {}, res: null };
   }
+  const zeigFb = el => { if (el && typeof window !== 'undefined' && window.LabRahmen && LabRahmen.zeig) try { LabRahmen.zeig(el); } catch (e) {} };
+  const tippText = q => q.type === 'num' ? 'Lies die Aufgabe noch einmal und rechne mit der Formel aus dem Reiter Hilfe (Formeln und Kennzahlen).' : q.type === 'match' ? 'Die grün markierten Zeilen stimmen schon. Überlege bei den roten noch einmal.' : q.type === 'multi' ? 'Prüfe jede Antwort einzeln: Es sind mehrere richtig.' : 'Lies die Frage noch einmal und streiche zuerst, was sicher nicht passt.';
   function quizInner(key) {
     if (!S.qz[key]) newQ(key); const z = S.qz[key], q = z.q;
-    let h = statBoxes() + qInner(q, z.ans, z.res, true);
+    let h = statBoxes() + qInner(q, z.ans, z.res || z.tipp, !!z.res);
     if (z.res) {
-      h += `<div class="fb ${z.res.ok ? 'ok' : 'bad'}">${qFeedback(q, z.res, true)}${z.res.ok ? '' : ' Richtig ist: <b>' + esc(C.solutionText(q)) + '</b>.'}</div><div class="rdout ${z.res.ok ? 'ok' : 'bad'}">${esc(q.expl)}</div><div class="btns"><button class="btn pri" data-qa="next">Nächste Frage</button></div>`;
-    } else h += '<div class="btns"><button class="btn pri" data-qa="chk">✓ Prüfen</button></div>';
+      h += `<div id="qzFb_${key}" class="lr-fb ${z.res.ok ? 'ok' : 'loes'} fb ${z.res.ok ? 'ok' : 'bad'}" role="status" tabindex="-1">${z.res.ok ? '<p><strong>✓ Richtig!</strong></p>' : '<p><strong>Leider nicht.</strong> ' + qFeedback(q, z.res, true).replace(/<span class="v">[^<]*<\/span>\s*/, '') + ' Richtig ist: <b>' + esc(C.solutionText(q)) + '</b>.</p>'}<p>${esc(q.expl)}</p></div><div class="btns"><button class="btn pri" data-qa="next">Nächste Frage</button></div>`;
+    } else {
+      if (z.fail) h += `<div id="qzFb_${key}" class="lr-fb tipp" role="status" tabindex="-1"><p><strong>Noch nicht.</strong> Tipp: ${esc(tippText(q))} Du hast einen zweiten Versuch.</p></div>`;
+      h += '<div class="btns"><button class="btn pri" data-qa="chk">✓ Prüfen</button></div>';
+    }
     return h;
   }
   const quizCard = (key, title) => `<div class="card pl" data-quiz="${key}"><h4>${esc(title || 'Üben')}</h4>${quizInner(key)}</div>`;
   function quizCheck(key) {
     const z = S.qz[key]; if (z.res) return;
     const r = C.checkQ(z.q, z.ans); if (r.empty) { toast('Bitte zuerst antworten.'); return; }
-    z.res = r; const st = S.rt; st.n++; if (r.ok) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; lsSet('rt', st);
+    const st = S.rt;
+    if (!r.ok && !z.fail) { z.fail = 1; z.tipp = r; st.streak = 0; lsSet('rt', st); sad(); updatePal(); return; }
+    z.res = r; z.tipp = null; const second = !!z.fail; st.n++; if (r.ok) { st.ok++; if (!second) { st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; } else st.streak = 0; lsSet('rt', st);
     if (r.ok) ding(); else sad(); updatePal();
-    if (r.ok && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
+    if (r.ok && !second && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
   }
   function bindQuiz(view) {
-    const refresh = el => { const key = el.dataset.quiz; el.innerHTML = el.querySelector('h4').outerHTML + quizInner(key); };
+    const refresh = el => { const key = el.dataset.quiz; el.innerHTML = el.querySelector('h4').outerHTML + quizInner(key); zeigFb(el.querySelector('.lr-fb')); };
     view.addEventListener('click', e => {
       const card = e.target.closest('[data-quiz]'); if (!card) return; const key = card.dataset.quiz; if (!S.qz[key]) return; const z = S.qz[key];
       if (z.res) { if (e.target.closest('[data-qa=next]')) { newQ(key); refresh(card); } return; }
       if (e.target.closest('[data-qa=chk]')) { quizCheck(key); refresh(card); return; }
-      if (qClick(e, z.q, z.ans)) refresh(card);
+      if (qClick(e, z.q, z.ans)) { z.tipp = null; refresh(card); }
     });
     view.addEventListener('change', e => { const card = e.target.closest('[data-quiz]'); if (!card) return; const z = S.qz[card.dataset.quiz]; if (z && !z.res) qChange(e, z.q, z.ans); });
     view.addEventListener('input', e => { const card = e.target.closest('[data-quiz]'); if (!card || !e.target.dataset.qn) return; const z = S.qz[card.dataset.quiz]; if (z && !z.res) z.ans.v = e.target.value; });
@@ -178,8 +185,13 @@
 
   /* ============================================================ Grundbegriffe */
   function svgOverview() {
-    const box = (x, y, w, t, c) => `<rect x="${x}" y="${y}" width="${w}" height="44" rx="8" fill="${c}" opacity=".9"/><text x="${x + w / 2}" y="${y + 27}" text-anchor="middle" style="fill:#fff;font-size:13px;font-weight:700">${t}</text>`;
-    return `<svg viewBox="0 0 480 130" style="width:100%;max-width:560px;height:auto;display:block;margin:6px auto" role="img" aria-label="Instandhaltung besteht aus Wartung, Inspektion, Instandsetzung und Verbesserung"><rect x="4" y="4" width="472" height="122" rx="12" fill="none" stroke="var(--mute)" stroke-dasharray="5 4"/><text x="240" y="26" text-anchor="middle" class="sv-lab" style="font-weight:700">Instandhaltung (DIN 31051)</text>${box(14, 50, 108, 'Wartung', '#1a6fd4')}${box(130, 50, 108, 'Inspektion', '#2d8a4e')}${box(246, 50, 108, 'Instandsetzung', '#b3591a')}${box(362, 50, 104, 'Verbesserung', '#7a4fb3')}<text x="68" y="112" text-anchor="middle" class="sv-lab m" style="font-size:10.5px">Verschleiß bremsen</text><text x="184" y="112" text-anchor="middle" class="sv-lab m" style="font-size:10.5px">Zustand feststellen</text><text x="300" y="112" text-anchor="middle" class="sv-lab m" style="font-size:10.5px">wieder funktionsfähig</text><text x="414" y="112" text-anchor="middle" class="sv-lab m" style="font-size:10.5px">sicherer machen</text></svg>`;
+    /* Handy: 2x2 statt 4 Spalten, damit die Texte nach der Mindestschrift-Korrektur (fix) nicht kollidieren; Textfarbe folgt dem Thema (Z3) */
+    const eng = innerWidth < 700, T = 'fill:var(--fg);';
+    const box = (x, y, w, t, c, sub) => `<rect x="${x}" y="${y}" width="${w}" height="44" rx="8" fill="${c}" opacity=".9"/><text x="${x + w / 2}" y="${y + 27}" text-anchor="middle" style="fill:#fff;font-size:13px;font-weight:700">${t}</text><text x="${x + w / 2}" y="${y + 60}" text-anchor="middle" style="${T}opacity:.78;font-size:10.5px">${sub}</text>`;
+    const B = [['Wartung', '#1a6fd4', 'Verschleiß bremsen'], ['Inspektion', '#2d8a4e', 'Zustand feststellen'], ['Instandsetzung', '#b3591a', 'wieder funktionsfähig'], ['Verbesserung', '#7a4fb3', 'sicherer machen']];
+    const vb = eng ? '0 0 300 220' : '0 0 480 130';
+    const kasten = eng ? B.map((q, i) => box(12 + (i % 2) * 144, 44 + Math.floor(i / 2) * 84, 132, q[0], q[1], q[2])).join('') : B.map((q, i) => box([14, 130, 246, 362][i], 50, i === 3 ? 104 : 108, q[0], q[1], q[2])).join('');
+    return `<svg viewBox="${vb}" style="width:100%;max-width:560px;height:auto;display:block;margin:6px auto" role="img" aria-label="Instandhaltung besteht aus Wartung, Inspektion, Instandsetzung und Verbesserung"><rect x="4" y="4" width="${eng ? 292 : 472}" height="${eng ? 212 : 122}" rx="12" fill="none" stroke="var(--mute)" stroke-dasharray="5 4"/><text x="${eng ? 150 : 240}" y="26" text-anchor="middle" style="${T}font-size:11px;font-weight:700">Instandhaltung (DIN 31051)</text>${kasten}</svg>`;
   }
   function renderBegr() {
     $('#begrView').innerHTML = `<div class="card pl"><h4>Instandhaltung nach DIN 31051</h4>${svgOverview()}
@@ -231,8 +243,8 @@
 
   /* ============================================================ Wartungsplan (Jahresraster) */
   const planKey = t => 'p' + (t ? t.id : '');
-  function planHTML(p, sel, res) {
-    const bad = {}, miss = {}; if (res) res.wrong.forEach(([i, j]) => { if (sel[i][j]) bad[i + ':' + j] = 1; else miss[i + ':' + j] = 1; });
+  function planHTML(p, sel, res, reveal) {
+    const bad = {}, miss = {}; if (res) res.wrong.forEach(([i, j]) => { if (sel[i][j]) bad[i + ':' + j] = 1; else if (reveal !== false) miss[i + ':' + j] = 1; });
     let h = `<ul class="ul" style="margin:0 0 8px">${p.rows.map(r => `<li>${esc(C.rowText(r))}</li>`).join('')}</ul><div class="pgrid"><table class="pt"><tr><th></th>${C.MON3.map(m => `<th>${m}</th>`).join('')}</tr>`;
     p.rows.forEach((r, i) => { h += `<tr><th class="rl">${esc(r.label)}</th>${C.MON3.map((m, j) => `<td><button class="pc ${sel[i][j] ? 'on' : ''} ${bad[i + ':' + j] ? 'bad' : ''} ${miss[i + ':' + j] ? 'miss' : ''}" data-pc="${i}:${j}" aria-pressed="${!!sel[i][j]}" aria-label="${esc(r.label)}, ${C.MONTHS[j]}">${sel[i][j] ? '●' : ''}</button></td>`).join('')}</tr>`; });
     return h + '</table></div>';
@@ -409,9 +421,11 @@
       if (t.kind === 'num') lines.push({ ok: true, info: true, text: 'Erlaubt ist eine Abweichung von ±' + C.fAny(t.tol, 2) + ' ' + t.unit + '.' });
     }
     const pct = ok ? pctFor(t.id) : 0;
-    S.tRes = Object.assign({ id: t.id, ok, pct, lines, sol }, per && per.per ? { per: per.per } : {});
-    if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Lies die Erklärung und versuche es noch einmal.'); }
-    renderTasks(false);
+    S.tFail = S.tFail || {}; if (!ok) S.tFail[t.id] = (S.tFail[t.id] || 0) + 1;
+    const stage = ok ? 'ok' : ex ? 'pruef' : S.tFail[t.id] >= 2 ? 'loes' : 'tipp';
+    S.tRes = Object.assign({ id: t.id, ok, pct, lines, sol, stage }, per && per.per ? { per: per.per } : {});
+    if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig.'); }
+    renderTasks(false); zeigFb($('#tkFb'));
   }
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
@@ -423,16 +437,21 @@
         h += `<p style="margin:8px 0">${esc(t.text)}</p>${planHTML(t.plan, S.tPlan.sel, r ? S.tPlan.res : null)}`;
       } else {
         const q = C.taskQ(t), res = r ? { ok: r.ok, per: r.per } : null;
-        h += `<div id="tkQ">${qInner(q, a, res, false)}</div>`;
+        h += `<div id="tkQ">${qInner(q, a, res, !!(r && r.stage === 'loes'))}</div>`;
       }
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.stage === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
+      const fl = (S.tFail || {})[t.id] || 0, tp = tipsOf(t);
       if (r) {
-        h += `<ul class="tl">${r.lines.map(l => `<li class="${l.info ? '' : l.ok ? 'ok' : 'bad'}">${l.info ? 'ℹ' : l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-        if (r.ok || !exam()) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(r.sol)}<br>${esc(t.expl)}</div>`;
-        else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
-        if (r.ok) h += '<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>';
-      }
+        const stg = r.stage, kind = stg === 'ok' ? 'ok' : stg === 'tipp' ? 'tipp' : 'loes';
+        const ul = `<ul class="tl">${r.lines.map(l => `<li class="${l.info ? '' : l.ok ? 'ok' : 'bad'}">${l.info ? 'ℹ' : l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
+        h += `<div id="tkFb" class="lr-fb ${kind}" role="status" tabindex="-1">`;
+        if (stg === 'tipp') h += `<p><strong>Noch nicht.</strong> Tipp: ${esc(tp && tp[0] || 'Lies die Aufgabe noch einmal.')} Du hast einen zweiten Versuch.</p>${ul}`;
+        else if (stg === 'pruef') h += ul + '<p>🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p>';
+        else h += ul + `<p><strong>${stg === 'ok' ? 'Richtig. ' : 'Lösung: '}</strong>${esc(r.sol)}</p><p>${esc(t.expl)}</p>`;
+        h += '</div>';
+        if (stg === 'ok' || stg === 'loes') h += '<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>';
+      } else if (fl === 1 && !exam()) h += `<div id="tkFb" class="lr-fb tipp" role="status" tabindex="-1"><p><strong>Noch nicht.</strong> Tipp: ${esc(tp && tp[0] || 'Lies die Aufgabe noch einmal.')} Du hast einen zweiten Versuch.</p></div>`;
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
@@ -443,7 +462,7 @@
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
-    S.task = id; S.tAns = {}; S.tRes = null; S.tPlan = null;
+    S.task = id; S.tAns = {}; S.tRes = null; S.tPlan = null; (S.tFail = S.tFail || {})[id] = 0;
     if (t.kind === 'scen') { startDiag(t.scen, { fault: t.fault, task: id }); return; }
     setTab('tasks'); renderTasks();
   }
@@ -542,6 +561,15 @@
 
   /* Ereignisse der einfachen Reiter */
   ['begr', 'schm', 'scha', 'kenn', 'sich', 'rt'].forEach(k => bindQuiz($('#' + VIEW[k])));
+  /* Grafikschrift am Handy mindestens 11 px (M-all-12): Schrift in Nutzereinheiten so anheben, dass sie auf dem Bildschirm 11 px erreicht */
+  (function () {
+    if (typeof MutationObserver === 'undefined' || typeof innerWidth === 'undefined' || typeof addEventListener === 'undefined') return;
+    let t = 0;
+    const fix = () => { t = 0; if (innerWidth >= 700) return; document.querySelectorAll('#app svg').forEach(sv => { const m = sv.getScreenCTM && sv.getScreenCTM(); if (!m || !m.a) return; sv.querySelectorAll('text').forEach(x => { const fs = parseFloat(getComputedStyle(x).fontSize) || 12; if (fs * m.a < 11) x.style.fontSize = (11.2 / m.a).toFixed(1) + 'px'; }); }); };
+    const q = () => { if (!t) t = setTimeout(fix, 120); };
+    new MutationObserver(q).observe(document.getElementById('app') || document.body, { childList: true, subtree: true });
+    addEventListener('resize', q); addEventListener('click', q, true); q();
+  })();
   $('#schmView').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.cov) { S.cover = !S.cover; S.uncovered = {}; renderSchm(); } else if (b.dataset.unc) { S.uncovered[b.dataset.unc] = true; renderSchm(); } });
   $('#schaView').addEventListener('click', e => { const g = e.target.closest('.gb'); if (!g) return; const id = g.parentNode.dataset.dm; S.dmg = S.dmg === id ? null : id; const keep = $('#pgScha').scrollTop; renderScha(); $('#pgScha').scrollTop = keep; });
   $('#kennView').addEventListener('input', e => {

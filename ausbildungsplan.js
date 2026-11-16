@@ -120,7 +120,7 @@
   }
   function zeichneKopf(p) {
     clear(el.top);
-    el.top.appendChild(h('a', { class: 'btn', href: 'index.html' }, ['Startseite']));
+    el.top.appendChild(h('a', { class: 'btn', href: 'index.html#ueben' }, ['‹ Start']));
     if (S.beruf) {
       el.top.appendChild(h('span', { class: 'apwho' }, [h('b', { text: berufName(S.beruf) })]));
       el.top.appendChild(h('button', { type: 'button', class: 'btn', 'aria-expanded': S.wechseln ? 'true' : 'false', 'aria-controls': 'apWahl', onclick: () => { S.wechseln = !S.wechseln; zeichneWahl(); zeichneKopf(p); } }, ['Beruf wechseln']));
@@ -133,13 +133,13 @@
     el.chooser.hidden = !zeigen;
     if (!zeigen) return;
     el.chooser.appendChild(h('h2', { id: 'apWahlH', text: S.beruf ? 'Beruf wechseln' : 'Für welchen Beruf möchtest du den Plan sehen?' }));
-    if (!S.beruf) el.chooser.appendChild(h('p', { class: 'lead', text: 'Du hast auf der Startseite noch keinen Beruf gewählt. Such dir hier einen aus; gespeichert wird dabei nichts.' }));
+    if (!S.beruf) el.chooser.appendChild(h('p', { class: 'lead', text: 'Du hast auf der Startseite noch keinen Beruf gewählt. Such dir hier einen aus. Die Wahl wird für die ganze App gemerkt, auch für die Startseite.' }));
     const seg = h('div', { class: 'seg', role: 'group', 'aria-labelledby': 'apWahlH' });
     AP().BERUFE.forEach(b => seg.appendChild(h('button', { type: 'button', 'aria-pressed': b.k === S.beruf ? 'true' : 'false', 'data-beruf': b.k, onclick: () => waehle(b.k) }, [b.n])));
     el.chooser.appendChild(seg);
   }
   function waehle(k) {
-    S.beruf = k; S.wechseln = false; S.jahr = null; S.offen = false; S.q = ''; S.skip = []; S.openYears = null; S.openCards = {}; S.openOpt = {}; S.fehler = '';
+    S.beruf = k; try { root.localStorage.setItem('lm4.beruf', k); } catch (e) {} S.wechseln = false; S.jahr = null; S.offen = false; S.q = ''; S.skip = []; S.openYears = null; S.openCards = {}; S.openOpt = {}; S.fehler = '';
     try { if (root.history && root.history.replaceState) root.history.replaceState(null, '', '?beruf=' + k); } catch (e) {}
     ladeUndZeige();
   }

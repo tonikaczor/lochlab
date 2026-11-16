@@ -190,9 +190,9 @@
   /* Antwortfeld je nach Aufgabenart; a = Antwortzustand, r = Ergebnis (oder null), lock = nicht mehr änderbar */
   function ansHtml(q, a, r, lock) {
     const k = q.ask.type, dis = lock ? ' disabled' : '';
-    if (k === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}"${dis} class="${r && lock && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    if (k === 'num') return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}"${dis}>${q.ask.unit ? `<span class="u">${esc(q.ask.unit)}</span>` : ''}</div></label>`;
-    if (k === 'out') return `<label class="f"><span>${esc(q.ask.label)} (mehrere Werte durch Leerzeichen trennen)</span><textarea data-in="1" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" style="min-height:64px"${dis}>${esc(a.v || '')}</textarea></label>`;
+    if (k === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}"${dis} class="${r && (r.ok || r.sol) && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok && r.sol ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    if (k === 'num') return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}"${dis}>${q.ask.unit ? `<span class="u">${esc(q.ask.unit)}</span>` : ''}</div><p class="lr-hinweis" style="margin:4px 0 0">Zahl${q.ask.unit ? ' in ' + esc(q.ask.unit) : ''}. ${q.tol ? '±' + esc(q.tol) + ' gilt als richtig.' : 'Sie muss genau stimmen.'}</p></label>`;
+    if (k === 'out') return `<label class="f"><span>${esc(q.ask.label)} (mehrere Werte durch Leerzeichen trennen)</span><textarea data-in="1" rows="2" autocomplete="off" autocapitalize="off" spellcheck="false" style="min-height:64px"${dis}>${esc(a.v || '')}</textarea><p class="lr-hinweis" style="margin:4px 0 0">In der Reihenfolge der Ausgabe, durch Leerzeichen getrennt. Es muss genau stimmen.</p></label>`;
     if (k === 'line') return `<p class="hint2" style="margin:6px 0 0">Tippe die Zeile an, die den Fehler enthält.</p>` + codeView(q.ask.lines.join('\n'), { pick: !lock, sel: r && lock ? [] : (a.s || []), ok: r && lock ? q.ask.correct : [], bad: r && !r.ok ? (a.s || []).filter(x => q.ask.correct.indexOf(x) < 0) : [] });
     if (k === 'order') {
       const sq = a.seq || [];
@@ -219,30 +219,42 @@
     if (q.fig) h += fig(q.fig.kind, q.fig.src, q.fig.blank);
     return h;
   }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${r.msg ? `<li>ℹ ${esc(r.msg)}</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> <span class="pre">${esc(D.solText(q))}</span><br><br><b>Lösungsweg:</b> <span class="pre">${esc(q.expl)}</span></div>${r.ok && q.reveal ? fig(q.reveal.kind, q.reveal.src) : ''}` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung nach „Prüfen“ (Rahmen 4.5): 1. Fehlversuch = Tipp und zweiter Versuch, 2. Fehlversuch = Lösung mit Rechenweg; im Prüfmodus kommt der Lösungsweg erst nach der richtigen Antwort */
+  const TRY = {};
+  const solHtml = q => `<div class="rdout ok" style="margin:0"><b>Lösung:</b> <span class="pre">${esc(D.solText(q))}</span><br><br><b>Lösungsweg:</b> <span class="pre">${esc(q.expl)}</span></div>`;
+  const resBlock = (q, r, mode) => {
+    const cls = r.ok ? 'ok' : mode === 'sol' ? 'loes' : 'tipp', info = r.msg ? `<p>ℹ ${esc(r.msg)}</p>` : '';
+    let h;
+    if (r.ok) h = `<p><strong>Richtig:</strong> ${esc(r.given)}</p>${info}${solHtml(q)}${q.reveal ? fig(q.reveal.kind, q.reveal.src) : ''}`;
+    else if (mode === 'sol') h = `<p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht. So geht es:</p>${info}${solHtml(q)}`;
+    else if (mode === 'exam') h = `<p><strong>Noch nicht richtig.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p>${info}<p>Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Ein Tipp kostet 25 % der Punkte. Du kannst es noch einmal versuchen.</p>`;
+    else h = `<p><strong>Noch nicht.</strong> Deine Antwort „${esc(r.given)}“ stimmt nicht.</p>${info}<p><strong>Tipp:</strong> ${esc((q.tips && q.tips[0]) || 'Rechne die Schritte noch einmal in Ruhe durch.')} Du hast einen zweiten Versuch.</p>`;
+    return `<div class="lr-fb ${cls}" id="lrFb">${h}</div>`;
+  };
+  const fbZeig = () => { const e = document.getElementById('lrFb'); if (e && window.LabRahmen) LabRahmen.zeig(e); };
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || (S.tAns[t.id] = {});
-      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qHead(q)}${ansHtml(q, a, r, !!(r && r.ok))}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button>${q.prog && q.ask.type !== 'code' && !exam() ? '<button class="btn" data-ta="ed">▶ Im Editor testen</button>' : ''}<button class="btn" data-ta="close">Schließen</button></div>`;
+      h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qHead(q)}${ansHtml(q, a, r, !!(r && (r.ok || r.sol)))}`;
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.sol) ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button>${q.prog && q.ask.type !== 'code' && !exam() ? '<button class="btn" data-ta="ed">▶ Im Editor testen</button>' : ''}<button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte. Der Editor ist hier gesperrt.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { h += resBlock(q, r, r.ok ? 'ok' : r.sol ? 'sol' : exam() ? 'exam' : 'tipp'); if (r.ok || r.sol) h += `<div class="btns">${r.ok ? '' : '<button class="btn" data-ta="again">Neu versuchen</button>'}<button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
-    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p>`;
+    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Mit „Prüfung“ im Umschalter oben zählen Tipps als Abzug.'}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; else fbZeig();
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = D.evalAnswer(S.tq, a); if (!e) return;
     if (e.incomplete) { toast(e.incomplete); return; }
     const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, msg: e.msg, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Hinweis und versuche es noch einmal.'); }
+    if (!e.ok) TRY[t.id] = (TRY[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, msg: e.msg, pct, sol: !e.ok && !exam() && TRY[t.id] >= 2 };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.sol ? 'Noch nicht richtig. Die Lösung steht unten.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
   function hintFor(q, id) {
@@ -257,18 +269,18 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; TRY[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
   /* gemeinsame Bedienung der Antwortfelder (Aufgaben und Trainer): ctx() liefert {q, a, res, redraw} */
   function bindAnswers(view, ctx) {
     view.addEventListener('input', e => {
-      const c = ctx(); if (!c || (c.res && (c.res.ok || c.rt))) return; const a = c.a;
+      const c = ctx(); if (!c || (c.res && (c.res.ok || c.res.sol || c.rt))) return; const a = c.a;
       if (e.target.dataset.in) a.v = e.target.value; else if (e.target.dataset.cell) (a.cells = a.cells || {})[e.target.dataset.cell] = e.target.value;
     });
     view.addEventListener('click', e => {
-      const c = ctx(); if (!c) return; const a = c.a, locked = c.res && (c.res.ok || c.rt);
+      const c = ctx(); if (!c) return; const a = c.a, locked = c.res && (c.res.ok || c.res.sol || c.rt);
       const tc = e.target.closest('[data-tc]'), ln = e.target.closest('[data-ln]'), oi = e.target.closest('[data-oi]'), oa = e.target.closest('[data-oa]');
       if (locked) return;
       if (tc) { a.c = +tc.dataset.tc; if (c.res && !c.res.ok) c.clear(); c.redraw(); }
@@ -288,6 +300,7 @@
       if (a === 'chk') checkTask(t); else if (a === 'hint') hintFor(S.tq, t.id);
       else if (a === 'close') { S.task = null; S.tRes = null; renderTasks(); }
       else if (a === 'ed') { S.ed.src = S.tq.prog; S.ed.inputs = (S.tq.inputs || []).join(' '); S.run = null; lsSet('ed', S.ed); setTab('ed'); toast('Programm der Aufgabe im Editor.'); }
+      else if (a === 'again') startTask(t.id);
       else if (a === 'next') { const i = TASKS.findIndex(x => x.id === t.id), nx = TASKS.slice(i + 1).find(x => !done()[x.id]) || TASKS[(i + 1) % TASKS.length]; startTask(nx.id); }
       return;
     }
@@ -295,15 +308,16 @@
   });
 
   /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.fb = null; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
-      <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
+      <div class="fbar"><span class="lbl" style="font-size:14px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
       <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div>${qHead(q)}${ansHtml(q, T.ans, T.res, !!T.res)}
       <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      ${T.res ? resBlock(q, T.res, T.res.ok ? 'ok' : 'sol') : T.fb ? resBlock(q, T.fb, 'tipp') : ''}</div>`;
+    if (T.res || T.fb) fbZeig();
   }
   const rv = $('#rtView');
   bindAnswers(rv, () => ({ q: S.tr.q, a: S.tr.ans, res: S.tr.res, rt: true, redraw: renderTrainer, clear: () => {} }));
@@ -316,7 +330,8 @@
   function trainerCheck() {
     const T = S.tr; if (T.res) return; const e = D.evalAnswer(T.q, T.ans); if (!e) return;
     if (e.incomplete) { toast(e.incomplete); return; }
-    T.res = { ok: e.ok, given: e.given, msg: e.msg }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    if (!e.ok && !T.fb) { T.fb = { ok: false, given: e.given, msg: e.msg }; sad(); renderTrainer(); return; }
+    T.res = { ok: e.ok, given: e.given, msg: e.msg, sol: !e.ok }; T.fb = null; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -365,7 +380,7 @@
       sec('Rekursion und Aufwand', `<p>Eine Funktion ist <b>rekursiv</b>, wenn sie sich selbst aufruft. Sie braucht immer eine Abbruchbedingung. <code>fak(n) = n · fak(n − 1)</code>, <code>fak(1) = 1</code>. Bei Fibonacci ruft jeder Aufruf zwei weitere auf; die Zahl der Aufrufe wächst schnell.</p><p><b>Aufwand grob:</b> Zähle die Vergleiche. Eine Schleife über n Elemente braucht etwa n Vergleiche, zwei verschachtelte Schleifen etwa n · n / 2. Verdoppelt man n, dann wächst der Aufwand der verschachtelten Schleifen ungefähr auf das Vierfache.</p>`) +
       sec('Zahlenalgorithmen', `<p><b>Teilersuche:</b> t ist Teiler von n, wenn <code>n mod t = 0</code>.</p><p><b>Primzahltest:</b> n ≥ 2 ist prim, wenn kein t mit 2 ≤ t und t · t ≤ n die Zahl teilt.</p><p><b>ggT (Euklid):</b> (a, b) durch (b, a mod b) ersetzen, bis b = 0; dann ist a der ggT.</p><p><b>Zahlensystem:</b> Dezimalzahl immer wieder durch die Basis teilen, die Reste von hinten nach vorn lesen. 13 → Reste 1, 0, 1, 1 → 1101.</p>`) +
       sec('Typische Fehler', `<ul><li><b>Grenze um eins daneben:</b> Läuft die Schleife von 0 bis n oder bis n − 1? Ein Feld mit n Elementen hat die Indizes 0 bis n − 1.</li><li><b>Schleife endet nie:</b> In der Bedingung vorkommende Variable wird nicht oder in die falsche Richtung geändert. Der Editor bricht nach der Schrittgrenze ab.</li><li><b>Variable ohne Anfangswert:</b> Summen starten bei 0, Produkte bei 1, ein Minimum beim ersten Element.</li><li><b>Falscher Vergleich:</b> &lt; statt &lt;=, = statt &lt;&gt;. Prüfe immer die Grenzfälle.</li><li><b>Rechenreihenfolge:</b> <code>a + b / 2</code> ist nicht <code>(a + b) / 2</code>.</li></ul>`) +
-      `<p class="hint2">Notationen (Symbole, Schreibweisen) sind in Lehrbüchern leicht verschieden; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Notationen (Symbole, Schreibweisen) sind in Lehrbüchern leicht verschieden.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

@@ -247,6 +247,15 @@
     z.text = z.text.trim();
     return z;
   }
+  /* Fazit: klare Aussage am Ende. { stufe: geeignet | hinweise | offen | eingeschraenkt, titel, text } */
+  function fazit(res) {
+    var z = zusammen(res), probs = (res || []).filter(function (r) { return r.status === 'fail'; }).map(function (r) { return r.titel; });
+    if (!z.gesamt) return { stufe: 'offen', titel: 'Dein Gerät ist noch nicht geprüft', text: 'Dein Gerät ist noch nicht geprüft, weil noch kein Test gelaufen ist.' };
+    if (z.fail) return { stufe: 'eingeschraenkt', titel: 'Dein Gerät ist eingeschränkt geeignet', text: 'Dein Gerät ist eingeschränkt geeignet, weil: ' + probs.join(', ') + '. Lies bei den Punkten mit ✗ nach, was Du tun kannst.' };
+    if (z.offen) return { stufe: 'offen', titel: 'Dein Gerät ist noch nicht ganz geprüft', text: 'Dein Gerät ist noch nicht ganz geprüft, weil ' + z.offen + (z.offen > 1 ? ' Tests' : ' Test') + ' noch offen ' + (z.offen > 1 ? 'sind' : 'ist') + '. Bisher gab es keine Fehler.' };
+    if (z.warn) return { stufe: 'hinweise', titel: 'Dein Gerät ist geeignet, mit Hinweisen', text: 'Dein Gerät ist geeignet, weil es keine Fehler gab. Beachte die ' + z.warn + (z.warn > 1 ? ' Hinweise' : ' Hinweis') + ' mit !.' };
+    return { stufe: 'geeignet', titel: 'Dein Gerät ist geeignet', text: 'Dein Gerät ist geeignet, weil alle Prüfungen in Ordnung sind.' };
+  }
   function zeile(r) { return ICON[r.status] + ' ' + r.titel + ': ' + r.text + (r.tipp && r.status !== 'ok' ? ' → ' + r.tipp : ''); }
   /* kompakter Bericht zum Kopieren. info: { version, geraet, ua, w, h, dpr, orient, zoom, zeit } */
   function bericht(info, res) {
@@ -257,6 +266,7 @@
     L.push('User-Agent: ' + (info.ua || '?'));
     L.push('Anzeige: ' + (info.w || '?') + 'x' + (info.h || '?') + ' px, Pixeldichte ' + (num(info.dpr) ? zahl(info.dpr, 2) : '?') + (info.orient ? ', ' + info.orient : '') + (num(info.zoom) ? ', Zoom ' + zahl(info.zoom, 2) : ''));
     L.push('Ergebnis: ' + z.ok + ' ✓, ' + z.fail + ' ✗, ' + (z.warn + z.offen) + ' !' + (z.offen ? ' (davon ' + z.offen + ' noch nicht gemacht)' : ''));
+    L.push('Fazit: ' + fazit(res).text);
     var g = null;
     (res || []).forEach(function (r) { if (r.gruppe !== g) { g = r.gruppe; L.push(''); L.push('[' + (GRUPPEN[g] || g) + ']'); } L.push(zeile(r)); });
     return L.join('\n');
@@ -266,7 +276,7 @@
     ICON: ICON, GRUPPEN: GRUPPEN, erkenneGeraet: erkenneGeraet, geraetText: geraetText, parseSw: parseSw, neuester: neuester, zaehle: zaehle, parseVer: parseVer, zoomGesperrt: zoomGesperrt,
     bewerteUmgebung: bewerteUmgebung, bewerteSw: bewerteSw, bewerteSpeicher: bewerteSpeicher, bewerteCacheSeiten: bewerteCacheSeiten, rangeBewerte: rangeBewerte, bewerteFlug: bewerteFlug,
     bewerteVorlesen: bewerteVorlesen, bewerteTouch: bewerteTouch, einstufungLeistung: einstufungLeistung, bewerteLeistung: bewerteLeistung, bewerteAnzeige: bewerteAnzeige,
-    zusammen: zusammen, zeile: zeile, bericht: bericht, mb: mb
+    zusammen: zusammen, fazit: fazit, zeile: zeile, bericht: bericht, mb: mb
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.GeraetetestCore = api;

@@ -128,8 +128,19 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .pc{color:var(--ok)}.pc.m{color:var(--danger)}
 .hl ul,.dt ul{margin:.3em 0 .3em 1.1em;padding:0}
 .row .ib{flex:none}.fbar .seg{flex-wrap:wrap}.dt details{margin-bottom:6px}
+.lbl{font-size:12px;color:var(--mute)}
+.vzs{margin:0}
+/* Handy: Schrift im DOM mindestens 14 px, Ziele mindestens 44 px (Welle 2, I2d) */
+@media(max-width:600px){
+.card.pl h4,.gh,label.f span,.tt th,.hl th,.rdout .st,.stats .bx,.lbl,.lv,.mgrid span,.hint2,.dot,.dot.p,.tab .bd,#stat,.chip.s,.rv-note,.rv h5,.hl .eq,.hl table,.tt,.tl,.rdout,.fb{font-size:14px}
+.seg button,.chip,.chip.s{min-height:44px;height:44px}
+.seg button{padding:0 14px}
+.stats .bx b{font-size:20px}
+input[type=range]{min-height:44px}
+}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body class="gs">
 <!--GATE-->
@@ -172,6 +183,8 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'reclab.html': { name: 'Auftrag-und-Recht-Lab', gruppen: [{ name: 'Vertrag und Rechte', teile: ['vert', 'fall'] }, { name: 'Rechnen', teile: ['frist', 'lohn'] }], leiste: { haupt: ['[data-a=rand]'] }, saetze: { 'Aufgaben': 'Feste Aufgaben. Nach dem ersten Fehler gibt es einen Tipp und einen zweiten Versuch, dann die Lösung mit Lösungsweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann die Lösung. Die Serie zählt nur ohne Fehlversuch.', 'Prüfung': 'Wie in der Prüfung: Jede Tipp-Stufe kostet 25 % der Punkte, den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

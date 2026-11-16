@@ -1354,6 +1354,29 @@
         { name: '2π vergessen', answer: A('rlc', {}, { fields: { i: v.i, xc: v.xc, c: v.cOhne } }) }]; } };
   })();
 
+  /* ---------- ws55: Periodendauer mit den Cursorn am Oszilloskop messen (B-wsl-04) ---------- */
+  const M55 = (() => {
+    const G = { f: 80 };
+    const vals = () => once('v55', () => { const t = 1000 / G.f; return { f: G.f, t, tS: t / 1000, halb: t / 2, fKehr: G.f }; });
+    const rfT = () => { const v = vals(); return own(v.tS, 's', [
+      { v: v.halb / 1000, id: 'halb', text: 'Dein Wert ' + f(v.halb, 2) + ' ms ist nur eine halbe Periode. Die Periodendauer T ist der Abstand zweier gleicher Punkte mit gleicher Steigung, zum Beispiel von einem Nulldurchgang nach oben bis zum nächsten.' },
+      { v: v.f, id: 'kehrwert', text: 'Dein Wert ist die Frequenz in Hz. Die Periodendauer ist der Kehrwert: T = 1 / f. Gesucht ist hier der Zeitabstand der Cursor in ms.' }], { factor: 1e-3, dispUnit: 'ms', tol: 0.05 }); };
+    const check = mk((r, a) => { numRow(r, rawOf(a, 't'), rfT(), 'Die Periodendauer T ist richtig gemessen', 1); });
+    return { vals, check, consts: [],
+      text: () => 'Am Oszilloskop im Prüfstand "Sinus, Effektivwert und Phase" steht eine Sinusspannung. Blende unter dem Bild die Cursor ein, setze t₁ und t₂ auf zwei gleiche Punkte aufeinanderfolgender Perioden und lies Δt ab. Trage die Periodendauer T in ms ein (Toleranz 5 %).',
+      fields: () => [{ key: 't', label: 'Periodendauer T', unit: 'ms' }],
+      hint: () => { const v = vals(); return [
+        'Drücke unter dem Bild auf "Cursor einblenden". Ziehe die beiden Zeitcursor t₁ und t₂ (oder bewege sie mit den Pfeiltasten) auf zwei Nulldurchgänge, bei denen die Kurve in dieselbe Richtung läuft. Der Abstand ist Δt.',
+        'Der Abstand zweier solcher Punkte ist genau eine Periode: T = Δt. Die Frequenz ist der Kehrwert f = 1 / T. Du sollst T in ms eintragen, nicht f.',
+        'Musterlösung: Δt zwischen zwei gleichen Nulldurchgängen ist T = ' + f(v.t, 1) + ' ms (daraus f = 1 / T = ' + f(v.f, 0) + ' Hz).'
+      ]; },
+      start: () => A('sinus', { f: G.f, ampl: 325, form: 'sinus' }, { fields: { t: null } }),
+      sol: () => { const v = vals(); return A('sinus', { f: G.f, ampl: 325, form: 'sinus' }, { fields: { t: v.t }, value: v.t }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'nur eine halbe Periode gemessen', answer: A('sinus', {}, { fields: { t: v.halb } }) },
+        { name: 'Frequenz statt Periodendauer eingetragen', answer: A('sinus', {}, { fields: { t: v.f } }) }]; } };
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'ws17', lab: 'wsl', cat: 'Prüfungsnah', title: 'Resonanzfrequenz berechnen', level: 1, rig: 'schwing' }, M17),
@@ -1393,9 +1416,10 @@
     tk({ id: 'ws51', lab: 'wsl', cat: 'R, L, C', title: 'Drei Kondensatoren zusammenschalten', level: 1, rig: 'rlc' }, M51),
     tk({ id: 'ws52', lab: 'wsl', cat: 'Filter', title: 'Phasenwinkel am RC-Tiefpass', level: 2, rig: 'filter' }, M52),
     tk({ id: 'ws53', lab: 'wsl', cat: 'Filter', title: 'Phasenwinkel am RC-Hochpass', level: 3, rig: 'filter' }, M53),
-    tk({ id: 'ws54', lab: 'wsl', cat: 'R, L, C', title: 'Kondensator für eine vorgegebene Blindleistung', level: 3, rig: 'rlc' }, M54)
+    tk({ id: 'ws54', lab: 'wsl', cat: 'R, L, C', title: 'Kondensator für eine vorgegebene Blindleistung', level: 3, rig: 'rlc' }, M54),
+    tk({ id: 'ws55', lab: 'wsl', cat: 'Sinus', title: 'Miss die Periodendauer', level: 2, rig: 'sinus' }, M55)
   ];
-  const MODS = { ws17: M17, ws18: M18, ws19: M19, ws20: M20, ws21: M21, ws22: M22, ws23: M23, ws24: M24, ws25: M25, ws26: M26, ws27: M27, ws28: M28, ws29: M29, ws30: M30, ws31: M31, ws32: M32, ws33: M33, ws34: M34, ws35: M35, ws36: M36, ws37: M37, ws38: M38, ws39: M39, ws40: M40, ws41: M41, ws42: M42, ws43: M43, ws44: M44, ws45: M45, ws46: M46, ws47: M47, ws48: M48, ws49: M49, ws50: M50, ws51: M51, ws52: M52, ws53: M53, ws54: M54 };
+  const MODS = { ws17: M17, ws18: M18, ws19: M19, ws20: M20, ws21: M21, ws22: M22, ws23: M23, ws24: M24, ws25: M25, ws26: M26, ws27: M27, ws28: M28, ws29: M29, ws30: M30, ws31: M31, ws32: M32, ws33: M33, ws34: M34, ws35: M35, ws36: M36, ws37: M37, ws38: M38, ws39: M39, ws40: M40, ws41: M41, ws42: M42, ws43: M43, ws44: M44, ws45: M45, ws46: M46, ws47: M47, ws48: M48, ws49: M49, ws50: M50, ws51: M51, ws52: M52, ws53: M53, ws54: M54, ws55: M55 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);

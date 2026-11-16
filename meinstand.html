@@ -48,6 +48,8 @@ h1{margin:6px 0 4px;font-size:26px}h2{margin:0 0 8px;font-size:20px}h3{margin:0;
 .src{margin:0;padding:0 0 0 18px;font-size:14px;color:var(--mute)}.src li{margin:2px 0}
 .leer{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 14px}
 .hint{color:var(--mute);font-size:14px}
+details.blk{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:0 14px}details.blk[open]{padding-bottom:12px}
+details.blk>summary{cursor:pointer;min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;padding:6px 0}details.blk>summary h2{margin:0;display:inline;font-size:18px}details.blk>summary .sl{color:var(--mute);font-size:14px}
 @media(prefers-reduced-motion:no-preference){.bar i{transition:width .3s}}
 @media(max-width:420px){.wrap{padding:12px}h1{font-size:23px}.btn{margin-right:6px}}
 </style>
@@ -57,17 +59,19 @@ h1{margin:6px 0 4px;font-size:26px}h2{margin:0 0 8px;font-size:20px}h3{margin:0;
 <script src="gate.js" data-title="Tonfunk Lab"></script>
 <!--/GATE-->
 <div class="wrap">
-  <div class="top"><a class="btn" href="index.html">Startseite</a><a class="btn" href="wiederholen.html">Wiederholen</a></div>
+  <div class="top"><a class="btn" href="index.html#ich">‹ Start</a><a class="btn" href="wiederholen.html">Wiederholen</a></div>
   <h1>Mein Stand</h1>
   <p class="lead" id="msLead">Eine Übersicht über alles, was du schon gemacht hast. Die Seite liest nur, sie verändert nichts an deinem Lernstand.</p>
   <noscript><p class="leer">Für diese Übersicht braucht die Seite JavaScript.</p></noscript>
   <div id="msKopf" class="kpis" aria-live="polite"></div>
   <section id="msNext" class="next" aria-labelledby="msNextH" hidden></section>
+  <p class="hint" id="cdHint">Prüfungs-Countdown: Trag das Datum deiner Prüfung ein. Du bekommst dann einen Wochenplan bis zum Termin. Das Datum bleibt auf deinem Gerät.</p>
   <section id="countdown" class="sec" aria-label="Prüfungs-Countdown"></section>
   <section id="msBereiche" class="sec" aria-labelledby="msBH"></section>
   <section id="msPruef" class="sec" aria-labelledby="msPH" hidden></section>
   <section id="msSerie" class="sec" aria-labelledby="msSH"></section>
   <details class="wn" id="msQuellen"><summary>Woher kommen die Zahlen?</summary><ul class="src" id="msQL"></ul>
+    <p class="fn">So wird gezählt: Hier zählt jede Aufgabe einmal. Die Seite Lernfelder zählt nach Lehrjahr und Lernfeld und führt übergreifende Aufgaben extra. Die Summen können deshalb abweichen.</p>
     <p class="fn">Der Ausbilder sieht über „Stand exportieren“ dieselben Zahlen: gelöste Aufgaben je Lab, Prüfungsthemen und Probeprüfungen kommen aus denselben Daten. Alles bleibt auf deinem Gerät.</p></details>
 </div>
 <script src="aufgaben.js"></script>

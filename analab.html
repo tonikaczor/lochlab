@@ -12,6 +12,8 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <title>Tonfunk Analogtechnik-Lab</title>
+<script>/* Darstellung: Auto / Hell / Dunkel; Schlüssel lm4.theme wie die Startseite */
+(function(){try{var v=localStorage.getItem('lm4.theme');if(v==='light'||v==='dark')document.documentElement.setAttribute('data-theme',v);}catch(e){}})();</script>
 <link rel="stylesheet" href="rig.css">
 <style>
 #mid[data-tab=rig] #pgRig,#mid[data-tab=wave] #pgWave,#mid[data-tab=curve] #pgCurve,#mid[data-tab=report] #pgReport,#mid[data-tab=design] #pgDesign,#mid[data-tab=calc] #pgCalc,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=help] #pgHelp{display:flex}
@@ -60,6 +62,7 @@ button.bt.on,button.bt:active{background:var(--accent-bg,#1a6fd4);border-color:v
 .hint2.inl{margin:0}
 #wipeBar{position:absolute;top:0;bottom:0;left:var(--wp,50%);width:56px;transform:translateX(-50%);cursor:ew-resize;touch-action:none;z-index:3}
 #wipeBar[hidden]{display:none}
+#cv:focus-visible{outline:3px solid var(--accent-bg,#1a6fd4);outline-offset:2px}
 #qLine{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12.5px;color:var(--mute);padding:2px 2px 6px}
 #qLine .qv b{color:var(--fg)}
 .chip.fire{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:var(--on-accent);font-weight:700}
@@ -75,6 +78,13 @@ button.bt.on,button.bt:active{background:var(--accent-bg,#1a6fd4);border-color:v
 .bdg.ok{color:var(--ok);border-color:var(--ok)}.bdg.uw{color:var(--warn);border-color:var(--warn)}
 .lim{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;padding:6px 10px;border-top:1px solid var(--line);font-size:13px}.lim:first-child{border-top:0}.lim small{grid-column:1/-1;color:var(--mute);font-size:12px}
 #cvw{touch-action:none}
+/* Handy-Ansicht: Umschalter über dem Zeichenausschnitt (umbrechend, nichts läuft über den Rand) */
+#cvw.pv{aspect-ratio:auto}
+#pvBar{position:absolute;top:0;left:0;right:0;z-index:4;display:flex;flex-wrap:wrap;gap:4px;padding:4px;box-sizing:border-box;touch-action:manipulation;background:var(--panel);border-bottom:1px solid var(--line)}
+#pvBar[hidden]{display:none}
+#pvBar button{flex:1 1 auto;min-width:44px;min-height:44px;padding:0 8px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:700 14px/1 system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+#pvBar button[aria-selected=true]{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:var(--on-accent)}
+#pvBar button:focus-visible{outline:3px solid var(--accent-bg,#1a6fd4);outline-offset:2px}
 #meters{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}
 .mt:not(.dg){padding:0}
 .mt canvas{width:100%;height:auto;aspect-ratio:13/9;display:block}
@@ -90,11 +100,14 @@ button.bt.on,button.bt:active{background:var(--accent-bg,#1a6fd4);border-color:v
 .ana-vertiefung .readout{padding:8px 2px 0}
 /* Fehlersuche (verdeckter Fehler), gesperrte Werte, Vertiefungen im Prüfstand */
 .fault{border:2px solid var(--g-fehler);margin-bottom:10px}.fault h4{color:var(--fg)}.fault .btns .btn{min-width:150px}
-.ct.hid .ctl{color:var(--fg)}.ct.lockd{opacity:.75}.ct small.hp.lk{color:var(--warn)}
+.ct.hid .ctl{color:var(--fg)}.ct.lockd{opacity:.75}.ct.inakt{opacity:.55}.ct small.hp.ia{color:var(--mute)}.ct small.hp.lk{color:var(--warn)}
 .ana-vertiefung .cb{padding:0 8px 10px}.ana-vertiefung summary{flex-wrap:wrap;padding-top:4px;padding-bottom:4px}
 </style>
 <link rel="stylesheet" href="design.css">
 <link rel="stylesheet" href="geraete.css">
+<link rel="stylesheet" href="labrahmen.css">
+<style>/* Welle 2 B1 (B-all-01): Kleintext mindestens 14 px */html:root .lim small,html:root .cmeta,html:root .eb,html:root .atx small,html:root .avs,html:root #qLine,html:root .legend,html:root p.av-note,html:root .ana-tbl caption,html:root .ana-tbl th,html:root .cu-read,html:root .cu-read li,html:root [class$="-sec"],html:root [class*="-rp-sec"],html:root #simTx,html:root label{font-size:14px}</style>
+<style>/* Welle 2 B1g (B-all-01, P2-Rest): restlicher Kleintext mindestens 14 px */html:root .cn b,html:root .cn span,html:root .cn small,html:root .sqr .n,html:root .simband small,html:root .bdg,html:root .ana-rp-ec,html:root .ana-rp-err,html:root .ana-rp-tags,html:root .ana-rp-leg,html:root .ana-rp-hist small,html:root .ana-cu-leg,html:root .ana-cu-sub,html:root .lim,html:root .hint2,html:root .chip small,html:root .atx small,html:root .ana-tbl table,html:root .ana-tbl caption,html:root .ana-tbl th,html:root .lim small,html:root .legend,html:root .avs,html:root #qLine,html:root .simband,html:root .lsym{font-size:14px}</style>
 </head>
 <body>
 <!--GATE-->
@@ -205,6 +218,8 @@ button.bt.on,button.bt:active{background:var(--accent-bg,#1a6fd4);border-color:v
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'analab.html': { name: 'Analogtechnik-Lab', gruppen: [{ name: 'Diagramme', teile: ['wave', 'curve'] }], leiste: { haupt: ['[data-a=dice]', '[data-a=fire]', '[data-a=chk]', '[data-a=reset]'] } } };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

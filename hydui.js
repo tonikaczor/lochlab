@@ -271,10 +271,11 @@
   /* ============================================================ Reiter Schaltpläne */
   function renderSim() {
     const V = $('#simView'), id = S.simId, c = D.circuits[id];
-    let h = `<div class="card pl"><h4>Schaltpläne lesen und ausprobieren</h4><div class="fbar"><div class="seg" style="flex-wrap:wrap;border-radius:20px">${D.circuitList.map(k => `<button data-circ="${k}" class="${k === id ? 'on' : ''}" aria-pressed="${k === id}">${k.slice(1)} · ${esc(D.circuits[k].short)}</button>`).join('')}</div></div>
+    let h = `<div class="card pl"><h4>Schaltpläne lesen und ausprobieren</h4><div class="fbar"><select class="circsel" id="circSel" aria-label="Schaltung wählen">${D.circuitList.map(k => `<option value="${k}"${k === id ? ' selected' : ''}>${k.slice(1)} · ${esc(D.circuits[k].short)}</option>`).join('')}</select><div class="seg circseg" style="flex-wrap:wrap;border-radius:20px">${D.circuitList.map(k => `<button data-circ="${k}" class="${k === id ? 'on' : ''}" aria-pressed="${k === id}">${k.slice(1)} · ${esc(D.circuits[k].short)}</button>`).join('')}</div></div>
       <div class="big" style="font-size:17px">${esc(c.title)}</div><div id="simHost"></div></div>`;
     V.innerHTML = h; mountSim($('#simHost'), id, { mode: 'tab' });
   }
+  $('#simView').addEventListener('change', e => { const sel = e.target.closest('#circSel'); if (sel) { S.simId = sel.value; lsSet('sim', S.simId); renderSim(); } });
   $('#simView').addEventListener('click', e => { const b = e.target.closest('[data-circ]'); if (b) { S.simId = b.dataset.circ; lsSet('sim', S.simId); renderSim(); } });
 
   /* ============================================================ Reiter Symbole */
@@ -369,9 +370,11 @@
       else lines.push({ ok: true, info: true, text: 'Tipp: Mit dem Probelauf kannst du die Anlage selbst ausprobieren. Er zeigt dir, wo Druck und Ölstrom nicht ankommen.' });
     }
     const pct = ok ? pctFor(t.id) : 0, ex = exam();
-    S.tRes = { id: t.id, ok, pct, lines, sol: solutionText(t, inst) };
+    S.tTry = S.tTry || {}; if (ok) S.tTry[t.id] = 0; else if (!ex && t.kind !== 'wire') S.tTry[t.id] = (S.tTry[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok, pct, lines, sol: solutionText(t, inst), att: S.tTry[t.id] || 0 };
     if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Lies die Rückmeldung und versuche es noch einmal.'); }
     renderTasks(false);
+    try { const fb = document.querySelector('#taskView .lr-fb'); if (fb && window.LabRahmen && LabRahmen.zeig) LabRahmen.zeig(fb); } catch (e) {}
   }
   function hintTask(t) {
     const h = lsGet('hints', {}), n = Math.min(3, (h[t.id] || 0) + 1), ex = exam(), inst = S.inst;
@@ -390,7 +393,7 @@
     let h = '';
     if (inst.sym) h += symRow(inst.sym);
     if (kind === 'choice') h += `<div class="opts" id="${ids.opts}">${inst.choices.map((c, i) => `<button data-${ids.attr}="${i}" ${r && (r.ok || ids.lock) ? 'disabled' : ''} class="${r && (r.ok || ids.lock) && i === inst.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    else h += `<label class="f"><span>${esc(inst.label || 'Dein Ergebnis')} (${esc(inst.unit)})</span><div class="qin"><input id="${ids.inp}" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || ids.lock) ? 'disabled' : ''}><span class="u">${esc(inst.unit)}</span></div></label>`;
+    else h += `<label class="f"><span>${esc(inst.label || 'Dein Ergebnis')} (${esc(inst.unit)})</span><div class="qin"><input id="${ids.inp}" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || ids.lock) ? 'disabled' : ''}><span class="u">${esc(inst.unit)}</span></div>${inst.tol != null ? `<span class="hint2 lr-hinweis">Einheit: ${esc(inst.unit)}. Abweichung bis ±${esc(fa(inst.tol))} ${esc(inst.unit)} (Rundung) ist erlaubt.</span>` : ''}</label>`;
     return h;
   }
   function renderTasks(top) {
@@ -404,7 +407,7 @@
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
       if (r) {
         h += `<ul class="tl">${r.lines.map(l => `<li class="${l.info ? '' : l.ok ? 'ok' : 'bad'}"${l.sub ? ' style="margin-left:22px"' : ''}>${l.info ? 'ℹ' : l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-        if (t.kind !== 'wire') { if (r.ok || !exam()) h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(r.sol)}<br>${esc(inst.expl)}</div>`; else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>'; }
+        if (t.kind !== 'wire') { if (r.ok) h += `<div class="lr-fb ok"><b>Richtig.</b> ${esc(r.sol)}<br>${esc(inst.expl)}</div>`; else if (!exam() && r.att < 2) h += `<div class="lr-fb tipp"><b>Tipp:</b> ${esc(t.tips[0])}<br>Du hast noch einen zweiten Versuch.</div>`; else if (!exam()) h += `<div class="lr-fb loes"><b>Noch nicht, so geht es:</b> ${esc(r.sol)}<br>${esc(inst.expl)}</div>`; else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>'; }
         else if (r.ok) h += `<div class="rdout ok"><b>Geschafft.</b> ${esc(D.circuits[inst.circ].info)}</div>`;
         if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
       }
@@ -446,7 +449,7 @@
       <div class="hint2" style="margin:0 0 4px">${esc(q.cat)}${q.title ? ' · ' + esc(q.title) : ''}</div><p style="margin:2px 0 8px">${esc(q.text)}</p>`;
     h += questionHtml(q.kind, q, a, T.res, { opts: 'rtOpts', attr: 'rc', inp: 'rtIn', lock: true });
     h += T.res ? `<div class="btns"><button class="btn pri" data-r="next">Nächste Aufgabe</button></div>` : `<div class="btns"><button class="btn pri" data-r="chk">✓ Prüfen</button><button class="btn" data-r="show">Lösung zeigen</button></div>`;
-    if (T.res) { const r = T.res; h += `<div class="fb ${r.ok ? 'ok' : 'bad'}"><span class="v">${r.shown ? 'Lösung gezeigt (zählt als Fehler, Serie beginnt neu)' : r.ok ? '✓ Richtig! Serie: ' + st.streak : '✗ Nicht ganz. Serie beginnt neu.'}</span></div><div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(q.kind === 'choice' ? q.choices[q.correct] : fa(q.value) + ' ' + q.unit)}<br>${esc(q.expl)}</div>`; }
+    if (T.res) { const r = T.res; h += `<div class="fb ${r.ok ? 'ok' : 'bad'}"><span class="v">${r.shown ? 'Lösung gezeigt (zählt als Fehler, Serie beginnt neu)' : r.ok ? '✓ Richtig! Serie: ' + st.streak : '✗ Nicht ganz. Serie beginnt neu.'}</span></div><div class="lr-fb ${r.ok ? 'ok' : 'loes'}"><b>${r.ok ? 'Richtig:' : 'So geht es:'}</b> ${esc(q.kind === 'choice' ? q.choices[q.correct] : fa(q.value) + ' ' + q.unit)}<br>${esc(q.expl)}</div>`; }
     V.innerHTML = h + '</div>';
   }
   function trainerCheck(shown) {
@@ -457,6 +460,7 @@
     }
     st.n++; if (ok && !shown) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; lsSet('rt', st);
     T.res = { ok, shown }; if (ok && !shown) ding(); else sad(); renderTrainer(); updatePal();
+    try { const fb = document.querySelector('#rtView .lr-fb'); if (fb && window.LabRahmen && LabRahmen.zeig) LabRahmen.zeig(fb); } catch (e) {}
     if (ok && !shown && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
   }
   $('#rtView').addEventListener('input', e => { if (e.target.id === 'rtIn') S.tr.ans = e.target.value; });
@@ -498,7 +502,7 @@
       <tr><td>A, B</td><td>Arbeitsanschlüsse zum Verbraucher; A = Kolbenseite (Ausfahren), B = Stangenseite (Einfahren)</td></tr>
       <tr><td>X</td><td>Steueranschluss (gestrichelte Steuerleitung)</td></tr></table>
       <p><b>Wegeventil lesen:</b> Zahl der Anschlüsse / Zahl der Schaltstellungen. Jedes Kästchen ist eine Stellung, die Anschlüsse liegen am Kästchen der Grundstellung. Pfeile zeigen die Strömungswege, ein T-Strich einen gesperrten Anschluss. Magnet links = Stellung a, rechts = Stellung b, Zickzack = Feder.</p>
-      <p><b>Mittelstellungen 4/3:</b> gesperrt (alle Anschlüsse zu, Pumpe arbeitet über das DBV), Umlauf (P mit T, Pumpe drucklos, A und B zu), alle Anschlüsse verbunden (Pumpe drucklos, Zylinder entlastet). /* PRUEFEN */ Herstellerbezeichnungen der Mittelstellungen (Buchstaben) bitte im Katalog nachsehen.</p></div></details>
+      <p><b>Mittelstellungen 4/3:</b> gesperrt (alle Anschlüsse zu, Pumpe arbeitet über das DBV), Umlauf (P mit T, Pumpe drucklos, A und B zu), alle Anschlüsse verbunden (Pumpe drucklos, Zylinder entlastet).</p></div></details>
     <details><summary>🧮 Formeln</summary><div class="hb2">
       <span class="eq">Fläche A = π/4 · d² (in cm², wenn d in mm: A = π/4 · d² / 100)</span>
       <span class="eq">Ringfläche A_R = A_Kolben − A_Stange</span>
@@ -510,7 +514,7 @@
       <span class="eq">Förderstrom Q = V_g · n · η_v / 1000  (V_g in cm³/U, n in 1/min, Q in l/min)</span>
       <span class="eq">Hydraulische Presse: p = F₁/A₁ = F₂/A₂, also F₂ = F₁ · A₂/A₁</span>
       <p>Umrechnungen: 1 bar = 0,1 MPa = 100 000 Pa = 10 N/cm². 1 l/min ≈ 16,7 cm³/s. 1 kN = 1000 N.</p>
-      <p><b>Richtwerte</b> (Lehrwerte, im Datenblatt prüfen): η_ges von Zahnrad- und Kolbenpumpen etwa 0,8 bis 0,9; η_v etwa 0,9 bis 0,95. /* PRUEFEN */</p></div></details>
+      <p><b>Richtwerte</b> (Lehrwerte, im Datenblatt prüfen): η_ges von Zahnrad- und Kolbenpumpen etwa 0,8 bis 0,9; η_v etwa 0,9 bis 0,95.</p></div></details>
     <details><summary>🔧 Bauteile und ihre Aufgabe</summary><div class="hb2">
       <table><tr><th>Bauteil</th><th>Aufgabe</th></tr>
       <tr><td>Pumpe (Konstantpumpe)</td><td>fördert festen Volumenstrom je Umdrehung, erzeugt keinen Druck von allein</td></tr>
@@ -584,6 +588,21 @@
   function loadBsp(b) { S.simId = b.cir; lsSet('sim', b.cir); setTab('sim'); toast('Schaltung geladen: ' + b.titel); }
 
   /* Schnittstelle für Karriere/Lernpfad */
+  /* SVG-Text am Handy mindestens 11 px auf dem Bildschirm (V1, M-all-12) */
+  function fixSvg(r) {
+    try {
+      (r || document).querySelectorAll('svg').forEach(function (sv) {
+        var m0 = sv.getScreenCTM && sv.getScreenCTM(); if (!m0) return; var sc = Math.hypot(m0.a, m0.b); if (!sc || !isFinite(sc)) return;
+        sv.querySelectorAll('text').forEach(function (t) {
+          if (t.dataset.fb == null) t.dataset.fb = parseFloat(getComputedStyle(t).fontSize) || 0;
+          var base = +t.dataset.fb; if (!base) return;
+          if (base * sc < 11.2) t.style.fontSize = (11.2 / sc).toFixed(2) + 'px'; else if (t.style.fontSize) t.style.fontSize = '';
+        });
+      });
+    } catch (e) {}
+  }
+  var fixT = 0; function fixSoon() { if (!fixT) fixT = setTimeout(function () { fixT = 0; fixSvg(); }, 80); }
+  try { window.addEventListener('resize', fixSoon); new MutationObserver(function (ms) { if (ms.some(function (m) { return !(m.target.closest && m.target.closest('svg')); })) fixSoon(); }).observe(document.body, { childList: true, subtree: true }); fixSoon(); } catch (e) {}
   root.HYD_LAB = { id: 'hyd', title: 'Hydraulik-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.HYD_TASKS };
 
   buildTabs(); updatePal(); setTab(S.tab);

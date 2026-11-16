@@ -1,16 +1,96 @@
-/* home.css (v23.145): neu geordnete Startseite (SPEC-STARTSEITE-FABLE.md): Suche, Primär-Band mit "Weitermachen", Themenbereiche, Fußzeile.
-   Wird in index.html nach design.css eingebunden. Karten, Vorschaubilder und Animationen stehen unverändert im <style> von index.html. */
+/* home.css: Startseite in fünf Ansichten (Umbau S1, Entwurf quelle/audit/umsetzung/S-entwurf.md): Kopf, Umschalter #bnav, Ansichten Start, Labs, Üben, Prüfen, Ich.
+   Wird in index.html nach design.css eingebunden. Karten, Vorschaubilder und Animationen stehen im <style> von index.html. Farben nur über die Variablen der App. */
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+.view[hidden],[data-nichtweg][hidden]{display:none!important}
+html[data-weg="1"] [data-nichtweg],html:not([data-weg="1"]) [data-nurweg],html[data-pr="0"] [data-nurpr]{display:none!important}
 
-/* ---- Suche (im Kopf rechts; unter 900 px darunter in voller Breite) ---- */
-header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
+/* ---- Kopf: Logo, Titel, Marke des Berufs (#berufBadge, führt zur Wahl in "Ich"), Wiki, Darstellung ---- */
+header{gap:12px;margin-bottom:12px}
+header img{height:40px;width:auto}
+h1{font-size:20px;line-height:1.25}
+header .ttl{min-width:0}
+header p{display:none;font-size:14px}
+.slogan{display:none}
+@media(min-width:900px){header p{display:block}}
+@media(min-width:960px){header .ttl{flex:0 0 auto}}
+@media(min-width:1100px){.slogan{display:block;margin-top:1px}}
+@media(min-width:1400px){.slogan{display:inline;margin-top:0}}
+.berufBadge{margin-left:auto;flex:0 1 auto;min-width:0;max-width:280px;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px system-ui,sans-serif;text-decoration:none}
+.berufBadge[hidden]{display:none}
+.berufBadge .bb{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.berufBadge .ti{flex:none;width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
+.berufBadge:hover{border-color:var(--accent)}
+.berufBadge:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.themeBtn{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer}
+.themeBtn:hover{background:var(--panel2)}
+.themeBtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wikiBtn{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px system-ui,sans-serif;text-decoration:none}
+.wikiBtn:hover{background:var(--panel2)}
+.wikiBtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wikiBtn .ti,.themeBtn .ti{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.themeBtn .t-l,.themeBtn .t-d{display:none}
+html[data-theme=light] .themeBtn .t-a,html[data-theme=dark] .themeBtn .t-a{display:none}
+html[data-theme=light] .themeBtn .t-l,html[data-theme=dark] .themeBtn .t-d{display:inline}
+/* unter 900 px: Logo und Knöpfe über zwei Zeilen, Titel oben, Marke des Berufs darunter */
+@media(max-width:899px){
+  header{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"logo ttl wiki theme" "logo badge wiki theme";column-gap:10px;row-gap:0;align-items:center}
+  header img{grid-area:logo}header>div.ttl{grid-area:ttl}header .wikiBtn{order:2;grid-area:wiki}header .themeBtn{order:2;grid-area:theme}
+  header .berufBadge{grid-area:badge;justify-self:start;margin-left:-6px;max-width:100%;padding:0 10px 0 6px;border-color:transparent;background:transparent;color:var(--accent)}
+  header .themeBtn .tl,header .wikiBtn .tl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+@media(max-width:639px){.wrap{padding-top:calc(12px + env(safe-area-inset-top));padding-left:16px;padding-right:16px}header{margin-bottom:8px}}
+
+/* ---- Umschalter der Ansichten (#bnav): unter 900 px fest unten, darüber als Leiste oben unter dem Kopf ---- */
+.bnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--panel);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
+.bnav a{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;color:var(--mute);text-decoration:none;font:600 14px system-ui,sans-serif;border-radius:10px}
+.bnav a .i{width:22px;height:22px;stroke-width:1.9}
+.bnav a[aria-current=page]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.bnav a[aria-current=page]::before{content:"";position:absolute;top:-4px;left:22%;right:22%;height:3px;border-radius:0 0 3px 3px;background:var(--accent)}
+.bnav a:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+@media(max-width:899px){.wrap{padding-bottom:calc(84px + env(safe-area-inset-bottom))}}
+@media(min-width:900px){
+  .bnav{position:sticky;top:0;bottom:auto;display:flex;gap:4px;margin:0 -20px 18px;padding:6px 20px;border-top:0;border-bottom:1px solid var(--line);background:var(--bg)}
+  .bnav a{flex-direction:row;gap:8px;min-height:44px;padding:0 18px;font-size:15px}
+  .bnav a[aria-current=page]::before{top:auto;bottom:-7px;left:12px;right:12px;border-radius:3px 3px 0 0}
+}
+@media print{.bnav{display:none!important}}
+
+/* ---- Bausteine aller Ansichten: Überschriften, Zeilen mit Symbol, einem Satz und Zustand ---- */
+.vh{margin:4px 0 4px;font-size:22px;line-height:1.25}
+.vh3{margin:20px 0 8px;font-size:17px;line-height:1.3}
+.vsub{margin:0 0 14px;color:var(--mute);font-size:15px;line-height:1.4}
+.vl{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));align-items:stretch}
+.mw-t{display:flex;align-items:center;gap:12px;min-width:0;width:100%;min-height:56px;margin:0;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;text-align:left;text-decoration:none;box-sizing:border-box;cursor:pointer;touch-action:manipulation}
+.mw-t[hidden],.mw-t.mw-aus{display:none!important}
+.mw-t:hover{border-color:var(--accent)}
+.mw-t:focus-visible,.mw-a:focus-visible,.mw-b:focus-visible,.mw-k:focus-visible{outline:3px solid var(--focus,var(--accent));outline-offset:2px}
+.mw-i{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:var(--panel2);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);font-size:22px;line-height:1}
+.mw-i .i{width:24px;height:24px}
+.mw-x{flex:1;min-width:0}
+.mw-x b{display:block;font-size:16px;line-height:1.25}
+.mw-x small{display:block;color:var(--mute);font-size:14px;line-height:1.35;overflow-wrap:anywhere}
+.mw-z{flex:0 1 auto;max-width:42%;font-size:14px;font-weight:600;line-height:1.3;color:var(--accent);text-align:right;overflow-wrap:anywhere}
+.mw-z:empty{display:none}
+.mw-p{flex:none;color:var(--accent);font-size:22px}
+.mw-2{padding:0;gap:0;cursor:default}
+.mw-a{display:flex;align-items:center;gap:12px;flex:1;min-width:0;min-height:56px;padding:10px 14px;border:0;background:none;color:inherit;font:inherit;text-align:left;text-decoration:none;cursor:pointer;border-radius:14px}
+.mw-b{flex:none;align-self:center;display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin:6px 10px 6px 0;padding:0 14px;border-radius:12px;border:1px solid var(--accent);background:transparent;color:var(--accent);font:600 14px system-ui,sans-serif;text-decoration:none;cursor:pointer;white-space:nowrap}
+.mw-b:hover{background:var(--panel2)}
+.mw-col{flex-direction:column;align-items:stretch;padding:0;gap:0;cursor:default}
+.mw-th{margin:0;padding:0 14px 8px 66px;font-size:14px;line-height:1.3;color:var(--mute)}
+.mw-th a{display:inline-flex;align-items:center;min-height:44px;margin-right:14px;color:var(--accent);font-weight:600}
+@media(max-width:639px){.mw-th{padding-left:14px}}
+@media(max-width:359px){.mw-t{flex-wrap:wrap}.mw-t>.mw-z{order:5;flex:1 1 100%;max-width:none;padding-left:52px;text-align:left}}   /* sehr schmal: Zustand unter den Satz */
+
+/* ---- Suche (oben in der Ansicht Labs; Trefferliste im Seitenfluss, kein eigener Rollbereich) ---- */
+.srch{position:relative;margin:0 0 10px;max-width:640px}
 .srch .res[hidden],.srch .clr[hidden]{display:none}
 .srch[hidden]{display:block;visibility:hidden;min-height:44px}   /* Platz bis das Skript die Suche freigibt (kein Layoutsprung) */
-.srch input{width:100%;min-height:44px;padding:0 44px 0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-size:16px;text-overflow:ellipsis}
+.srch input{width:100%;min-height:48px;padding:0 44px 0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;font-size:16px;text-overflow:ellipsis}
 .srch input::placeholder{color:var(--mute);opacity:1;text-overflow:ellipsis}
 .srch input::-webkit-search-cancel-button,.srch input::-webkit-search-decoration{-webkit-appearance:none;appearance:none;display:none}
-.srch .clr{position:absolute;right:0;top:0;width:44px;height:44px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--fg);font:400 26px/1 system-ui,sans-serif;cursor:pointer}
-.srch .res{position:absolute;z-index:50;right:0;top:48px;width:min(560px,92vw);max-height:60vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.55)}
+.srch .clr{position:absolute;right:2px;top:2px;width:44px;height:44px;padding:0;border:0;border-radius:12px;background:transparent;color:var(--fg);font:400 26px/1 system-ui,sans-serif;cursor:pointer}
+.srch .res{margin-top:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .srch .res a{display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;min-height:44px;padding:6px 12px;color:var(--fg);text-decoration:none}
 .srch .res a:hover,.srch .res a[aria-selected=true]{background:var(--panel2)}
 .srch .res a[aria-selected=true]{outline:2px solid var(--focus,#ffd166);outline-offset:-2px}
@@ -27,128 +107,35 @@ header .srch{position:relative;margin-left:auto;flex:0 1 420px;min-width:220px}
 .srch .res a.wkr sub{font-size:.65em;line-height:0;vertical-align:-.2em}
 .srch .res .ghd{padding:8px 12px 2px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute)}
 .srch .res .cnt,.srch .res .none{margin:0;padding:10px 12px;color:var(--mute);font-size:14px}
-@media(max-width:899px){header{flex-wrap:wrap}header>div:not(.srch){flex:1 1 200px;min-width:0}header .srch{flex:1 1 100%;max-width:none;margin-left:0;order:3}.srch .res{width:100%}}
+@media(max-width:639px){.srch .res .sb{padding-left:0}}
 
-/* ---- Primär-Band "Werkbank": Hero (Weitermachen mit Ring und Rang) links, "Heute" (Coach + Duell-Zeile) rechts, darunter die Lernpfad-Kopfzeile; der aufgeklappte Lernpfad nimmt die volle Breite ---- */
-.top{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);grid-template-areas:"hero today" "hero tg" "hero duell" "lp lp";gap:12px;align-items:stretch;margin:0 0 20px;min-height:330px}
-.top>.cont{grid-area:hero}
-.top>section.coach{grid-area:today}
-.top>#duellBand{grid-area:duell}
-.top>.lp{display:contents}
-.top .lp .hd{grid-area:lp;align-self:stretch}
-.top .lp .body{grid-column:1/-1;grid-row:5;margin-top:2px}
-.cont{display:flex;align-items:center;gap:18px;min-width:0;min-height:96px;padding:18px 20px;border-radius:16px;background:var(--accent-bg,#1a6fd4);color:var(--accent-ink,#fff);text-decoration:none;font-weight:600}
-.cont:hover{filter:brightness(1.08)}
-.cont .ic{flex:none;display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.25);font-size:16px}
-.cont .ring{position:relative;flex:none;display:grid;place-items:center;width:84px;height:84px}
-.cont .ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);fill:none;stroke-width:4;stroke-linecap:round}
-.cont .ring .rt{stroke:rgba(255,255,255,.28)}.cont .ring .rf{stroke:#fff}
-.cont .ring i{font-style:normal;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
-.cont .tx{min-width:0;flex:1}
-.cont .rk{display:block;margin:0 0 2px;font-size:14px;font-weight:600;letter-spacing:.02em}
-/* Orden: Reihe der 10 Ränge unter dem Text, großer Orden rechts (Farbe nach Stufe: Bronze, Silber, Gold, Prüfungsbester) */
-.cont .pips{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
-.cont .pips i{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);background:rgba(0,0,0,.14);font-style:normal;font-size:12px;line-height:1;filter:grayscale(1);opacity:.45}
-.cont .pips i.got{border-color:rgba(255,255,255,.85);background:rgba(255,255,255,.18);filter:none;opacity:1}
-.cont .pips i.now{border-color:#fff;background:rgba(255,255,255,.3);filter:none;opacity:1;box-shadow:0 0 0 3px rgba(255,255,255,.18)}
-.cont .medal{--m1:#e0a46b;--m2:#8a5424;position:relative;flex:none;display:grid;place-items:center;width:76px;height:76px;margin-left:auto;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 32% 28%,var(--m1),var(--m2));box-shadow:inset 0 0 0 3px rgba(255,255,255,.35),inset 0 0 0 7px rgba(0,0,0,.18),0 6px 14px -6px rgba(0,0,0,.6)}
-.cont .medal.t2{--m1:#eef2f7;--m2:#7d8794}.cont .medal.t3{--m1:#ffe08a;--m2:#b57f10}.cont .medal.t4{--m1:#fff3b0;--m2:#d98a00}
-.cont .medal em{font-style:normal;font-size:34px;line-height:1;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35))}
-.cont .medal::after{content:"";position:absolute;inset:-20% auto -20% -60%;width:40%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-12deg);pointer-events:none}
-.cont .medal+.pill{margin-left:0}
-.cont b{display:block;font-size:26px;line-height:1.2}
-.cont small{display:block;margin-top:2px;font-weight:400;font-size:15px;color:inherit;overflow-wrap:anywhere}
-.cont .pill{flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:#fff;color:var(--accent-bg,#1a6fd4);font-size:18px;padding-left:3px}
-/* Heute: Coach-Einträge als schlanke Zeilen, Duell darunter; nur der Hero bleibt ein gefüllter Knopf */
-#top section.coach{padding:10px 12px;border-radius:14px;align-self:stretch}
-#top .coach h2{margin:0 0 6px;font-size:15px;color:var(--mute);font-weight:600;letter-spacing:.02em}
-#top .coach ol{gap:6px}
-#top .coach li{flex-wrap:nowrap;gap:8px;padding:4px 6px 4px 12px}
-#top .coach .ci{display:none}
-#top .coach .ct{min-width:0}
-#top .coach .ct b{font-size:14px}
-#top .coach .ct span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-#top .coach .ct small{color:var(--mute);font-size:14px}
-#top .coach .cb{min-width:56px;padding:0 14px;background:transparent;color:var(--accent);border-color:var(--accent)}
-#top .coach .cb:hover{background:var(--panel)}
-#top>#duellBand{max-width:none;margin:0;align-self:stretch}
-#top #duellBand .dl-btn.pri{background:transparent;color:var(--accent);border-color:var(--accent)}
-#top #duellBand .dl-tx{flex:1 1 160px}
-.top .lp .hd .nx{background:transparent;color:var(--accent);border:1px solid var(--line)}
-.lp .lk a{display:inline-flex;align-items:center;min-height:44px}
-.lp #lpClose{height:44px!important}
-@media(max-width:899px){
-  .top{grid-template-columns:minmax(0,1fr);grid-template-areas:"hero" "today" "tg" "duell" "lp";min-height:430px}
-  .top .lp .body{grid-row:6}
-}
-@media(max-width:639px){
-  .top{gap:10px;margin-bottom:14px;min-height:420px}
-  .cont{gap:12px;min-height:84px;padding:12px 14px;border-radius:14px}
-  .cont .ring{width:60px;height:60px}.cont .ring i{font-size:13px}.cont .ring svg{stroke-width:5}
-  .cont b{font-size:20px}.cont small{font-size:14px}.cont .pill{width:44px;height:44px}
-  .cont .medal{display:none}.cont .pips{gap:3px;margin-top:8px}.cont .pips i{width:22px;height:22px;font-size:12px}
-  #top #duellBand{flex-wrap:wrap;gap:8px;padding:8px 10px}
-  #top #duellBand .dl-tx{flex:1 1 100%;min-width:0}#top #duellBand .dl-tx small{display:block;font-size:14px;line-height:1.3}
-  #top #duellBand .dl-btn{flex:1 1 calc(50% - 8px);padding:0 10px;font-size:14px;white-space:nowrap}
-  .top .lp .hd .nx{display:none}
-}
+/* ---- Leiste der Ansicht Labs (#lbBar): Mein Beruf / Alle, Sortierung, Ansicht ---- */
+.lb-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;margin:0 0 12px}
+.seg{display:inline-flex;flex-wrap:wrap;gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.seg button{min-height:44px;padding:0 14px;border:0;border-right:1px solid var(--line);background:transparent;color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed=true]{background:var(--accent-bg);color:var(--accent-ink,#fff)}
+.seg button .n{font-weight:500}
+.seg button:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.lb-sort{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--mute)}
+.lb-sort select{min-height:44px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px system-ui,sans-serif}
+.lb-b{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer}
+.lb-b:hover,.lb-sort select:hover{border-color:var(--accent)}
+.lb-b:focus-visible,.lb-sort select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lb-hid{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px;padding:8px 12px;border:1px dashed var(--line);border-radius:12px;color:var(--mute);font-size:14px}
+.lb-hid[hidden]{display:none}
+@media(max-width:639px){.lb-bar{gap:8px}.seg{flex:1 1 100%}.seg button{flex:1 1 0}.lb-sort{flex:1 1 auto}.lb-sort select{flex:1;min-width:0}}
 
-/* ---- Themenbereiche ---- */
-.grp{margin:0 0 22px}
+/* ---- Abschnitte des Lab-Rasters (home-groups.js): Thema, Reihenfolge (Lernpfad), Lernfeld; keine Klappen ---- */
+.grp{margin:0 0 24px}
 .grp.grp-empty{display:none}
-.grp>details>summary{display:flex;align-items:center;gap:10px;min-height:44px;margin:0 0 8px;padding:0 0 0 4px;list-style:none;cursor:pointer}
-.grp>details>summary::-webkit-details-marker{display:none}
-.grp h2{flex:1;display:flex;align-items:baseline;gap:10px;margin:0;font-size:19px}
-.grp h2 small{font-weight:400;font-size:14px;color:var(--mute)}
-.grp .chev{flex:none;display:grid;place-items:center;width:44px;height:44px;color:var(--mute)}
-.grp .chev::before{content:"";width:9px;height:9px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg) translate(-2px,-2px);transition:transform .15s}
-.grp details:not([open]) .chev::before{transform:rotate(-45deg)}
+.grp>h2{position:relative;display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;margin:0 0 8px;padding-left:16px;font-size:19px;line-height:1.3}
+.grp>h2::before{content:"";position:absolute;left:2px;top:4px;bottom:4px;width:4px;border-radius:2px;background:var(--c,var(--line))}
+.grp>h2 small{font-weight:400;font-size:14px;color:var(--mute)}
+.grp>.gs{margin:-4px 0 10px 16px;color:var(--mute);font-size:14px;line-height:1.4}
 .card.srch-out{display:none}
-.cards+.vbrow{margin-top:14px}
-@media(max-width:639px){.grp>details>summary{position:sticky;top:60px;z-index:3;padding:6px 0 6px 4px;background:var(--bg);border-bottom:1px solid var(--line)}}
-@media(prefers-reduced-motion:reduce){.grp .chev::before{transition:none}}
-
-/* ---- Fußzeile: Knopfzeile, Links mit 44-px-Zielen ---- */
-.foot.standrow{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px}
-.foot.standrow>span{flex:1 0 100%}
-.foot:not(.standrow) a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px}
-
-/* ---- Kopf kompakt (Werkbank, Schritt 2): Logo 40, H1 20, Slogan und Untertitel erst ab 900 px, Theme-Knopf, Versions-Badge im Kopf ---- */
-header{gap:12px;margin-bottom:14px}
-header img{height:40px;width:auto}
-h1{font-size:20px;line-height:1.25}
-header .ttl{min-width:0}
-header p{display:none;font-size:14px}
-.slogan{display:none}
-@media(min-width:900px){header p{display:block}header{margin-bottom:18px}}
-/* Slogan (v62.173): nur zeigen, wenn er ganz Platz hat. 900 bis 1099 px aus (dort lief er unter das Suchfeld), ab 1100 px in eigener Zeile unter dem Titel, ab 1400 px in der Titelzeile.
-   Ab 960 px schrumpft der Titelblock nicht mehr; die Suche gibt nach (bis 220 px). Messung 900 bis 1440 px: quelle/home/browser_raster.js */
-@media(min-width:960px){header .ttl{flex:0 0 auto}}   /* ab hier passt der Untertitel in eine Zeile; darunter darf er umbrechen */
-@media(min-width:1100px){.slogan{display:block;margin-top:1px}}
-@media(min-width:1400px){.slogan{display:inline;margin-top:0}}
-.themeBtn{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer}
-.themeBtn:hover{background:var(--panel2)}
-.wikiBtn{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:44px;height:44px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px system-ui,sans-serif;text-decoration:none}
-.wikiBtn:hover{background:var(--panel2)}
-.wikiBtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.wikiBtn .ti{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.themeBtn .ti{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
-.themeBtn .t-l,.themeBtn .t-d{display:none}
-html[data-theme=light] .themeBtn .t-a,html[data-theme=dark] .themeBtn .t-a{display:none}
-html[data-theme=light] .themeBtn .t-l,html[data-theme=dark] .themeBtn .t-d{display:inline}
-header #verBadge{position:static!important;top:auto!important;bottom:auto!important;right:auto!important;flex:none;align-self:center;z-index:auto;background:var(--panel2);color:var(--mute);border:1px solid var(--line);font-weight:600;font-size:12px}
-@media(max-width:899px){
-  header img{order:0}header>div.ttl:not(.srch){order:1;flex:1 1 0}header .wikiBtn{order:2}header .themeBtn{order:2}header #verBadge{order:2}header .srch{order:3}
-  header .themeBtn .tl,header .wikiBtn .tl{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-  header #verBadge{font-size:0}header #verBadge::after{content:attr(data-v);font-size:12px}
-}
-/* sehr schmale Handys (unter 360 px): das Versionsabzeichen rückt neben die Suche, sonst überdeckt der Wiki-Knopf den Titel */
-@media(max-width:359px){header #verBadge{order:4}header .srch{flex:1 1 150px;min-width:0}.srch .res{left:0;right:auto;width:calc(100vw - 40px);max-width:calc(100% + 66px)}}   /* Trefferliste so breit wie Suche plus Abzeichen, nie breiter als der Kopf */
-@media(max-width:639px){.wrap{padding-top:calc(14px + env(safe-area-inset-top))}header{gap:8px;margin-bottom:10px}}
-
-/* ---- Werkbank: Fachgebiets-Farben, Icons, Kachelmodus (html.tiles, Standard; "Große Karten" = ohne Klasse) ---- */
-svg.i{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
-.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.card.lb-nie,.card.hm-hid{display:none!important}
+html.lb-alle .card.be-out:not(.lb-nie):not(.hm-hid){display:flex!important}
 section.grp[data-grp=grund],.card[data-group=grund]{--c:var(--g-grund)}
 section.grp[data-grp=mess],.card[data-group=mess]{--c:var(--g-mess)}
 section.grp[data-grp=sich],.card[data-group=sich]{--c:var(--g-sich)}
@@ -157,9 +144,24 @@ section.grp[data-grp=auto],.card[data-group=auto]{--c:var(--g-auto)}
 section.grp[data-grp=bau],.card[data-group=bau]{--c:var(--g-bau)}
 section.grp[data-grp=pruef],.card[data-group=pruef]{--c:var(--g-pruef)}
 section.grp[data-grp=stud],.card[data-group=stud]{--c:var(--g-stud)}
-.grp>details>summary{padding-left:16px}
-@media(min-width:640px){.grp>details>summary{position:relative}}
-.grp>details>summary::before{content:"";position:absolute;left:2px;top:9px;bottom:9px;width:4px;border-radius:2px;background:var(--c,var(--line))}
+.grp:not([data-grp])>h2::before{background:var(--accent)}
+/* Reihenfolge: Nummer je Karte, Marke an der Empfehlung (in der Karte, S-14), Projekte-Spur als Zeilen */
+.card .lp-no{flex:none;display:grid;place-items:center;min-width:28px;height:28px;padding:0 6px;border-radius:14px;background:var(--panel2);color:var(--fg);font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.card.lp-rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.card .lp-mk{align-self:flex-start;padding:2px 10px;border-radius:9px;background:var(--accent-bg);color:var(--accent-ink,#fff);font-size:14px;font-weight:700}
+.lp-pj{list-style:none;margin:0;padding:0;display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr))}
+.lp-pj a{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none}
+.lp-pj a:hover{border-color:var(--accent)}
+.lp-pj .pj-i{flex:none;font-size:22px}
+.lp-pj .pj-x{flex:1;min-width:0}.lp-pj .pj-x b{display:block;font-size:15px}.lp-pj .pj-x small{display:block;color:var(--mute);font-size:14px}
+.lp-pj .lvl{display:inline-block;padding:0 8px;border-radius:9px;border:1px solid var(--line);font-size:13px}
+.lp-pj .bar{display:block;height:5px;margin-top:4px;border-radius:3px;background:var(--panel2);overflow:hidden}.lp-pj .bar i{display:block;height:100%;background:var(--ok)}
+.lp-pj .pj-go{flex:none;color:var(--accent);font-weight:600;font-size:14px}
+.lp-hub{margin:8px 0 0}.lp-hub a{display:inline-flex;align-items:center;min-height:44px;color:var(--accent);font-weight:600}
+
+/* ---- Karten: Farbstreifen, Kopfzeile mit Symbol und Ring; Kompaktansicht (html.tiles, Standard) und große Karten ---- */
+svg.i{width:1.25em;height:1.25em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
 .card{position:relative}
 .card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;border-radius:14px 0 0 14px;background:var(--c,transparent)}
 .card .th{display:flex;align-items:center;gap:10px}
@@ -167,45 +169,64 @@ section.grp[data-grp=stud],.card[data-group=stud]{--c:var(--g-stud)}
 .card h3{overflow-wrap:anywhere;-webkit-hyphens:auto;hyphens:auto}
 .card .li{display:none;flex:none;width:40px;height:40px;border-radius:11px;place-items:center;background:var(--panel2);background:color-mix(in srgb,var(--c,var(--accent)) 14%,transparent);color:var(--c,var(--accent))}
 .card .li .i{width:24px;height:24px}
+.card .mp small{font-size:14px;gap:8px}
+.card a.btn{text-align:center;line-height:1.15}
+.card p.cl{min-height:44px}
+.cards .card{margin-top:0}
+/* große Karten: Knopfzeile unten, Fortschritt direkt darüber (S-15), Schlagwörter als Text ohne Rahmen (S-17) */
+html:not(.tiles) .card .mp{margin-top:auto}
+html:not(.tiles) .card .btns{margin-top:0;flex-wrap:wrap}
+html:not(.tiles) .card a.btn{min-width:0;flex:1 1 auto;padding:0 10px}
+html:not(.tiles) .card a.btn.pri{flex:2 1 auto}
+.card .steps span{background:none;border:0;padding:0;color:var(--mute)}
+.card .steps span+span::before{content:"· ";color:var(--mute)}
 .mini{position:relative;flex:none;width:34px;height:34px;display:grid;place-items:center}
 .mini>svg:first-child{position:absolute;inset:0;width:34px;height:34px;transform:rotate(-90deg);fill:none;stroke-width:3.5;stroke-linecap:round}
 .mini .t{stroke:var(--line)}.mini .v{stroke:var(--c,var(--accent))}
 .mini .pv{font-size:12px;font-weight:700;color:var(--mute);font-variant-numeric:tabular-nums}
 .mini .ck{width:16px;height:16px;stroke-width:2.4;color:var(--c,var(--ok))}
 html:not(.tiles) .mini{display:none}
-html.tiles .cards{grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:14px}
-html.tiles .card{padding:14px 14px 12px 20px;gap:6px;border-radius:14px;overflow:hidden}
-html.tiles .card .li{display:grid}
-html.tiles .card .pic,html.tiles .card .steps,html.tiles .card .mp .bar{display:none}
-html.tiles .card h3{font-size:18px;margin-top:2px}
-html.tiles .card p{font-size:14px;line-height:1.45;-webkit-line-clamp:2}
-html.tiles .card .mp{order:3;margin:0}
-html.tiles .card .mp small{margin:0;justify-content:flex-start;gap:8px;font-size:14px}
-html.tiles .card .btns{gap:2px 6px;padding-top:6px;align-items:center;flex-wrap:wrap}
-html.tiles .card a.btn{white-space:nowrap}
-html.tiles .card a.btn:not(.pri){flex:0 0 auto;min-width:44px;padding:0 4px;background:none;border:0;color:var(--accent);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;font-weight:550;font-size:14px}
-html.tiles .card a.btn.pri{flex:1 1 64px;min-width:64px}
-html.tiles .vbrow{grid-column:span 2;flex-wrap:nowrap;align-items:center;gap:16px}
-html.tiles .vbrow .vbt{min-width:0}
-html.tiles .vbrow .vbt p{-webkit-line-clamp:3}
-html.tiles .vbrow .btns{flex:0 0 auto;margin:0;flex-wrap:nowrap}
-html.tiles .vbrow a.btn.pri{min-width:150px}
+html.tiles .cards{grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:12px}
+html.tiles .cards .card{padding:14px 14px 12px 20px;gap:6px;border-radius:14px;overflow:hidden}
+html.tiles .cards .card .li{display:grid}
+html.tiles .cards .card .pic,html.tiles .cards .card .steps,html.tiles .cards .card>p,html.tiles .cards .card .mp .bar{display:none}
+html.tiles .cards .card h3{font-size:17px;margin-top:2px}
+html.tiles .cards .card .mp{order:3;margin:0}
+html.tiles .cards .card .mp small{margin:0;justify-content:flex-start;gap:8px;font-size:14px}
+html.tiles .cards .card .btns{order:4;gap:2px 6px;padding-top:6px;align-items:center;flex-wrap:wrap}
+html.tiles .cards .card a.btn{white-space:nowrap}
+html.tiles .cards .card a.btn:not(.pri){display:none}   /* ein Knopf je Karte (S-16); Neu und Beispiel gibt es im Lab und in der Ansicht "Karten" */
+html.tiles .cards .card a.btn.pri{flex:1 1 100%;min-width:64px}
+/* ganze Karte anklickbar: der Hauptknopf spannt seine Fläche über die Karte */
+html.tiles .cards .card a.btn.pri::after{content:"";position:absolute;inset:0;border-radius:14px}
+html.tiles .cards .card:hover{border-color:var(--c,var(--accent))}
+html.tiles .cards .card:focus-within{outline:3px solid var(--focus,var(--accent));outline-offset:2px}
+html.tiles .cards .card a.btn.pri:focus-visible{outline:none}
 @media(max-width:899px){html.tiles .cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:639px){
   html.tiles .cards{gap:10px}
-  html.tiles .card{padding:12px 10px 10px 14px}
-  html.tiles .card p,html.tiles .card .tag{display:none}
-  html.tiles .card .mp small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
-  html.tiles .card .th .mini{margin-left:auto}
-  html.tiles .card .li{width:34px;height:34px;border-radius:9px}html.tiles .card .li .i{width:20px;height:20px}
-  html.tiles .card h3{font-size:15px}
-  html.tiles .card a.btn:not(.pri){display:none}
-  html.tiles .card a.btn.pri{flex:1 1 100%;font-size:14px}
-  html.tiles .vbrow{flex-wrap:wrap}html.tiles .vbrow .vbt p{display:none}html.tiles .vbrow .btns{flex:1 1 100%}
+  html.tiles .cards .card{padding:12px 10px 10px 14px}
+  html.tiles .cards .card .tag{display:none}
+  html.tiles .cards .card .mp small{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  html.tiles .cards .card .th .mini{margin-left:auto}
+  html.tiles .cards .card .li{width:34px;height:34px;border-radius:9px}html.tiles .cards .card .li .i{width:20px;height:20px}
+  html.tiles .cards .card h3{font-size:15px}
+  /* Handy: Kompaktansicht als Liste, eine Zeile je Lab (Symbol, Name, Ring, Knopftext), die ganze Zeile ist der Link */
+  html.tiles .cards{grid-template-columns:minmax(0,1fr);gap:6px}
+  html.tiles .cards .card{flex-direction:row;align-items:center;gap:10px;min-height:60px;padding:8px 12px 8px 16px}
+  html.tiles .cards .card .th{flex:none;gap:8px}
+  html.tiles .cards .card h3{flex:1 1 120px;min-width:0;margin:0;font-size:15px;line-height:1.25}
+  html.tiles .cards .card{flex-wrap:wrap}
+  html.tiles .cards .card .lp-mk{order:5;flex:0 0 auto;margin-left:38px;font-size:14px;padding:1px 8px}
+  html.tiles #groups[data-sort=pfad] .cards .card .li{display:none}   /* in der Reihenfolge trägt die Nummer, das Symbol entfällt am Handy */
+  html.tiles .cards .card .btns{order:3;flex:none;padding:0;margin:0}
+  html.tiles .cards .card a.btn.pri{flex:none;min-width:44px;height:44px;min-height:44px;padding:0 2px;border:0;background:none;color:var(--accent);font-size:14px}
+  html.tiles .cards .card .th .mini{margin-left:0;order:3}
 }
 
-/* ---- Rubrik-Chips ---- */
-.rub{margin:0 0 6px}
+/* ---- Rubrik-Chips (nur in der Sortierung Thema) ---- */
+.rub{margin:0 0 12px}
+.rub[hidden]{display:none}
 .rub ul{list-style:none;margin:0;padding:0;display:flex;gap:8px;flex-wrap:wrap}
 .rub li[hidden]{display:none}
 .chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:550 14px system-ui,sans-serif;white-space:nowrap;cursor:pointer}
@@ -215,44 +236,78 @@ html.tiles .vbrow a.btn.pri{min-width:150px}
 .chip[aria-pressed=true]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .chip[aria-pressed=true] .n{color:var(--bg);opacity:.75}
 .grp.rub-out{display:none}
-html.rub-free .grp.rub-out{display:block}
-html.rub-free .grp.rub-out.grp-empty{display:none}
-html.rub-free .rub{display:none}
 @media(max-width:899px){
-  .rub{position:sticky;top:0;z-index:20;margin:0 -20px 6px;padding:8px 20px;background:var(--bg);border-bottom:1px solid var(--line)}
   .rub ul{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
   .rub ul::-webkit-scrollbar{display:none}
   .rub ul.ov-r{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
   .rub ul.ov-l{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px);mask-image:linear-gradient(90deg,transparent,#000 36px)}
   .rub ul.ov-l.ov-r{-webkit-mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,transparent,#000 36px,#000 calc(100% - 36px),transparent)}
 }
+/* Vorschau geplanter Labs (berufe.js, #beSoon) über dem Raster */
+#beSoon .be-note{font-size:14px}
 
-/* ---- Fußzeile in zwei Blöcken: Für Azubis / Für Ausbilder ---- */
-.ft,.foot.ft{display:grid;grid-template-columns:1fr 1fr;gap:16px 32px;margin:36px 0 12px;padding-top:20px;border-top:1px solid var(--line);scroll-margin-top:72px;text-align:left}
-.ft .fth{margin:0 0 8px;font-size:14px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:650}
-.ft .foot{margin:0;text-align:left;font-size:15px;line-height:1.5}
-.ft .foot.standrow{justify-content:flex-start;margin-bottom:6px}
-.ft .foot.standrow>span{flex:1 0 100%;font-size:14px}
-.ft .foot:not(.standrow) a{color:var(--accent);text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:1px;padding:0 2px}
-.ft .ftnote{grid-column:1/-1;color:var(--mute);font-size:14px}
-.ft .foot.standrow button,.ft .hm-editbtn{display:inline-flex;align-items:center;gap:8px;font-size:15px}
-.ft #standOpen::before,.ft #lsOpen::before{content:"";width:18px;height:18px;flex:none;background:var(--mute);-webkit-mask:var(--ico) center/contain no-repeat;mask:var(--ico) center/contain no-repeat}
-.ft #standOpen{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V4M8 8l4-4 4 4M4 15v4h16v-4'/%3E%3C/svg%3E")}
-.ft #lsOpen{--ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4h12l4 4v12H4z'/%3E%3Cpath d='M8 4v5h7V4M8 20v-6h8v6'/%3E%3C/svg%3E")}
-@media(max-width:639px){.ft{grid-template-columns:1fr}}
+/* ---- Zeilen Projekte (#vbRow, Üben) und Ausbildungsplan (#planRow, Prüfen): Aufbau wie die übrigen Zeilen ---- */
+.vl>.card.vbrow{grid-column:1/-1;flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel)}
+.vl>.card.vbrow::before{display:none}
+.vl>.card.vbrow .vbt{flex:1 1 260px;min-width:0}
+.vl>.card.vbrow h2{margin:0;font-size:16px;line-height:1.25}
+.vl>.card.vbrow p{margin:2px 0 0;color:var(--mute);font-size:14px;-webkit-line-clamp:unset;display:block}
+.vl>.card.vbrow .vbn{margin-top:4px;font-size:14px;font-weight:600;color:var(--accent);overflow-wrap:anywhere}
+.vl>.card.vbrow .vbn small{display:block;font-weight:400;color:var(--mute);font-size:14px}
+.vl>.card.vbrow .btns,.vl>.card.vbrow .plbtns{flex:0 1 auto;display:flex;gap:8px;margin:0;padding:0;flex-wrap:wrap}
+.vl>.card.vbrow a.btn{flex:0 0 auto;min-width:0;padding:0 16px}
+@media(max-width:639px){.vl>.card.vbrow .btns,.vl>.card.vbrow .plbtns{flex:1 1 100%}.vl>.card.vbrow a.btn{flex:1 1 120px}}
+#duellBand[hidden]{display:none!important}
+#wdhHint{display:none}
 
-/* ---- Bottom-Nav (nur Handy < 640 px): Anker-Leiste, kein Skript nötig ---- */
-.bnav{display:none}
-@media(max-width:639px){
-  .wrap{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
-  .bnav{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--panel);border-top:1px solid var(--line);padding:4px 4px calc(4px + env(safe-area-inset-bottom))}
-  .bnav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;color:var(--mute);text-decoration:none;font:600 12px system-ui,sans-serif;border-radius:10px}
-  .bnav a .i{width:22px;height:22px;stroke-width:1.9}
-  .bnav a[aria-current=true]{color:var(--accent)}
-  #top,#grp-grund,#grp-pruef,#lpHd,#footBtns{scroll-margin-top:72px}
-  #top{scroll-margin-top:90px}
-}
-@media print{.bnav{display:none!important}}
+/* ---- Ansicht Ich: Abschnitte, Beruf als Liste, Lernstand, Darstellung, Gerät, Nachschlagen, Seiten ---- */
+.ib{margin:0 0 6px}
+#ichBeruf .be-tabs,#ichBeruf .be-wege{margin:0 0 8px}
+#ichBeruf .be-lab{margin:6px 0 6px;font-size:14px;font-weight:700;color:var(--mute);letter-spacing:.02em}
+#ichBeruf ul{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));gap:8px;overflow:visible;flex-wrap:wrap}
+#ichBeruf .be-tab{width:100%;min-height:56px;padding:6px 14px;border-radius:14px}
+#ichBeruf .be-tab small{white-space:normal;font-size:14px}
+#ichBeruf .be-tab[aria-pressed=true] small{opacity:1}
+#ichBeruf .be-tab[aria-pressed=true]::after{content:"gewählt";display:block;margin-top:2px;font-size:14px;font-weight:600}
+#ichBeruf .be-edit{min-height:44px;width:100%;font-size:14px}
+#ichBeruf .be-panel ul{display:block}
+#ichBeruf .be-panel p,#ichBeruf .be-panel .be-reset{font-size:14px}
+#ichBeruf .be-panel label,#ichBeruf .be-panel button{min-height:44px}
+#ichBeruf.zu nav:not(:has([aria-pressed=true])),#ichBeruf.zu li:not(:has([aria-pressed=true])),#ichBeruf.zu .be-lab,#ichBeruf.zu .be-panel{display:none!important}
+#ichBerufWechsel{margin:2px 0 4px}
+#ichRang{margin-top:10px}
+#ftAusb .foot{display:flex;flex-wrap:wrap;column-gap:18px;font-size:0;color:transparent}
+#ftAusb .foot a{font-size:15px}
+#ichGeraet #offlineStatus,#ichGeraet #offlineStatus *{text-align:left!important;justify-content:flex-start!important}
+@media(max-width:639px){.mw-2{flex-wrap:wrap}.mw-2>.mw-b{flex:1 1 100%;margin:0 14px 10px 66px}.lp-rang .mw-x{padding:10px 0}}
+#ichRang .mw-t{cursor:default}
+.foot.standrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0;text-align:left;font-size:14px;color:var(--mute)}
+.foot.standrow>span{flex:1 0 100%;font-size:14px;line-height:1.4}
+.foot.standrow button{display:inline-flex;align-items:center;gap:8px;min-height:44px;min-width:44px;padding:0 16px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--fg);font:600 15px system-ui,sans-serif;cursor:pointer}
+.foot.standrow button:hover{border-color:var(--accent)}
+.sichZ{color:var(--mute);font-size:14px}
+.seg[role=group]{margin:0}
+#ichGeraet #offlineStatus{margin:0 0 10px;text-align:left}
+#ichGeraet .ichver{margin:0}
+#ichGeraet #verBadge{position:static!important;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--panel);color:var(--fg);border:1px solid var(--line);font:600 14px system-ui,sans-serif;letter-spacing:0;cursor:pointer}
+#ichGeraet #verBadge::after{content:" · Was ist neu?";font-weight:400;color:var(--mute)}
+#v-ich .card.wikirow{flex-direction:row;align-items:center;flex-wrap:wrap;gap:8px 14px;padding:10px 14px;border-radius:14px}
+#v-ich .card.wikirow::before{display:none}
+#v-ich .card.wikirow .pic{display:none}
+#v-ich .card.wikirow .th{display:none}
+#v-ich .card.wikirow h3{flex:1 1 100%;font-size:16px;margin:0}
+#v-ich .card.wikirow p{flex:1 1 220px;font-size:14px}
+#v-ich .card.wikirow .wkn{font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
+#v-ich .card.wikirow .btns{flex:0 0 auto;margin:0;padding:0}
+#v-ich .card.wikirow a.btn{padding:0 18px}
+#v-ich .card.wikirow .li{display:grid}
+.card.wikirow .wkn{font-size:14px}
+html.tiles .cards .card.wikirow{grid-column:auto}
+.ll{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.ll a,#ftAusb .foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 2px;color:var(--accent);font-size:15px;line-height:1.35;text-underline-offset:3px}
+#ftAusb .foot{margin:0;text-align:left;font-size:15px;color:var(--mute)}
+#v-ich .vh3{margin-top:14px}
+#urheber-hinweis{font-size:14px!important;margin:16px 0 8px!important;max-width:none!important;text-align:left!important}
 
 /* ---- Schritt 8: Hintergrundmotiv (Leiterbahnen, Data-URI, ohne Netz) und Mikro-Animationen ---- */
 :root{--trace:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240' fill='none' stroke='%235fb0ff' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M0 40H60L100 80H160L200 40H240M40 0V30L80 70M120 240V200L160 160H220M0 160H40L80 200V240M200 120V90L240 50M140 0V20L110 50'/%3E%3Cg fill='%235fb0ff' stroke='none'%3E%3Ccircle cx='60' cy='40' r='3.5'/%3E%3Ccircle cx='160' cy='80' r='3.5'/%3E%3Ccircle cx='40' cy='30' r='3.5'/%3E%3Ccircle cx='120' cy='200' r='3.5'/%3E%3Ccircle cx='220' cy='160' r='3.5'/%3E%3Ccircle cx='80' cy='200' r='3.5'/%3E%3Ccircle cx='200' cy='90' r='3.5'/%3E%3Ccircle cx='110' cy='50' r='3.5'/%3E%3C/g%3E%3C/svg%3E");--trace-o:.07;--dots:rgba(255,255,255,.06)}
@@ -262,111 +317,140 @@ html.rub-free .rub{display:none}
 .wrap::before{content:"";position:absolute;left:0;right:0;top:0;height:420px;z-index:-1;background-image:var(--trace);background-size:240px 240px;opacity:var(--trace-o);pointer-events:none;-webkit-mask-image:linear-gradient(to bottom,#000 45%,transparent);mask-image:linear-gradient(to bottom,#000 45%,transparent)}
 @media(min-width:1600px){body{background-image:radial-gradient(var(--dots) 1px,transparent 1.2px);background-size:24px 24px}}
 @media print{.wrap::before{display:none}}
+
+/* Mein Weg (meinweg.js): Ansicht Start mit blauer Karte, Fälligem, Zuletzt geöffnet, Neuem und dem ersten Besuch (alle Schriften mindestens 14 px) */
+.mw{margin:0 0 6px}
+html.mw .top{display:none}
+.mw-hero{min-width:0;display:flex}
+.mw-hero>.cont{flex:1 1 auto;min-width:0}
+.mw-due[hidden]{display:none}
+.cont{display:flex;align-items:center;gap:18px;min-width:0;min-height:96px;padding:18px 20px;border-radius:16px;background:var(--accent-bg,#1a6fd4);color:var(--accent-ink,#fff);text-decoration:none;font-weight:600}
+.cont:hover{filter:brightness(1.08)}
+.cont:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:3px}
+.cont .ring{position:relative;flex:none;display:grid;place-items:center;width:84px;height:84px}
+.cont .ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);fill:none;stroke-width:4;stroke-linecap:round}
+.cont .ring .rt{stroke:rgba(255,255,255,.28)}.cont .ring .rf{stroke:#fff}
+.cont .ring i{font-style:normal;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.cont .tx{min-width:0;flex:1}
+.cont b{display:block;font-size:26px;line-height:1.2}
+.cont small{display:block;margin-top:2px;font-weight:400;font-size:16px;color:inherit;overflow-wrap:anywhere}
+.cont .rk{display:block;margin-top:6px;font-size:14px;font-weight:600;letter-spacing:.02em;opacity:.92}
+.cont .pill{flex:none;display:grid;place-items:center;width:52px;height:52px;border-radius:50%;background:#fff;color:var(--accent-bg,#1a6fd4);font-size:18px;padding-left:3px}
+.mw-t:hover{border-color:var(--accent)}
+.mw-stand .mw-x b{font-size:18px}
+#mwRow #e10Go{border-color:var(--line);font-size:16px}
+#mwRow #e10Go .mw-p{font-size:18px}
+.zl{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))}
+.zl-t{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none}
+.zl-t:hover{border-color:var(--accent)}
+.zl-t:focus-visible{outline:3px solid var(--focus,var(--accent));outline-offset:2px}
+.zl-i{flex:none;display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--panel2);color:var(--accent)}
+.zl-i .i{width:22px;height:22px}
+.zl-x{min-width:0}.zl-x b{display:block;font-size:15px}.zl-x small{display:block;color:var(--mute);font-size:14px}
+.st[hidden],.stneu[hidden]{display:none}
+.stneu{margin:16px 0 0}
+.stneu-b{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;border:0;background:none;color:var(--accent);font:600 15px system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.mw-erst[hidden]{display:none}
+.mw-erst{margin:0 0 14px}
+.mw-gl{margin:14px 0 8px;font-size:15px;font-weight:700;color:var(--mute)}
+.mw-wahl{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr))}
+.mw-k{display:flex;flex-direction:column;justify-content:center;min-height:56px;padding:8px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.mw-k:hover{border-color:var(--accent)}
+.mw-k b{font-size:16px}.mw-k small{color:var(--mute);font-size:14px}
+@media(max-width:899px){.cont{gap:14px}}
+@media(max-width:639px){
+  .cont{gap:12px;min-height:84px;padding:12px 14px;border-radius:14px}
+  .cont .ring{width:60px;height:60px}.cont .ring i{font-size:14px}.cont .ring svg{stroke-width:5}
+  .cont b{font-size:20px}.cont small{font-size:14px}.cont .pill{width:44px;height:44px}
+  .vh{font-size:20px}.vh3{margin-top:16px}
+  .vl,.zl,.mw-wahl{gap:8px}
+}
 @media(prefers-reduced-motion:no-preference){
   @keyframes ringfill{from{stroke-dasharray:0 100}}
-  @keyframes ringpulse{0%,100%{filter:drop-shadow(0 0 0 rgba(255,255,255,0))}50%{filter:drop-shadow(0 0 5px rgba(255,255,255,.55))}}
   .cont .ring .rf,.mini .v{animation:ringfill .6s ease-out}
-  .cont .ring svg{animation:ringpulse 3.6s ease-in-out 1s infinite}
-  @keyframes medalfloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
-  @keyframes medalshine{0%,55%{left:-60%}100%{left:130%}}
-  @keyframes pipnow{0%,100%{box-shadow:0 0 0 3px rgba(255,255,255,.18)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}}
-  .cont .medal{animation:medalfloat 4.2s ease-in-out infinite}
-  .cont .medal::after{animation:medalshine 4.2s ease-in-out infinite}
-  .cont .pips i.now{animation:pipnow 2.4s ease-out infinite}
-  .cont:hover .medal{animation-duration:1.6s}
-  html.tiles .card{transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
-  html.tiles .card:hover,html.tiles .card:focus-within{transform:translateY(-2px);box-shadow:0 10px 24px -14px rgba(0,0,0,.55)}
-  .chip{transition:transform .08s ease,background .12s ease,color .12s ease}
-  .chip:active{transform:scale(.97)}
+  html.tiles .cards .card{transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
+  html.tiles .cards .card:hover{transform:translateY(-2px);box-shadow:0 10px 24px -14px rgba(0,0,0,.55)}
   .cont .pill{transition:transform .15s ease}
   .cont:hover .pill{transform:translateX(3px)}
 }
 
-/* ---- Wiki-Kachel (Rubrik Grundlagen & Werkstatt, kein Lab): normale Kachel statt breiter Projekte-Zeile; Klasse vbrow bleibt, damit sie in keinem Lab-Zähler mitzählt ---- */
-.cards .card.wikirow{grid-column:auto;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:8px;border-color:var(--line);background:var(--panel)}
-.card.wikirow .pic{flex:none;height:76px}
-.card.wikirow .btns{flex:none;margin-top:auto;padding-top:2px}
-.card.wikirow a.btn{min-width:0;padding:0 18px}
-.card.wikirow .wkn{font-size:14px;color:var(--mute);font-variant-numeric:tabular-nums}
-html.tiles .cards .card.wikirow{grid-column:auto;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px}
-html.tiles .card.wikirow .wkn{order:3}
-html.tiles .card.wikirow .btns{flex:none;margin-top:auto;padding-top:6px;flex-wrap:wrap}
-html.tiles .card.wikirow a.btn.pri{flex:1 1 64px;min-width:64px}
+/* ---- S2: Ich am Handy straffen (nichts entfernt, nur dichter), Prüfen: rechte Angabe unter den Titel ---- */
+@media(max-width:479px){
+  .mw-t{flex-wrap:wrap}
+  .mw-t>.mw-x{flex:1 1 0}
+  .mw-t>.mw-z{order:5;flex:1 1 100%;max-width:none;padding-left:52px;text-align:left}   /* Zustand unter den Titel statt als dritte Spalte daneben */
+}
 @media(max-width:639px){
-  html.tiles .cards .card.wikirow{flex-direction:column;flex-wrap:nowrap}
-  html.tiles .card.wikirow .btns{flex:none}
-  html.tiles .card.wikirow .wkn{font-size:14px}
+  #v-ich .vh3{margin-top:8px;margin-bottom:6px;font-size:16px}
+  #v-ich .ib{margin-bottom:2px}
+  #v-ich .vsub{margin:0 0 6px}
+  #ichBeruf .be-tab[aria-pressed=true]::after{display:inline;margin:0 0 0 8px}
+  #ichBeruf .be-tab{min-height:48px}
+  #ichBerufWechsel{margin:0}
+  #ichRang{margin-top:6px}
+  #ichRang .mw-t{min-height:48px;padding:8px 12px}
+  /* Lernstand: die beiden Knöpfe nebeneinander, Erklärsatz darunter */
+  .foot.standrow{gap:8px}
+  .foot.standrow button{flex:1 1 150px;justify-content:center;padding:0 10px;font-size:14px;line-height:1.2;text-align:center}
+  .foot.standrow>span{font-size:14px;line-height:1.35}
+  /* Dieses Gerät: Zeile für Zeile dicht */
+  #ichGeraet #offlineStatus{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin:0 0 4px;padding:0}
+  #ichGeraet #offlineStatus>.os-z,#ichGeraet #offlineStatus>.os-b,#ichGeraet #offlineStatus>.os-v,#ichGeraet #offlineStatus>.os-a:not([hidden]){flex:1 1 100%;margin:0}
+  #ichGeraet #offlineStatus .os-a{display:flex;flex-wrap:wrap;gap:8px}
+  #ichGeraet #offlineStatus .os-a[hidden]{display:none}
+  #ichGeraet #offlineStatus .os-a button{flex:1 1 150px;margin:0;font-size:14px;line-height:1.2}
+  #ichGeraet #offlineStatus a.os-g{display:inline-flex;align-items:center;min-height:44px;margin:0}
+  #ichGeraet .ichver{display:inline-block;margin:0 0 0 8px;vertical-align:top}
+  #ichGeraet #verBadge{min-height:44px}
+  #ichGeraet #ichOffline{display:inline}
+  /* Wiki-Kachel: Titel und Zähler in einer Zeile, Satz und Knopf daneben */
+  #v-ich .card.wikirow{padding:8px 12px;gap:2px 10px;margin:0}
+  #v-ich .card.wikirow h3{flex:1 1 auto;margin:0}
+  #v-ich .card.wikirow .tag{display:none}
+  #v-ich .card.wikirow .wkn{order:2}
+  #v-ich .card.wikirow p{flex:1 1 0;min-width:150px;margin:0;line-height:1.3}
+  /* Lernhefte, Anleitung, Ausbilder: kompakte Zeilen mit Trennlinie */
+  .ll{gap:0}
+  .ll li{border-top:1px solid var(--line)}
+  .ll li:first-child{border-top:0}
+  .ll a{min-height:44px;padding:2px 2px;font-size:14px;line-height:1.3}
+  #ftAusb .foot{column-gap:14px}
+  #ftAusb .foot a{font-size:14px;padding:0 2px;line-height:1.3}
 }
 
-/* ---- Aufklappbare Kartenbeschreibung (p.cl, role=button): Ziel mindestens 44 px hoch (vorher 41 px bei 2 Zeilen a 14/1,45) ---- */
-.card p.cl{min-height:44px}
+/* S3: Hinweis "Lernstand scheint zu fehlen" auf Start (schlichte Zeile unter der blauen Karte) */
+.lsfehlt{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin:12px 0 0;padding:8px 12px;border:1px solid var(--warn,var(--line));border-radius:12px;background:var(--panel);color:var(--fg);font-size:14px;line-height:1.4}
+.lsfehlt .lsf-t{flex:1 1 220px;min-width:0}
+.lsfehlt button{flex:none;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--fg);font:600 14px system-ui,sans-serif;cursor:pointer}
+.lsfehlt button:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}
+.pfweiter{border-color:var(--line)}
+.pfweiter .pfw-a{flex:none;display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--fg);font:600 14px system-ui,sans-serif;text-decoration:none}
+.pfweiter .pfw-a:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}
 
-/* v50.166 Startseite aufgeräumt (home-clean.js): einklappbare Bänder, Kompaktansicht */
-.cl-bar{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
-.cl-b{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--fg,inherit);font:inherit;font-size:.9rem;cursor:pointer}
-.cl-b:hover{border-color:var(--ac,#5fb0ff)}
-.cl-tg{display:flex;align-items:center;gap:8px;min-height:44px;margin:6px 0;padding:0 12px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:.92rem;cursor:pointer;width:100%;max-width:900px;text-align:left}
-.cl-tg .ch{width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s}
-.cl-tg[aria-expanded="true"] .ch{transform:rotate(45deg)}
-html.cl-duell-zu #duellBand{display:none}
-html.cl-foot-zu #foot{display:none}
-html.cl-komp .grp .card .pic,html.cl-komp .grp .card>p,html.cl-komp .grp .card .steps{display:none}
-html.cl-komp .grp .cards{grid-template-columns:repeat(auto-fill,minmax(min(210px,100%),1fr));gap:8px}
-html.cl-komp .grp .card{padding-bottom:10px}
-@media (max-width:639px){.cl-bar{margin-bottom:6px}}
+/* ---- Handy-Liste: Nummer/Symbol sitzen im Fortschrittsring, der Titel bekommt die frei werdende Breite (kein Kürzen, Schrift bleibt 15 px) ---- */
+@media(max-width:639px){
+  html.tiles .cards .card .th{position:relative;flex:none;width:38px;height:38px;gap:0;justify-content:center}
+  html.tiles .cards .card .th .mini{position:absolute;inset:0;width:38px;height:38px;min-width:0;min-height:0;margin:0;order:0}   /* der Ring ist nur Anzeige (aria-hidden), die 44-px-Regel für .mini aus design.css gilt hier nicht */
+  html.tiles .cards .card .th .mini>svg:first-child{width:38px;height:38px}
+  html.tiles .cards .card .th .mini .pv{display:none}
+  html.tiles .cards .card .th .lp-no{position:relative;z-index:1;min-width:0;width:26px;height:26px;padding:0;border-radius:50%;background:none}
+  html.tiles .cards .card .th .li{position:relative;z-index:1;width:28px;height:28px;border-radius:50%}
+  html.tiles .cards .card .th .li .i{width:16px;height:16px}
+  html.tiles .cards .card .th:has(.ck) .lp-no{visibility:hidden}
+  html.tiles .cards .card .th .mini .ck{position:absolute;inset:0;margin:auto}
+  html.tiles .cards .card .lp-mk{margin-left:48px}
+  html.tiles .cards .card{gap:8px;padding:8px 6px 8px 12px}
+  html.tiles .cards .card h3{font-size:14px;line-height:1.25}
+  html.tiles .cards .card a.btn.pri{padding:0}
+}
+@media(max-width:360px){
+  html.tiles .cards .card{gap:6px;padding:8px 4px 8px 10px}
+  html.tiles .cards .card .th,html.tiles .cards .card .th .mini,html.tiles .cards .card .th .mini>svg:first-child{width:32px;height:32px}
+  html.tiles .cards .card .th .lp-no{width:22px;height:22px;font-size:14px}
+  html.tiles .cards .card .th .li{width:24px;height:24px}
+  html.tiles .cards .card .lp-mk{margin-left:38px}
+}
 
-/* Der Knopf zum Ein- und Ausklappen sitzt im Raster über dem Duell-Band (sonst landet er in einer freien Zelle) */
-.top>#clDuell{grid-area:tg;margin:0;max-width:none;align-self:start}
-/* Projekte-Zeile zuklappbar (v55.170): Kopfzeile wie die Bereiche, Inhalt in .vbbody */
-#vbRow>.vbd{flex:1 1 100%;min-width:0}html.tiles #vbRow .vbbody{flex-wrap:nowrap}@media(max-width:639px){html.tiles #vbRow .vbbody{flex-wrap:wrap}}
-
-/* ---- v62.173 Release-Prüfung: Schriftgrößen und Touch-Ziele (Messung über alle Berufsprofile: quelle/home/browser_raster.js) ----
-   Lese- und Bedientexte mindestens 14 px; Marken, untere Navigation und Versionsabzeichen mindestens 12 px. Die Regeln stehen hier, weil die Bausteine
-   (lernpfad.js, karriereui.js, berufe.js, urheber.js) ihre Schriftgröße selbst setzen und auch auf anderen Seiten benutzt werden. */
-.card .mp small{font-size:14px;gap:8px}                       /* Stufe und "x von y Aufgaben" (vorher 12 px) */
-#lpHd .sum,#lpHd .nx{font-size:14px}                          /* Lernpfad-Kopf (vorher 13 px) */
-#lpHd>span[style]{font-size:14px!important}                   /* "aufklappen" (vorher 12 px, im Baustein als style-Attribut) */
-#karCard .kr-sub{font-size:14px}                              /* Karriere-Karte (vorher 13 px) */
-#vbRow .vbn small,#planRow .vbn small{font-size:14px}         /* Zusatz in der Projekte- und Plan-Zeile (vorher 11,7 px) */
-#beSoon .be-note{font-size:14px}                              /* Hinweis unter den Berufsreitern (vorher 13 px) */
-#urheber-hinweis{font-size:14px!important}                    /* Urheberhinweis (vorher 12 px, im Baustein als style-Attribut) */
-/* aufgeklappter Lernpfad (lernpfad.js): Texte und Knöpfe 14 px (vorher 12 und 13 px), Marken 13 px */
-#lernpfad .trk h3 small,#lernpfad .trk p,#lernpfad .meta,#lernpfad .go a,#lpProj p,#lpProj h3 small{font-size:14px}
-#lernpfad .kamp div>span[style]{font-size:14px!important}
-#lernpfad .lvl,#lernpfad .badge,#lernpfad .step .no{font-size:13px}
-/* Projekte-Zeile auf dem Handy aufgeklappt: zwei Knöpfe mit je 150 px Mindestbreite und der Textblock mit 240 px ragten bei 320 und 375 px aus der Karte (308 px in 235 bzw. 290 px) */
-@media(max-width:639px){#vbRow .vbt{min-width:0}#vbRow .btns{flex-wrap:wrap}#vbRow .btns a.btn{min-width:0;flex:1 1 120px}#planRow .plbtns a.btn{min-width:0}}
-.card a.btn{text-align:center;line-height:1.15}               /* zweizeilige Knopftexte bei 320 px ("Erste Aufgabe") mittig */
-/* Berufsreiter (berufe.js) unter 360 px: der gewählte Reiter war breiter als die Leiste und links und rechts abgeschnitten; die zweite Zeile darf umbrechen */
-@media(max-width:359px){html .be-tab{max-width:calc(100vw - 40px)}html .be-tab small{white-space:normal}}
-
-/* Mein Weg (meinweg.js): ruhige Kurzansicht oben, darunter "Alle Labs" einklappbar */
-.mw{margin:0 0 16px}
-.mw h2{margin:0 0 8px;font-size:20px}
-.mw-g{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:12px;margin:0 0 12px;align-items:stretch}
-.mw-hero{min-width:0;display:flex}
-.mw-hero>.cont{flex:1 1 auto;min-width:0}
-.mw-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px}
-.mw-t{display:flex;align-items:center;gap:12px;min-width:0;min-height:56px;padding:10px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none;box-sizing:border-box;touch-action:manipulation}
-.mw-t:hover{border-color:var(--accent)}
-.mw-t:focus-visible{outline:3px solid var(--focus,var(--accent));outline-offset:2px}
-.mw-i{flex:none;font-size:26px;line-height:1}
-.mw-x{flex:1;min-width:0}
-.mw-x b{display:block;font-size:16px;line-height:1.25}
-.mw-x small{display:block;color:var(--mute);font-size:14px;line-height:1.3;overflow-wrap:anywhere}
-.mw-x .mw-s{margin-top:2px;color:var(--fg)}
-.mw-p{flex:none;color:var(--accent);font-size:22px}
-.mw-stand{border:2px solid var(--accent)}
-.mw-stand .mw-x b{font-size:20px}
-.mw-row #e10Go{height:100%;min-width:0}
-.mw .cont .ring i{font-size:14px}
-html.mw .top{grid-template-columns:minmax(0,1fr);grid-template-areas:"today" "tg" "duell" "lp";min-height:0}
-html.mw .top .lp .body{grid-row:5}
-html.mw #wdhHint{display:none}
-html.mw-zu:not(.rub-free) #planRow,html.mw-zu:not(.rub-free) #vbRow,html.mw-zu:not(.rub-free) #rub,html.mw-zu:not(.rub-free) #clBar,html.mw-zu:not(.rub-free) #groups,html.mw-zu:not(.rub-free) #cardsFlat{display:none}
-@media(max-width:899px){.mw-g{grid-template-columns:minmax(0,1fr)}}
-@media(max-width:639px){.mw h2{font-size:18px}.mw-g,.mw-row{gap:10px}}
-
-/* Studium und Technik, Ausbildung, Mein Weg einklappbar (v62.173): die Schalter tragen die Überschrift, die alten Beschriftungen bleiben für Leser im Text */
-#beWege>.be-lab{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-html.cl-stu-zu #beWege>ul,html.cl-aus-zu #beTabs,html.cl-aus-zu #beSoon,html.cl-mw-zu #meinWeg,html.cl-mw-zu #top>.coach,html.cl-mw-zu #lernpfad{display:none}
+/* Ich: gewählter Beruf, alle Zeilen der Taste linksbündig (der Zusatz "gewählt" saß eingerückt) */
+#ichBeruf .be-tab{align-items:flex-start;text-align:left}
+#ichBeruf .be-tab small,#ichBeruf .be-tab[aria-pressed=true]::after{align-self:flex-start;text-align:left;margin-left:0}

@@ -145,8 +145,14 @@ textarea.sm{min-height:84px}
 #printArea .sig div{border-top:1px solid #000;padding-top:3px}
 #printArea .fuss{margin-top:20px;font-size:9.5pt;color:#333}
 #printArea .gel{border:1px solid #000;padding:6px 8px;min-height:60px;white-space:pre-wrap}
+/* Audit K2b: Schrift mindestens 14 px (Handy), Bühne, Rückmeldung */
+.card.pl h4,.gh,.lv,.hint2,label.f span,.stats .bx,.tt th,.rdout .st,.hl th,.hl table,.hl .eq,.dot,.note,.fl .nr,.fl small,.tt td.m,.row small,.ph small,.tab .bd,#stat,.vzchk li,header .title small,.tl,.hl summary,.opts button,.fb{font-size:14px}
+.fl2{margin:4px 0 0;color:var(--mute);line-height:1.5}.fl2 span{display:block}
+.vzstage{margin:0 0 10px}.vzstage .vzbox{margin:0 auto}
+.vzstage .vzbtn{margin-top:6px}
 </style>
 <link rel="stylesheet" href="design.css">
+<link rel="stylesheet" href="labrahmen.css">
 </head>
 <body>
 <!--GATE-->
@@ -186,6 +192,16 @@ textarea.sm{min-height:84px}
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
+<script>window.LR_TAB = { 'bhflab.html': {
+  name: 'Berichtsheft-Helfer',
+  buehne: { helfer: '#vzStageDay', woche: '#vzStageWeek', tasks: false, rt: false, bsp: false, help: false },
+  saetze: {
+    'Aufgaben': 'Fester Aufgabenpool: Der erste Fehlversuch zeigt einen Tipp (kostet nichts), nach dem zweiten kommt die Lösung mit Lösungsweg.',
+    'Trainer': 'Endlos neue Zufallsfragen: Erster Fehlversuch mit Tipp, danach die Lösung.',
+    'Prüfung': 'Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte, der Lösungsweg kommt erst nach der richtigen Antwort.'
+  }
+} };</script>
+<script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>
 </body>

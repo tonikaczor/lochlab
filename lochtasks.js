@@ -203,10 +203,12 @@ const dots = n => '●'.repeat(n) + '○'.repeat(Math.max(0, 4 - n));
 let card = null;
 (function css() { const s = document.createElement('style'); s.textContent = `
 #tcard{position:absolute;z-index:5;left:8px;top:34px;max-width:min(380px,calc(100% - 16px));background:var(--panel,#1b1f24);color:var(--fg,#e8ecf0);border:1px solid var(--line,#38424d);border-radius:12px;padding:10px 12px;font-size:13px;box-shadow:0 4px 18px rgba(0,0,0,.4)}
-#tcard b{display:block;margin-bottom:4px;font-size:14px} #tcard p{margin:0 0 8px;color:var(--mute,#8d99a6);line-height:1.4} #tcard .tb{display:flex;gap:6px;flex-wrap:wrap}
-#tcard .tb button{height:38px;padding:0 12px;border-radius:9px;background:var(--panel2,#2c343e);border:1px solid var(--line,#38424d);font-weight:600;font-size:13px}
-#tcard .tb .pri{background:var(--accent,#3b9eff);border-color:var(--accent,#3b9eff);color:#fff}
-#tcard.min p,#tcard.min .tb{display:none}
+#tcard b{display:block;margin-bottom:4px;font-size:14px} #tcard p{margin:0 0 8px;color:var(--mute,#8d99a6);line-height:1.4} #tcard .tcb{display:flex;gap:6px;flex-wrap:wrap}
+#tcard .tcb button{height:38px;padding:0 12px;border-radius:9px;background:var(--panel2,#2c343e);border:1px solid var(--line,#38424d);font-weight:600;font-size:13px}
+#tcard .tcb .pri{background:var(--accent,#3b9eff);border-color:var(--accent,#3b9eff);color:#fff}
+#tcard.min p,#tcard.min>button,#tcard.min .tcb button:not([data-a=min]):not([data-a=chk]){display:none} #tcard.min .tcb{margin-top:6px}
+@media(max-width:700px){#tcard{right:8px;max-width:none;max-height:40%;overflow:auto} #tcard .tcb{flex-wrap:nowrap;overflow-x:auto} #tcard .tcb button{flex:none;min-height:44px;font-size:14px} #tcard p{font-size:14px}}
+#tcard.min{padding:6px 10px} #tcard.min b{margin:0}
 .tres .ln{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px} .tres .ln i{font-style:normal;flex:none;width:20px} .tres .ok i{color:#4cd964} .tres .no i{color:#ff6a5a}
 .tres .pc{font-size:22px;font-weight:700;margin:4px 0 8px}
 body.printhtml #printArea img{display:none} body.printhtml #printArea{background:#fff;color:#111}
@@ -216,8 +218,22 @@ function showCard() {
   if (card) { card.remove(); card = null; }
   const t = doc.task && byTask(doc.task); if (!t) return;
   card = document.createElement('div'); card.id = 'tcard'; card.setAttribute('role', 'region'); card.setAttribute('aria-label', 'Aufgabe: ' + t.title);
-  card.innerHTML = `<b>${esc(t.title)} <span style="color:var(--mute)" aria-label="Stufe ${t.level} von 4">${dots(t.level)}</span></b><p>${esc(t.text)}</p><div class="tb"><button class="pri" data-a="chk">Lösung prüfen</button><button data-a="hint">Tipp</button>${t.plan ? '<button data-a="plan">Schaltplan</button>' : ''}<button data-a="hand">Abgeben</button><button data-a="min">Einklappen</button><button data-a="end">Beenden</button></div>`;
+  card.innerHTML = `<b>${esc(t.title)} <span style="color:var(--mute)" aria-label="Stufe ${t.level} von 4">${dots(t.level)}</span></b><p>${esc(t.text)}</p><div class="tcb"><button class="pri" data-a="chk">Lösung prüfen</button><button data-a="hint">Tipp</button>${t.plan ? '<button data-a="plan">Schaltplan</button>' : ''}<button data-a="hand">Abgeben</button><button data-a="min">Einklappen</button><button data-a="end">Beenden</button></div>`;
   $('#stage').appendChild(card);
+  /* A-layout-01: Karte am Titel verschiebbar (merkt sich die Stelle); Doppeltippen auf den Titel setzt zurück */
+  (function () {
+    const tt = card.querySelector('b'); if (!tt) return; tt.style.cursor = 'grab'; tt.style.touchAction = 'none'; tt.title = 'Ziehen, um die Karte zu verschieben (doppelt tippen: zurück)';
+    const stg = $('#stage'), clampPos = (x, y) => { const sr = stg.getBoundingClientRect(); return [Math.max(0, Math.min(x, sr.width - 60)), Math.max(0, Math.min(y, sr.height - 36))]; };
+    const put = (x, y) => { const q = clampPos(x, y); card.style.left = q[0] + 'px'; card.style.top = q[1] + 'px'; card.style.right = 'auto'; return q; };
+    try { const sp = JSON.parse(localStorage.getItem('lm4.tcardpos') || 'null'); if (sp && window.innerWidth >= 700) put(sp[0], sp[1]); } catch (e) {}
+    let d = null;
+    tt.addEventListener('pointerdown', e => { if (e.button) return; const cr = card.getBoundingClientRect(), sr = stg.getBoundingClientRect(); d = { dx: e.clientX - cr.left, dy: e.clientY - cr.top, sx: sr.left, sy: sr.top }; try { tt.setPointerCapture(e.pointerId); } catch (x) {} tt.style.cursor = 'grabbing'; e.preventDefault(); });
+    tt.addEventListener('pointermove', e => { if (d) put(e.clientX - d.sx - d.dx, e.clientY - d.sy - d.dy); });
+    const end = () => { if (!d) return; d = null; tt.style.cursor = 'grab'; try { localStorage.setItem('lm4.tcardpos', JSON.stringify([parseInt(card.style.left, 10) || 0, parseInt(card.style.top, 10) || 0])); } catch (e) {} };
+    tt.addEventListener('pointerup', end); tt.addEventListener('pointercancel', end);
+    tt.addEventListener('dblclick', () => { card.style.left = card.style.top = card.style.right = ''; try { localStorage.removeItem('lm4.tcardpos'); } catch (e) {} });
+  })();
+  if (window.innerWidth < 700 && !card.dataset.opened) card.classList.add('min');   // A-layout-06: am Handy zuerst eingeklappt
   card.querySelector('[data-a=min]').textContent = card.classList.contains('min') ? 'Aufklappen' : 'Einklappen';
   card.onclick = e => {
     const a = e.target.dataset && e.target.dataset.a; if (!a) return;
@@ -234,12 +250,20 @@ function showCard() {
     else if (a === 'end') { delete doc.task; try { save(); } catch (x) {} showCard(); toast('Aufgabe beendet'); }
   };
 }
+let startSig = '', tries = {};
+const sigOf = d => { try { const c = Object.assign({}, d); delete c.updated; delete c.name; delete c.id; return JSON.stringify(c); } catch (e) { return ''; } };
 function runCheck(t) {
-  const r = checkTask(t, doc), dn = done(); dn[t.id] = Math.max(dn[t.id] || 0, r.pct); store('lm4.tdone', dn);
+  const r = checkTask(t, doc), dn = done();
+  /* F12: unbearbeitete Platine zeigt nie einen Teilerfolg */
+  if (!r.ok && startSig && sigOf(doc) === startSig) { r.pct = 0; r.lines.push({ ok: false, text: 'Du hast noch nichts verändert. Fang mit dem ersten Punkt an.' }); }
+  tries[t.id] = r.ok ? 0 : (tries[t.id] || 0) + 1;
+  const bad = r.lines.find(l => !l.ok), v = tries[t.id];
+  const fb = r.ok ? '<div class="lr-fb ok" id="tfb"><p><strong>Richtig.</strong> Aufgabe geschafft.</p></div>'
+    : '<div class="lr-fb ' + (v >= 2 ? 'loes' : 'tipp') + '" id="tfb"><p><strong>Noch nicht.</strong> ' + r.pct + ' % richtig. ' + (v >= 2 ? 'Offen: ' : 'Erster offener Punkt: ') + esc(bad ? bad.text : '') + (v >= 2 ? ' Der Tipp-Knopf in der Aufgabenkarte zeigt die Lösung.' : ' Du hast einen zweiten Versuch.') + '</p></div>'; dn[t.id] = Math.max(dn[t.id] || 0, r.pct); store('lm4.tdone', dn);
   if (window.Badges) window.Badges.result(t.id, r.pct);   // Badges.result spielt auch Ton und Konfetti (LochFX.pass), hier nichts doppelt auslösen
   else try { window.LochFX && LochFX.pass && LochFX.pass(r.pct); } catch (e) { /* Effekte sind Beiwerk */ }
   sheet('Prüfung: ' + t.title, b => {
-    b.innerHTML = `<div class="tres"><div class="pc" style="color:${r.ok ? '#4cd964' : '#ffb340'}">${r.ok ? '✓ Alles richtig' : r.pct + ' % richtig'}</div>${r.lines.map(l => `<div class="ln ${l.ok ? 'ok' : 'no'}"><i>${l.ok ? '✓' : '✗'}</i><span>${esc(l.text)}</span></div>`).join('')}</div>` + (r.ok ? '<p class="hint2">Super. Zum Abgeben tippe in der Aufgabenkarte auf „Abgeben“ und zeige den QR-Code deinem Ausbilder.</p>' : '<p class="hint2">Verbessere die Platine und prüfe nochmal. Du kannst beliebig oft prüfen.</p>');
+    b.innerHTML = fb + `<div class="tres"><div class="pc" style="color:${r.ok ? '#4cd964' : '#ffb340'}">${r.ok ? '✓ Alles richtig' : r.pct + ' % richtig'}</div>${r.lines.map(l => `<div class="ln ${l.ok ? 'ok' : 'no'}"><i>${l.ok ? '✓' : '✗'}</i><span>${esc(l.text)}</span></div>`).join('')}</div>` + (r.ok ? '<p class="hint2">Super. Zum Abgeben tippe in der Aufgabenkarte auf „Abgeben“ und zeige den QR-Code deinem Ausbilder.</p>' : '<p class="hint2">Verbessere die Platine und prüfe nochmal. Du kannst beliebig oft prüfen.</p>');
   });
 }
 function startTask(id) {
@@ -247,7 +271,7 @@ function startTask(id) {
   if (window.Auswertung) window.Auswertung.hintReset(id);
   try { save(); } catch (e) {}
   const d = clone(t.start); d.id = uid(); d.name = 'Aufgabe: ' + t.title; d.task = t.id; d.updated = Date.now();
-  load(d); showCard(); toast('Aufgabe geladen');
+  load(d); showCard(); startSig = sigOf(doc); toast('Aufgabe geladen');
 }
 function openTasks() {
   sheet('Aufgaben', (b, close) => {

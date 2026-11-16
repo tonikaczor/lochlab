@@ -40,7 +40,7 @@
   const DEF = { turn: { d: 40, l: 52 }, mill: { w: 80, h: 60, d: 20 } };
   const S = {
     tab: lsGet('tab', 'prog'), mach: lsGet('mach', 'turn'), src: lsGet('src', null), stk: Object.assign({ turn: Object.assign({}, DEF.turn), mill: Object.assign({}, DEF.mill) }, lsGet('stk', {})), speed: lsGet('speed', 3),
-    task: null, tAns: {}, tRes: null, tSim: {}, pw: null, wb: null, twb: null,
+    task: null, tAns: {}, tTry: {}, tRes: null, tSim: {}, pw: null, wb: null, twb: null,
     tr: Object.assign({ kind: 'coord', mach: 'mill', level: 1 }, lsGet('tr', {}), { item: null, res: null, ans: [], sim: false }),
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {}))
   };
@@ -102,8 +102,8 @@
       <div class="wsw seg"><button data-v="ed" class="on">⌨ Programm</button><button data-v="sim">▶ Simulation</button></div>
       <div class="edc"><div class="ed"><div class="gut"><div class="gin"></div></div><div class="gw"><div class="hl2"><div class="hli"></div></div><textarea wrap="off" spellcheck="false" autocapitalize="characters" autocomplete="off" autocorrect="off" inputmode="text" aria-label="CNC-Programm" ${ro ? 'readonly' : ''}></textarea></div></div>
         ${ro ? '' : '<div class="qk" role="toolbar" aria-label="Schnelltasten"></div>'}<div class="msgs"></div></div>
-      <div class="simc"><div class="alarm" hidden></div><div class="inst"><div class="svgh"></div></div>
-        <div class="ctl"><button class="chip" data-c="reset" title="Zurück zum Anfang">⏮ Anfang</button><button class="chip" data-c="back" title="Einen Satz zurück">◀ Satz</button><button class="chip on" data-c="play">▶ Start</button><button class="chip" data-c="step" title="Einzelsatz: nächsten Satz ausführen">Satz ▶|</button><button class="chip" data-c="end" title="Bis zum Ende">⏭ Ende</button>${wb.ref ? '<button class="chip on" data-c="ref" aria-pressed="true">Sollkontur</button>' : ''}</div>
+      <div class="simc"><div class="alarm" hidden></div><div class="stg"><div class="inst"><div class="svgh"></div></div>
+        <div class="ctl"><button class="chip" data-c="reset" title="Zurück zum Anfang">⏮ Anfang</button><button class="chip" data-c="back" title="Einen Satz zurück">◀ Satz</button><button class="chip on" data-c="play">▶ Start</button><button class="chip" data-c="step" title="Einzelsatz: nächsten Satz ausführen">Satz ▶|</button><button class="chip" data-c="end" title="Bis zum Ende">⏭ Ende</button>${wb.ref ? '<button class="chip on" data-c="ref" aria-pressed="true">Sollkontur</button>' : ''}</div></div>
         <div class="sl"><span>Tempo</span><input type="range" min="1" max="6" step="1" class="spd" aria-label="Simulationsgeschwindigkeit"><span class="spdn" style="min-width:86px"></span></div>
         <div class="rd"></div><div class="rdout stp"></div><div class="rdout tm"></div></div></div>`;
     const el = host.firstElementChild, ta = $('textarea', el), gin = $('.gin', el), hli = $('.hli', el), msgs = $('.msgs', el), qk = $('.qk', el), svgh = $('.svgh', el), rd = $('.rd', el), stp = $('.stp', el), tm = $('.tm', el), alarm = $('.alarm', el), spd = $('.spd', el);
@@ -317,6 +317,7 @@
     wb.setSetup = su => { wb.setup = su; keys(); update(); };
     wb.setTarget = r => { wb.ref = r; };
     wb.focusLine = focusLine;
+    ta.addEventListener('focus', () => el.classList.add('typ')); ta.addEventListener('blur', () => setTimeout(() => el.classList.remove('typ'), 200));
     keys(); update();
     return wb;
   }
@@ -364,14 +365,18 @@
   const nDone = () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length;
   function updateBadge() { const b = $('#tkBd'); if (b) b.textContent = nDone() + '/' + TASKS.length; }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
+  /* Rückmeldung ins Bild holen (Rahmen, Vorgabe 4.5) */
+  function lrFb(sel) { const el = $(sel); if (el && window.LabRahmen && LabRahmen.zeig) try { LabRahmen.zeig(el); } catch (e) { } }
+  const TOLTXT = t => { const f = t.ask.fields, s = t.solve ? t.solve(C) : null, tol = s && s.tol != null ? s.tol : 0.01; return 'Zahl in ' + f.map(x => x.unit).filter((u, i, a) => a.indexOf(u) === i).join(' bzw. ') + '. ±' + String(tol).replace('.', ',') + ' gilt als richtig.'; };
   function checkTask(t) {
     const a = S.tAns[t.id] || {}; let ans;
     if (t.ask.type === 'choice') ans = a.c == null ? -1 : a.c; else if (t.ask.type === 'num') ans = t.ask.fields.map((f, i) => (a.v || [])[i] || ''); else ans = S.wb ? S.wb.getSrc() : (a.src != null ? a.src : t.prog);
     const r = D.check(t, ans); if (r.empty) { toast(r.msg); return; }
     const pct = r.ok ? pctFor(t.id) : 0, ex = exam();
-    S.tRes = { id: t.id, ok: r.ok, pct, lines: r.lines, sol: r.sol };
-    if (r.ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) { } else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast('Noch nicht richtig. Lies die Hinweise und versuche es noch einmal.'); }
-    renderTasks(false);
+    if (!r.ok) S.tTry[t.id] = (S.tTry[t.id] || 0) + 1;
+    S.tRes = { id: t.id, ok: r.ok, pct, lines: r.lines, sol: r.sol, n: S.tTry[t.id] || 0 };
+    if (r.ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) { } else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast(ex || S.tTry[t.id] >= 2 ? 'Noch nicht richtig.' : 'Noch nicht richtig. Du hast einen zweiten Versuch.'); }
+    renderTasks(false); lrFb('#tkFb');
   }
   function hintTask(t) {
     const h = lsGet('hints', {}), n = Math.min(3, (h[t.id] || 0) + 1), ex = exam();
@@ -399,16 +404,17 @@
       if (t.fig) h += `<div class="inst">${svgFig(t.fig)}</div>${figList(t.fig)}`;
       if (t.prog != null && t.progMode !== 'none') h += `<div id="tkWb" style="margin:8px 0"></div>${t.progMode === 'show' && !r ? '<p class="hint2">Die Simulation gibt es nach der Abgabe. Lies das Programm genau.</p>' : ''}`;
       if (t.ask.type === 'choice') h += `<div class="opts" id="tkOpts">${t.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && r.ok ? 'disabled' : ''} class="${r && r.ok && i === t.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-      else if (t.ask.type === 'num') h += `<div class="flds">${t.ask.fields.map((f, i) => `<label class="f"><span>${esc(f.label)} (${esc(f.unit)})</span><div class="qin"><input data-i="${i}" inputmode="decimal" autocomplete="off" value="${esc((a.v || [])[i] || '')}" ${r && r.ok ? 'disabled' : ''}><span class="u">${esc(f.unit)}</span></div></label>`).join('')}</div>`;
+      else if (t.ask.type === 'num') h += `<div class="flds">${t.ask.fields.map((f, i) => `<label class="f"><span>${esc(f.label)} (${esc(f.unit)})</span><div class="qin"><input data-i="${i}" inputmode="decimal" autocomplete="off" value="${esc((a.v || [])[i] || '')}" ${r && r.ok ? 'disabled' : ''}><span class="u">${esc(f.unit)}</span></div></label>`).join('')}</div><p class="lr-hinweis">${esc(TOLTXT(t))}</p>`;
+      if (t.ask.type === 'choice') h += '<p class="lr-hinweis">Eine Antwort wählen.</p>';
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
       if (r) {
-        h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-        if (r.ok || !exam()) {
-          h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>${r.ok ? 'Lösung' : 'So geht es'}:</b> ${esc(t.expl)}</div>`;
-          h += t.ask.type === 'prog' ? `<details><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer">Lösungsprogramm anzeigen</summary><div class="mono">${esc(t.ref)}</div></details>` : `<div class="rdout"><b>Ergebnis:</b> ${esc(r.sol)}</div>`;
-        } else h += '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>';
-        if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
+        const ul = `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
+        const sol = t.ask.type === 'prog' ? `<details><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer">Lösungsprogramm anzeigen</summary><div class="mono">${esc(t.ref)}</div></details>` : `<p><b>Ergebnis:</b> ${esc(r.sol)}</p>`;
+        if (r.ok) h += `<div class="lr-fb ok" id="tkFb"><p><strong>Richtig.</strong></p>${ul}<p><b>Rechenweg:</b> ${esc(t.expl)}</p>${sol}<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div></div>`;
+        else if (exam()) h += `<div class="lr-fb tipp" id="tkFb"><p><strong>Noch nicht.</strong> Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</p>${ul}</div>`;
+        else if ((r.n || 1) < 2) h += `<div class="lr-fb tipp" id="tkFb"><p><strong>Noch nicht.</strong> Tipp: ${esc(t.tips[0])} Du hast einen zweiten Versuch.</p>${ul}</div>`;
+        else h += `<div class="lr-fb loes" id="tkFb"><p><strong>Auch das zweite Mal nicht.</strong> So geht es:</p>${ul}<p><b>Rechenweg:</b> ${esc(t.expl)}</p>${sol}<p class="hint2">Ändere deine Eingabe und prüfe noch einmal, oder gehe zur nächsten Aufgabe.</p><div class="btns"><button class="btn" data-ta="next">Nächste Aufgabe</button></div></div>`;
       }
       h += '</div>';
     }
@@ -426,7 +432,7 @@
     if (row) startTask(row.dataset.t);
   });
   function startTask(id) {
-    S.task = id; S.tAns = {}; S.tRes = null;
+    S.task = id; S.tAns = {}; S.tTry = {}; S.tRes = null;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -436,7 +442,7 @@
   function newItem() {
     const T = S.tr; let it = null;
     for (let i = 0; i < 6 && !it; i++) it = D.gen(C.rng((R0 || String(Math.random()) + Date.now()) + '#' + (seedN++)), T.kind, T.mach, T.level);
-    T.item = it; T.res = null; T.ans = []; T.sim = false; renderTrainer();
+    T.item = it; T.res = null; T.ans = []; T.sim = false; T.tries = 0; T.tip = null; renderTrainer();
   }
   function renderTrainer() {
     const T = S.tr, V = $('#trView'); if (!T.item) { newItem(); return; }
@@ -446,23 +452,33 @@
     h += `<p style="margin:6px 0"><b>${esc(it.text)}</b></p>`;
     if (it.fig) h += `<div class="inst">${svgFig(it.fig)}</div>${figList(it.fig)}`;
     if (it.src) h += '<div id="trWb" style="margin:8px 0"></div>';
-    h += `<div class="flds">${it.fields.map((f, i) => `<label class="f"><span>${esc(f.label)} (${esc(f.unit)})</span><div class="qin"><input data-i="${i}" inputmode="decimal" autocomplete="off" value="${esc(T.ans[i] || '')}" ${T.res ? 'disabled' : ''}><span class="u">${esc(f.unit)}</span></div></label>`).join('')}</div>`;
+    h += `<div class="flds">${it.fields.map((f, i) => `<label class="f"><span>${esc(f.label)} (${esc(f.unit)})</span><div class="qin"><input data-i="${i}" inputmode="decimal" autocomplete="off" value="${esc(T.ans[i] || '')}" ${T.res ? 'disabled' : ''}><span class="u">${esc(f.unit)}</span></div></label>`).join('')}</div><p class="lr-hinweis">Zahl in ${esc(it.fields.map(f => f.unit).filter((u, i, a) => a.indexOf(u) === i).join(' bzw. '))}. ±${String(it.tol).replace('.', ',')} gilt als richtig.</p>`;
+    if (T.tip && !T.res) h += T.tip;
     h += T.res ? `<div class="btns"><button class="btn pri" data-r="next">Nächste Aufgabe</button></div>` : `<div class="btns"><button class="btn pri" data-r="chk">✓ Prüfen</button><button class="btn" data-r="show">Lösung zeigen</button></div>`;
     if (T.res) {
-      const r = T.res; h += `<div class="fb"><b style="color:var(--${r.ok ? 'ok' : 'danger'})">${r.shown ? 'Lösung: ' + esc(r.sol) + ' (zählt als Fehler, Serie beginnt neu)' : r.ok ? '✓ Richtig! Serie: ' + st.streak : '✗ Nicht ganz. Richtig ist: ' + esc(r.sol) + '. Serie beginnt neu.'}</b></div>`;
-      if (r.lines && !r.ok && !r.shown) h += `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>`;
-      h += `<div class="rdout ${r.ok ? 'ok' : 'bad'}">${esc(it.expl)}</div>`;
+      const r = T.res, late = T.tries > 0;
+      const ul = r.lines && !r.ok && !r.shown ? `<ul class="tl">${r.lines.map(l => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(l.text)}</li>`).join('')}</ul>` : '';
+      const kopf = r.shown ? '<strong>Lösung:</strong> ' + esc(r.sol) + '. Das zählt als Fehler, die Serie beginnt neu.' : r.ok ? '<strong>Richtig.</strong> ' + (late ? 'Mit Fehlversuch zählt die Aufgabe nicht für die Serie.' : 'Serie: ' + st.streak + '.') : '<strong>Auch das zweite Mal nicht.</strong> Richtig ist: ' + esc(r.sol) + '. Die Serie beginnt neu.';
+      h += `<div class="lr-fb ${r.ok ? 'ok' : 'loes'}" id="trFb"><p>${kopf}</p>${ul}<p><b>Rechenweg:</b> ${esc(it.expl)}</p></div>`;
       if (it.src && !T.sim) h += '<div class="btns"><button class="btn" data-r="sim">▶ Probelauf ansehen</button></div>';
     }
     V.innerHTML = h + '</div>';
     if (it.src) Workbench($('#trWb'), { setup: { machine: T.mach }, src: it.src, compact: true, readonly: true, sim: T.sim });
   }
   function trainerResult(r, shown) {
-    const T = S.tr, st = S.rt; st.n++; if (r.ok && !shown) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; lsSet('rt', { n: st.n, ok: st.ok, streak: st.streak, best: st.best });
-    T.res = Object.assign({}, r, { shown }); if (shown) T.res.sol = D.checkItem(T.item, T.item.values.map(String)).sol; if (r.ok && !shown) ding(); else sad(); renderTrainer(); updatePal();
-    if (r.ok && !shown && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) { } }
+    const T = S.tr, st = S.rt; st.n++; if (r.ok && !shown && !T.tries) { st.ok++; st.streak++; st.best = Math.max(st.best, st.streak); } else st.streak = 0; lsSet('rt', { n: st.n, ok: st.ok, streak: st.streak, best: st.best });
+    T.res = Object.assign({}, r, { shown }); if (shown) T.res.sol = D.checkItem(T.item, T.item.values.map(String)).sol; if (r.ok && !shown) ding(); else sad(); renderTrainer(); updatePal(); lrFb('#trFb');
+    if (r.ok && !shown && !T.tries && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) { } }
   }
-  function trainerCheck() { const T = S.tr, r = D.checkItem(T.item, T.item.fields.map((f, i) => T.ans[i] || '')); if (r.empty) toast(r.msg); else trainerResult(r, false); }
+  const TRTIP = { coord: 'Beim Drehen ist X der Durchmesser, beim Fräsen liegt Z0 auf der Oberseite.', inc: 'Beim Kettenmaß (G91) zählt der Weg vom aktuellen Punkt, nicht die Position.', pos: 'Gehe Satz für Satz durch. Modale Werte gelten weiter, bis ein neuer Wert sie ersetzt.', zeit: 'Weg je Arbeitsgang durch die Vorschubgeschwindigkeit teilen, dann addieren.' };
+  function trainerCheck() {
+    const T = S.tr, r = D.checkItem(T.item, T.item.fields.map((f, i) => T.ans[i] || '')); if (r.empty) { toast(r.msg); return; }
+    if (r.ok || T.tries >= 1) { trainerResult(r, false); return; }
+    T.tries = 1; sad();
+    const ul = r.lines.map((l, i) => `<li class="${l.ok ? 'ok' : 'bad'}">${l.ok ? '✓' : '✗'} ${esc(T.item.fields[i].label)}: ${l.ok ? 'richtig' : 'stimmt noch nicht'}</li>`).join('');
+    T.tip = `<div class="lr-fb tipp" id="trFb"><p><strong>Noch nicht.</strong> Tipp: ${esc(TRTIP[T.item.kind] || TRTIP.coord)} Du hast einen zweiten Versuch.</p><ul class="tl">${ul}</ul></div>`;
+    renderTrainer(); lrFb('#trFb');
+  }
   $('#trView').addEventListener('input', e => { if (e.target.dataset.i != null) S.tr.ans[+e.target.dataset.i] = e.target.value; });
   $('#trView').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.i != null) { e.preventDefault(); if (S.tr.res) newItem(); else trainerCheck(); } });
   $('#trView').addEventListener('click', e => {
@@ -545,7 +561,7 @@
     if (!TABS.some(x => x[0] === t)) t = 'prog'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
     if (t === 'bsp') renderBsp(); else if (t === 'tr') renderTrainer(); else if (t === 'tasks') renderTasks(); else if (t === 'help') renderHelp();
-    const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'CNC-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'CNC-Lab: ' + T[2];
+    const T = TABS.find(x => x[0] === t); $('#title').innerHTML = 'CNC-Lab\n<small>' + esc(T[2]) + '</small>'; document.title = 'CNC-Lab: ' + T[2]; if (typeof fxSoon === 'function') fxSoon();
   }
   function setExam(on) { lsSet('exam', on ? '1' : '0'); palSig = ''; updatePal(); $('#bExam').classList.toggle('on', on); $('#bExam').setAttribute('aria-pressed', on); toast(on ? '🎓 Prüfmodus an: Tipps kosten 25 % je Stufe.' : 'Prüfmodus aus: Tipps kosten nichts.'); if (S.tab === 'tasks') renderTasks(false); }
   let palSig = '';
@@ -594,7 +610,22 @@
   root.CNC_LAB = { id: 'cnc', title: 'CNC-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.CNC_TASKS };
 
   if (S.src == null) S.src = (D.examples.find(x => x.machine === S.mach) || D.examples[0]).src;
-  buildTabs(); updatePal(); renderProg(); setTab(S.tab);
+
+  /* Text in Grafiken mindestens 11 px auf dem Bildschirm (viewBox skaliert auf Handybreite): Schrift in Zeichenmaß hochsetzen, ab breiteren Boxen wieder zurück */
+  let fxT = 0;
+  function fixSvgText() {
+    document.querySelectorAll('#mid svg').forEach(sv => {
+      const vb = sv.viewBox && sv.viewBox.baseVal; if (!vb || !vb.width) return; const w = sv.getBoundingClientRect().width; if (!w) return; const s = w / vb.width;
+      sv.querySelectorAll('text').forEach(t => {
+        if (t.dataset.fs0 == null) { t.style.fontSize = ''; t.dataset.fs0 = parseFloat(getComputedStyle(t).fontSize) || 10; }
+        const b = +t.dataset.fs0, want = b * s < 11.2 ? Math.min(11.2 / s, b * 2.8) : b, cur = t.style.fontSize;
+        if (want === b) { if (cur) t.style.fontSize = ''; } else if (cur !== want.toFixed(2) + 'px') t.style.fontSize = want.toFixed(2) + 'px';
+      });
+    });
+  }
+  const fxSoon = () => { clearTimeout(fxT); fxT = setTimeout(fixSvgText, 160); };
+  try { new MutationObserver(ms => { if (ms.some(m => !(m.target.closest && m.target.closest('svg')))) fxSoon(); }).observe($('#mid'), { childList: true, subtree: true }); window.addEventListener('resize', fxSoon); } catch (e) {}
+  buildTabs(); updatePal(); renderProg(); setTab(S.tab); fxSoon();
   /* Aufruf ?aufgabe=cnc1 (Startseite, Lernhefte): Aufgabe gleich öffnen */
   root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   try { const qa = new URLSearchParams(location.search).get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { setTab('tasks'); startTask(qa); } } catch (e) {}

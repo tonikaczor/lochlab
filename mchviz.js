@@ -49,9 +49,15 @@
     if (!eck) b += line(P1.x, P1.y, PR.x, PR.y, 'var(--hi)', 1.6, '6 4') + line(P2.x, P2.y, PR.x, PR.y, 'var(--accent)', 1.6, '6 4') + arrow(KO.x, KO.y, P1.x, P1.y, 'var(--accent)', 3.5) + arrow(KO.x, KO.y, P2.x, P2.y, 'var(--hi)', 3.5);
     else b += arrow(KO.x, KO.y, P1.x, P1.y, 'var(--accent)', 3.5) + arrow(P1.x, P1.y, PR.x, PR.y, 'var(--hi)', 3.5);
     b += arrow(KO.x, KO.y, PR.x, PR.y, 'var(--ok)', 4.5);
-    const lab = (P, t, col, dx, dy) => T(cl(P.x + dx, 6, 470), cl(P.y + dy, 16, 395), t, '', ` style="fill:${col};font-weight:700"`);
-    b += (eck ? lab({ x: (KO.x + P1.x) / 2, y: (KO.y + P1.y) / 2 }, 'F1 ' + f(F1) + ' N', 'var(--accent)', -4, 24) : lab(P1, 'F1 ' + f(F1) + ' N', 'var(--accent)', 12, -10)) + (eck ? lab({ x: (P1.x + PR.x) / 2, y: (P1.y + PR.y) / 2 }, 'F2 ' + f(F2) + ' N', 'var(--hi)', 14, 0) : lab(P2, 'F2 ' + f(F2) + ' N', 'var(--hi)', 12, -10));
-    b += lab({ x: (KO.x + PR.x) / 2, y: (KO.y + PR.y) / 2 }, 'R ' + f(r.R, 1) + ' N · ' + f(r.ang, 0) + '°', 'var(--ok)', -6, 26);
+    /* Beschriftungen: erst ihre Wunschplätze, dann überlappende nach unten schieben (M-mch-11). Breite und Höhe sind Schätzwerte, die auch für die am Handy angehobene Schrift reichen. */
+    const L = [];
+    const lab = (P, t, col, dx, dy) => L.push({ x: cl(P.x + dx, 6, 470), y: cl(P.y + dy, 16, 395), t, col });
+    if (eck) { lab({ x: (KO.x + P1.x) / 2, y: (KO.y + P1.y) / 2 }, 'F1 ' + f(F1) + ' N', 'var(--accent)', -4, 24); lab({ x: (P1.x + PR.x) / 2, y: (P1.y + PR.y) / 2 }, 'F2 ' + f(F2) + ' N', 'var(--hi)', 14, 0); }
+    else { lab(P1, 'F1 ' + f(F1) + ' N', 'var(--accent)', 12, -10); lab(P2, 'F2 ' + f(F2) + ' N', 'var(--hi)', 12, -10); }
+    lab({ x: (KO.x + PR.x) / 2, y: (KO.y + PR.y) / 2 }, 'R ' + f(r.R, 1) + ' N · ' + f(r.ang, 0) + '°', 'var(--ok)', -6, 26);
+    const wd = l => l.t.length * 10.5, hit = (p, q) => p.x < q.x + wd(q) && q.x < p.x + wd(p) && Math.abs(p.y - q.y) < 22;
+    L.forEach((l, i) => { for (let k = 0; k < 8 && L.slice(0, i).some(o => hit(l, o)); k++) { l.y += 22; if (l.y > 395) l.y = 395 - (k + 1) * 22 - 22; l.x = cl(l.x, 6, 600 - wd(l) - 6); } });
+    b += L.map(l => T(l.x, l.y, l.t, '', ` style="fill:${l.col};font-weight:700"`)).join('');
     b += handle('F1', P1.x, P1.y, 'var(--accent)') + handle('F2', eck ? PR.x : P2.x, eck ? PR.y : P2.y, 'var(--hi)');
     b += T(12, 412, eck ? 'Kräfteeck: F2 an die Spitze von F1 setzen, R verbindet Anfang und Spitze.' : 'Parallelogramm: Die Diagonale ist R. Ziehe die Pfeilspitzen.', 'm');
     return svg(600, 420, 'Kräfteparallelogramm: Kräfte F1 und F2 und ihre Resultierende', b);

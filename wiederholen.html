@@ -24,13 +24,15 @@ h1{margin:6px 0 4px;font-size:26px}.lead{color:var(--mute);margin:0 0 14px}
 .btn:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
 .zaehl{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px}
 .zaehl div{flex:1 1 120px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.zaehl b{display:block;font-size:24px}.zaehl span{color:var(--mute);font-size:13px}
+.zaehl b{display:block;font-size:24px}.zaehl span{color:var(--mute);font-size:14px}
 .item{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px}
-.item h2{margin:0 0 2px;font-size:17px}.meta{color:var(--mute);font-size:13px;margin:0 0 6px}
-.box{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--line);margin-right:6px}
+.item h2{margin:0 0 2px;font-size:17px}.meta{color:var(--mute);font-size:14px;margin:0 0 6px}.why{margin:0 0 8px;font-size:14px}
+.box{display:inline-block;font-size:14px;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--line);margin-right:6px}
 .leer{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:0 0 14px}
 .wn{margin:12px 0;padding:9px 12px;border-radius:8px;background:var(--panel);border:1px solid var(--line);font-size:14px;color:var(--mute)}
 .top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.wn{font-size:14px}.wn a{display:inline-block;padding:12px 4px}
 </style>
 </head>
 <body>
@@ -38,40 +40,53 @@ h1{margin:6px 0 4px;font-size:26px}.lead{color:var(--mute);margin:0 0 14px}
 <script src="gate.js" data-title="Tonfunk Lab"></script>
 <!--/GATE-->
 <div class="wrap">
-  <div class="top"><a class="btn" href="index.html">Startseite</a></div>
+  <div class="top"><a class="btn" href="index.html#ueben">‹ Start</a></div>
   <h1>Heute zu wiederholen</h1>
   <p class="lead" id="lead">Aufgaben, die du falsch oder nur mit Tipp gelöst hast, kommen nach ein paar Tagen von selbst wieder.</p>
   <div class="zaehl" id="zaehl" aria-live="polite"></div>
   <div id="liste"></div>
+  <div class="wn"><b>Aufgaben, nicht Karten:</b> Hier wiederholst du Aufgaben aus den Labs (4 Boxen). Begriffe, Formeln und Bauteile übst du getrennt bei den <a href="karten.html">Lernkarten</a> (5 Fächer, eigener Stand).</div>
   <div class="wn">Wie es funktioniert: Jede Aufgabe liegt in einer von vier Boxen. Du siehst sie nach 1, 3, 7 und 14 Tagen wieder. Löst du sie ohne Tipp, geht sie eine Box weiter, sonst zurück auf Box 1. Höchstens 5 Aufgaben am Tag. Alles bleibt auf deinem Gerät und steht in deinem Lernstand-Code.</div>
 </div>
 <script src="aufgaben.js"></script>
 <script src="wiederholen.js"></script>
+<script src="einheit10.js"></script>
 <script>
 (function () {
   var W = window.Wiederholen, R = window.LAB_REG || {}, BN = { egs: 'Elektroniker', ige: 'Industrieelektriker', im: 'Industriemechaniker', tpd: 'Techn. Produktdesigner', fll: 'Lagerlogistik', ik: 'Industriekaufmann', fi: 'Fachinformatiker', tec: 'Techniker Elektrotechnik', stu: 'Studium Elektrotechnik', wing: 'Wirtschaftsingenieur', winf: 'Wirtschaftsinformatik' };
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function rdj(k) { try { var o = JSON.parse(localStorage.getItem(k) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }
+  function grund(x) {   /* warum die Aufgabe wieder auftaucht: aus Tipp-Stufe und bestem Ergebnis */
+    var tip = +rdj('sim.hints')[x.id] || 0, d = rdj('sim.done'), t = rdj('lm4.tdone'), p = Math.max(+d[x.id] || 0, +t[x.id] || 0);
+    if (x.box > 1) return 'Du hast sie richtig gelöst. Zur Sicherheit kommt sie nach einer Pause noch einmal.';
+    if (tip > 0) return 'Grund: Du hast sie mit Tipp gelöst.';
+    if (p > 0 && p < 100) return 'Grund: Beim letzten Mal waren nur ' + Math.round(p) + ' % richtig.';
+    return 'Grund: Du warst bei dieser Aufgabe zuletzt unsicher.';
+  }
+  function zehn() { return window.Einheit10 && window.Einheit10.start ? '<div class="row" style="margin:0 0 14px"><button class="btn" id="z10" type="button">10-Minuten-Einheit starten</button><span class="why" style="color:var(--mute)">Eine kurze Mischung aus Wiederholung und neuen Aufgaben.</span></div>' : ''; }
   function wann(t) { return t === 0 ? 'heute fällig' : t === 1 ? 'seit gestern fällig' : 'seit ' + t + ' Tagen fällig'; }
   function draw() {
     var s = W.stand(), b = W.beruf(), list = $('liste');
     $('zaehl').innerHTML = '<div><b>' + s.liste.length + '</b><span>heute zu wiederholen</span></div><div><b>' + s.heute + ' / ' + s.limit + '</b><span>heute schon erledigt</span></div><div><b>' + Math.max(0, s.faellig - s.liste.length) + '</b><span>weitere fällig (an anderen Tagen)</span></div>';
     $('lead').textContent = 'Beruf: ' + (BN[b] || b) + ' (zu ändern auf der Startseite). Aufgaben, die du falsch oder nur mit Tipp gelöst hast, kommen nach ein paar Tagen von selbst wieder.';
     if (!s.liste.length) {
-      list.innerHTML = '<div class="leer"><b>' + (s.heute > 0 ? 'Für heute bist du fertig.' : 'Heute ist nichts zu wiederholen.') + '</b><p style="margin:6px 0 10px;color:var(--mute)">' + (s.heute > 0 ? 'Gut gemacht. Morgen kommen neue Aufgaben, wenn welche fällig werden.' : 'Sobald du Aufgaben bearbeitet hast und ihre Frist abgelaufen ist, erscheinen sie hier. Bearbeite weitere Aufgaben in den Labs.') + '</p><a class="btn pri" href="index.html">Zur Startseite</a></div>';
+      list.innerHTML = '<div class="leer"><b>' + (s.heute > 0 ? 'Für heute bist du fertig.' : 'Heute ist nichts zu wiederholen.') + '</b><p style="margin:6px 0 10px;color:var(--mute)">' + (s.heute > 0 ? 'Gut gemacht. Morgen kommen neue Aufgaben, wenn welche fällig werden.' : 'Sobald du Aufgaben bearbeitet hast und ihre Frist abgelaufen ist, erscheinen sie hier. Bearbeite weitere Aufgaben in den Labs.') + '</p><div class="row"><a class="btn pri" href="karten.html">Jetzt Karten lernen</a><a class="btn" href="index.html#labs">Zu den Labs</a></div></div>' + zehn();
       return;
     }
-    list.innerHTML = s.liste.map(function (x) {
+    list.innerHTML = zehn() + s.liste.map(function (x) {
       var href = x.file ? esc(x.file) + '?aufgabe=' + encodeURIComponent(x.id) : 'index.html';
-      return '<div class="item" data-id="' + esc(x.id) + '"><h2>' + esc(x.titel) + '</h2><p class="meta"><span class="box">Box ' + x.box + '</span>' + esc(x.labName) + ' · ' + wann(x.tage) + '</p>' +
+      return '<div class="item" data-id="' + esc(x.id) + '"><h2>' + esc(x.titel) + '</h2><p class="meta"><span class="box">Box ' + x.box + '</span>' + esc(x.labName) + ' · ' + wann(x.tage) + '</p><p class="why">' + esc(grund(x)) + '</p>' +
         '<a class="btn pri" href="' + href + '">Im Lab üben</a><button class="btn ok" data-g="1" type="button">Geschafft ohne Tipp</button><button class="btn no" data-g="0" type="button">Wieder unsicher</button></div>';
     }).join('');
   }
   document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('#z10')) { window.Einheit10.start(); return; }
     var b = e.target.closest && e.target.closest('button[data-g]'); if (!b) return;
     var it = b.closest('.item'); W.bewertenUndSpeichern(it.getAttribute('data-id'), b.getAttribute('data-g') === '1'); draw();
   });
   draw();
+  window.addEventListener('einheit10:fertig', draw);
   window.addEventListener('pageshow', function (e) { if (e.persisted) draw(); });
   document.addEventListener('visibilitychange', function () { if (!document.hidden) draw(); });
 })();

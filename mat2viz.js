@@ -48,7 +48,9 @@
 
   /* ============================================================ 1. Komplex: Zeigerdiagramm und Resonanzkurve */
   /* p = {R, L, C, f, U}: Reihenschaltung, Strom ist die Bezugsgröße (waagerecht) */
-  function phasorSvg(p, W) {
+  /* o.fix = {sc, ox, oy}: Maßstab und Ursprung festhalten (beim Ziehen der Zeigerspitze, sonst wandert die Spitze unter dem Finger weg).
+     Die Spitze des Summenzeigers U ist ein Griff (g.tip, Tippfläche 48 px); die Zahlen für das Umrechnen von Bildpunkten in Volt stehen als data-Werte am Griff. */
+  function phasorSvg(p, W, o) {
     W = okW(W); const z = C.zSeries(p.R, p.L, p.C, p.f); if (!fin(z.re) || !fin(z.im) || !(p.U > 0) || C.cabs(z) === 0) return '';
     const I = p.U / C.cabs(z), ur = I * p.R, ul = p.L > 0 ? I * C.XL(p.f, p.L) : 0, uc = p.C > 0 ? I * C.XC(p.f, p.C) : 0, ut = ul - uc, phi = C.carg(z);
     const leg = [['g-c1', 'U_R = ' + f(ur, 2) + ' V (Widerstand)']];
@@ -57,7 +59,7 @@
     const side = W >= 640, legW = side ? 330 : 0, legH = side ? 0 : leg.length * 22 + 10, PW = W - legW;
     const pts = [[0, 0], [ur, 0], [ur, ul], [ur, ut]], xs = pts.map(a => a[0]), ys = pts.map(a => a[1]), x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs), y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
     const H0 = Math.round(Math.max(230, Math.min(340, W * 0.5))), H = H0 + legH, padX = 34, padY = 30, sx = (PW - 2 * padX - 60) / Math.max(1e-9, x1 - x0), sy = (H0 - 2 * padY) / Math.max(1e-9, y1 - y0), sc = Math.min(sx, sy);
-    const ox = padX + 14 - x0 * sc, oy = padY + y1 * sc, X = v => ox + v * sc, Y = v => oy - v * sc;
+    const fx0 = o && o.fix, scF = fx0 ? fx0.sc : sc, ox = fx0 ? fx0.ox : padX + 14 - x0 * sc, oy = fx0 ? fx0.oy : padY + y1 * sc, X = v => ox + v * scF, Y = v => oy - v * scF;
     let s = L(padX - 6, Y(0), PW - 8, Y(0), 'g-grid') + L(X(0), 10, X(0), H0 - 6, 'g-grid') + T(PW - 8, Y(0) - 6, 'Re (I)', 'm', ' text-anchor="end"') + T(X(0) + 6, 20, 'Im', 'm');
     const tag = (x, y, t, dx, dy, cls) => T(X(x) + dx, Y(y) + dy, t, cls, ' text-anchor="middle"');
     if (ur > 0) s += arrow(X(0), Y(0), X(ur), Y(0), 'g-c1') + tag(ur / 2, 0, 'U_R', 0, ut < 0 ? -10 : 20, 'g-c1');
@@ -66,6 +68,7 @@
     if (Math.abs(ut) > 1e-9 * Math.max(1, ur)) s += arrow(X(0), Y(0), X(ur), Y(ut), 'g-c3', 3.4) + tag(ur / 2, ut / 2, 'U', -14, ut >= 0 ? -8 : 20, 'g-c3');
     else s += tag(ur, 0, 'U', 0, -12, 'g-c3');
     if (Math.abs(phi) > 0.5 && ur > 0) { const r = Math.min(34, Math.abs(X(ur) - X(0)) * 0.6 + 14), a = Math.atan2(ut, ur); s += `<path class="g-arc" d="M ${q(X(0) + r)} ${q(Y(0))} A ${r} ${r} 0 0 ${a > 0 ? 0 : 1} ${q(X(0) + r * Math.cos(a))} ${q(Y(0) - r * Math.sin(a))}"/>`; }
+    if (o && o.drag) s += `<g class="tip" tabindex="0" role="group" aria-label="Zeigerspitze von U. Pfeil rauf oder runter ändert den Winkel, Pfeil links oder rechts den Betrag. Jetzt ${f(p.U, 2)} Volt, ${f(phi, 1)} Grad." data-sc="${scF}" data-ox="${q(ox)}" data-oy="${q(oy)}" data-vb="${W}" data-ph="${PW}" data-h="${H0}" style="touch-action:none"><circle class="tip-hit" cx="${q(X(ur))}" cy="${q(Y(ut))}" r="26"/><circle class="tip-k" cx="${q(X(ur))}" cy="${q(Y(ut))}" r="9"/></g>`;
     leg.forEach((l, i) => { const lx = side ? PW + 10 : 14, ly = side ? 34 + i * 26 : H0 + 22 + i * 22; s += `<rect class="g-bar" x="${q(lx)}" y="${q(ly - 11)}" width="14" height="14" rx="2" style="fill:var(--c)" ${''}/>`.replace('class="g-bar"', 'class="g-bar ' + l[0] + '"') + T(lx + 22, ly + 1, l[1], l[0]); });
     return svg(W, H, 'Zeigerdiagramm der Reihenschaltung: Teilspannungen an R, L und C und Gesamtspannung', s);
   }  /* Resonanzkurve |I|(f) in logarithmischer Frequenzachse */

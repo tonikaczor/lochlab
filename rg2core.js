@@ -697,6 +697,8 @@
   }
   /* Totzeit, bei der die Phasenreserve gerade 0 wird: Tt,max = PM/(wc) (im Bogenmaß) */
   const tdMax = (pmDeg, wc) => pmDeg / DEG / wc;
+  /* Winkel in Grad auf (−180°, 180°] normieren. Die Phasenreserve ist nur modulo 360° eindeutig; mit Totzeit läuft die stetige Phase weit unter −360°. */
+  const wrapDeg = x => { if (!Number.isFinite(x)) return x; let y = ((x + 180) % 360 + 360) % 360 - 180; if (y === -180) y = 180; return y; };
   /* Alias-Frequenz einer Sinusschwingung f bei Abtastfrequenz fs */
   const aliasFreq = (f, fs) => Math.abs(f - Math.round(f / fs) * fs);
 
@@ -714,6 +716,6 @@
     locusPoly: locusPoly, locusRoots: locusRoots, rootLocus: rootLocus, locusInfo: locusInfo, locusKcrit: locusKcrit, locusKforDamping: locusKforDamping,
     boPI: boPI, boPID: boPID, boP_IT1: boP_IT1, soPI: soPI, znOsc: znOsc, znStep: znStep, chr: chr, CHR_TAB: CHR_TAB, ultimate: ultimate, loopStep: loopStep,
     c2dZOH: c2dZOH, tustin: tustin, dfilter: dfilter, dstep: dstep, piDigital: piDigital, dClosed: dClosed, zStability: zStability, sToZ: sToZ,
-    freqZ: freqZ, marginsZ: marginsZ, pmWithDelay: pmWithDelay, tdMax: tdMax, aliasFreq: aliasFreq
+    freqZ: freqZ, marginsZ: marginsZ, pmWithDelay: pmWithDelay, tdMax: tdMax, wrapDeg: wrapDeg, aliasFreq: aliasFreq
   };
 });

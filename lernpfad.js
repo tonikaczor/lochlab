@@ -1,12 +1,14 @@
 'use strict';
-/* Tonfunk Lab: Lernpfad auf der Startseite.
-   Drei Spuren (Elektronik, Installation, Programmieren) mit empfohlener Reihenfolge, Schwierigkeit und Fortschritt je Lab.
-   Der Fortschritt kommt aus den vorhandenen Ergebnissen (sim.done, lm4.tdone), die Liste der Labs und Aufgaben aus aufgaben.js. */
+/* Tonfunk Lab: Lernpfad der Startseite.
+   Spuren je Beruf mit empfohlener Reihenfolge, Schwierigkeit und Fortschritt je Lab. Der Fortschritt kommt aus den vorhandenen Ergebnissen (sim.done, lm4.tdone),
+   die Liste der Labs und Aufgaben aus aufgaben.js.
+   Seit dem Umbau in fünf Ansichten (S1) ist der Lernpfad kein eigener Bereich mehr: er ist die Sortierung "Reihenfolge" im Lab-Raster (home-groups.js liest
+   tracksFor(), projTrack() und projHtml()). build() trägt die Fortschrittszeile in die Karten ein und baut in der Ansicht "Ich" die Zeile Rang und Karriere (#ichRang). */
 (function (root) {
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const REG = root.LAB_REG || {}, ROWS = root.AUFGABEN || [];
   const TRACKS = [
-    { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik, zur elektrischen Sicherheit und Geräteprüfung, zu Netzteilen und Schaltreglern, zu Wechselstrom und Schwingkreisen, zur Analogtechnik mit Diode, Transistor und Operationsverstärker, zur Leiterplatte, zur speicherprogrammierbaren Steuerung (SPS), zu den Antrieben, zur Sensorik, zur Regelungstechnik, zur Wärmeabfuhr mit dem Kühlkörper und zur elektromagnetischen Verträglichkeit (EMV) und zur Solartechnik (Energie).', labs: ['loch', 'sch', 'digi', 'mess', 'els', 'nts', 'wsl', 'ana', 'sps', 'pcb', 'ant', 'sen', 'reg', 'thm', 'emv', 'enr'] },
+    { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik, zur elektrischen Sicherheit und Geräteprüfung, zu Netzteilen und Schaltreglern, zu Wechselstrom und Schwingkreisen, zur Analogtechnik mit Diode, Transistor und Operationsverstärker, zur Leiterplatte, zur speicherprogrammierbaren Steuerung (SPS), zu den Antrieben, zur Sensorik, zur Regelungstechnik, zur Wärmeabfuhr mit dem Kühlkörper und zur elektromagnetischen Verträglichkeit (EMV) und zur Solartechnik (Energie).', labs: ['sch', 'loch', 'digi', 'mess', 'els', 'nts', 'wsl', 'ana', 'sps', 'pcb', 'ant', 'sen', 'reg', 'thm', 'emv', 'enr'] },
     { t: 'Installation und Anlagen', s: 'Wie Strom im Haus verteilt, geschaltet und abgesichert wird.', labs: ['sim', 'haus'], pre: 'Empfohlen vorher: SchaltLab' },
     { t: 'Prüfungsvorbereitung', s: 'Die Abschlussprüfung üben: Datenblätter lesen (Grenzwerte, Kennlinien, Fachenglisch), Themen trainieren, Rechnen, Probeprüfung mit Zeitlimit und Auswertung. Das Thema Sicherheit und Normen übst du zusätzlich nach dem Sicherheits-Lab: die Abschaltbedingung, die Schutzmaßnahmen und die Geräteprüfung kommen in der Prüfung vor. Das Thema Stromversorgung übst du nach dem Netzteil-Lab: Gleichrichter, Siebung, Z-Diode, Linearregler und Schaltregler kommen in der Prüfung vor. Das Thema Wechselstrom und Filter übst du nach dem Wechselstrom-Lab: Zeigerdiagramm, Blindleistung, Schwingkreis, RC-Filter und Transformator kommen in der Prüfung vor. Das Thema Bauelemente übst du nach dem Analogtechnik-Lab: Diode, LED-Vorwiderstand, Transistor als Schalter, Arbeitspunkt und Operationsverstärker kommen in der Prüfung vor.', labs: ['ds', 'pr'], links: [['lernfelder.html', 'Lernfelder der Berufsschule: Aufgaben und Probetest'], ['pruefungslab.html?thema=sicherheit', 'Sicherheit und Normen üben (Prüfungs-Lab)'], ['elslab.html', 'Dazu im Sicherheits-Lab ausprobieren'], ['pruefungslab.html?thema=netzteile', 'Stromversorgung üben (Prüfungs-Lab)'], ['ntslab.html', 'Dazu im Netzteil-Lab ausprobieren'], ['pruefungslab.html?thema=wechselstrom', 'Wechselstrom und Filter üben (Prüfungs-Lab)'], ['wsllab.html', 'Dazu im Wechselstrom-Lab ausprobieren'], ['pruefungslab.html?thema=analog', 'Bauelemente und Verstärker üben (Prüfungs-Lab)'], ['analab.html', 'Dazu im Analogtechnik-Lab ausprobieren']], pre: 'Am besten nach SchaltLab, DigiLab und MessLab' },
     { t: 'Programmieren und Steuern', s: 'Eigene Apps mit KI bauen, dann Schaltungen mit Programmen steuern: Arduino und Raspberry Pi.', labs: ['app', 'code', 'pi'], pre: 'Die App-Werkstatt braucht kein Vorwissen. Für Arduino und Pi empfohlen: SchaltLab' },
@@ -15,7 +17,7 @@
   /* Spuren der anderen Berufe (v39.158). Labs, die der Beruf hat, aber in keiner Spur stehen, kommen unter „Weitere Labs“; Labs ohne Beruf-Zuordnung (z. B. noch gesperrt) fehlen. */
   const TRACKS_B = {
     ige: [
-      { t: 'Grundlagen und Grundschaltungen', s: 'Rechnen, Schaltpläne lesen, einfache Schaltungen aufbauen und simulieren, dazu Wechselstrom ohne Formelstress.', labs: ['mat', 'loch', 'sch', 'sim', 'wsl'], pre: 'Das Rechen-Lab ist ein guter Start' },
+      { t: 'Grundlagen und Grundschaltungen', s: 'Rechnen, Schaltpläne lesen, einfache Schaltungen aufbauen und simulieren, dazu Wechselstrom ohne Formelstress.', labs: ['sch', 'mat', 'loch', 'sim', 'wsl'], pre: 'Erst das SchaltLab, beim Rechnen hilft das Rechen-Lab' },
       { t: 'Sicherungen, Hausinstallation und Sicherheit', s: 'Wie Strom im Haus abgesichert, verteilt und geschaltet wird, was bei der elektrischen Sicherheit zählt und was Energie kostet.', labs: ['els', 'haus', 'enr'], pre: 'Empfohlen vorher: SchaltLab' },
       { t: 'Messen, Netzteile und Elektronik', s: 'Mit dem Multimeter sicher messen, Netzteile und einfache Halbleiterschaltungen verstehen, Logikschaltungen kennenlernen und Datenblätter lesen.', labs: ['mess', 'nts', 'ana', 'digi', 'ds'], pre: '' },
       { t: 'Steuerungen, Antriebe und Sensoren', s: 'Schaltschrank-Steuerungen einfach erklärt: SPS, Motoren und Sensoren.', labs: ['sps', 'ant', 'sen'], pre: 'Empfohlen vorher: SchaltLab' },
@@ -107,72 +109,54 @@
     const lv = rows.length ? rows.reduce((s, r) => s + r[4], 0) / rows.length : 1;
     return { n: rows.length, d: done.length, next: todo[0] || null, started: done.length > 0 || rows.some(r => (res[r[0]] || 0) > 0), level: LEVEL[lab] || (lv < 1.75 ? 'Einstieg' : lv < 2.4 ? 'Mittel' : 'Anspruchsvoll'), pct: rows.length ? Math.round(100 * done.length / rows.length) : 0 };
   }
-  // Empfehlung "wo weiter": erstes begonnenes, noch nicht fertiges Lab in der Spurenreihenfolge, sonst das erste unfertige (build() und Startseite "Weitermachen" nutzen dieselbe Logik)
+  // Empfehlung "wo weiter": das erste noch nicht fertige Lab in der Spurenreihenfolge, egal was sonst schon begonnen wurde (build() und Startseite "Weitermachen" nutzen dieselbe Logik)
+  const WEITER = 80;   // ab 80 % gelöster Aufgaben darf man schon ins nächste Lab wechseln (nur ein Hinweis, der Pfad bleibt bis 100 % bei der Station; Abzeichen und Orden verlangen 100 %)
   function recommend(stc) {
     const st = stc || (() => { const o = {}; Object.keys(REG).forEach(k => { o[k] = stat(k); }); return o; })();
     const order = tracksFor().reduce((a, t) => a.concat(t.labs), []).filter(k => REG[k]);
-    let rec = order.find(k => st[k].n && st[k].pct < 100 && st[k].started) || order.find(k => st[k].n && st[k].pct < 100) || null;
+    let rec = order.find(k => st[k].n && st[k].pct < 100) || null;   // erste offene Station in Pfadreihenfolge (ein später begonnenes Lab zieht den Pfad nicht vor)   // erste offene Station in Pfadreihenfolge (ein später begonnenes Lab zieht den Pfad nicht mehr vor)
     if (rec && REG.sch && order.indexOf('sch') >= 0 && !order.some(k => st[k].started || trained(k))) rec = 'sch';   // ganz neu: SchaltLab (wie der Hinweis "Neu hier? Beginne mit dem SchaltLab.")
     const nx = rec && st[rec].next ? st[rec] : null, R0 = rec ? REG[rec] : null;
     const began = !!rec && (st[rec].started || trained(rec));
     const href = !rec ? '' : (began ? (nx ? `${R0.file}?aufgabe=${nx.next[0]}` : R0.file) : `${R0.file}?trainer`);
     const txt = !rec ? '' : (began ? (nx ? 'Weiter: ' + R0.name + ' · ' + (nx.next[3].length > 30 ? nx.next[3].slice(0, 29) + '…' : nx.next[3]) : R0.name + ' öffnen') : 'Start: ' + R0.name + ' (Einführung)');
-    return { rec, st, order, href, txt, started: began, next: nx ? nx.next : null };
+    /* Hinweis "du könntest schon wechseln": Station ab 80 %, dazu die nächste offene Station dahinter */
+    let weiter = null;
+    if (rec && st[rec].pct >= WEITER) { const nk = order.slice(order.indexOf(rec) + 1).find(k => st[k].n && st[k].pct < 100); if (nk) { const b2 = st[nk].started || trained(nk), n2 = st[nk].next; weiter = { von: rec, vonName: R0.name, pct: st[rec].pct, key: nk, name: REG[nk].name, href: b2 ? (n2 ? `${REG[nk].file}?aufgabe=${n2[0]}` : REG[nk].file) : `${REG[nk].file}?trainer` }; } }
+    return { rec, st, order, href, txt, started: began, next: nx ? nx.next : null, weiter };
   }
-  const css = '.lp{margin:0 0 20px}.lp h2{margin:0 0 4px;font-size:20px}.lp .sub{color:var(--mute);margin:0 0 14px;font-size:14px}.lp .trk{margin:0 0 16px}.lp .trk h3{margin:0;font-size:15px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}.lp .trk h3 small{font-weight:400;color:var(--mute);font-size:12px}.lp .trk p{margin:2px 0 8px;color:var(--mute);font-size:13px}'
-    + '.lp .st{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px}.lp .step{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}.lp .step.rec{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}.lp .step .no{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--panel2);font-size:12px;font-weight:700;margin-right:6px}.lp .step b{font-size:15px}'
-    + '.lp .bar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden}.lp .bar i{display:block;height:100%;background:#4cd964;border-radius:3px}.lp .meta{display:flex;justify-content:space-between;font-size:12px;color:var(--mute)}.lp .lvl{padding:1px 8px;border-radius:9px;background:var(--panel2);border:1px solid var(--line);font-size:12px}.lp .go{display:flex;gap:6px;margin-top:2px}.lp .go a{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;text-align:center;padding:8px 6px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:600;background:var(--panel2);border:1px solid var(--line);color:var(--fg)}.lp .go a.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff;flex:2}'
-    + '.lp .badge{position:absolute;top:-9px;right:10px;background:var(--accent-bg,#1a6fd4);color:#fff;font-size:12px;font-weight:700;padding:2px 9px;border-radius:9px}.lp .kamp{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-radius:14px;border:1px solid #ff9d00;background:rgba(255,157,0,.08);margin-bottom:18px}.lp .kamp .bar{flex:1;min-width:140px}'
-    + '.mp{margin:2px 0 4px}.mp .bar{height:5px;border-radius:3px;background:var(--panel2);overflow:hidden}.mp .bar i{display:block;height:100%;background:#4cd964}.mp small{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin-top:3px}';
+  /* Projekte-Spur als kurze Zeilen (Sortierung "Reihenfolge" im Lab-Raster): je Projekt ein Link mit Stand */
+  function projHtml(PT) {
+    if (!PT || !PT.list || !PT.list.length) return '';
+    return `<ul class="lp-pj" id="lpProj" aria-label="${esc(PT.t)}">` + PT.list.map(p => {
+      const pct = p.fin ? 100 : p.n ? Math.round(100 * Math.min(p.done, p.n) / p.n) : 0, href = 'verbund.html?projekt=' + encodeURIComponent(p.id);
+      return `<li><a href="${esc(href)}"><span class="pj-i" aria-hidden="true">${esc(p.icon || '🧩')}</span><span class="pj-x"><b>${esc(p.name)}</b><small><span class="lvl">${p.fin ? 'Fertig' : p.started ? 'Läuft' : 'Neu'}</span> ${p.done} von ${p.n} Stationen</small><span class="bar"><i style="width:${pct}%"></i></span></span><span class="pj-go">${p.fin ? 'Wiederholen' : p.started ? 'Weiter' : 'Projekt starten'}</span></a></li>`;
+    }).join('') + '</ul>';
+  }
+  const css = '.mp{margin:2px 0 4px}.mp .bar{height:5px;border-radius:3px;background:var(--panel2);overflow:hidden}.mp .bar i{display:block;height:100%;background:#4cd964}.mp small{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin-top:3px}';
   function build() {
-    const top = document.getElementById('top'); if (!top || document.getElementById('lernpfad')) return;   // Einfügepunkt: Primär-Band der Startseite
+    if (!document.getElementById('top') || document.getElementById('lpCss')) return;   // nur auf der Startseite, nur einmal
     const st = {}; Object.keys(REG).forEach(k => { st[k] = stat(k); });
-    const rc = recommend(st), rec = rc.rec;
-    const labKeys = Object.keys(st).filter(k => !(REG[k] || {}).hub && inBeruf(k));   // der Hub Projekte zählt nicht als Lab
-    const total = labKeys.reduce((n, k) => n + st[k].n, 0), done = labKeys.reduce((n, k) => n + st[k].d, 0);
     const K = beruf() === 'egs' ? root.Kampagne : null, kt = K ? K.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = K ? K.CH.reduce((n, c) => n + K.prog(c).d, 0) : 0;
-    const goHref = rc.href, goTxt = rc.txt;
-    const open = (() => { try { return localStorage.getItem('lm4.lp.open') === '1'; } catch (e) { return false; } })();
-    let h = `<style>${css}.lp .hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:10px 14px;text-align:left;color:var(--fg);cursor:pointer}.lp .hd .ar{font-size:14px;transition:transform .15s;display:inline-block}.lp.open .hd .ar{transform:rotate(90deg)}.lp .hd b{font-size:17px}.lp .hd .sum{flex:1;min-width:160px;color:var(--mute);font-size:13px}.lp .hd .nx{display:inline-flex;align-items:center;min-height:44px;padding:7px 12px;border-radius:10px;background:var(--accent-bg,#1a6fd4);color:#fff;font-weight:600;font-size:13px;text-decoration:none;max-width:100%}.lp .body{display:none;margin-top:14px}.lp.open .body{display:block}</style>`
-      + `<div class="hd" id="lpHd" role="button" tabindex="0" aria-expanded="${open}"><span class="ar">▸</span><b>Dein Lernpfad</b><span class="sum">${done} von ${total} Aufgaben` + (K ? ` · Kampagne ${kd} von ${kt}` : '') + `</span>` + (goHref ? `<a class="nx" href="${esc(goHref)}">${esc(goTxt)}</a>` : '') + `<span style="color:var(--mute);font-size:12px">${open ? 'zuklappen' : 'aufklappen'}</span></div><div class="body"><p class="sub">Wähle eine Spur und gehe von links nach rechts.</p>`;
-    const KR = root.Karriere && root.Karriere.summary ? root.Karriere.summary() : null;
-    if (KR) h += `<div class="kamp"><span style="font-size:26px">🎓</span><div style="flex:1;min-width:200px"><b>Deine Karriere: Rang ${KR.n} · ${esc(KR.t)}</b><br><span style="color:var(--mute);font-size:13px">${KR.xp} XP${KR.next ? ' · nächster Rang bei ' + KR.next.xp : ''} · Kampagne ${kd} von ${kt} Missionen</span></div><div class="bar"><i style="width:${KR.pct}%"></i></div><a href="#" id="lpKamp" class="btn pri" style="flex:none;padding:0 18px;height:44px">Karriere öffnen</a></div>`;
-    else if (K) h += `<div class="kamp"><span style="font-size:26px">🎯</span><div style="flex:1;min-width:200px"><b>Kampagne: Das Abschlussgerät</b><br><span style="color:var(--mute);font-size:13px">${K.CH.length} Kapitel mit Meister Funk durch alle Labs. ${kd} von ${kt} Missionen erledigt.</span></div><div class="bar"><i style="width:${kt ? Math.round(100 * kd / kt) : 0}%"></i></div><a href="#" id="lpKamp" class="btn pri" style="flex:none;padding:0 18px;height:44px">Kampagne öffnen</a></div>`;
-    tracksFor().forEach(tr => {
-      const labs = tr.labs.filter(k => REG[k]); if (!labs.length) return;
-      h += `<div class="trk"><h3>${esc(tr.t)}${tr.pre ? `<small>${esc(tr.pre)}</small>` : ''}</h3><p>${esc(tr.s)}</p>${(tr.links || []).length ? `<p class="lk">${tr.links.map(l => `<a href="${esc(l[0])}" style="color:var(--accent);margin-right:14px;display:inline-block;padding:5px 0">${esc(l[1])}</a>`).join('')}</p>` : ''}<div class="st">`;
-      labs.forEach((k, i) => {
-        const s = st[k], R = REG[k], isRec = k === rec;
-        const go = s.pct >= 100 ? `<a class="pri" href="${esc(R.file)}">Wiederholen</a>` : (!s.started && !trained(k) ? `<a class="pri" href="${esc(R.file)}?trainer">Einführung starten</a><a href="${esc(R.file)}">Öffnen</a>` : (s.next ? `<a class="pri" href="${esc(R.file)}?aufgabe=${esc(s.next[0])}" title="${esc(s.next[3])}">Weiter: ${esc(s.next[3].length > 26 ? s.next[3].slice(0, 25) + '…' : s.next[3])}</a><a href="${esc(R.file)}">Öffnen</a>` : `<a class="pri" href="${esc(R.file)}">Öffnen</a>`));
-        h += `<div class="step ${isRec ? 'rec' : ''}">${isRec ? `<span class="badge">${s.started ? 'Weiter hier' : 'Start hier'}</span>` : ''}<div><span class="no">${i + 1}</span><b>${esc(R.name)}</b></div><div class="meta"><span class="lvl">${s.level}</span><span>${s.d} von ${s.n} Aufgaben</span></div><div class="bar"><i style="width:${s.pct}%"></i></div><div class="go">${go}</div></div>`;
-      });
-      h += '</div></div>';
-    });
-    const PT = projTrack();
-    if (PT) {
-      h += `<div class="trk" id="lpProj"><h3>${esc(PT.t)}<small>${esc(PT.pre)}</small></h3><p>${esc(PT.s)}</p><div class="st">`;
-      PT.list.forEach((p, i) => {
-        const pct = p.fin ? 100 : p.n ? Math.round(100 * Math.min(p.done, p.n) / p.n) : 0, href = 'verbund.html?projekt=' + encodeURIComponent(p.id);
-        h += `<div class="step"><div><span class="no">${i + 1}</span><b>${esc((p.icon || '🧩') + ' ' + p.name)}</b></div><div class="meta"><span class="lvl">${p.fin ? 'Fertig' : p.started ? 'Läuft' : 'Neu'}</span><span>${p.done} von ${p.n} Stationen</span></div><div class="bar"><i style="width:${pct}%"></i></div><div class="go"><a class="pri" href="${esc(href)}">${p.fin ? 'Wiederholen' : p.started ? 'Weiter' : 'Projekt starten'}</a></div></div>`;
-      });
-      h += '</div></div>';
+    const style = document.createElement('style'); style.id = 'lpCss'; style.textContent = css; document.head.appendChild(style);
+    /* Ansicht "Ich": eine Tür zur Karriere (Rang, XP, Kampagne); die Karte #karCard aus karriereui.js und die alte Kampagnen-Karte entfallen dann */
+    const ich = document.getElementById('ichRang'), KR = root.Karriere && root.Karriere.summary ? root.Karriere.summary() : null;
+    if (ich && (KR || K)) {
+      const tx = KR ? `<b>Rang ${KR.n} · ${esc(KR.t)}</b><small>${KR.xp} XP${KR.next ? ' · nächster Rang bei ' + KR.next.xp + ' XP' : ''}${K ? ' · Kampagne ' + kd + ' von ' + kt + ' Missionen' : ''}. Abzeichen und alle Ränge im Karriere-Fenster.</small>`
+        : `<b>Kampagne: Das Abschlussgerät</b><small>${K.CH.length} Kapitel mit Meister Funk durch alle Labs. ${kd} von ${kt} Missionen erledigt.</small>`;
+      ich.innerHTML = `<div class="mw-t mw-2 lp-rang"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-medal"/></svg></span><span class="mw-x">${tx}</span><a href="#" id="lpKamp" class="mw-b">${KR ? 'Karriere öffnen' : 'Kampagne öffnen'}</a></div>`;
+      const kb = document.getElementById('lpKamp'); if (kb) kb.onclick = e => { e.preventDefault(); if (root.Karriere && root.Karriere.open) root.Karriere.open(); else K.open(); };
+      ['kampCard', 'karCard'].forEach(id => { const x = document.getElementById(id); if (x) x.remove(); });
     }
-    h += '<button type="button" id="lpClose" style="display:block;width:100%;margin-top:12px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font:600 14px system-ui;cursor:pointer">▲ Lernpfad zuklappen</button></div>';
-    const sec = document.createElement('section'); sec.id = 'lernpfad'; sec.className = 'lp' + (open ? ' open' : ''); sec.innerHTML = h;
-    top.appendChild(sec);
-    const hd = document.getElementById('lpHd'), tog = () => { const o = sec.classList.toggle('open'); hd.setAttribute('aria-expanded', o); hd.lastElementChild.textContent = o ? 'zuklappen' : 'aufklappen'; try { localStorage.setItem('lm4.lp.open', o ? '1' : '0'); } catch (e) {} };
-    hd.addEventListener('click', e => { if (e.target.closest('a')) return; tog(); }); hd.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tog(); } });
-    const cl = document.getElementById('lpClose'); if (cl) cl.onclick = () => { tog(); hd.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
-    const kb = document.getElementById('lpKamp'); if (kb) kb.onclick = e => { e.preventDefault(); if (root.Karriere && root.Karriere.open) root.Karriere.open(); else K.open(); };
-    const kc = document.getElementById('kampCard'); if (kc) kc.remove();
     // Fortschritt auch in den Karten
     document.querySelectorAll('.card:not(.vbrow)').forEach(c => {
       const a = c.querySelector('.btns a'); if (!a) return; const file = a.getAttribute('href').split('?')[0], key = Object.keys(REG).find(k => REG[k].file === file); if (!key || !st[key].n) return;
       const s = st[key], p = document.createElement('div'); p.className = 'mp'; p.innerHTML = `<div class="bar"><i style="width:${s.pct}%"></i></div><small><span>${s.level}</span><span>${s.d} von ${s.n} Aufgaben</span></small>`;
       const steps = c.querySelector('.steps'); (steps || c.querySelector('p')).insertAdjacentElement('afterend', p);
     });
+    try { root.dispatchEvent(new Event('lernpfad:fertig')); } catch (e) {}
   }
   const run = () => { try { build(); } catch (e) { console.error(e); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(run, 60)); else setTimeout(run, 60);
-  root.Lernpfad = { build, stat, recommend, TRACKS, TRACKS_B, tracksFor, projTrack };
+  root.Lernpfad = { build, stat, recommend, TRACKS, TRACKS_B, tracksFor, projTrack, projHtml, LEVEL };
 })(window);

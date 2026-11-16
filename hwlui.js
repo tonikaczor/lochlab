@@ -125,7 +125,7 @@
     if (l === 1) s2 += `<path d="M${x0} 58 v-8 h${total} v8" fill="none" stroke="var(--mute)" stroke-width="1.5"/><text class="g-lab m" x="${W / 2}" y="46" text-anchor="middle">alle Platten enthalten dieselben Daten (Kopien)</text>`;
     for (let i = 0; i < n; i++) {
       const x = x0 + i * (dw + gap), isF = failed.indexOf(i) >= 0;
-      s2 += `<g class="hw-disk" data-rd="${i}" tabindex="0" role="button" aria-label="Platte ${i + 1}${isF ? ', ausgefallen' : ''}"><rect class="hw-d0" x="${x}" y="${top}" width="${dw}" height="${dh}" rx="6"/>`;
+      s2 += `<g class="hw-disk" data-rd="${i}" tabindex="0" role="button" aria-label="Platte ${i + 1}${isF ? ', ausgefallen' : ''}"><rect x="${x + dw / 2 - (W - 40) / k / 2}" y="${top - 6}" width="${(W - 40) / k}" height="${dh + 30}" fill="transparent"/><rect class="hw-d0" x="${x}" y="${top}" width="${dw}" height="${dh}" rx="6"/>`;
       if (r > 0) s2 += `<rect class="hw-dr" x="${x}" y="${top}" width="${dw}" height="${dh * r}" rx="6"/><rect class="hw-dd" x="${x}" y="${top + dh * r}" width="${dw}" height="${dh * (1 - r)}" rx="6"/>`;
       else s2 += `<rect class="hw-dd" x="${x}" y="${top}" width="${dw}" height="${dh}" rx="6"/>`;
       if (isF) s2 += `<rect class="hw-df" x="${x}" y="${top}" width="${dw}" height="${dh}" rx="6"/><path d="M${x + 6} ${top + 6} L${x + dw - 6} ${top + dh - 6} M${x + dw - 6} ${top + 6} L${x + 6} ${top + dh - 6}" stroke="var(--danger)" stroke-width="4" stroke-linecap="round"/>`;
@@ -278,17 +278,26 @@
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : f(q.value, 2) + (q.ask.unit ? ' ' + q.ask.unit : ''));
   const qText = t => `<p style="margin:8px 0;white-space:pre-line">${esc(t)}</p>`;
+  /* Welle 2 (Muster 4.5): auch der Trainer gibt einen zweiten Versuch; gesperrt ist die Eingabe erst bei richtiger Antwort oder nach dem zweiten Fehlversuch */
+  const gesperrt = (r, pre) => !!(r && (r.ok || (pre === 'rt' && (r.tries || 0) >= 2)));
   function qBody(q, a, r, pre) {
-    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''} class="${r && i === q.ask.correct && (r.ok || pre === 'rt') ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
-    return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${r && (r.ok || pre === 'rt') ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+    const lk = gesperrt(r, pre);
+    if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${lk ? 'disabled' : ''} class="${lk && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
+    return `<label class="f"><span>${esc(q.ask.label)}${q.ask.unit ? ' (' + esc(q.ask.unit) + ')' : ''}</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lk ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label><p class="hint2 lr-hinweis">Zahl${q.ask.unit ? ' in ' + esc(q.ask.unit) : ''}, Komma oder Punkt. Erlaubte Abweichung: ±${esc(f(q.tol, 2))}${q.ask.unit ? ' ' + esc(q.ask.unit) : ''}.</p>`;
   }
   function evalQ(q, a) {
     if (q.ask.type === 'choice') { if (a.c == null) { toast('Wähle zuerst eine Antwort.'); return null; } return { ok: a.c === q.ask.correct, given: q.ask.choices[a.c] }; }
     const v = P(a.v); if (!Number.isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return null; }
     return { ok: Math.abs(v - q.value) <= q.tol + 1e-9, given: f(v, 2) + (q.ask.unit ? ' ' + q.ask.unit : '') };
   }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  const resBlock = (q, r, showExpl) => {
+    const fbc = r.ok ? 'ok' : showExpl ? 'loes' : 'tipp';
+    const head = `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>`;
+    const tail = showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Lösungsweg:</b> ${esc(q.expl)}</div>`
+      : exam() ? '<div class="rdout bad">🎓 Prüfmodus: Den Lösungsweg gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>'
+      : `<p><b>Tipp:</b> ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p>`;
+    return `<div class="lr-fb ${fbc}" id="hwFb" role="status">${head}${tail}</div>`;
+  };
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
@@ -297,7 +306,7 @@
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div>${qText(q.text)}${qBody(q, a, r, 'tk')}`;
       h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r) { h += resBlock(q, r, r.ok || (!exam() && (r.tries || 0) >= 2)); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
       h += '</div>';
     }
     h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
@@ -307,10 +316,12 @@
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies den Lösungsweg und versuche es noch einmal.'); }
-    renderTasks(false);
+    const prev = S.tRes && S.tRes.id === t.id ? S.tRes : null;
+    S.tRes = { id: t.id, ok: e.ok, given: e.given, pct, tries: (prev ? prev.tries || 0 : 0) + (e.ok ? 0 : 1) };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig.'); }
+    renderTasks(false); zeigFb('#taskView');
   }
+  function zeigFb(sel) { const go = () => { const el = $('#hwFb', $(sel)); if (el && window.LabRahmen && LabRahmen.zeig) LabRahmen.zeig(el); }; go(); setTimeout(go, 120); }
   function hintFor(q, id) {
     const h = lsGet('hints', {}), n = Math.min(2, (h[id] || 0) + 1), ex = exam(); h[id] = Math.max(h[id] || 0, n); lsSet('hints', h);
     if (ex && id !== 'rt') { const c = lsGet('ctipps', {}); c[id] = Math.max(c[id] || 0, n); lsSet('ctipps', c); }
@@ -345,8 +356,8 @@
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
       <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
       <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div>${qText(q.text)}${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      <div class="btns"><button class="btn pri" data-ra="chk" ${gesperrt(T.res, 'rt') ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${gesperrt(T.res, 'rt') ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
+      ${T.res ? resBlock(q, T.res, T.res.ok || (T.res.tries || 0) >= 2) : ''}</div>`;
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
@@ -354,13 +365,15 @@
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
+    if (tc && !gesperrt(T.res, 'rt')) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
     if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
-    lsSet('rt', S.rt); renderTrainer(); updatePal();
+    const T = S.tr; if (gesperrt(T.res, 'rt')) return; const e = evalQ(T.q, T.ans); if (!e) return;
+    const first = !T.res; T.res = { ok: e.ok, given: e.given, tries: (first ? 0 : T.res.tries || 0) + (e.ok ? 0 : 1) };
+    if (first) { S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); } }   /* gezählt wird der erste Versuch; der zweite zählt nicht für Serie und Statistik */
+    else if (e.ok) ding(); else sad();
+    lsSet('rt', S.rt); renderTrainer(); updatePal(); zeigFb('#rtView');
   }
 
   /* ============================================================ Beispiele */
@@ -402,7 +415,7 @@
       sec('Zahlensysteme und Speichergrößen', `<table><tr><th>dezimal (SI)</th><th>binär (IEC)</th></tr><tr><td>1 kB = 1.000 Byte</td><td>1 KiB = 1.024 Byte</td></tr><tr><td>1 MB = 10⁶ Byte</td><td>1 MiB = 2²⁰ Byte</td></tr><tr><td>1 GB = 10⁹ Byte</td><td>1 GiB = 2³⁰ Byte = 1.073.741.824 Byte</td></tr><tr><td>1 TB = 10¹² Byte</td><td>1 TiB = 2⁴⁰ Byte</td></tr></table><p>Datenträger sind dezimal angegeben (500 GB ≈ 465,7 GiB), Arbeitsspeicher binär (16 GB meint 16 GiB). Hex-Ziffern: A = 10 bis F = 15; Binär-Stellenwerte 128, 64, 32, 16, 8, 4, 2, 1. Mit n Adressleitungen sind 2ⁿ Byte adressierbar (32 Bit = 4 GiB).</p>`) +
       sec('Strom und Kosten', `<span class="eq">Energie in kWh = Leistung in W · Zeit in h / 1.000</span><span class="eq">Kosten = Energie in kWh · Preis je kWh</span>`) +
       sec('Kompatibilität', `<p>Prüfreihenfolge: <b>Sockel</b> (Prozessor zum Mainboard), <b>Speichertyp</b> DDR4 oder DDR5 (zum Mainboard, nicht austauschbar) und Speichermenge, <b>Kühler</b> (Sockelliste und Leistung mindestens TDP), <b>Formfaktor</b> (ATX, mATX, ITX), <b>Höhe</b> des Kühlers und <b>Länge</b> der Grafikkarte im Gehäuse, <b>Netzteil</b> (Bedarf mit Reserve).</p>`) +
-      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Zahlen und Begriffe sind Lehrbuch- und Übungswerte; Rechne mit den Werten der Aufgabe, nicht mit denen eines bestimmten Herstellers.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */

@@ -24,7 +24,7 @@
   const CRIT = [
     { k: 'zweck', label: 'Art der App (Quiz, Rechner, Trainer, Karteikarten …)', re: /\b(app|quiz|rechner|trainer|lernapp|karteikarten|lernhilfe|formelsammlung|spiel)\b/i, hint: 'Sage, was für eine App entstehen soll.' },
     { k: 'ziel', label: 'Zielgruppe', re: /(azubi|auszubildende|berufsschul|schüler|klasse|anfänger|elektroniker|lehrling|einsteiger)/i, hint: 'Für wen ist die App? Zum Beispiel „für Auszubildende zum Elektroniker“.' },
-    { k: 'thema', label: 'Thema oder Inhalt', re: /\b(zu|über|zum|zur|für)\s+(dem\s+|der\s+|den\s+)?(thema\s+)?[\p{L}-]{4,}/iu, hint: 'Nenne das Thema: „zum Thema Ohmsches Gesetz“.' },
+    { k: 'thema', label: 'Thema oder Inhalt', re: /\b(zum thema|zu dem thema|zur? thema|thema\s*[:\-–]|über|zum|zur)\s+(?!thema\b|\(bitte)(dem\s+|der\s+|den\s+)?[\p{L}-]{4,}/iu, hint: 'Nenne das Thema: „zum Thema Ohmsches Gesetz“.' },
     { k: 'bedienung', label: 'Bedienung und Gerät', re: /(ipad|handy|smartphone|touch|tablet|große knöpfe|grosse knöpfe|hochformat|querformat|finger)/i, hint: 'Wie wird die App bedient? „große Knöpfe fürs iPad“.' },
     { k: 'technik', label: 'Technik: eine Datei, ohne Internet', re: /(einzige[nr]?\s+(html|datei)|eine\s+(einzige\s+)?(html|datei)|html-datei|ohne\s+internet|offline|ohne\s+(externe\s+)?bibliothek|ohne externe)/i, hint: 'Verlange „eine einzige HTML-Datei, ohne Internet und ohne externe Bibliotheken“.' },
     { k: 'umfang', label: 'Umfang (Zahl der Fragen, Karten, Felder …)', re: /(\d+|ein|zwei|drei|vier|fünf|sechs|sieben|acht|neun|zehn|zwölf|fünfzehn|zwanzig)\s+(fragen|aufgaben|karten|eingabefelder|felder|knöpfe|schritte|seiten|rechnungen)/i, hint: 'Wie viel soll es sein? „zehn Fragen“.' },
@@ -163,12 +163,63 @@
   /* ---------------- Oberfläche ---------------- */
   const TABS = [['start', 'Start'], ['auftrag', 'Auftrag'], ['werkstatt', 'Werkstatt'], ['notizen', 'Notizen'], ['bibliothek', 'Bibliothek'], ['fuehrer', 'KI-Führerschein'], ['aufgaben', 'Aufgaben']];
   let tab = 'start', curNote = null, openTaskId = null, notePrev = false, noteMap = false;
-  function go(t, id) { tab = t; if (t === 'aufgaben') openTaskId = id || null; render(); window.scrollTo(0, 0); }
+  /* A-app-01: Die offene Aufgabe bleibt gemerkt. "Aufgaben" führt in sie zurück; nur "← Alle Aufgaben" und das Kreuz in der Leiste schließen sie. */
+  const setOpen = id => { openTaskId = id || null; try { if (openTaskId) sessionStorage.setItem('app.openTask', openTaskId); else sessionStorage.removeItem('app.openTask'); } catch (e) {} };
+  function go(t, id) { tab = t; if (t === 'aufgaben' && id) setOpen(id); render(); window.scrollTo(0, 0); }
+  const tries = {};   // Fehlversuche je Aufgabe (nur diese Sitzung)
   function render() {
     $('#tabs').innerHTML = TABS.map(([k, n]) => '<button class="tab' + (tab === k ? ' on' : '') + '" data-t="' + k + '">' + n + '</button>').join('');
     $$('#tabs .tab').forEach(b => { b.onclick = () => go(b.dataset.t); });
-    const v = $('#view'); ({ start: vStart, auftrag: vAuftrag, werkstatt: vWerk, notizen: vNotes, bibliothek: vLib, fuehrer: vFuehrer, aufgaben: vTasks })[tab](v);
+    const v = $('#view'); v.classList.toggle('breit', tab === 'werkstatt'); ({ start: vStart, auftrag: vAuftrag, werkstatt: vWerk, notizen: vNotes, bibliothek: vLib, fuehrer: vFuehrer, aufgaben: vTasks })[tab](v);
     try { localStorage.setItem('app.tab', tab); } catch (e) {}
+    taskBar(); tabHint(); stick();
+  }
+  /* Reiterleiste: Verlauf an den Rändern zeigt, dass sie wischbar ist (A-app-05); aktiver Reiter wird sichtbar gehalten */
+  function tabHint() {
+    const t = $('#tabs'); if (!t) return;
+    const upd = () => { const max = t.scrollWidth - t.clientWidth; t.classList.toggle('ml', max > 4 && t.scrollLeft > 4); t.classList.toggle('mr', max > 4 && t.scrollLeft < max - 4); };
+    if (!t.dataset.h) { t.dataset.h = '1'; t.addEventListener('scroll', upd, { passive: true }); window.addEventListener('resize', () => { upd(); stick(); }); }
+    const on = $('.tab.on', t); if (on && t.scrollWidth > t.clientWidth) t.scrollLeft = Math.max(0, on.offsetLeft - (t.clientWidth - on.offsetWidth) / 2);
+    upd();
+  }
+  /* Höhe von Kopfzeile und Band: Band und Aufgabenleiste kleben darunter */
+  function stick() {
+    const h = $('#app > header'); if (!h) return; const vis = e => e && e.offsetParent !== null && e.offsetHeight > 0;
+    const hh = h.offsetHeight; let b = hh; const band = $('#app > .lr-band'), tb = $('#tabs');
+    if (vis(band)) b += band.offsetHeight; if (vis(tb)) b += tb.offsetHeight;
+    const r = document.documentElement.style; r.setProperty('--hh', hh + 'px'); r.setProperty('--stk', b + 'px');
+  }
+  /* Aufgabe prüfen: gemeinsam für die Karte und die Leiste (Rückmeldung 4.5: Tipp, Lösung, Richtig) */
+  async function checkTask(t, out) {
+    out.innerHTML = '<p class="mute">Prüfe …</p>'; const L = await runCheck(t), p = pctOf(L); markDone(t.id, p); persist();
+    let cls, kopf;
+    if (p >= 100) { tries[t.id] = 0; cls = 'ok'; kopf = '<strong>Richtig.</strong> Alle Punkte erfüllt.'; }
+    else {
+      const n = tries[t.id] = (tries[t.id] || 0) + 1, miss = L.filter(x => !x.ok).length;
+      if (n < 2) { cls = 'tipp'; kopf = '<strong>Noch nicht.</strong> ' + (miss === 1 ? 'Ein Punkt fehlt.' : miss + ' Punkte fehlen.') + (t.hint ? ' Tipp: ' + esc(t.hint) : '') + ' Du hast einen zweiten Versuch.'; }
+      else { cls = 'loes'; kopf = '<strong>So kommst du ans Ziel.</strong> ' + (t.hint ? esc(t.hint) + ' ' : '') + (t.kind === 'app' || t.kind === 'prompt' ? 'Mit „Beispiel zeigen“ siehst du eine fertige Lösung.' : 'Lies die roten Punkte unten und ändere deine Antwort.'); }
+    }
+    out.innerHTML = '<div class="lr-fb ' + cls + '" id="tFb"><div class="pct ' + (p >= 100 ? 'g' : '') + '">' + p + ' %</div><p>' + kopf + '</p></div>' + L.map(l => '<div class="rl ' + (l.ok ? 'ok' : 'no') + '">' + (l.ok ? '✓ ' : '✗ ') + esc(l.text) + (!l.ok && l.why ? '<div class="why">' + esc(l.why) + '</div>' : '') + '</div>').join('');
+    const fb = $('#tFb', out); if (fb) { if (root.LabRahmen && root.LabRahmen.zeig) root.LabRahmen.zeig(fb); else try { fb.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
+    if (p >= 100) toast('Geschafft!');
+    return p;
+  }
+  let barOpen = false;
+  function taskBar() {
+    const el = $('#taskBar'); if (!el) return;
+    const t = openTaskId && TASKS.find(x => x.id === openTaskId);
+    if (!t || tab === 'aufgaben' || tab === 'start') { el.hidden = true; el.innerHTML = ''; el.dataset.id = ''; return; }
+    const keep = el.dataset.id === t.id ? ($('#tbRes', el) || {}).innerHTML : '';
+    el.dataset.id = t.id; el.hidden = false;
+    el.innerHTML = '<div class="tbr"><button class="tbt" id="tbT" aria-expanded="' + barOpen + '" aria-controls="tbD"><i aria-hidden="true">▸</i><span>Aufgabe: ' + esc(t.title) + '</span></button><button class="tbk pri" id="tbC">Prüfen</button><button class="tbk" id="tbG">Aufgabe</button><button class="tbk tbx" id="tbX" aria-label="Aufgabe schließen" title="Aufgabe schließen">✕</button></div><div class="tbd" id="tbD"' + (barOpen || keep ? '' : ' hidden') + '><p id="tbTx"' + (barOpen ? '' : ' hidden') + '>' + esc(t.text) + '</p><div id="tbRes">' + (keep || '') + '</div></div>';
+    $('#tbT').onclick = () => { barOpen = !barOpen; $('#tbT').setAttribute('aria-expanded', barOpen); $('#tbTx').hidden = !barOpen; $('#tbD').hidden = !barOpen && !$('#tbRes').innerHTML; };
+    $('#tbG').onclick = () => go('aufgaben');
+    $('#tbX').onclick = () => { setOpen(null); taskBar(); };
+    $('#tbC').onclick = async () => { $('#tbD').hidden = false; await checkTask(t, $('#tbRes')); };
+  }
+  /* eigenes Bestätigungsfenster statt natives confirm (A-app-03) */
+  function ask(title, text, yes, label) {
+    sheet(title, (b, close) => { b.innerHTML = '<p style="margin-top:0">' + esc(text) + '</p><div class="row"><button class="btn pri" id="aYes">' + esc(label || 'Weiter') + '</button><button class="btn" id="aNo">Abbrechen</button></div>'; $('#aNo', b).onclick = close; $('#aYes', b).onclick = () => { close(); yes(); }; $('#aNo', b).focus(); });
   }
 
   /* ----- Start ----- */
@@ -191,7 +242,8 @@
   };
   function buildPrompt(f) {
     const T = TYPES[f.type] || TYPES.Quiz;
-    return 'Baue eine ' + T[0] + ' zum Thema ' + (f.topic || 'Ohmsches Gesetz') + ' für ' + f.aud + '. Umfang: ' + f.amount + ' ' + T[1] + '; ' + T[2] + '. Bedienung: große Knöpfe, gut mit dem Finger bedienbar auf ' + f.dev + '. Technik: Liefere eine einzige HTML-Datei (HTML, CSS und JavaScript zusammen), ohne Internet und ohne externe Bibliotheken. Sprache der App: Deutsch.' + (f.extra ? ' ' + f.extra.trim() : '') + ' Gib nur den vollständigen Code in einem Codeblock aus, ohne lange Erklärung.';
+    const topic = String(f.topic || '').trim() || '(bitte Thema eintragen)', amount = parseInt(f.amount, 10) > 0 ? parseInt(f.amount, 10) : '(Zahl fehlt)';
+    return 'Baue eine ' + T[0] + ' zum Thema ' + topic + ' für ' + f.aud + '. Umfang: ' + amount + ' ' + T[1] + '; ' + T[2] + '. Bedienung: große Knöpfe, gut mit dem Finger bedienbar auf ' + f.dev + '. Technik: Liefere eine einzige HTML-Datei (HTML, CSS und JavaScript zusammen), ohne Internet und ohne externe Bibliotheken. Sprache der App: Deutsch.' + (f.extra ? ' ' + f.extra.trim() : '') + ' Gib nur den vollständigen Code in einem Codeblock aus, ohne lange Erklärung.';
   }
   function copy(text) { (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast('Kopiert'), () => { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); toast('Kopiert'); } catch (e) { toast('Bitte von Hand kopieren'); } t.remove(); }); }
   function vAuftrag(v) {
@@ -206,7 +258,7 @@
       + '<details><summary>Wenn etwas nicht klappt</summary><p>Beschreibe der KI genau: was du gemacht hast, was passiert ist, was du erwartet hast, und kopiere Fehlermeldungen wörtlich hinein. Bitte um die <b>vollständige</b> korrigierte Datei. Mehr dazu in Stufe 3.</p></details></div>';
     const upd = () => {
       const fm = { type: $('#fType').value, topic: $('#fTopic').value, aud: $('#fAud').value, dev: $('#fDev').value, amount: $('#fAmount').value || 10, extra: $('#fExtra').value }; lsSet('app.form', fm);
-      const p = buildPrompt(fm); $('#fOut').value = p; $('#fRub').innerHTML = rubric(p).map(c => '<span class="chip ' + (c.ok ? 'ok' : 'no') + '">' + (c.ok ? '✓ ' : '✗ ') + esc(c.label) + '</span>').join('');
+      const p = buildPrompt(fm); $('#fOut').value = p; const warn = (fm.topic && String(fm.topic).trim() ? '' : 'Das Thema fehlt. ') + (parseInt(fm.amount, 10) > 0 ? '' : 'Die Zahl bei Umfang fehlt. '); $('#fRub').innerHTML = (warn ? '<p class="bad">' + warn + 'Ohne diese Angaben ist der Auftrag nicht vollständig.</p>' : '') + rubric(p).map(c => '<span class="chip ' + (c.ok ? 'ok' : 'no') + '">' + (c.ok ? '✓ ' : '✗ ') + esc(c.label) + '</span>').join('');
     };
     ['fType', 'fTopic', 'fAud', 'fDev', 'fAmount', 'fExtra'].forEach(i => { $('#' + i).oninput = upd; }); upd();
     $('#fCopy').onclick = () => { copy($('#fOut').value); stat('appAuftrag', 1); };
@@ -217,28 +269,40 @@
   /* ----- Werkstatt ----- */
   let msgs = [], prevWidth = 'ipad';
   function vWerk(v) {
-    v.innerHTML = '<div class="card"><h2>Werkstatt</h2><p class="mute">Füge den kompletten Code der KI ein (vom ersten bis zum letzten Zeichen) und tippe „Starten“. Die App läuft abgeschottet: Sie sieht weder deinen Fortschritt noch das Internet.</p>'
+    v.innerHTML = '<div class="wgrid"><div class="card wc"><h2>Werkstatt</h2><p class="mute">Füge den kompletten Code der KI ein (vom ersten bis zum letzten Zeichen) und tippe „Starten“. Die App läuft abgeschottet: Sie sieht weder deinen Fortschritt noch das Internet.</p>'
       + '<textarea id="wCode" rows="9" spellcheck="false" placeholder="<!doctype html> …">' + esc(S.code) + '</textarea>'
       + '<div class="row"><button class="btn pri" id="wRun">▶ Starten</button><button class="btn" id="wClr">Leeren</button><label class="btn file">Datei laden<input type="file" id="wFile" accept=".html,.htm,.txt" hidden></label><label class="inl">Name <input id="wName" value="' + esc(S.name) + '" style="width:150px"></label><button class="btn" id="wSave">In Bibliothek speichern</button></div></div>'
-      + '<div class="card"><div class="row"><b>Vorschau</b><span class="grow"></span><button class="btn s' + (prevWidth === 'hand' ? ' on' : '') + '" data-w="hand">Handy</button><button class="btn s' + (prevWidth === 'ipad' ? ' on' : '') + '" data-w="ipad">iPad</button><button class="btn s' + (prevWidth === 'breit' ? ' on' : '') + '" data-w="breit">breit</button></div>'
-      + '<div id="wFrameBox"><iframe id="wFrame" sandbox="allow-scripts" title="Vorschau"></iframe></div></div>'
-      + '<div class="card"><h3>Meldungen und Prüfwerte</h3><div id="wMsg" class="msgs"></div><div class="row"><button class="btn" id="wBug">Fehler an die KI formulieren</button></div></div>';
+      + '<div class="card wp"><div class="row"><b>Vorschau</b><span class="grow"></span><button class="btn s' + (prevWidth === 'hand' ? ' on' : '') + '" data-w="hand">Handy</button><button class="btn s' + (prevWidth === 'ipad' ? ' on' : '') + '" data-w="ipad">iPad</button><button class="btn s' + (prevWidth === 'breit' ? ' on' : '') + '" data-w="breit">breit</button></div>'
+      + '<div id="wStat" role="status" class="mute">Noch nicht gestartet. Tippe auf „Starten“.</div><div id="wFrameBox"><iframe id="wFrame" sandbox="allow-scripts" title="Vorschau"></iframe></div></div>'
+      + '<div class="card wm"><h3>Meldungen und Prüfwerte</h3><div id="wMsg" class="msgs"></div><div class="row"><button class="btn" id="wBug">Fehler an die KI formulieren</button></div></div></div>';
     const fr = $('#wFrame'), width = () => ({ hand: '390px', ipad: '768px', breit: '100%' }[prevWidth]);
     const sizeFrame = () => { fr.style.width = width(); }; sizeFrame();
     $$('[data-w]', v).forEach(b => { b.onclick = () => { prevWidth = b.dataset.w; $$('[data-w]', v).forEach(x => x.classList.toggle('on', x === b)); sizeFrame(); }; });
     const showMsgs = facts => {
-      const M = $('#wMsg'); if (!M) return; const rows = [];
-      if (facts) rows.push('<div class="kv">Titel: <b>' + esc(facts.title || '(keiner)') + '</b> · Knöpfe: <b>' + facts.nButtons + '</b> · Eingabefelder: <b>' + facts.nInputs + '</b> · Textlänge: <b>' + facts.textLen + '</b> · Größe: <b>' + Math.round(S.code.length / 102.4) / 10 + ' kB</b></div>');
+      const M = $('#wMsg'); if (!M) return; const rows = [], nerr = msgs.filter(m => m.k === 'err').length, S0 = $('#wStat');
+      /* A-app-07: Prüfwerte als Haken-Checkliste mit Erklärung */
+      const hk = (ok, text, info) => rows.push('<div class="m hk ' + (ok ? 'ok' : 'no') + '"><span class="hz">' + (ok ? '✓' : '✗') + '</span>' + esc(text) + (info ? ' <span class="mute">' + esc(info) + '</span>' : '') + '</div>');
+      if (facts) {
+        hk(!!(facts.title && facts.title.trim()), facts.title && facts.title.trim() ? 'Die App hat einen Titel: „' + facts.title + '“' : 'Die App hat keinen Titel', 'Der Titel steht im Reiter des Browsers.');
+        hk(facts.nButtons > 0, facts.nButtons + (facts.nButtons === 1 ? ' Knopf gefunden' : ' Knöpfe gefunden'), 'Gezählt werden Knöpfe und Elemente mit der Rolle „button“.');
+        rows.push('<div class="m hk ok"><span class="hz">ℹ</span>' + facts.nInputs + (facts.nInputs === 1 ? ' Eingabefeld' : ' Eingabefelder') + ' (Textfelder, Zahlfelder, Auswahllisten; Schieber, Häkchen und Auswahlpunkte zählen nicht) <span class="mute">Ein Rechner braucht mindestens eines, ein Quiz oft keines.</span></div>');
+        hk(facts.textLen >= 40, 'Sichtbarer Text: ' + facts.textLen + ' Zeichen', facts.textLen >= 40 ? '' : 'Das ist sehr wenig. Ist die Seite vielleicht leer?');
+        hk(!facts.ext.length && !msgs.some(m => /Internet/.test(m.t)), 'Es wird nichts aus dem Internet geladen', 'Die Vorschau blockiert das Netz.');
+        hk(!nerr, nerr ? nerr + (nerr === 1 ? ' Fehlermeldung' : ' Fehlermeldungen') + ' beim Start' : 'Keine Fehlermeldung beim Start', nerr ? '' : 'Das heißt nur: Sie startet. Ob die Zahlen stimmen, prüfst du selbst.');
+        rows.push('<div class="kv">Größe: <b>' + Math.round(S.code.length / 102.4) / 10 + ' kB</b></div>');
+      }
       msgs.forEach(m => rows.push('<div class="m ' + m.k + '">' + (m.k === 'err' ? '⚠ ' : 'ℹ ') + esc(m.t) + '</div>'));
-      if (!msgs.length && facts) rows.push('<div class="m ok">✓ Keine Fehlermeldung. Prüfe jetzt die Inhalte: Stimmen Zahlen und Aussagen?</div>');
       M.innerHTML = rows.join('') || '<div class="mute">Noch nichts gestartet.</div>';
+      if (S0) { if (nerr) { S0.className = 'err'; S0.textContent = '⚠ ' + nerr + (nerr === 1 ? ' Fehlermeldung' : ' Fehlermeldungen') + '. Details unten bei „Meldungen“.'; } else if (facts) { S0.className = 'ok'; S0.textContent = '✓ Gestartet, keine Fehlermeldung. Prüfe jetzt die Inhalte.'; } else if (!msgs.length) { S0.className = 'mute'; S0.textContent = 'Noch nicht gestartet. Tippe auf „Starten“.'; } }
     };
     const start = () => {
       S.code = $('#wCode').value; S.name = $('#wName').value || 'Meine App'; persist(); msgs = [];
       if (!S.code.trim()) { toast('Füge zuerst Code ein'); return; }
       const frame = $('#wFrame'); const on = e => { if (e.source !== frame.contentWindow || !e.data) return; const d = e.data; if (d.type === 'err') { msgs.push({ k: 'err', t: d.msg }); showMsgs(); } else if (d.type === 'ext') { msgs.push({ k: 'err', t: 'Die App will etwas aus dem Internet laden (' + d.uri + '). Das ist hier blockiert. Bitte die KI um eine Version ohne externe Dateien.' }); showMsgs(); } else if (d.type === 'ready') { showMsgs(d.facts); } };
       if (start.h) window.removeEventListener('message', start.h); start.h = on; window.addEventListener('message', on);
+      const S0 = $('#wStat'); if (S0) { S0.className = 'mute'; S0.textContent = 'Startet …'; }
       frame.srcdoc = srcdoc(S.code); stat('appStart', 1);
+      if (window.innerWidth < 1000) { const bx = $('#wFrameBox'); if (bx) { bx.style.scrollMarginTop = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--stk'), 10) || 100) + 8 + 'px'; try { bx.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) { bx.scrollIntoView(); } } }
     };
     $('#wRun').onclick = start; $('#wCode').oninput = () => { S.code = $('#wCode').value; persist(); };
     $('#wClr').onclick = () => { S.code = ''; $('#wCode').value = ''; $('#wFrame').srcdoc = ''; msgs = []; persist(); showMsgs(); };
@@ -268,7 +332,7 @@
     if (cur && !noteMap) {
       $('#nTitle').onchange = e => { const old = cur.title, t = e.target.value.trim() || 'Ohne Titel'; if (old && key(old) !== key(t)) NOTES.forEach(x => { x.text = (x.text || '').replace(new RegExp('\\[\\[' + old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(\\|[^\\]]*)?\\]\\]', 'gi'), '[[' + t + '$1]]'); }); cur.title = t; persist(); render(); };
       $('#nEdit').onclick = () => { notePrev = false; render(); }; $('#nPrev').onclick = () => { notePrev = true; render(); };
-      $('#nDel').onclick = () => { if (confirm('Diese Notiz löschen?')) { NOTES = NOTES.filter(x => x !== cur); curNote = null; persist(); render(); } };
+      $('#nDel').onclick = () => { ask('Notiz löschen', 'Diese Notiz wird gelöscht. Das lässt sich nicht rückgängig machen.', () => { NOTES = NOTES.filter(x => x !== cur); curNote = null; persist(); render(); }); };
       const ta = $('#nText'); if (ta) ta.oninput = () => { cur.text = ta.value; cur.t = Date.now(); persist(); stat('appNotes', NOTES.length, 'max'); };
     }
     $$('a[data-n]', v).forEach(a => { a.onclick = e => { e.preventDefault(); let n = byTitle(a.dataset.n); if (!n) { n = { id: uid(), title: a.dataset.n, text: '', t: Date.now() }; NOTES.push(n); persist(); } curNote = n.id; noteMap = false; render(); }; });
@@ -304,6 +368,7 @@
 
   /* ----- Aufgaben ----- */
   function vTasks(v) {
+    if (openTaskId && !TASKS.some(t => t.id === openTaskId)) setOpen(null);
     if (openTaskId) { card(v, TASKS.find(t => t.id === openTaskId)); return; }
     const d = done(), cats = []; TASKS.forEach(t => { if (!cats.includes(t.cat)) cats.push(t.cat); });
     v.innerHTML = '<div class="card"><h2>Aufgaben</h2><p class="mute">In Stufen vom ersten Start bis zum eigenen Projekt. Jede Aufgabe prüft das Lab automatisch.</p></div>' + cats.map(c => '<div class="card"><h3>' + esc(c) + '</h3>' + TASKS.filter(t => t.cat === c).map(t => { const p = d[t.id] || 0; return '<button class="ti" data-id="' + t.id + '"><span class="dot ' + (p >= 100 ? 'g' : p > 0 ? 'y' : '') + '">' + (p >= 100 ? '✓' : '') + '</span><span><b>' + esc(t.title) + '</b><br><span class="mute small">' + ['', 'Einstieg', 'Mittel', 'Fortgeschritten'][t.level] + (p ? ' · ' + p + ' %' : '') + '</span></span></button>'; }).join('') + '</div>').join('');
@@ -324,7 +389,7 @@
     else if (t.kind === 'notes') w = '<div class="row"><button class="btn" id="tNotes">Zu den Notizen</button></div>';
     else if (t.kind === 'flag') w = '<div class="row"><button class="btn" id="tNotes">Zu den Notizen</button><button class="btn" id="tLib">Zur Bibliothek</button></div>';
     v.innerHTML = '<div class="card"><button class="btn s" id="tBack">← Alle Aufgaben</button><h2>' + esc(t.title) + '</h2><p>' + esc(t.text) + '</p>' + think(t) + w + '<div class="row"><button class="btn pri" id="tCheck">Prüfen</button><button class="btn" id="tHint">Tipp</button>' + (t.kind === 'app' || t.kind === 'prompt' ? '<button class="btn" id="tSol">Beispiel zeigen</button>' : '') + '<button class="btn" id="tHand" ' + ((d[t.id] || 0) > 0 ? '' : 'disabled') + '>Abgeben</button></div><div id="tHintBox" class="hintbox" hidden>' + esc(t.hint || '') + '</div><div id="tRes"></div></div>';
-    $('#tBack').onclick = () => go('aufgaben');
+    $('#tBack').onclick = () => { setOpen(null); go('aufgaben'); };
     $$('[data-th]', v).forEach(b => { b.onclick = () => { const o = lsGet('app.think', {}); o[t.id] = +b.dataset.th; lsSet('app.think', o); const q = root.THINK[t.id]; if (+b.dataset.th === q.right) { try { const th = lsGet('lm4.think', {}); th[t.id] = 1; lsSet('lm4.think', th); } catch (e) {} if (root.Badges) root.Badges.stat('think', 1, 'max'); } render(); }; });
     if ($('#tP')) $('#tP').oninput = e => { S.prompts[t.id] = e.target.value; persist(); };
     $$('input[data-i]', v).forEach(c => { c.onchange = () => { A.sel = $$('input[data-i]', v).filter(x => x.checked).map(x => +x.dataset.i); persist(); }; });
@@ -333,31 +398,27 @@
     ['tShown', 'tRight'].forEach(i => { if ($('#' + i)) $('#' + i).oninput = e => { A[i === 'tShown' ? 'shown' : 'right'] = e.target.value; persist(); }; }); if ($('#tBug')) $('#tBug').onchange = e => { A.bug = e.target.value; persist(); };
     if ($('#tWerk')) $('#tWerk').onclick = () => go('werkstatt'); if ($('#tAuf')) $('#tAuf').onclick = () => go('auftrag'); if ($('#tNotes')) $('#tNotes').onclick = () => go('notizen'); if ($('#tLib')) $('#tLib').onclick = () => go('bibliothek'); if ($('#tKf')) $('#tKf').onclick = () => go('fuehrer');
     $('#tHint').onclick = () => { $('#tHintBox').hidden = !$('#tHintBox').hidden; try { const h = lsGet('sim.hints', {}); h[t.id] = Math.max(h[t.id] || 0, 1); localStorage.setItem('sim.hints', JSON.stringify(h)); } catch (e) {} };
-    if ($('#tSol')) $('#tSol').onclick = () => { if (t.kind === 'prompt') { const keep = S.prompts[t.id]; t.sol(); const p = S.prompts[t.id]; S.prompts[t.id] = keep; sheet('Beispiel', b => { b.innerHTML = '<p class="mute" style="margin-top:0">So könnte ein guter Text aussehen. Schreibe deinen eigenen, am besten zu einem Thema, das dich interessiert.</p><div class="prev">' + esc(p) + '</div>'; }); } else if (confirm('Das Beispiel ersetzt den Code in der Werkstatt. Weiter?')) { const keep = { n: NOTES, l: LIB, a: S.answers, p: S.prompts, f: S.flags }; t.sol(); NOTES = keep.n; LIB = keep.l; S.answers = keep.a; S.prompts = keep.p; S.flags = keep.f; persist(); try { const h = lsGet('sim.hints', {}); h[t.id] = 3; localStorage.setItem('sim.hints', JSON.stringify(h)); } catch (e) {} go('werkstatt'); toast('Beispiel geladen: Starten und ansehen'); } };
-    $('#tCheck').onclick = async () => {
-      $('#tRes').innerHTML = '<p class="mute">Prüfe …</p>'; const L = await runCheck(t), p = pctOf(L); markDone(t.id, p); persist();
-      $('#tRes').innerHTML = '<div class="pct ' + (p >= 100 ? 'g' : '') + '">' + p + ' %</div>' + L.map(l => '<div class="rl ' + (l.ok ? 'ok' : 'no') + '">' + (l.ok ? '✓ ' : '✗ ') + esc(l.text) + (!l.ok && l.why ? '<div class="why">' + esc(l.why) + '</div>' : '') + '</div>').join('');
-      $('#tHand').disabled = !(p > 0); if (p >= 100) toast('Geschafft!');
-    };
+    if ($('#tSol')) $('#tSol').onclick = () => { if (t.kind === 'prompt') { const keep = S.prompts[t.id]; t.sol(); const p = S.prompts[t.id]; S.prompts[t.id] = keep; sheet('Beispiel', b => { b.innerHTML = '<p class="mute" style="margin-top:0">So könnte ein guter Text aussehen. Schreibe deinen eigenen, am besten zu einem Thema, das dich interessiert.</p><div class="prev">' + esc(p) + '</div>'; }); } else ask('Beispiel laden', 'Das Beispiel ersetzt den Code in der Werkstatt. Weiter?', () => { const keep = { n: NOTES, l: LIB, a: S.answers, p: S.prompts, f: S.flags }; t.sol(); NOTES = keep.n; LIB = keep.l; S.answers = keep.a; S.prompts = keep.p; S.flags = keep.f; persist(); try { const h = lsGet('sim.hints', {}); h[t.id] = 3; localStorage.setItem('sim.hints', JSON.stringify(h)); } catch (e) {} go('werkstatt'); toast('Beispiel geladen: Starten und ansehen'); }, 'Beispiel laden'); };
+    $('#tCheck').onclick = async () => { const p = await checkTask(t, $('#tRes')); $('#tHand').disabled = !(p > 0); };
     $('#tHand').onclick = () => { const p = done()[t.id] || 0; if (root.Auswertung && p > 0) root.Auswertung.handIn(t.id, p, t.title); };
   }
 
   /* ----- Menü ----- */
   function menu() {
     sheet('Menü', b => {
-      const items = [['Aufgaben', () => go('aufgaben')], ['Abzeichen', () => root.Badges && root.Badges.open()], ['Trainer: Erste Schritte', () => root.Trainer && root.Trainer.start()], ['Kampagne', () => root.Kampagne && root.Kampagne.open()], ['Lernstand sichern oder laden', () => root.Lernstand && root.Lernstand.open()], ['Ergebnis senden', () => root.Auswertung && root.Auswertung.openSend()], ['Lernheft App-Werkstatt (PDF)', () => { location.href = 'tonfunk-lab-lernen-app.pdf'; }], ['Neu in dieser Version', () => root.LabNeu && root.LabNeu()]];
+      const items = [['Aufgaben', () => go('aufgaben')], ['Abzeichen', () => root.Badges && root.Badges.open()], ['Trainer: Erste Schritte', () => root.Trainer && root.Trainer.start()], ['Kampagne', () => root.Kampagne && root.Kampagne.open()], ['Lernstand sichern oder laden', () => root.Lernstand && root.Lernstand.open()], ['Ergebnis senden', () => root.Auswertung && root.Auswertung.openSend()], ['Lernheft App-Werkstatt (PDF)', () => { location.href = 'tonfunk-lab-lernen-app.pdf'; }], ['Neu in dieser Version', () => root.LabNeu && root.LabNeu()], [(document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')) === 'light' ? 'Dunkles Design' : 'Helles Design', () => { const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'), n = cur === 'light' ? 'dark' : 'light'; document.documentElement.dataset.theme = n; try { localStorage.setItem('lm4.theme', n); } catch (e) {} stick(); }]];
       b.innerHTML = items.map((x, i) => '<button class="row mi" data-i="' + i + '">' + x[0] + '</button>').join('');
       $$('.mi', b).forEach(btn => { btn.onclick = () => { $('.backdrop').remove(); items[+btn.dataset.i][1](); }; });
     });
   }
   root.AppWerk = { go, W, TASKS, DATA, runApp, rubric, makeZip, encodeApp, decodeApp, md, state: () => ({ S, NOTES, LIB }) };
-  root.LabTrainerAPI = { lab: 'app', go, tab: () => tab, notes: () => NOTES.length, lib: () => LIB.length, code: () => S.code };
+  root.LabTrainerAPI = { lab: 'app', go, tab: () => tab, notes: () => NOTES.length, lib: () => LIB.length, code: () => S.code, solve: id => { const t = TASKS.find(x => x.id === id); if (t && t.sol) { t.sol(); persist(); } } };
   root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { go('aufgaben', id); return true; } } catch (e) {} return false; };
 
   /* ----- Start ----- */
   const init = () => {
     $('#bMenu').onclick = menu; const sp = new URLSearchParams(location.search), t0 = sp.get('aufgabe'); let st = 'start'; try { st = localStorage.getItem('app.tab') || 'start'; } catch (e) {}
-    tab = TABS.some(x => x[0] === st) ? st : 'start'; if (t0 && TASKS.some(t => t.id === t0)) { tab = 'aufgaben'; openTaskId = t0; } render();
+    tab = TABS.some(x => x[0] === st) ? st : 'start'; try { const o = sessionStorage.getItem('app.openTask'); if (o && TASKS.some(t => t.id === o)) openTaskId = o; } catch (e) {} if (t0 && TASKS.some(t => t.id === t0)) { tab = 'aufgaben'; setOpen(t0); } render();
     if (!document.getElementById('gate')) return;
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

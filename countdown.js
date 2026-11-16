@@ -170,6 +170,7 @@
     if (cd) {
       h += '<div class="gr"><b>' + esc(p.status === 'heute' ? 'Heute' : p.status === 'vorbei' ? p.kurz : p.kurz.replace('noch ', 'Noch ')) + '</b><span>' + esc(p.label) + ' am ' + dmy(cd.datum) + '</span></div>';
       if (p.status === 'zukunft') h += '<p class="mu">Das sind ' + wochenText(Math.ceil(p.tage / 7)) + (p.beginn ? '. Der Wochenplan beginnt am ' + dmy(p.beginn) + ' (8 Wochen vor dem Termin).' : '.') + '</p>';
+      if (p.status === 'zukunft' && p.weeks.length && !p.aktuell) h += '<p class="mu">So funktioniert es: ' + (p.beginn ? 'Der Plan startet in ' + (p.tage - 7 * WOCHEN) + (p.tage - 7 * WOCHEN === 1 ? ' Tag' : ' Tagen') + '. ' : '') + 'Bis dahin zeigt „Heute dran“ eine Starthilfe, und der Wochenplan unten ist eine Vorschau. Mit „Los“ startest du ein Thema direkt.</p>';
       if (p.status === 'vorbei') h += '<p class="mu">Der Termin ist vorbei. Setze ein neues Datum, wenn der nächste ansteht.</p>';
     } else h += '<p>Setze das Datum deiner ' + (weg ? 'Klausur oder deines Abschlusses' : 'Prüfung') + '. Daraus entsteht ein Plan mit den Themen, die bei dir noch Luft nach oben haben.</p>';
     if (p.heute.length) h += '<h3>Heute dran</h3><ul>' + p.heute.map(itemHtml).join('') + '</ul>';

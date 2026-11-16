@@ -17,6 +17,18 @@
   const fx = () => root.LochFX || null;
   const ding = () => { const F = fx(); if (F && F.sound) try { F.sound('ding', 0.6); } catch (e) {} };
   const sad = () => { const F = fx(); if (F && F.sound) try { F.sound('sad', 0.5); } catch (e) {} };
+  /* Aussprache: Gerätestimme, Englisch (en-GB); ohne Sprachausgabe gibt es keinen Knopf */
+  const canSay = () => { try { return !!(root.speechSynthesis && typeof root.SpeechSynthesisUtterance === 'function'); } catch (e) { return false; } };
+  function say(text) {
+    try {
+      const ss = root.speechSynthesis; ss.cancel();
+      const u = new root.SpeechSynthesisUtterance(text); u.lang = 'en-GB'; u.rate = 0.9;
+      const v = (ss.getVoices() || []).filter(x => /^en[-_]GB/i.test(x.lang))[0] || (ss.getVoices() || []).filter(x => /^en/i.test(x.lang))[0]; if (v) u.voice = v;
+      ss.speak(u);
+    } catch (e) {}
+  }
+  const sayBtn = w => canSay() ? `<button type="button" class="say" data-say="${esc(w)}" aria-label="Aussprache: ${esc(w)}" title="Aussprache (Englisch)">🔊</button>` : '';
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-say]'); if (b) say(b.dataset.say); });
   function toast(m) { const t = $('#toast'); if (!t) return; t.textContent = m; t.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), Math.max(2200, m.length * 55)); }
   function sheet(title, build) {
     const bd = document.createElement('div'); bd.className = 'backdrop';
@@ -44,7 +56,7 @@
     wort: { q: '' },
     warn: Object.assign({ injury: 'serious', imminent: '1' }, lsGet('warn', {})),
     zahl: Object.assign({ s: '1,250.5', mode: 'en', q: 'len', v: '2,5', from: 'in', to: 'mm' }, lsGet('zahl', {})),
-    task: null, tq: null, tAns: {}, tRes: null,
+    task: null, tq: null, tAns: {}, tRes: null, tFehl: {},
     tr: { q: null, ans: {}, res: null, level: 0 },
     rt: Object.assign({ n: 0, ok: 0, streak: 0, best: 0 }, lsGet('rt', {}))
   };
@@ -73,6 +85,7 @@
     if (d.lines) h += d.lines.map((l, i) => `<div class="ln${d.mark === i ? ' mk' : ''}">${d.numbered ? `<i>${i + 1}</i>` : ''}<span>${esc(l)}</span></div>`).join('');
     return h + '</div>';
   }
+  const tableRaw = (head, rows) => `<div class="tw"><table class="tt"><tr>${head.map(x => `<th>${esc(x)}</th>`).join('')}</tr>${rows.map(r => `<tr>${r.map(x => `<td>${x}</td>`).join('')}</tr>`).join('')}</table></div>`;
   const table = (head, rows) => `<div class="tw"><table class="tt"><tr>${head.map(x => `<th>${esc(x)}</th>`).join('')}</tr>${rows.map(r => `<tr>${r.map(x => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</table></div>`;
 
   /* ============================================================ Vokabeltrainer */
@@ -87,6 +100,11 @@
     V.cur = C.nextCard(R0, cs, lsGet('cards', {}), V.cur && V.cur.en);
     V.mc = C.makeChoices(R0, D.vocab, V.cur, S.vok.dir, 4);
   }
+  /* K-eng-05: sichere Karten je Fachgebiet (Box 3) */
+  function gruppenBalken(boxes) {
+    const cs = C.filterCards(D.vocab, S.vok.job, 'all'); if (!cs.length) return '';
+    return '<div class="card pl"><h4>Fortschritt je Fachgebiet</h4>' + D.groups.map(g => { const l = cs.filter(c => c.g === g[0]); if (!l.length) return ''; const k = l.filter(c => (boxes[c.en] || 0) >= 2).length; return `<div class="gbar"><span class="nm">${esc(g[1])}</span><span class="bt" role="img" aria-label="${k} von ${l.length} sicher"><i style="width:${Math.round(k / l.length * 100)}%"></i></span><b>${k}/${l.length}</b></div>`; }).join('') + '<p class="hint2">Sicher = Box 3 erreicht.</p></div>';
+  }
   function renderVok() {
     const V = S.V, cs = vCards(), boxes = lsGet('cards', {}), known = cs.filter(c => (boxes[c.en] || 0) >= 2).length;
     if (!V.cur || cs.indexOf(V.cur) < 0) newCard();
@@ -95,14 +113,14 @@
     if (!V.cur) h += note('Für diese Auswahl gibt es keine Karten. Wähle einen anderen Beruf oder ein anderes Fachgebiet.');
     else {
       const c = V.cur, q = S.vok.dir === 'en2de' ? c.en : c.de, a = S.vok.dir === 'en2de' ? c.de : c.en;
-      h += `<div class="card pl"><h4>${esc(D.groupName(c.g))} · Box ${(boxes[c.en] || 0) + 1} von 3</h4><div class="fw">${esc(q)}</div>`;
+      h += `<div class="card pl"><h4>${esc(D.groupName(c.g))} · Box ${(boxes[c.en] || 0) + 1} von 3</h4><div class="fwrow"><div class="fw">${esc(q)}</div>${S.vok.dir === 'en2de' ? sayBtn(c.en) : ''}</div>`;
       if (S.vok.mode === 'karte') {
-        h += V.shown ? `<div class="fw back">${esc(a)}</div><div class="btns"><button class="btn pri" data-va="yes">✓ Gewusst</button><button class="btn" data-va="no">✗ Nochmal</button></div>` : `<div class="btns"><button class="btn pri" data-va="show">Aufdecken</button></div><p class="hint2">Denke zuerst an die Antwort, dann decke auf und sage ehrlich, ob du sie wusstest.</p>`;
+        h += V.shown ? `<div class="fwrow back"><div class="fw back">${esc(a)}</div>${S.vok.dir === 'de2en' ? sayBtn(c.en) : ''}</div><div class="btns"><button class="btn pri" data-va="yes">✓ Gewusst</button><button class="btn" data-va="no">✗ Nochmal</button></div>` : `<div class="btns"><button class="btn pri" data-va="show">Aufdecken</button></div><p class="hint2">Denke zuerst an die Antwort, dann decke auf und sage ehrlich, ob du sie wusstest.</p>`;
       } else {
         const done = V.sel >= 0;
         h += `<div class="opts">${V.mc.choices.map((x, i) => `<button data-vc="${i}" ${done ? 'disabled' : ''} class="${done ? (i === V.mc.correct ? 'ok' : i === V.sel ? 'bad' : '') : ''}">${esc(x)}</button>`).join('')}</div>${done ? '<div class="btns"><button class="btn pri" data-va="next">Nächste Karte</button></div>' : ''}`;
       }
-      h += `</div><p class="hint2">Gewusste Karten wandern in höhere Boxen und kommen seltener dran. Fehler schicken die Karte zurück in Box 1. Der Stand bleibt auf diesem Gerät gespeichert.</p>`;
+      h += `</div>${gruppenBalken(boxes)}<p class="hint2">Gewusste Karten wandern in höhere Boxen und kommen seltener dran. Fehler schicken die Karte zurück in Box 1. Der Stand bleibt auf diesem Gerät gespeichert.</p>`;
     }
     $('#vokView').innerHTML = h;
   }
@@ -126,7 +144,7 @@
   }
   function wortBody() {
     const rows = wortRows(), boxes = lsGet('cards', {});
-    return `<p class="hint2" style="margin:0 0 6px">${rows.length} Wörter</p>` + table(['Englisch', 'Deutsch', 'Fachgebiet', 'Box'], rows.map(c => [c.en, c.de, D.groupName(c.g), String((boxes[c.en] || 0) + 1)]));
+    return `<p class="hint2" style="margin:0 0 6px">${rows.length} Wörter</p>` + tableRaw(['Englisch', '', 'Deutsch', 'Fachgebiet', 'Box'], rows.map(c => [esc(c.en), sayBtn(c.en), esc(c.de), esc(D.groupName(c.g)), String((boxes[c.en] || 0) + 1)]));
   }
   function renderWort() {
     $('#wortView').innerHTML = `<div class="card pl"><h4>Wortliste</h4>${vFilters()}<label class="f"><span>Suche (Englisch oder Deutsch)</span><input data-wq="1" autocomplete="off" value="${esc(S.wort.q)}"></label><div id="wortBody">${wortBody()}</div></div>`;
@@ -211,34 +229,44 @@
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const solText = q => (q.ask.type === 'choice' ? q.ask.choices[q.ask.correct] : q.ask.type === 'multi' ? q.ask.rows.map(r => r.label + ' → ' + r.options[r.correct]).join('; ') : f(q.value, 2) + ' ' + q.ask.unit);
   function qBody(q, a, r, pre) {
-    const lock = r && (r.ok || pre === 'rt');
+    const lock = r && (r.ok || r.stufe === 'loes');
     if (q.ask.type === 'choice') return `<div class="opts">${q.ask.choices.map((c, i) => `<button data-tc="${i}" ${lock ? 'disabled' : ''} class="${lock && i === q.ask.correct ? 'ok' : a.c === i ? (r && !r.ok ? 'bad' : 'on') : ''}">${esc(c)}</button>`).join('')}</div>`;
     if (q.ask.type === 'multi') return q.ask.rows.map((row, i) => `<label class="f"><span>${esc(row.label)}${r && r.rows ? (r.rows[i] ? ' ✓' : ' ✗') : ''}</span><select data-tm="${i}" ${lock ? 'disabled' : ''}><option value="">– wählen –</option>${row.options.map((o, j) => `<option value="${j}"${a.m && a.m[i] === j ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`).join('');
-    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lock ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div></label>`;
+    return `<label class="f"><span>${esc(q.ask.label)} (${esc(q.ask.unit)})</span><div class="qin"><input data-in="1" inputmode="decimal" autocomplete="off" value="${esc(a.v || '')}" ${lock ? 'disabled' : ''}><span class="u">${esc(q.ask.unit)}</span></div>${eingabeHinweis(q)}</label>`;
   }
   function evalQ(q, a) { const r = C.evalAnswer(q, a); if (r.incomplete) { toast(r.msg); return null; } return r; }
-  const resBlock = (q, r, showExpl) => `<ul class="tl"><li class="${r.ok ? 'ok' : 'bad'}">${r.ok ? '✓ Richtig: ' + esc(r.given) : '✗ Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</li>${q.ask.type === 'num' && q.tol > 0.011 ? `<li>ℹ Erlaubte Abweichung: ±${esc(f(q.tol, 2))} ${esc(q.ask.unit)} (wegen Rundung).</li>` : ''}</ul>` +
-    (showExpl ? `<div class="rdout ${r.ok ? 'ok' : 'bad'}"><b>Lösung:</b> ${esc(solText(q))}<br><br><b>Erklärung:</b> ${esc(q.expl)}</div>` : '<div class="rdout bad">🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp oder versuche es noch einmal.</div>');
+  /* Rückmeldung nach "Prüfen" (4.5): r.stufe = 'ok' | 'tipp' | 'loes' | 'pruef' */
+  function fbHTML(q, r) {
+    if (r.stufe === 'ok') return `<div class="lr-fb ok fb"><p><strong>✓ Richtig:</strong> ${esc(r.given)}</p><p>${esc(q.expl)}</p></div>`;
+    const ist = q.ask.type === 'multi' ? '<strong>Noch nicht:</strong> ' + esc(r.given) + ' Die Zeilen mit ✗ stimmen nicht.' : '<strong>Noch nicht:</strong> Deine Antwort „' + esc(r.given) + '“ stimmt nicht.';
+    if (r.stufe === 'tipp') return `<div class="lr-fb tipp fb"><p>${ist}</p><p><strong>Tipp:</strong> ${esc(q.tips[0])} Du hast einen zweiten Versuch.</p></div>`;
+    if (r.stufe === 'loes') return `<div class="lr-fb loes fb"><p>${ist}</p><p><strong>Lösung:</strong> ${esc(solText(q))}</p><p><strong>Erklärung:</strong> ${esc(q.expl)}</p></div>`;
+    return `<div class="lr-fb tipp fb"><p>${ist}</p><p>🎓 Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Nutze einen Tipp (kostet 25 %) oder versuche es noch einmal.</p></div>`;
+  }
+  const zeigFb = el => { try { const f = el && el.querySelector('.lr-fb'); if (f && root.LabRahmen) root.LabRahmen.zeig(f); } catch (e) {} };
+  const eingabeHinweis = q => q.ask.type === 'num' ? `<p class="lr-hinweis hint2">Zahl in ${esc(q.ask.unit)}.${q.tol > 0 ? ' ±' + esc(f(q.tol, 2)) + ' ' + esc(q.ask.unit) + ' gelten als richtig.' : ''}</p>` : '';
+  const stufeFuer = (ok, fehl, ex) => ok ? 'ok' : ex ? 'pruef' : fehl >= 2 ? 'loes' : 'tipp';
 
   function renderTasks(top) {
     const V = $('#taskView'), d = done(), prog = lsGet('prog', {}), t = curTask(), n100 = TASKS.filter(x => d[x.id]).length; let h = '';
     if (t) {
       const q = S.tq, r = S.tRes && S.tRes.id === t.id ? S.tRes : null, a = S.tAns[t.id] || {};
       h += `<div class="card pl" style="border-color:var(--accent)"><h4>Aufgabe · ${esc(t.cat)}</h4><div class="big">${esc(t.title)}</div><div class="lv">${dots(t.level)}</div><p style="margin:8px 0">${esc(q.text)}</p>${docHtml(q.doc)}${qBody(q, a, r, 'tk')}`;
-      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && r.ok ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
+      if (r) h += fbHTML(q, r);
+      h += `<div class="btns"><button class="btn pri" data-ta="chk"${r && (r.ok || r.stufe === 'loes') ? ' disabled' : ''}>✓ Prüfen</button><button class="btn" data-ta="hint">💡 Tipp</button><button class="btn" data-ta="close">Schließen</button></div>`;
       if (exam()) h += '<p class="hint2" style="color:var(--warn)">🎓 Prüfmodus: Jede Tipp-Stufe kostet 25 % der Punkte.</p>';
-      if (r) { h += resBlock(q, r, r.ok || !exam()); if (r.ok) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`; }
+      if (r && (r.ok || r.stufe === 'loes')) h += `<div class="btns"><button class="btn pri" data-ta="next">Nächste Aufgabe</button></div>`;
       h += '</div>';
     }
-    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Tipp: Im Prüfmodus (🎓 oben) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
+    h += `<p class="hint2" style="margin:4px 0 0">${n100} von ${TASKS.length} Aufgaben gelöst. ${exam() ? '🎓 Prüfmodus ist an.' : 'Im Prüfmodus (Umschalter oben unter „Üben“) zählen Tipps als Abzug.'}</p><p class="hint2" style="margin:4px 0 0">⚠ ${esc(UEB)}</p>`;
     let last = '';
     TASKS.forEach(x => { if (x.cat !== last) { last = x.cat; h += `<div class="gh">${esc(x.cat)}</div>`; } const p = prog[x.id]; h += `<button class="row" data-t="${esc(x.id)}"><span class="dot ${d[x.id] ? 'g' : ''}">${d[x.id] ? '✓' : ''}</span><div class="grow"><b>${esc(x.title)}</b><small><span class="lv">${dots(x.level)}</span>${p != null && p < 100 ? ' · bisher ' + p + ' %' : ''}</small></div></button>`; });
-    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0;
+    V.innerHTML = h; if (top !== false) $('#pgTasks').scrollTop = 0; else if (t && S.tRes) zeigFb(V);
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, e = evalQ(S.tq, a); if (!e) return; const pct = e.ok ? pctFor(t.id) : 0;
-    S.tRes = { id: t.id, ok: e.ok, given: e.given, rows: e.rows, pct };
-    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast('Noch nicht richtig. Lies die Erklärung und versuche es noch einmal.'); }
+    const fehl = e.ok ? 0 : (S.tFehl[t.id] = (S.tFehl[t.id] || 0) + 1); S.tRes = { id: t.id, ok: e.ok, given: e.given, rows: e.rows, pct, stufe: stufeFuer(e.ok, fehl, exam()) };
+    if (e.ok) { markSolved(t.id, pct); const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (er) {} else ding(); toast(exam() && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } else { sad(); toast(S.tRes.stufe === 'loes' ? 'Lösung und Erklärung stehen unter der Aufgabe.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
   function hintFor(q, id) {
@@ -253,7 +281,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tFehl[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }
@@ -270,29 +298,31 @@
   });
 
   /* Zufalls-Trainer (Tipps kosten hier nie etwas) */
-  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; renderTrainer(); }
+  function newTrainer() { const T = S.tr; T.q = D.randomQ(R0, T.level); T.ans = {}; T.res = null; T.fehl = 0; renderTrainer(); }
   function renderTrainer() {
     const T = S.tr; if (!T.q) { newTrainer(); return; }
     const q = T.q;
     $('#rtView').innerHTML = `<div class="stats"><div class="bx"><b>${S.rt.n}</b>Fragen</div><div class="bx"><b>${S.rt.ok}</b>richtig</div><div class="bx"><b>${S.rt.streak}</b>Serie</div><div class="bx"><b>${S.rt.best}</b>Beste Serie</div></div>
       <div class="fbar"><span class="lbl" style="font-size:12px;color:var(--mute)">STUFE</span><div class="seg">${[[0, 'Alle'], [1, '1'], [2, '2'], [3, '3']].map(l => `<button data-lv="${l[0]}" class="${T.level === l[0] ? 'on' : ''}">${l[1]}</button>`).join('')}</div></div>
-      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${docHtml(q.doc)}${qBody(q, T.ans, T.res, 'rt')}
-      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res ? 'Nächste Frage' : 'Überspringen'}</button></div>
-      ${T.res ? resBlock(q, T.res, true) : ''}</div>`;
+      <div class="card pl"><h4>${esc(q.cat)} · <span class="lv">${dots(q.level)}</span></h4><div class="big">${esc(q.title)}</div><p style="margin:8px 0">${esc(q.text)}</p>${docHtml(q.doc)}${qBody(q, T.ans, T.res, 'rt')}${T.res ? fbHTML(q, T.res) : ''}
+      <div class="btns"><button class="btn pri" data-ra="chk" ${T.res && T.res.stufe !== 'tipp' ? 'disabled' : ''}>✓ Prüfen</button><button class="btn" data-ra="hint" ${T.res && T.res.stufe !== 'tipp' ? 'disabled' : ''}>💡 Tipp</button><button class="btn" data-ra="next">${T.res && T.res.stufe !== 'tipp' ? 'Nächste Frage' : 'Überspringen'}</button></div>
+</div>`;
+    if (T.res) zeigFb($('#rtView'));
   }
   const rv = $('#rtView');
   rv.addEventListener('input', e => { if (e.target.dataset.in) S.tr.ans.v = e.target.value; });
-  rv.addEventListener('change', e => { if (e.target.dataset.tm != null && !S.tr.res) setMulti(S.tr.ans, +e.target.dataset.tm, e.target.value); });
+  rv.addEventListener('change', e => { if (e.target.dataset.tm != null && (!S.tr.res || S.tr.res.stufe === 'tipp')) setMulti(S.tr.ans, +e.target.dataset.tm, e.target.value); });
   rv.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset.in) { e.preventDefault(); trainerCheck(); } });
   rv.addEventListener('click', e => {
     const T = S.tr, tc = e.target.closest('[data-tc]'), ra = e.target.closest('[data-ra]'), lv = e.target.closest('[data-lv]');
     if (lv) { T.level = +lv.dataset.lv; newTrainer(); return; }
-    if (tc && !T.res) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
-    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if (!T.res && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
+    if (tc && (!T.res || T.res.stufe === 'tipp')) { T.ans.c = +tc.dataset.tc; renderTrainer(); return; }
+    if (ra) { const a = ra.dataset.ra; if (a === 'chk') trainerCheck(); else if (a === 'hint') hintFor(T.q, 'rt'); else { if ((!T.res || T.res.stufe === 'tipp') && S.rt.streak) { S.rt.streak = 0; lsSet('rt', S.rt); } newTrainer(); updatePal(); } }
   });
   function trainerCheck() {
-    const T = S.tr; if (T.res) return; const e = evalQ(T.q, T.ans); if (!e) return;
-    T.res = { ok: e.ok, given: e.given, rows: e.rows }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
+    const T = S.tr; if (T.res && T.res.stufe !== 'tipp') return; const e = evalQ(T.q, T.ans); if (!e) return;
+    if (!e.ok && !T.fehl) { T.fehl = 1; T.res = { ok: false, given: e.given, rows: e.rows, stufe: 'tipp' }; sad(); renderTrainer(); return; }
+    T.res = { ok: e.ok, given: e.given, rows: e.rows, stufe: e.ok ? 'ok' : 'loes' }; S.rt.n++; if (e.ok) { S.rt.ok++; S.rt.streak++; S.rt.best = Math.max(S.rt.best, S.rt.streak); ding(); } else { S.rt.streak = 0; sad(); }
     lsSet('rt', S.rt); renderTrainer(); updatePal();
   }
 
@@ -354,7 +384,7 @@
       sec('Warnhinweise', `<table><tr><th>Signalwort</th><th>Bedeutung</th></tr>${C.SIGNALS.map(s => `<tr><td>${esc(s.w)} (${esc(s.de)})</td><td>${esc(s.rule)}</td></tr>`).join('')}</table><p class="hint2">Welche Signalwörter dein Betrieb benutzt, steht in seinen Anleitungen.</p>`) +
       sec('E-Mail und Telefon', `<p>Formell bleiben: keine Kurzformen („can’t“), keine Abkürzungen („thx“), kein „Hi“. Höflich fragen mit „Could you please …?“. Am Telefon: „I am afraid …“, „Could you spell that, please?“, „One moment, please.“</p>`) +
       sec('False Friends', `<p>Wörter, die wie deutsche aussehen, aber etwas anderes bedeuten: <i>actual</i> = tatsächlich, <i>become</i> = werden, <i>gift</i> = Geschenk, <i>eventually</i> = schließlich. Die ganze Liste steht unter „Nachschlagen“.</p>`) +
-      `<p class="hint2">Fachbegriffe und Beispiele sind eigene Übungsformulierungen; Unsicheres ist im Quelltext mit PRUEFEN markiert.</p>`;
+      `<p class="hint2">Fachbegriffe und Beispiele sind eigene Übungsformulierungen.</p>`;
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
