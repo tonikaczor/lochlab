@@ -47,7 +47,7 @@
       <p style="margin:8px 0">Alle bekommen dieselben Aufgaben mit denselben Zahlen. Wer mehr richtig hat, gewinnt. Bei Gleichstand gewinnt die kürzere Zeit.</p>
       <ol class="stp"><li>Einer tippt auf „Neues Duell“ und zeigt den Code.</li><li>Alle anderen tippen auf „Beitreten“ und geben den Code ein.</li><li>Zählt gemeinsam 3, 2, 1 und tippt alle zugleich auf „Start“.</li><li>Am Ende vergleicht ihr die Ergebniscodes. Wer mehr richtig hat, gewinnt. Bei gleich vielen richtigen gewinnt, wer schneller fertig war.</li></ol>
       <div class="btns"><button class="btn pri" data-rd="neu">⚔️ Neues Duell</button><button class="btn" data-rd="bei">Beitreten</button>${offen ? '<button class="btn" data-rd="weiter">Laufende Runde fortsetzen</button>' : ''}${c && c.ende != null ? '<button class="btn" data-rd="letzte">Letztes Ergebnis</button>' : ''}</div>
-      <p class="hint2">Im Duell gibt es keine Tipps und je Aufgabe nur einen Versuch. Den Lösungsweg siehst du nach der Runde. Taschenrechner und Tabellenbuch sind erlaubt.</p></div>`;
+      <p class="hint2">Im Duell gibt es keine Tipps und je Aufgabe nur einen Versuch. Den Lösungsweg siehst du nach der Runde. Taschenrechner und Tabellenbuch sind erlaubt. Unter jeder Aufgabe findest du ein Notizfeld für Nebenrechnungen und einen Taschenrechner.</p></div>`;
     if (h.length) x += '<div class="gh">Deine letzten Runden</div>' + h.slice(0, 8).map(e => `<div class="row rd-h"><div class="grow"><b>${e.richtig} von ${e.n} richtig</b><small>${esc(M.zeit(e.sek))} min · ${esc(e.code)}</small></div></div>`).join('');
     V().innerHTML = x;
   }
@@ -83,6 +83,8 @@
       <label class="f"><span>${esc(p.label)}${p.unit ? ' (' + esc(p.unit) + ')' : ''}</span><div class="qin"><input id="rdIn" inputmode="${p.bruch ? 'text' : 'decimal'}" autocomplete="off" enterkeyhint="go"><span class="u">${esc(p.unit)}</span></div></label>
       <p class="lr-hinweis">${p.bruch ? 'Bruch mit Schrägstrich, vollständig gekürzt, zum Beispiel 5/8 oder 1 3/8.' : (p.unit ? 'Zahl in ' + esc(p.unit) + '. ' : 'Zahl. ') + (p.exact ? 'Das Ergebnis muss genau stimmen.' : '±' + esc(C.fmt(p.tol, 6)) + ' gilt als richtig.')} Du hast einen Versuch.</p>
       <div class="btns"><button class="btn pri" data-rd="ant">Weiter ▶</button><button class="btn" data-rd="skip">Überspringen</button><button class="btn" data-rd="ab">${Z.ab ? 'Wirklich abbrechen?' : 'Abbrechen'}</button></div></div>`;
+    /* Notizfeld und Taschenrechner (matnotiz.js): werden mit jeder Aufgabe neu aufgebaut, dadurch ist das Notizfeld jedes Mal leer */
+    if (root.MatNotiz) try { root.MatNotiz.einbau(V().querySelector('.card'), { ziel: 'rdIn' }); } catch (x) {}
     const e = doc.getElementById('rdIn'); if (e) try { e.focus({ preventScroll: true }); } catch (x) {}
     uhr();
   }

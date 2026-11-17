@@ -566,7 +566,7 @@
     if (!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s)) return null;
     const x = parseFloat(s); return isFinite(x) ? x : null;
   }
-  const META = { id: 'rg2', file: 'rg2lab.html', name: 'Regelungstechnik Aufbau', stufe: 'studium', version: 'v62.180', blocks: BLOCKS.length };
+  const META = { id: 'rg2', file: 'rg2lab.html', name: 'Regelungstechnik Aufbau', stufe: 'studium', version: 'v62.181', blocks: BLOCKS.length };
   return {
     VERSION: '1.0', META: META, BLOCKS: BLOCKS, TASKS: T, ids: () => T.map(t => t.id), byBlock: b => T.filter(t => t.block === b), get: id => byId[id] || null, build: build, check: check, parseNum: parseNum, fmt: f
   };
