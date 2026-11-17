@@ -535,7 +535,121 @@
       return { text: `Eine Leiterplatte ist (x + ${a}) cm lang und (x − ${b}) cm breit. Stelle die Formel für die Fläche auf, multipliziere aus und berechne die Fläche für x = ${x}.`, unit: 'cm²', raw: A, dec: 0, meta: { a, b, x },
         steps: [`Fläche = Länge mal Breite: A = (x + ${a}) · (x − ${b})`, `Ausmultipliziert: A = ${poly(1, a - b, -a * b)}`, `x = ${x} einsetzen: ${x * x} ${vz((a - b) * x)} ${vz(-a * b)} = ${A}`, `Probe mit den Klammern: (${x} + ${a}) · (${x} − ${b}) = ${x + a} · ${x - b} = ${A}`],
         tips: ['Die Fläche eines Rechtecks ist Länge mal Breite. Hier sind Länge und Breite Klammern mit x.', 'Du kannst x gleich in die Klammern einsetzen oder erst ausmultiplizieren. Beides muss dasselbe ergeben. So gehst du vor: 1. A = Länge · Breite aufschreiben. 2. Klammern ausmultiplizieren und zusammenfassen. 3. Für x die Zahl einsetzen. 4. Probe mit den Klammern. 5. Trage die Fläche in cm² ein.'] };
-    }]
+    }],
+    /* ===== Nachtrag zur 183: je zwei weitere Aufgaben pro Rubrik (mat89 bis mat106) ===== */
+    ['Einheiten', 1, 'Zeit umrechnen: Stunden, Minuten, Sekunden', R => {
+      const [v, f, t, fak, mal] = pick(R, [[90, 'min', 'h', 60, false], [45, 'min', 'h', 60, false], [150, 'min', 'h', 60, false], [36, 'min', 'h', 60, false], [1.25, 'h', 'min', 60, true], [0.4, 'h', 'min', 60, true], [2.5, 'h', 'min', 60, true], [2.5, 'min', 's', 60, true], [12, 'min', 's', 60, true], [210, 's', 'min', 60, false], [450, 's', 'min', 60, false], [0.5, 'h', 's', 3600, true], [5400, 's', 'h', 3600, false]]);
+      const raw = rs(mal ? v * fak : v / fak);
+      return { text: `Rechne ${fmt(v)} ${f} in ${t} um.`, unit: t, raw, dec: 6, meta: { v, f, t, fak, mal },
+        steps: [`1 ${mal ? f : t} = ${fak} ${mal ? t : f}`, mal ? `In die kleinere Einheit wird malgenommen: ${fmt(v)} · ${fak} = ${fmt(raw)} ${t}` : `In die größere Einheit wird geteilt: ${fmt(v)} : ${fak} = ${fmt(raw)} ${t}`],
+        tips: ['Eine Stunde hat 60 Minuten, eine Minute hat 60 Sekunden. Eine Stunde hat also 3600 Sekunden.', mal ? `Die Einheit wird kleiner, die Zahl wird größer: mal ${fak}.` : `Die Einheit wird größer, die Zahl wird kleiner: geteilt durch ${fak}.`] };
+    }],
+    ['Einheiten', 2, 'Kondensator: Vorsätze der Kapazität', R => {
+      const [f, t, mal, werte] = pick(R, [['nF', MU + 'F', false, [4.7, 22, 68, 100, 330, 470]], [MU + 'F', 'nF', true, [0.1, 0.22, 0.33, 0.47, 1, 2.2, 4.7]], ['pF', 'nF', false, [22, 68, 100, 470, 2200, 4700]], ['nF', 'pF', true, [0.1, 0.47, 1, 1.5, 2.2, 4.7, 10]]]), v = pick(R, werte), raw = rs(mal ? v * 1000 : v / 1000);
+      return { text: `Auf einem Kondensator steht ${fmt(v)} ${f}. Rechne den Wert in ${t} um.`, unit: t, raw, dec: 6, meta: { v, f, t, mal },
+        steps: [`Reihenfolge der Vorsätze: 1 ${MU}F = 1000 nF und 1 nF = 1000 pF`, mal ? `In die kleinere Einheit wird malgenommen: ${fmt(v)} · 1000 = ${fmt(raw)} ${t}` : `In die größere Einheit wird geteilt: ${fmt(v)} : 1000 = ${fmt(raw)} ${t}`],
+        tips: [`Zwischen ${MU}F, nF und pF liegt jeweils der Faktor 1000.`, mal ? 'Die Einheit wird kleiner, also mal 1000: Das Komma wandert drei Stellen nach rechts.' : 'Die Einheit wird größer, also geteilt durch 1000: Das Komma wandert drei Stellen nach links.'] };
+    }],
+    ['Dreisatz', 1, 'Dreisatz direkt: Lötzinn für Platinen', R => {
+      const n1 = pick(R, [4, 5, 8, 10]), je = pick(R, [3, 4.5, 6, 7.5]), n2 = pick(R, [12, 15, 20, 25, 30]), m1 = rs(n1 * je), raw = rs(n2 * je);
+      return { text: `Für ${n1} gleiche Platinen brauchst du ${fmt(m1)} g Lötzinn. Wie viel Lötzinn brauchst du für ${n2} Platinen?`, unit: 'g', raw, dec: 1, meta: { n1, je, n2, m1 },
+        steps: [`${n1} Platinen brauchen ${fmt(m1)} g`, `1 Platine braucht ${fmt(m1)} g : ${n1} = ${fmt(je)} g`, `${n2} Platinen brauchen ${n2} · ${fmt(je)} g = ${fmt(raw)} g`],
+        tips: ['Mehr Platinen brauchen mehr Lötzinn. Das ist ein direkter Dreisatz.', 'Rechne zuerst auf eine Platine herunter (teilen), dann auf die gesuchte Anzahl hoch (malnehmen).'] };
+    }],
+    ['Dreisatz', 2, 'Dreisatz indirekt: Arbeit im Team', R => {
+      const a = pick(R, [2, 3, 4]), t = pick(R, [6, 8, 12]), b = pick(R, [2, 3, 4, 6, 8].filter(x => x !== a && (a * t * 2) % x === 0)), ges = a * t, raw = rs(ges / b);
+      return { text: `${a} Auszubildende brauchen für das Bestücken einer Serie ${t} Stunden. Wie lange brauchen ${b} Auszubildende, wenn alle gleich schnell arbeiten?`, unit: 'h', raw, dec: 1, meta: { a, t, b },
+        steps: [`${a} Auszubildende brauchen ${t} h`, `1 Auszubildender braucht ${a} · ${t} h = ${ges} h`, `${b} Auszubildende brauchen ${ges} h : ${b} = ${fmt(raw)} h`],
+        tips: ['Mehr Leute brauchen weniger Zeit. Das ist ein indirekter Dreisatz.', 'Rechne zuerst aus, wie lange eine Person allein braucht (malnehmen). Teile dann durch die neue Anzahl.'] };
+    }],
+    ['Prozent', 1, 'Ausschuss: Wie viele Teile sind in Ordnung?', R => {
+      const [G, p] = pick(R, [[200, 4], [200, 5], [200, 12], [250, 2], [250, 4], [250, 8], [400, 5], [400, 12], [500, 2], [500, 8], [800, 5], [800, 2]]), W = G * p / 100, raw = G - W;
+      return { text: `Von ${G} gefertigten Baugruppen fallen ${p} % bei der Prüfung durch. Wie viele Baugruppen sind in Ordnung?`, unit: 'Stück', raw, dec: 0, meta: { G, p, W },
+        steps: [`Ausschuss: W = G · p / 100 = ${G} · ${p} / 100 = ${W} Stück`, `In Ordnung: ${G} − ${W} = ${raw} Stück`, `Anderer Weg: ${100 - p} % von ${G} = ${raw} Stück`],
+        tips: ['Rechne zuerst aus, wie viele Baugruppen Ausschuss sind (Prozentwert).', `Ziehe den Ausschuss von der Gesamtzahl ab. Oder rechne gleich mit ${100 - p} %.`] };
+    }],
+    ['Prozent', 2, 'Preiserhöhung in Prozent', R => {
+      const a = pick(R, [40, 50, 80, 120, 250]), p = pick(R, [5, 8, 10, 12.5, 20]), n = rs(a * (1 + p / 100)), d = rs(n - a);
+      return { text: `Eine Rolle Schaltdraht kostete bisher ${fmtMoney(a)} €. Jetzt kostet sie ${fmtMoney(n)} €. Um wie viel Prozent ist der Preis gestiegen?`, unit: '%', raw: p, dec: 1, meta: { a, n, p },
+        steps: [`Erhöhung in Euro: ${fmtMoney(n)} € − ${fmtMoney(a)} € = ${fmtMoney(d)} €`, `Grundwert ist der alte Preis: p = ${fmtMoney(d)} / ${fmtMoney(a)} · 100 % = ${fmt(p)} %`],
+        tips: ['Rechne zuerst aus, um wie viele Euro der Preis gestiegen ist.', 'Der alte Preis ist der Grundwert (100 %). Teile die Erhöhung durch den alten Preis und nimm mit 100 mal.'] };
+    }],
+    [BR, 1, 'Dezimalzahl als Bruch schreiben', R => {
+      const [d, z, n, Z, N] = pick(R, [[0.25, 1, 4, 25, 100], [0.75, 3, 4, 75, 100], [0.2, 1, 5, 2, 10], [0.4, 2, 5, 4, 10], [0.6, 3, 5, 6, 10], [0.125, 1, 8, 125, 1000], [0.375, 3, 8, 375, 1000], [0.5, 1, 2, 5, 10], [0.05, 1, 20, 5, 100], [0.15, 3, 20, 15, 100], [0.8, 4, 5, 8, 10], [0.35, 7, 20, 35, 100]]), g = Z / z;
+      return { text: `Schreibe die Dezimalzahl ${fmt(d)} als Bruch und kürze so weit wie möglich.`, unit: '', bruch: [z, n], raw: z / n, dec: 6, meta: { d, Z, N },
+        steps: [`Stellen nach dem Komma zählen: ${fmt(d)} = ${Z}/${N}`, `Kürzen mit ${g}: ${Z} : ${g} = ${z} und ${N} : ${g} = ${n}`, `${fmt(d)} = ${z}/${n}`],
+        tips: ['Eine Stelle nach dem Komma bedeutet Zehntel, zwei Stellen Hundertstel, drei Stellen Tausendstel.', 'So gehst du vor: 1. Zahl ohne Komma in den Zähler schreiben. 2. In den Nenner 10, 100 oder 1000 schreiben. 3. Vollständig kürzen. 4. Trage den Bruch mit Schrägstrich ein, zum Beispiel 3/4.'] };
+    }],
+    [BR, 2, 'Werkstatt: Zollmaß in Millimeter', R => {
+      const [z, n] = pick(R, [[1, 4], [3, 8], [1, 2], [5, 8], [3, 4], [1, 8], [7, 8], [3, 16], [5, 16]]), raw = z / n * 25.4, teil = rs(25.4 / n);
+      return { text: `Ein Bohrer hat den Durchmesser ${z}/${n} Zoll. Ein Zoll sind 25,4 mm. Wie groß ist der Durchmesser in Millimetern?`, unit: 'mm', raw, dec: 4, meta: { z, n },
+        steps: [`1/${n} Zoll: 25,4 mm : ${n} = ${fmt(teil)} mm`, `${z}/${n} Zoll: ${z} · ${fmt(teil)} mm = ${fmt(rs(raw))} mm`],
+        tips: ['Der Bruch sagt, welcher Teil von einem Zoll gemeint ist. Ein Zoll sind 25,4 mm.', 'Teile 25,4 mm durch den Nenner und nimm das Ergebnis mit dem Zähler mal.'] };
+    }],
+    [KL, 1, 'Zahlen rechnen: Klammer zuerst', R => {
+      const a = ri(R, 2, 6), b = ri(R, 3, 9), c = ri(R, 2, 8), d = ri(R, 1, 9), s = b + c, raw = a * s - d;
+      return { text: `Rechne aus: ${a} · (${b} + ${c}) − ${d}`, unit: '', raw, dec: 0, meta: { a, b, c, d },
+        steps: [`Zuerst die Klammer: ${b} + ${c} = ${s}`, `Dann Punkt vor Strich: ${a} · ${s} = ${a * s}`, `Zum Schluss abziehen: ${a * s} − ${d} = ${raw}`],
+        tips: ['Die Reihenfolge ist fest: zuerst die Klammer, dann Punktrechnung, dann Strichrechnung.', `Rechne nicht ${a} · ${b} allein. Die ${a} gilt für die ganze Klammer.`] };
+    }],
+    [KL, 2, 'Praxis: Spannung an zwei Widerständen in Reihe', R => {
+      const I = pick(R, [2, 5, 10, 20]), R1 = pick(R, [100, 220, 330, 470]), R2 = pick(R, [150, 270, 390, 560]), s = R1 + R2, raw = rs(I / 1000 * s);
+      return { text: `Durch zwei Widerstände in Reihe fließen ${I} mA. Die Widerstände haben R1 = ${R1} Ω und R2 = ${R2} Ω. Berechne die Gesamtspannung mit U = I · (R1 + R2).`, unit: 'V', raw, dec: 2, meta: { I, R1, R2 },
+        steps: [`Strom in Ampere: ${I} mA = ${fmt(I / 1000)} A`, `Zuerst die Klammer: ${R1} Ω + ${R2} Ω = ${s} Ω`, `U = ${fmt(I / 1000)} A · ${s} Ω = ${fmt(raw)} V`, `Probe ohne Klammer: ${fmt(I / 1000)} · ${R1} + ${fmt(I / 1000)} · ${R2} = ${fmt(rs(I / 1000 * R1))} V + ${fmt(rs(I / 1000 * R2))} V = ${fmt(raw)} V`],
+        tips: ['Rechne den Strom zuerst in Ampere um: 1000 mA = 1 A.', 'Zuerst die Klammer ausrechnen (beide Widerstände zusammenzählen), dann mit dem Strom malnehmen.'] };
+    }],
+    ['Umstellen', 1, 'Leistung: Strom bestimmen', R => {
+      const U = pick(R, [5, 12, 24, 230]), I = pick(R, [0.2, 0.5, 1.5, 2, 4]), P = rs(U * I);
+      return { text: `Ein Gerät nimmt an ${U} V eine Leistung von ${fmt(P)} W auf. Wie groß ist der Strom? Stelle P = U · I nach I um.`, unit: 'A', raw: I, dec: 2, meta: { U, I, P },
+        steps: ['Formel: P = U · I   (gesucht: I)', 'Beide Seiten durch U teilen:   I = P / U', `I = ${fmt(P)} W / ${U} V = ${fmt(I)} A`, `Probe: ${U} V · ${fmt(I)} A = ${fmt(P)} W`],
+        tips: ['Das I steht in einem Produkt mit U. Du bekommst es allein, indem du beide Seiten durch U teilst.', 'Umgestellt: I = P / U. Jetzt nur noch einsetzen und rechnen.'] };
+    }],
+    ['Umstellen', 2, 'Elektrische Arbeit: Betriebszeit bestimmen', R => {
+      const P = pick(R, [40, 60, 150, 500, 2000]), t = pick(R, [1.5, 2, 4, 6, 8]), W = rs(P * t / 1000);
+      return { text: `Ein Gerät mit ${P} W hat ${fmt(W)} kWh verbraucht. Wie lange war es eingeschaltet? Stelle W = P · t nach t um.`, unit: 'h', raw: t, dec: 2, meta: { P, t, W },
+        steps: ['Formel: W = P · t   (gesucht: t)', 'Beide Seiten durch P teilen:   t = W / P', `Einheiten anpassen: ${fmt(W)} kWh = ${fmt(rs(W * 1000))} Wh`, `t = ${fmt(rs(W * 1000))} Wh / ${P} W = ${fmt(t)} h`],
+        tips: ['Stelle zuerst nach t um: Das t bekommst du allein, indem du durch P teilst.', 'Achte auf die Einheiten: Rechne kWh in Wh um (mal 1000), bevor du durch die Leistung in Watt teilst.'] };
+    }],
+    ['Geometrie', 1, 'Rechteck: Fläche und Umfang einer Leiterplatte', R => {
+      const l = pick(R, [50, 80, 100, 120, 160]), b = pick(R, [30, 40, 60, 75]), k = pick(R, ['A', 'U']), raw = k === 'A' ? l * b : 2 * (l + b);
+      return { text: `Eine rechteckige Leiterplatte ist ${l} mm lang und ${b} mm breit. ${k === 'A' ? 'Wie groß ist ihre Fläche?' : 'Wie lang ist ihr Umfang?'}`, unit: k === 'A' ? 'mm²' : 'mm', raw, dec: 0, meta: { l, b, k },
+        steps: k === 'A' ? ['Formel: A = l · b', `A = ${l} mm · ${b} mm = ${raw} mm²`] : ['Formel: U = 2 · (l + b)', `Zuerst die Klammer: ${l} mm + ${b} mm = ${l + b} mm`, `U = 2 · ${l + b} mm = ${raw} mm`],
+        tips: [k === 'A' ? 'Die Fläche eines Rechtecks ist Länge mal Breite.' : 'Der Umfang ist der Weg einmal außen herum: zweimal die Länge und zweimal die Breite.', k === 'A' ? 'Achte auf die Einheit: Millimeter mal Millimeter ergibt Quadratmillimeter.' : 'Zähle Länge und Breite zusammen und nimm das Ergebnis mal 2.'] };
+    }],
+    ['Geometrie', 2, 'Quader: Volumen eines Gehäuses', R => {
+      const l = pick(R, [8, 10, 12, 15, 20]), b = pick(R, [5, 6, 8, 10]), h = pick(R, [2.5, 3, 4, 5]), V = rs(l * b * h), raw = rs(V / 1000);
+      return { text: `Ein Gehäuse ist innen ${l} cm lang, ${b} cm breit und ${fmt(h)} cm hoch. Wie viel Liter Vergussmasse passen hinein?`, unit: 'l', raw, dec: 4, meta: { l, b, h },
+        steps: ['Formel: V = l · b · h', `V = ${l} cm · ${b} cm · ${fmt(h)} cm = ${fmt(V)} cm³`, `1 l = 1000 cm³: ${fmt(V)} cm³ : 1000 = ${fmt(raw)} l`],
+        tips: ['Das Volumen eines Quaders ist Länge mal Breite mal Höhe.', 'Das Ergebnis hat die Einheit cm³. Ein Liter sind 1000 cm³, also durch 1000 teilen.'] };
+    }],
+    ['Messwerte', 1, 'Toleranz: Höchstmaß und Mindestmaß', R => {
+      const N = pick(R, [12.5, 20, 25, 40, 63]), t = pick(R, [0.02, 0.05, 0.1, 0.2]), k = pick(R, ['max', 'min']), raw = rs(k === 'max' ? N + t : N - t);
+      return { text: `Auf der Zeichnung steht das Maß ${fmt(N)} mm ± ${fmt(t)} mm. Wie groß ist das ${k === 'max' ? 'Höchstmaß' : 'Mindestmaß'}?`, unit: 'mm', raw, dec: 2, meta: { N, t, k },
+        steps: [`${k === 'max' ? 'Höchstmaß = Nennmaß + Toleranz' : 'Mindestmaß = Nennmaß − Toleranz'}`, `${fmt(N)} mm ${k === 'max' ? '+' : '−'} ${fmt(t)} mm = ${fmt(raw)} mm`, `Alle Maße von ${fmt(rs(N - t))} mm bis ${fmt(rs(N + t))} mm sind in Ordnung.`],
+        tips: ['Das Zeichen ± heißt: Das Maß darf um diesen Wert größer oder kleiner sein.', k === 'max' ? 'Für das Höchstmaß zählst du die Toleranz zum Nennmaß dazu.' : 'Für das Mindestmaß ziehst du die Toleranz vom Nennmaß ab.'] };
+    }],
+    ['Messwerte', 2, 'Abweichung vom Sollwert in Prozent', R => {
+      const s = pick(R, [5, 12, 24, 10]), p = pick(R, [-5, -2.5, -2, 1, 2, 2.5, 5]), m = rs(s * (1 + p / 100)), d = rs(m - s);
+      return { text: `Ein Netzteil soll ${s} V liefern. Du misst ${fmt(m)} V. Um wie viel Prozent weicht der Messwert vom Sollwert ab? Ist der Messwert kleiner als der Sollwert, hat das Ergebnis ein Minus.`, unit: '%', raw: p, dec: 1, meta: { s, m, p },
+        steps: [`Abweichung: Messwert − Sollwert = ${fmt(m)} V − ${s} V = ${mz(d).replace('.', ',')} V`, `Bezogen auf den Sollwert: ${mz(d).replace('.', ',')} V / ${s} V · 100 % = ${mz(p).replace('.', ',')} %`],
+        tips: ['Rechne zuerst die Abweichung in Volt aus: Messwert minus Sollwert.', 'Der Sollwert ist der Grundwert (100 %). Teile die Abweichung durch den Sollwert und nimm mit 100 mal.'] };
+    }],
+    [PT1, 1, 'Transistor: Stromverstärkung', R => {
+      const Ib = pick(R, [20, 50, 100, 200]), B = pick(R, [100, 150, 200, 250]), Ic = rs(Ib * B / 1000), k = pick(R, ['Ic', 'B']);
+      return k === 'Ic'
+        ? { text: `Ein Transistor hat die Stromverstärkung B = ${B}. In die Basis fließen ${Ib} ${MU}A. Wie groß ist der Kollektorstrom?`, unit: 'mA', raw: Ic, dec: 1, meta: { k, Ib, B, Ic },
+          steps: ['Formel: I_C = B · I_B', `I_C = ${B} · ${Ib} ${MU}A = ${Ib * B} ${MU}A`, `In Milliampere: ${Ib * B} ${MU}A : 1000 = ${fmt(Ic)} mA`],
+          tips: ['Der Kollektorstrom ist um die Stromverstärkung B größer als der Basisstrom.', `Nimm den Basisstrom mit B mal. Rechne am Ende von ${MU}A in mA um (durch 1000).`] }
+        : { text: `Bei einem Transistor fließen ${Ib} ${MU}A in die Basis und ${fmt(Ic)} mA in den Kollektor. Wie groß ist die Stromverstärkung B?`, unit: '', label: 'Stromverstärkung B', raw: B, dec: 0, meta: { k, Ib, B, Ic },
+          steps: ['Formel: B = I_C / I_B', `Gleiche Einheit: ${fmt(Ic)} mA = ${Ib * B} ${MU}A`, `B = ${Ib * B} ${MU}A / ${Ib} ${MU}A = ${B}`],
+          tips: ['Die Stromverstärkung sagt, wie viel mal größer der Kollektorstrom als der Basisstrom ist.', `Bringe beide Ströme auf dieselbe Einheit (1 mA = 1000 ${MU}A), dann teile Kollektorstrom durch Basisstrom.`] };
+    }],
+    [PT1, 2, 'Kondensatoren: parallel und in Reihe', R => {
+      const [C1, C2] = pick(R, [[100, 100], [220, 220], [100, 150], [47, 47], [330, 220], [100, 400], [150, 300], [220, 330], [470, 470]]), k = pick(R, ['par', 'ser']), raw = k === 'par' ? C1 + C2 : C1 * C2 / (C1 + C2);
+      return { text: `Zwei Kondensatoren mit C1 = ${C1} nF und C2 = ${C2} nF sind ${k === 'par' ? 'parallel' : 'in Reihe'} geschaltet. Wie groß ist die Gesamtkapazität?`, unit: 'nF', raw, dec: 1, meta: { k, C1, C2 },
+        steps: k === 'par' ? ['Parallelschaltung: Die Kapazitäten addieren sich.', `C = C1 + C2 = ${C1} nF + ${C2} nF = ${raw} nF`] : ['Reihenschaltung: C = C1 · C2 / (C1 + C2)', `C = ${C1} · ${C2} / (${C1} + ${C2}) nF = ${C1 * C2} / ${C1 + C2} nF = ${fmt(rd(raw, 1))} nF`, 'Die Gesamtkapazität ist kleiner als die kleinste Einzelkapazität.'],
+        tips: ['Bei Kondensatoren ist es umgekehrt wie bei Widerständen: Parallel wird die Kapazität größer, in Reihe wird sie kleiner.', k === 'par' ? 'Parallel: einfach zusammenzählen.' : 'In Reihe bei zwei Kondensatoren: Produkt geteilt durch Summe.'] };
+        }]
   ];
   const tasks = defs.map((d, i) => ({ id: 'mat' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3] }));
 

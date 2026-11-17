@@ -5,6 +5,8 @@
     { v: 'v62.183', items: [
       ['Updates laden schneller', 'Bei einer neuen Version holt die App nur noch die Dateien, die sich geändert haben. Alles andere übernimmt sie aus dem Offline-Speicher. Das Update ist dadurch viel schneller fertig und braucht kaum Datenvolumen.', 'Start'],
       ['Duell: Anzeige verdeckt nichts mehr', 'Im Netzteil-Lab, Leiterplatten-Lab und Analogtechnik-Lab lag die orange Duell-Anzeige mit der Zeit über dem Lab-Namen. Jetzt bekommt sie während des Duells eine eigene Zeile über der Kopfzeile.', 'Duell'],
+      ['Rechen-Lab: 18 neue Aufgaben', 'In jeder Rubrik gibt es zwei weitere Aufgaben, von Zeit umrechnen über Zollmaß und Toleranz bis Stromverstärkung und Kondensatoren. Sie kommen auch im Duell und beim Üben allein dran.', 'Rechen-Lab'],
+      ['Wiki: 16 neue Bauteile', 'Neu im Wiki sind unter anderem RGB-Leuchtdiode, Drehgeber, DIP-Schalter, Schraubklemme, Messwiderstand, Ferritperle, Suppressordiode, Pt100, Bewegungsmelder, Darlington-Transistor und ULN2003.', 'Wiki'],
     ] },
     { v: 'v62.182', items: [
       ['Rechen-Duell: Deine Fehler erklärt', 'Nach der Runde siehst du unter dem Ergebnis jede falsche Aufgabe mit deiner Antwort, der richtigen Lösung und dem Rechenweg Schritt für Schritt. Mit „Ähnliche Aufgabe üben“ rechnest du sie gleich noch einmal mit neuen Zahlen.', 'Rechen-Lab'],

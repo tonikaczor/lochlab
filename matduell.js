@@ -19,7 +19,7 @@
   const maske = rub => { let m = 0; if (typeof rub === 'number') m = rub & VOLL; else (Array.isArray(rub) ? rub : []).forEach(n => { const i = RUB.indexOf(n); if (i >= 0) m |= 1 << i; }); return m === VOLL ? 0 : m; };
   const rubriken = m => RUB.filter((n, i) => m & (1 << i));
   /* Lehrjahr der Rechen-Lab-Aufgaben, die nicht ins 1. Lehrjahr gehören (muss zu lehrjahr.js passen) */
-  const LJ = { mat32: 4, mat33: 2, mat34: 4, mat35: 4, mat43: 4, mat61: 2, mat62: 2, mat63: 2, mat64: 2, mat65: 2, mat66: 2, mat67: 2, mat68: 2, mat69: 2, mat70: 2 };
+  const LJ = { mat32: 4, mat33: 2, mat34: 4, mat35: 4, mat43: 4, mat61: 2, mat62: 2, mat63: 2, mat64: 2, mat65: 2, mat66: 2, mat67: 2, mat68: 2, mat69: 2, mat70: 2, mat103: 2, mat104: 2, mat105: 2, mat106: 2 };
   const ljOf = id => LJ[id] || 1;
 
   const seeded = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
