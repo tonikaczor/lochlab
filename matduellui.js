@@ -45,7 +45,7 @@
     const h = jget('rduellh', []), c = cur(), offen = c && c.ende == null && M.lies(c.code) && rest(c) > 0;
     let x = `<div class="card pl"><h4>Rechen-Duell</h4><div class="big">Wer rechnet besser?</div>
       <p style="margin:8px 0">Alle bekommen dieselben Aufgaben mit denselben Zahlen. Wer mehr richtig hat, gewinnt. Bei Gleichstand gewinnt die kürzere Zeit.</p>
-      <ol class="stp"><li>Einer tippt auf „Neues Duell“ und zeigt den Code.</li><li>Alle anderen tippen auf „Beitreten“ und geben den Code ein.</li><li>Zählt gemeinsam 3, 2, 1 und tippt alle zugleich auf „Start“.</li><li>Am Ende vergleicht ihr die Ergebniscodes.</li></ol>
+      <ol class="stp"><li>Einer tippt auf „Neues Duell“ und zeigt den Code.</li><li>Alle anderen tippen auf „Beitreten“ und geben den Code ein.</li><li>Zählt gemeinsam 3, 2, 1 und tippt alle zugleich auf „Start“.</li><li>Am Ende vergleicht ihr die Ergebniscodes. Wer mehr richtig hat, gewinnt. Bei gleich vielen richtigen gewinnt, wer schneller fertig war.</li></ol>
       <div class="btns"><button class="btn pri" data-rd="neu">⚔️ Neues Duell</button><button class="btn" data-rd="bei">Beitreten</button>${offen ? '<button class="btn" data-rd="weiter">Laufende Runde fortsetzen</button>' : ''}${c && c.ende != null ? '<button class="btn" data-rd="letzte">Letztes Ergebnis</button>' : ''}</div>
       <p class="hint2">Im Duell gibt es keine Tipps und je Aufgabe nur einen Versuch. Den Lösungsweg siehst du nach der Runde. Taschenrechner und Tabellenbuch sind erlaubt.</p></div>`;
     if (h.length) x += '<div class="gh">Deine letzten Runden</div>' + h.slice(0, 8).map(e => `<div class="row rd-h"><div class="grow"><b>${e.richtig} von ${e.n} richtig</b><small>${esc(M.zeit(e.sek))} min · ${esc(e.code)}</small></div></div>`).join('');
@@ -115,8 +115,13 @@
     const alle = [ich].concat(geg).sort(M.vergleich), platz = alle.indexOf(ich) + 1, gleich = alle.filter(a => M.vergleich(a, alle[0]) === 0).length > 1;
     let x = `<div class="card pl" style="border-color:var(--accent)"><h4>Rechen-Duell · Ergebnis</h4><div class="rd-erg"><b>${ich.richtig}</b> von ${r.n} richtig</div><p style="text-align:center;margin:4px 0">Zeit: <b>${esc(M.zeit(c.ende))} min</b>${c.zeitUm ? ' (Zeit abgelaufen)' : ''} · ${esc(r.code)}</p>`;
     if (geg.length) {
-      x += `<div class="rdout ${platz === 1 ? 'ok' : 'bad'}" id="rdSieg"><b>${platz === 1 ? (gleich ? 'Unentschieden: gleich viele richtig in derselben Zeit.' : '🏆 Du hast gewonnen.') : 'Platz ' + platz + ' von ' + alle.length + '.'}</b></div>
-        <div class="fw"><table class="rd-t"><thead><tr><th>Platz</th><th>Wer</th><th>Richtig</th><th>Zeit</th></tr></thead><tbody>${alle.map((a, i) => `<tr${a.ich ? ' class="ich"' : ''}><td>${i + 1}</td><td>${esc(a.ich ? (kuerzel() || 'Du') + ' (du)' : a.name || 'Gegner')}</td><td>${a.richtig} von ${r.n}</td><td>${esc(M.zeit(a.sek))}</td></tr>`).join('')}</tbody></table></div>`;
+      /* Gleich viele richtig: wer schneller fertig war, liegt vorn (M.vergleich). Das sagen wir auch dazu. */
+      const nb = platz === 1 ? alle[1] : alle[platz - 2], zeitEnt = nb && nb.richtig === ich.richtig && nb.sek !== ich.sek, dt = nb ? M.zeit(Math.abs(nb.sek - ich.sek)) : '';
+      const wer = a => a.ich ? 'du' : (a.name || 'Gegner');
+      const sieg = platz === 1 ? (gleich ? 'Unentschieden: gleich viele richtig in derselben Zeit.' : '🏆 Du hast gewonnen.' + (zeitEnt ? ' Gleich viele richtig wie ' + wer(nb) + ', aber du warst ' + dt + ' min schneller.' : ''))
+        : 'Platz ' + platz + ' von ' + alle.length + '.' + (zeitEnt ? ' Gleich viele richtig wie ' + wer(nb) + ', aber ' + wer(nb) + ' war ' + dt + ' min schneller.' : '');
+      x += `<div class="rdout ${platz === 1 ? 'ok' : 'bad'}" id="rdSieg"><b>${esc(sieg)}</b></div>
+        <div class="fw"><table class="rd-t"><thead><tr><th>Platz</th><th>Wer</th><th>Richtig</th><th>Zeit</th></tr></thead><tbody>${alle.map((a, i) => `<tr${a.ich ? ' class="ich"' : ''}><td>${i + 1}</td><td>${esc(a.ich ? (kuerzel() || 'Du') + ' (du)' : a.name || 'Gegner')}</td><td>${a.richtig} von ${r.n}</td><td>${esc(M.zeit(a.sek))}</td></tr>`).join('')}</tbody></table></div><p class="lr-hinweis">Wer mehr richtig hat, gewinnt. Bei gleich vielen richtigen gewinnt, wer schneller fertig war.</p>`;
     }
     x += `<p class="rd-l">Dein Ergebniscode</p><div class="rd-code klein" id="rdMein">${esc(mein)}</div><div class="rd-qr" id="rdQr"></div>
       <label class="f"><span>Ergebniscode der anderen eintippen oder scannen</span><input id="rdGeg" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
@@ -162,7 +167,8 @@
     else if (a === 'start0') { Z.err = ''; Z.sicht = 'start'; render(true); }
     else if (a === 'code') { Z.code = M.neu(Z.wahl); Z.sicht = 'bereit'; render(true); }
     else if (a === 'join') beitreten((doc.getElementById('rdCode') || {}).value);
-    else if (a === 'scan') scan(t => beitreten(t));
+    /* Scanner: true = Code passt, Scanner schließt sich; Text = Hinweis im Scanner, weiter scannen (sonst meldete der Scanner einen Fehler, obwohl der Code schon übernommen war) */
+    else if (a === 'scan') scan(t => M.lies(t) ? (beitreten(t), true) : 'Das ist kein Code für das Rechen-Duell. Er sieht so aus: R47-1A2B3.');
     else if (a === 'go') los();
     else if (a === 'weiter') { Z.sicht = 'lauf'; render(true); }
     else if (a === 'letzte') { Z.err = ''; Z.sicht = 'ende'; render(true); }
@@ -170,7 +176,7 @@
     else if (a === 'skip') antwort(true);
     else if (a === 'ab') { if (Z.ab) { clearInterval(Z.tick); const c = cur(); if (c) { c.ende = Math.max(1, Math.min(M.lies(c.code).min * 60, Math.round((Date.now() - c.start) / 1000))); c.abbruch = 1; jset('rduell', c); } Z.ab = 0; Z.sicht = 'ende'; render(true); } else { Z.ab = 1; b.textContent = 'Wirklich abbrechen?'; } }
     else if (a === 'geg') gegner((doc.getElementById('rdGeg') || {}).value);
-    else if (a === 'gscan') scan(t => gegner(t));
+    else if (a === 'gscan') scan(t => { const c = cur(); if (!c) return true; const g = M.liesErgebnis(t, M.abdruck(aufgaben(c.code)), c.code); if (!g.ok) return g.why; gegner(t); return true; });
   });
   doc.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || !e.target || !e.target.id) return; const id = e.target.id;
