@@ -54,7 +54,7 @@
     const TASKS = [
       mk({ id: 'mp1', cat: 'Prüfung: Stromlaufplan', title: 'LED am Netzgerät: Strom und Vorwiderstand', level: 2,
         text: 'Im Stromlaufplan liegt eine rote LED über R1 = 470 Ω an 12 V. Datenblatt der LED: Durchlassspannung etwa 2 V, höchster Dauerstrom 30 mA. 1. Miss die Spannung an der LED (2 Pkt.). 2. Miss den Strom in mA (2 Pkt.). 3. Berechne die Verlustleistung von R1 in mW (2 Pkt.). 4. Welcher Vorwiderstand ergibt rund 15 mA (2 Pkt.)? Beurteile außerdem, ob der Betrieb zulässig ist.',
-        hint: 'Multimeter V⎓ an die LED, Strom über das Multimeter im Bereich A oder aus U / R. Verlustleistung P = U · I mit der Spannung an R1. Neuer Widerstand: R = (U − UF) / I.',
+        hint: 'Multimeter V⎓ an die LED, Strom über das Multimeter im Bereich A oder aus U / R. Verlustleistung P = U · I mit der Spannung an R1. Neuer Widerstand: R = (U − UF) / I. Die Durchlassspannung UF ist die Spannung, die an der leuchtenden LED abfällt. Der Vorwiderstand nimmt den Rest der Spannung auf und begrenzt den Strom.',
         start: () => cLed('470'), solMake: () => cLed('470'),
         solAns: () => { const E = ev(), u = uAcross(E, 'LED1'), i = iThrough(E, 'R1'); return { uled: String(rMeas(u)), i: String(rMeas(i * 1000)), pr: String(rMeas(i * i * 470 * 1000)), rneu: String(Math.round((12 - u) / 0.015)), ok: 0 }; },
         fields: [{ id: 'uled', label: 'Spannung an der LED', unit: 'V', tol: 0.05, truth: () => uAcross(ev(), 'LED1') }, { id: 'i', label: 'LED-Strom', unit: 'mA', tol: 0.05, truth: () => iThrough(ev(), 'R1') },
@@ -62,7 +62,7 @@
         choices: [{ id: 'ok', q: 'Ist der Betrieb der LED so zulässig?', short: 'Zulässigkeit', right: 0, opts: ['Ja, der Strom liegt unter dem höchsten Dauerstrom von 30 mA.', 'Nein, der Strom ist größer als 30 mA.', 'Das lässt sich ohne Kennlinie nicht sagen.'] }] }),
       mk({ id: 'mp2', cat: 'Prüfung: Stromlaufplan', title: 'Spannungsteiler mit Poti: Einstellbereich', level: 2,
         text: 'R1 = 2,2 kΩ, das Poti P1 = 4,7 kΩ und R2 = 1 kΩ liegen in Reihe an 9 V. Am Schleifer des Potis hängt die Last RL = 100 kΩ. Stelle den Regler (unter dem Bauteil) in beide Endstellungen und miss die Spannung an RL. Trage die größte und die kleinste Spannung und den Einstellbereich ein.',
-        hint: 'Spannung an RL mit dem Multimeter messen. Regler ganz nach links und ganz nach rechts. Der Einstellbereich ist die Differenz aus größter und kleinster Spannung.',
+        hint: 'Spannung an RL mit dem Multimeter messen. Regler ganz nach links und ganz nach rechts. Der Einstellbereich ist die Differenz aus größter und kleinster Spannung. Ein Poti ist ein einstellbarer Widerstand mit drei Anschlüssen. Der Schleifer ist der bewegliche Abgriff, der die Teilspannung abgibt.',
         start: () => cPoti(false), solMake: () => cPoti(false),
         solAns: () => { const r = rangeOf(); return { umax: String(rMeas(r[1])), umin: String(rMeas(r[0])), ber: String(rMeas(r[1] - r[0])) }; },
         fields: [{ id: 'umax', label: 'Größte Spannung', unit: 'V', tol: 0.05, truth: () => rangeOf()[1] }, { id: 'umin', label: 'Kleinste Spannung', unit: 'V', tol: 0.06, truth: () => rangeOf()[0] }, { id: 'ber', label: 'Einstellbereich', unit: 'V', tol: 0.06, truth: () => { const r = rangeOf(); return r[1] - r[0]; } }] }),

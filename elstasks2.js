@@ -525,7 +525,7 @@
     return { vals, check,
       text: () => 'Bestätige am Prüfstand „Sicherheitsregeln und Erste Hilfe“ (Szene Schaltschrank, Reihenfolge frei) die fünf Sicherheitsregeln in der richtigen Reihenfolge, bevor an einer Anlage gearbeitet wird (angelehnt an eine Frage der IHK-Prüfung). Spannungsprüfer und Erdungsseil sind nur Symbole. Dieses Lab ersetzt keine Unterweisung.',
       hint: () => [
-        'Die fünf Sicherheitsregeln haben eine feste Reihenfolge. Zuerst wird die Anlage vom Netz getrennt; erst wenn ihre Spannungsfreiheit festgestellt ist, wird geerdet.',
+        'Die fünf Sicherheitsregeln haben eine feste Reihenfolge. Zuerst wird die Anlage vom Netz getrennt; erst wenn ihre Spannungsfreiheit festgestellt ist, wird geerdet. Das Trennen vom Netz heißt Freischalten. Der Spannungsprüfer zeigt, ob noch Spannung anliegt. Mit dem Erdungsseil wird die Anlage geerdet und kurzgeschlossen. So gehst du vor: 1. Wähle am Prüfstand eine Regel und bestätige sie. 2. Bestätige die übrigen Regeln der Reihe nach. 3. Tippe auf „Lösung prüfen“.',
         'Die Reihenfolge lautet: ' + five().map((id, i) => (i + 1) + '. ' + nm(id)).join(', ') + '.',
         'Musterlösung: ' + five().map(nm).join(', dann ') + '.'
       ],
@@ -548,7 +548,7 @@
     return { vals, check, consts: [112],
       text: () => 'In der Werkstatt ist ein Kollege mit einem Stromunfall gestürzt. Bestätige am Prüfstand „Sicherheitsregeln und Erste Hilfe“ (Modus Rettungskette, Reihenfolge frei) die Schritte der Rettungskette in der richtigen Reihenfolge. Es geht um Reihenfolge und Begriffe; der Notruf ist 112. Die Folge ist das Lehrmodell des Labs (F12, F32). Dieses Lab ersetzt keinen Erste-Hilfe-Kurs.',
       hint: () => [
-        'Wer selbst verunglückt, kann nicht helfen: Der Eigenschutz kommt zuerst. Erst danach schaltest du ab oder trennst den Verunfallten sicher vom Stromkreis. Danach holst du Hilfe und prüfst den Verunfallten.',
+        'Wer selbst verunglückt, kann nicht helfen: Der Eigenschutz kommt zuerst. Erst danach schaltest du ab oder trennst den Verunfallten sicher vom Stromkreis. Danach holst du Hilfe und prüfst den Verunfallten. So gehst du vor: 1. Bestätige am Prüfstand jeden Schritt der Rettungskette in der richtigen Reihenfolge. 2. Tippe auf „Lösung prüfen“.',
         'Die Reihenfolge lautet: ' + chain().map((id, i) => (i + 1) + '. ' + nm(id)).join(', ') + '.',
         'Musterlösung: ' + chain().map(nm).join(', dann ') + '.'
       ],
@@ -579,7 +579,7 @@
       text: () => 'Zwei Folgen sind unvollständig. Folge 1 (Sicherheitsregeln): ' + RSEQ.map(rn).join(' – ') + '. Folge 2 (Rettungskette): ' + ASEQ.map(an).join(' – ') + '. Welcher Schritt fehlt jeweils? Probiere die Folgen am Prüfstand „Sicherheitsregeln und Erste Hilfe“ aus; dieses Lab ersetzt keine Unterweisung.',
       choices: () => [{ key: 'regel', q: 'Folge 1: Welche der fünf Sicherheitsregeln fehlt?', options: C().rules.five.map(id => ({ value: id, label: rn(id) })) }, { key: 'rettung', q: 'Folge 2: Welcher Schritt der Rettungskette fehlt?', options: C().aid.chain.map(id => ({ value: id, label: an(id) })) }],
       hint: () => { const v = vals(); return [
-        'Vergleiche die Folge Schritt für Schritt mit der vollständigen Reihenfolge. Frage dich bei jedem Schritt: Was kommt danach, und fehlt es hier?',
+        'Vergleiche die Folge Schritt für Schritt mit der vollständigen Reihenfolge. Frage dich bei jedem Schritt: Was kommt danach, und fehlt es hier? So gehst du vor: 1. Lies Folge 1 und denke an die fünf Sicherheitsregeln. 2. Wähle die fehlende Regel. 3. Lies Folge 2 und wähle den fehlenden Schritt der Rettungskette. 4. Tippe auf „Lösung prüfen“.',
         'Folge 1 hat ' + f(v.nR, 0) + ' von 5 Regeln, Folge 2 hat ' + f(v.nA, 0) + ' von 5 Schritten. In Folge 1 fehlt etwas nach dem Feststellen der Spannungsfreiheit, in Folge 2 etwas zwischen Abschalten und Prüfen.',
         'Musterlösung: Folge 1: „' + rn(rm()) + '“. Folge 2: „' + an(am()) + '“.'
       ]; },
@@ -687,7 +687,7 @@
     return { vals, check,
       text: () => spec.text,
       choices: () => rows.map(row => ({ key: row.key, q: row.q, options: optsOf(row).map(o => ({ value: o.value, label: o.label })) })),
-      hint: () => [spec.h1, spec.h2, 'Musterlösung: ' + rows.map(row => row.short + ': ' + optOf(row, row.correct).label).join('; ') + '.'],
+      hint: () => [spec.h1 + ' So gehst du vor: 1. Lies jede Frage in Ruhe. 2. Wähle zu jeder Frage eine Antwort. 3. Tippe auf „Lösung prüfen“. Falsche Antworten werden dir erklärt.', spec.h2, 'Musterlösung: ' + rows.map(row => row.short + ': ' + optOf(row, row.correct).label).join('; ') + '.'],
       start: () => A('regeln', Object.assign({}, ctl), { choices: {} }),
       sol: () => { const c = {}; rows.forEach(row => { c[row.key] = row.correct; }); return A('regeln', Object.assign({}, ctl), { choices: c }); },
       wrong: () => [{ name: 'erste Verwechslung bei jeder Frage', answer: A('regeln', Object.assign({}, ctl), { choices: mk(false) }) }, { name: 'andere Verwechslung bei jeder Frage', answer: A('regeln', Object.assign({}, ctl), { choices: mk(true) }) }] };

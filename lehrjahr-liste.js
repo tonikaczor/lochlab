@@ -8,6 +8,7 @@
       Die Zeilen selbst werden nur verschoben (nicht kopiert), die Klick-Behandlung der Labs bleibt also unverändert. Der MutationObserver ist unschädlich: Das Umordnen ist idempotent
       (ist die Liste schon so geordnet, passiert nichts), er wird während des eigenen Umbaus abgekoppelt.
    2. FOLGE: weiter(lab, ids, aktuell, erledigt) für Labs mit eigener "Nächste Aufgabe"-Logik, erlaubt(id) für Zufalls- und Tagesvorschläge; die Leiste "Nächste Aufgabe" (weiter.js) nutzt kontext().
+   1b. KARTEN (Paket L4): Prüfungs-Lab und AppWerkstatt zeigen ihre Liste als Karten (div.card, h3 = Kategorie, button.ti[data-id] = Zeile). umordnenKarten macht dort dasselbe wie umordnen.
    3. HINWEISE: Wer bewusst eine spätere Aufgabe wählt (Klick in der Liste oder Adresse ?aufgabe=): kleiner Hinweis "Diese Aufgabe gehört zum N. Lehrjahr." (nicht blockierend, schließbar, verschwindet von selbst).
       Ist der Teil des eigenen Lehrjahres geschafft: "Den Teil für das N. Lehrjahr hast du geschafft. Weiter geht es im nächsten Lab." mit Knopf zur Startseite. */
 (function (root) {
@@ -22,12 +23,15 @@
 
   /* Plan für eine Liste. es: [{ id, kat, lj }] in der bisherigen Reihenfolge (kat = Text der Kategorie-Überschrift oder null), lj = eigenes Lehrjahr.
      Ergebnis: Folge von { t: 'k', kat } (Kategorie-Überschrift), { t: 'r', e } (Zeile), { t: 'l', lj } (Überschrift "Kommt im N. Lehrjahr").
-     Erst Aufgaben bis zum eigenen Lehrjahr (Lehrjahr, dann bisherige Reihenfolge), dann je späterem Lehrjahr ein Block in bisheriger Reihenfolge. Kategorie-Überschriften wiederholen sich, wenn die Kategorie wechselt. */
+     Erst Aufgaben bis zum eigenen Lehrjahr (Lehrjahr, dann bisherige Reihenfolge), dann je späterem Lehrjahr ein Block in bisheriger Reihenfolge. In der ersten Gruppe steht jede Kategorie-Überschrift nur einmal (Kategorien in der Reihenfolge des Originals, darin nach Lehrjahr); in den späteren Blöcken bleibt die bisherige Reihenfolge. */
   function bauePlan(es, lj) {
     const out = []; let last;
     const reihe = list => list.forEach(e => { if (e.kat != null && e.kat !== last) { out.push({ t: 'k', kat: e.kat }); last = e.kat; } out.push({ t: 'r', e }); });
     const idx = es.map((e, i) => ({ e, i }));
-    reihe(idx.filter(x => x.e.lj <= lj).sort((a, b) => a.e.lj - b.e.lj || a.i - b.i).map(x => x.e));
+    /* Erste Gruppe: jede Kategorie nur einmal (Reihenfolge der Kategorien wie im Original, darin nach Lehrjahr) */
+    const erst = idx.filter(x => x.e.lj <= lj), kats = [];
+    erst.forEach(x => { if (kats.indexOf(x.e.kat) < 0) kats.push(x.e.kat); });
+    kats.forEach(k => reihe(erst.filter(x => x.e.kat === k).sort((a, b) => a.e.lj - b.e.lj || a.i - b.i).map(x => x.e)));
     [2, 3, 4].forEach(j => {
       if (j <= lj) return;
       const g = es.filter(e => e.lj === j); if (!g.length) return;
@@ -96,6 +100,7 @@
     st.textContent = '.ljh{margin-top:16px;padding-top:12px;border-top:2px dashed var(--line,#38424d);color:var(--fg,#e8ecf0);text-transform:none;letter-spacing:0;font-size:15px}'
       + '[data-lj-p] .row small{font-size:14px}'
       + '.row.lj-spaeter{border-left:3px dashed var(--line,#38424d);padding-left:10px}.row.lj-spaeter>.grow>b,.row.lj-spaeter>b{color:var(--mute,#8d99a6);font-weight:500}'
+      + '[data-lj-p] .ti .small{font-size:14px;color:var(--fg,#e8ecf0)}.ti.lj-spaeter{border-left:3px dashed var(--line,#38424d);padding-left:10px;background:var(--panel,#1e252d)}.ti.lj-spaeter b,.ti.lj-spaeter .small{color:var(--mute,#8d99a6)}.ti.lj-spaeter b{font-weight:500}'
       + '#' + HINT_ID + '{position:fixed;left:50%;transform:translateX(-50%);top:calc(64px + env(safe-area-inset-top,0px));z-index:260;box-sizing:border-box;width:max-content;max-width:min(440px,calc(100vw - 24px));display:flex;align-items:center;gap:8px;padding:6px 6px 6px 14px;border-radius:12px;border:1px solid var(--accent,#3b9eff);background:var(--panel2,#2c343e);color:var(--fg,#e8ecf0);font:500 14px/1.35 system-ui,sans-serif;box-shadow:0 4px 18px rgba(0,0,0,.35)}'
       + '#' + HINT_ID + ' .ljT{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}#' + HINT_ID + ' .ljT b{font-weight:600}'
       + '#' + HINT_ID + ' .ljGo{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 12px;border-radius:10px;border:1px solid transparent;background:var(--accent-bg,#1a6fd4);color:#fff;text-decoration:none;font:600 14px system-ui,sans-serif;flex:none}'
@@ -168,6 +173,47 @@
     return 'ok';
   }
 
+  /* Adapter für Prüfungs-Lab und AppWerkstatt (Paket L4): Die Aufgabenliste besteht dort aus Karten (div.card mit h3 als Kategorie und button.ti[data-id] als Zeilen), ohne die Zeilen .row.
+     Der Plan ist derselbe (bauePlan): erste Gruppe mit je einer Karte pro Kategorie, darunter je Lehrjahr eine Überschrift "Kommt im N. Lehrjahr" mit Karten. Die Zeilen werden nur verschoben. */
+  const istTi = c => !!c.classList && c.classList.contains('ti') && !!c.getAttribute('data-id');
+  const istKarte = c => !!c.classList && c.classList.contains('card') && c.firstElementChild && c.firstElementChild.tagName === 'H3' && c.querySelector(':scope > .ti[data-id]');
+  const istLjKopf = c => !!c.getAttribute && c.getAttribute('data-lj-liste') === 'l';
+  function umordnenKarten(view, k, bekannt) {
+    const kids = Array.prototype.slice.call(view.children);
+    let first = -1, last = -1;
+    kids.forEach((c, i) => { if (istKarte(c)) { if (first < 0) first = i; last = i; } });
+    if (first < 0) return 'leer';
+    const region = kids.slice(first, last + 1);
+    for (let i = 0; i < region.length; i++) {
+      const c = region[i]; if (istLjKopf(c)) continue; if (!istKarte(c)) return 'fremd';
+      const ch = Array.prototype.slice.call(c.children);
+      for (let j = 1; j < ch.length; j++) { if (!istTi(ch[j]) || !bekannt[ch[j].getAttribute('data-id')]) return 'fremd'; }
+    }
+    const es = [], protos = {}, aktuell = [];
+    region.forEach(c => {
+      if (istLjKopf(c)) { aktuell.push('l:' + c.getAttribute('data-lj')); return; }
+      const kat = c.firstElementChild.textContent.trim(); aktuell.push('k:' + kat); if (!protos[kat]) protos[kat] = c;
+      Array.prototype.slice.call(c.children, 1).forEach(r => { const id = r.getAttribute('data-id'); aktuell.push('r:' + id); es.push({ id, kat, lj: root.Lehrjahr.ab(id, k.lab), el: r }); });
+    });
+    const plan = bauePlan(es, k.lj);
+    const markOk = es.every(e => e.el.classList.contains('lj-spaeter') === (e.lj > k.lj));
+    if (markOk && zeichen(plan).join('|') === aktuell.join('|')) { region.forEach(c => { if (!istLjKopf(c)) c.setAttribute('data-lj-p', '1'); }); return 'gleich'; }
+    const anker = kids[last].nextSibling, frag = doc.createDocumentFragment(); let karte = null;
+    plan.forEach(p => {
+      if (p.t === 'k') {
+        karte = protos[p.kat].cloneNode(false); karte.setAttribute('data-lj-liste', 'k'); karte.setAttribute('data-lj-p', '1');
+        karte.appendChild(protos[p.kat].firstElementChild.cloneNode(true)); frag.appendChild(karte);
+      } else if (p.t === 'l') {
+        const h = doc.createElement('h3'); h.className = 'ljh'; h.setAttribute('data-lj-liste', 'l'); h.setAttribute('data-lj', String(p.lj)); h.textContent = kopf(p.lj); frag.appendChild(h); karte = null;
+      } else {
+        const e = p.e; e.el.classList.toggle('lj-spaeter', e.lj > k.lj); if (e.lj > k.lj) e.el.setAttribute('data-lj', String(e.lj)); else e.el.removeAttribute('data-lj'); karte.appendChild(e.el);
+      }
+    });
+    region.forEach(c => { if (c.parentNode === view) view.removeChild(c); });
+    view.insertBefore(frag, anker && anker.parentNode === view ? anker : null);
+    return 'ok';
+  }
+
   let wartet = false;
   function scan() {
     wartet = false;
@@ -176,12 +222,17 @@
     const bekannt = {}; idsDes(k).forEach(i => { bekannt[i] = 1; });
     const rows = doc.querySelectorAll('button.row[data-t],button.row[data-id],.row[data-t],.row[data-id]'), eltern = [];
     rows.forEach(r => { const p = r.parentNode; if (p && eltern.indexOf(p) < 0) eltern.push(p); });
-    if (!eltern.length) return;
+    const karten = [];
+    doc.querySelectorAll('.card > .ti[data-id]').forEach(r => { const v = r.parentNode.parentNode; if (v && karten.indexOf(v) < 0) karten.push(v); });
+    if (!eltern.length && !karten.length) return;
     if (obs) obs.disconnect();
-    try { eltern.forEach(p => { try { umordnen(p, k, bekannt); } catch (e) {} }); }
+    try {
+      eltern.forEach(p => { try { umordnen(p, k, bekannt); } catch (e) {} });
+      karten.forEach(v => { try { umordnenKarten(v, k, bekannt); } catch (e) {} });
+    }
     finally { if (obs && doc.body) obs.observe(doc.body, { childList: true, subtree: true }); }
   }
-  const relevant = n => n.nodeType === 1 && (n.matches('.row,.gh,.sh') || (n.querySelector && n.querySelector('.row[data-t],.row[data-id]')));
+  const relevant = n => n.nodeType === 1 && (n.matches('.row,.gh,.sh') || (n.querySelector && n.querySelector('.row[data-t],.row[data-id],.ti[data-id]')));
   function anstoss(muts) {
     if (wartet) return;
     for (let i = 0; i < muts.length; i++) { const a = muts[i].addedNodes; for (let j = 0; j < a.length; j++) if (relevant(a[j]) && !eigen(a[j])) { wartet = true; Promise.resolve().then(scan); return; } }
@@ -190,7 +241,7 @@
   /* Wer bewusst eine spätere Aufgabe wählt (Klick auf eine gedämpfte Zeile): kleiner Hinweis, nichts wird verhindert */
   function klick(e) {
     try {
-      const r = e.target && e.target.closest ? e.target.closest('.row.lj-spaeter') : null; if (!r) return;
+      const r = e.target && e.target.closest ? e.target.closest('.row.lj-spaeter,.ti.lj-spaeter') : null; if (!r) return;
       const j = +r.getAttribute('data-lj'); if (j >= 2 && j <= 4) setTimeout(() => zeigeSpaeter(j), 0);
     } catch (x) {}
   }
@@ -211,7 +262,7 @@
     scan(); einsprung();
     if (doc.body && obs) obs.observe(doc.body, { childList: true, subtree: true });
   }
-  Object.assign(root.LehrjahrListe, { kontext, erlaubt, weiter, zeigeHinweis, zeigeSpaeter, zeigeFertig, umordnen, scan });
+  Object.assign(root.LehrjahrListe, { kontext, erlaubt, weiter, zeigeHinweis, zeigeSpaeter, zeigeFertig, umordnen, umordnenKarten, scan });
   if (!root.MutationObserver) return;
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', los); else los();
 })(typeof window !== 'undefined' ? window : globalThis);
