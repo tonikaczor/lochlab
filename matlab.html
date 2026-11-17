@@ -203,6 +203,20 @@ table.tt{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
 .nztab{overflow-x:auto}
 html.lr-on .lr-teile .lr-seg>button{padding:0 3px;font-size:14px}
 .nz-plus{fill:var(--fg);font:700 16px system-ui,sans-serif}
+/* Rechen-Duell (Reiter Duell) */
+.rd-code{font:700 clamp(28px,9vw,52px)/1.1 ui-monospace,Consolas,monospace;letter-spacing:.06em;text-align:center;margin:10px 0;overflow-wrap:anywhere;user-select:all}
+.rd-code.klein{font-size:clamp(17px,5.2vw,26px);letter-spacing:.03em}
+.rd-qr{width:min(190px,60%);margin:6px auto;background:#fff;border-radius:8px;line-height:0}.rd-qr:empty{display:none}.rd-qr svg{width:100%;height:auto;display:block}
+.rd-l{font-size:13px;color:var(--mute);margin:12px 0 4px}
+.rd-err{color:var(--danger);font-size:14px;margin:6px 0;min-height:0}.rd-err:empty{display:none}
+.rd-top{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:14px;flex-wrap:wrap}
+.rd-uhr{font:700 20px/1 ui-monospace,Consolas,monospace}.rd-uhr.knapp{color:var(--danger)}
+.rd-bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin:8px 0 12px}.rd-bar i{display:block;height:100%;background:var(--accent)}
+.rd-erg{text-align:center;font-size:20px;margin:8px 0 0}.rd-erg b{font-size:clamp(44px,14vw,72px);line-height:1;color:var(--accent);display:block}
+.rd-t{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}.rd-t th,.rd-t td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}.rd-t tr.ich td{font-weight:700}
+.rd-d{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--danger);border-radius:10px;margin-bottom:8px;padding:0 12px}.rd-d.ok{border-left-color:var(--ok)}
+.rd-d summary{cursor:pointer;padding:10px 0;min-height:44px;line-height:1.4}.rd-d summary small{display:block;color:var(--mute);overflow-wrap:anywhere}.rd-d[open]{padding-bottom:10px}
+.rd-h{cursor:default}
 </style>
 <link rel="stylesheet" href="design.css">
 <link rel="stylesheet" href="labrahmen.css">
@@ -232,6 +246,7 @@ html.lr-on .lr-teile .lr-seg>button{padding:0 3px;font-size:14px}
     <section class="pg scroll" id="pg_bsp" data-tab="bsp"><div class="wrap" id="v_bsp"></div></section>
     <section class="pg scroll" id="pg_tasks" data-tab="tasks"><div class="wrap" id="v_tasks"></div></section>
     <section class="pg scroll" id="pg_rt" data-tab="rt"><div class="wrap" id="v_rt"></div></section>
+    <section class="pg scroll" id="pg_duell" data-tab="duell"><div class="wrap" id="v_duell"></div></section>
     <section class="pg scroll" id="pg_netz" data-tab="netz"><div class="wrap" id="v_netz"></div></section>
     <section class="pg scroll hl" id="pg_help" data-tab="help"><div class="wrap" id="v_help"></div></section>
   </div>
@@ -245,13 +260,15 @@ html.lr-on .lr-teile .lr-seg>button{padding:0 3px;font-size:14px}
 <script src="matnetz.js"></script>
 <script src="matnetzviz.js"></script>
 <script>window.LAB='mat';</script>
+<script src="matduell.js"></script>
+<script src="matduellui.js"></script>
 <script src="matui.js"></script>
 <script src="matviz.js"></script>
 <script>if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'))navigator.serviceWorker.register('sw.js').catch(function(){});</script>
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
-<script>window.LR_TAB = { 'matlab.html': { buehne: { umst: '#umWaage' }, name: 'Rechen-Lab Basis', gruppe: { netz: 'ueben' }, gruppen: [{ name: 'Einheiten und Messen', teile: ['einh', 'mess'] }, { name: 'Dreisatz und Prozent', teile: ['drei', 'proz'] }], saetze: { 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Netzwerke': 'Widerstandsschaltungen in 8 Stufen, von zwei Widerständen bis zehn und zur Leistung. Nach einem Fehlversuch gibt es Hinweise, nach dem zweiten die Lösung mit Lösungsweg. Eine Stufe ist nach 3 richtig gelösten Aufgaben geschafft.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
+<script>window.LR_TAB = { 'matlab.html': { buehne: { umst: '#umWaage' }, name: 'Rechen-Lab Basis', gruppe: { netz: 'ueben' }, gruppen: [{ name: 'Einheiten und Messen', teile: ['einh', 'mess'] }, { name: 'Dreisatz und Prozent', teile: ['drei', 'proz'] }], saetze: { 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Duell': 'Rechen-Duell: Alle rechnen dieselben Aufgaben mit denselben Zahlen. Mehr richtig gewinnt, bei Gleichstand die kürzere Zeit. Keine Tipps, je Aufgabe ein Versuch.', 'Netzwerke': 'Widerstandsschaltungen in 8 Stufen, von zwei Widerständen bis zehn und zur Leistung. Nach einem Fehlversuch gibt es Hinweise, nach dem zweiten die Lösung mit Lösungsweg. Eine Stufe ist nach 3 richtig gelösten Aufgaben geschafft.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
 <script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>

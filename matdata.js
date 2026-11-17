@@ -10,7 +10,17 @@
   const dig = n => n === 0 ? 'ganze Zahlen' : n === 1 ? 'eine Nachkommastelle' : n + ' Nachkommastellen';
   const MU = 'µ', OHM = 'Ω';
   const PT1 = 'Prüfung Teil 1';
-  const cats = ['Einheiten', 'Dreisatz', 'Prozent', 'Umstellen', 'Geometrie', 'Messwerte', PT1];
+  const BR = 'Bruchrechnung', KL = 'Klammern';
+  const cats = ['Einheiten', 'Dreisatz', 'Prozent', 'Bruchrechnung', 'Klammern', 'Umstellen', 'Geometrie', 'Messwerte', PT1];
+  /* Bausteine Bruchrechnung und Klammern (v62.180) */
+  const ggt = C.ggt, kz = (z, n) => { const g = ggt(z, n); return [z / g, n / g]; }, bt = (z, n) => n === 1 ? String(z) : z + '/' + n;
+  const gem = (z, n) => { const g = Math.floor(z / n); return g + ' ' + (z - g * n) + '/' + n; };
+  const bEnde = (zr, H) => { const g = ggt(zr, H), z = zr / g, n = H / g, o = []; if (g > 1) o.push(`Kürzen mit ${g}: ${zr}/${H} = ${bt(z, n)}`); if (n > 1 && z > n) o.push(`Als gemischte Zahl: ${gem(z, n)}`); return o; };
+  const BP = [[1, 2], [1, 3], [2, 3], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [1, 6], [5, 6], [1, 8], [3, 8], [5, 8], [7, 8]];
+  const mz = v => v < 0 ? '−' + (-v) : String(v), kl = v => v < 0 ? '(−' + (-v) + ')' : String(v);
+  const vz = (v, s) => (v < 0 ? '− ' : '+ ') + (s && Math.abs(v) === 1 ? '' : Math.abs(v)) + (s || '');
+  const poly = (A, B, K) => { const t = []; [[A, 'x²'], [B, 'x'], [K, '']].forEach(([v, s]) => { if (!v) return; t.push(t.length ? vz(v, s) : (v < 0 ? '−' : '') + (s && Math.abs(v) === 1 ? '' : Math.abs(v)) + s); }); return t.length ? t.join(' ') : '0'; };
+  const frage = k => k === 'x' ? 'Welche Zahl steht im Ergebnis vor dem x? Steht dort nur x, ist die Zahl 1.' : k === 'x2' ? 'Welche Zahl steht im Ergebnis vor dem x²? Steht dort nur x², ist die Zahl 1.' : 'Welche einzelne Zahl (ohne x) steht im Ergebnis?';
   const kO = v => v >= 1000 ? fmt(v / 1000) + ' kΩ' : v + ' Ω';
 
   /* ---------- Bausteine für Generatoren ---------- */
@@ -410,16 +420,133 @@
     [PT1, 3, 'RC-Tiefpass: Grenzfrequenz', R => {
       const Rk = pick(R, [1, 2.2, 4.7, 10]), Cn = pick(R, [10, 22, 47, 100]), fg = 1 / (2 * Math.PI * Rk * 1000 * Cn * 1e-9);
       return { text: `Ein Tiefpass besteht aus R = ${fmt(Rk)} kΩ und C = ${Cn} nF. Wie groß ist die Grenzfrequenz?`, unit: 'Hz', raw: fg, dec: 0, meta: { Rk, Cn }, steps: [`Formel: f_g = 1 / (2 · π · R · C)`, `Einheiten: R = ${fmt(Rk * 1000)} Ω, C = ${Cn} nF = ${Cn} · 10⁻⁹ F`, `f_g = 1 / (2 · π · ${fmt(Rk * 1000)} Ω · ${Cn} · 10⁻⁹ F) = ${fmt(rd(fg, 1), 1)} Hz`], tips: ['Ein Tiefpass lässt tiefe Frequenzen durch und schwächt hohe ab. Bei der Grenzfrequenz ist die Ausgangsspannung auf rund 71 % gesunken.', 'f_g = 1 / (2 · π · R · C), mit R in Ω und C in F. So gehst du vor: 1. kΩ in Ω umrechnen (mal 1000). 2. nF in F umrechnen (mal 10⁻⁹). 3. 2 · π · R · C rechnen und den Kehrwert bilden. 4. Trage f_g in Hz ein.'] };
+    }],
+    /* ---------- Bruchrechnung (v62.180, mat71 bis mat79): Themen wie in den Tests der Lehrwerkstatt im 1. Lehrjahr, eigene Texte und Zahlen. Antwort als Bruch (bruch: [Zähler, Nenner]), Eingabe 5/8 oder 1 3/8. ---------- */
+    [BR, 1, 'Bruch vollständig kürzen', R => {
+      const [z0, n0] = pick(R, [[3, 4], [2, 3], [5, 8], [3, 5], [7, 12], [1, 8], [4, 9], [5, 6], [2, 7], [3, 10]]), f = pick(R, [2, 3, 4, 5, 6, 8, 12, 25]), Z = z0 * f, N = n0 * f;
+      return { text: `Kürze den Bruch ${Z}/${N} so weit wie möglich.`, unit: '', bruch: [z0, n0], raw: z0 / n0, dec: 6, meta: { Z, N, f },
+        steps: [`Größter gemeinsamer Teiler von ${Z} und ${N}: ${f}`, `Zähler und Nenner durch ${f} teilen: ${Z} : ${f} = ${z0} und ${N} : ${f} = ${n0}`, `${Z}/${N} = ${z0}/${n0}`],
+        tips: ['Kürzen heißt: Zähler und Nenner durch dieselbe Zahl teilen. Der Wert des Bruchs bleibt gleich.', 'Suche eine Zahl, durch die sich Zähler und Nenner beide teilen lassen. So gehst du vor: 1. Gemeinsamen Teiler suchen (2, 3, 5 und so weiter). 2. Zähler und Nenner durch ihn teilen. 3. Wiederholen, bis es nicht mehr geht. 4. Trage den Bruch mit Schrägstrich ein, zum Beispiel 3/4.'] };
+    }],
+    [BR, 1, 'Bruch erweitern', R => {
+      const [z0, n0] = pick(R, [[3, 7], [5, 8], [2, 3], [3, 4], [4, 5], [5, 6], [2, 9], [7, 10]]), f = pick(R, [2, 3, 4, 5, 6, 7]), k = pick(R, ['N', 'Z']), Z = z0 * f, N = n0 * f;
+      const st = [`Erweiterungszahl: ${k === 'N' ? N + ' : ' + n0 : Z + ' : ' + z0} = ${f}`, `Zähler und Nenner mit ${f} malnehmen: ${z0} · ${f} = ${Z} und ${n0} · ${f} = ${N}`, `${z0}/${n0} = ${Z}/${N}`];
+      const tips = ['Erweitern heißt: Zähler und Nenner mit derselben Zahl malnehmen. Der Wert des Bruchs bleibt gleich.', `Finde zuerst die Erweiterungszahl. So gehst du vor: 1. ${k === 'N' ? 'Neuen Nenner durch den alten Nenner teilen' : 'Neuen Zähler durch den alten Zähler teilen'}. 2. Mit dieser Zahl auch ${k === 'N' ? 'den Zähler' : 'den Nenner'} malnehmen. 3. Trage die Zahl ein.`];
+      return k === 'N' ? { text: `Erweitere den Bruch ${z0}/${n0} auf den Nenner ${N}. Wie heißt der neue Zähler?`, unit: '', raw: Z, dec: 0, meta: { z0, n0, f, k }, steps: st, tips }
+        : { text: `Erweitere den Bruch ${z0}/${n0} auf den Zähler ${Z}. Wie heißt der neue Nenner?`, unit: '', raw: N, dec: 0, meta: { z0, n0, f, k }, steps: st, tips };
+    }],
+    [BR, 2, 'Brüche addieren und subtrahieren', R => {
+      let [a, b] = pick(R, BP), [c, d] = pick(R, BP.filter(x => x[1] !== b)); const op = pick(R, ['+', '−']);
+      if (op === '−' && a * d < c * b) { [a, b, c, d] = [c, d, a, b]; }
+      const H = b * d / ggt(b, d), za = a * H / b, zc = c * H / d, zr = op === '+' ? za + zc : za - zc, [z, n] = kz(zr, H);
+      const st = [`Hauptnenner (kleinstes gemeinsames Vielfaches von ${b} und ${d}): ${H}`, `Erweitern: ${a}/${b} = ${za}/${H} und ${c}/${d} = ${zc}/${H}`, `Zähler ${op === '+' ? 'addieren' : 'abziehen'}: ${za} ${op} ${zc} = ${zr}, also ${zr}/${H}`].concat(bEnde(zr, H));
+      return { text: `Berechne ${a}/${b} ${op} ${c}/${d}. Kürze das Ergebnis vollständig.`, unit: '', bruch: [z, n], raw: z / n, dec: 6, meta: { a, b, c, d, op }, steps: st,
+        tips: ['Brüche mit verschiedenen Nennern kannst du nicht direkt zusammenzählen. Bringe sie zuerst auf denselben Nenner.', 'Der Hauptnenner ist die kleinste Zahl, in der beide Nenner aufgehen. So gehst du vor: 1. Hauptnenner suchen. 2. Beide Brüche auf den Hauptnenner erweitern. 3. Nur die Zähler verrechnen, der Nenner bleibt. 4. Ergebnis kürzen. 5. Trage den Bruch ein, zum Beispiel 5/8 oder 1 3/8.'] };
+    }],
+    [BR, 3, 'Gemischte Zahlen addieren und subtrahieren', R => {
+      const [a, b] = pick(R, BP), [c, d] = pick(R, BP.filter(x => x[1] !== b)), op = pick(R, ['+', '−']), g2 = ri(R, 1, 2), g1 = op === '−' ? g2 + ri(R, 1, 2) : ri(R, 1, 3);
+      const u1 = g1 * b + a, u2 = g2 * d + c, H = b * d / ggt(b, d), za = u1 * H / b, zc = u2 * H / d, zr = op === '+' ? za + zc : za - zc, [z, n] = kz(zr, H);
+      const st = [`In unechte Brüche umwandeln: ${g1} ${a}/${b} = ${u1}/${b} und ${g2} ${c}/${d} = ${u2}/${d}`, `Hauptnenner von ${b} und ${d}: ${H}`, `Erweitern: ${u1}/${b} = ${za}/${H} und ${u2}/${d} = ${zc}/${H}`, `Zähler ${op === '+' ? 'addieren' : 'abziehen'}: ${za} ${op} ${zc} = ${zr}, also ${zr}/${H}`].concat(bEnde(zr, H));
+      return { text: `Berechne ${g1} ${a}/${b} ${op} ${g2} ${c}/${d}. Kürze das Ergebnis vollständig.`, unit: '', bruch: [z, n], raw: z / n, dec: 6, meta: { g1, a, b, g2, c, d, op }, steps: st,
+        tips: ['Eine gemischte Zahl besteht aus einer ganzen Zahl und einem Bruch. Wandle sie zuerst in einen unechten Bruch um: ganze Zahl mal Nenner plus Zähler.', 'Danach rechnest du wie mit normalen Brüchen. So gehst du vor: 1. Beide gemischten Zahlen in unechte Brüche umwandeln. 2. Hauptnenner suchen und erweitern. 3. Zähler verrechnen. 4. Kürzen. 5. Trage das Ergebnis ein, zum Beispiel 11/8 oder 1 3/8.'] };
+    }],
+    [BR, 2, 'Brüche multiplizieren', R => {
+      const [a, b] = pick(R, BP), [c, d] = pick(R, [[3, 8], [4, 9], [2, 3], [3, 4], [5, 6], [3, 10], [4, 5], [2, 7], [9, 10]]), g = pick(R, [0, 0, 1, 2]), u = g * b + a, [z, n] = kz(u * c, b * d);
+      const st = (g ? [`Gemischte Zahl umwandeln: ${g} ${a}/${b} = ${u}/${b}`] : []).concat([`Zähler mal Zähler und Nenner mal Nenner: ${u} · ${c} = ${u * c} und ${b} · ${d} = ${b * d}`, `Also ${u * c}/${b * d}`], bEnde(u * c, b * d));
+      return { text: `Berechne ${g ? g + ' ' : ''}${a}/${b} · ${c}/${d}. Kürze das Ergebnis vollständig.`, unit: '', bruch: [z, n], raw: z / n, dec: 6, meta: { g, a, b, c, d }, steps: st,
+        tips: ['Beim Malnehmen brauchst du keinen Hauptnenner. Zähler mal Zähler, Nenner mal Nenner.', `Du darfst vor dem Rechnen über Kreuz kürzen, das macht die Zahlen kleiner. So gehst du vor: 1. ${g ? 'Gemischte Zahl in einen unechten Bruch umwandeln. 2. ' : ''}Zähler mal Zähler rechnen. ${g ? 3 : 2}. Nenner mal Nenner rechnen. ${g ? 4 : 3}. Ergebnis kürzen. ${g ? 5 : 4}. Trage den Bruch ein.`] };
+    }],
+    [BR, 2, 'Brüche dividieren', R => {
+      const [a, b] = pick(R, [[7, 10], [3, 4], [2, 3], [5, 8], [4, 9], [5, 6], [3, 5], [9, 10]]), [c, d] = pick(R, [[14, 15], [3, 8], [5, 6], [2, 5], [4, 7], [9, 20], [1, 4], [5, 12]]), [z, n] = kz(a * d, b * c);
+      const st = ['Durch einen Bruch teilen heißt: mit dem Kehrwert malnehmen.', `${a}/${b} : ${c}/${d} = ${a}/${b} · ${d}/${c}`, `Zähler mal Zähler und Nenner mal Nenner: ${a} · ${d} = ${a * d} und ${b} · ${c} = ${b * c}, also ${a * d}/${b * c}`].concat(bEnde(a * d, b * c));
+      return { text: `Berechne ${a}/${b} : ${c}/${d}. Kürze das Ergebnis vollständig.`, unit: '', bruch: [z, n], raw: z / n, dec: 6, meta: { a, b, c, d }, steps: st,
+        tips: ['Durch einen Bruch teilst du, indem du mit seinem Kehrwert malnimmst. Der Kehrwert vertauscht Zähler und Nenner.', 'Nur der zweite Bruch wird umgedreht. So gehst du vor: 1. Kehrwert des zweiten Bruchs bilden. 2. Aus dem Geteilt ein Mal machen. 3. Zähler mal Zähler, Nenner mal Nenner. 4. Kürzen. 5. Trage den Bruch ein.'] };
+    }],
+    [BR, 1, 'Bruch in Dezimalzahl umrechnen', R => {
+      const [z, n] = pick(R, [[1, 2], [1, 4], [3, 4], [1, 5], [2, 5], [3, 5], [4, 5], [1, 8], [3, 8], [5, 8], [7, 8], [3, 10], [7, 10], [9, 10], [1, 20], [7, 20], [11, 20], [3, 25], [9, 25], [3, 40]]);
+      return { text: `Schreibe den Bruch ${z}/${n} als Dezimalzahl.`, unit: '', raw: z / n, dec: 3, meta: { z, n },
+        steps: [`Der Bruchstrich bedeutet geteilt: ${z}/${n} = ${z} : ${n}`, `${z} : ${n} = ${fmt(z / n)}`],
+        tips: ['Der Bruchstrich ist ein Geteilt-Zeichen. Teile den Zähler durch den Nenner.', 'Du kannst auch erst auf den Nenner 10, 100 oder 1000 erweitern. So gehst du vor: 1. Zähler durch Nenner teilen. 2. Bei Bedarf Nullen anhängen und weiter teilen. 3. Trage die Dezimalzahl mit Komma ein.'] };
+    }],
+    [BR, 2, 'Bruchteil einer Menge', R => {
+      const [z, n] = pick(R, [[3, 4], [2, 3], [5, 6], [3, 8], [2, 5], [1, 4], [5, 12]]), L = pick(R, [12, 20, 24, 36, 40, 60, 120].filter(x => x % n === 0)), k = pick(R, ['v', 'r']), teil = L / n, v = z * teil;
+      const st = [`1/${n} von ${L} m: ${L} m : ${n} = ${teil} m`, `${z}/${n} von ${L} m: ${z} · ${teil} m = ${v} m`].concat(k === 'r' ? [`Rest: ${L} m − ${v} m = ${L - v} m`] : []);
+      return { text: `Auf einer Rolle sind ${L} m Litze. Für die Lötübungen werden ${z}/${n} davon verbraucht. ${k === 'v' ? 'Wie viele Meter werden verbraucht?' : 'Wie viele Meter bleiben übrig?'}`, unit: 'm', raw: k === 'v' ? v : L - v, dec: 0, meta: { z, n, L, k }, steps: st,
+        tips: ['Der Nenner sagt, in wie viele gleiche Teile die Menge geteilt wird. Der Zähler sagt, wie viele dieser Teile gemeint sind.', `Rechne zuerst einen Teil aus. So gehst du vor: 1. Menge durch den Nenner teilen. 2. Ergebnis mit dem Zähler malnehmen. ${k === 'r' ? '3. Vom Ganzen abziehen. 4.' : '3.'} Trage die Meter ein.`] };
+    }],
+    [BR, 3, 'Werkstatt: Litze zuschneiden', R => {
+      const [g, a, b] = pick(R, [[3, 1, 2], [4, 1, 2], [5, 1, 4], [2, 3, 4], [6, 1, 2], [3, 3, 4]]), [c, d] = pick(R, [[1, 4], [3, 8], [1, 8], [5, 8]]), tot = g + a / b, k = pick(R, [4, 5, 6, 8].filter(x => x * c / d < tot - 0.01)) || 2;
+      const u = g * b + a, zt = u * 8 / b, zs = k * c * 8 / d, zr = zt - zs, [z, n] = kz(zr, 8), [sz, sn] = kz(k * c, d);
+      const st = [`Abgeschnitten: ${k} · ${c}/${d} m = ${k * c}/${d} m${sn !== d ? ' = ' + bt(sz, sn) + ' m' : ''}`, `Rolle als unechter Bruch: ${g} ${a}/${b} m = ${u}/${b} m`, `Beides in Achteln: ${zt}/8 m − ${zs}/8 m = ${zr}/8 m`].concat(bEnde(zr, 8));
+      return { text: `Auf einer Rolle sind ${g} ${a}/${b} m Litze. Du schneidest ${k} Stücke mit je ${c}/${d} m ab. Wie viele Meter bleiben auf der Rolle? Gib das Ergebnis als gekürzten Bruch oder als gemischte Zahl an.`, unit: 'm', bruch: [z, n], raw: z / n, dec: 6, meta: { g, a, b, c, d, k }, steps: st,
+        tips: ['Rechne zuerst aus, wie viel du insgesamt abschneidest. Das ziehst du von der Rolle ab.', 'Bringe alles auf denselben Nenner. So gehst du vor: 1. Anzahl der Stücke mal Länge eines Stücks. 2. Die gemischte Zahl der Rolle in einen unechten Bruch umwandeln. 3. Beide Brüche auf denselben Nenner bringen. 4. Abziehen und kürzen. 5. Trage den Bruch ein, zum Beispiel 9/4 oder 2 1/4.'] };
+    }],
+    /* ---------- Klammern (v62.180, mat80 bis mat88): Klammern auflösen, ausklammern, binomische Formeln. Gefragt ist eine Zahl aus dem Ergebnis (vor dem x, vor dem x² oder die einzelne Zahl), damit die Eingabe eine Zahl bleibt. ---------- */
+    [KL, 1, 'Klammer ausmultiplizieren', R => {
+      const f = pick(R, [2, 3, 4, 5, 6, -2, -3]), a = pick(R, [1, 2, 3, 4, 5]), b = pick(R, [-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7]), k = pick(R, ['x', 'c']);
+      return { text: `Löse die Klammer auf: ${mz(f)} · (${poly(0, a, b)}). ${frage(k)}`, unit: '', raw: k === 'x' ? f * a : f * b, dec: 0, meta: { f, a, b, k },
+        steps: [`Jedes Glied in der Klammer mit ${mz(f)} malnehmen: ${kl(f)} · ${a === 1 ? '' : a}x = ${mz(f * a)}x und ${kl(f)} · ${kl(b)} = ${mz(f * b)}`, `Aufgelöst: ${poly(0, f * a, f * b)}`, `${k === 'x' ? 'Vor dem x' : 'Ohne x'} steht ${mz(k === 'x' ? f * a : f * b)}.`],
+        tips: ['Die Zahl vor der Klammer wird mit jedem Glied in der Klammer malgenommen, nicht nur mit dem ersten.', 'Achte auf die Vorzeichen: Minus mal Minus ergibt Plus, Minus mal Plus ergibt Minus. So gehst du vor: 1. Zahl vor der Klammer mal das x-Glied. 2. Zahl vor der Klammer mal die einzelne Zahl. 3. Ergebnis ohne Klammer aufschreiben. 4. Trage die gefragte Zahl ein, bei Minus mit Vorzeichen.'] };
+    }],
+    [KL, 1, 'Minusklammer auflösen', R => {
+      const p = ri(R, 4, 9), a = pick(R, [1, 2, 3, 4, 5].filter(x => x !== p)), b = pick(R, [-6, -5, -4, -3, -2, 2, 3, 4, 5, 6]), q0 = ri(R, 1, 9), q = q0 === b ? q0 + 1 : q0, k = pick(R, ['x', 'c']);
+      return { text: `Löse die Klammer auf und fasse zusammen: ${p}x − (${poly(0, a, b)}) + ${q}. ${frage(k)}`, unit: '', raw: k === 'x' ? p - a : q - b, dec: 0, meta: { p, a, b, q, k },
+        steps: [`Ein Minus vor der Klammer dreht jedes Vorzeichen in der Klammer um: −(${poly(0, a, b)}) = ${poly(0, -a, -b)}`, `Ohne Klammer: ${p}x ${vz(-a, 'x')} ${vz(-b)} + ${q}`, `x-Glieder: ${p}x ${vz(-a, 'x')} = ${mz(p - a)}x. Zahlen: ${mz(-b)} + ${q} = ${mz(q - b)}`, `Aufgelöst: ${poly(0, p - a, q - b)}`],
+        tips: ['Steht ein Minus vor der Klammer, ändert sich beim Auflösen jedes Vorzeichen in der Klammer.', 'Löse erst die Klammer auf, fasse dann zusammen. So gehst du vor: 1. Klammer weglassen und jedes Vorzeichen darin umdrehen. 2. Alle Glieder mit x zusammenfassen. 3. Alle einzelnen Zahlen zusammenfassen. 4. Trage die gefragte Zahl ein, bei Minus mit Vorzeichen.'] };
+    }],
+    [KL, 2, 'Zwei Klammern ausmultiplizieren', R => {
+      const W = [-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6, 7], p = pick(R, [1, 1, 2, 3]), a = pick(R, W), b = pick(R, W.filter(x => p * x + a !== 0)), k = pick(R, ['x', 'c']), B = p * b + a, K = a * b;
+      return { text: `Multipliziere aus und fasse zusammen: (${poly(0, p, a)}) · (${poly(0, 1, b)}). ${frage(k)}`, unit: '', raw: k === 'x' ? B : K, dec: 0, meta: { p, a, b, k },
+        steps: [`Jedes Glied der ersten Klammer mit jedem Glied der zweiten malnehmen: ${p === 1 ? '' : p}x · x = ${p === 1 ? '' : p}x², ${p === 1 ? '' : p}x · ${kl(b)} = ${mz(p * b)}x, ${kl(a)} · x = ${mz(a)}x, ${kl(a)} · ${kl(b)} = ${mz(K)}`, `x-Glieder zusammenfassen: ${mz(p * b)}x ${vz(a, 'x')} = ${mz(B)}x`, `Aufgelöst: ${poly(p, B, K)}`],
+        tips: ['Jedes Glied der ersten Klammer wird mit jedem Glied der zweiten Klammer malgenommen. Das ergibt vier Produkte.', 'Schreib alle vier Produkte auf, bevor du zusammenfasst. So gehst du vor: 1. Erstes Glied mal beide Glieder der zweiten Klammer. 2. Zweites Glied mal beide Glieder der zweiten Klammer. 3. Die beiden Glieder mit x zusammenfassen. 4. Trage die gefragte Zahl ein, bei Minus mit Vorzeichen.'] };
+    }],
+    [KL, 2, 'Binomische Formel anwenden', R => {
+      const a = pick(R, [1, 1, 2, 3, 4]), b = ri(R, 1, 7), s = pick(R, [1, -1]), k = pick(R, a > 1 ? ['x', 'c', 'x2'] : ['x', 'x', 'c']), A = a * a, B = 2 * a * b * s, K = b * b, ax = (a === 1 ? '' : a) + 'x';
+      return { text: `Löse mit der binomischen Formel auf: (${poly(0, a, s * b)})². ${frage(k)}`, unit: '', raw: k === 'x' ? B : k === 'c' ? K : A, dec: 0, meta: { a, b, s, k },
+        steps: [`Binomische Formel: (a ${s > 0 ? '+' : '−'} b)² = a² ${s > 0 ? '+' : '−'} 2ab + b²`, `Hier ist a = ${ax} und b = ${b}`, `a² = ${A === 1 ? '' : A}x², 2ab = 2 · ${ax} · ${b} = ${2 * a * b}x, b² = ${K}`, `Aufgelöst: ${poly(A, B, K)}`],
+        tips: ['Eine Klammer hoch 2 heißt: die Klammer mal sich selbst. Dafür gibt es die binomischen Formeln, zum Beispiel (a + b)² = a² + 2ab + b².', 'Das mittlere Glied 2ab wird oft vergessen. So gehst du vor: 1. a und b in der Klammer bestimmen. 2. a² ausrechnen. 3. 2 · a · b ausrechnen, bei Minus in der Klammer mit Minus davor. 4. b² ausrechnen. 5. Trage die gefragte Zahl ein, bei Minus mit Vorzeichen.'] };
+    }],
+    [KL, 2, 'Klammern auflösen und zusammenfassen', R => {
+      const g = ri(R, 2, 4), d = ri(R, 1, 3), f = pick(R, [2, 3, 4, 5, 6, 7].filter(x => x !== g * d)), b = ri(R, 1, 6), e = ri(R, 1, 5), k = pick(R, ['x', 'c']), X = f - g * d, K = -f * b - g * e;
+      return { text: `Löse die Klammern auf und fasse zusammen: ${f}(${poly(0, 1, -b)}) − ${g}(${poly(0, d, e)}). ${frage(k)}`, unit: '', raw: k === 'x' ? X : K, dec: 0, meta: { f, b, g, d, e, k },
+        steps: [`Erste Klammer: ${f} · x = ${f}x und ${f} · (−${b}) = −${f * b}`, `Zweite Klammer mit −${g}: −${g} · ${d === 1 ? '' : d}x = −${g * d}x und −${g} · ${e} = −${g * e}`, `Ohne Klammern: ${f}x − ${f * b} − ${g * d}x − ${g * e}`, `Aufgelöst: ${poly(0, X, K)}`],
+        tips: ['Löse jede Klammer einzeln auf. Das Minus vor der zweiten Klammer gehört zur Zahl davor und wirkt auf jedes Glied.', 'Erst auflösen, dann sortieren. So gehst du vor: 1. Erste Klammer ausmultiplizieren. 2. Zweite Klammer mit der negativen Zahl ausmultiplizieren. 3. Glieder mit x zusammenfassen. 4. Einzelne Zahlen zusammenfassen. 5. Trage die gefragte Zahl ein, bei Minus mit Vorzeichen.'] };
+    }],
+    [KL, 1, 'Ausklammern: größte gemeinsame Zahl', R => {
+      const g = pick(R, [2, 3, 4, 5, 6, 7, 8]), a = ri(R, 1, 5), b = pick(R, [1, 2, 3, 4, 5, 6, 7].filter(x => ggt(a, x) === 1)), s = pick(R, [1, -1]);
+      return { text: `Klammere die größte gemeinsame Zahl aus: ${poly(0, g * a, s * g * b)}. Welche Zahl steht dann vor der Klammer?`, unit: '', raw: g, dec: 0, meta: { g, a, b, s },
+        steps: [`Größte Zahl, durch die sich ${g * a} und ${g * b} beide teilen lassen: ${g}`, `${g * a}x : ${g} = ${a === 1 ? '' : a}x und ${g * b} : ${g} = ${b}`, `Ausgeklammert: ${g} · (${poly(0, a, s * b)})`, `Probe: Ausmultiplizieren ergibt wieder ${poly(0, g * a, s * g * b)}`],
+        tips: ['Ausklammern ist das Gegenteil von Ausmultiplizieren. Du suchst eine Zahl, die in beiden Gliedern steckt.', 'Gesucht ist der größte gemeinsame Teiler der beiden Zahlen. So gehst du vor: 1. Teiler der ersten Zahl aufschreiben. 2. Teiler der zweiten Zahl aufschreiben. 3. Den größten gemeinsamen Teiler nehmen. 4. Probe: ausmultiplizieren. 5. Trage die Zahl vor der Klammer ein.'] };
+    }],
+    [KL, 3, 'Verschachtelte Klammern auflösen', R => {
+      const p = ri(R, 3, 8), q = ri(R, 2, 6), r = pick(R, [1, 2, 3, 4, 5].filter(x => x !== q && p - q + x !== 0)), c = pick(R, [-6, -5, -4, -3, -2, -1, 1, 2, 3, 4, 5, 6]), k = pick(R, ['x', 'c']);
+      return { text: `Löse von innen nach außen auf und fasse zusammen: ${p}x − [${q}x − (${poly(0, r, c)})]. ${frage(k)}`, unit: '', raw: k === 'x' ? p - q + r : c, dec: 0, meta: { p, q, r, c, k },
+        steps: [`Innere Klammer zuerst, das Minus davor dreht die Vorzeichen um: ${q}x − (${poly(0, r, c)}) = ${q}x ${vz(-r, 'x')} ${vz(-c)} = ${poly(0, q - r, -c)}`, `Eckige Klammer, wieder steht ein Minus davor: ${p}x − [${poly(0, q - r, -c)}] = ${p}x ${vz(r - q, 'x')} ${vz(c)}`, `Aufgelöst: ${poly(0, p - q + r, c)}`],
+        tips: ['Bei verschachtelten Klammern arbeitest du von innen nach außen. Jedes Minus vor einer Klammer dreht alle Vorzeichen darin um.', 'Zwei Minus hintereinander heben sich auf. So gehst du vor: 1. Runde Klammer auflösen (Vorzeichen umdrehen). 2. In der eckigen Klammer zusammenfassen. 3. Eckige Klammer auflösen (Vorzeichen wieder umdrehen). 4. Zusammenfassen. 5. Trage die gefragte Zahl ein, bei Minus mit Vorzeichen.'] };
+    }],
+    [KL, 3, 'Harte Nuss: Binom und zwei Klammern', R => {
+      const a = ri(R, 2, 4), b = ri(R, 1, 4), c = pick(R, [2, 3, 4, 5].filter(x => x !== a)), d = ri(R, 1, 3), k = pick(R, ['x2', 'x', 'c']), A = a - c, B = -2 * a * b, K = a * b * b + c * d * d;
+      return { text: `Löse auf und fasse zusammen: ${a}(${poly(0, 1, -b)})² − ${c}(${poly(0, 1, d)})(${poly(0, 1, -d)}). ${frage(k)}`, unit: '', raw: k === 'x2' ? A : k === 'x' ? B : K, dec: 0, meta: { a, b, c, d, k },
+        steps: [`Binom: (${poly(0, 1, -b)})² = ${poly(1, -2 * b, b * b)}`, `Mal ${a}: ${poly(a, -2 * a * b, a * b * b)}`, `Dritte binomische Formel: (${poly(0, 1, d)})(${poly(0, 1, -d)}) = x² − ${d * d}`, `Mal −${c}: −${c}x² + ${c * d * d}`, `Zusammenfassen: ${a}x² − ${c}x² = ${mz(A)}x², ${mz(B)}x bleibt, ${a * b * b} + ${c * d * d} = ${K}`, `Aufgelöst: ${poly(A, B, K)}`],
+        tips: ['Hier stecken zwei binomische Formeln: (a − b)² = a² − 2ab + b² und (a + b)(a − b) = a² − b². Löse beide Teile getrennt auf.', 'Die Zahl vor der Klammer wird erst nach dem Auflösen des Binoms verteilt. So gehst du vor: 1. Erstes Binom auflösen. 2. Mit der Zahl davor malnehmen. 3. Zweiten Teil mit der dritten binomischen Formel auflösen. 4. Mit der negativen Zahl davor malnehmen. 5. Gleiche Glieder zusammenfassen. 6. Trage die gefragte Zahl ein, bei Minus mit Vorzeichen.'] };
+    }],
+    [KL, 2, 'Praxis: Fläche einer Leiterplatte', R => {
+      const a = ri(R, 2, 8), b = ri(R, 1, 5), x = pick(R, [8, 10, 12, 15, 20]), A = (x + a) * (x - b);
+      return { text: `Eine Leiterplatte ist (x + ${a}) cm lang und (x − ${b}) cm breit. Stelle die Formel für die Fläche auf, multipliziere aus und berechne die Fläche für x = ${x}.`, unit: 'cm²', raw: A, dec: 0, meta: { a, b, x },
+        steps: [`Fläche = Länge mal Breite: A = (x + ${a}) · (x − ${b})`, `Ausmultipliziert: A = ${poly(1, a - b, -a * b)}`, `x = ${x} einsetzen: ${x * x} ${vz((a - b) * x)} ${vz(-a * b)} = ${A}`, `Probe mit den Klammern: (${x} + ${a}) · (${x} − ${b}) = ${x + a} · ${x - b} = ${A}`],
+        tips: ['Die Fläche eines Rechtecks ist Länge mal Breite. Hier sind Länge und Breite Klammern mit x.', 'Du kannst x gleich in die Klammern einsetzen oder erst ausmultiplizieren. Beides muss dasselbe ergeben. So gehst du vor: 1. A = Länge · Breite aufschreiben. 2. Klammern ausmultiplizieren und zusammenfassen. 3. Für x die Zahl einsetzen. 4. Probe mit den Klammern. 5. Trage die Fläche in cm² ein.'] };
     }]
   ];
   const tasks = defs.map((d, i) => ({ id: 'mat' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3] }));
 
   /* Fertige Aufgabe aus Aufgabe + Seed (gleicher Seed = gleiche Zahlen) */
   function build(t, seed) {
-    const R = C.rng(t.id + ':' + (seed == null ? 0 : seed)), g = t.gen(R), value = rd(g.raw, g.dec), exact = value === rs(g.raw), dec = g.dec;
-    const tol = exact ? Math.max(1e-6, Math.abs(value) * 1e-6) : Math.pow(10, -dec);
-    return { id: t.id, seed, cat: t.cat, level: t.level, title: t.title, text: g.text + (exact ? '' : ' Runde auf ' + dig(dec) + '.'), unit: g.unit, label: g.label || 'Dein Ergebnis', value, tol, dec, exact,
-      steps: g.steps.concat(['Ergebnis: ' + fmt(value, Math.max(dec, 0)) + (g.unit ? ' ' + g.unit : '')]), tips: g.tips, svg: g.svg || null, skizze: g.skizze || null, meta: g.meta, raw: g.raw };
+    const R = C.rng(t.id + ':' + (seed == null ? 0 : seed)), g = t.gen(R), B = g.bruch || null, value = B ? B[0] / B[1] : rd(g.raw, g.dec), exact = B ? true : value === rs(g.raw), dec = g.dec;
+    const tol = B ? 1e-9 : exact ? Math.max(1e-6, Math.abs(value) * 1e-6) : Math.pow(10, -dec);
+    /* sol = Lösung als Text; bei Bruch-Aufgaben der gekürzte Bruch, dazu die gemischte Zahl */
+    const sol = (B ? bt(B[0], B[1]) + (B[1] > 1 && B[0] > B[1] ? ' (= ' + gem(B[0], B[1]) + ')' : '') : fmt(value, Math.max(dec, 0))) + (g.unit ? ' ' + g.unit : '');
+    return { id: t.id, seed, cat: t.cat, level: t.level, title: t.title, text: g.text + (exact ? '' : ' Runde auf ' + dig(dec) + '.'), unit: g.unit, label: g.label || (B ? 'Dein Ergebnis als Bruch' : 'Dein Ergebnis'), value, tol, dec, exact, bruch: B, sol,
+      steps: g.steps.concat(['Ergebnis: ' + sol]), tips: g.tips, svg: g.svg || null, skizze: g.skizze || null, meta: g.meta, raw: g.raw };
   }
 
   /* ---------- Beispiele (Reiter "Beispiele", Aufruf ?bsp): Schritt für Schritt durchgerechnet ---------- */

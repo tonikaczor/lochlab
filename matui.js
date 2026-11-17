@@ -1,6 +1,6 @@
 'use strict';
 /* Tonfunk Rechen-Lab: Oberfläche (Lab-Kennung 'mat').
-   Reiter: Einheiten, Dreisatz, Prozent, Umstellen, Geometrie, Messwerte, Beispiele, Aufgaben, Trainer, Netzwerke, Hilfe.
+   Reiter: Einheiten, Dreisatz, Prozent, Umstellen, Geometrie, Messwerte, Beispiele, Aufgaben, Trainer, Duell (matduell.js, matduellui.js), Netzwerke, Hilfe.
    Module: matcore.js (MAT_CORE, Logik), matdata.js (MAT_DATA, MAT_TASKS).
    Speicher (Präfix lm4.mat.): tab, done ({id:true} nur gelöste), prog ({id:Prozent}), hints ({id:höchste Stufe}), ctipps ({id:Stufe} nur im Prüfmodus),
    exam ('1' = Prüfmodus), rt (Trainer: n, ok, streak, best), netz ({Stufe:Anzahl richtig gelöst}, Reiter Netzwerke, nicht im Lab-Fortschritt).
@@ -36,7 +36,7 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['einh', '📏', 'Einheiten'], ['drei', '⚖️', 'Dreisatz'], ['proz', '％', 'Prozent'], ['umst', '🔁', 'Umstellen'], ['geo', '📐', 'Geometrie'], ['mess', '📊', 'Messwerte'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['netz', '🔌', 'Netzwerke'], ['help', '📘', 'Hilfe']];
+  const TABS = [['einh', '📏', 'Einheiten'], ['drei', '⚖️', 'Dreisatz'], ['proz', '％', 'Prozent'], ['umst', '🔁', 'Umstellen'], ['geo', '📐', 'Geometrie'], ['mess', '📊', 'Messwerte'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['duell', '⚔️', 'Duell'], ['netz', '🔌', 'Netzwerke'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'einh'),
     einh: { fam: 'laenge', v: '4,7', from: 'mm', to: 'm', sv: '0,000047' },
@@ -282,22 +282,23 @@
   function updateBadge() { const b = $('#tkBd'); if (!b) return; const n = Object.keys(done()).filter(k => TASKS.some(t => t.id === k)).length; b.textContent = n + '/' + TASKS.length; }
   const curTask = () => S.task && TASKS.find(t => t.id === S.task);
   const instOf = t => { const sd = S.seeds[t.id] || 0, i = S.inst[t.id]; if (i && i.seed === sd) return i; return (S.inst[t.id] = D.build(t, sd)); };
-  const solText = p => fmt(p.value, Math.max(p.dec, 0)) + (p.unit ? ' ' + p.unit : '');
+  const solText = p => p.sol || fmt(p.value, Math.max(p.dec, 0)) + (p.unit ? ' ' + p.unit : '');
+  const BRUCH_BITTE = 'Bitte gib einen Bruch ein, zum Beispiel 5/8 oder 1 3/8.';
   const rdOf = (p, ok) => `<div class="rdout ${ok ? 'ok' : 'bad'}"><b>Lösungsweg</b>${stp(p.steps, true)}</div>`;
 
   /* Aufgabe + Eingabe (für Aufgaben und Trainer) */
   function probHTML(p, ans, res, ns) {
     const solved = !!(res && (res.ok || res.stage === 'loes'));
     return `<div class="lv">${dots(p.level)}</div><p style="margin:8px 0">${esc(p.text)}</p>${p.svg ? `<div class="svbox">${svgTri(p.svg)}</div>` : ''}${p.skizze ? `<div class="svbox">${svgSkizze(p.skizze)}</div>` : ''}
-      <label class="f"><span>${esc(p.label)}${p.unit ? ' (' + esc(p.unit) + ')' : ''}</span><div class="qin"><input id="${ns}In" data-ans="${ns}" inputmode="decimal" autocomplete="off" value="${esc(ans || '')}" ${solved ? 'disabled' : ''}><span class="u">${esc(p.unit)}</span></div></label><p class="lr-hinweis">${p.unit ? 'Zahl in ' + esc(p.unit) + '. ' : 'Zahl. '}${p.exact ? 'Das Ergebnis muss genau stimmen.' : '±' + esc(fmt(p.tol, 6)) + ' gilt als richtig.'}</p>`;
+      <label class="f"><span>${esc(p.label)}${p.unit ? ' (' + esc(p.unit) + ')' : ''}</span><div class="qin"><input id="${ns}In" data-ans="${ns}" inputmode="${p.bruch ? 'text' : 'decimal'}" autocomplete="off" value="${esc(ans || '')}" ${solved ? 'disabled' : ''}><span class="u">${esc(p.unit)}</span></div></label><p class="lr-hinweis">${p.bruch ? 'Bruch mit Schrägstrich, vollständig gekürzt, zum Beispiel 5/8 oder 1 3/8.' : (p.unit ? 'Zahl in ' + esc(p.unit) + '. ' : 'Zahl. ') + (p.exact ? 'Das Ergebnis muss genau stimmen.' : '±' + esc(fmt(p.tol, 6)) + ' gilt als richtig.')}</p>`;
   }
   const zeigFb = host => { if (window.LabRahmen) { const el = host.querySelector('.lr-fb'); if (el) LabRahmen.zeig(el); } };
   function givenText(p, v) { return fmt(v, 6) + (p.unit ? ' ' + p.unit : ''); }
   function checkTask(t) {
-    const p = instOf(t), a = (S.tAns[t.id] || ''), v = C.parseDe(a); if (!isFinite(v)) { toast('Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return; }
-    const ok = Math.abs(v - p.value) <= p.tol + 1e-9, pct = ok ? pctFor(t.id) : 0, ex = exam();
+    const p = instOf(t), a = (S.tAns[t.id] || ''), A = C.antwort(p, a), v = A.v; if (!isFinite(v)) { toast(p.bruch ? BRUCH_BITTE : 'Bitte gib eine Zahl ein (mit Komma oder Punkt).'); return; }
+    const ok = A.ok, pct = ok ? pctFor(t.id) : 0, ex = exam(), gt = p.bruch ? a.trim() + (p.unit ? ' ' + p.unit : '') : givenText(p, v);
     const tr = S.tTries = S.tTries || {}; if (!ok) tr[t.id] = (tr[t.id] || 0) + 1;
-    S.tRes = { id: t.id, ok, pct, stage: ok ? 'ok' : (ex ? 'pruef' : (tr[t.id] >= 2 ? 'loes' : 'tipp')), text: ok ? 'Richtig: ' + givenText(p, v) : 'Deine Antwort „' + givenText(p, v) + '“ stimmt nicht.' };
+    S.tRes = { id: t.id, ok, pct, stage: ok ? 'ok' : (ex ? 'pruef' : (tr[t.id] >= 2 ? 'loes' : 'tipp')), text: ok ? 'Richtig: ' + gt : 'Deine Antwort „' + gt + '“ stimmt nicht.' + (A.why ? ' ' + A.why : '') };
     if (ok) { markSolved(t.id, pct); if (pct === 0) toast('Mit angezeigter Lösung zählt die Aufgabe im Prüfmodus nicht.'); else { const F = fx(); if (F && F.pass) try { F.pass(pct); } catch (e) {} else ding(); toast(ex && pct < 100 ? pct + ' % (Tipps abgezogen)' : '🎉 Geschafft!'); } } else { sad(); toast(S.tRes.stage === 'loes' ? 'Noch nicht richtig. Die Lösung steht unter der Aufgabe.' : 'Noch nicht richtig. Lies den Tipp und versuche es noch einmal.'); }
     renderTasks(false);
   }
@@ -366,7 +367,7 @@
     T.res = { ok: ok && !shown, shown }; if (ok && !shown) ding(); else sad(); renderTrainer(); updatePal();
     if (ok && !shown && st.streak > 0 && st.streak % 5 === 0) { toast('🔥 ' + st.streak + ' richtige in Folge!'); const F = fx(); if (F && F.pass) try { F.pass(100); } catch (e) {} }
   }
-  function checkTrainer() { const T = S.tr, v = C.parseDe(T.ans); if (!isFinite(v)) { toast('Bitte gib eine Zahl ein.'); return; } trainerResult(Math.abs(v - T.p.value) <= T.p.tol + 1e-9, false); }
+  function checkTrainer() { const T = S.tr, A = C.antwort(T.p, T.ans); if (!isFinite(A.v)) { toast(T.p.bruch ? BRUCH_BITTE : 'Bitte gib eine Zahl ein.'); return; } if (!A.ok && A.why) toast(A.why); trainerResult(A.ok, false); }
 
   /* ============================================================ Netzwerke (Widerstandsschaltungen, matnetz.js und matnetzviz.js)
      Speicher lm4.mat.netz = { "<Stufe>": Anzahl richtig gelöster Aufgaben }. Eine Stufe gilt nach NZ_ZIEL richtig gelösten Aufgaben als geschafft.
@@ -477,7 +478,7 @@
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
-  const RENDER = { einh: renderEinh, drei: renderDrei, proz: renderProz, umst: renderUmst, geo: renderGeo, mess: renderMess, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, netz: renderNetz, help: renderHelp };
+  const RENDER = { einh: renderEinh, drei: renderDrei, proz: renderProz, umst: renderUmst, geo: renderGeo, mess: renderMess, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, duell: () => { if (root.MatDuellUI) root.MatDuellUI.render(); }, netz: renderNetz, help: renderHelp };
   const UPD = { einh: updEinh, drei: updDrei, proz: updProz, umst: updUmst, geo: updGeo, mess: updMess };
   function buildTabs() {
     $('#tabs').innerHTML = TABS.map(([k, i, n]) => `<button class="tab${S.tab === k ? ' on' : ''}" data-t="${k}" role="tab" aria-selected="${S.tab === k}">${i} ${n}${k === 'tasks' ? '<span class="bd" id="tkBd"></span>' : ''}</button>`).join('');
@@ -507,7 +508,7 @@
   $('#bTasks').onclick = () => setTab('tasks'); $('#bHelp').onclick = () => setTab('help'); $('#bExam').onclick = () => setExam(!exam());
   $('#title').onclick = () => setTab('einh');
   $('#bMenu').onclick = () => {
-    const rows = [['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung, Lösungsweg und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Aufgaben mit Serien-Zähler'], ['netz', 'Netzwerke', 'Widerstandsschaltungen in 8 Stufen: Rges, Teilströme, Leistung'], ['bsp', 'Beispiele', 'Durchgerechnete Beispiele zum Nachvollziehen'], ['help', 'Hilfe und Spickzettel', 'Vorsätze, Formeln, Dreisatz, Winkelfunktionen'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Trainer-Serie auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
+    const rows = [['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung, Lösungsweg und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Aufgaben mit Serien-Zähler'], ['duell', 'Rechen-Duell', 'Gleiche Aufgaben für alle: Wer hat mehr richtig?'], ['netz', 'Netzwerke', 'Widerstandsschaltungen in 8 Stufen: Rges, Teilströme, Leistung'], ['bsp', 'Beispiele', 'Durchgerechnete Beispiele zum Nachvollziehen'], ['help', 'Hilfe und Spickzettel', 'Vorsätze, Formeln, Dreisatz, Winkelfunktionen'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Trainer-Serie auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
     sheet('Menü', (b, close) => {
       b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${esc(r[1])}</b><small>${esc(r[2])}</small></div></button>`).join('');
       b.addEventListener('click', e => {
@@ -556,10 +557,12 @@
   /* Schnittstelle für Karriere/Lernpfad */
   root.MAT_LAB = { id: 'mat', title: 'Rechen-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.MAT_TASKS };
 
+  /* Bausteine für das Rechen-Duell (matduellui.js) */
+  root.MAT_UI = { toast, svgTri, svgSkizze, setTab: t => setTab(t) };
   buildTabs(); updatePal();
   /* Aufruf ?aufgabe=mat1 (Startseite, Lernhefte): Aufgabe gleich öffnen; ?bsp: Beispielauswahl zeigen */
   root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };
   let start = S.tab, openId = null;
-  try { const q = new URLSearchParams(location.search), qa = q.get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { start = 'tasks'; openId = qa; } else if (q.has('bsp')) start = 'bsp'; } catch (e) {}
+  try { const q = new URLSearchParams(location.search), qa = q.get('aufgabe'); if (qa && TASKS.some(t => t.id === qa)) { start = 'tasks'; openId = qa; } else if (q.has('bsp')) start = 'bsp'; else if (q.has('duell') && root.MatDuellUI && root.MatDuellUI.einstieg(q.get('duell') || 'neu')) start = 'duell'; } catch (e) {}
   setTab(start); if (openId) startTask(openId);
 })(typeof window !== 'undefined' ? window : globalThis);

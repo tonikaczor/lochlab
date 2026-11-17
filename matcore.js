@@ -331,9 +331,28 @@
   }
 
   /* Antwort prüfen: Zahl mit Toleranz */
+  /* Bruch-Eingabe: "5/8", "1 3/8", auch mit Einheit dahinter. Ergebnis { z, n, g, fz } (g = ganze Zahl der gemischten Schreibweise, fz = Zähler des Bruchteils) oder null. */
+  function parseBruch(s) {
+    s = String(s == null ? '' : s).trim().replace(/−/g, '-').replace(/\s*[A-Za-zµΩ°²³]+$/, '').trim();
+    let m = /^(-?)(\d+)\s+(\d+)\s*\/\s*(\d+)$/.exec(s); if (m) { const n = +m[4]; if (!n) return null; const z = (+m[2] * n + +m[3]) * (m[1] ? -1 : 1); return { z, n, g: +m[2], fz: +m[3] }; }
+    m = /^(-?\d+)\s*\/\s*(\d+)$/.exec(s); if (m) { const n = +m[2]; if (!n) return null; return { z: +m[1], n, g: 0, fz: Math.abs(+m[1]) }; }
+    return null;
+  }
+  const ggt = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) { const t = a % b; a = b; b = t; } return a || 1; };
+  /* Antwort auf eine gebaute Aufgabe p prüfen: { v, ok, why }. v = NaN, wenn die Eingabe nicht lesbar ist. Bei Bruch-Aufgaben (p.bruch = [Zähler, Nenner]) muss der Bruch
+     vollständig gekürzt sein; eine gemischte Zahl (1 3/8) und eine genau passende Dezimalzahl gelten auch. */
+  function antwort(p, s) {
+    if (p && p.bruch) {
+      const f = parseBruch(s);
+      if (f) { const gleich = f.z * p.bruch[1] === p.bruch[0] * f.n, gek = ggt(f.fz, f.n) === 1 && (!f.g || f.fz < f.n); return { v: f.z / f.n, ok: gleich && gek, why: gleich && !gek ? 'Der Wert stimmt, aber der Bruch ist noch nicht vollständig gekürzt.' : '' }; }
+      const v = parseDe(s); return { v, ok: fin(v) && Math.abs(v - p.value) <= 1e-9, why: '' };
+    }
+    const v = parseDe(s); return { v, ok: fin(v) && Math.abs(v - p.value) <= p.tol + 1e-9, why: '' };
+  }
   function check(ans, value, tol) { const v = parseDe(ans); if (!fin(v)) return { empty: true, ok: false, v }; return { ok: Math.abs(v - value) <= tol + 1e-9, v }; }
 
   const api = {
+    parseBruch, antwort, ggt,
     fin, rs, rd, sup, parseDe, fmt, fmtDe, roundSig, sigDigits, hashStr, rng, ri, pick, shuffle,
     PREFIX, sci, fmtSci, eng, FAM, unitInfo, convert, dreisatz, teilung, massstab, proz,
     evalExpr, idsOf, pretty, subst, calcLine, FORMELN, formel, umformung, solveFor, checkUmformung,

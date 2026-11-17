@@ -44,7 +44,7 @@
           },
           { lab: "emv", fremd: true, bereich: "*" },
           { lab: "pr", bereich: ["Stufe 1: Themen üben"] },
-          { lab: "mat", bereich: ["Einheiten", "Dreisatz", "Prozent", "Umstellen", "Geometrie", "Prüfung Teil 1"] }
+          { lab: "mat", bereich: ["Einheiten", "Dreisatz", "Prozent", "Bruchrechnung", "Klammern", "Umstellen", "Geometrie", "Prüfung Teil 1"] }
         ],
         heft: "lernen-mess.html",
         wiki: [

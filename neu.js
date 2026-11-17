@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v62.180', items: [
+      ['Rechen-Duell', 'Neu im Rechen-Lab: Alle bekommen dieselben Rechenaufgaben (5, 10 oder 15). Wer nach Ablauf der Zeit mehr richtig hat, gewinnt. Bei Gleichstand gewinnt, wer schneller war. Starte es im Reiter „Duell“ oder auf der Startseite unter Üben.', 'Rechen-Lab'],
+      ['Rechen-Lab: Bruchrechnung', '9 neue Aufgaben: kürzen, erweitern, addieren, multiplizieren, dividieren, gemischte Zahlen und eine Werkstatt-Aufgabe. Du tippst das Ergebnis als Bruch ein, zum Beispiel 5/8 oder 1 3/8. Der Bruch muss vollständig gekürzt sein.', 'Rechen-Lab'],
+      ['Rechen-Lab: Klammern', '9 neue Aufgaben: ausmultiplizieren, Minusklammer, zwei Klammern, binomische Formeln, ausklammern und verschachtelte Klammern. Jede Aufgabe nennt im Tipp die Schritte.', 'Rechen-Lab'],
+    ] },
     { v: 'v62.179', items: [
       ['Rechen-Lab: Prüfung Teil 1', '22 neue Rechenaufgaben zu den Themen der Abschlussprüfung Teil 1, zum Beispiel LED-Vorwiderstand, Spannungsteiler, Wirkungsgrad, Dualzahlen, Kondensator und Operationsverstärker. Jede Aufgabe nennt im Tipp die Schritte.', 'Rechen-Lab'],
       ['Duell passend zum Lehrjahr', 'Stufe 1 im Duell bringt jetzt nur Aufgaben aus dem 1. Lehrjahr. Die Stufe steckt im Code, deshalb bekommen alle dieselbe Aufgabe, wenn sie dasselbe Lab wählen.', 'Duell'],
@@ -11,10 +16,6 @@
       ['SchaltLab: weiter nach der Fehlersuche', 'Nach „Tiefpass filtert nicht“ ging es nicht weiter. Jetzt öffnet „Nächste Aufgabe“ den nächsten Fall im Schaltungs-Detektiv.', 'SchaltLab'],
       ['So gehst du vor', 'Viele Aufgaben für das 1. Lehrjahr erklären jetzt im Tipp die Begriffe und nennen die Schritte, die von dir erwartet werden.', 'SchaltLab, LochLab, DigiLab, MessLab, Sicherheits-Lab, Rechen-Lab'],
       ['Prüfungs-Lab nach Lehrjahr', 'Auch im Prüfungs-Lab stehen zuerst die Aufgaben bis zu deinem Lehrjahr. Die Hilfe im Rechen-Lab erklärt jetzt die Netzwerke.', 'Prüfungs-Lab, Rechen-Lab'],
-    ] },
-    { v: 'v62.177', items: [
-      ['Lernpfad nach Lehrjahr', 'Für Elektroniker-Berufe richtet sich der Weg jetzt nach deinem Lehrjahr. Unter „Ich“ stellst du „Mein Lehrjahr“ ein. Der Weg zeigt dir dann in jedem Lab zuerst den Teil, der zu deinem Lehrjahr passt. Das Rechen-Lab kommt im 1. Lehrjahr direkt nach dem SchaltLab.', 'Startseite'],
-      ['Lehrjahr in den Labs', 'Die Aufgabenliste zeigt zuerst die Aufgaben bis zu deinem Lehrjahr. Spätere Aufgaben stehen darunter unter „Kommt im 2. Lehrjahr“ und bleiben frei wählbar. „Nächste Aufgabe“ schlägt dir keine spätere Aufgabe mehr von sich aus vor.', 'Alle Labs'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
