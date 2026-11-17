@@ -56,7 +56,9 @@
   /* ---------- Kürzel, Jahrgang, Stufe, Lab ---------- */
   const thisYear = () => new Date().getFullYear();
   const jgDefault = () => { const j = lsGet('lm4.jahrgang').replace(/"/g, ''); return /^\d{4}$/.test(j) ? j : String(thisYear()); };
-  const stDefault = j => Math.min(3, Math.max(1, thisYear() - (+j || thisYear()) + 1));
+  const stDefault = j => { try { const m = root.Lehrjahr && root.Lehrjahr.mein && root.Lehrjahr.mein(); if (m >= 1) return Math.min(3, m); } catch (e) {} return Math.min(3, Math.max(1, thisYear() - (+j || thisYear()) + (new Date().getMonth() >= 7 ? 1 : 0))); };   // Lehrjahr beginnt im August; ein eingestelltes eigenes Lehrjahr geht vor
+  /* lehrjahr.js vor dem Dialog nachladen: Die Auswahl der Aufgabe richtet sich nach dem Lehrjahr und muss auf allen Geräten gleich sein */
+  const mitLj = (fn, self) => { if (root.Lehrjahr || self._lj) return false; self._lj = 1; loadSeq([root.LERNFELDER ? '' : 'lernfelder.js', 'lehrjahr.js'].filter(Boolean), () => fn()); return true; };
   function formHtml(o) {
     const y = thisYear(), j = o.j; let jo = ''; for (let i = y; i >= y - 5; i--) jo += `<option value="${i}"${String(i) === String(j) ? ' selected' : ''}>${i}</option>`;
     const labs = {}; rows().forEach(r => { labs[r[1]] = 1; });
@@ -96,6 +98,7 @@
 
   /* ---------- Neues Duell ---------- */
   function neu(pre) {
+    if (mitLj(() => neu(pre), neu)) return;
     const m = modal('Neues Duell', true), b = m.body, j = jgDefault();
     const o = Object.assign({ k: lsGet('lm4.kuerzel'), j, st: stDefault(j), lab: '' }, pre || {});
     b.innerHTML = '<p>Du erzeugst einen Runden-Code. Wer ihn eingibt, bekommt dieselbe Aufgabe mit demselben Fehler. Zählt: richtig lösen, sauber messen, wenige Tipps, dann die Zeit.</p><div class="dl-cols"><div id="dlF"></div><div id="dlR"></div></div>';
@@ -103,10 +106,10 @@
     F.innerHTML = formHtml(o) + '<div class="dl-row"><button type="button" class="dl-btn pri" id="dlGen">Runden-Code erzeugen</button></div>';
     const gen = () => {
       readForm(F, o); if (!checkId(F, o)) return;
-      o.r = C.newRound(Date.now()); const row = rowFor(o);
+      o.r = C.newRound(Date.now(), { st: o.st }); const row = rowFor(o);
       const url = new URL(labFile(row ? row[1] : 'sch') + '?aufgabe=' + (row ? row[0] : '') + '&duell=' + o.r + '&st=' + o.st + (o.lab ? '&lab=' + o.lab : ''), location.href).href;
       R.innerHTML = `<div class="dl-card"><div class="dl-mute">Runden-Code</div><div class="dl-code" id="dlCode">${esc(o.r)}</div><div class="dl-qr" id="dlQr"></div>
-        <p>${taskInfo(row)}</p><p><small>Der Gegner scannt den QR-Code oder tippt bei „Beitreten“ den Code ein: <b>${esc(joinStr(o))}</b>. Gleicher Code und gleiche Stufe = gleiche Aufgabe, gleicher Fehler.</small></p>
+        <p>${taskInfo(row)}</p><p><small>Der Gegner öffnet in der App „Duell beitreten“ und tippt dort auf „QR-Code scannen“. Nicht mit der Kamera-App scannen, sonst öffnet sich der Browser statt der App. Oder er tippt dort den Code ein: <b>${esc(o.r)}</b>. Die Stufe steckt im Code. ${o.lab ? 'Dazu wählt er dasselbe Lab wie du. ' : ''}Dann haben alle dieselbe Aufgabe. Vergleicht vor dem Start den Titel der Aufgabe.</small></p>
         <div class="dl-row"><button type="button" class="dl-btn pri" id="dlGo"${row ? '' : ' disabled'}>Los (3, 2, 1)</button><button type="button" class="dl-btn" id="dlCp">Kopieren</button></div></div>`;
       qrInto(R.querySelector('#dlQr'), url);
       R.querySelector('#dlCp').onclick = () => { const t = el('textarea'); t.value = joinStr(o); R.appendChild(t); copy(joinStr(o), t); t.remove(); };
@@ -121,18 +124,21 @@
     return { r: m ? C.roundBase(m[0]) : '', st: s ? +(s[1] || s[2]) : 0, lab: l ? l[1].toLowerCase() : '', aufgabe: a ? a[1] : '' };
   }
   function beitreten(pre) {
+    if (mitLj(() => beitreten(pre), beitreten)) return;
     const m = modal('Duell beitreten', true), b = m.body, j = jgDefault();
     const o = Object.assign({ k: lsGet('lm4.kuerzel'), j, st: 0, lab: '', r: '', aufgabe: '' }, pre || {}); if (!o.st) o.st = stDefault(j); const r0 = o.r, a0 = o.aufgabe;
-    b.innerHTML = `<p>Gib den Runden-Code deines Gegners ein (oder den ganzen Link). Stufe und Lab müssen zu seiner Anzeige passen. Prüfe, ob unten dieselbe Aufgabe steht.</p>
-      <label for="dlRc">Runden-Code</label><input type="text" id="dlRc" autocomplete="off" autocapitalize="characters" placeholder="K43-7F2A" value="${esc(o.r)}">
+    b.innerHTML = `<p>Gib den Runden-Code deines Gegners ein (oder den ganzen Link). Die Stufe stellt sich aus dem Code von selbst ein. Hat dein Gegner ein bestimmtes Lab gewählt, wählst du dasselbe Lab. Prüfe vor dem Start, ob unten dieselbe Aufgabe steht wie bei ihm.</p>
+      <label for="dlRc">Runden-Code</label><input type="text" id="dlRc" autocomplete="off" autocapitalize="characters" placeholder="K43-7F2A" value="${esc(o.r)}"><div class="dl-row"><button type="button" class="dl-btn" id="dlRs">QR-Code scannen</button></div>
       ${formHtml(o)}<div class="dl-card" id="dlT"></div><div class="dl-row"><button type="button" class="dl-btn pri" id="dlGo">Los (3, 2, 1)</button></div>`;
     const upd = () => {
       readForm(b, o); const p = parseJoin(b.querySelector('#dlRc').value); o.r = p.r; o.aufgabe = p.aufgabe || (o.r === r0 ? a0 : '');
       const row = o.r ? rowFor(o) : null; b.querySelector('#dlT').innerHTML = o.r ? taskInfo(row) : '<small>Noch kein gültiger Runden-Code (Form: K43-7F2A).</small>'; return row;
     };
     const rc = b.querySelector('#dlRc');
-    rc.oninput = () => { const p = parseJoin(rc.value); if (p.st) b.querySelectorAll('[data-st]').forEach(y => y.setAttribute('aria-pressed', String(+y.dataset.st === p.st))); if (p.lab) b.querySelector('#dlL').value = p.lab; upd(); };
+    rc.oninput = () => { const p = parseJoin(rc.value); if (!p.st && p.r) p.st = C.stOf(p.r); if (p.st) b.querySelectorAll('[data-st]').forEach(y => y.setAttribute('aria-pressed', String(+y.dataset.st === p.st))); if (p.lab) b.querySelector('#dlL').value = p.lab; upd(); };
     wireSeg(b, upd); upd();
+    /* QR des Gegners in der App scannen: die Kamera-App des iPads würde den Link im Browser öffnen (anderer Speicher als die installierte App, Anmeldung und Fortschritt fehlen dort) */
+    b.querySelector('#dlRs').onclick = () => scanCode(t => { if (!parseJoin(t).r) return 'Das ist kein Duell-Code (er sieht aus wie K43-7F2A).'; rc.value = t; rc.oninput(); return true; });
     b.querySelector('#dlGo').onclick = () => { const row = upd(); if (!o.r) { b.querySelector('#dlE').textContent = 'Bitte einen gültigen Runden-Code eingeben (z. B. K43-7F2A).'; return; } if (!checkId(b, o)) return; if (!row) return; begin(o, row); };
   }
 

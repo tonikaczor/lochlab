@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v62.179', items: [
+      ['Rechen-Lab: Prüfung Teil 1', '22 neue Rechenaufgaben zu den Themen der Abschlussprüfung Teil 1, zum Beispiel LED-Vorwiderstand, Spannungsteiler, Wirkungsgrad, Dualzahlen, Kondensator und Operationsverstärker. Jede Aufgabe nennt im Tipp die Schritte.', 'Rechen-Lab'],
+      ['Duell passend zum Lehrjahr', 'Stufe 1 im Duell bringt jetzt nur Aufgaben aus dem 1. Lehrjahr. Die Stufe steckt im Code, deshalb bekommen alle dieselbe Aufgabe, wenn sie dasselbe Lab wählen.', 'Duell'],
+      ['Duell: QR-Code in der App scannen', 'Unter „Duell beitreten“ gibt es den Knopf „QR-Code scannen“. So bleibst du in der App. Die Kamera-App des iPads öffnet sonst den Browser.', 'Duell'],
+    ] },
     { v: 'v62.178', items: [
       ['SchaltLab: weiter nach der Fehlersuche', 'Nach „Tiefpass filtert nicht“ ging es nicht weiter. Jetzt öffnet „Nächste Aufgabe“ den nächsten Fall im Schaltungs-Detektiv.', 'SchaltLab'],
       ['So gehst du vor', 'Viele Aufgaben für das 1. Lehrjahr erklären jetzt im Tipp die Begriffe und nennen die Schritte, die von dir erwartet werden.', 'SchaltLab, LochLab, DigiLab, MessLab, Sicherheits-Lab, Rechen-Lab'],
@@ -10,10 +15,6 @@
     { v: 'v62.177', items: [
       ['Lernpfad nach Lehrjahr', 'Für Elektroniker-Berufe richtet sich der Weg jetzt nach deinem Lehrjahr. Unter „Ich“ stellst du „Mein Lehrjahr“ ein. Der Weg zeigt dir dann in jedem Lab zuerst den Teil, der zu deinem Lehrjahr passt. Das Rechen-Lab kommt im 1. Lehrjahr direkt nach dem SchaltLab.', 'Startseite'],
       ['Lehrjahr in den Labs', 'Die Aufgabenliste zeigt zuerst die Aufgaben bis zu deinem Lehrjahr. Spätere Aufgaben stehen darunter unter „Kommt im 2. Lehrjahr“ und bleiben frei wählbar. „Nächste Aufgabe“ schlägt dir keine spätere Aufgabe mehr von sich aus vor.', 'Alle Labs'],
-    ] },
-    { v: 'v62.176', items: [
-      ['Widerstandsnetzwerke im Rechen-Lab', 'Unter „Üben“ findest du jetzt „Netzwerke“: Schaltungen mit zwei bis zehn Widerständen in acht Stufen. Du berechnest Gesamtwiderstand, Teilströme, Teilspannungen und Leistungen. Jede Stufe hat beliebig viele neue Aufgaben.', 'Rechen-Lab'],
-      ['Lösungsweg mit Ersatzschaltung', 'Der Lösungsweg fasst die Schaltung Schritt für Schritt zusammen und zeigt dir jedes Mal das neue Schaltbild. Am Handy kannst du das Bild seitlich schieben oder das Handy quer halten.', 'Rechen-Lab'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

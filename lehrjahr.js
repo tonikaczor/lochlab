@@ -162,7 +162,9 @@
     },
     // Rechen-Lab (mat)
     mat: {
-      mat33: 2 // Median und Spannweite
+      mat33: 2, // Median und Spannweite
+      /* Prüfung Teil 1 (v62.179): mat49 bis mat60 bleiben 1. Lehrjahr, ab Kondensator, Transistor, Z-Diode und Operationsverstärker 2. Lehrjahr */
+      mat61: 2, mat62: 2, mat63: 2, mat64: 2, mat65: 2, mat66: 2, mat67: 2, mat68: 2, mat69: 2, mat70: 2
     }
   };
 

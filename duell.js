@@ -25,6 +25,7 @@
   const KATS = ['Fehlersuche', 'Fehlersuche im Code', 'Messfehler'];
   const NOLABS = ['app', 'vb', 'pr', 'tol', 'zer', 'pne', 'hyd', 'cnc', 'wer', 'ins', 'net', 'kal', 'lag', 'zei', 'arb', 'mat', 'its', 'buc', 'lad', 'hwl', 'sys', 'ssl', 'fug', 'mas', 'mch', 'fer', 'mak', 'mat2', 'sig', 'rg2', 'emb', 'prj', 'nrm', 'fli'];   /* eigenständige Labs der Berufe (v39.158) und der Wege Studium/Technik (v55.174) haben keinen Duell-Modus */
   const EXTRA = ['sl3', 'sl5', 'sl6', 'cp4', 'el14', 'el16', 'el23'];   /* Fehlersuchen mit anderer Kategorie (Ids, keine Lab-Liste) */
+  const EINSTIEG = ['s1', 's2', 's6', 's7'];   /* SchaltLab-Grundaufgaben, nur für Stufe 1 zusätzlich im Duell */
   const SEEDLABS = ['nts', 'ana', 'pcb', 'els'];                        /* Seed-variabler Fehler: im Pool doppelt gewichtet */
   const KEYS = { cur: 'lm4.duellcur', hist: 'lm4.duell', old: 'lm4.duelcur', duels: 'lm4.duels' };
 
@@ -58,7 +59,14 @@
     for (let i = 0; i < n; i++) out += Math.floor(Math.random() * 16).toString(16);
     return out.toUpperCase();
   }
-  function newRound(ts, opt) { opt = opt || {}; return 'K' + String(kw(ts)).padStart(2, '0') + '-' + (opt.hex ? String(opt.hex).toUpperCase() : randHex(4)) + (opt.ausbilder ? '-E' : ''); }
+  /* opt.st (1..3): Die Stufe steckt in der letzten Ziffer des Codes (Ziffer mod 3 = Stufe - 1). Wer nur den Code eintippt, bekommt so dieselbe Stufe und damit dieselbe Aufgabe. */
+  function newRound(ts, opt) {
+    opt = opt || {}; let hex = opt.hex ? String(opt.hex).toUpperCase() : randHex(4);
+    if (!opt.hex && opt.st >= 1 && opt.st <= 3) { const z = []; for (let d = 0; d < 16; d++) if (d % 3 === opt.st - 1) z.push(d); hex = hex.slice(0, 3) + z[parseInt(hex[3], 16) % z.length].toString(16).toUpperCase(); }
+    return 'K' + String(kw(ts)).padStart(2, '0') + '-' + hex + (opt.ausbilder ? '-E' : '');
+  }
+  /* Stufe, die im Rundencode steckt (1..3), 0 bei ungültigem Code */
+  function stOf(r) { const p = parseRound(r); return p ? parseInt(p.hex[3], 16) % 3 + 1 : 0; }
   function parseRound(s) { const m = RRE.exec(String(s == null ? '' : s).trim().toUpperCase()); return m ? { code: m[0], kw: +m[1], hex: m[2], e: !!m[3] } : null; }
   /* Rundencode ohne Ausbilder-Suffix: Treffpunkt/Seed ist immer derselbe Teil */
   const roundBase = r => { const p = parseRound(r); return p ? 'K' + String(p.kw).padStart(2, '0') + '-' + p.hex : null; };
@@ -77,8 +85,22 @@
   /* deterministisch: gleicher Rundencode + gleiche Stufe/Lab = gleiche Aufgabe, unabhaengig vom Lernstand */
   function pick(runde, rows, opt) {
     rows = Array.isArray(rows) ? rows : []; opt = opt || {}; const st = int(opt.st, 1, 3, 2);
-    let c = (rows || []).filter(r => (!opt.lab || r[1] === opt.lab) && r[4] === st);
-    if (c.length < 6) c = (rows || []).filter(r => (!opt.lab || r[1] === opt.lab) && Math.abs(r[4] - st) <= 1);
+    const inLab = r => !opt.lab || r[1] === opt.lab; let c = null;
+    /* Stufe = Lehrjahr (Wunsch des Ausbilders, 17.11.2026): Mit lehrjahr.js kommen nur Aufgaben, die zu diesem Lehrjahr gehören. Stufe 1: nichts Schwereres als Level 2,
+       dazu die Grundaufgaben des SchaltLabs (Spannungsteiler, Vorwiderstand, Reihen- und Parallelschaltung). Ohne lehrjahr.js gilt die alte Auswahl nach Level. */
+    const LJ = typeof opt.lj === 'function' ? opt.lj : (opt.lj !== false && root.Lehrjahr && typeof root.Lehrjahr.ab === 'function' ? (i, l) => root.Lehrjahr.ab(i, l) : null);
+    if (LJ) {
+      const all = rows.filter(inLab);
+      if (st === 1) { const A = Array.isArray(opt.alle) ? opt.alle : (root.AUFGABEN || []); EINSTIEG.forEach(id => { const r = A.filter(x => x && x[0] === id && x[1] === 'sch')[0]; if (r && inLab(r) && !all.some(x => x[0] === id)) all.push(r); }); }
+      const j = r => { try { return LJ(r[0], r[1]); } catch (e) { return 9; } }, leicht = r => st > 1 || r[4] <= 2;
+      c = all.filter(r => j(r) === st && leicht(r));
+      if (c.length < 6) c = all.filter(r => j(r) <= st && leicht(r));
+      if (!c.length) c = null;
+    }
+    if (!c) {
+      c = rows.filter(r => inLab(r) && r[4] === st);
+      if (c.length < 6) c = rows.filter(r => inLab(r) && Math.abs(r[4] - st) <= 1);
+    }
     if (!c.length) return null;
     const w = []; c.forEach(r => { w.push(r); if (SEEDLABS.indexOf(r[1]) >= 0) w.push(r); });
     return w[Math.floor(seeded(hash(roundBase(runde) || runde))() * w.length)];
@@ -321,7 +343,7 @@
 
   const Duell = {
     W, KATS, NOLABS, EXTRA, SEEDLABS, KEYS, MESSLABS,
-    core: { KRE, cleanId, kw, seeded, hash, seedNum, newRound, parseRound, roundBase, pool, pick, score, cmp, effPts, normalize, encode, parse, verify, flags, sign, checksum, bestenliste, encodeBest, parseBest, b64, unb64 },
+    core: { KRE, cleanId, kw, seeded, hash, seedNum, newRound, stOf, parseRound, roundBase, pool, pick, score, cmp, effPts, normalize, encode, parse, verify, flags, sign, checksum, bestenliste, encodeBest, parseBest, b64, unb64 },
     store: { current, active, history, start, mess, seedFor, hintsUsed, hintDuell, finish, onResult, giveUp, cancel, rechnenSave, migrate },
     hook,
     rechnen: { cur: rechCur, prep: rechPrep, start: rechStart, cancel: rechCancel, solved: rechSolved, key: RK },
