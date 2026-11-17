@@ -43,6 +43,8 @@
 .dl-best{margin:6px 0;padding-left:22px}.dl-best li{margin:2px 0}
 /* D4: Chip (fixed, mittig oben) darf Kopfzeile/Titel der Labs nicht ueberdecken: waehrend eines Duells bekommt die Kopfzeile oben Platz fuer den Chip (nur wenn der Chip da ist) */
 html:has(#duelChip) body>header,html:has(#duelChip) #app>header,html:has(#duelChip) body>.app>header{padding-top:calc(48px + env(safe-area-inset-top))!important}
+/* v62.183: Der Lab-Rahmen (labrahmen.css) gibt der Kopfzeile eine feste Hoehe von 48px. Dort schob der Abstand oben den Inhalt nur zusammen, der Chip lag weiter auf dem Lab-Namen. Darum waechst die Kopfzeile waehrend eines Duells um die Chip-Zeile mit. */
+html.lr-on:has(#duelChip) #app>header{height:calc(96px + env(safe-area-inset-top,0px))!important;min-height:calc(96px + env(safe-area-inset-top,0px))!important}
 
 /* Serie (v62.182): Liste der Aufgaben */
 .dl-ser{margin:6px 0;padding-left:22px}.dl-ser li{margin:3px 0}.dl-ti{margin:8px 0}
