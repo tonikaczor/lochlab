@@ -11,11 +11,13 @@
   const WIKISTEP = { at: () => $('button.wk'), t: 'Das kleine ?', x: 'Neben vielen Reglern und Messfeldern steht ein kleines ?. Tippe darauf: Dann erklärt dir das Wiki den Regler oder das Messfeld, ohne dass du das Lab verlässt.' };
   const END = (name) => ({ t: 'Geschafft!', x: 'Das war die Einführung ins ' + name + '. Jetzt bist du dran: Probiere Beispiele aus oder starte eine Aufgabe. Viel Spaß beim Tüfteln!' });
 
+  /* Bauteilleiste: links (#parts), wenn sichtbar, sonst die untere Leiste (#pal, Handy) */
+  const BAUT = () => { const p = $('#parts'); if (p) { const r = p.getBoundingClientRect(); if (r.width > 4 && r.height > 4 && getComputedStyle(p).display !== 'none') return p; } return $('#pal'); };
   const SCRIPTS = {
     sch: { name: 'SchaltLab', steps: [
       { t: 'Willkommen im SchaltLab', x: 'Ich zeige dir in etwa drei Minuten, wie du Schaltungen aufbaust und ausprobierst. Bei markierten Stellen darfst du selbst mitmachen. Mit „Weiter“ geht es voran, mit ✕ brichst du jederzeit ab.' },
       { prep: a => a.load('LED mit Vorwiderstand'), at: '#cv', t: 'Die Zeichenfläche', x: 'Ich habe dir eine fertige Schaltung geladen: Batterie, Schalter, Widerstand und LED. Der Widerstand begrenzt den Strom, damit die LED nicht kaputtgeht. Man nennt ihn Vorwiderstand. Deine bisherige Schaltung ist unter „Gespeicherte Schaltungen“ gesichert.' },
-      { at: '#pal', t: 'Bauteile', x: 'Hier wählst du Bauteile aus. Bauteil antippen, dann auf die Fläche tippen zum Absetzen. Das Suchfeld findet schnell, was du brauchst.' },
+      { at: BAUT, t: 'Bauteile', x: 'Hier wählst du Bauteile aus. Bauteil antippen, dann auf die Fläche tippen zum Absetzen. Das Suchfeld findet schnell, was du brauchst.' },
       { at: '#cv', gate: a => a.sel() && a.sel().k === 'R', t: 'Bauteil antippen', x: 'Tippe in der Zeichnung auf den Widerstand.' },
       { at: '#side', t: 'Daten des Bauteils', x: 'Rechts siehst du jetzt, was zum Bauteil gehört, und kannst den Wert ändern. Merke dir den Wert des Widerstands.' },
       { at: '#bSim', gate: a => a.simMode(), t: 'Auf Simulation schalten', x: 'Jetzt wird es spannend. Schalte oben von „Zeichnen“ auf „Sim“.' },
@@ -27,7 +29,7 @@
     sim: { name: 'SimLab', steps: [
       { t: 'Willkommen im SimLab', x: 'Das SimLab ist dein Experimentierlabor für die Hausinstallation: Schalter, Sicherungsautomat, Steckdose und Lampe. Ich zeige dir die Grundlagen in wenigen Minuten.' },
       { prep: a => a.load('Ausschaltung'), at: '#cv', t: 'Eine Ausschaltung', x: 'Ich habe dir eine Ausschaltung geladen: Netz, Sicherungsautomat, Schalter und Lampe. Die farbigen Drähte entsprechen den echten Leitungsfarben (braun Außenleiter, blau Neutralleiter, grün-gelb Schutzleiter).' },
-      { at: '#pal', t: 'Bauteile', x: 'Hier wählst du Bauteile aus. Bauteil antippen, dann auf die Fläche tippen zum Absetzen.' },
+      { at: BAUT, t: 'Bauteile', x: 'Hier wählst du Bauteile aus. Bauteil antippen, dann auf die Fläche tippen zum Absetzen.' },
       { at: '#bSim', gate: a => a.simMode(), t: 'Auf Simulation schalten', x: 'Schalte oben von „Zeichnen“ auf „Sim“.' },
       { at: '#bRun', t: 'Stopp und Start', x: 'Die Simulation läuft sofort los, jetzt liegt Spannung an. Mit „Stopp“ hältst du sie an, mit „Start“ läuft sie weiter.' },
       { at: '#cv', prep: (a, st) => { st.sw = a.switchState(); }, gate: (a, st) => a.switchState() !== st.sw, t: 'Schalten', x: 'Tippe den Schalter in der Zeichnung an. Die Lampe geht an oder aus. Die Punkte zeigen, wo Strom fließt.' },
@@ -57,7 +59,7 @@
     digi: { name: 'DigiLab', steps: [
       { t: 'Willkommen im DigiLab', x: 'Hier lernst du Digitaltechnik: Gatter, Wahrheitstabellen, Flipflops, Zähler und sogar eine kleine CPU. Ich zeige dir die Grundlagen in wenigen Minuten.' },
       { prep: a => a.load('Grundgatter'), at: '#cv', t: 'Eine digitale Schaltung', x: 'Links die Batterie mit 5 V, zwei Schalter A und B, drei Gatter (UND, ODER, NICHT) und rechts drei LEDs. Ein Gatter macht aus Nullen und Einsen wieder eine Null oder Eins.' },
-      { at: '#pal', t: 'Bauteile', x: 'Hier findest du Taktgeber, Gatter, Flipflops, ICs und die Mini-CPU. Antippen und auf die Fläche tippen zum Absetzen.' },
+      { at: BAUT, t: 'Bauteile', x: 'Hier findest du Taktgeber, Gatter, Flipflops, ICs und die Mini-CPU. Antippen und auf die Fläche tippen zum Absetzen.' },
       { at: '#bSim', gate: a => a.simMode(), t: 'Auf Simulation schalten', x: 'Schalte oben von Zeichnen auf Sim. Jetzt rechnet das Lab die Pegel live.' },
       { at: '#cv', prep: (a, st) => { st.sw = a.switchState(); }, gate: (a, st) => a.switchState() !== st.sw, t: 'Eingang schalten', x: 'Tippe einen der Schalter an. Beobachte, welche LEDs leuchten: UND braucht beide Schalter, ODER reicht einer.' },
       { at: '#side', t: 'Digitaltechnik-Karte', x: 'Rechts findest du die Werkzeuge: die Wahrheitstabelle (alle Kombinationen auf einmal), „Aus Tabelle bauen“ (Schaltung nach Wunsch) und den Zahlenumrechner.' },

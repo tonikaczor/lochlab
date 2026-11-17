@@ -2,6 +2,16 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v62.182', items: [
+      ['Rechen-Duell: Deine Fehler erklärt', 'Nach der Runde siehst du unter dem Ergebnis jede falsche Aufgabe mit deiner Antwort, der richtigen Lösung und dem Rechenweg Schritt für Schritt. Mit „Ähnliche Aufgabe üben“ rechnest du sie gleich noch einmal mit neuen Zahlen.', 'Rechen-Lab'],
+      ['Rechen-Duell: Überspringen und Abgeben', '„Überspringen“ stellt die Aufgabe jetzt ans Ende. Du kannst sie später noch lösen. Mit „Abgeben“ beendest du die Runde, wenn du fertig bist.', 'Rechen-Lab'],
+      ['Rechen-Duell: Rubriken wählen', 'Beim neuen Duell wählst du „Gemischt“ oder einzelne Rubriken, zum Beispiel nur Bruchrechnung und Klammern. Die Wahl steckt im Code, alle bekommen dieselben Aufgaben.', 'Rechen-Lab'],
+      ['Prüfungs-Duell: mehrere Aufgaben hintereinander', 'Ein Duell kann jetzt aus 1, 3 oder 5 Fehlersuchen bestehen. Nach jeder Aufgabe siehst du deinen Zwischenstand, am Ende zählt die Summe. Der Duell-Code am Schluss gilt für alle Aufgaben zusammen.', 'Duell'],
+      ['Rechen-Duell: gleich scannen', '„QR-Code scannen“ und „Mit Code beitreten“ stehen jetzt direkt auf der ersten Seite und bei „Neues Duell“. Du musst nicht mehr erst zurückgehen.', 'Rechen-Lab'],
+      ['Wiki: 33 neue Bauteile', 'Das Wiki erklärt jetzt auch Z-Diode, Schottky-Diode, PNP-Transistor, Optokoppler, Quarz, Schütz, Timer 555, Schieberegister, Servo, Schrittmotor, Ultraschallsensor und viele mehr. Suche einfach nach dem Namen.', 'Wiki'],
+      ['Englisch-Lab: über 400 neue Fachwörter', 'Der Vokabeltrainer kennt jetzt 602 Wörter. Neu sind technische Begriffe aus Elektrik, Messtechnik, Funk, Digitaltechnik, Mechanik, Werkstoffen und Arbeitssicherheit, zum Beispiel Messschieber, Aderendhülse und Spannungsteiler.', 'Englisch-Lab'],
+      ['Einführung: Bauteilleiste', 'In der Einführung von DigiLab, SchaltLab und SimLab zeigt der Schritt „Bauteile“ auf dem Tablet und am PC jetzt auf die Bauteilleiste links und nicht mehr auf die untere Leiste.', 'DigiLab'],
+    ] },
     { v: 'v62.181', items: [
       ['Rechen-Duell: Notizfeld', 'Unter jeder Aufgabe im Rechen-Duell gibt es jetzt ein Notizfeld für Nebenrechnungen. Du schreibst mit dem Stift, dem Finger oder der Tastatur. Bei jeder neuen Aufgabe ist das Notizfeld wieder leer.', 'Rechen-Lab'],
       ['Rechen-Duell: Taschenrechner', 'Neu ist ein wissenschaftlicher Taschenrechner zum Auf- und Zuklappen: Klammern, Punkt vor Strich, Wurzel, Potenz, sin, cos, tan, log, ln und EXP. Das Ergebnis kannst du mit einem Knopf ins Antwortfeld übernehmen.', 'Rechen-Lab'],
@@ -11,11 +21,6 @@
       ['Rechen-Duell', 'Neu im Rechen-Lab: Alle bekommen dieselben Rechenaufgaben (5, 10 oder 15). Wer nach Ablauf der Zeit mehr richtig hat, gewinnt. Bei Gleichstand gewinnt, wer schneller war. Starte es im Reiter „Duell“ oder auf der Startseite unter Üben.', 'Rechen-Lab'],
       ['Rechen-Lab: Bruchrechnung', '9 neue Aufgaben: kürzen, erweitern, addieren, multiplizieren, dividieren, gemischte Zahlen und eine Werkstatt-Aufgabe. Du tippst das Ergebnis als Bruch ein, zum Beispiel 5/8 oder 1 3/8. Der Bruch muss vollständig gekürzt sein.', 'Rechen-Lab'],
       ['Rechen-Lab: Klammern', '9 neue Aufgaben: ausmultiplizieren, Minusklammer, zwei Klammern, binomische Formeln, ausklammern und verschachtelte Klammern. Jede Aufgabe nennt im Tipp die Schritte.', 'Rechen-Lab'],
-    ] },
-    { v: 'v62.179', items: [
-      ['Rechen-Lab: Prüfung Teil 1', '22 neue Rechenaufgaben zu den Themen der Abschlussprüfung Teil 1, zum Beispiel LED-Vorwiderstand, Spannungsteiler, Wirkungsgrad, Dualzahlen, Kondensator und Operationsverstärker. Jede Aufgabe nennt im Tipp die Schritte.', 'Rechen-Lab'],
-      ['Duell passend zum Lehrjahr', 'Stufe 1 im Duell bringt jetzt nur Aufgaben aus dem 1. Lehrjahr. Die Stufe steckt im Code, deshalb bekommen alle dieselbe Aufgabe, wenn sie dasselbe Lab wählen.', 'Duell'],
-      ['Duell: QR-Code in der App scannen', 'Unter „Duell beitreten“ gibt es den Knopf „QR-Code scannen“. So bleibst du in der App. Die Kamera-App des iPads öffnet sonst den Browser.', 'Duell'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

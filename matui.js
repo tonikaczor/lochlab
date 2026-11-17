@@ -558,7 +558,7 @@
   root.MAT_LAB = { id: 'mat', title: 'Rechen-Lab', doneKey: LS + 'done', progKey: LS + 'prog', total: TASKS.length, done: () => Object.keys(done()).filter(k => TASKS.some(t => t.id === k)), tasks: root.MAT_TASKS };
 
   /* Bausteine für das Rechen-Duell (matduellui.js) */
-  root.MAT_UI = { toast, svgTri, svgSkizze, setTab: t => setTab(t) };
+  root.MAT_UI = { toast, svgTri, svgSkizze, setTab: t => setTab(t), aufgabe: id => { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); } } };
   buildTabs(); updatePal();
   /* Aufruf ?aufgabe=mat1 (Startseite, Lernhefte): Aufgabe gleich öffnen; ?bsp: Beispielauswahl zeigen */
   root.LabGoto = id => { try { if (TASKS.some(t => t.id === id)) { setTab('tasks'); startTask(id); return true; } } catch (e) {} return false; };

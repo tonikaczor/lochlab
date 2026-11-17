@@ -1,5 +1,8 @@
 /* duellui.js - Oberflaeche des Pruefungs-Duells (Paket D2). Wird von duell.js bei Bedarf geladen (Chip, Startseiten-Band, ?duell=, Duell.open).
    Dialoge: Lobby, Neues Duell (Rundencode + QR), Beitreten, Countdown, Chip im Lab, Ergebnis (TFD1 + QR), Vergleich, Blitz-Duell (Rechnen, vom SchaltLab).
+   Serie (v62.182): Ein Duell kann aus 1, 3 oder 5 Aufgaben hintereinander bestehen (Anzahl steckt im Rundencode, Duell.core.nOf). Jede Aufgabe hat ihre eigene Uhr
+   und ihren eigenen TFD1-Code. Zwischen den Aufgaben steht ein Zwischenstand, am Ende das Gesamtergebnis mit allen Codes zusammen.
+   Speicher der Serie: lm4.duellser { r, st, lab, ids:[Aufgaben], n0 (geplante Anzahl), recs:[{ a, lab, st, t, ms, pct, h, f, m, pr, pts, code }], t0 }.
    Im Duell gesperrt: Tipp 3 (in auswertung.js), Aufloesung/"Fehler zeigen" (Klick-Sperre unten). Es wird nie Fehlername oder Ursache angezeigt:
    Ergebnis und Lernhinweis arbeiten nur mit Zahlen (Punkte, Zeit, Tipps, Versuche, Messungen). */
 (function (root) {
@@ -66,54 +69,73 @@
     return `<div class="dl-two"><div><label for="dlK">Dein Kürzel (kein Klarname)</label><input type="text" id="dlK" maxlength="12" autocomplete="off" autocapitalize="off" value="${esc(o.k)}" placeholder="az07"></div>
       <div><label for="dlJ">Jahrgang</label><select id="dlJ">${jo}</select></div></div>
       <label id="dlStL">Stufe (Lehrjahr)</label><div class="dl-seg" role="group" aria-labelledby="dlStL">${[1, 2, 3].map(i => `<button type="button" class="dl-btn" data-st="${i}" aria-pressed="${i === o.st}">${i}</button>`).join('')}</div>
+      ${o.nWahl ? `<label id="dlNL">Aufgaben hintereinander</label><div class="dl-seg" role="group" aria-labelledby="dlNL">${D.ANZ.map(i => `<button type="button" class="dl-btn" data-n="${i}" aria-pressed="${i === o.n}">${i}</button>`).join('')}</div>` : ''}
       <label for="dlL">Lab</label><select id="dlL">${lo}</select><div class="dl-err" id="dlE" role="alert"></div>`;
   }
   function readForm(b, o) {
     const k = b.querySelector('#dlK').value.trim(); o.k = k; o.j = b.querySelector('#dlJ').value; o.lab = b.querySelector('#dlL').value;
-    const p = b.querySelector('[data-st][aria-pressed=true]'); o.st = p ? +p.dataset.st : 2; return o;
+    const p = b.querySelector('[data-st][aria-pressed=true]'); o.st = p ? +p.dataset.st : 2;
+    const pn = b.querySelector('[data-n][aria-pressed=true]'); if (pn) o.n = +pn.dataset.n; return o;
   }
   function wireSeg(b, onChange) {
-    b.querySelectorAll('[data-st]').forEach(x => { x.onclick = () => { b.querySelectorAll('[data-st]').forEach(y => y.setAttribute('aria-pressed', String(y === x))); onChange && onChange(); }; });
+    ['st', 'n'].forEach(a => b.querySelectorAll('[data-' + a + ']').forEach(x => { x.onclick = () => { b.querySelectorAll('[data-' + a + ']').forEach(y => y.setAttribute('aria-pressed', String(y === x))); onChange && onChange(); }; }));
     ['#dlL', '#dlJ', '#dlK'].forEach(s => { const e = b.querySelector(s); if (e) e.onchange = () => onChange && onChange(); });
   }
   function checkId(b, o) { const e = b.querySelector('#dlE'); if (!KRE.test(o.k)) { e.textContent = 'Bitte ein Kürzel eintragen (2 bis 24 Zeichen: Buchstaben, Ziffern, _ . -).'; return false; } e.textContent = ''; return true; }
   const joinStr = o => o.r + ' · Stufe ' + o.st + (o.lab ? ' · ' + o.lab : '');
 
   /* ---------- Start des Duells (nach Countdown) ---------- */
-  function begin(o, row) {
+  /* ---------- Serie: mehrere Aufgaben hintereinander ---------- */
+  const SK = 'lm4.duellser';
+  const serGet = () => { try { const x = JSON.parse(lsGet(SK) || 'null'); return x && x.r && Array.isArray(x.ids) && Array.isArray(x.recs) ? x : null; } catch (e) { return null; } };
+  const serSet = x => { if (x) lsSet(SK, JSON.stringify(x)); else { try { localStorage.removeItem(SK); } catch (e) {} } };
+  /* offene Serie: noch nicht alle Aufgaben fertig, nicht abgegeben und nicht älter als 3 Stunden */
+  const serOffen = () => { const x = serGet(); if (!x || x.recs.length >= x.ids.length) return null; if (Date.now() - x.t0 > MAXMS) { serSet(null); return null; } return x; };
+  /* Aufgabe starten und ins Lab der Aufgabe wechseln */
+  function starte(r, row, st, lab) {
+    const c = D.store.start(r, row, st); if (!c) { toast('Duell konnte nicht gestartet werden (Speicher gesperrt, z. B. privater Modus?)'); return false; }
+    const q = new URLSearchParams(location.search);
+    const same = location.pathname.split('/').pop() === labFile(row[1]) && q.get('aufgabe') === row[0];
+    if (same) { chip(); return true; }
+    location.href = labFile(row[1]) + '?aufgabe=' + encodeURIComponent(row[0]) + '&duell=' + encodeURIComponent(r) + '&st=' + st + (lab ? '&lab=' + lab : '');
+    return true;
+  }
+  /* list: eine Aufgabenzeile oder eine Liste von Aufgabenzeilen (Serie) */
+  function begin(o, list) {
+    if (!Array.isArray(list[0])) list = [list]; const row = list[0];
     lsSet('lm4.kuerzel', o.k); lsSet('lm4.jahrgang', o.j);
     const go = () => countdown(() => {
-      const c = D.store.start(o.r, row, o.st); if (!c) { toast('Duell konnte nicht gestartet werden (Speicher gesperrt, z. B. privater Modus?)'); return; }
-      const q = new URLSearchParams(location.search);
-      const same = location.pathname.split('/').pop() === labFile(row[1]) && q.get('aufgabe') === row[0];
-      if (same) { chip(); return; }
-      location.href = labFile(row[1]) + '?aufgabe=' + encodeURIComponent(row[0]) + '&duell=' + encodeURIComponent(o.r) + '&st=' + o.st + (o.lab ? '&lab=' + o.lab : '');
+      if (!starte(o.r, row, o.st, o.lab)) return;
+      serSet(list.length > 1 ? { r: C.roundBase(o.r), st: o.st, lab: o.lab || '', ids: list.map(x => x[0]), n0: list.length, recs: [], t0: Date.now() } : null);
     });
     const cur = D.store.current(null);
     if (cur && cur.start && cur.r !== o.r) { if (!root.confirm('Es läuft noch ein Duell (' + cur.r + '). Aufgeben (mit Wertung) und das neue starten?')) return; D.store.giveUp(null, Date.now(), labApi()); chip(); }
     const m = doc.getElementById('dlBox'); if (m) m.remove(); go();
   }
-  const rowFor = o => { const r = (o.aufgabe && taskRow(o.aufgabe)) || C.pick(o.r, rows(), { st: o.st, lab: o.lab || '' }); return r; };
-  const taskInfo = row => row ? `<b>${esc(row[3])}</b><br><small>${esc(labName(row[1]))} · Stufe ${row[4]}</small>` : '<span class="dl-err">Keine passende Aufgabe gefunden.</span>';
+  /* Aufgaben der Runde. Die Anzahl steckt im Code. Nennt der Link eine andere erste Aufgabe als die Auswahl, gilt nur diese eine (gezielte Herausforderung). */
+  const rowsFor = o => { const a = o.aufgabe && taskRow(o.aufgabe), l = C.pickN(o.r, rows(), { st: o.st, lab: o.lab || '' }, C.nOf(o.r) || 1); if (a && (!l.length || l[0][0] !== a[0])) return [a]; return l; };
+  const taskInfo = l => !l || !l.length ? '<span class="dl-err">Keine passende Aufgabe gefunden.</span>'
+    : l.length === 1 ? `<b>${esc(l[0][3])}</b><br><small>${esc(labName(l[0][1]))} · Stufe ${l[0][4]}</small>`
+    : `<b>${l.length} Aufgaben hintereinander</b><ol class="dl-ser">${l.map(r => `<li>${esc(r[3])} <small>(${esc(labName(r[1]))})</small></li>`).join('')}</ol><small>Nach jeder Aufgabe siehst du deinen Zwischenstand. Dann geht es mit der nächsten weiter. Jede Aufgabe hat ihre eigene Uhr.</small>`;
 
   /* ---------- Neues Duell ---------- */
   function neu(pre) {
     if (mitLj(() => neu(pre), neu)) return;
     const m = modal('Neues Duell', true), b = m.body, j = jgDefault();
-    const o = Object.assign({ k: lsGet('lm4.kuerzel'), j, st: stDefault(j), lab: '' }, pre || {});
-    b.innerHTML = '<p>Du erzeugst einen Runden-Code. Wer ihn eingibt, bekommt dieselbe Aufgabe mit demselben Fehler. Zählt: richtig lösen, sauber messen, wenige Tipps, dann die Zeit.</p><div class="dl-cols"><div id="dlF"></div><div id="dlR"></div></div>';
+    const o = Object.assign({ k: lsGet('lm4.kuerzel'), j, st: stDefault(j), lab: '', n: 3, nWahl: 1 }, pre || {}); if (D.ANZ.indexOf(o.n) < 0) o.n = 3;
+    b.innerHTML = '<p>Du erzeugst einen Runden-Code. Wer ihn eingibt, bekommt dieselben Aufgaben mit denselben Fehlern. Zählt: richtig lösen, sauber messen, wenige Tipps, dann die Zeit. Du wählst, ob ihr 1, 3 oder 5 Aufgaben hintereinander löst.</p><div class="dl-cols"><div id="dlF"></div><div id="dlR"></div></div>';
     const F = b.querySelector('#dlF'), R = b.querySelector('#dlR');
     F.innerHTML = formHtml(o) + '<div class="dl-row"><button type="button" class="dl-btn pri" id="dlGen">Runden-Code erzeugen</button></div>';
     const gen = () => {
       readForm(F, o); if (!checkId(F, o)) return;
-      o.r = C.newRound(Date.now(), { st: o.st }); const row = rowFor(o);
+      o.r = C.newRound(Date.now(), { st: o.st, n: o.n }); const list = rowsFor(o), row = list[0] || null;
       const url = new URL(labFile(row ? row[1] : 'sch') + '?aufgabe=' + (row ? row[0] : '') + '&duell=' + o.r + '&st=' + o.st + (o.lab ? '&lab=' + o.lab : ''), location.href).href;
       R.innerHTML = `<div class="dl-card"><div class="dl-mute">Runden-Code</div><div class="dl-code" id="dlCode">${esc(o.r)}</div><div class="dl-qr" id="dlQr"></div>
-        <p>${taskInfo(row)}</p><p><small>Der Gegner öffnet in der App „Duell beitreten“ und tippt dort auf „QR-Code scannen“. Nicht mit der Kamera-App scannen, sonst öffnet sich der Browser statt der App. Oder er tippt dort den Code ein: <b>${esc(o.r)}</b>. Die Stufe steckt im Code. ${o.lab ? 'Dazu wählt er dasselbe Lab wie du. ' : ''}Dann haben alle dieselbe Aufgabe. Vergleicht vor dem Start den Titel der Aufgabe.</small></p>
+        <div class="dl-ti">${taskInfo(list)}</div>${list.length && list.length < o.n ? `<p><small>Für diese Wahl gibt es nur ${list.length === 1 ? 'eine passende Aufgabe' : list.length + ' passende Aufgaben'}.</small></p>` : ''}<p><small>Der Gegner öffnet in der App „Duell beitreten“ und tippt dort auf „QR-Code scannen“. Nicht mit der Kamera-App scannen, sonst öffnet sich der Browser statt der App. Oder er tippt dort den Code ein: <b>${esc(o.r)}</b>. Die Stufe und die Anzahl der Aufgaben stecken im Code. ${o.lab ? 'Dazu wählt er dasselbe Lab wie du. ' : ''}Dann haben alle dieselben Aufgaben. Vergleicht vor dem Start den Titel der ersten Aufgabe.</small></p>
         <div class="dl-row"><button type="button" class="dl-btn pri" id="dlGo"${row ? '' : ' disabled'}>Los (3, 2, 1)</button><button type="button" class="dl-btn" id="dlCp">Kopieren</button></div></div>`;
       qrInto(R.querySelector('#dlQr'), url);
       R.querySelector('#dlCp').onclick = () => { const t = el('textarea'); t.value = joinStr(o); R.appendChild(t); copy(joinStr(o), t); t.remove(); };
-      R.querySelector('#dlGo').onclick = () => { if (row) begin(o, row); };
+      R.querySelector('#dlGo').onclick = () => { if (row) begin(o, list); };
     };
     F.querySelector('#dlGen').onclick = gen; wireSeg(F, () => { R.innerHTML = ''; });
   }
@@ -127,12 +149,12 @@
     if (mitLj(() => beitreten(pre), beitreten)) return;
     const m = modal('Duell beitreten', true), b = m.body, j = jgDefault();
     const o = Object.assign({ k: lsGet('lm4.kuerzel'), j, st: 0, lab: '', r: '', aufgabe: '' }, pre || {}); if (!o.st) o.st = stDefault(j); const r0 = o.r, a0 = o.aufgabe;
-    b.innerHTML = `<p>Gib den Runden-Code deines Gegners ein (oder den ganzen Link). Die Stufe stellt sich aus dem Code von selbst ein. Hat dein Gegner ein bestimmtes Lab gewählt, wählst du dasselbe Lab. Prüfe vor dem Start, ob unten dieselbe Aufgabe steht wie bei ihm.</p>
+    b.innerHTML = `<p>Gib den Runden-Code deines Gegners ein (oder den ganzen Link). Die Stufe und die Anzahl der Aufgaben stellen sich aus dem Code von selbst ein. Hat dein Gegner ein bestimmtes Lab gewählt, wählst du dasselbe Lab. Prüfe vor dem Start, ob unten dieselben Aufgaben stehen wie bei ihm.</p>
       <label for="dlRc">Runden-Code</label><input type="text" id="dlRc" autocomplete="off" autocapitalize="characters" placeholder="K43-7F2A" value="${esc(o.r)}"><div class="dl-row"><button type="button" class="dl-btn" id="dlRs">QR-Code scannen</button></div>
       ${formHtml(o)}<div class="dl-card" id="dlT"></div><div class="dl-row"><button type="button" class="dl-btn pri" id="dlGo">Los (3, 2, 1)</button></div>`;
     const upd = () => {
       readForm(b, o); const p = parseJoin(b.querySelector('#dlRc').value); o.r = p.r; o.aufgabe = p.aufgabe || (o.r === r0 ? a0 : '');
-      const row = o.r ? rowFor(o) : null; b.querySelector('#dlT').innerHTML = o.r ? taskInfo(row) : '<small>Noch kein gültiger Runden-Code (Form: K43-7F2A).</small>'; return row;
+      const list = o.r ? rowsFor(o) : []; b.querySelector('#dlT').innerHTML = o.r ? taskInfo(list) : '<small>Noch kein gültiger Runden-Code (Form: K43-7F2A).</small>'; return list.length ? list : null;
     };
     const rc = b.querySelector('#dlRc');
     rc.oninput = () => { const p = parseJoin(rc.value); if (!p.st && p.r) p.st = C.stOf(p.r); if (p.st) b.querySelectorAll('[data-st]').forEach(y => y.setAttribute('aria-pressed', String(+y.dataset.st === p.st))); if (p.lab) b.querySelector('#dlL').value = p.lab; upd(); };
@@ -140,6 +162,68 @@
     /* QR des Gegners in der App scannen: die Kamera-App des iPads würde den Link im Browser öffnen (anderer Speicher als die installierte App, Anmeldung und Fortschritt fehlen dort) */
     b.querySelector('#dlRs').onclick = () => scanCode(t => { if (!parseJoin(t).r) return 'Das ist kein Duell-Code (er sieht aus wie K43-7F2A).'; rc.value = t; rc.oninput(); return true; });
     b.querySelector('#dlGo').onclick = () => { const row = upd(); if (!o.r) { b.querySelector('#dlE').textContent = 'Bitte einen gültigen Runden-Code eingeben (z. B. K43-7F2A).'; return; } if (!checkId(b, o)) return; if (!row) return; begin(o, row); };
+  }
+
+  /* ---------- Serie: Zwischenstand nach einer Aufgabe und Gesamtergebnis ---------- */
+  const serCode = async rec => { const api = labApi(), pay = { k: rec.k, j: rec.j, r: rec.r, a: rec.a, lab: rec.lab, st: rec.st, t: rec.t, ms: rec.ms, p: rec.pct, h: rec.h, f: rec.f, pr: rec.pr || 0, app: root.LAB_VERSION || '' }; if (rec.m != null) pay.m = rec.m; return C.encode(pay, null, { mp: api.mp }); };
+  const serSum = x => x.recs.reduce((a, r) => ({ pts: a.pts + C.effPts(r), ms: a.ms + r.ms, h: a.h + r.h, f: a.f + r.f, ok: a.ok + (r.pct >= 100 ? 1 : 0) }), { pts: 0, ms: 0, h: 0, f: 0, ok: 0 });
+  const serTab = x => `<table class="dl-tbl"><thead><tr><th>Aufgabe</th><th class="n">Punkte</th><th class="n">Zeit</th></tr></thead><tbody>${x.ids.map((id, i) => { const r = x.recs[i], t = taskRow(id); return `<tr><td>${i + 1}. ${esc(t ? t[3] : id)}</td><td class="n">${r ? r.pts + (r.pr ? ' (zählt ' + C.effPts(r) + ')' : '') : '–'}</td><td class="n">${r ? fmt(r.ms) : 'offen'}</td></tr>`; }).join('')}</tbody></table>`;
+  /* eine Aufgabe der Serie ist fertig: Datensatz mit Code merken, dann Zwischenstand oder Gesamtergebnis */
+  async function serWeiter(x, rec) {
+    rec.k = C.cleanId(rec.k || lsGet('lm4.kuerzel')); rec.j = rec.j || jgDefault();
+    let code = null; try { code = await serCode(rec); } catch (e) {}
+    x.recs.push({ a: rec.a, lab: rec.lab, st: rec.st, t: rec.t, ms: rec.ms, pct: rec.pct, h: rec.h, f: rec.f, m: rec.m, pr: rec.pr || 0, pts: rec.pts, code: code || '' }); serSet(x);
+    if (code) histPatch(rec, { code });
+    if (x.recs.length < x.ids.length) zwischen(x, rec); else { try { if (root.Badges) { root.Badges.confetti && root.Badges.confetti(false); root.Badges.chime && root.Badges.chime(false); } } catch (e) {} badges(); gesamt(x); }
+  }
+  function zwischen(x, rec) {
+    const i = x.recs.length, n = x.ids.length, last = x.recs[i - 1], next = taskRow(x.ids[i]), sum = serSum(x), m = modal('Aufgabe ' + i + ' von ' + n + ' fertig', true), b = m.body;
+    const sc = (rec && rec.sc) || C.score({ st: last.st, pct: last.pct, ms: last.ms, h: last.h, f: last.f, m: last.m == null ? null : last.m });
+    b.innerHTML = `<div class="dl-card"><div class="dl-big">${last.pts} Punkte</div><p>Richtigkeit ${sc.R} · Arbeitsweise ${sc.A} · Zeit ${sc.Z}${sc.T ? ' · Tipp-Abzug −' + sc.T : ''}</p>
+      <p><small>Zeit ${fmt(last.ms)} · Tipps ${last.h} · Versuche ${last.f}</small></p><p>${esc(hinweis({ pct: last.pct, h: last.h, f: last.f, m: last.m }))}</p></div>
+      <p><b>Zwischenstand: ${sum.pts} Punkte nach ${i} von ${n} Aufgaben.</b></p>${serTab(x)}
+      <div class="dl-card"><div class="dl-mute">Nächste Aufgabe (${i + 1} von ${n})</div><p><b>${esc(next ? next[3] : x.ids[i])}</b><br><small>${esc(next ? labName(next[1]) : '')}</small></p>
+      <p><small>So geht es weiter: 1. Tippe auf „Weiter“. 2. Nach dem Countdown öffnet sich die nächste Aufgabe und ihre Uhr läuft los. 3. Nach der letzten Aufgabe bekommst du einen Duell-Code für alle Aufgaben zusammen.</small></p>
+      <div class="dl-row"><button type="button" class="dl-btn pri" id="dlNx"${next ? '' : ' disabled'}>Weiter (3, 2, 1)</button><button type="button" class="dl-btn" id="dlAb">Jetzt abgeben</button></div><p class="dl-err" id="dlAe" role="alert"></p></div>`;
+    b.querySelector('#dlNx').onclick = () => { if (!next) return; m.close(); countdown(() => { starte(x.r, next, x.st, x.lab); }); };
+    let sure = 0; b.querySelector('#dlAb').onclick = e => {
+      if (!sure) { sure = 1; e.currentTarget.textContent = 'Wirklich abgeben?'; b.querySelector('#dlAe').textContent = 'Die restlichen ' + (n - i === 1 ? 'Aufgabe zählt' : (n - i) + ' Aufgaben zählen') + ' dann mit 0 Punkten. Tippe noch einmal, um abzugeben.'; return; }
+      x.ids = x.ids.slice(0, x.recs.length); serSet(x); m.close(); badges(); gesamt(x);
+    };
+  }
+  /* Gesamtergebnis der Serie: Summe, Tabelle je Aufgabe, alle Codes zusammen, Vergleich mit dem Gegner über die Summe */
+  function gesamt(x, again) {
+    const sum = serSum(x), n0 = x.n0 || x.ids.length, m = modal(again ? 'Duell-Code' : '🏁 Im Ziel', true), b = m.body, k = C.cleanId(lsGet('lm4.kuerzel'));
+    const codes = x.recs.map(r => r.code).filter(Boolean), text = codes.join('\n');
+    b.innerHTML = `<div class="dl-cols"><div><div class="dl-card"><div class="dl-big">${sum.pts} Punkte</div>
+      <p>${sum.ok} von ${n0} Aufgaben gelöst · Gesamtzeit ${fmt(sum.ms)} · Tipps ${sum.h} · Versuche ${sum.f}</p><p><small>${esc(x.r)} · höchstens ${n0 * 100} Punkte${x.recs.length < n0 ? ' · ' + (n0 - x.recs.length) + ' nicht bearbeitet' : ''}</small></p></div>
+      ${serTab(x)}<p class="dl-ok"><small>Gespeichert auf diesem Gerät.</small></p></div>
+      <div><label for="dlMy">Dein Duell-Code für alle Aufgaben (zeig ihn dem Gegner oder dem Ausbilder)</label><textarea id="dlMy" readonly rows="4" aria-label="Duell-Code">${esc(text || 'Code nicht möglich (Kürzel fehlt?)')}</textarea><div class="dl-qr" id="dlQr" style="width:200px"></div>
+      <div class="dl-row"><button type="button" class="dl-btn" id="dlCp">Kopieren</button><button type="button" class="dl-btn" id="dlSh" hidden>Teilen</button></div></div></div>
+      <label for="dlOp">Gegner-Code einfügen</label><textarea id="dlOp" rows="2" placeholder="TFD1.…"></textarea><div class="dl-row"><button type="button" class="dl-btn pri" id="dlCmp">Vergleichen</button><button type="button" class="dl-btn" id="dlScan">Gegner-Code scannen</button><button type="button" class="dl-btn" id="dlRev">Revanche (neue Runde)</button></div><div id="dlOut"></div>`;
+    const my = b.querySelector('#dlMy'); if (text) qrInto(b.querySelector('#dlQr'), codes.join(' '));
+    b.querySelector('#dlCp').onclick = () => copy(my.value, my);
+    const sh = b.querySelector('#dlSh'); if (navigator.share && text) { sh.hidden = false; sh.onclick = () => { try { navigator.share({ title: 'Duell-Code', text }); } catch (e) {} }; }
+    b.querySelector('#dlRev').onclick = () => neu({ st: x.st, lab: '', n: n0 });
+    b.querySelector('#dlScan').onclick = () => scanCode(t => { if (!C.parse(t).length) return 'Das ist kein Duell-Code (er beginnt mit TFD1.).'; b.querySelector('#dlOp').value = t; b.querySelector('#dlCmp').click(); return true; });
+    b.querySelector('#dlCmp').onclick = async () => {
+      const out = b.querySelector('#dlOut'), all = C.parse(b.querySelector('#dlOp').value);
+      if (!all.length) { out.innerHTML = '<p class="dl-err">Kein gültiger Duell-Code gefunden (er beginnt mit TFD1.).</p>'; return; }
+      const mine = all.filter(p => p.rec.r === x.r), seen = {}, vs = [];
+      if (!mine.length) { out.innerHTML = `<p class="dl-err">Der Code gehört zu einer anderen Runde (${esc(all[0].rec.r)}). Verglichen wird nur dieselbe Runde.</p>`; return; }
+      for (const p of mine) { if (seen[p.rec.a]) continue; seen[p.rec.a] = 1; const v = await C.verify(p.code, undefined, {}); if (v) vs.push(v); }
+      const os = vs.reduce((a, v) => ({ pts: a.pts + C.effPts(v.rec), ms: a.ms + v.rec.ms, h: a.h + v.rec.h, f: a.f + v.rec.f, ok: a.ok + (v.rec.p >= 100 ? 1 : 0) }), { pts: 0, ms: 0, h: 0, f: 0, ok: 0 });
+      const gk = vs[0].rec.k, c = C.cmp({ pts: sum.pts, ms: sum.ms, h: sum.h }, { pts: os.pts, ms: os.ms, h: os.h });
+      const win = c < 0 ? 'Du gewinnst.' : c > 0 ? esc(gk) + ' gewinnt.' : 'Unentschieden.';
+      const fset = {}; vs.forEach(v => v.flags.forEach(f => { fset[f] = 1; })); const fl = Object.keys(fset).map(f => '<li>' + esc(FLAGS[f] || f) + '</li>').join('');
+      out.innerHTML = `<table class="dl-tbl"><thead><tr><th></th><th>${esc(k)} (du)</th><th>${esc(gk)}</th></tr></thead><tbody>
+        <tr><td>Punkte gesamt</td><td class="${c < 0 ? 'dl-win' : ''}">${sum.pts}</td><td class="${c > 0 ? 'dl-win' : ''}">${os.pts}</td></tr>
+        <tr><td>Aufgaben gelöst</td><td>${sum.ok} von ${n0}</td><td>${os.ok} von ${n0}</td></tr>
+        <tr><td>Gesamtzeit</td><td>${fmt(sum.ms)}</td><td>${fmt(os.ms)}</td></tr><tr><td>Tipps</td><td>${sum.h}</td><td>${os.h}</td></tr><tr><td>Versuche</td><td>${sum.f}</td><td>${os.f}</td></tr>
+        ${x.ids.map((id, i) => { const r = x.recs[i], t = taskRow(id), v = vs.filter(q => q.rec.a === id)[0]; return `<tr><td>${i + 1}. ${esc(t ? t[3] : id)}</td><td>${r ? C.effPts(r) : '–'}</td><td>${v ? C.effPts(v.rec) : '–'}</td></tr>`; }).join('')}</tbody></table>
+        <p><b>${win}</b> Mehr Punkte gewinnt. Bei gleichen Punkten gewinnt die kürzere Gesamtzeit.</p>${vs.length < n0 ? '<p class="dl-warn">Im Code des Gegners ' + (vs.length === 1 ? 'steckt nur eine Aufgabe' : 'stecken nur ' + vs.length + ' Aufgaben') + ' dieser Runde. Fehlende Aufgaben zählen mit 0 Punkten.</p>' : ''}${fl ? '<p class="dl-warn">Hinweise zum Code:</p><ul class="dl-warn">' + fl + '</ul>' : '<p class="dl-ok"><small>Signatur ok, Zahlen plausibel.</small></p>'}`;
+      x.recs.forEach(r => histPatch({ r: x.r, a: r.a, t: r.t }, { g: gk, gp: os.pts, win: sum.ok > 0 && c < 0 ? 1 : 0 })); badges();
+    };
   }
 
   /* ---------- Scan (qrscan.js, jsqr.js erst beim ersten Scan nachgeladen); ohne Kamera/Scanner bleibt das Einfuegen per Text ---------- */
@@ -162,9 +246,11 @@
 
   /* ---------- Lobby ---------- */
   function lobby() {
-    const m = modal('Prüfungs-Duell', true), b = m.body, cur = D.store.current(null), h = D.store.history(null).slice(-5).reverse();
-    b.innerHTML = `<p>Zwei Azubis lösen <b>dieselbe Fehlersuche</b> mit demselben verdeckten Fehler. Gewertet werden Richtigkeit, saubere Arbeitsweise und Zeit. Jeder Tipp kostet ${W.tipp} Punkte, eine Auflösung gibt es im Duell nicht.</p>
+    const m = modal('Prüfungs-Duell', true), b = m.body, cur = D.store.current(null), h = D.store.history(null).slice(-5).reverse(), so = serOffen(), sl = serGet();
+    b.innerHTML = `<p>Zwei Azubis lösen <b>dieselben Fehlersuchen</b> mit denselben verdeckten Fehlern, eine oder mehrere hintereinander. Gewertet werden Richtigkeit, saubere Arbeitsweise und Zeit. Jeder Tipp kostet ${W.tipp} Punkte, eine Auflösung gibt es im Duell nicht.</p>
       ${cur && cur.start ? `<div class="dl-card"><b>Ein Duell läuft:</b> ${esc(cur.r)} <div class="dl-row"><button type="button" class="dl-btn pri" id="dlCont">Zum Duell</button></div></div>` : ''}
+      ${!(cur && cur.start) && so && so.recs.length ? `<div class="dl-card"><b>Dein Duell geht weiter:</b> ${esc(so.r)}, Aufgabe ${so.recs.length + 1} von ${so.ids.length} <div class="dl-row"><button type="button" class="dl-btn pri" id="dlSer">Weiter</button></div></div>` : ''}
+      ${!so && sl && sl.recs.length > 1 ? `<div class="dl-row"><button type="button" class="dl-btn" id="dlSl">Gesamtergebnis des letzten Duells (${esc(sl.r)})</button></div>` : ''}
       <div class="dl-row"><button type="button" class="dl-btn pri" id="dlN">Neues Duell</button><button type="button" class="dl-btn" id="dlJ2">Beitreten</button><button type="button" class="dl-btn" id="dlBl">Blitz-Duell (Rechnen)</button></div>
       <div class="dl-row"><button type="button" class="dl-btn" id="dlTa">🔁 Fehler-Tausch</button><button type="button" class="dl-btn" id="dlWe">🏆 Wettbewerb</button></div>
       <div id="dlH"></div><details style="margin-top:12px"><summary style="min-height:44px;display:flex;align-items:center;cursor:pointer"><b>Bestenliste vom Ausbilder</b></summary><div id="dlBest"></div></details>`;
@@ -172,6 +258,8 @@
     b.querySelector('#dlN').onclick = () => neu(); b.querySelector('#dlJ2').onclick = () => beitreten();
     b.querySelector('#dlBl').onclick = () => { m.close(); blitz(root.__duellRechOpt || {}); };
     b.querySelector('#dlTa').onclick = () => { m.close(); openTausch(); }; b.querySelector('#dlWe').onclick = () => { m.close(); openWett(); };
+    const bs = b.querySelector('#dlSer'); if (bs) bs.onclick = () => zwischen(so);
+    const bl = b.querySelector('#dlSl'); if (bl) bl.onclick = () => gesamt(sl, true);
     const c = b.querySelector('#dlCont'); if (c) c.onclick = () => { m.close(); const r = taskRow(cur.a); if (r) location.href = labFile(r[1]) + '?aufgabe=' + r[0] + '&duell=' + cur.r + '&st=' + cur.st; };
     if (h.length) { b.querySelector('#dlH').innerHTML = '<p style="margin-top:14px"><b>Letzte Duelle</b></p><table class="dl-tbl"><thead><tr><th>Runde</th><th>Aufgabe</th><th class="n">Punkte</th><th></th></tr></thead><tbody>' + h.map((x, i) => { const r = taskRow(x.a); return `<tr><td>${esc(x.r)}</td><td>${esc(r ? r[3] : x.a)}</td><td class="n">${x.pts}</td><td><button type="button" class="dl-btn" data-h="${i}">Code</button></td></tr>`; }).join('') + '</tbody></table>'; b.querySelectorAll('[data-h]').forEach(x => { x.onclick = () => finished(Object.assign({}, h[+x.dataset.h], { k: lsGet('lm4.kuerzel'), j: jgDefault(), sc: null, again: 1 })); }); }
   }
@@ -179,7 +267,7 @@
   /* ---------- Chip ---------- */
   let chipEl = null, chipT = 0;
   const MAXMS = 3 * 3600 * 1000;   /* Duell läuft nach 3 Stunden aus */
-  function live() { const c = D.store.current(null); if (!c || !c.start) return null; if (Date.now() - c.start > MAXMS) { D.store.cancel(null); toast('Das Duell ist nach 3 Stunden abgelaufen.'); return null; } return c; }
+  function live() { const c = D.store.current(null); if (!c || !c.start) return null; if (Date.now() - c.start > MAXMS) { D.store.cancel(null); serSet(null); toast('Das Duell ist nach 3 Stunden abgelaufen.'); return null; } return c; }
   function chip() {
     const cur = live(), rc = D.rechnen.cur(), duel = !!(cur && cur.start), bl = !duel && !!(rc.start && !rc.done);
     if (!duel && !bl) { if (chipT) clearInterval(chipT); chipT = 0; if (chipEl) { chipEl.remove(); chipEl = null; } return; }
@@ -198,7 +286,8 @@
       const c = D.store.current(null), r2 = D.rechnen.cur(); if (!(c && c.start) && !(r2.start && !r2.done)) { chip(); return; }
       if (c && c.start) {
         const h = D.store.hintsUsed(c, null);
-        chipEl.querySelector('.dl-n').textContent = '⚔️ ' + c.r; chipEl.querySelector('.dl-t').textContent = fmt(Date.now() - c.start);
+        const sx = serGet(), si = sx && sx.r === c.r && sx.recs.length < sx.ids.length && sx.ids[sx.recs.length] === c.a ? ' · ' + (sx.recs.length + 1) + '/' + sx.ids.length : '';
+        chipEl.querySelector('.dl-n').textContent = '⚔️ ' + c.r + si; chipEl.querySelector('.dl-t').textContent = fmt(Date.now() - c.start);
         chipEl.querySelector('.dl-h').textContent = 'Tipps ' + h + (h ? ' (−' + h * W.tipp + ')' : ''); chipEl.querySelector('.dl-v').textContent = 'Versuche ' + (c.tries || 0);
       } else { chipEl.querySelector('.dl-n').textContent = '⚔️ Blitz ' + r2.seed; chipEl.querySelector('.dl-t').textContent = fmt(Date.now() - r2.start); chipEl.querySelector('.dl-h').textContent = ''; chipEl.querySelector('.dl-v').textContent = ''; }
     };
@@ -228,6 +317,7 @@
     } catch (e) {}
   }
   async function finished(rec) {
+    if (!rec.again && !rec.w) { const x = serGet(); if (x && x.r === C.roundBase(rec.r) && x.recs.length < x.ids.length && x.ids[x.recs.length] === rec.a) { chip(); return serWeiter(x, rec); } }
     chip(); const again = rec.again; rec.k = C.cleanId(rec.k || lsGet('lm4.kuerzel')); rec.j = rec.j || jgDefault();
     if (!again) { try { if (root.Badges) { root.Badges.confetti && root.Badges.confetti(false); root.Badges.chime && root.Badges.chime(false); } } catch (e) {} badges(); }
     const m = modal(again ? 'Duell-Code' : '🏁 Im Ziel', true), b = m.body, sc = rec.sc || C.score({ st: rec.st, pct: rec.pct, ms: rec.ms, h: rec.h, f: rec.f, m: rec.m == null ? null : rec.m });
@@ -340,10 +430,12 @@
     d.querySelector('[data-b=tausch]').onclick = () => openTausch(); d.querySelector('[data-b=wett]').onclick = () => openWett();
   }
 
-  D.ui = { open, finished, chip, rechnenSolved, lobby, neu, beitreten, blitz, parseJoin, hinweis, toast };
+  D.ui = { open, finished, chip, rechnenSolved, lobby, neu, beitreten, blitz, parseJoin, hinweis, toast, serie: serGet, zwischen, gesamt };
   const q = new URLSearchParams(location.search), dq = q.get('duell');
   const boot = () => {
     band(); chip();
+    /* Serie: Zwischen zwei Aufgaben (keine Aufgabe läuft) den Zwischenstand wieder zeigen, damit es weitergeht. Ohne erste fertige Aufgabe ist die Serie hinfällig. */
+    const so = serOffen(); if (so && !D.active()) { if (so.recs.length) zwischen(so); else serSet(null); }
     if (dq && /^K\d{2}-[0-9A-Fa-f]{4}(-E)?$/.test(dq) && !D.active()) {
       const st = +q.get('st') || 0, lab = q.get('lab') || '', a = q.get('aufgabe') || '';
       beitreten({ r: C.roundBase(dq), st: st >= 1 && st <= 3 ? st : 0, lab: /^[a-z]{2,5}$/.test(lab) ? lab : '', aufgabe: a });

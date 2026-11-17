@@ -27,6 +27,7 @@
   const EXTRA = ['sl3', 'sl5', 'sl6', 'cp4', 'el14', 'el16', 'el23'];   /* Fehlersuchen mit anderer Kategorie (Ids, keine Lab-Liste) */
   const EINSTIEG = ['s1', 's2', 's6', 's7'];   /* SchaltLab-Grundaufgaben, nur für Stufe 1 zusätzlich im Duell */
   const SEEDLABS = ['nts', 'ana', 'pcb', 'els'];                        /* Seed-variabler Fehler: im Pool doppelt gewichtet */
+  const ANZ = [1, 3, 5];                                                /* Serie (v62.182): Anzahl der Aufgaben hintereinander, steckt in der dritten Ziffer des Rundencodes */
   const KEYS = { cur: 'lm4.duellcur', hist: 'lm4.duell', old: 'lm4.duelcur', duels: 'lm4.duels' };
 
   const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -59,12 +60,16 @@
     for (let i = 0; i < n; i++) out += Math.floor(Math.random() * 16).toString(16);
     return out.toUpperCase();
   }
-  /* opt.st (1..3): Die Stufe steckt in der letzten Ziffer des Codes (Ziffer mod 3 = Stufe - 1). Wer nur den Code eintippt, bekommt so dieselbe Stufe und damit dieselbe Aufgabe. */
+  /* opt.st (1..3): Die Stufe steckt in der letzten Ziffer des Codes (Ziffer mod 3 = Stufe - 1). Wer nur den Code eintippt, bekommt so dieselbe Stufe und damit dieselbe Aufgabe.
+     opt.n (1, 3 oder 5, ab v62.182): Die Anzahl der Aufgaben steckt in der dritten Ziffer (Ziffer mod 3 = Platz in ANZ). */
   function newRound(ts, opt) {
     opt = opt || {}; let hex = opt.hex ? String(opt.hex).toUpperCase() : randHex(4);
     if (!opt.hex && opt.st >= 1 && opt.st <= 3) { const z = []; for (let d = 0; d < 16; d++) if (d % 3 === opt.st - 1) z.push(d); hex = hex.slice(0, 3) + z[parseInt(hex[3], 16) % z.length].toString(16).toUpperCase(); }
+    if (!opt.hex && ANZ.indexOf(+opt.n) >= 0) { const z = []; for (let d = 0; d < 16; d++) if (d % 3 === ANZ.indexOf(+opt.n)) z.push(d); hex = hex.slice(0, 2) + z[parseInt(hex[2], 16) % z.length].toString(16).toUpperCase() + hex[3]; }
     return 'K' + String(kw(ts)).padStart(2, '0') + '-' + hex + (opt.ausbilder ? '-E' : '');
   }
+  /* Anzahl der Aufgaben, die im Rundencode steckt (1, 3 oder 5), 0 bei ungültigem Code */
+  function nOf(r) { const p = parseRound(r); return p ? ANZ[parseInt(p.hex[2], 16) % 3] : 0; }
   /* Stufe, die im Rundencode steckt (1..3), 0 bei ungültigem Code */
   function stOf(r) { const p = parseRound(r); return p ? parseInt(p.hex[3], 16) % 3 + 1 : 0; }
   function parseRound(s) { const m = RRE.exec(String(s == null ? '' : s).trim().toUpperCase()); return m ? { code: m[0], kw: +m[1], hex: m[2], e: !!m[3] } : null; }
@@ -83,7 +88,15 @@
     return out;
   }
   /* deterministisch: gleicher Rundencode + gleiche Stufe/Lab = gleiche Aufgabe, unabhaengig vom Lernstand */
-  function pick(runde, rows, opt) {
+  function pick(runde, rows, opt) { const w = kandidaten(rows, opt); return w.length ? w[Math.floor(seeded(hash(roundBase(runde) || runde))() * w.length)] : null; }
+  /* Serie: n verschiedene Aufgaben in fester Reihenfolge. Die erste ist dieselbe wie bei pick(). Gibt es weniger passende Aufgaben, wird die Liste kürzer. */
+  function pickN(runde, rows, opt, n) {
+    let w = kandidaten(rows, opt); const out = [], base = roundBase(runde) || runde; n = int(n, 1, 9, 1);
+    for (let i = 0; i < n && w.length; i++) { const r = w[Math.floor(seeded(hash(i ? base + '#' + i : base))() * w.length)]; out.push(r); w = w.filter(x => x[0] !== r[0]); }
+    return out;
+  }
+  /* passende Aufgaben für Stufe und Lab, Seed-Labs doppelt (Gewicht) */
+  function kandidaten(rows, opt) {
     rows = Array.isArray(rows) ? rows : []; opt = opt || {}; const st = int(opt.st, 1, 3, 2);
     const inLab = r => !opt.lab || r[1] === opt.lab; let c = null;
     /* Stufe = Lehrjahr (Wunsch des Ausbilders, 17.11.2026): Mit lehrjahr.js kommen nur Aufgaben, die zu diesem Lehrjahr gehören. Stufe 1: nichts Schwereres als Level 2,
@@ -101,9 +114,8 @@
       c = rows.filter(r => inLab(r) && r[4] === st);
       if (c.length < 6) c = rows.filter(r => inLab(r) && Math.abs(r[4] - st) <= 1);
     }
-    if (!c.length) return null;
     const w = []; c.forEach(r => { w.push(r); if (SEEDLABS.indexOf(r[1]) >= 0) w.push(r); });
-    return w[Math.floor(seeded(hash(roundBase(runde) || runde))() * w.length)];
+    return w;
   }
 
   /* ---------- Wertung ---------- */
@@ -342,8 +354,8 @@
   }
 
   const Duell = {
-    W, KATS, NOLABS, EXTRA, SEEDLABS, KEYS, MESSLABS,
-    core: { KRE, cleanId, kw, seeded, hash, seedNum, newRound, stOf, parseRound, roundBase, pool, pick, score, cmp, effPts, normalize, encode, parse, verify, flags, sign, checksum, bestenliste, encodeBest, parseBest, b64, unb64 },
+    W, KATS, NOLABS, EXTRA, SEEDLABS, KEYS, MESSLABS, ANZ,
+    core: { KRE, cleanId, kw, seeded, hash, seedNum, newRound, stOf, nOf, parseRound, roundBase, pool, pick, pickN, score, cmp, effPts, normalize, encode, parse, verify, flags, sign, checksum, bestenliste, encodeBest, parseBest, b64, unb64 },
     store: { current, active, history, start, mess, seedFor, hintsUsed, hintDuell, finish, onResult, giveUp, cancel, rechnenSave, migrate },
     hook,
     rechnen: { cur: rechCur, prep: rechPrep, start: rechStart, cancel: rechCancel, solved: rechSolved, key: RK },
