@@ -283,6 +283,8 @@ html.tiles .cards .card a.btn.pri:focus-visible{outline:none}
 #ftAusb .foot a{font-size:15px}
 #ichGeraet #offlineStatus,#ichGeraet #offlineStatus *{text-align:left!important;justify-content:flex-start!important}
 @media(max-width:639px){.mw-2{flex-wrap:wrap}.mw-2>.mw-b{flex:1 1 100%;margin:0 14px 10px 66px}.lp-rang .mw-x{padding:10px 0}}
+/* v62.180: Duell-Kachel hat zwei Knöpfe (Beitreten, Rechen-Duell). Ab Tablet-Breite geht die Kachel über die ganze Breite (wie Verbundprojekte), sonst wird der Text schmal und zieht die ganze Zeile in die Höhe. */
+@media(min-width:640px){#ubDuell{grid-column:1/-1}#ubDuell>.mw-b+.mw-b{margin-left:-2px}}
 #ichRang .mw-t{cursor:default}
 .foot.standrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0;text-align:left;font-size:14px;color:var(--mute)}
 .foot.standrow>span{flex:1 0 100%;font-size:14px;line-height:1.4}
