@@ -486,6 +486,7 @@
   }
   $('#tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.t); });
   function setTab(t) {
+    if (t !== 'duell' && root.MatDuellUI && root.MatDuellUI.laeuft && root.MatDuellUI.laeuft()) { if (S.tab === 'duell' && $('#mid').dataset.tab === 'duell') { toast('Das Duell läuft. Die anderen Reiter sind bis zum Ende der Runde gesperrt.'); return; } t = 'duell'; }
     if (!TABS.some(x => x[0] === t)) t = 'einh'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.pg').forEach(p => { p.style.display = p.dataset.tab === t ? 'flex' : 'none'; });
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });

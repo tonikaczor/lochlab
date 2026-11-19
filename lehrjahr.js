@@ -166,7 +166,9 @@
       /* Prüfung Teil 1 (v62.179): mat49 bis mat60 bleiben 1. Lehrjahr, ab Kondensator, Transistor, Z-Diode und Operationsverstärker 2. Lehrjahr */
       mat61: 2, mat62: 2, mat63: 2, mat64: 2, mat65: 2, mat66: 2, mat67: 2, mat68: 2, mat69: 2, mat70: 2, mat105: 2, mat106: 2,
       /* Nachtrag zur 183: zwei leichte Messwert-Aufgaben (Toleranz, Abweichung in Prozent) wie Median ins 2. Lehrjahr */
-      mat103: 2, mat104: 2
+      mat103: 2, mat104: 2,
+      /* v62.184: Rubrik Elektrotechnik (mat107 bis mat124) 2. oder 3. Lehrjahr, Rubrik Elektronik vertieft (mat125 bis mat144) 4. Lehrjahr */
+      mat107: 2, mat108: 2, mat109: 2, mat110: 2, mat111: 2, mat112: 2, mat113: 2, mat114: 2, mat117: 2, mat118: 2, mat119: 2, mat120: 2, mat115: 3, mat116: 3, mat121: 3, mat122: 3, mat123: 3, mat124: 3, mat125: 4, mat126: 4, mat127: 4, mat128: 4, mat129: 4, mat130: 4, mat131: 4, mat132: 4, mat133: 4, mat134: 4, mat135: 4, mat136: 4, mat137: 4, mat138: 4, mat139: 4, mat140: 4, mat141: 4, mat142: 4, mat143: 4, mat144: 4
     }
   };
 

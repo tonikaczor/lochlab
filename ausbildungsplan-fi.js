@@ -648,7 +648,7 @@
         "labs": [
           {
             "lab": "mat",
-            "bereich": "*"
+            "bereich": ["Einheiten","Dreisatz","Prozent","Bruchrechnung","Klammern","Umstellen","Geometrie","Messwerte","Prüfung Teil 1"]
           }
         ],
         "heft": null,
@@ -658,6 +658,30 @@
         "projekt": [],
         "quelle": "Entwurf",
         "pruefung": null
+      },
+      {
+        "id": "Z-ELEK",
+        "nr": "",
+        "titel": "Zusatzthema: Elektrotechnik rechnen",
+        "kurz": "Freiwillig, für alle, die über den eigenen Beruf hinaus Elektrotechnik rechnen wollen: Wechselstrom, Drehstrom, Messen und Prüfen, dazu Pegel, Wandler und Schaltregler.",
+        "jahr": 0,
+        "block": "Zusatzthemen",
+        "quelle": "Entwurf",
+        "entwurf": true,
+        "labs": [
+          {
+            "lab": "mat",
+            "bereich": [
+              "Elektrotechnik",
+              "Elektronik vertieft"
+            ]
+          }
+        ],
+        "heft": null,
+        "wiki": [],
+        "projekt": [],
+        "pruefung": null,
+        "optional": true
       }
     ]
   };

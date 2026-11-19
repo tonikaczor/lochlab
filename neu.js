@@ -2,6 +2,13 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v62.184', items: [
+      ['Rechen-Lab: Elektrotechnik rechnen', '38 neue Aufgaben in zwei neuen Rubriken. „Elektrotechnik“: Spannungsteiler mit Last, Brückenschaltung, Blindwiderstand, Drehstromleistung, Kompensation, Fehlerschleife, Geräteprüfung, Kühlkörper. „Elektronik vertieft“: Pegel in dB und dBm, Funkstrecke, AD-Wandler, Schaltregler, Verluste am MOSFET, Schnittstellen und die Grenzen des Operationsverstärkers. Beide Rubriken kannst du auch im Rechen-Duell wählen.', 'Rechen-Lab'],
+      ['Nach Beruf einsortiert', 'Die Rubrik „Elektrotechnik“ gehört bei Elektronikern und Industrieelektrikern zum Lernfeld 5.2 im 2. und 3. Lehrjahr. „Elektronik vertieft“ ist dort ein freiwilliges Zusatzthema und zählt nicht in den Fortschritt. In den Wegen Technik und Studium gehören beide Rubriken fest zum Plan. In allen anderen Berufen stehen sie als freiwilliges Zusatzthema am Ende.', 'Mein Plan'],
+      ['Wiki: 37 neue Seiten zur Elektrotechnik', 'Neu sind unter anderem Pegel und Dezibel, Wellenwiderstand und Anpassung, Funkstrecke, Modulation, Schaltregler, MOSFET als Schalter, Messunsicherheit, Bandbreite am Oszilloskop, unsymmetrische Last, Kompensation, Abschaltbedingung, Erstprüfung, Geräteprüfung, aktive Filter, Grenzen des Operationsverstärkers, Abtastung, UART, I²C, SPI, RS-485 und CAN, Bauteile mit Reserve auslegen und typische Ausfallbilder.', 'Wiki'],
+      ['Formelheft erweitert', 'Im Formelheft stehen 32 neue Formeln, dazu die neue Gruppe „Funk und Hochfrequenz“ mit Pegel, Reflexionsfaktor und Freiraumdämpfung.', 'Formelheft'],
+      ['Rechen-Duell: Reiter gesperrt', 'Solange eine Runde läuft, sind die anderen Reiter im Rechen-Lab gesperrt. Nachschlagen während des Duells geht so nicht mehr. Nach der Runde ist alles wieder frei.', 'Rechen-Lab'],
+    ] },
     { v: 'v62.183', items: [
       ['Updates laden schneller', 'Bei einer neuen Version holt die App nur noch die Dateien, die sich geändert haben. Alles andere übernimmt sie aus dem Offline-Speicher. Das Update ist dadurch viel schneller fertig und braucht kaum Datenvolumen.', 'Start'],
       ['Duell: Anzeige verdeckt nichts mehr', 'Im Netzteil-Lab, Leiterplatten-Lab und Analogtechnik-Lab lag die orange Duell-Anzeige mit der Zeit über dem Lab-Namen. Jetzt bekommt sie während des Duells eine eigene Zeile über der Kopfzeile.', 'Duell'],
@@ -18,11 +25,6 @@
       ['Wiki: 33 neue Bauteile', 'Das Wiki erklärt jetzt auch Z-Diode, Schottky-Diode, PNP-Transistor, Optokoppler, Quarz, Schütz, Timer 555, Schieberegister, Servo, Schrittmotor, Ultraschallsensor und viele mehr. Suche einfach nach dem Namen.', 'Wiki'],
       ['Englisch-Lab: über 400 neue Fachwörter', 'Der Vokabeltrainer kennt jetzt 602 Wörter. Neu sind technische Begriffe aus Elektrik, Messtechnik, Funk, Digitaltechnik, Mechanik, Werkstoffen und Arbeitssicherheit, zum Beispiel Messschieber, Aderendhülse und Spannungsteiler.', 'Englisch-Lab'],
       ['Einführung: Bauteilleiste', 'In der Einführung von DigiLab, SchaltLab und SimLab zeigt der Schritt „Bauteile“ auf dem Tablet und am PC jetzt auf die Bauteilleiste links und nicht mehr auf die untere Leiste.', 'DigiLab'],
-    ] },
-    { v: 'v62.181', items: [
-      ['Rechen-Duell: Notizfeld', 'Unter jeder Aufgabe im Rechen-Duell gibt es jetzt ein Notizfeld für Nebenrechnungen. Du schreibst mit dem Stift, dem Finger oder der Tastatur. Bei jeder neuen Aufgabe ist das Notizfeld wieder leer.', 'Rechen-Lab'],
-      ['Rechen-Duell: Taschenrechner', 'Neu ist ein wissenschaftlicher Taschenrechner zum Auf- und Zuklappen: Klammern, Punkt vor Strich, Wurzel, Potenz, sin, cos, tan, log, ln und EXP. Das Ergebnis kannst du mit einem Knopf ins Antwortfeld übernehmen.', 'Rechen-Lab'],
-      ['Rechen-Duell: Beitreten und Gleichstand', 'Beim Beitreten per QR-Code kommt keine falsche Fehlermeldung mehr. Haben zwei gleich viele Aufgaben richtig, steht jetzt dabei, wer schneller war.', 'Rechen-Lab'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -178,6 +178,7 @@
         entwurf: false,
         labs: [
           { lab: "sim", bereich: ["Drehstrom"], aufgaben: ["fi", "pe1", "sl3", "sl5", "sl6"] },
+          { lab: "mat", bereich: ["Elektrotechnik"] },
           { lab: "els", bereich: ["Schutzklassen", "Isolation und Schutzleiter", "Geräteprüfung", "Schutzmaßnahmen"] },
           {
             lab: "wsl",
@@ -951,6 +952,22 @@
         ],
         projekt: [],
         pruefung: null
+      },
+      {
+        id: "Z-ELV",
+        nr: "",
+        titel: "Zusatzthema Elektronik vertieft: Pegel, Wandler, Schaltregler",
+        kurz: "Du rechnest mit Pegeln in dB und dBm, mit AD-Wandlern, Schaltreglern, Schnittstellen und den Grenzen von Operationsverstärkern. Das bereitet auf Techniker und Studium vor.",
+        jahr: 4,
+        block: "Vertiefung",
+        quelle: "Entwurf",
+        entwurf: true,
+        labs: [{ lab: "mat", bereich: ["Elektronik vertieft"] }],
+        heft: null,
+        wiki: [],
+        projekt: [],
+        pruefung: null,
+        optional: true
       },
       {
         id: "Z-PRF",

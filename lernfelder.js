@@ -97,7 +97,7 @@
     pi: { 'Grundlagen': '11.2', 'Fehlersuche im Code': '11.2', 'Sensoren und Töne': 'E12', 'Analoge Sensoren (MCP3008)': '8.2', 'I²C-Sensoren': 'E12' },
     alg: { '*': '11.1' },
     vb: { '*': 'E12' },
-    mat: { '*': 'E1', 'Messwerte': 'E13' },
+    mat: { '*': 'E1', 'Messwerte': 'E13', 'Elektrotechnik': '5.2', 'Elektronik vertieft': null },
     eng: { '*': 'FE' },
     zei: { '*': '8.1' },
     pne: { '*': '10.2' },

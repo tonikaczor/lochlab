@@ -14,12 +14,12 @@
 (function (root) {
   const ANZ = [5, 10, 15], MIN = [5, 10, 15];
   /* Rubriken in fester Reihenfolge (Bit 0 = Einheiten ...). Muss zu den Kategorien in matdata.js passen (geprüft in quelle/mat/test_matduell.js). Nur hinten anhängen, nie umsortieren. */
-  const RUB = ['Einheiten', 'Dreisatz', 'Prozent', 'Bruchrechnung', 'Klammern', 'Umstellen', 'Geometrie', 'Messwerte', 'Prüfung Teil 1'], VOLL = (1 << RUB.length) - 1;
+  const RUB = ['Einheiten', 'Dreisatz', 'Prozent', 'Bruchrechnung', 'Klammern', 'Umstellen', 'Geometrie', 'Messwerte', 'Prüfung Teil 1', 'Elektrotechnik', 'Elektronik vertieft'], VOLL = (1 << RUB.length) - 1;
   /* Auswahl (Liste von Namen oder Zahl) -> Maske; 0 = gemischt (nichts oder alles gewählt) */
   const maske = rub => { let m = 0; if (typeof rub === 'number') m = rub & VOLL; else (Array.isArray(rub) ? rub : []).forEach(n => { const i = RUB.indexOf(n); if (i >= 0) m |= 1 << i; }); return m === VOLL ? 0 : m; };
   const rubriken = m => RUB.filter((n, i) => m & (1 << i));
   /* Lehrjahr der Rechen-Lab-Aufgaben, die nicht ins 1. Lehrjahr gehören (muss zu lehrjahr.js passen) */
-  const LJ = { mat32: 4, mat33: 2, mat34: 4, mat35: 4, mat43: 4, mat61: 2, mat62: 2, mat63: 2, mat64: 2, mat65: 2, mat66: 2, mat67: 2, mat68: 2, mat69: 2, mat70: 2, mat103: 2, mat104: 2, mat105: 2, mat106: 2 };
+  const LJ = { mat32: 4, mat33: 2, mat34: 4, mat35: 4, mat43: 4, mat61: 2, mat62: 2, mat63: 2, mat64: 2, mat65: 2, mat66: 2, mat67: 2, mat68: 2, mat69: 2, mat70: 2, mat103: 2, mat104: 2, mat105: 2, mat106: 2, mat107: 2, mat108: 2, mat109: 2, mat110: 2, mat111: 2, mat112: 2, mat113: 2, mat114: 2, mat117: 2, mat118: 2, mat119: 2, mat120: 2, mat115: 3, mat116: 3, mat121: 3, mat122: 3, mat123: 3, mat124: 3, mat125: 4, mat126: 4, mat127: 4, mat128: 4, mat129: 4, mat130: 4, mat131: 4, mat132: 4, mat133: 4, mat134: 4, mat135: 4, mat136: 4, mat137: 4, mat138: 4, mat139: 4, mat140: 4, mat141: 4, mat142: 4, mat143: 4, mat144: 4 };
   const ljOf = id => LJ[id] || 1;
 
   const seeded = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };

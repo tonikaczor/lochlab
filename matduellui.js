@@ -192,7 +192,10 @@
     if (Z.sicht === 'ende' && (!c || c.ende == null)) Z.sicht = 'start';
     ({ start, neu, bei, bereit, lauf, ende })[Z.sicht]();
     if (top) { const pg = doc.getElementById('pg_duell'); if (pg) pg.scrollTop = 0; }
+    const tb = doc.getElementById('tabs'); if (tb && tb.classList) tb.classList.toggle('sperr', laeuft());
   }
+  /* Läuft gerade eine Runde? Dann sperrt matui.js die anderen Reiter (kein Nachschlagen während des Duells). */
+  function laeuft() { const c = cur(); return !!(c && c.ende == null && M.lies(c.code) && rest(c) > 0 && c.q && c.q.length); }
 
   doc.addEventListener('click', e => {
     const b = e.target.closest && e.target.closest('#v_duell button'); if (!b) return; const ds = b.dataset;
@@ -229,5 +232,5 @@
     if (r) { Z.code = r.code; Z.sicht = 'bereit'; } else Z.sicht = 'neu';
     return true;
   }
-  root.MatDuellUI = { render: () => { const c = cur(); if (Z.sicht === 'start' && c && c.ende == null && M.lies(c.code) && rest(c) > 0 && c.q.length) Z.sicht = 'lauf'; render(true); }, einstieg, zustand: () => Z };
+  root.MatDuellUI = { render: () => { const c = cur(); if (Z.sicht === 'start' && c && c.ende == null && M.lies(c.code) && rest(c) > 0 && c.q.length) Z.sicht = 'lauf'; render(true); }, einstieg, laeuft, zustand: () => Z };
 })(typeof window !== 'undefined' ? window : globalThis);

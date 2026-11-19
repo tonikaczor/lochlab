@@ -202,7 +202,7 @@
         block: "Zusatzthemen",
         quelle: "Entwurf",
         entwurf: true,
-        labs: [{"lab":"mat","bereich":"*"}],
+        labs: [{"lab":"mat","bereich":["Einheiten","Dreisatz","Prozent","Bruchrechnung","Klammern","Umstellen","Geometrie","Messwerte","Prüfung Teil 1"]}],
         heft: null,
         wiki: ["fo-dreisatz","fo-prozentrechnung"],
         projekt: [],
@@ -237,6 +237,30 @@
         wiki: [],
         projekt: [],
         pruefung: null
+      },
+      {
+        "id": "Z-ELEK",
+        "nr": "",
+        "titel": "Zusatzthema: Elektrotechnik rechnen",
+        "kurz": "Freiwillig, für alle, die über den eigenen Beruf hinaus Elektrotechnik rechnen wollen: Wechselstrom, Drehstrom, Messen und Prüfen, dazu Pegel, Wandler und Schaltregler.",
+        "jahr": 1,
+        "block": "Zusatzthemen",
+        "quelle": "Entwurf",
+        "entwurf": true,
+        "labs": [
+          {
+            "lab": "mat",
+            "bereich": [
+              "Elektrotechnik",
+              "Elektronik vertieft"
+            ]
+          }
+        ],
+        "heft": null,
+        "wiki": [],
+        "projekt": [],
+        "pruefung": null,
+        "optional": true
       }
     ]
   };

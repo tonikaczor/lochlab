@@ -13,7 +13,7 @@
   const fHz = f => f >= 1e6 ? sg(f / 1e6) + ' MHz' : f >= 1e3 ? sg(f / 1e3) + ' kHz' : sg(f) + ' Hz';
 
   const META = {
-    id: 'emb', name: 'Embedded vertieft', stufe: 'studium', ver: '62.183',
+    id: 'emb', name: 'Embedded vertieft', stufe: 'studium', ver: '62.184',
     card: 'Timer, ADC, UART/SPI/I²C, Zustandsautomaten und Echtzeit: erst messen und simulieren, dann rechnen.',
     icon: 'Chip mit Zeitachse (Mikrocontroller-Gehäuse, darüber ein kleines Signaldiagramm)',
     blocks: [

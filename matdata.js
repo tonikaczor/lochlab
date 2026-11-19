@@ -11,7 +11,7 @@
   const MU = 'µ', OHM = 'Ω';
   const PT1 = 'Prüfung Teil 1';
   const BR = 'Bruchrechnung', KL = 'Klammern';
-  const cats = ['Einheiten', 'Dreisatz', 'Prozent', 'Bruchrechnung', 'Klammern', 'Umstellen', 'Geometrie', 'Messwerte', PT1];
+  const cats = ['Einheiten', 'Dreisatz', 'Prozent', 'Bruchrechnung', 'Klammern', 'Umstellen', 'Geometrie', 'Messwerte', PT1, 'Elektrotechnik', 'Elektronik vertieft'];
   /* Bausteine Bruchrechnung und Klammern (v62.180) */
   const ggt = C.ggt, kz = (z, n) => { const g = ggt(z, n); return [z / g, n / g]; }, bt = (z, n) => n === 1 ? String(z) : z + '/' + n;
   const gem = (z, n) => { const g = Math.floor(z / n); return g + ' ' + (z - g * n) + '/' + n; };
@@ -649,6 +649,247 @@
       return { text: `Zwei Kondensatoren mit C1 = ${C1} nF und C2 = ${C2} nF sind ${k === 'par' ? 'parallel' : 'in Reihe'} geschaltet. Wie groß ist die Gesamtkapazität?`, unit: 'nF', raw, dec: 1, meta: { k, C1, C2 },
         steps: k === 'par' ? ['Parallelschaltung: Die Kapazitäten addieren sich.', `C = C1 + C2 = ${C1} nF + ${C2} nF = ${raw} nF`] : ['Reihenschaltung: C = C1 · C2 / (C1 + C2)', `C = ${C1} · ${C2} / (${C1} + ${C2}) nF = ${C1 * C2} / ${C1 + C2} nF = ${fmt(rd(raw, 1))} nF`, 'Die Gesamtkapazität ist kleiner als die kleinste Einzelkapazität.'],
         tips: ['Bei Kondensatoren ist es umgekehrt wie bei Widerständen: Parallel wird die Kapazität größer, in Reihe wird sie kleiner.', k === 'par' ? 'Parallel: einfach zusammenzählen.' : 'In Reihe bei zwei Kondensatoren: Produkt geteilt durch Summe.'] };
+        }],
+    /* ===== v62.184: Rubrik Elektrotechnik (mat107 bis mat124): Wechselstrom, Drehstrom, Messen und Prüfen, Bauteilauslegung ===== */
+    ['Elektrotechnik', 2, 'Spannungsteiler mit Last', R => {
+      const U = pick(R, [10, 12, 24]), R1 = pick(R, [1, 2.2, 4.7, 10]), R2 = pick(R, [1, 2.2, 4.7, 10]), RL = pick(R, [10, 22, 47]), Rp = R2 * RL / (R2 + RL), raw = U * Rp / (R1 + Rp);
+      return { text: `Ein Spannungsteiler aus R1 = ${fmt(R1)} kΩ (oben) und R2 = ${fmt(R2)} kΩ (unten) liegt an ${U} V. Parallel zu R2 hängt eine Last mit ${RL} kΩ. Wie groß ist die Spannung an der Last?`, unit: 'V', raw, dec: 2, meta: { U, R1, R2, RL },
+        steps: [`Last und R2 liegen parallel: R2L = R2 · RL / (R2 + RL) = ${fmt(R2)} kΩ · ${RL} kΩ / (${fmt(R2)} kΩ + ${RL} kΩ) = ${fmt(rd(Rp, 3))} kΩ`, `Teilerformel: U2 = U · R2L / (R1 + R2L) = ${U} V · ${fmt(rd(Rp, 3))} kΩ / (${fmt(R1)} kΩ + ${fmt(rd(Rp, 3))} kΩ) = ${fmt(rd(raw, 3))} V`, `Ohne Last wären es ${fmt(rd(U * R2 / (R1 + R2), 2))} V. Die Last zieht die Spannung herunter.`],
+        tips: ['Die Last liegt parallel zu R2. Dadurch wird der untere Widerstand kleiner und die Spannung sinkt.', 'So gehst du vor: 1. R2 und RL zu einem Widerstand zusammenfassen (parallel). 2. Mit diesem Wert die Teilerformel U2 = U · R2L / (R1 + R2L) rechnen.'] };
+    }],
+    ['Elektrotechnik', 3, 'Brückenschaltung: Brückenspannung', R => {
+      const U = pick(R, [10, 12, 24]), W = [100, 220, 330, 470, 680, 1000], R1 = pick(R, W), R2 = pick(R, W), R3 = pick(R, W), R4 = pick(R, W.filter(x => x * R1 !== R2 * R3)), UA = U * R2 / (R1 + R2), UB = U * R4 / (R3 + R4), raw = Math.abs(UA - UB);
+      return { text: `Eine Brücke liegt an ${U} V. Linker Zweig: R1 = ${R1} Ω oben, R2 = ${R2} Ω unten, dazwischen Punkt A. Rechter Zweig: R3 = ${R3} Ω oben, R4 = ${R4} Ω unten, dazwischen Punkt B. Wie groß ist der Betrag der Spannung zwischen A und B?`, unit: 'V', raw, dec: 3, meta: { U, R1, R2, R3, R4 },
+        steps: [`Punkt A gegen Masse: UA = U · R2 / (R1 + R2) = ${U} V · ${R2} Ω / ${R1 + R2} Ω = ${fmt(rd(UA, 3))} V`, `Punkt B gegen Masse: UB = U · R4 / (R3 + R4) = ${U} V · ${R4} Ω / ${R3 + R4} Ω = ${fmt(rd(UB, 3))} V`, `Brückenspannung: Betrag von UA − UB = ${fmt(rd(raw, 3))} V`],
+        tips: ['Eine Brücke besteht aus zwei Spannungsteilern an derselben Spannung. Die Brückenspannung ist der Unterschied der beiden Teilspannungen.', 'So gehst du vor: 1. UA aus dem linken Teiler. 2. UB aus dem rechten Teiler. 3. Die kleinere von der größeren Spannung abziehen.'] };
+    }],
+    ['Elektrotechnik', 2, 'Kondensator an Wechselspannung: Blindwiderstand', R => {
+      const f = pick(R, [50, 100, 400, 1000]), Cu = pick(R, [1, 2.2, 4.7, 10, 22, 47]), raw = 1 / (2 * Math.PI * f * Cu * 1e-6);
+      return { text: `Ein Kondensator mit ${fmt(Cu)} ${MU}F liegt an einer Wechselspannung mit ${f} Hz. Wie groß ist sein Blindwiderstand?`, unit: OHM, raw, dec: 1, meta: { f, Cu },
+        steps: ['Formel: XC = 1 / (2 · π · f · C)', `Einheit: C = ${fmt(Cu)} ${MU}F = ${fmt(Cu)} · 10⁻⁶ F`, `XC = 1 / (2 · π · ${f} Hz · ${fmt(Cu)} · 10⁻⁶ F) = ${fmt(rd(raw, 2))} ${OHM}`],
+        tips: ['Je höher die Frequenz und je größer der Kondensator, desto kleiner ist sein Blindwiderstand.', `XC = 1 / (2 · π · f · C), mit C in Farad. 1 ${MU}F sind 10⁻⁶ F.`] };
+    }],
+    ['Elektrotechnik', 2, 'Spule an Wechselspannung: Blindwiderstand', R => {
+      const f = pick(R, [50, 100, 400, 1000]), L = pick(R, [10, 22, 47, 100, 220]), raw = 2 * Math.PI * f * L / 1000;
+      return { text: `Eine Spule mit ${L} mH liegt an einer Wechselspannung mit ${f} Hz. Der Drahtwiderstand wird vernachlässigt. Wie groß ist ihr Blindwiderstand?`, unit: OHM, raw, dec: 1, meta: { f, L },
+        steps: ['Formel: XL = 2 · π · f · L', `Einheit: L = ${L} mH = ${fmt(L / 1000)} H`, `XL = 2 · π · ${f} Hz · ${fmt(L / 1000)} H = ${fmt(rd(raw, 2))} ${OHM}`],
+        tips: ['Je höher die Frequenz und je größer die Induktivität, desto größer ist der Blindwiderstand der Spule.', 'XL = 2 · π · f · L, mit L in Henry. 1 mH sind 0,001 H.'] };
+    }],
+    ['Elektrotechnik', 3, 'Reihenschaltung R und C: Scheinwiderstand', R => {
+      const [Rw, X] = pick(R, [[30, 40], [60, 80], [80, 60], [120, 90], [150, 200], [100, 100], [220, 150], [47, 68], [330, 470]]), raw = Math.sqrt(Rw * Rw + X * X);
+      return { text: `Ein Widerstand mit ${Rw} Ω liegt in Reihe mit einem Kondensator, der bei der Betriebsfrequenz einen Blindwiderstand von ${X} Ω hat. Wie groß ist der Scheinwiderstand der Schaltung?`, unit: OHM, raw, dec: 1, meta: { Rw, X },
+        steps: ['Wirk- und Blindwiderstand stehen im Zeigerbild senkrecht aufeinander: Z = √(R² + XC²)', `Z = √((${Rw} Ω)² + (${X} Ω)²) = √(${Rw * Rw + X * X} Ω²) = ${fmt(rd(raw, 2))} ${OHM}`],
+        tips: ['Wirkwiderstand und Blindwiderstand darfst du nicht einfach zusammenzählen. Beide bilden ein rechtwinkliges Dreieck.', 'Rechne wie beim Satz des Pythagoras: Z = √(R² + XC²).'] };
+    }],
+    ['Elektrotechnik', 2, 'Wechselstrom: Wirkleistung mit cos φ', R => {
+      const U = 230, I = pick(R, [2, 3.5, 5, 8, 12]), c = pick(R, [0.6, 0.7, 0.8, 0.85, 0.9]), raw = U * I * c;
+      return { text: `Ein Motor nimmt an ${U} V einen Strom von ${fmt(I)} A auf. Der Leistungsfaktor ist cos φ = ${fmt(c)}. Wie groß ist die Wirkleistung?`, unit: 'W', raw, dec: 1, meta: { U, I, c },
+        steps: ['Formel: P = U · I · cos φ', `Scheinleistung: S = U · I = ${U} V · ${fmt(I)} A = ${fmt(rs(U * I))} VA`, `Wirkleistung: P = ${fmt(rs(U * I))} VA · ${fmt(c)} = ${fmt(rd(raw, 1))} W`],
+        tips: ['Bei Motoren ist nur ein Teil der Scheinleistung Wirkleistung. Der Leistungsfaktor cos φ sagt, wie groß dieser Teil ist.', 'P = U · I · cos φ.'] };
+    }],
+    ['Elektrotechnik', 2, 'Drehstrom: Leistung eines Motors', R => {
+      const U = 400, I = pick(R, [4, 6.3, 10, 16, 25]), c = pick(R, [0.8, 0.85, 0.9]), raw = Math.sqrt(3) * U * I * c / 1000;
+      return { text: `Ein Drehstrommotor (symmetrische Last) liegt an ${U} V (Leiterspannung) und nimmt je Außenleiter ${fmt(I)} A auf. Der Leistungsfaktor ist cos φ = ${fmt(c)}. Wie groß ist die aufgenommene Wirkleistung?`, unit: 'kW', raw, dec: 2, meta: { U, I, c },
+        steps: ['Formel für symmetrische Last: P = √3 · U · I · cos φ', `P = 1,732 · ${U} V · ${fmt(I)} A · ${fmt(c)} = ${fmt(rd(raw * 1000, 0))} W`, `In Kilowatt: ${fmt(rd(raw * 1000, 0))} W : 1000 = ${fmt(rd(raw, 3))} kW`],
+        tips: ['Bei Drehstrom kommt der Faktor √3 (rund 1,732) dazu. U ist die Spannung zwischen zwei Außenleitern, I der Strom in einem Außenleiter.', 'P = √3 · U · I · cos φ. Das Ergebnis in W teilst du durch 1000.'] };
+    }],
+    ['Elektrotechnik', 2, 'Stern und Dreieck: Strangwerte', R => {
+      const k = pick(R, ['U', 'I']), U = pick(R, [400, 690, 230]), Is = pick(R, [5, 8, 12, 20]), w3 = Math.sqrt(3);
+      if (k === 'U') return { text: `Ein symmetrischer Verbraucher ist im Stern an ein Drehstromnetz mit ${U} V Leiterspannung angeschlossen. Welche Spannung liegt an einem Strang?`, unit: 'V', raw: U / w3, dec: 0, meta: { k, U, Is },
+        steps: ['Sternschaltung: Jeder Strang liegt zwischen Außenleiter und Sternpunkt.', `Strangspannung: U_Str = U / √3 = ${U} V / 1,732 = ${fmt(rd(U / w3, 1))} V`],
+        tips: ['Im Stern ist die Strangspannung kleiner als die Leiterspannung, der Strangstrom ist gleich dem Leiterstrom.', 'U_Str = U / √3, mit √3 rund 1,732.'] };
+      return { text: `Ein symmetrischer Verbraucher ist im Dreieck an ein Drehstromnetz angeschlossen. In jedem Strang fließen ${Is} A. Wie groß ist der Strom in einem Außenleiter?`, unit: 'A', raw: Is * w3, dec: 1, meta: { k, U, Is },
+        steps: ['Dreieckschaltung: Jeder Strang liegt zwischen zwei Außenleitern. An jedem Außenleiter treffen sich zwei Stränge.', `Leiterstrom: I = √3 · I_Str = 1,732 · ${Is} A = ${fmt(rd(Is * w3, 2))} A`],
+        tips: ['Im Dreieck ist die Strangspannung gleich der Leiterspannung, der Leiterstrom ist größer als der Strangstrom.', 'I = √3 · I_Str, mit √3 rund 1,732.'] };
+    }],
+    ['Elektrotechnik', 3, 'Blindleistung kompensieren', R => {
+      const P = pick(R, [4, 6, 10, 15, 22]), c1 = pick(R, [0.6, 0.7, 0.75]), c2 = pick(R, [0.9, 0.95]), t1 = Math.tan(Math.acos(c1)), t2 = Math.tan(Math.acos(c2)), raw = P * (t1 - t2);
+      return { text: `Eine Anlage mit induktiver Last nimmt ${P} kW Wirkleistung bei cos φ = ${fmt(c1)} auf. Der Leistungsfaktor soll auf ${fmt(c2)} verbessert werden. Welche Blindleistung müssen die Kondensatoren liefern?`, unit: 'kvar', raw, dec: 2, meta: { P, c1, c2 },
+        steps: ['Formel: QC = P · (tan φ1 − tan φ2)', `Aus cos φ1 = ${fmt(c1)} folgt tan φ1 = ${fmt(rd(t1, 4))}. Aus cos φ2 = ${fmt(c2)} folgt tan φ2 = ${fmt(rd(t2, 4))}.`, `QC = ${P} kW · (${fmt(rd(t1, 4))} − ${fmt(rd(t2, 4))}) = ${fmt(rd(raw, 3))} kvar`],
+        tips: ['Die Wirkleistung bleibt gleich. Die Kondensatoren nehmen der Anlage einen Teil der induktiven Blindleistung ab.', 'So gehst du vor: 1. Aus jedem cos φ den Winkel bestimmen (cos⁻¹) und davon den tan. 2. QC = P · (tan φ1 − tan φ2).'] };
+    }],
+    ['Elektrotechnik', 3, 'Messfehler durch den Innenwiderstand des Messgeräts', R => {
+      const U = pick(R, [10, 12, 24]), R1 = pick(R, [100, 220, 470, 1000]), R2 = pick(R, [100, 220, 470, 1000]), Ri = pick(R, [1, 10]), Rp = R2 * Ri * 1000 / (R2 + Ri * 1000), raw = U * Rp / (R1 + Rp);
+      return { text: `Ein Spannungsteiler aus R1 = ${R1} kΩ und R2 = ${R2} kΩ liegt an ${U} V. Ein Spannungsmesser mit ${Ri} MΩ Innenwiderstand misst an R2. Welche Spannung zeigt er an?`, unit: 'V', raw, dec: 2, meta: { U, R1, R2, Ri },
+        steps: [`Das Messgerät liegt parallel zu R2: R2M = R2 · Ri / (R2 + Ri) = ${R2} kΩ · ${Ri * 1000} kΩ / (${R2} kΩ + ${Ri * 1000} kΩ) = ${fmt(rd(Rp, 2))} kΩ`, `Anzeige: U2 = U · R2M / (R1 + R2M) = ${U} V · ${fmt(rd(Rp, 2))} kΩ / (${R1} kΩ + ${fmt(rd(Rp, 2))} kΩ) = ${fmt(rd(raw, 3))} V`, `Ohne Messgerät liegen an R2 genau ${fmt(rd(U * R2 / (R1 + R2), 3))} V. Das Messgerät belastet die Schaltung und zeigt deshalb zu wenig an.`],
+        tips: ['Ein Spannungsmesser ist selbst ein Widerstand. Er liegt parallel zur Messstelle und wirkt wie eine zusätzliche Last.', 'So gehst du vor: 1. R2 und Ri parallel zusammenfassen (Ri in kΩ umrechnen). 2. Teilerformel mit dem neuen Wert.'] };
+    }],
+    ['Elektrotechnik', 2, 'Fehlerschleife: Kurzschlussstrom', R => {
+      const U = 230, Z = pick(R, [0.4, 0.5, 0.8, 1.15, 1.5, 2, 2.3]), raw = U / Z;
+      return { text: `An einer Steckdose wird eine Schleifenimpedanz von ${fmt(Z)} Ω gemessen. Die Spannung gegen Erde beträgt ${U} V. Welcher Strom fließt bei einem Körperschluss?`, unit: 'A', raw, dec: 1, meta: { U, Z },
+        steps: ['Formel: Ik = U0 / Zs', `Ik = ${U} V / ${fmt(Z)} Ω = ${fmt(rd(raw, 1))} A`, 'Dieser Strom muss größer sein als der Strom, bei dem die Sicherung schnell genug abschaltet (Abschaltbedingung).'],
+        tips: ['Die Fehlerschleife ist der ganze Weg des Fehlerstroms: Trafo, Außenleiter, Fehlerstelle, Schutzleiter und zurück.', 'Es gilt das ohmsche Gesetz: Ik = U0 / Zs.'] };
+    }],
+    ['Elektrotechnik', 1, 'Geräteprüfung: Schutzleiterwiderstand', R => {
+      const I = 200, Um = pick(R, [16, 24, 36, 50, 64, 90, 120]), raw = Um / I;
+      return { text: `Bei der Prüfung eines Geräts fließt ein Prüfstrom von ${I} mA durch den Schutzleiter. Dabei fallen ${Um} mV ab. Wie groß ist der Schutzleiterwiderstand?`, unit: OHM, raw, dec: 2, meta: { I, Um },
+        steps: ['Formel: R = U / I', `R = ${Um} mV / ${I} mA = ${fmt(rd(raw, 3))} ${OHM}`, 'Richtwert bei Anschlussleitungen bis 5 m Länge: höchstens 0,3 Ω.'],
+        tips: ['Der Schutzleiter soll einen Fehlerstrom gut ableiten. Dafür muss sein Widerstand klein sein.', 'R = U / I. Millivolt durch Milliampere ergibt direkt Ohm.'] };
+    }],
+    ['Elektrotechnik', 2, 'Isolationsprüfung: Strom durch die Isolation', R => {
+      const U = pick(R, [250, 500]), Ri = pick(R, [1, 2, 5, 10, 25, 50]), raw = U / Ri;
+      return { text: `Bei einer Isolationsmessung mit ${U} V Prüfspannung zeigt das Gerät ${Ri} MΩ an. Welcher Strom fließt dabei durch die Isolation?`, unit: MU + 'A', raw, dec: 0, meta: { U, Ri },
+        steps: ['Formel: I = U / R', `I = ${U} V / ${Ri} MΩ = ${fmt(rs(raw))} ${MU}A`],
+        tips: ['Auch eine gute Isolation lässt einen sehr kleinen Strom durch. Je größer der Isolationswiderstand, desto kleiner ist dieser Strom.', 'I = U / R. Volt durch Megaohm ergibt direkt Mikroampere.'] };
+    }],
+    ['Elektrotechnik', 1, 'Pulsweitenmodulation: Mittelwert der Spannung', R => {
+      const Ub = pick(R, [5, 12, 24]), T = pick(R, [1, 2, 5, 10]), D = pick(R, [20, 25, 40, 60, 75, 80]), ton = rs(T * D / 100), raw = Ub * D / 100;
+      return { text: `Ein Ausgang schaltet ${Ub} V mit Pulsweitenmodulation. Die Periodendauer ist ${T} ms, eingeschaltet ist er davon jeweils ${fmt(ton)} ms. Wie groß ist der Mittelwert der Spannung?`, unit: 'V', raw, dec: 2, meta: { Ub, T, D, ton },
+        steps: [`Tastgrad: g = Einschaltzeit / Periodendauer = ${fmt(ton)} ms / ${T} ms = ${fmt(D / 100)}`, `Mittelwert: U = g · Ub = ${fmt(D / 100)} · ${Ub} V = ${fmt(rs(raw))} V`],
+        tips: ['Der Tastgrad sagt, welchen Teil der Zeit der Ausgang eingeschaltet ist.', 'So gehst du vor: 1. Einschaltzeit durch Periodendauer teilen. 2. Mit der Betriebsspannung malnehmen.'] };
+    }],
+    ['Elektrotechnik', 2, 'Elektrolytkondensator: Lebensdauer und Temperatur', R => {
+      const L0 = pick(R, [2000, 5000, 10000]), T0 = pick(R, [85, 105]), d = pick(R, [10, 20, 30, 40]), T = T0 - d, raw = L0 * Math.pow(2, d / 10);
+      return { text: `Ein Elektrolytkondensator ist mit ${L0} Stunden Lebensdauer bei ${T0} °C angegeben. Als Faustregel verdoppelt sich die Lebensdauer je 10 °C weniger. Welche Lebensdauer ist bei ${T} °C Betriebstemperatur zu erwarten?`, unit: 'h', raw, dec: 0, meta: { L0, T0, T },
+        steps: [`Temperaturabstand: ${T0} °C − ${T} °C = ${d} °C, das sind ${d / 10} Schritte von je 10 °C`, `Je Schritt verdoppelt sich die Lebensdauer: Faktor 2^${d / 10} = ${Math.pow(2, d / 10)}`, `Lebensdauer: ${L0} h · ${Math.pow(2, d / 10)} = ${fmt(raw)} h`],
+        tips: ['Wärme lässt den Elektrolyten schneller altern. Jede Absenkung um 10 °C verdoppelt nach der Faustregel die Lebensdauer.', 'So gehst du vor: 1. Temperaturabstand bestimmen. 2. Durch 10 teilen, das ist die Zahl der Verdopplungen. 3. Die Lebensdauer so oft mit 2 malnehmen.'] };
+    }],
+    ['Elektrotechnik', 3, 'Spannungsteiler: ungünstigster Fall mit Toleranz', R => {
+      const U = pick(R, [10, 12]), R1 = pick(R, [1, 2.2, 4.7, 10]), R2 = pick(R, [1, 2.2, 4.7, 10]), p = pick(R, [1, 5, 10]), a = rs(R1 * (1 - p / 100)), b = rs(R2 * (1 + p / 100)), raw = U * b / (a + b);
+      return { text: `Ein Spannungsteiler aus R1 = ${fmt(R1)} kΩ (oben) und R2 = ${fmt(R2)} kΩ (unten) liegt an genau ${U} V. Beide Widerstände haben ${p} % Toleranz. Wie groß kann die Spannung an R2 im ungünstigsten Fall höchstens werden?`, unit: 'V', raw, dec: 3, meta: { U, R1, R2, p },
+        steps: [`Die Spannung an R2 wird am größten, wenn R2 am oberen und R1 am unteren Rand liegt.`, `R1 kleinster Wert: ${fmt(R1)} kΩ · ${fmt(rs(1 - p / 100))} = ${fmt(a)} kΩ. R2 größter Wert: ${fmt(R2)} kΩ · ${fmt(rs(1 + p / 100))} = ${fmt(b)} kΩ.`, `U2 = U · R2 / (R1 + R2) = ${U} V · ${fmt(b)} kΩ / (${fmt(a)} kΩ + ${fmt(b)} kΩ) = ${fmt(rd(raw, 4))} V`, `Mit den Nennwerten wären es ${fmt(rd(U * R2 / (R1 + R2), 3))} V.`],
+        tips: ['Überlege zuerst, in welche Richtung jeder Widerstand abweichen muss, damit die Spannung an R2 möglichst groß wird.', 'R2 so groß wie möglich, R1 so klein wie möglich. Dann die Teilerformel mit diesen Grenzwerten rechnen.'] };
+    }],
+    ['Elektrotechnik', 3, 'Kühlkörper auslegen', R => {
+      const P = pick(R, [5, 8, 10, 15]), Tj = pick(R, [125, 150]), Ta = pick(R, [25, 40, 50]), Rjc = pick(R, [1.5, 2, 3]), Rck = pick(R, [0.5, 1]), ges = (Tj - Ta) / P, raw = ges - Rjc - Rck;
+      return { text: `Ein Transistor setzt ${P} W in Wärme um. Die Sperrschicht darf höchstens ${Tj} °C warm werden, die Umgebung hat ${Ta} °C. Wärmewiderstand Sperrschicht zu Gehäuse: ${fmt(Rjc)} K/W, Gehäuse zu Kühlkörper: ${fmt(Rck)} K/W. Welchen Wärmewiderstand darf der Kühlkörper höchstens haben?`, unit: 'K/W', raw, dec: 3, meta: { P, Tj, Ta, Rjc, Rck },
+        steps: [`Erlaubter Temperaturunterschied: ${Tj} °C − ${Ta} °C = ${Tj - Ta} K`, `Erlaubter Wärmewiderstand der ganzen Kette: R_ges = ${Tj - Ta} K / ${P} W = ${fmt(rd(ges, 3))} K/W`, `Davon ab gehen Sperrschicht zu Gehäuse und Gehäuse zu Kühlkörper: ${fmt(rd(ges, 3))} K/W − ${fmt(Rjc)} K/W − ${fmt(Rck)} K/W = ${fmt(rd(raw, 3))} K/W`],
+        tips: ['Wärme fließt wie Strom durch eine Reihenschaltung: Sperrschicht, Gehäuse, Kühlkörper, Luft. Die Wärmewiderstände zählen sich zusammen.', 'So gehst du vor: 1. Temperaturunterschied durch die Leistung teilen. 2. Die beiden bekannten Wärmewiderstände abziehen.'] };
+    }],
+    ['Elektrotechnik', 1, 'Funk: Wellenlänge aus der Frequenz', R => {
+      const f = pick(R, [27, 88, 100, 145, 433, 868, 2400]), raw = 300 / f;
+      return { text: `Ein Sender arbeitet auf ${f} MHz. Wie groß ist die Wellenlänge in Luft? Rechne mit einer Ausbreitungsgeschwindigkeit von 300 000 km/s.`, unit: 'm', raw, dec: 3, meta: { f },
+        steps: ['Formel: λ = c / f', `Mit c = 300 000 000 m/s und f = ${f} MHz = ${f} · 10⁶ Hz: λ = 300 / ${f} m = ${fmt(rd(raw, 4))} m`],
+        tips: ['Je höher die Frequenz, desto kürzer die Welle.', 'Kurzform: Wellenlänge in Metern = 300 geteilt durch die Frequenz in MHz.'] };
+    }],
+    /* ===== v62.184: Rubrik Elektronik vertieft (mat125 bis mat144): Pegel und Funk, Wandler, Schaltregler, Schnittstellen, Operationsverstärker ===== */
+    ['Elektronik vertieft', 1, 'Pegel: Leistungsverstärkung in dB', R => {
+      const P1 = pick(R, [1, 2, 5, 10]), k = pick(R, [2, 4, 10, 20, 50, 100, 200]), P2 = P1 * k, raw = 10 * Math.log10(k);
+      return { text: `Ein Verstärker macht aus ${P1} mW Eingangsleistung ${P2} mW Ausgangsleistung. Wie groß ist die Verstärkung in dB?`, unit: 'dB', raw, dec: 1, meta: { P1, P2 },
+        steps: ['Formel für Leistungen: g = 10 · lg(P2 / P1)', `Verhältnis: P2 / P1 = ${P2} mW / ${P1} mW = ${k}`, `g = 10 · lg(${k}) = ${fmt(rd(raw, 2))} dB`],
+        tips: ['Das Dezibel beschreibt ein Verhältnis. Verdoppelte Leistung sind rund 3 dB, zehnfache Leistung sind 10 dB.', 'g = 10 · lg(P2 / P1). lg ist der Logarithmus zur Basis 10 (Taste log).'] };
+    }],
+    ['Elektronik vertieft', 2, 'Pegel: Spannungsverstärkung in dB', R => {
+      const U1 = pick(R, [10, 20, 50, 100]), k = pick(R, [2, 5, 10, 20, 50, 100]), U2 = U1 * k, raw = 20 * Math.log10(k);
+      return { text: `Ein Verstärker macht aus ${U1} mV am Eingang ${U2} mV am Ausgang. Ein- und Ausgang haben denselben Widerstand. Wie groß ist die Verstärkung in dB?`, unit: 'dB', raw, dec: 1, meta: { U1, U2 },
+        steps: ['Formel für Spannungen: g = 20 · lg(U2 / U1)', `Verhältnis: U2 / U1 = ${U2} mV / ${U1} mV = ${k}`, `g = 20 · lg(${k}) = ${fmt(rd(raw, 2))} dB`],
+        tips: ['Bei Spannungen steht eine 20 vor dem Logarithmus, weil die Leistung mit dem Quadrat der Spannung wächst. Doppelte Spannung sind rund 6 dB.', 'g = 20 · lg(U2 / U1).'] };
+    }],
+    ['Elektronik vertieft', 2, 'Pegel: dBm und Milliwatt', R => {
+      const k = pick(R, ['L', 'P']), P = pick(R, [2, 5, 20, 50, 200, 500]), L = pick(R, [3, 7, 10, 13, 17, 20, 27, 30]);
+      if (k === 'L') return { text: `Ein Sender gibt ${P} mW ab. Wie groß ist der Leistungspegel in dBm?`, unit: 'dBm', raw: 10 * Math.log10(P), dec: 1, meta: { k, P, L },
+        steps: ['Der Pegel in dBm bezieht die Leistung auf 1 mW: L = 10 · lg(P / 1 mW)', `L = 10 · lg(${P}) = ${fmt(rd(10 * Math.log10(P), 2))} dBm`],
+        tips: ['0 dBm sind genau 1 mW. 10 dBm sind 10 mW, 20 dBm sind 100 mW.', 'L = 10 · lg(P in mW).'] };
+      return { text: `Ein Signal hat einen Leistungspegel von ${L} dBm. Wie groß ist die Leistung?`, unit: 'mW', raw: Math.pow(10, L / 10), dec: 1, meta: { k, P, L },
+        steps: ['Umkehrung der Pegelformel: P = 1 mW · 10^(L / 10)', `P = 1 mW · 10^(${fmt(L / 10)}) = ${fmt(rd(Math.pow(10, L / 10), 2))} mW`],
+        tips: ['0 dBm sind genau 1 mW. Je 10 dB mehr verzehnfacht sich die Leistung, je 3 dB mehr verdoppelt sie sich ungefähr.', 'P in mW = 10 hoch (Pegel geteilt durch 10).'] };
+    }],
+    ['Elektronik vertieft', 2, 'Pegelplan einer Übertragungsstrecke', R => {
+      const Ls = pick(R, [0, 10, 13, 20]), a1 = pick(R, [1.5, 3, 4.5, 6]), g = pick(R, [10, 15, 20]), a2 = pick(R, [0.5, 2, 2.5]), raw = Ls - a1 + g - a2;
+      return { text: `Ein Sender liefert ${Ls} dBm. Es folgen ein Kabel mit ${fmt(a1)} dB Dämpfung, ein Verstärker mit ${g} dB Verstärkung und ein zweites Kabel mit ${fmt(a2)} dB Dämpfung. Welcher Pegel kommt am Ende an?`, unit: 'dBm', raw, dec: 1, meta: { Ls, a1, g, a2 },
+        steps: ['In dB wird nur zusammengezählt und abgezogen: Verstärkung plus, Dämpfung minus.', `L = ${Ls} dBm − ${fmt(a1)} dB + ${g} dB − ${fmt(a2)} dB = ${fmt(rs(raw))} dBm`],
+        tips: ['Das ist der große Vorteil der Pegelrechnung: Aus Malnehmen und Teilen wird Zusammenzählen und Abziehen.', 'Starte beim Senderpegel. Ziehe jede Dämpfung ab und zähle jede Verstärkung dazu.'] };
+    }],
+    ['Elektronik vertieft', 1, 'Koaxialkabel: Dämpfung nach Länge', R => {
+      const a = pick(R, [6.5, 11, 17, 22, 28]), l = pick(R, [15, 25, 40, 60, 75]), raw = a * l / 100;
+      return { text: `Ein Koaxialkabel hat laut Datenblatt bei der Betriebsfrequenz ${fmt(a)} dB Dämpfung je 100 m. Wie groß ist die Dämpfung bei ${l} m Kabel?`, unit: 'dB', raw, dec: 3, meta: { a, l },
+        steps: [`Dämpfung je Meter: ${fmt(a)} dB : 100 = ${fmt(rs(a / 100))} dB`, `Für ${l} m: ${fmt(rs(a / 100))} dB · ${l} = ${fmt(rs(raw))} dB`],
+        tips: ['Die Dämpfung in dB wächst gleichmäßig mit der Länge. Doppelte Länge, doppelte dB-Zahl.', 'Das ist ein Dreisatz: von 100 m auf 1 m herunter, dann auf die gesuchte Länge hoch.'] };
+    }],
+    ['Elektronik vertieft', 3, 'Anpassung: Reflexionsfaktor und Stehwellenverhältnis', R => {
+      const k = pick(R, ['r', 's']), Z0 = 50, ZL = pick(R, [12.5, 25, 75, 100, 150, 200, 300]), r = Math.abs(ZL - Z0) / (ZL + Z0), s = (1 + r) / (1 - r);
+      const st = ['Formel: r = Betrag von (ZL − Z0) / (ZL + Z0)', `r = Betrag von (${fmt(ZL)} Ω − ${Z0} Ω) / (${fmt(ZL)} Ω + ${Z0} Ω) = ${fmt(rd(r, 4))}`];
+      if (k === 'r') return { text: `An ein Kabel mit ${Z0} Ω Wellenwiderstand ist eine rein ohmsche Last mit ${fmt(ZL)} Ω angeschlossen. Wie groß ist der Betrag des Reflexionsfaktors?`, unit: '', raw: r, dec: 3, meta: { k, Z0, ZL }, steps: st,
+        tips: ['Nur wenn die Last genau so groß ist wie der Wellenwiderstand, wird nichts zurückgeworfen. Dann ist der Reflexionsfaktor 0.', 'r = Betrag von (ZL − Z0) / (ZL + Z0). Das Ergebnis liegt zwischen 0 und 1 und hat keine Einheit.'] };
+      return { text: `An ein Kabel mit ${Z0} Ω Wellenwiderstand ist eine Antenne mit ${fmt(ZL)} Ω (rein ohmsch) angeschlossen. Wie groß ist das Stehwellenverhältnis?`, unit: '', raw: s, dec: 2, meta: { k, Z0, ZL }, steps: st.concat([`Stehwellenverhältnis: s = (1 + r) / (1 − r) = ${fmt(rd(1 + r, 4))} / ${fmt(rd(1 - r, 4))} = ${fmt(rd(s, 3))}`]),
+        tips: ['Bei perfekter Anpassung ist das Stehwellenverhältnis 1. Je schlechter die Anpassung, desto größer wird es.', 'So gehst du vor: 1. Reflexionsfaktor r = Betrag von (ZL − Z0) / (ZL + Z0). 2. s = (1 + r) / (1 − r).'] };
+    }],
+    ['Elektronik vertieft', 3, 'Funkstrecke: Freiraumdämpfung', R => {
+      const d = pick(R, [0.1, 0.5, 1, 2, 5, 10]), f = pick(R, [145, 433, 868, 2400]), raw = 32.44 + 20 * Math.log10(d) + 20 * Math.log10(f);
+      return { text: `Zwischen zwei Antennen liegen ${fmt(d)} km freie Sicht. Die Frequenz ist ${f} MHz. Wie groß ist die Freiraumdämpfung? Nutze a = 32,44 dB + 20 · lg(d in km) + 20 · lg(f in MHz).`, unit: 'dB', raw, dec: 1, meta: { d, f },
+        steps: [`Anteil der Entfernung: 20 · lg(${fmt(d)}) = ${fmt(rd(20 * Math.log10(d), 2))} dB`, `Anteil der Frequenz: 20 · lg(${f}) = ${fmt(rd(20 * Math.log10(f), 2))} dB`, `Summe: 32,44 dB ${20 * Math.log10(d) < 0 ? '− ' + fmt(rd(-20 * Math.log10(d), 2)) : '+ ' + fmt(rd(20 * Math.log10(d), 2))} dB + ${fmt(rd(20 * Math.log10(f), 2))} dB = ${fmt(rd(raw, 2))} dB`],
+        tips: ['Die Welle verteilt sich im Raum. Doppelte Entfernung oder doppelte Frequenz kosten jeweils rund 6 dB.', 'Setze die Entfernung in km und die Frequenz in MHz ein. Der Logarithmus einer Zahl unter 1 ist negativ.'] };
+    }],
+    ['Elektronik vertieft', 2, 'AD-Wandler: Größe einer Stufe', R => {
+      const Ur = pick(R, [2.5, 3.3, 4.096, 5]), n = pick(R, [8, 10, 12]), N = Math.pow(2, n), raw = Ur * 1000 / N;
+      return { text: `Ein AD-Wandler mit ${n} Bit arbeitet mit ${fmt(Ur)} V Referenzspannung. Wie groß ist eine Stufe (1 LSB)? Rechne mit 2ⁿ Stufen.`, unit: 'mV', raw, dec: 2, meta: { Ur, n },
+        steps: [`Zahl der Stufen: 2^${n} = ${N}`, `Eine Stufe: U_LSB = U_ref / 2^n = ${fmt(Ur * 1000)} mV / ${N} = ${fmt(rd(raw, 3))} mV`],
+        tips: ['Der Wandler teilt die Referenzspannung in gleich große Stufen. Mit jedem Bit mehr verdoppelt sich die Zahl der Stufen.', 'U_LSB = U_ref / 2^n. Rechne die Referenzspannung vorher in mV um.'] };
+    }],
+    ['Elektronik vertieft', 2, 'AD-Wandler: Spannung aus dem Zahlenwert', R => {
+      const Ur = pick(R, [3.3, 5]), n = pick(R, [10, 12]), N = Math.pow(2, n), Z = pick(R, [205, 300, 512, 614, 768, 1000]) * (n === 12 ? 4 : 1), raw = Z * Ur / N;
+      return { text: `Ein AD-Wandler mit ${n} Bit und ${fmt(Ur)} V Referenzspannung liefert den Zahlenwert ${Z}. Welche Spannung liegt am Eingang? Rechne mit 2ⁿ Stufen.`, unit: 'V', raw, dec: 3, meta: { Ur, n, Z },
+        steps: [`Zahl der Stufen: 2^${n} = ${N}`, `Spannung: U = Zahlenwert · U_ref / 2^n = ${Z} · ${fmt(Ur)} V / ${N} = ${fmt(rd(raw, 4))} V`],
+        tips: ['Der Zahlenwert sagt, wie viele Stufen die Eingangsspannung hoch ist.', 'U = Zahlenwert · U_ref / 2^n.'] };
+    }],
+    ['Elektronik vertieft', 1, 'Abtasten: kleinste Abtastrate', R => {
+      const f = pick(R, [3.4, 4, 8, 15, 20, 22]), raw = 2 * f;
+      return { text: `Ein Signal enthält Frequenzen bis ${fmt(f)} kHz. Welche Grenze muss die Abtastrate nach dem Abtasttheorem überschreiten, damit das Signal noch richtig erfasst wird?`, unit: 'kHz', raw, dec: 1, meta: { f },
+        steps: ['Abtasttheorem: Die Abtastrate muss größer sein als das Doppelte der höchsten Signalfrequenz.', `Grenze: 2 · ${fmt(f)} kHz = ${fmt(rs(raw))} kHz`],
+        tips: ['Je Schwingung braucht der Wandler mehr als zwei Messpunkte.', 'Grenze der Abtastrate = 2 · höchste Signalfrequenz.'] };
+    }],
+    ['Elektronik vertieft', 3, 'Abtasten: Alias-Frequenz', R => {
+      const fs = pick(R, [8, 10, 20, 48]), q = pick(R, [0.6, 0.7, 0.75, 0.9]), f = rs(fs * q), raw = fs - f;
+      return { text: `Ein AD-Wandler tastet mit ${fs} kHz ab. Ohne Filter gelangt ein Sinus mit ${fmt(f)} kHz an den Eingang. Bei welcher Frequenz erscheint dieses Signal in den abgetasteten Daten?`, unit: 'kHz', raw, dec: 2, meta: { fs, f },
+        steps: [`Halbe Abtastrate: ${fs} kHz : 2 = ${fmt(fs / 2)} kHz. Das Signal liegt darüber, es wird also gespiegelt.`, `Alias-Frequenz: f_a = f_s − f = ${fs} kHz − ${fmt(f)} kHz = ${fmt(rs(raw))} kHz`],
+        tips: ['Signale oberhalb der halben Abtastrate tauchen an einer falschen, tieferen Stelle wieder auf. Deshalb sitzt vor dem Wandler ein Tiefpass.', 'Liegt die Signalfrequenz zwischen halber und ganzer Abtastrate, gilt: Alias-Frequenz = Abtastrate − Signalfrequenz.'] };
+    }],
+    ['Elektronik vertieft', 2, 'Abwärtswandler: Tastgrad', R => {
+      const Ue = pick(R, [12, 24, 48]), Ua = pick(R, [3.3, 5, 9, 12].filter(x => x < Ue)), raw = Ua / Ue * 100;
+      return { text: `Ein Abwärtswandler soll aus ${Ue} V eine Ausgangsspannung von ${fmt(Ua)} V machen. Verluste werden vernachlässigt, der Drosselstrom reißt nicht ab. Welchen Tastgrad braucht der Schalter?`, unit: '%', raw, dec: 2, meta: { Ue, Ua },
+        steps: ['Beim Abwärtswandler gilt: Ua = g · Ue', `Tastgrad: g = Ua / Ue = ${fmt(Ua)} V / ${Ue} V = ${fmt(rd(raw / 100, 4))}`, `In Prozent: ${fmt(rd(raw, 2))} %`],
+        tips: ['Der Schalter legt die Eingangsspannung nur einen Teil der Zeit an die Drossel. Dieser Teil ist der Tastgrad.', 'g = Ua / Ue, mal 100 ergibt Prozent.'] };
+    }],
+    ['Elektronik vertieft', 3, 'Abwärtswandler: Welligkeit des Drosselstroms', R => {
+      const Ue = pick(R, [12, 24]), Ua = pick(R, [3.3, 5]), L = pick(R, [22, 47, 100]), f = pick(R, [100, 250, 500]), g = Ua / Ue, raw = (Ue - Ua) * g / (L * 1e-6 * f * 1e3);
+      return { text: `Ein Abwärtswandler macht aus ${Ue} V eine Ausgangsspannung von ${fmt(Ua)} V. Die Drossel hat ${L} ${MU}H, die Schaltfrequenz ist ${f} kHz. Wie groß ist die Welligkeit des Drosselstroms (Spitze zu Spitze)?`, unit: 'A', raw, dec: 3, meta: { Ue, Ua, L, f },
+        steps: [`Tastgrad: g = Ua / Ue = ${fmt(rd(g, 4))}`, `Einschaltzeit: t_ein = g / f = ${fmt(rd(g, 4))} / ${f} kHz = ${fmt(rd(g / f * 1000, 3))} ${MU}s`, `In dieser Zeit liegt an der Drossel Ue − Ua = ${fmt(rs(Ue - Ua))} V. Stromanstieg: ΔI = (Ue − Ua) · t_ein / L = ${fmt(rs(Ue - Ua))} V · ${fmt(rd(g / f * 1000, 3))} ${MU}s / ${L} ${MU}H = ${fmt(rd(raw, 3))} A`],
+        tips: ['Solange der Schalter leitet, steigt der Strom in der Drossel gleichmäßig an. Die Spannung an der Drossel ist dabei Ue − Ua.', 'So gehst du vor: 1. Tastgrad g = Ua / Ue. 2. Einschaltzeit t_ein = g / f. 3. ΔI = (Ue − Ua) · t_ein / L.'] };
+    }],
+    ['Elektronik vertieft', 1, 'MOSFET: Verlustleistung im eingeschalteten Zustand', R => {
+      const I = pick(R, [2, 5, 8, 10, 15]), Rm = pick(R, [8, 20, 45, 100]), raw = I * I * Rm / 1000;
+      return { text: `Ein MOSFET hat eingeschaltet einen Widerstand von ${Rm} mΩ. Es fließen dauerhaft ${I} A. Welche Leistung wird im MOSFET zu Wärme?`, unit: 'W', raw, dec: 3, meta: { I, Rm },
+        steps: ['Formel: P = I² · R', `R = ${Rm} mΩ = ${fmt(Rm / 1000)} Ω`, `P = (${I} A)² · ${fmt(Rm / 1000)} Ω = ${fmt(rs(raw))} W`],
+        tips: ['Eingeschaltet verhält sich der MOSFET wie ein kleiner Widerstand. Die Verluste wachsen mit dem Quadrat des Stroms.', 'P = I² · R, mit R in Ohm (mΩ durch 1000 teilen).'] };
+    }],
+    ['Elektronik vertieft', 3, 'MOSFET: Schaltverluste', R => {
+      const U = pick(R, [12, 24, 48]), I = pick(R, [2, 5, 10]), t = pick(R, [40, 60, 100]), f = pick(R, [100, 200, 500]), raw = 0.5 * U * I * t * 1e-9 * f * 1e3;
+      return { text: `Ein MOSFET schaltet ${U} V und ${I} A mit ${f} kHz. Ein- und Ausschalten dauern zusammen ${t} ns. Wie groß sind die Schaltverluste? Nutze die Näherung P = 0,5 · U · I · t · f.`, unit: 'W', raw, dec: 3, meta: { U, I, t, f },
+        steps: [`Einheiten: t = ${t} ns = ${t} · 10⁻⁹ s, f = ${f} kHz = ${f} · 10³ Hz`, `P = 0,5 · ${U} V · ${I} A · ${t} · 10⁻⁹ s · ${f} · 10³ Hz = ${fmt(rd(raw, 4))} W`],
+        tips: ['Während des Umschaltens liegen kurz gleichzeitig Spannung und Strom am MOSFET an. Das passiert bei jeder Periode, deshalb wachsen die Verluste mit der Frequenz.', 'Rechne ns in s (mal 10⁻⁹) und kHz in Hz (mal 10³) um, dann alles malnehmen.'] };
+    }],
+    ['Elektronik vertieft', 2, 'Serielle Schnittstelle: Bitdauer und Zeit je Zeichen', R => {
+      const k = pick(R, ['bit', 'byte']), b = pick(R, [9600, 19200, 38400, 57600, 115200]), bit = 1e6 / b;
+      if (k === 'bit') return { text: `Eine serielle Schnittstelle (UART) arbeitet mit ${b} Baud. Wie lange dauert ein Bit?`, unit: MU + 's', raw: bit, dec: 1, meta: { k, b },
+        steps: ['Formel: Bitdauer = 1 / Baudrate', `Bitdauer = 1 / ${b} s = ${fmt(rd(bit, 2))} ${MU}s`],
+        tips: ['Die Baudrate sagt, wie viele Bits je Sekunde übertragen werden.', `Bitdauer = 1 / Baudrate. Eine Sekunde hat 1 000 000 ${MU}s.`] };
+      return { text: `Eine serielle Schnittstelle (UART) arbeitet mit ${b} Baud. Ein Zeichen besteht aus 1 Startbit, 8 Datenbits und 1 Stoppbit. Wie lange dauert die Übertragung eines Zeichens?`, unit: MU + 's', raw: 10 * bit, dec: 1, meta: { k, b },
+        steps: ['Bits je Zeichen: 1 + 8 + 1 = 10', `Bitdauer = 1 / ${b} s = ${fmt(rd(bit, 2))} ${MU}s`, `Zeit je Zeichen: 10 · ${fmt(rd(bit, 2))} ${MU}s = ${fmt(rd(10 * bit, 2))} ${MU}s`],
+        tips: ['Zu den 8 Datenbits kommen Startbit und Stoppbit dazu.', `So gehst du vor: 1. Bitdauer = 1 / Baudrate (in ${MU}s). 2. Mal 10 Bits.`] };
+    }],
+    ['Elektronik vertieft', 2, 'I²C-Bus: kleinster Pull-up-Widerstand', R => {
+      const V = pick(R, [3, 3.3, 3.6, 5]), I = pick(R, [3, 3, 20]), raw = (V - 0.4) / I;
+      return { text: `An einem I²C-Bus mit ${fmt(V)} V darf ein Baustein die Leitung mit höchstens ${I} mA auf 0,4 V herunterziehen. Wie groß muss der Pull-up-Widerstand mindestens sein?`, unit: 'kΩ', raw, dec: 3, meta: { V, I },
+        steps: [`Am Widerstand liegt bei gezogener Leitung: ${fmt(V)} V − 0,4 V = ${fmt(rs(V - 0.4))} V`, `Kleinster Wert: R = U / I = ${fmt(rs(V - 0.4))} V / ${I} mA = ${fmt(rd(raw, 3))} kΩ`],
+        tips: ['Zieht ein Baustein die Leitung auf Low, fließt Strom durch den Pull-up in den Baustein. Dieser Strom darf den erlaubten Wert nicht übersteigen.', 'R = (Betriebsspannung − 0,4 V) / erlaubter Strom. Volt durch Milliampere ergibt Kiloohm.'] };
+    }],
+    ['Elektronik vertieft', 2, 'Operationsverstärker: Bandbreite bei Verstärkung', R => {
+      const G = pick(R, [1, 3, 10]), V = pick(R, [10, 20, 50, 100]), raw = G * 1000 / V;
+      return { text: `Ein Operationsverstärker hat ein Verstärkungs-Bandbreite-Produkt von ${G} MHz. Er wird als nicht invertierender Verstärker mit der Verstärkung ${V} betrieben. Bis zu welcher Frequenz bleibt diese Verstärkung ungefähr erhalten?`, unit: 'kHz', raw, dec: 1, meta: { G, V },
+        steps: ['Faustformel: Grenzfrequenz = Verstärkungs-Bandbreite-Produkt / Verstärkung', `f_g = ${G} MHz / ${V} = ${G * 1000} kHz / ${V} = ${fmt(rs(raw))} kHz`],
+        tips: ['Verstärkung und Bandbreite hängen zusammen: Je mehr Verstärkung du einstellst, desto kleiner wird die nutzbare Bandbreite.', 'f_g = Verstärkungs-Bandbreite-Produkt / Verstärkung. Rechne MHz in kHz um (mal 1000).'] };
+    }],
+    ['Elektronik vertieft', 3, 'Operationsverstärker: Anstiegsgeschwindigkeit', R => {
+      const S = pick(R, [0.5, 1, 7, 13]), U = pick(R, [1, 2, 5, 10]), raw = S * 1e6 / (2 * Math.PI * U) / 1000;
+      return { text: `Ein Operationsverstärker hat eine Anstiegsgeschwindigkeit von ${fmt(S)} V/${MU}s. Er soll einen Sinus mit ${U} V Scheitelwert ausgeben. Bis zu welcher Frequenz gelingt das unverzerrt?`, unit: 'kHz', raw, dec: 1, meta: { S, U },
+        steps: ['Die steilste Stelle eines Sinus hat die Steigung 2 · π · f · Û. Diese Steigung darf die Anstiegsgeschwindigkeit nicht übersteigen.', 'Umgestellt: f_max = SR / (2 · π · Û)', `SR = ${fmt(S)} V/${MU}s = ${fmt(S)} · 10⁶ V/s`, `f_max = ${fmt(S)} · 10⁶ V/s / (2 · π · ${U} V) = ${fmt(rd(raw * 1000, 0))} Hz = ${fmt(rd(raw, 2))} kHz`],
+        tips: ['Der Ausgang kann seine Spannung nur begrenzt schnell ändern. Bei großen Amplituden und hohen Frequenzen wird aus dem Sinus sonst ein Dreieck.', `f_max = SR / (2 · π · Û). Rechne V/${MU}s in V/s um (mal 10⁶).`] };
+    }],
+    ['Elektronik vertieft', 3, 'Komparator mit Hysterese', R => {
+      const Us = pick(R, [10, 12, 13.5]), R1 = pick(R, [1, 2.2, 4.7, 10]), R2 = pick(R, [47, 100, 220]), raw = 2 * Us * R1 / R2;
+      return { text: `Ein nicht invertierender Schmitt-Trigger: Das Eingangssignal liegt über R1 = ${fmt(R1)} kΩ am Plus-Eingang, R2 = ${R2} kΩ führt vom Ausgang zurück zum Plus-Eingang, der Minus-Eingang liegt an Masse. Der Ausgang springt zwischen +${fmt(Us)} V und −${fmt(Us)} V. Wie groß ist die Hysterese (Abstand der beiden Schaltschwellen)?`, unit: 'V', raw, dec: 2, meta: { Us, R1, R2 },
+        steps: [`Umgeschaltet wird, wenn der Plus-Eingang 0 V erreicht. Das ist der Fall bei U_ein = ± U_aus · R1 / R2.`, `Eine Schwelle: ${fmt(Us)} V · ${fmt(R1)} kΩ / ${R2} kΩ = ${fmt(rd(Us * R1 / R2, 4))} V (einmal positiv, einmal negativ)`, `Hysterese: 2 · ${fmt(rd(Us * R1 / R2, 4))} V = ${fmt(rd(raw, 3))} V`],
+        tips: ['Durch die Rückkopplung auf den Plus-Eingang gibt es zwei Schaltschwellen. Ein verrauschtes Signal schaltet dadurch nicht mehrfach hin und her.', 'Schwellen: ± U_aus · R1 / R2. Die Hysterese ist der Abstand der beiden Schwellen, also das Doppelte.'] };
         }]
   ];
   const tasks = defs.map((d, i) => ({ id: 'mat' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3] }));
