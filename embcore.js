@@ -504,6 +504,77 @@
     return { U, bound: C.rmBound(ts.length), sufficient: U <= C.rmBound(ts.length), rows, all: rows.every(r => r.ok) };
   };
 
+  /* =====================================================================
+   *  Erweiterung 186: RS-485, RS-232, CAN, Pegelteiler (Block 3) und SAR-Zeit, Sigma-Delta, Abgleich, Fehlerbudget (Block 2)
+   * ===================================================================== */
+  /* RS-485: Differenz A minus B gegen die Empfaengerschwelle (Standard 0,2 V). state '1', '0' oder 'x' (unbestimmt) */
+  C.rs485State = function (va, vb, thr) {
+    const th = thr == null ? 0.2 : thr, vd = va - vb;
+    return { vd, state: vd > th ? '1' : (vd < -th ? '0' : 'x') };
+  };
+  /* n gleiche Abschlusswiderstaende parallel zwischen A und B; termCount: Anzahl aus dem Messwert */
+  C.termRes = (r, n) => n > 0 ? r / n : Infinity;
+  C.termCount = (r, meas) => Math.round(r / meas);
+  /* Faustregel Bitrate mal Laenge <= prod, Laenge hoechstens cap */
+  C.rs485MaxRate = (prod, len) => prod / len;
+  C.rs485MaxLen = (prod, rate, cap) => Math.min(cap == null ? Infinity : cap, prod / rate);
+  /* RS-232: negative Logik. rs232Levels baut die Pegel (Start, Daten LSB zuerst, Stopp), rs232Decode liest sie wieder */
+  C.rs232Levels = function (byte, volt, nd) {
+    const v = volt || 9, d = nd || 8, out = [v];
+    for (let i = 0; i < d; i++) out.push(((byte >> i) & 1) ? -v : v);
+    out.push(-v);
+    return out;
+  };
+  C.rs232Decode = function (levels, nd) {
+    const d = nd || 8, lg = levels.map(x => x <= -3 ? 1 : (x >= 3 ? 0 : null)), data = lg.slice(1, 1 + d);
+    let byte = 0; data.forEach((b, i) => { if (b) byte |= (1 << i); });
+    return { logic: lg, data, byte, startOk: lg[0] === 0, stopOk: lg[1 + d] === 1, valid: lg.slice(0, d + 2).every(x => x !== null) };
+  };
+  /* CAN-Arbitrierung: ids als Zahlen, nbits Bit, MSB zuerst. 0 ist dominant. lostAt[i] = Bitnummer (ab 1), bei der Knoten i aufgibt (0 = nie) */
+  C.canArbitrate = function (ids, nbits) {
+    const nb = nbits || 11, active = ids.map(() => true), lostAt = ids.map(() => 0), bus = [];
+    for (let k = 0; k < nb; k++) {
+      const bit = i => (ids[i] >> (nb - 1 - k)) & 1;
+      let lvl = 1; ids.forEach((x, i) => { if (active[i] && bit(i) === 0) lvl = 0; });
+      ids.forEach((x, i) => { if (active[i] && bit(i) === 1 && lvl === 0) { active[i] = false; lostAt[i] = k + 1; } });
+      bus.push(lvl);
+    }
+    const win = active.map((a, i) => a ? i : -1).filter(i => i >= 0);
+    return { winner: win.length === 1 ? win[0] : -1, lostAt, decided: Math.max.apply(null, lostAt), bus };
+  };
+  /* CAN-Bitstopfen: nach fuenf gleichen Bits ein entgegengesetztes Bit, das fuer die naechste Folge mitzaehlt */
+  C.canStuff = function (bits) {
+    let out = '', run = 0, last = '', n = 0; const ev = [];
+    for (let i = 0; i < bits.length; i++) {
+      const b = bits[i];
+      if (b === last) run++; else { last = b; run = 1; }
+      out += b;
+      if (run === 5) { const s = b === '1' ? '0' : '1'; out += s; n++; ev.push({ after: i + 1, val: s, pos: out.length }); last = s; run = 1; }
+    }
+    return { out, n, len: out.length, ev };
+  };
+  /* CAN: Bitzeit und groesste Buslaenge nach der vereinfachten Regel  sp * tbit >= 2 * (L * tprop + tnode) */
+  C.canBitTime = rate => 1 / rate;
+  C.canMaxLen = (rate, sp, tnode, tprop) => (sp / rate / 2 - tnode) / tprop;
+  /* SAR: Takte, Dauer und groesste Abtastrate aus Takt, Bitzahl und Abtasttakten */
+  C.sarConv = function (fclk, bits, sample) {
+    const clocks = (sample || 0) + bits;
+    return { clocks, t: clocks / fclk, fs: fclk / clocks };
+  };
+  /* Sigma-Delta: Ausgaberate aus Modulatortakt und OSR und umgekehrt */
+  C.sdRate = (fmod, osr) => fmod / osr;
+  C.sdOsr = (fmod, rate) => fmod / rate;
+  /* Zwei-Punkt-Abgleich: Gerade U = m * Code + u0 durch (c1, u1) und (c2, u2) */
+  C.calTwoPoint = function (c1, u1, c2, u2) {
+    const m = (u2 - u1) / (c2 - c1), u0 = u1 - m * c1;
+    return { m, u0, volt: c => u1 + m * (c - c1) };
+  };
+  /* Fehlerbudget als Summe der Betraege */
+  C.errBudget = function (parts) {
+    const p = parts.map(Math.abs), sum = p.reduce((s, x) => s + x, 0);
+    return { parts: p, sum, biggest: p.indexOf(Math.max.apply(null, p)) };
+  };
+
   root.EMB_CORE = C;
   if (typeof module !== 'undefined' && module.exports) module.exports = C;
 })(typeof window !== 'undefined' ? window : globalThis);

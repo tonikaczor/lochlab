@@ -26,9 +26,11 @@
   /* Berufe mit Datenlage: nur dort wird gefiltert */
   const BERUFE = ['egs', 'ige'];
   /* Vorgabe je Lab für Zeilen ohne Lernfeld; Labs, die hier fehlen, bekommen 1 */
-  const VORGABE = { sch: 1, loch: 1, digi: 1, mess: 1, sim: 1, haus: 1, els: 1, nts: 1, wsl: 1, ana: 1, thm: 1, sps: 1, pcb: 1, ant: 1, sen: 1, reg: 3, emv: 2, enr: 2, ds: 2, pr: 2, code: 1, pi: 1, app: 1, mat: 1, eng: 2, bhf: 1, alg: 1, sys: 1, ssl: 1 };
+  const VORGABE = { sch: 1, loch: 1, digi: 1, mess: 1, sim: 1, haus: 1, els: 1, nts: 1, wsl: 1, ana: 1, thm: 1, sps: 1, pcb: 1, ant: 1, sen: 1, reg: 3, emv: 2, hf: 3, enr: 2, ds: 2, pr: 2, code: 1, pi: 1, app: 1, mat: 1, eng: 2, bhf: 1, alg: 1, sys: 1, ssl: 1 };
   /* Ausnahmen je Lab: Aufgaben-ID -> frühestes Lehrjahr. Nur Aufgaben, die vom Lernfeld abweichen oder kein Lernfeld haben und nicht zur Vorgabe passen. */
   const AUSNAHMEN = {
+    // Thermik-Lab (thm), v63.185
+    thm: { th45: 4 },
     // SchaltLab (sch)
     sch: {
       s4: 2, // Tiefpass mit 1 kHz Grenzfrequenz
@@ -67,6 +69,8 @@
     },
     // MessLab (mess)
     mess: {
+      /* v63.185: neue Aufgaben */
+      m49: 2, m50: 2, m51: 1, m52: 2, m53: 1, m54: 2, m55: 3, m56: 3, m57: 3, mf8: 1, mf9: 2, mf10: 2,
       m8: 1, // Periodendauer und Frequenz ablesen [einfache Oszilloskop-Bedienung (Toni)]
       m9: 1, // Spitzenwert und Effektivwert [einfache Oszilloskop-Bedienung (Toni)]
       m12: 1, // Frequenz mit dem Frequenzzähler messen [einfache Oszilloskop-Bedienung (Toni)]
@@ -88,6 +92,8 @@
     },
     // Sicherheits-Lab (els)
     els: {
+      /* v63.185: neue Aufgaben */
+      el47: 3, el48: 3, el49: 4, el50: 3, el51: 3, el52: 3, el53: 3, el54: 3, el55: 4, el56: 3, el57: 4,
       el28: 1, // Fünf Sicherheitsregeln
       el29: 1, // Rettungskette
       el30: 1, // Welche Regel fehlt?
@@ -98,6 +104,8 @@
     },
     // Netzteil-Lab (nts)
     nts: {
+      /* v63.185: neue Aufgaben */
+      nt55: 4,
       nt9: 2, // Z-Diode: Strom berechnen (Pool S2025-30) [Z-Diode, 555 oder 7805 (Toni)]
       nt10: 2, // Z-Diode: Vorwiderstand (Pool F2020-N22) [Z-Diode, 555 oder 7805 (Toni)]
       nt11: 2, // Z-Diode regelt nicht mehr [Z-Diode, 555 oder 7805 (Toni)]
@@ -119,6 +127,8 @@
     },
     // Wechselstrom-Lab (wsl)
     wsl: {
+      /* v63.185: neue Aufgaben */
+      ws59: 3, ws63: 3,
       ws1: 1, // Effektivwert oder Scheitelwert?
       ws2: 1, // Scheitelwert der Netzspannung
       ws5: 1, // X_L und X_C berechnen
@@ -138,6 +148,8 @@
     },
     // Analogtechnik-Lab (ana)
     ana: {
+      /* v63.185: neue Aufgaben */
+      ae55: 4, ae58: 4, ae61: 4,
       ae2: 2, // Z-Diode: kleinster Vorwiderstand [Z-Diode, 555 oder 7805 (Toni)]
       ae15: 2 // Z-Diode am Folger: R_1 [Z-Diode, 555 oder 7805 (Toni)]
     },
@@ -148,6 +160,8 @@
     },
     // Datenblatt-Lab (ds)
     ds: {
+      /* v63.185: neue Aufgaben */
+      ds36: 3, ds37: 3, ds42: 3,
       ds10: 2, // Mindest-Eingangsspannung des LM317 bei 125 °C [Z-Diode, 555 oder 7805 (Toni)]
       ds11: 2, // RB für 1 kHz mit dem NE555 [Z-Diode, 555 oder 7805 (Toni)]
       ds14: 2, // Vorwiderstand der Z-Diode [Z-Diode, 555 oder 7805 (Toni)]

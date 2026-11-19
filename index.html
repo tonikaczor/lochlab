@@ -178,6 +178,7 @@ document.addEventListener('click',function(e){var s=e.target.closest&&e.target.c
   <symbol id="i-pruefungslab" viewBox="0 0 24 24"><path d="M3.5 6.5l1.3 1.3L7.5 5M3.5 12l1.3 1.3L7.5 10.5M10 6.5h10M10 12h5M4 17.5h6"/><circle cx="17" cy="17" r="4.5"/><path d="M17 14.5V17h2"/></symbol>
   <symbol id="i-mat2lab" viewBox="0 0 24 24"><path d="M3 19h18M4 19c0-6 3.5-10 8-10s8 4 8 10"/><path d="M8 13c1.3-2.2 2.7-2.2 4 0s2.7 2.2 4 0"/></symbol>
   <symbol id="i-siglab" viewBox="0 0 24 24"><path d="M3 12c2-6 4-6 6 0s4 6 6 0"/><path d="M17 18v-6M19.5 18V8M22 18v-9"/></symbol>
+  <symbol id="i-hflab" viewBox="0 0 24 24"><path d="M12 21V10M8 21h8M12 10l-4-5M12 10l4-5M8 5h8"/><path d="M17 9a4 4 0 0 1 0 6M19.5 7a7 7 0 0 1 0 10"/></symbol>
   <symbol id="i-rg2lab" viewBox="0 0 24 24"><path d="M3 12h18M12 3v18"/><path d="M5.5 7.5l3 3M8.5 7.5l-3 3M5.5 13.5l3 3M8.5 13.5l-3 3"/><circle cx="16.5" cy="12" r="1.8"/></symbol>
   <symbol id="i-emblab" viewBox="0 0 24 24"><rect x="7" y="10" width="10" height="10" rx="1"/><path d="M10 10V7.5M14 10V7.5M10 20v2M14 20v2M7 13H4M7 17H4M17 13h3M17 17h3"/><path d="M5 4.5h4V2.5h4v2h4V2.5h2"/></symbol>
   <symbol id="i-prjlab" viewBox="0 0 24 24"><rect x="2" y="3" width="6" height="5" rx="1"/><rect x="16" y="3" width="6" height="5" rx="1"/><rect x="9" y="15" width="6" height="5" rx="1"/><path d="M8 5.5h8M5 8v4h14V8M12 12v3"/></symbol>
@@ -442,6 +443,16 @@ document.addEventListener('click',function(e){var s=e.target.closest&&e.target.c
       <p>Neun animierte Prüfstände: Kopplung, Störquelle, Filter, Schirmung, Abstrahlung, Leiterplatten-Layout, ESD und Burst, Tastkopf und Vorprüfung. Ursachen von Störungen erkennen, Gegenmaßnahmen wählen, vorher und nachher vergleichen und sehen, warum ein Gerät die Prüfung besteht oder nicht.</p>
       <div class="steps"><span>Störung messen</span><span>Maßnahme wählen</span><span>Prüfen</span></div>
       <div class="btns"><a class="btn pri" href="emvlab.html">Öffnen</a></div>
+    </section>
+    <section class="card" data-lab="hflab" data-group="mess" data-beruf="egs tec stu">
+      <span class="tag">FUNK UND HOCHFREQUENZ</span>
+      <h3>Funk- und HF-Lab</h3>
+      <div class="pic" aria-hidden="true">
+        <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><rect x="22" y="62" width="34" height="26" fill="#2c3748" rx="3" stroke="#5fb0ff" stroke-width="2"/><path d="M39 62V30M39 30l-9-12M39 30l9-12M30 18h18" fill="none" stroke="#e3eaf1" stroke-width="2.5" stroke-linecap="round"/><path class="rad" d="M62 28a22 22 0 0 1 0 34" fill="none" stroke="#ffb020" stroke-width="2.5" style="animation-delay:0s"/><path class="rad" d="M80 22a34 34 0 0 1 0 46" fill="none" stroke="#ffb020" stroke-width="2.5" style="animation-delay:.3s"/><path class="rad" d="M100 16a46 46 0 0 1 0 58" fill="none" stroke="#ffb020" stroke-width="2.5" style="animation-delay:.6s"/><path d="M201 62V34M201 34l-8-10M201 34l8-10M193 24h16" fill="none" stroke="#e3eaf1" stroke-width="2.5" stroke-linecap="round"/><rect x="184" y="62" width="34" height="26" fill="#2c3748" rx="3" stroke="#6dff7a" stroke-width="2"/><path d="M70 98h30v-6h30v-6h30v-6h30" fill="none" stroke="#6dff7a" stroke-width="2.5"/></svg>
+      </div>
+      <p>Pegel in dB und dBm, Leitung und Anpassung, Antenne und Funkstrecke, Modulation, Empfänger und HF-Messtechnik selbst ausprobieren: Regler ziehen, Diagramme live ansehen und 54 Aufgaben mit Tipps und Musterlösung rechnen.</p>
+      <div class="steps"><span>Pegel</span><span>Leitung</span><span>Funkstrecke</span><span>Modulation</span><span>Empfänger</span><span>Messen</span></div>
+      <div class="btns"><a class="btn pri" href="hflab.html">Öffnen</a><a class="btn" href="hflab.html?aufgabe=hf1">Erste Aufgabe</a></div>
     </section>
     <section class="card" data-lab="enrlab" data-group="sich" data-beruf="egs ige tec stu wing">
       <span class="tag">ENERGIE-LAB</span>
@@ -830,7 +841,7 @@ document.addEventListener('click',function(e){var s=e.target.closest&&e.target.c
       <div class="pic" aria-hidden="true">
         <svg viewBox="0 0 240 120"><rect x="10" y="10" width="220" height="100" fill="#17202e" rx="8"/><path d="M20 60H228" fill="none" stroke="#6b7684" stroke-width="1.2"/><path d="M24 60q13-40 26 0t26 0t26 0" fill="none" stroke="#5fb0ff" stroke-width="2.5"/><circle cx="37" cy="38" r="3.5" fill="#ffb020"/><circle cx="63" cy="82" r="3.5" fill="#ffb020"/><circle cx="89" cy="38" r="3.5" fill="#ffb020"/><circle cx="115" cy="82" r="3.5" fill="#ffb020"/><path d="M134 60h8m-3-4l4 4-4 4" fill="none" stroke="#9aa6b2" stroke-width="1.5"/><path d="M152 100H224" fill="none" stroke="#6b7684" stroke-width="1.5"/><rect x="162" y="38" width="8" height="62" fill="#6dff7a" rx="1"/><rect x="184" y="64" width="8" height="36" fill="#6dff7a" rx="1"/><rect x="206" y="82" width="8" height="18" fill="#6dff7a" rx="1"/></svg>
       </div>
-      <p>Signale, Spektrum und FFT, Abtastung, Filter, Faltung und Modulation selbst ausprobieren: Regler ziehen, Diagramme live ansehen und 57 Aufgaben mit Tipps und Musterlösung rechnen.</p>
+      <p>Signale, Spektrum und FFT, Abtastung, Filter, Faltung und Modulation selbst ausprobieren: Regler ziehen, Diagramme live ansehen und 63 Aufgaben mit Tipps und Musterlösung rechnen.</p>
       <div class="steps"><span>Spektrum</span><span>Abtastung</span><span>Filter</span><span>Faltung</span><span>Modulation</span></div>
       <div class="btns"><a class="btn pri" href="siglab.html">Öffnen</a><a class="btn" href="siglab.html?aufgabe=sig1">Erste Aufgabe</a></div>
     </section>

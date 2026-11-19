@@ -1,6 +1,6 @@
 'use strict';
 /* Tonfunk Lab "Signale und Systeme": Aufgaben und Lerntexte (Lab-Kennung 'sig', Präfix lm4.sig.).
-   SIG_DATA.meta: Name, Kürzel, Stufe ('studium').  SIG_DATA.tasks: 57 Aufgaben (Stufe 1-3) in 6 Blöcken; jede hat make(R, C) mit seed-fähigem
+   SIG_DATA.meta: Name, Kürzel, Stufe ('studium').  SIG_DATA.tasks: 63 Aufgaben (Stufe 1-3) in 6 Blöcken; jede hat make(R, C) mit seed-fähigem
    Zufallsgenerator R und SIG_CORE C und liefert { text, label, unit, value, tol, tips[3], steps[], meta }.
    Der Wert (value) und alle Zahlen im Rechenweg (steps) kommen aus dem Kern (SIG_CORE), nie von Hand. Der Test (quelle/sig/test_sigdata.js)
    rechnet jede Aufgabe aus meta ein zweites Mal auf anderem Weg nach (Integration, DFT-Definition, Bisektion, Simulation, ...).
@@ -390,6 +390,45 @@
       tips: ['FM hat theoretisch unendlich viele Seitenlinien, fast die gesamte Leistung liegt aber in einem begrenzten Bereich um den Träger.', 'B ≈ 2 · (Δf + f_m).', `B ≈ 2 · (${F(df)} kHz + ${F(fm)} kHz).`],
       steps: ['Carson-Regel: B ≈ 2·(Δf + f_m)', `B ≈ 2 · (${F(df)} kHz + ${F(fm)} kHz) = ${F(v)} kHz`], meta: { df, fm }, tolo: { rel: 0.003 } });
   });
+  /* ---- digitale Modulation (v62.186): Bit je Symbol, Bitrate, Symbolrate, Bandbreite mit Roll-off, FSK-Index, spektrale Effizienz ---- */
+  const DM = [[2, 'BPSK'], [4, 'QPSK'], [8, '8-PSK'], [16, '16-QAM'], [64, '64-QAM'], [256, '256-QAM']];
+  const DMQ = [DM[1], DM[3], DM[4]], bitsOf = M => Math.round(Math.log2(M));
+  add('Modulation', 'Bit je Symbol', 1, 'dm_bits', (R) => {
+    const q = pick(R, DM), M = q[0], v = bitsOf(M);
+    return out({ text: `Ein digitales Modulationsverfahren (${q[1]}) unterscheidet M = ${M} verschiedene Symbolzustände. Wie viele Bit überträgt ein einzelnes Symbol?`, label: 'Bit je Symbol', unit: 'bit', value: v,
+      tips: ['Mit jedem zusätzlichen Bit verdoppelt sich die Zahl der möglichen Zustände: 1 Bit hat 2 Zustände, 2 Bit haben 4, 3 Bit haben 8.', 'k = log₂(M), das heißt: 2 hoch k ergibt M.', `k = log₂(${M}). Zähle, wie oft du die 2 mit sich selbst malnehmen musst, bis ${M} herauskommt.`],
+      steps: ['k = log₂(M)', `k = log₂(${M}) = ${F(v)} bit (Probe: 2 hoch ${F(v)} = ${M})`], meta: { M }, tolo: { abs: 0.01, rel: 0 } });
+  });
+  add('Modulation', 'Bitrate aus Symbolrate', 1, 'dm_bitrate', (R) => {
+    const q = pick(R, DMQ), M = q[0], k = bitsOf(M), Rs = pick(R, [10, 20, 25, 50, 100, 150]), v = Rs * k;
+    return out({ text: `Ein Modem sendet mit ${q[1]} (M = ${M} Symbolzustände) und einer Symbolrate von ${F(Rs)} kBd (1 Bd = 1 Symbol je Sekunde). Wie groß ist die Bitrate?`, label: 'Bitrate', unit: 'kbit/s', value: v,
+      tips: ['Jedes Symbol trägt mehrere Bit. Die Bitrate ist deshalb größer als die Symbolrate.', 'R_b = R_s · log₂(M).', `R_b = ${F(Rs)} kBd · log₂(${M}).`],
+      steps: [`Bit je Symbol: k = log₂(${M}) = ${k}`, `R_b = R_s · k = ${F(Rs)} kBd · ${k} bit = ${F(v)} kbit/s`], meta: { Rs, M } });
+  });
+  add('Modulation', 'Symbolrate für eine Bitrate', 2, 'dm_symrate', (R) => {
+    const q = pick(R, DMQ), M = q[0], k = bitsOf(M), Rb = pick(R, [12, 24, 48, 60, 96, 120, 240, 480]), v = Rb / k;
+    return out({ text: `Über eine Funkstrecke sollen ${F(Rb)} kbit/s übertragen werden. Als Modulation ist ${q[1]} mit M = ${M} Symbolzuständen vorgesehen. Welche Symbolrate ist dafür nötig (in kBd, 1 Bd = 1 Symbol je Sekunde)?`, label: 'Symbolrate', unit: 'kBd', value: v,
+      tips: ['Je mehr Bit ein Symbol trägt, desto weniger Symbole je Sekunde brauchst du für dieselbe Bitrate.', 'R_s = R_b / log₂(M).', `R_s = ${F(Rb)} kbit/s / log₂(${M}).`],
+      steps: [`Bit je Symbol: k = log₂(${M}) = ${k}`, `R_s = R_b / k = ${F(Rb)} kbit/s / ${k} bit = ${F(v)} kBd`], meta: { Rb, M } });
+  });
+  add('Modulation', 'Bandbreite mit Roll-off-Faktor', 2, 'dm_bw', (R) => {
+    const Rs = pick(R, [10, 20, 25, 50, 100, 200]), a = pick(R, [0.2, 0.25, 0.35, 0.5]), v = Rs * (1 + a);
+    return out({ text: `Ein digitaler Sender überträgt ${F(Rs)} kBd (das sind ${F(Rs)} 000 Symbole je Sekunde). Sein Impulsformfilter hat den Roll-off-Faktor α = ${F(a)}. Welche Bandbreite belegt das modulierte Signal ungefähr?`, label: 'Bandbreite', unit: 'kHz', value: v,
+      tips: ['Ohne Roll-off wäre die Bandbreite so groß wie die Symbolrate, das ist das theoretische Minimum. Der Roll-off-Faktor sagt, um welchen Anteil die weichen Filterflanken das Spektrum breiter machen.', 'B ≈ R_s · (1 + α).', `B ≈ ${F(Rs)} kHz · (1 + ${F(a)}).`],
+      steps: ['B ≈ R_s · (1 + α)', `B ≈ ${F(Rs)} kHz · ${F(1 + a)} = ${F(v)} kHz`, `(ganz ohne Roll-off wären es mindestens ${F(Rs)} kHz)`], meta: { Rs, a } });
+  });
+  add('Modulation', 'Modulationsindex bei FSK', 2, 'dm_fsk_h', (R) => {
+    const Rb = pick(R, [10, 20, 40, 50, 100]), h0 = pick(R, [0.5, 0.75, 1, 1.5, 2]), f0 = pick(R, [450, 500, 600, 750]), f1 = f0 + h0 * Rb, df = f1 - f0, v = df / Rb;
+    return out({ text: `Ein 2-FSK-Sender sendet für eine „0“ die Frequenz f₀ = ${F(f0)} kHz und für eine „1“ die Frequenz f₁ = ${F(f1)} kHz. Die Bitrate beträgt R_b = ${F(Rb)} kbit/s. Der Frequenzabstand ist Δf = f₁ − f₀, der Modulationsindex ist h = Δf / R_b. Wie groß ist h?`, label: 'Modulationsindex h', unit: '', value: v,
+      tips: ['Bei FSK steht jede der beiden Frequenzen für einen Bitwert. Der Index vergleicht den Abstand der beiden Frequenzen mit der Bitrate.', 'Δf = f₁ − f₀ und h = Δf / R_b (kHz geteilt durch kbit/s ergibt eine Zahl ohne Einheit).', `h = (${F(f1)} kHz − ${F(f0)} kHz) / ${F(Rb)} kbit/s.`],
+      steps: ['Δf = f₁ − f₀ und h = Δf / R_b', `Δf = ${F(f1)} kHz − ${F(f0)} kHz = ${F(df)} kHz`, `h = ${F(df)} kHz / ${F(Rb)} kbit/s = ${F(v)}`].concat(v === 0.5 ? ['Mit h = 0,5 heißt das Verfahren MSK (Minimum Shift Keying): Das ist bei kohärenter Demodulation der kleinste Abstand, bei dem die beiden Signale zueinander orthogonal sind.'] : []), meta: { f0, f1, Rb }, tolo: { abs: 0.01 } });
+  });
+  add('Modulation', 'Spektrale Effizienz', 3, 'dm_eff', (R) => {
+    const q = pick(R, [DM[1], DM[3], DM[4], DM[5]]), M = q[0], k = bitsOf(M), Rs = pick(R, [1, 2, 5, 10]), a = pick(R, [0.2, 0.25, 0.35, 0.5]), Rb = Rs * k, B = Rs * (1 + a), v = Rb / B;
+    return out({ text: `Eine Richtfunkstrecke arbeitet mit ${q[1]} (M = ${M} Symbolzustände) bei einer Symbolrate von ${F(Rs)} MBd. Das Impulsformfilter hat den Roll-off-Faktor α = ${F(a)}, die belegte Bandbreite ist B ≈ R_s · (1 + α). Wie groß ist die spektrale Effizienz, also die Bitrate geteilt durch die Bandbreite?`, label: 'Spektrale Effizienz', unit: 'bit/s/Hz', value: v,
+      tips: ['Die spektrale Effizienz sagt, wie viele Bit je Sekunde in jedem Hertz Bandbreite Platz finden. Du brauchst also zuerst die Bitrate und die Bandbreite.', 'η = R_b / B mit R_b = R_s · log₂(M) und B ≈ R_s · (1 + α).', `η = (${F(Rs)} MBd · log₂(${M})) / (${F(Rs)} MHz · (1 + ${F(a)})).`],
+      steps: [`R_b = R_s · log₂(M) = ${F(Rs)} MBd · ${k} bit = ${F(Rb)} Mbit/s`, `B ≈ R_s · (1 + α) = ${F(Rs)} MHz · ${F(1 + a)} = ${F(B)} MHz`, `η = R_b / B = ${F(Rb)} Mbit/s / ${F(B)} MHz = ${F(v)} bit/s je Hz`, 'Die Symbolrate kürzt sich heraus: η = log₂(M) / (1 + α).'], meta: { M, Rs, a } });
+  });
 
   /* ============================================================ Lerntexte */
   const BLOCKS = [
@@ -439,11 +478,12 @@
         ['Amplitudenmodulation', 's(t) = Â_T·(1 + m·cos ω_m t)·cos ω_T t. Das Spektrum hat den Träger und zwei Seitenlinien bei f_T ± f_m, jede mit m·Â_T/2. Die Bandbreite ist 2·f_m. Der Modulationsgrad m darf nicht über 1 steigen, sonst wird die Hüllkurve verzerrt (Übermodulation).'],
         ['Leistung', 'Nur die Seitenbänder tragen die Nachricht. Ihr Anteil an der Gesamtleistung ist m²/(2 + m²), selbst bei m = 1 nur ein Drittel.'],
         ['Frequenzmodulation', 'Bei FM bleibt die Amplitude konstant, die Momentanfrequenz schwankt um bis zu ±Δf (Frequenzhub) um die Trägerfrequenz. Der Modulationsindex ist β = Δf/f_m. Das Spektrum besteht aus vielen Seitenlinien im Abstand f_m, ihre Amplituden folgen den Besselfunktionen J_n(β).'],
-        ['Bandbreite von FM', 'Für die Praxis genügt die Carson-Regel B ≈ 2·(Δf + f_m). FM braucht mehr Bandbreite als AM, ist dafür aber unempfindlicher gegen Amplitudenstörungen.']
+        ['Bandbreite von FM', 'Für die Praxis genügt die Carson-Regel B ≈ 2·(Δf + f_m). FM braucht mehr Bandbreite als AM, ist dafür aber unempfindlicher gegen Amplitudenstörungen.'],
+        ['Digitale Modulation', 'Bei digitaler Modulation steht jedes Symbol für eine Gruppe von Bit. Mit M Symbolzuständen sind es log₂(M) Bit je Symbol (QPSK 2, 16-QAM 4, 64-QAM 6). Die Bitrate ist die Symbolrate mal Bit je Symbol. Bei PSK und QAM belegt das Signal mit einem Impulsformfilter etwa B ≈ R_s·(1 + α), dabei ist α der Roll-off-Faktor. Für FSK gilt diese Formel nicht. Die spektrale Effizienz R_b/B in bit/s je Hz sagt, wie gut die Bandbreite genutzt wird. Bei 2-FSK steht jede der beiden Frequenzen für einen Bitwert, der Modulationsindex ist h = Δf/R_b mit dem Frequenzabstand Δf.']
       ] }
   ];
 
-  const meta = { lab: 'sig', name: 'Signale und Systeme', stufe: 'studium', version: 'v62.184', zielgruppe: 'Technikerschule, Duales Studium, Wirtschaftsingenieurwesen', bloecke: BLOCKS.length };
+  const meta = { lab: 'sig', name: 'Signale und Systeme', stufe: 'studium', version: 'v63.185', zielgruppe: 'Technikerschule, Duales Studium, Wirtschaftsingenieurwesen', bloecke: BLOCKS.length };
   const TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   const api = { meta, tasks, CATS, blocks: BLOCKS };
   root.SIG_DATA = api; root.SIG_TASKS = TASKS;

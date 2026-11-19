@@ -36,6 +36,8 @@
   R({ lab: 'thm', betrieb: 'Hitze ist ein häufiger Grund für ausfallende Elektronik. Du rechnest die Verlustleistung aus und wählst Kühlkörper und Wärmeleitpaste, damit Bauteile im Gerät oder Schaltschrank nicht überhitzen.',
       pruefung: 'Die Verlustleistung eines Bauteils berechnen und beurteilen, ob ein Kühlkörper nötig ist.' });
   R({ lab: 'emv', betrieb: 'Ein Gerät, das Störungen aussendet oder durch Störungen ausfällt, besteht die EMV-Prüfung nicht. Du erkennst Störquellen und wählst Filter, Schirmung und Layout-Maßnahmen, bevor das Gerät zur Prüfung geht.' });
+  R({ lab: 'hf', betrieb: 'Funkgeräte, Antennen und Sensoren mit Funk arbeiten mit Hochfrequenz. Du rechnest mit Pegeln in dB, passt Leitungen an und schätzt ab, ob eine Funkstrecke reicht. So verstehst du Messwerte am HF-Prüfplatz.',
+      lernfelder: ['Z-HF'] });   /* freiwilliges Zusatzthema: steht in keinem Pflicht-Lernfeld, deshalb hier fest genannt */
   R({ lab: 'enr', betrieb: 'Solaranlagen mit Akku oder Netzeinspeisung gehören zum Berufsalltag. Du dimensionierst Modul, Laderegler, Kabel und Sicherung. Ein Solarmodul liefert bei Licht immer Spannung: Arbeiten daran nur durch Elektrofachkräfte.',
       pruefung: 'Leistung und Ertrag einer kleinen Anlage berechnen oder den Aufbau einer Inselanlage erklären.' });
   R({ lab: 'code', betrieb: 'Mikrocontroller wie der Arduino steuern LEDs, Motoren und Sensoren in vielen Geräten und Prototypen. Mit eigenen Programmen testest du Schaltungen schnell und liest fremde Programme leichter.' });

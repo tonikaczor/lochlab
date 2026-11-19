@@ -82,7 +82,7 @@
     loch: { 'Aufbau': 'E1', 'Arduino und Pi': '11.2', 'Projekt Ampel': '9.1', 'Projekt Dämmerungsschalter': '6.1', 'Projekt Netzteil': '5.3', 'Fehlersuche': 'E2' },
     digi: { 'Grundgatter': '7.2', 'Schaltnetze': '7.2', 'Speicher und Zähler': '9.1', 'Fehlersuche': '7.2', 'Rechnerbausteine': '7.1', 'Zahlen und Codes': '7.1', 'Logikfamilien': '9.1', 'Mini-CPU': '11.3', 'Prozessor 8085': '11.3', 'Kundenauftrag': '10.1', 'Vereinfachen': '7.2', 'Zustandsautomaten': '9.1' },
     mess: { 'Multimeter': 'E1', 'Leistung und Kennlinien': 'E1', 'Netzgerät und Generator': 'E1', 'Oszilloskop': 'E6', 'Messfehler': 'E1', 'Frequenzgang': 'E6', 'Logik': '9.1', 'Kundenauftrag': '10.1', 'Fehlersuche': 'E1', 'Prüfung: Stromlaufplan': 'E1' },
-    els: { 'Stromwirkung': '5.1', 'Prüfungsnah': '5.1', 'Schutzklassen': '5.2', 'Schutzorgane': '5.1', 'RCD': '5.1', 'Isolation und Schutzleiter': '5.2', 'Geräteprüfung': '5.2', 'Sicherheitsregeln': 'E13', 'Brandschutz': 'E13', 'Kennzeichnung': 'E13', 'Maschinensicherheit': '10.1', 'TT-System': '5.1', 'Schmelzsicherung': '5.1', 'Schutzmaßnahmen': '5.2' },
+    els: { 'Stromwirkung': '5.1', 'Prüfungsnah': '5.1', 'Schutzklassen': '5.2', 'Schutzorgane': '5.1', 'RCD': '5.1', 'Isolation und Schutzleiter': '5.2', 'Geräteprüfung': '5.2', 'Sicherheitsregeln': 'E13', 'Brandschutz': 'E13', 'Kennzeichnung': 'E13', 'Maschinensicherheit': '10.1', 'TT-System': '5.1', 'Schmelzsicherung': '5.1', 'Schutzmaßnahmen': '5.2', 'IT-System': '5.1', 'Anlagenprüfung': '5.2' },
     nts: { 'Prüfungsnah': '5.3', 'Transformator': '5.3', 'Gleichrichter': '5.3', 'Z-Diode': '9.2', 'Linearregler': '9.2', 'Schaltregler': '9.2', 'Gate': '9.2', 'Regelkreis': '9.2', 'Fehlersuche': '9.2' },
     wsl: { '*': '5.2', 'Transformator': '5.3', 'Filter': 'E6' },
     ana: { 'Prüfungsnah': '6.1', 'Fehlersuche': '6.1', 'Transistorverstärker': '6.1', 'Komparator und Schmitt-Trigger': '6.2', 'Aktive Schaltungen': '6.2', 'Diode': '6.1', 'Transistorschalter': '6.1', 'OPV-Grundschaltungen': '9.1' },
@@ -112,6 +112,10 @@
   };
   /* Ausnahmen je Aufgaben-ID (gehen den Regeln vor) */
   const AUSNAHMEN = {
+    // v63.185: geht über die Ausbildung hinaus (Zusatzthema Elektronik vertieft, fest in den Wegen Technik und Studium)
+    ae55: null, ae58: null, ae61: null, nt55: null, th45: null,
+    // v63.185: wie im Ausbildungsplan (Bauteilwahl mit Reserve bei LF 5.3, Subtrahierer bei LF 6.2)
+    ds39: '5.3', ds40: '5.3', ds41: '5.3', ds42: '5.3', ds43: '5.3', ae57: '6.2',
     // HausLab: Herd-Fehlersuche aus der Mitschrift E13.3 (Instandsetzung)
     ha38: 'E13',
     // SimLab, HausLab

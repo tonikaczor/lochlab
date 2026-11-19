@@ -1,4 +1,4 @@
-/* elstasks2.js - ELS-Lab: Aufgaben el17 bis el46 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b; el33 bis el38: Wissensaufgaben Brandschutz, Kennzeichnung, Maschinensicherheit, Berufsschulstoff; el39 bis el46: TT-System, Stromwirkung, LS-Schalter, Schmelzsicherung, Schutzmassnahmen, Berufsschulstoff)
+/* elstasks2.js - ELS-Lab: Aufgaben el17 bis el57 (el47 bis el57: IT-System, RCD-Messwerte, Anlagenpruefung) mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig) (WP4b; el33 bis el38: Wissensaufgaben Brandschutz, Kennzeichnung, Maschinensicherheit, Berufsschulstoff; el39 bis el46: TT-System, Stromwirkung, LS-Schalter, Schmelzsicherung, Schutzmassnahmen, Berufsschulstoff)
  * Registrierung: ELS_TASKS.register([ ... ]) (ELS_TASKS kommt aus elsdata.js; elsdata.js VOR dieser Datei laden, in Node holt sich die Datei es per require).
  * Format, Regeln und answer-Objekt wie in elsdata.js: { id:'elN', lab:'els', cat, title, level, rig, text, table?, hint[3], start(), sol(), wrong(), check(answer), hintVals(),
  *   fields? | choices?, consts? }; answer = { rig, controls, ref, seq, rows, state, fired, value, text, fields, choices, clicks, protokoll }.
@@ -828,7 +828,9 @@
     const check = mkCheck((a, r) => {
       const fl = obj(a.fields), v = vals();
       flds.forEach(fd => numRow(r, fd.ok(v), fl[fd.key], Object.assign({ unit: fd.unit, tol: 0.03 }, fd.num(v))));
-      rows.forEach(row => choiceRow(r, a, row.key, row.correct, row.ok, w => { const o = optOf(row, w); return o ? 'Du hast „' + o.label + '“ gewählt. ' + o.why : 'Die Auswahl gehört nicht zu dieser Frage.'; }));
+      /* row.note (ab el47, optional): Zusatz zur Begründung mit den Zahlen dieser Zeile, Text oder Funktion der Musterwerte */
+      const noteOf = row => (row.note ? ' ' + (typeof row.note === 'function' ? row.note(v) : row.note) : '');
+      rows.forEach(row => choiceRow(r, a, row.key, row.correct, row.ok, w => { const o = optOf(row, w); return o ? 'Du hast „' + o.label + '“ gewählt. ' + o.why + noteOf(row) : 'Die Auswahl gehört nicht zu dieser Frage.'; }));
     });
     const pickWrong = (row, last) => { const bad = optsOf(row).filter(o => String(o.value) !== String(row.correct)); return bad[last ? bad.length - 1 : 0].value; };
     const mkC = last => { const c = {}; rows.forEach(row => { c[row.key] = pickWrong(row, last); }); return c; };
@@ -842,6 +844,7 @@
       wrong: () => { const v = vals(), w = spec.wrongF ? spec.wrongF(v) : [solF(), solF()]; return [{ name: 'erste Verwechslung, Rechenfehler 1', answer: A(rig, ctl(), { fields: w[0], choices: mkC(false) }) }, { name: 'andere Verwechslung, Rechenfehler 2', answer: A(rig, ctl(), { fields: w[1], choices: mkC(true) }) }]; } };
     if (flds.length) M.fields = () => flds.map(fd => ({ key: fd.key, label: fd.label, unit: fd.unit }));
     if (rows.length) M.choices = () => rows.map(row => ({ key: row.key, q: row.q, options: optsOf(row).map(o => ({ value: o.value, label: o.label })) }));
+    if (spec.table) M.table = () => spec.table(vals());                  // ab el47: Messwert-Tabelle wie bei el21
     return M;
   };
 
@@ -1042,6 +1045,362 @@
           { value: 'indirekt', label: 'Indirektes Berühren eines Körpers', why: 'Das ist richtig.' },
           { value: 'nah', label: 'Annäherung an ein aktives Teil', why: 'Annäherung ohne Berührung ist hier nicht gemeint. Du fasst das Gehäuse an.' }] }] });
 
+  /* ====================================================================== el47 bis el57: IT-System, RCD-Messwerte, Anlagenprüfung (Erstprüfung)
+     Eigene Zahlen. Grenzwerte nur aus dem Kern (limit 'rcd_bereich', 'rcd_zeit', 'ul_ac', 'riso_sk1', 'upruef_iso', 'faktor_b'); wo der Kern keinen Wert hat
+     (Ansprechwert der Isolationsüberwachung, 25 V, Sicherheitsfaktor 2/3, Schutzleiter der Anlage), steht die Grenze als Übungswert im Aufgabentext.
+     Messungen mit Netzspannung (Schleifenimpedanz, RCD, Drehfeld) werden nur ausgewertet: Gemessen hat die Elektrofachkraft, es gibt keine Anleitung dazu.
+     Offene Fachfragen an den Ausbilder: W186-1 bis W186-11 (noch nicht in PRUEFEN.md eingetragen). */
+
+  /* el47: Erster Fehler im IT-System. W186-1 (Lehrmodell des Kerns: I_F1 = U0 · 2π · f · C_E, eine zusammengefasste Ableitkapazität) */
+  const ITFIX = { form: 'IT', q: 2.5, qpe: 2.5, l: 20, cleck: 200, ra: 15, dev: 'LS-B', In: 16, rcd: 0, fehler: 'koerperschluss' };
+  const M47 = MIX({ id: 'el47', rig: 'netz', ctl: ITFIX, consts: [200, 15, 50, 80, 5],
+    vals: () => { const c = C(), o = c.grid.fault(Object.assign({}, ITFIX)), u0 = c.const.U0, fq = c.const.f, cf = ITFIX.cleck * 1e-9, xc = 1 / (2 * Math.PI * fq * cf), fB = c.limit('faktor_b').value;
+      return { u0, fq, cnf: ITFIX.cleck, ra: ITFIX.ra, In: ITFIX.In, iF1: o.iF * 1000, uF: o.uB, xck: xc / 1000, ohne2pi: u0 * fq * cf * 1000, fB, iaB: fB * ITFIX.In }; },
+    text: v => 'IT-System (Übungsanlage, Prüfstand „Netzform und Fehlerschleife“, Form IT): Der Sternpunkt der Quelle ist nicht geerdet. Die Gehäuse der Geräte sind über den Schutzleiter geerdet, der Erdungswiderstand ist R_A = ' + f(v.ra, 0) + ' Ω. An einem Gerät tritt ein Körperschluss auf, das ist der erste Fehler. Der Fehlerstrom kann nur über die Ableitkapazität des Netzes gegen Erde zurückfließen. Im Lehrmodell ist sie zu einem Kondensator mit C_E = ' + f(v.cnf, 0) + ' nF zusammengefasst. Es gilt U0 = ' + f(v.u0, 0) + ' V und f = ' + f(v.fq, 0) + ' Hz. Der Stromkreis hat einen LS-Schalter B' + f(v.In, 0) + '. Berechne den Fehlerstrom I_F1 = U0 · 2π · f · C_E und die Fehlerspannung U_F = I_F1 · R_A am Gehäuse. Beantworte dann die drei Fragen.',
+    h1: 'Ein Kondensator lässt bei dieser Frequenz nur einen sehr kleinen Wechselstrom durch. Deshalb bleibt der Strom beim ersten Fehler winzig. Rechne die Kapazität in Farad um: 1 nF ist ein Milliardstel Farad.',
+    h2: v => 'Der Blindwiderstand der Ableitkapazität ist X_C = 1 / (2π · f · C_E) = ' + f(v.xck, 1) + ' kΩ. Damit ist I_F1 = ' + f(v.u0, 0) + ' V / ' + f(v.xck, 1) + ' kΩ. Die Fehlerspannung ist U_F = I_F1 · R_A, mit I_F1 in A. Der LS-Schalter B' + f(v.In, 0) + ' löst erst ab ' + f(v.fB, 0) + ' · In = ' + f(v.iaB, 0) + ' A sicher schnell aus.',
+    fields: [
+      { key: 'if1', label: 'Fehlerstrom I_F1', unit: 'mA', d: 2, ok: v => 'Der Fehlerstrom beim ersten Fehler ist richtig (' + f(v.iF1, 2) + ' mA)', num: v => ({ targets: [v.iF1], scale: 0.001, errs: [{ v: v.ohne2pi, text: 'Der Faktor 2π fehlt in deiner Rechnung.' }, { v: v.iF1 * 1000, text: 'Achte auf die Vorsilbe: 1 nF ist ein Milliardstel Farad, nicht ein Millionstel.' }], hint: 'I_F1 = U0 · 2π · f · C_E.' }) },
+      { key: 'uf', label: 'Fehlerspannung U_F am Gehäuse', unit: 'V', d: 3, ok: v => 'Die Fehlerspannung ist richtig (' + f(v.uF, 3) + ' V)', num: v => ({ targets: [v.uF], errs: [{ v: v.iF1 * v.ra, text: 'Rechne den Strom zuerst von mA in A um und nimm erst dann mit R_A mal.' }, { v: v.u0, text: 'Die volle Spannung liegt nicht am Gehäuse. Fast alles fällt an der Ableitkapazität ab.' }], hint: 'U_F = I_F1 · R_A.' }) }],
+    rows: [
+      { key: 'warum', q: 'Warum schaltet der LS-Schalter beim ersten Fehler nicht ab?', ok: 'Keine Abschaltung: Der Fehlerstrom fließt nur über die Ableitkapazität und bleibt winzig', short: 'Keine Abschaltung', correct: 'kap',
+        options: [
+          { value: 'pe', label: 'Weil im IT-System kein Schutzleiter zu den Geräten führt', why: 'Die Gehäuse sind auch im IT-System über den Schutzleiter geerdet. Der Strom bleibt aus einem anderen Grund klein.' },
+          { value: 'kap', label: 'Weil der Strom nur über die Ableitkapazität zurückfließt', why: 'Das ist richtig.' },
+          { value: 'defekt', label: 'Weil ein LS-Schalter im IT-System grundsätzlich nicht auslöst', why: 'Der LS-Schalter arbeitet wie in jedem Netz. Er bekommt hier nur viel zu wenig Strom.' },
+          { value: 'gross', label: 'Weil der Fehlerstrom dafür schon viel zu groß geworden ist', why: 'Es ist umgekehrt: Der Fehlerstrom ist viel zu klein für eine Auslösung.' }] },
+      { key: 'danach', q: 'Was gilt für die Anlage nach dem ersten Fehler?', ok: 'Nach dem ersten Fehler: Die Anlage läuft weiter, der Fehler wird gemeldet und soll bald beseitigt werden', short: 'Nach dem ersten Fehler', correct: 'weiter',
+        options: [
+          { value: 'aus', label: 'Die Anlage wird vom Schutzorgan sofort ganz abgeschaltet', why: 'Beim ersten Fehler fließt zu wenig Strom für eine Abschaltung. Genau das ist der Vorteil des IT-Systems.' },
+          { value: 'egal', label: 'Die Anlage darf ohne jede Maßnahme beliebig lange so laufen', why: 'Mit dem ersten Fehler ist das Netz an einer Stelle mit Erde verbunden. Ein zweiter Fehler wird dann zum Kurzschluss, deshalb muss der erste bald beseitigt werden.' },
+          { value: 'weiter', label: 'Die Anlage läuft weiter, Fehler melden und bald beseitigen', why: 'Das ist richtig.' }] },
+      { key: 'wo', q: 'Wo wird ein IT-System vor allem eingesetzt?', ok: 'Einsatz: dort, wo ein plötzlicher Stromausfall gefährlich oder sehr teuer wäre, zum Beispiel im Operationsraum', short: 'Einsatz', correct: 'ausfall',
+        options: [
+          { value: 'wohnung', label: 'In Wohnungen für alle Steckdosen und das Licht', why: 'Wohnungen werden in der Regel als TN-System oder TT-System versorgt.' },
+          { value: 'klein', label: 'Nur in Anlagen mit Kleinspannung bis 50 V', why: 'Das IT-System gibt es auch bei 230 V und 400 V. Mit Kleinspannung hat es nichts zu tun.' },
+          { value: 'billig', label: 'Überall dort, wo die Anlage besonders billig sein soll', why: 'Ein IT-System braucht eine eigene Quelle und ein Überwachungsgerät. Es ist aufwendiger, nicht billiger.' },
+          { value: 'ausfall', label: 'Dort, wo ein Stromausfall gefährlich wäre', why: 'Das ist richtig.' }] }],
+    wrongF: v => [{ if1: v.ohne2pi, uf: v.iF1 * v.ra }, { if1: v.iF1 * 1000, uf: v.u0 }] });
+
+  /* el48: Isolationsüberwachung, Ansprechwert und Meldung. W186-2 (Ansprechwert 50 kΩ ist ein Übungswert im Aufgabentext, der Kern hat dafür keinen Wert) */
+  const M48 = MIX({ id: 'el48', rig: 'netz', ctl: ITFIX, consts: [50, 150, 60, 210],
+    vals: () => { const ran = 50, r1 = 150, r2 = 60; return { ran, r1, r2, summe: r1 + r2, rges: r1 * r2 / (r1 + r2), mittel: (r1 + r2) / 2 }; },
+    text: v => 'In einem IT-System überwacht ein Isolationsüberwachungsgerät dauernd den Isolationswiderstand des ganzen Netzes gegen Erde. Der Ansprechwert ist hier auf ' + f(v.ran, 0) + ' kΩ eingestellt (Übungswert, am Gerät einstellbar). Sinkt der Isolationswiderstand unter diesen Wert, meldet das Gerät mit Leuchte und Summer. Am Netz hängen zwei Abgänge. Abgang 1 hat ' + f(v.r1, 0) + ' kΩ gegen Erde, Abgang 2 nach einem Feuchteschaden nur noch ' + f(v.r2, 0) + ' kΩ. Für das Gerät liegen beide Widerstände parallel. Berechne den Isolationswiderstand des ganzen Netzes und beantworte die drei Fragen.',
+    h1: 'Jeder Abgang ist ein eigener Weg vom Netz zur Erde. Mehrere Wege nebeneinander sind eine Parallelschaltung. Der Gesamtwiderstand ist dann kleiner als der kleinste Einzelwert.',
+    h2: v => 'R_ges = R1 · R2 / (R1 + R2) = ' + f(v.r1, 0) + ' kΩ · ' + f(v.r2, 0) + ' kΩ / ' + f(v.summe, 0) + ' kΩ. Vergleiche das Ergebnis mit dem Ansprechwert von ' + f(v.ran, 0) + ' kΩ.',
+    fields: [
+      { key: 'rges', label: 'Isolationswiderstand des ganzen Netzes', unit: 'kΩ', d: 1, ok: v => 'Der Isolationswiderstand des Netzes ist richtig (' + f(v.rges, 1) + ' kΩ)', num: v => ({ targets: [v.rges], scale: 1000, errs: [{ v: v.summe, text: 'Du hast die Widerstände addiert. Die Abgänge liegen aber parallel, der Gesamtwert wird kleiner.' }, { v: v.mittel, text: 'Der Mittelwert passt hier nicht. Rechne die Parallelschaltung: R1 · R2 / (R1 + R2).' }, { v: v.r2, text: 'Das ist nur der schlechtere Abgang. Der andere Abgang liegt parallel dazu und senkt den Gesamtwert noch etwas.' }], hint: 'R_ges = R1 · R2 / (R1 + R2).' }) }],
+    rows: [
+      { key: 'meldet', q: 'Meldet das Gerät bei diesen Werten?', ok: 'Meldung: ja, der Gesamtwert liegt unter dem Ansprechwert von 50 kΩ', short: 'Meldung', correct: 'ja',
+        options: [
+          { value: 'nein1', label: 'Nein, beide Abgänge liegen einzeln über 50 kΩ', why: 'Das Gerät sieht nicht die einzelnen Abgänge, sondern alle zusammen. Parallel ergeben sie weniger als 50 kΩ.' },
+          { value: 'nein2', label: 'Nein, zusammen sind es 210 kΩ und damit genug', why: 'Die Widerstände addieren sich nicht. Parallel geschaltet ist der Gesamtwert kleiner als der kleinste Einzelwert.' },
+          { value: 'ja', label: 'Ja, der Gesamtwert liegt unter 50 kΩ', why: 'Das ist richtig.' },
+          { value: 'ja2', label: 'Ja, weil schon ein Abgang unter 150 kΩ liegt', why: 'Die Meldung hängt am Ansprechwert von 50 kΩ und am Gesamtwert, nicht am Vergleich der Abgänge untereinander.' }] },
+      { key: 'tun', q: 'Das Gerät meldet. Was ist jetzt richtig?', ok: 'Nach der Meldung: Fehler melden und bald suchen und beseitigen lassen, die Anlage darf so lange weiterlaufen', short: 'Nach der Meldung', correct: 'suchen',
+        options: [
+          { value: 'suchen', label: 'Fehler melden und bald suchen und beseitigen lassen', why: 'Das ist richtig.' },
+          { value: 'quitt', label: 'Meldung quittieren und warten, bis etwas abschaltet', why: 'Abgeschaltet wird erst beim zweiten Fehler, und der ist ein Kurzschluss. So lange darf der erste Fehler nicht bleiben.' },
+          { value: 'stell', label: 'Den Ansprechwert kleiner stellen, bis die Leuchte ausgeht', why: 'Damit verschwindet nur die Meldung, nicht der Fehler. Die Überwachung wäre dann wertlos.' },
+          { value: 'not', label: 'Sofort alles abschalten, weil akute Lebensgefahr besteht', why: 'Beim ersten Fehler entsteht keine gefährliche Berührungsspannung. Der Betrieb darf weitergehen, bis der Fehler gefunden ist.' }] },
+      { key: 'prinzip', q: 'Wie erkennt das Gerät den Isolationsfehler?', ok: 'Messprinzip: Das Gerät legt eine kleine Messspannung zwischen Netz und Erde und wertet den Messstrom aus', short: 'Messprinzip', correct: 'mess',
+        options: [
+          { value: 'summe', label: 'Über den Summenstrom der Außenleiter, wie ein RCD', why: 'Das ist das Prinzip der Fehlerstrom-Schutzeinrichtung. Beim ersten Fehler im IT-System fließt dafür zu wenig Strom.' },
+          { value: 'temp', label: 'Über die Erwärmung der Leitungen an den Klemmen', why: 'Ein Isolationsfehler mit so kleinem Strom erwärmt nichts messbar.' },
+          { value: 'mess', label: 'Über eine kleine Messspannung zwischen Netz und Erde', why: 'Das ist richtig.' },
+          { value: 'kurz', label: 'Über den Kurzschlussstrom, der im Schutzleiter fließt', why: 'Ein Kurzschlussstrom fließt erst beim zweiten Fehler. Das Gerät soll schon vorher melden.' }] }],
+    wrongF: v => [{ rges: v.summe }, { rges: v.mittel }] });
+
+  /* el49: Zweiter Fehler im IT-System an einem anderen Außenleiter. W186-3 (reine Kreisrechnung mit 400 V zwischen zwei Außenleitern;
+     der Kern rechnet den zweiten Fehler im Prüfstand vereinfacht wie TN mit U0, eine Abschaltzeit für das IT-System hat das Lab nicht: keine Normbedingung gefragt) */
+  const M49 = MIX({ id: 'el49', rig: 'netz', ctl: ITFIX, consts: [0.3, 0.21, 0.32, 400, 230, 80, 5],
+    vals: () => { const c = C(), ull = 400, rq = 0.3, r1 = 0.21, r2 = 0.32, zs = rq + 2 * r1 + 2 * r2, halb = rq + r1 + r2, fB = c.limit('faktor_b').value, In = ITFIX.In;
+      return { ull, u0: c.const.U0, rq, r1, r2, zs, halb, ohneQ: 2 * r1 + 2 * r2, iF: ull / zs, iF230: c.const.U0 / zs, iFhalb: ull / halb, In, fB, iaB: fB * In }; },
+    text: v => 'IT-System mit ' + f(v.ull, 0) + ' V zwischen den Außenleitern (Übungsanlage). Der erste Fehler wurde nicht beseitigt: Gerät 1 hat einen Körperschluss am Außenleiter L1. Nun kommt ein zweiter Fehler dazu: Gerät 2 hat einen Körperschluss am Außenleiter L2. Beide Gehäuse sind über den Schutzleiter miteinander verbunden. Der Fehlerstrom fließt von der Quelle über L1 zu Gerät 1, über die Schutzleiter zu Gerät 2 und über L2 zurück zur Quelle. Widerstände (Übungswerte): Quelle ' + f(v.rq, 1) + ' Ω, Außenleiter und Schutzleiter zu Gerät 1 je ' + f(v.r1, 2) + ' Ω, Außenleiter und Schutzleiter zu Gerät 2 je ' + f(v.r2, 2) + ' Ω. Jeder der beiden Stromkreise hat einen LS-Schalter B' + f(v.In, 0) + '. Berechne den Widerstand der Fehlerschleife und den Fehlerstrom. Der Nachweis nach Norm ist hier nicht Teil der Aufgabe. Beantworte dann die drei Fragen.',
+    h1: 'Beim zweiten Fehler schließt sich ein Stromkreis von einem Außenleiter über beide Gehäuse und die Schutzleiter zum anderen Außenleiter. Alle Widerstände auf diesem Weg liegen in Reihe. Die treibende Spannung ist die Spannung zwischen den beiden Außenleitern.',
+    h2: v => 'Schleife: ' + f(v.rq, 1) + ' Ω + ' + f(v.r1, 2) + ' Ω + ' + f(v.r1, 2) + ' Ω + ' + f(v.r2, 2) + ' Ω + ' + f(v.r2, 2) + ' Ω. Fehlerstrom: I_F = ' + f(v.ull, 0) + ' V / Schleifenwiderstand. Der LS-Schalter B' + f(v.In, 0) + ' löst ab ' + f(v.fB, 0) + ' · In = ' + f(v.iaB, 0) + ' A sicher schnell aus.',
+    fields: [
+      { key: 'zs', label: 'Widerstand der Fehlerschleife', unit: 'Ω', d: 2, ok: v => 'Der Widerstand der Fehlerschleife ist richtig (' + f(v.zs, 2) + ' Ω)', num: v => ({ targets: [v.zs], errs: [{ v: v.halb, text: 'Zu jedem Gerät gehören zwei Leiter: der Außenleiter und der Schutzleiter. Beide liegen in der Schleife.' }, { v: v.ohneQ, text: 'Der Widerstand der Quelle gehört auch zur Schleife.' }], hint: 'Addiere alle fünf Widerstände.' }) },
+      { key: 'if', label: 'Fehlerstrom beim zweiten Fehler', unit: 'A', d: 1, ok: v => 'Der Fehlerstrom beim zweiten Fehler ist richtig (' + f(v.iF, 1) + ' A)', num: v => ({ targets: [v.iF], errs: [{ v: v.iF230, text: 'Die beiden Fehler liegen an verschiedenen Außenleitern. Dazwischen liegen ' + f(v.ull, 0) + ' V, nicht ' + f(v.u0, 0) + ' V.' }, { v: v.iFhalb, text: 'Dein Schleifenwiderstand ist zu klein: Zu jedem Gerät gehören Außenleiter und Schutzleiter.' }], hint: 'I_F = ' + f(v.ull, 0) + ' V / Schleifenwiderstand.' }) }],
+    rows: [
+      { key: 'ab', q: 'Schaltet ein LS-Schalter B16 bei diesem Strom schnell ab?', ok: 'Abschaltung: ja, der Fehlerstrom liegt weit über dem Fünffachen des Nennstroms (80 A)', short: 'Abschaltung', correct: 'ja',
+        options: [
+          { value: 'nie', label: 'Nein, im IT-System schaltet ein Fehler grundsätzlich nie ab', why: 'Das gilt nur für den ersten Fehler. Der zweite Fehler ist ein Kurzschluss über beide Fehlerstellen.' },
+          { value: 'rcd', label: 'Nein, dafür wäre immer ein RCD mit 30 mA nötig', why: 'Bei fast 300 A spricht der Magnetauslöser des LS-Schalters an. Ein RCD ist dafür nicht nötig.' },
+          { value: 'bimetall', label: 'Ja, aber erst nach vielen Minuten über das Bimetall', why: 'Das Bimetall ist für Überlast da. Bei diesem Strom spricht der Magnetauslöser sofort an.' },
+          { value: 'ja', label: 'Ja, der Strom liegt weit über dem Fünffachen von In', why: 'Das ist richtig.' }] },
+      { key: 'unterschied', q: 'Warum ist der Strom beim zweiten Fehler so viel größer als beim ersten?', ok: 'Unterschied: Über beide Fehlerstellen und die Schutzleiter schließt sich ein Kurzschlusskreis mit kleinem Widerstand', short: 'Unterschied', correct: 'kreis',
+        options: [
+          { value: 'kap', label: 'Weil sich die Ableitkapazität des Netzes dabei verdoppelt', why: 'Die Kapazität ändert sich kaum. Der Strom fließt jetzt gar nicht mehr über die Kapazität.' },
+          { value: 'kreis', label: 'Weil sich über beide Fehlerstellen ein Kurzschluss schließt', why: 'Das ist richtig.' },
+          { value: 'geraet', label: 'Weil das Überwachungsgerät nun selbst einen Strom einspeist', why: 'Das Überwachungsgerät arbeitet nur mit einem winzigen Messstrom. Der große Strom kommt aus der Quelle.' }] },
+      { key: 'gleich', q: 'Angenommen, der zweite Fehler läge ebenfalls am Außenleiter L1. Was passiert dann?', ok: 'Gleicher Außenleiter: kein Kurzschluss, denn zwischen beiden Fehlerstellen liegt keine Spannung', short: 'Gleicher Außenleiter', correct: 'kein',
+        options: [
+          { value: 'selb', label: 'Es fließt derselbe große Strom wie bei L1 und L2', why: 'Ein großer Strom braucht eine Spannung zwischen den Fehlerstellen. Am selben Außenleiter fehlt sie.' },
+          { value: 'kein', label: 'Es fließt kein Kurzschlussstrom über die Gehäuse', why: 'Das ist richtig.' },
+          { value: 'volt', label: 'Zwischen den beiden Gehäusen liegen dann dauernd 400 V', why: 'Beide Gehäuse hängen am selben Außenleiter und am selben Schutzleiter. Zwischen ihnen liegt keine Spannung.' }] }],
+    wrongF: v => [{ zs: v.halb, if: v.iFhalb }, { zs: v.ohneQ, if: v.iF230 }] });
+
+  /* el50: RCD-Messwerte beurteilen. W186-4 (Grenzen aus dem Kern: Auslösestrom 0,5 bis 1 · IΔn, 300 ms bei IΔn, 50 V; Lehrfaustwerte des Labs, F9) */
+  const RCDM = [
+    { key: 'a', n: 'A', idn: 30, ia: 21.4, t: 28, ub: 0.9, correct: 'ok', ok: 'RCD A: bestanden, alle drei Werte liegen im erlaubten Bereich', note: 'RCD A: 21,4 mA liegen zwischen 15 mA und 30 mA, 28 ms und 0,9 V liegen unter den Grenzen.' },
+    { key: 'b', n: 'B', idn: 30, ia: 34.2, t: 31, ub: 1.1, correct: 'strom', ok: 'RCD B: nicht bestanden, der Auslösestrom 34,2 mA liegt über 30 mA', note: 'RCD B: 34,2 mA liegen über IΔn = 30 mA. Zeit und Berührungsspannung passen.' },
+    { key: 'c', n: 'C', idn: 30, ia: 23.8, t: 342, ub: 0.8, correct: 'zeit', ok: 'RCD C: nicht bestanden, die Auslösezeit 342 ms liegt über 300 ms', note: 'RCD C: 342 ms liegen über 300 ms. Auslösestrom und Berührungsspannung passen.' },
+    { key: 'd', n: 'D', idn: 30, ia: 12.6, t: 24, ub: 0.7, correct: 'strom', ok: 'RCD D: nicht bestanden, der Auslösestrom 12,6 mA liegt unter 15 mA (der RCD löst zu früh aus)', note: 'RCD D: 12,6 mA liegen unter der Hälfte von 30 mA. Zeit und Berührungsspannung passen.' },
+    { key: 'e', n: 'E', idn: 300, ia: 228, t: 142, ub: 61, correct: 'ub', ok: 'RCD E: nicht bestanden, die Berührungsspannung 61 V liegt über 50 V', note: 'RCD E: 61 V liegen über 50 V. 228 mA liegen zwischen 150 mA und 300 mA, 142 ms liegen unter 300 ms.' }];
+  const M50 = MIX({ id: 'el50', rig: 'rcd', ctl: { idn: 30, type: 'A', form: 'sinus', iFehler: 0, person: false, pe: 'angeschlossen' }, consts: [15, 30, 150, 300, 50],
+    vals: () => { const c = C(), rb = c.limit('rcd_bereich').extra, idn = 30, idnE = 300; return { idn, idnE, unten: rb.unten, oben: rb.oben, lo: rb.unten * idn, hi: rb.oben * idn, loE: rb.unten * idnE, hiE: rb.oben * idnE, tmax: c.limit('rcd_zeit').value, ul: c.limit('ul_ac').value, pUnten: 100 * rb.unten, pOben: 100 * rb.oben }; },
+    text: v => 'Eine Elektrofachkraft hat fünf Fehlerstrom-Schutzeinrichtungen (RCD) mit dem Prüfgerät gemessen. Du wertest die Messwerte aus der Tabelle aus. In dieser Übung gelten die üblichen Prüfwerte für allgemeine RCD (Übungswerte, maßgeblich sind Norm und Prüfgerät): Der Auslösestrom muss zwischen ' + f(v.pUnten, 0) + ' % und ' + f(v.pOben, 0) + ' % des Nennfehlerstroms IΔn liegen. Die Auslösezeit beim Nennfehlerstrom darf höchstens ' + f(v.tmax, 0) + ' ms betragen. Die Berührungsspannung darf höchstens ' + f(v.ul, 0) + ' V betragen. Berechne zuerst die untere und die obere Grenze des Auslösestroms für IΔn = ' + f(v.idn, 0) + ' mA. Beurteile dann jeden RCD. Bei jedem RCD ist höchstens ein Wert auffällig.',
+    table: () => [{ caption: 'Messwerte der RCD-Prüfung', head: ['RCD', 'IΔn in mA', 'Auslösestrom in mA', 'Auslösezeit in ms', 'Berührungsspannung in V'], rows: RCDM.map(x => [x.n, f(x.idn, 0), f(x.ia, 1), f(x.t, 0), f(x.ub, 1)]) }],
+    h1: 'Gehe bei jedem RCD drei Schritte: 1. Liegt der Auslösestrom zwischen der Hälfte und dem vollen Nennfehlerstrom? 2. Ist die Auslösezeit kurz genug? 3. Ist die Berührungsspannung klein genug?',
+    h2: v => 'Für IΔn = ' + f(v.idn, 0) + ' mA reicht der erlaubte Bereich von ' + f(v.lo, 0) + ' mA bis ' + f(v.hi, 0) + ' mA, für IΔn = ' + f(v.idnE, 0) + ' mA von ' + f(v.loE, 0) + ' mA bis ' + f(v.hiE, 0) + ' mA. Ein RCD, der schon unter der Hälfte auslöst, ist zu empfindlich und stört den Betrieb. Ein RCD, der erst über IΔn auslöst, schützt nicht sicher.',
+    fields: [
+      { key: 'lo', label: 'Untere Grenze des Auslösestroms bei 30 mA', unit: 'mA', d: 0, ok: v => 'Die untere Grenze ist richtig (' + f(v.lo, 0) + ' mA)', num: v => ({ targets: [v.lo], tol: 0.01, errs: [{ v: v.hi, text: 'Das ist die obere Grenze. Die untere liegt bei der Hälfte des Nennfehlerstroms.' }], hint: 'Untere Grenze = 0,5 · IΔn.' }) },
+      { key: 'hi', label: 'Obere Grenze des Auslösestroms bei 30 mA', unit: 'mA', d: 0, ok: v => 'Die obere Grenze ist richtig (' + f(v.hi, 0) + ' mA)', num: v => ({ targets: [v.hi], tol: 0.01, errs: [{ v: v.lo, text: 'Das ist die untere Grenze. Die obere ist der Nennfehlerstrom selbst.' }, { v: 5 * v.idn, text: 'Das ist das Fünffache. Die obere Grenze des Auslösestroms ist der Nennfehlerstrom selbst.' }], hint: 'Obere Grenze = 1 · IΔn.' }) }],
+    options: [
+      { value: 'ok', label: 'bestanden: alle drei Werte liegen im erlaubten Bereich', why: 'Bestanden ist ein RCD nur, wenn alle drei Werte passen. Vergleiche Auslösestrom, Auslösezeit und Berührungsspannung einzeln mit den Grenzen.' },
+      { value: 'strom', label: 'nicht bestanden: Auslösestrom außerhalb des Bereichs', why: 'Der Auslösestrom muss zwischen der Hälfte und dem vollen Nennfehlerstrom liegen. Prüfe, ob das hier wirklich verletzt ist.' },
+      { value: 'zeit', label: 'nicht bestanden: Auslösezeit ist zu lang', why: 'Die Auslösezeit darf höchstens 300 ms betragen. Prüfe, ob das hier wirklich verletzt ist.' },
+      { value: 'ub', label: 'nicht bestanden: Berührungsspannung ist zu hoch', why: 'Die Berührungsspannung darf höchstens 50 V betragen. Prüfe, ob das hier wirklich verletzt ist.' }],
+    rows: RCDM.map(x => ({ key: x.key, q: 'RCD ' + x.n + ' (IΔn = ' + f(x.idn, 0) + ' mA): ' + f(x.ia, 1) + ' mA, ' + f(x.t, 0) + ' ms, ' + f(x.ub, 1) + ' V', ok: x.ok, short: 'RCD ' + x.n, correct: x.correct, note: x.note })),
+    wrongF: v => [{ lo: v.hi, hi: v.lo }, { lo: v.lo / 5, hi: 5 * v.idn }] });
+  M50.daten = () => RCDM.map(x => ({ key: x.key, idn: x.idn, ia: x.ia, t: x.t, ub: x.ub }));
+
+  /* el51: Erdungswiderstand passend zum RCD. W186-5 (R_A ≤ U_L / IΔn aus dem Kern mit 50 V; 25 V nur als Übungswert im Aufgabentext) */
+  const TT51 = { form: 'TT', ra: 210, rb: 2, l: 10, q: 2.5, qpe: 2.5, dev: 'LS-B', In: 16, rcd: 30, fehler: 'koerperschluss' };
+  const M51 = MIX({ id: 'el51', rig: 'netz', ctl: TT51, consts: [0.03, 0.3, 25, 30, 100, 300, 500, 210],
+    vals: () => { const c = C(), ul = c.limit('ul_ac').value, ul2 = 25; return { ul, ul2, ra30: c.grid.raMax(30), ra100: c.grid.raMax(100), ra300: c.grid.raMax(300), ra500: c.grid.raMax(500), ra25: ul2 / 0.03, raMess: TT51.ra }; },
+    text: v => 'TT-System (Übungsanlage, Prüfstand „Netzform und Fehlerschleife“, Form TT): Hier schaltet der RCD den Fehler ab. Damit am Gehäuse keine zu hohe Berührungsspannung stehen bleibt, muss der Anlagenerder gut genug sein: R_A ≤ U_L / IΔn. Die dauernd zulässige Berührungsspannung ist U_L = ' + f(v.ul, 0) + ' V. Berechne den größten zulässigen Erdungswiderstand für einen RCD mit 30 mA und für einen RCD mit 300 mA. Rechne dann den RCD mit 30 mA noch einmal mit U_L = ' + f(v.ul2, 0) + ' V. Dieser kleinere Wert ist hier ein Übungswert für Bereiche mit erhöhter Gefährdung. Beantworte danach die beiden Fragen.',
+    h1: 'Solange der RCD noch nicht auslöst, fließt höchstens IΔn über den Anlagenerder. Die Spannung am Gehäuse ist dann höchstens IΔn · R_A. Diese Spannung soll nicht über U_L steigen. Rechne IΔn in A um.',
+    h2: v => 'R_A = U_L / IΔn. Für 30 mA: ' + f(v.ul, 0) + ' V / 0,03 A. Für 300 mA: ' + f(v.ul, 0) + ' V / 0,3 A. Mit dem Übungswert: ' + f(v.ul2, 0) + ' V / 0,03 A. Für 100 mA wären es ' + f(v.ra100, 0) + ' Ω, für 500 mA nur ' + f(v.ra500, 0) + ' Ω.',
+    fields: [
+      { key: 'ra30', label: 'Größter Erdungswiderstand bei 30 mA und 50 V', unit: 'Ω', d: 1, ok: v => 'Der Wert für 30 mA und 50 V ist richtig (' + f(v.ra30, 1) + ' Ω)', num: v => ({ targets: [v.ra30], errs: [{ v: v.ul / 30, text: 'Rechne den Nennfehlerstrom in A um: 30 mA sind 0,03 A.' }, { v: v.ul * 0.03, text: 'Du hast malgenommen. Der Widerstand ist Spannung geteilt durch Strom.' }], hint: 'R_A = U_L / IΔn.' }) },
+      { key: 'ra300', label: 'Größter Erdungswiderstand bei 300 mA und 50 V', unit: 'Ω', d: 1, ok: v => 'Der Wert für 300 mA und 50 V ist richtig (' + f(v.ra300, 1) + ' Ω)', num: v => ({ targets: [v.ra300], errs: [{ v: v.ra30, text: 'Das ist der Wert für 30 mA. Bei 300 mA fließt zehnmal so viel Strom, der Widerstand muss zehnmal kleiner sein.' }, { v: v.ul / 300, text: 'Rechne den Nennfehlerstrom in A um: 300 mA sind 0,3 A.' }], hint: 'R_A = U_L / IΔn.' }) },
+      { key: 'ra25', label: 'Größter Erdungswiderstand bei 30 mA und 25 V', unit: 'Ω', d: 1, ok: v => 'Der Wert für 30 mA und 25 V ist richtig (' + f(v.ra25, 1) + ' Ω)', num: v => ({ targets: [v.ra25], errs: [{ v: v.ra30, text: 'Das ist der Wert für 50 V. Mit 25 V halbiert sich der zulässige Widerstand.' }, { v: 2 * v.ra30, text: 'Die kleinere Spannung macht den zulässigen Widerstand kleiner, nicht größer.' }], hint: 'R_A = 25 V / IΔn.' }) }],
+    rows: [
+      { key: 'passt', q: 'Der Anlagenerder hat R_A = 210 Ω (von der Elektrofachkraft gemessen). Welcher ist der größte Nennfehlerstrom, bei dem die Bedingung mit 50 V noch erfüllt ist?', ok: 'Bei 210 Ω passt höchstens ein RCD mit 100 mA (erlaubt bis 500 Ω), bei 300 mA wären nur 166,7 Ω erlaubt', short: 'Größter RCD bei 210 Ω', correct: '100',
+        options: [
+          { value: '30', label: '30 mA', why: 'Mit 30 mA ist die Bedingung erfüllt. Es passt aber auch noch ein größerer Nennfehlerstrom.' },
+          { value: '100', label: '100 mA', why: 'Das ist richtig.' },
+          { value: '300', label: '300 mA', why: 'Bei 300 mA sind höchstens 166,7 Ω erlaubt. 210 Ω sind zu viel.' },
+          { value: '500', label: '500 mA', why: 'Bei 500 mA sind höchstens 100 Ω erlaubt. 210 Ω sind zu viel.' }] },
+      { key: 'trend', q: 'Wie hängen Nennfehlerstrom und zulässiger Erdungswiderstand zusammen?', ok: 'Zusammenhang: Je größer IΔn, desto kleiner muss der Erdungswiderstand sein', short: 'Zusammenhang', correct: 'kleiner',
+        options: [
+          { value: 'groesser', label: 'Je größer IΔn, desto größer darf R_A werden', why: 'Es ist umgekehrt: Ein größerer Strom erzeugt am selben Widerstand mehr Spannung.' },
+          { value: 'egal', label: 'R_A spielt mit einem RCD keine Rolle mehr', why: 'Auch der RCD braucht einen Fehlerstrom über den Erder. Ist R_A zu groß, bleibt eine zu hohe Spannung am Gehäuse stehen.' },
+          { value: 'kleiner', label: 'Je größer IΔn, desto kleiner muss R_A sein', why: 'Das ist richtig.' }] }],
+    wrongF: v => [{ ra30: v.ul / 30, ra300: v.ra30, ra25: v.ra30 }, { ra30: v.ul * 0.03, ra300: v.ul / 300, ra25: 2 * v.ra30 }] });
+
+  /* el52: Erstprüfung, Reihenfolge Besichtigen, Erproben, Messen. W186-6 (Wissensaufgabe ohne Zahlen; welche Messungen ohne Netzspannung erfolgen) */
+  const BEM = [
+    { value: 'bes', label: 'Besichtigen (ansehen, ohne Messgerät)', why: 'Besichtigen heißt, etwas mit den Augen zu prüfen: Auswahl, Zustand, Beschriftung und Vollständigkeit.' },
+    { value: 'erp', label: 'Erproben (Funktion auslösen und beobachten)', why: 'Erproben heißt, eine Funktion zu betätigen und zu beobachten, ob sie wirkt.' },
+    { value: 'mes', label: 'Messen (Wert mit dem Messgerät ermitteln)', why: 'Messen heißt, mit dem Messgerät einen Zahlenwert zu ermitteln und zu bewerten.' }];
+  const M52 = MIX({ id: 'el52', vals: () => ({ fragen: 8 }),
+    text: 'Bevor eine neue elektrische Anlage in Betrieb geht, wird sie von einer Elektrofachkraft geprüft (Erstprüfung). Die Prüfung hat drei Teile: Besichtigen, Erproben und Messen. Ordne fünf Tätigkeiten dem richtigen Teil zu und beantworte drei Fragen zur Reihenfolge. Wissensaufgabe: Die Norm und die Vorgaben des Betriebs sind maßgeblich.',
+    h1: 'Besichtigen heißt: mit den Augen prüfen, ohne Messgerät. Erproben heißt: eine Funktion auslösen und beobachten. Messen heißt: mit dem Messgerät einen Wert ermitteln und mit einem Sollwert vergleichen.',
+    h2: 'Die Reihenfolge ist Besichtigen, danach Messen und Erproben. Dabei wird zuerst ohne Netzspannung gemessen: Durchgängigkeit der Schutzleiter und Isolationswiderstand. Erst danach folgen die Messungen mit Netzspannung, zum Beispiel Schleifenimpedanz, RCD und Drehfeld.',
+    options: BEM,
+    rows: [
+      { key: 't1', q: 'Prüfen, ob alle Abdeckungen im Verteiler vorhanden sind', ok: 'Abdeckungen im Verteiler kontrollieren: Besichtigen', short: 'Abdeckungen', correct: 'bes' },
+      { key: 't2', q: 'Die Prüftaste des RCD drücken und sehen, ob er auslöst', ok: 'Prüftaste des RCD drücken: Erproben', short: 'Prüftaste', correct: 'erp' },
+      { key: 't3', q: 'Den Isolationswiderstand eines Stromkreises ermitteln', ok: 'Isolationswiderstand ermitteln: Messen', short: 'Isolationswiderstand', correct: 'mes' },
+      { key: 't4', q: 'Vergleichen, ob Leiterquerschnitt und LS-Schalter zum Plan passen', ok: 'Leiterquerschnitt und LS-Schalter mit dem Plan vergleichen: Besichtigen', short: 'Vergleich mit dem Plan', correct: 'bes' },
+      { key: 't5', q: 'Den Not-Halt einer Maschine betätigen und die Wirkung beobachten', ok: 'Not-Halt betätigen und beobachten: Erproben', short: 'Not-Halt', correct: 'erp' },
+      { key: 'erst', q: 'Welcher Teil der Prüfung kommt zuerst?', ok: 'Zuerst: Besichtigen, denn sichtbare Mängel müssen vor allem anderen gefunden werden', short: 'Zuerst', correct: 'bes',
+        options: [
+          { value: 'mes', label: 'Messen, damit sofort Zahlenwerte vorliegen', why: 'Gemessen wird erst, wenn die Anlage besichtigt ist. Sichtbare Mängel findet man ohne Messgerät.' },
+          { value: 'erp', label: 'Erproben, um zu sehen, ob alles läuft', why: 'Zum Erproben braucht die Anlage meist Spannung. Vorher muss klar sein, dass sie in Ordnung aussieht.' },
+          { value: 'bes', label: 'Besichtigen, um sichtbare Mängel zu finden', why: 'Das ist richtig.' }] },
+      { key: 'ohne', q: 'Welche beiden Messungen werden ohne Netzspannung durchgeführt?', ok: 'Ohne Netzspannung: Durchgängigkeit der Schutzleiter und Isolationswiderstand', short: 'Ohne Netzspannung', correct: 'frei',
+        options: [
+          { value: 'zs', label: 'Schleifenimpedanz und Auslösezeit des RCD', why: 'Beide Messungen brauchen die Netzspannung und kommen erst später an die Reihe.' },
+          { value: 'frei', label: 'Schutzleiter-Durchgang und Isolationswiderstand', why: 'Das ist richtig.' },
+          { value: 'dreh', label: 'Drehfeld und Spannung zwischen den Außenleitern', why: 'Ein Drehfeld und eine Spannung gibt es nur mit Netzspannung.' },
+          { value: 'misch', label: 'Isolationswiderstand und Schleifenimpedanz der Stromkreise', why: 'Der Isolationswiderstand stimmt. Die Schleifenimpedanz wird aber mit Netzspannung gemessen.' }] },
+      { key: 'grund', q: 'Warum kommen die Messungen ohne Netzspannung vor den Messungen mit Netzspannung?', ok: 'Grund: Erst wenn Schutzleiter und Isolation in Ordnung sind, darf die Anlage eingeschaltet werden', short: 'Grund', correct: 'sicher',
+        options: [
+          { value: 'genau', label: 'Weil die Messgeräte ohne Netzspannung viel genauer anzeigen', why: 'Mit der Genauigkeit hat das nichts zu tun. Es geht darum, einen Fehler am Schutzleiter oder an der Isolation vor dem Einschalten zu finden.' },
+          { value: 'zeit', label: 'Weil diese Messungen am schnellsten erledigt sind', why: 'Die Dauer ist nicht der Grund. Es geht um die Sicherheit beim ersten Einschalten.' },
+          { value: 'strom', label: 'Weil dabei kein Strom verbraucht wird und Kosten sinken', why: 'Kosten spielen hier keine Rolle. Es geht um die Sicherheit beim ersten Einschalten.' },
+          { value: 'sicher', label: 'Weil die Anlage erst danach sicher eingeschaltet wird', why: 'Das ist richtig.' }] }] });
+
+  /* el53: Durchgängigkeit des Schutzleiters. W186-7 (Erwartungswert R = ρ · l / q, einfache Länge; kein Grenzwert im Kern für Leitungen über 5 m, deshalb Vergleich mit dem Rechenwert) */
+  const M53 = MIX({ id: 'el53', rig: 'isolation', ctl: { art: 'rpe', sk: 'I', mode: '4L', len: 24, q: 1.5, bruch: 'kein' }, consts: [24, 1.5, 18, 2.5, 0.29, 0.85],
+    vals: () => { const c = C(), rho = c.const.rho, alt = c.const.rhoAlt, l1 = 24, q1 = 1.5, l2 = 18, q2 = 2.5, m1 = 0.29, m2 = 0.85;
+      return { rho, l1, q1, l2, q2, m1, m2, r1: rho * l1 / q1, r1alt: alt * l1 / q1, r2: rho * l2 / q2, r2alt: alt * l2 / q2, r1mal: rho * l1 * q1, r2q1: rho * l2 / q1, mal2: m2 / (rho * l2 / q2) }; },
+    text: v => 'Bei der Erstprüfung einer Anlage prüft die Elektrofachkraft im spannungsfreien Zustand, ob der Schutzleiter jedes Stromkreises durchgängig ist. Für den Widerstand gibt es in dieser Übung keinen festen Grenzwert. Du berechnest deshalb den Erwartungswert aus Länge und Querschnitt und vergleichst ihn mit dem Messwert. Kupfer hat ρ = ' + f(v.rho, 4) + ' Ω·mm²/m. Stromkreis 1: Schutzleiter ' + f(v.l1, 0) + ' m lang mit ' + f(v.q1, 1) + ' mm², gemessen ' + f(v.m1, 2) + ' Ω. Stromkreis 2: Schutzleiter ' + f(v.l2, 0) + ' m lang mit ' + f(v.q2, 1) + ' mm², gemessen ' + f(v.m2, 2) + ' Ω. Der Widerstand der Messleitungen ist in den Messwerten nicht enthalten. Berechne beide Erwartungswerte und beurteile die Messwerte. Den ersten Stromkreis kannst du am Prüfstand „Isolation und Schutzleiter“ nachstellen (Messung Schutzleiterwiderstand, 4-Leiter).',
+    h1: 'Der Widerstand eines Leiters ist R = ρ · l / q. Gemessen wird nur der Schutzleiter, also die einfache Länge. Ein Messwert nahe am Erwartungswert ist in Ordnung. Ein Messwert, der ein Vielfaches darüber liegt, zeigt auf eine schlechte Verbindung.',
+    h2: v => 'Stromkreis 1: R = ' + f(v.rho, 4) + ' · ' + f(v.l1, 0) + ' / ' + f(v.q1, 1) + '. Stromkreis 2: R = ' + f(v.rho, 4) + ' · ' + f(v.l2, 0) + ' / ' + f(v.q2, 1) + '. Der Messwert von Stromkreis 2 ist mehr als sechsmal so groß wie sein Erwartungswert.',
+    fields: [
+      { key: 'r1', label: 'Erwartungswert Stromkreis 1', unit: 'Ω', d: 3, ok: v => 'Der Erwartungswert für Stromkreis 1 ist richtig (' + f(v.r1, 3) + ' Ω)', num: v => ({ targets: [v.r1, v.r1alt], errs: [{ v: 2 * v.r1, text: 'Du hast Hinleiter und Rückleiter gerechnet. Gemessen wird nur der Schutzleiter, also die einfache Länge.' }, { v: v.r1mal, text: 'Du hast mit dem Querschnitt malgenommen. Der Querschnitt steht unter dem Bruchstrich.' }], hint: 'R = ρ · l / q.' }) },
+      { key: 'r2', label: 'Erwartungswert Stromkreis 2', unit: 'Ω', d: 3, ok: v => 'Der Erwartungswert für Stromkreis 2 ist richtig (' + f(v.r2, 3) + ' Ω)', num: v => ({ targets: [v.r2, v.r2alt], errs: [{ v: 2 * v.r2, text: 'Du hast Hinleiter und Rückleiter gerechnet. Gemessen wird nur der Schutzleiter, also die einfache Länge.' }, { v: v.r2q1, text: 'Du hast den Querschnitt von Stromkreis 1 genommen. Stromkreis 2 hat einen größeren Querschnitt.' }], hint: 'R = ρ · l / q.' }) }],
+    rows: [
+      { key: 'u1', q: 'Stromkreis 1: gemessen 0,29 Ω. Wie beurteilst du das?', ok: 'Stromkreis 1: Der Messwert passt zum Erwartungswert, der Schutzleiter ist durchgängig', short: 'Stromkreis 1', correct: 'passt',
+        options: [
+          { value: 'hoch', label: 'Viel zu hoch, eine Klemmstelle ist ganz sicher lose', why: 'Der Messwert liegt ganz nah am Erwartungswert. Ein Hinweis auf eine schlechte Klemmstelle wäre ein Vielfaches davon.' },
+          { value: 'passt', label: 'Passt zum Erwartungswert, Schutzleiter durchgängig', why: 'Das ist richtig.' },
+          { value: 'unterbr', label: 'Der Schutzleiter ist an einer Stelle unterbrochen', why: 'Bei einer Unterbrechung zeigt das Messgerät keinen kleinen Wert, sondern einen sehr großen Widerstand oder gar keinen Durchgang.' }] },
+      { key: 'u2', q: 'Stromkreis 2: gemessen 0,85 Ω. Wie beurteilst du das?', ok: 'Stromkreis 2: Der Messwert liegt weit über dem Erwartungswert, die Klemmstellen müssen geprüft werden', short: 'Stromkreis 2', correct: 'klemme',
+        options: [
+          { value: 'ok', label: 'In Ordnung, denn der Wert liegt unter 1 Ω', why: 'Eine feste Grenze von 1 Ω gibt es hier nicht. Maßgeblich ist der Vergleich mit dem Erwartungswert, und der ist mehr als sechsmal kleiner.' },
+          { value: 'laenge', label: 'In Ordnung, lange Leitungen haben eben mehr', why: 'Die Länge steckt schon im Erwartungswert. Der Messwert ist trotzdem mehr als sechsmal so groß.' },
+          { value: 'quer', label: 'Zu niedrig: Der Querschnitt ist zu groß', why: 'Der Messwert ist nicht zu niedrig, sondern viel höher als der Erwartungswert.' },
+          { value: 'klemme', label: 'Zu hoch: Klemmstellen prüfen lassen', why: 'Das ist richtig.' }] },
+      { key: 'abgl', q: 'Warum wird bei einer 2-Leiter-Messung vorher der Widerstand der Messleitungen abgeglichen?', ok: 'Abgleich: Sonst steckt der Widerstand der Messleitungen im Messwert, und der Schutzleiter wirkt schlechter, als er ist', short: 'Abgleich', correct: 'mess',
+        options: [
+          { value: 'mess', label: 'Damit die Messleitungen nicht mitgemessen werden', why: 'Das ist richtig.' },
+          { value: 'akku', label: 'Damit der Akku des Messgeräts länger hält', why: 'Mit dem Akku hat der Abgleich nichts zu tun.' },
+          { value: 'spann', label: 'Damit an den Messspitzen keine Spannung anliegt', why: 'Die Spannungsfreiheit wird vorher an der Anlage festgestellt. Der Abgleich betrifft nur den Widerstand der Messleitungen.' },
+          { value: 'norm', label: 'Damit das Messgerät den Grenzwert der Norm kennt', why: 'Das Messgerät kennt keinen Grenzwert für diese Leitung. Der Abgleich zieht nur den Widerstand der Messleitungen ab.' }] }],
+    wrongF: v => [{ r1: 2 * v.r1, r2: 2 * v.r2 }, { r1: v.r1mal, r2: v.r2q1 }] });
+
+  /* el54: Isolationswiderstand im Stromkreis. W186-8 (500 V Prüfspannung und 1 MΩ aus dem Kern, im Text als Übungswert für die Anlage genannt) */
+  const M54 = MIX({ id: 'el54', rig: 'isolation', ctl: { art: 'riso', sk: 'I', feuchte: 0, schmutz: 0, defekt: false, uPruef: 500 }, consts: [180, 0.6, 240, 95, 600000, 500, 1],
+    vals: () => { const c = C(), up = c.limit('upruef_iso').value, g = c.limit('riso_sk1').value, l1 = 180, l2 = 0.6, l3 = 240, n = 95; return { up, g, l1, l2, l3, n, ohm: l2 * 1e6, il: up / (l2 * 1e6) * 1000, ilNetz: c.const.U0 / (l2 * 1e6) * 1000 }; },
+    text: v => 'Bei der Erstprüfung misst die Elektrofachkraft im spannungsfreien Zustand den Isolationswiderstand eines Drehstromkreises. Die Prüfspannung ist ' + f(v.up, 0) + ' V Gleichspannung. In dieser Übung muss jeder Messwert mindestens ' + f(v.g, 0) + ' MΩ betragen (Übungswert). Messwerte gegen den Schutzleiter PE: L1 mit ' + f(v.l1, 0) + ' MΩ, L2 mit ' + f(v.l2, 1) + ' MΩ, L3 mit ' + f(v.l3, 0) + ' MΩ, N mit ' + f(v.n, 0) + ' MΩ. Berechne den Strom, der bei der Messung durch die schlechteste Isolation fließt, und beantworte die vier Fragen.',
+    h1: 'Ein guter Isolationswiderstand ist sehr groß, viele MΩ. Ein Wert unter dem Mindestwert zeigt eine beschädigte oder feuchte Isolation. Der Messstrom folgt aus dem ohmschen Gesetz mit der Prüfspannung.',
+    h2: v => 'Der kleinste Messwert ist ' + f(v.l2, 1) + ' MΩ, das sind ' + f(v.ohm, 0) + ' Ω. I = ' + f(v.up, 0) + ' V / ' + f(v.ohm, 0) + ' Ω. Vergleiche jeden Messwert mit ' + f(v.g, 0) + ' MΩ.',
+    fields: [
+      { key: 'il', label: 'Messstrom durch die schlechteste Isolation', unit: 'mA', d: 2, ok: v => 'Der Messstrom ist richtig (' + f(v.il, 2) + ' mA)', num: v => ({ targets: [v.il], scale: 0.001, errs: [{ v: v.ilNetz, text: 'Bei der Messung liegt die Prüfspannung des Messgeräts an, nicht die Netzspannung.' }, { v: v.il * 1000, text: 'Achte auf die Vorsilbe: 1 MΩ ist eine Million Ω.' }], hint: 'I = Prüfspannung / Isolationswiderstand.' }) }],
+    rows: [
+      { key: 'welcher', q: 'Welcher Messwert besteht die Prüfung nicht?', ok: 'Nicht bestanden: L2 gegen PE, der Wert liegt unter 1 MΩ', short: 'Nicht bestanden', correct: 'l2',
+        options: [
+          { value: 'l1', label: 'L1 gegen PE', why: 'Der Wert von L1 liegt weit über dem Mindestwert.' },
+          { value: 'l2', label: 'L2 gegen PE', why: 'Das ist richtig.' },
+          { value: 'l3', label: 'L3 gegen PE', why: 'Der Wert von L3 liegt weit über dem Mindestwert.' },
+          { value: 'n', label: 'N gegen PE', why: 'Der Wert von N liegt weit über dem Mindestwert.' }] },
+      { key: 'vorher', q: 'Was geschieht vor der Messung mit dem Stromkreis?', ok: 'Vorher: Stromkreis freischalten, Spannungsfreiheit feststellen und empfindliche Geräte abtrennen', short: 'Vorher', correct: 'frei',
+        options: [
+          { value: 'an', label: 'Alle Verbraucher einschalten, damit ein Strom fließt', why: 'Gemessen wird ohne Netzspannung. Das Messgerät bringt seine eigene Prüfspannung mit.' },
+          { value: 'gross', label: 'Den LS-Schalter gegen einen größeren austauschen', why: 'Das Schutzorgan wird für die Messung nicht verändert. Der Stromkreis wird nur freigeschaltet.' },
+          { value: 'frei', label: 'Freischalten und empfindliche Geräte abtrennen', why: 'Das ist richtig.' },
+          { value: 'lampe', label: 'Nur die Leuchtmittel entfernen, der Rest bleibt an', why: 'Der ganze Stromkreis muss spannungsfrei sein, nicht nur die Leuchten.' }] },
+      { key: 'warum', q: 'Warum werden Geräte mit Elektronik, zum Beispiel Dimmer, Netzteile oder Überspannungsschutz, vor der Messung abgetrennt?', ok: 'Abtrennen: Die Prüfspannung von 500 V kann Elektronik beschädigen, und angeschlossene Geräte verfälschen den Messwert', short: 'Abtrennen', correct: 'schaden',
+        options: [
+          { value: 'schaden', label: 'Weil 500 V die Elektronik beschädigen können', why: 'Das ist richtig.' },
+          { value: 'warm', label: 'Weil die Geräte bei der Messung sonst zu warm werden', why: 'Der Messstrom ist winzig und erwärmt nichts. Gefährlich für die Elektronik ist die hohe Prüfspannung.' },
+          { value: 'netz', label: 'Weil die Geräte sonst zu viel Strom aus dem Netz ziehen', why: 'Bei der Messung ist das Netz abgeschaltet. Es geht um die Prüfspannung des Messgeräts.' }] },
+      { key: 'wo', q: 'Zwischen welchen Leitern wird der Isolationswiderstand hier mindestens gemessen?', ok: 'Messpunkte: zwischen jedem aktiven Leiter (L1, L2, L3, N) und dem Schutzleiter', short: 'Messpunkte', correct: 'aktivpe',
+        options: [
+          { value: 'll', label: 'Nur zwischen den drei Außenleitern untereinander', why: 'Damit fände man keinen Fehler gegen Erde. Für den Schutz zählt vor allem die Isolation gegen den Schutzleiter.' },
+          { value: 'wasser', label: 'Zwischen Schutzleiter und einer Wasserleitung', why: 'Das wäre eine Prüfung der Erdverbindung, keine Isolationsmessung des Stromkreises.' },
+          { value: 'aktivpe', label: 'Zwischen jedem aktiven Leiter und Schutzleiter', why: 'Das ist richtig.' }] }],
+    wrongF: v => [{ il: v.ilNetz }, { il: v.il * 1000 }] });
+
+  /* el55: Schleifenimpedanz, Messwert bewerten. W186-9 (Zs_max = U0 / Ia aus dem Kern; der Sicherheitsfaktor 2/3 ist ein Übungswert im Aufgabentext, kein Wert des Kerns) */
+  const ZFIX = { form: 'TN-S', q: 2.5, qpe: 2.5, l: 20, zv: 0.4, dev: 'LS-B', In: 16, kreis: 'end', rcd: 0, fehler: 'koerperschluss' };
+  const zsVals = () => { const c = C(), u0 = c.const.U0, In = ZFIX.In, fB = c.limit('faktor_b').value, zsMax = c.grid.zsMax('LS-B', In), zsC = c.grid.zsMax('LS-C', In); return { u0, In, fB, ia: fB * In, zsMax, zsC, zsUeb: zsMax * 2 / 3, zsUebC: zsC * 2 / 3 }; };
+  const ZOPT = [
+    { value: 'ok', label: 'bestanden: unter dem Übungsgrenzwert', why: 'Bestanden ist nur ein Messwert, der höchstens 2/3 von Zs_max beträgt.' },
+    { value: 'knapp', label: 'nicht bestanden: unter Zs_max, aber ohne Sicherheitsabstand', why: 'Das gilt für Messwerte zwischen dem Übungsgrenzwert und Zs_max.' },
+    { value: 'ueber', label: 'nicht bestanden: sogar über Zs_max', why: 'Das gilt nur für Messwerte, die größer sind als Zs_max.' }];
+  const M55 = MIX({ id: 'el55', rig: 'netz', ctl: ZFIX, consts: [1.42, 2.35, 3.1, 80, 5, 16, 230, 1.5],
+    vals: () => { const z = zsVals(), m1 = 1.42, m2 = 2.35, m3 = 3.1; return Object.assign(z, { m1, m2, m3, verh2: z.u0 / m2 / z.ia, abstand: 1.5, ik2: z.u0 / m2, ikMal: z.u0 * m2, durchIn: z.u0 / z.In }); },
+    text: v => 'TN-S-System, Steckdosenstromkreis mit LS-Schalter B' + f(v.In, 0) + ', U0 = ' + f(v.u0, 0) + ' V. Bei der Erstprüfung hat die Elektrofachkraft an drei Steckdosen die Schleifenimpedanz gemessen: Steckdose 1 mit ' + f(v.m1, 2) + ' Ω, Steckdose 2 mit ' + f(v.m2, 2) + ' Ω, Steckdose 3 mit ' + f(v.m3, 1) + ' Ω. Der LS-Schalter Typ B löst ab ' + f(v.fB, 0) + ' · In sicher schnell aus. Im Fehlerfall ist die Leitung wärmer als bei der Messung, und jedes Messgerät hat eine Abweichung. Deshalb gilt in dieser Übung ein Sicherheitsfaktor: Der Messwert darf höchstens 2/3 von Zs_max betragen (Übungswert). Berechne Zs_max = U0 / Ia, den Übungsgrenzwert für den Messwert und den Fehlerstrom, der sich aus dem Messwert von Steckdose 2 ergibt. Der RCD als Zusatzschutz bleibt in dieser Aufgabe außer Betracht. Beurteile dann die drei Messwerte und beantworte die letzte Frage.',
+    h1: 'Der LS-Schalter schaltet nur dann schnell genug ab, wenn im Fehlerfall genug Strom fließt. Dafür darf die Schleifenimpedanz nicht zu groß sein. Der Messwert braucht außerdem Abstand zur Grenze, weil warme Leiter einen größeren Widerstand haben.',
+    h2: v => 'Ia = ' + f(v.fB, 0) + ' · ' + f(v.In, 0) + ' A = ' + f(v.ia, 0) + ' A. Zs_max = ' + f(v.u0, 0) + ' V / ' + f(v.ia, 0) + ' A. Übungsgrenzwert = 2/3 · Zs_max. Fehlerstrom an Steckdose 2: I_F = ' + f(v.u0, 0) + ' V / ' + f(v.m2, 2) + ' Ω. Vergleiche diesen Strom mit ' + f(v.ia, 0) + ' A. Der Strom liegt zwar darüber, aber nur um das ' + f(v.verh2, 2) + '-Fache. Für den Sicherheitsabstand fordert die Übung das ' + f(v.abstand, 1) + '-Fache (1 geteilt durch 2/3).',
+    fields: [
+      { key: 'zsmax', label: 'Zs_max für den B16', unit: 'Ω', d: 3, ok: v => 'Zs_max ist richtig (' + f(v.zsMax, 3) + ' Ω)', num: v => ({ targets: [v.zsMax], errs: [{ v: v.zsC, text: 'Das ist der Wert für Typ C mit dem Zehnfachen des Nennstroms. Typ B löst schon beim Fünffachen sicher aus.' }, { v: v.durchIn, text: 'Du hast durch In geteilt. Maßgeblich ist der Auslösestrom Ia = 5 · In.' }], hint: 'Zs_max = U0 / Ia mit Ia = 5 · In.' }) },
+      { key: 'zsueb', label: 'Übungsgrenzwert für den Messwert', unit: 'Ω', d: 3, ok: v => 'Der Übungsgrenzwert ist richtig (' + f(v.zsUeb, 3) + ' Ω)', num: v => ({ targets: [v.zsUeb], errs: [{ v: v.zsMax, text: 'Das ist Zs_max ohne Sicherheitsfaktor. Der Messwert darf höchstens 2/3 davon betragen.' }, { v: v.zsMax * 1.5, text: 'Der Faktor macht die Grenze kleiner, nicht größer: mal 2, geteilt durch 3.' }], hint: 'Übungsgrenzwert = 2/3 · Zs_max.' }) },
+      { key: 'ik', label: 'Fehlerstrom an Steckdose 2', unit: 'A', d: 1, ok: v => 'Der Fehlerstrom an Steckdose 2 ist richtig (' + f(v.ik2, 1) + ' A)', num: v => ({ targets: [v.ik2], errs: [{ v: v.ia, text: 'Das ist der Auslösestrom Ia. Gefragt ist der Strom, der beim Messwert von Steckdose 2 wirklich fließt.' }, { v: v.ikMal, text: 'Du hast malgenommen. Der Strom ist Spannung geteilt durch Impedanz.' }], hint: 'I_F = U0 / Zs.' }) }],
+    options: ZOPT,
+    rows: [
+      { key: 's1', q: 'Steckdose 1 mit 1,42 Ω:', ok: 'Steckdose 1: bestanden, der Messwert liegt unter dem Übungsgrenzwert', short: 'Steckdose 1', correct: 'ok', note: v => f(v.m1, 2) + ' Ω liegen unter dem Übungsgrenzwert von ' + f(v.zsUeb, 3) + ' Ω.' },
+      { key: 's2', q: 'Steckdose 2 mit 2,35 Ω:', ok: 'Steckdose 2: nicht bestanden, der Messwert liegt unter Zs_max, aber über dem Übungsgrenzwert', short: 'Steckdose 2', correct: 'knapp', note: v => f(v.m2, 2) + ' Ω liegen zwischen ' + f(v.zsUeb, 3) + ' Ω und ' + f(v.zsMax, 3) + ' Ω.' },
+      { key: 's3', q: 'Steckdose 3 mit 3,1 Ω:', ok: 'Steckdose 3: nicht bestanden, der Messwert liegt sogar über Zs_max', short: 'Steckdose 3', correct: 'ueber', note: v => f(v.m3, 1) + ' Ω liegen über Zs_max = ' + f(v.zsMax, 3) + ' Ω.' },
+      { key: 'massn', q: 'An Steckdose 3 ist die Schleifenimpedanz zu groß. Was kann helfen?', ok: 'Abhilfe: Klemmstellen prüfen, größeren Querschnitt oder kürzere Leitung wählen', short: 'Abhilfe', correct: 'leitung',
+        options: [
+          { value: 'typc', label: 'Den LS-Schalter Typ B gegen einen Typ C tauschen', why: 'Typ C braucht den doppelten Strom für die sichere Schnellauslösung. Zs_max würde halb so groß, das Problem wäre größer.' },
+          { value: 'in', label: 'Einen LS-Schalter mit größerem Nennstrom einbauen', why: 'Ein größerer Nennstrom erhöht den Auslösestrom Ia und senkt Zs_max. Das verschlimmert das Problem.' },
+          { value: 'leitung', label: 'Klemmstellen prüfen, Querschnitt größer wählen', why: 'Das ist richtig.' },
+          { value: 'nochmal', label: 'So oft neu messen, bis ein kleinerer Wert erscheint', why: 'Ein Messwert wird nicht passend gemessen. Die Ursache muss gefunden und beseitigt werden.' }] }],
+    wrongF: v => [{ zsmax: v.zsC, zsueb: v.zsMax, ik: v.ia }, { zsmax: v.durchIn, zsueb: v.zsMax * 1.5, ik: v.ikMal }] });
+
+  /* el56: Drehfeld an der CEE-Steckdose. W186-10 (Rechtsdrehfeld erwartet; Abhilfe nur durch die Elektrofachkraft im freigeschalteten Zustand) */
+  const M56 = MIX({ id: 'el56', consts: [1.732, 1.414, 230],
+    vals: () => { const u0 = C().const.U0, w3 = Math.sqrt(3); return { u0, w3, ull: w3 * u0, doppelt: 2 * u0, scheitel: Math.SQRT2 * u0, fragen: 5 }; },
+    text: v => 'An einer roten CEE-Steckdose mit fünf Polen (L1, L2, L3, N und PE) wird bei der Erstprüfung das Drehfeld geprüft. Das Drehfeldmessgerät der Elektrofachkraft zeigt ein Linksdrehfeld. Zwischen jedem Außenleiter und N liegen ' + f(v.u0, 0) + ' V. Berechne die Spannung zwischen zwei Außenleitern und beantworte die fünf Fragen. Wissensaufgabe: An der Anlage ändert nur die Elektrofachkraft etwas, und nur im freigeschalteten Zustand.',
+    h1: 'Die drei Außenleiter erreichen nacheinander den Höchstwert der Spannung. Die Reihenfolge bestimmt, in welche Richtung sich ein Drehstrommotor dreht. Werden zwei Außenleiter getauscht, kehrt sich die Reihenfolge um.',
+    h2: v => 'Spannung zwischen zwei Außenleitern: U = ' + f(v.w3, 3) + ' · ' + f(v.u0, 0) + ' V. Rechts dreht das Feld bei L1, L2, L3 und bei jeder Folge, die daraus durch Weiterrücken entsteht: L2, L3, L1 und L3, L1, L2.',
+    fields: [
+      { key: 'ull', label: 'Spannung zwischen zwei Außenleitern', unit: 'V', d: 0, ok: v => 'Die Spannung zwischen zwei Außenleitern ist richtig (' + f(v.ull, 0) + ' V, gerundet 400 V)', num: v => ({ targets: [v.ull], errs: [{ v: v.doppelt, text: 'Die Spannungen addieren sich nicht einfach, weil sie zeitlich versetzt sind. Der Faktor ist 1,732 (Wurzel aus 3).' }, { v: v.u0, text: 'Das ist die Spannung zwischen Außenleiter und N. Zwischen zwei Außenleitern ist sie um den Faktor 1,732 größer.' }, { v: v.scheitel, text: 'Der Faktor 1,414 gehört zum Scheitelwert. Zwischen zwei Außenleitern gilt der Faktor 1,732.' }], hint: 'U = 1,732 · 230 V.' }) }],
+    rows: [
+      { key: 'soll', q: 'Welches Drehfeld wird an einer CEE-Steckdose erwartet?', ok: 'Erwartet: ein Rechtsdrehfeld', short: 'Erwartet', correct: 'rechts',
+        options: [
+          { value: 'links', label: 'Ein Linksdrehfeld', why: 'Erwartet wird das Rechtsdrehfeld. Darauf sind Maschinen mit Stecker eingerichtet.' },
+          { value: 'rechts', label: 'Ein Rechtsdrehfeld', why: 'Das ist richtig.' },
+          { value: 'egal', label: 'Das ist ganz beliebig', why: 'Beliebig ist es nicht: Steckbare Maschinen sollen an jeder Steckdose gleich herum laufen.' }] },
+      { key: 'folge', q: 'Was passiert, wenn eine Maschine mit Drehstrommotor an die Steckdose mit Linksdrehfeld angeschlossen wird?', ok: 'Folge: Der Motor läuft in der falschen Drehrichtung', short: 'Folge', correct: 'richtung',
+        options: [
+          { value: 'halb', label: 'Der Motor läuft nur mit halber Leistung', why: 'Die Leistung bleibt gleich. Es ändert sich die Drehrichtung.' },
+          { value: 'ls', label: 'Der LS-Schalter löst sofort beim Einschalten aus', why: 'Ein falsches Drehfeld ist kein Kurzschluss. Das Schutzorgan merkt davon nichts.' },
+          { value: 'span', label: 'Die Spannung am Motor sinkt auf 230 V ab', why: 'Die Spannungen bleiben gleich groß. Nur die Reihenfolge ist anders.' },
+          { value: 'richtung', label: 'Der Motor läuft in der falschen Richtung', why: 'Das ist richtig.' }] },
+      { key: 'gefahr', q: 'Warum kann die falsche Drehrichtung gefährlich sein?', ok: 'Gefahr: Pumpen, Lüfter, Sägen oder Förderbänder arbeiten verkehrt herum und können Schaden anrichten', short: 'Gefahr', correct: 'verkehrt',
+        options: [
+          { value: 'heiss', label: 'Weil die Steckdose dabei sehr heiß wird', why: 'Die Steckdose wird durch das Drehfeld nicht wärmer. Die Gefahr liegt an der Maschine.' },
+          { value: 'verkehrt', label: 'Weil Maschinen verkehrt herum arbeiten', why: 'Das ist richtig.' },
+          { value: 'rcd', label: 'Weil dann der RCD nicht mehr auslöst', why: 'Der RCD arbeitet unabhängig vom Drehfeld.' }] },
+      { key: 'abhilfe', q: 'Wie wird aus dem Linksdrehfeld ein Rechtsdrehfeld?', ok: 'Abhilfe: zwei Außenleiter tauschen lassen (Elektrofachkraft, freigeschaltet)', short: 'Abhilfe', correct: 'zwei',
+        options: [
+          { value: 'drei', label: 'Alle drei Außenleiter um einen Platz weiterrücken', why: 'Beim Weiterrücken bleibt die Reihenfolge im Kreis gleich. Das Drehfeld ändert sich dadurch nicht.' },
+          { value: 'npe', label: 'Neutralleiter und Schutzleiter miteinander tauschen', why: 'Das wäre ein gefährlicher Fehler und ändert am Drehfeld nichts.' },
+          { value: 'zwei', label: 'Zwei Außenleiter an der Anschlussklemme tauschen', why: 'Das ist richtig.' },
+          { value: 'stecker', label: 'Den Stecker einfach anders herum einstecken', why: 'Ein CEE-Stecker passt nur in einer Stellung in die Steckdose.' }] },
+      { key: 'welche', q: 'Welche Reihenfolge ergibt ebenfalls ein Rechtsdrehfeld?', ok: 'Auch rechts: L2, L3, L1 (aus L1, L2, L3 durch Weiterrücken)', short: 'Auch rechts', correct: 'b',
+        options: [
+          { value: 'a', label: 'L1, L3, L2', why: 'Hier sind L2 und L3 getauscht. Das ergibt ein Linksdrehfeld.' },
+          { value: 'c', label: 'L3, L2, L1', why: 'Hier sind L1 und L3 getauscht. Das ergibt ein Linksdrehfeld.' },
+          { value: 'd', label: 'L2, L1, L3', why: 'Hier sind L1 und L2 getauscht. Das ergibt ein Linksdrehfeld.' },
+          { value: 'b', label: 'L2, L3, L1', why: 'Das ist richtig.' }] }],
+    wrongF: v => [{ ull: v.doppelt }, { ull: v.u0 }] });
+
+  /* el57: Prüfprotokoll, welcher Wert fällt durch? W186-11 (Grenzen wie el50, el54, el55; Schutzleiter höchstens das 1,5-Fache des Rechenwerts ist ein Übungswert im Aufgabentext) */
+  const PROT = {
+    zeilen: [
+      { id: 'rpeSoll', name: 'Schutzleiter: Rechenwert in Ω', d: 2, w: [0.21, 0.34, 0.15] },
+      { id: 'rpe', name: 'Schutzleiter: Messwert in Ω', d: 2, w: [0.23, 0.36, 0.17] },
+      { id: 'riso', name: 'Isolationswiderstand in MΩ', d: 1, w: [210, 0.4, 165] },
+      { id: 'zs', name: 'Schleifenimpedanz in Ω', d: 2, w: [0.96, 1.22, 0.84] },
+      { id: 'ia', name: 'Auslösestrom des RCD in mA', d: 1, w: [22.5, 19.8, 24.1] },
+      { id: 'ta', name: 'Auslösezeit des RCD in ms', d: 0, w: [345, 27, 31] },
+      { id: 'ub', name: 'Berührungsspannung in V', d: 1, w: [1.4, 1.9, 1.2] }],
+    faktorPe: 1.5 };
+  const POPT = [
+    { value: 'rpe', label: 'Durchgängigkeit des Schutzleiters', why: 'Der Messwert darf hier höchstens das 1,5-Fache des Rechenwerts betragen. Vergleiche die beiden Zeilen.' },
+    { value: 'riso', label: 'Isolationswiderstand', why: 'Der Isolationswiderstand muss mindestens 1 MΩ betragen. Prüfe, ob das hier wirklich verletzt ist.' },
+    { value: 'zs', label: 'Schleifenimpedanz', why: 'Die Schleifenimpedanz darf den Übungsgrenzwert nicht überschreiten. Prüfe, ob das hier wirklich verletzt ist.' },
+    { value: 'ia', label: 'Auslösestrom des RCD', why: 'Der Auslösestrom muss mindestens 15 mA und höchstens 30 mA betragen. Prüfe, ob das hier wirklich verletzt ist.' },
+    { value: 'ta', label: 'Auslösezeit des RCD', why: 'Die Auslösezeit darf höchstens 300 ms betragen. Prüfe, ob das hier wirklich verletzt ist.' },
+    { value: 'ub', label: 'Berührungsspannung', why: 'Die Berührungsspannung darf höchstens 50 V betragen. Prüfe, ob das hier wirklich verletzt ist.' },
+    { value: 'keiner', label: 'kein Wert, der Stromkreis besteht', why: 'Ein Stromkreis besteht nur, wenn alle Werte passen. Gehe die Tabelle Zeile für Zeile durch.' }];
+  const M57 = MIX({ id: 'el57', rig: 'netz', ctl: ZFIX, consts: [80, 15, 30, 1.5, 230, 300, 50, 1, 16, 5],
+    vals: () => { const c = C(), z = zsVals(), rb = c.limit('rcd_bereich').extra, idn = 30; return Object.assign(z, { idn, lo: rb.unten * idn, hi: rb.oben * idn, tmax: c.limit('rcd_zeit').value, ul: c.limit('ul_ac').value, riso: c.limit('riso_sk1').value, faktorPe: PROT.faktorPe }); },
+    text: v => 'Prüfprotokoll einer Erstprüfung (Übung): Drei Steckdosenstromkreise im TN-S-System, jeder mit LS-Schalter B' + f(v.In, 0) + ' und RCD mit IΔn = ' + f(v.idn, 0) + ' mA. Die Tabelle zeigt die Messwerte der Elektrofachkraft. In dieser Übung gelten diese Grenzen (Übungswerte): Der Messwert des Schutzleiters beträgt höchstens das ' + f(v.faktorPe, 1) + '-Fache des Rechenwerts. Der Isolationswiderstand beträgt mindestens ' + f(v.riso, 0) + ' MΩ. Die Schleifenimpedanz beträgt höchstens 2/3 von Zs_max. Der Auslösestrom des RCD beträgt mindestens ' + f(v.lo, 0) + ' mA und höchstens ' + f(v.hi, 0) + ' mA. Die Auslösezeit beträgt höchstens ' + f(v.tmax, 0) + ' ms. Die Berührungsspannung beträgt höchstens ' + f(v.ul, 0) + ' V. Berechne zuerst den Übungsgrenzwert der Schleifenimpedanz (Zs_max = U0 / Ia mit U0 = ' + f(v.u0, 0) + ' V und Ia = ' + f(v.fB, 0) + ' · In). Suche dann in jedem Stromkreis den Wert, der durchfällt. In jedem Stromkreis fällt höchstens ein Wert durch. Beantworte zum Schluss die beiden Fragen zum Ergebnis.',
+    table: () => [{ caption: 'Messwerte aus dem Prüfprotokoll', head: ['Messung', 'Stromkreis 1', 'Stromkreis 2', 'Stromkreis 3'], rows: PROT.zeilen.map(z => [z.name].concat(z.w.map(x => f(x, z.d)))) }],
+    h1: 'Gehe das Protokoll Zeile für Zeile durch und vergleiche jeden Wert mit seiner Grenze. Achte darauf, ob die Grenze ein Mindestwert oder ein Höchstwert ist.',
+    h2: v => 'Zs_max = ' + f(v.u0, 0) + ' V / ' + f(v.ia, 0) + ' A = ' + f(v.zsMax, 3) + ' Ω, der Übungsgrenzwert ist 2/3 davon. Mindestwert: Isolationswiderstand ' + f(v.riso, 0) + ' MΩ. Höchstwerte: Auslösezeit ' + f(v.tmax, 0) + ' ms, Berührungsspannung ' + f(v.ul, 0) + ' V, Auslösestrom ' + f(v.hi, 0) + ' mA. Der Auslösestrom muss außerdem mindestens ' + f(v.lo, 0) + ' mA betragen.',
+    fields: [
+      { key: 'zsueb', label: 'Übungsgrenzwert der Schleifenimpedanz', unit: 'Ω', d: 3, ok: v => 'Der Übungsgrenzwert der Schleifenimpedanz ist richtig (' + f(v.zsUeb, 3) + ' Ω)', num: v => ({ targets: [v.zsUeb], errs: [{ v: v.zsMax, text: 'Das ist Zs_max ohne Sicherheitsfaktor. Der Messwert darf höchstens 2/3 davon betragen.' }, { v: v.zsUebC, text: 'Du hast mit dem Zehnfachen des Nennstroms gerechnet. Für Typ B gilt Ia = 5 · In.' }], hint: 'Übungsgrenzwert = 2/3 · U0 / Ia.' }) }],
+    options: POPT,
+    rows: [
+      { key: 'k1', q: 'Stromkreis 1: Welcher Wert fällt durch?', ok: 'Stromkreis 1: Die Auslösezeit des RCD fällt durch (345 ms sind mehr als 300 ms)', short: 'Stromkreis 1', correct: 'ta', note: 'In Stromkreis 1 liegt die Auslösezeit mit 345 ms über 300 ms.' },
+      { key: 'k2', q: 'Stromkreis 2: Welcher Wert fällt durch?', ok: 'Stromkreis 2: Der Isolationswiderstand fällt durch (0,4 MΩ sind weniger als 1 MΩ)', short: 'Stromkreis 2', correct: 'riso', note: 'In Stromkreis 2 liegt der Isolationswiderstand mit 0,4 MΩ unter 1 MΩ.' },
+      { key: 'k3', q: 'Stromkreis 3: Welcher Wert fällt durch?', ok: 'Stromkreis 3: Kein Wert fällt durch, der Stromkreis besteht', short: 'Stromkreis 3', correct: 'keiner', note: 'In Stromkreis 3 hält jeder Wert seine Grenze ein.' },
+      { key: 'gesamt', q: 'Wie lautet das Gesamtergebnis der Prüfung?', ok: 'Gesamtergebnis: nicht bestanden, bis die Mängel in Stromkreis 1 und 2 behoben und neu gemessen sind', short: 'Gesamtergebnis', correct: 'nein',
+        options: [
+          { value: 'ja', label: 'Bestanden, weil die meisten Werte in Ordnung sind', why: 'Bei einer Prüfung zählt nicht die Mehrheit. Jeder einzelne Wert muss passen.' },
+          { value: 'teil', label: 'Bestanden, weil Stromkreis 3 ohne Mangel ist', why: 'Ein guter Stromkreis gleicht die Mängel der anderen nicht aus.' },
+          { value: 'nein', label: 'Nicht bestanden, bis die Mängel behoben sind', why: 'Das ist richtig.' }] },
+      { key: 'danach', q: 'Was geschieht nach der Reparatur?', ok: 'Nach der Reparatur: Die betroffenen Messungen werden wiederholt und neu ins Protokoll eingetragen', short: 'Nach der Reparatur', correct: 'neu',
+        options: [
+          { value: 'alt', label: 'Die alten Messwerte werden im Protokoll verbessert', why: 'Ein Messwert wird nie ohne Messung geändert. Das Protokoll muss zeigen, was wirklich gemessen wurde.' },
+          { value: 'neu', label: 'Die betroffenen Messungen werden wiederholt', why: 'Das ist richtig.' },
+          { value: 'nichts', label: 'Nichts weiter, die Reparatur gilt als Nachweis', why: 'Erst die neue Messung zeigt, dass der Mangel wirklich behoben ist.' }] }],
+    wrongF: v => [{ zsueb: v.zsMax }, { zsueb: v.zsUebC }] });
+  M57.daten = () => clone(PROT);
+
 
   /* ====================================================================== Registrierung */
   function def(head, M) {
@@ -1086,9 +1445,20 @@
     def({ id: 'el43', lab: 'els', cat: 'Schutzorgane', title: 'Thermischer Auslöser: kleiner und großer Prüfstrom', level: 2, rig: 'schutz' }, M43),
     def({ id: 'el44', lab: 'els', cat: 'Schmelzsicherung', title: 'Kennfarbe des Sicherungseinsatzes', level: 1, rig: 'schutz' }, M44),
     def({ id: 'el45', lab: 'els', cat: 'Schmelzsicherung', title: 'Passeinsatz, Gewinde und Betriebsklasse', level: 2, rig: 'schutz' }, M45),
-    def({ id: 'el46', lab: 'els', cat: 'Schutzmaßnahmen', title: 'Basisschutz, Fehlerschutz, Zusatzschutz', level: 1, rig: 'regeln' }, M46)
+    def({ id: 'el46', lab: 'els', cat: 'Schutzmaßnahmen', title: 'Basisschutz, Fehlerschutz, Zusatzschutz', level: 1, rig: 'regeln' }, M46),
+    def({ id: 'el47', lab: 'els', cat: 'IT-System', title: 'Erster Fehler im IT-System', level: 2, rig: 'netz' }, M47),
+    def({ id: 'el48', lab: 'els', cat: 'IT-System', title: 'Isolationsüberwachung: Ansprechwert und Meldung', level: 2, rig: 'netz' }, M48),
+    def({ id: 'el49', lab: 'els', cat: 'IT-System', title: 'Zweiter Fehler im IT-System', level: 3, rig: 'netz' }, M49),
+    def({ id: 'el50', lab: 'els', cat: 'RCD', title: 'RCD-Messwerte beurteilen', level: 2, rig: 'rcd' }, M50),
+    def({ id: 'el51', lab: 'els', cat: 'RCD', title: 'Erdungswiderstand passend zum RCD', level: 2, rig: 'netz' }, M51),
+    def({ id: 'el52', lab: 'els', cat: 'Anlagenprüfung', title: 'Erstprüfung: Besichtigen, Erproben, Messen', level: 1, rig: 'regeln' }, M52),
+    def({ id: 'el53', lab: 'els', cat: 'Anlagenprüfung', title: 'Durchgängigkeit des Schutzleiters', level: 2, rig: 'isolation' }, M53),
+    def({ id: 'el54', lab: 'els', cat: 'Anlagenprüfung', title: 'Isolationswiderstand im Stromkreis', level: 2, rig: 'isolation' }, M54),
+    def({ id: 'el55', lab: 'els', cat: 'Anlagenprüfung', title: 'Schleifenimpedanz: Messwert bewerten', level: 3, rig: 'netz' }, M55),
+    def({ id: 'el56', lab: 'els', cat: 'Anlagenprüfung', title: 'Drehfeld an der CEE-Steckdose', level: 2, rig: 'regeln' }, M56),
+    def({ id: 'el57', lab: 'els', cat: 'Anlagenprüfung', title: 'Prüfprotokoll: Welcher Wert fällt durch?', level: 3, rig: 'netz' }, M57)
   ]);
-  /* Musterwerte der Aufgaben el17-el46 (aus dem Kern, Stand 2026-11-09) fuer Tests und Ausbilder */
-  T.thresholds2 = () => ({ el17: M17.vals(), el18: M18.vals(), el19: M19.vals(), el20: M20.vals(), el21: M21.vals(), el22: M22.vals(), el23: M23.vals(), el24: M24.vals(), el25: M25.vals(), el26: M26.vals(), el27: M27.vals(), el28: M28.vals(), el29: M29.vals(), el30: M30.vals(), el31: M31.vals(), el32: M32.vals(), el33: M33.vals(), el34: M34.vals(), el35: M35.vals(), el36: M36.vals(), el37: M37.vals(), el38: M38.vals(), el39: M39.vals(), el40: M40.vals(), el41: M41.vals(), el42: M42.vals(), el43: M43.vals(), el44: M44.vals(), el45: M45.vals(), el46: M46.vals() });
+  /* Musterwerte der Aufgaben el17-el57 (aus dem Kern, Stand 2026-11-18) fuer Tests und Ausbilder */
+  T.thresholds2 = () => ({ el17: M17.vals(), el18: M18.vals(), el19: M19.vals(), el20: M20.vals(), el21: M21.vals(), el22: M22.vals(), el23: M23.vals(), el24: M24.vals(), el25: M25.vals(), el26: M26.vals(), el27: M27.vals(), el28: M28.vals(), el29: M29.vals(), el30: M30.vals(), el31: M31.vals(), el32: M32.vals(), el33: M33.vals(), el34: M34.vals(), el35: M35.vals(), el36: M36.vals(), el37: M37.vals(), el38: M38.vals(), el39: M39.vals(), el40: M40.vals(), el41: M41.vals(), el42: M42.vals(), el43: M43.vals(), el44: M44.vals(), el45: M45.vals(), el46: M46.vals(), el47: M47.vals(), el48: M48.vals(), el49: M49.vals(), el50: M50.vals(), el51: M51.vals(), el52: M52.vals(), el53: M53.vals(), el54: M54.vals(), el55: M55.vals(), el56: M56.vals(), el57: M57.vals() });
   if (typeof module !== 'undefined') module.exports = { tasks: T.tasks };
 })(typeof window !== 'undefined' ? window : globalThis);

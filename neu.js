@@ -2,6 +2,13 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v63.185', items: [
+      ['Neu: Funk- und HF-Lab', 'Das 63. Lab: Pegel in dB und dBm, Leitung und Anpassung, Antenne und Funkstrecke, Modulation, Empfänger und Rauschen, Messen in der HF-Technik. Sechs Reiter mit Reglern und Diagrammen, dazu 54 Aufgaben mit Tipps und Rechenweg. Du findest es auf der Startseite im Bereich Messen.', 'Funk- und HF-Lab'],
+      ['63 neue Aufgaben in sieben Labs', 'Wechselstrom-Lab: Drehstrom mit ungleicher Last, unterbrochener Neutralleiter, Kompensation. MessLab: Messunsicherheit, Messbereich, Echt-Effektivwert, Tastkopf. Sicherheits-Lab: IT-System, RCD-Messwerte, Erstprüfung einer Anlage. Analogtechnik-Lab: Bandbreite, Offset, aktive Filter. Netzteil-Lab und Thermik-Lab: Schaltregler, Verluste und Kühlung. Datenblatt-Lab: Toleranzen, Reserve und Derating.', 'Elektronik-Labs'],
+      ['Embedded vertieft und Signale erweitert', 'Embedded vertieft: 14 neue Aufgaben zu AD-Wandlern (SAR, Sigma-Delta, Abgleich, Fehlerbudget) und zu Bussen (RS-485, RS-232, CAN, Pegelanpassung). Signale und Systeme: 6 neue Aufgaben und ein neuer Lernabschnitt.', 'Studium und Technik'],
+      ['Nach Beruf einsortiert', 'Die neuen Aufgaben stehen bei Elektronikern und Industrieelektrikern im passenden Lernfeld und Lehrjahr. Was über die Ausbildung hinausgeht, liegt im freiwilligen Zusatzthema „Elektronik vertieft“. Das Funk- und HF-Lab ist für Elektroniker ein freiwilliges Zusatzthema ab dem 3. Lehrjahr. In den Wegen Technik und Studium gehört alles fest zum Plan.', 'Mein Plan'],
+      ['Lernheft zum Funk- und HF-Lab', 'Zehn Kapitel von Dezibel bis HF-Messtechnik, mit Zeichnungen, Links zu den passenden Aufgaben und einem Arbeitsblatt mit 40 Fragen. Für Ausbilder: Die Lösungen zu allen Lernheften öffnen sich nach dem Passwort jetzt direkt als Seite mit Rechenweg.', 'Lernhefte'],
+    ] },
     { v: 'v62.184', items: [
       ['Rechen-Lab: Elektrotechnik rechnen', '38 neue Aufgaben in zwei neuen Rubriken. „Elektrotechnik“: Spannungsteiler mit Last, Brückenschaltung, Blindwiderstand, Drehstromleistung, Kompensation, Fehlerschleife, Geräteprüfung, Kühlkörper. „Elektronik vertieft“: Pegel in dB und dBm, Funkstrecke, AD-Wandler, Schaltregler, Verluste am MOSFET, Schnittstellen und die Grenzen des Operationsverstärkers. Beide Rubriken kannst du auch im Rechen-Duell wählen.', 'Rechen-Lab'],
       ['Nach Beruf einsortiert', 'Die Rubrik „Elektrotechnik“ gehört bei Elektronikern und Industrieelektrikern zum Lernfeld 5.2 im 2. und 3. Lehrjahr. „Elektronik vertieft“ ist dort ein freiwilliges Zusatzthema und zählt nicht in den Fortschritt. In den Wegen Technik und Studium gehören beide Rubriken fest zum Plan. In allen anderen Berufen stehen sie als freiwilliges Zusatzthema am Ende.', 'Mein Plan'],
@@ -15,16 +22,6 @@
       ['Rechen-Lab: 18 neue Aufgaben', 'In jeder Rubrik gibt es zwei weitere Aufgaben, von Zeit umrechnen über Zollmaß und Toleranz bis Stromverstärkung und Kondensatoren. Sie kommen auch im Duell und beim Üben allein dran.', 'Rechen-Lab'],
       ['App öffnet sofort', 'Die App startet jetzt immer direkt aus dem Offline-Speicher, auch bei schwachem Netz. Gibt es eine neue Version, erscheint oben ein oranger Knopf „Neue Version bereit“. Erst wenn du ihn antippst, wird sie geladen.', 'Start'],
       ['Wiki: 16 neue Bauteile', 'Neu im Wiki sind unter anderem RGB-Leuchtdiode, Drehgeber, DIP-Schalter, Schraubklemme, Messwiderstand, Ferritperle, Suppressordiode, Pt100, Bewegungsmelder, Darlington-Transistor und ULN2003.', 'Wiki'],
-    ] },
-    { v: 'v62.182', items: [
-      ['Rechen-Duell: Deine Fehler erklärt', 'Nach der Runde siehst du unter dem Ergebnis jede falsche Aufgabe mit deiner Antwort, der richtigen Lösung und dem Rechenweg Schritt für Schritt. Mit „Ähnliche Aufgabe üben“ rechnest du sie gleich noch einmal mit neuen Zahlen.', 'Rechen-Lab'],
-      ['Rechen-Duell: Überspringen und Abgeben', '„Überspringen“ stellt die Aufgabe jetzt ans Ende. Du kannst sie später noch lösen. Mit „Abgeben“ beendest du die Runde, wenn du fertig bist.', 'Rechen-Lab'],
-      ['Rechen-Duell: Rubriken wählen', 'Beim neuen Duell wählst du „Gemischt“ oder einzelne Rubriken, zum Beispiel nur Bruchrechnung und Klammern. Die Wahl steckt im Code, alle bekommen dieselben Aufgaben.', 'Rechen-Lab'],
-      ['Prüfungs-Duell: mehrere Aufgaben hintereinander', 'Ein Duell kann jetzt aus 1, 3 oder 5 Fehlersuchen bestehen. Nach jeder Aufgabe siehst du deinen Zwischenstand, am Ende zählt die Summe. Der Duell-Code am Schluss gilt für alle Aufgaben zusammen.', 'Duell'],
-      ['Rechen-Duell: gleich scannen', '„QR-Code scannen“ und „Mit Code beitreten“ stehen jetzt direkt auf der ersten Seite und bei „Neues Duell“. Du musst nicht mehr erst zurückgehen.', 'Rechen-Lab'],
-      ['Wiki: 33 neue Bauteile', 'Das Wiki erklärt jetzt auch Z-Diode, Schottky-Diode, PNP-Transistor, Optokoppler, Quarz, Schütz, Timer 555, Schieberegister, Servo, Schrittmotor, Ultraschallsensor und viele mehr. Suche einfach nach dem Namen.', 'Wiki'],
-      ['Englisch-Lab: über 400 neue Fachwörter', 'Der Vokabeltrainer kennt jetzt 602 Wörter. Neu sind technische Begriffe aus Elektrik, Messtechnik, Funk, Digitaltechnik, Mechanik, Werkstoffen und Arbeitssicherheit, zum Beispiel Messschieber, Aderendhülse und Spannungsteiler.', 'Englisch-Lab'],
-      ['Einführung: Bauteilleiste', 'In der Einführung von DigiLab, SchaltLab und SimLab zeigt der Schritt „Bauteile“ auf dem Tablet und am PC jetzt auf die Bauteilleiste links und nicht mehr auf die untere Leiste.', 'DigiLab'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

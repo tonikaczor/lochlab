@@ -36,7 +36,7 @@
         jahr: 1,
         quelle: "Entwurf: eigene Zusammenstellung nach dem Inhalt der Labs, kein amtlicher Lehrplan",
         entwurf: true,
-        labs: [{"lab":"wsl","bereich":"*"},{"lab":"sig","bereich":"*"},{"lab":"mess","bereich":"*"}],
+        labs: [{"lab":"wsl","bereich":"*"},{"lab":"sig","bereich":"*"},{"lab":"hf","bereich":"*"},{"lab":"mess","bereich":"*"}],
         heft: null,
         wiki: [],
         projekt: [],

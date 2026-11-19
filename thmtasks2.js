@@ -1,4 +1,4 @@
-/* thmtasks2.js - Thermik-Lab: Aufgaben th16 bis th42 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig)
+/* thmtasks2.js - Thermik-Lab: Aufgaben th16 bis th46 mit automatischer Pruefung (Rechnung und Simulation, ohne Browser lauffaehig)
  * Registrierung: THM_TASKS.register([ ... ]) (THM_TASKS kommt aus thmdata.js; fehlt es, legt diese Datei ein gleichwertiges Geruest an).
  * Format je Aufgabe: { id, lab:'thm', cat, title, level, rig, text, table?, hint[3], start(), sol(), check(answer), hintVals(), ask? | fields? , choices? }
  *   start() und sol() liefern { rig, controls, settle?, fields?, choices?, value? } (Steuerwerte des Pruefstands, Beharrungszustand, Selbsttest-Antworten).
@@ -881,6 +881,149 @@
       ]; } };
   })();
 
+  /* ====================================================================== th43 bis th46 (Lebensdauer von Elkos nach der 10-K-Regel, MOSFET-Verluste mit Kuehlkoerperwahl, Derating eines Widerstands)
+   * th43, th44 und th46 sind reine Rechenaufgaben mit eigenen Uebungswerten: THM_CORE fuehrt weder eine Lebensdauerformel noch eine Deratingkurve mit Knick bei 70 °C,
+   * der Pruefstand "bauteil" ist nur der naechstliegende Pruefstand. th45 rechnet die Verluste ueber THM_CORE.power.mosfet (RDS(on) bei der Auslegungsgrenze 125 °C);
+   * den erforderlichen Waermewiderstand rechnet die Aufgabe selbst, weil THM_CORE.rthKerf mit Tj,max statt mit der Auslegungsgrenze rechnet. */
+
+  /* ====================================================================== th43: Lebensdauer eines Elkos nach der 10-K-Regel */
+  const M43 = (() => {
+    const L0 = 3000, T0 = 105, T = 65, STEP = 10, HJ = 8760;
+    const vals = () => once('v43', () => {
+      const dT = T0 - T, n = dT / STEP, fak = Math.pow(2, n), l = L0 * fak;
+      return { l0: L0, t0: T0, t: T, zehn: STEP, hJahr: HJ, dT, stufen: n, fak, l, jahre: l / HJ, lMal: L0 * 2 * n, lNur: L0 * n, lHalb: L0 / fak, lWarm: l / 2, jahreTage: l / 365, jahreMal: L0 * 2 * n / HJ, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'l', label: 'Lebensdauer bei der Betriebstemperatur', unit: 'h', want: v.l, tol: 0.02, mistakes: [
+        [v.lMal, 'du die Zahl der Stufen mit 2 malgenommen hast, statt für jede Stufe einmal zu verdoppeln'],
+        [v.lNur, 'du nur mit der Zahl der Stufen malgenommen hast (jede Stufe verdoppelt die Lebensdauer)'],
+        [v.lHalb, 'du die Lebensdauer halbiert statt verdoppelt hast (kühler heißt länger)']] },
+      { key: 'jahre', label: 'Lebensdauer in Jahren bei Dauerbetrieb', unit: 'Jahre', want: v.jahre, tol: 0.02, mistakes: [
+        [v.jahreTage, 'du durch die Tage statt durch die Stunden eines Jahres geteilt hast'],
+        [v.jahreMal, 'du die Zahl der Stufen mit 2 malgenommen hast, statt für jede Stufe einmal zu verdoppeln']] }
+    ]; };
+    const fields = [{ key: 'l', label: 'Lebensdauer bei der Betriebstemperatur', unit: 'h' }, { key: 'jahre', label: 'Lebensdauer bei Dauerbetrieb', unit: 'Jahre' }];
+    const ctl = { device: 'diode', iF: 1, ff: 3, ta: T };
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein Elektrolytkondensator im Netzteil ist im Datenblatt mit einer Lebensdauer von ' + fm(v.l0, 0) + ' h bei ' + fm(v.t0, 0) + ' °C angegeben (Übungswerte). Im Gerät wird er im Betrieb nur ' + fm(v.t, 0) + ' °C warm. Als Faustregel gilt die ' + fm(v.zehn, 0) + '-K-Regel: Je ' + fm(v.zehn, 0) + ' K niedrigerer Temperatur verdoppelt sich die Lebensdauer. Die Regel ist eine Näherung, das Datenblatt des Herstellers ist maßgeblich.\nBerechne die zu erwartende Lebensdauer in Stunden und in Jahren bei Dauerbetrieb (ein Jahr hat ' + fm(v.hJahr, 0) + ' h).'; },
+      hint() { const v = vals(); return [
+        'Zähle, wie viele Stufen von ' + fm(v.zehn, 0) + ' K zwischen der Temperatur aus dem Datenblatt und der Temperatur im Betrieb liegen. Für jede Stufe verdoppelt sich die Lebensdauer. Du multiplizierst also so oft mit 2, wie es Stufen sind.',
+        'Temperaturunterschied: ' + fm(v.t0, 0) + ' °C − ' + fm(v.t, 0) + ' °C = ' + fm(v.dT, 0) + ' K, das sind ' + fm(v.dT, 0) + ' K / ' + fm(v.zehn, 0) + ' K = ' + fm(v.stufen, 0) + ' Stufen. Der Faktor ist 2 hoch ' + fm(v.stufen, 0) + ', also ' + fm(v.fak, 0) + '.',
+        'Musterlösung: Lebensdauer = ' + fm(v.l0, 0) + ' h · ' + fm(v.fak, 0) + ' = ' + fm(v.l, 0) + ' h. In Jahren: ' + fm(v.l, 0) + ' h / ' + fm(v.hJahr, 0) + ' h = ' + fm(v.jahre, 2) + ' Jahre. Wäre der Kondensator ' + fm(v.zehn, 0) + ' K wärmer, wären es nur ' + fm(v.lWarm, 0) + ' h.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th44: Lebensdauer mit Eigenerwaermung durch den Rippelstrom */
+  const M44 = (() => {
+    const L0 = 2000, T0 = 85, TA = 48, DTE = 7, STEP = 10;
+    const vals = () => once('v44', () => {
+      const tk = TA + DTE, dT = T0 - tk, n = dT / STEP, fak = Math.pow(2, n), l = L0 * fak, lOhne = L0 * Math.pow(2, (T0 - TA) / STEP), tkMinus = TA - DTE;
+      return { l0: L0, t0: T0, ta: TA, dTe: DTE, zehn: STEP, tk, dT, stufen: n, fak, l, lOhne, tkMinus, lMinus: L0 * Math.pow(2, (T0 - tkMinus) / STEP), lMal: L0 * 2 * n, lHalb: L0 / fak, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'tk', label: 'Kerntemperatur des Kondensators', unit: '°C', want: v.tk, tol: 0.02, mistakes: [
+        [v.tkMinus, 'du die Eigenerwärmung abgezogen statt addiert hast'],
+        [v.ta, 'du die Eigenerwärmung nicht berücksichtigt hast (das ist die Umgebungstemperatur)']] },
+      { key: 'l', label: 'Lebensdauer mit Eigenerwärmung', unit: 'h', want: v.l, tol: 0.02, mistakes: [
+        [v.lOhne, 'du ohne die Eigenerwärmung gerechnet hast (für die Lebensdauer zählt die Kerntemperatur)'],
+        [v.lMinus, 'du die Eigenerwärmung abgezogen statt addiert hast'],
+        [v.lMal, 'du die Zahl der Stufen mit 2 malgenommen hast, statt für jede Stufe einmal zu verdoppeln'],
+        [v.lHalb, 'du die Lebensdauer halbiert statt verdoppelt hast (kühler heißt länger)']] }
+    ]; };
+    const fields = [{ key: 'tk', label: 'Kerntemperatur des Kondensators', unit: '°C' }, { key: 'l', label: 'Lebensdauer mit Eigenerwärmung', unit: 'h' }];
+    const ctl = { device: 'diode', iF: 1, ff: 3, ta: TA };
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein Elektrolytkondensator am Ausgang eines Schaltreglers ist im Datenblatt mit ' + fm(v.l0, 0) + ' h bei ' + fm(v.t0, 0) + ' °C angegeben (Übungswerte). Im Gerät herrschen ' + fm(v.ta, 0) + ' °C. Der Wechselanteil des Stroms (Rippelstrom) erwärmt den Kondensator über seinen Innenwiderstand zusätzlich um ' + fm(v.dTe, 0) + ' K (Übungsannahme). Für die Lebensdauer zählt die Temperatur im Kern des Kondensators: Umgebungstemperatur plus Eigenerwärmung.\nBerechne die Kerntemperatur und mit der ' + fm(v.zehn, 0) + '-K-Regel (je ' + fm(v.zehn, 0) + ' K kühler doppelte Lebensdauer, Näherung) die zu erwartende Lebensdauer.'; },
+      hint() { const v = vals(); return [
+        'Der Kondensator ist innen wärmer als die Luft im Gerät, weil der Wechselstrom an seinem Innenwiderstand Wärme erzeugt. Addiere die Eigenerwärmung zur Umgebungstemperatur. Mit dieser Kerntemperatur zählst du dann die Stufen der Regel bis zur Temperatur aus dem Datenblatt.',
+        'Kerntemperatur: ' + fm(v.ta, 0) + ' °C + ' + fm(v.dTe, 0) + ' K. Bis ' + fm(v.t0, 0) + ' °C sind es dann ' + fm(v.dT, 0) + ' K, das sind ' + fm(v.stufen, 0) + ' Stufen von ' + fm(v.zehn, 0) + ' K. Der Faktor ist 2 hoch ' + fm(v.stufen, 0) + ', also ' + fm(v.fak, 0) + '.',
+        'Musterlösung: Kerntemperatur = ' + fm(v.tk, 0) + ' °C. Lebensdauer = ' + fm(v.l0, 0) + ' h · ' + fm(v.fak, 0) + ' = ' + fm(v.l, 0) + ' h. Ohne die Eigenerwärmung wären es ' + fm(v.lOhne, 0) + ' h: Die ' + fm(v.dTe, 0) + ' K kosten mehr als ein Drittel der Lebensdauer. Ein Kondensator mit kleinerem Innenwiderstand erwärmt sich weniger und hält länger.'
+      ]; } };
+  })();
+
+  /* ====================================================================== th45: MOSFET im PWM-Betrieb, Verluste und passender Kuehlkoerper */
+  const M45 = (() => {
+    const I = 10, U = 24, DPCT = 60, F = 100000, VGS = 5, TA = 45, TJD = 125, TREF = 25, IDS = ['fahne', 's', 'm', 'l'];
+    const vals = () => once('v45', () => {
+      const C = CORE(), dev = C.devices.irlz34n, rds25 = dev.rdsTyp[String(VGS)], d = DPCT / 100, ck = rthCK('TO-220', 'glimmer', 'duenn');
+      const pm = C.power.mosfet({ i: I, d, rds25, tj: TJD, alpha: dev.alpha, u: U, f: F, tr: dev.tr, tf: dev.tf });
+      const p = pm.p, dT = TJD - TA, rthMax = dT / p, erf = rthMax - dev.rthJC - ck, kk = smallestSink(erf, IDS);
+      const tj = kk ? C.steady({ device: 'irlz34n', heatsink: kk, joint: 'glimmer', paste: 'duenn' }, p, TA).tj : NaN;
+      return { i: I, u: U, dPct: DPCT, d, fk: F / 1000, vgs: VGS, ta: TA, tjd: TJD, tRef: TREF, tjMax: dev.tjMax, rthJC: dev.rthJC, rthCK: ck, rds25m: rds25 * 1000, rdsHotm: pm.rds * 1000, trn: dev.tr * 1e9, tfn: dev.tf * 1e9, tsum: (dev.tr + dev.tf) * 1e9,
+        pLeit: pm.pLeit, pSw: pm.pSw, p, dT, rthMax, erf, kk, kkRth: kk ? hsRth(kk) : NaN, kkName: kk ? HSNAME[kk] : '', nextRth: hsRth('s'), nextName: HSNAME.s, tj, reserve: TJD - tj,
+        pLeitVoll: I * I * pm.rds, pLeit25: I * I * rds25 * d, pSwDoppelt: 2 * pm.pSw, pSwD: pm.pSw * d, pSwTr: 0.5 * U * I * dev.tr * F, pVoll: I * I * pm.rds + pm.pSw,
+        erfNoTa: TJD / p - dev.rthJC - ck, erfMax: (dev.tjMax - TA) / p - dev.rthJC - ck, tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'pleit', label: 'Leitverluste des MOSFET', unit: 'W', want: v.pLeit, tol: 0.02, mistakes: [
+        [v.pLeitVoll, 'du den Tastgrad nicht berücksichtigt hast (der MOSFET leitet nur während der Einschaltzeit)'],
+        [v.pLeit25, 'du mit RDS(on) bei ' + fm(v.tRef, 0) + ' °C gerechnet hast (die heiße Sperrschicht hat den größeren Widerstand)']] },
+      { key: 'psw', label: 'Schaltverluste des MOSFET', unit: 'W', want: v.pSw, tol: 0.02, mistakes: [
+        [v.pSwDoppelt, 'du den Faktor ½ vergessen hast'],
+        [v.pSwD, 'du die Schaltverluste mit dem Tastgrad malgenommen hast (geschaltet wird in jeder Periode einmal ein und einmal aus)'],
+        [v.pSwTr, 'du nur die Anstiegszeit eingesetzt hast (es zählen Anstiegszeit und Abfallzeit zusammen)']] },
+      { key: 'pges', label: 'Gesamte Verlustleistung des MOSFET', unit: 'W', want: v.p, tol: 0.02, mistakes: [
+        [v.pLeit, 'du nur die Leitverluste angegeben hast'],
+        [v.pVoll, 'du die Leitverluste ohne den Tastgrad gerechnet hast']] },
+      { key: 'rkerf', label: 'Erforderlicher Wärmewiderstand des Kühlkörpers', unit: 'K/W', want: v.erf, tol: 0.02, mistakes: [
+        [v.erfNoTa, 'du {sym:Ta} nicht von der Auslegungsgrenze abgezogen hast'],
+        [v.rthMax - v.rthCK, 'du {sym:Rth_JC} vergessen hast'],
+        [v.rthMax, 'du den größten Gesamt-Wärmewiderstand angegeben hast, ohne {sym:Rth_JC} und {sym:Rth_CK} abzuziehen']] }
+    ]; };
+    const fields = [{ key: 'pleit', label: 'Leitverluste', unit: 'W' }, { key: 'psw', label: 'Schaltverluste', unit: 'W' }, { key: 'pges', label: 'Gesamte Verlustleistung {sym:P}', unit: 'W' }, { key: 'rkerf', label: 'Erforderlicher Wärmewiderstand des Kühlkörpers {sym:Rth_Kerf}', unit: 'K/W' }];
+    const choices = () => [{ key: 'kk', q: 'Welchen Kühlkörper wählst du (den kleinsten, der reicht)?', options: sinkOptions(IDS) }];
+    const ctl = (hs, hot) => ({ id: I, u: U, duty: DPCT, f: F, vgs: VGS, spec: 'typ', hot, pulse: false, ta: TA, heatsink: hs, joint: 'glimmer', paste: 'duenn' });
+    return { vals, items, fields, choices, ctl, ids: IDS,
+      tables() { const v = vals(); return [
+        tbl('MOSFET IRLZ34N (Werte des Labs)', ['Größe', 'Wert'], [['RDS(on) bei ' + fm(v.tRef, 0) + ' °C Sperrschichttemperatur', fm(v.rds25m, 0) + ' mΩ'], ['RDS(on) bei ' + fm(v.tjd, 0) + ' °C Sperrschichttemperatur', fm(v.rdsHotm, 2) + ' mΩ'], ['Anstiegszeit t_r', fm(v.trn, 0) + ' ns'], ['Abfallzeit t_f', fm(v.tfn, 0) + ' ns'], ['{sym:Rth_JC}', kW(v.rthJC)], ['{sym:Tjmax}', fm(v.tjMax, 0) + ' °C']]),
+        tbl('Übergang vom Gehäuse zum Kühlkörper (TO-220)', ['Montage', '{sym:Rth_CK}'], [['Glimmerscheibe, Wärmeleitpaste dünn', kW(v.rthCK)]]),
+        tbl('Kühlkörper (freie Konvektion, ohne Lüfter)', ['Typ', '{sym:Rth_K}'], IDS.map(id => [HSNAME[id], kW(hsRth(id))]))
+      ]; },
+      text() { const v = vals(); return 'Ein IRLZ34N (Werte des Labs) schaltet eine Last mit PWM: Betriebsspannung ' + fm(v.u, 0) + ' V, Strom ' + fm(v.i, 0) + ' A im eingeschalteten Zustand, Tastgrad ' + fm(v.dPct, 0) + ' %, Schaltfrequenz ' + fm(v.fk, 0) + ' kHz, ' + fm(v.vgs, 0) + ' V am Gate. Im Gerät herrschen ' + fm(v.ta, 0) + ' °C. Die Sperrschicht soll höchstens ' + fm(v.tjd, 0) + ' °C erreichen (Auslegungsgrenze als Übungsvorgabe, {sym:Tjmax} liegt höher). Rechne deshalb mit dem RDS(on) für die heiße Sperrschicht aus der Tabelle. Der MOSFET sitzt mit Glimmerscheibe und Wärmeleitpaste auf dem Kühlkörper.\nBerechne die Leitverluste P = I² · RDS(on) · D, die Schaltverluste mit der Näherung P_sw = ½ · U · I · (t_r + t_f) · f, die gesamte Verlustleistung und den erforderlichen Wärmewiderstand des Kühlkörpers. Wähle dann den kleinsten Kühlkörper aus der Tabelle, der reicht.'; },
+      hint() { const v = vals(); return [
+        'Im PWM-Betrieb entstehen zwei Arten von Verlusten: Leitverluste, solange der MOSFET eingeschaltet ist, und Schaltverluste bei jedem Umschalten. Addiere beide. Danach gehst du vor wie beim Linearregler: größter Gesamt-Wärmewiderstand aus dem erlaubten Temperaturunterschied, davon {sym:Rth_JC} und {sym:Rth_CK} abziehen.',
+        'Leitverluste: (' + fm(v.i, 0) + ' A)² · ' + fm(v.rdsHotm, 2) + ' mΩ · ' + fm(v.d, 1) + ' = ' + fm(v.pLeit, 3) + ' W. Schaltverluste: ½ · ' + fm(v.u, 0) + ' V · ' + fm(v.i, 0) + ' A · ' + fm(v.tsum, 0) + ' ns · ' + fm(v.fk, 0) + ' kHz = ' + fm(v.pSw, 2) + ' W. Erlaubter Temperaturunterschied: ' + fm(v.tjd, 0) + ' °C − ' + fm(v.ta, 0) + ' °C = ' + fm(v.dT, 0) + ' K.',
+        'Musterlösung: P = ' + fm(v.pLeit, 3) + ' W + ' + fm(v.pSw, 2) + ' W = ' + fm(v.p, 3) + ' W. Größter Gesamt-Wärmewiderstand: ' + fm(v.dT, 0) + ' K / ' + fm(v.p, 3) + ' W = ' + fm(v.rthMax, 3) + ' K/W. {sym:Rth_Kerf} = ' + fm(v.rthMax, 3) + ' K/W − ' + fm(v.rthJC, 1) + ' K/W − ' + fm(v.rthCK, 1) + ' K/W = ' + fm(v.erf, 3) + ' K/W. Gewählt: ' + v.kkName + ' mit ' + fm(v.kkRth, 0) + ' K/W (' + v.nextName + ' hat ' + fm(v.nextRth, 0) + ' K/W und reicht nicht). Damit erreicht die Sperrschicht ' + fm(v.tj, 1) + ' °C.'
+      ]; },
+      extra(r, a) {
+        const v = vals();
+        choiceRow(r, 'Kleinsten passenden Kühlkörper gewählt', choiceOf(a, 'kk'), v.kk, got => {
+          if (IDS.indexOf(got) < 0) return 'Wähle einen Kühlkörper aus der Tabelle.';
+          const rt = hsRth(got), small = rt <= v.erf + 1e-9;
+          return 'Der Kühlkörper ' + HSNAME[got] + ' hat ' + kW(rt) + '. Erforderlich sind höchstens ' + kW(v.erf) + ': ' + (small ? 'Dieser Kühlkörper reicht, aber es gibt einen kleineren, der auch reicht.' : 'Dieser Kühlkörper reicht nicht.');
+        });
+      } };
+  })();
+
+  /* ====================================================================== th46: Derating eines Widerstands oberhalb von 70 °C */
+  const M46 = (() => {
+    const PN = 0.6, TKN = 70, TMAX = 155, T1 = 110, P2 = 0.25;
+    const vals = () => once('v46', () => {
+      const span = TMAX - TKN, rest = TMAX - T1, ueber = T1 - TKN, pzul = PN * rest / span, span2 = P2 / PN * span, tzul = TMAX - span2;
+      return { pn: PN, tkn: TKN, tmax: TMAX, t1: T1, p2: P2, span, rest, ueber, slopem: PN / span * 1000, pzul, span2, tzul, pAb0: PN * rest / TMAX, pAbn: PN * ueber / span, pVerh: PN * TKN / T1, tAuf: TKN + span2, tAb0: TMAX * (1 - P2 / PN), tol: 2 };
+    });
+    const items = () => { const v = vals(); return [
+      { key: 'pzul', label: 'Zulässige Verlustleistung bei der erhöhten Temperatur', unit: 'W', want: v.pzul, tol: 0.02, mistakes: [
+        [v.pAb0, 'du die Gerade bei 0 °C statt bei ' + fm(v.tkn, 0) + ' °C beginnen lässt'],
+        [v.pAbn, 'du die Abnahme statt der verbleibenden Leistung angegeben hast'],
+        [v.pn, 'du die Nennleistung nicht abgesenkt hast (sie gilt nur bis ' + fm(v.tkn, 0) + ' °C)'],
+        [v.pVerh, 'du die beiden Temperaturen ins Verhältnis gesetzt hast (es zählt der Abstand bis zur Grenztemperatur)']] },
+      { key: 'tzul', label: 'Höchste Umgebungstemperatur für die geforderte Leistung', unit: '°C', want: v.tzul, tol: 0.02, mistakes: [
+        [v.tAuf, 'du die Temperaturspanne von ' + fm(v.tkn, 0) + ' °C aus nach oben gezählt hast, statt sie von der Grenztemperatur abzuziehen'],
+        [v.tAb0, 'du die Gerade bei 0 °C statt bei ' + fm(v.tkn, 0) + ' °C beginnen lässt'],
+        [v.span2, 'du nur die Temperaturspanne angegeben hast (sie wird von der Grenztemperatur abgezogen)']] }
+    ]; };
+    const fields = [{ key: 'pzul', label: 'Zulässige Verlustleistung {sym:P}', unit: 'W' }, { key: 'tzul', label: 'Höchste Umgebungstemperatur {sym:Ta}', unit: '°C' }];
+    const ctl = { device: 'rzement', uR: 12, rR: 47 };
+    return { vals, items, fields, ctl,
+      text() { const v = vals(); return 'Ein Metallschichtwiderstand hat die Nennleistung ' + fm(v.pn, 1) + ' W. Diese Leistung darf er bis ' + fm(v.tkn, 0) + ' °C Umgebungstemperatur umsetzen. Darüber sinkt die zulässige Verlustleistung geradlinig und erreicht bei ' + fm(v.tmax, 0) + ' °C null (Deratingkurve, Übungswerte, das Datenblatt des Herstellers ist maßgeblich).\nBerechne die zulässige Verlustleistung bei ' + fm(v.t1, 0) + ' °C Umgebungstemperatur. Berechne danach, bis zu welcher Umgebungstemperatur der Widerstand ' + fm(v.p2, 2) + ' W umsetzen darf.'; },
+      hint() { const v = vals(); return [
+        'Zeichne dir die Kurve auf: waagerecht bis zum Knick, danach eine Gerade bis null. Auf der Geraden verhält sich die zulässige Leistung zur Nennleistung wie der Abstand bis zur Grenztemperatur zur ganzen Spanne der Geraden. Für die zweite Frage stellst du dieses Verhältnis nach der Temperatur um.',
+        'Die Gerade fällt über ' + fm(v.tmax, 0) + ' °C − ' + fm(v.tkn, 0) + ' °C = ' + fm(v.span, 0) + ' K von ' + fm(v.pn, 1) + ' W auf null, also um ' + fm(v.slopem, 2) + ' mW je Kelvin. Bei ' + fm(v.t1, 0) + ' °C fehlen bis zur Grenztemperatur noch ' + fm(v.rest, 0) + ' K.',
+        'Musterlösung: P = ' + fm(v.pn, 1) + ' W · ' + fm(v.rest, 0) + ' K / ' + fm(v.span, 0) + ' K = ' + fm(v.pzul, 3) + ' W. Für ' + fm(v.p2, 2) + ' W: Abstand zur Grenztemperatur = ' + fm(v.p2, 2) + ' W / ' + fm(v.pn, 1) + ' W · ' + fm(v.span, 0) + ' K = ' + fm(v.span2, 1) + ' K, also ' + fm(v.tmax, 0) + ' °C − ' + fm(v.span2, 1) + ' K = ' + fm(v.tzul, 1) + ' °C.'
+      ]; } };
+  })();
+
   /* ====================================================================== Aufgabenliste */
   /* text, table und hint werden erst beim ersten Zugriff gerechnet (Kern und Pruefstaende), danach gemerkt */
   const L = (t, M) => {
@@ -1027,7 +1170,27 @@
       fields: M42.fields,
       start: () => S('linear', M42.ctl(0.5), { settle: true, fields: noV(['pct', 'imax']) }),
       sol: () => { const v = M42.vals(); return S('linear', M42.ctl(Math.floor(v.imax * 100) / 100), { settle: true, fields: { pct: v.pct, imax: v.imax } }); },
-      check: calcCheck(M42), hintVals: () => M42.vals() }, M42)
+      check: calcCheck(M42), hintVals: () => M42.vals() }, M42),
+    L({ id: 'th43', lab: 'thm', cat: 'Bauteile', title: 'Lebensdauer eines Elektrolytkondensators abschätzen', level: 1, rig: 'bauteil',
+      fields: M43.fields,
+      start: () => S('bauteil', M43.ctl, { settle: true, fields: noV(['l', 'jahre']) }),
+      sol: () => { const v = M43.vals(); return S('bauteil', M43.ctl, { settle: true, fields: { l: v.l, jahre: v.jahre } }); },
+      check: calcCheck(M43), hintVals: () => M43.vals() }, M43),
+    L({ id: 'th44', lab: 'thm', cat: 'Bauteile', title: 'Elektrolytkondensator: Lebensdauer mit Eigenerwärmung', level: 2, rig: 'bauteil',
+      fields: M44.fields,
+      start: () => S('bauteil', M44.ctl, { settle: true, fields: noV(['tk', 'l']) }),
+      sol: () => { const v = M44.vals(); return S('bauteil', M44.ctl, { settle: true, fields: { tk: v.tk, l: v.l } }); },
+      check: calcCheck(M44), hintVals: () => M44.vals() }, M44),
+    L({ id: 'th45', lab: 'thm', cat: 'Kühlkörper wählen', title: 'Schaltender MOSFET: Verluste und passender Kühlkörper', level: 3, rig: 'mosfet',
+      fields: M45.fields,
+      start: () => S('mosfet', M45.ctl('s', false), { settle: true, fields: noV(['pleit', 'psw', 'pges', 'rkerf']), choices: {} }),
+      sol: () => { const v = M45.vals(); return S('mosfet', M45.ctl(v.kk, true), { settle: true, fields: { pleit: v.pLeit, psw: v.pSw, pges: v.p, rkerf: v.erf }, choices: { kk: v.kk } }); },
+      check: calcCheck(M45), hintVals: () => M45.vals() }, M45),
+    L({ id: 'th46', lab: 'thm', cat: 'Derating', title: 'Widerstand bei hoher Umgebungstemperatur: Deratingkurve', level: 2, rig: 'bauteil',
+      fields: M46.fields,
+      start: () => S('bauteil', M46.ctl, { settle: true, fields: noV(['pzul', 'tzul']) }),
+      sol: () => { const v = M46.vals(); return S('bauteil', M46.ctl, { settle: true, fields: { pzul: v.pzul, tzul: v.tzul } }); },
+      check: calcCheck(M46), hintVals: () => M46.vals() }, M46)
   ];
 
   /* ====================================================================== Registrierung */
@@ -1062,6 +1225,6 @@
       return out;
     };
   }
-  const api = { tasks, answerOf, models: { M16, M17, M18, M19, M20, M21, M22, M23, M24, M25, M26, M27, M28, M29, M30, M31, M32, M33, M34, M35, M36, M37, M38, M39, M40, M41, M42 }, helpers: { numRow, fm, pick, build, aufwand: M30.aufwand } };
+  const api = { tasks, answerOf, models: { M16, M17, M18, M19, M20, M21, M22, M23, M24, M25, M26, M27, M28, M29, M30, M31, M32, M33, M34, M35, M36, M37, M38, M39, M40, M41, M42, M43, M44, M45, M46 }, helpers: { numRow, fm, pick, build, aufwand: M30.aufwand } };
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -44,6 +44,7 @@
     digi: { datei: 'digilab.html', art: 'api', fam: 'task', ohne: wechselt }, mess: { datei: 'messlab.html', art: 'api', fam: 'task', ohne: wechselt }, haus: { datei: 'hauslab.html', art: 'api', fam: 'task', ohne: wechselt },
     mat2: { datei: 'mat2lab.html', art: 'make' }, nrm: { datei: 'nrmlab.html', art: 'make' }, fli: { datei: 'flilab.html', art: 'make' },
     sig: { datei: 'siglab.html', art: 'seed', fam: 'qt', seed: function (g, t, k) { return t.make(g.SIG_CORE.rng(t.id + '#' + k), g.SIG_CORE).text; } },
+    hf: { datei: 'hflab.html', art: 'seed', fam: 'qt', seed: function (g, t, k) { return t.make(g.HF_CORE.rng(t.id + '#' + k), g.HF_CORE).text; } },
     prj: { datei: 'prjlab.html', art: 'seed', fam: 'qt', seed: function (g, t, k) { return t.make(g.PRJ_CORE.rng(t.id + '#' + k), g.PRJ_CORE).text; } },
     rg2: { datei: 'rg2lab.html', art: 'build', fam: 'rg2', modul: 'rg2data.js', glob: 'RG2DATA' }, emb: { datei: 'emblab.html', art: 'rig', fam: 'emb' },
     loch: { datei: 'layout.html', art: 'loch', fam: 'loch', ohne: wechselt }, app: { datei: 'appwerkstatt.html', art: 'app', fam: 'app', ohne: wechselt }

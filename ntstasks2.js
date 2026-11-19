@@ -315,7 +315,7 @@
       fields: () => [{ key: 'dil', label: 'Drosselwelligkeit ΔI_L', unit: 'A' }],
       hint: () => { const v = vals(); return [
         'Während der Einschaltdauer D · T liegt an der Drossel die Spannung U_ein − U_aus; der Strom steigt linear um ΔI_L = (U_ein − U_aus) · D · T / L. Mit T = 1 / f ergibt sich die Formel.',
-        'Zuerst D = U_aus / U_ein = ' + f(v.d, 2) + ' %. Dann U_ein − U_aus = ' + f(v.diff, 0) + ' V und f · L = ' + f(v.f, 0) + ' kHz · ' + f(v.l, 0) + ' µH = ' + f(v.fl, 0) + ' V·s/A. Setze alles in SI-Einheiten ein (Hz, H).',
+        'Zuerst D = U_aus / U_ein = ' + f(v.d, 2) + ' %. Dann U_ein − U_aus = ' + f(v.diff, 0) + ' V und f · L = ' + f(v.f, 0) + ' kHz · ' + f(v.l, 0) + ' µH = ' + f(v.fl, 0) + ' Ω. Setze alles in SI-Einheiten ein (Hz, H).',
         'Musterlösung: ΔI_L = ' + f(v.diff, 0) + ' V · ' + f(v.dA, 4) + ' / ' + f(v.fl, 0) + ' = ' + f(v.dil, 4) + ' A. Mit dem Vorfaktor des Hochsetzstellers käme ' + f(v.boost, 2) + ' A heraus, die halbe Welligkeit wäre ' + f(v.halb, 4) + ' A.'
       ]; },
       start: () => A('buck', { uin: G.uin, uout: G.uout, f: G.f / 1e3, l: G.l * 1e6, steuer: 'geregelt' }, { fields: { dil: null } }),
@@ -1367,6 +1367,299 @@
         { name: 'I_Z,min vergessen, zu großer Normwert', answer: A('stabil', {}, { fields: { rvmax: v.rvmaxOhne, rvmin: v.rvmin }, choices: { e12: '120' } }) }]; } };
   })();
 
+  /* ====================================================================== nt48 bis nt55: Vertiefung Schaltregler (Ausgangswelligkeit über den ESR, Freilaufdiode, Spitzenstrom der Drossel, Verlustbilanz) und Gate (Ansteuerleistung, Gate-Strom, Bootstrap-Kondensator)
+   * Eigene Zahlen (Übungswerte). Gerechnet wird über den Kern, wo er die Größe führt (buck.ripple, loss.parts, gate.drive, Prüfstand buck für I_L,max). Der Kern kennt keinen Bootstrap-Kondensator und keine Sättigung:
+   * nt55 rechnet C = Q_G / ΔU direkt, nt51 leitet I_sat aus dem Spitzenstrom des Prüfstands und einer Reserve (Aufgabenwert) ab. nt52 rechnet die Leitverluste mit dem Mittelwert des Stroms (Welligkeit vernachlässigt, steht im Text). */
+
+  /* ====================================================================== nt48: Welligkeit der Ausgangsspannung aus ΔI_L und ESR */
+  const M48 = (() => {
+    const G = { uin: 24, uout: 5, f: 200e3, l: 47e-6, esr: 0.04, c: 220e-6, i: 2 };
+    const CTL = () => ({ uin: G.uin, steuer: 'geregelt', uout: G.uout, f: G.f / 1e3, l: G.l * 1e6, c: G.c * 1e6, esr: G.esr * 1e3, iout: G.i });
+    const rp = () => once('rp48', () => { const p = C().buck.ripple({ Uin: G.uin, Uout: G.uout, f: G.f, L: G.l, C: G.c, esr: G.esr, Iout: G.i }); if (!p || !p.ok || !fin(p.dUesr) || !fin(p.dUc)) throw new Error('buck.ripple'); return p; });
+    const vals = () => once('v48', () => { const p = rp();
+      return { uin: G.uin, uout: G.uout, f: G.f / 1e3, l: G.l * 1e6, esr: G.esr * 1e3, esrOhm: G.esr, c: G.c * 1e6, i: G.i, d: p.D * 100, dA: p.D, diff: G.uin - G.uout, fl: G.f * G.l, dil: p.dIL, du: p.dUesr * 1e3, duLast: G.i * G.esr * 1e3, duHalb: p.dUesr * 1e3 / 2, duc: p.dUc * 1e3, duSum: p.dU * 1e3, dilOhneD: (G.uin - G.uout) / (G.f * G.l) }; });
+    const rDil = () => once('r48a', () => { const v = vals(); return own(v.dil, 'A', { wrongs: [
+      { v: v.dilOhneD, text: 'Der Faktor D fehlt: ΔI_L = (U_ein − U_aus) · D / (f · L).' },
+      { v: v.dil / 2, text: 'Das ist nur die halbe Welligkeit ΔI_L / 2. Gefragt ist der Wert Spitze-Spitze.' }] }); });
+    const rDu = () => once('r48b', () => { const v = vals(); return own(v.du * 1e-3, 'V', { factor: 1e-3, wrongs: [
+      { v: v.duLast * 1e-3, text: 'Du hast mit dem Laststrom gerechnet (' + f(v.i, 0) + ' A · ESR = ' + f(v.duLast, 0) + ' mV). Der Gleichstrom fließt in die Last, durch den Kondensator fließt nur der Wechselanteil ΔI_L.' },
+      { v: v.duHalb * 1e-3, text: 'Du hast mit der halben Welligkeit ΔI_L / 2 gerechnet. Für den Wert Spitze-Spitze zählt das ganze ΔI_L.' }] }); });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'dil'), rDil(), 'Die Drosselwelligkeit ΔI_L ist richtig berechnet', 4);
+      numRow(r, rawOf(a, 'du'), rDu(), 'Die Welligkeit der Ausgangsspannung am ESR ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Tiefsetzsteller (ideal, nicht lückend, Übungsschaltung) setzt ' + f(G.uin, 0) + ' V auf ' + f(G.uout, 0) + ' V herab und liefert ' + f(G.i, 0) + ' A. Die Schaltfrequenz ist f = ' + f(G.f / 1e3, 0) + ' kHz, die Drossel hat L = ' + f(G.l * 1e6, 0) + ' µH. Der Ausgangskondensator hat den Ersatzserienwiderstand ESR = ' + f(G.esr * 1e3, 0) + ' mΩ. Die Kapazität ist so groß, dass du nur den ESR-Anteil rechnest. Berechne die Drosselwelligkeit ΔI_L (Spitze-Spitze) in A und die Welligkeit der Ausgangsspannung ΔU = ΔI_L · ESR in mV.',
+      fields: () => [{ key: 'dil', label: 'Drosselwelligkeit ΔI_L', unit: 'A' }, { key: 'du', label: 'Welligkeit der Ausgangsspannung ΔU', unit: 'mV' }],
+      hint: () => { const v = vals(); return [
+        'Der Gleichanteil des Drosselstroms fließt in die Last, der Wechselanteil ΔI_L fließt durch den Ausgangskondensator. Am ESR entsteht dabei nach dem ohmschen Gesetz die Spannung ΔU = ΔI_L · ESR. Zuerst brauchst du also ΔI_L = (U_ein − U_aus) · D / (f · L).',
+        'D = U_aus / U_ein = ' + f(v.d, 2) + ' %. U_ein − U_aus = ' + f(v.diff, 0) + ' V und f · L = ' + f(v.f, 0) + ' kHz · ' + f(v.l, 0) + ' µH = ' + f(v.fl, 1) + ' Ω. Rechne den ESR in Ω um: ' + f(v.esr, 0) + ' mΩ = ' + f(v.esrOhm, 2) + ' Ω.',
+        'Musterlösung: ΔI_L = ' + f(v.diff, 0) + ' V · ' + f(v.dA, 4) + ' / ' + f(v.fl, 1) + ' Ω = ' + f(v.dil, 4) + ' A. ΔU = ' + f(v.dil, 4) + ' A · ' + f(v.esrOhm, 2) + ' Ω = ' + f(v.du, 2) + ' mV. Mit dem Laststrom gerechnet kämen ' + f(v.duLast, 0) + ' mV heraus. Der Prüfstand zeigt mit C = ' + f(v.c, 0) + ' µF zusätzlich den Kapazitätsanteil von ' + f(v.duc, 2) + ' mV, zusammen höchstens ' + f(v.duSum, 2) + ' mV (die beiden Anteile erreichen ihre Spitzen nicht gleichzeitig).'
+      ]; },
+      start: () => A('buck', CTL(), { fields: { dil: null, du: null } }),
+      sol: () => { const v = vals(); return A('buck', CTL(), { fields: { dil: v.dil, du: v.du }, value: v.du }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Laststrom statt Drosselwelligkeit', answer: A('buck', {}, { fields: { dil: v.dil, du: v.duLast } }) },
+        { name: 'halbe Welligkeit', answer: A('buck', {}, { fields: { dil: v.dil / 2, du: v.duHalb } }) },
+        { name: 'Faktor D vergessen', answer: A('buck', {}, { fields: { dil: v.dilOhneD, du: v.dilOhneD * v.esr } }) }]; } };
+  })();
+
+  /* ====================================================================== nt49: Ausgangskondensator nach dem groessten ESR waehlen */
+  const M49 = (() => {
+    const G = { uin: 12, uout: 3.3, f: 250e3, l: 22e-6, duMax: 0.03, i: 1 };
+    const KOND = [{ k: 'a', c: 220, esr: 250 }, { k: 'b', c: 470, esr: 120 }, { k: 'c', c: 100, esr: 45 }, { k: 'd', c: 1000, esr: 90 }];
+    const CTL = (c, esr) => ({ uin: G.uin, steuer: 'geregelt', uout: G.uout, f: G.f / 1e3, l: G.l * 1e6, c, esr, iout: G.i });
+    const duOf = esr => { const p = C().buck.ripple({ Uin: G.uin, Uout: G.uout, f: G.f, L: G.l, esr: esr * 1e-3, Iout: G.i }); if (!p || !p.ok || !fin(p.dUesr)) throw new Error('buck.ripple'); return p.dUesr * 1e3; };
+    const vals = () => once('v49', () => { const dil = fml('dIL', G.uin, G.uout, G.f, G.l), d = fml('dBuck', G.uin, G.uout), o = { uin: G.uin, uout: G.uout, f: G.f / 1e3, l: G.l * 1e6, dumax: G.duMax * 1e3, dumaxV: G.duMax, i: G.i, d: d * 100, dA: d, diff: G.uin - G.uout, fl: G.f * G.l, dil, esrmax: G.duMax / dil * 1e3, esrLast: G.duMax / G.i * 1e3, esrKehr: dil / G.duMax };
+      KOND.forEach(q => { o['c' + q.k] = q.c; o['e' + q.k] = q.esr; o['u' + q.k] = duOf(q.esr); });
+      return o; });
+    const rDil = () => once('r49a', () => { const v = vals(); return own(v.dil, 'A', { wrongs: [{ v: v.diff / v.fl, text: 'Der Faktor D fehlt: ΔI_L = (U_ein − U_aus) · D / (f · L).' }, { v: v.dil / 2, text: 'Das ist nur die halbe Welligkeit ΔI_L / 2. Gefragt ist der Wert Spitze-Spitze.' }] }); });
+    const rEsr = () => once('r49b', () => { const v = vals(); return own(v.esrmax * 1e-3, 'Ω', { factor: 1e-3, wrongs: [
+      { v: v.esrLast * 1e-3, text: 'Du hast durch den Laststrom geteilt. Durch den Kondensator fließt nur der Wechselanteil: ESR_max = ΔU / ΔI_L.' },
+      { v: v.esrKehr, text: 'Du hast ΔI_L / ΔU gerechnet. Stelle ΔU = ΔI_L · ESR nach dem ESR um: ESR_max = ΔU / ΔI_L.' }] }); });
+    const specs = () => once('sp49', () => { const v = vals(), gr = q => q.k === 'c'
+      ? 'Mit ESR = ' + f(q.esr, 0) + ' mΩ ist ΔU = ' + f(v.dil, 3) + ' A · ' + f(q.esr, 0) + ' mΩ = ' + f(v['u' + q.k], 1) + ' mV, weniger als die erlaubten ' + f(v.dumax, 0) + ' mV. Nur dieser Kondensator liegt unter ESR_max = ' + f(v.esrmax, 1) + ' mΩ.'
+      : 'Mit ESR = ' + f(q.esr, 0) + ' mΩ wäre ΔU = ' + f(v.dil, 3) + ' A · ' + f(q.esr, 0) + ' mΩ = ' + f(v['u' + q.k], 1) + ' mV, mehr als die erlaubten ' + f(v.dumax, 0) + ' mV. Die größere Kapazität hilft hier nicht, weil der ESR-Anteil überwiegt.';
+      return [{ key: 'kond', q: 'Welcher Kondensator hält die Welligkeit ein?', short: 'Der Kondensator mit ausreichend kleinem ESR ist gewählt', right: 'c',
+        options: KOND.map(q => ({ value: q.k, label: 'Kondensator ' + q.k.toUpperCase() + ': ' + f(q.c, 0) + ' µF, ESR ' + f(q.esr, 0) + ' mΩ', grund: gr(q) })) }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'dil'), rDil(), 'Die Drosselwelligkeit ΔI_L ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'esrmax'), rEsr(), 'Der größte zulässige ESR ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein Tiefsetzsteller (ideal, nicht lückend, Übungsschaltung) setzt ' + f(G.uin, 0) + ' V auf ' + f(G.uout, 1) + ' V herab. Die Schaltfrequenz ist f = ' + f(G.f / 1e3, 0) + ' kHz, die Drossel hat L = ' + f(G.l * 1e6, 0) + ' µH. Die Welligkeit der Ausgangsspannung soll höchstens ' + f(G.duMax * 1e3, 0) + ' mV betragen (Aufgabenwert). Rechne nur mit dem ESR-Anteil ΔU = ΔI_L · ESR. Berechne die Drosselwelligkeit ΔI_L in A und den größten zulässigen ESR in mΩ. Wähle dann den Kondensator, der die Vorgabe einhält.',
+      fields: () => [{ key: 'dil', label: 'Drosselwelligkeit ΔI_L', unit: 'A' }, { key: 'esrmax', label: 'Größter zulässiger ESR', unit: 'mΩ' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Bei Elektrolytkondensatoren bestimmt meist der ESR die Welligkeit, nicht die Kapazität. Aus ΔU = ΔI_L · ESR folgt die Grenze ESR_max = ΔU / ΔI_L. Ein Kondensator mit größerem ESR hält die Vorgabe nicht ein, auch wenn seine Kapazität groß ist.',
+        'D = U_aus / U_ein = ' + f(v.d, 1) + ' %. U_ein − U_aus = ' + f(v.diff, 1) + ' V und f · L = ' + f(v.f, 0) + ' kHz · ' + f(v.l, 0) + ' µH = ' + f(v.fl, 1) + ' Ω. Rechne die erlaubte Welligkeit in V um: ' + f(v.dumax, 0) + ' mV = ' + f(v.dumaxV, 2) + ' V.',
+        'Musterlösung: ΔI_L = ' + f(v.diff, 1) + ' V · ' + f(v.dA, 3) + ' / ' + f(v.fl, 1) + ' Ω = ' + f(v.dil, 3) + ' A. ESR_max = ' + f(v.dumaxV, 2) + ' V / ' + f(v.dil, 3) + ' A = ' + f(v.esrmax, 1) + ' mΩ. Nur Kondensator C mit ' + f(v.ec, 0) + ' mΩ liegt darunter (ΔU = ' + f(v.uc, 1) + ' mV). Kondensator D hat die größte Kapazität, kommt aber auf ' + f(v.ud, 1) + ' mV.'
+      ]; },
+      start: () => A('buck', CTL(470, 120), { fields: { dil: null, esrmax: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('buck', CTL(100, 45), { fields: { dil: v.dil, esrmax: v.esrmax }, choices: rightOf(specs()), value: v.esrmax }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Laststrom statt Drosselwelligkeit, größte Kapazität gewählt', answer: A('buck', {}, { fields: { dil: v.dil, esrmax: v.esrLast }, choices: { kond: 'd' } }) },
+        { name: 'Kehrwert, Kondensator mit zu großem ESR', answer: A('buck', {}, { fields: { dil: v.dil, esrmax: v.esrKehr }, choices: { kond: 'b' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt50: Verlust in der Freilaufdiode, Schottky gegen Silizium */
+  const M50 = (() => {
+    const G = { uin: 24, uout: 5, i: 2, f: 200e3, l: 47e-6, ufsi: 0.9 };
+    const CTL = () => ({ uin: G.uin, steuer: 'geregelt', uout: G.uout, f: G.f / 1e3, l: G.l * 1e6, uf: 'diode', iout: G.i });
+    const pd = uf => { const p = C().loss.parts({ kind: 'buck', Uin: G.uin, Uout: G.uout, Iout: G.i, f: G.f, L: G.l, uf }); if (!p || !p.ok || !fin(p.diode)) throw new Error('loss.parts'); return p.diode; };
+    const vals = () => once('v50', () => { const d = fml('dBuck', G.uin, G.uout), ufs = lv('uf_schottky'), ufsi = G.ufsi, idm = pd(1), ps = pd(ufs), psi = pd(ufsi);
+      return { uin: G.uin, uout: G.uout, i: G.i, ufs, ufsi, d: d * 100, dA: d, aus: 1 - d, ausPct: (1 - d) * 100, idm, ps, psi, diff: psi - ps, idmD: G.i * d, psD: ufs * G.i * d, psiD: ufsi * G.i * d, psVoll: ufs * G.i, psiVoll: ufsi * G.i }; });
+    const rfs = () => once('r50', () => { const v = vals(), tD = 'Du hast mit D statt mit 1 − D gerechnet. Die Diode leitet, wenn der Schalter sperrt, also im Anteil 1 − D = ' + f(v.ausPct, 2) + ' % der Periode.', tV = 'Der Faktor 1 − D fehlt: Die Diode führt den Strom nur während der Ausschaltdauer, im Mittel also I_aus · (1 − D).';
+      return {
+        idm: own(v.idm, 'A', { wrongs: [{ v: v.idmD, text: tD }, { v: G.i, text: tV }] }),
+        ps: own(v.ps, 'W', { wrongs: [{ v: v.psD, text: tD }, { v: v.psVoll, text: tV }, { v: v.psi, text: 'Das ist der Wert der Silizium-Diode mit U_F = ' + f(v.ufsi, 1) + ' V. Die Schottky-Diode hat U_F = ' + f(v.ufs, 1) + ' V.' }] }),
+        psi: own(v.psi, 'W', { wrongs: [{ v: v.psiD, text: tD }, { v: v.psiVoll, text: tV }, { v: v.ps, text: 'Das ist der Wert der Schottky-Diode mit U_F = ' + f(v.ufs, 1) + ' V. Die Silizium-Diode hat U_F = ' + f(v.ufsi, 1) + ' V.' }] }),
+        diff: own(v.diff, 'W', { wrongs: [{ v: v.psiD - v.psD, text: tD }, { v: v.psiVoll - v.psVoll, text: tV }] }) }; });
+    const check = mk((r, a) => { const R = rfs();
+      numRow(r, rawOf(a, 'idm'), R.idm, 'Der Mittelwert des Diodenstroms ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'ps'), R.ps, 'Die Verlustleistung der Schottky-Diode ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'psi'), R.psi, 'Die Verlustleistung der Silizium-Diode ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'diff'), R.diff, 'Die Einsparung mit der Schottky-Diode ist richtig berechnet', 3);
+    });
+    return { vals, check, consts: [],
+      text: () => 'In einem Tiefsetzsteller (ideal, nicht lückend, Übungsschaltung) mit U_ein = ' + f(G.uin, 0) + ' V, U_aus = ' + f(G.uout, 0) + ' V und I_aus = ' + f(G.i, 0) + ' A leitet die Freilaufdiode nur während der Ausschaltdauer, also im Anteil 1 − D der Periode. Vergleiche eine Schottky-Diode mit U_F = ' + f(lv('uf_schottky'), 1) + ' V und eine Silizium-Diode mit U_F = ' + f(G.ufsi, 1) + ' V (Übungswerte, Datenblatt maßgeblich). Berechne den Mittelwert des Diodenstroms, die Verlustleistung P = U_F · I_aus · (1 − D) für beide Dioden und die Einsparung mit der Schottky-Diode.',
+      fields: () => [{ key: 'idm', label: 'Mittelwert des Diodenstroms', unit: 'A' }, { key: 'ps', label: 'Verlustleistung Schottky-Diode', unit: 'W' }, { key: 'psi', label: 'Verlustleistung Silizium-Diode', unit: 'W' }, { key: 'diff', label: 'Einsparung mit der Schottky-Diode', unit: 'W' }],
+      hint: () => { const v = vals(); return [
+        'Solange der Schalter leitet, sperrt die Diode. Sperrt der Schalter, übernimmt die Diode den Drosselstrom. Im Mittel fließt durch die Diode deshalb I_aus · (1 − D). An der Diode fällt dabei die Durchlassspannung U_F ab, also ist P = U_F · I_aus · (1 − D).',
+        'D = U_aus / U_ein = ' + f(v.d, 2) + ' %, also 1 − D = ' + f(v.ausPct, 2) + ' %. Der Mittelwert des Diodenstroms ist ' + f(v.i, 0) + ' A · ' + f(v.aus, 4) + ' = ' + f(v.idm, 3) + ' A.',
+        'Musterlösung: Schottky-Diode P = ' + f(v.ufs, 1) + ' V · ' + f(v.idm, 3) + ' A = ' + f(v.ps, 3) + ' W. Silizium-Diode P = ' + f(v.ufsi, 1) + ' V · ' + f(v.idm, 3) + ' A = ' + f(v.psi, 3) + ' W. Die Schottky-Diode spart ' + f(v.diff, 3) + ' W. Wer mit D statt mit 1 − D rechnet, bekommt ' + f(v.psD, 3) + ' W für die Schottky-Diode.'
+      ]; },
+      start: () => A('buck', CTL(), { fields: { idm: null, ps: null, psi: null, diff: null } }),
+      sol: () => { const v = vals(); return A('buck', CTL(), { fields: { idm: v.idm, ps: v.ps, psi: v.psi, diff: v.diff }, value: v.ps }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'D statt 1 − D', answer: A('buck', {}, { fields: { idm: v.idmD, ps: v.psD, psi: v.psiD, diff: v.psiD - v.psD } }) },
+        { name: 'ohne den Faktor 1 − D', answer: A('buck', {}, { fields: { idm: G.i, ps: v.psVoll, psi: v.psiVoll, diff: v.psiVoll - v.psVoll } }) },
+        { name: 'Dioden vertauscht', answer: A('buck', {}, { fields: { idm: v.idm, ps: v.psi, psi: v.ps, diff: v.diff } }) }]; } };
+  })();
+
+  /* ====================================================================== nt51: Spitzenstrom der Drossel und noetiger Saettigungsstrom */
+  const M51 = (() => {
+    const G = { uin: 12, uout: 5, i: 2.5, f: 150e3, l: 33e-6, res: 1.2 };
+    const ISAT = ['2,5', '3', '3,5', '5'];
+    const CTL = () => ({ uin: G.uin, steuer: 'geregelt', uout: G.uout, f: G.f / 1e3, l: G.l * 1e6, iout: G.i });
+    const vals = () => once('v51', () => { const dil = fml('dIL', G.uin, G.uout, G.f, G.l), d = fml('dBuck', G.uin, G.uout), s = sim('buck', CTL()), ilmax = s.m.iLmax;
+      if (!s.ok || !fin(ilmax)) throw new Error('Prüfstand buck');
+      return { uin: G.uin, uout: G.uout, i: G.i, f: G.f / 1e3, l: G.l * 1e6, res: G.res, d: d * 100, dA: d, diff: G.uin - G.uout, fl: G.f * G.l, dil, halb: dil / 2, ilmax, isat: G.res * ilmax, ilVoll: G.i + dil, isatVoll: G.res * (G.i + dil), isatOhne: G.res * G.i, s25: 2.5, s3: 3, s35: 3.5, s5: 5 }; });
+    const rfs = () => once('r51', () => { const v = vals();
+      return {
+        dil: own(v.dil, 'A', { wrongs: [{ v: v.diff / v.fl, text: 'Der Faktor D fehlt: ΔI_L = (U_ein − U_aus) · D / (f · L).' }] }),
+        ilmax: own(v.ilmax, 'A', { wrongs: [{ v: v.ilVoll, text: 'Du hast das ganze ΔI_L addiert. Der Drosselstrom schwankt um den Mittelwert I_aus, nach oben also nur um ΔI_L / 2.' }, { v: G.i, text: 'Das ist der Mittelwert I_aus. Der Spitzenstrom liegt um ΔI_L / 2 darüber.' }] }),
+        isat: own(v.isat, 'A', { wrongs: [{ v: v.ilmax, text: 'Das ist der Spitzenstrom ohne Reserve. Verlangt ist das ' + f(G.res, 1) + '-Fache.' }, { v: v.isatOhne, text: 'Du hast die Reserve auf den Mittelwert I_aus gerechnet. Die Drossel muss den Spitzenstrom I_L,max aushalten.' }, { v: v.isatVoll, text: 'Du hast das ganze ΔI_L addiert. Nach oben schwankt der Strom nur um ΔI_L / 2.' }] }) }; });
+    const specs = () => once('sp51', () => { const v = vals(), gr = { '2,5': 'Das ist nur der Mittelwert I_aus. Der Spitzenstrom I_L,max = ' + f(v.ilmax, 3) + ' A liegt darüber: Die Drossel sättigt in jeder Periode, die Induktivität bricht ein und der Strom steigt steil an.',
+        '3': 'Der Wert liegt zwar über dem Spitzenstrom I_L,max = ' + f(v.ilmax, 3) + ' A, aber unter dem verlangten ' + f(G.res, 1) + '-Fachen (' + f(v.isat, 3) + ' A). Die Reserve für Toleranzen und Erwärmung fehlt.',
+        '3,5': 'Der Wert liegt über dem verlangten ' + f(G.res, 1) + '-Fachen des Spitzenstroms (' + f(v.isat, 3) + ' A) und ist der kleinste Wert der Auswahl, der reicht.',
+        '5': 'Die Drossel reicht, ist aber größer und teurer als nötig. Verlangt sind ' + f(v.isat, 3) + ' A, gefragt ist die kleinste Drossel, die reicht.' };
+      return [{ key: 'isat', q: 'Welche Drossel wählst du (die kleinste, die reicht)?', short: 'Die kleinste Drossel mit ausreichendem Sättigungsstrom ist gewählt', right: '3,5',
+        options: ISAT.map(k => ({ value: k, label: 'Drossel mit I_sat = ' + k + ' A', grund: gr[k] })) }]; });
+    const check = mk((r, a) => { const R = rfs();
+      numRow(r, rawOf(a, 'dil'), R.dil, 'Die Drosselwelligkeit ΔI_L ist richtig berechnet', 4);
+      numRow(r, rawOf(a, 'ilmax'), R.ilmax, 'Der Spitzenstrom I_L,max der Drossel ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'isat'), R.isat, 'Der nötige Sättigungsstrom mit Reserve ist richtig berechnet', 3);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein Tiefsetzsteller (ideal, nicht lückend, Übungsschaltung) setzt ' + f(G.uin, 0) + ' V auf ' + f(G.uout, 0) + ' V herab und liefert ' + f(G.i, 1) + ' A. Die Schaltfrequenz ist f = ' + f(G.f / 1e3, 0) + ' kHz, die Drossel hat L = ' + f(G.l * 1e6, 0) + ' µH. Wird der Strom größer als der Sättigungsstrom I_sat, verliert die Drossel ihre Induktivität. I_sat soll deshalb mindestens das ' + f(G.res, 1) + '-Fache des Spitzenstroms betragen (Reserve als Aufgabenwert). Berechne ΔI_L, den Spitzenstrom I_L,max = I_aus + ΔI_L / 2 und den nötigen Sättigungsstrom. Wähle dann die Drossel. Zur Auswahl stehen Drosseln mit I_sat = 2,5 A, 3 A, 3,5 A und 5 A.',
+      fields: () => [{ key: 'dil', label: 'Drosselwelligkeit ΔI_L', unit: 'A' }, { key: 'ilmax', label: 'Spitzenstrom I_L,max', unit: 'A' }, { key: 'isat', label: 'Nötiger Sättigungsstrom I_sat', unit: 'A' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der Drosselstrom ist ein Dreieck um den Mittelwert I_aus. Nach oben und nach unten weicht er je um die halbe Welligkeit ab. Der höchste Wert ist also I_L,max = I_aus + ΔI_L / 2. Bei diesem Strom darf der Kern der Drossel noch nicht sättigen.',
+        'D = U_aus / U_ein = ' + f(v.d, 2) + ' %. U_ein − U_aus = ' + f(v.diff, 0) + ' V und f · L = ' + f(v.f, 0) + ' kHz · ' + f(v.l, 0) + ' µH = ' + f(v.fl, 2) + ' Ω. Daraus folgt ΔI_L = ' + f(v.dil, 4) + ' A, die Hälfte davon ist ' + f(v.halb, 4) + ' A.',
+        'Musterlösung: I_L,max = ' + f(v.i, 1) + ' A + ' + f(v.halb, 4) + ' A = ' + f(v.ilmax, 3) + ' A. I_sat ≥ ' + f(v.res, 1) + ' · ' + f(v.ilmax, 3) + ' A = ' + f(v.isat, 3) + ' A. Die kleinste Drossel, die reicht, hat I_sat = ' + f(v.s35, 1) + ' A. Die Drossel mit ' + f(v.s3, 0) + ' A liegt über dem Spitzenstrom, hat aber keine Reserve.'
+      ]; },
+      start: () => A('buck', CTL(), { fields: { dil: null, ilmax: null, isat: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('buck', CTL(), { fields: { dil: v.dil, ilmax: v.ilmax, isat: v.isat }, choices: rightOf(specs()), value: v.ilmax }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'ganze Welligkeit addiert, zu große Drossel', answer: A('buck', {}, { fields: { dil: v.dil, ilmax: v.ilVoll, isat: v.isatVoll }, choices: { isat: '5' } }) },
+        { name: 'Mittelwert statt Spitzenstrom, Drossel ohne Reserve', answer: A('buck', {}, { fields: { dil: v.dil, ilmax: G.i, isat: v.isatOhne }, choices: { isat: '3' } }) }]; } };
+  })();
+
+  /* ====================================================================== nt52: Verlustbilanz des Tiefsetzstellers, Wirkungsgrad */
+  const M52 = (() => {
+    const G = { uin: 24, uout: 5, i: 2, f: 200e3, l: 47e-6, rds: 0.08, rl: 0.05 };
+    const CTL = () => ({ uin: G.uin, steuer: 'geregelt', uout: G.uout, f: G.f / 1e3, l: G.l * 1e6, rdson: G.rds * 1e3, uf: 'diode', iout: G.i });
+    const lp = () => once('lp52', () => { const p = C().loss.parts({ kind: 'buck', Uin: G.uin, Uout: G.uout, Iout: G.i, f: G.f, L: G.l, rdson: G.rds, uf: lv('uf_schottky'), rl: G.rl }); if (!p || !p.ok) throw new Error('loss.parts'); return p; });
+    const vals = () => once('v52', () => { const p = lp(), d = fml('dBuck', G.uin, G.uout), uf = lv('uf_schottky'), pab = p.Pab, pleit = G.rds * G.i * G.i * d, pd = p.diode, pl = G.rl * G.i * G.i, psw = p.schalt, pg = p.gate, pv = pleit + pd + pl + psw + pg, pdD = uf * G.i * d, pleitVoll = G.rds * G.i * G.i;
+      return { uin: G.uin, uout: G.uout, i: G.i, f: G.f / 1e3, rds: G.rds * 1e3, rdsOhm: G.rds, rl: G.rl * 1e3, rlOhm: G.rl, uf, d: d * 100, dA: d, aus: 1 - d, i2: G.i * G.i, pab, pleit: pleit * 1e3, pd: pd * 1e3, pl: pl * 1e3, psw: psw * 1e3, pg: pg * 1e3, pvm: pv * 1e3, pv, pzu: pab + pv, eta: pab / (pab + pv) * 100,
+        pleitVoll: pleitVoll * 1e3, pdD: pdD * 1e3, pvOhneL: pv - pl, etaOhneL: pab / (pab + pv - pl) * 100, pvVoll: pv - pleit + pleitVoll, etaVoll: pab / (pab + pv - pleit + pleitVoll) * 100, pvD: pv - pd + pdD, etaD: pab / (pab + pv - pd + pdD) * 100, anteil: pv / (pab + pv) * 100, pvKern: p.Pv, etaKern: p.eta * 100 }; });
+    const rfs = () => once('r52', () => { const v = vals();
+      return {
+        pleit: own(v.pleit * 1e-3, 'W', { factor: 1e-3, wrongs: [{ v: v.pleitVoll * 1e-3, text: 'Der Faktor D fehlt: Der Schalter leitet nur während der Einschaltdauer, P = R_DS,on · I² · D.' }, { v: G.rds * G.i * v.dA, text: 'Der Strom steht im Quadrat: P = R_DS,on · I² · D.' }] }),
+        pd: own(v.pd * 1e-3, 'W', { factor: 1e-3, wrongs: [{ v: v.pdD * 1e-3, text: 'Du hast mit D statt mit 1 − D gerechnet. Die Diode leitet während der Ausschaltdauer: P = U_F · I · (1 − D).' }, { v: v.uf * G.i, text: 'Der Faktor 1 − D fehlt: Die Diode führt den Strom nur während der Ausschaltdauer.' }] }),
+        pv: own(v.pv, 'W', { wrongs: [{ v: v.pvOhneL, text: 'Es fehlt der Verlust im Drosselkupfer P = R_L · I² = ' + eng(v.pl * 1e-3, 'W') + '. Die Drossel führt den Strom dauernd, ohne den Faktor D.' }, { v: v.pvVoll, text: 'Beim Leitverlust des Schalters fehlt der Faktor D.' }, { v: v.pvD, text: 'Beim Diodenverlust steht D statt 1 − D.' }] }),
+        eta: own(v.eta / 100, '', { pct: true, factor: 0.01, tol: TOLE(), wrongs: [{ v: v.anteil / 100, text: 'Das ist der Verlustanteil P_V / P_zu = ' + f(v.anteil, 1) + ' %. Der Wirkungsgrad ist P_ab / P_zu.' }, { v: v.pab / (v.pab + v.pv) / (v.pab + v.pv) * v.pab, text: 'Du hast zweimal durch P_zu geteilt. Der Wirkungsgrad ist P_ab / (P_ab + P_V).' }] }) }; });
+    const check = mk((r, a) => { const R = rfs();
+      numRow(r, rawOf(a, 'pleit'), R.pleit, 'Der Leitverlust des Schalters ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'pd'), R.pd, 'Der Diodenverlust ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'pv'), R.pv, 'Die gesamte Verlustleistung P_V ist richtig summiert', 3);
+      numRow(r, rawOf(a, 'eta'), R.eta, 'Der Wirkungsgrad η ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Tiefsetzsteller (nicht lückend, Übungsschaltung) setzt ' + f(G.uin, 0) + ' V auf ' + f(G.uout, 0) + ' V herab und liefert ' + f(G.i, 0) + ' A bei f = ' + f(G.f / 1e3, 0) + ' kHz. Die Tabelle nennt die Bauteilwerte und zwei fertige Einzelverluste (Übungswerte, Datenblatt maßgeblich). Rechne mit dem Mittelwert des Drosselstroms, die Welligkeit vernachlässigst du. Berechne den Leitverlust des Schalters P = R_DS,on · I² · D, den Diodenverlust P = U_F · I · (1 − D), die gesamte Verlustleistung P_V aus allen fünf Teilen und den Wirkungsgrad η in Prozent (der Anteil als Zahl zählt auch).',
+      table: () => { const v = vals(); return { caption: 'Bauteilwerte und Einzelverluste (Übungswerte)', head: ['Größe', 'Wert'], rows: [['Durchlasswiderstand des Schalters R_DS,on', f(v.rds, 0) + ' mΩ'], ['Durchlassspannung der Schottky-Diode U_F', f(v.uf, 1) + ' V'], ['Kupferwiderstand der Drossel R_L', f(v.rl, 0) + ' mΩ'], ['Schaltverlust (gegeben)', f(v.psw, 0) + ' mW'], ['Gate-Verlust (gegeben)', f(v.pg, 0) + ' mW']] }; },
+      fields: () => [{ key: 'pleit', label: 'Leitverlust des Schalters', unit: 'mW' }, { key: 'pd', label: 'Diodenverlust', unit: 'mW' }, { key: 'pv', label: 'Gesamte Verlustleistung P_V', unit: 'W' }, { key: 'eta', label: 'Wirkungsgrad η', unit: '%' }],
+      hint: () => { const v = vals(); return [
+        'Schalter und Diode teilen sich die Periode: Der Schalter leitet im Anteil D, die Diode im Anteil 1 − D. Die Drossel führt den Strom dauernd, ihr Kupferverlust ist R_L · I². Addiere dann alle fünf Teile und rechne η = P_ab / (P_ab + P_V).',
+        'D = U_aus / U_ein = ' + f(v.d, 2) + ' %, also 1 − D = ' + f(v.aus, 4) + '. Mit I² = ' + f(v.i2, 0) + ' A² ist der Leitverlust ' + f(v.rdsOhm, 2) + ' Ω · ' + f(v.i2, 0) + ' A² · ' + f(v.dA, 4) + ' und der Drosselverlust ' + f(v.rlOhm, 2) + ' Ω · ' + f(v.i2, 0) + ' A² = ' + f(v.pl, 0) + ' mW. Die abgegebene Leistung ist P_ab = ' + f(v.pab, 0) + ' W.',
+        'Musterlösung: Leitverlust ' + f(v.pleit, 2) + ' mW, Diodenverlust ' + f(v.uf, 1) + ' V · ' + f(v.i, 0) + ' A · ' + f(v.aus, 4) + ' = ' + f(v.pd, 1) + ' mW. P_V = ' + f(v.pleit, 2) + ' mW + ' + f(v.pd, 1) + ' mW + ' + f(v.pl, 0) + ' mW + ' + f(v.psw, 0) + ' mW + ' + f(v.pg, 0) + ' mW = ' + f(v.pv, 3) + ' W. η = ' + f(v.pab, 0) + ' W / ' + f(v.pzu, 3) + ' W = ' + f(v.eta, 2) + ' %. Die Diode verursacht mehr als die Hälfte der Verluste. Mit der Welligkeit des Drosselstroms rechnet der Kern ' + f(v.pvKern, 3) + ' W und ' + f(v.etaKern, 2) + ' %.'
+      ]; },
+      start: () => A('buck', CTL(), { fields: { pleit: null, pd: null, pv: null, eta: null } }),
+      sol: () => { const v = vals(); return A('buck', CTL(), { fields: { pleit: v.pleit, pd: v.pd, pv: v.pv, eta: v.eta }, value: v.eta }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Leitverlust ohne D', answer: A('buck', {}, { fields: { pleit: v.pleitVoll, pd: v.pd, pv: v.pvVoll, eta: v.etaVoll } }) },
+        { name: 'Diode mit D statt 1 − D', answer: A('buck', {}, { fields: { pleit: v.pleit, pd: v.pdD, pv: v.pvD, eta: v.etaD } }) },
+        { name: 'Drosselkupfer vergessen, Verlustanteil statt Wirkungsgrad', answer: A('buck', {}, { fields: { pleit: v.pleit, pd: v.pd, pv: v.pvOhneL, eta: v.anteil } }) }]; } };
+  })();
+
+  /* ====================================================================== nt53: Ansteuerleistung des Gate-Treibers */
+  const M53 = (() => {
+    const FIX = { ug: 12, rg: 10, qg: 45, qgd: 5, f: 150000, uin: 24, i: 2, halbbruecke: false, ton: 100, toff: 0 };
+    const drv = () => once('d53', () => { const d = C().gate.drive({ UG: FIX.ug, Rg: FIX.rg, Qg: FIX.qg * 1e-9, Qgd: FIX.qgd * 1e-9, f: FIX.f }); if (!d || !d.ok || !fin(d.PG)) throw new Error('gate.drive'); return d; });
+    const vals = () => once('v53', () => { const d = drv(), itr = FIX.qg * 1e-9 * FIX.f;
+      return { ug: FIX.ug, qg: FIX.qg, f: FIX.f / 1e3, fHz: FIX.f, pg: d.PG * 1e3, pgW: d.PG, itr: itr * 1e3, halb: d.PG * 1e3 / 2, e: FIX.qg * FIX.ug, igs: d.Ig_peak, pg2: 2 * d.PG * 1e3 }; });
+    const rfs = () => once('r53', () => { const v = vals();
+      return {
+        pg: own(v.pgW, 'W', { factor: 1e-3, wrongs: [{ v: v.pgW / 2, text: 'Du hast mit dem Faktor ½ gerechnet, wie bei der Energie eines Kondensators. Der Treiber liefert aber die ganze Ladung bei voller Spannung, die andere Hälfte wird im Gate-Widerstand zu Wärme: P_G = Q_G · U_GS · f.' }, { v: v.e * 1e-9 * 1e-3, text: 'Das ist die Energie für einen Takt in nJ (Q_G · U_GS), noch nicht die Leistung. Multipliziere mit der Schaltfrequenz.' }] }),
+        itr: own(v.itr * 1e-3, 'A', { factor: 1e-3, wrongs: [{ v: v.igs, text: 'Das ist der Spitzenstrom U_G / R_g. Gefragt ist der Mittelwert, den der Treiber aus der Versorgung zieht: I = Q_G · f.' }, { v: v.itr * 1e-3 * FIX.ug, text: 'Du hast noch mit der Spannung multipliziert, das ergibt die Leistung. Der mittlere Strom ist I = Q_G · f.' }] }) }; });
+    const check = mk((r, a) => { const R = rfs();
+      numRow(r, rawOf(a, 'pg'), R.pg, 'Die Ansteuerleistung P_G ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'itr'), R.itr, 'Der mittlere Strom des Treibers ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Gate-Treiber (Übungsschaltung) schaltet einen MOSFET mit der Gate-Ladung Q_G = ' + f(FIX.qg, 0) + ' nC. Die Gate-Spannung ist U_GS = ' + f(FIX.ug, 0) + ' V, die Schaltfrequenz f = ' + f(FIX.f / 1e3, 0) + ' kHz. In jedem Takt wird das Gate einmal geladen und wieder entladen. Berechne die Ansteuerleistung P_G = Q_G · U_GS · f in mW und den mittleren Strom I = Q_G · f, den der Treiber aus seiner Versorgung zieht, in mA. Im Prüfstand „' + rname('gate') + '“ sind diese Werte eingestellt.',
+      fields: () => [{ key: 'pg', label: 'Ansteuerleistung P_G', unit: 'mW' }, { key: 'itr', label: 'Mittlerer Strom des Treibers', unit: 'mA' }],
+      hint: () => { const v = vals(); return [
+        'Bei jedem Einschalten holt der Treiber die Ladung Q_G aus seiner Versorgung. Ladung mal Spannung ist die Energie für einen Takt, und das geschieht f-mal in der Sekunde. Die Leistung hängt deshalb nicht vom Laststrom ab, sie wächst aber mit der Schaltfrequenz.',
+        'Setze in SI-Einheiten ein: Q_G = ' + f(v.qg, 0) + ' nC (Nanocoulomb), f = ' + f(v.f, 0) + ' kHz = ' + f(v.fHz, 0) + ' Hz. Die Energie für einen Takt ist ' + f(v.qg, 0) + ' nC · ' + f(v.ug, 0) + ' V = ' + f(v.e, 0) + ' nJ.',
+        'Musterlösung: P_G = ' + f(v.e, 0) + ' nJ · ' + f(v.fHz, 0) + ' Hz = ' + f(v.pg, 0) + ' mW. I = ' + f(v.qg, 0) + ' nC · ' + f(v.fHz, 0) + ' Hz = ' + f(v.itr, 2) + ' mA. Bei doppelter Schaltfrequenz verdoppelt sich die Leistung auf ' + f(v.pg2, 0) + ' mW.'
+      ]; },
+      start: () => A('gate', Object.assign({}, FIX), { fields: { pg: null, itr: null } }),
+      sol: () => { const v = vals(); return A('gate', Object.assign({}, FIX), { fields: { pg: v.pg, itr: v.itr }, value: v.pg }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Faktor ½ wie bei der Kondensatorenergie', answer: A('gate', {}, { fields: { pg: v.halb, itr: v.itr } }) },
+        { name: 'Spitzenstrom statt Mittelwert', answer: A('gate', {}, { fields: { pg: v.pg, itr: v.igs } }) }]; } };
+  })();
+
+  /* ====================================================================== nt54: Gate-Spitzenstrom und Einschaltzeit aus Q_G / I_G */
+  const M54 = (() => {
+    const FIX = { ug: 12, rg: 18, qg: 30, qgd: 5, f: 100000, uin: 24, i: 2, halbbruecke: false, ton: 100, toff: 0 };
+    const drv = () => once('d54', () => { const d = C().gate.drive({ UG: FIX.ug, Rg: FIX.rg, Qg: FIX.qg * 1e-9, Qgd: FIX.qgd * 1e-9, f: FIX.f }); if (!d || !d.ok) throw new Error('gate.drive'); return d; });
+    const vals = () => once('v54', () => { const d = drv();
+      return { ug: FIX.ug, rg: FIX.rg, qg: FIX.qg, uplat: d.Uplat, du: FIX.ug - d.Uplat, igs: d.Ig_peak, igp: d.Ig_plateau, ton: d.tOn * 1e9, tonS: FIX.qg * 1e-9 / d.Ig_peak * 1e9, igU: d.Uplat / FIX.rg, rg2: 2 * FIX.rg, ton2: 2 * d.tOn * 1e9 }; });
+    const rfs = () => once('r54', () => { const v = vals();
+      return {
+        igs: own(v.igs, 'A', { wrongs: [{ v: v.igp, text: 'Das ist der Strom auf dem Plateau. Im ersten Augenblick ist das Gate noch ungeladen, am Widerstand liegt die volle Spannung: I_G = U_G / R_g.' }] }),
+        igp: own(v.igp, 'A', { wrongs: [{ v: v.igs, text: 'Das ist der Spitzenstrom. Auf dem Plateau liegt am Gate schon U_Plateau, am Widerstand bleibt nur U_G − U_Plateau = ' + f(v.du, 1) + ' V.' }, { v: v.igU, text: 'Du hast U_Plateau / R_g gerechnet. Am Widerstand liegt die Differenz U_G − U_Plateau.' }] }),
+        ton: own(v.ton * 1e-9, 's', { factor: 1e-9, wrongs: [{ v: v.tonS * 1e-9, text: 'Du hast mit dem Spitzenstrom gerechnet. Der fließt nur im ersten Augenblick, für den Überschlag gilt der Plateau-Strom.' }, { v: FIX.qg * 1e-9 * v.igp, text: 'Du hast Q_G · I_G gerechnet. Aus Q = I · t folgt t = Q_G / I_G.' }] }) }; });
+    const check = mk((r, a) => { const R = rfs();
+      numRow(r, rawOf(a, 'igs'), R.igs, 'Der Gate-Spitzenstrom ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'igp'), R.igp, 'Der Gate-Strom auf dem Plateau ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'ton'), R.ton, 'Die Einschaltzeit aus Q_G / I_G ist richtig überschlagen', 1);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Treiber lädt das Gate eines MOSFET (Übungsschaltung) über den Gate-Widerstand R_g = ' + f(FIX.rg, 0) + ' Ω auf U_G = ' + f(FIX.ug, 0) + ' V. Die Gate-Ladung ist Q_G = ' + f(FIX.qg, 0) + ' nC, die Plateauspannung U_Plateau = ' + f(lv('uplat'), 1) + ' V (Übungswerte, Datenblatt maßgeblich). Berechne den Spitzenstrom I_G = U_G / R_g im ersten Augenblick, den Gate-Strom auf dem Plateau (U_G − U_Plateau) / R_g und als Überschlag die Einschaltzeit t = Q_G / I_G mit dem Plateau-Strom in ns. Der Überschlag ist grob: Er schätzt die Zeit, in der das Gate geladen wird, bis der MOSFET umgeschaltet hat. Bis die Gate-Spannung ganz bei 12 V ist, dauert es etwas länger. Im Prüfstand „' + rname('gate') + '“ kannst du R_g verstellen und die Zeiten vergleichen.',
+      fields: () => [{ key: 'igs', label: 'Gate-Spitzenstrom', unit: 'A' }, { key: 'igp', label: 'Gate-Strom auf dem Plateau', unit: 'A' }, { key: 'ton', label: 'Einschaltzeit (Überschlag)', unit: 'ns' }],
+      hint: () => { const v = vals(); return [
+        'Das Gate verhält sich wie ein Kondensator, der über R_g geladen wird. Am Anfang liegt die ganze Treiberspannung am Widerstand, dann fließt der größte Strom. Während der MOSFET umschaltet, bleibt die Gate-Spannung auf dem Plateau stehen. Aus Ladung und Strom folgt die Zeit: t = Q / I.',
+        'Spitzenstrom: ' + f(v.ug, 0) + ' V / ' + f(v.rg, 0) + ' Ω. Auf dem Plateau liegen am Widerstand ' + f(v.ug, 0) + ' V − ' + f(v.uplat, 1) + ' V = ' + f(v.du, 1) + ' V. Rechne die Ladung in SI-Einheiten: ' + f(v.qg, 0) + ' nC (Nanocoulomb).',
+        'Musterlösung: I_G = ' + f(v.igs, 3) + ' A im ersten Augenblick, auf dem Plateau ' + f(v.du, 1) + ' V / ' + f(v.rg, 0) + ' Ω = ' + f(v.igp, 3) + ' A. t = ' + f(v.qg, 0) + ' nC / ' + f(v.igp, 3) + ' A = ' + f(v.ton, 0) + ' ns. Mit dem Spitzenstrom gerechnet wären es nur ' + f(v.tonS, 0) + ' ns. Mit R_g = ' + f(v.rg2, 0) + ' Ω verdoppelt sich die Zeit auf ' + f(v.ton2, 0) + ' ns.'
+      ]; },
+      start: () => A('gate', Object.assign({}, FIX), { fields: { igs: null, igp: null, ton: null } }),
+      sol: () => { const v = vals(); return A('gate', Object.assign({}, FIX), { fields: { igs: v.igs, igp: v.igp, ton: v.ton }, value: v.ton }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Zeit mit dem Spitzenstrom', answer: A('gate', {}, { fields: { igs: v.igs, igp: v.igp, ton: v.tonS } }) },
+        { name: 'Spitzenstrom und Plateau-Strom vertauscht', answer: A('gate', {}, { fields: { igs: v.igp, igp: v.igs, ton: v.ton } }) }]; } };
+  })();
+
+  /* ====================================================================== nt55: Bootstrap-Kondensator fuer den oberen Schalter (der Kern fuehrt Bootstrap nur als Begriff, gerechnet wird C = Q_G / ΔU) */
+  const M55 = (() => {
+    const G = { qg: 55, duMax: 0.3 };   // nC, V (Aufgabenwerte)
+    const NORM = [47, 100, 220, 470];   // nF
+    const FIX = { ug: 12, rg: 10, qg: G.qg, qgd: 5, f: 100000, uin: 24, i: 2, halbbruecke: true, ton: 100, toff: 0 };
+    const duOf = c => G.qg / c;          // nC / nF = V
+    const vals = () => once('v55', () => ({ qg: G.qg, dumax: G.duMax, cmin: G.qg / G.duMax, cn: 220, du: duOf(220), c100: 100, du100: duOf(100), c47: 47, c470: 470, du470: duOf(470), cMal: G.qg * G.duMax, zehn: 10, cPraxis: 10 * G.qg / G.duMax }));
+    const rC = () => once('r55a', () => { const v = vals(); return own(v.cmin * 1e-9, 'F', { factor: 1e-9, wrongs: [
+      { v: v.cMal * 1e-9, text: 'Du hast Q_G · ΔU gerechnet. Aus Q = C · U folgt C = Q_G / ΔU.' },
+      { v: G.duMax / G.qg * 1e-9, text: 'Du hast ΔU / Q_G gerechnet. Aus Q = C · U folgt C = Q_G / ΔU.' }] }); });
+    const rDu = cn => own(duOf(cn), 'V', { wrongs: [{ v: G.duMax, text: 'Das ist der erlaubte Höchstwert. Gefragt ist der Spannungsabfall mit dem gewählten Normwert: ΔU = Q_G / C.' }, { v: duOf(vals().cmin) * cn / vals().cmin, text: 'Du hast C / C_min gerechnet. Der Spannungsabfall ist ΔU = Q_G / C.' }] });
+    const specs = () => once('sp55', () => { const v = vals(), g = c => c < v.cmin
+      ? 'Mit ' + f(c, 0) + ' nF sinkt die Spannung um ' + f(G.qg, 0) + ' nC / ' + f(c, 0) + ' nF = ' + f(duOf(c), 2) + ' V, mehr als die erlaubten ' + f(G.duMax, 1) + ' V. Der Wert liegt unter C_min = ' + f(v.cmin, 1) + ' nF.'
+      : c === 220 ? 'Mit ' + f(c, 0) + ' nF sinkt die Spannung nur um ' + f(duOf(c), 2) + ' V. Das ist der kleinste Normwert über C_min = ' + f(v.cmin, 1) + ' nF.'
+        : 'Der Wert reicht (Spannungsabfall ' + f(duOf(c), 3) + ' V), es gibt aber einen kleineren Normwert über C_min = ' + f(v.cmin, 1) + ' nF. Gefragt ist der kleinste, der reicht.';
+      return [
+        { key: 'c', q: 'Welcher Normwert ist der kleinste, der reicht?', short: 'Der kleinste ausreichende Normwert ist gewählt', right: '220', options: NORM.map(c => ({ value: String(c), label: f(c, 0) + ' nF', grund: g(c) })) },
+        { key: 'lade', q: 'Wann wird der Bootstrap-Kondensator nachgeladen?', short: 'Der Zeitpunkt des Nachladens ist richtig erkannt', right: 'unten',
+          options: [
+            { value: 'oben', label: 'Während der obere Schalter leitet', grund: 'Dann liegt der Schaltknoten auf U_ein, die Bootstrap-Diode sperrt. In dieser Zeit gibt der Kondensator Ladung ab, er wird nicht geladen.' },
+            { value: 'unten', label: 'Während der untere Schalter leitet', grund: 'Dann liegt der Schaltknoten auf Masse. Die Treiberversorgung lädt den Kondensator über die Bootstrap-Diode wieder auf.' },
+            { value: 'tot', label: 'Nur in der Totzeit beider Schalter', grund: 'Die Totzeit dauert nur einige zehn Nanosekunden und der Schaltknoten liegt dabei nicht sicher auf Masse. Geladen wird, solange der untere Schalter leitet.' }] }]; });
+    const check = mk((r, a) => {
+      const got = choiceOf(a, 'c'), cn = NORM.indexOf(Number(got)) >= 0 ? Number(got) : 220;
+      numRow(r, rawOf(a, 'cmin'), rC(), 'Die kleinste Kapazität C_min ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'du'), rDu(cn), 'Der Spannungsabfall mit dem gewählten Normwert ist richtig berechnet', 3);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'In einer Halbbrücke (Übungsschaltung) versorgt ein Bootstrap-Kondensator den Treiber des oberen Schalters. Bei jedem Einschalten gibt der Kondensator die Gate-Ladung Q_G = ' + f(G.qg, 0) + ' nC ab. Dabei darf seine Spannung um höchstens ΔU = ' + f(G.duMax, 1) + ' V sinken (Aufgabenwert). Den Ruhestrom des Treibers und Leckströme vernachlässigst du. Berechne die kleinste Kapazität C_min = Q_G / ΔU in nF. Wähle aus den Normwerten 47 nF, 100 nF, 220 nF und 470 nF den kleinsten, der reicht, und berechne den Spannungsabfall mit diesem Wert. Beantworte dann, wann der Kondensator nachgeladen wird. Im Prüfstand „' + rname('gate') + '“ ist die Halbbrücke eingeschaltet.',
+      fields: () => [{ key: 'cmin', label: 'Kleinste Kapazität C_min', unit: 'nF' }, { key: 'du', label: 'Spannungsabfall mit dem gewählten Normwert', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Der obere Schalter braucht eine Gate-Spannung, die über der Eingangsspannung liegt. Die liefert ein Kondensator, der mit dem Schaltknoten nach oben mitwandert. Gibt ein Kondensator die Ladung Q ab, sinkt seine Spannung um ΔU = Q / C. Je größer C, desto kleiner der Abfall.',
+        'Stelle Q = C · ΔU nach C um: C_min = ' + f(v.qg, 0) + ' nC / ' + f(v.dumax, 1) + ' V. Nanocoulomb durch Volt ergibt Nanofarad. Vergleiche das Ergebnis mit den Normwerten und rechne für den gewählten Wert ΔU = Q_G / C.',
+        'Musterlösung: C_min = ' + f(v.cmin, 1) + ' nF, der kleinste Normwert darüber ist ' + f(v.cn, 0) + ' nF. Damit ist ΔU = ' + f(v.qg, 0) + ' nC / ' + f(v.cn, 0) + ' nF = ' + f(v.du, 2) + ' V. Mit ' + f(v.c100, 0) + ' nF wären es ' + f(v.du100, 2) + ' V. Nachgeladen wird, während der untere Schalter leitet. In der Praxis wählt man den Kondensator meist deutlich größer, weil auch der Treiber selbst Strom braucht.'
+      ]; },
+      start: () => A('gate', Object.assign({}, FIX), { fields: { cmin: null, du: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('gate', Object.assign({}, FIX), { fields: { cmin: v.cmin, du: v.du }, choices: rightOf(specs()), value: v.cmin }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Ladung mal Spannung, zu kleiner Normwert, falscher Zeitpunkt', answer: A('gate', {}, { fields: { cmin: v.cMal, du: v.dumax }, choices: { c: '100', lade: 'oben' } }) },
+        { name: 'größter Normwert, Nachladen in der Totzeit', answer: A('gate', {}, { fields: { cmin: v.cmin, du: v.du }, choices: { c: '470', lade: 'tot' } }) }]; } };
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'nt17', lab: 'nts', cat: 'Prüfungsnah', title: 'Strombegrenzung dimensionieren (Pool W2024-23)', level: 3, rig: 'stabil' }, M17),
@@ -1399,9 +1692,17 @@
     tk({ id: 'nt44', lab: 'nts', cat: 'Linearregler', title: 'Längstransistor mit Z-Diode auslegen', level: 3, rig: 'stabil' }, M44),
     tk({ id: 'nt45', lab: 'nts', cat: 'Linearregler', title: 'LM317 mit Einstellbereich 3 bis 12 V', level: 2, rig: 'stabil' }, M45),
     tk({ id: 'nt46', lab: 'nts', cat: 'Z-Diode', title: 'Z-Diode: Kennwerte aus der Typbezeichnung', level: 1, rig: 'stabil' }, M46),
-    tk({ id: 'nt47', lab: 'nts', cat: 'Z-Diode', title: 'Vorwiderstand für schwankende Spannung und Last', level: 3, rig: 'stabil' }, M47)
+    tk({ id: 'nt47', lab: 'nts', cat: 'Z-Diode', title: 'Vorwiderstand für schwankende Spannung und Last', level: 3, rig: 'stabil' }, M47),
+    tk({ id: 'nt48', lab: 'nts', cat: 'Schaltregler', title: 'Ausgangswelligkeit aus Drosselwelligkeit und ESR', level: 2, rig: 'buck' }, M48),
+    tk({ id: 'nt49', lab: 'nts', cat: 'Schaltregler', title: 'Ausgangskondensator nach dem ESR wählen', level: 2, rig: 'buck' }, M49),
+    tk({ id: 'nt50', lab: 'nts', cat: 'Schaltregler', title: 'Freilaufdiode: Schottky gegen Silizium', level: 2, rig: 'buck' }, M50),
+    tk({ id: 'nt51', lab: 'nts', cat: 'Schaltregler', title: 'Spitzenstrom und Sättigungsstrom der Drossel', level: 2, rig: 'buck' }, M51),
+    tk({ id: 'nt52', lab: 'nts', cat: 'Schaltregler', title: 'Verlustbilanz des Tiefsetzstellers', level: 3, rig: 'buck' }, M52),
+    tk({ id: 'nt53', lab: 'nts', cat: 'Gate', title: 'Ansteuerleistung des Gate-Treibers', level: 1, rig: 'gate' }, M53),
+    tk({ id: 'nt54', lab: 'nts', cat: 'Gate', title: 'Gate-Strom und Einschaltzeit', level: 2, rig: 'gate' }, M54),
+    tk({ id: 'nt55', lab: 'nts', cat: 'Gate', title: 'Bootstrap-Kondensator für den oberen Schalter', level: 3, rig: 'gate' }, M55)
   ];
-  const MODS = { nt17: M17, nt18: M18, nt19: M19, nt20: M20, nt21: M21, nt22: M22, nt23: M23, nt24: M24, nt25: M25, nt26: M26, nt27: M27, nt28: M28, nt29: M29, nt30: M30, nt31: M31, nt32: M32, nt33: M33, nt34: M34, nt35: M35, nt36: M36, nt37: M37, nt38: M38, nt39: M39, nt40: M40, nt41: M41, nt42: M42, nt43: M43, nt44: M44, nt45: M45, nt46: M46, nt47: M47 };
+  const MODS = { nt48: M48, nt49: M49, nt50: M50, nt51: M51, nt52: M52, nt53: M53, nt54: M54, nt55: M55,nt17: M17, nt18: M18, nt19: M19, nt20: M20, nt21: M21, nt22: M22, nt23: M23, nt24: M24, nt25: M25, nt26: M26, nt27: M27, nt28: M28, nt29: M29, nt30: M30, nt31: M31, nt32: M32, nt33: M33, nt34: M34, nt35: M35, nt36: M36, nt37: M37, nt38: M38, nt39: M39, nt40: M40, nt41: M41, nt42: M42, nt43: M43, nt44: M44, nt45: M45, nt46: M46, nt47: M47 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);

@@ -34,7 +34,7 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
 .row{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);min-height:56px}
 .row .t{flex:1;min-width:0}
 .row .t b{display:block;font-size:15px;font-weight:600;overflow-wrap:anywhere}
-.row .t small{color:var(--mute);font-size:12.5px}
+.row .t small{color:var(--mute);font-size:14px}
 .row .a{display:flex;gap:6px;flex:none}
 #viewer{position:fixed;inset:0;z-index:100;background:var(--bg);display:none;flex-direction:column}
 #viewer.on{display:flex}
@@ -54,6 +54,20 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
 #gate .btn{width:100%}
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 #urheber-hinweis{font-size:14px!important}
+#seite .kopf{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
+#seite .kopf .sp{flex:1}
+#seite .kopf .btn,#items .btn{min-height:44px}
+#seite h2{margin:0 0 4px;font-size:21px;overflow-wrap:anywhere}
+#seite ol{list-style:none;margin:0;padding:0;counter-reset:nr}
+#seite li{counter-increment:nr;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 10px;break-inside:avoid}
+#seite .f{font-weight:600;overflow-wrap:anywhere}
+#seite .f::before{content:counter(nr) ". ";color:var(--mute)}
+#seite .l{margin-top:8px;padding:8px 12px;border-left:4px solid var(--ok);background:var(--panel2);border-radius:0 10px 10px 0;overflow-wrap:anywhere}
+#seite .l::before{content:"Lösung mit Rechenweg";display:block;font-size:14px;font-weight:700;color:var(--ok);margin-bottom:2px}
+#seite table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;font-size:14px;margin:6px 0}
+#seite th,#seite td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+#seite.nurfragen .l{display:none}
+@media print{header,#gate,#toast,#seite .kopf,#urheber-hinweis{display:none!important}html,body{background:#fff;color:#000;font-size:11pt}main{max-width:none;padding:0}#seite li{background:#fff;border-color:#999}#seite .l{background:#fff;border-left-color:#000}#seite .l::before{color:#000}}
 </style>
 </head>
 <body>
@@ -69,7 +83,7 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
 <main>
   <section class="card" id="login">
     <h2>Ausbilder-Passwort</h2>
-    <p class="mute">Die Lösungsblätter liegen verschlüsselt auf dem Server. Sie werden erst hier im Browser mit dem Ausbilder-Passwort entschlüsselt. Das Passwort bleibt nur im Arbeitsspeicher dieser Seite und wird nach 15 Minuten ohne Eingabe vergessen.</p>
+    <p class="mute">Die Lösungen aller Arbeitsblätter liegen verschlüsselt auf dem Server. Sie werden erst hier im Browser mit dem Ausbilder-Passwort entschlüsselt und dann als Seite mit Rechenweg gezeigt. Das Passwort bleibt nur im Arbeitsspeicher dieser Seite und wird nach 15 Minuten ohne Eingabe vergessen.</p>
     <form id="pwForm" autocomplete="off">
       <div id="pwRow">
         <input id="pw" type="password" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Passwort" aria-label="Ausbilder-Passwort">
@@ -84,6 +98,11 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
       <p class="mute" id="count" style="margin:8px 0 0"></p>
     </div>
     <div class="card" id="items"></div>
+  </section>
+  <section id="seite" hidden>
+    <div class="kopf"><button class="btn s" id="sBack">‹ Alle Lösungen</button><span class="sp"></span><a class="btn s" id="sHeft" href="lernen.html">Zum Lernheft</a><button class="btn s" id="sNur" aria-pressed="false">Lösungen ausblenden</button><button class="btn s" id="sPrint">Drucken</button></div>
+    <div class="card"><h2 id="sTitel"></h2><p class="mute" id="sInfo" style="margin:0"></p></div>
+    <div id="sInhalt"></div>
   </section>
 </main>
 <div id="viewer" role="dialog" aria-modal="true" aria-label="Lösung ansehen">
@@ -112,7 +131,7 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
   function lock(grund) {
     base = null; index = null;
     if (timer) { clearTimeout(timer); timer = null; }
-    closeViewer();
+    closeViewer(); closeSeite(true);
     wins.forEach(function (w) { try { w.close(); } catch (e) {} }); wins = [];
     urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} }); urls = [];
     $('#items').textContent = ''; $('#q').value = ''; $('#pw').value = '';
@@ -170,12 +189,13 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
     });
     Object.keys(gr).sort(function (a, b) { return a.localeCompare(b, 'de'); }).forEach(function (g) {
       var h = document.createElement('div'); h.className = 'gh'; h.textContent = g; box.appendChild(h);
-      gr[g].sort(function (a, b) { return a.typ === b.typ ? a.titel.localeCompare(b.titel, 'de') : (a.typ === 'pdf' ? -1 : 1); }).forEach(function (e) {
+      gr[g].sort(function (a, b) { return a.typ === b.typ ? a.titel.localeCompare(b.titel, 'de') : (a.typ === 'pdf' ? 1 : -1); }).forEach(function (e) {
         var r = document.createElement('div'); r.className = 'row';
-        r.innerHTML = '<div class="t"><b>' + esc(e.titel) + '</b><small>' + (e.typ === 'pdf' ? 'PDF' : 'Heft (HTML)') + ' · ' + kb(e.groesse) + '</small></div>' +
-          '<div class="a"><button class="btn s" data-a="open">Öffnen</button><button class="btn s" data-a="save">Speichern</button></div>';
+        var seite = istSeite(e);
+        r.innerHTML = '<div class="t"><b>' + esc(e.titel) + '</b><small>' + (seite ? 'Lösungen mit Rechenweg' : e.typ === 'pdf' ? 'PDF · ' + kb(e.groesse) : 'Heft (HTML) · ' + kb(e.groesse)) + '</small></div>' +
+          '<div class="a"><button class="btn s' + (seite ? ' pri' : '') + '" data-a="open">' + (seite ? 'Ansehen' : 'Öffnen') + '</button>' + (seite ? '' : '<button class="btn s" data-a="save">Speichern</button>') + '</div>';
         r.querySelector('[data-a=open]').addEventListener('click', function () { openEntry(e); });
-        r.querySelector('[data-a=save]').addEventListener('click', function () { saveEntry(e); });
+        if (!seite) r.querySelector('[data-a=save]').addEventListener('click', function () { saveEntry(e); });
         box.appendChild(r);
       });
     });
@@ -195,7 +215,55 @@ input[type=password],input[type=search]{width:100%;font:inherit;font-size:16px;c
     if (!base) throw new Error('GESPERRT');
     return C.openEntry(base, e, fetchBytes);
   }
+  /* ----- Lösungsseite: Arbeitsblatt mit Lösungen direkt in der App (statt PDF) ----- */
+  function istSeite(e) { return e.typ === 'html' && /-loesungen\.html$/.test(e.name || ''); }
+  var OK_TAGS = { ARTICLE: 1, H2: 1, OL: 1, LI: 1, DIV: 1, B: 1, I: 1, EM: 1, STRONG: 1, SUB: 1, SUP: 1, BR: 1, TABLE: 1, THEAD: 1, TBODY: 1, TR: 1, TH: 1, TD: 1, SPAN: 1 };
+  /* baut den entschlüsselten Inhalt neu auf: nur einfache Auszeichnung, von den Attributen nur class f und l */
+  function kopie(n) {
+    if (n.nodeType === 3) return document.createTextNode(n.nodeValue);
+    if (n.nodeType !== 1 || !OK_TAGS[n.tagName]) return null;
+    var k = document.createElement(n.tagName), c = n.getAttribute('class');
+    if (c === 'f' || c === 'l') k.className = c;
+    for (var x = n.firstChild; x; x = x.nextSibling) { var y = kopie(x); if (y) k.appendChild(y); }
+    return k;
+  }
+  var seiteOffen = null;
+  function zeigeSeite(e, plain) {
+    var doc = new DOMParser().parseFromString(new TextDecoder('utf-8').decode(plain), 'text/html'), art = doc.querySelector('article.lsg'), ol = art && art.querySelector('ol');
+    if (!ol) throw new Error('FORMAT');
+    var heft = art.getAttribute('data-heft') || '', h = art.querySelector('h2'), n = ol.children.length;
+    $('#sTitel').textContent = e.titel;
+    $('#sInfo').textContent = (h ? h.textContent + ' · ' : '') + n + (n === 1 ? ' Aufgabe' : ' Aufgaben') + ' · nur für Ausbilder';
+    var a = $('#sHeft'); if (/^(lernen|projekt)-[a-z0-9-]+\.html$/.test(heft)) { a.href = heft + '#ws'; a.hidden = false; } else a.hidden = true;
+    var box = $('#sInhalt'); box.textContent = ''; box.appendChild(kopie(ol));
+    $('#seite').classList.remove('nurfragen'); $('#sNur').textContent = 'Lösungen ausblenden'; $('#sNur').setAttribute('aria-pressed', 'false');
+    $('#liste').hidden = true; $('#seite').hidden = false; seiteOffen = e.id;
+    try { history.pushState({ lsg: 1 }, ''); } catch (x) {}   /* nur ein Verlaufsschritt für die Zurück-Taste, die Adresse bleibt gleich */
+    window.scrollTo(0, 0);
+  }
+  function closeSeite(still) {
+    if (!seiteOffen && $('#seite').hidden) return;
+    seiteOffen = null; $('#sInhalt').textContent = ''; $('#sTitel').textContent = ''; $('#seite').hidden = true;
+    if (!still && base) $('#liste').hidden = false;
+  }
+  window.addEventListener('popstate', function () { if (seiteOffen) closeSeite(false); });
+  $('#sBack').addEventListener('click', function () {
+    var imVerlauf = false; try { imVerlauf = !!(history.state && history.state.lsg); } catch (x) {}
+    closeSeite(false); window.scrollTo(0, 0);
+    if (imVerlauf) { try { history.back(); } catch (x) {} }
+  });
+  $('#sPrint').addEventListener('click', function () { window.print(); });
+  $('#sNur').addEventListener('click', function () {
+    var an = $('#seite').classList.toggle('nurfragen');
+    this.textContent = an ? 'Lösungen zeigen' : 'Lösungen ausblenden'; this.setAttribute('aria-pressed', an ? 'true' : 'false');
+  });
+
   async function openEntry(e) {
+    if (istSeite(e)) {
+      toast('Wird entschlüsselt …');
+      try { zeigeSeite(e, await laden(e)); } catch (x) { toast(base ? 'Lösung nicht lesbar' : 'Gesperrt'); }
+      return;
+    }
     var w = null;
     if (e.typ === 'pdf') { try { w = window.open('', '_blank'); if (w) { w.opener = null; w.document.title = 'Lösung wird entschlüsselt …'; wins.push(w); } } catch (x) { w = null; } }
     toast('Wird entschlüsselt …');

@@ -177,7 +177,45 @@
     },
     /* ds33 */ pcfR() { const d = need('tf-pcf8574'), vol = val(d, 'elec', 'vol', 'typ'), volMax = val(d, 'elec', 'vol', 'max'); return { r: (5 - 2 - vol) / 0.01, rMax: (5 - 2 - volMax) / 0.01, none: (5 - 2) / 0.01 }; },
     /* ds35 */ mono555() { const a = (need('tf-ne555').app || []).find(x => /Monostable/.test(x.title)); if (!a || !a.formulas.some(f => /T = 1\.1 · R · C/.test(f))) throw new Error('Monostabil-Formel fehlt'); return { t: 1.1 * 470000 * 22e-6, astH: 0.693 * 470000 * 22e-6, idx: need('tf-ne555').app.indexOf(a) }; },
-    /* ds34 */ mcpN() { const d = need('tf-mcp4151'), rw = val(d, 'elec', 'rw_55', 'typ'), rab = val(d, 'elec', 'rab_10', 'typ') * 1000, n = (3300 - rw) * 128 / rab; return { n: Math.round(n), exact: n, rw, rab }; }
+    /* ds34 */ mcpN() { const d = need('tf-mcp4151'), rw = val(d, 'elec', 'rw_55', 'typ'), rab = val(d, 'elec', 'rab_10', 'typ') * 1000, n = (3300 - rw) * 128 / rab; return { n: Math.round(n), exact: n, rw, rab }; },
+    /* ds36 */ gateDiv() {
+      const d = need('tf-irlz'), w = CORE().divider(24, 2200, 1000, 5, 5, 10), r = CORE().divider(24, 2200, 1000, 5, 5, 0), u = CORE().divider(24, 2200, 1000, 0, 0, 10);
+      if (!w.ok || !r.ok || !u.ok) throw new Error(w.error || r.error || u.error);
+      if (w.min < val(d, 'rec', 'vgs', 'min') || w.max > val(d, 'rec', 'vgs', 'max')) throw new Error('Gate-Spannung liegt nicht im empfohlenen Bereich');
+      return { nom: w.nom, min: w.min, max: w.max, span: w.max - w.min, onlyR: r.max - r.min, onlyU: u.max - u.min };
+    },
+    /* ds37 */ rss() { const t = [1, 2, 1.5], wc = t.reduce((a, b) => a + b, 0), sq = t.reduce((a, b) => a + b * b, 0); if (!(need('tf-lm358').app || []).some(a => /Non-inverting amplifier/.test(a.title))) throw new Error('Anwendungsbeispiel fehlt'); return { wc, sq, rss: Math.sqrt(sq), mean: wc / t.length, noSq: Math.sqrt(wc) }; },
+    /* ds38 */ rDerate() {
+      const pn = 0.6, tk = 70, tmax = 155, ta = 100, p = pn * (tmax - ta) / (tmax - tk), pr = Math.pow(12 * 1.1 - val(need('tf-zd'), 'elec', 'vz', 'typ'), 2) / 270;
+      if (!(pr < p) || Math.abs(pr - 0.243) > 0.0005) throw new Error('Vergleichsleistung am Vorwiderstand stimmt nicht');
+      return { p, pn, pr, from0: pn * (1 - ta / tmax), drop: pn * (ta - tk) / (tmax - tk), ratio: pn * tk / ta };
+    },
+    /* ds39 */ rPower() {
+      const vf = val(need('tf-led-r'), 'elec', 'vf20', 'typ'), p = (24 - vf) * 0.02, min = p / 0.5, list = [0.25, 0.5, 1, 2], pick = list.find(x => x >= min - 1e-12);
+      const lr = CORE().ledResistor(24, vf, 0.02);   /* Gegenprobe über den Kern: R = 1,1 kΩ ist ein E24-Wert, P = I² · R */
+      if (!fin(pick) || !lr || lr.error || Math.abs(lr.r - 1100) > 1e-6 || lr.rE24 !== 1100 || Math.abs(lr.p - p) > 1e-9) throw new Error('Vorwiderstand oder Baugröße passt nicht');
+      return { p, min, pick, list };
+    },
+    /* ds40 */ capV() {
+      const d = need('tf-7805'), umax = 12 * 1.1, min = umax / 0.8, list = [10, 16, 25, 35, 50], pick = list.find(x => x * 0.8 >= umax - 1e-12);
+      if (!fin(pick) || 12 < val(d, 'rec', 'vi', 'min') || 12 > val(d, 'rec', 'vi', 'max')) throw new Error('Eingangsspannung oder Nennspannung passt nicht');
+      return { umax, min, pick, noTol: 12 / 0.8, list };
+    },
+    /* ds41 */ e24Dev() {
+      const vref = val(need('tf-lm317'), 'elec', 'vref', 'typ'), r = 240 * (10 / vref - 1), e = CORE().eSeries('E24', r, 'nearest'), up = CORE().eSeries('E24', r, 'up');
+      if (!fin(e) || !fin(up) || e === up) throw new Error('E24-Wert nicht eindeutig');
+      return { r, e, up, dev: (e - r) / r * 100, devE: (e - r) / e * 100, devUp: (up - r) / r * 100, ohm: e - r, vout: vref * (1 + e / 240) };
+    },
+    /* ds42 */ divSeries() {
+      const dev = [10, 5, 1].map(t => { const w = CORE().divider(5, 10000, 15000, t, t, 0); if (!w.ok) throw new Error(w.error); return Math.max(w.plusPct, w.minusPct); });
+      if (3 > val(need('tf-lm358'), 'rec', 'vicm', 'max')) throw new Error('Schwelle liegt über VICM max');
+      const i = dev.findIndex(x => x <= 2); return { dev, idx: i < 0 ? 3 : i };
+    },
+    /* ds43 */ mains() {
+      const d = need('tf-1n4007'), u = 230 * 1.1 * Math.SQRT2, vrrm = val(d, 'abs', 'vrrm', 'max');
+      if (!(vrrm > u) || !(val(d, 'rec', 'vr', 'max') > u)) throw new Error('VRRM reicht nicht');
+      return { u, nom: 230 * Math.SQRT2, rms: 230 * 1.1, app: 230 * Math.SQRT2 * 1.2, half: 2 * u, vrrm };
+    }
   };
 
   /* ====================================================================== Aufgaben */
@@ -332,6 +370,31 @@
       sol() { return { ds: 'tf-lm317', focus: { section: 'elec', key: 'vref' }, calc: { id: 'wc317', fromDs: true, vals: { r1: 240, r2: 720, t: 1 } }, value: W.lm317Wc().max }; },
       check: numCheck({ unit: 'V', want: () => W.lm317Wc().max, tol: 0.02,
         mistakes: () => { const w = W.lm317Wc(); return [[w.nom, 'Das ist der Nennwert mit typischen Größen. Gefragt ist der ungünstigste Fall mit allen Größen am Eckwert.'], [w.min, 'Das ist der kleinste mögliche Wert. Für das Maximum nimmst du die größte Vref und R2 groß, R1 klein.']]; } }) },
+    /* v62.186: ds36 bis ds38 (Toleranzrechnung und Derating eines Widerstands), eigene Werte; Widerstandsdaten sind Übungswerte aus dem Aufgabentext. */
+    { id: 'ds36', lab: 'ds', cat: 'Berechnungen', title: 'Spannungsteiler am Gate: Fenster im Worst Case', level: 3, ds: 'tf-irlz',
+      text: 'Dein TF-IRLZ34 schaltet eine Last und wird aus einem 24-V-Steuersignal angesteuert. Ein Spannungsteiler aus R1 = 2,2 kΩ (oben) und R2 = 1 kΩ (unten, zwischen Gate und Source) setzt das Signal herab. Der Teiler ist bewusst niederohmig, damit das Gate zügig umgeladen wird. Das Steuersignal hat ±10 % Toleranz, beide Widerstände haben ±5 %. Berechne die größte und die kleinste Gate-Spannung im ungünstigsten Fall und gib an, wie breit das Fenster dazwischen ist (Umax − Umin). Prüfe danach, ob beide Werte im empfohlenen Bereich von VGS im Datenblatt TF-IRLZ34 liegen.',
+      ask: { label: 'Fensterbreite Umax − Umin', unit: 'V' },
+      hint: ['Worst Case heißt: Jede Größe steht gleichzeitig an dem Eckwert, der das Ergebnis am weitesten verschiebt. Formel: UG = U · R2 / (R1 + R2).', 'Für das Maximum: U groß (26,4 V), R2 groß (1,05 kΩ), R1 klein (2,09 kΩ). Für das Minimum genau umgekehrt: 21,6 V, 0,95 kΩ und 2,31 kΩ.', 'Umax = 26,4 V · 1,05 / (2,09 + 1,05) = 8,828 V. Umin = 21,6 V · 0,95 / (2,31 + 0,95) = 6,294 V. Fenster: 8,828 V − 6,294 V = 2,534 V, also rund 2,53 V (Nennwert 7,5 V). Beide Werte liegen im empfohlenen Bereich von 4,5 V bis 10 V, der Grenzwert von 16 V wird nicht erreicht.'],
+      start() { return { ds: 'tf-irlz', focus: { section: 'rec', key: 'vgs' }, calc: { id: 'divider', vals: { u: 24 } } }; },
+      sol() { return { ds: 'tf-irlz', focus: { section: 'rec', key: 'vgs' }, calc: { id: 'divider', vals: { u: 24, tu: 10, r1: '2,2k', r2: '1k', tr: 5, rl: 0 } }, value: W.gateDiv().span }; },
+      check: numCheck({ unit: 'V', want: () => W.gateDiv().span, tol: 0.02,
+        mistakes: () => { const w = W.gateDiv(); return [[w.max, 'Das ist die größte Gate-Spannung. Gefragt ist die Breite des Fensters: Umax − Umin.'], [w.min, 'Das ist die kleinste Gate-Spannung. Gefragt ist die Breite des Fensters: Umax − Umin.'], [w.nom, 'Das ist der Nennwert ohne Toleranzen. Rechne das Maximum und das Minimum aus und bilde die Differenz.'], [w.onlyR, 'Du hast nur die Toleranz der Widerstände berücksichtigt. Auch das Steuersignal streut um ±10 %.'], [w.onlyU, 'Du hast nur die Toleranz des Steuersignals berücksichtigt. Auch die Widerstände streuen um ±5 %.']]; } }) },
+    { id: 'ds37', lab: 'ds', cat: 'Berechnungen', title: 'Drei Toleranzen: statistisch statt Worst Case', level: 3, ds: 'tf-lm358',
+      text: 'Du misst einen Strom über einen Shunt und verstärkst die Spannung mit einem TF-LM358 als nicht invertierendem Verstärker (Anwendungsbeispiel im Datenblatt TF-LM358). Drei Toleranzen gehen in den Messwert ein: Shunt ±1 %, Verstärkung (durch Rf und Rg festgelegt) ±2 %, Referenzspannung des A/D-Wandlers ±1,5 %. Im Worst Case addierst du alle drei. Die drei Toleranzen sind unabhängig voneinander, deshalb treffen selten alle Grenzen zugleich zusammen. Statistisch zählt dann die Wurzel aus der Summe der Quadrate. Berechne beide Werte und gib die statistische Gesamttoleranz an.',
+      ask: { label: 'Statistische Gesamttoleranz (±)', unit: '%' },
+      hint: ['Worst Case: die Beträge einfach addieren. Statistisch: jede Toleranz quadrieren, die Quadrate addieren und aus der Summe die Wurzel ziehen.', 'Worst Case = 1 % + 2 % + 1,5 %. Statistisch = √(1² + 2² + 1,5²) %. Die Quadrate sind 1, 4 und 2,25.', 'Worst Case: 1 % + 2 % + 1,5 % = 4,5 %. Statistisch: √(1 + 4 + 2,25) % = √7,25 % = 2,69 %. Die statistische Toleranz ist deutlich kleiner. Dafür müssen die Toleranzen unabhängig voneinander sein, und der Wert gilt nur für die allermeisten Geräte einer Serie. Für eine Sicherheitsfunktion rechnest du weiter mit dem Worst Case.'],
+      start() { return { ds: 'tf-lm358', focus: { section: 'app', key: '0' } }; },
+      sol() { return { ds: 'tf-lm358', focus: { section: 'app', key: '0' }, value: W.rss().rss }; },
+      check: numCheck({ unit: '%', want: () => W.rss().rss, absTol: 0.03,
+        mistakes: () => { const w = W.rss(); return [[w.wc, 'Das ist der Worst Case (Summe der Beträge). Gefragt ist die statistische Toleranz: die Wurzel aus der Summe der Quadrate.'], [w.sq, 'Du hast die Wurzel vergessen: 7,25 ist erst die Summe der Quadrate.'], [w.noSq, 'Du hast die Wurzel aus der einfachen Summe gezogen. Quadriere zuerst jede Toleranz einzeln.'], [w.mean, 'Das ist der Mittelwert der drei Toleranzen. Gefragt ist die Wurzel aus der Summe der Quadrate.']]; } }) },
+    { id: 'ds38', lab: 'ds', cat: 'Berechnungen', title: 'Widerstand im warmen Gehäuse (Derating)', level: 2, ds: 'tf-zd',
+      text: 'Der Vorwiderstand RS = 270 Ω deiner Z-Diode TF-ZD5V1 sitzt in einem warmen Gehäuse mit 100 °C Umgebungstemperatur. Für den Widerstand gelten diese Übungswerte: Nennleistung 0,6 W bis 70 °C, darüber fällt die zulässige Leistung linear ab und erreicht bei 155 °C den Wert 0 W. Berechne, welche Leistung der Widerstand bei 100 °C noch dauerhaft umsetzen darf. Zum Vergleich: Bei der größten Eingangsspannung von 13,2 V fallen an RS nach der Formel aus dem Datenblatt TF-ZD5V1 etwa 0,24 W an.',
+      ask: { label: 'Zulässige Leistung bei 100 °C', unit: 'W' },
+      hint: ['Bis 70 °C gilt die volle Nennleistung. Darüber sinkt sie auf einer Geraden bis auf 0 W bei 155 °C. Gesucht ist der Punkt bei 100 °C auf dieser Geraden.', 'P(T) = PN · (Tmax − T) / (Tmax − TK) mit PN = 0,6 W, Tmax = 155 °C und dem Knickpunkt TK = 70 °C.', 'P(100 °C) = 0,6 W · (155 − 100) / (155 − 70) = 0,6 W · 55 / 85 = 0,388 W. Die 0,24 W am Vorwiderstand liegen darunter, der Widerstand ist also auch im warmen Gehäuse nicht überlastet.'],
+      start() { return { ds: 'tf-zd', focus: { section: 'app', key: '0' } }; },
+      sol() { return { ds: 'tf-zd', focus: { section: 'app', key: '0' }, value: W.rDerate().p }; },
+      check: numCheck({ unit: 'W', want: () => W.rDerate().p, tol: 0.02,
+        mistakes: () => { const w = W.rDerate(); return [[w.pn, 'Das ist die Nennleistung. Diese gilt nur bis 70 °C, bei 100 °C ist sie schon vermindert.'], [w.from0, 'Die Gerade beginnt erst am Knickpunkt bei 70 °C und nicht bei 0 °C: Teile durch 155 − 70 und nicht durch 155.'], [w.drop, 'Das ist der Betrag, um den die Leistung gesunken ist. Gefragt ist der Rest, also 0,6 W minus diesen Betrag.'], [w.ratio, 'Ein einfacher Dreisatz mit 70 / 100 passt hier nicht. Die Leistung fällt auf einer Geraden von 0,6 W bei 70 °C auf 0 W bei 155 °C.'], [w.pr, 'Das ist die Leistung, die am Vorwiderstand anfällt. Gefragt ist die Leistung, die der Widerstand bei 100 °C höchstens umsetzen darf.']]; } }) },
 
     /* ---------------------------------------------------------------- Thermik und Derating */
     { id: 'ds18', lab: 'ds', cat: 'Thermik und Derating', title: 'Sperrschichttemperatur des 7805 ohne Kühlkörper', level: 2, ds: 'tf-7805',
@@ -368,6 +431,47 @@
       sol() { const p = W.pickDiode(); return { ds: p.id, tab: 'lib', focus: { section: 'abs' }, choice: 1 }; },
       check: choiceCheck({ choices: ['TF-1N4148 (DO-35)', 'TF-1N4007 (DO-41)', 'TF-ZD5V1 (DO-35)', 'TF-LED-R5 (LED 5 mm)'], want: () => (W.pickDiode().part === 'TF-1N4007' ? 1 : -1),
         reasons: ['Die Signaldiode sperrt höchstens 100 V (VRRM) und trägt nur 200 mA. Für 390 V und 0,8 A reicht sie nicht.', null, 'Eine Z-Diode ist für den Durchbruchbetrieb gebaut und hat keine Sperrspannung von 390 V.', 'Die LED sperrt nur 5 V und verträgt 30 mA.'] }) },
+    /* v62.186: ds39 bis ds43 (Reserve bei Leistung und Spannung, E-Reihen, Netzspitze), eigene Werte; Kondensator- und Widerstandsdaten sind Übungswerte aus dem Aufgabentext. */
+    { id: 'ds39', lab: 'ds', cat: 'Bauteilwahl', title: 'Baugröße des Vorwiderstands (50 % Reserve)', level: 2, ds: 'tf-led-r',
+      text: 'Deine rote LED TF-LED-R5 arbeitet als Sender einer einfachen Lichtschranke an 24 V. Damit der Empfänger genug Licht bekommt, läuft sie dauernd mit IF = 20 mA. Mit der typischen Durchlassspannung VF bei 20 mA aus dem Datenblatt TF-LED-R5 ergibt sich der Vorwiderstand 1,1 kΩ. Berechne die Verlustleistung im Widerstand mit der Formel aus dem Anwendungsbeispiel. Ein Widerstand soll im Dauerbetrieb höchstens zu 50 % seiner Nennleistung belastet werden. Welche Nennleistung wählst du aus der Reihe 0,25 W, 0,5 W, 1 W und 2 W? Gib die kleinste passende an.',
+      ask: { label: 'Nennleistung des Widerstands', unit: 'W' },
+      hint: ['Zuerst die Verlustleistung: PR = (Vs − VF) · IF. Danach darf diese Leistung höchstens die Hälfte der Nennleistung sein.', 'VF (typ.) = 2,0 V. Am Widerstand liegen 24 V − 2,0 V = 22 V, es fließen 20 mA. Die Nennleistung muss mindestens doppelt so groß sein wie PR.', 'PR = 22 V · 20 mA = 0,44 W. Mit 50 % Reserve brauchst du mindestens 0,44 W / 0,5 = 0,88 W. Ein Widerstand mit 0,5 W wäre zu 88 % ausgelastet und würde sehr heiß. Die kleinste passende Baugröße ist 1 W. Zum Vergleich: Eine reine Anzeige-LED mit 5 mA setzt im Widerstand nur 0,11 W um, dort genügt die Baugröße 0,25 W.'],
+      start() { return { ds: 'tf-led-r', focus: { section: 'elec', key: 'vf20' } }; },
+      sol() { return { ds: 'tf-led-r', focus: { section: 'app', key: '0' }, value: W.rPower().pick }; },
+      check: numCheck({ unit: 'W', want: () => W.rPower().pick, absTol: 0.01,
+        mistakes: () => { const w = W.rPower(); return [[w.p, 'Das ist die Verlustleistung im Widerstand. Gefragt ist die Nennleistung der Baugröße, und die soll mindestens doppelt so groß sein.'], [w.min, 'Das ist die rechnerische Mindest-Nennleistung. Gefragt ist die kleinste Baugröße aus der Reihe, die mindestens so groß ist.'], [0.5, 'Ein Widerstand mit 0,5 W hält die 0,44 W zwar aus, wäre aber zu 88 % ausgelastet. Erlaubt sind höchstens 50 %.'], [0.25, 'Zu klein: Schon die Verlustleistung von 0,44 W liegt über 0,25 W.'], [2, 'Ein Widerstand mit 2 W hält das aus, ist aber größer als nötig. Gefragt ist die kleinste passende Baugröße.']]; } }) },
+    { id: 'ds40', lab: 'ds', cat: 'Bauteilwahl', title: 'Spannungsfestigkeit des Eingangskondensators', level: 2, ds: 'tf-7805',
+      text: 'Dein TF-7805 wird aus einer 12-V-Schiene versorgt, die bis zu 10 % über dem Nennwert liegen kann. Am Eingang sitzt ein Elektrolytkondensator mit 100 µF. Als Übungswerte gibt es ihn mit den Nennspannungen 10 V, 16 V, 25 V, 35 V und 50 V. Nach der 80-%-Regel soll die höchste Betriebsspannung höchstens 80 % der Nennspannung des Kondensators betragen. Prüfe im Datenblatt TF-7805, dass 12 V als Eingangsspannung zulässig sind, und gib die kleinste passende Nennspannung an.',
+      ask: { label: 'Nennspannung des Kondensators', unit: 'V' },
+      hint: ['Rechne zuerst die höchste Spannung der Schiene aus (Nennwert plus 10 %). Diese Spannung darf höchstens 80 % der Nennspannung des Kondensators sein.', 'Höchste Schienenspannung: 12 V · 1,1 = 13,2 V. Mindest-Nennspannung = 13,2 V / 0,8. Wähle danach den nächsten Wert aus der Reihe, der mindestens so groß ist.', '13,2 V / 0,8 = 16,5 V. Der 16-V-Typ reicht knapp nicht: 80 % von 16 V sind nur 12,8 V. Die kleinste passende Nennspannung ist 25 V. Die 12 V liegen im empfohlenen Eingangsbereich des TF-7805 von 7,5 V bis 25 V.'],
+      start() { return { ds: 'tf-7805', focus: { section: 'rec', key: 'vi' } }; },
+      sol() { return { ds: 'tf-7805', focus: { section: 'rec', key: 'vi' }, value: W.capV().pick }; },
+      check: numCheck({ unit: 'V', want: () => W.capV().pick, absTol: 0.01,
+        mistakes: () => { const w = W.capV(); return [[w.min, 'Das ist die rechnerische Mindest-Nennspannung. Gefragt ist der nächste Wert aus der Reihe, der mindestens so groß ist.'], [16, '80 % von 16 V sind nur 12,8 V. Die Schiene erreicht aber 13,2 V, der 16-V-Typ reicht knapp nicht.'], [w.umax, 'Das ist die höchste Spannung der Schiene. Der Kondensator braucht eine höhere Nennspannung: teile durch 0,8 und wähle den nächsten Wert der Reihe.'], [w.noTol, 'Du hast die Toleranz der Schiene vergessen: Rechne mit 12 V · 1,1 = 13,2 V.'], [10, 'Zu klein: Die Nennspannung von 10 V liegt schon unter der Schienenspannung von 12 V.'], [35, 'Ein 35-V-Typ hält das aus, ist aber größer als nötig. Gefragt ist die kleinste passende Nennspannung.'], [50, 'Ein 50-V-Typ hält das aus, ist aber größer als nötig. Gefragt ist die kleinste passende Nennspannung.']]; } }) },
+    { id: 'ds41', lab: 'ds', cat: 'Bauteilwahl', title: 'E24-Wert für R2 und seine Abweichung', level: 2, ds: 'tf-lm317',
+      text: 'Dein TF-LM317 soll 10 V liefern, R1 beträgt 240 Ω. Berechne R2 mit dem Typwert der Referenzspannung Vref aus dem Datenblatt TF-LM317 (den Adjust-Strom darfst du vernachlässigen). Wähle dann den E24-Wert, der dem Rechenwert am nächsten liegt, und berechne, um wie viel Prozent dieser Normwert vom Rechenwert abweicht. Gib die Abweichung mit Vorzeichen an: negativ, wenn der Normwert kleiner ist als der Rechenwert.',
+      ask: { label: 'Abweichung des E24-Werts', unit: '%' },
+      hint: ['R2 = R1 · (Vout / Vref − 1). In der E24-Reihe folgen zum Beispiel 1,5 / 1,6 / 1,8 / 2,0 aufeinander. Abweichung = (Normwert − Rechenwert) / Rechenwert.', 'R2 = 240 Ω · (10 V / 1,25 V − 1) = 1680 Ω. Die Nachbarn in der E24-Reihe sind 1,6 kΩ und 1,8 kΩ. Näher liegt 1,6 kΩ (Abstand 80 Ω statt 120 Ω).', 'Abweichung = (1600 Ω − 1680 Ω) / 1680 Ω = −0,0476, das sind −4,76 %. Mit 1,6 kΩ stellt sich eine Ausgangsspannung von etwa 9,58 V ein. Wenn das zu ungenau ist, nimmst du einen E96-Wert (1,69 kΩ) oder ein Trimmpoti.'],
+      start() { return { ds: 'tf-lm317', focus: { section: 'elec', key: 'vref' }, calc: { id: 'es', vals: { ser: 'E24' } } }; },
+      sol() { const w = W.e24Dev(); return { ds: 'tf-lm317', focus: { section: 'app', key: '0' }, calc: { id: 'es', vals: { r: String(Math.round(w.r)), ser: 'E24' } }, value: w.dev }; },
+      check: numCheck({ unit: '%', want: () => W.e24Dev().dev, absTol: 0.06,
+        mistakes: () => { const w = W.e24Dev(); return [[-w.dev, 'Der Betrag stimmt, aber das Vorzeichen nicht: 1,6 kΩ ist kleiner als der Rechenwert, die Abweichung ist also negativ.'], [w.devE, 'Du hast auf den Normwert bezogen. Die Abweichung wird auf den Rechenwert bezogen: Teile durch 1680 Ω.'], [-w.devE, 'Du hast auf den Normwert bezogen und das Vorzeichen fehlt. Teile durch den Rechenwert 1680 Ω, die Abweichung ist negativ.'], [w.devUp, '1,8 kΩ ist der nächste Wert nach oben. Näher am Rechenwert liegt aber 1,6 kΩ.'], [w.ohm, 'Das ist die Abweichung in Ω. Gefragt ist sie in Prozent vom Rechenwert.'], [w.r, 'Das ist der Rechenwert von R2 in Ω. Gefragt ist die Abweichung des E24-Werts in Prozent.'], [w.e, 'Das ist der E24-Wert in Ω. Gefragt ist seine Abweichung vom Rechenwert in Prozent.']]; } }) },
+    { id: 'ds42', lab: 'ds', cat: 'Bauteilwahl', title: 'Reicht E12 oder braucht der Teiler E96?', level: 3, ds: 'tf-lm358',
+      text: 'Ein TF-LM358 arbeitet an 5 V als Komparator. Seine Schaltschwelle von 3,0 V erzeugt ein Spannungsteiler aus R1 = 10 kΩ (oben) und R2 = 15 kΩ (unten) an einer Referenz von 5,00 V, die du als genau annehmen darfst. Die Schwelle darf im ungünstigsten Fall höchstens um ±2 % vom Sollwert abweichen. Entscheide, welche Widerstandsreihe du mindestens brauchst: E12 mit ±10 %, E24 mit ±5 % oder E96 mit ±1 %. Prüfe im Datenblatt TF-LM358 auch, ob 3,0 V als Gleichtakt-Eingangsspannung bei VCC = 5 V erlaubt sind.',
+      ask: { label: 'Deine Wahl', choices: ['E12 mit ±10 % reicht aus.', 'E24 mit ±5 % reicht aus, E12 aber nicht.', 'Erst E96 mit ±1 % hält die Vorgabe ein.', 'Keine der drei Reihen hält die Vorgabe ein.'] },
+      hint: ['Im ungünstigsten Fall liegt ein Widerstand an der oberen und der andere an der unteren Toleranzgrenze. Rechne die Schwelle U = 5 V · R2 / (R1 + R2) für diesen Fall aus und vergleiche mit 3,0 V.', 'Größte Schwelle: R2 groß und R1 klein. Bei ±10 %: 5 V · 16,5 / (9 + 16,5). Bei ±5 %: 5 V · 15,75 / (9,5 + 15,75). Bei ±1 %: 5 V · 15,15 / (9,9 + 15,15). Für die kleinste Schwelle nimmst du R2 klein und R1 groß. Erlaubt sind 2,94 V bis 3,06 V.', '±10 % ergibt 2,755 V bis 3,235 V (−8,2 % bis +7,8 %), ±5 % ergibt 2,879 V bis 3,119 V (−4,0 % bis +4,0 %), ±1 % ergibt 2,976 V bis 3,024 V (−0,8 % bis +0,8 %). Nur E96 mit ±1 % bleibt innerhalb von ±2 %. Faustregel für diesen Teiler: Die Schwelle streut etwa um das 0,8-Fache der Widerstandstoleranz. Die 3,0 V sind erlaubt, das Datenblatt nennt bis 3,5 V bei VCC = 5 V.'],
+      start() { return { ds: 'tf-lm358', focus: { section: 'rec', key: 'vicm' }, calc: { id: 'divider', vals: { u: 5, tu: 0, r1: '10k', r2: '15k' } } }; },
+      sol() { return { ds: 'tf-lm358', focus: { section: 'rec', key: 'vicm' }, calc: { id: 'divider', vals: { u: 5, tu: 0, r1: '10k', r2: '15k', tr: 1, rl: 0 } }, choice: W.divSeries().idx }; },
+      check: choiceCheck({ choices: ['E12 mit ±10 % reicht aus.', 'E24 mit ±5 % reicht aus, E12 aber nicht.', 'Erst E96 mit ±1 % hält die Vorgabe ein.', 'Keine der drei Reihen hält die Vorgabe ein.'], want: () => W.divSeries().idx,
+        reasons: ['Mit ±10 % kann die Schwelle bis 2,755 V fallen oder bis 3,235 V steigen, das sind rund 8 % Abweichung. Erlaubt sind 2 %.', 'Mit ±5 % kann die Schwelle bis 2,879 V fallen oder bis 3,119 V steigen, das sind etwa 4 % Abweichung. Erlaubt sind 2 %.', null, 'Rechne den Fall ±1 % nach: Die Schwelle liegt dann zwischen 2,976 V und 3,024 V, also nur 0,8 % neben dem Sollwert.'] }) },
+    { id: 'ds43', lab: 'ds', cat: 'Bauteilwahl', title: 'Sperrspannung am Netzgleichrichter', level: 2, ds: 'tf-1n4007',
+      text: 'Du baust mit vier Dioden TF-1N4007 einen Brückengleichrichter mit Ladekondensator direkt am 230-V-Netz. Jede Diode muss in Sperrrichtung den Spitzenwert der Netzspannung aushalten. Die Netzspannung darf bis zu 10 % über dem Nennwert liegen. Berechne die größte Sperrspannung, die an einer Diode auftreten kann (Spitzenwert bei 230 V + 10 %, ohne weiteren Zuschlag). Vergleiche dein Ergebnis mit VRRM im Datenblatt TF-1N4007.',
+      ask: { label: 'Größte Sperrspannung an der Diode', unit: 'V' },
+      hint: ['230 V ist der Effektivwert. Die Diode sieht den Spitzenwert, und zwar den der größten Netzspannung.', 'Größter Effektivwert: 230 V · 1,1 = 253 V. Spitzenwert = Effektivwert · √2 (etwa 1,414).', 'û = 253 V · √2 = 357,8 V, also rund 358 V. Die TF-1N4007 hat VRRM = 1000 V (empfohlen bis 800 V), das ist reichlich Reserve für Störspitzen aus dem Netz. Eine Diode mit VRRM = 100 V wie die TF-1N4148 wäre sofort zerstört.'],
+      start() { return { ds: 'tf-1n4007', focus: { section: 'abs', key: 'vrrm' } }; },
+      sol() { return { ds: 'tf-1n4007', focus: { section: 'abs', key: 'vrrm' }, value: W.mains().u }; },
+      check: numCheck({ unit: 'V', want: () => W.mains().u, tol: 0.01,
+        mistakes: () => { const w = W.mains(); return [[w.nom, 'Das ist der Spitzenwert bei genau 230 V. Rechne mit der größten Netzspannung: 230 V + 10 % = 253 V.'], [w.rms, 'Das ist der größte Effektivwert. Die Diode muss den Spitzenwert sperren: Multipliziere mit √2.'], [230, 'Das ist der Nennwert als Effektivwert. Rechne erst 10 % dazu und dann mit √2 auf den Spitzenwert um.'], [w.app, 'Das ist die Faustregel 1,2 · Spitzenwert aus dem Anwendungsbeispiel. Hier ist nur die Netztoleranz von +10 % gefragt.'], [w.half, 'Den doppelten Spitzenwert sieht eine Diode im Einweggleichrichter mit Ladekondensator. In der Brücke ist es der einfache Spitzenwert.'], [w.vrrm, 'Das ist der Grenzwert VRRM der Diode. Gefragt ist die Spannung, die in der Schaltung auftritt.']]; } }) },
 
     /* ---------------------------------------------------------------- Zeitdiagramm und Register */
     { id: 'ds22', lab: 'ds', cat: 'Zeitdiagramm und Register', title: 'Pegel am NAND-Ausgang', level: 1, ds: 'tf-74hc00',

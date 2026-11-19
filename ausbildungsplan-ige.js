@@ -141,7 +141,7 @@
           { lab: "sim", bereich: ["Leitungen und Messen"], aufgaben: ["schutz", "vt1", "f2"] },
           {
             lab: "els",
-            bereich: ["Stromwirkung", "Prüfungsnah", "Schutzorgane", "RCD", "TT-System", "Schmelzsicherung"]
+            bereich: ["Stromwirkung", "Prüfungsnah", "Schutzorgane", "RCD", "TT-System", "IT-System", "Schmelzsicherung"]
           },
           { lab: "haus", bereich: ["Verteiler", "Büro", "Leitungen", "Gesamtaufgabe"] },
           { lab: "pr", aufgaben: ["pr8"] },
@@ -175,7 +175,7 @@
         labs: [
           { lab: "sim", bereich: ["Drehstrom"], aufgaben: ["fi", "pe1", "sl3", "sl5", "sl6"] },
           { lab: "mat", bereich: ["Elektrotechnik"] },
-          { lab: "els", bereich: ["Schutzklassen", "Isolation und Schutzleiter", "Geräteprüfung", "Schutzmaßnahmen"] },
+          { lab: "els", bereich: ["Schutzklassen", "Isolation und Schutzleiter", "Geräteprüfung", "Anlagenprüfung", "Schutzmaßnahmen"] },
           {
             lab: "wsl",
             bereich: [
@@ -857,13 +857,17 @@
       {
         id: "Z-ELV",
         nr: "",
-        titel: "Zusatzthema Elektronik vertieft: Pegel, Wandler, Schaltregler",
+        titel: "Zusatzthema Elektronik vertieft: Pegel, Wandler, Schaltregler, Filter",
         kurz: "Du rechnest mit Pegeln in dB und dBm, mit AD-Wandlern, Schaltreglern, Schnittstellen und den Grenzen von Operationsverstärkern. Das bereitet auf Techniker und Studium vor.",
         jahr: 3,
         block: "Aufbau zum Elektroniker (nach dem Abschluss)",
         quelle: "Entwurf",
         entwurf: true,
-        labs: [{ lab: "mat", bereich: ["Elektronik vertieft"] }],
+        labs: [
+          { lab: "mat", bereich: ["Elektronik vertieft"] },
+          { lab: "ana", aufgaben: ["ae55","ae58","ae61"] },
+          { lab: "nts", aufgaben: ["nt55"] }
+        ],
         heft: null,
         wiki: [],
         projekt: [],

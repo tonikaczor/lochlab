@@ -144,7 +144,7 @@
           { lab: "sim", bereich: ["Leitungen und Messen"], aufgaben: ["schutz", "vt1", "f2"] },
           {
             lab: "els",
-            bereich: ["Stromwirkung", "Prüfungsnah", "Schutzorgane", "RCD", "TT-System", "Schmelzsicherung"]
+            bereich: ["Stromwirkung", "Prüfungsnah", "Schutzorgane", "RCD", "TT-System", "IT-System", "Schmelzsicherung"]
           },
           { lab: "haus", bereich: ["Verteiler", "Büro", "Leitungen", "Gesamtaufgabe"] },
           { lab: "pr", aufgaben: ["pr8"] },
@@ -179,7 +179,7 @@
         labs: [
           { lab: "sim", bereich: ["Drehstrom"], aufgaben: ["fi", "pe1", "sl3", "sl5", "sl6"] },
           { lab: "mat", bereich: ["Elektrotechnik"] },
-          { lab: "els", bereich: ["Schutzklassen", "Isolation und Schutzleiter", "Geräteprüfung", "Schutzmaßnahmen"] },
+          { lab: "els", bereich: ["Schutzklassen", "Isolation und Schutzleiter", "Geräteprüfung", "Anlagenprüfung", "Schutzmaßnahmen"] },
           {
             lab: "wsl",
             bereich: [
@@ -956,15 +956,36 @@
       {
         id: "Z-ELV",
         nr: "",
-        titel: "Zusatzthema Elektronik vertieft: Pegel, Wandler, Schaltregler",
+        titel: "Zusatzthema Elektronik vertieft: Pegel, Wandler, Schaltregler, Filter",
         kurz: "Du rechnest mit Pegeln in dB und dBm, mit AD-Wandlern, Schaltreglern, Schnittstellen und den Grenzen von Operationsverstärkern. Das bereitet auf Techniker und Studium vor.",
         jahr: 4,
         block: "Vertiefung",
         quelle: "Entwurf",
         entwurf: true,
-        labs: [{ lab: "mat", bereich: ["Elektronik vertieft"] }],
+        labs: [
+          { lab: "mat", bereich: ["Elektronik vertieft"] },
+          { lab: "ana", aufgaben: ["ae55","ae58","ae61"] },
+          { lab: "nts", aufgaben: ["nt55"] },
+          { lab: "thm", aufgaben: ["th45"] }
+        ],
         heft: null,
         wiki: [],
+        projekt: [],
+        pruefung: null,
+        optional: true
+      },
+      {
+        id: "Z-HF",
+        nr: "",
+        titel: "Zusatzthema Funk und Hochfrequenz",
+        kurz: "Du rechnest mit Pegeln in dB und dBm, passt Leitungen an, planst eine Funkstrecke und verstehst Modulation, Empfänger und HF-Messtechnik. Freiwillig, steht in keinem Lernfeld der Berufsschule.",
+        jahr: 3,
+        block: "Vertiefung",
+        quelle: "Entwurf",
+        entwurf: true,
+        labs: [{ lab: "hf", bereich: "*" }],
+        heft: "lernen-hf.html",
+        wiki: ["bg-pegel-dezibel", "bg-modulation", "bg-antenne-funkstrecke", "fo-pegel-db"],
         projekt: [],
         pruefung: null,
         optional: true

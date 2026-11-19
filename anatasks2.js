@@ -1,4 +1,8 @@
 /* anatasks2.js - ANA-Lab (Analogtechnik: Halbleiter und Verstaerker): Aufgaben ae17 bis ae32 (OPV-Schaltungen) mit automatischer Pruefung (ohne Browser lauffaehig) (WP4b)
+ * Erweiterungen: ae33 bis ae50 (Berufsschulstoff, test_schule.js); ae51 bis ae61 (v62.186: Bandbreite, Offset, aktiver Hochpass, Filter zweiter Ordnung, Pegel in dB,
+ *   Instrumentenverstaerker, Gleichtaktunterdrueckung, offener Kollektor, Hysterese gegen Stoerungen, kapazitive Last). ae51, ae53, ae54, ae56 und ae60 rechnen ueber den Kern
+ *   (exercise fgGbw / fgAktiv / vDb, deep.offset, act.hp, komp.schmitt); ae52, ae55, ae57, ae58, ae59 und ae61 sind reine Rechenaufgaben mit eigenen Formeln, weil der Kern
+ *   dafuer keine Funktion hat (Sallen-Key, Instrumentenverstaerker, CMRR, offener Kollektor, Lastkapazitaet). ae55, ae58 und ae61 gehen ueber den Pruefungsstoff hinaus.
  * Registrierung: ANA_TASKS.register([ ... ]) (ANA_TASKS kommt aus anadata.js; anadata.js VOR dieser Datei laden, in Node holt sich die Datei es per require).
  * Format wie SPEC 8 / wsltasks2.js: { id:'aeN', lab:'ana', cat, title, level, rig, text, table?, hint[3], start(), sol(), wrong(), check(answer), hintVals(),
  *   fields? | choices?, consts? }; answer = { rig, controls, ref, seq, rows, state, fired, value, text, fields, choices, diagnose, clicks, bericht }.
@@ -1459,6 +1463,482 @@
         { name: 'Sperrspannung mal Durchlassstrom, beide gleich warm', answer: A('diode', {}, { fields: { rs: v.rs, ps: v.ps, pf: G.ur * G.iF }, choices: { warm: 'gleich' } }) }]; } };
   })();
 
+  /* ====================================================================== ae51 bis ae61 (v62.186): Vertiefung Operationsverstaerker. Eigene Werte (Uebungswerte), Du-Form, keine Pool-Aufgaben. */
+  const withW = (R, ws) => { R.wrongs = ws.concat(R.wrongs); return R; };   // eigene Fehlerbilder vor die des Kerns stellen (erstes Fehlerbild gilt)
+  const wrongSetOf = (specs, k) => { const c = {}; specs.forEach(s => { const w = s.options.filter(x => x.value !== s.right); c[s.key] = w[k % w.length].value; }); return c; };
+
+  /* ====================================================================== ae51: Bandbreite aus dem Verstaerkungs-Bandbreite-Produkt (opv_aktiv, Schaltung real; Kern: exercise fgGbw) */
+  const M51 = (() => {
+    const G = { r1: 10000, rf: 47000 }, RF2 = 100000;
+    const gbw = () => lv('gbw_langsam');
+    const vn = () => 1 + G.rf / G.r1;
+    const ctl = () => ({ schaltung: 'real', opv: 'langsam', uv: 12, form: 'sinus', ue: 0.1, f: 1000, r1: G.r1, rf: G.rf, c: 1e-6 });
+    const rVn = () => once('r51v', () => own(vn(), '', [{ v: G.rf / G.r1, id: 'vu', text: 'Dein Wert ist der Betrag der Spannungsverstärkung R_f / R_1. Für die Bandbreite zählt die Rauschverstärkung V_n = 1 + R_f / R_1.' }, { v: -G.rf / G.r1, id: 'vu-minus', text: 'Dein Wert ist die Spannungsverstärkung −R_f / R_1 des Invertierers. Für die Bandbreite zählt die Rauschverstärkung V_n = 1 + R_f / R_1; sie ist immer positiv.' }]));
+    const rFg = () => once('r51f', () => withW(ref('fgGbw', { gbw: gbw(), v: vn() }, RECH_TOL), [{ v: gbw() / (G.rf / G.r1), id: 'vu', text: 'Du hast durch |V_u| = R_f / R_1 geteilt. Beim Invertierer bestimmt die Rauschverstärkung V_n = 1 + R_f / R_1 die Bandbreite: f_g ≈ GBW / V_n.' }]));
+    const vals = () => once('v51', () => { const R = rFg(), s = sim('opv_aktiv', ctl()), v2 = 1 + RF2 / G.r1; return { r1: G.r1 / 1e3, rf: G.rf / 1e3, gbw: gbw() / 1e6, gbwK: gbw() / 1e3, vn: vn(), vu: G.rf / G.r1, fg: R.value / 1e3, fgHz: R.value, fgVu: gbw() / (G.rf / G.r1) / 1e3, fgMal: gbw() * vn() / 1e3, rf2: RF2 / 1e3, vn2: v2, fg2: gbw() / v2 / 1e3, fgHoch: R.value / 1e3 * v2 / vn(), fgRig: s.m.fg / 1e3 }; });
+    const specs = () => once('sp51', () => { const v = vals(); return [
+      { key: 'mehr', q: 'R_f wird auf ' + f(v.rf2, 0) + ' kΩ vergrößert (V_n = ' + f(v.vn2, 0) + '). Was geschieht mit der Grenzfrequenz?', short: 'Die Wirkung der größeren Verstärkung auf die Bandbreite ist richtig beschrieben', right: 'sinkt',
+        options: [
+          { value: 'steigt', label: 'Die Grenzfrequenz steigt auf etwa ' + f(v.fgHoch, 0) + ' kHz', grund: 'Mehr Verstärkung kostet Bandbreite. Das Produkt aus V_n und f_g bleibt bei etwa GBW: f_g ≈ ' + f(v.gbwK, 0) + ' kHz / ' + f(v.vn2, 0) + ' = ' + f(v.fg2, 1) + ' kHz.' },
+          { value: 'bleibt', label: 'Die Grenzfrequenz bleibt bei etwa ' + f(v.fg, 0) + ' kHz', grund: 'Fest bleibt nicht die Grenzfrequenz, sondern das Produkt V_n · f_g ≈ GBW. Mit V_n = ' + f(v.vn2, 0) + ' sind es nur noch ' + f(v.fg2, 1) + ' kHz.' },
+          { value: 'sinkt', label: 'Die Grenzfrequenz sinkt auf etwa ' + f(v.fg2, 0) + ' kHz', grund: 'V_n · f_g bleibt etwa gleich GBW: f_g ≈ ' + f(v.gbwK, 0) + ' kHz / ' + f(v.vn2, 0) + ' = ' + f(v.fg2, 1) + ' kHz. Fast doppelte Verstärkung bedeutet fast halbe Bandbreite.' },
+          { value: 'gleich', label: 'Die Schaltung verstärkt dann nur noch Gleichspannung', grund: 'Auch mit V_n = ' + f(v.vn2, 0) + ' bleibt eine Bandbreite von ' + f(v.fg2, 1) + ' kHz. Erst ganz ohne Gegenkopplung liegt die Grenze bei wenigen Hertz.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'vn'), rVn(), 'Die Rauschverstärkung V_n ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'fg'), rFg(), 'Die Grenzfrequenz f_g ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Im Prüfstand „' + rname('opv_aktiv') + '“ ist die Schaltung „Realer Operationsverstärker (Verstärker)“ als Invertierer mit R_1 = ' + eng(G.r1, 'Ω') + ' und R_f = ' + eng(G.rf, 'Ω') + ' aufgebaut (Lehrmodell „langsam“, Übungswerte). Das Verstärkungs-Bandbreite-Produkt des Bausteins beträgt GBW = ' + eng(gbw(), 'Hz') + '. Berechne die Rauschverstärkung V_n = 1 + R_f / R_1 und die Grenzfrequenz f_g ≈ GBW / V_n in kHz. Beantworte dann die Frage zum größeren R_f. Das Messgerät „Grenzfrequenz f_g“ zeigt dir den Wert zur Kontrolle.',
+      fields: () => [{ key: 'vn', label: 'Rauschverstärkung V_n', unit: '' }, { key: 'fg', label: 'Grenzfrequenz f_g', unit: 'kHz' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Verstärkung mal Bandbreite bleibt bei einem Operationsverstärker ungefähr gleich. Je größer die eingestellte Verstärkung, desto kleiner die Grenzfrequenz. Beim Invertierer zählt dafür nicht |V_u| = R_f / R_1, sondern die Rauschverstärkung V_n = 1 + R_f / R_1.',
+        'V_n = 1 + ' + f(v.rf, 0) + ' kΩ / ' + f(v.r1, 0) + ' kΩ = ' + f(v.vn, 1) + '. Dann f_g ≈ ' + f(v.gbw, 0) + ' MHz / ' + f(v.vn, 1) + '. Rechne das Ergebnis in kHz um (' + f(v.gbw, 0) + ' MHz = ' + f(v.gbwK, 0) + ' kHz).',
+        'Musterlösung: f_g ≈ ' + f(v.gbwK, 0) + ' kHz / ' + f(v.vn, 1) + ' = ' + f(v.fg, 1) + ' kHz. Mit |V_u| = ' + f(v.vu, 1) + ' kämen ' + f(v.fgVu, 1) + ' kHz heraus, das ist zu viel. Mit R_f = ' + f(v.rf2, 0) + ' kΩ ist V_n = ' + f(v.vn2, 0) + ' und f_g ≈ ' + f(v.fg2, 1) + ' kHz.'
+      ]; },
+      start: () => A('opv_aktiv', ctl(), { fields: { vn: null, fg: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_aktiv', ctl(), { fields: { vn: v.vn, fg: v.fg }, choices: rightOf(specs()), value: v.fg }); },
+      wrong: () => { const v = vals(); return [
+        { name: '|V_u| statt V_n (zu groß), Grenzfrequenz steigt', answer: A('opv_aktiv', {}, { fields: { vn: v.vu, fg: v.fgVu }, choices: { mehr: 'steigt' } }) },
+        { name: 'GBW mal V_n (viel zu groß), Grenzfrequenz bleibt', answer: A('opv_aktiv', {}, { fields: { vn: v.vn, fg: v.fgMal }, choices: { mehr: 'bleibt' } }) },
+        { name: 'zu klein (halber Wert)', answer: A('opv_aktiv', {}, { fields: { vn: v.vn, fg: v.fg * 0.5 }, choices: { mehr: 'sinkt' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae52: Zwei Stufen fuer mehr Bandbreite (opv_nin; Kern: exercise fgGbw je Stufe; Kettenfaktor Wurzel(Wurzel(2) - 1) = 0,644 als Annahme im Text) */
+  const M52 = (() => {
+    const G = { vges: 100, fsoll: 50000 }, KETTE = Math.sqrt(Math.SQRT2 - 1);
+    const gbw = () => lv('gbw_langsam');
+    const vst = () => Math.sqrt(G.vges);
+    const ctl = () => ({ schaltung: 'nichtinvertierend', opv: 'langsam', uv: 12, form: 'sinus', ue: 0.1, f: 1000, rg: 10000, rf: 90000 });
+    const rEin = () => once('r52a', () => ref('fgGbw', { gbw: gbw(), v: G.vges }, RECH_TOL));
+    const rVst = () => once('r52b', () => own(vst(), '', [{ v: G.vges / 2, id: 'halb', text: 'Du hast die Verstärkung halbiert. Die Verstärkungen von Stufen hintereinander werden multipliziert: V_1 · V_2 = V_ges. Bei zwei gleichen Stufen ist V = √V_ges.' }, { v: G.vges, id: 'ganz', text: 'Das ist die Gesamtverstärkung. Diese verteilt sich auf beide Stufen: V_1 · V_2 = V_ges, bei gleichen Stufen V = √V_ges.' }]));
+    const rFst = () => once('r52c', () => withW(ref('fgGbw', { gbw: gbw(), v: vst() }, RECH_TOL), [{ v: gbw() / (G.vges / 2), id: 'halb', text: 'Dein Wert passt zu einer Stufenverstärkung von ' + f(G.vges / 2, 0) + '. Zwei gleiche Stufen brauchen je V = √V_ges, dann gilt f_g ≈ GBW / V.' }]));
+    const rFges = () => once('r52d', () => { const fs1 = rFst().value, fe = rEin().value; return own(fs1 * KETTE, 'Hz', [
+      { v: fs1, id: 'einzel', text: 'Das ist die Grenzfrequenz einer Stufe. Bei dieser Frequenz liefert jede Stufe nur noch das 0,707-Fache, beide zusammen also nur die Hälfte. Die Kette erreicht ihre Grenze deshalb früher: 0,644 · f_g der Stufe.' },
+      { v: fs1 / 2, id: 'halb', text: 'Du hast die Grenzfrequenz der Stufe halbiert. Für zwei gleiche Stufen gilt laut Aufgabe der Faktor 0,644.' },
+      { v: fe * KETTE, id: 'einstufig', text: 'Du hast den Faktor 0,644 auf die Grenzfrequenz der einstufigen Lösung angewendet. Er gehört zur Grenzfrequenz einer Stufe der zweistufigen Lösung.' }], { factor: 1e3, dispUnit: 'kHz', disp: fs1 * KETTE / 1e3 }); });
+    const vals = () => once('v52', () => { const fe = rEin().value, fs1 = rFst().value, fg = rFges().value; return { vges: G.vges, gbw: gbw() / 1e6, gbwK: gbw() / 1e3, fsoll: G.fsoll / 1e3, fein: fe / 1e3, vst: vst(), fst: fs1 / 1e3, kette: KETTE, fges: fg / 1e3, faktor: fg / fe, vHalb: G.vges / 2, fstHalb: gbw() / (G.vges / 2) / 1e3, fgesHalb: gbw() / (G.vges / 2) * KETTE / 1e3 }; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'fein'), rEin(), 'Die Grenzfrequenz mit einer einzigen Stufe ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'vst'), rVst(), 'Die Verstärkung je Stufe ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'fst'), rFst(), 'Die Grenzfrequenz einer Stufe ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'fges'), rFges(), 'Die Grenzfrequenz der Kette aus zwei Stufen ist richtig berechnet', 1);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Verstärker soll die Spannung insgesamt ' + f(G.vges, 0) + '-fach verstärken. Verwendet werden nichtinvertierende Stufen (dort ist V_n = V_u) mit Operationsverstärkern, deren Verstärkungs-Bandbreite-Produkt GBW = ' + eng(gbw(), 'Hz') + ' beträgt (Lehrmodell „langsam“, Übungswerte). Gefordert ist eine Bandbreite von mindestens ' + f(G.fsoll / 1e3, 0) + ' kHz. Berechne zuerst die Grenzfrequenz, wenn eine einzige Stufe die ganze Verstärkung übernimmt. Teile die Verstärkung dann gleichmäßig auf zwei Stufen auf: Berechne die Verstärkung je Stufe, die Grenzfrequenz einer Stufe und die Grenzfrequenz der ganzen Kette. Annahme: Bei zwei gleichen Stufen hintereinander ist die gemeinsame Grenzfrequenz das 0,644-Fache der Grenzfrequenz einer Stufe. Im Prüfstand „' + rname('opv_nin') + '“ ist eine der beiden Stufen aufgebaut.',
+      fields: () => [{ key: 'fein', label: 'Grenzfrequenz mit einer Stufe', unit: 'kHz' }, { key: 'vst', label: 'Verstärkung je Stufe (zwei Stufen)', unit: '' }, { key: 'fst', label: 'Grenzfrequenz einer Stufe', unit: 'kHz' }, { key: 'fges', label: 'Grenzfrequenz der Kette', unit: 'kHz' }],
+      hint: () => { const v = vals(); return [
+        'Für jede Stufe gilt f_g ≈ GBW / V. Die Verstärkungen von Stufen hintereinander werden multipliziert. Zwei Stufen mit kleiner Verstärkung sind deshalb jede für sich viel schneller als eine Stufe mit der ganzen Verstärkung.',
+        'Eine Stufe allein: f_g ≈ ' + f(v.gbwK, 0) + ' kHz / ' + f(v.vges, 0) + '. Zwei gleiche Stufen: V = √' + f(v.vges, 0) + ' = ' + f(v.vst, 0) + ' je Stufe, also f_g ≈ ' + f(v.gbwK, 0) + ' kHz / ' + f(v.vst, 0) + ' je Stufe. Für die Kette multiplizierst du mit ' + f(v.kette, 3) + '.',
+        'Musterlösung: eine Stufe ' + f(v.fein, 0) + ' kHz; zwei Stufen mit je V = ' + f(v.vst, 0) + ' und je ' + f(v.fst, 0) + ' kHz, zusammen ' + f(v.kette, 3) + ' · ' + f(v.fst, 0) + ' kHz = ' + f(v.fges, 1) + ' kHz. Das ist rund ' + f(v.faktor, 1) + '-mal so viel wie mit einer Stufe und erfüllt die Forderung von ' + f(v.fsoll, 0) + ' kHz.'
+      ]; },
+      start: () => A('opv_nin', ctl(), { fields: { fein: null, vst: null, fst: null, fges: null } }),
+      sol: () => { const v = vals(); return A('opv_nin', ctl(), { fields: { fein: v.fein, vst: v.vst, fst: v.fst, fges: v.fges }, value: v.fges }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Verstärkung halbiert statt Wurzel gezogen', answer: A('opv_nin', {}, { fields: { fein: v.fein, vst: v.vHalb, fst: v.fstHalb, fges: v.fgesHalb } }) },
+        { name: 'Faktor für die Kette vergessen (zu groß)', answer: A('opv_nin', {}, { fields: { fein: v.fein, vst: v.vst, fst: v.fst, fges: v.fst } }) },
+        { name: 'GBW mal Verstärkung (viel zu groß)', answer: A('opv_nin', {}, { fields: { fein: v.gbwK * v.vges, vst: v.vst, fst: v.gbwK * v.vst, fges: v.fges } }) }]; } };
+  })();
+
+  /* ====================================================================== ae53: Offsetspannung am Ausgang (opv_aktiv, Schaltung real; Kern: deep.offset) */
+  const M53 = (() => {
+    const G = { r1: 10000, rf: 82000 }, RF2 = 820000;
+    const ctl = () => ({ schaltung: 'real', opv: 'langsam', uv: 12, form: 'gleich', ue: 0, f: 1000, r1: G.r1, rf: G.rf, c: 1e-6 });
+    const off = rf => once('o53|' + rf, () => { const o = C().deep.offset({ opv: 'langsam', rf, r1: G.r1 }); if (!o || !o.ok || !fin(o.uaOff)) throw new Error('Rechenkern: Offset'); return o; });
+    const rVn = () => once('r53v', () => own(off(G.rf).vn, '', [{ v: G.rf / G.r1, id: 'vu', text: 'Dein Wert ist R_f / R_1 ohne die Eins. Die Offsetspannung wirkt wie eine kleine Spannung am nichtinvertierenden Eingang und wird mit V_n = 1 + R_f / R_1 verstärkt.' }]));
+    const rOff = () => once('r53o', () => { const o = off(G.rf); return own(o.uaOff, 'V', [
+      { v: o.uos * G.rf / G.r1, id: 'plus-eins', text: 'Du hast mit |V_u| = R_f / R_1 gerechnet. Die Offsetspannung wird mit der Rauschverstärkung V_n = 1 + R_f / R_1 verstärkt.' },
+      { v: o.uos, id: 'uos', text: 'Das ist die Offsetspannung am Eingang selbst. Am Ausgang erscheint sie um V_n = 1 + R_f / R_1 vergrößert.' }], { factor: 1e-3, dispUnit: 'mV', disp: o.uaOff * 1e3 }); });
+    const vals = () => once('v53', () => { const o = off(G.rf), o2 = off(RF2), s = sim('opv_aktiv', ctl()); return { r1: G.r1 / 1e3, rf: G.rf / 1e3, uos: o.uos * 1e3, vn: o.vn, off: o.uaOff * 1e3, offOhne: o.uos * G.rf / G.r1 * 1e3, rf2: RF2 / 1e3, vn2: o2.vn, off2: o2.uaOff * 1e3, offRig: s.m.uosOut }; });
+    const specs = () => once('sp53', () => { const v = vals(), mv = (x, d) => f(x, d) + ' mV'; return [
+      { key: 'mehr', q: 'R_f wird auf ' + f(v.rf2, 0) + ' kΩ vergrößert (V_n = ' + f(v.vn2, 0) + '). Was geschieht mit der Offsetspannung am Ausgang?', short: 'Die Wirkung der größeren Verstärkung auf den Offsetfehler ist richtig beschrieben', right: 'steigt',
+        options: [
+          { value: 'bleibt', label: 'Der Wert bleibt bei ' + mv(v.off, 1) + ', weil U_os zum Baustein gehört', grund: 'Am Eingang bleibt U_os = ' + mv(v.uos, 0) + ' gleich. Am Ausgang wird diese Spannung aber mit V_n verstärkt: ' + mv(v.uos, 0) + ' · ' + f(v.vn2, 0) + ' = ' + mv(v.off2, 0) + '.' },
+          { value: 'sinkt', label: 'Der Wert sinkt auf etwa ' + mv(v.uos, 0) + ', weil R_f den Strom begrenzt', grund: 'Ein größeres R_f vergrößert die Rauschverstärkung. Der Offsetfehler am Ausgang wächst mit: ' + mv(v.uos, 0) + ' · ' + f(v.vn2, 0) + ' = ' + mv(v.off2, 0) + '.' },
+          { value: 'null', label: 'Der Offset verschwindet, weil die Gegenkopplung ihn ausregelt', grund: 'Die Gegenkopplung macht den Fehler klein, aber nicht null: Am Ausgang bleibt U_os · V_n. Mit V_n = ' + f(v.vn2, 0) + ' sind das ' + mv(v.off2, 0) + '.' },
+          { value: 'steigt', label: 'Der Wert steigt auf etwa ' + mv(v.off2, 0) + ', weil V_n größer wird', grund: 'U_a,off = U_os · V_n = ' + mv(v.uos, 0) + ' · ' + f(v.vn2, 0) + ' = ' + mv(v.off2, 0) + '. Eine hohe Verstärkung vergrößert auch den Offsetfehler.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'vn'), rVn(), 'Die Rauschverstärkung V_n ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'uoff'), rOff(), 'Die Offsetspannung am Ausgang ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => { const v = vals(); return 'Im Prüfstand „' + rname('opv_aktiv') + '“ arbeitet die Schaltung „Realer Operationsverstärker (Verstärker)“ mit R_1 = ' + eng(G.r1, 'Ω') + ' und R_f = ' + eng(G.rf, 'Ω') + ' (Lehrmodell „langsam“, Übungswerte). Der Baustein hat die Offsetspannung U_os = ' + f(v.uos, 0) + ' mV. Der Eingang liegt an 0 V. Berechne die Rauschverstärkung V_n = 1 + R_f / R_1 und die Spannung, die trotzdem am Ausgang steht (U_a,off als Betrag in mV). Eingangsströme bleiben unberücksichtigt. Beantworte dann die Frage zum größeren R_f. Das Messgerät „Offsetspannung am Ausgang“ zeigt dir den Wert zur Kontrolle.'; },
+      fields: () => [{ key: 'vn', label: 'Rauschverstärkung V_n', unit: '' }, { key: 'uoff', label: 'Offsetspannung am Ausgang U_a,off', unit: 'mV' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Die Offsetspannung ist ein kleiner Fehler im Baustein. Man denkt sie sich als Spannungsquelle am nichtinvertierenden Eingang. Für diese Quelle arbeitet die Schaltung wie ein nichtinvertierender Verstärker: U_a,off = U_os · (1 + R_f / R_1).',
+        'V_n = 1 + ' + f(v.rf, 0) + ' kΩ / ' + f(v.r1, 0) + ' kΩ = ' + f(v.vn, 1) + '. Dann U_a,off = ' + f(v.uos, 0) + ' mV · ' + f(v.vn, 1) + '.',
+        'Musterlösung: U_a,off = ' + f(v.uos, 0) + ' mV · ' + f(v.vn, 1) + ' = ' + f(v.off, 1) + ' mV. Ohne die Eins kämen ' + f(v.offOhne, 1) + ' mV heraus. Mit R_f = ' + f(v.rf2, 0) + ' kΩ ist V_n = ' + f(v.vn2, 0) + ' und U_a,off = ' + f(v.off2, 0) + ' mV.'
+      ]; },
+      start: () => A('opv_aktiv', ctl(), { fields: { vn: null, uoff: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_aktiv', ctl(), { fields: { vn: v.vn, uoff: v.off }, choices: rightOf(specs()), value: v.off }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Eins vergessen (zu klein), Offset bleibt', answer: A('opv_aktiv', {}, { fields: { vn: v.vn - 1, uoff: v.offOhne }, choices: { mehr: 'bleibt' } }) },
+        { name: 'Offset am Eingang statt am Ausgang, Offset verschwindet', answer: A('opv_aktiv', {}, { fields: { vn: v.vn, uoff: v.uos }, choices: { mehr: 'null' } }) },
+        { name: 'zu groß (doppelter Wert), Offset sinkt', answer: A('opv_aktiv', {}, { fields: { vn: v.vn, uoff: v.off * 2 }, choices: { mehr: 'sinkt' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae54: Aktiver Hochpass erster Ordnung (opv_aktiv, Schaltung hochpass; Kern: act.hp, exercise fgAktiv) */
+  const M54 = (() => {
+    const G = { r1: 6800, rf: 33000, c: 47e-9 };
+    const ctl = () => ({ schaltung: 'hochpass', opv: 'ideal', form: 'sinus', ue: 1, f: 1000, r1: G.r1, rf: G.rf, c: G.c });
+    const hpC = () => once('hp54', () => C().act.hp({ r1: G.r1, rf: G.rf, c1: G.c }));
+    const rFg = () => once('r54f', () => ref('fgAktiv', { art: 'hp', r1: G.r1, rf: G.rf, c: G.c }, RECH_TOL));
+    const rV = () => once('r54v', () => { const h = hpC(); return own(h.vInf, '', [{ v: -h.vInf, id: 'vorzeichen', text: 'Dein Wert hat das falsche Vorzeichen: Der aktive Hochpass invertiert im Durchlassbereich, V = −R_f / R_1 ist negativ.' }, { v: -G.r1 / G.rf, id: 'kehrwert', text: 'Dein Wert ist der Kehrwert: V = −R_f / R_1, der Rückkopplungswiderstand steht im Zähler.' }]); });
+    const rVfg = () => once('r54g', () => { const b = Math.abs(hpC().vInf); return own(b * Math.SQRT1_2, '', [
+      { v: b / 2, id: 'halb', text: 'Bei der Grenzfrequenz sinkt die Verstärkung nicht auf die Hälfte, sondern auf das 0,707-Fache (−3 dB).' },
+      { v: b, id: 'voll', text: 'Das ist die Verstärkung im Durchlassbereich. Genau bei der Grenzfrequenz ist der Betrag schon auf das 0,707-Fache gefallen (−3 dB).' }]); });
+    const vals = () => once('v54', () => { const R = rFg(), h = hpC(), w = id => R.wrongs.find(x => x.id === id); return { r1: G.r1 / 1e3, rf: G.rf / 1e3, c: G.c * 1e9, vinf: h.vInf, vBetrag: Math.abs(h.vInf), fg: R.value, alt: R.alts[0], tauUs: h.tau * 1e6, faktor: Math.SQRT1_2, vfg: Math.abs(h.vInf) * Math.SQRT1_2, vHalb: Math.abs(h.vInf) / 2, rfHz: w('rf-statt-r1').v, ohneK: w('zwei-pi').v / 1e3 }; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'v'), rV(), 'Die Verstärkung im Durchlassbereich ist richtig berechnet (mit Vorzeichen)', 2);
+      numRow(r, rawOf(a, 'fg'), rFg(), 'Die Grenzfrequenz f_g ist richtig berechnet', 1);
+      numRow(r, rawOf(a, 'vfg'), rVfg(), 'Der Betrag der Verstärkung bei f_g ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [3.14],
+      text: () => 'Ein aktiver Hochpass erster Ordnung (invertierend, idealer Operationsverstärker, Übungsschaltung) hat C_1 = ' + eng(G.c, 'F') + ' in Reihe zu R_1 = ' + eng(G.r1, 'Ω') + ' am Eingang und R_f = ' + eng(G.rf, 'Ω') + ' in der Rückkopplung. Berechne die Verstärkung V im Durchlassbereich (hohe Frequenzen, mit Vorzeichen), die Grenzfrequenz f_g in Hz (mit π = 3,14 gerechnet zählt ebenfalls) und den Betrag der Verstärkung genau bei f_g. Im Prüfstand „' + rname('opv_aktiv') + '“ steht die Schaltung „Aktiver Hochpass“ bereit.',
+      fields: () => [{ key: 'v', label: 'Verstärkung V im Durchlassbereich', unit: '' }, { key: 'fg', label: 'Grenzfrequenz f_g', unit: 'Hz' }, { key: 'vfg', label: 'Betrag der Verstärkung bei f_g', unit: '' }],
+      hint: () => { const v = vals(); return [
+        'Bei hohen Frequenzen wirkt der Kondensator wie eine Verbindung: V = −R_f / R_1. Die Grenzfrequenz bestimmt das Zeitglied am Eingang: f_g = 1 / (2π · R_1 · C_1), nicht R_f. Genau bei f_g ist der Betrag auf das 0,707-Fache gefallen (−3 dB).',
+        'V = −' + f(v.rf, 0) + ' kΩ / ' + f(v.r1, 1) + ' kΩ = ' + fs(v.vinf, 2) + '. Die Zeitkonstante am Eingang ist τ = R_1 · C_1 = ' + f(v.tauUs, 0) + ' µs; daraus f_g = 1 / (2π · τ). Bei f_g gilt |V| = ' + f(v.faktor, 3) + ' · ' + f(v.vBetrag, 2) + '.',
+        'Musterlösung: f_g = 1 / (2π · ' + f(v.tauUs, 0) + ' µs) = ' + f(v.fg, 0) + ' Hz (mit π = 3,14 gerechnet ' + f(v.alt, 1) + ' Hz), |V| bei f_g = ' + f(v.vfg, 2) + '. Mit R_f statt R_1 kämen ' + f(v.rfHz, 1) + ' Hz heraus, ohne den Faktor 2π ' + f(v.ohneK, 2) + ' kHz.'
+      ]; },
+      start: () => A('opv_aktiv', ctl(), { fields: { v: null, fg: null, vfg: null } }),
+      sol: () => { const v = vals(); return A('opv_aktiv', ctl(), { fields: { v: v.vinf, fg: v.fg, vfg: v.vfg }, value: v.fg }); },
+      wrong: () => { const v = vals(); return [
+        { name: '2π vergessen (zu groß), Vorzeichen vergessen, halbe Verstärkung', answer: A('opv_aktiv', {}, { fields: { v: v.vBetrag, fg: v.ohneK * 1000, vfg: v.vHalb } }) },
+        { name: 'R_f statt R_1 (zu klein), volle Verstärkung bei f_g', answer: A('opv_aktiv', {}, { fields: { v: v.vinf, fg: v.rfHz, vfg: v.vBetrag } }) }]; } };
+  })();
+
+  /* ====================================================================== ae55: Sallen-Key-Tiefpass zweiter Ordnung, gleiche R und C (eigene Formeln im Text: f_g = 1/(2 pi R C), V = 3 - 1/Q; Kern nur fuer f_g: exercise fgAktiv) */ /* PRUEFEN: geht ueber den Pruefungsstoff hinaus (Technikerniveau) */
+  const M55 = (() => {
+    const G = { r: 8200, c: 10e-9, q: 0.707, ra: 10000 };
+    const ctl = () => ({ schaltung: 'tiefpass', opv: 'ideal', form: 'sinus', ue: 1, f: 1000, r1: G.r, rf: G.r, c: G.c });
+    const V = () => 3 - 1 / G.q;
+    const rFg = () => once('r55f', () => ref('fgAktiv', { art: 'tp', r1: G.r, rf: G.r, c: G.c }, RECH_TOL));
+    const rV = () => once('r55v', () => own(V(), '', [
+      { v: 1 / G.q, id: 'kehr', text: 'Dein Wert ist 1 / Q. Für diese Schaltung gilt V = 3 − 1 / Q.' },
+      { v: 3 - G.q, id: 'q', text: 'Du hast Q selbst abgezogen. Abgezogen wird der Kehrwert: V = 3 − 1 / Q.' },
+      { v: 3, id: 'drei', text: 'Bei V = 3 ist die Dämpfung null, die Schaltung schwingt von selbst. Für Butterworth gilt V = 3 − 1 / Q.' }]));
+    const rRb = () => once('r55r', () => own((V() - 1) * G.ra, 'Ω', [
+      { v: V() * G.ra, id: 'mal', text: 'Du hast R_b = V · R_a gerechnet. Beim nichtinvertierenden Verstärker gilt V = 1 + R_b / R_a, also R_b = (V − 1) · R_a.' },
+      { v: G.ra / (V() - 1), id: 'kehr', text: 'Dein Wert ist R_a / (V − 1). Richtig umgestellt: R_b = (V − 1) · R_a.' }], { factor: 1e3, dispUnit: 'kΩ', disp: (V() - 1) * G.ra / 1e3 }));
+    const vals = () => once('v55', () => { const R = rFg(), w = id => R.wrongs.find(x => x.id === id); return { r: G.r / 1e3, c: G.c * 1e9, q: G.q, ra: G.ra / 1e3, tauUs: G.r * G.c * 1e6, fg: R.value, alt: R.alts[0], kehr: 1 / G.q, v: V(), vm1: V() - 1, rb: (V() - 1) * G.ra / 1e3, ohneK: w('zwei-pi').v / 1e3, vQ: 3 - G.q, rbMal: V() * G.ra / 1e3, steil: 40, steil1: 20, steil3: 60 }; });
+    const specs = () => once('sp55', () => { const v = vals(), dd = x => f(x, 0) + ' dB je Dekade'; return [
+      { key: 'steil', q: 'Wie stark fällt die Verstärkung dieses Tiefpasses zweiter Ordnung weit oberhalb der Grenzfrequenz?', short: 'Die Flankensteilheit ist richtig angegeben', right: 'zwei',
+        options: [
+          { value: 'eins', label: 'Mit ' + dd(v.steil1) + ', also auf ein Zehntel', grund: 'Mit ' + dd(v.steil1) + ' fällt ein Tiefpass erster Ordnung mit einem Zeitglied. Hier wirken zwei Zeitglieder, jedes bringt ' + dd(v.steil1) + '.' },
+          { value: 'zwei', label: 'Mit ' + dd(v.steil) + ', also auf ein Hundertstel', grund: 'Zwei Zeitglieder aus R und C ergeben zusammen ' + dd(v.steil) + ': Bei der zehnfachen Frequenz bleibt nur noch ein Hundertstel der Spannung.' },
+          { value: 'drei', label: 'Mit ' + dd(v.steil3) + ', also auf ein Tausendstel', grund: 'Erst mit drei Zeitgliedern sind es ' + dd(v.steil3) + ' (dritte Ordnung). Hier sind es zwei Zeitglieder, also ' + dd(v.steil) + '.' },
+          { value: 'grenz', label: 'Mit 3 dB je Dekade, wie an der Grenzfrequenz', grund: 'Die 3 dB sind der Abfall genau bei der Grenzfrequenz, nicht die Steilheit darüber. Weit oberhalb fällt die zweite Ordnung mit ' + dd(v.steil) + '.' }] },
+      { key: 'butter', q: 'Was bringt die Butterworth-Abstimmung (Q = ' + f(v.q, 3) + ')?', short: 'Die Eigenschaft der Butterworth-Abstimmung ist richtig benannt', right: 'flach',
+        options: [
+          { value: 'spitze', label: 'Eine hohe Spitze der Verstärkung kurz vor der Grenzfrequenz', grund: 'Eine Überhöhung entsteht erst bei größerer Güte, also bei V über ' + f(v.v, 3) + '. Butterworth ist gerade die Abstimmung ohne Überhöhung.' },
+          { value: 'schwingt', label: 'Eine Dauerschwingung mit der Grenzfrequenz am Ausgang', grund: 'Von selbst schwingt die Schaltung erst bei V = 3. Mit V = ' + f(v.v, 3) + ' ist der Abstand dazu groß, der Filter arbeitet stabil.' },
+          { value: 'steiler', label: 'Eine Flanke, die steiler ist als bei jeder anderen Abstimmung', grund: 'Die Steilheit weit oberhalb von f_g legt die Ordnung fest (' + dd(v.steil) + '), nicht die Abstimmung. Butterworth sorgt für den flachen Durchlassbereich.' },
+          { value: 'flach', label: 'Einen möglichst flachen Durchlassbereich ohne Überhöhung', grund: 'Bei Q = ' + f(v.q, 3) + ' bleibt die Verstärkung bis nahe an f_g fast konstant und fällt dann ohne Überhöhung ab; bei f_g sind es genau 3 dB weniger.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'fg'), rFg(), 'Die Grenzfrequenz f_g ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'v'), rV(), 'Die nötige Verstärkung V ist richtig berechnet', 3);
+      numRow(r, rawOf(a, 'rb'), rRb(), 'Der Widerstand R_b ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [3.14],
+      text: () => 'Ein Sallen-Key-Tiefpass zweiter Ordnung hat zwei gleiche Widerstände R = ' + eng(G.r, 'Ω') + ' und zwei gleiche Kondensatoren C = ' + eng(G.c, 'F') + ' (idealer Operationsverstärker, Übungsschaltung). Der Operationsverstärker arbeitet darin als nichtinvertierender Verstärker mit V = 1 + R_b / R_a und R_a = ' + eng(G.ra, 'Ω') + '. Für diese Schaltung gilt: f_g = 1 / (2π · R · C) und V = 3 − 1 / Q. Die Butterworth-Abstimmung verlangt die Güte Q = ' + f(G.q, 3) + '. Berechne die Grenzfrequenz f_g in Hz (mit π = 3,14 gerechnet zählt ebenfalls), die nötige Verstärkung V und den Widerstand R_b. Beantworte dann die zwei Fragen. Das ist eine Vertiefung über den Prüfungsstoff hinaus. Im Prüfstand „' + rname('opv_aktiv') + '“ steht zum Vergleich ein aktiver Tiefpass erster Ordnung mit derselben Grenzfrequenz bereit.',
+      fields: () => [{ key: 'fg', label: 'Grenzfrequenz f_g', unit: 'Hz' }, { key: 'v', label: 'Verstärkung V', unit: '' }, { key: 'rb', label: 'Widerstand R_b', unit: 'kΩ' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Die Grenzfrequenz rechnest du wie beim einfachen RC-Glied aus R und C. Die Güte Q legt fest, wie der Übergang aussieht; eingestellt wird Q über die Verstärkung V. Aus V = 1 + R_b / R_a folgt der Widerstand R_b.',
+        'τ = R · C = ' + f(v.r, 1) + ' kΩ · ' + f(v.c, 0) + ' nF = ' + f(v.tauUs, 0) + ' µs, daraus f_g = 1 / (2π · τ). 1 / Q = 1 / ' + f(v.q, 3) + ' = ' + f(v.kehr, 3) + ', also V = 3 − ' + f(v.kehr, 3) + '. Für R_b stellst du um: R_b = (V − 1) · R_a.',
+        'Musterlösung: f_g = ' + f(v.fg, 0) + ' Hz (mit π = 3,14 gerechnet ' + f(v.alt, 0) + ' Hz), V = ' + f(v.v, 3) + ', R_b = ' + f(v.vm1, 3) + ' · ' + f(v.ra, 0) + ' kΩ = ' + f(v.rb, 2) + ' kΩ. Oberhalb von f_g fällt die Verstärkung mit ' + f(v.steil, 0) + ' dB je Dekade. Ohne den Faktor 2π kämen ' + f(v.ohneK, 1) + ' kHz heraus.'
+      ]; },
+      start: () => A('opv_aktiv', ctl(), { fields: { fg: null, v: null, rb: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_aktiv', ctl(), { fields: { fg: v.fg, v: v.v, rb: v.rb }, choices: rightOf(specs()), value: v.fg }); },
+      wrong: () => { const v = vals(); return [
+        { name: '2π vergessen, V = 1 / Q, erste Ordnung, Spitze', answer: A('opv_aktiv', {}, { fields: { fg: v.ohneK * 1000, v: v.kehr, rb: (v.kehr - 1) * v.ra }, choices: { steil: 'eins', butter: 'spitze' } }) },
+        { name: 'Q statt 1 / Q abgezogen, R_b = V · R_a, dritte Ordnung, schwingt', answer: A('opv_aktiv', {}, { fields: { fg: v.fg, v: v.vQ, rb: v.rbMal }, choices: { steil: 'drei', butter: 'schwingt' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae56: Pegel eine Dekade ueber der Grenzfrequenz, erste und zweite Ordnung (opv_aktiv, Schaltung tiefpass; Kern: exercise vDb; Naeherungsgeraden laut Text) */
+  const M56 = (() => {
+    const G = { r1: 2000, rf: 100000, c: 1e-9, fgK: 1.6, fK: 16, ue: 2 };
+    const ctl = () => ({ schaltung: 'tiefpass', opv: 'ideal', form: 'sinus', ue: 0.1, f: G.fK * 1e3, r1: G.r1, rf: G.rf, c: G.c });
+    const v0 = () => G.rf / G.r1, DEK = G.fK / G.fgK;
+    const dbOf = x => 20 * Math.log(x) / Math.LN10;
+    const rA0 = () => once('r56a', () => ref('vDb', { v: v0() }, RECH_TOL));
+    const rA1 = () => once('r56b', () => { const a0 = rA0().value; return own(a0 - 20, 'dB', [
+      { v: a0 - 3, id: 'drei', text: 'Die 3 dB weniger gelten genau bei der Grenzfrequenz. Eine Dekade darüber sind es bei erster Ordnung 20 dB weniger.' },
+      { v: a0 - 40, id: 'zwei', text: 'Die 40 dB je Dekade gelten für die zweite Ordnung. Ein Tiefpass erster Ordnung fällt mit 20 dB je Dekade.' },
+      { v: a0 + 20, id: 'plus', text: 'Du hast die 20 dB addiert. Oberhalb der Grenzfrequenz wird die Verstärkung kleiner: a = a_0 − 20 dB.' }], { alts: [dbOf(v0() / Math.sqrt(1 + DEK * DEK))] }); });
+    const rA2 = () => once('r56c', () => { const a0 = rA0().value; return own(a0 - 40, 'dB', [
+      { v: 40 - a0, id: 'vorzeichen', text: 'Der Betrag stimmt, das Vorzeichen nicht: a_0 − 40 dB ist hier negativ. Ein negatives Verstärkungsmaß heißt, dass die Ausgangsspannung kleiner ist als die Eingangsspannung.' },
+      { v: a0 - 20, id: 'eins', text: 'Das ist der Wert für die erste Ordnung. Ein Tiefpass zweiter Ordnung fällt mit 40 dB je Dekade.' }], { alts: [dbOf(v0() / Math.sqrt(1 + Math.pow(DEK, 4)))] }); });
+    const rUa = () => once('r56d', () => { const a0 = rA0().value, k = Math.pow(10, (a0 - 40) / 20); return own(G.ue * k, 'V', [
+      { v: G.ue / k, id: 'vorzeichen', text: 'Du hast mit +' + f(40 - a0, 2) + ' dB gerechnet. Das Verstärkungsmaß ist negativ, die Ausgangsspannung ist also kleiner als die Eingangsspannung.' },
+      { v: G.ue * Math.pow(10, (a0 - 20) / 20), id: 'eins', text: 'Dein Wert passt zum Tiefpass erster Ordnung (20 dB weniger). Gefragt ist der Tiefpass zweiter Ordnung mit 40 dB weniger.' },
+      { v: G.ue * v0(), id: 'durchlass', text: 'Das ist die Ausgangsspannung im Durchlassbereich. Eine Dekade über f_g ist die Verstärkung der zweiten Ordnung um 40 dB kleiner.' }], { alts: [G.ue * v0() / Math.sqrt(1 + Math.pow(DEK, 4))] }); });
+    const vals = () => once('v56', () => { const R = rA0(), a0 = R.value, w = id => R.wrongs.find(x => x.id === id); return { v0: v0(), fg: G.fgK, f: G.fK, dek: DEK, ue: G.ue, r1: G.r1 / 1e3, rf: G.rf / 1e3, c: G.c * 1e9, lg: Math.log(v0()) / Math.LN10, a0, a1: a0 - 20, a2: a0 - 40, k2: Math.pow(10, (a0 - 40) / 20), ua2: G.ue * Math.pow(10, (a0 - 40) / 20), a0Falsch: w('dB-10lg').v, d1: 20, d2: 40, a1Drei: a0 - 3, ua1: G.ue * Math.pow(10, (a0 - 20) / 20), uaPlus: G.ue / Math.pow(10, (a0 - 40) / 20) }; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'a0'), rA0(), 'Das Verstärkungsmaß im Durchlassbereich ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'a1'), rA1(), 'Das Verstärkungsmaß der ersten Ordnung eine Dekade über f_g ist richtig', 2);
+      numRow(r, rawOf(a, 'a2'), rA2(), 'Das Verstärkungsmaß der zweiten Ordnung eine Dekade über f_g ist richtig (mit Vorzeichen)', 2);
+      numRow(r, rawOf(a, 'ua2'), rUa(), 'Die Ausgangsspannung des Filters zweiter Ordnung ist richtig berechnet', 2);
+    });
+    return { vals, check, consts: [],
+      text: () => 'Zwei aktive Tiefpässe haben beide im Durchlassbereich die Verstärkung V_0 = ' + f(v0(), 0) + ' (Betrag) und die Grenzfrequenz f_g = ' + f(G.fgK, 1) + ' kHz (Übungswerte). Der erste ist ein Tiefpass erster Ordnung, der zweite ein Tiefpass zweiter Ordnung (Butterworth). Berechne das Verstärkungsmaß a_0 im Durchlassbereich in dB. Bestimme dann für beide Filter das Verstärkungsmaß bei f = ' + f(G.fK, 0) + ' kHz, also eine Dekade über f_g. Rechne mit den Näherungsgeraden: 20 dB je Dekade bei erster Ordnung, 40 dB je Dekade bei zweiter Ordnung. Wie groß ist die Ausgangsspannung des zweiten Filters bei ' + f(G.fK, 0) + ' kHz, wenn am Eingang ' + f(G.ue, 0) + ' V anliegen? Im Prüfstand „' + rname('opv_aktiv') + '“ steht ein Tiefpass erster Ordnung mit diesen Werten bereit (R_1 = ' + eng(G.r1, 'Ω') + ', R_f = ' + eng(G.rf, 'Ω') + ', C_f = ' + eng(G.c, 'F') + ').',
+      fields: () => [{ key: 'a0', label: 'Verstärkungsmaß a_0 im Durchlassbereich', unit: 'dB' }, { key: 'a1', label: 'Erste Ordnung bei ' + f(G.fK, 0) + ' kHz', unit: 'dB' }, { key: 'a2', label: 'Zweite Ordnung bei ' + f(G.fK, 0) + ' kHz', unit: 'dB' }, { key: 'ua2', label: 'Ausgangsspannung, zweite Ordnung', unit: 'V' }],
+      hint: () => { const v = vals(); return [
+        'Für Spannungen gilt a = 20 · lg V. Eine Dekade ist der Faktor 10 in der Frequenz. Oberhalb der Grenzfrequenz zieht man je Dekade einen festen Betrag in dB ab; je höher die Ordnung, desto mehr. Zurück zum Faktor geht es mit V = 10^(a / 20).',
+        'a_0 = ' + f(v.d1, 0) + ' · lg ' + f(v.v0, 0) + ' = ' + f(v.d1, 0) + ' · ' + f(v.lg, 3) + '. Erste Ordnung: a_0 − ' + f(v.d1, 0) + ' dB. Zweite Ordnung: a_0 − ' + f(v.d2, 0) + ' dB. Ein negatives Verstärkungsmaß heißt: Die Ausgangsspannung ist kleiner als die Eingangsspannung.',
+        'Musterlösung: a_0 = ' + f(v.a0, 2) + ' dB; erste Ordnung ' + f(v.a1, 2) + ' dB; zweite Ordnung ' + fs(v.a2, 2) + ' dB. Das entspricht dem Faktor ' + f(v.k2, 1) + ', aus ' + f(v.ue, 0) + ' V werden ' + f(v.ua2, 0) + ' V. Mit ' + f(v.dek, 0) + ' · lg statt ' + f(v.d1, 0) + ' · lg kämen ' + f(v.a0Falsch, 2) + ' dB heraus.'
+      ]; },
+      start: () => A('opv_aktiv', ctl(), { fields: { a0: null, a1: null, a2: null, ua2: null } }),
+      sol: () => { const v = vals(); return A('opv_aktiv', ctl(), { fields: { a0: v.a0, a1: v.a1, a2: v.a2, ua2: v.ua2 }, value: v.a2 }); },
+      wrong: () => { const v = vals(); return [
+        { name: '10 · lg, nur 3 dB weniger, Vorzeichen falsch', answer: A('opv_aktiv', {}, { fields: { a0: v.a0Falsch, a1: v.a1Drei, a2: -v.a2, ua2: v.uaPlus } }) },
+        { name: 'zweite Ordnung wie erste Ordnung gerechnet', answer: A('opv_aktiv', {}, { fields: { a0: v.a0, a1: v.a1, a2: v.a1, ua2: v.ua1 } }) }]; } };
+  })();
+
+  /* ====================================================================== ae57: Instrumentenverstaerker mit drei Operationsverstaerkern (eigene Formel V = 1 + 2R/R_G; Pruefstand opv_nin zeigt die Ausgangsstufe) */
+  const M57 = (() => {
+    const G = { r: 22000, v: 11, rgN: 4700, ud: 0.05 };
+    const ctl = () => ({ schaltung: 'differenz', opv: 'ideal', u1: 1.6, u2: 2.1, r1: 10000, r2: 10000, r3: 10000, r4: 10000 });
+    const rg = () => 2 * G.r / (G.v - 1), vN = () => 1 + 2 * G.r / G.rgN;
+    const rRg = () => once('r57a', () => own(rg(), 'Ω', [
+      { v: 2 * G.r / G.v, id: 'eins', text: 'Du hast die Eins nicht abgezogen. Aus V = 1 + 2 · R / R_G folgt R_G = 2 · R / (V − 1).' },
+      { v: G.r / (G.v - 1), id: 'zwei', text: 'Der Faktor 2 fehlt: Beide Widerstände R der Eingangsstufe zählen, R_G = 2 · R / (V − 1).' },
+      { v: 2 * G.r * (G.v - 1), id: 'mal', text: 'Du hast multipliziert statt geteilt. Umgestellt gilt R_G = 2 · R / (V − 1).' }], { factor: 1e3, dispUnit: 'kΩ', disp: rg() / 1e3 }));
+    const rVn = () => once('r57b', () => own(vN(), '', [
+      { v: vN() - 1, id: 'eins', text: 'Die Eins fehlt: V = 1 + 2 · R / R_G.' },
+      { v: 1 + G.r / G.rgN, id: 'zwei', text: 'Der Faktor 2 fehlt: V = 1 + 2 · R / R_G, beide Widerstände R zählen.' },
+      { v: G.v, id: 'soll', text: 'Das ist die gewünschte Verstärkung. Mit dem Normwert weicht die Verstärkung etwas ab: V = 1 + 2 · R / R_G mit dem eingebauten R_G.' }]));
+    const rUa = () => once('r57c', () => own(vN() * G.ud, 'V', [
+      { v: G.v * G.ud, id: 'soll', text: 'Du hast mit der gewünschten Verstärkung gerechnet. Mit dem eingebauten Normwert ist die Verstärkung etwas kleiner.' },
+      { v: (vN() - 1) * G.ud, id: 'eins', text: 'Dein Wert passt zu einer Verstärkung ohne die Eins. Es gilt U_a = (1 + 2 · R / R_G) · U_D.' }], { factor: 1e-3, dispUnit: 'mV', disp: vN() * G.ud * 1e3 }));
+    const vals = () => once('v57', () => ({ r: G.r / 1e3, zweiR: 2 * G.r / 1e3, v: G.v, vm1: G.v - 1, rg: rg() / 1e3, rgN: G.rgN / 1e3, vN: vN(), ud: G.ud * 1e3, ua: vN() * G.ud * 1e3, rgOhne: 2 * G.r / G.v / 1e3, rgHalb: G.r / (G.v - 1) / 1e3, vOhne: vN() - 1, vHalb: 1 + G.r / G.rgN, uaSoll: G.v * G.ud * 1e3, uaOhne: (vN() - 1) * G.ud * 1e3 }));
+    const specs = () => once('sp57', () => [
+      { key: 'warum', q: 'Welchen Vorteil hat der Instrumentenverstärker gegenüber einem einfachen Differenzverstärker mit einem Operationsverstärker?', short: 'Der Vorteil des Instrumentenverstärkers ist richtig benannt', right: 'hochohmig',
+        options: [
+          { value: 'einer', label: 'Er braucht weniger Bauteile und nur eine Betriebsspannung', grund: 'Der Instrumentenverstärker braucht drei Operationsverstärker, also mehr Bauteile als der einfache Differenzverstärker. Der Aufwand lohnt sich wegen der hochohmigen Eingänge.' },
+          { value: 'hochohmig', label: 'Beide Eingänge sind sehr hochohmig und belasten die Quelle kaum', grund: 'Die Signale gehen direkt auf die nichtinvertierenden Eingänge der beiden Eingangsverstärker. Dort fließt fast kein Strom, eine Messbrücke wird kaum belastet. Die Verstärkung stellt ein einziger Widerstand R_G ein.' },
+          { value: 'gleichtakt', label: 'Er verstärkt die Gleichtaktspannung stärker als die Differenz', grund: 'Gewünscht ist das Gegenteil: Die Eingangsstufe verstärkt die Differenz mit V, eine Spannung an beiden Eingängen zugleich nur mit 1. Die Ausgangsstufe unterdrückt diesen Rest.' },
+          { value: 'passiv', label: 'Er arbeitet ohne Gegenkopplung und ist deshalb schneller', grund: 'Alle drei Operationsverstärker arbeiten mit Gegenkopplung, sonst gäbe es keine feste Verstärkung. Der Gewinn liegt bei den hochohmigen Eingängen.' }] }]);
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'rg'), rRg(), 'Der Einstellwiderstand R_G ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'vn'), rVn(), 'Die Verstärkung mit dem Normwert ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'ua'), rUa(), 'Die Ausgangsspannung ist richtig berechnet', 0);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein Instrumentenverstärker aus drei Operationsverstärkern (ideal, Übungsschaltung) hat in der Eingangsstufe zwei gleiche Widerstände R = ' + eng(G.r, 'Ω') + ' und dazwischen den Einstellwiderstand R_G. Die Ausgangsstufe ist ein Differenzverstärker mit der Verstärkung 1. Für die ganze Schaltung gilt V = 1 + 2 · R / R_G. Berechne R_G für die Verstärkung V = ' + f(G.v, 0) + '. Eingebaut wird der E12-Wert R_G = ' + eng(G.rgN, 'Ω') + ': Berechne die Verstärkung, die sich damit ergibt, und die Ausgangsspannung bei der Differenzspannung U_D = ' + f(G.ud * 1e3, 0) + ' mV am Eingang. Beantworte dann die Frage. Im Prüfstand „' + rname('opv_nin') + '“ steht die Ausgangsstufe bereit (Schaltung „Differenzverstärker“).',
+      fields: () => [{ key: 'rg', label: 'Einstellwiderstand R_G für V = ' + f(G.v, 0), unit: 'kΩ' }, { key: 'vn', label: 'Verstärkung mit dem E12-Wert', unit: '' }, { key: 'ua', label: 'Ausgangsspannung U_a', unit: 'mV' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Stelle die Formel V = 1 + 2 · R / R_G nach R_G um: Erst die Eins auf die andere Seite bringen, dann tauschen. Mit dem E12-Wert setzt du rückwärts wieder in die Formel ein. Die Ausgangsspannung ist Verstärkung mal Differenzspannung.',
+        'R_G = 2 · R / (V − 1) = ' + f(v.zweiR, 0) + ' kΩ / ' + f(v.vm1, 0) + '. Mit dem E12-Wert: V = 1 + ' + f(v.zweiR, 0) + ' kΩ / ' + f(v.rgN, 1) + ' kΩ. Dann U_a = V · U_D.',
+        'Musterlösung: R_G = ' + f(v.rg, 1) + ' kΩ. Mit ' + f(v.rgN, 1) + ' kΩ ist V = ' + f(v.vN, 2) + ' und U_a = ' + f(v.vN, 2) + ' · ' + f(v.ud, 0) + ' mV = ' + f(v.ua, 0) + ' mV. Ohne die Eins abzuziehen kämen ' + f(v.rgOhne, 0) + ' kΩ heraus.'
+      ]; },
+      start: () => A('opv_nin', ctl(), { fields: { rg: null, vn: null, ua: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_nin', ctl(), { fields: { rg: v.rg, vn: v.vN, ua: v.ua }, choices: rightOf(specs()), value: v.rg }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Eins nicht abgezogen, Eins vergessen, weniger Bauteile', answer: A('opv_nin', {}, { fields: { rg: v.rgOhne, vn: v.vOhne, ua: v.uaOhne }, choices: { warum: 'einer' } }) },
+        { name: 'Faktor 2 vergessen, gewünschte Verstärkung benutzt, Gleichtakt', answer: A('opv_nin', {}, { fields: { rg: v.rgHalb, vn: v.vHalb, ua: v.uaSoll }, choices: { warum: 'gleichtakt' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae58: Gleichtaktunterdrueckung (eigene Formel CMRR = 20 lg (V_D / V_Gl); Pruefstand opv_nin, Schaltung differenz) */ /* PRUEFEN: geht ueber den Pruefungsstoff hinaus */
+  const M58 = (() => {
+    const G = { vd: 50, cmrr: 80, ugl: 4, ud: 0.01, cmrr2: 100 };
+    const ctl = () => ({ schaltung: 'differenz', opv: 'ideal', u1: 4, u2: 4.01, r1: 1000, r2: 1000, r3: 50000, r4: 50000 });
+    const fak = db => Math.pow(10, db / 20);
+    const rCm = () => once('r58a', () => own(fak(G.cmrr), '', [
+      { v: Math.pow(10, G.cmrr / 10), id: 'zehn', text: 'Dein Wert passt zu 10 · lg. Für Spannungen gilt 20 · lg, der Faktor ist also 10^(CMRR / 20).' },
+      { v: G.cmrr, id: 'db', text: 'Das ist der Wert in dB. Gesucht ist der Faktor dazu: 10^(CMRR / 20).' },
+      { v: G.cmrr / 20, id: 'exp', text: 'Das ist nur der Exponent CMRR / 20. Der Faktor ist 10 hoch diesen Wert.' }]));
+    const rVgl = () => once('r58b', () => own(G.vd / fak(G.cmrr), '', [
+      { v: 1 / fak(G.cmrr), id: 'vd', text: 'Hier fehlt V_D: Die Gleichtaktverstärkung ist V_Gl = V_D / Faktor.' },
+      { v: G.vd * fak(G.cmrr), id: 'mal', text: 'Du hast multipliziert. Die Gleichtaktverstärkung ist um den Faktor kleiner als V_D: V_Gl = V_D / Faktor.' },
+      { v: G.vd / Math.pow(10, G.cmrr / 10), id: 'zehn', text: 'Dein Wert passt zu einem Faktor aus 10 · lg. Für Spannungen gilt 20 · lg, also Faktor = 10^(CMRR / 20).' }]));
+    const rUf = () => once('r58c', () => own(G.vd / fak(G.cmrr) * G.ugl, 'V', [
+      { v: G.ugl / fak(G.cmrr), id: 'vd', text: 'Du hast U_Gl nur durch den Faktor geteilt. Am Ausgang erscheint die Gleichtaktspannung mit V_Gl = V_D / Faktor.' },
+      { v: G.vd * G.ugl, id: 'voll', text: 'So groß wäre der Ausgang, wenn die Gleichtaktspannung wie ein Nutzsignal verstärkt würde. Die Gleichtaktspannung wird aber nur mit V_Gl = V_D / Faktor verstärkt.' }], { factor: 1e-3, dispUnit: 'mV', disp: G.vd / fak(G.cmrr) * G.ugl * 1e3 }));
+    const vals = () => once('v58', () => { const cm = fak(G.cmrr), cm2 = fak(G.cmrr2); return { vd: G.vd, cmrr: G.cmrr, zwanzig: 20, exp: G.cmrr / 20, ugl: G.ugl, cm, vgl: G.vd / cm, uf: G.vd / cm * G.ugl * 1e3, ud: G.ud * 1e3, nutz: G.vd * G.ud * 1e3, anteil: G.vd / cm * G.ugl / (G.vd * G.ud) * 100, cmrr2: G.cmrr2, cm2, vgl2: G.vd / cm2, uf2: G.vd / cm2 * G.ugl * 1e3, cmFalsch: Math.pow(10, G.cmrr / 10), ufOhne: G.ugl / cm * 1e3, ufVoll: G.vd * G.ugl * 1e3 }; });
+    const specs = () => once('sp58', () => { const v = vals(), mv = x => f(x, 0) + ' mV'; return [
+      { key: 'besser', q: 'Das Nutzsignal ist U_D = ' + mv(v.ud) + ', am Ausgang also ' + mv(v.nutz) + '. Der Fehler von ' + mv(v.uf) + ' ist zu groß. Was hilft?', short: 'Die wirksame Maßnahme gegen den Gleichtaktfehler ist richtig gewählt', right: 'cmrr',
+        options: [
+          { value: 'vd', label: 'Die Differenzverstärkung V_D verdoppeln', grund: 'Bei gleichem CMRR wächst mit V_D auch V_Gl. Nutzsignal und Fehler verdoppeln sich beide, der Anteil des Fehlers bleibt bei ' + f(v.anteil, 0) + ' %.' },
+          { value: 'ub', label: 'Die Betriebsspannung des Verstärkers erhöhen', grund: 'Die Betriebsspannung ändert nur die Aussteuergrenzen. Der Fehler von ' + mv(v.uf) + ' hängt von U_Gl und V_Gl ab, nicht von der Betriebsspannung.' },
+          { value: 'cmrr', label: 'Einen Verstärker mit CMRR = ' + f(v.cmrr2, 0) + ' dB einsetzen', grund: f(v.cmrr2, 0) + ' dB entsprechen dem Faktor ' + f(v.cm2, 0) + '. Dann ist V_Gl = ' + f(v.vd, 0) + ' / ' + f(v.cm2, 0) + ' = ' + f(v.vgl2, 4) + ' und der Fehler nur noch ' + mv(v.uf2) + ' statt ' + mv(v.uf) + '.' },
+          { value: 'tausch', label: 'Die beiden Eingänge miteinander vertauschen', grund: 'Dann wechselt nur das Vorzeichen des Nutzsignals. Die Gleichtaktspannung liegt weiter an beiden Eingängen und erzeugt denselben Fehler von ' + mv(v.uf) + '.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'cm'), rCm(), 'Die Gleichtaktunterdrückung als Faktor ist richtig berechnet', 0);
+      numRow(r, rawOf(a, 'vgl'), rVgl(), 'Die Gleichtaktverstärkung V_Gl ist richtig berechnet', 4);
+      numRow(r, rawOf(a, 'uf'), rUf(), 'Die Fehlerspannung am Ausgang ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein Differenzverstärker verstärkt die Differenzspannung mit V_D = ' + f(G.vd, 0) + '. Im Datenblatt steht die Gleichtaktunterdrückung CMRR = ' + f(G.cmrr, 0) + ' dB (Übungswerte). Dieser Wert sagt, wie viel schwächer eine Spannung verstärkt wird, die an beiden Eingängen gleich anliegt: CMRR = 20 · lg (V_D / V_Gl). An beiden Eingängen liegt die Gleichtaktspannung U_Gl = ' + f(G.ugl, 0) + ' V, zum Beispiel eine Störung auf beiden Messleitungen. Berechne die Gleichtaktunterdrückung als Faktor, die Gleichtaktverstärkung V_Gl und die Fehlerspannung am Ausgang (Betrag in mV). Beantworte dann die Frage. Das ist eine Vertiefung über den Prüfungsstoff hinaus. Im Prüfstand „' + rname('opv_nin') + '“ steht die Schaltung „Differenzverstärker“ mit V_D = ' + f(G.vd, 0) + ' bereit; dort ist der Operationsverstärker ideal und zeigt keinen Gleichtaktfehler.',
+      fields: () => [{ key: 'cm', label: 'Gleichtaktunterdrückung als Faktor', unit: '' }, { key: 'vgl', label: 'Gleichtaktverstärkung V_Gl', unit: '' }, { key: 'uf', label: 'Fehlerspannung am Ausgang', unit: 'mV' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Aus dem Wert in dB wird ein Faktor mit 10^(CMRR / 20). Um diesen Faktor ist die Gleichtaktverstärkung kleiner als die Differenzverstärkung. Die Gleichtaktspannung erscheint am Ausgang mit der Gleichtaktverstärkung.',
+        'Faktor = 10^(' + f(v.cmrr, 0) + ' / ' + f(v.zwanzig, 0) + ') = 10^' + f(v.exp, 0) + '. Daraus V_Gl = V_D / Faktor = ' + f(v.vd, 0) + ' / ' + f(v.cm, 0) + '. Die Fehlerspannung ist V_Gl · U_Gl.',
+        'Musterlösung: Faktor ' + f(v.cm, 0) + ', V_Gl = ' + f(v.vgl, 3) + ', Fehlerspannung ' + f(v.vgl, 3) + ' · ' + f(v.ugl, 0) + ' V = ' + f(v.uf, 0) + ' mV. Das sind ' + f(v.anteil, 0) + ' % des Nutzsignals von ' + f(v.nutz, 0) + ' mV. Mit 10 · lg gerechnet käme der Faktor ' + f(v.cmFalsch, 0) + ' heraus.'
+      ]; },
+      start: () => A('opv_nin', ctl(), { fields: { cm: null, vgl: null, uf: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_nin', ctl(), { fields: { cm: v.cm, vgl: v.vgl, uf: v.uf }, choices: rightOf(specs()), value: v.uf }); },
+      wrong: () => { const v = vals(); return [
+        { name: '10 · lg (Faktor viel zu groß), V_D vergessen, V_D verdoppeln', answer: A('opv_nin', {}, { fields: { cm: v.cmFalsch, vgl: 1 / v.cm, uf: v.ufOhne }, choices: { besser: 'vd' } }) },
+        { name: 'dB-Wert als Faktor, voll verstärkt, Betriebsspannung', answer: A('opv_nin', {}, { fields: { cm: v.cmrr, vgl: v.vgl, uf: v.ufVoll }, choices: { besser: 'ub' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae59: Komparator mit offenem Kollektor, Pull-up-Widerstand und Pegel (eigene Rechnung; der Pruefstand opv_komp hat einen Gegentaktausgang) */
+  const M59 = (() => {
+    const G = { ub: 5, usat: 0.4, imax: 0.004, rp: 3300, rl: 22000 };
+    const ctl = () => ({ schaltung: 'komparator', opv: 'ideal', uv: 12, uref: 0 });
+    const rRp = () => once('r59a', () => own((G.ub - G.usat) / G.imax, 'Ω', [
+      { v: G.ub / G.imax, id: 'usat', text: 'Du hast die Restspannung nicht abgezogen. Bei Low liegt an R_P nur die Spannung U_B − U_CE,sat.' },
+      { v: G.usat / G.imax, id: 'nur-usat', text: 'Du hast nur die Restspannung durch den Strom geteilt. An R_P liegt bei Low die Spannung U_B − U_CE,sat.' }], { factor: 1e3, dispUnit: 'kΩ', disp: (G.ub - G.usat) / G.imax / 1e3 }));
+    const rIl = () => once('r59b', () => own((G.ub - G.usat) / G.rp, 'A', [
+      { v: G.ub / G.rp, id: 'usat', text: 'Du hast die Restspannung nicht abgezogen. Bei Low liegt an R_P nur U_B − U_CE,sat, also I = (U_B − U_CE,sat) / R_P.' },
+      { v: G.imax, id: 'imax', text: 'Das ist der höchste zulässige Strom. Mit dem gewählten R_P fließt weniger: I = (U_B − U_CE,sat) / R_P.' }], { factor: 1e-3, dispUnit: 'mA', disp: (G.ub - G.usat) / G.rp * 1e3 }));
+    const rUh = () => once('r59c', () => own(G.ub * G.rl / (G.rp + G.rl), 'V', [
+      { v: G.ub, id: 'ub', text: 'Ohne Last wäre der High-Pegel gleich U_B. Hier bilden R_P und R_L einen Spannungsteiler: U_H = U_B · R_L / (R_P + R_L).' },
+      { v: G.ub * G.rp / (G.rp + G.rl), id: 'teiler', text: 'Du hast den Teiler vertauscht. Der Ausgang liegt über R_L: U_H = U_B · R_L / (R_P + R_L).' },
+      { v: G.ub - G.usat, id: 'usat', text: 'Bei High sperrt der Ausgangstransistor, seine Restspannung spielt dann keine Rolle. Der Pegel folgt aus dem Spannungsteiler R_P und R_L.' }]));
+    const vals = () => once('v59', () => ({ ub: G.ub, usat: G.usat, imax: G.imax * 1e3, rp: G.rp / 1e3, rl: G.rl / 1e3, urp: G.ub - G.usat, rpmin: (G.ub - G.usat) / G.imax / 1e3, il: (G.ub - G.usat) / G.rp * 1e3, uh: G.ub * G.rl / (G.rp + G.rl), rpOhne: G.ub / G.imax / 1e3, ilOhne: G.ub / G.rp * 1e3, uhTeiler: G.ub * G.rp / (G.rp + G.rl), halb: G.ub / 2 }));
+    const specs = () => once('sp59', () => { const v = vals(); return [
+      { key: 'ohne', q: 'Der Pull-up-Widerstand fehlt und der Ausgangstransistor sperrt. Was liegt am unbelasteten Ausgang?', short: 'Der Ausgang ohne Pull-up-Widerstand ist richtig beschrieben', right: 'offen',
+        options: [
+          { value: 'high', label: 'Der High-Pegel von ' + f(v.ub, 0) + ' V, weil der Transistor sperrt', grund: 'Der gesperrte Transistor trennt den Ausgang nur von Masse. Ohne R_P gibt es keine Verbindung nach ' + f(v.ub, 0) + ' V, also auch keinen High-Pegel.' },
+          { value: 'low', label: 'Der Low-Pegel von ' + f(v.usat, 1) + ' V, wie bei leitendem Transistor', grund: 'Die ' + f(v.usat, 1) + ' V liegen nur bei leitendem Transistor an. Sperrt er, zieht nichts den Ausgang nach Masse.' },
+          { value: 'offen', label: 'Kein fester Pegel, der Ausgang ist hochohmig und offen', grund: 'Der Transistor sperrt, und ohne R_P führt kein Weg nach U_B. Der Ausgang ist offen, sein Pegel ist unbestimmt. Erst der Pull-up-Widerstand legt den High-Pegel fest.' },
+          { value: 'halb', label: 'Die halbe Betriebsspannung, also ' + f(v.halb, 1) + ' V', grund: 'Für ' + f(v.halb, 1) + ' V wäre ein Spannungsteiler aus zwei gleichen Widerständen nötig. Ohne R_P ist der Ausgang offen und nicht festgelegt.' }] },
+      { key: 'vorteil', q: 'Welchen Vorteil hat ein Ausgang mit offenem Kollektor?', short: 'Der Vorteil des offenen Kollektors ist richtig benannt', right: 'pegel',
+        options: [
+          { value: 'pegel', label: 'Der High-Pegel richtet sich nach der Spannung am Pull-up-Widerstand', grund: 'R_P kann an die Betriebsspannung der folgenden Schaltung gelegt werden, zum Beispiel an ' + f(v.ub, 0) + ' V für Logik, auch wenn der Komparator selbst mit einer anderen Spannung arbeitet. Mehrere solche Ausgänge dürfen außerdem an einem gemeinsamen R_P hängen.' },
+          { value: 'schnell', label: 'Der Wechsel nach High geht schneller als mit einem Gegentaktausgang', grund: 'Der Wechsel nach High ist eher langsamer: Leitungs- und Eingangskapazitäten werden nur über R_P geladen. Der Vorteil liegt beim frei wählbaren High-Pegel.' },
+          { value: 'strom', label: 'Bei High liefert der Ausgang besonders viel Strom an die Last', grund: 'Bei High fließt der Laststrom über R_P, mit ' + f(v.rp, 1) + ' kΩ also nur wenig. Der Vorteil liegt beim frei wählbaren High-Pegel.' },
+          { value: 'bauteil', label: 'Die Schaltung kommt ohne jedes zusätzliche Bauteil am Ausgang aus', grund: 'Der offene Kollektor braucht gerade ein zusätzliches Bauteil, den Pull-up-Widerstand. Dafür ist der High-Pegel frei wählbar.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'rp'), rRp(), 'Der kleinste zulässige Pull-up-Widerstand ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'il'), rIl(), 'Der Strom durch den Ausgangstransistor bei Low ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'uh'), rUh(), 'Der High-Pegel am Ausgang ist richtig berechnet', 2);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [],
+      text: () => 'Ein Komparator-Baustein hat einen Ausgang mit offenem Kollektor: Der Ausgangstransistor kann den Ausgang nur nach Masse ziehen. Für den High-Pegel sorgt ein Pull-up-Widerstand R_P vom Ausgang nach U_B = ' + f(G.ub, 0) + ' V (Übungswerte). Der leitende Ausgangstransistor hat die Restspannung U_CE,sat = ' + f(G.usat, 1) + ' V und darf höchstens ' + f(G.imax * 1e3, 0) + ' mA aufnehmen. Am Ausgang hängt außerdem ein Lastwiderstand R_L = ' + eng(G.rl, 'Ω') + ' nach Masse. Berechne den kleinsten zulässigen Pull-up-Widerstand; Gewählt wird R_P = ' + eng(G.rp, 'Ω') + ': Berechne den Strom durch den Ausgangstransistor bei Low und den High-Pegel am Ausgang. Der kleine Strom durch R_L bei Low bleibt in beiden Rechnungen unberücksichtigt. Beantworte dann die zwei Fragen. Der Prüfstand „' + rname('opv_komp') + '“ zeigt zum Vergleich einen Komparator, dessen Ausgang beide Pegel selbst treibt.',
+      fields: () => [{ key: 'rp', label: 'Kleinster Pull-up-Widerstand R_P', unit: 'kΩ' }, { key: 'il', label: 'Strom bei Low (R_P = ' + eng(G.rp, 'Ω') + ')', unit: 'mA' }, { key: 'uh', label: 'High-Pegel U_H', unit: 'V' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Bei Low leitet der Ausgangstransistor: An R_P liegt die Betriebsspannung abzüglich der Restspannung, und der Strom durch R_P fließt in den Transistor. Bei High sperrt der Transistor: R_P und R_L bilden einen Spannungsteiler an U_B.',
+        'Bei Low liegen an R_P ' + f(v.ub, 0) + ' V − ' + f(v.usat, 1) + ' V = ' + f(v.urp, 1) + ' V. Kleinster Widerstand: ' + f(v.urp, 1) + ' V / ' + f(v.imax, 0) + ' mA. Mit ' + f(v.rp, 1) + ' kΩ fließen ' + f(v.urp, 1) + ' V / ' + f(v.rp, 1) + ' kΩ. High-Pegel: U_H = ' + f(v.ub, 0) + ' V · ' + f(v.rl, 0) + ' kΩ / (' + f(v.rp, 1) + ' kΩ + ' + f(v.rl, 0) + ' kΩ).',
+        'Musterlösung: R_P mindestens ' + f(v.rpmin, 2) + ' kΩ; mit ' + f(v.rp, 1) + ' kΩ fließen ' + f(v.il, 2) + ' mA; High-Pegel ' + f(v.uh, 2) + ' V, Low-Pegel ' + f(v.usat, 1) + ' V. Ohne die Restspannung abzuziehen kämen ' + f(v.rpOhne, 2) + ' kΩ heraus.'
+      ]; },
+      start: () => A('opv_komp', ctl(), { fields: { rp: null, il: null, uh: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_komp', ctl(), { fields: { rp: v.rpmin, il: v.il, uh: v.uh }, choices: rightOf(specs()), value: v.rpmin }); },
+      wrong: () => { const v = vals(); return [
+        { name: 'Restspannung nicht abgezogen, High gleich U_B, High ohne Pull-up', answer: A('opv_komp', {}, { fields: { rp: v.rpOhne, il: v.ilOhne, uh: v.ub }, choices: { ohne: 'high', vorteil: 'schnell' } }) },
+        { name: 'nur Restspannung durch Strom, Teiler vertauscht, Low ohne Pull-up', answer: A('opv_komp', {}, { fields: { rp: G.usat / G.imax / 1e3, il: v.il, uh: v.uhTeiler }, choices: { ohne: 'low', vorteil: 'strom' } }) }]; } };
+  })();
+
+  /* ====================================================================== ae60: Hysterese gegen Stoerungen auslegen (opv_komp, nichtinvertierender Schmitt-Trigger, Verhalten; Kern: komp.schmitt) */
+  const M60 = (() => {
+    const FIX = { schaltung: 'schmitt_nin', opv: 'ideal', uv: 12, uref: 0, r2: 180000, fehler: 'keiner' }, OWN = ['r1'], START = { r1: 1000 }, STOER = 0.25, SICHER = 2;
+    const USS = 2 * STOER, UHT = SICHER * USS;
+    const sch = r1 => once('s60|' + r1, () => { const s = C().komp.schmitt({ art: 'nin', r1, r2: FIX.r2, uv: FIX.uv, opv: 'ideal' }); if (!s || !s.ok || !fin(s.uh)) throw new Error('Rechenkern: Schmitt-Trigger'); return s; });
+    const par = () => once('p60', () => { const us = sch(START.r1).usat, r1 = UHT * FIX.r2 / (2 * us); return { r1, usat: us }; });
+    const rUss = () => once('r60a', () => own(USS, 'V', [
+      { v: STOER, id: 'scheitel', text: 'Das ist der Scheitelwert. Der Spitze-Spitze-Wert reicht von der negativen bis zur positiven Spitze: U_ss = 2 · û.' },
+      { v: STOER * Math.SQRT2, id: 'wurzel', text: 'Der Faktor √2 gehört zum Effektivwert. Der Spitze-Spitze-Wert ist das Doppelte des Scheitelwerts: U_ss = 2 · û.' }]));
+    const rUh = () => once('r60b', () => own(UHT, 'V', [
+      { v: USS, id: 'uss', text: 'Das ist nur der Spitze-Spitze-Wert der Störung. Für diese Aufgabe ist das Doppelte davon als Hysterese festgelegt.' },
+      { v: STOER, id: 'scheitel', text: 'Das ist der Scheitelwert der Störung. Die Hysterese soll doppelt so groß sein wie der Spitze-Spitze-Wert.' }]));
+    const vals = () => once('v60', () => { const p = par(); return { stoer: STOER, uss: USS, uh: UHT, uo: UHT / 2, usat: p.usat, zweiUsat: 2 * p.usat, r2: FIX.r2 / 1e3, r1: p.r1 / 1e3, r1Ohm: p.r1, r1Start: START.r1 / 1e3, uhStart: sch(START.r1).uh, r1Halb: p.r1 / 2e3, uhHalb: sch(p.r1 / 2).uh, r1Dopp: 2 * p.r1 / 1e3, uhDopp: sch(2 * p.r1).uh, tol: 100 * AMP_TOL() }; });
+    const check = mk((r, a) => {
+      const ctl = effCtl(a, OWN, FIX, START), s = sim('opv_komp', ctl), tol = AMP_TOL(), m = s.m;
+      inputRow(r, a, s, 'opv_komp');
+      numRow(r, rawOf(a, 'uss'), rUss(), 'Der Spitze-Spitze-Wert der Störung ist richtig berechnet', 2);
+      numRow(r, rawOf(a, 'uh'), rUh(), 'Die nötige Hysterese ist richtig berechnet', 2);
+      const uh = m.uh;
+      r(s.ok && fin(uh) && Math.abs(uh - UHT) <= tol * UHT, 'Der Prüfstand zeigt die Hysterese U_H = ' + f(UHT, 0) + ' V (Toleranz ' + f(100 * tol, 0) + ' %)',
+        fin(uh) ? 'Mit R_1 = ' + f(ctl.r1 / 1e3, 2) + ' kΩ und R_2 = ' + f(ctl.r2 / 1e3, 0) + ' kΩ ist U_H = ' + f(uh, 2) + ' V, verlangt sind ' + f(UHT, 0) + ' V. ' + (uh > UHT ? 'Die Hysterese ist zu groß: Das Verhältnis R_1 / R_2 ist zu groß. Ein kleineres R_1 verkleinert U_H.' : 'Die Hysterese ist zu klein: Das Verhältnis R_1 / R_2 ist zu klein. Ein größeres R_1 vergrößert U_H. Bei zu kleiner Hysterese kann die Störung den Ausgang mehrfach kippen lassen.') : 'Der Prüfstand meldet für diese Werte keine Hysterese.');
+      const uo = m.uo, uu = m.uu;
+      r(s.ok && fin(uo) && fin(uu) && Math.abs(uo + uu) <= 0.02 * Math.max(Math.abs(uo), Math.abs(uu), 1e-9), 'Die Schaltschwellen liegen symmetrisch zum Nullpunkt (U_o = −U_u)',
+        fin(uo) && fin(uu) ? 'Die Schwellen sind U_o = ' + f(uo, 2) + ' V und U_u = ' + f(uu, 2) + ' V; bei Bezugsspannung 0 V und gleichen Aussteuergrenzen müssen beide gleich weit vom Nullpunkt entfernt sein.' : 'Der Prüfstand meldet keine Schwellen.');
+    });
+    return { vals, check, consts: [],
+      text: () => 'Ein Sensorsignal ist von einer Störspannung mit dem Scheitelwert û = ' + f(STOER, 2) + ' V überlagert. Ein Komparator ohne Hysterese würde in der Nähe der Schaltschwelle mehrfach hin und her schalten. Im Prüfstand „' + rname('opv_komp') + '“ ist deshalb ein nichtinvertierender Schmitt-Trigger aufgebaut (idealer Operationsverstärker, Bezugsspannung 0 V, Betriebsspannung ±' + f(FIX.uv, 0) + ' V, R_2 = ' + eng(FIX.r2, 'Ω') + ', Übungsschaltung). Festlegung für diese Aufgabe: Die Hysterese soll doppelt so groß sein wie der Spitze-Spitze-Wert der Störung. Berechne den Spitze-Spitze-Wert der Störung und die nötige Hysterese U_H. Stelle dann R_1 so ein, dass der Prüfstand diese Hysterese zeigt (Fenster ' + f(100 * AMP_TOL(), 0) + ' %, ein Übungswert). Es gilt U_H = 2 · U_sat · R_1 / R_2.',
+      fields: () => [{ key: 'uss', label: 'Spitze-Spitze-Wert der Störung U_ss', unit: 'V' }, { key: 'uh', label: 'Nötige Hysterese U_H', unit: 'V' }],
+      hint: () => { const v = vals(); return [
+        'Die Störung schwankt zwischen −û und +û, ihr Spitze-Spitze-Wert ist also 2 · û. Ist die Hysterese größer als dieser Wert, kann die Störung allein den Ausgang nicht zurückkippen. Beim nichtinvertierenden Schmitt-Trigger wächst die Hysterese mit R_1.',
+        'Spitze-Spitze-Wert: 2 · ' + f(v.stoer, 2) + ' V = ' + f(v.uss, 1) + ' V. Hysterese: 2 · ' + f(v.uss, 1) + ' V = ' + f(v.uh, 0) + ' V. Mit der Startschaltung (R_1 = ' + f(v.r1Start, 0) + ' kΩ) ist U_H nur ' + f(v.uhStart, 2) + ' V. Stelle die Formel um: R_1 = U_H · R_2 / (2 · U_sat) mit 2 · U_sat = ' + f(v.zweiUsat, 0) + ' V.',
+        'Musterlösung: R_1 = ' + f(v.uh, 0) + ' V · ' + f(v.r2, 0) + ' kΩ / ' + f(v.zweiUsat, 0) + ' V = ' + f(v.r1, 1) + ' kΩ (Schwellen ±' + f(v.uo, 1) + ' V). Mit ' + f(v.r1Halb, 2) + ' kΩ wäre U_H nur ' + f(v.uhHalb, 1) + ' V, mit ' + f(v.r1Dopp, 0) + ' kΩ schon ' + f(v.uhDopp, 0) + ' V.'
+      ]; },
+      start: () => A('opv_komp', Object.assign({}, FIX, START, { zielUh: UHT }), { fields: { uss: null, uh: null } }),
+      sol: () => A('opv_komp', Object.assign({}, FIX, { r1: par().r1, zielUh: UHT }), { fields: { uss: USS, uh: UHT }, value: par().r1 }),
+      wrong: () => { const p = par(); return [
+        { name: 'Scheitelwert statt Spitze-Spitze-Wert (Hysterese zu klein)', answer: A('opv_komp', Object.assign({}, FIX, { r1: p.r1 / 2 }), { fields: { uss: STOER, uh: USS } }) },
+        { name: 'Faktor 2 in der Formel vergessen (Hysterese zu groß)', answer: A('opv_komp', Object.assign({}, FIX, { r1: 2 * p.r1 }), { fields: { uss: USS, uh: UHT } }) }]; } };
+  })();
+
+  /* ====================================================================== ae61: Kapazitive Last, Phasenreserve und Trennwiderstand (Konzeptaufgabe; eigene Rechnung mit ro_ol und gbw_langsam aus dem Kern) */ /* PRUEFEN: geht ueber den Pruefungsstoff hinaus (Techniker- und Hochschulniveau); Lehrmodell: Schleife = Integrator mit GBW, ein Pol aus R_o und C_L, mit R_iso eine Nullstelle */
+  const M61 = (() => {
+    const G = { cl: 10e-9, riso: 47 };
+    const ctl = () => ({ schaltung: 'real', opv: 'langsam', uv: 12, form: 'rechteck', ue: 1, f: 1000, r1: 10000, rf: 10000, c: 1e-6 });
+    const DEG = 180 / Math.PI;
+    /* Phasenreserve der Schleife fT/f mit Pol fp und Nullstelle fz (0 = keine): Durchtritt per Intervallhalbierung */
+    const reserve = (fT, fp, fz) => {
+      const mag = x => fT / x * (fz > 0 ? Math.sqrt(1 + (x / fz) * (x / fz)) : 1) / Math.sqrt(1 + (x / fp) * (x / fp));
+      let lo = fp / 1000, hi = fT * 100;
+      for (let i = 0; i < 200; i++) { const m = Math.sqrt(lo * hi); if (mag(m) > 1) lo = m; else hi = m; }
+      const fc = Math.sqrt(lo * hi);
+      return 90 + (fz > 0 ? Math.atan(fc / fz) * DEG : 0) - Math.atan(fc / fp) * DEG;
+    };
+    const vals = () => once('v61', () => { const ro = lv('ro_ol'), fT = lv('gbw_langsam'), fp = 1 / (TWO_PI * ro * G.cl), fp2 = 1 / (TWO_PI * (ro + G.riso) * G.cl), fz = 1 / (TWO_PI * G.riso * G.cl);
+      return { ro, cl: G.cl * 1e9, riso: G.riso, gbw: fT / 1e6, tauNs: ro * G.cl * 1e9, fp: fp / 1e3, fpHz: fp, alt: 1 / (2 * 3.14 * ro * G.cl) / 1e3, ohneK: 1 / (ro * G.cl) / 1e3, pr: reserve(fT, fp, 0), prIso: reserve(fT, fp2, fz), prIsoRund: Math.round(reserve(fT, fp2, fz) / 10) * 10, prGut: 45, prBesser: 60, grad: 90, grenze: 180 }; });
+    const rFp = () => once('r61', () => { const v = vals(); return own(v.fpHz, 'Hz', [
+      { v: v.ohneK * 1e3, id: 'zwei-pi', text: 'Dein Wert passt zu einer Rechnung ohne den Faktor 2π. Für die Grenzfrequenz gilt f_p = 1 / (2π · R_o · C_L).' },
+      { v: TWO_PI * lv('ro_ol') * G.cl, id: 'kehr', text: 'Dein Wert ist die Zeit 2π · R_o · C_L. Die Frequenz ist der Kehrwert davon.' }], { factor: 1e3, dispUnit: 'kHz', disp: v.fp, alts: [v.alt * 1e3] }); });
+    const specs = () => once('sp61', () => { const v = vals(), g = x => f(x, 0) + '°'; return [
+      { key: 'wirkung', q: 'Was bewirkt die Lastkapazität direkt am Ausgang des Spannungsfolgers?', short: 'Die Wirkung der kapazitiven Last ist richtig beschrieben', right: 'phase',
+        options: [
+          { value: 'gleich', label: 'Die Kapazität glättet nur, die Stabilität ändert sich nicht', grund: 'Ein Kondensator am Ausgang glättet nicht einfach. Mit R_o bildet er einen Tiefpass in der Gegenkopplung, der die Phase zusätzlich dreht: Im Lehrmodell bleiben nur etwa ' + g(v.pr) + ' Phasenreserve.' },
+          { value: 'phase', label: 'Die Phase dreht zusätzlich, der Ausgang neigt zum Schwingen', grund: 'R_o und C_L bilden einen Tiefpass mit f_p = ' + f(v.fp, 0) + ' kHz in der Gegenkopplung. Zusammen mit den ' + g(v.grad) + ' des Operationsverstärkers nähert sich die Drehung ' + g(v.grenze) + '; im Lehrmodell bleiben nur etwa ' + g(v.pr) + ' Phasenreserve, der Ausgang schwingt nach jedem Sprung nach.' },
+          { value: 'offset', label: 'Die Offsetspannung am Ausgang wird durch die Last größer', grund: 'Die Offsetspannung ist ein Gleichspannungsfehler, ein Kondensator ändert daran nichts. Die Lastkapazität wirkt auf die Phase in der Gegenkopplung und damit auf die Stabilität.' },
+          { value: 'kurz', label: 'Die Kapazität schließt den Ausgang für Gleichspannung kurz', grund: 'Für Gleichspannung sperrt ein Kondensator. Die Lastkapazität wirkt bei hohen Frequenzen: Mit R_o entsteht ein Tiefpass, der die Phase in der Gegenkopplung dreht.' }] },
+      { key: 'reserve', q: 'Welche Phasenreserve gilt als Richtwert für einen ruhigen Ausgang?', short: 'Der Richtwert der Phasenreserve ist richtig angegeben', right: 'gut',
+        options: [
+          { value: 'gut', label: 'Mindestens ' + g(v.prGut) + ', besser ' + g(v.prBesser) + ' oder mehr', grund: 'Ab etwa ' + g(v.prGut) + ' klingt ein Überschwingen schnell ab, ab ' + g(v.prBesser) + ' ist es kaum noch zu sehen. Die ' + g(v.pr) + ' ohne Trennwiderstand sind zu wenig.' },
+          { value: 'null', label: 'Genau 0°, dann wirkt die Gegenkopplung am stärksten', grund: 'Bei 0° Phasenreserve ist aus der Gegenkopplung eine Mitkopplung geworden: Die Schaltung schwingt dauernd. Gebraucht wird ein Abstand von mindestens ' + g(v.prGut) + '.' },
+          { value: 'klein', label: 'Schon wenige Grad reichen, Hauptsache über 0°', grund: 'Mit wenigen Grad schwingt der Ausgang nach jedem Sprung lange nach. Als Richtwert gelten mindestens ' + g(v.prGut) + ', besser ' + g(v.prBesser) + '.' },
+          { value: 'voll', label: 'Genau ' + g(v.grenze) + ', also die volle Phasendrehung', grund: 'Die ' + g(v.grenze) + ' sind die Grenze, an der die Gegenkopplung zur Mitkopplung wird. Die Phasenreserve ist der Abstand zu dieser Grenze und soll mindestens ' + g(v.prGut) + ' betragen.' }] },
+      { key: 'ort', q: 'Wo sitzt der Trennwiderstand R_iso, der die Schaltung wieder beruhigt?', short: 'Der Platz des Trennwiderstands ist richtig angegeben', right: 'reihe',
+        options: [
+          { value: 'parallel', label: 'Parallel zur Last, vom Ausgang direkt nach Masse', grund: 'Ein Widerstand parallel zur Last belastet nur den Ausgang. Die Kapazität hängt weiter direkt am Ausgang, die zusätzliche Phasendrehung bleibt.' },
+          { value: 'eingang', label: 'In Reihe zum nichtinvertierenden Eingang der Schaltung', grund: 'Am Eingang ändert ein Widerstand nichts an der Schleife aus Ausgang, Last und Gegenkopplung. Der Trennwiderstand muss zwischen Ausgang und Lastkapazität sitzen.' },
+          { value: 'reihe', label: 'In Reihe zwischen Ausgang und Last, die Gegenkopplung davor', grund: 'R_iso = ' + f(v.riso, 0) + ' Ω trennt die Kapazität vom Ausgang. Die Gegenkopplung wird direkt am Ausgang des Operationsverstärkers abgegriffen. Im Lehrmodell steigt die Phasenreserve damit von etwa ' + g(v.pr) + ' auf etwa ' + g(v.prIso) + '.' },
+          { value: 'versorgung', label: 'In der Zuleitung der positiven Betriebsspannung', grund: 'Ein Widerstand in der Versorgung verschlechtert nur die Betriebsspannung des Bausteins. Der Trennwiderstand gehört zwischen Ausgang und Lastkapazität.' }] }]; });
+    const check = mk((r, a) => {
+      numRow(r, rawOf(a, 'fp'), rFp(), 'Die Grenzfrequenz f_p aus R_o und C_L ist richtig berechnet', 1);
+      choiceRows(r, a, specs());
+    });
+    return { vals, check, audit: () => choiceAudit(specs()), consts: [3.14],
+      text: () => { const v = vals(); return 'Ein Spannungsfolger mit einem realen Operationsverstärker (Lehrmodell „langsam“: Verstärkungs-Bandbreite-Produkt ' + f(v.gbw, 0) + ' MHz, Ausgangswiderstand ohne Gegenkopplung R_o = ' + f(v.ro, 0) + ' Ω, Übungswerte) treibt eine lange Leitung. Die Leitung wirkt wie eine Lastkapazität C_L = ' + f(v.cl, 0) + ' nF direkt am Ausgang. R_o und C_L bilden einen Tiefpass in der Gegenkopplung. Berechne seine Grenzfrequenz f_p = 1 / (2π · R_o · C_L) in kHz (mit π = 3,14 gerechnet zählt ebenfalls). Beantworte dann drei Fragen zur Stabilität. Das ist eine Vertiefung über den Prüfungsstoff hinaus. Im Prüfstand „' + rname('opv_aktiv') + '“ steht der reale Operationsverstärker bereit; die Lastkapazität bildet der Prüfstand nicht nach.'; },
+      fields: () => [{ key: 'fp', label: 'Grenzfrequenz f_p', unit: 'kHz' }],
+      choices: () => publicChoices(specs()),
+      hint: () => { const v = vals(); return [
+        'Jeder Tiefpass in der Schleife aus Verstärker und Gegenkopplung dreht die Phase weiter. Der Operationsverstärker selbst bringt schon eine Vierteldrehung mit. Kommt der Tiefpass aus R_o und C_L dazu, wird aus der Gegenkopplung fast eine Mitkopplung. Die Phasenreserve ist der Abstand, der bis dahin noch bleibt.',
+        'f_p = 1 / (2π · ' + f(v.ro, 0) + ' Ω · ' + f(v.cl, 0) + ' nF). Die Zeitkonstante ist τ = ' + f(v.ro, 0) + ' Ω · ' + f(v.cl, 0) + ' nF = ' + f(v.tauNs, 0) + ' ns. Liegt f_p unter ' + f(v.gbw, 0) + ' MHz, wirkt der zusätzliche Tiefpass schon dort, wo die Schleife noch verstärkt.',
+        'Musterlösung: f_p = ' + f(v.fp, 0) + ' kHz (mit π = 3,14 gerechnet ' + f(v.alt, 1) + ' kHz). Im Lehrmodell bleibt damit nur eine Phasenreserve von etwa ' + f(v.pr, 0) + '°, der Ausgang schwingt nach jedem Sprung nach. Ein Trennwiderstand R_iso = ' + f(v.riso, 0) + ' Ω in Reihe zur Last hebt die Reserve auf etwa ' + f(v.prIsoRund, 0) + '°. Ohne den Faktor 2π kämen ' + f(v.ohneK, 0) + ' kHz heraus.'
+      ]; },
+      start: () => A('opv_aktiv', ctl(), { fields: { fp: null }, choices: {} }),
+      sol: () => { const v = vals(); return A('opv_aktiv', ctl(), { fields: { fp: v.fp }, choices: rightOf(specs()), value: v.fp }); },
+      wrong: () => { const v = vals(); return [
+        { name: '2π vergessen (zu groß), jeweils die erste falsche Antwort', answer: A('opv_aktiv', {}, { fields: { fp: v.ohneK }, choices: wrongSetOf(specs(), 0) }) },
+        { name: 'halber Wert (zu klein), jeweils die zweite falsche Antwort', answer: A('opv_aktiv', {}, { fields: { fp: v.fp * 0.5 }, choices: wrongSetOf(specs(), 1) }) }]; } };
+  })();
+
   /* ====================================================================== Registrierung */
   const tasks = [
     tk({ id: 'ae17', lab: 'ana', cat: 'Prüfungsnah', title: 'Verstärkung des Invertierers', level: 1, rig: 'opv_inv' }, M17),
@@ -1494,9 +1974,20 @@
     tk({ id: 'ae47', lab: 'ana', cat: 'Transistorschalter', title: 'Basisvorwiderstand mit B aus der Messung', level: 2, rig: 'schalter' }, M47),
     tk({ id: 'ae48', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'R-2R-Umsetzer am invertierenden Verstärker', level: 3, rig: 'opv_inv' }, M48),
     tk({ id: 'ae49', lab: 'ana', cat: 'Diode', title: 'Diodenschaltungen: Spannung am Ausgang', level: 1, rig: 'diode' }, M49),
-    tk({ id: 'ae50', lab: 'ana', cat: 'Diode', title: 'Verlustleistung in Durchlass- und Sperrrichtung', level: 2, rig: 'diode' }, M50)
+    tk({ id: 'ae50', lab: 'ana', cat: 'Diode', title: 'Verlustleistung in Durchlass- und Sperrrichtung', level: 2, rig: 'diode' }, M50),
+    tk({ id: 'ae51', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Bandbreite aus dem Verstärkungs-Bandbreite-Produkt', level: 2, rig: 'opv_aktiv' }, M51),
+    tk({ id: 'ae52', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Zwei Stufen für mehr Bandbreite', level: 3, rig: 'opv_nin' }, M52),
+    tk({ id: 'ae53', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Offsetspannung am Ausgang', level: 2, rig: 'opv_aktiv' }, M53),
+    tk({ id: 'ae54', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Aktiver Hochpass: Grenzfrequenz und Verstärkung', level: 2, rig: 'opv_aktiv' }, M54),
+    tk({ id: 'ae55', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Sallen-Key-Tiefpass zweiter Ordnung', level: 3, rig: 'opv_aktiv' }, M55),
+    tk({ id: 'ae56', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Pegel eine Dekade über der Grenzfrequenz', level: 2, rig: 'opv_aktiv' }, M56),
+    tk({ id: 'ae57', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Instrumentenverstärker: Verstärkung einstellen', level: 3, rig: 'opv_nin' }, M57),
+    tk({ id: 'ae58', lab: 'ana', cat: 'OPV-Grundschaltungen', title: 'Gleichtaktunterdrückung: Fehler am Ausgang', level: 3, rig: 'opv_nin' }, M58),
+    tk({ id: 'ae59', lab: 'ana', cat: 'Komparator und Schmitt-Trigger', title: 'Komparator mit offenem Kollektor', level: 2, rig: 'opv_komp' }, M59),
+    tk({ id: 'ae60', lab: 'ana', cat: 'Komparator und Schmitt-Trigger', title: 'Hysterese gegen Störungen auslegen', level: 3, rig: 'opv_komp' }, M60),
+    tk({ id: 'ae61', lab: 'ana', cat: 'Aktive Schaltungen', title: 'Kapazitive Last: Phasenreserve und Trennwiderstand', level: 3, rig: 'opv_aktiv' }, M61)
   ];
-  const MODS = { ae17: M17, ae18: M18, ae19: M19, ae20: M20, ae21: M21, ae22: M22, ae23: M23, ae24: M24, ae25: M25, ae26: M26, ae27: M27, ae28: M28, ae29: M29, ae30: M30, ae31: M31, ae32: M32, ae33: M33, ae34: M34, ae35: M35, ae36: M36, ae37: M37, ae38: M38, ae39: M39, ae40: M40, ae41: M41, ae42: M42, ae43: M43, ae44: M44, ae45: M45, ae46: M46, ae47: M47, ae48: M48, ae49: M49, ae50: M50 };
+  const MODS = { ae17: M17, ae18: M18, ae19: M19, ae20: M20, ae21: M21, ae22: M22, ae23: M23, ae24: M24, ae25: M25, ae26: M26, ae27: M27, ae28: M28, ae29: M29, ae30: M30, ae31: M31, ae32: M32, ae33: M33, ae34: M34, ae35: M35, ae36: M36, ae37: M37, ae38: M38, ae39: M39, ae40: M40, ae41: M41, ae42: M42, ae43: M43, ae44: M44, ae45: M45, ae46: M46, ae47: M47, ae48: M48, ae49: M49, ae50: M50, ae51: M51, ae52: M52, ae53: M53, ae54: M54, ae55: M55, ae56: M56, ae57: M57, ae58: M58, ae59: M59, ae60: M60, ae61: M61 };
   /* Musterwerte der Aufgaben (Schwellen aus den Musterloesungen, SPEC 8: Schwellwerte aus der Musterloesung) */
   T.thresholds2 = function () { const o = {}; Object.keys(MODS).forEach(k => { try { o[k] = MODS[k].vals(); } catch (e) { o[k] = { error: String(e && e.message || e) }; } }); return o; };
   T.register(tasks);
