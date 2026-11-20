@@ -403,7 +403,7 @@
     const ex = exam();
     if (!r) { const f = S.tFb && S.tFb.id === t.id ? S.tFb : null; return f ? `<div class="lr-fb tipp" id="fb-task" tabindex="-1"><p><strong>Noch nicht.</strong> Deine Antwort „${esc(f.given)}“ stimmt nicht. ${ex ? 'Im Prüfmodus kostet ein Tipp 25 % je Stufe. Tippe auf „Tipp“, wenn du ihn willst. Du hast einen zweiten Versuch.' : 'Tipp: ' + esc(t.tips[0]) + ' Du hast einen zweiten Versuch.'}</p></div>` : ''; }
     const full = r.ok || !ex, ab = t.inst ? '<p><b>Ablesung:</b> ' + esc(C.describe(t.inst)) + '</p>' : '';
-    return `<div class="lr-fb ${r.ok ? 'ok' : 'loes'}" id="fb-task" tabindex="-1"><p><strong>${r.ok ? 'Richtig.' : 'Noch nicht.'}</strong> ${r.ok ? esc(r.given) : 'Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</p>` + (full ? `<p><b>Lösung:</b> ${esc(r.sol)}</p><p>${esc(t.expl)}</p>${ab}` : '<p>Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Versuche es noch einmal.</p>') + '</div>' + (full && root.TOLVIZ ? root.TOLVIZ.task(t.id) : '');
+    return `<div class="lr-fb ${r.ok ? 'ok' : 'loes'}" id="fb-task" tabindex="-1"><p><strong>${r.ok ? 'Richtig.' : 'Noch nicht.'}</strong> ${r.ok ? esc(r.given) : 'Deine Antwort „' + esc(r.given) + '“ stimmt nicht.'}</p>` + (full ? `${r.ok && String(r.given).replace(/\s+/g, '') === String(r.sol).replace(/\s+/g, '') ? '' : '<p><b>Lösung:</b> ' + esc(r.sol) + '</p>'}<p>${esc(t.expl)}</p>${ab}` : '<p>Prüfmodus: Die Erklärung gibt es erst, wenn die Aufgabe richtig gelöst ist. Versuche es noch einmal.</p>') + '</div>' + (full && root.TOLVIZ ? root.TOLVIZ.task(t.id) : '');
   }
   function taskHinweis(t) {
     if (t.ask.type === 'choice') return '';
@@ -524,7 +524,7 @@
       <tr><td>Toleranz T</td><td>Höchstmaß − Mindestmaß = oberes − unteres Abmaß</td></tr>
       <tr><td>Mittenmaß</td><td>(Höchstmaß + Mindestmaß) / 2</td></tr></table>
       <p><b>Gut, Nacharbeit, Ausschuss:</b> Liegt das Istmaß zwischen den Grenzmaßen (Grenzen eingeschlossen), ist das Teil gut. Bei einer <b>Welle</b> ist zu groß = Nacharbeit (abtragen), zu klein = Ausschuss. Bei einer <b>Bohrung</b> ist zu klein = Nacharbeit (aufbohren, aufreiben), zu groß = Ausschuss.</p>
-      <p><b>Faustregel zur Messmittelwahl:</b> Der Skalenteilungswert (Ablesung) des Messmittels soll höchstens 1/10 der Toleranz sein.</p></div></details>
+      <p><b>Faustregel zur Messmittelwahl:</b> Die Messabweichung des Messmittels soll höchstens etwa 1/10 der Toleranz sein. Als Übungsnäherung zählt hier der Skalenwert (die Ablesung); in der Praxis ist die Messabweichung meist größer als der Skalenwert.</p></div></details>
     <details><summary>🎯 Passungsarten</summary><div class="hb2">
       <p>Passung = Zusammenspiel von Bohrung und Welle mit gleichem Nennmaß. Im System <b>Einheitsbohrung</b> hat die Bohrung immer H (unteres Abmaß 0), die Welle wechselt je nach gewünschter Passung.</p>
       <table><tr><th>Art</th><th>Merkmal</th><th>Beispiele</th></tr>

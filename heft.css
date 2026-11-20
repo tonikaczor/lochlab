@@ -84,6 +84,18 @@ summary{min-height:44px;padding:10px 0;cursor:pointer}
 pre{overflow-x:auto;max-width:100%}
 @media print{table,table.t{width:100%;table-layout:auto}th,td{overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow:visible}.k{white-space:normal}.wrap,.box,.fig,figure{max-width:100%}}
 
+/* uifix63186 B22: Tabellen sind am Handy (bis 640 px) schon eigene waagerechte Rollbereiche (siehe oben); hier kommt der Hinweis dazu: Schatten am Rand, solange es dort weitergeht.
+   Elemente mit class="q" und deren Inhalt bleiben unberuehrt. */
+@media screen and (max-width:640px){
+table:not(.q *){--tbg:var(--bg);background:linear-gradient(to right,var(--tbg),var(--tbg)) left center/28px 100% no-repeat local,linear-gradient(to left,var(--tbg),var(--tbg)) right center/28px 100% no-repeat local,linear-gradient(to right,rgba(128,128,128,.55),rgba(128,128,128,0)) left center/14px 100% no-repeat scroll,linear-gradient(to left,rgba(128,128,128,.55),rgba(128,128,128,0)) right center/14px 100% no-repeat scroll}
+.box table:not(.q *){--tbg:var(--panel)}
+}
+/* uifix63186 B23: Textlinks zu Labs und Heften (21 px hoch) bekommen eine unsichtbare Tippflaeche von mindestens 41 px Hoehe; das Layout aendert sich nicht. */
+@media screen and (pointer:coarse),screen and (max-width:700px){
+a[href$="lab.html"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a),a[href*="lab.html?"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a),a[href^="lernen-"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a),a[href^="appwerkstatt"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a),a[href^="ausbilder"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a){position:relative}
+a[href$="lab.html"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a)::after,a[href*="lab.html?"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a)::after,a[href^="lernen-"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a)::after,a[href^="appwerkstatt"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a)::after,a[href^="ausbilder"]:not(.try):not(.k):not(.lm-start):not(.lm-figlab):not(.toc a):not(.lm-panel a):not(.q a):not(.weiter a)::after{content:"";position:absolute;left:-4px;right:-4px;top:-11px;bottom:-11px}
+}
+
 /* G: Darstellung folgt lm4.theme (heft-nav.js setzt data-theme am html-Element; ohne Wahl gilt das System). Druck bleibt hell. */
 @media screen{
 :root[data-theme=light]{--bg:#f6f8fa;--fg:#1d2329;--mute:#5b6773;--panel:#fff;--line:#d5dce3;--accent:#0a6cdc;--ok:#1a8f3a;color-scheme:light}

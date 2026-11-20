@@ -69,13 +69,14 @@
       const L = root.Lehrjahr, R = root.LAB_REG; if (!L || !R || !L.gilt || !L.wirksam) return null;
       const beruf = root.BerufReg && root.BerufReg.cur ? root.BerufReg.cur() : 'egs';
       if (!L.gilt(beruf)) return null;
+      if (L.bereit && !L.bereit(beruf)) return null;   // Beruf mit Plan (im): solange der Plan lädt, bleibt alles wie bisher; danach kommt "lernpfad:lj"
       const lj = L.wirksam(); if (!(lj >= 1 && lj <= 4)) return null;
       let lab = '';
       Object.keys(R).forEach(k => { if (!lab && R[k] && R[k].file === FILE && !R[k].hub) lab = k; });
       if (!lab) return null;
       /* Gehört das ganze Lab erst in ein späteres Lehrjahr (keine einzige Aufgabe bis zum eigenen), gibt es nichts zu ordnen: das Lab selbst ordnet der Lernpfad ein */
       const rows = (root.AUFGABEN || []).filter(r => r[1] === lab);
-      if (rows.length && !rows.some(r => L.ab(r[0], lab) <= lj)) return null;
+      if (rows.length && !rows.some(r => L.ab(r[0], lab, beruf) <= lj)) return null;
       return { lab, beruf, lj };
     } catch (e) { return null; }
   }
@@ -83,12 +84,12 @@
   /* Darf diese Aufgabe von sich aus vorgeschlagen werden? (ohne Lehrjahr: immer ja) */
   function erlaubt(id, lab) {
     const k = kontext(); if (!k) return true;
-    try { return root.Lehrjahr.ab(id, lab || k.lab) <= k.lj; } catch (e) { return true; }
+    try { return root.Lehrjahr.ab(id, lab || k.lab, k.beruf) <= k.lj; } catch (e) { return true; }
   }
   /* Nächste Aufgabe für Labs mit eigener Folge-Logik. undefined = Filter aus (Aufrufer nimmt seine alte Logik); { id } mit id oder null (Teil geschafft, Hinweis wird gezeigt) */
   function weiter(lab, ids, aktuell, erledigt) {
     const k = kontext(); if (!k) return undefined;
-    const id = folge(ids, i => root.Lehrjahr.ab(i, lab || k.lab), k.lj, aktuell, erledigt);
+    const id = folge(ids, i => root.Lehrjahr.ab(i, lab || k.lab, k.beruf), k.lj, aktuell, erledigt);
     if (id == null) zeigeFertig(k.lj);
     return { id };
   }
@@ -152,7 +153,7 @@
       if (istKopf(c)) {
         alteKopf.push(c);
         if (c.getAttribute('data-lj-liste') === 'l') kat = null; else { kat = c.textContent.trim(); if (!protos[kat]) protos[kat] = c; }
-      } else es.push({ id: rowId(c), kat, lj: root.Lehrjahr.ab(rowId(c), k.lab), el: c });
+      } else es.push({ id: rowId(c), kat, lj: root.Lehrjahr.ab(rowId(c), k.lab, k.beruf), el: c });
     });
     const plan = bauePlan(es, k.lj);
     const aktuell = region.map(c => istKopf(c) ? (c.getAttribute('data-lj-liste') === 'l' ? 'l:' + c.getAttribute('data-lj') : 'k:' + c.textContent.trim()) : 'r:' + rowId(c));
@@ -193,7 +194,7 @@
     region.forEach(c => {
       if (istLjKopf(c)) { aktuell.push('l:' + c.getAttribute('data-lj')); return; }
       const kat = c.firstElementChild.textContent.trim(); aktuell.push('k:' + kat); if (!protos[kat]) protos[kat] = c;
-      Array.prototype.slice.call(c.children, 1).forEach(r => { const id = r.getAttribute('data-id'); aktuell.push('r:' + id); es.push({ id, kat, lj: root.Lehrjahr.ab(id, k.lab), el: r }); });
+      Array.prototype.slice.call(c.children, 1).forEach(r => { const id = r.getAttribute('data-id'); aktuell.push('r:' + id); es.push({ id, kat, lj: root.Lehrjahr.ab(id, k.lab, k.beruf), el: r }); });
     });
     const plan = bauePlan(es, k.lj);
     const markOk = es.every(e => e.el.classList.contains('lj-spaeter') === (e.lj > k.lj));
@@ -251,7 +252,7 @@
       const k = kontext(); if (!k) return;
       const m = /[?&]aufgabe=([A-Za-z0-9_.-]{1,40})/.exec(String(root.location.search || '')); if (!m) return;
       if (idsDes(k).indexOf(m[1]) < 0) return;
-      const j = root.Lehrjahr.ab(m[1], k.lab); if (j > k.lj) setTimeout(() => zeigeSpaeter(j), 1200);
+      const j = root.Lehrjahr.ab(m[1], k.lab, k.beruf); if (j > k.lj) setTimeout(() => zeigeSpaeter(j), 1200);
     } catch (e) {}
   }
 
@@ -260,6 +261,7 @@
     obs = new root.MutationObserver(anstoss);
     doc.addEventListener('click', klick, true);
     scan(); einsprung();
+    root.addEventListener('lernpfad:lj', () => { try { scan(); einsprung(); } catch (e) {} });   // Plan des Berufs ist nachgeladen (lehrjahr.js): Listen jetzt ordnen
     if (doc.body && obs) obs.observe(doc.body, { childList: true, subtree: true });
   }
   Object.assign(root.LehrjahrListe, { kontext, erlaubt, weiter, zeigeHinweis, zeigeSpaeter, zeigeFertig, umordnen, umordnenKarten, scan });

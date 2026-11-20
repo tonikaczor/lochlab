@@ -2,7 +2,7 @@
 /* Tonfunk Lab: Lernpfad der Startseite.
    Spuren je Beruf mit empfohlener Reihenfolge, Schwierigkeit und Fortschritt je Lab. Der Fortschritt kommt aus den vorhandenen Ergebnissen (sim.done, lm4.tdone),
    die Liste der Labs und Aufgaben aus aufgaben.js.
-   Lehrjahr-gerechter Weg (Paket L2): Für Berufe mit Datenlage (Lehrjahr.gilt: egs, ige) und mit bekanntem Lehrjahr (Lehrjahr.wirksam, lehrjahr.js) führt der Pfad nur durch den Teil jedes Labs bis zum
+   Lehrjahr-gerechter Weg (Paket L2): Für Berufe mit Datenlage (Lehrjahr.gilt: egs, ige, im) und mit bekanntem Lehrjahr (Lehrjahr.wirksam, lehrjahr.js) führt der Pfad nur durch den Teil jedes Labs bis zum
    eigenen Lehrjahr (stat().t, recommend()). n, d und pct von stat() bleiben der Gesamtfortschritt des Labs; ohne Lehrjahr und für andere Berufe ist alles wie vorher (kein neues Feld). Nichts wird gesperrt.
    Seit dem Umbau in fünf Ansichten (S1) ist der Lernpfad kein eigener Bereich mehr: er ist die Sortierung "Reihenfolge" im Lab-Raster (home-groups.js liest
    tracksFor(), projTrack() und projHtml()). build() trägt die Fortschrittszeile in die Karten ein und baut in der Ansicht "Ich" die Zeile Rang und Karriere (#ichRang). */
@@ -26,11 +26,12 @@
       { t: 'Prüfung und Berufsalltag', s: 'Die Abschlussprüfung üben, Fachenglisch und das Berichtsheft.', labs: ['pr', 'eng', 'bhf'], pre: '' }
     ],
     im: [
-      { t: 'Grundlagen der Fertigung', s: 'Rechnen, Toleranzen und Passungen, Werkstoffe und Zeichnungen: das Handwerkszeug für jede Werkstatt.', labs: ['mat', 'mch', 'tol', 'wer', 'zei'], pre: 'Das Rechen-Lab ist ein guter Start' },
-      { t: 'Zerspanen und CNC', s: 'Schnittwerte berechnen, Drehzahlen und Vorschübe wählen, CNC-Programme lesen und verstehen.', labs: ['zer', 'fer', 'mak', 'cnc'], pre: 'Empfohlen vorher: Toleranz-Lab' },
-      { t: 'Fügen und Maschinenelemente', s: 'Schweißen, Löten, Kleben und Schrauben richtig wählen und rechnen, dazu Zahnräder, Riemen, Lager und Federn.', labs: ['fug', 'mas'], pre: 'Empfohlen vorher: Werkstoff-Lab' },
+      { t: 'Grundlagen der Fertigung', s: 'Fertigen von Hand, Messen mit Toleranzen und Passungen, Rechnen, Mechanik, Werkstoffe und Zeichnungen: das Handwerkszeug für jede Werkstatt.', labs: ['fer', 'tol', 'mat', 'mch', 'wer', 'zei'], pre: 'Das Fertigungs-Lab ist ein guter Start' },   /* v63.187: beginnt wie der Ausbildungsplan mit Lernfeld 1 (Fertigungs-Lab, Toleranz-Lab) */
+      { t: 'Zerspanen und CNC', s: 'Schnittwerte berechnen, Drehzahlen und Vorschübe wählen, CNC-Programme lesen und verstehen.', labs: ['zer', 'mak', 'cnc'], pre: 'Empfohlen vorher: Toleranz-Lab' },
+      { t: 'Fügen und Maschinenelemente', s: 'Schweißen, Löten, Kleben und Schrauben richtig wählen und rechnen, dazu Zahnräder, Riemen, Lager und Federn, Normteile und fertigungsgerechtes Konstruieren.', labs: ['fug', 'mas', 'kon'], pre: 'Empfohlen vorher: Werkstoff-Lab' },
       { t: 'Pneumatik, Hydraulik und Steuern', s: 'Schaltpläne lesen, Zylinder und Ventile ansteuern, Sensoren, Antriebe, SPS und Regelung.', labs: ['pne', 'hyd', 'sen', 'sps', 'ant', 'reg'], pre: 'Empfohlen vorher: Pneumatik-Lab' },
-      { t: 'Instandhaltung und Sicherheit', s: 'Anlagen warten, Fehler systematisch suchen, sicher arbeiten, messen und Wärme verstehen.', labs: ['ins', 'els', 'mess', 'thm'], pre: '' }
+      { t: 'Instandhaltung und Sicherheit', s: 'Anlagen warten, Fehler systematisch suchen, sicher arbeiten, messen und Wärme verstehen.', labs: ['ins', 'els', 'mess', 'thm'], pre: '' },
+      { t: 'Betrieb und Beruf', s: 'Fachenglisch für Anleitungen und Datenblätter, dazu das Berichtsheft sauber führen.', labs: ['eng', 'bhf'], pre: '' }   /* v63.187: kon (oben), eng und bhf standen vorher unter „Weitere Labs“ */
     ],
     tpd: [
       { t: 'Zeichnen und Toleranzen', s: 'Ansichten und Schnitte, Bemaßung nach Norm, Toleranzen und Passungen und das Rechnen dazu.', labs: ['mat', 'zei', 'tol'], pre: 'Das Rechen-Lab ist ein guter Start' }
@@ -117,7 +118,7 @@
   const trained = lab => !!get('lm4.trainer', {})[lab];
   /* Lehrjahr des Weges: Zahl 1..4 nur für Berufe mit Datenlage und bekanntem Lehrjahr, sonst null (alles wie bisher) */
   const LJM = () => root.Lehrjahr || null;
-  function ljAktiv() { const X = LJM(); if (!X) return null; try { return X.gilt(beruf()) ? (X.wirksam() || null) : null; } catch (e) { return null; } }
+  function ljAktiv() { const X = LJM(); if (!X) return null; try { const b = beruf(); return X.gilt(b) && (!X.bereit || X.bereit(b)) ? (X.wirksam() || null) : null; } catch (e) { return null; } }
   function stat(lab) {
     const res = results(), rows = ROWS.filter(r => r[1] === lab).sort((a, b) => a[4] - b[4]), done = rows.filter(r => (res[r[0]] || 0) >= 100), todo = rows.filter(r => (res[r[0]] || 0) < 100);
     const lv = rows.length ? rows.reduce((s, r) => s + r[4], 0) / rows.length : 1;
@@ -126,8 +127,8 @@
     const lj = rows.length ? ljAktiv() : null, X = LJM();
     if (lj && X) {
       const ids = {}; X.teil(lab, beruf(), lj).forEach(i => { ids[i] = 1; });
-      const tr = rows.filter(r => ids[r[0]]).map((r, i) => [r, X.ab(r[0], lab), i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(x => x[0]);
-      const td = tr.filter(r => (res[r[0]] || 0) >= 100), tt = tr.filter(r => (res[r[0]] || 0) < 100), s = X.summen(lab);
+      const tr = rows.filter(r => ids[r[0]]).map((r, i) => [r, X.ab(r[0], lab, beruf()), i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map(x => x[0]);
+      const td = tr.filter(r => (res[r[0]] || 0) >= 100), tt = tr.filter(r => (res[r[0]] || 0) < 100), s = X.summen(lab, beruf());
       o.lj = lj;
       o.t = { n: tr.length, d: td.length, pct: tr.length ? Math.round(100 * td.length / tr.length) : 0, next: tt[0] || null, lj, erst: s.findIndex(x => x > 0) + 1 };
       if (o.t.next) o.next = o.t.next;
@@ -141,7 +142,7 @@
       for (let i = 0; i < order.length; i++) {
         const k = order[i]; if (!REG[k]) continue;
         const ids = {}; X.teil(k, beruf(), l).forEach(x => { ids[x] = 1; });
-        const open = ROWS.filter(r => r[1] === k && ids[r[0]] && (res[r[0]] || 0) < 100).map((r, j) => [r, X.ab(r[0], k), j]).sort((a, b) => a[1] - b[1] || a[0][4] - b[0][4] || a[2] - b[2]);
+        const open = ROWS.filter(r => r[1] === k && ids[r[0]] && (res[r[0]] || 0) < 100).map((r, j) => [r, X.ab(r[0], k, beruf()), j]).sort((a, b) => a[1] - b[1] || a[0][4] - b[0][4] || a[2] - b[2]);
         if (open.length) { const r = open[0][0]; return { lj: l, key: k, name: REG[k].name, href: REG[k].file + '?aufgabe=' + r[0], title: r[3] }; }
       }
     }
@@ -149,11 +150,16 @@
   }
   // Empfehlung "wo weiter": das erste noch nicht fertige Lab in der Spurenreihenfolge, egal was sonst schon begonnen wurde (build() und Startseite "Weitermachen" nutzen dieselbe Logik)
   const WEITER = 80;   // ab 80 % gelöster Aufgaben darf man schon ins nächste Lab wechseln (nur ein Hinweis, der Pfad bleibt bis 100 % bei der Station; Abzeichen und Orden verlangen 100 %)
+  /* Etappen je Beruf (v63.187, nur Berufe in dieser Tabelle): Der Pfad bleibt nicht bis 100 % in einem großen Lab. Eine Station gilt fürs Erste als geschafft, wenn pct Prozent ihres Teils gelöst sind,
+     höchstens aber max Aufgaben. Dann führt die Empfehlung zur nächsten Station. Sind alle Stationen so weit, geht es in derselben Reihenfolge noch einmal durch die Reste bis 100 %.
+     Für alle anderen Berufe gilt wie bisher: erste Station unter 100 %. */
+  const ETAPPE = { im: { pct: 80, max: 30 } };
   function recommend(stc) {
     const st = stc || (() => { const o = {}; Object.keys(REG).forEach(k => { o[k] = stat(k); }); return o; })();
     const order = tracksFor().reduce((a, t) => a.concat(t.labs), []).filter(k => REG[k]);
     const lj = ljAktiv(), S = k => (lj && st[k] && st[k].t) || st[k];   // Sicht auf den Teil bis zum eigenen Lehrjahr (ohne Lehrjahr: das ganze Lab)
-    let rec = order.find(k => S(k).n && S(k).pct < 100) || null;   // erste offene Station in Pfadreihenfolge (ein später begonnenes Lab zieht den Pfad nicht vor)   // erste offene Station in Pfadreihenfolge (ein später begonnenes Lab zieht den Pfad nicht mehr vor)
+    const et = ETAPPE[beruf()] || null, offen = k => S(k).n && S(k).pct < 100, genug = k => S(k).d >= Math.min(Math.ceil(S(k).n * et.pct / 100), et.max);
+    let rec = (et && order.find(k => offen(k) && !genug(k))) || order.find(offen) || null;   // erste offene Station in Pfadreihenfolge (ein später begonnenes Lab zieht den Pfad nicht vor)   // erste offene Station in Pfadreihenfolge (ein später begonnenes Lab zieht den Pfad nicht mehr vor)
     if (rec && REG.sch && order.indexOf('sch') >= 0 && !order.some(k => st[k].started || trained(k))) rec = 'sch';   // ganz neu: SchaltLab (wie der Hinweis "Neu hier? Beginne mit dem SchaltLab.")
     const nx = rec && S(rec).next ? S(rec) : null, R0 = rec ? REG[rec] : null;
     const began = !!rec && (st[rec].started || trained(rec));
@@ -163,6 +169,7 @@
     let weiter = null;
     if (rec && S(rec).pct >= WEITER) { const nk = order.slice(order.indexOf(rec) + 1).find(k => S(k).n && S(k).pct < 100); if (nk) { const b2 = st[nk].started || trained(nk), n2 = S(nk).next; weiter = { von: rec, vonName: R0.name, pct: S(rec).pct, key: nk, name: REG[nk].name, href: b2 ? (n2 ? `${REG[nk].file}?aufgabe=${n2[0]}` : REG[nk].file) : `${REG[nk].file}?trainer` }; if (lj) weiter.lj = lj; } }
     const out = { rec, st, order, href, txt, started: began, next: nx ? nx.next : null, weiter };
+    if (et && rec) { const vor = order.slice(0, order.indexOf(rec)).filter(offen); if (vor.length) out.etappe = { offen: vor }; }   // nur Berufe mit Etappen: frühere Stationen, in denen noch ein Rest offen ist
     if (lj) {   // nur mit Lehrjahr: Beschriftung der Station und der Zustand "Dein Lehrjahr ist geschafft"
       out.lj = lj;
       if (rec) { const t = st[rec].t; out.teilKurz = 'Teil ' + lj + '. Lehrjahr'; out.teilText = t ? 'Teil für das ' + lj + '. Lehrjahr (' + t.n + (t.n === 1 ? ' Aufgabe' : ' Aufgaben') + ')' : ''; }
@@ -194,13 +201,13 @@
   function build() {
     if (!document.getElementById('top') || document.getElementById('lpCss')) return;   // nur auf der Startseite, nur einmal
     const st = {}; Object.keys(REG).forEach(k => { st[k] = stat(k); });
-    const K = beruf() === 'egs' ? root.Kampagne : null, kt = K ? K.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = K ? K.CH.reduce((n, c) => n + K.prog(c).d, 0) : 0;
+    const K = root.Kampagne && root.Kampagne.fuer ? root.Kampagne.fuer(beruf()) : (beruf() === 'egs' ? root.Kampagne : null), KI = K && K.info ? K.info() : null, kt = K ? K.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = K ? K.CH.reduce((n, c) => n + K.prog(c).d, 0) : 0;
     const style = document.createElement('style'); style.id = 'lpCss'; style.textContent = css; document.head.appendChild(style);
     /* Ansicht "Ich": eine Tür zur Karriere (Rang, XP, Kampagne); die Karte #karCard aus karriereui.js und die alte Kampagnen-Karte entfallen dann */
     const ich = document.getElementById('ichRang'), KR = root.Karriere && root.Karriere.summary ? root.Karriere.summary() : null;
     if (ich && (KR || K)) {
       const tx = KR ? `<b>Rang ${KR.n} · ${esc(KR.t)}</b><small>${KR.xp} XP${KR.next ? ' · nächster Rang bei ' + KR.next.xp + ' XP' : ''}${K ? ' · Kampagne ' + kd + ' von ' + kt + ' Missionen' : ''}. Abzeichen und alle Ränge im Karriere-Fenster.</small>`
-        : `<b>Kampagne: Das Abschlussgerät</b><small>${K.CH.length} Kapitel mit Meister Funk durch alle Labs. ${kd} von ${kt} Missionen erledigt.</small>`;
+        : `<b>Kampagne: ${esc(KI ? KI.titel : 'Das Abschlussgerät')}</b><small>${K.CH.length}${esc(KI ? KI.karte : ' Kapitel mit Meister Funk durch alle Labs. ')}${kd} von ${kt} Missionen erledigt.</small>`;
       ich.innerHTML = `<div class="mw-t mw-2 lp-rang"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-medal"/></svg></span><span class="mw-x">${tx}</span><a href="#" id="lpKamp" class="mw-b">${KR ? 'Karriere öffnen' : 'Kampagne öffnen'}</a></div>`;
       const kb = document.getElementById('lpKamp'); if (kb) kb.onclick = e => { e.preventDefault(); if (root.Karriere && root.Karriere.open) root.Karriere.open(); else K.open(); };
       ['kampCard', 'karCard'].forEach(id => { const x = document.getElementById(id); if (x) x.remove(); });
@@ -218,5 +225,5 @@
   if (root.addEventListener) root.addEventListener('lernpfad:lj', () => { try { ljZeilen(); } catch (e) { console.error(e); } try { root.dispatchEvent(new Event('lernpfad:fertig')); } catch (e) {} });
   const run = () => { try { build(); } catch (e) { console.error(e); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(run, 60)); else setTimeout(run, 60);
-  root.Lernpfad = { build, stat, recommend, TRACKS, TRACKS_B, tracksFor, projTrack, projHtml, LEVEL, ljAktiv, ljZeilen };
+  root.Lernpfad = { build, stat, recommend, TRACKS, TRACKS_B, tracksFor, projTrack, projHtml, LEVEL, ljAktiv, ljZeilen, ETAPPE };
 })(window);

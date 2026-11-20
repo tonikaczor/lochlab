@@ -4,8 +4,9 @@
    Nichts wird gesperrt: alle Aufgaben bleiben in den Labs frei wählbar; Orden, 100 %, Fortschritt und Ausbilder-Auswertung rechnen weiter über alle Aufgaben.
 
    SCHNITTSTELLE (ein zweites Paket, L3, baut die Aufgabenlisten der Labs darauf):
-     Lehrjahr.ab(id, lab)             -> 1..4, frühestens sinnvolles Lehrjahr der Aufgabe
-     Lehrjahr.gilt(beruf)             -> true nur für Berufe mit Datenlage (egs, ige); für alle anderen bleibt alles wie bisher
+     Lehrjahr.ab(id, lab, beruf?)     -> 1..4, frühestens sinnvolles Lehrjahr der Aufgabe (ohne beruf oder für egs, ige: wie bisher; für im: aus dem Ausbildungsplan)
+     Lehrjahr.gilt(beruf)             -> true nur für Berufe mit Datenlage (egs, ige, im); für alle anderen bleibt alles wie bisher
+     Lehrjahr.bereit(beruf)           -> false nur, solange für einen Beruf mit Plan (im) der Ausbildungsplan noch nicht geladen ist (bis dahin wird nicht gefiltert); stößt das Laden an
      Lehrjahr.mein(store?, jetzt?)    -> 1..4 oder null (nicht angegeben); Handwert lm4.lehrjahr (mit Stichtag, zählt am 1. August weiter, höchstens 4), sonst aus lm4.jahrgang
      Lehrjahr.setz(n, store?, jetzt?) -> Handwert setzen (n = 1..4) oder zurücknehmen (n = null)
      Lehrjahr.teil(lab, beruf, lj)    -> Liste der Aufgaben-IDs des Labs bis einschließlich Lehrjahr lj (für Berufe ohne Datenlage: alle)
@@ -18,13 +19,20 @@
      3. sonst VORGABE[lab] (Zeilen ohne Lernfeld), sonst 1.
    AUSNAHMEN ändern: Der Ausbilder darf die Tabellen hier von Hand ändern (nur diese Datei). Eine Zeile "id: Lehrjahr" genügt; der Kommentar dahinter nennt den Titel.
    Entstanden aus quelle/lernfaden/LEHRJAHR-KONZEPT.md (Spalte Vorschlag) und den Entscheidungen von Toni vom 16.11.2026:
+     (Die drei Schritte oben gelten für egs, ige und für alle Aufrufe ohne Beruf. Industriemechaniker: siehe Abschnitt 2b.)
      Z-Diode, 555 und 7805 (dazu der LM317 und Linearregler) ab 2. Lehrjahr; Transistor, Gleichrichter, OPV, Tiefpass und RC-Zeitkonstante ab 2;
      einfache Oszilloskop-Bedienung im MessLab im 1. Lehrjahr, anspruchsvolle (Mischspannung, Phase, Kopplung, Frequenzgang) ab 2;
      Sicherheitsregeln, Rettungskette, Brandschutz im 1. Lehrjahr; Technisches Englisch ab 2. */
 (function (root) {
   /* ---------------------------------------------------------------- 1. Tabellen */
   /* Berufe mit Datenlage: nur dort wird gefiltert */
-  const BERUFE = ['egs', 'ige'];
+  const BERUFE = ['egs', 'ige', 'im'];
+  /* Berufe, bei denen das Lehrjahr aus dem Ausbildungsplan kommt (ausbildungsplan-<beruf>.js, Feld jahr der Lernfelder). Regel in Abschnitt 2b. */
+  const PLANBERUFE = ['im'];
+  /* Ausnahmen für Industriemechaniker: Lab -> { Aufgaben-ID: Lehrjahr }. Geht dem Plan vor. Nur für Einzelfälle; alles andere regelt der Plan.
+     Beispiel: mat: { mat33: 2 } */
+  const AUSNAHMEN_IM = {};
+  const AUSNAHMEN_PLAN = { im: AUSNAHMEN_IM };
   /* Vorgabe je Lab für Zeilen ohne Lernfeld; Labs, die hier fehlen, bekommen 1 */
   const VORGABE = { sch: 1, loch: 1, digi: 1, mess: 1, sim: 1, haus: 1, els: 1, nts: 1, wsl: 1, ana: 1, thm: 1, sps: 1, pcb: 1, ant: 1, sen: 1, reg: 3, emv: 2, hf: 3, enr: 2, ds: 2, pr: 2, code: 1, pi: 1, app: 1, mat: 1, eng: 2, bhf: 1, alg: 1, sys: 1, ssl: 1 };
   /* Ausnahmen je Lab: Aufgaben-ID -> frühestes Lehrjahr. Nur Aufgaben, die vom Lernfeld abweichen oder kein Lernfeld haben und nicht zur Vorgabe passen. */
@@ -206,9 +214,88 @@
     return nodeLF;
   }
   /* Daten von außen vorgeben (Tests): { rows, lf } */
-  function daten(d) { injiziert = d || null; cache = null; cacheN = -1; }
+  function daten(d) { injiziert = d || null; cache = null; cacheN = -1; pc = {}; }
   const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
   const klemme = n => Math.max(1, Math.min(4, Math.round(+n) || 1));
+  /* ---------------------------------------------------------------- 2b. Berufe mit Plan (im): Lehrjahr aus dem Ausbildungsplan
+     Der Plan ordnet je Lernfeld Labs zu: aufgaben = ID-Liste, bereich = Rubriken oder '*' (Rest des Labs). Welcher Eintrag eine Aufgabe trifft, entscheidet derselbe Rang wie in
+     ausbildungsplan-core.js (zuordnung): ID vor Rubrik vor '*'. Nur die Einträge mit dem besten Rang zählen (so steht die Aufgabe im selben Lernfeld wie auf der Seite "Mein Plan").
+       1. AUSNAHMEN_IM[lab][id], wenn dort eine Zahl steht.
+       2. sonst das kleinste jahr (1 bis 4) der nicht optionalen Lernfelder, die die Aufgabe mit dem besten Rang enthalten.
+       3. steht sie nur in Lernfeldern mit jahr 0 (übergreifend): 1. Steht sie nur in optionalen Lernfeldern: 4 (füllt den Pfad nicht).
+       4. Aufgaben eines Labs aus dem Plan, die kein Lernfeld nennt: 1. Labs, die im Plan gar nicht vorkommen: wie bisher (Abschnitt 3).
+     Einträge mit fremd:true zählen nicht. Der Plan wird gelesen, nie geändert. Ändert sich der Plan, ändern sich die Lehrjahre von selbst. */
+  const doc = root.document || null;
+  let nodePlan = {}, pc = {};
+  const planBeruf = b => PLANBERUFE.indexOf(b) >= 0;
+  const liste = x => (x == null ? [] : Array.isArray(x) ? x : [x]);
+  /* Plan des Berufs: vorgegeben (Tests), aus dem Kern (AusbildungsPlan.plan), aus der Warteschlange der Plan-Datei (window.__apQueue, wenn der Kern nicht geladen ist), in Node aus der Datei */
+  function planVon(b) {
+    let p = null;
+    if (injiziert && injiziert.plan) p = injiziert.plan[b] || null;
+    else {
+      const AP = root.AusbildungsPlan; try { p = AP && AP.plan ? AP.plan(b) : null; } catch (e) { p = null; }
+      if (!p && Array.isArray(root.__apQueue)) root.__apQueue.forEach(a => { if (a && a[0] === b && a[1]) p = a[1]; });
+      if (!p && !doc && typeof require === 'function') {
+        if (!has(nodePlan, b)) {
+          nodePlan[b] = null;
+          try { const fs = require('fs'), path = require('path'), vm = require('vm'), w = {}; w.window = w; vm.runInNewContext(fs.readFileSync(path.join(__dirname, 'ausbildungsplan-' + b + '.js'), 'utf8'), w); (w.__apQueue || []).forEach(a => { if (a && a[0] === b) nodePlan[b] = a[1]; }); } catch (e) {}
+        }
+        p = nodePlan[b];
+      }
+    }
+    return p && Array.isArray(p.lernfelder) && p.lernfelder.length ? p : null;
+  }
+  /* Index wie index(), aber mit den Lehrjahren aus dem Plan; null, solange der Plan fehlt. ohne = Aufgaben von Plan-Labs, die kein Lernfeld nennt. */
+  function planIndex(b) {
+    const p = planVon(b); if (!p) return null;
+    const R = rows(), c = pc[b];
+    if (c && c.p === p && c.R === R && c.n === R.length) return c.ix;
+    const A = AUSNAHMEN_PLAN[b] || {}, best = {}, byLab = {}, imPlan = {};
+    R.forEach(r => { (byLab[r[1]] = byLab[r[1]] || []).push(r); });
+    p.lernfelder.forEach(lf => {
+      if (!lf) return;
+      const opt = !!lf.optional, jahr = +lf.jahr >= 1 && +lf.jahr <= 4 ? Math.round(+lf.jahr) : 0;
+      liste(lf.labs).forEach(e => {
+        if (!e || e.fremd || typeof e.lab !== 'string') return;
+        imPlan[e.lab] = 1;
+        const ids = liste(e.aufgaben), cats = liste(e.bereich), star = cats.indexOf('*') >= 0;
+        (byLab[e.lab] || []).forEach(r => {
+          const rank = ids.indexOf(r[0]) >= 0 ? 0 : cats.indexOf(r[2]) >= 0 ? 1 : star ? 2 : -1; if (rank < 0) return;
+          let o = best[r[0]]; if (!o || rank < o.rank) o = best[r[0]] = { rank, j: 0, pfl: false };
+          if (rank > o.rank || opt) return;
+          o.pfl = true; if (jahr && (!o.j || jahr < o.j)) o.j = jahr;
+        });
+      });
+    });
+    const ix = { lab: {}, id: {}, labOf: {}, ohne: [] };
+    R.forEach(r => {
+      const id = r[0], lab = r[1], o = best[id]; let lj;
+      if (has(A, lab) && A[lab] && has(A[lab], id)) lj = klemme(A[lab][id]);
+      else if (o) lj = o.pfl ? (o.j || 1) : 4;
+      else if (imPlan[lab]) { lj = 1; ix.ohne.push(id); }
+      else lj = ljZeile(r);
+      (ix.lab[lab] = ix.lab[lab] || []).push({ id, lj }); ix.id[id] = lj; ix.labOf[id] = lab;
+    });
+    pc[b] = { p, R, n: R.length, ix }; return ix;
+  }
+  /* Browser: Plan-Datei nachladen (klassisches Skript, liegt schon im Offline-Speicher). Der Kern ausbildungsplan-core.js wird dafür nicht gebraucht.
+     Danach meldet das Modul "lernpfad:lj": Startseite (lernpfad.js) und Aufgabenlisten (lehrjahr-liste.js) rechnen neu. */
+  const geladen = {};
+  function planLaden(b) {
+    if (!doc || !planBeruf(b) || geladen[b] || planVon(b)) return;
+    geladen[b] = 1;
+    const src = 'ausbildungsplan-' + b + '.js';
+    const fertig = () => { if (geladen[b] === 2 || !planVon(b)) return; geladen[b] = 2; pc = {}; try { root.dispatchEvent(new root.Event('lernpfad:lj')); } catch (e) {} };
+    try {
+      let e = doc.querySelector('script[src="' + src + '"]');
+      if (!e) { e = doc.createElement('script'); e.src = src; e.async = true; (doc.head || doc.documentElement).appendChild(e); }
+      e.addEventListener('load', fertig); root.setTimeout(fertig, 2500);
+    } catch (x) {}
+  }
+  /* false nur, solange der Plan eines Plan-Berufs noch fehlt (dann wird nicht gefiltert und das Laden angestoßen) */
+  function bereit(beruf) { if (!planBeruf(beruf) || planVon(beruf)) return true; planLaden(beruf); return false; }
+
   /* Lehrjahr aus dem Lernfeld der Zeile (1..4) oder 0, wenn keins da ist (Lernfeldübergreifend) */
   function katalog(row) {
     const L = lfmod(); if (!L || !L.lfOf || !L.lf) return 0;
@@ -231,7 +318,8 @@
   }
 
   /* ---------------------------------------------------------------- 3. Lehrjahr je Aufgabe */
-  function ab(id, lab) {
+  function ab(id, lab, beruf) {
+    if (planBeruf(beruf)) { const px = planIndex(beruf); if (px && has(px.id, id) && (!lab || px.labOf[id] === lab)) return px.id[id]; }
     const ix = index();
     if (has(ix.id, id) && (!lab || ix.labOf[id] === lab)) return ix.id[id];
     // Aufgabe nicht im Verzeichnis: Ausnahme, sonst Vorgabe des Labs
@@ -240,17 +328,17 @@
     return lab && has(VORGABE, lab) ? klemme(VORGABE[lab]) : 1;
   }
   const gilt = beruf => BERUFE.indexOf(beruf) >= 0;
-  const alle = lab => (index().lab[lab] || []);
+  const alle = (lab, beruf) => (((planBeruf(beruf) && planIndex(beruf)) || index()).lab[lab] || []);
   function teil(lab, beruf, lj) {
-    const z = alle(lab); if (!gilt(beruf)) return z.map(x => x.id);
+    const z = alle(lab, beruf); if (!gilt(beruf) || !bereit(beruf)) return z.map(x => x.id);
     const j = klemme(lj); return z.filter(x => x.lj <= j).map(x => x.id);
   }
   function spaeter(lab, beruf, lj) {
-    if (!gilt(beruf)) return [];
-    const j = klemme(lj); return alle(lab).filter(x => x.lj > j).map(x => ({ id: x.id, lj: x.lj }));
+    if (!gilt(beruf) || !bereit(beruf)) return [];
+    const j = klemme(lj); return alle(lab, beruf).filter(x => x.lj > j).map(x => ({ id: x.id, lj: x.lj }));
   }
   /* Anzahl Aufgaben je Lehrjahr: [n1, n2, n3, n4] */
-  function summen(lab) { const s = [0, 0, 0, 0]; alle(lab).forEach(x => { s[x.lj - 1]++; }); return s; }
+  function summen(lab, beruf) { const s = [0, 0, 0, 0]; alle(lab, beruf).forEach(x => { s[x.lj - 1]++; }); return s; }
 
   /* ---------------------------------------------------------------- 4. Eigenes Lehrjahr */
   const K_HAND = 'lm4.lehrjahr', K_FRAGE = 'lm4.lehrjahr.frage', K_NEU = 'lm4.lehrjahr.neu', K_JG = 'lm4.jahrgang';
@@ -334,7 +422,11 @@
     return !frageErledigt(store) && !hatFortschritt(store) ? 1 : null;
   }
 
-  const API = { ab, gilt, mein, quelle, setz, teil, spaeter, summen, wirksam, frageNoetig, frageErledigt, frageSchliessen, hatFortschritt, init, daten, BERUFE, VORGABE, AUSNAHMEN, KEYS: { hand: K_HAND, frage: K_FRAGE, neu: K_NEU, jahrgang: K_JG }, ausbJahr };
+  /* Aufgaben von Plan-Labs ohne Lernfeld (für Prüfskripte): Liste der IDs, leer für Berufe ohne Plan */
+  function planOhne(beruf) { const px = planBeruf(beruf) ? planIndex(beruf) : null; return px ? px.ohne.slice() : []; }
+  const API = { bereit, planLaden, planOhne, PLANBERUFE, AUSNAHMEN_IM, ab, gilt, mein, quelle, setz, teil, spaeter, summen, wirksam, frageNoetig, frageErledigt, frageSchliessen, hatFortschritt, init, daten, BERUFE, VORGABE, AUSNAHMEN, KEYS: { hand: K_HAND, frage: K_FRAGE, neu: K_NEU, jahrgang: K_JG }, ausbJahr };
   root.Lehrjahr = API;
+  /* Browser: für einen Beruf mit Plan (im) die Plan-Datei gleich nachladen */
+  if (doc) { try { planLaden(root.BerufReg && root.BerufReg.cur ? root.BerufReg.cur() : ''); } catch (e) {} }
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

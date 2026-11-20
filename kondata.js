@@ -103,14 +103,14 @@
         '"' + it[0] + '" ist ' + (/(schraube|mutter|scheibe|feder)/i.test(it[1].split(' ')[0]) ? 'eine ' : 'ein ') + it[1] + '. Die Normnummer legt die Bauform fest, danach folgen Größe und Länge.', ['Die Normnummer (zum Beispiel ISO 4017) steht für eine bestimmte Bauform.', 'Achte auf die Buchstaben und Maße hinter der Normnummer: M steht für metrisches Gewinde.']);
     },
     bezlen: R => {
-      const c = C(), no = c.pick(R, ['4017', '4014', '4762']), d = c.pick(R, [5, 6, 8, 10, 12, 16]), l = c.pick(R, [16, 20, 25, 30, 35, 40, 45, 50, 60, 70]), fk = c.pick(R, c.FKS), b = c.bez.schraube(no, d, l, fk), askL = R() < 0.6;
+      const c = C(), no = c.pick(R, ['4017', '4014', '4762']), d = c.pick(R, [5, 6, 8, 10, 12, 16]), l = c.pick(R, [16, 20, 25, 30, 35, 40, 45, 50, 60, 70]), fk = c.pick(R, no === '4762' ? c.FKS : c.FKS.filter(x => x !== '12.9')), b = c.bez.schraube(no, d, l, fk), askL = R() < 0.6;
       return askL ? numQ('Im Lieferschein steht: "' + b + '". Wie lang ist die Schraube in mm (Länge ohne Kopf)?', l, 'mm', 'Schraubenlänge', 0.01,
         'In "' + b + '" steht M' + d + ' für das Gewinde, ' + l + ' für die Länge in mm und ' + fk + ' für die Festigkeitsklasse. Die Länge wird ohne den Kopf gemessen: ' + l + ' mm.', ['Die Zahl nach dem x ist die Länge.', 'M8 ist das Gewinde, hinter dem Strich steht die Festigkeitsklasse.'])
         : numQ('Im Lieferschein steht: "' + b + '". Welchen Nenndurchmesser in mm hat das Gewinde der Schraube?', d, 'mm', 'Nenndurchmesser', 0.01,
           'M' + d + ' bedeutet metrisches Gewinde mit ' + d + ' mm Nenndurchmesser. Die Länge ' + l + ' mm und die Festigkeitsklasse ' + fk + ' haben mit dem Durchmesser nichts zu tun.', ['Der Buchstabe M steht für metrisches ISO-Gewinde.', 'Die Zahl direkt hinter M ist der Nenndurchmesser in mm.']);
     },
     mutter: R => {
-      const c = C(), no = c.pick(R, ['4017', '4014', '4762']), d = c.pick(R, [6, 8, 10, 12, 16]), fk = c.pick(R, ['8.8', '10.9', '12.9']), l = c.pick(R, [20, 25, 30, 40, 50]), nn = c.fkNut(fk), d2 = c.pick(R, [6, 8, 10, 12, 16].filter(x => x !== d)), low = c.pick(R, [4, 5, 6].filter(x => x < nn)), right = c.bez.mutter(d, nn);
+      const c = C(), no = c.pick(R, ['4017', '4014', '4762']), d = c.pick(R, [6, 8, 10, 12, 16]), fk = c.pick(R, no === '4762' ? ['8.8', '10.9', '12.9'] : ['8.8', '10.9']), l = c.pick(R, [20, 25, 30, 40, 50]), nn = c.fkNut(fk), d2 = c.pick(R, [6, 8, 10, 12, 16].filter(x => x !== d)), low = c.pick(R, [4, 5, 6].filter(x => x < nn)), right = c.bez.mutter(d, nn);
       return choiceQ(R, 'Zur Schraube "' + c.bez.schraube(no, d, l, fk) + '" soll eine passende Mutter bestellt werden. Welche Bezeichnung wählst du?', right, [c.bez.mutter(d2, nn), c.bez.mutter(d, low), c.bez.scheibe(d)],
         'Die Mutter muss dasselbe Gewinde haben (M' + d + ') und eine ausreichende Festigkeitsklasse: zur Schraube ' + fk + ' gehört mindestens Klasse ' + nn + ' (Zahl vor dem Punkt). Richtig ist also "' + right + '". Die Scheibe ist keine Mutter, und Klasse ' + low + ' wäre zu schwach.', ['Gewinde und Festigkeitsklasse müssen passen.', 'Bei 8.8 gehört Klasse 8, bei 10.9 Klasse 10, bei 12.9 Klasse 12 zur Mutter.']);
     },
@@ -143,7 +143,7 @@
     gewinde: R => {
       const c = C(), t = c.pick(R, c.TH), all = [0.5, 0.7, 0.8, 1, 1.25, 1.5, 1.75, 2, 2.5, 3], fp = v => f(v, 2) + ' mm';
       return choiceQ(R, 'Welche Steigung P hat ein metrisches Regelgewinde M' + t.d + '?', fp(t.P), c.shuffle(R, all.filter(x => x !== t.P)).slice(0, 3).map(fp),
-        'Für das Regelgewinde M' + t.d + ' gilt als Übungswert die Steigung P = ' + f(t.P, 2) + ' mm (Gewindetabelle im Reiter Hilfe). Mit wachsendem Durchmesser nimmt die Steigung zu.', ['Schau in die Gewindetabelle im Reiter Schrauben.', 'Je größer das Gewinde, desto größer die Steigung: M6 hat 1 mm.']);
+        'Für das Regelgewinde M' + t.d + ' gilt als Übungswert die Steigung P = ' + f(t.P, 2) + ' mm (Gewindetabelle im Reiter Schrauben). Mit wachsendem Durchmesser nimmt die Steigung zu.', ['Schau in die Gewindetabelle im Reiter Schrauben.', 'Je größer das Gewinde, desto größer die Steigung: M6 hat 1 mm.']);
     },
     fk: R => {
       const c = C(), fk = c.pick(R, c.FKS), re = R() < 0.5;
@@ -253,7 +253,7 @@
     },
     bezug: R => {
       const c = C(), need = R() < 0.5, withD = c.SYMS.filter(x => x.dat), noD = c.SYMS.filter(x => !x.dat), right = c.pick(R, need ? withD : noD), wrong = c.shuffle(R, need ? noD : withD).slice(0, 3);
-      return choiceQ(R, need ? 'Welche der folgenden Toleranzen braucht zwingend eine Bezugsangabe im Toleranzrahmen?' : 'Welche der folgenden Toleranzen hat keinen Bezug im Toleranzrahmen?', right.n, wrong.map(x => x.n),
+      return choiceQ(R, need ? 'Welche der folgenden Toleranzen braucht in der Regel eine Bezugsangabe im Toleranzrahmen?' : 'Welche der folgenden Toleranzen hat keinen Bezug im Toleranzrahmen?', right.n, wrong.map(x => x.n),
         need ? right.n + ' ist eine ' + right.cls + 'toleranz und bezieht sich auf einen Bezug. Formtoleranzen (Geradheit, Ebenheit, Rundheit, Zylinderform) brauchen keinen.' : right.n + ' ist eine Formtoleranz: Das Element wird für sich beurteilt, es gibt keinen Bezug. Richtung, Ort und Lauf brauchen einen Bezug.', ['Formtoleranzen beurteilen ein Element für sich allein.', 'Richtung, Ort und Lauf messen immer im Verhältnis zu einem Bezug.']);
     },
     posprf: R => {
@@ -299,10 +299,10 @@
     gewbez: pq(GEWQ),
     /* PRUEFEN P27: Faustformel für das Anzugsmoment M_A ≈ 0,2 · F_V · d (Gesamtreibwert etwa 0,14, Schmierzustand und Schraubenkopfauflage vernachlässigt); gewählte Vorspannkräfte höchstens 70 % der Streckgrenzenkraft. Ist die Faustformel für das Lehrjahr in Ordnung, oder sollen Tabellenwerte (Anziehdrehmoment je Festigkeitsklasse) verwendet werden? */
     anzug: R => {
-      const c = C(), d = c.pick(R, [8, 10, 12, 16]), fk = c.pick(R, ['8.8', '10.9']), ys = c.forceYield(fk, d) / 1000, F = c.pick(R, [6, 8, 10, 12, 15, 20, 25].filter(x => x <= 0.7 * ys)), M = c.rd(0.2 * F * d, 2), askM = R() < 0.5;
-      const rule = ' Als Faustformel gilt M_A ≈ 0,2 · F_V · d (M_A in N·mm, F_V in N, d in mm).', chk = ' Die Streckgrenzenkraft der Schraube liegt bei ' + f(ys, 1) + ' kN, die Vorspannkraft von ' + f(F, 0) + ' kN bleibt darunter.';
-      return askM ? numQ('Eine Schraube M' + d + ' der Festigkeitsklasse ' + fk + ' soll mit einer Vorspannkraft von ' + f(F, 0) + ' kN montiert werden.' + rule + ' Mit welchem Anzugsmoment in N·m ziehst du sie an?', M, 'N·m', 'Anzugsmoment', 0.1,
-        'F_V = ' + f(F, 0) + ' kN = ' + f(F * 1000, 0) + ' N. M_A = 0,2 · ' + f(F * 1000, 0) + ' N · ' + d + ' mm = ' + f(0.2 * F * 1000 * d, 0) + ' N·mm = ' + f(M, 2) + ' N·m.' + chk, ['Rechne die Kraft zuerst in N um.', 'Das Ergebnis kommt in N·mm heraus. Teile durch 1.000 für N·m.'])
+      const c = C(), d = c.pick(R, [8, 10, 12, 16]), fk = c.pick(R, ['8.8', '10.9']), ys = c.forceYield(fk, d) / 1000, M = ({ 8: { '8.8': 25, '10.9': 36 }, 10: { '8.8': 49, '10.9': 72 }, 12: { '8.8': 86, '10.9': 125 }, 16: { '8.8': 210, '10.9': 310 } })[d][fk], F = c.rd(M / (0.2 * d), 2), askM = R() < 0.5;
+      const rule = ' Als Faustformel gilt M_A ≈ 0,2 · F_V · d (M_A in N·mm, F_V in N, d in mm). Die Momente entsprechen der Tabelle im Füge-Lab und gelten für leicht geölte Gewinde.', chk = ' Die Streckgrenzenkraft der Schraube liegt bei ' + f(ys, 1) + ' kN, die Vorspannkraft von ' + f(F, 1) + ' kN bleibt darunter.';
+      return askM ? numQ('Eine Schraube M' + d + ' der Festigkeitsklasse ' + fk + ' soll mit einer Vorspannkraft von ' + f(F, 1) + ' kN montiert werden.' + rule + ' Mit welchem Anzugsmoment in N·m ziehst du sie an?', M, 'N·m', 'Anzugsmoment', 0.5,
+        'F_V = ' + f(F, 1) + ' kN = ' + f(F * 1000, 0) + ' N. M_A = 0,2 · ' + f(F * 1000, 0) + ' N · ' + d + ' mm = ' + f(0.2 * F * 1000 * d, 0) + ' N·mm = ' + f(M, 2) + ' N·m.' + chk, ['Rechne die Kraft zuerst in N um.', 'Das Ergebnis kommt in N·mm heraus. Teile durch 1.000 für N·m.'])
         : numQ('Eine Schraube M' + d + ' der Festigkeitsklasse ' + fk + ' wird mit einem Anzugsmoment von ' + f(M, 1) + ' N·m angezogen.' + rule + ' Welche Vorspannkraft in kN entsteht ungefähr?', F, 'kN', 'Vorspannkraft', 0.05,
           'M_A = ' + f(M, 1) + ' N·m = ' + f(M * 1000, 0) + ' N·mm. F_V = M_A / (0,2 · d) = ' + f(M * 1000, 0) + ' / (0,2 · ' + d + ') = ' + f(F * 1000, 0) + ' N = ' + f(F, 1) + ' kN.' + chk, ['Rechne das Moment zuerst in N·mm um (mal 1.000).', 'Stelle die Formel nach F_V um: F_V = M_A / (0,2 · d). Das Ergebnis in N durch 1.000 teilen für kN.']);
     },
@@ -319,9 +319,9 @@
     bezbau: R => {
       const c = C();
       if (R() < 0.65) {
-        const no = c.pick(R, ['4017', '4014', '4762']), d = c.pick(R, [6, 8, 10, 12]), l = c.pick(R, [20, 25, 30, 35, 40, 50]), fk = c.pick(R, ['8.8', '10.9', '12.9']), right = c.bez.schraube(no, d, l, fk);
-        const l2 = c.pick(R, [16, 20, 25, 30, 35, 40, 45, 50, 60].filter(x => x !== l)), fk2 = c.pick(R, c.FKS.filter(x => x !== fk)), no2 = c.pick(R, ['4017', '4014', '4762'].filter(x => x !== no)), d2 = c.pick(R, [6, 8, 10, 12].filter(x => x !== d));
-        return choiceQ(R, 'Du bestellst eine ' + c.NORMS[no].n + ' mit Gewinde M' + d + ', ' + l + ' mm Länge und Festigkeitsklasse ' + fk + '. Wie lautet die Bezeichnung in der Stückliste?', right, c.shuffle(R, [c.bez.schraube(no, d, l2, fk), c.bez.schraube(no, d, l, fk2), c.bez.schraube(no2, d, l, fk), c.bez.schraube(no, d2, l, fk)]).slice(0, 3),
+        const no = c.pick(R, ['4017', '4014', '4762']), d = c.pick(R, [6, 8, 10, 12]), l = c.pick(R, [20, 25, 30, 35, 40, 50]), fk = c.pick(R, no === '4762' ? ['8.8', '10.9', '12.9'] : ['8.8', '10.9']), right = c.bez.schraube(no, d, l, fk);
+        const l2 = c.pick(R, [16, 20, 25, 30, 35, 40, 45, 50, 60].filter(x => x !== l)), fk2 = c.pick(R, c.FKS.filter(x => x !== fk && (x !== '12.9' || no === '4762'))), no2 = c.pick(R, ['4017', '4014', '4762'].filter(x => x !== no)), d2 = c.pick(R, [6, 8, 10, 12].filter(x => x !== d));
+        return choiceQ(R, 'Du bestellst eine ' + c.NORMS[no].n + ' mit Gewinde M' + d + ', ' + l + ' mm Länge und Festigkeitsklasse ' + fk + '. Wie lautet die Bezeichnung in der Stückliste?', right, c.shuffle(R, [c.bez.schraube(no, d, l2, fk), c.bez.schraube(no, d, l, fk2), c.bez.schraube(no2, d, l, no2 === '4762' || fk !== '12.9' ? fk : '10.9'), c.bez.schraube(no, d2, l, fk)]).slice(0, 3),
           'Die Bezeichnung besteht aus der Norm (ISO ' + no + ' für ' + c.NORMS[no].n + '), dem Gewinde M' + d + ', der Länge ' + l + ' mm und der Festigkeitsklasse ' + fk + ': "' + right + '".', ['Die Normnummer legt fest, welche Bauform gemeint ist.', 'Reihenfolge: Norm, Gewinde x Länge, Strich, Festigkeitsklasse.']);
       }
       const p = c.pick(R, c.PF.slice(5, 10)), form = c.pick(R, ['A', 'B']), l = c.pick(R, [25, 32, 40, 45, 50, 56]), right = c.bez.passfeder(form, p.b, p.h, l), q2 = c.PF.find(x => x.b > p.b && x.b !== x.h) || c.PF[5];
@@ -333,20 +333,62 @@
     sackloch: R => {
       const c = C(), d = c.pick(R, [6, 8, 10, 12]), L = c.pick(R, [12, 16, 20, 24, 30]), t = c.thread(d), v = L + 3 * t.P;
       return numQ('In ein Bauteil soll ein Sacklochgewinde M' + d + ' mit einer nutzbaren Gewindelänge von ' + L + ' mm geschnitten werden. Das Kernloch soll um drei Steigungen tiefer gebohrt werden als die nutzbare Gewindelänge, damit der Gewindebohrer auslaufen kann. Wie tief in mm bohrst du das Kernloch?', v, 'mm', 'Kernlochtiefe', 0.05,
-        'Für M' + d + ' gilt die Steigung P = ' + f(t.P, 2) + ' mm. Drei Steigungen sind ' + f(3 * t.P, 2) + ' mm. Kernlochtiefe = ' + L + ' + ' + f(3 * t.P, 2) + ' = ' + f(v, 2) + ' mm.', ['Die Steigung findest du in der Gewindetabelle.', 'Addiere drei Steigungen zur nutzbaren Gewindelänge.']);
-    }
+        'Für M' + d + ' gilt die Steigung P = ' + f(t.P, 2) + ' mm. Drei Steigungen sind ' + f(3 * t.P, 2) + ' mm. Kernlochtiefe = ' + L + ' + ' + f(3 * t.P, 2) + ' = ' + f(v, 2) + ' mm.', ['Die Steigung findest du in der Gewindetabelle.', 'Addiere drei Steigungen zur nutzbaren Gewindelänge. Das ist eine Übungsregel: Je nach Gewindebohrer (Anschnitt) und Reserve gilt in der Praxis das Tabellenbuch.']);
+    },
+    /* w187 Fachstufe: Vorspannung, Loslager, Allgemeintoleranzen, Freistich */
+    vorsp: R => choiceQ(R, 'Ein Deckel wird mit Schrauben auf ein Gehäuse gespannt. Im Betrieb zieht eine Kraft den Deckel vom Gehäuse weg. Wie groß muss die Vorspannkraft der Schrauben zusammen sein?',
+      'Größer als die Betriebskraft, die Fuge bleibt dann geschlossen',
+      ['Genau so groß wie die Betriebskraft, mehr belastet nur unnötig', 'Etwa halb so groß wie die Betriebskraft', 'Möglichst klein, das schont die Schrauben'],
+      'Die Vorspannkraft presst Deckel und Gehäuse zusammen. Diese Kraft muss größer sein als die Kraft, die im Betrieb an der Fuge zieht. Dann bleibt eine Klemmkraft übrig, die Fuge klafft nicht und die Dichtung bleibt dicht. Ist die Vorspannkraft zu klein, hebt der Deckel ab. Die Schrauben werden dann wechselnd belastet und lockern sich oder brechen.',
+      ['Was passiert mit der Trennfuge, wenn die Betriebskraft größer ist als die Kraft, mit der die Schrauben klemmen?', 'Nach Abzug der Betriebskraft muss noch Klemmkraft übrig bleiben.']),
+    ausn: R => {
+      const c = C(), d = c.pick(R, [8, 10, 12, 16]), fk = c.pick(R, ['8.8', '10.9']), As = c.spannQuer(d), Re = c.fkRe(fk), FV = Math.round(c.pick(R, [0.5, 0.6, 0.7, 0.8]) * Re * As / 1000), sig = FV * 1000 / As, v = sig / Re * 100;
+      return numQ('Eine Schraube M' + d + ' der Festigkeitsklasse ' + fk + ' hat den Spannungsquerschnitt As = ' + f(As, 1) + ' mm² und die Streckgrenze Re = ' + Re + ' N/mm². Die Schraube wird mit der Vorspannkraft FV = ' + FV + ' kN angezogen. Zu wie viel Prozent ist die Streckgrenze ausgenutzt? Runde auf ganze Prozent.', v, '%', 'Ausnutzung', 0.6,
+        'Zugspannung: σ = FV / As = ' + (FV * 1000) + ' N / ' + f(As, 1) + ' mm² = ' + f(sig, 0) + ' N/mm². Ausnutzung = σ / Re · 100 % = ' + f(sig, 0) + ' / ' + Re + ' · 100 % = ' + f(v, 0) + ' %. Beim Anziehen kommt noch Verdrehung dazu. Deshalb nutzt man die Streckgrenze nie ganz aus.',
+        ['Rechne die Vorspannkraft in Newton um und teile durch den Spannungsquerschnitt.', 'Vergleiche die Spannung mit der Streckgrenze: Spannung geteilt durch Re mal 100.']);
+    },
+    loslag: R => {
+      const c = C(), L = c.pick(R, [400, 500, 800, 1000, 1500]), dT = c.pick(R, [30, 40, 50, 60]), v = 12 * L * dT / 1000000;
+      return numQ('Eine Stahlwelle ist zwischen Festlager und Loslager ' + L + ' mm lang. Im Betrieb wird sie um ' + dT + ' K wärmer als das Gehäuse. Um wie viel Millimeter muss sich das Loslager mindestens verschieben können? Rechne mit α = 0,000012 1/K. Runde auf zwei Stellen nach dem Komma.', rd2(v), 'mm', 'Verschiebeweg', 0.005,
+        'Die Welle dehnt sich aus: Δl = α · l · ΔT = 0,000012 1/K · ' + L + ' mm · ' + dT + ' K = ' + f(v, 2) + ' mm. Das Festlager hält die Welle axial fest. Das Loslager muss diese Längenänderung zulassen, sonst verspannen sich die Lager und werden heiß.',
+        ['Die Welle wird wärmer und damit länger. Diese Längenänderung muss das Loslager aufnehmen.', 'Rechne Δl = α · l · ΔT mit der Länge zwischen den beiden Lagern.']);
+    },
+    allgmax: R => {
+      const c = C(), N = c.pick(R, [12, 20, 25, 45, 60, 80, 100, 150, 200, 250]), t = N <= 30 ? 0.2 : N <= 120 ? 0.3 : 0.5, hi = R() < 0.5, v = rd2(hi ? N + t : N - t), w = hi ? 'Höchstmaß' : 'Mindestmaß';
+      return numQ('Im Schriftfeld einer Zeichnung steht ISO 2768-m. Für Längenmaße ohne eigene Toleranz gilt damit: über 6 bis 30 mm ± 0,2 mm, über 30 bis 120 mm ± 0,3 mm, über 120 bis 400 mm ± 0,5 mm. Ein Maß ' + N + ' mm hat keine Toleranzangabe. Wie groß ist das ' + w + ' in mm?', v, 'mm', w, 0.001,
+        'Das Nennmaß ' + N + ' mm liegt im Bereich ' + (N <= 30 ? 'über 6 bis 30 mm' : N <= 120 ? 'über 30 bis 120 mm' : 'über 120 bis 400 mm') + '. Dort gilt ± ' + f(t, 1) + ' mm. ' + w + ' = ' + N + ' mm ' + (hi ? '+' : '-') + ' ' + f(t, 1) + ' mm = ' + f(v, 1) + ' mm. Auch ein Maß ohne Toleranzangabe hat also Grenzmaße.',
+        ['Suche zuerst den Nennmaßbereich, in dem das Maß liegt.', 'Das Zeichen ± bedeutet: Die Abweichung gilt nach oben und nach unten.']);
+    },
+    allgfeld: R => {
+      const c = C(), N = c.pick(R, [40, 50, 63, 80, 100]), fein = R() < 0.5, t = fein ? 0.15 : 0.3, v = 2 * t;
+      return numQ('Für Längenmaße über 30 bis 120 mm gilt nach ISO 2768: Klasse f (fein) ± 0,15 mm, Klasse m (mittel) ± 0,3 mm. Im Schriftfeld steht ISO 2768-' + (fein ? 'f' : 'm') + '. Wie groß ist die Toleranz für ein Maß ' + N + ' mm ohne eigene Angabe, also der Abstand zwischen Mindestmaß und Höchstmaß?', v, 'mm', 'Toleranz', 0.001,
+        'Es gilt Klasse ' + (fein ? 'f' : 'm') + ' mit ± ' + f(t, 2) + ' mm. Höchstmaß = ' + f(N + t, 2) + ' mm, Mindestmaß = ' + f(N - t, 2) + ' mm. Toleranz = Höchstmaß - Mindestmaß = 2 · ' + f(t, 2) + ' mm = ' + f(v, 2) + ' mm. Die feine Klasse halbiert die Toleranz, kostet aber mehr Fertigungsaufwand.',
+        ['Lies ab, welche Klasse im Schriftfeld steht.', 'Die Abweichung gilt nach oben und nach unten. Die Toleranz ist der ganze Abstand dazwischen.']);
+    },
+    allgio: R => {
+      const c = C(), N = c.pick(R, [50, 80, 100]), dev = c.pick(R, [-0.45, -0.35, -0.25, -0.1, 0.15, 0.25, 0.4, 0.5]), ist = N + dev;
+      const OPT = ['In Ordnung: Das Istmaß liegt zwischen Mindestmaß und Höchstmaß', 'Nicht in Ordnung: Das Istmaß liegt über dem Höchstmaß', 'Nicht in Ordnung: Das Istmaß liegt unter dem Mindestmaß', 'Nicht prüfbar: Ohne Toleranzangabe am Maß gibt es keine Grenzmaße'], r = dev > 0.3 ? 1 : dev < -0.3 ? 2 : 0;
+      return choiceQ(R, 'Ein Längenmaß ' + N + ' mm hat in der Zeichnung keine Toleranzangabe. Im Schriftfeld steht ISO 2768-m. Für dieses Maß gilt damit ± 0,3 mm. Du misst am Werkstück ' + f(ist, 2) + ' mm. Wie beurteilst du das Maß?', OPT[r], OPT.filter((_, k) => k !== r),
+        'Höchstmaß = ' + N + ' mm + 0,3 mm = ' + f(N + 0.3, 1) + ' mm. Mindestmaß = ' + N + ' mm - 0,3 mm = ' + f(N - 0.3, 1) + ' mm. Das Istmaß ' + f(ist, 2) + ' mm liegt ' + (r === 0 ? 'dazwischen, das Maß ist in Ordnung.' : r === 1 ? 'über dem Höchstmaß. Das Maß ist nicht in Ordnung.' : 'unter dem Mindestmaß. Das Maß ist nicht in Ordnung.') + ' Die Allgemeintoleranz gilt für alle Maße ohne eigene Toleranzangabe.',
+        ['Berechne zuerst Höchstmaß und Mindestmaß aus dem Nennmaß und der Abweichung.', 'Vergleiche das Istmaß mit beiden Grenzmaßen.']);
+    },
+    freist: R => choiceQ(R, 'An einem Wellenabsatz soll der Lagersitz geschliffen werden. Das Wälzlager muss später satt an der Wellenschulter anliegen. Was sieht die Konstruktion am Übergang vom Lagersitz zur Schulter vor?',
+      'Einen Freistich, die Schleifscheibe kann dort auslaufen',
+      ['Eine scharfe Innenkante ohne Radius, das Lager liegt dann an', 'Einen möglichst großen Übergangsradius', 'Eine breite Fase an der Wellenschulter'],
+      'Eine Schleifscheibe kann keine scharfe Innenkante herstellen, ihre Kante rundet sich ab. Der Freistich gibt der Scheibe Platz zum Auslaufen. So werden Sitz und Schulter bis zum Ende sauber, und das Lager liegt satt an. Ein großer Radius würde das Lager von der Schulter wegdrücken. Eine scharfe Kante wäre außerdem eine starke Kerbe. Form und Maße des Freistichs stehen im Tabellenbuch.',
+      ['Überlege, wie die Kante einer Schleifscheibe nach einiger Zeit aussieht.', 'Der Innenring des Lagers hat selbst eine kleine Rundung. Der Übergang an der Welle muss kleiner sein oder zurückgesetzt.'])
   };
   function rd2(v) { return Math.round(v * 1000) / 1000; }
 
   /* Aufgabenliste: Kategorie, Stufe, Titel (neutral), Generator, Argument (Indexliste für Pools) */
   const defs = [
     ['Normteile und Stücklisten', 1, 'Normteil benennen', 'normname'], ['Normteile und Stücklisten', 1, 'Bezeichnung lesen', 'bezlen'], ['Normteile und Stücklisten', 2, 'Passende Mutter', 'mutter'], ['Normteile und Stücklisten', 2, 'Stückliste auswerten', 'stkauswert'], ['Normteile und Stücklisten', 3, 'Stückliste prüfen', 'stkpruef'], ['Normteile und Stücklisten', 2, 'Bezeichnung zusammensetzen', 'bezbau', null, 'kon39'],
-    ['Schrauben und Gewinde', 1, 'Gewinde nachschlagen', 'gewinde'], ['Schrauben und Gewinde', 1, 'Festigkeitsklasse lesen', 'fk'], ['Schrauben und Gewinde', 2, 'Bohrungsdurchmesser wählen', 'bohr'], ['Schrauben und Gewinde', 3, 'Passende Schraubenlänge', 'laenge'], ['Schrauben und Gewinde', 3, 'Belastbarkeit einer Schraube', 'kraft'], ['Schrauben und Gewinde', 2, 'Verbindung gegen Lockern', 'sicherung'], ['Schrauben und Gewinde', 1, 'Gewindebezeichnung deuten', 'gewbez', null, 'kon35'], ['Schrauben und Gewinde', 3, 'Anzugsmoment und Vorspannkraft', 'anzug', null, 'kon36'],
+    ['Schrauben und Gewinde', 1, 'Gewinde nachschlagen', 'gewinde'], ['Schrauben und Gewinde', 1, 'Festigkeitsklasse lesen', 'fk'], ['Schrauben und Gewinde', 2, 'Bohrungsdurchmesser wählen', 'bohr'], ['Schrauben und Gewinde', 3, 'Passende Schraubenlänge', 'laenge'], ['Schrauben und Gewinde', 3, 'Belastbarkeit einer Schraube', 'kraft'], ['Schrauben und Gewinde', 2, 'Verbindung gegen Lockern', 'sicherung'], ['Schrauben und Gewinde', 1, 'Gewindebezeichnung deuten', 'gewbez', null, 'kon35'], ['Schrauben und Gewinde', 3, 'Anzugsmoment und Vorspannkraft', 'anzug', null, 'kon36'], ['Schrauben und Gewinde', 2, 'Vorspannkraft und Betriebskraft', 'vorsp', null, 'kon41'], ['Schrauben und Gewinde', 3, 'Ausnutzung der Streckgrenze', 'ausn', null, 'kon42'],
     ['Welle-Nabe-Verbindungen', 1, 'Verbindungsart bestimmen', 'verb', [0, 1, 2, 3]], ['Welle-Nabe-Verbindungen', 2, 'Passfeder wählen', 'passfeder'], ['Welle-Nabe-Verbindungen', 2, 'Länge der Passfeder', 'tragl'], ['Welle-Nabe-Verbindungen', 2, 'Kraft an der Welle', 'umfang'], ['Welle-Nabe-Verbindungen', 3, 'Nabe aufschrumpfen', 'press'], ['Welle-Nabe-Verbindungen', 3, 'Prüfmaß am Nutgrund', 'nutgrund', null, 'kon37'],
-    ['Wälzlager und Federn', 1, 'Lagerart erkennen', 'lagerart'], ['Wälzlager und Federn', 1, 'Lager lesen', 'lagerbohr'], ['Wälzlager und Federn', 2, 'Lager aussuchen', 'lagerwahl'], ['Wälzlager und Federn', 2, 'Federkennlinie', 'feder'], ['Wälzlager und Federn', 3, 'Federn kombinieren', 'kombi'], ['Wälzlager und Federn', 2, 'Federarbeit berechnen', 'fedarb', null, 'kon38'],
-    ['Form- und Lagetoleranzen', 1, 'Symbol erkennen', 'symerk'], ['Form- und Lagetoleranzen', 1, 'Toleranzart zuordnen', 'symzu'], ['Form- und Lagetoleranzen', 2, 'Toleranzrahmen lesen', 'rahmen'], ['Form- und Lagetoleranzen', 2, 'Mit oder ohne Bezug', 'bezug'], ['Form- und Lagetoleranzen', 3, 'Lage der Bohrung prüfen', 'posprf'],
+    ['Wälzlager und Federn', 1, 'Lagerart erkennen', 'lagerart'], ['Wälzlager und Federn', 1, 'Lager lesen', 'lagerbohr'], ['Wälzlager und Federn', 2, 'Lager aussuchen', 'lagerwahl'], ['Wälzlager und Federn', 2, 'Federkennlinie', 'feder'], ['Wälzlager und Federn', 3, 'Federn kombinieren', 'kombi'], ['Wälzlager und Federn', 2, 'Federarbeit berechnen', 'fedarb', null, 'kon38'], ['Wälzlager und Federn', 2, 'Weg am Loslager', 'loslag', null, 'kon43'],
+    ['Form- und Lagetoleranzen', 1, 'Symbol erkennen', 'symerk'], ['Form- und Lagetoleranzen', 1, 'Toleranzart zuordnen', 'symzu'], ['Form- und Lagetoleranzen', 2, 'Toleranzrahmen lesen', 'rahmen'], ['Form- und Lagetoleranzen', 2, 'Mit oder ohne Bezug', 'bezug'], ['Form- und Lagetoleranzen', 3, 'Lage der Bohrung prüfen', 'posprf'], ['Form- und Lagetoleranzen', 1, 'Allgemeintoleranz anwenden', 'allgmax', null, 'kon44'], ['Form- und Lagetoleranzen', 2, 'Toleranzfeld der Allgemeintoleranz', 'allgfeld', null, 'kon45'], ['Form- und Lagetoleranzen', 2, 'Istmaß beurteilen', 'allgio', null, 'kon46'],
     ['Oberflächenangaben', 1, 'Rauheitsangaben', 'rauk'], ['Oberflächenangaben', 1, 'Bearbeitungszeichen', 'bearbz'], ['Oberflächenangaben', 2, 'Verfahren und Rauheit', 'verfrau'], ['Oberflächenangaben', 3, 'Rauheit passend wählen', 'rauwahl'],
-    ['Fertigungsgerecht konstruieren', 1, 'Gussteil gestalten', 'guss'], ['Fertigungsgerecht konstruieren', 2, 'Schräge am Gussteil', 'schraege'], ['Fertigungsgerecht konstruieren', 2, 'Dreh- und Frästeil gestalten', 'dreh'], ['Fertigungsgerecht konstruieren', 3, 'Sackloch vorbohren', 'sackloch', null, 'kon40'], ['Fertigungsgerecht konstruieren', 3, 'Werkstoff anwenden', 'wst']
+    ['Fertigungsgerecht konstruieren', 1, 'Gussteil gestalten', 'guss'], ['Fertigungsgerecht konstruieren', 2, 'Schräge am Gussteil', 'schraege'], ['Fertigungsgerecht konstruieren', 2, 'Dreh- und Frästeil gestalten', 'dreh'], ['Fertigungsgerecht konstruieren', 3, 'Sackloch vorbohren', 'sackloch', null, 'kon40'], ['Fertigungsgerecht konstruieren', 3, 'Werkstoff anwenden', 'wst'], ['Fertigungsgerecht konstruieren', 2, 'Freistich am Wellenabsatz', 'freist', null, 'kon47']
   ];
   let seq = 0;
   const tasks = defs.map(d => ({ id: d[5] || 'kon' + (++seq), cat: d[0], level: d[1], title: d[2], gen: d[3], arg: d[4] }));

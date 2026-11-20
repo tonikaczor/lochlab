@@ -11,7 +11,7 @@
 (function (root) {
   const C = () => root.MAS_CORE;
   const f = (v, d) => C().fmtN(v, d == null ? 2 : d, true);
-  const CATS = ['Zahnräder und Maße', 'Übersetzung und Leistung', 'Riemen und Ketten', 'Lager und Wellen', 'Kupplungen, Bremsen, Dichtungen', 'Federn', 'Fehlersuche'];
+  const CATS = ['Zahnräder und Maße', 'Übersetzung und Leistung', 'Riemen und Ketten', 'Lager und Wellen', 'Kupplungen, Bremsen, Dichtungen', 'Federn', 'Fehlersuche', 'Kupplung ausrichten'];
 
   /* ---------- Frageformen ---------- */
   const numQ = (text, value, unit, label, tol, expl, tips) => ({ text, ask: { type: 'num', unit, label }, value, tol, expl, tips });
@@ -53,7 +53,7 @@
     ['Eine Hubachse soll im Stillstand sicher gehalten werden und bei Stromausfall sofort bremsen. Welche Bauart ist üblich?', 'Eine Federdruckbremse: Federn schließen sie, Strom lüftet sie', ['Eine Bremse, die nur mit anliegender Spannung zugreift und sonst offen bleibt', 'Eine Strömungsbremse ohne Reibbelag, die nur im Lauf wirkt', 'Ein Freilauf, der die Drehrichtung einschränkt'], 'Bei der Federdruckbremse wirkt die Federkraft ohne Energie. Erst Strom (oder Druck) hebt die Bremse ab. Fällt er aus, schließt sie, das ist die sichere Seite.', ['Was soll ohne Energie passieren?', 'Welche Kraft wirkt auch ohne Strom?']],
     ['Was passiert beim Bremsen mit der Bewegungsenergie?', 'Sie wird durch Reibung in Wärme umgewandelt, die abgeführt werden muss', ['Sie verschwindet vollständig und erzeugt dabei keinerlei Erwärmung der Teile', 'Sie wird als Drehzahl im Bremsbelag gespeichert', 'Sie wird vollständig in Schmierstoff umgesetzt'], 'Energie geht nicht verloren: Sie wird zu Wärme. Zu starke Dauerbremsung überhitzt die Bremse, Wärmeabfuhr und Leistungsgrenzen sind zu beachten.', ['Reibung erzeugt Wärme.', 'Energie bleibt erhalten, ändert aber die Form.']],
     ['Wofür ist die Haltebremse an einem Servomotor gedacht?', 'Sie hält die Achse im Stillstand, nicht fürs ständige Abbremsen', ['Sie bremst die Achse bei jedem Positionieren aus voller Drehzahl auf Null', 'Sie schützt den Motor bei Überlast durch kontrolliertes Durchrutschen', 'Sie begrenzt die Drehzahl des Motors im Betrieb'], 'Eine Haltebremse klemmt im Stillstand, damit die Achse nicht absackt. Regelmäßiges Abbremsen aus der Bewegung würde sie verschleißen; das übernimmt der Antrieb elektrisch.', ['Halten und Bremsen sind verschiedene Aufgaben.', 'Wer bremst im Normalbetrieb?']],
-    ['Warum müssen Bremsbeläge irgendwann ersetzt werden?', 'Sie verschleißen durch die Reibung und werden dünner', ['Sie verlieren nur durch Alterung die Haftung, nicht durch Benutzung', 'Sie schmelzen schon beim ersten Bremsvorgang vollständig', 'Sie werden durch Fett dauerhaft rutschfest'], 'Reibung bedeutet Abrieb: Der Belag wird dünner und irgendwann unbrauchbar. Deshalb gibt es Verschleißgrenzen im Wartungsplan.', ['Reibung trägt Material ab.', 'Im Wartungsplan steht oft eine Mindestdicke.']],
+    ['Warum müssen Bremsbeläge irgendwann ersetzt werden?', 'Sie verschleißen durch die Reibung und werden dünner', ['Sie verlieren nur durch Alterung die Haftung, nicht durch Benutzung', 'Sie werden beim Bremsen immer dicker und härter', 'Sie verlieren ihre Wirkung, sobald sie einmal warm geworden sind'], 'Reibung bedeutet Abrieb: Der Belag wird dünner und irgendwann unbrauchbar. Deshalb gibt es Verschleißgrenzen im Wartungsplan.', ['Reibung trägt Material ab.', 'Im Wartungsplan steht oft eine Mindestdicke.']],
     ['Eine Scheibenbremse greift plötzlich schlecht. Welche Ursache ist plausibel?', 'Öl oder Fett auf Scheibe und Belag senkt die Reibung', ['Zu viel Reibung am Belag macht die Bremse wirkungslos', 'Ein sauberer Belag kann nie ausreichend greifen', 'Die Scheibe ist zu kalt für jeden Bremsvorgang'], 'Schmierstoffe zwischen Belag und Scheibe verringern den Reibwert drastisch. Nach Wartungsarbeiten und bei Leckagen ist das eine häufige Ursache.', ['Bremsen leben von Reibung.', 'Was senkt die Reibung zwischen zwei Flächen?']]
   ];
   /* PRUEFEN P14: Radial-Wellendichtring (RWDR): Dichtlippe zeigt zum abzudichtenden Medium, Lippe vor dem Aufschieben benetzen, scharfe Kanten (Nut, Gewinde) mit Hülse oder Folie schützen, eingelaufene Laufbahn der Welle ist eine Leckageursache, Staublippe nach außen. Stimmen die Hinweise mit eurer Werkstattpraxis überein? */
@@ -176,7 +176,7 @@
     l10h: R => { const c = C(), P = c.pick(R, [2, 3, 4, 5, 6]), r = c.pick(R, [2, 3, 4]), n = c.pick(R, [1000, 1500, 3000]), C0 = P * r, v = Math.pow(r, 3) * 1e6 / (60 * n); return numQ('Ein Kugellager mit C = ' + f(C0, 0) + ' kN trägt P = ' + f(P, 0) + ' kN und dreht mit ' + f(n, 0) + ' 1/min. Wie groß ist die nominelle Lebensdauer in Betriebsstunden? (L10 = (C / P)³ in Millionen Umdrehungen, L10h = L10 · 10⁶ / (60 · n))', v, 'h', 'Lebensdauer L10h', Math.max(0.6, v * 0.004), 'L10 = (' + f(C0, 0) + ' / ' + f(P, 0) + ')³ = ' + Math.pow(r, 3) + ' Mio. Umdrehungen. L10h = ' + Math.pow(r, 3) + ' · 10⁶ / (60 · ' + f(n, 0) + ') = ' + f(v, 1) + ' h.', ['Berechne zuerst L10 in Millionen Umdrehungen.', 'Teile durch 60 · n, um auf Stunden zu kommen.']); },
     kup: pq(KUP),
     dichtmatch: R => {
-      const c = C(), S = [['Radial-Wellendichtring', ['Eine drehende Welle tritt durch die Gehäusewand, innen ist Getriebeöl', 'Eine Antriebswelle muss gegen austretendes Öl abgedichtet werden']], ['O-Ring in der Nut', ['Zwei ruhende Flansche mit Druckmedium müssen abgedichtet werden', 'Ein Hydraulikdeckel liegt ruhend auf dem Zylinderrohr']], ['Flachdichtung', ['Ein ebener Deckel auf einem Getriebegehäuse bei kaum Druck', 'Zwischen zwei glatten Flanschflächen soll ein dünnes Blatt dichten']]], pickT = S.map(s => c.pick(R, s[1])), order = c.shuffle(R, [0, 1, 2]);
+      const c = C(), S = [['Radial-Wellendichtring', ['Eine drehende Welle tritt durch die Gehäusewand, innen ist Getriebeöl', 'Eine Antriebswelle muss gegen austretendes Öl abgedichtet werden']], ['O-Ring in der Nut', ['Eine ruhende Stirnfläche mit Druckmedium, zum Beispiel ein Hydraulikblock, muss abgedichtet werden', 'Ein Hydraulikdeckel liegt ruhend auf dem Zylinderrohr']], ['Flachdichtung', ['Ein ebener Deckel auf einem Getriebegehäuse bei kaum Druck', 'Zwischen zwei glatten Flanschflächen soll ein dünnes Blatt dichten']]], pickT = S.map(s => c.pick(R, s[1])), order = c.shuffle(R, [0, 1, 2]);
       return matchQ(R, 'Welche Dichtung passt zu welcher Aufgabe?', order.map(i => pickT[i]), S.map(s => s[0]), order, 'Der Wellendichtring dichtet drehende Wellen gegen Öl. Der O-Ring in einer Nut dichtet ruhende Fugen, auch unter Druck. Eine Flachdichtung dichtet ebene Flächen ohne hohen Druck.', ['Dreht sich etwas, oder ruht es?', 'Wie hoch ist der Druck?']);
     },
     brake: pq(BRE),
@@ -203,7 +203,7 @@
     },
     /* Fehlerbild A: Abtriebsdrehzahl passt bei einem Getriebe nicht zu den Zähnezahlen */
     fsa: R => {
-      const c = C(), NM = ['Förderband', 'Rührwerk', 'Drehtisch', 'Kranfahrwerk', 'Pumpenantrieb', 'Lüfterstufe', 'Bohrspindel', 'Walzenvorschub'], names = c.shuffle(R, NM).slice(0, 4), bad = c.ri(R, 0, 3);
+      const c = C(), NM = ['Förderband', 'Rührwerk', 'Drehtisch', 'Kranfahrwerk', 'Pumpenantrieb', 'Lüfterstufe', 'Vorschubantrieb', 'Walzenvorschub'], names = c.shuffle(R, NM).slice(0, 4), bad = c.ri(R, 0, 3);
       const rows = names.map((n, i) => {
         const z1 = c.ri(R, 16, 30), z2 = c.ri(R, 2 * z1 + 2, 4 * z1), nin = c.pick(R, [1400, 1450, 2800, 2900]), good = Math.round(nin * z1 / z2), meas = i === bad ? Math.round(nin * z2 / z1) : good + c.ri(R, -2, 2);
         return { n, z1, z2, nin, meas, good };
@@ -229,7 +229,78 @@
         ['Öl tritt gleichzeitig an mehreren Dichtstellen aus, obwohl alle Ringe unbeschädigt aussehen. Die Entlüftungsschraube ist mit Schmutz zugesetzt.', 'Überdruck im Gehäuse presst Öl an den Dichtlippen vorbei']
       ], i = c.ri(R, 0, CASES.length - 1), wrong = c.shuffle(R, CASES.map((x, j) => j).filter(j => j !== i)).slice(0, 3).map(j => CASES[j][1]);
       return choiceQ(R, 'Ein Getriebe verliert Öl an einer Wellendichtung. Befund: ' + CASES[i][0] + ' Was ist die wahrscheinlichste Ursache?', CASES[i][1], wrong, 'Der Befund weist auf diese Ursache: ' + CASES[i][1] + '. Die anderen genannten Ursachen passen nicht zum beschriebenen Bild. Nur den Ring zu tauschen, würde den Fehler nicht beheben.', ['Lies den Befund genau: Was ist auffällig an Welle, Ring oder Gehäuse?', 'Welche Ursache erklärt alle Beobachtungen zugleich?']);
-    }
+    },
+    /* w187: Kupplung ausrichten (mas41 bis mas44). Grenzwerte sind Übungswerte und stehen in der Aufgabe. */
+    /* Radialversatz = halber Anzeigeunterschied der Messuhr über eine halbe Umdrehung */
+    kuprad: R => {
+      const c = C(), k2 = x => x.toFixed(2).replace('.', ','), dv = c.ri(R, 4, 30) * 2 / 100, v = dv / 2;
+      return numQ('Du prüfst die Ausrichtung einer Kupplung. Die Messuhr ist an der einen Kupplungshälfte befestigt und tastet den Umfang der anderen Hälfte an. Beide Wellen werden gemeinsam gedreht. Oben stellst du die Messuhr auf 0,00 mm. Nach einer halben Umdrehung zeigt die Messuhr unten ' + k2(dv) + ' mm an. Wie groß ist der Radialversatz der beiden Wellen in der Höhe?', v, 'mm', 'Radialversatz', 0.005,
+        'Bei einer halben Umdrehung wandert die Messuhr von der einen Seite des Versatzes auf die andere. Die Anzeige enthält den Versatz deshalb doppelt. Radialversatz = Anzeigeunterschied : 2 = ' + k2(dv) + ' mm : 2 = ' + k2(v) + ' mm. Um diesen Betrag liegt die eine Wellenmitte höher oder tiefer als die andere. Ob das zulässig ist, steht in der Herstellerangabe der Kupplung.', ['Die Messuhr misst oben und unten. Der Versatz steckt zweimal in der Anzeige.', 'Teile den Anzeigeunterschied durch 2.']);
+    },
+    /* Winkelfehler: Unterlage = Spaltunterschied · Fußabstand : Messdurchmesser (Strahlensatz) */
+    kupwin: R => {
+      const c = C(), k2 = x => x.toFixed(2).replace('.', ','), g = c.pick(R, [0.04, 0.06, 0.08, 0.1, 0.12, 0.16, 0.2]), D = c.pick(R, [80, 100, 125, 160, 200]), L = c.pick(R, [200, 250, 300, 400, 500]), v = g * L / D;
+      return numQ('An einer Kupplung misst du mit der Fühlerlehre den Spalt zwischen den beiden Hälften. Oben ist der Spalt um ' + k2(g) + ' mm größer als unten, gemessen auf einem Durchmesser von ' + D + ' mm. Der Motor muss deshalb an den hinteren Füßen angehoben werden. Die vorderen und die hinteren Füße haben ' + L + ' mm Abstand. Wie dick muss die Unterlage unter den hinteren Füßen sein, damit der Winkelfehler verschwindet? (Strahlensatz, Ergebnis in mm auf zwei Nachkommastellen)', v, 'mm', 'Dicke der Unterlage', 0.01,
+        'Der Spaltunterschied von ' + k2(g) + ' mm auf ' + D + ' mm Durchmesser gibt die Neigung an. Dieselbe Neigung gilt über den Fußabstand: Unterlage : ' + L + ' mm = ' + k2(g) + ' mm : ' + D + ' mm. Unterlage = ' + k2(g) + ' mm · ' + L + ' : ' + D + ' = ' + k2(v) + ' mm. Unterlegt wird mit passenden Blechen. Danach wird neu gemessen, denn das Unterlegen verändert auch den Radialversatz.', ['Der Motor kippt um die vorderen Füße. Das Verhältnis von Spaltunterschied zu Durchmesser ist gleich dem Verhältnis von Unterlage zu Fußabstand.', 'Unterlage = Spaltunterschied · Fußabstand : Durchmesser.']);
+    },
+    kupreih: R => orderQ(R, 'Ein Motor wird an eine Pumpe gekuppelt und soll ausgerichtet werden. Bringe die Schritte in die richtige Reihenfolge.', ['Antrieb freischalten und gegen Wiedereinschalten sichern', 'Prüfen, ob alle Füße satt aufliegen (weicher Fuß), und nachbessern', 'Grob ausrichten mit Lineal und Fühlerlehre', 'Mit Messuhren den Versatz in Höhe und Seite genau messen', 'Füße unterlegen und den Motor seitlich verschieben', 'Schrauben festziehen und zur Kontrolle noch einmal messen'],
+      'Zuerst wird der Antrieb gesichert. Dann wird der weiche Fuß beseitigt, denn ein Fuß mit Luft verspannt den Motor und verfälscht jede Messung. Danach wird grob mit Lineal und Fühlerlehre ausgerichtet, dann genau mit Messuhren (oder einem Lasergerät) gemessen. Erst dann wird unterlegt und seitlich verschoben. Zum Schluss werden die Schrauben festgezogen und es wird nachgemessen, weil sich der Motor beim Anziehen noch bewegen kann.', ['Vor jeder Arbeit an der Kupplung kommt das Sichern. Vor dem genauen Messen muss der Motor satt stehen.', 'Erst grob, dann fein. Die Kontrolle nach dem Festziehen steht am Ende.']),
+    /* Weicher Fuß: genau ein Fuß hebt sich deutlich über dem Übungsgrenzwert 0,05 mm */
+    kupfuss: R => {
+      const c = C(), k2 = x => x.toFixed(2).replace('.', ','), FU = ['vorn links', 'vorn rechts', 'hinten links', 'hinten rechts'], i = c.ri(R, 0, 3), h = c.ri(R, 8, 25) / 100, vals = FU.map((_, j) => j === i ? h : c.ri(R, 1, 3) / 100), o = (i + 2) % 4;
+      return choiceQ(R, 'Vor dem Ausrichten prüfst du die Füße eines Motors. Alle vier Schrauben sind fest. Du setzt eine Messuhr an einen Fuß, löst seine Schraube und liest ab, um wie viel sich der Fuß hebt. Danach ziehst du die Schraube wieder fest und gehst zum nächsten Fuß. Ergebnis: ' + FU.map((n, j) => n + ' ' + k2(vals[j]) + ' mm').join(', ') + '. Für diese Übung gilt: Hebt sich ein Fuß um mehr als 0,05 mm, liegt er nicht satt auf (Übungswert, maßgeblich ist die Herstellerangabe). Was ist zu tun?',
+        'Den Fuß ' + FU[i] + ' mit etwa ' + k2(h) + ' mm unterlegen und die Prüfung wiederholen',
+        ['Die Schraube am Fuß ' + FU[i] + ' stärker anziehen, bis auch dieser Fuß satt aufliegt', 'Alle vier Füße mit ' + k2(h) + ' mm unterlegen, damit der Motor überall gleich hoch steht', 'Nur den Fuß ' + FU[o] + ' mit ' + k2(h) + ' mm unterlegen'],
+        'Am Fuß ' + FU[i] + ' hebt sich der Motor um ' + k2(h) + ' mm, das ist mehr als 0,05 mm: Dieser Fuß liegt nicht satt auf (weicher Fuß). Wird seine Schraube einfach stärker angezogen, verspannt sich das Motorgehäuse, Lager und Welle werden belastet und die Messwerte beim Ausrichten stimmen nicht. Deshalb wird genau dieser Fuß mit Blechen von etwa ' + k2(h) + ' mm unterlegt. Danach wird die Prüfung an allen Füßen wiederholt. Die anderen drei Füße liegen unter dem Grenzwert.', ['Vergleiche jeden Messwert mit dem Grenzwert von 0,05 mm.', 'Der Spalt unter dem Fuß soll gefüllt werden, nicht zugezogen.']);
+    },
+    /* w187 Fachstufe: Schäden an Zahnflanken, Schneckengetriebe, Schlupf am Riemen, Gleitlager */
+    zschad: R => matchQ(R, 'Bei einer Inspektion siehst du Schäden an Zahnrädern. Ordne jedem Schadensbild den Fachbegriff zu. Ein Begriff bleibt übrig.',
+      ['Kleine muschelförmige Ausbrüche auf der Flanke, vor allem nahe dem Teilkreis', 'Riefen und aufgeraute Stellen in Gleitrichtung nach Ölmangel', 'Ein ganzer Zahn fehlt, die Bruchfläche liegt am Zahnfuß', 'Die Flanken sind gleichmäßig abgetragen, die Zähne sind dünner geworden'],
+      ['Grübchen (Pitting)', 'Fressen', 'Zahnbruch', 'Abrieb', 'Passungsrost'], [0, 1, 2, 3],
+      'Grübchen entstehen durch Ermüdung der Flanke unter hoher Pressung. Fressen entsteht, wenn der Schmierfilm reißt und die Flanken kurz verschweißen. Beim Zahnbruch ist der Zahnfuß überlastet oder ermüdet. Abrieb entsteht durch Schmutz im Öl oder durch zu wenig Schmierung. Passungsrost gehört zu Sitzflächen von Naben und Lagern, nicht zur Zahnflanke.',
+      ['Beginne mit dem Bild, bei dem ein ganzer Zahn fehlt.', 'Einzelne kleine Ausbrüche sind etwas anderes als Riefen in Gleitrichtung.']),
+    schni: R => {
+      const c = C(), z1 = c.pick(R, [1, 2, 3, 4]), i = c.pick(R, [10, 15, 20, 30]), z2 = z1 * i;
+      return numQ((z1 === 1 ? 'Eine eingängige Schnecke (z1 = 1)' : 'Eine Schnecke mit ' + z1 + ' Gängen (z1 = ' + z1 + ')') + ' treibt ein Schneckenrad mit ' + z2 + ' Zähnen. Wie groß ist die Übersetzung?', i, '', 'Übersetzung i', 0.01,
+        'Bei der Schnecke zählt die Gangzahl als Zähnezahl. i = z2 / z1 = ' + z2 + ' / ' + z1 + ' = ' + i + '. Die Schnecke dreht sich ' + i + '-mal, bis das Schneckenrad eine Umdrehung geschafft hat.',
+        ['Die Gangzahl der Schnecke ist ihre Zähnezahl z1.', 'Teile die Zähnezahl des Schneckenrades durch die Gangzahl.']);
+    },
+    schnn: R => {
+      const c = C(), z1 = c.pick(R, [1, 2]), z2 = c.pick(R, [20, 25, 40, 50]), n1 = c.pick(R, [1400, 1450, 2800, 2900]), i = z2 / z1, v = n1 / i;
+      return numQ('Ein Motor dreht mit ' + f(n1, 0) + ' 1/min. Er treibt eine ' + (z1 === 1 ? 'eingängige' : 'zweigängige') + ' Schnecke an. Das Schneckenrad hat ' + z2 + ' Zähne. Mit welcher Drehzahl dreht das Schneckenrad? Runde auf eine Stelle nach dem Komma.', v, '1/min', 'Abtriebsdrehzahl n2', 0.11,
+        'i = z2 / z1 = ' + z2 + ' / ' + z1 + ' = ' + f(i, 1) + '. n2 = n1 / i = ' + f(n1, 0) + ' / ' + f(i, 1) + ' = ' + f(v, 2) + ' 1/min. Ein Schneckengetriebe übersetzt in einer Stufe stark ins Langsame.',
+        ['Bestimme zuerst die Übersetzung. Die Gangzahl der Schnecke ist z1.', 'Das Schneckenrad dreht viel langsamer als die Schnecke: n2 = n1 / i.']);
+    },
+    schne: pq([
+      ['Ein Antrieb braucht in einer einzigen Stufe die Übersetzung i = 40. Antriebswelle und Abtriebswelle sollen sich rechtwinklig kreuzen. Welches Getriebe passt?', 'Schneckengetriebe', ['Einstufiges Stirnradgetriebe', 'Kegelradgetriebe', 'Flachriementrieb'],
+        'Ein Schneckengetriebe schafft in einer Stufe große Übersetzungen, die Wellen kreuzen sich rechtwinklig. Eine Stirnradstufe schafft nur etwa bis i = 8, eine Kegelradstufe nur etwa bis i = 5. Bei Stirnrädern liegen die Wellen außerdem parallel. Ein Flachriemen schafft so große Übersetzungen ebenfalls nicht.',
+        ['Welche Übersetzung schafft eine einzelne Zahnradstufe ungefähr?', 'Gesucht ist ein Getriebe mit gekreuzten Wellen und sehr großer Übersetzung.']],
+      ['Ein Schneckengetriebe mit eingängiger Schnecke hebt eine Last. Der Motor wird abgeschaltet. Die Last bleibt stehen, obwohl keine Bremse greift, denn das Schneckenrad kann die Schnecke nicht antreiben. Wie heißt diese Eigenschaft?', 'Selbsthemmung', ['Flankenspiel', 'Überlastschutz', 'Freilauf'],
+        'Bei kleiner Steigung der Schnecke ist die Reibung so groß, dass das Schneckenrad die Schnecke nicht drehen kann. Das heißt Selbsthemmung. Die Selbsthemmung hängt von Steigung, Schmierung und Erschütterungen ab. Wo Personen gefährdet sind, braucht der Antrieb deshalb trotzdem eine Bremse.',
+        ['Die Bewegung lässt sich nur von der Schnecke her einleiten.', 'Die Reibung zwischen Schnecke und Schneckenrad verhindert das Rücklaufen.']]
+    ]),
+    rschl: R => {
+      const c = C(), d1 = c.pick(R, [100, 125, 160]), d2 = c.pick(R, [200, 250, 315, 400]), n1 = c.pick(R, [1450, 2900]), s = c.pick(R, [1, 2, 3]), n0 = n1 * d1 / d2, v = n0 * (1 - s / 100);
+      return numQ('Ein Keilriemen treibt von einer Scheibe mit ' + d1 + ' mm Wirkdurchmesser auf eine Scheibe mit ' + d2 + ' mm Wirkdurchmesser. Die treibende Scheibe dreht mit ' + f(n1, 0) + ' 1/min. Der Riemen hat ' + s + ' % Schlupf. Wie schnell dreht die getriebene Scheibe wirklich? Runde auf ganze Umdrehungen.', v, '1/min', 'Drehzahl n2', 1,
+        'Ohne Schlupf: n2 = n1 · d1 / d2 = ' + f(n1, 0) + ' · ' + d1 + ' / ' + d2 + ' = ' + f(n0, 1) + ' 1/min. Mit ' + s + ' % Schlupf kommen nur ' + (100 - s) + ' % davon an: ' + f(n0, 1) + ' · ' + f(1 - s / 100, 2) + ' = ' + f(v, 1) + ' 1/min.',
+        ['Rechne zuerst die Drehzahl ohne Schlupf aus den Durchmessern.', 'Schlupf heißt: Die getriebene Scheibe dreht etwas langsamer als berechnet.']);
+    },
+    rschlp: R => {
+      const c = C(), pr = c.pick(R, [[100, 200], [125, 250], [100, 250], [80, 200], [100, 400]]), n1 = c.pick(R, [1000, 2000, 3000]), s = c.pick(R, [1, 2, 3, 4]), n0 = n1 * pr[0] / pr[1], n2 = n0 * (1 - s / 100);
+      return numQ('Ein Keilriemen treibt von einer Scheibe mit ' + pr[0] + ' mm Wirkdurchmesser auf eine Scheibe mit ' + pr[1] + ' mm Wirkdurchmesser. Die treibende Scheibe dreht mit ' + f(n1, 0) + ' 1/min. An der getriebenen Scheibe misst du ' + f(n2, 1) + ' 1/min. Wie groß ist der Schlupf in Prozent?', s, '%', 'Schlupf', 0.05,
+        'Ohne Schlupf: n2 = n1 · d1 / d2 = ' + f(n1, 0) + ' · ' + pr[0] + ' / ' + pr[1] + ' = ' + f(n0, 1) + ' 1/min. Es fehlen ' + f(n0, 1) + ' - ' + f(n2, 1) + ' = ' + f(n0 - n2, 1) + ' 1/min. Schlupf = ' + f(n0 - n2, 1) + ' / ' + f(n0, 1) + ' · 100 % = ' + s + ' %. Wird der Schlupf deutlich größer, ist der Riemen zu locker oder abgenutzt.',
+        ['Berechne zuerst die Drehzahl, die ohne Schlupf herauskäme.', 'Schlupf ist die fehlende Drehzahl, bezogen auf die Drehzahl ohne Schlupf.']);
+    },
+    gleitv: R => choiceQ(R, 'Ein Gleitlager läuft langsam und trägt eine hohe Last. Der Schmierfilm reißt immer wieder ab. Welche Änderung am Schmieröl hilft?',
+      'Ein Öl mit höherer Viskosität wählen (zähflüssiger)',
+      ['Ein Öl mit niedrigerer Viskosität wählen (dünnflüssiger)', 'Die Ölmenge halbieren, damit das Lager kühler läuft', 'Auf Öl verzichten, das Lager läuft sich ein'],
+      'Bei hoher Last und kleiner Drehzahl wird ein dünnes Öl aus dem Schmierspalt gedrückt. Ein zähflüssigeres Öl hält den Schmierfilm besser. Dünnes Öl passt zu schnell laufenden, wenig belasteten Lagern. Weniger oder gar kein Öl führt zu Reibung von Metall auf Metall und zum Fressen.',
+      ['Welches Öl lässt sich schwerer aus einem engen Spalt drücken?', 'Hohe Last und kleine Drehzahl verlangen ein anderes Öl als eine schnelle Spindel.']),
+    gleitm: R => choiceQ(R, 'Eine Welle läuft in einem ölgeschmierten Gleitlager. Im Betrieb schwimmt sie auf einem Ölfilm. In welcher Phase ist der Verschleiß am größten?',
+      'Beim Anfahren und Auslaufen, der Ölfilm trägt noch nicht',
+      ['Bei voller Drehzahl, die Welle gleitet dann am schnellsten', 'Im Stillstand, das Öl läuft dann langsam aus dem Lager', 'Im Dauerbetrieb mit warmem Öl, der Film wird dann zu dick'],
+      'Der tragende Ölfilm baut sich erst mit der Drehzahl auf. Beim Anfahren und beim Auslaufen berühren sich Welle und Lagerschale teilweise. Das heißt Mischreibung. Im Betrieb trennt der Ölfilm beide Teile, das Lager läuft dann fast ohne Verschleiß. Häufiges Starten und Stoppen belastet ein Gleitlager deshalb besonders.',
+      ['Der Ölfilm entsteht erst durch die Drehung der Welle.', 'Überlege, wann sich Welle und Lagerschale berühren können.'])
   };
   function zS(a, m) { return C().zSum(a, m); }
 
@@ -241,9 +312,15 @@
     [CATS[3], 1, 'Kurzzeichen lesen', 'bore'], [CATS[3], 1, 'Bauformen zuordnen', 'bearmatch'], [CATS[3], 2, 'Wie ist die Welle gelagert', 'festlos'], [CATS[3], 2, 'Lagerlebensdauer', 'l10'], [CATS[3], 2, 'Vom Stillstand zum Betrieb', 'gleitreih'], [CATS[3], 2, 'Schmieren und Verbinden', 'schm'], [CATS[3], 3, 'Welle unter Last', 'wtorq'], [CATS[3], 3, 'Lagerlebensdauer in Stunden', 'l10h'],
     [CATS[4], 1, 'Zwei Wellen verbinden', 'kup'], [CATS[4], 1, 'Dichtung wählen', 'dichtmatch'], [CATS[4], 2, 'Bremsen im Antrieb', 'brake'], [CATS[4], 2, 'Dichtring einbauen', 'wdr'], [CATS[4], 3, 'O-Ring richtig verwenden', 'oring'],
     [CATS[5], 1, 'Kraft einer Feder', 'sf'], [CATS[5], 2, 'Federn hintereinander', 'sser'], [CATS[5], 2, 'Federn nebeneinander', 'spar'], [CATS[5], 3, 'Gemischte Schaltung', 'smix'],
-    [CATS[6], 2, 'Fehlerbild A', 'fsa'], [CATS[6], 3, 'Fehlerbild B', 'fsb'], [CATS[6], 3, 'Fehlerbild C', 'fsc']
+    [CATS[6], 2, 'Fehlerbild A', 'fsa'], [CATS[6], 3, 'Fehlerbild B', 'fsb'], [CATS[6], 3, 'Fehlerbild C', 'fsc'],
+    [CATS[7], 1, 'Messuhr an der Kupplung', 'kuprad'], [CATS[7], 3, 'Unterlage berechnen', 'kupwin'], [CATS[7], 2, 'Schritte beim Ausrichten', 'kupreih'], [CATS[7], 2, 'Füße prüfen', 'kupfuss'],
+    [CATS[0], 2, 'Schäden an Zahnflanken', 'zschad'],
+    [CATS[1], 1, 'Schnecke und Schneckenrad', 'schni'], [CATS[1], 2, 'Drehzahl am Schneckenrad', 'schnn'], [CATS[1], 2, 'Schneckengetriebe einsetzen', 'schne'],
+    [CATS[2], 2, 'Drehzahl mit Schlupf', 'rschl'], [CATS[2], 3, 'Schlupf aus der Messung', 'rschlp'],
+    [CATS[3], 2, 'Öl für das Gleitlager', 'gleitv'], [CATS[3], 2, 'Anlauf im Gleitlager', 'gleitm']
   ];
   const tasks = defs.map((d, i) => ({ id: 'mas' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3], arg: d[4] }));
+  { const o = tasks.map((t, i) => [CATS.indexOf(t.cat), i, t]).sort((a, b) => a[0] - b[0] || a[1] - b[1]); o.forEach((x, k) => { tasks[k] = x[2]; }); } /* w187: Aufgaben vom Listenende nach Rubrik einsortieren, die IDs bleiben */
 
   function make(t, R) {
     const q = G[t.gen](R, t.arg); q.id = t.id; q.cat = t.cat; q.level = t.level; q.title = t.title; return q;

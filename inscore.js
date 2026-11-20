@@ -64,6 +64,24 @@
       case 'meld': return c[1] * c[2] + c[3];   /* Meldebestand = Verbrauch je Zeiteinheit · Wiederbeschaffungszeit + Sicherheitsbestand */
       case 'oee': return rd(c[1] * c[2] * c[3] / 10000, 2);   /* Gesamtanlageneffektivität in Prozent aus Verfügbarkeit, Leistungsgrad, Qualitätsrate (je in Prozent) */
       case 'fett': return rd(0.005 * c[1] * c[2], 2);   /* Nachschmiermenge in g: G = 0,005 · D · B (D, B in mm) */
+      /* w187: Rechenvorschriften für ins64 bis ins84 */
+      case 'fkolb': return rd(c[1] * 0.1 * Math.PI / 4 * c[2] * c[2], 1);   /* Kolbenkraft in N: F = p · A, c = ['fkolb', p in bar, d in mm] */
+      case 'qleck': return rd(c[1] - Math.PI / 4 * c[2] * c[2] * c[3] / 1e6 / c[4] * 60, 2);   /* Verluststrom in l/min: Pumpenstrom minus Hubvolumen je Zeit, c = ['qleck', Q in l/min, d in mm, Hub in mm, Zeit in s] */
+      case 'mittel': { const a = c.slice(1); return rd(a.reduce((s, x) => s + x, 0) / a.length, 2); }   /* Mittelwert einer Liste, z. B. mittlere Reparaturzeit */
+      case 'verfliste': return rd(100 * (c[1] - c.slice(2).reduce((s, x) => s + x, 0)) / c[1], 2);   /* Verfügbarkeit in Prozent: c = ['verfliste', geplante Zeit, Stillstand 1, Stillstand 2, ...] */
+      case 'dtk': return rd(c[1] / (c[2] * c[3] * 1e-6), 1);   /* Temperaturunterschied in K: ΔT = Δd : (d · α), c = ['dtk', Δd in mm, d in mm, α in 1e-6 1/K] */
+      case 'laeng': return rd(100 * (c[2] - c[1]) / c[1], 2);   /* Kettenlängung in Prozent: c = ['laeng', Nennlänge, gemessene Länge] */
+      case 'verpr': return rd(100 * (c[1] - c[2]) / c[1], 1);   /* O-Ring-Verpressung in Prozent: c = ['verpr', Schnurstärke, Höhe des Einbauraums] */
+      case 'zeitbed': return c[1] * c.slice(3).reduce((s, x) => s + x, 0) / c[2];   /* Dauer in min: c = ['zeitbed', Maschinen, Personen, Zeit 1, Zeit 2, ...] */
+      /* w187 Vertiefung: Rechenvorschriften für ins90 bis ins108 */
+      case 'erwk': return rd(c[1] * c[2] / 100, 2);   /* erwartete Ausfallkosten: c = ['erwk', Kosten des Ausfalls, Wahrscheinlichkeit in Prozent] */
+      case 'kwfaellig': return rd(c[1] + c[2] / (c[3] * c[4] * c[5]), 2);   /* Kalenderwoche der nächsten Wartung: c = ['kwfaellig', KW der letzten Wartung, Intervall in h, Schichten je Tag, Stunden je Schicht, Tage je Woche] */
+      case 'pers': return Math.ceil(rd(c.slice(2).reduce((s, x) => s + x, 0) / c[1], 6));   /* Mindestzahl Personen: c = ['pers', Fenster in h, Arbeit 1 in h, Arbeit 2 in h, ...], aufgerundet */
+      case 'gebinde': return Math.ceil(rd((c[1] * c[2] - c[3]) / c[4], 6));   /* Zahl der Gebinde: c = ['gebinde', Anzahl, Menge je Stück, Vorrat, Inhalt je Gebinde], aufgerundet */
+      case 'trendkw': return rd(c[1] + (c[3] - c[2]) / c[4], 2);   /* Trend: c = ['trendkw', letzte KW, letzter Messwert, Grenzwert, Anstieg je Woche] */
+      case 'bptage': return rd((c[1] - (c[2] * c[3] + c[4])) / c[2], 2);   /* Tage bis zum Bestellpunkt: c = ['bptage', Bestand, Tagesverbrauch, Lieferzeit in Tagen, Sicherheitsbestand] */
+      case 'hochr': { const a = c.slice(2); return rd(a.reduce((s, x) => s + x, 0) / a.length * c[1] / 60, 2); }   /* Stillstand im Jahr in h: c = ['hochr', Wochen im Jahr, min in Woche 1, min in Woche 2, ...] */
+      case 'dverf': return rd(100 * (c[2] - c[3]) / c[1], 2);   /* Anstieg der Verfügbarkeit in Prozentpunkten: c = ['dverf', geplante Zeit, Stillstand vorher, Stillstand nachher] */
       default: return NaN;
     }
   }
@@ -304,13 +322,13 @@
   function genQuick(R, cat, level) {
     if (!cat || cat === 'mixed') cat = pick(R, ['Begriffe', 'Schmierung', 'Schäden', 'Kennzahlen', 'Sicherheit']);
     if (cat === 'Begriffe') {
-      if (R() < 0.35) { const it = pick(R, D.strategieItems), s = D.strategien.find(x => x.id === it.k); return mkChoice(R, 'Welche Instandhaltungsstrategie steckt dahinter? „' + it.t + '“', s.name, D.strategien.filter(x => x.id !== it.k).map(x => x.name).concat(['Verbesserung']), s.long + ': ' + s.was, cat); }
+      if (R() < 0.35) { const it = pick(R, D.strategieItems), s = D.strategien.find(x => x.id === it.k); return mkChoice(R, 'Welche Instandhaltungsstrategie steckt dahinter? „' + it.t + '“', s.name, D.strategien.filter(x => x.id !== it.k).map(x => x.name).concat(['Austausch der ganzen Anlage']), s.long + ': ' + s.was, cat); }
       const it = pick(R, D.begriffeItems), b = D.begriffe.find(x => x.id === it.k);
       return mkChoice(R, 'Zu welchem Teil der Instandhaltung gehört das? „' + it.t + '“', b.name, D.begriffe.filter(x => x.id !== it.k).map(x => x.name), b.name + ': ' + b.def, cat);
     }
     if (cat === 'Schmierung') {
       if (R() < 0.5) { const it = pick(R, D.schmierItems), s = D.schmier.find(x => x.id === it.k); return mkChoice(R, 'Welche Schmierstoffart passt zu: ' + it.t + '?', s.name, D.schmier.filter(x => x.id !== it.k).map(x => x.name).concat(['Wasser']), s.name + ': ' + s.eig, cat); }
-      const row = pick(R, D.schmierplan), wrong = D.schmierplan.filter(x => x.stelle !== row.stelle && x.stoff !== row.stoff).map(x => x.stoff);
+      const row = pick(R, D.schmierplan), wrong = D.schmierplan.filter(x => x.stelle !== row.stelle && x.stoff !== row.stoff && x.art !== row.art).map(x => x.stoff);
       return mkChoice(R, 'Im Schmierplan fehlt der Schmierstoff. Schmierstelle: ' + row.stelle + '. Was gehört hinein?', row.stoff, wrong, 'Laut Schmierplan: ' + row.stelle + ' – ' + row.stoff + ' (' + row.intervall + ').', cat);
     }
     if (cat === 'Schäden') {

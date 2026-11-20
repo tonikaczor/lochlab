@@ -47,7 +47,7 @@
   const P2 = L('N40 G0 X10 Y10 Z5', 'N50 G1 Z-2 F150', 'N60 G1 X50 F300');
   add({ id: 'cnc2', cat: 'G-Code lesen', level: 1, title: 'Was bedeutet G0?', machine: 'mill', prog: P2, progMode: 'show',
     text: 'Im Satz N40 steht G0. Was macht die Steuerung?',
-    ask: choice(['Eilgang: Das Werkzeug fährt ohne zu zerspanen auf geradem Weg zum Ziel.', 'Das Werkzeug fährt eine gerade Bahn mit Arbeitsvorschub F.', 'Das Werkzeug fährt einen Kreisbogen im Uhrzeigersinn.', 'Die Spindel wird eingeschaltet.'], 0), solve: () => ({ correct: 0 }), bad: [1],
+    ask: choice(['Eilgang: Das Werkzeug fährt ohne zu zerspanen meist auf kürzestem Weg zum Ziel, je nach Steuerung auch achsweise.', 'Das Werkzeug fährt eine gerade Bahn mit Arbeitsvorschub F.', 'Das Werkzeug fährt einen Kreisbogen im Uhrzeigersinn.', 'Die Spindel wird eingeschaltet.'], 0), solve: () => ({ correct: 0 }), bad: [1],
     expl: 'G0 ist der Eilgang (Positionieren). Er ist nur für freie Wege gedacht, nie im Material. Die Bearbeitung mit Vorschub steht unter G1 (gerade) oder G2/G3 (Kreis). Die Spindel schaltet M3 ein.',
     tips: ['Die Null in G0 steht für „keine Bearbeitung“.', 'Vergleiche mit N50: Dort steht G1 und ein Vorschub F.'] });
   const P3 = L('(WELLE)', 'N10 G54 G90 G95 G18', 'N20 T1', 'N30 M3 S1000', 'N40 G0 X40 Z2', 'N50 G1 Z-10 F0.2', 'N60 G91 G1 X-10 Z-5', 'N70 G1 Z-15', 'N80 G90 G1 X40', 'N90 G0 X100 Z50', 'N100 M5', 'N110 M30');
@@ -179,6 +179,33 @@
     expl: 'Der Maschinennullpunkt liegt fest in der Maschine, die Position legt der Hersteller fest. Den Werkstücknullpunkt wählst du je Werkstück so, dass die Maße der Zeichnung direkt als Koordinaten verwendbar sind. Mit G54 wird er im Programm aktiviert. Er wird sowohl beim Fräsen als auch beim Drehen gebraucht.',
     tips: ['Ein Werkstück wird an verschiedenen Stellen im Maschinenraum gespannt. Welcher Nullpunkt muss sich deshalb anpassen lassen?', 'Der Befehl G54 aktiviert eine Nullpunktverschiebung für das Werkstück.'] });
 
+  /* w187 Fachstufe: Werkzeugkorrektur und Nullpunkte */
+  add({ id: 'cnc49', cat: 'Koordinaten', level: 1, title: 'Werkzeuglänge im Speicher', machine: 'mill', progMode: 'none',
+    text: 'Die Werkzeuge im Magazin einer Fräsmaschine sind unterschiedlich lang. Für jedes Werkzeug steht deshalb eine Länge im Werkzeugspeicher. Wozu braucht die Steuerung diesen Wert?',
+    ask: choice(['Damit passt sie die Drehzahl an das Werkzeug an', 'Damit rechnet sie die Z-Maße auf die Werkzeugspitze um', 'Damit legt sie den Werkstücknullpunkt in X und Y fest', 'Damit berechnet sie den Vorschub je Zahn für das Werkzeug'], 1), solve: () => ({ correct: 1 }), bad: [2],
+    expl: 'Die Steuerung kennt zuerst nur die Lage der Spindel. Mit der Werkzeuglänge rechnet sie aus, wo die Werkzeugspitze steht. So gilt Z-5 im Programm für jedes Werkzeug gleich, egal wie lang es ist. Drehzahl und Vorschub stehen als S und F im Programm. Den Nullpunkt in X und Y legt die Nullpunktverschiebung fest.',
+    tips: ['Ein kurzer Bohrer und ein langer Fräser sollen beide genau auf Z-5 fahren. Was muss die Steuerung dafür wissen?', 'Die Länge wirkt in der Achse des Werkzeugs, beim Fräsen also in Z.'] });
+  add({ id: 'cnc50', cat: 'Koordinaten', level: 1, title: 'Zweiter Nullpunkt mit G55', machine: 'mill', progMode: 'none',
+    text: 'Auf dem Maschinentisch sind zwei gleiche Teile gespannt. Für das erste Teil steht in der Nullpunkttabelle unter G54 der Wert X = 150 mm. Das zweite Teil sitzt genau 80 mm weiter in Richtung X plus. Welchen X-Wert trägst du unter G55 ein?',
+    ask: nums(['X-Wert für G55', 'mm']), solve: () => ({ values: [150 + 80], tol: 0.01 }), bad: [[70], [80]],
+    expl: 'Die Werte in der Nullpunkttabelle zählen vom Maschinennullpunkt aus. Das zweite Teil liegt 80 mm weiter in X plus: 150 mm + 80 mm = 230 mm. Im Programm schaltest du mit G55 auf das zweite Teil um, der Rest des Programms bleibt gleich.',
+    tips: ['Beide Werte in der Tabelle zählen vom selben Punkt aus, dem Maschinennullpunkt.', 'Richtung X plus heißt: Der Wert wird größer. Addiere den Abstand der Teile.'] });
+  add({ id: 'cnc51', cat: 'Koordinaten', level: 2, title: 'Kante mit dem Kantentaster antasten', machine: 'mill', progMode: 'none',
+    text: 'Du tastest die linke Werkstückkante mit einem Kantentaster an. Die Tastkugel hat Ø 10 mm. Der Taster kommt von links und berührt die Kante. In diesem Moment zeigt die Maschine für die Spindelmitte X = 200,000 mm an. Bei welchem X-Wert liegt die Werkstückkante?',
+    ask: nums(['X der Kante', 'mm']), solve: () => ({ values: [200 + 10 / 2], tol: 0.01 }), bad: [[195], [210]],
+    expl: 'Die Anzeige gilt für die Spindelmitte. Die Kugel berührt die Kante mit ihrem Rand, also einen Kugelradius weiter rechts. Radius: 10 mm / 2 = 5 mm. Kante: 200 mm + 5 mm = 205 mm. Wer den Radius vergisst, setzt den Nullpunkt 5 mm daneben.',
+    tips: ['Die Anzeige gilt für die Mitte der Spindel. Die Kugel berührt die Kante aber mit ihrem Rand.', 'Der Taster steht links von der Kante. Die Kante liegt um den Kugelradius weiter in X plus.'] });
+  add({ id: 'cnc52', cat: 'Koordinaten', level: 2, title: 'Verschleißkorrektur beim Drehen', machine: 'turn', progMode: 'none',
+    text: 'Du drehst einen Zapfen mit dem Sollmaß Ø 40,00 mm. Die Messung am ersten Teil ergibt Ø 40,06 mm. Die Steuerung rechnet die Verschleißkorrektur in X im Durchmesser. Ein negativer Wert stellt das Werkzeug näher zur Drehmitte. Welchen Wert trägst du ein, damit das nächste Teil das Sollmaß trifft?',
+    ask: choice(['+0,06 mm', '-0,03 mm', '-0,06 mm', '-0,12 mm'], 2), solve: () => ({ correct: 2 }), bad: [1],
+    expl: 'Das Teil ist 40,06 mm - 40,00 mm = 0,06 mm zu dick. Die Korrektur wirkt hier im Durchmesser, also trägst du die volle Abweichung ein. Das Werkzeug muss näher zur Drehmitte, deshalb ist der Wert negativ: -0,06 mm. Der halbe Wert wäre nur richtig, wenn die Steuerung im Radius rechnet. Das Programm selbst bleibt unverändert.',
+    tips: ['Bestimme zuerst, um wie viel der Durchmesser vom Sollmaß abweicht.', 'Das Teil ist zu dick. Muss das Werkzeug näher zur Drehmitte oder weiter weg?'] });
+  add({ id: 'cnc53', cat: 'Koordinaten', level: 3, title: 'Werkzeuglänge zu kurz eingetragen', machine: 'mill', progMode: 'none',
+    text: 'Ein Fräser ist wirklich 100 mm lang. Im Werkzeugspeicher steht durch einen Tippfehler aber die Länge 95 mm. Das Programm fährt auf Z-8. Der Werkstücknullpunkt liegt auf der Oberfläche des Werkstücks. Wie tief taucht der Fräser wirklich ein?',
+    ask: nums(['Wirkliche Tiefe', 'mm']), solve: () => ({ values: [8 + (100 - 95)], tol: 0.01 }), bad: [[3], [8]],
+    expl: 'Die Steuerung hält den Fräser für 5 mm kürzer, als er ist. Deshalb fährt sie die Spindel 5 mm weiter nach unten. Die wirkliche Tiefe ist 8 mm + 5 mm = 13 mm. Ein zu kurz eingetragenes Werkzeug fräst also zu tief und kann sogar in das Spannmittel fahren. Deshalb fährst du ein neues Werkzeug zuerst mit Abstand und kleinem Vorschub an.',
+    tips: ['Die Steuerung glaubt, der Fräser sei kürzer. Fährt sie die Spindel dann weiter nach unten oder weniger weit?', 'Der Unterschied zwischen wirklicher und eingetragener Länge kommt zur programmierten Tiefe dazu.'] });
+
   /* ---------- Programm ergänzen ---------- */
   const NUT = a => L('(RECHTECKNUT)', 'N10 G54 G90 G94 G17', 'N20 T1 M6', 'N30 M3 S2500 M8', 'N40 G0 X20 Y10', 'N50 G0 Z2', 'N60 G1 Z-2 F100', ...a, 'N110 G0 Z50', 'N120 M5 M9', 'N130 M30');
   const NUTREF = NUT(['N70 G1 X60 F300', 'N80 Y30', 'N90 X20', 'N100 Y10']);
@@ -262,11 +289,11 @@
     expl: 'Im Satz N80 stand G2 (Uhrzeigersinn) statt G3. Mit gleichem Mittelpunkt läuft der Bogen dann den langen Weg (270°) um den Mittelpunkt. Die Kontur ist gegen den Uhrzeigersinn, also G3.',
     tips: ['Beobachte die Bahn im Simulator: In welche Richtung läuft der Kreis?', 'Die Kontur läuft gegen den Uhrzeigersinn. Welcher Befehl gehört dazu?'] });
   const EIN = z => L('(NUT)', 'N10 G54 G90 G94 G17', 'N20 T1 M6', 'N30 M3 S2500 M8', 'N40 G0 X20 Y10', 'N50 G0 Z2', 'N60 ' + z, 'N70 G1 X60 F300', 'N80 Y30', 'N90 X20', 'N100 Y10', 'N110 G0 Z50', 'N120 M5 M9', 'N130 M30');
-  add({ id: 'cnc23', cat: 'Fehler im Programm finden', level: 2, title: 'Alarm beim Eintauchen', machine: 'mill', prog: EIN('Z-2 F100'), progMode: 'edit', ref: EIN('G1 Z-2 F100'), target: true,
-    text: 'Die Steuerung bricht mit einem Alarm ab, sobald das Werkzeug ins Material eintauchen soll. Finde den Fehler und korrigiere ihn.',
+  add({ id: 'cnc23', cat: 'Fehler im Programm finden', level: 2, title: 'Eilgang beim Eintauchen', machine: 'mill', prog: EIN('Z-2 F100'), progMode: 'edit', ref: EIN('G1 Z-2 F100'), target: true,
+    text: 'Die Simulation meldet Eilgang im Material, sobald das Werkzeug eintauchen soll. An der echten Maschine gäbe es keinen Alarm, sondern einen Crash. Finde den Fehler und korrigiere ihn.',
     ask: { type: 'prog' }, bad: [EIN('Z-2 F100')],
     expl: 'In N60 fehlte G1. Davor war G0 aktiv (N50) und bleibt modal wirksam: Z-2 wird deshalb im Eilgang gefahren, der Vorschub F wird ignoriert, und das Werkzeug fährt im Eilgang ins Material. Mit G1 Z-2 F100 taucht es mit Vorschub ein.',
-    tips: ['Lies die Alarmmeldung genau: Welche Art Bewegung wird als gefährlich gemeldet?', 'G0 und G1 sind modal. Welcher Befehl war vor dem Satz zuletzt aktiv?'] });
+    tips: ['Lies die Meldung der Simulation genau: Welche Art Bewegung wird als gefährlich gemeldet?', 'G0 und G1 sind modal. Welcher Befehl war vor dem Satz zuletzt aktiv?'] });
   const SP = s => L('(NUT)', 'N10 G54 G90 G94 G17', 'N20 T1 M6', 'N30 ' + s, 'N40 G0 X20 Y10', 'N50 G0 Z2', 'N60 G1 Z-2 F100', 'N70 G1 X60 F300', 'N80 Y30', 'N90 X20', 'N100 Y10', 'N110 G0 Z50', 'N120 M5 M9', 'N130 M30');
   add({ id: 'cnc24', cat: 'Fehler im Programm finden', level: 1, title: 'Alarm beim ersten Fräsweg', machine: 'mill', prog: SP('M8'), progMode: 'edit', ref: SP('M3 S2500 M8'), target: true,
     text: 'Die Steuerung bleibt beim ersten Fräsweg mit einem Alarm stehen. Finde den Fehler und korrigiere ihn.',
@@ -340,6 +367,23 @@
     ask: nums(['Hauptzeit th', 's']), solve: Cc => ({ values: [Cc.run(B4REF, { machine: 'mill' }).time.main * 60], tol: 0.5 }), bad: [[20], [12]],
     expl: 'Je Bohrung läuft der Bohrer mit F120 von R2 bis Z-10: Weg 2 + 10 = 12 mm. Zeit: 12 mm / 120 mm/min = 0,1 min = 6 s. Vier Bohrungen: 4 · 6 s = 24 s. Der Weg von R bis zur Werkstückoberfläche (2 mm) zählt mit, weil dort schon mit Vorschub gefahren wird.',
     tips: ['Wie lang ist der Weg mit Vorschub für eine Bohrung? Beginne bei der Rückzugsebene R.', 'Zeit = Weg / Vorschub. Rechne eine Bohrung aus und multipliziere mit der Anzahl.'] });
+
+  /* w187 Fachstufe: Gewindebohren, Schruppen und Schlichten */
+  add({ id: 'cnc54', cat: 'Zeit rechnen', level: 1, title: 'Vorschub beim Gewindebohren', machine: 'mill', progMode: 'none',
+    text: 'Ein Gewinde M10 hat die Steigung P = 1,5 mm. Der Gewindebohrer läuft mit n = 300 1/min. Welche Vorschubgeschwindigkeit muss im Programm stehen, damit Vorschub und Steigung zusammenpassen?',
+    ask: nums(['Vorschubgeschwindigkeit vf', 'mm/min']), solve: () => ({ values: [1.5 * 300], tol: 0.5 }), bad: [[200], [3000]],
+    expl: 'Bei jeder Umdrehung muss der Gewindebohrer genau um eine Steigung tiefer gehen. vf = P · n = 1,5 mm · 300 1/min = 450 mm/min. Ist der Vorschub größer oder kleiner, passen die Gänge nicht mehr zusammen. Das Gewinde wird zerschnitten oder der Gewindebohrer bricht.',
+    tips: ['Wie weit muss der Gewindebohrer bei einer einzigen Umdrehung nach unten?', 'Weg je Umdrehung mal Umdrehungen je Minute ergibt den Weg je Minute.'] });
+  add({ id: 'cnc55', cat: 'Zeit rechnen', level: 2, title: 'Anzahl der Schruppschnitte', machine: 'turn', progMode: 'none',
+    text: 'Eine Welle wird von Ø 60 mm auf das Fertigmaß Ø 40 mm gedreht. Für das Schlichten bleibt ein Aufmaß von 0,5 mm je Seite stehen. Beim Schruppen beträgt die Schnitttiefe ap = 2,4 mm je Schnitt. Wie viele Schruppschnitte brauchst du mindestens?',
+    ask: nums(['Schruppschnitte', 'Schnitte']), solve: () => ({ values: [Math.ceil(((60 - (40 + 2 * 0.5)) / 2) / 2.4)], tol: 0.01 }), bad: [[5], [8], [3]],
+    expl: 'Nach dem Schruppen soll der Durchmesser 40 mm + 2 · 0,5 mm = 41 mm sein. Abzutragen sind je Seite (60 mm - 41 mm) / 2 = 9,5 mm. 9,5 mm / 2,4 mm = 3,96. Schnitte gibt es nur ganz, also sind 4 Schruppschnitte nötig. Der letzte Schnitt ist etwas dünner. Wer das Aufmaß vergisst, rechnet 10 mm / 2,4 mm = 4,17 und kommt auf 5 Schnitte. Danach folgt der Schlichtschnitt mit 0,5 mm.',
+    tips: ['Das Aufmaß steht auf beiden Seiten. Auf welchen Durchmesser wird also geschruppt?', 'Die Schnitttiefe ap zählt je Seite, also im Radius. Runde die Zahl der Schnitte auf.'] });
+  add({ id: 'cnc56', cat: 'Zeit rechnen', level: 2, title: 'Hauptzeit bei mehreren Schnitten', machine: 'turn', progMode: 'none',
+    text: 'Ein Absatz wird in 3 gleichen Schnitten längs gedreht. Die Drehzahl ist n = 1200 1/min, der Vorschub f = 0,2 mm je Umdrehung. Der Vorschubweg je Schnitt beträgt 60 mm (Anlauf schon eingerechnet). Wie groß ist die Hauptzeit für alle Schnitte zusammen?',
+    ask: nums(['Hauptzeit th', 'min']), solve: () => ({ values: [60 * 3 / (1200 * 0.2)], tol: 0.01 }), bad: [[0.25], [45]],
+    expl: 'th = L · i / (n · f). Vorschubgeschwindigkeit: n · f = 1200 1/min · 0,2 mm = 240 mm/min. Gesamtweg: 60 mm · 3 = 180 mm. th = 180 mm / 240 mm/min = 0,75 min. Das sind 45 s. Wer die Zahl der Schnitte vergisst, erhält nur 0,25 min.',
+    tips: ['Berechne zuerst die Vorschubgeschwindigkeit aus Drehzahl und Vorschub je Umdrehung.', 'Der Weg wird dreimal gefahren. Zeit = gesamter Weg / Vorschubgeschwindigkeit.'] });
 
   tasks.forEach(t => { if (!t.tips || t.tips.length < 2) throw new Error('Tipps fehlen: ' + t.id); });
 

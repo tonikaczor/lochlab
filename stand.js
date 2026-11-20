@@ -96,7 +96,7 @@
       Object.keys(exam.topics).forEach(k => { const t = topicTitle(k, o.bank, o.pool); if (t) exam.titles[k] = String(t).slice(0, 80); });
     }
     /* Lernpfad, Kampagne und Zähler */
-    const trn = get('lm4.trainer', {}), km = get('lm4.kamp', {}), st = get('lm4.stats', {}), du = get('lm4.duels', {}), th = get('lm4.think', {}), pr = get('lm4.predictstats', {});
+    const trn = get('lm4.trainer', {}), km = get(o.kampKey || 'lm4.kamp', {}), st = get('lm4.stats', {}), du = get('lm4.duels', {}), th = get('lm4.think', {}), pr = get('lm4.predictstats', {});
     const path = { trainer: isObj(trn) ? Object.keys(trn).filter(k => trn[k] && idOk(k)).slice(0, 60) : [], kampagne: [], kampTotal: o.kampTotal == null ? null : Math.max(0, Math.round(num(o.kampTotal))), stats: {}, duels: isObj(du) ? Object.keys(du).length : 0, think: isObj(th) ? Object.keys(th).length : 0, predict: [isObj(pr) ? Math.max(0, Math.round(num(pr.right))) : 0, isObj(pr) ? Math.max(0, Math.round(num(pr.total))) : 0] };
     if (isObj(km) && Array.isArray(km.done)) path.kampagne = km.done.filter(x => typeof x === 'string').map(x => x.slice(0, 80)).slice(0, 40);
     if (isObj(st)) Object.keys(st).forEach(k => { if (/^(kapitel|kampagne|vb\w{0,8})$/.test(k) && isFinite(+st[k])) path.stats[k] = Math.max(0, Math.round(+st[k])); });
@@ -186,7 +186,7 @@
     return { read: (get, extra) => K.core.read(get, extra), level: K.core.level, extra: Kp && Kp.CH ? { CH: Kp.CH, mdone: Kp.mdone, virtual: true } : { virtual: true }, ctx: { AUFGABEN: root.AUFGABEN, DEFS: defs } };
   }
   function makeObj(kuerzel) {
-    return build({ read: ls.get, G: { AUFGABEN: root.AUFGABEN, LAB_REG: root.LAB_REG }, app: root.LAB_VERSION || '', kuerzel, bank: root.PR_BANK, pool: root.PR_POOL, kampTotal: root.Kampagne && root.Kampagne.CH ? root.Kampagne.CH.length : null, karriere: karriereArg() });
+    return build({ read: ls.get, G: { AUFGABEN: root.AUFGABEN, LAB_REG: root.LAB_REG }, app: root.LAB_VERSION || '', kuerzel, bank: root.PR_BANK, pool: root.PR_POOL, kampKey: root.Kampagne && root.Kampagne.fuer && root.BerufReg && root.Kampagne.fuer(root.BerufReg.cur()) ? root.Kampagne.info().key : null, kampTotal: root.Kampagne && root.Kampagne.CH ? root.Kampagne.CH.length : null, karriere: karriereArg() });
   }
   async function open(from) {
     opener = from || document.activeElement; if (!document.getElementById('standCss')) { const s = document.createElement('style'); s.id = 'standCss'; s.textContent = CSS; document.head.appendChild(s); }

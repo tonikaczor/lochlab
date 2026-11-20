@@ -307,7 +307,7 @@
   /* ============================================================ Hilfe */
   function renderHelp() {
     const w = C.modelByName('winkel'), ws = C.modelByName('wellenabsatz');
-    $('#helpView').innerHTML = `
+    $('#helpView').innerHTML = `<p class="heftlink" style="margin:0 0 12px"><a href="lernen-zei.html" style="font-weight:700">📘 Lernheft zum Zeichnungs-Lab öffnen</a></p>
     <details open><summary>🧊 Projektionsmethode 1 (Europa)</summary><div class="hb2">
       <p>Du stellst dir den Körper vor und schaust aus drei Richtungen auf ihn. Das Ergebnis zeichnest du so auf das Blatt:</p>
       <div class="inst zc1">${F({ k: 'views', m: w }, { w: 460, smax: 46 })}</div>

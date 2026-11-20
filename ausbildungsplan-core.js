@@ -236,6 +236,13 @@
         else if (c.dateien && !c.dateien.has(lf.heft)) err(w + 'Heft ' + lf.heft + ' existiert nicht.');
       }
       if (lf.heft === undefined) err(w + 'heft fehlt (Dateiname oder null).');
+      if (lf.heftMehr !== undefined) {
+        if (!Array.isArray(lf.heftMehr)) err(w + 'heftMehr muss eine Liste sein.');
+        else lf.heftMehr.forEach(function (m) {
+          if (!m || typeof m.heft !== 'string' || !/^lernen-[a-z0-9]+\.html$/.test(m.heft) || typeof m.t !== 'string' || !m.t) err(w + 'heftMehr braucht je Eintrag heft (lernen-<name>.html) und t (Text).');
+          else if (c.dateien && !c.dateien.has(m.heft)) err(w + 'Heft ' + m.heft + ' existiert nicht.');
+        });
+      }
       if (!Array.isArray(lf.labs)) err(w + 'labs muss eine Liste sein.');
       (lf.labs || []).forEach(function (e) {
         var ew = w + 'Lab "' + (e && e.lab) + '": ';

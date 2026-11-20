@@ -41,8 +41,15 @@
   const ARTEN = { alle: 'Alle Karten', b: 'Begriffe', f: 'Formeln', t: 'Bauteile', p: 'Aus Prüfung', pt1: 'Aus Prüfung: Teil 1', pt2: 'Aus Prüfung: Teil 2' };
   /* Karten aus Prüfungsfehlern (pkarten.js, lm4.pkarten) tragen ihr Fach in der Karte selbst; hier werden sie mit den Wiki-Karten zu einer Liste und einem Stand zusammengesetzt */
   const PK = root.PKarten;
+  /* W187-KARTEN-IM: Karten für Industriemechaniker (karten-im.js, window.KARTEN_IM, fünftes Feld = Lab). Der Stapel gilt nur beim Beruf im (?beruf=im oder lm4.beruf).
+     Bei jedem anderen Beruf bleibt alles wie bisher: nur window.KARTEN, kein Auswahlfeld „Stapel“. Der Lernstand liegt wie bei allen Karten in lm4.karten (Ids im-<lab>-NN). */
+  const KIM = root.KARTEN_IM || [], IMLAB = {fer: 'Fertigungs-Lab', tol: 'Toleranz-Lab', zer: 'Zerspan-Lab', wer: 'Werkstoff-Lab', fug: 'Füge-Lab', mas: 'Maschinenelemente-Lab', mch: 'Mechanik-Lab', mak: 'Maschinen-Lab', cnc: 'CNC-Lab', pne: 'Pneumatik-Lab', hyd: 'Hydraulik-Lab', ins: 'Instandhaltungs-Lab', zei: 'Zeichnungs-Lab', kon: 'Konstruktions-Lab'};
+  const beruf = (() => { try { const m = /[?&]beruf=([a-z0-9]+)/.exec(String(root.location && root.location.search || '')); return m ? m[1] : (localStorage.getItem('lm4.beruf') || 'egs'); } catch (e) { return 'egs'; } })();
+  const mitIM = beruf === 'im' && KIM.length > 0;
+  let deck = mitIM ? 'im' : 'e';   // im = alle IM-Karten, <lab> = ein Lab, e = bisherige Karten, alle = beides
+  const basis = () => deck === 'e' ? (root.KARTEN || []) : deck === 'alle' ? KIM.concat(root.KARTEN || []) : deck === 'im' ? KIM : KIM.filter(k => k[4] === deck);
   let pk = PK ? PK.laden() : {}, stand = load(), art = 'alle', q = [], pos = 0, offen = false, richtig = 0, falsch = 0;
-  const K = () => (root.KARTEN || []).concat(PK ? PK.toKarten(pk) : []);
+  const K = () => basis().concat(PK ? PK.toKarten(pk) : []);
   const istP = k => k[1] === 'p';
   const sicht = () => { const s = Object.assign({}, stand); Object.keys(pk).forEach(id => { s[id] = PK.stateOf(pk[id]); }); return s; };
   function kopf() {
@@ -53,6 +60,7 @@
   }
   function start() {
     const a0 = $('#art'); art = a0 ? a0.value : art;
+    const d0 = $('#deck'); if (d0) deck = d0.value;
     if (PK) pk = PK.laden(); stand = load(); q = core.sitzung(K(), sicht(), art, 20, Date.now()); pos = 0; offen = false; richtig = 0; falsch = 0; zeige();
   }
   function zeige() {
@@ -62,8 +70,8 @@
       out.innerHTML = kopf() + (done ? '<div class="card fin"><h2>Sitzung fertig</h2><p>' + richtig + ' gewusst, ' + falsch + ' nochmal üben. Nicht gewusste Karten kommen sofort wieder, gewusste später.</p></div>' : '<div class="card fin"><h2>Nichts fällig</h2><p>In dieser Auswahl ist gerade keine Karte fällig. Komm später wieder oder wähle eine andere Kartenart.</p></div>') + '<button type="button" class="btn" id="neu">' + (done ? 'Neue Sitzung' : 'Neu prüfen') + '</button>';
       $('#neu').onclick = start; return;
     }
-    const k = q[pos], bild = k[1] === 'f' ? 'Formel' : k[1] === 't' ? 'Bauteil' : istP(k) ? 'Prüfungsfrage' + (k[4] === 't1' ? ' Teil 1' : k[4] === 't2' ? ' Teil 2' : '') : 'Begriff';
-    out.innerHTML = kopf() + '<div class="card"><p class="mute">Karte ' + (pos + 1) + ' von ' + q.length + ' · ' + bild + ' · Fach ' + core.fach(sicht()[k[0]]) + '</p><h2 class="fr">' + esc(k[2]) + '</h2>' +
+    const k = q[pos], bild = k[1] === 'f' ? 'Formel' : k[1] === 't' ? 'Bauteil' : istP(k) ? 'Prüfungsfrage' + (k[4] === 't1' ? ' Teil 1' : k[4] === 't2' ? ' Teil 2' : '') : 'Begriff', labn = !istP(k) && IMLAB[k[4]] ? ' · ' + IMLAB[k[4]] : '';
+    out.innerHTML = kopf() + '<div class="card"><p class="mute">Karte ' + (pos + 1) + ' von ' + q.length + ' · ' + bild + labn + ' · Fach ' + core.fach(sicht()[k[0]]) + '</p><h2 class="fr">' + esc(k[2]) + '</h2>' +
       (offen ? '<div class="an">' + esc(k[3]).replace(/\n/g, '<br>') + '</div><p class="btns"><button type="button" class="btn ja" id="ja">Gewusst</button><button type="button" class="btn nein" id="nein">Nicht gewusst</button></p>' : '<p class="mute">Überlege zuerst, was du dazu weißt (bei Formeln: wie lautet sie?). Dann deck die Antwort auf.</p><p class="btns"><button type="button" class="btn" id="auf">Antwort zeigen</button></p>') + '</div>';
     if (offen) { $('#ja').onclick = () => ant(true); $('#nein').onclick = () => ant(false); $('#ja').focus(); } else { $('#auf').onclick = () => { offen = true; zeige(); }; $('#auf').focus(); }
   }
@@ -89,6 +97,14 @@
       if (e.key === ' ' && !offen && q[pos] && !/^(BUTTON|A|SUMMARY)$/.test(e.target.tagName)) { e.preventDefault(); offen = true; zeige(); }
       else if (offen && e.key === 'ArrowRight') ant(true); else if (offen && e.key === 'ArrowLeft') ant(false);
     });
+    if (mitIM && sel) {   // W187-KARTEN-IM: Auswahl des Stapels, nur beim Beruf Industriemechaniker
+      const lb = document.createElement('label'), ds = document.createElement('select'), n = l => KIM.filter(k => k[4] === l).length;
+      lb.htmlFor = 'deck'; lb.textContent = 'Stapel: '; ds.id = 'deck';
+      ds.innerHTML = '<option value="im">Industriemechaniker (' + KIM.length + ')</option>' + Object.keys(IMLAB).filter(n).map(l => '<option value="' + l + '">' + esc(IMLAB[l]) + ' (' + n(l) + ')</option>').join('') + '<option value="e">Elektronik und Grundlagen</option><option value="alle">Alle Karten</option>';
+      const p = sel.parentNode, vor = p.querySelector('label[for="art"]') || sel; p.insertBefore(lb, vor); p.insertBefore(ds, vor); p.insertBefore(document.createTextNode(' '), vor);
+      ds.onchange = start;
+      try { const m = /[?&]deck=([a-z]+)/.exec(String(root.location && root.location.search || '')); if (m && ds.querySelector('option[value="' + m[1] + '"]')) ds.value = m[1]; } catch (e) {}   // karten.html?deck=zer: gleich ein Lab üben
+    }
     try { const m = /[?&]art=([a-z0-9]+)/.exec(String(root.location && root.location.search || '')); if (m && sel && ARTEN[m[1]]) sel.value = m[1]; } catch (e) {}   // karten.html?art=p: gleich die Fehlerkarten (aus Prüfung) üben
     start();
   }

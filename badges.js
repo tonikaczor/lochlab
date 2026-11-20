@@ -345,6 +345,26 @@
       DEFS.push([k + 'alle', '🏆', R.short + '-Meister', 'Alle Aufgaben im ' + R.name + ' geschafft.', function (c) { return [c.n(c.ids(k)), c.ids(k).length || 30]; }]);
     });
   })();
+  /* Thematische Abzeichen je Beruf (v63.187, datengetrieben): je Zeile [id, Symbol, Name, Lab, Kategorie]. Das Abzeichen gibt es für alle Aufgaben dieser Kategorie im Lab (wie „Prüfungsnah Analog“).
+     Die Abzeichen entstehen nur für den gewählten Beruf (BerufReg.cur), für alle anderen Berufe bleibt die Liste wie sie war. Fehlt die Kategorie in aufgaben.js, entfällt das Abzeichen. */
+  var BERUF_KAT = { im: [
+    ['imferhand', '🪚', 'Feilen und Sägen', 'fer', 'Handfertigung'], ['imferplan', '📋', 'Fertigungsplaner', 'fer', 'Fertigungsplanung'],
+    ['imtolabl', '📏', 'Scharf abgelesen', 'tol', 'Ablesen'], ['imtolpass', '🔘', 'Passungs-Kenner', 'tol', 'Passungen'],
+    ['imzervc', '🌀', 'Drehzahl-Kenner', 'zer', 'Drehzahl und vc'], ['imcncfehler', '🔎', 'Programm-Prüfer', 'cnc', 'Fehler im Programm finden'],
+    ['immaksich', '🦺', 'Sicher an der Maschine', 'mak', 'Sicherheit an Maschinen'], ['imwerzug', '📈', 'Zugversuch-Kenner', 'wer', 'Zugversuch'],
+    ['immchhebel', '⚖️', 'Hebel-Kenner', 'mch', 'Hebel und Drehmoment'], ['imzeians', '✏️', 'Ansichten-Kenner', 'zei', 'Ansichten'],
+    ['imkongew', '🔩', 'Gewinde-Kenner', 'kon', 'Schrauben und Gewinde'], ['imfugnaht', '🔥', 'Naht-Kenner', 'fug', 'Schweißen'],
+    ['immaslager', '⚙️', 'Lager-Kenner', 'mas', 'Lager und Wellen'], ['impneplan', '💨', 'Pneumatikplan-Leser', 'pne', 'Schaltplan lesen'],
+    ['imhydplan', '🛢️', 'Hydraulikplan-Leser', 'hyd', 'Schaltplan lesen'], ['iminsfehler', '🕵️', 'Fehlersucher Instandhaltung', 'ins', 'Fehlersuche']
+  ] };
+  (function () {
+    var REG = window.LAB_REG || {}, b = ''; try { b = window.BerufReg && window.BerufReg.cur ? window.BerufReg.cur() : ''; } catch (e) { b = ''; }
+    var kat = function (lab, k) { return (window.AUFGABEN || []).filter(function (r) { return r[1] === lab && r[2] === k; }).map(function (r) { return r[0]; }); };
+    (Object.prototype.hasOwnProperty.call(BERUF_KAT, b) ? BERUF_KAT[b] : []).forEach(function (x) {
+      if (!REG[x[3]] || !kat(x[3], x[4]).length) return;
+      DEFS.push([x[0], x[1], x[2], 'Alle Aufgaben der Kategorie ' + x[4] + ' im ' + REG[x[3]].name + ' gelöst.', function (c) { var l = kat(x[3], x[4]); return [c.n(l), l.length || 1]; }]);
+    });
+  })();
   DEFS.forEach(function (d) { d.id = d[0]; d.icon = d[1]; d.name = d[2]; d.desc = d[3]; d.prog = d[4]; });
   DEFS.find(function (d) { return d.id === 'wuerfel5'; }).icon = '👑';
 
@@ -438,5 +458,5 @@
       if (cf) cf.onchange = function () { setEffects(cf.checked); };
     });
   }
-  window.Badges = { result: result, stat: stat, open: open, check: check, confetti: confetti, chime: chime, soundOn: soundOn, fxOn: fxOn, setSound: setSound, setEffects: setEffects, earnedIds: function () { return Object.keys(earned()); }, DEFS: DEFS };
+  window.Badges = { result: result, stat: stat, open: open, check: check, confetti: confetti, chime: chime, soundOn: soundOn, fxOn: fxOn, setSound: setSound, setEffects: setEffects, earnedIds: function () { return Object.keys(earned()); }, DEFS: DEFS, BERUF_KAT: BERUF_KAT };
 })();

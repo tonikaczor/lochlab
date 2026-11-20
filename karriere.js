@@ -22,7 +22,7 @@
     const g = (k, d) => { try { const v = get(k, d); return v == null ? d : v; } catch (e) { return d; } };
     const done = {};
     [g('sim.done', {}), g('lm4.tdone', {})].forEach(o => { if (isObj(o)) Object.keys(o).forEach(k => { const v = num(o[k]); if (v > (done[k] || 0)) done[k] = v; }); });
-    const ps = g('pr.state', {}), kb = g('lm4.kamp', { done: [] }), tr = g('lm4.trainer', {}), duell = g('lm4.duell', {}), kar = g('lm4.karriere', {});
+    const ps = g('pr.state', {}), kb = g(KD.kamp ? KD.kamp().key : 'lm4.kamp', { done: [] }), tr = g('lm4.trainer', {}), duell = g('lm4.duell', {}), kar = g('lm4.karriere', {});
     const o = (k) => { const v = g(k, {}); return isObj(v) ? v : {}; };
     const D = {
       done, hints: o('lm4.ctipps'), hintsAll: o('sim.hints'), badges: Object.keys(o('lm4.badges')), stats: o('lm4.stats'),
@@ -89,7 +89,7 @@
   }
   function milestone(L, D, G) {
     if (L.kap && !L.kap.every(t => D.kampDone.includes(t))) return false;
-    if (L.kampagne) { const all = D.chAll && D.chAll.length ? D.chAll.every(t => D.kampDone.includes(t)) : false; if (!all && num(D.stats.kampagne) < 1) return false; }
+    if (L.kampagne) { const all = D.chAll && D.chAll.length ? D.chAll.every(t => D.kampDone.includes(t)) : false; if (!all && num(D.stats[KD.kamp ? KD.kamp().stat : 'kampagne']) < 1) return false; }
     if (L.gpNote && !(G && G.note >= 1 && G.note <= L.gpNote)) return false;
     return true;
   }

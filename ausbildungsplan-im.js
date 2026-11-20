@@ -33,7 +33,7 @@
         "id": "LF1",
         "nr": "1",
         "titel": "LF 1: Fertigen von Bauelementen mit handgeführten Werkzeugen",
-        "kurz": "Du lernst, Bauteile von Hand zu sägen, feilen, biegen und zu messen und dafür das passende Fertigungsverfahren zu wählen.",
+        "kurz": "Du lernst, Bauteile von Hand zu sägen, feilen, biegen und anzureißen, Maße und Toleranzen zu lesen, zu messen und zu prüfen und Werkstoffe zu erkennen.",
         "jahr": 1,
         "quelle": "KMK-Rahmenlehrplan Industriemechaniker/-in (Lernfeldtitel, Stand Änderung 2018); ZVEI/BIBB Zeitrahmen und Lernfelder, Stand 16.05.2018; BBS Osnabrück Gliederung Industriemechanik, Stand 15.02.2023",
         "entwurf": false,
@@ -43,14 +43,29 @@
             "bereich": [
               "Fertigungsverfahren (DIN 8580)",
               "Handfertigung",
-              "Biegen und Richten"
+              "Biegen und Richten",
+              "Werkbank-Praxis"
             ]
           },
           {
             "lab": "tol",
             "bereich": [
               "Ablesen",
-              "Messmittel wählen"
+              "Messmittel wählen",
+              "Toleranzen",
+              "Prüfen in der Werkstatt"
+            ]
+          },
+          {
+            "lab": "wer",
+            "bereich": [
+              "Werkstoffe erkennen"
+            ]
+          },
+          {
+            "lab": "zer",
+            "bereich": [
+              "Schneide und Verfahren"
             ]
           }
         ],
@@ -64,7 +79,13 @@
             ]
           }
         ],
-        "pruefung": "AP1"
+        "pruefung": "AP1",
+        "heftMehr": [
+          {
+            "heft": "lernen-tol.html",
+            "t": "Heft Messen"
+          }
+        ]
       },
       {
         "id": "LF2",
@@ -144,7 +165,6 @@
           {
             "lab": "tol",
             "bereich": [
-              "Toleranzen",
               "Form- und Lagetoleranz"
             ]
           },
@@ -193,7 +213,17 @@
             ]
           }
         ],
-        "pruefung": "AP1"
+        "pruefung": "AP1",
+        "heftMehr": [
+          {
+            "heft": "lernen-zei.html",
+            "t": "Heft Technische Zeichnung"
+          },
+          {
+            "heft": "lernen-kon.html",
+            "t": "Heft Konstruktion"
+          }
+        ]
       },
       {
         "id": "LF4",
@@ -221,7 +251,17 @@
           },
           {
             "lab": "els",
-            "bereich": "*"
+            "bereich": [
+              "Stromwirkung",
+              "Sicherheitsregeln",
+              "Schutzklassen",
+              "Schutzorgane",
+              "RCD",
+              "Schutzmaßnahmen",
+              "Brandschutz",
+              "Kennzeichnung",
+              "Maschinensicherheit"
+            ]
           },
           {
             "lab": "mess",
@@ -289,7 +329,7 @@
         "id": "LF6",
         "nr": "6",
         "titel": "LF 6: Installieren und Inbetriebnehmen steuerungstechnischer Systeme",
-        "kurz": "Du lernst Steuerungen kennen: Pneumatik und Hydraulik, Sensoren, SPS-Programme und das Messen mit dem Oszilloskop.",
+        "kurz": "Du lernst Steuerungen kennen: Pneumatik und Hydraulik, Sensoren und SPS-Programme.",
         "jahr": 2,
         "quelle": "KMK-Rahmenlehrplan Industriemechaniker/-in (Lernfeldtitel, Stand Änderung 2018); ZVEI/BIBB Zeitrahmen und Lernfelder, Stand 16.05.2018; BBS Osnabrück Gliederung Industriemechanik, Stand 15.02.2023",
         "entwurf": true,
@@ -320,10 +360,6 @@
               "Fehlersuche",
               "Prüfungsstil"
             ]
-          },
-          {
-            "lab": "mess",
-            "bereich": "*"
           },
           {
             "lab": "pne",
@@ -367,9 +403,12 @@
           {
             "lab": "mas",
             "bereich": [
+              "Zahnräder und Maße",
+              "Übersetzung und Leistung",
               "Lager und Wellen",
               "Kupplungen, Bremsen, Dichtungen",
-              "Federn"
+              "Federn",
+              "Kupplung ausrichten"
             ]
           },
           {
@@ -386,14 +425,9 @@
               "Spannung und Dehnung",
               "Pressung und Abscheren",
               "Biegung und Sicherheit",
-              "Arbeit und Leistung"
-            ]
-          },
-          {
-            "lab": "mas",
-            "bereich": [
-              "Zahnräder und Maße",
-              "Übersetzung und Leistung"
+              "Arbeit und Leistung",
+              "Torsion und Knickung",
+              "Bewegung"
             ]
           }
         ],
@@ -448,7 +482,8 @@
             "bereich": [
               "Fehlersuche",
               "Lager und Schadensanalyse",
-              "Motor und Typenschild"
+              "Motor und Typenschild",
+              "Riemen, Ketten und Dichtungen"
             ]
           },
           {
@@ -479,6 +514,18 @@
             "lab": "fer",
             "bereich": [
               "Fehlersuche"
+            ]
+          },
+          {
+            "lab": "pne",
+            "bereich": [
+              "Wartung und Fehlersuche"
+            ]
+          },
+          {
+            "lab": "hyd",
+            "bereich": [
+              "Wartung und Fehlersuche"
             ]
           }
         ],
@@ -520,13 +567,10 @@
             "lab": "ant",
             "bereich": [
               "Grundlagen",
-              "Gleichstrom und H-Brücke",
-              "Schrittmotor",
               "Drehstrom",
               "Getriebe",
               "Asynchronmotor",
-              "Typenschild und Betrieb",
-              "Gleichstrom- und Schrittmotor"
+              "Typenschild und Betrieb"
             ]
           }
         ],
@@ -646,8 +690,7 @@
           {
             "lab": "sen",
             "bereich": [
-              "Normsignale",
-              "ADU"
+              "Normsignale"
             ]
           },
           {
@@ -661,6 +704,48 @@
         "wiki": [
           "bg-adu-dau"
         ],
+        "projekt": [],
+        "pruefung": "AP2"
+      },
+      {
+        "id": "E-INST",
+        "nr": "",
+        "titel": "Einsatzgebiet Instandhaltung",
+        "kurz": "Du übst den ganzen Instandhaltungsauftrag: von der Störmeldung über Planen, Sichern und Instandsetzen bis zur Übergabe. Dazu Wartungsplanung, Zustandsüberwachung, Ersatzteile und Schwachstellen.",
+        "jahr": 3,
+        "quelle": "Einsatzgebiet nach Ausbildungsordnung Industriemechaniker/-in; Zuordnung der Aufgaben als Entwurf.",
+        "entwurf": true,
+        "labs": [
+          {
+            "lab": "ins",
+            "bereich": [
+              "Einsatzgebiet Instandhaltung"
+            ]
+          }
+        ],
+        "heft": "lernen-ins.html",
+        "wiki": [],
+        "projekt": [],
+        "pruefung": "AP2"
+      },
+      {
+        "id": "E-PROD",
+        "nr": "",
+        "titel": "Einsatzgebiet Produktionstechnik",
+        "kurz": "Du lernst, für die Produktion zu bauen: Vorrichtungen und Betriebsmittel, Auftragszeit und Taktzeit, Prüfplan und Erstteilfreigabe, Arbeitsplatz und die Übergabe an die Produktion.",
+        "jahr": 3,
+        "quelle": "Einsatzgebiet nach Ausbildungsordnung Industriemechaniker/-in; Zuordnung der Aufgaben als Entwurf.",
+        "entwurf": true,
+        "labs": [
+          {
+            "lab": "fer",
+            "bereich": [
+              "Einsatzgebiet Produktionstechnik"
+            ]
+          }
+        ],
+        "heft": "lernen-fer.html",
+        "wiki": [],
         "projekt": [],
         "pruefung": "AP2"
       },
@@ -681,7 +766,7 @@
             ]
           }
         ],
-        "heft": null,
+        "heft": "lernen-kon.html",
         "wiki": [],
         "projekt": [
           {
@@ -697,25 +782,24 @@
         "id": "LF15",
         "nr": "15",
         "titel": "LF 15: Optimieren von technischen Systemen",
-        "kurz": "Du lernst, Anlagen zu verbessern: SPS-Vertiefung, Regelkreis optimieren, Antriebe beurteilen und Verbesserungen abzusichern.",
+        "kurz": "Du lernst, Anlagen zu verbessern: Regelkreis einstellen und optimieren, Antriebe beurteilen und Verbesserungen absichern.",
         "jahr": 4,
         "quelle": "KMK-Rahmenlehrplan Industriemechaniker/-in (Lernfeldtitel, Stand Änderung 2018); ZVEI/BIBB Zeitrahmen und Lernfelder, Stand 16.05.2018; BBS Osnabrück Gliederung Industriemechanik, Stand 15.02.2023",
         "entwurf": true,
         "labs": [
-          {
-            "lab": "sps",
-            "bereich": "*"
-          },
           {
             "lab": "reg",
             "bereich": "*"
           },
           {
             "lab": "ant",
-            "bereich": "*"
+            "bereich": [
+              "Fehlersuche",
+              "Prüfungsstil"
+            ]
           }
         ],
-        "heft": "lernen-sps.html",
+        "heft": "lernen-reg.html",
         "wiki": [],
         "projekt": [],
         "pruefung": "AP2"
@@ -731,7 +815,16 @@
         "labs": [
           {
             "lab": "mat",
-            "bereich": ["Einheiten","Dreisatz","Prozent","Bruchrechnung","Klammern","Umstellen","Geometrie","Messwerte","Prüfung Teil 1"]
+            "bereich": [
+              "Einheiten",
+              "Dreisatz",
+              "Prozent",
+              "Bruchrechnung",
+              "Klammern",
+              "Umstellen",
+              "Geometrie",
+              "Messwerte"
+            ]
           }
         ],
         "heft": null,
@@ -742,7 +835,7 @@
       {
         "id": "Z-THM",
         "nr": "",
-        "titel": "Wärme und Kühlung (Elektronik)",
+        "titel": "Zusatzthema: Wärme und Kühlung (Elektronik)",
         "kurz": "Du lernst, wie sich Bauteile erwärmen und wie ein Kühlkörper die Wärme abführt; ein Zusatzthema aus der Elektronik, das hier keinem Lernfeld zugeordnet ist.",
         "jahr": 0,
         "quelle": "Entwurf",
@@ -758,7 +851,9 @@
           "bg-kuehlung-halbleiter"
         ],
         "projekt": [],
-        "pruefung": null
+        "pruefung": null,
+        "optional": true,
+        "block": "Zusatzthemen"
       },
       {
         "id": "Z-ENG",
@@ -812,7 +907,8 @@
             "lab": "mat",
             "bereich": [
               "Elektrotechnik",
-              "Elektronik vertieft"
+              "Elektronik vertieft",
+              "Prüfung Teil 1"
             ]
           }
         ],
@@ -820,6 +916,67 @@
         "wiki": [],
         "projekt": [],
         "pruefung": null,
+        "optional": true
+      },
+      {
+        "id": "Z-ELV",
+        "nr": "",
+        "titel": "Zusatzthema: Elektrotechnik vertieft",
+        "kurz": "Freiwillig, für alle, die tiefer einsteigen wollen: Anlagen und Geräte prüfen, Netzformen, Oszilloskop, Wandler, Kleinmotoren und SPS-Vertiefung. Elektrische Arbeiten macht die Elektrofachkraft.",
+        "jahr": 0,
+        "quelle": "Entwurf",
+        "entwurf": true,
+        "labs": [
+          {
+            "lab": "els",
+            "bereich": [
+              "Prüfungsnah",
+              "Isolation und Schutzleiter",
+              "Geräteprüfung",
+              "TT-System",
+              "Schmelzsicherung",
+              "IT-System",
+              "Anlagenprüfung"
+            ]
+          },
+          {
+            "lab": "mess",
+            "bereich": [
+              "Oszilloskop",
+              "Frequenzgang",
+              "Logik",
+              "Kundenauftrag",
+              "Fehlersuche",
+              "Prüfung: Stromlaufplan"
+            ]
+          },
+          {
+            "lab": "sen",
+            "bereich": [
+              "ADU"
+            ]
+          },
+          {
+            "lab": "ant",
+            "bereich": [
+              "Gleichstrom und H-Brücke",
+              "Schrittmotor",
+              "Gleichstrom- und Schrittmotor",
+              "Vertiefung"
+            ]
+          },
+          {
+            "lab": "sps",
+            "bereich": [
+              "Vertiefung"
+            ]
+          }
+        ],
+        "heft": null,
+        "wiki": [],
+        "projekt": [],
+        "pruefung": null,
+        "block": "Zusatzthemen",
         "optional": true
       }
     ]

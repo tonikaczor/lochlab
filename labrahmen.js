@@ -112,6 +112,7 @@
     }
     var el = S.name.querySelector('.lr-sub');
     if (el.textContent !== sub) el.textContent = sub;
+    S.name.classList.toggle('lr-hat-sub', !!sub);   /* uifix63186 */
     el.setAttribute('aria-label', sub ? 'Versuch: ' + sub : '');
   }
   /* Kopfzeilenknöpfe, die unter 1100 px verschwinden und im Menü der Labs noch fehlen, bekommen dort eine Zeile */
@@ -543,11 +544,38 @@
     } catch (e) { return false; }
   }
 
+  /* ------------------------------------------------------------------ uifix63186: Einheiten nicht in Versalien (B05)
+     Tabellenkoepfe und Kartentitel der Metall-Labs sind per CSS in Versalien gesetzt: aus "µm" wird dann "ΜM" (griechisches Mu), aus "mm" "MM", aus "p + 1" "P + 1".
+     Enthaelt so ein Element eine Einheit oder eine Formel, bekommt es text-transform:none. Nur in den 14 Metall-Labs; Elektronik-Labs bleiben unberuehrt. */
+  var METALL_LABS = ' fer tol zer wer fug mas mch mak cnc pne hyd ins zei kon ';
+  function metallLab() { var m = /^([a-z]+)lab\.html$/.exec(FILE); return !!m && METALL_LABS.indexOf(' ' + m[1] + ' ') >= 0; }
+  var EINHEIT = /[\u00B5\u03BC]|(^|[^A-Za-z\u00C4\u00D6\u00DC\u00E4\u00F6\u00FC\u00DF])(m{1,2}|cm|dm|km|kg|kN|kW|kHz|MPa|kPa|bar|min|ml)(?![A-Za-z\u00C4\u00D6\u00DC\u00E4\u00F6\u00FC\u00DF])|[=\u00B7]|\(\s*[a-z]\s*[+\-\u2212\u00B7*\/=]/;
+  function versalien() {
+    try {
+      $$('th, h3, h4, h5, summary, .lbl, .gh').forEach(function (e) {
+        if (e.style.textTransform === 'none') return;
+        if (!EINHEIT.test(e.textContent || '')) return;
+        if (root.getComputedStyle(e).textTransform === 'uppercase') e.style.textTransform = 'none';
+      });
+    } catch (err) {}
+  }
+  function versalienStart() {
+    if (!metallLab()) return;
+    versalien();
+    if (!root.MutationObserver) return;
+    var tv = 0, soonV = function () { clearTimeout(tv); tv = setTimeout(versalien, 120); };
+    var mid = doc.getElementById('mid'); if (mid) new MutationObserver(soonV).observe(mid, { childList: true, subtree: true });
+    new MutationObserver(soonV).observe(doc.body, { childList: true });
+  }
+
   /* ------------------------------------------------------------------ Start */
   function start() {
     S.app = doc.getElementById('app'); S.hdr = S.app && S.app.querySelector(':scope > header');
     if (!S.app || !S.hdr) return;   // kein Lab-Gerüst: nichts tun
     doc.documentElement.classList.add('lr-on');
+    /* uifix63186: Kennung des Labs (data-lr-lab="zerlab.html") und Klasse lr-metall fuer die 14 Metall-Labs; nur Selektoren fuer CSS-Regeln */
+    doc.documentElement.setAttribute('data-lr-lab', FILE);
+    if (metallLab()) doc.documentElement.classList.add('lr-metall');
     S.tabs = doc.getElementById('tabs');
     S.engine = !S.tabs && !!(doc.getElementById('parts') && doc.getElementById('cv'));
     if (doc.querySelector('#pgRig.rigc')) doc.documentElement.classList.add('lr-rig');
@@ -594,6 +622,7 @@
     root.addEventListener('orientationchange', function () { setTimeout(platz, 300); });
     setTimeout(function () { aktualisieren(); platz(); einsammeln(); leiste(); }, 600);
     setTimeout(function () { einsammeln(); buehne(); }, 2500);
+    versalienStart();   /* uifix63186 */
   }
 
   root.LabRahmen = {

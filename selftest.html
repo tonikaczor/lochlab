@@ -16,7 +16,7 @@
   Object.keys(REG).forEach(function (k) { if (REG[k].eig && !LABS.some(function (l) { return l[0] === k; })) LABS.push([k, REG[k].name, REG[k].file, 0, 'eig']); });
   var ALLE = LABS.slice();
   /* Soll-Zahlen der Kern-Prüfungen, Stand v63.185 (Aufgaben je Lab wie im Aufgabenverzeichnis; ex = Beispiele, proj = Projekte). Kommen Aufgaben dazu, hier anpassen. */
-  var SOLL = { sps: 43, pcb: 49, ant: 54, sen: 49, ds: 43, thm: 46, emv: 35, enr: 42, els: 57, nts: 55, wsl: 64, ana: 61, reg: 53, regEx: 30, proj: 13, gesamt: 3075, labs: 63 };
+  var SOLL = { sps: 43, pcb: 49, ant: 54, sen: 49, ds: 43, thm: 46, emv: 35, enr: 42, els: 57, nts: 55, wsl: 64, ana: 61, reg: 53, regEx: 30, proj: 13, gesamt: 3264, labs: 63 };
   var nur = /[?&]nur=([\w,]+)/.exec(location.search); if (nur) LABS = LABS.filter(function (l) { return nur[1].split(',').indexOf(l[0]) >= 0; });   // ?nur=sps: nur einzelne Labs prüfen (Probelauf)
   var sleep = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
   var all = { ok: true, labs: [] };

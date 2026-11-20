@@ -243,7 +243,8 @@
       links.appendChild(h('li', {}, [h('a', { class: 'lab' + (x.fremd ? ' fremd' : ''), href: labLink(x.lab, auf, D.reg), 'aria-label': (info.name || x.lab) + (sub ? ', ' + sub : '') }, [h('span', { text: info.name || x.lab }), sub ? h('small', { text: sub }) : null])]));
     });
     if (l.heft) links.appendChild(h('li', {}, [h('a', { class: 'lab heft', href: l.heft }, [h('span', { text: 'Heft' }), h('small', { text: 'lesen' })])]));
-    else links.appendChild(h('li', {}, [h('span', { class: 'lab keinheft' }, [h('span', { text: 'Heft' }), h('small', { text: 'noch keins' })])]));
+    (l.heftMehr || []).forEach(m => links.appendChild(h('li', {}, [h('a', { class: 'lab heft', href: m.heft }, [h('span', { text: m.t }), h('small', { text: 'lesen' })])])));
+    if (!l.heft) links.appendChild(h('li', {}, [h('span', { class: 'lab keinheft' }, [h('span', { text: 'Heft' }), h('small', { text: 'noch keins' })])]));
     art.appendChild(links);
     // Mehr: Themen, Wiki, Projekt-Stationen, Probetest
     const mehr = [], themen = l.themen || [], wiki = (l.wiki || []).slice(0, 8), pro = l.projekt || [];

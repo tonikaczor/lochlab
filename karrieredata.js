@@ -70,9 +70,19 @@
     'Du rechnest und prüfst, bevor du rätst.', 'Du bist auf dem Weg: Die Basis steht, jetzt kommt die Vertiefung.', 'Du erkennst Muster und Fehler, bevor andere sie sehen.', 'Was du hier übst, kannst du bald in der Praxis.',
     'Du bist bereit für die Prüfung: Zeit, Genauigkeit, Ruhe.', 'Fast alles geschafft. Nur noch die letzten Lücken schließen.', 'Du hast dein Fach im Griff. Gib dein Wissen an die Neuen weiter.'];
   const ANTEIL = [0, 0.02, 0.05, 0.09, 0.14, 0.20, 0.26, 0.32, 0.38, 0.45];   // Rang n ab Anteil der erreichbaren Aufgaben-XP (n = 1 bis 10)
+  /* Kampagne je Beruf (Gegenstück zu KAMP in kampagne.js): Speicherschlüssel, Zähler in lm4.stats, Erzähler.
+     Die Ränge dieser Berufe haben weiterhin keine Kapitel-Meilensteine (kein Kampagnen-Zwang); abgeschlossene Kapitel bringen aber wie bei egs XP.
+     GP_BERUFE: Berufe mit Generalprobe. Sie braucht den Prüfungs-Pool des Berufs; für im gibt es ihn noch nicht, der Reiter bleibt dort ausgeblendet. */
+  const KAMP_B = {
+    im: { key: 'lm4.kamp.im', stat: 'kampagneim', meister: 'Meister Span' }
+  };
+  const GP_BERUFE = ['egs'];
+  let AKT = 'egs';
+  const kamp = () => (KAMP_B[AKT] ? { beruf: AKT, key: KAMP_B[AKT].key, stat: KAMP_B[AKT].stat, meister: KAMP_B[AKT].meister } : { beruf: 'egs', key: 'lm4.kamp', stat: 'kampagne', meister: 'Meister Funk' });
   function use(beruf, rows, reg) {
     const set = (arr, list) => { arr.length = 0; list.forEach(x => arr.push(x)); };
-    if (!beruf || beruf === 'egs' || !TITEL[beruf]) { set(LEVELS, ORIG.LEVELS); set(SPECIALS, ORIG.SPECIALS); return 'egs'; }
+    if (!beruf || beruf === 'egs' || !TITEL[beruf]) { AKT = 'egs'; set(LEVELS, ORIG.LEVELS); set(SPECIALS, ORIG.SPECIALS); return 'egs'; }
+    AKT = beruf;
     reg = reg || {}; rows = rows || [];
     const labs = Object.keys(reg).filter(k => !reg[k].hub && (reg[k].beruf || ['egs']).indexOf(beruf) >= 0);
     const mine = rows.filter(r => labs.indexOf(r[1]) >= 0);
@@ -89,7 +99,7 @@
     set(LEVELS, lv); set(SPECIALS, sp);
     return beruf;
   }
-  const D = { LEVELS, SPECIALS, XP, GP, XPKEY, use, VERBUND_AGG: ['vbfertig', 'vbprofi', 'vbgold'], VERBUND_PIDS: ['vbgarage', 'vbampel', 'vbuhr', 'vbgiess', 'vbfoerder', 'vbnetzteil', 'vbheizung', 'vbpresse', 'vbversand', 'vbkalk', 'vbwerknetz', 'vbgehaeuse', 'vbtonfunk'] };
+  const D = { LEVELS, SPECIALS, XP, GP, XPKEY, use, KAMP_B, GP_BERUFE, kamp, VERBUND_AGG: ['vbfertig', 'vbprofi', 'vbgold'], VERBUND_PIDS: ['vbgarage', 'vbampel', 'vbuhr', 'vbgiess', 'vbfoerder', 'vbnetzteil', 'vbheizung', 'vbpresse', 'vbversand', 'vbkalk', 'vbwerknetz', 'vbgehaeuse', 'vbtonfunk'] };
   if (typeof module !== 'undefined' && module.exports) module.exports = D;
   root.KarriereData = D;
 })(typeof window !== 'undefined' ? window : globalThis);

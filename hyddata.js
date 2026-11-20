@@ -158,7 +158,7 @@
         { name: 'Magnet a: Zylinder fährt langsam (gedrosselt) aus', set: { V1: 'a' }, expect: [{ t: 'ext', c: 'Z1' }, { t: 'vmax', c: 'Z1', v: 0.04 }] },
         { name: 'Magnet loslassen: Zylinder fährt schnell ein (Rückschlagventil öffnet)', set: { V1: '0' }, expect: [{ t: 'ret', c: 'Z1' }, { t: 'vmin', c: 'Z1', v: 0.06 }] }
       ] },
-      info: 'Das Drosselrückschlagventil sitzt in der Zuleitung zur Kolbenseite: Beim Ausfahren muss das Öl durch die Drossel (gedrosselt), beim Einfahren fließt es frei über das Rückschlagventil zurück. Der Pumpenstrom, den die Drossel nicht durchlässt, fließt über das DBV ab: Der Pumpendruck steht auf dem Einstelldruck.',
+      info: 'Das Drosselrückschlagventil sitzt in der Zuleitung zur Kolbenseite: Beim Ausfahren muss das Öl durch die Drossel (gedrosselt), beim Einfahren fließt es frei über das Rückschlagventil zurück. Der Pumpenstrom, den die Drossel nicht durchlässt, fließt über das DBV ab: Der Pumpendruck steht auf dem Einstelldruck. Bei ziehender Last (Absenken) ist die Zulaufdrosselung ungeeignet, dort nimmst du die Ablaufdrosselung.',
       tryIt: ['Ventil auf a: Zylinder fährt langsam, der Pumpendruck steht auf 80 bar, der Zylinderdruck ist deutlich niedriger.', 'Ventil auf 0: Zylinder fährt wieder schnell ein.']
     });
   })();
@@ -212,7 +212,7 @@
 
   /* ================================================================ Aufgaben */
   const tasks = [];
-  const cats = ['Symbole', 'Bauteile und Anschlüsse', 'Schaltplan lesen', 'Verschlauchen', 'Rechnen'];
+  const cats = ['Symbole', 'Bauteile und Anschlüsse', 'Schaltplan lesen', 'Verschlauchen', 'Rechnen', 'Wartung und Fehlersuche'];
   const T_AB = 'Beim normalen Üben kosten Tipps nichts.';
   function add(cat, title, level, o) { tasks.push(Object.assign({ id: 'hyd' + (tasks.length + 1), cat, title, level }, o)); }
   function choiceTask(cat, title, level, text, choices, correct, expl, tips, extra) {
@@ -412,6 +412,34 @@
   });
 
   /* ================================================================ Zufalls-Trainer */
+  /* ---- Neue Aufgaben hyd46 bis hyd51 (w187, Wartung und Fehlersuche aus Sicht der Instandhaltung); hinten angehängt, Nummern der bisherigen bleiben. ---- */
+  const WH = 'Wartung und Fehlersuche';
+  choiceTask(WH, 'Verschmutzungsanzeige am Filter', 1, 'Am Rücklauffilter einer Hydraulikanlage steht die Verschmutzungsanzeige im roten Bereich, obwohl das Öl betriebswarm ist. Was bedeutet das und was ist zu tun?',
+    ['Das Filterelement ist zugesetzt und wird gewechselt, bevor ungefiltertes Öl umläuft', 'Der Filter arbeitet besonders gut und bleibt drin, bis die Anlage von selbst stehen bleibt', 'Der Systemdruck ist zu hoch, das Druckbegrenzungsventil wird niedriger eingestellt', 'Das Öl ist zu dünnflüssig, es wird sofort gegen eine dickere Sorte getauscht'], 0,
+    'Die Verschmutzungsanzeige misst den Druckunterschied vor und hinter dem Filterelement. Je mehr Schmutz im Element sitzt, desto größer wird er. Im roten Bereich ist das Element zugesetzt und wird gewechselt, bei ausgeschalteter, gesicherter und drucklos gemachter Anlage. Wartet man zu lange, öffnet bei vielen Filtern ein Umgehungsventil (Bypass) und das Öl läuft ungefiltert weiter. Bei kaltem, zähem Öl kann die Anzeige kurz ansprechen, deshalb wird bei betriebswarmem Öl abgelesen.',
+    ['Die Anzeige vergleicht den Druck vor und hinter dem Filterelement.', 'Ein großer Druckunterschied heißt: Das Öl kommt nur schwer durch das Element.']);
+  choiceTask(WH, 'Arbeiten an einer Anlage mit Speicher', 2, 'An einer Hydraulikanlage mit Blasenspeicher soll ein Wegeventil getauscht werden. Die Pumpe ist ausgeschaltet und gegen Wiedereinschalten gesichert. Was ist noch nötig, bevor du eine Verschraubung löst?',
+    ['Den Speicher zum Tank entlasten und am Manometer prüfen, dass 0 bar anstehen', 'Nichts weiter, denn ohne laufende Pumpe gibt es in der Anlage keinen Druck mehr', 'Den Stickstoff aus dem Speicher ablassen, das Öl darf dabei unter Druck bleiben', 'Die Verschraubung langsam lösen und warten, bis kein Öl mehr herausspritzt'], 0,
+    'Ein Hydrospeicher hält Öl unter Druck, auch wenn die Pumpe steht. Deshalb wird er vor jeder Arbeit auf der Ölseite über das Entlastungsventil zum Tank entlastet. Am Manometer wird geprüft, dass der Druck auf 0 bar gefallen ist. Hängende Lasten werden abgesenkt oder abgestützt. Die Gasfüllung bleibt im Speicher. Eine Verschraubung unter Druck zu lösen ist lebensgefährlich: Ein feiner Ölstrahl kann die Haut durchdringen.',
+    ['Überlege, welches Bauteil Energie speichert, auch wenn die Pumpe steht.', 'Der Druck muss abgebaut und danach kontrolliert werden. Womit liest du den Druck ab?']);
+  choiceTask(WH, 'Pumpe wird laut', 2, 'Die Pumpe eines Hydraulikaggregats läuft seit heute auffällig laut und rasselnd, die Zylinder fahren ruckartig. Was prüfst du zuerst?',
+    ['Ölstand und Schaum im Tank, danach Saugfilter und Saugleitung auf Dichtheit', 'Das Druckbegrenzungsventil höher einstellen, damit die Pumpe mehr Gegendruck hat', 'Die Pumpe sofort ausbauen und zerlegen, das Geräusch kommt immer von den Lagern', 'Ein dickflüssigeres Öl einfüllen, damit das Geräusch der Pumpe gedämpft wird'], 0,
+    'Rasseln und ruckartige Zylinder deuten auf die Saugseite: Entweder saugt die Pumpe Luft an (Ölstand zu niedrig, Saugleitung undicht, das Öl schäumt), oder die Pumpe bekommt zu wenig Öl (Saugfilter zugesetzt, Öl zu kalt und zäh). Dann bilden sich Dampfblasen, die schlagartig zusammenfallen (Kavitation). Beides zerstört die Pumpe. Bei anhaltendem Rasseln wird die Anlage deshalb abgeschaltet und gesichert, bevor Saugfilter und Saugleitung geprüft werden. Deshalb erst die einfachen Dinge prüfen: Ölstand, Ölzustand, Saugfilter, Saugleitung. Am Druckbegrenzungsventil wird nichts verstellt.',
+    ['Beginne mit dem, was du ohne Werkzeug sehen kannst.', 'Die Pumpe wird laut, wenn Luft oder zu wenig Öl ankommt. Auf welcher Seite der Pumpe suchst du?']);
+  choiceTask(WH, 'Öl wird zu heiß: erste Maßnahme', 2, 'Die Öltemperatur einer Hydraulikanlage ist in den letzten Tagen gestiegen und liegt jetzt nahe am Abschaltwert. Druckeinstellung und Arbeitsablauf sind unverändert. Deine Befunde: Der Ölstand steht an der unteren Markierung, die Lamellen des Ölkühlers sind dick mit Staub belegt. Was machst du zuerst?',
+    ['Den Ölkühler reinigen, Öl bis zur Markierung auffüllen und die Temperatur beobachten', 'Das Druckbegrenzungsventil höher einstellen, damit weniger Öl darüber abströmt', 'Den Temperaturfühler abklemmen, damit die Anlage nicht mehr von selbst abschaltet', 'Ein dünnflüssigeres Öl einfüllen, weil es sich beim Umlauf weniger stark erwärmt'], 0,
+    'Die Verlustwärme der Anlage wird über Tank und Kühler abgegeben. Ein verstaubter Kühler gibt kaum noch Wärme ab, und wenig Öl im Tank läuft schneller um und kühlt schlechter. Beides passt zu den Befunden und ist schnell behoben: Kühler reinigen (vorher Anlage ausschalten und sichern, denn der Lüfter kann anlaufen und der Kühler kann heiß sein), das vorgeschriebene Öl auffüllen, beobachten. Fehlt Öl, wird auch die Ursache des Verlusts gesucht. Bleibt das Öl heiß, geht die Suche weiter (zum Beispiel Öl strömt dauernd über das Druckbegrenzungsventil, innere Leckage). Druckbegrenzungsventil und Temperaturüberwachung schützen die Anlage und werden nicht verstellt oder überbrückt.',
+    ['Druck und Ablauf sind gleich geblieben. Es entsteht also nicht mehr Wärme als früher. Was hat sich bei der Kühlung geändert?', 'Zwei Befunde stehen in der Aufgabe. Beide lassen sich ohne Umbau beheben.']);
+  choiceTask(WH, 'Schlauchleitung wechseln', 2, 'Eine undichte Schlauchleitung wird getauscht. Die Anlage ist gesichert und drucklos. Worauf achtest du beim Wechsel besonders?',
+    ['Anschlüsse vorher reinigen, offene Stellen sofort verschließen, die neue Leitung sauber einbauen', 'Offene Anschlüsse mit einem Putzlappen ausstopfen, denn der Lappen saugt das Öl gut auf', 'Sauberkeit ist hier unwichtig, denn Schmutz aus der Leitung bleibt später im Tank liegen', 'Die neue Leitung kräftig verdreht einbauen, denn unter Spannung sitzt die Leitung fester'], 0,
+    'Schmutz ist eine der häufigsten Ausfallursachen in der Hydraulik. Schon feine Teilchen verschleißen Pumpe und Ventile. Deshalb: Umgebung der Anschlüsse vor dem Lösen reinigen, offene Anschlüsse sofort mit sauberen Stopfen oder Kappen verschließen (keine Putzlappen, denn Lappen verlieren Fasern), die neue Leitung bis zum Einbau verschlossen halten. Die Leitung wird ohne Verdrehung und mit dem richtigen Biegeradius verlegt und nach Herstellerangabe angezogen. Danach folgen Probelauf und Sichtprüfung auf Dichtheit. Ausgelaufenes Öl wird aufgenommen und richtig entsorgt.',
+    ['Überlege, was in die offene Leitung gelangen kann, solange sie nicht angeschlossen ist.', 'Auch Fasern von einem Lappen sind Schmutz. Womit verschließt man offene Anschlüsse?']);
+  add(WH, 'Leckage: Ölverlust je Tag', 3, { kind: 'num', tips: ['Rechne zuerst aus, wie viele Tropfen an einem Tag fallen. Ein Tag hat 86 400 Sekunden.', 'Teile die Zahl der Tropfen durch die Tropfen je Milliliter. 1000 ml sind 1 l.'], make: R => {
+    const ts = C.pick(R, [3, 4, 5, 6, 8, 10]), nt = C.pick(R, [20, 25]), tr = 86400 / ts, ml = tr / nt, V = ml / 1000;
+    return { text: 'An einer Verschraubung fällt alle ' + ts + ' Sekunden ein Tropfen Öl. Für diese Übung gilt: ' + nt + ' Tropfen ergeben 1 ml (Übungswert). Wie viel Öl geht in 24 Stunden verloren (in Liter, zwei Nachkommastellen)?', unit: 'l', value: V, tol: tolOf(V, 0.02, 0.01), label: 'Ölverlust in 24 h',
+      expl: 'Ein Tag hat 24 · 3600 s = 86400 s. Tropfen je Tag: 86400 : ' + ts + ' = ' + f(tr, 0) + '. Ölmenge: ' + f(tr, 0) + ' : ' + nt + ' = ' + f(ml, 0) + ' ml = ' + f(V, 2) + ' l. Auch eine kleine Leckage ergibt über Wochen viele Liter, dazu kommen Rutschgefahr und Umweltschaden. Eine Verschraubung wird nur bei druckloser Anlage nachgezogen.' };
+  } });
+
   const symKeys = symbols.map(s => s.k);
   const cleanName = n => n.replace(/, Mittelstellung.*$/, '');
   function trainerSymbol(R) {

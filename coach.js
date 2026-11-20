@@ -29,8 +29,13 @@
   const BANK_TITEL = { grund: 'Grundlagen Gleichstrom', bauteile: 'Bauelemente', wechsel: 'Wechselstrom und Filter', digital: 'Digitaltechnik', messen: 'Messtechnik', strom: 'Stromversorgung', mcu: 'Mikrocontroller', sicher: 'Sicherheit und Normen' };
   const GRUPPEN_TITEL = { sich: 'Sicherheit, Schutzmaßnahmen, Installation', steu: 'SPS, Steuerung und Regelung', opv: 'Operationsverstärker', netz: 'Netzteil und Spannungsversorgung', bus: 'Bussysteme und Schnittstellen', digi: 'Digitaltechnik und Zahlensysteme', halb: 'Halbleiter, Transistor, LED, Relais', mcu: 'Mikrocontroller, Speicher, Wandler', mess: 'Messtechnik und Sensorik', qm: 'Qualität, Instandhaltung, Fachenglisch', grund: 'Grundlagen, Wechselstrom, Filter', itpc: 'IT, PC und Betriebssysteme', wiso: 'Wirtschafts- und Sozialkunde' };
   const PR_AUFGABE_THEMA = { pr1: 'grund', pr2: 'bauteile', pr3: 'wechsel', pr4: 'digital', pr5: 'messen', pr6: 'strom', pr7: 'mcu', pr8: 'sicher' };   // Aufgabe „Thema üben“ gilt ab 80 %
-  const ART = ['thema', 'aufgabe', 'pruefung', 'pfad'];   // Reihenfolge bei gleichem Gewicht
+  const ART = ['thema', 'aufgabe', 'pruefung', 'pfad', 'lab'];   // Reihenfolge bei gleichem Gewicht
   const LAB_PR = 'pruefungslab.html';
+  /* Profil je Beruf (v63.187, datengetrieben): Berufe ohne Prüfungs-Lab und ohne SchaltLab bekommen keine Vorschläge, die dorthin führen (kein Prüfungsthema, keine Probeprüfung, kein SchaltLab-Start).
+     Stattdessen: Lernpfad des Berufs, eine angefangene Aufgabe, ein begonnenes Lab des Berufs (labW = Gewicht) und zum Wiederholen das Lab fertig. Berufe ohne Eintrag: alles wie bisher.
+     Das Profil kommt aus C.profil (Test), sonst aus C.beruf, sonst aus BerufReg.cur() (Browser; so gilt es auch für Mein Stand, das seinen Katalog selbst baut). */
+  const PROFIL = { im: { pr: false, fertig: 'ins', labW: 0.4 } };
+  const profilOf = C => { try { if (C && C.profil !== undefined) return C.profil || null; const b = (C && C.beruf) || (root.BerufReg && root.BerufReg.cur ? root.BerufReg.cur() : ''); return Object.prototype.hasOwnProperty.call(PROFIL, b) ? PROFIL[b] : null; } catch (e) { return null; } };
 
   const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
   const fin = v => { const x = typeof v === 'string' && v.trim() !== '' ? +v : v; return typeof x === 'number' && isFinite(x) ? x : null; };
@@ -83,11 +88,11 @@
   /* ---------- Kern ---------- */
   function suggest(D0, now, C) {
     C = C || {}; now = now || Date.now();
-    const D = clean(D0), K = [];
+    const D = clean(D0), K = [], PF = profilOf(C), ohnePr = !!(PF && PF.pr === false);
     const hasData = Object.keys(D.done).length > 0 || Object.keys(D.tr).length > 0 || Object.keys(D.best).length > 0 || D.hist.length > 0 || D.trainer > 0;
     const lastLab = D.last ? (Object.keys(C.LAB_REG || {}).find(k => C.LAB_REG[k].file === D.last.file) || null) : null;
     /* 1. Prüfungsthemen: schwach (unter 70 %) oder gutes Thema, das nach Wiederholabstand wieder dran ist */
-    Object.keys(D.tr).forEach(k => {
+    if (!ohnePr) Object.keys(D.tr).forEach(k => {
       const t = D.tr[k]; if (t.n < W.minAntworten) return;
       const p = Math.round(100 * t.r / t.n), st = stage(k, D), days = daysSince(t.t, now), due = !t.t || (now - t.t) >= W.gap[st] * DAY;
       if (p < W.schwach) K.push({ art: 'thema', k, w: (W.schwach - p) / W.schwach * relOf(k) * (due ? 1 : W.nichtFaellig), p, r: t.r, n: t.n, days, due, sub: 'schwach' });
@@ -104,16 +109,37 @@
     /* 3. Lernpfad weiter */
     let rc = null; try { rc = typeof C.recommend === 'function' ? C.recommend() : null; } catch (e) { rc = null; }
     if (rc && rc.rec && (C.LAB_REG || {})[rc.rec]) K.push({ art: 'pfad', lab: rc.rec, href: rc.href || '', nextTitle: rc.next ? rc.next[3] : '', started: !!rc.started, w: W.pfad });
+    /* 3b. nur Berufe mit Profil: ein begonnenes Lab des Berufs, in dem anteilig am meisten offen ist (nicht die Pfadstation) */
+    if (PF) {
+      const R = C.LAB_REG || {}, by = {};
+      (C.AUFGABEN || []).forEach(r => { if (!R[r[1]] || R[r[1]].hub) return; const a = by[r[1]] = by[r[1]] || { n: 0, d: 0 }; a.n++; if ((D.done[r[0]] || 0) >= 100) a.d++; });
+      /* mit Lehrjahr zählt der Teil bis zum eigenen Lehrjahr (Lernpfad.recommend().st[k].t), damit keine Aufgabe aus einem späteren Lehrjahr vorgeschlagen wird */
+      const tl = k => (rc && rc.st && rc.st[k] && rc.st[k].t) || null, za = k => (tl(k) ? { d: tl(k).d, n: tl(k).n, lj: 1 } : by[k]);
+      const kand = Object.keys(by).filter(k => za(k).d > 0 && za(k).d < za(k).n && !(rc && rc.rec === k)).sort((a, b) => za(a).d / za(a).n - za(b).d / za(b).n || (a < b ? -1 : 1));
+      const k0 = kand[0], nx = k0 && tl(k0) && tl(k0).next, lt = !k0 ? null : nx ? { id: nx[0], title: nx[3], href: labFile(k0, C) + '?aufgabe=' + nx[0] } : labTask(k0, D, C);
+      if (lt) K.push({ art: 'lab', lab: k0, d: za(k0).d, n: za(k0).n, lj: !!za(k0).lj, id: lt.id, nextTitle: lt.title, href: lt.href, w: PF.labW || 0.4 });
+    }
     /* 4. Probeprüfung */
     const lastEx = D.hist.length ? D.hist.slice().sort((a, b) => a.t - b.t)[D.hist.length - 1] : null, ready = Object.keys(D.best).filter(k => D.best[k] >= W.gut).length >= 3;
-    if ((!lastEx && ready) || (lastEx && now - lastEx.t > W.pruefungTage * DAY)) K.push({ art: 'pruefung', lastEx, ready: Object.keys(D.best).filter(k => D.best[k] >= W.gut).length, days: lastEx ? daysSince(lastEx.t, now) : null, w: lastEx && lastEx.note >= 4 ? W.pruefungNote4 : W.pruefung });
+    if (!ohnePr && ((!lastEx && ready) || (lastEx && now - lastEx.t > W.pruefungTage * DAY))) K.push({ art: 'pruefung', lastEx, ready: Object.keys(D.best).filter(k => D.best[k] >= W.gut).length, days: lastEx ? daysSince(lastEx.t, now) : null, w: lastEx && lastEx.note >= 4 ? W.pruefungNote4 : W.pruefung });
     /* Auswahl: höchstens drei, je Art einer */
     const top = [], seen = {};
-    K.sort((a, b) => b.w - a.w || ART.indexOf(a.art) - ART.indexOf(b.art)).forEach(c => { if (!seen[c.art] && top.length < 3) { seen[c.art] = 1; top.push(c); } });
+    K.sort((a, b) => b.w - a.w || ART.indexOf(a.art) - ART.indexOf(b.art)).forEach(c => { if (!seen[c.art] && top.length < 3 && !(c.art === 'lab' && top.some(t => t.art === 'aufgabe' && t.id === c.id))) { seen[c.art] = 1; top.push(c); } });
     const lsHint = !!D.kuerzel && Object.keys(D.done).length === 0 && Object.keys(D.tr).length === 0;
     let res = hasData ? top.map(c => decorate(c, C)) : [];   // ohne jede Spur von Lernstand: immer die beiden Startvorschläge (auch wenn der Lernpfad „SchaltLab“ empfiehlt)
     if (!res.length && C.weg) {   // Wege Studium/Technik (v55.174): kein SchaltLab-Einstieg, kein Prüfungs-Lab (dafür gibt es keine Pool-Fragen): nur der nächste Schritt im Lernpfad, sonst nichts
       if (rc && rc.rec && (C.LAB_REG || {})[rc.rec]) res = [decorate({ art: 'pfad', lab: rc.rec, href: rc.href || '', nextTitle: rc.next ? rc.next[3] : '', started: !!rc.started, w: 1 }, C)];
+    } else if (!res.length && PF) {   // Beruf mit Profil (v63.187): Start im eigenen Lernpfad, dazu die zweite Station; nie SchaltLab, nie Prüfungs-Lab
+      const R = C.LAB_REG || {}, ord = rc && Array.isArray(rc.order) ? rc.order.filter(k => R[k] && !R[k].hub) : [];
+      if (rc && rc.rec && R[rc.rec]) {
+        res = [decorate({ art: 'pfad', lab: rc.rec, href: rc.href || '', nextTitle: rc.next ? rc.next[3] : '', started: !!rc.started, w: 1 }, C)];
+        const k2 = ord[ord.indexOf(rc.rec) + 1];
+        if (k2 && !rc.started) res.push({ art: 'start', title: 'Oder: ' + R[k2].name, text: 'Oder beginne mit dem ' + R[k2].name + ' (Einführung, etwa ' + W.minuten.start + ' Minuten).', href: R[k2].file + '?trainer', minuten: W.minuten.start, w: 0.9 });
+      } else if (rc && rc.fertigLj && R[rc.fertigLj.key]) {
+        const f = rc.fertigLj; res = [{ art: 'pfad', lab: f.key, title: 'Schau ins ' + f.lj + '. Lehrjahr', text: 'Dein Lehrjahr ist geschafft. Schau schon ins ' + f.lj + '. Lehrjahr: ' + f.name + (f.title ? ', ' + f.title : '') + '.', href: f.href, minuten: W.minuten.pfad, w: 0.5 }];
+      } else if (PF.fertig && R[PF.fertig]) {
+        res = [{ art: 'fertig', title: 'Nichts fällig', text: 'Im Moment ist nichts fällig. Wiederhole Aufgaben im ' + R[PF.fertig].name + '.', href: R[PF.fertig].file, minuten: W.minuten.aufgabe, w: 0.1 }];
+      }
     } else if (!res.length) {
       if (!hasData) res = [
         { art: 'start', title: 'Starte mit dem SchaltLab', text: 'Starte mit dem SchaltLab (Einführung, etwa ' + W.minuten.start + ' Minuten).', href: (labFile('sch', C) || 'schaltplan.html') + '?trainer', minuten: W.minuten.start, w: 1 },
@@ -141,6 +167,11 @@
       c.text = c.started ? 'Dein Lernpfad geht im ' + lab + ' weiter' + (c.nextTitle ? ': ' + c.nextTitle : '') + '.' : 'Das ist der nächste Schritt in deinem Lernpfad (Einführung).';
       c.href = c.href || (labFile(c.lab, C) + (c.started ? '' : '?trainer'));
       c.minuten = W.minuten.pfad;
+    } else if (c.art === 'lab') {
+      const lab = labName(c.lab, C);
+      c.title = 'Dranbleiben im ' + lab;
+      c.text = 'Im ' + lab + ' hast du ' + c.d + ' von ' + c.n + ' Aufgaben' + (c.lj ? ' für dein Lehrjahr' : '') + ' gelöst. Mach dort weiter' + (c.nextTitle ? ': ' + c.nextTitle : '') + '.';
+      c.minuten = W.minuten.aufgabe;
     } else if (c.art === 'pruefung') {
       c.title = 'Probeprüfung machen';
       c.text = c.lastEx ? 'Deine letzte Probeprüfung war ' + dayText(c.days) + ' (' + c.lastEx.pct + ' %, Note ' + c.lastEx.note + '). Mach eine neue und vergleiche.' : 'Du hast schon ' + c.ready + ' Themen mit 80 % geschafft. Probiere jetzt eine Probeprüfung mit Zeit und Note.';
@@ -165,7 +196,7 @@
 
   /* ---------- Oberfläche (nur im Browser) ---------- */
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const ICON = { thema: '📝', aufgabe: '🛠', pfad: '▶', pruefung: '🎓', start: '▶', fertig: '✓', hinweis: '💾', formel: '📐', gut: '👍' };
+  const ICON = { thema: '📝', aufgabe: '🛠', pfad: '▶', pruefung: '🎓', lab: '🧰', start: '▶', fertig: '✓', hinweis: '💾', formel: '📐', gut: '👍' };
   const CSS = 'section.coach{grid-column:1/-1;margin:0;padding:12px 14px;border:1px solid var(--line,#38424d);border-radius:14px;background:var(--panel,#222830);color:var(--fg,#e8ecf0)}'
     + 'section.coach h2{margin:0 0 8px;font-size:18px}.coach ol{list-style:none;margin:0;padding:0;display:grid;gap:8px}.coach li{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 10px;border-radius:12px;background:var(--panel2,#2c343e);border:1px solid var(--line,#38424d)}'
     + '.coach .ci{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.25);font-size:17px}.coach .ct{flex:1;min-width:200px}.coach .ct b{display:block;font-size:15px}.coach .ct span{display:block;font-size:14px;color:var(--fg,#e8ecf0);overflow-wrap:anywhere}.coach .ct small{color:#aab4bf;font-size:13px}'
@@ -198,6 +229,6 @@
       return sec;
     } catch (e) { return null; }
   }
-  const api = { W, REL, GAP: W.gap, BANK_TITEL, GRUPPEN_TITEL, clean, read, suggest, afterExam, labTask, nextStage, topicTitle, cardHtml, mount, current, relOf, dayText };
+  const api = { W, REL, PROFIL, GAP: W.gap, BANK_TITEL, GRUPPEN_TITEL, clean, read, suggest, afterExam, labTask, nextStage, topicTitle, cardHtml, mount, current, relOf, dayText };
   if (typeof module === 'object' && module.exports) module.exports = api; else root.Coach = api;
 })(typeof window !== 'undefined' ? window : globalThis);

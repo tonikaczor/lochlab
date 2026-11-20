@@ -12,11 +12,13 @@
   const TABS = [['rang', 'Rang'], ['spez', 'Spezialaufgaben'], ['gp', 'Generalprobe'], ['story', 'Geschichte']];
   /* Beruf (v39.158): Elektroniker wie bisher mit Kampagne und Generalprobe; die anderen Berufe haben Rang und Meisterstücke aus ihren Labs. */
   const berufNow = () => (root.BerufReg ? root.BerufReg.cur() : 'egs');
-  const tabsNow = () => (berufNow() === 'egs' ? TABS : TABS.filter(t => t[0] === 'rang' || t[0] === 'spez'));
+  /* Kampagne des Berufs (null, wenn der Beruf keine eigene hat). Reiter: Geschichte für Berufe mit Kampagne, Generalprobe nur für Berufe in KD.GP_BERUFE. */
+  const kampFuer = b => { const K = root.Kampagne; if (!K) return null; if (K.fuer) return K.fuer(b); return b === 'egs' ? K : null; };
+  const tabsNow = () => { const b = berufNow(); if (b === 'egs') return TABS; const gp = (KD.GP_BERUFE || []).indexOf(b) >= 0, st = !!kampFuer(b); return TABS.filter(t => t[0] === 'rang' || t[0] === 'spez' || (t[0] === 'gp' && gp) || (t[0] === 'story' && st)); };
   function useBeruf() { const b = berufNow(); try { if (KD.use) KD.use(b, root.AUFGABEN || [], root.LAB_REG || {}); } catch (e) {} return b; }
 
   /* ---------- reine Funktionen ---------- */
-  function kampOK(D) { return (D.chAll && D.chAll.length ? D.chAll.every(t => D.kampDone.includes(t)) : false) || (+D.stats.kampagne || 0) >= 1; }
+  function kampOK(D) { return (D.chAll && D.chAll.length ? D.chAll.every(t => D.kampDone.includes(t)) : false) || (+D.stats[KD.kamp ? KD.kamp().stat : 'kampagne'] || 0) >= 1; }
   /* Anzeige-Modell aus Eingaben (D wie core.read) */
   function model(D, ctx, free) {
     const L = core.level(D, ctx), cur = KD.LEVELS[L.n - 1], nx = L.next ? KD.LEVELS[L.n] : null;
@@ -54,7 +56,7 @@
       + '<div class="kr-sub">' + (M.nx ? (M.xpDone ? 'XP-Ziel erreicht (' + fmt(M.nx.xp) + ' XP)' : fmt(L.xp) + ' / ' + fmt(M.nx.xp) + ' XP') : fmt(L.xp) + ' XP · höchster Rang erreicht') + '</div>'
       + (M.nx ? '<p class="kr-nx"><b>Nächster Rang: ' + esc(M.nx.t) + '</b><br>' + (M.need.length ? (M.xpDone ? 'Es fehlt noch: ' : 'Braucht noch: ') + M.need.map(esc).join(' · ') : 'Alle Bedingungen erfüllt, der Aufstieg kommt gleich.') + '</p>' : '')
       + (extra.up ? '<p class="kr-up">🎉 Neuer Rang erreicht!</p>' : '')
-      + '<p class="kr-story"><span>Meister Funk</span> „' + esc(M.cur.story) + '“</p></div>');
+      + '<p class="kr-story"><span>' + esc(extra.meister || 'Meister Funk') + '</span> „' + esc(M.cur.story) + '“</p></div>');
     const right = ['<div class="kr-c"><h3>Nächste Schritte</h3>' + (extra.coach && extra.coach.length ? '<ol class="kr-co">' + extra.coach.map(s => '<li><b>' + esc(s.title) + '</b><span>' + esc(s.text || '') + '</span>' + (s.href ? '<a class="kr-b" href="' + esc(s.href) + '">Los</a>' : '') + '</li>').join('') + '</ol>' : '<p class="kr-sub">Öffne ein Lab und löse eine Aufgabe. Dann erscheinen hier deine nächsten Schritte.</p>')
       + (tauschZeile(extra.tz) ? '<p class="kr-sub" id="krTw">' + esc(tauschZeile(extra.tz)) + '</p>' : '')
       + (extra.badges ? '<p class="kr-sub">Abzeichen ' + extra.badges.n + ' von ' + extra.badges.of + ' <button type="button" class="kr-b" data-act="badges">alle ansehen</button></p>' : '') + '</div>'];
@@ -136,14 +138,14 @@
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); if (v == null) return d; try { return JSON.parse(v); } catch (e) { return v; } } catch (e) { return d; } };
   const freeOn = () => { try { return localStorage.getItem('lm4.kamp.free') === '1'; } catch (e) { return false; } };
   function state() {
-    const b = useBeruf(), Kp = b === 'egs' ? root.Kampagne : null, B = root.Badges;
+    const b = useBeruf(), Kp = kampFuer(b), B = root.Badges;
     const D = core.read(lsGet, Kp ? { CH: Kp.CH, mdone: Kp.mdone, virtual: true } : { virtual: true });
     return { D, M: model(D, { AUFGABEN: root.BerufReg ? root.BerufReg.rows(b) : root.AUFGABEN, DEFS: B && B.DEFS ? B.DEFS.map(d => Array.isArray(d) ? d[0] : d.id) : null }, freeOn()) };
   }
   /* kurze Zusammenfassung für Karte und Lernpfad-Band */
   function summary() {
     try {
-      const S = state(), M = S.M, Kp = berufNow() === 'egs' ? root.Kampagne : null;
+      const S = state(), M = S.M, Kp = kampFuer(berufNow());
       const kt = Kp ? Kp.CH.reduce((n, c) => n + c.m.length, 0) : 0, kd = Kp ? Kp.CH.reduce((n, c) => n + Kp.prog(c).d, 0) : 0;
       return { n: M.L.n, t: M.L.t, xp: M.L.xp, xpDone: M.xpDone, next: M.nx ? { t: M.nx.t, xp: M.nx.xp } : null, pct: M.pct, kt, kd };
     } catch (e) { return null; }
@@ -151,7 +153,7 @@
   /* Karriere-Start: beim ersten Öffnen des Dialogs wird der Startstand (lm4.karriere.k0) gespeichert; XP zählen ab da, Altdaten nicht. Der Rang-Marker beginnt bei 1. */
   function start() {
     try {
-      const Kp = root.Kampagne, had = lsGet('lm4.karriere', {}), fresh = !(had && had.k0);
+      const Kp = kampFuer(useBeruf()) || root.Kampagne, had = lsGet('lm4.karriere', {}), fresh = !(had && had.k0);
       core.start(lsGet, (k, v) => { try { if (fresh && v && typeof v === 'object') v.seen = { level: 1 }; localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, Kp ? { CH: Kp.CH, mdone: Kp.mdone } : null);
     } catch (e) {}
   }
@@ -220,7 +222,7 @@
         let coach = null; try { coach = root.Coach && root.Coach.current ? root.Coach.current() : null; } catch (e) { coach = null; }
         const B = root.Badges;
         const tz = tauschDaten();
-        body.innerHTML = rangHtml(S.M, { up, coach: coach && coach.slice(0, 3), badges: B && B.DEFS && B.earnedIds ? { n: B.earnedIds().length, of: B.DEFS.length } : null, tz });
+        body.innerHTML = rangHtml(S.M, { up, coach: coach && coach.slice(0, 3), badges: B && B.DEFS && B.earnedIds ? { n: B.earnedIds().length, of: B.DEFS.length } : null, tz, meister: KD.kamp ? KD.kamp().meister : null });
         tauschGuete(tz, body);
       } else if (cur === 'gp') {
         const nm = body.querySelector('#krName') ? body.querySelector('#krName').value : null; body.innerHTML = gpHtml(S.D, S.M, freeOn(), Date.now(), nm);

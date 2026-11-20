@@ -9,8 +9,8 @@
 (function (root) {
   var C = root.ZER_CORE || (typeof require !== 'undefined' ? require('./zercore.js') : null);
   var F = C.fmt, PI = Math.PI;
-  var CATS = { vc: 'Drehzahl und vc', zeit: 'Vorschub und Zeit', fraes: 'Fräsen', bohr: 'Bohren', praxis: 'Praxisfälle' };
-  var CAT_KEYS = ['vc', 'zeit', 'fraes', 'bohr', 'praxis'];
+  var CATS = { vc: 'Drehzahl und vc', zeit: 'Vorschub und Zeit', fraes: 'Fräsen', bohr: 'Bohren', schn: 'Schneide und Verfahren', praxis: 'Praxisfälle' };
+  var CAT_KEYS = ['vc', 'zeit', 'fraes', 'bohr', 'schn', 'praxis'];
   var DEFS = {};
   var ORDER = [];
   function def(id, cat, level, title, type, gen, extra) {
@@ -48,7 +48,7 @@
   def('zer4', 'vc', 2, 'Passende Stufe der Drehzahlreihe wählen', 'series', function (r) {
     var d = r.pick([20, 25, 30, 40, 50]), v = r.pick([25, 30]), ns = C.nFromVc(v, d), best = C.nearestSpeed(C.SERIES_STD, ns);
     return {
-      text: 'Ein Stab S235 (Ø ' + d + ' mm) wird mit einem HSS-Drehmeißel gedreht, Richtwert vc = ' + v + ' m/min. Die Drehbank hat die Stufen der Reihe unten. Tippe die Stufe an, die der rechnerischen Drehzahl am nächsten liegt.',
+      text: 'Ein Stab S235 (Ø ' + d + ' mm) wird mit einem HSS-Drehmeißel gedreht, Richtwert vc = ' + v + ' m/min. Die Drehbank hat die Stufen der Reihe unten. Tippe die Stufe an, die der rechnerischen Drehzahl am nächsten liegt. Das ist hier eine reine Rechenübung. Willst du den Richtwert sicher nicht überschreiten, nimmst du in der Werkstatt die nächstniedrigere Stufe.',
       series: C.SERIES_STD, d: d, window: [v, v], accept: [best], sol: best, unit: 'min⁻¹',
       steps: ['n = vc · 1000 / (π · d) = ' + v + ' · 1000 / (π · ' + d + ') = ' + N(ns) + ' min⁻¹', 'Nächstliegende Stufe der Reihe: ' + best + ' min⁻¹.', 'Probe: vc = π · ' + d + ' · ' + best + ' / 1000 = ' + N(C.vc(d, best)) + ' m/min.'],
       tips: tipps('Rechne zuerst die Soll-Drehzahl aus.', 'n = vc · 1000 / (π · d). Dann in der Reihe die Stufe suchen, die am wenigsten abweicht.', 'Die rechnerische Drehzahl liegt bei etwa ' + F(ns, 0) + ' min⁻¹.')
@@ -357,7 +357,7 @@
       tips: tipps('Eine Passbohrung braucht ein genaues Maß und eine glatte Wand.', 'Die Reibahle hat viele feine Schneiden und nimmt nur sehr wenig Material weg.')
     };
   });
-  def('zer40', 'bohr', 1, 'Senken und Entgraten', 'choice', function (r) {
+  def('zer40', 'bohr', 1, 'Senken', 'choice', function (r) {
     var d = r.pick([6, 8, 9, 11]);
     return {
       text: 'In ein Blech wird eine Durchgangsbohrung Ø' + d + ' mm gebohrt. Eine Senkkopfschraube soll später bündig mit der Oberfläche abschließen. Welches Werkzeug erzeugt die dafür nötige kegelige Vertiefung?',
@@ -420,6 +420,91 @@
       tips: tipps('Ist die Schnittgeschwindigkeit für Hartmetall hoch genug?', 'Hartmetall braucht deutlich mehr vc als HSS, Richtwert in Stahl etwa 120 bis 220 m/min.')
     };
   }, true);
+
+  /* ====================== Schneide und Verfahren (Grundausbildung, v63.187) ====================== */
+  /* PRUEFEN: Winkel am Schneidkeil (Freiwinkel α, Keilwinkel β, Spanwinkel γ, Summe 90°), Folgen eines falsch angeschliffenen Bohrers, Namen der Drehverfahren. */
+  def('zer45', 'schn', 1, 'Keilwinkel berechnen', 'num', function (r) {
+    var a = r.pick([6, 8, 10, 12]), g = r.pick([6, 10, 14, 20, 25]), wz = r.pick(['Drehmeißel', 'Flachmeißel', 'Hobelmeißel']), s = 90 - a - g;
+    return {
+      text: 'An der Schneide eines Werkzeugs ergeben Freiwinkel α, Keilwinkel β und Spanwinkel γ zusammen 90°. Ein ' + wz + ' hat den Freiwinkel α = ' + a + '° und den Spanwinkel γ = ' + g + '°. Wie groß ist der Keilwinkel β?', unit: '°', sol: s, tol: 0,
+      steps: ['α + β + γ = 90°, umgestellt nach β:', 'β = 90° − α − γ = 90° − ' + a + '° − ' + g + '° = ' + s + '°'],
+      tips: tipps('Die drei Winkel ergeben zusammen einen rechten Winkel.', 'Ziehe den Freiwinkel und den Spanwinkel von 90° ab.')
+    };
+  });
+  def('zer46', 'schn', 1, 'Winkel am Schneidkeil benennen', 'choice', function (r) {
+    var V = [
+        ['zwischen der Freifläche des Werkzeugs und der gerade bearbeiteten Fläche des Werkstücks', 0, 'Der Freiwinkel α sorgt dafür, dass das Werkzeug hinter der Schneide nicht am Werkstück reibt.'],
+        ['zwischen der Freifläche und der Spanfläche, also der Winkel des Werkzeugs selbst', 1, 'Der Keilwinkel β ist der Winkel des Schneidkeils. Ein großer Keil ist stabil, ein kleiner dringt leichter ein.'],
+        ['zwischen der Spanfläche und der Senkrechten auf der bearbeiteten Fläche', 2, 'Der Spanwinkel γ bestimmt, wie der Span abläuft. Über die Spanfläche gleitet der Span ab.']
+      ], v = r.pick(V), wz = r.pick(['einem Drehmeißel', 'einem Flachmeißel', 'einem Sägezahn', 'einem Hobelmeißel']);
+    return {
+      text: 'An ' + wz + ' gibt es drei wichtige Winkel. Wie heißt der Winkel ' + v[0] + '?',
+      opts: ['Freiwinkel α', 'Keilwinkel β', 'Spanwinkel γ', 'Spitzenwinkel σ'], correct: v[1],
+      steps: [v[2], 'Die drei Winkel ergeben zusammen 90°: α + β + γ = 90°. Den Spitzenwinkel σ gibt es am Spiralbohrer, er gehört nicht zu diesen drei Winkeln.'],
+      tips: tipps('Der Name des Winkels kommt von der Fläche oder dem Teil, an dem er liegt.', 'Die Freifläche zeigt zum Werkstück. Über die Spanfläche läuft der Span ab.')
+    };
+  });
+  def('zer47', 'schn', 2, 'Schneidkeil und Werkstoff', 'choice', function (r) {
+    var weich = r.pick([true, false]), w = weich ? r.pick(['Aluminium', 'weiches Kupfer', 'eine weiche Aluminiumlegierung']) : r.pick(['harten, festen Stahl', 'hartes Gusseisen', 'hochfesten Stahl']);
+    return {
+      text: 'Ein Werkzeug soll ' + w + ' zerspanen. Welche Form der Schneide passt zu diesem Werkstoff?',
+      opts: ['Kleiner Keilwinkel und großer Spanwinkel', 'Großer Keilwinkel und kleiner Spanwinkel', 'Kleiner Keilwinkel und kleiner Spanwinkel bei sehr großem Freiwinkel', 'Die Winkel sind bei jedem Werkstoff gleich'], correct: weich ? 0 : 1,
+      steps: [weich ? 'Weiche Werkstoffe brauchen wenig Kraft. Ein schlanker Keil mit großem Spanwinkel dringt leicht ein, der Span läuft gut ab.' : 'Harte Werkstoffe belasten die Schneide stark. Ein großer Keilwinkel macht die Schneide stabil, der Spanwinkel wird dafür klein.', 'Merke: weicher Werkstoff, schlanker Keil. Harter Werkstoff, kräftiger Keil. Der Freiwinkel bleibt in beiden Fällen klein.'],
+      tips: tipps('Ein schlanker Keil dringt leicht ein, bricht aber schneller aus.', 'Überlege, wie stark der Werkstoff die Schneide belastet.')
+    };
+  });
+  def('zer48', 'bohr', 2, 'Bohrer mit ungleichen Schneiden', 'choice', function (r) {
+    var d = r.pick([5, 6, 8, 10, 12, 14]);
+    return {
+      text: 'Ein Spiralbohrer Ø' + d + ' mm wurde von Hand nachgeschliffen. Die beiden Hauptschneiden sind jetzt ungleich lang. Die Spitze sitzt nicht mehr in der Mitte. Was passiert beim Bohren?',
+      opts: ['Die Bohrung wird größer als ' + d + ' mm', 'Die Bohrung wird kleiner als ' + d + ' mm', 'Die Bohrung wird genau ' + d + ' mm und besonders glatt', 'Der Bohrer dreht sich, schneidet aber gar nicht mehr'], correct: 0,
+      steps: ['Sitzt die Spitze nicht auf der Achse, schneidet fast nur die längere Schneide. Sie beschreibt einen größeren Kreis als der halbe Bohrerdurchmesser.', 'Die Bohrung wird zu groß. Außerdem schneidet fast nur eine Schneide, sie wird schneller stumpf. Die Schneiden prüfst du nach dem Schleifen mit der Bohrerschleiflehre.'],
+      tips: tipps('Der Bohrer dreht sich um seine Achse.', 'Die längere Schneide reicht weiter nach außen als die kürzere.')
+    };
+  });
+  def('zer49', 'bohr', 2, 'Freiwinkel am Bohrer', 'choice', function (r) {
+    var klein = r.pick([true, false]), d = r.pick([6, 8, 10, 12, 16]);
+    return {
+      text: 'Ein Spiralbohrer Ø' + d + ' mm wurde nachgeschliffen. Dabei ist der Freiwinkel hinter den Schneiden viel ' + (klein ? 'kleiner' : 'größer') + ' geworden als vorgesehen. Was ist die Folge?',
+      opts: ['Die Freifläche drückt auf den Bohrungsgrund, der Bohrer schneidet kaum und wird heiß', 'Die Schneide ist zu dünn und zu schwach, sie hakt ein und bricht leicht aus', 'Die Bohrung wird doppelt so groß wie der Bohrer', 'Der Bohrer läuft ruhiger und hält viel länger als vorher'], correct: klein ? 0 : 1,
+      steps: [klein ? 'Der Freiwinkel schafft Platz hinter der Schneide. Fehlt dieser Platz, reibt die Freifläche auf dem Werkstoff. Der Bohrer dringt trotz großer Kraft kaum ein und wird heiß.' : 'Ein großer Freiwinkel macht den Keil hinter der Schneide dünn. Die Schneide ist dann schwach. Sie hakt ein, rattert und bricht leicht aus.', 'Der Freiwinkel muss zum Werkstoff passen: groß genug, damit nichts reibt, und klein genug, damit die Schneide stabil bleibt.'],
+      tips: tipps('Der Freiwinkel schafft Platz hinter der Schneide.', 'Überlege: Reibt die Fläche hinter der Schneide, oder wird die Schneide zu dünn?')
+    };
+  });
+  def('zer50', 'schn', 1, 'Drehverfahren benennen', 'choice', function (r) {
+    var d = r.pick([30, 40, 50, 60, 80]), V = [
+        ['Der Drehmeißel fährt parallel zur Drehachse am Umfang entlang. Der Durchmesser wird dabei kleiner.', 0, 'Beim Längsdrehen (Runddrehen) bewegt sich der Meißel parallel zur Drehachse. Es entsteht eine zylindrische Fläche.'],
+        ['Der Drehmeißel fährt quer zur Drehachse über die Stirnseite. Es entsteht eine ebene Fläche.', 1, 'Beim Plandrehen bewegt sich der Meißel quer zur Drehachse. Es entsteht eine ebene Stirnfläche.'],
+        ['Ein schmaler Meißel fährt quer zur Drehachse bis zur Mitte. Das fertige Teil fällt von der Stange.', 2, 'Beim Abstechdrehen trennt ein schmaler Meißel das Werkstück von der Stange.']
+      ], v = r.pick(V);
+    return {
+      text: 'An der Drehmaschine wird eine Welle Ø' + d + ' mm bearbeitet. ' + v[0] + ' Wie heißt dieses Verfahren?',
+      opts: ['Längsdrehen (Runddrehen)', 'Plandrehen', 'Abstechdrehen', 'Gewindedrehen'], correct: v[1],
+      steps: [v[2], 'Merke: Die Richtung des Vorschubs gibt dem Verfahren den Namen. Parallel zur Achse heißt längs, quer zur Achse heißt plan.'],
+      tips: tipps('Achte auf die Richtung, in die sich der Meißel bewegt.', 'Überlege, welche Fläche entsteht: ein Zylinder, eine ebene Stirnfläche oder ein Trennschnitt.')
+    };
+  });
+  def('zer51', 'zeit', 2, 'Hauptzeit beim Plandrehen', 'num', function (r) {
+    var d = r.pick([40, 50, 60, 80, 100]), la = r.pick([1, 2, 3]), f = r.pick([0.1, 0.2, 0.25]), n = r.pick([355, 500, 710]), L = d / 2 + la, s = L / (f * n);
+    return {
+      text: 'Die Stirnseite einer Welle Ø' + d + ' mm (volles Material) wird in einem Schnitt von außen bis zur Mitte plangedreht. Der Anlauf beträgt la = ' + la + ' mm. f = ' + N(f) + ' mm/U, die Drehzahl bleibt bei n = ' + n + ' min⁻¹. Wie groß ist die Hauptzeit th?', unit: 'min', sol: s,
+      steps: ['Weg des Meißels: L = d / 2 + la = ' + N(d / 2) + ' mm + ' + la + ' mm = ' + N(L) + ' mm', 'vf = f · n = ' + N(f) + ' · ' + n + ' = ' + N(f * n) + ' mm/min', 'th = L / vf = ' + N(L) + ' mm / ' + N(f * n) + ' mm/min = ' + N(s) + ' min (' + C.fmtZeit(s) + ')'],
+      tips: tipps('Beim Plandrehen bis zur Mitte fährt der Meißel nur den halben Durchmesser ab.', 'Weg: L = d / 2 + la. Dann wie beim Längsdrehen: th = L / (f · n).', 'Der Weg beträgt ' + N(L) + ' mm.')
+    };
+  });
+  def('zer52', 'schn', 2, 'Verfahren für den Arbeitsschritt', 'choice', function (r) {
+    var d = r.pick([20, 25, 30, 40, 50]), V = [
+        ['Eine Welle Ø' + d + ' mm braucht eine schmale Nut für einen Sicherungsring.', 0, 'Eine schmale Nut am Umfang entsteht beim Einstechdrehen. Der Meißel ist so breit wie die Nut und fährt quer zur Achse in das Werkstück.'],
+        ['Eine Welle Ø' + d + ' mm wurde abgesägt. Die raue Stirnseite soll eben und rechtwinklig zur Achse werden.', 1, 'Eine ebene Stirnfläche entsteht beim Plandrehen. Der Meißel fährt quer zur Achse über die Stirnseite.'],
+        ['Eine Welle Ø' + d + ' mm soll auf 60 mm Länge einen kleineren Durchmesser bekommen.', 2, 'Ein Absatz mit kleinerem Durchmesser entsteht beim Längsdrehen. Der Meißel fährt parallel zur Achse.']
+      ], v = r.pick(V);
+    return {
+      text: v[0] + ' Welches Drehverfahren wählst du?',
+      opts: ['Einstechdrehen', 'Plandrehen', 'Längsdrehen', 'Rändeln'], correct: v[1],
+      steps: [v[2], 'Rändeln ist kein Spanen: Dabei wird ein Muster in die Oberfläche gedrückt, damit ein Griff nicht rutscht.'],
+      tips: tipps('Überlege, welche Form entstehen soll: Nut, ebene Fläche oder Zylinder.', 'In welche Richtung muss sich der Meißel dafür bewegen?')
+    };
+  });
 
   /* ====================== Aufbau, Schnittstelle ====================== */
   function build(id, seed) {

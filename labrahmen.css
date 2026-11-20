@@ -133,5 +133,50 @@ html.lr-on .lr-fb>p{margin:0}
 html.lr-on .lr-hinweis{margin:4px 0 0;color:var(--mute);font-size:14px;line-height:1.4}
 @media(prefers-reduced-motion:no-preference){html.lr-on .lr-fb.lr-neu{animation:lrFb .9s ease-out}@keyframes lrFb{0%{box-shadow:0 0 0 0 var(--accent)}40%{box-shadow:0 0 0 4px var(--accent)}100%{box-shadow:0 0 0 0 transparent}}}
 
+/* ---------- 6b Metall-Labs am Handy (uifix63186): Regeln gelten nur mit html.lr-metall bzw. html[data-lr-lab=...] (fer tol zer wer fug mas mch mak cnc pne hyd ins zei kon), Elektronik-Labs bleiben unberuehrt ---------- */
+/* B14 Statuszeile unten am Handy: umbrechen statt mit "..." abschneiden */
+@media(max-width:699px){html.lr-metall #pal.lr-pal>#stat{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;line-height:1.15;padding:0 4px}}
+/* B07, B09, B10 Umschalter (.seg): umbrechen statt Knoepfe abzuschneiden; Trennlinien als 1 px Luecke */
+html.lr-metall #mid .seg{flex-wrap:wrap;max-width:100%;gap:1px;background:var(--line)}
+html.lr-metall #mid .seg button{flex:1 1 auto;border-right:0}
+/* B10 Knopfreihen: umbrechen, wenn sie nicht in eine Zeile passen (statt auf 74 px zu schrumpfen) */
+html.lr-metall .btns{flex-wrap:wrap}
+html.lr-metall .btns>.btn{flex:1 1 auto}
+/* B10, B11 Schieberegler: 100 % Breite plus 2 px Rand links und rechts ragte 4 px hinaus */
+html.lr-metall input[type=range]{margin-left:0;margin-right:0;max-width:100%}
+/* B01 zer: Ergebnistabellen der Rechenkarten (Drehen, Fraesen, Bohren): Formelspalte darf umbrechen, Ergebnisspalte bleibt; Rollbereich als Netz */
+html[data-lr-lab="zerlab.html"] [id$="-res"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
+html[data-lr-lab="zerlab.html"] table.iot td,
+html[data-lr-lab="zerlab.html"] table.iot th{hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere}
+@media(max-width:480px){html[data-lr-lab="zerlab.html"] table.iot td,html[data-lr-lab="zerlab.html"] table.iot th{padding-left:4px;padding-right:4px}}
+/* B01 zer: Kontrollkaestchen mit Beschriftung: die ganze Zeile (Beschriftung) ist die Tippflaeche, das Kaestchen liegt darin */
+html.lr-metall .ctl.chk{position:relative;min-height:44px}
+html.lr-metall .ctl.chk input[type=checkbox]{position:absolute;left:0;top:50%;margin:-12px 0 0;z-index:1}
+html.lr-metall .ctl.chk label{width:100%;min-height:44px;padding-left:34px}
+/* B02 tol: Passungstabellen (#fRes, #fCmp): enger setzen und umbrechen, sonst Rollbereich */
+html[data-lr-lab="tollab.html"] #fRes,
+html[data-lr-lab="tollab.html"] #fCmp,
+html[data-lr-lab="tollab.html"] #fCmp>.card{overflow-x:auto;-webkit-overflow-scrolling:touch}
+@media(max-width:480px){
+html[data-lr-lab="tollab.html"] .tt td,
+html[data-lr-lab="tollab.html"] .tt th{padding:6px 4px}
+html[data-lr-lab="tollab.html"] .tt th.n{white-space:normal;letter-spacing:0;hyphens:auto;-webkit-hyphens:auto}
+html[data-lr-lab="tollab.html"] .tt td.n{white-space:normal}
+}
+/* B06 cnc: Anzeigefelder (.rd): Wert (z. B. Zustand G90 G54 G18 G95 G40) darf umbrechen statt die Seite zu verbreitern */
+html[data-lr-lab="cnclab.html"] .rd .bx{min-width:0}
+html[data-lr-lab="cnclab.html"] .rd .bx b{white-space:normal;overflow-wrap:anywhere}
+/* B09 ins: Wartungsplan, erste Spalte (lange Woerter wie Sicherheitseinrichtungen) */
+html[data-lr-lab="inslab.html"] .pt th.rl{overflow-wrap:anywhere}
+/* B13 hyd: Klasse .pl (Schaltplan-Text, 12 px) traf auch die Karte .card.pl und machte Absaetze und Knoepfe 12 px klein */
+html[data-lr-lab="hydlab.html"] .card.pl{font:inherit}
+/* B08 hyd: Schaltplan bleibt in lesbarer Groesse (min. 400 px breit) und wischbar; unter 460 px Breite steht ein Hinweis darueber */
+@media(max-width:459px){html[data-lr-lab="hydlab.html"] .anl-wrap::before{content:"\2194  Schaltplan seitlich wischen";display:block;position:sticky;left:0;padding:0 4px 4px;font-size:14px;line-height:1.3;color:var(--mute)}}
+/* B12 alle Labs: zweite Zeile des Namens (ab 700 px, Versuchs- oder Schaltungsname) war nur 17 px hoch; jetzt ist die ganze Namensflaeche (44 px) die Tippflaeche, Text bleibt an gleicher Stelle */
+@media(min-width:700px){
+html.lr-on .lr-name.lr-hat-sub{overflow:visible}
+html.lr-on .lr-name.lr-hat-sub .lr-sub:not(:empty){padding:12px 0;margin:-12px 0}
+}
+
 /* ---------- 7 Druck ---------- */
 @media print{html.lr-on .lr-band,html.lr-on .lr-teile,html.lr-on .lr-info,html.lr-on .lr-blatt,html.lr-on .lr-mehr-blatt,html.lr-on .lr-mehr-knopf{display:none!important}}

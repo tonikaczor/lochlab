@@ -3,6 +3,9 @@
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 .view[hidden],[data-nichtweg][hidden]{display:none!important}
 html[data-weg="1"] [data-nichtweg],html:not([data-weg="1"]) [data-nurweg],html[data-pr="0"] [data-nurpr]{display:none!important}
+/* v63.187: Zeilen, die es für einzelne Berufe nicht gibt (data-nichtberuf="im ..."); der Lernfelder-Probetest hat nur den Katalog der Elektroniker */
+html[data-beruf="im"] [data-nichtberuf~="im"]{display:none!important}
+html:not([data-beruf="im"]) [data-nurim]{display:none!important}   /* pruefim187: Zeilen nur für Industriemechaniker */
 
 /* ---- Kopf: Logo, Titel, Marke des Berufs (#berufBadge, führt zur Wahl in "Ich"), Wiki, Darstellung ---- */
 header{gap:12px;margin-bottom:12px}

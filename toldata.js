@@ -165,7 +165,7 @@
       tips: ['Höchstübermaß entsteht bei kleinster Bohrung und größter Welle.', 'Höchstübermaß = es − EI = 15 − 0.'] },
     { id: 'tol26', cat: 'Passungen', level: 2, title: 'Passung für ein Gleitlager', text: 'Eine Welle dreht sich geschmiert in einer Lagerbuchse. Es soll deutliches Spiel für den Schmierfilm vorhanden sein. Welche Passung (Einheitsbohrung) wählst du?',
       ask: choice(useOptions, 0), solve: () => ({ correct: 0 }),
-      expl: 'H7/f7 ist eine Spielpassung mit deutlichem Mindestspiel für den Schmierfilm. H7/j6 (Übergang) und H7/s6 (Presssitz) würden die Welle festklemmen.',
+      expl: 'H7/f7 ist eine Spielpassung mit deutlichem Mindestspiel für den Schmierfilm. H7/j6 (Übergang) hat je nach Istmaß Spiel oder leichtes Übermaß, die Welle sitzt zu fest für eine leichte Gleitführung. H7/s6 (Presssitz) hat immer Übermaß.',
       tips: ['Die Welle muss sich drehen können. Welche Passungsart brauchst du?', 'Nur eine der drei Passungen hat immer Spiel. Der Buchstabe der Welle liegt dort weit unter der Nulllinie.'] },
     { id: 'tol27', cat: 'Passungen', level: 2, title: 'Passung für eine Zentrierung', text: 'Ein Zentrierflansch soll genau fluchten, sich aber ohne große Kraft fügen und wieder lösen lassen. Welche Passung (Einheitsbohrung) wählst du?',
       ask: choice(useOptions, 1), solve: () => ({ correct: 1 }),
@@ -185,17 +185,17 @@
       ask: choice(['Sie macht die Messung schneller.', 'Sie sorgt für einen immer gleichen Messdruck.', 'Sie stellt die Messschraube auf 0 ein.'], 1), solve: () => ({ correct: 1 }),
       expl: 'Die Knarre rutscht durch, sobald die Messkraft einen festgelegten Wert erreicht. So messen verschiedene Personen mit gleichem Messdruck und verfälschen das Ergebnis nicht durch zu festes Zudrehen.',
       tips: ['Es geht um die Kraft, mit der die Messflächen auf das Werkstück drücken.', 'Die Knarre rutscht ab einer bestimmten Kraft durch.'] },
-    { id: 'tol31', cat: 'Messmittel wählen', level: 2, title: 'Welche Ablesung ist nötig?', text: 'Faustregel: Der Skalenteilungswert (Ablesung) des Messmittels soll höchstens 1/10 der Toleranz betragen. Ein Maß hat die Toleranz 0,5 mm. Wie groß darf die Ablesung höchstens sein?',
+    { id: 'tol31', cat: 'Messmittel wählen', level: 2, title: 'Welche Ablesung ist nötig?', text: 'Faustregel: Die Messabweichung des Messmittels soll höchstens etwa 1/10 der Toleranz betragen. Als Übungsnäherung zählt hier der Skalenwert (die Ablesung). Ein Maß hat die Toleranz 0,5 mm. Wie groß darf die Ablesung höchstens sein?',
       ask: num('mm', 'Ablesung höchstens'), solve: () => ({ value: 0.05, tol: 0.0005 }),
-      expl: '0,5 mm / 10 = 0,05 mm. Ein Messschieber mit 1/20-Nonius (0,05 mm) erfüllt die Faustregel gerade noch.',
+      expl: '0,5 mm / 10 = 0,05 mm. Ein Messschieber mit 1/20-Nonius (0,05 mm) erfüllt die Übungs-Faustregel gerade noch. In der Praxis ist die Messabweichung eines Messschiebers größer als sein Skalenwert, die Skalenteilung allein genügt nicht.',
       tips: ['Es ist ein Zehntel der Toleranz gefragt.', 'Teile 0,5 mm durch 10.'] },
-    { id: 'tol32', cat: 'Messmittel wählen', level: 2, title: 'Das passende Messmittel', text: 'Ein Maß ist mit ±0,05 mm toleriert, die Toleranz beträgt also 0,1 mm. Welches ist das einfachste Messmittel, das die Faustregel (Ablesung höchstens 1/10 der Toleranz) erfüllt?',
+    { id: 'tol32', cat: 'Messmittel wählen', level: 2, title: 'Das passende Messmittel', text: 'Ein Maß ist mit ±0,05 mm toleriert, die Toleranz beträgt also 0,1 mm. Welches ist das einfachste Messmittel, das die Faustregel (Übungsnäherung: Ablesung höchstens 1/10 der Toleranz) erfüllt?',
       ask: choice(devices.slice(0, 5).map(d => d.name), 4), solve: () => ({ correct: 4 }),
       expl: 'Erlaubte Ablesung: 0,1 mm / 10 = 0,01 mm. Der Messschieber 1/50 liest nur auf 0,02 mm ab, das reicht nicht. Die Bügelmessschraube liest auf 0,01 mm ab: das einfachste geeignete Messmittel.',
       tips: ['Rechne zuerst die erlaubte Ablesung aus: ein Zehntel der Toleranz.', 'Erlaubt sind 0,01 mm. Vergleiche mit der Ablesung der Messmittel in der Liste.'] },
-    { id: 'tol33', cat: 'Messmittel wählen', level: 3, title: 'Passungsmaß prüfen', text: 'Eine Welle Ø20 h6 hat eine Toleranz von 13 µm. Welches Messmittel erfüllt die Faustregel (Ablesung höchstens 1/10 der Toleranz)?',
+    { id: 'tol33', cat: 'Messmittel wählen', level: 3, title: 'Passungsmaß prüfen', text: 'Eine Welle Ø20 h6 hat eine Toleranz von 13 µm. Welches Messmittel erfüllt die Faustregel (Übungsnäherung: Ablesung höchstens 1/10 der Toleranz)?',
       ask: choice(devices.slice(1).map(d => d.name), 4), solve: () => ({ correct: 4 }),
-      expl: 'Erlaubte Ablesung: 13 µm / 10 = 1,3 µm = 0,0013 mm. Nur der Feinzeiger mit 0,001 mm Skalenwert erfüllt das. Bügelmessschraube und Messschieber sind für so kleine Toleranzen zu grob.',
+      expl: 'Erlaubte Ablesung: 13 µm / 10 = 1,3 µm = 0,0013 mm. Nur der Feinzeiger mit 0,001 mm Skalenwert erfüllt das. Bügelmessschraube und Messschieber sind für so kleine Toleranzen zu grob. Bei einer Serienprüfung nimmst du in der Praxis meist eine Grenzrachenlehre.',
       tips: ['Rechne die Toleranz in mm um: 13 µm = 0,013 mm.', 'Ein Zehntel davon ist rund 0,0013 mm. Welches Messmittel liest so fein ab?'] },
     /* ----- Neue Aufgaben tol34 bis tol44 (Industriemechaniker: Prüfen und Qualitätssicherung). PRUEFEN Pn: Fragen an den Ausbilder in quelle/tol/PRUEFEN.md ----- */
     { id: 'tol34', cat: 'Messabweichung und Prüfmittel', level: 1, title: 'Messabweichung bestimmen', text: 'Ein Prüfnormal (Endmaß) hat das Nennmaß 30,000 mm. Eine Bügelmessschraube zeigt am Endmaß 29,992 mm an. Wie groß ist die Messabweichung (Anzeige minus richtiger Wert)? Gib auch das Vorzeichen an.',
@@ -241,7 +241,52 @@
     { id: 'tol44', cat: 'Form- und Lagetoleranz', level: 3, title: 'Parallelität prüfen', text: 'Eine Fläche soll nach Zeichnung parallel zur Auflagefläche sein, die Toleranz beträgt 0,04 mm. Du verfährst eine Messuhr über die Fläche. Der kleinste Wert ist −0,015 mm, der größte +0,035 mm (jeweils gegen den Startwert null). Ist die Toleranz eingehalten?',
       ask: choice(['Ja, denn der größte Ausschlag von +0,035 mm bleibt unter 0,04 mm', 'Nein, die Anzeige schwankt insgesamt um 0,05 mm und damit mehr als erlaubt', 'Ja, denn der Mittelwert der Anzeige liegt bei fast null', 'Nein, denn die Anzeige zeigt auch negative Werte'], 1), solve: () => ({ correct: 1 }),
       expl: 'Bei der Parallelität zählt der gesamte Anzeigeunterschied (Spanne) über die Fläche: +0,035 mm − (−0,015 mm) = 0,050 mm. Erlaubt sind 0,04 mm. Die Spanne ist größer, die Fläche ist nicht in Toleranz. Einzelne Werte oder der Mittelwert sagen darüber nichts.',
-      tips: ['Die Toleranzzone ist der Abstand zwischen zwei parallelen Ebenen. Die ganze Fläche muss dazwischen liegen.', 'Bilde die Differenz zwischen dem größten und dem kleinsten Anzeigewert.'] }
+      tips: ['Die Toleranzzone ist der Abstand zwischen zwei parallelen Ebenen. Die ganze Fläche muss dazwischen liegen.', 'Bilde die Differenz zwischen dem größten und dem kleinsten Anzeigewert.'] },
+    /* Prüfen in der Werkstatt (Grundausbildung, v63.187). PRUEFEN: Die Tabelle der Allgemeintoleranzen ist ein Auszug mit Übungswerten und steht im Aufgabentext. */
+    { id: 'tol45', cat: 'Prüfen in der Werkstatt', level: 1, title: 'Gefeiltes Maß bewerten', text: 'Du feilst eine Platte auf die Länge 60 ± 0,2 mm. Mit dem Messschieber misst du 60,3 mm. Wie bewertest du das Teil?',
+      ask: choice(GPA, 1), solve: () => ({ correct: 1 }),
+      expl: 'Das Höchstmaß ist 60,2 mm, das Mindestmaß 59,8 mm. Mit 60,3 mm ist die Platte noch zu lang. Bei einem Außenmaß ist dann noch Werkstoff da, den du abfeilen kannst. Das Teil geht in die Nacharbeit.',
+      tips: ['Rechne zuerst Höchstmaß und Mindestmaß aus.', 'Zu lang heißt: Es ist noch Werkstoff da, den du abnehmen kannst.'] },
+    { id: 'tol46', cat: 'Prüfen in der Werkstatt', level: 1, title: 'Maß unter dem Nennmaß', text: 'Eine Platte soll 45 ± 0,1 mm breit sein. Du misst 44,92 mm. Wie bewertest du das Teil?',
+      ask: choice(GPA, 0), solve: () => ({ correct: 0 }),
+      expl: 'Das Mindestmaß ist 44,9 mm, das Höchstmaß 45,1 mm. Der Messwert 44,92 mm liegt dazwischen. Das Teil ist gut, auch wenn es etwas kleiner ist als das Nennmaß 45 mm.',
+      tips: ['Ein Maß muss nicht genau das Nennmaß treffen.', 'Vergleiche den Messwert mit dem Mindestmaß 44,9 mm.'] },
+    { id: 'tol47', cat: 'Prüfen in der Werkstatt', level: 1, title: 'Allgemeintoleranz: Höchstmaß', text: 'Auf einer Zeichnung steht das Maß 85 ohne Toleranzangabe. Dann gilt die Allgemeintoleranz Klasse mittel (Auszug, Übungswerte): über 6 bis 30 mm: ± 0,2 mm. Über 30 bis 120 mm: ± 0,3 mm. Über 120 bis 400 mm: ± 0,5 mm. Wie groß ist das Höchstmaß?',
+      ask: num('mm', 'Höchstmaß'), solve: () => ({ value: 85 + 0.3, tol: 0.005 }),
+      expl: 'Das Maß 85 mm liegt im Bereich über 30 bis 120 mm. Dort gilt ± 0,3 mm. Höchstmaß = 85 mm + 0,3 mm = 85,3 mm. Das Mindestmaß wäre 84,7 mm.',
+      tips: ['Suche zuerst den Bereich, in dem 85 mm liegt.', 'Zähle das obere Abmaß zum Nennmaß dazu.'] },
+    { id: 'tol48', cat: 'Prüfen in der Werkstatt', level: 2, title: 'Maß ohne Toleranzangabe prüfen', text: 'Auf einer Zeichnung steht das Maß 25 ohne Toleranzangabe. Es gilt die Allgemeintoleranz Klasse mittel (Auszug, Übungswerte): über 6 bis 30 mm: ± 0,2 mm. Über 30 bis 120 mm: ± 0,3 mm. Du misst 25,25 mm. Ist das Maß in Ordnung?',
+      ask: choice(['Ja, denn ohne Toleranzangabe ist jede Abweichung erlaubt', 'Ja, denn erlaubt sind 24,7 mm bis 25,3 mm', 'Nein, denn erlaubt sind 24,8 mm bis 25,2 mm', 'Nein, denn ohne Toleranzangabe muss das Maß genau 25,00 mm sein'], 2), solve: () => ({ correct: 2 }),
+      expl: 'Das Maß 25 mm liegt im Bereich über 6 bis 30 mm. Dort gilt ± 0,2 mm. Erlaubt sind also 24,8 mm bis 25,2 mm. Der Messwert 25,25 mm liegt darüber. Auch ein Maß ohne Toleranzangabe hat Grenzen.',
+      tips: ['Auch ein Maß ohne Angabe hat eine Toleranz. Sie steht in der Tabelle.', '25 mm gehört in den Bereich über 6 bis 30 mm.'] },
+    { id: 'tol49', cat: 'Prüfen in der Werkstatt', level: 1, title: 'Kanten gebrochen', text: 'Auf einer Zeichnung steht der Hinweis „Kanten gebrochen“. Was ist damit gemeint?',
+      ask: choice(['Die Kanten sind beschädigt, das Teil ist deshalb Ausschuss', 'Alle Kanten bekommen einen genau tolerierten Radius von 2 mm', 'Die scharfen Kanten werden leicht abgenommen, zum Beispiel mit einer kleinen Fase', 'Das Werkstück wird an den Kanten abgebrochen und nicht gesägt'], 2), solve: () => ({ correct: 2 }),
+      expl: 'Kanten brechen heißt: Die scharfe Kante wird mit der Feile leicht abgenommen. Es entsteht eine kleine Fase oder Rundung. So schneidet sich niemand, und das Teil lässt sich besser fügen. Ein genaues Maß ist damit nicht gemeint.',
+      tips: ['Es geht um scharfe Kanten nach dem Sägen, Feilen oder Fräsen.', 'Eine scharfe Kante ist eine Gefahr für die Hände.'] },
+    { id: 'tol50', cat: 'Prüfen in der Werkstatt', level: 1, title: 'Haarwinkel und Lichtspalt', text: 'Du prüfst zwei Flächen mit dem Haarwinkel gegen das Licht. Der Lichtspalt ist oben breit und wird nach unten immer schmaler. Was bedeutet das?',
+      ask: choice(['Der Winkel zwischen den Flächen ist nicht genau 90°', 'Die Flächen stehen genau rechtwinklig zueinander', 'Die geprüfte Fläche ist nur zu rau', 'Der Haarwinkel ist zu kurz für dieses Werkstück'], 0), solve: () => ({ correct: 0 }),
+      expl: 'Bei einem genauen rechten Winkel liegt die Messkante auf der ganzen Länge an. Du siehst dann keinen Lichtspalt. Ein keilförmiger Spalt zeigt: Die Fläche läuft schräg weg, der Winkel stimmt nicht.',
+      tips: ['Der Haarwinkel hat genau 90°. Er zeigt jede Abweichung als Lichtspalt.', 'Ein Spalt, der breiter wird, sieht aus wie ein Keil.'] },
+    { id: 'tol51', cat: 'Prüfen in der Werkstatt', level: 2, title: 'Haarlineal auf der Fläche', text: 'Du legst das Haarlineal auf eine gefeilte Fläche und schaust gegen das Licht. In der Mitte siehst du einen Lichtspalt. An beiden Enden liegt das Lineal auf. Wie ist die Fläche?',
+      ask: choice(['Ballig: Sie ist in der Mitte höher als außen', 'Eben: So ein Lichtspalt ist normal', 'Rechtwinklig zur Nachbarfläche', 'Hohl: Sie ist in der Mitte tiefer als außen'], 3), solve: () => ({ correct: 3 }),
+      expl: 'Das Haarlineal ist gerade. Licht scheint dort durch, wo die Fläche tiefer liegt. Ein Spalt in der Mitte bedeutet: Die Fläche ist hohl. Bei einer balligen Fläche würde das Lineal in der Mitte aufliegen und an den Enden wäre Licht zu sehen.',
+      tips: ['Licht scheint dort durch, wo die Fläche tiefer liegt als das Lineal.', 'Wo liegt das Lineal auf, und wo nicht?'] },
+    { id: 'tol52', cat: 'Prüfen in der Werkstatt', level: 2, title: 'Winkel in Grad und Minuten', text: 'Ein Winkel ist mit 90° ± 0° 30′ toleriert. Mit dem Universalwinkelmesser misst du 89° 40′. Ein Grad hat 60 Winkelminuten. Liegt der Winkel in der Toleranz?',
+      ask: choice(['Nein, denn der Winkel ist kleiner als 90°', 'Ja, denn erlaubt sind 89° 30′ bis 90° 30′', 'Nein, denn 40′ sind mehr als die erlaubten 30′', 'Ja, denn bei Winkeln gibt es keine Grenzen'], 1), solve: () => ({ correct: 1 }),
+      expl: 'Kleinster erlaubter Winkel: 90° − 30′ = 89° 30′. Größter erlaubter Winkel: 90° 30′. Der Messwert 89° 40′ liegt dazwischen. Die Abweichung vom Sollwinkel beträgt nur 20′, denn von 89° 40′ bis 90° fehlen 20′.',
+      tips: ['Rechne den kleinsten erlaubten Winkel aus: 90° minus 30 Minuten.', 'Von 89° 40′ bis 90° fehlen 20 Minuten.'] },
+    { id: 'tol53', cat: 'Prüfen in der Werkstatt', level: 1, title: 'Grenzrachenlehre an der Welle', text: 'Du prüfst eine Welle mit der Grenzrachenlehre. Die Gutseite gleitet über die Welle. Auch die Ausschussseite gleitet über die Welle. Wie bewertest du die Welle?',
+      ask: choice(GPA, 2), solve: () => ({ correct: 2 }),
+      expl: 'Die Ausschussseite hat das Mindestmaß der Welle. Sie darf nicht über die Welle gehen. Gleitet sie doch darüber, ist die Welle dünner als das Mindestmaß. Es fehlt Werkstoff, und den kann man nicht wieder auftragen. Die Welle ist Ausschuss.',
+      tips: ['Die Gutseite muss über die Welle gehen, die Ausschussseite nicht.', 'Geht die Ausschussseite darüber, ist die Welle zu dünn.'] },
+    { id: 'tol54', cat: 'Prüfen in der Werkstatt', level: 1, title: 'Innengewinde prüfen', text: 'Du hast ein Innengewinde M8 in eine Platte geschnitten. Mit welchem Prüfmittel prüfst du, ob das Gewinde maßlich in Ordnung ist?',
+      ask: choice(['Mit dem Gewinde-Grenzlehrdorn', 'Mit dem Gewinde-Lehrring', 'Mit dem Haarlineal', 'Mit der Fühlerlehre'], 0), solve: () => ({ correct: 0 }),
+      expl: 'Ein Innengewinde prüfst du mit dem Gewinde-Grenzlehrdorn. Die Gutseite muss sich leicht ganz einschrauben lassen. Die Ausschussseite darf nur ein kurzes Stück fassen (Regel: höchstens zwei Umdrehungen). Der Gewinde-Lehrring ist für Außengewinde.',
+      tips: ['In eine Bohrung passt ein Dorn, über einen Bolzen passt ein Ring.', 'Das Prüfmittel hat eine Gutseite und eine Ausschussseite.'] },
+    { id: 'tol55', cat: 'Prüfen in der Werkstatt', level: 1, title: 'Warmes Werkstück messen', text: 'Du hast eine Welle aus Stahl gerade bearbeitet. Sie ist noch deutlich warm. Was gilt, wenn du sie sofort misst?',
+      ask: choice(['Das Maß ist kleiner als später, weil Wärme den Stahl zusammenzieht', 'Das Maß stimmt, die Temperatur hat keinen Einfluss', 'Das Maß ist größer als später bei 20 °C', 'Das Messmittel zeigt bei Wärme gar nichts an'], 2), solve: () => ({ correct: 2 }),
+      expl: 'Metalle dehnen sich bei Wärme aus. Eine warme Welle ist dicker als nach dem Abkühlen. Maße auf Zeichnungen gelten bei der Bezugstemperatur 20 °C. Genaue Maße misst du deshalb erst, wenn Werkstück und Messmittel etwa diese Temperatur haben.',
+      tips: ['Was macht Metall, wenn es warm wird?', 'Die Maße auf der Zeichnung gelten bei 20 °C.'] }
   ];
 
   /* Beispiele (Reiter "Beispiele", Aufruf ?bsp): fertige Einstellungen, die "Laden" im passenden Reiter übernimmt.
@@ -256,7 +301,7 @@
   ];
 
   root.TOL_ISO = ISO;
-  root.TOL_DATA = { beispiele, tasks, uses, useOptions, devices, cats: ['Ablesen', 'Toleranzen', 'Passungen', 'Messmittel wählen', 'Messabweichung und Prüfmittel', 'Lehren und Oberfläche', 'Form- und Lagetoleranz'] };
+  root.TOL_DATA = { beispiele, tasks, uses, useOptions, devices, cats: ['Ablesen', 'Toleranzen', 'Passungen', 'Messmittel wählen', 'Messabweichung und Prüfmittel', 'Lehren und Oberfläche', 'Form- und Lagetoleranz', 'Prüfen in der Werkstatt'] };
   root.TOL_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { ISO, DATA: root.TOL_DATA, TASKS: root.TOL_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -149,12 +149,23 @@
       });
       return top;
     }
+    /* uifix63186: Liegt die Meldung ueber einer Rueckmeldung (.lr-fb), rueckt sie unter Kopfzeile und Reiterband an den oberen Rand. */
+    function ueberFb() {
+      var tr = t.getBoundingClientRect(), fbs = document.querySelectorAll('.lr-fb'), i, r, y = 0;
+      for (i = 0; i < fbs.length; i++) {
+        r = fbs[i].getBoundingClientRect();
+        if (r.height > 0 && r.bottom > tr.top && r.top < tr.bottom && r.right > tr.left && r.left < tr.right) {
+          ['#app>header', '.lr-band'].forEach(function (s) { var e = document.querySelector(s); if (!e) return; var q = e.getBoundingClientRect(); if (q.height > 0 && q.bottom > y && q.bottom < window.innerHeight / 2) y = q.bottom; });
+          t.style.bottom = 'auto'; t.style.top = Math.round(y + 8) + 'px'; return;
+        }
+      }
+    }
     function lage() {
       if (!t) return;
       if (wel && document.getElementById('tfGo')) { weg(); return; }   // das Angebot des Trainers ("Neu hier?") hat Vorrang: das Willkommens-Banner würde seine Knöpfe verdecken
-      if (!t.classList.contains('show')) { t.style.bottom = ''; if (iv) { clearInterval(iv); iv = 0; } return; }
+      if (!t.classList.contains('show')) { t.style.bottom = ''; t.style.top = ''; if (iv) { clearInterval(iv); iv = 0; } return; }
       t.style.bottom = '';
-      var top = stapel(); if (!top) return;
+      t.style.top = ''; var top = stapel(); if (!top) { ueberFb(); return; }
       var vh = window.innerHeight, frei = vh - t.getBoundingClientRect().bottom, need = Math.ceil(vh - top + 8);
       if (need > frei) t.style.bottom = need + 'px';
     }

@@ -3,7 +3,7 @@
    WER_DATA: materials (Übungswerte für Kurven), heat (Wärmebehandlungen), groups (Werkstoffwahl), quizzes, tasks.
    window.WER_TASKS: Kurzliste für Karriere/Lernpfad [{id, cat, title, level}]; Status in localStorage 'lm4.wer.done' = {id:true}.
    ALLE KENNWERTE SIND ÜBUNGSWERTE (gerundet, typische Größenordnung), keine garantierten Werkstoffdaten.
-   Was Ausbilder Dennis Sett prüfen soll, ist mit PRUEFEN markiert bzw. im Bericht aufgelistet. */
+   Was der Ausbilder prüfen soll, ist mit PRUEFEN markiert bzw. im Bericht aufgelistet. */
 (function (root) {
   /* ---------------- Werkstoffe für den Zugversuch (Übungswerte) ---------------- */
   const materials = [
@@ -91,7 +91,7 @@
     { title: 'Tank in der Lebensmittelindustrie', text: 'Ein Behälter kommt dauernd mit Feuchtigkeit in Kontakt und darf nicht rosten, er muss auch zäh sein.', w: { korr: 2, zaeh: 1 }, correct: 'nr' },
     { title: 'Stromschiene', text: 'Eine Schiene soll Strom verlustarm leiten und in feuchter Luft nicht korrodieren.', w: { leit: 2, korr: 1 }, correct: 'cu' },
     { title: 'Leichter Tragrahmen', text: 'Ein tragender Rahmen soll möglichst leicht und trotzdem fest sein.', w: { leicht: 2, fest: 1 }, correct: 'alu' },
-    { title: 'Kühlkörper im Außenbereich', text: 'Ein Kühlkörper soll leicht und witterungsbeständig sein und Wärme/Strom gut leiten.', w: { leicht: 1, korr: 1, leit: 1 }, correct: 'alu' }
+    { title: 'Kühlkörper im Außenbereich', text: 'Ein Kühlkörper soll leicht und witterungsbeständig sein und Wärme gut leiten. Im Modell steht die Leitfähigkeit stellvertretend für die Wärmeleitfähigkeit.', w: { leicht: 1, korr: 1, leit: 1 }, correct: 'alu' }
   ];
 
   /* ---------------- Aufgaben ---------------- */
@@ -292,7 +292,7 @@
       ask: wc(['nr', 'alu', 'bau', 'cu'], 'alu'), solve: () => ({ correct: 1 }),
       expl: 'Aluminium-Legierungen sind leicht (Dichte etwa ein Drittel von Stahl) und ausgehärtet recht fest. Stahl und Kupfer sind deutlich schwerer.',
       tips: ['Es kommt auf geringe Dichte an.', 'Der Werkstoff liegt bei etwa 2,7 g/cm³.'] },
-    { cat: 'Werkstoffwahl', level: 3, title: 'Kühlkörper im Außenbereich', text: 'Ein Kühlkörper soll leicht und witterungsbeständig sein und Wärme und Strom gut leiten. Gefordert sind: leicht, korrosionsbeständig und leitfähig. Welche Gruppe (Punktebewertung beachten)?',
+    { cat: 'Werkstoffwahl', level: 3, title: 'Kühlkörper im Außenbereich', text: 'Ein Kühlkörper soll leicht und witterungsbeständig sein und Wärme gut leiten. Gefordert sind: leicht, korrosionsbeständig und wärmeleitfähig (im Modell gilt dafür die Bewertung „leitfähig“). Welche Gruppe (Punktebewertung beachten)?',
       ask: wc(['cu', 'alu', 'nr', 'ms'], 'alu'), solve: () => ({ correct: 1 }),
       expl: 'Aluminium erreicht leicht 5 + korrosionsbeständig 4 + leitfähig 4 = 13 Punkte. Kupfer kommt nur auf 1 + 4 + 5 = 10, weil es schwer ist. Messing und Edelstahl liegen noch niedriger.',
       tips: ['Rechne für jede Gruppe die Punkte der drei Anforderungen zusammen.', 'Kupfer leitet besser, aber ist schwer: Es verliert bei „leicht“ viele Punkte.'] },
@@ -340,7 +340,52 @@
     { cat: 'Eisen und Kohlenstoff', level: 2, title: 'Ferritanteil bei 0,2 % C', text: 'Ein langsam abgekühlter Stahl enthält 0,2 % Kohlenstoff. Wie groß ist nach dem vereinfachten Lehrmodell der Ferritanteil (reiner Perlit hat 0,8 % C, Ferrit praktisch 0 % C)?',
       ask: num('%', 'Ferritanteil'), solve: () => ({ value: 100 - Math.round(0.2 / 0.8 * 1000) / 10, tol: 1 }),
       expl: 'Perlitanteil = C-Gehalt / 0,8 · 100 % = 0,2 / 0,8 · 100 % = 25 %. Der Rest ist Ferrit: 100 % − 25 % = 75 %. Ein Stahl mit so wenig Kohlenstoff ist weich und gut umformbar, aber kaum härtbar.',
-      tips: ['Rechne zuerst den Perlitanteil: C-Gehalt geteilt durch 0,8.', 'Der Stahl besteht nur aus Perlit und Ferrit. Was bleibt, wenn du den Perlitanteil abziehst?'] }
+      tips: ['Rechne zuerst den Perlitanteil: C-Gehalt geteilt durch 0,8.', 'Der Stahl besteht nur aus Perlit und Ferrit. Was bleibt, wenn du den Perlitanteil abziehst?'] },
+    /* Werkstoffe erkennen (Grundausbildung, v63.187). PRUEFEN: Dichten und Längenausdehnungszahl sind gerundete Übungswerte und stehen im Aufgabentext. */
+    { cat: 'Werkstoffe erkennen', level: 1, title: 'Eisen oder Nichteisen?', text: 'Metalle teilt man in Eisenwerkstoffe und Nichteisenmetalle ein. Ordne jeden Werkstoff der richtigen Gruppe zu.',
+      ask: match([['Baustahl', 0], ['Kupfer', 1], ['Gusseisen', 0], ['Aluminium', 1], ['Messing', 1]], ['Eisenwerkstoff', 'Nichteisenmetall']), solve: () => ({}),
+      expl: 'Stahl und Gusseisen bestehen zum größten Teil aus Eisen. Sie sind Eisenwerkstoffe. Kupfer und Aluminium sind eigene Metalle ohne Eisen. Messing ist eine Legierung aus Kupfer und Zink. Alle drei sind Nichteisenmetalle.',
+      tips: ['Frage dich bei jedem Werkstoff: Ist Eisen der Hauptbestandteil?', 'Messing besteht aus Kupfer und Zink.'] },
+    { cat: 'Werkstoffe erkennen', level: 1, title: 'Leichtmetall oder Schwermetall?', text: 'Die Grenze zwischen Leichtmetall und Schwermetall liegt bei einer Dichte von 5 kg/dm³. Ordne die Metalle zu.',
+      ask: match([['Aluminium (2,7 kg/dm³)', 0], ['Kupfer (8,9 kg/dm³)', 1], ['Magnesium (1,7 kg/dm³)', 0], ['Blei (11,3 kg/dm³)', 1], ['Titan (4,5 kg/dm³)', 0]], ['Leichtmetall', 'Schwermetall']), solve: () => ({}),
+      expl: 'Metalle mit einer Dichte unter 5 kg/dm³ sind Leichtmetalle: Aluminium, Magnesium und Titan. Kupfer und Blei liegen deutlich darüber. Sie sind Schwermetalle. Auch Eisen und Stahl (7,85 kg/dm³) gehören zu den Schwermetallen.',
+      tips: ['Vergleiche jede Dichte mit der Grenze 5 kg/dm³.', 'Titan liegt mit 4,5 kg/dm³ knapp unter der Grenze.'] },
+    { cat: 'Werkstoffe erkennen', level: 2, title: 'Masse eines Rundstabs', text: 'Ein Rundstab aus Aluminium hat den Durchmesser 40 mm und die Länge 250 mm. Die Dichte beträgt 2,7 kg/dm³. Welche Masse hat der Stab?',
+      ask: num('kg', 'Masse'), solve: () => ({ value: Math.PI / 4 * 0.4 * 0.4 * 2.5 * 2.7, tol: 0.01 }),
+      expl: 'Rechne in dm: d = 0,4 dm, l = 2,5 dm. Volumen V = π / 4 · d² · l = 0,785 · 0,16 dm² · 2,5 dm = 0,314 dm³. Masse m = V · Dichte = 0,314 dm³ · 2,7 kg/dm³ = 0,848 kg. Derselbe Stab aus Stahl (7,85 kg/dm³) wäre fast dreimal so schwer.',
+      tips: ['Rechne die Maße zuerst in dm um. Dann passt die Dichte in kg/dm³ direkt.', 'Volumen des Zylinders: V = π / 4 · d² · l. Danach mit der Dichte malnehmen.'] },
+    { cat: 'Werkstoffe erkennen', level: 2, title: 'Werkstoff über die Dichte bestimmen', text: 'Ein blanker Metallklotz ohne Beschriftung misst 60 mm × 40 mm × 25 mm. Auf der Waage zeigt er 471 g. Welche Dichte hat der Werkstoff?',
+      ask: num('g/cm³', 'Dichte'), solve: () => ({ value: 471 / (6 * 4 * 2.5), tol: 0.01 }),
+      expl: 'Volumen V = 6 cm · 4 cm · 2,5 cm = 60 cm³. Dichte = Masse / Volumen = 471 g / 60 cm³ = 7,85 g/cm³. Das ist die Dichte von Stahl. Aluminium hätte 2,7 g/cm³ und Kupfer 8,9 g/cm³.',
+      tips: ['Rechne die Maße in cm um und bestimme das Volumen.', 'Dichte = Masse geteilt durch Volumen.'] },
+    { cat: 'Werkstoffe erkennen', level: 2, title: 'Längenänderung durch Wärme', text: 'Eine Schiene aus Aluminium ist bei 20 °C genau 2 000 mm lang. In der Sonne erwärmt sie sich auf 45 °C. Die Längenausdehnungszahl von Aluminium beträgt 0,000 024 je Kelvin (Übungswert). Es gilt: Längenänderung = Länge · Ausdehnungszahl · Temperaturunterschied. Um wie viel wird die Schiene länger?',
+      ask: num('mm', 'Längenänderung'), solve: () => ({ value: 2000 * 0.000024 * (45 - 20), tol: 0.01 }),
+      expl: 'Temperaturunterschied: 45 °C − 20 °C = 25 K. Längenänderung = 2 000 mm · 0,000 024 · 25 = 1,2 mm. Stahl dehnt sich nur etwa halb so stark aus wie Aluminium. Deshalb misst man genaue Maße bei 20 °C.',
+      tips: ['Rechne zuerst den Temperaturunterschied aus.', 'Setze alle drei Werte in die Formel ein und rechne mal.'] },
+    { cat: 'Werkstoffe erkennen', level: 1, title: 'Prüfen mit dem Magneten', text: 'In einer Kiste liegen blanke Stäbe aus vier Werkstoffen. Du hältst einen Magneten daran. Welcher Stab wird angezogen?',
+      ask: choice(['Der Stab aus Aluminium', 'Der Stab aus Kupfer', 'Der Stab aus Baustahl', 'Der Stab aus Messing'], 2), solve: () => ({ correct: 2 }),
+      expl: 'Eisen und die üblichen Stähle sind magnetisch. Aluminium, Kupfer und Messing werden vom Magneten nicht angezogen. Der Magnet ist deshalb eine schnelle Probe, um Stahl von Nichteisenmetallen zu unterscheiden.',
+      tips: ['Welches Metall steckt in einem Magneten oder haftet daran?', 'Drei der vier Werkstoffe sind Nichteisenmetalle.'] },
+    { cat: 'Werkstoffe erkennen', level: 1, title: 'Aluminium an der Luft', text: 'Ein Blech aus Aluminium liegt jahrelang im Freien. Es wird matt, aber es rostet nicht durch. Warum?',
+      ask: choice(['Aluminium ist ein Edelmetall wie Gold', 'Eine dünne, dichte Oxidschicht schützt das Metall darunter', 'Aluminium enthält sehr viel Kohlenstoff', 'Luft und Wasser kommen an Aluminium gar nicht heran'], 1), solve: () => ({ correct: 1 }),
+      expl: 'Aluminium verbindet sich an der Luft sofort mit Sauerstoff. Dabei entsteht eine sehr dünne, fest haftende Oxidschicht. Sie ist dicht und schützt das Metall darunter. Rost auf Stahl ist dagegen locker und porös. Er schützt nicht, der Stahl rostet weiter.',
+      tips: ['Das Blech wird matt. An der Oberfläche passiert also etwas.', 'Die Schicht an der Oberfläche ist dicht und haftet fest.'] },
+    { cat: 'Werkstoffe erkennen', level: 1, title: 'Gehärtete Werkzeuge', text: 'Reißnadel, Körner und Feile bestehen aus gehärtetem Stahl. Warum?',
+      ask: choice(['Sie müssen härter sein als das Werkstück, sonst werden sie sofort stumpf', 'Gehärteter Stahl ist viel leichter als weicher Stahl', 'Gehärteter Stahl ist nicht mehr magnetisch', 'Gehärteter Stahl lässt sich besser biegen und richten'], 0), solve: () => ({ correct: 0 }),
+      expl: 'Ein Werkzeug kann nur ritzen, körnen oder spanen, wenn es härter ist als das Werkstück. Ein weiches Werkzeug würde sich selbst verformen und stumpf werden. Deshalb werden Schneiden und Spitzen gehärtet.',
+      tips: ['Was passiert, wenn du mit einem weichen Stift über harten Stahl fährst?', 'Der härtere Stoff ritzt den weicheren.'] },
+    { cat: 'Werkstoffe erkennen', level: 2, title: 'Schneide hart, Kopf weich', text: 'Bei einem Meißel ist nur die Schneide gehärtet. Der Kopf, auf den du mit dem Hammer schlägst, bleibt weicher. Warum?',
+      ask: choice(['Ein weicher Kopf lässt sich billiger anmalen', 'Ein weicher Kopf ist schwerer und schlägt kräftiger', 'Ein harter Kopf würde den Hammer magnetisch machen', 'Ein harter Kopf wäre spröde, beim Schlag könnten Stücke abspringen'], 3), solve: () => ({ correct: 3 }),
+      expl: 'Gehärteter Stahl ist hart, aber auch spröde. Unter Hammerschlägen kann er splittern. Der weichere, zähe Kopf verformt sich dagegen nur. Dabei bildet sich mit der Zeit ein Bart, der abgeschliffen wird.',
+      tips: ['Harter Stahl ist auch spröde.', 'Was passiert mit einem spröden Stoff bei einem Schlag?'] },
+    { cat: 'Werkstoffe erkennen', level: 2, title: 'Werkstoff für das Bauteil', text: 'Vier Bauteile, vier Werkstoffe. Jeder Werkstoff passt genau einmal. Ordne zu.',
+      ask: match([['Körner und Reißnadel', 0], ['Schutzbacken für den Schraubstock', 1], ['Ständer einer Bohrmaschine', 2], ['Träger für eine Halle, wird geschweißt', 3]], ['gehärteter Werkzeugstahl', 'Aluminium', 'Gusseisen (Grauguss)', 'unlegierter Baustahl']), solve: () => ({}),
+      expl: 'Körner und Reißnadel müssen hart sein: gehärteter Werkzeugstahl. Schutzbacken sollen das Werkstück schonen: weiches Aluminium. Der Ständer einer Maschine wird gegossen und soll Schwingungen dämpfen: Grauguss. Träger werden gewalzt und geschweißt: Baustahl.',
+      tips: ['Überlege bei jedem Bauteil, welche Eigenschaft am wichtigsten ist: hart, weich, gut gießbar oder gut schweißbar.', 'Schutzbacken müssen weicher sein als das Werkstück.'] },
+    { cat: 'Werkstoffe erkennen', level: 1, title: 'Eigenschaften benennen', text: 'Vier Beobachtungen aus der Werkstatt. Ordne jeder Beobachtung die passende Eigenschaft zu.',
+      ask: match([['Eine Glasscheibe zerspringt beim Schlag, ohne sich vorher zu verformen', 0], ['Eine Feder geht nach dem Entlasten in ihre alte Form zurück', 1], ['Ein Blech bleibt nach dem Biegen gebogen', 2], ['Eine Feile ritzt das Werkstück und wird selbst nicht geritzt', 3]], ['spröde', 'elastisch', 'plastisch verformbar', 'hart']), solve: () => ({}),
+      expl: 'Spröde Stoffe brechen ohne bleibende Verformung. Elastisch heißt: Die Verformung geht von selbst zurück. Plastisch heißt: Die Verformung bleibt. Hart ist ein Stoff, der dem Eindringen eines anderen Körpers großen Widerstand entgegensetzt.',
+      tips: ['Elastisch und plastisch unterscheiden sich darin, ob die Verformung bleibt.', 'Spröde Stoffe brechen plötzlich.'] }
   ];
   const tasks = T.map((t, i) => Object.assign({ id: 'wer' + (i + 1) }, t));
 
@@ -355,7 +400,7 @@
     { id: 'wb6', tab: 'name', titel: 'Bezeichnung 42CrMo4 entschlüsselt', text: 'Niedrig legierter Stahl: 42 bedeutet 0,42 % Kohlenstoff, dann kommen die Legierungselemente Chrom und Molybdän. Die 4 gehört zu Chrom und bedeutet 1 % Cr.', set: { v: '42CrMo4' } },
     { id: 'wb7', tab: 'wb', titel: 'Wärmebehandlung: Vergüten von C45', text: 'Vergüten ist Härten und hohes Anlassen bei ca. 500 bis 680 °C. Die Anlasstemperatur ist auf 550 °C eingestellt: hohe Zähigkeit bei guter Festigkeit, typisch für Wellen und Achsen aus C45.', set: { id: 'verg', Ta: 550 } }
   ];
-  root.WER_DATA = { beispiele, materials, hardness, hardUses, hardOptions, nameExamples, nameQuizList, nameInfo, heat, heatGoals, heatOptions, groups, propLabels, wahlCases, tasks, cats: ['Zugversuch', 'Härte', 'Bezeichnungen', 'Gefüge und Wärmebehandlung', 'Werkstoffwahl', 'Kennwerte und Prüfung', 'Wärmebehandlung in der Praxis', 'Korrosion und Kunststoffe', 'Eisen und Kohlenstoff'] };
+  root.WER_DATA = { beispiele, materials, hardness, hardUses, hardOptions, nameExamples, nameQuizList, nameInfo, heat, heatGoals, heatOptions, groups, propLabels, wahlCases, tasks, cats: ['Zugversuch', 'Härte', 'Bezeichnungen', 'Gefüge und Wärmebehandlung', 'Werkstoffwahl', 'Kennwerte und Prüfung', 'Wärmebehandlung in der Praxis', 'Korrosion und Kunststoffe', 'Eisen und Kohlenstoff', 'Werkstoffe erkennen'] };
   root.WER_TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   if (typeof module !== 'undefined' && module.exports) module.exports = { DATA: root.WER_DATA, TASKS: root.WER_TASKS };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -70,7 +70,7 @@
   const travel = (n, d) => (num(n) >= 0 && thread(d) ? n * thread(d).P : NAN);
 
   /* PRUEFEN P3: Festigkeitsklasse a.b: Rm = a · 100 N/mm², Re = a · b · 10 N/mm². Ab 8.8 ist der Wert genau genommen die 0,2-%-Dehngrenze Rp0,2; Mindestwerte nach ISO 898-1 weichen für 8.8 bei d > 16 mm leicht ab (830 statt 800 N/mm²). Reicht die Vereinfachung? */
-  const FKS = ['4.6', '5.8', '8.8', '10.9', '12.9'];
+  const FKS = ['4.6', '5.6', '8.8', '10.9', '12.9'];
   const fkParse = s => { const m = /^(\d{1,2})\.(\d)$/.exec(String(s == null ? '' : s).trim()); return m ? { a: +m[1], b: +m[2] } : null; };
   const fkRm = s => { const p = fkParse(s); return p ? p.a * 100 : NAN; };
   const fkRe = s => { const p = fkParse(s); return p ? p.a * p.b * 10 : NAN; };

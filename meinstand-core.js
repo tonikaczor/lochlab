@@ -215,9 +215,9 @@
     /* Rang, Abzeichen, Kampagne */
     let karriere = null; try { karriere = typeof env.karriere === 'function' ? env.karriere() : null; } catch (e) { karriere = null; }
     const bd = get('lm4.badges', {}), nBad = isObj(bd) ? Object.keys(bd).filter(idOk).length : 0;
-    const km = get('lm4.kamp', {}), kd = isObj(km) && Array.isArray(km.done) ? km.done.filter(x => typeof x === 'string').length : 0;
+    const km = get(b !== 'egs' && env.kampKey ? env.kampKey : 'lm4.kamp', {}), kd = isObj(km) && Array.isArray(km.done) ? km.done.filter(x => typeof x === 'string').length : 0;
     const abz = { n: nBad, total: env.badgeTotal == null ? null : num(env.badgeTotal) };
-    const kampagne = b === 'egs' ? { done: kd, total: env.kampTotal == null ? null : num(env.kampTotal) } : null;
+    const kampagne = (b === 'egs' || env.kampHat) ? { done: kd, total: env.kampTotal == null ? null : num(env.kampTotal) } : null;
     /* nächster Schritt */
     let weitere = [], naechster = null;
     try {
@@ -249,6 +249,7 @@
     return { read, now: now || Date.now(), beruf, AUFGABEN: g.AUFGABEN || [], LAB_REG: g.LAB_REG || {}, VB_INDEX: g.VB_INDEX || [], AP: g.AusbildungsPlan || null, Wdh: g.Wiederholen || null, Coach: C,
       KARTEN: g.KARTEN || [], recommend: g.Lernpfad && g.Lernpfad.recommend ? () => g.Lernpfad.recommend() : null,
       karriere: K && typeof K.summary === 'function' ? () => K.summary() : null,
+      kampHat: !!(beruf !== 'egs' && g.Kampagne && g.Kampagne.fuer && g.Kampagne.fuer(beruf)), kampKey: g.Kampagne && g.Kampagne.fuer && g.Kampagne.fuer(beruf) ? g.Kampagne.info().key : null,
       kampTotal: g.Kampagne && g.Kampagne.CH ? g.Kampagne.CH.length : null, badgeTotal: g.Badges && g.Badges.DEFS ? g.Badges.DEFS.length : null,
       alleThemen: C ? Object.keys(C.BANK_TITEL || {}).concat(Object.keys(C.GRUPPEN_TITEL || {}).map(k => 'p:' + k)) : [],
       topicTitle: C ? k => C.topicTitle(k, { groups: (g.PR_POOL && g.PR_POOL.groups) || [], topics: (g.PR_BANK && g.PR_BANK.TOPICS) || [] }) : null,

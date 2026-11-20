@@ -13,7 +13,7 @@
   const f = (v, d) => C().fmtN(v, d == null ? 2 : d, true);
   const dgG = a => f(a, 2) + ' °'; /* vorgegebener Winkel: so genau wie gegeben (30 °, 12,5 °) */
   const dg = a => { const c = C(); return c.fin(a) ? c.fmtDe(c.rd(a, 2), 2, true) + ' °' : '–'; }; /* Winkel einheitlich: zwei Nachkommastellen, Leerzeichen vor dem Gradzeichen */
-  const CATS = ['Kräfte als Vektor', 'Hebel und Drehmoment', 'Träger und Auflager', 'Schwerpunkt', 'Reibung', 'Spannung und Dehnung', 'Pressung und Abscheren', 'Biegung und Sicherheit', 'Arbeit und Leistung', 'Fehlersuche'];
+  const CATS = ['Kräfte als Vektor', 'Hebel und Drehmoment', 'Träger und Auflager', 'Schwerpunkt', 'Reibung', 'Spannung und Dehnung', 'Pressung und Abscheren', 'Biegung und Sicherheit', 'Arbeit und Leistung', 'Fehlersuche', 'Torsion und Knickung', 'Bewegung'];
   const REL = 0.01;
 
   /* ---------- Frageformen ---------- */
@@ -94,7 +94,7 @@
     schl: R => {
       const c = C();
       if (R() < 0.5) {
-        const M = c.pick(R, [60, 80, 100, 120, 150]), l = c.pick(R, [250, 300, 400, 500]), v = M / l * 1000;
+        const M = c.pick(R, [60, 80, 100, 120]), l = c.pick(R, [400, 450, 500]), v = M / l * 1000;
         return numQ('Eine Schraube soll mit ' + f(M, 0) + ' Nm angezogen werden. Der Schlüssel hat vom Schraubenkopf bis zum Griffpunkt einen Hebelarm von ' + f(l, 0) + ' mm. Mit welcher Handkraft muss gezogen werden?', v, 'N', 'Handkraft F', 0,
           'F = M / l = ' + f(M, 0) + ' Nm / ' + f(l / 1000, 3) + ' m = ' + f(v, 1) + ' N.', ['Stelle M = F · l nach der Kraft um.', 'Hebelarm in Meter umrechnen.']);
       }
@@ -374,6 +374,53 @@
         'Bei zähen Werkstoffen gilt als Grenzspannung die Streckgrenze Re, nicht die Zugfestigkeit Rm. Mit Rm wird die Sicherheit zu hoch angegeben.',
         'Die Bewertung ist verdreht: Ist S größer oder gleich der geforderten Sicherheit 1,5, ist der Stab ausreichend; ist S kleiner, ist er es nicht.'];
       return choiceQ(R, 'Ein Rundstab aus ' + mt.n + ' (Re = ' + f(mt.Re, 0) + ' N/mm², Rm = ' + f(mt.Rm, 0) + ' N/mm²), d = ' + f(d, 0) + ' mm, wird mit ' + f(F, 0) + ' N auf Zug belastet. Gefordert ist S ≥ 1,5. Der Rechenweg enthält einen Fehler:\n' + steps.join('\n') + '\nIn welchem Schritt steckt der Fehler?', nm[bad], nm.filter((_, i) => i !== bad), nm[bad] + ': ' + ex[bad] + ' Richtig gerechnet: A = ' + f(A, 0) + ' mm², σ = ' + f(sg, 0) + ' N/mm², S = ' + f(S, 2) + (S >= Sreq ? ' (ausreichend).' : ' (nicht ausreichend).'), ['Prüfe jeden Schritt einzeln, beginne bei den Einheiten.', 'Welche Größe gilt als Grenze bei einem zähen Werkstoff, und wann ist S ausreichend?']);
+    },
+    /* w187 Fachstufe: Wärmedehnung, Torsion, Knickung, Bewegung */
+    wd1: R => {
+      const c = C(), L = c.pick(R, [2, 5, 8, 10, 20]), dT = c.pick(R, [20, 30, 40, 50]), v = 12 * L * dT / 1000;
+      return numQ('Eine Stahlschiene ist ' + L + ' m lang. Die Schiene erwärmt sich um ' + dT + ' K. Um wie viel Millimeter wird sie länger? Längenausdehnungszahl für Stahl: α = 0,000012 1/K.', v, 'mm', 'Längenänderung ΔL', 2,
+        'ΔL = α · L · ΔT. Setze die Länge in mm ein: ΔL = 0,000012 1/K · ' + f(L * 1000, 0) + ' mm · ' + dT + ' K = ' + f(v, 2) + ' mm. Merkhilfe: 1 m Stahl wird je 100 K etwa 1,2 mm länger.',
+        ['Die Längenänderung wächst mit der Länge und mit dem Temperaturunterschied.', 'Rechne die Länge zuerst in Millimeter um.']);
+    },
+    wd2: R => {
+      const c = C(), L = c.pick(R, [5, 10, 20]), dT = c.pick(R, [25, 40, 50]), s = 12 * L * dT / 1000;
+      return numQ('Eine Stahlschiene ist ' + L + ' m lang. Bis zum nächsten Bauteil bleibt eine Dehnfuge von ' + f(s, 1) + ' mm. Um wie viel Kelvin darf sich die Schiene erwärmen, bis die Fuge gerade geschlossen ist? Längenausdehnungszahl für Stahl: α = 0,000012 1/K.', dT, 'K', 'Temperaturunterschied ΔT', 0,
+        'Stelle ΔL = α · L · ΔT nach ΔT um: ΔT = ΔL / (α · L) = ' + f(s, 1) + ' mm / (0,000012 1/K · ' + f(L * 1000, 0) + ' mm) = ' + dT + ' K. Wird es noch wärmer, drückt die Schiene gegen das Nachbarteil und es entstehen große Kräfte.',
+        ['Die Fuge ist geschlossen, wenn die Längenänderung so groß ist wie die Fuge.', 'Stelle die Formel ΔL = α · L · ΔT nach ΔT um. Länge in mm einsetzen.']);
+    },
+    kn2: R => choiceQ(R, 'Ein schlanker Druckstab wird doppelt so lang gebaut. Querschnitt, Werkstoff und Lagerung bleiben gleich. Wie ändert sich die Knickkraft nach Euler? Formel: FK = π² · E · I / lk².',
+      'Die Knickkraft sinkt auf ein Viertel', ['Die Knickkraft sinkt auf die Hälfte', 'Die Knickkraft bleibt gleich', 'Die Knickkraft steigt auf das Doppelte'],
+      'Die Knicklänge steht im Nenner und wird quadriert. Doppelte Länge heißt: Der Nenner wird 2 · 2 = 4-mal so groß. Die Knickkraft sinkt auf ein Viertel. Lange dünne Druckstäbe sind deshalb besonders knickgefährdet, auch wenn die Druckspannung noch klein ist.',
+      ['Sieh dir an, wo die Länge in der Formel steht und mit welcher Hochzahl.', 'Setze für die Länge einmal 1 und einmal 2 ein und vergleiche.']),
+    tor1: R => {
+      const c = C(), d = c.pick(R, [20, 25, 30, 40, 50]), tau = c.pick(R, [30, 40, 50, 60]), Wp = Math.PI * d * d * d / 16, v = tau * Wp / 1000;
+      return numQ('Eine Vollwelle aus Stahl hat ' + d + ' mm Durchmesser. Die zulässige Torsionsspannung beträgt ' + tau + ' N/mm². Welches Drehmoment darf die Welle höchstens übertragen? Polares Widerstandsmoment der Vollwelle: Wp = π · d³ / 16.', v, 'Nm', 'Drehmoment M', 0,
+        'Wp = π · d³ / 16 = π · (' + d + ' mm)³ / 16 = ' + f(Wp, 0) + ' mm³. M = τ zul · Wp = ' + tau + ' N/mm² · ' + f(Wp, 0) + ' mm³ = ' + f(tau * Wp, 0) + ' Nmm = ' + f(v, 1) + ' Nm. Der Durchmesser geht mit der dritten Potenz ein: Eine doppelt so dicke Welle überträgt das achtfache Moment.',
+        ['Berechne zuerst das polare Widerstandsmoment Wp in mm³.', 'Spannung mal Widerstandsmoment ergibt das Moment in Nmm. Teile durch 1000 für Nm.']);
+    },
+    kn1: R => {
+      const c = C(), d = c.pick(R, [10, 12, 16, 20]), I = Math.round(Math.PI * Math.pow(d, 4) / 64), lk = c.pick(R, [600, 800, 1000, 1200]), E = 210000, v = Math.PI * Math.PI * E * I / (lk * lk);
+      return numQ('Ein schlanker Rundstab aus Stahl hat ' + d + ' mm Durchmesser. Sein Flächenmoment beträgt I = ' + f(I, 0) + ' mm⁴. Der Stab ist an beiden Enden gelenkig gelagert, die Knicklänge beträgt lk = ' + f(lk, 0) + ' mm. Bei welcher Druckkraft knickt er nach Euler aus? Rechne mit E = ' + f(E, 0) + ' N/mm² und FK = π² · E · I / lk².', v, 'N', 'Knickkraft FK', 0,
+        'FK = π² · E · I / lk² = 9,87 · ' + f(E, 0) + ' N/mm² · ' + f(I, 0) + ' mm⁴ / (' + f(lk, 0) + ' mm)² = ' + f(v, 0) + ' N. Das ist die Kraft, bei der der Stab seitlich ausweicht. Im Betrieb muss die Druckkraft mit Sicherheit deutlich darunter bleiben.',
+        ['Rechne zuerst das Quadrat der Knicklänge aus.', 'π² ist etwa 9,87. Setze alle Längen in mm ein, dann kommt die Kraft in N heraus.']);
+    },
+    bw1: R => {
+      const c = C(), s = c.pick(R, [3, 4, 6, 9, 12]), t = c.pick(R, [10, 15, 20, 30]), v = s * 60 / t;
+      return numQ('Ein Förderband bewegt ein Paket gleichmäßig in ' + t + ' s um ' + s + ' m weiter. Wie groß ist die Bandgeschwindigkeit in m/min?', v, 'm/min', 'Geschwindigkeit v', 1,
+        'v = s / t = ' + s + ' m / ' + t + ' s = ' + f(s / t, 3) + ' m/s. Eine Minute hat 60 s: ' + f(s / t, 3) + ' m/s · 60 = ' + f(v, 1) + ' m/min.',
+        ['Geschwindigkeit ist Weg geteilt durch Zeit.', 'Achte auf die Einheit: In einer Minute läuft das Band 60-mal so weit wie in einer Sekunde.']);
+    },
+    bw2: R => {
+      const c = C(), a = c.pick(R, [0.5, 1, 1.5, 2, 2.5]), t = c.pick(R, [2, 3, 4, 5]), v = a * t;
+      return numQ('Der Schlitten einer Linearachse fährt aus dem Stand an. Er beschleunigt gleichmäßig mit ' + f(a, 1) + ' m/s². Welche Geschwindigkeit hat er nach ' + t + ' s?', v, 'm/s', 'Geschwindigkeit v', 2,
+        'Bei gleichmäßiger Beschleunigung aus dem Stand gilt v = a · t = ' + f(a, 1) + ' m/s² · ' + t + ' s = ' + f(v, 2) + ' m/s. Die Beschleunigung sagt, um wie viel die Geschwindigkeit in jeder Sekunde wächst.',
+        ['Die Beschleunigung gibt an, wie stark die Geschwindigkeit je Sekunde zunimmt.', 'Aus dem Stand: Geschwindigkeit = Beschleunigung mal Zeit.']);
+    },
+    bw3: R => {
+      const c = C(), v = c.pick(R, [0.5, 1, 1.2, 2, 3]), t = c.pick(R, [1, 2, 4, 5]), s = v * t / 2;
+      return numQ('Der Schlitten einer Linearachse beschleunigt gleichmäßig aus dem Stand. Nach ' + t + ' s hat er die Geschwindigkeit ' + f(v, 1) + ' m/s erreicht. Welchen Weg legt er in dieser Zeit zurück?', s, 'm', 'Weg s', 2,
+        'Die Geschwindigkeit steigt gleichmäßig von 0 auf ' + f(v, 1) + ' m/s. Im Mittel fährt der Schlitten also halb so schnell: ' + f(v / 2, 2) + ' m/s. s = v · t / 2 = ' + f(v, 1) + ' m/s · ' + t + ' s / 2 = ' + f(s, 2) + ' m. Ohne das Teilen durch 2 käme der Weg bei voller Geschwindigkeit heraus.',
+        ['Am Anfang steht der Schlitten, am Ende hat er die volle Geschwindigkeit. Wie schnell ist er im Mittel?', 'Weg = mittlere Geschwindigkeit mal Zeit.']);
     }
   };
 
@@ -386,11 +433,15 @@
     [CATS[4], 1, 'Klotz auf der Bahn', 'rb1'], [CATS[4], 2, 'Wagen schieben', 'rb2'], [CATS[4], 2, 'Auf der Schräge', 'rb3'], [CATS[4], 2, 'Liegt es oder geht es?', 'rb4'], [CATS[4], 3, 'Der Neigungswinkel', 'rb5'], [CATS[4], 3, 'Die Rampe hinauf', 'rb6'],
     [CATS[5], 1, 'Zugspannung', 'zs1'], [CATS[5], 2, 'Stange dimensionieren', 'zs2'], [CATS[5], 2, 'Dehnung', 'zs3'], [CATS[5], 3, 'Länger unter Last', 'zs4'],
     [CATS[6], 1, 'Bolzen im Blech', 'fp1'], [CATS[6], 2, 'Bolzen auf Abscheren', 'ab1'], [CATS[6], 2, 'Lochen im Blech', 'ab2'],
-    [CATS[7], 2, 'Profile vergleichen', 'bg1'], [CATS[7], 3, 'Biegespannung im Träger', 'bg2'], [CATS[7], 2, 'Wie sicher ist das Bauteil?', 'sf1'], [CATS[7], 2, 'Wie viel darf er tragen?', 'sf2'],
+    [CATS[7], 2, 'Widerstandsmoment von Profilen', 'bg1'], [CATS[7], 3, 'Biegespannung im Träger', 'bg2'], [CATS[7], 2, 'Wie sicher ist das Bauteil?', 'sf1'], [CATS[7], 2, 'Wie viel darf er tragen?', 'sf2'],
     [CATS[8], 1, 'Arbeit und Leistung', 'ar1'], [CATS[8], 2, 'Was kommt an?', 'ar2'],
-    [CATS[9], 2, 'Fehlerbild A', 'fsa'], [CATS[9], 3, 'Fehlerbild B', 'fsb'], [CATS[9], 3, 'Fehlerbild C', 'fsc']
+    [CATS[9], 2, 'Fehlerbild A', 'fsa'], [CATS[9], 3, 'Fehlerbild B', 'fsb'], [CATS[9], 3, 'Fehlerbild C', 'fsc'],
+    [CATS[5], 1, 'Länger durch Wärme', 'wd1'], [CATS[5], 2, 'Reicht die Dehnfuge?', 'wd2'],
+    [CATS[10], 2, 'Doppelt so langer Stab', 'kn2'], [CATS[10], 3, 'Was die Welle überträgt', 'tor1'], [CATS[10], 3, 'Wann knickt der Stab?', 'kn1'],
+    [CATS[11], 1, 'Wie schnell läuft das Band?', 'bw1'], [CATS[11], 2, 'Schneller werden', 'bw2'], [CATS[11], 3, 'Weg beim Anfahren', 'bw3']
   ];
   const tasks = defs.map((d, i) => ({ id: 'mch' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3] }));
+  { const o = tasks.map((t, i) => [CATS.indexOf(t.cat), i, t]).sort((a, b) => a[0] - b[0] || a[1] - b[1]); o.forEach((x, k) => { tasks[k] = x[2]; }); } /* w187: Aufgaben vom Listenende nach Rubrik einsortieren, die IDs bleiben */
 
   function make(t, R) {
     const q = G[t.gen](R, t.arg); q.id = t.id; q.cat = t.cat; q.level = t.level; q.title = t.title; return q;

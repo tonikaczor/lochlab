@@ -15,7 +15,13 @@
   const el = (tag, cls, html) => { const e = doc.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
   const fmt = ms => { const s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
   const KRE = /^[A-Za-z0-9ÄÖÜäöüß_.-]{2,24}$/;   /* wie stand.js und Duell.core.KRE */
-  const rows = () => C.pool(root.AUFGABEN || []);
+  /* Beruf-Pool (v63.187): Für die Berufe in BPOOL kommen die Duell-Aufgaben nur aus den Labs des Berufs (BerufReg.has), also aus den duellfähigen Labs, die der Beruf hat.
+     pb = Kürzel des Pools ('' = alle Fehlersuchen wie bisher, ohne Angabe = eigener Beruf). Der Link und der QR-Code tragen &pb=, damit ein Gegner aus einem anderen Beruf dieselben Aufgaben bekommt.
+     Ein Link ohne &pb= stammt von einem Gerät mit dem ganzen Pool, dann gilt auch hier der ganze Pool. Für alle Berufe außerhalb von BPOOL ändert sich nichts. */
+  const BPOOL = ['im'];
+  const pbOk = p => (BPOOL.indexOf(p) >= 0 ? p : '');
+  const pbVon = pb => { if (pb != null) return pbOk(String(pb)); try { return pbOk(root.BerufReg && root.BerufReg.cur ? root.BerufReg.cur() : ''); } catch (e) { return ''; } };
+  const rows = pb => { const all = C.pool(root.AUFGABEN || []), p = pbVon(pb); return p && root.BerufReg && root.BerufReg.has ? all.filter(r => root.BerufReg.has(r[1], p)) : all; };
   const taskRow = id => (root.AUFGABEN || []).find(r => r[0] === id) || null;
   const labName = id => (root.LAB_REG && root.LAB_REG[id] && root.LAB_REG[id].name) || id;
   const labFile = id => (root.LAB_REG && root.LAB_REG[id] && root.LAB_REG[id].file) || 'index.html';
@@ -64,7 +70,7 @@
   const mitLj = (fn, self) => { if (root.Lehrjahr || self._lj) return false; self._lj = 1; loadSeq([root.LERNFELDER ? '' : 'lernfelder.js', 'lehrjahr.js'].filter(Boolean), () => fn()); return true; };
   function formHtml(o) {
     const y = thisYear(), j = o.j; let jo = ''; for (let i = y; i >= y - 5; i--) jo += `<option value="${i}"${String(i) === String(j) ? ' selected' : ''}>${i}</option>`;
-    const labs = {}; rows().forEach(r => { labs[r[1]] = 1; });
+    const labs = {}; rows(o.pb).forEach(r => { labs[r[1]] = 1; });
     const lo = '<option value="">Alle Fehlersuchen</option>' + Object.keys(labs).sort((a, b) => labName(a) < labName(b) ? -1 : 1).map(l => `<option value="${l}"${l === o.lab ? ' selected' : ''}>${esc(labName(l))}</option>`).join('');
     return `<div class="dl-two"><div><label for="dlK">Dein Kürzel (kein Klarname)</label><input type="text" id="dlK" maxlength="12" autocomplete="off" autocapitalize="off" value="${esc(o.k)}" placeholder="az07"></div>
       <div><label for="dlJ">Jahrgang</label><select id="dlJ">${jo}</select></div></div>
@@ -82,7 +88,7 @@
     ['#dlL', '#dlJ', '#dlK'].forEach(s => { const e = b.querySelector(s); if (e) e.onchange = () => onChange && onChange(); });
   }
   function checkId(b, o) { const e = b.querySelector('#dlE'); if (!KRE.test(o.k)) { e.textContent = 'Bitte ein Kürzel eintragen (2 bis 24 Zeichen: Buchstaben, Ziffern, _ . -).'; return false; } e.textContent = ''; return true; }
-  const joinStr = o => o.r + ' · Stufe ' + o.st + (o.lab ? ' · ' + o.lab : '');
+  const joinStr = o => o.r + ' · Stufe ' + o.st + (pbVon(o.pb) ? ' · Beruf ' + pbVon(o.pb) : '') + (o.lab ? ' · ' + o.lab : '');   // „Beruf im“ steht vor dem Lab, damit das Lab am Ende bleibt
 
   /* ---------- Start des Duells (nach Countdown) ---------- */
   /* ---------- Serie: mehrere Aufgaben hintereinander ---------- */
@@ -113,7 +119,7 @@
     const m = doc.getElementById('dlBox'); if (m) m.remove(); go();
   }
   /* Aufgaben der Runde. Die Anzahl steckt im Code. Nennt der Link eine andere erste Aufgabe als die Auswahl, gilt nur diese eine (gezielte Herausforderung). */
-  const rowsFor = o => { const a = o.aufgabe && taskRow(o.aufgabe), l = C.pickN(o.r, rows(), { st: o.st, lab: o.lab || '' }, C.nOf(o.r) || 1); if (a && (!l.length || l[0][0] !== a[0])) return [a]; return l; };
+  const rowsFor = o => { const a = o.aufgabe && taskRow(o.aufgabe), rw = rows(o.pb), l = C.pickN(o.r, rw, pbVon(o.pb) ? { st: o.st, lab: o.lab || '', alle: rw } : { st: o.st, lab: o.lab || '' }, C.nOf(o.r) || 1); if (a && (!l.length || l[0][0] !== a[0])) return [a]; return l; };
   const taskInfo = l => !l || !l.length ? '<span class="dl-err">Keine passende Aufgabe gefunden.</span>'
     : l.length === 1 ? `<b>${esc(l[0][3])}</b><br><small>${esc(labName(l[0][1]))} · Stufe ${l[0][4]}</small>`
     : `<b>${l.length} Aufgaben hintereinander</b><ol class="dl-ser">${l.map(r => `<li>${esc(r[3])} <small>(${esc(labName(r[1]))})</small></li>`).join('')}</ol><small>Nach jeder Aufgabe siehst du deinen Zwischenstand. Dann geht es mit der nächsten weiter. Jede Aufgabe hat ihre eigene Uhr.</small>`;
@@ -129,9 +135,9 @@
     const gen = () => {
       readForm(F, o); if (!checkId(F, o)) return;
       o.r = C.newRound(Date.now(), { st: o.st, n: o.n }); const list = rowsFor(o), row = list[0] || null;
-      const url = new URL(labFile(row ? row[1] : 'sch') + '?aufgabe=' + (row ? row[0] : '') + '&duell=' + o.r + '&st=' + o.st + (o.lab ? '&lab=' + o.lab : ''), location.href).href;
+      const url = new URL(labFile(row ? row[1] : 'sch') + '?aufgabe=' + (row ? row[0] : '') + '&duell=' + o.r + '&st=' + o.st + (o.lab ? '&lab=' + o.lab : '') + (pbVon(o.pb) ? '&pb=' + pbVon(o.pb) : ''), location.href).href;
       R.innerHTML = `<div class="dl-card"><div class="dl-mute">Runden-Code</div><div class="dl-code" id="dlCode">${esc(o.r)}</div><div class="dl-qr" id="dlQr"></div>
-        <div class="dl-ti">${taskInfo(list)}</div>${list.length && list.length < o.n ? `<p><small>Für diese Wahl gibt es nur ${list.length === 1 ? 'eine passende Aufgabe' : list.length + ' passende Aufgaben'}.</small></p>` : ''}<p><small>Der Gegner öffnet in der App „Duell beitreten“ und tippt dort auf „QR-Code scannen“. Nicht mit der Kamera-App scannen, sonst öffnet sich der Browser statt der App. Oder er tippt dort den Code ein: <b>${esc(o.r)}</b>. Die Stufe und die Anzahl der Aufgaben stecken im Code. ${o.lab ? 'Dazu wählt er dasselbe Lab wie du. ' : ''}Dann haben alle dieselben Aufgaben. Vergleicht vor dem Start den Titel der ersten Aufgabe.</small></p>
+        <div class="dl-ti">${taskInfo(list)}</div>${list.length && list.length < o.n ? `<p><small>Für diese Wahl gibt es nur ${list.length === 1 ? 'eine passende Aufgabe' : list.length + ' passende Aufgaben'}.</small></p>` : ''}<p><small>Der Gegner öffnet in der App „Duell beitreten“ und tippt dort auf „QR-Code scannen“. Nicht mit der Kamera-App scannen, sonst öffnet sich der Browser statt der App. Oder er tippt dort den Code ein: <b>${esc(o.r)}</b>. Die Stufe und die Anzahl der Aufgaben stecken im Code. ${o.lab ? 'Dazu wählt er dasselbe Lab wie du. ' : ''}${pbVon(o.pb) ? 'Deine Aufgaben kommen aus den Labs deines Berufs. Ein Gegner aus einem anderen Beruf scannt den QR-Code, dann bekommt er dieselben Aufgaben. ' : ''}Dann haben alle dieselben Aufgaben. Vergleicht vor dem Start den Titel der ersten Aufgabe.</small></p>
         <div class="dl-row"><button type="button" class="dl-btn pri" id="dlGo"${row ? '' : ' disabled'}>Los (3, 2, 1)</button><button type="button" class="dl-btn" id="dlCp">Kopieren</button></div></div>`;
       qrInto(R.querySelector('#dlQr'), url);
       R.querySelector('#dlCp').onclick = () => { const t = el('textarea'); t.value = joinStr(o); R.appendChild(t); copy(joinStr(o), t); t.remove(); };
@@ -142,18 +148,18 @@
 
   /* ---------- Beitreten ---------- */
   function parseJoin(txt) {
-    const t = String(txt || ''), m = /K\d{2}-[0-9A-Fa-f]{4}(?:-E)?/.exec(t), s = /[?&\s·]st=?\s*([123])|Stufe\s*([123])/i.exec(t), l = /[?&\s·]lab=([a-z]{2,5})/i.exec(t) || /·\s*([a-z]{2,5})\s*$/i.exec(t), a = /[?&]aufgabe=([A-Za-z0-9_-]+)/.exec(t);
-    return { r: m ? C.roundBase(m[0]) : '', st: s ? +(s[1] || s[2]) : 0, lab: l ? l[1].toLowerCase() : '', aufgabe: a ? a[1] : '' };
+    const t = String(txt || ''), m = /K\d{2}-[0-9A-Fa-f]{4}(?:-E)?/.exec(t), s = /[?&\s·]st=?\s*([123])|Stufe\s*([123])/i.exec(t), l = /[?&\s·]lab=([a-z]{2,5})/i.exec(t) || /·\s*([a-z]{2,5})\s*$/i.exec(t), a = /[?&]aufgabe=([A-Za-z0-9_-]+)/.exec(t), p = /[?&]pb=([a-z]{2,5})/i.exec(t) || /·\s*Beruf\s+([a-z]{2,5})/i.exec(t);
+    return { r: m ? C.roundBase(m[0]) : '', st: s ? +(s[1] || s[2]) : 0, lab: l ? l[1].toLowerCase() : '', aufgabe: a ? a[1] : '', pb: p ? p[1].toLowerCase() : null };
   }
   function beitreten(pre) {
     if (mitLj(() => beitreten(pre), beitreten)) return;
     const m = modal('Duell beitreten', true), b = m.body, j = jgDefault();
-    const o = Object.assign({ k: lsGet('lm4.kuerzel'), j, st: 0, lab: '', r: '', aufgabe: '' }, pre || {}); if (!o.st) o.st = stDefault(j); const r0 = o.r, a0 = o.aufgabe;
+    const o = Object.assign({ k: lsGet('lm4.kuerzel'), j, st: 0, lab: '', r: '', aufgabe: '' }, pre || {}); if (!o.st) o.st = stDefault(j); const r0 = o.r, a0 = o.aufgabe, pb0 = o.pb;
     b.innerHTML = `<p>Gib den Runden-Code deines Gegners ein (oder den ganzen Link). Die Stufe und die Anzahl der Aufgaben stellen sich aus dem Code von selbst ein. Hat dein Gegner ein bestimmtes Lab gewählt, wählst du dasselbe Lab. Prüfe vor dem Start, ob unten dieselben Aufgaben stehen wie bei ihm.</p>
       <label for="dlRc">Runden-Code</label><input type="text" id="dlRc" autocomplete="off" autocapitalize="characters" placeholder="K43-7F2A" value="${esc(o.r)}"><div class="dl-row"><button type="button" class="dl-btn" id="dlRs">QR-Code scannen</button></div>
       ${formHtml(o)}<div class="dl-card" id="dlT"></div><div class="dl-row"><button type="button" class="dl-btn pri" id="dlGo">Los (3, 2, 1)</button></div>`;
     const upd = () => {
-      readForm(b, o); const p = parseJoin(b.querySelector('#dlRc').value); o.r = p.r; o.aufgabe = p.aufgabe || (o.r === r0 ? a0 : '');
+      readForm(b, o); const p = parseJoin(b.querySelector('#dlRc').value); o.r = p.r; o.aufgabe = p.aufgabe || (o.r === r0 ? a0 : ''); o.pb = p.pb != null ? p.pb : p.aufgabe ? '' : (o.r === r0 && a0 ? pb0 : undefined);   // Link oder kopierter Text mit Beruf: dessen Pool; Link mit Aufgabe ohne Beruf: alle; nur der Code: Pool des eigenen Berufs
       const list = o.r ? rowsFor(o) : []; b.querySelector('#dlT').innerHTML = o.r ? taskInfo(list) : '<small>Noch kein gültiger Runden-Code (Form: K43-7F2A).</small>'; return list.length ? list : null;
     };
     const rc = b.querySelector('#dlRc');
@@ -438,7 +444,7 @@
     const so = serOffen(); if (so && !D.active()) { if (so.recs.length) zwischen(so); else serSet(null); }
     if (dq && /^K\d{2}-[0-9A-Fa-f]{4}(-E)?$/.test(dq) && !D.active()) {
       const st = +q.get('st') || 0, lab = q.get('lab') || '', a = q.get('aufgabe') || '';
-      beitreten({ r: C.roundBase(dq), st: st >= 1 && st <= 3 ? st : 0, lab: /^[a-z]{2,5}$/.test(lab) ? lab : '', aufgabe: a });
+      beitreten({ r: C.roundBase(dq), st: st >= 1 && st <= 3 ? st : 0, lab: /^[a-z]{2,5}$/.test(lab) ? lab : '', aufgabe: a, pb: a ? (q.get('pb') || '') : undefined });
     }
   };
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot); else boot();

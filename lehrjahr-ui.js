@@ -1,5 +1,5 @@
 'use strict';
-/* Tonfunk Lab: Eigenes Lehrjahr einstellen (Paket L2). Nur im Browser, nur für Berufe mit Datenlage (Lehrjahr.gilt: egs, ige).
+/* Tonfunk Lab: Eigenes Lehrjahr einstellen (Paket L2). Nur im Browser, nur für Berufe mit Datenlage (Lehrjahr.gilt: egs, ige, im).
    1. Ansicht "Ich": Zeile "Mein Lehrjahr" mit vier Knöpfen (1. bis 4.), Hinweistext und "Keine Angabe" (#ichLj in index.html).
    2. Einmal-Frage unter der blauen Karte ("In welchem Lehrjahr bist du?"): ein kleines Blatt im Stil der Hinweiszeilen (.lsfehlt), kein Browser-Dialog, wegklickbar ("Nicht jetzt");
       danach nie wieder (Schlüssel lm4.lehrjahr.frage), erreichbar bleibt die Zeile in "Ich".

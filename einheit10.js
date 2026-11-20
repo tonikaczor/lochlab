@@ -13,7 +13,7 @@
    Fälligkeit der Aufgaben-Wiederholung (wiederholen.js) wird in der Zusammenfassung nur angezeigt, nicht verändert. */
 (function (root) {
   const DAY = 86400000, ABST = [0, 1, 3, 7, 14], N_KARTE = 3, N_RECHNEN = 2, N_PRUEF = 1, KEY = 'lm4.e10', KEEP = 40;
-  const ELEKTRO = ['egs', 'ige'], POOLTEIL = { egs: ['Teil1', 'SysE', 'FuSa'], ige: ['Teil1', 'SysE', 'FuSa'], ik: ['WiSo'] };
+  const ELEKTRO = ['egs', 'ige'], POOLTEIL = { egs: ['Teil1', 'SysE', 'FuSa'], ige: ['Teil1', 'SysE', 'FuSa'], ik: ['WiSo'], im: ['IM1', 'IMA', 'IMF', 'WiSo'] };   /* pruefim187: Industriemechaniker, eigener Pool pruefpool-im.js und WiSo */
   const isObj = o => !!o && typeof o === 'object' && !Array.isArray(o);
   const num = v => { const x = +v; return isFinite(x) ? x : 0; };
   const rng = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
@@ -46,7 +46,7 @@
     const w = gs.map(g => { const p = weak[g]; return p != null && p < 60 ? 1 + 1.5 * (60 - p) / 60 : 1; }), sum = w.reduce((s, x) => s + x, 0);
     let x = r() * sum; for (let i = 0; i < gs.length; i++) { x -= w[i]; if (x <= 0) return gs[i]; } return gs[gs.length - 1];
   }
-  const teilNr = t => (t === 'Teil1' ? 1 : 2);
+  const teilNr = t => (t === 'Teil1' || t === 'IM1' ? 1 : 2);
   /* Pool-Aufgabe -> Frage im Format des Prüfungs-Labs; Mehrfachwahl bekommt gemischte Antworten */
   function poolFrage(p, r) {
     const base = { id: p.id, pool: true, g: p.g, teil: p.teil, niv: p.n, k: 'p:' + p.g + '@' + teilNr(p.teil), q: p.q, w: p.w };
@@ -136,6 +136,7 @@
     const need = [['KARTEN', 'karten-daten.js'], ['PKarten', 'pkarten.js'], ['PR_BANK', 'pruefbank.js'], ['PR_POOL', 'pruefpool.js']];
     for (const [g, f] of need) { if (!root[g]) await laden(f); }
     if (root.PR_BANK && !root.PR_BANK.drawBeruf) await laden('pruefbank-beruf.js');
+    if (beruf() === 'im' && !root.PR_POOL_IM) { try { await laden('pruefpool-im.js'); } catch (e) {} }   /* pruefim187 */
   }
   const CSS = '#e10Go{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;margin:0;padding:10px 14px;border-radius:14px;border:1px solid var(--accent,#3b9eff);background:var(--panel,#222830);color:var(--fg,#e8ecf0);font:inherit;text-align:left;cursor:pointer;align-self:stretch;box-sizing:border-box;touch-action:manipulation}'
     + '#e10Go:hover{filter:brightness(1.08)}#e10Go:focus-visible,#e10Box button:focus-visible,#e10Box input:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}'
@@ -177,7 +178,7 @@
     const now = Date.now(), PK = root.PKarten, pk = PK ? PK.laden() : {}, kst = rd('lm4.karten', {}), st = Object.assign({}, isObj(kst) ? kst : {});
     Object.keys(pk).forEach(id => { st[id] = PK.stateOf(pk[id]); });
     const B = root.PR_BANK, ps = rd('pr.state', {}), e10 = normE(rd(KEY, {}));
-    const w = wahl({ now, seed: now % 1000000000, beruf: beruf(), karten: (root.KARTEN || []).concat(PK ? PK.toKarten(pk) : []), kstand: st, pool: root.PR_POOL && root.PR_POOL.q, tr: ps && ps.tr, recent: e10.last,
+    const w = wahl({ now, seed: now % 1000000000, beruf: beruf(), karten: (root.KARTEN || []).concat(PK ? PK.toKarten(pk) : []), kstand: st, pool: beruf() === 'im' && root.PR_POOL && root.PR_POOL_IM ? root.PR_POOL.q.concat(root.PR_POOL_IM.q) : root.PR_POOL && root.PR_POOL.q, tr: ps && ps.tr, recent: e10.last,
       bank: B && B.drawBeruf ? { themen: b => (B.themenFuer ? B.themenFuer(b) : []).map(t => t.k), draw: (k, n, seed) => B.drawBeruf(k, n, seed) } : null });
     if (!w.items.length) { inn().innerHTML = '<p class="e10m">Für heute gibt es keine passende Aufgabe. Wähle ein Lab auf der Startseite.</p><div class="e10b"><button type="button" class="pri" id="e10Zu">Schließen</button></div>'; box.querySelector('#e10Zu').onclick = schliessen; return; }
     run = { items: w.items, i: 0, res: [], neu: 0, vor: 0, start: now };

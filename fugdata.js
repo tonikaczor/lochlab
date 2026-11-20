@@ -91,7 +91,7 @@
   /* PRUEFEN P24: Fehlerbild B (Schweißfehler): Zuordnung Beobachtung → Ursache (Zugluft, Wärmeeinbringung, Verzug, Spannung/Vorschub, Strom). Die Fälle sind vereinfacht und in eigenen Worten. Fehlen häufige Fehlerbilder (Risse, Wurzelfehler), oder stimmt die Gewichtung? */
   const FSBS = [
     ['Beim MAG-Schweißen in einer Halle zeigt die Naht viele kleine Poren. Ein Fenster steht offen, es zieht deutlich. Gasmenge und Draht sind wie sonst eingestellt.', 'Zugluft bläst das Schutzgas von der Schweißstelle', ['Die Stromstärke ist deutlich zu hoch eingestellt worden', 'Das Blech ist zu dick für dieses Verfahren', 'Der Draht ist nicht fest genug aufgespult'], 'Poren entstehen, wenn Luft ins Schmelzbad gelangt. Zugluft zerstört die Gasglocke. Abhilfe: Windschutz, Gasmenge prüfen, Brennerabstand.', ['Wohin gehört die Gasglocke?', 'Was stört sie, obwohl die Einstellung stimmt?']],
-    ['Eine Kehlnaht sieht äußerlich gut aus, lässt sich aber an der Flanke leicht vom Blech abheben. Ein Einbrand ist kaum zu erkennen.', 'Zu wenig Wärme: Strom zu klein oder zu schnell geführt', ['Es wurde viel zu viel Schutzgas an der Düse verwendet', 'Das a-Maß der Naht ist viel zu groß geplant worden', 'Die Brennerführung war insgesamt zu langsam und zu steil'], 'Ein Bindefehler entsteht, wenn der Grundwerkstoff nicht aufgeschmolzen wird. Das Schweißgut liegt nur auf. Abhilfe: mehr Wärme, langsamer führen, saubere Flanken.', ['Was fehlt, damit Grund- und Zusatzwerkstoff verschmelzen?', 'Bei zu langsamer Führung gäbe es zu viel Wärme.']],
+    ['Eine Kehlnaht sieht äußerlich gut aus, lässt sich aber an der Flanke leicht vom Blech abheben. Ein Einbrand ist kaum zu erkennen.', 'Zu wenig Wärme: Strom zu klein oder zu schnell geführt', ['Es wurde viel zu viel Schutzgas an der Düse verwendet', 'Das a-Maß der Naht ist viel zu groß geplant worden', 'Das Schweißgerät war auf Gleichstrom statt Wechselstrom gestellt'], 'Ein Bindefehler entsteht, wenn der Grundwerkstoff nicht aufgeschmolzen wird. Das Schweißgut liegt nur auf. Abhilfe: mehr Wärme, langsamer führen, saubere Flanken.', ['Was fehlt, damit Grund- und Zusatzwerkstoff verschmelzen?', 'Es fehlt Wärme, nicht Schutzgas, Nahtplanung oder Stromart.']],
     ['Nach dem Schweißen ist das dünne Blech wellig und stark gebogen. Die lange Naht wurde in einem Zug mit hoher Stromstärke geschweißt, ohne Heftstellen.', 'Zu viel Wärme in einem Zug, ohne Heftstellen und Schweißfolge', ['Zu wenig Zusatzwerkstoff wurde in der Naht verarbeitet und aufgetragen', 'Die Schlacke wurde nach dem Schweißen nicht entfernt', 'Das Schutzgas war beim Schweißen viel zu kalt'], 'Ein dünnes Blech reagiert empfindlich auf Wärme. Heften, Spannen, Pilgerschritt und geringere Stromstärke begrenzen die Schrumpfung.', ['Verzug entsteht durch Wärme und Schrumpfung.', 'Was hätte vor dem Schweißen die Lage gesichert?']],
     ['Neben der Naht sind Rillen ins Blech eingebrannt (Einbrandkerben). Der Lichtbogen war sehr lang und die Stromstärke hoch.', 'Zu hohe Stromstärke und zu großer Lichtbogen', ['Die Naht wurde mit zu kleinem a-Maß geplant und gesetzt', 'Das Blech wurde nicht gereinigt', 'Der Draht war zu dünn für das Gerät'], 'Zu viel Energie schmilzt das Blech neben der Naht an, ohne dass Zusatzwerkstoff nachfließt. Es bleibt eine Kerbe, die die Festigkeit mindert.', ['Wo kommt die zusätzliche Energie her?', 'Kerben entstehen neben der Naht.']],
     ['Beim MAG-Schweißen spritzt es stark, der Lichtbogen ist unruhig und knallt. Gas und Blech sind in Ordnung.', 'Spannung und Drahtvorschub passen nicht zueinander', ['Es wurde zu viel Argon im Mischgas zugemischt', 'Das Blech war vorher viel zu gründlich gereinigt worden', 'Das Blech war eindeutig zu dünn für den Draht'], 'Spannung (Lichtbogenlänge) und Drahtvorschub (Strom) müssen aufeinander abgestimmt sein. Sonst ist der Lichtbogen unruhig und es spritzt.', ['Zwei Einstellungen gehören zusammen.', 'Lichtbogenlänge und Drahtgeschwindigkeit.']]
@@ -225,7 +225,7 @@
     },
     sre: R => {
       const c = C(), cl = c.pick(R, ['4.6', '5.6', '8.8', '10.9', '12.9']), v = c.boltRe(cl);
-      return numQ('Wie groß ist die Streckgrenze Re einer Schraube der Festigkeitsklasse ' + cl + ' in N/mm²? (Re = erste Zahl · zweite Zahl · 10)', v, 'N/mm²', 'Streckgrenze Re', 0, 'Re = ' + cl.split('.')[0] + ' · ' + cl.split('.')[1] + ' · 10 = ' + f(v, 0) + ' N/mm². Die Zugfestigkeit wäre ' + f(c.boltRm(cl), 0) + ' N/mm².', ['Multipliziere beide Zahlen und dann mit 10.', 'Beispiel 6.8 ergibt 480.'], { k: 'schraube', neutral: true });
+      return numQ('Wie groß ist die Streckgrenze Re einer Schraube der Festigkeitsklasse ' + cl + ' in N/mm²? (Re = erste Zahl · zweite Zahl · 10, eine Faustformel; das Tabellenbuch nennt für 10.9 und 12.9 leicht andere Mindestwerte)', v, 'N/mm²', 'Streckgrenze Re', 0, 'Re = ' + cl.split('.')[0] + ' · ' + cl.split('.')[1] + ' · 10 = ' + f(v, 0) + ' N/mm². Die Zugfestigkeit wäre ' + f(c.boltRm(cl), 0) + ' N/mm².', ['Multipliziere beide Zahlen und dann mit 10.', 'Beispiel 6.8 ergibt 480.'], { k: 'schraube', neutral: true });
     },
     smoment: R => {
       const c = C(), m = c.pick(R, c.TORQ_ORDER), cl = c.pick(R, c.TORQ_CLS), v = c.torque(m, cl);
@@ -236,7 +236,7 @@
       return numQ('Eine Schraube ' + m + ' soll durch ein Bauteil gesteckt werden. Welchen Durchgangsloch-Durchmesser in mm wählst du (Reihe „mittel“, Tabelle im Hilfe-Reiter)?', v, 'mm', 'Durchgangsloch', 0.06, 'Durchgangsloch mittel für ' + m + ': ' + f(v, 1) + ' mm. Es ist größer als der Gewinde-Nenndurchmesser, damit sich die Teile ausrichten lassen.', ['Das Durchgangsloch ist etwas größer als der Nenndurchmesser.', 'Suche die Reihe mittel in der Tabelle.'], { k: 'schraube', neutral: true });
     },
     ssich: pq(SIQ),
-    smont: R => orderQ(R, 'Bringe die Schritte beim Montieren einer Flanschverschraubung in die richtige Reihenfolge.', C().MONTAGE.slice(), 'Erst reinigen und prüfen, dann ausrichten und von Hand ansetzen. Danach kreuzweise in zwei Stufen anziehen (erst etwa die Hälfte, dann das Sollmoment) und zuletzt kontrollieren und sichern.', ['Von Hand ansetzen kommt vor dem Werkzeug.', 'Kreuzweise bedeutet gegenüberliegend.']),
+    smont: R => orderQ(R, 'Bringe die Schritte beim Montieren einer Flanschverschraubung in die richtige Reihenfolge.', C().MONTAGE.slice(), 'Erst reinigen, prüfen und (falls vorgesehen) die Schraubensicherung auftragen, dann ausrichten und von Hand ansetzen. Danach kreuzweise in zwei Stufen anziehen (erst etwa die Hälfte, dann das Sollmoment) und zuletzt kontrollieren und kennzeichnen. Das Sollmoment gilt für leicht geölte Gewinde.', ['Von Hand ansetzen kommt vor dem Werkzeug.', 'Kreuzweise bedeutet gegenüberliegend.']),
     spre: R => {
       const c = C(), m = c.pick(R, ['M8', 'M10', 'M12', 'M16']), cl = c.pick(R, c.TORQ_CLS), M = c.torque(m, cl), d = c.BOLT[m].d, v = c.preload(M, d);
       return numQ('Eine Schraube ' + m + ' der Klasse ' + cl + ' wird mit ' + f(M, 0) + ' Nm angezogen. Mit der Faustformel F_V = M / (0,2 · d) (M in Nm, d in mm, Ergebnis in kN) ergibt sich welche Vorspannkraft in kN? Zwei Nachkommastellen genügen.', v, 'kN', 'Vorspannkraft', 0.06, 'F_V = ' + f(M, 0) + ' / (0,2 · ' + d + ') = ' + f(M, 0) + ' / ' + f(0.2 * d, 1) + ' = ' + f(v, 2) + ' kN.', ['Die Faustformel steht in der Aufgabe.', 'Das Ergebnis liegt im Bereich 10 bis 100 kN.'], { k: 'schraube', M: m, c: cl, ratio: c.utilPreload(v, m, cl) });
@@ -270,7 +270,51 @@
       q.meta = { rows, bad }; return q;
     },
     fsb: pq(FSBS.map(s => s)),
-    fsc: pq(FSCS.map(s => s))
+    fsc: pq(FSCS.map(s => s)),
+    /* w187 Fachstufe: Stoßarten, Arbeitsschutz beim Schweißen, Klebstoff ansetzen */
+    stossm: R => matchQ(R, 'Ordne jeder Beschreibung die Stoßart zu. Eine Stoßart bleibt übrig.',
+      ['Zwei Bleche liegen in einer Ebene, die Stirnflächen stehen sich gegenüber', 'Ein Blech steht rechtwinklig mitten auf der Fläche des anderen', 'Zwei Bleche liegen flach aufeinander und überdecken sich ein Stück', 'Zwei Bleche treffen sich mit ihren Enden unter einem Winkel'],
+      ['Stumpfstoß', 'T-Stoß', 'Überlappstoß', 'Eckstoß', 'Kreuzstoß'], [0, 1, 2, 3],
+      'Stumpfstoß: Die Teile liegen in einer Ebene. T-Stoß: Ein Teil steht rechtwinklig auf dem anderen. Überlappstoß: Die Teile überdecken sich. Eckstoß: Die Enden bilden eine Ecke. Beim Kreuzstoß stoßen zwei Teile von beiden Seiten auf ein drittes, das passt hier zu keiner Beschreibung.',
+      ['Stell dir die Bleche von der Seite gesehen vor. Welcher Buchstabe oder welche Form entsteht?', 'Beginne mit dem Stoß, bei dem beide Bleche in einer Ebene liegen.']),
+    gasfett: R => choiceQ(R, 'Das Gewinde am Druckminderer einer Sauerstoffflasche geht schwer. Ein Kollege will es mit etwas Fett gängig machen. Wie beurteilst du das?',
+      'Verboten: Fett kann sich in Sauerstoff selbst entzünden',
+      ['Erlaubt, wenn du nur wenig säurefreies Fett dünn aufträgst', 'Erlaubt, weil Fett das Gewinde vor Rost schützt', 'Nur Öl ist verboten, Fett darf an die Armatur'],
+      'Öl und Fett können sich in verdichtetem Sauerstoff von selbst entzünden und explosionsartig verbrennen. Armaturen für Sauerstoff müssen deshalb frei von Öl und Fett bleiben. Das gilt auch für ölige Hände und Handschuhe. Ein schwergängiger Druckminderer wird ausgetauscht und vom Fachbetrieb geprüft.',
+      ['Sauerstoff brennt nicht selbst, aber er fördert jede Verbrennung sehr stark.', 'Denke an das Schild auf dem Manometer für Sauerstoff.']),
+    gassich: R => choiceQ(R, 'Eine volle Gasflasche wurde gerade angeliefert und steht frei neben dem Schweißplatz. Was tust du als Erstes?',
+      'Flasche mit Kette oder Bügel gegen Umfallen sichern',
+      ['Schutzkappe abnehmen, damit das Ventil frei zugänglich ist', 'Flasche an den Schweißtisch lehnen, das reicht aus', 'Flaschenventil ganz öffnen und den Druck prüfen'],
+      'Eine Gasflasche steht unter hohem Druck. Fällt sie um und das Ventil bricht ab, schießt sie wie ein Geschoss durch die Werkstatt. Deshalb wird jede Flasche sofort mit Kette oder Bügel gesichert. Die Schutzkappe bleibt auf dem Ventil, bis die Flasche gesichert ist und der Druckminderer angeschlossen wird.',
+      ['Was passiert, wenn die Flasche umfällt und auf das Ventil schlägt?', 'Die Schutzkappe schützt das Ventil beim Transport und beim Abstellen.']),
+    gasvor: R => {
+      const c = C(), V = c.pick(R, [10, 20, 50]), p = c.pick(R, [60, 80, 100, 120, 150, 180, 200]), v = p * V;
+      return numQ('Eine Argonflasche hat ' + V + ' l Rauminhalt. Das Manometer zeigt einen Flaschendruck von ' + p + ' bar. Wie viel Liter Gas stecken ungefähr in der Flasche, gemessen bei Umgebungsdruck? Rechne vereinfacht: Gasvorrat = Flaschendruck · Rauminhalt.', v, 'l', 'Gasvorrat', 0,
+        'Gasvorrat = p · V = ' + p + ' bar · ' + V + ' l = ' + f(v, 0) + ' l. Die Faustformel gilt für verdichtete Gase wie Argon oder Sauerstoff. Für Acetylen gilt sie nicht, weil Acetylen in der Flasche gelöst ist.',
+        ['Je höher der Druck, desto mehr Gas ist in der Flasche zusammengepresst.', 'Multipliziere den Druck in bar mit dem Rauminhalt in Litern.']);
+    },
+    lichtb: R => choiceQ(R, 'Du schweißt mit dem Lichtbogen. In der Nähe arbeiten Kollegen an anderen Aufgaben. Wie schützt du sie vor der Strahlung?',
+      'Den Schweißplatz mit Stellwänden oder Vorhängen abschirmen',
+      ['Die Kollegen bitten, nicht direkt in den Lichtbogen zu schauen', 'Die Absaugung einschalten, sie nimmt die Strahlung mit', 'Den Schweißstrom etwas senken'],
+      'Der Lichtbogen sendet starke ultraviolette Strahlung aus. Diese Strahlung verblitzt die Augen und verbrennt die Haut, auch von der Seite und über Spiegelungen. Stellwände oder Schweißervorhänge schirmen den Platz ab. Wegsehen allein reicht nicht. Die Absaugung hilft gegen Rauch, nicht gegen Strahlung.',
+      ['Die Strahlung trifft auch Personen, die gar nicht hinsehen.', 'Gesucht ist eine Maßnahme, die den ganzen Arbeitsplatz abschirmt.']),
+    gaszeit: R => {
+      const c = C(), V = c.pick(R, [10, 20, 50]), p = c.pick(R, [40, 60, 90, 120, 150]), Q = c.pick(R, [8, 10, 12, 15]), vor = p * V, v = vor / Q;
+      return numQ('Eine Argonflasche mit ' + V + ' l Rauminhalt zeigt noch ' + p + ' bar. Am Durchflussmesser sind ' + Q + ' l/min eingestellt. Wie viele Minuten reicht das Schutzgas ungefähr? Rechne vereinfacht: Gasvorrat = Flaschendruck · Rauminhalt. Runde auf ganze Minuten.', v, 'min', 'Schweißzeit', 1,
+        'Gasvorrat = ' + p + ' bar · ' + V + ' l = ' + f(vor, 0) + ' l. Zeit = Gasvorrat / Verbrauch = ' + f(vor, 0) + ' l / ' + Q + ' l/min = ' + f(v, 1) + ' min. In der Praxis wechselst du die Flasche früher, weil ein Rest in der Flasche bleibt.',
+        ['Berechne zuerst, wie viel Liter Gas noch in der Flasche sind.', 'Teile den Gasvorrat durch den Verbrauch je Minute.']);
+    },
+    klmisch: R => {
+      const c = C(), h = c.pick(R, [20, 25, 40, 50]), m = c.pick(R, [20, 30, 50, 60, 80, 150]), v = m * h / 100;
+      return numQ('Ein Zweikomponenten-Klebstoff wird nach Masse im Verhältnis 100 : ' + h + ' gemischt (Harz : Härter). Du wiegst ' + m + ' g Harz ab. Wie viel Gramm Härter gibst du dazu?', v, 'g', 'Härter', 0.05,
+        'Auf 100 g Harz kommen ' + h + ' g Härter. Härter = ' + m + ' g · ' + h + ' / 100 = ' + f(v, 1) + ' g. Halte das Verhältnis genau ein. Mit zu viel oder zu wenig Härter erreicht der Klebstoff seine Festigkeit nicht.',
+        ['Das Verhältnis sagt: Auf 100 Teile Harz kommt eine feste Zahl Teile Härter.', 'Rechne zuerst aus, wie viel Härter auf 1 g Harz kommt.']);
+    },
+    topfz: R => choiceQ(R, 'Im Datenblatt eines Zweikomponenten-Klebstoffs steht: Topfzeit 20 Minuten bei 20 °C. Was sagt dir diese Angabe?',
+      'Nach dem Mischen bleibt der Klebstoff so lange verarbeitbar',
+      ['Nach dieser Zeit hat die Klebung ihre volle Festigkeit erreicht', 'So lange müssen die Teile zusammengepresst werden', 'So lange müssen Harz und Härter gerührt werden'],
+      'Die Topfzeit beginnt mit dem Mischen von Harz und Härter. In dieser Zeit musst du auftragen und fügen. Danach wird der Klebstoff zäh und benetzt die Flächen nicht mehr richtig. Die volle Festigkeit kommt erst nach der viel längeren Aushärtezeit. Bei Wärme ist die Topfzeit kürzer.',
+      ['Die Zeit läuft ab dem Moment, in dem Harz und Härter zusammenkommen.', 'Unterscheide die Zeit zum Verarbeiten von der Zeit zum Aushärten.'])
   };
   function rdn(v) { return Math.round(v * 1000) / 1000; }
 
@@ -283,9 +327,12 @@
     [CATS[4], 1, 'Nieten, Klemmen, Stecken', 'nietk'], [CATS[4], 2, 'Die Nietlänge', 'nietl'], [CATS[4], 2, 'Sichern beim Stecken', 'steck'], [CATS[4], 3, 'Was hält der Niet', 'nietf'],
     [CATS[5], 1, 'Festigkeitsklasse lesen', 'sklasse'], [CATS[5], 1, 'Kernloch bohren', 'skern'], [CATS[5], 2, 'Streckgrenze der Schraube', 'sre'], [CATS[5], 2, 'Anzugsmoment aus Tabelle', 'smoment'], [CATS[5], 2, 'Das Durchgangsloch', 'sdurch'], [CATS[5], 2, 'Schrauben sichern', 'ssich'], [CATS[5], 2, 'Schraube montieren', 'smont'], [CATS[5], 3, 'Vorspannkraft', 'spre'],
     [CATS[6], 2, 'Passfeder wählen', 'pfeder'], [CATS[6], 3, 'Pressverband fügen', 'ppress'], [CATS[6], 3, 'Passfeder tragen', 'ppflaech'],
-    [CATS[7], 2, 'Fehlerbild A', 'fsa'], [CATS[7], 3, 'Fehlerbild B', 'fsb'], [CATS[7], 3, 'Fehlerbild C', 'fsc']
+    [CATS[7], 2, 'Fehlerbild A', 'fsa'], [CATS[7], 3, 'Fehlerbild B', 'fsb'], [CATS[7], 3, 'Fehlerbild C', 'fsc'],
+    [CATS[1], 1, 'Stoßarten zuordnen', 'stossm'], [CATS[1], 1, 'Sauerstoff und Fett', 'gasfett'], [CATS[1], 1, 'Gasflasche sichern', 'gassich'], [CATS[1], 2, 'Gasvorrat in der Flasche', 'gasvor'], [CATS[1], 2, 'Schutz vor dem Lichtbogen', 'lichtb'], [CATS[1], 3, 'Wie lange reicht das Gas', 'gaszeit'],
+    [CATS[3], 2, 'Klebstoff mischen', 'klmisch'], [CATS[3], 2, 'Die Topfzeit', 'topfz']
   ];
   const tasks = defs.map((d, i) => ({ id: 'fug' + (i + 1), cat: d[0], level: d[1], title: d[2], gen: d[3] }));
+  { const o = tasks.map((t, i) => [CATS.indexOf(t.cat), i, t]).sort((a, b) => a[0] - b[0] || a[1] - b[1]); o.forEach((x, k) => { tasks[k] = x[2]; }); } /* w187: Aufgaben vom Listenende nach Rubrik einsortieren, die IDs bleiben */
 
   function make(t, R) {
     const q = G[t.gen](R, t.arg); q.id = t.id; q.cat = t.cat; q.level = t.level; q.title = t.title; return q;

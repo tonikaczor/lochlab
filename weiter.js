@@ -209,7 +209,7 @@
     bar.style.bottom = 'calc(' + (12 + h + dockHoehe()) + 'px + env(safe-area-inset-bottom))'; luft();
   }
   /* Paket L3: Lehrjahr-Teil für die Folge (lehrjahr-liste.js); null = kein eigenes Lehrjahr oder anderer Beruf, dann alles wie bisher */
-  function ljFilter() { try { const X = root.LehrjahrListe, k = X && X.kontext && X.kontext(); return k && root.Lehrjahr ? { max: k.lj, ab: (i, l) => root.Lehrjahr.ab(i, l) } : null; } catch (e) { return null; } }
+  function ljFilter() { try { const X = root.LehrjahrListe, k = X && X.kontext && X.kontext(); return k && root.Lehrjahr ? { max: k.lj, ab: (i, l) => root.Lehrjahr.ab(i, l, k.beruf) } : null; } catch (e) { return null; } }
   function zeige(id, n) {
     try {
       if (zu() || !document.body || document.getElementById('gate')) return;

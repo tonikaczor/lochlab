@@ -2,6 +2,13 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v63.186', items: [
+      ['Industriemechaniker: 189 neue Aufgaben', 'Neue Aufgaben in 14 Metall-Labs: Werkbank-Praxis, Prüfen in der Werkstatt, Werkstoffe erkennen, Schneide und Verfahren, Kupplung ausrichten, Riemen, Ketten und Dichtungen, Wartung und Fehlersuche in Pneumatik und Hydraulik, Torsion, Knickung und Bewegung. Dazu neue Aufgaben in CNC, Fügen, Zeichnung, Konstruktion und Maschinenkunde.', 'Metall-Labs'],
+      ['Einsatzgebiete Instandhaltung und Produktionstechnik', 'Beide Einsatzgebiete gehören jetzt fest zum Plan des Industriemechanikers im 3. und 4. Lehrjahr. Instandhaltung: der ganze Auftrag von der Störmeldung bis zur Übergabe, Wartungsplanung, Ersatzteile, Schwachstellen. Produktionstechnik: Vorrichtungen und Betriebsmittel, Auftragszeit und Taktzeit, Prüfplan, Erstteilfreigabe und Übergabe an die Produktion.', 'Mein Plan'],
+      ['Prüfung üben, Kampagne und Abzeichen', 'Neu für Industriemechaniker: eine eigene Probeprüfung mit 302 Übungsfragen im Stil von Teil 1 und Teil 2, die Kampagne „Die Presse“ mit 27 Kapiteln, 16 Abzeichen zu den Metall-Themen und Prüfungsfragen in der 10-Minuten-Einheit. Pfad, Coach und Lehrjahr-Filter richten sich nach dem Plan des Berufs.', 'Startseite'],
+      ['Zwei neue Lernhefte, mehr Wissen', 'Neue Lernhefte Technische Zeichnung und Konstruktion mit je 40 Fragen. Im Wiki 121 neue Einträge zu Metall, Pneumatik, Hydraulik und Instandhaltung, im Formelheft 90 neue Formeln und 131 Lernkarten als eigener Stapel für Industriemechaniker.', 'Lernhefte und Wiki'],
+      ['Trainer und Handy-Ansicht in den Metall-Labs', 'Jedes der 14 Metall-Labs hat jetzt den Trainer „Erste Schritte“: Er führt in neun Schritten vom ersten Regler bis zur ersten gelösten Aufgabe. Auf dem Handy ist nichts mehr abgeschnitten: Statuszeile, Umschalter, Tabellen und Knöpfe passen in die Breite.', 'Metall-Labs'],
+    ] },
     { v: 'v63.185', items: [
       ['Neu: Funk- und HF-Lab', 'Das 63. Lab: Pegel in dB und dBm, Leitung und Anpassung, Antenne und Funkstrecke, Modulation, Empfänger und Rauschen, Messen in der HF-Technik. Sechs Reiter mit Reglern und Diagrammen, dazu 54 Aufgaben mit Tipps und Rechenweg. Du findest es auf der Startseite im Bereich Messen.', 'Funk- und HF-Lab'],
       ['63 neue Aufgaben in sieben Labs', 'Wechselstrom-Lab: Drehstrom mit ungleicher Last, unterbrochener Neutralleiter, Kompensation. MessLab: Messunsicherheit, Messbereich, Echt-Effektivwert, Tastkopf. Sicherheits-Lab: IT-System, RCD-Messwerte, Erstprüfung einer Anlage. Analogtechnik-Lab: Bandbreite, Offset, aktive Filter. Netzteil-Lab und Thermik-Lab: Schaltregler, Verluste und Kühlung. Datenblatt-Lab: Toleranzen, Reserve und Derating.', 'Elektronik-Labs'],
@@ -15,13 +22,6 @@
       ['Wiki: 37 neue Seiten zur Elektrotechnik', 'Neu sind unter anderem Pegel und Dezibel, Wellenwiderstand und Anpassung, Funkstrecke, Modulation, Schaltregler, MOSFET als Schalter, Messunsicherheit, Bandbreite am Oszilloskop, unsymmetrische Last, Kompensation, Abschaltbedingung, Erstprüfung, Geräteprüfung, aktive Filter, Grenzen des Operationsverstärkers, Abtastung, UART, I²C, SPI, RS-485 und CAN, Bauteile mit Reserve auslegen und typische Ausfallbilder.', 'Wiki'],
       ['Formelheft erweitert', 'Im Formelheft stehen 32 neue Formeln, dazu die neue Gruppe „Funk und Hochfrequenz“ mit Pegel, Reflexionsfaktor und Freiraumdämpfung.', 'Formelheft'],
       ['Rechen-Duell: Reiter gesperrt', 'Solange eine Runde läuft, sind die anderen Reiter im Rechen-Lab gesperrt. Nachschlagen während des Duells geht so nicht mehr. Nach der Runde ist alles wieder frei.', 'Rechen-Lab'],
-    ] },
-    { v: 'v62.183', items: [
-      ['Updates laden schneller', 'Bei einer neuen Version holt die App nur noch die Dateien, die sich geändert haben. Alles andere übernimmt sie aus dem Offline-Speicher. Das Update ist dadurch viel schneller fertig und braucht kaum Datenvolumen.', 'Start'],
-      ['Duell: Anzeige verdeckt nichts mehr', 'Im Netzteil-Lab, Leiterplatten-Lab und Analogtechnik-Lab lag die orange Duell-Anzeige mit der Zeit über dem Lab-Namen. Jetzt bekommt sie während des Duells eine eigene Zeile über der Kopfzeile.', 'Duell'],
-      ['Rechen-Lab: 18 neue Aufgaben', 'In jeder Rubrik gibt es zwei weitere Aufgaben, von Zeit umrechnen über Zollmaß und Toleranz bis Stromverstärkung und Kondensatoren. Sie kommen auch im Duell und beim Üben allein dran.', 'Rechen-Lab'],
-      ['App öffnet sofort', 'Die App startet jetzt immer direkt aus dem Offline-Speicher, auch bei schwachem Netz. Gibt es eine neue Version, erscheint oben ein oranger Knopf „Neue Version bereit“. Erst wenn du ihn antippst, wird sie geladen.', 'Start'],
-      ['Wiki: 16 neue Bauteile', 'Neu im Wiki sind unter anderem RGB-Leuchtdiode, Drehgeber, DIP-Schalter, Schraubklemme, Messwiderstand, Ferritperle, Suppressordiode, Pt100, Bewegungsmelder, Darlington-Transistor und ULN2003.', 'Wiki'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

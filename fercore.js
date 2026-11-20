@@ -15,7 +15,7 @@
   /* ---------- Zahlen deutsch ---------- */
   function parseDe(s) {
     if (typeof s === 'number') return fin(s) ? s : NAN;
-    s = String(s == null ? '' : s).trim().replace(/\s+/g, '').replace(/(mm²|mm2|mm|min|kg|stk|stück|eur|€|%|°|h|m)$/i, '');
+    s = String(s == null ? '' : s).trim().replace(/\s+/g, '').replace(/(mm²|mm2|mm|min|kg|stk|stück|teile|eur|€|%|°|h|m|s|n)$/i, '');
     if (/^[+\-−]?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) s = s.replace(/\./g, '');
     s = s.replace(',', '.');
     if (!/^[+\-−]?\d+(\.\d+)?$|^[+\-−]?\.\d+$/.test(s)) return NAN;
