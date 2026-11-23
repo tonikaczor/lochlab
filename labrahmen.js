@@ -623,6 +623,40 @@
     setTimeout(function () { aktualisieren(); platz(); einsammeln(); leiste(); }, 600);
     setTimeout(function () { einsammeln(); buehne(); }, 2500);
     versalienStart();   /* uifix63186 */
+    rechenhilfe();
+  }
+
+  /* Rechenhilfe (v63.187, Wunsch Toni 23.11.2026): Notizfeld und Taschenrechner aus dem Rechen-Duell (matnotiz.js) unter jeder Aufgabe mit Zahlen-Antwortfeld.
+     Zahlenfeld = inputmode decimal/numeric oder type number im Aufgabenbereich; Parameterfelder von Simulation, Rechner-Reiter und Editor zählen nicht.
+     Es gibt einen Kasten je Seite. Er hängt an der Aufgabenkarte, in der zuletzt ein Zahlenfeld den Fokus hatte (sonst an der ersten sichtbaren).
+     Wechselt die Aufgabe (andere erste Überschrift der Karte, ohne Überschrift: anderer Kartenanfang), wird er neu gebaut: das Notizfeld ist wieder leer, wie im Duell. */
+  var RH_FELD = 'input[inputmode=decimal],input[inputmode=numeric]';   /* type=number nur in Editor-Parameterfeldern (pcb), nie als Antwortfeld */
+  var RH_BEREICH = '#pgTasks,#pg_tasks,#taskView,#v_tasks,#taskCard,#task-open,.taskcard,.card.task,details.task';
+  function rechenhilfe() {
+    var box = null, karte = null, schluessel = '', letztes = null, t = 0;
+    function sichtbar(e) { return !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length); }
+    function kartenText(k) { var h = k.querySelector('h1,h2,h3,h4,h5'); if (h && !(box && box.contains(h)) && h.textContent.trim()) return h.textContent.replace(/s+/g, ' ').trim(); var s = ''; for (var n = k.firstChild; n && s.length < 160; n = n.nextSibling) if (n !== box) s += n.textContent || ''; return s.replace(/\s+/g, ' ').slice(0, 160); }
+    function ziel() { if (letztes && karte && karte.contains(letztes)) return letztes; var f = karte && karte.querySelectorAll(RH_FELD); return f && f.length === 1 ? f[0] : null; }   /* mehrere Felder und keins angetippt: nichts raten */
+    function karteVon(f) { return f.closest('.mn') || !f.closest(RH_BEREICH) ? null : f.closest('.card,.qcard,details.task') || f.closest(RH_BEREICH); }
+    function pruefen() {
+      if (!root.MatNotiz) return;
+      var k = letztes && doc.contains(letztes) && sichtbar(letztes) ? karteVon(letztes) : null;
+      if (!k) { var a = doc.querySelectorAll(RH_FELD); for (var i = 0; i < a.length && !k; i++) if (sichtbar(a[i])) k = karteVon(a[i]); }
+      if ([].some.call(doc.querySelectorAll('.mn'), function (m) { return m !== box && sichtbar(m); })) k = null;   /* ein Kasten je Seite: das Rechen-Duell hat seinen eigenen */
+      if (!k) { if (box && box.parentNode) box.parentNode.removeChild(box); karte = null; return; }
+      var s = kartenText(k);
+      if (box && karte === k && box.parentNode === k && s === schluessel) return;
+      if (box && s === schluessel) { k.appendChild(box); karte = k; return; }
+      if (box && box.parentNode) box.parentNode.removeChild(box);
+      karte = k; schluessel = s;
+      box = root.MatNotiz.einbau(k, { ziel: ziel }).box;
+    }
+    function bald() { if (!t && !doc.hidden) t = setTimeout(function () { t = 0; pruefen(); }, 150); }   /* gedrosselt, nicht entprellt: laufende Animationen dürfen die Prüfung nicht aufschieben */
+    doc.addEventListener('visibilitychange', bald);
+    doc.addEventListener('focusin', function (e) { if (e.target.matches && e.target.matches(RH_FELD) && !e.target.closest('.mn')) { letztes = e.target; bald(); } });
+    new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (!(box && box.contains(ms[i].target))) { bald(); return; } }).observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'class', 'open'] });
+    if (root.MatNotiz) bald();
+    else { var sc = doc.createElement('script'); sc.src = 'matnotiz.js'; sc.onload = bald; doc.head.appendChild(sc); }
   }
 
   root.LabRahmen = {

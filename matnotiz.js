@@ -1,5 +1,6 @@
 'use strict';
 /* matnotiz.js - Werkzeuge für das Rechen-Duell (Wunsch der Azubis, 17.11.2026): Notizfeld für Nebenrechnungen und wissenschaftlicher Taschenrechner.
+   Seit v63.187 auch in allen Lab-Aufgaben mit Zahlen-Antwortfeld (labrahmen.js, rechenhilfe); ziel darf dort eine Funktion sein, die das Antwortfeld liefert.
    Aufruf: MatNotiz.einbau(host, { ziel: 'rdIn' }) hängt zwei Knöpfe und die beiden Felder an host an. matduellui.js ruft das bei jeder Aufgabe neu auf,
    dadurch ist das Notizfeld bei jeder Aufgabe leer. Der Rechner behält Anzeige, Ans und Grad/Bogenmaß über die Aufgaben hinweg.
    Notizfeld: Zeichenfläche (Apple Pencil, Finger, Maus; Druck des Stifts macht die Linie dicker) und darunter ein Textfeld für die Tastatur.
@@ -202,7 +203,7 @@
       if (e.ctrlKey || e.metaKey || e.altKey) return; const t = /^[0-9]$/.test(e.key) ? e.key : KEY[e.key]; if (!t) return;
       e.preventDefault(); e.stopPropagation(); taste(t); zeichne();
     });
-    if (ueb) ueb.addEventListener('click', () => { const z = ziel && doc.getElementById(ziel); if (!z || R.wert == null) return; z.value = plain(R.wert); try { z.dispatchEvent(new Event('input', { bubbles: true })); z.focus({ preventScroll: true }); } catch (e) {} });
+    if (ueb) ueb.addEventListener('click', () => { const z = typeof ziel === 'function' ? ziel() : ziel && doc.getElementById(ziel); if (!z || R.wert == null) return; z.value = plain(R.wert); try { z.dispatchEvent(new Event('input', { bubbles: true })); z.focus({ preventScroll: true }); } catch (e) {} });
     zeichne();
     return { zeichne, anz };
   }

@@ -2,6 +2,9 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v63.187', items: [
+      ['Taschenrechner und Notizfeld bei allen Rechenaufgaben', 'Was es im Rechen-Duell schon gab, steht jetzt unter jeder Aufgabe, bei der du eine Zahl ausrechnest, in allen Labs: ein Taschenrechner mit Klammern, Potenzen, Wurzel und Winkelfunktionen und ein Notizfeld für Nebenrechnungen mit Stift, Finger oder Tastatur. „Ergebnis ins Antwortfeld“ trägt die Zahl direkt ein. Bei einer neuen Aufgabe ist das Notizfeld wieder leer.', 'Alle Labs'],
+    ] },
     { v: 'v63.186', items: [
       ['Industriemechaniker: 189 neue Aufgaben', 'Neue Aufgaben in 14 Metall-Labs: Werkbank-Praxis, Prüfen in der Werkstatt, Werkstoffe erkennen, Schneide und Verfahren, Kupplung ausrichten, Riemen, Ketten und Dichtungen, Wartung und Fehlersuche in Pneumatik und Hydraulik, Torsion, Knickung und Bewegung. Dazu neue Aufgaben in CNC, Fügen, Zeichnung, Konstruktion und Maschinenkunde.', 'Metall-Labs'],
       ['Einsatzgebiete Instandhaltung und Produktionstechnik', 'Beide Einsatzgebiete gehören jetzt fest zum Plan des Industriemechanikers im 3. und 4. Lehrjahr. Instandhaltung: der ganze Auftrag von der Störmeldung bis zur Übergabe, Wartungsplanung, Ersatzteile, Schwachstellen. Produktionstechnik: Vorrichtungen und Betriebsmittel, Auftragszeit und Taktzeit, Prüfplan, Erstteilfreigabe und Übergabe an die Produktion.', 'Mein Plan'],
@@ -15,13 +18,6 @@
       ['Embedded vertieft und Signale erweitert', 'Embedded vertieft: 14 neue Aufgaben zu AD-Wandlern (SAR, Sigma-Delta, Abgleich, Fehlerbudget) und zu Bussen (RS-485, RS-232, CAN, Pegelanpassung). Signale und Systeme: 6 neue Aufgaben und ein neuer Lernabschnitt.', 'Studium und Technik'],
       ['Nach Beruf einsortiert', 'Die neuen Aufgaben stehen bei Elektronikern und Industrieelektrikern im passenden Lernfeld und Lehrjahr. Was über die Ausbildung hinausgeht, liegt im freiwilligen Zusatzthema „Elektronik vertieft“. Das Funk- und HF-Lab ist für Elektroniker ein freiwilliges Zusatzthema ab dem 3. Lehrjahr. In den Wegen Technik und Studium gehört alles fest zum Plan.', 'Mein Plan'],
       ['Lernheft zum Funk- und HF-Lab', 'Zehn Kapitel von Dezibel bis HF-Messtechnik, mit Zeichnungen, Links zu den passenden Aufgaben und einem Arbeitsblatt mit 40 Fragen. Für Ausbilder: Die Lösungen zu allen Lernheften öffnen sich nach dem Passwort jetzt direkt als Seite mit Rechenweg.', 'Lernhefte'],
-    ] },
-    { v: 'v62.184', items: [
-      ['Rechen-Lab: Elektrotechnik rechnen', '38 neue Aufgaben in zwei neuen Rubriken. „Elektrotechnik“: Spannungsteiler mit Last, Brückenschaltung, Blindwiderstand, Drehstromleistung, Kompensation, Fehlerschleife, Geräteprüfung, Kühlkörper. „Elektronik vertieft“: Pegel in dB und dBm, Funkstrecke, AD-Wandler, Schaltregler, Verluste am MOSFET, Schnittstellen und die Grenzen des Operationsverstärkers. Beide Rubriken kannst du auch im Rechen-Duell wählen.', 'Rechen-Lab'],
-      ['Nach Beruf einsortiert', 'Die Rubrik „Elektrotechnik“ gehört bei Elektronikern und Industrieelektrikern zum Lernfeld 5.2 im 2. und 3. Lehrjahr. „Elektronik vertieft“ ist dort ein freiwilliges Zusatzthema und zählt nicht in den Fortschritt. In den Wegen Technik und Studium gehören beide Rubriken fest zum Plan. In allen anderen Berufen stehen sie als freiwilliges Zusatzthema am Ende.', 'Mein Plan'],
-      ['Wiki: 37 neue Seiten zur Elektrotechnik', 'Neu sind unter anderem Pegel und Dezibel, Wellenwiderstand und Anpassung, Funkstrecke, Modulation, Schaltregler, MOSFET als Schalter, Messunsicherheit, Bandbreite am Oszilloskop, unsymmetrische Last, Kompensation, Abschaltbedingung, Erstprüfung, Geräteprüfung, aktive Filter, Grenzen des Operationsverstärkers, Abtastung, UART, I²C, SPI, RS-485 und CAN, Bauteile mit Reserve auslegen und typische Ausfallbilder.', 'Wiki'],
-      ['Formelheft erweitert', 'Im Formelheft stehen 32 neue Formeln, dazu die neue Gruppe „Funk und Hochfrequenz“ mit Pegel, Reflexionsfaktor und Freiraumdämpfung.', 'Formelheft'],
-      ['Rechen-Duell: Reiter gesperrt', 'Solange eine Runde läuft, sind die anderen Reiter im Rechen-Lab gesperrt. Nachschlagen während des Duells geht so nicht mehr. Nach der Runde ist alles wieder frei.', 'Rechen-Lab'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
