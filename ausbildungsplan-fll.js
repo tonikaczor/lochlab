@@ -22,7 +22,7 @@
         block: "Beschaffungslogistik",
         quelle: "KMK-Rahmenlehrplan Fachlagerist/Fachlageristin und Fachkraft für Lagerlogistik (Beschluss 25.03.2004); Lehrplan Sachsen (schulportal.sachsen.de); ISB Bayern bs_lpr_fachkraft_fuer_lagerlogistik.pdf",
         entwurf: false,
-        labs: [{"lab":"wfl","bereich":["Wareneingangsprüfung","Mängel und Rüge"]},{"lab":"lag","aufgaben":["lag36"]},{"lab":"eng","bereich":["Stückliste und Lieferschein"]}],
+        labs: [{"lab":"arb","bereich":"*"},{"lab":"wfl","bereich":["Wareneingangsprüfung","Mängel und Rüge"]},{"lab":"lag","aufgaben":["lag36"]},{"lab":"eng","bereich":["Stückliste und Lieferschein"]}],
         heft: null,
         wiki: [],
         projekt: [{"pid":"versand","station":["vk1","vk2"]}],

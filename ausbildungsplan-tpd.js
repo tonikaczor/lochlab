@@ -39,6 +39,10 @@
         "entwurf": false,
         "labs": [
           {
+            "lab": "arb",
+            "bereich": "*"
+          },
+          {
             "lab": "zei",
             "bereich": [
               "Ansichten",

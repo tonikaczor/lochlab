@@ -26,7 +26,6 @@
   ];
   var STATUS = ['skelett', 'entwurf', 'bestaetigt'];       // Stand des ganzen Plans
   var PRUEFUNG = ['AP1', 'AP2', 'beide'];
-  var AUSGEBLENDET = ['arb'];                              // gesperrte Labs: nie im Plan (zusätzlich: jedes Lab mit beruf: [])
   var MAX_KURZ = 200;
   var W = { abstand: 0.3, begonnen: 25, wdh: 20, probe: 20, pruefung: 15, block: 10, anzahl: 3 };   // Punkte für "Als Nächstes"
   var NAMEN_RE = /\b(Herr|Frau)\b/;                        // der Test prüft zusätzlich die Namensliste der Schule
@@ -55,8 +54,7 @@
   }
   var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
   var arr = function (x) { return x == null ? [] : Array.isArray(x) ? x : [x]; };
-  function ausgeblendet(c, lab) { var r = c.reg[lab]; return AUSGEBLENDET.indexOf(lab) >= 0 || !r || !(r.beruf && r.beruf.length); }
-  function labGehoert(c, lab, b) { var r = c.reg[lab]; return !!r && !r.hub && AUSGEBLENDET.indexOf(lab) < 0 && (r.beruf || []).indexOf(b) >= 0; }
+  function labGehoert(c, lab, b) { var r = c.reg[lab]; return !!r && !r.hub && (r.beruf || []).indexOf(b) >= 0; }
   function labsVon(c, b) { return Object.keys(c.reg).filter(function (k) { return labGehoert(c, k, b); }); }
   function labVonDatei(c, file) { var ks = Object.keys(c.reg); for (var i = 0; i < ks.length; i++) if (c.reg[ks[i]].file === file && !c.reg[ks[i]].hub) return ks[i]; return null; }
   var bereichListe = function (e) { return arr(e.bereich).filter(function (x) { return typeof x === 'string'; }); };
@@ -249,7 +247,7 @@
         if (!e || typeof e.lab !== 'string') { err(w + 'Lab-Eintrag ohne lab.'); return; }
         var r = c.reg[e.lab];
         if (!r) { err(ew + 'Lab unbekannt.'); return; }
-        if (AUSGEBLENDET.indexOf(e.lab) >= 0 || !(r.beruf && r.beruf.length)) { err(ew + 'dieses Lab ist gesperrt und gehört nicht in den Plan.'); return; }
+        if (!(r.beruf && r.beruf.length)) { err(ew + 'dieses Lab ist gesperrt und gehört nicht in den Plan.'); return; }
         if (r.hub) { err(ew + 'Hub-Seite, kein Lab.'); return; }
         if (c.dateien && !c.dateien.has(r.file)) err(ew + 'Lab-Seite ' + r.file + ' existiert nicht.');
         if (e.fremd !== undefined && typeof e.fremd !== 'boolean') err(ew + 'fremd muss true oder false sein.');
@@ -298,7 +296,7 @@
     return done();
   }
 
-  var API = { BERUFE: BERUFE, STATUS: STATUS, PRUEFUNG: PRUEFUNG, AUSGEBLENDET: AUSGEBLENDET, MAX_KURZ: MAX_KURZ, W: W,
+  var API = { BERUFE: BERUFE, STATUS: STATUS, PRUEFUNG: PRUEFUNG, MAX_KURZ: MAX_KURZ, W: W,
     register: register, plan: plan, berufe: berufe, zuordnung: zuordnung, lernfeldFortschritt: lernfeldFortschritt, naechste: naechste, validate: validate,
     ladeLernstand: ladeLernstand, ergebnis: ergebnis, labsVon: function (b, ctx) { return labsVon(C(ctx), b); }, _reset: function () { REG = {}; } };
   var vorhanden = root.AusbildungsPlan;   // zweites Laden (z. B. Test) überschreibt nichts Fremdes

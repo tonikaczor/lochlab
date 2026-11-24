@@ -250,7 +250,7 @@
       KARTEN: g.KARTEN || [], recommend: g.Lernpfad && g.Lernpfad.recommend ? () => g.Lernpfad.recommend() : null,
       karriere: K && typeof K.summary === 'function' ? () => K.summary() : null,
       kampHat: !!(beruf !== 'egs' && g.Kampagne && g.Kampagne.fuer && g.Kampagne.fuer(beruf)), kampKey: g.Kampagne && g.Kampagne.fuer && g.Kampagne.fuer(beruf) ? g.Kampagne.info().key : null,
-      kampTotal: g.Kampagne && g.Kampagne.CH ? g.Kampagne.CH.length : null, badgeTotal: g.Badges && g.Badges.DEFS ? g.Badges.DEFS.length : null,
+      kampTotal: g.Kampagne && g.Kampagne.CH ? g.Kampagne.CH.length : null, badgeTotal: g.Badges && g.Badges.sichtbar ? g.Badges.sichtbar().length : null,   // v63.188: nur die im Beruf erreichbaren oder verdienten
       alleThemen: C ? Object.keys(C.BANK_TITEL || {}).concat(Object.keys(C.GRUPPEN_TITEL || {}).map(k => 'p:' + k)) : [],
       topicTitle: C ? k => C.topicTitle(k, { groups: (g.PR_POOL && g.PR_POOL.groups) || [], topics: (g.PR_BANK && g.PR_BANK.TOPICS) || [] }) : null,
       groups: (g.PR_POOL && g.PR_POOL.groups) || [], topics: (g.PR_BANK && g.PR_BANK.TOPICS) || [] };

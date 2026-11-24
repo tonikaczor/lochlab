@@ -1,7 +1,7 @@
 'use strict';
 /* Tonfunk Lab: Einordnung "Warum brauche ich das?", Texte für die Elektronik-/Elektrik-Labs (Elektroniker/in Geräte und Systeme, Industrieelektriker/in).
    Format: Einordnung.register({ lab, betrieb (<= 240 Zeichen), pruefung (<= 160 Zeichen, nur wenn sicher, sonst weglassen) }). Modul: einordnung.js.
-   Eigene Worte, Du-Form, keine Normwerte und keine Namen. Das Arbeitsschutz-Lab (arb) und der Projekte-Hub (vb) haben bewusst keinen Text. */
+   Eigene Worte, Du-Form, keine Normwerte und keine Namen. Der Projekte-Hub (vb) hat bewusst keinen Text. Das Arbeitsschutz-Lab (arb, alle Berufe) steht hier für alle. */
 (function (root) {
   var R = function (o) { if (root.Einordnung) root.Einordnung.register(o); else (root.__einQueue = root.__einQueue || []).push(o); };
 
@@ -15,6 +15,8 @@
       pruefung: 'Eine Wahrheitstabelle aufstellen, ein Gatter-Netz lesen oder Zahlen zwischen Dezimal, Dual und Hexadezimal umrechnen.' });
   R({ lab: 'mess', betrieb: 'Jede Inbetriebnahme und jede Fehlersuche beginnt mit Messen: Spannung am Prüfpunkt, Strom einer Baugruppe, Signal am Oszilloskop. Wer richtig misst, findet Fehler schneller und beschädigt nichts.',
       pruefung: 'Die richtige Messschaltung wählen (Strom in Reihe, Spannung parallel), Messwerte ablesen und Messfehler bewerten.' });
+  R({ lab: 'arb', betrieb: 'Ab dem ersten Tag im Betrieb: Du erkennst Sicherheitszeichen, weißt, wo Feuerlöscher und Verbandkasten sind, trägst die passende Schutzausrüstung und gehst sicher mit Gefahrstoffen um.',
+      pruefung: 'Sicherheitszeichen und Gefahrstoff-Symbole deuten, die passende Schutzausrüstung wählen oder die Rettungskette bei einem Unfall nennen.' });
   R({ lab: 'els', betrieb: 'Bevor ein repariertes Gerät zurückgeht oder eine Anlage wieder läuft, wird geprüft und protokolliert. Hier lernst du, wie Schutzmaßnahmen wirken. Arbeiten an Netzspannung gehören in die Hände von Elektrofachkräften.',
       pruefung: 'Die Wirkung von Sicherung und RCD erklären und Schutzklasse oder Schutzart eines Geräts richtig einordnen.' });
   R({ lab: 'nts', betrieb: 'Netzteile stecken in fast jedem Gerät. Fällt eines aus oder wird zu heiß, grenzt du den Fehler ein, schätzt Verlustleistung und Kühlung ab und wählst ein passendes Ersatzteil, etwa im Schaltschrank.',

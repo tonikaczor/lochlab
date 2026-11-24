@@ -222,7 +222,7 @@
         let coach = null; try { coach = root.Coach && root.Coach.current ? root.Coach.current() : null; } catch (e) { coach = null; }
         const B = root.Badges;
         const tz = tauschDaten();
-        body.innerHTML = rangHtml(S.M, { up, coach: coach && coach.slice(0, 3), badges: B && B.DEFS && B.earnedIds ? { n: B.earnedIds().length, of: B.DEFS.length } : null, tz, meister: KD.kamp ? KD.kamp().meister : null });
+        body.innerHTML = rangHtml(S.M, { up, coach: coach && coach.slice(0, 3), badges: B && B.sichtbar && B.earnedIds ? { n: B.earnedIds().length, of: B.sichtbar().length } : null, tz, meister: KD.kamp ? KD.kamp().meister : null });
         tauschGuete(tz, body);
       } else if (cur === 'gp') {
         const nm = body.querySelector('#krName') ? body.querySelector('#krName').value : null; body.innerHTML = gpHtml(S.D, S.M, freeOn(), Date.now(), nm);

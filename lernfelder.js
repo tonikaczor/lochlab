@@ -76,6 +76,7 @@
   /* ---------------------------------------------------------------- 2. Zuordnung der Aufgaben */
   /* Regeln: Lab -> { Kategorie: Lernfeld, '*': Lernfeld für alle anderen Kategorien }. Kein Eintrag = nicht zugeordnet. */
   const REGELN = {
+    arb: { '*': 'E1' },   // v63.188: Arbeitsschutz für alle Berufe, Unterweisung zu Beginn der Ausbildung
     sim: { 'Grundlagen': 'E2', 'Hausinstallation': 'E2', 'Fehlersuche': 'E2', 'Drehstrom': '5.2', 'Leitungen und Messen': '5.1', 'Steuerungstechnik': 'E3' },
     haus: { 'Licht': 'E2', 'Steckdosen': 'E2', 'Verteiler': '5.1', 'Schutz': '5.2', 'Fehlersuche': 'E2', 'Büro': '5.1', 'Leitungen': '5.1', 'Gesamtaufgabe': '5.1', 'Frei gestalten': 'E2', 'Drehstrom': '5.2', 'Geschosse': 'E2', 'Hausanschluss': '5.2', 'Kundenauftrag': '10.1' },
     sch: { 'Grundlagen': 'E1', 'Transistoren': '6.1', 'Filter und Gleichrichter': 'E2', 'Fehlersuche': 'E1', 'Halbleiter': '9.2', 'Aufbau nach Plan': '6.1', 'Projekt: Ampel': '9.1', 'Projekt: Dämmerungsschalter': '6.1', 'Projekt: Netzteil': '5.3', 'Zufallsaufgaben': 'E1', 'Tagesaufgabe': null, 'Duell': null, 'Schaltungs-Detektiv': null },
@@ -182,8 +183,7 @@
   /* Zählquelle (gemeinsam mit Mein Stand und Ausbildungsplan): eine Aufgabe zählt nur im Beruf, zu dem ihr Lab gehört (kein Hub, nicht gesperrt, Beruf in der
      Berufsliste des Labs). Dieselbe Regel wie labGehoert() in ausbildungsplan-core.js; test_lernfelder.js vergleicht beide Zählungen für jedes Lernfeld.
      Ohne Lab-Verzeichnis (reg) werden alle Zeilen gezählt. */
-  const AUSGEBLENDET = ['arb'];
-  function labZaehlt(reg, lab, beruf) { const r = reg && reg[lab]; return !!r && !r.hub && AUSGEBLENDET.indexOf(lab) < 0 && Array.isArray(r.beruf) && r.beruf.indexOf(beruf) >= 0; }
+  function labZaehlt(reg, lab, beruf) { const r = reg && reg[lab]; return !!r && !r.hub && Array.isArray(r.beruf) && r.beruf.indexOf(beruf) >= 0; }
   function zaehlZeilen(rows, reg, beruf) { return reg && beruf ? (rows || []).filter(r => labZaehlt(reg, r[1], beruf)) : (rows || []); }
   /* Lernstand: res = { id: Prozent } (sim.done und lm4.tdone gemischt, höchster Wert); gelöst = 100 */
   function stand(rows, res) {

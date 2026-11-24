@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v63.188', items: [
+      ['Arbeitsschutz-Lab für alle Berufe', 'Sicherheitszeichen, Gefahrstoffe, Schutzausrüstung und Erste Hilfe gehen alle an: Das Arbeitsschutz-Lab steht jetzt in jedem Beruf und im ersten Lernfeld des 1. Lehrjahrs, gleich nach dem Einstieg. Die Erste-Hilfe-Aufgaben sind auf dem Stand der aktuellen Leitlinien (DGUV, Reanimation 2025).', 'Alle Berufe'],
+      ['Abzeichen, die du wirklich verdienen kannst', 'Die Abzeichen-Liste zeigt nur noch Abzeichen, die du in deinem Beruf erreichen kannst. Schon verdiente Abzeichen bleiben immer sichtbar. Neu für Industriemechaniker: das Abzeichen „Die Presse“ für die ganze Kampagne.', 'Abzeichen'],
+      ['Prüfungsfragen Industriemechanik korrigiert', 'Zwei Ankreuzfragen im Prüfungs-Pool Industriemechanik waren missverständlich (Kronenmutter, Magnesium). Sie sind jetzt eindeutig.', 'Industriemechaniker'],
+    ] },
     { v: 'v63.187', items: [
       ['Taschenrechner und Notizfeld bei allen Rechenaufgaben', 'Was es im Rechen-Duell schon gab, steht jetzt unter jeder Aufgabe, bei der du eine Zahl ausrechnest, in allen Labs: ein Taschenrechner mit Klammern, Potenzen, Wurzel und Winkelfunktionen und ein Notizfeld für Nebenrechnungen mit Stift, Finger oder Tastatur. „Ergebnis ins Antwortfeld“ trägt die Zahl direkt ein. Bei einer neuen Aufgabe ist das Notizfeld wieder leer.', 'Alle Labs'],
     ] },
@@ -11,13 +16,6 @@
       ['Prüfung üben, Kampagne und Abzeichen', 'Neu für Industriemechaniker: eine eigene Probeprüfung mit 302 Übungsfragen im Stil von Teil 1 und Teil 2, die Kampagne „Die Presse“ mit 27 Kapiteln, 16 Abzeichen zu den Metall-Themen und Prüfungsfragen in der 10-Minuten-Einheit. Pfad, Coach und Lehrjahr-Filter richten sich nach dem Plan des Berufs.', 'Startseite'],
       ['Zwei neue Lernhefte, mehr Wissen', 'Neue Lernhefte Technische Zeichnung und Konstruktion mit je 40 Fragen. Im Wiki 121 neue Einträge zu Metall, Pneumatik, Hydraulik und Instandhaltung, im Formelheft 90 neue Formeln und 131 Lernkarten als eigener Stapel für Industriemechaniker.', 'Lernhefte und Wiki'],
       ['Trainer und Handy-Ansicht in den Metall-Labs', 'Jedes der 14 Metall-Labs hat jetzt den Trainer „Erste Schritte“: Er führt in neun Schritten vom ersten Regler bis zur ersten gelösten Aufgabe. Auf dem Handy ist nichts mehr abgeschnitten: Statuszeile, Umschalter, Tabellen und Knöpfe passen in die Breite.', 'Metall-Labs'],
-    ] },
-    { v: 'v63.185', items: [
-      ['Neu: Funk- und HF-Lab', 'Das 63. Lab: Pegel in dB und dBm, Leitung und Anpassung, Antenne und Funkstrecke, Modulation, Empfänger und Rauschen, Messen in der HF-Technik. Sechs Reiter mit Reglern und Diagrammen, dazu 54 Aufgaben mit Tipps und Rechenweg. Du findest es auf der Startseite im Bereich Messen.', 'Funk- und HF-Lab'],
-      ['63 neue Aufgaben in sieben Labs', 'Wechselstrom-Lab: Drehstrom mit ungleicher Last, unterbrochener Neutralleiter, Kompensation. MessLab: Messunsicherheit, Messbereich, Echt-Effektivwert, Tastkopf. Sicherheits-Lab: IT-System, RCD-Messwerte, Erstprüfung einer Anlage. Analogtechnik-Lab: Bandbreite, Offset, aktive Filter. Netzteil-Lab und Thermik-Lab: Schaltregler, Verluste und Kühlung. Datenblatt-Lab: Toleranzen, Reserve und Derating.', 'Elektronik-Labs'],
-      ['Embedded vertieft und Signale erweitert', 'Embedded vertieft: 14 neue Aufgaben zu AD-Wandlern (SAR, Sigma-Delta, Abgleich, Fehlerbudget) und zu Bussen (RS-485, RS-232, CAN, Pegelanpassung). Signale und Systeme: 6 neue Aufgaben und ein neuer Lernabschnitt.', 'Studium und Technik'],
-      ['Nach Beruf einsortiert', 'Die neuen Aufgaben stehen bei Elektronikern und Industrieelektrikern im passenden Lernfeld und Lehrjahr. Was über die Ausbildung hinausgeht, liegt im freiwilligen Zusatzthema „Elektronik vertieft“. Das Funk- und HF-Lab ist für Elektroniker ein freiwilliges Zusatzthema ab dem 3. Lehrjahr. In den Wegen Technik und Studium gehört alles fest zum Plan.', 'Mein Plan'],
-      ['Lernheft zum Funk- und HF-Lab', 'Zehn Kapitel von Dezibel bis HF-Messtechnik, mit Zeichnungen, Links zu den passenden Aufgaben und einem Arbeitsblatt mit 40 Fragen. Für Ausbilder: Die Lösungen zu allen Lernheften öffnen sich nach dem Passwort jetzt direkt als Seite mit Rechenweg.', 'Lernhefte'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

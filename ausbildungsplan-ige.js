@@ -29,6 +29,7 @@
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
         labs: [
+          { lab: "arb", bereich: "*" },
           { lab: "loch", aufgaben: ["l1", "l2", "l3"] },
           { lab: "sch", bereich: ["Grundlagen", "Fehlersuche", "Zufallsaufgaben"] },
           {

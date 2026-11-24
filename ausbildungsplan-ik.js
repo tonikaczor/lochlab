@@ -35,6 +35,10 @@
         "entwurf": false,
         "labs": [
           {
+            "lab": "arb",
+            "bereich": "*"
+          },
+          {
             "lab": "bhf",
             "bereich": "*"
           }

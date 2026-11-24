@@ -37,6 +37,10 @@
         "entwurf": true,
         "labs": [
           {
+            "lab": "arb",
+            "bereich": "*"
+          },
+          {
             "lab": "bhf",
             "bereich": "*"
           },

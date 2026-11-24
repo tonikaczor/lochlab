@@ -39,6 +39,10 @@
         "entwurf": false,
         "labs": [
           {
+            "lab": "arb",
+            "bereich": "*"
+          },
+          {
             "lab": "fer",
             "bereich": [
               "Fertigungsverfahren (DIN 8580)",
