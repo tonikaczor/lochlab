@@ -126,7 +126,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
   function parseH(h) { var p = {}; String(h || '').split('&').forEach(function (kv) { var i = kv.indexOf('='); if (i > 0) p[kv.slice(0, i)] = dec(kv.slice(i + 1)); }); return p; }
   function has(o, k) { return Object.prototype.hasOwnProperty.call(o, k); }
   try { history.scrollRestoration = 'manual'; } catch (e) {}   // Scrollposition der Listen verwalten wir selbst (Zurueck aus dem Eintrag)
-  var LABX = { sch: 'schaltplan schaltbild schaltung', loch: 'lochraster lochplatine layout', sim: 'simulation', mess: 'messen messgeraete', ds: 'datenblatt', pr: 'pruefung', vb: 'verbund projekt', pne: 'pneumatik', arb: 'arbeitsschutz' };   // zusaetzliche Suchwoerter fuer Lab-Namen
+  var LABX = { sch: 'schaltplan schaltbild schaltung', loch: 'lochraster lochplatine layout', sim: 'simulation', mess: 'messen messgeraete', ds: 'datenblatt', pr: 'pruefung', vb: 'verbund projekt', pne: 'pneumatik', arb: 'arbeitsschutz', ems: 'ems fertigung elektronikfertigung tonfunk' };   // zusaetzliche Suchwoerter fuer Lab-Namen
   var KAT_SUB = { bauteil: 'LED, Widerstand, Elko …', geraet: 'Oszi, Multimeter, Bedienelemente', regler: 'Steuerwerte der Prüfstände', messwert: 'Anzeigen der Prüfstände' };
   try { $('#stand').textContent = 'Stand ' + (window.LAB_VERSION || ''); } catch (e) {}
 
@@ -154,7 +154,7 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
     R.forEach(function (e) { (e.labs || []).forEach(function (l) { labs[l] = (labs[l] || 0) + 1; }); });
     if (window.matchMedia && matchMedia('(max-width:639px)').matches) $('#q').placeholder = 'Suchen…';   // U-wiki-03: am Handy kurzer Platzhalter
     (function () {
-      var G = [['Grundlagen', ['loch', 'sch', 'quarz', 'sim', 'ds']], ['Messen und Wechselstrom', ['mess', 'wsl']], ['Sicherheit und Energie', ['els', 'haus', 'emv', 'enr', 'arb']], ['Analog und Digital', ['ana', 'digi', 'nts', 'thm']], ['Steuern und Programmieren', ['sps', 'reg', 'ant', 'sen', 'code', 'pi', 'app']], ['Bau und Prüfung', ['pcb', 'vb', 'pr']]];
+      var G = [['Grundlagen', ['loch', 'sch', 'quarz', 'sim', 'ds']], ['Messen und Wechselstrom', ['mess', 'wsl']], ['Sicherheit und Energie', ['els', 'haus', 'emv', 'enr', 'arb']], ['Analog und Digital', ['ana', 'digi', 'nts', 'thm']], ['Steuern und Programmieren', ['sps', 'reg', 'ant', 'sen', 'code', 'pi', 'app']], ['Bau und Prüfung', ['pcb', 'ems', 'vb', 'pr']]];
       var seen = {}, out = '';
       function chip(l) { return '<a class="lc" data-lab="' + l + '" href="#k=alle&lab=' + l + '">' + esc(LABS[l][0]) + ' <small>' + labs[l] + '</small></a>'; }
       G.forEach(function (g) { var c = g[1].filter(function (l) { return LABS[l] && labs[l]; }); c.forEach(function (l) { seen[l] = 1; }); if (c.length) out += '<div class="lg"><b class="lgt">' + g[0] + '</b>' + c.map(chip).join('') + '</div>'; });

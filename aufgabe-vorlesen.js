@@ -29,7 +29,7 @@
     rec: { datei: 'reclab.html', art: 'make' }, lin: { datei: 'linlab.html', art: 'make' }, alg: { datei: 'alglab.html', art: 'make' }, hwl: { datei: 'hwllab.html', art: 'make' },
     sys: { datei: 'syslab.html', art: 'make' }, ssl: { datei: 'ssllab.html', art: 'make' }, lag: { datei: 'laglab.html', art: 'make' }, bhf: { datei: 'bhflab.html', art: 'make' },
     fug: { datei: 'fuglab.html', art: 'make' }, fer: { datei: 'ferlab.html', art: 'make' }, mak: { datei: 'maklab.html', art: 'make' }, mas: { datei: 'maslab.html', art: 'make' },
-    mch: { datei: 'mchlab.html', art: 'make' }, arb: { datei: 'arblab.html', art: 'text' }, net: { datei: 'netlab.html', art: 'mk' },
+    mch: { datei: 'mchlab.html', art: 'make' }, arb: { datei: 'arblab.html', art: 'text' }, ems: { datei: 'emslab.html', art: 'text' }, net: { datei: 'netlab.html', art: 'mk' },
     pne: { datei: 'pnelab.html', art: 'text', feld: 'TASKS', fam: 'pne' },
     its: { datei: 'itslab.html', art: 'seed', seed: function (g, t, k) { return g.ITS_DATA.build(t, k).text; } },
     buc: { datei: 'buclab.html', art: 'seed', seed: function (g, t, k) { return t.make(g.BUC_CORE.rng(t.id + '#' + k), g.BUC_CORE).text; } },

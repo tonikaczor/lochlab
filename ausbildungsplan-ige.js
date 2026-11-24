@@ -30,6 +30,7 @@
         entwurf: false,
         labs: [
           { lab: "arb", bereich: "*" },
+          { lab: "ems", bereich: "*" },
           { lab: "loch", aufgaben: ["l1", "l2", "l3"] },
           { lab: "sch", bereich: ["Grundlagen", "Fehlersuche", "Zufallsaufgaben"] },
           {

@@ -43,6 +43,15 @@
             "bereich": "*"
           },
           {
+            "lab": "ems",
+            "bereich": [
+              "Wertstrom",
+              "Fertigung",
+              "Qualität",
+              "Montage und Gehäuse"
+            ]
+          },
+          {
             "lab": "fer",
             "bereich": [
               "Fertigungsverfahren (DIN 8580)",

@@ -19,7 +19,7 @@
     sps: ['SPS-Lab', 'spslab.html'], pcb: ['Leiterplatten-Lab', 'pcblab.html'], ant: ['Antriebs-Lab', 'antlab.html'], sen: ['Sensorik-Lab', 'senlab.html'],
     reg: ['Regelungstechnik-Lab', 'reglab.html'], thm: ['Thermik-Lab', 'thmlab.html'], emv: ['EMV-Lab', 'emvlab.html'], enr: ['Energie-Lab', 'enrlab.html'],
     code: ['Arduino-Lab', 'codelab.html'], pi: ['Pi-Lab', 'pilab.html'], ds: ['Datenblatt-Lab', 'dslab.html'], pr: ['Prüfungs-Lab', 'pruefungslab.html'], vb: ['Projekte', 'verbund.html'],
-    pne: ['Pneumatik-Lab', 'pnelab.html'], arb: ['Arbeitsschutz-Lab', 'arblab.html'],
+    pne: ['Pneumatik-Lab', 'pnelab.html'], arb: ['Arbeitsschutz-Lab', 'arblab.html'], ems: ['EMS-Lab', 'emslab.html'],
     mat2: ['Mathe-Brücke', 'mat2lab.html'], sig: ['Signale und Systeme', 'siglab.html'], hf: ['Funk- und HF-Lab', 'hflab.html'], rg2: ['Regelungstechnik Aufbau', 'rg2lab.html'],
     emb: ['Embedded vertieft', 'emblab.html'], prj: ['Projekt und Wirtschaftlichkeit', 'prjlab.html'], nrm: ['Normen und Konformität', 'nrmlab.html'], fli: ['Linien-Lab', 'flilab.html'],
     // Paket W1 (Welle 3): 30 weitere Labs (Metall, Technik, IT, Betrieb); Kuerzel = Dateiname ohne "lab.html"

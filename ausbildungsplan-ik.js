@@ -39,6 +39,15 @@
             "bereich": "*"
           },
           {
+            "lab": "ems",
+            "bereich": [
+              "Wertstrom",
+              "Material und Lager",
+              "Qualität",
+              "Kunde und Kosten"
+            ]
+          },
+          {
             "lab": "bhf",
             "bereich": "*"
           }

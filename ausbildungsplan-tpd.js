@@ -43,6 +43,15 @@
             "bereich": "*"
           },
           {
+            "lab": "ems",
+            "bereich": [
+              "Wertstrom",
+              "Qualität",
+              "Montage und Gehäuse",
+              "Kunde und Kosten"
+            ]
+          },
+          {
             "lab": "zei",
             "bereich": [
               "Ansichten",

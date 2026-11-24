@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v64.190', items: [
+      ['Neu: EMS-Lab „So fertigt Tonfunk“', 'Tonfunk fertigt Elektronik im Auftrag von Kunden. Im EMS-Lab siehst du den Weg einer Baugruppe in 15 Schritten, von der Anfrage bis zur Rechnung, und mit einem Stern die Schritte, an denen dein Beruf mitarbeitet.', 'Alle Berufe'],
+      ['Sieben Rechner und 48 Aufgaben', 'Ausbeute, Prüfkosten von ICT und Flying-Probe, MSL-Uhr für feuchteempfindliche Bauteile, Zehnerregel der Fehlerkosten, Rückverfolgung, Drehmoment und Kalkulation einer Baugruppe. Dazu 48 Aufgaben mit drei Tipp-Stufen und 40 Fachbegriffe.', 'Alle Berufe'],
+      ['Im Lernpfad gleich am Anfang', 'Das EMS-Lab steht in jedem Ausbildungsplan und Lernpfad direkt nach dem Arbeitsschutz. Erst sicher arbeiten, dann wissen, wie der Betrieb fertigt.', 'Lernpfad, Mein Plan'],
+    ] },
     { v: 'v63.189', items: [
       ['Abzeichen in jedem Lab', 'Bisher gab es in rund 40 Labs keine Abzeichen, zum Beispiel im Lager-, Zeichnungs- und Kalkulations-Lab. Jetzt zählt jede gelöste Aufgabe in jedem Lab für deine Abzeichen, auch der Trainer.', 'Alle Berufe'],
       ['Eigene Kampagne für drei weitere Berufe', 'Technische Produktdesigner bauen in „Das Gehäuse“ mit Meisterin Kontur ein Gehäuse. Fachkräfte für Lagerlogistik bringen in „Der Großauftrag“ mit Meister Palette einen Auftrag durchs Lager. Industriekaufleute begleiten in „Der Lautsprecher-Auftrag“ mit Ausbilderin Saldo einen Auftrag von der Anfrage bis zum Abschluss. Jede Kampagne hat 16 Kapitel und einen Epilog.', 'Technischer Produktdesigner, Fachkraft für Lagerlogistik, Industriekaufmann'],
@@ -11,9 +16,6 @@
       ['Arbeitsschutz-Lab für alle Berufe', 'Sicherheitszeichen, Gefahrstoffe, Schutzausrüstung und Erste Hilfe gehen alle an: Das Arbeitsschutz-Lab steht jetzt in jedem Beruf und im ersten Lernfeld des 1. Lehrjahrs, gleich nach dem Einstieg. Die Erste-Hilfe-Aufgaben sind auf dem Stand der aktuellen Leitlinien (DGUV, Reanimation 2025).', 'Alle Berufe'],
       ['Abzeichen, die du wirklich verdienen kannst', 'Die Abzeichen-Liste zeigt nur noch Abzeichen, die du in deinem Beruf erreichen kannst. Schon verdiente Abzeichen bleiben immer sichtbar. Neu für Industriemechaniker: das Abzeichen „Die Presse“ für die ganze Kampagne.', 'Abzeichen'],
       ['Prüfungsfragen Industriemechanik korrigiert', 'Zwei Ankreuzfragen im Prüfungs-Pool Industriemechanik waren missverständlich (Kronenmutter, Magnesium). Sie sind jetzt eindeutig.', 'Industriemechaniker'],
-    ] },
-    { v: 'v63.187', items: [
-      ['Taschenrechner und Notizfeld bei allen Rechenaufgaben', 'Was es im Rechen-Duell schon gab, steht jetzt unter jeder Aufgabe, bei der du eine Zahl ausrechnest, in allen Labs: ein Taschenrechner mit Klammern, Potenzen, Wurzel und Winkelfunktionen und ein Notizfeld für Nebenrechnungen mit Stift, Finger oder Tastatur. „Ergebnis ins Antwortfeld“ trägt die Zahl direkt ein. Bei einer neuen Aufgabe ist das Notizfeld wieder leer.', 'Alle Labs'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -41,6 +41,15 @@
             "bereich": "*"
           },
           {
+            "lab": "ems",
+            "bereich": [
+              "Wertstrom",
+              "Prüfen",
+              "Qualität",
+              "Daten und Rückverfolgung"
+            ]
+          },
+          {
             "lab": "bhf",
             "bereich": "*"
           },
