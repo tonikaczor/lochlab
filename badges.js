@@ -43,13 +43,16 @@
     ['wuerfel', '🎲', 'Würfelglück', 'Einen gewürfelten Fehler gefunden.', function (c) { return [c.st.dice || 0, 1]; }, ['code', 'digi', 'haus', 'mess', 'pi', 'sch', 'sim']],
     ['wuerfel5', '🎰', 'Würfelkönig', 'Fünf gewürfelte Fehler gefunden.', function (c) { return [c.st.dice || 0, 5]; }, ['code', 'digi', 'haus', 'mess', 'pi', 'sch', 'sim']],
     ['hellseher', '🔮', 'Hellseher', 'Fünf richtige Vorhersagen hintereinander.', function (c) { return [c.st.predictBest || 0, 5]; }, ['code', 'digi', 'haus', 'mess', 'pi', 'sch', 'sim']],
-    ['kapitel4', '🧭', 'Auf dem Weg', 'Vier Kapitel der Kampagne geschafft.', function (c) { return [c.st.kapitel || 0, 4]; }, ['egs', 'im']],
+    ['kapitel4', '🧭', 'Auf dem Weg', 'Vier Kapitel der Kampagne geschafft.', function (c) { return [c.st.kapitel || 0, 4]; }, ['egs', 'im', 'tpd', 'fll', 'ik']],
     ['kampagne', '🏆', 'Abschlussgerät', 'Die ganze Kampagne geschafft.', function (c) { return [c.st.kampagne || 0, 1]; }, ['egs']],
     ['kampagneim', '🏆', 'Die Presse', 'Die ganze Kampagne „Die Presse“ geschafft.', function (c) { return [c.st.kampagneim || 0, 1]; }, ['im']],
+    ['kampagnetpd', '🏆', 'Das Gehäuse', 'Die ganze Kampagne „Das Gehäuse“ geschafft.', function (c) { return [c.st.kampagnetpd || 0, 1]; }, ['tpd']],
+    ['kampagnefll', '🏆', 'Der Großauftrag', 'Die ganze Kampagne „Der Großauftrag“ geschafft.', function (c) { return [c.st.kampagnefll || 0, 1]; }, ['fll']],
+    ['kampagneik', '🏆', 'Der Lautsprecher-Auftrag', 'Die ganze Kampagne „Der Lautsprecher-Auftrag“ geschafft.', function (c) { return [c.st.kampagneik || 0, 1]; }, ['ik']],
     ['rang5', '🔍', 'Prüfer', 'Rang 5 in der Karriere erreicht.', function (c) { return [c.st.rang || 0, 5]; }],
     ['rang8', '📋', 'Prüfungskandidat', 'Rang 8 in der Karriere erreicht.', function (c) { return [c.st.rang || 0, 8]; }],
     ['geselle', '🎓', 'Geselle', 'Rang 9 in der Karriere erreicht.', function (c) { return [c.st.rang || 0, 9]; }],
-    ['pruefungsbester', '🥇', 'Prüfungsbester', 'Rang 10 in der Karriere erreicht: Generalprobe mit Note 2 oder besser.', function (c) { return [c.st.rang || 0, 10]; }],
+    ['pruefungsbester', '🥇', 'Prüfungsbester', 'Rang 10 in der Karriere erreicht, den höchsten Rang.', function (c) { return [c.st.rang || 0, 10]; }],
     ['osziprofi', '📈', 'Oszi-Profi', 'Im Oszilloskop-Trainer alles richtig gemacht.', function (c) { return [c.st.osziPerfekt || 0, 1]; }, ['code', 'digi', 'haus', 'loch', 'mess', 'pi', 'sch', 'sim']],
     ['ruhighand', '✋', 'Ruhige Hand', 'Sechs von sechs Lötstellen in der Lötübung gelungen.', function (c) { return [c.st.loetPerfekt || 0, 1]; }, ['code', 'digi', 'haus', 'loch', 'mess', 'pi', 'sch', 'sim']],
     ['scharfauge', '🔍', 'Scharfes Auge', 'In der Lupen-Prüfung alle schlechten Lötstellen gefunden, ohne falschen Alarm.', function (c) { return [c.st.lupePerfekt || 0, 1]; }, ['code', 'digi', 'haus', 'loch', 'mess', 'pi', 'sch', 'sim']],
@@ -357,6 +360,12 @@
     ['imkongew', '🔩', 'Gewinde-Kenner', 'kon', 'Schrauben und Gewinde'], ['imfugnaht', '🔥', 'Naht-Kenner', 'fug', 'Schweißen'],
     ['immaslager', '⚙️', 'Lager-Kenner', 'mas', 'Lager und Wellen'], ['impneplan', '💨', 'Pneumatikplan-Leser', 'pne', 'Schaltplan lesen'],
     ['imhydplan', '🛢️', 'Hydraulikplan-Leser', 'hyd', 'Schaltplan lesen'], ['iminsfehler', '🕵️', 'Fehlersucher Instandhaltung', 'ins', 'Fehlersuche']
+  ], tpd: [
+    ['tpdzeischnitt', '✂️', 'Schnitt-Zeichner', 'zei', 'Schnitt'], ['tpdzeibem', '📐', 'Bemaßungs-Profi', 'zei', 'Linien und Bemaßung'], ['tpdzeidar', '🧊', 'Darstellungs-Kenner', 'zei', 'Darstellungsarten'], ['tpdkontol', '🎯', 'Toleranz-Kenner', 'kon', 'Form- und Lagetoleranzen'], ['tpdkonnorm', '📑', 'Stücklisten-Profi', 'kon', 'Normteile und Stücklisten'], ['tpdkonfert', '🛠️', 'Fertigungsgerecht', 'kon', 'Fertigungsgerecht konstruieren']
+  ], fll: [
+    ['flllagkenn', '📊', 'Kennzahlen-Kenner', 'lag', 'Kennzahlen'], ['flllagabc', '🔤', 'ABC-Analytiker', 'lag', 'ABC-Analyse'], ['fllladzurr', '⛓️', 'Zurr-Profi', 'lad', 'Zurrkraft berechnen'], ['fllladgef', '☣️', 'Gefahrgut-Kenner', 'lad', 'Gefahrgut'], ['fllwflkomm', '🛒', 'Kommissionierer', 'wfl', 'Kommissionierung'], ['fllwflinv', '🧮', 'Inventur-Profi', 'wfl', 'Inventur'], ['fllwflff', '🚜', 'Stapler-Kenner', 'wfl', 'Flurförderzeuge']
+  ], ik: [
+    ['ikkalang', '💶', 'Angebots-Rechner', 'kal', 'Angebot'], ['ikkaldb', '📊', 'Deckungsbeitrag-Kenner', 'kal', 'Deckungsbeitrag'], ['ikbucsatz', '📒', 'Buchungsprofi', 'buc', 'Buchungssätze'], ['ikbucust', '🧾', 'Umsatzsteuer-Kenner', 'buc', 'Umsatzsteuer'], ['ikrecfrist', '📅', 'Fristen-Kenner', 'rec', 'Fristen'], ['ikrecstoer', '⚠️', 'Vertragsstörungs-Kenner', 'rec', 'Vertragsstörungen']
   ] };
   (function () {
     var REG = window.LAB_REG || {}, b = ''; try { b = window.BerufReg && window.BerufReg.cur ? window.BerufReg.cur() : ''; } catch (e) { b = ''; }

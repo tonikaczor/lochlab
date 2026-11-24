@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v63.189', items: [
+      ['Abzeichen in jedem Lab', 'Bisher gab es in rund 40 Labs keine Abzeichen, zum Beispiel im Lager-, Zeichnungs- und Kalkulations-Lab. Jetzt zählt jede gelöste Aufgabe in jedem Lab für deine Abzeichen, auch der Trainer.', 'Alle Berufe'],
+      ['Eigene Kampagne für drei weitere Berufe', 'Technische Produktdesigner bauen in „Das Gehäuse“ mit Meisterin Kontur ein Gehäuse. Fachkräfte für Lagerlogistik bringen in „Der Großauftrag“ mit Meister Palette einen Auftrag durchs Lager. Industriekaufleute begleiten in „Der Lautsprecher-Auftrag“ mit Ausbilderin Saldo einen Auftrag von der Anfrage bis zum Abschluss. Jede Kampagne hat 16 Kapitel und einen Epilog.', 'Technischer Produktdesigner, Fachkraft für Lagerlogistik, Industriekaufmann'],
+      ['Mehr Abzeichen und ein Kampagnen-Fehler behoben', 'Neue Themen-Abzeichen für Produktdesign, Lager und Kaufleute, dazu je ein Abzeichen für die ganze Kampagne. Kapitel, die du auf der Startseite geschafft hast, zählen jetzt auch für die Kapitel-Abzeichen.', 'Abzeichen'],
+    ] },
     { v: 'v63.188', items: [
       ['Arbeitsschutz-Lab für alle Berufe', 'Sicherheitszeichen, Gefahrstoffe, Schutzausrüstung und Erste Hilfe gehen alle an: Das Arbeitsschutz-Lab steht jetzt in jedem Beruf und im ersten Lernfeld des 1. Lehrjahrs, gleich nach dem Einstieg. Die Erste-Hilfe-Aufgaben sind auf dem Stand der aktuellen Leitlinien (DGUV, Reanimation 2025).', 'Alle Berufe'],
       ['Abzeichen, die du wirklich verdienen kannst', 'Die Abzeichen-Liste zeigt nur noch Abzeichen, die du in deinem Beruf erreichen kannst. Schon verdiente Abzeichen bleiben immer sichtbar. Neu für Industriemechaniker: das Abzeichen „Die Presse“ für die ganze Kampagne.', 'Abzeichen'],
@@ -9,13 +14,6 @@
     ] },
     { v: 'v63.187', items: [
       ['Taschenrechner und Notizfeld bei allen Rechenaufgaben', 'Was es im Rechen-Duell schon gab, steht jetzt unter jeder Aufgabe, bei der du eine Zahl ausrechnest, in allen Labs: ein Taschenrechner mit Klammern, Potenzen, Wurzel und Winkelfunktionen und ein Notizfeld für Nebenrechnungen mit Stift, Finger oder Tastatur. „Ergebnis ins Antwortfeld“ trägt die Zahl direkt ein. Bei einer neuen Aufgabe ist das Notizfeld wieder leer.', 'Alle Labs'],
-    ] },
-    { v: 'v63.186', items: [
-      ['Industriemechaniker: 189 neue Aufgaben', 'Neue Aufgaben in 14 Metall-Labs: Werkbank-Praxis, Prüfen in der Werkstatt, Werkstoffe erkennen, Schneide und Verfahren, Kupplung ausrichten, Riemen, Ketten und Dichtungen, Wartung und Fehlersuche in Pneumatik und Hydraulik, Torsion, Knickung und Bewegung. Dazu neue Aufgaben in CNC, Fügen, Zeichnung, Konstruktion und Maschinenkunde.', 'Metall-Labs'],
-      ['Einsatzgebiete Instandhaltung und Produktionstechnik', 'Beide Einsatzgebiete gehören jetzt fest zum Plan des Industriemechanikers im 3. und 4. Lehrjahr. Instandhaltung: der ganze Auftrag von der Störmeldung bis zur Übergabe, Wartungsplanung, Ersatzteile, Schwachstellen. Produktionstechnik: Vorrichtungen und Betriebsmittel, Auftragszeit und Taktzeit, Prüfplan, Erstteilfreigabe und Übergabe an die Produktion.', 'Mein Plan'],
-      ['Prüfung üben, Kampagne und Abzeichen', 'Neu für Industriemechaniker: eine eigene Probeprüfung mit 302 Übungsfragen im Stil von Teil 1 und Teil 2, die Kampagne „Die Presse“ mit 27 Kapiteln, 16 Abzeichen zu den Metall-Themen und Prüfungsfragen in der 10-Minuten-Einheit. Pfad, Coach und Lehrjahr-Filter richten sich nach dem Plan des Berufs.', 'Startseite'],
-      ['Zwei neue Lernhefte, mehr Wissen', 'Neue Lernhefte Technische Zeichnung und Konstruktion mit je 40 Fragen. Im Wiki 121 neue Einträge zu Metall, Pneumatik, Hydraulik und Instandhaltung, im Formelheft 90 neue Formeln und 131 Lernkarten als eigener Stapel für Industriemechaniker.', 'Lernhefte und Wiki'],
-      ['Trainer und Handy-Ansicht in den Metall-Labs', 'Jedes der 14 Metall-Labs hat jetzt den Trainer „Erste Schritte“: Er führt in neun Schritten vom ersten Regler bis zur ersten gelösten Aufgabe. Auf dem Handy ist nichts mehr abgeschnitten: Statuszeile, Umschalter, Tabellen und Knöpfe passen in die Breite.', 'Metall-Labs'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

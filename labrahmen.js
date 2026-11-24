@@ -569,7 +569,25 @@
   }
 
   /* ------------------------------------------------------------------ Start */
+  /* v63.189 Abzeichen in jedem Lab: Labs ohne eigenes badges.js laden auswertung.js, badges.js und kampagne.js nach (wie matnotiz.js).
+     Danach zählt der Trainer-Stand nach (wie trainer.js finish), alle Abzeichen werden geprüft und bei jeder Änderung von sim.done oder lm4.tdone wieder. */
+  function abzeichen() {
+    if (root.Badges) return;
+    var liste = ['auswertung.js', 'badges.js', 'kampagne.js'].filter(function (f) { return !(f === 'auswertung.js' && root.Auswertung) && !(f === 'kampagne.js' && root.Kampagne); });
+    (function lade() {
+      var f = liste.shift(); if (!f) return fertig();
+      var sc = doc.createElement('script'); sc.src = f; sc.onload = lade; doc.head.appendChild(sc);
+    })();
+    function fertig() {
+      var B = root.Badges, tr = {}; if (!B) return;
+      try { tr = JSON.parse(localStorage.getItem('lm4.trainer') || '{}') || {}; } catch (e) { tr = {}; }
+      B.stat('trainer', Object.keys(tr).filter(function (k) { return !((root.LAB_REG || {})[k] || {}).hub; }).length, 'max');
+      var P = root.Storage && root.Storage.prototype, orig = P && P.setItem, t = 0; if (!orig) return;
+      P.setItem = function (k) { var r = orig.apply(this, arguments); if (k === 'sim.done' || k === 'lm4.tdone') { clearTimeout(t); t = setTimeout(B.check, 300); } return r; };
+    }
+  }
   function start() {
+    try { abzeichen(); } catch (e) {}
     S.app = doc.getElementById('app'); S.hdr = S.app && S.app.querySelector(':scope > header');
     if (!S.app || !S.hdr) return;   // kein Lab-Gerüst: nichts tun
     doc.documentElement.classList.add('lr-on');
