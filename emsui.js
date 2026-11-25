@@ -1,7 +1,7 @@
 'use strict';
 /* Tonfunk EMS-Lab: Oberfläche (Lab-Kennung 'ems', alle Berufe). So fertigt ein EMS-Dienstleister wie Tonfunk Elektronik im Auftrag.
    Reiter: Wertstrom (mit „Dein Beruf“), Fertigung, Prüfen, Material, Qualität, Daten, Montage, Kunde, Aufgaben, Hilfe. Jeder Themen-Reiter hat einen Rechner.
-   Module: emscore.js (EMS_CORE, Rechnen und Prüfen), emsdata.js (EMS_DATA).
+   Module: emscore.js (EMS_CORE, Rechnen und Prüfen), emsdata.js (EMS_DATA), emsviz.js (EMS_VIZ, Bilder zu den Schritten).
    Speicher (Präfix lm4.ems.): tab, b (gewählter Beruf im Wertstrom), r (Rechnerwerte), done ({id:true}), prog ({id:Prozent}), hints, ctipps (nur Prüfmodus), auf ({id:true} Lösung aufgedeckt), exam ('1').
    Tipps, Prüfmodus und „Lösung zeigen“ wie im Linien-Lab. Aufruf: emslab.html?aufgabe=ems1 öffnet die Aufgabe, ?tab=pru den Reiter. */
 (function (root) {
@@ -47,7 +47,7 @@
     h += `<p style="margin:8px 0 0"><b>${esc(D.BN[S.b])}:</b> ${esc(B.rolle)}</p><p class="hint2">★ markiert die Schritte, an denen du als ${esc(D.BN[S.b])} mitarbeitest. Tippe einen Schritt an, dann siehst du, was dort passiert.</p></div>`;
     h += `<div class="flow" role="list">${D.schritte.map((s, i) => `<button class="fs${mine(s.id) ? ' mine' : ''}${S.step === s.id ? ' sel' : ''}" data-s="${s.id}" role="listitem" aria-pressed="${S.step === s.id}"><span class="nb">${i + 1}</span><span class="grow"><b>${mine(s.id) ? '★ ' : ''}${esc(s.name)}</b><small>${esc(s.kurz)}</small></span></button>`).join('')}</div>`;
     const s = D.schritte.find(x => x.id === S.step);
-    if (s) h += `<div class="card pl" id="stepCard" style="border-color:var(--accent)"><h4>Schritt ${D.schritte.indexOf(s) + 1} von ${D.schritte.length}</h4><div class="big">${esc(s.name)}</div><p>${esc(s.was)}</p><div class="rdout ok"><b>So werden Fehler verhindert oder gefunden:</b> ${esc(s.pruef)}</div><p class="hint2">Hier arbeiten mit: ${s.berufe.map(b => esc(D.BN[b])).join(', ')}.</p></div>`;
+    if (s) h += `<div class="card pl" id="stepCard" style="border-color:var(--accent)"><h4>Schritt ${D.schritte.indexOf(s) + 1} von ${D.schritte.length}</h4><div class="big">${esc(s.name)}</div><p>${esc(s.was)}</p>${root.EMS_VIZ.schritt(s.id)}<div class="rdout ok"><b>So werden Fehler verhindert oder gefunden:</b> ${esc(s.pruef)}</div><p class="hint2">Hier arbeiten mit: ${s.berufe.map(b => esc(D.BN[b])).join(', ')}.</p></div>`;
     $('#wertView').innerHTML = h;
   }
   $('#wertView').addEventListener('click', e => {

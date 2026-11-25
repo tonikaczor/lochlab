@@ -44,7 +44,7 @@
     li: C.normiere(lsGet('li', {})),
     rv: Object.assign({ mode: 'charge', k: 'lk', w: 'LK2', sel: [] }, lsGet('rv', {})),
     lv: Object.assign({ stueck: 24, minuten: 30, topf: 45, je: 4, gesamt: 90, b: 25 }, lsGet('lv', {})),
-    task: null, tq: null, tAns: {}, tRes: null, tShow: null
+    task: null, tq: null, tAns: {}, tRes: null, tShow: null, tTries: {}   // tTries: Fehlversuche je Aufgabe, bleibt beim Ändern der Auswahl
   };
   if (!Array.isArray(S.rv.sel)) S.rv.sel = [];
   const num = (v, a, b, d) => { v = +v; return Number.isFinite(v) ? Math.min(b, Math.max(a, v)) : d; };
@@ -281,7 +281,7 @@
   }
   function checkTask(t) {
     const a = S.tAns[t.id] || {}, r0 = evalQ(S.tq, a); if (!r0) return; const auf = r0.ok && aufg(t.id), pct = r0.ok ? pctFor(t.id) : 0;
-    const prev = S.tRes && S.tRes.id === t.id ? S.tRes : null, tries = (prev ? prev.tries || 0 : 0) + (r0.ok ? 0 : 1);
+    const tries = S.tTries[t.id] = (S.tTries[t.id] || 0) + (r0.ok ? 0 : 1);
     S.tRes = { id: t.id, ok: r0.ok, given: r0.given, pct, auf, tries };
     if (r0.ok) {
       markSolved(t.id, pct);
@@ -314,7 +314,7 @@
   }
   function startTask(id) {
     const t = TASKS.find(x => x.id === id); if (!t) return;
-    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tShow = null;
+    S.task = id; S.tq = D.makeTask(t); S.tAns = {}; S.tRes = null; S.tShow = null; S.tTries[id] = 0;
     const h = lsGet('hints', {}), c = lsGet('ctipps', {}); if (h[id]) { delete h[id]; lsSet('hints', h); } if (c[id]) { delete c[id]; lsSet('ctipps', c); }
     renderTasks();
   }

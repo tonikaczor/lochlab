@@ -684,4 +684,6 @@
     menue: menue, _modell: function () { return modell(); }, _laeufe: function () { return S.n || 0; }
   };
   if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', start); else start();
+  /* Abkürzungen im Fließtext beim ersten Vorkommen erklären (abk.js, Toni 25.11.2026) */
+  (function () { var sc = doc.createElement('script'); sc.src = 'abk.js'; doc.head.appendChild(sc); })();
 })(window);

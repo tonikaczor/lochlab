@@ -1,6 +1,6 @@
 'use strict';
 /* Tonfunk Arbeitsschutz-Lab: Oberfläche (Lab-Kennung 'arb').
-   Reiter: Zeichen, Brandschutz, Gefahrstoffe, Gefährdungsbeurteilung, PSA, Erste Hilfe, Verhalten, Beispiele, Aufgaben, Trainer, Abschluss, Hilfe.
+   Reiter: Zeichen, Brandschutz, Gefahrstoffe, Gefährdungsbeurteilung, PSA, Erste Hilfe, Verhalten, ESD und Lötplatz, Beispiele, Aufgaben, Trainer, Abschluss, Hilfe.
    Module: arbdata.js (ARB_DATA, ARB_TASKS), arbcore.js (ARB_CORE, Logik).
    Speicher (Präfix lm4.arb.): tab, done ({id:true} nur gelöste), prog ({id:Prozent}), hints ({id:höchste Stufe}), ctipps ({id:Stufe} nur im Prüfmodus),
    exam ('1' = Prüfmodus), rt (Trainer: n, ok, streak, best), fin (Abschlussrunde: best, last, date).
@@ -42,7 +42,7 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['zei', '🪧', 'Zeichen'], ['bra', '🔥', 'Brandschutz'], ['ghs', '☣️', 'Gefahrstoffe'], ['gb', '📋', 'Gefährdungsbeurteilung'], ['psa', '🦺', 'PSA'], ['eh', '🩹', 'Erste Hilfe'], ['ver', '🚪', 'Verhalten'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['fin', '🏁', 'Abschluss'], ['help', '📘', 'Hilfe']];
+  const TABS = [['zei', '🪧', 'Zeichen'], ['bra', '🔥', 'Brandschutz'], ['ghs', '☣️', 'Gefahrstoffe'], ['gb', '📋', 'Gefährdungsbeurteilung'], ['psa', '🦺', 'PSA'], ['eh', '🩹', 'Erste Hilfe'], ['ver', '🚪', 'Verhalten'], ['esd', '⚡', 'ESD und Lötplatz'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['fin', '🏁', 'Abschluss'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'zei'), gbStep: 0, braKey: 'F', gbWp: 'bohr', gb: {}, gbRes: {}, psaAct: 'schleifen', psaSel: [], psaRes: null,
     task: null, tAns: {}, tRes: null, tTries: {}, rtTries: 0, pq: {}, bsp: null,
@@ -332,6 +332,7 @@
   /* ============================================================ Erste Hilfe, Verhalten */
   function renderEh() { $('#ehView').innerHTML = `<div class="hl">${details(D.seiten.eh.slice(0, 2), true)}${svgKette()}${details(D.seiten.eh.slice(2), false)}</div><div class="card pl"><h4>Reihenfolge üben</h4><div id="reihHost">${reihHTML()}</div></div>`; }
   function renderVer() { $('#verView').innerHTML = `<div class="hl">${details(D.seiten.ver, true)}</div>`; }
+  function renderEsd() { $('#esdView').innerHTML = `<div class="hl">${details(D.seiten.esd, true)}</div>`; }
 
   /* ============================================================ Beispiele (Reiter "Beispiele", Aufruf ?bsp) */
   const BSP_INTRO = 'Fertige Beispiele zum Anschauen. „Ansehen“ zeigt das Beispiel durchgespielt, danach kannst du es im passenden Reiter selbst ausprobieren.';
@@ -549,7 +550,7 @@
     $('#tabs').innerHTML = TABS.map(([k, i, n]) => `<button class="tab${S.tab === k ? ' on' : ''}" data-t="${k}" role="tab" aria-selected="${S.tab === k}">${n}${k === 'tasks' ? '<span class="bd" id="tkBd"></span>' : ''}</button>`).join('');
     updateBadge();
   }
-  const RENDER = { zei: renderZei, bra: renderBra, ghs: renderGhs, gb: renderGb, psa: renderPsa, eh: renderEh, ver: renderVer, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, fin: renderFin, help: renderHelp };
+  const RENDER = { zei: renderZei, bra: renderBra, ghs: renderGhs, gb: renderGb, psa: renderPsa, eh: renderEh, ver: renderVer, esd: renderEsd, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, fin: renderFin, help: renderHelp };
   function setTab(t) {
     if (!TABS.some(x => x[0] === t)) t = 'zei'; S.tab = t; lsSet('tab', t); $('#mid').dataset.tab = t;
     $$('.tab').forEach(b => { const on = b.dataset.t === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });

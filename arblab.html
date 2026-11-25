@@ -87,7 +87,7 @@ label.f{display:block;margin:0 0 10px}label.f span{display:block;font-size:12px;
 #gateErr{margin-top:12px;min-height:20px;color:var(--danger);font-size:14px}
 @media print{#app,.backdrop,#toast,#gate,#verBadge{display:none!important}body{background:#fff;height:auto}html{height:auto}}
 /* ===== Arbeitsschutz-Lab ===== */
-#mid[data-tab=zei] #pgZei,#mid[data-tab=bra] #pgBra,#mid[data-tab=ghs] #pgGhs,#mid[data-tab=gb] #pgGb,#mid[data-tab=psa] #pgPsa,#mid[data-tab=eh] #pgEh,#mid[data-tab=ver] #pgVer,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=fin] #pgFin,#mid[data-tab=help] #pgHelp{display:flex}
+#mid[data-tab=zei] #pgZei,#mid[data-tab=bra] #pgBra,#mid[data-tab=ghs] #pgGhs,#mid[data-tab=gb] #pgGb,#mid[data-tab=psa] #pgPsa,#mid[data-tab=eh] #pgEh,#mid[data-tab=ver] #pgVer,#mid[data-tab=esd] #pgEsd,#mid[data-tab=bsp] #pgBsp,#mid[data-tab=tasks] #pgTasks,#mid[data-tab=rt] #pgRt,#mid[data-tab=fin] #pgFin,#mid[data-tab=help] #pgHelp{display:flex}
 .inst{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin:8px 0}
 .inst svg{display:block}.inst.fit svg{width:100%;height:auto;max-width:520px;margin:0 auto}
 .inst svg text{font-family:system-ui,sans-serif;-webkit-user-select:none;user-select:none}
@@ -192,6 +192,7 @@ pre.cert{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:
     <section class="pg scroll" id="pgPsa"><div class="wrap" id="psaView"></div></section>
     <section class="pg scroll" id="pgEh"><div class="wrap" id="ehView"></div></section>
     <section class="pg scroll" id="pgVer"><div class="wrap" id="verView"></div></section>
+    <section class="pg scroll" id="pgEsd"><div class="wrap" id="esdView"></div></section>
     <section class="pg scroll" id="pgBsp"><div class="wrap" id="bspView"></div></section>
     <section class="pg scroll" id="pgTasks"><div class="wrap" id="taskView"></div></section>
     <section class="pg scroll" id="pgRt"><div class="wrap" id="rtView"></div></section>
@@ -212,7 +213,7 @@ pre.cert{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:
 <script src="urheber.js"></script>
 <script src="design.js"></script>
 <script src="iliasbar.js"></script>
-<script>window.LR_TAB = { 'arblab.html': { buehne: { psa: '#psaView > .vz' }, gruppen: [{ name: 'Kennzeichnung', teile: ['zei', 'ghs'] }, { name: 'Notfall', teile: ['bra', 'eh', 'ver'] }, { name: 'Beurteilung und Schutz', teile: ['gb', 'psa'] }], gruppe: { fin: 'ueben' }, saetze: { 'Abschluss': 'Abschlussrunde mit Wertung und Zertifikat, ohne Tipps.', 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
+<script>window.LR_TAB = { 'arblab.html': { buehne: { psa: '#psaView > .vz' }, gruppen: [{ name: 'Kennzeichnung', teile: ['zei', 'ghs'] }, { name: 'Notfall', teile: ['bra', 'eh', 'ver'] }, { name: 'Beurteilung und Schutz', teile: ['gb', 'psa', 'esd'] }], gruppe: { fin: 'ueben' }, saetze: { 'Abschluss': 'Abschlussrunde mit Wertung und Zertifikat, ohne Tipps.', 'Aufgaben': 'Feste Aufgaben: erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg. Tipps kosten nichts.', 'Trainer': 'Endlos neue Zufallsaufgaben. Erst Tipp und zweiter Versuch, dann Lösung mit Rechenweg.', 'Prüfung': 'Prüfmodus: Jeder Tipp kostet 25 % der Punkte. Den Lösungsweg gibt es erst nach der richtigen Antwort.' } } };</script>
 <script src="labrahmen.js"></script>
 <script src="tutorial-data.js"></script>
 <script src="tutorial.js"></script>

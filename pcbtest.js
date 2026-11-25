@@ -861,18 +861,22 @@
       {
         id: 'pnp', name: 'Bestückautomat', sub: 'Pick and Place', icon: 'pnp',
         what: ['Ein Bestückkopf nimmt die Bauteile mit Vakuumpipetten aus den Zuführungen (Gurte, Stangen, Trays), prüft sie mit einer Kamera auf Lage und Drehung und setzt sie auf die Paste. Die Paste hält die Bauteile bis zum Löten fest.',
-          'Das Programm entsteht aus den Bestückungsdaten (Pick-and-Place-Datei: Referenz, Position x/y, Drehung, Seite) und der Stückliste. Jede Bauteilsorte braucht einen Platz (Feeder) an der Maschine.'],
+          'Das Programm entsteht aus den Bestückungsdaten (Pick-and-Place-Datei: Referenz, Position x/y, Drehung, Seite) und der Stückliste. Jede Bauteilsorte braucht einen Platz (Feeder) an der Maschine.',
+          'Feuchteempfindliche Bauteile haben eine Feuchteklasse (MSL, Moisture Sensitivity Level, Stufe der Feuchteempfindlichkeit). Eingestuft werden sie nach der Norm J-STD-020. Sie kommen in einer Trockenverpackung: Beutel mit Trockenmittel und Feuchteindikatorkarte. Ab dem Öffnen läuft die Offenzeit, zum Beispiel 168 h bei MSL 3 (bei höchstens 30 °C und 60 % rF, relative Luftfeuchte). Restzeit = Offenzeit minus bisherige Zeit außerhalb. Ist sie abgelaufen oder zeigt die Karte zu viel Feuchte, wird das Bauteil nach J-STD-033 (Norm zum Umgang mit feuchteempfindlichen Bauteilen) gebacken. Angebrochene Rollen kommen in den Trockenschrank. Sonst droht beim Reflow der Popcorn-Effekt: Die Feuchte verdampft schlagartig, das Gehäuse reißt oder löst sich innen ab.'],
         finds: ['Bauteile, die nicht aufgenommen werden konnten, werden von der Kamera erkannt und aussortiert. Falsch eingelegte Rollen (falscher Wert) erkennt die Maschine nur, wenn sie das Bauteil erkennen kann, deshalb sind Rüsten und Kontrolle der Rollen wichtig.'],
-        params: [['Leistung', 'je nach Maschinentyp einige tausend bis über hunderttausend Bauteile pro Stunde'], ['Genauigkeit', 'deutlich besser als 0,1 mm'], ['Rüsten', 'Rollen und Stangen in Feeder einsetzen, Rüstzeit zählt bei kleinen Losen stark'], ['Drehung', 'aus der Pick-and-Place-Datei, Polarität muss zum Bauteilgurt passen']],
+        params: [['Leistung', 'je nach Maschinentyp einige tausend bis über hunderttausend Bauteile pro Stunde'], ['Genauigkeit', 'deutlich besser als 0,1 mm'], ['Rüsten', 'Rollen und Stangen in Feeder einsetzen, Rüstzeit zählt bei kleinen Losen stark'], ['Drehung', 'aus der Pick-and-Place-Datei, Polarität muss zum Bauteilgurt passen'], ['Feuchteklasse (MSL)', 'Offenzeit: MSL 1 unbegrenzt, 2 ein Jahr, 2a vier Wochen, 3 168 h, 4 72 h, 5 48 h, 5a 24 h, MSL 6 immer vor Gebrauch backen']],
         pros: ['Schnell und genau, auch bei 0402 und feinem Raster', 'Wiederholbar'], cons: ['Rüstaufwand bei vielen Bauteilsorten', 'Falsche Drehung in den Daten (z. B. bei ICs) wird millionenfach wiederholt, bis jemand es merkt'],
         board: (b, S) => !S.smd ? ['Keine SMD-Bauteile: Der Bestückautomat wird nicht gebraucht.'] : ['SMD-Bauteile: ' + S.smd + ' (Oberseite ' + S.smdTop + ', Unterseite ' + S.smdBot + '), verschiedene Bauteilsorten: ' + S.uniq + ' (so viele Feeder-Plätze brauchst du höchstens).', 'Bei beispielhaften 10 000 Bauteilen pro Stunde dauert die Bestückung etwa ' + n1(S.smd / 10000 * 3600) + ' s pro Platine.', S.smdBot ? 'Es gibt SMD-Bauteile auf der Unterseite: die Platine läuft durch Druck, Bestückung und Reflow zweimal (eine Seite je Durchgang).' : 'Alle SMD-Teile liegen auf einer Seite: ein Durchlauf genügt.']
       },
       {
         id: 'reflow', name: 'Reflow-Ofen', sub: 'Lötofen', icon: 'oven',
         what: ['Die bestückte Platine läuft auf einem Band durch mehrere Heizzonen. Das Temperaturprofil hat vier Abschnitte: Vorwärmen, Soak (Flussmittel aktiviert, Temperatur gleicht sich aus), Reflow-Spitze (Lot schmilzt) und Abkühlen.',
-          'Bleifreies Lot (z. B. SAC305) schmilzt bei etwa 217 °C. Die Spitzentemperatur liegt meist im Bereich von etwa 235 bis 250 °C. Durch die Oberflächenspannung zieht das flüssige Lot die Bauteile auf die Pads (Selbstzentrierung).'],
+          'Bleifreies Lot (z. B. SAC305) schmilzt bei etwa 217 °C. Die Spitzentemperatur liegt meist im Bereich von etwa 235 bis 250 °C. Durch die Oberflächenspannung zieht das flüssige Lot die Bauteile auf die Pads (Selbstzentrierung).',
+          'Unter Stickstoff ist kaum Sauerstoff im Ofen. Das flüssige Lot oxidiert weniger und benetzt Pads und Anschlüsse besser, das hilft bei feinem Raster und schwierigen Oberflächen. Stickstoff kostet aber laufend Geld.',
+          'Ein Vakuum-Reflow-Ofen hat eine Kammer, in der kurz Unterdruck entsteht, solange das Lot flüssig ist. Gasblasen werden dabei aus dem Lot gezogen, es bleiben weniger Lunker (Voids). Das ist wichtig unter großen Kühlflächen und Leistungsbauteilen. Das Ergebnis zeigt die Röntgenprüfung.',
+          'Nach dem Löten bekommen große BGA (Ball Grid Array, Gehäuse mit Lotkugeln unten) oder ungehäuste Chips manchmal einen Verguss. Beim Underfill fließt eine dünnflüssige Masse unter das Bauteil und härtet aus: Stoß, Biegen und Temperaturwechsel verteilen sich auf die ganze Fläche, die Lötkugeln werden geschont. Bei Dam & Fill wird erst ein Damm gezogen und dann die Fläche darin gefüllt, etwa über einem Chip mit Bonddrähten. Danach ist Nacharbeit kaum noch möglich, darum wird vorher geprüft.'],
         finds: ['Der Ofen prüft die Platine nicht. Das Profil wird mit einem Profiler (Thermoelemente auf einer Testplatine) kontrolliert. Fehler zeigen sich erst danach: Tombstones (Grabsteine), Lötbrücken, Zinnperlen, kalte Lötstellen, Lunker, Benetzungsfehler.'],
-        params: [['Zeit über Liquidus', 'etwa 40 bis 90 s'], ['Aufheizrate', 'typisch bis etwa 3 °C pro Sekunde'], ['Spitze (bleifrei)', 'etwa 235 bis 250 °C'], ['Atmosphäre', 'Luft oder Stickstoff (weniger Oxidation)']],
+        params: [['Zeit über Liquidus', 'etwa 40 bis 90 s'], ['Aufheizrate', 'typisch bis etwa 3 °C pro Sekunde'], ['Spitze (bleifrei)', 'etwa 235 bis 250 °C'], ['Atmosphäre', 'Luft oder Stickstoff (weniger Oxidation, bessere Benetzung), manche Öfen mit Vakuumphase gegen Lunker']],
         pros: ['Tausende Lötstellen gleichzeitig', 'Gleichmäßig, wiederholbar'], cons: ['Alle Bauteile müssen die Temperatur aushalten (viele Stecker und Elkos nicht)', 'Ungleiche Erwärmung führt zu Tombstones, besonders bei kleinen Chipbauteilen'],
         board: (b, S) => !S.smd ? ['Ohne SMD-Teile braucht deine Platine keinen Reflow-Ofen, sondern Welle oder Handlöten.'] : [S.smdBot ? 'Doppelseitig SMD-bestückt: Zuerst wird meist die Seite mit den leichteren, kleineren Bauteilen gelötet. Beim zweiten Durchgang hängen die Teile der ersten Seite kopfüber, die Oberflächenspannung des Lots hält sie.' : 'Einseitig SMD: ein Reflow-Durchgang.', S.tht ? 'THT-Bauteile (' + S.tht + ') gehören nicht in den Ofen, sie werden danach gelötet.' : 'Keine THT-Bauteile.', 'Höchstes Bauteil: ' + S.tallRef + ' mit ' + n0(S.tallest) + ' mm.']
       },
@@ -961,6 +965,7 @@
       ['Boundary Scan', 'Prüfverfahren nach IEEE 1149.1 (JTAG): Spezielle Zellen an den Pins von ICs prüfen Verbindungen zwischen ICs, ohne dass Nadeln an die Pins müssen.'],
       ['BSDL', 'Boundary Scan Description Language: Beschreibungsdatei eines JTAG-fähigen ICs für das Prüfprogramm.'],
       ['Burn-in', 'Betrieb unter erhöhter Temperatur und Spannung für eine bestimmte Zeit, damit Frühausfälle schon beim Hersteller auftreten.'],
+      ['Dam & Fill', 'Verguss in zwei Schritten: erst einen Damm aus zäher Masse um das Bauteil ziehen, dann die Fläche darin mit dünnerer Masse füllen.'],
       ['DFM', 'Design for Manufacturing: fertigungsgerechtes Entwickeln (Abstände, Pads, Fiducials, Bauteilauswahl).'],
       ['DFT', 'Design for Test: prüfgerechtes Entwickeln. Testpunkte, Zugang, Abstände, Programmieranschlüsse und Boundary-Scan-Kette einplanen.'],
       ['DPMO', 'Defects per Million Opportunities: Fehler je eine Million Fehlermöglichkeiten (Lötstellen, Bauteile). DPMO = Fehler geteilt durch (Platinen mal Möglichkeiten je Platine) mal 1 000 000.'],
@@ -976,10 +981,12 @@
       ['JTAG', 'Schnittstelle nach IEEE 1149.1 für Boundary Scan, Programmieren und Debuggen. Standardsignale: TCK, TMS, TDI, TDO.'],
       ['Kelvin-Messung', 'Vierleitermessung: Zwei Nadeln leiten den Strom ein, zwei andere messen die Spannung direkt am Bauteil. Der Widerstand der Zuleitungen fällt dadurch heraus.'],
       ['Lunker (Void)', 'Gaseinschluss in der Lötstelle. Er verringert die Fläche für Strom und Wärme und ist im Röntgenbild zu sehen.'],
+      ['MSL', 'Moisture Sensitivity Level, Feuchteklasse nach J-STD-020 (Norm zur Einstufung feuchteempfindlicher Bauteile): Sie legt fest, wie lange ein Bauteil nach dem Öffnen der Trockenverpackung offen liegen darf, bevor es gelötet oder gebacken werden muss.'],
       ['Nadelbett', 'Prüfadapter mit einem Raster aus Federkontaktstiften, auf die die Platine gedrückt wird, um viele Testpunkte gleichzeitig zu kontaktieren.'],
       ['Netzliste', 'Liste aller Verbindungen: Welche Pins gehören zum selben Netz. Aus ihr entstehen Layout-Prüfung und Testprogramm.'],
       ['Open und Short', 'Open: Verbindung unterbrochen, die nicht sein dürfte. Short: Kurzschluss, eine Verbindung, die nicht sein dürfte.'],
       ['Panel (Nutzen)', 'Mehrere Platinen auf einer Fertigungstafel, durch Stege oder Ritzen verbunden und erst nach Bestückung, Löten und oft auch Test getrennt.'],
+      ['Popcorn-Effekt', 'Feuchte im Bauteilgehäuse verdampft im Reflow-Ofen schlagartig. Das Gehäuse reißt oder löst sich innen ab. Abhilfe: Offenzeit einhalten, sonst backen.'],
       ['Prüfadapter', 'Mechanische Aufnahme für die Platine im Test: Nadelbett beim ICT oder Haltevorrichtung mit Kontaktstiften beim Funktionstest.'],
       ['Pseudofehler', 'Falschmeldung der AOI: Die Software markiert ein Bauteil als fehlerhaft, obwohl es gut ist. Kostet Zeit durch Nachprüfung.'],
       ['Rework', 'Nacharbeit: Fehlerhafte Platinen werden repariert, z. B. Bauteil tauschen, Brücke entfernen, nachlöten.'],
@@ -988,7 +995,8 @@
       ['TAP', 'Test Access Port: Anschluss des Boundary Scan mit den Signalen TCK (Takt), TMS (Steuerung), TDI (Dateneingang), TDO (Datenausgang), optional TRST (Reset).'],
       ['Testpunkt', 'Kupferfläche oder Via, die nur dem Messen dient: Hier kann eine Nadel das Netz berühren. Sie sollte frei, groß genug und mit Lötstopp-Öffnung sein.'],
       ['Tombstone', 'Grabstein: Ein Chip-Bauteil richtet sich beim Löten an einem Ende auf, weil ein Ende früher schmilzt.'],
-      ['Traceability', 'Rückverfolgbarkeit: Seriennummern verbinden Platine, Bauteilchargen, Prozessdaten und Prüfergebnis.']
+      ['Traceability', 'Rückverfolgbarkeit: Seriennummern verbinden Platine, Bauteilchargen, Prozessdaten und Prüfergebnis.'],
+      ['Underfill', 'Dünnflüssige Masse, die nach dem Löten unter ein BGA (Ball Grid Array, Gehäuse mit Lotkugeln unten) oder einen Chip fließt und aushärtet. Sie schützt die Lötstellen gegen Stoß, Biegen und Temperaturwechsel.']
     ];
 
     /* ====================================================================================

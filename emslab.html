@@ -124,6 +124,13 @@ small{font-size:14px}
 .chip,.chip.s{min-width:44px;justify-content:center}
 .lbl2{font-size:14px;color:var(--mute);margin:8px 0 2px;display:block}
 /* Mindestgrößen: Rest zu design.css (P2), das Höhen 44 px und Schrift 14 px für Reiter, Chips, Hinweise setzt */
+/* Schritt-Bilder (emsviz.js) */
+.viz{margin:10px 0;padding:6px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}.viz svg{display:block;width:100%;max-width:560px;height:auto;margin:0 auto}
+.viz .vF{fill:var(--panel2);stroke:var(--mute);stroke-width:1.5}.viz .vS{fill:none;stroke:var(--fg);stroke-width:1.5}.viz .vS1{stroke:var(--fg);stroke-width:1.2}.viz .vM{fill:none;stroke:var(--mute);stroke-width:1.2}
+.viz .vAs{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round}.viz .vA{fill:var(--accent)}.viz .vB{fill:var(--ok);fill-opacity:.35;stroke:var(--ok);stroke-width:1.5}.viz .vD{fill:var(--mute)}
+.viz .vK{fill:var(--warn);fill-opacity:.25;stroke:var(--warn);stroke-width:1.5}.viz .vGl{fill:var(--accent);fill-opacity:.15;stroke:var(--accent);stroke-width:1.2}.viz .vW{fill:none;stroke:var(--hi);stroke-width:2.5;stroke-linecap:round}
+.viz .vLot{fill:var(--hi);fill-opacity:.35;stroke:var(--hi);stroke-width:1.2}.viz .vOk{fill:none;stroke:var(--ok);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.viz .vOkR{fill:var(--ok);fill-opacity:.15;stroke:var(--ok);stroke-width:2.5}
+.viz .vT{fill:var(--fg);font-size:11px}.viz .vTm{fill:var(--mute);font-size:11px}.viz .vTa{fill:var(--accent);font-size:14px;font-weight:700}
 .ib{width:44px;height:44px}.chip{font-size:14px}.dot{font-size:14px}#toast{font-size:15px}.hint2{line-height:1.45}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}</style>
 <link rel="stylesheet" href="design.css">
@@ -163,6 +170,7 @@ small{font-size:14px}
 <script src="fx.js"></script>
 <script src="emscore.js"></script>
 <script src="emsdata.js"></script>
+<script src="emsviz.js"></script>
 <script>window.LAB="ems";</script>
 <script src="emsui.js"></script>
 

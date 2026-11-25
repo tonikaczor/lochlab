@@ -497,7 +497,7 @@
               "Fehlersuche",
               "Prüfverfahren"
             ],
-            aufgaben: ["pb42", "pb43"]
+            aufgaben: ["pb42", "pb43", "pb50", "pb51", "pb52", "pb53", "pb54", "pb55", "pb56"]
           }
         ],
         heft: "lernen-pcb.html",

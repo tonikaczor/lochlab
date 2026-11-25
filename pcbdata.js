@@ -279,6 +279,14 @@
   const profOf = a => { const p = {}; PROF_ANS.forEach(f => { p[f.k] = num(a[f.k]); }); return p; };
   const NETZ_BLOECKE = [['Transformation', 'Spannung herunter transformieren'], ['Gleichrichtung', 'Gleichrichtung'], ['Glättung', 'Glättung und Siebung'], ['Stabilisierung', 'Stabilisierung'], ['Anzeige', 'Betriebsanzeige']];
   const TIP_OPTS = [['meissel', 'Meißelspitze 2,4 mm'], ['kegel', 'Kegelspitze 1,0 mm'], ['fein', 'Feinspitze 0,4 mm'], ['messer', 'Messerspitze 3 mm (zum Schleppen)']];
+  /* pb50 bis pb56: Feuchteklassen, Prüfstrategie, Underfill, Stickstoff und Vakuum (Auswahllisten) */
+  const MSL_ZEIT = [['unbegrenzt', 'unbegrenzt'], ['1 Jahr', 'ein Jahr'], ['4 Wochen', 'vier Wochen'], ['168 h', '168 Stunden'], ['72 h', '72 Stunden'], ['48 h', '48 Stunden'], ['24 h', '24 Stunden'], ['backen', 'immer vor Gebrauch backen, dann Zeit laut Etikett']];
+  const MSL_SOLL = [['m1', 'MSL 1', 'unbegrenzt'], ['m2a', 'MSL 2a', '4 Wochen'], ['m3', 'MSL 3', '168 h'], ['m4', 'MSL 4', '72 h'], ['m5a', 'MSL 5a', '24 h'], ['m6', 'MSL 6', 'backen']];
+  const MSL_TUN = [['frei', 'ohne Einschränkung verarbeiten'], ['verarbeiten', 'verarbeiten, die Restzeit reicht'], ['backen', 'vor dem Löten backen'], ['trocken', 'in den Trockenschrank oder neu trocken verpacken']];
+  const VERG_OPTS = [['underfill', 'Underfill: Masse fließt unter das Bauteil'], ['damfill', 'Dam & Fill: Damm ziehen, dann füllen'], ['lack', 'Schutzlack über die Baugruppe']];
+  const ATMO_OPTS = [['luft', 'Luft'], ['n2', 'Stickstoff'], ['vak', 'Vakuumphase']];
+  /* Zeile für Antwortblätter: ok ist schon geprüft, fehlt die Antwort, sagt die Zeile das */
+  const ansRow = (a, k, ok, lab, why) => L(ok, lab, a[k] === undefined || a[k] === '' ? 'Hier fehlt noch deine Antwort.' : 'Deine Antwort passt nicht. ' + why);
 
   const tasks = [
     /* ---------------- Grundlagen */
@@ -767,6 +775,96 @@
         return [L(isFinite(v) && v >= 21 * 0.95 && v <= 21 * 1.05, 'Die Spannungsverstärkung passt zu 20 mV Eingang und etwa 0,42 V Ausgang', 'Mit R1 = ' + f2(r1 / 1000, 2) + ' kΩ und R2 = ' + f2(r2 / 1000, 2) + ' kΩ ist die Verstärkung 1 + R2 / R1 = ' + f2(v, 1) + '. Aus 20 mV soll rund 0,42 V werden, das verlangt die Verstärkung 21 (±5 %).'),
           L(e24(r1) && e24(r2), 'R1 und R2 sind Werte der Reihe E24', 'Mindestens einer der beiden Werte (R1 = ' + f2(r1, 0) + ' Ω, R2 = ' + f2(r2, 0) + ' Ω) gehört nicht zur Reihe E24. Nimm den nächstgelegenen Normwert, zum Beispiel 20 kΩ statt 19 kΩ.'),
           L(bad.length === 0, 'Alle anderen Bauteilwerte sind unverändert', 'Verändert wurde auch ' + bad[0] + '. Nur R1 und R2, die beiden Widerstände, die die Verstärkung festlegen, dürfen einen neuen Wert bekommen.')].concat(routeLines(b, ref));
+      } },
+
+    /* ---------------- Fertigungswissen pb50 bis pb56 (Feuchteklassen, Prüfstrategie, Underfill, Stickstoff und Vakuum): bleibt in der Kategorie Prüfungsstil, weil die Ids positionsgebunden sind */
+    { id: 'pb50', lab: 'pcb', cat: 'Prüfungsstil', title: 'Feuchteklassen: Offenzeit nach MSL zuordnen', level: 1,
+      text: 'Viele SMD-Bauteile (Surface Mounted Devices, Bauteile zum Aufsetzen auf die Oberfläche) nehmen aus der Luft Feuchte auf. Die Norm J-STD-020 (Norm zur Einstufung feuchteempfindlicher Bauteile) teilt sie deshalb in Feuchteklassen (MSL, Moisture Sensitivity Level, Stufe der Feuchteempfindlichkeit) ein, J-STD-033 (Norm zum Umgang mit feuchteempfindlichen Bauteilen) regelt Lagerung, Trocknen und Backen. Die Klasse steht auf dem Etikett der Trockenverpackung. Ordne jeder Klasse ihre Offenzeit zu: So lange darf das Bauteil nach dem Öffnen des Beutels bei höchstens 30 °C und 60 % relativer Luftfeuchte offen liegen, bis es gelötet sein muss.',
+      hint: ['Je höher die Zahl der Feuchteklasse MSL (Moisture Sensitivity Level, Stufe der Feuchteempfindlichkeit), desto empfindlicher ist das Bauteil und desto kürzer ist die Offenzeit. MSL 1 ist gar nicht empfindlich.', 'Merkreihe für MSL (Moisture Sensitivity Level, Stufe der Feuchteempfindlichkeit): MSL 2 ein Jahr, 2a vier Wochen, 3 eine Woche (168 h), 4 drei Tage, 5 zwei Tage, 5a ein Tag. MSL 6 hat keine feste Offenzeit.', 'MSL (Moisture Sensitivity Level, Stufe der Feuchteempfindlichkeit) 1 unbegrenzt (bis 30 °C und 85 % rF, relative Luftfeuchte), MSL 2a vier Wochen, MSL 3 168 h, MSL 4 72 h, MSL 5a 24 h, MSL 6 immer vor Gebrauch backen und innerhalb der Zeit auf dem Etikett löten.'],
+      start: () => withAnswers(board('exled'), {}), sol: () => { const a = {}; MSL_SOLL.forEach(m => { a[m[0]] = m[2]; }); return withAnswers(board('exled'), a); },
+      answer: MSL_SOLL.map(m => ({ k: m[0], label: 'Offenzeit bei ' + m[1], type: 'select', options: MSL_ZEIT })),
+      check(b) {
+        const a = A(b);
+        return MSL_SOLL.map(m => ansRow(a, m[0], a[m[0]] === m[2], m[1] + ': ' + MSL_ZEIT.find(o => o[0] === m[2])[1], 'Je höher die Klasse, desto kürzer die Offenzeit. Schau in die Merkreihe der Tipps.'));
+      } },
+    /* PRUEFEN P6: pb51 und pb52 addieren alle Zeiten außerhalb der Trockenverpackung; die Zeit im Trockenschrank zählt nicht mit (vereinfacht). J-STD-033 kennt genauere Regeln, wann eine kurze Offenzeit durch Trockenlagerung zurückgesetzt wird. Reicht die Vereinfachung für die Ausbildung? */
+    { id: 'pb51', lab: 'pcb', cat: 'Prüfungsstil', title: 'Restzeit einer MSL-3-Rolle berechnen', level: 2,
+      text: 'Eine Rolle mit ICs (integrierte Schaltungen) der Feuchteklasse MSL 3 (MSL: Moisture Sensitivity Level, Stufe der Feuchteempfindlichkeit; Offenzeit 168 h bei höchstens 30 °C und 60 % rF, relative Luftfeuchte) war schon dreimal an der Linie: 26 h, 41 h und 37,5 h außerhalb der Trockenverpackung. Dazwischen lag sie im Trockenschrank, diese Zeit zählt in dieser Übung nicht mit. a) Wie viele Stunden war die Rolle bisher außerhalb? b) Wie groß ist die Restzeit? c) Der nächste Auftrag hält die Rolle 3 Schichten zu je 8 h an der Linie. Wie viel Restzeit bleibt danach? d) Reicht dieser Rest noch für einen weiteren Auftrag mit 48 h?',
+      hint: ['Restzeit = Offenzeit minus bisherige Zeit außerhalb. Alle Zeiten außerhalb der Trockenverpackung werden zusammengezählt.', 'Addiere 26 h + 41 h + 37,5 h und ziehe die Summe von 168 h ab. Für c) ziehst du noch 3 · 8 h ab, für d) vergleichst du den Rest mit 48 h.', 'a) 104,5 h. b) 168 h - 104,5 h = 63,5 h. c) 63,5 h - 24 h = 39,5 h. d) Nein, 39,5 h sind weniger als 48 h: Die Rolle muss vorher gebacken werden.'],
+      start: () => withAnswers(board('exled'), {}), sol: () => withAnswers(board('exled'), msl51()),
+      answer: [{ k: 'bisher', label: 'a) Zeit außerhalb bisher', unit: 'h', type: 'num', min: 0, max: 999, step: 0.5 }, { k: 'rest', label: 'b) Restzeit jetzt', unit: 'h', type: 'num', min: -999, max: 999, step: 0.5 }, { k: 'danach', label: 'c) Restzeit nach dem nächsten Auftrag', unit: 'h', type: 'num', min: -999, max: 999, step: 0.5 }, { k: 'reicht', label: 'd) Reicht der Rest für weitere 48 h?', type: 'select', options: [['ja', 'Ja, der Rest reicht'], ['nein', 'Nein, die Rolle muss vorher gebacken werden']] }],
+      check(b) {
+        const v = msl51(), a = A(b);
+        return [ansRow(a, 'bisher', near(a.bisher, v.bisher, 0.05), 'a) Bisher außerhalb: 104,5 h', 'Zähle 26 h, 41 h und 37,5 h zusammen.'), ansRow(a, 'rest', near(a.rest, v.rest, 0.05), 'b) Restzeit: 63,5 h', 'Restzeit = 168 h minus die Zeit aus a).'),
+          ansRow(a, 'danach', near(a.danach, v.danach, 0.05), 'c) Rest nach dem Auftrag: 39,5 h', 'Ziehe 3 · 8 h von der Restzeit ab.'), ansRow(a, 'reicht', a.reicht === v.reicht, 'd) 39,5 h reichen nicht für 48 h: vorher backen', 'Vergleiche den Rest aus c) mit 48 h.')];
+      } },
+    { id: 'pb52', lab: 'pcb', cat: 'Prüfungsstil', title: 'Feuchteempfindliche Bauteile: richtig handeln', level: 2,
+      text: 'Am Rüstplatz liegen verschiedene Bauteile. Entscheide für jeden Fall, was du tust. Die Feuchteklasse MSL (Moisture Sensitivity Level, Stufe der Feuchteempfindlichkeit) steht auf dem Etikett. Die Feuchteindikatorkarte im Trockenbeutel zeigt mit Farbfeldern, ob zu viel Feuchte eingedrungen ist. Gebacken wird im Ofen nach den Vorgaben von J-STD-033 (Norm zum Umgang mit feuchteempfindlichen Bauteilen), gelagert wird im Trockenschrank oder neu verschweißt mit frischem Trockenmittel. Beantworte zum Schluss, was einem feuchten Bauteil im Reflow-Ofen passieren kann.',
+      hint: ['Vergleiche immer die Zeit, die das Bauteil schon offen war, mit der Offenzeit seiner Klasse. Was übrig bleibt, ist die Restzeit.', 'MSL 3 (MSL: Moisture Sensitivity Level, Stufe der Feuchteempfindlichkeit) hat 168 h, MSL 4 hat 72 h, MSL 5a hat 24 h. Ist die Zeit überschritten oder zeigt die Indikatorkarte zu viel Feuchte, wird gebacken. Was gerade nicht gebraucht wird, kommt trocken weg.', 'a) backen, b) verarbeiten (72 h - 50 h = 22 h Rest), c) backen (24 h überschritten), d) Trockenschrank, e) ohne Einschränkung, f) Popcorn-Effekt.'],
+      start: () => withAnswers(board('exled'), {}), sol: () => withAnswers(board('exled'), { a: 'backen', b: 'verarbeiten', c: 'backen', d: 'trocken', e: 'frei', f: 'popcorn' }),
+      answer: [{ k: 'a', label: 'a) Trockenbeutel geöffnet, die Feuchteindikatorkarte zeigt zu viel Feuchte', type: 'select', options: MSL_TUN }, { k: 'b', label: 'b) MSL-4-Rolle, schon 50 h offen, der Auftrag braucht sie noch 10 h', type: 'select', options: MSL_TUN },
+        { k: 'c', label: 'c) MSL-5a-IC (integrierte Schaltung), schon 30 h offen', type: 'select', options: MSL_TUN }, { k: 'd', label: 'd) Auftrag fertig, die MSL-3-Rolle hat noch 60 h Restzeit und wird erst nächste Woche gebraucht', type: 'select', options: MSL_TUN },
+        { k: 'e', label: 'e) Widerstände der Klasse MSL 1, seit Wochen offen im Regal', type: 'select', options: MSL_TUN },
+        { k: 'f', label: 'f) Was kann passieren, wenn ein feuchtes Bauteil ungebacken in den Reflow-Ofen kommt?', type: 'select', options: [['popcorn', 'Die Feuchte verdampft schlagartig, das Gehäuse reißt oder löst sich innen ab (Popcorn-Effekt)'], ['nichts', 'Nichts, der Ofen trocknet das Bauteil schonend'], ['perlen', 'Es entstehen nur ein paar Zinnperlen neben dem Bauteil']] }],
+      check(b) {
+        const a = A(b);
+        return [ansRow(a, 'a', a.a === 'backen', 'a) Zu viel Feuchte angezeigt: vor dem Löten backen', 'Die Indikatorkarte meldet Feuchte im Beutel. Dann gilt die Offenzeit nicht mehr.'),
+          ansRow(a, 'b', a.b === 'verarbeiten', 'b) MSL 4: 72 h - 50 h = 22 h Rest, das reicht für 10 h', 'Rechne die Restzeit aus und vergleiche sie mit 10 h.'),
+          ansRow(a, 'c', a.c === 'backen', 'c) MSL 5a: 24 h sind überschritten, also backen', 'MSL 5a darf nur 24 h offen liegen.'),
+          ansRow(a, 'd', a.d === 'trocken', 'd) Nicht gebrauchte Rolle kommt in den Trockenschrank', 'Die Restzeit reicht zwar, aber bis nächste Woche würde sie an der Luft verbraucht.'),
+          ansRow(a, 'e', a.e === 'frei', 'e) MSL 1 ist bei bis zu 30 °C und 85 % rF unbegrenzt haltbar', 'MSL 1 ist nicht feuchteempfindlich.'),
+          ansRow(a, 'f', a.f === 'popcorn', 'f) Popcorn-Effekt: Dampf sprengt oder trennt das Gehäuse', 'Wasser wird im Ofen schlagartig zu Dampf.')];
+      } },
+    { id: 'pb53', lab: 'pcb', cat: 'Prüfungsstil', title: 'Prüfstrategie: Prüfzeit in Kosten umrechnen', level: 3,
+      text: 'Eine Baugruppe soll elektrisch geprüft werden. Der Flying-Probe-Tester braucht 120 s je Baugruppe und keinen Adapter. Mit dem Nadelbettadapter (ICT, In-Circuit-Test, Prüfung mit Nadeladapter) dauert die Prüfung nur 12 s, der Adapter kostet aber einmalig 2400 Euro. Eine Prüfstunde kostet bei beiden Anlagen 90 Euro. a) Was kostet die Prüfung je Baugruppe mit Flying Probe? b) Was kostet sie je Baugruppe mit ICT (ohne Adapter)? c) Ab welcher Stückzahl ist der Adapter günstiger? d) Welches Verfahren wählst du für 30 Muster, e) welches für eine Serie von 5000 Stück?',
+      hint: ['Kosten je Baugruppe = Prüfzeit in Stunden mal Stundensatz. 120 s sind 120 / 3600 h.', 'Break-even: Stückzahl = Adapterkosten / (Kosten Flying Probe je Stück minus Kosten ICT je Stück). Runde auf, denn erst ab dieser Stückzahl ist der Adapter günstiger.', 'a) 120 / 3600 · 90 = 3,00 Euro. b) 12 / 3600 · 90 = 0,30 Euro. c) 2400 / 2,70 = 888,9, also ab 889 Stück. d) 30 Muster: Flying Probe. e) 5000 Stück: ICT (In-Circuit-Test) mit Nadelbettadapter.'],
+      start: () => withAnswers(board('exled'), {}), sol: () => withAnswers(board('exled'), pruef53()),
+      answer: [{ k: 'fp', label: 'a) Kosten Flying Probe je Baugruppe', unit: 'Euro', type: 'num', min: 0, max: 999, step: 0.01 }, { k: 'ict', label: 'b) Kosten ICT je Baugruppe (ohne Adapter)', unit: 'Euro', type: 'num', min: 0, max: 999, step: 0.01 }, { k: 'be', label: 'c) Break-even-Stückzahl (Adapter ab hier günstiger)', type: 'num', min: 0, max: 99999, step: 1 },
+        { k: 'w30', label: 'd) Verfahren für 30 Muster', type: 'select', options: [['Flying Probe', 'Flying Probe (ohne Adapter)'], ['ICT', 'ICT mit Nadelbettadapter']] }, { k: 'w5000', label: 'e) Verfahren für 5000 Stück', type: 'select', options: [['Flying Probe', 'Flying Probe (ohne Adapter)'], ['ICT', 'ICT mit Nadelbettadapter']] }],
+      check(b) {
+        const v = pruef53(), a = A(b);
+        return [ansRow(a, 'fp', near(a.fp, v.fp, 0.005), 'a) Flying Probe: 3,00 Euro je Baugruppe', 'Rechne 120 / 3600 h mal 90 Euro je Stunde.'), ansRow(a, 'ict', near(a.ict, v.ict, 0.005), 'b) ICT: 0,30 Euro je Baugruppe', 'Rechne 12 / 3600 h mal 90 Euro je Stunde.'),
+          ansRow(a, 'be', near(a.be, v.be, 0.5), 'c) Break-even bei 889 Stück', 'Rechne 2400 / (3,00 - 0,30) und runde auf.'),
+          ansRow(a, 'w30', a.w30 === v.w30, 'd) 30 Muster: Flying Probe', '30 Stück liegen weit unter dem Break-even, der Adapter lohnt sich nicht.'), ansRow(a, 'w5000', a.w5000 === v.w5000, 'e) 5000 Stück: ICT mit Nadelbettadapter', '5000 Stück liegen weit über dem Break-even.')];
+      } },
+    /* PRUEFEN P7: pb54 sagt, Underfill komme meist nach der elektrischen Prüfung (weil Nacharbeit danach kaum geht); es gibt auch Massen, die vor dem Reflow aufgetragen werden. pb56 nimmt 25 % Lunkerfläche als Grenze der Übung an, echte Grenzen stehen in der Prüfanweisung. Passt das so? */
+    { id: 'pb54', lab: 'pcb', cat: 'Prüfungsstil', title: 'Underfill und Dam & Fill unterscheiden', level: 2,
+      text: 'Große BGA-Gehäuse (BGA: Ball Grid Array, Gehäuse mit Lotkugeln unten) und ungehäuste Chips brauchen nach dem Löten oft zusätzlichen Schutz durch Vergussmasse. Beim Underfill fließt eine dünnflüssige Masse durch die Kapillarkraft in den Spalt unter dem Bauteil und härtet dort aus. Bei Dam & Fill wird zuerst ein Damm aus zäher Masse gezogen, dann wird die Fläche darin mit dünnerer Masse gefüllt. Ordne die Fälle zu und beantworte, wogegen der Schutz hilft und wann er aufgetragen wird.',
+      hint: ['Under heißt unter, fill heißt füllen, dam heißt Damm. Schutzlack bedeckt die ganze Baugruppe nur dünn.', 'Bei Stoß, Biegen und Temperaturwechsel arbeiten Platine und Bauteil verschieden stark. Ohne Underfill tragen die kleinen Lötkugeln die ganze Last. Nach dem Underfill ist Nacharbeit kaum noch möglich, darum wird vorher geprüft.', 'a) Underfill, b) Dam & Fill, c) Schutzlack, d) mechanische Belastung, e) nach dem Löten und meist erst nach der elektrischen Prüfung.'],
+      start: () => withAnswers(board('exled'), {}), sol: () => withAnswers(board('exled'), { a: 'underfill', b: 'damfill', c: 'lack', d: 'mech', e: 'nach' }),
+      answer: [{ k: 'a', label: 'a) Ein BGA in einem Handgerät soll Stürze und Verbiegen aushalten', type: 'select', options: VERG_OPTS }, { k: 'b', label: 'b) Ein ungehäuster Chip mit Bonddrähten wird abgedeckt, die Masse darf nicht über einen festen Rand laufen', type: 'select', options: VERG_OPTS },
+        { k: 'c', label: 'c) Die ganze Baugruppe bekommt einen dünnen Schutz gegen Feuchte und Staub', type: 'select', options: VERG_OPTS },
+        { k: 'd', label: 'd) Wogegen schützt Underfill die Lötkugeln vor allem?', type: 'select', options: [['mech', 'gegen mechanische Belastung: Stoß, Biegen und Temperaturwechsel verteilen sich auf die ganze Fläche'], ['esd', 'gegen elektrostatische Entladung'], ['oxid', 'gegen Oxidation während des Lötens']] },
+        { k: 'e', label: 'e) Wann wird Underfill in der Regel aufgetragen?', type: 'select', options: [['nach', 'nach dem Löten, meist erst nach der elektrischen Prüfung'], ['vor', 'vor dem Bestücken direkt auf die Pads'], ['ofen', 'zusammen mit der Lotpaste im Reflow-Ofen']] }],
+      check(b) {
+        const a = A(b);
+        return [ansRow(a, 'a', a.a === 'underfill', 'a) BGA im Handgerät: Underfill', 'Die Masse muss unter das Bauteil zu den Lötkugeln.'), ansRow(a, 'b', a.b === 'damfill', 'b) Chip mit Bonddrähten: Dam & Fill', 'Ein fester Rand heißt: erst den Damm ziehen, dann füllen.'),
+          ansRow(a, 'c', a.c === 'lack', 'c) Dünner Schutz für die ganze Baugruppe: Schutzlack', 'Underfill und Dam & Fill schützen nur einzelne Bauteile.'), ansRow(a, 'd', a.d === 'mech', 'd) Underfill schützt vor mechanischer Belastung', 'Underfill klebt Bauteil und Platine flächig zusammen.'),
+          ansRow(a, 'e', a.e === 'nach', 'e) Underfill kommt nach dem Löten und meist nach der Prüfung', 'Unter ein Bauteil fließen kann die Masse erst, wenn es gelötet ist.')];
+      } },
+    { id: 'pb55', lab: 'pcb', cat: 'Prüfungsstil', title: 'Löten unter Stickstoff und Vakuum-Reflow', level: 2,
+      text: 'Ein Reflow-Ofen kann mit normaler Luft, mit Stickstoff oder mit einer zusätzlichen Vakuumphase arbeiten. Stickstoff verdrängt den Sauerstoff aus dem Ofen. In der Vakuumkammer wird kurz ein Unterdruck erzeugt, solange das Lot flüssig ist. Ordne jedem Ziel die passende Betriebsart zu. Beantworte dann, wann die Vakuumphase wirkt und mit welcher Prüfung du das Ergebnis siehst.',
+      hint: ['Sauerstoff lässt heißes Metall anlaufen (Oxid). Gas, das im Lot eingeschlossen bleibt, bildet Lunker.', 'Ohne Sauerstoff entsteht weniger Oxid, das Lot fließt besser. Unterdruck zieht die Gasblasen aus dem Lot, aber nur, solange es flüssig ist. Lunker liegen unter dem Bauteil, eine Kamera von oben sieht sie nicht.', 'a) Stickstoff, b) Vakuumphase, c) Luft, d) während das Lot flüssig ist, e) Röntgenprüfung (AXI, automatische Röntgeninspektion).'],
+      start: () => withAnswers(board('exled'), {}), sol: () => withAnswers(board('exled'), { a: 'n2', b: 'vak', c: 'luft', d: 'fluessig', e: 'axi' }),
+      answer: [{ k: 'a', label: 'a) Weniger Oxidation, das Lot benetzt besser', type: 'select', options: ATMO_OPTS }, { k: 'b', label: 'b) Weniger Lunker (Voids) unter großen Kühlflächen', type: 'select', options: ATMO_OPTS }, { k: 'c', label: 'c) Günstiger Betrieb, reicht für viele einfache Baugruppen', type: 'select', options: ATMO_OPTS },
+        { k: 'd', label: 'd) Wann wirkt die Vakuumphase?', type: 'select', options: [['soak', 'in der Soak-Phase, bevor das Lot schmilzt'], ['fluessig', 'während das Lot flüssig ist (über Liquidus)'], ['kalt', 'nach dem Abkühlen']] },
+        { k: 'e', label: 'e) Womit siehst du, ob die Lunker weniger geworden sind?', type: 'select', options: [['aoi', 'AOI (automatische optische Inspektion, Kamera von oben)'], ['axi', 'Röntgenprüfung (AXI, automatische Röntgeninspektion)'], ['ict', 'ICT (In-Circuit-Test mit Nadelbett)']] }],
+      check(b) {
+        const a = A(b);
+        return [ansRow(a, 'a', a.a === 'n2', 'a) Weniger Oxidation, bessere Benetzung: Stickstoff', 'Was verdrängt den Sauerstoff?'), ansRow(a, 'b', a.b === 'vak', 'b) Weniger Lunker: Vakuumphase', 'Unterdruck zieht Gasblasen aus dem flüssigen Lot.'),
+          ansRow(a, 'c', a.c === 'luft', 'c) Einfach und günstig: Luft', 'Stickstoff und Vakuum kosten zusätzlich.'), ansRow(a, 'd', a.d === 'fluessig', 'd) Die Vakuumphase wirkt, solange das Lot flüssig ist', 'Aus festem Lot kann kein Gas mehr entweichen.'),
+          ansRow(a, 'e', a.e === 'axi', 'e) Lunker siehst du im Röntgenbild (AXI)', 'Lunker liegen im Inneren der Lötstelle.')];
+      } },
+    { id: 'pb56', lab: 'pcb', cat: 'Prüfungsstil', title: 'Lunkeranteil im Röntgenbild berechnen', level: 3,
+      text: 'Ein Leistungstransistor ist mit seiner Kühlfläche auf ein Pad von 6 mm x 5 mm gelötet. Im Röntgenbild siehst du vier Lunker mit 2,4 mm², 2,1 mm², 1,8 mm² und 1,5 mm². Die Prüfanweisung in dieser Übung erlaubt höchstens 25 % Lunkerfläche. a) Wie groß ist die Padfläche? b) Wie groß ist der Lunkeranteil in Prozent? c) Ist die Lötstelle in Ordnung? d) Nach dem Umstellen auf Vakuum-Reflow zeigt das Röntgenbild nur noch zwei Lunker mit 0,6 mm² und 0,3 mm². Wie groß ist der Anteil jetzt?',
+      hint: ['Der Lunkeranteil ist die Fläche aller Lunker geteilt durch die Padfläche, mal 100 %.', 'Padfläche = 6 mm · 5 mm. Addiere die vier Lunkerflächen, teile durch die Padfläche und vergleiche mit 25 %. Für d) rechnest du genauso mit den zwei neuen Lunkern.', 'a) 30 mm². b) 7,8 mm² / 30 mm² = 26 %. c) Nicht in Ordnung, 26 % liegt über 25 %. d) 0,9 mm² / 30 mm² = 3 %.'],
+      start: () => withAnswers(board('exled'), {}), sol: () => withAnswers(board('exled'), lunker56()),
+      answer: [{ k: 'pad', label: 'a) Padfläche', unit: 'mm²', type: 'num', min: 0, max: 999, step: 0.1 }, { k: 'anteil', label: 'b) Lunkeranteil vorher', unit: '%', type: 'num', min: 0, max: 100, step: 0.1 },
+        { k: 'io', label: 'c) Ist die Lötstelle in Ordnung?', type: 'select', options: [['ja', 'Ja, in Ordnung'], ['nein', 'Nein, nicht in Ordnung']] }, { k: 'vak', label: 'd) Lunkeranteil nach Vakuum-Reflow', unit: '%', type: 'num', min: 0, max: 100, step: 0.1 }],
+      check(b) {
+        const v = lunker56(), a = A(b);
+        return [ansRow(a, 'pad', near(a.pad, v.pad, 0.05), 'a) Padfläche: 30 mm²', 'Rechne 6 mm · 5 mm.'), ansRow(a, 'anteil', near(a.anteil, v.anteil, 0.5), 'b) Lunkeranteil: 26 %', 'Summe der Lunker (7,8 mm²) geteilt durch die Padfläche, mal 100 %.'),
+          ansRow(a, 'io', a.io === v.io, 'c) 26 % liegt über 25 %: nicht in Ordnung', 'Vergleiche den Anteil aus b) mit der Grenze von 25 %.'), ansRow(a, 'vak', near(a.vak, v.vak, 0.2), 'd) Nach Vakuum-Reflow: 3 %', '0,6 mm² + 0,3 mm² geteilt durch die Padfläche, mal 100 %.')];
       } }
   ];
 
@@ -791,6 +889,20 @@
   function kuehl46() {                                                         /* pb46: Verlustleistung und Sperrschichttemperatur */
     const pv = (8.6 - 5) * 0.6, lim = (125 - 40) / pv;
     return { pv: Math.round(pv * 100) / 100, tj0: Math.round((40 + pv * 50) * 10) / 10, tj1: Math.round((40 + pv * (5 + 1 + 12)) * 10) / 10, rsa: Math.round((lim - 6) * 10) / 10 };
+  }
+  /* Fertigungswissen pb51, pb53, pb56: Rechenwerte (alle Zahlen stehen im Aufgabentext) */
+  function msl51() {                                                           /* pb51: MSL 3, Offenzeit 168 h, Restzeit = Offenzeit minus Zeit außerhalb */
+    const bisher = 26 + 41 + 37.5, rest = 168 - bisher, danach = rest - 3 * 8;
+    return { bisher, rest, danach, reicht: danach >= 48 ? 'ja' : 'nein' };
+  }
+  function pruef53() {                                                         /* pb53: Prüfkosten je Stück aus Prüfzeit und Stundensatz, Break-even aufgerundet */
+    const fp = Math.round(120 / 3600 * 90 * 100) / 100, ict = Math.round(12 / 3600 * 90 * 100) / 100, be = Math.ceil(2400 / (fp - ict));
+    const wahl = n => n >= be ? 'ICT' : 'Flying Probe';
+    return { fp, ict, be, w30: wahl(30), w5000: wahl(5000) };
+  }
+  function lunker56() {                                                        /* pb56: Lunkeranteil = Lunkerfläche / Padfläche, Grenze der Übung 25 % */
+    const pad = 6 * 5, anteil = Math.round((2.4 + 2.1 + 1.8 + 1.5) / pad * 1000) / 10;
+    return { pad, anteil, io: anteil <= 25 ? 'ja' : 'nein', vak: Math.round((0.6 + 0.3) / pad * 1000) / 10 };
   }
   function regler47() {                                                        /* pb47: Linear- gegen Schaltregler */
     const pout = 5 * 0.8;
@@ -911,5 +1023,5 @@
     }
     return out;
   };
-  if (typeof module !== 'undefined') module.exports = { examples, tasks, run, board, DEF, BAKE, spike, ACID, acidStart, mk, planes, snapGrid, repStart, repSol, viasBad, mfgStart, reflip, setW, setCur, withAnswers, pruefWerte, rechne41, werte42, pctOf, roleOf, ipcFor, answerSheet, ohm, netz45, kuehl46, regler47, opvWerte };
+  if (typeof module !== 'undefined') module.exports = { examples, tasks, run, board, DEF, BAKE, spike, ACID, acidStart, mk, planes, snapGrid, repStart, repSol, viasBad, mfgStart, reflip, setW, setCur, withAnswers, pruefWerte, rechne41, werte42, pctOf, roleOf, ipcFor, answerSheet, ohm, netz45, kuehl46, regler47, opvWerte, msl51, pruef53, lunker56 };
 })(typeof window !== 'undefined' ? window : globalThis);

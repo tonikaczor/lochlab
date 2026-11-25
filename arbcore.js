@@ -66,7 +66,7 @@
       return mk('PSA', 'psa', 'Welche Schutzausrüstung ist bei „' + a.t + '“ erforderlich?', { t: D.psaItems[c] }, w.map(k => ({ t: D.psaItems[k] })), a.t + ': ' + stripMark(a.note));
     }
   };
-  const CATGENS = { 'Zeichen': ['sign2name', 'name2sign', 'sign2cat'], 'Brandschutz': ['class4mat', 'mittel', 'mittelNot'], 'Gefahrstoffe': ['ghs2name', 'name2ghs'], 'Gefährdungsbeurteilung': ['stop4'], 'PSA': ['psa'], 'Erste Hilfe': [] };
+  const CATGENS = { 'Zeichen': ['sign2name', 'name2sign', 'sign2cat'], 'Brandschutz': ['class4mat', 'mittel', 'mittelNot'], 'Gefahrstoffe': ['ghs2name', 'name2ghs'], 'Gefährdungsbeurteilung': ['stop4'], 'PSA': ['psa'], 'Erste Hilfe': [], 'ESD-Schutzzone und Lötplatz': [] };
   const statics = cat => D.tasks.concat(D.eh).filter(t => t.cat === cat && !t.gb);
   function fromStatic(R, cat, used) { const l = statics(cat).filter(t => !used.has('s|' + t.id)); if (!l.length) return null; const t = pick(R, l); used.add('s|' + t.id); return Object.assign({ kind: 'static', key: 's|' + t.id }, prep(t, R)); }
   function fromGen(R, cat, used, kind) {
@@ -81,7 +81,7 @@
     return fromGen(R, c, used);
   }
   /* Abschlussrunde: 20 gemischte Fragen, gleiche Seed gibt gleiche Runde */
-  const EXAM_PLAN = [['Zeichen', 4, 0], ['Brandschutz', 3, 1], ['Gefahrstoffe', 2, 1], ['Gefährdungsbeurteilung', 2, 1], ['PSA', 2, 1], ['Erste Hilfe', 0, 3]];
+  const EXAM_PLAN = [['Zeichen', 3, 0], ['Brandschutz', 2, 1], ['Gefahrstoffe', 2, 1], ['Gefährdungsbeurteilung', 2, 1], ['PSA', 2, 1], ['Erste Hilfe', 0, 3], ['ESD-Schutzzone und Lötplatz', 0, 2]];
   function buildExam(seed) {
     const R = rng(seed), used = new Set(), out = [];
     EXAM_PLAN.forEach(([cat, g, s]) => {

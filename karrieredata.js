@@ -99,7 +99,7 @@
     set(LEVELS, lv); set(SPECIALS, sp);
     return beruf;
   }
-  const D = { LEVELS, SPECIALS, XP, GP, XPKEY, use, KAMP_B, GP_BERUFE, kamp, VERBUND_AGG: ['vbfertig', 'vbprofi', 'vbgold'], VERBUND_PIDS: ['vbgarage', 'vbampel', 'vbuhr', 'vbgiess', 'vbfoerder', 'vbnetzteil', 'vbheizung', 'vbpresse', 'vbversand', 'vbkalk', 'vbwerknetz', 'vbgehaeuse', 'vbtonfunk'] };
+  const D = { LEVELS, SPECIALS, XP, GP, XPKEY, use, KAMP_B, GP_BERUFE, kamp, VERBUND_AGG: ['vbfertig', 'vbprofi', 'vbgold'], VERBUND_PIDS: ['vbgarage', 'vbampel', 'vbuhr', 'vbgiess', 'vbfoerder', 'vbnetzteil', 'vbheizung', 'vbpresse', 'vbversand', 'vbkalk', 'vbwerknetz', 'vbgehaeuse', 'vbtonfunk', 'vbkunde'] };
   if (typeof module !== 'undefined' && module.exports) module.exports = D;
   root.KarriereData = D;
 })(typeof window !== 'undefined' ? window : globalThis);

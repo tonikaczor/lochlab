@@ -334,6 +334,7 @@
     ['vbwerknetz', '🖧', 'Netzwerker', 'Das Projekt Werkstatt-Netz mit Messdaten-Server abgeschlossen.', function (c) { return [c.st.vbwerknetz || 0, 1]; }, ['fi']],
     ['vbgehaeuse', '📦', 'Gehäusekonstrukteur', 'Das Projekt Gehäuse für das Labornetzteil abgeschlossen.', function (c) { return [c.st.vbgehaeuse || 0, 1]; }, ['tpd']],
     ['vbtonfunk', '🏭', 'Hand in Hand', 'Den Tonfunk-Auftrag mit den Kollegen der anderen Berufe bis zur Rechnung gebracht.', function (c) { return [c.st.vbtonfunk || 0, 1]; }, ['egs', 'ige', 'im', 'tpd', 'fll', 'ik', 'fi']],
+    ['vbkunde', '🩺', 'Für den Kunden gebaut', 'Die Kundenbaugruppe mit den Kollegen der anderen Berufe von der Anfrage bis zur Rechnung gebracht.', function (c) { return [c.st.vbkunde || 0, 1]; }, ['egs', 'ige', 'im', 'tpd', 'fll', 'ik', 'fi']],
     ['tauschbau', '🔁', 'Kartenbauer', 'Eine Fehlerkarte gebaut, die drei andere Azubis gelöst haben.', function (c) { return [c.st.tauschbau || 0, 1]; }, ['ana', 'els', 'nts']],
     ['tauschloeser', '🔎', 'Fehlerjäger', 'Fünf Fehlerkarten von anderen Azubis gelöst.', function (c) { return [c.st.tauschloeser || 0, 5]; }, ['ana', 'els', 'nts']],
     ['tauschguete', '💎', 'Gute Karte', 'Eine Fehlerkarte mit Güte ab 80 gebaut.', function (c) { return [c.st.tauschguete || 0, 1]; }, ['ana', 'els', 'nts']],

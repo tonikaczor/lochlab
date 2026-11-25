@@ -261,6 +261,27 @@
         "projekt": [],
         "pruefung": null,
         "optional": true
+      },
+      {
+        "id": "Z-EMS",
+        "nr": "",
+        "titel": "Zusatzthema: Die ganze Fertigung",
+        "kurz": "Freiwillig, für alle, die den ganzen Weg einer Baugruppe kennenlernen wollen: die Themen aus dem EMS-Lab, die nicht zum eigenen Beruf gehören.",
+        "jahr": 0,
+        "block": "Übergreifend",
+        "quelle": "Entwurf",
+        "entwurf": true,
+        "labs": [
+          {
+            "lab": "ems",
+            "bereich": "*"
+          }
+        ],
+        "heft": null,
+        "wiki": [],
+        "projekt": [],
+        "pruefung": null,
+        "optional": true
       }
     ]
   };
