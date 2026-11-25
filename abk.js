@@ -87,7 +87,7 @@
   /* Liste für eine Seite: Eigenes überschreibt Allgemeines */
   function fuer(seite) { const eig = EIGEN[seite] || [], k = new Set(eig.map(a => a[0])); return eig.concat(LISTE.filter(a => !k.has(a[0]))); }
 
-  const NICHT = 'script,style,svg,canvas,input,textarea,select,option,button,label,a,nav,header,table,pre,code,kbd,h1,h2,h3,h4,h5,h6,summary,[role=button],[role=tab],[role=radio],[role=checkbox],[role=option],[role=menuitem],[role=link],[role=switch],[role=log],[role=alert],[role=status],[aria-live],[tabindex="0"],[onclick],[contenteditable],.chip,.tl,.lr-band,#toast,#v_duell,.dl,#wtBox,#tuBox,#cbBox';
+  const NICHT = 'script,style,svg,canvas,input,textarea,select,option,button,label,a,nav,header,table,pre,code,kbd,h1,h2,h3,h4,h5,h6,summary,[role=button],[role=tab],[role=radio],[role=checkbox],[role=option],[role=menuitem],[role=link],[role=switch],[role=log],[role=alert],[role=status],[aria-live],[tabindex="0"],[onclick],[contenteditable],.chip,.tl,.lr-band,#toast,#v_duell,.dl,#wtBox,#tuBox,#cbBox,#meters';   // #meters: Messfelder der Rig-Labs sind Anzeigen wie Statuszeilen, ihr Name führt das Wiki-? (Nachtrag v64.191.1)
   const KARTE = '.card,.sh-b,section,article,details,dialog,[role=tabpanel],main,.wrap';
   const FRAGE = /\?|Abkürzung|steht für|Bedeutung|bedeutet|heißt|ausgeschrieben/;
   const INLINE = /^(B|I|EM|STRONG|SPAN|U|SUB|SUP|MARK|SMALL)$/;

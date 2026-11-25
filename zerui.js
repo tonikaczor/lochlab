@@ -199,7 +199,7 @@
 <g id="dr-tool"><polygon id="dr-bit" fill="var(--sv-tool)" stroke="var(--sv-ln)" stroke-width="1"/><rect id="dr-hold" fill="var(--sv-chuck)" stroke="var(--sv-ln)" stroke-width="1"/><text id="dr-fl" text-anchor="start"></text></g>
 <g id="dr-chips">${ch}</g>
 <text id="dr-ap" style="fill:var(--sv-ap,var(--sv-tool))"></text>
-<g id="dr-rot"><path d="M34 40a14 14 0 1 1-12 7" fill="none" stroke="var(--sv-cut)" stroke-width="2.4"/><polygon points="16,42 27,44 20,53" fill="var(--sv-cut)"/></g>
+<g id="dr-rot"><path d="M40 40A12 12 0 1 1 34 29.6" fill="none" stroke="var(--sv-cut)" stroke-width="2.4"/><polygon points="39.6,32.8 36.5,25.3 31.5,33.9" fill="var(--sv-cut)"/></g>
 <text x="56" y="44" id="dr-nt"></text></svg>`;
   };
   function mountDreh() {
@@ -250,7 +250,7 @@
 <g id="fr-cut"><circle id="fr-body" fill="var(--sv-cut)" fill-opacity=".14" stroke="var(--sv-cut)" stroke-width="1.5"/><g id="fr-teeth"></g><circle id="fr-hub" fill="var(--sv-chuck)" stroke="var(--sv-ln)" stroke-width="1"/></g>
 <g id="fr-arrow"><line id="fr-ar" stroke="var(--sv-tool)" stroke-width="2.4" marker-end="url(#fr-head)"/><text id="fr-at" style="fill:var(--sv-tool)"></text></g>
 <defs><marker id="fr-head" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--sv-tool)"/></marker></defs>
-<g id="fr-rot"><path d="M34 40a14 14 0 1 1-12 7" fill="none" stroke="var(--sv-cut)" stroke-width="2.4"/><polygon points="16,42 27,44 20,53" fill="var(--sv-cut)"/></g>
+<g id="fr-rot"><path d="M40 40A12 12 0 1 1 34 29.6" fill="none" stroke="var(--sv-cut)" stroke-width="2.4"/><polygon points="39.6,32.8 36.5,25.3 31.5,33.9" fill="var(--sv-cut)"/></g>
 <text x="56" y="44" id="fr-nt"></text></svg>`;
   function mountFraes() { const h = $('#fraesView'), e = EL.fraes; ['wp', 'mill', 'lines', 'lt', 'cut', 'body', 'teeth', 'hub', 'ar', 'at', 'rot', 'nt'].forEach(k => { e[k] = $('#fr-' + k, h); }); e.sig = ''; }
   function drawFraes(m) {
@@ -282,7 +282,7 @@
 <g id="bo-chips"><circle class="cp" r="3" fill="var(--sv-chip)"/><circle class="cp" r="2.4" fill="var(--sv-chip)"/><circle class="cp" r="3" fill="var(--sv-chip)"/><circle class="cp" r="2.4" fill="var(--sv-chip)"/><circle class="cp" r="3" fill="var(--sv-chip)"/></g>
 <g id="bo-drill"><rect id="bo-chuck" fill="var(--sv-chuck)" stroke="var(--sv-ln)" stroke-width="1"/><rect id="bo-body" fill="url(#bo-fl)" stroke="var(--sv-ln)" stroke-width="1"/><polygon id="bo-tip" fill="var(--sv-tool)" stroke="var(--sv-ln)" stroke-width="1"/></g>
 <text id="bo-dt" text-anchor="middle"></text><text id="bo-lt" text-anchor="start"></text><text id="bo-st" text-anchor="start"></text>
-<g id="bo-rot"><path d="M34 40a14 14 0 1 1-12 7" fill="none" stroke="var(--sv-cut)" stroke-width="2.4"/><polygon points="16,42 27,44 20,53" fill="var(--sv-cut)"/></g>
+<g id="bo-rot"><path d="M40 40A12 12 0 1 1 34 29.6" fill="none" stroke="var(--sv-cut)" stroke-width="2.4"/><polygon points="39.6,32.8 36.5,25.3 31.5,33.9" fill="var(--sv-cut)"/></g>
 <text x="56" y="44" id="bo-nt"></text></svg>`;
   function mountBohr() { const h = $('#bohrView'), e = EL.bohr; ['plate', 'hole', 'chuck', 'body', 'tip', 'dt', 'lt', 'st', 'rot', 'nt', 'fl'].forEach(k => { e[k] = $('#bo-' + k, h); }); e.cps = $$('.cp', h); e.pat = $('#bo-fl', h); }
   function drawBohr(m) {
