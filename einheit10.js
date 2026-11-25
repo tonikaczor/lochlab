@@ -8,6 +8,8 @@
    - Beruf (lm4.beruf): Elektroniker und Industrieelektriker ziehen aus Teil 1 und Teil 2 (Systementwurf, Funktions- und Systemanalyse), Industriekaufleute aus Wirtschafts- und Sozialkunde, die übrigen Berufe
      (Mechaniker, Produktdesigner, Lagerlogistik, Fachinformatiker) bekommen Mehrfachwahl-Fragen ihres Berufs (PR_BANK.drawBeruf); wo es keine Rechenaufgaben gibt, ersetzen zwei weitere Fragen sie. Bei diesen Berufen kommen
      Wiki-Karten nur nach den eigenen Prüfungs-Karten und den Begriffen.
+   - Lehrjahr (inp.jahr, 1 bis 4, ohne Angabe 1; nur Elektroniker und Industrieelektriker): Neue Lernkarten und Pool-Aufgaben bis zum eigenen Lehrjahr kommen zuerst, spätere nur zum Auffüllen. Nichts wird gesperrt,
+     fällige Karten bleiben immer dran. Das Lehrjahr kommt aus der vorhandenen Zuordnung Thema -> Lernfeld (lernfelder.js, poolLF), bei Karten zusätzlich aus den Labs des Wiki-Eintrags (Lehrjahr.VORGABE).
    Ergebnisse fließen in die vorhandene Fortschrittslogik: Karten im Leitner-Kasten (lm4.karten bzw. lm4.pkarten, Abstände 0, 1, 3, 7, 14 Tage), Pool-Aufgaben in die Prüfungsstatistik (pr.state.tr),
    falsch beantwortete Fragen als neue Lernkarten (pkarten.js). Die Einheit selbst steht in lm4.e10 = { n: Einheiten, tage: { "JJJJ-MM-TT": Anzahl }, last: [Ids], ok, tot }.
    Fälligkeit der Aufgaben-Wiederholung (wiederholen.js) wird in der Zusammenfassung nur angezeigt, nicht verändert. */
@@ -29,14 +31,20 @@
     Object.keys(tr).forEach(k => { const m = /^p:([^@]+)@\d$/.exec(k); if (!m) return; const t = tr[k]; if (!isObj(t)) return; const a = s[m[1]] = s[m[1]] || { r: 0, n: 0 }; a.r += num(t.r); a.n += num(t.n); });
     const out = {}; Object.keys(s).forEach(g => { if (s[g].n >= 3) out[g] = Math.round(100 * s[g].r / s[g].n); }); return out;
   }
-  /* Lernkarten: karten = [[id, art, Titel, Antwort, Teil]], st = { id: [fach, fällig ms] } (auch die Karten aus Prüfungsfehlern, art 'p') */
-  function waehleKarten(karten, st, beruf, now, r, n) {
-    n = n == null ? N_KARTE : n; st = isObj(st) ? st : {};
+  /* Lehrjahr eines Themas über die vorhandene Zuordnung Thema -> Lernfeld (lernfelder.js); ohne Daten oder ohne Lernfeld: 1 */
+  const ljThema = (g, th) => { const L = root.LERNFELDER, f = L && L.poolLF && L.lf ? L.lf(L.poolLF({ g, th })) : null; return f && f.lj >= 1 ? f.lj : 1; };
+  /* Lehrjahr einer Lernkarte: Thema des Titels, mindestens aber das früheste Lab des Wiki-Eintrags (WikiIndex-Feld labs, Lehrjahr.VORGABE) */
+  let wikiLabs = null;
+  const ljKarte = k => { const J = root.Lehrjahr, W = root.WikiIndex; if (!wikiLabs && Array.isArray(W)) { wikiLabs = {}; W.forEach(e => { wikiLabs[e[0]] = e[4]; }); }
+    const labs = wikiLabs && wikiLabs[k[0]] ? String(wikiLabs[k[0]]).split(',') : []; return Math.max(ljThema('', k[2]), labs.length && J && J.VORGABE ? Math.min.apply(null, labs.map(l => J.VORGABE[l] || 1)) : 1); };
+  /* Lernkarten: karten = [[id, art, Titel, Antwort, Teil]], st = { id: [fach, fällig ms] } (auch die Karten aus Prüfungsfehlern, art 'p'); jahr = Lehrjahr (ohne Angabe: keine Reihenfolge nach Lehrjahr) */
+  function waehleKarten(karten, st, beruf, now, r, n, jahr) {
+    n = n == null ? N_KARTE : n; st = isObj(st) ? st : {}; jahr = jahr || 4;
     let cand = (karten || []).filter(k => ELEKTRO.indexOf(beruf) >= 0 || k[1] === 'p' || k[1] === 'b');
     if (cand.length < n) cand = (karten || []).slice();
     const has = k => !!st[k[0]], due = k => has(k) && st[k[0]][1] <= now, pr = k => (k[1] === 'p' ? 0 : 1);
     const f = cand.filter(due).sort((a, b) => fach(st[a[0]]) - fach(st[b[0]]) || pr(a) - pr(b) || st[a[0]][1] - st[b[0]][1] || (a[0] < b[0] ? -1 : 1));
-    const neu = shuffle(cand.filter(k => !has(k)), r);
+    const neu = shuffle(cand.filter(k => !has(k)), r); if (jahr < 4) neu.sort((a, b) => Math.max(ljKarte(a), jahr) - Math.max(ljKarte(b), jahr));   // ab 4 (alle Lehrjahre) bleibt die Zufallsfolge; neue Karten bis zum eigenen Lehrjahr zuerst, spätere nur zum Auffüllen
     const spaeter = cand.filter(k => has(k) && !due(k)).sort((a, b) => st[a[0]][1] - st[b[0]][1] || (a[0] < b[0] ? -1 : 1));
     return f.concat(neu, spaeter).slice(0, n).map(k => ({ typ: 'karte', id: k[0], art: k[1], front: k[2], back: k[3], teil: k[4] || '', faellig: due(k), fach: fach(st[k[0]]) }));
   }
@@ -53,18 +61,22 @@
     if (p.o) { const idx = shuffle(p.o.map((x, i) => i), r); return Object.assign(base, { type: 'mc', opts: idx.map(i => p.o[i]), r: idx.indexOf(p.r) }); }
     return Object.assign(base, { type: 'num', ans: p.ans, unit: p.u || '', tol: p.tol });
   }
-  /* Rechenaufgaben und Prüfungsfrage aus dem Pool. in: { pool, beruf, tr, recent, r } */
-  function waehlePool(pool, beruf, tr, recent, r, nCalc, nMc) {
+  /* Rechenaufgaben und Prüfungsfrage aus dem Pool. in: { pool, beruf, tr, recent, r }; jahr = Lehrjahr (ohne Angabe: alle Aufgaben gleich) */
+  function waehlePool(pool, beruf, tr, recent, r, nCalc, nMc, jahr) {
     const teile = POOLTEIL[beruf]; if (!teile || !Array.isArray(pool)) return null;
     const src = pool.filter(p => teile.indexOf(p.teil) >= 0), weak = schwach(tr), seen = {}; (recent || []).forEach(i => { seen[i] = 1; });
-    const out = [], used = [], exu = {};   // exu: schon gezogene Ausschlussgruppen (Pool-Feld ex)
+    const out = [], used = [], exu = {}, spaet = {};   // exu: schon gezogene Ausschlussgruppen (Pool-Feld ex); spaet: Aufgaben aus einem späteren Lehrjahr
+    if (jahr && jahr < 4) src.forEach(p => { if (ljThema(p.g, p.th) > jahr || (jahr <= 2 && teilNr(p.teil) === 2)) spaet[p.id] = 1; });   // 1. und 2. Lehrjahr: Aufgaben aus Prüfung Teil 2 zählen als später
+    const hatSpaet = Object.keys(spaet).length > 0;
     const nimm = (istMc, n, typ) => {
       const alle = src.filter(p => (istMc ? !!p.o : !p.o));
       for (let i = 0; i < n; i++) {
-        const frei = alle.filter(p => !p.ex || !exu[p.ex]), liste = frei.length ? frei : alle;   // belegte Ausschlussgruppen nur, wenn sonst nichts bleibt
-        const gruppen = Array.from(new Set(liste.map(p => p.g))), g = waehleGruppe(gruppen, weak, used, r); if (g == null) return;
+        const frei = alle.filter(p => !p.ex || !exu[p.ex]), l0 = frei.length ? frei : alle;   // belegte Ausschlussgruppen nur, wenn sonst nichts bleibt
+        const passt = l0.filter(p => !spaet[p.id] && !out.some(o => o.q.id === p.id)), liste = passt.length ? passt : l0;   // Lehrjahr: passende zuerst, spätere nur zum Auffüllen
+        const gruppen = Array.from(new Set(liste.map(p => p.g))), eng = hatSpaet && passt.length > 0 && passt.length < 50;   // nur wenige passende Aufgaben (1. Lehrjahr): ohne Themenwahl aus allen passenden ziehen, sonst kämen immer dieselben paar Aufgaben der kleinen Themen
+        const g = eng ? '' : waehleGruppe(gruppen, weak, used, r); if (g == null) return;
         used.push(g);
-        let c = liste.filter(p => p.g === g && !seen[p.id] && !out.some(o => o.q.id === p.id)); if (!c.length) c = liste.filter(p => p.g === g && !out.some(o => o.q.id === p.id)); if (!c.length) return;
+        let c = liste.filter(p => (eng || p.g === g) && !seen[p.id] && !out.some(o => o.q.id === p.id)); if (!c.length) c = liste.filter(p => (eng || p.g === g) && !out.some(o => o.q.id === p.id)); if (!c.length) return;
         const leicht = c.filter(p => (p.n || 2) <= 2); c = leicht.length ? leicht : c;
         const wahl = c[Math.floor(r() * c.length)]; if (wahl.ex) exu[wahl.ex] = 1;
         out.push({ typ, q: poolFrage(wahl, r) });
@@ -82,13 +94,14 @@
     let c = all.filter(q => !seen[q.id]); if (c.length < n) c = all;
     return shuffle(c, r).slice(0, n).map(q => ({ typ: 'pruef', q }));
   }
-  /* Die ganze Einheit. in: { now, seed, beruf, karten, kstand, pool, tr, recent, bank } -> { items, plan } */
+  /* Die ganze Einheit. in: { now, seed, beruf, jahr, karten, kstand, pool, tr, recent, bank } -> { items, plan }; jahr 1 bis 3 bevorzugt Passendes, 4 = alle Lehrjahre (so übergibt start() alte Geräte ohne Angabe) */
   function wahl(inp) {
     const now = num(inp.now) || Date.now(), r = rng(inp.seed == null ? now : inp.seed), beruf = inp.beruf || 'egs';
-    const karten = waehleKarten(inp.karten, inp.kstand, beruf, now, r), n = N_RECHNEN + N_PRUEF;
-    let fragen = waehlePool(inp.pool, beruf, inp.tr, inp.recent, r, N_RECHNEN, N_PRUEF);
+    const jahr = ELEKTRO.indexOf(beruf) < 0 ? 4 : inp.jahr >= 1 && inp.jahr <= 4 ? Math.round(inp.jahr) : 1;   // Lernfelder gibt es nur für die Elektroberufe; ohne Angabe gilt das 1. Lehrjahr
+    const karten = waehleKarten(inp.karten, inp.kstand, beruf, now, r, N_KARTE, jahr), n = N_RECHNEN + N_PRUEF;
+    let fragen = waehlePool(inp.pool, beruf, inp.tr, inp.recent, r, N_RECHNEN, N_PRUEF, jahr);
     if (!fragen || fragen.length < n) fragen = (fragen || []).concat(waehleBank(inp.bank, beruf, inp.recent, r, n - (fragen || []).length));
-    return { items: karten.concat(fragen), plan: { karten: karten.length, rechnen: fragen.filter(f => f.typ === 'rechnen').length, pruef: fragen.filter(f => f.typ === 'pruef').length, beruf } };
+    return { items: karten.concat(fragen), plan: { karten: karten.length, rechnen: fragen.filter(f => f.typ === 'rechnen').length, pruef: fragen.filter(f => f.typ === 'pruef').length, beruf, jahr } };
   }
   /* Antwort bewerten wie im Prüfungs-Lab: Mehrfachwahl = Index, Rechnen = Zahl mit Toleranz (Komma oder Punkt) */
   function parse(s) { const x = parseFloat(String(s == null ? '' : s).replace(/\s/g, '').replace(',', '.')); return isFinite(x) ? x : NaN; }
@@ -115,7 +128,7 @@
   function trBuchen(state, k, ok, now) { const s = isObj(state) ? state : {}; s.tr = isObj(s.tr) ? s.tr : {}; const t = s.tr[k] = isObj(s.tr[k]) ? s.tr[k] : { r: 0, n: 0 }; t.r = num(t.r) + (ok ? 1 : 0); t.n = num(t.n) + 1; t.t = now; return s; }
   const minuten = 10, text = { karte: 'Lernkarte', rechnen: 'Rechenaufgabe', pruef: 'Prüfungsfrage' };
   const sub = 'Heute: 3 Karten, 2 Rechenaufgaben, 1 Prüfungsfrage';
-  const api = { DAY, ABST, N_KARTE, N_RECHNEN, N_PRUEF, KEY, ELEKTRO, POOLTEIL, schwach, waehleKarten, waehlePool, waehleBank, wahl, richtig, parse, kAntwort, normE, buche, trBuchen, tagKey, poolFrage, rng, text, sub };
+  const api = { DAY, ABST, N_KARTE, N_RECHNEN, N_PRUEF, KEY, ELEKTRO, POOLTEIL, schwach, waehleKarten, waehlePool, waehleBank, wahl, ljThema, ljKarte, richtig, parse, kAntwort, normE, buche, trBuchen, tagKey, poolFrage, rng, text, sub };
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.Einheit10 = api;
 
@@ -137,6 +150,7 @@
     for (const [g, f] of need) { if (!root[g]) await laden(f); }
     if (root.PR_BANK && !root.PR_BANK.drawBeruf) await laden('pruefbank-beruf.js');
     if (beruf() === 'im' && !root.PR_POOL_IM) { try { await laden('pruefpool-im.js'); } catch (e) {} }   /* pruefim187 */
+    if (ELEKTRO.indexOf(beruf()) >= 0 && !root.WikiIndex) { try { await laden('wiki-index.js'); } catch (e) {} }   /* Labs der Wiki-Einträge für das Lehrjahr der Lernkarten */
   }
   const CSS = '#e10Go{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;margin:0;padding:10px 14px;border-radius:14px;border:1px solid var(--accent,#3b9eff);background:var(--panel,#222830);color:var(--fg,#e8ecf0);font:inherit;text-align:left;cursor:pointer;align-self:stretch;box-sizing:border-box;touch-action:manipulation}'
     + '#e10Go:hover{filter:brightness(1.08)}#e10Go:focus-visible,#e10Box button:focus-visible,#e10Box input:focus-visible{outline:3px solid var(--focus,#ffd166);outline-offset:2px}'
@@ -149,7 +163,7 @@
     + '#e10Box .e10m{color:var(--mute,#9aa6b2);font-size:14px;margin:6px 0 10px}#e10Box h2{font-size:19px;line-height:1.3;margin:4px 0 10px;overflow-wrap:anywhere}#e10Box .e10q{font-size:17px;line-height:1.45;margin:4px 0 12px;overflow-wrap:anywhere}'
     + '#e10Box .e10a{border-left:4px solid var(--accent,#3b9eff);padding:6px 12px;margin:10px 0;font-size:16px;overflow-wrap:anywhere}'
     + '#e10Box .e10b{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 0}#e10Box .e10b button,#e10Box .e10o{min-height:48px;padding:8px 16px;border-radius:12px;border:1px solid var(--line,#46525f);background:var(--panel2,#2c343e);color:var(--fg,#e8ecf0);font:600 15px/1.3 system-ui,sans-serif;cursor:pointer;touch-action:manipulation}'
-    + '#e10Box .e10b button.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:var(--accent-ink,#fff)}#e10Box .e10b button{flex:1 1 140px}'
+    + '#e10Box .e10b button.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:var(--accent-ink,#fff)}#e10Box .e10b button{flex:1 1 140px}#e10Box .e10b button.e10w{flex:0 1 auto;background:none;color:var(--mute,#9aa6b2);font-weight:500}'
     + '#e10Box .e10o{display:block;width:100%;text-align:left;margin:6px 0;font-weight:500}#e10Box .e10o[aria-checked=true]{border-color:var(--accent,#3b9eff);box-shadow:inset 0 0 0 2px var(--accent,#3b9eff)}#e10Box .e10o.ok{border-color:var(--ok,#4cd964);box-shadow:inset 0 0 0 2px var(--ok,#4cd964)}#e10Box .e10o.no{border-color:var(--danger,#ff8a7a);box-shadow:inset 0 0 0 2px var(--danger,#ff8a7a)}'
     + '#e10Box input.e10n{min-height:48px;width:min(220px,60%);padding:6px 10px;border-radius:10px;border:1px solid var(--line,#46525f);background:var(--bg,#14181c);color:var(--fg,#e8ecf0);font:17px system-ui}'
     + '#e10Box .e10r{margin:10px 0;padding:8px 12px;border-radius:10px;border:1px solid var(--line,#38424d);overflow-wrap:anywhere}#e10Box .e10r.ok{border-color:var(--ok,#4cd964)}#e10Box .e10r.no{border-color:var(--danger,#ff8a7a)}#e10Box .e10r b.ok{color:var(--ok,#4cd964)}#e10Box .e10r b.no{color:var(--danger,#ff8a7a)}'
@@ -178,7 +192,8 @@
     const now = Date.now(), PK = root.PKarten, pk = PK ? PK.laden() : {}, kst = rd('lm4.karten', {}), st = Object.assign({}, isObj(kst) ? kst : {});
     Object.keys(pk).forEach(id => { st[id] = PK.stateOf(pk[id]); });
     const B = root.PR_BANK, ps = rd('pr.state', {}), e10 = normE(rd(KEY, {}));
-    const w = wahl({ now, seed: now % 1000000000, beruf: beruf(), karten: (root.KARTEN || []).concat(PK ? PK.toKarten(pk) : []), kstand: st, pool: beruf() === 'im' && root.PR_POOL && root.PR_POOL_IM ? root.PR_POOL.q.concat(root.PR_POOL_IM.q) : root.PR_POOL && root.PR_POOL.q, tr: ps && ps.tr, recent: e10.last,
+    let jahr = 4; try { if (root.Lehrjahr && root.Lehrjahr.wirksam) jahr = root.Lehrjahr.wirksam() || 4; } catch (e) {}   // wie der Lernpfad: neue Geräte 1. Lehrjahr, alte Geräte ohne Angabe alles wie bisher
+    const w = wahl({ now, seed: now % 1000000000, beruf: beruf(), jahr, karten: (root.KARTEN || []).concat(PK ? PK.toKarten(pk) : []), kstand: st, pool: beruf() === 'im' && root.PR_POOL && root.PR_POOL_IM ? root.PR_POOL.q.concat(root.PR_POOL_IM.q) : root.PR_POOL && root.PR_POOL.q, tr: ps && ps.tr, recent: e10.last,
       bank: B && B.drawBeruf ? { themen: b => (B.themenFuer ? B.themenFuer(b) : []).map(t => t.k), draw: (k, n, seed) => B.drawBeruf(k, n, seed) } : null });
     if (!w.items.length) { inn().innerHTML = '<p class="e10m">Für heute gibt es keine passende Aufgabe. Wähle ein Lab auf der Startseite.</p><div class="e10b"><button type="button" class="pri" id="e10Zu">Schließen</button></div>'; box.querySelector('#e10Zu').onclick = schliessen; return; }
     run = { items: w.items, i: 0, res: [], neu: 0, vor: 0, start: now };
@@ -198,14 +213,15 @@
     const q = it.q;
     if (it.fertig) { feedback(it, head); return; }
     if (q.type === 'mc') {
-      el.innerHTML = head + '<div class="e10q">' + esc(q.q) + '</div><div role="radiogroup" aria-label="Antworten">' + q.opts.map((o, k) => '<button type="button" class="e10o" role="radio" aria-checked="' + (it.sel === k ? 'true' : 'false') + '" data-k="' + k + '">' + esc(o) + '</button>').join('') + '</div><div class="e10b"><button type="button" class="pri" id="e10Ok">Antwort prüfen</button></div><p class="e10m" id="e10Hint" role="status"></p>';
+      el.innerHTML = head + '<div class="e10q">' + esc(q.q) + '</div><div role="radiogroup" aria-label="Antworten">' + q.opts.map((o, k) => '<button type="button" class="e10o" role="radio" aria-checked="' + (it.sel === k ? 'true' : 'false') + '" data-k="' + k + '">' + esc(o) + '</button>').join('') + '</div><div class="e10b"><button type="button" class="pri" id="e10Ok">Antwort prüfen</button><button type="button" class="e10w" id="e10Kw">Weiß ich nicht</button></div><p class="e10m" id="e10Hint" role="status"></p>';
       box.querySelectorAll('.e10o').forEach(b => { b.onclick = () => { it.sel = +b.dataset.k; box.querySelectorAll('.e10o').forEach(x => x.setAttribute('aria-checked', x === b ? 'true' : 'false')); }; });
       box.querySelector('#e10Ok').onclick = () => { if (it.sel == null) { box.querySelector('#e10Hint').textContent = 'Wähle zuerst eine Antwort.'; return; } frageFertig(it, it.sel); };
     } else {
-      el.innerHTML = head + '<div class="e10q">' + esc(q.q) + '</div><p><input class="e10n" id="e10N" inputmode="decimal" autocomplete="off" aria-label="Deine Antwort" placeholder="Zahl eingeben" value="' + esc(it.txt || '') + '"> <span>' + esc(q.unit) + '</span></p><div class="e10b"><button type="button" class="pri" id="e10Ok">Antwort prüfen</button></div><p class="e10m" id="e10Hint" role="status"></p>';
+      el.innerHTML = head + '<div class="e10q">' + esc(q.q) + '</div><p><input class="e10n" id="e10N" inputmode="decimal" autocomplete="off" aria-label="Deine Antwort" placeholder="Zahl eingeben" value="' + esc(it.txt || '') + '"> <span>' + esc(q.unit) + '</span></p><div class="e10b"><button type="button" class="pri" id="e10Ok">Antwort prüfen</button><button type="button" class="e10w" id="e10Kw">Weiß ich nicht</button></div><p class="e10m" id="e10Hint" role="status"></p>';
       const inp = box.querySelector('#e10N'), go = () => { const v = inp.value; it.txt = v; if (isNaN(parse(v))) { box.querySelector('#e10Hint').textContent = 'Gib eine Zahl ein (Komma oder Punkt).'; return; } frageFertig(it, v); };
       box.querySelector('#e10Ok').onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') go(); }; fokus('#e10N');
     }
+    box.querySelector('#e10Kw').onclick = () => { it.sel = null; frageFertig(it, null); };   // „Weiß ich nicht“: zählt als falsch, zeigt dieselbe Rückmeldung mit Lösung
   }
   function karteFertig(ok) {
     const R = run, it = R.items[R.i], now = Date.now(), PK = root.PKarten;

@@ -348,6 +348,7 @@ html.mw .top{display:none}
 .mw-stand .mw-x b{font-size:18px}
 #mwRow #e10Go{border-color:var(--line);font-size:16px}
 #mwRow #e10Go .mw-p{font-size:18px}
+@media(min-width:640px){#mwRow{grid-template-columns:repeat(2,minmax(0,1fr))}}   /* Heute dran: ab Tablet immer zwei Spalten (vier Karten füllen die Breite) */
 .zl{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(min(100%,240px),1fr))}
 .zl-t{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg);text-decoration:none}
 .zl-t:hover{border-color:var(--accent)}

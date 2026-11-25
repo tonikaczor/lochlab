@@ -34,8 +34,8 @@
   if (typeof document === 'undefined') return;
 
   /* ---------- Oberfläche ---------- */
-  /* Ansicht Start (Umbau S1): #meinWeg mit der blauen Karte (#contGo wird aus #top hierher gesetzt) und darunter nur Fälligem: Wiederholen (nur wenn etwas fällig ist),
-     10-Minuten-Einheit (#e10Go aus einheit10.js, nur wenn heute noch keine gemacht wurde, nicht bei den Wegen), Prüfungstermin (nur mit Datum).
+  /* Ansicht Start (Umbau S1): #meinWeg mit der blauen Karte (#contGo wird aus #top hierher gesetzt) und darunter "Heute dran" mit vier Karten: Wiederholen (auch wenn nichts fällig ist),
+     10-Minuten-Einheit (#e10Go aus einheit10.js, nur wenn heute noch keine gemacht wurde, nicht bei den Wegen; sonst steht an ihrer Stelle das Wiki), Prüfung oder Studium (Termin und Wochenplan), Verbundprojekte.
      Beim ersten Besuch (kein Beruf gespeichert, kein Fortschritt) steht darüber die Frage "Was lernst du?" (#mwErst) und sonst nur die blaue Karte.
      "Mein Stand" (#mwStand) steht in der Ansicht "Ich" (#ichStand), den Zustand der Zeile Wiederholen in "Üben" (#ubWd) füllt dieses Skript mit.
      Die alte Sprungmarke #meinWeg führt über home-views.js in die Ansicht Start. Es wird nichts in den Speicher geschrieben. */
@@ -65,10 +65,11 @@
     const erstEl = sec.querySelector('#mwErst'); if (erstEl) erstEl.hidden = !erst;
     /* Fälliges */
     const wd = sec.querySelector('#mwWd'), pr = sec.querySelector('#mwPr'), e10 = doc.getElementById('e10Go');
-    setTile(wd, SYM.wd, t.wiederholen); wd.hidden = erst || !(t.wiederholen.n > 0);
-    setTile(pr, SYM.pr, t.pruefung); pr.hidden = erst || !t.pruefung.gesetzt;
-    if (e10) e10.classList.toggle('mw-aus', erst || !!m.weg || e10heute());
-    const due = sec.querySelector('#mwDue'); if (due) due.hidden = [wd, pr, e10].every(x => !x || x.hidden || x.classList.contains('mw-aus'));
+    setTile(wd, SYM.wd, t.wiederholen); wd.hidden = erst;
+    setTile(pr, SYM.pr, t.pruefung); pr.hidden = erst;
+    const e10aus = erst || !!m.weg || e10heute(); if (e10) e10.classList.toggle('mw-aus', e10aus);
+    sec.querySelector('#mwVb').hidden = erst; sec.querySelector('#mwWiki').hidden = erst || !!(e10 && !e10aus);   // Wiki füllt den Platz, wenn es die 10-Minuten-Einheit nicht gibt: immer vier Karten
+    const due = sec.querySelector('#mwDue'); if (due) due.hidden = erst;
     /* Ich: Mein Stand (ohne "Nächster Schritt": die Empfehlung steht nur in der blauen Karte) */
     const host = doc.getElementById('ichStand');
     if (host) { let a = doc.getElementById('mwStand'); if (!a) { host.insertAdjacentHTML('afterbegin', '<a class="mw-t mw-stand" id="mwStand" href="meinstand.html"></a>'); a = doc.getElementById('mwStand'); } setTile(a, SYM.stand, t.stand); }
@@ -89,7 +90,9 @@
     const top = doc.getElementById('top'), go = doc.getElementById('contGo'); if (!top || !go || doc.getElementById('meinWeg')) return;
     sec = doc.createElement('section'); sec.id = 'meinWeg'; sec.className = 'mw'; sec.setAttribute('aria-label', 'Dein nächster Schritt');
     sec.innerHTML = '<div class="mw-erst" id="mwErst" aria-labelledby="mwErstH" hidden>' + erstHtml() + '</div><div class="mw-hero" id="mwHero"></div>'
-      + '<section class="mw-due" id="mwDue" aria-labelledby="mwDueH" hidden><h3 class="vh3" id="mwDueH">Heute dran</h3><div class="vl" id="mwRow"><a class="mw-t" id="mwWd" href="wiederholen.html" hidden></a><a class="mw-t" id="mwPr" href="meinstand.html#countdown" hidden></a></div></section>';
+      + '<section class="mw-due" id="mwDue" aria-labelledby="mwDueH" hidden><h3 class="vh3" id="mwDueH">Heute dran</h3><div class="vl" id="mwRow"><a class="mw-t" id="mwWd" href="wiederholen.html" hidden></a><a class="mw-t" id="mwPr" href="meinstand.html#countdown" hidden></a><a class="mw-t" id="mwVb" href="verbund.html" hidden></a><a class="mw-t" id="mwWiki" href="wiki.html" hidden></a></div></section>';
+    setTile(sec.querySelector('#mwVb'), 'i-vb', { titel: 'Verbundprojekte', text: 'Ein Auftrag wie in der Firma, mit vielen Stationen.', href: 'verbund.html' });
+    setTile(sec.querySelector('#mwWiki'), 'i-wiki', { titel: 'Wiki', text: 'Bauteile, Geräte und Begriffe nachschlagen.', href: 'wiki.html' });
     top.parentNode.insertBefore(sec, top);
     sec.querySelector('#mwHero').appendChild(go);
     sec.querySelector('#mwErst').addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-k]'); if (b && root.Berufe && root.Berufe.waehle) root.Berufe.waehle(b.dataset.k); });

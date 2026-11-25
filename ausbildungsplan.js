@@ -226,6 +226,7 @@
     if (l.entwurf) chips.appendChild(chip('Entwurf', 'warn', ENTWURF_TIP));
     if (l.optional) chips.appendChild(chip('Optional', '', 'Gehört nicht zur Ausbildung selbst und zählt nicht in deinen Fortschritt'));
     if (l.pruefung && PRUEF[l.pruefung]) chips.appendChild(chip(PRUEF[l.pruefung][0], 'neu', PRUEF[l.pruefung][1] + (l.pruefungAbgeleitet ? ' (aus dem Ausbildungsjahr abgeleitet, noch nicht geprüft)' : '')));
+    if (l.modul && l.modul.length) chips.appendChild(chip('Modul ' + l.modul.join(', '), '', 'Passende Module der Ausbildungsplanung im Betrieb'));
     if (f.probe) chips.appendChild(chip('Probetest: Note ' + de(f.probe.note), f.probe.note <= 4 ? 'ok' : 'warn'));
     if (f.wdh1 > 0) chips.appendChild(chip(f.wdh1 + ' zu wiederholen', 'warn'));
     const art = h('article', { class: 'lfk', id: 'lf-' + l.id, 'data-lf': l.id, 'aria-labelledby': 'lft-' + l.id }, [

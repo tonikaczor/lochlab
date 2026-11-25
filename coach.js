@@ -147,7 +147,7 @@
       ];
       else res = [{ art: 'fertig', title: 'Nichts fällig', text: 'Im Moment ist nichts fällig. Mache eine Probeprüfung Teil 2.', href: LAB_PR + '?tab=pruefung&teil=2', minuten: W.minuten.pruefung, w: 0.1 }];
     }
-    if (lsHint) res.unshift({ art: 'hinweis', title: 'Lernstand laden', text: 'Dein Lernstand scheint auf diesem Gerät zu fehlen. Lade deine gesicherte Datei mit „Lernstand laden“.', href: '', act: 'lsOpen', minuten: 0, w: 2 });
+    if (lsHint) res.unshift({ art: 'hinweis', title: 'Lernstand laden', text: 'Neu hier? Dann leg einfach los. Hast du schon auf einem anderen Gerät geübt? Dann hol deinen Stand mit „Lernstand laden“.', href: '', act: 'lsOpen', minuten: 0, w: 2 });
     return res.slice(0, 3);
   }
   function decorate(c, C) {

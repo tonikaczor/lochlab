@@ -52,6 +52,8 @@ details.blk{background:var(--panel);border:1px solid var(--line);border-radius:1
 details.blk>summary{cursor:pointer;min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:0 10px;padding:6px 0}details.blk>summary h2{margin:0;display:inline;font-size:18px}details.blk>summary .sl{color:var(--mute);font-size:14px}
 @media(prefers-reduced-motion:no-preference){.bar i{transition:width .3s}}
 @media(max-width:420px){.wrap{padding:12px}h1{font-size:23px}.btn{margin-right:6px}}
+/* iOS-Zeile (Uhr, Akku): Inhalt scrollt nicht darunter durch */
+html:not(.lr-on) body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:90;pointer-events:none}
 </style>
 </head>
 <body>

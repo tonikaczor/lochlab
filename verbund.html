@@ -26,6 +26,7 @@ set(get());window.addEventListener('storage',function(e){if(e.key===K)set(get())
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px/1.3 -apple-system,system-ui,"Segoe UI",sans-serif;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;padding:0 env(safe-area-inset-right) 0 env(safe-area-inset-left)}
 header{display:flex;align-items:center;gap:4px;padding:calc(4px + env(safe-area-inset-top)) 8px 4px;background:var(--panel);border-bottom:1px solid var(--mute);min-height:52px;box-shadow:0 3px 10px var(--shade);position:relative;z-index:5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+html:root:not(.lr-on) body::before{background:var(--panel)}/* iOS-Zeile in der Farbe des Kopfs, der selbst bis unter Uhr und Akku reicht; html:root schlägt die spätere Regel aus design.css */
 header img{height:34px;margin-left:2px}
 header .title{flex:1;min-width:0;padding:0 8px;font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 header .title small{display:block;color:var(--fg);opacity:.78;font-weight:500;font-size:12.5px;overflow:hidden;text-overflow:ellipsis}

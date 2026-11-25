@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v64.191', items: [
+      ['10-Minuten-Einheit passt zum Lehrjahr', 'Elektroniker und Industrieelektriker bekommen zuerst Lernkarten und Aufgaben, die zu ihrem Lehrjahr passen. Neu ist der Knopf „Weiß ich nicht“: Du siehst dann gleich die Lösung und machst mit der nächsten Aufgabe weiter.', 'Start, Üben'],
+      ['Mehr unter „Heute dran“', 'Auf der Startseite stehen jetzt immer vier Ziele: Wiederholen, 10-Minuten-Einheit oder Wiki, Prüfung oder Studium und die Verbundprojekte. Das gilt auch für Techniker und Studium, die jetzt alle Verbundprojekte sehen.', 'Startseite'],
+      ['Besser lesbar auf iPad und iPhone', 'Als App vom Home-Bildschirm rutscht der Text beim Scrollen nicht mehr unter Uhr und Akku-Anzeige. Im EMS-Lab stehen die Texte näher an ihrer Überschrift.', 'Alle Berufe'],
+    ] },
     { v: 'v64.190', items: [
       ['Neu: EMS-Lab „So fertigt Tonfunk“', 'Tonfunk fertigt Elektronik im Auftrag von Kunden. Im EMS-Lab siehst du den Weg einer Baugruppe in 15 Schritten, von der Anfrage bis zur Rechnung, und mit einem Stern die Schritte, an denen dein Beruf mitarbeitet.', 'Alle Berufe'],
       ['Sieben Rechner und 48 Aufgaben', 'Ausbeute, Prüfkosten von ICT und Flying-Probe, MSL-Uhr für feuchteempfindliche Bauteile, Zehnerregel der Fehlerkosten, Rückverfolgung, Drehmoment und Kalkulation einer Baugruppe. Dazu 48 Aufgaben mit drei Tipp-Stufen und 40 Fachbegriffe.', 'Alle Berufe'],
@@ -11,11 +16,6 @@
       ['Abzeichen in jedem Lab', 'Bisher gab es in rund 40 Labs keine Abzeichen, zum Beispiel im Lager-, Zeichnungs- und Kalkulations-Lab. Jetzt zählt jede gelöste Aufgabe in jedem Lab für deine Abzeichen, auch der Trainer.', 'Alle Berufe'],
       ['Eigene Kampagne für drei weitere Berufe', 'Technische Produktdesigner bauen in „Das Gehäuse“ mit Meisterin Kontur ein Gehäuse. Fachkräfte für Lagerlogistik bringen in „Der Großauftrag“ mit Meister Palette einen Auftrag durchs Lager. Industriekaufleute begleiten in „Der Lautsprecher-Auftrag“ mit Ausbilderin Saldo einen Auftrag von der Anfrage bis zum Abschluss. Jede Kampagne hat 16 Kapitel und einen Epilog.', 'Technischer Produktdesigner, Fachkraft für Lagerlogistik, Industriekaufmann'],
       ['Mehr Abzeichen und ein Kampagnen-Fehler behoben', 'Neue Themen-Abzeichen für Produktdesign, Lager und Kaufleute, dazu je ein Abzeichen für die ganze Kampagne. Kapitel, die du auf der Startseite geschafft hast, zählen jetzt auch für die Kapitel-Abzeichen.', 'Abzeichen'],
-    ] },
-    { v: 'v63.188', items: [
-      ['Arbeitsschutz-Lab für alle Berufe', 'Sicherheitszeichen, Gefahrstoffe, Schutzausrüstung und Erste Hilfe gehen alle an: Das Arbeitsschutz-Lab steht jetzt in jedem Beruf und im ersten Lernfeld des 1. Lehrjahrs, gleich nach dem Einstieg. Die Erste-Hilfe-Aufgaben sind auf dem Stand der aktuellen Leitlinien (DGUV, Reanimation 2025).', 'Alle Berufe'],
-      ['Abzeichen, die du wirklich verdienen kannst', 'Die Abzeichen-Liste zeigt nur noch Abzeichen, die du in deinem Beruf erreichen kannst. Schon verdiente Abzeichen bleiben immer sichtbar. Neu für Industriemechaniker: das Abzeichen „Die Presse“ für die ganze Kampagne.', 'Abzeichen'],
-      ['Prüfungsfragen Industriemechanik korrigiert', 'Zwei Ankreuzfragen im Prüfungs-Pool Industriemechanik waren missverständlich (Kronenmutter, Magnesium). Sie sind jetzt eindeutig.', 'Industriemechaniker'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -1,3 +1,5 @@
+/* iOS-Zeile (Uhr, Akku): Inhalt scrollt nicht darunter durch */
+html:not(.lr-on) body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:90;pointer-events:none}
 /* wiki.css - Tonfunk Wiki: Werkbank-Tokens (hell/dunkel wie index.html, Schluessel lm4.theme), Startseite, Eintrag, Drawer, "?"-Knopf.
  * Im Lab (Drawer) erben die Lab-Tokens aus rig.css/lab.css; eigene Variablen dort nur als Fallback. */
 :root:not(.wk-lab){--bg:#14181c;--panel:#222830;--panel2:#2c343e;--line:#38424d;--fg:#e8ecf0;--mute:#9aa6b2;--accent:#5fb0ff;--accent-bg:#1a6fd4;--accent-ink:#fff;--ok:#4fd58a;--warn:#ffd166;--danger:#ff7a7a;--focus:#ffd166;--g-grund:#f2b544;--g-mess:#4fd58a;--g-sich:#ff8a5c;--g-anadig:#5fb0ff;--g-auto:#b79cff;--g-bau:#45d4c8;--g-pruef:#ffd166;color-scheme:dark light}

@@ -51,7 +51,7 @@ svg.i{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8;stro
 #stat{flex:none;font-size:12.5px;color:var(--mute);padding:0 4px;white-space:nowrap;font-variant-numeric:tabular-nums}
 #stat b{color:var(--fg)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:0;margin-bottom:10px;overflow:hidden}
-.card.pl{padding:12px}.card.pl h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
+.card.pl{padding:12px}html:root .card.pl>h4{min-height:0}/* nicht antippbar: keine 44 px Mindesthöhe aus design.css */.card.pl h4{margin:0 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--mute);font-weight:600}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 16px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);font-weight:600;text-decoration:none;color:var(--fg)}
 .btn.pri{background:var(--accent-bg,#1a6fd4);border-color:var(--accent-bg,#1a6fd4);color:#fff}.btn.danger{color:var(--danger)}
 .btns{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}.btns .btn{flex:1;min-width:120px}

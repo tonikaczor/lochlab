@@ -119,7 +119,7 @@
     if (!an) { if (h) h.remove(); return; }
     if (h) return;
     h = doc.createElement('p'); h.id = 'lsFehlt'; h.className = 'lsfehlt'; h.setAttribute('role', 'status');
-    h.innerHTML = '<span class="lsf-t">Dein Lernstand scheint auf diesem Gerät zu fehlen. Lade deine gesicherte Datei mit „Lernstand laden“.</span><button type="button" id="lsFehltBtn">Lernstand laden</button>';
+    h.innerHTML = '<span class="lsf-t">Neu hier? Dann leg einfach los. Hast du schon auf einem anderen Gerät geübt? Dann hol deinen Stand mit „Lernstand laden“.</span><button type="button" id="lsFehltBtn">Lernstand laden</button>';
     h.querySelector('button').onclick = () => { const x = doc.getElementById('lsOpen'); if (x) x.click(); else if (root.Lernstand && root.Lernstand.open) root.Lernstand.open(); };
     top.insertAdjacentElement('afterend', h);
   }

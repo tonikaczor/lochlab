@@ -32,10 +32,11 @@ window.VB_INDEX = [{"id":"garage","p":"vg","name":"Garagentor mit Funköffner","
      vbSummary(b)   { n, fertig, begonnen, list: [{ id, name, icon, n, done, fin, started }] } für die Projekt-Zeile der Startseite
      vbLab(lab, b)  Projekte, in denen das Lab vorkommt (als Arbeits-Lab einer Station oder über eine Lab-Aufgabe; im berufsübergreifenden Projekt nur Stationen deines Berufs): [{ id, name, st: [Stationsnummern], beruf }] */
   function vbList() { return Array.isArray(root.VB_INDEX) ? root.VB_INDEX.slice().sort(function (a, b) { return (a.order || 99) - (b.order || 99); }) : []; }
-  function vbFits(p, b) { var x = p.beruf || ['egs']; b = b || cur(); return (x.indexOf('alle') >= 0 && ['tec', 'stu', 'wing', 'winf'].indexOf(b) < 0) || x.indexOf(b) >= 0; }   // Verbundprojekte gibt es nur für Ausbildungsberufe: die Stationen des berufsübergreifenden Projekts gehören Ausbildungsberufen, die Wege Studium/Technik haben (noch) keine
+  var WEG = ['tec', 'stu', 'wing', 'winf'];   // Wege Studium/Technik: sehen alle Verbundprojekte mit allen Stationen und wählen die Rolle im Projekt (Toni 25.11.2026)
+  function vbFits(p, b) { var x = p.beruf || ['egs']; b = b || cur(); return WEG.indexOf(b) >= 0 || x.indexOf('alle') >= 0 || x.indexOf(b) >= 0; }
   function jget(k) { try { var v = JSON.parse(ls && ls.getItem(k) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } }
   /* Station gehört zu deinem Beruf? Nur im berufsübergreifenden Projekt ('alle') tragen Stationen eigene Berufe (s[4]); sonst zählen alle Stationen. */
-  function vbOwn(p, s, b) { return !(p && (p.beruf || []).indexOf('alle') >= 0 && b && s[4] && s[4].length) || s[4].indexOf(b) >= 0; }
+  function vbOwn(p, s, b) { return !(p && (p.beruf || []).indexOf('alle') >= 0 && b && WEG.indexOf(b) < 0 && s[4] && s[4].length) || s[4].indexOf(b) >= 0; }
   function projState(id, b) {
     var p = vbList().filter(function (x) { return x.id === id; })[0], s = jget('verbund.' + id), st = jget('lm4.stats') || {}, done = 0, total = p ? p.st.length : 0;
     var own = p && b ? p.st.map(function (x) { return vbOwn(p, x, b) ? x[0] : null; }) : null;

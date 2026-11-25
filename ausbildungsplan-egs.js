@@ -25,6 +25,7 @@
           "Strom und Spannung messen (Messgerät in Reihe oder parallel)",
           "Rechnen mit Einheiten, Vorsätzen und Formeln umstellen"
         ],
+        modul: ["E0", "B1", "MT1", "B2", "B3", "L1"],   // Module der Ausbildungsplanung EGS
         jahr: 1,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -79,6 +80,7 @@
           "Ausschaltung, Wechselschaltung, Kreuzschaltung",
           "Wechselstromkreis, Spannungserzeugung, Leiterkennzeichnung"
         ],
+        modul: ["SM1", "IT", "PJ1"],
         jahr: 1,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -116,6 +118,7 @@
           "Schütz, Selbsthaltung, Verriegelung",
           "Dual-, Hexadezimal- und Dezimalzahlen umrechnen"
         ],
+        modul: ["ST1", "DT1"],
         jahr: 1,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -139,6 +142,7 @@
           "Leitungsschutzschalter, Schmelzsicherung, Auslösebedingung",
           "Körperstrom und Gefahren des elektrischen Stroms"
         ],
+        modul: ["IT", "SM2"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -175,6 +179,7 @@
           "Drehstrom: Stern- und Dreieckschaltung, Außenleiter, Neutralleiter",
           "Fehlerarten, Schutzklassen und IP-Schutzarten, Wechselstromgrößen"
         ],
+        modul: ["B5", "SM2"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -218,6 +223,7 @@
           "Transformator, Gleichrichtung, Siebung",
           "Verlustleistung und Kühlkörper"
         ],
+        modul: ["SV"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -256,6 +262,7 @@
           "Gleich- und Wechselanteil, Kopplung, Tastkopf",
           "Effektivwert, Phasenverschiebung, Frequenzgang"
         ],
+        modul: ["MT2", "B5"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -286,6 +293,7 @@
           "Diode, LED und Sonderdioden, p-n-Übergang",
           "Bipolartransistor als Schalter und Verstärker, Basisvorwiderstand"
         ],
+        modul: ["HL", "VT"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -341,6 +349,7 @@
           "Invertierer, Nichtinvertierer, Summierer, Differenzverstärker",
           "Komparator, Schmitt-Trigger, Integrierer"
         ],
+        modul: ["OV1", "OV2"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -379,6 +388,7 @@
           "Speicher, Adressbus, Adressdecoder, Rechenwerk",
           "Zahlendarstellung, Zweierkomplement, Hardware im PC"
         ],
+        modul: ["PC"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -403,6 +413,7 @@
           "Vereinfachen mit KV-Diagramm",
           "Gatter, Halbaddierer, Multiplexer"
         ],
+        modul: ["DT1"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -426,6 +437,7 @@
           "Ansichten, Schnitte, Bemaßung",
           "Schaltpläne, Kennbuchstaben und Installationspläne"
         ],
+        modul: ["LP"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -446,6 +458,7 @@
           "Analog-Digital-Umsetzer (Zählverfahren, Parallelverfahren)",
           "Aktive und passive Sensoren, Normsignale"
         ],
+        modul: ["DT2", "MC1"],
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -479,6 +492,7 @@
           "Bestücken und Löten",
           "Prüfverfahren und Fehlersuche an Baugruppen"
         ],
+        modul: ["L2", "L3", "LP", "QM"],
         jahr: 2,
         quelle: "Entwurf: keine eigene Schulmitschrift vorhanden",
         entwurf: true,
@@ -522,6 +536,7 @@
           "Lastfaktoren, Open-Collector, Tri-State",
           "Flipflops, Zähler, Zeitgeber 555"
         ],
+        modul: ["DT2", "PJ2"],
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -553,6 +568,7 @@
           "Linearregler (7805, LM317) und Verlustleistung",
           "Schaltregler und Regelschaltung mit Referenz"
         ],
+        modul: ["SV"],
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -588,6 +604,7 @@
         titel: "LF 9: Geräte und Systeme in Stand halten (Instandhaltung)",
         kurz: "Du lernst: Instandhaltungsauftrag und Begriffe; Systematische Fehlersuche; Sicherheit nach der Reparatur.",
         themen: ["Instandhaltungsauftrag und Begriffe", "Systematische Fehlersuche", "Sicherheit nach der Reparatur"],
+        modul: ["FS"],
         jahr: 3,
         quelle: "Entwurf: keine eigene Schulmitschrift vorhanden",
         entwurf: true,
@@ -623,6 +640,7 @@
           "Motoren, Antriebe und Asynchronmotor",
           "Kundenauftrag bearbeiten und übergeben"
         ],
+        modul: ["ST2", "KA"],
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -683,6 +701,7 @@
           "Qualität und Qualitätsmanagement (Normenreihe ISO 9000)",
           "Qualitätswerkzeuge"
         ],
+        modul: ["ST2", "QM"],
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -703,6 +722,7 @@
           "Programmablaufplan und Struktogramm",
           "Variablen, Verzweigungen, Schleifen, Algorithmen"
         ],
+        modul: ["MC0", "MC1"],
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -723,6 +743,7 @@
           "Zuweisungen, Schleifen, Verzweigungen in C++",
           "Mikrocontroller programmieren (Arduino, Raspberry Pi)"
         ],
+        modul: ["MC1", "MC2"],
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -761,6 +782,7 @@
           "Befehle, Sprünge, Unterprogramme",
           "Programm als Befehlsfolge auf der Mini-CPU"
         ],
+        modul: ["MC2"],
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -781,6 +803,7 @@
           "Aufbau des Mikrocontrollers, Speicher, Timer, Interrupt",
           "Serielle Datenübertragung, Bussysteme, Verbundprojekte"
         ],
+        modul: ["MC2", "DUE", "PJ3"],
         jahr: 4,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -818,6 +841,7 @@
           "Messwert, Referenzwert, Auflösung, Messunsicherheit",
           "Brandschutz, Sicherheitszeichen, Maschinensicherheit"
         ],
+        modul: ["QM", "EMV", "FS"],
         jahr: 4,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
@@ -868,6 +892,7 @@
         nr: "",
         titel: "Zusatzthema Regelungstechnik",
         kurz: "Du lernst, wie ein Regler eine Größe auf dem Sollwert hält: Regelstrecke messen, Regler einstellen und Stabilität beurteilen.",
+        modul: ["ST2"],
         jahr: 3,
         block: "Vertiefung",
         quelle: "Entwurf",
@@ -890,6 +915,7 @@
         nr: "",
         titel: "Zusatzthema Elektromagnetische Verträglichkeit",
         kurz: "Du lernst, wie Störungen entstehen und sich ausbreiten und wie du sie mit Filter, Schirmung und gutem Layout dämpfst.",
+        modul: ["EMV"],
         jahr: 2,
         block: "Vertiefung",
         quelle: "Entwurf",
@@ -938,6 +964,7 @@
         nr: "",
         titel: "Zusatzthema Energieversorgung: Auslegung und Fehlersuche",
         kurz: "Du legst Energieanlagen aus, suchst Fehler und übst Aufgaben im Stil der Prüfung.",
+        modul: ["SV"],
         jahr: 2,
         block: "Vertiefung",
         quelle: "Entwurf",
@@ -960,6 +987,7 @@
         nr: "",
         titel: "Zusatzthema Elektronik vertieft: Pegel, Wandler, Schaltregler, Filter",
         kurz: "Du rechnest mit Pegeln in dB und dBm, mit AD-Wandlern, Schaltreglern, Schnittstellen und den Grenzen von Operationsverstärkern. Das bereitet auf Techniker und Studium vor.",
+        modul: ["VT", "OV2"],
         jahr: 4,
         block: "Vertiefung",
         quelle: "Entwurf",
@@ -981,6 +1009,7 @@
         nr: "",
         titel: "Zusatzthema Funk und Hochfrequenz",
         kurz: "Du rechnest mit Pegeln in dB und dBm, passt Leitungen an, planst eine Funkstrecke und verstehst Modulation, Empfänger und HF-Messtechnik. Freiwillig, steht in keinem Lernfeld der Berufsschule.",
+        modul: ["DUE"],
         jahr: 3,
         block: "Vertiefung",
         quelle: "Entwurf",
@@ -997,6 +1026,7 @@
         nr: "",
         titel: "Prüfungsvorbereitung und Rätselaufgaben",
         kurz: "Du übst lernfeldübergreifend: Probeprüfungen, Prüfungsaufbau, Schaltungs-Detektiv, Tagesaufgabe und Duell.",
+        modul: ["PV1", "PV2"],
         jahr: 0,
         block: "Prüfungsvorbereitung",
         quelle: "Entwurf",
@@ -1018,6 +1048,7 @@
         nr: "",
         titel: "Berichtsheft und Ausbildungsnachweis",
         kurz: "Du übst, Tätigkeiten und Lernerträge sauber zu formulieren und deinen Ausbildungsnachweis zu führen.",
+        modul: ["E0"],
         jahr: 0,
         block: "Übergreifend",
         quelle: "Entwurf",

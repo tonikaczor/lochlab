@@ -146,3 +146,5 @@ html:root .hl .eq,html:root #qLine,html:root #qLine b,html:root #qLine .qv,html:
 html:root .av-st .bx,html:root .av-ctl label span,html:root .av h5{font-size:14px}
 html:root .mvtab,html:root .btn2{min-width:44px}
 html:root .iot th,html:root .iot td,html:root .ana-cg label,html:root .hl .glo{font-size:14px}
+/* iOS-Zeile (Uhr, Akku): Inhalt scrollt nicht darunter durch */
+html:not(.lr-on) body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:90;pointer-events:none}
