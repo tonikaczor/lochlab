@@ -438,7 +438,7 @@
       ] }
   ];
 
-  const meta = { lab: 'hf', name: 'Funk- und HF-Lab', stufe: 'ausbildung', version: 'v78.195', zielgruppe: 'Elektroniker für Geräte und Systeme, Informationselektroniker, Technikerschule', bloecke: BLOCKS.length };
+  const meta = { lab: 'hf', name: 'Funk- und HF-Lab', stufe: 'ausbildung', version: 'v78.196', zielgruppe: 'Elektroniker für Geräte und Systeme, Informationselektroniker, Technikerschule', bloecke: BLOCKS.length };
   const TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   const api = { meta, tasks, CATS, blocks: BLOCKS };
   root.HF_DATA = api; root.HF_TASKS = TASKS;

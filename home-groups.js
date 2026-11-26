@@ -43,7 +43,7 @@
   const secs = () => Array.from(doc.querySelectorAll('section.grp'));
   const labCards = () => wrap ? Array.from(wrap.querySelectorAll('.card[data-lab]:not(.vbrow)')) : [];
   /* gezählt und gezeigt wird eine Karte, wenn sie zum gewählten Beruf gehört (oder "Alle" an ist und sie überhaupt einem Beruf gehört) und nicht von Hand ausgeblendet ist */
-  const sichtbar = c => !c.classList.contains('vbrow') && !c.classList.contains('hm-hid') && !c.classList.contains('lb-nie') && (!c.classList.contains('be-out') || html.classList.contains('lb-alle'));
+  const sichtbar = c => !c.classList.contains('vbrow') && !c.classList.contains('mappe-teil') && !c.classList.contains('hm-hid') && !c.classList.contains('lb-nie') && (!c.classList.contains('be-out') || html.classList.contains('lb-alle'));
   const REGkey = c => { const a = c.querySelector('.btns a.btn.pri') || c.querySelector('.btns a'), f = a ? (a.getAttribute('href') || '').split(/[?#]/)[0] : '', R = root.LAB_REG || {}; return Object.keys(R).find(k => R[k].file === f) || ''; };
 
   function refresh() {
@@ -200,6 +200,24 @@
     const s = src => new Promise(ok => { if (doc.querySelector('script[src="' + src + '"]')) { setTimeout(() => ok(), 300); return; } const e = doc.createElement('script'); e.src = src; e.onload = () => ok(); e.onerror = () => ok(); doc.head.appendChild(e); });
     (root.AusbildungsPlan ? Promise.resolve() : s('ausbildungsplan-core.js')).then(() => (root.AusbildungsPlan && root.AusbildungsPlan.plan(b) ? null : s('ausbildungsplan-' + b + '.js'))).then(() => cb());
   }
+  /* v78.196 Mappen (aufgaben.js LAB_MAPPEN): Teil-Labs liegen als Link in der Karte des Ziel-Labs, wenn der gewählte Beruf das Ziel-Lab sieht (sonst bleibt ihre eigene Karte).
+     Die Karte des Teil-Labs wartet unsichtbar in #mappeAblage. Rückgabe: die Karten, die im Raster stehen. */
+  function mappen(cards, byKey) {
+    const M = root.LAB_MAPPEN || {}, R = root.LAB_REG || {}, be = root.BerufReg && root.BerufReg.cur ? root.BerufReg.cur() : '', sieht = k => !be || (R[k].beruf || []).indexOf(be) >= 0;
+    let ablage = doc.getElementById('mappeAblage'); if (!ablage) { ablage = doc.createElement('div'); ablage.id = 'mappeAblage'; ablage.hidden = true; }
+    wrap.appendChild(ablage);
+    wrap.querySelectorAll('.mappe').forEach(x => x.remove());
+    cards.forEach(c => c.classList.remove('mappe-teil'));
+    Object.keys(M).forEach(h => {
+      const hc = byKey[h]; if (!hc || !R[h] || !sieht(h)) return;
+      const teile = M[h].filter(k => byKey[k] && R[k] && sieht(k)); if (!teile.length) return;
+      const box = doc.createElement('div'); box.className = 'mappe';
+      box.innerHTML = '<span class="mappe-t">Dazu in dieser Mappe</span>' + teile.map(k => '<a class="mappe-a" href="' + esc(R[k].file) + '">' + esc(R[k].name) + '</a>').join('');
+      const btns = hc.querySelector('.btns'); if (btns) btns.parentNode.insertBefore(box, btns.nextSibling); else hc.appendChild(box);
+      teile.forEach(k => { byKey[k].classList.add('mappe-teil'); ablage.appendChild(byKey[k]); delete byKey[k]; });
+    });
+    return cards.filter(c => !c.classList.contains('mappe-teil'));
+  }
   /* Sortierung wechseln: Karten bleiben dieselben Elemente, nur die Abschnitte werden neu gebaut */
   function sortiere(m, nachher) {
     if (!wrap) return modus;
@@ -209,8 +227,8 @@
     wrap.querySelectorAll('.lp-pj,.lp-hub,.lp-ljn').forEach(x => x.remove());
     const auf = !!wrap.querySelector('.lp-spaeter[open]');
     cards.forEach(c => wrap.appendChild(c)); secs().forEach(s => s.remove()); wrap.querySelectorAll('.lp-spaeter').forEach(x => x.remove());
-    modus = m; let ok = true;
-    if (m === 'pfad') ok = pfad(cards, byKey); else if (m === 'lf') ok = lf(cards, byKey, nachher); else thema(cards);
+    modus = m; let ok = true; const imRaster = mappen(cards, byKey);
+    if (m === 'pfad') ok = pfad(imRaster, byKey); else if (m === 'lf') ok = lf(imRaster, byKey, nachher); else thema(imRaster);
     const sp = wrap.querySelector('.lp-spaeter'); if (sp && auf) sp.open = true;   // nach neuem Sortieren (z. B. Lernpfad fertig geladen) offen lassen, wenn es offen war
     html.setAttribute('data-sort', m); wrap.setAttribute('data-sort', m);
     const note = doc.getElementById('lbLfNote'); if (note) note.hidden = !(m === 'lf' && !ok);

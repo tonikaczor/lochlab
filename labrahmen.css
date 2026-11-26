@@ -34,6 +34,8 @@ html.lr-on.lr-band-an #tabs{display:none!important}
 html.lr-on .lr-band{flex:none;display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;background:var(--panel);border-bottom:1px solid var(--line);position:relative;z-index:4;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 html.lr-on .lr-band::-webkit-scrollbar{display:none}
 html.lr-on .lr-band>button{flex:none;height:44px;margin:0;padding:0 14px;border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--mute);font:600 15px/1 -apple-system,system-ui,"Segoe UI",sans-serif;white-space:nowrap;cursor:pointer;display:inline-flex;align-items:center;touch-action:manipulation}
+html.lr-on .lr-band>.lr-mappe-t{flex:none;align-self:center;margin-left:auto;padding:0 4px 0 14px;border-left:1px solid var(--line);color:var(--mute);font:400 14px/1 -apple-system,system-ui,"Segoe UI",sans-serif;white-space:nowrap}
+html.lr-on .lr-band>.lr-mappe-a{flex:none;display:inline-flex;align-items:center;height:44px;padding:0 12px;color:var(--accent);font:600 15px/1 -apple-system,system-ui,"Segoe UI",sans-serif;text-decoration:none;white-space:nowrap}
 html.lr-on .lr-band>button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
 html.lr-on .lr-band>button small{font-size:14px;font-weight:400;color:var(--mute);margin-left:5px;font-variant-numeric:tabular-nums}
 html.lr-on .lr-band>button:focus-visible,html.lr-on .lr-seg>button:focus-visible,html.lr-on .lr-info:focus-visible,html.lr-on .lr-blatt button:focus-visible,html.lr-on #bHome:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}

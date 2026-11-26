@@ -241,6 +241,17 @@
     var m = teilGemerkt(it.key), t = views.filter(function (x) { return x.label === m; })[0] || views[0];
     teilWaehlen(it, t);
   }
+  /* v78.196 Mappen (aufgaben.js LAB_MAPPEN): die anderen Labs derselben Mappe als Links am Ende des Bands, nur Labs des eigenen Berufs und nur, wenn der Beruf das Ziel-Lab sieht (wie die Startseite) */
+  function mappeLinks(b) {
+    var M = root.LAB_MAPPEN || {}, R = root.LAB_REG || {}, ich = '';
+    Object.keys(R).forEach(function (k) { if (R[k].file === FILE) ich = k; });
+    var host = M[ich] ? ich : Object.keys(M).filter(function (h) { return M[h].indexOf(ich) >= 0; })[0]; if (!ich || !host) return;
+    var be = root.BerufReg && root.BerufReg.cur ? root.BerufReg.cur() : '', sieht = function (k) { return !!R[k] && (!be || (R[k].beruf || []).indexOf(be) >= 0); };
+    if (!sieht(host)) return;
+    var andere = [host].concat(M[host]).filter(function (k) { return k !== ich && sieht(k); }); if (!andere.length) return;
+    b.appendChild(mk('span', 'lr-mappe-t', 'Mappe:'));
+    andere.forEach(function (k) { var a = mk('a', 'lr-mappe-a', R[k].name); a.href = R[k].file; b.appendChild(a); });
+  }
   function bandZeichnen(items) {
     var b = S.band, sig = items.map(function (it) { return it.key + '|' + it.label + '|' + (it.small || ''); }).join('§');
     if (sig !== S.sig) {
@@ -254,6 +265,7 @@
         x.addEventListener('click', function () { itemKlick(S.items.filter(function (y) { return y.key === it.key; })[0] || it); });
         b.appendChild(x);
       });
+      mappeLinks(b);
     }
     var selKey = '';
     items.forEach(function (it, i) { var on = !!it.sel; b.children[i].setAttribute('aria-selected', on ? 'true' : 'false'); b.children[i].tabIndex = on ? 0 : -1; if (on) selKey = it.key; });

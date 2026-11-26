@@ -37,8 +37,8 @@
   function anwenden() {
     const alle = html.classList.contains('lb-alle');
     cards().forEach(c => c.classList.toggle('hm-hid', !alle && st.hidden.indexOf(c.dataset.lab) >= 0));
-    const nB = cards().filter(c => !c.classList.contains('be-out') && !c.classList.contains('lb-nie') && !c.classList.contains('hm-hid')).length;
-    const nA = cards().filter(c => !c.classList.contains('lb-nie')).length;
+    const nB = cards().filter(c => !c.classList.contains('mappe-teil') && !c.classList.contains('be-out') && !c.classList.contains('lb-nie') && !c.classList.contains('hm-hid')).length;
+    const nA = cards().filter(c => !c.classList.contains('lb-nie') && !c.classList.contains('mappe-teil')).length;   // v78.196: Teil-Labs einer Mappe zählen in der Karte des Ziel-Labs
     if (bar) {
       bar.querySelector('[data-f=beruf] .n').textContent = '(' + nB + ')'; bar.querySelector('[data-f=alle] .n').textContent = '(' + nA + ')';
       bar.querySelectorAll('[data-f]').forEach(b => b.setAttribute('aria-pressed', (b.dataset.f === 'alle') === alle ? 'true' : 'false'));

@@ -477,3 +477,8 @@ html.mw .top{display:none}
 .ub-gruppe[open]>summary::before{transform:rotate(90deg)}
 .ub-gruppe>summary small{font-weight:400;color:var(--mute)}
 .ub-gruppe>.vl{padding:0 10px 10px}
+/* v78.196 Mappen: Teil-Labs als Links in der Karte des Ziel-Labs */
+.card .mappe{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:14px}
+.card .mappe-t{color:var(--mute)}
+.card .mappe-a{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:18px;border:1px solid var(--line);background:var(--panel2);color:var(--fg);font-weight:600;text-decoration:none}
+.card .mappe-a:hover{border-color:var(--accent)}
