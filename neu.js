@@ -2,17 +2,16 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v78.195', items: [
+      ['Weniger auf einmal', 'Die Labs-Seite zeigt oben nur noch „Jetzt dran“: die nächsten acht Labs deines Pfads im eigenen Lehrjahr. Alle anderen Labs liegen darunter eingeklappt und bleiben frei wählbar. „Starten“ öffnet direkt die erste Aufgabe, die lange Einführung gibt es weiter im Info-Menü. Duell, Fehler-Tausch und Wettbewerb stehen unter „Mit der Gruppe“.', 'Startseite'],
+      ['Mathe-Eingangstest', 'Neuer Reiter im Rechen-Lab: 20 Fragen zu Brüchen, Prozent, Potenzen, Umstellen und Dreisatz. Danach siehst du je Thema, wo du sicher bist und wo du üben solltest.', 'Rechen-Lab'],
+    ] },
     { v: 'v78.194', items: [
       ['Vier neue Labs', 'Kleinsteuerungs-Lab mit Selbsthaltung, Funktionsplan, Elektropneumatik und Sensoren, Simulations- und EDA-Lab mit Simulation, ERC und Gerber-Lagen, Plan-Lab mit Stromlaufplan, Kennzeichen und Klemmenplan und Industrie-4.0-Lab mit Datenkette, MQTT und Zustandsüberwachung. Zusammen 175 neue Aufgaben mit bewegten Bildern.', 'Neue Labs'],
     ] },
     { v: 'v74.193', items: [
       ['Fünf neue Labs', 'Für Elektroniker das Löt-Lab, das Bus-Lab und das Mikrocontroller-Lab. Für Elektro- und Metallberufe, Produktdesigner, Techniker und Studium das 3D-Druck-Lab und das 3D-Modellierungs-Lab. Zusammen 211 neue Aufgaben mit bewegten Bildern.', 'Neue Labs'],
       ['Pneumatik-Lab für Elektroniker', 'Elektroniker und Industrieelektriker finden jetzt auch das Pneumatik-Lab, ab dem 3. Lehrjahr. Der Lernpfad zeigt die neuen Schritte.', 'Lernpfad'],
-    ] },
-    { v: 'v69.192', items: [
-      ['Fünf neue Labs', 'Touren-Lab für die Lagerlogistik, Kunststoff-Lab für Produktdesigner, Produktions-Lab und Marketing-Lab für Industriekaufleute und das Systemanalyse-Lab für Elektroniker im 3. und 4. Lehrjahr. Zusammen 212 neue Aufgaben mit bewegten Bildern.', 'Neue Labs'],
-      ['Mehr Labs für Kaufleute und Produktdesigner', 'Industriekaufleute finden jetzt auch das Lager-Lab und das Warenfluss-Lab. Produktdesigner bekommen das Werkstoff-, Zerspan-, Fertigungs- und Füge-Lab. Der Lernpfad zeigt die neuen Schritte.', 'Lernpfad'],
-      ['Berichtsheft füllt sich aus der App', 'Im Berichtsheft-Helfer holt der Knopf „Aus der App übernehmen“ deine erledigten Aufgaben der Woche als Stichpunkte in die Wochenansicht. Du kannst sie danach ändern.', 'Berichtsheft'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -134,7 +134,7 @@
       if (rc && rc.rec && R[rc.rec]) {
         res = [decorate({ art: 'pfad', lab: rc.rec, href: rc.href || '', nextTitle: rc.next ? rc.next[3] : '', started: !!rc.started, w: 1 }, C)];
         const k2 = ord[ord.indexOf(rc.rec) + 1];
-        if (k2 && !rc.started) res.push({ art: 'start', title: 'Oder: ' + R[k2].name, text: 'Oder beginne mit dem ' + R[k2].name + ' (Einführung, etwa ' + W.minuten.start + ' Minuten).', href: R[k2].file + '?trainer', minuten: W.minuten.start, w: 0.9 });
+        if (k2 && !rc.started) res.push({ art: 'start', title: 'Oder: ' + R[k2].name, text: 'Oder beginne mit dem ' + R[k2].name + '.', href: R[k2].file, minuten: W.minuten.start, w: 0.9 });
       } else if (rc && rc.fertigLj && R[rc.fertigLj.key]) {
         const f = rc.fertigLj; res = [{ art: 'pfad', lab: f.key, title: 'Schau ins ' + f.lj + '. Lehrjahr', text: 'Dein Lehrjahr ist geschafft. Schau schon ins ' + f.lj + '. Lehrjahr: ' + f.name + (f.title ? ', ' + f.title : '') + '.', href: f.href, minuten: W.minuten.pfad, w: 0.5 }];
       } else if (PF.fertig && R[PF.fertig]) {
@@ -142,7 +142,7 @@
       }
     } else if (!res.length) {
       if (!hasData) res = [
-        { art: 'start', title: 'Starte mit dem SchaltLab', text: 'Starte mit dem SchaltLab (Einführung, etwa ' + W.minuten.start + ' Minuten).', href: (labFile('sch', C) || 'schaltplan.html') + '?trainer', minuten: W.minuten.start, w: 1 },
+        { art: 'start', title: 'Starte mit dem SchaltLab', text: 'Starte mit dem SchaltLab.', href: labFile('sch', C) || 'schaltplan.html', minuten: W.minuten.start, w: 1 },
         { art: 'start', title: 'Oder: Prüfungs-Lab, Grundlagen', text: 'Oder übe im Prüfungs-Lab das Thema Grundlagen: 10 Fragen mit Erklärung, etwa ' + W.minuten.thema + ' Minuten.', href: trainHref('grund'), minuten: W.minuten.thema, w: 0.9 }
       ];
       else res = [{ art: 'fertig', title: 'Nichts fällig', text: 'Im Moment ist nichts fällig. Mache eine Probeprüfung Teil 2.', href: LAB_PR + '?tab=pruefung&teil=2', minuten: W.minuten.pruefung, w: 0.1 }];
@@ -164,8 +164,8 @@
     } else if (c.art === 'pfad') {
       const lab = labName(c.lab, C);
       c.title = c.started ? 'Weiter im ' + lab : 'Starte mit dem ' + lab;
-      c.text = c.started ? 'Dein Lernpfad geht im ' + lab + ' weiter' + (c.nextTitle ? ': ' + c.nextTitle : '') + '.' : 'Das ist der nächste Schritt in deinem Lernpfad (Einführung).';
-      c.href = c.href || (labFile(c.lab, C) + (c.started ? '' : '?trainer'));
+      c.text = c.started ? 'Dein Lernpfad geht im ' + lab + ' weiter' + (c.nextTitle ? ': ' + c.nextTitle : '') + '.' : 'Das ist der nächste Schritt in deinem Lernpfad.';
+      c.href = c.href || labFile(c.lab, C);
       c.minuten = W.minuten.pfad;
     } else if (c.art === 'lab') {
       const lab = labName(c.lab, C);

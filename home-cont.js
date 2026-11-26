@@ -52,12 +52,12 @@
     if (rc && rc.rec && (any || rc.started)) {
       const R = REG[rc.rec];
       if (rc.started) { const title = rc.next ? rc.next[3] : ''; return { src: 'rec', key: rc.rec, href: rc.href, label: 'Weitermachen', sub: [R.name, rc.teilKurz, short(title, 40)].filter(Boolean).join(' · '), name: R.name, title, when: '' }; }
-      return { src: 'rec', key: rc.rec, href: rc.href, label: 'Starten', sub: rc.teilText ? R.name + ' · ' + rc.teilText : R.name + ' (Einführung)', name: R.name, title: '', when: '' };
+      return { src: 'rec', key: rc.rec, href: rc.href, label: 'Starten', sub: rc.teilText ? R.name + ' · ' + rc.teilText : R.name, name: R.name, title: '', when: '' };
     }
     /* Beruf ohne SchaltLab (die Wege tec/stu/wing/winf und Berufe ohne dieses Lab): bei leerem Speicher der erste Schritt des eigenen Lernpfads statt SchaltLab (env.beruf; ohne Angabe gilt das alte Verhalten) */
     const inB = r => !env.beruf || !r || !Array.isArray(r.beruf) || r.beruf.indexOf(env.beruf) >= 0;
-    if (!any && !inB(REG.sch) && rc && rc.rec && REG[rc.rec]) { const R0 = REG[rc.rec]; return { src: 'start', key: rc.rec, href: rc.href || (R0.file + '?trainer'), label: 'Starten', sub: rc.teilText ? R0.name + ' · ' + rc.teilText : R0.name + ' (Einführung)', name: R0.name, title: '', when: '' }; }
-    if (!any && REG.sch && inB(REG.sch)) return { src: 'leer', key: 'sch', href: REG.sch.file + '?trainer', label: 'Starten', sub: rc && rc.teilText && rc.rec === 'sch' ? REG.sch.name + ' · ' + rc.teilText : REG.sch.name + ' (Einführung)', name: REG.sch.name, title: '', when: '' };
+    if (!any && !inB(REG.sch) && rc && rc.rec && REG[rc.rec]) { const R0 = REG[rc.rec]; return { src: 'start', key: rc.rec, href: rc.href || R0.file, label: 'Starten', sub: rc.teilText ? R0.name + ' · ' + rc.teilText : R0.name, name: R0.name, title: '', when: '' }; }
+    if (!any && REG.sch && inB(REG.sch)) return { src: 'leer', key: 'sch', href: rc && rc.rec === 'sch' && rc.href ? rc.href : REG.sch.file, label: 'Starten', sub: rc && rc.teilText && rc.rec === 'sch' ? REG.sch.name + ' · ' + rc.teilText : REG.sch.name, name: REG.sch.name, title: '', when: '' };
     const pk = REG.pr && inB(REG.pr) ? 'pr' : REG.sch && inB(REG.sch) ? 'sch' : (Object.keys(REG).find(k => !REG[k].hub && inB(REG[k])) || (REG.pr ? 'pr' : 'sch'));
     const P = REG[pk] || { name: 'Prüfungs-Lab', file: 'pruefungslab.html' };
     return { src: 'fertig', key: pk, href: P.file, label: 'Wiederholen', sub: P.name + ' (alle Aufgaben erledigt)', name: P.name, title: '', when: '' };

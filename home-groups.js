@@ -52,6 +52,7 @@
       const gc = s.querySelector('.gc'), zus = !!s.querySelector('.lp-pj,.lp-hub'); if (gc) gc.textContent = vis.length || !zus ? '(' + vis.length + ')' : '';
       s.classList.toggle('grp-empty', vis.length === 0 && !s.querySelector('.lp-pj,.lp-hub'));
     });
+    const sg = wrap && wrap.querySelector('#lpSpaeter>summary .gc'); if (sg) sg.textContent = '(' + Array.from(wrap.querySelectorAll('#lpSpaeter .card[data-lab]')).filter(sichtbar).length + ')';
     chipsUpdate();
   }
 
@@ -167,7 +168,24 @@
     secs().forEach(s => { if (!/^lp\d/.test(s.id)) return; let i = 0; s.querySelectorAll('.cards>.card[data-lab]').forEach(c => { const th = c.querySelector('.th'); const ab = uebersprungen(c); if (!ab) i++; if (!th) return; const no = doc.createElement('span'); no.className = 'lp-no'; no.setAttribute('aria-hidden', 'true'); no.textContent = ab ? '–' : String(i); th.insertBefore(no, th.firstChild); if (ab) { const mk = doc.createElement('span'); mk.className = 'lp-mk lp-ab'; mk.textContent = 'Ab ' + ab + '. Lehrjahr'; th.insertAdjacentElement('afterend', mk); } }); });
     if (lj) { const p = doc.createElement('p'); p.className = 'lp-ljn'; p.textContent = 'Dein Pfad führt durch den Teil für das ' + lj + '. Lehrjahr. Alles andere bleibt in den Labs frei wählbar. Dein Lehrjahr stellst du unter „Ich“ ein.'; wrap.insertBefore(p, wrap.firstChild); }
     const rc = rec && byKey[rec]; if (rc) { rc.classList.add('lp-rec'); const mk = doc.createElement('span'); mk.className = 'lp-mk'; mk.textContent = began ? 'Weiter hier' : 'Start hier'; const th = rc.querySelector('.th'); if (th) th.insertAdjacentElement('afterend', mk); else rc.insertBefore(mk, rc.firstChild); }
+    jetztDran(tracks, byKey, rec, lj);
     return true;
+  }
+  /* v78.195 Verschlanken: oben nur „Jetzt dran“ (die nächsten JETZT offenen Labs des Pfads ab der Empfehlung, im eigenen Lehrjahr),
+     alles andere (restlicher Pfad, Projekte, Labs anderer Berufe) eingeklappt darunter. Nichts wird gesperrt. Bei höchstens 10 Karten bleibt alles offen. */
+  const JETZT = 8;
+  function jetztDran(tracks, byKey, rec, lj) {
+    const L = root.Lernpfad; if (!rec || !L || !L.stat) return;
+    if (labCards().filter(sichtbar).length <= JETZT + 2) return;
+    const order = tracks.reduce((a, t) => a.concat(t.labs || []), []).filter((k, i, a) => byKey[k] && a.indexOf(k) === i && sichtbar(byKey[k]));
+    const offen = k => { try { const s = L.stat(k), S = (lj && s.t) || s; return S.n > 0 && S.pct < 100; } catch (e) { return false; } };
+    const i0 = order.indexOf(rec), ks = (i0 < 0 ? [rec].concat(order) : order.slice(i0)).filter((k, i, a) => byKey[k] && a.indexOf(k) === i && (k === rec || offen(k))).slice(0, JETZT); if (!ks.length) return;
+    const box = sec('lpJetzt', 'Jetzt dran', 'Die nächsten Labs auf deinem Pfad' + (lj ? ' im ' + lj + '. Lehrjahr' : '') + '.', '');
+    ks.forEach(k => box.appendChild(byKey[k]));
+    const det = doc.createElement('details'); det.className = 'lp-spaeter'; det.id = 'lpSpaeter';
+    det.innerHTML = '<summary>Später und alle weiteren Labs <small class="gc"></small></summary>';
+    Array.from(wrap.children).filter(x => x.id !== 'lpJetzt' && !x.classList.contains('lp-ljn')).forEach(x => det.appendChild(x));
+    wrap.appendChild(det);
   }
   function lf(cards, byKey, nachher) {
     const AP = root.AusbildungsPlan, b = root.BerufReg && root.BerufReg.cur ? root.BerufReg.cur() : 'egs', p = AP && AP.plan ? AP.plan(b) : null;
@@ -189,9 +207,11 @@
     const cards = labCards(); aufraeumen(cards);
     const byKey = {}; cards.forEach(c => { const k = REGkey(c); if (k && !byKey[k]) byKey[k] = c; });
     wrap.querySelectorAll('.lp-pj,.lp-hub,.lp-ljn').forEach(x => x.remove());
-    cards.forEach(c => wrap.appendChild(c)); secs().forEach(s => s.remove());
+    const auf = !!wrap.querySelector('.lp-spaeter[open]');
+    cards.forEach(c => wrap.appendChild(c)); secs().forEach(s => s.remove()); wrap.querySelectorAll('.lp-spaeter').forEach(x => x.remove());
     modus = m; let ok = true;
     if (m === 'pfad') ok = pfad(cards, byKey); else if (m === 'lf') ok = lf(cards, byKey, nachher); else thema(cards);
+    const sp = wrap.querySelector('.lp-spaeter'); if (sp && auf) sp.open = true;   // nach neuem Sortieren (z. B. Lernpfad fertig geladen) offen lassen, wenn es offen war
     html.setAttribute('data-sort', m); wrap.setAttribute('data-sort', m);
     const note = doc.getElementById('lbLfNote'); if (note) note.hidden = !(m === 'lf' && !ok);
     rubApply(); refresh();

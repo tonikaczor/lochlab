@@ -172,11 +172,11 @@
     if (rec && REG.sch && order.indexOf('sch') >= 0 && !order.some(k => st[k].started || trained(k))) rec = 'sch';   // ganz neu: SchaltLab (wie der Hinweis "Neu hier? Beginne mit dem SchaltLab.")
     const nx = rec && S(rec).next ? S(rec) : null, R0 = rec ? REG[rec] : null;
     const began = !!rec && (st[rec].started || trained(rec));
-    const href = !rec ? '' : (began ? (nx ? `${R0.file}?aufgabe=${nx.next[0]}` : R0.file) : `${R0.file}?trainer`);
-    const txt = !rec ? '' : (began ? (nx ? 'Weiter: ' + R0.name + ' · ' + (nx.next[3].length > 30 ? nx.next[3].slice(0, 29) + '…' : nx.next[3]) : R0.name + ' öffnen') : 'Start: ' + R0.name + ' (Einführung)');
+    const href = !rec ? '' : (nx ? `${R0.file}?aufgabe=${nx.next[0]}` : R0.file);   // v78.195: auch beim ersten Mal direkt die erste Aufgabe (Einführung im Info-Menü)
+    const txt = !rec ? '' : (began ? (nx ? 'Weiter: ' + R0.name + ' · ' + (nx.next[3].length > 30 ? nx.next[3].slice(0, 29) + '…' : nx.next[3]) : R0.name + ' öffnen') : 'Start: ' + R0.name);
     /* Hinweis "du könntest schon wechseln": Station ab 80 %, dazu die nächste offene Station dahinter */
     let weiter = null;
-    if (rec && S(rec).pct >= WEITER) { const nk = order.slice(order.indexOf(rec) + 1).find(k => S(k).n && S(k).pct < 100); if (nk) { const b2 = st[nk].started || trained(nk), n2 = S(nk).next; weiter = { von: rec, vonName: R0.name, pct: S(rec).pct, key: nk, name: REG[nk].name, href: b2 ? (n2 ? `${REG[nk].file}?aufgabe=${n2[0]}` : REG[nk].file) : `${REG[nk].file}?trainer` }; if (lj) weiter.lj = lj; } }
+    if (rec && S(rec).pct >= WEITER) { const nk = order.slice(order.indexOf(rec) + 1).find(k => S(k).n && S(k).pct < 100); if (nk) { const n2 = S(nk).next; weiter = { von: rec, vonName: R0.name, pct: S(rec).pct, key: nk, name: REG[nk].name, href: n2 ? `${REG[nk].file}?aufgabe=${n2[0]}` : REG[nk].file }; if (lj) weiter.lj = lj; } }
     const out = { rec, st, order, href, txt, started: began, next: nx ? nx.next : null, weiter };
     if (et && rec) { const vor = order.slice(0, order.indexOf(rec)).filter(offen); if (vor.length) out.etappe = { offen: vor }; }   // nur Berufe mit Etappen: frühere Stationen, in denen noch ein Rest offen ist
     if (lj) {   // nur mit Lehrjahr: Beschriftung der Station und der Zustand "Dein Lehrjahr ist geschafft"

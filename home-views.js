@@ -127,6 +127,7 @@
     setZ('ubDuellZ', duell);
     try { setZ('ubTauschZ', root.Tauschui && root.Tauschui.statusZeile ? root.Tauschui.statusZeile() : ''); } catch (e) {}
     try { setZ('ubWettZ', root.Wett && root.Wett.ui && root.Wett.ui.statusZeile ? root.Wett.ui.statusZeile() : ''); } catch (e) {}
+    { const g = $('ubGruppe'); if (g && !g.open && !g.dataset.auto && ['ubDuellZ', 'ubTauschZ', 'ubWettZ'].some(i => ($(i) || {}).textContent)) { g.open = true; g.dataset.auto = '1'; } }   // v78.195: Gruppe eingeklappt, offen wenn dort gerade etwas läuft
     try {
       const E = root.Einheit10, e10 = E && E.normE ? E.normE(JSON.parse(localStorage.getItem(E.KEY) || '{}')) : null, heute = E && E.tagKey ? e10 && e10.tage[E.tagKey(Date.now())] : 0;
       setZ('ubE10Z', heute ? 'heute ' + heute + ' gemacht' : '');

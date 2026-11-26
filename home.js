@@ -13,11 +13,11 @@
     try { const o = JSON.parse(raw); if (o && typeof o === 'object') { const ok = a => Array.isArray(a) ? a.filter(s => typeof s === 'string') : []; return { order: ok(o.order), hidden: ok(o.hidden) }; } } catch (e) {}
     return { order: [], hidden: [] };
   }
-  /* Hauptknopf einer Karte nach dem Stand des Labs: s = Lernpfad.stat(lab), trained = Einführung gesehen */
+  /* Hauptknopf einer Karte nach dem Stand des Labs: s = Lernpfad.stat(lab), trained = Einführung gesehen (seit v78.195 nur noch für den Text „Starten“/„Weiter“) */
   function knopf(file, s, trained) {
     if (!s || !s.n) return { t: 'Öffnen', href: file };
     if (s.pct >= 100) return { t: 'Wiederholen', href: file };
-    if (!s.started && !trained) return { t: 'Starten', href: file + '?trainer' };
+    if (!s.started && !trained) return s.next ? { t: 'Starten', href: file + '?aufgabe=' + encodeURIComponent(s.next[0]), task: s.next[3] } : { t: 'Starten', href: file };   // v78.195: direkt die erste Aufgabe, die Einführung bleibt im Info-Menü
     return s.next ? { t: 'Weiter', href: file + '?aufgabe=' + encodeURIComponent(s.next[0]), task: s.next[3] } : { t: 'Öffnen', href: file };
   }
   if (typeof module === 'object' && module.exports) module.exports = { lesen, knopf, SORTEN, KEY, SORT, KOMP };

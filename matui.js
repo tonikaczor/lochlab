@@ -36,7 +36,7 @@
   const TASKS = D.tasks;
 
   /* ============================================================ Zustand */
-  const TABS = [['einh', '📏', 'Einheiten'], ['drei', '⚖️', 'Dreisatz'], ['proz', '％', 'Prozent'], ['umst', '🔁', 'Umstellen'], ['geo', '📐', 'Geometrie'], ['mess', '📊', 'Messwerte'], ['bsp', '💡', 'Beispiele'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['duell', '⚔️', 'Duell'], ['netz', '🔌', 'Netzwerke'], ['help', '📘', 'Hilfe']];
+  const TABS = [['einh', '📏', 'Einheiten'], ['drei', '⚖️', 'Dreisatz'], ['proz', '％', 'Prozent'], ['umst', '🔁', 'Umstellen'], ['geo', '📐', 'Geometrie'], ['mess', '📊', 'Messwerte'], ['bsp', '💡', 'Beispiele'], ['eingang', '🧭', 'Eingangstest'], ['tasks', '📝', 'Aufgaben'], ['rt', '🎲', 'Trainer'], ['duell', '⚔️', 'Duell'], ['netz', '🔌', 'Netzwerke'], ['help', '📘', 'Hilfe']];
   const S = {
     tab: lsGet('tab', 'einh'),
     einh: { fam: 'laenge', v: '4,7', from: 'mm', to: 'm', sv: '0,000047' },
@@ -477,8 +477,83 @@
     <details><summary>📊 Messwerte und Runden</summary><div class="hb2"><span class="eq">Mittelwert x̄ = Summe / n</span><span class="eq">Median = mittlerer Wert der sortierten Liste</span><span class="eq">Spannweite R = x(max) − x(min)</span><span class="eq">s = √( Σ(x − x̄)² / (n − 1) )</span><p>Signifikante Stellen: alle Ziffern ab der ersten, die nicht 0 ist (0,0250 hat 3). Bei Malnehmen und Teilen addieren sich die Prozent-Fehler (Faustregel).</p></div></details>`;
   }
 
+  /* ============================================================ Reiter: Eingangstest (mateingang.js)
+     Diagnose, keine Übung: keine Tipps, keine Rückmeldung je Frage, Überspringen zählt als falsch. Letztes Ergebnis: lm4.mat.eingang = { d: 'JJJJ-MM-TT', p: richtig, v: Fragen, f: {Feld: richtig} }. */
+  const EG = root.MAT_EINGANG, EGS = { ph: 'start', q: [], i: 0, ant: [], res: null, vor: null };
+  const egLast = () => { const v = lsGet('eingang', null); return v && typeof v.p === 'number' && v.v > 0 && v.f && typeof v.f === 'object' ? v : null; };
+  const egDatum = d => String(d || '').split('-').reverse().join('.');
+  const egHeute = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); };
+  const egProz = (p, v) => Math.round(100 * p / v);
+  const EG_AMP = { gruen: ['g', '✓ sicher'], gelb: ['y', '~ wackelig'], rot: ['r', '! hier üben'] };
+  function egStart() { EGS.q = EG.bauen(Math.floor(Math.random() * 1e9)); EGS.i = 0; EGS.ant = []; EGS.res = null; EGS.ph = 'frage'; renderEingang(); }
+  function egWeiter(skip) {
+    const q = EGS.q[EGS.i];
+    if (skip) EGS.ant[EGS.i] = '';
+    else {
+      const a = q.typ === 'sel' ? (EGS.ant[EGS.i] == null ? '' : String(EGS.ant[EGS.i])) : ($('#egIn') ? $('#egIn').value.trim() : '');
+      if (a === '') { toast(q.typ === 'sel' ? 'Wähle eine Antwort oder tippe auf „Überspringen“.' : 'Gib eine Zahl ein oder tippe auf „Überspringen“.'); return; }
+      if (q.typ === 'num' && !isFinite(EG.lies(a))) { toast('Bitte gib eine Zahl ein, zum Beispiel 4,5 oder 5/4.'); return; }
+      EGS.ant[EGS.i] = a;
+    }
+    if (EGS.i < EGS.q.length - 1) { EGS.i++; renderEingang(); return; }
+    EGS.res = EG.auswerten(EGS.q, EGS.ant); EGS.vor = egLast();
+    const f = {}; EGS.res.felder.forEach(x => { f[x.k] = x.richtig; });
+    lsSet('eingang', { d: egHeute(), p: EGS.res.richtig, v: EGS.res.von, f });
+    EGS.ph = 'ende'; renderEingang();
+  }
+  function egUeben(k) {
+    const f = EG.FELDER.find(x => x.k === k); if (!f) return;
+    if (f.kat) { const t = TASKS.find(x => x.cat === f.kat && !done()[x.id]) || TASKS.find(x => x.cat === f.kat); if (t) { setTab('tasks'); startTask(t.id); return; } }
+    setTab(f.tab);
+  }
+  const egBalken = (n, von) => `<div class="eg-seg" aria-hidden="true">${Array.from({ length: von }, (_, i) => `<i class="${i < n ? 'f' : ''}"></i>`).join('')}</div>`;
+  function renderEingang() {
+    const V = $('#v_eingang'); if (!EG) { V.innerHTML = '<div class="card pl"><h4>Eingangstest</h4><p class="hint2">mateingang.js konnte nicht geladen werden. Bitte die Seite neu laden.</p></div>'; return; }
+    let h = '';
+    if (EGS.ph === 'start') {
+      const l = egLast();
+      h = `<div class="card pl"><h4>Eingangstest</h4><div class="big">Wo stehst du in Mathe?</div>
+        <p style="margin:0 0 8px">${EG.FELDER.length * 4} Fragen in ${EG.FELDER.length} Themen: ${EG.FELDER.map(f => esc(f.name)).join(', ')}. Das Niveau ist Ende Klasse 10. Du darfst den Taschenrechner benutzen.</p>
+        <p class="hint2" style="margin:0 0 4px">Das ist ein Test zum Einschätzen, keine Übung: Es gibt keine Tipps und keine Rückmeldung zwischendurch. Es gibt keine Noten, nur Punkte. Wenn du eine Frage nicht kannst, tippe auf „Überspringen“. Die Frage zählt dann als falsch. Am Ende siehst du, wo du sicher bist und was du noch üben solltest.</p>
+        <div class="btns"><button class="btn pri" data-eg="start">▶ Test starten</button></div></div>`;
+      if (l) h += `<div class="card pl"><h4>Letztes Ergebnis</h4><div class="big2">${l.p} von ${l.v} <small>(${egProz(l.p, l.v)} %) am ${esc(egDatum(l.d))}</small></div>${EG.FELDER.filter(f => typeof l.f[f.k] === 'number').map(f => `<div class="eg-zl"><span>${esc(f.name)}</span><b>${l.f[f.k]} von 4</b></div>`).join('')}<p class="hint2">Nach dem nächsten Test siehst du den Vergleich.</p></div>`;
+    } else if (EGS.ph === 'frage') {
+      const q = EGS.q[EGS.i], n = EGS.q.length, fn = EG.FELDER.find(f => f.k === q.feld).name, pr = Math.round(100 * EGS.i / n), last = EGS.i === n - 1;
+      const eing = q.typ === 'sel'
+        ? `<div class="opts" role="group" aria-label="Antworten">${q.options.map((o, i) => `<button data-egopt="${i}" class="${String(EGS.ant[EGS.i]) === String(i) ? 'on' : ''}" aria-pressed="${String(EGS.ant[EGS.i]) === String(i)}">${esc(o)}</button>`).join('')}</div>`
+        : `<label class="f"><span>Deine Antwort${q.unit ? ' in ' + esc(q.unit) : ''}</span><div class="qin"><input id="egIn" data-egin="1" inputmode="decimal" autocomplete="off" value="${esc(EGS.ant[EGS.i] || '')}"><span class="u">${esc(q.unit)}</span></div></label><p class="lr-hinweis">Zahl mit Komma, zum Beispiel 4,5. Ein Bruch wie 5/4 geht auch.</p>`;
+      h = `<div class="card pl"><h4>Frage ${EGS.i + 1} von ${n} · ${esc(fn)}</h4>
+        <div class="eg-pb" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${EGS.i}" aria-label="Fortschritt"><i style="width:${pr}%"></i></div>
+        <p class="eg-q">${esc(q.text)}</p>${eing}
+        <div class="btns"><button class="btn pri" data-eg="next">${last ? 'Fertig, Auswertung zeigen' : 'Weiter'}</button><button class="btn" data-eg="skip">Überspringen</button></div></div>`;
+    } else {
+      const r = EGS.res, vor = EGS.vor;
+      h = `<div class="card pl"><h4>Dein Ergebnis</h4><div class="big2">${r.richtig} von ${r.von} richtig <small>(${r.prozent} %)</small></div>
+        <p class="hint2" style="margin:0">${vor ? `Letztes Mal (${esc(egDatum(vor.d))}): ${vor.p} von ${vor.v} (${egProz(vor.p, vor.v)} %).` : 'Das ist dein erster Test. Das Ergebnis ist auf diesem Gerät gespeichert, beim nächsten Mal siehst du den Vergleich.'}</p></div>`;
+      r.felder.forEach(f => {
+        const a = EG_AMP[f.ampel], vf = vor && typeof vor.f[f.k] === 'number' ? vor.f[f.k] : null;
+        h += `<div class="card pl eg-f ${a[0]}"><div class="eg-kopf"><b class="eg-nm">${esc(f.name)}</b><span class="eg-am">${a[1]}</span></div>
+          <div class="eg-zl"><span>${f.richtig} von ${f.von} richtig</span>${vf == null ? '' : `<small>Letztes Mal: ${vf} von ${f.von}</small>`}</div>${egBalken(f.richtig, f.von)}
+          <div class="btns" style="margin-top:6px"><button class="btn" data-eg="ueben" data-k="${f.k}">🧭 Üben</button></div></div>`;
+      });
+      h += `<div class="gh">Alle Fragen mit Lösung</div>` + EGS.q.map((q, i) => {
+        const a = EGS.ant[i], ok = r.ok[i], dein = a === '' || a == null ? 'übersprungen' : q.typ === 'sel' ? q.options[+a] : a;
+        return `<details class="rd-d ${ok ? 'ok' : ''}"><summary>${ok ? '✓' : '✗'} ${i + 1}. ${esc(q.text)}<small>Richtig: ${esc(q.lsg)}${ok ? '' : ' · Deine Antwort: ' + esc(dein)}</small></summary><div class="rdout"><b>Lösungsweg</b>${stp(q.weg, true)}</div></details>`;
+      }).join('');
+      h += '<div class="btns"><button class="btn pri" data-eg="start">↻ Neuer Test mit neuen Zahlen</button></div>';
+    }
+    V.innerHTML = h; $('#pg_eingang').scrollTop = 0;
+    if (EGS.ph === 'frage' && $('#egIn') && window.matchMedia && matchMedia('(pointer:fine)').matches) $('#egIn').focus();
+  }
+  $('#v_eingang').addEventListener('click', e => {
+    const o = e.target.closest('[data-egopt]'); if (o) { EGS.ant[EGS.i] = +o.dataset.egopt; $$('[data-egopt]', $('#v_eingang')).forEach(b => { const on = b === o; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }); return; }
+    const b = e.target.closest('[data-eg]'); if (!b) return; const a = b.dataset.eg;
+    if (a === 'start') egStart(); else if (a === 'next') egWeiter(false); else if (a === 'skip') egWeiter(true); else if (a === 'ueben') egUeben(b.dataset.k);
+  });
+  $('#v_eingang').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.egin) { e.preventDefault(); egWeiter(false); } });
+
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
-  const RENDER = { einh: renderEinh, drei: renderDrei, proz: renderProz, umst: renderUmst, geo: renderGeo, mess: renderMess, bsp: renderBsp, tasks: renderTasks, rt: renderTrainer, duell: () => { if (root.MatDuellUI) root.MatDuellUI.render(); }, netz: renderNetz, help: renderHelp };
+  const RENDER = { einh: renderEinh, drei: renderDrei, proz: renderProz, umst: renderUmst, geo: renderGeo, mess: renderMess, bsp: renderBsp, eingang: renderEingang, tasks: renderTasks, rt: renderTrainer, duell: () => { if (root.MatDuellUI) root.MatDuellUI.render(); }, netz: renderNetz, help: renderHelp };
   const UPD = { einh: updEinh, drei: updDrei, proz: updProz, umst: updUmst, geo: updGeo, mess: updMess };
   function buildTabs() {
     $('#tabs').innerHTML = TABS.map(([k, i, n]) => `<button class="tab${S.tab === k ? ' on' : ''}" data-t="${k}" role="tab" aria-selected="${S.tab === k}">${i} ${n}${k === 'tasks' ? '<span class="bd" id="tkBd"></span>' : ''}</button>`).join('');
@@ -509,7 +584,7 @@
   $('#bTasks').onclick = () => setTab('tasks'); $('#bHelp').onclick = () => setTab('help'); $('#bExam').onclick = () => setExam(!exam());
   $('#title').onclick = () => setTab('einh');
   $('#bMenu').onclick = () => {
-    const rows = [['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung, Lösungsweg und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Aufgaben mit Serien-Zähler'], ['duell', 'Rechen-Duell', 'Gleiche Aufgaben für alle: Wer hat mehr richtig?'], ['netz', 'Netzwerke', 'Widerstandsschaltungen in 8 Stufen: Rges, Teilströme, Leistung'], ['bsp', 'Beispiele', 'Durchgerechnete Beispiele zum Nachvollziehen'], ['help', 'Hilfe und Spickzettel', 'Vorsätze, Formeln, Dreisatz, Winkelfunktionen'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Trainer-Serie auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
+    const rows = [['eingang', 'Eingangstest', 'Wo stehst du in Mathe? 20 Fragen, keine Tipps, Auswertung je Thema'], ['tasks', 'Aufgaben', TASKS.length + ' Aufgaben mit Prüfung, Lösungsweg und Tipps'], ['rt', 'Zufalls-Trainer', 'Unendlich viele Aufgaben mit Serien-Zähler'], ['duell', 'Rechen-Duell', 'Gleiche Aufgaben für alle: Wer hat mehr richtig?'], ['netz', 'Netzwerke', 'Widerstandsschaltungen in 8 Stufen: Rges, Teilströme, Leistung'], ['bsp', 'Beispiele', 'Durchgerechnete Beispiele zum Nachvollziehen'], ['help', 'Hilfe und Spickzettel', 'Vorsätze, Formeln, Dreisatz, Winkelfunktionen'], ['exam', 'Prüfmodus: ' + (exam() ? 'an' : 'aus'), 'Im Prüfmodus kosten Tipps 25 % je Stufe'], ['reset', 'Fortschritt zurücksetzen', 'Löscht gelöste Aufgaben und Trainer-Serie auf diesem Gerät'], ['home', 'Startseite', 'Zurück zur Übersicht']];
     sheet('Menü', (b, close) => {
       b.innerHTML = rows.map(r => `<button class="row" data-m="${r[0]}"><div class="grow"><b>${esc(r[1])}</b><small>${esc(r[2])}</small></div></button>`).join('');
       b.addEventListener('click', e => {

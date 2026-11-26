@@ -246,7 +246,7 @@ document.addEventListener('click',function(e){var s=e.target.closest&&e.target.c
   <!-- Ansicht Start: blaue Karte (meinweg.js setzt sie mit dem Fälligen in #meinWeg), Zuletzt geöffnet, Neues (home-views.js). #top bleibt als Ankerpunkt für Weitermachen, Duell, Sicherung und Wiederholen. -->
   <section class="view" id="v-start" data-view="start" aria-labelledby="vStartH">
     <h2 class="sr" id="vStartH">Start</h2>
-    <div class="top" id="top"><a class="cont" id="contGo" href="schaltplan.html?trainer"><b>Starten</b><small>SchaltLab (Einführung)</small></a></div>
+    <div class="top" id="top"><a class="cont" id="contGo" href="schaltplan.html"><b>Starten</b><small>SchaltLab</small></a></div>
     <section class="st" id="stZuletzt" aria-labelledby="stZuH" hidden><h3 class="vh3" id="stZuH">Zuletzt geöffnet</h3><div class="zl" id="stZuL"></div></section>
     <p class="stneu" id="stNeu" hidden></p>
   </section>
@@ -257,9 +257,13 @@ document.addEventListener('click',function(e){var s=e.target.closest&&e.target.c
     <div class="vl">
       <a class="mw-t" id="ubWd" href="wiederholen.html"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-repeat"/></svg></span><span class="mw-x"><b>Wiederholen</b><small>Aufgaben und Lernkarten, die heute wieder dran sind.</small></span><span class="mw-z" id="ubWdZ"></span><span class="mw-p" aria-hidden="true">›</span></a>
       <button type="button" class="mw-t" id="ubE10" data-nichtweg="1"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-clock"/></svg></span><span class="mw-x"><b>10-Minuten-Einheit</b><small>3 Lernkarten, 2 Rechenaufgaben und 1 Prüfungsfrage.</small></span><span class="mw-z" id="ubE10Z"></span></button>
-      <div class="mw-t mw-2" id="ubDuell"><button type="button" class="mw-a" id="ubDuellGo"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-swords"/></svg></span><span class="mw-x"><b>Duell</b><small>Löse dieselben Aufgaben wie ein Mitazubi und vergleicht eure Punkte.</small></span><span class="mw-z" id="ubDuellZ"></span></button><button type="button" class="mw-b" id="ubDuellJoin">Beitreten</button><a class="mw-b" id="ubRechDuell" href="matlab.html?duell=neu" title="Alle rechnen dieselben Aufgaben. Wer hat mehr richtig?">Rechen-Duell</a></div>
-      <button type="button" class="mw-t" id="ubTausch"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-swap"/></svg></span><span class="mw-x"><b>Fehler-Tausch</b><small>Tausche deine Fehlerkarten mit einem Mitazubi.</small></span><span class="mw-z" id="ubTauschZ"></span></button>
-      <button type="button" class="mw-t" id="ubWett"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-trophy"/></svg></span><span class="mw-x"><b>Wettbewerb</b><small>Mit der ganzen Gruppe eine Zeit lang um die Wette üben.</small></span><span class="mw-z" id="ubWettZ"></span></button>
+      <details class="ub-gruppe" id="ubGruppe"><summary>Mit der Gruppe <small>Duell, Fehler-Tausch, Wettbewerb</small></summary>
+        <div class="vl">
+          <div class="mw-t mw-2" id="ubDuell"><button type="button" class="mw-a" id="ubDuellGo"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-swords"/></svg></span><span class="mw-x"><b>Duell</b><small>Löse dieselben Aufgaben wie ein Mitazubi und vergleicht eure Punkte.</small></span><span class="mw-z" id="ubDuellZ"></span></button><button type="button" class="mw-b" id="ubDuellJoin">Beitreten</button><a class="mw-b" id="ubRechDuell" href="matlab.html?duell=neu" title="Alle rechnen dieselben Aufgaben. Wer hat mehr richtig?">Rechen-Duell</a></div>
+          <button type="button" class="mw-t" id="ubTausch"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-swap"/></svg></span><span class="mw-x"><b>Fehler-Tausch</b><small>Tausche deine Fehlerkarten mit einem Mitazubi.</small></span><span class="mw-z" id="ubTauschZ"></span></button>
+          <button type="button" class="mw-t" id="ubWett"><span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-trophy"/></svg></span><span class="mw-x"><b>Wettbewerb</b><small>Mit der ganzen Gruppe eine Zeit lang um die Wette üben.</small></span><span class="mw-z" id="ubWettZ"></span></button>
+        </div>
+      </details>
       <section class="card vbrow" id="vbRow" data-hub="vb" data-beruf="alle" aria-labelledby="vbH">
         <span class="mw-i" aria-hidden="true"><svg class="i" viewBox="0 0 24 24" focusable="false"><use href="#i-vb"/></svg></span>
         <div class="vbt"><h2 id="vbH">Verbundprojekte: ein Auftrag, viele Stationen</h2><p id="vbTxt">Ein Auftrag wie in der Firma: Jede Station liefert ihr Ergebnis an die nächste, am Ende gibt es ein Zertifikat.</p><div class="vbn" id="vbN" aria-live="polite"></div></div>

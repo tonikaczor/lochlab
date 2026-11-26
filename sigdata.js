@@ -483,7 +483,7 @@
       ] }
   ];
 
-  const meta = { lab: 'sig', name: 'Signale und Systeme', stufe: 'studium', version: 'v78.194', zielgruppe: 'Technikerschule, Duales Studium, Wirtschaftsingenieurwesen', bloecke: BLOCKS.length };
+  const meta = { lab: 'sig', name: 'Signale und Systeme', stufe: 'studium', version: 'v78.195', zielgruppe: 'Technikerschule, Duales Studium, Wirtschaftsingenieurwesen', bloecke: BLOCKS.length };
   const TASKS = tasks.map(t => ({ id: t.id, cat: t.cat, title: t.title, level: t.level }));
   const api = { meta, tasks, CATS, blocks: BLOCKS };
   root.SIG_DATA = api; root.SIG_TASKS = TASKS;
