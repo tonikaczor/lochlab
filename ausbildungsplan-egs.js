@@ -610,6 +610,10 @@
         entwurf: true,
         labs: [
           {
+            lab: "sya",
+            bereich: "*"
+          },
+          {
             lab: "ins",
             fremd: true,
             bereich: [

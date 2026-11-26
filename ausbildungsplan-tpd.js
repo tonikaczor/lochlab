@@ -233,7 +233,12 @@
         "jahr": 2,
         "block": "Gemeinsame Lernfelder",
         "entwurf": false,
-        "labs": [],
+        "labs": [
+          {
+            "lab": "fer",
+            "bereich": "*"
+          }
+        ],
         "heft": "lernen-fer.html",
         "wiki": [],
         "projekt": [
@@ -255,7 +260,12 @@
         "jahr": 2,
         "block": "Gemeinsame Lernfelder",
         "entwurf": false,
-        "labs": [],
+        "labs": [
+          {
+            "lab": "kun",
+            "bereich": "*"
+          }
+        ],
         "heft": null,
         "wiki": [],
         "projekt": [],
@@ -270,7 +280,12 @@
         "jahr": 2,
         "block": "Gemeinsame Lernfelder",
         "entwurf": false,
-        "labs": [],
+        "labs": [
+          {
+            "lab": "zer",
+            "bereich": "*"
+          }
+        ],
         "heft": "lernen-zer.html",
         "wiki": [],
         "projekt": [
@@ -292,7 +307,12 @@
         "jahr": 2,
         "block": "Gemeinsame Lernfelder",
         "entwurf": false,
-        "labs": [],
+        "labs": [
+          {
+            "lab": "wer",
+            "bereich": "*"
+          }
+        ],
         "heft": null,
         "wiki": [],
         "projekt": [],
@@ -313,6 +333,10 @@
             "bereich": [
               "Schrauben und Gewinde"
             ]
+          },
+          {
+            "lab": "fug",
+            "bereich": "*"
           }
         ],
         "heft": "lernen-fug.html",

@@ -2,6 +2,11 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v69.192', items: [
+      ['Fünf neue Labs', 'Touren-Lab für die Lagerlogistik, Kunststoff-Lab für Produktdesigner, Produktions-Lab und Marketing-Lab für Industriekaufleute und das Systemanalyse-Lab für Elektroniker im 3. und 4. Lehrjahr. Zusammen 212 neue Aufgaben mit bewegten Bildern.', 'Neue Labs'],
+      ['Mehr Labs für Kaufleute und Produktdesigner', 'Industriekaufleute finden jetzt auch das Lager-Lab und das Warenfluss-Lab. Produktdesigner bekommen das Werkstoff-, Zerspan-, Fertigungs- und Füge-Lab. Der Lernpfad zeigt die neuen Schritte.', 'Lernpfad'],
+      ['Berichtsheft füllt sich aus der App', 'Im Berichtsheft-Helfer holt der Knopf „Aus der App übernehmen“ deine erledigten Aufgaben der Woche als Stichpunkte in die Wochenansicht. Du kannst sie danach ändern.', 'Berichtsheft'],
+    ] },
     { v: 'v64.191', items: [
       ['10-Minuten-Einheit passt zum Lehrjahr', 'Elektroniker und Industrieelektriker bekommen zuerst Lernkarten und Aufgaben, die zu ihrem Lehrjahr passen. Neu ist der Knopf „Weiß ich nicht“: Du siehst dann gleich die Lösung und machst mit der nächsten Aufgabe weiter.', 'Start, Üben'],
       ['Mehr unter „Heute dran“', 'Auf der Startseite stehen jetzt immer vier Ziele: Wiederholen, 10-Minuten-Einheit oder Wiki, Prüfung oder Studium und die Verbundprojekte. Das gilt auch für Techniker und Studium, die jetzt alle Verbundprojekte sehen.', 'Startseite'],
@@ -11,11 +16,6 @@
       ['Neu: EMS-Lab „So fertigt Tonfunk“', 'Tonfunk fertigt Elektronik im Auftrag von Kunden. Im EMS-Lab siehst du den Weg einer Baugruppe in 15 Schritten, von der Anfrage bis zur Rechnung, und mit einem Stern die Schritte, an denen dein Beruf mitarbeitet.', 'Alle Berufe'],
       ['Sieben Rechner und 48 Aufgaben', 'Ausbeute, Prüfkosten von ICT und Flying-Probe, MSL-Uhr für feuchteempfindliche Bauteile, Zehnerregel der Fehlerkosten, Rückverfolgung, Drehmoment und Kalkulation einer Baugruppe. Dazu 48 Aufgaben mit drei Tipp-Stufen und 40 Fachbegriffe.', 'Alle Berufe'],
       ['Im Lernpfad gleich am Anfang', 'Das EMS-Lab steht in jedem Ausbildungsplan und Lernpfad direkt nach dem Arbeitsschutz. Erst sicher arbeiten, dann wissen, wie der Betrieb fertigt.', 'Lernpfad, Mein Plan'],
-    ] },
-    { v: 'v63.189', items: [
-      ['Abzeichen in jedem Lab', 'Bisher gab es in rund 40 Labs keine Abzeichen, zum Beispiel im Lager-, Zeichnungs- und Kalkulations-Lab. Jetzt zählt jede gelöste Aufgabe in jedem Lab für deine Abzeichen, auch der Trainer.', 'Alle Berufe'],
-      ['Eigene Kampagne für drei weitere Berufe', 'Technische Produktdesigner bauen in „Das Gehäuse“ mit Meisterin Kontur ein Gehäuse. Fachkräfte für Lagerlogistik bringen in „Der Großauftrag“ mit Meister Palette einen Auftrag durchs Lager. Industriekaufleute begleiten in „Der Lautsprecher-Auftrag“ mit Ausbilderin Saldo einen Auftrag von der Anfrage bis zum Abschluss. Jede Kampagne hat 16 Kapitel und einen Epilog.', 'Technischer Produktdesigner, Fachkraft für Lagerlogistik, Industriekaufmann'],
-      ['Mehr Abzeichen und ein Kampagnen-Fehler behoben', 'Neue Themen-Abzeichen für Produktdesign, Lager und Kaufleute, dazu je ein Abzeichen für die ganze Kampagne. Kapitel, die du auf der Startseite geschafft hast, zählen jetzt auch für die Kapitel-Abzeichen.', 'Abzeichen'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

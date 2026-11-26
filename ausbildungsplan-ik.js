@@ -201,11 +201,16 @@
         "id": "LF6",
         "nr": "6",
         "titel": "LF 6: Leistungserstellung planen, steuern und kontrollieren",
-        "kurz": "Du lernst, wie ein Betrieb seine Produktion plant, steuert und kontrolliert. Dazu gibt es im Lab noch keine eigenen Aufgaben.",
+        "kurz": "Du lernst, wie ein Betrieb seine Produktion plant, steuert und kontrolliert. Dazu übst du im Produktions-Lab.",
         "jahr": 2,
         "quelle": "KMK-Rahmenlehrplan Industriekaufleute (2024); ISB Bayern bs_lpr_industriekaufmann_industriekauffrau_24.06.pdf; IHK-Basisinformation Neuordnung",
         "entwurf": true,
-        "labs": [],
+        "labs": [
+          {
+            "lab": "prd",
+            "bereich": "*"
+          }
+        ],
         "heft": null,
         "wiki": [],
         "projekt": [],
@@ -215,11 +220,20 @@
         "id": "LF7",
         "nr": "7",
         "titel": "LF 7: Logistik- und Lagerprozesse koordinieren, umsetzen und überwachen",
-        "kurz": "Du lernst, Lager- und Transportprozesse zu koordinieren und zu überwachen. Dazu gibt es im Lab noch keine eigenen Aufgaben.",
+        "kurz": "Du lernst, Lager- und Transportprozesse zu koordinieren und zu überwachen. Dazu übst du im Lager-Lab und im Warenfluss-Lab.",
         "jahr": 2,
         "quelle": "KMK-Rahmenlehrplan Industriekaufleute (2024); ISB Bayern bs_lpr_industriekaufmann_industriekauffrau_24.06.pdf; IHK-Basisinformation Neuordnung",
         "entwurf": true,
-        "labs": [],
+        "labs": [
+          {
+            "lab": "lag",
+            "bereich": "*"
+          },
+          {
+            "lab": "wfl",
+            "bereich": "*"
+          }
+        ],
         "heft": null,
         "wiki": [],
         "projekt": [],
@@ -269,11 +283,16 @@
         "id": "LF9",
         "nr": "9",
         "titel": "LF 9: Marketingkonzepte planen und umsetzen",
-        "kurz": "Du lernst, ein Marketingkonzept für Produkte und Zielgruppen zu planen und umzusetzen. Dazu gibt es im Lab noch keine eigenen Aufgaben.",
+        "kurz": "Du lernst, ein Marketingkonzept für Produkte und Zielgruppen zu planen und umzusetzen. Dazu übst du im Marketing-Lab.",
         "jahr": 2,
         "quelle": "KMK-Rahmenlehrplan Industriekaufleute (2024); ISB Bayern bs_lpr_industriekaufmann_industriekauffrau_24.06.pdf; IHK-Basisinformation Neuordnung",
         "entwurf": true,
-        "labs": [],
+        "labs": [
+          {
+            "lab": "mkt",
+            "bereich": "*"
+          }
+        ],
         "heft": null,
         "wiki": [],
         "projekt": [],

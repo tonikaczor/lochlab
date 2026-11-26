@@ -34,9 +34,11 @@
   const AUSNAHMEN_IM = {};
   const AUSNAHMEN_PLAN = { im: AUSNAHMEN_IM };
   /* Vorgabe je Lab für Zeilen ohne Lernfeld; Labs, die hier fehlen, bekommen 1 */
-  const VORGABE = { sch: 1, loch: 1, digi: 1, mess: 1, sim: 1, haus: 1, els: 1, nts: 1, wsl: 1, ana: 1, thm: 1, sps: 1, pcb: 1, ant: 1, sen: 1, reg: 3, emv: 2, hf: 3, enr: 2, ds: 2, pr: 2, code: 1, pi: 1, app: 1, mat: 1, eng: 2, bhf: 1, alg: 1, sys: 1, ssl: 1 };
+  const VORGABE = { sch: 1, loch: 1, digi: 1, mess: 1, sim: 1, haus: 1, els: 1, nts: 1, wsl: 1, ana: 1, thm: 1, sps: 1, pcb: 1, ant: 1, sen: 1, reg: 3, emv: 2, hf: 3, enr: 2, ds: 2, pr: 2, code: 1, pi: 1, app: 1, mat: 1, eng: 2, bhf: 1, alg: 1, sys: 1, ssl: 1, sya: 3 };
   /* Ausnahmen je Lab: Aufgaben-ID -> frühestes Lehrjahr. Nur Aufgaben, die vom Lernfeld abweichen oder kein Lernfeld haben und nicht zur Vorgabe passen. */
   const AUSNAHMEN = {
+    // Systemanalyse-Lab (sya), v69.192: Teil 2 der Abschlussprüfung, alles ab dem 3. Lehrjahr, diese Aufgaben erst im 4.
+    sya: { sya16: 4, sya17: 4, sya18: 4, sya19: 4, sya20: 4, sya27: 4, sya28: 4, sya29: 4, sya30: 4, sya31: 4, sya32: 4, sya33: 4, sya34: 4, sya35: 4, sya36: 4, sya37: 4, sya38: 4, sya39: 4, sya41: 4, sya42: 4, sya44: 4, sya45: 4 },
     // Thermik-Lab (thm), v63.185
     thm: { th45: 4 },
     // SchaltLab (sch)

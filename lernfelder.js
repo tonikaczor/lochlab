@@ -104,6 +104,7 @@
     zei: { '*': '8.1' },
     pne: { '*': '10.2' },
     ins: { '*': '9.3' },
+    sya: { '*': '9.3' },
     net: { 'Schichten/Ports': 'E13', 'Übertragungstechnik': 'E13' },
     emv: { 'Grundwissen': 'E13' },
     rec: { 'Qualität und Projekt': 'E13' },

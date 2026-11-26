@@ -28,7 +28,7 @@
     wer: ['Werkstoff-Lab', 'werlab.html'], mch: ['Mechanik-Lab', 'mchlab.html'], ins: ['Instandhaltungs-Lab', 'inslab.html'], net: ['Netzwerk-Lab', 'netlab.html'],
     kal: ['Kalkulations-Lab', 'kallab.html'], lag: ['Lager-Lab', 'laglab.html'], mat: ['Rechen-Lab', 'matlab.html'], zei: ['Zeichnungs-Lab', 'zeilab.html'],
     its: ['IT-Sicherheits-Lab', 'itslab.html'], buc: ['Buchführungs-Lab', 'buclab.html'], lad: ['Ladungssicherungs-Lab', 'ladlab.html'], eng: ['Technisches-Englisch-Lab', 'englab.html'],
-    bhf: ['Berichtsheft-Helfer', 'bhflab.html'], kon: ['Konstruktions-Lab', 'konlab.html'], wfl: ['Warenfluss-Lab', 'wfllab.html'], rec: ['Auftrag-und-Recht-Lab', 'reclab.html'],
+    bhf: ['Berichtsheft-Helfer', 'bhflab.html'], kon: ['Konstruktions-Lab', 'konlab.html'], wfl: ['Warenfluss-Lab', 'wfllab.html'], tou: ['Touren-Lab', 'toulab.html'], sya: ['Systemanalyse-Lab', 'syalab.html'], kun: ['Kunststoff-Lab', 'kunlab.html'], prd: ['Produktions-Lab', 'prdlab.html'], mkt: ['Marketing-Lab', 'mktlab.html'], rec: ['Auftrag-und-Recht-Lab', 'reclab.html'],
     sql: ['Datenbank-Lab (SQL)', 'sqllab.html'], lin: ['Linux-Terminal-Lab', 'linlab.html'], alg: ['Algorithmen-Lab', 'alglab.html'], hwl: ['PC-Hardware-Lab', 'hwllab.html'],
     sys: ['IT-Systeme-Lab', 'syslab.html'], ssl: ['Schaltschrank-Lab', 'ssllab.html']
   };

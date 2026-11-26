@@ -164,6 +164,9 @@
     const w = S.wo;
     $('#wocheView').innerHTML = `<p class="note">${esc(NOTE)}</p><div class="card pl"><h4>Deine Woche</h4>${beruSel('wberuf', w.beruf)}
       <label class="f"><span>Name (optional, wird nicht gespeichert)</span><input data-name="1" autocomplete="off" value="${esc(S.name)}" placeholder="bleibt leer, wenn du es nicht brauchst"></label>
+      <label class="f"><span>Woche für „Aus der App übernehmen“</span><select data-k="wback"><option value="0"${S.woBack ? '' : ' selected'}>Diese Woche</option><option value="1"${S.woBack ? ' selected' : ''}>Vorwoche</option></select></label>
+      <div class="btns"><button class="btn" data-w="app">📥 Aus der App übernehmen</button></div>
+      <p class="hint2">Holt Stichpunkte aus den Aufgaben, die du an dem Tag in der App gelöst hast. Das sind nur Vorschläge: Schreib sie in eigenen Worten genauer und ergänze die Dauer. Was schon im Feld steht, bleibt stehen. Nichts verlässt das Gerät.</p>
       ${C.TAGE.map((t, i) => `<label class="f"><span>${t}: eine Tätigkeit pro Zeile, mit Dauer</span><textarea class="sm" data-d="${i}" placeholder="z. B. Platine gelötet (2 Stunden)">${esc(w.d[i])}</textarea></label>`).join('')}
       <div class="btns"><button class="btn" data-w="clear">Leeren</button><button class="btn pri" data-w="print">🖨 Woche drucken</button></div></div><div id="woOut"></div>`;
     updateWoche();
@@ -186,13 +189,24 @@
     const t = e.target;
     if (t.dataset.name) { S.name = t.value; return; }
     if (t.dataset.k === 'wberuf') { S.wo.beruf = t.value; saveWo(); updateWoche(); return; }
+    if (t.dataset.k === 'wback') { S.woBack = +t.value; return; }
     if (t.dataset.d != null) { S.wo.d[+t.dataset.d] = t.value; saveWo(); updateWoche(); }
   });
   wv.addEventListener('click', e => {
     const b = e.target.closest('[data-w]'); if (!b) return;
     if (b.dataset.w === 'clear') { S.wo.d = ['', '', '', '', '']; saveWo(); renderWoche(); toast('Woche geleert'); }
+    else if (b.dataset.w === 'app') fillFromApp();
     else printWeek();
   });
+  /* Stichpunkte aus der App: liest nur sim.done, lm4.tdone und lm4.when, schreibt nur den Wochenentwurf */
+  function fillFromApp() {
+    const raw = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+    const r = C.fromApp({ back: S.woBack, when: raw('lm4.when'), done: raw('sim.done'), tdone: raw('lm4.tdone'), rows: root.AUFGABEN, labs: root.AUFGABEN_LABS, d: S.wo.d });
+    const von = r.tage[0].toLocaleDateString('de-DE'), bis = r.tage[4].toLocaleDateString('de-DE');
+    if (!r.n) { toast('Für die Woche vom ' + von + ' bis ' + bis + ' hast du in der App noch nichts gelöst. Trag deine Tage selbst ein.'); return; }
+    S.wo.d = r.d; saveWo(); renderWoche();
+    toast(r.neu ? r.neu + ' Stichpunkt(e) für ' + von + ' bis ' + bis + ' angehängt. Bitte in eigenen Worten nachschärfen.' : 'Alles schon eingetragen, nichts Neues dazu.');
+  }
   function printWeek() {
     const w = S.wo, sm = C.weekSummary(w.d, w.beruf);
     if (sm.empty === 5) { toast('Schreibe zuerst Stichpunkte zu mindestens einem Tag.'); return; }

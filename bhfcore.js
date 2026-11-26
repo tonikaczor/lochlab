@@ -298,9 +298,39 @@
     return { days: out, total, warn, missing, byFach, empty: out.filter(x => !x.n).length };
   }
 
+  /* Vorschläge aus der App für die Woche (Mo bis Fr, Ortszeit) von o.ref, o.back Wochen zurück.
+     o.when = {id: ms} (lm4.when), o.done = {id: true} (sim.done), o.tdone = {id: Prozent} (lm4.tdone, 100 zählt als gelöst); je Objekt oder JSON-Text, kaputter Text zählt als leer.
+     o.rows = AUFGABEN ([id, Lab, Gruppe, Titel, ...]), o.labs = {Lab: Name}, o.d = bisherige 5 Tagestexte.
+     Vorhandener Text bleibt stehen, neue Stichpunkte (höchstens MAXAPP je Tag, nach Lab gruppiert) werden angehängt, Doppelte weggelassen.
+     Liefert { tage: [5 Date], d: [5 Texte], n: gefundene Aufgaben, neu: angehängte Stichpunkte }. Kein Zugriff auf Speicher. */
+  const MAXAPP = 6;
+  function fromApp(o) {
+    const obj = v => { if (typeof v === 'string') { try { v = JSON.parse(v); } catch (e) { v = null; } } return v && typeof v === 'object' && !Array.isArray(v) ? v : {}; };
+    const when = obj(o.when), done = obj(o.done), tdone = obj(o.tdone), labs = o.labs || {}, info = {};
+    (o.rows || []).forEach(r => { if (Array.isArray(r) && r[0] && r[3]) info[r[0]] = { lab: labs[r[1]] || String(r[1] || 'App'), t: String(r[3]).replace(/\s*\(Pool [^)]*\)\s*$/, '') }; });
+    const r0 = new Date(o.ref == null ? Date.now() : o.ref);
+    const mon = new Date(r0.getFullYear(), r0.getMonth(), r0.getDate() - (r0.getDay() + 6) % 7 - 7 * (o.back || 0));
+    const tage = [0, 1, 2, 3, 4, 5].map(i => new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i));
+    const old = Array.isArray(o.d) ? o.d : [];
+    let n = 0, neu = 0;
+    const d = TAGE.map((x, i) => {
+      const a = tage[i].getTime(), b = tage[i + 1].getTime();
+      const hits = Object.keys(when).filter(id => info[id] && fin(when[id]) && when[id] >= a && when[id] < b && (+done[id] >= 100 || +tdone[id] >= 100))
+        .sort((p, q) => when[p] - when[q]);
+      n += hits.length;
+      const order = []; hits.forEach(id => { if (order.indexOf(info[id].lab) < 0) order.push(info[id].lab); });
+      const txt = typeof old[i] === 'string' ? old[i] : '', have = txt.split('\n').map(s => LOW(s.trim()));
+      const add = [];
+      order.forEach(l => hits.forEach(id => { const s = l + ': ' + info[id].t; if (info[id].lab === l && have.indexOf(LOW(s)) < 0 && add.indexOf(s) < 0) add.push(s); }));
+      const take = add.slice(0, MAXAPP); neu += take.length;
+      return take.length ? (txt.trim() ? txt.replace(/\s+$/, '') + '\n' : '') + take.join('\n') : txt;
+    });
+    return { tage: tage.slice(0, 5), d, n, neu };
+  }
+
   const API = { parseDe, fmtDe, fmtN, rd, num, hashStr, rng, ri, pick, shuffle, cap, words, fmtDauer, fmtStd,
     BERUFE, berufOf, VAGUE, WERT, FACH, TAGE, splitItems, findDauer, stripDauer, tenseOf, isLern, hasIch, vagueHit, findFach, hasFach, hasDauer, firstWord,
-    checkItem, startStats, maxStart, checkGelernt, analyze, neutralize, buildReport, weekSummary, hitList };
+    checkItem, startStats, maxStart, checkGelernt, analyze, neutralize, buildReport, weekSummary, fromApp, hitList };
   root.BHF_CORE = API;
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -67,5 +67,7 @@
   R({ lab: 'emb', betrieb: 'In fast jedem Gerät arbeitet ein Mikrocontroller. Wer Geräte entwickelt oder Fehler in der Firmware sucht, muss wissen, wie Timer, Wandler, serielle Busse und Zustandsautomaten zusammenspielen.' });
   R({ lab: 'nrm', betrieb: 'Bevor ein Gerät verkauft werden darf, muss feststehen, welche Vorschriften gelten und wie ihre Einhaltung nachgewiesen wird. Das planst du von Anfang an ein, damit es am Ende keine teuren Änderungen gibt.' });
   R({ lab: 'prj', betrieb: 'Technische Projekte scheitern oft an Terminen, Kosten und unklaren Anforderungen. Mit Lastenheft, Netzplan und Investitionsrechnung planst du ein Vorhaben so, dass es sich rechnet und fertig wird.' });
+  R({ lab: 'sya', betrieb: 'Kommt ein Gerät aus dem Prüffeld zurück, suchst du den Fehler nicht durch Raten. Du gehst am Blockschaltbild entlang, misst an den Messpunkten und grenzt den Block ein. Nach der Reparatur prüfst du das Gerät, bevor es wieder rausgeht.',
+    pruefung: 'Abschlussprüfung Teil 2, Systemanalyse: Schaltungsunterlagen auswerten, Fehler eingrenzen, Bauteile auslegen, Instandsetzung dokumentieren.' });
   R({ lab: 'fli', betrieb: 'In der Fertigung bestimmt die langsamste Station, wie viele Baugruppen die Linie schafft. Wer Takt, Engpass und Ausschuss lesen kann, findet die Stelle, an der sich eine Verbesserung lohnt.' });
 })(typeof window !== 'undefined' ? window : globalThis);
