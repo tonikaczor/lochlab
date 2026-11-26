@@ -69,5 +69,17 @@
   R({ lab: 'prj', betrieb: 'Technische Projekte scheitern oft an Terminen, Kosten und unklaren Anforderungen. Mit Lastenheft, Netzplan und Investitionsrechnung planst du ein Vorhaben so, dass es sich rechnet und fertig wird.' });
   R({ lab: 'sya', betrieb: 'Kommt ein Gerät aus dem Prüffeld zurück, suchst du den Fehler nicht durch Raten. Du gehst am Blockschaltbild entlang, misst an den Messpunkten und grenzt den Block ein. Nach der Reparatur prüfst du das Gerät, bevor es wieder rausgeht.',
     pruefung: 'Abschlussprüfung Teil 2, Systemanalyse: Schaltungsunterlagen auswerten, Fehler eingrenzen, Bauteile auslegen, Instandsetzung dokumentieren.' });
+  R({ lab: 'lot', betrieb: 'In der Fertigung lötest du von Hand nach und beurteilst Lötstellen nach Vorgabe. Du erkennst kalte Lötstellen, Brücken und Grabsteine, weißt, was zum Fehler führt, und arbeitest im ESD-Bereich richtig.',
+    pruefung: 'Lötprüfung Modul 1 (THT) und Modul 2 (SMD), Abschlussprüfung Teil 1: Lötstellen herstellen und beurteilen, ESD-Schutz.' });
+  R({ lab: 'bus', betrieb: 'Geräte und Anlagen tauschen Daten über serielle Busse aus. Bei der Inbetriebnahme stellst du Baudrate und Adresse ein, prüfst Abschlusswiderstände und erkennst am Oszilloskop, ob ein Rahmen sauber ankommt.',
+    pruefung: 'Abschlussprüfung Teil 2, Systementwurf und Funktionsanalyse: Schnittstellen auswählen, Datenübertragung berechnen, Busfehler eingrenzen.' });
+  R({ lab: 'mik', betrieb: 'Viele Geräte haben einen Mikrocontroller. Du liest Programme, stellst Zeiten über Timer ein, prüfst Messwerte vom AD-Wandler und findest heraus, warum ein Gerät zu viel Strom zieht.',
+    pruefung: 'Abschlussprüfung Teil 2, Systementwurf: Timer und AD-Wandler berechnen, Programmabläufe lesen, Zustandsautomaten entwerfen.' });
+  R({ lab: 'pne', betrieb: 'Viele Anlagen bewegen Teile mit Druckluft. Du liest Pneumatikpläne, erkennst Ventile und Zylinder, schließt Schläuche richtig an und findest Lecks.',
+    pruefung: 'Abschlussprüfung Teil 2: Pneumatik- und Elektropneumatikpläne lesen, Ventile und Zylinder auswählen, Luftverbrauch abschätzen.' });
+  R({ lab: 'drk', betrieb: 'In der Werkstatt druckst du Halter, Gehäuse und Prüfmittel selbst. Du bereitest das Modell im Slicer vor, wählst das Filament und erkennst Druckfehler früh.',
+    pruefung: 'Abschlussprüfung Teil 1 und Projektarbeit: Gehäuse und Halter fertigen, Fertigungsverfahren auswählen, Materialkosten berechnen.' });
+  R({ lab: 'cad', betrieb: 'Halter, Gehäuse und Frontplatten konstruierst du am Rechner. Du zeichnest saubere Skizzen, baust den Körper aus Features auf und gibst die Datei an den 3D-Drucker oder die Fertigung weiter.',
+    pruefung: 'Abschlussprüfung Teil 1 und Projektarbeit: technische Unterlagen erstellen, Gehäuse konstruieren, Daten für die Fertigung bereitstellen.' });
   R({ lab: 'fli', betrieb: 'In der Fertigung bestimmt die langsamste Station, wie viele Baugruppen die Linie schafft. Wer Takt, Engpass und Ausschuss lesen kann, findet die Stelle, an der sich eine Verbesserung lohnt.' });
 })(typeof window !== 'undefined' ? window : globalThis);

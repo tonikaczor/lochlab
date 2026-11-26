@@ -115,7 +115,21 @@
       {
         id: "M8",
         nr: "8",
-        titel: "Modul 8: Normen, Projekt und Betrieb",
+        titel: "Modul 8: Konstruieren und 3D-Druck",
+        kurz: "Du konstruierst Bauteile und Gehäuse am Rechner und bereitest sie im Slicer für den 3D-Druck vor.",
+        jahr: 3,
+        quelle: "Entwurf: eigene Zusammenstellung nach dem Inhalt der Labs, kein amtlicher Lehrplan",
+        entwurf: true,
+        labs: [{"lab":"cad","bereich":"*"},{"lab":"drk","bereich":"*"}],
+        heft: null,
+        wiki: [],
+        projekt: [],
+        pruefung: null
+      },
+      {
+        id: "M9",
+        nr: "9",
+        titel: "Modul 9: Normen, Projekt und Betrieb",
         kurz: "Du wendest Normen an, planst und bewertest Projekte, kalkulierst Kosten und liest englische Fachtexte.",
         jahr: 3,
         quelle: "Entwurf: eigene Zusammenstellung nach dem Inhalt der Labs, kein amtlicher Lehrplan",

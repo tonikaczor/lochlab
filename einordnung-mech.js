@@ -9,8 +9,6 @@
       pruefung: 'Drehzahl, Vorschub und Hauptnutzungszeit für Drehen, Fräsen und Bohren berechnen und passende Schnittwerte aus der Tabelle wählen.' },
     { lab: 'fer', betrieb: 'In der Werkstatt planst du, mit welchem Verfahren du ein Teil fertigst, rechnest die Zuschnittlänge und kontrollierst die Qualität. So werden Biegeteile, Gewinde und Serien maßhaltig.',
       pruefung: 'In Teil 1 fertigst du ein Werkstück von Hand und an Maschinen nach Zeichnung. Dazu planst du die Arbeitsschritte und wählst das Verfahren.' },
-    { lab: 'pne', betrieb: 'Druckluftzylinder spannen, schieben und sortieren in vielen Anlagen. Wenn du Schaltpläne lesen und verschlauchen kannst, findest du Fehler schneller und baust Steuerungen sauber auf.',
-      pruefung: 'Einen pneumatischen Schaltplan lesen, Bauteile und Anschlüsse benennen, die Kolbenkraft berechnen und einen Fehler in der Steuerung eingrenzen.' },
     { lab: 'hyd', betrieb: 'Pressen, Hebebühnen und Bagger arbeiten mit Hydraulik. Du berechnest Kraft und Geschwindigkeit der Zylinder und liest Schaltpläne, um Anlagen einzustellen oder Störungen einzugrenzen.',
       pruefung: 'Einen Hydraulikplan lesen, Ventile und Anschlüsse benennen und Druck, Kolbenkraft oder Volumenstrom eines Zylinders berechnen.' },
     { lab: 'mas', betrieb: 'Getriebe, Riemen, Lager und Kupplungen stecken in fast jeder Maschine. Du erkennst, welches Element wo wirkt, und tauschst Verschleißteile gezielt statt zu raten.',

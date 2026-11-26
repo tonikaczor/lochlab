@@ -418,7 +418,7 @@
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [{ lab: "zei", fremd: true, bereich: "*" }],
+        labs: [{"lab": "cad", "bereich": "*"}, { lab: "zei", fremd: true, bereich: "*" }],
         heft: null,
         wiki: [],
         projekt: [],
@@ -469,7 +469,11 @@
         jahr: 2,
         quelle: "Entwurf: keine eigene Schulmitschrift vorhanden",
         entwurf: true,
-        labs: [
+        labs: [{"lab": "drk", "bereich": "*"}, 
+          {
+            lab: "lot",
+            bereich: "*"
+          },
           {
             lab: "pcb",
             fremd: true,
@@ -664,7 +668,7 @@
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [{ lab: "pne", fremd: true, bereich: "*" }],
+        labs: [{ lab: "pne", bereich: "*" }],
         heft: "lernen-pne.html",
         wiki: [],
         projekt: [],
@@ -754,6 +758,8 @@
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
         labs: [
+          { lab: "mik", fremd: true, bereich: "*" },
+          { lab: "bus", fremd: true, bereich: "*" },
           { lab: "loch", aufgaben: ["l11", "l12", "lf4"] },
           { lab: "ana", aufgaben: ["ae48"] },
           { lab: "code", fremd: true, bereich: ["Sensoren und Töne", "Prüfungspraxis"], aufgaben: ["c24"] },

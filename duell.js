@@ -23,7 +23,7 @@
     histMax: 100, rowsMax: 10
   };
   const KATS = ['Fehlersuche', 'Fehlersuche im Code', 'Messfehler'];
-  const NOLABS = ['app', 'vb', 'pr', 'tol', 'zer', 'pne', 'hyd', 'cnc', 'wer', 'ins', 'net', 'kal', 'lag', 'zei', 'arb', 'ems', 'mat', 'its', 'buc', 'lad', 'hwl', 'sys', 'ssl', 'fug', 'mas', 'mch', 'fer', 'mak', 'mat2', 'sig', 'rg2', 'emb', 'prj', 'nrm', 'fli', 'tou', 'sya', 'kun', 'prd', 'mkt', 'hf'];   /* eigenständige Labs der Berufe (v39.158) und der Wege Studium/Technik (v55.174) haben keinen Duell-Modus */
+  const NOLABS = ['app', 'vb', 'pr', 'tol', 'zer', 'pne', 'hyd', 'cnc', 'wer', 'ins', 'net', 'kal', 'lag', 'zei', 'arb', 'ems', 'mat', 'its', 'buc', 'lad', 'hwl', 'sys', 'ssl', 'fug', 'mas', 'mch', 'fer', 'mak', 'mat2', 'sig', 'rg2', 'emb', 'prj', 'nrm', 'fli', 'tou', 'sya', 'kun', 'prd', 'mkt', 'lot', 'bus', 'mik', 'drk', 'cad', 'hf'];   /* eigenständige Labs der Berufe (v39.158) und der Wege Studium/Technik (v55.174) haben keinen Duell-Modus */
   const EXTRA = ['sl3', 'sl5', 'sl6', 'cp4', 'el14', 'el16', 'el23'];   /* Fehlersuchen mit anderer Kategorie (Ids, keine Lab-Liste) */
   const EINSTIEG = ['s1', 's2', 's6', 's7'];   /* SchaltLab-Grundaufgaben, nur für Stufe 1 zusätzlich im Duell */
   const SEEDLABS = ['nts', 'ana', 'pcb', 'els'];                        /* Seed-variabler Fehler: im Pool doppelt gewichtet */

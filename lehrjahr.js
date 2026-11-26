@@ -39,6 +39,16 @@
   const AUSNAHMEN = {
     // Systemanalyse-Lab (sya), v69.192: Teil 2 der Abschlussprüfung, alles ab dem 3. Lehrjahr, diese Aufgaben erst im 4.
     sya: { sya16: 4, sya17: 4, sya18: 4, sya19: 4, sya20: 4, sya27: 4, sya28: 4, sya29: 4, sya30: 4, sya31: 4, sya32: 4, sya33: 4, sya34: 4, sya35: 4, sya36: 4, sya37: 4, sya38: 4, sya39: 4, sya41: 4, sya42: 4, sya44: 4, sya45: 4 },
+    // Löt-Lab (lot), v74.193: Lernfeld 8.3 gibt das 2. Lehrjahr, diese Aufgaben weichen ab.
+    lot: { lot1: 1, lot2: 1, lot3: 1, lot4: 1, lot5: 1, lot6: 1, lot7: 1, lot8: 1, lot9: 1, lot10: 1, lot11: 1, lot12: 1, lot13: 1, lot14: 1, lot15: 1, lot16: 1, lot33: 1, lot34: 1, lot35: 1, lot36: 1, lot37: 1, lot38: 1, lot39: 1, lot40: 1, lot41: 1 },
+    // Bus-Lab (bus), v74.193: Lernfeld E12 gibt das 4. Lehrjahr, diese Aufgaben weichen ab.
+    bus: { bus1: 3, bus2: 3, bus3: 3, bus4: 3, bus5: 3, bus6: 3, bus7: 3, bus8: 3, bus9: 3, bus10: 3, bus11: 3, bus12: 3, bus13: 3, bus14: 3, bus15: 3, bus16: 3, bus17: 3, bus18: 3, bus19: 3, bus20: 3, bus21: 3, bus22: 3, bus23: 3, bus24: 3, bus25: 3, bus26: 3, bus27: 3, bus28: 3, bus29: 3, bus30: 3, bus31: 3, bus32: 3, bus33: 3, bus34: 3, bus35: 3, bus36: 3, bus37: 3, bus38: 3, bus39: 3, bus40: 3, bus41: 3, bus42: 3, bus43: 3, bus44: 3 },
+    // Mikrocontroller-Lab (mik), v74.193: Lernfeld E12 gibt das 4. Lehrjahr, diese Aufgaben weichen ab.
+    mik: { mik1: 3, mik2: 3, mik3: 3, mik4: 3, mik5: 3, mik6: 3, mik7: 3, mik8: 3, mik9: 3, mik10: 3, mik11: 3, mik12: 3, mik13: 3, mik14: 3, mik15: 3, mik16: 3, mik17: 3, mik18: 3, mik19: 3, mik20: 3, mik21: 3, mik22: 3, mik23: 3, mik24: 3 },
+    // 3D-Druck-Lab (drk), v74.193: Lernfeld 8.3 gibt das 2. Lehrjahr, diese Aufgaben weichen ab.
+    drk: { drk1: 1, drk2: 1, drk3: 1, drk4: 1, drk5: 1, drk6: 1, drk7: 1, drk8: 1, drk9: 1, drk10: 1, drk11: 1, drk12: 1 },
+    // 3D-Modellierungs-Lab (cad), v74.193: Lernfeld 8.1 gibt das 2. Lehrjahr, diese Aufgaben weichen ab.
+    cad: { cad1: 1, cad2: 1, cad3: 1, cad4: 1, cad5: 1, cad6: 1, cad7: 1, cad10: 1, cad12: 1, cad32: 3, cad34: 3, cad35: 3, cad39: 3, cad41: 3 },
     // Thermik-Lab (thm), v63.185
     thm: { th45: 4 },
     // SchaltLab (sch)

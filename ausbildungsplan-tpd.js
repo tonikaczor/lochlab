@@ -107,7 +107,7 @@
         "jahr": 1,
         "block": "Gemeinsame Lernfelder",
         "entwurf": true,
-        "labs": [
+        "labs": [{"lab": "cad", "bereich": "*"}, 
           {
             "lab": "zei",
             "bereich": [
@@ -158,7 +158,7 @@
         "jahr": 1,
         "block": "Gemeinsame Lernfelder",
         "entwurf": true,
-        "labs": [
+        "labs": [{"lab": "drk", "bereich": "*"}, 
           {
             "lab": "tol",
             "bereich": [

@@ -101,7 +101,21 @@
       {
         id: "M7",
         nr: "7",
-        titel: "Modul 7: Projekt, Normen und Fachenglisch",
+        titel: "Modul 7: Konstruieren und 3D-Druck",
+        kurz: "Du konstruierst Bauteile und Gehäuse am Rechner und bereitest sie im Slicer für den 3D-Druck vor.",
+        jahr: 3,
+        quelle: "Entwurf: eigene Zusammenstellung nach dem Inhalt der Labs, kein amtlicher Lehrplan",
+        entwurf: true,
+        labs: [{"lab":"cad","bereich":"*"},{"lab":"drk","bereich":"*"}],
+        heft: null,
+        wiki: [],
+        projekt: [],
+        pruefung: null
+      },
+      {
+        id: "M8",
+        nr: "8",
+        titel: "Modul 8: Projekt, Normen und Fachenglisch",
         kurz: "Du planst und bewertest Projekte, wendest Normen an und liest englische Fachtexte.",
         jahr: 3,
         quelle: "Entwurf: eigene Zusammenstellung nach dem Inhalt der Labs, kein amtlicher Lehrplan",

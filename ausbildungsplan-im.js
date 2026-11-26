@@ -1001,7 +1001,7 @@
         "block": "Übergreifend",
         "quelle": "Entwurf",
         "entwurf": true,
-        "labs": [
+        "labs": [{"lab": "cad", "bereich": "*"}, {"lab": "drk", "bereich": "*"}, 
           {
             "lab": "ems",
             "bereich": "*"
