@@ -2,6 +2,9 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v78.194', items: [
+      ['Vier neue Labs', 'Kleinsteuerungs-Lab mit Selbsthaltung, Funktionsplan, Elektropneumatik und Sensoren, Simulations- und EDA-Lab mit Simulation, ERC und Gerber-Lagen, Plan-Lab mit Stromlaufplan, Kennzeichen und Klemmenplan und Industrie-4.0-Lab mit Datenkette, MQTT und Zustandsüberwachung. Zusammen 175 neue Aufgaben mit bewegten Bildern.', 'Neue Labs'],
+    ] },
     { v: 'v74.193', items: [
       ['Fünf neue Labs', 'Für Elektroniker das Löt-Lab, das Bus-Lab und das Mikrocontroller-Lab. Für Elektro- und Metallberufe, Produktdesigner, Techniker und Studium das 3D-Druck-Lab und das 3D-Modellierungs-Lab. Zusammen 211 neue Aufgaben mit bewegten Bildern.', 'Neue Labs'],
       ['Pneumatik-Lab für Elektroniker', 'Elektroniker und Industrieelektriker finden jetzt auch das Pneumatik-Lab, ab dem 3. Lehrjahr. Der Lernpfad zeigt die neuen Schritte.', 'Lernpfad'],
@@ -10,11 +13,6 @@
       ['Fünf neue Labs', 'Touren-Lab für die Lagerlogistik, Kunststoff-Lab für Produktdesigner, Produktions-Lab und Marketing-Lab für Industriekaufleute und das Systemanalyse-Lab für Elektroniker im 3. und 4. Lehrjahr. Zusammen 212 neue Aufgaben mit bewegten Bildern.', 'Neue Labs'],
       ['Mehr Labs für Kaufleute und Produktdesigner', 'Industriekaufleute finden jetzt auch das Lager-Lab und das Warenfluss-Lab. Produktdesigner bekommen das Werkstoff-, Zerspan-, Fertigungs- und Füge-Lab. Der Lernpfad zeigt die neuen Schritte.', 'Lernpfad'],
       ['Berichtsheft füllt sich aus der App', 'Im Berichtsheft-Helfer holt der Knopf „Aus der App übernehmen“ deine erledigten Aufgaben der Woche als Stichpunkte in die Wochenansicht. Du kannst sie danach ändern.', 'Berichtsheft'],
-    ] },
-    { v: 'v64.191', items: [
-      ['10-Minuten-Einheit passt zum Lehrjahr', 'Elektroniker und Industrieelektriker bekommen zuerst Lernkarten und Aufgaben, die zu ihrem Lehrjahr passen. Neu ist der Knopf „Weiß ich nicht“: Du siehst dann gleich die Lösung und machst mit der nächsten Aufgabe weiter.', 'Start, Üben'],
-      ['Mehr unter „Heute dran“', 'Auf der Startseite stehen jetzt immer vier Ziele: Wiederholen, 10-Minuten-Einheit oder Wiki, Prüfung oder Studium und die Verbundprojekte. Das gilt auch für Techniker und Studium, die jetzt alle Verbundprojekte sehen.', 'Startseite'],
-      ['Besser lesbar auf iPad und iPhone', 'Als App vom Home-Bildschirm rutscht der Text beim Scrollen nicht mehr unter Uhr und Akku-Anzeige. Im EMS-Lab stehen die Texte näher an ihrer Überschrift.', 'Alle Berufe'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

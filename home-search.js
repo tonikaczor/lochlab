@@ -101,7 +101,20 @@
     ['cadlab.html?tab=bo', '3D-Modellierungs-Lab', 'Boolesch', '3D-Modellierung CAD boolesche Operation Vereinigung Differenz Schnittmenge Baugruppe Zusammenbau STL STEP 3MF'],
     ['flilab.html?tab=li', 'Linien-Lab', 'Linie', 'Linien Fertigungslinie Takt Taktzeit Kundentakt Engpass Durchsatz Durchlaufzeit Puffer Bestand Little Ausschuss Ausbeute Gesamtausbeute RTY Störung'],
     ['flilab.html?tab=rv', 'Linien-Lab', 'Rückverfolgung', 'Linien Rückverfolgbarkeit Charge Verpackungs-Kennung Seriennummer Rückruf Los eingrenzen'],
-    ['flilab.html?tab=lv', 'Linien-Lab', 'Lack und Verguss', 'Linien Lackieren Lackierung Schutzlack Maskieren Ablüften Aushärten Verguss Vergussmasse Topfzeit Mischungsverhältnis Harz Härter']
+    ['flilab.html?tab=lv', 'Linien-Lab', 'Lack und Verguss', 'Linien Lackieren Lackierung Schutzlack Maskieren Ablüften Aushärten Verguss Vergussmasse Topfzeit Mischungsverhältnis Harz Härter'],
+    ['ksplab.html?tab=sh', 'Kleinsteuerungs-Lab', 'Selbsthaltung', 'Kleinsteuerung Selbsthaltung Schütz Relais Wendeschaltung Verriegelung Stromlaufplan Taster Öffner Schließer'],
+    ['ksplab.html?tab=fup', 'Kleinsteuerungs-Lab', 'Funktionsplan', 'Kleinsteuerung Funktionsplan FUP UND ODER NICHT Einschaltverzögerung Ausschaltverzögerung Wischer Zähler Speicher'],
+    ['ksplab.html?tab=ep', 'Kleinsteuerungs-Lab', 'Elektropneumatik', 'Elektropneumatik Magnetventil 5/2-Ventil monostabil bistabil Zylinder Endlage Reedkontakt Endschalter Ablauf'],
+    ['ksplab.html?tab=sen', 'Kleinsteuerungs-Lab', 'Sensor', 'Kleinsteuerung Sensor induktiv kapazitiv optisch Schaltabstand Hysterese PNP NPN Drahtbruch Status-LED 24 V'],
+    ['edalab.html?tab=sim', 'Simulations- und EDA-Lab', 'Simulation', 'Simulation Arbeitspunkt Zeitverlauf Transientenanalyse Frequenzgang AC-Analyse Bode Grenzfrequenz Parameter-Sweep Brummspannung Toleranz'],
+    ['edalab.html?tab=erc', 'Simulations- und EDA-Lab', 'ERC', 'EDA Schaltplan ERC elektrische Regelprüfung Netzliste Netzname Pin Treiber Versorgung Footprint Zuordnung'],
+    ['edalab.html?tab=ger', 'Simulations- und EDA-Lab', 'Gerber', 'EDA Gerber Fertigungsdaten Bohrdatei Lötstoppmaske Bestückungsdruck Pastenlage Kontur DFM Restring Stückliste BOM Nutzen'],
+    ['bmklab.html?tab=plan', 'Plan-Lab', 'Stromlaufplan', 'Plan lesen Stromlaufplan Schaltplan Strompfad Kontaktspiegel Querverweis Übersichtsplan Plantypen Schaltzeichen'],
+    ['bmklab.html?tab=kz', 'Plan-Lab', 'Kennzeichen', 'Betriebsmittelkennzeichnung BMK Kennbuchstabe Referenzkennzeichen Funktion Ort Produkt Anschluss Schütz Relais'],
+    ['bmklab.html?tab=klem', 'Plan-Lab', 'Klemmenplan', 'Klemmenplan Klemmleiste Verdrahtungsliste Anschlussplan Anschlussbezeichnung Hilfskontakt Leiterfarben Klemme'],
+    ['iotlab.html?tab=dk', 'Industrie-4.0-Lab', 'Datenkette', 'Industrie 4.0 IIoT Datenkette Sensor Gateway Edge Cloud Dashboard Datenmenge Datenrate Abtastintervall'],
+    ['iotlab.html?tab=mq', 'Industrie-4.0-Lab', 'MQTT', 'Industrie 4.0 MQTT Broker Topic Publish Subscribe Platzhalter QoS Retain Port 1883 8883'],
+    ['iotlab.html?tab=zu', 'Industrie-4.0-Lab', 'Zustand', 'Industrie 4.0 Zustandsüberwachung vorausschauende Wartung Predictive Maintenance Grenzwert Trend digitaler Zwilling OPC UA Modbus TCP']
   ];
   const toStr = s => String(s == null ? '' : s);
   // Umlaute zu ae/oe/ue/ss (Eingabe "waerme" findet "Wärme"); fold: zusätzlich Akzente weg ("warme" findet auch "Wärme")

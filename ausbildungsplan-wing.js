@@ -64,7 +64,7 @@
         jahr: 2,
         quelle: "Entwurf: eigene Zusammenstellung nach dem Inhalt der Labs, kein amtlicher Lehrplan",
         entwurf: true,
-        labs: [{"lab":"sps","bereich":"*"},{"lab":"sen","bereich":"*"},{"lab":"ant","bereich":"*"},{"lab":"reg","bereich":"*"},{"lab":"rg2","bereich":"*"},{"lab":"enr","bereich":"*"}],
+        labs: [{"lab":"sps","bereich":"*"},{"lab":"sen","bereich":"*"},{"lab":"ant","bereich":"*"},{"lab":"reg","bereich":"*"},{"lab":"rg2","bereich":"*"},{"lab":"enr","bereich":"*"},{"lab":"iot","bereich":"*"}],
         heft: null,
         wiki: [],
         projekt: [],

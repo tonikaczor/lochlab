@@ -6,7 +6,7 @@
 /* ---------- 1 Kopfzeile (4.1): eine Zeile, am Handy 48 px ---------- */
 html.lr-on #app>header{min-height:48px;height:calc(48px + env(safe-area-inset-top,0px));padding:env(safe-area-inset-top,0px) 4px 0;gap:2px;flex-wrap:nowrap;overflow:hidden;box-shadow:none;border-bottom:1px solid var(--line);background:var(--panel)}
 html.lr-on #app>header>*{order:5}
-@media(max-width:400px){html.lr-on #app>header{gap:0;padding-left:2px;padding-right:2px}html.lr-on #app>header>*{margin-left:0;margin-right:0}}
+@media(max-width:400px){html.lr-on #app>header{gap:0;padding-left:2px;padding-right:2px}html.lr-on #app>header>*{margin-left:0;margin-right:0}html.lr-on .lr-seg:has(>button:nth-child(4))>button{padding:0 2px;font-size:14px}}
 html.lr-on #app>header>#bHome{order:1}
 html.lr-on #app>header>.lr-name{order:2}
 html.lr-on #app>header>.lr-band{order:3}

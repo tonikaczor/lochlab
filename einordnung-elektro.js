@@ -81,5 +81,13 @@
     pruefung: 'Abschlussprüfung Teil 1 und Projektarbeit: Gehäuse und Halter fertigen, Fertigungsverfahren auswählen, Materialkosten berechnen.' });
   R({ lab: 'cad', betrieb: 'Halter, Gehäuse und Frontplatten konstruierst du am Rechner. Du zeichnest saubere Skizzen, baust den Körper aus Features auf und gibst die Datei an den 3D-Drucker oder die Fertigung weiter.',
     pruefung: 'Abschlussprüfung Teil 1 und Projektarbeit: technische Unterlagen erstellen, Gehäuse konstruieren, Daten für die Fertigung bereitstellen.' });
+  R({ lab: 'ksp', betrieb: 'Prüfplätze, Vorrichtungen und kleine Anlagen werden oft mit Kleinsteuerung, Schützen und Magnetventilen gesteuert. Du schließt Sensoren richtig an und findest Fehler an Ein- und Ausgängen.',
+    pruefung: 'Abschlussprüfung Teil 1 und 2: Steuerungen mit Schütz und Kleinsteuerung lesen, Sensoren anschließen, elektropneumatische Abläufe prüfen.' });
+  R({ lab: 'eda', betrieb: 'Bevor eine Platine bestellt wird, prüfst du die Schaltung in der Simulation, beseitigst die Meldungen der Regelprüfung und kontrollierst die Fertigungsdaten.',
+    pruefung: 'Abschlussprüfung Teil 1 und 2: Schaltungsunterlagen auswerten, Simulationsergebnisse bewerten, Fertigungsdaten für eine Leiterplatte prüfen.' });
+  R({ lab: 'bmk', betrieb: 'Bei Prüfung, Wartung und Fehlersuche arbeitest du mit Stromlaufplan, Klemmenplan und Verdrahtungsliste. Du findest jedes Betriebsmittel über sein Kennzeichen.',
+    pruefung: 'Abschlussprüfung Teil 1 und 2: Stromlaufplan, Klemmenplan und Verdrahtungsliste lesen und ergänzen, Betriebsmittel richtig kennzeichnen.' });
+  R({ lab: 'iot', betrieb: 'Prüfplätze und Fertigungslinien melden Messwerte und Zustände an ein Leitsystem. Du verstehst die Datenkette, liest Topics und achtest auf die IT-Sicherheit der Anlage.',
+    pruefung: 'Abschlussprüfung Teil 2: Datenfluss vom Sensor bis zur Auswertung beschreiben, Schnittstellen zuordnen, IT-Sicherheit vernetzter Anlagen bewerten.' });
   R({ lab: 'fli', betrieb: 'In der Fertigung bestimmt die langsamste Station, wie viele Baugruppen die Linie schafft. Wer Takt, Engpass und Ausschuss lesen kann, findet die Stelle, an der sich eine Verbesserung lohnt.' });
 })(typeof window !== 'undefined' ? window : globalThis);

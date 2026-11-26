@@ -346,7 +346,7 @@
         "jahr": 2,
         "quelle": "KMK-Rahmenlehrplan Industriemechaniker/-in (Lernfeldtitel, Stand Änderung 2018); ZVEI/BIBB Zeitrahmen und Lernfelder, Stand 16.05.2018; BBS Osnabrück Gliederung Industriemechanik, Stand 15.02.2023",
         "entwurf": true,
-        "labs": [
+        "labs": [{"lab": "ksp", "bereich": "*"}, {"lab": "bmk", "bereich": "*"}, 
           {
             "lab": "sps",
             "bereich": [

@@ -81,7 +81,7 @@
         jahr: 1,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [
+        labs: [{ lab: "bmk", bereich: "*" }, 
           { lab: "loch", bereich: ["Fehlersuche"], aufgaben: ["l18", "l21"] },
           { lab: "sch", bereich: ["Filter und Gleichrichter"], aufgaben: ["sf5", "r4"] },
           { lab: "sim", bereich: ["Grundlagen", "Hausinstallation", "Fehlersuche"] },
@@ -117,7 +117,7 @@
         jahr: 1,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [
+        labs: [{ lab: "ksp", bereich: ["Relais, Schütz, Selbsthaltung", "Kleinsteuerung als Gerät", "Funktionsplan, Zeiten, Zähler"] }, 
           { lab: "sim", bereich: ["Steuerungstechnik"], aufgaben: ["zh", "schuetz", "selbst", "f3", "f10"] },
           { lab: "sps", bereich: ["Grundlagen"] }
         ],
@@ -418,7 +418,7 @@
         jahr: 2,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [{"lab": "cad", "bereich": "*"}, { lab: "zei", fremd: true, bereich: "*" }],
+        labs: [{ lab: "cad", bereich: "*" }, { lab: "zei", fremd: true, bereich: "*" }],
         heft: null,
         wiki: [],
         projekt: [],
@@ -469,7 +469,7 @@
         jahr: 2,
         quelle: "Entwurf: keine eigene Schulmitschrift vorhanden",
         entwurf: true,
-        labs: [{"lab": "drk", "bereich": "*"}, 
+        labs: [{ lab: "drk", bereich: "*" },
           {
             lab: "lot",
             bereich: "*"
@@ -614,7 +614,7 @@
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [
+        labs: [{ lab: "iot", bereich: "*" }, { lab: "ksp", bereich: ["Sensorik an der Steuerung", "Fehlersuche an Ein- und Ausgängen"] }, 
           { lab: "digi", bereich: ["Kundenauftrag"] },
           { lab: "mess", bereich: ["Kundenauftrag"] },
           { lab: "els", bereich: ["Maschinensicherheit"] },
@@ -668,7 +668,7 @@
         jahr: 3,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [{ lab: "pne", bereich: "*" }],
+        labs: [{ lab: "ksp", bereich: ["Elektropneumatik"] }, { lab: "pne", bereich: "*" }],
         heft: "lernen-pne.html",
         wiki: [],
         projekt: [],

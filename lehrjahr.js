@@ -49,6 +49,12 @@
     drk: { drk1: 1, drk2: 1, drk3: 1, drk4: 1, drk5: 1, drk6: 1, drk7: 1, drk8: 1, drk9: 1, drk10: 1, drk11: 1, drk12: 1 },
     // 3D-Modellierungs-Lab (cad), v74.193: Lernfeld 8.1 gibt das 2. Lehrjahr, diese Aufgaben weichen ab.
     cad: { cad1: 1, cad2: 1, cad3: 1, cad4: 1, cad5: 1, cad6: 1, cad7: 1, cad10: 1, cad12: 1, cad32: 3, cad34: 3, cad35: 3, cad39: 3, cad41: 3 },
+    // Kleinsteuerungs-Lab (ksp), v78.194: das Lernfeld gibt ein anderes Lehrjahr als das Thema, diese Aufgaben weichen ab.
+    ksp: { ksp38: 2, ksp39: 2, ksp40: 2, ksp41: 2, ksp42: 2, ksp43: 2 },
+    // Simulations- und EDA-Lab (eda), v78.194: das Lernfeld gibt ein anderes Lehrjahr als das Thema, diese Aufgaben weichen ab.
+    eda: { eda7: 1, eda8: 1, eda9: 1, eda10: 1, eda11: 1, eda12: 1, eda13: 1, eda14: 1, eda15: 1, eda16: 1 },
+    // Plan-Lab (bmk), v78.194: das Lernfeld gibt ein anderes Lehrjahr als das Thema, diese Aufgaben weichen ab.
+    bmk: { bmk14: 2, bmk15: 2, bmk16: 2, bmk17: 2, bmk18: 2, bmk19: 2, bmk20: 2, bmk21: 2, bmk22: 2, bmk23: 2, bmk24: 2, bmk25: 2, bmk26: 2, bmk27: 2 },
     // Thermik-Lab (thm), v63.185
     thm: { th45: 4 },
     // SchaltLab (sch)

@@ -10,20 +10,20 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const REG = root.LAB_REG || {}, ROWS = root.AUFGABEN || [];
   const TRACKS = [
-    { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik, zur elektrischen Sicherheit und Geräteprüfung, zu Netzteilen und Schaltreglern, zu Wechselstrom und Schwingkreisen, zur Analogtechnik mit Diode, Transistor und Operationsverstärker, zur Leiterplatte, zur speicherprogrammierbaren Steuerung (SPS), zu den Antrieben, zur Sensorik, zur Regelungstechnik, zur Wärmeabfuhr mit dem Kühlkörper und zur elektromagnetischen Verträglichkeit (EMV) und zur Solartechnik (Energie).', labs: ['sch', 'arb', 'ems', 'loch', 'digi', 'mess', 'els', 'nts', 'wsl', 'ana', 'sps', 'pne', 'pcb', 'lot', 'ant', 'sen', 'reg', 'thm', 'emv', 'hf', 'enr'] },
-    { t: 'Installation und Anlagen', s: 'Wie Strom im Haus verteilt, geschaltet und abgesichert wird.', labs: ['sim', 'haus'], pre: 'Empfohlen vorher: SchaltLab' },
+    { t: 'Elektronik von Grund auf', s: 'Von der einfachen Schaltung über das Löten und die Digitaltechnik bis zur Messtechnik, zur elektrischen Sicherheit und Geräteprüfung, zu Netzteilen und Schaltreglern, zu Wechselstrom und Schwingkreisen, zur Analogtechnik mit Diode, Transistor und Operationsverstärker, zur Leiterplatte, zur speicherprogrammierbaren Steuerung (SPS), zu den Antrieben, zur Sensorik, zur Regelungstechnik, zur Wärmeabfuhr mit dem Kühlkörper und zur elektromagnetischen Verträglichkeit (EMV) und zur Solartechnik (Energie).', labs: ['sch', 'arb', 'ems', 'loch', 'digi', 'mess', 'els', 'nts', 'wsl', 'ana', 'sps', 'ksp', 'pne', 'pcb', 'eda', 'lot', 'ant', 'sen', 'reg', 'thm', 'emv', 'hf', 'enr'] },
+    { t: 'Installation und Anlagen', s: 'Wie Strom im Haus verteilt, geschaltet und abgesichert wird.', labs: ['bmk', 'sim', 'haus'], pre: 'Empfohlen vorher: SchaltLab' },
     { t: 'Konstruieren und 3D-Druck', s: 'Bauteile und Gehäuse am Rechner konstruieren, dann im Slicer vorbereiten und drucken.', labs: ['cad', 'drk'], pre: '' },
     { t: 'Prüfungsvorbereitung', s: 'Die Abschlussprüfung üben: Datenblätter lesen (Grenzwerte, Kennlinien, Fachenglisch), Themen trainieren, Rechnen, Probeprüfung mit Zeitlimit und Auswertung. Das Thema Sicherheit und Normen übst du zusätzlich nach dem Sicherheits-Lab: die Abschaltbedingung, die Schutzmaßnahmen und die Geräteprüfung kommen in der Prüfung vor. Das Thema Stromversorgung übst du nach dem Netzteil-Lab: Gleichrichter, Siebung, Z-Diode, Linearregler und Schaltregler kommen in der Prüfung vor. Das Thema Wechselstrom und Filter übst du nach dem Wechselstrom-Lab: Zeigerdiagramm, Blindleistung, Schwingkreis, RC-Filter und Transformator kommen in der Prüfung vor. Das Thema Bauelemente übst du nach dem Analogtechnik-Lab: Diode, LED-Vorwiderstand, Transistor als Schalter, Arbeitspunkt und Operationsverstärker kommen in der Prüfung vor.', labs: ['ds', 'pr', 'sya'], links: [['lernfelder.html', 'Lernfelder der Berufsschule: Aufgaben und Probetest'], ['pruefungslab.html?thema=sicherheit', 'Sicherheit und Normen üben (Prüfungs-Lab)'], ['elslab.html', 'Dazu im Sicherheits-Lab ausprobieren'], ['pruefungslab.html?thema=netzteile', 'Stromversorgung üben (Prüfungs-Lab)'], ['ntslab.html', 'Dazu im Netzteil-Lab ausprobieren'], ['pruefungslab.html?thema=wechselstrom', 'Wechselstrom und Filter üben (Prüfungs-Lab)'], ['wsllab.html', 'Dazu im Wechselstrom-Lab ausprobieren'], ['pruefungslab.html?thema=analog', 'Bauelemente und Verstärker üben (Prüfungs-Lab)'], ['analab.html', 'Dazu im Analogtechnik-Lab ausprobieren']], pre: 'Am besten nach SchaltLab, DigiLab und MessLab' },
-    { t: 'Programmieren und Steuern', s: 'Eigene Apps mit KI bauen, dann Schaltungen mit Programmen steuern: Arduino und Raspberry Pi, danach Timer, Interrupts und serielle Busse im Mikrocontroller- und im Bus-Lab.', labs: ['app', 'code', 'pi', 'mik', 'bus'], pre: 'Die App-Werkstatt braucht kein Vorwissen. Für Arduino und Pi empfohlen: SchaltLab, für Mikrocontroller und Busse: Arduino-Lab' },
+    { t: 'Programmieren und Steuern', s: 'Eigene Apps mit KI bauen, dann Schaltungen mit Programmen steuern: Arduino und Raspberry Pi, danach Timer, Interrupts und serielle Busse im Mikrocontroller- und im Bus-Lab.', labs: ['app', 'code', 'pi', 'mik', 'bus', 'iot'], pre: 'Die App-Werkstatt braucht kein Vorwissen. Für Arduino und Pi empfohlen: SchaltLab, für Mikrocontroller und Busse: Arduino-Lab' },
     { t: 'Verbundprojekte', s: 'Alle Labs arbeiten zusammen an einem Gerät: Garagentor, Ampel, Digitale Uhr, Gartenbewässerung, Förderanlage, Labornetzteil und Heizungsregelung (für andere Berufe gibt es eigene Projekte im Projekt-Bereich). Jede Station liefert ihr Ergebnis an die nächste, am Ende gibt es Gesamttest und Zertifikat.', labs: ['vb'], pre: 'Am besten nach den Labs, die ein Projekt braucht (Datenblatt, Schaltplan, Leiterplatte, Messen, Antrieb, Sensorik, SPS)' }
   ];
   /* Spuren der anderen Berufe (v39.158). Labs, die der Beruf hat, aber in keiner Spur stehen, kommen unter „Weitere Labs“; Labs ohne Beruf-Zuordnung (z. B. noch gesperrt) fehlen. */
   const TRACKS_B = {
     ige: [
       { t: 'Grundlagen und Grundschaltungen', s: 'Rechnen, Schaltpläne lesen, einfache Schaltungen aufbauen und simulieren, dazu Wechselstrom ohne Formelstress. Zu Beginn: Arbeitsschutz, Erste Hilfe und wie Tonfunk fertigt.', labs: ['sch', 'mat', 'arb', 'ems', 'loch', 'sim', 'wsl'], pre: 'Erst das SchaltLab, beim Rechnen hilft das Rechen-Lab' },
-      { t: 'Sicherungen, Hausinstallation und Sicherheit', s: 'Wie Strom im Haus abgesichert, verteilt und geschaltet wird, was bei der elektrischen Sicherheit zählt und was Energie kostet.', labs: ['els', 'haus', 'enr'], pre: 'Empfohlen vorher: SchaltLab' },
+      { t: 'Sicherungen, Hausinstallation und Sicherheit', s: 'Wie Strom im Haus abgesichert, verteilt und geschaltet wird, was bei der elektrischen Sicherheit zählt und was Energie kostet.', labs: ['bmk', 'els', 'haus', 'enr'], pre: 'Empfohlen vorher: SchaltLab' },
       { t: 'Messen, Netzteile und Elektronik', s: 'Mit dem Multimeter sicher messen, Netzteile und einfache Halbleiterschaltungen verstehen, Logikschaltungen kennenlernen und Datenblätter lesen.', labs: ['mess', 'nts', 'ana', 'digi', 'lot', 'ds'], pre: '' },
-      { t: 'Steuerungen, Antriebe und Sensoren', s: 'Schaltschrank-Steuerungen einfach erklärt: SPS, Motoren und Sensoren.', labs: ['sps', 'pne', 'ant', 'sen'], pre: 'Empfohlen vorher: SchaltLab' },
+      { t: 'Steuerungen, Antriebe und Sensoren', s: 'Schaltschrank-Steuerungen einfach erklärt: SPS, Motoren und Sensoren.', labs: ['sps', 'ksp', 'pne', 'ant', 'sen', 'iot'], pre: 'Empfohlen vorher: SchaltLab' },
       { t: 'Konstruieren und 3D-Druck', s: 'Bauteile und Gehäuse am Rechner konstruieren, dann im Slicer vorbereiten und drucken.', labs: ['cad', 'drk'], pre: '' },
       { t: 'Prüfung und Berufsalltag', s: 'Die Abschlussprüfung üben, Fachenglisch und das Berichtsheft.', labs: ['pr', 'eng', 'bhf'], pre: '' }
     ],
@@ -31,8 +31,8 @@
       { t: 'Grundlagen der Fertigung', s: 'Fertigen von Hand, Messen mit Toleranzen und Passungen, Rechnen, Mechanik, Werkstoffe und Zeichnungen: das Handwerkszeug für jede Werkstatt. Zu Beginn: Arbeitsschutz, Erste Hilfe und wie Tonfunk fertigt.', labs: ['arb', 'ems', 'fer', 'tol', 'mat', 'mch', 'wer', 'zei'], pre: 'Das Fertigungs-Lab ist ein guter Start' },   /* v63.187: beginnt wie der Ausbildungsplan mit Lernfeld 1 (Fertigungs-Lab, Toleranz-Lab) */
       { t: 'Zerspanen und CNC', s: 'Schnittwerte berechnen, Drehzahlen und Vorschübe wählen, CNC-Programme lesen und verstehen.', labs: ['zer', 'mak', 'cnc'], pre: 'Empfohlen vorher: Toleranz-Lab' },
       { t: 'Fügen und Maschinenelemente', s: 'Schweißen, Löten, Kleben und Schrauben richtig wählen und rechnen, dazu Zahnräder, Riemen, Lager und Federn, Normteile und fertigungsgerechtes Konstruieren.', labs: ['fug', 'mas', 'kon', 'cad', 'drk'], pre: 'Empfohlen vorher: Werkstoff-Lab' },
-      { t: 'Pneumatik, Hydraulik und Steuern', s: 'Schaltpläne lesen, Zylinder und Ventile ansteuern, Sensoren, Antriebe, SPS und Regelung.', labs: ['pne', 'hyd', 'sen', 'sps', 'ant', 'reg'], pre: 'Empfohlen vorher: Pneumatik-Lab' },
-      { t: 'Instandhaltung und Sicherheit', s: 'Anlagen warten, Fehler systematisch suchen, sicher arbeiten, messen und Wärme verstehen.', labs: ['ins', 'els', 'mess', 'thm'], pre: '' },
+      { t: 'Pneumatik, Hydraulik und Steuern', s: 'Schaltpläne lesen, Zylinder und Ventile ansteuern, Sensoren, Antriebe, SPS und Regelung.', labs: ['pne', 'hyd', 'sen', 'ksp', 'sps', 'ant', 'reg'], pre: 'Empfohlen vorher: Pneumatik-Lab' },
+      { t: 'Instandhaltung und Sicherheit', s: 'Anlagen warten, Fehler systematisch suchen, sicher arbeiten, messen und Wärme verstehen.', labs: ['bmk', 'ins', 'els', 'mess', 'thm'], pre: '' },
       { t: 'Betrieb und Beruf', s: 'Fachenglisch für Anleitungen und Datenblätter, dazu das Berichtsheft sauber führen.', labs: ['eng', 'bhf'], pre: '' }   /* v63.187: kon (oben), eng und bhf standen vorher unter „Weitere Labs“ */
     ],
     tpd: [
@@ -57,20 +57,20 @@
     tec: [
       { t: 'Mathematik für die Technik', s: 'Komplexe Zahlen, Matrizen und Differenzialgleichungen an Schaltungen, dazu das Rechnen aus der Ausbildung zum Auffrischen. Zu Beginn: Arbeitsschutz, Erste Hilfe und wie Tonfunk fertigt.', labs: ['arb', 'ems', 'mat', 'mat2'], pre: 'Das Rechen-Lab ist eine gute Auffrischung' },
       { t: 'Wechselstrom, Signale und Messtechnik', s: 'Wechselstromnetze und Schwingkreise, Spektrum und Filter, Funk und Hochfrequenz, sicheres und genaues Messen.', labs: ['wsl', 'sig', 'hf', 'mess'], pre: '' },
-      { t: 'Elektronik und Digitaltechnik', s: 'Diode, Transistor und Operationsverstärker, Netzteile, Logikschaltungen und Datenblätter.', labs: ['ana', 'nts', 'digi', 'ds'], pre: '' },
-      { t: 'Automatisierung und Antriebe', s: 'Steuerungen und Schaltschrank, Motoren und Sensoren.', labs: ['sps', 'ssl', 'ant', 'sen'], pre: '' },
+      { t: 'Elektronik und Digitaltechnik', s: 'Diode, Transistor und Operationsverstärker, Netzteile, Logikschaltungen und Datenblätter.', labs: ['ana', 'nts', 'digi', 'ds', 'eda'], pre: '' },
+      { t: 'Automatisierung und Antriebe', s: 'Steuerungen und Schaltschrank, Motoren und Sensoren.', labs: ['sps', 'ssl', 'ant', 'sen', 'iot'], pre: '' },
       { t: 'Regelungstechnik', s: 'Erst den Regelkreis verstehen, dann Bode, Stabilität und Reglerentwurf.', labs: ['reg', 'rg2'], pre: 'Empfohlen vorher: Mathe-Brücke' },
       { t: 'Mikrocontroller', s: 'Timer, Schnittstellen und Echtzeit, dazu Arduino.', labs: ['code', 'emb'], pre: '' },
       { t: 'Energie, Sicherheit und Verträglichkeit', s: 'Energieanlagen, elektrische Sicherheit, EMV und Wärme.', labs: ['enr', 'els', 'emv', 'thm'], pre: '' },
       { t: 'Konstruieren und 3D-Druck', s: 'Bauteile und Gehäuse am Rechner konstruieren, dann im Slicer vorbereiten und drucken.', labs: ['cad', 'drk'], pre: '' },
-      { t: 'Normen, Projekt und Betrieb', s: 'Normen und Konformität, Projekte planen und bewerten, Kosten kalkulieren, Fachenglisch.', labs: ['nrm', 'prj', 'fli', 'kal', 'eng'], pre: '' }
+      { t: 'Normen, Projekt und Betrieb', s: 'Normen und Konformität, Projekte planen und bewerten, Kosten kalkulieren, Fachenglisch.', labs: ['bmk', 'nrm', 'prj', 'fli', 'kal', 'eng'], pre: '' }
     ],
     stu: [
       { t: 'Mathematik', s: 'Die Mathematik des Studiums direkt an Schaltungen, dazu das Rechnen aus der Schule zum Auffrischen. Zu Beginn: Arbeitsschutz, Erste Hilfe und wie Tonfunk fertigt.', labs: ['arb', 'ems', 'mat', 'mat2'], pre: 'Das Rechen-Lab ist eine gute Auffrischung' },
       { t: 'Netzwerke, Signale und Messtechnik', s: 'Wechselstromnetze, Spektrum, Abtastung und Filter, Funk und Hochfrequenz, Messen mit Verstand.', labs: ['wsl', 'sig', 'hf', 'mess'], pre: '' },
-      { t: 'Elektronik', s: 'Halbleiter und Verstärker, Netzteile, Digitaltechnik, Datenblätter und Leiterplatten.', labs: ['ana', 'nts', 'digi', 'ds', 'pcb'], pre: '' },
+      { t: 'Elektronik', s: 'Halbleiter und Verstärker, Netzteile, Digitaltechnik, Datenblätter und Leiterplatten.', labs: ['ana', 'nts', 'digi', 'ds', 'pcb', 'eda'], pre: '' },
       { t: 'Regelung und Systeme', s: 'Regelkreise und ihr Entwurf, Sensoren und Antriebe.', labs: ['reg', 'rg2', 'sen', 'ant'], pre: 'Empfohlen vorher: Mathe-Brücke' },
-      { t: 'Eingebettete Systeme und Programmieren', s: 'Mikrocontroller, Arduino, Algorithmen und Raspberry Pi.', labs: ['code', 'emb', 'alg', 'pi'], pre: '' },
+      { t: 'Eingebettete Systeme und Programmieren', s: 'Mikrocontroller, Arduino, Algorithmen und Raspberry Pi.', labs: ['code', 'emb', 'alg', 'pi', 'iot'], pre: '' },
       { t: 'Energie, EMV und Wärme', s: 'Energiesysteme, elektromagnetische Verträglichkeit und Wärmeabfuhr.', labs: ['enr', 'emv', 'thm'], pre: '' },
       { t: 'Konstruieren und 3D-Druck', s: 'Bauteile und Gehäuse am Rechner konstruieren, dann im Slicer vorbereiten und drucken.', labs: ['cad', 'drk'], pre: '' },
       { t: 'Projekt, Normen und Fachenglisch', s: 'Projekte planen und bewerten, Normen anwenden, Fachtexte verstehen.', labs: ['prj', 'nrm', 'eng'], pre: '' }
@@ -79,7 +79,7 @@
       { t: 'Mathematik', s: 'Komplexe Zahlen, Matrizen und Differenzialgleichungen, dazu das Rechnen zum Auffrischen. Zu Beginn: Arbeitsschutz, Erste Hilfe und wie Tonfunk fertigt.', labs: ['arb', 'ems', 'mat', 'mat2'], pre: 'Das Rechen-Lab ist eine gute Auffrischung' },
       { t: 'Technikgrundlagen', s: 'Wechselstrom, Signale und Messtechnik als gemeinsame Sprache mit den Technikern.', labs: ['wsl', 'sig', 'mess'], pre: '' },
       { t: 'Werkstoffe und Fertigung', s: 'Werkstoffe, Mechanik, Toleranzen und Fertigungsverfahren.', labs: ['wer', 'mch', 'tol', 'fer', 'fli'], pre: '' },
-      { t: 'Automatisierung und Energie', s: 'Steuerung, Sensoren, Antriebe, Regelung und Energieversorgung.', labs: ['sps', 'sen', 'ant', 'reg', 'rg2', 'enr'], pre: '' },
+      { t: 'Automatisierung und Energie', s: 'Steuerung, Sensoren, Antriebe, Regelung und Energieversorgung.', labs: ['sps', 'sen', 'ant', 'reg', 'rg2', 'enr', 'iot'], pre: '' },
       { t: 'Rechnungswesen', s: 'Kosten kalkulieren, Geschäftsfälle buchen und auswerten.', labs: ['kal', 'buc'], pre: '' },
       { t: 'Logistik und Recht', s: 'Warenfluss und Lager, Verträge und Auftragsabwicklung.', labs: ['wfl', 'lag', 'rec'], pre: '' },
       { t: 'Projekt, Normen und Fachenglisch', s: 'Projekte planen und wirtschaftlich bewerten, Normen anwenden, Fachtexte verstehen.', labs: ['prj', 'nrm', 'eng'], pre: '' }
@@ -88,7 +88,7 @@
       { t: 'Mathematik', s: 'Mathematische Grundlagen für Signale und Systeme, dazu das Rechnen zum Auffrischen. Zu Beginn: Arbeitsschutz, Erste Hilfe und wie Tonfunk fertigt.', labs: ['arb', 'ems', 'mat', 'mat2'], pre: 'Das Rechen-Lab ist eine gute Auffrischung' },
       { t: 'Logik und Programmieren', s: 'Digitale Logik, Algorithmen, eigene Apps und Arduino.', labs: ['digi', 'alg', 'app', 'code'], pre: 'Die App-Werkstatt braucht kein Vorwissen' },
       { t: 'Datenbanken', s: 'Daten abfragen und verknüpfen mit SQL.', labs: ['sql'], pre: '' },
-      { t: 'Systeme und Netze', s: 'PC-Hardware, IT-Systeme, Linux-Terminal, Netzwerke und Raspberry Pi.', labs: ['hwl', 'sys', 'lin', 'net', 'pi'], pre: 'Netzwerk-Lab zuerst' },
+      { t: 'Systeme und Netze', s: 'PC-Hardware, IT-Systeme, Linux-Terminal, Netzwerke und Raspberry Pi.', labs: ['hwl', 'sys', 'lin', 'net', 'pi', 'iot'], pre: 'Netzwerk-Lab zuerst' },
       { t: 'IT-Sicherheit', s: 'Gefahren erkennen und Schutzmaßnahmen auswählen.', labs: ['its'], pre: '' },
       { t: 'Signale und Embedded', s: 'Signale und Spektren, Mikrocontroller, Schnittstellen und Echtzeit.', labs: ['sig', 'emb'], pre: '' },
       { t: 'Betriebswirtschaft und Prozesse', s: 'Kalkulation, Buchführung, Warenfluss und Auftragsrecht.', labs: ['kal', 'buc', 'wfl', 'rec'], pre: '' },

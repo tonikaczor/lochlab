@@ -64,7 +64,7 @@
         jahr: 2,
         quelle: "Entwurf: eigene Zusammenstellung nach dem Inhalt der Labs, kein amtlicher Lehrplan",
         entwurf: true,
-        labs: [{"lab":"hwl","bereich":"*"},{"lab":"sys","bereich":"*"},{"lab":"lin","bereich":"*"},{"lab":"net","bereich":"*"},{"lab":"pi","bereich":"*"}],
+        labs: [{"lab":"hwl","bereich":"*"},{"lab":"sys","bereich":"*"},{"lab":"lin","bereich":"*"},{"lab":"net","bereich":"*"},{"lab":"pi","bereich":"*"},{"lab":"iot","bereich":"*"}],
         heft: null,
         wiki: [],
         projekt: [],
