@@ -2,15 +2,15 @@
 /* Tonfunk Lab: „Neu in dieser Version“. Stichpunkte je Version mit Fundort. Bei jedem Release oben einen Block ergänzen und den ältesten löschen, so dass genau 3 bleiben. */
 (function (root) {
   const LOG = [
+    { v: 'v79.197', items: [
+      ['Fachgespräch üben', 'Neu in der Prüfungs-Mappe: das Fachgespräch-Lab. Du planst einen Arbeitsauftrag mit Zeitplan und Puffer, teilst deinen Vortrag zeitlich auf und übst das Fachgespräch mit Leitfragen. Dazu 43 Aufgaben von der Unterweisung bis zur Rückmeldung. Alles spielt in einem erfundenen Modellbetrieb.', 'Fachgespräch-Lab'],
+    ] },
     { v: 'v78.196', items: [
       ['Labs in Mappen', 'Labs, die zusammengehören, teilen sich jetzt eine Karte: zum Beispiel SchaltLab und LochLab, SimLab und HausLab, Pneumatik und Hydraulik, Prüfungs-Lab und Systemanalyse. Die anderen Teile stehen als Knopf in der Karte. Im Lab selbst führt „Mappe:“ oben rechts zu den anderen Teilen. Aufgaben und Fortschritt bleiben, wie sie waren.', 'Startseite'],
     ] },
     { v: 'v78.195', items: [
       ['Weniger auf einmal', 'Die Labs-Seite zeigt oben nur noch „Jetzt dran“: die nächsten acht Labs deines Pfads im eigenen Lehrjahr. Alle anderen Labs liegen darunter eingeklappt und bleiben frei wählbar. „Starten“ öffnet direkt die erste Aufgabe, die lange Einführung gibt es weiter im Info-Menü. Duell, Fehler-Tausch und Wettbewerb stehen unter „Mit der Gruppe“.', 'Startseite'],
       ['Mathe-Eingangstest', 'Neuer Reiter im Rechen-Lab: 20 Fragen zu Brüchen, Prozent, Potenzen, Umstellen und Dreisatz. Danach siehst du je Thema, wo du sicher bist und wo du üben solltest.', 'Rechen-Lab'],
-    ] },
-    { v: 'v78.194', items: [
-      ['Vier neue Labs', 'Kleinsteuerungs-Lab mit Selbsthaltung, Funktionsplan, Elektropneumatik und Sensoren, Simulations- und EDA-Lab mit Simulation, ERC und Gerber-Lagen, Plan-Lab mit Stromlaufplan, Kennzeichen und Klemmenplan und Industrie-4.0-Lab mit Datenkette, MQTT und Zustandsüberwachung. Zusammen 175 neue Aufgaben mit bewegten Bildern.', 'Neue Labs'],
     ] },
       ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

@@ -55,6 +55,8 @@
     eda: { eda7: 1, eda8: 1, eda9: 1, eda10: 1, eda11: 1, eda12: 1, eda13: 1, eda14: 1, eda15: 1, eda16: 1 },
     // Plan-Lab (bmk), v78.194: das Lernfeld gibt ein anderes Lehrjahr als das Thema, diese Aufgaben weichen ab.
     bmk: { bmk14: 2, bmk15: 2, bmk16: 2, bmk17: 2, bmk18: 2, bmk19: 2, bmk20: 2, bmk21: 2, bmk22: 2, bmk23: 2, bmk24: 2, bmk25: 2, bmk26: 2, bmk27: 2 },
+    // Fachgespräch-Lab (fgs), v79.197: das Lernfeld gibt ein anderes Lehrjahr als das Thema, diese Aufgaben weichen ab.
+    fgs: { fgs10: 2, fgs11: 2, fgs12: 2, fgs13: 2, fgs14: 2, fgs15: 2, fgs16: 2, fgs17: 2, fgs18: 2, fgs19: 2, fgs20: 2, fgs21: 2, fgs22: 2, fgs23: 2, fgs24: 2, fgs25: 2, fgs26: 2, fgs27: 2, fgs28: 3, fgs29: 3, fgs30: 3, fgs31: 3, fgs32: 3, fgs33: 3, fgs34: 3, fgs35: 3, fgs36: 3, fgs37: 3, fgs38: 3, fgs39: 3, fgs40: 3, fgs41: 3, fgs42: 3, fgs43: 3 },
     // Thermik-Lab (thm), v63.185
     thm: { th45: 4 },
     // SchaltLab (sch)

@@ -89,5 +89,7 @@
     pruefung: 'Abschlussprüfung Teil 1 und 2: Stromlaufplan, Klemmenplan und Verdrahtungsliste lesen und ergänzen, Betriebsmittel richtig kennzeichnen.' });
   R({ lab: 'iot', betrieb: 'Prüfplätze und Fertigungslinien melden Messwerte und Zustände an ein Leitsystem. Du verstehst die Datenkette, liest Topics und achtest auf die IT-Sicherheit der Anlage.',
     pruefung: 'Abschlussprüfung Teil 2: Datenfluss vom Sensor bis zur Auswertung beschreiben, Schnittstellen zuordnen, IT-Sicherheit vernetzter Anlagen bewerten.' });
+  R({ lab: 'fgs', betrieb: 'Jeden Auftrag planst du, dokumentierst ihn und erklärst ihn deinem Ausbilder. Unterweisungen und Berichtsheft gehören zum Alltag der Ausbildung.',
+    pruefung: 'Abschlussprüfung Teil 2: Arbeitsauftrag planen und dokumentieren, Ergebnis vorstellen, im Fachgespräch fachlich begründen.' });
   R({ lab: 'fli', betrieb: 'In der Fertigung bestimmt die langsamste Station, wie viele Baugruppen die Linie schafft. Wer Takt, Engpass und Ausschuss lesen kann, findet die Stelle, an der sich eine Verbesserung lohnt.' });
 })(typeof window !== 'undefined' ? window : globalThis);

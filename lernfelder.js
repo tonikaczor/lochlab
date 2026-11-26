@@ -114,6 +114,7 @@
     eda: { '*': '8.1' },
     bmk: { '*': 'E2' },
     iot: { '*': '10.1' },
+    fgs: { '*': 'E12', 'Ausbildung und Unterweisungen': 'E1' },
     net: { 'Schichten/Ports': 'E13', 'Übertragungstechnik': 'E13' },
     emv: { 'Grundwissen': 'E13' },
     rec: { 'Qualität und Projekt': 'E13' },

@@ -28,7 +28,7 @@
         jahr: 1,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [
+        labs: [{ lab: "fgs", bereich: ["Ausbildung und Unterweisungen"] }, 
           { lab: "arb", bereich: "*" },
           { lab: "ems", bereich: "*" },
           { lab: "loch", aufgaben: ["l1", "l2", "l3"] },
@@ -757,7 +757,7 @@
         jahr: 4,
         quelle: "Schulmitschriften der Berufsschule",
         entwurf: false,
-        labs: [
+        labs: [{ lab: "fgs", bereich: ["Arbeitsauftrag planen", "Präsentation vorbereiten", "Fachgespräch führen", "Bewerten und Rückmeldung"] }, 
           { lab: "mik", fremd: true, bereich: "*" },
           { lab: "bus", fremd: true, bereich: "*" },
           { lab: "loch", aufgaben: ["l11", "l12", "lf4"] },
