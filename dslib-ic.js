@@ -887,7 +887,7 @@ function mcp4151() {
   var wr = spi([0x00, 0x40]);
   var inc = spi([0x04]);
   return {
-    id: 'tf-mcp4151', part: 'TF-MCP4151', family: 'Digitalpotentiometer', mfr: MFR, lang: 'en', ref: 'MCP4151',
+    id: 'tf-mcp4151', part: 'TF-MCP4151', family: 'Digitalpotentiometer', mfr: MFR, lang: 'en', ref: 'MCP4131',
     title: '7-bit single SPI digital potentiometer with volatile wiper',
     desc: 'The TF-MCP4151 is a digitally controlled potentiometer with 129 wiper positions. The wiper is set through an SPI interface and can work as a voltage divider (potentiometer) or as a variable resistor (rheostat). Four resistance versions are available. The wiper is volatile: it is not stored when the supply is removed.',
     notes: NOTE, disclaimer: NOTE,

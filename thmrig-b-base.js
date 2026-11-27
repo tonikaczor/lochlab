@@ -1410,7 +1410,7 @@
     freiZuHeiss: (L, f, pz, p) => 'Freistehend darfst du höchstens ' + f(pz, 1) + ' W umsetzen, du hast ' + f(p, 1) + ' W. ' + (L.freeHint || 'Du brauchst einen Kühlkörper.'),
     pasteFehlt: (f, x, y, dT) => 'Ohne Wärmeleitpaste ist Rth_CK = ' + f(x, 2) + ' K/W statt ' + f(y, 2) + ' K/W mit Paste: Die Sperrschicht ist ' + f(dT, 1) + ' K heißer.',
     kurzschluss: (pot) => 'Kurzschluss: Die Fahne des Bauteils liegt ' + pot + '.',
-    beruehr: (f, u) => 'Der Kühlkörper führt Spannung (' + f(u, 0) + ' V gegen Masse). Isoliere ihn oder baue ihn berührgeschützt ein.',
+    beruehr: (f, u) => 'Der Kühlkörper führt das Potenzial der Fahne (mindestens ' + f(u, 0) + ' V gegen Masse). Isoliere ihn oder baue ihn berührgeschützt ein.',
     locker: (f, x, y) => 'Die Schraube ist locker: Rth_CK steigt von ' + f(x, 2) + ' auf ' + f(y, 2) + ' K/W.',
     dick: (f, x, y) => 'Zu viel Wärmeleitpaste: Rth_CK steigt von ' + f(x, 2) + ' auf ' + f(y, 2) + ' K/W. Trage sie dünn auf.',
     luefterHilft: (f, tj) => 'Ein Lüfter (mittel) würde Tj auf ' + f(tj, 1) + ' °C senken.',

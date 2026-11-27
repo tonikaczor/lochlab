@@ -52,13 +52,11 @@
   /* ---------------- Kontenübungsliste (IKR) ----------------
      FESTLEGUNG für dieses Lab: kleine Übungsliste mit vierstelligen Nummern in Anlehnung an den Industriekontenrahmen (IKR).
      typ: A = aktives Bestandskonto, P = passives Bestandskonto, Aw = Aufwand, Er = Ertrag, Ab = Abschlusskonto.
-     PRUEFEN: Die Nummern sind Übungswerte. Der Ausbildungsbetrieb kann abweichende Nummern verwenden (z. B. 0210 Maschinen, 2880 Kasse, 5000er Erlöse). */
-  /* PRUEFEN: Kasse 2880 und Erlöse 5000/5100 sind IKR-Nummern (die Aufgabenvorgabe nannte 1000 Kasse und 8000er Erlöse, das ist eher SKR 03/04). 0210 Maschinen ist Vorgabe; in manchen IKR-Ausgaben ist 0210 ein anderes Sachanlagekonto. */
-  /* PRUEFEN: 4830/4840 (Verbindlichkeiten gegenüber Finanzbehörden bzw. Sozialversicherungsträgern), 6001 Bezugskosten, 6002 Nachlässe, 5001 Erlösberichtigungen, 6400 Arbeitgeberanteil, 6520 Abschreibungen und 9100/9200/9300 sind aus dem Gedächtnis des IKR übernommen und mit dem betrieblichen Kontenplan abzugleichen. */
+     FESTLEGUNG 27.11.2026: Nummern nach dem Schulkontenrahmen IKR (0700 Maschinen, 0840 Fuhrpark, 0860 BGA, 2880 Kasse, 5000er Erlöse, 8000/8010/8020 Abschluss). Ein Betrieb kann abweichende Nummern verwenden. */
   const KDEF = [
-    ['0210', 'Maschinen', 'A', 'Anlagevermögen'],
-    ['0220', 'Fuhrpark', 'A', 'Anlagevermögen'],
-    ['0230', 'Betriebs- und Geschäftsausstattung', 'A', 'Anlagevermögen'],
+    ['0700', 'Maschinen', 'A', 'Anlagevermögen'],
+    ['0840', 'Fuhrpark', 'A', 'Anlagevermögen'],
+    ['0860', 'Betriebs- und Geschäftsausstattung', 'A', 'Anlagevermögen'],
     ['2000', 'Rohstoffe', 'A', 'Umlaufvermögen'],
     ['2020', 'Hilfsstoffe', 'A', 'Umlaufvermögen'],
     ['2280', 'Waren', 'A', 'Umlaufvermögen'],
@@ -85,9 +83,9 @@
     ['6400', 'Arbeitgeberanteil zur Sozialversicherung', 'Aw', 'Aufwendungen'],
     ['6520', 'Abschreibungen auf Sachanlagen', 'Aw', 'Aufwendungen'],
     ['6800', 'Büromaterial', 'Aw', 'Aufwendungen'],
-    ['9100', 'Eröffnungsbilanzkonto', 'Ab', 'Abschluss'],
-    ['9200', 'Schlussbilanzkonto', 'Ab', 'Abschluss'],
-    ['9300', 'Gewinn- und Verlustkonto', 'Ab', 'Abschluss']
+    ['8000', 'Eröffnungsbilanzkonto', 'Ab', 'Abschluss'],
+    ['8010', 'Schlussbilanzkonto', 'Ab', 'Abschluss'],
+    ['8020', 'Gewinn- und Verlustkonto', 'Ab', 'Abschluss']
   ];
   const KONTEN = KDEF.map(a => ({ nr: a[0], name: a[1], typ: a[2], grp: a[3] }));
   const KMAP = {}; KONTEN.forEach(k => { KMAP[k.nr] = k; });

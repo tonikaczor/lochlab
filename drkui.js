@@ -124,7 +124,7 @@
     const m = C.filOf(st.mat); let h = '';
     if (!d.found.length) h += note('Mit diesen Werten ist kein Fehler zu erwarten. Alle Werte liegen im Übungsbereich für ' + m.n + '.', 'ok');
     d.found.forEach(k => { const x = C.fehlOf(k); h += `<div class="rdout bad"><b>${esc(x.n)}</b><br>${esc(x.sym)}<span class="st">Ursache</span>${esc(x.ursache)}<span class="st">Abhilfe</span>${esc(x.abhilfe)}</div>`; });
-    return h + `<p class="hint2">Bereiche für ${esc(m.n)} (Übungswerte): Düse ${f(m.nl, 0)} bis ${f(m.nh, 0)} °C, Bett ${f(m.bl, 0)} bis ${f(m.bh, 0)} °C, Lüfter ${f(m.fan[0], 0)} bis ${f(m.fan[1], 0)} %, Rückzug ab etwa 0,5 mm. Ein Fehler zeigt sich erst ab einer gewissen Stärke.</p>`;
+    return h + `<p class="hint2">Bereiche für ${esc(m.n)} (Übungswerte): Düse ${f(m.nl, 0)} bis ${f(m.nh, 0)} °C, Bett ${f(m.bl, 0)} bis ${f(m.bh, 0)} °C, Lüfter ${f(m.fan[0], 0)} bis ${f(m.fan[1], 0)} %, Rückzug ab etwa 0,5 mm (Direktextruder, bei Bowden-Antrieb deutlich mehr). Ein Fehler zeigt sich erst ab einer gewissen Stärke.</p>`;
   }
   function fehShow() { const st = S.feh, d = C.diagnose(st); $('#vzFeh').innerHTML = Z.fehSvg(st, d); $('#fehOut').innerHTML = fehOut(d, st); }
   function renderFeh() {

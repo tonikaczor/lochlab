@@ -100,7 +100,7 @@
       'Logik: Ausgang MATCH mit ' + fm(p.vOH, 0) + ' V, belastbar mit höchstens ' + fm(p.iOutMax, 0) + ' mA (A).',
       'Relais: Spule ' + fm(p.uCoil, 0) + ' V, ' + p.rCoil + ' Ω, also ' + fm(p.iCoil, 0) + ' mA (A). Umgebung in der Garage ' + p.tAmb + ' °C (A).',
       'Tor: Hub ' + fm(p.hub, 2) + ' m in ' + fm(p.travelS, 0) + ' s, Seiltrommel ' + fm(p.dT * 1000, 0) + ' mm (A), Restkraft ' + p.fLast + ' N (A), Motor ' + p.uMotor + ' V.',
-      'Sicherheit: Reaktionszeit höchstens ' + p.tReactMaxMs + ' ms, Anhalteweg höchstens ' + p.sStopMaxMm + ' mm (A). Blinklicht ' + fm(p.tVorwarn, 0) + ' s vor jeder Fahrt (A).',
+      'Sicherheit: Reaktionszeit höchstens ' + p.tReactMaxMs + ' ms, Anhalteweg höchstens ' + p.sStopMaxMm + ' mm (A). Blinklicht ' + fm(p.tVorwarn, 0) + ' s vor jeder Fahrt (A). Echte kraftbetätigte Tore müssen DIN EN 13241 und DIN EN 12453 erfüllen (Kraftbegrenzung, Schutzeinrichtungen), die Zahlen hier sind Übungsannahmen.',
       'Lichtschranke: dunkles Ziel in ' + p.zielDist + ' mm, Fremdlicht ' + p.fremdLux + ' lx (A). SPS-Zyklus ' + p.cycleMs + ' ms.',
       'Platine: höchstens ' + p.boardW + ' x ' + p.boardH + ' mm, ' + p.layers + ' Lagen.'
     ];

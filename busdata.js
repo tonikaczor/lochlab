@@ -84,7 +84,7 @@
     abtast(R) {
       const x = C().pick(R, [1, 2, 3, 4, 5, 6]), v = C().abtastVersatz(10, x) * 100;
       return numQ('Ein Empfänger tastet jedes Bit in der Mitte ab. Seine Baudrate weicht um ' + x + ' % von der des Senders ab. Der Rahmen hat 10 Bit (8N1). Um wie viel Prozent einer Bitzeit ist der Abtastpunkt des letzten Bits verschoben? Bis zur Mitte des Stoppbits vergehen 9,5 Bitzeiten.', v, '% einer Bitzeit', 'Versatz', 0.05,
-        'Versatz = 9,5 Bitzeiten · ' + x + ' % = ' + f(v, 1) + ' % einer Bitzeit. Erst über 50 % liest der Empfänger das Nachbarbit.',
+        'Versatz = 9,5 Bitzeiten · ' + x + ' % = ' + f(v, 1) + ' % einer Bitzeit. Erst über 50 % liest der Empfänger das Nachbarbit. Das ist die rechnerische Grenze: In der Praxis sollen Sender und Empfänger zusammen um weniger als etwa 2 % abweichen, weil auch die Startflanke nur ungefähr erkannt wird.',
         ['Der Fehler summiert sich über 9,5 Bitzeiten.', 'Versatz = 9,5 · Abweichung (in Prozent einer Bitzeit).'],
         ['Zeit bis zur Mitte des letzten Bits notieren: 9,5 Bitzeiten.', 'Mit der Abweichung malnehmen.', 'Ergebnis in Prozent einer Bitzeit angeben.']);
     },

@@ -62,7 +62,7 @@
     { k: 'petg', n: 'PETG', nl: 230, nh: 260, bl: 70, bh: 85, rho: 1.27, dry: [65, 8], fan: [30, 70], warp: 0.8, star: [4, 2, 2, 4], box: false,
       info: ['Zäher als PLA und beständiger gegen Feuchte und viele Chemikalien.', 'Neigt zu Fäden (Stringing) und klebt stark an glatten Platten.', 'Für Gehäuse, Halter und Teile, die etwas aushalten sollen.'] },
     { k: 'abs', n: 'ABS', nl: 240, nh: 270, bl: 90, bh: 100, rho: 1.04, dry: [80, 6], fan: [0, 30], warp: 1, star: [4, 4, 2, 2], box: true,
-      info: ['Hitzebeständig und zäh, lässt sich nachbearbeiten.', 'Verzieht sich stark: Einhausung, heißes Bett und wenig Lüfter nötig.', 'Dämpfe: gut lüften, Drucker möglichst in einem belüfteten Raum.'] },
+      info: ['Hitzebeständig und zäh, lässt sich nachbearbeiten.', 'Verzieht sich stark: Einhausung, heißes Bett und wenig Lüfter nötig.', 'Dämpfe: nur in einem gut gelüfteten Raum drucken, mit Absaugung oder Filter.'] },
     { k: 'asa', n: 'ASA', nl: 240, nh: 270, bl: 90, bh: 100, rho: 1.07, dry: [80, 6], fan: [0, 30], warp: 1, star: [4, 4, 2, 2], box: true,
       info: ['Ähnlich wie ABS, aber beständiger gegen UV-Licht und Wetter.', 'Auch hier: Einhausung, heißes Bett, wenig Lüfter, gute Lüftung des Raums.', 'Für Teile im Freien und im Fahrzeug.'] },
     { k: 'tpu', n: 'TPU', nl: 200, nh: 230, bl: 30, bh: 45, rho: 1.21, dry: [70, 8], fan: [30, 80], warp: 0.3, star: [2, 2, 5, 2], box: false,

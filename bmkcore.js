@@ -53,7 +53,7 @@
   const KB = [
     { k: 'Q', n: 'Energiefluss schalten', ex: ['Leistungsschalter', 'Trennschalter', 'Leistungsschütz im Hauptstromkreis'], sym: 'hauptk3' },
     { k: 'K', n: 'Signale verarbeiten', ex: ['Relais', 'Hilfsschütz', 'Zeitrelais', 'Koppelrelais'], sym: 'spule' },
-    { k: 'F', n: 'Schützen', ex: ['Schmelzsicherung', 'Leitungsschutzschalter', 'Überlastrelais'], sym: 'sicherung' },
+    { k: 'F', n: 'Schützen', ex: ['Überlastrelais', 'Schmelzsicherung', 'Leitungsschutzschalter'], sym: 'sicherung' },
     { k: 'S', n: 'Von Hand eingeben', ex: ['Taster', 'Wahlschalter', 'Not-Halt-Taster'], sym: 'taster' },
     { k: 'B', n: 'Messgröße in ein Signal umwandeln', ex: ['Näherungsschalter', 'Temperaturfühler', 'Lichtschranke', 'Drucksensor'], sym: null },
     { k: 'M', n: 'Bewegung erzeugen (Antrieb)', ex: ['Drehstrommotor', 'Gleichstrommotor', 'Stellantrieb'], sym: 'motor' },
@@ -139,8 +139,8 @@
   /* ============================================================ Klemmenplan der Übungsanlage (Klemmleiste -X1)
      innen = Quelle im Schaltschrank, aussen = Ziel im Feld, f = Aderfarbe, q = Querschnitt in mm² (Übungswerte) */
   const KLEMMEN = [
-    { n: 1, innen: '-K1:2', aussen: '-M1:U1', f: 'schwarz', q: '1,5' }, { n: 2, innen: '-K1:4', aussen: '-M1:V1', f: 'schwarz', q: '1,5' },
-    { n: 3, innen: '-K1:6', aussen: '-M1:W1', f: 'schwarz', q: '1,5' }, { n: 4, innen: 'PE-Schiene', aussen: '-M1:PE', f: 'grün-gelb', q: '1,5' },
+    { n: 1, innen: '-F2:2', aussen: '-M1:U1', f: 'schwarz', q: '1,5' }, { n: 2, innen: '-F2:4', aussen: '-M1:V1', f: 'schwarz', q: '1,5' },
+    { n: 3, innen: '-F2:6', aussen: '-M1:W1', f: 'schwarz', q: '1,5' }, { n: 4, innen: 'PE-Schiene', aussen: '-M1:PE', f: 'grün-gelb', q: '1,5' },
     { n: 5, innen: '+24 V-Schiene', aussen: '-S1:11', f: 'rot', q: '0,75' }, { n: 6, innen: '-K1:13', aussen: '-S2:13', f: 'rot', q: '0,75' },
     { n: 7, innen: '-K1:14', aussen: '-S2:14', f: 'rot', q: '0,75' }, { n: 8, innen: '-K1:22', aussen: '-P1:X1', f: 'rot', q: '0,75' },
     { n: 9, innen: '-K1:34', aussen: '-P2:X1', f: 'rot', q: '0,75' }, { n: 10, innen: '0 V-Schiene', aussen: '-P1:X2', f: 'blau', q: '0,75' },

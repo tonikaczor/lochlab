@@ -157,7 +157,7 @@
   const TAGN = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
   function renderZeit() {
     const s = S.zeit;
-    $('#zeitView').innerHTML = `<div class="card pl"><h4>Die Regeln im Bild</h4>${vz('', V.figSvg({ art: 'regel' }))}<p class="hint2">Grundregeln der EU-Verordnung 561/2006 für Lkw-Fahrer. Ausnahmen (verkürzte Ruhezeit, Mehrfahrerbetrieb) stehen in der Hilfe.</p></div>
+    $('#zeitView').innerHTML = `<div class="card pl"><h4>Die Regeln im Bild</h4>${vz('', V.figSvg({ art: 'regel' }))}<p class="hint2">Grundregeln der EU-Verordnung 561/2006 für Lkw-Fahrer. Ausnahmen (verkürzte Ruhezeit, Mehrfahrerbetrieb) stehen in der Hilfe. Im Lab gelten die Regeln vereinfacht auch für den Transporter 3,5 t. Ob sie dort gelten, hängt vom Einsatz ab (Fahrpersonalverordnung, grenzüberschreitender Verkehr), das klärt dein Betrieb.</p></div>
       <div class="card pl"><h4>Lenkzeit der Woche</h4><p class="hint2" style="margin:0 0 8px">So gehst du vor: 1. Trage die Lenkzeit je Tag in Stunden ein. 2. Trage die Lenkzeit der Vorwoche ein. 3. Lies ab, ob alle Grenzen eingehalten sind und wie viel Lenkzeit noch bleibt.</p>
       <div class="mgrid">${s.tage.map((v, i) => `<label class="f"><span>${TAGN[i]} (h)</span><input data-tg="${i}" inputmode="decimal" autocomplete="off" value="${esc(v)}"></label>`).join('')}<label class="f"><span>Vorwoche (h)</span><input data-k="vor" inputmode="decimal" autocomplete="off" value="${esc(s.vor)}"></label></div>
       ${vz('weekSvg', '')}<div id="weekOut"></div></div>

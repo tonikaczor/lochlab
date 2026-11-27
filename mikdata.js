@@ -176,7 +176,7 @@
     /* PWM und Mittelwert */
     duty: R => {
       const c = C(), o = c.pick(R, [51, 102, 153, 204]), d = c.duty(o, 8) * 100;
-      return numQ('Ein 8-Bit-Timer erzeugt PWM. Der Zähler läuft von 0 bis 255, der Ausgang ist High, solange der Zähler unter OCR liegt. OCR = ' + o + '. Wie groß ist der Tastgrad?', d, '%', 'Tastgrad', 0.1,
+      return numQ('Ein 8-Bit-Timer erzeugt PWM. Der Zähler läuft von 0 bis 255. Im Lab gilt vereinfacht: OCR = 0 heißt immer Low, OCR = 255 heißt immer High. OCR = ' + o + '. Wie groß ist der Tastgrad?', d, '%', 'Tastgrad', 0.1,
         'Tastgrad = OCR / 255 = ' + o + ' / 255 = ' + f(d / 100, 2) + ' = ' + f(d, 1) + ' %.', ['Wie viele Schritte hat die ganze Periode, wie viele davon ist der Ausgang High?', 'OCR geteilt durch 255.'], VOR.duty);
     },
     mean: R => {

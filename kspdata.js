@@ -299,7 +299,7 @@
     reduktion: R => {
       const c = C(), sn = c.pick(R, [5, 8, 10, 15]), m = c.pick(R, [['Aluminium', 0.4], ['Messing', 0.5], ['Edelstahl', 0.8]]), sr = rdv(sn * m[1]);
       return numQ('Ein induktiver Sensor hat einen Nennschaltabstand von ' + f(sn, 0) + ' mm. Für ' + m[0] + ' gilt in diesem Lab der Reduktionsfaktor ' + f(m[1], 1) + '. Wie groß ist der reduzierte Schaltabstand Sr?', sr, 'mm', 'Schaltabstand', 0.01,
-        'Sr = Sn · Reduktionsfaktor = ' + f(sn, 0) + ' mm · ' + f(m[1], 1) + ' = ' + f(sr, 2) + ' mm. Bei Metallen mit schlechterer Wirkung schaltet der Sensor früher.', ['Sr = Sn mal Faktor.', 'Faktor kleiner 1 heißt kürzer.'],
+        'Sr = Sn · Reduktionsfaktor = ' + f(sn, 0) + ' mm · ' + f(m[1], 1) + ' = ' + f(sr, 2) + ' mm. Bei Metallen mit schwächerer Wirkung schaltet der Sensor erst, wenn das Teil näher heran ist.', ['Sr = Sn mal Faktor.', 'Faktor kleiner 1 heißt kürzer.'],
         '1. Schreibe die Formel Sr = Sn · Faktor. 2. Setze die Werte ein. 3. Gib das Ergebnis in mm an.');
     },
     arbeitsabstand: R => {

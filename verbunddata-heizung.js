@@ -55,7 +55,7 @@
   const FACH = {
     pHeiz: 3000, uNetz: 230, wNutz: 20,                          // HA1 (F19), HA2 (F8)
     kappa: 56, rho: 0.0178, dUmax: 3,                             // Kupfer: beide Schreibweisen zulassen
-    LS_MAX: { 0.75: 10, 1: 10, 1.5: 16, 2.5: 20, 4: 25, 6: 32 }, // gleich verbunddata-giessen.js:68 (Test vergleicht)
+    LS_MAX: { 1.5: 16, 2.5: 20, 4: 25, 6: 32 }, // gleich verbunddata-giessen.js:68 (Test vergleicht)
     fiMaMax: 30,                                                  // HA9 (F24): FI Typ A, höchstens 30 mA
     aufloesung: 0.2, skalEng: 0.3, skalWeit: 1.0,                // HA10, HA11 (F22)
     risoMin: 100,                                                 // HA13: MΩ bei 100 V

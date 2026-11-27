@@ -65,7 +65,7 @@
   const PUMP = { K: 5e-7, eta: 0.3, iLimit: 10, fStart: 0.02, ri: 0.2, drop: 0.2 };   // (A) Verdrängung 0,5 ml je rad, Wirkungsgrad 0,3, Netzteil-Strombegrenzung 10 A (Prüfstand), Anlaufanteil 2 %, Netzteil-Innenwiderstand 0,2 Ω
   const FUSES = [0.5, 1, 1.6, 2, 2.5, 3.15, 4, 5, 6.3, 8, 10];
   const MOTOR_IDS = { antrieb24: 'antrieb24', getriebe12: 'gm12', gm12: 'gm12', modell: 'modell6', modell6: 'modell6' };
-  const LS_MAX = { 0.75: 10, 1: 10, 1.5: 16, 2.5: 20, 4: 25, 6: 32 };       // größter zugeordneter Leitungsschutz je Querschnitt in A (1,5 mm² -> B16 üblich, übrige (A))
+  const LS_MAX = { 1.5: 16, 2.5: 20, 4: 25, 6: 32 };   // feste Verlegung mindestens 1,5 mm² Kupfer (DIN VDE 0100-520)       // größter zugeordneter Leitungsschutz je Querschnitt in A (1,5 mm² -> B16 üblich, übrige (A))
   const KAPPA = 56;                             // sicher: Kupfer in m/(Ω·mm²)
   const IO = [
     { key: 'I0.0', sym: 'S1_Start', text: 'Taster Start Gießen (Schließer)' },

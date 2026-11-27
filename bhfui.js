@@ -358,7 +358,7 @@
       sec('Wochenbericht', '<p>Im Reiter „Woche“ trägst du Montag bis Freitag ein. Der Helfer addiert die Dauer, zeigt Schwerpunkte und gibt dir eine Satzvorlage für die Zusammenfassung.</p>') +
       sec('Ausbildungsnachweis und dein Betrieb', '<p>Wie oft du schreibst, ob auf Papier oder digital und welche Felder dein Vordruck hat, legt dein Betrieb fest. Das ist keine Rechtsauskunft: <b>Frag deinen Ausbilder.</b></p>') +
       sec('Was nicht in den Bericht gehört', '<ul><li>Namen von Kunden, Preise und interne Daten</li><li>Zugangsdaten und Passwörter</li><li>Meinungen über Kollegen und Privates</li></ul><p>Im Zweifel weglassen und den Ausbilder fragen.</p>') +
-      sec('Datenschutz', '<p>Das Lab arbeitet ohne Internet. Dein Entwurf bleibt nur in diesem Browser auf diesem Gerät. Der Name wird nie gespeichert. Über das Menü kannst du alles löschen.</p>');
+      sec('Datenschutz', '<p>Das Lab arbeitet ohne Internet. Dein Entwurf bleibt nur in diesem Browser auf diesem Gerät. Der Name wird nie gespeichert. Über das Menü kannst du alles löschen. Auf einem geteilten Gerät löschst du den Entwurf nach dem Gebrauch.</p>');
   }
 
   /* ============================================================ Reiter, Kopfzeile, Bedienleiste */
